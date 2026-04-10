@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import sys, json; data=json.load(sys.stdin); cmd=data.get('tool_input',{}).get('command',''); print(json.dumps({'systemMessage': 'REMINDER: Did you bump mod_version in gradle.properties?'}) if any(k in cmd for k in ['gradlew','gradle','cp build/libs']) else json.dumps({}))\"",
+            "statusMessage": "Checking version bump..."
+          }
+        ]
+      }
+    ]
+  }
+}

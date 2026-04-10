@@ -1,0 +1,36 @@
+{
+  "required": true,
+  "package": "blade.addon.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ChunkMixin",
+    "ClientConnectionMixin",
+    "ClientPlayNetworkHandlerMixin",
+    "EntityMixin",
+    "PlayerInventoryMixin",
+    "StuckArrowsFeatureRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  },
+  "client": [
+    "BossBarHudMixin",
+    "ChatHudInvoker",
+    "ChatHudMixin",
+    "ChatScreenMixin",
+    "ClientPlayNetworkHandlerMixin",
+    "DrawContextMixin",
+    "EntityRendererMixin",
+    "HandledScreenMixin",
+    "InventoryScreenMixin",
+    "KeyboardMixin",
+    "MouseMixin",
+    "RecipeBookScreenMixin",
+    "RecipeBookWidgetMixin",
+    "SkullBlockEntityRendererMixin",
+    "StatusEffectsDisplayMixin"
+  ]
+}

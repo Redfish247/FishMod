@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Minecraft Client (Dev)",
+      "runtimeExecutable": "gradlew",
+      "runtimeArgs": ["runClient"],
+      "port": 0
+    },
+    {
+      "name": "Minecraft Server (Dev)",
+      "runtimeExecutable": "gradlew",
+      "runtimeArgs": ["runServer"],
+      "port": 25565
+    }
+  ]
+}
