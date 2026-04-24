@@ -1,7 +1,5 @@
-# Blade Addons
-
-A dungeons mod made to port dungeons features to the newer Minecraft versions. Huge thanks to Ohful for letting me port
-his amazing mods like Valley addons.
+FishMod
+dungeuons and qol features
 
 # Current Version
 1.21.10
