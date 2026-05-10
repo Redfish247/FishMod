@@ -108,6 +108,7 @@ public class FishModScreen extends Screen {
         partyCat.add(new ToggleSetting(".fps", "Sends your current FPS to party", () -> FishSettings.pcFps, v -> FishSettings.pcFps = v));
         partyCat.add(new ToggleSetting(".tps", "Sends estimated server TPS to party", () -> FishSettings.pcTps, v -> FishSettings.pcTps = v));
         partyCat.add(new ToggleSetting(".ping", "Sends your ping to party", () -> FishSettings.pcPing, v -> FishSettings.pcPing = v));
+        partyCat.add(new ToggleSetting(".d", "Disbands the party (off by default)", () -> FishSettings.pcDisband, v -> FishSettings.pcDisband = v));
         partyCat.add(new SubcategoryHeader("API Settings"));
         partyCat.add(new InputSetting("Hypixel API Key", "Required for .cata and .rtca", () -> FishSettings.hypixelApiKey, v -> FishSettings.hypixelApiKey = v));
         partyCat.add(new SliderIntSetting("RTCA XP / run", "Class XP per M7 run as that class",

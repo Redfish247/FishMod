@@ -71,6 +71,7 @@ public class PartyCommandHandler {
             case "tps"    -> { if (FishSettings.pcTps    && isMe) sendTps(mc);  }
             case "ping"   -> { if (FishSettings.pcPing   && isMe) sendPing(mc); }
             case "ai", "allinv" -> { if (FishSettings.pcAllinvite && isMe) sendCmd(mc, "p settings allinvite"); }
+            case "d"            -> { if (FishSettings.pcDisband   && isMe) sendCmd(mc, "p disband");             }
             default -> {
                 if ((cmd.matches("[fm][1-7]") || cmd.equals("e")) && FishSettings.pcJoinFloor) handleJoinInstance(cmd, mc);
                 else if (cmd.matches("t[1-5]") && FishSettings.pcJoinFloor) handleKuudra(cmd, mc);
@@ -129,6 +130,10 @@ public class PartyCommandHandler {
             case "ping":
                 if (!FishSettings.pcPing || target == null) return false;
                 sendPing(mc);
+                return true;
+            case "d":
+                if (!FishSettings.pcDisband || target == null) return false;
+                sendCmd(mc, "p disband");
                 return true;
         }
 
@@ -271,5 +276,6 @@ public class PartyCommandHandler {
         String pingStr = ping >= 0 ? ping + "ms" : "N/A";
         sendCmd(mc, "pc Ping: " + pingStr);
     }
+
 
 }

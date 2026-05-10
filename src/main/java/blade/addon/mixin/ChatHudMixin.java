@@ -18,7 +18,7 @@ public class ChatHudMixin {
 
     // Group 1 = typer IGN, Group 2 = command, Group 3 = optional arg
     private static final Pattern PARTY_CMD = Pattern.compile(
-            "^Party > (?:\\[[^\\]]+\\] )*(\\w+): [.!](rtca|cata|pb|fps|tps|ping|ai|allinv|e|[fm][1-7]|t[1-5])(?:\\s+(\\w+))?\\s*$");
+            "^Party > (?:\\[[^\\]]+\\] )*(\\w+): [.!](rtca|cata|pb|fps|tps|ping|ai|allinv|d|e|[fm][1-7]|t[1-5])(?:\\s+(\\w+))?\\s*$");
 
     @Inject(method = "addMessage(Lnet/minecraft/text/Text;)V", at = @At("HEAD"))
     private void onAddMessage(Text message, CallbackInfo ci) {

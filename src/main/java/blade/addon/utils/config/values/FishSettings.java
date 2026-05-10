@@ -48,4 +48,5 @@ public class FishSettings {
     @ConfigValue public static boolean pcFps        = true;
     @ConfigValue public static boolean pcTps        = true;
     @ConfigValue public static boolean pcPing       = true;
+    @ConfigValue public static boolean pcDisband    = false;
 }
