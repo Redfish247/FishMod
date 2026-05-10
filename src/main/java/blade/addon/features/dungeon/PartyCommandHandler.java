@@ -4,52 +4,31 @@ import blade.addon.utils.HypixelApi;
 import blade.addon.utils.Location;
 import blade.addon.utils.config.values.FishSettings;
 import blade.addon.utils.Misc;
-import blade.addon.utils.dungeon.RunHistory;
 import blade.addon.utils.events.Events;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.text.Text;
 
-import java.io.*;
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Handles party commands typed by the local player:
- *   .ai / .allinv  — /party settings allinvite
- *   .pb            — send M7 personal best to party chat
+ *   .ai / .allinv  — /p settings allinvite
+ *   .pb            — fetch M7 PB from Hypixel API and send to party chat
  *   .cata          — send cata level (requires API key)
  *   .rtca          — send runs-to-class-50 (requires API key)
- *   .f1-.f7        — /joininstance catacombs_floor_X  (after 30s in dungeon)
+ *   .e             — /joininstance catacombs_entrance
+ *   .f1-.f7        — /joininstance catacombs_floor_X
  *   .m1-.m7        — /joininstance master_catacombs_floor_X
  */
 public class PartyCommandHandler {
 
-    private static final Pattern DEFEAT_PATTERN = Pattern.compile(
-            "^\\s*☠ Defeated .+ in ((?:\\d+[hms] ?)+?)\\s*(?:\\(NEW RECORD!\\))?\\s*$");
-
-    // Matches party chat commands: "Party > [RANK] PlayerName: .rtca" etc.
-    // Group 1 = IGN, Group 2 = command name
-    private static final Pattern PARTY_RTCA = Pattern.compile(
-            "^Party > (?:\\[[^\\]]+\\] )*(\\w+): [.!](rtca|cata|pb)\\s*$");
-
     private static final String[] NUM_WORDS =
             {"one", "two", "three", "four", "five", "six", "seven"};
 
-    private static final String PB_PATH  = "config/fishmod-pb.json";
-    private static final Gson   GSON     = new GsonBuilder().setPrettyPrinting().create();
-
-    // floor key (e.g. "M7") → best run time in seconds
-    private static final Map<String, Long> personalBests = new HashMap<>();
+    private static final String[] KUUDRA_TIERS =
+            {"normal", "hot", "burning", "fiery", "infernal"};
 
     private static long dungeonEnteredAt = 0;
 
@@ -58,72 +37,59 @@ public class PartyCommandHandler {
     private static int tickIdx = 0;
     private static long lastTickMs = -1;
 
-    static { loadPbs(); }
-
     public static void init() {
-        // Track when the player enters a dungeon (for 30s joininstance guard)
+        // Track when the player enters a dungeon or Kuudra (for 30s joininstance guard)
         Events.ON_LOCATION_CHANGE.register(loc -> {
-            if (loc == Location.DUNGEON) dungeonEnteredAt = System.currentTimeMillis();
+            if (loc == Location.DUNGEON || loc == Location.KUUDRA) dungeonEnteredAt = System.currentTimeMillis();
             return false;
         });
 
-        // Track run completions for PB storage
-        Events.ON_GAME_MESSAGE.register(msg -> {
-            if (!Location.inDungeon()) return false;
-            Matcher m = DEFEAT_PATTERN.matcher(msg.getString());
-            if (m.find()) {
-                double secs = parseTime(m.group(1).trim());
-                if (secs > 0) {
-                    String floor = normalizeFloor(scanTabFloor(MinecraftClient.getInstance()));
-                    if (!floor.isEmpty()) {
-                        Long prev = personalBests.get(floor);
-                        if (prev == null || (long) secs < prev) {
-                            personalBests.put(floor, (long) secs);
-                            savePbs();
-                        }
-                    }
-                }
-            }
-            return false;
-        });
-
-        // TPS tick timer
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+        // Server tick timing for real TPS (CommonPingS2CPacket fires once per server tick)
+        Events.ON_SERVER_TICK.register(() -> {
             long now = System.currentTimeMillis();
             if (lastTickMs > 0) {
                 TICK_TIMES[tickIdx % TICK_TIMES.length] = now - lastTickMs;
                 tickIdx++;
             }
             lastTickMs = now;
+            return false;
         });
 
-        // Intercept .cmd and !cmd typed directly in chat (non-/pc mode)
-        ClientSendMessageEvents.ALLOW_CHAT.register(message -> {
-            String t = message.trim();
-            if (!t.startsWith(".") && !t.startsWith("!")) return true;
-            String cmd = t.substring(1).toLowerCase().trim();
-            return !handleCommand(cmd);
-        });
     }
 
-    /** Called from ChatHudMixin for every party message — catches all packet types. */
-    public static void onPartyCommand(String ign, String cmd) {
+    /** Called from ChatHudMixin for every party command message. typer = who typed it, ign = lookup target, cmd = the command. */
+    public static void onPartyCommand(String typer, String ign, String cmd) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.getNetworkHandler() == null) return;
+        boolean isMe = mc.player != null && typer.equalsIgnoreCase(mc.player.getName().getString());
         switch (cmd) {
-            case "rtca"               -> { if (FishSettings.pcRtca)      runRtcaForPlayer(mc, ign); }
-            case "cata"               -> { if (FishSettings.pcCata)      runCataForPlayer(mc, ign); }
-            case "pb"                 -> { if (FishSettings.pcPb)        runPbForPlayer(mc, ign);   }
-            case "fps"                -> { if (FishSettings.pcFps)       sendFps(mc);               }
-            case "tps"                -> { if (FishSettings.pcTps)       sendTps(mc);               }
-            case "ping"               -> { if (FishSettings.pcPing)      sendPing(mc);              }
-            default                   -> { if (cmd.matches("[fm][1-7]") && FishSettings.pcJoinFloor) handleJoinInstance(cmd, mc); }
+            case "rtca"   -> { if (FishSettings.pcRtca)      runRtcaForPlayer(mc, ign); }
+            case "cata"   -> { if (FishSettings.pcCata)      runCataForPlayer(mc, ign); }
+            case "pb"     -> { if (FishSettings.pcPb)        runPbForPlayer(mc, ign);   }
+            // Local-only: only the typer's own mod responds (avoids everyone spamming their own stats)
+            case "fps"    -> { if (FishSettings.pcFps    && isMe) sendFps(mc);  }
+            case "tps"    -> { if (FishSettings.pcTps    && isMe) sendTps(mc);  }
+            case "ping"   -> { if (FishSettings.pcPing   && isMe) sendPing(mc); }
+            case "ai", "allinv" -> { if (FishSettings.pcAllinvite && isMe) sendCmd(mc, "p settings allinvite"); }
+            default -> {
+                if ((cmd.matches("[fm][1-7]") || cmd.equals("e")) && FishSettings.pcJoinFloor) handleJoinInstance(cmd, mc);
+                else if (cmd.matches("t[1-5]") && FishSettings.pcJoinFloor) handleKuudra(cmd, mc);
+            }
         }
+    }
+
+    /** Sends a command to the server after a short delay to avoid rate-limiting. */
+    private static void sendCmd(MinecraftClient mc, String command) {
+        CompletableFuture.delayedExecutor(250, TimeUnit.MILLISECONDS)
+            .execute(() -> mc.execute(() -> {
+                if (mc.getNetworkHandler() != null)
+                    mc.getNetworkHandler().sendChatCommand(command);
+            }));
     }
 
     // ─── command dispatcher ───────────────────────────────────────────────────
 
-    private static boolean handleCommand(String fullCmd) {
+    public static boolean handleCommand(String fullCmd) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.getNetworkHandler() == null) return false;
 
@@ -137,11 +103,11 @@ public class PartyCommandHandler {
 
         switch (cmd) {
             case "ai": case "allinv":
-                if (!FishSettings.pcAllinvite) return false;
-                mc.send(() -> mc.getNetworkHandler().sendChatCommand("party settings allinvite"));
+                if (!FishSettings.pcAllinvite || target == null) return false;
+                sendCmd(mc, "p settings allinvite");
                 return true;
             case "pb":
-                if (!FishSettings.pcPb) return false;
+                if (!FishSettings.pcPb || target == null) return false;
                 sendPb(mc);
                 return true;
             case "cata":
@@ -153,22 +119,27 @@ public class PartyCommandHandler {
                 runRtcaForPlayer(mc, target);
                 return true;
             case "fps":
-                if (!FishSettings.pcFps) return false;
+                if (!FishSettings.pcFps || target == null) return false;
                 sendFps(mc);
                 return true;
             case "tps":
-                if (!FishSettings.pcTps) return false;
+                if (!FishSettings.pcTps || target == null) return false;
                 sendTps(mc);
                 return true;
             case "ping":
-                if (!FishSettings.pcPing) return false;
+                if (!FishSettings.pcPing || target == null) return false;
                 sendPing(mc);
                 return true;
         }
 
-        if (cmd.matches("[fm][1-7]")) {
+        if (cmd.equals("e") || cmd.matches("[fm][1-7]")) {
             if (!FishSettings.pcJoinFloor) return false;
             handleJoinInstance(cmd, mc);
+            return true;
+        }
+        if (cmd.matches("t[1-5]")) {
+            if (!FishSettings.pcJoinFloor) return false;
+            handleKuudra(cmd, mc);
             return true;
         }
         return false;
@@ -186,18 +157,15 @@ public class PartyCommandHandler {
         HypixelApi.getByName(mc, ign, data -> {
             String level  = HypixelApi.formatLevel(data.cataXp);
             String toNext = HypixelApi.xpToNextLevel(data.cataXp);
-            mc.send(() -> mc.getNetworkHandler().sendChatCommand("pc " + ign + " Cata: " + level + " | " + toNext + " XP to next"));
+            sendCmd(mc, "pc " + ign + " Cata: " + level + " | " + toNext + " XP to next");
         });
     }
 
     private static void runPbForPlayer(MinecraftClient mc, String ign) {
-        // PB is tracked locally — if we have one for the local player only
-        String localName = mc.player != null ? mc.player.getName().getString() : "";
-        if (ign.equalsIgnoreCase(localName)) {
-            sendPb(mc);
-        } else {
-            Misc.addChatMessage(Text.literal("§cPBs are only tracked for yourself."));
-        }
+        HypixelApi.getByName(mc, ign, data -> {
+            String m7pb = data.masterPbs[7];
+            sendCmd(mc, "pc " + ign + " M7 PB: " + (m7pb != null ? m7pb : "N/A"));
+        });
     }
 
     private static void buildAndSendRtca(MinecraftClient mc, HypixelApi.DungeonData data, String ign) {
@@ -231,69 +199,60 @@ public class PartyCommandHandler {
             if (i < 4) sb.append(" | ");
         }
         String out = sb.toString();
-        mc.send(() -> mc.getNetworkHandler().sendChatCommand("pc " + out));
+        sendCmd(mc, "pc " + out);
     }
 
     // ─── local command implementations ───────────────────────────────────────
 
     private static void sendPb(MinecraftClient mc) {
-        Long pb = personalBests.get("M7");
-        if (pb == null) {
-            if (personalBests.isEmpty()) {
-                Misc.addChatMessage(Text.literal("§cNo PBs tracked yet — complete a run first."));
-            } else {
-                // Show all stored PBs locally
-                personalBests.forEach((floor, t) ->
-                        Misc.addChatMessage(Text.literal("§e" + floor + " PB: §f" + formatTime(t))));
-            }
-            return;
-        }
-        long finalPb = pb;
-        mc.send(() -> mc.getNetworkHandler().sendChatCommand("pc M7 PB: " + formatTime(finalPb)));
-    }
-
-    private static void sendCata(MinecraftClient mc) {
-        String ign = mc.player != null ? mc.player.getName().getString() : "?";
         HypixelApi.getPlayerDungeonData(mc, data -> {
-            String level  = HypixelApi.formatLevel(data.cataXp);
-            String toNext = HypixelApi.xpToNextLevel(data.cataXp);
-            mc.send(() -> mc.getNetworkHandler().sendChatCommand("pc " + ign + " Cata: " + level + " | " + toNext + " XP to next"));
+            String m7pb = data.masterPbs[7];
+            sendCmd(mc, "pc M7 PB: " + (m7pb != null ? m7pb : "N/A"));
         });
     }
 
-    private static void sendRtca(MinecraftClient mc) {
-        String ign = mc.player != null ? mc.player.getName().getString() : "?";
-        HypixelApi.getPlayerDungeonData(mc, data -> buildAndSendRtca(mc, data, ign));
-    }
-
     private static void handleJoinInstance(String cmd, MinecraftClient mc) {
-        if (!Location.inDungeon()) {
-            mc.send(() -> mc.getNetworkHandler().sendChatCommand("pc Not in a dungeon."));
-            return;
-        }
         long elapsed = System.currentTimeMillis() - dungeonEnteredAt;
         if (elapsed < 30_000L) {
             long rem = (30_000L - elapsed) / 1_000L + 1L;
-            mc.send(() -> mc.getNetworkHandler().sendChatCommand("pc Wait another " + rem + "s before joining."));
+            sendCmd(mc, "pc Wait " + rem + "s before joining.");
             return;
         }
-        char type    = cmd.charAt(0);           // 'f' or 'm'
-        int  num     = cmd.charAt(1) - '0';     // 1-7
-        String floor = (type == 'm' ? "master_" : "") + "catacombs_floor_" + NUM_WORDS[num - 1];
+        String floor;
+        if (cmd.equals("e")) {
+            floor = "catacombs_entrance";
+        } else {
+            char type = cmd.charAt(0);
+            int  num  = cmd.charAt(1) - '0';
+            floor = (type == 'm' ? "master_" : "") + "catacombs_floor_" + NUM_WORDS[num - 1];
+        }
         String joinCmd = "joininstance " + floor;
         Misc.addChatMessage(Text.literal("§7[FM] Sending: /" + joinCmd));
-        mc.send(() -> mc.getNetworkHandler().sendChatCommand(joinCmd));
+        sendCmd(mc, joinCmd);
+    }
+
+    private static void handleKuudra(String cmd, MinecraftClient mc) {
+        long elapsed = System.currentTimeMillis() - dungeonEnteredAt;
+        if (elapsed < 30_000L) {
+            long rem = (30_000L - elapsed) / 1_000L + 1L;
+            sendCmd(mc, "pc Wait " + rem + "s before joining Kuudra.");
+            return;
+        }
+        int tier = cmd.charAt(1) - '1'; // t1=0 … t5=4
+        String joinCmd = "joininstance kuudra_" + KUUDRA_TIERS[tier];
+        Misc.addChatMessage(Text.literal("§7[FM] Sending: /" + joinCmd));
+        sendCmd(mc, joinCmd);
     }
 
     private static void sendFps(MinecraftClient mc) {
         int fps = mc.getCurrentFps();
-        mc.send(() -> mc.getNetworkHandler().sendChatCommand("pc FPS: " + fps));
+        sendCmd(mc, "pc FPS: " + fps);
     }
 
     private static void sendTps(MinecraftClient mc) {
         int filled = Math.min(tickIdx, TICK_TIMES.length);
         if (filled == 0) {
-            mc.send(() -> mc.getNetworkHandler().sendChatCommand("pc TPS: N/A"));
+            sendCmd(mc, "pc TPS: N/A");
             return;
         }
         long sum = 0;
@@ -301,7 +260,7 @@ public class PartyCommandHandler {
         double avgMs = (double) sum / filled;
         double tps = Math.min(20.0, 1000.0 / avgMs);
         String formatted = String.format("%.1f", tps);
-        mc.send(() -> mc.getNetworkHandler().sendChatCommand("pc TPS: " + formatted));
+        sendCmd(mc, "pc TPS: " + formatted);
     }
 
     private static void sendPing(MinecraftClient mc) {
@@ -309,93 +268,8 @@ public class PartyCommandHandler {
         var entry = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
         if (entry == null) return;
         int ping = entry.getLatency();
-        mc.send(() -> mc.getNetworkHandler().sendChatCommand("pc Ping: " + ping + "ms"));
+        String pingStr = ping >= 0 ? ping + "ms" : "N/A";
+        sendCmd(mc, "pc Ping: " + pingStr);
     }
 
-    // ─── helpers ──────────────────────────────────────────────────────────────
-
-    /** Scans the tab list for the ⏣ The Catacombs (…) line and returns the floor name inside. */
-    private static String scanTabFloor(MinecraftClient mc) {
-        ClientPlayNetworkHandler handler = mc.getNetworkHandler();
-        if (handler == null) return "";
-        for (PlayerListEntry entry : handler.getPlayerList()) {
-            if (entry.getDisplayName() == null) continue;
-            String line = entry.getDisplayName().getString().replaceAll("§.", "").trim();
-            if (line.startsWith("⏣ The Catacombs")) {
-                int s = line.indexOf('('), e = line.indexOf(')');
-                if (s >= 0 && e > s) return line.substring(s + 1, e);
-            }
-        }
-        return "";
-    }
-
-    /**
-     * Converts a tab-list floor string to a short key like "M7" or "F4".
-     * Input examples: "Master Mode Floor VII", "Floor IV"
-     */
-    private static String normalizeFloor(String raw) {
-        if (raw == null || raw.isEmpty()) return "";
-        raw = raw.trim();
-        boolean master = raw.startsWith("Master Mode");
-        String[] words = raw.split(" ");
-        String last = words[words.length - 1];
-        int num = romanToInt(last);
-        if (num <= 0) return "";
-        return (master ? "M" : "F") + num;
-    }
-
-    private static int romanToInt(String r) {
-        return switch (r.toUpperCase()) {
-            case "I"    -> 1;
-            case "II"   -> 2;
-            case "III"  -> 3;
-            case "IV"   -> 4;
-            case "V"    -> 5;
-            case "VI"   -> 6;
-            case "VII"  -> 7;
-            default     -> -1;
-        };
-    }
-
-    /** Parses a time string like "05m 20s", "1h 05m 30s", "45s", "02m" into total seconds. */
-    private static double parseTime(String t) {
-        double total = 0;
-        Matcher m = Pattern.compile("(\\d+)([hms])").matcher(t);
-        while (m.find()) {
-            int v = Integer.parseInt(m.group(1));
-            char u = m.group(2).charAt(0);
-            if (u == 'h')      total += v * 3600.0;
-            else if (u == 'm') total += v * 60.0;
-            else               total += v;
-        }
-        return total;
-    }
-
-    /** Formats seconds as "5m 20s" or "45s". */
-    private static String formatTime(long secs) {
-        long h = secs / 3600, m = (secs % 3600) / 60, s = secs % 60;
-        if (h > 0) return h + "h " + String.format("%02d", m) + "m " + String.format("%02d", s) + "s";
-        if (m > 0) return m + "m " + String.format("%02d", s) + "s";
-        return s + "s";
-    }
-
-    // ─── persistence ─────────────────────────────────────────────────────────
-
-    private static void loadPbs() {
-        File f = new File(PB_PATH);
-        if (!f.exists()) return;
-        try (Reader r = new FileReader(f)) {
-            Type type = new TypeToken<Map<String, Long>>() {}.getType();
-            Map<String, Long> loaded = GSON.fromJson(r, type);
-            if (loaded != null) personalBests.putAll(loaded);
-        } catch (Exception ignored) {}
-    }
-
-    private static void savePbs() {
-        try {
-            File f = new File(PB_PATH);
-            f.getParentFile().mkdirs();
-            try (Writer w = new FileWriter(f)) { GSON.toJson(personalBests, w); }
-        } catch (Exception ignored) {}
-    }
 }

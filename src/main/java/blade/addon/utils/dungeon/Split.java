@@ -126,6 +126,9 @@ public class Split {
     }
 
     public double getRealTime() {
+        // startTime == 0 means start() was never called; guard against returning
+        // epoch-time-in-seconds when printSplits() force-ends a never-started split.
+        if (startTime == 0) return 0;
         double realTime;
         if (ended) {
             realTime = (endTime - startTime) / 1000.0;

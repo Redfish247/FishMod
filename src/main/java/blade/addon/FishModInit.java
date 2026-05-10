@@ -1,5 +1,6 @@
 package blade.addon;
 
+import blade.addon.features.warpmap.WarpMapFeature;
 import blade.addon.utils.config.FolderUtility;
 import blade.addon.utils.config.Config;
 import blade.addon.utils.Keybinds;
@@ -10,12 +11,11 @@ import blade.addon.utils.Scheduler;
 import blade.addon.features.dungeon.DungeonDeathMessage;
 import blade.addon.features.dungeon.PartyCommandHandler;
 import blade.addon.features.dungeon.PartyInviteAccepter;
-import blade.addon.features.other.PartyFinderEnhancer;
 import blade.addon.features.dungeon.FishEstTotal;
 import blade.addon.features.dungeon.FishPuzzleDisplay;
+import blade.addon.features.dungeon.LagTracker;
 import blade.addon.utils.data.FishPartyTracker;
 import blade.addon.features.dungeon.PuzzleDisplay;
-import blade.addon.features.other.SearchBar;
 import blade.addon.utils.config.components.Components;
 import blade.addon.utils.data.EntityUtil;
 import blade.addon.utils.data.PartyUtil;
@@ -29,6 +29,7 @@ import blade.addon.utils.config.FishConfig;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
@@ -42,13 +43,13 @@ public class FishModInit implements ModInitializer {
         FishConfig.manager.load();
 
         // Always init FishMod-exclusive classes (always load from FishMod's jar)
+        LagTracker.init();
         FishPuzzleDisplay.init();
         FishEstTotal.init();
         DungeonDeathMessage.init();
         FishPartyTracker.init();
         PartyCommandHandler.init();
         PartyInviteAccepter.init();
-        PartyFinderEnhancer.init();
 
         // Always register /fm and /fmdbg regardless of whether blade is loaded
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
@@ -59,10 +60,6 @@ public class FishModInit implements ModInitializer {
                     return Constants.SUCCESS;
                 })
             );
-            dispatcher.register(ClientCommandManager.literal("pfdbg").executes(context -> {
-                MinecraftClient.getInstance().send(() -> PartyFinderEnhancer.debug(MinecraftClient.getInstance()));
-                return Constants.SUCCESS;
-            }));
             dispatcher.register(ClientCommandManager.literal("fmdbg").executes(context -> {
                 MinecraftClient mc = MinecraftClient.getInstance();
                 mc.send(() -> {
@@ -98,6 +95,9 @@ public class FishModInit implements ModInitializer {
         });
 
 
+        // ── Warp Map HUD — always active regardless of blade-addons ──────────
+        HudRenderCallback.EVENT.register((ctx, tickCounter) -> WarpMapFeature.renderHud(ctx, tickCounter));
+
         if (!FabricLoader.getInstance().isModLoaded("blade-addons")) {
             // Standalone — init the full shared framework
             FolderUtility.init();
@@ -114,7 +114,6 @@ public class FishModInit implements ModInitializer {
             EntityUtil.init();
             RenderingEvents.init();
             Scheduler.init();
-            SearchBar.init();
         }
     }
 }

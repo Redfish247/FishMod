@@ -1,8 +1,9 @@
 package blade.addon.utils;
 
+import blade.addon.utils.rendering.RenderUtils;
 import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexRendering;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.math.Box;
 
 public class Waypoint {
     private final double x, y, z, dx, dy, dz;
@@ -38,7 +39,7 @@ public class Waypoint {
     }
 
     public void Render(VertexConsumer consumer, MatrixStack matrixStack) {
-        VertexRendering.drawFilledBox(matrixStack, consumer, x, y, z, x + dx, y + dy, z + dz, r, g, b, a);
+        RenderUtils.renderFilled(matrixStack, consumer, new Box(x, y, z, x + dx, y + dy, z + dz), new float[]{r, g, b, a});
     }
 
     @Override

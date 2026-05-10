@@ -9,7 +9,7 @@ import config.practical.manager.ConfigValue;
 public class FishSettings {
 
     @ConfigValue
-    public static boolean sendLagToParty = false;
+    public static boolean sendLagToParty = true;
 
     @ConfigValue
     public static boolean showPuzzles = true;
@@ -31,10 +31,13 @@ public class FishSettings {
     public static int rtcaClassXpPerRun = 500000;
 
     @ConfigValue
-    public static boolean autoAcceptPartyInvite = false;
+    public static boolean warpMapHudEnabled = true;
 
     @ConfigValue
-    public static boolean partyFinderStats = true;
+    public static int warpMapDotColor = 0xFFDB3737;
+
+    @ConfigValue
+    public static boolean autoAcceptPartyInvite = false;
 
     // Party command toggles
     @ConfigValue public static boolean pcAllinvite  = true;

@@ -18,6 +18,9 @@ import java.util.*;
 public class RunHistory {
 
     private static final int MAX_RUNS = 30;
+    // Any single split taking more than this is an artifact of a never-started split
+    // being force-ended (startTime==0 → huge wall time). Reject on save; filter on read.
+    private static final double MAX_SPLIT_SECONDS = 3600.0;
     private static final String FILE_PATH = "config/fishmod-runs.json";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
@@ -37,8 +40,10 @@ public class RunHistory {
         Map<String, List<Double>> floorData = data.computeIfAbsent(floor, k -> new HashMap<>());
         boolean anyRecorded = false;
         for (Map.Entry<String, Double> entry : times.entrySet()) {
+            double t = entry.getValue();
+            if (t <= 0 || t > MAX_SPLIT_SECONDS) continue; // reject corrupt/impossible values
             List<Double> list = floorData.computeIfAbsent(entry.getKey(), k -> new ArrayList<>());
-            list.add(entry.getValue());
+            list.add(t);
             if (list.size() > MAX_RUNS) list.remove(0);
             anyRecorded = true;
         }
@@ -57,9 +62,11 @@ public class RunHistory {
         for (Split split : splits) {
             if (!split.ended()) continue;
             if (split.getAvg() < 0) continue; // skip cumulative/total splits
+            double t = split.getRealTime();
+            if (t <= 0 || t > MAX_SPLIT_SECONDS) continue; // reject corrupt/impossible values
 
             List<Double> times = floorData.computeIfAbsent(split.getName(), k -> new ArrayList<>());
-            times.add(split.getRealTime());
+            times.add(t);
             if (times.size() > MAX_RUNS) times.remove(0);
             anyRecorded = true;
         }
@@ -76,7 +83,11 @@ public class RunHistory {
         if (floorData == null) return -1;
         List<Double> times = floorData.get(splitName);
         if (times == null || times.isEmpty()) return -1;
-        return times.stream().mapToDouble(Double::doubleValue).average().orElse(-1);
+        return times.stream()
+                .mapToDouble(Double::doubleValue)
+                .filter(t -> t > 0 && t <= MAX_SPLIT_SECONDS) // ignore already-persisted corrupt values
+                .average()
+                .orElse(-1);
     }
 
     /** How many recorded runs exist for a given split. */

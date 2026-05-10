@@ -8,18 +8,30 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtSizeTracker;
 import net.minecraft.text.Text;
 
+import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class HypixelApi {
 
@@ -77,6 +89,16 @@ public class HypixelApi {
                     for (int i = 0; i < Math.min(arr.size(), 8); i++)
                         d.masterPbs[i] = arr.get(i).isJsonNull() ? null : arr.get(i).getAsString();
                 }
+                if (obj.has("ragnarockChimera")) d.ragnarockChimera = obj.get("ragnarockChimera").getAsInt();
+                if (obj.has("termUltimate") && !obj.get("termUltimate").isJsonNull()) d.termUltimate = obj.get("termUltimate").getAsString();
+                if (obj.has("armorStars")) {
+                    JsonArray a = obj.getAsJsonArray("armorStars");
+                    if (a.size() == 4) d.armorStars = new int[]{a.get(0).getAsInt(), a.get(1).getAsInt(), a.get(2).getAsInt(), a.get(3).getAsInt()};
+                }
+                if (obj.has("equipStars")) {
+                    JsonArray a = obj.getAsJsonArray("equipStars");
+                    if (a.size() == 4) d.equipStars = new int[]{a.get(0).getAsInt(), a.get(1).getAsInt(), a.get(2).getAsInt(), a.get(3).getAsInt()};
+                }
                 liveCache.put(name, d);
             }
         } catch (Exception ignored) {}
@@ -109,6 +131,15 @@ public class HypixelApi {
                     JsonArray masterPbs = new JsonArray();
                     for (String pb : d.masterPbs) { if (pb != null) masterPbs.add(pb); else masterPbs.add(JsonNull.INSTANCE); }
                     obj.add("masterPbs", masterPbs);
+                    obj.addProperty("ragnarockChimera", d.ragnarockChimera);
+                    if (d.termUltimate != null) obj.addProperty("termUltimate", d.termUltimate);
+                    else obj.add("termUltimate", JsonNull.INSTANCE);
+                    if (d.armorStars != null) {
+                        JsonArray a = new JsonArray(); for (int s : d.armorStars) a.add(s); obj.add("armorStars", a);
+                    }
+                    if (d.equipStars != null) {
+                        JsonArray a = new JsonArray(); for (int s : d.equipStars) a.add(s); obj.add("equipStars", a);
+                    }
                     entries.add(name, obj);
                 }
                 root.addProperty("version", 1);
@@ -128,6 +159,192 @@ public class HypixelApi {
         // Index 0-7: 0=Entrance/E, 1-7=F1-F7 for cata; 1-7=M1-M7 for master. null = no PB.
         public String[] cataPbs   = new String[8];
         public String[] masterPbs = new String[8];
+        // Inventory-derived fields (null/–1 when API is off or item not found)
+        public int      ragnarockChimera = -1;  // Chimera enchant level on RAGNAROCK_AXE, –1 = none
+        public String   termUltimate     = null; // Ultimate enchant on Terminator(s), null = none/no term
+        public int[]    armorStars       = null; // [H, C, L, B] dungeon stars; null = inventory API off
+        public int[]    equipStars       = null; // [N, CL, B, G] dungeon stars; null = inventory API off
+    }
+
+    // ─── inventory / NBT helpers ──────────────────────────────────────────────
+
+    private static final Pattern STRIP_COLOR    = Pattern.compile("§.");
+    private static final Pattern ULTIMATE_PAT   = Pattern.compile("Ultimate ([A-Za-z ]+?) ([IVX]+)$");
+
+    private static void parseInventoryData(JsonObject member, DungeonData result) {
+        try {
+            if (!member.has("inventory")) return;
+            JsonObject inv = member.getAsJsonObject("inventory");
+
+            // Search main inv + echest for Ragnarock Axe / Terminator
+            List<NbtCompound> mainItems  = parseSlots(inv, "inv_contents");
+            List<NbtCompound> echestItems = parseSlots(inv, "ender_chest_contents");
+            List<NbtCompound> allItems = new ArrayList<>(mainItems.size() + echestItems.size());
+            for (NbtCompound c : mainItems)   if (c != null) allItems.add(c);
+            for (NbtCompound c : echestItems) if (c != null) allItems.add(c);
+
+            for (NbtCompound item : allItems) {
+                String id = getItemId(item);
+                if (result.ragnarockChimera < 0 && "RAGNAROCK_AXE".equals(id))
+                    result.ragnarockChimera = getEnchantLevel(item, "chimera");
+                if (result.termUltimate == null && id != null && id.contains("TERMINATOR"))
+                    result.termUltimate = getUltimateEnchant(item);
+            }
+
+            // Armor stars: inv_armor slots [0=boots, 1=legs, 2=chest, 3=head]
+            List<NbtCompound> armorSlots = parseSlots(inv, "inv_armor");
+            if (!armorSlots.isEmpty()) {
+                result.armorStars = new int[]{
+                    getStarCount(armorSlots.size() > 3 ? armorSlots.get(3) : null), // H
+                    getStarCount(armorSlots.size() > 2 ? armorSlots.get(2) : null), // C
+                    getStarCount(armorSlots.size() > 1 ? armorSlots.get(1) : null), // L
+                    getStarCount(armorSlots.size() > 0 ? armorSlots.get(0) : null)  // B
+                };
+            }
+
+            // Equipment stars: equipment_contents [0=necklace, 1=cloak, 2=belt, 3=gloves]
+            List<NbtCompound> equipSlots = parseSlots(inv, "equipment_contents");
+            if (!equipSlots.isEmpty()) {
+                result.equipStars = new int[]{
+                    getStarCount(equipSlots.size() > 0 ? equipSlots.get(0) : null), // N
+                    getStarCount(equipSlots.size() > 1 ? equipSlots.get(1) : null), // CL
+                    getStarCount(equipSlots.size() > 2 ? equipSlots.get(2) : null), // B (belt)
+                    getStarCount(equipSlots.size() > 3 ? equipSlots.get(3) : null)  // G
+                };
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private static List<NbtCompound> parseSlots(JsonObject inventory, String key) {
+        try {
+            if (!inventory.has(key)) return Collections.emptyList();
+            JsonObject slot = inventory.getAsJsonObject(key);
+            if (!slot.has("data")) return Collections.emptyList();
+            String b64 = slot.get("data").getAsString();
+            if (b64.isEmpty()) return Collections.emptyList();
+            byte[] bytes = java.util.Base64.getDecoder().decode(b64);
+            NbtCompound root = NbtIo.readCompressed(new ByteArrayInputStream(bytes), NbtSizeTracker.ofUnlimitedBytes());
+            Optional<NbtList> listOpt = root.getList("i");
+            NbtList items = listOpt.orElse(null);
+            if (items == null) return Collections.emptyList();
+            List<NbtCompound> out = new ArrayList<>(items.size());
+            for (int i = 0; i < items.size(); i++) {
+                NbtCompound c = items.getCompound(i).orElse(null);
+                out.add(c != null && !c.isEmpty() ? c : null);
+            }
+            return out;
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    private static NbtCompound getTag(NbtCompound item) {
+        if (item == null) return null;
+        try {
+            NbtElement el = item.get("tag");
+            if (el == null) return null;
+            return el.asCompound().orElse(null);
+        } catch (Exception e) { return null; }
+    }
+
+    private static NbtCompound getExtras(NbtCompound item) {
+        NbtCompound tag = getTag(item);
+        if (tag == null) return null;
+        try {
+            NbtElement el = tag.get("ExtraAttributes");
+            if (el == null) return null;
+            return el.asCompound().orElse(null);
+        } catch (Exception e) { return null; }
+    }
+
+    private static String getItemId(NbtCompound item) {
+        NbtCompound extras = getExtras(item);
+        if (extras == null) return null;
+        try {
+            NbtElement el = extras.get("id");
+            if (el == null) return null;
+            return el.asString().orElse(null);
+        } catch (Exception e) { return null; }
+    }
+
+    private static int getEnchantLevel(NbtCompound item, String enchantName) {
+        NbtCompound extras = getExtras(item);
+        if (extras == null) return -1;
+        try {
+            NbtElement encEl = extras.get("enchantments");
+            if (encEl == null) return -1;
+            NbtCompound enchants = encEl.asCompound().orElse(null);
+            if (enchants == null) return -1;
+            return enchants.getInt(enchantName, -1);
+        } catch (Exception e) { return -1; }
+    }
+
+    private static String getUltimateEnchant(NbtCompound item) {
+        NbtCompound extras = getExtras(item);
+        if (extras == null) return null;
+        try {
+            // Check enchantments map for "ultimate_" prefixed keys
+            NbtElement encEl = extras.get("enchantments");
+            if (encEl != null) {
+                NbtCompound enchants = encEl.asCompound().orElse(null);
+                if (enchants != null) {
+                    for (String k : enchants.getKeys()) {
+                        if (!k.startsWith("ultimate_")) continue;
+                        int lvl = enchants.getInt(k, 0);
+                        String name = k.substring("ultimate_".length()).replace("_", " ");
+                        name = Character.toUpperCase(name.charAt(0)) + name.substring(1);
+                        return name + " " + toRoman(lvl);
+                    }
+                }
+            }
+            // Fallback: scan lore for "Ultimate <Name> <Level>"
+            NbtCompound tag = getTag(item);
+            if (tag == null) return null;
+            NbtElement displayEl = tag.get("display");
+            if (displayEl == null) return null;
+            NbtCompound display = displayEl.asCompound().orElse(null);
+            if (display == null) return null;
+            NbtList lore = display.getList("Lore").orElse(null);
+            if (lore == null || lore.isEmpty()) return null;
+            for (int i = 0; i < lore.size(); i++) {
+                String line = STRIP_COLOR.matcher(lore.getString(i).orElse("")).replaceAll("").trim();
+                Matcher m = ULTIMATE_PAT.matcher(line);
+                if (m.find()) return m.group(1).trim() + " " + m.group(2);
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private static int getStarCount(NbtCompound item) {
+        NbtCompound extras = getExtras(item);
+        if (extras != null) {
+            try {
+                int lvl = extras.getInt("dungeon_item_level", -1);
+                if (lvl >= 0) return lvl;
+            } catch (Exception ignored) {}
+        }
+        // Fallback: count ✪ in display name
+        try {
+            NbtCompound tag = getTag(item);
+            if (tag == null) return 0;
+            NbtElement displayEl = tag.get("display");
+            if (displayEl == null) return 0;
+            NbtCompound display = displayEl.asCompound().orElse(null);
+            if (display == null) return 0;
+            NbtElement nameEl = display.get("Name");
+            if (nameEl == null) return 0;
+            String name = STRIP_COLOR.matcher(nameEl.asString().orElse("")).replaceAll("");
+            return (int) name.chars().filter(c -> c == '\u272A').count();
+        } catch (Exception e) { return 0; }
+    }
+
+    private static String toRoman(int n) {
+        if (n <= 0) return String.valueOf(n);
+        String[] v = {"M","CM","D","CD","C","XC","L","XL","X","IX","V","IV","I"};
+        int[]    r = {1000,900,500,400,100, 90, 50, 40, 10,  9,  5,  4,  1};
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < r.length; i++) while (n >= r[i]) { sb.append(v[i]); n -= r[i]; }
+        return sb.toString();
     }
 
     public interface DungeonDataCallback {
@@ -217,7 +434,7 @@ public class HypixelApi {
                         if (!members.has(uuidStr)) continue;
                         JsonObject member = members.getAsJsonObject(uuidStr);
                         if (!member.has("dungeons")) continue;
-                        callback.onData(parseDungeonData(uuidStr, member.getAsJsonObject("dungeons")));
+                        callback.onData(parseDungeonData(uuidStr, member));
                         return;
                     }
                 } catch (Exception ignored) {}
@@ -280,8 +497,10 @@ public class HypixelApi {
 
     // ─── internal ─────────────────────────────────────────────────────────────
 
-    private static DungeonData parseDungeonData(String uuidStr, JsonObject dungeons) {
+    private static DungeonData parseDungeonData(String uuidStr, JsonObject member) {
         DungeonData result = new DungeonData();
+        if (!member.has("dungeons")) return result;
+        JsonObject dungeons = member.getAsJsonObject("dungeons");
 
         if (dungeons.has("dungeon_types")) {
             JsonObject types = dungeons.getAsJsonObject("dungeon_types");
@@ -332,6 +551,7 @@ public class HypixelApi {
             }
         }
 
+        parseInventoryData(member, result);
         return result;
     }
 
@@ -397,8 +617,7 @@ public class HypixelApi {
                         if (!members.has(uuidStr)) continue;
                         JsonObject member = members.getAsJsonObject(uuidStr);
                         if (!member.has("dungeons")) continue;
-                        JsonObject dungeons = member.getAsJsonObject("dungeons");
-                        callback.onData(parseDungeonData(uuidStr, dungeons));
+                        callback.onData(parseDungeonData(uuidStr, member));
                         return;
                     }
                     mc.send(() -> Misc.addChatMessage(Text.literal("§cNo active Skyblock profile found.")));

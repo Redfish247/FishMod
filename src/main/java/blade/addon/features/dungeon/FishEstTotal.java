@@ -75,6 +75,10 @@ public class FishEstTotal {
         boolean ended() { return ended; }
 
         double getRealTime() {
+            // startTime == 0 means this split was never started.
+            // Without this guard, force-ending a never-started split via endRun()
+            // produces (currentTimeMs - 0) / 1000 ≈ 55 years → "infinite time" in the EST.
+            if (startTime == 0) return 0;
             if (ended) return (endTime - startTime) / 1000.0;
             if (started) return (System.currentTimeMillis() - startTime) / 1000.0;
             return 0;
@@ -148,8 +152,11 @@ public class FishEstTotal {
     private static void endRun() {
         runOver = true;
         if (currentSplits == null) return;
-        // Finalise all running splits and save to RunHistory
-        for (LocalSplit s : currentSplits) s.end();
+        // Only finalise splits that actually started — skipping splits with startTime == 0
+        // prevents (currentTime - 0) / 1000 ≈ 55-year getRealTime() blowing up the EST total.
+        for (LocalSplit s : currentSplits) {
+            if (s.startTime > 0) s.end();
+        }
         Map<String, Double> times = new LinkedHashMap<>();
         for (LocalSplit s : currentSplits) {
             if (s.avg < 0) continue; // skip cumulative entries

@@ -16,6 +16,7 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShapes;
 import org.joml.Vector3f;
 
 public class RenderUtils {
@@ -89,12 +90,13 @@ public class RenderUtils {
 
     public static void renderFilled(MatrixStack matrixStack, VertexConsumer consumer, Box box, float[] rgba) {
         if (rgba[3] == 0) return;
-        VertexRendering.drawFilledBox(matrixStack, consumer, box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, rgba[0], rgba[1], rgba[2], rgba[3]);
+        drawFilledBox(matrixStack, consumer, box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, rgba[0], rgba[1], rgba[2], rgba[3]);
     }
 
     public static void renderOutline(MatrixStack matrixStack, VertexConsumer consumer, Box box, float[] rgba) {
         if (rgba[3] == 0) return;
-        VertexRendering.drawBox(matrixStack.peek(), consumer, box, rgba[0], rgba[1], rgba[2], rgba[3]);
+        int argb = ((int)(rgba[3] * 255) << 24) | ((int)(rgba[0] * 255) << 16) | ((int)(rgba[1] * 255) << 8) | (int)(rgba[2] * 255);
+        VertexRendering.drawOutline(matrixStack, consumer, VoxelShapes.cuboid(box), 0.0, 0.0, 0.0, argb, 1.0f);
     }
 
 
@@ -128,12 +130,60 @@ public class RenderUtils {
         Vector3f lookat = new Vector3f(0, 0, -1f).rotate(context.worldState().cameraRenderState.orientation);
 
         Vector3f startPos = playerPos.toVector3f().add(0f, (float)eyeHeight, 0f).add(lookat);
-        Vec3d endPos = new Vec3d(x, y, z).subtract(playerPos).subtract(lookat.x, lookat.y + eyeHeight, lookat.z);
-        VertexRendering.drawVector(matrices, consumer, startPos, endPos, color);
+        Vec3d endVec = new Vec3d(x, y, z).subtract(playerPos).subtract(lookat.x, lookat.y + eyeHeight, lookat.z);
+        Vector3f normal = new Vector3f((float)endVec.x, (float)endVec.y, (float)endVec.z).normalize();
+        float r = ((color >> 16) & 0xFF) / 255f;
+        float g = ((color >> 8) & 0xFF) / 255f;
+        float b = (color & 0xFF) / 255f;
+        float a = ((color >> 24) & 0xFF) / 255f;
+        if (a == 0) a = 1.0f;
+        consumer.vertex(matrices.peek(), startPos.x, startPos.y, startPos.z).color(r, g, b, a).normal(matrices.peek(), normal.x, normal.y, normal.z);
+        consumer.vertex(matrices.peek(), (float)endVec.x + startPos.x, (float)endVec.y + startPos.y, (float)endVec.z + startPos.z).color(r, g, b, a).normal(matrices.peek(), normal.x, normal.y, normal.z);
     }
 
     public static void renderLineTo(WorldRenderContext context, MatrixStack matrices, VertexConsumer consumer, Vec3d pos, int color) {
         renderLineTo(context, matrices, consumer, pos.x, pos.y, pos.z, color);
+    }
+
+    private static void drawFilledBox(MatrixStack matrices, VertexConsumer consumer,
+                                       double x1, double y1, double z1,
+                                       double x2, double y2, double z2,
+                                       float r, float g, float b, float a) {
+        MatrixStack.Entry entry = matrices.peek();
+        consumer.vertex(entry, (float)x1, (float)y1, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y1, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x1, (float)y1, (float)z2).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y1, (float)z2).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y1, (float)z2).color(r, g, b, a);
+        consumer.vertex(entry, (float)x1, (float)y2, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x1, (float)y2, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y2, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x1, (float)y2, (float)z2).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y2, (float)z2).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y2, (float)z2).color(r, g, b, a);
+        consumer.vertex(entry, (float)x1, (float)y1, (float)z2).color(r, g, b, a);
+        consumer.vertex(entry, (float)x1, (float)y1, (float)z2).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y1, (float)z2).color(r, g, b, a);
+        consumer.vertex(entry, (float)x1, (float)y2, (float)z2).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y2, (float)z2).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y2, (float)z2).color(r, g, b, a);
+        consumer.vertex(entry, (float)x1, (float)y1, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x1, (float)y1, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y1, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x1, (float)y2, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y2, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y2, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x1, (float)y1, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x1, (float)y1, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x1, (float)y1, (float)z2).color(r, g, b, a);
+        consumer.vertex(entry, (float)x1, (float)y2, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x1, (float)y2, (float)z2).color(r, g, b, a);
+        consumer.vertex(entry, (float)x1, (float)y2, (float)z2).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y1, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y1, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y1, (float)z2).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y2, (float)z1).color(r, g, b, a);
+        consumer.vertex(entry, (float)x2, (float)y2, (float)z2).color(r, g, b, a);
     }
 
         public static String formatNumber(float num) {

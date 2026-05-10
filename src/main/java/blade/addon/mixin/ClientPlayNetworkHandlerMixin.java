@@ -98,6 +98,7 @@ public class ClientPlayNetworkHandlerMixin {
         original.call(packet, listener);
     }
 
+
     @Inject(method = "onGameMessage", at = @At("HEAD"), cancellable = true)
     private void onGameMessage(GameMessageS2CPacket packet, CallbackInfo ci) {
         if (!packet.overlay()) {

@@ -18,6 +18,8 @@
   },
   "client": [
     "BossBarHudMixin",
+    "accessors.KeyBindingAccessor",
+
     "ChatHudInvoker",
     "ChatHudMixin",
     "ChatScreenMixin",

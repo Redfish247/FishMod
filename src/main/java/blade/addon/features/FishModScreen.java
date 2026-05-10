@@ -76,9 +76,7 @@ public class FishModScreen extends Screen {
         Category myFeatures = new Category("My Features");
         myFeatures.add(new ToggleSetting("Send Lag to Party", "Sends lag message to party chat after dungeon run", () -> FishSettings.sendLagToParty, v -> FishSettings.sendLagToParty = v));
         myFeatures.add(new ToggleSetting("Show Puzzles", "Displays dungeon puzzles on screen", () -> FishSettings.showPuzzles, v -> FishSettings.showPuzzles = v));
-        myFeatures.add(new ToggleSetting("Toggleable search bar (Ctrl+F)", "", () -> ExtraOptions.toggleableSearchBar, v -> ExtraOptions.toggleableSearchBar = v));
         myFeatures.add(new ToggleSetting("Auto Accept Party Invite", "Accepts any party invite, says message, then leaves", () -> FishSettings.autoAcceptPartyInvite, v -> FishSettings.autoAcceptPartyInvite = v));
-        myFeatures.add(new ToggleSetting("Party Finder Stats", "Shows secrets/run and M7 PB in Party Finder tooltips (API key required)", () -> FishSettings.partyFinderStats, v -> FishSettings.partyFinderStats = v));
         categories.add(myFeatures);
 
         // Splits
@@ -115,6 +113,12 @@ public class FishModScreen extends Screen {
         partyCat.add(new SliderIntSetting("RTCA XP / run", "Class XP per M7 run as that class",
                 () -> FishSettings.rtcaClassXpPerRun, v -> FishSettings.rtcaClassXpPerRun = v, 10_000, 500_000));
         categories.add(partyCat);
+
+        // Warp Map
+        Category warpMap = new Category("Warp Map");
+        warpMap.add(new ToggleSetting("Warp Map HUD", "Shows warp dots projected onto the Hub map wall when you're nearby", () -> FishSettings.warpMapHudEnabled, v -> FishSettings.warpMapHudEnabled = v));
+        warpMap.add(new ColorSetting("Warp Dot Color", "Color of warp dots on the Hub map wall", () -> FishSettings.warpMapDotColor, v -> FishSettings.warpMapDotColor = v));
+        categories.add(warpMap);
 
         // Credits
         Category credits = new Category("Credits");
@@ -239,7 +243,9 @@ public class FishModScreen extends Screen {
         for (Setting setting : current.settings) {
             int sh = setting.getHeight();
             if (!lowerSearch.isEmpty() && !setting.name.toLowerCase().contains(lowerSearch)) { settingY += sh; continue; }
-            if (setting instanceof InputSetting && mx > this.width - PADDING - INPUT_W && mx < this.width - PADDING && my > settingY && my < settingY + sh) {
+            if ((setting instanceof InputSetting || setting instanceof ColorSetting)
+                    && mx > this.width - PADDING - 80 && mx < this.width - PADDING
+                    && my > settingY && my < settingY + sh) {
                 activeInput = setting;
             }
             if (setting.onClick(mx, my, this.width, settingY, click.button())) return true;
@@ -291,6 +297,10 @@ public class FishModScreen extends Screen {
             is.textField.keyPressed(input);
             return true;
         }
+        if (activeInput instanceof ColorSetting cs && cs.textField != null) {
+            cs.textField.keyPressed(input);
+            return true;
+        }
         if (searchFocused && searchField != null) {
             searchField.keyPressed(input);
             return true;
@@ -302,6 +312,10 @@ public class FishModScreen extends Screen {
         if (activeInput instanceof InputSetting is && is.textField != null) {
             is.textField.charTyped(input);
             is.setter.accept(is.textField.getText());
+            return true;
+        }
+        if (activeInput instanceof ColorSetting cs && cs.textField != null) {
+            cs.textField.charTyped(input);
             return true;
         }
         if (searchFocused && searchField != null) {
@@ -503,6 +517,48 @@ public class FishModScreen extends Screen {
             int ix = w - PADDING - INPUT_W;
             int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
             if (mx >= ix && mx <= ix + INPUT_W && my >= iy && my <= iy + INPUT_H) {
+                if (textField != null) textField.setFocused(true);
+                return true;
+            }
+            return false;
+        }
+    }
+
+    // Hex color input with live preview swatch
+    static class ColorSetting extends Setting {
+        Supplier<Integer> getter; Consumer<Integer> setter;
+        TextFieldWidget textField;
+        ColorSetting(String name, String desc, Supplier<Integer> getter, Consumer<Integer> setter) {
+            super(name, desc); this.getter = getter; this.setter = setter;
+        }
+        void initField(net.minecraft.client.font.TextRenderer tr) {
+            if (textField == null) {
+                textField = new TextFieldWidget(tr, 0, 0, 72, INPUT_H, Text.empty());
+                textField.setMaxLength(6);
+                textField.setText(String.format("%06X", getter.get() & 0xFFFFFF));
+                textField.setChangedListener(s -> {
+                    if (s.length() == 6) {
+                        try { setter.accept(0xFF000000 | (int) Long.parseLong(s, 16)); }
+                        catch (NumberFormatException ignored) {}
+                    }
+                });
+            }
+        }
+        @Override
+        void render(DrawContext ctx, int w, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
+            initField(tr);
+            int ix = w - PADDING - 72;
+            int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
+            ctx.fill(ix - 24, iy, ix - 2, iy + INPUT_H, 0xFF000000);
+            ctx.fill(ix - 23, iy + 1, ix - 3, iy + INPUT_H - 1, getter.get());
+            textField.setX(ix); textField.setY(iy);
+            textField.render(ctx, mx, my, 0);
+        }
+        @Override
+        boolean onClick(int mx, int my, int w, int sy, int button) {
+            int ix = w - PADDING - 72;
+            int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
+            if (mx >= ix && mx <= ix + 72 && my >= iy && my <= iy + INPUT_H) {
                 if (textField != null) textField.setFocused(true);
                 return true;
             }

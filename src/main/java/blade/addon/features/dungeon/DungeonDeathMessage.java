@@ -26,7 +26,7 @@ public class DungeonDeathMessage {
 
     private static boolean onMessage(Text message) {
         if (!FishSettings.deathMessageEnabled) return false;
-        if (!Location.inDungeon()) return false;
+        if (Location.getCurrentLocation() != Location.DUNGEON) return false;
 
         String raw = message.getString();
 

@@ -5,6 +5,7 @@ import blade.addon.utils.config.values.ExtraOptions;
 import blade.addon.utils.data.TextUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
+import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.hud.ChatHudLine;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
@@ -33,19 +34,19 @@ public class ChatScreenMixin extends Screen {
         ChatHudInvoker hudInvoker = (ChatHudInvoker) mc.inGameHud.getChatHud();
         if (hudInvoker == null) return;
 
-        double x = hudInvoker.lineX(click.x());
-        double y = hudInvoker.lineY(click.y());
+        double x = toChatLineX(hudInvoker, click.x());
+        double y = toChatLineY(hudInvoker, click.y(), mc);
 
         String string;
         if (ExtraOptions.copyLineOnly) {
-            int index = hudInvoker.getLineIndex(x, y);
+            int index = getMessageLineIndex(hudInvoker, mc, x, y);
             List<ChatHudLine.Visible> visibleMessages = hudInvoker.getVisibleMessages();
             if (visibleMessages == null || index < 0 || index >= visibleMessages.size()) return;
 
             ChatHudLine.Visible msg = visibleMessages.get(index);
             string = TextUtil.orderedTextToString(msg.content());
         } else {
-            string = copyChat(hudInvoker, x, y);
+            string = copyChat(hudInvoker, mc, x, y);
         }
 
         if (string == null) return;
@@ -66,15 +67,38 @@ public class ChatScreenMixin extends Screen {
     }
 
     @Unique
-    private static String copyChat(ChatHudInvoker hudInvoker, double x, double y) {
+    private static double toChatLineX(ChatHudInvoker hud, double screenX) {
+        return screenX / hud.invokeChatScale() - 2.0;
+    }
+
+    @Unique
+    private static double toChatLineY(ChatHudInvoker hud, double screenY, MinecraftClient mc) {
+        int scaledHeight = mc.getWindow().getScaledHeight();
+        return ((double)(scaledHeight - 40) - screenY) / hud.invokeChatScale();
+    }
+
+    @Unique
+    private static int getMessageLineIndex(ChatHudInvoker hud, MinecraftClient mc, double chatX, double chatY) {
+        if (chatX < 0.0 || chatY < 0.0) return -1;
+        List<ChatHudLine.Visible> messages = hud.getVisibleMessages();
+        int lh = hud.invokeLineHeight();
+        int visible = Math.min(((ChatHud)(Object)hud).getVisibleLineCount(), messages.size());
+        if (chatX <= hud.invokeWidth() && chatY < (double)(lh * visible + lh)) {
+            int j = (int)(chatY / lh) + hud.getScrolledLines();
+            if (j >= 0 && j < messages.size()) return j;
+        }
+        return -1;
+    }
+
+    @Unique
+    private static String copyChat(ChatHudInvoker hudInvoker, MinecraftClient mc, double x, double y) {
         List<ChatHudLine.Visible> messages = hudInvoker.getVisibleMessages();
-        int endIndex = hudInvoker.getLineIndex(x, y);
+        int endIndex = getMessageLineIndex(hudInvoker, mc, x, y);
 
         if (messages == null || endIndex < 0 || endIndex >= messages.size()) return null;
 
         int startIndex = endIndex;
 
-        //find start of msg
         for (int i = endIndex; i >= 0; i--) {
             ChatHudLine.Visible chatHudLine = messages.get(i);
             if (chatHudLine.endOfEntry()) {
@@ -84,7 +108,6 @@ public class ChatScreenMixin extends Screen {
         }
 
         if (!messages.get(endIndex).endOfEntry()) {
-            //find end of msg
             for (int i = endIndex + 1; i < messages.size(); i++) {
                 ChatHudLine.Visible chatHudLine = messages.get(i);
                 if (chatHudLine.endOfEntry()) {

@@ -11,14 +11,17 @@ import java.util.List;
 @Mixin(ChatHud.class)
 public interface ChatHudInvoker {
 
-    @Invoker("toChatLineY")
-    double lineY(double y);
+    @Invoker("getChatScale")
+    double invokeChatScale();
 
-    @Invoker("toChatLineX")
-    double lineX(double X);
+    @Invoker("getLineHeight")
+    int invokeLineHeight();
 
-    @Invoker("getMessageLineIndex")
-    int getLineIndex(double chatLineX, double chatLineY);
+    @Invoker("getWidth")
+    int invokeWidth();
+
+    @Accessor("scrolledLines")
+    int getScrolledLines();
 
     @Accessor("visibleMessages")
     List<ChatHudLine.Visible> getVisibleMessages();

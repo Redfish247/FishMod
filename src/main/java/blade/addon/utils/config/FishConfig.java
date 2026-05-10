@@ -15,5 +15,10 @@ public class FishConfig {
 
     public static final ConfigManager manager = new ConfigManager(
             "config/fishmod-settings.json",
-            List.of(FishSettings.class, FishPuzzleDisplay.class, FishEstTotal.class));
+            List.of(FishSettings.class, FishPuzzleDisplay.class, FishEstTotal.class,
+                    blade.addon.utils.dungeon.Phase.class,
+                    blade.addon.utils.dungeon.Section.class,
+                    blade.addon.utils.dungeon.Split.class,
+                    blade.addon.utils.config.values.Dungeons.class,
+                    blade.addon.features.dungeon.PuzzleDisplay.class));
 }
