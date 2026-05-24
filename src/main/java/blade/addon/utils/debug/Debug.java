@@ -1,6 +1,7 @@
 package blade.addon.utils.debug;
 
 import blade.addon.features.FishModScreen;
+import blade.addon.mixin.accessors.BossBarHudAccessor;
 import blade.addon.utils.Constants;
 import net.minecraft.client.MinecraftClient;
 import blade.addon.utils.Location;
@@ -9,6 +10,7 @@ import blade.addon.utils.dungeon.DungeonClass;
 import blade.addon.utils.dungeon.Phase;
 import blade.addon.utils.dungeon.Section;
 import blade.addon.utils.events.Events;
+import net.minecraft.client.gui.hud.ClientBossBar;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
@@ -36,10 +38,28 @@ public class Debug {
     private static void registerCommands(@NotNull CommandDispatcher<FabricClientCommandSource> dispatcher,
                                          CommandRegistryAccess registryAccess) {
 
-        dispatcher.register(ClientCommandManager.literal("fm").executes(context -> {
-            MinecraftClient.getInstance().send(() -> MinecraftClient.getInstance().setScreen(new FishModScreen()));
-            return Constants.SUCCESS;
-        }));
+        dispatcher.register(ClientCommandManager.literal("fm")
+                .executes(context -> {
+                    MinecraftClient.getInstance().send(() -> MinecraftClient.getInstance().setScreen(new FishModScreen()));
+                    return Constants.SUCCESS;
+                })
+                .then(ClientCommandManager.literal("bossbars")
+                        .executes(context -> {
+                            MinecraftClient mc = MinecraftClient.getInstance();
+                            BossBarHudAccessor accessor = (BossBarHudAccessor) mc.inGameHud.getBossBarHud();
+                            var bars = accessor.getBossBars();
+                            if (bars == null || bars.isEmpty()) {
+                                Misc.addChatMessage(Text.literal("§cNo boss bars active."));
+                            } else {
+                                bars.values().forEach(bar -> {
+                                    String stripped = bar.getName().getString().replaceAll("§.", "").trim();
+                                    Misc.addChatMessage(Text.literal("§eBar: §f\"" + stripped + "\" §7(" + String.format("%.1f%%", bar.getPercent() * 100f) + ")"));
+                                });
+                            }
+                            return Constants.SUCCESS;
+                        })
+                )
+        );
 
         dispatcher.register(ClientCommandManager.literal("badev")
                 .then(ClientCommandManager.literal("runInfo").executes(context -> {

@@ -2,6 +2,7 @@ package blade.addon.mixin;
 
 import blade.addon.utils.config.values.ExtraOptions;
 import net.minecraft.client.Mouse;
+import net.minecraft.client.input.MouseInput;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

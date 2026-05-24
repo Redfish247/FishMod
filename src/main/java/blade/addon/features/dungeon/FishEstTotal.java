@@ -2,6 +2,7 @@ package blade.addon.features.dungeon;
 
 import blade.addon.utils.Constants;
 import blade.addon.utils.dungeon.Phase;
+import blade.addon.features.dungeon.LagTracker;
 import blade.addon.utils.dungeon.RunHistory;
 import blade.addon.utils.events.Events;
 import com.google.gson.JsonElement;
@@ -72,6 +73,7 @@ public class FishEstTotal {
             ended = true;
         }
 
+        boolean started() { return started; }
         boolean ended() { return ended; }
 
         double getRealTime() {
@@ -173,6 +175,29 @@ public class FishEstTotal {
 
     // ── HUD display/render ────────────────────────────────────────────────────
 
+    /**
+     * Mirrors Phase.getVisibleRowCount() but works against FishEstTotal's own LocalSplits,
+     * so it stays accurate even when blade-addons' Phase is the one rendering. Each call to
+     * onPartyCommand splits-list grows as splits start, so this value increases each time a
+     * new split begins — which pushes Est. Total down to "stick" to the bottom of the list.
+     */
+    private static int computeVisibleRowCount() {
+        if (currentSplits == null) return 0;
+        boolean onlyActivated = true;
+        boolean includeTotal  = false;
+        try { onlyActivated = Phase.onlyShowActivatedSplits; } catch (Throwable ignored) {}
+        try { includeTotal  = Phase.includeTotalTime;        } catch (Throwable ignored) {}
+        int count = currentSplits.size();
+        if (!includeTotal) count--; // last row is the cumulative "total" split
+        if (!onlyActivated) return Math.max(0, count);
+        int visible = 0;
+        for (int i = 0; i < count; i++) {
+            LocalSplit s = currentSplits.get(i);
+            if (s.started() || s.ended()) visible++;
+        }
+        return visible;
+    }
+
     public static boolean display() {
         try {
             return Phase.enableSplits && Phase.runStarted() && currentSplits != null;
@@ -185,36 +210,22 @@ public class FishEstTotal {
         if (currentSplits == null) return;
         MinecraftClient client = MinecraftClient.getInstance();
 
-        // Auto-snap position to the bottom of Phase.splitTimer so they appear as one display.
+        // Auto-snap below Phase.splitTimer rows + separator. Compute the visible-row count
+        // from our OWN LocalSplits so this works even when blade-addons' Phase wins the
+        // classload (its Phase has no getVisibleRowCount()) — otherwise the throwable catch
+        // would drop us back to the user's draggable position and the est. total would stop
+        // tracking the splits as they're added.
         int x, y;
         try {
             x = Phase.splitTimer.getScaledX();
             int baseY = Phase.splitTimer.getScaledY();
-
-            // Count how many rows blade is rendering
-            int splitCount = Phase.includeTotalTime
-                    ? currentSplits.size()
-                    : currentSplits.size() - 1;
-
-            int visibleRows;
-            if (Phase.onlyShowActivatedSplits) {
-                visibleRows = 0;
-                for (LocalSplit s : currentSplits) {
-                    if (s.started || s.ended()) visibleRows++;
-                }
-                visibleRows = Math.min(visibleRows, splitCount);
-            } else {
-                visibleRows = splitCount;
-            }
-
-            // sit right after the last split row, at the separator level
-            y = baseY + Constants.TEXT_HEIGHT * visibleRows + 4;
+            y = baseY + Constants.TEXT_HEIGHT * computeVisibleRowCount() + 8;
         } catch (Throwable t) {
             x = component.getScaledX();
             y = component.getScaledY();
         }
 
-        // Base = sum of all personal averages. Delta = sum of (actual − avg) for ended splits.
+        // Base = sum of all averages. Delta = (actual − avg) for ended splits only. Subtract accumulated run lag.
         int splitCount = currentSplits.size() - 1;
         double base = 0, delta = 0;
         int personalCount = 0, fallbackCount = 0;
@@ -229,7 +240,7 @@ public class FishEstTotal {
             if (s.ended()) delta += s.getRealTime() - avg;
         }
 
-        double totalSeconds = base + delta;
+        double totalSeconds = Math.max(0, base + delta - LagTracker.getCurrentLag());
 
         int estColor = (personalCount > 0 && fallbackCount == 0) ? 0xFF00AACC
                 : (personalCount > 0) ? 0xFFFFAA00 : 0xFF888888;
@@ -243,6 +254,40 @@ public class FishEstTotal {
         int timeWidth = client.textRenderer.getWidth(estTime);
         context.drawText(client.textRenderer, estLabel, x, y, 0xFFFFFFFF, true);
         context.drawText(client.textRenderer, estTime, x + Phase.SPLIT_LENGTH - timeWidth, y, 0xFFFFFFFF, true);
+    }
+
+    /** Standalone render — called from HudRenderCallback when blade-addons is absent. */
+    public static void renderStandalone(DrawContext ctx, int baseX, int baseY) {
+        if (!display()) return;
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.player == null) return;
+
+        int x = baseX;
+        int y = baseY + Constants.TEXT_HEIGHT * computeVisibleRowCount() + 4;
+
+        int splitCount = currentSplits.size() - 1;
+        double base = 0, delta = 0;
+        int personalCount = 0, fallbackCount = 0;
+        for (int i = 0; i < splitCount; i++) {
+            LocalSplit s = currentSplits.get(i);
+            if (s.avg < 0) continue;
+            double personal = RunHistory.getPersonalAvg(floor, s.name);
+            double avg = personal > 0 ? personal : s.avg;
+            if (personal > 0) { base += personal; personalCount++; }
+            else               { base += s.avg;    fallbackCount++; }
+            if (s.ended()) delta += s.getRealTime() - avg;
+        }
+
+        double totalSeconds = Math.max(0, base + delta - LagTracker.getCurrentLag());
+        int estColor = (personalCount > 0 && fallbackCount == 0) ? 0xFF00AACC
+                : (personalCount > 0) ? 0xFFFFAA00 : 0xFF888888;
+        String estTimeStr = (totalSeconds >= 60 ? (int)(totalSeconds / 60) + "m " : "")
+                + Constants.DECIMAL_FORMAT.format(totalSeconds % 60) + "s";
+        Text estLabel = Text.literal("Est. Total ").withColor(estColor);
+        Text estTime  = Text.literal(estTimeStr).withColor(0xFF55FF55);
+        int timeWidth = client.textRenderer.getWidth(estTime);
+        ctx.drawText(client.textRenderer, estLabel, x, y, 0xFFFFFFFF, true);
+        ctx.drawText(client.textRenderer, estTime, x + Phase.SPLIT_LENGTH - timeWidth, y, 0xFFFFFFFF, true);
     }
 
     // ── splits.json loader (FishMod's own jar via FishEstTotal.class) ─────────

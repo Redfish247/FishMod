@@ -234,63 +234,53 @@ public class Phase {
     public static HUDComponent splitTimer = new HUDComponent(0, 0, SPLIT_LENGTH, 100, 1, "Splits",
             () -> enableSplits && Phase.runStarted(),
             ((hudComponent, drawContext) -> {
-                int x = hudComponent.getScaledX();
-                int y = hudComponent.getScaledY();
-
-                TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
-
-                if (currentSplits != null) {
-                    int splitCount = currentSplits.size();
-                    if (!includeTotalTime) splitCount--;
-
-                    int height = 0;
-
-                    for (int i = 0; i < splitCount; i++) {
-                        Split split = currentSplits.get(i);
-                        if (Phase.onlyShowActivatedSplits && !(split.started() || split.ended())) continue;
-                        split.drawSplit(drawContext, textRenderer, x, y + Constants.TEXT_HEIGHT * height, SPLIT_LENGTH);
-                        height++;
-                    }
-
-                    // Est. Total — completed splits use actual time, pending splits use
-                    // personal average (from RunHistory) with fallback to splits.json avg
-                    double totalSeconds = 0;
-                    int personalCount = 0, fallbackCount = 0;
-                    for (int i = 0; i < splitCount; i++) {
-                        Split s = currentSplits.get(i);
-                        if (s.getAvg() < 0) continue; // skip cumulative/overlapping splits
-                        if (s.ended()) {
-                            totalSeconds += s.getRealTime();
-                        } else {
-                            double personal = RunHistory.getPersonalAvg(floor, s.getName());
-                            if (personal > 0) {
-                                totalSeconds += personal;
-                                personalCount++;
-                            } else {
-                                totalSeconds += s.getAvg();
-                                fallbackCount++;
-                            }
-                        }
-                    }
-                    if (height > 0) {
-                        drawContext.fill(x, y + Constants.TEXT_HEIGHT * height + 3,
-                                x + SPLIT_LENGTH, y + Constants.TEXT_HEIGHT * height + 4, 0x44FFFFFF);
-                        height++;
-                    }
-                    // Label: cyan if all personal data, yellow if mixed, gray if all fallback
-                    int estColor = (personalCount > 0 && fallbackCount == 0) ? 0xFF00AACC
-                            : (personalCount > 0) ? 0xFFFFAA00 : 0xFF888888;
-                    Text estLabel = Text.literal("Est. Total ").withColor(estColor);
-                    String estTimeStr = (totalSeconds >= 60 ? (int)(totalSeconds / 60) + "m " : "") + Constants.DECIMAL_FORMAT.format(totalSeconds % 60) + "s";
-                    Text estTime = Text.literal(estTimeStr).withColor(Split.realTimeColorComplete);
-                    int estTimeWidth = textRenderer.getWidth(estTime);
-                    drawContext.drawText(textRenderer, estLabel, x, y + Constants.TEXT_HEIGHT * height, 0xFFFFFFFF, true);
-                    drawContext.drawText(textRenderer, estTime, x + SPLIT_LENGTH - estTimeWidth, y + Constants.TEXT_HEIGHT * height, 0xFFFFFFFF, true);
-                } else {
-                    for (int i = 0; i < DUMMY_SIZE; i++) {
-                        DUMMY_SPLIT.drawSplit(drawContext, textRenderer, x, y + Constants.TEXT_HEIGHT * i, SPLIT_LENGTH);
-                    }
-                }
+                renderSplitRows(drawContext, hudComponent.getScaledX(), hudComponent.getScaledY());
             }), () -> enableSplits
     );
+
+    /** Renders split rows + separator. Called by splitTimer HUD (with blade) and renderSplitsHud (standalone). */
+    public static void renderSplitRows(net.minecraft.client.gui.DrawContext ctx, int x, int y) {
+        TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
+        if (currentSplits != null) {
+            int splitCount = currentSplits.size();
+            if (!includeTotalTime) splitCount--;
+            int height = 0;
+            for (int i = 0; i < splitCount; i++) {
+                Split split = currentSplits.get(i);
+                if (onlyShowActivatedSplits && !(split.started() || split.ended())) continue;
+                split.drawSplit(ctx, textRenderer, x, y + Constants.TEXT_HEIGHT * height, SPLIT_LENGTH);
+                height++;
+            }
+            if (height > 0) {
+                ctx.fill(x, y + Constants.TEXT_HEIGHT * height + 3,
+                        x + SPLIT_LENGTH, y + Constants.TEXT_HEIGHT * height + 4, 0x44FFFFFF);
+            }
+        } else {
+            for (int i = 0; i < DUMMY_SIZE; i++) {
+                DUMMY_SPLIT.drawSplit(ctx, textRenderer, x, y + Constants.TEXT_HEIGHT * i, SPLIT_LENGTH);
+            }
+        }
+    }
+
+    /** Returns how many split rows are currently visible (for FishEstTotal snap position). */
+    public static int getVisibleRowCount() {
+        if (currentSplits == null) return 0;
+        int splitCount = currentSplits.size();
+        if (!includeTotalTime) splitCount--;
+        if (!onlyShowActivatedSplits) return splitCount;
+        int visible = 0;
+        for (int i = 0; i < splitCount; i++) {
+            Split s = currentSplits.get(i);
+            if (s.started() || s.ended()) visible++;
+        }
+        return visible;
+    }
+
+    /** Direct HUD render for standalone mode (no blade / HUDComponent system). */
+    public static void renderSplitsHud(net.minecraft.client.gui.DrawContext ctx, int x, int y) {
+        if (!enableSplits || !runStarted()) return;
+        net.minecraft.client.MinecraftClient mc = net.minecraft.client.MinecraftClient.getInstance();
+        if (mc.player == null) return;
+        renderSplitRows(ctx, x, y);
+    }
 }

@@ -17,8 +17,11 @@
     "requireAnnotations": true
   },
   "client": [
-    "BossBarHudMixin",
+    "FishBossBarHudMixin",
+    "accessors.BossBarHudAccessor",
+    "accessors.ChatScreenAccessor",
     "accessors.KeyBindingAccessor",
+    "accessors.GameRendererAccessor",
 
     "ChatHudInvoker",
     "ChatHudMixin",

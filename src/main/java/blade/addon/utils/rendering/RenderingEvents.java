@@ -28,6 +28,7 @@ public class RenderingEvents {
     }
 
     private static void filled(WorldRenderContext context) {
+        if (context.worldState() == null) return;
         Vec3d camera = context.worldState().cameraRenderState.pos;
         MatrixStack matrices = context.matrices();
         if (matrices == null) return;
@@ -43,6 +44,7 @@ public class RenderingEvents {
     }
 
     private static void filledNoDepth(WorldRenderContext context) {
+        if (context.worldState() == null) return;
         Vec3d camera = context.worldState().cameraRenderState.pos;
         MatrixStack matrices = context.matrices();
         if (matrices == null) return;
@@ -58,6 +60,7 @@ public class RenderingEvents {
     }
 
     private static void entityFilled(WorldRenderContext context) {
+        if (context.worldState() == null) return;
         Vec3d camera = context.worldState().cameraRenderState.pos;
         MatrixStack matrices = context.matrices();
         if (matrices == null) return;
@@ -74,6 +77,7 @@ public class RenderingEvents {
 
 
     private static void entityOutline(WorldRenderContext context) {
+        if (context.worldState() == null) return;
         Vec3d camera = context.worldState().cameraRenderState.pos;
         MatrixStack matrices = context.matrices();
         if (matrices == null) return;
@@ -89,6 +93,7 @@ public class RenderingEvents {
     }
 
     private static void entityOutlineNoDepth(WorldRenderContext context) {
+        if (context.worldState() == null) return;
         Vec3d camera = context.worldState().cameraRenderState.pos;
         MatrixStack matrices = context.matrices();
         if (matrices == null) return;
@@ -104,6 +109,7 @@ public class RenderingEvents {
     }
 
     private static void debugLine(WorldRenderContext context) {
+        if (context.worldState() == null) return;
         Vec3d camera = context.worldState().cameraRenderState.pos;
         MatrixStack matrices = context.matrices();
         if (matrices == null) return;

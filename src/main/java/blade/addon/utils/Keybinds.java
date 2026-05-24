@@ -31,6 +31,7 @@ public class Keybinds {
     private static KeyBinding openConfig;
     private static KeyBinding trades;
     private static KeyBinding potions;
+    public  static KeyBinding openItemWiki;
 
     private static KeyBinding getItemLore;
     private static KeyBinding getItemCustomData;
@@ -55,6 +56,12 @@ public class Keybinds {
 
         potions = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "Opens the potion bag",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                category));
+
+        openItemWiki = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "Open hovered item wiki page",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));

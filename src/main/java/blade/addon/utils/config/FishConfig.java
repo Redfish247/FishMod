@@ -19,6 +19,5 @@ public class FishConfig {
                     blade.addon.utils.dungeon.Phase.class,
                     blade.addon.utils.dungeon.Section.class,
                     blade.addon.utils.dungeon.Split.class,
-                    blade.addon.utils.config.values.Dungeons.class,
-                    blade.addon.features.dungeon.PuzzleDisplay.class));
+                    blade.addon.utils.config.values.Dungeons.class));
 }

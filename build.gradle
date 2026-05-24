@@ -1,6 +1,7 @@
 plugins {
 	id 'fabric-loom' version "${loom_version}"
 	id 'maven-publish'
+	id 'com.modrinth.minotaur' version '2.+'
 }
 
 version = project.mod_version
@@ -71,7 +72,8 @@ dependencies {
 
     modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
 
-
+    // MCEF — compile-only, users install at runtime from Modrinth
+    modCompileOnly files('C:/Users/Eli/AppData/Roaming/ModrinthApp/profiles/Skyblock 1.21.8/mods/mcef_fabric_2.2.0_MC_1.21.11.jar')
 }
 
 processResources {
@@ -103,6 +105,31 @@ jar {
 		rename { "${it}_${inputs.properties.archivesName}"}
 	}
 }
+
+// Modrinth publishing — run with: ./gradlew modrinth
+//   Requires env vars: MODRINTH_TOKEN, MODRINTH_PROJECT_ID (or override project.modrinth_project_id in gradle.properties)
+//   Optional: CHANGELOG (defaults to "Release ${mod_version}")
+modrinth {
+	token       = providers.environmentVariable('MODRINTH_TOKEN')
+	projectId   = providers.environmentVariable('MODRINTH_PROJECT_ID')
+			.orElse(providers.gradleProperty('modrinth_project_id'))
+	versionNumber = project.findProperty('modrinth_version') ?: project.mod_version
+	versionName   = "FishMod ${project.findProperty('modrinth_version') ?: project.mod_version}"
+	versionType   = 'release'
+	uploadFile    = tasks.remapJar
+	gameVersions  = [project.minecraft_version]
+	loaders       = ['fabric']
+	changelog     = providers.environmentVariable('CHANGELOG')
+			.orElse("Release ${project.mod_version}")
+	syncBodyFrom  = providers.fileContents(layout.projectDirectory.file('README.md'))
+			.asText.orElse('')
+	dependencies {
+		required.project 'fabric-api'
+		required.project 'mcef'              // Keksuccino's MCEF fork
+		required.project 'hypixel-mod-api'   // Hypixel Mod API
+	}
+}
+tasks.modrinth.dependsOn tasks.build
 
 // configure the maven publication
 publishing {

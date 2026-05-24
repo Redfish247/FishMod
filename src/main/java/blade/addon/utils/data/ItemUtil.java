@@ -22,6 +22,13 @@ public class ItemUtil {
         return compound.getString("id", null);
     }
 
+    /** Reads a raw string value out of an item's CUSTOM_DATA NBT (e.g. "petInfo"), or null. */
+    public static String getNbtString(ItemStack item, String key) {
+        NbtComponent nbt = item.get(DataComponentTypes.CUSTOM_DATA);
+        if (nbt == null) return null;
+        return nbt.copyNbt().getString(key, null);
+    }
+
     public static String getUuid(ItemStack item) {
         NbtComponent nbt = item.get(DataComponentTypes.CUSTOM_DATA);
         if (nbt == null) return null;

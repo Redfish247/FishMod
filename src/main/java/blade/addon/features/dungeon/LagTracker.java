@@ -26,6 +26,14 @@ public class LagTracker {
     private static long    startMs  = 0;
     private static long    ticks    = 0;
 
+    /** Returns seconds of accumulated lag for the current run, or 0 if no run is active. */
+    public static double getCurrentLag() {
+        if (!active || startMs == 0) return 0;
+        double wallSec = (System.currentTimeMillis() - startMs) / 1000.0;
+        double tickSec = ticks * 0.05;
+        return Math.max(0, wallSec - tickSec);
+    }
+
     public static void init() {
 
         // Detect run start / end from game messages
