@@ -45,6 +45,10 @@ node_modules/
 
 fishmod-worker/
 
+# local hud mockup
+
+fishmod-hud-mockup.html
+
 # local claude settings
 
 .claude/settings.local.json
