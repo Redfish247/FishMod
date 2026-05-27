@@ -41,6 +41,10 @@ run/
 
 node_modules/
 
+# cloudflare worker (kept local, not part of the mod)
+
+fishmod-worker/
+
 # local claude settings
 
 .claude/settings.local.json
