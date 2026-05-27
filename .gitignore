@@ -49,6 +49,10 @@ fishmod-worker/
 
 fishmod-hud-mockup.html
 
+# graphify generated output
+
+graphify-out/
+
 # local claude settings
 
 .claude/settings.local.json
