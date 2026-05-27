@@ -25,7 +25,11 @@ loom {
         vmArgs.add("-Dmixin.debug.export=true")
         vmArgs.add("-Ddevauth.enabled=true")
         vmArgs.add("-Ddevauth.account=main")
-        vmArgs.add("-XX:+AllowEnhancedClassRedefinition")
+        // Only valid on JetBrains Runtime (IntelliJ); Adoptium/Hotspot rejects it
+        if (System.getProperty("java.vendor.version")?.contains("JBR") ||
+                System.getProperty("java.vm.vendor")?.contains("JetBrains")) {
+            vmArgs.add("-XX:+AllowEnhancedClassRedefinition")
+        }
     }
 
     runConfigs.named("server") {
@@ -71,6 +75,9 @@ dependencies {
 	include modImplementation("com.github.BladeMasterGabe:practical-config:${project.practical_config}")
 
     modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
+
+    // Dev runtime: load the real Hypixel Mod API fabric mod (maven 'mod-api' lacks the fabric mod entry)
+    modRuntimeOnly files('C:/Users/Eli/AppData/Roaming/ModrinthApp/profiles/Skyblock 1.21.8/mods/HypixelModAPI-1.0.1+build.1+mc1.21.jar')
 
     // MCEF — compile-only, users install at runtime from Modrinth
     modCompileOnly files('C:/Users/Eli/AppData/Roaming/ModrinthApp/profiles/Skyblock 1.21.8/mods/mcef_fabric_2.2.0_MC_1.21.11.jar')

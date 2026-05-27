@@ -13,10 +13,10 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"blade.addon.FishModInit"
+			"fishmod.FishModInit"
 		],
 		"modmenu": [
-			"blade.addon.utils.config.ModMenu"
+			"fishmod.utils.config.ModMenu"
 		]
 	},
 	"mixins": [

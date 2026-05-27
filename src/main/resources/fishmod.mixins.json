@@ -1,6 +1,6 @@
 {
   "required": true,
-  "package": "blade.addon.mixin",
+  "package": "fishmod.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "ChunkMixin",
@@ -25,7 +25,10 @@
 
     "ChatHudInvoker",
     "ChatHudMixin",
-    "ChatScreenMixin",
+    "FishCopyChatMixin",
+    "CosmeticChatMixin",
+    "CosmeticEntityNameMixin",
+    "CosmeticGuiTextMixin",
     "ClientPlayNetworkHandlerMixin",
     "DrawContextMixin",
     "EntityRendererMixin",
@@ -33,6 +36,7 @@
     "InventoryScreenMixin",
     "KeyboardMixin",
     "MouseMixin",
+    "PlayerNameLabelMixin",
     "RecipeBookScreenMixin",
     "RecipeBookWidgetMixin",
     "SkullBlockEntityRendererMixin",

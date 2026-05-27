@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "blade-addons",
+  "version": "2.4.0",
+  "name": "blade-addons",
+  "description": "Just some 1.21 mod that ports mods like valley and other requested features",
+  "authors": [
+    "BladeMasterGabe"
+  ],
+  "contact": {
+    "homepage": "https://modrinth.com/mod/blade-addons",
+    "sources": "https://github.com/BladeMasterGabe/blade-addons"
+  },
+  "license": "CC0-1.0",
+  "icon": "assets/blade-addons/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "blade.addon.Bladeaddons"
+    ],
+    "modmenu": [
+      "blade.addon.utils.config.ModMenu"
+    ]
+  },
+  "mixins": [
+    "blade-addons.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": "\u003e\u003d0.17.3",
+    "minecraft": "~1.21.8",
+    "java": "\u003e\u003d21",
+    "fabric-api": "*",
+    "hypixel-mod-api": "*"
+  },
+  "suggests": {
+    "another-mod": "*"
+  },
+  "jars": [
+    {
+      "file": "META-INF/jars/mod-api-1.0.1.jar"
+    },
+    {
+      "file": "META-INF/jars/practical-config-1.4.3.jar"
+    }
+  ]
+}
