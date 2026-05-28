@@ -96,7 +96,7 @@ dependencies {
     if (mcefLocal.exists()) {
         modCompileOnly files(mcefLocal)
     } else {
-        modCompileOnly("maven.modrinth:mcef:mcef-fabric-2.2.0+mc1.21")
+        modCompileOnly("maven.modrinth:mcef-keksuccino:2.2.0-1.21.11-fabric")
     }
 }
 
