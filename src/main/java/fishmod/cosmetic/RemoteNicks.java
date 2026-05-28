@@ -1,35 +1,60 @@
 package fishmod.cosmetic;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import fishmod.utils.HypixelApi;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Holds other players' cosmetic nicks (fetched from the mod proxy) and rewrites their IGN to the
  * styled nick in chat/tab/nametags — the multiplayer counterpart to the local-only {@link NickState}.
+ *
+ * Sources of names:
+ *   1. Periodic tab-list scan every ~30s (covers everyone on your current server).
+ *   2. Chat-driven discovery — any IGN that appears in a chat line is resolved + fetched, so
+ *      DMs and party/guild messages from off-server players also get nick-rewritten.
  */
 public final class RemoteNicks {
     private RemoteNicks() {}
 
     // IGN → styled nick Text, for players other than the local one.
     private static final Map<String, Text> styledByName = new ConcurrentHashMap<>();
+    /** name → ms when negative cache (no nick set) expires. Stops re-lookups of plain IGNs. */
+    private static final Map<String, Long> negativeCache = new ConcurrentHashMap<>();
+    /** names currently being resolved → don't re-fire. */
+    private static final Set<String> inFlight = ConcurrentHashMap.newKeySet();
     private static int tick = 0;
+
+    private static final long NEGATIVE_TTL_MS = 15 * 60_000L; // 15 min
+    private static final Pattern IGN_PAT = Pattern.compile("\\b([A-Za-z0-9_]{3,16})\\b");
+
+    // Local HTTP for name→uuid lookups (Ashcon, no auth).
+    private static final HttpClient HTTP = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(8)).build();
 
     public static void init() {
         ClientPlayConnectionEvents.JOIN.register((h, s, c) -> {
             tick = 0;
-            styledByName.clear();
             uploadOwn();      // (re)publish our own nick on join
             refresh();
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (++tick < 20 * 30) return; // every ~30s (keep KV reads well under the daily quota)
+            if (++tick < 20 * 30) return; // every ~30s
             tick = 0;
             refresh();
         });
@@ -44,8 +69,17 @@ public final class RemoteNicks {
         HypixelApi.uploadNick(id.toString().replace("-", ""), NickState.isActive() ? NickState.getRaw() : "");
     }
 
+    /** Snapshot of the IGN→styled-Text cache. Used by debug commands. */
+    public static Map<String, Text> snapshot() { return new HashMap<>(styledByName); }
+
+    /** Force an immediate refresh from the tab list. */
+    public static void forceRefresh() { refresh(); }
+
     private static void refresh() {
-        if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) { styledByName.clear(); return; }
+        if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) {
+            styledByName.clear();
+            return;
+        }
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.getNetworkHandler() == null || mc.player == null) return;
         String self = mc.player.getGameProfile().name();
@@ -54,27 +88,104 @@ public final class RemoteNicks {
             var gp = entry.getProfile();
             if (gp == null || gp.id() == null) continue;
             String name = gp.name();
-            if (name == null || name.isEmpty() || name.equals(self)) continue; // self handled by NickState
+            if (name == null || name.isEmpty() || name.equals(self)) continue;
             uuidToName.put(gp.id().toString().replace("-", ""), name);
         }
         if (uuidToName.isEmpty()) return;
 
         HypixelApi.fetchNicks(uuidToName.keySet(), nicks -> mc.execute(() -> {
-            Map<String, Text> next = new ConcurrentHashMap<>();
+            // Merge — do NOT clear the existing cache. Entries discovered via chat for
+            // off-server players need to survive across tab-list refreshes.
             for (var e : nicks.entrySet()) {
                 String name = uuidToName.get(e.getKey());
                 String raw = e.getValue();
-                if (name != null && raw != null && !raw.isEmpty()) next.put(name, NickState.parse(raw));
+                if (name == null) continue;
+                if (raw != null && !raw.isEmpty()) {
+                    styledByName.put(name, NickState.parse(raw));
+                    negativeCache.remove(name);
+                } else {
+                    negativeCache.put(name, System.currentTimeMillis() + NEGATIVE_TTL_MS);
+                }
             }
-            styledByName.clear();
-            styledByName.putAll(next);
         }));
+    }
+
+    /**
+     * Scan a chat-rendered string for unknown IGN-like tokens and resolve+fetch nicks for them.
+     * Bounded to a few new lookups per call to avoid runaway requests on noisy chat.
+     */
+    public static void ensureKnownFromChat(String text) {
+        if (text == null || text.isEmpty()) return;
+        if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) return;
+        Matcher m = IGN_PAT.matcher(text);
+        long now = System.currentTimeMillis();
+        int triggered = 0;
+        Set<String> seenThisLine = new java.util.HashSet<>();
+        while (m.find() && triggered < 4) {
+            String name = m.group(1);
+            if (!seenThisLine.add(name)) continue;
+            if (styledByName.containsKey(name)) continue;
+            Long neg = negativeCache.get(name);
+            if (neg != null && neg > now) continue;
+            if (!inFlight.add(name)) continue;
+            triggered++;
+            lookupAndCache(name);
+        }
+    }
+
+    private static void lookupAndCache(String name) {
+        String cachedUuid = HypixelApi.uuidByName.get(name);
+        if (cachedUuid != null) { fetchOne(name, cachedUuid); return; }
+        try {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.ashcon.app/mojang/v2/user/" + name))
+                    .header("User-Agent", "FishMod/1.0")
+                    .timeout(Duration.ofSeconds(8))
+                    .GET().build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(resp -> {
+                try {
+                    if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
+                        JsonObject o = JsonParser.parseString(resp.body()).getAsJsonObject();
+                        if (o.has("uuid")) {
+                            String uuid = o.get("uuid").getAsString().replace("-", "");
+                            HypixelApi.uuidByName.put(name, uuid);
+                            fetchOne(name, uuid);
+                            return;
+                        }
+                    }
+                } catch (Exception ignored) {}
+                markNotFound(name);
+            }).exceptionally(t -> { markNotFound(name); return null; });
+        } catch (Exception e) { markNotFound(name); }
+    }
+
+    private static void fetchOne(String name, String uuid) {
+        HypixelApi.fetchNicks(java.util.Set.of(uuid), nicks -> {
+            inFlight.remove(name);
+            String raw = nicks.get(uuid);
+            if (raw != null && !raw.isEmpty()) {
+                styledByName.put(name, NickState.parse(raw));
+                negativeCache.remove(name);
+            } else {
+                negativeCache.put(name, System.currentTimeMillis() + NEGATIVE_TTL_MS);
+            }
+        });
+    }
+
+    private static void markNotFound(String name) {
+        inFlight.remove(name);
+        negativeCache.put(name, System.currentTimeMillis() + NEGATIVE_TTL_MS);
     }
 
     /** Replace any known remote player's IGN in the text with their styled nick. */
     public static Text apply(Text text) {
-        if (text == null || styledByName.isEmpty()
-                || !fishmod.utils.config.values.FishSettings.remoteNicksEnabled) return text;
+        if (text == null) return text;
+        if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) return text;
+        // Trigger background lookups for any new IGNs in this line. The current rewrite uses
+        // whatever's in styledByName right now; the first message from an unknown player won't
+        // be rewritten but subsequent ones will be (typical 200-500ms after the lookup completes).
+        ensureKnownFromChat(text.getString());
+        if (styledByName.isEmpty()) return text;
         String s = text.getString();
         Text out = text;
         for (Map.Entry<String, Text> e : styledByName.entrySet()) {

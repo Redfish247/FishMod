@@ -99,6 +99,15 @@ public class StreamsScreen extends Screen {
             ctx.fill(x + 8, y + 8, x + 12, y + 12, LIVE_RED);
             ctx.drawText(textRenderer, Text.literal("§f" + viewers), x + 16, y + 6, TEXT_COLOR, false);
 
+            // Language pill (top-right of thumbnail), e.g. EN / DE / ES — falls back to the title.
+            String langTag = languageTag(s);
+            if (langTag != null) {
+                int lw = textRenderer.getWidth(langTag) + 8;
+                int lx = x + cw - 4 - lw;
+                ctx.fill(lx, y + 4, lx + lw, y + 16, 0xCC000000);
+                ctx.drawText(textRenderer, Text.literal("§f" + langTag), lx + 4, y + 6, TEXT_COLOR, false);
+            }
+
             // streamer name
             ctx.drawText(textRenderer, Text.literal((hov ? "§d" : "§f") + trim(s.displayName(), cw - 12)),
                     x + 6, y + th + 5, TEXT_COLOR, false);
@@ -133,6 +142,22 @@ public class StreamsScreen extends Screen {
         boolean hov = mx >= x && mx <= x + bw && my >= y && my <= y + bh;
         ctx.fill(x, y, x + bw, y + bh, hov ? hover : col);
         ctx.drawText(textRenderer, label, x + (bw - textRenderer.getWidth(label)) / 2, y + (bh - 8) / 2, 0xFFFFFFFF, false);
+    }
+
+    /** 2-letter uppercase language tag for the badge — broadcastSettings.language first, then a
+     *  best-effort scan of the stream title for a [XX] or (XX) marker. Null if nothing usable. */
+    private static String languageTag(TwitchStreams.Stream s) {
+        String lang = s.language();
+        if (lang != null && lang.length() >= 2) {
+            String t = lang.substring(0, 2).toUpperCase();
+            if (t.chars().allMatch(Character::isLetter)) return t;
+        }
+        String title = s.title();
+        if (title != null) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("[\\[(]([A-Za-z]{2})[\\])]").matcher(title);
+            if (m.find()) return m.group(1).toUpperCase();
+        }
+        return null;
     }
 
     private String trim(String s, int maxW) {

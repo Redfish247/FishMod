@@ -825,6 +825,7 @@ public class HypixelApi {
     /** Client-side networth estimate using the SkyHelper price list. */
     private static void getNetworthLocal(String uuid, NetworthCallback cb) {
             try {
+                fishmod.utils.networth.ItemsDb.ensureLoaded();
                 Map<String, Double> prices = nwPrices();
 
                 HttpRequest req = HttpRequest.newBuilder()
@@ -869,6 +870,9 @@ public class HypixelApi {
                     }
                 }
                 total += petsValueNw(member, prices);
+                total += sacksValueNw(member, prices);
+                total += essenceValueNw(member, prices);
+                total += shardsValueNw(member, prices);
 
                 cb.onData(total, pname);
             } catch (Exception ex) {
@@ -909,86 +913,435 @@ public class HypixelApi {
         return total;
     }
 
+    /**
+     * Per-item modifier valuation, ported from SkyHelper-Networth's handler pipeline (non-cosmetic).
+     * Each modifier is wrapped in try/catch so one bad field never zeroes the whole item.
+     */
     private static double itemValueNw(NbtCompound item, Map<String, Double> prices) {
         NbtCompound ex = getExtras(item);
         if (ex == null) return 0;
         String id = getItemId(item);
         if (id == null) return 0;
-        double v = price(prices, id);
-        // Recombobulator
-        try { if (ex.getInt("rarity_upgrades", 0) > 0) v += price(prices, "RECOMBOBULATOR_3000"); } catch (Exception ignored) {}
-        // Hot Potato Books / Fuming
+
+        int count = 1;
+        try { count = item.getInt("Count", 1); if (count <= 0) count = 1; } catch (Exception ignored) {}
+        // Some lists store Count as byte; fall back gracefully.
+
+        // Item metadata (category / gemstone_slots / upgrade_costs / prestige) for handlers that need it.
+        com.google.gson.JsonObject meta = fishmod.utils.networth.ItemsDb.get(id);
+        String category = "";
+        try { if (meta != null && meta.has("category")) category = meta.get("category").getAsString(); } catch (Exception ignored) {}
+
+        // ---- Base price (ported getItemId): skin / shiny / starred / cake / rune variants ----
+        String priceId = id;
         try {
-            int hpc = ex.getInt("hot_potato_count", 0);
-            if (hpc > 0) { v += price(prices, "HOT_POTATO_BOOK") * Math.min(hpc, 10);
-                if (hpc > 10) v += price(prices, "FUMING_POTATO_BOOK") * (hpc - 10); }
+            String skin = ex.getString("skin", "");
+            if (!skin.isEmpty()) {
+                String skinned = id + "_SKINNED_" + skin;
+                if (price(prices, skinned) > price(prices, id)) priceId = skinned;
+            }
+            // Rune item -> RUNE_<type>_<tier>
+            if ("RUNE".equals(id) || "UNIQUE_RUNE".equals(id)) {
+                NbtCompound runes = compound(ex, "runes");
+                if (runes != null) for (String rn : runes.getKeys()) {
+                    priceId = ("RUNE_" + rn + "_" + runes.getInt(rn, 0)).toUpperCase();
+                    break;
+                }
+            }
+            if ("NEW_YEAR_CAKE".equals(id)) {
+                int cake = ex.getInt("new_years_cake", 0);
+                priceId = "NEW_YEAR_CAKE_" + cake;
+            }
+            // Shiny variant
+            if (ex.getInt("is_shiny", 0) > 0 && price(prices, id + "_SHINY") > 0) priceId = id + "_SHINY";
+            // Fragged: STARRED_ fallback to base
+            if (id.startsWith("STARRED_") && price(prices, id) == 0 && price(prices, id.replace("STARRED_", "")) > 0)
+                priceId = id.replace("STARRED_", "");
         } catch (Exception ignored) {}
-        // Art of War
-        try { if (ex.getInt("art_of_war_count", 0) > 0) v += price(prices, "THE_ART_OF_WAR"); } catch (Exception ignored) {}
-        // Master/dungeon stars beyond 5 → master stars
+
+        double base = price(prices, priceId) * count;
+        double v = base;
+
+        // ---- Crown of Avarice: collected coins interpolate base between 0 and 1B price ----
         try {
-            int stars = ex.getInt("upgrade_level", ex.getInt("dungeon_item_level", 0));
-            String[] ms = {"FIRST_MASTER_STAR","SECOND_MASTER_STAR","THIRD_MASTER_STAR","FOURTH_MASTER_STAR","FIFTH_MASTER_STAR"};
-            for (int s = 6; s <= stars && s <= 10; s++) v += price(prices, ms[s - 6]);
-        } catch (Exception ignored) {}
-        // Enchantments
-        try {
-            NbtElement encEl = ex.get("enchantments");
-            if (encEl != null) {
-                NbtCompound enc = encEl.asCompound().orElse(null);
-                if (enc != null) for (String name : enc.getKeys()) {
-                    int lvl = enc.getInt(name, 0);
-                    if (lvl > 0) v += price(prices, "ENCHANTMENT_" + name.toUpperCase() + "_" + lvl);
+            if ("CROWN_OF_AVARICE".equals(id)) {
+                long cc = 0;
+                try { cc = ex.getLong("collected_coins", 0L); }
+                catch (Exception e) { cc = (long) ex.getDouble("collected_coins", 0); }
+                if (cc > 0) {
+                    double zero = price(prices, "CROWN_OF_AVARICE");
+                    double bil  = price(prices, "CROWN_OF_AVARICE_1B");
+                    double coins = Math.min(cc, 1_000_000_000.0);
+                    double newBase = zero + (bil - zero) * (coins / 1_000_000_000.0);
+                    v += (newBase - base); // SkyHelper replaces the base price with the interpolated value
                 }
             }
         } catch (Exception ignored) {}
-        // Gemstones (applied gems can be worth tens of millions each on endgame gear)
-        try { v += gemsValueNw(ex, prices); } catch (Exception ignored) {}
-        // Necron-blade ability scrolls (~230M each)
+
+        // ---- Recombobulator x0.8 ----
+        try {
+            boolean isRecomb = ex.getInt("rarity_upgrades", 0) > 0 && ex.getInt("item_tier", -1) < 0
+                    && !ex.contains("item_tier");
+            if (isRecomb) {
+                boolean hasEnch = compound(ex, "enchantments") != null;
+                boolean allows = fishmod.utils.networth.NwConstants.ALLOWED_RECOMBOBULATED_CATEGORIES.contains(category)
+                        || fishmod.utils.networth.NwConstants.ALLOWED_RECOMBOBULATED_IDS.contains(id);
+                if (hasEnch || allows) {
+                    double w = "BONE_BOOMERANG".equals(id)
+                            ? fishmod.utils.networth.NwConstants.RECOMBOBULATOR * 0.5
+                            : fishmod.utils.networth.NwConstants.RECOMBOBULATOR;
+                    v += price(prices, "RECOMBOBULATOR_3000") * w;
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // ---- Potato books ----
+        try {
+            int hpc = ex.getInt("hot_potato_count", 0);
+            if (hpc > 0) {
+                v += price(prices, "HOT_POTATO_BOOK") * Math.min(hpc, 10) * fishmod.utils.networth.NwConstants.HOT_POTATO_BOOK;
+                if (hpc > 10) v += price(prices, "FUMING_POTATO_BOOK") * (hpc - 10) * fishmod.utils.networth.NwConstants.FUMING_POTATO_BOOK;
+            }
+        } catch (Exception ignored) {}
+
+        // ---- Enchantments (EnchantedBook items valued differently) ----
+        try {
+            NbtCompound enc = compound(ex, "enchantments");
+            if (enc != null && !enc.getKeys().isEmpty()) {
+                if ("ENCHANTED_BOOK".equals(id)) {
+                    boolean single = enc.getKeys().size() == 1;
+                    double bookPrice = 0;
+                    for (String name : enc.getKeys()) {
+                        int lvl = enc.getInt(name, 0);
+                        double p = price(prices, "ENCHANTMENT_" + name.toUpperCase() + "_" + lvl);
+                        if (p == 0) continue;
+                        bookPrice += p * (single ? 1 : fishmod.utils.networth.NwConstants.ENCHANTMENTS);
+                    }
+                    if (bookPrice > 0) v += bookPrice; // replaces basePrice (which is ~0 for the book item)
+                } else {
+                    v += enchantmentsValueNw(id, enc, prices);
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // ---- Gemstones (gems themselves + unlock slot costs for Divan/Crimson armor) ----
+        try { v += gemsValueNw(id, ex, meta, prices); } catch (Exception ignored) {}
+
+        // ---- Master Stars (stars 6-10) ----
+        try {
+            int up = upgradeLevel(ex);
+            if (meta != null && meta.has("upgrade_costs") && up > 5) {
+                int starsUsed = Math.min(up - 5, 5);
+                if (meta.getAsJsonArray("upgrade_costs").size() <= 5) {
+                    for (int s = 0; s < starsUsed; s++)
+                        v += price(prices, fishmod.utils.networth.NwConstants.MASTER_STARS[s]) * fishmod.utils.networth.NwConstants.MASTER_STAR;
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // ---- Essence Stars ----
+        try {
+            int up = upgradeLevel(ex);
+            if (meta != null && meta.has("upgrade_costs") && up > 0) {
+                v += starCostsNw(meta.getAsJsonArray("upgrade_costs"), up, prices, false);
+            }
+        } catch (Exception ignored) {}
+
+        // ---- Prestige ----
+        try {
+            String[] chain = fishmod.utils.networth.NwConstants.PRESTIGES.get(id);
+            if (chain != null && price(prices, id) == 0) {
+                for (String pItem : chain) {
+                    com.google.gson.JsonObject pMeta = fishmod.utils.networth.ItemsDb.get(pItem);
+                    if (pMeta != null && pMeta.has("upgrade_costs"))
+                        v += starCostsNw(pMeta.getAsJsonArray("upgrade_costs"), pMeta.getAsJsonArray("upgrade_costs").size(), prices, true);
+                    if (pMeta != null && pMeta.has("prestige") && pMeta.getAsJsonObject("prestige").has("costs"))
+                        v += starCostsNw(pMeta.getAsJsonObject("prestige").getAsJsonArray("costs"),
+                                pMeta.getAsJsonObject("prestige").getAsJsonArray("costs").size(), prices, true);
+                    if (price(prices, pItem) > 0) { v += price(prices, pItem); break; }
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // ---- Reforge x1 (not for accessories) ----
+        try {
+            String modifier = ex.getString("modifier", "");
+            if (!modifier.isEmpty() && !"ACCESSORY".equals(category)) {
+                String stone = fishmod.utils.networth.NwConstants.REFORGES.get(modifier);
+                if (stone != null) v += price(prices, stone) * fishmod.utils.networth.NwConstants.REFORGE;
+            }
+        } catch (Exception ignored) {}
+
+        // ---- Art of War x0.6 ----
+        try { int c = ex.getInt("art_of_war_count", 0); if (c > 0) v += price(prices, "THE_ART_OF_WAR") * c * fishmod.utils.networth.NwConstants.ART_OF_WAR; } catch (Exception ignored) {}
+        // ---- Art of Peace x0.8 ----
+        try { int c = ex.getInt("artOfPeaceApplied", 0); if (c > 0) v += price(prices, "THE_ART_OF_PEACE") * c * fishmod.utils.networth.NwConstants.ART_OF_PEACE; } catch (Exception ignored) {}
+        // ---- Necron-blade ability scrolls x1 ----
         try {
             NbtList scrolls = ex.getList("ability_scroll").orElse(null);
             if (scrolls != null) for (int i = 0; i < scrolls.size(); i++)
-                v += price(prices, scrolls.getString(i).orElse(""));
+                v += price(prices, scrolls.getString(i).orElse("").toUpperCase()) * fishmod.utils.networth.NwConstants.NECRON_BLADE_SCROLL;
         } catch (Exception ignored) {}
-        // Gemstone power scroll (e.g. JASPER_POWER_SCROLL)
-        try { String ps = ex.getString("power_ability_scroll", ""); if (!ps.isEmpty()) v += price(prices, ps); } catch (Exception ignored) {}
-        // Drill parts
+        // ---- Gemstone power scroll x0.5 ----
+        try { String ps = ex.getString("power_ability_scroll", ""); if (!ps.isEmpty()) v += price(prices, ps) * fishmod.utils.networth.NwConstants.GEMSTONE_POWER_SCROLL; } catch (Exception ignored) {}
+        // ---- Drill parts x1 ----
         try {
-            for (String part : new String[]{"drill_part_engine","drill_part_fuel_tank","drill_part_upgrade_module"}) {
+            for (String part : new String[]{"drill_part_upgrade_module","drill_part_fuel_tank","drill_part_engine"}) {
                 String pid = ex.getString(part, "");
-                if (!pid.isEmpty()) v += price(prices, pid.toUpperCase());
+                if (!pid.isEmpty()) v += price(prices, pid.toUpperCase()) * fishmod.utils.networth.NwConstants.DRILL_PART;
             }
         } catch (Exception ignored) {}
-        // Etherwarp conduit (ethermerge) + transmission tuners
-        try { if (ex.getInt("ethermerge", 0) > 0) v += price(prices, "ETHERWARP_CONDUIT"); } catch (Exception ignored) {}
-        try { int tt = ex.getInt("tuned_transmission", 0); if (tt > 0) v += price(prices, "TRANSMISSION_TUNER") * tt; } catch (Exception ignored) {}
-        // Consumable upgrade books/items
-        try { if (ex.getInt("wood_singularity_count", 0) > 0) v += price(prices, "WOOD_SINGULARITY"); } catch (Exception ignored) {}
-        try { if (ex.getInt("jalapeno_count", 0) > 0) v += price(prices, "JALAPENO_BOOK"); } catch (Exception ignored) {}
-        try { int md = ex.getInt("mana_disintegrator_count", 0); if (md > 0) v += price(prices, "MANA_DISINTEGRATOR") * md; } catch (Exception ignored) {}
-        try { int ffd = ex.getInt("farming_for_dummies_count", 0); if (ffd > 0) v += price(prices, "FARMING_FOR_DUMMIES") * ffd; } catch (Exception ignored) {}
-        // Dyes (expensive cosmetics — Pure dyes etc. are hundreds of millions each)
-        try { String dye = ex.getString("dye_item", ""); if (!dye.isEmpty()) v += price(prices, dye) * 0.9; } catch (Exception ignored) {}
-        // Runes
+        // ---- Rod parts x1 (line/hook/sinker -> compound with `part`) ----
         try {
-            NbtElement runesEl = ex.get("runes");
-            NbtCompound runes = runesEl != null ? runesEl.asCompound().orElse(null) : null;
-            if (runes != null) for (String rn : runes.getKeys())
-                v += price(prices, "RUNE_" + rn.toUpperCase() + "_" + runes.getInt(rn, 0)) * 0.6;
+            for (String part : new String[]{"line","hook","sinker"}) {
+                NbtCompound pc = compound(ex, part);
+                if (pc != null) {
+                    String pp = pc.getString("part", "");
+                    if (!pp.isEmpty()) v += price(prices, pp.toUpperCase()) * fishmod.utils.networth.NwConstants.ROD_PART;
+                }
+            }
         } catch (Exception ignored) {}
+        // ---- Etherwarp conduit x1 ----
+        try { if (ex.getInt("ethermerge", 0) > 0) v += price(prices, "ETHERWARP_CONDUIT") * fishmod.utils.networth.NwConstants.ETHERWARP; } catch (Exception ignored) {}
+        // ---- Transmission tuner x0.7 ----
+        try { int tt = ex.getInt("tuned_transmission", 0); if (tt > 0) v += price(prices, "TRANSMISSION_TUNER") * tt * fishmod.utils.networth.NwConstants.TUNED_TRANSMISSION; } catch (Exception ignored) {}
+        // ---- Wood singularity x0.5 ----
+        try { int c = ex.getInt("wood_singularity_count", 0); if (c > 0) v += price(prices, "WOOD_SINGULARITY") * c * fishmod.utils.networth.NwConstants.WOOD_SINGULARITY; } catch (Exception ignored) {}
+        // ---- Jalapeno book x0.8 ----
+        try { int c = ex.getInt("jalapeno_count", 0); if (c > 0) v += price(prices, "JALAPENO_BOOK") * c * fishmod.utils.networth.NwConstants.JALAPENO_BOOK; } catch (Exception ignored) {}
+        // ---- Mana disintegrator x0.8 ----
+        try { int c = ex.getInt("mana_disintegrator_count", 0); if (c > 0) v += price(prices, "MANA_DISINTEGRATOR") * c * fishmod.utils.networth.NwConstants.MANA_DISINTEGRATOR; } catch (Exception ignored) {}
+        // ---- Farming for dummies x0.5 ----
+        try { int c = ex.getInt("farming_for_dummies_count", 0); if (c > 0) v += price(prices, "FARMING_FOR_DUMMIES") * c * fishmod.utils.networth.NwConstants.FARMING_FOR_DUMMIES; } catch (Exception ignored) {}
+        // ---- Overclocker 3000 x0.9 ----
+        try { int c = ex.getInt("levelable_overclocks", 0); if (c > 0) v += price(prices, "OVERCLOCKER_3000") * c * fishmod.utils.networth.NwConstants.OVERCLOCKER_3000; } catch (Exception ignored) {}
+        // ---- Polarvoid book x1 ----
+        try { int c = ex.getInt("polarvoid", 0); if (c > 0) v += price(prices, "POLARVOID_BOOK") * c * fishmod.utils.networth.NwConstants.POLARVOID_BOOK; } catch (Exception ignored) {}
+        // ---- Pocket sack-in-a-sack x0.7 ----
+        try { int c = ex.getInt("sack_pss", 0); if (c > 0) v += price(prices, "POCKET_SACK_IN_A_SACK") * c * fishmod.utils.networth.NwConstants.POCKET_SACK_IN_A_SACK; } catch (Exception ignored) {}
+        // ---- Divan powder coating x0.8 ----
+        try { int c = ex.getInt("divan_powder_coating", 0); if (c > 0) v += price(prices, "DIVAN_POWDER_COATING") * fishmod.utils.networth.NwConstants.DIVAN_POWDER_COATING; } catch (Exception ignored) {}
+        // ---- Dye x0.9 ----
+        try { String dye = ex.getString("dye_item", ""); if (!dye.isEmpty()) v += price(prices, dye.toUpperCase()) * fishmod.utils.networth.NwConstants.DYE; } catch (Exception ignored) {}
+        // ---- Runes x0.6 (only on non-rune items) ----
+        try {
+            NbtCompound runes = compound(ex, "runes");
+            if (runes != null && !id.startsWith("RUNE")) for (String rn : runes.getKeys()) {
+                String runeId = "RUNE_" + rn + "_" + runes.getInt(rn, 0);
+                v += price(prices, runeId.toUpperCase()) * fishmod.utils.networth.NwConstants.RUNES;
+                break;
+            }
+        } catch (Exception ignored) {}
+        // ---- Enrichment x0.5 (cheapest enrichment) ----
+        try {
+            String enr = ex.getString("talisman_enrichment", "");
+            if (!enr.isEmpty()) {
+                double cheapest = Double.POSITIVE_INFINITY;
+                for (String e : fishmod.utils.networth.NwConstants.ENRICHMENTS) {
+                    double p = price(prices, e);
+                    if (p > 0) cheapest = Math.min(cheapest, p);
+                }
+                if (cheapest != Double.POSITIVE_INFINITY) v += cheapest * fishmod.utils.networth.NwConstants.ENRICHMENT;
+            }
+        } catch (Exception ignored) {}
+        // ---- Boosters x0.8 ----
+        try {
+            NbtList boosters = ex.getList("boosters").orElse(null);
+            if (boosters != null) for (int i = 0; i < boosters.size(); i++) {
+                String b = boosters.getString(i).orElse("");
+                if (!b.isEmpty()) v += price(prices, b.toUpperCase() + "_BOOSTER") * fishmod.utils.networth.NwConstants.BOOSTER;
+            }
+        } catch (Exception ignored) {}
+        // ---- New Year Cake Bag (sum of contained cakes, x1) ----
+        try {
+            NbtList years = ex.getList("new_year_cake_bag_years").orElse(null);
+            if (years != null) for (int i = 0; i < years.size(); i++)
+                v += price(prices, "NEW_YEAR_CAKE_" + years.getInt(i).orElse(0));
+        } catch (Exception ignored) {}
+        // ---- Shen's Auction (price paid x0.85, replaces base if higher) ----
+        try {
+            if (ex.contains("price") && ex.contains("auction") && ex.contains("bid")) {
+                double pricePaid = ex.getDouble("price", 0) * fishmod.utils.networth.NwConstants.SHENS_AUCTION_PRICE;
+                if (pricePaid > base) v += (pricePaid - base);
+            }
+        } catch (Exception ignored) {}
+        // ---- Midas weapon (max-bid variant replaces base) ----
+        try {
+            Object[] midas = fishmod.utils.networth.NwConstants.MIDAS_SWORDS.get(id);
+            if (midas != null) {
+                long maxBid = (Long) midas[0];
+                String type = (String) midas[1];
+                double winning = ex.getDouble("winning_bid", 0);
+                double additional = ex.getDouble("additional_coins", 0);
+                if (winning + additional >= maxBid && price(prices, type) > 0)
+                    v += (price(prices, type) - base);
+            }
+        } catch (Exception ignored) {}
+        // ---- Pickonimbus (durability reduces base) ----
+        try {
+            if ("PICKONIMBUS".equals(id)) {
+                int dur = ex.getInt("pickonimbus_durability", 5000);
+                if (dur < 5000) v += base * ((dur / 5000.0) - 1);
+            }
+        } catch (Exception ignored) {}
+
+        // ---- BONUS (not in SkyHelper): item attributes -> ATTRIBUTE_SHARD_<NAME> x 2^(level-1) ----
+        try {
+            NbtCompound att = compound(ex, "attributes");
+            if (att != null) for (String an : att.getKeys()) {
+                int lvl = att.getInt(an, 0);
+                if (lvl > 0) {
+                    double sp = price(prices, "ATTRIBUTE_SHARD_" + an.toUpperCase());
+                    if (sp > 0) v += sp * Math.pow(2, lvl - 1);
+                }
+            }
+        } catch (Exception ignored) {}
+
+        return v;
+    }
+
+    private static NbtCompound compound(NbtCompound parent, String key) {
+        try {
+            NbtElement el = parent.get(key);
+            if (el == null) return null;
+            return el.asCompound().orElse(null);
+        } catch (Exception e) { return null; }
+    }
+
+    /** dungeon_item_level / upgrade_level, stripped of non-digits, max of the two. */
+    private static int upgradeLevel(NbtCompound ex) {
+        int dil = digits(strOrInt(ex, "dungeon_item_level"));
+        int ul = digits(strOrInt(ex, "upgrade_level"));
+        return Math.max(dil, ul);
+    }
+    private static String strOrInt(NbtCompound ex, String key) {
+        try {
+            NbtElement el = ex.get(key);
+            if (el == null) return "0";
+            String s = el.asString().orElse(null);
+            if (s != null) return s;
+            return String.valueOf(ex.getInt(key, 0));
+        } catch (Exception e) { return "0"; }
+    }
+    private static int digits(String s) {
+        StringBuilder b = new StringBuilder();
+        for (char c : s.toCharArray()) if (Character.isDigit(c)) b.append(c);
+        try { return b.length() == 0 ? 0 : Integer.parseInt(b.toString()); } catch (Exception e) { return 0; }
+    }
+
+    /** Ported helper/essenceStars.js starCosts. Sums slice(0, level) of an upgrade_costs array. */
+    private static double starCostsNw(JsonArray upgrades, int level, Map<String, Double> prices, boolean prestigeItem) {
+        double price = 0;
+        int limit = Math.min(level, upgrades.size());
+        for (int i = 0; i < limit; i++) {
+            JsonElement up = upgrades.get(i);
+            if (up.isJsonArray()) {
+                for (JsonElement cost : up.getAsJsonArray()) price += starCostOne(cost.getAsJsonObject(), prices);
+            } else if (up.isJsonObject()) {
+                price += starCostOne(up.getAsJsonObject(), prices);
+            }
+        }
+        return price;
+    }
+    private static double starCostOne(JsonObject up, Map<String, Double> prices) {
+        try {
+            double amount = up.has("amount") ? up.get("amount").getAsDouble() : 0;
+            if (up.has("essence_type")) {
+                String et = up.get("essence_type").getAsString();
+                return amount * price(prices, "ESSENCE_" + et) * fishmod.utils.networth.NwConstants.ESSENCE;
+            } else if (up.has("item_id")) {
+                String iid = up.get("item_id").getAsString();
+                return amount * price(prices, iid);
+            }
+        } catch (Exception ignored) {}
+        return 0;
+    }
+
+    /** Ported ItemEnchantments.js: per-enchant value with overrides, silex, upgrades. */
+    private static double enchantmentsValueNw(String id, NbtCompound enc, Map<String, Double> prices) {
+        double v = 0;
+        java.util.Set<String> blocked = fishmod.utils.networth.NwConstants.BLOCKED_ENCHANTMENTS.get(id);
+        for (String rawName : enc.getKeys()) {
+            try {
+                String name = rawName.toUpperCase();
+                int value = enc.getInt(rawName, 0);
+                if (blocked != null && blocked.contains(name)) continue;
+                Integer ign = fishmod.utils.networth.NwConstants.IGNORED_ENCHANTMENTS.get(name);
+                if (ign != null && ign == value) continue;
+                if (fishmod.utils.networth.NwConstants.STACKING_ENCHANTMENTS.contains(name)) value = 1;
+
+                // Silex
+                if ("EFFICIENCY".equals(name) && value >= 6 && !fishmod.utils.networth.NwConstants.IGNORE_SILEX.contains(id)) {
+                    int eff = value - ("STONK_PICKAXE".equals(id) ? 6 : 5);
+                    if (eff > 0) v += price(prices, "SIL_EX") * eff * fishmod.utils.networth.NwConstants.SILEX;
+                }
+                // Enchantment upgrades
+                Integer tierReq = fishmod.utils.networth.NwConstants.ENCHANTMENT_UPGRADE_TIER.containsKey(name)
+                        ? fishmod.utils.networth.NwConstants.ENCHANTMENT_UPGRADE_TIER.get(name)[0] : null;
+                if (tierReq != null && value >= tierReq) {
+                    String up = fishmod.utils.networth.NwConstants.ENCHANTMENT_UPGRADE_ITEM.get(name);
+                    v += price(prices, up) * fishmod.utils.networth.NwConstants.ENCHANTMENT_UPGRADES;
+                }
+                // Base enchantment value
+                double mult = fishmod.utils.networth.NwConstants.ENCHANTMENTS_WORTH.containsKey(name)
+                        ? fishmod.utils.networth.NwConstants.ENCHANTMENTS_WORTH.get(name)
+                        : fishmod.utils.networth.NwConstants.ENCHANTMENTS;
+                v += price(prices, "ENCHANTMENT_" + name + "_" + value) * mult;
+            } catch (Exception ignored) {}
+        }
         return v;
     }
 
     private static final java.util.Set<String> GEM_TYPES = java.util.Set.of(
         "RUBY","AMBER","SAPPHIRE","JADE","AMETHYST","TOPAZ","JASPER","OPAL","AQUAMARINE","CITRINE","ONYX","PERIDOT");
 
-    /** Values applied gemstones in an item's `gems` compound. */
-    private static double gemsValueNw(NbtCompound ex, Map<String, Double> prices) {
+    /**
+     * Values applied gemstones in an item's `gems` compound (x1) PLUS gemstone-slot UNLOCK costs
+     * for Divan armor (x0.9 gemstoneChambers) and Crimson-family armor (x0.6 gemstoneSlots),
+     * replicating Gemstones.js.
+     */
+    private static double gemsValueNw(String id, NbtCompound ex, com.google.gson.JsonObject meta, Map<String, Double> prices) {
         NbtElement gemsEl = ex.get("gems");
         if (gemsEl == null) return 0;
         NbtCompound gems = gemsEl.asCompound().orElse(null);
         if (gems == null) return 0;
         double total = 0;
+
+        // ---- Gemstone slot unlock costs (Divan / Crimson family armor) ----
+        try {
+            boolean isDivan = id != null && id.matches("DIVAN_(HELMET|CHESTPLATE|LEGGINGS|BOOTS)");
+            boolean isCrimson = id != null && id.matches("(HOT_|FIERY_|BURNING_|INFERNAL_)?(AURORA|CRIMSON|TERROR|HOLLOW|FERVOR)(_HELMET|_CHESTPLATE|_LEGGINGS|_BOOTS)");
+            if ((isDivan || isCrimson) && meta != null && meta.has("gemstone_slots") && meta.get("gemstone_slots").isJsonArray()) {
+                double application = isDivan
+                        ? fishmod.utils.networth.NwConstants.GEMSTONE_CHAMBERS
+                        : fishmod.utils.networth.NwConstants.GEMSTONE_SLOTS;
+                NbtList unlocked = gems.getList("unlocked_slots").orElse(null);
+                if (unlocked != null) {
+                    com.google.gson.JsonArray slots = meta.getAsJsonArray("gemstone_slots");
+                    for (int u = 0; u < unlocked.size(); u++) {
+                        String slotName = unlocked.getString(u).orElse("");
+                        // slot entries look like COMBAT_0 -> match by slot_type prefix
+                        String slotType = slotName.contains("_") ? slotName.substring(0, slotName.lastIndexOf('_')) : slotName;
+                        for (com.google.gson.JsonElement se : slots) {
+                            if (!se.isJsonObject()) continue;
+                            com.google.gson.JsonObject so = se.getAsJsonObject();
+                            if (so.has("slot_type") && so.get("slot_type").getAsString().equals(slotType) && so.has("costs")) {
+                                double t = 0;
+                                for (com.google.gson.JsonElement ce : so.getAsJsonArray("costs")) {
+                                    com.google.gson.JsonObject co = ce.getAsJsonObject();
+                                    String ctype = co.has("type") ? co.get("type").getAsString() : "";
+                                    if ("COINS".equals(ctype) && co.has("coins")) t += co.get("coins").getAsDouble();
+                                    else if ("ITEM".equals(ctype) && co.has("item_id"))
+                                        t += price(prices, co.get("item_id").getAsString().toUpperCase()) * (co.has("amount") ? co.get("amount").getAsDouble() : 0);
+                                }
+                                total += t * application;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
         for (String slot : gems.getKeys()) {
             if (slot.equals("unlocked_slots") || slot.endsWith("_gem")) continue;
             // Tier: either a bare string ("PERFECT") or a compound with "quality".
@@ -1026,15 +1379,114 @@ public class HypixelApi {
                 double exp = pet.has("exp") ? pet.get("exp").getAsDouble() : 0;
                 int maxLevel = "GOLDEN_DRAGON".equals(type) ? 200 : 100;
                 int level = Math.min(maxLevel, fishmod.features.OverflowPetLevels.calcLevel(exp, petRarity(tier)));
-                double p1 = price(prices, "LVL_1_" + tier + "_" + type);
-                double pMax = price(prices, "LVL_" + maxLevel + "_" + tier + "_" + type);
+                String skin = pet.has("skin") && !pet.get("skin").isJsonNull() ? pet.get("skin").getAsString() : null;
+                String basePetId = tier + "_" + type;
+                String petId = skin != null ? basePetId + "_SKINNED_" + skin : basePetId;
+                // pet skin uses max(skinned, base) at each level point (non-cosmetic falls back to base)
+                double p1 = Math.max(price(prices, "LVL_1_" + petId), price(prices, "LVL_1_" + basePetId));
+                double pMax = Math.max(price(prices, "LVL_" + maxLevel + "_" + petId), price(prices, "LVL_" + maxLevel + "_" + basePetId));
                 double frac = maxLevel <= 1 ? 1 : (double) (level - 1) / (maxLevel - 1);
                 double base = p1 + (pMax - p1) * frac;
                 if (base <= 0) base = pMax > 0 ? pMax : p1;
-                // held pet item
-                if (pet.has("heldItem") && !pet.get("heldItem").isJsonNull())
-                    base += price(prices, pet.get("heldItem").getAsString());
-                total += base;
+
+                double extra = 0;
+                String heldItem = pet.has("heldItem") && !pet.get("heldItem").isJsonNull() ? pet.get("heldItem").getAsString() : null;
+                // held pet item x1
+                if (heldItem != null) extra += price(prices, heldItem) * fishmod.utils.networth.NwConstants.PET_ITEM;
+                // pet skin x0.8
+                if (skin != null) extra += price(prices, "PET_SKIN_" + skin) * fishmod.utils.networth.NwConstants.SOULBOUND_PET_SKINS;
+
+                // pet candy reduction (PetCandy.js): reduces the candy-added value portion
+                try {
+                    int candyUsed = pet.has("candyUsed") && !pet.get("candyUsed").isJsonNull() ? pet.get("candyUsed").getAsInt() : 0;
+                    if (candyUsed > 0) {
+                        double reduceValue = base * (1 - fishmod.utils.networth.NwConstants.PET_CANDY);
+                        double maxReduction = level == 100 ? 5_000_000 : 2_500_000;
+                        reduceValue = Math.min(reduceValue, maxReduction);
+                        extra -= reduceValue;
+                    }
+                } catch (Exception ignored) {}
+
+                total += base + extra;
+            }
+        } catch (Exception ignored) {}
+        return total;
+    }
+
+    /** Values everything stored in sacks (enchanted resources, gemstones, etc.). */
+    private static double sacksValueNw(JsonObject member, Map<String, Double> prices) {
+        JsonObject sacks = null;
+        if (member.has("inventory") && member.getAsJsonObject("inventory").has("sacks_counts")
+                && member.getAsJsonObject("inventory").get("sacks_counts").isJsonObject())
+            sacks = member.getAsJsonObject("inventory").getAsJsonObject("sacks_counts");
+        else if (member.has("sacks_counts") && member.get("sacks_counts").isJsonObject())
+            sacks = member.getAsJsonObject("sacks_counts");
+        if (sacks == null) return 0;
+        double total = 0;
+        for (Map.Entry<String, JsonElement> e : sacks.entrySet()) {
+            try {
+                double cnt = e.getValue().getAsDouble();
+                if (cnt > 0) total += price(prices, e.getKey()) * cnt;
+            } catch (Exception ignored) {}
+        }
+        return total;
+    }
+
+    /** Values stored essence (wither/crimson/dragon/etc.) from the currencies block. */
+    private static double essenceValueNw(JsonObject member, Map<String, Double> prices) {
+        try {
+            if (!member.has("currencies")) return 0;
+            JsonObject cur = member.getAsJsonObject("currencies");
+            if (!cur.has("essence") || !cur.get("essence").isJsonObject()) return 0;
+            JsonObject ess = cur.getAsJsonObject("essence");
+            double total = 0;
+            for (Map.Entry<String, JsonElement> e : ess.entrySet()) {
+                double amt = 0;
+                if (e.getValue().isJsonObject()) {
+                    JsonObject o = e.getValue().getAsJsonObject();
+                    if (o.has("current")) amt = o.get("current").getAsDouble();
+                } else {
+                    try { amt = e.getValue().getAsDouble(); } catch (Exception ignored) {}
+                }
+                if (amt > 0) total += price(prices, "ESSENCE_" + e.getKey().toUpperCase()) * amt;
+            }
+            return total;
+        } catch (Exception ignored) { return 0; }
+    }
+
+    /**
+     * Values the Galatea/Foraging Attribute Shard system: loose captured shards
+     * ({@code member.shards.owned} → {@code SHARD_<TYPE>}) plus fused attribute stacks
+     * ({@code member.attributes.stacks} → {@code ATTRIBUTE_SHARD_<NAME>}). SkyHelper does not
+     * value this, so this is a market-resale estimate (shard count × current shard price).
+     */
+    private static double shardsValueNw(JsonObject member, Map<String, Double> prices) {
+        double total = 0;
+        try {
+            JsonObject shards = member.has("shards") && member.get("shards").isJsonObject()
+                    ? member.getAsJsonObject("shards") : null;
+            if (shards != null && shards.has("owned") && shards.get("owned").isJsonArray()) {
+                for (JsonElement e : shards.getAsJsonArray("owned")) {
+                    try {
+                        JsonObject o = e.getAsJsonObject();
+                        String type = o.has("type") ? o.get("type").getAsString() : null;
+                        double amt = o.has("amount_owned") ? o.get("amount_owned").getAsDouble() : 0;
+                        if (type != null && amt > 0) total += price(prices, "SHARD_" + type.toUpperCase()) * amt;
+                    } catch (Exception ignored) {}
+                }
+            }
+        } catch (Exception ignored) {}
+        try {
+            JsonObject attrs = member.has("attributes") && member.get("attributes").isJsonObject()
+                    ? member.getAsJsonObject("attributes") : null;
+            if (attrs != null && attrs.has("stacks") && attrs.get("stacks").isJsonObject()) {
+                JsonObject stacks = attrs.getAsJsonObject("stacks");
+                for (Map.Entry<String, JsonElement> e : stacks.entrySet()) {
+                    try {
+                        double cnt = e.getValue().getAsDouble();
+                        if (cnt > 0) total += price(prices, "ATTRIBUTE_SHARD_" + e.getKey().toUpperCase()) * cnt;
+                    } catch (Exception ignored) {}
+                }
             }
         } catch (Exception ignored) {}
         return total;

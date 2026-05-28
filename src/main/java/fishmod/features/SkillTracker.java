@@ -31,13 +31,21 @@ public class SkillTracker {
         55172425L,59472425L,64072425L,68972425L,74172425L,79672425L,85472425L,91572425L,97972425L,104672425L,111672425L
     };
 
+    // Cumulative XP to reach the top of the standard table (level 60).
+    private static final long MAX_CUM = CUM[CUM.length - 1];
+    // Overflow leveling (Hypixel "overflow skills", same constants every mod uses):
+    // first overflow level costs 7,600,000; slope is 600,000 and doubles every 10 levels.
+    private static final long OVERFLOW_BASE  = 7_600_000L;
+    private static final long OVERFLOW_SLOPE = 600_000L;
+
     private static final DecimalFormat NUM = new DecimalFormat("#,###");
     private static final long WINDOW_MS = 3_600_000L;
     private static final long IDLE_PAUSE_MS = 20_000L;
 
-    // Action bar: "... +12.5 Farming (2,601,816/2,693,800) ..."
+    // Action bar: "... +12.5 Farming (2,601,816/2,693,800) ..." OR newer
+    // "... +12.5 Farming 53 (3,012,209/5,500,000) ..." with explicit level (group 3 optional).
     private static final Pattern SKILL_AB = Pattern.compile(
-        "\\+([\\d,]+(?:\\.\\d+)?)\\s+(Farming|Mining|Combat|Foraging|Fishing|Enchanting|Alchemy|Taming|Carpentry|Runecrafting|Social)\\s+\\(([\\d,]+(?:\\.\\d+)?)/([\\d,]+(?:\\.\\d+)?)\\)");
+        "\\+([\\d,]+(?:\\.\\d+)?)\\s+(Farming|Mining|Combat|Foraging|Fishing|Enchanting|Alchemy|Taming|Carpentry|Runecrafting|Social)(?:\\s+(\\d+))?\\s*\\(([\\d,]+(?:\\.\\d+)?)/([\\d,]+(?:\\.\\d+)?)\\)");
 
     private record XpEntry(long timeMs, long xp) {}
     private static final Deque<XpEntry> window = new ArrayDeque<>();
@@ -76,8 +84,9 @@ public class SkillTracker {
             if (!m.find()) return;
 
             String sk   = m.group(2);
-            long a      = parseNum(m.group(3));
-            long b      = parseNum(m.group(4));
+            String lvlGroup = m.group(3);                    // explicit level when shown (newer SkyBlock fmt)
+            long a      = parseNum(m.group(4));
+            long b      = parseNum(m.group(5));
             long now    = System.currentTimeMillis();
 
             // Switching skills resets the session.
@@ -101,7 +110,12 @@ public class SkillTracker {
 
             curXp = a;
             neededXp = b;
-            level = levelForNeeded(b);
+            // Prefer the explicit level from the action bar (covers overflow levels past the table).
+            if (lvlGroup != null) {
+                try { level = Integer.parseInt(lvlGroup); } catch (NumberFormatException e) { level = levelForNeeded(b); }
+            } else {
+                level = levelForNeeded(b);
+            }
             primed = true;
 
             if (sessionStartMs == 0) sessionStartMs = now;
@@ -135,18 +149,44 @@ public class SkillTracker {
         catch (NumberFormatException e) { return 0; }
     }
 
-    /** Finds the level whose to-next-level requirement equals `needed`, or -1 (overflow/unknown). */
+    /** Finds the completed level whose to-next-level requirement equals `needed`, or -1. */
     private static int levelForNeeded(long needed) {
         for (int l = 0; l < CUM.length - 1; l++) {
             if (CUM[l + 1] - CUM[l] == needed) return l;
         }
+        // Overflow brackets past level 60.
+        int level = CUM.length - 1;
+        long slope = OVERFLOW_SLOPE, xpForCurr = OVERFLOW_BASE;
+        while (xpForCurr <= needed && level < 1000) {
+            if (xpForCurr == needed) return level;
+            level++;
+            xpForCurr += slope;
+            if (level % 10 == 0) slope *= 2;
+        }
         return -1;
     }
 
-    /** Maps a cumulative total XP to its level (0..60). */
-    private static int levelFromCumulative(long total) {
-        for (int l = CUM.length - 1; l >= 0; l--) if (total >= CUM[l]) return l;
-        return 0;
+    /**
+     * Resolves a cumulative total XP into {completed level, XP into level, XP needed for level},
+     * extending past the standard table with overflow levels.
+     */
+    private static long[] resolveCumulative(long total) {
+        if (total < MAX_CUM) {
+            int l = 0;
+            for (int i = CUM.length - 1; i >= 0; i--) if (total >= CUM[i]) { l = i; break; }
+            if (l >= CUM.length - 1) l = CUM.length - 2;
+            return new long[] { l, total - CUM[l], CUM[l + 1] - CUM[l] };
+        }
+        int level = CUM.length - 1;
+        long xpCurrent = total - MAX_CUM;
+        long slope = OVERFLOW_SLOPE, xpForCurr = OVERFLOW_BASE;
+        while (xpCurrent > xpForCurr) {
+            level++;
+            xpCurrent -= xpForCurr;
+            xpForCurr += slope;
+            if (level % 10 == 0) slope *= 2;
+        }
+        return new long[] { level, xpCurrent, xpForCurr };
     }
 
     private static long getXpPerHour() {
@@ -171,19 +211,17 @@ public class SkillTracker {
         int lvl; double pct; long remaining; String maxTag = "";
         if (neededXp > 0) {
             // Within-level form: (currentLevelXp / levelTotal)
-            lvl = levelForNeeded(neededXp);
+            // Prefer the explicit level captured from the action bar; falls back to table lookup.
+            lvl = (level >= 0) ? level : levelForNeeded(neededXp);
             pct = curXp * 100.0 / neededXp;
             remaining = Math.max(0, neededXp - curXp);
         } else {
-            // Cumulative form: action bar shows (totalXp / 0) — derive from the XP table.
-            lvl = levelFromCumulative(curXp);
-            if (lvl >= 0 && lvl < CUM.length - 1) {
-                long base = CUM[lvl], next = CUM[lvl + 1];
-                pct = (curXp - base) * 100.0 / (next - base);
-                remaining = next - curXp;
-            } else {
-                lvl = CUM.length - 1; pct = 100; remaining = 0; maxTag = " §6(Max)";
-            }
+            // Cumulative form: action bar shows (totalXp / 0) — derive from the XP table (with overflow).
+            long[] r = resolveCumulative(curXp);
+            lvl = (int) r[0];
+            long into = r[1], need = r[2];
+            pct = need > 0 ? into * 100.0 / need : 100;
+            remaining = Math.max(0, need - into);
         }
         String lvlStr = lvl >= 0 ? String.valueOf(lvl) : "?";
         long xphr = getXpPerHour();

@@ -71,6 +71,10 @@ public class TrophyFrogTracker {
     private static String lastMsg = "";
     private static long lastMsgMs = 0;
 
+    /** Read-only snapshot for the compact tab (name → [bronze, silver, gold, diamond]). */
+    public static Map<String, int[]> snapshot() { return new LinkedHashMap<>(data); }
+    public static boolean atoll() { return inAtoll(); }
+
     public static void init() {
         load();
         FishHudEditor.register("Trophy Frogs",
@@ -95,7 +99,7 @@ public class TrophyFrogTracker {
         Screen scr = mc.currentScreen;
         if (!(scr instanceof HandledScreen<?> hs)
                 || !(hs.getScreenHandler() instanceof GenericContainerScreenHandler handler)
-                || !scr.getTitle().getString().replaceAll("§.", "").toLowerCase().contains("frog")) {
+                || !scr.getTitle().getString().replaceAll("§.", "").trim().equals("Trophy Frogs")) {
             lastScreen = scr; return;
         }
 

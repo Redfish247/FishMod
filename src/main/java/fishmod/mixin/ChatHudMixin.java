@@ -32,7 +32,7 @@ public class ChatHudMixin {
     private static final Pattern TO_CMD = Pattern.compile(
             "^To (?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")(?:\\s+(\\w+)(?:\\s+(\\w+))?)?\\s*$");
     private static final Pattern ALL_CMD = Pattern.compile(
-            "^(?:\\[[^\\]]+\\] )+(\\w+): [.!](" + CMD_ALT + ")(?:\\s+(\\w+)(?:\\s+(\\w+))?)?\\s*$");
+            "^(?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")(?:\\s+(\\w+)(?:\\s+(\\w+))?)?\\s*$");
 
     @Inject(method = "addMessage(Lnet/minecraft/text/Text;)V", at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Text message, CallbackInfo ci) {
@@ -47,7 +47,7 @@ public class ChatHudMixin {
             }
         }
 
-        if (tryDispatch(PARTY_CMD, plain, "pc ", null)) return;
+        if (FishSettings.chatParty && tryDispatch(PARTY_CMD, plain, "pc ", null)) return;
         if (FishSettings.chatGuild && tryDispatch(GUILD_CMD, plain, "gc ", null)) return;
         if (FishSettings.chatOfficer && tryDispatch(OFFICER_CMD, plain, "oc ", null)) return;
         if (FishSettings.chatPrivate) {
@@ -69,10 +69,10 @@ public class ChatHudMixin {
     private static final Pattern GUILD_MSG   = Pattern.compile("^(?:Guild|G) > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: (.+)$");
     private static final Pattern OFFICER_MSG = Pattern.compile("^(?:Officer|O) > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: (.+)$");
     private static final Pattern FROM_MSG    = Pattern.compile("^From (?:\\[[^\\]]+\\] )*(\\w+): (.+)$");
-    private static final Pattern ALL_MSG     = Pattern.compile("^(?:\\[[^\\]]+\\] )+(\\w+): (.+)$");
+    private static final Pattern ALL_MSG     = Pattern.compile("^(?:\\[[^\\]]+\\] )*(\\w+): (.+)$");
 
     private static final String[] MEOWS = {"meow", "mrow", "meow meow", "nya~", "mrrp", "meow :3", ":3",
-            "purr", "mew", "nyaa~", "purrr", "blep", "mlem", "meow >w<", "mrrp :3", "nya nya"};
+            "purr", "mew", "nyaa~", "purrr", "blep", "mlem", "meow >w<", "mrrp :3", "nya nya", "Mreow!"};
     private static long lastMeowAt = 0;
 
     private static void tryMeow(String plain) {
@@ -80,7 +80,7 @@ public class ChatHudMixin {
         if (mc.getNetworkHandler() == null || mc.player == null) return;
 
         String prefix = null; Matcher m;
-        if ((m = PARTY_MSG.matcher(plain)).find()) prefix = "pc ";
+        if (FishSettings.chatParty && (m = PARTY_MSG.matcher(plain)).find()) prefix = "pc ";
         else if (FishSettings.chatGuild && (m = GUILD_MSG.matcher(plain)).find()) prefix = "gc ";
         else if (FishSettings.chatOfficer && (m = OFFICER_MSG.matcher(plain)).find()) prefix = "oc ";
         else if (FishSettings.chatPrivate && (m = FROM_MSG.matcher(plain)).find()) prefix = "msg " + m.group(1) + " ";

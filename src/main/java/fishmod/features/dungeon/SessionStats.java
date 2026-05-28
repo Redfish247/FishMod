@@ -198,7 +198,9 @@ public class SessionStats {
     public static String formatDuration() {
         if (sessionStartMs < 0) return "—";
         long ref = (paused && pauseStartedMs > 0) ? pauseStartedMs : System.currentTimeMillis();
-        return formatTime(ref - sessionStartMs);
+        // Defensive clamp: if Mort start fires while manually paused, sessionStartMs can be set
+        // newer than pauseStartedMs, producing a transient negative duration. Show 0s instead.
+        return formatTime(Math.max(0, ref - sessionStartMs));
     }
 
     public static void reset() {
@@ -272,7 +274,7 @@ public class SessionStats {
         double rhr = runsPerHour();
         long ref = (paused && pauseStartedMs > 0) ? pauseStartedMs : System.currentTimeMillis();
         String timeStr = sessionStartMs > 0
-                ? formatTime(ref - sessionStartMs)
+                ? formatTime(Math.max(0, ref - sessionStartMs))
                 : "—";
         return new String[] {
             "§7Runs: §a"    + runs + (paused ? " §e§l(PAUSED)" : ""),
