@@ -60,6 +60,14 @@ repositories {
 	repositories {
 		maven { url = 'https://repo.hypixel.net/repository/Hypixel/' }
 	}
+
+	// Modrinth maven — used as a fallback for mods (MCEF, Hypixel Mod API) when the
+	// developer-local jars under C:/Users/Eli/... aren't available (e.g. CI).
+	maven {
+		name = "Modrinth"
+		url = "https://api.modrinth.com/maven"
+		content { includeGroup "maven.modrinth" }
+	}
 }
 
 dependencies {
@@ -76,11 +84,20 @@ dependencies {
 
     modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
 
-    // Dev runtime: load the real Hypixel Mod API fabric mod (maven 'mod-api' lacks the fabric mod entry)
-    modRuntimeOnly files('C:/Users/Eli/AppData/Roaming/ModrinthApp/profiles/Skyblock 1.21.8/mods/HypixelModAPI-1.0.1+build.1+mc1.21.jar')
+    // Dev runtime: prefer the local Hypixel Mod API jar (it has the fabric.mod.json that
+    // the maven 'mod-api' artifact lacks) when running on the developer machine. If absent
+    // (CI, fresh clone) we skip it — compile doesn't need it, only the dev-time runClient task.
+    def hyApiLocal = file('C:/Users/Eli/AppData/Roaming/ModrinthApp/profiles/Skyblock 1.21.8/mods/HypixelModAPI-1.0.1+build.1+mc1.21.jar')
+    if (hyApiLocal.exists()) modRuntimeOnly files(hyApiLocal)
 
-    // MCEF — compile-only, users install at runtime from Modrinth
-    modCompileOnly files('C:/Users/Eli/AppData/Roaming/ModrinthApp/profiles/Skyblock 1.21.8/mods/mcef_fabric_2.2.0_MC_1.21.11.jar')
+    // MCEF — compile-only (users install at runtime from Modrinth). Use the local jar when
+    // present; otherwise pull from Modrinth's maven so CI can compile WikiScreen.
+    def mcefLocal = file('C:/Users/Eli/AppData/Roaming/ModrinthApp/profiles/Skyblock 1.21.8/mods/mcef_fabric_2.2.0_MC_1.21.11.jar')
+    if (mcefLocal.exists()) {
+        modCompileOnly files(mcefLocal)
+    } else {
+        modCompileOnly("maven.modrinth:mcef:mcef-fabric-2.2.0+mc1.21")
+    }
 }
 
 processResources {
