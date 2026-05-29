@@ -45,7 +45,8 @@ public class TwitchStreams {
             .build();
 
     public record Stream(String login, String displayName, String title,
-                         int viewers, String game, String profileImageUrl, String previewUrl) {
+                         int viewers, String game, String profileImageUrl, String previewUrl,
+                         String language) {
         public String url() { return "https://twitch.tv/" + login; }
     }
 
@@ -95,7 +96,7 @@ public class TwitchStreams {
                 next.add(new Stream(
                         str(s, "login"), str(s, "name"), str(s, "title"),
                         s.has("viewers") && !s.get("viewers").isJsonNull() ? s.get("viewers").getAsInt() : 0,
-                        "Minecraft", "", str(s, "preview")));
+                        "Minecraft", "", str(s, "preview"), str(s, "language")));
             }
             next.sort(Comparator.comparingInt(Stream::viewers).reversed());
             streams = next;
@@ -177,14 +178,15 @@ public class TwitchStreams {
 
     private static String searchBody(String term) {
         return "{\"query\":\"query{searchFor(userQuery:\\\"" + term + "\\\",platform:\\\"web\\\")"
-                + "{channels{edges{item{... on User{login displayName profileImageURL(width:70) "
-                + "stream{id title viewersCount previewImageURL(width:320,height:180) game{displayName}}}}}}}}\"}";
+                + "{channels{edges{item{... on User{login displayName profileImageURL(width:300) "
+                + "broadcastSettings{language} "
+                + "stream{id title viewersCount previewImageURL(width:1280,height:720) game{displayName}}}}}}}}\"}";
     }
 
     private static String directoryBody() {
         return "{\"query\":\"query{game(name:\\\"Minecraft\\\"){streams(first:100,options:{sort:VIEWER_COUNT})"
-                + "{edges{node{title viewersCount previewImageURL(width:320,height:180) game{displayName} "
-                + "broadcaster{login displayName profileImageURL(width:70)}}}}}}\"}";
+                + "{edges{node{title viewersCount previewImageURL(width:1280,height:720) game{displayName} "
+                + "broadcaster{login displayName profileImageURL(width:300) broadcastSettings{language}}}}}}}\"}";
     }
 
     private static List<Stream> parseSearch(JsonObject root) {
@@ -229,6 +231,11 @@ public class TwitchStreams {
         if (g != null && g.isJsonObject()) game = str(g.getAsJsonObject(), "displayName");
         int viewers = st.has("viewersCount") && !st.get("viewersCount").isJsonNull()
                 ? st.get("viewersCount").getAsInt() : 0;
+        String lang = "";
+        try {
+            JsonElement bs = channel.get("broadcastSettings");
+            if (bs != null && bs.isJsonObject()) lang = str(bs.getAsJsonObject(), "language");
+        } catch (Exception ignored) {}
         return new Stream(
                 str(channel, "login"),
                 str(channel, "displayName"),
@@ -236,7 +243,8 @@ public class TwitchStreams {
                 viewers,
                 game,
                 str(channel, "profileImageURL"),
-                str(st, "previewImageURL"));
+                str(st, "previewImageURL"),
+                lang);
     }
 
     private static String str(JsonObject o, String key) {

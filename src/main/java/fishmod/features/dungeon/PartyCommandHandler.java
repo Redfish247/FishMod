@@ -173,10 +173,12 @@ public class PartyCommandHandler {
             case "ping"   -> { if (FishSettings.pcPing   && isMe) sendPing(mc, responder); }
             case "ai", "allinv" -> { if (FishSettings.pcAllinvite && isMe) sendCmd(mc, "p settings allinvite"); }
             case "d"            -> { if (FishSettings.pcDisband   && isMe) sendCmd(mc, "p disband");             }
-            case "kick"     -> { if (allowPartyAction(typer, isMe) && rawArg1 != null) sendCmd(mc, "p kick " + rawArg1);     }
-            case "warp"     -> { if (allowPartyAction(typer, isMe))                    sendCmd(mc, "p warp");                }
-            case "transfer" -> { if (allowPartyAction(typer, isMe) && rawArg1 != null) sendCmd(mc, "p transfer " + rawArg1); }
-            case "promote"  -> { if (allowPartyAction(typer, isMe) && rawArg1 != null) sendCmd(mc, "p promote " + rawArg1);  }
+            // Party actions: only honor from party chat or local /command (never from DM/guild/officer/all chat,
+            // where someone saying ".warp" would otherwise make our client try `/p warp` and error out).
+            case "kick"     -> { if (partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendCmd(mc, "p kick " + rawArg1);     }
+            case "warp"     -> { if (partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe))                    sendCmd(mc, "p warp");                }
+            case "transfer" -> { if (partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendCmd(mc, "p transfer " + rawArg1); }
+            case "promote"  -> { if (partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendCmd(mc, "p promote " + rawArg1);  }
             default -> {
                 if ((cmd.matches("[fm][1-7]") || cmd.equals("e")) && FishSettings.pcJoinFloor) handleJoinInstance(cmd, mc, responder);
                 else if (cmd.matches("t[1-5]") && FishSettings.pcJoinFloor) handleKuudra(cmd, mc, responder);
@@ -202,6 +204,11 @@ public class PartyCommandHandler {
         // Light GC: drop entries older than 30s
         RECENT_RESPONSES.entrySet().removeIf(e -> now - e.getValue() > 30_000);
         return true;
+    }
+
+    /** Party actions (kick/warp/transfer/promote) only run from party chat or local /command. */
+    private static boolean partyActionAllowed(String responder, boolean isLocal) {
+        return isLocal || (responder != null && responder.startsWith("pc "));
     }
 
     private static boolean allowPartyAction(String typer, boolean isMe) {
@@ -690,6 +697,16 @@ public class PartyCommandHandler {
         sendCmd(mc, responder + "FPS: " + fps);
     }
 
+    /** Current measured server TPS (0..20), or -1 if not enough samples yet. */
+    public static double currentTps() {
+        int filled = Math.min(tickIdx, TICK_TIMES.length);
+        if (filled == 0) return -1;
+        long sum = 0;
+        for (int i = 0; i < filled; i++) sum += TICK_TIMES[i];
+        double avgMs = (double) sum / filled;
+        return Math.min(20.0, 1000.0 / avgMs);
+    }
+
     private static void sendTps(MinecraftClient mc, String responder) {
         int filled = Math.min(tickIdx, TICK_TIMES.length);
         if (filled == 0) {
@@ -706,11 +723,17 @@ public class PartyCommandHandler {
 
     private static void sendPing(MinecraftClient mc, String responder) {
         if (mc.player == null || mc.getNetworkHandler() == null) return;
-        var entry = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
-        if (entry == null) return;
-        int ping = entry.getLatency();
-        String pingStr = ping >= 0 ? ping + "ms" : "N/A";
-        sendCmd(mc, responder + "Ping: " + pingStr);
+        // Live keep-alive RTT → server-list join ping → tab latency (last resort).
+        int ping = fishmod.utils.PingTracker.latest();
+        if (ping < 0) {
+            try { var si = mc.getCurrentServerEntry(); if (si != null && si.ping > 0) ping = (int) si.ping; }
+            catch (Exception ignored) {}
+        }
+        if (ping < 0) {
+            var entry = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
+            if (entry != null) ping = entry.getLatency();
+        }
+        sendCmd(mc, responder + "Ping: " + (ping >= 0 ? ping + "ms" : "N/A"));
     }
 
 

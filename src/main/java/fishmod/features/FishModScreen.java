@@ -136,6 +136,7 @@ public class FishModScreen extends Screen {
     private Setting activeSlider = null;
     private int activeSliderX = 0;
     private Setting activeInput = null;
+    private ColorPickerSetting activePicker = null;
     private TextFieldWidget searchField;
 
     public FishModScreen() {
@@ -309,14 +310,26 @@ public class FishModScreen extends Screen {
         // ===== Chat/Misc =====
         Column misc = new Column("Chat/Misc");
         {
-            // Master toggle reflects whether a nick is active; turning it on seeds the real IGN so
-            // there's something to edit. The Name field accepts &-codes (see the key at the bottom).
-            Feature f = new Feature("Name Changer",
+            // Recolors your real username with a Start→End gradient. Custom names are no longer
+            // allowed (color only) — toggling on applies the gradient, off restores the plain IGN.
+            Feature f = new Feature("Name Color",
                     NickState::isActive,
-                    v -> { if (!v) NickState.reset(); else if (NickState.getRaw() == null) NickState.set(NickState.realName()); });
-            f.sub.add(new InputSetting("Name", "",
-                    () -> { String r = NickState.getRaw(); return r == null ? "" : r; },
-                    v -> { if (v == null || v.isEmpty()) NickState.reset(); else NickState.set(v); }));
+                    v -> { if (!v) NickState.reset(); else NickState.applyFromSettings(); });
+            f.sub.add(new LimitedInputSetting("Custom Name", "", 18,
+                    () -> FishSettings.nickCustomName,
+                    v -> { FishSettings.nickCustomName = v == null ? "" : v;
+                           if (NickState.isActive()) NickState.applyFromSettings(); }));
+            f.sub.add(new DropdownSetting<>("Color Mode", "", new String[]{"GRADIENT", "SOLID"},
+                    () -> FishSettings.nickColorMode,
+                    v -> { FishSettings.nickColorMode = v; if (NickState.isActive()) NickState.applyFromSettings(); }));
+            f.sub.add(new ColorPickerSetting("Color", "",
+                    () -> FishSettings.nickColorStart,
+                    v -> { FishSettings.nickColorStart = v; if (NickState.isActive()) NickState.applyFromSettings(); }));
+            // Second picker is only shown in Gradient mode.
+            f.sub.add(new ConditionalColorPickerSetting("End Color", "",
+                    () -> "GRADIENT".equalsIgnoreCase(FishSettings.nickColorMode),
+                    () -> FishSettings.nickColorEnd,
+                    v -> { FishSettings.nickColorEnd = v; if (NickState.isActive()) NickState.applyFromSettings(); }));
             f.sub.add(new ToggleSetting("See Others", "",
                     () -> FishSettings.remoteNicksEnabled, v -> FishSettings.remoteNicksEnabled = v));
             misc.features.add(f);
@@ -347,6 +360,13 @@ public class FishModScreen extends Screen {
         }
         misc.features.add(new Feature("Auto Meow",
                 () -> FishSettings.chatMeow, v -> FishSettings.chatMeow = v));
+        {
+            Feature f = new Feature("Compact Tab",
+                    () -> FishSettings.compactTabEnabled, v -> FishSettings.compactTabEnabled = v);
+            f.sub.add(new SliderIntSetting("Opacity %", "",
+                    () -> FishSettings.compactTabOpacity, v -> FishSettings.compactTabOpacity = v, 0, 100));
+            misc.features.add(f);
+        }
         misc.features.add(new Feature("Smart Copy Chat",
                 () -> FishSettings.smartCopyChat, v -> FishSettings.smartCopyChat = v));
         // Party Commands + Chat Channels pinned to the bottom.
@@ -380,10 +400,10 @@ public class FishModScreen extends Screen {
         }
         {
             Feature f = new Feature("Chat Channels", null, null);
+            f.sub.add(new ToggleSetting("Personal Messages", "", () -> FishSettings.chatPrivate, v -> FishSettings.chatPrivate = v));
+            f.sub.add(new ToggleSetting("Party", "", () -> FishSettings.chatParty, v -> FishSettings.chatParty = v));
             f.sub.add(new ToggleSetting("Guild", "", () -> FishSettings.chatGuild, v -> FishSettings.chatGuild = v));
-            f.sub.add(new ToggleSetting("Officer", "", () -> FishSettings.chatOfficer, v -> FishSettings.chatOfficer = v));
-            f.sub.add(new ToggleSetting("Private", "", () -> FishSettings.chatPrivate, v -> FishSettings.chatPrivate = v));
-            f.sub.add(new ToggleSetting("All Chat", "", () -> FishSettings.chatAll, v -> FishSettings.chatAll = v));
+            f.sub.add(new ToggleSetting("All", "", () -> FishSettings.chatAll, v -> FishSettings.chatAll = v));
             misc.features.add(f);
         }
         columns.add(misc);
@@ -680,11 +700,15 @@ public class FishModScreen extends Screen {
                             int sh = s.getHeight();
                             if (my >= sy && my <= sy + sh) {
                                 if (s instanceof InputSetting || s instanceof InputIntSetting
-                                        || s instanceof InputDoubleSetting || s instanceof ColorSetting) {
+                                        || s instanceof InputDoubleSetting || s instanceof ColorSetting
+                                        || s instanceof ColorPickerSetting) {
                                     activeInput = s;
                                 }
                             }
-                            if (s.onClick(mx, my, leftX, rightX, sy, btn)) return true;
+                            if (s.onClick(mx, my, leftX, rightX, sy, btn)) {
+                                if (s instanceof ColorPickerSetting cps && cps.dragMode != 0) activePicker = cps;
+                                return true;
+                            }
                             if (s instanceof SliderIntSetting || s instanceof SliderDoubleSetting) {
                                 int slx = rightX - SLIDER_W - 2;
                                 int sly = sy + (ITEM_HEIGHT - SLIDER_H) / 2;
@@ -712,12 +736,17 @@ public class FishModScreen extends Screen {
             activeSlider.onDrag((int) click.x(), activeSliderX, SLIDER_W);
             return true;
         }
+        if (activePicker != null) {
+            activePicker.updateFromMouse((int) click.x(), (int) click.y());
+            return true;
+        }
         return super.mouseDragged(click, deltaX, deltaY);
     }
 
     @Override
     public boolean mouseReleased(Click click) {
         activeSlider = null;
+        if (activePicker != null) { activePicker.dragMode = 0; activePicker = null; }
         return super.mouseReleased(click);
     }
 
@@ -756,6 +785,7 @@ public class FishModScreen extends Screen {
         if (activeInput instanceof InputIntSetting iis && iis.textField != null) { iis.textField.keyPressed(input); return true; }
         if (activeInput instanceof InputDoubleSetting ids && ids.textField != null) { ids.textField.keyPressed(input); return true; }
         if (activeInput instanceof ColorSetting cs && cs.textField != null) { cs.textField.keyPressed(input); return true; }
+        if (activeInput instanceof ColorPickerSetting cp && cp.textField != null) { cp.textField.keyPressed(input); return true; }
         if (searchFocused && searchField != null) { searchField.keyPressed(input); return true; }
         return super.keyPressed(input);
     }
@@ -768,6 +798,7 @@ public class FishModScreen extends Screen {
         if (activeInput instanceof InputIntSetting iis && iis.textField != null) { iis.textField.charTyped(input); return true; }
         if (activeInput instanceof InputDoubleSetting ids && ids.textField != null) { ids.textField.charTyped(input); return true; }
         if (activeInput instanceof ColorSetting cs && cs.textField != null) { cs.textField.charTyped(input); return true; }
+        if (activeInput instanceof ColorPickerSetting cp && cp.textField != null) { cp.textField.charTyped(input); return true; }
         if (searchFocused && searchField != null) {
             searchField.charTyped(input);
             searchText = searchField.getText();
@@ -987,6 +1018,66 @@ public class FishModScreen extends Screen {
         }
     }
 
+    /**
+     * Text input with a visible-character cap + two-line layout: label on top, "N/MAX" counter on
+     * the bottom row (so they don't overlap on narrow columns). External row-label drawing is
+     * suppressed by passing an empty name to super().
+     */
+    static class LimitedInputSetting extends InputSetting {
+        final int maxVisible;
+        final String displayLabel;
+        LimitedInputSetting(String name, String desc, int maxVisible, Supplier<String> g, Consumer<String> s) {
+            super("", desc, g, capWrapper(s, maxVisible));
+            this.maxVisible = maxVisible;
+            this.displayLabel = name;
+        }
+        static int visibleLen(String s) {
+            if (s == null) return 0;
+            return s.replaceAll("&#[0-9a-fA-F]{6}", "").replaceAll("[&§][0-9a-fk-orxA-FK-ORX]", "").length();
+        }
+        private static Consumer<String> capWrapper(Consumer<String> inner, int max) {
+            return v -> {
+                String s = v == null ? "" : v;
+                while (!s.isEmpty() && visibleLen(s) > max) s = s.substring(0, s.length() - 1);
+                inner.accept(s);
+            };
+        }
+        @Override int getHeight() { return ITEM_HEIGHT + 9; } // room for stacked label + counter
+        @Override
+        void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
+            // Label on top
+            st(ctx, tr, displayLabel, leftX + 2, sy + 1, TEXT_COLOR);
+            // Field anchored to top so it doesn't push the counter off the row
+            initField(tr);
+            int ix = rightX - INPUT_W - 2;
+            int iy = sy + 2;
+            float fs = 0.7f;
+            textField.setWidth((int) (INPUT_W / fs));
+            textField.setHeight((int) (INPUT_H / fs));
+            textField.setX(0); textField.setY(0);
+            ctx.getMatrices().pushMatrix();
+            ctx.getMatrices().translate((float) ix, (float) iy);
+            ctx.getMatrices().scale(fs, fs);
+            textField.render(ctx, mx, my, 0);
+            ctx.getMatrices().popMatrix();
+            // Counter on the bottom row
+            int len = visibleLen(getter.get());
+            String counter = len + "/" + maxVisible;
+            int color = len >= maxVisible ? 0xFFFF5555 : SUBTEXT_COLOR;
+            st(ctx, tr, counter, leftX + 2, sy + getHeight() - 9, color);
+        }
+        @Override
+        boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
+            int ix = rightX - INPUT_W - 2;
+            int iy = sy + 2;
+            if (mx >= ix && mx <= ix + INPUT_W && my >= iy && my <= iy + INPUT_H) {
+                if (textField != null) textField.setFocused(true);
+                return true;
+            }
+            return false;
+        }
+    }
+
     static class ColorSetting extends Setting {
         Supplier<Integer> getter; Consumer<Integer> setter;
         TextFieldWidget textField;
@@ -1025,6 +1116,143 @@ public class FishModScreen extends Screen {
                 return true;
             }
             return false;
+        }
+    }
+
+    /** Visual color picker: saturation/brightness square + vertical hue bar + swatch + editable hex. */
+    static class ColorPickerSetting extends Setting {
+        Supplier<Integer> getter; Consumer<Integer> setter;
+        TextFieldWidget textField;
+        float hsbH, hsbS, hsbV;          // current picker state
+        int lastColor = 0;               // detect external changes to resync
+        int dragMode = 0;                // 0 none, 1 SV square, 2 hue bar
+        // region geometry (set each render for hit-testing)
+        int sqX, sqY, sqW = 96, sqH = 46, hueX, hueY, hueW = 10, hueH = 46;
+
+        ColorPickerSetting(String name, String desc, Supplier<Integer> g, Consumer<Integer> s) {
+            super(name, desc); this.getter = g; this.setter = s;
+            syncFromColor(getter.get());
+        }
+        @Override int getHeight() { return ITEM_HEIGHT + sqH + 6; }
+
+        private void syncFromColor(int argb) {
+            float[] hsb = java.awt.Color.RGBtoHSB((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, null);
+            hsbH = hsb[0]; hsbS = hsb[1]; hsbV = hsb[2];
+            lastColor = argb;
+        }
+        private void commit() {
+            int rgb = java.awt.Color.HSBtoRGB(hsbH, hsbS, hsbV) & 0xFFFFFF;
+            int argb = 0xFF000000 | rgb;
+            lastColor = argb;
+            setter.accept(argb);
+            if (textField != null) textField.setText(String.format("%06X", rgb));
+        }
+        void initField(net.minecraft.client.font.TextRenderer tr) {
+            if (textField == null) {
+                textField = new TextFieldWidget(tr, 0, 0, 46, INPUT_H, Text.empty());
+                textField.setMaxLength(6);
+                textField.setText(String.format("%06X", getter.get() & 0xFFFFFF));
+                textField.setChangedListener(t -> {
+                    if (t.length() == 6) {
+                        try {
+                            int argb = 0xFF000000 | (int) Long.parseLong(t, 16);
+                            setter.accept(argb); syncFromColor(argb);
+                        } catch (NumberFormatException ignored) {}
+                    }
+                });
+            }
+        }
+        @Override
+        void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
+            initField(tr);
+            // External change (e.g. toggled on) → resync the picker state.
+            if (getter.get() != lastColor) { syncFromColor(getter.get()); textField.setText(String.format("%06X", getter.get() & 0xFFFFFF)); }
+
+            // Top row: label + swatch + hex field.
+            st(ctx, tr, name, leftX, sy + (ITEM_HEIGHT - 8) / 2, TEXT_COLOR);
+            int ix = rightX - 46 - 2;
+            int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
+            ctx.fill(ix - 18, iy, ix - 2, iy + INPUT_H, 0xFF000000);
+            ctx.fill(ix - 17, iy + 1, ix - 3, iy + INPUT_H - 1, getter.get());
+            textField.setX(ix); textField.setY(iy);
+            textField.render(ctx, mx, my, 0);
+
+            // SV square: per-column gradient from bright-saturated (top) to black (bottom).
+            sqX = leftX; sqY = sy + ITEM_HEIGHT + 2;
+            for (int c = 0; c < sqW; c++) {
+                float sat = (float) c / sqW;
+                int top = 0xFF000000 | (java.awt.Color.HSBtoRGB(hsbH, sat, 1f) & 0xFFFFFF);
+                ctx.fillGradient(sqX + c, sqY, sqX + c + 1, sqY + sqH, top, 0xFF000000);
+            }
+            // SV marker.
+            int msx = sqX + Math.round(hsbS * sqW);
+            int msy = sqY + Math.round((1 - hsbV) * sqH);
+            ctx.fill(msx - 2, msy - 1, msx + 2, msy, 0xFFFFFFFF);
+            ctx.fill(msx - 2, msy + 1, msx + 2, msy + 2, 0xFFFFFFFF);
+            ctx.fill(msx - 2, msy, msx - 1, msy + 1, 0xFFFFFFFF);
+            ctx.fill(msx + 1, msy, msx + 2, msy + 1, 0xFFFFFFFF);
+
+            // Vertical hue bar.
+            hueX = sqX + sqW + 6; hueY = sqY;
+            for (int r = 0; r < sqH; r++) {
+                int col = 0xFF000000 | (java.awt.Color.HSBtoRGB((float) r / sqH, 1f, 1f) & 0xFFFFFF);
+                ctx.fill(hueX, hueY + r, hueX + hueW, hueY + r + 1, col);
+            }
+            int hmy = hueY + Math.round(hsbH * sqH);
+            ctx.fill(hueX - 1, hmy - 1, hueX + hueW + 1, hmy + 1, 0xFFFFFFFF);
+        }
+        @Override
+        boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
+            int ix = rightX - 46 - 2;
+            int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
+            if (mx >= ix && mx <= ix + 46 && my >= iy && my <= iy + INPUT_H) {
+                if (textField != null) textField.setFocused(true); return true;
+            }
+            if (mx >= sqX && mx <= sqX + sqW && my >= sqY && my <= sqY + sqH) {
+                dragMode = 1; updateFromMouse(mx, my); return true;
+            }
+            if (mx >= hueX && mx <= hueX + hueW && my >= hueY && my <= hueY + hueH) {
+                dragMode = 2; updateFromMouse(mx, my); return true;
+            }
+            return false;
+        }
+        void updateFromMouse(int mx, int my) {
+            if (dragMode == 1) {
+                hsbS = MathHelper.clamp((float) (mx - sqX) / sqW, 0f, 1f);
+                hsbV = MathHelper.clamp(1f - (float) (my - sqY) / sqH, 0f, 1f);
+            } else if (dragMode == 2) {
+                hsbH = MathHelper.clamp((float) (my - hueY) / sqH, 0f, 1f);
+            }
+            commit();
+        }
+    }
+
+    /** ColorPickerSetting that collapses to zero height (invisible + non-interactive) when the
+     *  supplied predicate returns false. Used to hide the End picker while in Solid mode. */
+    static class ConditionalColorPickerSetting extends ColorPickerSetting {
+        final Supplier<Boolean> visible;
+        final String shownName;
+        ConditionalColorPickerSetting(String name, String desc, Supplier<Boolean> visible,
+                                      Supplier<Integer> g, Consumer<Integer> s) {
+            super(name, desc, g, s);
+            this.visible = visible;
+            this.shownName = name;
+        }
+        @Override int getHeight() {
+            if (!visible.get()) { this.name = ""; return 0; }
+            this.name = shownName;
+            return super.getHeight();
+        }
+        @Override
+        void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my,
+                    net.minecraft.client.font.TextRenderer tr) {
+            if (!visible.get()) return;
+            super.render(ctx, leftX, rightX, sy, mx, my, tr);
+        }
+        @Override
+        boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
+            if (!visible.get()) return false;
+            return super.onClick(mx, my, leftX, rightX, sy, btn);
         }
     }
 

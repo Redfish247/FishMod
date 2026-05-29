@@ -109,12 +109,18 @@ public class FishSettings {
 
     // Chat-channel compatibility — when on, dot-commands (.pb, .rtca, etc.) work in these
     // channels in addition to party chat, and replies go back in the same channel.
+    @ConfigValue public static boolean chatParty   = true;
     @ConfigValue public static boolean chatGuild   = true;
     @ConfigValue public static boolean chatOfficer = true;
     @ConfigValue public static boolean chatPrivate = true;
     @ConfigValue public static boolean chatAll     = false; // opt-in (false-positive risk)
     // Meow auto-responder: replies "meow" when anyone says meow in an enabled chat.
     @ConfigValue public static boolean chatMeow    = true;
+
+    // Compact custom tab list (replaces vanilla player list while tab is held). Opt-in.
+    @ConfigValue public static boolean compactTabEnabled = false;
+    /** Panel opacity percentage (0 = fully transparent, 100 = solid). Default 70%. */
+    @ConfigValue public static int     compactTabOpacity = 70;
 
     // Party command toggles
     @ConfigValue public static boolean pcAllinvite  = true;
@@ -165,6 +171,14 @@ public class FishSettings {
 
     // Show other mod users' cosmetic nicks (your own always shows locally)
     @ConfigValue public static boolean remoteNicksEnabled = true;
+
+    // Name color: gradient applied to your real username
+    @ConfigValue public static int nickColorStart = 0xFFFF5555; // red
+    @ConfigValue public static int nickColorEnd   = 0xFF5555FF; // blue
+    // Optional custom nick text (up to 18 visible chars, & color codes ok). Empty = use real IGN.
+    @ConfigValue public static String nickCustomName = "";
+    // Color application mode for the nick (custom name or IGN). "GRADIENT" = Start→End across letters; "SOLID" = single Start color.
+    @ConfigValue public static String nickColorMode = "GRADIENT";
 
     // Your own above-head nametag (with [level] + emblem)
     @ConfigValue public static boolean nickPreviewEnabled = false;
@@ -237,6 +251,16 @@ public class FishSettings {
     @ConfigValue public static int     simonSaysHudY       = 360;
     @ConfigValue public static double  simonSaysHudScale   = 1.0;
 
+    // Daily/Weekly/Monthly Challenges
+    @ConfigValue public static boolean challengesEnabled            = false;
+    @ConfigValue public static boolean challengeHudEnabled          = true;
+    @ConfigValue public static int     challengeHudX                = 10;
+    @ConfigValue public static int     challengeHudY                = 400;
+    @ConfigValue public static double  challengeHudScale            = 1.0;
+    @ConfigValue public static int     challengeAfkMinutes          = 3;
+    @ConfigValue public static boolean challengeLeaderboardEnabled  = true;
+    /** Optional override for the /challenges/* worker base URL. Empty = default proxy. */
+    @ConfigValue public static String  challengeWorkerOverride      = "";
 
 
 }

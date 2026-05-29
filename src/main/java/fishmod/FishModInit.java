@@ -101,6 +101,9 @@ public class FishModInit implements ModInitializer {
         fishmod.cosmetic.RemoteNicks.init();
 
         // Always init FishMod-exclusive classes (always load from FishMod's jar)
+        fishmod.features.ItemCustomizer.init();
+        fishmod.features.WelcomeMessage.init();
+        fishmod.utils.PingRefresher.init();
         LagTracker.init();
 SessionStats.init();
         FishPuzzleDisplay.init();
@@ -156,6 +159,11 @@ SessionStats.init();
         // Always register /fm and /fmdbg regardless of whether blade is loaded
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
             dispatcher.register(ClientCommandManager.literal("fm")
+                .then(ClientCommandManager.literal("customize").executes(context -> {
+                    MinecraftClient.getInstance().send(() ->
+                        MinecraftClient.getInstance().setScreen(new fishmod.features.ItemCustomizeScreen()));
+                    return Constants.SUCCESS;
+                }))
                 .executes(context -> {
                     MinecraftClient.getInstance().send(() ->
                         MinecraftClient.getInstance().setScreen(new fishmod.features.FishModScreen()));
@@ -169,6 +177,125 @@ SessionStats.init();
                     return Constants.SUCCESS;
                 })
             );
+            dispatcher.register(ClientCommandManager.literal("fmnicktest")
+                .executes(ctx -> {
+                    if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
+                    MinecraftClient mc = MinecraftClient.getInstance();
+                    if (mc.player == null || mc.getNetworkHandler() == null) {
+                        Misc.addChatMessage(Text.literal("§cNot in a world."));
+                        return Constants.SUCCESS;
+                    }
+                    boolean remoteOn = fishmod.utils.config.values.FishSettings.remoteNicksEnabled;
+                    Misc.addChatMessage(Text.literal("§b[fmnicktest] §7See Others: §f" + remoteOn
+                            + " §8|§7 own nick active: §f" + fishmod.cosmetic.NickState.isActive()
+                            + " §8|§7 raw: §f" + (fishmod.cosmetic.NickState.getRaw() == null ? "(none)" : fishmod.cosmetic.NickState.getRaw())));
+
+                    // Re-upload own nick
+                    fishmod.cosmetic.RemoteNicks.uploadOwn();
+                    Misc.addChatMessage(Text.literal("§b[fmnicktest] §7re-uploaded own nick."));
+
+                    // Force an immediate refresh so styledByName is up to date.
+                    fishmod.cosmetic.RemoteNicks.forceRefresh();
+                    Misc.addChatMessage(Text.literal("§b[fmnicktest] §7triggered RemoteNicks.refresh()…"));
+
+                    // Re-dump the cache shortly after so the async fetch finishes first.
+                    mc.send(() -> new Thread(() -> {
+                        try { Thread.sleep(1200); } catch (InterruptedException ignored) {}
+                        mc.send(() -> {
+                            var cache = fishmod.cosmetic.RemoteNicks.snapshot();
+                            Misc.addChatMessage(Text.literal("§b[fmnicktest] §7styledByName cache: §f"
+                                    + cache.size() + " §7entries"));
+                            int count = 0;
+                            for (var e : cache.entrySet()) {
+                                net.minecraft.text.MutableText line = net.minecraft.text.Text.literal("§7  " + e.getKey() + " §8→ ").copy();
+                                line.append(e.getValue());
+                                Misc.addChatMessage(line);
+                                if (++count > 10) { Misc.addChatMessage(Text.literal("§8  (…more)")); break; }
+                            }
+                            if (cache.isEmpty()) {
+                                Misc.addChatMessage(Text.literal("§c[fmnicktest] cache is empty — chat rewrite has nothing to apply. Check See Others toggle."));
+                            } else {
+                                Misc.addChatMessage(Text.literal("§a[fmnicktest] cache populated. If chat still shows IGNs, the mixin path isn't covering Hypixel's chat handler — paste a chat screenshot."));
+                            }
+                        });
+                    }, "fmnicktest-dump").start());
+                    return Constants.SUCCESS;
+                })
+            );
+            dispatcher.register(ClientCommandManager.literal("fmchping")
+                .executes(ctx -> {
+                    if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
+                    MinecraftClient mc = MinecraftClient.getInstance();
+                    Misc.addChatMessage(Text.literal("§b[fmchping] §7Pinging worker…"));
+                    fishmod.features.challenges.ChallengeApi.pingWorker((status, body) -> mc.send(() -> {
+                        if (status == 200) Misc.addChatMessage(Text.literal("§a[fmchping] §7status=§a200 §7body=§f" + body));
+                        else if (status == -1) Misc.addChatMessage(Text.literal("§c[fmchping] network error: §7" + body));
+                        else Misc.addChatMessage(Text.literal("§c[fmchping] §7status=§c" + status + " §7body=§f" + body));
+                    }));
+                    return Constants.SUCCESS;
+                })
+            );
+            dispatcher.register(ClientCommandManager.literal("fmchworker")
+                .executes(ctx -> {
+                    if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
+                    String cur = fishmod.utils.config.values.FishSettings.challengeWorkerOverride;
+                    Misc.addChatMessage(Text.literal("§b[fmchworker] §7current: §f"
+                            + (cur == null || cur.isBlank() ? "(default)" : cur)));
+                    Misc.addChatMessage(Text.literal("§7Usage: §f/fmchworker <url> §7| §f/fmchworker reset"));
+                    return Constants.SUCCESS;
+                })
+                .then(ClientCommandManager.literal("reset").executes(ctx -> {
+                    if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
+                    fishmod.utils.config.values.FishSettings.challengeWorkerOverride = "";
+                    fishmod.utils.config.FishConfig.manager.save();
+                    Misc.addChatMessage(Text.literal("§a[fmchworker] reset — using default worker."));
+                    return Constants.SUCCESS;
+                }))
+                .then(ClientCommandManager.argument("url", StringArgumentType.greedyString()).executes(ctx -> {
+                    if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
+                    String url = StringArgumentType.getString(ctx, "url").trim();
+                    fishmod.utils.config.values.FishSettings.challengeWorkerOverride = url;
+                    fishmod.utils.config.FishConfig.manager.save();
+                    Misc.addChatMessage(Text.literal("§a[fmchworker] override set: §f" + url));
+                    return Constants.SUCCESS;
+                }))
+            );
+            dispatcher.register(ClientCommandManager.literal("fmlbtest")
+                .executes(ctx -> {
+                    if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
+                    MinecraftClient mc = MinecraftClient.getInstance();
+                    if (mc.player == null) return Constants.SUCCESS;
+                    String uuid = mc.player.getUuid().toString().replace("-", "");
+                    String name = fishmod.features.challenges.ChallengeApi.displayName();
+                    Misc.addChatMessage(Text.literal("§b[lbtest] §7Submitting test score…"));
+                    fishmod.features.challenges.ChallengeApi.submitScore(
+                            uuid, name, "test-" + System.currentTimeMillis(),
+                            fishmod.features.challenges.Tier.DAILY, 1, 0,
+                            (ok, total, rank) -> mc.send(() -> {
+                                if (ok) Misc.addChatMessage(Text.literal("§a[lbtest] §7submit OK — newTotal=§a"
+                                        + total + " §7rank=§e#" + rank));
+                                else    Misc.addChatMessage(Text.literal("§c[lbtest] submit FAILED — §7"
+                                        + (fishmod.features.challenges.ChallengeApi.lastSubmitError.isEmpty()
+                                            ? "unknown" : fishmod.features.challenges.ChallengeApi.lastSubmitError)));
+                                Misc.addChatMessage(Text.literal("§b[lbtest] §7Fetching leaderboard…"));
+                                fishmod.features.challenges.ChallengeApi.fetchLeaderboard(10, entries -> mc.send(() -> {
+                                    if (entries.isEmpty()) {
+                                        Misc.addChatMessage(Text.literal("§c[lbtest] leaderboard empty (or fetch failed — likely worker endpoint not deployed)"));
+                                    } else {
+                                        Misc.addChatMessage(Text.literal("§a[lbtest] leaderboard returned §f" + entries.size() + " §7entries:"));
+                                        int i = 1;
+                                        for (var e : entries) {
+                                            Misc.addChatMessage(Text.literal("§7  #" + i++ + " §f" + e.name + " §8— §a" + e.totalPoints + " §7pts"));
+                                            if (i > 10) break;
+                                        }
+                                    }
+                                }));
+                            }));
+                    return Constants.SUCCESS;
+                })
+            );
+            // /fmchallenge is disabled — feature shelved pending redesign. Code still present
+            // in fishmod.features.challenges.* and gated by FishSettings.challengesEnabled.
             dispatcher.register(ClientCommandManager.literal("streams")
                 .executes(ctx -> {
                     MinecraftClient mc = MinecraftClient.getInstance();
@@ -234,6 +361,7 @@ SessionStats.init();
             // ─────────────────────────────────────────────────────────────────
 
             dispatcher.register(ClientCommandManager.literal("fmpet").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 MinecraftClient mc = MinecraftClient.getInstance();
                 mc.send(() -> {
                     Misc.addChatMessage(Text.literal("§b--- Pet HUD ---"));
@@ -245,18 +373,21 @@ SessionStats.init();
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmpetdump").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 PetHud.debugDumpPetLines = !PetHud.debugDumpPetLines;
                 Misc.addChatMessage(Text.literal("§b[fmpet] dump pet-related chat lines: §f" + PetHud.debugDumpPetLines));
                 return Constants.SUCCESS;
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmcddump").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 CooldownOverlay.debugDumpSound = !CooldownOverlay.debugDumpSound;
                 Misc.addChatMessage(Text.literal("§b[fmcd] dump cooldown sound events: §f" + CooldownOverlay.debugDumpSound));
                 return Constants.SUCCESS;
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmblocks").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 MinecraftClient mc = MinecraftClient.getInstance();
                 mc.send(() -> {
                     if (mc.player == null || mc.world == null) { Misc.addChatMessage(Text.literal("§cNo world")); return; }
@@ -279,27 +410,32 @@ SessionStats.init();
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmssdebug").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.features.dungeon.SimonSaysTracker.debug = !fishmod.features.dungeon.SimonSaysTracker.debug;
                 Misc.addChatMessage(Text.literal("§b[ssdbg] log Simon Says block transitions: §f" + fishmod.features.dungeon.SimonSaysTracker.debug));
                 return Constants.SUCCESS;
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmnuc").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.utils.HypixelApi.dumpNucleus(MinecraftClient.getInstance());
                 return Constants.SUCCESS;
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmgarden").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.utils.HypixelApi.dumpGarden(MinecraftClient.getInstance());
                 return Constants.SUCCESS;
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmprofile").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.utils.HypixelApi.dumpEconomy(MinecraftClient.getInstance());
                 return Constants.SUCCESS;
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmtabdump").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 MinecraftClient mc = MinecraftClient.getInstance();
                 mc.send(() -> {
                     if (mc.getNetworkHandler() == null) { Misc.addChatMessage(Text.literal("§cNo network")); return; }
@@ -320,12 +456,14 @@ SessionStats.init();
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmskilldump").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.features.SkillTracker.debugDump = !fishmod.features.SkillTracker.debugDump;
                 Misc.addChatMessage(Text.literal("§b[skill] dump raw action bar: §f" + fishmod.features.SkillTracker.debugDump));
                 return Constants.SUCCESS;
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmdbg").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 MinecraftClient mc = MinecraftClient.getInstance();
                 mc.send(() -> {
                     Misc.addChatMessage(Text.literal("§b--- FishMod Debug ---"));
@@ -489,7 +627,9 @@ SessionStats.init();
                     .then(ClientCommandManager.argument("player", StringArgumentType.word()).suggests(playerSuggest)
                         .executes(c -> runLocalLookup(name, StringArgumentType.getString(c, "player"), null))));
             }
-            for (String name : new String[]{"pb","runs","collection"}) {
+            // NOTE: no "collection" here — Hypixel already owns /collection. The party-chat
+            // ".collection" command still works via the chat handler.
+            for (String name : new String[]{"pb","runs"}) {
                 dispatcher.register(ClientCommandManager.literal(name)
                     .executes(c -> runLocalLookup(name, null, null))
                     .then(ClientCommandManager.argument("player", StringArgumentType.word()).suggests(playerSuggest)
@@ -514,6 +654,21 @@ SessionStats.init();
         // ── Cosmetic name changer: /nick <name> | /nick reset ────────────────
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
                 fishmod.cosmetic.command.NickCommand.register(dispatcher));
+
+        // ── Override OdinClient's /cata ───────────────────────────────────────
+        // Both mods register a client-side /cata; Brigadier hands the executes() to whoever
+        // registers LAST, which isn't deterministic at init. Re-register ours on each server
+        // join — that runs after every mod's init-time registration, so ours wins.
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            com.mojang.brigadier.CommandDispatcher<FabricClientCommandSource> d = ClientCommandManager.getActiveDispatcher();
+            if (d == null) return;
+            try {
+                d.register(ClientCommandManager.literal("cata")
+                    .executes(c -> runLocalLookup("cata", null, null))
+                    .then(ClientCommandManager.argument("player", StringArgumentType.word())
+                        .executes(c -> runLocalLookup("cata", StringArgumentType.getString(c, "player"), null))));
+            } catch (Exception ignored) {}
+        });
 
 
         // ── Warp Map HUD + click detection ───────────────────────────────────
@@ -540,6 +695,21 @@ SessionStats.init();
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> CroesusOverlay.renderHud(ctx, tickCounter));
         fishmod.features.TrophyFrogTracker.init();
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.TrophyFrogTracker.renderHud(ctx, tickCounter));
+
+        // ── Daily/Weekly/Monthly Challenges ──────────────────────────────────
+        fishmod.features.challenges.ChallengeManager.init();
+        fishmod.features.challenges.LeaderboardRenderer.init();
+        HudRenderCallback.EVENT.register((ctx, tickCounter) ->
+                fishmod.features.challenges.ChallengeHud.renderHud(ctx, tickCounter));
+        FishHudEditor.register("Challenges",
+                () -> fishmod.utils.config.values.FishSettings.challengeHudX,
+                v -> fishmod.utils.config.values.FishSettings.challengeHudX = v,
+                () -> fishmod.utils.config.values.FishSettings.challengeHudY,
+                v -> fishmod.utils.config.values.FishSettings.challengeHudY = v, 200, 64,
+                () -> fishmod.utils.config.values.FishSettings.challengeHudScale,
+                v -> fishmod.utils.config.values.FishSettings.challengeHudScale = v,
+                () -> fishmod.utils.config.values.FishSettings.challengesEnabled
+                        && fishmod.utils.config.values.FishSettings.challengeHudEnabled);
 
         // Tracker overlay (reset button) for HandledScreens — fires after full render chain
         ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {

@@ -19,6 +19,38 @@ public final class NickState {
         RemoteNicks.uploadOwn(); // publish so other mod users see the change
     }
 
+    /** Recolors the player's real username with a gradient over the given RGB stops. */
+    public static void setGradient(int[][] stops) {
+        String raw = GradientNick.build(realName(), stops);
+        set(raw);
+    }
+
+    /**
+     * Applies the configured nick: takes the custom name (if set) or the real IGN as the base text,
+     * strips any existing color codes, then re-colors it in the chosen mode (Solid or Gradient).
+     */
+    public static void applyFromSettings() {
+        String custom = fishmod.utils.config.values.FishSettings.nickCustomName;
+        String base = (custom != null && !custom.isEmpty()) ? custom : realName();
+        // Strip ONLY color codes (hex + 0-9/a-f/x) so the chosen palette wins. Keep format codes
+        // (&l/&o/&m/&n/&k/&r) intact — GradientNick re-emits them after every per-letter color so
+        // bold/italic etc. survive the gradient.
+        String stripped = base.replaceAll("&#[0-9a-fA-F]{6}", "").replaceAll("[&§][0-9a-fxA-FX]", "");
+        // Empty-visible check (strip format codes too, just for this test).
+        String visibleOnly = stripped.replaceAll("[&§][klmnorKLMNOR]", "");
+        if (visibleOnly.isEmpty()) { reset(); return; }
+        int[][] stops;
+        if ("SOLID".equalsIgnoreCase(fishmod.utils.config.values.FishSettings.nickColorMode)) {
+            stops = new int[][] { GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorStart) };
+        } else {
+            stops = new int[][] {
+                GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorStart),
+                GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorEnd)
+            };
+        }
+        set(GradientNick.build(stripped, stops));
+    }
+
     public static void reset() {
         nick = null;
         NickData.save(null);
