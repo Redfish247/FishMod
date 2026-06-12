@@ -44,7 +44,7 @@ public class FarmingTracker {
         "SUGAR_CANE", "ENCHANTED_SUGAR_CANE",
         "INK_SACK:3", "ENCHANTED_COCOA",
         "CACTUS", "ENCHANTED_CACTUS",
-        "NETHER_STALK", "ENCHANTED_NETHER_STALK",
+        "NETHER_STALK", "ENCHANTED_NETHER_WART",
         "MUSHROOM_COLLECTION", "RED_MUSHROOM", "ENCHANTED_RED_MUSHROOM", "BROWN_MUSHROOM", "ENCHANTED_BROWN_MUSHROOM"
     };
 
@@ -82,7 +82,8 @@ public class FarmingTracker {
         NAME_TO_ID.put("Cactus", "CACTUS");
         NAME_TO_ID.put("Enchanted Cactus", "ENCHANTED_CACTUS");
         NAME_TO_ID.put("Nether Wart", "NETHER_STALK");
-        NAME_TO_ID.put("Enchanted Nether Wart", "ENCHANTED_NETHER_STALK");
+        NAME_TO_ID.put("Enchanted Nether Wart", "ENCHANTED_NETHER_WART");
+        NAME_TO_ID.put("Mutant Nether Wart",    "MUTANT_NETHER_WART");
         NAME_TO_ID.put("Red Mushroom", "RED_MUSHROOM");
         NAME_TO_ID.put("Brown Mushroom", "BROWN_MUSHROOM");
         NAME_TO_ID.put("Enchanted Red Mushroom", "ENCHANTED_RED_MUSHROOM");
@@ -121,23 +122,42 @@ public class FarmingTracker {
     // the message pairs a raw removal ("-160 Carrot") with an enchanted addition ("+1 Enchanted Carrot").
     // The raw was already credited when it was first gained, so the enchanted addition is ignored ONLY
     // when it's explained by a matching precursor removal; an unmatched enchanted addition is real profit.
+    /** sign|id|count → expiry-ms. Hypixel echoes the same [Sacks] message across multiple
+     *  channels (system chat, action overlay, etc.); without a cross-message debounce the
+     *  same +N line is parsed and credited 2-3x per real drop, inflating profit by 3x. */
+    private static final Map<String, Long> RECENT_LINE_EXPIRY = new HashMap<>();
+    private static final long LINE_DEDUP_WINDOW_MS = 2500L;
+
     private static final long COMPACT_RATIO = 160;
     private static final Map<String, String> ENCHANT_PRECURSOR = new HashMap<>();
     static {
-        ENCHANT_PRECURSOR.put("ENCHANTED_WHEAT", "WHEAT");
-        ENCHANT_PRECURSOR.put("ENCHANTED_HAY_BLOCK", "ENCHANTED_WHEAT");
-        ENCHANT_PRECURSOR.put("ENCHANTED_CARROT", "CARROT_ITEM");
-        ENCHANT_PRECURSOR.put("ENCHANTED_POTATO", "POTATO_ITEM");
-        ENCHANT_PRECURSOR.put("ENCHANTED_BAKED_POTATO", "ENCHANTED_POTATO");
-        ENCHANT_PRECURSOR.put("ENCHANTED_PUMPKIN", "PUMPKIN");
-        ENCHANT_PRECURSOR.put("ENCHANTED_MELON", "MELON");
-        ENCHANT_PRECURSOR.put("ENCHANTED_MELON_BLOCK", "ENCHANTED_MELON");
-        ENCHANT_PRECURSOR.put("ENCHANTED_SUGAR_CANE", "SUGAR_CANE");
-        ENCHANT_PRECURSOR.put("ENCHANTED_COCOA", "INK_SACK:3");
-        ENCHANT_PRECURSOR.put("ENCHANTED_CACTUS", "CACTUS");
-        ENCHANT_PRECURSOR.put("ENCHANTED_NETHER_STALK", "NETHER_STALK");
-        ENCHANT_PRECURSOR.put("ENCHANTED_RED_MUSHROOM", "RED_MUSHROOM");
-        ENCHANT_PRECURSOR.put("ENCHANTED_BROWN_MUSHROOM", "BROWN_MUSHROOM");
+        // Each row: { base, 1x-enchanted, 2x-enchanted-or-null }.
+        // base → 1x-enchanted is 160 base; 1x → 2x is 160 1x-enchanted.
+        // null in slot 2 means no second-tier compaction exists for that crop.
+        String[][] tiers = {
+            { "WHEAT",         "ENCHANTED_WHEAT",         "ENCHANTED_HAY_BLOCK"           },
+            { "CARROT_ITEM",   "ENCHANTED_CARROT",        "ENCHANTED_GOLDEN_CARROT"       },
+            { "POTATO_ITEM",   "ENCHANTED_POTATO",        "ENCHANTED_BAKED_POTATO"        },
+            { "PUMPKIN",       "ENCHANTED_PUMPKIN",       "POLISHED_PUMPKIN"              },
+            { "MELON",         "ENCHANTED_MELON",         "ENCHANTED_MELON_BLOCK"         },
+            // Sugar Cane: 1x = Enchanted Sugar, 2x = Enchanted Sugar Cane.
+            { "SUGAR_CANE",    "ENCHANTED_SUGAR",         "ENCHANTED_SUGAR_CANE"          },
+            { "INK_SACK:3",    "ENCHANTED_COCOA",          null                           },
+            // Cactus: 1x = Enchanted Cactus Green, 2x = Enchanted Cactus.
+            { "CACTUS",        "ENCHANTED_CACTUS_GREEN",  "ENCHANTED_CACTUS"              },
+            // Internal IDs use _WART (not _STALK) for the enchanted nether-wart tiers.
+            { "NETHER_STALK",  "ENCHANTED_NETHER_WART",   "MUTANT_NETHER_WART"            },
+            { "RED_MUSHROOM",  "ENCHANTED_RED_MUSHROOM",   "ENCHANTED_RED_MUSHROOM_BLOCK"  },
+            { "BROWN_MUSHROOM","ENCHANTED_BROWN_MUSHROOM", "ENCHANTED_BROWN_MUSHROOM_BLOCK"},
+            // Garden plot drops — full 3-tier chain: base → Enchanted → Compacted.
+            { "MOONFLOWER",    "ENCHANTED_MOONFLOWER",    "COMPACTED_MOONFLOWER"          },
+            { "WILD_ROSE",     "ENCHANTED_WILD_ROSE",     "COMPACTED_WILD_ROSE"           },
+            { "SUNFLOWER",     "ENCHANTED_SUNFLOWER",     "COMPACTED_SUNFLOWER"           },
+        };
+        for (String[] row : tiers) {
+            ENCHANT_PRECURSOR.put(row[1], row[0]);                       // 1x ← base
+            if (row[2] != null) ENCHANT_PRECURSOR.put(row[2], row[1]);   // 2x ← 1x
+        }
     }
 
     private static final long WINDOW_MS = 3_600_000L;
@@ -252,6 +272,9 @@ public class FarmingTracker {
         long now = System.currentTimeMillis();
         String[] lines = hover.toString().split("\\n|\\r");
 
+        // Sweep expired dedup entries first so the map doesn't grow unbounded.
+        RECENT_LINE_EXPIRY.entrySet().removeIf(e -> e.getValue() < now);
+
         // Aggregate additions and removals per item id.
         Map<String, Long> additions = new HashMap<>();
         Map<String, Long> removals = new HashMap<>();
@@ -270,6 +293,10 @@ public class FarmingTracker {
                 if (DEBUG_FARMING) System.out.println("[FishMod/Farming] unknown item: \"" + name + "\" (count " + (neg ? -count : count) + ")");
                 continue;
             }
+            // Cross-message dedup: same sign|id|count within window → echo, skip.
+            String key = (neg ? "-|" : "+|") + id + "|" + count;
+            if (RECENT_LINE_EXPIRY.containsKey(key)) continue;
+            RECENT_LINE_EXPIRY.put(key, now + LINE_DEDUP_WINDOW_MS);
             (neg ? removals : additions).merge(id, count, Long::sum);
         }
 

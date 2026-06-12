@@ -14,6 +14,10 @@ public final class NickState {
     private NickState() {}
 
     public static void set(String name) {
+        // Censor banned words before anything is stored, displayed or uploaded. This is the single
+        // chokepoint for every nick path (gradient, solid, custom text) — the filter understands
+        // color codes, so it works even on a fully gradient-coded string.
+        if (name != null && !name.isEmpty()) name = ProfanityFilter.censor(name);
         nick = (name != null && !name.isEmpty()) ? name : null;
         NickData.save(nick);
         RemoteNicks.uploadOwn(); // publish so other mod users see the change
@@ -58,6 +62,7 @@ public final class NickState {
     }
 
     public static void applyFromDisk(String raw) {
+        if (raw != null && !raw.isEmpty()) raw = ProfanityFilter.censor(raw);
         nick = (raw != null && !raw.isEmpty()) ? raw : null;
     }
 

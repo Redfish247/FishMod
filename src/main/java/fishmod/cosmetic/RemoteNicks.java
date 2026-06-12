@@ -3,7 +3,6 @@ package fishmod.cosmetic;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import fishmod.utils.HypixelApi;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
@@ -25,7 +24,7 @@ import java.util.regex.Pattern;
  * styled nick in chat/tab/nametags — the multiplayer counterpart to the local-only {@link NickState}.
  *
  * Sources of names:
- *   1. Periodic tab-list scan every ~30s (covers everyone on your current server).
+ *   1. Periodic tab-list scan via {@link RemoteSync} (covers everyone on your current server).
  *   2. Chat-driven discovery — any IGN that appears in a chat line is resolved + fetched, so
  *      DMs and party/guild messages from off-server players also get nick-rewritten.
  */
@@ -38,7 +37,6 @@ public final class RemoteNicks {
     private static final Map<String, Long> negativeCache = new ConcurrentHashMap<>();
     /** names currently being resolved → don't re-fire. */
     private static final Set<String> inFlight = ConcurrentHashMap.newKeySet();
-    private static int tick = 0;
 
     private static final long NEGATIVE_TTL_MS = 15 * 60_000L; // 15 min
     private static final Pattern IGN_PAT = Pattern.compile("\\b([A-Za-z0-9_]{3,16})\\b");
@@ -48,16 +46,9 @@ public final class RemoteNicks {
             .connectTimeout(Duration.ofSeconds(8)).build();
 
     public static void init() {
-        ClientPlayConnectionEvents.JOIN.register((h, s, c) -> {
-            tick = 0;
-            uploadOwn();      // (re)publish our own nick on join
-            refresh();
-        });
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (++tick < 20 * 30) return; // every ~30s
-            tick = 0;
-            refresh();
-        });
+        // Polling is driven by RemoteSync (combined version-gated /sync). We only (re)publish our
+        // own nick on join here; incoming nicks arrive via acceptNicks().
+        ClientPlayConnectionEvents.JOIN.register((h, s, c) -> uploadOwn());
     }
 
     /** Publish the local player's current nick (or clear it) to the shared store. */
@@ -73,41 +64,35 @@ public final class RemoteNicks {
     public static Map<String, Text> snapshot() { return new HashMap<>(styledByName); }
 
     /** Force an immediate refresh from the tab list. */
-    public static void forceRefresh() { refresh(); }
+    public static void forceRefresh() { RemoteSync.forceSync(); }
 
-    private static void refresh() {
-        if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) {
-            styledByName.clear();
-            return;
-        }
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.getNetworkHandler() == null || mc.player == null) return;
-        String self = mc.player.getGameProfile().name();
-        Map<String, String> uuidToName = new HashMap<>();
-        for (var entry : mc.getNetworkHandler().getPlayerList()) {
-            var gp = entry.getProfile();
-            if (gp == null || gp.id() == null) continue;
-            String name = gp.name();
-            if (name == null || name.isEmpty() || name.equals(self)) continue;
-            uuidToName.put(gp.id().toString().replace("-", ""), name);
-        }
-        if (uuidToName.isEmpty()) return;
+    /** Clear all remotely-sourced nicks (called when the feature is toggled off). */
+    public static void clearAll() { styledByName.clear(); }
 
-        HypixelApi.fetchNicks(uuidToName.keySet(), nicks -> mc.execute(() -> {
-            // Merge — do NOT clear the existing cache. Entries discovered via chat for
-            // off-server players need to survive across tab-list refreshes.
-            for (var e : nicks.entrySet()) {
-                String name = uuidToName.get(e.getKey());
-                String raw = e.getValue();
-                if (name == null) continue;
-                if (raw != null && !raw.isEmpty()) {
-                    styledByName.put(name, NickState.parse(raw));
-                    negativeCache.remove(name);
-                } else {
-                    negativeCache.put(name, System.currentTimeMillis() + NEGATIVE_TTL_MS);
-                }
+    /**
+     * Apply the result of a {@link RemoteSync} poll. {@code uuidToName} is the full set of on-server
+     * players we queried; {@code nicks} holds only those with a nick currently set. Players in
+     * {@code uuidToName} but absent from {@code nicks} have no (or a just-cleared) nick, so we drop
+     * any stale styled entry for them. Off-server entries discovered via chat are NOT touched.
+     */
+    public static void acceptNicks(Map<String, String> uuidToName, Map<String, String> nicks) {
+        if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) { styledByName.clear(); return; }
+        long now = System.currentTimeMillis();
+        boolean newlyResolved = false;
+        for (var e : uuidToName.entrySet()) {
+            String name = e.getValue();
+            String raw = nicks.get(e.getKey());
+            if (raw != null && !raw.isEmpty()) {
+                Text prev = styledByName.put(name, NickState.parse(ProfanityFilter.censor(raw)));
+                negativeCache.remove(name);
+                if (prev == null) newlyResolved = true; // a name we showed plainly now has a nick
+            } else {
+                styledByName.remove(name);
+                negativeCache.put(name, now + NEGATIVE_TTL_MS);
             }
-        }));
+        }
+        // A newly-known nick should retroactively re-style any messages already in the chat history.
+        if (newlyResolved) ChatNickRefresher.requestRefresh();
     }
 
     /**
@@ -124,6 +109,7 @@ public final class RemoteNicks {
         while (m.find() && triggered < 4) {
             String name = m.group(1);
             if (!seenThisLine.add(name)) continue;
+            if (!hasLetter(name)) continue; // skip pure-number tokens (coords, stats) — never an IGN we care about
             if (styledByName.containsKey(name)) continue;
             Long neg = negativeCache.get(name);
             if (neg != null && neg > now) continue;
@@ -131,6 +117,11 @@ public final class RemoteNicks {
             triggered++;
             lookupAndCache(name);
         }
+    }
+
+    private static boolean hasLetter(String s) {
+        for (int i = 0; i < s.length(); i++) if (Character.isLetter(s.charAt(i))) return true;
+        return false;
     }
 
     private static void lookupAndCache(String name) {
@@ -164,8 +155,11 @@ public final class RemoteNicks {
             inFlight.remove(name);
             String raw = nicks.get(uuid);
             if (raw != null && !raw.isEmpty()) {
-                styledByName.put(name, NickState.parse(raw));
+                Text prev = styledByName.put(name, NickState.parse(ProfanityFilter.censor(raw)));
                 negativeCache.remove(name);
+                // The message that triggered this chat lookup is already in history showing the IGN;
+                // retroactively re-style it (and any earlier ones) now that the nick is known.
+                if (prev == null) ChatNickRefresher.requestRefresh();
             } else {
                 negativeCache.put(name, System.currentTimeMillis() + NEGATIVE_TTL_MS);
             }
@@ -186,6 +180,25 @@ public final class RemoteNicks {
         // be rewritten but subsequent ones will be (typical 200-500ms after the lookup completes).
         ensureKnownFromChat(text.getString());
         if (styledByName.isEmpty()) return text;
+        String s = text.getString();
+        Text out = text;
+        for (Map.Entry<String, Text> e : styledByName.entrySet()) {
+            if (s.contains(e.getKey())) {
+                out = NameRewriter.replaceName(out, e.getKey(), e.getValue());
+                s = out.getString();
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Like {@link #apply}, but only rewrites already-known nicks — it does NOT trigger new chat-driven
+     * lookups. Used by {@link ChatNickRefresher} when re-styling existing chat history, so re-scanning
+     * every line doesn't spam name→uuid lookups. Returns the same instance when nothing changed.
+     */
+    public static Text applyResolvedOnly(Text text) {
+        if (text == null) return text;
+        if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled || styledByName.isEmpty()) return text;
         String s = text.getString();
         Text out = text;
         for (Map.Entry<String, Text> e : styledByName.entrySet()) {

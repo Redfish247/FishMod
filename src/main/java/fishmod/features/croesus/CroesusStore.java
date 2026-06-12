@@ -41,7 +41,10 @@ public class CroesusStore {
 
     public static synchronized List<Entry> all() {
         ensureLoaded();
-        return entries;
+        // Return a snapshot so callers can iterate without holding the lock — fixes
+        // ConcurrentModificationException when the render thread iterates while a
+        // chat handler is parsing a new claim into entries.
+        return new ArrayList<>(entries);
     }
 
     public static synchronized void add(Entry e) {

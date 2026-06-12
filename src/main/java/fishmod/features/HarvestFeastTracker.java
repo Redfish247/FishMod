@@ -50,9 +50,25 @@ public class HarvestFeastTracker {
     private static final Pattern SACK_HOVER_LINE =
             Pattern.compile("([+-])\\s*([\\d,]+)\\s+([A-Za-z][A-Za-z ]+?)(?:\\s+\\(.*?\\))?\\s*$");
     private static final Pattern COLOR_STRIP = Pattern.compile("§.");
+    /** Rare crop drop message — fired even when the seasoning is auto-donated, so this is
+     *  the only reliable signal for Seasoning counts (sacks hover never sees them).
+     *  The "+N☀" in the message is sun XP, NOT a seasoning quantity, so we just count +1
+     *  per match (one drop event = one seasoning). */
+    private static final Pattern SEASONING_DROP =
+            Pattern.compile("RARE CROP!\\s+Seasoning\\b");
 
     private static final Map<String, Long> counts = new LinkedHashMap<>();
     private static long sessionStartMs = -1;
+
+    /** item-line signature → expiry-ms. Hypixel sometimes fires the same [Sacks] hover via
+     *  multiple sibling chat components (and occasionally separate chat messages) — without
+     *  this debounce the same drop is parsed N times. Keyed by "sign|name|count". */
+    private static final Map<String, Long> recentLineExpiry = new java.util.HashMap<>();
+    private static final long DEDUP_WINDOW_MS = 2500L;
+
+    /** Last accepted "RARE CROP! Seasoning" timestamp — used to dedupe multi-channel echoes. */
+    private static long lastSeasoningMs = 0L;
+    private static final long SEASONING_DEDUP_MS = 1500L;
 
     private static final Path SAVE_FILE = Paths.get("config/fishmod/harvest_feast_tracker.json");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -77,7 +93,25 @@ public class HarvestFeastTracker {
         Events.ON_GAME_MESSAGE.register(message -> {
             if (!FishSettings.harvestFeastEnabled) return false;
             String plain = COLOR_STRIP.matcher(message.getString()).replaceAll("");
-            if (!plain.contains("[Sacks]") && !plain.contains("Added items")) return false;
+            // Auto-donated Seasoning never hits the sacks hover — catch it here.
+            // One match = one seasoning drop, regardless of the "+N☀" sun-XP number.
+            // The same RARE CROP line is delivered through several channels (system chat,
+            // overlay, etc.) so the handler fires multiple times per drop — debounce a
+            // short window to keep one drop = one count.
+            if (SEASONING_DROP.matcher(plain).find()) {
+                long now = System.currentTimeMillis();
+                if (now - lastSeasoningMs < SEASONING_DEDUP_MS) return false;
+                lastSeasoningMs = now;
+                counts.merge("Seasoning", 1L, Long::sum);
+                if (sessionStartMs < 0) sessionStartMs = now;
+                save();
+                return false;
+            }
+            // Only parse the canonical [Sacks] chat line. Hypixel also sends an "Added items:"
+            // summary message with its own hover containing the same items — including both
+            // double/triple-counted every drop, since per-call hover-text dedup can't dedupe
+            // across separate ON_GAME_MESSAGE invocations.
+            if (!plain.contains("[Sacks]")) return false;
             parseHover(message);
             return false;
         });
@@ -88,18 +122,27 @@ public class HarvestFeastTracker {
         collectHover(root, hover, new java.util.HashSet<>());
         if (hover.length() == 0) return;
         long now = System.currentTimeMillis();
+        // Sweep expired dedup entries first so the map doesn't grow unbounded.
+        recentLineExpiry.entrySet().removeIf(e -> e.getValue() < now);
         boolean any = false;
         for (String line : hover.toString().split("\\n|\\r")) {
             String s = COLOR_STRIP.matcher(line).replaceAll("").trim();
             Matcher m = SACK_HOVER_LINE.matcher(s);
             if (!m.find()) continue;
-            int sign = m.group(1).equals("-") ? -1 : 1;
+            boolean removal = m.group(1).equals("-");
+            // Ignore removals entirely: a "-160 Cornucopia" almost always means the sack
+            // auto-compacted 160 raws (already credited as drops) into an enchanted form.
+            // Subtracting would undo a genuine drop. Compaction events therefore net to zero.
+            if (removal) continue;
             String name = m.group(3).trim();
             if (!ITEMS.containsKey(name)) continue;
             long count;
             try { count = Long.parseLong(m.group(2).replace(",", "")); } catch (NumberFormatException e) { continue; }
-            counts.merge(name, sign * count, Long::sum);
-            if (counts.get(name) < 0) counts.put(name, 0L);
+            // Skip if we've seen this exact line within the dedup window.
+            String key = "+|" + name + "|" + count;
+            if (recentLineExpiry.containsKey(key)) continue;
+            recentLineExpiry.put(key, now + DEDUP_WINDOW_MS);
+            counts.merge(name, count, Long::sum);
             any = true;
         }
         if (any) {
@@ -157,9 +200,11 @@ public class HarvestFeastTracker {
 
     private static String[] buildLines() {
         // Only show items the player has collected at least one of (compact display).
+        // Seasoning is rendered as a dedicated bottom line (always shown), so skip it here.
         java.util.List<String> lines = new java.util.ArrayList<>();
         long total = 0;
         for (Map.Entry<String, String> e : ITEMS.entrySet()) {
+            if ("Seasoning".equals(e.getKey())) continue;
             Long c = counts.get(e.getKey());
             if (c == null || c == 0) continue;
             total += c;
@@ -167,6 +212,11 @@ public class HarvestFeastTracker {
         }
         if (lines.isEmpty()) lines.add("§7No drops yet");
         else lines.add(0, "§6§lHarvest Feast §7(" + fmt(total) + ")");
+        // Dedicated Seasoning line (dark green label, gray number) — always shown so the
+        // player can see how many they've banked even before the first drop.
+        Long seasoning = counts.get("Seasoning");
+        long sc = seasoning == null ? 0 : seasoning;
+        lines.add("§2Seasoning: §7" + fmt(sc));
         return lines.toArray(new String[0]);
     }
 

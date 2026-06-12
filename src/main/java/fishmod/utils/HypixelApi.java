@@ -503,6 +503,7 @@ public class HypixelApi {
         } catch (Exception e) { callback.onData(new DungeonData()); return; }
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
             .thenAccept(resp -> {
+                if (friendlyProxyError(resp) != null) { callback.onData(new DungeonData()); return; }
                 try {
                     JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
                     if (!root.get("success").getAsBoolean()) { callback.onData(new DungeonData()); return; }
@@ -728,6 +729,11 @@ public class HypixelApi {
 
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
             .thenAccept(resp -> {
+                String friendly = friendlyProxyError(resp);
+                if (friendly != null) {
+                    mc.send(() -> Misc.addChatMessage(Text.literal(friendly)));
+                    return;
+                }
                 try {
                     JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
                     if (!root.get("success").getAsBoolean()) {
@@ -750,6 +756,25 @@ public class HypixelApi {
                 }
             })
             .exceptionally(e -> { mc.send(() -> Misc.addChatMessage(Text.literal("§cAPI request failed."))); return null; });
+    }
+
+    /**
+     * Returns a user-friendly chat message if the proxy response is not parseable JSON
+     * (rate limits, Cloudflare error pages, etc.), or null if the body looks like JSON.
+     */
+    private static String friendlyProxyError(HttpResponse<String> resp) {
+        int code = resp.statusCode();
+        String body = resp.body();
+        String trimmed = body == null ? "" : body.trim();
+        boolean looksJson = trimmed.startsWith("{") || trimmed.startsWith("[");
+        if (code >= 200 && code < 300 && looksJson) return null;
+        if (code == 429 || trimmed.contains("error code: 1015") || trimmed.contains("error code: 1027"))
+            return "§cHypixel proxy is rate-limited (429) — try again in a bit.";
+        if (code == 502 || code == 503 || code == 504)
+            return "§cHypixel proxy unreachable (" + code + ") — try again shortly.";
+        if (code >= 400) return "§cHypixel proxy error (HTTP " + code + ").";
+        if (!looksJson) return "§cHypixel proxy returned a non-JSON response (HTTP " + code + ").";
+        return null;
     }
 
     /** Dumps all top-level keys of the member object to chat — used to find which fields the proxy returns. */
@@ -1703,6 +1728,93 @@ public class HypixelApi {
                     JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
                     if (root.has("nicks") && root.get("nicks").isJsonObject())
                         for (var e : root.getAsJsonObject("nicks").entrySet())
+                            if (e.getValue() != null && !e.getValue().isJsonNull())
+                                out.put(e.getKey(), e.getValue().getAsString());
+                } catch (Exception ignored) {}
+                cb.accept(out);
+            }).exceptionally(t -> { cb.accept(java.util.Map.of()); return null; });
+        } catch (Exception e) { cb.accept(java.util.Map.of()); }
+    }
+
+    /** Result of a /sync poll: the server version, and (only when changed) the nick + item maps. */
+    public interface SyncCallback {
+        /** @param version current server version; @param nicks/items null when nothing changed. */
+        void onData(long version, Map<String, String> nicks, Map<String, String> items);
+    }
+
+    /**
+     * Combined, version-gated poll. Sends the last-seen {@code version}; the worker returns just the
+     * version (nicks/items null) when nothing has changed, or both maps filtered to {@code uuids}
+     * when it has. Replaces the separate {@link #fetchNicks}/{@link #fetchItems} polls so the mod can
+     * refresh often while reading the full tables server-side only when something actually changed.
+     */
+    public static void fetchSync(java.util.Collection<String> uuidsNoDashes, long version, SyncCallback cb) {
+        if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.onData(version, null, null); return; }
+        try {
+            String q = String.join(",", uuidsNoDashes);
+            HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(PROXY_URL + "/sync?since=" + version + "&uuids=" + q))
+                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("User-Agent", "Mozilla/5.0")
+                .timeout(Duration.ofSeconds(10))
+                .GET().build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
+                try {
+                    JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
+                    if (!root.has("success") || !root.get("success").getAsBoolean()) { cb.onData(version, null, null); return; }
+                    long ver = root.has("version") ? root.get("version").getAsLong() : version;
+                    if (!root.has("changed") || !root.get("changed").getAsBoolean()) { cb.onData(ver, null, null); return; }
+                    cb.onData(ver, parseStringMap(root, "nicks"), parseStringMap(root, "items"));
+                } catch (Exception ignored) { cb.onData(version, null, null); }
+            }).exceptionally(t -> { cb.onData(version, null, null); return null; });
+        } catch (Exception e) { cb.onData(version, null, null); }
+    }
+
+    private static Map<String, String> parseStringMap(JsonObject root, String key) {
+        Map<String, String> out = new HashMap<>();
+        if (root.has(key) && root.get(key).isJsonObject())
+            for (var e : root.getAsJsonObject(key).entrySet())
+                if (e.getValue() != null && !e.getValue().isJsonNull())
+                    out.put(e.getKey(), e.getValue().getAsString());
+        return out;
+    }
+
+    /** Uploads the local player's item customizations (JSON array; empty array clears them). */
+    public static void uploadItems(String uuidNoDashes, String itemsJson) {
+        try {
+            JsonObject o = new JsonObject();
+            o.addProperty("uuid", uuidNoDashes);
+            o.addProperty("items", itemsJson == null ? "" : itemsJson);
+            HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(PROXY_URL + "/items"))
+                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("Content-Type", "application/json")
+                .header("User-Agent", "Mozilla/5.0")
+                .timeout(Duration.ofSeconds(10))
+                .POST(HttpRequest.BodyPublishers.ofString(o.toString()))
+                .build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception ignored) {}
+    }
+
+    /** Batch-fetches item customizations for the given UUIDs → map of uuid(no dashes) → JSON payload. */
+    public static void fetchItems(java.util.Collection<String> uuidsNoDashes,
+                                  java.util.function.Consumer<Map<String, String>> cb) {
+        if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.accept(java.util.Map.of()); return; }
+        try {
+            String q = String.join(",", uuidsNoDashes);
+            HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(PROXY_URL + "/items?uuids=" + q))
+                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("User-Agent", "Mozilla/5.0")
+                .timeout(Duration.ofSeconds(10))
+                .GET().build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
+                Map<String, String> out = new HashMap<>();
+                try {
+                    JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
+                    if (root.has("items") && root.get("items").isJsonObject())
+                        for (var e : root.getAsJsonObject("items").entrySet())
                             if (e.getValue() != null && !e.getValue().isJsonNull())
                                 out.put(e.getKey(), e.getValue().getAsString());
                 } catch (Exception ignored) {}

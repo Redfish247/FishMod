@@ -9,13 +9,13 @@ import config.practical.manager.ConfigValue;
 public class FishSettings {
 
     @ConfigValue
-    public static boolean sendLagToParty = true;
+    public static boolean sendLagToParty = false;
 
     @ConfigValue
-    public static boolean showPuzzles = true;
+    public static boolean showPuzzles = false;
 
     @ConfigValue
-    public static boolean deathMessageEnabled = true;
+    public static boolean deathMessageEnabled = false;
 
     @ConfigValue
     public static String deathMessageTemplate = "{name} died like a bum";
@@ -28,10 +28,10 @@ public class FishSettings {
     public static int rtcaClassXpPerRun = 403000;
     @ConfigValue public static int rtcCataXpPerRun  = 490000;
     /** Hypixel's first-5-runs-of-the-day daily bonus (+40% XP). Toggle off after you've used them. */
-    @ConfigValue public static boolean rtcaIncludeDailyBonus = true;
+    @ConfigValue public static boolean rtcaIncludeDailyBonus = false;
 
     @ConfigValue
-    public static boolean warpMapHudEnabled = true;
+    public static boolean warpMapHudEnabled = false;
 
     @ConfigValue
     public static int warpMapDotColor = 0xFFDB3737;
@@ -41,9 +41,9 @@ public class FishSettings {
     @ConfigValue public static int     splitsHudY               = 10;
 
     // Soulflow HUD
-    @ConfigValue public static boolean soulflowHudEnabled      = true;
+    @ConfigValue public static boolean soulflowHudEnabled      = false;
     @ConfigValue public static int     soulflowWarningThreshold = 1000;
-    @ConfigValue public static boolean soulflowMissingNotifier  = true;
+    @ConfigValue public static boolean soulflowMissingNotifier  = false;
     @ConfigValue public static int     soulflowHudX             = 10;
     @ConfigValue public static int     soulflowHudY             = 60;
     @ConfigValue public static int     soulflowHudColor         = 0xFF55FFFF; // Aqua §b
@@ -62,12 +62,12 @@ public class FishSettings {
     /** Booster cookie active (+20% skill XP, which becomes +20% pet XP for matching pets). */
     @ConfigValue public static boolean petXpBoosterCookie = false;
     /** When true, the four pet XP multipliers above are auto-detected from the Hypixel API every ~60s. */
-    @ConfigValue public static boolean petXpAutoDetect    = true;
+    @ConfigValue public static boolean petXpAutoDetect    = false;
 
     // Pet HUD
     @ConfigValue public static boolean petHudEnabled    = false;
-    @ConfigValue public static boolean petHudShowLevel  = true;
-    @ConfigValue public static boolean petHudFadeIdle   = true;
+    @ConfigValue public static boolean petHudShowLevel  = false;
+    @ConfigValue public static boolean petHudFadeIdle   = false;
     @ConfigValue public static int     petHudFadeMs     = 5000;
     @ConfigValue public static int     petHudX          = 10;
     @ConfigValue public static int     petHudY          = 80;
@@ -75,7 +75,7 @@ public class FishSettings {
 
     // Cooldown overlay (per-item ability cooldowns drawn on hotbar / inventory slots)
     @ConfigValue public static boolean cooldownOverlayEnabled = false;
-    @ConfigValue public static boolean cooldownShowText       = true;
+    @ConfigValue public static boolean cooldownShowText       = false;
     @ConfigValue public static boolean cooldownShowBar        = false;
     @ConfigValue public static boolean cooldownOnlyUnder3s    = false;
 
@@ -84,8 +84,8 @@ public class FishSettings {
     @ConfigValue public static String  bridgeBotName    = "";
 
     // Slayer XP tracker
-    @ConfigValue public static boolean fireFreezeTimerEnabled = true;
-    @ConfigValue public static boolean skillTrackerEnabled = true;
+    @ConfigValue public static boolean fireFreezeTimerEnabled = false;
+    @ConfigValue public static boolean skillTrackerEnabled = false;
     @ConfigValue public static int     skillTrackerHudX    = 10;
     @ConfigValue public static int     skillTrackerHudY    = 360;
     @ConfigValue public static double  skillTrackerScale   = 1.0;
@@ -100,8 +100,8 @@ public class FishSettings {
     @ConfigValue public static int     powderTrackerHudY    = 100;
 
     // Session stats HUD
-    @ConfigValue public static boolean sessionStatsEnabled      = true;
-    @ConfigValue public static boolean sessionStatsInDungeon    = true;
+    @ConfigValue public static boolean sessionStatsEnabled      = false;
+    @ConfigValue public static boolean sessionStatsInDungeon    = false;
     @ConfigValue public static boolean sessionStatsInDungeonHub = false;
     @ConfigValue public static boolean sessionStatsResetOnRelog = false;
     @ConfigValue public static int     sessionStatsHudX         = 10;
@@ -109,13 +109,13 @@ public class FishSettings {
 
     // Chat-channel compatibility — when on, dot-commands (.pb, .rtca, etc.) work in these
     // channels in addition to party chat, and replies go back in the same channel.
-    @ConfigValue public static boolean chatParty   = true;
-    @ConfigValue public static boolean chatGuild   = true;
-    @ConfigValue public static boolean chatOfficer = true;
-    @ConfigValue public static boolean chatPrivate = true;
+    @ConfigValue public static boolean chatParty   = false;
+    @ConfigValue public static boolean chatGuild   = false;
+    @ConfigValue public static boolean chatOfficer = false;
+    @ConfigValue public static boolean chatPrivate = false;
     @ConfigValue public static boolean chatAll     = false; // opt-in (false-positive risk)
     // Meow auto-responder: replies "meow" when anyone says meow in an enabled chat.
-    @ConfigValue public static boolean chatMeow    = true;
+    @ConfigValue public static boolean chatMeow    = false;
 
     // Compact custom tab list (replaces vanilla player list while tab is held). Opt-in.
     @ConfigValue public static boolean compactTabEnabled = false;
@@ -123,54 +123,57 @@ public class FishSettings {
     @ConfigValue public static int     compactTabOpacity = 70;
 
     // Party command toggles
-    @ConfigValue public static boolean pcAllinvite  = true;
-    @ConfigValue public static boolean pcPb         = true;
-    @ConfigValue public static boolean pcCata       = true;
-    @ConfigValue public static boolean pcRtca       = true;
-    @ConfigValue public static boolean pcDprofit    = true;
-    @ConfigValue public static boolean pcRtc        = true;
-    @ConfigValue public static boolean pcHelp       = true;
-    @ConfigValue public static boolean pcNw         = true;
-    @ConfigValue public static boolean pcBank       = true;
-    @ConfigValue public static boolean pcPowder     = true;
-    @ConfigValue public static boolean pcLevel      = true;
-    @ConfigValue public static boolean pcFarming    = true;
-    @ConfigValue public static boolean pcVisitor    = true;
-    @ConfigValue public static boolean pcNuc        = true;
+    @ConfigValue public static boolean pcAllinvite  = false;
+    @ConfigValue public static boolean pcPb         = false;
+    @ConfigValue public static boolean pcCata       = false;
+    @ConfigValue public static boolean pcRtca       = false;
+    @ConfigValue public static boolean pcDprofit    = false;
+    @ConfigValue public static boolean pcRtc        = false;
+    @ConfigValue public static boolean pcHelp       = false;
+    @ConfigValue public static boolean pcNw         = false;
+    @ConfigValue public static boolean pcBank       = false;
+    @ConfigValue public static boolean pcPowder     = false;
+    @ConfigValue public static boolean pcLevel      = false;
+    @ConfigValue public static boolean pcFarming    = false;
+    @ConfigValue public static boolean pcVisitor    = false;
+    @ConfigValue public static boolean pcNuc        = false;
 
     // Smart copy-chat: right-click a chat line to copy the whole message (joins wrapped lines,
     // strips ---- / ▬▬▬ dividers).
     @ConfigValue public static boolean smartCopyChat = false;
 
     // Mod chat prefix — shown as "<prefix> > <message>" on FishMod's chat output (max 10 chars).
-    @ConfigValue public static boolean modPrefixEnabled = true;
+    @ConfigValue public static boolean modPrefixEnabled = false;
     @ConfigValue public static String modPrefix = "FM";
 
     // Dungeon Score (live S+ tracker)
-    @ConfigValue public static boolean dungeonScoreEnabled = true;
+    @ConfigValue public static boolean dungeonScoreEnabled = false;
     @ConfigValue public static int     dungeonScoreHudX    = 10;
     @ConfigValue public static int     dungeonScoreHudY    = 200;
     @ConfigValue public static boolean dungeonScorePaulActive = false;
 
     // Farming coin/hr tracker
-    @ConfigValue public static boolean farmingTrackerEnabled = true;
+    @ConfigValue public static boolean farmingTrackerEnabled = false;
     @ConfigValue public static int     farmingTrackerHudX    = 10;
     @ConfigValue public static int     farmingTrackerHudY    = 240;
 
     // Harvest Feast tracker
-    @ConfigValue public static boolean harvestFeastEnabled = true;
+    @ConfigValue public static boolean harvestFeastEnabled = false;
     @ConfigValue public static int     harvestFeastHudX    = 10;
     @ConfigValue public static int     harvestFeastHudY    = 280;
     @ConfigValue public static double  harvestFeastScale   = 1.0;
 
     // Mining coin/hr tracker
-    @ConfigValue public static boolean miningTrackerEnabled = true;
+    @ConfigValue public static boolean miningTrackerEnabled = false;
     @ConfigValue public static int     miningTrackerHudX    = 10;
     @ConfigValue public static int     miningTrackerHudY    = 320;
     @ConfigValue public static double  miningTrackerScale   = 1.0;
 
     // Show other mod users' cosmetic nicks (your own always shows locally)
-    @ConfigValue public static boolean remoteNicksEnabled = true;
+    @ConfigValue public static boolean remoteNicksEnabled = false;
+
+    // Show other mod users' custom item/armor cosmetics (dye, trim, model, name, stars)
+    @ConfigValue public static boolean remoteItemsEnabled = false;
 
     // Name color: gradient applied to your real username
     @ConfigValue public static int nickColorStart = 0xFFFF5555; // red
@@ -186,7 +189,7 @@ public class FishSettings {
     @ConfigValue public static double  nickPreviewYOffset = 0.0;  // raise(+)/lower(-) the tag, blocks
 
     // Trophy Frogs tab tracker
-    @ConfigValue public static boolean trophyFrogEnabled = true;
+    @ConfigValue public static boolean trophyFrogEnabled = false;
     @ConfigValue public static int     trophyFrogHudX    = 10;
     @ConfigValue public static int     trophyFrogHudY    = 60;
     @ConfigValue public static double  trophyFrogHudScale = 1.0;
@@ -204,10 +207,10 @@ public class FishSettings {
     @ConfigValue public static PriceMode miningPriceMode       = PriceMode.INSTASELL;
     // Legacy int kept for any save-file backcompat; not used by code anymore.
     @ConfigValue public static int trackerPriceMode = 0;
-    @ConfigValue public static boolean pcCorpse = true;
+    @ConfigValue public static boolean pcCorpse = false;
 
     // Cooldown overlay extras
-    @ConfigValue public static boolean cooldownInInventory = true;
+    @ConfigValue public static boolean cooldownInInventory = false;
 
     // Per-HUD scale (1.0 = default). Adjusted via scroll wheel in HUD editor.
     @ConfigValue public static double sessionStatsScale  = 1.0;
@@ -218,15 +221,15 @@ public class FishSettings {
     @ConfigValue public static double petHudScale         = 1.0;
     @ConfigValue public static double soulflowHudScale    = 1.0;
     @ConfigValue public static double croesusOverlayScale = 1.0;
-    @ConfigValue public static boolean pcSecrets    = true;
-    @ConfigValue public static boolean pcRuns       = true;
-    @ConfigValue public static boolean pcJoinFloor  = true;
-    @ConfigValue public static boolean pcFps        = true;
-    @ConfigValue public static boolean pcTps        = true;
-    @ConfigValue public static boolean pcPing       = true;
+    @ConfigValue public static boolean pcSecrets    = false;
+    @ConfigValue public static boolean pcRuns       = false;
+    @ConfigValue public static boolean pcJoinFloor  = false;
+    @ConfigValue public static boolean pcFps        = false;
+    @ConfigValue public static boolean pcTps        = false;
+    @ConfigValue public static boolean pcPing       = false;
     @ConfigValue public static boolean pcDisband    = false;
-    @ConfigValue public static boolean pcMp         = true;
-    @ConfigValue public static boolean pcCollection = true;
+    @ConfigValue public static boolean pcMp         = false;
+    @ConfigValue public static boolean pcCollection = false;
 
     // Chat-triggered party actions (.kick / .warp / .transfer / .promote).
     // pcPartyActionsMode: "off" | "self" | "whitelist" | "everyone".
@@ -236,16 +239,16 @@ public class FishSettings {
     @ConfigValue public static String  pcPartyActionsWhitelist = "";
 
     // Croesus chest drop overlay
-    @ConfigValue public static boolean croesusOverlayEnabled     = true;
-    @ConfigValue public static boolean croesusOverlayHideInDungeon = true;
+    @ConfigValue public static boolean croesusOverlayEnabled     = false;
+    @ConfigValue public static boolean croesusOverlayHideInDungeon = false;
     @ConfigValue public static int     croesusOverlayX           = 10;
     @ConfigValue public static int     croesusOverlayY           = 160;
 
     // Simon Says (F7 Goldor) tracker
-    @ConfigValue public static boolean simonSaysEnabled    = true;
-    @ConfigValue public static boolean simonSaysHudEnabled = true;
+    @ConfigValue public static boolean simonSaysEnabled    = false;
+    @ConfigValue public static boolean simonSaysHudEnabled = false;
     @ConfigValue public static boolean simonSaysPartyChat  = false;
-    @ConfigValue public static boolean simonSaysFailEnabled = true;
+    @ConfigValue public static boolean simonSaysFailEnabled = false;
     @ConfigValue public static String  simonSaysFailMessage = "Simon Says: FAILED!";
     @ConfigValue public static int     simonSaysHudX       = 10;
     @ConfigValue public static int     simonSaysHudY       = 360;
@@ -253,12 +256,12 @@ public class FishSettings {
 
     // Daily/Weekly/Monthly Challenges
     @ConfigValue public static boolean challengesEnabled            = false;
-    @ConfigValue public static boolean challengeHudEnabled          = true;
+    @ConfigValue public static boolean challengeHudEnabled          = false;
     @ConfigValue public static int     challengeHudX                = 10;
     @ConfigValue public static int     challengeHudY                = 400;
     @ConfigValue public static double  challengeHudScale            = 1.0;
     @ConfigValue public static int     challengeAfkMinutes          = 3;
-    @ConfigValue public static boolean challengeLeaderboardEnabled  = true;
+    @ConfigValue public static boolean challengeLeaderboardEnabled  = false;
     /** Optional override for the /challenges/* worker base URL. Empty = default proxy. */
     @ConfigValue public static String  challengeWorkerOverride      = "";
 
