@@ -38,8 +38,8 @@ public final class WelcomeMessage {
         Misc.addChatMessage(Text.literal(""));
         Misc.addChatMessage(Text.literal("§8§m                                                          "));
         Misc.addChatMessage(Text.literal(""));
-        Misc.addChatMessage(Text.literal("           §7Thanks for installing §bFishMod§7!"));
-        Misc.addChatMessage(Text.literal("                §7Run §a/fm §7to open settings."));
+        Misc.addChatMessage(Text.literal("              §b§lWelcome To FishMod"));
+        Misc.addChatMessage(Text.literal("            §7Do §a§l/fm §r§7To Edit Config"));
         Misc.addChatMessage(Text.literal("    §7Bug reports » DM §bredfish2471 §7on Discord"));
         Misc.addChatMessage(Text.literal(""));
         Misc.addChatMessage(Text.literal("§8§m                                                          "));

@@ -49,6 +49,21 @@ public final class CompactTab {
     private static final Pattern COL_KEY  = Pattern.compile("^!([A-Za-z])");
     private static final Pattern SERVER_ID = Pattern.compile("\\b((?:mini|mega|m)\\d+[A-Za-z]{1,3})\\b");
 
+    /**
+     * Returns true if the current tab uses Hypixel's lobby column-major encoding
+     * (entries named "!A-…"/"!B-…"). Dungeons, Kuudra, Rift, Garden, Crimson Isle
+     * sub-servers etc. don't use this — for those we fall back to vanilla rendering
+     * via {@link #shouldRender()} so we just draw whatever Hypixel sent verbatim.
+     */
+    public static boolean shouldRender() {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc.player == null || mc.getNetworkHandler() == null) return false;
+        for (PlayerListEntry e : mc.getNetworkHandler().getPlayerList()) {
+            if (COL_KEY.matcher(nameOf(e)).find()) return true;
+        }
+        return false;
+    }
+
     public static void render(DrawContext ctx, int screenW, String tabHeader, String tabFooter) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null || mc.getNetworkHandler() == null) return;
@@ -59,16 +74,13 @@ public final class CompactTab {
         List<PlayerListEntry> all = new ArrayList<>(mc.getNetworkHandler().getPlayerList());
         all.sort((a, b) -> nameOf(a).compareToIgnoreCase(nameOf(b)));
         Map<String, List<PlayerListEntry>> grouped = new LinkedHashMap<>();
-        boolean keyed = false;
         for (PlayerListEntry e : all) {
             Matcher m = COL_KEY.matcher(nameOf(e));
-            if (m.find()) { keyed = true; grouped.computeIfAbsent(m.group(1).toUpperCase(), k -> new ArrayList<>()).add(e); }
+            if (m.find()) grouped.computeIfAbsent(m.group(1).toUpperCase(), k -> new ArrayList<>()).add(e);
         }
-        if (!keyed) {
-            int per = 20;
-            for (int i = 0; i < all.size(); i++)
-                grouped.computeIfAbsent(String.valueOf((char) ('A' + i / per)), k -> new ArrayList<>()).add(all.get(i));
-        }
+        // Non-lobby tabs (dungeons / Kuudra / Rift / Garden / etc.) have no !X- keys —
+        // caller should have routed to vanilla via shouldRender(); guard anyway.
+        if (grouped.isEmpty()) return;
 
         // ── smart sizing: trim trailing blank rows, drop empty columns, width = content ──
         List<List<PlayerListEntry>> columns = new ArrayList<>();

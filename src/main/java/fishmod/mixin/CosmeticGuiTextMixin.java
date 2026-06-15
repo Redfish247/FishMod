@@ -58,7 +58,19 @@ public abstract class CosmeticGuiTextMixin {
             if (!real.isEmpty() && out.getString().contains(real))
                 out = NameRewriter.replaceName(out, real, NickState.asComponent());
         }
-        return fishmod.cosmetic.RemoteNicks.apply(out);
+        // In a container menu (friends list, player menus, AH, etc.) discover unknown names so
+        // off-server players get nick-rewritten — those names appear nowhere else (not in tab/chat).
+        // On the bare HUD (scoreboard/tab, redrawn every frame) use the lookup-free path to avoid
+        // per-frame request spam; on-server players there are already covered by the bulk poll.
+        return fishmod$inMenu()
+            ? fishmod.cosmetic.RemoteNicks.apply(out)
+            : fishmod.cosmetic.RemoteNicks.applyResolvedOnly(out);
+    }
+
+    /** True when a server-driven container GUI (chest menu) is open — where off-server names show up. */
+    private static boolean fishmod$inMenu() {
+        return net.minecraft.client.MinecraftClient.getInstance().currentScreen
+                instanceof net.minecraft.client.gui.screen.ingame.HandledScreen;
     }
 
     private static List<Text> fishmod$swapList(List<Text> lines) {

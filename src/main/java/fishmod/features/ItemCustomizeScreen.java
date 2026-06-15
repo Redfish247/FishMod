@@ -30,11 +30,11 @@ public class ItemCustomizeScreen extends Screen {
     private static final int SLOT_BG     = 0xFF2A2D38;
     private static final int SLOT_SEL    = 0xFF55FF55;
 
-    private int panelX, panelY, panelW = 380, panelH = 340;
+    private int panelX, panelY, panelW = 380, panelH = 392;
     private int gridX, gridY, armorX, armorY;
     private int selectedIndex = 0;
     private int stars = 0;
-    private TextFieldWidget nameField, modelField, dyeField;
+    private TextFieldWidget nameField, modelField, dyeField, trimMatField, trimPatField;
 
     public ItemCustomizeScreen() { super(Text.literal("Item Customize")); }
 
@@ -84,6 +84,14 @@ public class ItemCustomizeScreen extends Screen {
         dyeField.setMaxLength(6);
         addDrawableChild(dyeField);
 
+        // Trim row: material + pattern side by side (armor only; ids like diamond / sentry)
+        trimMatField = new TextFieldWidget(this.textRenderer, fieldX, custY + 14 + 144, 120, 16, Text.literal("Trim Material"));
+        trimMatField.setMaxLength(32);
+        addDrawableChild(trimMatField);
+        trimPatField = new TextFieldWidget(this.textRenderer, fieldX + 126, custY + 14 + 144, 120, 16, Text.literal("Trim Pattern"));
+        trimPatField.setMaxLength(32);
+        addDrawableChild(trimPatField);
+
         // Bottom buttons
         int btnY = panelY + panelH - 26;
         int btnW = 70;
@@ -108,6 +116,8 @@ public class ItemCustomizeScreen extends Screen {
         nameField.setText(c != null && c.name() != null ? c.name() : "");
         modelField.setText(c != null && c.modelId() != null ? c.modelId() : "");
         dyeField.setText(c != null && c.dye() >= 0 ? String.format("%06X", c.dye() & 0xFFFFFF) : "");
+        trimMatField.setText(c != null && c.trimMat() != null ? c.trimMat() : "");
+        trimPatField.setText(c != null && c.trimPat() != null ? c.trimPat() : "");
         stars = c != null ? c.stars() : 0;
     }
 
@@ -115,12 +125,14 @@ public class ItemCustomizeScreen extends Screen {
         int dye = -1;
         String d = dyeField.getText().trim();
         if (d.length() == 6) try { dye = (int) Long.parseLong(d, 16); } catch (NumberFormatException ignored) {}
-        ItemCustomizer.set(inv().getStack(selectedIndex), nameField.getText(), modelField.getText().trim(), stars, dye);
+        ItemCustomizer.set(inv().getStack(selectedIndex), nameField.getText(), modelField.getText().trim(), stars, dye,
+                trimMatField.getText().trim(), trimPatField.getText().trim());
     }
 
     private void reset() {
-        ItemCustomizer.set(inv().getStack(selectedIndex), "", "", 0, -1);
+        ItemCustomizer.set(inv().getStack(selectedIndex), "", "", 0, -1, "", "");
         nameField.setText(""); modelField.setText(""); dyeField.setText(""); stars = 0;
+        trimMatField.setText(""); trimPatField.setText("");
     }
 
     private String idOf(ItemStack st) {
@@ -217,12 +229,16 @@ public class ItemCustomizeScreen extends Screen {
         ctx.drawTextWithShadow(this.textRenderer, "§8(hex e.g. §fFF5555§8, leather armor)",
                 panelX + 12 + 70 + 90, custY + 18 + 108, TEXT_HINT);
 
+        ctx.drawTextWithShadow(this.textRenderer, "§fTrim:",  labelX, custY + 18 + 144, TEXT_PRIM);
+        ctx.drawTextWithShadow(this.textRenderer, "§8(material + pattern, e.g. §fdiamond§8 / §fsentry§8)",
+                labelX, custY + 30 + 144, TEXT_HINT);
+
         // Live preview of name + stars
         String previewBase = nameField.getText().isEmpty() ? sel.getName().getString() : nameField.getText();
-        ctx.drawTextWithShadow(this.textRenderer, "§7Preview:", labelX, custY + 132 + 14, TEXT_HINT);
+        ctx.drawTextWithShadow(this.textRenderer, "§7Preview:", labelX, custY + 182, TEXT_HINT);
         ctx.drawTextWithShadow(this.textRenderer,
                 fishmod.cosmetic.NickState.parse(previewBase + ItemCustomizer.starSuffix(stars)),
-                labelX + 50, custY + 132 + 14, 0xFFFFFFFF);
+                labelX + 50, custY + 182, 0xFFFFFFFF);
     }
 
     @Override

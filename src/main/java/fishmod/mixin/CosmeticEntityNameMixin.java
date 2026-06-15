@@ -20,6 +20,8 @@ public abstract class CosmeticEntityNameMixin {
             if (!real.isEmpty() && out.getString().contains(real))
                 out = NameRewriter.replaceName(out, real, NickState.asComponent());
         }
-        return fishmod.cosmetic.RemoteNicks.apply(out);
+        // Render path: only re-style already-known nicks. Discovery is chat-driven (CosmeticChatMixin)
+        // so per-frame nametag draws never fire name→uuid / /nicks lookups.
+        return fishmod.cosmetic.RemoteNicks.applyResolvedOnly(out);
     }
 }

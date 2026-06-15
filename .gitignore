@@ -49,6 +49,10 @@ fishmod-worker/
 
 fishmod-hud-mockup.html
 
+# local API/profile dump used for debugging
+
+profile.json
+
 # graphify generated output
 
 graphify-out/

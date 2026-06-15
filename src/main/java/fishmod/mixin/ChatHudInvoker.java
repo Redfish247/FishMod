@@ -25,4 +25,11 @@ public interface ChatHudInvoker {
 
     @Accessor("visibleMessages")
     List<ChatHudLine.Visible> getVisibleMessages();
+
+    @Accessor("messages")
+    List<ChatHudLine> getMessages();
+
+    /** Rebuilds visibleMessages from messages (re-wraps lines); preserves scroll position. */
+    @Invoker("refresh")
+    void invokeRefresh();
 }

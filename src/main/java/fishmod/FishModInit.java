@@ -102,6 +102,10 @@ public class FishModInit implements ModInitializer {
 
         // Always init FishMod-exclusive classes (always load from FishMod's jar)
         fishmod.features.ItemCustomizer.init();
+        // Shared item cosmetics: fetch + render other mod users' custom items/armor (after ItemCustomizer.init)
+        fishmod.cosmetic.RemoteItems.init();
+        // Combined version-gated poller that drives RemoteNicks + RemoteItems (after both .init())
+        fishmod.cosmetic.RemoteSync.init();
         fishmod.features.WelcomeMessage.init();
         fishmod.utils.PingRefresher.init();
         LagTracker.init();
@@ -219,6 +223,51 @@ SessionStats.init();
                             }
                         });
                     }, "fmnicktest-dump").start());
+                    return Constants.SUCCESS;
+                })
+            );
+            dispatcher.register(ClientCommandManager.literal("fmitems")
+                .executes(ctx -> {
+                    if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
+                    MinecraftClient mc = MinecraftClient.getInstance();
+                    if (mc.player == null || mc.world == null) {
+                        Misc.addChatMessage(Text.literal("§cNot in a world."));
+                        return Constants.SUCCESS;
+                    }
+                    boolean on = fishmod.utils.config.values.FishSettings.remoteItemsEnabled;
+                    var ownKeys = fishmod.features.ItemCustomizer.debugKeys();
+                    Misc.addChatMessage(Text.literal("§b[fmitems] §7See Others' Items: §f" + on
+                            + " §8|§7 your customs: §f" + ownKeys.size()));
+                    for (String k : ownKeys) Misc.addChatMessage(Text.literal("§7  your key §8→ §f" + k));
+
+                    fishmod.features.ItemCustomizer.uploadOwn();
+                    fishmod.cosmetic.RemoteItems.forceRefresh();
+                    Misc.addChatMessage(Text.literal("§b[fmitems] §7re-uploaded own + forced sync…"));
+
+                    new Thread(() -> {
+                        try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
+                        mc.send(() -> {
+                            var loaded = fishmod.cosmetic.RemoteItems.snapshotKeys();
+                            Misc.addChatMessage(Text.literal("§b[fmitems] §7remote payloads loaded: §f"
+                                    + loaded.size() + " §7player(s)"));
+                            int shown = 0;
+                            for (net.minecraft.entity.player.PlayerEntity p : mc.world.getPlayers()) {
+                                if (p == mc.player) continue;
+                                String u = p.getUuid().toString().replace("-", "");
+                                java.util.Set<String> customs = loaded.get(u);
+                                net.minecraft.item.ItemStack held = p.getEquippedStack(net.minecraft.entity.EquipmentSlot.MAINHAND);
+                                String heldVanilla = fishmod.features.ItemCustomizer.vanillaId(held);
+                                boolean match = customs != null && heldVanilla != null && customs.contains(heldVanilla);
+                                Misc.addChatMessage(Text.literal("§7  " + p.getGameProfile().name()
+                                        + " §8| customs:§f" + (customs == null ? 0 : customs.size())
+                                        + " §8| held:§f" + heldVanilla
+                                        + " §8| match:" + (match ? "§a✔" : "§c✘")));
+                                if (++shown >= 8) { Misc.addChatMessage(Text.literal("§8  (…more)")); break; }
+                            }
+                            if (loaded.isEmpty())
+                                Misc.addChatMessage(Text.literal("§c[fmitems] no remote customs fetched — nobody nearby has uploaded (their \"See Others' Items\" may be off, or they haven't customized anything)."));
+                        });
+                    }, "fmitems-dump").start();
                     return Constants.SUCCESS;
                 })
             );
@@ -644,11 +693,28 @@ SessionStats.init();
                     .then(ClientCommandManager.argument("level", StringArgumentType.word())
                         .executes(c -> runLocalLookup("rtc", StringArgumentType.getString(c, "player"), StringArgumentType.getString(c, "level"))))));
             // No-arg commands: self metrics, party actions, and join-floor/Kuudra shortcuts.
-            for (String name : new String[]{"fps","tps","ping","dprofit","ai","allinv","d","warp",
+            for (String name : new String[]{"fps","tps","ping","dprofit","ai","allinv","d",
                     "e","f1","f2","f3","f4","f5","f6","f7","m1","m2","m3","m4","m5","m6","m7",
                     "t1","t2","t3","t4","t5"}) {
                 dispatcher.register(ClientCommandManager.literal(name).executes(c -> runLocalLookup(name, null, null)));
             }
+            // /warp — bare-form runs the local party action; with an argument, forward to
+            // Hypixel's server-side /warp <dest> so the client command doesn't shadow it
+            // with "Incorrect argument for command at position 5: warp <--[HERE]".
+            dispatcher.register(ClientCommandManager.literal("warp")
+                .executes(c -> runLocalLookup("warp", null, null))
+                .then(ClientCommandManager.argument("dest", StringArgumentType.greedyString())
+                    .executes(c -> {
+                        String dest = StringArgumentType.getString(c, "dest");
+                        MinecraftClient mc = MinecraftClient.getInstance();
+                        // Send the command packet DIRECTLY, bypassing Fabric's client command
+                        // dispatcher — otherwise it re-matches our /warp literal and infinitely
+                        // recurses into this same lambda, blowing the stack.
+                        if (mc.player != null && mc.player.networkHandler != null)
+                            mc.player.networkHandler.sendPacket(
+                                new net.minecraft.network.packet.c2s.play.CommandExecutionC2SPacket("warp " + dest));
+                        return Constants.SUCCESS;
+                    })));
         });
 
         // ── Cosmetic name changer: /nick <name> | /nick reset ────────────────

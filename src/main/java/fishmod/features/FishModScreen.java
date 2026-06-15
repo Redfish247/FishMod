@@ -334,6 +334,16 @@ public class FishModScreen extends Screen {
                     () -> FishSettings.remoteNicksEnabled, v -> FishSettings.remoteNicksEnabled = v));
             misc.features.add(f);
         }
+        // Show other mod users' custom item/armor cosmetics (dye, trim, model, name, stars) on their
+        // worn armor + held items. Your own customizations still work locally regardless of this.
+        {
+            Feature f = new Feature("See Others' Items",
+                    () -> FishSettings.remoteItemsEnabled,
+                    v -> { FishSettings.remoteItemsEnabled = v;
+                           if (v) fishmod.cosmetic.RemoteSync.forceSync();
+                           else fishmod.cosmetic.RemoteItems.clearAll(); });
+            misc.features.add(f);
+        }
         // Show your own nametag above your head (with [level] + emblem). Height adjustable; text size
         // is fixed by ImmediatelyFast so there's no scale control.
         {
