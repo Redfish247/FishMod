@@ -137,6 +137,7 @@ public class FishSettings {
     @ConfigValue public static boolean pcFarming    = false;
     @ConfigValue public static boolean pcVisitor    = false;
     @ConfigValue public static boolean pcNuc        = false;
+    @ConfigValue public static boolean pcWorm       = false; // .worm / .scatha (Worm + Scatha bestiary)
 
     // Smart copy-chat: right-click a chat line to copy the whole message (joins wrapped lines,
     // strips ---- / ▬▬▬ dividers).
@@ -174,6 +175,14 @@ public class FishSettings {
 
     // Show other mod users' custom item/armor cosmetics (dye, trim, model, name, stars)
     @ConfigValue public static boolean remoteItemsEnabled = false;
+
+    // Customizable player model size (render-only — no hitbox/attribute change). Own size shows
+    // locally when enabled; Share publishes it so other mod users render you at it (and you see theirs).
+    @ConfigValue public static boolean playerSizeEnabled = false;
+    @ConfigValue public static double  playerSizeScaleX  = 1.0;   // 0.25–5.0 width  multiplier
+    @ConfigValue public static double  playerSizeScaleY  = 1.0;   // 0.25–5.0 height multiplier
+    @ConfigValue public static double  playerSizeScaleZ  = 1.0;   // 0.25–5.0 depth  multiplier
+    @ConfigValue public static boolean playerSizeShared  = false; // publish mine + render others' sizes
 
     // Name color: gradient applied to your real username
     @ConfigValue public static int nickColorStart = 0xFFFF5555; // red
@@ -264,6 +273,9 @@ public class FishSettings {
     @ConfigValue public static boolean challengeLeaderboardEnabled  = false;
     /** Optional override for the /challenges/* worker base URL. Empty = default proxy. */
     @ConfigValue public static String  challengeWorkerOverride      = "";
+
+    // Class Colored Boots — recolor your dungeon boots (leather dye) by your detected class.
+    @ConfigValue public static boolean classColoredBootsEnabled = false;
 
 
 }

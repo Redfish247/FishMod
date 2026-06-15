@@ -168,6 +168,7 @@ public class PartyCommandHandler {
             case "level", "sblvl" -> { if (FishSettings.pcLevel && respond(cmd, typer, isLocal)) sendSkyblockLevel(mc, ign, responder); }
             case "farming" -> { if (FishSettings.pcFarming && respond(cmd, typer, isLocal)) sendFarming(mc, ign, responder); }
             case "nuc", "nucleus" -> { if (FishSettings.pcNuc && respond(cmd, typer, isLocal)) sendNucleus(mc, ign, responder); }
+            case "worm", "scatha" -> { if (FishSettings.pcWorm && respond(cmd, typer, isLocal)) sendWorm(mc, ign, responder); }
             case "fps"    -> { if (FishSettings.pcFps    && isMe) sendFps(mc, responder);  }
             case "tps"    -> { if (FishSettings.pcTps    && isMe) sendTps(mc, responder);  }
             case "ping"   -> { if (FishSettings.pcPing   && isMe) sendPing(mc, responder); }
@@ -230,6 +231,7 @@ public class PartyCommandHandler {
         if (FishSettings.pcLevel)      cmds.add("level");
         if (FishSettings.pcFarming)    cmds.add("farming");
         if (FishSettings.pcNuc)        cmds.add("nuc");
+        if (FishSettings.pcWorm)       cmds.add("worm"); // .scatha is a hidden alias
         if (FishSettings.pcBank)       cmds.add("bank");
         if (FishSettings.pcPowder)     cmds.add("powder");
         if (FishSettings.pcCorpse)     cmds.add("corpses");
@@ -369,6 +371,10 @@ public class PartyCommandHandler {
             case "nw": case "networth":
                 if (!FishSettings.pcNw || target == null) return false;
                 sendNetworth(mc, target, responder);
+                return true;
+            case "worm": case "scatha":
+                if (!FishSettings.pcWorm || target == null) return false;
+                sendWorm(mc, target, responder);
                 return true;
         }
 
@@ -685,6 +691,16 @@ public class PartyCommandHandler {
             sendCmd(mc, responder + ign + "'s Nucleus Runs: " + (runs >= 0 ? String.format("%,d", runs) : "N/A")));
     }
 
+    private static void sendWorm(MinecraftClient mc, String ign, String responder) {
+        HypixelApi.getWormStats(mc, ign, s -> {
+            if (!s.found) { sendCmd(mc, responder + ign + "'s Bestiary: N/A"); return; }
+            String tier = "Tier " + s.tier + "/" + s.maxTier
+                    + (s.nextTierKills != null ? " (" + String.format("%,d", s.total) + "/" + String.format("%,d", s.nextTierKills) + ")" : " (MAX)");
+            sendCmd(mc, responder + ign + "'s Bestiary: Worm " + String.format("%,d", s.worm)
+                    + " | Scatha " + String.format("%,d", s.scatha) + " | " + tier);
+        });
+    }
+
     private static String fmtCoins(double v) {
         if (v >= 1_000_000_000d) return String.format("%.2fB", v / 1_000_000_000d);
         if (v >= 1_000_000d)     return String.format("%.2fM", v / 1_000_000d);
@@ -723,15 +739,17 @@ public class PartyCommandHandler {
 
     private static void sendPing(MinecraftClient mc, String responder) {
         if (mc.player == null || mc.getNetworkHandler() == null) return;
-        // Live keep-alive RTT → server-list join ping → tab latency (last resort).
+        // The vanilla ping/pong round trip is the most accurate, freshest end-to-end source (the same
+        // one Odin uses). Server-measured tab latency and the server-list join ping are fallbacks only
+        // for the brief window before a live measurement is available.
         int ping = fishmod.utils.PingTracker.latest();
+        if (ping < 0) {
+            var entry = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
+            if (entry != null && entry.getLatency() > 0) ping = entry.getLatency();
+        }
         if (ping < 0) {
             try { var si = mc.getCurrentServerEntry(); if (si != null && si.ping > 0) ping = (int) si.ping; }
             catch (Exception ignored) {}
-        }
-        if (ping < 0) {
-            var entry = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
-            if (entry != null) ping = entry.getLatency();
         }
         sendCmd(mc, responder + "Ping: " + (ping >= 0 ? ping + "ms" : "N/A"));
     }

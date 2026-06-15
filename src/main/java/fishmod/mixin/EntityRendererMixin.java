@@ -34,6 +34,13 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
             }
         }
 
+        // Stash this player's custom render size on the state so PlayerEntityRendererScaleMixin can
+        // apply it inside scale(). Own size shows locally; others' only when sharing is on.
+        if (entity instanceof PlayerEntity sized) {
+            float[] sc = fishmod.cosmetic.PlayerSize.scaleFor(sized);
+            ((fishmod.cosmetic.ScaleHolder) state).fishmod$setScale(sc[0], sc[1], sc[2]);
+        }
+
         if (Visual.hideEntityFire) {
             state.onFire = false;
         } else if (entity instanceof PlayerEntity player && Visual.hideFireInf5) {

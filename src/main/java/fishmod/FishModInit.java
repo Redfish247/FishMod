@@ -104,10 +104,11 @@ public class FishModInit implements ModInitializer {
         fishmod.features.ItemCustomizer.init();
         // Shared item cosmetics: fetch + render other mod users' custom items/armor (after ItemCustomizer.init)
         fishmod.cosmetic.RemoteItems.init();
-        // Combined version-gated poller that drives RemoteNicks + RemoteItems (after both .init())
+        // Shared player sizes: publish ours on join + render other mod users' shared sizes
+        fishmod.cosmetic.PlayerSize.init();
+        // Combined version-gated poller that drives RemoteNicks + RemoteItems + RemoteScales (after .init())
         fishmod.cosmetic.RemoteSync.init();
         fishmod.features.WelcomeMessage.init();
-        fishmod.utils.PingRefresher.init();
         LagTracker.init();
 SessionStats.init();
         FishPuzzleDisplay.init();
@@ -127,6 +128,11 @@ SessionStats.init();
         CroesusTracker.init();
         CroesusOverlay.init();
         fishmod.features.dungeon.SimonSaysTracker.init();
+        // Dungeon class detection (own class from the "stats are doubled" message + tab list) and the
+        // class-colored boots feature that depends on it. Boots init AFTER ItemCustomizer.init (above)
+        // so the class color wins over per-item boot dye while enabled.
+        fishmod.utils.dungeon.DungeonClass.init();
+        fishmod.features.ClassColoredBoots.init();
 
         // Register all HUD elements in FishHudEditor (position drag editor)
         FishHudEditor.register("Splits",    Phase.splitTimer);
@@ -670,7 +676,7 @@ SessionStats.init();
             // Lookups + player-arg party actions (kick/transfer/promote take a player name).
             for (String name : new String[]{"cata","rtca","secrets","sa","totalruns","mp","nw","networth",
                     "bank","corpse","corpses","level","sblvl","farming","nuc","nucleus","powder",
-                    "kick","transfer","promote"}) {
+                    "worm","scatha","kick","transfer","promote"}) {
                 dispatcher.register(ClientCommandManager.literal(name)
                     .executes(c -> runLocalLookup(name, null, null))
                     .then(ClientCommandManager.argument("player", StringArgumentType.word()).suggests(playerSuggest)

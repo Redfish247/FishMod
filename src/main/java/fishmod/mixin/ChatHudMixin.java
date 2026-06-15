@@ -19,7 +19,7 @@ public class ChatHudMixin {
     // ── Command Parsing Logic ──────────────────────────────────────────────────
 
     private static final String CMD_ALT =
-            "rtca|rtc|cata|pb|secrets|sa|runs|totalruns|dprofit|fps|tps|ping|ai|allinv|d|mp|collection|kick|warp|transfer|promote|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|help|\\?|e|[fm][1-7]|t[1-5]";
+            "rtca|rtc|cata|pb|secrets|sa|runs|totalruns|dprofit|fps|tps|ping|ai|allinv|d|mp|collection|kick|warp|transfer|promote|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|help|\\?|e|[fm][1-7]|t[1-5]";
 
     private static final Pattern PARTY_CMD = Pattern.compile(
             "^Party > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")(?:\\s+(\\w+)(?:\\s+(\\w+))?)?\\s*$");

@@ -81,14 +81,40 @@ public class FishModScreen extends Screen {
         return (int) Math.ceil(tr.getWidth(s) * TEXT_SCALE);
     }
 
-    /** Fills a rectangle with rounded (~2px) corners. */
+    /** Filled rectangle with square corners (per request). {@code r} is ignored — retained for call sites. */
+    static void roundRect(DrawContext ctx, int x1, int y1, int x2, int y2, int r, int color) {
+        ctx.fill(x1, y1, x2, y2, color);
+    }
+
+    /** Filled rounded rectangle with the default pill radius (3px). */
     static void roundRect(DrawContext ctx, int x1, int y1, int x2, int y2, int color) {
-        if (x2 - x1 < 4 || y2 - y1 < 4) { ctx.fill(x1, y1, x2, y2, color); return; }
-        ctx.fill(x1 + 2, y1,     x2 - 2, y1 + 1, color); // top row (inset 2)
-        ctx.fill(x1 + 1, y1 + 1, x2 - 1, y1 + 2, color); // 2nd row (inset 1)
-        ctx.fill(x1,     y1 + 2, x2,     y2 - 2, color); // middle (full width)
-        ctx.fill(x1 + 1, y2 - 2, x2 - 1, y2 - 1, color); // 2nd-last row (inset 1)
-        ctx.fill(x1 + 2, y2 - 1, x2 - 2, y2,     color); // bottom row (inset 2)
+        roundRect(ctx, x1, y1, x2, y2, 3, color);
+    }
+
+    /** Full capsule: radius = half the shorter side. For toggle tracks/knobs and slider bars. */
+    static void pill(DrawContext ctx, int x1, int y1, int x2, int y2, int color) {
+        roundRect(ctx, x1, y1, x2, y2, Math.min(x2 - x1, y2 - y1) / 2, color);
+    }
+
+    /** Rounded panel: a 1px {@code border} frame around a {@code fill}, corner radius {@code r}. */
+    static void panel(DrawContext ctx, int x1, int y1, int x2, int y2, int r, int fill, int border) {
+        roundRect(ctx, x1, y1, x2, y2, r, border);
+        roundRect(ctx, x1 + 1, y1 + 1, x2 - 1, y2 - 1, Math.max(0, r - 1), fill);
+    }
+
+    /** Small chevron drawn from fills (font-independent): ▾ when {@code open}, ▸ when closed. {@code cy} is the vertical centre. */
+    static void drawChevron(DrawContext ctx, int gx, int cy, boolean open, int color) {
+        if (open) { // pointing down
+            ctx.fill(gx,     cy - 2, gx + 7, cy - 1, color);
+            ctx.fill(gx + 1, cy - 1, gx + 6, cy,     color);
+            ctx.fill(gx + 2, cy,     gx + 5, cy + 1, color);
+            ctx.fill(gx + 3, cy + 1, gx + 4, cy + 2, color);
+        } else {    // pointing right
+            ctx.fill(gx,     cy - 3, gx + 1, cy + 4, color);
+            ctx.fill(gx + 1, cy - 2, gx + 2, cy + 3, color);
+            ctx.fill(gx + 2, cy - 1, gx + 3, cy + 2, color);
+            ctx.fill(gx + 3, cy,     gx + 4, cy + 1, color);
+        }
     }
     static final int TOGGLE_ON       = ACCENT;
     static final int TOGGLE_OFF      = 0xFF2A2D38;
@@ -98,8 +124,8 @@ public class FishModScreen extends Screen {
 
     // ----- sizes -----
     static final int PADDING        = 12;
-    static final int COL_W          = 150;
-    static final int COL_GAP        = 10;
+    static final int COL_W          = 168;
+    static final int COL_GAP        = 12;
     static final int COL_HEADER_H   = 18;
     static final int PILL_H         = 20;
     static final int PILL_GAP       = 1;
@@ -157,8 +183,10 @@ public class FishModScreen extends Screen {
         {
             Feature f = new Feature("Death Message",
                     () -> FishSettings.deathMessageEnabled, v -> FishSettings.deathMessageEnabled = v);
-            f.sub.add(new InputSetting("Template", "",
-                    () -> FishSettings.deathMessageTemplate, v -> FishSettings.deathMessageTemplate = v));
+            InputSetting tmpl = new InputSetting("Template", "",
+                    () -> FishSettings.deathMessageTemplate, v -> FishSettings.deathMessageTemplate = v);
+            tmpl.hint = "{name} = player who died";
+            f.sub.add(tmpl);
             f.sub.add(new ToggleSetting("To Party", "",
                     () -> FishSettings.deathMessageToParty, v -> FishSettings.deathMessageToParty = v));
             dungeon.features.add(f);
@@ -220,6 +248,8 @@ public class FishModScreen extends Screen {
                     () -> FishSettings.simonSaysFailMessage, v -> FishSettings.simonSaysFailMessage = v));
             dungeon.features.add(f);
         }
+        dungeon.features.add(new Feature("Class Colored Boots",
+                () -> FishSettings.classColoredBootsEnabled, v -> FishSettings.classColoredBootsEnabled = v));
         columns.add(dungeon);
 
         // ===== Trackers =====
@@ -344,6 +374,13 @@ public class FishModScreen extends Screen {
                            else fishmod.cosmetic.RemoteItems.clearAll(); });
             misc.features.add(f);
         }
+        // Open the item customizer (/fm customize) from the menu — rename, re-model, dye, trim, ✪ stars.
+        {
+            Feature f = new Feature("Customize", null, null);
+            f.sub.add(new ButtonSetting("Open", "",
+                    () -> MinecraftClient.getInstance().setScreen(new fishmod.features.ItemCustomizeScreen())));
+            misc.features.add(f);
+        }
         // Show your own nametag above your head (with [level] + emblem). Height adjustable; text size
         // is fixed by ImmediatelyFast so there's no scale control.
         {
@@ -351,6 +388,32 @@ public class FishModScreen extends Screen {
                     () -> FishSettings.nickPreviewEnabled, v -> FishSettings.nickPreviewEnabled = v);
             f.sub.add(new SliderDoubleSetting("Height", "",
                     () -> FishSettings.nickPreviewYOffset, v -> FishSettings.nickPreviewYOffset = v, -1.5, 1.0));
+            misc.features.add(f);
+        }
+        // Customizable player model size (render-only — no hitbox change, safe on Hypixel). The slider
+        // sizes your own model; "Share w/ All" publishes it so other mod users render you at it (and you
+        // render theirs).
+        {
+            Feature f = new Feature("Player Size",
+                    () -> FishSettings.playerSizeEnabled,
+                    v -> { FishSettings.playerSizeEnabled = v; fishmod.cosmetic.PlayerSize.uploadOwn(); });
+            f.sub.add(new SliderDoubleSetting("Width (X)", "",
+                    () -> FishSettings.playerSizeScaleX,
+                    v -> { FishSettings.playerSizeScaleX = v; fishmod.cosmetic.PlayerSize.uploadOwn(); },
+                    fishmod.cosmetic.PlayerSize.MIN, fishmod.cosmetic.PlayerSize.MAX));
+            f.sub.add(new SliderDoubleSetting("Height (Y)", "",
+                    () -> FishSettings.playerSizeScaleY,
+                    v -> { FishSettings.playerSizeScaleY = v; fishmod.cosmetic.PlayerSize.uploadOwn(); },
+                    fishmod.cosmetic.PlayerSize.MIN, fishmod.cosmetic.PlayerSize.MAX));
+            f.sub.add(new SliderDoubleSetting("Depth (Z)", "",
+                    () -> FishSettings.playerSizeScaleZ,
+                    v -> { FishSettings.playerSizeScaleZ = v; fishmod.cosmetic.PlayerSize.uploadOwn(); },
+                    fishmod.cosmetic.PlayerSize.MIN, fishmod.cosmetic.PlayerSize.MAX));
+            f.sub.add(new ToggleSetting("Share w/ All", "",
+                    () -> FishSettings.playerSizeShared,
+                    v -> { FishSettings.playerSizeShared = v;
+                           if (v) { fishmod.cosmetic.PlayerSize.uploadOwn(); fishmod.cosmetic.RemoteSync.forceSync(); }
+                           else { fishmod.cosmetic.PlayerSize.clearOwnShare(); fishmod.cosmetic.RemoteScales.clearAll(); } }));
             misc.features.add(f);
         }
         {
@@ -404,6 +467,7 @@ public class FishModScreen extends Screen {
             f.sub.add(new ToggleSetting(".level", "", () -> FishSettings.pcLevel, v -> FishSettings.pcLevel = v));
             f.sub.add(new ToggleSetting(".farming", "", () -> FishSettings.pcFarming, v -> FishSettings.pcFarming = v));
             f.sub.add(new ToggleSetting(".nuc", "", () -> FishSettings.pcNuc, v -> FishSettings.pcNuc = v));
+            f.sub.add(new ToggleSetting(".worm / .scatha", "", () -> FishSettings.pcWorm, v -> FishSettings.pcWorm = v));
             f.sub.add(new ToggleSetting(".help / .?", "", () -> FishSettings.pcHelp, v -> FishSettings.pcHelp = v));
             f.sub.add(new ToggleSetting("Party Actions", "", () -> FishSettings.pcPartyActions, v -> FishSettings.pcPartyActions = v));
             misc.features.add(f);
@@ -465,13 +529,16 @@ public class FishModScreen extends Screen {
     private void renderColumn(DrawContext ctx, Column col, int x, int y, int mouseX, int mouseY, String filter, int colIndex) {
         float colDelay = colIndex * COL_STAGGER_MS;
 
-        // Header strip (first thing to reveal in the column)
+        // Tab header (first to reveal): a solid teal pill you click to open/close the column.
         float hr = reveal(colDelay);
         int hdy = Math.round((1f - hr) * -SLIDE_PX);
-        ctx.fill(x, y + hdy, x + COL_W, y + COL_HEADER_H + hdy, fade(COL_HEADER_BG, hr));
+        boolean headerHov = mouseX >= x && mouseX <= x + COL_W && mouseY >= y + hdy && mouseY <= y + COL_HEADER_H + hdy;
+        ctx.fill(x, y + hdy, x + COL_W, y + COL_HEADER_H + hdy, fade(headerHov ? ACCENT_HOVER : ACCENT, hr));
         ctx.fill(x, y + COL_HEADER_H - 1 + hdy, x + COL_W, y + COL_HEADER_H + hdy, fade(BORDER_COLOR, hr));
         int titleX = x + (COL_W - stw(this.textRenderer, col.name)) / 2;
         st(ctx, this.textRenderer, col.name, titleX, y + (COL_HEADER_H - 8) / 2 + hdy, fade(TEXT_COLOR, hr));
+        drawChevron(ctx, x + COL_W - 14, y + COL_HEADER_H / 2 + hdy, col.open, fade(TEXT_COLOR, hr));
+        if (!col.open) return; // collapsed → show only the tab pill
 
         int py = y + COL_HEADER_H + 3;
         int colBottom = colsBottomY();
@@ -486,40 +553,39 @@ public class FishModScreen extends Screen {
             int rdy = Math.round((1f - rr) * -SLIDE_PX);
 
             boolean on = f.hasMaster() && f.get.get();
-            boolean hov = mouseX >= x && mouseX <= x + COL_W && mouseY >= py && mouseY <= py + PILL_H;
+            boolean expanded = (f == selectedFeature && !f.sub.isEmpty());
+            boolean hov = mouseX >= x && mouseX <= x + COL_W && mouseY >= py + rdy && mouseY <= py + PILL_H + rdy;
             int bg = on ? (hov ? PILL_ON_HOVER : PILL_ON) : (hov ? PILL_OFF_HOVER : PILL_OFF);
-            roundRect(ctx, x, py + rdy, x + COL_W, py + PILL_H + rdy, fade(bg, rr));
 
-            // Pill label, truncated to column width
+            // Pill label, centred + truncated to column width
             String label = f.name;
-            int maxW = COL_W - 12;
+            int maxW = COL_W - 16;
             if (stw(this.textRenderer, label) > maxW) {
                 label = this.textRenderer.trimToWidth(label, (int) ((maxW - 4) / TEXT_SCALE)) + "…";
             }
-            int tx = x + 6;
-            int ty = py + (PILL_H - 8) / 2 + rdy;
-            st(ctx, this.textRenderer, label, tx, ty, fade(TEXT_COLOR, rr));
-            py += PILL_H + PILL_GAP;
+            int labelX = x + (COL_W - stw(this.textRenderer, label)) / 2;
 
-            // Inline detail panel right under the selected pill
-            if (f == selectedFeature && !f.sub.isEmpty()) {
-                int dH = Math.min(detailHeightForSelected(), colBottom - py);
+            if (expanded) {
+                // Header fused to its settings body: square corners, a thin divider line at the
+                // seam, header + body in two different shades.
+                int top = py + rdy;
+                int headerBot = top + PILL_H;
+                int dH = Math.min(detailHeightForSelected(), colBottom - headerBot);
                 if (dH > 8) {
-                    ctx.fill(x, py, x + COL_W, py + dH, PANEL_BG);
-                    ctx.fill(x, py, x + COL_W, py + 1, BORDER_COLOR);
-                    ctx.fill(x, py + dH - 1, x + COL_W, py + dH, BORDER_COLOR);
-                    ctx.fill(x, py, x + 1, py + dH, BORDER_COLOR);
-                    ctx.fill(x + COL_W - 1, py, x + COL_W, py + dH, BORDER_COLOR);
+                    int bodyBot = headerBot + dH;
+                    ctx.fill(x, top, x + COL_W, headerBot, fade(bg, rr));                        // header
+                    ctx.fill(x, headerBot, x + COL_W, bodyBot, fade(PANEL_BG, rr));              // settings body
+                    ctx.fill(x, headerBot - 1, x + COL_W, headerBot, fade(BORDER_COLOR, rr));    // seam divider line
+                    st(ctx, this.textRenderer, label, labelX, top + (PILL_H - 8) / 2, fade(TEXT_COLOR, rr));
 
-                    ctx.enableScissor(x + 1, py + 1, x + COL_W - 1, py + dH - 1);
+                    ctx.enableScissor(x, headerBot, x + COL_W, bodyBot);
                     int leftX = x + 4;
                     int rightX = x + COL_W - 4;
-                    int sy = py + 4 - detailScroll;
+                    int sy = headerBot + 4 - detailScroll;
                     for (Setting s : f.sub) {
                         int sh = s.getHeight();
-                        if (sy + sh < py || sy > py + dH) { sy += sh; continue; }
-                        if (!(s instanceof SubcategoryHeader)) {
-                            // Truncated row name on the left
+                        if (sy + sh < headerBot || sy > bodyBot) { sy += sh; continue; }
+                        if (!(s instanceof SubcategoryHeader) && !(s instanceof InputSetting)) {
                             int nameMaxW = (rightX - leftX) - 78;
                             if (nameMaxW < 30) nameMaxW = 30;
                             String name = s.name;
@@ -532,8 +598,16 @@ public class FishModScreen extends Screen {
                         sy += sh;
                     }
                     ctx.disableScissor();
-                    py += dH + PILL_GAP;
+                    py += PILL_H + dH + PILL_GAP;
+                } else {
+                    ctx.fill(x, top, x + COL_W, top + PILL_H, fade(bg, rr));
+                    st(ctx, this.textRenderer, label, labelX, top + (PILL_H - 8) / 2, fade(TEXT_COLOR, rr));
+                    py += PILL_H + PILL_GAP;
                 }
+            } else {
+                ctx.fill(x, py + rdy, x + COL_W, py + PILL_H + rdy, fade(bg, rr));
+                st(ctx, this.textRenderer, label, labelX, py + (PILL_H - 8) / 2 + rdy, fade(TEXT_COLOR, rr));
+                py += PILL_H + PILL_GAP;
             }
         }
     }
@@ -566,11 +640,8 @@ public class FishModScreen extends Screen {
         if (py + panelH > this.height - PADDING) py = this.height - PADDING - panelH;
 
         // Panel background + border.
-        ctx.fill(px, py, px + panelW, py + panelH, PANEL_BG);
-        ctx.fill(px, py, px + panelW, py + 1, ACCENT);
-        ctx.fill(px, py + panelH - 1, px + panelW, py + panelH, ACCENT);
-        ctx.fill(px, py, px + 1, py + panelH, BORDER_COLOR);
-        ctx.fill(px + panelW - 1, py, px + panelW, py + panelH, BORDER_COLOR);
+        panel(ctx, px, py, px + panelW, py + panelH, 4, PANEL_BG, BORDER_COLOR);
+        ctx.fill(px + 5, py + 1, px + panelW - 5, py + 2, ACCENT); // accent header line, inset inside corners
 
         int ox = px + padX, oy = py + padY;
         ctx.drawText(tr, "Color Codes", ox, oy, TEXT_COLOR, false);
@@ -613,11 +684,7 @@ public class FishModScreen extends Screen {
         }
         // Bottom bar reveals after the columns have begun cascading in.
         float br = reveal(columns.size() * COL_STAGGER_MS + 60f);
-        ctx.fill(bx, by, bx + barW, by + SEARCH_H, fade(COL_HEADER_BG, br));
-        ctx.fill(bx, by, bx + barW, by + 1, fade(searchFocused ? ACCENT : BORDER_COLOR, br));
-        ctx.fill(bx, by + SEARCH_H - 1, bx + barW, by + SEARCH_H, fade(searchFocused ? ACCENT : BORDER_COLOR, br));
-        ctx.fill(bx, by, bx + 1, by + SEARCH_H, fade(BORDER_COLOR, br));
-        ctx.fill(bx + barW - 1, by, bx + barW, by + SEARCH_H, fade(BORDER_COLOR, br));
+        panel(ctx, bx, by, bx + barW, by + SEARCH_H, 5, fade(COL_HEADER_BG, br), fade(searchFocused ? ACCENT : BORDER_COLOR, br));
         if (searchText.isEmpty() && !searchFocused) {
             st(ctx, this.textRenderer, "Search here...", bx + 6, by + (SEARCH_H - 8) / 2, fade(SUBTEXT_COLOR, br));
         } else {
@@ -627,11 +694,7 @@ public class FishModScreen extends Screen {
         // Scale icon → opens existing HUD editor
         int sx = bx + barW + 6;
         boolean sHov = mouseX >= sx && mouseX <= sx + SCALE_BTN_W && mouseY >= by && mouseY <= by + SEARCH_H;
-        ctx.fill(sx, by, sx + SCALE_BTN_W, by + SEARCH_H, fade(sHov ? PILL_OFF_HOVER : COL_HEADER_BG, br));
-        ctx.fill(sx, by, sx + SCALE_BTN_W, by + 1, fade(sHov ? ACCENT : BORDER_COLOR, br));
-        ctx.fill(sx, by + SEARCH_H - 1, sx + SCALE_BTN_W, by + SEARCH_H, fade(sHov ? ACCENT : BORDER_COLOR, br));
-        ctx.fill(sx, by, sx + 1, by + SEARCH_H, fade(BORDER_COLOR, br));
-        ctx.fill(sx + SCALE_BTN_W - 1, by, sx + SCALE_BTN_W, by + SEARCH_H, fade(BORDER_COLOR, br));
+        panel(ctx, sx, by, sx + SCALE_BTN_W, by + SEARCH_H, 5, fade(sHov ? PILL_OFF_HOVER : COL_HEADER_BG, br), fade(sHov ? ACCENT : BORDER_COLOR, br));
         // expand-arrows glyph
         int gx = sx + SCALE_BTN_W / 2 - 4;
         int gy = by + SEARCH_H / 2 - 4;
@@ -653,6 +716,7 @@ public class FishModScreen extends Screen {
         int mx = (int) click.x();
         int my = (int) click.y();
         int btn = click.button();
+        if (activeInput instanceof InputSetting prevInput && prevInput.textField != null) prevInput.textField.setFocused(false);
         activeInput = null;
 
         // Bottom bar
@@ -673,21 +737,27 @@ public class FishModScreen extends Screen {
             Column col = columns.get(i);
             int cx = colX(i);
             int colBottom = colsBottomY();
+            // Tab header click → toggle this column open/closed.
+            int hy = colsTopY();
+            if (mx >= cx && mx <= cx + COL_W && my >= hy && my <= hy + COL_HEADER_H) {
+                col.open = !col.open;
+                return true;
+            }
+            if (!col.open) continue;
             int py = colsTopY() + COL_HEADER_H + 3;
             for (Feature f : col.features) {
                 if (!filter.isEmpty() && !f.name.toLowerCase().contains(filter)) continue;
                 if (py + PILL_H > colBottom) break;
+                boolean expanded = (f == selectedFeature && !f.sub.isEmpty());
 
                 // Pill hit-test
                 if (mx >= cx && mx <= cx + COL_W && my >= py && my <= py + PILL_H) {
                     if (btn == 1) {
-                        // Right-click → expand inline detail (toggle)
                         if (!f.sub.isEmpty()) {
                             selectedFeature = (selectedFeature == f ? null : f);
                             detailScroll = 0;
                         }
                     } else {
-                        // Left-click → master toggle, or open detail if no master
                         if (f.hasMaster()) {
                             f.set.accept(!f.get.get());
                         } else if (!f.sub.isEmpty()) {
@@ -697,15 +767,15 @@ public class FishModScreen extends Screen {
                     }
                     return true;
                 }
-                py += PILL_H + PILL_GAP;
 
-                // Detail hit-test
-                if (f == selectedFeature && !f.sub.isEmpty()) {
-                    int dH = Math.min(detailHeightForSelected(), colBottom - py);
-                    if (dH > 8 && mx >= cx && mx <= cx + COL_W && my >= py && my <= py + dH) {
+                // Settings body hit-test (fused directly under the header, no gap)
+                if (expanded) {
+                    int headerBot = py + PILL_H;
+                    int dH = Math.min(detailHeightForSelected(), colBottom - headerBot);
+                    if (dH > 8 && mx >= cx && mx <= cx + COL_W && my >= headerBot && my <= headerBot + dH) {
                         int leftX = cx + 4;
                         int rightX = cx + COL_W - 4;
-                        int sy = py + 4 - detailScroll;
+                        int sy = headerBot + 4 - detailScroll;
                         for (Setting s : f.sub) {
                             int sh = s.getHeight();
                             if (my >= sy && my <= sy + sh) {
@@ -731,9 +801,11 @@ public class FishModScreen extends Screen {
                             }
                             sy += sh;
                         }
-                        return true; // swallow clicks inside the detail panel
+                        return true; // swallow clicks inside the settings body
                     }
-                    if (dH > 8) py += dH + PILL_GAP;
+                    py += (dH > 8 ? PILL_H + dH : PILL_H) + PILL_GAP;
+                } else {
+                    py += PILL_H + PILL_GAP;
                 }
             }
         }
@@ -768,21 +840,24 @@ public class FishModScreen extends Screen {
             Column col = columns.get(i);
             int cx = colX(i);
             int colBottom = colsBottomY();
+            if (!col.open) continue;
             int py = colsTopY() + COL_HEADER_H + 3;
             for (Feature f : col.features) {
                 if (!filter.isEmpty() && !f.name.toLowerCase().contains(filter)) continue;
                 if (py + PILL_H > colBottom) break;
-                py += PILL_H + PILL_GAP;
                 if (f == selectedFeature && !f.sub.isEmpty()) {
-                    int dH = Math.min(detailHeightForSelected(), colBottom - py);
-                    if (mouseX >= cx && mouseX <= cx + COL_W && mouseY >= py && mouseY <= py + dH) {
+                    int headerBot = py + PILL_H;
+                    int dH = Math.min(detailHeightForSelected(), colBottom - headerBot);
+                    if (mouseX >= cx && mouseX <= cx + COL_W && mouseY >= headerBot && mouseY <= headerBot + dH) {
                         int viewH = dH - 8;
                         int total = detailHeightForSelected() - 8;
                         int max = Math.max(0, total - viewH);
                         detailScroll = MathHelper.clamp((int) (detailScroll - verticalAmount * 12), 0, max);
                         return true;
                     }
-                    py += dH + PILL_GAP;
+                    py += (dH > 8 ? PILL_H + dH : PILL_H) + PILL_GAP;
+                } else {
+                    py += PILL_H + PILL_GAP;
                 }
             }
         }
@@ -833,6 +908,7 @@ public class FishModScreen extends Screen {
     static class Column {
         final String name;
         final List<Feature> features = new ArrayList<>();
+        boolean open = true;            // tab collapsed/expanded state
         Column(String name) { this.name = name; }
     }
 
@@ -864,9 +940,8 @@ public class FishModScreen extends Screen {
         @Override int getHeight() { return SUBCAT_HEIGHT; }
         @Override
         void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
-            ctx.fill(leftX, sy, rightX, sy + SUBCAT_HEIGHT, 0xFF11131A);
-            ctx.fill(leftX, sy + SUBCAT_HEIGHT - 1, rightX, sy + SUBCAT_HEIGHT, BORDER_COLOR);
-            ctx.fill(leftX, sy, leftX + 2, sy + SUBCAT_HEIGHT, ACCENT);
+            roundRect(ctx, leftX, sy, rightX, sy + SUBCAT_HEIGHT, 2, 0xFF11131A);
+            ctx.fill(leftX + 1, sy + 2, leftX + 3, sy + SUBCAT_HEIGHT - 2, ACCENT); // rounded-inset accent tab
             st(ctx, tr, name, leftX + 6, sy + (SUBCAT_HEIGHT - 8) / 2, ACCENT);
         }
     }
@@ -882,13 +957,12 @@ public class FishModScreen extends Screen {
             int ty = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
             boolean on = getter.get();
             boolean hov = mx >= tx && mx <= tx + TOGGLE_W && my >= ty && my <= ty + TOGGLE_H;
-            // Pill switch: rounded capsule track + a circular knob that sits right (on) / left (off).
             int track = on ? (hov ? ACCENT_HOVER : TOGGLE_ON) : (hov ? 0xFF3A3D48 : TOGGLE_OFF);
-            roundRect(ctx, tx, ty, tx + TOGGLE_W, ty + TOGGLE_H, track);
-            int knob = TOGGLE_H - 4;                 // knob diameter (2px inset top/bottom)
+            pill(ctx, tx, ty, tx + TOGGLE_W, ty + TOGGLE_H, track);
+            int knob = TOGGLE_H - 4;
             int kx = on ? tx + TOGGLE_W - knob - 2 : tx + 2;
             int ky = ty + 2;
-            roundRect(ctx, kx, ky, kx + knob, ky + knob, 0xFFE8ECF2); // light knob
+            pill(ctx, kx, ky, kx + knob, ky + knob, 0xFFE8ECF2);
         }
         @Override
         boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
@@ -911,9 +985,9 @@ public class FishModScreen extends Screen {
             int slx = rightX - SLIDER_W - 2;
             int sly = sy + (ITEM_HEIGHT - SLIDER_H) / 2;
             float pct = (float)(getter.get() - min) / (max - min);
-            ctx.fill(slx, sly, slx + SLIDER_W, sly + SLIDER_H, SLIDER_BG);
-            ctx.fill(slx, sly, slx + (int)(SLIDER_W * pct), sly + SLIDER_H, SLIDER_FILL);
-            // value text small, above the bar
+            pill(ctx, slx, sly, slx + SLIDER_W, sly + SLIDER_H, SLIDER_BG);
+            int fillW = (int)(SLIDER_W * pct);
+            if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL);
             String val = String.valueOf(getter.get());
             st(ctx, tr, val, slx + SLIDER_W - stw(tr, val), sly - 9, SUBTEXT_COLOR);
         }
@@ -934,8 +1008,9 @@ public class FishModScreen extends Screen {
             int slx = rightX - SLIDER_W - 2;
             int sly = sy + (ITEM_HEIGHT - SLIDER_H) / 2;
             float pct = (float)((getter.get() - min) / (max - min));
-            ctx.fill(slx, sly, slx + SLIDER_W, sly + SLIDER_H, SLIDER_BG);
-            ctx.fill(slx, sly, slx + (int)(SLIDER_W * pct), sly + SLIDER_H, SLIDER_FILL);
+            pill(ctx, slx, sly, slx + SLIDER_W, sly + SLIDER_H, SLIDER_BG);
+            int fillW = (int)(SLIDER_W * pct);
+            if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL);
             String val = String.format("%.1f", getter.get());
             st(ctx, tr, val, slx + SLIDER_W - stw(tr, val), sly - 9, SUBTEXT_COLOR);
         }
@@ -959,13 +1034,10 @@ public class FishModScreen extends Screen {
             int bx = rightX - bw - 2;
             int by = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
             boolean hov = mx >= bx && mx <= bx + bw && my >= by && my <= by + TOGGLE_H;
-            ctx.fill(bx, by, bx + bw, by + TOGGLE_H, hov ? 0xFF252832 : SLIDER_BG);
-            ctx.fill(bx, by, bx + bw, by + 1, ACCENT);
-            ctx.fill(bx, by + TOGGLE_H - 1, bx + bw, by + TOGGLE_H, ACCENT);
+            panel(ctx, bx, by, bx + bw, by + TOGGLE_H, 3, hov ? 0xFF252832 : SLIDER_BG, ACCENT);
             String current = getter.get().toString();
             if (tr.getWidth(current) > bw - 14) current = tr.trimToWidth(current, bw - 18) + "…";
             st(ctx, tr, current, bx + 4, by + (TOGGLE_H - 8) / 2, TEXT_COLOR);
-            // tiny chevron on the right
             st(ctx, tr, "›", bx + bw - 7, by + (TOGGLE_H - 8) / 2, ACCENT);
         }
         @Override
@@ -988,6 +1060,7 @@ public class FishModScreen extends Screen {
     static class InputSetting extends Setting {
         Supplier<String> getter; Consumer<String> setter;
         TextFieldWidget textField;
+        String hint = null;   // optional small note rendered under the field
         InputSetting(String name, String desc, Supplier<String> g, Consumer<String> s) {
             super(name, desc); this.getter = g; this.setter = s;
         }
@@ -999,29 +1072,40 @@ public class FishModScreen extends Screen {
                 textField.setChangedListener(setter);
             }
         }
+        @Override int getHeight() { return hint != null ? 35 : 26; } // label row, full-width field (+ optional note)
         @Override
         void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
             initField(tr);
-            int ix = rightX - INPUT_W - 2;
-            int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
-            // Render the field text scaled down so the whole value is visible (it scrolled off
-            // before). Backing width is enlarged then scaled to the same visual box size.
+            // Label on top so the field can span the full width below it (long messages were cut off).
+            st(ctx, tr, name, leftX + 2, sy + 1, TEXT_COLOR);
+            int ix = leftX + 2;
+            int iy = sy + 11;
+            int fieldW = rightX - leftX - 4;
             float fs = 0.7f;
-            textField.setWidth((int) (INPUT_W / fs));
+            textField.setWidth((int) (fieldW / fs));
             textField.setHeight((int) (INPUT_H / fs));
+            // When not being edited, scroll back to the start so the whole message reads from the
+            // beginning instead of staying scrolled to the tail.
+            if (!textField.isFocused()) { textField.setSelectionStart(0); textField.setSelectionEnd(0); }
             textField.setX(0); textField.setY(0);
             ctx.getMatrices().pushMatrix();
             ctx.getMatrices().translate((float) ix, (float) iy);
             ctx.getMatrices().scale(fs, fs);
             textField.render(ctx, mx, my, 0);
             ctx.getMatrices().popMatrix();
+            if (hint != null) st(ctx, tr, hint, leftX + 2, sy + 27, SUBTEXT_COLOR);
         }
         @Override
         boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
-            int ix = rightX - INPUT_W - 2;
-            int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
-            if (mx >= ix && mx <= ix + INPUT_W && my >= iy && my <= iy + INPUT_H) {
-                if (textField != null) textField.setFocused(true);
+            int ix = leftX + 2;
+            int iy = sy + 11;
+            int fieldW = rightX - leftX - 4;
+            if (mx >= ix && mx <= ix + fieldW && my >= iy && my <= iy + INPUT_H) {
+                if (textField != null) {
+                    textField.setFocused(true);
+                    int len = textField.getText().length();           // put the caret at the end so you can append
+                    textField.setSelectionStart(len); textField.setSelectionEnd(len);
+                }
                 return true;
             }
             return false;
@@ -1275,7 +1359,7 @@ public class FishModScreen extends Screen {
             int bx = rightX - bw - 2;
             int by = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
             boolean hov = mx >= bx && mx <= bx + bw && my >= by && my <= by + TOGGLE_H;
-            ctx.fill(bx, by, bx + bw, by + TOGGLE_H, hov ? ACCENT_HOVER : ACCENT);
+            roundRect(ctx, bx, by, bx + bw, by + TOGGLE_H, 3, hov ? ACCENT_HOVER : ACCENT);
             st(ctx, tr, "Open", bx + (bw - stw(tr, "Open")) / 2, by + (TOGGLE_H - 8) / 2, TEXT_COLOR);
         }
         @Override
@@ -1312,8 +1396,6 @@ public class FishModScreen extends Screen {
             initField(tr);
             int ix = rightX - INPUT_W - 2;
             int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
-            // Render the field text scaled down so the whole value is visible (it scrolled off
-            // before). Backing width is enlarged then scaled to the same visual box size.
             float fs = 0.7f;
             textField.setWidth((int) (INPUT_W / fs));
             textField.setHeight((int) (INPUT_H / fs));
@@ -1358,8 +1440,6 @@ public class FishModScreen extends Screen {
             initField(tr);
             int ix = rightX - INPUT_W - 2;
             int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
-            // Render the field text scaled down so the whole value is visible (it scrolled off
-            // before). Backing width is enlarged then scaled to the same visual box size.
             float fs = 0.7f;
             textField.setWidth((int) (INPUT_W / fs));
             textField.setHeight((int) (INPUT_H / fs));

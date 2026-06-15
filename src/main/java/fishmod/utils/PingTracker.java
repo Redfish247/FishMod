@@ -1,10 +1,12 @@
 package fishmod.utils;
 
 /**
- * Live ping (RTT) estimate from server keep-alive timestamps. Vanilla servers (and Hypixel) set the
- * keep-alive id to {@code System.currentTimeMillis()} when sending; we compute {@code now - id} on
- * receipt, double it (out + back), and EMA-smooth so it doesn't jitter. Refreshes every 15s as the
- * server tick-fires keep-alives.
+ * Live ping (RTT) from the vanilla ping protocol. During play, Minecraft's own {@code PingMeasurer}
+ * periodically sends a ping request (the value that drives the F3 ping graph); the server replies
+ * with a {@code PingResultS2CPacket} that echoes the {@code startTime} we sent. We catch that pong on
+ * the network channel and compute {@code now - startTime} for a true client→server→client round trip
+ * — the same approach Odin uses, and accurate end-to-end even on proxied/anycast servers like Hypixel
+ * (unlike a TCP-edge probe or a clock-skew estimate, which can read far too low).
  */
 public final class PingTracker {
     private PingTracker() {}
@@ -12,21 +14,12 @@ public final class PingTracker {
     private static volatile int latestMs = -1;
     private static volatile long updatedAt = 0;
 
-    /** Push a measured round-trip time directly (e.g. from a TCP handshake). */
+    /** Push a measured round-trip time in ms (from the ping/pong round trip). */
     public static void pushRtt(long rttMs) {
-        if (rttMs < 0 || rttMs > 5_000) return;
+        if (rttMs < 0 || rttMs > 5_000) return; // implausible — ignore
         int rtt = (int) rttMs;
         int prev = latestMs;
-        latestMs = prev > 0 ? (rtt + prev) / 2 : rtt;
-        updatedAt = System.currentTimeMillis();
-    }
-
-    /** Push a one-way-latency estimate (server send → our receive, in ms). */
-    public static void pushOneWay(long oneWayMs) {
-        if (oneWayMs < 0 || oneWayMs > 5_000) return; // looks like the id isn't a timestamp — ignore
-        int rtt = (int) Math.min(2_000, oneWayMs * 2);
-        int prev = latestMs;
-        latestMs = prev > 0 ? (rtt + prev) / 2 : rtt; // light EMA
+        latestMs = prev > 0 ? (rtt + prev) / 2 : rtt; // light EMA so it doesn't jitter
         updatedAt = System.currentTimeMillis();
     }
 

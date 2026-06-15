@@ -39,6 +39,10 @@ public class CroesusTracker {
     private static final Pattern COST_LORE   = Pattern.compile("(?i)Cost:?\\s*([\\d,]+)\\s*coins?");
     private static final Pattern CLAIM_CHAT  = Pattern.compile(
             "(?i)^\\s*(WOOD|GOLD|DIAMOND|EMERALD|OBSIDIAN|BEDROCK)\\s+CHEST\\s+REWARDS\\s*$");
+    // The run's chest-SELECTION grid lists the six chest tiers as items; they are never loot. Used to
+    // belt-and-suspenders skip them in case a tier item ever slips into the loot row.
+    private static final Pattern CHEST_TIER_ITEM = Pattern.compile(
+            "(?i)^(Wood|Gold|Diamond|Emerald|Obsidian|Bedrock)(?:\\s+Chest)?$");
 
     // Reward slots on the 5-row chest UI (rows 1-3 middle). Hypixel currently
     // places loot in row 2 (slots 9-17); we conservatively scan that whole row.
@@ -51,6 +55,8 @@ public class CroesusTracker {
 
     public static void init() {
         CroesusPrices.refreshIfStale(); // warm cache so first claim has prices
+        int purged = CroesusStore.purgeChestTierEntries(); // clean up bogus chest-tier "drops"
+        if (purged > 0) fishmod.utils.debug.Debug.LOGGER.info("[Croesus] purged {} bogus chest-tier entries", purged);
         ClientTickEvents.END_CLIENT_TICK.register(client -> tick(client));
         Events.ON_GAME_MESSAGE.register(text -> {
             String plain = text.getString().replaceAll("§.", "");
@@ -69,18 +75,19 @@ public class CroesusTracker {
         ScreenHandler handler = hs.getScreenHandler();
         if (!(handler instanceof GenericContainerScreenHandler)) return;
         String title = scr.getTitle().getString().replaceAll("§.", "").trim();
-        if (!looksLikeRewardChest(title, handler)) return;
+        if (!looksLikeRewardChest(handler)) return;
         snapshot(title, handler);
     }
 
-    private static boolean looksLikeRewardChest(String title, ScreenHandler handler) {
-        if (title.toLowerCase().contains("catacombs")) return true;
-        // Some chest UIs are titled simply with the chest type ("Wood Chest", "Bedrock Chest").
-        // Use the open-reward slot's existence + lore as a secondary signal.
+    private static boolean looksLikeRewardChest(ScreenHandler handler) {
+        // Require the "Open Reward Chest" button (slot 31). That button only exists inside a single
+        // chest's reward preview — it is what separates a real reward chest from the run's chest
+        // SELECTION grid (the Wood/Gold/.../Bedrock list), which is ALSO titled with the floor.
+        // Without this guard we snapshot the grid, record the chest tiers as "loot", and that bogus
+        // snapshot then commits in place of the actual drops when the chest is claimed.
         ItemStack openSlot = slotStack(handler, OPEN_CHEST_SLOT);
         if (openSlot == null || openSlot.isEmpty()) return false;
-        String n = openSlot.getName().getString();
-        return n.toLowerCase().contains("reward chest");
+        return openSlot.getName().getString().toLowerCase().contains("reward chest");
     }
 
     private static void snapshot(String title, ScreenHandler handler) {
@@ -134,6 +141,8 @@ public class CroesusTracker {
                 try { nameCount = Integer.parseInt(countM.group(1)); } catch (NumberFormatException ignored) {}
                 displayName = displayName.substring(0, countM.start()).trim();
             }
+            // Never record a chest-selection tile (Wood/Gold/.../Bedrock) as loot.
+            if (CHEST_TIER_ITEM.matcher(displayName).matches()) continue;
             it.name = displayName;
             it.count = nameCount > 0 ? nameCount : st.getCount();
             s.items.add(it);
