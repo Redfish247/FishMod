@@ -19,20 +19,23 @@ public class ChatHudMixin {
     // ── Command Parsing Logic ──────────────────────────────────────────────────
 
     private static final String CMD_ALT =
-            "rtca|rtc|cata|pb|secrets|sa|runs|totalruns|dprofit|fps|tps|ping|ai|allinv|d|mp|collection|kick|warp|transfer|promote|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|help|\\?|e|[fm][1-7]|t[1-5]";
+            "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|fps|tps|ping|ai|allinv|d|mp|collection|kick|warp|transfer|promote|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|help|\\?|e|[fm][1-7]|t[1-5]";
+
+    // Up to 3 args captured (groups 3/4/5): .crtc needs [name] [class] [level].
+    private static final String ARG_TAIL = "(?:\\s+(\\w+)(?:\\s+(\\w+)(?:\\s+(\\w+))?)?)?\\s*$";
 
     private static final Pattern PARTY_CMD = Pattern.compile(
-            "^Party > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")(?:\\s+(\\w+)(?:\\s+(\\w+))?)?\\s*$");
+            "^Party > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")" + ARG_TAIL);
     private static final Pattern GUILD_CMD = Pattern.compile(
-            "^(?:Guild|G) > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")(?:\\s+(\\w+)(?:\\s+(\\w+))?)?\\s*$");
+            "^(?:Guild|G) > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")" + ARG_TAIL);
     private static final Pattern OFFICER_CMD = Pattern.compile(
-            "^(?:Officer|O) > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")(?:\\s+(\\w+)(?:\\s+(\\w+))?)?\\s*$");
+            "^(?:Officer|O) > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")" + ARG_TAIL);
     private static final Pattern MSG_CMD = Pattern.compile(
-            "^From (?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")(?:\\s+(\\w+)(?:\\s+(\\w+))?)?\\s*$");
+            "^From (?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")" + ARG_TAIL);
     private static final Pattern TO_CMD = Pattern.compile(
-            "^To (?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")(?:\\s+(\\w+)(?:\\s+(\\w+))?)?\\s*$");
+            "^To (?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")" + ARG_TAIL);
     private static final Pattern ALL_CMD = Pattern.compile(
-            "^(?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")(?:\\s+(\\w+)(?:\\s+(\\w+))?)?\\s*$");
+            "^(?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")" + ARG_TAIL);
 
     @Inject(method = "addMessage(Lnet/minecraft/text/Text;)V", at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Text message, CallbackInfo ci) {
@@ -111,11 +114,12 @@ public class ChatHudMixin {
         String cmd = m.group(2);
         String rawArg1 = m.group(3);
         String rawArg2 = m.group(4);
+        String rawArg3 = m.group(5);
         // The typer is always the message sender (group 1), so stats lookups (.nw/.cata/.pb/...)
         // with no explicit arg default to the SENDER, not the local player. For a DM we reply
         // privately to the sender; for channels we reply in that channel.
         String responder = (dmPrefix != null) ? dmPrefix + matchedName + " " : channelResponder;
-        PartyCommandHandler.onPartyCommand(matchedName, cmd, rawArg1, rawArg2, responder);
+        PartyCommandHandler.onPartyCommand(matchedName, cmd, rawArg1, rawArg2, rawArg3, responder);
         return true;
     }
 }

@@ -73,12 +73,69 @@ public class FishModInit implements ModInitializer {
 
     /** Runs a party-command lookup locally and prints the result in your own chat (no party message). */
     private static int runLocalLookup(String cmd, String arg1, String arg2) {
+        return runLocalLookup(cmd, arg1, arg2, null);
+    }
+
+    /** Three-arg variant (e.g. /crtc [name] [class] [level]). */
+    private static int runLocalLookup(String cmd, String arg1, String arg2, String arg3) {
         MinecraftClient mc = MinecraftClient.getInstance();
         String self = (mc.player != null) ? mc.player.getGameProfile().name() : null;
         if (self == null) return Constants.SUCCESS;
         fishmod.features.dungeon.PartyCommandHandler.onPartyCommand(
-                self, cmd, arg1, arg2, fishmod.features.dungeon.PartyCommandHandler.LOCAL);
+                self, cmd, arg1, arg2, arg3, fishmod.features.dungeon.PartyCommandHandler.LOCAL);
         return Constants.SUCCESS;
+    }
+
+    /** Prints a formatted reference of FishMod's commands and their argument formats to the player's chat. */
+    private static void printCommandHelp() {
+        java.util.function.Consumer<String> line = s -> Misc.addChatMessage(Text.literal(s));
+        line.accept("§b§m                    §r §3§lFishMod Commands §r§b§m                    ");
+        line.accept("§7Args in §f<>§7 are required, §8[]§7 optional. Stats commands default to §fyou§7 if no name is given.");
+        line.accept("§7All stats commands also work in party chat as §f.cmd§7 (toggle each in §f/fm §8> §7Party Commands).");
+
+        line.accept("");
+        line.accept("§3§lStats Lookups");
+        line.accept("§e/cata §8[player] §7— Catacombs level");
+        line.accept("§e/rtc §8[player] [level] §7— runs to a Cata level §8(default 50)");
+        line.accept("§e/rtca §8[player] §7— runs to class 50 for all 5 classes");
+        line.accept("§e/crtc §8[player] §f<class> §8[level] §7— XP + runs for one class to a level §8(default 50)");
+        line.accept("§8        class = healer | mage | berserk | archer | tank §8(e.g. §7.crtc mage 60§8)");
+        line.accept("§e/secrets §7or §e/sa §8[player] §7— total secrets / secret average");
+        line.accept("§e/runs §8[player] [floor] §7— floor run count §8(default m7)");
+        line.accept("§e/totalruns §8[player] §7— total dungeon runs");
+        line.accept("§e/pb §8[player] [floor] §7— floor personal best §8(default m7)");
+        line.accept("§e/mp §8[player] §7— Magical Power");
+        line.accept("§e/nw §8[player] §7— networth");
+        line.accept("§e/level §8[player] §7— Skyblock level");
+        line.accept("§e/farming §8[player] §7— farming weight");
+        line.accept("§e/nuc §8[player] §7— Crystal Nucleus runs");
+        line.accept("§e/worm §7or §e/scatha §8[player] §7— Worm + Scatha bestiary");
+        line.accept("§e/bank §8[player] §7— bank + purse");
+        line.accept("§e/powder §8[player] §7— Mithril / Gemstone / Glacite powder");
+        line.accept("§e/corpse §8[player] §7— Glacite corpses");
+        line.accept("§8floor = e, f1-f7, m1-m7 §7(party-only §f.collection [floor]§7 also available)");
+
+        line.accept("");
+        line.accept("§3§lYour Stats");
+        line.accept("§e/fps §8·§e /tps §8·§e /ping §8·§e /dprofit §7— FPS, server TPS, ping, Croesus profit/run");
+
+        line.accept("");
+        line.accept("§3§lDungeon / Kuudra Joins §8(party chat)");
+        line.accept("§f.e §8·§f .f1-.f7 §8·§f .m1-.m7 §7— join Catacombs floor");
+        line.accept("§f.t1-.t5 §7— join Kuudra tier");
+
+        line.accept("");
+        line.accept("§3§lParty Actions");
+        line.accept("§e/pk §f<player> §7— kick  §8·§7  §e/pw §7— warp  §8·§7  §e/pt §f<player> §7— transfer  §8·§7  §e/pp §f<player> §7— promote");
+        line.accept("§7In party chat: §f.ai §7(allinvite), §f.d §7(disband), §f.kick/.warp/.transfer/.promote");
+
+        line.accept("");
+        line.accept("§3§lScreens & Misc");
+        line.accept("§e/fm §7— config GUI  §8·§7  §e/fm customize §7— item customizer  §8·§7  §e/fmloot §7— Croesus loot");
+        line.accept("§e/po §7or §e/fm optimize §7— Profile Optimizer §8(net worth, skill roadmap, what to do next)");
+        line.accept("§e/streams §8·§e /wiki §8<query> §8·§e /nick §8<name>|reset");
+        line.accept("§e/fm commandhelp §7— this list  §8·§7  party chat: §f.help §7lists enabled party commands");
+        line.accept("§b§m                                                                          ");
     }
 
     /** True if MCEF isn't installed — /wiki needs it, and constructing WikiScreen without it crashes
@@ -174,6 +231,19 @@ SessionStats.init();
                         MinecraftClient.getInstance().setScreen(new fishmod.features.ItemCustomizeScreen()));
                     return Constants.SUCCESS;
                 }))
+                .then(ClientCommandManager.literal("optimize").executes(context -> {
+                    MinecraftClient.getInstance().send(() ->
+                        MinecraftClient.getInstance().setScreen(new fishmod.features.optimizer.OptimizerScreen(null)));
+                    return Constants.SUCCESS;
+                }))
+                .then(ClientCommandManager.literal("commandhelp").executes(context -> {
+                    printCommandHelp();
+                    return Constants.SUCCESS;
+                }))
+                .then(ClientCommandManager.literal("help").executes(context -> {
+                    printCommandHelp();
+                    return Constants.SUCCESS;
+                }))
                 .executes(context -> {
                     MinecraftClient.getInstance().send(() ->
                         MinecraftClient.getInstance().setScreen(new fishmod.features.FishModScreen()));
@@ -184,6 +254,13 @@ SessionStats.init();
                 .executes(ctx -> {
                     MinecraftClient mc = MinecraftClient.getInstance();
                     mc.send(() -> mc.setScreen(new CroesusLootScreen(mc.currentScreen)));
+                    return Constants.SUCCESS;
+                })
+            );
+            dispatcher.register(ClientCommandManager.literal("po")
+                .executes(ctx -> {
+                    MinecraftClient mc = MinecraftClient.getInstance();
+                    mc.send(() -> mc.setScreen(new fishmod.features.optimizer.OptimizerScreen(mc.currentScreen)));
                     return Constants.SUCCESS;
                 })
             );
@@ -698,6 +775,22 @@ SessionStats.init();
                     .executes(c -> runLocalLookup("rtc", StringArgumentType.getString(c, "player"), null))
                     .then(ClientCommandManager.argument("level", StringArgumentType.word())
                         .executes(c -> runLocalLookup("rtc", StringArgumentType.getString(c, "player"), StringArgumentType.getString(c, "level"))))));
+            // /crtc [name] [class] [level] — XP for one class to reach a level (default 50).
+            // Smart-parses in PartyCommandHandler: a leading class arg means "self".
+            SuggestionProvider<FabricClientCommandSource> classSuggest = (c, b) -> {
+                String rem = b.getRemaining().toLowerCase();
+                for (String cl : new String[]{"healer","mage","berserk","archer","tank"})
+                    if (cl.startsWith(rem)) b.suggest(cl);
+                return b.buildFuture();
+            };
+            dispatcher.register(ClientCommandManager.literal("crtc")
+                .executes(c -> runLocalLookup("crtc", null, null, null))
+                .then(ClientCommandManager.argument("a1", StringArgumentType.word()).suggests(classSuggest)
+                    .executes(c -> runLocalLookup("crtc", StringArgumentType.getString(c, "a1"), null, null))
+                    .then(ClientCommandManager.argument("a2", StringArgumentType.word()).suggests(classSuggest)
+                        .executes(c -> runLocalLookup("crtc", StringArgumentType.getString(c, "a1"), StringArgumentType.getString(c, "a2"), null))
+                        .then(ClientCommandManager.argument("a3", StringArgumentType.word())
+                            .executes(c -> runLocalLookup("crtc", StringArgumentType.getString(c, "a1"), StringArgumentType.getString(c, "a2"), StringArgumentType.getString(c, "a3")))))));
             // No-arg commands: self metrics, party actions, and join-floor/Kuudra shortcuts.
             for (String name : new String[]{"fps","tps","ping","dprofit","ai","allinv","d",
                     "e","f1","f2","f3","f4","f5","f6","f7","m1","m2","m3","m4","m5","m6","m7",

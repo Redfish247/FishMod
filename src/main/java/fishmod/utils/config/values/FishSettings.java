@@ -23,10 +23,12 @@ public class FishSettings {
     @ConfigValue
     public static boolean deathMessageToParty = false;
 
-    /** Class XP gained per run when playing as that class — used for .rtca */
+    /** Class XP gained per run when playing as that class — used for .rtca / .crtc */
     @ConfigValue
-    public static int rtcaClassXpPerRun = 403000;
-    @ConfigValue public static int rtcCataXpPerRun  = 490000;
+    public static int rtcaClassXpPerRun = 424200;
+    /** Class XP gained per run for the classes you're NOT playing (passive) — used for .rtca */
+    @ConfigValue public static int rtcaClassPassiveXpPerRun = 106050;
+    @ConfigValue public static int rtcCataXpPerRun  = 509040;
     /** Hypixel's first-5-runs-of-the-day daily bonus (+40% XP). Toggle off after you've used them. */
     @ConfigValue public static boolean rtcaIncludeDailyBonus = false;
 
@@ -129,6 +131,7 @@ public class FishSettings {
     @ConfigValue public static boolean pcRtca       = false;
     @ConfigValue public static boolean pcDprofit    = false;
     @ConfigValue public static boolean pcRtc        = false;
+    @ConfigValue public static boolean pcCrtc       = false;
     @ConfigValue public static boolean pcHelp       = false;
     @ConfigValue public static boolean pcNw         = false;
     @ConfigValue public static boolean pcBank       = false;
