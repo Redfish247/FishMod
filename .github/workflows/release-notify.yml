@@ -1,0 +1,112 @@
+# Announce a new FishMod release in Discord whenever mod_version is bumped,
+# attaching the built FishMod-<version>.jar so people can download it from the message.
+#
+# Fires only on pushes to main that touch gradle.properties, and only posts when
+# the mod_version line actually changed (so editing other properties stays silent).
+#
+# Setup (one-time):
+#   1. In Discord: Channel ▸ Edit ▸ Integrations ▸ Webhooks ▸ New Webhook ▸ Copy URL
+#   2. Add it as a repo secret named DISCORD_WEBHOOK:
+#        gh secret set DISCORD_WEBHOOK --body "https://discord.com/api/webhooks/XXX/YYY"
+#      (or GitHub ▸ Settings ▸ Secrets and variables ▸ Actions ▸ New repository secret)
+
+name: release-notify
+on:
+  push:
+    branches: [main]
+    paths:
+      - gradle.properties
+
+jobs:
+  notify:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need the pre-push commit to diff mod_version
+
+      - name: detect version change
+        id: ver
+        run: |
+          new=$(grep -E '^mod_version=' gradle.properties | head -1 | cut -d= -f2 | tr -d '[:space:]')
+          before='${{ github.event.before }}'
+          old=""
+          if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ]; then
+            old=$(git show "$before:gradle.properties" 2>/dev/null | grep -E '^mod_version=' | head -1 | cut -d= -f2 | tr -d '[:space:]' || true)
+          fi
+          echo "new=$new" >> "$GITHUB_OUTPUT"
+          echo "old=$old" >> "$GITHUB_OUTPUT"
+          if [ "$new" != "$old" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "mod_version changed: '$old' -> '$new'"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "mod_version unchanged ($new) - no announcement"
+          fi
+
+      - name: setup jdk
+        if: steps.ver.outputs.changed == 'true'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'microsoft'
+
+      - name: build jar
+        if: steps.ver.outputs.changed == 'true'
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build --stacktrace
+
+      - name: notify discord
+        if: steps.ver.outputs.changed == 'true'
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          VERSION: ${{ steps.ver.outputs.new }}
+          MSG: ${{ github.event.head_commit.message }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
+          AUTHOR: ${{ github.event.head_commit.author.name }}
+          SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then
+            echo "::warning::DISCORD_WEBHOOK secret not set - skipping announcement."
+            exit 0
+          fi
+          jar="build/libs/FishMod-${VERSION}.jar"
+          if [ ! -f "$jar" ]; then
+            echo "::error::Expected jar not found: $jar"; ls -la build/libs || true; exit 1
+          fi
+          short="${SHA:0:7}"
+          jq -n \
+            --arg title "🎣 FishMod v$VERSION released" \
+            --arg desc "$MSG" \
+            --arg url "$COMMIT_URL" \
+            --arg ver "$VERSION" \
+            --arg commit "[\`$short\`]($COMMIT_URL)" \
+            --arg run "[View build]($RUN_URL)" \
+            --arg author "$AUTHOR" \
+            '{
+              username: "FishMod Releases",
+              content: ("📦 **FishMod v" + $ver + "** — jar attached below."),
+              embeds: [{
+                title: $title,
+                description: $desc,
+                url: $url,
+                color: 2406064,
+                fields: [
+                  { name: "Version", value: $ver, inline: true },
+                  { name: "Commit",  value: $commit, inline: true },
+                  { name: "CI",      value: $run, inline: true }
+                ],
+                footer: { text: ("Pushed by " + $author) }
+              }]
+            }' > payload.json
+          # NOTE: payload_json must use '<' (field value from file), not '@' (which would
+          # upload payload.json as an extra attachment and drop the embed).
+          curl -fsS \
+            -A "FishMod-Release-Notifier (https://github.com/${{ github.repository }}, 1.0)" \
+            -F "payload_json=<payload.json" \
+            -F "files[0]=@${jar};type=application/java-archive" \
+            "$WEBHOOK"
+          echo "Announced v$VERSION to Discord with jar attached."

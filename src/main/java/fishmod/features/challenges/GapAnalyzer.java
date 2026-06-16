@@ -29,6 +29,16 @@ public class GapAnalyzer {
         return 0;
     }
 
+    /** Cumulative skill XP required to reach {@code level} (1..60). 0 for level &lt;= 0. */
+    public static long xpToReach(int level) {
+        if (level <= 0) return 0;
+        int idx = Math.min(level, SKILL_XP_LEVEL_TARGETS.length) - 1;
+        return SKILL_XP_LEVEL_TARGETS[idx];
+    }
+
+    /** Highest skill level represented by the XP table (used as the roadmap cap). */
+    public static int maxSkillLevel() { return SKILL_XP_LEVEL_TARGETS.length; }
+
     // Only skills that can realistically be progressed via grinding.
     // Excluded: social (extremely slow, party-join based), carpentry (limited by recipes),
     // runecrafting (limited by enchanting table availability).
