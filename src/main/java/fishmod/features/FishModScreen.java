@@ -23,87 +23,74 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * Odin-inspired column layout. Transparent background, no header.
- * Left-click pill = toggle master (or open detail if no master).
- * Right-click pill = expand inline detail panel directly under it.
+ * Sidebar + detail-list config screen (matches the FishMod design mockup).
+ *
+ *  ┌──────────────────────────────────────────────────────────┐
+ *  │  FishMod                                       [ search ]  │  title bar
+ *  ├───────────┬──────────────────────────────────────────────┤
+ *  │  General  │  [icon]  Label                        ( ON )  │
+ *  │  Dungeon  │          description                          │  scrollable
+ *  │  Cosmetic │  [icon]  Label                        ( OFF)  │  feature rows
+ *  │  Party    │  ...                                          │
+ *  │  Visuals  │                                               │
+ *  ├───────────┴──────────────────────────────────────────────┤
+ *  │  Edit HUD                       Reset      Save & Close    │  footer
+ *  └──────────────────────────────────────────────────────────┘
+ *
+ * Left-click a category to switch pages. Left-click a feature toggle = master on/off.
+ * Left-click a feature row body (when it has sub-settings) = expand an inline panel
+ * beneath it with the rich controls (sliders, dropdowns, colour pickers, text inputs).
  */
 public class FishModScreen extends Screen {
 
-    // ----- colors (alpha-blended over the live world) -----
-    static final int PILL_OFF        = 0xFF1B1D24;
-    static final int PILL_ON         = 0xFF0D7377;
-    static final int PILL_OFF_HOVER  = 0xFF252832;
-    static final int PILL_ON_HOVER   = 0xFF119BA0;
-    static final int PANEL_BG        = 0xFF15171C;
-    static final int COL_HEADER_BG   = 0xFF15171C;
-    static final int BORDER_COLOR    = 0xFF2A2D38;
-    static final int TEXT_COLOR      = 0xFFFFFFFF;
-    static final int SUBTEXT_COLOR   = 0xFF8B92A5;
-    static final int ACCENT          = 0xFF0D7377;  // slate teal
-    static final int ACCENT_HOVER    = 0xFF119BA0;
+    // ----- palette -----
+    static final int ACCENT          = 0xFF24B6B0;  // bright slate-teal
+    static final int ACCENT_HOVER    = 0xFF3AD8D1;
+    static final int BG_TOP          = 0xFF0C1318;
+    static final int BG_BOT          = 0xFF06090C;
+    static final int SIDEBAR_BG      = 0xFF0A0F14;
+    static final int CONTENT_BG      = 0xFF090E12;
+    static final int ROW_BG          = 0xFF0E151B;
+    static final int ROW_BG_HOVER    = 0xFF142028;
+    static final int SUBROW_BG       = 0xFF0A1015;
+    static final int TILE_BG         = 0xFF10282B;
+    static final int TILE_BG_ON      = 0xFF123A3C;
+    static final int DIVIDER         = 0xFF18222C;
+    static final int SCRIM           = 0xB3000000;  // dim the live game behind the overlay
+    static final int PANEL_BORDER    = 0xFF24333C;  // 1px frame around the overlay
+    static final int TEXT_COLOR      = 0xFFEDF1F5;
+    static final int SUBTEXT_COLOR   = 0xFF7E8A98;
+    static final int CHEVRON_COLOR   = 0xFF5A6675;
+    static final int PANEL_BG        = 0xFF12141A;  // (legacy, referenced by helpers)
+    static final int BORDER_COLOR    = 0xFF2A2D38;  // (legacy)
 
-    // Menu text is rendered at this scale so longer labels stop getting cut off with "…".
-    static final float TEXT_SCALE = 0.75f;
-
-    // ----- open animation -----
-    private final long openStartMs = System.currentTimeMillis();
-    private static final float COL_STAGGER_MS = 55f;  // delay added per column (diagonal feel)
-    private static final float ROW_STAGGER_MS = 34f;  // delay added per pill row within a column
-    private static final float ROW_MS         = 210f; // each element's own reveal duration
-    private static final float SLIDE_PX        = 9f;   // how far each element drops in from above
-
-    private float elapsedMs() { return System.currentTimeMillis() - openStartMs; }
-
-    /** Eased reveal for an element delayed by {@code delayMs}: returns progress 0..1 (easeOutCubic). */
-    private float reveal(float delayMs) {
-        float t = MathHelper.clamp((elapsedMs() - delayMs) / ROW_MS, 0f, 1f);
-        float inv = 1f - t;
-        return 1f - inv * inv * inv;
-    }
-
-    /** Scales the alpha channel of an ARGB color by {@code a} (0..1). */
-    static int fade(int argb, float a) {
-        int alpha = Math.round(((argb >>> 24) & 0xFF) * MathHelper.clamp(a, 0f, 1f));
-        return (alpha << 24) | (argb & 0xFFFFFF);
-    }
-
-    /** Draws menu text at TEXT_SCALE, vertically nudged to stay centered in its row slot. */
-    static void st(DrawContext ctx, net.minecraft.client.font.TextRenderer tr, String s, int x, int y, int color) {
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) x, (float) y + 1f);
-        ctx.getMatrices().scale(TEXT_SCALE, TEXT_SCALE);
-        ctx.drawText(tr, s, 0, 0, color, false);
-        ctx.getMatrices().popMatrix();
-    }
-
-    /** Pixel width of text as drawn by {@link #st} (scaled). */
-    static int stw(net.minecraft.client.font.TextRenderer tr, String s) {
-        return (int) Math.ceil(tr.getWidth(s) * TEXT_SCALE);
-    }
-
-    /** Fills a rectangle with rounded (~2px) corners. */
-    static void roundRect(DrawContext ctx, int x1, int y1, int x2, int y2, int color) {
-        if (x2 - x1 < 4 || y2 - y1 < 4) { ctx.fill(x1, y1, x2, y2, color); return; }
-        ctx.fill(x1 + 2, y1,     x2 - 2, y1 + 1, color); // top row (inset 2)
-        ctx.fill(x1 + 1, y1 + 1, x2 - 1, y1 + 2, color); // 2nd row (inset 1)
-        ctx.fill(x1,     y1 + 2, x2,     y2 - 2, color); // middle (full width)
-        ctx.fill(x1 + 1, y2 - 2, x2 - 1, y2 - 1, color); // 2nd-last row (inset 1)
-        ctx.fill(x1 + 2, y2 - 1, x2 - 2, y2,     color); // bottom row (inset 2)
-    }
+    // ----- setting-widget palette (consumed by the Setting subclasses below) -----
     static final int TOGGLE_ON       = ACCENT;
     static final int TOGGLE_OFF      = 0xFF2A2D38;
     static final int TOGGLE_TEXT     = 0xFFFFFFFF;
     static final int SLIDER_BG       = 0xFF1B1D24;
     static final int SLIDER_FILL     = ACCENT;
 
-    // ----- sizes -----
-    static final int PADDING        = 12;
-    static final int COL_W          = 150;
-    static final int COL_GAP        = 10;
-    static final int COL_HEADER_H   = 18;
-    static final int PILL_H         = 20;
-    static final int PILL_GAP       = 1;
-    static final int ITEM_HEIGHT    = 20;
+    // Sub-panel menu text scale (the rich controls render compactly).
+    static final float TEXT_SCALE = 0.75f;
+
+    // ----- layout -----
+    static final int SIDEBAR_W   = 150;
+    static final int TITLE_H     = 38;
+    static final int FOOTER_H    = 40;
+    static final int CONTENT_PAD = 12;
+    static final int ROW_H       = 38;
+    static final int ROW_GAP     = 5;
+    static final int CAT_ITEM_H  = 34;
+    static final int TOG2_W      = 40;   // big row toggle
+    static final int TOG2_H      = 18;
+
+    // ----- overlay panel geometry (fixed-size, centred; the game shows through behind) -----
+    static final int PANEL_W     = 520;
+    static final int PANEL_H     = 340;
+
+    // ----- setting-widget geometry (consumed below) -----
+    static final int ITEM_HEIGHT   = 20;
     static final int TOGGLE_W       = 36;
     static final int TOGGLE_H       = 14;
     static final int SLIDER_W       = 64;
@@ -111,26 +98,12 @@ public class FishModScreen extends Screen {
     static final int INPUT_W        = 70;
     static final int INPUT_H        = 14;
     static final int SUBCAT_HEIGHT  = 13;
-    static final int SEARCH_H       = 22;
-    static final int SCALE_BTN_W    = 28;
-
-    // Minecraft &-code → RGB, for the legend at the bottom of the screen.
-    private static final int[][] CODE_COLORS = {
-            {'0', 0x000000}, {'1', 0x0000AA}, {'2', 0x00AA00}, {'3', 0x00AAAA},
-            {'4', 0xAA0000}, {'5', 0xAA00AA}, {'6', 0xFFAA00}, {'7', 0xAAAAAA},
-            {'8', 0x555555}, {'9', 0x5555FF}, {'a', 0x55FF55}, {'b', 0x55FFFF},
-            {'c', 0xFF5555}, {'d', 0xFF55FF}, {'e', 0xFFFF55}, {'f', 0xFFFFFF},
-    };
-    // Format codes shown as live styled samples.
-    private static final String[][] CODE_FORMATS = {
-            {"&l", "§lBold"}, {"&o", "§oItalic"}, {"&n", "§nUnder"},
-            {"&m", "§mStrike"}, {"&k", "§kMagic"}, {"&r", "§rReset"}, {"&#rrggbb", "Hex"},
-    };
 
     // ----- state -----
     private final List<Column> columns = new ArrayList<>();
+    private int selectedCat = 0;
+    private int scroll = 0;
     private Feature selectedFeature = null;
-    private int detailScroll = 0;
     private String searchText = "";
     private boolean searchFocused = false;
     private Setting activeSlider = null;
@@ -138,18 +111,271 @@ public class FishModScreen extends Screen {
     private Setting activeInput = null;
     private ColorPickerSetting activePicker = null;
     private TextFieldWidget searchField;
+    private boolean resetArmed = false;
+    private long resetArmedAt = 0;
 
     public FishModScreen() {
         super(Text.literal("FishMod"));
-        buildColumns();
+        buildCategories();
     }
 
     // -----------------------------------------------------------------------------------
-    // Column / feature graph
+    // Drawing helpers
     // -----------------------------------------------------------------------------------
-    private void buildColumns() {
+
+    /** Filled rectangle with square corners (per the design). {@code r} ignored — retained for call sites. */
+    static void roundRect(DrawContext ctx, int x1, int y1, int x2, int y2, int r, int color) { ctx.fill(x1, y1, x2, y2, color); }
+    static void roundRect(DrawContext ctx, int x1, int y1, int x2, int y2, int color) { ctx.fill(x1, y1, x2, y2, color); }
+
+    /** Full capsule (square corners here): used by toggle tracks/knobs and slider bars. */
+    static void pill(DrawContext ctx, int x1, int y1, int x2, int y2, int color) { ctx.fill(x1, y1, x2, y2, color); }
+
+    /** 1px border frame around a fill. */
+    static void panel(DrawContext ctx, int x1, int y1, int x2, int y2, int r, int fill, int border) {
+        ctx.fill(x1, y1, x2, y2, border);
+        ctx.fill(x1 + 1, y1 + 1, x2 - 1, y2 - 1, fill);
+    }
+
+    /** Octagon-ish solid disc (square corners trimmed) — good enough for small circular glyphs. */
+    static void disc(DrawContext ctx, int cx, int cy, int r, int color) {
+        ctx.fill(cx - r, cy - r + 1, cx + r, cy + r - 1, color);
+        ctx.fill(cx - r + 1, cy - r, cx + r - 1, cy + r, color);
+    }
+
+    /** Sub-panel menu text at TEXT_SCALE. */
+    static void st(DrawContext ctx, net.minecraft.client.font.TextRenderer tr, String s, int x, int y, int color) {
+        ctx.getMatrices().pushMatrix();
+        ctx.getMatrices().translate((float) x, (float) y + 1f);
+        ctx.getMatrices().scale(TEXT_SCALE, TEXT_SCALE);
+        ctx.drawText(tr, s, 0, 0, color, false);
+        ctx.getMatrices().popMatrix();
+    }
+    static int stw(net.minecraft.client.font.TextRenderer tr, String s) { return (int) Math.ceil(tr.getWidth(s) * TEXT_SCALE); }
+
+    /** Text at an arbitrary scale. */
+    static void sst(DrawContext ctx, net.minecraft.client.font.TextRenderer tr, String s, int x, int y, int color, float scale) {
+        ctx.getMatrices().pushMatrix();
+        ctx.getMatrices().translate((float) x, (float) y);
+        ctx.getMatrices().scale(scale, scale);
+        ctx.drawText(tr, s, 0, 0, color, false);
+        ctx.getMatrices().popMatrix();
+    }
+    static int sw(net.minecraft.client.font.TextRenderer tr, String s, float scale) { return (int) Math.ceil(tr.getWidth(s) * scale); }
+
+    /** Chevron from fills: ▾ when {@code open}, ▸ when closed; {@code cy} is the vertical centre. */
+    static void drawChevron(DrawContext ctx, int gx, int cy, boolean open, int color) {
+        if (open) {
+            ctx.fill(gx,     cy - 2, gx + 7, cy - 1, color);
+            ctx.fill(gx + 1, cy - 1, gx + 6, cy,     color);
+            ctx.fill(gx + 2, cy,     gx + 5, cy + 1, color);
+            ctx.fill(gx + 3, cy + 1, gx + 4, cy + 2, color);
+        } else {
+            ctx.fill(gx,     cy - 3, gx + 1, cy + 4, color);
+            ctx.fill(gx + 1, cy - 2, gx + 2, cy + 3, color);
+            ctx.fill(gx + 2, cy - 1, gx + 3, cy + 2, color);
+            ctx.fill(gx + 3, cy,     gx + 4, cy + 1, color);
+        }
+    }
+
+    /** Tiny vector emblem (~14px) centred at (cx,cy). {@code bg} is the tile fill, for knockouts. */
+    private static void drawGlyph(DrawContext ctx, String t, int cx, int cy, int c, int bg) {
+        switch (t) {
+            case "gear" -> {
+                disc(ctx, cx, cy, 5, c);
+                ctx.fill(cx - 1, cy - 7, cx + 1, cy + 7, c); ctx.fill(cx - 7, cy - 1, cx + 7, cy + 1, c);
+                ctx.fill(cx - 5, cy - 5, cx - 3, cy - 3, c); ctx.fill(cx + 3, cy - 5, cx + 5, cy - 3, c);
+                ctx.fill(cx - 5, cy + 3, cx - 3, cy + 5, c); ctx.fill(cx + 3, cy + 3, cx + 5, cy + 5, c);
+                disc(ctx, cx, cy, 2, bg);
+            }
+            case "arch" -> {
+                ctx.fill(cx - 6, cy - 6, cx - 3, cy + 7, c); ctx.fill(cx + 3, cy - 6, cx + 6, cy + 7, c);
+                ctx.fill(cx - 6, cy - 6, cx + 6, cy - 3, c);
+            }
+            case "hanger" -> {
+                ctx.fill(cx - 7, cy + 2, cx + 7, cy + 4, c);
+                ctx.fill(cx - 1, cy - 5, cx + 1, cy + 3, c);
+                ctx.fill(cx - 1, cy - 6, cx + 3, cy - 4, c);
+            }
+            case "people" -> {
+                disc(ctx, cx - 4, cy - 3, 3, c); disc(ctx, cx + 4, cy - 3, 3, c);
+                ctx.fill(cx - 7, cy + 2, cx + 7, cy + 6, c);
+            }
+            case "eye" -> {
+                ctx.fill(cx - 7, cy - 1, cx + 7, cy + 1, c); ctx.fill(cx - 5, cy - 3, cx + 5, cy + 3, c);
+                disc(ctx, cx, cy, 2, bg); disc(ctx, cx, cy, 1, c);
+            }
+            case "text" -> {
+                ctx.fill(cx - 5, cy - 5, cx + 5, cy - 3, c); ctx.fill(cx - 1, cy - 5, cx + 1, cy + 6, c);
+            }
+            case "chat" -> {
+                ctx.fill(cx - 7, cy - 5, cx + 7, cy + 2, c); ctx.fill(cx - 5, cy + 2, cx - 1, cy + 6, c);
+                ctx.fill(cx - 4, cy - 2, cx + 4, cy - 1, bg); ctx.fill(cx - 4, cy, cx + 2, cy + 1, bg);
+            }
+            case "star" -> {
+                ctx.fill(cx - 1, cy - 7, cx + 1, cy + 7, c); ctx.fill(cx - 7, cy - 1, cx + 7, cy + 1, c);
+                ctx.fill(cx - 4, cy - 4, cx - 2, cy - 2, c); ctx.fill(cx + 2, cy - 4, cx + 4, cy - 2, c);
+                ctx.fill(cx - 4, cy + 2, cx - 2, cy + 4, c); ctx.fill(cx + 2, cy + 2, cx + 4, cy + 4, c);
+            }
+            case "cube" -> {
+                ctx.fill(cx - 6, cy - 6, cx + 6, cy - 4, c); ctx.fill(cx - 6, cy + 4, cx + 6, cy + 6, c);
+                ctx.fill(cx - 6, cy - 6, cx - 4, cy + 6, c); ctx.fill(cx + 4, cy - 6, cx + 6, cy + 6, c);
+            }
+            case "clock" -> {
+                disc(ctx, cx, cy, 6, c); disc(ctx, cx, cy, 4, bg);
+                ctx.fill(cx - 1, cy - 4, cx + 1, cy + 1, c); ctx.fill(cx - 1, cy - 1, cx + 4, cy + 1, c);
+            }
+            case "coin" -> {
+                disc(ctx, cx, cy, 6, c); disc(ctx, cx, cy, 3, bg); disc(ctx, cx, cy, 1, c);
+            }
+            case "palette" -> {
+                disc(ctx, cx, cy, 6, c);
+                ctx.fill(cx - 3, cy - 3, cx - 1, cy - 1, bg); ctx.fill(cx + 1, cy - 3, cx + 3, cy - 1, bg);
+                ctx.fill(cx - 1, cy + 1, cx + 1, cy + 3, bg);
+            }
+            case "tag" -> {
+                ctx.fill(cx - 6, cy - 4, cx + 2, cy + 4, c); ctx.fill(cx + 2, cy - 3, cx + 4, cy + 3, c);
+                ctx.fill(cx + 4, cy - 1, cx + 6, cy + 1, c); disc(ctx, cx - 3, cy, 1, bg);
+            }
+            case "slider" -> {
+                ctx.fill(cx - 7, cy - 1, cx + 7, cy + 1, c); ctx.fill(cx, cy - 4, cx + 4, cy + 4, c);
+            }
+            case "bell" -> {
+                ctx.fill(cx - 4, cy - 3, cx + 4, cy + 3, c); ctx.fill(cx - 5, cy + 3, cx + 5, cy + 4, c);
+                ctx.fill(cx - 1, cy - 6, cx + 1, cy - 4, c); ctx.fill(cx - 1, cy + 4, cx + 1, cy + 6, c);
+            }
+            case "map" -> {
+                ctx.fill(cx - 6, cy - 5, cx + 6, cy + 5, c); ctx.fill(cx - 1, cy - 5, cx + 1, cy + 5, bg);
+                ctx.fill(cx - 6, cy - 1, cx + 6, cy + 1, bg);
+            }
+            default -> { // box
+                ctx.fill(cx - 5, cy - 5, cx + 5, cy - 3, c); ctx.fill(cx - 5, cy + 3, cx + 5, cy + 5, c);
+                ctx.fill(cx - 5, cy - 5, cx - 3, cy + 5, c); ctx.fill(cx + 3, cy - 5, cx + 5, cy + 5, c);
+            }
+        }
+    }
+
+    /** Per-feature glyph (looked up by name to avoid threading an icon field through every Feature). */
+    private static String iconFor(String name) {
+        return switch (name) {
+            case "Mod Prefix" -> "text";
+            case "Auto Meow", "Smart Copy Chat", "Bridge Bot", "Death Message", "Chat Channels", "Chat Filter" -> "chat";
+            case "Explosive Shot" -> "star";
+            case "Compact Tab", "Party Commands" -> "people";
+            case "Dungeon Score", "Session Stats", "Pet HUD", "Trophy Frogs" -> "star";
+            case "Puzzle Overlay", "Simon Says" -> "cube";
+            case "Send Lag to Party", "Splits", "Cooldown Overlay", "Fire Freeze Timer" -> "clock";
+            case "Croesus Overlay", "Croesus Loot",
+                 "Slayer XP Tracker", "Skill XP Tracker", "Powder Tracker",
+                 "Farming Tracker", "Harvest Feast Tracker", "Mining Tracker" -> "coin";
+            case "Class Colored Boots", "Name Color", "Customize", "Rarity Hotbar" -> "palette";
+            case "See Others' Items" -> "eye";
+            case "Nametag" -> "tag";
+            case "Player Size" -> "slider";
+            case "Soulflow HUD" -> "bell";
+            case "Warp Map" -> "map";
+            default -> "box";
+        };
+    }
+
+    /** Short one-line description shown under each row label. */
+    private static String descFor(String name) {
+        return switch (name) {
+            case "Mod Prefix" -> "Tag FishMod's chat output with a prefix";
+            case "Auto Meow" -> "Auto-reply 'meow' when someone meows";
+            case "Smart Copy Chat" -> "Right-click a chat line to copy it";
+            case "Compact Tab" -> "Cleaner custom tab player list";
+            case "Bridge Bot" -> "Relay Discord bridge messages";
+            case "Chat Filter" -> "Hide selected chat spam";
+            case "Explosive Shot" -> "Title with per-enemy damage";
+            case "Dungeon Score" -> "Live S+ score tracker overlay";
+            case "Puzzle Overlay" -> "Show solved puzzle names";
+            case "Death Message" -> "Announce deaths with a template";
+            case "Send Lag to Party" -> "Warn the party when your game lags";
+            case "Splits" -> "Phase split timers for runs";
+            case "Session Stats" -> "Per-session run statistics HUD";
+            case "Croesus Overlay" -> "Chest drop value overlay";
+            case "Croesus Loot" -> "Browse Croesus loot & prices";
+            case "Simon Says" -> "F7 Goldor device solver";
+            case "Class Colored Boots" -> "Dye boots by your dungeon class";
+            case "Name Color" -> "Recolor your username gradient";
+            case "See Others' Items" -> "Render other users' item cosmetics";
+            case "Customize" -> "Rename, dye & re-model your items";
+            case "Nametag" -> "Show your own above-head nametag";
+            case "Player Size" -> "Resize your model (render only)";
+            case "Party Commands" -> "Dot-commands usable in party chat";
+            case "Chat Channels" -> "Where dot-commands are allowed";
+            case "Rarity Hotbar" -> "Tint hotbar slots by item rarity";
+            case "Cooldown Overlay" -> "Ability cooldowns on item slots";
+            case "Pet HUD" -> "Show your active pet & level";
+            case "Soulflow HUD" -> "Track your soulflow count";
+            case "Fire Freeze Timer" -> "Fire Freeze staff cooldown timer";
+            case "Warp Map" -> "Mini warp map HUD";
+            case "Slayer XP Tracker" -> "Slayer XP per hour overlay";
+            case "Skill XP Tracker" -> "Skill XP per hour overlay";
+            case "Powder Tracker" -> "Powder & gemstone gains";
+            case "Farming Tracker" -> "Farming coins per hour";
+            case "Harvest Feast Tracker" -> "Harvest Feast event tracker";
+            case "Mining Tracker" -> "Mining coins per hour";
+            case "Trophy Frogs" -> "Trophy frog catch tracker";
+            default -> "";
+        };
+    }
+
+    // -----------------------------------------------------------------------------------
+    // Category / feature graph
+    // -----------------------------------------------------------------------------------
+    private void buildCategories() {
+        Column general   = new Column("General",   "gear");
+        Column dungeon   = new Column("Dungeon",   "arch");
+        Column cosmetics = new Column("Cosmetics", "hanger");
+        Column party     = new Column("Party",     "people");
+        Column visuals   = new Column("Visuals",   "eye");
+
+        // ===== General =====
+        {
+            Feature f = new Feature("Mod Prefix",
+                    () -> FishSettings.modPrefixEnabled, v -> FishSettings.modPrefixEnabled = v);
+            f.sub.add(new InputSetting("Prefix", "",
+                    () -> FishSettings.modPrefix,
+                    v -> FishSettings.modPrefix = (v != null && v.length() > 10) ? v.substring(0, 10) : v));
+            general.features.add(f);
+        }
+        general.features.add(new Feature("Auto Meow",
+                () -> FishSettings.chatMeow, v -> FishSettings.chatMeow = v));
+        general.features.add(new Feature("Smart Copy Chat",
+                () -> FishSettings.smartCopyChat, v -> FishSettings.smartCopyChat = v));
+        {
+            Feature f = new Feature("Compact Tab",
+                    () -> FishSettings.compactTabEnabled, v -> FishSettings.compactTabEnabled = v);
+            f.sub.add(new SliderIntSetting("Opacity %", "",
+                    () -> FishSettings.compactTabOpacity, v -> FishSettings.compactTabOpacity = v, 0, 100));
+            general.features.add(f);
+        }
+        {
+            Feature f = new Feature("Bridge Bot",
+                    () -> FishSettings.bridgeBotEnabled, v -> FishSettings.bridgeBotEnabled = v);
+            f.sub.add(new InputSetting("Bot IGN", "",
+                    () -> FishSettings.bridgeBotName,
+                    v -> { FishSettings.bridgeBotName = v; BridgeBot.rebuildPattern(); }));
+            general.features.add(f);
+        }
+        {
+            Feature f = new Feature("Chat Filter",
+                    () -> FishSettings.chatFilterEnabled, v -> FishSettings.chatFilterEnabled = v);
+            f.sub.add(new ToggleSetting("Kill Combo", "",
+                    () -> FishSettings.cfKillCombo, v -> FishSettings.cfKillCombo = v));
+            f.sub.add(new ToggleSetting("Boss Messages", "",
+                    () -> FishSettings.cfBossMessages, v -> FishSettings.cfBossMessages = v));
+            f.sub.add(new ToggleSetting("Friend Join/Leave", "",
+                    () -> FishSettings.cfFriendJoinLeave, v -> FishSettings.cfFriendJoinLeave = v));
+            f.sub.add(new ToggleSetting("Bazaar", "",
+                    () -> FishSettings.cfBazaar, v -> FishSettings.cfBazaar = v));
+            f.sub.add(new ToggleSetting("Warping", "",
+                    () -> FishSettings.cfWarping, v -> FishSettings.cfWarping = v));
+            general.features.add(f);
+        }
+
         // ===== Dungeon =====
-        Column dungeon = new Column("Dungeon");
         dungeon.features.add(new Feature("Dungeon Score",
                 () -> FishSettings.dungeonScoreEnabled, v -> FishSettings.dungeonScoreEnabled = v));
         dungeon.features.add(new Feature("Puzzle Overlay",
@@ -157,8 +383,10 @@ public class FishModScreen extends Screen {
         {
             Feature f = new Feature("Death Message",
                     () -> FishSettings.deathMessageEnabled, v -> FishSettings.deathMessageEnabled = v);
-            f.sub.add(new InputSetting("Template", "",
-                    () -> FishSettings.deathMessageTemplate, v -> FishSettings.deathMessageTemplate = v));
+            InputSetting tmpl = new InputSetting("Template", "",
+                    () -> FishSettings.deathMessageTemplate, v -> FishSettings.deathMessageTemplate = v);
+            tmpl.hint = "{name} = player who died";
+            f.sub.add(tmpl);
             f.sub.add(new ToggleSetting("To Party", "",
                     () -> FishSettings.deathMessageToParty, v -> FishSettings.deathMessageToParty = v));
             dungeon.features.add(f);
@@ -220,98 +448,11 @@ public class FishModScreen extends Screen {
                     () -> FishSettings.simonSaysFailMessage, v -> FishSettings.simonSaysFailMessage = v));
             dungeon.features.add(f);
         }
-        columns.add(dungeon);
+        dungeon.features.add(new Feature("Class Colored Boots",
+                () -> FishSettings.classColoredBootsEnabled, v -> FishSettings.classColoredBootsEnabled = v));
 
-        // ===== Trackers =====
-        Column trackers = new Column("Trackers");
-        trackers.features.add(new Feature("Slayer XP Tracker",
-                () -> FishSettings.slayerXpEnabled, v -> FishSettings.slayerXpEnabled = v));
-        trackers.features.add(new Feature("Skill XP Tracker",
-                () -> FishSettings.skillTrackerEnabled, v -> FishSettings.skillTrackerEnabled = v));
+        // ===== Cosmetics =====
         {
-            Feature f = new Feature("Powder Tracker",
-                    () -> FishSettings.powderTrackerEnabled, v -> FishSettings.powderTrackerEnabled = v);
-            f.sub.add(new DropdownSetting<>("Price", "", FishSettings.PriceMode.values(),
-                    () -> FishSettings.powderPriceMode, v -> FishSettings.powderPriceMode = v));
-            trackers.features.add(f);
-        }
-        {
-            Feature f = new Feature("Farming Tracker",
-                    () -> FishSettings.farmingTrackerEnabled, v -> FishSettings.farmingTrackerEnabled = v);
-            f.sub.add(new DropdownSetting<>("Price", "", FishSettings.PriceMode.values(),
-                    () -> FishSettings.farmingPriceMode, v -> FishSettings.farmingPriceMode = v));
-            trackers.features.add(f);
-        }
-        {
-            Feature f = new Feature("Harvest Feast Tracker",
-                    () -> FishSettings.harvestFeastEnabled, v -> FishSettings.harvestFeastEnabled = v);
-            f.sub.add(new DropdownSetting<>("Price", "", FishSettings.PriceMode.values(),
-                    () -> FishSettings.harvestFeastPriceMode, v -> FishSettings.harvestFeastPriceMode = v));
-            trackers.features.add(f);
-        }
-        {
-            Feature f = new Feature("Mining Tracker",
-                    () -> FishSettings.miningTrackerEnabled, v -> FishSettings.miningTrackerEnabled = v);
-            f.sub.add(new DropdownSetting<>("Price", "", FishSettings.PriceMode.values(),
-                    () -> FishSettings.miningPriceMode, v -> FishSettings.miningPriceMode = v));
-            trackers.features.add(f);
-        }
-        trackers.features.add(new Feature("Trophy Frogs",
-                () -> FishSettings.trophyFrogEnabled, v -> FishSettings.trophyFrogEnabled = v));
-        columns.add(trackers);
-
-        // ===== QOL =====
-        Column qol = new Column("QOL");
-        qol.features.add(new Feature("Rarity Hotbar",
-                () -> Visual.itemRarityBackground, v -> Visual.itemRarityBackground = v));
-        {
-            Feature f = new Feature("Cooldown Overlay",
-                    () -> FishSettings.cooldownOverlayEnabled, v -> FishSettings.cooldownOverlayEnabled = v);
-            f.sub.add(new ToggleSetting("Show Number", "",
-                    () -> FishSettings.cooldownShowText, v -> FishSettings.cooldownShowText = v));
-            f.sub.add(new ToggleSetting("Under 3s Only", "",
-                    () -> FishSettings.cooldownOnlyUnder3s, v -> FishSettings.cooldownOnlyUnder3s = v));
-            f.sub.add(new ToggleSetting("In Inventory", "",
-                    () -> FishSettings.cooldownInInventory, v -> FishSettings.cooldownInInventory = v));
-            qol.features.add(f);
-        }
-        {
-            Feature f = new Feature("Pet HUD",
-                    () -> FishSettings.petHudEnabled, v -> FishSettings.petHudEnabled = v);
-            f.sub.add(new ToggleSetting("Show Level", "",
-                    () -> FishSettings.petHudShowLevel, v -> FishSettings.petHudShowLevel = v));
-            f.sub.add(new ToggleSetting("Fade Idle", "",
-                    () -> FishSettings.petHudFadeIdle, v -> FishSettings.petHudFadeIdle = v));
-            f.sub.add(new SliderIntSetting("Fade ms", "",
-                    () -> FishSettings.petHudFadeMs, v -> FishSettings.petHudFadeMs = v, 1000, 30000));
-            qol.features.add(f);
-        }
-        {
-            Feature f = new Feature("Soulflow HUD",
-                    () -> FishSettings.soulflowHudEnabled, v -> FishSettings.soulflowHudEnabled = v);
-            f.sub.add(new InputIntSetting("Warning", "",
-                    () -> FishSettings.soulflowWarningThreshold, v -> FishSettings.soulflowWarningThreshold = v));
-            f.sub.add(new ToggleSetting("Missing Warn", "",
-                    () -> FishSettings.soulflowMissingNotifier, v -> FishSettings.soulflowMissingNotifier = v));
-            qol.features.add(f);
-        }
-        {
-            Feature f = new Feature("Bridge Bot",
-                    () -> FishSettings.bridgeBotEnabled, v -> FishSettings.bridgeBotEnabled = v);
-            f.sub.add(new InputSetting("Bot IGN", "",
-                    () -> FishSettings.bridgeBotName,
-                    v -> { FishSettings.bridgeBotName = v; BridgeBot.rebuildPattern(); }));
-            qol.features.add(f);
-        }
-        qol.features.add(new Feature("Fire Freeze Timer",
-                () -> FishSettings.fireFreezeTimerEnabled, v -> FishSettings.fireFreezeTimerEnabled = v));
-        columns.add(qol);
-
-        // ===== Chat/Misc =====
-        Column misc = new Column("Chat/Misc");
-        {
-            // Recolors your real username with a Start→End gradient. Custom names are no longer
-            // allowed (color only) — toggling on applies the gradient, off restores the plain IGN.
             Feature f = new Feature("Name Color",
                     NickState::isActive,
                     v -> { if (!v) NickState.reset(); else NickState.applyFromSettings(); });
@@ -325,61 +466,60 @@ public class FishModScreen extends Screen {
             f.sub.add(new ColorPickerSetting("Color", "",
                     () -> FishSettings.nickColorStart,
                     v -> { FishSettings.nickColorStart = v; if (NickState.isActive()) NickState.applyFromSettings(); }));
-            // Second picker is only shown in Gradient mode.
             f.sub.add(new ConditionalColorPickerSetting("End Color", "",
                     () -> "GRADIENT".equalsIgnoreCase(FishSettings.nickColorMode),
                     () -> FishSettings.nickColorEnd,
                     v -> { FishSettings.nickColorEnd = v; if (NickState.isActive()) NickState.applyFromSettings(); }));
             f.sub.add(new ToggleSetting("See Others", "",
                     () -> FishSettings.remoteNicksEnabled, v -> FishSettings.remoteNicksEnabled = v));
-            misc.features.add(f);
+            cosmetics.features.add(f);
         }
-        // Show other mod users' custom item/armor cosmetics (dye, trim, model, name, stars) on their
-        // worn armor + held items. Your own customizations still work locally regardless of this.
         {
             Feature f = new Feature("See Others' Items",
                     () -> FishSettings.remoteItemsEnabled,
                     v -> { FishSettings.remoteItemsEnabled = v;
                            if (v) fishmod.cosmetic.RemoteSync.forceSync();
                            else fishmod.cosmetic.RemoteItems.clearAll(); });
-            misc.features.add(f);
+            cosmetics.features.add(f);
         }
-        // Show your own nametag above your head (with [level] + emblem). Height adjustable; text size
-        // is fixed by ImmediatelyFast so there's no scale control.
+        {
+            Feature f = new Feature("Customize", null, null);
+            f.sub.add(new ButtonSetting("Open", "",
+                    () -> MinecraftClient.getInstance().setScreen(new fishmod.features.ItemCustomizeScreen())));
+            cosmetics.features.add(f);
+        }
         {
             Feature f = new Feature("Nametag",
                     () -> FishSettings.nickPreviewEnabled, v -> FishSettings.nickPreviewEnabled = v);
             f.sub.add(new SliderDoubleSetting("Height", "",
                     () -> FishSettings.nickPreviewYOffset, v -> FishSettings.nickPreviewYOffset = v, -1.5, 1.0));
-            misc.features.add(f);
+            cosmetics.features.add(f);
         }
         {
-            Feature f = new Feature("Warp Map",
-                    () -> FishSettings.warpMapHudEnabled, v -> FishSettings.warpMapHudEnabled = v);
-            f.sub.add(new ColorSetting("Dot Color", "",
-                    () -> FishSettings.warpMapDotColor, v -> FishSettings.warpMapDotColor = v));
-            misc.features.add(f);
+            Feature f = new Feature("Player Size",
+                    () -> FishSettings.playerSizeEnabled,
+                    v -> { FishSettings.playerSizeEnabled = v; fishmod.cosmetic.PlayerSize.uploadOwn(); });
+            f.sub.add(new SliderDoubleSetting("Width (X)", "",
+                    () -> FishSettings.playerSizeScaleX,
+                    v -> { FishSettings.playerSizeScaleX = v; fishmod.cosmetic.PlayerSize.uploadOwn(); },
+                    fishmod.cosmetic.PlayerSize.MIN, fishmod.cosmetic.PlayerSize.MAX));
+            f.sub.add(new SliderDoubleSetting("Height (Y)", "",
+                    () -> FishSettings.playerSizeScaleY,
+                    v -> { FishSettings.playerSizeScaleY = v; fishmod.cosmetic.PlayerSize.uploadOwn(); },
+                    fishmod.cosmetic.PlayerSize.MIN, fishmod.cosmetic.PlayerSize.MAX));
+            f.sub.add(new SliderDoubleSetting("Depth (Z)", "",
+                    () -> FishSettings.playerSizeScaleZ,
+                    v -> { FishSettings.playerSizeScaleZ = v; fishmod.cosmetic.PlayerSize.uploadOwn(); },
+                    fishmod.cosmetic.PlayerSize.MIN, fishmod.cosmetic.PlayerSize.MAX));
+            f.sub.add(new ToggleSetting("Share w/ All", "",
+                    () -> FishSettings.playerSizeShared,
+                    v -> { FishSettings.playerSizeShared = v;
+                           if (v) { fishmod.cosmetic.PlayerSize.uploadOwn(); fishmod.cosmetic.RemoteSync.forceSync(); }
+                           else { fishmod.cosmetic.PlayerSize.clearOwnShare(); fishmod.cosmetic.RemoteScales.clearAll(); } }));
+            cosmetics.features.add(f);
         }
-        {
-            Feature f = new Feature("Mod Prefix",
-                    () -> FishSettings.modPrefixEnabled, v -> FishSettings.modPrefixEnabled = v);
-            f.sub.add(new InputSetting("Prefix", "",
-                    () -> FishSettings.modPrefix,
-                    v -> FishSettings.modPrefix = (v != null && v.length() > 10) ? v.substring(0, 10) : v));
-            misc.features.add(f);
-        }
-        misc.features.add(new Feature("Auto Meow",
-                () -> FishSettings.chatMeow, v -> FishSettings.chatMeow = v));
-        {
-            Feature f = new Feature("Compact Tab",
-                    () -> FishSettings.compactTabEnabled, v -> FishSettings.compactTabEnabled = v);
-            f.sub.add(new SliderIntSetting("Opacity %", "",
-                    () -> FishSettings.compactTabOpacity, v -> FishSettings.compactTabOpacity = v, 0, 100));
-            misc.features.add(f);
-        }
-        misc.features.add(new Feature("Smart Copy Chat",
-                () -> FishSettings.smartCopyChat, v -> FishSettings.smartCopyChat = v));
-        // Party Commands + Chat Channels pinned to the bottom.
+
+        // ===== Party =====
         {
             Feature f = new Feature("Party Commands", null, null);
             f.sub.add(new ToggleSetting(".ai", "", () -> FishSettings.pcAllinvite, v -> FishSettings.pcAllinvite = v));
@@ -387,6 +527,7 @@ public class FishModScreen extends Screen {
             f.sub.add(new ToggleSetting(".cata", "", () -> FishSettings.pcCata, v -> FishSettings.pcCata = v));
             f.sub.add(new ToggleSetting(".rtca", "", () -> FishSettings.pcRtca, v -> FishSettings.pcRtca = v));
             f.sub.add(new ToggleSetting(".rtc", "", () -> FishSettings.pcRtc, v -> FishSettings.pcRtc = v));
+            f.sub.add(new ToggleSetting(".crtc", "", () -> FishSettings.pcCrtc, v -> FishSettings.pcCrtc = v));
             f.sub.add(new ToggleSetting(".dprofit", "", () -> FishSettings.pcDprofit, v -> FishSettings.pcDprofit = v));
             f.sub.add(new ToggleSetting(".corpse", "", () -> FishSettings.pcCorpse, v -> FishSettings.pcCorpse = v));
             f.sub.add(new ToggleSetting(".f# / .m#", "", () -> FishSettings.pcJoinFloor, v -> FishSettings.pcJoinFloor = v));
@@ -404,9 +545,10 @@ public class FishModScreen extends Screen {
             f.sub.add(new ToggleSetting(".level", "", () -> FishSettings.pcLevel, v -> FishSettings.pcLevel = v));
             f.sub.add(new ToggleSetting(".farming", "", () -> FishSettings.pcFarming, v -> FishSettings.pcFarming = v));
             f.sub.add(new ToggleSetting(".nuc", "", () -> FishSettings.pcNuc, v -> FishSettings.pcNuc = v));
+            f.sub.add(new ToggleSetting(".worm / .scatha", "", () -> FishSettings.pcWorm, v -> FishSettings.pcWorm = v));
             f.sub.add(new ToggleSetting(".help / .?", "", () -> FishSettings.pcHelp, v -> FishSettings.pcHelp = v));
             f.sub.add(new ToggleSetting("Party Actions", "", () -> FishSettings.pcPartyActions, v -> FishSettings.pcPartyActions = v));
-            misc.features.add(f);
+            party.features.add(f);
         }
         {
             Feature f = new Feature("Chat Channels", null, null);
@@ -414,235 +556,372 @@ public class FishModScreen extends Screen {
             f.sub.add(new ToggleSetting("Party", "", () -> FishSettings.chatParty, v -> FishSettings.chatParty = v));
             f.sub.add(new ToggleSetting("Guild", "", () -> FishSettings.chatGuild, v -> FishSettings.chatGuild = v));
             f.sub.add(new ToggleSetting("All", "", () -> FishSettings.chatAll, v -> FishSettings.chatAll = v));
-            misc.features.add(f);
+            party.features.add(f);
         }
-        columns.add(misc);
+
+        // ===== Visuals =====
+        visuals.features.add(new Feature("Rarity Hotbar",
+                () -> Visual.itemRarityBackground, v -> Visual.itemRarityBackground = v));
+        {
+            Feature f = new Feature("Cooldown Overlay",
+                    () -> FishSettings.cooldownOverlayEnabled, v -> FishSettings.cooldownOverlayEnabled = v);
+            f.sub.add(new ToggleSetting("Show Number", "",
+                    () -> FishSettings.cooldownShowText, v -> FishSettings.cooldownShowText = v));
+            f.sub.add(new ToggleSetting("Under 3s Only", "",
+                    () -> FishSettings.cooldownOnlyUnder3s, v -> FishSettings.cooldownOnlyUnder3s = v));
+            f.sub.add(new ToggleSetting("In Inventory", "",
+                    () -> FishSettings.cooldownInInventory, v -> FishSettings.cooldownInInventory = v));
+            visuals.features.add(f);
+        }
+        {
+            Feature f = new Feature("Pet HUD",
+                    () -> FishSettings.petHudEnabled, v -> FishSettings.petHudEnabled = v);
+            f.sub.add(new ToggleSetting("Show Level", "",
+                    () -> FishSettings.petHudShowLevel, v -> FishSettings.petHudShowLevel = v));
+            f.sub.add(new ToggleSetting("Fade Idle", "",
+                    () -> FishSettings.petHudFadeIdle, v -> FishSettings.petHudFadeIdle = v));
+            f.sub.add(new SliderIntSetting("Fade ms", "",
+                    () -> FishSettings.petHudFadeMs, v -> FishSettings.petHudFadeMs = v, 1000, 30000));
+            visuals.features.add(f);
+        }
+        {
+            Feature f = new Feature("Soulflow HUD",
+                    () -> FishSettings.soulflowHudEnabled, v -> FishSettings.soulflowHudEnabled = v);
+            f.sub.add(new InputIntSetting("Warning", "",
+                    () -> FishSettings.soulflowWarningThreshold, v -> FishSettings.soulflowWarningThreshold = v));
+            f.sub.add(new ToggleSetting("Missing Warn", "",
+                    () -> FishSettings.soulflowMissingNotifier, v -> FishSettings.soulflowMissingNotifier = v));
+            visuals.features.add(f);
+        }
+        visuals.features.add(new Feature("Fire Freeze Timer",
+                () -> FishSettings.fireFreezeTimerEnabled, v -> FishSettings.fireFreezeTimerEnabled = v));
+        visuals.features.add(new Feature("Explosive Shot",
+                () -> FishSettings.explosiveShotEnabled, v -> FishSettings.explosiveShotEnabled = v));
+        {
+            Feature f = new Feature("Warp Map",
+                    () -> FishSettings.warpMapHudEnabled, v -> FishSettings.warpMapHudEnabled = v);
+            f.sub.add(new ColorSetting("Dot Color", "",
+                    () -> FishSettings.warpMapDotColor, v -> FishSettings.warpMapDotColor = v));
+            visuals.features.add(f);
+        }
+        visuals.features.add(new Feature("Slayer XP Tracker",
+                () -> FishSettings.slayerXpEnabled, v -> FishSettings.slayerXpEnabled = v));
+        visuals.features.add(new Feature("Skill XP Tracker",
+                () -> FishSettings.skillTrackerEnabled, v -> FishSettings.skillTrackerEnabled = v));
+        {
+            Feature f = new Feature("Powder Tracker",
+                    () -> FishSettings.powderTrackerEnabled, v -> FishSettings.powderTrackerEnabled = v);
+            f.sub.add(new DropdownSetting<>("Price", "", FishSettings.PriceMode.values(),
+                    () -> FishSettings.powderPriceMode, v -> FishSettings.powderPriceMode = v));
+            visuals.features.add(f);
+        }
+        {
+            Feature f = new Feature("Farming Tracker",
+                    () -> FishSettings.farmingTrackerEnabled, v -> FishSettings.farmingTrackerEnabled = v);
+            f.sub.add(new DropdownSetting<>("Price", "", FishSettings.PriceMode.values(),
+                    () -> FishSettings.farmingPriceMode, v -> FishSettings.farmingPriceMode = v));
+            visuals.features.add(f);
+        }
+        {
+            Feature f = new Feature("Harvest Feast Tracker",
+                    () -> FishSettings.harvestFeastEnabled, v -> FishSettings.harvestFeastEnabled = v);
+            f.sub.add(new DropdownSetting<>("Price", "", FishSettings.PriceMode.values(),
+                    () -> FishSettings.harvestFeastPriceMode, v -> FishSettings.harvestFeastPriceMode = v));
+            visuals.features.add(f);
+        }
+        {
+            Feature f = new Feature("Mining Tracker",
+                    () -> FishSettings.miningTrackerEnabled, v -> FishSettings.miningTrackerEnabled = v);
+            f.sub.add(new DropdownSetting<>("Price", "", FishSettings.PriceMode.values(),
+                    () -> FishSettings.miningPriceMode, v -> FishSettings.miningPriceMode = v));
+            visuals.features.add(f);
+        }
+        visuals.features.add(new Feature("Trophy Frogs",
+                () -> FishSettings.trophyFrogEnabled, v -> FishSettings.trophyFrogEnabled = v));
+
+        columns.add(general);
+        columns.add(dungeon);
+        columns.add(cosmetics);
+        columns.add(party);
+        columns.add(visuals);
     }
 
     // -----------------------------------------------------------------------------------
-    // Layout
+    // Region geometry
     // -----------------------------------------------------------------------------------
-    private int totalColsWidth() {
-        return columns.size() * COL_W + (columns.size() - 1) * COL_GAP;
+    // overlay panel bounds (centred, clamped to the window for small GUI scales)
+    private int panelW()  { return Math.min(PANEL_W, this.width  - 20); }
+    private int panelH()  { return Math.min(PANEL_H, this.height - 20); }
+    private int left()    { return (this.width  - panelW()) / 2; }
+    private int top()     { return (this.height - panelH()) / 2; }
+    private int right()   { return left() + panelW(); }
+    private int bottom()  { return top()  + panelH(); }
+
+    private int cx0()   { return left() + SIDEBAR_W + CONTENT_PAD; }
+    private int cx1()   { return right() - CONTENT_PAD; }
+    private int cyTop() { return top() + TITLE_H + 10; }
+    private int cyBot() { return bottom() - FOOTER_H - 6; }
+
+    private Column currentColumn() { return columns.get(selectedCat); }
+
+    private List<Feature> visibleFeatures() {
+        String f = searchText.toLowerCase();
+        List<Feature> out = new ArrayList<>();
+        for (Feature ft : currentColumn().features) {
+            if (f.isEmpty() || ft.name.toLowerCase().contains(f)) out.add(ft);
+        }
+        return out;
     }
-    private int colsStartX() {
-        return Math.max(PADDING, (this.width - totalColsWidth()) / 2);
-    }
-    private int colsTopY()   { return PADDING; }
-    private int colsBottomY() { return this.height - PADDING * 2 - SEARCH_H; }
-    private int colX(int i)  { return colsStartX() + i * (COL_W + COL_GAP); }
 
     private int detailHeightForSelected() {
         if (selectedFeature == null) return 0;
         int total = 0;
         for (Setting s : selectedFeature.sub) total += s.getHeight();
-        return total + 8;
+        return total;
+    }
+    private int subPanelHeight(Feature f) {
+        return (f == selectedFeature && !f.sub.isEmpty()) ? detailHeightForSelected() + 10 : 0;
     }
 
-    // -----------------------------------------------------------------------------------
-    // Transparent background: no-op
-    // -----------------------------------------------------------------------------------
-    @Override
-    public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) { }
+    private int contentTotalHeight() {
+        int h = 6;
+        for (Feature f : visibleFeatures()) {
+            h += ROW_H + subPanelHeight(f) + ROW_GAP;
+        }
+        return h;
+    }
+    private int maxScroll() { return Math.max(0, contentTotalHeight() - (cyBot() - cyTop())); }
+    private void clampScroll() { scroll = MathHelper.clamp(scroll, 0, maxScroll()); }
 
-    @Override
-    public void renderInGameBackground(DrawContext ctx) { }
+    // -----------------------------------------------------------------------------------
+    // Background: solid dark (matches the mockup), no vanilla blur/dirt
+    // -----------------------------------------------------------------------------------
+    @Override public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) { }
+    @Override public void renderInGameBackground(DrawContext ctx) { }
 
     // -----------------------------------------------------------------------------------
     // Render
     // -----------------------------------------------------------------------------------
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
-        String filter = searchText.toLowerCase();
-        for (int i = 0; i < columns.size(); i++) {
-            renderColumn(ctx, columns.get(i), colX(i), colsTopY(), mouseX, mouseY, filter, i);
-        }
-        if (selectedFeature != null && "Nickname".equals(selectedFeature.name)) renderColorKey(ctx);
-        renderBottomBar(ctx, mouseX, mouseY);
+        if (resetArmed && System.currentTimeMillis() - resetArmedAt > 3000) resetArmed = false;
+        clampScroll();
+
+        // dim the live game behind the overlay
+        ctx.fill(0, 0, this.width, this.height, SCRIM);
+
+        // centred overlay panel
+        int lx = left(), ty = top(), rx = right(), by = bottom();
+        ctx.fillGradient(lx, ty, rx, by, BG_TOP, BG_BOT);
+        ctx.fill(lx, ty + TITLE_H, lx + SIDEBAR_W, by, SIDEBAR_BG);
+        ctx.fill(lx + SIDEBAR_W, ty + TITLE_H, rx, by - FOOTER_H, CONTENT_BG);
+        // 1px frame around the panel
+        ctx.fill(lx, ty, rx, ty + 1, PANEL_BORDER);
+        ctx.fill(lx, by - 1, rx, by, PANEL_BORDER);
+        ctx.fill(lx, ty, lx + 1, by, PANEL_BORDER);
+        ctx.fill(rx - 1, ty, rx, by, PANEL_BORDER);
+
+        renderTitleBar(ctx, mouseX, mouseY);
+        renderSidebar(ctx, mouseX, mouseY);
+        renderContent(ctx, mouseX, mouseY);
+        renderFooter(ctx, mouseX, mouseY);
+
         super.render(ctx, mouseX, mouseY, delta);
     }
 
-    private void renderColumn(DrawContext ctx, Column col, int x, int y, int mouseX, int mouseY, String filter, int colIndex) {
-        float colDelay = colIndex * COL_STAGGER_MS;
+    private void renderTitleBar(DrawContext ctx, int mouseX, int mouseY) {
+        int lx = left(), ty = top();
+        // wordmark "FishMod"
+        float ws = 1.6f;
+        int wy = ty + (TITLE_H - (int) (8 * ws)) / 2;
+        sst(ctx, this.textRenderer, "Fish", lx + 22, wy, TEXT_COLOR, ws);
+        int fw = sw(this.textRenderer, "Fish", ws);
+        sst(ctx, this.textRenderer, "Mod", lx + 22 + fw, wy, ACCENT, ws);
+        int totalW = fw + sw(this.textRenderer, "Mod", ws);
 
-        // Header strip (first thing to reveal in the column)
-        float hr = reveal(colDelay);
-        int hdy = Math.round((1f - hr) * -SLIDE_PX);
-        ctx.fill(x, y + hdy, x + COL_W, y + COL_HEADER_H + hdy, fade(COL_HEADER_BG, hr));
-        ctx.fill(x, y + COL_HEADER_H - 1 + hdy, x + COL_W, y + COL_HEADER_H + hdy, fade(BORDER_COLOR, hr));
-        int titleX = x + (COL_W - stw(this.textRenderer, col.name)) / 2;
-        st(ctx, this.textRenderer, col.name, titleX, y + (COL_HEADER_H - 8) / 2 + hdy, fade(TEXT_COLOR, hr));
+        // divider + teal accent under the wordmark
+        ctx.fill(lx, ty + TITLE_H, right(), ty + TITLE_H + 1, DIVIDER);
+        ctx.fill(lx + 22, ty + TITLE_H, lx + 22 + totalW, ty + TITLE_H + 1, ACCENT);
 
-        int py = y + COL_HEADER_H + 3;
-        int colBottom = colsBottomY();
-        int rowIndex = 0;
-        for (Feature f : col.features) {
-            if (!filter.isEmpty() && !f.name.toLowerCase().contains(filter)) continue;
-            if (py + PILL_H > colBottom) break;
-
-            // Per-row staggered reveal: fade in + drop down a few px into place.
-            float rr = reveal(colDelay + (rowIndex + 1) * ROW_STAGGER_MS);
-            rowIndex++;
-            int rdy = Math.round((1f - rr) * -SLIDE_PX);
-
-            boolean on = f.hasMaster() && f.get.get();
-            boolean hov = mouseX >= x && mouseX <= x + COL_W && mouseY >= py && mouseY <= py + PILL_H;
-            int bg = on ? (hov ? PILL_ON_HOVER : PILL_ON) : (hov ? PILL_OFF_HOVER : PILL_OFF);
-            roundRect(ctx, x, py + rdy, x + COL_W, py + PILL_H + rdy, fade(bg, rr));
-
-            // Pill label, truncated to column width
-            String label = f.name;
-            int maxW = COL_W - 12;
-            if (stw(this.textRenderer, label) > maxW) {
-                label = this.textRenderer.trimToWidth(label, (int) ((maxW - 4) / TEXT_SCALE)) + "…";
-            }
-            int tx = x + 6;
-            int ty = py + (PILL_H - 8) / 2 + rdy;
-            st(ctx, this.textRenderer, label, tx, ty, fade(TEXT_COLOR, rr));
-            py += PILL_H + PILL_GAP;
-
-            // Inline detail panel right under the selected pill
-            if (f == selectedFeature && !f.sub.isEmpty()) {
-                int dH = Math.min(detailHeightForSelected(), colBottom - py);
-                if (dH > 8) {
-                    ctx.fill(x, py, x + COL_W, py + dH, PANEL_BG);
-                    ctx.fill(x, py, x + COL_W, py + 1, BORDER_COLOR);
-                    ctx.fill(x, py + dH - 1, x + COL_W, py + dH, BORDER_COLOR);
-                    ctx.fill(x, py, x + 1, py + dH, BORDER_COLOR);
-                    ctx.fill(x + COL_W - 1, py, x + COL_W, py + dH, BORDER_COLOR);
-
-                    ctx.enableScissor(x + 1, py + 1, x + COL_W - 1, py + dH - 1);
-                    int leftX = x + 4;
-                    int rightX = x + COL_W - 4;
-                    int sy = py + 4 - detailScroll;
-                    for (Setting s : f.sub) {
-                        int sh = s.getHeight();
-                        if (sy + sh < py || sy > py + dH) { sy += sh; continue; }
-                        if (!(s instanceof SubcategoryHeader)) {
-                            // Truncated row name on the left
-                            int nameMaxW = (rightX - leftX) - 78;
-                            if (nameMaxW < 30) nameMaxW = 30;
-                            String name = s.name;
-                            if (stw(this.textRenderer, name) > nameMaxW) {
-                                name = this.textRenderer.trimToWidth(name, (int) ((nameMaxW - 4) / TEXT_SCALE)) + "…";
-                            }
-                            st(ctx, this.textRenderer, name, leftX + 2, sy + (sh - 8) / 2, TEXT_COLOR);
-                        }
-                        s.render(ctx, leftX, rightX, sy, mouseX, mouseY, this.textRenderer);
-                        sy += sh;
-                    }
-                    ctx.disableScissor();
-                    py += dH + PILL_GAP;
-                }
-            }
-        }
-    }
-
-    /** Readable color-code key, shown in its own panel under the Nickname section when expanded. */
-    private void renderColorKey(DrawContext ctx) {
-        var tr = this.textRenderer;
-        int lineH = 12;
-        int cols = 2;                       // color swatches per row (narrow so it fits the margin)
-        int cellW = 48;                     // swatch + " &x" label
-        int padX = 8, padY = 6;
-        int panelW = padX * 2 + cols * cellW;
-        int colorRows = (CODE_COLORS.length + cols - 1) / cols;
-        int fmtRows = CODE_FORMATS.length;  // one per row
-        int panelH = padY * 2 + lineH        // title
-                + colorRows * lineH
-                + 4                          // gap
-                + fmtRows * lineH;
-
-        // Place it in the empty margin to the RIGHT of the last column so it never covers a tab.
-        // If there isn't room on the right, fall back to the left margin.
-        int colsRight = colX(columns.size() - 1) + COL_W;
-        int px = colsRight + COL_GAP;
-        if (px + panelW > this.width - PADDING) {
-            int leftMargin = colsStartX() - PADDING;
-            px = (leftMargin >= panelW + COL_GAP) ? colsStartX() - COL_GAP - panelW : this.width - PADDING - panelW;
-            if (px < PADDING) px = PADDING;
-        }
-        int py = colsTopY();
-        if (py + panelH > this.height - PADDING) py = this.height - PADDING - panelH;
-
-        // Panel background + border.
-        ctx.fill(px, py, px + panelW, py + panelH, PANEL_BG);
-        ctx.fill(px, py, px + panelW, py + 1, ACCENT);
-        ctx.fill(px, py + panelH - 1, px + panelW, py + panelH, ACCENT);
-        ctx.fill(px, py, px + 1, py + panelH, BORDER_COLOR);
-        ctx.fill(px + panelW - 1, py, px + panelW, py + panelH, BORDER_COLOR);
-
-        int ox = px + padX, oy = py + padY;
-        ctx.drawText(tr, "Color Codes", ox, oy, TEXT_COLOR, false);
-        oy += lineH;
-
-        int swatch = 8;
-        for (int i = 0; i < CODE_COLORS.length; i++) {
-            // Column-major: left column &0-&7, right column &8-&f (the familiar code chart).
-            int r = i % colorRows, c = i / colorRows;
-            int x = ox + c * cellW;
-            int yy = oy + r * lineH;
-            ctx.fill(x, yy, x + swatch, yy + swatch, 0xFF000000 | CODE_COLORS[i][1]);
-            ctx.fill(x, yy, x + swatch, yy + 1, BORDER_COLOR);
-            ctx.fill(x, yy + swatch - 1, x + swatch, yy + swatch, BORDER_COLOR);
-            ctx.drawText(tr, "&" + (char) CODE_COLORS[i][0], x + swatch + 3, yy, TEXT_COLOR, false);
-        }
-        oy += colorRows * lineH + 4;
-
-        // Format codes as live styled samples, one per row.
-        for (int i = 0; i < CODE_FORMATS.length; i++) {
-            int yy = oy + i * lineH;
-            ctx.drawText(tr, CODE_FORMATS[i][0], ox, yy, ACCENT, false);
-            ctx.drawText(tr, CODE_FORMATS[i][1], ox + tr.getWidth(CODE_FORMATS[i][0]) + 3, yy, TEXT_COLOR, false);
-        }
-    }
-
-    private void renderBottomBar(DrawContext ctx, int mouseX, int mouseY) {
-        int by = this.height - PADDING - SEARCH_H;
-        int barW = Math.min(360, this.width - PADDING * 2 - SCALE_BTN_W - 6);
-        int bx = (this.width - barW - SCALE_BTN_W - 6) / 2;
+        // search field (top-right)
+        int swW = 156, swH = 20;
+        int sx = right() - CONTENT_PAD - swW;
+        int sy = ty + (TITLE_H - swH) / 2;
         if (searchField == null) {
-            searchField = new TextFieldWidget(this.textRenderer, bx + 4, by + 4, barW - 8, SEARCH_H - 6, Text.empty());
-            searchField.setMaxLength(64);
+            searchField = new TextFieldWidget(this.textRenderer, sx + 6, sy + 6, swW - 12, swH - 6, Text.empty());
+            searchField.setMaxLength(48);
             searchField.setDrawsBackground(false);
-            searchField.setChangedListener(s -> searchText = s);
+            searchField.setChangedListener(s -> { searchText = s; scroll = 0; });
         } else {
-            searchField.setX(bx + 4);
-            searchField.setY(by + 4);
-            searchField.setWidth(barW - 8);
+            searchField.setX(sx + 6); searchField.setY(sy + 6); searchField.setWidth(swW - 12);
         }
-        // Bottom bar reveals after the columns have begun cascading in.
-        float br = reveal(columns.size() * COL_STAGGER_MS + 60f);
-        ctx.fill(bx, by, bx + barW, by + SEARCH_H, fade(COL_HEADER_BG, br));
-        ctx.fill(bx, by, bx + barW, by + 1, fade(searchFocused ? ACCENT : BORDER_COLOR, br));
-        ctx.fill(bx, by + SEARCH_H - 1, bx + barW, by + SEARCH_H, fade(searchFocused ? ACCENT : BORDER_COLOR, br));
-        ctx.fill(bx, by, bx + 1, by + SEARCH_H, fade(BORDER_COLOR, br));
-        ctx.fill(bx + barW - 1, by, bx + barW, by + SEARCH_H, fade(BORDER_COLOR, br));
+        panel(ctx, sx, sy, sx + swW, sy + swH, 0, ROW_BG, searchFocused ? ACCENT : DIVIDER);
+        // magnifier glyph
+        disc(ctx, sx + 11, sy + swH / 2 - 1, 3, SUBTEXT_COLOR);
+        disc(ctx, sx + 11, sy + swH / 2 - 1, 1, ROW_BG);
+        ctx.fill(sx + 13, sy + swH / 2 + 1, sx + 16, sy + swH / 2 + 2, SUBTEXT_COLOR);
         if (searchText.isEmpty() && !searchFocused) {
-            st(ctx, this.textRenderer, "Search here...", bx + 6, by + (SEARCH_H - 8) / 2, fade(SUBTEXT_COLOR, br));
+            sst(ctx, this.textRenderer, "Search…", sx + 22, sy + (swH - 8) / 2 + 1, SUBTEXT_COLOR, 0.9f);
         } else {
+            // nudge field right of the glyph
+            searchField.setX(sx + 22); searchField.setWidth(swW - 28);
             searchField.render(ctx, mouseX, mouseY, 0);
         }
+    }
 
-        // Scale icon → opens existing HUD editor
-        int sx = bx + barW + 6;
-        boolean sHov = mouseX >= sx && mouseX <= sx + SCALE_BTN_W && mouseY >= by && mouseY <= by + SEARCH_H;
-        ctx.fill(sx, by, sx + SCALE_BTN_W, by + SEARCH_H, fade(sHov ? PILL_OFF_HOVER : COL_HEADER_BG, br));
-        ctx.fill(sx, by, sx + SCALE_BTN_W, by + 1, fade(sHov ? ACCENT : BORDER_COLOR, br));
-        ctx.fill(sx, by + SEARCH_H - 1, sx + SCALE_BTN_W, by + SEARCH_H, fade(sHov ? ACCENT : BORDER_COLOR, br));
-        ctx.fill(sx, by, sx + 1, by + SEARCH_H, fade(BORDER_COLOR, br));
-        ctx.fill(sx + SCALE_BTN_W - 1, by, sx + SCALE_BTN_W, by + SEARCH_H, fade(BORDER_COLOR, br));
-        // expand-arrows glyph
-        int gx = sx + SCALE_BTN_W / 2 - 4;
-        int gy = by + SEARCH_H / 2 - 4;
-        int gc = fade(sHov ? ACCENT_HOVER : ACCENT, br);
-        ctx.fill(gx, gy, gx + 8, gy + 1, gc);
-        ctx.fill(gx, gy, gx + 1, gy + 4, gc);
-        ctx.fill(gx, gy + 7, gx + 4, gy + 8, gc);
-        ctx.fill(gx, gy + 4, gx + 1, gy + 8, gc);
-        ctx.fill(gx + 7, gy, gx + 8, gy + 4, gc);
-        ctx.fill(gx + 4, gy + 7, gx + 8, gy + 8, gc);
-        ctx.fill(gx + 7, gy + 4, gx + 8, gy + 8, gc);
+    private void renderSidebar(DrawContext ctx, int mouseX, int mouseY) {
+        int lx = left(), ty = top();
+        ctx.fill(lx + SIDEBAR_W, ty + TITLE_H, lx + SIDEBAR_W + 1, bottom(), DIVIDER);
+        int y = ty + TITLE_H + 10;
+        for (int i = 0; i < columns.size(); i++) {
+            Column c = columns.get(i);
+            int x0 = lx + 8, x1 = lx + SIDEBAR_W - 8;
+            boolean sel = i == selectedCat;
+            boolean hov = mouseX >= lx && mouseX <= lx + SIDEBAR_W && mouseY >= y && mouseY <= y + CAT_ITEM_H;
+            if (sel) {
+                ctx.fill(x0, y, x1, y + CAT_ITEM_H, 0xFF12262A);
+                ctx.fill(lx, y, lx + 3, y + CAT_ITEM_H, ACCENT);
+            } else if (hov) {
+                ctx.fill(x0, y, x1, y + CAT_ITEM_H, ROW_BG_HOVER);
+            }
+            int gx = x0 + 18, gcy = y + CAT_ITEM_H / 2;
+            drawGlyph(ctx, c.icon, gx, gcy, sel ? ACCENT_HOVER : 0xFF8893A0, sel ? 0xFF12262A : SIDEBAR_BG);
+            sst(ctx, this.textRenderer, c.name, gx + 18, gcy - 5, sel ? TEXT_COLOR : 0xFFAEB7C2, 1.1f);
+            y += CAT_ITEM_H + 4;
+        }
+    }
+
+    private void renderContent(DrawContext ctx, int mouseX, int mouseY) {
+        int x0 = cx0(), x1 = cx1();
+        int top = cyTop(), bot = cyBot();
+        ctx.enableScissor(left() + SIDEBAR_W + 1, top, right(), bot);
+
+        int y = top - scroll;
+        for (Feature f : visibleFeatures()) {
+            int rowTop = y;
+            if (rowTop + ROW_H > top && rowTop < bot) renderRow(ctx, f, x0, x1, rowTop, mouseX, mouseY);
+            y += ROW_H;
+            int subH = subPanelHeight(f);
+            if (subH > 0) {
+                if (y + subH > top && y < bot) renderSubPanel(ctx, f, x0, x1, y, mouseX, mouseY);
+                y += subH;
+            }
+            y += ROW_GAP;
+        }
+        ctx.disableScissor();
+
+        // scrollbar
+        int ms = maxScroll();
+        if (ms > 0) {
+            int trackX = x1 + 6;
+            int vp = bot - top;
+            int barH = Math.max(24, (int) ((long) vp * vp / contentTotalHeight()));
+            int barY = top + (int) ((long) (vp - barH) * scroll / ms);
+            ctx.fill(trackX, top, trackX + 3, bot, 0xFF141A20);
+            ctx.fill(trackX, barY, trackX + 3, barY + barH, ACCENT);
+        }
+    }
+
+    private void renderRow(DrawContext ctx, Feature f, int x0, int x1, int top, int mouseX, int mouseY) {
+        boolean on = f.hasMaster() && f.get.get();
+        boolean inView = mouseY >= cyTop() && mouseY <= cyBot();
+        boolean hover = inView && mouseX >= x0 && mouseX <= x1 && mouseY >= top && mouseY <= top + ROW_H;
+
+        ctx.fill(x0, top, x1, top + ROW_H, hover ? ROW_BG_HOVER : ROW_BG);
+        if (on) ctx.fill(x0, top, x0 + 2, top + ROW_H, ACCENT);
+
+        // icon tile
+        int ts = 24, tx = x0 + 9, ty = top + (ROW_H - ts) / 2;
+        ctx.fill(tx, ty, tx + ts, ty + ts, on ? TILE_BG_ON : TILE_BG);
+        drawGlyph(ctx, iconFor(f.name), tx + ts / 2, ty + ts / 2, on ? ACCENT_HOVER : 0xFF49C9C3, on ? TILE_BG_ON : TILE_BG);
+
+        // texts
+        int labelX = tx + ts + 9;
+        String d = descFor(f.name);
+        if (d.isEmpty()) {
+            ctx.drawText(this.textRenderer, f.name, labelX, top + (ROW_H - 8) / 2, TEXT_COLOR, false);
+        } else {
+            ctx.drawText(this.textRenderer, f.name, labelX, top + 8, TEXT_COLOR, false);
+            sst(ctx, this.textRenderer, d, labelX, top + 21, SUBTEXT_COLOR, 0.85f);
+        }
+
+        // control
+        if (f.hasMaster()) {
+            int tgx = x1 - 14 - TOG2_W, tgy = top + (ROW_H - TOG2_H) / 2;
+            boolean th = inView && mouseX >= tgx && mouseX <= tgx + TOG2_W && mouseY >= tgy && mouseY <= tgy + TOG2_H;
+            drawBigToggle(ctx, tgx, tgy, on, th);
+            if (!f.sub.isEmpty()) drawChevron(ctx, tgx - 16, top + ROW_H / 2 - 2, f == selectedFeature, CHEVRON_COLOR);
+        } else if (!f.sub.isEmpty()) {
+            drawChevron(ctx, x1 - 18, top + ROW_H / 2 - 2, f == selectedFeature, f == selectedFeature ? ACCENT : 0xFF7A8694);
+        }
+    }
+
+    private void drawBigToggle(DrawContext ctx, int x, int y, boolean on, boolean hover) {
+        int track = on ? (hover ? ACCENT_HOVER : ACCENT) : (hover ? 0xFF333D48 : 0xFF252D37);
+        pill(ctx, x, y, x + TOG2_W, y + TOG2_H, track);
+        int knobD = TOG2_H - 6;
+        int kcx = on ? x + TOG2_W - 3 - knobD / 2 : x + 3 + knobD / 2;
+        disc(ctx, kcx, y + TOG2_H / 2, knobD / 2 + 1, 0xFFFFFFFF);
+        String t = on ? "ON" : "OFF";
+        int tw = sw(this.textRenderer, t, 0.8f);
+        int tx = on ? x + 7 : x + TOG2_W - 7 - tw;
+        sst(ctx, this.textRenderer, t, tx, y + (TOG2_H - 6) / 2, on ? 0xFF06302F : 0xFF8893A0, 0.8f);
+    }
+
+    private void renderSubPanel(DrawContext ctx, Feature f, int x0, int x1, int top, int mouseX, int mouseY) {
+        int subH = detailHeightForSelected() + 10;
+        ctx.fill(x0, top, x1, top + subH, SUBROW_BG);
+        ctx.fill(x0, top, x0 + 2, top + subH, ACCENT);
+        int leftX = x0 + 14, rightX = x1 - 12;
+        int sy = top + 6;
+        for (Setting s : f.sub) {
+            int sh = s.getHeight();
+            if (!(s instanceof SubcategoryHeader) && !(s instanceof InputSetting)) {
+                st(ctx, this.textRenderer, s.name, leftX + 2, sy + (sh - 8) / 2, TEXT_COLOR);
+            }
+            s.render(ctx, leftX, rightX, sy, mouseX, mouseY, this.textRenderer);
+            sy += sh;
+        }
+    }
+
+    private void renderFooter(DrawContext ctx, int mouseX, int mouseY) {
+        int fY = bottom() - FOOTER_H;
+        ctx.fill(left() + SIDEBAR_W, fY, right(), fY + 1, DIVIDER);
+        int by = fY + (FOOTER_H - 26) / 2, bh = 26;
+
+        // Edit HUD (left)
+        int ehW = 96, ehX = cx0();
+        drawButton(ctx, ehX, by, ehW, bh, "Edit HUD", false, hovBtn(mouseX, mouseY, ehX, by, ehW, bh));
+
+        // Save & Close (far right)
+        int scW = 126, scX = cx1() - scW;
+        drawButton(ctx, scX, by, scW, bh, "Save & Close", true, hovBtn(mouseX, mouseY, scX, by, scW, bh));
+
+        // Reset (left of Save & Close)
+        int rsW = 84, rsX = scX - 10 - rsW;
+        String rsLabel = resetArmed ? "Confirm?" : "Reset";
+        drawButton(ctx, rsX, by, rsW, bh, rsLabel, false, hovBtn(mouseX, mouseY, rsX, by, rsW, bh), resetArmed ? 0xFFE05A5A : ACCENT);
+    }
+
+    private boolean hovBtn(int mx, int my, int x, int y, int w, int h) {
+        return mx >= x && mx <= x + w && my >= y && my <= y + h;
+    }
+    private void drawButton(DrawContext ctx, int x, int y, int w, int h, String label, boolean filled, boolean hover) {
+        drawButton(ctx, x, y, w, h, label, filled, hover, ACCENT);
+    }
+    private void drawButton(DrawContext ctx, int x, int y, int w, int h, String label, boolean filled, boolean hover, int tint) {
+        if (filled) {
+            ctx.fill(x, y, x + w, y + h, hover ? ACCENT_HOVER : tint);
+            int tw = this.textRenderer.getWidth(label);
+            ctx.drawText(this.textRenderer, label, x + (w - tw) / 2, y + (h - 8) / 2, 0xFF052A29, false);
+        } else {
+            int bd = hover ? ACCENT_HOVER : tint;
+            ctx.fill(x, y, x + w, y + h, hover ? 0xFF12222A : 0xFF0D141A);
+            ctx.fill(x, y, x + w, y + 1, bd); ctx.fill(x, y + h - 1, x + w, y + h, bd);
+            ctx.fill(x, y, x + 1, y + h, bd); ctx.fill(x + w - 1, y, x + w, y + h, bd);
+            int tw = this.textRenderer.getWidth(label);
+            ctx.drawText(this.textRenderer, label, x + (w - tw) / 2, y + (h - 8) / 2, bd, false);
+        }
     }
 
     // -----------------------------------------------------------------------------------
@@ -653,103 +932,109 @@ public class FishModScreen extends Screen {
         int mx = (int) click.x();
         int my = (int) click.y();
         int btn = click.button();
+
+        if (activeInput instanceof InputSetting prevInput && prevInput.textField != null) prevInput.textField.setFocused(false);
         activeInput = null;
 
-        // Bottom bar
-        int by = this.height - PADDING - SEARCH_H;
-        int barW = Math.min(360, this.width - PADDING * 2 - SCALE_BTN_W - 6);
-        int bx = (this.width - barW - SCALE_BTN_W - 6) / 2;
-        searchFocused = mx >= bx && mx <= bx + barW && my >= by && my <= by + SEARCH_H;
+        // ----- search -----
+        int swW = 156, swH = 20;
+        int sx = right() - CONTENT_PAD - swW, sy = top() + (TITLE_H - swH) / 2;
+        searchFocused = mx >= sx && mx <= sx + swW && my >= sy && my <= sy + swH;
         if (searchField != null) searchField.setFocused(searchFocused);
         if (searchFocused) return true;
-        int sxBtn = bx + barW + 6;
-        if (mx >= sxBtn && mx <= sxBtn + SCALE_BTN_W && my >= by && my <= by + SEARCH_H) {
-            MinecraftClient.getInstance().setScreen(new FishHudEditor(this));
+
+        // ----- footer buttons -----
+        int fY = bottom() - FOOTER_H, by = fY + (FOOTER_H - 26) / 2, bh = 26;
+        int ehW = 96, ehX = cx0();
+        if (hovBtn(mx, my, ehX, by, ehW, bh)) { MinecraftClient.getInstance().setScreen(new FishHudEditor(this)); return true; }
+        int scW = 126, scX = cx1() - scW;
+        if (hovBtn(mx, my, scX, by, scW, bh)) { close(); return true; }
+        int rsW = 84, rsX = scX - 10 - rsW;
+        if (hovBtn(mx, my, rsX, by, rsW, bh)) {
+            if (resetArmed) { resetCurrentCategory(); resetArmed = false; }
+            else { resetArmed = true; resetArmedAt = System.currentTimeMillis(); }
             return true;
         }
 
-        String filter = searchText.toLowerCase();
-        for (int i = 0; i < columns.size(); i++) {
-            Column col = columns.get(i);
-            int cx = colX(i);
-            int colBottom = colsBottomY();
-            int py = colsTopY() + COL_HEADER_H + 3;
-            for (Feature f : col.features) {
-                if (!filter.isEmpty() && !f.name.toLowerCase().contains(filter)) continue;
-                if (py + PILL_H > colBottom) break;
-
-                // Pill hit-test
-                if (mx >= cx && mx <= cx + COL_W && my >= py && my <= py + PILL_H) {
-                    if (btn == 1) {
-                        // Right-click → expand inline detail (toggle)
-                        if (!f.sub.isEmpty()) {
-                            selectedFeature = (selectedFeature == f ? null : f);
-                            detailScroll = 0;
-                        }
-                    } else {
-                        // Left-click → master toggle, or open detail if no master
-                        if (f.hasMaster()) {
-                            f.set.accept(!f.get.get());
-                        } else if (!f.sub.isEmpty()) {
-                            selectedFeature = (selectedFeature == f ? null : f);
-                            detailScroll = 0;
-                        }
+        // ----- sidebar -----
+        if (mx >= left() && mx <= left() + SIDEBAR_W && my >= top() + TITLE_H && my <= bottom()) {
+            int y = top() + TITLE_H + 10;
+            for (int i = 0; i < columns.size(); i++) {
+                if (my >= y && my <= y + CAT_ITEM_H) {
+                    if (i != selectedCat) {
+                        selectedCat = i; selectedFeature = null; scroll = 0;
+                        searchText = ""; if (searchField != null) searchField.setText("");
                     }
                     return true;
                 }
-                py += PILL_H + PILL_GAP;
+                y += CAT_ITEM_H + 4;
+            }
+            return true; // swallow clicks in the sidebar gutter
+        }
 
-                // Detail hit-test
-                if (f == selectedFeature && !f.sub.isEmpty()) {
-                    int dH = Math.min(detailHeightForSelected(), colBottom - py);
-                    if (dH > 8 && mx >= cx && mx <= cx + COL_W && my >= py && my <= py + dH) {
-                        int leftX = cx + 4;
-                        int rightX = cx + COL_W - 4;
-                        int sy = py + 4 - detailScroll;
+        // ----- content rows / sub-panels -----
+        if (my >= cyTop() && my <= cyBot()) {
+            int x0 = cx0(), x1 = cx1();
+            int y = cyTop() - scroll;
+            for (Feature f : visibleFeatures()) {
+                int rowTop = y;
+                // row hit
+                if (mx >= x0 && mx <= x1 && my >= rowTop && my <= rowTop + ROW_H) {
+                    if (f.hasMaster()) {
+                        int tgx = x1 - 14 - TOG2_W, tgy = rowTop + (ROW_H - TOG2_H) / 2;
+                        if (mx >= tgx && mx <= tgx + TOG2_W && my >= tgy && my <= tgy + TOG2_H) {
+                            f.set.accept(!f.get.get()); return true;
+                        }
+                        if (!f.sub.isEmpty()) { selectedFeature = (selectedFeature == f ? null : f); }
+                        else { f.set.accept(!f.get.get()); }
+                    } else if (!f.sub.isEmpty()) {
+                        selectedFeature = (selectedFeature == f ? null : f);
+                    }
+                    return true;
+                }
+                y += ROW_H;
+                int subH = subPanelHeight(f);
+                if (subH > 0) {
+                    int subTop = y;
+                    if (mx >= x0 && mx <= x1 && my >= subTop && my <= subTop + subH) {
+                        int leftX = x0 + 14, rightX = x1 - 12, ssy = subTop + 6;
                         for (Setting s : f.sub) {
                             int sh = s.getHeight();
-                            if (my >= sy && my <= sy + sh) {
+                            if (my >= ssy && my <= ssy + sh) {
                                 if (s instanceof InputSetting || s instanceof InputIntSetting
                                         || s instanceof InputDoubleSetting || s instanceof ColorSetting
                                         || s instanceof ColorPickerSetting) {
                                     activeInput = s;
                                 }
                             }
-                            if (s.onClick(mx, my, leftX, rightX, sy, btn)) {
+                            if (s.onClick(mx, my, leftX, rightX, ssy, btn)) {
                                 if (s instanceof ColorPickerSetting cps && cps.dragMode != 0) activePicker = cps;
                                 return true;
                             }
                             if (s instanceof SliderIntSetting || s instanceof SliderDoubleSetting) {
                                 int slx = rightX - SLIDER_W - 2;
-                                int sly = sy + (ITEM_HEIGHT - SLIDER_H) / 2;
+                                int sly = ssy + (ITEM_HEIGHT - SLIDER_H) / 2;
                                 if (mx >= slx && mx <= slx + SLIDER_W && my >= sly - 4 && my <= sly + SLIDER_H + 4) {
-                                    activeSlider = s;
-                                    activeSliderX = slx;
-                                    s.onDrag(mx, slx, SLIDER_W);
-                                    return true;
+                                    activeSlider = s; activeSliderX = slx; s.onDrag(mx, slx, SLIDER_W); return true;
                                 }
                             }
-                            sy += sh;
+                            ssy += sh;
                         }
-                        return true; // swallow clicks inside the detail panel
+                        return true; // swallow clicks inside the body
                     }
-                    if (dH > 8) py += dH + PILL_GAP;
+                    y += subH;
                 }
+                y += ROW_GAP;
             }
+            return true;
         }
         return super.mouseClicked(click, bl);
     }
 
     @Override
     public boolean mouseDragged(Click click, double deltaX, double deltaY) {
-        if (activeSlider != null) {
-            activeSlider.onDrag((int) click.x(), activeSliderX, SLIDER_W);
-            return true;
-        }
-        if (activePicker != null) {
-            activePicker.updateFromMouse((int) click.x(), (int) click.y());
-            return true;
-        }
+        if (activeSlider != null) { activeSlider.onDrag((int) click.x(), activeSliderX, SLIDER_W); return true; }
+        if (activePicker != null) { activePicker.updateFromMouse((int) click.x(), (int) click.y()); return true; }
         return super.mouseDragged(click, deltaX, deltaY);
     }
 
@@ -762,31 +1047,14 @@ public class FishModScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        if (selectedFeature == null) return true;
-        String filter = searchText.toLowerCase();
-        for (int i = 0; i < columns.size(); i++) {
-            Column col = columns.get(i);
-            int cx = colX(i);
-            int colBottom = colsBottomY();
-            int py = colsTopY() + COL_HEADER_H + 3;
-            for (Feature f : col.features) {
-                if (!filter.isEmpty() && !f.name.toLowerCase().contains(filter)) continue;
-                if (py + PILL_H > colBottom) break;
-                py += PILL_H + PILL_GAP;
-                if (f == selectedFeature && !f.sub.isEmpty()) {
-                    int dH = Math.min(detailHeightForSelected(), colBottom - py);
-                    if (mouseX >= cx && mouseX <= cx + COL_W && mouseY >= py && mouseY <= py + dH) {
-                        int viewH = dH - 8;
-                        int total = detailHeightForSelected() - 8;
-                        int max = Math.max(0, total - viewH);
-                        detailScroll = MathHelper.clamp((int) (detailScroll - verticalAmount * 12), 0, max);
-                        return true;
-                    }
-                    py += dH + PILL_GAP;
-                }
-            }
-        }
+        scroll = MathHelper.clamp((int) (scroll - verticalAmount * 18), 0, maxScroll());
         return true;
+    }
+
+    private void resetCurrentCategory() {
+        for (Feature f : currentColumn().features) {
+            if (f.hasMaster() && f.get.get()) f.set.accept(false);
+        }
     }
 
     @Override
@@ -809,16 +1077,11 @@ public class FishModScreen extends Screen {
         if (activeInput instanceof InputDoubleSetting ids && ids.textField != null) { ids.textField.charTyped(input); return true; }
         if (activeInput instanceof ColorSetting cs && cs.textField != null) { cs.textField.charTyped(input); return true; }
         if (activeInput instanceof ColorPickerSetting cp && cp.textField != null) { cp.textField.charTyped(input); return true; }
-        if (searchFocused && searchField != null) {
-            searchField.charTyped(input);
-            searchText = searchField.getText();
-            return true;
-        }
+        if (searchFocused && searchField != null) { searchField.charTyped(input); searchText = searchField.getText(); scroll = 0; return true; }
         return super.charTyped(input);
     }
 
-    @Override
-    public boolean shouldPause() { return false; }
+    @Override public boolean shouldPause() { return false; }
 
     @Override
     public void close() {
@@ -832,8 +1095,9 @@ public class FishModScreen extends Screen {
     // -----------------------------------------------------------------------------------
     static class Column {
         final String name;
+        final String icon;
         final List<Feature> features = new ArrayList<>();
-        Column(String name) { this.name = name; }
+        Column(String name, String icon) { this.name = name; this.icon = icon; }
     }
 
     static class Feature {
@@ -864,9 +1128,8 @@ public class FishModScreen extends Screen {
         @Override int getHeight() { return SUBCAT_HEIGHT; }
         @Override
         void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
-            ctx.fill(leftX, sy, rightX, sy + SUBCAT_HEIGHT, 0xFF11131A);
-            ctx.fill(leftX, sy + SUBCAT_HEIGHT - 1, rightX, sy + SUBCAT_HEIGHT, BORDER_COLOR);
-            ctx.fill(leftX, sy, leftX + 2, sy + SUBCAT_HEIGHT, ACCENT);
+            roundRect(ctx, leftX, sy, rightX, sy + SUBCAT_HEIGHT, 2, 0xFF11131A);
+            ctx.fill(leftX + 1, sy + 2, leftX + 3, sy + SUBCAT_HEIGHT - 2, ACCENT);
             st(ctx, tr, name, leftX + 6, sy + (SUBCAT_HEIGHT - 8) / 2, ACCENT);
         }
     }
@@ -882,13 +1145,12 @@ public class FishModScreen extends Screen {
             int ty = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
             boolean on = getter.get();
             boolean hov = mx >= tx && mx <= tx + TOGGLE_W && my >= ty && my <= ty + TOGGLE_H;
-            // Pill switch: rounded capsule track + a circular knob that sits right (on) / left (off).
             int track = on ? (hov ? ACCENT_HOVER : TOGGLE_ON) : (hov ? 0xFF3A3D48 : TOGGLE_OFF);
-            roundRect(ctx, tx, ty, tx + TOGGLE_W, ty + TOGGLE_H, track);
-            int knob = TOGGLE_H - 4;                 // knob diameter (2px inset top/bottom)
+            pill(ctx, tx, ty, tx + TOGGLE_W, ty + TOGGLE_H, track);
+            int knob = TOGGLE_H - 4;
             int kx = on ? tx + TOGGLE_W - knob - 2 : tx + 2;
             int ky = ty + 2;
-            roundRect(ctx, kx, ky, kx + knob, ky + knob, 0xFFE8ECF2); // light knob
+            pill(ctx, kx, ky, kx + knob, ky + knob, 0xFFE8ECF2);
         }
         @Override
         boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
@@ -911,9 +1173,9 @@ public class FishModScreen extends Screen {
             int slx = rightX - SLIDER_W - 2;
             int sly = sy + (ITEM_HEIGHT - SLIDER_H) / 2;
             float pct = (float)(getter.get() - min) / (max - min);
-            ctx.fill(slx, sly, slx + SLIDER_W, sly + SLIDER_H, SLIDER_BG);
-            ctx.fill(slx, sly, slx + (int)(SLIDER_W * pct), sly + SLIDER_H, SLIDER_FILL);
-            // value text small, above the bar
+            pill(ctx, slx, sly, slx + SLIDER_W, sly + SLIDER_H, SLIDER_BG);
+            int fillW = (int)(SLIDER_W * pct);
+            if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL);
             String val = String.valueOf(getter.get());
             st(ctx, tr, val, slx + SLIDER_W - stw(tr, val), sly - 9, SUBTEXT_COLOR);
         }
@@ -934,8 +1196,9 @@ public class FishModScreen extends Screen {
             int slx = rightX - SLIDER_W - 2;
             int sly = sy + (ITEM_HEIGHT - SLIDER_H) / 2;
             float pct = (float)((getter.get() - min) / (max - min));
-            ctx.fill(slx, sly, slx + SLIDER_W, sly + SLIDER_H, SLIDER_BG);
-            ctx.fill(slx, sly, slx + (int)(SLIDER_W * pct), sly + SLIDER_H, SLIDER_FILL);
+            pill(ctx, slx, sly, slx + SLIDER_W, sly + SLIDER_H, SLIDER_BG);
+            int fillW = (int)(SLIDER_W * pct);
+            if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL);
             String val = String.format("%.1f", getter.get());
             st(ctx, tr, val, slx + SLIDER_W - stw(tr, val), sly - 9, SUBTEXT_COLOR);
         }
@@ -947,33 +1210,31 @@ public class FishModScreen extends Screen {
     }
 
     // Click to advance to the next value; right-click goes back one.
-    // Avoids popup overflow problems in narrow columns.
     static class DropdownSetting<T> extends Setting {
+        static final int DROP_W = 120;
+        static final int DROP_H = 18;
         T[] values; Supplier<T> getter; Consumer<T> setter;
         DropdownSetting(String name, String desc, T[] vals, Supplier<T> g, Consumer<T> s) {
             super(name, desc); this.values = vals; this.getter = g; this.setter = s;
         }
         @Override
         void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
-            int bw = 80;
+            int bw = DROP_W;
             int bx = rightX - bw - 2;
-            int by = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
-            boolean hov = mx >= bx && mx <= bx + bw && my >= by && my <= by + TOGGLE_H;
-            ctx.fill(bx, by, bx + bw, by + TOGGLE_H, hov ? 0xFF252832 : SLIDER_BG);
-            ctx.fill(bx, by, bx + bw, by + 1, ACCENT);
-            ctx.fill(bx, by + TOGGLE_H - 1, bx + bw, by + TOGGLE_H, ACCENT);
+            int by = sy + (ITEM_HEIGHT - DROP_H) / 2;
+            boolean hov = mx >= bx && mx <= bx + bw && my >= by && my <= by + DROP_H;
+            panel(ctx, bx, by, bx + bw, by + DROP_H, 3, hov ? 0xFF252832 : SLIDER_BG, hov ? ACCENT_HOVER : ACCENT);
             String current = getter.get().toString();
-            if (tr.getWidth(current) > bw - 14) current = tr.trimToWidth(current, bw - 18) + "…";
-            st(ctx, tr, current, bx + 4, by + (TOGGLE_H - 8) / 2, TEXT_COLOR);
-            // tiny chevron on the right
-            st(ctx, tr, "›", bx + bw - 7, by + (TOGGLE_H - 8) / 2, ACCENT);
+            if (tr.getWidth(current) > bw - 20) current = tr.trimToWidth(current, bw - 24) + "…";
+            ctx.drawText(tr, current, bx + 6, by + (DROP_H - 8) / 2, TEXT_COLOR, false);
+            ctx.drawText(tr, "›", bx + bw - 9, by + (DROP_H - 8) / 2, ACCENT, false);
         }
         @Override
         boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
-            int bw = 80;
+            int bw = DROP_W;
             int bx = rightX - bw - 2;
-            int by = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
-            if (mx >= bx && mx <= bx + bw && my >= by && my <= by + TOGGLE_H) {
+            int by = sy + (ITEM_HEIGHT - DROP_H) / 2;
+            if (mx >= bx && mx <= bx + bw && my >= by && my <= by + DROP_H) {
                 int idx = 0;
                 T cur = getter.get();
                 for (int i = 0; i < values.length; i++) if (values[i] == cur || values[i].equals(cur)) { idx = i; break; }
@@ -988,6 +1249,7 @@ public class FishModScreen extends Screen {
     static class InputSetting extends Setting {
         Supplier<String> getter; Consumer<String> setter;
         TextFieldWidget textField;
+        String hint = null;
         InputSetting(String name, String desc, Supplier<String> g, Consumer<String> s) {
             super(name, desc); this.getter = g; this.setter = s;
         }
@@ -999,40 +1261,43 @@ public class FishModScreen extends Screen {
                 textField.setChangedListener(setter);
             }
         }
+        @Override int getHeight() { return hint != null ? 35 : 26; }
         @Override
         void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
             initField(tr);
-            int ix = rightX - INPUT_W - 2;
-            int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
-            // Render the field text scaled down so the whole value is visible (it scrolled off
-            // before). Backing width is enlarged then scaled to the same visual box size.
+            st(ctx, tr, name, leftX + 2, sy + 1, TEXT_COLOR);
+            int ix = leftX + 2;
+            int iy = sy + 11;
+            int fieldW = rightX - leftX - 4;
             float fs = 0.7f;
-            textField.setWidth((int) (INPUT_W / fs));
+            textField.setWidth((int) (fieldW / fs));
             textField.setHeight((int) (INPUT_H / fs));
+            if (!textField.isFocused()) { textField.setSelectionStart(0); textField.setSelectionEnd(0); }
             textField.setX(0); textField.setY(0);
             ctx.getMatrices().pushMatrix();
             ctx.getMatrices().translate((float) ix, (float) iy);
             ctx.getMatrices().scale(fs, fs);
             textField.render(ctx, mx, my, 0);
             ctx.getMatrices().popMatrix();
+            if (hint != null) st(ctx, tr, hint, leftX + 2, sy + 27, SUBTEXT_COLOR);
         }
         @Override
         boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
-            int ix = rightX - INPUT_W - 2;
-            int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
-            if (mx >= ix && mx <= ix + INPUT_W && my >= iy && my <= iy + INPUT_H) {
-                if (textField != null) textField.setFocused(true);
+            int ix = leftX + 2;
+            int iy = sy + 11;
+            int fieldW = rightX - leftX - 4;
+            if (mx >= ix && mx <= ix + fieldW && my >= iy && my <= iy + INPUT_H) {
+                if (textField != null) {
+                    textField.setFocused(true);
+                    int len = textField.getText().length();
+                    textField.setSelectionStart(len); textField.setSelectionEnd(len);
+                }
                 return true;
             }
             return false;
         }
     }
 
-    /**
-     * Text input with a visible-character cap + two-line layout: label on top, "N/MAX" counter on
-     * the bottom row (so they don't overlap on narrow columns). External row-label drawing is
-     * suppressed by passing an empty name to super().
-     */
     static class LimitedInputSetting extends InputSetting {
         final int maxVisible;
         final String displayLabel;
@@ -1052,12 +1317,10 @@ public class FishModScreen extends Screen {
                 inner.accept(s);
             };
         }
-        @Override int getHeight() { return ITEM_HEIGHT + 9; } // room for stacked label + counter
+        @Override int getHeight() { return ITEM_HEIGHT + 9; }
         @Override
         void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
-            // Label on top
             st(ctx, tr, displayLabel, leftX + 2, sy + 1, TEXT_COLOR);
-            // Field anchored to top so it doesn't push the counter off the row
             initField(tr);
             int ix = rightX - INPUT_W - 2;
             int iy = sy + 2;
@@ -1070,7 +1333,6 @@ public class FishModScreen extends Screen {
             ctx.getMatrices().scale(fs, fs);
             textField.render(ctx, mx, my, 0);
             ctx.getMatrices().popMatrix();
-            // Counter on the bottom row
             int len = visibleLen(getter.get());
             String counter = len + "/" + maxVisible;
             int color = len >= maxVisible ? 0xFFFF5555 : SUBTEXT_COLOR;
@@ -1133,10 +1395,9 @@ public class FishModScreen extends Screen {
     static class ColorPickerSetting extends Setting {
         Supplier<Integer> getter; Consumer<Integer> setter;
         TextFieldWidget textField;
-        float hsbH, hsbS, hsbV;          // current picker state
-        int lastColor = 0;               // detect external changes to resync
-        int dragMode = 0;                // 0 none, 1 SV square, 2 hue bar
-        // region geometry (set each render for hit-testing)
+        float hsbH, hsbS, hsbV;
+        int lastColor = 0;
+        int dragMode = 0;
         int sqX, sqY, sqW = 96, sqH = 46, hueX, hueY, hueW = 10, hueH = 46;
 
         ColorPickerSetting(String name, String desc, Supplier<Integer> g, Consumer<Integer> s) {
@@ -1175,10 +1436,8 @@ public class FishModScreen extends Screen {
         @Override
         void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
             initField(tr);
-            // External change (e.g. toggled on) → resync the picker state.
             if (getter.get() != lastColor) { syncFromColor(getter.get()); textField.setText(String.format("%06X", getter.get() & 0xFFFFFF)); }
 
-            // Top row: label + swatch + hex field.
             st(ctx, tr, name, leftX, sy + (ITEM_HEIGHT - 8) / 2, TEXT_COLOR);
             int ix = rightX - 46 - 2;
             int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
@@ -1187,14 +1446,12 @@ public class FishModScreen extends Screen {
             textField.setX(ix); textField.setY(iy);
             textField.render(ctx, mx, my, 0);
 
-            // SV square: per-column gradient from bright-saturated (top) to black (bottom).
             sqX = leftX; sqY = sy + ITEM_HEIGHT + 2;
             for (int c = 0; c < sqW; c++) {
                 float sat = (float) c / sqW;
                 int top = 0xFF000000 | (java.awt.Color.HSBtoRGB(hsbH, sat, 1f) & 0xFFFFFF);
                 ctx.fillGradient(sqX + c, sqY, sqX + c + 1, sqY + sqH, top, 0xFF000000);
             }
-            // SV marker.
             int msx = sqX + Math.round(hsbS * sqW);
             int msy = sqY + Math.round((1 - hsbV) * sqH);
             ctx.fill(msx - 2, msy - 1, msx + 2, msy, 0xFFFFFFFF);
@@ -1202,7 +1459,6 @@ public class FishModScreen extends Screen {
             ctx.fill(msx - 2, msy, msx - 1, msy + 1, 0xFFFFFFFF);
             ctx.fill(msx + 1, msy, msx + 2, msy + 1, 0xFFFFFFFF);
 
-            // Vertical hue bar.
             hueX = sqX + sqW + 6; hueY = sqY;
             for (int r = 0; r < sqH; r++) {
                 int col = 0xFF000000 | (java.awt.Color.HSBtoRGB((float) r / sqH, 1f, 1f) & 0xFFFFFF);
@@ -1237,8 +1493,6 @@ public class FishModScreen extends Screen {
         }
     }
 
-    /** ColorPickerSetting that collapses to zero height (invisible + non-interactive) when the
-     *  supplied predicate returns false. Used to hide the End picker while in Solid mode. */
     static class ConditionalColorPickerSetting extends ColorPickerSetting {
         final Supplier<Boolean> visible;
         final String shownName;
@@ -1275,7 +1529,7 @@ public class FishModScreen extends Screen {
             int bx = rightX - bw - 2;
             int by = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
             boolean hov = mx >= bx && mx <= bx + bw && my >= by && my <= by + TOGGLE_H;
-            ctx.fill(bx, by, bx + bw, by + TOGGLE_H, hov ? ACCENT_HOVER : ACCENT);
+            roundRect(ctx, bx, by, bx + bw, by + TOGGLE_H, 3, hov ? ACCENT_HOVER : ACCENT);
             st(ctx, tr, "Open", bx + (bw - stw(tr, "Open")) / 2, by + (TOGGLE_H - 8) / 2, TEXT_COLOR);
         }
         @Override
@@ -1312,8 +1566,6 @@ public class FishModScreen extends Screen {
             initField(tr);
             int ix = rightX - INPUT_W - 2;
             int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
-            // Render the field text scaled down so the whole value is visible (it scrolled off
-            // before). Backing width is enlarged then scaled to the same visual box size.
             float fs = 0.7f;
             textField.setWidth((int) (INPUT_W / fs));
             textField.setHeight((int) (INPUT_H / fs));
@@ -1358,8 +1610,6 @@ public class FishModScreen extends Screen {
             initField(tr);
             int ix = rightX - INPUT_W - 2;
             int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
-            // Render the field text scaled down so the whole value is visible (it scrolled off
-            // before). Backing width is enlarged then scaled to the same visual box size.
             float fs = 0.7f;
             textField.setWidth((int) (INPUT_W / fs));
             textField.setHeight((int) (INPUT_H / fs));

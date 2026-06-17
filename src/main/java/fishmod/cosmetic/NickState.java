@@ -100,6 +100,13 @@ public final class NickState {
             char c = input.charAt(i);
             if ((c == '&' || c == '§') && i + 1 < input.length()) {
                 char next = input.charAt(i + 1);
+                // "&*" inserts a SkyBlock star (✪) in the CURRENT color — pick the color with the code
+                // right before it (e.g. "&6&*" = gold star, "&d&*" = pink). Replaces the old star counter.
+                if (next == '*') {
+                    buf.append('✪');
+                    i += 2;
+                    continue;
+                }
                 if (next == '#' && i + 7 < input.length()) {
                     String hex = input.substring(i + 2, i + 8);
                     if (hex.matches("[0-9a-fA-F]{6}")) {

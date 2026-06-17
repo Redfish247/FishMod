@@ -69,9 +69,11 @@ public final class RemoteSync {
     private static void refresh() {
         boolean nicksOn = FishSettings.remoteNicksEnabled;
         boolean itemsOn = FishSettings.remoteItemsEnabled;
+        boolean sizeOn  = FishSettings.playerSizeShared;
         if (!nicksOn) RemoteNicks.clearAll();
         if (!itemsOn) RemoteItems.clearAll();
-        if (!nicksOn && !itemsOn) return;
+        if (!sizeOn)  RemoteScales.clearAll();
+        if (!nicksOn && !itemsOn && !sizeOn) return;
 
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.getNetworkHandler() == null || mc.player == null) return;
@@ -93,16 +95,17 @@ public final class RemoteSync {
         long since = newPlayers ? -1 : version;
         final Set<String> keys = new HashSet<>(uuidToName.keySet());
 
-        HypixelApi.fetchSync(uuidToName.keySet(), since, (ver, nicks, items) -> mc.execute(() -> {
+        HypixelApi.fetchSync(uuidToName.keySet(), since, (ver, nicks, items, scales) -> mc.execute(() -> {
             version = ver;
             lastUuids = keys;
             lastTabSize = tabSize();
-            boolean changed = nicks != null || items != null; // server only sends maps when something moved
+            boolean changed = nicks != null || items != null || scales != null; // server only sends maps when something moved
             // Back off when idle (most of the time), snap back to fast on any change. Keeps updates
             // near-instant during activity while collapsing steady-state requests ~6x.
             interval = changed ? BASE_TICKS : Math.min(interval + STEP_TICKS, MAX_TICKS);
-            if (nicks != null && FishSettings.remoteNicksEnabled) RemoteNicks.acceptNicks(uuidToName, nicks);
-            if (items != null && FishSettings.remoteItemsEnabled) RemoteItems.acceptItems(keys, items);
+            if (nicks  != null && FishSettings.remoteNicksEnabled) RemoteNicks.acceptNicks(uuidToName, nicks);
+            if (items  != null && FishSettings.remoteItemsEnabled) RemoteItems.acceptItems(keys, items);
+            if (scales != null && FishSettings.playerSizeShared)   RemoteScales.acceptScales(keys, scales);
         }));
     }
 }

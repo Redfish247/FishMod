@@ -17,6 +17,10 @@ public enum DungeonClass {
 
     private static final Pattern PATTERN = Pattern.compile("^\\[(Archer|Berserk|Healer|Mage|Tank)]");
     private static final Pattern NAME_CLASS_PATTERN = Pattern.compile("^\\[\\d+] (.+) \\((Archer|Berserk|Healer|Mage|Tank) ");
+    /** "Your Berserk stats are doubled because you are the only player using this class!" — the most
+     *  reliable signal of the LOCAL player's own dungeon class (fires at the start of a run). */
+    private static final Pattern STATS_DOUBLED_PATTERN =
+            Pattern.compile("Your (Archer|Berserk|Healer|Mage|Tank) stats are doubled because you are the only player using this class!");
 
     private static final ConcurrentHashMap<String, DungeonClass> nameClassMap = new ConcurrentHashMap<>();
     public static DungeonClass currentClass;
@@ -36,12 +40,22 @@ public enum DungeonClass {
         });
 
         ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
+            String string = message.getString();
+
+            // Authoritative own-class signal — always wins, regardless of run state.
+            Matcher doubled = STATS_DOUBLED_PATTERN.matcher(string);
+            if (doubled.find()) {
+                currentClass = parseClass(doubled.group(1));
+                return;
+            }
+
             if (!Phase.runStarted() && currentClass != null) return;
 
-            Matcher matcher = PATTERN.matcher(message.getString());
-            if (matcher.find()) {
-                String dungeonClass = matcher.group(1);
-                currentClass = parseClass(dungeonClass);
+            // Fallback only: the dungeon chat "[Class]" prefix is the SPEAKER's class, not necessarily
+            // ours — only use it to seed currentClass when nothing more reliable has set it yet.
+            Matcher matcher = PATTERN.matcher(string);
+            if (matcher.find() && currentClass == null) {
+                currentClass = parseClass(matcher.group(1));
             }
         });
 

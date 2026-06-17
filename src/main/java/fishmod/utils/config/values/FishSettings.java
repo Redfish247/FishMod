@@ -23,10 +23,12 @@ public class FishSettings {
     @ConfigValue
     public static boolean deathMessageToParty = false;
 
-    /** Class XP gained per run when playing as that class — used for .rtca */
+    /** Class XP gained per run when playing as that class — used for .rtca / .crtc */
     @ConfigValue
-    public static int rtcaClassXpPerRun = 403000;
-    @ConfigValue public static int rtcCataXpPerRun  = 490000;
+    public static int rtcaClassXpPerRun = 424200;
+    /** Class XP gained per run for the classes you're NOT playing (passive) — used for .rtca */
+    @ConfigValue public static int rtcaClassPassiveXpPerRun = 106050;
+    @ConfigValue public static int rtcCataXpPerRun  = 509040;
     /** Hypixel's first-5-runs-of-the-day daily bonus (+40% XP). Toggle off after you've used them. */
     @ConfigValue public static boolean rtcaIncludeDailyBonus = false;
 
@@ -129,6 +131,7 @@ public class FishSettings {
     @ConfigValue public static boolean pcRtca       = false;
     @ConfigValue public static boolean pcDprofit    = false;
     @ConfigValue public static boolean pcRtc        = false;
+    @ConfigValue public static boolean pcCrtc       = false;
     @ConfigValue public static boolean pcHelp       = false;
     @ConfigValue public static boolean pcNw         = false;
     @ConfigValue public static boolean pcBank       = false;
@@ -137,6 +140,7 @@ public class FishSettings {
     @ConfigValue public static boolean pcFarming    = false;
     @ConfigValue public static boolean pcVisitor    = false;
     @ConfigValue public static boolean pcNuc        = false;
+    @ConfigValue public static boolean pcWorm       = false; // .worm / .scatha (Worm + Scatha bestiary)
 
     // Smart copy-chat: right-click a chat line to copy the whole message (joins wrapped lines,
     // strips ---- / ▬▬▬ dividers).
@@ -174,6 +178,26 @@ public class FishSettings {
 
     // Show other mod users' custom item/armor cosmetics (dye, trim, model, name, stars)
     @ConfigValue public static boolean remoteItemsEnabled = false;
+
+    // Customizable player model size (render-only — no hitbox/attribute change). Own size shows
+    // locally when enabled; Share publishes it so other mod users render you at it (and you see theirs).
+    @ConfigValue public static boolean playerSizeEnabled = false;
+    @ConfigValue public static double  playerSizeScaleX  = 1.0;   // 0.25–5.0 width  multiplier
+    @ConfigValue public static double  playerSizeScaleY  = 1.0;   // 0.25–5.0 height multiplier
+    @ConfigValue public static double  playerSizeScaleZ  = 1.0;   // 0.25–5.0 depth  multiplier
+    @ConfigValue public static boolean playerSizeShared  = false; // publish mine + render others' sizes
+
+    // Chat filter: hide selected categories of Hypixel chat spam. Master gate + per-category toggles.
+    @ConfigValue public static boolean chatFilterEnabled       = false;
+    @ConfigValue public static boolean cfKillCombo             = true;  // "+15 Kill Combo"
+    @ConfigValue public static boolean cfBossMessages          = false; // "[BOSS] Wither King: ..."
+    @ConfigValue public static boolean cfFriendJoinLeave       = false; // "Friend > X joined./left."
+    @ConfigValue public static boolean cfBazaar                = false; // "[Bazaar] Executing instant buy..."
+    @ConfigValue public static boolean cfWarping               = false; // "Warping..."
+
+    // Explosive Shot: parse "Your Explosive Shot hit N enemy/enemies for D damage." and show the
+    // per-enemy damage (D / N) as an on-screen title.
+    @ConfigValue public static boolean explosiveShotEnabled    = false;
 
     // Name color: gradient applied to your real username
     @ConfigValue public static int nickColorStart = 0xFFFF5555; // red
@@ -264,6 +288,9 @@ public class FishSettings {
     @ConfigValue public static boolean challengeLeaderboardEnabled  = false;
     /** Optional override for the /challenges/* worker base URL. Empty = default proxy. */
     @ConfigValue public static String  challengeWorkerOverride      = "";
+
+    // Class Colored Boots — recolor your dungeon boots (leather dye) by your detected class.
+    @ConfigValue public static boolean classColoredBootsEnabled = false;
 
 
 }

@@ -206,17 +206,22 @@ public final class CompactTab {
         catch (Exception ex) { return ""; }
     }
 
-    /** Live ping: tracked off keep-alive RTT (refreshes every ~15s), then server-list ping, then tab latency. */
+    /**
+     * Real ping. The vanilla ping/pong round trip ({@link fishmod.utils.PingTracker}) is the most
+     * accurate, freshest end-to-end source — a true client→server→client measurement, the same one
+     * Odin uses. Fall back to server-measured tab latency, then server-list join ping, only when a
+     * live measurement isn't available yet (briefly after join).
+     */
     private static int realPing(MinecraftClient mc) {
         int live = fishmod.utils.PingTracker.latest();
         if (live > 0) return live;
         try {
-            var si = mc.getCurrentServerEntry();
-            if (si != null && si.ping > 0) return (int) si.ping;
+            var self = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
+            if (self != null && self.getLatency() > 0) return self.getLatency();
         } catch (Exception ignored) {}
         try {
-            var self = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
-            if (self != null) return self.getLatency();
+            var si = mc.getCurrentServerEntry();
+            if (si != null && si.ping > 0) return (int) si.ping;
         } catch (Exception ignored) {}
         return -1;
     }

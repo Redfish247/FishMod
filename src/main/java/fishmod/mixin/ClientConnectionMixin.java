@@ -8,7 +8,9 @@ import net.minecraft.network.ClientConnection;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
 import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
+import net.minecraft.network.packet.s2c.query.PingResultS2CPacket;
 import net.minecraft.text.Text;
+import net.minecraft.util.Util;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -24,6 +26,12 @@ public class ClientConnectionMixin {
             //thankfully they all have the param 0 for some reason
             if (common.getParameter() == 0) return;
             Events.ON_SERVER_TICK.invoke(ServerTickEvent::onServerTick);
+        }
+
+        // Vanilla's PingMeasurer drives ping requests during play; the server echoes our startTime in
+        // the pong, so now - startTime is a true round trip. Same source Odin reads for live ping.
+        if (packet instanceof PingResultS2CPacket pong) {
+            fishmod.utils.PingTracker.pushRtt(Util.getMeasuringTimeMs() - pong.startTime());
         }
 
         if (packet instanceof GameMessageS2CPacket(Text content, boolean overlay) && !overlay) {

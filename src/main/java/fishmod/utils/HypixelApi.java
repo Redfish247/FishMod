@@ -57,10 +57,104 @@ public class HypixelApi {
 
     // ─── persistent cache ──────────────────────────────────────────────────────
     private static final long CACHE_TTL_MS = 30 * 60 * 1000L; // 30 minutes
-    /** player name (case-sensitive as returned by Mojang) → UUID without dashes */
+    /** lower-cased player name → UUID without dashes. Backed by an on-disk cache (see below). */
     public  static final Map<String, String> uuidByName    = new ConcurrentHashMap<>();
     /** player name → epoch-ms when DungeonData was last fetched */
     public  static final Map<String, Long>   dataTimestamp = new ConcurrentHashMap<>();
+
+    // ─── persistent name→UUID cache ────────────────────────────────────────────
+    // A UUID never changes for an account and players rename only rarely, so name→UUID is cheap to keep
+    // on disk and saves a Mojang round-trip on every repeat lookup (party members, friends, etc.). Each
+    // entry carries the time it was written and expires after UUID_CACHE_TTL_MS, so a rename / recycle
+    // self-corrects within a bounded window — and the resolve that refreshes it is Mojang-authoritative
+    // (see resolveUuid), so we never re-introduce the stale-mirror bug. This does NOT touch the worker:
+    // name resolution hits Mojang, the worker is only used for the by-UUID stats fetch.
+    private static final long UUID_CACHE_TTL_MS = 24 * 60 * 60 * 1000L; // 24h
+    private static final Map<String, Long> uuidCachedAt = new ConcurrentHashMap<>();
+    private static volatile boolean uuidCacheLoaded = false;
+    private static final java.util.concurrent.atomic.AtomicBoolean uuidSavePending = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+    private static String nameKey(String name) {
+        return name == null ? "" : name.toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /** Cached UUID for a name if present and unexpired, else null. Lazily loads the on-disk cache once. */
+    public static String getCachedUuid(String name) {
+        ensureUuidCacheLoaded();
+        String k = nameKey(name);
+        Long ts = uuidCachedAt.get(k);
+        if (ts == null) return null;
+        if (System.currentTimeMillis() - ts > UUID_CACHE_TTL_MS) { // expired — drop it
+            uuidByName.remove(k);
+            uuidCachedAt.remove(k);
+            return null;
+        }
+        return uuidByName.get(k);
+    }
+
+    /** Records a fresh name→UUID mapping (from an authoritative resolve) and schedules a debounced save. */
+    public static void putUuid(String name, String uuid) {
+        if (name == null || uuid == null || uuid.isEmpty()) return;
+        ensureUuidCacheLoaded();
+        String k = nameKey(name);
+        uuidByName.put(k, uuid);
+        uuidCachedAt.put(k, System.currentTimeMillis());
+        scheduleUuidSave();
+    }
+
+    private static synchronized void ensureUuidCacheLoaded() {
+        if (uuidCacheLoaded) return;
+        try {
+            var file = FabricLoader.getInstance().getConfigDir().resolve("fishmod_uuid_cache.json");
+            if (Files.exists(file)) {
+                JsonObject root = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+                JsonObject entries = root.has("entries") ? root.getAsJsonObject("entries") : new JsonObject();
+                long now = System.currentTimeMillis();
+                for (Map.Entry<String, JsonElement> e : entries.entrySet()) {
+                    try {
+                        JsonObject o = e.getValue().getAsJsonObject();
+                        long ts = o.get("ts").getAsLong();
+                        if (now - ts > UUID_CACHE_TTL_MS) continue; // stale — skip
+                        String uuid = o.get("uuid").getAsString();
+                        if (uuid == null || uuid.isEmpty()) continue;
+                        uuidByName.put(e.getKey(), uuid);
+                        uuidCachedAt.put(e.getKey(), ts);
+                    } catch (Exception ignored) {}
+                }
+            }
+        } catch (Exception ignored) {}
+        // Flush on shutdown so the most recent lookups survive even a hard close.
+        try { Runtime.getRuntime().addShutdownHook(new Thread(HypixelApi::saveUuidCacheNow, "fishmod-uuid-cache-flush")); }
+        catch (Exception ignored) {}
+        uuidCacheLoaded = true;
+    }
+
+    private static void scheduleUuidSave() {
+        if (!uuidSavePending.compareAndSet(false, true)) return; // a flush is already queued
+        CompletableFuture.delayedExecutor(5, java.util.concurrent.TimeUnit.SECONDS)
+            .execute(() -> { uuidSavePending.set(false); saveUuidCacheNow(); });
+    }
+
+    private static synchronized void saveUuidCacheNow() {
+        try {
+            var file = FabricLoader.getInstance().getConfigDir().resolve("fishmod_uuid_cache.json");
+            JsonObject entries = new JsonObject();
+            long now = System.currentTimeMillis();
+            for (Map.Entry<String, Long> e : uuidCachedAt.entrySet()) {
+                if (now - e.getValue() > UUID_CACHE_TTL_MS) continue;
+                String uuid = uuidByName.get(e.getKey());
+                if (uuid == null) continue;
+                JsonObject o = new JsonObject();
+                o.addProperty("uuid", uuid);
+                o.addProperty("ts", e.getValue());
+                entries.add(e.getKey(), o);
+            }
+            JsonObject root = new JsonObject();
+            root.addProperty("version", 1);
+            root.add("entries", entries);
+            Files.writeString(file, root.toString());
+        } catch (Exception ignored) {}
+    }
 
     public static void loadPfCache(Map<String, DungeonData> liveCache) {
         try {
@@ -443,51 +537,14 @@ public class HypixelApi {
      * Always calls callback so pending is never stuck.
      */
     public static void getByNameSilent(String ign, DungeonDataCallback callback) {
-        // Fast path: UUID already known — skip Ashcon/Mojang lookup entirely
-        String cachedUuid = uuidByName.get(ign);
+        // Fast path: UUID already known (in-session or on-disk cache) — skip the name→UUID lookup.
+        String cachedUuid = getCachedUuid(ign);
         if (cachedUuid != null) { fetchProfilesSilent(cachedUuid, callback); return; }
-
-        fetchAsync("https://api.ashcon.app/mojang/v2/user/" + ign)
-            .thenAccept(body -> {
-                try {
-                    JsonObject obj = JsonParser.parseString(body).getAsJsonObject();
-                    if (obj.has("uuid")) {
-                        String uuid = obj.get("uuid").getAsString().replace("-", "");
-                        uuidByName.put(ign, uuid);
-                        fetchProfilesSilent(uuid, callback); return;
-                    }
-                } catch (Exception ignored) {}
-                // Ashcon failed — fall back to Mojang
-                fetchAsync("https://api.mojang.com/users/profiles/minecraft/" + ign)
-                    .thenAccept(body2 -> {
-                        try {
-                            JsonObject obj2 = JsonParser.parseString(body2).getAsJsonObject();
-                            if (obj2.has("id")) {
-                                String uuid = obj2.get("id").getAsString();
-                                uuidByName.put(ign, uuid);
-                                fetchProfilesSilent(uuid, callback); return;
-                            }
-                        } catch (Exception ignored) {}
-                        callback.onData(new DungeonData());
-                    })
-                    .exceptionally(e -> { callback.onData(new DungeonData()); return null; });
-            })
-            .exceptionally(e -> {
-                fetchAsync("https://api.mojang.com/users/profiles/minecraft/" + ign)
-                    .thenAccept(body2 -> {
-                        try {
-                            JsonObject obj2 = JsonParser.parseString(body2).getAsJsonObject();
-                            if (obj2.has("id")) {
-                                String uuid = obj2.get("id").getAsString();
-                                uuidByName.put(ign, uuid);
-                                fetchProfilesSilent(uuid, callback); return;
-                            }
-                        } catch (Exception ignored) {}
-                        callback.onData(new DungeonData());
-                    })
-                    .exceptionally(e2 -> { callback.onData(new DungeonData()); return null; });
-                return null;
-            });
+        // Mojang-authoritative resolve (see resolveUuid) so recycled/changed names hit the right account.
+        resolveUuid(ign, 0, uuid -> {
+            if (uuid == null) { callback.onData(new DungeonData()); return; }
+            fetchProfilesSilent(uuid, callback);
+        });
     }
 
     private static void fetchProfilesSilent(String uuidStr, DungeonDataCallback callback) {
@@ -523,18 +580,6 @@ public class HypixelApi {
             .exceptionally(e -> { callback.onData(new DungeonData()); return null; });
     }
 
-    private static java.util.concurrent.CompletableFuture<String> fetchAsync(String url) {
-        HttpRequest req = HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .header("User-Agent", "Mozilla/5.0")
-            .timeout(Duration.ofSeconds(10))
-            .GET()
-            .build();
-        return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-            .thenApply(HttpResponse::body);
-    }
-
-
     /** Look up by IGN: Mojang UUID lookup → Hypixel profiles. */
     public static void getByName(MinecraftClient mc, String ign, DungeonDataCallback callback) {
         if (!checkKey(mc)) return;
@@ -548,13 +593,26 @@ public class HypixelApi {
         });
     }
 
-    /** Try multiple name→UUID services in sequence. Mojang's endpoint frequently rate-limits, so we try alts first. */
+    /**
+     * Resolves an IGN to a dash-less UUID, preferring Mojang's authoritative endpoint so name changes
+     * and recycled names resolve to whoever CURRENTLY owns the name. Ashcon / playerdb mirror Mojang
+     * but cache aggressively and can lag real name changes by days — so they're used only as a fallback
+     * for when Mojang itself can't answer (rate-limit / outage), never to override a Mojang answer.
+     *
+     * attempt: 0 = Mojang (authoritative) → 1 = Ashcon → 2 = playerdb. A definitive not-found from
+     * Mojang means "no account currently holds this name" — we stop there instead of asking the stale
+     * mirrors, which would happily hand back a recycled/old owner (the bug this ordering fixes).
+     */
     private static void resolveUuid(String ign, int attempt, java.util.function.Consumer<String> cb) {
+        if (attempt == 0) {
+            String cached = getCachedUuid(ign);
+            if (cached != null) { cb.accept(cached); return; }
+        }
         String url; final int next;
         switch (attempt) {
-            case 0 -> { url = "https://api.ashcon.app/mojang/v2/user/" + ign;                 next = 1; }
-            case 1 -> { url = "https://playerdb.co/api/player/minecraft/" + ign;             next = 2; }
-            case 2 -> { url = "https://api.mojang.com/users/profiles/minecraft/" + ign;      next = 3; }
+            case 0 -> { url = "https://api.mojang.com/users/profiles/minecraft/" + ign; next = 1; }
+            case 1 -> { url = "https://api.ashcon.app/mojang/v2/user/" + ign;           next = 2; }
+            case 2 -> { url = "https://playerdb.co/api/player/minecraft/" + ign;        next = 3; }
             default -> { cb.accept(null); return; }
         }
         HttpRequest req;
@@ -569,22 +627,37 @@ public class HypixelApi {
 
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                 .thenAccept(resp -> {
-                    try {
-                        if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
-                            JsonObject obj = JsonParser.parseString(resp.body()).getAsJsonObject();
-                            String uuid = null;
-                            if (obj.has("uuid"))      uuid = obj.get("uuid").getAsString();   // ashcon
-                            else if (obj.has("id"))   uuid = obj.get("id").getAsString();     // mojang
-                            else if (obj.has("data")) {                                       // playerdb
-                                JsonObject data = obj.getAsJsonObject("data").getAsJsonObject("player");
-                                if (data.has("id")) uuid = data.get("id").getAsString();
-                            }
-                            if (uuid != null && !uuid.isEmpty()) { cb.accept(uuid.replace("-", "")); return; }
-                        }
-                        resolveUuid(ign, next, cb);
-                    } catch (Exception e) { resolveUuid(ign, next, cb); }
+                    int code = resp.statusCode();
+                    String uuid = (code >= 200 && code < 300) ? parseUuid(resp.body()) : null;
+                    if (uuid != null) { putUuid(ign, uuid); cb.accept(uuid); return; }
+                    // Only fall back to the mirrors when Mojang couldn't actually answer. A definitive
+                    // not-found (404/400/empty-2xx) is authoritative — don't let a stale mirror resolve
+                    // a recycled name to the wrong account.
+                    boolean transientErr = code == 429 || code == 408 || code >= 500;
+                    if (attempt == 0 && !transientErr) { cb.accept(null); return; }
+                    resolveUuid(ign, next, cb);
                 })
                 .exceptionally(e -> { resolveUuid(ign, next, cb); return null; });
+    }
+
+    /** Public async name→UUID resolver (Mojang-authoritative, mirror fallback). UUID is dash-less. */
+    public static void resolveUuidAsync(String ign, java.util.function.Consumer<String> cb) {
+        resolveUuid(ign, 0, cb);
+    }
+
+    /** Extracts a dash-less UUID from a Mojang / Ashcon / playerdb name-lookup body, or null. */
+    private static String parseUuid(String body) {
+        try {
+            JsonObject obj = JsonParser.parseString(body).getAsJsonObject();
+            String uuid = null;
+            if (obj.has("id"))        uuid = obj.get("id").getAsString();   // mojang
+            else if (obj.has("uuid")) uuid = obj.get("uuid").getAsString(); // ashcon
+            else if (obj.has("data")) {                                     // playerdb
+                JsonObject player = obj.getAsJsonObject("data").getAsJsonObject("player");
+                if (player.has("id")) uuid = player.get("id").getAsString();
+            }
+            return (uuid != null && !uuid.isEmpty()) ? uuid.replace("-", "") : null;
+        } catch (Exception e) { return null; }
     }
 
     /** Look up by local player's own UUID (no Mojang step needed). */
@@ -1522,24 +1595,37 @@ public class HypixelApi {
         catch (Exception e) { return fishmod.features.OverflowPetLevels.Rarity.LEGENDARY; }
     }
 
-    /** Blocking UUID resolve (Mojang → Ashcon), with cache. */
+    /** Blocking UUID resolve (Mojang → Ashcon), with on-disk cache. */
     private static String resolveUuidBlocking(String ign) {
-        String cached = uuidByName.get(ign);
+        String cached = getCachedUuid(ign);
         if (cached != null) return cached;
-        for (String url : new String[]{
-                "https://api.mojang.com/users/profiles/minecraft/" + ign,
-                "https://api.ashcon.app/mojang/v2/user/" + ign}) {
-            try {
-                HttpRequest req = HttpRequest.newBuilder().uri(URI.create(url))
-                        .timeout(Duration.ofSeconds(8)).header("User-Agent", "FishMod").GET().build();
-                HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
-                if (r.statusCode() != 200) continue;
-                JsonObject o = JsonParser.parseString(r.body()).getAsJsonObject();
-                String uuid = o.has("id") ? o.get("id").getAsString()
-                        : o.has("uuid") ? o.get("uuid").getAsString().replace("-", "") : null;
-                if (uuid != null) { uuidByName.put(ign, uuid); return uuid; }
-            } catch (Exception ignored) {}
-        }
+        // Mojang is authoritative for the CURRENT owner of a name. Only fall back to the (cache-laggy)
+        // Ashcon mirror when Mojang can't answer (rate-limit / outage) — never on a clean not-found,
+        // which would let a stale mirror resolve a recycled name to the wrong account.
+        try {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.mojang.com/users/profiles/minecraft/" + ign))
+                    .timeout(Duration.ofSeconds(8)).header("User-Agent", "FishMod").GET().build();
+            HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
+            int code = r.statusCode();
+            if (code >= 200 && code < 300) {
+                String uuid = parseUuid(r.body());
+                if (uuid != null) { putUuid(ign, uuid); return uuid; }
+            }
+            boolean transientErr = code == 429 || code == 408 || code >= 500;
+            if (!transientErr) return null; // authoritative not-found — don't ask the stale mirror
+        } catch (Exception ignored) {}
+        // Mojang unreachable / rate-limited — fall back to Ashcon.
+        try {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.ashcon.app/mojang/v2/user/" + ign))
+                    .timeout(Duration.ofSeconds(8)).header("User-Agent", "FishMod").GET().build();
+            HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
+            if (r.statusCode() == 200) {
+                String uuid = parseUuid(r.body());
+                if (uuid != null) { putUuid(ign, uuid); return uuid; }
+            }
+        } catch (Exception ignored) {}
         return null;
     }
 
@@ -1736,10 +1822,28 @@ public class HypixelApi {
         } catch (Exception e) { cb.accept(java.util.Map.of()); }
     }
 
-    /** Result of a /sync poll: the server version, and (only when changed) the nick + item maps. */
+    /** Publishes the local player's render size as "x,y,z" (all 1.0 = none/clear). */
+    public static void uploadScale(String uuidNoDashes, float x, float y, float z) {
+        try {
+            JsonObject o = new JsonObject();
+            o.addProperty("uuid", uuidNoDashes);
+            o.addProperty("scale", x + "," + y + "," + z);
+            HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(PROXY_URL + "/scale"))
+                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("Content-Type", "application/json")
+                .header("User-Agent", "Mozilla/5.0")
+                .timeout(Duration.ofSeconds(10))
+                .POST(HttpRequest.BodyPublishers.ofString(o.toString()))
+                .build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception ignored) {}
+    }
+
+    /** Result of a /sync poll: the server version, and (only when changed) the nick/item/scale maps. */
     public interface SyncCallback {
-        /** @param version current server version; @param nicks/items null when nothing changed. */
-        void onData(long version, Map<String, String> nicks, Map<String, String> items);
+        /** @param version current server version; @param nicks/items/scales null when nothing changed. */
+        void onData(long version, Map<String, String> nicks, Map<String, String> items, Map<String, String> scales);
     }
 
     /**
@@ -1749,7 +1853,7 @@ public class HypixelApi {
      * refresh often while reading the full tables server-side only when something actually changed.
      */
     public static void fetchSync(java.util.Collection<String> uuidsNoDashes, long version, SyncCallback cb) {
-        if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.onData(version, null, null); return; }
+        if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.onData(version, null, null, null); return; }
         try {
             String q = String.join(",", uuidsNoDashes);
             HttpRequest req = HttpRequest.newBuilder()
@@ -1761,13 +1865,13 @@ public class HypixelApi {
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
                 try {
                     JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
-                    if (!root.has("success") || !root.get("success").getAsBoolean()) { cb.onData(version, null, null); return; }
+                    if (!root.has("success") || !root.get("success").getAsBoolean()) { cb.onData(version, null, null, null); return; }
                     long ver = root.has("version") ? root.get("version").getAsLong() : version;
-                    if (!root.has("changed") || !root.get("changed").getAsBoolean()) { cb.onData(ver, null, null); return; }
-                    cb.onData(ver, parseStringMap(root, "nicks"), parseStringMap(root, "items"));
-                } catch (Exception ignored) { cb.onData(version, null, null); }
-            }).exceptionally(t -> { cb.onData(version, null, null); return null; });
-        } catch (Exception e) { cb.onData(version, null, null); }
+                    if (!root.has("changed") || !root.get("changed").getAsBoolean()) { cb.onData(ver, null, null, null); return; }
+                    cb.onData(ver, parseStringMap(root, "nicks"), parseStringMap(root, "items"), parseStringMap(root, "scales"));
+                } catch (Exception ignored) { cb.onData(version, null, null, null); }
+            }).exceptionally(t -> { cb.onData(version, null, null, null); return null; });
+        } catch (Exception e) { cb.onData(version, null, null, null); }
     }
 
     private static Map<String, String> parseStringMap(JsonObject root, String key) {
@@ -2393,6 +2497,94 @@ public class HypixelApi {
             } catch (Exception ex) {
                 fishmod.utils.debug.Debug.LOGGER.warn("[ProfileStats] error: {}", ex.toString());
                 cb.onData(-1, -1);
+            }
+        });
+    }
+
+    // ─── Worm / Scatha bestiary ────────────────────────────────────────────────
+
+    /** Worm + Scatha bestiary kills and the (combined) Worm bestiary tier. */
+    public static class WormStats {
+        public int     worm    = 0;     // Crystal Hollows Worm kills (bestiary.kills.worm_*)
+        public int     scatha  = 0;     // Scatha kills (bestiary.kills.scatha_*)
+        public long    total   = 0;     // worm + scatha (the bestiary tier is based on this combined total)
+        public int     tier    = 0;     // current Worm-bestiary tier (0..maxTier)
+        public int     maxTier = 0;     // max tier (15)
+        public Integer nextTierKills;   // combined kills required for the next tier, null if maxed
+        public boolean found   = false; // true if the profile's bestiary data was located
+    }
+
+    // Hypixel "Worm" bestiary family (Crystal Hollows) — combines Worm + Scatha kills into one tier.
+    // Bracket 5 thresholds truncated at the family's 400-kill cap → 15 tiers. Source: Hypixel bestiary.
+    private static final int[] WORM_BESTIARY_BRACKET =
+        {1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 60, 120, 200, 300, 400};
+
+    private static WormStats computeWormStats(int worm, int scatha) {
+        WormStats s = new WormStats();
+        s.worm    = worm;
+        s.scatha  = scatha;
+        s.total   = (long) worm + scatha;
+        s.maxTier = WORM_BESTIARY_BRACKET.length;
+        int tier = s.maxTier;
+        Integer next = null;
+        for (int i = 0; i < WORM_BESTIARY_BRACKET.length; i++) {
+            if (s.total < WORM_BESTIARY_BRACKET[i]) { tier = i; next = WORM_BESTIARY_BRACKET[i]; break; }
+        }
+        s.tier = tier;
+        s.nextTierKills = next;
+        return s;
+    }
+
+    public interface WormStatsCallback { void onData(WormStats data); }
+
+    /**
+     * Fetches the player's Worm + Scatha bestiary kills from member.bestiary.kills and computes the
+     * Worm bestiary tier. Keys are matched as worm_<n> / scatha_<n> so the Crystal Hollows Worm is
+     * not confused with other "worm" families (water_worm, pest_worm, flaming_worm, …) and the lookup
+     * survives a future bracket-number change.
+     */
+    public static void getWormStats(MinecraftClient mc, String ign, WormStatsCallback cb) {
+        CompletableFuture.runAsync(() -> {
+            String uuid = resolveUuidBlocking(ign);
+            if (uuid == null) { cb.onData(new WormStats()); return; }
+            try {
+                HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
+                    .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                    .timeout(Duration.ofSeconds(12)).GET().build();
+                HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
+                JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
+                int worm = 0, scatha = 0; boolean found = false;
+                if (root.has("profiles") && !root.get("profiles").isJsonNull()) {
+                    JsonObject chosen = null;
+                    for (JsonElement pe : root.getAsJsonArray("profiles")) {
+                        JsonObject p = pe.getAsJsonObject();
+                        if (p.has("selected") && p.get("selected").getAsBoolean()) { chosen = p; break; }
+                        if (chosen == null) chosen = p;
+                    }
+                    if (chosen != null) {
+                        JsonObject member = chosen.getAsJsonObject("members").getAsJsonObject(uuid);
+                        if (member.has("bestiary") && member.get("bestiary").isJsonObject()) {
+                            JsonObject best = member.getAsJsonObject("bestiary");
+                            if (best.has("kills") && best.get("kills").isJsonObject()) {
+                                found = true;
+                                for (Map.Entry<String, JsonElement> e : best.getAsJsonObject("kills").entrySet()) {
+                                    int v;
+                                    try { v = e.getValue().getAsInt(); } catch (Exception ex) { continue; }
+                                    String k = e.getKey();
+                                    if (k.matches("scatha_\\d+"))    scatha += v;
+                                    else if (k.matches("worm_\\d+")) worm   += v;
+                                }
+                            }
+                        }
+                    }
+                }
+                WormStats s = computeWormStats(worm, scatha);
+                s.found = found;
+                cb.onData(s);
+            } catch (Exception ex) {
+                fishmod.utils.debug.Debug.LOGGER.warn("[WormStats] error: {}", ex.toString());
+                cb.onData(new WormStats());
             }
         });
     }

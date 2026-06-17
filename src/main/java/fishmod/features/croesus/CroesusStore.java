@@ -104,6 +104,26 @@ public class CroesusStore {
     private static final java.util.regex.Pattern TRAILING_COUNT =
             java.util.regex.Pattern.compile("(?i)\\s*x\\s*\\d+\\s*$");
 
+    private static final java.util.regex.Pattern CHEST_TIER_NAME = java.util.regex.Pattern.compile(
+            "(?i)^(Wood|Gold|Diamond|Emerald|Obsidian|Bedrock)(?:\\s+Chest)?$");
+
+    /**
+     * Removes legacy bogus entries created before the chest-selection grid was excluded from capture:
+     * entries whose items are ALL chest-tier names (Wood/Gold/Diamond/Emerald/Obsidian/Bedrock).
+     * Real loot entries are untouched. Returns the number of entries removed.
+     */
+    public static synchronized int purgeChestTierEntries() {
+        ensureLoaded();
+        int before = entries.size();
+        entries.removeIf(e -> !e.items.isEmpty() && e.items.stream().allMatch(it ->
+                CHEST_TIER_NAME.matcher(
+                        TRAILING_COUNT.matcher(it.name == null ? "" : it.name).replaceAll("").trim()
+                ).matches()));
+        int removed = before - entries.size();
+        if (removed > 0) save();
+        return removed;
+    }
+
     /** Aggregate count + value per item id. Normalises old entries that stored counts in the name. */
     public static Map<String, Agg> aggregateByItem() {
         Map<String, Agg> map = new LinkedHashMap<>();

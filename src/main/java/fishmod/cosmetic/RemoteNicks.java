@@ -1,17 +1,10 @@
 package fishmod.cosmetic;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import fishmod.utils.HypixelApi;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -40,10 +33,6 @@ public final class RemoteNicks {
 
     private static final long NEGATIVE_TTL_MS = 15 * 60_000L; // 15 min
     private static final Pattern IGN_PAT = Pattern.compile("\\b([A-Za-z0-9_]{3,16})\\b");
-
-    // Local HTTP for name→uuid lookups (Ashcon, no auth).
-    private static final HttpClient HTTP = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(8)).build();
 
     public static void init() {
         // Polling is driven by RemoteSync (combined version-gated /sync). We only (re)publish our
@@ -125,29 +114,14 @@ public final class RemoteNicks {
     }
 
     private static void lookupAndCache(String name) {
-        String cachedUuid = HypixelApi.uuidByName.get(name);
+        String cachedUuid = HypixelApi.getCachedUuid(name);
         if (cachedUuid != null) { fetchOne(name, cachedUuid); return; }
-        try {
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.ashcon.app/mojang/v2/user/" + name))
-                    .header("User-Agent", "FishMod/1.0")
-                    .timeout(Duration.ofSeconds(8))
-                    .GET().build();
-            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(resp -> {
-                try {
-                    if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
-                        JsonObject o = JsonParser.parseString(resp.body()).getAsJsonObject();
-                        if (o.has("uuid")) {
-                            String uuid = o.get("uuid").getAsString().replace("-", "");
-                            HypixelApi.uuidByName.put(name, uuid);
-                            fetchOne(name, uuid);
-                            return;
-                        }
-                    }
-                } catch (Exception ignored) {}
-                markNotFound(name);
-            }).exceptionally(t -> { markNotFound(name); return null; });
-        } catch (Exception e) { markNotFound(name); }
+        // Mojang-authoritative resolve (shared with stats lookups) so a recycled/changed name maps to
+        // the player who currently owns it — otherwise we'd style the wrong person's nick onto it.
+        HypixelApi.resolveUuidAsync(name, uuid -> {
+            if (uuid != null) fetchOne(name, uuid);
+            else markNotFound(name);
+        });
     }
 
     private static void fetchOne(String name, String uuid) {

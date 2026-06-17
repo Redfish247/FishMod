@@ -91,7 +91,7 @@ public class PartyCommandHandler {
      */
     /** Back-compat overload — defaults responder to party chat ("pc "). */
     public static void onPartyCommand(String typer, String cmd, String rawArg1, String rawArg2) {
-        onPartyCommand(typer, cmd, rawArg1, rawArg2, "pc ");
+        onPartyCommand(typer, cmd, rawArg1, rawArg2, null, "pc ");
     }
 
     /**
@@ -101,7 +101,12 @@ public class PartyCommandHandler {
     /** Responder sentinel for /command lookups — result is shown in your own chat, not sent anywhere. */
     public static final String LOCAL = "";
 
+    /** Back-compat overload for callers that only have two args (rawArg3 = null). */
     public static void onPartyCommand(String typer, String cmd, String rawArg1, String rawArg2, String responder) {
+        onPartyCommand(typer, cmd, rawArg1, rawArg2, null, responder);
+    }
+
+    public static void onPartyCommand(String typer, String cmd, String rawArg1, String rawArg2, String rawArg3, String responder) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.getNetworkHandler() == null) return;
         // Use the real account name (GameProfile), NOT getName() — a cosmetic /nick overrides
@@ -123,6 +128,13 @@ public class PartyCommandHandler {
                 if (rawArg1 != null && rawArg1.matches("\\d+")) { rtcIgn = typer; levelArg = rawArg1; }
                 else { rtcIgn = rawArg1 != null ? rawArg1 : typer; levelArg = rawArg2; }
                 runRtcForPlayer(mc, rtcIgn, levelArg, responder);
+            } }
+            case "crtc"      -> { if (FishSettings.pcCrtc && respond(cmd, typer, isLocal)) {
+                // .crtc [name] <class> [level] — smart-parse: if arg1 is a class, name defaults to typer.
+                String cIgn, cClass, cLevel;
+                if (resolveClass(rawArg1) != null) { cIgn = typer; cClass = rawArg1; cLevel = rawArg2; }
+                else { cIgn = rawArg1 != null ? rawArg1 : typer; cClass = rawArg2; cLevel = rawArg3; }
+                runCrtcForPlayer(mc, cIgn, cClass, cLevel, responder);
             } }
             case "cata"      -> { if (FishSettings.pcCata && respond(cmd, typer, isLocal))    runCataForPlayer(mc, ign, responder);             }
             case "pb" -> {
@@ -168,6 +180,7 @@ public class PartyCommandHandler {
             case "level", "sblvl" -> { if (FishSettings.pcLevel && respond(cmd, typer, isLocal)) sendSkyblockLevel(mc, ign, responder); }
             case "farming" -> { if (FishSettings.pcFarming && respond(cmd, typer, isLocal)) sendFarming(mc, ign, responder); }
             case "nuc", "nucleus" -> { if (FishSettings.pcNuc && respond(cmd, typer, isLocal)) sendNucleus(mc, ign, responder); }
+            case "worm", "scatha" -> { if (FishSettings.pcWorm && respond(cmd, typer, isLocal)) sendWorm(mc, ign, responder); }
             case "fps"    -> { if (FishSettings.pcFps    && isMe) sendFps(mc, responder);  }
             case "tps"    -> { if (FishSettings.pcTps    && isMe) sendTps(mc, responder);  }
             case "ping"   -> { if (FishSettings.pcPing   && isMe) sendPing(mc, responder); }
@@ -222,6 +235,7 @@ public class PartyCommandHandler {
         if (FishSettings.pcCata)       cmds.add("cata");
         if (FishSettings.pcRtca)       cmds.add("rtca");
         if (FishSettings.pcRtc)        cmds.add("rtc");
+        if (FishSettings.pcCrtc)       cmds.add("crtc");
         if (FishSettings.pcSecrets)    cmds.add("secrets/sa");
         if (FishSettings.pcRuns)       cmds.add("runs/totalruns");
         if (FishSettings.pcCollection) cmds.add("collection");
@@ -230,6 +244,7 @@ public class PartyCommandHandler {
         if (FishSettings.pcLevel)      cmds.add("level");
         if (FishSettings.pcFarming)    cmds.add("farming");
         if (FishSettings.pcNuc)        cmds.add("nuc");
+        if (FishSettings.pcWorm)       cmds.add("worm"); // .scatha is a hidden alias
         if (FishSettings.pcBank)       cmds.add("bank");
         if (FishSettings.pcPowder)     cmds.add("powder");
         if (FishSettings.pcCorpse)     cmds.add("corpses");
@@ -369,6 +384,10 @@ public class PartyCommandHandler {
             case "nw": case "networth":
                 if (!FishSettings.pcNw || target == null) return false;
                 sendNetworth(mc, target, responder);
+                return true;
+            case "worm": case "scatha":
+                if (!FishSettings.pcWorm || target == null) return false;
+                sendWorm(mc, target, responder);
                 return true;
         }
 
@@ -547,6 +566,65 @@ public class PartyCommandHandler {
         });
     }
 
+    /** Maps a class name/alias to the Hypixel class key, or null if unrecognised. */
+    private static String resolveClass(String s) {
+        if (s == null) return null;
+        return switch (s.toLowerCase()) {
+            case "healer", "heal", "h"                  -> "healer";
+            case "mage", "m"                            -> "mage";
+            case "berserk", "berserker", "bers", "ber", "b" -> "berserk";
+            case "archer", "arch", "a"                  -> "archer";
+            case "tank", "t"                            -> "tank";
+            default                                     -> null;
+        };
+    }
+
+    /**
+     * .crtc — XP needed for a single class to reach a target level (default 50, or above if specified).
+     * Class XP uses the same curve as catacombs (CATA_XP_TABLE); levels above 50 cost 200M XP each.
+     */
+    private static void runCrtcForPlayer(MinecraftClient mc, String ign, String classArg, String levelArg, String responder) {
+        String classKey = resolveClass(classArg);
+        if (classKey == null) {
+            sendCmd(mc, responder + "Usage: .crtc [name] <healer|mage|berserk|archer|tank> [level]");
+            return;
+        }
+        int target = 50;
+        if (levelArg != null) {
+            try { target = Math.max(1, Math.min(99, Integer.parseInt(levelArg))); } catch (NumberFormatException ignored) {}
+        }
+        final int targetLevel = target;
+        HypixelApi.getByName(mc, ign, data -> {
+            long curXp = data.classXp.getOrDefault(classKey, 0L);
+            long goalXp;
+            if (targetLevel < HypixelApi.CATA_XP_TABLE.length) {
+                goalXp = HypixelApi.CATA_XP_TABLE[targetLevel];
+            } else {
+                long over = (long)(targetLevel - 50) * 200_000_000L;
+                goalXp = HypixelApi.CATA_XP_TABLE[50] + over;
+            }
+            long xpNeeded = goalXp - curXp;
+            String disp = Character.toUpperCase(classKey.charAt(0)) + classKey.substring(1);
+            String result;
+            if (xpNeeded <= 0) {
+                result = "Done ✔";
+            } else {
+                long xpPerRun = Math.max(1, FishSettings.rtcaClassXpPerRun);
+                long runs;
+                if (FishSettings.rtcaIncludeDailyBonus) {
+                    long bonusXp = (long)(5 * xpPerRun * 1.4); // 5 daily-bonus runs at +40%
+                    if (xpNeeded <= bonusXp) runs = (long) Math.ceil(xpNeeded / (xpPerRun * 1.4));
+                    else                     runs = 5 + (xpNeeded - bonusXp + xpPerRun - 1) / xpPerRun;
+                } else {
+                    runs = (xpNeeded + xpPerRun - 1) / xpPerRun;
+                }
+                String runsStr = runs >= 1_000 ? String.format("%.1fk", runs / 1_000.0) : Long.toString(runs);
+                result = fmtCoins(xpNeeded) + " XP | " + runsStr + " runs";
+            }
+            sendCmd(mc, responder + ign + "'s " + disp + " to " + targetLevel + ": " + result);
+        });
+    }
+
     private static void sendDprofit(MinecraftClient mc, String responder) {
         java.util.List<fishmod.features.croesus.CroesusStore.Entry> all = fishmod.features.croesus.CroesusStore.all();
         String last = all.isEmpty()
@@ -559,7 +637,7 @@ public class PartyCommandHandler {
 
     private static void buildAndSendRtca(MinecraftClient mc, HypixelApi.DungeonData data, String ign, String responder) {
         long xpPerRun = Math.max(1, FishSettings.rtcaClassXpPerRun);
-        long passiveXp = (long)(xpPerRun * 0.2);
+        long passiveXp = Math.max(0, FishSettings.rtcaClassPassiveXpPerRun);
 
         String[] classes    = {"healer", "mage", "berserk", "archer", "tank"};
         String[] shortNames = {"H",      "M",    "B",       "A",      "T"   };
@@ -685,6 +763,16 @@ public class PartyCommandHandler {
             sendCmd(mc, responder + ign + "'s Nucleus Runs: " + (runs >= 0 ? String.format("%,d", runs) : "N/A")));
     }
 
+    private static void sendWorm(MinecraftClient mc, String ign, String responder) {
+        HypixelApi.getWormStats(mc, ign, s -> {
+            if (!s.found) { sendCmd(mc, responder + ign + "'s Bestiary: N/A"); return; }
+            String tier = "Tier " + s.tier + "/" + s.maxTier
+                    + (s.nextTierKills != null ? " (" + String.format("%,d", s.total) + "/" + String.format("%,d", s.nextTierKills) + ")" : " (MAX)");
+            sendCmd(mc, responder + ign + "'s Bestiary: Worm " + String.format("%,d", s.worm)
+                    + " | Scatha " + String.format("%,d", s.scatha) + " | " + tier);
+        });
+    }
+
     private static String fmtCoins(double v) {
         if (v >= 1_000_000_000d) return String.format("%.2fB", v / 1_000_000_000d);
         if (v >= 1_000_000d)     return String.format("%.2fM", v / 1_000_000d);
@@ -723,15 +811,17 @@ public class PartyCommandHandler {
 
     private static void sendPing(MinecraftClient mc, String responder) {
         if (mc.player == null || mc.getNetworkHandler() == null) return;
-        // Live keep-alive RTT → server-list join ping → tab latency (last resort).
+        // The vanilla ping/pong round trip is the most accurate, freshest end-to-end source (the same
+        // one Odin uses). Server-measured tab latency and the server-list join ping are fallbacks only
+        // for the brief window before a live measurement is available.
         int ping = fishmod.utils.PingTracker.latest();
+        if (ping < 0) {
+            var entry = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
+            if (entry != null && entry.getLatency() > 0) ping = entry.getLatency();
+        }
         if (ping < 0) {
             try { var si = mc.getCurrentServerEntry(); if (si != null && si.ping > 0) ping = (int) si.ping; }
             catch (Exception ignored) {}
-        }
-        if (ping < 0) {
-            var entry = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
-            if (entry != null) ping = entry.getLatency();
         }
         sendCmd(mc, responder + "Ping: " + (ping >= 0 ? ping + "ms" : "N/A"));
     }
