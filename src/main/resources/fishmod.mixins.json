@@ -7,6 +7,7 @@
     "ClientConnectionMixin",
     "ClientPlayNetworkHandlerMixin",
     "EntityMixin",
+    "ItemStackMixin",
     "PlayerInventoryMixin",
     "StuckArrowsFeatureRendererMixin"
   ],
@@ -22,6 +23,7 @@
     "accessors.ChatScreenAccessor",
     "accessors.KeyBindingAccessor",
     "accessors.GameRendererAccessor",
+    "accessors.HandledScreenAccessor",
 
     "ChatHudInvoker",
     "ChatHudMixin",

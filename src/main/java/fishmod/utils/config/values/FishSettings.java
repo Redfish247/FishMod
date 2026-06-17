@@ -199,6 +199,10 @@ public class FishSettings {
     // per-enemy damage (D / N) as an on-screen title.
     @ConfigValue public static boolean explosiveShotEnabled    = false;
 
+    // M7/F7 lever waypoints: through-walls filled box on each boss lever; disappears once flipped.
+    @ConfigValue public static boolean enableM7LeverWaypoints  = false;
+    @ConfigValue public static int     m7LeverWaypointColor    = 0x13FF0086; // ARGB (faint magenta)
+
     // Name color: gradient applied to your real username
     @ConfigValue public static int nickColorStart = 0xFFFF5555; // red
     @ConfigValue public static int nickColorEnd   = 0xFF5555FF; // blue
@@ -244,7 +248,6 @@ public class FishSettings {
     @ConfigValue public static double dungeonScoreScale  = 1.0;
     @ConfigValue public static double petHudScale         = 1.0;
     @ConfigValue public static double soulflowHudScale    = 1.0;
-    @ConfigValue public static double croesusOverlayScale = 1.0;
     @ConfigValue public static boolean pcSecrets    = false;
     @ConfigValue public static boolean pcRuns       = false;
     @ConfigValue public static boolean pcJoinFloor  = false;
@@ -262,11 +265,10 @@ public class FishSettings {
     @ConfigValue public static String  pcPartyActionsMode      = "self";
     @ConfigValue public static String  pcPartyActionsWhitelist = "";
 
-    // Croesus chest drop overlay
-    @ConfigValue public static boolean croesusOverlayEnabled     = false;
-    @ConfigValue public static boolean croesusOverlayHideInDungeon = false;
-    @ConfigValue public static int     croesusOverlayX           = 10;
-    @ConfigValue public static int     croesusOverlayY           = 160;
+    // Manual loot/profit tracker (in-inventory panel, Dungeon Hub only)
+    @ConfigValue public static boolean lootTrackerEnabled = false;
+    @ConfigValue public static int     lootTrackerX = -1; // -1 = auto-anchor beside the inventory
+    @ConfigValue public static int     lootTrackerY = -1;
 
     // Simon Says (F7 Goldor) tracker
     @ConfigValue public static boolean simonSaysEnabled    = false;

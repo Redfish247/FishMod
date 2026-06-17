@@ -71,18 +71,26 @@ public class FishHudEditor extends Screen {
         ENTRIES.add(new HudEntry(name, getX, v -> {}, getY, v -> {}, w, h, true));
     }
 
-    /** Register a HUDComponent — position get/set bridges through component.move(). */
+    /**
+     * Register a HUDComponent — position get/set bridges through component.move().
+     * <p>We work in TRUE pixel space ({@code getScaledX() * scale == x * screenWidth}), not raw
+     * {@code getScaledX()}: the latter is scale-dependent, so the editor box would drift when you
+     * resize. Using the scale-independent pixel position keeps the box anchored at its top-left
+     * while scaling — matching where the HUD actually renders.
+     */
     public static void register(String name, HUDComponent component) {
         ENTRIES.add(new HudEntry(name,
-            component::getScaledX,
+            () -> Math.round(component.getScaledX() * component.getScale()),
             v -> {
                 int ww = MinecraftClient.getInstance().getWindow().getScaledWidth();
-                component.move((double)(v - component.getScaledX()) * component.getScale() / ww, 0);
+                int cur = Math.round(component.getScaledX() * component.getScale());
+                component.move((double)(v - cur) / ww, 0);
             },
-            component::getScaledY,
+            () -> Math.round(component.getScaledY() * component.getScale()),
             v -> {
                 int wh = MinecraftClient.getInstance().getWindow().getScaledHeight();
-                component.move(0, (double)(v - component.getScaledY()) * component.getScale() / wh);
+                int cur = Math.round(component.getScaledY() * component.getScale());
+                component.move(0, (double)(v - cur) / wh);
             },
             component.getWidth(), component.getHeight(),
             false,
@@ -149,10 +157,21 @@ public class FishHudEditor extends Screen {
             ctx.fill(x,             y,             x + 1,       y + scaledH,     outline);
             ctx.fill(x + scaledW-1, y,             x + scaledW, y + scaledH,     outline);
 
-            int labelX = x + 3;
-            int labelY = y + (scaledH - 8) / 2;
             int labelColor = e.locked() ? 0xFF888888 : (active ? 0xFFFFFFFF : 0xFFAAAAAA);
             String label = e.name() + (e.scale() != 1.0 ? String.format(" §7(%.2fx)", e.scale()) : "");
+            int labelW = this.textRenderer.getWidth(label);
+            int labelX, labelY;
+            if (labelW + 6 <= scaledW) {
+                // fits inside the box
+                labelX = x + 3;
+                labelY = y + (scaledH - 8) / 2;
+            } else {
+                // too wide for the box — drop the label just below it (or above if it would run off
+                // the bottom of the screen), with a dark backing so it stays readable over other boxes
+                labelX = x;
+                labelY = (y + scaledH + 10 <= this.height) ? y + scaledH + 1 : y - 10;
+                ctx.fill(labelX - 1, labelY - 1, labelX + labelW + 1, labelY + 9, 0xC0000000);
+            }
             ctx.drawText(this.textRenderer, label, labelX, labelY, labelColor, true);
         }
 
@@ -176,7 +195,9 @@ public class FishHudEditor extends Screen {
             if (e.locked() || !e.isVisible()) continue;
             int x = e.getX().getAsInt();
             int y = e.getY().getAsInt();
-            if (mx >= x && mx <= x + e.w() && my >= y && my <= y + e.h()) {
+            int sw = Math.max(8, (int)(e.w() * e.scale()));
+            int sh = Math.max(8, (int)(e.h() * e.scale()));
+            if (mx >= x && mx <= x + sw && my >= y && my <= y + sh) {
                 dragging = e;
                 dragOffX = mx - x;
                 dragOffY = my - y;
@@ -192,8 +213,10 @@ public class FishHudEditor extends Screen {
         if (dragging != null) {
             int nx = (int) click.x() - dragOffX;
             int ny = (int) click.y() - dragOffY;
-            nx = Math.max(0, Math.min(this.width  - dragging.w(), nx));
-            ny = Math.max(0, Math.min(this.height - dragging.h(), ny));
+            int sw = Math.max(8, (int)(dragging.w() * dragging.scale()));
+            int sh = Math.max(8, (int)(dragging.h() * dragging.scale()));
+            nx = Math.max(0, Math.min(this.width  - sw, nx));
+            ny = Math.max(0, Math.min(this.height - sh, ny));
             dragging.setX().accept(nx);
             dragging.setY().accept(ny);
             return true;

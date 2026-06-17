@@ -65,6 +65,33 @@ public class SkyblockItems {
                 .exceptionally(t -> { loading.set(false); return null; });
     }
 
+    /**
+     * Case-insensitive name search for autocomplete. Prefix matches rank before substring
+     * matches; both are sorted alphabetically and the combined result is capped at {@code limit}.
+     * Returns display names (resolve to ids via {@link #idFor(String)}).
+     */
+    public static java.util.List<String> searchNames(String query, int limit) {
+        if (query == null || query.isBlank()) return java.util.List.of();
+        String q = query.toLowerCase();
+        java.util.List<String> prefix = new java.util.ArrayList<>();
+        java.util.List<String> contains = new java.util.ArrayList<>();
+        synchronized (nameToId) {
+            for (String name : nameToId.keySet()) {
+                String ln = name.toLowerCase();
+                if (ln.startsWith(q)) prefix.add(name);
+                else if (ln.contains(q)) contains.add(name);
+            }
+        }
+        prefix.sort(String.CASE_INSENSITIVE_ORDER);
+        contains.sort(String.CASE_INSENSITIVE_ORDER);
+        java.util.List<String> out = new java.util.ArrayList<>(prefix);
+        for (String c : contains) {
+            if (out.size() >= limit) break;
+            out.add(c);
+        }
+        return out.size() > limit ? new java.util.ArrayList<>(out.subList(0, limit)) : out;
+    }
+
     /** @return canonical id for the given display name, or null if not loaded/unknown */
     public static String idFor(String name) {
         if (name == null) return null;

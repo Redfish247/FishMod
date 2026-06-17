@@ -626,13 +626,11 @@ public class PartyCommandHandler {
     }
 
     private static void sendDprofit(MinecraftClient mc, String responder) {
-        java.util.List<fishmod.features.croesus.CroesusStore.Entry> all = fishmod.features.croesus.CroesusStore.all();
-        String last = all.isEmpty()
-                ? "—"
-                : fishmod.features.croesus.CroesusOverlay.bestDrop(all.get(all.size() - 1));
-        String pr = fishmod.features.croesus.CroesusOverlay.fmtCoins(
-                fishmod.features.croesus.CroesusOverlay.avgProfit());
-        sendCmd(mc, responder + "Last RNG: " + last + " | Profit Per Run: " + pr);
+        double total = fishmod.features.croesus.LootTrackerOverlay.totalValueForChat();
+        int runs = fishmod.features.croesus.LootTrackerOverlay.runsForChat();
+        double avg = total / Math.max(1, runs);
+        String pr = fishmod.features.croesus.LootTrackerOverlay.fmtCoinsPublic(avg);
+        sendCmd(mc, responder + "Profit Per Run: " + pr + " (" + runs + " runs)");
     }
 
     private static void buildAndSendRtca(MinecraftClient mc, HypixelApi.DungeonData data, String ign, String responder) {
