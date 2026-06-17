@@ -86,8 +86,8 @@ public class FishModScreen extends Screen {
     static final int TOG2_H      = 18;
 
     // ----- overlay panel geometry (fixed-size, centred; the game shows through behind) -----
-    static final int PANEL_W     = 520;
-    static final int PANEL_H     = 340;
+    static final int PANEL_W     = 700;
+    static final int PANEL_H     = 460;
 
     // ----- setting-widget geometry (consumed below) -----
     static final int ITEM_HEIGHT   = 20;
@@ -258,16 +258,21 @@ public class FishModScreen extends Screen {
     private static String iconFor(String name) {
         return switch (name) {
             case "Mod Prefix" -> "text";
+            case "Inventory Buttons" -> "cube";
             case "Auto Meow", "Smart Copy Chat", "Bridge Bot", "Death Message", "Chat Channels", "Chat Filter" -> "chat";
             case "Explosive Shot" -> "star";
             case "Compact Tab", "Party Commands" -> "people";
             case "Dungeon Score", "Session Stats", "Pet HUD", "Trophy Frogs" -> "star";
-            case "Puzzle Overlay", "Simon Says" -> "cube";
-            case "Send Lag to Party", "Splits", "Cooldown Overlay", "Fire Freeze Timer" -> "clock";
-            case "Croesus Overlay", "Croesus Loot",
+            case "Puzzle Overlay", "Simon Says", "M7 Lever Waypoints" -> "cube";
+            case "Send Lag to Party", "Splits", "Cooldown Overlay", "Fire Freeze Timer",
+                 "Maxor Tick Timer", "Crystal Spawn", "Storm Tick Timer", "Storm Death Time",
+                 "Goldor Tick Timer", "Term Start Timer" -> "clock";
+            case "Storm Crushed Noti" -> "bell";
+            case "Section Progress" -> "star";
+            case "Loot Tracker",
                  "Slayer XP Tracker", "Skill XP Tracker", "Powder Tracker",
                  "Farming Tracker", "Harvest Feast Tracker", "Mining Tracker" -> "coin";
-            case "Class Colored Boots", "Name Color", "Customize", "Rarity Hotbar" -> "palette";
+            case "Class Colored Boots", "Name Color", "Customize", "Rarity Background" -> "palette";
             case "See Others' Items" -> "eye";
             case "Nametag" -> "tag";
             case "Player Size" -> "slider";
@@ -281,6 +286,7 @@ public class FishModScreen extends Screen {
     private static String descFor(String name) {
         return switch (name) {
             case "Mod Prefix" -> "Tag FishMod's chat output with a prefix";
+            case "Inventory Buttons" -> "Clickable command buttons in your inventory";
             case "Auto Meow" -> "Auto-reply 'meow' when someone meows";
             case "Smart Copy Chat" -> "Right-click a chat line to copy it";
             case "Compact Tab" -> "Cleaner custom tab player list";
@@ -293,10 +299,18 @@ public class FishModScreen extends Screen {
             case "Send Lag to Party" -> "Warn the party when your game lags";
             case "Splits" -> "Phase split timers for runs";
             case "Session Stats" -> "Per-session run statistics HUD";
-            case "Croesus Overlay" -> "Chest drop value overlay";
-            case "Croesus Loot" -> "Browse Croesus loot & prices";
+            case "Loot Tracker" -> "Manual drop & profit tracker (D Hub inv)";
             case "Simon Says" -> "F7 Goldor device solver";
             case "Class Colored Boots" -> "Dye boots by your dungeon class";
+            case "M7 Lever Waypoints" -> "See F7/M7 levers through walls";
+            case "Maxor Tick Timer" -> "Tick timer during Maxor (P1)";
+            case "Crystal Spawn" -> "Crystal spawn countdown + reminder";
+            case "Storm Tick Timer" -> "Tick timer during Storm (P2)";
+            case "Storm Death Time" -> "Show when Storm died";
+            case "Storm Crushed Noti" -> "Alert when Storm is crushed";
+            case "Goldor Tick Timer" -> "Terminal-phase tick timer";
+            case "Term Start Timer" -> "Countdown to terminals start";
+            case "Section Progress" -> "Terminal section completed/total";
             case "Name Color" -> "Recolor your username gradient";
             case "See Others' Items" -> "Render other users' item cosmetics";
             case "Customize" -> "Rename, dye & re-model your items";
@@ -304,7 +318,7 @@ public class FishModScreen extends Screen {
             case "Player Size" -> "Resize your model (render only)";
             case "Party Commands" -> "Dot-commands usable in party chat";
             case "Chat Channels" -> "Where dot-commands are allowed";
-            case "Rarity Hotbar" -> "Tint hotbar slots by item rarity";
+            case "Rarity Background" -> "Rarity-colored backing on all slots";
             case "Cooldown Overlay" -> "Ability cooldowns on item slots";
             case "Pet HUD" -> "Show your active pet & level";
             case "Soulflow HUD" -> "Track your soulflow count";
@@ -321,6 +335,13 @@ public class FishModScreen extends Screen {
         };
     }
 
+    /** Builds a command-input row for an inventory button (the hint reminds it's a command, no slash). */
+    private static InputSetting makeButtonInput(String name, Supplier<String> getter, Consumer<String> setter) {
+        InputSetting s = new InputSetting(name, "", getter, setter);
+        s.hint = "command without /";
+        return s;
+    }
+
     // -----------------------------------------------------------------------------------
     // Category / feature graph
     // -----------------------------------------------------------------------------------
@@ -330,6 +351,7 @@ public class FishModScreen extends Screen {
         Column cosmetics = new Column("Cosmetics", "hanger");
         Column party     = new Column("Party",     "people");
         Column visuals   = new Column("Visuals",   "eye");
+        Column floor7    = new Column("Floor 7",   "arch");
 
         // ===== General =====
         {
@@ -338,6 +360,19 @@ public class FishModScreen extends Screen {
             f.sub.add(new InputSetting("Prefix", "",
                     () -> FishSettings.modPrefix,
                     v -> FishSettings.modPrefix = (v != null && v.length() > 10) ? v.substring(0, 10) : v));
+            general.features.add(f);
+        }
+        {
+            Feature f = new Feature("Inventory Buttons",
+                    () -> fishmod.utils.config.values.Buttons.enableInventoryButtons,
+                    v -> fishmod.utils.config.values.Buttons.enableInventoryButtons = v);
+            f.sub.add(makeButtonInput("Button 1", () -> fishmod.utils.config.values.Buttons.command1, v -> fishmod.utils.config.values.Buttons.command1 = v));
+            f.sub.add(makeButtonInput("Button 2", () -> fishmod.utils.config.values.Buttons.command2, v -> fishmod.utils.config.values.Buttons.command2 = v));
+            f.sub.add(makeButtonInput("Button 3", () -> fishmod.utils.config.values.Buttons.command3, v -> fishmod.utils.config.values.Buttons.command3 = v));
+            f.sub.add(makeButtonInput("Button 4", () -> fishmod.utils.config.values.Buttons.command4, v -> fishmod.utils.config.values.Buttons.command4 = v));
+            f.sub.add(makeButtonInput("Button 5", () -> fishmod.utils.config.values.Buttons.command5, v -> fishmod.utils.config.values.Buttons.command5 = v));
+            f.sub.add(makeButtonInput("Button 6", () -> fishmod.utils.config.values.Buttons.command6, v -> fishmod.utils.config.values.Buttons.command6 = v));
+            f.sub.add(makeButtonInput("Button 7", () -> fishmod.utils.config.values.Buttons.command7, v -> fishmod.utils.config.values.Buttons.command7 = v));
             general.features.add(f);
         }
         general.features.add(new Feature("Auto Meow",
@@ -418,17 +453,8 @@ public class FishModScreen extends Screen {
             dungeon.features.add(f);
         }
         {
-            Feature f = new Feature("Croesus Overlay",
-                    () -> FishSettings.croesusOverlayEnabled, v -> FishSettings.croesusOverlayEnabled = v);
-            f.sub.add(new ToggleSetting("Hide in Dungeon", "",
-                    () -> FishSettings.croesusOverlayHideInDungeon, v -> FishSettings.croesusOverlayHideInDungeon = v));
-            dungeon.features.add(f);
-        }
-        {
-            Feature f = new Feature("Croesus Loot", null, null);
-            f.sub.add(new ButtonSetting("Open Loot", "",
-                    () -> MinecraftClient.getInstance().setScreen(
-                            new fishmod.features.croesus.CroesusLootScreen(MinecraftClient.getInstance().currentScreen))));
+            Feature f = new Feature("Loot Tracker",
+                    () -> FishSettings.lootTrackerEnabled, v -> FishSettings.lootTrackerEnabled = v);
             f.sub.add(new DropdownSetting<>("Price", "",
                     FishSettings.PriceMode.values(),
                     () -> FishSettings.trackerPriceModeEnum,
@@ -450,6 +476,13 @@ public class FishModScreen extends Screen {
         }
         dungeon.features.add(new Feature("Class Colored Boots",
                 () -> FishSettings.classColoredBootsEnabled, v -> FishSettings.classColoredBootsEnabled = v));
+        {
+            Feature f = new Feature("M7 Lever Waypoints",
+                    () -> FishSettings.enableM7LeverWaypoints, v -> FishSettings.enableM7LeverWaypoints = v);
+            f.sub.add(new ColorPickerSetting("Box Color", "",
+                    () -> FishSettings.m7LeverWaypointColor, v -> FishSettings.m7LeverWaypointColor = v));
+            dungeon.features.add(f);
+        }
 
         // ===== Cosmetics =====
         {
@@ -560,8 +593,13 @@ public class FishModScreen extends Screen {
         }
 
         // ===== Visuals =====
-        visuals.features.add(new Feature("Rarity Hotbar",
-                () -> Visual.itemRarityBackground, v -> Visual.itemRarityBackground = v));
+        {
+            Feature f = new Feature("Rarity Background",
+                    () -> Visual.itemRarityBackground, v -> Visual.itemRarityBackground = v);
+            f.sub.add(new ToggleSetting("Circular", "",
+                    () -> Visual.circularRarityBackground, v -> Visual.circularRarityBackground = v));
+            visuals.features.add(f);
+        }
         {
             Feature f = new Feature("Cooldown Overlay",
                     () -> FishSettings.cooldownOverlayEnabled, v -> FishSettings.cooldownOverlayEnabled = v);
@@ -639,11 +677,61 @@ public class FishModScreen extends Screen {
         visuals.features.add(new Feature("Trophy Frogs",
                 () -> FishSettings.trophyFrogEnabled, v -> FishSettings.trophyFrogEnabled = v));
 
+        // ===== Floor 7 (ported from blade-addons) =====
+        {
+            Feature f = new Feature("Maxor Tick Timer",
+                    () -> Floor7.enableMaxorTickTimer, v -> Floor7.enableMaxorTickTimer = v);
+            floor7.features.add(f);
+        }
+        {
+            Feature f = new Feature("Crystal Spawn",
+                    () -> Floor7.enableCrystalSpawnTime, v -> Floor7.enableCrystalSpawnTime = v);
+            f.sub.add(new ToggleSetting("Place Reminder", "",
+                    () -> Floor7.crystalPlaceReminder, v -> Floor7.crystalPlaceReminder = v));
+            f.sub.add(new ToggleSetting("Instant Reminder", "",
+                    () -> Floor7.instantlyDisplayCrystalReminder, v -> Floor7.instantlyDisplayCrystalReminder = v));
+            floor7.features.add(f);
+        }
+        {
+            Feature f = new Feature("Storm Tick Timer",
+                    () -> Floor7.enableStormTickTimer, v -> Floor7.enableStormTickTimer = v);
+            f.sub.add(new ToggleSetting("Tick Down From 5", "",
+                    () -> Floor7.tickDownStormTickTimer, v -> Floor7.tickDownStormTickTimer = v));
+            f.sub.add(new ColorPickerSetting("Timer Color", "",
+                    () -> Floor7.stormTickTimerColor, v -> Floor7.stormTickTimerColor = v));
+            floor7.features.add(f);
+        }
+        floor7.features.add(new Feature("Storm Death Time",
+                () -> Floor7.enableStormDeathTime, v -> Floor7.enableStormDeathTime = v));
+        floor7.features.add(new Feature("Storm Crushed Noti",
+                () -> Floor7.notifyStormCrush, v -> Floor7.notifyStormCrush = v));
+        {
+            Feature f = new Feature("Goldor Tick Timer",
+                    () -> Floor7.enableGoldorTickTimer, v -> Floor7.enableGoldorTickTimer = v);
+            f.sub.add(new ToggleSetting("In 3s Increments", "",
+                    () -> Floor7.inDeathTicks, v -> Floor7.inDeathTicks = v));
+            f.sub.add(new ToggleSetting("Tick Up", "",
+                    () -> Floor7.makeGoldorTickUp, v -> Floor7.makeGoldorTickUp = v));
+            floor7.features.add(f);
+        }
+        floor7.features.add(new Feature("Term Start Timer",
+                () -> Floor7.enableTermStartTimer, v -> Floor7.enableTermStartTimer = v));
+        {
+            Feature f = new Feature("Section Progress",
+                    () -> Floor7.showSectionProgress, v -> Floor7.showSectionProgress = v);
+            f.sub.add(new ToggleSetting("Color w/ Progress", "",
+                    () -> Floor7.sectionColorProgress, v -> Floor7.sectionColorProgress = v));
+            f.sub.add(new ToggleSetting("Prev Objective", "",
+                    () -> Floor7.sectionPrevObjective, v -> Floor7.sectionPrevObjective = v));
+            floor7.features.add(f);
+        }
+
         columns.add(general);
         columns.add(dungeon);
         columns.add(cosmetics);
         columns.add(party);
         columns.add(visuals);
+        columns.add(floor7);
     }
 
     // -----------------------------------------------------------------------------------
@@ -893,6 +981,10 @@ public class FishModScreen extends Screen {
         int ehW = 96, ehX = cx0();
         drawButton(ctx, ehX, by, ehW, bh, "Edit HUD", false, hovBtn(mouseX, mouseY, ehX, by, ehW, bh));
 
+        // Credits (right of Edit HUD)
+        int crW = 76, crX = ehX + ehW + 10;
+        drawButton(ctx, crX, by, crW, bh, "Credits", false, hovBtn(mouseX, mouseY, crX, by, crW, bh));
+
         // Save & Close (far right)
         int scW = 126, scX = cx1() - scW;
         drawButton(ctx, scX, by, scW, bh, "Save & Close", true, hovBtn(mouseX, mouseY, scX, by, scW, bh));
@@ -947,6 +1039,8 @@ public class FishModScreen extends Screen {
         int fY = bottom() - FOOTER_H, by = fY + (FOOTER_H - 26) / 2, bh = 26;
         int ehW = 96, ehX = cx0();
         if (hovBtn(mx, my, ehX, by, ehW, bh)) { MinecraftClient.getInstance().setScreen(new FishHudEditor(this)); return true; }
+        int crW = 76, crX = ehX + ehW + 10;
+        if (hovBtn(mx, my, crX, by, crW, bh)) { MinecraftClient.getInstance().setScreen(new CreditsScreen(this)); return true; }
         int scW = 126, scX = cx1() - scW;
         if (hovBtn(mx, my, scX, by, scW, bh)) { close(); return true; }
         int rsW = 84, rsX = scX - 10 - rsW;

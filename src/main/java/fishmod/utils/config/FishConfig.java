@@ -19,5 +19,8 @@ public class FishConfig {
                     fishmod.utils.dungeon.Phase.class,
                     fishmod.utils.dungeon.Section.class,
                     fishmod.utils.dungeon.Split.class,
-                    fishmod.utils.config.values.Dungeons.class));
+                    fishmod.utils.config.values.Dungeons.class,
+                    fishmod.utils.config.values.Floor7.class,
+                    fishmod.utils.config.values.Buttons.class,
+                    fishmod.features.dungeon.f7.F7Huds.class));
 }

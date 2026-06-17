@@ -53,6 +53,7 @@ public class Phase {
     @ConfigValue
     public static boolean onlyShowActivatedSplits = false;
 
+
     public static void init() {
         Events.ON_SERVER_TICK.register(() -> {
             if (currentSplits == null || runOver) return false;
@@ -229,13 +230,32 @@ public class Phase {
         return currentSplits.get(index).getRealTime();
     }
 
+    // Splits panel. Rendered explicitly via Phase.renderHud (HudRenderCallback in FishModInit) — the
+    // proven path every other FishMod HUD uses — so its condition-supplier is forced false to keep
+    // practical-config's HudElementRegistry auto-render (unreliable here) from double-drawing it.
+    // (The per-phase Maxor/Storm/Terminals timers live in the Floor 7 tab as F7Huds tick timers.)
     @ConfigValue
     public static HUDComponent splitTimer = new HUDComponent(0, 0, SPLIT_LENGTH, 100, 1, "Splits",
-            () -> enableSplits && Phase.runStarted(),
+            () -> false,
             ((hudComponent, drawContext) -> {
                 renderSplitRows(drawContext, hudComponent.getScaledX(), hudComponent.getScaledY());
             }), () -> enableSplits
     );
+
+    /** Explicit HUD render for the splits panel (auto-render is disabled above). */
+    public static void renderHud(net.minecraft.client.gui.DrawContext ctx) {
+        if (enableSplits && runStarted()) {
+            renderScaled(ctx, splitTimer, () -> renderSplitRows(ctx, splitTimer.getScaledX(), splitTimer.getScaledY()));
+        }
+    }
+
+    private static void renderScaled(net.minecraft.client.gui.DrawContext ctx, HUDComponent c, Runnable draw) {
+        org.joml.Matrix3x2fStack stack = ctx.getMatrices();
+        stack.pushMatrix();
+        stack.scale(c.getScale(), c.getScale());
+        draw.run();
+        stack.popMatrix();
+    }
 
     /** Renders split rows + separator. Called by splitTimer HUD (with blade) and renderSplitsHud (standalone). */
     public static void renderSplitRows(net.minecraft.client.gui.DrawContext ctx, int x, int y) {

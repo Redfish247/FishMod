@@ -30,6 +30,12 @@ public class DrawContextMixin {
 
     @Inject(method = "drawItem(Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/world/World;Lnet/minecraft/item/ItemStack;III)V", at=@At("HEAD"))
     private void scaleUp(LivingEntity entity, World world, ItemStack stack, int x, int y, int seed, CallbackInfo ci) {
+        // Rarity background BEHIND the item. The entity-context drawItem overload is what the hotbar
+        // uses (entity = the player); inventory slots delegate with a null entity and are handled by
+        // INVENTORY_SLOT_BEFORE instead, so gating on entity != null avoids drawing it twice.
+        if (entity != null) {
+            fishmod.features.ItemRarityHotbar.drawRarity((DrawContext) (Object) this, stack, x, y);
+        }
         if (Visual.oldPlayerHead && stack.getItem() == Items.PLAYER_HEAD) {
             float scale = 0.875f;
             int offset = (16 - (int)(scale * 16)) / 2;

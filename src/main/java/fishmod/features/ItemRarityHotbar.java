@@ -1,87 +1,81 @@
 package fishmod.features;
 
-import fishmod.utils.Location;
+import fishmod.features.item.ItemRarity;
+import fishmod.features.item.ItemRarityHolder;
 import fishmod.utils.config.values.Visual;
-import net.minecraft.client.MinecraftClient;
+import fishmod.utils.rendering.DrawEvents;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.LoreComponent;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 import java.util.List;
-import java.util.Locale;
 
+/**
+ * Rarity background — draws a tinted sprite (square or circle) BEHIND every item, coloured by its
+ * SkyBlock rarity. Blade-addons' sprite approach: inventory slots via {@link DrawEvents#INVENTORY_SLOT_BEFORE}
+ * and the hotbar via {@code DrawContextMixin} (both before the item draw). Rarity is parsed once and
+ * cached per ItemStack ({@link ItemRarityHolder}).
+ */
 public class ItemRarityHotbar {
-    private static final int COMMON = 0xFFFFFFFF;
-    private static final int UNCOMMON = 0xFF55FF55;
-    private static final int RARE = 0xFF172452;
-    private static final int EPIC = 0xFF241228;
-    private static final int LEGENDARY = 0xFFFFAA00;
-    private static final int MYTHIC = 0xFF241428;
-    private static final int DIVINE = 0xFF2F8E8E;
-    private static final int SPECIAL = 0xFFFF5555;
-    private static final int SUPREME = 0xFFAA0000;
-    private static final int VERY_SPECIAL = 0xFF241428;
 
-    public static void renderHotbar(DrawContext ctx, RenderTickCounter tickCounter) {
-        if (!Visual.itemRarityBackground) return;
+    private static final Identifier SQUARE = Identifier.of("fishmod", "rarity-background");
+    private static final Identifier CIRCLE = Identifier.of("fishmod", "rarity-background-circle");
 
-        MinecraftClient mc = MinecraftClient.getInstance();
-        ClientPlayerEntity player = mc.player;
-        if (player == null || mc.world == null) return;
-        if (!Location.inSkyblock()) return;
-        if (mc.options.hudHidden) return;
-        if (mc.getDebugHud() != null && mc.getDebugHud().shouldShowDebugHud()) return;
+    // The raw rarity colors are very bright/saturated. Tone them WAY down so the backing is a subtle
+    // hint rather than a glaring block: drop to a low alpha and blend halfway toward grey.
+    private static final int   TINT_ALPHA = 0xFF;  // ~100% opacity
+    private static final float DESATURATE = 0.55f; // 0 = full color, 1 = grey
 
-        int hotbarX = (mc.getWindow().getScaledWidth() - 182) / 2;
-        int hotbarY = mc.getWindow().getScaledHeight() - 22;
-
-        PlayerInventory inventory = player.getInventory();
-        for (int slot = 0; slot < 9; slot++) {
-            ItemStack stack = inventory.getStack(slot);
-            int color = rarityColor(stack);
-            if (color == 0) continue;
-
-            int x = hotbarX + 1 + slot * 20;
-            int y = hotbarY + 2;
-            drawSlotColor(ctx, x, y, color);
-        }
+    /** Inventory coverage — the slot-before event fires for every rendered inventory slot. */
+    public static void init() {
+        DrawEvents.INVENTORY_SLOT_BEFORE.register(ItemRarityHotbar::drawRarity);
     }
 
-    private static void drawSlotColor(DrawContext ctx, int x, int y, int color) {
-        int fill = (color & 0x00FFFFFF) | 0x0A000000;
-        ctx.fill(x, y, x + 18, y + 18, fill);
+    /** Shared draw: parse (cached) rarity and blit the tinted sprite behind the 16x16 item icon. */
+    public static void drawRarity(DrawContext ctx, ItemStack stack, int x, int y) {
+        if (!Visual.itemRarityBackground || stack == null || stack.isEmpty()) return;
+
+        ItemRarityHolder holder = (ItemRarityHolder) (Object) stack;
+        if (!holder.fishmod$hasScanned()) holder.fishmod$setItemRarity(getRarity(stack));
+        if (!holder.fishmod$hasItemRarity()) return;
+
+        Identifier sprite = Visual.circularRarityBackground ? CIRCLE : SQUARE;
+        ctx.drawGuiTexture(RenderPipelines.GUI_TEXTURED, sprite, x, y, 16, 16, getTintColor(holder.fishmod$getItemRarity()));
     }
 
-    private static int rarityColor(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return 0;
+    private static int getTintColor(ItemRarity rarity) {
+        int color = rarity.getColor();
+        int red = (color >> 16) & 0xff;
+        int green = (color >> 8) & 0xff;
+        int blue = color & 0xff;
+        int grey = (red + green + blue) / 3;
 
+        red = desaturate(red, grey);
+        green = desaturate(green, grey);
+        blue = desaturate(blue, grey);
+
+        return (TINT_ALPHA << 24) | (red << 16) | (green << 8) | blue;
+    }
+
+    private static int desaturate(int channel, int grey) {
+        return Math.round(channel + (grey - channel) * DESATURATE);
+    }
+
+    /** Reads the rarity keyword from the last lore lines (e.g. "LEGENDARY DUNGEON SWORD"). */
+    public static ItemRarity getRarity(ItemStack stack) {
         LoreComponent lore = stack.get(DataComponentTypes.LORE);
-        if (lore == null) return 0;
-
+        if (lore == null) return ItemRarity.NONE;
         List<Text> lines = lore.lines();
-        if (lines.isEmpty()) return 0;
-
+        if (lines.isEmpty()) return ItemRarity.NONE;
         for (int i = lines.size() - 1; i >= 0; i--) {
-            String line = lines.get(i).getString().trim().toUpperCase(Locale.ROOT);
-            if (line.isEmpty()) continue;
-
-            if (line.startsWith("VERY SPECIAL")) return VERY_SPECIAL;
-            if (line.startsWith("SPECIAL")) return SPECIAL;
-            if (line.startsWith("SUPREME")) return SUPREME;
-            if (line.startsWith("DIVINE")) return DIVINE;
-            if (line.startsWith("MYTHIC")) return MYTHIC;
-            if (line.startsWith("LEGENDARY")) return LEGENDARY;
-            if (line.startsWith("EPIC")) return EPIC;
-            if (line.startsWith("RARE")) return RARE;
-            if (line.startsWith("UNCOMMON")) return UNCOMMON;
-            if (line.startsWith("COMMON")) return COMMON;
+            for (String word : lines.get(i).getString().split(" ")) {
+                try { return ItemRarity.valueOf(word); } catch (IllegalArgumentException ignored) {}
+            }
         }
-
-        return 0;
+        return ItemRarity.NONE;
     }
 }

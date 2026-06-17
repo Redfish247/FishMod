@@ -1,5 +1,6 @@
 package fishmod.mixin;
 
+import fishmod.features.croesus.LootTrackerOverlay;
 import fishmod.features.other.SearchBar;
 import fishmod.utils.config.values.ExtraOptions;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -17,8 +18,9 @@ public class KeyboardMixin {
 
     @Inject(method = "onChar", at= @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/Screen;charTyped(Lnet/minecraft/client/input/CharInput;)Z"))
     private void onChar(long window, CharInput input, CallbackInfo ci, @Local Screen screen) {
-        if (ExtraOptions.toggleableSearchBar && screen instanceof HandledScreen<?>) {
-            SearchBar.CharTyped(input);
+        if (screen instanceof HandledScreen<?>) {
+            if (ExtraOptions.toggleableSearchBar) SearchBar.CharTyped(input);
+            LootTrackerOverlay.charTyped(input);
         }
     }
 

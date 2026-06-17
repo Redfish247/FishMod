@@ -110,8 +110,6 @@ public class CroesusPrices {
                             double p = med.getAsDouble();
                             if (p > 0) {
                                 coflnet.put(id, p);
-                                // Backfill any stored entries that were priced at 0.
-                                CroesusStore.backfillPrices(CroesusPrices::price);
                                 Debug.LOGGER.info("[CroesusPrices] coflnet {} = {}", id, p);
                             }
                         }
@@ -132,8 +130,7 @@ public class CroesusPrices {
         CompletableFuture<Void> bz = needB ? fetchBazaar()  : CompletableFuture.completedFuture(null);
         CompletableFuture<Void> lb = needL ? fetchLbin()    : CompletableFuture.completedFuture(null);
         CompletableFuture<Void> av = needA ? fetchAvgLbin() : CompletableFuture.completedFuture(null);
-        inFlight = CompletableFuture.allOf(bz, lb, av)
-                .thenRun(() -> CroesusStore.backfillPrices(CroesusPrices::price));
+        inFlight = CompletableFuture.allOf(bz, lb, av);
         return inFlight;
     }
 

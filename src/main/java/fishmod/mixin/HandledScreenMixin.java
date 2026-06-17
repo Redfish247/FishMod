@@ -2,6 +2,7 @@ package fishmod.mixin;
 
 import fishmod.features.PowderTracker;
 import fishmod.features.SlayerXpTracker;
+import fishmod.features.croesus.LootTrackerOverlay;
 import fishmod.features.dungeon.SessionStats;
 import fishmod.features.other.SearchBar;
 import fishmod.features.wiki.WikiContextMenu;
@@ -65,6 +66,7 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> extends Screen
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void keyPressed(KeyInput input, CallbackInfoReturnable<Boolean> cir) {
         if (SearchBar.keyPressed(input)) { cir.setReturnValue(false); return; }
+        if (LootTrackerOverlay.keyPressed(input)) { cir.setReturnValue(false); return; }
 
         // Wiki slot keybind — configurable, default unbound
         KeyBinding wikiKey = Keybinds.openItemWiki;
@@ -91,7 +93,8 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> extends Screen
 
         if (SessionStats.handleScreenClick(cx, cy)
                 || PowderTracker.handleScreenClick(cx, cy)
-                || SlayerXpTracker.handleScreenClick(cx, cy)) {
+                || SlayerXpTracker.handleScreenClick(cx, cy)
+                || LootTrackerOverlay.handleScreenClick(cx, cy)) {
             cir.setReturnValue(true);
             return;
         }

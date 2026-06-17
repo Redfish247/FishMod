@@ -155,6 +155,75 @@ modrinth {
 }
 tasks.modrinth.dependsOn tasks.build
 
+// Auto-announce a Modrinth release in Discord right after a successful `./gradlew modrinth`.
+//   Webhook source (first found wins): env DISCORD_WEBHOOK, then gradle property discord_webhook
+//   (put it in ~/.gradle/gradle.properties — NOT this repo's gradle.properties, which is tracked).
+//   Skips with a warning (never fails the publish) if no webhook is configured, and is itself
+//   skipped if the modrinth upload failed. Uses the JDK HttpClient with a real User-Agent so
+//   Discord/Cloudflare doesn't reject it (the default UA gets a 403 error code 1010).
+def discordWebhook = providers.environmentVariable('DISCORD_WEBHOOK')
+		.orElse(providers.gradleProperty('discord_webhook'))
+
+tasks.register('announceDiscord') {
+	description = 'Posts a Modrinth release announcement to a Discord webhook.'
+	group = 'publishing'
+
+	onlyIf {
+		if (!discordWebhook.isPresent() || discordWebhook.get().trim().isEmpty()) {
+			logger.warn('announceDiscord: no DISCORD_WEBHOOK env var / discord_webhook property set — skipping Discord announcement.')
+			return false
+		}
+		if (tasks.modrinth.state.failure != null) {
+			logger.warn('announceDiscord: modrinth publish failed — skipping Discord announcement.')
+			return false
+		}
+		return true
+	}
+
+	doLast {
+		def ver = (project.findProperty('modrinth_version') ?: project.mod_version).toString()
+		def mcVer = project.minecraft_version.toString()
+		def changelogText = (System.getenv('CHANGELOG') ?: "Release ${project.mod_version}").toString()
+		def pageUrl = "https://modrinth.com/mod/fishmod/version/${ver}".toString()
+		def payload = [
+			username        : 'FishMod Releases',
+			content         : "@everyone 📦 **FishMod ${ver}** is now live on Modrinth — update now!".toString(),
+			allowed_mentions: [parse: ['everyone']],
+			embeds          : [[
+				title      : "🎣 FishMod ${ver} released on Modrinth".toString(),
+				url        : pageUrl,
+				description: 'A new version of FishMod is out now. Download or update straight from Modrinth.',
+				color      : 2406064,
+				fields     : [
+					[name: 'Version',    value: ver,           inline: true],
+					[name: 'Minecraft',  value: mcVer,         inline: true],
+					[name: 'Loader',     value: 'Fabric',      inline: true],
+					[name: "What's new", value: changelogText, inline: false],
+					[name: 'Download',   value: "[modrinth.com/mod/fishmod](${pageUrl})".toString(), inline: false]
+				],
+				thumbnail  : [url: 'https://cdn.modrinth.com/data/glXPWTyr/d8f3a4f7bb9d828eae870c1b7aa8ca86559e1f4a.webp'],
+				footer     : [text: 'Available on Modrinth']
+			]]
+		]
+		def body = groovy.json.JsonOutput.toJson(payload)
+		def client = java.net.http.HttpClient.newHttpClient()
+		def request = java.net.http.HttpRequest.newBuilder()
+				.uri(java.net.URI.create(discordWebhook.get().trim()))
+				.header('Content-Type', 'application/json')
+				.header('User-Agent', 'FishMod-Release-Notifier (https://github.com/Redfish247/FishMod, 1.0)')
+				.POST(java.net.http.HttpRequest.BodyPublishers.ofString(body, java.nio.charset.StandardCharsets.UTF_8))
+				.build()
+		def response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString())
+		if (response.statusCode() >= 200 && response.statusCode() < 300) {
+			logger.lifecycle("announceDiscord: posted FishMod ${ver} announcement to Discord (HTTP ${response.statusCode()}).")
+		} else {
+			throw new GradleException("announceDiscord: Discord webhook HTTP ${response.statusCode()} — ${response.body()}")
+		}
+	}
+}
+
+tasks.named('modrinth').configure { finalizedBy 'announceDiscord' }
+
 // configure the maven publication
 publishing {
 	publications {

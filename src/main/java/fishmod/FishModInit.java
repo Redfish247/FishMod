@@ -3,9 +3,7 @@ package fishmod;
 import fishmod.features.BossBarFeature;
 import fishmod.features.wiki.WikiScreen;
 import fishmod.features.BridgeBot;
-import fishmod.features.croesus.CroesusLootScreen;
-import fishmod.features.croesus.CroesusOverlay;
-import fishmod.features.croesus.CroesusTracker;
+import fishmod.features.croesus.LootTrackerOverlay;
 import fishmod.features.FishHudEditor;
 import fishmod.features.PowderTracker;
 import fishmod.features.SlayerXpTracker;
@@ -177,15 +175,31 @@ SessionStats.init();
         SoulflowHud.init();
         PetHud.init();
         CooldownOverlay.init();
+        ItemRarityHotbar.init();   // rarity background: inventory-slot coverage (hotbar via HudRenderCallback)
         MayorApi.init();
         BridgeBot.init();
         SlayerXpTracker.init();
         fishmod.features.SkillTracker.init();
         fishmod.features.FireFreezeTimer.init();
         PowderTracker.init();
-        CroesusTracker.init();
-        CroesusOverlay.init();
         fishmod.features.dungeon.SimonSaysTracker.init();
+        fishmod.features.dungeon.M7LeverWaypoints.init();
+        // Floor 7 boss timers (ported from blade-addons): Maxor/Storm/Goldor tick timers, crystal
+        // spawn, term start, section progress, storm-crushed. HUDs auto-render via the practical
+        // config system (F7Huds registered with FishConfig); register each for the Edit-HUD dragger.
+        fishmod.features.dungeon.f7.F7Huds.init();
+        // Inventory command buttons (ported 1:1 from blade-addons) — touch the class so its 7 buttons
+        // self-register; commands are edited in /fm → General → Inventory Buttons.
+        fishmod.utils.config.values.Buttons.init();
+        FishHudEditor.register("Maxor Tick Timer",  fishmod.features.dungeon.f7.F7Huds.maxorTickTimer);
+        FishHudEditor.register("Crystal Spawn Time", fishmod.features.dungeon.f7.F7Huds.crystalSpawnTime);
+        FishHudEditor.register("Crystal Reminder",  fishmod.features.dungeon.f7.F7Huds.crystalReminder);
+        FishHudEditor.register("Storm Tick Timer",  fishmod.features.dungeon.f7.F7Huds.stormTickTimer);
+        FishHudEditor.register("Storm Death Time",  fishmod.features.dungeon.f7.F7Huds.stormDeathTime);
+        FishHudEditor.register("Storm Crushed",     fishmod.features.dungeon.f7.F7Huds.stormCrush);
+        FishHudEditor.register("Goldor Tick Timer", fishmod.features.dungeon.f7.F7Huds.goldorTickTimer);
+        FishHudEditor.register("Term Start Timer",  fishmod.features.dungeon.f7.F7Huds.termStartTimer);
+        FishHudEditor.register("Section Progress",  fishmod.features.dungeon.f7.F7Huds.sectionProgress);
         // Dungeon class detection (own class from the "stats are doubled" message + tab list) and the
         // class-colored boots feature that depends on it. Boots init AFTER ItemCustomizer.init (above)
         // so the class color wins over per-item boot dye while enabled.
@@ -253,8 +267,12 @@ SessionStats.init();
             );
             dispatcher.register(ClientCommandManager.literal("fmloot")
                 .executes(ctx -> {
-                    MinecraftClient mc = MinecraftClient.getInstance();
-                    mc.send(() -> mc.setScreen(new CroesusLootScreen(mc.currentScreen)));
+                    boolean on = !fishmod.utils.config.values.FishSettings.lootTrackerEnabled;
+                    fishmod.utils.config.values.FishSettings.lootTrackerEnabled = on;
+                    fishmod.utils.config.FishConfig.manager.save();
+                    Misc.addChatMessage(Text.literal("§7[FM] Loot tracker "
+                            + (on ? "§aenabled §7— open your inventory in the Dungeon Hub"
+                                  : "§cdisabled")));
                     return Constants.SUCCESS;
                 })
             );
@@ -663,19 +681,6 @@ SessionStats.init();
                                 + fishmod.features.croesus.CroesusPrices.debugSource(pid)))));
                         return Constants.SUCCESS;
                     }
-                    if (parts[0].equals("clast")) {
-                        java.util.List<fishmod.features.croesus.CroesusStore.Entry> all =
-                                fishmod.features.croesus.CroesusStore.all();
-                        if (all.isEmpty()) { mc.send(() -> Misc.addChatMessage(Text.literal("§7No claims recorded."))); return Constants.SUCCESS; }
-                        fishmod.features.croesus.CroesusStore.Entry e = all.get(all.size() - 1);
-                        mc.send(() -> {
-                            Misc.addChatMessage(Text.literal("§b--- Last claim: " + e.floor + " " + e.chestType + " ---"));
-                            for (fishmod.features.croesus.CroesusStore.Item it : e.items)
-                                Misc.addChatMessage(Text.literal("§7 • §f" + it.name + " §8[" + it.id + "] §7x" + it.count
-                                    + " §e@" + (long)it.priceAtClaim));
-                        });
-                        return Constants.SUCCESS;
-                    }
                     if (parts[0].equals("mp")) {
                         String ign = parts.length > 1 ? parts[1] : (mc.player != null ? mc.player.getName().getString() : null);
                         if (ign == null) { mc.send(() -> Misc.addChatMessage(Text.literal("§cUsage: /fmdbg mp <ign>"))); return Constants.SUCCESS; }
@@ -842,12 +847,18 @@ SessionStats.init();
         ClientTickEvents.END_CLIENT_TICK.register(WarpMapFeature::tickClickDetection);
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> SoulflowHud.renderHud(ctx, tickCounter));
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> PetHud.renderHud(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> ItemRarityHotbar.renderHotbar(ctx, tickCounter));
+        // Rarity background is drawn behind items via DrawContextMixin (hotbar) + INVENTORY_SLOT_BEFORE
+        // (inventory) — see ItemRarityHotbar.init(). No HudRenderCallback (that draws over the items).
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> CooldownOverlay.renderHotbar(ctx, tickCounter));
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> SlayerXpTracker.renderHud(ctx, tickCounter));
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.SkillTracker.renderHud(ctx, tickCounter));
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> PowderTracker.renderHud(ctx, tickCounter));
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> BossBarFeature.renderHud(ctx));
+        // Splits panel + Maxor/Storm/Terminals split-time HUDs. Rendered here (not via practical-config's
+        // HudElementRegistry auto-render, which doesn't fire reliably) — their condition-suppliers are
+        // forced false in Phase so this is the single render path.
+        HudRenderCallback.EVENT.register((ctx, tickCounter) -> Phase.renderHud(ctx));
+        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.dungeon.f7.F7Huds.renderHud(ctx));
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> SessionStats.renderHud(ctx, tickCounter));
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.dungeon.DungeonScore.renderHud(ctx, tickCounter));
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.FarmingTracker.renderHud(ctx, tickCounter));
@@ -858,7 +869,6 @@ SessionStats.init();
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.HarvestFeastTracker.renderHud(ctx, tickCounter));
         fishmod.features.MiningTracker.init();
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.MiningTracker.renderHud(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> CroesusOverlay.renderHud(ctx, tickCounter));
         fishmod.features.TrophyFrogTracker.init();
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.TrophyFrogTracker.renderHud(ctx, tickCounter));
 
@@ -889,6 +899,7 @@ SessionStats.init();
                 fishmod.features.HarvestFeastTracker.renderInScreen(ctx, mx, my);
                 fishmod.features.MiningTracker.renderInScreen(ctx, mx, my);
                 fishmod.features.TrophyFrogTracker.renderInScreen(ctx);
+                LootTrackerOverlay.renderInScreen(ctx, mx, my);
             });
             net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.allowMouseClick(screen).register((s, click) -> {
                 if (click.button() != 0) return true; // only left click resets
