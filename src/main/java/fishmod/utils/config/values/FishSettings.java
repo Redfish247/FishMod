@@ -187,6 +187,18 @@ public class FishSettings {
     @ConfigValue public static double  playerSizeScaleZ  = 1.0;   // 0.25–5.0 depth  multiplier
     @ConfigValue public static boolean playerSizeShared  = false; // publish mine + render others' sizes
 
+    // Chat filter: hide selected categories of Hypixel chat spam. Master gate + per-category toggles.
+    @ConfigValue public static boolean chatFilterEnabled       = false;
+    @ConfigValue public static boolean cfKillCombo             = true;  // "+15 Kill Combo"
+    @ConfigValue public static boolean cfBossMessages          = false; // "[BOSS] Wither King: ..."
+    @ConfigValue public static boolean cfFriendJoinLeave       = false; // "Friend > X joined./left."
+    @ConfigValue public static boolean cfBazaar                = false; // "[Bazaar] Executing instant buy..."
+    @ConfigValue public static boolean cfWarping               = false; // "Warping..."
+
+    // Explosive Shot: parse "Your Explosive Shot hit N enemy/enemies for D damage." and show the
+    // per-enemy damage (D / N) as an on-screen title.
+    @ConfigValue public static boolean explosiveShotEnabled    = false;
+
     // Name color: gradient applied to your real username
     @ConfigValue public static int nickColorStart = 0xFFFF5555; // red
     @ConfigValue public static int nickColorEnd   = 0xFF5555FF; // blue

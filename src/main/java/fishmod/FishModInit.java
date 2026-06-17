@@ -171,6 +171,7 @@ SessionStats.init();
         FishPuzzleDisplay.init();
         FishEstTotal.init();
         DungeonDeathMessage.init();
+        fishmod.features.ExplosiveShot.init();
         FishPartyTracker.init();
         PartyCommandHandler.init();
         SoulflowHud.init();

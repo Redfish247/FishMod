@@ -33,14 +33,28 @@ public final class PlayerSize {
         MinecraftClient mc = MinecraftClient.getInstance();
         boolean isSelf = mc.player != null && p.getUuid().equals(mc.player.getUuid());
         if (isSelf) {
-            return FishSettings.playerSizeEnabled ? ownShareValue() : IDENTITY;
+            return FishSettings.playerSizeEnabled ? localSelfValue() : IDENTITY;
         }
         if (!FishSettings.playerSizeShared) return IDENTITY;
         float[] s = RemoteScales.get(p.getUuid().toString().replace("-", ""));
         return s == null ? IDENTITY : s;
     }
 
-    /** The size we currently broadcast: your chosen X/Y/Z when enabled, else {1,1,1} (= none/clear). */
+    /**
+     * What YOU see for your own model: the raw config X/Y/Z, floored to a tiny positive so the model never
+     * inverts/vanishes, but with NO upper cap. Edit {@code playerSizeScale*} in config/fishmod-settings.json
+     * to any value (e.g. 100) to go huge — the GUI slider is still bounded 0.25–5.0, hand-editing isn't.
+     */
+    public static float[] localSelfValue() {
+        if (!FishSettings.playerSizeEnabled) return IDENTITY;
+        return new float[] {
+            floorPos((float) FishSettings.playerSizeScaleX),
+            floorPos((float) FishSettings.playerSizeScaleY),
+            floorPos((float) FishSettings.playerSizeScaleZ)
+        };
+    }
+
+    /** The size we broadcast to OTHER mod users: clamped to MIN..MAX so we never force a giant on them. */
     public static float[] ownShareValue() {
         if (!FishSettings.playerSizeEnabled) return IDENTITY;
         return new float[] {
@@ -70,4 +84,7 @@ public final class PlayerSize {
     }
 
     static float clamp(float s) { return Math.max(MIN, Math.min(MAX, s)); }
+
+    /** Floor to a tiny positive so an out-of-range/zero config value never inverts or hides the model. */
+    static float floorPos(float s) { return Math.max(0.01f, s); }
 }

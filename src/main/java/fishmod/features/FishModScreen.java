@@ -56,6 +56,8 @@ public class FishModScreen extends Screen {
     static final int TILE_BG         = 0xFF10282B;
     static final int TILE_BG_ON      = 0xFF123A3C;
     static final int DIVIDER         = 0xFF18222C;
+    static final int SCRIM           = 0xB3000000;  // dim the live game behind the overlay
+    static final int PANEL_BORDER    = 0xFF24333C;  // 1px frame around the overlay
     static final int TEXT_COLOR      = 0xFFEDF1F5;
     static final int SUBTEXT_COLOR   = 0xFF7E8A98;
     static final int CHEVRON_COLOR   = 0xFF5A6675;
@@ -73,15 +75,19 @@ public class FishModScreen extends Screen {
     static final float TEXT_SCALE = 0.75f;
 
     // ----- layout -----
-    static final int SIDEBAR_W   = 196;
-    static final int TITLE_H     = 54;
-    static final int FOOTER_H    = 54;
-    static final int CONTENT_PAD = 18;
-    static final int ROW_H       = 50;
-    static final int ROW_GAP     = 6;
-    static final int CAT_ITEM_H  = 46;
-    static final int TOG2_W      = 46;   // big row toggle
-    static final int TOG2_H      = 22;
+    static final int SIDEBAR_W   = 150;
+    static final int TITLE_H     = 38;
+    static final int FOOTER_H    = 40;
+    static final int CONTENT_PAD = 12;
+    static final int ROW_H       = 38;
+    static final int ROW_GAP     = 5;
+    static final int CAT_ITEM_H  = 34;
+    static final int TOG2_W      = 40;   // big row toggle
+    static final int TOG2_H      = 18;
+
+    // ----- overlay panel geometry (fixed-size, centred; the game shows through behind) -----
+    static final int PANEL_W     = 520;
+    static final int PANEL_H     = 340;
 
     // ----- setting-widget geometry (consumed below) -----
     static final int ITEM_HEIGHT   = 20;
@@ -252,7 +258,8 @@ public class FishModScreen extends Screen {
     private static String iconFor(String name) {
         return switch (name) {
             case "Mod Prefix" -> "text";
-            case "Auto Meow", "Smart Copy Chat", "Bridge Bot", "Death Message", "Chat Channels" -> "chat";
+            case "Auto Meow", "Smart Copy Chat", "Bridge Bot", "Death Message", "Chat Channels", "Chat Filter" -> "chat";
+            case "Explosive Shot" -> "star";
             case "Compact Tab", "Party Commands" -> "people";
             case "Dungeon Score", "Session Stats", "Pet HUD", "Trophy Frogs" -> "star";
             case "Puzzle Overlay", "Simon Says" -> "cube";
@@ -278,6 +285,8 @@ public class FishModScreen extends Screen {
             case "Smart Copy Chat" -> "Right-click a chat line to copy it";
             case "Compact Tab" -> "Cleaner custom tab player list";
             case "Bridge Bot" -> "Relay Discord bridge messages";
+            case "Chat Filter" -> "Hide selected chat spam";
+            case "Explosive Shot" -> "Title with per-enemy damage";
             case "Dungeon Score" -> "Live S+ score tracker overlay";
             case "Puzzle Overlay" -> "Show solved puzzle names";
             case "Death Message" -> "Announce deaths with a template";
@@ -348,6 +357,21 @@ public class FishModScreen extends Screen {
             f.sub.add(new InputSetting("Bot IGN", "",
                     () -> FishSettings.bridgeBotName,
                     v -> { FishSettings.bridgeBotName = v; BridgeBot.rebuildPattern(); }));
+            general.features.add(f);
+        }
+        {
+            Feature f = new Feature("Chat Filter",
+                    () -> FishSettings.chatFilterEnabled, v -> FishSettings.chatFilterEnabled = v);
+            f.sub.add(new ToggleSetting("Kill Combo", "",
+                    () -> FishSettings.cfKillCombo, v -> FishSettings.cfKillCombo = v));
+            f.sub.add(new ToggleSetting("Boss Messages", "",
+                    () -> FishSettings.cfBossMessages, v -> FishSettings.cfBossMessages = v));
+            f.sub.add(new ToggleSetting("Friend Join/Leave", "",
+                    () -> FishSettings.cfFriendJoinLeave, v -> FishSettings.cfFriendJoinLeave = v));
+            f.sub.add(new ToggleSetting("Bazaar", "",
+                    () -> FishSettings.cfBazaar, v -> FishSettings.cfBazaar = v));
+            f.sub.add(new ToggleSetting("Warping", "",
+                    () -> FishSettings.cfWarping, v -> FishSettings.cfWarping = v));
             general.features.add(f);
         }
 
@@ -571,6 +595,8 @@ public class FishModScreen extends Screen {
         }
         visuals.features.add(new Feature("Fire Freeze Timer",
                 () -> FishSettings.fireFreezeTimerEnabled, v -> FishSettings.fireFreezeTimerEnabled = v));
+        visuals.features.add(new Feature("Explosive Shot",
+                () -> FishSettings.explosiveShotEnabled, v -> FishSettings.explosiveShotEnabled = v));
         {
             Feature f = new Feature("Warp Map",
                     () -> FishSettings.warpMapHudEnabled, v -> FishSettings.warpMapHudEnabled = v);
@@ -623,10 +649,18 @@ public class FishModScreen extends Screen {
     // -----------------------------------------------------------------------------------
     // Region geometry
     // -----------------------------------------------------------------------------------
-    private int cx0()   { return SIDEBAR_W + CONTENT_PAD; }
-    private int cx1()   { return this.width - CONTENT_PAD; }
-    private int cyTop() { return TITLE_H + 10; }
-    private int cyBot() { return this.height - FOOTER_H - 6; }
+    // overlay panel bounds (centred, clamped to the window for small GUI scales)
+    private int panelW()  { return Math.min(PANEL_W, this.width  - 20); }
+    private int panelH()  { return Math.min(PANEL_H, this.height - 20); }
+    private int left()    { return (this.width  - panelW()) / 2; }
+    private int top()     { return (this.height - panelH()) / 2; }
+    private int right()   { return left() + panelW(); }
+    private int bottom()  { return top()  + panelH(); }
+
+    private int cx0()   { return left() + SIDEBAR_W + CONTENT_PAD; }
+    private int cx1()   { return right() - CONTENT_PAD; }
+    private int cyTop() { return top() + TITLE_H + 10; }
+    private int cyBot() { return bottom() - FOOTER_H - 6; }
 
     private Column currentColumn() { return columns.get(selectedCat); }
 
@@ -673,10 +707,19 @@ public class FishModScreen extends Screen {
         if (resetArmed && System.currentTimeMillis() - resetArmedAt > 3000) resetArmed = false;
         clampScroll();
 
-        // backdrop
-        ctx.fillGradient(0, 0, this.width, this.height, BG_TOP, BG_BOT);
-        ctx.fill(0, TITLE_H, SIDEBAR_W, this.height, SIDEBAR_BG);
-        ctx.fill(SIDEBAR_W, TITLE_H, this.width, this.height - FOOTER_H, CONTENT_BG);
+        // dim the live game behind the overlay
+        ctx.fill(0, 0, this.width, this.height, SCRIM);
+
+        // centred overlay panel
+        int lx = left(), ty = top(), rx = right(), by = bottom();
+        ctx.fillGradient(lx, ty, rx, by, BG_TOP, BG_BOT);
+        ctx.fill(lx, ty + TITLE_H, lx + SIDEBAR_W, by, SIDEBAR_BG);
+        ctx.fill(lx + SIDEBAR_W, ty + TITLE_H, rx, by - FOOTER_H, CONTENT_BG);
+        // 1px frame around the panel
+        ctx.fill(lx, ty, rx, ty + 1, PANEL_BORDER);
+        ctx.fill(lx, by - 1, rx, by, PANEL_BORDER);
+        ctx.fill(lx, ty, lx + 1, by, PANEL_BORDER);
+        ctx.fill(rx - 1, ty, rx, by, PANEL_BORDER);
 
         renderTitleBar(ctx, mouseX, mouseY);
         renderSidebar(ctx, mouseX, mouseY);
@@ -687,22 +730,23 @@ public class FishModScreen extends Screen {
     }
 
     private void renderTitleBar(DrawContext ctx, int mouseX, int mouseY) {
+        int lx = left(), ty = top();
         // wordmark "FishMod"
-        float ws = 2.0f;
-        int wy = (TITLE_H - (int) (8 * ws)) / 2;
-        sst(ctx, this.textRenderer, "Fish", 22, wy, TEXT_COLOR, ws);
+        float ws = 1.6f;
+        int wy = ty + (TITLE_H - (int) (8 * ws)) / 2;
+        sst(ctx, this.textRenderer, "Fish", lx + 22, wy, TEXT_COLOR, ws);
         int fw = sw(this.textRenderer, "Fish", ws);
-        sst(ctx, this.textRenderer, "Mod", 22 + fw, wy, ACCENT, ws);
+        sst(ctx, this.textRenderer, "Mod", lx + 22 + fw, wy, ACCENT, ws);
         int totalW = fw + sw(this.textRenderer, "Mod", ws);
 
         // divider + teal accent under the wordmark
-        ctx.fill(0, TITLE_H, this.width, TITLE_H + 1, DIVIDER);
-        ctx.fill(22, TITLE_H, 22 + totalW, TITLE_H + 1, ACCENT);
+        ctx.fill(lx, ty + TITLE_H, right(), ty + TITLE_H + 1, DIVIDER);
+        ctx.fill(lx + 22, ty + TITLE_H, lx + 22 + totalW, ty + TITLE_H + 1, ACCENT);
 
         // search field (top-right)
         int swW = 156, swH = 20;
-        int sx = this.width - CONTENT_PAD - swW;
-        int sy = (TITLE_H - swH) / 2;
+        int sx = right() - CONTENT_PAD - swW;
+        int sy = ty + (TITLE_H - swH) / 2;
         if (searchField == null) {
             searchField = new TextFieldWidget(this.textRenderer, sx + 6, sy + 6, swW - 12, swH - 6, Text.empty());
             searchField.setMaxLength(48);
@@ -726,16 +770,17 @@ public class FishModScreen extends Screen {
     }
 
     private void renderSidebar(DrawContext ctx, int mouseX, int mouseY) {
-        ctx.fill(SIDEBAR_W, TITLE_H, SIDEBAR_W + 1, this.height, DIVIDER);
-        int y = TITLE_H + 14;
+        int lx = left(), ty = top();
+        ctx.fill(lx + SIDEBAR_W, ty + TITLE_H, lx + SIDEBAR_W + 1, bottom(), DIVIDER);
+        int y = ty + TITLE_H + 10;
         for (int i = 0; i < columns.size(); i++) {
             Column c = columns.get(i);
-            int x0 = 8, x1 = SIDEBAR_W - 8;
+            int x0 = lx + 8, x1 = lx + SIDEBAR_W - 8;
             boolean sel = i == selectedCat;
-            boolean hov = mouseX >= 0 && mouseX <= SIDEBAR_W && mouseY >= y && mouseY <= y + CAT_ITEM_H;
+            boolean hov = mouseX >= lx && mouseX <= lx + SIDEBAR_W && mouseY >= y && mouseY <= y + CAT_ITEM_H;
             if (sel) {
                 ctx.fill(x0, y, x1, y + CAT_ITEM_H, 0xFF12262A);
-                ctx.fill(0, y, 3, y + CAT_ITEM_H, ACCENT);
+                ctx.fill(lx, y, lx + 3, y + CAT_ITEM_H, ACCENT);
             } else if (hov) {
                 ctx.fill(x0, y, x1, y + CAT_ITEM_H, ROW_BG_HOVER);
             }
@@ -749,7 +794,7 @@ public class FishModScreen extends Screen {
     private void renderContent(DrawContext ctx, int mouseX, int mouseY) {
         int x0 = cx0(), x1 = cx1();
         int top = cyTop(), bot = cyBot();
-        ctx.enableScissor(SIDEBAR_W + 1, top, this.width, bot);
+        ctx.enableScissor(left() + SIDEBAR_W + 1, top, right(), bot);
 
         int y = top - scroll;
         for (Feature f : visibleFeatures()) {
@@ -786,15 +831,19 @@ public class FishModScreen extends Screen {
         if (on) ctx.fill(x0, top, x0 + 2, top + ROW_H, ACCENT);
 
         // icon tile
-        int ts = 34, tx = x0 + 12, ty = top + (ROW_H - ts) / 2;
+        int ts = 24, tx = x0 + 9, ty = top + (ROW_H - ts) / 2;
         ctx.fill(tx, ty, tx + ts, ty + ts, on ? TILE_BG_ON : TILE_BG);
         drawGlyph(ctx, iconFor(f.name), tx + ts / 2, ty + ts / 2, on ? ACCENT_HOVER : 0xFF49C9C3, on ? TILE_BG_ON : TILE_BG);
 
         // texts
-        int labelX = tx + ts + 12;
-        ctx.drawText(this.textRenderer, f.name, labelX, top + 13, TEXT_COLOR, false);
+        int labelX = tx + ts + 9;
         String d = descFor(f.name);
-        if (!d.isEmpty()) sst(ctx, this.textRenderer, d, labelX, top + 28, SUBTEXT_COLOR, 0.85f);
+        if (d.isEmpty()) {
+            ctx.drawText(this.textRenderer, f.name, labelX, top + (ROW_H - 8) / 2, TEXT_COLOR, false);
+        } else {
+            ctx.drawText(this.textRenderer, f.name, labelX, top + 8, TEXT_COLOR, false);
+            sst(ctx, this.textRenderer, d, labelX, top + 21, SUBTEXT_COLOR, 0.85f);
+        }
 
         // control
         if (f.hasMaster()) {
@@ -836,9 +885,9 @@ public class FishModScreen extends Screen {
     }
 
     private void renderFooter(DrawContext ctx, int mouseX, int mouseY) {
-        int fY = this.height - FOOTER_H;
-        ctx.fill(SIDEBAR_W, fY, this.width, fY + 1, DIVIDER);
-        int by = fY + (FOOTER_H - 30) / 2, bh = 30;
+        int fY = bottom() - FOOTER_H;
+        ctx.fill(left() + SIDEBAR_W, fY, right(), fY + 1, DIVIDER);
+        int by = fY + (FOOTER_H - 26) / 2, bh = 26;
 
         // Edit HUD (left)
         int ehW = 96, ehX = cx0();
@@ -889,13 +938,13 @@ public class FishModScreen extends Screen {
 
         // ----- search -----
         int swW = 156, swH = 20;
-        int sx = this.width - CONTENT_PAD - swW, sy = (TITLE_H - swH) / 2;
+        int sx = right() - CONTENT_PAD - swW, sy = top() + (TITLE_H - swH) / 2;
         searchFocused = mx >= sx && mx <= sx + swW && my >= sy && my <= sy + swH;
         if (searchField != null) searchField.setFocused(searchFocused);
         if (searchFocused) return true;
 
         // ----- footer buttons -----
-        int fY = this.height - FOOTER_H, by = fY + (FOOTER_H - 30) / 2, bh = 30;
+        int fY = bottom() - FOOTER_H, by = fY + (FOOTER_H - 26) / 2, bh = 26;
         int ehW = 96, ehX = cx0();
         if (hovBtn(mx, my, ehX, by, ehW, bh)) { MinecraftClient.getInstance().setScreen(new FishHudEditor(this)); return true; }
         int scW = 126, scX = cx1() - scW;
@@ -908,8 +957,8 @@ public class FishModScreen extends Screen {
         }
 
         // ----- sidebar -----
-        if (mx >= 0 && mx <= SIDEBAR_W && my >= TITLE_H) {
-            int y = TITLE_H + 14;
+        if (mx >= left() && mx <= left() + SIDEBAR_W && my >= top() + TITLE_H && my <= bottom()) {
+            int y = top() + TITLE_H + 10;
             for (int i = 0; i < columns.size(); i++) {
                 if (my >= y && my <= y + CAT_ITEM_H) {
                     if (i != selectedCat) {

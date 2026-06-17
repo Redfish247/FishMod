@@ -39,6 +39,11 @@ public class ChatHudMixin {
 
     @Inject(method = "addMessage(Lnet/minecraft/text/Text;)V", at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Text message, CallbackInfo ci) {
+        // Chat filter: hide selected spam lines at DISPLAY time. Packet-level parsers (dungeon
+        // splits/score, Simon Says, …) already ran via ON_GAME_MESSAGE before the line reaches
+        // here, so suppressing it now never breaks those features.
+        if (fishmod.features.ChatFilter.shouldHide(message)) { ci.cancel(); return; }
+
         String plain = message.getString().replaceAll("§.", "");
 
         if (System.currentTimeMillis() - fishmod.features.dungeon.ChatCommandState.lastPartyCommandAt < 6000) {

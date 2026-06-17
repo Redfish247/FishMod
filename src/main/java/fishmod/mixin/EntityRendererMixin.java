@@ -39,6 +39,13 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
         if (entity instanceof PlayerEntity sized) {
             float[] sc = fishmod.cosmetic.PlayerSize.scaleFor(sized);
             ((fishmod.cosmetic.ScaleHolder) state).fishmod$setScale(sc[0], sc[1], sc[2]);
+            // Keep the nametag above the head when the model is taller. The model scale pivots at the
+            // feet, so a Y-scaled model grows upward and would clip through its fixed-height label.
+            // Raise the label by the extra model height (height × (scaleY − 1)). Only Y matters — the
+            // overall tag size is unchanged; X/Z (width/depth) never move it.
+            if (sc[1] != 1.0f && state.nameLabelPos != null) {
+                state.nameLabelPos = state.nameLabelPos.add(0, sized.getHeight() * (sc[1] - 1.0), 0);
+            }
         }
 
         if (Visual.hideEntityFire) {
