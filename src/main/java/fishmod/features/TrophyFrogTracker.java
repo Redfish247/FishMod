@@ -57,7 +57,7 @@ public class TrophyFrogTracker {
             "Puddle Jumper",
     };
 
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
     private static final Path SAVE_FILE = Paths.get("config/fishmod/trophy_frogs.json");
     private static final Path DUMP_FILE = Paths.get("config/fishmod/trophy_menu_dump.txt");
 
