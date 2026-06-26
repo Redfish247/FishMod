@@ -225,7 +225,7 @@ public final class ItemCustomizer {
         // A stable UUID per texture keeps the profile cache-friendly; the name is cosmetic.
         java.util.UUID id = java.util.UUID.nameUUIDFromBytes(value.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         com.mojang.authlib.GameProfile gp = new com.mojang.authlib.GameProfile(id, "FishModSkin");
-        gp.getProperties().put("textures", new com.mojang.authlib.properties.Property("textures", value));
+        gp.properties().put("textures", new com.mojang.authlib.properties.Property("textures", value));
         return net.minecraft.component.type.ProfileComponent.ofStatic(gp);
     }
 
