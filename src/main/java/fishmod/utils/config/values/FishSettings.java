@@ -156,6 +156,7 @@ public class FishSettings {
     @ConfigValue public static int     dungeonScoreHudY    = 200;
     @ConfigValue public static boolean dungeonScorePaulActive = false;
     @ConfigValue public static boolean dungeonScoreToSPlus = true; // show "N→S+" remaining-to-300 on the HUD
+    @ConfigValue public static boolean dungeonScoreMissingAlert = true; // 1:00 "X Score Missing" chat+sound
 
     // Farming coin/hr tracker
     @ConfigValue public static boolean farmingTrackerEnabled = false;

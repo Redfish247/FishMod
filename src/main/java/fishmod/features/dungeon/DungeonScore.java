@@ -69,6 +69,8 @@ public class DungeonScore {
     private static boolean expectingBloodUpdate = false;
     private static long runStartMs = -1;
     private static boolean alerted300 = false;
+    private static int runSeconds = -1;        // run clock from the tab "Time:" line (authoritative)
+    private static boolean alerted1min = false; // 1:00 missing-score ping fired
 
     public static void init() {
         FishHudEditor.register("Dungeon Score",
@@ -114,6 +116,13 @@ public class DungeonScore {
             if (!FishSettings.dungeonScoreEnabled) return;
             if (client.player == null || client.world == null) return;
             if (Location.getCurrentLocation() != Location.DUNGEON) return;
+            // 1:00 missing-score ping: use the tab run clock when available, else time since entry.
+            if (FishSettings.dungeonScoreMissingAlert && !alerted1min && !fishmod.utils.dungeon.Phase.inBoss()) {
+                int sec = runSeconds >= 0 ? runSeconds
+                        : (runStartMs > 0 ? (int) ((System.currentTimeMillis() - runStartMs) / 1000) : -1);
+                if (sec >= 60) { alerted1min = true; fireMissingAlert(); }
+            }
+
             scanTick++;
             if (scanTick < 10) return;
             scanTick = 0;
@@ -141,6 +150,8 @@ public class DungeonScore {
         expectingBloodUpdate = false;
         runStartMs = -1;
         alerted300 = false;
+        runSeconds = -1;
+        alerted1min = false;
         puzzleStatuses.clear();
     }
 
@@ -158,6 +169,7 @@ public class DungeonScore {
             if ((m = PUZZLE_COUNT_PAT.matcher(line)).find())    try { puzzleCount     = Integer.parseInt(m.group(1)); } catch (NumberFormatException ignored) {}
             if ((m = DEATHS_PAT.matcher(line)).find())          try { deathCount      = Integer.parseInt(m.group(1)); } catch (NumberFormatException ignored) {}
             if ((m = CRYPTS_PAT.matcher(line)).find())          try { cryptCount      = Integer.parseInt(m.group(1)); } catch (NumberFormatException ignored) {}
+            if ((m = TIME_PAT.matcher(line)).find())            runSeconds = parseTimeSeconds(m.group(1));
 
             m = PUZZLE_STATUS_PAT.matcher(line);
             if (m.find() && !m.group(1).equals("???")) {
@@ -213,6 +225,35 @@ public class DungeonScore {
         return s;
     }
     private static int inBoss() { return 0; } // approximate: treat as not-in-boss until phase tracking added
+
+    /** Parses a Catacombs run clock like "1h 2m 3s" / "5m 12s" / "45s" to seconds. */
+    private static int parseTimeSeconds(String t) {
+        int total = 0;
+        Matcher m;
+        if ((m = Pattern.compile("(\\d+)h").matcher(t)).find()) total += Integer.parseInt(m.group(1)) * 3600;
+        if ((m = Pattern.compile("(\\d+)m").matcher(t)).find()) total += Integer.parseInt(m.group(1)) * 60;
+        if ((m = Pattern.compile("(\\d+)s").matcher(t)).find()) total += Integer.parseInt(m.group(1));
+        return total;
+    }
+
+    /** At 1:00, ping the bonus score still unearned (crypts toward 5, mimic +2, prince +1). */
+    private static void fireMissingAlert() {
+        int cryptsMissing = Math.max(0, 5 - Math.min(cryptCount, 5));
+        boolean mimicMissing = currentFloor != null
+                && (currentFloor.floorNumber() == 6 || currentFloor.floorNumber() == 7) && !mimicKilled;
+        boolean princeMissing = !princeKilled; // tracked via chat; floors without a prince can be gated later
+        int total = cryptsMissing + (mimicMissing ? 2 : 0) + (princeMissing ? 1 : 0);
+        if (total <= 0) return;
+
+        java.util.List<String> parts = new java.util.ArrayList<>();
+        if (cryptsMissing > 0) parts.add(cryptsMissing + " Crypt" + (cryptsMissing > 1 ? "s" : ""));
+        if (mimicMissing) parts.add("Mimic");
+        if (princeMissing) parts.add("Prince");
+
+        fishmod.utils.Misc.addChatMessage(net.minecraft.text.Text.literal(
+                "§c§l" + total + " Score Missing §r§7(" + String.join(", ", parts) + ")"));
+        fishmod.utils.Misc.sendSound(net.minecraft.sound.SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), 1f, 0.5f);
+    }
 
     public static int computeScore() {
         if (currentFloor == null) return 0;
