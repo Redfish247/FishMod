@@ -430,6 +430,8 @@ public class FishModScreen extends Screen {
         }
         dungeon.features.add(new Feature("Puzzle Overlay",
                 () -> FishSettings.showPuzzles, v -> FishSettings.showPuzzles = v));
+        dungeon.features.add(new Feature("Leap Overlay",
+                () -> FishSettings.leapOverlayEnabled, v -> FishSettings.leapOverlayEnabled = v));
         {
             Feature f = new Feature("Death Message",
                     () -> FishSettings.deathMessageEnabled, v -> FishSettings.deathMessageEnabled = v);

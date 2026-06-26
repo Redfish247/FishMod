@@ -905,6 +905,7 @@ public class FishModInit implements ModInitializer {
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.dungeon.DungeonScore.renderHud(ctx, tickCounter));
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.FarmingTracker.renderHud(ctx, tickCounter));
         fishmod.features.dungeon.DungeonScore.init();
+        fishmod.features.dungeon.LeapOverlay.init();
         fishmod.utils.SkyblockItems.initAsync();
         fishmod.features.FarmingTracker.init();
         fishmod.features.HarvestFeastTracker.init();
