@@ -294,5 +294,49 @@ public class FishSettings {
     // Class Colored Boots — recolor your dungeon boots (leather dye) by your detected class.
     @ConfigValue public static boolean classColoredBootsEnabled = false;
 
+    // ── Fishing ───────────────────────────────────────────────────────────────
+    // Bobber Reminder: after a fish bites, count down; once the reminder delay passes without
+    // reeling, flash a customizable "!!!" alert (+ optional sound); if the catch window closes
+    // unreeled, show the "missed it" text. All drawn in one small HUD.
+    @ConfigValue public static boolean fishingTimerEnabled    = false;
+    /** Seconds after a bite before the "!!!" reel reminder flashes (countdown shows until then). */
+    @ConfigValue public static int     fishingReminderDelay   = 3;
+    /** Customizable reel-now reminder text. */
+    @ConfigValue public static String  fishingReminderText    = "§c§l!!! REEL !!!";
+    /** Shown briefly when the catch window closes without a reel. */
+    @ConfigValue public static String  fishingMissedText      = "§7Missed it...";
+    /** Play a ping when the reminder fires. */
+    @ConfigValue public static boolean fishingReminderSound   = true;
+    @ConfigValue public static int     fishingTimerHudX       = 10;
+    @ConfigValue public static int     fishingTimerHudY       = 140;
+    @ConfigValue public static double  fishingTimerScale      = 1.5;
+
+    // Sea Creature Tracker: per-creature session counts + creatures/hr, with an optional
+    // title+sound alert when a rare creature surfaces.
+    @ConfigValue public static boolean seaCreatureEnabled     = false;
+    @ConfigValue public static boolean seaCreatureRareAlert   = true;
+    @ConfigValue public static int     seaCreatureHudX        = 10;
+    @ConfigValue public static int     seaCreatureHudY        = 160;
+    @ConfigValue public static double  seaCreatureScale       = 1.0;
+
+    // Trophy Fish tab tracker (Crimson Isle) — same shape as Trophy Frogs.
+    @ConfigValue public static boolean trophyFishEnabled      = false;
+    @ConfigValue public static int     trophyFishHudX         = 10;
+    @ConfigValue public static int     trophyFishHudY         = 200;
+    @ConfigValue public static double  trophyFishHudScale     = 1.0;
+
+    // ── Slayer ────────────────────────────────────────────────────────────────
+    // Slayer Alerts: title + sound on miniboss spawn, boss spawn, and boss slain.
+    @ConfigValue public static boolean slayerAlertsEnabled    = false;
+    @ConfigValue public static boolean slayerAlertMiniboss    = true;
+    @ConfigValue public static boolean slayerAlertBossSpawn   = true;
+    @ConfigValue public static boolean slayerAlertBossSlain   = true;
+    @ConfigValue public static boolean slayerAlertSound       = true;
+
+    // Slayer Drop Tracker: session counter for RARE / VERY RARE / CRAZY RARE / PRAISE drops.
+    @ConfigValue public static boolean slayerDropsEnabled     = false;
+    @ConfigValue public static int     slayerDropsHudX        = 10;
+    @ConfigValue public static int     slayerDropsHudY        = 240;
+    @ConfigValue public static double  slayerDropsScale       = 1.0;
 
 }

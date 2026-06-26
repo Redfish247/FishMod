@@ -35,6 +35,21 @@ and a stack of convenience commands into one client-side mod.
 - **Trophy frog** progress tracker.
 - All HUD elements are draggable/scalable via the in-game **HUD editor**.
 
+### Fishing
+- **Bobber reminder** — after a bite, a HUD counts down; once your reminder delay passes it flashes
+  a customizable `!!!` alert (with optional ping), and shows **"missed it"** if the catch window
+  closes unreeled. Delay, reminder text, missed text, sound, position & scale all configurable.
+- **Sea creature tracker** — per-creature session counts + creatures/hour HUD, with an optional
+  **rare-catch** title + sound when a rare one surfaces.
+- **Trophy fish tracker** — Bronze/Silver/Gold/Diamond progress per trophy fish on Crimson Isle,
+  seeded from the Trophy Fishing menu and kept live from catch messages.
+
+### Slayer
+- **Slayer alerts** — title + ping on **boss spawn** (your "Spawned by" boss), **boss slain**, and
+  **miniboss** spawns. Each event individually toggleable.
+- **Slayer drop tracker** — session HUD counting Rare / Very Rare / Crazy Rare / Insane drops and
+  "Praise RNGesus" pulls while a quest is active.
+
 ### Cosmetics (opt-in)
 - **Item customizer** (`/fm customize`) — recolor/rename your items and armor.
 - **Custom nicknames** (`/nick`), shared with other FishMod users.

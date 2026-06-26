@@ -595,6 +595,20 @@ public class FishModInit implements ModInitializer {
                 return Constants.SUCCESS;
             }));
 
+            dispatcher.register(ClientCommandManager.literal("fmseadump").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
+                fishmod.features.fishing.SeaCreatureTracker.debugDump = !fishmod.features.fishing.SeaCreatureTracker.debugDump;
+                Misc.addChatMessage(Text.literal("§b[fmsea] dump unmatched fishing chat lines: §f" + fishmod.features.fishing.SeaCreatureTracker.debugDump));
+                return Constants.SUCCESS;
+            }));
+
+            dispatcher.register(ClientCommandManager.literal("fmslayerdump").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
+                fishmod.features.slayer.SlayerAlerts.debugDump = !fishmod.features.slayer.SlayerAlerts.debugDump;
+                Misc.addChatMessage(Text.literal("§b[fmslayer] dump slayer chat lines: §f" + fishmod.features.slayer.SlayerAlerts.debugDump));
+                return Constants.SUCCESS;
+            }));
+
             dispatcher.register(ClientCommandManager.literal("fmnuc").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.utils.HypixelApi.dumpNucleus(MinecraftClient.getInstance());
@@ -900,6 +914,51 @@ public class FishModInit implements ModInitializer {
         fishmod.features.TrophyFrogTracker.init();
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.TrophyFrogTracker.renderHud(ctx, tickCounter));
 
+        // ── Fishing ──────────────────────────────────────────────────────────
+        fishmod.features.fishing.FishingTimer.init();
+        fishmod.features.fishing.SeaCreatureTracker.init();
+        fishmod.features.fishing.TrophyFishTracker.init();
+        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.fishing.FishingTimer.renderHud(ctx, tickCounter));
+        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.fishing.SeaCreatureTracker.renderHud(ctx, tickCounter));
+        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.fishing.TrophyFishTracker.renderHud(ctx, tickCounter));
+        FishHudEditor.register("Bobber Reminder",
+                () -> fishmod.utils.config.values.FishSettings.fishingTimerHudX,
+                v  -> fishmod.utils.config.values.FishSettings.fishingTimerHudX = v,
+                () -> fishmod.utils.config.values.FishSettings.fishingTimerHudY,
+                v  -> fishmod.utils.config.values.FishSettings.fishingTimerHudY = v, 90, 14,
+                () -> fishmod.utils.config.values.FishSettings.fishingTimerScale,
+                v  -> fishmod.utils.config.values.FishSettings.fishingTimerScale = v,
+                () -> fishmod.utils.config.values.FishSettings.fishingTimerEnabled);
+        FishHudEditor.register("Sea Creatures",
+                () -> fishmod.utils.config.values.FishSettings.seaCreatureHudX,
+                v  -> fishmod.utils.config.values.FishSettings.seaCreatureHudX = v,
+                () -> fishmod.utils.config.values.FishSettings.seaCreatureHudY,
+                v  -> fishmod.utils.config.values.FishSettings.seaCreatureHudY = v, 150, 14 * 5,
+                () -> fishmod.utils.config.values.FishSettings.seaCreatureScale,
+                v  -> fishmod.utils.config.values.FishSettings.seaCreatureScale = v,
+                () -> fishmod.features.fishing.SeaCreatureTracker.isVisible());
+        FishHudEditor.register("Trophy Fish",
+                () -> fishmod.utils.config.values.FishSettings.trophyFishHudX,
+                v  -> fishmod.utils.config.values.FishSettings.trophyFishHudX = v,
+                () -> fishmod.utils.config.values.FishSettings.trophyFishHudY,
+                v  -> fishmod.utils.config.values.FishSettings.trophyFishHudY = v, 160, 14 * 6,
+                () -> fishmod.utils.config.values.FishSettings.trophyFishHudScale,
+                v  -> fishmod.utils.config.values.FishSettings.trophyFishHudScale = v,
+                () -> fishmod.features.fishing.TrophyFishTracker.isVisible());
+
+        // ── Slayer ───────────────────────────────────────────────────────────
+        fishmod.features.slayer.SlayerAlerts.init();
+        fishmod.features.slayer.SlayerDropTracker.init();
+        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.slayer.SlayerDropTracker.renderHud(ctx, tickCounter));
+        FishHudEditor.register("Slayer Drops",
+                () -> fishmod.utils.config.values.FishSettings.slayerDropsHudX,
+                v  -> fishmod.utils.config.values.FishSettings.slayerDropsHudX = v,
+                () -> fishmod.utils.config.values.FishSettings.slayerDropsHudY,
+                v  -> fishmod.utils.config.values.FishSettings.slayerDropsHudY = v, 110, 14 * 4,
+                () -> fishmod.utils.config.values.FishSettings.slayerDropsScale,
+                v  -> fishmod.utils.config.values.FishSettings.slayerDropsScale = v,
+                () -> fishmod.utils.config.values.FishSettings.slayerDropsEnabled);
+
         // ── Daily/Weekly/Monthly Challenges ──────────────────────────────────
         fishmod.features.challenges.ChallengeManager.init();
         fishmod.features.challenges.LeaderboardRenderer.init();
@@ -927,6 +986,9 @@ public class FishModInit implements ModInitializer {
                 fishmod.features.HarvestFeastTracker.renderInScreen(ctx, mx, my);
                 fishmod.features.MiningTracker.renderInScreen(ctx, mx, my);
                 fishmod.features.TrophyFrogTracker.renderInScreen(ctx);
+                fishmod.features.fishing.SeaCreatureTracker.renderInScreen(ctx, mx, my);
+                fishmod.features.fishing.TrophyFishTracker.renderInScreen(ctx);
+                fishmod.features.slayer.SlayerDropTracker.renderInScreen(ctx, mx, my);
                 LootTrackerOverlay.renderInScreen(ctx, mx, my);
             });
             net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.allowMouseClick(screen).register((s, click) -> {
@@ -938,6 +1000,8 @@ public class FishModInit implements ModInitializer {
                 if (fishmod.features.FarmingTracker.handleScreenClick(mx, my)) return false;
                 if (fishmod.features.HarvestFeastTracker.handleScreenClick(mx, my)) return false;
                 if (fishmod.features.MiningTracker.handleScreenClick(mx, my)) return false;
+                if (fishmod.features.fishing.SeaCreatureTracker.handleScreenClick(mx, my)) return false;
+                if (fishmod.features.slayer.SlayerDropTracker.handleScreenClick(mx, my)) return false;
                 return true;
             });
         });

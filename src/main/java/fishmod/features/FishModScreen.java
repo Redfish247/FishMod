@@ -272,6 +272,9 @@ public class FishModScreen extends Screen {
             case "Loot Tracker",
                  "Slayer XP Tracker", "Skill XP Tracker", "Powder Tracker",
                  "Farming Tracker", "Harvest Feast Tracker", "Mining Tracker" -> "coin";
+            case "Bobber Reminder" -> "bell";
+            case "Sea Creatures", "Trophy Fish", "Slayer Drops" -> "coin";
+            case "Slayer Alerts" -> "bell";
             case "Class Colored Boots", "Name Color", "Customize", "Rarity Background" -> "palette";
             case "See Others' Items" -> "eye";
             case "Nametag" -> "tag";
@@ -331,6 +334,11 @@ public class FishModScreen extends Screen {
             case "Harvest Feast Tracker" -> "Harvest Feast event tracker";
             case "Mining Tracker" -> "Mining coins per hour";
             case "Trophy Frogs" -> "Trophy frog catch tracker";
+            case "Bobber Reminder" -> "Reel-in countdown, alert & missed HUD";
+            case "Sea Creatures" -> "Sea creature counts & rare-catch alert";
+            case "Trophy Fish" -> "Trophy fish catch tracker (Crimson)";
+            case "Slayer Alerts" -> "Title + ping on slayer boss events";
+            case "Slayer Drops" -> "Session rare-drop counter";
             default -> "";
         };
     }
@@ -726,11 +734,56 @@ public class FishModScreen extends Screen {
             floor7.features.add(f);
         }
 
+        // ===== Fishing =====
+        Column fishing = new Column("Fishing", "eye");
+        {
+            Feature f = new Feature("Bobber Reminder",
+                    () -> FishSettings.fishingTimerEnabled, v -> FishSettings.fishingTimerEnabled = v);
+            f.sub.add(new SliderIntSetting("Reminder Delay s", "",
+                    () -> FishSettings.fishingReminderDelay, v -> FishSettings.fishingReminderDelay = v, 1, 10));
+            f.sub.add(new InputSetting("Reminder Text", "",
+                    () -> FishSettings.fishingReminderText, v -> FishSettings.fishingReminderText = v));
+            f.sub.add(new InputSetting("Missed Text", "",
+                    () -> FishSettings.fishingMissedText, v -> FishSettings.fishingMissedText = v));
+            f.sub.add(new ToggleSetting("Play Sound", "",
+                    () -> FishSettings.fishingReminderSound, v -> FishSettings.fishingReminderSound = v));
+            fishing.features.add(f);
+        }
+        {
+            Feature f = new Feature("Sea Creatures",
+                    () -> FishSettings.seaCreatureEnabled, v -> FishSettings.seaCreatureEnabled = v);
+            f.sub.add(new ToggleSetting("Rare Alert", "",
+                    () -> FishSettings.seaCreatureRareAlert, v -> FishSettings.seaCreatureRareAlert = v));
+            fishing.features.add(f);
+        }
+        fishing.features.add(new Feature("Trophy Fish",
+                () -> FishSettings.trophyFishEnabled, v -> FishSettings.trophyFishEnabled = v));
+
+        // ===== Slayer =====
+        Column slayer = new Column("Slayer", "coin");
+        {
+            Feature f = new Feature("Slayer Alerts",
+                    () -> FishSettings.slayerAlertsEnabled, v -> FishSettings.slayerAlertsEnabled = v);
+            f.sub.add(new ToggleSetting("Miniboss", "",
+                    () -> FishSettings.slayerAlertMiniboss, v -> FishSettings.slayerAlertMiniboss = v));
+            f.sub.add(new ToggleSetting("Boss Spawn", "",
+                    () -> FishSettings.slayerAlertBossSpawn, v -> FishSettings.slayerAlertBossSpawn = v));
+            f.sub.add(new ToggleSetting("Boss Slain", "",
+                    () -> FishSettings.slayerAlertBossSlain, v -> FishSettings.slayerAlertBossSlain = v));
+            f.sub.add(new ToggleSetting("Play Sound", "",
+                    () -> FishSettings.slayerAlertSound, v -> FishSettings.slayerAlertSound = v));
+            slayer.features.add(f);
+        }
+        slayer.features.add(new Feature("Slayer Drops",
+                () -> FishSettings.slayerDropsEnabled, v -> FishSettings.slayerDropsEnabled = v));
+
         columns.add(general);
         columns.add(dungeon);
         columns.add(cosmetics);
         columns.add(party);
         columns.add(visuals);
+        columns.add(fishing);
+        columns.add(slayer);
         columns.add(floor7);
     }
 
