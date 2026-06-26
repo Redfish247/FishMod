@@ -99,6 +99,52 @@ public class FishHudEditor extends Screen {
         ));
     }
 
+    /**
+     * Default position (pixels) and scale for each registered HUD, mirroring the defaults in its
+     * {@code register(...)} call (FishSettings field initializers / HUDComponent constructors).
+     * Used by the "Reset positions" button. Keep in sync when a HUD's default changes.
+     */
+    private static final java.util.Map<String, double[]> DEFAULTS = java.util.Map.ofEntries(
+            java.util.Map.entry("Farming Coins",      new double[]{10, 240, 1.0}),
+            java.util.Map.entry("Pet",                new double[]{10,  80, 1.0}),
+            java.util.Map.entry("Harvest Feast",      new double[]{10, 280, 1.0}),
+            java.util.Map.entry("Session Stats",      new double[]{10, 120, 1.0}),
+            java.util.Map.entry("Dungeon Score",      new double[]{10, 200, 1.0}),
+            java.util.Map.entry("Simon Says",         new double[]{10, 360, 1.0}),
+            java.util.Map.entry("Soulflow",           new double[]{10,  60, 1.0}),
+            java.util.Map.entry("Mining Coins",       new double[]{10, 320, 1.0}),
+            java.util.Map.entry("Trophy Frogs",       new double[]{10,  60, 1.0}),
+            java.util.Map.entry("Slayer XP",          new double[]{10,  80, 1.0}),
+            java.util.Map.entry("Skill XP",           new double[]{10, 360, 1.0}),
+            java.util.Map.entry("Powder",             new double[]{10, 100, 1.0}),
+            java.util.Map.entry("Challenges",         new double[]{10, 400, 1.0}),
+            java.util.Map.entry("Maxor Tick Timer",   new double[]{10,  80, 1.0}),
+            java.util.Map.entry("Crystal Spawn Time", new double[]{10,  92, 1.0}),
+            java.util.Map.entry("Crystal Reminder",   new double[]{ 0,   0, 1.0}),
+            java.util.Map.entry("Storm Tick Timer",   new double[]{10,  80, 1.0}),
+            java.util.Map.entry("Storm Death Time",   new double[]{10,  92, 1.0}),
+            java.util.Map.entry("Storm Crushed",      new double[]{ 0,   0, 1.0}),
+            java.util.Map.entry("Goldor Tick Timer",  new double[]{10,  80, 1.0}),
+            java.util.Map.entry("Term Start Timer",   new double[]{10, 104, 1.0}),
+            java.util.Map.entry("Section Progress",   new double[]{10, 116, 1.0}),
+            java.util.Map.entry("Splits",             new double[]{ 0,   0, 1.0}),
+            java.util.Map.entry("Puzzles",            new double[]{ 0,   0, 1.0}));
+
+    /** Restore every registered HUD to its default position/scale and persist the change. */
+    public static void resetAll() {
+        for (HudEntry e : ENTRIES) {
+            double[] d = DEFAULTS.get(e.name());
+            if (d == null || e.locked()) continue;
+            e.setX().accept((int) d[0]);
+            e.setY().accept((int) d[1]);
+            if (e.setScale != null) e.setScale.accept(d[2]);
+        }
+        FishConfig.manager.save();
+    }
+
+    private static final int RESET_X = 10;
+    private static final int RESET_W = 120;
+
     private static final int ACCENT       = 0xFF00AACC;
     private static final int ACCENT_HOVER = 0xFF00CCEE;
     private static final int BOX_FILL     = 0x5500AACC;
@@ -108,6 +154,8 @@ public class FishHudEditor extends Screen {
     private final Screen parent;
     private HudEntry dragging = null;
     private int dragOffX, dragOffY;
+    /** First click on Reset arms it; a second click confirms. Any drag/other click disarms. */
+    private boolean resetArmed = false;
 
     public FishHudEditor(Screen parent) {
         super(Text.literal("Edit HUD"));
@@ -122,7 +170,7 @@ public class FishHudEditor extends Screen {
         ctx.fill(0, 0, this.width, this.height, 0x80000000);
 
         ctx.drawCenteredTextWithShadow(this.textRenderer,
-                "Drag elements to reposition", this.width / 2, 10, 0xFFAAAAAA);
+                "Drag to move · scroll to resize", this.width / 2, 10, 0xFFAAAAAA);
 
         // Done button
         int btnW = 60, btnH = 18;
@@ -133,6 +181,15 @@ public class FishHudEditor extends Screen {
         ctx.fill(btnX, btnY, btnX + btnW, btnY + btnH, btnHov ? ACCENT_HOVER : ACCENT);
         ctx.drawCenteredTextWithShadow(this.textRenderer, "Done",
                 btnX + btnW / 2, btnY + (btnH - 8) / 2, 0xFFFFFFFF);
+
+        // Reset-positions button (bottom-left). First click arms, second click confirms.
+        boolean rHov = mouseX >= RESET_X && mouseX <= RESET_X + RESET_W
+                    && mouseY >= btnY && mouseY <= btnY + btnH;
+        int rFill = resetArmed ? 0xFFAA3333 : (rHov ? 0xFF553333 : 0xFF442222);
+        ctx.fill(RESET_X, btnY, RESET_X + RESET_W, btnY + btnH, rFill);
+        ctx.drawCenteredTextWithShadow(this.textRenderer,
+                resetArmed ? "§fClick to confirm" : "Reset positions",
+                RESET_X + RESET_W / 2, btnY + (btnH - 8) / 2, 0xFFFFCCCC);
 
         // HUD element boxes — only show entries that are actually active right now (feature enabled
         // and in the right context). Hiding inactive ones keeps the editor uncluttered so elements
@@ -190,6 +247,14 @@ public class FishHudEditor extends Screen {
             this.close();
             return true;
         }
+
+        // Reset-positions button: first click arms, second click performs the reset.
+        if (mx >= RESET_X && mx <= RESET_X + RESET_W && my >= btnY && my <= btnY + btnH) {
+            if (resetArmed) { resetAll(); resetArmed = false; }
+            else resetArmed = true;
+            return true;
+        }
+        resetArmed = false; // any other click disarms the confirm
 
         for (HudEntry e : ENTRIES) {
             if (e.locked() || !e.isVisible()) continue;

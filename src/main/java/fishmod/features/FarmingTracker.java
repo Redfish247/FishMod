@@ -112,7 +112,7 @@ public class FarmingTracker {
         NAME_TO_ID.put("Sunflower",              "SUNFLOWER");
         NAME_TO_ID.put("Enchanted Sunflower",    "ENCHANTED_SUNFLOWER");
     }
-    private static final boolean DEBUG_FARMING = true;
+    private static final boolean DEBUG_FARMING = false;
 
     // Matches both "+1,234 Item" (additions) and "-1,234 Item" (withdrawals / compaction).
     private static final java.util.regex.Pattern SACK_HOVER_LINE =

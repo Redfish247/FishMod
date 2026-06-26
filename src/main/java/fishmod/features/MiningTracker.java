@@ -226,7 +226,7 @@ public class MiningTracker {
     // Accept either "+1,234 [icon] Name" or "Name +1,234". Hypixel inserts symbols like ☠/❁ between count and gemstone names.
     private static final Pattern SACK_HOVER_LINE =
             Pattern.compile("(?:([+-])\\s*([\\d,]+)\\s+(?:[^A-Za-z0-9\\s]\\s+)?([A-Za-z][A-Za-z0-9 '\\-]+?)|([A-Za-z][A-Za-z0-9 '\\-]+?)\\s*[:\\s]\\s*([+-])\\s*([\\d,]+))(?:\\s+\\(.*?\\))?\\s*$");
-    private static final boolean DEBUG_SACKS = true; // logs unknown sack lines/items to console
+    private static final boolean DEBUG_SACKS = false; // logs unknown sack lines/items to console
     private static final Pattern CORPSE_LOOT_LINE =
             Pattern.compile("^\\s*(LAPIS|TUNGSTEN|UMBER|VANGUARD) CORPSE LOOT!\\s*(?:\\((\\d+)\\))?\\s*$");
     private static final Pattern SACK_LAST_SECONDS =

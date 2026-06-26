@@ -54,7 +54,7 @@ public class SkyblockItems {
                         synchronized (nameToId) { nameToId.clear(); nameToId.putAll(nextNames); }
                         synchronized (npcSellPrice) { npcSellPrice.clear(); npcSellPrice.putAll(nextNpc); }
                         loaded = true;
-                        System.out.println("[SkyblockItems] loaded " + nextNames.size() + " items (" + nextNpc.size() + " with NPC sell price)");
+                        fishmod.utils.debug.Debug.LOGGER.info("[SkyblockItems] loaded {} items ({} with NPC sell price)", nextNames.size(), nextNpc.size());
                         // Re-apply price mode in case CroesusPrices already loaded the bazaar
                         fishmod.features.croesus.CroesusPrices.applyPriceMode();
                     } catch (Exception ignored) {
