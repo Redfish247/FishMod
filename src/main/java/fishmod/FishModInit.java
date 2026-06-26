@@ -84,9 +84,37 @@ public class FishModInit implements ModInitializer {
         return Constants.SUCCESS;
     }
 
+    private static final java.util.regex.Pattern HELP_CMD_TOKEN =
+            java.util.regex.Pattern.compile("[/.][a-zA-Z][a-zA-Z0-9]*");
+
+    /**
+     * Prints one command-help line. If the line names exactly one command (e.g. "/cata [player]"),
+     * the whole line is made click-to-suggest so you can drop the command into chat with one click;
+     * lines listing several commands, headers, and prose are printed plain.
+     */
+    private static void helpLine(String text) {
+        java.util.regex.Matcher m = HELP_CMD_TOKEN.matcher(text);
+        String cmd = null;
+        if (m.find()) {
+            cmd = m.group();
+            if (m.find()) cmd = null; // more than one command on the line → leave it plain
+        }
+        if (cmd == null) {
+            Misc.addChatMessage(Text.literal(text));
+            return;
+        }
+        final String suggest = cmd;
+        net.minecraft.text.MutableText t = Text.literal(text);
+        t.setStyle(t.getStyle()
+                .withClickEvent(new net.minecraft.text.ClickEvent.SuggestCommand(suggest))
+                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(
+                        Text.literal("§7Click to put §f" + suggest + "§7 in chat"))));
+        Misc.addChatMessage(t);
+    }
+
     /** Prints a formatted reference of FishMod's commands and their argument formats to the player's chat. */
     private static void printCommandHelp() {
-        java.util.function.Consumer<String> line = s -> Misc.addChatMessage(Text.literal(s));
+        java.util.function.Consumer<String> line = FishModInit::helpLine;
         line.accept("§b§m                    §r §3§lFishMod Commands §r§b§m                    ");
         line.accept("§7Args in §f<>§7 are required, §8[]§7 optional. Stats commands default to §fyou§7 if no name is given.");
         line.accept("§7All stats commands also work in party chat as §f.cmd§7 (toggle each in §f/fm §8> §7Party Commands).");
@@ -165,7 +193,7 @@ public class FishModInit implements ModInitializer {
         fishmod.cosmetic.RemoteSync.init();
         fishmod.features.WelcomeMessage.init();
         LagTracker.init();
-SessionStats.init();
+        SessionStats.init();
         FishPuzzleDisplay.init();
         FishEstTotal.init();
         DungeonDeathMessage.init();

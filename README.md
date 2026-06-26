@@ -103,7 +103,11 @@ In party chat, `.help` lists your enabled party commands.
 ## Configuration
 
 Open the config GUI with `/fm`, or via Mod Menu. HUD positions and scales are
-edited from the config's HUD editor.
+edited from the config's HUD editor — drag to move, scroll to resize, and use
+**Reset positions** to restore every HUD to its default layout.
+
+`/fm commandhelp` (and party-chat `.help`) print the command reference; single
+commands in that list are click-to-suggest.
 
 ## Building
 
