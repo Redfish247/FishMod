@@ -417,6 +417,17 @@ public class FishModScreen extends Screen {
                     () -> FishSettings.cfWarping, v -> FishSettings.cfWarping = v));
             general.features.add(f);
         }
+        {
+            Feature f = new Feature("Particles",
+                    () -> FishSettings.particlesEnabled, v -> FishSettings.particlesEnabled = v);
+            f.sub.add(new DropdownSetting<>("Style", "Trail, orbiting aura, wings, or footsteps.",
+                    fishmod.features.ParticleCosmetics.Style.values(),
+                    () -> FishSettings.particleStyle, v -> FishSettings.particleStyle = v));
+            f.sub.add(new DropdownSetting<>("Particle", "Which particle to use.",
+                    fishmod.features.ParticleCosmetics.PType.values(),
+                    () -> FishSettings.particleType, v -> FishSettings.particleType = v));
+            general.features.add(f);
+        }
 
         // ===== Dungeon =====
         {

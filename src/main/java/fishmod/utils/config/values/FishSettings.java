@@ -159,6 +159,11 @@ public class FishSettings {
     @ConfigValue public static boolean dungeonScoreMissingAlert = true; // 1:00 "X Score Missing" chat+sound
     @ConfigValue public static boolean leapOverlayEnabled = true; // Odin-style Spirit Leap overlay
 
+    // Cosmetic particle effects around the local player
+    @ConfigValue public static boolean particlesEnabled = false;
+    @ConfigValue public static fishmod.features.ParticleCosmetics.Style particleStyle = fishmod.features.ParticleCosmetics.Style.TRAIL;
+    @ConfigValue public static fishmod.features.ParticleCosmetics.PType particleType = fishmod.features.ParticleCosmetics.PType.FLAME;
+
     // Farming coin/hr tracker
     @ConfigValue public static boolean farmingTrackerEnabled = false;
     @ConfigValue public static int     farmingTrackerHudX    = 10;
