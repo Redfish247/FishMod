@@ -2,12 +2,13 @@ package fishmod.features.dungeon;
 
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.dungeon.DungeonClass;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.screen.GenericContainerScreenHandler;
@@ -15,6 +16,7 @@ import net.minecraft.screen.slot.SlotActionType;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -38,6 +40,7 @@ public final class LeapOverlay {
     }
 
     private static final List<Cell> cells = new ArrayList<>();
+    private static final boolean[] keyDown = new boolean[5]; // edge-detection for number keys 1-5
 
     public static void init() {
         ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
@@ -56,12 +59,23 @@ public final class LeapOverlay {
                 if (c != null) leap(gc, c.slot);
                 return false; // swallow all clicks so the covered vanilla slots never fire
             });
-            ScreenKeyboardEvents.allowKeyPress(screen).register((s, key, scancode, mods) -> {
-                if (!FishSettings.leapOverlayEnabled) return true;
-                int idx = key - GLFW.GLFW_KEY_1;
-                if (idx >= 0 && idx < cells.size()) { leap(gc, cells.get(idx).slot); return false; }
-                return true;
-            });
+        });
+
+        // Number-key leaping (1-5). Polled via InputUtil with edge-detection — the Fabric keyboard
+        // event's record signature is mapping-volatile, so we read raw GLFW state instead.
+        ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+            if (!FishSettings.leapOverlayEnabled
+                    || !(mc.currentScreen instanceof GenericContainerScreen gc) || !isLeapMenu(gc)) {
+                Arrays.fill(keyDown, false);
+                return;
+            }
+            rebuild(gc);
+            long handle = mc.getWindow().getHandle();
+            for (int i = 0; i < keyDown.length; i++) {
+                boolean down = InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_1 + i);
+                if (down && !keyDown[i] && i < cells.size()) leap(gc, cells.get(i).slot);
+                keyDown[i] = down;
+            }
         });
     }
 
