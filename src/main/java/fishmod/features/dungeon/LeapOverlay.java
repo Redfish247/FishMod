@@ -70,9 +70,9 @@ public final class LeapOverlay {
                 return;
             }
             rebuild(gc);
-            long handle = mc.getWindow().getHandle();
+            net.minecraft.client.util.Window window = mc.getWindow();
             for (int i = 0; i < keyDown.length; i++) {
-                boolean down = InputUtil.isKeyPressed(handle, GLFW.GLFW_KEY_1 + i);
+                boolean down = InputUtil.isKeyPressed(window, GLFW.GLFW_KEY_1 + i);
                 if (down && !keyDown[i] && i < cells.size()) leap(gc, cells.get(i).slot);
                 keyDown[i] = down;
             }
