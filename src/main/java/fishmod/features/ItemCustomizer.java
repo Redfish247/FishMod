@@ -39,8 +39,8 @@ public final class ItemCustomizer {
      *  custom: Hypixel strips SkyBlock NBT (the uuid/id key) off other players' items, so the only
      *  thing a viewer can identify is the vanilla item type. */
     public record Custom(String name, String modelId, int stars, int dye, String trimMat, String trimPat,
-                         String skin, String vanilla) {
-        public Custom withVanilla(String v) { return new Custom(name, modelId, stars, dye, trimMat, trimPat, skin, v); }
+                         String skin, String dyeAnim, String vanilla) {
+        public Custom withVanilla(String v) { return new Custom(name, modelId, stars, dye, trimMat, trimPat, skin, dyeAnim, v); }
     }
 
     private static final char[] MASTER = {'➊', '➋', '➌', '➍', '➎'}; // ➊➋➌➍➎
@@ -168,16 +168,18 @@ public final class ItemCustomizer {
     }
 
     public static void set(ItemStack st, String name, String modelId, int stars, int dye,
-                           String trimMat, String trimPat, String skin) {
+                           String trimMat, String trimPat, String skin, String dyeAnim) {
         String k = keyFor(st);
         if (k == null) return;
         boolean noTrim = (trimMat == null || trimMat.isEmpty()) || (trimPat == null || trimPat.isEmpty());
         boolean noSkin = (skin == null || skin.isEmpty());
+        boolean noAnim = (dyeAnim == null || dyeAnim.isEmpty());
         boolean empty = (name == null || name.isEmpty()) && (modelId == null || modelId.isEmpty())
-                && stars <= 0 && dye < 0 && noTrim && noSkin;
+                && stars <= 0 && dye < 0 && noTrim && noSkin && noAnim;
         if (empty) DATA.remove(k);
         else DATA.put(k, new Custom(name, modelId, stars, dye,
-                noTrim ? null : trimMat, noTrim ? null : trimPat, noSkin ? null : skin, vanillaId(st)));
+                noTrim ? null : trimMat, noTrim ? null : trimPat, noSkin ? null : skin,
+                noAnim ? null : dyeAnim, vanillaId(st)));
         save();
         apply(st);
         uploadOwn();
@@ -226,6 +228,10 @@ public final class ItemCustomizer {
             }
             if (c.dye() >= 0)
                 st.set(DataComponentTypes.DYED_COLOR, new net.minecraft.component.type.DyedColorComponent(c.dye() & 0xFFFFFF));
+            // Animated dye: recomputed every tick (this runs in the per-tick reapply for both local and
+            // remote items), so it animates smoothly and can't be left flickering by server resyncs.
+            if (c.dyeAnim() != null && !c.dyeAnim().isEmpty())
+                st.set(DataComponentTypes.DYED_COLOR, new net.minecraft.component.type.DyedColorComponent(animColor(c.dyeAnim(), c.dye())));
             applyTrim(st, c);
             if (applySkin) applyHeadSkin(st, c);
         } catch (Exception ignored) {}
@@ -300,6 +306,64 @@ public final class ItemCustomizer {
         return id.contains(":") ? Identifier.of(id) : Identifier.ofVanilla(id);
     }
 
+    // ── animated dyes (generic styles) ──────────────────────────────────────────
+    /** The animated-dye presets offered by the customizer (key → display label). */
+    public static final String[][] ANIM_DYES = {
+        {"rainbow", "Rainbow"}, {"fire", "Fire"}, {"ice", "Ice"},
+        {"toxic", "Toxic"}, {"galaxy", "Galaxy"}, {"pulse", "Pulse"},
+    };
+
+    /** Time-based RGB for an animated dye. {@code baseDye} (>=0) is the pulse/fallback color. */
+    public static int animColor(String anim, int baseDye) {
+        long t = System.currentTimeMillis();
+        int base = baseDye >= 0 ? (baseDye & 0xFFFFFF) : 0xFFFFFF;
+        return switch (anim) {
+            case "rainbow" -> hsvToRgb((t % 6000L) / 6000f, 0.9f, 1f);
+            case "fire"    -> cycle(t, 0xFF3300, 0xFF8800, 0xFFDD00);
+            case "ice"     -> cycle(t, 0x00CCFF, 0x3366FF, 0xFFFFFF);
+            case "toxic"   -> cycle(t, 0x00FF66, 0x99FF00, 0x33CC00);
+            case "galaxy"  -> cycle(t, 0x6600FF, 0xCC00FF, 0x3300AA);
+            case "pulse"   -> scale(base, 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(t / 600.0)));
+            default        -> base;
+        };
+    }
+
+    /** Representative swatch color for an animated dye (for the dropdown), sampled "now". */
+    public static int animSwatch(String anim) { return animColor(anim, 0xFFFFFF); }
+
+    private static int cycle(long t, int... cols) {
+        double period = 2500.0; // ms per color leg
+        double pos = (t % (long) (period * cols.length)) / period; // 0..cols.length
+        int i = (int) pos;
+        return lerp(cols[i % cols.length], cols[(i + 1) % cols.length], pos - i);
+    }
+    private static int lerp(int a, int b, double f) {
+        int r = (int) (((a >> 16) & 0xFF) + (((b >> 16) & 0xFF) - ((a >> 16) & 0xFF)) * f);
+        int g = (int) (((a >> 8) & 0xFF) + (((b >> 8) & 0xFF) - ((a >> 8) & 0xFF)) * f);
+        int bl = (int) ((a & 0xFF) + ((b & 0xFF) - (a & 0xFF)) * f);
+        return (r << 16) | (g << 8) | bl;
+    }
+    private static int scale(int c, double f) {
+        f = Math.max(0, Math.min(1, f));
+        int r = (int) (((c >> 16) & 0xFF) * f), g = (int) (((c >> 8) & 0xFF) * f), b = (int) ((c & 0xFF) * f);
+        return (r << 16) | (g << 8) | b;
+    }
+    private static int hsvToRgb(float h, float s, float v) {
+        int i = (int) (h * 6) % 6;
+        float f = h * 6 - (int) (h * 6);
+        float p = v * (1 - s), q = v * (1 - f * s), tt = v * (1 - (1 - f) * s);
+        float r, g, b;
+        switch (i) {
+            case 0 -> { r = v; g = tt; b = p; }
+            case 1 -> { r = q; g = v; b = p; }
+            case 2 -> { r = p; g = v; b = tt; }
+            case 3 -> { r = p; g = q; b = v; }
+            case 4 -> { r = tt; g = p; b = v; }
+            default -> { r = v; g = p; b = q; }
+        }
+        return ((int) (r * 255) << 16) | ((int) (g * 255) << 8) | (int) (b * 255);
+    }
+
     // ── persistence + sharing ──────────────────────────────────────────────────
 
     /** Serializes the local customization map to the shared JSON-array format. */
@@ -325,6 +389,7 @@ public final class ItemCustomizer {
             if (v.trimMat() != null) o.addProperty("trimMat", v.trimMat());
             if (v.trimPat() != null) o.addProperty("trimPat", v.trimPat());
             if (v.skin() != null) o.addProperty("skin", v.skin());
+            if (v.dyeAnim() != null) o.addProperty("dyeAnim", v.dyeAnim());
             if (v.vanilla() != null) o.addProperty("vanilla", v.vanilla());
             arr.add(o);
         }
@@ -348,6 +413,7 @@ public final class ItemCustomizer {
                         o.has("trimMat") ? o.get("trimMat").getAsString() : null,
                         o.has("trimPat") ? o.get("trimPat").getAsString() : null,
                         o.has("skin") ? o.get("skin").getAsString() : null,
+                        o.has("dyeAnim") ? o.get("dyeAnim").getAsString() : null,
                         o.has("vanilla") ? o.get("vanilla").getAsString() : null));
             }
         } catch (Exception ignored) {}

@@ -91,6 +91,7 @@ public final class RemoteItems {
             if (!modelPath.equals(basePath)) return true; // model differs from the base item → real swap
         }
         if (c.dye() >= 0) return true;
+        if (c.dyeAnim() != null && !c.dyeAnim().isEmpty()) return true;
         if (c.trimMat() != null && !c.trimMat().isEmpty()) return true;
         if (c.name() != null && !c.name().isEmpty()) return true;
         return c.stars() > 0;

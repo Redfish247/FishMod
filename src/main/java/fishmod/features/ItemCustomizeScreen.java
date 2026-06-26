@@ -97,6 +97,7 @@ public class ItemCustomizeScreen extends Screen {
     private TextFieldWidget nameField, modelField, dyeField, skinField;
     private Dropdown dyeDropdown, trimMatDropdown, trimPatDropdown, skinDropdown;
     private ButtonWidget grabButton;
+    private String selectedAnim = null; // chosen animated-dye key, or null for a static dye
     private final List<PetSkins.Skin> skinChoices = new ArrayList<>();
 
     // &-code key hit-boxes, rebuilt each frame, consumed by mouseClicked. {x,y,w,h} + parallel code.
@@ -156,11 +157,21 @@ public class ItemCustomizeScreen extends Screen {
         dyeField.setMaxLength(6);
         addDrawableChild(dyeField);
 
+        // Dye dropdown: animated presets first (marked ✦), then the static Hypixel dyes.
         dyeDropdown = new Dropdown("Pick a dye…", fx, dyeY, 150);
-        for (String[] d : DYES) dyeDropdown.labels.add(d[0]);
-        dyeDropdown.swatches = DYE_RGB;
+        int A = ItemCustomizer.ANIM_DYES.length;
+        int[] swatches = new int[A + DYE_RGB.length];
+        for (int i = 0; i < A; i++) {
+            dyeDropdown.labels.add("✦ " + ItemCustomizer.ANIM_DYES[i][1]);
+            swatches[i] = ItemCustomizer.animSwatch(ItemCustomizer.ANIM_DYES[i][0]);
+        }
+        for (int i = 0; i < DYES.length; i++) { dyeDropdown.labels.add(DYES[i][0]); swatches[A + i] = DYE_RGB[i]; }
+        dyeDropdown.swatches = swatches;
         dyeDropdown.onChange = () -> {
-            if (dyeDropdown.selected >= 0) dyeField.setText(DYES[dyeDropdown.selected][1]);
+            int s = dyeDropdown.selected;
+            if (s < 0) { selectedAnim = null; return; }
+            if (s < A) { selectedAnim = ItemCustomizer.ANIM_DYES[s][0]; dyeField.setText(""); }
+            else { selectedAnim = null; dyeField.setText(DYES[s - A][1]); }
         };
 
         int half = (fw - 6) / 2;
@@ -221,9 +232,17 @@ public class ItemCustomizeScreen extends Screen {
         modelField.setText(c != null && c.modelId() != null && !c.modelId().isEmpty()
                 ? c.modelId() : (baseModel != null ? baseModel : ""));
 
-        int dye = c != null ? c.dye() : -1;
-        dyeField.setText(dye >= 0 ? String.format("%06X", dye & 0xFFFFFF) : "");
-        dyeDropdown.selected = dye >= 0 ? dyeIndex(dye) : -1;
+        int A = ItemCustomizer.ANIM_DYES.length;
+        selectedAnim = (c != null && c.dyeAnim() != null && !c.dyeAnim().isEmpty()) ? c.dyeAnim() : null;
+        if (selectedAnim != null) {
+            dyeField.setText("");
+            dyeDropdown.selected = animIndex(selectedAnim); // 0..A-1
+        } else {
+            int dye = c != null ? c.dye() : -1;
+            dyeField.setText(dye >= 0 ? String.format("%06X", dye & 0xFFFFFF) : "");
+            int di = dye >= 0 ? dyeIndex(dye) : -1;
+            dyeDropdown.selected = di >= 0 ? A + di : -1;
+        }
 
         trimMatDropdown.selected = c != null && c.trimMat() != null ? indexOf(TRIM_MATERIALS, c.trimMat()) : -1;
         trimPatDropdown.selected = c != null && c.trimPat() != null ? indexOf(TRIM_PATTERNS, c.trimPat()) : -1;
@@ -269,8 +288,10 @@ public class ItemCustomizeScreen extends Screen {
         String model = modelField.getText().trim();
         if (baseModel != null && model.equals(baseModel)) model = "";
 
+        // Animated dye wins over a static hex when one is selected.
+        String dyeAnim = (dyeAllowed(sel) && selectedAnim != null) ? selectedAnim : "";
         int dye = -1;
-        if (dyeAllowed(sel)) {
+        if (dyeAllowed(sel) && dyeAnim.isEmpty()) {
             String d = dyeField.getText().trim();
             if (d.length() == 6) try { dye = (int) Long.parseLong(d, 16); } catch (NumberFormatException ignored) {}
         }
@@ -281,13 +302,21 @@ public class ItemCustomizeScreen extends Screen {
         String skin = isHead(sel) ? skinField.getText().trim() : "";
 
         // Stars are now encoded as "&*" inside the name, so the stored star count is always 0.
-        ItemCustomizer.set(sel, name, model, 0, dye, mat, pat, skin);
+        ItemCustomizer.set(sel, name, model, 0, dye, mat, pat, skin, dyeAnim);
     }
 
     /** Restore the item to its original appearance, then re-fill the fields with its base values. */
     private void reset() {
-        ItemCustomizer.set(inv().getStack(selectedIndex), "", "", 0, -1, "", "", "");
+        selectedAnim = null;
+        ItemCustomizer.set(inv().getStack(selectedIndex), "", "", 0, -1, "", "", "", "");
         loadFields();
+    }
+
+    /** Index of an animated-dye key within ItemCustomizer.ANIM_DYES, or -1. */
+    private static int animIndex(String key) {
+        for (int i = 0; i < ItemCustomizer.ANIM_DYES.length; i++)
+            if (ItemCustomizer.ANIM_DYES[i][0].equals(key)) return i;
+        return -1;
     }
 
     // ── helpers ────────────────────────────────────────────────────────────────
