@@ -278,8 +278,12 @@ public class DungeonScore {
                 ? Math.max(0, (int) Math.ceil(ts * currentFloor.requiredPercentage))
                 : 0;
 
+        String scorePart = "§7Score: " + colorizeScore(score);
+        if (FishSettings.dungeonScoreToSPlus)
+            scorePart += score >= 300 ? " §a§lS+" : " §7(§e" + (300 - score) + "§7→S+)";
+
         String secretsLine = "§7Secrets: §b" + secretCount + "§7-§e" + needed + "§7-§c" + (ts > 0 ? ts : "?")
-                + "   §7Score: " + colorizeScore(score);
+                + "   " + scorePart;
         String statsLine = "§7Deaths: " + colorizeDeaths(deathCount)
                 + "  §7M:" + (mimicKilled ? "§a✔" : "§c✘")
                 + " §7P:" + (princeKilled ? "§a✔" : "§c✘")

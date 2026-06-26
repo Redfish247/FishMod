@@ -419,8 +419,13 @@ public class FishModScreen extends Screen {
         }
 
         // ===== Dungeon =====
-        dungeon.features.add(new Feature("Dungeon Score",
-                () -> FishSettings.dungeonScoreEnabled, v -> FishSettings.dungeonScoreEnabled = v));
+        {
+            Feature f = new Feature("Dungeon Score",
+                    () -> FishSettings.dungeonScoreEnabled, v -> FishSettings.dungeonScoreEnabled = v);
+            f.sub.add(new ToggleSetting("Score to S+", "Show how much score is left until S+ (300).",
+                    () -> FishSettings.dungeonScoreToSPlus, v -> FishSettings.dungeonScoreToSPlus = v));
+            dungeon.features.add(f);
+        }
         dungeon.features.add(new Feature("Puzzle Overlay",
                 () -> FishSettings.showPuzzles, v -> FishSettings.showPuzzles = v));
         {
