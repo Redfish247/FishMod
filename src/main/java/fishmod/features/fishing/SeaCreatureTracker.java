@@ -168,7 +168,7 @@ public final class SeaCreatureTracker {
                 hud.setTitle(Text.literal("§6§l✦ RARE CATCH ✦"));
                 hud.setSubtitle(Text.literal("§e" + c.name()));
                 if (mc.player != null)
-                    mc.player.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP.value(), 1.0f, 1.0f);
+                    mc.player.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
             });
         }
     }

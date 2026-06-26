@@ -70,7 +70,7 @@ public final class SlayerAlerts {
             if (name == null) continue;
             String s = name.getString().replaceAll("§.", "");
             if (s.contains(marker) && seenSpawnIds.add(e.getId())) {
-                alert("§5§lSLAYER BOSS", "§dSpawned — slay it!", SoundEvents.ENTITY_WITHER_SPAWN.value());
+                alert("§5§lSLAYER BOSS", "§dSpawned — slay it!", SoundEvents.ENTITY_WITHER_SPAWN);
             }
         }
         // Keep the seen-set from growing without bound across a long session.
@@ -84,7 +84,7 @@ public final class SlayerAlerts {
 
         if (plain.contains("SLAYER QUEST COMPLETE")) {
             if (FishSettings.slayerAlertBossSlain)
-                alert("§a§lBOSS SLAIN", "§7Slayer quest complete", SoundEvents.ENTITY_PLAYER_LEVELUP.value());
+                alert("§a§lBOSS SLAIN", "§7Slayer quest complete", SoundEvents.ENTITY_PLAYER_LEVELUP);
             return;
         }
 
