@@ -88,7 +88,7 @@ jobs:
             --arg author "$AUTHOR" \
             '{
               username: "FishMod Releases",
-              content: ("@sushiestt @redfish2471\n📦 **FishMod v" + $ver + "** — jar attached below."),
+              content: ("<@1238879362904887357> <@1182737866820960316>\n📦 **FishMod v" + $ver + "** — jar attached below."),
               embeds: [{
                 title: $title,
                 description: $desc,
