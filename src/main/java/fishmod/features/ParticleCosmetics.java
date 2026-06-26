@@ -55,13 +55,13 @@ public final class ParticleCosmetics {
         switch (FishSettings.particleStyle) {
             case TRAIL -> {
                 // Particles left at the feet, drifting up slightly — fade where you've been.
-                mc.world.addParticle(fx, false, false,x + rand(0.25), y + 0.05, z + rand(0.25), 0, 0.01, 0);
+                mc.particleManager.addParticle(fx,x + rand(0.25), y + 0.05, z + rand(0.25), 0, 0.01, 0);
             }
             case AURA -> {
                 // Two points orbiting at waist height.
                 for (int i = 0; i < 2; i++) {
                     double a = tickAngle + i * Math.PI;
-                    mc.world.addParticle(fx, false, false,x + Math.cos(a) * 0.7, y + 1.0, z + Math.sin(a) * 0.7, 0, 0, 0);
+                    mc.particleManager.addParticle(fx,x + Math.cos(a) * 0.7, y + 1.0, z + Math.sin(a) * 0.7, 0, 0, 0);
                 }
             }
             case WINGS -> {
@@ -71,14 +71,14 @@ public final class ParticleCosmetics {
                 double sx = Math.cos(yaw), sz = Math.sin(yaw);       // sideways
                 for (int i = 1; i <= 3; i++) {
                     double back = 0.15 * i, span = 0.18 * i, up = 1.3 - 0.12 * i;
-                    mc.world.addParticle(fx, false, false,x + bx * back + sx * span, y + up, z + bz * back + sz * span, 0, 0, 0);
-                    mc.world.addParticle(fx, false, false,x + bx * back - sx * span, y + up, z + bz * back - sz * span, 0, 0, 0);
+                    mc.particleManager.addParticle(fx,x + bx * back + sx * span, y + up, z + bz * back + sz * span, 0, 0, 0);
+                    mc.particleManager.addParticle(fx,x + bx * back - sx * span, y + up, z + bz * back - sz * span, 0, 0, 0);
                 }
             }
             case FOOTSTEPS -> {
                 double dx = x - lastX, dz = z - lastZ;
                 if (dx * dx + dz * dz > 0.0006 && p.isOnGround())
-                    mc.world.addParticle(fx, false, false,x + rand(0.15), y + 0.02, z + rand(0.15), 0, 0, 0);
+                    mc.particleManager.addParticle(fx,x + rand(0.15), y + 0.02, z + rand(0.15), 0, 0, 0);
             }
         }
         lastX = x; lastZ = z;
