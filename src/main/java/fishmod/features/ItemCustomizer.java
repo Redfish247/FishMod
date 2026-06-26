@@ -128,6 +128,33 @@ public final class ItemCustomizer {
         return null;
     }
 
+    /** The SkyBlock pet type of a pet item (e.g. "ENDER_DRAGON") from its ExtraAttributes petInfo, or null. */
+    public static String petType(ItemStack st) {
+        if (st == null || st.isEmpty()) return null;
+        try {
+            NbtComponent cd = st.get(DataComponentTypes.CUSTOM_DATA);
+            if (cd == null) return null;
+            NbtCompound ea = cd.copyNbt().getCompound("ExtraAttributes").orElse(null);
+            if (ea == null) return null;
+            String petInfo = ea.getString("petInfo", "");
+            if (petInfo.isEmpty()) return null;
+            JsonObject o = JsonParser.parseString(petInfo).getAsJsonObject();
+            return o.has("type") ? o.get("type").getAsString() : null;
+        } catch (Exception e) { return null; }
+    }
+
+    /** The current head texture (base64 "textures" value) on a player_head stack, or null. */
+    public static String currentHeadTexture(ItemStack st) {
+        if (st == null || !st.isOf(net.minecraft.item.Items.PLAYER_HEAD)) return null;
+        try {
+            net.minecraft.component.type.ProfileComponent pc = st.get(DataComponentTypes.PROFILE);
+            if (pc == null) return null;
+            for (com.mojang.authlib.properties.Property p : pc.getGameProfile().properties().get("textures"))
+                return p.value();
+        } catch (Exception ignored) {}
+        return null;
+    }
+
     /** Wipes every saved customization (recovery for accidentally-broad keys from older builds). */
     public static void clearAll() {
         DATA.clear();

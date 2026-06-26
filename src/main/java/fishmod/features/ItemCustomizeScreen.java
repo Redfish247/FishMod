@@ -90,12 +90,14 @@ public class ItemCustomizeScreen extends Screen {
     };
 
     private int panelX, panelY;
-    private final int panelW = 360, panelH = 432;
+    private final int panelW = 360, panelH = 460;
     private int gridX, gridY, armorX, armorY;
     private int legendX, legendY;
     private int selectedIndex = 0;
     private TextFieldWidget nameField, modelField, dyeField, skinField;
-    private Dropdown dyeDropdown, trimMatDropdown, trimPatDropdown;
+    private Dropdown dyeDropdown, trimMatDropdown, trimPatDropdown, skinDropdown;
+    private ButtonWidget grabButton;
+    private final List<PetSkins.Skin> skinChoices = new ArrayList<>();
 
     // &-code key hit-boxes, rebuilt each frame, consumed by mouseClicked. {x,y,w,h} + parallel code.
     private final List<int[]> keyRects = new ArrayList<>();
@@ -168,10 +170,24 @@ public class ItemCustomizeScreen extends Screen {
         for (String s : TRIM_PATTERNS) trimPatDropdown.labels.add(cap(s));
 
         // Skin: a head texture for player_head items (e.g. apply a Hypixel pet/cosmetic skin). Accepts
-        // a texture hash, a textures.minecraft.net URL, or a raw base64 textures value.
-        skinField = new TextFieldWidget(this.textRenderer, fx, skinY, fw, 14, Text.literal("Skin"));
+        // a texture hash, a textures.minecraft.net URL, or a raw base64 textures value. A "Grab" button
+        // copies the head's current texture in, and a dropdown offers curated skins for this pet type.
+        skinField = new TextFieldWidget(this.textRenderer, fx, skinY, fw - 54, 14, Text.literal("Skin"));
         skinField.setMaxLength(2048);
         addDrawableChild(skinField);
+        grabButton = ButtonWidget.builder(Text.literal("Grab"), b -> grabSkin())
+                .dimensions(fx + fw - 50, skinY - 1, 50, 16)
+                .tooltip(Tooltip.of(Text.literal("Copy the texture from the selected head into the Skin box.")))
+                .build();
+        addDrawableChild(grabButton);
+
+        skinDropdown = new Dropdown("Pick a pet skin…", fx, skinY + 18, fw);
+        skinDropdown.onChange = () -> {
+            if (skinDropdown.selected < 0 || skinDropdown.selected >= skinChoices.size()) return;
+            String tex = skinChoices.get(skinDropdown.selected).tex();
+            String hash = PetSkins.hashFromValue(tex);
+            skinField.setText(hash != null ? hash : tex); // prefer the tidy hash, fall back to raw value
+        };
 
         // Bottom buttons
         int btnY = panelY + panelH - 26;
@@ -214,13 +230,33 @@ public class ItemCustomizeScreen extends Screen {
 
         skinField.setText(c != null && c.skin() != null ? c.skin() : "");
         skinField.visible = isHead(sel);
+        grabButton.visible = isHead(sel);
 
-        dyeDropdown.close(); trimMatDropdown.close(); trimPatDropdown.close();
+        // Populate the pet-skin dropdown with skins matching this pet (or all heads for a generic head).
+        skinChoices.clear();
+        skinDropdown.labels.clear();
+        skinDropdown.selected = -1;
+        if (isHead(sel)) {
+            skinChoices.addAll(PetSkins.forPet(ItemCustomizer.petType(sel)));
+            for (PetSkins.Skin s : skinChoices) skinDropdown.labels.add(s.name());
+        }
+
+        dyeDropdown.close(); trimMatDropdown.close(); trimPatDropdown.close(); skinDropdown.close();
         dyeField.visible = dyeAllowed(sel);
     }
 
     private boolean isHead(ItemStack st) {
         return st != null && !st.isEmpty() && st.isOf(Items.PLAYER_HEAD);
+    }
+
+    /** Copies the selected head's current texture into the Skin box (tidy hash when possible). */
+    private void grabSkin() {
+        ItemStack sel = inv().getStack(selectedIndex);
+        if (!isHead(sel)) return;
+        String tex = ItemCustomizer.currentHeadTexture(sel);
+        if (tex == null || tex.isEmpty()) return;
+        String hash = PetSkins.hashFromValue(tex);
+        skinField.setText(hash != null ? hash : tex);
     }
 
     private void apply() {
@@ -318,6 +354,7 @@ public class ItemCustomizeScreen extends Screen {
         if (dyeAllowed(sel)) dyeDropdown.renderOpen(ctx, mouseX, mouseY);
         trimMatDropdown.renderOpen(ctx, mouseX, mouseY);
         trimPatDropdown.renderOpen(ctx, mouseX, mouseY);
+        if (isHead(sel)) skinDropdown.renderOpen(ctx, mouseX, mouseY);
     }
 
     private void drawPanel(DrawContext ctx, int mouseX, int mouseY) {
@@ -396,16 +433,16 @@ public class ItemCustomizeScreen extends Screen {
         trimMatDropdown.renderClosed(ctx, mouseX, mouseY);
         trimPatDropdown.renderClosed(ctx, mouseX, mouseY);
 
-        // Skin row: an editable texture box for player heads, or a hint for everything else.
+        // Skin row: editable texture box + Grab button + a pet-skin dropdown, or a hint for non-heads.
         if (isHead(sel)) {
-            ctx.drawTextWithShadow(this.textRenderer, "§8hash / url / value", fx, skinY + 16, TEXT_HINT);
+            skinDropdown.renderClosed(ctx, mouseX, mouseY);
         } else {
             ctx.fill(fx, skinY, fx + fw, skinY + 14, BG_FIELD);
             ctx.drawTextWithShadow(this.textRenderer, "§8player heads only (pets)", fx + 4, skinY + 3, TEXT_HINT);
         }
 
         // Live preview (name with &* stars resolved)
-        int prevY = skinY + 28;
+        int prevY = skinY + 40;
         String nameTxt = nameField.getText();
         ctx.drawTextWithShadow(this.textRenderer, "§7Preview:", p, prevY, TEXT_HINT);
         ctx.drawTextWithShadow(this.textRenderer, fishmod.cosmetic.NickState.parse(nameTxt), fx, prevY, 0xFFFFFFFF);
@@ -484,6 +521,7 @@ public class ItemCustomizeScreen extends Screen {
         if (dyeAllowed(sel) && dyeDropdown.click(mx, my)) { closeOthers(dyeDropdown); return true; }
         if (trimMatDropdown.click(mx, my)) { closeOthers(trimMatDropdown); return true; }
         if (trimPatDropdown.click(mx, my)) { closeOthers(trimPatDropdown); return true; }
+        if (isHead(sel) && skinDropdown.click(mx, my)) { closeOthers(skinDropdown); return true; }
 
         // &-code key
         for (int i = 0; i < keyRects.size(); i++) {
@@ -517,6 +555,7 @@ public class ItemCustomizeScreen extends Screen {
         if (dyeDropdown.scrolled(mx, my, verticalAmount)) return true;
         if (trimMatDropdown.scrolled(mx, my, verticalAmount)) return true;
         if (trimPatDropdown.scrolled(mx, my, verticalAmount)) return true;
+        if (skinDropdown.scrolled(mx, my, verticalAmount)) return true;
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
@@ -524,6 +563,7 @@ public class ItemCustomizeScreen extends Screen {
         if (dyeDropdown != keep) dyeDropdown.close();
         if (trimMatDropdown != keep) trimMatDropdown.close();
         if (trimPatDropdown != keep) trimPatDropdown.close();
+        if (skinDropdown != keep) skinDropdown.close();
     }
 
     @Override
