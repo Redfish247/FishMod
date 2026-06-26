@@ -94,7 +94,7 @@ public class ItemCustomizeScreen extends Screen {
     private int gridX, gridY, armorX, armorY;
     private int legendX, legendY;
     private int selectedIndex = 0;
-    private TextFieldWidget nameField, modelField, dyeField;
+    private TextFieldWidget nameField, modelField, dyeField, skinField;
     private Dropdown dyeDropdown, trimMatDropdown, trimPatDropdown;
 
     // &-code key hit-boxes, rebuilt each frame, consumed by mouseClicked. {x,y,w,h} + parallel code.
@@ -139,6 +139,7 @@ public class ItemCustomizeScreen extends Screen {
         int modelY = nameY + 24;
         int dyeY   = modelY + 24;
         int trimY  = dyeY + 24;
+        int skinY  = trimY + 24;
 
         nameField = new TextFieldWidget(this.textRenderer, fx, nameY, fw, 14, Text.literal("Name"));
         nameField.setMaxLength(128);
@@ -165,6 +166,12 @@ public class ItemCustomizeScreen extends Screen {
         for (String s : TRIM_MATERIALS) trimMatDropdown.labels.add(cap(s));
         trimPatDropdown = new Dropdown("Pattern", fx + half + 6, trimY, half);
         for (String s : TRIM_PATTERNS) trimPatDropdown.labels.add(cap(s));
+
+        // Skin: a head texture for player_head items (e.g. apply a Hypixel pet/cosmetic skin). Accepts
+        // a texture hash, a textures.minecraft.net URL, or a raw base64 textures value.
+        skinField = new TextFieldWidget(this.textRenderer, fx, skinY, fw, 14, Text.literal("Skin"));
+        skinField.setMaxLength(2048);
+        addDrawableChild(skinField);
 
         // Bottom buttons
         int btnY = panelY + panelH - 26;
@@ -205,8 +212,15 @@ public class ItemCustomizeScreen extends Screen {
         trimMatDropdown.selected = c != null && c.trimMat() != null ? indexOf(TRIM_MATERIALS, c.trimMat()) : -1;
         trimPatDropdown.selected = c != null && c.trimPat() != null ? indexOf(TRIM_PATTERNS, c.trimPat()) : -1;
 
+        skinField.setText(c != null && c.skin() != null ? c.skin() : "");
+        skinField.visible = isHead(sel);
+
         dyeDropdown.close(); trimMatDropdown.close(); trimPatDropdown.close();
         dyeField.visible = dyeAllowed(sel);
+    }
+
+    private boolean isHead(ItemStack st) {
+        return st != null && !st.isEmpty() && st.isOf(Items.PLAYER_HEAD);
     }
 
     private void apply() {
@@ -228,13 +242,15 @@ public class ItemCustomizeScreen extends Screen {
         String mat = trimMatDropdown.selected >= 0 ? TRIM_MATERIALS[trimMatDropdown.selected] : "";
         String pat = trimPatDropdown.selected >= 0 ? TRIM_PATTERNS[trimPatDropdown.selected] : "";
 
+        String skin = isHead(sel) ? skinField.getText().trim() : "";
+
         // Stars are now encoded as "&*" inside the name, so the stored star count is always 0.
-        ItemCustomizer.set(sel, name, model, 0, dye, mat, pat);
+        ItemCustomizer.set(sel, name, model, 0, dye, mat, pat, skin);
     }
 
     /** Restore the item to its original appearance, then re-fill the fields with its base values. */
     private void reset() {
-        ItemCustomizer.set(inv().getStack(selectedIndex), "", "", 0, -1, "", "");
+        ItemCustomizer.set(inv().getStack(selectedIndex), "", "", 0, -1, "", "", "");
         loadFields();
     }
 
@@ -359,11 +375,13 @@ public class ItemCustomizeScreen extends Screen {
         int modelY = nameY + 24;
         int dyeY   = modelY + 24;
         int trimY  = dyeY + 24;
+        int skinY  = trimY + 24;
 
         drawLabel(ctx, "Name", p, nameY);
         drawLabel(ctx, "Model", p, modelY);
         drawLabel(ctx, "Dye", p, dyeY);
         drawLabel(ctx, "Trim", p, trimY);
+        drawLabel(ctx, "Skin", p, skinY);
 
         // Dye row: dropdown + hex, or a hint when the item can't be dyed.
         if (dyeAllowed(sel)) {
@@ -378,8 +396,16 @@ public class ItemCustomizeScreen extends Screen {
         trimMatDropdown.renderClosed(ctx, mouseX, mouseY);
         trimPatDropdown.renderClosed(ctx, mouseX, mouseY);
 
+        // Skin row: an editable texture box for player heads, or a hint for everything else.
+        if (isHead(sel)) {
+            ctx.drawTextWithShadow(this.textRenderer, "§8hash / url / value", fx, skinY + 16, TEXT_HINT);
+        } else {
+            ctx.fill(fx, skinY, fx + fw, skinY + 14, BG_FIELD);
+            ctx.drawTextWithShadow(this.textRenderer, "§8player heads only (pets)", fx + 4, skinY + 3, TEXT_HINT);
+        }
+
         // Live preview (name with &* stars resolved)
-        int prevY = trimY + 24;
+        int prevY = skinY + 28;
         String nameTxt = nameField.getText();
         ctx.drawTextWithShadow(this.textRenderer, "§7Preview:", p, prevY, TEXT_HINT);
         ctx.drawTextWithShadow(this.textRenderer, fishmod.cosmetic.NickState.parse(nameTxt), fx, prevY, 0xFFFFFFFF);

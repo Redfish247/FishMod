@@ -35,6 +35,7 @@
     "DrawContextMixin",
     "EntityRendererMixin",
     "EntityRenderStateMixin",
+    "ItemModelBehaviorMixin",
     "PlayerEntityRendererScaleMixin",
     "HandledScreenMixin",
     "InventoryScreenMixin",

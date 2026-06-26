@@ -109,7 +109,9 @@ public final class RemoteItems {
                 String vid = ItemCustomizer.vanillaId(st); // match by vanilla type (see acceptItems)
                 if (vid == null) continue;
                 Custom c = customs.get(vid);
-                if (c != null) ItemCustomizer.applyCustom(st, c);
+                // Skip skins remotely: player_head covers many distinct items (pets, talismans, …),
+                // so a vanilla-type match can't pin a shared skin to the right head. Skins stay local.
+                if (c != null) ItemCustomizer.applyCustom(st, c, false);
             }
         }
     }

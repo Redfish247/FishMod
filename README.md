@@ -51,7 +51,10 @@ and a stack of convenience commands into one client-side mod.
   "Praise RNGesus" pulls while a quest is active.
 
 ### Cosmetics (opt-in)
-- **Item customizer** (`/fm customize`) — recolor/rename your items and armor.
+- **Item customizer** (`/fm customize`) — recolor/rename your items and armor, swap an item's
+  model to another item (a model swap also adopts that item's hold/draw pose, so e.g. a crossbow
+  model actually behaves like a crossbow, not a retextured bow), and apply a head **skin** to pet /
+  player-head items from a texture hash, URL, or value.
 - **Custom nicknames** (`/nick`), shared with other FishMod users.
 - Remote item cosmetics and player sizes synced between FishMod users.
 
