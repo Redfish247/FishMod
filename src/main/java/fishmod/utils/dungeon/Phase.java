@@ -184,6 +184,11 @@ public class Phase {
         return currentPhase >= 0;
     }
 
+    /** Live splits for the current run (empty when no run is active). Read-only use only. */
+    public static java.util.List<Split> getCurrentSplits() {
+        return currentSplits == null ? java.util.List.of() : currentSplits;
+    }
+
     public static boolean runJustStarted() {
         return currentPhase == 0;
     }

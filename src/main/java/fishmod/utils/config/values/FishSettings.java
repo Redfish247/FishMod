@@ -291,6 +291,12 @@ public class FishSettings {
     /** Optional override for the /challenges/* worker base URL. Empty = default proxy. */
     @ConfigValue public static String  challengeWorkerOverride      = "";
 
+    // PB Pace — live delta vs your personal-best splits during a dungeon run.
+    @ConfigValue public static boolean pbPaceEnabled = false;
+    @ConfigValue public static int     pbPaceHudX    = 10;
+    @ConfigValue public static int     pbPaceHudY    = 300;
+    @ConfigValue public static double  pbPaceScale   = 1.0;
+
     // Class Colored Boots — recolor your dungeon boots (leather dye) by your detected class.
     @ConfigValue public static boolean classColoredBootsEnabled = false;
 

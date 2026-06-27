@@ -981,6 +981,17 @@ public class FishModInit implements ModInitializer {
                 v  -> fishmod.utils.config.values.FishSettings.slayerDropsScale = v,
                 () -> fishmod.utils.config.values.FishSettings.slayerDropsEnabled);
 
+        // ── PB Pace (live delta vs personal-best splits) ─────────────────────
+        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.PbPaceHud.renderHud(ctx, tickCounter));
+        FishHudEditor.register("PB Pace",
+                () -> fishmod.utils.config.values.FishSettings.pbPaceHudX,
+                v  -> fishmod.utils.config.values.FishSettings.pbPaceHudX = v,
+                () -> fishmod.utils.config.values.FishSettings.pbPaceHudY,
+                v  -> fishmod.utils.config.values.FishSettings.pbPaceHudY = v, 130, 14 * 3,
+                () -> fishmod.utils.config.values.FishSettings.pbPaceScale,
+                v  -> fishmod.utils.config.values.FishSettings.pbPaceScale = v,
+                () -> fishmod.features.PbPaceHud.isVisible());
+
         // ── Desk-Buddy (kaomoji companion) ───────────────────────────────────
         fishmod.features.DeskBuddy.init();
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.DeskBuddy.renderHud(ctx, tickCounter));

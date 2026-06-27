@@ -435,6 +435,8 @@ public class FishModScreen extends Screen {
         // ===== Dungeon =====
         dungeon.features.add(new Feature("Dungeon Score",
                 () -> FishSettings.dungeonScoreEnabled, v -> FishSettings.dungeonScoreEnabled = v));
+        dungeon.features.add(new Feature("PB Pace",
+                () -> FishSettings.pbPaceEnabled, v -> FishSettings.pbPaceEnabled = v));
         dungeon.features.add(new Feature("Puzzle Overlay",
                 () -> FishSettings.showPuzzles, v -> FishSettings.showPuzzles = v));
         {
