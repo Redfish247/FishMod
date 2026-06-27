@@ -31,6 +31,8 @@ public abstract class CosmeticChatMixin {
             if (!real.isEmpty() && out.getString().contains(real))
                 out = NameRewriter.replaceName(out, real, NickState.asComponent());
         }
-        return fishmod.cosmetic.RemoteNicks.apply(out);
+        out = fishmod.cosmetic.RemoteNicks.apply(out);
+        // Streamer Mode: hide own IGN in chat too.
+        return fishmod.features.StreamerMode.censorName(out);
     }
 }

@@ -364,6 +364,11 @@ public class FishSettings {
     @ConfigValue public static int     pingColor           = 0xFF55FFFF; // ARGB (aqua)
     @ConfigValue public static int     pingDurationSeconds = 8;
 
+    // ── Streamer Mode ───────────────────────────────────────────────────────────
+    // Hide your IGN (swap for an alias) and mask money totals on the scoreboard sidebar.
+    @ConfigValue public static boolean streamerMode  = false;
+    @ConfigValue public static String  streamerAlias = "Player";
+
     // ── Reputation ──────────────────────────────────────────────────────────────
     // Show a red ✘ next to flagged (net-negative rep) players in the tab list.
     @ConfigValue public static boolean repFlagsEnabled = false;

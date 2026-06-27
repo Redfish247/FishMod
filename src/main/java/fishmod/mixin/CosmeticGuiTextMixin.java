@@ -67,6 +67,8 @@ public abstract class CosmeticGuiTextMixin {
             : fishmod.cosmetic.RemoteNicks.applyResolvedOnly(out);
         // Tag flagged (shitter-list) players with a red ✘ on the bare HUD (tab list / scoreboard).
         if (!fishmod$inMenu()) out = fishmod.features.Reputation.decorateTab(out);
+        // Streamer Mode: hide own IGN + mask sidebar money totals.
+        out = fishmod.features.StreamerMode.censor(out);
         return out;
     }
 

@@ -412,6 +412,13 @@ public class FishModScreen extends Screen {
                     () -> FishSettings.ttsRate, v -> FishSettings.ttsRate = v, -10, 10));
             general.features.add(f);
         }
+        {
+            Feature f = new Feature("Streamer Mode",
+                    () -> FishSettings.streamerMode, v -> FishSettings.streamerMode = v);
+            f.sub.add(new InputSetting("Alias", "",
+                    () -> FishSettings.streamerAlias, v -> FishSettings.streamerAlias = v));
+            general.features.add(f);
+        }
         general.features.add(new Feature("Player Flags",
                 () -> FishSettings.repFlagsEnabled, v -> FishSettings.repFlagsEnabled = v));
         general.features.add(new Feature("Auto Meow",
