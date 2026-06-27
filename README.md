@@ -79,9 +79,10 @@ and a stack of convenience commands into one client-side mod.
 > `worker-reputation-snippet.js`) are deployed.
 
 ### Other
-- **Streamer Mode** — hide your IGN behind an alias (chat, tab, scoreboard, tooltips) and mask money
-  totals on the scoreboard sidebar (Purse / Bits / Piggy / Motes). Render-only; commands still use your
-  real name. `/fm` → General → Streamer Mode.
+- **Streamer Mode** — anti-snipe name hiding. Scrambles player IGNs with Minecraft's `§k` obfuscated
+  font in the **Party Finder / group menus** and your own name in chat, so viewers can't read them
+  off-stream. Optional **Hide Tab Names** for when you're idling in a lobby (leave off in dungeons so
+  you can still read teammates). Only actual online names are touched; render-only. `/fm` → General.
 - **Profile Optimizer** (`/po`) — net worth, skill roadmap, and "what to do next".
 - **Twitch streams** browser (`/streams`) and **Wiki** browser (`/wiki`).
 - **Warp map**, **chat filter**, **inventory command buttons**, item rarity

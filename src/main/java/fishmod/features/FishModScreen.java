@@ -415,8 +415,8 @@ public class FishModScreen extends Screen {
         {
             Feature f = new Feature("Streamer Mode",
                     () -> FishSettings.streamerMode, v -> FishSettings.streamerMode = v);
-            f.sub.add(new InputSetting("Alias", "",
-                    () -> FishSettings.streamerAlias, v -> FishSettings.streamerAlias = v));
+            f.sub.add(new ToggleSetting("Hide Tab Names", "",
+                    () -> FishSettings.streamerHideTab, v -> FishSettings.streamerHideTab = v));
             general.features.add(f);
         }
         general.features.add(new Feature("Player Flags",

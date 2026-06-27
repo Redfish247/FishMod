@@ -32,7 +32,7 @@ public abstract class CosmeticChatMixin {
                 out = NameRewriter.replaceName(out, real, NickState.asComponent());
         }
         out = fishmod.cosmetic.RemoteNicks.apply(out);
-        // Streamer Mode: hide own IGN in chat too.
-        return fishmod.features.StreamerMode.censorName(out);
+        // Streamer Mode: §k-scramble your own IGN in chat too.
+        return fishmod.features.StreamerMode.censorChat(out);
     }
 }

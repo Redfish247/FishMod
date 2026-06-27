@@ -3,59 +3,88 @@ package fishmod.features;
 import fishmod.cosmetic.NameRewriter;
 import fishmod.cosmetic.NickState;
 import fishmod.utils.config.values.FishSettings;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.text.Text;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
- * Streamer Mode — keeps stream-snipers and beggars from reading your screen. When on it swaps your
- * real IGN for a neutral alias everywhere FishMod already rewrites names (chat, tab, scoreboard,
- * tooltips), and masks money totals on the scoreboard sidebar (Purse / Bits / Piggy / Motes).
+ * Streamer Mode — anti-snipe name hiding. The real leak for streamers is the Party Finder menu (and
+ * lobby tab), where viewers can read teammates' IGNs off-stream and follow/snipe. So this scrambles
+ * actual player names with Minecraft's own {@code §k} obfuscated font — same width, unreadable:
  *
- * Render-only: it changes what's drawn, never what's sent — your real name still works in commands.
+ *   • Party Finder / Group menus — always (while Streamer Mode is on): every online player's IGN in
+ *     the menu is scrambled.
+ *   • Your own IGN in chat — scrambled, so your messages don't expose your name.
+ *   • Lobby tab list — optional ("Hide Tab Names"), for when you're sitting in a hub/lobby; leave it
+ *     off in dungeons so you can still read your teammates.
+ *
+ * Only names that are actually online (in the tab list) are touched, so class/floor/other menu text
+ * is never garbled. Render-only — nothing about what you send changes.
  */
 public final class StreamerMode {
 
     private StreamerMode() {}
 
-    // "Purse: 12,345", "Bits: 1.2k", "Piggy: 999", "Motes: 4,200" → mask the value.
-    private static final Pattern MONEY_PAT = Pattern.compile(
-            "(?i)(Purse|Bits|Piggy|Motes|Copper)\\s*[:：]\\s*(\\d[\\d,\\.]*[kKmMbB]?)");
+    private static Set<String> namesCache = Set.of();
+    private static long namesAt = 0;
 
-    public static boolean on() { return FishSettings.streamerMode; }
-
-    private static String alias() {
-        String a = FishSettings.streamerAlias;
-        return (a == null || a.isBlank()) ? "Player" : a.trim();
+    /** Online player IGNs (tab list + you), cached ~1s so we don't rebuild it on every text draw. */
+    private static Set<String> onlineNames() {
+        long now = System.currentTimeMillis();
+        if (now - namesAt < 1000) return namesCache;
+        namesAt = now;
+        Set<String> s = new HashSet<>();
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc.getNetworkHandler() != null) {
+            for (var e : mc.getNetworkHandler().getPlayerList()) {
+                var gp = e.getProfile();
+                if (gp != null && gp.name() != null && gp.name().length() >= 3) s.add(gp.name());
+            }
+        }
+        String self = NickState.realName();
+        if (!self.isEmpty()) s.add(self);
+        namesCache = s;
+        return s;
     }
 
-    /** Replace the local player's IGN with the alias (for chat / GUI name text). */
-    public static Text censorName(Text text) {
-        if (!FishSettings.streamerMode || text == null) return text;
-        String real = NickState.realName();
-        if (real.isEmpty() || !text.getString().contains(real)) return text;
-        return NameRewriter.replaceName(text, real, Text.literal(alias()));
+    private static Text obfuscate(String name) {
+        return Text.literal(name).styled(st -> st.withObfuscated(true));
     }
 
-    /** Mask money totals on a sidebar/HUD line (Purse/Bits/…); returns the same instance if untouched. */
-    public static Text censorMoney(Text text) {
-        if (!FishSettings.streamerMode || text == null) return text;
-        String s = text.getString();
-        Matcher m = MONEY_PAT.matcher(s);
+    private static Text scramble(Text text, Set<String> names) {
+        if (text == null || names.isEmpty()) return text;
+        String str = text.getString();
         Text out = text;
-        java.util.Set<String> done = new java.util.HashSet<>();
-        while (m.find()) {
-            String num = m.group(2);
-            if (num == null || num.isEmpty() || num.equals("***") || !done.add(num)) continue;
-            // Replace just the value substring so the line keeps its original colors.
-            out = NameRewriter.replaceName(out, num, Text.literal("***"));
+        for (String n : names) {
+            if (str.contains(n)) out = NameRewriter.replaceName(out, n, obfuscate(n));
         }
         return out;
     }
 
-    /** Full censor pass for on-screen GUI text (name + money). */
-    public static Text censor(Text text) {
-        return censorMoney(censorName(text));
+    /** Chat: scramble just your own IGN. */
+    public static Text censorChat(Text text) {
+        if (!FishSettings.streamerMode || text == null) return text;
+        String self = NickState.realName();
+        if (self.isEmpty() || !text.getString().contains(self)) return text;
+        return NameRewriter.replaceName(text, self, obfuscate(self));
+    }
+
+    /** On-screen GUI text: scramble names in Party Finder menus, and in the tab list when enabled. */
+    public static Text forGui(Text text, boolean inMenu) {
+        if (!FishSettings.streamerMode || text == null) return text;
+        if (inMenu) return inPartyFinder() ? scramble(text, onlineNames()) : text;
+        return FishSettings.streamerHideTab ? scramble(text, onlineNames()) : text;
+    }
+
+    private static boolean inPartyFinder() {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (!(mc.currentScreen instanceof HandledScreen)) return false;
+        Text title = mc.currentScreen.getTitle();
+        String t = title == null ? "" : title.getString().toLowerCase();
+        return t.contains("party finder") || t.contains("group builder")
+                || t.contains("parties") || t.contains("your party") || t.contains("party settings");
     }
 }

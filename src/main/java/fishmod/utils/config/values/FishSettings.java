@@ -365,9 +365,10 @@ public class FishSettings {
     @ConfigValue public static int     pingDurationSeconds = 8;
 
     // ── Streamer Mode ───────────────────────────────────────────────────────────
-    // Hide your IGN (swap for an alias) and mask money totals on the scoreboard sidebar.
-    @ConfigValue public static boolean streamerMode  = false;
-    @ConfigValue public static String  streamerAlias = "Player";
+    // Anti-snipe: §k-scramble player IGNs in Party Finder menus + your own name in chat. Optional
+    // lobby tab scrambling for when you're idling in a hub.
+    @ConfigValue public static boolean streamerMode    = false;
+    @ConfigValue public static boolean streamerHideTab = false;
 
     // ── Reputation ──────────────────────────────────────────────────────────────
     // Show a red ✘ next to flagged (net-negative rep) players in the tab list.
