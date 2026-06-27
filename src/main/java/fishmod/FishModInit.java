@@ -1043,6 +1043,8 @@ public class FishModInit implements ModInitializer {
         safeInit("EntityUtil", EntityUtil::init);
         safeInit("RenderingEvents", RenderingEvents::init);
         safeInit("Scheduler", Scheduler::init);
+        // Location Ping needs the world render passes (RenderingEvents) registered first.
+        safeInit("PingFeature", fishmod.features.PingFeature::init);
     }
 
     private static void safeInit(String name, Runnable init) {

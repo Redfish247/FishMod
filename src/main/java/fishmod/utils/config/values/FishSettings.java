@@ -339,6 +339,15 @@ public class FishSettings {
     @ConfigValue public static int     slayerDropsHudY        = 240;
     @ConfigValue public static double  slayerDropsScale       = 1.0;
 
+    // ── Location Ping ───────────────────────────────────────────────────────────
+    // Press the ping key (default middle mouse, rebindable in Options > Controls) to drop a
+    // through-walls waypoint where you're looking.
+    @ConfigValue public static boolean pingEnabled         = true;
+    @ConfigValue public static boolean pingSound           = true;
+    @ConfigValue public static boolean pingAnnounceParty   = false;  // also post coords to party chat
+    @ConfigValue public static int     pingColor           = 0xFF55FFFF; // ARGB (aqua)
+    @ConfigValue public static int     pingDurationSeconds = 8;
+
     // ── Desk-Buddy ──────────────────────────────────────────────────────────────
     // A tiny kaomoji companion that idles, sleeps when you're AFK, and dances on RNG drops.
     @ConfigValue public static boolean deskBuddyEnabled       = false;

@@ -28,6 +28,9 @@ import java.util.List;
 
 public class Keybinds {
 
+    /** Shared keybind category for all FishMod binds — reused by features that register their own keys. */
+    public static KeyBinding.Category category;
+
     private static KeyBinding openConfig;
     private static KeyBinding trades;
     private static KeyBinding potions;
@@ -39,7 +42,7 @@ public class Keybinds {
 
     public static void init() {
 
-        KeyBinding.Category category = KeyBinding.Category.create(Identifier.of(Constants.NAMESPACE));
+        category = KeyBinding.Category.create(Identifier.of(Constants.NAMESPACE));
 
         //normal keybinds
         openConfig = KeyBindingHelper.registerKeyBinding(new KeyBinding(

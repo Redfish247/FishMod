@@ -383,6 +383,18 @@ public class FishModScreen extends Screen {
             f.sub.add(makeButtonInput("Button 7", () -> fishmod.utils.config.values.Buttons.command7, v -> fishmod.utils.config.values.Buttons.command7 = v));
             general.features.add(f);
         }
+        {
+            Feature f = new Feature("Location Ping",
+                    () -> FishSettings.pingEnabled, v -> FishSettings.pingEnabled = v);
+            f.sub.add(new SubcategoryHeader("Key: Options > Controls > FishMod (default middle mouse)"));
+            f.sub.add(new ToggleSetting("Play Sound", "",
+                    () -> FishSettings.pingSound, v -> FishSettings.pingSound = v));
+            f.sub.add(new ToggleSetting("Announce to Party", "",
+                    () -> FishSettings.pingAnnounceParty, v -> FishSettings.pingAnnounceParty = v));
+            f.sub.add(new SliderIntSetting("Duration s", "",
+                    () -> FishSettings.pingDurationSeconds, v -> FishSettings.pingDurationSeconds = v, 2, 30));
+            general.features.add(f);
+        }
         general.features.add(new Feature("Auto Meow",
                 () -> FishSettings.chatMeow, v -> FishSettings.chatMeow = v));
         general.features.add(new Feature("Smart Copy Chat",
