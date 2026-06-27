@@ -158,6 +158,7 @@ public class FishSettings {
     @ConfigValue public static boolean dungeonScoreToSPlus = true; // show "N→S+" remaining-to-300 on the HUD
     @ConfigValue public static boolean dungeonScoreMissingAlert = true; // 1:00 "X Score Missing" chat+sound
     @ConfigValue public static boolean leapOverlayEnabled = true; // Odin-style Spirit Leap overlay
+    @ConfigValue public static boolean starGlowEnabled = false; // glowing outline on starred dungeon mobs (LOS)
 
     // Cosmetic particle effects around the local player
     @ConfigValue public static boolean particlesEnabled = false;

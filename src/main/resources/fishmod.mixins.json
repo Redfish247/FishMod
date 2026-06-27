@@ -36,6 +36,7 @@
     "EntityRendererMixin",
     "EntityRenderStateMixin",
     "ItemModelBehaviorMixin",
+    "StarredMobGlowMixin",
     "PlayerEntityRendererScaleMixin",
     "HandledScreenMixin",
     "InventoryScreenMixin",
