@@ -1796,6 +1796,65 @@ public class HypixelApi {
         } catch (Exception ignored) {}
     }
 
+    /** A shared location ping published by a FishMod user. */
+    public record PingData(String uuid, String name, double x, double y, double z, String dim, long ts) {}
+
+    /** Publishes (or refreshes) the local player's current location ping to the shared store. */
+    public static void uploadPing(String uuidNoDashes, String name, double x, double y, double z, String dim) {
+        try {
+            JsonObject o = new JsonObject();
+            o.addProperty("uuid", uuidNoDashes);
+            o.addProperty("name", name == null ? "" : name);
+            o.addProperty("x", x);
+            o.addProperty("y", y);
+            o.addProperty("z", z);
+            o.addProperty("dim", dim == null ? "" : dim);
+            HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(PROXY_URL + "/ping"))
+                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("Content-Type", "application/json")
+                .header("User-Agent", "Mozilla/5.0")
+                .timeout(Duration.ofSeconds(10))
+                .POST(HttpRequest.BodyPublishers.ofString(o.toString()))
+                .build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception ignored) {}
+    }
+
+    /** Fetches live pings for the given UUIDs newer than {@code since} (ms). Empty list on any failure. */
+    public static void fetchPings(java.util.Collection<String> uuidsNoDashes, long since,
+                                  java.util.function.Consumer<java.util.List<PingData>> cb) {
+        if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.accept(java.util.List.of()); return; }
+        try {
+            String q = String.join(",", uuidsNoDashes);
+            HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(PROXY_URL + "/pings?uuids=" + q + "&since=" + since))
+                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("User-Agent", "Mozilla/5.0")
+                .timeout(Duration.ofSeconds(10))
+                .GET().build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
+                java.util.List<PingData> out = new java.util.ArrayList<>();
+                try {
+                    JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
+                    if (root.has("pings") && root.get("pings").isJsonObject()) {
+                        for (var e : root.getAsJsonObject("pings").entrySet()) {
+                            if (e.getValue() == null || !e.getValue().isJsonObject()) continue;
+                            JsonObject pr = e.getValue().getAsJsonObject();
+                            out.add(new PingData(
+                                e.getKey(),
+                                pr.has("name") ? pr.get("name").getAsString() : "",
+                                pr.get("x").getAsDouble(), pr.get("y").getAsDouble(), pr.get("z").getAsDouble(),
+                                pr.has("dim") ? pr.get("dim").getAsString() : "",
+                                pr.has("ts") ? pr.get("ts").getAsLong() : 0L));
+                        }
+                    }
+                } catch (Exception ignored) {}
+                cb.accept(out);
+            }).exceptionally(t -> { cb.accept(java.util.List.of()); return null; });
+        } catch (Exception e) { cb.accept(java.util.List.of()); }
+    }
+
     /** Batch-fetches cosmetic nicks for the given UUIDs → map of uuid(no dashes) → raw nick. */
     public static void fetchNicks(java.util.Collection<String> uuidsNoDashes,
                                   java.util.function.Consumer<Map<String, String>> cb) {

@@ -21,26 +21,43 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Location ping — press the ping key (default middle mouse) to drop a through-walls waypoint where
  * you're looking, like a MOBA ping. The marker (a glowing column + floating "⚑ name • dist") fades
- * out after a few seconds; an optional toggle also drops the coordinates into party chat so the rest
- * of the group sees them even without the mod.
+ * out after a few seconds.
  *
- * This is the local half of the feature. Sharing the live in-world marker between FishMod users runs
- * through the worker and is layered on top of this without changing the rendering path.
+ * Two reach levels:
+ *   • Local — always on; your own ping renders for you, and (optionally) the coords go to party chat.
+ *   • Shared — opt-in. Your ping is published to the worker and other FishMod users on your server
+ *     (your tab list, same scope as the cosmetic /sync) see it in their world, labelled with your
+ *     name. Their pings show up for you the same way. Needs the /ping worker route deployed
+ *     (worker-pings-snippet.js); it silently no-ops until then.
  */
 public final class PingFeature {
 
     private PingFeature() {}
 
     private static final double REACH = 160.0;   // how far the ping ray travels before landing in air
+    private static final int POLL_TICKS = 40;    // ~2s between shared-ping polls
+
+    /** One ping marker — your own or a remote user's. */
+    private static final class Ping {
+        final Vec3d pos; final long startMs; final String name; final long srcTs;
+        Ping(Vec3d pos, long startMs, String name, long srcTs) {
+            this.pos = pos; this.startMs = startMs; this.name = name; this.srcTs = srcTs;
+        }
+    }
 
     private static KeyBinding pingKey;
-
-    // A single active self-ping. (Remote pings, when sharing lands, render through the same draw path.)
-    private static Vec3d pingPos = null;
-    private static long  pingStartMs = 0;
+    private static Ping self = null;
+    private static final Map<String, Ping> remote = new ConcurrentHashMap<>(); // uuid → their ping
+    private static int pollTick = 0;
+    private static long lastSeenTs = 0;          // newest source ts we've pulled, for the `since` filter
 
     public static void init() {
         // Reuse the shared FishMod keybind category (created in Keybinds.init, which runs first) so we
@@ -59,14 +76,20 @@ public final class PingFeature {
 
     private static void onTick(MinecraftClient mc) {
         if (pingKey == null) return;
+
         boolean fired = false;
         while (pingKey.wasPressed()) fired = true; // drain queued presses
-        if (!fired) return;
-        if (!FishSettings.pingEnabled) return;
-        if (mc.player == null || mc.world == null) return;
-        if (mc.currentScreen != null) return;        // don't ping while a menu is open
-        if (!Location.inSkyblock()) return;          // SkyBlock-only, like the rest of the mod
-        placePing(mc);
+        if (fired && FishSettings.pingEnabled && mc.player != null && mc.world != null
+                && mc.currentScreen == null && Location.inSkyblock()) {
+            placePing(mc);
+        }
+
+        // Poll for other users' shared pings.
+        if (FishSettings.pingEnabled && FishSettings.pingShareEnabled) {
+            if (++pollTick >= POLL_TICKS) { pollTick = 0; pollRemote(mc); }
+        } else if (!remote.isEmpty()) {
+            remote.clear();
+        }
     }
 
     private static void placePing(MinecraftClient mc) {
@@ -87,8 +110,7 @@ public final class PingFeature {
             target = end; // landed in air — ping the point you're aiming at
         }
 
-        pingPos = target;
-        pingStartMs = System.currentTimeMillis();
+        self = new Ping(target, System.currentTimeMillis(), null, 0);
 
         if (FishSettings.pingSound) p.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 0.7f, 1.6f);
 
@@ -96,20 +118,62 @@ public final class PingFeature {
             mc.getNetworkHandler().sendChatCommand("pc x: " + (int) Math.floor(target.x)
                     + ", y: " + (int) Math.floor(target.y) + ", z: " + (int) Math.floor(target.z) + " (ping)");
         }
+
+        if (FishSettings.pingShareEnabled) {
+            String uuid = p.getUuid().toString().replace("-", "");
+            String dim = mc.world.getRegistryKey().getValue().toString();
+            fishmod.utils.HypixelApi.uploadPing(uuid, p.getGameProfile().name(), target.x, target.y, target.z, dim);
+        }
     }
 
-    private static double remainingFraction() {
+    private static void pollRemote(MinecraftClient mc) {
+        if (mc.getNetworkHandler() == null || mc.player == null) return;
+        String selfUuid = mc.player.getUuid().toString().replace("-", "");
+        Set<String> uuids = new HashSet<>();
+        for (var entry : mc.getNetworkHandler().getPlayerList()) {
+            var gp = entry.getProfile();
+            if (gp == null || gp.id() == null) continue;
+            String u = gp.id().toString().replace("-", "");
+            if (!u.equals(selfUuid)) uuids.add(u);
+        }
+        if (uuids.isEmpty()) return;
+
+        fishmod.utils.HypixelApi.fetchPings(uuids, lastSeenTs, list -> mc.execute(() -> {
+            long now = System.currentTimeMillis();
+            for (var pd : list) {
+                Ping existing = remote.get(pd.uuid());
+                if (existing != null && existing.srcTs == pd.ts()) continue; // same ping, keep its local clock
+                remote.put(pd.uuid(), new Ping(new Vec3d(pd.x(), pd.y(), pd.z()), now, pd.name(), pd.ts()));
+                if (pd.ts() > lastSeenTs) lastSeenTs = pd.ts();
+            }
+        }));
+    }
+
+    private static double remainingFraction(Ping ping) {
         long dur = Math.max(1, FishSettings.pingDurationSeconds) * 1000L;
-        long elapsed = System.currentTimeMillis() - pingStartMs;
+        long elapsed = System.currentTimeMillis() - ping.startMs;
         return elapsed >= dur ? 0 : 1.0 - (double) elapsed / dur;
     }
 
     private static void render(net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext ctx,
                               net.minecraft.client.util.math.MatrixStack matrices,
                               net.minecraft.client.render.VertexConsumer vc) {
-        if (!FishSettings.pingEnabled || pingPos == null) return;
-        double frac = remainingFraction();
-        if (frac <= 0) { pingPos = null; return; }
+        if (!FishSettings.pingEnabled) return;
+
+        if (self != null && remainingFraction(self) <= 0) self = null;
+        if (self != null) drawPing(ctx, matrices, vc, self);
+
+        if (!remote.isEmpty()) {
+            remote.entrySet().removeIf(e -> remainingFraction(e.getValue()) <= 0);
+            for (Ping ping : remote.values()) drawPing(ctx, matrices, vc, ping);
+        }
+    }
+
+    private static void drawPing(net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext ctx,
+                                 net.minecraft.client.util.math.MatrixStack matrices,
+                                 net.minecraft.client.render.VertexConsumer vc, Ping ping) {
+        double frac = remainingFraction(ping);
+        if (frac <= 0) return;
 
         int base = FishSettings.pingColor;
         float r = (base >> 16 & 0xFF) / 255f;
@@ -118,16 +182,16 @@ public final class PingFeature {
         float a = (float) (Math.min(1.0, frac) * 0.55);   // fade out
         float[] rgba = { r, g, b, a };
 
-        double x = pingPos.x, y = pingPos.y, z = pingPos.z;
+        double x = ping.pos.x, y = ping.pos.y, z = ping.pos.z;
         // Base cube on the block + a tall thin beam so it's spottable from across the room.
         RenderUtils.renderFilled(matrices, vc, new Box(x - 0.5, y, z - 0.5, x + 0.5, y + 1, z + 0.5), rgba);
         RenderUtils.renderFilled(matrices, vc, new Box(x - 0.15, y, z - 0.15, x + 0.15, y + 6, z + 0.15), rgba);
 
-        // Floating label above the beam with the live distance.
-        ClientPlayerEntity self = MinecraftClient.getInstance().player;
-        if (self != null) {
-            int dist = (int) Math.round(self.getPos().distanceTo(pingPos));
-            Text label = Text.literal("§b⚑ §fPing §7• §e" + dist + "m");
+        ClientPlayerEntity me = MinecraftClient.getInstance().player;
+        if (me != null) {
+            int dist = (int) Math.round(me.getPos().distanceTo(ping.pos));
+            String who = ping.name == null || ping.name.isBlank() ? "Ping" : ping.name;
+            Text label = Text.literal("§b⚑ §f" + who + " §7• §e" + dist + "m");
             RenderUtils.renderText(ctx, matrices, label, x, y + 6.4, z, 1.1f);
         }
     }

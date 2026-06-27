@@ -391,6 +391,8 @@ public class FishModScreen extends Screen {
                     () -> FishSettings.pingSound, v -> FishSettings.pingSound = v));
             f.sub.add(new ToggleSetting("Announce to Party", "",
                     () -> FishSettings.pingAnnounceParty, v -> FishSettings.pingAnnounceParty = v));
+            f.sub.add(new ToggleSetting("Share w/ FishMod Users", "",
+                    () -> FishSettings.pingShareEnabled, v -> FishSettings.pingShareEnabled = v));
             f.sub.add(new SliderIntSetting("Duration s", "",
                     () -> FishSettings.pingDurationSeconds, v -> FishSettings.pingDurationSeconds = v, 2, 30));
             general.features.add(f);
