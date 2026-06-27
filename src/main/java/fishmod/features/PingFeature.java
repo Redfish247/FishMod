@@ -112,7 +112,7 @@ public final class PingFeature {
 
         self = new Ping(target, System.currentTimeMillis(), null, 0);
 
-        if (FishSettings.pingSound) p.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING, 0.7f, 1.6f);
+        if (FishSettings.pingSound) p.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), 0.7f, 1.6f);
 
         if (FishSettings.pingAnnounceParty && mc.getNetworkHandler() != null) {
             mc.getNetworkHandler().sendChatCommand("pc x: " + (int) Math.floor(target.x)
@@ -189,7 +189,7 @@ public final class PingFeature {
 
         ClientPlayerEntity me = MinecraftClient.getInstance().player;
         if (me != null) {
-            int dist = (int) Math.round(me.getPos().distanceTo(ping.pos));
+            int dist = (int) Math.round(Math.sqrt(me.squaredDistanceTo(ping.pos)));
             String who = ping.name == null || ping.name.isBlank() ? "Ping" : ping.name;
             Text label = Text.literal("§b⚑ §f" + who + " §7• §e" + dist + "m");
             RenderUtils.renderText(ctx, matrices, label, x, y + 6.4, z, 1.1f);
