@@ -418,6 +418,15 @@ public class FishModScreen extends Screen {
             general.features.add(f);
         }
         {
+            Feature f = new Feature("Pet Entity Skin",
+                    () -> FishSettings.petEntitySkinEnabled, v -> FishSettings.petEntitySkinEnabled = v);
+            InputSetting tex = new InputSetting("Texture", "",
+                    () -> FishSettings.petEntitySkin, v -> FishSettings.petEntitySkin = v);
+            tex.hint = "head texture hash / URL / value for your summoned pet";
+            f.sub.add(tex);
+            general.features.add(f);
+        }
+        {
             Feature f = new Feature("Particles",
                     () -> FishSettings.particlesEnabled, v -> FishSettings.particlesEnabled = v);
             f.sub.add(new DropdownSetting<>("Style", "Trail, orbiting aura, wings, or footsteps.",

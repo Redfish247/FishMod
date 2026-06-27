@@ -71,6 +71,7 @@ public class DungeonScore {
     private static boolean alerted300 = false;
     private static int runSeconds = -1;        // run clock from the tab "Time:" line (authoritative)
     private static boolean alerted1min = false; // 1:00 missing-score ping fired
+    private static boolean wasInBoss = false;   // rising-edge tracker for the mimic reminder
 
     public static void init() {
         FishHudEditor.register("Dungeon Score",
@@ -123,6 +124,15 @@ public class DungeonScore {
                 if (sec >= 60) { alerted1min = true; fireMissingAlert(); }
             }
 
+            // Mimic reminder: on entering the boss without the mimic killed (F6/F7).
+            boolean inBossNow = fishmod.utils.dungeon.Phase.inBoss();
+            if (inBossNow && !wasInBoss && FishSettings.dungeonScoreMissingAlert && !mimicKilled
+                    && currentFloor != null && (currentFloor.floorNumber() == 6 || currentFloor.floorNumber() == 7)) {
+                fishmod.utils.Misc.addChatMessage(net.minecraft.text.Text.literal("§c§lMimic not killed!"));
+                fishmod.utils.Misc.sendSound(net.minecraft.sound.SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), 1f, 0.5f);
+            }
+            wasInBoss = inBossNow;
+
             scanTick++;
             if (scanTick < 10) return;
             scanTick = 0;
@@ -152,6 +162,7 @@ public class DungeonScore {
         alerted300 = false;
         runSeconds = -1;
         alerted1min = false;
+        wasInBoss = false;
         puzzleStatuses.clear();
     }
 

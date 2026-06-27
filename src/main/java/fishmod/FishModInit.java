@@ -908,6 +908,7 @@ public class FishModInit implements ModInitializer {
         fishmod.features.dungeon.LeapOverlay.init();
         fishmod.features.dungeon.StarredMobGlow.init();
         fishmod.features.ParticleCosmetics.init();
+        fishmod.features.PetEntitySkin.init();
         fishmod.utils.SkyblockItems.initAsync();
         fishmod.features.FarmingTracker.init();
         fishmod.features.HarvestFeastTracker.init();

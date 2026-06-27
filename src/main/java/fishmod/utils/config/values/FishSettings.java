@@ -165,6 +165,10 @@ public class FishSettings {
     @ConfigValue public static fishmod.features.ParticleCosmetics.Style particleStyle = fishmod.features.ParticleCosmetics.Style.TRAIL;
     @ConfigValue public static fishmod.features.ParticleCosmetics.PType particleType = fishmod.features.ParticleCosmetics.PType.FLAME;
 
+    // Reskin the summoned (floating) pet entity
+    @ConfigValue public static boolean petEntitySkinEnabled = false;
+    @ConfigValue public static String petEntitySkin = ""; // head texture: hash / URL / base64 value
+
     // Farming coin/hr tracker
     @ConfigValue public static boolean farmingTrackerEnabled = false;
     @ConfigValue public static int     farmingTrackerHudX    = 10;
