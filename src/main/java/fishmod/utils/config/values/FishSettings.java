@@ -164,6 +164,7 @@ public class FishSettings {
     @ConfigValue public static boolean particlesEnabled = false;
     @ConfigValue public static fishmod.features.ParticleCosmetics.Style particleStyle = fishmod.features.ParticleCosmetics.Style.TRAIL;
     @ConfigValue public static fishmod.features.ParticleCosmetics.PType particleType = fishmod.features.ParticleCosmetics.PType.FLAME;
+    @ConfigValue public static boolean particlesSynced = true; // share your particle with other FishMod users (rides the item-cosmetics channel)
 
     // Reskin the summoned (floating) pet entity
     @ConfigValue public static boolean petEntitySkinEnabled = false;

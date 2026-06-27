@@ -366,9 +366,27 @@ public final class ItemCustomizer {
 
     // ── persistence + sharing ──────────────────────────────────────────────────
 
-    /** Serializes the local customization map to the shared JSON-array format. */
+    /** SkyBlock id used to piggyback the player's particle-cosmetic config on the item-customs channel. */
+    public static final String PARTICLE_KEY = "fishmod:particles";
+
+    /**
+     * Serializes the local customization map to the shared JSON-array format. When particle sharing is
+     * on, a synthetic {@link #PARTICLE_KEY} entry carrying "STYLE:TYPE" is appended so other FishMod
+     * users' particle cosmetics ride the existing item-sync channel (no new proxy endpoint needed).
+     * Receivers ignore it for item customs (no vanilla type) — see {@link fishmod.cosmetic.RemoteParticles}.
+     */
     public static synchronized String serialize() {
-        return toJson().toString();
+        // Item customs are only shared when item sharing is on (else just the particle entry rides).
+        JsonArray arr = fishmod.utils.config.values.FishSettings.remoteItemsEnabled ? toJson() : new JsonArray();
+        if (fishmod.utils.config.values.FishSettings.particlesSynced
+                && fishmod.utils.config.values.FishSettings.particlesEnabled) {
+            JsonObject p = new JsonObject();
+            p.addProperty("key", PARTICLE_KEY);
+            p.addProperty("particle", fishmod.utils.config.values.FishSettings.particleStyle.name()
+                    + ":" + fishmod.utils.config.values.FishSettings.particleType.name());
+            arr.add(p);
+        }
+        return arr.toString();
     }
 
     /** Debug: the keys of the local player's own customizations (what gets uploaded). */
@@ -422,7 +440,9 @@ public final class ItemCustomizer {
 
     /** Publishes the local player's customizations to the proxy so other mod users see them. */
     public static void uploadOwn() {
-        if (!fishmod.utils.config.values.FishSettings.remoteItemsEnabled) return;
+        if (!fishmod.utils.config.values.FishSettings.remoteItemsEnabled
+                && !(fishmod.utils.config.values.FishSettings.particlesSynced
+                        && fishmod.utils.config.values.FishSettings.particlesEnabled)) return;
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.getSession() == null) return;
         java.util.UUID id = mc.getSession().getUuidOrNull();

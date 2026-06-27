@@ -3,16 +3,16 @@ package fishmod.features;
 import fishmod.utils.config.values.FishSettings;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.particle.ParticleManager;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.math.MathHelper;
 
 /**
- * Cosmetic particle effects rendered around the local player — a trail, an orbiting aura, particle
- * wings, or footsteps — in a chosen particle type. Spawned client-side each tick. This is the local
- * version; syncing the effect to other FishMod users (via {@link fishmod.cosmetic.RemoteSync}) is a
- * planned follow-up, mirroring how nicks/sizes are shared.
+ * Cosmetic particle effects rendered around a player — a trail, an orbiting aura, particle wings, or
+ * footsteps — in a chosen particle type. {@link #spawnAt} is reused for both the local player (this
+ * class) and other FishMod users (see {@link fishmod.cosmetic.RemoteParticles}). Sharing rides the
+ * item-cosmetics channel, so it needs Remote item cosmetics enabled.
  */
 public final class ParticleCosmetics {
     private ParticleCosmetics() {}
@@ -39,52 +39,54 @@ public final class ParticleCosmetics {
     private static double tickAngle = 0;
     private static double lastX, lastZ;
 
+    // Re-upload our particle config when it changes (so others see edits without a relog).
+    private static String lastUploaded = null;
+
     public static void init() {
         ClientTickEvents.END_CLIENT_TICK.register(mc -> {
-            if (!FishSettings.particlesEnabled || mc.player == null || mc.world == null) return;
             if (mc.isPaused()) return;
             tickAngle += 0.25;
-            spawn(mc, mc.player);
+
+            // Push config changes to the share channel.
+            String sig = (FishSettings.particlesSynced && FishSettings.particlesEnabled)
+                    ? FishSettings.particleStyle.name() + ":" + FishSettings.particleType.name() : "";
+            if (!sig.equals(lastUploaded)) { lastUploaded = sig; ItemCustomizer.uploadOwn(); }
+
+            if (!FishSettings.particlesEnabled || mc.player == null || mc.world == null) return;
+            double x = mc.player.getX(), z = mc.player.getZ();
+            boolean moving = (x - lastX) * (x - lastX) + (z - lastZ) * (z - lastZ) > 0.0006 && mc.player.isOnGround();
+            lastX = x; lastZ = z;
+            spawnAt(mc, FishSettings.particleStyle, FishSettings.particleType.effect,
+                    x, mc.player.getY(), z, mc.player.getYaw(), moving);
         });
     }
 
-    private static void spawn(MinecraftClient mc, ClientPlayerEntity p) {
-        ParticleEffect fx = FishSettings.particleType.effect;
-        double x = p.getX(), y = p.getY(), z = p.getZ();
-
-        switch (FishSettings.particleStyle) {
-            case TRAIL -> {
-                // Particles left at the feet, drifting up slightly — fade where you've been.
-                mc.particleManager.addParticle(fx,x + rand(0.25), y + 0.05, z + rand(0.25), 0, 0.01, 0);
-            }
+    /** Spawns one tick of the given style's particles around a position. Reused for remote players. */
+    public static void spawnAt(MinecraftClient mc, Style style, ParticleEffect fx,
+                               double x, double y, double z, float yaw, boolean moving) {
+        ParticleManager pm = mc.particleManager;
+        switch (style) {
+            case TRAIL -> pm.addParticle(fx, x + rand(0.25), y + 0.05, z + rand(0.25), 0, 0.01, 0);
             case AURA -> {
-                // Two points orbiting at waist height.
                 for (int i = 0; i < 2; i++) {
                     double a = tickAngle + i * Math.PI;
-                    mc.particleManager.addParticle(fx,x + Math.cos(a) * 0.7, y + 1.0, z + Math.sin(a) * 0.7, 0, 0, 0);
+                    pm.addParticle(fx, x + Math.cos(a) * 0.7, y + 1.0, z + Math.sin(a) * 0.7, 0, 0, 0);
                 }
             }
             case WINGS -> {
-                // Two arcs sweeping back from the shoulders, oriented by the player's facing.
-                float yaw = p.getYaw() * MathHelper.RADIANS_PER_DEGREE;
-                double bx = Math.sin(yaw), bz = -Math.cos(yaw);      // backward
-                double sx = Math.cos(yaw), sz = Math.sin(yaw);       // sideways
+                float r = yaw * MathHelper.RADIANS_PER_DEGREE;
+                double bx = Math.sin(r), bz = -Math.cos(r), sx = Math.cos(r), sz = Math.sin(r);
                 for (int i = 1; i <= 3; i++) {
                     double back = 0.15 * i, span = 0.18 * i, up = 1.3 - 0.12 * i;
-                    mc.particleManager.addParticle(fx,x + bx * back + sx * span, y + up, z + bz * back + sz * span, 0, 0, 0);
-                    mc.particleManager.addParticle(fx,x + bx * back - sx * span, y + up, z + bz * back - sz * span, 0, 0, 0);
+                    pm.addParticle(fx, x + bx * back + sx * span, y + up, z + bz * back + sz * span, 0, 0, 0);
+                    pm.addParticle(fx, x + bx * back - sx * span, y + up, z + bz * back - sz * span, 0, 0, 0);
                 }
             }
             case FOOTSTEPS -> {
-                double dx = x - lastX, dz = z - lastZ;
-                if (dx * dx + dz * dz > 0.0006 && p.isOnGround())
-                    mc.particleManager.addParticle(fx,x + rand(0.15), y + 0.02, z + rand(0.15), 0, 0, 0);
+                if (moving) pm.addParticle(fx, x + rand(0.15), y + 0.02, z + rand(0.15), 0, 0, 0);
             }
         }
-        lastX = x; lastZ = z;
     }
 
-    private static double rand(double spread) {
-        return (Math.random() * 2 - 1) * spread;
-    }
+    private static double rand(double spread) { return (Math.random() * 2 - 1) * spread; }
 }

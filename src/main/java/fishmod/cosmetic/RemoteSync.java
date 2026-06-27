@@ -70,10 +70,12 @@ public final class RemoteSync {
         boolean nicksOn = FishSettings.remoteNicksEnabled;
         boolean itemsOn = FishSettings.remoteItemsEnabled;
         boolean sizeOn  = FishSettings.playerSizeShared;
+        boolean partOn  = FishSettings.particlesSynced; // particle config rides the items channel
         if (!nicksOn) RemoteNicks.clearAll();
         if (!itemsOn) RemoteItems.clearAll();
         if (!sizeOn)  RemoteScales.clearAll();
-        if (!nicksOn && !itemsOn && !sizeOn) return;
+        if (!partOn)  RemoteParticles.clearAll();
+        if (!nicksOn && !itemsOn && !sizeOn && !partOn) return;
 
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.getNetworkHandler() == null || mc.player == null) return;
@@ -106,6 +108,9 @@ public final class RemoteSync {
             if (nicks  != null && FishSettings.remoteNicksEnabled) RemoteNicks.acceptNicks(uuidToName, nicks);
             if (items  != null && FishSettings.remoteItemsEnabled) RemoteItems.acceptItems(keys, items);
             if (scales != null && FishSettings.playerSizeShared)   RemoteScales.acceptScales(keys, scales);
+            // Particle config rides the items payload, so read it whenever the items map arrives
+            // (independent of item-cosmetic sharing being on).
+            if (items  != null && FishSettings.particlesSynced)    RemoteParticles.accept(keys, items);
         }));
     }
 }

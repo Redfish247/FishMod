@@ -191,6 +191,7 @@ public class FishModInit implements ModInitializer {
         fishmod.cosmetic.PlayerSize.init();
         // Combined version-gated poller that drives RemoteNicks + RemoteItems + RemoteScales (after .init())
         fishmod.cosmetic.RemoteSync.init();
+        fishmod.cosmetic.RemoteParticles.init();
         fishmod.features.WelcomeMessage.init();
         LagTracker.init();
         SessionStats.init();

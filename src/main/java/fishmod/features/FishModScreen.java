@@ -435,6 +435,8 @@ public class FishModScreen extends Screen {
             f.sub.add(new DropdownSetting<>("Particle", "Which particle to use.",
                     fishmod.features.ParticleCosmetics.PType.values(),
                     () -> FishSettings.particleType, v -> FishSettings.particleType = v));
+            f.sub.add(new ToggleSetting("Sync", "Show your particle to other FishMod users (rides the item-cosmetics channel).",
+                    () -> FishSettings.particlesSynced, v -> FishSettings.particlesSynced = v));
             general.features.add(f);
         }
 
