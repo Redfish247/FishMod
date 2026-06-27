@@ -118,6 +118,7 @@ public class FishHudEditor extends Screen {
             java.util.Map.entry("Sea Creatures",      new double[]{10, 160, 1.0}),
             java.util.Map.entry("Trophy Fish",        new double[]{10, 200, 1.0}),
             java.util.Map.entry("Slayer Drops",       new double[]{10, 240, 1.0}),
+            java.util.Map.entry("Desk-Buddy",         new double[]{10, 440, 1.5}),
             java.util.Map.entry("Slayer XP",          new double[]{10,  80, 1.0}),
             java.util.Map.entry("Skill XP",           new double[]{10, 360, 1.0}),
             java.util.Map.entry("Powder",             new double[]{10, 100, 1.0}),

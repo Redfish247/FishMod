@@ -559,6 +559,17 @@ public class FishModScreen extends Screen {
                            else { fishmod.cosmetic.PlayerSize.clearOwnShare(); fishmod.cosmetic.RemoteScales.clearAll(); } }));
             cosmetics.features.add(f);
         }
+        {
+            Feature f = new Feature("Desk-Buddy",
+                    () -> FishSettings.deskBuddyEnabled, v -> FishSettings.deskBuddyEnabled = v);
+            f.sub.add(new InputSetting("Name", "",
+                    () -> FishSettings.deskBuddyName, v -> FishSettings.deskBuddyName = v));
+            f.sub.add(new ToggleSetting("Dance on RNG", "",
+                    () -> FishSettings.deskBuddyReactToRng, v -> FishSettings.deskBuddyReactToRng = v));
+            f.sub.add(new SliderIntSetting("AFK Sleep s", "",
+                    () -> FishSettings.deskBuddyAfkSeconds, v -> FishSettings.deskBuddyAfkSeconds = v, 10, 600));
+            cosmetics.features.add(f);
+        }
 
         // ===== Party =====
         {

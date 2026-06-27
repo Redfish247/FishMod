@@ -551,6 +551,13 @@ public class FishModInit implements ModInitializer {
                 return Constants.SUCCESS;
             }));
 
+            dispatcher.register(ClientCommandManager.literal("fmbuddy").executes(context -> {
+                fishmod.features.DeskBuddy.cheer();
+                Misc.addChatMessage(Text.literal("§6[Desk-Buddy] §7" + (fishmod.utils.config.values.FishSettings.deskBuddyEnabled
+                        ? "§a\\(^o^)/ dancing!" : "§eenable it in §f/fm §8> §7Cosmetics §8> §7Desk-Buddy §7first.")));
+                return Constants.SUCCESS;
+            }));
+
             dispatcher.register(ClientCommandManager.literal("fmpetdump").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 PetHud.debugDumpPetLines = !PetHud.debugDumpPetLines;
@@ -958,6 +965,18 @@ public class FishModInit implements ModInitializer {
                 () -> fishmod.utils.config.values.FishSettings.slayerDropsScale,
                 v  -> fishmod.utils.config.values.FishSettings.slayerDropsScale = v,
                 () -> fishmod.utils.config.values.FishSettings.slayerDropsEnabled);
+
+        // ── Desk-Buddy (kaomoji companion) ───────────────────────────────────
+        fishmod.features.DeskBuddy.init();
+        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.DeskBuddy.renderHud(ctx, tickCounter));
+        FishHudEditor.register("Desk-Buddy",
+                () -> fishmod.utils.config.values.FishSettings.deskBuddyHudX,
+                v  -> fishmod.utils.config.values.FishSettings.deskBuddyHudX = v,
+                () -> fishmod.utils.config.values.FishSettings.deskBuddyHudY,
+                v  -> fishmod.utils.config.values.FishSettings.deskBuddyHudY = v, 70, 14 * 3,
+                () -> fishmod.utils.config.values.FishSettings.deskBuddyScale,
+                v  -> fishmod.utils.config.values.FishSettings.deskBuddyScale = v,
+                () -> fishmod.utils.config.values.FishSettings.deskBuddyEnabled);
 
         // ── Daily/Weekly/Monthly Challenges ──────────────────────────────────
         fishmod.features.challenges.ChallengeManager.init();

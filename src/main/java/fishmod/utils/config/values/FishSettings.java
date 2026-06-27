@@ -339,4 +339,14 @@ public class FishSettings {
     @ConfigValue public static int     slayerDropsHudY        = 240;
     @ConfigValue public static double  slayerDropsScale       = 1.0;
 
+    // ── Desk-Buddy ──────────────────────────────────────────────────────────────
+    // A tiny kaomoji companion that idles, sleeps when you're AFK, and dances on RNG drops.
+    @ConfigValue public static boolean deskBuddyEnabled       = false;
+    @ConfigValue public static boolean deskBuddyReactToRng    = true;   // dance on rare drops / praise rngesus
+    @ConfigValue public static String  deskBuddyName          = "Rocky";
+    @ConfigValue public static int     deskBuddyAfkSeconds    = 120;    // idle this long → sleep
+    @ConfigValue public static int     deskBuddyHudX          = 10;
+    @ConfigValue public static int     deskBuddyHudY          = 440;
+    @ConfigValue public static double  deskBuddyScale         = 1.5;
+
 }
