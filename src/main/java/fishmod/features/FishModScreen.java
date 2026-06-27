@@ -393,6 +393,8 @@ public class FishModScreen extends Screen {
                     () -> FishSettings.pingAnnounceParty, v -> FishSettings.pingAnnounceParty = v));
             f.sub.add(new ToggleSetting("Share w/ FishMod Users", "",
                     () -> FishSettings.pingShareEnabled, v -> FishSettings.pingShareEnabled = v));
+            f.sub.add(new ToggleSetting("Waypoint from Chat Coords", "",
+                    () -> FishSettings.pingFromChat, v -> FishSettings.pingFromChat = v));
             f.sub.add(new SliderIntSetting("Duration s", "",
                     () -> FishSettings.pingDurationSeconds, v -> FishSettings.pingDurationSeconds = v, 2, 30));
             general.features.add(f);

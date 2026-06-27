@@ -55,9 +55,15 @@ public final class PingFeature {
 
     private static KeyBinding pingKey;
     private static Ping self = null;
+    private static Ping chatPing = null;         // latest coords parsed out of chat
     private static final Map<String, Ping> remote = new ConcurrentHashMap<>(); // uuid → their ping
     private static int pollTick = 0;
     private static long lastSeenTs = 0;          // newest source ts we've pulled, for the `since` filter
+
+    // "x: 12 y: 34 z: -56", "x12 y34 z-56", "x=12, y=34, z=-56" — labelled so it won't grab random numbers.
+    private static final java.util.regex.Pattern COORD_PAT = java.util.regex.Pattern.compile(
+            "(?i)x[:=]?\\s*(-?\\d{1,6})[ ,]+y[:=]?\\s*(-?\\d{1,4})[ ,]+z[:=]?\\s*(-?\\d{1,6})");
+    private static final java.util.regex.Pattern NAME_PAT = java.util.regex.Pattern.compile("([A-Za-z0-9_]{2,16}):");
 
     public static void init() {
         // Reuse the shared FishMod keybind category (created in Keybinds.init, which runs first) so we
@@ -72,6 +78,30 @@ public final class PingFeature {
 
         ClientTickEvents.END_CLIENT_TICK.register(PingFeature::onTick);
         RenderingEvents.NO_DEPTH_FILLED.register((ctx, matrices, vc) -> render(ctx, matrices, vc));
+        fishmod.utils.events.Events.ON_GAME_MESSAGE.register(text -> {
+            if (FishSettings.pingEnabled && FishSettings.pingFromChat && text != null)
+                parseChatCoords(text.getString().replaceAll("§.", ""));
+            return false;
+        });
+    }
+
+    /** Detect "x: N y: N z: N" in a chat line and drop a waypoint there, labelled with the speaker. */
+    private static void parseChatCoords(String plain) {
+        if (plain == null || plain.isEmpty()) return;
+        java.util.regex.Matcher m = COORD_PAT.matcher(plain);
+        if (!m.find()) return;
+        int x, y, z;
+        try {
+            x = Integer.parseInt(m.group(1));
+            y = Integer.parseInt(m.group(2));
+            z = Integer.parseInt(m.group(3));
+        } catch (NumberFormatException e) { return; }
+        if (y < -64 || y > 320) return; // implausible Y → almost certainly not a location
+        // Best-effort speaker name: the last "Name:" token before the message body.
+        String label = "ping";
+        java.util.regex.Matcher nm = NAME_PAT.matcher(plain.substring(0, m.start()));
+        while (nm.find()) label = nm.group(1);
+        chatPing = new Ping(new Vec3d(x + 0.5, y, z + 0.5), System.currentTimeMillis(), label, 0);
     }
 
     private static void onTick(MinecraftClient mc) {
@@ -162,6 +192,9 @@ public final class PingFeature {
 
         if (self != null && remainingFraction(self) <= 0) self = null;
         if (self != null) drawPing(ctx, matrices, vc, self);
+
+        if (chatPing != null && remainingFraction(chatPing) <= 0) chatPing = null;
+        if (chatPing != null) drawPing(ctx, matrices, vc, chatPing);
 
         if (!remote.isEmpty()) {
             remote.entrySet().removeIf(e -> remainingFraction(e.getValue()) <= 0);

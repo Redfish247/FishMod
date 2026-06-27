@@ -360,6 +360,7 @@ public class FishSettings {
     @ConfigValue public static boolean pingSound           = true;
     @ConfigValue public static boolean pingAnnounceParty   = false;  // also post coords to party chat
     @ConfigValue public static boolean pingShareEnabled    = false;  // show/share pings with other FishMod users
+    @ConfigValue public static boolean pingFromChat        = true;   // render a waypoint from coords posted in chat
     @ConfigValue public static int     pingColor           = 0xFF55FFFF; // ARGB (aqua)
     @ConfigValue public static int     pingDurationSeconds = 8;
 
