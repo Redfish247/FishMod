@@ -60,14 +60,17 @@ and a stack of convenience commands into one client-side mod.
 - **Custom nicknames** (`/nick`), shared with other FishMod users.
 - Remote item cosmetics and player sizes synced between FishMod users.
 - **Desk-Buddy** — a tiny kaomoji companion that idles with a bob and blink, curls up to sleep when
-  you go AFK, and breaks into a dance when RNG hits (rare drops, "PRAISE RNGESUS", great catches).
+  you go AFK, dances when RNG hits (rare drops, "PRAISE RNGESUS", great catches), shows some love on a
+  pet level-up, and faints when you die.
 
 ### Social (FishMod ↔ FishMod)
 - **Location Ping** — press the ping key (default **middle mouse**, rebindable in Options → Controls)
   to drop a through-walls waypoint where you're looking. Optionally announce the coords to party chat,
-  or **share** the live in-world marker with other FishMod users on your server.
+  **share** the live in-world marker with other FishMod users on your server, or auto-drop a waypoint
+  from any **`x: y: z:` coordinates posted in chat**.
 - **Reputation** — a crowd-sourced **vouch / shitter list** that works on any player by UUID:
   `/vouch`, `/shitter`, `/unrep` to tag, `/rep <player>` to view, `/rep` to scan the current lobby.
+  Enable **Player Flags** to mark flagged players with a red ✘ in the tab list.
 - **TTS Callouts** — optional spoken alerts via your OS's text-to-speech (rare drops, slayer events,
   a spoken "Reel" on the fishing reminder). Per-category toggles in `/fm` → General.
 
@@ -76,6 +79,9 @@ and a stack of convenience commands into one client-side mod.
 > `worker-reputation-snippet.js`) are deployed.
 
 ### Other
+- **Streamer Mode** — hide your IGN behind an alias (chat, tab, scoreboard, tooltips) and mask money
+  totals on the scoreboard sidebar (Purse / Bits / Piggy / Motes). Render-only; commands still use your
+  real name. `/fm` → General → Streamer Mode.
 - **Profile Optimizer** (`/po`) — net worth, skill roadmap, and "what to do next".
 - **Twitch streams** browser (`/streams`) and **Wiki** browser (`/wiki`).
 - **Warp map**, **chat filter**, **inventory command buttons**, item rarity
