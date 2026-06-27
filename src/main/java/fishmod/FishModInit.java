@@ -499,6 +499,21 @@ public class FishModInit implements ModInitializer {
                     })
                 )
             );
+            // ── Reputation (vouch / shitter list) ─────────────────────────────
+            dispatcher.register(ClientCommandManager.literal("vouch")
+                .then(ClientCommandManager.argument("player", StringArgumentType.word())
+                    .executes(ctx -> { fishmod.features.Reputation.vote(StringArgumentType.getString(ctx, "player"), "up"); return Constants.SUCCESS; })));
+            dispatcher.register(ClientCommandManager.literal("shitter")
+                .then(ClientCommandManager.argument("player", StringArgumentType.word())
+                    .executes(ctx -> { fishmod.features.Reputation.vote(StringArgumentType.getString(ctx, "player"), "down"); return Constants.SUCCESS; })));
+            dispatcher.register(ClientCommandManager.literal("unrep")
+                .then(ClientCommandManager.argument("player", StringArgumentType.word())
+                    .executes(ctx -> { fishmod.features.Reputation.vote(StringArgumentType.getString(ctx, "player"), "none"); return Constants.SUCCESS; })));
+            dispatcher.register(ClientCommandManager.literal("rep")
+                .executes(ctx -> { fishmod.features.Reputation.listNearby(); return Constants.SUCCESS; })
+                .then(ClientCommandManager.argument("player", StringArgumentType.word())
+                    .executes(ctx -> { fishmod.features.Reputation.lookup(StringArgumentType.getString(ctx, "player")); return Constants.SUCCESS; })));
+
             // ── Party alias commands ──────────────────────────────────────────
             dispatcher.register(ClientCommandManager.literal("pk")
                 .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())

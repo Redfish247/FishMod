@@ -1855,6 +1855,72 @@ public class HypixelApi {
         } catch (Exception e) { cb.accept(java.util.List.of()); }
     }
 
+    /** Aggregate reputation for a player: crowd-sourced up/down vote counts. */
+    public record RepData(String name, int up, int down) {}
+
+    /** Casts the local player's reputation vote on a target. vote ∈ "up" | "down" | "none" (clears). */
+    public static void voteRep(String voterUuid, String targetUuid, String targetName, String vote,
+                               java.util.function.BiConsumer<Integer, Integer> cb) {
+        try {
+            JsonObject o = new JsonObject();
+            o.addProperty("voter", voterUuid);
+            o.addProperty("target", targetUuid);
+            o.addProperty("name", targetName == null ? "" : targetName);
+            o.addProperty("vote", vote);
+            HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(PROXY_URL + "/rep"))
+                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("Content-Type", "application/json")
+                .header("User-Agent", "Mozilla/5.0")
+                .timeout(Duration.ofSeconds(10))
+                .POST(HttpRequest.BodyPublishers.ofString(o.toString()))
+                .build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
+                int up = -1, down = -1;
+                try {
+                    JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
+                    if (root.has("success") && root.get("success").getAsBoolean()) {
+                        up = root.has("up") ? root.get("up").getAsInt() : 0;
+                        down = root.has("down") ? root.get("down").getAsInt() : 0;
+                    }
+                } catch (Exception ignored) {}
+                if (cb != null) cb.accept(up, down);
+            }).exceptionally(t -> { if (cb != null) cb.accept(-1, -1); return null; });
+        } catch (Exception e) { if (cb != null) cb.accept(-1, -1); }
+    }
+
+    /** Batch-fetches reputation for the given UUIDs → map of uuid(no dashes) → RepData. */
+    public static void fetchReps(java.util.Collection<String> uuidsNoDashes,
+                                 java.util.function.Consumer<Map<String, RepData>> cb) {
+        if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.accept(java.util.Map.of()); return; }
+        try {
+            String q = String.join(",", uuidsNoDashes);
+            HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(PROXY_URL + "/rep?uuids=" + q))
+                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("User-Agent", "Mozilla/5.0")
+                .timeout(Duration.ofSeconds(10))
+                .GET().build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
+                Map<String, RepData> out = new HashMap<>();
+                try {
+                    JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
+                    if (root.has("reps") && root.get("reps").isJsonObject()) {
+                        for (var e : root.getAsJsonObject("reps").entrySet()) {
+                            if (e.getValue() == null || !e.getValue().isJsonObject()) continue;
+                            JsonObject rr = e.getValue().getAsJsonObject();
+                            out.put(e.getKey(), new RepData(
+                                rr.has("name") ? rr.get("name").getAsString() : "",
+                                rr.has("up") ? rr.get("up").getAsInt() : 0,
+                                rr.has("down") ? rr.get("down").getAsInt() : 0));
+                        }
+                    }
+                } catch (Exception ignored) {}
+                cb.accept(out);
+            }).exceptionally(t -> { cb.accept(java.util.Map.of()); return null; });
+        } catch (Exception e) { cb.accept(java.util.Map.of()); }
+    }
+
     /** Batch-fetches cosmetic nicks for the given UUIDs → map of uuid(no dashes) → raw nick. */
     public static void fetchNicks(java.util.Collection<String> uuidsNoDashes,
                                   java.util.function.Consumer<Map<String, String>> cb) {
