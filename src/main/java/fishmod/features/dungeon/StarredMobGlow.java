@@ -40,7 +40,7 @@ public final class StarredMobGlow {
             for (Entity e : mc.world.getEntities()) {
                 if (e instanceof ArmorStandEntity && e.hasCustomName()) {
                     var n = e.getCustomName();
-                    if (n != null && n.getString().contains("✯")) stars.add(e.getPos());
+                    if (n != null && n.getString().contains("✯")) stars.add(new Vec3d(e.getX(), e.getY(), e.getZ()));
                 }
             }
             if (stars.isEmpty()) return;
