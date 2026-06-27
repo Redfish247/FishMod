@@ -90,6 +90,20 @@ public class RunHistory {
                 .orElse(-1);
     }
 
+    /** Returns the personal best (fastest) recorded time for a split, or -1 if no data yet. */
+    public static double getPersonalBest(String floor, String splitName) {
+        if (floor == null || splitName == null) return -1;
+        Map<String, List<Double>> floorData = data.get(floor);
+        if (floorData == null) return -1;
+        List<Double> times = floorData.get(splitName);
+        if (times == null || times.isEmpty()) return -1;
+        return times.stream()
+                .mapToDouble(Double::doubleValue)
+                .filter(t -> t > 0 && t <= MAX_SPLIT_SECONDS)
+                .min()
+                .orElse(-1);
+    }
+
     /** How many recorded runs exist for a given split. */
     public static int runCount(String floor, String splitName) {
         Map<String, List<Double>> floorData = data.get(floor);

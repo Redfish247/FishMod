@@ -499,6 +499,21 @@ public class FishModInit implements ModInitializer {
                     })
                 )
             );
+            // ── Reputation (vouch / shitter list) ─────────────────────────────
+            dispatcher.register(ClientCommandManager.literal("vouch")
+                .then(ClientCommandManager.argument("player", StringArgumentType.word())
+                    .executes(ctx -> { fishmod.features.Reputation.vote(StringArgumentType.getString(ctx, "player"), "up"); return Constants.SUCCESS; })));
+            dispatcher.register(ClientCommandManager.literal("shitter")
+                .then(ClientCommandManager.argument("player", StringArgumentType.word())
+                    .executes(ctx -> { fishmod.features.Reputation.vote(StringArgumentType.getString(ctx, "player"), "down"); return Constants.SUCCESS; })));
+            dispatcher.register(ClientCommandManager.literal("unrep")
+                .then(ClientCommandManager.argument("player", StringArgumentType.word())
+                    .executes(ctx -> { fishmod.features.Reputation.vote(StringArgumentType.getString(ctx, "player"), "none"); return Constants.SUCCESS; })));
+            dispatcher.register(ClientCommandManager.literal("rep")
+                .executes(ctx -> { fishmod.features.Reputation.listNearby(); return Constants.SUCCESS; })
+                .then(ClientCommandManager.argument("player", StringArgumentType.word())
+                    .executes(ctx -> { fishmod.features.Reputation.lookup(StringArgumentType.getString(ctx, "player")); return Constants.SUCCESS; })));
+
             // ── Party alias commands ──────────────────────────────────────────
             dispatcher.register(ClientCommandManager.literal("pk")
                 .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
@@ -548,6 +563,27 @@ public class FishModInit implements ModInitializer {
                     Misc.addChatMessage(Text.literal("§b--- Cooldown Overlay ---"));
                     Misc.addChatMessage(Text.literal("§7" + CooldownOverlay.debugState()));
                 });
+                return Constants.SUCCESS;
+            }));
+
+            dispatcher.register(ClientCommandManager.literal("fmtts")
+                .executes(ctx -> {
+                    boolean on = fishmod.utils.config.values.FishSettings.ttsEnabled;
+                    Misc.addChatMessage(Text.literal("§b[TTS] §7" + (on
+                            ? "speaking a test line…" : "§eenable it in §f/fm §8> §7General §8> §7TTS Callouts §7first.")));
+                    if (on) fishmod.utils.Tts.speak("Fish mod text to speech is working");
+                    return Constants.SUCCESS;
+                })
+                .then(ClientCommandManager.argument("phrase", StringArgumentType.greedyString())
+                    .executes(ctx -> {
+                        fishmod.utils.Tts.speak(StringArgumentType.getString(ctx, "phrase"));
+                        return Constants.SUCCESS;
+                    })));
+
+            dispatcher.register(ClientCommandManager.literal("fmbuddy").executes(context -> {
+                fishmod.features.DeskBuddy.cheer();
+                Misc.addChatMessage(Text.literal("§6[Desk-Buddy] §7" + (fishmod.utils.config.values.FishSettings.deskBuddyEnabled
+                        ? "§a\\(^o^)/ dancing!" : "§eenable it in §f/fm §8> §7Cosmetics §8> §7Desk-Buddy §7first.")));
                 return Constants.SUCCESS;
             }));
 
@@ -959,6 +995,35 @@ public class FishModInit implements ModInitializer {
                 v  -> fishmod.utils.config.values.FishSettings.slayerDropsScale = v,
                 () -> fishmod.utils.config.values.FishSettings.slayerDropsEnabled);
 
+        // ── Reputation flag poll (tab ✘ for flagged players) ─────────────────
+        fishmod.features.Reputation.init();
+
+        // ── TTS voice callouts (chat-driven) ─────────────────────────────────
+        fishmod.features.TtsCallouts.init();
+
+        // ── PB Pace (live delta vs personal-best splits) ─────────────────────
+        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.PbPaceHud.renderHud(ctx, tickCounter));
+        FishHudEditor.register("PB Pace",
+                () -> fishmod.utils.config.values.FishSettings.pbPaceHudX,
+                v  -> fishmod.utils.config.values.FishSettings.pbPaceHudX = v,
+                () -> fishmod.utils.config.values.FishSettings.pbPaceHudY,
+                v  -> fishmod.utils.config.values.FishSettings.pbPaceHudY = v, 130, 14 * 3,
+                () -> fishmod.utils.config.values.FishSettings.pbPaceScale,
+                v  -> fishmod.utils.config.values.FishSettings.pbPaceScale = v,
+                () -> fishmod.features.PbPaceHud.isVisible());
+
+        // ── Desk-Buddy (kaomoji companion) ───────────────────────────────────
+        fishmod.features.DeskBuddy.init();
+        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.DeskBuddy.renderHud(ctx, tickCounter));
+        FishHudEditor.register("Desk-Buddy",
+                () -> fishmod.utils.config.values.FishSettings.deskBuddyHudX,
+                v  -> fishmod.utils.config.values.FishSettings.deskBuddyHudX = v,
+                () -> fishmod.utils.config.values.FishSettings.deskBuddyHudY,
+                v  -> fishmod.utils.config.values.FishSettings.deskBuddyHudY = v, 70, 14 * 3,
+                () -> fishmod.utils.config.values.FishSettings.deskBuddyScale,
+                v  -> fishmod.utils.config.values.FishSettings.deskBuddyScale = v,
+                () -> fishmod.utils.config.values.FishSettings.deskBuddyEnabled);
+
         // ── Daily/Weekly/Monthly Challenges ──────────────────────────────────
         fishmod.features.challenges.ChallengeManager.init();
         fishmod.features.challenges.LeaderboardRenderer.init();
@@ -1024,6 +1089,8 @@ public class FishModInit implements ModInitializer {
         safeInit("EntityUtil", EntityUtil::init);
         safeInit("RenderingEvents", RenderingEvents::init);
         safeInit("Scheduler", Scheduler::init);
+        // Location Ping needs the world render passes (RenderingEvents) registered first.
+        safeInit("PingFeature", fishmod.features.PingFeature::init);
     }
 
     private static void safeInit(String name, Runnable init) {

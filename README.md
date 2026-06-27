@@ -24,6 +24,8 @@ and a stack of convenience commands into one client-side mod.
 - **Puzzle solvers** — Simon Says tracker, M7 lever waypoints, puzzle display.
 - **Death messages** and **session stats** (runs, time, profit).
 - **Class detection** with optional **class-colored boots**.
+- **PB Pace** — a racing-style "ghost": each completed split shows a live delta vs your personal
+  best for that split (green = ahead of PB pace, red = behind), with an overall ahead/behind total.
 
 ### Trackers & HUDs
 - **Powder tracker** — Mithril / Gemstone / Glacite powder rates.
@@ -57,8 +59,30 @@ and a stack of convenience commands into one client-side mod.
   player-head items from a texture hash, URL, or value.
 - **Custom nicknames** (`/nick`), shared with other FishMod users.
 - Remote item cosmetics and player sizes synced between FishMod users.
+- **Desk-Buddy** — a tiny kaomoji companion that idles with a bob and blink, curls up to sleep when
+  you go AFK, dances when RNG hits (rare drops, "PRAISE RNGESUS", great catches), shows some love on a
+  pet level-up, and faints when you die.
+
+### Social (FishMod ↔ FishMod)
+- **Location Ping** — press the ping key (default **middle mouse**, rebindable in Options → Controls)
+  to drop a through-walls waypoint where you're looking. Optionally announce the coords to party chat,
+  **share** the live in-world marker with other FishMod users on your server, or auto-drop a waypoint
+  from any **`x: y: z:` coordinates posted in chat**.
+- **Reputation** — a crowd-sourced **vouch / shitter list** that works on any player by UUID:
+  `/vouch`, `/shitter`, `/unrep` to tag, `/rep <player>` to view, `/rep` to scan the current lobby.
+  Enable **Player Flags** to mark flagged players with a red ✘ in the tab list.
+- **TTS Callouts** — optional spoken alerts via your OS's text-to-speech (rare drops, slayer events,
+  a spoken "Reel" on the fishing reminder). Per-category toggles in `/fm` → General.
+
+> Note: the shared ping marker and reputation store run through the FishMod worker. The Java side
+> no-ops cleanly until the matching worker routes (`worker-pings-snippet.js`,
+> `worker-reputation-snippet.js`) are deployed.
 
 ### Other
+- **Streamer Mode** — anti-snipe name hiding. Scrambles player IGNs with Minecraft's `§k` obfuscated
+  font in the **Party Finder / group menus** and your own name in chat, so viewers can't read them
+  off-stream. Optional **Hide Tab Names** for when you're idling in a lobby (leave off in dungeons so
+  you can still read teammates). Only actual online names are touched; render-only. `/fm` → General.
 - **Profile Optimizer** (`/po`) — net worth, skill roadmap, and "what to do next".
 - **Twitch streams** browser (`/streams`) and **Wiki** browser (`/wiki`).
 - **Warp map**, **chat filter**, **inventory command buttons**, item rarity
@@ -114,6 +138,8 @@ In party chat: `.ai` (allinvite), `.d` (disband), `.kick/.warp/.transfer/.promot
 | `/streams` | Twitch streams |
 | `/wiki <query>` | Wiki browser (needs MCEF) |
 | `/nick <name>\|reset` | Set/reset cosmetic nickname |
+| `/vouch <player>` · `/shitter <player>` · `/unrep <player>` | Tag a player's reputation |
+| `/rep [player]` | Show a player's rep, or scan the lobby for flagged players |
 | `/fm commandhelp` | Print the full command list in chat |
 
 In party chat, `.help` lists your enabled party commands.

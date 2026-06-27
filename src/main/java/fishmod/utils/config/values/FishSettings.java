@@ -291,6 +291,12 @@ public class FishSettings {
     /** Optional override for the /challenges/* worker base URL. Empty = default proxy. */
     @ConfigValue public static String  challengeWorkerOverride      = "";
 
+    // PB Pace — live delta vs your personal-best splits during a dungeon run.
+    @ConfigValue public static boolean pbPaceEnabled = false;
+    @ConfigValue public static int     pbPaceHudX    = 10;
+    @ConfigValue public static int     pbPaceHudY    = 300;
+    @ConfigValue public static double  pbPaceScale   = 1.0;
+
     // Class Colored Boots — recolor your dungeon boots (leather dye) by your detected class.
     @ConfigValue public static boolean classColoredBootsEnabled = false;
 
@@ -338,5 +344,44 @@ public class FishSettings {
     @ConfigValue public static int     slayerDropsHudX        = 10;
     @ConfigValue public static int     slayerDropsHudY        = 240;
     @ConfigValue public static double  slayerDropsScale       = 1.0;
+
+    // ── TTS Voice Callouts ──────────────────────────────────────────────────────
+    // Speak short alerts through the OS's built-in text-to-speech.
+    @ConfigValue public static boolean ttsEnabled   = false;
+    @ConfigValue public static boolean ttsRareDrops = true;   // rare/insane drops, praise rngesus, great catch
+    @ConfigValue public static boolean ttsSlayer    = true;   // slayer quest started / complete / boss slain
+    @ConfigValue public static boolean ttsFishing   = true;   // spoken "Reel" when the bobber reminder fires
+    @ConfigValue public static int     ttsRate      = 0;      // Windows speech rate (-10..10)
+
+    // ── Location Ping ───────────────────────────────────────────────────────────
+    // Press the ping key (default middle mouse, rebindable in Options > Controls) to drop a
+    // through-walls waypoint where you're looking.
+    @ConfigValue public static boolean pingEnabled         = true;
+    @ConfigValue public static boolean pingSound           = true;
+    @ConfigValue public static boolean pingAnnounceParty   = false;  // also post coords to party chat
+    @ConfigValue public static boolean pingShareEnabled    = false;  // show/share pings with other FishMod users
+    @ConfigValue public static boolean pingFromChat        = true;   // render a waypoint from coords posted in chat
+    @ConfigValue public static int     pingColor           = 0xFF55FFFF; // ARGB (aqua)
+    @ConfigValue public static int     pingDurationSeconds = 8;
+
+    // ── Streamer Mode ───────────────────────────────────────────────────────────
+    // Anti-snipe: §k-scramble player IGNs in Party Finder menus + your own name in chat. Optional
+    // lobby tab scrambling for when you're idling in a hub.
+    @ConfigValue public static boolean streamerMode    = false;
+    @ConfigValue public static boolean streamerHideTab = false;
+
+    // ── Reputation ──────────────────────────────────────────────────────────────
+    // Show a red ✘ next to flagged (net-negative rep) players in the tab list.
+    @ConfigValue public static boolean repFlagsEnabled = false;
+
+    // ── Desk-Buddy ──────────────────────────────────────────────────────────────
+    // A tiny kaomoji companion that idles, sleeps when you're AFK, and dances on RNG drops.
+    @ConfigValue public static boolean deskBuddyEnabled       = false;
+    @ConfigValue public static boolean deskBuddyReactToRng    = true;   // dance on rare drops / praise rngesus
+    @ConfigValue public static String  deskBuddyName          = "Rocky";
+    @ConfigValue public static int     deskBuddyAfkSeconds    = 120;    // idle this long → sleep
+    @ConfigValue public static int     deskBuddyHudX          = 10;
+    @ConfigValue public static int     deskBuddyHudY          = 440;
+    @ConfigValue public static double  deskBuddyScale         = 1.5;
 
 }

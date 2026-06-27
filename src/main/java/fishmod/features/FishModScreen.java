@@ -383,6 +383,44 @@ public class FishModScreen extends Screen {
             f.sub.add(makeButtonInput("Button 7", () -> fishmod.utils.config.values.Buttons.command7, v -> fishmod.utils.config.values.Buttons.command7 = v));
             general.features.add(f);
         }
+        {
+            Feature f = new Feature("Location Ping",
+                    () -> FishSettings.pingEnabled, v -> FishSettings.pingEnabled = v);
+            f.sub.add(new SubcategoryHeader("Key: Options > Controls > FishMod (default middle mouse)"));
+            f.sub.add(new ToggleSetting("Play Sound", "",
+                    () -> FishSettings.pingSound, v -> FishSettings.pingSound = v));
+            f.sub.add(new ToggleSetting("Announce to Party", "",
+                    () -> FishSettings.pingAnnounceParty, v -> FishSettings.pingAnnounceParty = v));
+            f.sub.add(new ToggleSetting("Share w/ FishMod Users", "",
+                    () -> FishSettings.pingShareEnabled, v -> FishSettings.pingShareEnabled = v));
+            f.sub.add(new ToggleSetting("Waypoint from Chat Coords", "",
+                    () -> FishSettings.pingFromChat, v -> FishSettings.pingFromChat = v));
+            f.sub.add(new SliderIntSetting("Duration s", "",
+                    () -> FishSettings.pingDurationSeconds, v -> FishSettings.pingDurationSeconds = v, 2, 30));
+            general.features.add(f);
+        }
+        {
+            Feature f = new Feature("TTS Callouts",
+                    () -> FishSettings.ttsEnabled, v -> FishSettings.ttsEnabled = v);
+            f.sub.add(new ToggleSetting("Rare Drops", "",
+                    () -> FishSettings.ttsRareDrops, v -> FishSettings.ttsRareDrops = v));
+            f.sub.add(new ToggleSetting("Slayer", "",
+                    () -> FishSettings.ttsSlayer, v -> FishSettings.ttsSlayer = v));
+            f.sub.add(new ToggleSetting("Fishing Reel", "",
+                    () -> FishSettings.ttsFishing, v -> FishSettings.ttsFishing = v));
+            f.sub.add(new SliderIntSetting("Rate (Win)", "",
+                    () -> FishSettings.ttsRate, v -> FishSettings.ttsRate = v, -10, 10));
+            general.features.add(f);
+        }
+        {
+            Feature f = new Feature("Streamer Mode",
+                    () -> FishSettings.streamerMode, v -> FishSettings.streamerMode = v);
+            f.sub.add(new ToggleSetting("Hide Tab Names", "",
+                    () -> FishSettings.streamerHideTab, v -> FishSettings.streamerHideTab = v));
+            general.features.add(f);
+        }
+        general.features.add(new Feature("Player Flags",
+                () -> FishSettings.repFlagsEnabled, v -> FishSettings.repFlagsEnabled = v));
         general.features.add(new Feature("Auto Meow",
                 () -> FishSettings.chatMeow, v -> FishSettings.chatMeow = v));
         general.features.add(new Feature("Smart Copy Chat",
@@ -421,6 +459,8 @@ public class FishModScreen extends Screen {
         // ===== Dungeon =====
         dungeon.features.add(new Feature("Dungeon Score",
                 () -> FishSettings.dungeonScoreEnabled, v -> FishSettings.dungeonScoreEnabled = v));
+        dungeon.features.add(new Feature("PB Pace",
+                () -> FishSettings.pbPaceEnabled, v -> FishSettings.pbPaceEnabled = v));
         dungeon.features.add(new Feature("Puzzle Overlay",
                 () -> FishSettings.showPuzzles, v -> FishSettings.showPuzzles = v));
         {
@@ -557,6 +597,17 @@ public class FishModScreen extends Screen {
                     v -> { FishSettings.playerSizeShared = v;
                            if (v) { fishmod.cosmetic.PlayerSize.uploadOwn(); fishmod.cosmetic.RemoteSync.forceSync(); }
                            else { fishmod.cosmetic.PlayerSize.clearOwnShare(); fishmod.cosmetic.RemoteScales.clearAll(); } }));
+            cosmetics.features.add(f);
+        }
+        {
+            Feature f = new Feature("Desk-Buddy",
+                    () -> FishSettings.deskBuddyEnabled, v -> FishSettings.deskBuddyEnabled = v);
+            f.sub.add(new InputSetting("Name", "",
+                    () -> FishSettings.deskBuddyName, v -> FishSettings.deskBuddyName = v));
+            f.sub.add(new ToggleSetting("Dance on RNG", "",
+                    () -> FishSettings.deskBuddyReactToRng, v -> FishSettings.deskBuddyReactToRng = v));
+            f.sub.add(new SliderIntSetting("AFK Sleep s", "",
+                    () -> FishSettings.deskBuddyAfkSeconds, v -> FishSettings.deskBuddyAfkSeconds = v, 10, 600));
             cosmetics.features.add(f);
         }
 
