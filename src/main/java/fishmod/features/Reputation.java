@@ -2,14 +2,19 @@ package fishmod.features;
 
 import fishmod.utils.HypixelApi;
 import fishmod.utils.Misc;
+import fishmod.utils.config.values.FishSettings;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
@@ -24,6 +29,63 @@ import java.util.function.Consumer;
 public final class Reputation {
 
     private Reputation() {}
+
+    // Lowercased IGNs of flagged (net-negative) players currently in the lobby, refreshed by a poll.
+    private static final Set<String> flaggedIgns = ConcurrentHashMap.newKeySet();
+    private static final int POLL_TICKS = 20 * 30; // ~30s between flag refreshes
+    private static int pollTick = 0;
+
+    /** Registers the background poll that keeps the in-lobby flagged set fresh (for the tab ✗ marker). */
+    public static void init() {
+        ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+            if (!FishSettings.repFlagsEnabled) { if (!flaggedIgns.isEmpty()) flaggedIgns.clear(); return; }
+            if (++pollTick < POLL_TICKS) return;
+            pollTick = 0;
+            pollFlags(mc);
+        });
+    }
+
+    private static void pollFlags(MinecraftClient mc) {
+        if (mc.getNetworkHandler() == null) return;
+        Map<String, String> uuidToName = new HashMap<>();
+        for (var e : mc.getNetworkHandler().getPlayerList()) {
+            var gp = e.getProfile();
+            if (gp == null || gp.id() == null || gp.name() == null || gp.name().isBlank()) continue;
+            uuidToName.put(gp.id().toString().replace("-", ""), gp.name());
+        }
+        if (uuidToName.isEmpty()) return;
+        HypixelApi.fetchReps(uuidToName.keySet(), reps -> mc.execute(() -> {
+            Set<String> next = new HashSet<>();
+            for (var entry : reps.entrySet()) {
+                HypixelApi.RepData rd = entry.getValue();
+                if (rd.down() > rd.up()) {
+                    String name = uuidToName.get(entry.getKey());
+                    if (name != null) next.add(name.toLowerCase());
+                }
+            }
+            flaggedIgns.clear();
+            flaggedIgns.addAll(next);
+        }));
+    }
+
+    /**
+     * Appends a red ✘ to any flagged player's name found in an on-screen text (tab list / scoreboard).
+     * Cheap: the flagged set is usually empty and only ever holds players in your current lobby.
+     */
+    public static Text decorateTab(Text text) {
+        if (!FishSettings.repFlagsEnabled || text == null || flaggedIgns.isEmpty()) return text;
+        String s = text.getString();
+        if (s.isEmpty() || s.endsWith("✘")) return text;
+        String lower = s.toLowerCase();
+        for (String name : flaggedIgns) {
+            if (lower.contains(name)) {
+                MutableText out = text.copy();
+                out.append(Text.literal(" §c✘"));
+                return out;
+            }
+        }
+        return text;
+    }
 
     /** Resolve an IGN to a dashless UUID (cache first, then Mojang), then run {@code cb} (null on miss). */
     private static void withUuid(String name, Consumer<String> cb) {

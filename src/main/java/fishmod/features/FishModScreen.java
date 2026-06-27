@@ -410,6 +410,8 @@ public class FishModScreen extends Screen {
                     () -> FishSettings.ttsRate, v -> FishSettings.ttsRate = v, -10, 10));
             general.features.add(f);
         }
+        general.features.add(new Feature("Player Flags",
+                () -> FishSettings.repFlagsEnabled, v -> FishSettings.repFlagsEnabled = v));
         general.features.add(new Feature("Auto Meow",
                 () -> FishSettings.chatMeow, v -> FishSettings.chatMeow = v));
         general.features.add(new Feature("Smart Copy Chat",

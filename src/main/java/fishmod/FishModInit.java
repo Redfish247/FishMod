@@ -995,6 +995,9 @@ public class FishModInit implements ModInitializer {
                 v  -> fishmod.utils.config.values.FishSettings.slayerDropsScale = v,
                 () -> fishmod.utils.config.values.FishSettings.slayerDropsEnabled);
 
+        // ── Reputation flag poll (tab ✘ for flagged players) ─────────────────
+        fishmod.features.Reputation.init();
+
         // ── TTS voice callouts (chat-driven) ─────────────────────────────────
         fishmod.features.TtsCallouts.init();
 

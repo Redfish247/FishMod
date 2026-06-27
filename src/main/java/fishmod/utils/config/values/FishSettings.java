@@ -363,6 +363,10 @@ public class FishSettings {
     @ConfigValue public static int     pingColor           = 0xFF55FFFF; // ARGB (aqua)
     @ConfigValue public static int     pingDurationSeconds = 8;
 
+    // ── Reputation ──────────────────────────────────────────────────────────────
+    // Show a red ✘ next to flagged (net-negative rep) players in the tab list.
+    @ConfigValue public static boolean repFlagsEnabled = false;
+
     // ── Desk-Buddy ──────────────────────────────────────────────────────────────
     // A tiny kaomoji companion that idles, sleeps when you're AFK, and dances on RNG drops.
     @ConfigValue public static boolean deskBuddyEnabled       = false;

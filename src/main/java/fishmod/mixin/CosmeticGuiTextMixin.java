@@ -62,9 +62,12 @@ public abstract class CosmeticGuiTextMixin {
         // off-server players get nick-rewritten — those names appear nowhere else (not in tab/chat).
         // On the bare HUD (scoreboard/tab, redrawn every frame) use the lookup-free path to avoid
         // per-frame request spam; on-server players there are already covered by the bulk poll.
-        return fishmod$inMenu()
+        out = fishmod$inMenu()
             ? fishmod.cosmetic.RemoteNicks.apply(out)
             : fishmod.cosmetic.RemoteNicks.applyResolvedOnly(out);
+        // Tag flagged (shitter-list) players with a red ✘ on the bare HUD (tab list / scoreboard).
+        if (!fishmod$inMenu()) out = fishmod.features.Reputation.decorateTab(out);
+        return out;
     }
 
     /** True when a server-driven container GUI (chest menu) is open — where off-server names show up. */
