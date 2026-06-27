@@ -566,6 +566,20 @@ public class FishModInit implements ModInitializer {
                 return Constants.SUCCESS;
             }));
 
+            dispatcher.register(ClientCommandManager.literal("fmtts")
+                .executes(ctx -> {
+                    boolean on = fishmod.utils.config.values.FishSettings.ttsEnabled;
+                    Misc.addChatMessage(Text.literal("§b[TTS] §7" + (on
+                            ? "speaking a test line…" : "§eenable it in §f/fm §8> §7General §8> §7TTS Callouts §7first.")));
+                    if (on) fishmod.utils.Tts.speak("Fish mod text to speech is working");
+                    return Constants.SUCCESS;
+                })
+                .then(ClientCommandManager.argument("phrase", StringArgumentType.greedyString())
+                    .executes(ctx -> {
+                        fishmod.utils.Tts.speak(StringArgumentType.getString(ctx, "phrase"));
+                        return Constants.SUCCESS;
+                    })));
+
             dispatcher.register(ClientCommandManager.literal("fmbuddy").executes(context -> {
                 fishmod.features.DeskBuddy.cheer();
                 Misc.addChatMessage(Text.literal("§6[Desk-Buddy] §7" + (fishmod.utils.config.values.FishSettings.deskBuddyEnabled
@@ -980,6 +994,9 @@ public class FishModInit implements ModInitializer {
                 () -> fishmod.utils.config.values.FishSettings.slayerDropsScale,
                 v  -> fishmod.utils.config.values.FishSettings.slayerDropsScale = v,
                 () -> fishmod.utils.config.values.FishSettings.slayerDropsEnabled);
+
+        // ── TTS voice callouts (chat-driven) ─────────────────────────────────
+        fishmod.features.TtsCallouts.init();
 
         // ── PB Pace (live delta vs personal-best splits) ─────────────────────
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.PbPaceHud.renderHud(ctx, tickCounter));

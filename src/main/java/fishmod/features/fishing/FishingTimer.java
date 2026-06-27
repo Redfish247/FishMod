@@ -95,6 +95,7 @@ public final class FishingTimer {
             soundPlayed = true;
             if (FishSettings.fishingReminderSound)
                 mc.player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), 1.0f, 2.0f);
+            if (FishSettings.ttsFishing) fishmod.utils.Tts.speak("Reel");
         }
 
         // Window fully closed without a reel → it's a miss. Latch the "missed it" message and stop

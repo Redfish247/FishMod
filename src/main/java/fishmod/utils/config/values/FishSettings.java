@@ -345,6 +345,14 @@ public class FishSettings {
     @ConfigValue public static int     slayerDropsHudY        = 240;
     @ConfigValue public static double  slayerDropsScale       = 1.0;
 
+    // ── TTS Voice Callouts ──────────────────────────────────────────────────────
+    // Speak short alerts through the OS's built-in text-to-speech.
+    @ConfigValue public static boolean ttsEnabled   = false;
+    @ConfigValue public static boolean ttsRareDrops = true;   // rare/insane drops, praise rngesus, great catch
+    @ConfigValue public static boolean ttsSlayer    = true;   // slayer quest started / complete / boss slain
+    @ConfigValue public static boolean ttsFishing   = true;   // spoken "Reel" when the bobber reminder fires
+    @ConfigValue public static int     ttsRate      = 0;      // Windows speech rate (-10..10)
+
     // ── Location Ping ───────────────────────────────────────────────────────────
     // Press the ping key (default middle mouse, rebindable in Options > Controls) to drop a
     // through-walls waypoint where you're looking.

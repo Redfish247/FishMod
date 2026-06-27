@@ -397,6 +397,19 @@ public class FishModScreen extends Screen {
                     () -> FishSettings.pingDurationSeconds, v -> FishSettings.pingDurationSeconds = v, 2, 30));
             general.features.add(f);
         }
+        {
+            Feature f = new Feature("TTS Callouts",
+                    () -> FishSettings.ttsEnabled, v -> FishSettings.ttsEnabled = v);
+            f.sub.add(new ToggleSetting("Rare Drops", "",
+                    () -> FishSettings.ttsRareDrops, v -> FishSettings.ttsRareDrops = v));
+            f.sub.add(new ToggleSetting("Slayer", "",
+                    () -> FishSettings.ttsSlayer, v -> FishSettings.ttsSlayer = v));
+            f.sub.add(new ToggleSetting("Fishing Reel", "",
+                    () -> FishSettings.ttsFishing, v -> FishSettings.ttsFishing = v));
+            f.sub.add(new SliderIntSetting("Rate (Win)", "",
+                    () -> FishSettings.ttsRate, v -> FishSettings.ttsRate = v, -10, 10));
+            general.features.add(f);
+        }
         general.features.add(new Feature("Auto Meow",
                 () -> FishSettings.chatMeow, v -> FishSettings.chatMeow = v));
         general.features.add(new Feature("Smart Copy Chat",
