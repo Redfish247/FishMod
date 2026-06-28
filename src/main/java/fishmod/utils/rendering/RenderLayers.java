@@ -1,13 +1,12 @@
 package fishmod.utils.rendering;
 
+import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
 import net.minecraft.client.gl.RenderPipelines;
+import net.minecraft.client.gl.UniformType;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderSetup;
-
-import java.lang.reflect.Field;
-import java.util.List;
 
 public class RenderLayers {
 
@@ -29,33 +28,62 @@ public class RenderLayers {
      * Builds a render layer whose pipeline is {@code base} with depth testing turned off, so geometry
      * drawn through it renders on top of (through) the world instead of being occluded by it.
      *
-     * <p>A built {@link RenderPipeline} keeps the list of {@link RenderPipeline.Snippet}s it was made
-     * from; {@code RenderPipeline.builder(Snippet...)} is the only way to re-derive a builder that
-     * carries the base's shaders/vertex-format/blend. We grab that snippet list reflectively (its
-     * field is private and unmapped at runtime), then override just the depth-test function.
+     * <p>A built {@link RenderPipeline} does <em>not</em> retain the {@link RenderPipeline.Snippet}s it
+     * was assembled from (they are consumed at build time), so there is no snippet list to re-derive a
+     * builder from. Instead we start from an empty builder and copy every property off the base via its
+     * public getters, overriding only the depth-test function (and location/name). This is mapping-stable
+     * across Minecraft versions — it relies on the public {@code RenderPipeline} API rather than the
+     * private internals, which is what broke the previous reflective approach on 1.21.11.
      */
     private static RenderLayer noDepth(RenderPipeline base, String location, String layerName) {
-        RenderPipeline.Snippet[] snippets = null;
-        for (Field f : base.getClass().getDeclaredFields()) {
+        RenderPipeline.Builder builder = RenderPipeline.builder()
+                .withLocation(location)
+                .withVertexShader(base.getVertexShader())
+                .withFragmentShader(base.getFragmentShader())
+                .withVertexFormat(base.getVertexFormat(), base.getVertexFormatMode())
+                .withCull(base.isCull())
+                .withColorWrite(base.isWriteColor(), base.isWriteAlpha())
+                .withDepthWrite(base.isWriteDepth())
+                .withColorLogic(base.getColorLogic())
+                .withPolygonMode(base.getPolygonMode())
+                .withDepthBias(base.getDepthBiasScaleFactor(), base.getDepthBiasConstant())
+                // The whole point of this layer: render through walls.
+                .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST);
+
+        BlendFunction blend = base.getBlendFunction().orElse(null);
+        if (blend != null) {
+            builder.withBlend(blend);
+        } else {
+            builder.withoutBlend();
+        }
+
+        // Copy shader defines: bare flags directly, keyed values numerically (the builder only exposes
+        // int/float keyed defines). The base debug/line pipelines carry no defines, so this is normally
+        // a no-op — it just keeps the copy faithful if that ever changes.
+        base.getShaderDefines().flags().forEach(builder::withShaderDefine);
+        base.getShaderDefines().values().forEach((name, value) -> {
             try {
-                f.setAccessible(true);
-                Object value = f.get(base);
-                if (value instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof RenderPipeline.Snippet) {
-                    snippets = list.toArray(new RenderPipeline.Snippet[0]);
-                    break;
+                builder.withShaderDefine(name, Integer.parseInt(value));
+            } catch (NumberFormatException notInt) {
+                try {
+                    builder.withShaderDefine(name, Float.parseFloat(value));
+                } catch (NumberFormatException notFloat) {
+                    // non-numeric define can't be expressed via the builder API; skip it
                 }
-            } catch (ReflectiveOperationException ignored) {
-                // try the next field
+            }
+        });
+
+        // Copy samplers and uniforms so the shader still has everything it expects.
+        base.getSamplers().forEach(builder::withSampler);
+        for (RenderPipeline.UniformDescription uniform : base.getUniforms()) {
+            if (uniform.type() == UniformType.TEXEL_BUFFER) {
+                builder.withUniform(uniform.name(), uniform.type(), uniform.textureFormat());
+            } else {
+                builder.withUniform(uniform.name(), uniform.type());
             }
         }
-        if (snippets == null) {
-            throw new IllegalStateException("Could not find pipeline snippets to derive a no-depth layer for " + location);
-        }
-        RenderPipeline pipeline = RenderPipeline.builder(snippets)
-                .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-                .withLocation(location)
-                .build();
-        return RenderLayer.of(layerName, RenderSetup.builder(pipeline).build());
+
+        return RenderLayer.of(layerName, RenderSetup.builder(builder.build()).build());
     }
 
     public static RenderLayer getOutline(int width, boolean depthCheck) {
