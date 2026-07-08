@@ -23,13 +23,13 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
         super(handler, recipeBook, inventory, title);
     }
 
-    @Inject(method = "renderLabels", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "extractLabels", at = @At("HEAD"), cancellable = true)
     protected void drawForeground(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
         ci.cancel();
     }
 
     // Inventory command buttons (1:1 with blade-addons): render at the inventory's top-left origin.
-    @Inject(method = "render", at = @At("TAIL"))
+    @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void fishmod$renderInventoryButtons(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         if (!Buttons.enableInventoryButtons) return;
         Matrix3x2fStack stack = context.pose();

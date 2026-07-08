@@ -23,8 +23,9 @@ loom {
     runConfigs.named("client") {
         setIdeConfigGenerated(true)
         vmArg("-Dmixin.debug.export=true")
-        vmArg("-Ddevauth.enabled=true")
-        vmArg("-Ddevauth.account=main")
+        // TEMP: disabled for port smoke-testing (blocks on live MS OAuth with no cached session)
+        // vmArg("-Ddevauth.enabled=true")
+        // vmArg("-Ddevauth.account=main")
         // Only valid on JetBrains Runtime (IntelliJ); Adoptium/Hotspot rejects it
         if (System.getProperty("java.vendor.version")?.contains("JBR") ||
                 System.getProperty("java.vm.vendor")?.contains("JetBrains")) {
@@ -78,18 +79,23 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	implementation("com.terraformersmc:modmenu:${project.modmenu_version}")
-	include implementation("net.hypixel:mod-api:${project.hypixel_api_version}")
+	// Hypixel Mod API needs two coordinates: Hypixel's own maven (repo.hypixel.net) publishes the
+	// core net.hypixel.modapi.* classes but no fabric.mod.json, so it's compile-only here. Modrinth's
+	// build carries proper Fabric metadata but only bundles the core classes as a nested
+	// META-INF/jars/ jar (a runtime-only Fabric Loader mechanism Gradle can't see at compile time) —
+	// that one is the actual runtime/shipped dependency.
+	compileOnly("net.hypixel:mod-api:${project.hypixel_api_core_version}")
+	include implementation("maven.modrinth:hypixel-mod-api:${project.hypixel_api_version}")
 	// Fork of BladeMasterGabe/practical-config ported to 26.2 (see gradle.properties)
 	include implementation("com.github.Redfish247:practical-config:${project.practical_config}")
 
     runtimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
     runtimeOnly("org.apache.httpcomponents:httpclient:4.5.14")
 
-    // Dev runtime: prefer the local Hypixel Mod API jar (it has the fabric.mod.json that
-    // the maven 'mod-api' artifact lacks) when running on the developer machine. If absent
-    // (CI, fresh clone) we skip it — compile doesn't need it, only the dev-time runClient task.
-    def hyApiLocal = file('C:/Users/Eli/AppData/Roaming/ModrinthApp/profiles/Skyblock 1.21.8/mods/HypixelModAPI-1.0.1+build.1+mc1.21.jar')
-    if (hyApiLocal.exists()) runtimeOnly files(hyApiLocal)
+    // Hypixel Mod API is already pulled from repo.hypixel.net above (include implementation(...)),
+    // which for 1.0.2+ ships a proper fabric.mod.json — no local-jar workaround needed anymore.
+    // (The old workaround pointed at a stale 1.21-era local jar that actively conflicted with the
+    // real 26.2 dependency once both were on the runtime classpath.)
 
     // MCEF — compile-only (users install at runtime from Modrinth). Use the local jar when
     // present; otherwise pull from Modrinth's maven so CI can compile WikiScreen.

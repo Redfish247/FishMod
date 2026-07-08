@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(BossHealthOverlay.class)
 public class FishBossBarHudMixin {
 
-    @Inject(method = "render", at = @At("RETURN"))
+    @Inject(method = "extractRenderState", at = @At("RETURN"))
     private void fishDrawBossHp(GuiGraphicsExtractor context, CallbackInfo ci) {
         BossBarFeature.renderAfterVanilla(context);
     }

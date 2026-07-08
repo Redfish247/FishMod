@@ -174,8 +174,7 @@ public final class WarpMapFeature {
 
         // Use the *actual* rendered FOV (handles zoom mods) instead of the settings FOV.
         Window win = mc.getWindow();
-        float fovDeg = ((fishmod.mixin.accessors.GameRendererAccessor) mc.gameRenderer)
-                .invokeGetFov(camera, delta, true);
+        float fovDeg = camera.getFov();
         double f   = 1.0 / Math.tan(Math.toRadians(fovDeg / 2.0));
         double asp = (double) win.getGuiScaledWidth() / win.getGuiScaledHeight();
 

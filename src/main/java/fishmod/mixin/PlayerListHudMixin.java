@@ -18,7 +18,7 @@ public class PlayerListHudMixin {
     @Shadow private Component header;
     @Shadow private Component footer;
 
-    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "extractRenderState", at = @At("HEAD"), cancellable = true)
     private void fishmod$compactTab(GuiGraphicsExtractor context, int scaledWindowWidth, Scoreboard scoreboard,
                                     Objective objective, CallbackInfo ci) {
         if (!FishSettings.compactTabEnabled) return;

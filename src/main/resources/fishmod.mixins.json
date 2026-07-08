@@ -22,7 +22,6 @@
     "accessors.BossBarHudAccessor",
     "accessors.ChatScreenAccessor",
     "accessors.KeyBindingAccessor",
-    "accessors.GameRendererAccessor",
     "accessors.HandledScreenAccessor",
 
     "ChatHudInvoker",

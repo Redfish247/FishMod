@@ -15,17 +15,17 @@ import net.minecraft.network.chat.Component;
 @Mixin(GuiGraphicsExtractor.class)
 public abstract class CosmeticGuiTextMixin {
 
-    @ModifyVariable(method = "drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;III)V", at = @At("HEAD"), argsOnly = true)
+    @ModifyVariable(method = "text(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;III)V", at = @At("HEAD"), argsOnly = true)
     private Component fishmod$ds1(Component text) {
         return fishmod$swap(text);
     }
 
-    @ModifyVariable(method = "drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIIZ)V", at = @At("HEAD"), argsOnly = true)
+    @ModifyVariable(method = "text(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIIZ)V", at = @At("HEAD"), argsOnly = true)
     private Component fishmod$ds2(Component text) {
         return fishmod$swap(text);
     }
 
-    @ModifyVariable(method = "drawStringWithBackdrop(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIII)V", at = @At("HEAD"), argsOnly = true)
+    @ModifyVariable(method = "textWithBackdrop(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIII)V", at = @At("HEAD"), argsOnly = true)
     private Component fishmod$ds3(Component text) {
         return fishmod$swap(text);
     }

@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(EffectsInInventory.class)
 public class StatusEffectsDisplayMixin {
 
-    @Inject(method = "renderEffects", at=@At("HEAD"), cancellable = true)
+    @Inject(method = "extractEffects", at=@At("HEAD"), cancellable = true)
     public void drawEffects(GuiGraphicsExtractor context, java.util.Collection<?> effects, int x, int y, int width, int height, int maxHeight, CallbackInfo ci) {
         if (Visual.hideStatusOverLay) {
             ci.cancel();
