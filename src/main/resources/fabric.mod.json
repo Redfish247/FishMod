@@ -1,9 +1,9 @@
 {
 	"schemaVersion": 1,
-	"id": "fishmod",
+	"id": "fishmod-dungeons",
 	"version": "${version}",
-	"name": "FishMod",
-	"description": "Hypixel Skyblock dungeon utilities",
+	"name": "FishMod (Dungeons Only)",
+	"description": "Hypixel Skyblock dungeon utilities — curated Dungeons-only edition of FishMod",
 	"authors": [
 		"Eli"
 	],
