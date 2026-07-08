@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version "${loom_version}"
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
 	id 'maven-publish'
 	id 'com.modrinth.minotaur' version '2.+'
 }
@@ -12,7 +12,7 @@ base {
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
     // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
     // if it is present.
     // If you remove this line, sources will not be generated.
@@ -22,13 +22,13 @@ java {
 loom {
     runConfigs.named("client") {
         setIdeConfigGenerated(true)
-        vmArgs.add("-Dmixin.debug.export=true")
-        vmArgs.add("-Ddevauth.enabled=true")
-        vmArgs.add("-Ddevauth.account=main")
+        vmArg("-Dmixin.debug.export=true")
+        vmArg("-Ddevauth.enabled=true")
+        vmArg("-Ddevauth.account=main")
         // Only valid on JetBrains Runtime (IntelliJ); Adoptium/Hotspot rejects it
         if (System.getProperty("java.vendor.version")?.contains("JBR") ||
                 System.getProperty("java.vm.vendor")?.contains("JetBrains")) {
-            vmArgs.add("-XX:+AllowEnhancedClassRedefinition")
+            vmArg("-XX:+AllowEnhancedClassRedefinition")
         }
     }
 
@@ -73,31 +73,31 @@ repositories {
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings loom.officialMojangMappings()
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
-	include modImplementation("net.hypixel:mod-api:${project.hypixel_api_version}")
-	include modImplementation("com.github.BladeMasterGabe:practical-config:${project.practical_config}")
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	implementation("com.terraformersmc:modmenu:${project.modmenu_version}")
+	include implementation("net.hypixel:mod-api:${project.hypixel_api_version}")
+	// Fork of BladeMasterGabe/practical-config ported to 26.2 (see gradle.properties)
+	include implementation("com.github.Redfish247:practical-config:${project.practical_config}")
 
-    modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
+    runtimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
     runtimeOnly("org.apache.httpcomponents:httpclient:4.5.14")
 
     // Dev runtime: prefer the local Hypixel Mod API jar (it has the fabric.mod.json that
     // the maven 'mod-api' artifact lacks) when running on the developer machine. If absent
     // (CI, fresh clone) we skip it — compile doesn't need it, only the dev-time runClient task.
     def hyApiLocal = file('C:/Users/Eli/AppData/Roaming/ModrinthApp/profiles/Skyblock 1.21.8/mods/HypixelModAPI-1.0.1+build.1+mc1.21.jar')
-    if (hyApiLocal.exists()) modRuntimeOnly files(hyApiLocal)
+    if (hyApiLocal.exists()) runtimeOnly files(hyApiLocal)
 
     // MCEF — compile-only (users install at runtime from Modrinth). Use the local jar when
     // present; otherwise pull from Modrinth's maven so CI can compile WikiScreen.
     def mcefLocal = file('C:/Users/Eli/AppData/Roaming/ModrinthApp/profiles/Skyblock 1.21.8/mods/mcef_fabric_2.2.0_MC_1.21.11.jar')
     if (mcefLocal.exists()) {
-        modCompileOnly files(mcefLocal)
+        compileOnly files(mcefLocal)
     } else {
-        modCompileOnly("maven.modrinth:mcef-keksuccino:2.2.0-1.21.11-fabric")
+        compileOnly("maven.modrinth:mcef-keksuccino:2.2.1-26.2-fabric")
     }
 }
 
@@ -110,7 +110,7 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
+	it.options.release = 25
 }
 
 java {
@@ -119,8 +119,8 @@ java {
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
 }
 
 jar {
@@ -141,7 +141,7 @@ modrinth {
 	versionNumber = project.findProperty('modrinth_version') ?: project.mod_version
 	versionName   = "FishMod ${project.findProperty('modrinth_version') ?: project.mod_version}"
 	versionType   = 'release'
-	uploadFile    = tasks.remapJar
+	uploadFile    = tasks.jar
 	gameVersions  = [project.minecraft_version]
 	loaders       = ['fabric']
 	changelog     = providers.environmentVariable('CHANGELOG')
