@@ -203,13 +203,13 @@ public class FishModInit implements ModInitializer {
         SoulflowHud.init();
         PetHud.init();
         CooldownOverlay.init();
-        ItemRarityHotbar.init();   // rarity background: inventory-slot coverage (hotbar via HudRenderCallback)
+        // ItemRarityHotbar.init();   // rarity background: inventory-slot coverage (hotbar via HudRenderCallback)
         MayorApi.init();
-        BridgeBot.init();
-        SlayerXpTracker.init();
-        fishmod.features.SkillTracker.init();
+        // BridgeBot.init();
+        // SlayerXpTracker.init();
+        // fishmod.features.SkillTracker.init();
         fishmod.features.FireFreezeTimer.init();
-        PowderTracker.init();
+        // PowderTracker.init();
         fishmod.features.dungeon.SimonSaysTracker.init();
         fishmod.features.dungeon.M7LeverWaypoints.init();
         // Floor 7 boss timers (ported from blade-addons): Maxor/Storm/Goldor tick timers, crystal
@@ -241,30 +241,30 @@ public class FishModInit implements ModInitializer {
                 () -> { try { return Phase.splitTimer.getScaledY() + fishmod.utils.Constants.TEXT_HEIGHT * Phase.getVisibleRowCount() + 8; } catch (Throwable t) { return Phase.splitTimer.getScaledY() + 20; } },
                 Phase.SPLIT_LENGTH, fishmod.utils.Constants.TEXT_HEIGHT + 4);
         FishHudEditor.register("Puzzles",   FishPuzzleDisplay.puzzleHud);
-        FishHudEditor.register("Slayer XP",
-                () -> fishmod.utils.config.values.FishSettings.slayerXpHudX,
-                v  -> fishmod.utils.config.values.FishSettings.slayerXpHudX = v,
-                () -> fishmod.utils.config.values.FishSettings.slayerXpHudY,
-                v  -> fishmod.utils.config.values.FishSettings.slayerXpHudY = v, 160, 30,
-                () -> fishmod.utils.config.values.FishSettings.slayerXpScale,
-                v  -> fishmod.utils.config.values.FishSettings.slayerXpScale = v,
-                () -> fishmod.features.SlayerXpTracker.isBossActive());
-        FishHudEditor.register("Skill XP",
-                () -> fishmod.utils.config.values.FishSettings.skillTrackerHudX,
-                v  -> fishmod.utils.config.values.FishSettings.skillTrackerHudX = v,
-                () -> fishmod.utils.config.values.FishSettings.skillTrackerHudY,
-                v  -> fishmod.utils.config.values.FishSettings.skillTrackerHudY = v, 160, 60,
-                () -> fishmod.utils.config.values.FishSettings.skillTrackerScale,
-                v  -> fishmod.utils.config.values.FishSettings.skillTrackerScale = v,
-                () -> fishmod.features.SkillTracker.hasData());
-        FishHudEditor.register("Powder",
-                () -> fishmod.utils.config.values.FishSettings.powderTrackerHudX,
-                v  -> fishmod.utils.config.values.FishSettings.powderTrackerHudX = v,
-                () -> fishmod.utils.config.values.FishSettings.powderTrackerHudY,
-                v  -> fishmod.utils.config.values.FishSettings.powderTrackerHudY = v, 160, 60,
-                () -> fishmod.utils.config.values.FishSettings.powderTrackerScale,
-                v  -> fishmod.utils.config.values.FishSettings.powderTrackerScale = v,
-                () -> fishmod.features.PowderTracker.isInMiningArea() && fishmod.utils.config.values.FishSettings.powderTrackerEnabled);
+        // FishHudEditor.register("Slayer XP",
+                // () -> fishmod.utils.config.values.FishSettings.slayerXpHudX,
+                // v  -> fishmod.utils.config.values.FishSettings.slayerXpHudX = v,
+                // () -> fishmod.utils.config.values.FishSettings.slayerXpHudY,
+                // v  -> fishmod.utils.config.values.FishSettings.slayerXpHudY = v, 160, 30,
+                // () -> fishmod.utils.config.values.FishSettings.slayerXpScale,
+                // v  -> fishmod.utils.config.values.FishSettings.slayerXpScale = v,
+                // () -> fishmod.features.SlayerXpTracker.isBossActive());
+        // FishHudEditor.register("Skill XP",
+                // () -> fishmod.utils.config.values.FishSettings.skillTrackerHudX,
+                // v  -> fishmod.utils.config.values.FishSettings.skillTrackerHudX = v,
+                // () -> fishmod.utils.config.values.FishSettings.skillTrackerHudY,
+                // v  -> fishmod.utils.config.values.FishSettings.skillTrackerHudY = v, 160, 60,
+                // () -> fishmod.utils.config.values.FishSettings.skillTrackerScale,
+                // v  -> fishmod.utils.config.values.FishSettings.skillTrackerScale = v,
+                // () -> fishmod.features.SkillTracker.hasData());
+        // FishHudEditor.register("Powder",
+                // () -> fishmod.utils.config.values.FishSettings.powderTrackerHudX,
+                // v  -> fishmod.utils.config.values.FishSettings.powderTrackerHudX = v,
+                // () -> fishmod.utils.config.values.FishSettings.powderTrackerHudY,
+                // v  -> fishmod.utils.config.values.FishSettings.powderTrackerHudY = v, 160, 60,
+                // () -> fishmod.utils.config.values.FishSettings.powderTrackerScale,
+                // v  -> fishmod.utils.config.values.FishSettings.powderTrackerScale = v,
+                // () -> fishmod.features.PowderTracker.isInMiningArea() && fishmod.utils.config.values.FishSettings.powderTrackerEnabled);
 
         // Always register /fm and /fmdbg regardless of whether blade is loaded
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
@@ -917,16 +917,16 @@ public class FishModInit implements ModInitializer {
 
 
         // ── Warp Map HUD + click detection ───────────────────────────────────
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> WarpMapFeature.renderHud(ctx, tickCounter));
-        ClientTickEvents.END_CLIENT_TICK.register(WarpMapFeature::tickClickDetection);
+        // HudRenderCallback.EVENT.register((ctx, tickCounter) -> WarpMapFeature.renderHud(ctx, tickCounter));
+        // ClientTickEvents.END_CLIENT_TICK.register(WarpMapFeature::tickClickDetection);
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> SoulflowHud.renderHud(ctx, tickCounter));
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> PetHud.renderHud(ctx, tickCounter));
         // Rarity background is drawn behind items via DrawContextMixin (hotbar) + INVENTORY_SLOT_BEFORE
         // (inventory) — see ItemRarityHotbar.init(). No HudRenderCallback (that draws over the items).
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> CooldownOverlay.renderHotbar(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> SlayerXpTracker.renderHud(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.SkillTracker.renderHud(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> PowderTracker.renderHud(ctx, tickCounter));
+        // HudRenderCallback.EVENT.register((ctx, tickCounter) -> SlayerXpTracker.renderHud(ctx, tickCounter));
+        // HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.SkillTracker.renderHud(ctx, tickCounter));
+        // HudRenderCallback.EVENT.register((ctx, tickCounter) -> PowderTracker.renderHud(ctx, tickCounter));
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> BossBarFeature.renderHud(ctx));
         // Splits panel + Maxor/Storm/Terminals split-time HUDs. Rendered here (not via practical-config's
         // HudElementRegistry auto-render, which doesn't fire reliably) — their condition-suppliers are
@@ -935,68 +935,68 @@ public class FishModInit implements ModInitializer {
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.dungeon.f7.F7Huds.renderHud(ctx));
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> SessionStats.renderHud(ctx, tickCounter));
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.dungeon.DungeonScore.renderHud(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.FarmingTracker.renderHud(ctx, tickCounter));
+        // HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.FarmingTracker.renderHud(ctx, tickCounter));
         fishmod.features.dungeon.DungeonScore.init();
         fishmod.utils.SkyblockItems.initAsync();
-        fishmod.features.FarmingTracker.init();
-        fishmod.features.HarvestFeastTracker.init();
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.HarvestFeastTracker.renderHud(ctx, tickCounter));
-        fishmod.features.MiningTracker.init();
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.MiningTracker.renderHud(ctx, tickCounter));
-        fishmod.features.TrophyFrogTracker.init();
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.TrophyFrogTracker.renderHud(ctx, tickCounter));
+        // fishmod.features.FarmingTracker.init();
+        // fishmod.features.HarvestFeastTracker.init();
+        // HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.HarvestFeastTracker.renderHud(ctx, tickCounter));
+        // fishmod.features.MiningTracker.init();
+        // HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.MiningTracker.renderHud(ctx, tickCounter));
+        // fishmod.features.TrophyFrogTracker.init();
+        // HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.TrophyFrogTracker.renderHud(ctx, tickCounter));
 
         // ── Fishing ──────────────────────────────────────────────────────────
-        fishmod.features.fishing.FishingTimer.init();
-        fishmod.features.fishing.SeaCreatureTracker.init();
-        fishmod.features.fishing.TrophyFishTracker.init();
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.fishing.FishingTimer.renderHud(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.fishing.SeaCreatureTracker.renderHud(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.fishing.TrophyFishTracker.renderHud(ctx, tickCounter));
-        FishHudEditor.register("Bobber Reminder",
-                () -> fishmod.utils.config.values.FishSettings.fishingTimerHudX,
-                v  -> fishmod.utils.config.values.FishSettings.fishingTimerHudX = v,
-                () -> fishmod.utils.config.values.FishSettings.fishingTimerHudY,
-                v  -> fishmod.utils.config.values.FishSettings.fishingTimerHudY = v, 90, 14,
-                () -> fishmod.utils.config.values.FishSettings.fishingTimerScale,
-                v  -> fishmod.utils.config.values.FishSettings.fishingTimerScale = v,
-                () -> fishmod.utils.config.values.FishSettings.fishingTimerEnabled);
-        FishHudEditor.register("Sea Creatures",
-                () -> fishmod.utils.config.values.FishSettings.seaCreatureHudX,
-                v  -> fishmod.utils.config.values.FishSettings.seaCreatureHudX = v,
-                () -> fishmod.utils.config.values.FishSettings.seaCreatureHudY,
-                v  -> fishmod.utils.config.values.FishSettings.seaCreatureHudY = v, 150, 14 * 5,
-                () -> fishmod.utils.config.values.FishSettings.seaCreatureScale,
-                v  -> fishmod.utils.config.values.FishSettings.seaCreatureScale = v,
-                () -> fishmod.features.fishing.SeaCreatureTracker.isVisible());
-        FishHudEditor.register("Trophy Fish",
-                () -> fishmod.utils.config.values.FishSettings.trophyFishHudX,
-                v  -> fishmod.utils.config.values.FishSettings.trophyFishHudX = v,
-                () -> fishmod.utils.config.values.FishSettings.trophyFishHudY,
-                v  -> fishmod.utils.config.values.FishSettings.trophyFishHudY = v, 160, 14 * 6,
-                () -> fishmod.utils.config.values.FishSettings.trophyFishHudScale,
-                v  -> fishmod.utils.config.values.FishSettings.trophyFishHudScale = v,
-                () -> fishmod.features.fishing.TrophyFishTracker.isVisible());
+        // fishmod.features.fishing.FishingTimer.init();
+        // fishmod.features.fishing.SeaCreatureTracker.init();
+        // fishmod.features.fishing.TrophyFishTracker.init();
+        // HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.fishing.FishingTimer.renderHud(ctx, tickCounter));
+        // HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.fishing.SeaCreatureTracker.renderHud(ctx, tickCounter));
+        // HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.fishing.TrophyFishTracker.renderHud(ctx, tickCounter));
+        // FishHudEditor.register("Bobber Reminder",
+                // () -> fishmod.utils.config.values.FishSettings.fishingTimerHudX,
+                // v  -> fishmod.utils.config.values.FishSettings.fishingTimerHudX = v,
+                // () -> fishmod.utils.config.values.FishSettings.fishingTimerHudY,
+                // v  -> fishmod.utils.config.values.FishSettings.fishingTimerHudY = v, 90, 14,
+                // () -> fishmod.utils.config.values.FishSettings.fishingTimerScale,
+                // v  -> fishmod.utils.config.values.FishSettings.fishingTimerScale = v,
+                // () -> fishmod.utils.config.values.FishSettings.fishingTimerEnabled);
+        // FishHudEditor.register("Sea Creatures",
+                // () -> fishmod.utils.config.values.FishSettings.seaCreatureHudX,
+                // v  -> fishmod.utils.config.values.FishSettings.seaCreatureHudX = v,
+                // () -> fishmod.utils.config.values.FishSettings.seaCreatureHudY,
+                // v  -> fishmod.utils.config.values.FishSettings.seaCreatureHudY = v, 150, 14 * 5,
+                // () -> fishmod.utils.config.values.FishSettings.seaCreatureScale,
+                // v  -> fishmod.utils.config.values.FishSettings.seaCreatureScale = v,
+                // () -> fishmod.features.fishing.SeaCreatureTracker.isVisible());
+        // FishHudEditor.register("Trophy Fish",
+                // () -> fishmod.utils.config.values.FishSettings.trophyFishHudX,
+                // v  -> fishmod.utils.config.values.FishSettings.trophyFishHudX = v,
+                // () -> fishmod.utils.config.values.FishSettings.trophyFishHudY,
+                // v  -> fishmod.utils.config.values.FishSettings.trophyFishHudY = v, 160, 14 * 6,
+                // () -> fishmod.utils.config.values.FishSettings.trophyFishHudScale,
+                // v  -> fishmod.utils.config.values.FishSettings.trophyFishHudScale = v,
+                // () -> fishmod.features.fishing.TrophyFishTracker.isVisible());
 
         // ── Slayer ───────────────────────────────────────────────────────────
-        fishmod.features.slayer.SlayerAlerts.init();
-        fishmod.features.slayer.SlayerDropTracker.init();
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.slayer.SlayerDropTracker.renderHud(ctx, tickCounter));
-        FishHudEditor.register("Slayer Drops",
-                () -> fishmod.utils.config.values.FishSettings.slayerDropsHudX,
-                v  -> fishmod.utils.config.values.FishSettings.slayerDropsHudX = v,
-                () -> fishmod.utils.config.values.FishSettings.slayerDropsHudY,
-                v  -> fishmod.utils.config.values.FishSettings.slayerDropsHudY = v, 110, 14 * 4,
-                () -> fishmod.utils.config.values.FishSettings.slayerDropsScale,
-                v  -> fishmod.utils.config.values.FishSettings.slayerDropsScale = v,
-                () -> fishmod.utils.config.values.FishSettings.slayerDropsEnabled);
+        // fishmod.features.slayer.SlayerAlerts.init();
+        // fishmod.features.slayer.SlayerDropTracker.init();
+        // HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.slayer.SlayerDropTracker.renderHud(ctx, tickCounter));
+        // FishHudEditor.register("Slayer Drops",
+                // () -> fishmod.utils.config.values.FishSettings.slayerDropsHudX,
+                // v  -> fishmod.utils.config.values.FishSettings.slayerDropsHudX = v,
+                // () -> fishmod.utils.config.values.FishSettings.slayerDropsHudY,
+                // v  -> fishmod.utils.config.values.FishSettings.slayerDropsHudY = v, 110, 14 * 4,
+                // () -> fishmod.utils.config.values.FishSettings.slayerDropsScale,
+                // v  -> fishmod.utils.config.values.FishSettings.slayerDropsScale = v,
+                // () -> fishmod.utils.config.values.FishSettings.slayerDropsEnabled);
 
         // ── Reputation flag poll (tab ✘ for flagged players) ─────────────────
-        fishmod.features.Reputation.init();
-
+        // fishmod.features.Reputation.init();
+// 
         // ── TTS voice callouts (chat-driven) ─────────────────────────────────
-        fishmod.features.TtsCallouts.init();
-
+        // fishmod.features.TtsCallouts.init();
+// 
         // ── PB Pace (live delta vs personal-best splits) ─────────────────────
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.PbPaceHud.renderHud(ctx, tickCounter));
         FishHudEditor.register("PB Pace",
@@ -1009,16 +1009,16 @@ public class FishModInit implements ModInitializer {
                 () -> fishmod.features.PbPaceHud.isVisible());
 
         // ── Desk-Buddy (kaomoji companion) ───────────────────────────────────
-        fishmod.features.DeskBuddy.init();
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.DeskBuddy.renderHud(ctx, tickCounter));
-        FishHudEditor.register("Desk-Buddy",
-                () -> fishmod.utils.config.values.FishSettings.deskBuddyHudX,
-                v  -> fishmod.utils.config.values.FishSettings.deskBuddyHudX = v,
-                () -> fishmod.utils.config.values.FishSettings.deskBuddyHudY,
-                v  -> fishmod.utils.config.values.FishSettings.deskBuddyHudY = v, 70, 14 * 3,
-                () -> fishmod.utils.config.values.FishSettings.deskBuddyScale,
-                v  -> fishmod.utils.config.values.FishSettings.deskBuddyScale = v,
-                () -> fishmod.utils.config.values.FishSettings.deskBuddyEnabled);
+        // fishmod.features.DeskBuddy.init();
+        // HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.DeskBuddy.renderHud(ctx, tickCounter));
+        // FishHudEditor.register("Desk-Buddy",
+                // () -> fishmod.utils.config.values.FishSettings.deskBuddyHudX,
+                // v  -> fishmod.utils.config.values.FishSettings.deskBuddyHudX = v,
+                // () -> fishmod.utils.config.values.FishSettings.deskBuddyHudY,
+                // v  -> fishmod.utils.config.values.FishSettings.deskBuddyHudY = v, 70, 14 * 3,
+                // () -> fishmod.utils.config.values.FishSettings.deskBuddyScale,
+                // v  -> fishmod.utils.config.values.FishSettings.deskBuddyScale = v,
+                // () -> fishmod.utils.config.values.FishSettings.deskBuddyEnabled);
 
         // ── Daily/Weekly/Monthly Challenges ──────────────────────────────────
         fishmod.features.challenges.ChallengeManager.init();
@@ -1086,7 +1086,7 @@ public class FishModInit implements ModInitializer {
         safeInit("RenderingEvents", RenderingEvents::init);
         safeInit("Scheduler", Scheduler::init);
         // Location Ping needs the world render passes (RenderingEvents) registered first.
-        safeInit("PingFeature", fishmod.features.PingFeature::init);
+        // safeInit("PingFeature", fishmod.features.PingFeature::init);
     }
 
     private static void safeInit(String name, Runnable init) {

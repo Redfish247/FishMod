@@ -3,7 +3,6 @@ package fishmod.features;
 import fishmod.utils.config.Config;
 import fishmod.utils.config.FishConfig;
 import fishmod.cosmetic.NickState;
-import fishmod.features.BridgeBot;
 import fishmod.utils.config.values.*;
 import fishmod.utils.dungeon.Phase;
 import fishmod.utils.dungeon.Split;
@@ -383,46 +382,6 @@ public class FishModScreen extends Screen {
             f.sub.add(makeButtonInput("Button 7", () -> fishmod.utils.config.values.Buttons.command7, v -> fishmod.utils.config.values.Buttons.command7 = v));
             general.features.add(f);
         }
-        {
-            Feature f = new Feature("Location Ping",
-                    () -> FishSettings.pingEnabled, v -> FishSettings.pingEnabled = v);
-            f.sub.add(new SubcategoryHeader("Key: Options > Controls > FishMod (default middle mouse)"));
-            f.sub.add(new ToggleSetting("Play Sound", "",
-                    () -> FishSettings.pingSound, v -> FishSettings.pingSound = v));
-            f.sub.add(new ToggleSetting("Announce to Party", "",
-                    () -> FishSettings.pingAnnounceParty, v -> FishSettings.pingAnnounceParty = v));
-            f.sub.add(new ToggleSetting("Share w/ FishMod Users", "",
-                    () -> FishSettings.pingShareEnabled, v -> FishSettings.pingShareEnabled = v));
-            f.sub.add(new ToggleSetting("Waypoint from Chat Coords", "",
-                    () -> FishSettings.pingFromChat, v -> FishSettings.pingFromChat = v));
-            f.sub.add(new SliderIntSetting("Duration s", "",
-                    () -> FishSettings.pingDurationSeconds, v -> FishSettings.pingDurationSeconds = v, 2, 30));
-            general.features.add(f);
-        }
-        {
-            Feature f = new Feature("TTS Callouts",
-                    () -> FishSettings.ttsEnabled, v -> FishSettings.ttsEnabled = v);
-            f.sub.add(new ToggleSetting("Rare Drops", "",
-                    () -> FishSettings.ttsRareDrops, v -> FishSettings.ttsRareDrops = v));
-            f.sub.add(new ToggleSetting("Slayer", "",
-                    () -> FishSettings.ttsSlayer, v -> FishSettings.ttsSlayer = v));
-            f.sub.add(new ToggleSetting("Fishing Reel", "",
-                    () -> FishSettings.ttsFishing, v -> FishSettings.ttsFishing = v));
-            f.sub.add(new SliderIntSetting("Rate (Win)", "",
-                    () -> FishSettings.ttsRate, v -> FishSettings.ttsRate = v, -10, 10));
-            general.features.add(f);
-        }
-        {
-            Feature f = new Feature("Streamer Mode",
-                    () -> FishSettings.streamerMode, v -> FishSettings.streamerMode = v);
-            f.sub.add(new ToggleSetting("Hide Tab Names", "",
-                    () -> FishSettings.streamerHideTab, v -> FishSettings.streamerHideTab = v));
-            general.features.add(f);
-        }
-        general.features.add(new Feature("Player Flags",
-                () -> FishSettings.repFlagsEnabled, v -> FishSettings.repFlagsEnabled = v));
-        general.features.add(new Feature("Auto Meow",
-                () -> FishSettings.chatMeow, v -> FishSettings.chatMeow = v));
         general.features.add(new Feature("Smart Copy Chat",
                 () -> FishSettings.smartCopyChat, v -> FishSettings.smartCopyChat = v));
         general.features.add(new Feature("Compact Chat",
@@ -432,14 +391,6 @@ public class FishModScreen extends Screen {
                     () -> FishSettings.compactTabEnabled, v -> FishSettings.compactTabEnabled = v);
             f.sub.add(new SliderIntSetting("Opacity %", "",
                     () -> FishSettings.compactTabOpacity, v -> FishSettings.compactTabOpacity = v, 0, 100));
-            general.features.add(f);
-        }
-        {
-            Feature f = new Feature("Bridge Bot",
-                    () -> FishSettings.bridgeBotEnabled, v -> FishSettings.bridgeBotEnabled = v);
-            f.sub.add(new InputSetting("Bot IGN", "",
-                    () -> FishSettings.bridgeBotName,
-                    v -> { FishSettings.bridgeBotName = v; BridgeBot.rebuildPattern(); }));
             general.features.add(f);
         }
         {
@@ -601,17 +552,6 @@ public class FishModScreen extends Screen {
                            else { fishmod.cosmetic.PlayerSize.clearOwnShare(); fishmod.cosmetic.RemoteScales.clearAll(); } }));
             cosmetics.features.add(f);
         }
-        {
-            Feature f = new Feature("Desk-Buddy",
-                    () -> FishSettings.deskBuddyEnabled, v -> FishSettings.deskBuddyEnabled = v);
-            f.sub.add(new InputSetting("Name", "",
-                    () -> FishSettings.deskBuddyName, v -> FishSettings.deskBuddyName = v));
-            f.sub.add(new ToggleSetting("Dance on RNG", "",
-                    () -> FishSettings.deskBuddyReactToRng, v -> FishSettings.deskBuddyReactToRng = v));
-            f.sub.add(new SliderIntSetting("AFK Sleep s", "",
-                    () -> FishSettings.deskBuddyAfkSeconds, v -> FishSettings.deskBuddyAfkSeconds = v, 10, 600));
-            cosmetics.features.add(f);
-        }
 
         // ===== Party =====
         {
@@ -655,13 +595,6 @@ public class FishModScreen extends Screen {
 
         // ===== Visuals =====
         {
-            Feature f = new Feature("Rarity Background",
-                    () -> Visual.itemRarityBackground, v -> Visual.itemRarityBackground = v);
-            f.sub.add(new ToggleSetting("Circular", "",
-                    () -> Visual.circularRarityBackground, v -> Visual.circularRarityBackground = v));
-            visuals.features.add(f);
-        }
-        {
             Feature f = new Feature("Cooldown Overlay",
                     () -> FishSettings.cooldownOverlayEnabled, v -> FishSettings.cooldownOverlayEnabled = v);
             f.sub.add(new ToggleSetting("Show Number", "",
@@ -696,47 +629,6 @@ public class FishModScreen extends Screen {
                 () -> FishSettings.fireFreezeTimerEnabled, v -> FishSettings.fireFreezeTimerEnabled = v));
         visuals.features.add(new Feature("Explosive Shot",
                 () -> FishSettings.explosiveShotEnabled, v -> FishSettings.explosiveShotEnabled = v));
-        {
-            Feature f = new Feature("Warp Map",
-                    () -> FishSettings.warpMapHudEnabled, v -> FishSettings.warpMapHudEnabled = v);
-            f.sub.add(new ColorSetting("Dot Color", "",
-                    () -> FishSettings.warpMapDotColor, v -> FishSettings.warpMapDotColor = v));
-            visuals.features.add(f);
-        }
-        visuals.features.add(new Feature("Slayer XP Tracker",
-                () -> FishSettings.slayerXpEnabled, v -> FishSettings.slayerXpEnabled = v));
-        visuals.features.add(new Feature("Skill XP Tracker",
-                () -> FishSettings.skillTrackerEnabled, v -> FishSettings.skillTrackerEnabled = v));
-        {
-            Feature f = new Feature("Powder Tracker",
-                    () -> FishSettings.powderTrackerEnabled, v -> FishSettings.powderTrackerEnabled = v);
-            f.sub.add(new DropdownSetting<>("Price", "", FishSettings.PriceMode.values(),
-                    () -> FishSettings.powderPriceMode, v -> FishSettings.powderPriceMode = v));
-            visuals.features.add(f);
-        }
-        {
-            Feature f = new Feature("Farming Tracker",
-                    () -> FishSettings.farmingTrackerEnabled, v -> FishSettings.farmingTrackerEnabled = v);
-            f.sub.add(new DropdownSetting<>("Price", "", FishSettings.PriceMode.values(),
-                    () -> FishSettings.farmingPriceMode, v -> FishSettings.farmingPriceMode = v));
-            visuals.features.add(f);
-        }
-        {
-            Feature f = new Feature("Harvest Feast Tracker",
-                    () -> FishSettings.harvestFeastEnabled, v -> FishSettings.harvestFeastEnabled = v);
-            f.sub.add(new DropdownSetting<>("Price", "", FishSettings.PriceMode.values(),
-                    () -> FishSettings.harvestFeastPriceMode, v -> FishSettings.harvestFeastPriceMode = v));
-            visuals.features.add(f);
-        }
-        {
-            Feature f = new Feature("Mining Tracker",
-                    () -> FishSettings.miningTrackerEnabled, v -> FishSettings.miningTrackerEnabled = v);
-            f.sub.add(new DropdownSetting<>("Price", "", FishSettings.PriceMode.values(),
-                    () -> FishSettings.miningPriceMode, v -> FishSettings.miningPriceMode = v));
-            visuals.features.add(f);
-        }
-        visuals.features.add(new Feature("Trophy Frogs",
-                () -> FishSettings.trophyFrogEnabled, v -> FishSettings.trophyFrogEnabled = v));
 
         // ===== Floor 7 (ported from blade-addons) =====
         {
@@ -787,56 +679,11 @@ public class FishModScreen extends Screen {
             floor7.features.add(f);
         }
 
-        // ===== Fishing =====
-        Column fishing = new Column("Fishing", "eye");
-        {
-            Feature f = new Feature("Bobber Reminder",
-                    () -> FishSettings.fishingTimerEnabled, v -> FishSettings.fishingTimerEnabled = v);
-            f.sub.add(new SliderIntSetting("Reminder Delay s", "",
-                    () -> FishSettings.fishingReminderDelay, v -> FishSettings.fishingReminderDelay = v, 1, 10));
-            f.sub.add(new InputSetting("Reminder Text", "",
-                    () -> FishSettings.fishingReminderText, v -> FishSettings.fishingReminderText = v));
-            f.sub.add(new InputSetting("Missed Text", "",
-                    () -> FishSettings.fishingMissedText, v -> FishSettings.fishingMissedText = v));
-            f.sub.add(new ToggleSetting("Play Sound", "",
-                    () -> FishSettings.fishingReminderSound, v -> FishSettings.fishingReminderSound = v));
-            fishing.features.add(f);
-        }
-        {
-            Feature f = new Feature("Sea Creatures",
-                    () -> FishSettings.seaCreatureEnabled, v -> FishSettings.seaCreatureEnabled = v);
-            f.sub.add(new ToggleSetting("Rare Alert", "",
-                    () -> FishSettings.seaCreatureRareAlert, v -> FishSettings.seaCreatureRareAlert = v));
-            fishing.features.add(f);
-        }
-        fishing.features.add(new Feature("Trophy Fish",
-                () -> FishSettings.trophyFishEnabled, v -> FishSettings.trophyFishEnabled = v));
-
-        // ===== Slayer =====
-        Column slayer = new Column("Slayer", "coin");
-        {
-            Feature f = new Feature("Slayer Alerts",
-                    () -> FishSettings.slayerAlertsEnabled, v -> FishSettings.slayerAlertsEnabled = v);
-            f.sub.add(new ToggleSetting("Miniboss", "",
-                    () -> FishSettings.slayerAlertMiniboss, v -> FishSettings.slayerAlertMiniboss = v));
-            f.sub.add(new ToggleSetting("Boss Spawn", "",
-                    () -> FishSettings.slayerAlertBossSpawn, v -> FishSettings.slayerAlertBossSpawn = v));
-            f.sub.add(new ToggleSetting("Boss Slain", "",
-                    () -> FishSettings.slayerAlertBossSlain, v -> FishSettings.slayerAlertBossSlain = v));
-            f.sub.add(new ToggleSetting("Play Sound", "",
-                    () -> FishSettings.slayerAlertSound, v -> FishSettings.slayerAlertSound = v));
-            slayer.features.add(f);
-        }
-        slayer.features.add(new Feature("Slayer Drops",
-                () -> FishSettings.slayerDropsEnabled, v -> FishSettings.slayerDropsEnabled = v));
-
         columns.add(general);
         columns.add(dungeon);
         columns.add(cosmetics);
         columns.add(party);
         columns.add(visuals);
-        columns.add(fishing);
-        columns.add(slayer);
         columns.add(floor7);
     }
 
