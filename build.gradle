@@ -83,6 +83,7 @@ dependencies {
 	include modImplementation("com.github.BladeMasterGabe:practical-config:${project.practical_config}")
 
     modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
+    runtimeOnly("org.apache.httpcomponents:httpclient:4.5.14")
 
     // Dev runtime: prefer the local Hypixel Mod API jar (it has the fabric.mod.json that
     // the maven 'mod-api' artifact lacks) when running on the developer machine. If absent
