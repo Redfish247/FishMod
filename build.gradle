@@ -23,9 +23,8 @@ loom {
     runConfigs.named("client") {
         setIdeConfigGenerated(true)
         vmArg("-Dmixin.debug.export=true")
-        // TEMP: disabled for port smoke-testing (blocks on live MS OAuth with no cached session)
-        // vmArg("-Ddevauth.enabled=true")
-        // vmArg("-Ddevauth.account=main")
+        vmArg("-Ddevauth.enabled=true")
+        vmArg("-Ddevauth.account=main")
         // Only valid on JetBrains Runtime (IntelliJ); Adoptium/Hotspot rejects it
         if (System.getProperty("java.vendor.version")?.contains("JBR") ||
                 System.getProperty("java.vm.vendor")?.contains("JetBrains")) {
