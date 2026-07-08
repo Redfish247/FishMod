@@ -13,7 +13,7 @@ public class ChallengeHud {
         if (!FishSettings.challengesEnabled || !FishSettings.challengeHudEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
 
         ChallengeProgress p = ChallengeProgress.get();
         if (p.active.isEmpty()) return;

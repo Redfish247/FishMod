@@ -267,7 +267,7 @@ public class DungeonScore {
         if (!FishSettings.dungeonScoreEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         if (Location.getCurrentLocation() != Location.DUNGEON) return;
         if (fishmod.utils.dungeon.Phase.inBoss()) return;
 

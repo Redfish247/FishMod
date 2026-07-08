@@ -272,7 +272,7 @@ public static void init() {
         if (!FishSettings.powderTrackerEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         if (!inMiningArea()) return;
 
         int x = FishSettings.powderTrackerHudX;
@@ -292,7 +292,7 @@ public static void init() {
         btnVisible = false;
         if (!FishSettings.powderTrackerEnabled) return;
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.gui.screen() instanceof AbstractContainerScreen<?>)) return;
+        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
         if (!inMiningArea()) return;
 
         int x = FishSettings.powderTrackerHudX;

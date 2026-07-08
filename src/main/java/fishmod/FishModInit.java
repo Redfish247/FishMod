@@ -270,12 +270,12 @@ public class FishModInit implements ModInitializer {
             dispatcher.register(ClientCommands.literal("fm")
                 .then(ClientCommands.literal("customize").executes(context -> {
                     Minecraft.getInstance().schedule(() ->
-                        Minecraft.getInstance().gui.setScreen(new fishmod.features.ItemCustomizeScreen()));
+                        Minecraft.getInstance().setScreen(new fishmod.features.ItemCustomizeScreen()));
                     return Constants.SUCCESS;
                 }))
                 .then(ClientCommands.literal("optimize").executes(context -> {
                     Minecraft.getInstance().schedule(() ->
-                        Minecraft.getInstance().gui.setScreen(new fishmod.features.optimizer.OptimizerScreen(null)));
+                        Minecraft.getInstance().setScreen(new fishmod.features.optimizer.OptimizerScreen(null)));
                     return Constants.SUCCESS;
                 }))
                 .then(ClientCommands.literal("commandhelp").executes(context -> {
@@ -288,7 +288,7 @@ public class FishModInit implements ModInitializer {
                 }))
                 .executes(context -> {
                     Minecraft.getInstance().schedule(() ->
-                        Minecraft.getInstance().gui.setScreen(new fishmod.features.FishModScreen()));
+                        Minecraft.getInstance().setScreen(new fishmod.features.FishModScreen()));
                     return Constants.SUCCESS;
                 })
             );
@@ -306,7 +306,7 @@ public class FishModInit implements ModInitializer {
             dispatcher.register(ClientCommands.literal("po")
                 .executes(ctx -> {
                     Minecraft mc = Minecraft.getInstance();
-                    mc.schedule(() -> mc.gui.setScreen(new fishmod.features.optimizer.OptimizerScreen(mc.gui.screen())));
+                    mc.schedule(() -> mc.setScreen(new fishmod.features.optimizer.OptimizerScreen(mc.screen)));
                     return Constants.SUCCESS;
                 })
             );
@@ -477,7 +477,7 @@ public class FishModInit implements ModInitializer {
             dispatcher.register(ClientCommands.literal("streams")
                 .executes(ctx -> {
                     Minecraft mc = Minecraft.getInstance();
-                    mc.schedule(() -> mc.gui.setScreen(new fishmod.features.streams.StreamsScreen(mc.gui.screen())));
+                    mc.schedule(() -> mc.setScreen(new fishmod.features.streams.StreamsScreen(mc.screen)));
                     return Constants.SUCCESS;
                 })
             );
@@ -485,7 +485,7 @@ public class FishModInit implements ModInitializer {
                 .executes(ctx -> {
                     if (wikiUnavailable(ctx.getSource())) return Constants.SUCCESS;
                     Minecraft mc = Minecraft.getInstance();
-                    mc.schedule(() -> mc.gui.setScreen(new WikiScreen(mc.gui.screen(), "")));
+                    mc.schedule(() -> mc.setScreen(new WikiScreen(mc.screen, "")));
                     return Constants.SUCCESS;
                 })
                 .then(ClientCommands.argument("query", StringArgumentType.greedyString())
@@ -493,7 +493,7 @@ public class FishModInit implements ModInitializer {
                         if (wikiUnavailable(ctx.getSource())) return Constants.SUCCESS;
                         String query = StringArgumentType.getString(ctx, "query");
                         Minecraft mc = Minecraft.getInstance();
-                        mc.schedule(() -> mc.gui.setScreen(new WikiScreen(mc.gui.screen(), query)));
+                        mc.schedule(() -> mc.setScreen(new WikiScreen(mc.screen, query)));
                         return Constants.SUCCESS;
                     })
                 )

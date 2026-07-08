@@ -23,7 +23,7 @@ public class BossBarFeature {
         Minecraft mc = Minecraft.getInstance();
         if (mc == null || mc.player == null) return;
 
-        BossBarHudAccessor accessor = (BossBarHudAccessor) mc.gui.hud.getBossOverlay();
+        BossBarHudAccessor accessor = (BossBarHudAccessor) mc.gui.getBossOverlay();
         Map<UUID, LerpingBossEvent> bossBars = accessor.getBossBars();
         if (bossBars == null || bossBars.isEmpty()) return;
 

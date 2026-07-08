@@ -170,7 +170,7 @@ public class StreamsScreen extends Screen {
         int mx = (int) click.x(), my = (int) click.y();
 
         if (hit(mx, my, refreshX(), 12, 70, 20)) { TwitchStreams.refresh(); return true; }
-        if (hit(mx, my, closeX(), 12, 60, 20)) { Minecraft.getInstance().gui.setScreen(parent); return true; }
+        if (hit(mx, my, closeX(), 12, 60, 20)) { Minecraft.getInstance().setScreen(parent); return true; }
 
         // card clicks
         List<TwitchStreams.Stream> list = TwitchStreams.streams();

@@ -40,7 +40,7 @@ public final class CompactChat {
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.gui == null) return false;
-        int nowTick = mc.gui.hud.getGuiTicks();
+        int nowTick = mc.gui.getGuiTicks();
 
         ChatHudInvoker acc = (ChatHudInvoker) hud;
         List<GuiMessage> messages = acc.getMessages();

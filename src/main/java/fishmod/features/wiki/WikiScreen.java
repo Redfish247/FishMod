@@ -429,7 +429,7 @@ public class WikiScreen extends Screen {
 
         if (key == GLFW.GLFW_KEY_ESCAPE) {
             if (findVisible) { closeFindBar(); return true; }
-            minecraft.gui.setScreen(parent);
+            minecraft.setScreen(parent);
             return true;
         }
         if (ctrl && key == GLFW.GLFW_KEY_F)     { toggleFindBar();                       return true; }

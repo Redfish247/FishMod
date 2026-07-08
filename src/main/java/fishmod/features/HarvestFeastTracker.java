@@ -224,7 +224,7 @@ public class HarvestFeastTracker {
         if (!FishSettings.harvestFeastEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         if (!inFarmingArea()) return;
 
         int x = FishSettings.harvestFeastHudX;
@@ -244,7 +244,7 @@ public class HarvestFeastTracker {
         btnVisible = false;
         if (!FishSettings.harvestFeastEnabled) return;
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.gui.screen() instanceof AbstractContainerScreen<?>)) return;
+        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
         if (!inFarmingArea()) return;
 
         int x = FishSettings.harvestFeastHudX;

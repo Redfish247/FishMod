@@ -94,7 +94,7 @@ public class Keybinds {
     public static void checkInputs(Minecraft client) {
 
         if (openConfig.consumeClick()) {
-            client.gui.setScreen(new fishmod.features.FishModScreen());
+            client.setScreen(new fishmod.features.FishModScreen());
         }
 
         if (trades.consumeClick()) {

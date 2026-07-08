@@ -567,7 +567,7 @@ public class FishModScreen extends Screen {
         {
             Feature f = new Feature("Customize", null, null);
             f.sub.add(new ButtonSetting("Open", "",
-                    () -> Minecraft.getInstance().gui.setScreen(new fishmod.features.ItemCustomizeScreen())));
+                    () -> Minecraft.getInstance().setScreen(new fishmod.features.ItemCustomizeScreen())));
             cosmetics.features.add(f);
         }
         {
@@ -1143,9 +1143,9 @@ public class FishModScreen extends Screen {
         // ----- footer buttons -----
         int fY = bottom() - FOOTER_H, by = fY + (FOOTER_H - 26) / 2, bh = 26;
         int ehW = 96, ehX = cx0();
-        if (hovBtn(mx, my, ehX, by, ehW, bh)) { Minecraft.getInstance().gui.setScreen(new FishHudEditor(this)); return true; }
+        if (hovBtn(mx, my, ehX, by, ehW, bh)) { Minecraft.getInstance().setScreen(new FishHudEditor(this)); return true; }
         int crW = 76, crX = ehX + ehW + 10;
-        if (hovBtn(mx, my, crX, by, crW, bh)) { Minecraft.getInstance().gui.setScreen(new CreditsScreen(this)); return true; }
+        if (hovBtn(mx, my, crX, by, crW, bh)) { Minecraft.getInstance().setScreen(new CreditsScreen(this)); return true; }
         int scW = 126, scX = cx1() - scW;
         if (hovBtn(mx, my, scX, by, scW, bh)) { onClose(); return true; }
         int rsW = 84, rsX = scX - 10 - rsW;

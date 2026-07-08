@@ -1,10 +1,9 @@
 package fishmod.utils.rendering;
 
-import com.mojang.blaze3d.pipeline.BindGroupLayout;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.CompareOp;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.shaders.UniformType;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -29,11 +28,11 @@ public class RenderLayers {
      * Builds a render layer whose pipeline is {@code base} with depth testing turned off, so geometry
      * drawn through it renders on top of (through) the world instead of being occluded by it.
      *
-     * <p>26.2 restructured {@link RenderPipeline} around composite state objects ({@link ColorTargetState},
-     * {@link DepthStencilState}, {@link BindGroupLayout}) instead of flat blend/depth/sampler/uniform
-     * setters, so the clone-and-override approach now copies those state objects wholesale and only
-     * swaps the depth compare op. This is mapping-stable across Minecraft versions — it relies on the
-     * public {@code RenderPipeline} API rather than private internals.
+     * <p>26.1.2's {@link RenderPipeline} is a transitional shape: {@link com.mojang.blaze3d.pipeline.ColorTargetState}/
+     * {@link DepthStencilState} already exist as composite objects, but samplers/uniforms/vertex format
+     * are still flat properties (no {@code BindGroupLayout}/per-buffer vertex bindings yet — those are
+     * 26.2-only). Don't reuse the 26.2 branch's version of this file as-is; the Builder API genuinely
+     * differs between the two versions, not just renamed.
      */
     private static RenderType noDepth(RenderPipeline base, String location, String layerName) {
         DepthStencilState baseDepth = base.getDepthStencilState();
@@ -44,21 +43,12 @@ public class RenderLayers {
                 .withLocation(location)
                 .withVertexShader(base.getVertexShader())
                 .withFragmentShader(base.getFragmentShader())
+                .withVertexFormat(base.getVertexFormat(), base.getVertexFormatMode())
                 .withCull(base.isCull())
                 .withPolygonMode(base.getPolygonMode())
-                .withPrimitiveTopology(base.getPrimitiveTopology())
                 .withColorTargetState(base.getColorTargetState())
                 // The whole point of this layer: render through walls.
                 .withDepthStencilState(noDepthTest);
-
-        for (BindGroupLayout layout : base.getBindGroupLayouts()) {
-            builder.withBindGroupLayout(layout);
-        }
-
-        VertexFormat[] bindings = base.getVertexFormatBindings();
-        for (int i = 0; i < bindings.length; i++) {
-            if (bindings[i] != null) builder.withVertexBinding(i, bindings[i]);
-        }
 
         // Copy shader defines: bare flags directly, keyed values numerically (the builder only exposes
         // int/float keyed defines). The base debug/line pipelines carry no defines, so this is normally
@@ -75,6 +65,16 @@ public class RenderLayers {
                 }
             }
         });
+
+        // Copy samplers and uniforms so the shader still has everything it expects.
+        base.getSamplers().forEach(builder::withSampler);
+        for (RenderPipeline.UniformDescription uniform : base.getUniforms()) {
+            if (uniform.type() == UniformType.TEXEL_BUFFER) {
+                builder.withUniform(uniform.name(), uniform.type(), uniform.textureFormat());
+            } else {
+                builder.withUniform(uniform.name(), uniform.type());
+            }
+        }
 
         return RenderType.create(layerName, RenderSetup.builder(builder.build()).createRenderSetup());
     }

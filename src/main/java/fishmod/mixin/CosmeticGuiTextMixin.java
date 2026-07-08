@@ -75,7 +75,7 @@ public abstract class CosmeticGuiTextMixin {
 
     /** True when a server-driven container GUI (chest menu) is open — where off-server names show up. */
     private static boolean fishmod$inMenu() {
-        return net.minecraft.client.Minecraft.getInstance().gui.screen()
+        return net.minecraft.client.Minecraft.getInstance().screen
                 instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
     }
 

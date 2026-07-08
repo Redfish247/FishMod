@@ -34,7 +34,7 @@ public final class ChatNickRefresher {
 
     private static void reapply(Minecraft mc) {
         if (mc.gui == null) return;
-        ChatComponent hud = mc.gui.hud.getChat();
+        ChatComponent hud = mc.gui.getChat();
         if (hud == null) return;
         List<GuiMessage> messages = ((ChatHudInvoker) hud).getMessages();
         if (messages == null || messages.isEmpty()) return;

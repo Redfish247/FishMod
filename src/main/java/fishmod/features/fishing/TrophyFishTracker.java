@@ -80,7 +80,7 @@ public final class TrophyFishTracker {
 
     // ── menu baseline ──────────────────────────────────────────────────────────
     private static void scanMenu(Minecraft mc) {
-        Screen scr = mc.gui.screen();
+        Screen scr = mc.screen;
         if (!(scr instanceof AbstractContainerScreen<?> hs)
                 || !(hs.getMenu() instanceof ChestMenu handler)
                 || !scr.getTitle().getString().replaceAll("§.", "").trim().contains("Trophy Fish")) {
@@ -157,7 +157,7 @@ public final class TrophyFishTracker {
             needsSync = true;
             Minecraft mc = Minecraft.getInstance();
             mc.execute(() -> {
-                if (mc.gui != null) mc.gui.hud.getChat().addClientSystemMessage(Component.literal(
+                if (mc.gui != null) mc.gui.getChat().addClientSystemMessage(Component.literal(
                         "§e[FishMod] §7Trophy fish counts are now estimated — open the §bTrophy Fishing §7menu to correct them."));
             });
         }
@@ -221,14 +221,14 @@ public final class TrophyFishTracker {
         if (!isVisible()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         draw(ctx, mc);
     }
 
     public static void renderInScreen(GuiGraphicsExtractor ctx) {
         if (!isVisible()) return;
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.gui.screen() instanceof AbstractContainerScreen<?>)) return;
+        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
         draw(ctx, mc);
     }
 

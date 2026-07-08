@@ -251,14 +251,14 @@ public class SkillTracker {
         if (!hasData()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof ChatScreen)) return;
         draw(ctx, mc);
     }
 
     public static void renderInScreen(GuiGraphicsExtractor ctx, int mouseX, int mouseY) {
         if (!hasData()) return;
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.gui.screen() instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>)) return;
+        if (!(mc.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>)) return;
         draw(ctx, mc);
     }
 

@@ -288,7 +288,7 @@ public class SessionStats {
         if (!FishSettings.sessionStatsEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         Location loc = Location.getCurrentLocation();
         boolean show = (loc == Location.DUNGEON    && FishSettings.sessionStatsInDungeon)
                     || (loc == Location.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub);
@@ -312,7 +312,7 @@ public class SessionStats {
         btnVisible = false;
         if (!FishSettings.sessionStatsEnabled) return;
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.gui.screen() instanceof AbstractContainerScreen<?>)) return;
+        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
         Location loc = Location.getCurrentLocation();
         boolean show = (loc == Location.DUNGEON    && FishSettings.sessionStatsInDungeon)
                     || (loc == Location.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub);

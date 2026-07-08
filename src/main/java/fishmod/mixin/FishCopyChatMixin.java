@@ -32,7 +32,7 @@ public class FishCopyChatMixin extends Screen {
         if ((!ExtraOptions.copyChat && !smart) || click.button() != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
 
         Minecraft mc = Minecraft.getInstance();
-        ChatHudInvoker hudInvoker = (ChatHudInvoker) mc.gui.hud.getChat();
+        ChatHudInvoker hudInvoker = (ChatHudInvoker) mc.gui.getChat();
         if (hudInvoker == null) return;
 
         double x = toChatLineX(hudInvoker, click.x());

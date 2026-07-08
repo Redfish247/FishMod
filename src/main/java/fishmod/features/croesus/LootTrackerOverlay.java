@@ -84,7 +84,7 @@ public final class LootTrackerOverlay {
     private static boolean active() {
         if (!FishSettings.lootTrackerEnabled) return false;
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.gui.screen() instanceof InventoryScreen)) return false;
+        if (!(mc.screen instanceof InventoryScreen)) return false;
         return Location.getCurrentLocation() == Location.DUNGEON_HUB;
     }
 
@@ -118,7 +118,7 @@ public final class LootTrackerOverlay {
         CroesusPrices.refreshIfStale(); // fire-and-forget; warms price cache
         Minecraft mc = Minecraft.getInstance();
         Font tr = mc.font;
-        HandledScreenAccessor s = (HandledScreenAccessor) mc.gui.screen();
+        HandledScreenAccessor s = (HandledScreenAccessor) mc.screen;
         int bgX = s.getBgX(), bgY = s.getBgY(), bgW = s.getBgWidth();
         int screenW = mc.getWindow().getGuiScaledWidth();
         int screenH = mc.getWindow().getGuiScaledHeight();

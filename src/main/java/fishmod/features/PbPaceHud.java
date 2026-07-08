@@ -28,7 +28,7 @@ public final class PbPaceHud {
         if (!FishSettings.pbPaceEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof ChatScreen)) return;
         if (!Phase.runStarted()) return;
 
         java.util.List<Split> splits = Phase.getCurrentSplits();

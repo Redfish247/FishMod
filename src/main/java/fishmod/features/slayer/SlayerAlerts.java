@@ -5,7 +5,7 @@ import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.events.Events;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Hud;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
@@ -101,7 +101,7 @@ public final class SlayerAlerts {
             Minecraft mc = Minecraft.getInstance();
             mc.execute(() -> {
                 if (mc.gui != null)
-                    mc.gui.hud.getChat().addClientSystemMessage(Component.literal("§8[slayerdump] §7" + plain));
+                    mc.gui.getChat().addClientSystemMessage(Component.literal("§8[slayerdump] §7" + plain));
             });
         }
     }
@@ -109,7 +109,7 @@ public final class SlayerAlerts {
     private static void alert(String title, String subtitle, net.minecraft.sounds.SoundEvent sound) {
         Minecraft mc = Minecraft.getInstance();
         mc.execute(() -> {
-            Hud hud = mc.gui.hud;
+            Gui hud = mc.gui;
             if (hud == null) return;
             hud.setTimes(0, 25, 8);
             hud.setTitle(Component.literal(title));

@@ -39,13 +39,13 @@ public class Debug {
 
         dispatcher.register(ClientCommands.literal("fm")
                 .executes(context -> {
-                    Minecraft.getInstance().schedule(() -> Minecraft.getInstance().gui.setScreen(new fishmod.features.FishModScreen()));
+                    Minecraft.getInstance().schedule(() -> Minecraft.getInstance().setScreen(new fishmod.features.FishModScreen()));
                     return Constants.SUCCESS;
                 })
                 .then(ClientCommands.literal("bossbars")
                         .executes(context -> {
                             Minecraft mc = Minecraft.getInstance();
-                            BossBarHudAccessor accessor = (BossBarHudAccessor) mc.gui.hud.getBossOverlay();
+                            BossBarHudAccessor accessor = (BossBarHudAccessor) mc.gui.getBossOverlay();
                             var bars = accessor.getBossBars();
                             if (bars == null || bars.isEmpty()) {
                                 Misc.addChatMessage(Component.literal("§cNo boss bars active."));

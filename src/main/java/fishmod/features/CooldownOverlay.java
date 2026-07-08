@@ -279,7 +279,7 @@ public class CooldownOverlay {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer p = mc.player;
         if (p == null || mc.level == null) return;
-        if (mc.gui.hud.isHidden()) return;
+        if (mc.options.hideGui) return;
         if (mc.getDebugOverlay() != null && mc.getDebugOverlay().showDebugScreen()) return;
 
         // Sweep expired entries before drawing.

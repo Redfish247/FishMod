@@ -180,7 +180,7 @@ public class PetHud {
                 HypixelApi.getActivePet(client, PetHud::applyApiPet);
             }
 
-            scanPetsMenuIfOpen(client.gui.screen());
+            scanPetsMenuIfOpen(client.screen);
 
             // After an equip/summon, scan every tick for a short burst (tab can lag the chat msg).
             if (forceScanTicks > 0) {

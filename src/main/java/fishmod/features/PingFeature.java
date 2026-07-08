@@ -110,7 +110,7 @@ public final class PingFeature {
         boolean fired = false;
         while (pingKey.consumeClick()) fired = true; // drain queued presses
         if (fired && FishSettings.pingEnabled && mc.player != null && mc.level != null
-                && mc.gui.screen() == null && Location.inSkyblock()) {
+                && mc.screen == null && Location.inSkyblock()) {
             placePing(mc);
         }
 

@@ -94,7 +94,7 @@ public class TrophyFrogTracker {
 
     // ── menu baseline ──────────────────────────────────────────────────────────
     private static void scanMenu(Minecraft mc) {
-        Screen scr = mc.gui.screen();
+        Screen scr = mc.screen;
         if (!(scr instanceof AbstractContainerScreen<?> hs)
                 || !(hs.getMenu() instanceof ChestMenu handler)
                 || !scr.getTitle().getString().replaceAll("§.", "").trim().equals("Trophy Frogs")) {
@@ -183,7 +183,7 @@ public class TrophyFrogTracker {
             // the renderer ("Close the existing render pass"), so marshal onto the main thread.
             Minecraft mc = Minecraft.getInstance();
             mc.execute(() -> {
-                if (mc.gui != null) mc.gui.hud.getChat().addClientSystemMessage(
+                if (mc.gui != null) mc.gui.getChat().addClientSystemMessage(
                         net.minecraft.network.chat.Component.literal("§e[FishMod] §7Frog counts are now estimated — check up with §bResearcher Ribery §7to correct this menu."));
             });
         }
@@ -264,14 +264,14 @@ public class TrophyFrogTracker {
         if (!FishSettings.trophyFrogEnabled || data.isEmpty() || !inAtoll()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         draw(ctx, mc);
     }
 
     public static void renderInScreen(GuiGraphicsExtractor ctx) {
         if (!FishSettings.trophyFrogEnabled || data.isEmpty() || !inAtoll()) return;
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.gui.screen() instanceof AbstractContainerScreen<?>)) return;
+        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
         draw(ctx, mc);
     }
 

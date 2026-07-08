@@ -576,8 +576,8 @@ if (sessionStartMs < 0 && totalCoins > 0) sessionStartMs = now;
         // Skip while a Forge / Anvil / Crafting GUI is open — items appearing in inv from those
         // are not drops and shouldn't be credited. Re-baseline silently while open so we don't
         // pick up the post-close diff either.
-        if (client.gui.screen() instanceof AbstractContainerScreen<?>) {
-            String title = client.gui.screen().getTitle().getString();
+        if (client.screen instanceof AbstractContainerScreen<?>) {
+            String title = client.screen.getTitle().getString();
             if (title.contains("Forge") || title.contains("The Forge") || title.contains("Anvil")
                     || title.contains("Crafting") || title.contains("Reforge") || title.contains("Recipe Book")) {
                 rebaselineUntilMs = System.currentTimeMillis() + 3_000;
@@ -883,7 +883,7 @@ long now = System.currentTimeMillis();
         if (!FishSettings.miningTrackerEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         if (!inMiningArea()) return;
         int x = FishSettings.miningTrackerHudX;
         int y = FishSettings.miningTrackerHudY;
@@ -902,7 +902,7 @@ long now = System.currentTimeMillis();
         btnVisible = false;
         if (!FishSettings.miningTrackerEnabled) return;
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.gui.screen() instanceof AbstractContainerScreen<?>)) return;
+        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
         if (!inMiningArea()) return;
         int x = FishSettings.miningTrackerHudX;
         int y = FishSettings.miningTrackerHudY;

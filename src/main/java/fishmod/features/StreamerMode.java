@@ -80,8 +80,8 @@ public final class StreamerMode {
 
     private static boolean inPartyFinder() {
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.gui.screen() instanceof AbstractContainerScreen)) return false;
-        Component title = mc.gui.screen().getTitle();
+        if (!(mc.screen instanceof AbstractContainerScreen)) return false;
+        Component title = mc.screen.getTitle();
         String t = title == null ? "" : title.getString().toLowerCase();
         return t.contains("party finder") || t.contains("group builder")
                 || t.contains("parties") || t.contains("your party") || t.contains("party settings");

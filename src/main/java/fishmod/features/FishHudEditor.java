@@ -322,6 +322,6 @@ public class FishHudEditor extends Screen {
     @Override
     public void onClose() {
         FishConfig.manager.save();
-        Minecraft.getInstance().gui.setScreen(parent);
+        Minecraft.getInstance().setScreen(parent);
     }
 }

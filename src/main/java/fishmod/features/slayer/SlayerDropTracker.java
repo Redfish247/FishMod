@@ -121,7 +121,7 @@ public final class SlayerDropTracker {
         if (!FishSettings.slayerDropsEnabled || !any()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         draw(ctx, mc, buildLines());
     }
 
@@ -129,7 +129,7 @@ public final class SlayerDropTracker {
         btnVisible = false;
         if (!FishSettings.slayerDropsEnabled) return;
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.gui.screen() instanceof AbstractContainerScreen<?>)) return;
+        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
 
         String[] lines = buildLines();
         int x = FishSettings.slayerDropsHudX, y = FishSettings.slayerDropsHudY;

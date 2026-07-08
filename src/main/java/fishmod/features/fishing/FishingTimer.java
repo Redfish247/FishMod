@@ -145,7 +145,7 @@ public final class FishingTimer {
         if (!FishSettings.fishingTimerEnabled || !Location.inSkyblock()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
 
         String line = currentLine();
         if (line == null) return;

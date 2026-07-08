@@ -6,7 +6,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Hud;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -57,7 +57,7 @@ public final class ExplosiveShot {
         // ON_GAME_MESSAGE fires on the network thread — touch the HUD only on the client thread.
         Minecraft mc = Minecraft.getInstance();
         mc.execute(() -> {
-            Hud hud = mc.gui.hud;
+            Gui hud = mc.gui;
             hud.setTimes(0, 25, 8); // snappy: no fade-in, ~1.25s hold, quick fade-out
             hud.setTitle(title);
             hud.setSubtitle(subtitle);

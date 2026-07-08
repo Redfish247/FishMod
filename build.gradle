@@ -97,14 +97,14 @@ dependencies {
     // dependency once both ended up on the runtime classpath together.)
 
     // MCEF — compile-only (users install at runtime from Modrinth). Use the local jar when
-    // present; otherwise pull from Modrinth's maven so CI can compile WikiScreen. No 26.2 launcher
+    // present; otherwise pull from Modrinth's maven so CI can compile WikiScreen. No 26.1.2 launcher
     // profile exists on this machine yet, so this currently always falls through to the Modrinth
-    // maven coordinate below — update this path once a 26.2 dev profile is set up locally.
+    // maven coordinate below — update this path once a 26.1.2 dev profile is set up locally.
     def mcefLocal = file('C:/Users/Eli/AppData/Roaming/ModrinthApp/profiles/Skyblock 1.21.8/mods/mcef_fabric_2.2.0_MC_1.21.11.jar')
     if (mcefLocal.exists()) {
         compileOnly files(mcefLocal)
     } else {
-        compileOnly("maven.modrinth:mcef-keksuccino:2.2.1-26.2-fabric")
+        compileOnly("maven.modrinth:mcef-keksuccino:2.2.0-26.1.1-fabric")
     }
 }
 

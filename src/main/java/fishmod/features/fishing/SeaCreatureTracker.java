@@ -8,7 +8,7 @@ import fishmod.utils.events.Events;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Hud;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
@@ -147,7 +147,7 @@ public final class SeaCreatureTracker {
         Minecraft mc = Minecraft.getInstance();
         mc.execute(() -> {
             if (mc.gui != null)
-                mc.gui.hud.getChat().addClientSystemMessage(Component.literal("§8[seadump] §7" + plain));
+                mc.gui.getChat().addClientSystemMessage(Component.literal("§8[seadump] §7" + plain));
         });
     }
 
@@ -161,7 +161,7 @@ public final class SeaCreatureTracker {
         if (c.rare() && FishSettings.seaCreatureRareAlert) {
             Minecraft mc = Minecraft.getInstance();
             mc.execute(() -> {
-                Hud hud = mc.gui.hud;
+                Gui hud = mc.gui;
                 if (hud == null) return;
                 hud.setTimes(0, 30, 10);
                 hud.setTitle(Component.literal("§6§l✦ RARE CATCH ✦"));
@@ -235,7 +235,7 @@ public final class SeaCreatureTracker {
         if (!isVisible()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         draw(ctx, mc, buildLines());
     }
 
@@ -243,7 +243,7 @@ public final class SeaCreatureTracker {
         btnVisible = false;
         if (!isVisible()) return;
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.gui.screen() instanceof AbstractContainerScreen<?>)) return;
+        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
 
         String[] lines = buildLines();
         int x = FishSettings.seaCreatureHudX, y = FishSettings.seaCreatureHudY;

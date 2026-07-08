@@ -110,7 +110,7 @@ public final class WarpMapFeature {
     public static void renderHud(GuiGraphicsExtractor ctx, DeltaTracker tickCounter) {
         if (!fishmod.utils.config.values.FishSettings.warpMapHudEnabled) { hoveredWarp = null; inZone = false; return; }
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null || mc.gui.screen() != null) {
+        if (mc.player == null || mc.level == null || mc.screen != null) {
             hoveredWarp = null; inZone = false; return;
         }
         if (!isOnHypixel(mc)) { hoveredWarp = null; inZone = false; return; }
@@ -127,7 +127,7 @@ public final class WarpMapFeature {
         // In third-person (F5 / F5-front) the camera is offset from the player,
         // so we use the Camera object for all three axes and its own yaw/pitch.
         float delta  = tickCounter.getGameTimeDeltaPartialTick(true);
-        Camera camera = mc.gameRenderer.mainCamera();
+        Camera camera = mc.gameRenderer.getMainCamera();
         boolean thirdPerson = mc.options.getCameraType() != CameraType.FIRST_PERSON;
 
         double ex, ey, ez;
@@ -245,7 +245,7 @@ public final class WarpMapFeature {
     private static boolean lastLeftDown = false;
 
     public static void tickClickDetection(Minecraft mc) {
-        if (mc.player == null || mc.gui.screen() != null || mc.getWindow() == null) {
+        if (mc.player == null || mc.screen != null || mc.getWindow() == null) {
             lastLeftDown = false;
             return;
         }
@@ -261,7 +261,7 @@ public final class WarpMapFeature {
                     && py >= BOX_Y0 && py <= BOX_Y1
                     && pz >= BOX_Z0 && pz <= BOX_Z1;
 
-        Camera camera = mc.gameRenderer.mainCamera();
+        Camera camera = mc.gameRenderer.getMainCamera();
         boolean thirdPerson = mc.options.getCameraType() != CameraType.FIRST_PERSON;
         double ex, ey, ez;
         float  yaw, pitch;
