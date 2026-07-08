@@ -7,8 +7,8 @@ import fishmod.utils.config.values.Floor7;
 import fishmod.utils.dungeon.Phase;
 import fishmod.utils.events.Events;
 import fishmod.utils.rendering.RenderUtils;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 /** Counts down ~5s from Storm's death to terminal start. Ported from blade-addons. */
 public class TermStartTimer {
@@ -28,8 +28,8 @@ public class TermStartTimer {
         return Floor7.enableTermStartTimer && Location.inDungeon() && Phase.inP2() && Phase.stormDead();
     }
 
-    public static void render(HUDComponent component, DrawContext context) {
+    public static void render(HUDComponent component, GuiGraphics context) {
         double num = tick * Constants.TICK_DURATION;
-        RenderUtils.drawCenteredText(context, component, Text.literal(Constants.DECIMAL_FORMAT.format(num)), Constants.YELLOW);
+        RenderUtils.drawCenteredText(context, component, Component.literal(Constants.DECIMAL_FORMAT.format(num)), Constants.YELLOW);
     }
 }

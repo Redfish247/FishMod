@@ -6,16 +6,15 @@ import fishmod.utils.Constants;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.events.Events;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.hud.InGameHud;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.projectile.FishingBobberEntity;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.projectile.FishingHook;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -108,9 +107,9 @@ public final class SeaCreatureTracker {
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (!FishSettings.seaCreatureEnabled) return;
-            if (client.player == null || client.world == null) return;
-            for (Entity e : client.world.getEntities()) {
-                if (e instanceof FishingBobberEntity b && b.getPlayerOwner() == client.player) {
+            if (client.player == null || client.level == null) return;
+            for (Entity e : client.level.entitiesForRendering()) {
+                if (e instanceof FishingHook b && b.getPlayerOwner() == client.player) {
                     lastFishingMs = System.currentTimeMillis();
                     break;
                 }
@@ -145,10 +144,10 @@ public final class SeaCreatureTracker {
 
     private static void dump(String plain) {
         if (!debugDump || plain.isEmpty()) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         mc.execute(() -> {
-            if (mc.inGameHud != null)
-                mc.inGameHud.getChatHud().addMessage(Text.literal("§8[seadump] §7" + plain));
+            if (mc.gui != null)
+                mc.gui.getChat().addMessage(Component.literal("§8[seadump] §7" + plain));
         });
     }
 
@@ -160,15 +159,15 @@ public final class SeaCreatureTracker {
         save();
 
         if (c.rare() && FishSettings.seaCreatureRareAlert) {
-            MinecraftClient mc = MinecraftClient.getInstance();
+            Minecraft mc = Minecraft.getInstance();
             mc.execute(() -> {
-                InGameHud hud = mc.inGameHud;
+                Gui hud = mc.gui;
                 if (hud == null) return;
-                hud.setTitleTicks(0, 30, 10);
-                hud.setTitle(Text.literal("§6§l✦ RARE CATCH ✦"));
-                hud.setSubtitle(Text.literal("§e" + c.name()));
+                hud.setTimes(0, 30, 10);
+                hud.setTitle(Component.literal("§6§l✦ RARE CATCH ✦"));
+                hud.setSubtitle(Component.literal("§e" + c.name()));
                 if (mc.player != null)
-                    mc.player.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                    mc.player.playSound(SoundEvents.PLAYER_LEVELUP, 1.0f, 1.0f);
             });
         }
     }
@@ -231,20 +230,20 @@ public final class SeaCreatureTracker {
         return lines.toArray(new String[0]);
     }
 
-    public static void renderHud(DrawContext ctx, RenderTickCounter tick) {
+    public static void renderHud(GuiGraphics ctx, DeltaTracker tick) {
         btnVisible = false;
         if (!isVisible()) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.currentScreen != null && !(mc.currentScreen instanceof net.minecraft.client.gui.screen.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         draw(ctx, mc, buildLines());
     }
 
-    public static void renderInScreen(DrawContext ctx, int mouseX, int mouseY) {
+    public static void renderInScreen(GuiGraphics ctx, int mouseX, int mouseY) {
         btnVisible = false;
         if (!isVisible()) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (!(mc.currentScreen instanceof HandledScreen<?>)) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
 
         String[] lines = buildLines();
         int x = FishSettings.seaCreatureHudX, y = FishSettings.seaCreatureHudY;
@@ -258,14 +257,14 @@ public final class SeaCreatureTracker {
         boolean hover;
         btnX = x;
         btnY = y + (int) (localY * sc);
-        btnW = (int) ((mc.textRenderer.getWidth(label) + padX * 2) * sc);
+        btnW = (int) ((mc.font.width(label) + padX * 2) * sc);
         btnH = (int) ((Constants.TEXT_HEIGHT + padY * 2 + 1) * sc);
         hover = mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH;
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) x, (float) y);
-        ctx.getMatrices().scale(sc, sc);
-        ctx.drawText(mc.textRenderer, hover ? "§c§l[ Reset ]" : label, padX, localY + padY, 0xFFFFFFFF, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) x, (float) y);
+        ctx.pose().scale(sc, sc);
+        ctx.drawString(mc.font, hover ? "§c§l[ Reset ]" : label, padX, localY + padY, 0xFFFFFFFF, true);
+        ctx.pose().popMatrix();
         btnVisible = true;
     }
 
@@ -278,15 +277,15 @@ public final class SeaCreatureTracker {
         return false;
     }
 
-    private static void draw(DrawContext ctx, MinecraftClient mc, String[] lines) {
+    private static void draw(GuiGraphics ctx, Minecraft mc, String[] lines) {
         int x = FishSettings.seaCreatureHudX, y = FishSettings.seaCreatureHudY;
         float sc = (float) FishSettings.seaCreatureScale;
         int lh = Constants.TEXT_HEIGHT + 1;
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) x, (float) y);
-        ctx.getMatrices().scale(sc, sc);
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) x, (float) y);
+        ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawText(mc.textRenderer, lines[i], 0, lh * i, 0xFFFFFFFF, true);
-        ctx.getMatrices().popMatrix();
+            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+        ctx.pose().popMatrix();
     }
 }

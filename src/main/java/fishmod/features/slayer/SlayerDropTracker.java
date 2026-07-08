@@ -5,14 +5,13 @@ import com.google.gson.GsonBuilder;
 import fishmod.utils.Constants;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.events.Events;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.render.RenderTickCounter;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 
 /**
  * Slayer Drop Tracker — a small session HUD counting RARE / VERY RARE / CRAZY RARE / INSANE drops
@@ -117,20 +116,20 @@ public final class SlayerDropTracker {
     // ── rendering ────────────────────────────────────────────────────────────
     public static boolean isVisible() { return FishSettings.slayerDropsEnabled; }
 
-    public static void renderHud(DrawContext ctx, RenderTickCounter tick) {
+    public static void renderHud(GuiGraphics ctx, DeltaTracker tick) {
         btnVisible = false;
         if (!FishSettings.slayerDropsEnabled || !any()) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.currentScreen != null && !(mc.currentScreen instanceof net.minecraft.client.gui.screen.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         draw(ctx, mc, buildLines());
     }
 
-    public static void renderInScreen(DrawContext ctx, int mouseX, int mouseY) {
+    public static void renderInScreen(GuiGraphics ctx, int mouseX, int mouseY) {
         btnVisible = false;
         if (!FishSettings.slayerDropsEnabled) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (!(mc.currentScreen instanceof HandledScreen<?>)) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
 
         String[] lines = buildLines();
         int x = FishSettings.slayerDropsHudX, y = FishSettings.slayerDropsHudY;
@@ -143,14 +142,14 @@ public final class SlayerDropTracker {
         int localY = lh * lines.length - 2;
         btnX = x;
         btnY = y + (int) (localY * sc);
-        btnW = (int) ((mc.textRenderer.getWidth(label) + padX * 2) * sc);
+        btnW = (int) ((mc.font.width(label) + padX * 2) * sc);
         btnH = (int) ((Constants.TEXT_HEIGHT + padY * 2 + 1) * sc);
         boolean hover = mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH;
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) x, (float) y);
-        ctx.getMatrices().scale(sc, sc);
-        ctx.drawText(mc.textRenderer, hover ? "§c§l[ Reset ]" : label, padX, localY + padY, 0xFFFFFFFF, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) x, (float) y);
+        ctx.pose().scale(sc, sc);
+        ctx.drawString(mc.font, hover ? "§c§l[ Reset ]" : label, padX, localY + padY, 0xFFFFFFFF, true);
+        ctx.pose().popMatrix();
         btnVisible = true;
     }
 
@@ -163,15 +162,15 @@ public final class SlayerDropTracker {
         return false;
     }
 
-    private static void draw(DrawContext ctx, MinecraftClient mc, String[] lines) {
+    private static void draw(GuiGraphics ctx, Minecraft mc, String[] lines) {
         int x = FishSettings.slayerDropsHudX, y = FishSettings.slayerDropsHudY;
         float sc = (float) FishSettings.slayerDropsScale;
         int lh = Constants.TEXT_HEIGHT + 1;
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) x, (float) y);
-        ctx.getMatrices().scale(sc, sc);
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) x, (float) y);
+        ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawText(mc.textRenderer, lines[i], 0, lh * i, 0xFFFFFFFF, true);
-        ctx.getMatrices().popMatrix();
+            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+        ctx.pose().popMatrix();
     }
 }

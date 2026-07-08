@@ -5,18 +5,17 @@ import fishmod.utils.data.ItemUtil;
 import fishmod.utils.events.Events;
 import fishmod.utils.rendering.DrawEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 import fishmod.utils.data.ScoreboardUtil;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -81,9 +80,9 @@ public class CooldownOverlay {
         // Primary trigger: cooldown sound (Enderman teleport, pitch=0, volume=8).
         Events.ON_SOUND.register((SoundEvent event, float volume, float pitch) -> {
             if (!FishSettings.cooldownOverlayEnabled) return false;
-            if (pitch == 0.0f && volume == 8.0f && event == SoundEvents.ENTITY_ENDERMAN_TELEPORT) {
+            if (pitch == 0.0f && volume == 8.0f && event == SoundEvents.ENDERMAN_TELEPORT) {
                 if (debugDumpSound) {
-                    fishmod.utils.Misc.addChatMessage(net.minecraft.text.Text.literal("§d[fmcd] cooldown sound detected"));
+                    fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§d[fmcd] cooldown sound detected"));
                 }
                 onAbilityFired();
             }
@@ -95,7 +94,7 @@ public class CooldownOverlay {
             if (!FishSettings.cooldownOverlayEnabled) return false;
             String s = COLOR_STRIP.matcher(text.getString()).replaceAll("");
             if (debugDumpSound && s.toLowerCase().contains("mana")) {
-                fishmod.utils.Misc.addChatMessage(net.minecraft.text.Text.literal("§d[fmcd] chat: §7" + s));
+                fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§d[fmcd] chat: §7" + s));
             }
             java.util.regex.Matcher cdrM = MAGE_CDR_LINE.matcher(s);
             if (cdrM.find()) {
@@ -105,7 +104,7 @@ public class CooldownOverlay {
             java.util.regex.Matcher m = MANA_LINE.matcher(s);
             if (m.find()) {
                 if (debugDumpSound) {
-                    fishmod.utils.Misc.addChatMessage(net.minecraft.text.Text.literal("§d[fmcd] mana line matched: " + m.group(1)));
+                    fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§d[fmcd] mana line matched: " + m.group(1)));
                 }
                 onAbilityFired();
             }
@@ -124,7 +123,7 @@ public class CooldownOverlay {
             try { mana = Integer.parseInt(m.group(1).replace(",", "")); } catch (NumberFormatException e) { return; }
             if (pendingId != null && System.currentTimeMillis() - pendingAt < 2000
                     && pendingManaBefore >= 0 && mana < pendingManaBefore) {
-                if (debugDumpSound) fishmod.utils.Misc.addChatMessage(net.minecraft.text.Text.literal(
+                if (debugDumpSound) fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal(
                         "§d[fmcd] mana " + pendingManaBefore + "→" + mana + " confirms " + pendingId));
                 pendingId = null;
                 onAbilityFired();
@@ -135,9 +134,9 @@ public class CooldownOverlay {
         // Right-click trigger — ARMS the pending confirmation only. Cooldown is registered by the
         // mana tracker above when mana actually drops, so a no-mana right-click won't start it.
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            if (!FishSettings.cooldownOverlayEnabled) return ActionResult.PASS;
-            if (hand != Hand.MAIN_HAND) return ActionResult.PASS;
-            ItemStack stack = player.getStackInHand(hand);
+            if (!FishSettings.cooldownOverlayEnabled) return InteractionResult.PASS;
+            if (hand != InteractionHand.MAIN_HAND) return InteractionResult.PASS;
+            ItemStack stack = player.getItemInHand(hand);
             if (stack != null && !stack.isEmpty()) {
                 String id = ItemUtil.getId(stack);
                 if (id != null && COOLDOWNS.containsKey(id)) {
@@ -145,11 +144,11 @@ public class CooldownOverlay {
                     pendingAt = System.currentTimeMillis();
                     pendingManaBefore = lastMana;
                     if (debugDumpSound) {
-                        fishmod.utils.Misc.addChatMessage(net.minecraft.text.Text.literal("§d[fmcd] armed " + id + " (mana=" + lastMana + ")"));
+                        fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§d[fmcd] armed " + id + " (mana=" + lastMana + ")"));
                     }
                 }
             }
-            return ActionResult.PASS;
+            return InteractionResult.PASS;
         });
 
         // Inventory-GUI slot overlay (chest GUIs, player inventory open, etc.)
@@ -160,11 +159,11 @@ public class CooldownOverlay {
     }
 
     private static void onAbilityFired() {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        ClientPlayerEntity p = mc.player;
-        if (p == null || mc.getNetworkHandler() == null) return;
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer p = mc.player;
+        if (p == null || mc.getConnection() == null) return;
 
-        ItemStack held = p.getMainHandStack();
+        ItemStack held = p.getMainHandItem();
         if (held == null || held.isEmpty()) return;
 
         String id = ItemUtil.getId(held);
@@ -181,9 +180,9 @@ public class CooldownOverlay {
         boolean inDungeon = fishmod.utils.Location.inDungeon();
 
         // --- TAB LIST SCANNING (Mage detection) ---
-        for (net.minecraft.client.network.PlayerListEntry entry : mc.getNetworkHandler().getPlayerList()) {
-            if (entry.getDisplayName() != null) {
-                String line = entry.getDisplayName().getString();
+        for (net.minecraft.client.multiplayer.PlayerInfo entry : mc.getConnection().getOnlinePlayers()) {
+            if (entry.getTabListDisplayName() != null) {
+                String line = entry.getTabListDisplayName().getString();
 
                 if (line.contains(p.getName().getString()) && line.contains("Mage")) {
                     isMage = true;
@@ -230,7 +229,7 @@ public class CooldownOverlay {
         }
 
         if (debugDumpSound) {
-            fishmod.utils.Misc.addChatMessage(net.minecraft.text.Text.literal(
+            fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal(
                     "§b[fmcd] Final CD: " + String.format("%.1fs", finalCdResult / 1000.0) + (inDungeon ? " (Dungeon)" : " (Outside)")
             ));
         }
@@ -275,26 +274,26 @@ public class CooldownOverlay {
     }
 
     /** Hotbar render hook (called from FishModInit HudRenderCallback). */
-    public static void renderHotbar(DrawContext ctx, RenderTickCounter tickCounter) {
+    public static void renderHotbar(GuiGraphics ctx, DeltaTracker tickCounter) {
         if (!FishSettings.cooldownOverlayEnabled) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
-        ClientPlayerEntity p = mc.player;
-        if (p == null || mc.world == null) return;
-        if (mc.options.hudHidden) return;
-        if (mc.getDebugHud() != null && mc.getDebugHud().shouldShowDebugHud()) return;
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer p = mc.player;
+        if (p == null || mc.level == null) return;
+        if (mc.options.hideGui) return;
+        if (mc.getDebugOverlay() != null && mc.getDebugOverlay().showDebugScreen()) return;
 
         // Sweep expired entries before drawing.
         pruneExpired();
         if (active.isEmpty()) return;
 
-        int sw = mc.getWindow().getScaledWidth();
-        int sh = mc.getWindow().getScaledHeight();
+        int sw = mc.getWindow().getGuiScaledWidth();
+        int sh = mc.getWindow().getGuiScaledHeight();
         int hbX = (sw - 182) / 2;
         int hbY = sh - 22;
 
-        PlayerInventory inv = p.getInventory();
+        Inventory inv = p.getInventory();
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = inv.getStack(i);
+            ItemStack stack = inv.getItem(i);
             if (stack == null || stack.isEmpty()) continue;
             int x = hbX + 3 + i * 20;
             int y = hbY + 3;
@@ -312,9 +311,9 @@ public class CooldownOverlay {
             for (Map.Entry<String, Long> e : active.entrySet())
                 sb.append(e.getKey()).append("(").append(Math.max(0, e.getValue() - now)).append("ms) ");
         }
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
-            ItemStack held = mc.player.getMainHandStack();
+            ItemStack held = mc.player.getMainHandItem();
             sb.append(" | heldId=").append(held == null || held.isEmpty() ? "none" : ItemUtil.getId(held));
         }
         return sb.toString();
@@ -326,7 +325,7 @@ public class CooldownOverlay {
         while (it.hasNext()) if (it.next().getValue() <= now) it.remove();
     }
 
-    private static void drawOverlay(DrawContext ctx, ItemStack stack, int x, int y) {
+    private static void drawOverlay(GuiGraphics ctx, ItemStack stack, int x, int y) {
         if (stack == null || stack.isEmpty()) return;
         String id = ItemUtil.getId(stack);
         if (id == null) return;
@@ -348,14 +347,14 @@ public class CooldownOverlay {
 
 
         if (FishSettings.cooldownShowText) {
-            MinecraftClient mc = MinecraftClient.getInstance();
-            int tx = x + 16 - mc.textRenderer.getWidth(text);
-            int ty = y + 8 - mc.textRenderer.fontHeight / 2 + 1;
+            Minecraft mc = Minecraft.getInstance();
+            int tx = x + 16 - mc.font.width(text);
+            int ty = y + 8 - mc.font.lineHeight / 2 + 1;
             // Draw text on top of items (use 200 z-offset to clear item shading).
-            ctx.getMatrices().pushMatrix();
-            ctx.getMatrices().translate(0f, 0f);
-            ctx.drawText(mc.textRenderer, text, tx, ty, 0xFFFFFFFF, true);
-            ctx.getMatrices().popMatrix();
+            ctx.pose().pushMatrix();
+            ctx.pose().translate(0f, 0f);
+            ctx.drawString(mc.font, text, tx, ty, 0xFFFFFFFF, true);
+            ctx.pose().popMatrix();
         }
     }
     private static int decodeRoman(String roman) {

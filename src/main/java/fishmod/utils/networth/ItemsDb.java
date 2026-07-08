@@ -3,8 +3,6 @@ package fishmod.utils.networth;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.minecraft.client.MinecraftClient;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -15,6 +13,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.client.Minecraft;
 
 /**
  * Lazily fetches and caches the public Hypixel SkyBlock items resource
@@ -64,7 +63,7 @@ public final class ItemsDb {
     }
 
     private static Path file() {
-        Path dir = MinecraftClient.getInstance().runDirectory.toPath().resolve("fishmod-networth");
+        Path dir = Minecraft.getInstance().gameDirectory.toPath().resolve("fishmod-networth");
         return dir.resolve("items.json");
     }
 

@@ -3,10 +3,10 @@ package fishmod.features;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.dungeon.DungeonClass;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.DyedColorComponent;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.item.ItemStack;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.DyedItemColor;
 
 /**
  * Recolors the local player's worn boots (leather dye) to a color that matches their detected dungeon
@@ -39,9 +39,9 @@ public final class ClassColoredBoots {
             int rgb = colorFor(DungeonClass.currentClass);
             if (rgb < 0) return;
             try {
-                ItemStack boots = mc.player.getEquippedStack(EquipmentSlot.FEET);
+                ItemStack boots = mc.player.getItemBySlot(EquipmentSlot.FEET);
                 if (boots == null || boots.isEmpty()) return;
-                boots.set(DataComponentTypes.DYED_COLOR, new DyedColorComponent(rgb & 0xFFFFFF));
+                boots.set(DataComponents.DYED_COLOR, new DyedItemColor(rgb & 0xFFFFFF));
             } catch (Exception ignored) {}
         });
     }

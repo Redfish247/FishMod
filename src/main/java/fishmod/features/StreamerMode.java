@@ -3,12 +3,11 @@ package fishmod.features;
 import fishmod.cosmetic.NameRewriter;
 import fishmod.cosmetic.NickState;
 import fishmod.utils.config.values.FishSettings;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.text.Text;
-
 import java.util.HashSet;
 import java.util.Set;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.network.chat.Component;
 
 /**
  * Streamer Mode — anti-snipe name hiding. The real leak for streamers is the Party Finder menu (and
@@ -37,9 +36,9 @@ public final class StreamerMode {
         if (now - namesAt < 1000) return namesCache;
         namesAt = now;
         Set<String> s = new HashSet<>();
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.getNetworkHandler() != null) {
-            for (var e : mc.getNetworkHandler().getPlayerList()) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getConnection() != null) {
+            for (var e : mc.getConnection().getOnlinePlayers()) {
                 var gp = e.getProfile();
                 if (gp != null && gp.name() != null && gp.name().length() >= 3) s.add(gp.name());
             }
@@ -50,14 +49,14 @@ public final class StreamerMode {
         return s;
     }
 
-    private static Text obfuscate(String name) {
-        return Text.literal(name).styled(st -> st.withObfuscated(true));
+    private static Component obfuscate(String name) {
+        return Component.literal(name).withStyle(st -> st.withObfuscated(true));
     }
 
-    private static Text scramble(Text text, Set<String> names) {
+    private static Component scramble(Component text, Set<String> names) {
         if (text == null || names.isEmpty()) return text;
         String str = text.getString();
-        Text out = text;
+        Component out = text;
         for (String n : names) {
             if (str.contains(n)) out = NameRewriter.replaceName(out, n, obfuscate(n));
         }
@@ -65,7 +64,7 @@ public final class StreamerMode {
     }
 
     /** Chat: scramble just your own IGN. */
-    public static Text censorChat(Text text) {
+    public static Component censorChat(Component text) {
         if (!FishSettings.streamerMode || text == null) return text;
         String self = NickState.realName();
         if (self.isEmpty() || !text.getString().contains(self)) return text;
@@ -73,16 +72,16 @@ public final class StreamerMode {
     }
 
     /** On-screen GUI text: scramble names in Party Finder menus, and in the tab list when enabled. */
-    public static Text forGui(Text text, boolean inMenu) {
+    public static Component forGui(Component text, boolean inMenu) {
         if (!FishSettings.streamerMode || text == null) return text;
         if (inMenu) return inPartyFinder() ? scramble(text, onlineNames()) : text;
         return FishSettings.streamerHideTab ? scramble(text, onlineNames()) : text;
     }
 
     private static boolean inPartyFinder() {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (!(mc.currentScreen instanceof HandledScreen)) return false;
-        Text title = mc.currentScreen.getTitle();
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.screen instanceof AbstractContainerScreen)) return false;
+        Component title = mc.screen.getTitle();
         String t = title == null ? "" : title.getString().toLowerCase();
         return t.contains("party finder") || t.contains("group builder")
                 || t.contains("parties") || t.contains("your party") || t.contains("party settings");

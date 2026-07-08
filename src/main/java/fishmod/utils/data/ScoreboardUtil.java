@@ -1,7 +1,7 @@
 package fishmod.utils.data;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.PlayerInfo;
 
 public class ScoreboardUtil {
 
@@ -16,18 +16,18 @@ public class ScoreboardUtil {
     }
 
     private static ClassInfo getClassInfo() {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc == null || mc.player == null || mc.getNetworkHandler() == null)
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null || mc.player == null || mc.getConnection() == null)
             return null;
 
         String myName = mc.player.getName().getString();
 
-        for (PlayerListEntry entry : mc.getNetworkHandler().getPlayerList()) {
+        for (PlayerInfo entry : mc.getConnection().getOnlinePlayers()) {
             String profileName = entry.getProfile().name();
             if (!profileName.equals(myName)) continue;
 
-            String display = entry.getDisplayName() != null
-                    ? entry.getDisplayName().getString()
+            String display = entry.getTabListDisplayName() != null
+                    ? entry.getTabListDisplayName().getString()
                     : profileName;
 
             // Look for "(Mage XLIX)"

@@ -1,10 +1,10 @@
 package fishmod.features;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 
 /** Small centered credits panel (matches the FishMod overlay style) with a clickable Discord link. */
@@ -31,13 +31,13 @@ public class CreditsScreen extends Screen {
     private int backX, backY, backW, backH;
 
     public CreditsScreen(Screen parent) {
-        super(Text.literal("Credits"));
+        super(Component.literal("Credits"));
         this.parent = parent;
     }
 
-    @Override public boolean shouldPause() { return false; }
-    @Override public void renderBackground(DrawContext ctx, int mx, int my, float d) { }
-    @Override public void renderInGameBackground(DrawContext ctx) { }
+    @Override public boolean isPauseScreen() { return false; }
+    @Override public void renderBackground(GuiGraphics ctx, int mx, int my, float d) { }
+    @Override public void renderTransparentBackground(GuiGraphics ctx) { }
 
     private int pw() { return Math.min(360, this.width  - 20); }
     private int ph() { return Math.min(232, this.height - 20); }
@@ -45,7 +45,7 @@ public class CreditsScreen extends Screen {
     private int py() { return (this.height - ph()) / 2; }
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         ctx.fill(0, 0, this.width, this.height, SCRIM);
 
         int lx = px(), ty = py(), rx = lx + pw(), by = ty + ph();
@@ -57,8 +57,8 @@ public class CreditsScreen extends Screen {
         ctx.fill(rx - 1, ty, rx, by, BORDER);
 
         // wordmark
-        ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal("§lFish§b§lMod"), cx, ty + 14, TEXT);
-        ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Credits"), cx, ty + 26, SUBTEXT);
+        ctx.drawCenteredString(this.font, Component.literal("§lFish§b§lMod"), cx, ty + 14, TEXT);
+        ctx.drawCenteredString(this.font, Component.literal("Credits"), cx, ty + 26, SUBTEXT);
         ctx.fill(lx + 24, ty + 40, rx - 24, ty + 41, DIVIDER);
 
         int y = ty + 52;
@@ -67,29 +67,29 @@ public class CreditsScreen extends Screen {
         drawCredit(ctx, lx + 26, y, "Sushiest", "dungeon help & UI changes");         y += 28;
 
         // Discord link button
-        linkW = this.textRenderer.getWidth(DISCORD) + 24;
+        linkW = this.font.width(DISCORD) + 24;
         linkH = 18;
         linkX = cx - linkW / 2;
         linkY = by - 60;
         boolean linkHov = inside(mouseX, mouseY, linkX, linkY, linkW, linkH);
         ctx.fill(linkX, linkY, linkX + linkW, linkY + linkH, linkHov ? 0xFF1B2733 : 0xFF131B22);
         ctx.fill(linkX, linkY, linkX + linkW, linkY + 1, linkHov ? ACCENT_HOVER : DISCORD_BLURPLE);
-        ctx.drawCenteredTextWithShadow(this.textRenderer,
-                Text.literal((linkHov ? "§b" : "§9") + DISCORD), cx, linkY + 5, DISCORD_BLURPLE);
+        ctx.drawCenteredString(this.font,
+                Component.literal((linkHov ? "§b" : "§9") + DISCORD), cx, linkY + 5, DISCORD_BLURPLE);
 
         // Back button
         backW = 72; backH = 22;
         backX = cx - backW / 2; backY = by - 32;
         boolean backHov = inside(mouseX, mouseY, backX, backY, backW, backH);
         ctx.fill(backX, backY, backX + backW, backY + backH, backHov ? ACCENT_HOVER : ACCENT);
-        ctx.drawCenteredTextWithShadow(this.textRenderer, Text.literal("Back"), cx, backY + (backH - 8) / 2, 0xFF052A29);
+        ctx.drawCenteredString(this.font, Component.literal("Back"), cx, backY + (backH - 8) / 2, 0xFF052A29);
 
         super.render(ctx, mouseX, mouseY, delta);
     }
 
-    private void drawCredit(DrawContext ctx, int x, int y, String name, String role) {
-        ctx.drawText(this.textRenderer, Text.literal(name), x, y, TEXT, false);
-        ctx.drawText(this.textRenderer, Text.literal("§7" + role), x + 6, y + 11, SUBTEXT, false);
+    private void drawCredit(GuiGraphics ctx, int x, int y, String name, String role) {
+        ctx.drawString(this.font, Component.literal(name), x, y, TEXT, false);
+        ctx.drawString(this.font, Component.literal("§7" + role), x + 6, y + 11, SUBTEXT, false);
     }
 
     private static boolean inside(int mx, int my, int x, int y, int w, int h) {
@@ -97,18 +97,18 @@ public class CreditsScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(Click click, boolean bl) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean bl) {
         int mx = (int) click.x(), my = (int) click.y();
-        if (inside(mx, my, backX, backY, backW, backH)) { close(); return true; }
+        if (inside(mx, my, backX, backY, backW, backH)) { onClose(); return true; }
         if (inside(mx, my, linkX, linkY, linkW, linkH)) {
-            try { Util.getOperatingSystem().open(DISCORD_URL); } catch (Throwable ignored) {}
+            try { Util.getPlatform().openUri(DISCORD_URL); } catch (Throwable ignored) {}
             return true;
         }
         return super.mouseClicked(click, bl);
     }
 
     @Override
-    public void close() {
-        MinecraftClient.getInstance().setScreen(parent);
+    public void onClose() {
+        Minecraft.getInstance().setScreen(parent);
     }
 }

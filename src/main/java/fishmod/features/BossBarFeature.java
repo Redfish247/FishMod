@@ -3,49 +3,48 @@ package fishmod.features;
 import fishmod.mixin.accessors.BossBarHudAccessor;
 import fishmod.utils.debug.Debug;
 import fishmod.utils.rendering.RenderUtils;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.hud.ClientBossBar;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.LerpingBossEvent;
+import net.minecraft.network.chat.Component;
 
 public class BossBarFeature {
 
     /** Called from HudRenderCallback — fires BEFORE vanilla boss bar, so only used for non-boss-bar elements. */
-    public static void renderHud(DrawContext ctx) {
+    public static void renderHud(GuiGraphics ctx) {
         // intentionally empty — boss HP drawn in renderAfterVanilla
     }
 
     /** Called from FishBossBarHudMixin @Inject(RETURN) — fires after vanilla draws its text. */
-    public static void renderAfterVanilla(DrawContext ctx) {
-        MinecraftClient mc = MinecraftClient.getInstance();
+    public static void renderAfterVanilla(GuiGraphics ctx) {
+        Minecraft mc = Minecraft.getInstance();
         if (mc == null || mc.player == null) return;
 
-        BossBarHudAccessor accessor = (BossBarHudAccessor) mc.inGameHud.getBossBarHud();
-        Map<UUID, ClientBossBar> bossBars = accessor.getBossBars();
+        BossBarHudAccessor accessor = (BossBarHudAccessor) mc.gui.getBossOverlay();
+        Map<UUID, LerpingBossEvent> bossBars = accessor.getBossBars();
         if (bossBars == null || bossBars.isEmpty()) return;
 
-        int screenWidth = ctx.getScaledWindowWidth();
+        int screenWidth = ctx.guiWidth();
         int y = 12;
 
-        for (ClientBossBar bar : bossBars.values()) {
-            Text customText = buildText(bar);
+        for (LerpingBossEvent bar : bossBars.values()) {
+            Component customText = buildText(bar);
             if (customText != null) {
-                int textWidth = mc.textRenderer.getWidth(customText);
+                int textWidth = mc.font.width(customText);
                 int textX = screenWidth / 2 - textWidth / 2;
-                ctx.drawText(mc.textRenderer, customText, textX, y - 9, 0xFFFFFF, true);
+                ctx.drawString(mc.font, customText, textX, y - 9, 0xFFFFFF, true);
             }
             y += 19;
         }
     }
 
-    private static Text buildText(ClientBossBar bar) {
+    private static Component buildText(LerpingBossEvent bar) {
         try {
             String name = bar.getName().getString().replaceAll("§.", "").trim();
-            float pct = bar.getPercent() * 100f;
+            float pct = bar.getProgress() * 100f;
             String pctStr = pct >= 10 ? String.format("%.1f%%", pct) : String.format("%.2f%%", pct);
 
             float maxHp;
@@ -56,15 +55,15 @@ public class BossBarFeature {
             else maxHp = -1f;
 
             if (maxHp < 0) {
-                return Text.literal(name + " ").formatted(Formatting.RED)
-                        .append(Text.literal(pctStr).formatted(Formatting.GREEN));
+                return Component.literal(name + " ").withStyle(ChatFormatting.RED)
+                        .append(Component.literal(pctStr).withStyle(ChatFormatting.GREEN));
             }
 
-            float currHp = maxHp * bar.getPercent();
-            return Text.literal(name + " ").formatted(Formatting.RED)
-                    .append(Text.literal(RenderUtils.formatNumber(currHp)).formatted(Formatting.GREEN))
-                    .append(Text.literal("/").formatted(Formatting.GRAY))
-                    .append(Text.literal(RenderUtils.formatNumber(maxHp)).formatted(Formatting.GREEN));
+            float currHp = maxHp * bar.getProgress();
+            return Component.literal(name + " ").withStyle(ChatFormatting.RED)
+                    .append(Component.literal(RenderUtils.formatNumber(currHp)).withStyle(ChatFormatting.GREEN))
+                    .append(Component.literal("/").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal(RenderUtils.formatNumber(maxHp)).withStyle(ChatFormatting.GREEN));
         } catch (Exception e) {
             Debug.LOGGER.error("BossBarFeature buildText error: {}", e.getMessage());
             return null;

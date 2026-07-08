@@ -8,17 +8,16 @@ import fishmod.utils.Location;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.events.Events;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.LoreComponent;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.GenericContainerScreenHandler;
-import net.minecraft.text.Text;
-
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemLore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -80,10 +79,10 @@ public final class TrophyFishTracker {
     }
 
     // ── menu baseline ──────────────────────────────────────────────────────────
-    private static void scanMenu(MinecraftClient mc) {
-        Screen scr = mc.currentScreen;
-        if (!(scr instanceof HandledScreen<?> hs)
-                || !(hs.getScreenHandler() instanceof GenericContainerScreenHandler handler)
+    private static void scanMenu(Minecraft mc) {
+        Screen scr = mc.screen;
+        if (!(scr instanceof AbstractContainerScreen<?> hs)
+                || !(hs.getMenu() instanceof ChestMenu handler)
                 || !scr.getTitle().getString().replaceAll("§.", "").trim().contains("Trophy Fish")) {
             lastScreen = scr; return;
         }
@@ -91,12 +90,12 @@ public final class TrophyFishTracker {
         Map<String, int[]> found = new LinkedHashMap<>();
         for (int i = 0; i < handler.slots.size(); i++) {
             ItemStack st;
-            try { st = handler.slots.get(i).getStack(); } catch (Exception e) { continue; }
+            try { st = handler.slots.get(i).getItem(); } catch (Exception e) { continue; }
             if (st == null || st.isEmpty()) continue;
-            String regId = net.minecraft.registry.Registries.ITEM.getId(st.getItem()).toString();
+            String regId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(st.getItem()).toString();
             if (regId.contains("stained_glass_pane") || regId.contains("barrier")) continue;
 
-            String name = st.getName().getString().replaceAll("§.", "").replaceAll("\\s*x\\s*\\d+\\s*$", "").trim();
+            String name = st.getHoverName().getString().replaceAll("§.", "").replaceAll("\\s*x\\s*\\d+\\s*$", "").trim();
             int[] counts = new int[4];
             int present = 0;
             for (String line : lore(st)) {
@@ -156,9 +155,9 @@ public final class TrophyFishTracker {
         data.computeIfAbsent(matched, k -> new int[4])[tier]++;
         if (!needsSync) {
             needsSync = true;
-            MinecraftClient mc = MinecraftClient.getInstance();
+            Minecraft mc = Minecraft.getInstance();
             mc.execute(() -> {
-                if (mc.inGameHud != null) mc.inGameHud.getChatHud().addMessage(Text.literal(
+                if (mc.gui != null) mc.gui.getChat().addMessage(Component.literal(
                         "§e[FishMod] §7Trophy fish counts are now estimated — open the §bTrophy Fishing §7menu to correct them."));
             });
         }
@@ -171,9 +170,9 @@ public final class TrophyFishTracker {
 
     private static List<String> lore(ItemStack stack) {
         List<String> out = new ArrayList<>();
-        LoreComponent lc = stack.get(DataComponentTypes.LORE);
+        ItemLore lc = stack.get(DataComponents.LORE);
         if (lc == null) return out;
-        for (Text line : lc.lines()) out.add(line.getString().replaceAll("§.", ""));
+        for (Component line : lc.lines()) out.add(line.getString().replaceAll("§.", ""));
         return out;
     }
 
@@ -218,66 +217,66 @@ public final class TrophyFishTracker {
         return FishSettings.trophyFishEnabled && !data.isEmpty() && inCrimson();
     }
 
-    public static void renderHud(DrawContext ctx, RenderTickCounter tick) {
+    public static void renderHud(GuiGraphics ctx, DeltaTracker tick) {
         if (!isVisible()) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.currentScreen != null && !(mc.currentScreen instanceof net.minecraft.client.gui.screen.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         draw(ctx, mc);
     }
 
-    public static void renderInScreen(DrawContext ctx) {
+    public static void renderInScreen(GuiGraphics ctx) {
         if (!isVisible()) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (!(mc.currentScreen instanceof HandledScreen<?>)) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
         draw(ctx, mc);
     }
 
-    private static void draw(DrawContext ctx, MinecraftClient mc) {
+    private static void draw(GuiGraphics ctx, Minecraft mc) {
         int x = FishSettings.trophyFishHudX;
         int y = FishSettings.trophyFishHudY;
         float sc = (float) FishSettings.trophyFishHudScale;
         int lh = Constants.TEXT_HEIGHT + 1;
-        var tr = mc.textRenderer;
+        var tr = mc.font;
 
         int nameW = 0;
         int[] amtW = new int[4];
         for (var e : data.entrySet()) {
             int[] v = e.getValue();
             int total = v[0] + v[1] + v[2] + v[3];
-            nameW = Math.max(nameW, tr.getWidth(e.getKey() + " (" + total + ")"));
-            for (int i = 0; i < 4; i++) amtW[i] = Math.max(amtW[i], tr.getWidth(v[i] == 0 ? "-" : String.valueOf(v[i])));
+            nameW = Math.max(nameW, tr.width(e.getKey() + " (" + total + ")"));
+            for (int i = 0; i < 4; i++) amtW[i] = Math.max(amtW[i], tr.width(v[i] == 0 ? "-" : String.valueOf(v[i])));
         }
         int gap = 4;
-        int sepW = tr.getWidth("| ");
+        int sepW = tr.width("| ");
         int[] cellX = new int[4];
         int cur = nameW + gap;
         for (int i = 0; i < 4; i++) { cellX[i] = cur; cur += amtW[i] + gap + sepW; }
 
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) x, (float) y);
-        ctx.getMatrices().scale(sc, sc);
-        ctx.drawText(tr, "Trophy Fish", 0, 0, 0xFF000000 | C_HEADER, true);
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) x, (float) y);
+        ctx.pose().scale(sc, sc);
+        ctx.drawString(tr, "Trophy Fish", 0, 0, 0xFF000000 | C_HEADER, true);
         int row = 1;
         for (var e : data.entrySet()) {
             int ty = lh * row;
             int[] t = e.getValue();
             int total = t[0] + t[1] + t[2] + t[3];
-            ctx.drawText(tr, e.getKey() + " ", 0, ty, 0xFF000000 | C_NAME, true);
-            drawTok(ctx, tr, "(" + total + ")", tr.getWidth(e.getKey() + " "), ty, C_TOTAL);
+            ctx.drawString(tr, e.getKey() + " ", 0, ty, 0xFF000000 | C_NAME, true);
+            drawTok(ctx, tr, "(" + total + ")", tr.width(e.getKey() + " "), ty, C_TOTAL);
             for (int i = 0; i < 4; i++) {
                 int cx = cellX[i];
                 if (i > 0) drawTok(ctx, tr, "| ", cx - sepW, ty, C_SEP);
                 String num = t[i] == 0 ? "-" : String.valueOf(t[i]);
-                drawTok(ctx, tr, num, cx + (amtW[i] - tr.getWidth(num)), ty, t[i] == 0 ? C_MISSING : COLORS[i]);
+                drawTok(ctx, tr, num, cx + (amtW[i] - tr.width(num)), ty, t[i] == 0 ? C_MISSING : COLORS[i]);
             }
             row++;
         }
-        ctx.getMatrices().popMatrix();
+        ctx.pose().popMatrix();
     }
 
-    private static void drawTok(DrawContext ctx, net.minecraft.client.font.TextRenderer tr,
+    private static void drawTok(GuiGraphics ctx, net.minecraft.client.gui.Font tr,
                                 String s, int cx, int ty, int color) {
-        ctx.drawText(tr, s, cx, ty, 0xFF000000 | color, true);
+        ctx.drawString(tr, s, cx, ty, 0xFF000000 | color, true);
     }
 }

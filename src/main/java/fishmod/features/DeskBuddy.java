@@ -3,11 +3,11 @@ package fishmod.features;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.events.Events;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.player.LocalPlayer;
 
 /**
  * Desk-Buddy — a tiny kaomoji companion that lives in the corner of your HUD. It idles with a gentle
@@ -81,21 +81,21 @@ public final class DeskBuddy {
         }
     }
 
-    private static void tick(MinecraftClient mc) {
+    private static void tick(Minecraft mc) {
         if (!FishSettings.deskBuddyEnabled) return;
-        ClientPlayerEntity p = mc.player;
+        LocalPlayer p = mc.player;
         if (p == null) return;
         long now = System.currentTimeMillis();
 
         // Activity = any movement or camera change since last tick.
         if (!poseInit) {
-            pX = p.getX(); pY = p.getY(); pZ = p.getZ(); pYaw = p.getYaw(); pPitch = p.getPitch();
+            pX = p.getX(); pY = p.getY(); pZ = p.getZ(); pYaw = p.getYRot(); pPitch = p.getXRot();
             poseInit = true; lastActivityMs = now;
         } else {
             boolean moved = p.getX() != pX || p.getY() != pY || p.getZ() != pZ
-                    || p.getYaw() != pYaw || p.getPitch() != pPitch;
+                    || p.getYRot() != pYaw || p.getXRot() != pPitch;
             if (moved) lastActivityMs = now;
-            pX = p.getX(); pY = p.getY(); pZ = p.getZ(); pYaw = p.getYaw(); pPitch = p.getPitch();
+            pX = p.getX(); pY = p.getY(); pZ = p.getZ(); pYaw = p.getYRot(); pPitch = p.getXRot();
         }
     }
 
@@ -136,11 +136,11 @@ public final class DeskBuddy {
         return "§7idle";
     }
 
-    public static void renderHud(DrawContext ctx, RenderTickCounter tickCounter) {
+    public static void renderHud(GuiGraphics ctx, DeltaTracker tickCounter) {
         if (!FishSettings.deskBuddyEnabled) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.currentScreen != null && !(mc.currentScreen instanceof ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof ChatScreen)) return;
 
         long now = System.currentTimeMillis();
         // Blink scheduler (only while awake & not mid-reaction).
@@ -178,12 +178,12 @@ public final class DeskBuddy {
         }
 
         int lh = fishmod.utils.Constants.TEXT_HEIGHT + 1;
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) x, (float) y);
-        ctx.getMatrices().scale(sc, sc);
-        ctx.drawText(mc.textRenderer, "§6" + name, 0, 0, 0xFFFFFFFF, true);
-        ctx.drawText(mc.textRenderer, faceStr, Math.round(wiggle), lh + Math.round(bob), 0xFFFFFFFF, true);
-        ctx.drawText(mc.textRenderer, moodStr, 0, lh * 2 + 2, 0xFFFFFFFF, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) x, (float) y);
+        ctx.pose().scale(sc, sc);
+        ctx.drawString(mc.font, "§6" + name, 0, 0, 0xFFFFFFFF, true);
+        ctx.drawString(mc.font, faceStr, Math.round(wiggle), lh + Math.round(bob), 0xFFFFFFFF, true);
+        ctx.drawString(mc.font, moodStr, 0, lh * 2 + 2, 0xFFFFFFFF, true);
+        ctx.pose().popMatrix();
     }
 }

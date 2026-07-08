@@ -4,12 +4,11 @@ import fishmod.utils.Constants;
 import fishmod.utils.Location;
 import fishmod.utils.config.values.FishSettings;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.client.render.RenderTickCounter;
-
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,7 +34,7 @@ public class SoulflowHud {
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (!FishSettings.soulflowHudEnabled) return;
-            if (client.player == null || client.getNetworkHandler() == null) {
+            if (client.player == null || client.getConnection() == null) {
                 soulflow = -1;
                 return;
             }
@@ -46,15 +45,15 @@ public class SoulflowHud {
             tickCount++;
             if (tickCount < 10) return;
             tickCount = 0;
-            scanTabList(client.getNetworkHandler());
+            scanTabList(client.getConnection());
         });
     }
 
-    private static void scanTabList(ClientPlayNetworkHandler handler) {
-        Collection<PlayerListEntry> entries = handler.getPlayerList();
-        for (PlayerListEntry entry : entries) {
-            if (entry.getDisplayName() == null) continue;
-            String text = COLOR_STRIP.matcher(entry.getDisplayName().getString()).replaceAll("").trim();
+    private static void scanTabList(ClientPacketListener handler) {
+        Collection<PlayerInfo> entries = handler.getOnlinePlayers();
+        for (PlayerInfo entry : entries) {
+            if (entry.getTabListDisplayName() == null) continue;
+            String text = COLOR_STRIP.matcher(entry.getTabListDisplayName().getString()).replaceAll("").trim();
             Matcher m = SF_PATTERN.matcher(text);
             if (m.find()) {
                 String numStr = m.group(1).replace(",", "");
@@ -74,16 +73,16 @@ public class SoulflowHud {
                 && !warnedThisSession
                 && missCount >= MISS_SCANS_BEFORE_WARN) {
             warnedThisSession = true;
-            fishmod.utils.Misc.addChatMessage(net.minecraft.text.Text.literal(
+            fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal(
                 "§3[FishMod] §eSoulflow not visible in /tab. Run §b/tab §e→ click §bProfile §e→ enable §bSoulflow§e."
             ));
         }
     }
 
-    public static void renderHud(DrawContext ctx, RenderTickCounter tickCounter) {
+    public static void renderHud(GuiGraphics ctx, DeltaTracker tickCounter) {
         if (!FishSettings.soulflowHudEnabled) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.player == null || mc.world == null) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) return;
         if (!Location.inSkyblock()) return;
         if (soulflow < 0) return;
 
@@ -101,10 +100,10 @@ public class SoulflowHud {
         }
 
         float sc = (float) FishSettings.soulflowHudScale;
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) FishSettings.soulflowHudX, (float) FishSettings.soulflowHudY);
-        ctx.getMatrices().scale(sc, sc);
-        ctx.drawText(mc.textRenderer, label, 0, 0, -1, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) FishSettings.soulflowHudX, (float) FishSettings.soulflowHudY);
+        ctx.pose().scale(sc, sc);
+        ctx.drawString(mc.font, label, 0, 0, -1, true);
+        ctx.pose().popMatrix();
     }
 }

@@ -2,9 +2,6 @@ package fishmod.mixin;
 
 import fishmod.features.dungeon.PartyCommandHandler;
 import fishmod.utils.config.values.FishSettings;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.hud.ChatHud;
-import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -12,8 +9,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.ChatComponent;
+import net.minecraft.network.chat.Component;
 
-@Mixin(ChatHud.class)
+@Mixin(ChatComponent.class)
 public class ChatHudMixin {
 
     // ── Command Parsing Logic ──────────────────────────────────────────────────
@@ -37,8 +37,8 @@ public class ChatHudMixin {
     private static final Pattern ALL_CMD = Pattern.compile(
             "^(?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")" + ARG_TAIL);
 
-    @Inject(method = "addMessage(Lnet/minecraft/text/Text;)V", at = @At("HEAD"), cancellable = true)
-    private void onAddMessage(Text message, CallbackInfo ci) {
+    @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;)V", at = @At("HEAD"), cancellable = true)
+    private void onAddMessage(Component message, CallbackInfo ci) {
         // Chat filter: hide selected spam lines at DISPLAY time. Packet-level parsers (dungeon
         // splits/score, Simon Says, …) already ran via ON_GAME_MESSAGE before the line reaches
         // here, so suppressing it now never breaks those features.
@@ -69,7 +69,7 @@ public class ChatHudMixin {
         // Collapse identical repeats into a single "(N)"-counted line. Runs last so filtered/
         // dispatched lines are already handled; cancels + re-adds the message when it collapses.
         if (FishSettings.chatCompact
-                && fishmod.features.CompactChat.tryCompact(message, (ChatHud) (Object) this, ci)) return;
+                && fishmod.features.CompactChat.tryCompact(message, (ChatComponent) (Object) this, ci)) return;
 
         if (FishSettings.chatMeow) tryMeow(plain);
     }
@@ -89,8 +89,8 @@ public class ChatHudMixin {
     private static long lastMeowAt = 0;
 
     private static void tryMeow(String plain) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.getNetworkHandler() == null || mc.player == null) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getConnection() == null || mc.player == null) return;
 
         String prefix = null; Matcher m;
         if (FishSettings.chatParty && (m = PARTY_MSG.matcher(plain)).find()) prefix = "pc ";
@@ -112,7 +112,7 @@ public class ChatHudMixin {
         String reply = prefix + MEOWS[(int) (Math.random() * MEOWS.length)];
         java.util.concurrent.CompletableFuture.delayedExecutor(400, java.util.concurrent.TimeUnit.MILLISECONDS)
                 .execute(() -> mc.execute(() -> {
-                    if (mc.getNetworkHandler() != null) mc.getNetworkHandler().sendChatCommand(reply);
+                    if (mc.getConnection() != null) mc.getConnection().sendCommand(reply);
                 }));
     }
 

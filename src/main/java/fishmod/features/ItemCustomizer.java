@@ -4,17 +4,16 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.NbtComponent;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.equipment.trim.ArmorTrim;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.util.Identifier;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.equipment.trim.ArmorTrim;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -64,9 +63,9 @@ public final class ItemCustomizer {
             try {
                 boolean dirty = false;
                 var inv = mc.player.getInventory();
-                for (int i = 0; i < inv.size(); i++) dirty |= applyAndBackfill(inv.getStack(i));
-                ScreenHandler h = mc.player.currentScreenHandler;
-                if (h != null) for (var slot : h.slots) dirty |= applyAndBackfill(slot.getStack());
+                for (int i = 0; i < inv.getContainerSize(); i++) dirty |= applyAndBackfill(inv.getItem(i));
+                AbstractContainerMenu h = mc.player.containerMenu;
+                if (h != null) for (var slot : h.slots) dirty |= applyAndBackfill(slot.getItem());
                 // A custom captured its vanilla type for the first time → persist + republish so other
                 // players (who can only match by vanilla type) start seeing it.
                 if (dirty) { save(); uploadOwn(); }
@@ -77,7 +76,7 @@ public final class ItemCustomizer {
     /** The vanilla registry id of a stack's base item (e.g. "minecraft:diamond_sword"). */
     public static String vanillaId(ItemStack st) {
         if (st == null || st.isEmpty()) return null;
-        try { return Registries.ITEM.getId(st.getItem()).toString(); } catch (Exception e) { return null; }
+        try { return BuiltInRegistries.ITEM.getKey(st.getItem()).toString(); } catch (Exception e) { return null; }
     }
 
     /**
@@ -109,19 +108,19 @@ public final class ItemCustomizer {
     public static String keyFor(ItemStack st) {
         if (st == null || st.isEmpty()) return null;
         try {
-            NbtComponent cd = st.get(DataComponentTypes.CUSTOM_DATA);
+            CustomData cd = st.get(DataComponents.CUSTOM_DATA);
             if (cd != null) {
-                NbtCompound nbt = cd.copyNbt();
-                NbtCompound ea = nbt.getCompound("ExtraAttributes").orElse(null);
+                CompoundTag nbt = cd.copyTag();
+                CompoundTag ea = nbt.getCompound("ExtraAttributes").orElse(null);
                 if (ea != null) {
-                    String u = ea.getString("uuid", "");
+                    String u = ea.getStringOr("uuid", "");
                     if (!u.isEmpty()) return "uuid:" + u;
-                    String id = ea.getString("id", "");
+                    String id = ea.getStringOr("id", "");
                     if (!id.isEmpty()) return "id:" + id;
                 }
-                String u = nbt.getString("uuid", "");
+                String u = nbt.getStringOr("uuid", "");
                 if (!u.isEmpty()) return "uuid:" + u;
-                String id = nbt.getString("id", "");
+                String id = nbt.getStringOr("id", "");
                 if (!id.isEmpty()) return "id:" + id;
             }
         } catch (Exception ignored) {}
@@ -187,18 +186,18 @@ public final class ItemCustomizer {
             if (hasName || c.stars() > 0) {
                 String base = hasName ? fishmod.cosmetic.ProfanityFilter.censor(c.name())
                                       : st.getItem().getName().getString();
-                net.minecraft.text.Text styled = fishmod.cosmetic.NickState.parse(base + starSuffix(c.stars()));
+                net.minecraft.network.chat.Component styled = fishmod.cosmetic.NickState.parse(base + starSuffix(c.stars()));
                 // Vanilla auto-italicizes CUSTOM_NAME (anvil-rename behavior); explicitly clear it.
-                net.minecraft.text.MutableText name = net.minecraft.text.Text.empty()
+                net.minecraft.network.chat.MutableComponent name = net.minecraft.network.chat.Component.empty()
                         .append(styled)
-                        .setStyle(net.minecraft.text.Style.EMPTY.withItalic(false));
-                st.set(DataComponentTypes.CUSTOM_NAME, name);
+                        .setStyle(net.minecraft.network.chat.Style.EMPTY.withItalic(false));
+                st.set(DataComponents.CUSTOM_NAME, name);
             }
             if (c.modelId() != null && !c.modelId().isEmpty()) {
-                st.set(DataComponentTypes.ITEM_MODEL, ident(c.modelId()));
+                st.set(DataComponents.ITEM_MODEL, ident(c.modelId()));
             }
             if (c.dye() >= 0)
-                st.set(DataComponentTypes.DYED_COLOR, new net.minecraft.component.type.DyedColorComponent(c.dye() & 0xFFFFFF));
+                st.set(DataComponents.DYED_COLOR, new net.minecraft.world.item.component.DyedItemColor(c.dye() & 0xFFFFFF));
             applyTrim(st, c);
             if (applySkin) applyHeadSkin(st, c);
         } catch (Exception ignored) {}
@@ -211,22 +210,22 @@ public final class ItemCustomizer {
      */
     private static void applyHeadSkin(ItemStack st, Custom c) {
         if (c.skin() == null || c.skin().isEmpty()) return;
-        if (!st.isOf(net.minecraft.item.Items.PLAYER_HEAD)) return;
+        if (!st.is(net.minecraft.world.item.Items.PLAYER_HEAD)) return;
         try {
-            net.minecraft.component.type.ProfileComponent pc = buildSkinProfile(c.skin());
-            if (pc != null) st.set(DataComponentTypes.PROFILE, pc);
+            net.minecraft.world.item.component.ResolvableProfile pc = buildSkinProfile(c.skin());
+            if (pc != null) st.set(DataComponents.PROFILE, pc);
         } catch (Exception ignored) {}
     }
 
     /** Builds a PROFILE component carrying the given head texture, or null if it can't be resolved. */
-    public static net.minecraft.component.type.ProfileComponent buildSkinProfile(String skin) {
+    public static net.minecraft.world.item.component.ResolvableProfile buildSkinProfile(String skin) {
         String value = texturesValue(skin);
         if (value == null) return null;
         // A stable UUID per texture keeps the profile cache-friendly; the name is cosmetic.
         java.util.UUID id = java.util.UUID.nameUUIDFromBytes(value.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         com.mojang.authlib.GameProfile gp = new com.mojang.authlib.GameProfile(id, "FishModSkin");
         gp.properties().put("textures", new com.mojang.authlib.properties.Property("textures", value));
-        return net.minecraft.component.type.ProfileComponent.ofStatic(gp);
+        return net.minecraft.world.item.component.ResolvableProfile.createResolved(gp);
     }
 
     /**
@@ -257,20 +256,20 @@ public final class ItemCustomizer {
     private static void applyTrim(ItemStack st, Custom c) {
         if (c.trimMat() == null || c.trimMat().isEmpty() || c.trimPat() == null || c.trimPat().isEmpty()) return;
         try {
-            MinecraftClient mc = MinecraftClient.getInstance();
-            if (mc.world == null) return;
-            var drm = mc.world.getRegistryManager();
-            var matReg = drm.getOptional(RegistryKeys.TRIM_MATERIAL).orElse(null);
-            var patReg = drm.getOptional(RegistryKeys.TRIM_PATTERN).orElse(null);
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.level == null) return;
+            var drm = mc.level.registryAccess();
+            var matReg = drm.lookup(Registries.TRIM_MATERIAL).orElse(null);
+            var patReg = drm.lookup(Registries.TRIM_PATTERN).orElse(null);
             if (matReg == null || patReg == null) return;
-            var mat = matReg.getEntry(ident(c.trimMat())).orElse(null);
-            var pat = patReg.getEntry(ident(c.trimPat())).orElse(null);
-            if (mat != null && pat != null) st.set(DataComponentTypes.TRIM, new ArmorTrim(mat, pat));
+            var mat = matReg.get(ident(c.trimMat())).orElse(null);
+            var pat = patReg.get(ident(c.trimPat())).orElse(null);
+            if (mat != null && pat != null) st.set(DataComponents.TRIM, new ArmorTrim(mat, pat));
         } catch (Exception ignored) {}
     }
 
     private static Identifier ident(String id) {
-        return id.contains(":") ? Identifier.of(id) : Identifier.ofVanilla(id);
+        return id.contains(":") ? Identifier.parse(id) : Identifier.withDefaultNamespace(id);
     }
 
     // ── persistence + sharing ──────────────────────────────────────────────────
@@ -330,9 +329,9 @@ public final class ItemCustomizer {
     /** Publishes the local player's customizations to the proxy so other mod users see them. */
     public static void uploadOwn() {
         if (!fishmod.utils.config.values.FishSettings.remoteItemsEnabled) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.getSession() == null) return;
-        java.util.UUID id = mc.getSession().getUuidOrNull();
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getUser() == null) return;
+        java.util.UUID id = mc.getUser().getProfileId();
         if (id == null) return;
         fishmod.utils.HypixelApi.uploadItems(id.toString().replace("-", ""), serialize());
     }

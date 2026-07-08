@@ -2,19 +2,19 @@ package fishmod.features.wiki;
 
 import com.cinemamod.mcef.MCEF;
 import com.cinemamod.mcef.MCEFBrowser;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.network.chat.Component;
 
 public class WikiScreen extends Screen {
 
@@ -45,13 +45,13 @@ public class WikiScreen extends Screen {
     private String  lastFindText  = "";
     private int     bookmarkScroll = 0;
 
-    private TextFieldWidget findField;
+    private EditBox findField;
 
     private static final String WIKI_HOST = "hypixelskyblock.minecraft.wiki";
     private static final String WIKI_HOME = "https://hypixelskyblock.minecraft.wiki/w/Main_Page";
 
     public WikiScreen(Screen parent, String initialQuery) {
-        super(Text.literal("Wiki"));
+        super(Component.literal("Wiki"));
         this.parent       = parent;
         this.initialQuery = (initialQuery == null) ? "" : initialQuery;
     }
@@ -78,13 +78,13 @@ public class WikiScreen extends Screen {
 
     // ── coordinate helpers ─────────────────────────────────────────────────────
 
-    private int bx(double guiX) { return (int)(guiX * client.getWindow().getScaleFactor()); }
-    private int by(double guiY) { return (int)(guiY * client.getWindow().getScaleFactor()); }
+    private int bx(double guiX) { return (int)(guiX * minecraft.getWindow().getGuiScale()); }
+    private int by(double guiY) { return (int)(guiY * minecraft.getWindow().getGuiScale()); }
     private int sideW()         { return sidebarOpen ? SIDEBAR_W : 0; }
     private int browserW()      { return width - sideW(); }
     private int browserH()      { return height - BAR_H - (findVisible ? FIND_BAR_H : 0); }
-    private int browserPixelW() { return (int)(browserW() * client.getWindow().getScaleFactor()); }
-    private int browserPixelH() { return (int)(browserH() * client.getWindow().getScaleFactor()); }
+    private int browserPixelW() { return (int)(browserW() * minecraft.getWindow().getGuiScale()); }
+    private int browserPixelH() { return (int)(browserH() * minecraft.getWindow().getGuiScale()); }
 
     // ── button positions (top bar) ─────────────────────────────────────────────
 
@@ -123,18 +123,18 @@ public class WikiScreen extends Screen {
         if (browser != null) browser.resize(browserPixelW(), browserPixelH());
 
         int ffY = height - FIND_BAR_H + (FIND_BAR_H - 16) / 2;
-        findField = new TextFieldWidget(textRenderer, findFieldX(), ffY, findFieldW(), 16, Text.literal(""));
+        findField = new EditBox(font, findFieldX(), ffY, findFieldW(), 16, Component.literal(""));
         findField.setMaxLength(256);
-        findField.setText(lastFindText);
+        findField.setValue(lastFindText);
         findField.setVisible(findVisible);
-        addDrawableChild(findField);
+        addRenderableWidget(findField);
     }
 
     @Override
     public void resize(int w, int h) {
-        String savedFind = findField != null ? findField.getText() : null;
+        String savedFind = findField != null ? findField.getValue() : null;
         super.resize(w, h);
-        if (savedFind != null && findField != null) findField.setText(savedFind);
+        if (savedFind != null && findField != null) findField.setValue(savedFind);
         if (browser != null) browser.resize(browserPixelW(), browserPixelH());
     }
 
@@ -153,10 +153,10 @@ public class WikiScreen extends Screen {
     // ── rendering ──────────────────────────────────────────────────────────────
 
     @Override
-    public void renderBackground(DrawContext ctx, int mx, int my, float delta) {}
+    public void renderBackground(GuiGraphics ctx, int mx, int my, float delta) {}
 
     @Override
-    public void render(DrawContext ctx, int mx, int my, float delta) {
+    public void render(GuiGraphics ctx, int mx, int my, float delta) {
         // Smooth scroll
         if (browser != null && pendingScroll != 0.0) {
             long now = System.nanoTime();
@@ -187,16 +187,16 @@ public class WikiScreen extends Screen {
 
         // Browser content
         if (browser != null && browser.isTextureReady()) {
-            ctx.drawTexture(RenderPipelines.GUI_TEXTURED,
+            ctx.blit(RenderPipelines.GUI_TEXTURED,
                 browser.getTextureIdentifier(),
                 0, BAR_H, 0f, 0f, bW, bH, bW, bH);
         } else {
             ctx.fill(0, BAR_H, bW, BAR_H + bH, 0xFF0d0e17);
             if (!MCEF.isInitialized()) {
-                ctx.drawCenteredTextWithShadow(textRenderer, "§cMCEF not installed!", bW/2, BAR_H + bH/2 - 10, 0xFFFFFFFF);
-                ctx.drawCenteredTextWithShadow(textRenderer, "§7Install §fMCEF §7from Modrinth for MC 1.21.11", bW/2, BAR_H + bH/2 + 4, 0xFFAAAAAA);
+                ctx.drawCenteredString(font, "§cMCEF not installed!", bW/2, BAR_H + bH/2 - 10, 0xFFFFFFFF);
+                ctx.drawCenteredString(font, "§7Install §fMCEF §7from Modrinth for MC 1.21.11", bW/2, BAR_H + bH/2 + 4, 0xFFAAAAAA);
             } else {
-                ctx.drawCenteredTextWithShadow(textRenderer, "§7Loading...", bW/2, BAR_H + bH/2, 0xFFAAAAAA);
+                ctx.drawCenteredString(font, "§7Loading...", bW/2, BAR_H + bH/2, 0xFFAAAAAA);
             }
         }
 
@@ -226,8 +226,8 @@ public class WikiScreen extends Screen {
         if (zoomLevel != 0.0) {
             int pct = (int)(Math.pow(1.2, zoomLevel) * 100);
             String lbl = "§7" + pct + "%";
-            ctx.drawTextWithShadow(textRenderer, lbl,
-                zoomOutX() - textRenderer.getWidth(lbl) - 4,
+            ctx.drawString(font, lbl,
+                zoomOutX() - font.width(lbl) - 4,
                 bY + (BTN_H - 8) / 2, 0xFF888888);
         }
 
@@ -239,7 +239,7 @@ public class WikiScreen extends Screen {
             int fbY = height - FIND_BAR_H;
             ctx.fill(0, fbY, width, height, COL_BAR);
             ctx.fill(0, fbY, width, fbY + 1, 0xFF2a3a6a);
-            ctx.drawTextWithShadow(textRenderer, "§7Find:", 4, fbY + (FIND_BAR_H - 8) / 2, 0xFFAAAAAA);
+            ctx.drawString(font, "§7Find:", 4, fbY + (FIND_BAR_H - 8) / 2, 0xFFAAAAAA);
             ctx.fill(findFieldX() - 2, fbY + (FIND_BAR_H - 18) / 2,
                      findFieldX() + findFieldW() + 2, height - (FIND_BAR_H - 18) / 2, COL_INPUT);
             int fb = findBtnY();
@@ -251,7 +251,7 @@ public class WikiScreen extends Screen {
         super.render(ctx, mx, my, delta);
     }
 
-    private void renderSidebar(DrawContext ctx, int mx, int my) {
+    private void renderSidebar(GuiGraphics ctx, int mx, int my) {
         int sx    = width - SIDEBAR_W;
         int sy    = BAR_H;
         int sh    = height - BAR_H;
@@ -263,7 +263,7 @@ public class WikiScreen extends Screen {
         // "★ Add" button
         int addY = sy + 3;
         ctx.fill(sx + 2, addY, sx + inner + 2, addY + BTN_H, COL_BTN);
-        ctx.drawCenteredTextWithShadow(textRenderer, "§e★ §7Add current page",
+        ctx.drawCenteredString(font, "§e★ §7Add current page",
             sx + SIDEBAR_W / 2, addY + (BTN_H - 8) / 2, 0xFFFFFFFF);
 
         // Bookmarks list
@@ -281,25 +281,25 @@ public class WikiScreen extends Screen {
             ctx.fill(sx + 2, rowY, width - BTN_W - 4, rowY + rowH - 2, hovered ? 0xFF1e3050 : 0xFF0d1420);
 
             String title = bm[1].length() > 13 ? bm[1].substring(0, 13) + "…" : bm[1];
-            ctx.drawTextWithShadow(textRenderer, "§f" + title, sx + 5, rowY + (rowH - 10) / 2, 0xFFCCCCCC);
+            ctx.drawString(font, "§f" + title, sx + 5, rowY + (rowH - 10) / 2, 0xFFCCCCCC);
 
             // × remove button
             int xBtnX = width - BTN_W - 2;
             boolean xHov = mx >= xBtnX && mx <= xBtnX + BTN_W - 2 && my >= rowY && my <= rowY + rowH - 2;
             ctx.fill(xBtnX, rowY, xBtnX + BTN_W - 2, rowY + rowH - 2, xHov ? 0xFF501010 : 0xFF200808);
-            ctx.drawCenteredTextWithShadow(textRenderer, "§c×",
+            ctx.drawCenteredString(font, "§c×",
                 xBtnX + (BTN_W - 2) / 2, rowY + (rowH - 8) / 2, 0xFFFF4444);
         }
 
         if (marks.isEmpty()) {
-            ctx.drawCenteredTextWithShadow(textRenderer, "§8No bookmarks yet",
+            ctx.drawCenteredString(font, "§8No bookmarks yet",
                 sx + SIDEBAR_W / 2, listY + 10, 0xFF666666);
         }
     }
 
-    private void drawBtn(DrawContext ctx, int x, int y, String label) {
+    private void drawBtn(GuiGraphics ctx, int x, int y, String label) {
         ctx.fill(x, y, x + BTN_W, y + BTN_H, COL_BTN);
-        ctx.drawCenteredTextWithShadow(textRenderer, label, x + BTN_W/2, y + (BTN_H - 8)/2, 0xFFFFFFFF);
+        ctx.drawCenteredString(font, label, x + BTN_W/2, y + (BTN_H - 8)/2, 0xFFFFFFFF);
     }
 
     // ── input ──────────────────────────────────────────────────────────────────
@@ -313,7 +313,7 @@ public class WikiScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(Click click, boolean bl) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean bl) {
         double cx = click.x(), cy = click.y();
         int bY = btnY();
 
@@ -381,7 +381,7 @@ public class WikiScreen extends Screen {
     }
 
     @Override
-    public boolean mouseReleased(Click click) {
+    public boolean mouseReleased(MouseButtonEvent click) {
         if (browser != null)
             browser.sendMouseRelease(bx(click.x()), by(click.y() - BAR_H), click.button());
         return super.mouseReleased(click);
@@ -394,7 +394,7 @@ public class WikiScreen extends Screen {
             bookmarkScroll = Math.max(0, bookmarkScroll + (vAmt < 0 ? 1 : -1));
             return true;
         }
-        long win = client.getWindow().getHandle();
+        long win = minecraft.getWindow().handle();
         boolean ctrl = GLFW.glfwGetKey(win, GLFW.GLFW_KEY_LEFT_CONTROL)  == GLFW.GLFW_PRESS
                     || GLFW.glfwGetKey(win, GLFW.GLFW_KEY_RIGHT_CONTROL) == GLFW.GLFW_PRESS;
         if (ctrl) { adjustZoom(vAmt > 0 ? 1 : -1); return true; }
@@ -406,14 +406,14 @@ public class WikiScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(KeyInput input) {
+    public boolean keyPressed(KeyEvent input) {
         int  key  = input.key();
         int  mods = input.modifiers();
         boolean ctrl = (mods & GLFW.GLFW_MOD_CONTROL) != 0;
 
         if (key == GLFW.GLFW_KEY_ESCAPE) {
             if (findVisible) { closeFindBar(); return true; }
-            client.setScreen(parent);
+            minecraft.setScreen(parent);
             return true;
         }
         if (ctrl && key == GLFW.GLFW_KEY_F)     { toggleFindBar();                       return true; }
@@ -433,7 +433,7 @@ public class WikiScreen extends Screen {
     }
 
     @Override
-    public boolean keyReleased(KeyInput input) {
+    public boolean keyReleased(KeyEvent input) {
         boolean findFoc = findVisible && findField != null && findField.isFocused();
         if (!findFoc && browser != null)
             browser.sendKeyRelease(input.key(), (long) input.scancode(), input.modifiers());
@@ -441,7 +441,7 @@ public class WikiScreen extends Screen {
     }
 
     @Override
-    public boolean charTyped(CharInput input) {
+    public boolean charTyped(CharacterEvent input) {
         if (findVisible && findField != null && findField.isFocused())         return super.charTyped(input);
         if (browser != null && input.codepoint() != 0) {
             browser.sendKeyTyped((char) input.codepoint(), input.modifiers());
@@ -479,13 +479,13 @@ public class WikiScreen extends Screen {
 
     private void closeFindBar() {
         findVisible = false;
-        if (findField != null) { lastFindText = findField.getText(); findField.setVisible(false); findField.setFocused(false); }
+        if (findField != null) { lastFindText = findField.getValue(); findField.setVisible(false); findField.setFocused(false); }
         if (browser  != null) { browser.stopFinding(true); browser.resize(browserPixelW(), browserPixelH()); }
     }
 
     private void doFind(boolean reverse) {
         if (findField == null || browser == null) return;
-        String text = findField.getText().trim();
+        String text = findField.getValue().trim();
         if (text.isEmpty()) return;
         boolean isNew = !text.equals(lastFindText);
         lastFindText = text;
@@ -493,5 +493,5 @@ public class WikiScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() { return false; }
+    public boolean isPauseScreen() { return false; }
 }

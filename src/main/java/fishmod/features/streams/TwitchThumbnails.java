@@ -1,12 +1,11 @@
 package fishmod.features.streams;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import fishmod.utils.debug.Debug;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.util.Identifier;
-
 import javax.imageio.ImageIO;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.Identifier;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
@@ -68,17 +67,17 @@ public class TwitchThumbnails {
                         }
                         int wd = bi.getWidth(), ht = bi.getHeight();
                         int[] argb = bi.getRGB(0, 0, wd, ht, null, 0, wd);
-                        MinecraftClient mc = MinecraftClient.getInstance();
+                        Minecraft mc = Minecraft.getInstance();
                         mc.execute(() -> {
                             try {
                                 NativeImage img = new NativeImage(wd, ht, false);
                                 for (int yy = 0; yy < ht; yy++)
                                     for (int xx = 0; xx < wd; xx++)
-                                        img.setColorArgb(xx, yy, argb[yy * wd + xx]);
-                                NativeImageBackedTexture tex =
-                                        new NativeImageBackedTexture(() -> "twitch_thumb", img);
-                                Identifier id = Identifier.of("fishmod", "twitch_thumb/" + hash(url));
-                                mc.getTextureManager().registerTexture(id, tex);
+                                        img.setPixel(xx, yy, argb[yy * wd + xx]);
+                                DynamicTexture tex =
+                                        new DynamicTexture(() -> "twitch_thumb", img);
+                                Identifier id = Identifier.fromNamespaceAndPath("fishmod", "twitch_thumb/" + hash(url));
+                                mc.getTextureManager().register(id, tex);
                                 ready.put(url, id);
                             } catch (Throwable e) {
                                 failed.put(url, String.valueOf(e));

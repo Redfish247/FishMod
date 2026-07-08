@@ -1,6 +1,6 @@
 package fishmod.utils.events.interfaces;
 
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 public interface SlotChangeEvent {
     boolean onSlotChange(int slot, ItemStack item);

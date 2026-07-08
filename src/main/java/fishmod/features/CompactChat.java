@@ -1,16 +1,16 @@
 package fishmod.features;
 
 import fishmod.mixin.ChatHudInvoker;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.hud.ChatHud;
-import net.minecraft.client.gui.hud.ChatHudLine;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.GuiMessage;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.ChatComponent;
+import net.minecraft.network.chat.Component;
 
 /**
  * Collapses repeated chat lines. When a message identical to one shown within the last
@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  * trailing "§7(N)" count (e.g. {@code Hi im RedFish2471 (2)}) instead of stacking duplicates.
  *
  * <p>Runs at display time from {@link fishmod.mixin.ChatHudMixin} (after chat-filter/command
- * parsing), so packet-level parsers are unaffected. It manipulates {@link ChatHud}'s backing
+ * parsing), so packet-level parsers are unaffected. It manipulates {@link ChatComponent}'s backing
  * {@code messages} list and re-wraps via {@link ChatHudInvoker#invokeRefresh()} — the same
  * approach used by {@link fishmod.cosmetic.ChatNickRefresher}.
  */
@@ -34,22 +34,22 @@ public final class CompactChat {
      * @return true if the message duplicated a recent line and was collapsed into a count (in which
      *         case {@code ci} is cancelled and the caller must stop processing this add).
      */
-    public static boolean tryCompact(Text message, ChatHud hud, CallbackInfo ci) {
+    public static boolean tryCompact(Component message, ChatComponent hud, CallbackInfo ci) {
         String incoming = stripKey(message.getString());
         if (incoming.isEmpty()) return false;
 
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.inGameHud == null) return false;
-        int nowTick = mc.inGameHud.getTicks();
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.gui == null) return false;
+        int nowTick = mc.gui.getGuiTicks();
 
         ChatHudInvoker acc = (ChatHudInvoker) hud;
-        List<ChatHudLine> messages = acc.getMessages();
+        List<GuiMessage> messages = acc.getMessages();
         if (messages == null || messages.isEmpty()) return false;
 
         // messages are newest-first, so once we pass a line older than the window we can stop.
         for (int i = 0; i < messages.size(); i++) {
-            ChatHudLine line = messages.get(i);
-            if (nowTick - line.creationTick() > WINDOW_TICKS) break;
+            GuiMessage line = messages.get(i);
+            if (nowTick - line.addedTime() > WINDOW_TICKS) break;
             if (!incoming.equals(stripKey(line.content().getString()))) continue;
 
             int next = extractCount(line.content().getString()) + 1;
@@ -77,7 +77,7 @@ public final class CompactChat {
     }
 
     /** Original message with a gray " (N)" appended, preserving its styling. */
-    private static Text withCount(Text message, int n) {
-        return message.copy().append(Text.literal(" (" + n + ")").formatted(Formatting.GRAY));
+    private static Component withCount(Component message, int n) {
+        return message.copy().append(Component.literal(" (" + n + ")").withStyle(ChatFormatting.GRAY));
     }
 }

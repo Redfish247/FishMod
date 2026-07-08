@@ -8,11 +8,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.render.RenderTickCounter;
-
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -117,7 +116,7 @@ public class HarvestFeastTracker {
         });
     }
 
-    private static void parseHover(net.minecraft.text.Text root) {
+    private static void parseHover(net.minecraft.network.chat.Component root) {
         StringBuilder hover = new StringBuilder();
         collectHover(root, hover, new java.util.HashSet<>());
         if (hover.length() == 0) return;
@@ -151,15 +150,15 @@ public class HarvestFeastTracker {
         }
     }
 
-    private static void collectHover(net.minecraft.text.Text t, StringBuilder out, java.util.Set<String> seen) {
+    private static void collectHover(net.minecraft.network.chat.Component t, StringBuilder out, java.util.Set<String> seen) {
         // A single chat line is split into many sibling components that all share the SAME hover
         // tooltip. Without de-duping, each identical hover gets parsed once per sibling, which
         // multiplied every drop count (≈6x). Only append each distinct hover text once.
-        if (t.getStyle() != null && t.getStyle().getHoverEvent() instanceof net.minecraft.text.HoverEvent.ShowText st) {
+        if (t.getStyle() != null && t.getStyle().getHoverEvent() instanceof net.minecraft.network.chat.HoverEvent.ShowText st) {
             String text = st.value().getString();
             if (seen.add(text)) out.append(text).append('\n');
         }
-        for (net.minecraft.text.Text sib : t.getSiblings()) collectHover(sib, out, seen);
+        for (net.minecraft.network.chat.Component sib : t.getSiblings()) collectHover(sib, out, seen);
     }
 
     private static boolean inFarmingArea() {
@@ -220,12 +219,12 @@ public class HarvestFeastTracker {
         return lines.toArray(new String[0]);
     }
 
-    public static void renderHud(DrawContext ctx, RenderTickCounter tick) {
+    public static void renderHud(GuiGraphics ctx, DeltaTracker tick) {
         btnVisible = false;
         if (!FishSettings.harvestFeastEnabled) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.currentScreen != null && !(mc.currentScreen instanceof net.minecraft.client.gui.screen.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         if (!inFarmingArea()) return;
 
         int x = FishSettings.harvestFeastHudX;
@@ -233,19 +232,19 @@ public class HarvestFeastTracker {
         int lh = Constants.TEXT_HEIGHT + 1;
         String[] lines = buildLines();
         float sc = (float) FishSettings.harvestFeastScale;
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) x, (float) y);
-        ctx.getMatrices().scale(sc, sc);
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) x, (float) y);
+        ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawText(mc.textRenderer, lines[i], 0, lh * i, 0xFFFFFFFF, true);
-        ctx.getMatrices().popMatrix();
+            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+        ctx.pose().popMatrix();
     }
 
-    public static void renderInScreen(DrawContext ctx, int mouseX, int mouseY) {
+    public static void renderInScreen(GuiGraphics ctx, int mouseX, int mouseY) {
         btnVisible = false;
         if (!FishSettings.harvestFeastEnabled) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (!(mc.currentScreen instanceof HandledScreen<?>)) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
         if (!inFarmingArea()) return;
 
         int x = FishSettings.harvestFeastHudX;
@@ -255,7 +254,7 @@ public class HarvestFeastTracker {
         float sc = (float) FishSettings.harvestFeastScale;
 
         String resetLabel = "§l[ Reset ]";
-        int resetW = mc.textRenderer.getWidth(resetLabel);
+        int resetW = mc.font.width(resetLabel);
         int padX = 4, padY = 3;
         int localBtnY = lh * lines.length - 2;
         int localResetW = resetW + padX * 2;
@@ -267,13 +266,13 @@ public class HarvestFeastTracker {
         boolean resetHover = mouseX >= btnX && mouseX <= btnX + btnW && mouseY >= btnY && mouseY <= btnY + btnH;
         String shownReset = resetHover ? "§c§l[ Reset ]" : resetLabel;
 
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) x, (float) y);
-        ctx.getMatrices().scale(sc, sc);
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) x, (float) y);
+        ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawText(mc.textRenderer, lines[i], 0, lh * i, 0xFFFFFFFF, true);
-        ctx.drawText(mc.textRenderer, shownReset, padX, localBtnY + padY, 0xFFFFFFFF, true);
-        ctx.getMatrices().popMatrix();
+            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+        ctx.drawString(mc.font, shownReset, padX, localBtnY + padY, 0xFFFFFFFF, true);
+        ctx.pose().popMatrix();
         btnVisible = true;
     }
 

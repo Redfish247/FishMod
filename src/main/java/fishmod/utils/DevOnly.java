@@ -1,9 +1,8 @@
 package fishmod.utils;
 
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import java.util.Set;
 
 /**
@@ -18,15 +17,15 @@ public class DevOnly {
     );
 
     public static boolean isDev() {
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return false;
-        return DEV_UUIDS.contains(mc.player.getUuid().toString().replace("-", "").toLowerCase());
+        return DEV_UUIDS.contains(mc.player.getUUID().toString().replace("-", "").toLowerCase());
     }
 
     /** Returns true if the caller is NOT a dev, after sending a "dev-only" message. */
     public static boolean deny(FabricClientCommandSource source) {
         if (isDev()) return false;
-        source.sendFeedback(Text.literal("§cThat command is dev-only."));
+        source.sendFeedback(Component.literal("§cThat command is dev-only."));
         return true;
     }
 }

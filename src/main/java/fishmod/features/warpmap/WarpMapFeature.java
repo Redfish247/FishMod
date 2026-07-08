@@ -1,16 +1,16 @@
 package fishmod.features.warpmap;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.option.Perspective;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.client.util.Window;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.world.RaycastContext;
+import com.mojang.blaze3d.platform.Window;
+import net.minecraft.client.Camera;
+import net.minecraft.client.CameraType;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -107,10 +107,10 @@ public final class WarpMapFeature {
 
     // ── HUD render ────────────────────────────────────────────────────────────
 
-    public static void renderHud(DrawContext ctx, RenderTickCounter tickCounter) {
+    public static void renderHud(GuiGraphics ctx, DeltaTracker tickCounter) {
         if (!fishmod.utils.config.values.FishSettings.warpMapHudEnabled) { hoveredWarp = null; inZone = false; return; }
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.player == null || mc.world == null || mc.currentScreen != null) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null || mc.screen != null) {
             hoveredWarp = null; inZone = false; return;
         }
         if (!isOnHypixel(mc)) { hoveredWarp = null; inZone = false; return; }
@@ -126,24 +126,24 @@ public final class WarpMapFeature {
         // In first-person the player-lerp X/Z + camera Y is proven stable.
         // In third-person (F5 / F5-front) the camera is offset from the player,
         // so we use the Camera object for all three axes and its own yaw/pitch.
-        float delta  = tickCounter.getTickProgress(true);
-        Camera camera = mc.gameRenderer.getCamera();
-        boolean thirdPerson = mc.options.getPerspective() != Perspective.FIRST_PERSON;
+        float delta  = tickCounter.getGameTimeDeltaPartialTick(true);
+        Camera camera = mc.gameRenderer.getMainCamera();
+        boolean thirdPerson = mc.options.getCameraType() != CameraType.FIRST_PERSON;
 
         double ex, ey, ez;
         float  yaw, pitch;
         if (thirdPerson) {
-            ex    = camera.getCameraPos().x;
-            ey    = camera.getCameraPos().y;
-            ez    = camera.getCameraPos().z;
-            yaw   = camera.getYaw();
-            pitch = camera.getPitch();
+            ex    = camera.position().x;
+            ey    = camera.position().y;
+            ez    = camera.position().z;
+            yaw   = camera.yRot();
+            pitch = camera.xRot();
         } else {
-            ex    = MathHelper.lerp((double)delta, mc.player.lastX, mc.player.getX());
-            ey    = camera.getCameraPos().y;
-            ez    = MathHelper.lerp((double)delta, mc.player.lastZ, mc.player.getZ());
-            yaw   = mc.player.getYaw(delta);
-            pitch = mc.player.getPitch(delta);
+            ex    = Mth.lerp((double)delta, mc.player.xo, mc.player.getX());
+            ey    = camera.position().y;
+            ez    = Mth.lerp((double)delta, mc.player.zo, mc.player.getZ());
+            yaw   = mc.player.getViewYRot(delta);
+            pitch = mc.player.getViewXRot(delta);
         }
 
         double yr   = Math.toRadians(yaw),   pr = Math.toRadians(pitch);
@@ -177,23 +177,23 @@ public final class WarpMapFeature {
         float fovDeg = ((fishmod.mixin.accessors.GameRendererAccessor) mc.gameRenderer)
                 .invokeGetFov(camera, delta, true);
         double f   = 1.0 / Math.tan(Math.toRadians(fovDeg / 2.0));
-        double asp = (double) win.getScaledWidth() / win.getScaledHeight();
+        double asp = (double) win.getGuiScaledWidth() / win.getGuiScaledHeight();
 
         int hoverSx = 0, hoverSy = 0;
         boolean haveHoverPos = false;
 
-        Vec3d camPos = new Vec3d(ex, ey, ez);
+        Vec3 camPos = new Vec3(ex, ey, ez);
         for (WarpPoint wp : WALL_WARPS) {
             double wx = uvToWorldX(wp.u());
             double wy = uvToWorldY(wp.v());
             // Offset target slightly toward the camera side of the wall so the
             // raycast doesn't hit the wall block itself.
             double targetZ = MAP_Z + (ez > MAP_Z ? 0.1 : -0.1);
-            Vec3d target = new Vec3d(wx, wy, targetZ);
-            var hit = mc.world.raycast(new RaycastContext(
+            Vec3 target = new Vec3(wx, wy, targetZ);
+            var hit = mc.level.clip(new ClipContext(
                 camPos, target,
-                RaycastContext.ShapeType.COLLIDER,
-                RaycastContext.FluidHandling.NONE,
+                ClipContext.Block.COLLIDER,
+                ClipContext.Fluid.NONE,
                 mc.player));
             if (hit.getType() == HitResult.Type.BLOCK) continue;
 
@@ -210,12 +210,12 @@ public final class WarpMapFeature {
             double ndcX = f / asp * camX / camZ;
             double ndcY = f          * camY / camZ;
 
-            int sx = (int)((1.0 + ndcX) * 0.5 * win.getScaledWidth()) - 2;
-            int sy = (int)((1.0 - ndcY) * 0.5 * win.getScaledHeight());
+            int sx = (int)((1.0 + ndcX) * 0.5 * win.getGuiScaledWidth()) - 2;
+            int sy = (int)((1.0 - ndcY) * 0.5 * win.getGuiScaledHeight());
 
             // Scale dot size by zoom factor (settings FOV / current rendered FOV)
             // so dots stay proportional to the (zoomed) map behind them.
-            float zoom = (float) (mc.options.getFov().getValue() / Math.max(1f, fovDeg));
+            float zoom = (float) (mc.options.fov().get() / Math.max(1f, fovDeg));
             drawDot(ctx, sx, sy, wp == hoveredWarp, zoom);
 
             if (wp == hoveredWarp) {
@@ -227,17 +227,17 @@ public final class WarpMapFeature {
 
         if (haveHoverPos && hoveredWarp != null) {
             String label = "§a/warp " + hoveredWarp.name();
-            var tr = mc.textRenderer;
-            int textW = tr.getWidth(label);
+            var tr = mc.font;
+            int textW = tr.width(label);
             int padX = 3, padY = 2;
             int tx = hoverSx + 8;
-            int ty = hoverSy - tr.fontHeight - 4;
-            if (tx + textW + padX * 2 > win.getScaledWidth()) {
+            int ty = hoverSy - tr.lineHeight - 4;
+            if (tx + textW + padX * 2 > win.getGuiScaledWidth()) {
                 tx = hoverSx - textW - padX * 2 - 8;
             }
             if (ty < 0) ty = hoverSy + 8;
-            ctx.fill(tx - padX, ty - padY, tx + textW + padX, ty + tr.fontHeight + padY, 0xC0000000);
-            ctx.drawTextWithShadow(tr, Text.literal(label), tx, ty, 0xFFFFFFFF);
+            ctx.fill(tx - padX, ty - padY, tx + textW + padX, ty + tr.lineHeight + padY, 0xC0000000);
+            ctx.drawString(tr, Component.literal(label), tx, ty, 0xFFFFFFFF);
         }
     }
 
@@ -245,12 +245,12 @@ public final class WarpMapFeature {
 
     private static boolean lastLeftDown = false;
 
-    public static void tickClickDetection(MinecraftClient mc) {
-        if (mc.player == null || mc.currentScreen != null || mc.getWindow() == null) {
+    public static void tickClickDetection(Minecraft mc) {
+        if (mc.player == null || mc.screen != null || mc.getWindow() == null) {
             lastLeftDown = false;
             return;
         }
-        boolean leftDown = GLFW.glfwGetMouseButton(mc.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        boolean leftDown = GLFW.glfwGetMouseButton(mc.getWindow().handle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
         boolean justPressed = leftDown && !lastLeftDown;
         lastLeftDown = leftDown;
         if (!justPressed) return;
@@ -262,16 +262,16 @@ public final class WarpMapFeature {
                     && py >= BOX_Y0 && py <= BOX_Y1
                     && pz >= BOX_Z0 && pz <= BOX_Z1;
 
-        Camera camera = mc.gameRenderer.getCamera();
-        boolean thirdPerson = mc.options.getPerspective() != Perspective.FIRST_PERSON;
+        Camera camera = mc.gameRenderer.getMainCamera();
+        boolean thirdPerson = mc.options.getCameraType() != CameraType.FIRST_PERSON;
         double ex, ey, ez;
         float  yaw, pitch;
         if (thirdPerson) {
-            ex = camera.getCameraPos().x; ey = camera.getCameraPos().y; ez = camera.getCameraPos().z;
-            yaw = camera.getYaw(); pitch = camera.getPitch();
+            ex = camera.position().x; ey = camera.position().y; ez = camera.position().z;
+            yaw = camera.yRot(); pitch = camera.xRot();
         } else {
-            ex = mc.player.getX(); ey = camera.getCameraPos().y; ez = mc.player.getZ();
-            yaw = mc.player.getYaw(); pitch = mc.player.getPitch();
+            ex = mc.player.getX(); ey = camera.position().y; ez = mc.player.getZ();
+            yaw = mc.player.getYRot(); pitch = mc.player.getXRot();
         }
 
         double yr = Math.toRadians(yaw), pr = Math.toRadians(pitch);
@@ -299,14 +299,14 @@ public final class WarpMapFeature {
 
         if (!zone || target == null || best > 0.12 * 0.12) return;
 
-        mc.player.networkHandler.sendChatCommand("warp " + target.name());
-        mc.player.sendMessage(Text.literal("§a[WarpMap] Warping to §l" + target.name() + "§r§a..."), true);
+        mc.player.connection.sendCommand("warp " + target.name());
+        mc.player.displayClientMessage(Component.literal("§a[WarpMap] Warping to §l" + target.name() + "§r§a..."), true);
     }
 
     // ── Zone check ────────────────────────────────────────────────────────────
 
-    public static boolean isInZone(MinecraftClient mc) {
-        if (mc.player == null || mc.world == null) return false;
+    public static boolean isInZone(Minecraft mc) {
+        if (mc.player == null || mc.level == null) return false;
         if (!isOnHypixel(mc)) return false;
         double x = mc.player.getX(), y = mc.player.getY(), z = mc.player.getZ();
         return x >= BOX_X0 && x <= BOX_X1
@@ -316,12 +316,12 @@ public final class WarpMapFeature {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private static boolean isOnHypixel(MinecraftClient mc) {
-        var s = mc.getCurrentServerEntry();
-        return s != null && s.address.toLowerCase().contains("hypixel.net");
+    private static boolean isOnHypixel(Minecraft mc) {
+        var s = mc.getCurrentServer();
+        return s != null && s.ip.toLowerCase().contains("hypixel.net");
     }
 
-    private static void drawDot(DrawContext ctx, int sx, int sy, boolean hov, float zoom) {
+    private static void drawDot(GuiGraphics ctx, int sx, int sy, boolean hov, float zoom) {
         float z = Math.max(1f, zoom);
         int s1 = Math.max(1, Math.round(1 * z));
         int s2 = Math.max(1, Math.round(2 * z));

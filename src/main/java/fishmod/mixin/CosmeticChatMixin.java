@@ -2,30 +2,30 @@ package fishmod.mixin;
 
 import fishmod.cosmetic.NameRewriter;
 import fishmod.cosmetic.NickState;
-import net.minecraft.client.gui.hud.ChatHud;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.components.ChatComponent;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
-@Mixin(ChatHud.class)
+@Mixin(ChatComponent.class)
 public abstract class CosmeticChatMixin {
 
-    @ModifyVariable(method = "addMessage(Lnet/minecraft/text/Text;)V", at = @At("HEAD"), argsOnly = true)
-    private Text fishmod$cosmeticAddMessage1(Text msg) {
+    @ModifyVariable(method = "addMessage(Lnet/minecraft/network/chat/Component;)V", at = @At("HEAD"), argsOnly = true)
+    private Component fishmod$cosmeticAddMessage1(Component msg) {
         return fishmod$swap(msg);
     }
 
     @ModifyVariable(
-        method = "addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;Lnet/minecraft/client/gui/hud/MessageIndicator;)V",
+        method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/GuiMessageTag;)V",
         at = @At("HEAD"), argsOnly = true)
-    private Text fishmod$cosmeticAddMessage2(Text msg) {
+    private Component fishmod$cosmeticAddMessage2(Component msg) {
         return fishmod$swap(msg);
     }
 
-    private static Text fishmod$swap(Text msg) {
+    private static Component fishmod$swap(Component msg) {
         if (msg == null) return msg;
-        Text out = msg;
+        Component out = msg;
         if (NickState.isActive()) {
             String real = NickState.realName();
             if (!real.isEmpty() && out.getString().contains(real))

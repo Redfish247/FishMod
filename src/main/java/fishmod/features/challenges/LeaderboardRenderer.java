@@ -1,14 +1,13 @@
 package fishmod.features.challenges;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import fishmod.utils.Location;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.rendering.RenderUtils;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Vec3d;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,7 +38,7 @@ public class LeaderboardRenderer {
         if (!Location.in(Location.HUB)) return;
         if (ctx.worldState() == null) return;
 
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
         double dx = mc.player.getX() - CENTER_X, dy = mc.player.getY() - CENTER_Y, dz = mc.player.getZ() - CENTER_Z;
         if (dx*dx + dy*dy + dz*dz > RENDER_DIST_SQ) return;
@@ -55,26 +54,26 @@ public class LeaderboardRenderer {
             });
         }
 
-        MatrixStack matrices = ctx.matrices();
+        PoseStack matrices = ctx.matrices();
         if (matrices == null) return;
-        Vec3d cam = ctx.worldState().cameraRenderState.pos;
+        Vec3 cam = ctx.worldState().cameraRenderState.pos;
 
-        matrices.push();
+        matrices.pushPose();
         matrices.translate(-cam.x, -cam.y, -cam.z);
 
         // Lines (top -> bottom): title, separator, top N entries
-        List<Text> lines = new ArrayList<>();
-        lines.add(Text.literal("§6§l✦ FishMod Challenges ✦"));
-        lines.add(Text.literal("§8§m                              "));
+        List<Component> lines = new ArrayList<>();
+        lines.add(Component.literal("§6§l✦ FishMod Challenges ✦"));
+        lines.add(Component.literal("§8§m                              "));
         if (cache.isEmpty()) {
-            lines.add(Text.literal("§7(no scores yet)"));
+            lines.add(Component.literal("§7(no scores yet)"));
         } else {
             int rank = 1;
             for (ChallengeApi.LbEntry e : cache) {
                 String rk = rank == 1 ? "§e§l#1" : rank == 2 ? "§7§l#2" : rank == 3 ? "§c§l#3" : "§8#" + rank;
-                net.minecraft.text.MutableText line = net.minecraft.text.Text.literal(rk + " ").copy();
+                net.minecraft.network.chat.MutableComponent line = net.minecraft.network.chat.Component.literal(rk + " ").copy();
                 line.append(ChallengeApi.renderName(e.name));
-                line.append(Text.literal(" §8— §a" + e.totalPoints + " §7pts"));
+                line.append(Component.literal(" §8— §a" + e.totalPoints + " §7pts"));
                 lines.add(line);
                 rank++;
                 if (rank > 10) break;
@@ -88,7 +87,7 @@ public class LeaderboardRenderer {
             RenderUtils.renderText(ctx, matrices, lines.get(i), CENTER_X, y, CENTER_Z, 1.5f);
         }
 
-        matrices.pop();
+        matrices.popPose();
     }
 
     /** Manual refresh trigger (used by /fmchallenge refresh). */

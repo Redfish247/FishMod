@@ -3,9 +3,8 @@ package fishmod.features.challenges;
 import fishmod.utils.Misc;
 import fishmod.utils.config.values.FishSettings;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -58,7 +57,7 @@ public class ChallengeManager {
         });
     }
 
-    private static void tick(MinecraftClient mc) {
+    private static void tick(Minecraft mc) {
         if (!FishSettings.challengesEnabled) return;
         if (mc.player == null) return;
 
@@ -67,7 +66,7 @@ public class ChallengeManager {
 
         // Detect movement/rotation
         double x = mc.player.getX(), y = mc.player.getY(), z = mc.player.getZ();
-        float yaw = mc.player.getYaw(), pitch = mc.player.getPitch();
+        float yaw = mc.player.getYRot(), pitch = mc.player.getXRot();
         if (!havePos) {
             lastX = x; lastY = y; lastZ = z; lastYaw = yaw; lastPitch = pitch;
             havePos = true; lastActivityMs = now;
@@ -100,7 +99,7 @@ public class ChallengeManager {
                 c.awardedPoints = 0;
                 p.history.add(c);
                 p.active.remove(e.getKey());
-                Misc.addChatMessage(Text.literal("§c[Challenge] " + c.tier.label + " expired: " + c.describe()));
+                Misc.addChatMessage(Component.literal("§c[Challenge] " + c.tier.label + " expired: " + c.describe()));
             }
         }
 
@@ -114,7 +113,7 @@ public class ChallengeManager {
     private static void poll() {
         ChallengeApi.fetchLocal(snap -> {
             if (snap == null) return;
-            MinecraftClient.getInstance().execute(() -> applySnapshot(snap));
+            Minecraft.getInstance().execute(() -> applySnapshot(snap));
         });
     }
 
@@ -159,15 +158,15 @@ public class ChallengeManager {
         p.totalPoints += c.awardedPoints;
         p.history.add(c);
         p.save();
-        Misc.addChatMessage(Text.literal("§a[Challenge] §lCOMPLETE §r" + c.tier.color + c.tier.label
+        Misc.addChatMessage(Component.literal("§a[Challenge] §lCOMPLETE §r" + c.tier.color + c.tier.label
                 + " §7— §e+" + c.awardedPoints + " §7points (total §a" + p.totalPoints + "§7)"));
-        Misc.addChatMessage(Text.literal("§7→ " + c.describe()));
+        Misc.addChatMessage(Component.literal("§7→ " + c.describe()));
 
         // Submit to leaderboard if enabled
         if (FishSettings.challengeLeaderboardEnabled) {
-            MinecraftClient mc = MinecraftClient.getInstance();
+            Minecraft mc = Minecraft.getInstance();
             if (mc.player != null) {
-                String uuid = mc.player.getUuid().toString().replace("-", "");
+                String uuid = mc.player.getUUID().toString().replace("-", "");
                 String name = ChallengeApi.displayName();
                 ChallengeApi.submitScore(uuid, name, c.id, c.tier, c.awardedPoints, c.activeMs,
                         (ok, total, rank) -> {});
@@ -186,23 +185,23 @@ public class ChallengeManager {
 
     public static void acceptNew(Tier tier, Runnable onDone) {
         ChallengeApi.fetchLocal(snap -> {
-            MinecraftClient.getInstance().execute(() -> {
+            Minecraft.getInstance().execute(() -> {
                 if (snap == null) {
-                    Misc.addChatMessage(Text.literal("§c[Challenge] Could not fetch profile — §7"
+                    Misc.addChatMessage(Component.literal("§c[Challenge] Could not fetch profile — §7"
                             + (ChallengeApi.lastFetchError.isEmpty() ? "unknown" : ChallengeApi.lastFetchError)));
                     if (onDone != null) onDone.run();
                     return;
                 }
                 Challenge c = GapAnalyzer.pickFor(tier, snap);
                 if (c == null) {
-                    Misc.addChatMessage(Text.literal("§c[Challenge] No suitable challenge found."));
+                    Misc.addChatMessage(Component.literal("§c[Challenge] No suitable challenge found."));
                     if (onDone != null) onDone.run();
                     return;
                 }
                 ChallengeProgress p = ChallengeProgress.get();
                 p.active.put(tier, c);
                 p.save();
-                Misc.addChatMessage(Text.literal("§a[Challenge] New " + tier.color + tier.label + " §7challenge: §f" + c.describe()));
+                Misc.addChatMessage(Component.literal("§a[Challenge] New " + tier.color + tier.label + " §7challenge: §f" + c.describe()));
                 if (onDone != null) onDone.run();
             });
         });
@@ -211,7 +210,7 @@ public class ChallengeManager {
     public static boolean reroll(Tier tier) {
         ChallengeProgress p = ChallengeProgress.get();
         if (!p.canReroll()) {
-            Misc.addChatMessage(Text.literal("§c[Challenge] Reroll already used this month."));
+            Misc.addChatMessage(Component.literal("§c[Challenge] Reroll already used this month."));
             return false;
         }
         p.active.remove(tier);
@@ -228,7 +227,7 @@ public class ChallengeManager {
             c.awardedPoints = 0;
             p.history.add(c);
             p.save();
-            Misc.addChatMessage(Text.literal("§7[Challenge] Abandoned " + tier.label + "."));
+            Misc.addChatMessage(Component.literal("§7[Challenge] Abandoned " + tier.label + "."));
         }
     }
 

@@ -1,12 +1,12 @@
 package fishmod.mixin;
 
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.registry.Registries;
-import net.minecraft.item.consume.UseAction;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemUseAnimation;
+import net.minecraft.world.item.Items;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * Makes a FishMod-customized item BEHAVE like the item it borrows its model from, not just look like
  * it. When a stack carries an ITEM_MODEL override that resolves to a different vanilla item — e.g. a
- * Terminator (a bow) given the crossbow model — the client adopts that model item's {@link UseAction}
+ * Terminator (a bow) given the crossbow model — the client adopts that model item's {@link ItemUseAnimation}
  * so the hold / draw pose matches the model (crossbow load pose instead of a bow pull). Without this
  * the item is "a bow retextured as a crossbow"; with it, it actually acts like a crossbow.
  *
@@ -28,19 +28,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ItemStack.class)
 public abstract class ItemModelBehaviorMixin {
 
-    @Inject(method = "getUseAction", at = @At("HEAD"), cancellable = true)
-    private void fishmod$useModelItemUseAction(CallbackInfoReturnable<UseAction> cir) {
+    @Inject(method = "getUseAnimation", at = @At("HEAD"), cancellable = true)
+    private void fishmod$useModelItemUseAction(CallbackInfoReturnable<ItemUseAnimation> cir) {
         ItemStack self = (ItemStack) (Object) this;
-        Identifier modelId = self.get(DataComponentTypes.ITEM_MODEL);
+        Identifier modelId = self.get(DataComponents.ITEM_MODEL);
         if (modelId == null) return;
 
-        Item modelItem = Registries.ITEM.get(modelId);
+        Item modelItem = BuiltInRegistries.ITEM.getValue(modelId);
         // Skip when the model id isn't a real item (custom resource-pack model) or is the item's own
         // model (a no-op swap) — otherwise we'd recurse and/or change nothing.
         if (modelItem == null || modelItem == Items.AIR || modelItem == self.getItem()) return;
 
         // The model item's default stack reports its own model id, so this call hits the guard above
         // and returns its real use action without re-entering for this stack.
-        cir.setReturnValue(modelItem.getDefaultStack().getUseAction());
+        cir.setReturnValue(modelItem.getDefaultInstance().getUseAnimation());
     }
 }

@@ -6,10 +6,9 @@ import fishmod.utils.Location;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.events.Events;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderTickCounter;
-
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -112,7 +111,7 @@ public class DungeonScore {
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (!FishSettings.dungeonScoreEnabled) return;
-            if (client.player == null || client.world == null) return;
+            if (client.player == null || client.level == null) return;
             if (Location.getCurrentLocation() != Location.DUNGEON) return;
             scanTick++;
             if (scanTick < 10) return;
@@ -144,12 +143,12 @@ public class DungeonScore {
         puzzleStatuses.clear();
     }
 
-    private static void scanTabList(MinecraftClient mc) {
-        if (mc.getNetworkHandler() == null) return;
+    private static void scanTabList(Minecraft mc) {
+        if (mc.getConnection() == null) return;
         int newPuzzlesCompleted = 0;
-        for (var entry : mc.getNetworkHandler().getPlayerList()) {
-            if (entry.getDisplayName() == null) continue;
-            String line = entry.getDisplayName().getString().replaceAll("§.", "");
+        for (var entry : mc.getConnection().getOnlinePlayers()) {
+            if (entry.getTabListDisplayName() == null) continue;
+            String line = entry.getTabListDisplayName().getString().replaceAll("§.", "");
 
             Matcher m;
             if ((m = SECRET_PCT_PAT.matcher(line)).find())      try { secretsPercent  = Float.parseFloat(m.group(1)); } catch (NumberFormatException ignored) {}
@@ -168,15 +167,15 @@ public class DungeonScore {
         puzzlesCompleted = newPuzzlesCompleted;
     }
 
-    private static void scanSidebar(MinecraftClient mc) {
-        var sb = mc.world.getScoreboard();
-        var sidebar = sb.getObjectiveForSlot(net.minecraft.scoreboard.ScoreboardDisplaySlot.SIDEBAR);
+    private static void scanSidebar(Minecraft mc) {
+        var sb = mc.level.getScoreboard();
+        var sidebar = sb.getDisplayObjective(net.minecraft.world.scores.DisplaySlot.SIDEBAR);
         if (sidebar == null) return;
-        for (var entry : sb.getScoreboardEntries(sidebar)) {
-            var team = sb.getScoreHolderTeam(entry.owner());
+        for (var entry : sb.listPlayerScores(sidebar)) {
+            var team = sb.getPlayersTeam(entry.owner());
             String raw = team != null
-                    ? team.getPrefix().getString() + entry.owner() + team.getSuffix().getString()
-                    : entry.name().getString();
+                    ? team.getPlayerPrefix().getString() + entry.owner() + team.getPlayerSuffix().getString()
+                    : entry.ownerName().getString();
             String line = raw.replaceAll("§.", "").replaceAll("[^\\x20-\\x7E%()]", "").trim();
             Matcher m = CLEARED_SIDEBAR_PAT.matcher(line);
             if (m.find()) {
@@ -264,11 +263,11 @@ public class DungeonScore {
         return "§4D";
     }
 
-    public static void renderHud(DrawContext ctx, RenderTickCounter tick) {
+    public static void renderHud(GuiGraphics ctx, DeltaTracker tick) {
         if (!FishSettings.dungeonScoreEnabled) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.currentScreen != null && !(mc.currentScreen instanceof net.minecraft.client.gui.screen.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         if (Location.getCurrentLocation() != Location.DUNGEON) return;
         if (fishmod.utils.dungeon.Phase.inBoss()) return;
 
@@ -290,18 +289,18 @@ public class DungeonScore {
 
         if (!alerted300 && score >= 300) {
             alerted300 = true;
-            fishmod.utils.Misc.addChatMessage(net.minecraft.text.Text.literal("§a§l300 Score!"));
+            fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§a§l300 Score!"));
         }
 
         int x = FishSettings.dungeonScoreHudX;
         int y = FishSettings.dungeonScoreHudY;
         int lh = Constants.TEXT_HEIGHT + 2;
         float sc = (float) FishSettings.dungeonScoreScale;
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) x, (float) y);
-        ctx.getMatrices().scale(sc, sc);
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) x, (float) y);
+        ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawText(mc.textRenderer, lines[i], 0, lh * i, 0xFFFFFFFF, true);
-        ctx.getMatrices().popMatrix();
+            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+        ctx.pose().popMatrix();
     }
 }

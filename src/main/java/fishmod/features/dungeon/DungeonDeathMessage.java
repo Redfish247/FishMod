@@ -3,11 +3,10 @@ package fishmod.features.dungeon;
 import fishmod.utils.Location;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.events.Events;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 
 /**
  * When a player dies in a dungeon, sends a customisable message
@@ -24,7 +23,7 @@ public class DungeonDeathMessage {
         Events.ON_GAME_MESSAGE.register(DungeonDeathMessage::onMessage);
     }
 
-    private static boolean onMessage(Text message) {
+    private static boolean onMessage(Component message) {
         if (!FishSettings.deathMessageEnabled) return false;
         if (Location.getCurrentLocation() != Location.DUNGEON) return false;
 
@@ -37,12 +36,12 @@ public class DungeonDeathMessage {
 
         // Skip the local player's own death. Hypixel writes "☠ You died/were killed..." for
         // yourself (literally "You"), so match that as well as the actual username.
-        MinecraftClient mc = MinecraftClient.getInstance();
-        String localName = mc.getSession().getUsername();
+        Minecraft mc = Minecraft.getInstance();
+        String localName = mc.getUser().getName();
         if (playerName.equalsIgnoreCase("You") || playerName.equalsIgnoreCase(localName)) return false;
 
-        if (FishSettings.deathMessageToParty && mc.getNetworkHandler() != null) {
-            mc.getNetworkHandler().sendChatCommand("pc " + FishSettings.deathMessageTemplate.replace("{name}", playerName));
+        if (FishSettings.deathMessageToParty && mc.getConnection() != null) {
+            mc.getConnection().sendCommand("pc " + FishSettings.deathMessageTemplate.replace("{name}", playerName));
         }
 
         return false;

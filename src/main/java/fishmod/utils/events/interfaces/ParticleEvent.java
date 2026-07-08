@@ -1,8 +1,8 @@
 package fishmod.utils.events.interfaces;
 
-import net.minecraft.network.packet.s2c.play.ParticleS2CPacket;
+import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
 
 public interface ParticleEvent {
 
-    boolean onParticle(ParticleS2CPacket packet);
+    boolean onParticle(ClientboundLevelParticlesPacket packet);
 }

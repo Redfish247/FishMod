@@ -1,11 +1,11 @@
 package fishmod.cosmetic;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 
 /** Holds the client-side cosmetic display name and turns the raw "&"-coded string into a styled Text. */
 public final class NickState {
@@ -76,21 +76,21 @@ public final class NickState {
 
     /** The player's real in-game username, used as the search target when swapping. */
     public static String realName() {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.getSession() != null) {
-            String n = mc.getSession().getUsername();
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getUser() != null) {
+            String n = mc.getUser().getName();
             if (n != null && !n.isEmpty()) return n;
         }
         return "";
     }
 
-    public static Text asComponent() {
+    public static Component asComponent() {
         return parse(nick);
     }
 
     /** Parses a string with &-codes (and &#rrggbb hex codes) into a styled Text. */
-    public static Text parse(String input) {
-        MutableText root = Text.empty();
+    public static Component parse(String input) {
+        MutableComponent root = Component.empty();
         if (input == null || input.isEmpty()) return root;
 
         Style style = Style.EMPTY;
@@ -111,27 +111,27 @@ public final class NickState {
                     String hex = input.substring(i + 2, i + 8);
                     if (hex.matches("[0-9a-fA-F]{6}")) {
                         if (buf.length() > 0) {
-                            root.append(Text.literal(buf.toString()).setStyle(style));
+                            root.append(Component.literal(buf.toString()).setStyle(style));
                             buf.setLength(0);
                         }
-                        style = Style.EMPTY.withColor(TextColor.parse("#" + hex).getOrThrow());
+                        style = Style.EMPTY.withColor(TextColor.parseColor("#" + hex).getOrThrow());
                         i += 8;
                         continue;
                     }
                 }
 
-                Formatting fmt = Formatting.byCode(Character.toLowerCase(next));
+                ChatFormatting fmt = ChatFormatting.getByCode(Character.toLowerCase(next));
                 if (fmt != null) {
                     if (buf.length() > 0) {
-                        root.append(Text.literal(buf.toString()).setStyle(style));
+                        root.append(Component.literal(buf.toString()).setStyle(style));
                         buf.setLength(0);
                     }
-                    if (fmt == Formatting.RESET) {
+                    if (fmt == ChatFormatting.RESET) {
                         style = Style.EMPTY;
                     } else if (fmt.isColor()) {
                         style = Style.EMPTY.withColor(fmt);
                     } else {
-                        style = style.withFormatting(fmt);
+                        style = style.applyFormat(fmt);
                     }
                     i += 2;
                     continue;
@@ -143,7 +143,7 @@ public final class NickState {
         }
 
         if (buf.length() > 0) {
-            root.append(Text.literal(buf.toString()).setStyle(style));
+            root.append(Component.literal(buf.toString()).setStyle(style));
         }
         return root;
     }

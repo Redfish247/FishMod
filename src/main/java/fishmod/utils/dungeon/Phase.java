@@ -12,14 +12,13 @@ import fishmod.utils.events.interfaces.PhaseEvent;
 import fishmod.utils.events.interfaces.RunEndEvent;
 import config.practical.hud.HUDComponent;
 import config.practical.manager.ConfigValue;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.text.Text;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.network.chat.Component;
 
 public class Phase {
 
@@ -103,7 +102,7 @@ public class Phase {
         runOver = false;
     }
 
-    public static boolean parseGameMessage(Text message) {
+    public static boolean parseGameMessage(Component message) {
         String string = message.getString();
         if (currentSplits == null) return false;
         if (runOver) return false;
@@ -156,7 +155,7 @@ public class Phase {
     public static String getFloor() { return floor; }
 
     private static void printSplits() {
-        Misc.addChatMessage(Text.literal("§aSplits: "));
+        Misc.addChatMessage(Component.literal("§aSplits: "));
         for (Split split : currentSplits) {
             split.end();
             Misc.addChatMessage(split.createNameText().append(split.createTimeText()));
@@ -166,7 +165,7 @@ public class Phase {
         if (!currentSplits.isEmpty()) {
             double time = currentSplits.getLast().getTimeDiffrence();
             String formattedTime = Constants.DECIMAL_FORMAT.format(time);
-            Text timeLost = Text.literal("§aApproximately §e" + formattedTime + "s §alost to lag.");
+            Component timeLost = Component.literal("§aApproximately §e" + formattedTime + "s §alost to lag.");
             Misc.addChatMessage(timeLost);
 
         }
@@ -248,14 +247,14 @@ public class Phase {
     );
 
     /** Explicit HUD render for the splits panel (auto-render is disabled above). */
-    public static void renderHud(net.minecraft.client.gui.DrawContext ctx) {
+    public static void renderHud(net.minecraft.client.gui.GuiGraphics ctx) {
         if (enableSplits && runStarted()) {
             renderScaled(ctx, splitTimer, () -> renderSplitRows(ctx, splitTimer.getScaledX(), splitTimer.getScaledY()));
         }
     }
 
-    private static void renderScaled(net.minecraft.client.gui.DrawContext ctx, HUDComponent c, Runnable draw) {
-        org.joml.Matrix3x2fStack stack = ctx.getMatrices();
+    private static void renderScaled(net.minecraft.client.gui.GuiGraphics ctx, HUDComponent c, Runnable draw) {
+        org.joml.Matrix3x2fStack stack = ctx.pose();
         stack.pushMatrix();
         stack.scale(c.getScale(), c.getScale());
         draw.run();
@@ -263,8 +262,8 @@ public class Phase {
     }
 
     /** Renders split rows + separator. Called by splitTimer HUD (with blade) and renderSplitsHud (standalone). */
-    public static void renderSplitRows(net.minecraft.client.gui.DrawContext ctx, int x, int y) {
-        TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
+    public static void renderSplitRows(net.minecraft.client.gui.GuiGraphics ctx, int x, int y) {
+        Font textRenderer = Minecraft.getInstance().font;
         if (currentSplits != null) {
             int splitCount = currentSplits.size();
             if (!includeTotalTime) splitCount--;
@@ -301,9 +300,9 @@ public class Phase {
     }
 
     /** Direct HUD render for standalone mode (no blade / HUDComponent system). */
-    public static void renderSplitsHud(net.minecraft.client.gui.DrawContext ctx, int x, int y) {
+    public static void renderSplitsHud(net.minecraft.client.gui.GuiGraphics ctx, int x, int y) {
         if (!enableSplits || !runStarted()) return;
-        net.minecraft.client.MinecraftClient mc = net.minecraft.client.MinecraftClient.getInstance();
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
         if (mc.player == null) return;
         renderSplitRows(ctx, x, y);
     }

@@ -5,10 +5,10 @@ import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.dungeon.Phase;
 import fishmod.utils.dungeon.RunHistory;
 import fishmod.utils.dungeon.Split;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.ChatScreen;
 
 /**
  * PB Pace — a racing-style "ghost" for dungeon runs. As each split completes it compares your live
@@ -24,11 +24,11 @@ public final class PbPaceHud {
         return FishSettings.pbPaceEnabled && Phase.runStarted() && !Phase.getCurrentSplits().isEmpty();
     }
 
-    public static void renderHud(DrawContext ctx, RenderTickCounter tick) {
+    public static void renderHud(GuiGraphics ctx, DeltaTracker tick) {
         if (!FishSettings.pbPaceEnabled) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.currentScreen != null && !(mc.currentScreen instanceof ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof ChatScreen)) return;
         if (!Phase.runStarted()) return;
 
         java.util.List<Split> splits = Phase.getCurrentSplits();
@@ -61,18 +61,18 @@ public final class PbPaceHud {
         float sc = (float) FishSettings.pbPaceScale;
         int lh = Constants.TEXT_HEIGHT + 1;
 
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) x, (float) y);
-        ctx.getMatrices().scale(sc, sc);
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) x, (float) y);
+        ctx.pose().scale(sc, sc);
         int row = 0;
-        ctx.drawText(mc.textRenderer, "§6§lPB Pace §7(" + floor.toUpperCase() + ")", 0, row++ * lh, 0xFFFFFFFF, true);
+        ctx.drawString(mc.font, "§6§lPB Pace §7(" + floor.toUpperCase() + ")", 0, row++ * lh, 0xFFFFFFFF, true);
         if (lastHasPb)
-            ctx.drawText(mc.textRenderer, "§f" + last.getName() + " " + signed(lastDelta), 0, row++ * lh, 0xFFFFFFFF, true);
+            ctx.drawString(mc.font, "§f" + last.getName() + " " + signed(lastDelta), 0, row++ * lh, 0xFFFFFFFF, true);
         if (anyPb)
-            ctx.drawText(mc.textRenderer, "§7vs PB: " + (cumDelta <= 0 ? "§aahead " : "§cbehind ") + signed(cumDelta), 0, row++ * lh, 0xFFFFFFFF, true);
+            ctx.drawString(mc.font, "§7vs PB: " + (cumDelta <= 0 ? "§aahead " : "§cbehind ") + signed(cumDelta), 0, row++ * lh, 0xFFFFFFFF, true);
         else
-            ctx.drawText(mc.textRenderer, "§8building PB history…", 0, row++ * lh, 0xFFFFFFFF, true);
-        ctx.getMatrices().popMatrix();
+            ctx.drawString(mc.font, "§8building PB history…", 0, row++ * lh, 0xFFFFFFFF, true);
+        ctx.pose().popMatrix();
     }
 
     /** Format a delta vs PB: green & "-" when faster, red & "+" when slower. */

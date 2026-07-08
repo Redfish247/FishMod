@@ -4,15 +4,14 @@ import fishmod.features.item.ItemRarity;
 import fishmod.features.item.ItemRarityHolder;
 import fishmod.utils.config.values.Visual;
 import fishmod.utils.rendering.DrawEvents;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.LoreComponent;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-
 import java.util.List;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemLore;
 
 /**
  * Rarity background — draws a tinted sprite (square or circle) BEHIND every item, coloured by its
@@ -22,8 +21,8 @@ import java.util.List;
  */
 public class ItemRarityHotbar {
 
-    private static final Identifier SQUARE = Identifier.of("fishmod", "rarity-background");
-    private static final Identifier CIRCLE = Identifier.of("fishmod", "rarity-background-circle");
+    private static final Identifier SQUARE = Identifier.fromNamespaceAndPath("fishmod", "rarity-background");
+    private static final Identifier CIRCLE = Identifier.fromNamespaceAndPath("fishmod", "rarity-background-circle");
 
     // The raw rarity colors are very bright/saturated. Tone them WAY down so the backing is a subtle
     // hint rather than a glaring block: drop to a low alpha and blend halfway toward grey.
@@ -36,7 +35,7 @@ public class ItemRarityHotbar {
     }
 
     /** Shared draw: parse (cached) rarity and blit the tinted sprite behind the 16x16 item icon. */
-    public static void drawRarity(DrawContext ctx, ItemStack stack, int x, int y) {
+    public static void drawRarity(GuiGraphics ctx, ItemStack stack, int x, int y) {
         if (!Visual.itemRarityBackground || stack == null || stack.isEmpty()) return;
 
         ItemRarityHolder holder = (ItemRarityHolder) (Object) stack;
@@ -44,7 +43,7 @@ public class ItemRarityHotbar {
         if (!holder.fishmod$hasItemRarity()) return;
 
         Identifier sprite = Visual.circularRarityBackground ? CIRCLE : SQUARE;
-        ctx.drawGuiTexture(RenderPipelines.GUI_TEXTURED, sprite, x, y, 16, 16, getTintColor(holder.fishmod$getItemRarity()));
+        ctx.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, 16, 16, getTintColor(holder.fishmod$getItemRarity()));
     }
 
     private static int getTintColor(ItemRarity rarity) {
@@ -67,9 +66,9 @@ public class ItemRarityHotbar {
 
     /** Reads the rarity keyword from the last lore lines (e.g. "LEGENDARY DUNGEON SWORD"). */
     public static ItemRarity getRarity(ItemStack stack) {
-        LoreComponent lore = stack.get(DataComponentTypes.LORE);
+        ItemLore lore = stack.get(DataComponents.LORE);
         if (lore == null) return ItemRarity.NONE;
-        List<Text> lines = lore.lines();
+        List<Component> lines = lore.lines();
         if (lines.isEmpty()) return ItemRarity.NONE;
         for (int i = lines.size() - 1; i >= 0; i--) {
             for (String word : lines.get(i).getString().split(" ")) {

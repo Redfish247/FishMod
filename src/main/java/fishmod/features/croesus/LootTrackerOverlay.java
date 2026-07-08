@@ -5,18 +5,18 @@ import fishmod.mixin.accessors.KeyBindingAccessor;
 import fishmod.utils.Location;
 import fishmod.utils.SkyblockItems;
 import fishmod.utils.config.values.FishSettings;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 import java.text.DecimalFormat;
 import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.network.chat.Component;
 
 /**
  * Manual loot/profit tracker drawn on top of the player's inventory while in the Dungeon Hub.
@@ -44,8 +44,8 @@ public final class LootTrackerOverlay {
     private static final DecimalFormat NUM = new DecimalFormat("#,###");
 
     // text widgets (lazy, like SearchBar). searchBox = item search, numberBox = active count/runs edit.
-    private static TextFieldWidget searchBox;
-    private static TextFieldWidget numberBox;
+    private static EditBox searchBox;
+    private static EditBox numberBox;
     private static String query = "";
     private static List<String> suggestions = List.of();
     private static boolean dropdownOpen = false;
@@ -82,39 +82,39 @@ public final class LootTrackerOverlay {
     // ── gates ────────────────────────────────────────────────────────────────
     private static boolean active() {
         if (!FishSettings.lootTrackerEnabled) return false;
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (!(mc.currentScreen instanceof InventoryScreen)) return false;
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.screen instanceof InventoryScreen)) return false;
         return Location.getCurrentLocation() == Location.DUNGEON_HUB;
     }
 
     private static boolean exists() {
         if (searchBox != null) return true;
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.textRenderer == null || mc.getWindow() == null) return false;
-        searchBox = new TextFieldWidget(mc.textRenderer, 0, 0, 100, SEARCH_H, Text.literal(""));
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.font == null || mc.getWindow() == null) return false;
+        searchBox = new EditBox(mc.font, 0, 0, 100, SEARCH_H, Component.literal(""));
         searchBox.setMaxLength(64);
-        searchBox.setChangedListener(s -> {
+        searchBox.setResponder(s -> {
             query = s.toLowerCase();
             recomputeSuggestions();
             dropdownOpen = !query.isEmpty();
         });
-        numberBox = new TextFieldWidget(mc.textRenderer, 0, 0, rowCountW, COUNT_H, Text.literal(""));
+        numberBox = new EditBox(mc.font, 0, 0, rowCountW, COUNT_H, Component.literal(""));
         numberBox.setMaxLength(9);
-        numberBox.setTextPredicate(s -> s.isEmpty() || s.matches("\\d{1,9}"));
+        numberBox.setFilter(s -> s.isEmpty() || s.matches("\\d{1,9}"));
         return true;
     }
 
     // ── render ───────────────────────────────────────────────────────────────
-    public static void renderInScreen(DrawContext ctx, int mx, int my) {
+    public static void renderInScreen(GuiGraphics ctx, int mx, int my) {
         visible = false;
         if (!active() || !exists()) return;
         CroesusPrices.refreshIfStale(); // fire-and-forget; warms price cache
-        MinecraftClient mc = MinecraftClient.getInstance();
-        TextRenderer tr = mc.textRenderer;
-        HandledScreenAccessor s = (HandledScreenAccessor) mc.currentScreen;
+        Minecraft mc = Minecraft.getInstance();
+        Font tr = mc.font;
+        HandledScreenAccessor s = (HandledScreenAccessor) mc.screen;
         int bgX = s.getBgX(), bgY = s.getBgY(), bgW = s.getBgWidth();
-        int screenW = mc.getWindow().getScaledWidth();
-        int screenH = mc.getWindow().getScaledHeight();
+        int screenW = mc.getWindow().getGuiScaledWidth();
+        int screenH = mc.getWindow().getGuiScaledHeight();
 
         List<LootTrackerStore.Row> rows = LootTrackerStore.rows();
         int runsCount = LootTrackerStore.runs();
@@ -130,7 +130,7 @@ public final class LootTrackerOverlay {
                 + drawnRows * ROW_H + DIV_GAP + RUNS_H + LINE_H * 3 + 2 + CLEAR_H + PAD;
 
         // stop a drag once the mouse button is released
-        boolean mouseDown = GLFW.glfwGetMouseButton(mc.getWindow().getHandle(),
+        boolean mouseDown = GLFW.glfwGetMouseButton(mc.getWindow().handle(),
                 GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
         if (dragging && !mouseDown) { dragging = false; fishmod.utils.config.FishConfig.manager.save(); }
 
@@ -158,15 +158,15 @@ public final class LootTrackerOverlay {
         int y = panelY + PAD;
         // title bar (drag handle)
         titleBarY = panelY; titleBarH = PAD + 9;
-        ctx.drawText(tr, "§l⠿ Loot Tracker", panelX + PAD, y, ACCENT, true);
+        ctx.drawString(tr, "§l⠿ Loot Tracker", panelX + PAD, y, ACCENT, true);
         y += TITLE_H;
 
         // search box
         searchX = panelX + PAD; searchY = y; searchW = panelW - PAD * 2; searchH = SEARCH_H;
         searchBox.setX(searchX); searchBox.setY(searchY); searchBox.setWidth(searchW);
         searchBox.render(ctx, mx, my, 0f);
-        if (!searchBox.isFocused() && searchBox.getText().isEmpty())
-            ctx.drawText(tr, "§8+ add drop…", searchX + 4, searchY + 3, SUB, false);
+        if (!searchBox.isFocused() && searchBox.getValue().isEmpty())
+            ctx.drawString(tr, "§8+ add drop…", searchX + 4, searchY + 3, SUB, false);
         y += SEARCH_H + SEARCH_GAP;
 
         // autocomplete dropdown
@@ -174,13 +174,13 @@ public final class LootTrackerOverlay {
             sugStartY = y;
             if (suggestions.isEmpty()) {
                 ctx.fill(searchX, y, searchX + searchW, y + sugRowH, 0xFF0E151B);
-                ctx.drawText(tr, "§8loading items…", searchX + 4, y + 2, SUB, false);
+                ctx.drawString(tr, "§8loading items…", searchX + 4, y + 2, SUB, false);
                 y += sugRowH;
             } else {
                 for (int i = 0; i < suggestions.size(); i++) {
                     boolean hov = hit(mx, my, searchX, y, searchW, sugRowH);
                     ctx.fill(searchX, y, searchX + searchW, y + sugRowH, hov ? 0xFF142028 : 0xFF0E151B);
-                    ctx.drawText(tr, tr.trimToWidth(suggestions.get(i), searchW - 6),
+                    ctx.drawString(tr, tr.plainSubstrByWidth(suggestions.get(i), searchW - 6),
                             searchX + 4, y + 2, hov ? ACCENT2 : TEXT, false);
                     y += sugRowH;
                 }
@@ -196,7 +196,7 @@ public final class LootTrackerOverlay {
         int nameX = rowPlusX + BTN + 4;
         rowY = new int[rows.size()];
         if (rows.isEmpty()) {
-            ctx.drawText(tr, "§8no drops yet — type above", x0, y + 4, SUB, true);
+            ctx.drawString(tr, "§8no drops yet — type above", x0, y + 4, SUB, true);
             y += ROW_H;
         } else {
             for (int i = 0; i < rows.size(); i++) {
@@ -213,11 +213,11 @@ public final class LootTrackerOverlay {
                 }
                 double v = rowValue(r);
                 String val = v > 0 ? fmtCoins(v) : "—";
-                int vw = tr.getWidth(val);
+                int vw = tr.width(val);
                 int valX = panelX + panelW - PAD - vw;
-                ctx.drawText(tr, val, valX, y + 4, v > 0 ? GOLD : SUB, true);
+                ctx.drawString(tr, val, valX, y + 4, v > 0 ? GOLD : SUB, true);
                 int maxNameW = Math.max(10, valX - nameX - 4);
-                ctx.drawText(tr, tr.trimToWidth(r.name, maxNameW), nameX, y + 4, TEXT, true);
+                ctx.drawString(tr, tr.plainSubstrByWidth(r.name, maxNameW), nameX, y + 4, TEXT, true);
                 y += ROW_H;
             }
         }
@@ -229,7 +229,7 @@ public final class LootTrackerOverlay {
         // runs row: Runs:  [-] [count] [+]
         runsRowY = y;
         int rct = y + 2;
-        ctx.drawText(tr, "§7Runs:", x0, y + 4, TEXT, true);
+        ctx.drawString(tr, "§7Runs:", x0, y + 4, TEXT, true);
         runsPlusX  = panelX + panelW - PAD - BTN;
         runsCountX = runsPlusX - 2 - rowCountW;
         runsMinusX = runsCountX - 2 - BTN;
@@ -245,11 +245,11 @@ public final class LootTrackerOverlay {
         for (LootTrackerStore.Row r : rows) totalDrops += r.count;
         double total = totalValue();
         double perRun = total / Math.max(1, runsCount);
-        ctx.drawText(tr, "§7Drops: §f" + totalDrops + " §8(" + rows.size() + " types)", x0, y, TEXT, true);
+        ctx.drawString(tr, "§7Drops: §f" + totalDrops + " §8(" + rows.size() + " types)", x0, y, TEXT, true);
         y += LINE_H;
-        ctx.drawText(tr, "§7Total: §6" + fmtCoins(total), x0, y, TEXT, true);
+        ctx.drawString(tr, "§7Total: §6" + fmtCoins(total), x0, y, TEXT, true);
         y += LINE_H;
-        ctx.drawText(tr, "§7Per run: §6" + fmtCoins(perRun), x0, y, TEXT, true);
+        ctx.drawString(tr, "§7Per run: §6" + fmtCoins(perRun), x0, y, TEXT, true);
         y += LINE_H + 2;
 
         // clear button
@@ -257,30 +257,30 @@ public final class LootTrackerOverlay {
         boolean ch = hit(mx, my, clearX, clearY, clearW, clearH);
         ctx.fill(clearX, clearY, clearX + clearW, clearY + clearH, ch ? 0xFF3A1414 : BTN_BG);
         String cl = "§l[ Clear ]";
-        int clw = tr.getWidth(cl);
-        ctx.drawText(tr, ch ? "§c§l[ Clear ]" : cl, clearX + (clearW - clw) / 2,
+        int clw = tr.width(cl);
+        ctx.drawString(tr, ch ? "§c§l[ Clear ]" : cl, clearX + (clearW - clw) / 2,
                 clearY + (clearH - 8) / 2, ch ? 0xFFFF6B6B : TEXT, true);
 
         visible = true;
     }
 
-    private static void renderNumberBox(DrawContext ctx, int mx, int my, int x, int y) {
+    private static void renderNumberBox(GuiGraphics ctx, int mx, int my, int x, int y) {
         numberBox.setX(x); numberBox.setY(y); numberBox.setWidth(rowCountW);
         numberBox.render(ctx, mx, my, 0f);
         numX = x; numY = y; numW = rowCountW; numH = COUNT_H;
     }
 
-    private static void drawCountCell(DrawContext ctx, TextRenderer tr, int x, int y, String text, boolean hov) {
+    private static void drawCountCell(GuiGraphics ctx, Font tr, int x, int y, String text, boolean hov) {
         ctx.fill(x, y, x + rowCountW, y + COUNT_H, BORDER);
         ctx.fill(x + 1, y + 1, x + rowCountW - 1, y + COUNT_H - 1, hov ? BTN_HOV : BTN_BG);
-        int tw = tr.getWidth(text);
-        ctx.drawText(tr, text, x + (rowCountW - tw) / 2, y + (COUNT_H - 8) / 2, hov ? ACCENT2 : TEXT, false);
+        int tw = tr.width(text);
+        ctx.drawString(tr, text, x + (rowCountW - tw) / 2, y + (COUNT_H - 8) / 2, hov ? ACCENT2 : TEXT, false);
     }
 
-    private static void drawMini(DrawContext ctx, TextRenderer tr, int x, int y, String glyph, boolean hov) {
+    private static void drawMini(GuiGraphics ctx, Font tr, int x, int y, String glyph, boolean hov) {
         ctx.fill(x, y, x + BTN, y + BTN, hov ? BTN_HOV : BTN_BG);
-        int gw = tr.getWidth(glyph);
-        ctx.drawText(tr, glyph, x + (BTN - gw) / 2, y + (BTN - 8) / 2, hov ? ACCENT2 : TEXT, false);
+        int gw = tr.width(glyph);
+        ctx.drawString(tr, glyph, x + (BTN - gw) / 2, y + (BTN - 8) / 2, hov ? ACCENT2 : TEXT, false);
     }
 
     // ── click ────────────────────────────────────────────────────────────────
@@ -306,7 +306,7 @@ public final class LootTrackerOverlay {
             for (int i = 0; i < suggestions.size(); i++) {
                 if (hit(mx, my, searchX, sugStartY + i * sugRowH, searchW, sugRowH)) {
                     addRowFromSuggestion(suggestions.get(i));
-                    searchBox.setText(""); query = ""; suggestions = List.of();
+                    searchBox.setValue(""); query = ""; suggestions = List.of();
                     dropdownOpen = false; searchBox.setFocused(false);
                     return true;
                 }
@@ -339,14 +339,14 @@ public final class LootTrackerOverlay {
     }
 
     // ── keyboard (mirrors SearchBar; routes to whichever field is focused) ─────
-    public static boolean keyPressed(KeyInput input) {
+    public static boolean keyPressed(KeyEvent input) {
         if (!active() || !exists()) return false;
-        TextFieldWidget f = focusedField();
+        EditBox f = focusedField();
         if (f == null) return false;
         // never eat the drop key — fall through
         try {
-            int dropCode = ((KeyBindingAccessor) (Object) MinecraftClient.getInstance().options.dropKey)
-                    .getBoundKey().getCode();
+            int dropCode = ((KeyBindingAccessor) (Object) Minecraft.getInstance().options.keyDrop)
+                    .getBoundKey().getValue();
             if (input.key() == dropCode) {
                 if (f == numberBox) commitNumber(); else f.setFocused(false);
                 return false;
@@ -358,7 +358,7 @@ public final class LootTrackerOverlay {
         }
         if (input.key() == GLFW.GLFW_KEY_ENTER || input.key() == GLFW.GLFW_KEY_KP_ENTER) {
             if (f == searchBox) {
-                if (!suggestions.isEmpty()) { addRowFromSuggestion(suggestions.get(0)); searchBox.setText(""); }
+                if (!suggestions.isEmpty()) { addRowFromSuggestion(suggestions.get(0)); searchBox.setValue(""); }
             } else if (f == numberBox) {
                 commitNumber();
             }
@@ -368,13 +368,13 @@ public final class LootTrackerOverlay {
         return true; // consume -> mixin returns false -> no inventory close / hotbar swap
     }
 
-    public static void charTyped(CharInput input) {
+    public static void charTyped(CharacterEvent input) {
         if (!active() || !exists()) return;
-        TextFieldWidget f = focusedField();
+        EditBox f = focusedField();
         if (f != null) f.charTyped(input);
     }
 
-    private static TextFieldWidget focusedField() {
+    private static EditBox focusedField() {
         if (numberBox != null && numberBox.isFocused()) return numberBox;
         if (searchBox != null && searchBox.isFocused()) return searchBox;
         return null;
@@ -385,14 +385,14 @@ public final class LootTrackerOverlay {
         editKind = kind;
         editId = id == null ? "" : id;
         editName = name == null ? "" : name;
-        numberBox.setText(String.valueOf(current));
+        numberBox.setValue(String.valueOf(current));
         numberBox.setFocused(true);
         searchBox.setFocused(false);
     }
 
     private static void commitNumber() {
         if (editKind == 0) return;
-        String t = numberBox.getText().trim();
+        String t = numberBox.getValue().trim();
         try {
             int n = t.isEmpty() ? 0 : Integer.parseInt(t);
             if (editKind == 1) LootTrackerStore.setRuns(n);

@@ -1,18 +1,17 @@
 package fishmod.features;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.PlayerSkinDrawer;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.text.Text;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.PlayerFaceRenderer;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.network.chat.Component;
 
 /**
  * Compact custom tab list. Hypixel packs every column (Players / Info / Trophy Frogs / Active
@@ -56,25 +55,25 @@ public final class CompactTab {
      * via {@link #shouldRender()} so we just draw whatever Hypixel sent verbatim.
      */
     public static boolean shouldRender() {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.player == null || mc.getNetworkHandler() == null) return false;
-        for (PlayerListEntry e : mc.getNetworkHandler().getPlayerList()) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.getConnection() == null) return false;
+        for (PlayerInfo e : mc.getConnection().getOnlinePlayers()) {
             if (COL_KEY.matcher(nameOf(e)).find()) return true;
         }
         return false;
     }
 
-    public static void render(DrawContext ctx, int screenW, String tabHeader, String tabFooter) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.player == null || mc.getNetworkHandler() == null) return;
-        TextRenderer tr = mc.textRenderer;
+    public static void render(GuiGraphics ctx, int screenW, String tabHeader, String tabFooter) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.getConnection() == null) return;
+        Font tr = mc.font;
         int lh = 10;
 
         // ── group entries into Hypixel's tab columns (by their !X- sort key) ──
-        List<PlayerListEntry> all = new ArrayList<>(mc.getNetworkHandler().getPlayerList());
+        List<PlayerInfo> all = new ArrayList<>(mc.getConnection().getOnlinePlayers());
         all.sort((a, b) -> nameOf(a).compareToIgnoreCase(nameOf(b)));
-        Map<String, List<PlayerListEntry>> grouped = new LinkedHashMap<>();
-        for (PlayerListEntry e : all) {
+        Map<String, List<PlayerInfo>> grouped = new LinkedHashMap<>();
+        for (PlayerInfo e : all) {
             Matcher m = COL_KEY.matcher(nameOf(e));
             if (m.find()) grouped.computeIfAbsent(m.group(1).toUpperCase(), k -> new ArrayList<>()).add(e);
         }
@@ -83,7 +82,7 @@ public final class CompactTab {
         if (grouped.isEmpty()) return;
 
         // ── smart sizing: trim trailing blank rows, drop empty columns, width = content ──
-        List<List<PlayerListEntry>> columns = new ArrayList<>();
+        List<List<PlayerInfo>> columns = new ArrayList<>();
         List<Integer> colWidths = new ArrayList<>();
         int rows = 0;
         boolean first = true;
@@ -92,10 +91,10 @@ public final class CompactTab {
             for (int i = 0; i < col.size(); i++) if (!blank(col.get(i))) { last = i; nonBlank++; }
             // Drop empty columns AND header-only columns (e.g. an "Info" column with no content).
             if (last < 0 || nonBlank <= 1) { first = false; continue; }
-            List<PlayerListEntry> trimmed = new ArrayList<>(col.subList(0, last + 1));
+            List<PlayerInfo> trimmed = new ArrayList<>(col.subList(0, last + 1));
             boolean playersCol = first; first = false;
             int maxW = 0;
-            for (PlayerListEntry e : trimmed) { Text dn = e.getDisplayName(); if (dn != null) maxW = Math.max(maxW, tr.getWidth(dn)); }
+            for (PlayerInfo e : trimmed) { Component dn = e.getTabListDisplayName(); if (dn != null) maxW = Math.max(maxW, tr.width(dn)); }
             int extra = playersCol ? 26 : 8;                       // head + signal bars on players col
             int w = Math.max(playersCol ? 116 : 60, Math.min(maxW + extra, 230));
             columns.add(trimmed);
@@ -106,7 +105,7 @@ public final class CompactTab {
         rows = Math.min(rows, 22);
 
         int ping = realPing(mc);
-        int fps = mc.getCurrentFps();
+        int fps = mc.getFps();
         double tps = fishmod.features.dungeon.PartyCommandHandler.currentTps();
         String server = findServer(mc, tabFooter, tabHeader);
 
@@ -139,9 +138,9 @@ public final class CompactTab {
             int cxL = x0 + i * cellW;
             if (i > 0) ctx.fill(cxL, y0 + 5, cxL + 1, y0 + headH - 5, DIVIDER);
             int cxC = cxL + cellW / 2;
-            ctx.drawCenteredTextWithShadow(tr, "§7" + labels[i], cxC, y0 + 5, LABEL);
+            ctx.drawCenteredString(tr, "§7" + labels[i], cxC, y0 + 5, LABEL);
             int vc = (i == 1 && tps >= 0 && tps < 19) ? 0xFFFF5555 : VALUE;
-            ctx.drawCenteredTextWithShadow(tr, values[i], cxC, y0 + 16, vc);
+            ctx.drawCenteredString(tr, values[i], cxC, y0 + 16, vc);
         }
         ctx.fill(x0 + 4, y0 + headH - 1, x0 + pw - 4, y0 + headH, DIVIDER);
 
@@ -152,30 +151,30 @@ public final class CompactTab {
             int w = colWidths.get(c);
             if (c > 0) ctx.fill(colX - gap / 2, cy, colX - gap / 2 + 1, cy + rows * lh, DIVIDER);
             boolean playersCol = (c == 0);
-            List<PlayerListEntry> entries = columns.get(c);
+            List<PlayerInfo> entries = columns.get(c);
             for (int r = 0; r < entries.size() && r < rows; r++) {
-                PlayerListEntry e = entries.get(r);
-                Text dn = e.getDisplayName();
+                PlayerInfo e = entries.get(r);
+                Component dn = e.getTabListDisplayName();
                 if (dn == null) continue;
                 int ry = cy + r * lh;
                 int tx = colX;
                 if (playersCol && r > 0) {
-                    try { PlayerSkinDrawer.draw(ctx, e.getSkinTextures(), colX, ry - 1, 8); } catch (Exception ignored) {}
+                    try { PlayerFaceRenderer.draw(ctx, e.getSkin(), colX, ry - 1, 8); } catch (Exception ignored) {}
                     tx = colX + 10;
                 }
                 // draw styled text directly (no plain-string trim → keeps rank colors)
-                ctx.drawText(tr, dn, tx, ry, NAME, true);
+                ctx.drawString(tr, dn, tx, ry, NAME, true);
                 if (playersCol && r > 0 && e.getLatency() > 0)
                     drawSignal(ctx, colX + w - 13, ry, e.getLatency());
             }
             colX += w + gap;
         }
 
-        ctx.drawCenteredTextWithShadow(tr, footerLine(tabFooter), x0 + pw / 2, y0 + totalH - footH + 2, GOLD);
+        ctx.drawCenteredString(tr, footerLine(tabFooter), x0 + pw / 2, y0 + totalH - footH + 2, GOLD);
     }
 
-    private static boolean blank(PlayerListEntry e) {
-        Text dn = e.getDisplayName();
+    private static boolean blank(PlayerInfo e) {
+        Component dn = e.getTabListDisplayName();
         if (dn == null) return true;
         // Strip color codes AND invisible formatting chars (NBSP, LRM/RLM, ZWJ, separators) so
         // Hypixel's hidden-character padding rows are recognized as blank.
@@ -184,7 +183,7 @@ public final class CompactTab {
     }
 
     /** 2px-radius rounded rectangle fill. */
-    private static void roundRect(DrawContext ctx, int x1, int y1, int x2, int y2, int color) {
+    private static void roundRect(GuiGraphics ctx, int x1, int y1, int x2, int y2, int color) {
         ctx.fill(x1 + 2, y1, x2 - 2, y1 + 1, color);
         ctx.fill(x1 + 1, y1 + 1, x2 - 1, y1 + 2, color);
         ctx.fill(x1, y1 + 2, x2, y2 - 2, color);
@@ -192,7 +191,7 @@ public final class CompactTab {
         ctx.fill(x1 + 2, y2 - 1, x2 - 2, y2, color);
     }
 
-    private static void drawSignal(DrawContext ctx, int x, int y, int latency) {
+    private static void drawSignal(GuiGraphics ctx, int x, int y, int latency) {
         int filled = latency <= 75 ? 4 : latency <= 150 ? 3 : latency <= 300 ? 2 : 1;
         for (int b = 0; b < 4; b++) {
             int h = 2 + b * 2;
@@ -201,7 +200,7 @@ public final class CompactTab {
         }
     }
 
-    private static String nameOf(PlayerListEntry e) {
+    private static String nameOf(PlayerInfo e) {
         try { return e.getProfile() != null && e.getProfile().name() != null ? e.getProfile().name() : ""; }
         catch (Exception ex) { return ""; }
     }
@@ -212,30 +211,30 @@ public final class CompactTab {
      * Odin uses. Fall back to server-measured tab latency, then server-list join ping, only when a
      * live measurement isn't available yet (briefly after join).
      */
-    private static int realPing(MinecraftClient mc) {
+    private static int realPing(Minecraft mc) {
         int live = fishmod.utils.PingTracker.latest();
         if (live > 0) return live;
         try {
-            var self = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
+            var self = mc.getConnection().getPlayerInfo(mc.player.getUUID());
             if (self != null && self.getLatency() > 0) return self.getLatency();
         } catch (Exception ignored) {}
         try {
-            var si = mc.getCurrentServerEntry();
+            var si = mc.getCurrentServer();
             if (si != null && si.ping > 0) return (int) si.ping;
         } catch (Exception ignored) {}
         return -1;
     }
 
-    private static String findServer(MinecraftClient mc, String footer, String header) {
+    private static String findServer(Minecraft mc, String footer, String header) {
         String hay = (footer == null ? "" : footer) + " " + (header == null ? "" : header);
         // sidebar often carries the server id (e.g. "05/27/26 m108AB")
         try {
-            if (mc.world != null) {
-                var sb = mc.world.getScoreboard();
-                var obj = sb.getObjectiveForSlot(net.minecraft.scoreboard.ScoreboardDisplaySlot.SIDEBAR);
-                if (obj != null) for (var en : sb.getScoreboardEntries(obj)) {
-                    var team = sb.getScoreHolderTeam(en.owner());
-                    String raw = team != null ? team.getPrefix().getString() + en.owner() + team.getSuffix().getString() : en.name().getString();
+            if (mc.level != null) {
+                var sb = mc.level.getScoreboard();
+                var obj = sb.getDisplayObjective(net.minecraft.world.scores.DisplaySlot.SIDEBAR);
+                if (obj != null) for (var en : sb.listPlayerScores(obj)) {
+                    var team = sb.getPlayersTeam(en.owner());
+                    String raw = team != null ? team.getPlayerPrefix().getString() + en.owner() + team.getPlayerSuffix().getString() : en.ownerName().getString();
                     hay += " " + raw.replaceAll("§.", "");
                 }
             }

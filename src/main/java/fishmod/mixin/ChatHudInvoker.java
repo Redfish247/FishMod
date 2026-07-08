@@ -1,17 +1,17 @@
 package fishmod.mixin;
 
-import net.minecraft.client.gui.hud.ChatHud;
-import net.minecraft.client.gui.hud.ChatHudLine;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
 import java.util.List;
+import net.minecraft.client.GuiMessage;
+import net.minecraft.client.gui.components.ChatComponent;
 
-@Mixin(ChatHud.class)
+@Mixin(ChatComponent.class)
 public interface ChatHudInvoker {
 
-    @Invoker("getChatScale")
+    @Invoker("getScale")
     double invokeChatScale();
 
     @Invoker("getLineHeight")
@@ -20,16 +20,16 @@ public interface ChatHudInvoker {
     @Invoker("getWidth")
     int invokeWidth();
 
-    @Accessor("scrolledLines")
+    @Accessor("chatScrollbarPos")
     int getScrolledLines();
 
-    @Accessor("visibleMessages")
-    List<ChatHudLine.Visible> getVisibleMessages();
+    @Accessor("trimmedMessages")
+    List<GuiMessage.Line> getVisibleMessages();
 
-    @Accessor("messages")
-    List<ChatHudLine> getMessages();
+    @Accessor("allMessages")
+    List<GuiMessage> getMessages();
 
     /** Rebuilds visibleMessages from messages (re-wraps lines); preserves scroll position. */
-    @Invoker("refresh")
+    @Invoker("refreshTrimmedMessages")
     void invokeRefresh();
 }

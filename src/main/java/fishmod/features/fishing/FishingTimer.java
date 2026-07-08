@@ -3,13 +3,13 @@ package fishmod.features.fishing;
 import fishmod.utils.Location;
 import fishmod.utils.config.values.FishSettings;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.projectile.FishingBobberEntity;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.projectile.FishingHook;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Bobber Reminder HUD.
@@ -52,11 +52,11 @@ public final class FishingTimer {
         soundPlayed = false;
     }
 
-    private static void tick(MinecraftClient mc) {
+    private static void tick(Minecraft mc) {
         if (!FishSettings.fishingTimerEnabled) { reset(); return; }
-        if (mc.player == null || mc.world == null) { reset(); return; }
+        if (mc.player == null || mc.level == null) { reset(); return; }
 
-        FishingBobberEntity bobber = findBobber(mc);
+        FishingHook bobber = findBobber(mc);
 
         if (bobber == null) {
             // Bobber gone. If we were mid-bite and the catch window hadn't elapsed, the player reeled
@@ -74,7 +74,7 @@ public final class FishingTimer {
             missedUntilMs = 0;
         }
 
-        Vec3d v = bobber.getVelocity();
+        Vec3 v = bobber.getDeltaMovement();
         double speed = v.length();
         if (!settled) {
             if (speed < SETTLE_SPEED) settled = true;
@@ -94,7 +94,7 @@ public final class FishingTimer {
         if (elapsed >= delayMs && !soundPlayed) {
             soundPlayed = true;
             if (FishSettings.fishingReminderSound)
-                mc.player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), 1.0f, 2.0f);
+                mc.player.playSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1.0f, 2.0f);
             if (FishSettings.ttsFishing) fishmod.utils.Tts.speak("Reel");
         }
 
@@ -108,9 +108,9 @@ public final class FishingTimer {
     }
 
     /** The player's own bobber, or null. */
-    private static FishingBobberEntity findBobber(MinecraftClient mc) {
-        for (Entity e : mc.world.getEntities()) {
-            if (e instanceof FishingBobberEntity b && b.getPlayerOwner() == mc.player) return b;
+    private static FishingHook findBobber(Minecraft mc) {
+        for (Entity e : mc.level.entitiesForRendering()) {
+            if (e instanceof FishingHook b && b.getPlayerOwner() == mc.player) return b;
         }
         return null;
     }
@@ -141,20 +141,20 @@ public final class FishingTimer {
         return FishSettings.fishingTimerEnabled && currentLine() != null;
     }
 
-    public static void renderHud(DrawContext ctx, RenderTickCounter tick) {
+    public static void renderHud(GuiGraphics ctx, DeltaTracker tick) {
         if (!FishSettings.fishingTimerEnabled || !Location.inSkyblock()) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.currentScreen != null && !(mc.currentScreen instanceof net.minecraft.client.gui.screen.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
 
         String line = currentLine();
         if (line == null) return;
 
         float sc = (float) FishSettings.fishingTimerScale;
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) FishSettings.fishingTimerHudX, (float) FishSettings.fishingTimerHudY);
-        ctx.getMatrices().scale(sc, sc);
-        ctx.drawText(mc.textRenderer, line, 0, 0, 0xFFFFFFFF, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) FishSettings.fishingTimerHudX, (float) FishSettings.fishingTimerHudY);
+        ctx.pose().scale(sc, sc);
+        ctx.drawString(mc.font, line, 0, 0, 0xFFFFFFFF, true);
+        ctx.pose().popMatrix();
     }
 }

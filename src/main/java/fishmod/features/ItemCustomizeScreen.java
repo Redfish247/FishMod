@@ -1,21 +1,20 @@
 package fishmod.features;
 
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.NbtComponent;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.registry.Registries;
-import net.minecraft.text.Text;
-
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.CustomData;
 
 /**
  * /fm customize — a clearer, friendlier item customizer.
@@ -94,28 +93,28 @@ public class ItemCustomizeScreen extends Screen {
     private int gridX, gridY, armorX, armorY;
     private int legendX, legendY;
     private int selectedIndex = 0;
-    private TextFieldWidget nameField, modelField, dyeField, skinField;
+    private EditBox nameField, modelField, dyeField, skinField;
     private Dropdown dyeDropdown, trimMatDropdown, trimPatDropdown;
 
     // &-code key hit-boxes, rebuilt each frame, consumed by mouseClicked. {x,y,w,h} + parallel code.
     private final List<int[]> keyRects = new ArrayList<>();
     private final List<String> keyCodes = new ArrayList<>();
 
-    public ItemCustomizeScreen() { super(Text.literal("Item Customize")); }
+    public ItemCustomizeScreen() { super(Component.literal("Item Customize")); }
 
-    private PlayerInventory inv() { return client.player.getInventory(); }
-    private int mainCount() { return Math.min(36, inv().size()); }
+    private Inventory inv() { return minecraft.player.getInventory(); }
+    private int mainCount() { return Math.min(36, inv().getContainerSize()); }
 
     @Override
     protected void init() {
-        if (client == null || client.player == null) return;
+        if (minecraft == null || minecraft.player == null) return;
 
         panelX = (this.width - panelW) / 2;
         panelY = Math.max(8, (this.height - panelH) / 2);
 
         // Default selection = currently held item.
-        ItemStack held = client.player.getMainHandStack();
-        for (int i = 0; i < mainCount(); i++) if (inv().getStack(i) == held) { selectedIndex = i; break; }
+        ItemStack held = minecraft.player.getMainHandItem();
+        for (int i = 0; i < mainCount(); i++) if (inv().getItem(i) == held) { selectedIndex = i; break; }
 
         int p = panelX + 14;
         int contentW = panelW - 28;
@@ -141,24 +140,24 @@ public class ItemCustomizeScreen extends Screen {
         int trimY  = dyeY + 24;
         int skinY  = trimY + 24;
 
-        nameField = new TextFieldWidget(this.textRenderer, fx, nameY, fw, 14, Text.literal("Name"));
+        nameField = new EditBox(this.font, fx, nameY, fw, 14, Component.literal("Name"));
         nameField.setMaxLength(128);
-        addDrawableChild(nameField);
+        addRenderableWidget(nameField);
 
-        modelField = new TextFieldWidget(this.textRenderer, fx, modelY, fw, 14, Text.literal("Model"));
+        modelField = new EditBox(this.font, fx, modelY, fw, 14, Component.literal("Model"));
         modelField.setMaxLength(64);
-        addDrawableChild(modelField);
+        addRenderableWidget(modelField);
 
         // Dye: hex box on the right, dropdown on the left (built below).
-        dyeField = new TextFieldWidget(this.textRenderer, fx + 156, dyeY, fw - 156, 14, Text.literal("Hex"));
+        dyeField = new EditBox(this.font, fx + 156, dyeY, fw - 156, 14, Component.literal("Hex"));
         dyeField.setMaxLength(6);
-        addDrawableChild(dyeField);
+        addRenderableWidget(dyeField);
 
         dyeDropdown = new Dropdown("Pick a dye…", fx, dyeY, 150);
         for (String[] d : DYES) dyeDropdown.labels.add(d[0]);
         dyeDropdown.swatches = DYE_RGB;
         dyeDropdown.onChange = () -> {
-            if (dyeDropdown.selected >= 0) dyeField.setText(DYES[dyeDropdown.selected][1]);
+            if (dyeDropdown.selected >= 0) dyeField.setValue(DYES[dyeDropdown.selected][1]);
         };
 
         int half = (fw - 6) / 2;
@@ -169,25 +168,25 @@ public class ItemCustomizeScreen extends Screen {
 
         // Skin: a head texture for player_head items (e.g. apply a Hypixel pet/cosmetic skin). Accepts
         // a texture hash, a textures.minecraft.net URL, or a raw base64 textures value.
-        skinField = new TextFieldWidget(this.textRenderer, fx, skinY, fw, 14, Text.literal("Skin"));
+        skinField = new EditBox(this.font, fx, skinY, fw, 14, Component.literal("Skin"));
         skinField.setMaxLength(2048);
-        addDrawableChild(skinField);
+        addRenderableWidget(skinField);
 
         // Bottom buttons
         int btnY = panelY + panelH - 26;
         int btnW = 70;
         int btnX = panelX + (panelW - btnW * 3 - 12) / 2;
-        addDrawableChild(ButtonWidget.builder(Text.literal("Apply"), b -> apply())
-                .dimensions(btnX, btnY, btnW, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("§eReset"), b -> reset())
-                .dimensions(btnX + btnW + 6, btnY, btnW, 20)
-                .tooltip(Tooltip.of(Text.literal("Restore this item to its original look and re-fill the fields with its base values.")))
+        addRenderableWidget(Button.builder(Component.literal("Apply"), b -> apply())
+                .bounds(btnX, btnY, btnW, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("§eReset"), b -> reset())
+                .bounds(btnX + btnW + 6, btnY, btnW, 20)
+                .tooltip(Tooltip.create(Component.literal("Restore this item to its original look and re-fill the fields with its base values.")))
                 .build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("Done"), b -> close())
-                .dimensions(btnX + (btnW + 6) * 2, btnY, btnW, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("§cClear All"), b -> { ItemCustomizer.clearAll(); loadFields(); })
-                .dimensions(panelX + panelW - 60 - 8, btnY, 60, 20)
-                .tooltip(Tooltip.of(Text.literal("Wipes every saved customization on every item.")))
+        addRenderableWidget(Button.builder(Component.literal("Done"), b -> onClose())
+                .bounds(btnX + (btnW + 6) * 2, btnY, btnW, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("§cClear All"), b -> { ItemCustomizer.clearAll(); loadFields(); })
+                .bounds(panelX + panelW - 60 - 8, btnY, 60, 20)
+                .tooltip(Tooltip.create(Component.literal("Wipes every saved customization on every item.")))
                 .build());
 
         loadFields();
@@ -196,23 +195,23 @@ public class ItemCustomizeScreen extends Screen {
     // ── load / apply / reset ───────────────────────────────────────────────────
 
     private void loadFields() {
-        ItemStack sel = inv().getStack(selectedIndex);
+        ItemStack sel = inv().getItem(selectedIndex);
         ItemCustomizer.Custom c = ItemCustomizer.get(sel);
 
         // Name + Model pre-fill with the item's BASE values so the user edits, not starts blank.
-        nameField.setText(c != null && c.name() != null && !c.name().isEmpty() ? c.name() : sel.getName().getString());
+        nameField.setValue(c != null && c.name() != null && !c.name().isEmpty() ? c.name() : sel.getHoverName().getString());
         String baseModel = ItemCustomizer.vanillaId(sel);
-        modelField.setText(c != null && c.modelId() != null && !c.modelId().isEmpty()
+        modelField.setValue(c != null && c.modelId() != null && !c.modelId().isEmpty()
                 ? c.modelId() : (baseModel != null ? baseModel : ""));
 
         int dye = c != null ? c.dye() : -1;
-        dyeField.setText(dye >= 0 ? String.format("%06X", dye & 0xFFFFFF) : "");
+        dyeField.setValue(dye >= 0 ? String.format("%06X", dye & 0xFFFFFF) : "");
         dyeDropdown.selected = dye >= 0 ? dyeIndex(dye) : -1;
 
         trimMatDropdown.selected = c != null && c.trimMat() != null ? indexOf(TRIM_MATERIALS, c.trimMat()) : -1;
         trimPatDropdown.selected = c != null && c.trimPat() != null ? indexOf(TRIM_PATTERNS, c.trimPat()) : -1;
 
-        skinField.setText(c != null && c.skin() != null ? c.skin() : "");
+        skinField.setValue(c != null && c.skin() != null ? c.skin() : "");
         skinField.visible = isHead(sel);
 
         dyeDropdown.close(); trimMatDropdown.close(); trimPatDropdown.close();
@@ -220,29 +219,29 @@ public class ItemCustomizeScreen extends Screen {
     }
 
     private boolean isHead(ItemStack st) {
-        return st != null && !st.isEmpty() && st.isOf(Items.PLAYER_HEAD);
+        return st != null && !st.isEmpty() && st.is(Items.PLAYER_HEAD);
     }
 
     private void apply() {
-        ItemStack sel = inv().getStack(selectedIndex);
+        ItemStack sel = inv().getItem(selectedIndex);
 
         // "equals base" → store empty so the item keeps its original (colored) name / model.
-        String name = nameField.getText();
-        if (name.equals(sel.getName().getString())) name = "";
+        String name = nameField.getValue();
+        if (name.equals(sel.getHoverName().getString())) name = "";
         String baseModel = ItemCustomizer.vanillaId(sel);
-        String model = modelField.getText().trim();
+        String model = modelField.getValue().trim();
         if (baseModel != null && model.equals(baseModel)) model = "";
 
         int dye = -1;
         if (dyeAllowed(sel)) {
-            String d = dyeField.getText().trim();
+            String d = dyeField.getValue().trim();
             if (d.length() == 6) try { dye = (int) Long.parseLong(d, 16); } catch (NumberFormatException ignored) {}
         }
 
         String mat = trimMatDropdown.selected >= 0 ? TRIM_MATERIALS[trimMatDropdown.selected] : "";
         String pat = trimPatDropdown.selected >= 0 ? TRIM_PATTERNS[trimPatDropdown.selected] : "";
 
-        String skin = isHead(sel) ? skinField.getText().trim() : "";
+        String skin = isHead(sel) ? skinField.getValue().trim() : "";
 
         // Stars are now encoded as "&*" inside the name, so the stored star count is always 0.
         ItemCustomizer.set(sel, name, model, 0, dye, mat, pat, skin);
@@ -250,7 +249,7 @@ public class ItemCustomizeScreen extends Screen {
 
     /** Restore the item to its original appearance, then re-fill the fields with its base values. */
     private void reset() {
-        ItemCustomizer.set(inv().getStack(selectedIndex), "", "", 0, -1, "", "", "");
+        ItemCustomizer.set(inv().getItem(selectedIndex), "", "", 0, -1, "", "", "");
         loadFields();
     }
 
@@ -261,7 +260,7 @@ public class ItemCustomizeScreen extends Screen {
         var it = st.getItem();
         if (it == Items.LEATHER_HELMET || it == Items.LEATHER_CHESTPLATE
                 || it == Items.LEATHER_LEGGINGS || it == Items.LEATHER_BOOTS) return true;
-        try { return st.contains(DataComponentTypes.DYED_COLOR); } catch (Exception e) { return false; }
+        try { return st.has(DataComponents.DYED_COLOR); } catch (Exception e) { return false; }
     }
 
     private static int dyeIndex(int rgb) {
@@ -281,47 +280,47 @@ public class ItemCustomizeScreen extends Screen {
     }
 
     private void insertIntoName(String code) {
-        String t = nameField.getText();
-        int cur = Math.min(nameField.getCursor(), t.length());
+        String t = nameField.getValue();
+        int cur = Math.min(nameField.getCursorPosition(), t.length());
         String nt = t.substring(0, cur) + code + t.substring(cur);
         if (nt.length() > 128) return;
-        nameField.setText(nt);
-        nameField.setCursor(cur + code.length(), false);
+        nameField.setValue(nt);
+        nameField.moveCursorTo(cur + code.length(), false);
         nameField.setFocused(true);
         setFocused(nameField);
     }
 
     private String idOf(ItemStack st) {
         try {
-            NbtComponent cd = st.get(DataComponentTypes.CUSTOM_DATA);
+            CustomData cd = st.get(DataComponents.CUSTOM_DATA);
             if (cd != null) {
-                String id = cd.copyNbt().getString("id", "");
+                String id = cd.copyTag().getStringOr("id", "");
                 if (!id.isEmpty()) return id;
             }
         } catch (Exception ignored) {}
-        return Registries.ITEM.getId(st.getItem()).toString();
+        return BuiltInRegistries.ITEM.getKey(st.getItem()).toString();
     }
 
     // ── render ─────────────────────────────────────────────────────────────────
 
     @Override
-    public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         super.renderBackground(ctx, mouseX, mouseY, delta);
         drawPanel(ctx, mouseX, mouseY);
     }
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         super.render(ctx, mouseX, mouseY, delta); // renderBackground (panel + fields) + buttons
         // Open dropdown lists float above everything else.
-        ItemStack sel = inv().getStack(selectedIndex);
+        ItemStack sel = inv().getItem(selectedIndex);
         if (dyeAllowed(sel)) dyeDropdown.renderOpen(ctx, mouseX, mouseY);
         trimMatDropdown.renderOpen(ctx, mouseX, mouseY);
         trimPatDropdown.renderOpen(ctx, mouseX, mouseY);
     }
 
-    private void drawPanel(DrawContext ctx, int mouseX, int mouseY) {
-        ItemStack sel = inv().getStack(selectedIndex);
+    private void drawPanel(GuiGraphics ctx, int mouseX, int mouseY) {
+        ItemStack sel = inv().getItem(selectedIndex);
         int p = panelX + 14;
 
         // Outer panel + title
@@ -329,17 +328,17 @@ public class ItemCustomizeScreen extends Screen {
         ctx.fill(panelX, panelY, panelX + panelW, panelY + panelH, BG_PANEL);
         ctx.fill(panelX, panelY, panelX + panelW, panelY + 22, BG_SECTION);
         ctx.fill(panelX, panelY + 22, panelX + panelW, panelY + 23, ACCENT);
-        ctx.drawCenteredTextWithShadow(this.textRenderer, "§b§lItem Customize", panelX + panelW / 2, panelY + 7, 0xFFFFFF);
+        ctx.drawCenteredString(this.font, "§b§lItem Customize", panelX + panelW / 2, panelY + 7, 0xFFFFFF);
 
         // Current readout
         int curY = panelY + 28;
-        ctx.drawTextWithShadow(this.textRenderer, "§7Editing:", p, curY, TEXT_HINT);
-        ctx.drawTextWithShadow(this.textRenderer, sel.getName(), p + 46, curY, TEXT_PRIM);
-        ctx.drawTextWithShadow(this.textRenderer, "§8" + idOf(sel), p, curY + 11, TEXT_HINT);
+        ctx.drawString(this.font, "§7Editing:", p, curY, TEXT_HINT);
+        ctx.drawString(this.font, sel.getHoverName(), p + 46, curY, TEXT_PRIM);
+        ctx.drawString(this.font, "§8" + idOf(sel), p, curY + 11, TEXT_HINT);
 
         // PICK ITEM
         int pickY = panelY + 54;
-        ctx.drawTextWithShadow(this.textRenderer, "§b▍ §fPICK ITEM §8— click armor or a slot", p, pickY, ACCENT);
+        ctx.drawString(this.font, "§b▍ §fPICK ITEM §8— click armor or a slot", p, pickY, ACCENT);
 
         int[] armorSlots = {39, 38, 37, 36};
         String[] armorTags = {"H", "C", "L", "B"};
@@ -348,11 +347,11 @@ public class ItemCustomizeScreen extends Screen {
             int x = armorX + r * CELL, y = armorY;
             if (s == selectedIndex) ctx.fill(x - 1, y - 1, x + 17, y + 17, SLOT_SEL);
             ctx.fill(x, y, x + 16, y + 16, SLOT_BG);
-            if (s < inv().size()) {
-                ItemStack a = inv().getStack(s);
-                if (!a.isEmpty()) ctx.drawItem(a, x, y);
+            if (s < inv().getContainerSize()) {
+                ItemStack a = inv().getItem(s);
+                if (!a.isEmpty()) ctx.renderItem(a, x, y);
             }
-            ctx.drawTextWithShadow(this.textRenderer, "§8" + armorTags[r], x + 5, y + 18, TEXT_HINT);
+            ctx.drawString(this.font, "§8" + armorTags[r], x + 5, y + 18, TEXT_HINT);
         }
         for (int i = 0; i < mainCount(); i++) {
             int col = i % 9;
@@ -360,12 +359,12 @@ public class ItemCustomizeScreen extends Screen {
             int x = gridX + col * CELL, y = gridY + row * CELL;
             if (i == selectedIndex) ctx.fill(x - 1, y - 1, x + 17, y + 17, SLOT_SEL);
             ctx.fill(x, y, x + 16, y + 16, SLOT_BG);
-            ItemStack st = inv().getStack(i);
-            if (!st.isEmpty()) { ctx.drawItem(st, x, y); ctx.drawStackOverlay(this.textRenderer, st, x, y); }
+            ItemStack st = inv().getItem(i);
+            if (!st.isEmpty()) { ctx.renderItem(st, x, y); ctx.renderItemDecorations(this.font, st, x, y); }
         }
 
         // CUSTOMIZE header + &-code key
-        ctx.drawTextWithShadow(this.textRenderer, "§b▍ §fCUSTOMIZE", p, panelY + 150, ACCENT);
+        ctx.drawString(this.font, "§b▍ §fCUSTOMIZE", p, panelY + 150, ACCENT);
         drawColorKey(ctx, mouseX, mouseY);
 
         int labelW = 52;
@@ -386,10 +385,10 @@ public class ItemCustomizeScreen extends Screen {
         // Dye row: dropdown + hex, or a hint when the item can't be dyed.
         if (dyeAllowed(sel)) {
             dyeDropdown.renderClosed(ctx, mouseX, mouseY);
-            ctx.drawTextWithShadow(this.textRenderer, "§8#", fx + 150, dyeY + 3, TEXT_HINT);
+            ctx.drawString(this.font, "§8#", fx + 150, dyeY + 3, TEXT_HINT);
         } else {
             ctx.fill(fx, dyeY, fx + fw, dyeY + 14, BG_FIELD);
-            ctx.drawTextWithShadow(this.textRenderer, "§8leather armor only", fx + 4, dyeY + 3, TEXT_HINT);
+            ctx.drawString(this.font, "§8leather armor only", fx + 4, dyeY + 3, TEXT_HINT);
         }
 
         // Trim dropdowns
@@ -398,30 +397,30 @@ public class ItemCustomizeScreen extends Screen {
 
         // Skin row: an editable texture box for player heads, or a hint for everything else.
         if (isHead(sel)) {
-            ctx.drawTextWithShadow(this.textRenderer, "§8hash / url / value", fx, skinY + 16, TEXT_HINT);
+            ctx.drawString(this.font, "§8hash / url / value", fx, skinY + 16, TEXT_HINT);
         } else {
             ctx.fill(fx, skinY, fx + fw, skinY + 14, BG_FIELD);
-            ctx.drawTextWithShadow(this.textRenderer, "§8player heads only (pets)", fx + 4, skinY + 3, TEXT_HINT);
+            ctx.drawString(this.font, "§8player heads only (pets)", fx + 4, skinY + 3, TEXT_HINT);
         }
 
         // Live preview (name with &* stars resolved)
         int prevY = skinY + 28;
-        String nameTxt = nameField.getText();
-        ctx.drawTextWithShadow(this.textRenderer, "§7Preview:", p, prevY, TEXT_HINT);
-        ctx.drawTextWithShadow(this.textRenderer, fishmod.cosmetic.NickState.parse(nameTxt), fx, prevY, 0xFFFFFFFF);
+        String nameTxt = nameField.getValue();
+        ctx.drawString(this.font, "§7Preview:", p, prevY, TEXT_HINT);
+        ctx.drawString(this.font, fishmod.cosmetic.NickState.parse(nameTxt), fx, prevY, 0xFFFFFFFF);
     }
 
-    private void drawLabel(DrawContext ctx, String s, int x, int y) {
-        ctx.drawTextWithShadow(this.textRenderer, "§f" + s + ":", x, y + 3, TEXT_PRIM);
+    private void drawLabel(GuiGraphics ctx, String s, int x, int y) {
+        ctx.drawString(this.font, "§f" + s + ":", x, y + 3, TEXT_PRIM);
     }
 
     /** Clickable color/format key. Click a color → inserts its code into the name at the cursor;
      *  the ✪ button inserts "&*". Rebuilds the hit-boxes each frame. */
-    private void drawColorKey(DrawContext ctx, int mouseX, int mouseY) {
+    private void drawColorKey(GuiGraphics ctx, int mouseX, int mouseY) {
         keyRects.clear();
         keyCodes.clear();
 
-        ctx.drawTextWithShadow(this.textRenderer,
+        ctx.drawString(this.font,
                 "§8&-codes (click to insert) — §7&* §8= ✪ star in the color before it", legendX, legendY - 11, TEXT_HINT);
 
         int sw = 16, sh = 11, gap = 2;
@@ -435,7 +434,7 @@ public class ItemCustomizeScreen extends Screen {
             ctx.fill(colX - 1, colY - 1, colX + sw + 1, colY + sh + 1, hov ? ACCENT : BORDER_LT);
             ctx.fill(colX, colY, colX + sw, colY + sh, 0xFF000000 | rgb);
             int textCol = brightness(rgb) > 140 ? 0xFF000000 : 0xFFFFFFFF;
-            ctx.drawCenteredTextWithShadow(this.textRenderer, String.valueOf(code), colX + sw / 2, colY + 2, textCol);
+            ctx.drawCenteredString(this.font, String.valueOf(code), colX + sw / 2, colY + 2, textCol);
             keyRects.add(new int[]{colX, colY, sw, sh});
             keyCodes.add("&" + code);
         }
@@ -445,10 +444,10 @@ public class ItemCustomizeScreen extends Screen {
         int fyr = legendY;
         for (String[] f : CODE_FORMATS) {
             String sample = f[1];
-            int w = this.textRenderer.getWidth(sample) + 6;
+            int w = this.font.width(sample) + 6;
             boolean hov = inBox(mouseX, mouseY, fxr, fyr, w, sh);
             ctx.fill(fxr, fyr, fxr + w, fyr + sh, hov ? ROW_HOVER : BG_FIELD);
-            ctx.drawTextWithShadow(this.textRenderer, sample, fxr + 3, fyr + 2, 0xFFFFFFFF);
+            ctx.drawString(this.font, sample, fxr + 3, fyr + 2, 0xFFFFFFFF);
             keyRects.add(new int[]{fxr, fyr, w, sh});
             keyCodes.add("&" + f[0]);
             fxr += w + gap;
@@ -456,10 +455,10 @@ public class ItemCustomizeScreen extends Screen {
         // ✪ star button on the second row under the format codes
         int starX = legendX + 8 * (sw + gap) + 8;
         int starY = legendY + sh + gap;
-        int starW = this.textRenderer.getWidth("&* ✪") + 8;
+        int starW = this.font.width("&* ✪") + 8;
         boolean hovStar = inBox(mouseX, mouseY, starX, starY, starW, sh);
         ctx.fill(starX, starY, starX + starW, starY + sh, hovStar ? ROW_HOVER : BG_FIELD);
-        ctx.drawTextWithShadow(this.textRenderer, "§7&* §6✪", starX + 4, starY + 2, 0xFFFFFFFF);
+        ctx.drawString(this.font, "§7&* §6✪", starX + 4, starY + 2, 0xFFFFFFFF);
         keyRects.add(new int[]{starX, starY, starW, sh});
         keyCodes.add("&*");
     }
@@ -476,9 +475,9 @@ public class ItemCustomizeScreen extends Screen {
     // ── input ──────────────────────────────────────────────────────────────────
 
     @Override
-    public boolean mouseClicked(Click click, boolean bl) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean bl) {
         int mx = (int) click.x(), my = (int) click.y();
-        ItemStack sel = inv().getStack(selectedIndex);
+        ItemStack sel = inv().getItem(selectedIndex);
 
         // Dropdowns get first crack (open lists sit on top of everything).
         if (dyeAllowed(sel) && dyeDropdown.click(mx, my)) { closeOthers(dyeDropdown); return true; }
@@ -527,7 +526,7 @@ public class ItemCustomizeScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() { return false; }
+    public boolean isPauseScreen() { return false; }
 
     // ── lightweight dropdown ─────────────────────────────────────────────────────
 
@@ -550,7 +549,7 @@ public class ItemCustomizeScreen extends Screen {
 
         private int rowsShown() { return Math.min(maxVisible, labels.size()); }
 
-        void renderClosed(DrawContext ctx, int mx, int my) {
+        void renderClosed(GuiGraphics ctx, int mx, int my) {
             boolean hov = inBox(mx, my, x, y, w, boxH);
             ctx.fill(x, y, x + w, y + boxH, hov ? BORDER_LT : BORDER);
             ctx.fill(x + 1, y + 1, x + w - 1, y + boxH - 1, BG_FIELD);
@@ -561,11 +560,11 @@ public class ItemCustomizeScreen extends Screen {
             }
             String label = selected >= 0 ? labels.get(selected) : placeholder;
             int col = selected >= 0 ? TEXT_PRIM : TEXT_HINT;
-            ctx.drawTextWithShadow(textRenderer, clip(label, w - (tx - x) - 12), tx, y + 3, col);
-            ctx.drawTextWithShadow(textRenderer, "§7▾", x + w - 9, y + 3, TEXT_HINT);
+            ctx.drawString(font, clip(label, w - (tx - x) - 12), tx, y + 3, col);
+            ctx.drawString(font, "§7▾", x + w - 9, y + 3, TEXT_HINT);
         }
 
-        void renderOpen(DrawContext ctx, int mx, int my) {
+        void renderOpen(GuiGraphics ctx, int mx, int my) {
             if (!open) return;
             int rows = rowsShown();
             int ly = y + boxH;
@@ -583,7 +582,7 @@ public class ItemCustomizeScreen extends Screen {
                     tx = x + 16;
                 }
                 int col = idx == selected ? ACCENT : TEXT_PRIM;
-                ctx.drawTextWithShadow(textRenderer, clip(labels.get(idx), w - (tx - x) - 4), tx, ry + 3, col);
+                ctx.drawString(font, clip(labels.get(idx), w - (tx - x) - 4), tx, ry + 3, col);
             }
             if (labels.size() > maxVisible) {
                 // simple scroll indicator
@@ -629,8 +628,8 @@ public class ItemCustomizeScreen extends Screen {
         }
 
         private String clip(String s, int maxW) {
-            if (textRenderer.getWidth(s) <= maxW) return s;
-            while (s.length() > 1 && textRenderer.getWidth(s + "…") > maxW) s = s.substring(0, s.length() - 1);
+            if (font.width(s) <= maxW) return s;
+            while (s.length() > 1 && font.width(s + "…") > maxW) s = s.substring(0, s.length() - 1);
             return s + "…";
         }
     }

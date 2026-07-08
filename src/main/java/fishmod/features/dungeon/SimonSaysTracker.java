@@ -6,14 +6,13 @@ import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.dungeon.Phase;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -48,7 +47,7 @@ public final class SimonSaysTracker {
     private static boolean completed  = false; // SS done this run — ignore everything until next run
     private static boolean inP3       = false; // HUD only
     private static boolean atDevice   = false;
-    private static net.minecraft.util.math.BlockPos deviceCenter = null;
+    private static net.minecraft.core.BlockPos deviceCenter = null;
     private static long doneAtMs = 0L; // when 5/5 fired — HUD unrenders 2s later
     private static final java.util.HashSet<Long> litPrev = new java.util.HashSet<>();
 
@@ -59,7 +58,7 @@ public final class SimonSaysTracker {
     // ── debug: log every block transition in a cube around the player (/ssdbg) ──
     public static boolean debug = false;
     private static final int DBG_R = 6;
-    private static final java.util.HashMap<Long, net.minecraft.block.Block> dbgPrev = new java.util.HashMap<>();
+    private static final java.util.HashMap<Long, net.minecraft.world.level.block.Block> dbgPrev = new java.util.HashMap<>();
 
     public static void init() {
         // New run (entering/leaving the dungeon) → reset everything.
@@ -86,7 +85,7 @@ public final class SimonSaysTracker {
             if (!s.contains("completed a device")) return false;
             // Must be OUR completion (teammates' device completions also broadcast). Match the name
             // loosely (anywhere in the line) so color-code spacing can't break it.
-            MinecraftClient mc = MinecraftClient.getInstance();
+            Minecraft mc = Minecraft.getInstance();
             String self = (mc.player != null) ? mc.player.getGameProfile().name() : null;
             boolean mine = (self == null) || s.contains(self);
             if (debug) log("completed-a-device match; self=" + self + " mine=" + mine + " completed=" + completed);
@@ -106,8 +105,8 @@ public final class SimonSaysTracker {
                 () -> FishSettings.simonSaysHudEnabled && round > 0);
     }
 
-    private static void tick(MinecraftClient client) {
-        if (!FishSettings.simonSaysEnabled || client.player == null || client.world == null) {
+    private static void tick(Minecraft client) {
+        if (!FishSettings.simonSaysEnabled || client.player == null || client.level == null) {
             inP3 = false; atDevice = false; deviceCenter = null; reset(); return;
         }
         inP3 = safeInP3();
@@ -119,7 +118,7 @@ public final class SimonSaysTracker {
 
         // Player at an obsidian-backed device? Also get the obsidian centroid to lock the scan.
         long[] agg = new long[4]; // count, sumX, sumY, sumZ
-        int nearObsidian = countObsidian(client.world, client.player.getBlockPos(), PROX_RADIUS, agg);
+        int nearObsidian = countObsidian(client.level, client.player.blockPosition(), PROX_RADIUS, agg);
         atDevice = nearObsidian >= MIN_OBSIDIAN;
         if (atDevice) lastAtDeviceMs = now;
 
@@ -135,7 +134,7 @@ public final class SimonSaysTracker {
         }
 
         java.util.HashSet<Long> cur = new java.util.HashSet<>();
-        scanLitCells(client.world, deviceCenter, cur);
+        scanLitCells(client.level, deviceCenter, cur);
 
         // Prime on the first scan so the always-lit decorative frame lanterns aren't miscounted.
         if (!primed) { litPrev.clear(); litPrev.addAll(cur); primed = true; return; }
@@ -186,17 +185,17 @@ public final class SimonSaysTracker {
 
     private static void announceRound(int r) {
         String label = r + "/5" + (r >= 5 ? " (done)" : "");
-        Misc.addChatMessage(Text.literal(fishmod.utils.FishMsg.prefix() + "§bSimon Says: §a" + label));
+        Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§bSimon Says: §a" + label));
         if (FishSettings.simonSaysPartyChat) Misc.executeCommand("pc Simon Says: " + label);
     }
 
     // ── block scanning ──────────────────────────────────────────────────────────
 
     /** Counts obsidian within {@code radius} of center; accumulates centroid into agg[count,x,y,z]. */
-    private static int countObsidian(World world, BlockPos center, int radius, long[] agg) {
+    private static int countObsidian(Level world, BlockPos center, int radius, long[] agg) {
         int obsidian = 0;
         int cx = center.getX(), cy = center.getY(), cz = center.getZ();
-        BlockPos.Mutable m = new BlockPos.Mutable();
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (int dx = -radius; dx <= radius; dx++)
             for (int dy = -radius; dy <= radius; dy++)
                 for (int dz = -radius; dz <= radius; dz++) {
@@ -210,9 +209,9 @@ public final class SimonSaysTracker {
     }
 
     /** Fills {@code litOut} with lit sea-lantern positions in the box around the locked device center. */
-    private static void scanLitCells(World world, BlockPos center, java.util.HashSet<Long> litOut) {
+    private static void scanLitCells(Level world, BlockPos center, java.util.HashSet<Long> litOut) {
         int cx = center.getX(), cy = center.getY(), cz = center.getZ();
-        BlockPos.Mutable m = new BlockPos.Mutable();
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (int dx = -SCAN_RADIUS; dx <= SCAN_RADIUS; dx++)
             for (int dy = -SCAN_RADIUS; dy <= SCAN_RADIUS; dy++)
                 for (int dz = -SCAN_RADIUS; dz <= SCAN_RADIUS; dz++) {
@@ -240,50 +239,50 @@ public final class SimonSaysTracker {
 
     public static int getStage() { return round; }
 
-    public static void renderHud(DrawContext ctx, RenderTickCounter tc) {
+    public static void renderHud(GuiGraphics ctx, DeltaTracker tc) {
         if (!FishSettings.simonSaysEnabled || !FishSettings.simonSaysHudEnabled) return;
         if (round <= 0) return;
         // Auto-hide 2 seconds after completion.
         if (round >= 5 && doneAtMs > 0 && System.currentTimeMillis() - doneAtMs > 2000) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
         // Don't render when standing right at the device (~3 blocks) — you can see it yourself.
-        if (deviceCenter != null && mc.player.getBlockPos().getSquaredDistance(deviceCenter) <= 12) return;
+        if (deviceCenter != null && mc.player.blockPosition().distSqr(deviceCenter) <= 12) return;
 
         String label = round == 0
                 ? "§bSimon Says: §7—"
                 : "§bSimon Says: §a" + round + "§7/5" + (round >= 5 ? " §7(done)" : "");
 
         float sc = (float) FishSettings.simonSaysHudScale;
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) FishSettings.simonSaysHudX, (float) FishSettings.simonSaysHudY);
-        ctx.getMatrices().scale(sc, sc);
-        ctx.drawText(mc.textRenderer, label, 0, 0, -1, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) FishSettings.simonSaysHudX, (float) FishSettings.simonSaysHudY);
+        ctx.pose().scale(sc, sc);
+        ctx.drawString(mc.font, label, 0, 0, -1, true);
+        ctx.pose().popMatrix();
     }
 
     private static void log(String line) {
         fishmod.utils.debug.Debug.LOGGER.info("[SS] {}", line);
-        Misc.addChatMessage(Text.literal("§e[SS] " + line));
+        Misc.addChatMessage(Component.literal("§e[SS] " + line));
     }
 
     /** /ssdbg: logs every block transition in a cube around the player — for locating the device. */
-    private static void debugTick(MinecraftClient client) {
-        if (!debug || client.player == null || client.world == null) { dbgPrev.clear(); return; }
-        World world = client.world;
-        BlockPos c = client.player.getBlockPos();
-        BlockPos.Mutable m = new BlockPos.Mutable();
+    private static void debugTick(Minecraft client) {
+        if (!debug || client.player == null || client.level == null) { dbgPrev.clear(); return; }
+        Level world = client.level;
+        BlockPos c = client.player.blockPosition();
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         boolean first = dbgPrev.isEmpty();
         for (int dx = -DBG_R; dx <= DBG_R; dx++)
             for (int dy = -DBG_R; dy <= DBG_R; dy++)
                 for (int dz = -DBG_R; dz <= DBG_R; dz++) {
                     m.set(c.getX() + dx, c.getY() + dy, c.getZ() + dz);
-                    net.minecraft.block.Block b = world.getBlockState(m).getBlock();
+                    net.minecraft.world.level.block.Block b = world.getBlockState(m).getBlock();
                     long key = m.asLong();
-                    net.minecraft.block.Block old = dbgPrev.put(key, b);
+                    net.minecraft.world.level.block.Block old = dbgPrev.put(key, b);
                     if (first || old == b) continue;
-                    String oldId = old == null ? "none" : net.minecraft.registry.Registries.BLOCK.getId(old).getPath();
-                    String newId = net.minecraft.registry.Registries.BLOCK.getId(b).getPath();
+                    String oldId = old == null ? "none" : net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(old).getPath();
+                    String newId = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(b).getPath();
                     log("(" + dx + "," + dy + "," + dz + ") " + oldId + " -> " + newId);
                 }
     }

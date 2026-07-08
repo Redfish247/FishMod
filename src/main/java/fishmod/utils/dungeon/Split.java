@@ -1,11 +1,11 @@
 package fishmod.utils.dungeon;
 
 import fishmod.utils.Constants;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import config.practical.manager.ConfigValue;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
 
 public class Split {
 
@@ -140,15 +140,15 @@ public class Split {
         return realTime;
     }
 
-    public MutableText createNameText() {
-        return Text.literal(name + " ").withColor(color);
+    public MutableComponent createNameText() {
+        return Component.literal(name + " ").withColor(color);
     }
 
     public double getTimeDiffrence() {
         return getRealTime() - getTickTime();
     }
 
-    public MutableText createTimeText() {
+    public MutableComponent createTimeText() {
         int realTimeColor, serverTimeColor, parenthesesColor;
 
         if (!started) {
@@ -182,19 +182,19 @@ public class Split {
         }
 
         String realTimeString = (realTime >= 60? (int)(realTime / 60) + "m ": "") + Constants.DECIMAL_FORMAT.format(realTime % 60) + "s";
-        return Text.literal(realTimeString).withColor(realTimeColor)
-                .append(Text.literal(" (").withColor(parenthesesColor)
-                        .append(Text.literal(serverTime).withColor(serverTimeColor))
-                        .append(Text.literal(")").withColor(parenthesesColor)
+        return Component.literal(realTimeString).withColor(realTimeColor)
+                .append(Component.literal(" (").withColor(parenthesesColor)
+                        .append(Component.literal(serverTime).withColor(serverTimeColor))
+                        .append(Component.literal(")").withColor(parenthesesColor)
                         ));
     }
 
-    public void drawSplit(DrawContext context, TextRenderer textRenderer, int x, int y, int maxWidth) {
-        Text nameText = createNameText();
-        Text timerText = createTimeText();
+    public void drawSplit(GuiGraphics context, Font textRenderer, int x, int y, int maxWidth) {
+        Component nameText = createNameText();
+        Component timerText = createTimeText();
 
-        int timerWidth = textRenderer.getWidth(timerText);
-        context.drawText(textRenderer, nameText, x, y, 0xffffffff, true);
-        context.drawText(textRenderer, timerText, x + maxWidth - timerWidth, y, 0xffffffff, true);
+        int timerWidth = textRenderer.width(timerText);
+        context.drawString(textRenderer, nameText, x, y, 0xffffffff, true);
+        context.drawString(textRenderer, timerText, x + maxWidth - timerWidth, y, 0xffffffff, true);
     }
 }

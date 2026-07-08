@@ -3,8 +3,8 @@ package fishmod.features.dungeon.f7;
 import config.practical.hud.HUDComponent;
 import config.practical.manager.ConfigValue;
 import fishmod.utils.config.values.Floor7;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import org.joml.Matrix3x2fStack;
 
 /**
@@ -68,7 +68,7 @@ public class F7Huds {
     }
 
     /** Render all enabled F7 HUDs (called from a HudRenderCallback in FishModInit). */
-    public static void renderHud(DrawContext ctx) {
+    public static void renderHud(GuiGraphics ctx) {
         // Distinct left-column default targets so nothing stacks. These are only used to pull an
         // off-screen element back on-screen; once on-screen the user's dragged position is kept.
         renderOne(ctx, maxorTickTimer,   MaxorTickTimer.display(),          MaxorTickTimer::render,          10, 70);
@@ -82,11 +82,11 @@ public class F7Huds {
         renderOne(ctx, stormCrush,       PillarExplode.display(),           PillarExplode::render,           10, 28);
     }
 
-    private static void renderOne(DrawContext ctx, HUDComponent c, boolean show,
+    private static void renderOne(GuiGraphics ctx, HUDComponent c, boolean show,
                                   HUDComponent.RenderSupplier render, int targetX, int targetY) {
         keepOnScreen(c, targetX, targetY);
         if (!show) return;
-        Matrix3x2fStack stack = ctx.getMatrices();
+        Matrix3x2fStack stack = ctx.pose();
         stack.pushMatrix();
         stack.scale(c.getScale(), c.getScale());
         render.render(c, ctx);
@@ -94,10 +94,10 @@ public class F7Huds {
     }
 
     private static void keepOnScreen(HUDComponent component, int targetX, int targetY) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null || client.getWindow() == null) return;
-        int screenWidth = client.getWindow().getScaledWidth();
-        int screenHeight = client.getWindow().getScaledHeight();
+        int screenWidth = client.getWindow().getGuiScaledWidth();
+        int screenHeight = client.getWindow().getGuiScaledHeight();
         int x = component.getScaledX();
         int y = component.getScaledY();
         if (x >= 0 && x <= screenWidth - component.getWidth() && y >= 0 && y <= screenHeight - component.getHeight()) return;

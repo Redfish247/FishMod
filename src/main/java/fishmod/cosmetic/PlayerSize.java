@@ -3,8 +3,8 @@ package fishmod.cosmetic;
 import fishmod.utils.HypixelApi;
 import fishmod.utils.config.values.FishSettings;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * Customizable player model size with independent X (width), Y (height) and Z (depth) axes. This is
@@ -29,14 +29,14 @@ public final class PlayerSize {
     }
 
     /** Effective render scale {x,y,z} for a player: own config locally, others' shared size when on. */
-    public static float[] scaleFor(PlayerEntity p) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        boolean isSelf = mc.player != null && p.getUuid().equals(mc.player.getUuid());
+    public static float[] scaleFor(Player p) {
+        Minecraft mc = Minecraft.getInstance();
+        boolean isSelf = mc.player != null && p.getUUID().equals(mc.player.getUUID());
         if (isSelf) {
             return FishSettings.playerSizeEnabled ? localSelfValue() : IDENTITY;
         }
         if (!FishSettings.playerSizeShared) return IDENTITY;
-        float[] s = RemoteScales.get(p.getUuid().toString().replace("-", ""));
+        float[] s = RemoteScales.get(p.getUUID().toString().replace("-", ""));
         return s == null ? IDENTITY : s;
     }
 
@@ -76,9 +76,9 @@ public final class PlayerSize {
     }
 
     private static void upload(float[] xyz) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.getSession() == null) return;
-        java.util.UUID id = mc.getSession().getUuidOrNull();
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getUser() == null) return;
+        java.util.UUID id = mc.getUser().getProfileId();
         if (id == null) return;
         HypixelApi.uploadScale(id.toString().replace("-", ""), xyz[0], xyz[1], xyz[2]);
     }

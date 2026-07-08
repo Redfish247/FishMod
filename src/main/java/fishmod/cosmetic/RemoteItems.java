@@ -5,11 +5,10 @@ import fishmod.features.ItemCustomizer.Custom;
 import fishmod.utils.config.values.FishSettings;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -96,15 +95,15 @@ public final class RemoteItems {
         return c.stars() > 0;
     }
 
-    private static void applyToWorld(MinecraftClient mc) {
+    private static void applyToWorld(Minecraft mc) {
         if (!FishSettings.remoteItemsEnabled || byUuid.isEmpty()) return;
-        if (mc.world == null || mc.player == null) return;
-        for (PlayerEntity p : mc.world.getPlayers()) {
+        if (mc.level == null || mc.player == null) return;
+        for (Player p : mc.level.players()) {
             if (p == mc.player) continue;
-            Map<String, Custom> customs = byUuid.get(p.getUuid().toString().replace("-", ""));
+            Map<String, Custom> customs = byUuid.get(p.getUUID().toString().replace("-", ""));
             if (customs == null || customs.isEmpty()) continue;
             for (EquipmentSlot slot : SLOTS) {
-                ItemStack st = p.getEquippedStack(slot);
+                ItemStack st = p.getItemBySlot(slot);
                 if (st == null || st.isEmpty()) continue;
                 String vid = ItemCustomizer.vanillaId(st); // match by vanilla type (see acceptItems)
                 if (vid == null) continue;

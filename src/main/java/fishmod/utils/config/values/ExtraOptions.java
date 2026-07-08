@@ -1,10 +1,10 @@
 package fishmod.utils.config.values;
 
 import fishmod.utils.Constants;
+import net.minecraft.core.BlockPos;
+import net.minecraft.sounds.SoundEvents;
 import config.practical.data.SoundData;
 import config.practical.manager.ConfigValue;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
 
 public class ExtraOptions {
     @ConfigValue
@@ -65,13 +65,13 @@ public class ExtraOptions {
     public static boolean useCustomRagSound = false;
 
     @ConfigValue
-    public static SoundData ragSound = new SoundData(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), 1, 1);
+    public static SoundData ragSound = new SoundData(SoundEvents.NOTE_BLOCK_PLING.value(), 1, 1);
 
     @ConfigValue
     public static boolean sendOnPetSound = false;
 
     @ConfigValue
-    public static  SoundData petSound = new SoundData(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), 1, 1);
+    public static  SoundData petSound = new SoundData(SoundEvents.NOTE_BLOCK_PLING.value(), 1, 1);
 
     @ConfigValue
     public static boolean copyChat = false;
@@ -92,7 +92,7 @@ public class ExtraOptions {
     public static boolean useOldRagSound = false;
 
     @ConfigValue
-    public static SoundData ssSound = new SoundData(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), 0, 1);
+    public static SoundData ssSound = new SoundData(SoundEvents.NOTE_BLOCK_PLING.value(), 0, 1);
 
     @ConfigValue
     public static boolean moveToolTip = false;

@@ -2,9 +2,8 @@ package fishmod.cosmetic;
 
 import fishmod.utils.HypixelApi;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -25,7 +24,7 @@ public final class RemoteNicks {
     private RemoteNicks() {}
 
     // IGN → styled nick Text, for players other than the local one.
-    private static final Map<String, Text> styledByName = new ConcurrentHashMap<>();
+    private static final Map<String, Component> styledByName = new ConcurrentHashMap<>();
     /** name → ms when negative cache (no nick set) expires. Stops re-lookups of plain IGNs. */
     private static final Map<String, Long> negativeCache = new ConcurrentHashMap<>();
     /** names currently being resolved → don't re-fire. */
@@ -42,15 +41,15 @@ public final class RemoteNicks {
 
     /** Publish the local player's current nick (or clear it) to the shared store. */
     public static void uploadOwn() {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.getSession() == null) return;
-        java.util.UUID id = mc.getSession().getUuidOrNull();
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getUser() == null) return;
+        java.util.UUID id = mc.getUser().getProfileId();
         if (id == null) return;
         HypixelApi.uploadNick(id.toString().replace("-", ""), NickState.isActive() ? NickState.getRaw() : "");
     }
 
     /** Snapshot of the IGN→styled-Text cache. Used by debug commands. */
-    public static Map<String, Text> snapshot() { return new HashMap<>(styledByName); }
+    public static Map<String, Component> snapshot() { return new HashMap<>(styledByName); }
 
     /** Force an immediate refresh from the tab list. */
     public static void forceRefresh() { RemoteSync.forceSync(); }
@@ -72,7 +71,7 @@ public final class RemoteNicks {
             String name = e.getValue();
             String raw = nicks.get(e.getKey());
             if (raw != null && !raw.isEmpty()) {
-                Text prev = styledByName.put(name, NickState.parse(ProfanityFilter.censor(raw)));
+                Component prev = styledByName.put(name, NickState.parse(ProfanityFilter.censor(raw)));
                 negativeCache.remove(name);
                 if (prev == null) newlyResolved = true; // a name we showed plainly now has a nick
             } else {
@@ -129,7 +128,7 @@ public final class RemoteNicks {
             inFlight.remove(name);
             String raw = nicks.get(uuid);
             if (raw != null && !raw.isEmpty()) {
-                Text prev = styledByName.put(name, NickState.parse(ProfanityFilter.censor(raw)));
+                Component prev = styledByName.put(name, NickState.parse(ProfanityFilter.censor(raw)));
                 negativeCache.remove(name);
                 // The message that triggered this chat lookup is already in history showing the IGN;
                 // retroactively re-style it (and any earlier ones) now that the nick is known.
@@ -146,7 +145,7 @@ public final class RemoteNicks {
     }
 
     /** Replace any known remote player's IGN in the text with their styled nick. */
-    public static Text apply(Text text) {
+    public static Component apply(Component text) {
         if (text == null) return text;
         if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) return text;
         // Trigger background lookups for any new IGNs in this line. The current rewrite uses
@@ -155,8 +154,8 @@ public final class RemoteNicks {
         ensureKnownFromChat(text.getString());
         if (styledByName.isEmpty()) return text;
         String s = text.getString();
-        Text out = text;
-        for (Map.Entry<String, Text> e : styledByName.entrySet()) {
+        Component out = text;
+        for (Map.Entry<String, Component> e : styledByName.entrySet()) {
             if (s.contains(e.getKey())) {
                 out = NameRewriter.replaceName(out, e.getKey(), e.getValue());
                 s = out.getString();
@@ -170,12 +169,12 @@ public final class RemoteNicks {
      * lookups. Used by {@link ChatNickRefresher} when re-styling existing chat history, so re-scanning
      * every line doesn't spam name→uuid lookups. Returns the same instance when nothing changed.
      */
-    public static Text applyResolvedOnly(Text text) {
+    public static Component applyResolvedOnly(Component text) {
         if (text == null) return text;
         if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled || styledByName.isEmpty()) return text;
         String s = text.getString();
-        Text out = text;
-        for (Map.Entry<String, Text> e : styledByName.entrySet()) {
+        Component out = text;
+        for (Map.Entry<String, Component> e : styledByName.entrySet()) {
             if (s.contains(e.getKey())) {
                 out = NameRewriter.replaceName(out, e.getKey(), e.getValue());
                 s = out.getString();

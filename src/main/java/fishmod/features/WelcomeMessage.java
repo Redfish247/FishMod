@@ -2,9 +2,8 @@ package fishmod.features;
 
 import fishmod.utils.Misc;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,19 +29,19 @@ public final class WelcomeMessage {
             } catch (Exception ignored) {}
             // Slight delay so the welcome lands after Hypixel's join spam.
             CompletableFuture.delayedExecutor(2000, TimeUnit.MILLISECONDS)
-                    .execute(() -> MinecraftClient.getInstance().execute(WelcomeMessage::show));
+                    .execute(() -> Minecraft.getInstance().execute(WelcomeMessage::show));
         });
     }
 
     private static void show() {
-        Misc.addChatMessage(Text.literal(""));
-        Misc.addChatMessage(Text.literal("§8§m                                                          "));
-        Misc.addChatMessage(Text.literal(""));
-        Misc.addChatMessage(Text.literal("              §b§lWelcome To FishMod"));
-        Misc.addChatMessage(Text.literal("            §7Do §a§l/fm §r§7To Edit Config"));
-        Misc.addChatMessage(Text.literal("    §7Bug reports » DM §bredfish2471 §7on Discord"));
-        Misc.addChatMessage(Text.literal(""));
-        Misc.addChatMessage(Text.literal("§8§m                                                          "));
-        Misc.addChatMessage(Text.literal(""));
+        Misc.addChatMessage(Component.literal(""));
+        Misc.addChatMessage(Component.literal("§8§m                                                          "));
+        Misc.addChatMessage(Component.literal(""));
+        Misc.addChatMessage(Component.literal("              §b§lWelcome To FishMod"));
+        Misc.addChatMessage(Component.literal("            §7Do §a§l/fm §r§7To Edit Config"));
+        Misc.addChatMessage(Component.literal("    §7Bug reports » DM §bredfish2471 §7on Discord"));
+        Misc.addChatMessage(Component.literal(""));
+        Misc.addChatMessage(Component.literal("§8§m                                                          "));
+        Misc.addChatMessage(Component.literal(""));
     }
 }

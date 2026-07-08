@@ -1,24 +1,24 @@
 package fishmod.features;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import fishmod.utils.Location;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.rendering.RenderUtils;
 import fishmod.utils.rendering.RenderingEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.RaycastContext;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.HashSet;
@@ -47,13 +47,13 @@ public final class PingFeature {
 
     /** One ping marker — your own or a remote user's. */
     private static final class Ping {
-        final Vec3d pos; final long startMs; final String name; final long srcTs;
-        Ping(Vec3d pos, long startMs, String name, long srcTs) {
+        final Vec3 pos; final long startMs; final String name; final long srcTs;
+        Ping(Vec3 pos, long startMs, String name, long srcTs) {
             this.pos = pos; this.startMs = startMs; this.name = name; this.srcTs = srcTs;
         }
     }
 
-    private static KeyBinding pingKey;
+    private static KeyMapping pingKey;
     private static Ping self = null;
     private static Ping chatPing = null;         // latest coords parsed out of chat
     private static final Map<String, Ping> remote = new ConcurrentHashMap<>(); // uuid → their ping
@@ -68,11 +68,11 @@ public final class PingFeature {
     public static void init() {
         // Reuse the shared FishMod keybind category (created in Keybinds.init, which runs first) so we
         // don't double-register the category Identifier.
-        KeyBinding.Category category = fishmod.utils.Keybinds.category;
-        if (category == null) category = KeyBinding.Category.create(Identifier.of(fishmod.utils.Constants.NAMESPACE));
-        pingKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+        KeyMapping.Category category = fishmod.utils.Keybinds.category;
+        if (category == null) category = KeyMapping.Category.register(Identifier.parse(fishmod.utils.Constants.NAMESPACE));
+        pingKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "FishMod: Ping location",
-                InputUtil.Type.MOUSE,
+                InputConstants.Type.MOUSE,
                 GLFW.GLFW_MOUSE_BUTTON_MIDDLE,
                 category));
 
@@ -101,16 +101,16 @@ public final class PingFeature {
         String label = "ping";
         java.util.regex.Matcher nm = NAME_PAT.matcher(plain.substring(0, m.start()));
         while (nm.find()) label = nm.group(1);
-        chatPing = new Ping(new Vec3d(x + 0.5, y, z + 0.5), System.currentTimeMillis(), label, 0);
+        chatPing = new Ping(new Vec3(x + 0.5, y, z + 0.5), System.currentTimeMillis(), label, 0);
     }
 
-    private static void onTick(MinecraftClient mc) {
+    private static void onTick(Minecraft mc) {
         if (pingKey == null) return;
 
         boolean fired = false;
-        while (pingKey.wasPressed()) fired = true; // drain queued presses
-        if (fired && FishSettings.pingEnabled && mc.player != null && mc.world != null
-                && mc.currentScreen == null && Location.inSkyblock()) {
+        while (pingKey.consumeClick()) fired = true; // drain queued presses
+        if (fired && FishSettings.pingEnabled && mc.player != null && mc.level != null
+                && mc.screen == null && Location.inSkyblock()) {
             placePing(mc);
         }
 
@@ -122,45 +122,45 @@ public final class PingFeature {
         }
     }
 
-    private static void placePing(MinecraftClient mc) {
-        ClientPlayerEntity p = mc.player;
-        float delta = mc.getRenderTickCounter().getTickProgress(false);
-        Vec3d eye = p.getCameraPosVec(delta);
-        Vec3d look = p.getRotationVec(delta);
-        Vec3d end = eye.add(look.multiply(REACH));
+    private static void placePing(Minecraft mc) {
+        LocalPlayer p = mc.player;
+        float delta = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+        Vec3 eye = p.getEyePosition(delta);
+        Vec3 look = p.getViewVector(delta);
+        Vec3 end = eye.add(look.scale(REACH));
 
-        BlockHitResult hit = mc.world.raycast(new RaycastContext(
-                eye, end, RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, p));
+        BlockHitResult hit = mc.level.clip(new ClipContext(
+                eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, p));
 
-        Vec3d target;
+        Vec3 target;
         if (hit != null && hit.getType() != HitResult.Type.MISS) {
             BlockPos bp = hit.getBlockPos();
-            target = new Vec3d(bp.getX() + 0.5, bp.getY(), bp.getZ() + 0.5);
+            target = new Vec3(bp.getX() + 0.5, bp.getY(), bp.getZ() + 0.5);
         } else {
             target = end; // landed in air — ping the point you're aiming at
         }
 
         self = new Ping(target, System.currentTimeMillis(), null, 0);
 
-        if (FishSettings.pingSound) p.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), 0.7f, 1.6f);
+        if (FishSettings.pingSound) p.playSound(SoundEvents.NOTE_BLOCK_PLING.value(), 0.7f, 1.6f);
 
-        if (FishSettings.pingAnnounceParty && mc.getNetworkHandler() != null) {
-            mc.getNetworkHandler().sendChatCommand("pc x: " + (int) Math.floor(target.x)
+        if (FishSettings.pingAnnounceParty && mc.getConnection() != null) {
+            mc.getConnection().sendCommand("pc x: " + (int) Math.floor(target.x)
                     + ", y: " + (int) Math.floor(target.y) + ", z: " + (int) Math.floor(target.z) + " (ping)");
         }
 
         if (FishSettings.pingShareEnabled) {
-            String uuid = p.getUuid().toString().replace("-", "");
-            String dim = mc.world.getRegistryKey().getValue().toString();
+            String uuid = p.getUUID().toString().replace("-", "");
+            String dim = mc.level.dimension().identifier().toString();
             fishmod.utils.HypixelApi.uploadPing(uuid, p.getGameProfile().name(), target.x, target.y, target.z, dim);
         }
     }
 
-    private static void pollRemote(MinecraftClient mc) {
-        if (mc.getNetworkHandler() == null || mc.player == null) return;
-        String selfUuid = mc.player.getUuid().toString().replace("-", "");
+    private static void pollRemote(Minecraft mc) {
+        if (mc.getConnection() == null || mc.player == null) return;
+        String selfUuid = mc.player.getUUID().toString().replace("-", "");
         Set<String> uuids = new HashSet<>();
-        for (var entry : mc.getNetworkHandler().getPlayerList()) {
+        for (var entry : mc.getConnection().getOnlinePlayers()) {
             var gp = entry.getProfile();
             if (gp == null || gp.id() == null) continue;
             String u = gp.id().toString().replace("-", "");
@@ -173,7 +173,7 @@ public final class PingFeature {
             for (var pd : list) {
                 Ping existing = remote.get(pd.uuid());
                 if (existing != null && existing.srcTs == pd.ts()) continue; // same ping, keep its local clock
-                remote.put(pd.uuid(), new Ping(new Vec3d(pd.x(), pd.y(), pd.z()), now, pd.name(), pd.ts()));
+                remote.put(pd.uuid(), new Ping(new Vec3(pd.x(), pd.y(), pd.z()), now, pd.name(), pd.ts()));
                 if (pd.ts() > lastSeenTs) lastSeenTs = pd.ts();
             }
         }));
@@ -186,8 +186,8 @@ public final class PingFeature {
     }
 
     private static void render(net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext ctx,
-                              net.minecraft.client.util.math.MatrixStack matrices,
-                              net.minecraft.client.render.VertexConsumer vc) {
+                              com.mojang.blaze3d.vertex.PoseStack matrices,
+                              com.mojang.blaze3d.vertex.VertexConsumer vc) {
         if (!FishSettings.pingEnabled) return;
 
         if (self != null && remainingFraction(self) <= 0) self = null;
@@ -203,8 +203,8 @@ public final class PingFeature {
     }
 
     private static void drawPing(net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext ctx,
-                                 net.minecraft.client.util.math.MatrixStack matrices,
-                                 net.minecraft.client.render.VertexConsumer vc, Ping ping) {
+                                 com.mojang.blaze3d.vertex.PoseStack matrices,
+                                 com.mojang.blaze3d.vertex.VertexConsumer vc, Ping ping) {
         double frac = remainingFraction(ping);
         if (frac <= 0) return;
 
@@ -217,14 +217,14 @@ public final class PingFeature {
 
         double x = ping.pos.x, y = ping.pos.y, z = ping.pos.z;
         // Base cube on the block + a tall thin beam so it's spottable from across the room.
-        RenderUtils.renderFilled(matrices, vc, new Box(x - 0.5, y, z - 0.5, x + 0.5, y + 1, z + 0.5), rgba);
-        RenderUtils.renderFilled(matrices, vc, new Box(x - 0.15, y, z - 0.15, x + 0.15, y + 6, z + 0.15), rgba);
+        RenderUtils.renderFilled(matrices, vc, new AABB(x - 0.5, y, z - 0.5, x + 0.5, y + 1, z + 0.5), rgba);
+        RenderUtils.renderFilled(matrices, vc, new AABB(x - 0.15, y, z - 0.15, x + 0.15, y + 6, z + 0.15), rgba);
 
-        ClientPlayerEntity me = MinecraftClient.getInstance().player;
+        LocalPlayer me = Minecraft.getInstance().player;
         if (me != null) {
-            int dist = (int) Math.round(Math.sqrt(me.squaredDistanceTo(ping.pos)));
+            int dist = (int) Math.round(Math.sqrt(me.distanceToSqr(ping.pos)));
             String who = ping.name == null || ping.name.isBlank() ? "Ping" : ping.name;
-            Text label = Text.literal("§b⚑ §f" + who + " §7• §e" + dist + "m");
+            Component label = Component.literal("§b⚑ §f" + who + " §7• §e" + dist + "m");
             RenderUtils.renderText(ctx, matrices, label, x, y + 6.4, z, 1.1f);
         }
     }

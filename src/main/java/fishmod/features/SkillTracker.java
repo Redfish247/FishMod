@@ -4,10 +4,9 @@ import fishmod.utils.Constants;
 import fishmod.utils.config.values.FishSettings;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ChatScreen;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.ChatScreen;
 import java.text.DecimalFormat;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -78,7 +77,7 @@ public class SkillTracker {
             if (!FishSettings.skillTrackerEnabled || !overlay) return;
             String plain = message.getString().replaceAll("§.", "");
             if (debugDump && plain.toLowerCase().matches(".*(farming|mining|combat|foraging|fishing|enchanting|alchemy|taming).*")) {
-                fishmod.utils.Misc.addChatMessage(net.minecraft.text.Text.literal("§b[skill] §7" + plain));
+                fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§b[skill] §7" + plain));
             }
             Matcher m = SKILL_AB.matcher(plain);
             if (!m.find()) return;
@@ -248,32 +247,32 @@ public class SkillTracker {
         return sec + "s";
     }
 
-    public static void renderHud(DrawContext ctx, net.minecraft.client.render.RenderTickCounter tick) {
+    public static void renderHud(GuiGraphics ctx, net.minecraft.client.DeltaTracker tick) {
         if (!hasData()) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.currentScreen != null && !(mc.currentScreen instanceof ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof ChatScreen)) return;
         draw(ctx, mc);
     }
 
-    public static void renderInScreen(DrawContext ctx, int mouseX, int mouseY) {
+    public static void renderInScreen(GuiGraphics ctx, int mouseX, int mouseY) {
         if (!hasData()) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (!(mc.currentScreen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?>)) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>)) return;
         draw(ctx, mc);
     }
 
-    private static void draw(DrawContext ctx, MinecraftClient mc) {
+    private static void draw(GuiGraphics ctx, Minecraft mc) {
         int x = FishSettings.skillTrackerHudX;
         int y = FishSettings.skillTrackerHudY;
         int lh = Constants.TEXT_HEIGHT + 1;
         String[] lines = buildLines();
         float sc = (float) FishSettings.skillTrackerScale;
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) x, (float) y);
-        ctx.getMatrices().scale(sc, sc);
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) x, (float) y);
+        ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawText(mc.textRenderer, lines[i], 0, lh * i, 0xFFFFFFFF, true);
-        ctx.getMatrices().popMatrix();
+            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+        ctx.pose().popMatrix();
     }
 }

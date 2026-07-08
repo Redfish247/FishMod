@@ -9,11 +9,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.render.RenderTickCounter;
-
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -284,12 +283,12 @@ public class SessionStats {
         };
     }
 
-    public static void renderHud(DrawContext ctx, RenderTickCounter tick) {
+    public static void renderHud(GuiGraphics ctx, DeltaTracker tick) {
         btnVisible = false;
         if (!FishSettings.sessionStatsEnabled) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.currentScreen != null && !(mc.currentScreen instanceof net.minecraft.client.gui.screen.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         Location loc = Location.getCurrentLocation();
         boolean show = (loc == Location.DUNGEON    && FishSettings.sessionStatsInDungeon)
                     || (loc == Location.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub);
@@ -300,20 +299,20 @@ public class SessionStats {
         int lh = Constants.TEXT_HEIGHT + 2;
         String[] lines = buildLines();
         float sc = (float) FishSettings.sessionStatsScale;
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float)x, (float)y);
-        ctx.getMatrices().scale(sc, sc);
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float)x, (float)y);
+        ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawText(mc.textRenderer, lines[i], 0, lh * i, 0xFFFFFFFF, true);
-        ctx.getMatrices().popMatrix();
+            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+        ctx.pose().popMatrix();
     }
 
     /** Rendered on top of any HandledScreen (chest/inventory) with a clickable reset button. */
-    public static void renderInScreen(DrawContext ctx, int mouseX, int mouseY) {
+    public static void renderInScreen(GuiGraphics ctx, int mouseX, int mouseY) {
         btnVisible = false;
         if (!FishSettings.sessionStatsEnabled) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (!(mc.currentScreen instanceof HandledScreen<?>)) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
         Location loc = Location.getCurrentLocation();
         boolean show = (loc == Location.DUNGEON    && FishSettings.sessionStatsInDungeon)
                     || (loc == Location.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub);
@@ -327,8 +326,8 @@ public class SessionStats {
 
         String resetLabel = "§l[ Reset ]";
         String pauseLabel = paused ? "§l[ Resume ]" : "§l[ Pause ]";
-        int resetW = mc.textRenderer.getWidth(resetLabel);
-        int pauseW = mc.textRenderer.getWidth(pauseLabel);
+        int resetW = mc.font.width(resetLabel);
+        int pauseW = mc.font.width(pauseLabel);
         int padX = 4, padY = 3;
         int localBtnY = lh * lines.length - 2;
         int localResetW = resetW + padX * 2;
@@ -349,14 +348,14 @@ public class SessionStats {
         String shownReset = resetHover ? "§c§l[ Reset ]" : resetLabel;
         String shownPause = pauseHover ? (paused ? "§a§l[ Resume ]" : "§e§l[ Pause ]") : pauseLabel;
 
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float)x, (float)y);
-        ctx.getMatrices().scale(sc, sc);
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float)x, (float)y);
+        ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawText(mc.textRenderer, lines[i], 0, lh * i, 0xFFFFFFFF, true);
-        ctx.drawText(mc.textRenderer, shownReset, padX, localBtnY + padY, 0xFFFFFFFF, true);
-        ctx.drawText(mc.textRenderer, shownPause, localPauseX + padX, localBtnY + padY, 0xFFFFFFFF, true);
-        ctx.getMatrices().popMatrix();
+            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+        ctx.drawString(mc.font, shownReset, padX, localBtnY + padY, 0xFFFFFFFF, true);
+        ctx.drawString(mc.font, shownPause, localPauseX + padX, localBtnY + padY, 0xFFFFFFFF, true);
+        ctx.pose().popMatrix();
         btnVisible = true;
     }
 

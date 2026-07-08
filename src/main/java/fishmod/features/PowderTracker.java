@@ -7,16 +7,15 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.ScoreboardDisplaySlot;
-import net.minecraft.scoreboard.ScoreboardEntry;
-import net.minecraft.scoreboard.ScoreboardObjective;
-import net.minecraft.scoreboard.Team;
-
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.world.scores.DisplaySlot;
+import net.minecraft.world.scores.Objective;
+import net.minecraft.world.scores.PlayerScoreEntry;
+import net.minecraft.world.scores.PlayerTeam;
+import net.minecraft.world.scores.Scoreboard;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -98,7 +97,7 @@ public static void init() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (!FishSettings.powderTrackerEnabled) return;
             tickAutoPause();
-            if (client.player == null || client.world == null) return;
+            if (client.player == null || client.level == null) return;
             if (!inMiningArea()) autoPause(System.currentTimeMillis());
             tickCount++;
             if (tickCount < 20) return;
@@ -171,23 +170,23 @@ public static void init() {
             || Location.in(Location.MINESHAFT);
     }
 
-    private static void scanScoreboard(MinecraftClient client) {
+    private static void scanScoreboard(Minecraft client) {
         if (paused && !autoPaused) return; // manual pause stops scanning; auto-pause resumes on a powder gain
         if (!inMiningArea()) return;
-        Scoreboard sb = client.world.getScoreboard();
-        ScoreboardObjective sidebar = sb.getObjectiveForSlot(ScoreboardDisplaySlot.SIDEBAR);
+        Scoreboard sb = client.level.getScoreboard();
+        Objective sidebar = sb.getDisplayObjective(DisplaySlot.SIDEBAR);
         if (sidebar == null) return;
 
         long now = System.currentTimeMillis();
         long newMith = -1, newGem = -1, newGla = -1;
 
-        Collection<ScoreboardEntry> entries = sb.getScoreboardEntries(sidebar);
-        for (ScoreboardEntry entry : entries) {
+        Collection<PlayerScoreEntry> entries = sb.listPlayerScores(sidebar);
+        for (PlayerScoreEntry entry : entries) {
             String owner = entry.owner();
-            Team team = sb.getScoreHolderTeam(owner);
+            PlayerTeam team = sb.getPlayersTeam(owner);
             String raw = team != null
-                ? team.getPrefix().getString() + owner + team.getSuffix().getString()
-                : entry.name().getString();
+                ? team.getPlayerPrefix().getString() + owner + team.getPlayerSuffix().getString()
+                : entry.ownerName().getString();
             String line = raw.replaceAll("§.", "").replaceAll("[^\\x20-\\x7E]", "").trim();
             if (line.isEmpty()) continue;
 
@@ -268,12 +267,12 @@ public static void init() {
         };
     }
 
-    public static void renderHud(DrawContext ctx, RenderTickCounter tick) {
+    public static void renderHud(GuiGraphics ctx, DeltaTracker tick) {
         btnVisible = false;
         if (!FishSettings.powderTrackerEnabled) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.currentScreen != null && !(mc.currentScreen instanceof net.minecraft.client.gui.screen.ChatScreen)) return;
+        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         if (!inMiningArea()) return;
 
         int x = FishSettings.powderTrackerHudX;
@@ -281,19 +280,19 @@ public static void init() {
         int lh = Constants.TEXT_HEIGHT + 1;
         String[] lines = buildLines();
         float sc = (float) FishSettings.powderTrackerScale;
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float)x, (float)y);
-        ctx.getMatrices().scale(sc, sc);
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float)x, (float)y);
+        ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawText(mc.textRenderer, lines[i], 0, lh * i, 0xFFFFFFFF, true);
-        ctx.getMatrices().popMatrix();
+            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+        ctx.pose().popMatrix();
     }
 
-    public static void renderInScreen(DrawContext ctx, int mouseX, int mouseY) {
+    public static void renderInScreen(GuiGraphics ctx, int mouseX, int mouseY) {
         btnVisible = false;
         if (!FishSettings.powderTrackerEnabled) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (!(mc.currentScreen instanceof HandledScreen<?>)) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
         if (!inMiningArea()) return;
 
         int x = FishSettings.powderTrackerHudX;
@@ -304,8 +303,8 @@ public static void init() {
 
         String resetLabel = "§l[ Reset ]";
         String pauseLabel = paused ? "§l[ Resume ]" : "§l[ Pause ]";
-        int resetW = mc.textRenderer.getWidth(resetLabel);
-        int pauseW = mc.textRenderer.getWidth(pauseLabel);
+        int resetW = mc.font.width(resetLabel);
+        int pauseW = mc.font.width(pauseLabel);
         int padX = 4, padY = 3;
         int localBtnY = lh * lines.length - 2;
         int localResetW = resetW + padX * 2;
@@ -326,14 +325,14 @@ public static void init() {
         String shownReset = resetHover ? "§c§l[ Reset ]" : resetLabel;
         String shownPause = pauseHover ? (paused ? "§a§l[ Resume ]" : "§e§l[ Pause ]") : pauseLabel;
 
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float)x, (float)y);
-        ctx.getMatrices().scale(sc, sc);
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float)x, (float)y);
+        ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawText(mc.textRenderer, lines[i], 0, lh * i, 0xFFFFFFFF, true);
-        ctx.drawText(mc.textRenderer, shownReset, padX, localBtnY + padY, 0xFFFFFFFF, true);
-        ctx.drawText(mc.textRenderer, shownPause, localPauseX + padX, localBtnY + padY, 0xFFFFFFFF, true);
-        ctx.getMatrices().popMatrix();
+            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+        ctx.drawString(mc.font, shownReset, padX, localBtnY + padY, 0xFFFFFFFF, true);
+        ctx.drawString(mc.font, shownPause, localPauseX + padX, localBtnY + padY, 0xFFFFFFFF, true);
+        ctx.pose().popMatrix();
         btnVisible = true;
     }
 

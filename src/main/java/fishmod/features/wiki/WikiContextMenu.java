@@ -1,9 +1,9 @@
 package fishmod.features.wiki;
 
 import fishmod.utils.data.ItemUtil;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.item.ItemStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.world.item.ItemStack;
 
 public class WikiContextMenu {
 
@@ -21,7 +21,7 @@ public class WikiContextMenu {
         active      = true;
         menuX       = x;
         menuY       = y;
-        displayName = stack.getName().getString().replaceAll("§.", "");
+        displayName = stack.getHoverName().getString().replaceAll("§.", "");
         String id   = ItemUtil.getId(stack);
         // Prefer Skyblock item ID (converts underscores to spaces for search)
         wikiQuery   = id != null ? id.replace("_", " ") : displayName;
@@ -31,10 +31,10 @@ public class WikiContextMenu {
 
     public static boolean isActive() { return active; }
 
-    public static void render(DrawContext ctx, MinecraftClient mc) {
-        if (!active || mc.currentScreen == null) return;
-        int sw = mc.currentScreen.width;
-        int sh = mc.currentScreen.height;
+    public static void render(GuiGraphics ctx, Minecraft mc) {
+        if (!active || mc.screen == null) return;
+        int sw = mc.screen.width;
+        int sh = mc.screen.height;
         // Keep menu on screen
         int rx = Math.min(menuX, sw - W - 2);
         int ry = Math.min(menuY, sh - H - 2);
@@ -46,18 +46,18 @@ public class WikiContextMenu {
         ctx.fill(rx, ry + H - 1, rx + W, ry + H, BD);
 
         String label = "§bOpen Wiki§7: §f" + truncate(displayName, 11);
-        ctx.drawTextWithShadow(mc.textRenderer, label, rx + 4, ry + (H - 8) / 2, 0xFFFFFFFF);
+        ctx.drawString(mc.font, label, rx + 4, ry + (H - 8) / 2, 0xFFFFFFFF);
     }
 
-    public static boolean handleClick(double cx, double cy, MinecraftClient mc) {
+    public static boolean handleClick(double cx, double cy, Minecraft mc) {
         if (!active) return false;
-        int sw = mc.currentScreen != null ? mc.currentScreen.width  : 0;
-        int sh = mc.currentScreen != null ? mc.currentScreen.height : 0;
+        int sw = mc.screen != null ? mc.screen.width  : 0;
+        int sh = mc.screen != null ? mc.screen.height : 0;
         int rx = Math.min(menuX, sw - W - 2);
         int ry = Math.min(menuY, sh - H - 2);
 
         if (cx >= rx && cx <= rx + W && cy >= ry && cy <= ry + H) {
-            mc.setScreen(new WikiScreen(mc.currentScreen, wikiQuery));
+            mc.setScreen(new WikiScreen(mc.screen, wikiQuery));
             hide();
             return true;
         }

@@ -4,8 +4,7 @@ import fishmod.utils.HypixelApi;
 import fishmod.utils.config.values.FishSettings;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.client.MinecraftClient;
-
+import net.minecraft.client.Minecraft;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -59,8 +58,8 @@ public final class RemoteSync {
     private static void reset() { tick = 0; interval = BASE_TICKS; version = -1; lastUuids = Set.of(); lastTabSize = 0; }
 
     private static int tabSize() {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        return mc.getNetworkHandler() == null ? 0 : mc.getNetworkHandler().getPlayerList().size();
+        Minecraft mc = Minecraft.getInstance();
+        return mc.getConnection() == null ? 0 : mc.getConnection().getOnlinePlayers().size();
     }
 
     /** Force an immediate poll that ignores the cached version (used by debug commands / toggles). */
@@ -75,11 +74,11 @@ public final class RemoteSync {
         if (!sizeOn)  RemoteScales.clearAll();
         if (!nicksOn && !itemsOn && !sizeOn) return;
 
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.getNetworkHandler() == null || mc.player == null) return;
-        String selfUuid = mc.player.getUuid().toString().replace("-", "");
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getConnection() == null || mc.player == null) return;
+        String selfUuid = mc.player.getUUID().toString().replace("-", "");
         Map<String, String> uuidToName = new HashMap<>();
-        for (var entry : mc.getNetworkHandler().getPlayerList()) {
+        for (var entry : mc.getConnection().getOnlinePlayers()) {
             var gp = entry.getProfile();
             if (gp == null || gp.id() == null) continue;
             String name = gp.name();

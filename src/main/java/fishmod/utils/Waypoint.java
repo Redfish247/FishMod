@@ -1,9 +1,9 @@
 package fishmod.utils;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import fishmod.utils.rendering.RenderUtils;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Box;
+import net.minecraft.world.phys.AABB;
 
 public class Waypoint {
     private final double x, y, z, dx, dy, dz;
@@ -38,8 +38,8 @@ public class Waypoint {
         return throughWall;
     }
 
-    public void Render(VertexConsumer consumer, MatrixStack matrixStack) {
-        RenderUtils.renderFilled(matrixStack, consumer, new Box(x, y, z, x + dx, y + dy, z + dz), new float[]{r, g, b, a});
+    public void Render(VertexConsumer consumer, PoseStack matrixStack) {
+        RenderUtils.renderFilled(matrixStack, consumer, new AABB(x, y, z, x + dx, y + dy, z + dz), new float[]{r, g, b, a});
     }
 
     @Override

@@ -2,13 +2,12 @@ package fishmod.features;
 
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.events.Events;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.hud.InGameHud;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.network.chat.Component;
 
 /**
  * Parses the Terminator "Explosive Shot" chat line and shows the per-enemy damage as a title.
@@ -31,7 +30,7 @@ public final class ExplosiveShot {
         Events.ON_GAME_MESSAGE.register(ExplosiveShot::onMessage);
     }
 
-    private static boolean onMessage(Text text) {
+    private static boolean onMessage(Component text) {
         if (!FishSettings.explosiveShotEnabled || text == null) return false;
         String s = text.getString();
         if (s == null || s.indexOf("Explosive Shot") < 0) return false;
@@ -51,15 +50,15 @@ public final class ExplosiveShot {
 
         double perEnemy = total / enemies;
         String dmg = formatDamage(perEnemy);
-        Text title = Text.literal(dmg).formatted(Formatting.RED);
-        Text subtitle = Text.literal("§7Explosive Shot §8• §f" + enemies
+        Component title = Component.literal(dmg).withStyle(ChatFormatting.RED);
+        Component subtitle = Component.literal("§7Explosive Shot §8• §f" + enemies
                 + (enemies == 1 ? " enemy" : " enemies"));
 
         // ON_GAME_MESSAGE fires on the network thread — touch the HUD only on the client thread.
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         mc.execute(() -> {
-            InGameHud hud = mc.inGameHud;
-            hud.setTitleTicks(0, 25, 8); // snappy: no fade-in, ~1.25s hold, quick fade-out
+            Gui hud = mc.gui;
+            hud.setTimes(0, 25, 8); // snappy: no fade-in, ~1.25s hold, quick fade-out
             hud.setTitle(title);
             hud.setSubtitle(subtitle);
         });

@@ -1,13 +1,12 @@
 package fishmod.features.challenges;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
-
 import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 
 /** GUI screen — pick a tier, view active challenges, reroll, see the leaderboard. */
 public class ChallengeScreen extends Screen {
@@ -47,7 +46,7 @@ public class ChallengeScreen extends Screen {
     private long lbFetched = 0;
 
     public ChallengeScreen(Screen parent) {
-        super(Text.literal("Challenges"));
+        super(Component.literal("Challenges"));
         this.parent = parent;
     }
 
@@ -60,11 +59,11 @@ public class ChallengeScreen extends Screen {
         }
     }
 
-    @Override public boolean shouldPause() { return false; }
-    @Override public void renderInGameBackground(DrawContext ctx) {}
+    @Override public boolean isPauseScreen() { return false; }
+    @Override public void renderTransparentBackground(GuiGraphics ctx) {}
 
     @Override
-    public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         // Full-screen dim, plus subtle vignette band at top/bottom.
         ctx.fill(0, 0, this.width, this.height, PANEL_BG);
         ctx.fill(0, 0, this.width, 1, ACCENT);
@@ -72,17 +71,17 @@ public class ChallengeScreen extends Screen {
     }
 
     private float reveal(float delayMs) {
-        float t = MathHelper.clamp(((System.currentTimeMillis() - openMs) - delayMs) / REVEAL_MS, 0f, 1f);
+        float t = Mth.clamp(((System.currentTimeMillis() - openMs) - delayMs) / REVEAL_MS, 0f, 1f);
         float inv = 1f - t;
         return 1f - inv * inv * inv;
     }
     private static int fade(int argb, float a) {
-        int alpha = Math.round(((argb >>> 24) & 0xFF) * MathHelper.clamp(a, 0f, 1f));
+        int alpha = Math.round(((argb >>> 24) & 0xFF) * Mth.clamp(a, 0f, 1f));
         return (alpha << 24) | (argb & 0xFFFFFF);
     }
     private static int slide(float r) { return Math.round((1f - r) * -10f); }
 
-    private static void roundRect(DrawContext ctx, int x1, int y1, int x2, int y2, int color) {
+    private static void roundRect(GuiGraphics ctx, int x1, int y1, int x2, int y2, int color) {
         if (x2 - x1 < 4 || y2 - y1 < 4) { ctx.fill(x1, y1, x2, y2, color); return; }
         ctx.fill(x1 + 2, y1,     x2 - 2, y1 + 1, color);
         ctx.fill(x1 + 1, y1 + 1, x2 - 1, y1 + 2, color);
@@ -91,19 +90,19 @@ public class ChallengeScreen extends Screen {
         ctx.fill(x1 + 2, y2 - 1, x2 - 2, y2,     color);
     }
 
-    private void scaledText(DrawContext ctx, String s, int x, int y, int color, float scale) {
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) x, (float) y);
-        ctx.getMatrices().scale(scale, scale);
-        ctx.drawText(this.textRenderer, s, 0, 0, color, false);
-        ctx.getMatrices().popMatrix();
+    private void scaledText(GuiGraphics ctx, String s, int x, int y, int color, float scale) {
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) x, (float) y);
+        ctx.pose().scale(scale, scale);
+        ctx.drawString(this.font, s, 0, 0, color, false);
+        ctx.pose().popMatrix();
     }
     private int scaledWidth(String s, float scale) {
-        return (int) Math.ceil(this.textRenderer.getWidth(s) * scale);
+        return (int) Math.ceil(this.font.width(s) * scale);
     }
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         super.render(ctx, mouseX, mouseY, delta);
         ChallengeProgress p = ChallengeProgress.get();
 
@@ -112,8 +111,8 @@ public class ChallengeScreen extends Screen {
         int hdy = slide(hr);
         int headerY = 22 + hdy;
         String title = "§l✦ FishMod Challenges ✦";
-        int titleW = this.textRenderer.getWidth(title);
-        ctx.drawText(this.textRenderer, title, (this.width - titleW) / 2, headerY, fade(0xFFFFD580, hr), false);
+        int titleW = this.font.width(title);
+        ctx.drawString(this.font, title, (this.width - titleW) / 2, headerY, fade(0xFFFFD580, hr), false);
 
         String rerollNote;
         int rerollsThisMonth = ChallengeProgress.currentMonthKey().equals(p.rerollMonthKey) ? p.rerollsUsedThisMonth : 0;
@@ -182,11 +181,11 @@ public class ChallengeScreen extends Screen {
                 String medal = i == 0 ? "§e§l①" : i == 1 ? "§f§l②" : i == 2 ? "§6§l③" : "§8#" + (i + 1);
                 scaledText(ctx, medal, startX + 12, rowY, fade(TEXT, lr), TEXT_SCALE);
                 // Render the cosmetic name through NickState.parse so &#rrggbb hex actually colors.
-                ctx.getMatrices().pushMatrix();
-                ctx.getMatrices().translate((float)(startX + 60), (float) rowY);
-                ctx.getMatrices().scale(TEXT_SCALE, TEXT_SCALE);
-                ctx.drawText(this.textRenderer, ChallengeApi.renderName(e.name).asOrderedText(), 0, 0, fade(TEXT, lr), false);
-                ctx.getMatrices().popMatrix();
+                ctx.pose().pushMatrix();
+                ctx.pose().translate((float)(startX + 60), (float) rowY);
+                ctx.pose().scale(TEXT_SCALE, TEXT_SCALE);
+                ctx.drawString(this.font, ChallengeApi.renderName(e.name).getVisualOrderText(), 0, 0, fade(TEXT, lr), false);
+                ctx.pose().popMatrix();
                 String pts = "§a§l" + e.totalPoints;
                 scaledText(ctx, pts, startX + lbW - 12 - scaledWidth(pts, TEXT_SCALE), rowY, fade(TEXT, lr), TEXT_SCALE);
                 rowY += rowH;
@@ -195,18 +194,18 @@ public class ChallengeScreen extends Screen {
 
         // Footer hint
         String hint = "§8esc to close  §7•  §8right-click a tier card to reroll";
-        int hw = this.textRenderer.getWidth(hint);
-        ctx.drawText(this.textRenderer, hint, (this.width - hw) / 2, this.height - 14, fade(SUBTEXT, lr), false);
+        int hw = this.font.width(hint);
+        ctx.drawString(this.font, hint, (this.width - hw) / 2, this.height - 14, fade(SUBTEXT, lr), false);
     }
 
-    private void drawChip(DrawContext ctx, String label, int x, int y, int w, float a) {
+    private void drawChip(GuiGraphics ctx, String label, int x, int y, int w, float a) {
         int h = 14;
         roundRect(ctx, x, y, x + w, y + h, fade(CARD_BG, a));
         ctx.fill(x, y, x + 2, y + h, fade(ACCENT, a)); // left rail
         scaledText(ctx, label, x + 7, y + (h - 8) / 2, fade(TEXT, a), TEXT_SCALE);
     }
 
-    private void renderCard(DrawContext ctx, Tier tier, Challenge active, int x, int y, int w, int h, int mx, int my, float a) {
+    private void renderCard(GuiGraphics ctx, Tier tier, Challenge active, int x, int y, int w, int h, int mx, int my, float a) {
         boolean hover = mx >= x && mx <= x + w && my >= y && my <= y + h;
         roundRect(ctx, x, y, x + w, y + h, fade(hover ? CARD_HOVER : CARD_BG, a));
         // tier color accent strip
@@ -291,7 +290,7 @@ public class ChallengeScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(Click click, boolean bl) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean bl) {
         int mx = (int) click.x(), my = (int) click.y();
         int btn = click.button();
 
@@ -339,8 +338,8 @@ public class ChallengeScreen extends Screen {
     }
 
     @Override
-    public void close() {
-        MinecraftClient.getInstance().setScreen(parent);
+    public void onClose() {
+        Minecraft.getInstance().setScreen(parent);
     }
 
     private static String formatMs(long ms) {

@@ -3,26 +3,26 @@ package fishmod.utils.rendering;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gl.UniformType;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.RenderSetup;
+import com.mojang.blaze3d.shaders.UniformType;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.rendertype.RenderSetup;
+import net.minecraft.client.renderer.rendertype.RenderType;
 
 public class RenderLayers {
 
     // Depth-tested layers: occluded by terrain (only drawn where the box is actually visible).
-    public static final RenderLayer FILLED_LAYER        = RenderLayer.of("fishmod_filled",    RenderSetup.builder(RenderPipelines.DEBUG_FILLED_BOX).build());
-    public static final RenderLayer FILLED_ENTITY_LAYER = RenderLayer.of("fishmod_filled_en", RenderSetup.builder(RenderPipelines.DEBUG_FILLED_BOX).build());
+    public static final RenderType FILLED_LAYER        = RenderType.create("fishmod_filled",    RenderSetup.builder(RenderPipelines.DEBUG_FILLED_BOX).createRenderSetup());
+    public static final RenderType FILLED_ENTITY_LAYER = RenderType.create("fishmod_filled_en", RenderSetup.builder(RenderPipelines.DEBUG_FILLED_BOX).createRenderSetup());
 
     // Through-walls layers: a clone of the base pipeline with depth testing disabled, so boxes/lines
     // (e.g. the M7 lever waypoints) show through terrain. The vanilla DEBUG_FILLED_BOX / LINES
     // pipelines depth-test, so reusing them here would let walls occlude the highlight — which is
     // exactly the "doesn't render through walls" bug. We rebuild the pipeline from its own snippets
     // and override only the depth-test function.
-    public static final RenderLayer FILLED_LAYER_NO_DEPTH = noDepth(RenderPipelines.DEBUG_FILLED_BOX, "fishmod/filled_no_depth", "fishmod_filled_nd");
+    public static final RenderType FILLED_LAYER_NO_DEPTH = noDepth(RenderPipelines.DEBUG_FILLED_BOX, "fishmod/filled_no_depth", "fishmod_filled_nd");
 
-    private static final RenderLayer OUTLINE_LAYER          = RenderLayer.of("fishmod_lines", RenderSetup.builder(RenderPipelines.LINES).build());
-    private static final RenderLayer OUTLINE_LAYER_NO_DEPTH = noDepth(RenderPipelines.LINES, "fishmod/lines_no_depth", "fishmod_lines_nd");
+    private static final RenderType OUTLINE_LAYER          = RenderType.create("fishmod_lines", RenderSetup.builder(RenderPipelines.LINES).createRenderSetup());
+    private static final RenderType OUTLINE_LAYER_NO_DEPTH = noDepth(RenderPipelines.LINES, "fishmod/lines_no_depth", "fishmod_lines_nd");
 
     /**
      * Builds a render layer whose pipeline is {@code base} with depth testing turned off, so geometry
@@ -35,7 +35,7 @@ public class RenderLayers {
      * across Minecraft versions — it relies on the public {@code RenderPipeline} API rather than the
      * private internals, which is what broke the previous reflective approach on 1.21.11.
      */
-    private static RenderLayer noDepth(RenderPipeline base, String location, String layerName) {
+    private static RenderType noDepth(RenderPipeline base, String location, String layerName) {
         RenderPipeline.Builder builder = RenderPipeline.builder()
                 .withLocation(location)
                 .withVertexShader(base.getVertexShader())
@@ -83,10 +83,10 @@ public class RenderLayers {
             }
         }
 
-        return RenderLayer.of(layerName, RenderSetup.builder(builder.build()).build());
+        return RenderType.create(layerName, RenderSetup.builder(builder.build()).createRenderSetup());
     }
 
-    public static RenderLayer getOutline(int width, boolean depthCheck) {
+    public static RenderType getOutline(int width, boolean depthCheck) {
         return depthCheck ? OUTLINE_LAYER : OUTLINE_LAYER_NO_DEPTH;
     }
 }

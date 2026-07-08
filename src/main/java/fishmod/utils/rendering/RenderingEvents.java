@@ -1,11 +1,11 @@
 package fishmod.utils.rendering;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.world.phys.Vec3;
 
 public class RenderingEvents {
 
@@ -29,99 +29,99 @@ public class RenderingEvents {
 
     private static void filled(WorldRenderContext context) {
         if (context.worldState() == null) return;
-        Vec3d camera = context.worldState().cameraRenderState.pos;
-        MatrixStack matrices = context.matrices();
+        Vec3 camera = context.worldState().cameraRenderState.pos;
+        PoseStack matrices = context.matrices();
         if (matrices == null) return;
-        matrices.push();
+        matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
-        VertexConsumerProvider consumers = context.consumers();
+        MultiBufferSource consumers = context.consumers();
         if (consumers == null) return;
         VertexConsumer consumer = consumers.getBuffer(RenderLayers.FILLED_LAYER);
 
         FILLED_BLOCK.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer));
-        matrices.pop();
+        matrices.popPose();
     }
 
     private static void filledNoDepth(WorldRenderContext context) {
         if (context.worldState() == null) return;
-        Vec3d camera = context.worldState().cameraRenderState.pos;
-        MatrixStack matrices = context.matrices();
+        Vec3 camera = context.worldState().cameraRenderState.pos;
+        PoseStack matrices = context.matrices();
         if (matrices == null) return;
-        matrices.push();
+        matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
-        VertexConsumerProvider consumers = context.consumers();
+        MultiBufferSource consumers = context.consumers();
         if (consumers == null) return;
         VertexConsumer consumer = consumers.getBuffer(RenderLayers.FILLED_LAYER_NO_DEPTH);
 
         NO_DEPTH_FILLED.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer));
-        matrices.pop();
+        matrices.popPose();
     }
 
     private static void entityFilled(WorldRenderContext context) {
         if (context.worldState() == null) return;
-        Vec3d camera = context.worldState().cameraRenderState.pos;
-        MatrixStack matrices = context.matrices();
+        Vec3 camera = context.worldState().cameraRenderState.pos;
+        PoseStack matrices = context.matrices();
         if (matrices == null) return;
-        matrices.push();
+        matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
-        VertexConsumerProvider consumers = context.consumers();
+        MultiBufferSource consumers = context.consumers();
         if (consumers == null) return;
         VertexConsumer consumer = consumers.getBuffer(RenderLayers.FILLED_ENTITY_LAYER);
 
         FILLED_ENTITY.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer));
-        matrices.pop();
+        matrices.popPose();
     }
 
 
     private static void entityOutline(WorldRenderContext context) {
         if (context.worldState() == null) return;
-        Vec3d camera = context.worldState().cameraRenderState.pos;
-        MatrixStack matrices = context.matrices();
+        Vec3 camera = context.worldState().cameraRenderState.pos;
+        PoseStack matrices = context.matrices();
         if (matrices == null) return;
-        matrices.push();
+        matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
-        VertexConsumerProvider consumers = context.consumers();
+        MultiBufferSource consumers = context.consumers();
         if (consumers == null) return;
         VertexConsumer consumer = consumers.getBuffer(RenderLayers.getOutline(4, true));
 
         OUTLINE_ENTITY.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer));
-        matrices.pop();
+        matrices.popPose();
     }
 
     private static void entityOutlineNoDepth(WorldRenderContext context) {
         if (context.worldState() == null) return;
-        Vec3d camera = context.worldState().cameraRenderState.pos;
-        MatrixStack matrices = context.matrices();
+        Vec3 camera = context.worldState().cameraRenderState.pos;
+        PoseStack matrices = context.matrices();
         if (matrices == null) return;
-        matrices.push();
+        matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
-        VertexConsumerProvider consumers = context.consumers();
+        MultiBufferSource consumers = context.consumers();
         if (consumers == null) return;
         VertexConsumer consumer = consumers.getBuffer(RenderLayers.getOutline(4, false));
 
         NO_DEPTH_OUTLINE_ENTITY.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer));
-        matrices.pop();
+        matrices.popPose();
     }
 
     private static void debugLine(WorldRenderContext context) {
         if (context.worldState() == null) return;
-        Vec3d camera = context.worldState().cameraRenderState.pos;
-        MatrixStack matrices = context.matrices();
+        Vec3 camera = context.worldState().cameraRenderState.pos;
+        PoseStack matrices = context.matrices();
         if (matrices == null) return;
-        matrices.push();
+        matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
-        VertexConsumerProvider consumers = context.consumers();
+        MultiBufferSource consumers = context.consumers();
         if (consumers == null) return;
         VertexConsumer consumer = consumers.getBuffer(RenderLayers.getOutline(4, true));
 
         LINE.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer));
-        matrices.pop();
+        matrices.popPose();
     }
 
 }

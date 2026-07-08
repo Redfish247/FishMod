@@ -7,11 +7,10 @@ import fishmod.utils.events.Events;
 import config.practical.hud.HUDComponent;
 import config.practical.manager.ConfigValue;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.client.network.PlayerListEntry;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -56,17 +55,17 @@ public class FishPuzzleDisplay {
         });
     }
 
-    private static void updatePuzzles(MinecraftClient client) {
+    private static void updatePuzzles(Minecraft client) {
         puzzles.clear();
-        ClientPlayNetworkHandler handler = client.getNetworkHandler();
+        ClientPacketListener handler = client.getConnection();
         if (handler == null) return;
 
-        Collection<PlayerListEntry> entries = handler.getPlayerList();
+        Collection<PlayerInfo> entries = handler.getOnlinePlayers();
         String puzzleHeader = null;
 
-        for (PlayerListEntry entry : entries) {
-            if (entry.getDisplayName() == null) continue;
-            String line = entry.getDisplayName().getString();
+        for (PlayerInfo entry : entries) {
+            if (entry.getTabListDisplayName() == null) continue;
+            String line = entry.getTabListDisplayName().getString();
             String clean = COLOR_STRIP.matcher(line).replaceAll("").trim();
 
             if (clean.startsWith("Puzzles:")) {
@@ -87,8 +86,8 @@ public class FishPuzzleDisplay {
         return FishSettings.showPuzzles && !bossReached && !puzzles.isEmpty();
     }
 
-    public static void render(HUDComponent component, DrawContext context) {
-        MinecraftClient client = MinecraftClient.getInstance();
+    public static void render(HUDComponent component, GuiGraphics context) {
+        Minecraft client = Minecraft.getInstance();
         int x = component.getScaledX();
         int y = component.getScaledY();
 
@@ -99,7 +98,7 @@ public class FishPuzzleDisplay {
             else if (puzzle.contains("✔"))          color = Constants.GREEN;   // solved
             else if (puzzle.contains("???"))        color = Constants.BLUE;    // undiscovered
             else                                    color = Constants.RED;     // discovered, unsolved
-            context.drawText(client.textRenderer, puzzle, x, y + i * Constants.TEXT_HEIGHT, color, true);
+            context.drawString(client.font, puzzle, x, y + i * Constants.TEXT_HEIGHT, color, true);
         }
     }
 }

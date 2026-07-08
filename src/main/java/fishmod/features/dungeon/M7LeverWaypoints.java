@@ -1,19 +1,18 @@
 package fishmod.features.dungeon;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.dungeon.Phase;
 import fishmod.utils.rendering.RenderUtils;
 import fishmod.utils.rendering.RenderingEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.LeverBlock;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.LeverBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,38 +49,38 @@ public final class M7LeverWaypoints {
         return FishSettings.enableM7LeverWaypoints && Phase.isInFloor7() && Phase.inBoss();
     }
 
-    private static void onTick(MinecraftClient mc) {
-        if (mc.world == null || mc.player == null || !active()) {
+    private static void onTick(Minecraft mc) {
+        if (mc.level == null || mc.player == null || !active()) {
             if (!levers.isEmpty()) levers.clear();
             retry = 0;
             return;
         }
         // Re-scan until we locate the levers (their chunks may load after entering the boss); stop once found.
         if (levers.isEmpty()) {
-            if (retry <= 0) { scan(mc.world, mc.player.getBlockPos()); retry = RETRY_TICKS; }
+            if (retry <= 0) { scan(mc.level, mc.player.blockPosition()); retry = RETRY_TICKS; }
             else retry--;
         }
     }
 
-    private static void scan(ClientWorld world, BlockPos center) {
+    private static void scan(ClientLevel world, BlockPos center) {
         levers.clear();
-        BlockPos.Mutable m = new BlockPos.Mutable();
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         int cx = center.getX(), cy = center.getY(), cz = center.getZ();
         for (int x = cx - H_RADIUS; x <= cx + H_RADIUS; x++) {
             for (int z = cz - H_RADIUS; z <= cz + H_RADIUS; z++) {
                 for (int y = cy - V_RADIUS; y <= cy + V_RADIUS; y++) {
                     m.set(x, y, z);
                     if (world.getBlockState(m).getBlock() instanceof LeverBlock) {
-                        levers.add(m.toImmutable());
+                        levers.add(m.immutable());
                     }
                 }
             }
         }
     }
 
-    private static void render(MatrixStack matrices, VertexConsumer vc) {
+    private static void render(PoseStack matrices, VertexConsumer vc) {
         if (!active() || levers.isEmpty()) return;
-        ClientWorld world = MinecraftClient.getInstance().world;
+        ClientLevel world = Minecraft.getInstance().level;
         if (world == null) return;
 
         int c = FishSettings.m7LeverWaypointColor;
@@ -94,8 +93,8 @@ public final class M7LeverWaypoints {
         for (BlockPos p : levers) {
             BlockState st = world.getBlockState(p);
             if (!(st.getBlock() instanceof LeverBlock)) continue;
-            if (st.get(LeverBlock.POWERED)) continue;   // lever flipped → box disappears
-            Box box = new Box(
+            if (st.getValue(LeverBlock.POWERED)) continue;   // lever flipped → box disappears
+            AABB box = new AABB(
                 p.getX() - EXPAND,     p.getY() - EXPAND,     p.getZ() - EXPAND,
                 p.getX() + 1 + EXPAND, p.getY() + 1 + EXPAND, p.getZ() + 1 + EXPAND);
             RenderUtils.renderFilled(matrices, vc, box, rgba);

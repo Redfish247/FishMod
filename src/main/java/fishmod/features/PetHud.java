@@ -6,17 +6,16 @@ import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.data.ItemUtil;
 import fishmod.utils.events.Events;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.Slot;
-
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.ContainerScreen;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -124,7 +123,7 @@ public class PetHud {
                 lastTabUpdate = System.currentTimeMillis();
                 lastApiFetchAt = 0; // force an immediate API refetch for the new pet
                 forceScanTicks = 10; // immediately pull level/xp/overflow from tab
-                if (debugDumpPetLines) fishmod.utils.Misc.addChatMessage(net.minecraft.text.Text.literal("§d[pet] autopet → [" + petLevel + "] " + petName));
+                if (debugDumpPetLines) fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§d[pet] autopet → [" + petLevel + "] " + petName));
                 return;
             }
             Matcher su = SUMMON_PAT.matcher(s);
@@ -137,7 +136,7 @@ public class PetHud {
                 lastTabUpdate = System.currentTimeMillis();
                 lastApiFetchAt = 0; // force an immediate API refetch for the new pet
                 forceScanTicks = 10; // immediately pull level/xp/overflow from tab
-                if (debugDumpPetLines) fishmod.utils.Misc.addChatMessage(net.minecraft.text.Text.literal("§d[pet] summon → " + petName));
+                if (debugDumpPetLines) fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§d[pet] summon → " + petName));
             }
         });
 
@@ -167,7 +166,7 @@ public class PetHud {
         });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (!FishSettings.petHudEnabled || client.getNetworkHandler() == null) return;
+            if (!FishSettings.petHudEnabled || client.getConnection() == null) return;
             if (!Location.inSkyblock()) {
                 reset();
                 return;
@@ -181,23 +180,23 @@ public class PetHud {
                 HypixelApi.getActivePet(client, PetHud::applyApiPet);
             }
 
-            scanPetsMenuIfOpen(client.currentScreen);
+            scanPetsMenuIfOpen(client.screen);
 
             // After an equip/summon, scan every tick for a short burst (tab can lag the chat msg).
             if (forceScanTicks > 0) {
                 forceScanTicks--;
-                scanTabList(client.getNetworkHandler());
+                scanTabList(client.getConnection());
             }
 
             tickCount++;
             if (tickCount >= 5) {
                 tickCount = 0;
-                scanTabList(client.getNetworkHandler());
+                scanTabList(client.getConnection());
             }
         });
     }
 
-    private static void scanTabList(ClientPlayNetworkHandler handler) {
+    private static void scanTabList(ClientPacketListener handler) {
         // The equipped pet shows in the tab list as "[Lvl N] Name" (under the "Pet:" header).
         // The "[Lvl " prefix is unique to the pet line — player names use "[519]"/"[MVP+]" —
         // so we just match it directly. (The old code required a separate "x/y XP" line that
@@ -207,9 +206,9 @@ public class PetHud {
         boolean maxed = false;
         double overflowXp = -1;
 
-        for (PlayerListEntry entry : handler.getPlayerList()) {
-            if (entry.getDisplayName() == null) continue;
-            String text = COLOR_STRIP.matcher(entry.getDisplayName().getString()).replaceAll("").trim();
+        for (PlayerInfo entry : handler.getOnlinePlayers()) {
+            if (entry.getTabListDisplayName() == null) continue;
+            String text = COLOR_STRIP.matcher(entry.getTabListDisplayName().getString()).replaceAll("").trim();
             Matcher nameMatch = TAB_NAME_LINE.matcher(text);
             if (nameMatch.find()) {
                 tempLevel = safeInt(nameMatch.group(1), -1);
@@ -269,16 +268,16 @@ public class PetHud {
         // Stop flopping: If Tab updated in last 2 seconds, don't use menu data
         if (System.currentTimeMillis() - lastTabUpdate < 2000) return;
 
-        if (!(current instanceof GenericContainerScreen gc)) return;
+        if (!(current instanceof ContainerScreen gc)) return;
         String title = COLOR_STRIP.matcher(gc.getTitle().getString()).replaceAll("").trim();
         if (!title.startsWith("Pets")) return;
 
-        ScreenHandler handler = gc.getScreenHandler();
+        AbstractContainerMenu handler = gc.getMenu();
         for (Slot slot : handler.slots) {
-            ItemStack stack = slot.getStack();
+            ItemStack stack = slot.getItem();
             if (stack == null || stack.isEmpty() || !ItemUtil.containsLore(stack, "Click to despawn")) continue;
 
-            String displayName = COLOR_STRIP.matcher(stack.getName().getString()).replaceAll("").trim();
+            String displayName = COLOR_STRIP.matcher(stack.getHoverName().getString()).replaceAll("").trim();
             Matcher m = PET_ITEM_NAME.matcher(displayName);
             if (m.find()) {
                 petLevel = safeInt(m.group(1), petLevel);
@@ -290,9 +289,9 @@ public class PetHud {
     }
 
     private static void scanProgressFromLore(ItemStack stack) {
-        var lore = stack.get(net.minecraft.component.DataComponentTypes.LORE);
+        var lore = stack.get(net.minecraft.core.component.DataComponents.LORE);
         if (lore == null) return;
-        java.util.List<net.minecraft.text.Text> lines = lore.lines();
+        java.util.List<net.minecraft.network.chat.Component> lines = lore.lines();
         for (int i = 0; i < lines.size(); i++) {
             String s = COLOR_STRIP.matcher(lines.get(i).getString()).replaceAll("").trim();
             Matcher pm = PROGRESS_PAT.matcher(s);
@@ -341,9 +340,9 @@ public class PetHud {
                 FishSettings.petHudEnabled, petName, petLevel, xpCurrent, xpNext);
     }
 
-    public static void renderHud(DrawContext ctx, RenderTickCounter tickCounter) {
+    public static void renderHud(GuiGraphics ctx, DeltaTracker tickCounter) {
         if (!FishSettings.petHudEnabled) return;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || !Location.inSkyblock() || petName == null) return;
 
         if (FishSettings.petHudFadeIdle && pendingXp > 0 && (System.currentTimeMillis() - lastXpAt) > FishSettings.petHudFadeMs) {
@@ -369,11 +368,11 @@ public class PetHud {
         }
 
         float sc = (float) FishSettings.petHudScale;
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) FishSettings.petHudX, (float) FishSettings.petHudY);
-        ctx.getMatrices().scale(sc, sc);
-        ctx.drawText(mc.textRenderer, text.toString(), 0, 0, -1, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) FishSettings.petHudX, (float) FishSettings.petHudY);
+        ctx.pose().scale(sc, sc);
+        ctx.drawString(mc.font, text.toString(), 0, 0, -1, true);
+        ctx.pose().popMatrix();
     }
 
     private static String formatXp(double v) {

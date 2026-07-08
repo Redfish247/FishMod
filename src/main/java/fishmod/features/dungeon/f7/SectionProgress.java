@@ -7,8 +7,8 @@ import fishmod.utils.dungeon.Phase;
 import fishmod.utils.dungeon.Section;
 import fishmod.utils.events.Events;
 import fishmod.utils.rendering.RenderUtils;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 /** Terminal-section progress (completed/total), optional prev-objective label. Ported from blade-addons. */
 public class SectionProgress {
@@ -70,21 +70,21 @@ public class SectionProgress {
         return Section.getSection() != 2 ? 7 : 8;
     }
 
-    private static Text getProgressText() {
+    private static Component getProgressText() {
         if (Floor7.sectionColorProgress) {
-            return Text.literal("§f(" + completedFormat + completed + "§f/§a" + sectionTotal + "§f)");
+            return Component.literal("§f(" + completedFormat + completed + "§f/§a" + sectionTotal + "§f)");
         }
-        return Text.literal("§a(§c" + completed + "§a/" + sectionTotal + ")");
+        return Component.literal("§a(§c" + completed + "§a/" + sectionTotal + ")");
     }
 
     public static boolean display() {
         return Floor7.showSectionProgress && Phase.inTerminals();
     }
 
-    public static void render(HUDComponent component, DrawContext context) {
+    public static void render(HUDComponent component, GuiGraphics context) {
         if (Floor7.sectionPrevObjective) {
             RenderUtils.drawCenteredText(context, component,
-                    Text.literal(objectiveFormat + prevObjective + " ").append(getProgressText()));
+                    Component.literal(objectiveFormat + prevObjective + " ").append(getProgressText()));
         } else {
             RenderUtils.drawCenteredText(context, component, getProgressText());
         }

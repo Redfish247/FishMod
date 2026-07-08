@@ -5,8 +5,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import fishmod.utils.debug.Debug;
-import net.minecraft.client.MinecraftClient;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -15,6 +13,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import net.minecraft.client.Minecraft;
 
 /**
  * Thin Hypixel profile fetcher tailored to challenges. Talks to FishMod's worker proxy
@@ -74,7 +73,7 @@ public class ChallengeApi {
                 if (raw != null && !raw.isBlank()) return raw;
             }
         } catch (Throwable ignored) {}
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         return (mc.player != null) ? mc.player.getName().getString() : "?";
     }
 
@@ -82,10 +81,10 @@ public class ChallengeApi {
      * Build a properly styled Text from a stored leaderboard name. Handles &-codes,
      * &#rrggbb hex, and §-codes via {@link fishmod.cosmetic.NickState#parse(String)}.
      */
-    public static net.minecraft.text.Text renderName(String stored) {
-        if (stored == null || stored.isEmpty()) return net.minecraft.text.Text.literal("?");
+    public static net.minecraft.network.chat.Component renderName(String stored) {
+        if (stored == null || stored.isEmpty()) return net.minecraft.network.chat.Component.literal("?");
         try { return fishmod.cosmetic.NickState.parse(stored); }
-        catch (Throwable ignored) { return net.minecraft.text.Text.literal(stored); }
+        catch (Throwable ignored) { return net.minecraft.network.chat.Component.literal(stored); }
     }
 
     public interface SnapshotCallback { void onData(ProfileSnapshot snap); }
@@ -94,9 +93,9 @@ public class ChallengeApi {
 
     /** Fetches the local player's selected profile and parses a ProfileSnapshot. */
     public static void fetchLocal(SnapshotCallback cb) {
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) { lastFetchError = "no player"; cb.onData(null); return; }
-        String uuid = mc.player.getUuid().toString().replace("-", "");
+        String uuid = mc.player.getUUID().toString().replace("-", "");
         fetchByUuid(uuid, cb);
     }
 

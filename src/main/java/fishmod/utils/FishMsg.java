@@ -1,7 +1,7 @@
 package fishmod.utils;
 
 import fishmod.utils.config.values.FishSettings;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * FishMod chat output with the configurable mod prefix. Lives in a FishMod-unique class so it is
@@ -22,6 +22,6 @@ public final class FishMsg {
 
     /** Sends a FishMod chat message with the configurable mod prefix. */
     public static void send(String message) {
-        Misc.addChatMessage(Text.literal(prefix() + message));
+        Misc.addChatMessage(Component.literal(prefix() + message));
     }
 }

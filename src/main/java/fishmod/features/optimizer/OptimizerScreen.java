@@ -3,13 +3,13 @@ package fishmod.features.optimizer;
 import fishmod.features.challenges.ChallengeApi;
 import fishmod.features.challenges.ProfileSnapshot;
 import fishmod.utils.HypixelApi;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 /**
  * Profile Optimizer — on-demand snapshot of the player's progression with concrete next steps.
@@ -46,7 +46,7 @@ public class OptimizerScreen extends Screen {
     private volatile double  networth = -1;
 
     public OptimizerScreen(Screen parent) {
-        super(Text.literal("Profile Optimizer"));
+        super(Component.literal("Profile Optimizer"));
         this.parent = parent;
     }
 
@@ -60,14 +60,14 @@ public class OptimizerScreen extends Screen {
         snap = null; skills = null; sugg = null; snapFailed = false; error = "";
         nwDone = false; networth = -1; profileName = null;
 
-        ChallengeApi.fetchLocal(s -> MinecraftClient.getInstance().execute(() -> {
+        ChallengeApi.fetchLocal(s -> Minecraft.getInstance().execute(() -> {
             if (s == null) { snapFailed = true; error = ChallengeApi.lastFetchError; return; }
             snap   = s;
             skills = OptimizerAnalyzer.skillRoadmap(s);
             sugg   = OptimizerAnalyzer.suggestions(s, 14);
         }));
 
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         String ign = mc.player != null ? mc.player.getName().getString() : null;
         if (ign != null) {
             HypixelApi.getNetworth(mc, ign, (nw, profile) -> mc.execute(() -> {
@@ -78,24 +78,24 @@ public class OptimizerScreen extends Screen {
         } else { nwDone = true; }
     }
 
-    @Override public boolean shouldPause() { return false; }
-    @Override public void renderInGameBackground(DrawContext ctx) {}
+    @Override public boolean isPauseScreen() { return false; }
+    @Override public void renderTransparentBackground(GuiGraphics ctx) {}
 
     @Override
-    public void renderBackground(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         ctx.fill(0, 0, this.width, this.height, BG);
         ctx.fill(0, 0, this.width, 1, ACCENT);
         ctx.fill(0, this.height - 1, this.width, this.height, ACCENT);
     }
 
     @Override
-    public boolean keyPressed(net.minecraft.client.input.KeyInput input) {
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent input) {
         if (input.key() == GLFW.GLFW_KEY_R) { fetch(); return true; }
         return super.keyPressed(input);
     }
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         super.render(ctx, mouseX, mouseY, delta);
 
         int contentW = Math.min(this.width - 40, 580);
@@ -103,7 +103,7 @@ public class OptimizerScreen extends Screen {
 
         // ── Header ───────────────────────────────────────────────────────────
         String title = "§l✦ Profile Optimizer ✦";
-        ctx.drawText(this.textRenderer, title, (this.width - this.textRenderer.getWidth(title)) / 2, 14, GOLD, false);
+        ctx.drawString(this.font, title, (this.width - this.font.width(title)) / 2, 14, GOLD, false);
         String sub = profileName != null ? "§7Profile: §f" + profileName : "§8your active SkyBlock profile";
         int sw = sw(sub, 0.85f);
         sst(ctx, sub, (this.width - sw) / 2, 28, SUBTEXT, 0.85f);
@@ -113,7 +113,7 @@ public class OptimizerScreen extends Screen {
             String msg = "§cCouldn't load your profile";
             String why = "§8" + (error == null || error.isEmpty() ? "unknown error" : error);
             String tip = "§7Make sure your SkyBlock API access is on, then press §fR §7to retry.";
-            ctx.drawText(this.textRenderer, msg, (this.width - this.textRenderer.getWidth(msg)) / 2, this.height / 2 - 14, TEXT, false);
+            ctx.drawString(this.font, msg, (this.width - this.font.width(msg)) / 2, this.height / 2 - 14, TEXT, false);
             int ww = sw(why, 0.85f);
             sst(ctx, why, (this.width - ww) / 2, this.height / 2, DIM, 0.85f);
             int tw = sw(tip, 0.85f);
@@ -123,7 +123,7 @@ public class OptimizerScreen extends Screen {
         if (snap == null) {
             String dots = ".".repeat((int) ((System.currentTimeMillis() / 350) % 4));
             String msg = "§7Analyzing your profile" + dots;
-            ctx.drawText(this.textRenderer, msg, (this.width - this.textRenderer.getWidth(msg)) / 2, this.height / 2 - 4, TEXT, false);
+            ctx.drawString(this.font, msg, (this.width - this.font.width(msg)) / 2, this.height / 2 - 4, TEXT, false);
             return;
         }
 
@@ -153,7 +153,7 @@ public class OptimizerScreen extends Screen {
         sst(ctx, hint, (this.width - sw(hint, 0.85f)) / 2, this.height - 14, SUBTEXT, 0.85f);
     }
 
-    private void renderSkillPanel(DrawContext ctx, int x, int y, int w, int bottom) {
+    private void renderSkillPanel(GuiGraphics ctx, int x, int y, int w, int bottom) {
         panel(ctx, x, y, x + w, bottom);
         sst(ctx, "§e§lSKILL ROADMAP", x + 10, y + 8, TEXT, 0.85f);
         sst(ctx, "§8weakest first", x + w - sw("§8weakest first", 0.7f) - 10, y + 9, DIM, 0.7f);
@@ -175,7 +175,7 @@ public class OptimizerScreen extends Screen {
         }
     }
 
-    private void renderSuggestPanel(DrawContext ctx, int x, int y, int w, int bottom) {
+    private void renderSuggestPanel(GuiGraphics ctx, int x, int y, int w, int bottom) {
         panel(ctx, x, y, x + w, bottom);
         sst(ctx, "§b§lWHAT TO DO NEXT", x + 10, y + 8, TEXT, 0.85f);
         sst(ctx, "§8nearest milestones", x + w - sw("§8nearest milestones", 0.7f) - 10, y + 9, DIM, 0.7f);
@@ -223,7 +223,7 @@ public class OptimizerScreen extends Screen {
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
-    private void panel(DrawContext ctx, int x1, int y1, int x2, int y2) {
+    private void panel(GuiGraphics ctx, int x1, int y1, int x2, int y2) {
         ctx.fill(x1, y1, x2, y2, PANEL_BG);
         ctx.fill(x1, y1, x2, y1 + 2, ACCENT);            // top rail
         ctx.fill(x1, y2 - 1, x2, y2, BORDER);
@@ -231,7 +231,7 @@ public class OptimizerScreen extends Screen {
         ctx.fill(x2 - 1, y1, x2, y2, BORDER);
     }
 
-    private void drawChip(DrawContext ctx, int x, int y, int w, int h, String label, String value) {
+    private void drawChip(GuiGraphics ctx, int x, int y, int w, int h, String label, String value) {
         ctx.fill(x, y, x + w, y + h, CHIP_BG);
         ctx.fill(x, y, x + 2, y + h, ACCENT);            // left rail
         int vw = sw(value, 0.9f);
@@ -241,14 +241,14 @@ public class OptimizerScreen extends Screen {
         sst(ctx, lab, x + (w - lw) / 2, y + 16, SUBTEXT, 0.6f);
     }
 
-    private void sst(DrawContext ctx, String s, int x, int y, int color, float scale) {
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) x, (float) y);
-        ctx.getMatrices().scale(scale, scale);
-        ctx.drawText(this.textRenderer, s, 0, 0, color, false);
-        ctx.getMatrices().popMatrix();
+    private void sst(GuiGraphics ctx, String s, int x, int y, int color, float scale) {
+        ctx.pose().pushMatrix();
+        ctx.pose().translate((float) x, (float) y);
+        ctx.pose().scale(scale, scale);
+        ctx.drawString(this.font, s, 0, 0, color, false);
+        ctx.pose().popMatrix();
     }
-    private int sw(String s, float scale) { return (int) Math.ceil(this.textRenderer.getWidth(s) * scale); }
+    private int sw(String s, float scale) { return (int) Math.ceil(this.font.width(s) * scale); }
 
     private String truncate(String s, int maxW, float scale) {
         if (sw(s, scale) <= maxW) return s;
@@ -269,7 +269,7 @@ public class OptimizerScreen extends Screen {
     }
 
     @Override
-    public void close() {
-        MinecraftClient.getInstance().setScreen(parent);
+    public void onClose() {
+        Minecraft.getInstance().setScreen(parent);
     }
 }

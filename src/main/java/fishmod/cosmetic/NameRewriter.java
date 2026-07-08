@@ -1,18 +1,17 @@
 package fishmod.cosmetic;
 
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 
 /** Replaces every occurrence of the real IGN inside a Text with the styled cosmetic name, preserving styling. */
 public final class NameRewriter {
     private NameRewriter() {}
 
-    public static Text replaceName(Text original, String realName, Text replacement) {
+    public static Component replaceName(Component original, String realName, Component replacement) {
         if (original == null || realName == null || realName.isEmpty()) return original;
         if (!original.getString().contains(realName)) return original;
 
@@ -36,7 +35,7 @@ public final class NameRewriter {
         String cosmetic = replacement.getString();
         int nameOffInCosmetic = cosmetic.indexOf(realName); // where the IGN sits inside the cosmetic
 
-        MutableText out = Text.empty();
+        MutableComponent out = Component.empty();
         int charPos = 0;
         int idx;
         while ((idx = full.indexOf(realName, charPos)) >= 0) {
@@ -61,7 +60,7 @@ public final class NameRewriter {
         return out;
     }
 
-    private static void appendRange(MutableText out, List<Segment> segs, int from, int to) {
+    private static void appendRange(MutableComponent out, List<Segment> segs, int from, int to) {
         if (from >= to) return;
         int pos = 0;
         for (Segment s : segs) {
@@ -74,7 +73,7 @@ public final class NameRewriter {
             int sliceFrom = Math.max(0, from - pos);
             int sliceTo = Math.min(s.text().length(), to - pos);
             if (sliceTo > sliceFrom) {
-                out.append(Text.literal(s.text().substring(sliceFrom, sliceTo)).setStyle(s.style()));
+                out.append(Component.literal(s.text().substring(sliceFrom, sliceTo)).setStyle(s.style()));
             }
             pos = segEnd;
         }

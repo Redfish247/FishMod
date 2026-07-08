@@ -1,6 +1,6 @@
 package fishmod.cosmetic;
 
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
 
 /** Builds a per-character &#rrggbb gradient string over a fixed name (no custom text allowed). */
 public final class GradientNick {
@@ -99,10 +99,10 @@ public final class GradientNick {
                 Integer.parseInt(t.substring(4, 6), 16)
             };
         }
-        Formatting f = null;
-        if (t.length() == 1) f = Formatting.byCode(t.charAt(0));
-        if (f == null) f = Formatting.byName(t.toUpperCase());
-        if (f != null && f.isColor() && f.getColorValue() != null) return rgb(f.getColorValue());
+        ChatFormatting f = null;
+        if (t.length() == 1) f = ChatFormatting.getByCode(t.charAt(0));
+        if (f == null) f = ChatFormatting.getByName(t.toUpperCase());
+        if (f != null && f.isColor() && f.getColor() != null) return rgb(f.getColor());
         return null;
     }
 

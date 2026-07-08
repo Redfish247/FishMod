@@ -5,12 +5,10 @@ import fishmod.utils.Location;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.Misc;
 import fishmod.utils.events.Events;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.text.Text;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 
 /**
  * Handles party commands typed by the local player:
@@ -107,8 +105,8 @@ public class PartyCommandHandler {
     }
 
     public static void onPartyCommand(String typer, String cmd, String rawArg1, String rawArg2, String rawArg3, String responder) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.getNetworkHandler() == null) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getConnection() == null) return;
         // Use the real account name (GameProfile), NOT getName() — a cosmetic /nick overrides
         // getName() and would break the isMe check for self-only commands (.ping/.fps/.corpse...).
         String selfName = (mc.player != null) ? mc.player.getGameProfile().name() : null;
@@ -260,7 +258,7 @@ public class PartyCommandHandler {
     }
 
     /** Sends a command to the server after a short delay to avoid rate-limiting. */
-    private static void sendCmd(MinecraftClient mc, String command) {
+    private static void sendCmd(Minecraft mc, String command) {
         // Local /command lookups: show the result in your own chat instead of sending it anywhere.
         if (command.startsWith(LOCAL)) {
             String msg = command.substring(LOCAL.length());
@@ -269,8 +267,8 @@ public class PartyCommandHandler {
         }
         CompletableFuture.delayedExecutor(250, TimeUnit.MILLISECONDS)
             .execute(() -> mc.execute(() -> {
-                if (mc.getNetworkHandler() != null) {
-                    mc.getNetworkHandler().sendChatCommand(command);
+                if (mc.getConnection() != null) {
+                    mc.getConnection().sendCommand(command);
                     // Refresh the suppression window so Hypixel's error replies stay hidden.
                     ChatCommandState.lastPartyCommandAt = System.currentTimeMillis();
                 }
@@ -280,8 +278,8 @@ public class PartyCommandHandler {
     // ─── command dispatcher ───────────────────────────────────────────────────
 
     public static boolean handleCommand(String fullCmd) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.getNetworkHandler() == null) return false;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getConnection() == null) return false;
         final String responder = "pc ";
 
         // Split "rtca PlayerName" → cmd="rtca", arg="PlayerName" (or null)
@@ -408,11 +406,11 @@ public class PartyCommandHandler {
 
     // ─── party-triggered lookups (by IGN) ────────────────────────────────────
 
-    private static void runRtcaForPlayer(MinecraftClient mc, String ign, String responder) {
+    private static void runRtcaForPlayer(Minecraft mc, String ign, String responder) {
         HypixelApi.getByName(mc, ign, data -> buildAndSendRtca(mc, data, ign, responder));
     }
 
-    private static void runCataForPlayer(MinecraftClient mc, String ign, String responder) {
+    private static void runCataForPlayer(Minecraft mc, String ign, String responder) {
         HypixelApi.getByName(mc, ign, data -> {
             String level  = HypixelApi.formatLevel(data.cataXp);
             String toNext = HypixelApi.xpToNextLevel(data.cataXp);
@@ -425,7 +423,7 @@ public class PartyCommandHandler {
      * For .runs, floor defaults to "m7" if not provided.
      * Floor format: "m1"-"m7" (master), "f1"-"f7" (normal), "e" (entrance).
      */
-    private static void runStatsForPlayer(MinecraftClient mc, String ign, String cmd, String floorArg, String responder) {
+    private static void runStatsForPlayer(Minecraft mc, String ign, String cmd, String floorArg, String responder) {
         HypixelApi.getByName(mc, ign, data -> {
             StringBuilder sb = new StringBuilder(ign + "'s ");
             switch (cmd) {
@@ -465,13 +463,13 @@ public class PartyCommandHandler {
         });
     }
 
-    private static void runTotalRunsForPlayer(MinecraftClient mc, String ign, String responder) {
+    private static void runTotalRunsForPlayer(Minecraft mc, String ign, String responder) {
         HypixelApi.getByName(mc, ign, data -> {
             sendCmd(mc, responder + ign + "'s Total Runs: " + String.format("%,d", data.totalRuns));
         });
     }
 
-    private static void runPbForPlayer(MinecraftClient mc, String ign, String floor, String responder) {
+    private static void runPbForPlayer(Minecraft mc, String ign, String floor, String responder) {
         HypixelApi.getByName(mc, ign, data -> {
             boolean isMaster = floor == null || floor.toLowerCase().startsWith("m");
             int floorNum = 7;
@@ -485,7 +483,7 @@ public class PartyCommandHandler {
         });
     }
 
-    private static void runMpForPlayer(MinecraftClient mc, String ign, String responder) {
+    private static void runMpForPlayer(Minecraft mc, String ign, String responder) {
         HypixelApi.getByName(mc, ign, data -> {
             String val = data.magicalPower >= 0 ? String.valueOf(data.magicalPower) : "N/A";
             sendCmd(mc, responder + ign + "'s MP: " + val);
@@ -506,7 +504,7 @@ public class PartyCommandHandler {
         return String.format("%,d/%,d", col, next);
     }
 
-    private static void runCollectionForPlayer(MinecraftClient mc, String ign, String floor, String responder) {
+    private static void runCollectionForPlayer(Minecraft mc, String ign, String floor, String responder) {
         HypixelApi.getByName(mc, ign, data -> {
             String label;
             String value;
@@ -530,7 +528,7 @@ public class PartyCommandHandler {
         });
     }
 
-    private static void runRtcForPlayer(MinecraftClient mc, String ign, String levelArg, String responder) {
+    private static void runRtcForPlayer(Minecraft mc, String ign, String levelArg, String responder) {
         int target = 50;
         if (levelArg != null) {
             try { target = Math.max(1, Math.min(99, Integer.parseInt(levelArg))); } catch (NumberFormatException ignored) {}
@@ -583,7 +581,7 @@ public class PartyCommandHandler {
      * .crtc — XP needed for a single class to reach a target level (default 50, or above if specified).
      * Class XP uses the same curve as catacombs (CATA_XP_TABLE); levels above 50 cost 200M XP each.
      */
-    private static void runCrtcForPlayer(MinecraftClient mc, String ign, String classArg, String levelArg, String responder) {
+    private static void runCrtcForPlayer(Minecraft mc, String ign, String classArg, String levelArg, String responder) {
         String classKey = resolveClass(classArg);
         if (classKey == null) {
             sendCmd(mc, responder + "Usage: .crtc [name] <healer|mage|berserk|archer|tank> [level]");
@@ -625,7 +623,7 @@ public class PartyCommandHandler {
         });
     }
 
-    private static void sendDprofit(MinecraftClient mc, String responder) {
+    private static void sendDprofit(Minecraft mc, String responder) {
         double total = fishmod.features.croesus.LootTrackerOverlay.totalValueForChat();
         int runs = fishmod.features.croesus.LootTrackerOverlay.runsForChat();
         double avg = total / Math.max(1, runs);
@@ -633,7 +631,7 @@ public class PartyCommandHandler {
         sendCmd(mc, responder + "Profit Per Run: " + pr + " (" + runs + " runs)");
     }
 
-    private static void buildAndSendRtca(MinecraftClient mc, HypixelApi.DungeonData data, String ign, String responder) {
+    private static void buildAndSendRtca(Minecraft mc, HypixelApi.DungeonData data, String ign, String responder) {
         long xpPerRun = Math.max(1, FishSettings.rtcaClassXpPerRun);
         long passiveXp = Math.max(0, FishSettings.rtcaClassPassiveXpPerRun);
 
@@ -678,7 +676,7 @@ public class PartyCommandHandler {
 
     // ─── local command implementations ───────────────────────────────────────
 
-    private static void handleJoinInstance(String cmd, MinecraftClient mc, String responder) {
+    private static void handleJoinInstance(String cmd, Minecraft mc, String responder) {
         long elapsed = System.currentTimeMillis() - dungeonEnteredAt;
         if (elapsed < 26_000L) {
             long rem = (26_000L - elapsed) / 1_000L + 1L;
@@ -694,11 +692,11 @@ public class PartyCommandHandler {
             floor = (type == 'm' ? "master_" : "") + "catacombs_floor_" + NUM_WORDS[num - 1];
         }
         String joinCmd = "joininstance " + floor;
-        Misc.addChatMessage(Text.literal("§7[FM] Sending: /" + joinCmd));
+        Misc.addChatMessage(Component.literal("§7[FM] Sending: /" + joinCmd));
         sendCmd(mc, joinCmd);
     }
 
-    private static void handleKuudra(String cmd, MinecraftClient mc, String responder) {
+    private static void handleKuudra(String cmd, Minecraft mc, String responder) {
         long elapsed = System.currentTimeMillis() - dungeonEnteredAt;
         if (elapsed < 30_000L) {
             long rem = (30_000L - elapsed) / 1_000L + 1L;
@@ -707,16 +705,16 @@ public class PartyCommandHandler {
         }
         int tier = cmd.charAt(1) - '1'; // t1=0 … t5=4
         String joinCmd = "joininstance kuudra_" + KUUDRA_TIERS[tier];
-        Misc.addChatMessage(Text.literal("§7[FM] Sending: /" + joinCmd));
+        Misc.addChatMessage(Component.literal("§7[FM] Sending: /" + joinCmd));
         sendCmd(mc, joinCmd);
     }
 
-    private static void sendCorpse(MinecraftClient mc, String ign, String responder) {
+    private static void sendCorpse(Minecraft mc, String ign, String responder) {
         HypixelApi.getEconomyByName(mc, ign, (bank, purse, corpses) ->
             sendCmd(mc, responder + ign + "'s Corpses: " + (corpses != null ? corpses : "N/A")));
     }
 
-    private static void sendBank(MinecraftClient mc, String ign, String responder) {
+    private static void sendBank(Minecraft mc, String ign, String responder) {
         HypixelApi.getEconomyByName(mc, ign, (bank, purse, corpses) -> {
             String b = bank >= 0 ? fmtCoins(bank) : "N/A";
             String p = purse >= 0 ? fmtCoins(purse) : "N/A";
@@ -724,7 +722,7 @@ public class PartyCommandHandler {
         });
     }
 
-    private static void sendPowder(MinecraftClient mc, String ign, String responder) {
+    private static void sendPowder(Minecraft mc, String ign, String responder) {
         HypixelApi.getPowderByName(mc, ign, data -> {
             if (!data.hasData()) {
                 sendCmd(mc, responder + ign + "'s Powder: N/A");
@@ -737,31 +735,31 @@ public class PartyCommandHandler {
         });
     }
 
-    private static void sendNetworth(MinecraftClient mc, String ign, String responder) {
+    private static void sendNetworth(Minecraft mc, String ign, String responder) {
         fishmod.features.croesus.CroesusPrices.refreshIfStale();
-        Misc.addChatMessage(Text.literal("§7[FM] Looking up " + ign + "'s networth..."));
+        Misc.addChatMessage(Component.literal("§7[FM] Looking up " + ign + "'s networth..."));
         HypixelApi.getNetworth(mc, ign, (nw, prof) -> {
             if (nw < 0) { sendCmd(mc, responder + ign + "'s Networth: N/A"); return; }
             sendCmd(mc, responder + ign + "'s Networth: " + fmtCoins(nw) + (prof != null ? " (" + prof + ")" : ""));
         });
     }
 
-    private static void sendSkyblockLevel(MinecraftClient mc, String ign, String responder) {
+    private static void sendSkyblockLevel(Minecraft mc, String ign, String responder) {
         HypixelApi.getProfileStats(mc, ign, (sb, farm) ->
             sendCmd(mc, responder + ign + "'s SB Level: " + (sb >= 0 ? String.format("%.2f", sb) : "N/A")));
     }
 
-    private static void sendFarming(MinecraftClient mc, String ign, String responder) {
+    private static void sendFarming(Minecraft mc, String ign, String responder) {
         HypixelApi.getProfileStats(mc, ign, (sb, farm) ->
             sendCmd(mc, responder + ign + "'s Farming: " + (farm >= 0 ? String.format("%.2f", farm) : "N/A")));
     }
 
-    private static void sendNucleus(MinecraftClient mc, String ign, String responder) {
+    private static void sendNucleus(Minecraft mc, String ign, String responder) {
         HypixelApi.getNucleusRuns(mc, ign, runs ->
             sendCmd(mc, responder + ign + "'s Nucleus Runs: " + (runs >= 0 ? String.format("%,d", runs) : "N/A")));
     }
 
-    private static void sendWorm(MinecraftClient mc, String ign, String responder) {
+    private static void sendWorm(Minecraft mc, String ign, String responder) {
         HypixelApi.getWormStats(mc, ign, s -> {
             if (!s.found) { sendCmd(mc, responder + ign + "'s Bestiary: N/A"); return; }
             String tier = "Tier " + s.tier + "/" + s.maxTier
@@ -778,8 +776,8 @@ public class PartyCommandHandler {
         return String.format("%,d", (long) v);
     }
 
-    private static void sendFps(MinecraftClient mc, String responder) {
-        int fps = mc.getCurrentFps();
+    private static void sendFps(Minecraft mc, String responder) {
+        int fps = mc.getFps();
         sendCmd(mc, responder + "FPS: " + fps);
     }
 
@@ -793,7 +791,7 @@ public class PartyCommandHandler {
         return Math.min(20.0, 1000.0 / avgMs);
     }
 
-    private static void sendTps(MinecraftClient mc, String responder) {
+    private static void sendTps(Minecraft mc, String responder) {
         int filled = Math.min(tickIdx, TICK_TIMES.length);
         if (filled == 0) {
             sendCmd(mc, responder + "TPS: N/A");
@@ -807,18 +805,18 @@ public class PartyCommandHandler {
         sendCmd(mc, responder + "TPS: " + formatted);
     }
 
-    private static void sendPing(MinecraftClient mc, String responder) {
-        if (mc.player == null || mc.getNetworkHandler() == null) return;
+    private static void sendPing(Minecraft mc, String responder) {
+        if (mc.player == null || mc.getConnection() == null) return;
         // The vanilla ping/pong round trip is the most accurate, freshest end-to-end source (the same
         // one Odin uses). Server-measured tab latency and the server-list join ping are fallbacks only
         // for the brief window before a live measurement is available.
         int ping = fishmod.utils.PingTracker.latest();
         if (ping < 0) {
-            var entry = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
+            var entry = mc.getConnection().getPlayerInfo(mc.player.getUUID());
             if (entry != null && entry.getLatency() > 0) ping = entry.getLatency();
         }
         if (ping < 0) {
-            try { var si = mc.getCurrentServerEntry(); if (si != null && si.ping > 0) ping = (int) si.ping; }
+            try { var si = mc.getCurrentServer(); if (si != null && si.ping > 0) ping = (int) si.ping; }
             catch (Exception ignored) {}
         }
         sendCmd(mc, responder + "Ping: " + (ping >= 0 ? ping + "ms" : "N/A"));

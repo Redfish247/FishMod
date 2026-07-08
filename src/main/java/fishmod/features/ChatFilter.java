@@ -1,9 +1,8 @@
 package fishmod.features;
 
 import fishmod.utils.config.values.FishSettings;
-import net.minecraft.text.Text;
-
 import java.util.regex.Pattern;
+import net.minecraft.network.chat.Component;
 
 /**
  * Decides which Hypixel chat lines to hide. This is a pure predicate — it is checked at the chat
@@ -23,7 +22,7 @@ public final class ChatFilter {
     private static final Pattern FRIEND_JOIN_LEAVE = Pattern.compile("Friend > \\S+ (?:joined|left)\\.");
 
     /** @return true if this chat line should be hidden from the chat HUD. */
-    public static boolean shouldHide(Text text) {
+    public static boolean shouldHide(Component text) {
         if (!FishSettings.chatFilterEnabled || text == null) return false;
         String s = text.getString();
         if (s == null || s.isEmpty()) return false;

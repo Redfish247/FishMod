@@ -2,9 +2,8 @@ package fishmod.features.dungeon;
 
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.events.Events;
-import net.minecraft.client.MinecraftClient;
-
 import java.util.regex.Pattern;
+import net.minecraft.client.Minecraft;
 
 /**
  * Self-contained lag tracker — measures seconds lost to server lag during a
@@ -53,10 +52,10 @@ public class LagTracker {
 
                 if (FishSettings.sendLagToParty && lag >= 0.1) {
                     String formatted = String.format("%.2f", lag);
-                    MinecraftClient mc = MinecraftClient.getInstance();
-                    if (mc.getNetworkHandler() != null) {
-                        mc.send(() -> mc.getNetworkHandler()
-                                .sendChatCommand("pc " + formatted + "s lost to lag."));
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.getConnection() != null) {
+                        mc.schedule(() -> mc.getConnection()
+                                .sendCommand("pc " + formatted + "s lost to lag."));
                     }
                 }
             }

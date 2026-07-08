@@ -6,7 +6,7 @@ import fishmod.utils.config.values.Floor7;
 import fishmod.utils.dungeon.Phase;
 import fishmod.utils.events.Events;
 import fishmod.utils.rendering.RenderUtils;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics;
 
 /** Maxor (P1) tick timer — counts server ticks while in P1. Ported from blade-addons. */
 public class MaxorTickTimer {
@@ -25,7 +25,7 @@ public class MaxorTickTimer {
         return Floor7.enableMaxorTickTimer && Location.inDungeon() && Phase.inP1();
     }
 
-    public static void render(HUDComponent component, DrawContext context) {
+    public static void render(HUDComponent component, GuiGraphics context) {
         RenderUtils.drawTimer(component, context, tick, 0xffffffff);
     }
 }

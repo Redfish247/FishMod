@@ -3,8 +3,7 @@ package fishmod.features;
 import fishmod.utils.Misc;
 import fishmod.utils.config.values.FishSettings;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.minecraft.text.Text;
-
+import net.minecraft.network.chat.Component;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,7 +39,7 @@ public class BridgeBot {
 
             String player = m.group(1);
             String text   = m.group(2);
-            Misc.addChatMessage(Text.literal("§2Guild > §r§a[Bridge] §r" + player + "§r: " + text));
+            Misc.addChatMessage(Component.literal("§2Guild > §r§a[Bridge] §r" + player + "§r: " + text));
             return false; // suppress original bot message
         });
     }

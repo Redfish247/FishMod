@@ -14,8 +14,6 @@ import fishmod.features.ItemRarityHotbar;
 import fishmod.mixin.accessors.ChatScreenAccessor;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents;
-import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
 import fishmod.features.dungeon.SessionStats;
 import fishmod.features.warpmap.WarpMapFeature;
 import fishmod.utils.config.FolderUtility;
@@ -52,11 +50,11 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.text.Text;
 
 public class FishModInit implements ModInitializer {
 
@@ -76,7 +74,7 @@ public class FishModInit implements ModInitializer {
 
     /** Three-arg variant (e.g. /crtc [name] [class] [level]). */
     private static int runLocalLookup(String cmd, String arg1, String arg2, String arg3) {
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         String self = (mc.player != null) ? mc.player.getGameProfile().name() : null;
         if (self == null) return Constants.SUCCESS;
         fishmod.features.dungeon.PartyCommandHandler.onPartyCommand(
@@ -100,15 +98,15 @@ public class FishModInit implements ModInitializer {
             if (m.find()) cmd = null; // more than one command on the line → leave it plain
         }
         if (cmd == null) {
-            Misc.addChatMessage(Text.literal(text));
+            Misc.addChatMessage(Component.literal(text));
             return;
         }
         final String suggest = cmd;
-        net.minecraft.text.MutableText t = Text.literal(text);
+        net.minecraft.network.chat.MutableComponent t = Component.literal(text);
         t.setStyle(t.getStyle()
-                .withClickEvent(new net.minecraft.text.ClickEvent.SuggestCommand(suggest))
-                .withHoverEvent(new net.minecraft.text.HoverEvent.ShowText(
-                        Text.literal("§7Click to put §f" + suggest + "§7 in chat"))));
+                .withClickEvent(new net.minecraft.network.chat.ClickEvent.SuggestCommand(suggest))
+                .withHoverEvent(new net.minecraft.network.chat.HoverEvent.ShowText(
+                        Component.literal("§7Click to put §f" + suggest + "§7 in chat"))));
         Misc.addChatMessage(t);
     }
 
@@ -168,7 +166,7 @@ public class FishModInit implements ModInitializer {
      *  (NoClassDefFoundError on the MCEF-typed fields). Guard the command before touching WikiScreen. */
     private static boolean wikiUnavailable(net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource source) {
         if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("mcef")) return false;
-        source.sendFeedback(net.minecraft.text.Text.literal(
+        source.sendFeedback(net.minecraft.network.chat.Component.literal(
                 "§c[FishMod] §7/wiki needs the §fMCEF §7mod — install it from Modrinth (MC 1.21.11)."));
         return true;
     }
@@ -270,13 +268,13 @@ public class FishModInit implements ModInitializer {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
             dispatcher.register(ClientCommandManager.literal("fm")
                 .then(ClientCommandManager.literal("customize").executes(context -> {
-                    MinecraftClient.getInstance().send(() ->
-                        MinecraftClient.getInstance().setScreen(new fishmod.features.ItemCustomizeScreen()));
+                    Minecraft.getInstance().schedule(() ->
+                        Minecraft.getInstance().setScreen(new fishmod.features.ItemCustomizeScreen()));
                     return Constants.SUCCESS;
                 }))
                 .then(ClientCommandManager.literal("optimize").executes(context -> {
-                    MinecraftClient.getInstance().send(() ->
-                        MinecraftClient.getInstance().setScreen(new fishmod.features.optimizer.OptimizerScreen(null)));
+                    Minecraft.getInstance().schedule(() ->
+                        Minecraft.getInstance().setScreen(new fishmod.features.optimizer.OptimizerScreen(null)));
                     return Constants.SUCCESS;
                 }))
                 .then(ClientCommandManager.literal("commandhelp").executes(context -> {
@@ -288,8 +286,8 @@ public class FishModInit implements ModInitializer {
                     return Constants.SUCCESS;
                 }))
                 .executes(context -> {
-                    MinecraftClient.getInstance().send(() ->
-                        MinecraftClient.getInstance().setScreen(new fishmod.features.FishModScreen()));
+                    Minecraft.getInstance().schedule(() ->
+                        Minecraft.getInstance().setScreen(new fishmod.features.FishModScreen()));
                     return Constants.SUCCESS;
                 })
             );
@@ -298,7 +296,7 @@ public class FishModInit implements ModInitializer {
                     boolean on = !fishmod.utils.config.values.FishSettings.lootTrackerEnabled;
                     fishmod.utils.config.values.FishSettings.lootTrackerEnabled = on;
                     fishmod.utils.config.FishConfig.manager.save();
-                    Misc.addChatMessage(Text.literal("§7[FM] Loot tracker "
+                    Misc.addChatMessage(Component.literal("§7[FM] Loot tracker "
                             + (on ? "§aenabled §7— open your inventory in the Dungeon Hub"
                                   : "§cdisabled")));
                     return Constants.SUCCESS;
@@ -306,50 +304,50 @@ public class FishModInit implements ModInitializer {
             );
             dispatcher.register(ClientCommandManager.literal("po")
                 .executes(ctx -> {
-                    MinecraftClient mc = MinecraftClient.getInstance();
-                    mc.send(() -> mc.setScreen(new fishmod.features.optimizer.OptimizerScreen(mc.currentScreen)));
+                    Minecraft mc = Minecraft.getInstance();
+                    mc.schedule(() -> mc.setScreen(new fishmod.features.optimizer.OptimizerScreen(mc.screen)));
                     return Constants.SUCCESS;
                 })
             );
             dispatcher.register(ClientCommandManager.literal("fmnicktest")
                 .executes(ctx -> {
                     if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
-                    MinecraftClient mc = MinecraftClient.getInstance();
-                    if (mc.player == null || mc.getNetworkHandler() == null) {
-                        Misc.addChatMessage(Text.literal("§cNot in a world."));
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.player == null || mc.getConnection() == null) {
+                        Misc.addChatMessage(Component.literal("§cNot in a world."));
                         return Constants.SUCCESS;
                     }
                     boolean remoteOn = fishmod.utils.config.values.FishSettings.remoteNicksEnabled;
-                    Misc.addChatMessage(Text.literal("§b[fmnicktest] §7See Others: §f" + remoteOn
+                    Misc.addChatMessage(Component.literal("§b[fmnicktest] §7See Others: §f" + remoteOn
                             + " §8|§7 own nick active: §f" + fishmod.cosmetic.NickState.isActive()
                             + " §8|§7 raw: §f" + (fishmod.cosmetic.NickState.getRaw() == null ? "(none)" : fishmod.cosmetic.NickState.getRaw())));
 
                     // Re-upload own nick
                     fishmod.cosmetic.RemoteNicks.uploadOwn();
-                    Misc.addChatMessage(Text.literal("§b[fmnicktest] §7re-uploaded own nick."));
+                    Misc.addChatMessage(Component.literal("§b[fmnicktest] §7re-uploaded own nick."));
 
                     // Force an immediate refresh so styledByName is up to date.
                     fishmod.cosmetic.RemoteNicks.forceRefresh();
-                    Misc.addChatMessage(Text.literal("§b[fmnicktest] §7triggered RemoteNicks.refresh()…"));
+                    Misc.addChatMessage(Component.literal("§b[fmnicktest] §7triggered RemoteNicks.refresh()…"));
 
                     // Re-dump the cache shortly after so the async fetch finishes first.
-                    mc.send(() -> new Thread(() -> {
+                    mc.schedule(() -> new Thread(() -> {
                         try { Thread.sleep(1200); } catch (InterruptedException ignored) {}
-                        mc.send(() -> {
+                        mc.schedule(() -> {
                             var cache = fishmod.cosmetic.RemoteNicks.snapshot();
-                            Misc.addChatMessage(Text.literal("§b[fmnicktest] §7styledByName cache: §f"
+                            Misc.addChatMessage(Component.literal("§b[fmnicktest] §7styledByName cache: §f"
                                     + cache.size() + " §7entries"));
                             int count = 0;
                             for (var e : cache.entrySet()) {
-                                net.minecraft.text.MutableText line = net.minecraft.text.Text.literal("§7  " + e.getKey() + " §8→ ").copy();
+                                net.minecraft.network.chat.MutableComponent line = net.minecraft.network.chat.Component.literal("§7  " + e.getKey() + " §8→ ").copy();
                                 line.append(e.getValue());
                                 Misc.addChatMessage(line);
-                                if (++count > 10) { Misc.addChatMessage(Text.literal("§8  (…more)")); break; }
+                                if (++count > 10) { Misc.addChatMessage(Component.literal("§8  (…more)")); break; }
                             }
                             if (cache.isEmpty()) {
-                                Misc.addChatMessage(Text.literal("§c[fmnicktest] cache is empty — chat rewrite has nothing to apply. Check See Others toggle."));
+                                Misc.addChatMessage(Component.literal("§c[fmnicktest] cache is empty — chat rewrite has nothing to apply. Check See Others toggle."));
                             } else {
-                                Misc.addChatMessage(Text.literal("§a[fmnicktest] cache populated. If chat still shows IGNs, the mixin path isn't covering Hypixel's chat handler — paste a chat screenshot."));
+                                Misc.addChatMessage(Component.literal("§a[fmnicktest] cache populated. If chat still shows IGNs, the mixin path isn't covering Hypixel's chat handler — paste a chat screenshot."));
                             }
                         });
                     }, "fmnicktest-dump").start());
@@ -359,43 +357,43 @@ public class FishModInit implements ModInitializer {
             dispatcher.register(ClientCommandManager.literal("fmitems")
                 .executes(ctx -> {
                     if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
-                    MinecraftClient mc = MinecraftClient.getInstance();
-                    if (mc.player == null || mc.world == null) {
-                        Misc.addChatMessage(Text.literal("§cNot in a world."));
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.player == null || mc.level == null) {
+                        Misc.addChatMessage(Component.literal("§cNot in a world."));
                         return Constants.SUCCESS;
                     }
                     boolean on = fishmod.utils.config.values.FishSettings.remoteItemsEnabled;
                     var ownKeys = fishmod.features.ItemCustomizer.debugKeys();
-                    Misc.addChatMessage(Text.literal("§b[fmitems] §7See Others' Items: §f" + on
+                    Misc.addChatMessage(Component.literal("§b[fmitems] §7See Others' Items: §f" + on
                             + " §8|§7 your customs: §f" + ownKeys.size()));
-                    for (String k : ownKeys) Misc.addChatMessage(Text.literal("§7  your key §8→ §f" + k));
+                    for (String k : ownKeys) Misc.addChatMessage(Component.literal("§7  your key §8→ §f" + k));
 
                     fishmod.features.ItemCustomizer.uploadOwn();
                     fishmod.cosmetic.RemoteItems.forceRefresh();
-                    Misc.addChatMessage(Text.literal("§b[fmitems] §7re-uploaded own + forced sync…"));
+                    Misc.addChatMessage(Component.literal("§b[fmitems] §7re-uploaded own + forced sync…"));
 
                     new Thread(() -> {
                         try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
-                        mc.send(() -> {
+                        mc.schedule(() -> {
                             var loaded = fishmod.cosmetic.RemoteItems.snapshotKeys();
-                            Misc.addChatMessage(Text.literal("§b[fmitems] §7remote payloads loaded: §f"
+                            Misc.addChatMessage(Component.literal("§b[fmitems] §7remote payloads loaded: §f"
                                     + loaded.size() + " §7player(s)"));
                             int shown = 0;
-                            for (net.minecraft.entity.player.PlayerEntity p : mc.world.getPlayers()) {
+                            for (net.minecraft.world.entity.player.Player p : mc.level.players()) {
                                 if (p == mc.player) continue;
-                                String u = p.getUuid().toString().replace("-", "");
+                                String u = p.getUUID().toString().replace("-", "");
                                 java.util.Set<String> customs = loaded.get(u);
-                                net.minecraft.item.ItemStack held = p.getEquippedStack(net.minecraft.entity.EquipmentSlot.MAINHAND);
+                                net.minecraft.world.item.ItemStack held = p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND);
                                 String heldVanilla = fishmod.features.ItemCustomizer.vanillaId(held);
                                 boolean match = customs != null && heldVanilla != null && customs.contains(heldVanilla);
-                                Misc.addChatMessage(Text.literal("§7  " + p.getGameProfile().name()
+                                Misc.addChatMessage(Component.literal("§7  " + p.getGameProfile().name()
                                         + " §8| customs:§f" + (customs == null ? 0 : customs.size())
                                         + " §8| held:§f" + heldVanilla
                                         + " §8| match:" + (match ? "§a✔" : "§c✘")));
-                                if (++shown >= 8) { Misc.addChatMessage(Text.literal("§8  (…more)")); break; }
+                                if (++shown >= 8) { Misc.addChatMessage(Component.literal("§8  (…more)")); break; }
                             }
                             if (loaded.isEmpty())
-                                Misc.addChatMessage(Text.literal("§c[fmitems] no remote customs fetched — nobody nearby has uploaded (their \"See Others' Items\" may be off, or they haven't customized anything)."));
+                                Misc.addChatMessage(Component.literal("§c[fmitems] no remote customs fetched — nobody nearby has uploaded (their \"See Others' Items\" may be off, or they haven't customized anything)."));
                         });
                     }, "fmitems-dump").start();
                     return Constants.SUCCESS;
@@ -404,12 +402,12 @@ public class FishModInit implements ModInitializer {
             dispatcher.register(ClientCommandManager.literal("fmchping")
                 .executes(ctx -> {
                     if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
-                    MinecraftClient mc = MinecraftClient.getInstance();
-                    Misc.addChatMessage(Text.literal("§b[fmchping] §7Pinging worker…"));
-                    fishmod.features.challenges.ChallengeApi.pingWorker((status, body) -> mc.send(() -> {
-                        if (status == 200) Misc.addChatMessage(Text.literal("§a[fmchping] §7status=§a200 §7body=§f" + body));
-                        else if (status == -1) Misc.addChatMessage(Text.literal("§c[fmchping] network error: §7" + body));
-                        else Misc.addChatMessage(Text.literal("§c[fmchping] §7status=§c" + status + " §7body=§f" + body));
+                    Minecraft mc = Minecraft.getInstance();
+                    Misc.addChatMessage(Component.literal("§b[fmchping] §7Pinging worker…"));
+                    fishmod.features.challenges.ChallengeApi.pingWorker((status, body) -> mc.schedule(() -> {
+                        if (status == 200) Misc.addChatMessage(Component.literal("§a[fmchping] §7status=§a200 §7body=§f" + body));
+                        else if (status == -1) Misc.addChatMessage(Component.literal("§c[fmchping] network error: §7" + body));
+                        else Misc.addChatMessage(Component.literal("§c[fmchping] §7status=§c" + status + " §7body=§f" + body));
                     }));
                     return Constants.SUCCESS;
                 })
@@ -418,16 +416,16 @@ public class FishModInit implements ModInitializer {
                 .executes(ctx -> {
                     if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
                     String cur = fishmod.utils.config.values.FishSettings.challengeWorkerOverride;
-                    Misc.addChatMessage(Text.literal("§b[fmchworker] §7current: §f"
+                    Misc.addChatMessage(Component.literal("§b[fmchworker] §7current: §f"
                             + (cur == null || cur.isBlank() ? "(default)" : cur)));
-                    Misc.addChatMessage(Text.literal("§7Usage: §f/fmchworker <url> §7| §f/fmchworker reset"));
+                    Misc.addChatMessage(Component.literal("§7Usage: §f/fmchworker <url> §7| §f/fmchworker reset"));
                     return Constants.SUCCESS;
                 })
                 .then(ClientCommandManager.literal("reset").executes(ctx -> {
                     if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
                     fishmod.utils.config.values.FishSettings.challengeWorkerOverride = "";
                     fishmod.utils.config.FishConfig.manager.save();
-                    Misc.addChatMessage(Text.literal("§a[fmchworker] reset — using default worker."));
+                    Misc.addChatMessage(Component.literal("§a[fmchworker] reset — using default worker."));
                     return Constants.SUCCESS;
                 }))
                 .then(ClientCommandManager.argument("url", StringArgumentType.greedyString()).executes(ctx -> {
@@ -435,36 +433,36 @@ public class FishModInit implements ModInitializer {
                     String url = StringArgumentType.getString(ctx, "url").trim();
                     fishmod.utils.config.values.FishSettings.challengeWorkerOverride = url;
                     fishmod.utils.config.FishConfig.manager.save();
-                    Misc.addChatMessage(Text.literal("§a[fmchworker] override set: §f" + url));
+                    Misc.addChatMessage(Component.literal("§a[fmchworker] override set: §f" + url));
                     return Constants.SUCCESS;
                 }))
             );
             dispatcher.register(ClientCommandManager.literal("fmlbtest")
                 .executes(ctx -> {
                     if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
-                    MinecraftClient mc = MinecraftClient.getInstance();
+                    Minecraft mc = Minecraft.getInstance();
                     if (mc.player == null) return Constants.SUCCESS;
-                    String uuid = mc.player.getUuid().toString().replace("-", "");
+                    String uuid = mc.player.getUUID().toString().replace("-", "");
                     String name = fishmod.features.challenges.ChallengeApi.displayName();
-                    Misc.addChatMessage(Text.literal("§b[lbtest] §7Submitting test score…"));
+                    Misc.addChatMessage(Component.literal("§b[lbtest] §7Submitting test score…"));
                     fishmod.features.challenges.ChallengeApi.submitScore(
                             uuid, name, "test-" + System.currentTimeMillis(),
                             fishmod.features.challenges.Tier.DAILY, 1, 0,
-                            (ok, total, rank) -> mc.send(() -> {
-                                if (ok) Misc.addChatMessage(Text.literal("§a[lbtest] §7submit OK — newTotal=§a"
+                            (ok, total, rank) -> mc.schedule(() -> {
+                                if (ok) Misc.addChatMessage(Component.literal("§a[lbtest] §7submit OK — newTotal=§a"
                                         + total + " §7rank=§e#" + rank));
-                                else    Misc.addChatMessage(Text.literal("§c[lbtest] submit FAILED — §7"
+                                else    Misc.addChatMessage(Component.literal("§c[lbtest] submit FAILED — §7"
                                         + (fishmod.features.challenges.ChallengeApi.lastSubmitError.isEmpty()
                                             ? "unknown" : fishmod.features.challenges.ChallengeApi.lastSubmitError)));
-                                Misc.addChatMessage(Text.literal("§b[lbtest] §7Fetching leaderboard…"));
-                                fishmod.features.challenges.ChallengeApi.fetchLeaderboard(10, entries -> mc.send(() -> {
+                                Misc.addChatMessage(Component.literal("§b[lbtest] §7Fetching leaderboard…"));
+                                fishmod.features.challenges.ChallengeApi.fetchLeaderboard(10, entries -> mc.schedule(() -> {
                                     if (entries.isEmpty()) {
-                                        Misc.addChatMessage(Text.literal("§c[lbtest] leaderboard empty (or fetch failed — likely worker endpoint not deployed)"));
+                                        Misc.addChatMessage(Component.literal("§c[lbtest] leaderboard empty (or fetch failed — likely worker endpoint not deployed)"));
                                     } else {
-                                        Misc.addChatMessage(Text.literal("§a[lbtest] leaderboard returned §f" + entries.size() + " §7entries:"));
+                                        Misc.addChatMessage(Component.literal("§a[lbtest] leaderboard returned §f" + entries.size() + " §7entries:"));
                                         int i = 1;
                                         for (var e : entries) {
-                                            Misc.addChatMessage(Text.literal("§7  #" + i++ + " §f" + e.name + " §8— §a" + e.totalPoints + " §7pts"));
+                                            Misc.addChatMessage(Component.literal("§7  #" + i++ + " §f" + e.name + " §8— §a" + e.totalPoints + " §7pts"));
                                             if (i > 10) break;
                                         }
                                     }
@@ -477,24 +475,24 @@ public class FishModInit implements ModInitializer {
             // in fishmod.features.challenges.* and gated by FishSettings.challengesEnabled.
             dispatcher.register(ClientCommandManager.literal("streams")
                 .executes(ctx -> {
-                    MinecraftClient mc = MinecraftClient.getInstance();
-                    mc.send(() -> mc.setScreen(new fishmod.features.streams.StreamsScreen(mc.currentScreen)));
+                    Minecraft mc = Minecraft.getInstance();
+                    mc.schedule(() -> mc.setScreen(new fishmod.features.streams.StreamsScreen(mc.screen)));
                     return Constants.SUCCESS;
                 })
             );
             dispatcher.register(ClientCommandManager.literal("wiki")
                 .executes(ctx -> {
                     if (wikiUnavailable(ctx.getSource())) return Constants.SUCCESS;
-                    MinecraftClient mc = MinecraftClient.getInstance();
-                    mc.send(() -> mc.setScreen(new WikiScreen(mc.currentScreen, "")));
+                    Minecraft mc = Minecraft.getInstance();
+                    mc.schedule(() -> mc.setScreen(new WikiScreen(mc.screen, "")));
                     return Constants.SUCCESS;
                 })
                 .then(ClientCommandManager.argument("query", StringArgumentType.greedyString())
                     .executes(ctx -> {
                         if (wikiUnavailable(ctx.getSource())) return Constants.SUCCESS;
                         String query = StringArgumentType.getString(ctx, "query");
-                        MinecraftClient mc = MinecraftClient.getInstance();
-                        mc.send(() -> mc.setScreen(new WikiScreen(mc.currentScreen, query)));
+                        Minecraft mc = Minecraft.getInstance();
+                        mc.schedule(() -> mc.setScreen(new WikiScreen(mc.screen, query)));
                         return Constants.SUCCESS;
                     })
                 )
@@ -519,16 +517,16 @@ public class FishModInit implements ModInitializer {
                 .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
                     .executes(ctx -> {
                         String name = StringArgumentType.getString(ctx, "name");
-                        MinecraftClient mc = MinecraftClient.getInstance();
-                        if (mc.getNetworkHandler() != null) mc.getNetworkHandler().sendChatCommand("p kick " + name);
+                        Minecraft mc = Minecraft.getInstance();
+                        if (mc.getConnection() != null) mc.getConnection().sendCommand("p kick " + name);
                         return Constants.SUCCESS;
                     })
                 )
             );
             dispatcher.register(ClientCommandManager.literal("pw")
                 .executes(ctx -> {
-                    MinecraftClient mc = MinecraftClient.getInstance();
-                    if (mc.getNetworkHandler() != null) mc.getNetworkHandler().sendChatCommand("p warp");
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.getConnection() != null) mc.getConnection().sendCommand("p warp");
                     return Constants.SUCCESS;
                 })
             );
@@ -536,8 +534,8 @@ public class FishModInit implements ModInitializer {
                 .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
                     .executes(ctx -> {
                         String name = StringArgumentType.getString(ctx, "name");
-                        MinecraftClient mc = MinecraftClient.getInstance();
-                        if (mc.getNetworkHandler() != null) mc.getNetworkHandler().sendChatCommand("p transfer " + name);
+                        Minecraft mc = Minecraft.getInstance();
+                        if (mc.getConnection() != null) mc.getConnection().sendCommand("p transfer " + name);
                         return Constants.SUCCESS;
                     })
                 )
@@ -546,8 +544,8 @@ public class FishModInit implements ModInitializer {
                 .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
                     .executes(ctx -> {
                         String name = StringArgumentType.getString(ctx, "name");
-                        MinecraftClient mc = MinecraftClient.getInstance();
-                        if (mc.getNetworkHandler() != null) mc.getNetworkHandler().sendChatCommand("p promote " + name);
+                        Minecraft mc = Minecraft.getInstance();
+                        if (mc.getConnection() != null) mc.getConnection().sendCommand("p promote " + name);
                         return Constants.SUCCESS;
                     })
                 )
@@ -556,12 +554,12 @@ public class FishModInit implements ModInitializer {
 
             dispatcher.register(ClientCommandManager.literal("fmpet").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
-                MinecraftClient mc = MinecraftClient.getInstance();
-                mc.send(() -> {
-                    Misc.addChatMessage(Text.literal("§b--- Pet HUD ---"));
-                    Misc.addChatMessage(Text.literal("§7" + PetHud.debugState()));
-                    Misc.addChatMessage(Text.literal("§b--- Cooldown Overlay ---"));
-                    Misc.addChatMessage(Text.literal("§7" + CooldownOverlay.debugState()));
+                Minecraft mc = Minecraft.getInstance();
+                mc.schedule(() -> {
+                    Misc.addChatMessage(Component.literal("§b--- Pet HUD ---"));
+                    Misc.addChatMessage(Component.literal("§7" + PetHud.debugState()));
+                    Misc.addChatMessage(Component.literal("§b--- Cooldown Overlay ---"));
+                    Misc.addChatMessage(Component.literal("§7" + CooldownOverlay.debugState()));
                 });
                 return Constants.SUCCESS;
             }));
@@ -569,7 +567,7 @@ public class FishModInit implements ModInitializer {
             dispatcher.register(ClientCommandManager.literal("fmtts")
                 .executes(ctx -> {
                     boolean on = fishmod.utils.config.values.FishSettings.ttsEnabled;
-                    Misc.addChatMessage(Text.literal("§b[TTS] §7" + (on
+                    Misc.addChatMessage(Component.literal("§b[TTS] §7" + (on
                             ? "speaking a test line…" : "§eenable it in §f/fm §8> §7General §8> §7TTS Callouts §7first.")));
                     if (on) fishmod.utils.Tts.speak("Fish mod text to speech is working");
                     return Constants.SUCCESS;
@@ -582,7 +580,7 @@ public class FishModInit implements ModInitializer {
 
             dispatcher.register(ClientCommandManager.literal("fmbuddy").executes(context -> {
                 fishmod.features.DeskBuddy.cheer();
-                Misc.addChatMessage(Text.literal("§6[Desk-Buddy] §7" + (fishmod.utils.config.values.FishSettings.deskBuddyEnabled
+                Misc.addChatMessage(Component.literal("§6[Desk-Buddy] §7" + (fishmod.utils.config.values.FishSettings.deskBuddyEnabled
                         ? "§a\\(^o^)/ dancing!" : "§eenable it in §f/fm §8> §7Cosmetics §8> §7Desk-Buddy §7first.")));
                 return Constants.SUCCESS;
             }));
@@ -590,36 +588,36 @@ public class FishModInit implements ModInitializer {
             dispatcher.register(ClientCommandManager.literal("fmpetdump").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 PetHud.debugDumpPetLines = !PetHud.debugDumpPetLines;
-                Misc.addChatMessage(Text.literal("§b[fmpet] dump pet-related chat lines: §f" + PetHud.debugDumpPetLines));
+                Misc.addChatMessage(Component.literal("§b[fmpet] dump pet-related chat lines: §f" + PetHud.debugDumpPetLines));
                 return Constants.SUCCESS;
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmcddump").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 CooldownOverlay.debugDumpSound = !CooldownOverlay.debugDumpSound;
-                Misc.addChatMessage(Text.literal("§b[fmcd] dump cooldown sound events: §f" + CooldownOverlay.debugDumpSound));
+                Misc.addChatMessage(Component.literal("§b[fmcd] dump cooldown sound events: §f" + CooldownOverlay.debugDumpSound));
                 return Constants.SUCCESS;
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmblocks").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
-                MinecraftClient mc = MinecraftClient.getInstance();
-                mc.send(() -> {
-                    if (mc.player == null || mc.world == null) { Misc.addChatMessage(Text.literal("§cNo world")); return; }
-                    net.minecraft.util.math.BlockPos c = mc.player.getBlockPos();
+                Minecraft mc = Minecraft.getInstance();
+                mc.schedule(() -> {
+                    if (mc.player == null || mc.level == null) { Misc.addChatMessage(Component.literal("§cNo world")); return; }
+                    net.minecraft.core.BlockPos c = mc.player.blockPosition();
                     java.util.Map<String, Integer> counts = new java.util.HashMap<>();
                     int R = 7;
-                    net.minecraft.util.math.BlockPos.Mutable m = new net.minecraft.util.math.BlockPos.Mutable();
+                    net.minecraft.core.BlockPos.MutableBlockPos m = new net.minecraft.core.BlockPos.MutableBlockPos();
                     for (int dx = -R; dx <= R; dx++) for (int dy = -R; dy <= R; dy++) for (int dz = -R; dz <= R; dz++) {
                         m.set(c.getX() + dx, c.getY() + dy, c.getZ() + dz);
-                        net.minecraft.block.Block b = mc.world.getBlockState(m).getBlock();
-                        if (b == net.minecraft.block.Blocks.AIR) continue;
-                        String id = net.minecraft.registry.Registries.BLOCK.getId(b).toString();
+                        net.minecraft.world.level.block.Block b = mc.level.getBlockState(m).getBlock();
+                        if (b == net.minecraft.world.level.block.Blocks.AIR) continue;
+                        String id = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(b).toString();
                         counts.merge(id, 1, Integer::sum);
                     }
-                    Misc.addChatMessage(Text.literal("§b--- Blocks within " + R + " (top 20) ---"));
+                    Misc.addChatMessage(Component.literal("§b--- Blocks within " + R + " (top 20) ---"));
                     counts.entrySet().stream().sorted((a, b) -> b.getValue() - a.getValue()).limit(20)
-                        .forEach(e -> Misc.addChatMessage(Text.literal("§7" + e.getValue() + "x §f" + e.getKey())));
+                        .forEach(e -> Misc.addChatMessage(Component.literal("§7" + e.getValue() + "x §f" + e.getKey())));
                 });
                 return Constants.SUCCESS;
             }));
@@ -627,59 +625,59 @@ public class FishModInit implements ModInitializer {
             dispatcher.register(ClientCommandManager.literal("fmssdebug").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.features.dungeon.SimonSaysTracker.debug = !fishmod.features.dungeon.SimonSaysTracker.debug;
-                Misc.addChatMessage(Text.literal("§b[ssdbg] log Simon Says block transitions: §f" + fishmod.features.dungeon.SimonSaysTracker.debug));
+                Misc.addChatMessage(Component.literal("§b[ssdbg] log Simon Says block transitions: §f" + fishmod.features.dungeon.SimonSaysTracker.debug));
                 return Constants.SUCCESS;
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmseadump").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.features.fishing.SeaCreatureTracker.debugDump = !fishmod.features.fishing.SeaCreatureTracker.debugDump;
-                Misc.addChatMessage(Text.literal("§b[fmsea] dump unmatched fishing chat lines: §f" + fishmod.features.fishing.SeaCreatureTracker.debugDump));
+                Misc.addChatMessage(Component.literal("§b[fmsea] dump unmatched fishing chat lines: §f" + fishmod.features.fishing.SeaCreatureTracker.debugDump));
                 return Constants.SUCCESS;
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmslayerdump").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.features.slayer.SlayerAlerts.debugDump = !fishmod.features.slayer.SlayerAlerts.debugDump;
-                Misc.addChatMessage(Text.literal("§b[fmslayer] dump slayer chat lines: §f" + fishmod.features.slayer.SlayerAlerts.debugDump));
+                Misc.addChatMessage(Component.literal("§b[fmslayer] dump slayer chat lines: §f" + fishmod.features.slayer.SlayerAlerts.debugDump));
                 return Constants.SUCCESS;
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmnuc").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
-                fishmod.utils.HypixelApi.dumpNucleus(MinecraftClient.getInstance());
+                fishmod.utils.HypixelApi.dumpNucleus(Minecraft.getInstance());
                 return Constants.SUCCESS;
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmgarden").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
-                fishmod.utils.HypixelApi.dumpGarden(MinecraftClient.getInstance());
+                fishmod.utils.HypixelApi.dumpGarden(Minecraft.getInstance());
                 return Constants.SUCCESS;
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmprofile").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
-                fishmod.utils.HypixelApi.dumpEconomy(MinecraftClient.getInstance());
+                fishmod.utils.HypixelApi.dumpEconomy(Minecraft.getInstance());
                 return Constants.SUCCESS;
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmtabdump").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
-                MinecraftClient mc = MinecraftClient.getInstance();
-                mc.send(() -> {
-                    if (mc.getNetworkHandler() == null) { Misc.addChatMessage(Text.literal("§cNo network")); return; }
-                    Misc.addChatMessage(Text.literal("§b--- Tab entries (non-empty) ---"));
+                Minecraft mc = Minecraft.getInstance();
+                mc.schedule(() -> {
+                    if (mc.getConnection() == null) { Misc.addChatMessage(Component.literal("§cNo network")); return; }
+                    Misc.addChatMessage(Component.literal("§b--- Tab entries (non-empty) ---"));
                     int n = 0;
-                    for (net.minecraft.client.network.PlayerListEntry e : mc.getNetworkHandler().getPlayerList()) {
-                        if (e.getDisplayName() == null) continue;
-                        String s = e.getDisplayName().getString().replaceAll("§.", "").trim();
+                    for (net.minecraft.client.multiplayer.PlayerInfo e : mc.getConnection().getOnlinePlayers()) {
+                        if (e.getTabListDisplayName() == null) continue;
+                        String s = e.getTabListDisplayName().getString().replaceAll("§.", "").trim();
                         if (s.isEmpty()) continue;
                         if (s.toLowerCase().contains("pet") || s.contains("Lvl") || s.contains("XP") || s.contains("/")) {
-                            Misc.addChatMessage(Text.literal("§7" + s));
+                            Misc.addChatMessage(Component.literal("§7" + s));
                             if (++n > 30) break;
                         }
                     }
-                    Misc.addChatMessage(Text.literal("§b--- End (" + n + ") ---"));
+                    Misc.addChatMessage(Component.literal("§b--- End (" + n + ") ---"));
                 });
                 return Constants.SUCCESS;
             }));
@@ -687,126 +685,126 @@ public class FishModInit implements ModInitializer {
             dispatcher.register(ClientCommandManager.literal("fmskilldump").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.features.SkillTracker.debugDump = !fishmod.features.SkillTracker.debugDump;
-                Misc.addChatMessage(Text.literal("§b[skill] dump raw action bar: §f" + fishmod.features.SkillTracker.debugDump));
+                Misc.addChatMessage(Component.literal("§b[skill] dump raw action bar: §f" + fishmod.features.SkillTracker.debugDump));
                 return Constants.SUCCESS;
             }));
 
             dispatcher.register(ClientCommandManager.literal("fmdbg").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
-                MinecraftClient mc = MinecraftClient.getInstance();
-                mc.send(() -> {
-                    Misc.addChatMessage(Text.literal("§b--- FishMod Debug ---"));
-                    Misc.addChatMessage(Text.literal("§7Location: §f" + Location.getCurrentLocation()));
-                    Misc.addChatMessage(Text.literal("§7inSkyblock: §f" + Location.inSkyblock()));
-                    Misc.addChatMessage(Text.literal("§7inDungeon: §f" + Location.inDungeon()));
-                    Misc.addChatMessage(Text.literal("§7showPuzzles: §f" + fishmod.utils.config.values.FishSettings.showPuzzles));
-                    Misc.addChatMessage(Text.literal("§7Puzzle list (" + FishPuzzleDisplay.getPuzzles().size() + "): §f" + FishPuzzleDisplay.getPuzzles()));
-                    try { Misc.addChatMessage(Text.literal("§7Phase.runStarted: §f" + Phase.runStarted())); } catch (Throwable t) { Misc.addChatMessage(Text.literal("§cPhase.runStarted ERR: " + t.getMessage())); }
-                    try { Misc.addChatMessage(Text.literal("§7Phase.enableSplits: §f" + Phase.enableSplits)); } catch (Throwable t) { Misc.addChatMessage(Text.literal("§cPhase.enableSplits ERR: " + t.getMessage())); }
-                    try { Misc.addChatMessage(Text.literal("§7blade loaded: §f" + FabricLoader.getInstance().isModLoaded("blade-addons"))); } catch (Throwable t) { Misc.addChatMessage(Text.literal("§cloader ERR")); }
+                Minecraft mc = Minecraft.getInstance();
+                mc.schedule(() -> {
+                    Misc.addChatMessage(Component.literal("§b--- FishMod Debug ---"));
+                    Misc.addChatMessage(Component.literal("§7Location: §f" + Location.getCurrentLocation()));
+                    Misc.addChatMessage(Component.literal("§7inSkyblock: §f" + Location.inSkyblock()));
+                    Misc.addChatMessage(Component.literal("§7inDungeon: §f" + Location.inDungeon()));
+                    Misc.addChatMessage(Component.literal("§7showPuzzles: §f" + fishmod.utils.config.values.FishSettings.showPuzzles));
+                    Misc.addChatMessage(Component.literal("§7Puzzle list (" + FishPuzzleDisplay.getPuzzles().size() + "): §f" + FishPuzzleDisplay.getPuzzles()));
+                    try { Misc.addChatMessage(Component.literal("§7Phase.runStarted: §f" + Phase.runStarted())); } catch (Throwable t) { Misc.addChatMessage(Component.literal("§cPhase.runStarted ERR: " + t.getMessage())); }
+                    try { Misc.addChatMessage(Component.literal("§7Phase.enableSplits: §f" + Phase.enableSplits)); } catch (Throwable t) { Misc.addChatMessage(Component.literal("§cPhase.enableSplits ERR: " + t.getMessage())); }
+                    try { Misc.addChatMessage(Component.literal("§7blade loaded: §f" + FabricLoader.getInstance().isModLoaded("blade-addons"))); } catch (Throwable t) { Misc.addChatMessage(Component.literal("§cloader ERR")); }
                     // Dump tab list
-                    ClientPlayNetworkHandler handler = mc.getNetworkHandler();
+                    ClientPacketListener handler = mc.getConnection();
                     if (handler == null) {
-                        Misc.addChatMessage(Text.literal("§cNo network handler"));
+                        Misc.addChatMessage(Component.literal("§cNo network handler"));
                     } else {
                         int total = 0, nullName = 0;
-                        for (PlayerListEntry e : handler.getPlayerList()) {
+                        for (PlayerInfo e : handler.getOnlinePlayers()) {
                             total++;
-                            if (e.getDisplayName() == null) { nullName++; continue; }
-                            String raw = e.getDisplayName().getString();
+                            if (e.getTabListDisplayName() == null) { nullName++; continue; }
+                            String raw = e.getTabListDisplayName().getString();
                             String clean = raw.replaceAll("§.", "").trim();
                             if (!clean.isEmpty())
-                                Misc.addChatMessage(Text.literal("§8TAB: §7" + clean));
+                                Misc.addChatMessage(Component.literal("§8TAB: §7" + clean));
                         }
-                        Misc.addChatMessage(Text.literal("§7Tab entries: §f" + total + " (§c" + nullName + " null§7)"));
+                        Misc.addChatMessage(Component.literal("§7Tab entries: §f" + total + " (§c" + nullName + " null§7)"));
                     }
                     // Dump scoreboard sidebar
-                    if (mc.world != null) {
-                        net.minecraft.scoreboard.Scoreboard sb = mc.world.getScoreboard();
-                        net.minecraft.scoreboard.ScoreboardObjective sidebar = sb.getObjectiveForSlot(net.minecraft.scoreboard.ScoreboardDisplaySlot.SIDEBAR);
+                    if (mc.level != null) {
+                        net.minecraft.world.scores.Scoreboard sb = mc.level.getScoreboard();
+                        net.minecraft.world.scores.Objective sidebar = sb.getDisplayObjective(net.minecraft.world.scores.DisplaySlot.SIDEBAR);
                         if (sidebar == null) {
-                            Misc.addChatMessage(Text.literal("§7Sidebar: §cnone"));
+                            Misc.addChatMessage(Component.literal("§7Sidebar: §cnone"));
                         } else {
-                            Misc.addChatMessage(Text.literal("§7Sidebar obj: §f" + sidebar.getDisplayName().getString()));
-                            for (net.minecraft.scoreboard.ScoreboardEntry entry : sb.getScoreboardEntries(sidebar)) {
+                            Misc.addChatMessage(Component.literal("§7Sidebar obj: §f" + sidebar.getDisplayName().getString()));
+                            for (net.minecraft.world.scores.PlayerScoreEntry entry : sb.listPlayerScores(sidebar)) {
                                 String owner = entry.owner();
-                                net.minecraft.scoreboard.Team team = sb.getScoreHolderTeam(owner);
+                                net.minecraft.world.scores.PlayerTeam team = sb.getPlayersTeam(owner);
                                 String line = team != null
-                                    ? team.getPrefix().getString() + owner + team.getSuffix().getString()
-                                    : entry.name().getString();
+                                    ? team.getPlayerPrefix().getString() + owner + team.getPlayerSuffix().getString()
+                                    : entry.ownerName().getString();
                                 String clean = line.replaceAll("§.", "").trim();
                                 if (!clean.isEmpty())
-                                    Misc.addChatMessage(Text.literal("§8SB: §7" + clean));
+                                    Misc.addChatMessage(Component.literal("§8SB: §7" + clean));
                             }
                         }
                     }
-                    Misc.addChatMessage(Text.literal("§b--- End Debug ---"));
+                    Misc.addChatMessage(Component.literal("§b--- End Debug ---"));
                 });
                 return Constants.SUCCESS;
             }).then(ClientCommandManager.argument("sub", StringArgumentType.greedyString())
                 .executes(ctx -> {
                     String arg = StringArgumentType.getString(ctx, "sub");
-                    MinecraftClient mc = MinecraftClient.getInstance();
+                    Minecraft mc = Minecraft.getInstance();
                     String[] parts = arg.trim().split("\\s+", 2);
                     if (parts[0].equals("cprice")) {
                         if (parts.length < 2) {
-                            mc.send(() -> Misc.addChatMessage(Text.literal("§cUsage: /fmdbg cprice <ITEM_ID>")));
+                            mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUsage: /fmdbg cprice <ITEM_ID>")));
                             return Constants.SUCCESS;
                         }
                         String pid = parts[1].trim().toUpperCase();
                         fishmod.features.croesus.CroesusPrices.refreshIfStale().whenComplete((v, t) ->
-                            mc.send(() -> Misc.addChatMessage(Text.literal("§b" + pid + " §7→ §f"
+                            mc.schedule(() -> Misc.addChatMessage(Component.literal("§b" + pid + " §7→ §f"
                                 + fishmod.features.croesus.CroesusPrices.debugSource(pid)))));
                         return Constants.SUCCESS;
                     }
                     if (parts[0].equals("mp")) {
                         String ign = parts.length > 1 ? parts[1] : (mc.player != null ? mc.player.getName().getString() : null);
-                        if (ign == null) { mc.send(() -> Misc.addChatMessage(Text.literal("§cUsage: /fmdbg mp <ign>"))); return Constants.SUCCESS; }
+                        if (ign == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUsage: /fmdbg mp <ign>"))); return Constants.SUCCESS; }
                         final String finalIgn = ign;
                         fishmod.utils.HypixelApi.getByName(mc, ign, data ->
-                            mc.send(() -> Misc.addChatMessage(Text.literal("§b" + finalIgn + " magicalPower=§f" + data.magicalPower))));
+                            mc.schedule(() -> Misc.addChatMessage(Component.literal("§b" + finalIgn + " magicalPower=§f" + data.magicalPower))));
                         return Constants.SUCCESS;
                     }
                     if (parts[0].equals("mpraw")) {
                         String ign = parts.length > 1 ? parts[1] : (mc.player != null ? mc.player.getName().getString() : null);
-                        if (ign == null) { mc.send(() -> Misc.addChatMessage(Text.literal("§cUsage: /fmdbg mpraw <ign>"))); return Constants.SUCCESS; }
+                        if (ign == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUsage: /fmdbg mpraw <ign>"))); return Constants.SUCCESS; }
                         fishmod.utils.HypixelApi.dumpMemberKeys(mc, ign);
                         return Constants.SUCCESS;
                     }
                     if (parts[0].equals("col")) {
                         String ign = parts.length > 1 ? parts[1] : (mc.player != null ? mc.player.getName().getString() : null);
-                        if (ign == null) { mc.send(() -> Misc.addChatMessage(Text.literal("§cUsage: /fmdbg col <ign>"))); return Constants.SUCCESS; }
+                        if (ign == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUsage: /fmdbg col <ign>"))); return Constants.SUCCESS; }
                         final String finalIgn = ign;
-                        fishmod.utils.HypixelApi.getByName(mc, ign, data -> mc.send(() -> {
+                        fishmod.utils.HypixelApi.getByName(mc, ign, data -> mc.schedule(() -> {
                             long cataTotal = 0; for (long t : data.cataTimes) cataTotal += t;
                             long masterTotal = 0; for (int i = 1; i <= 7; i++) masterTotal += data.masterTimes[i];
                             long col = cataTotal + masterTotal * 2;
-                            Misc.addChatMessage(Text.literal("§b--- Collection debug: " + finalIgn + " ---"));
+                            Misc.addChatMessage(Component.literal("§b--- Collection debug: " + finalIgn + " ---"));
                             StringBuilder cata = new StringBuilder("§7cata: ");
                             for (int i = 0; i <= 7; i++) cata.append(i == 0 ? "E" : "F" + i).append("=").append(data.cataTimes[i]).append(" ");
-                            Misc.addChatMessage(Text.literal(cata.toString()));
+                            Misc.addChatMessage(Component.literal(cata.toString()));
                             StringBuilder master = new StringBuilder("§7master: ");
                             for (int i = 1; i <= 7; i++) master.append("M").append(i).append("=").append(data.masterTimes[i]).append(" ");
-                            Misc.addChatMessage(Text.literal(master.toString()));
-                            Misc.addChatMessage(Text.literal("§7cataTotal=§f" + cataTotal + " §7masterTotal=§f" + masterTotal));
-                            Misc.addChatMessage(Text.literal("§7computed col=§f" + col + " §7(cata×1 + master×2)"));
+                            Misc.addChatMessage(Component.literal(master.toString()));
+                            Misc.addChatMessage(Component.literal("§7cataTotal=§f" + cataTotal + " §7masterTotal=§f" + masterTotal));
+                            Misc.addChatMessage(Component.literal("§7computed col=§f" + col + " §7(cata×1 + master×2)"));
                         }));
                         return Constants.SUCCESS;
                     }
                     if (parts[0].equals("runs")) {
                         String ign = parts.length > 1 ? parts[1] : (mc.player != null ? mc.player.getName().getString() : null);
-                        if (ign == null) { mc.send(() -> Misc.addChatMessage(Text.literal("§cUsage: /fmdbg runs <ign>"))); return Constants.SUCCESS; }
+                        if (ign == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUsage: /fmdbg runs <ign>"))); return Constants.SUCCESS; }
                         final String finalIgn = ign;
-                        fishmod.utils.HypixelApi.getByName(mc, ign, data -> mc.send(() -> {
-                            Misc.addChatMessage(Text.literal("§b--- Runs debug: " + finalIgn + " ---"));
-                            Misc.addChatMessage(Text.literal("§7totalRuns: §f" + data.totalRuns));
+                        fishmod.utils.HypixelApi.getByName(mc, ign, data -> mc.schedule(() -> {
+                            Misc.addChatMessage(Component.literal("§b--- Runs debug: " + finalIgn + " ---"));
+                            Misc.addChatMessage(Component.literal("§7totalRuns: §f" + data.totalRuns));
                             StringBuilder cata = new StringBuilder("§7cataTimes: ");
                             for (int i = 0; i <= 7; i++) cata.append("F").append(i == 0 ? "E" : String.valueOf(i)).append("=").append(data.cataTimes[i]).append(" ");
-                            Misc.addChatMessage(Text.literal(cata.toString()));
+                            Misc.addChatMessage(Component.literal(cata.toString()));
                             StringBuilder master = new StringBuilder("§7masterTimes: ");
                             for (int i = 1; i <= 7; i++) master.append("M").append(i).append("=").append(data.masterTimes[i]).append(" ");
-                            Misc.addChatMessage(Text.literal(master.toString()));
-                            Misc.addChatMessage(Text.literal("§b--- End ---"));
+                            Misc.addChatMessage(Component.literal(master.toString()));
+                            Misc.addChatMessage(Component.literal("§b--- End ---"));
                         }));
                     }
                     return Constants.SUCCESS;
@@ -815,11 +813,11 @@ public class FishModInit implements ModInitializer {
 
             // ── Local lookup /commands (native tab-complete; result shown in your own chat) ──
             SuggestionProvider<FabricClientCommandSource> playerSuggest = (c, b) -> {
-                MinecraftClient mc = MinecraftClient.getInstance();
-                if (mc.getNetworkHandler() != null) {
+                Minecraft mc = Minecraft.getInstance();
+                if (mc.getConnection() != null) {
                     String rem = b.getRemaining().toLowerCase();
                     java.util.Set<String> seen = new java.util.HashSet<>();
-                    for (PlayerListEntry e : mc.getNetworkHandler().getPlayerList()) {
+                    for (PlayerInfo e : mc.getConnection().getOnlinePlayers()) {
                         String n = e.getProfile().name();
                         if (n == null || n.isBlank() || !seen.add(n.toLowerCase())) continue;
                         if (n.toLowerCase().startsWith(rem)) b.suggest(n);
@@ -889,13 +887,13 @@ public class FishModInit implements ModInitializer {
                 .then(ClientCommandManager.argument("dest", StringArgumentType.greedyString())
                     .executes(c -> {
                         String dest = StringArgumentType.getString(c, "dest");
-                        MinecraftClient mc = MinecraftClient.getInstance();
+                        Minecraft mc = Minecraft.getInstance();
                         // Send the command packet DIRECTLY, bypassing Fabric's client command
                         // dispatcher — otherwise it re-matches our /warp literal and infinitely
                         // recurses into this same lambda, blowing the stack.
-                        if (mc.player != null && mc.player.networkHandler != null)
-                            mc.player.networkHandler.sendPacket(
-                                new net.minecraft.network.packet.c2s.play.CommandExecutionC2SPacket("warp " + dest));
+                        if (mc.player != null && mc.player.connection != null)
+                            mc.player.connection.send(
+                                new net.minecraft.network.protocol.game.ServerboundChatCommandPacket("warp " + dest));
                         return Constants.SUCCESS;
                     })));
         });
@@ -1037,7 +1035,7 @@ public class FishModInit implements ModInitializer {
 
         // Tracker overlay (reset button) for HandledScreens — fires after full render chain
         ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
-            if (!(screen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?>)) return;
+            if (!(screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>)) return;
             net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.afterRender(screen).register((s, ctx, mx, my, delta) -> {
                 SessionStats.renderInScreen(ctx, mx, my);
                 PowderTracker.renderInScreen(ctx, mx, my);

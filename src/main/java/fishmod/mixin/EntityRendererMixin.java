@@ -6,11 +6,11 @@ import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.config.values.Visual;
 import fishmod.utils.data.EntityUtil;
 import fishmod.utils.dungeon.DungeonClass;
-import net.minecraft.client.network.OtherClientPlayerEntity;
-import net.minecraft.client.render.entity.EntityRenderer;
-import net.minecraft.client.render.entity.state.EntityRenderState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.client.player.RemotePlayer;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -19,49 +19,49 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(EntityRenderer.class)
 public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> {
 
-    @Inject(method = "updateRenderState", at = @At("TAIL"))
+    @Inject(method = "extractRenderState", at = @At("TAIL"))
     public void hideFire(T entity, S state, float tickProgress, CallbackInfo ci) {
 
-        if (Dungeons.hideBlazeNameTag && state.displayName != null) {
-            if (state.displayName.getString().contains("Blaze")) {
-                state.displayName = null;
+        if (Dungeons.hideBlazeNameTag && state.nameTag != null) {
+            if (state.nameTag.getString().contains("Blaze")) {
+                state.nameTag = null;
             }
 
         }
-        if (entity instanceof OtherClientPlayerEntity player && Dungeons.renderClassName && Location.inDungeon()) {
+        if (entity instanceof RemotePlayer player && Dungeons.renderClassName && Location.inDungeon()) {
             if (DungeonClass.isTeammate(player)) {
-                state.displayName = null;
+                state.nameTag = null;
             }
         }
 
         // Stash this player's custom render size on the state so PlayerEntityRendererScaleMixin can
         // apply it inside scale(). Own size shows locally; others' only when sharing is on.
-        if (entity instanceof PlayerEntity sized) {
+        if (entity instanceof Player sized) {
             float[] sc = fishmod.cosmetic.PlayerSize.scaleFor(sized);
             ((fishmod.cosmetic.ScaleHolder) state).fishmod$setScale(sc[0], sc[1], sc[2]);
             // Keep the nametag above the head when the model is taller. The model scale pivots at the
             // feet, so a Y-scaled model grows upward and would clip through its fixed-height label.
             // Raise the label by the extra model height (height × (scaleY − 1)). Only Y matters — the
             // overall tag size is unchanged; X/Z (width/depth) never move it.
-            if (sc[1] != 1.0f && state.nameLabelPos != null) {
-                state.nameLabelPos = state.nameLabelPos.add(0, sized.getHeight() * (sc[1] - 1.0), 0);
+            if (sc[1] != 1.0f && state.nameTagAttachment != null) {
+                state.nameTagAttachment = state.nameTagAttachment.add(0, sized.getBbHeight() * (sc[1] - 1.0), 0);
             }
         }
 
         if (Visual.hideEntityFire) {
-            state.onFire = false;
-        } else if (entity instanceof PlayerEntity player && Visual.hideFireInf5) {
+            state.displayFireAnimation = false;
+        } else if (entity instanceof Player player && Visual.hideFireInf5) {
             if (EntityUtil.isClientPlayer(player)) {
-                state.onFire = false;
+                state.displayFireAnimation = false;
             }
         }
 
         // Lower the local player's own nametag. The position lives in the render state, which the
         // label renderer reads — so this works even though the text SIZE is fixed by ImmediatelyFast.
-        if (entity instanceof PlayerEntity p && EntityUtil.isClientPlayer(p)
+        if (entity instanceof Player p && EntityUtil.isClientPlayer(p)
                 && FishSettings.nickPreviewEnabled && FishSettings.nickPreviewYOffset != 0.0
-                && state.nameLabelPos != null) {
-            state.nameLabelPos = state.nameLabelPos.add(0, FishSettings.nickPreviewYOffset, 0);
+                && state.nameTagAttachment != null) {
+            state.nameTagAttachment = state.nameTagAttachment.add(0, FishSettings.nickPreviewYOffset, 0);
         }
     }
 }

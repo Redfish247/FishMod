@@ -2,7 +2,7 @@ package fishmod.mixin;
 
 import fishmod.features.item.ItemRarity;
 import fishmod.features.item.ItemRarityHolder;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 

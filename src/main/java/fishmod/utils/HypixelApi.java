@@ -7,14 +7,13 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
+import net.minecraft.client.Minecraft;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtSizeTracker;
-import net.minecraft.text.Text;
-
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -297,13 +296,13 @@ public class HypixelApi {
             JsonObject inv = member.getAsJsonObject("inventory");
 
             // Search main inv + echest for Ragnarock Axe / Terminator
-            List<NbtCompound> mainItems  = parseSlots(inv, "inv_contents");
-            List<NbtCompound> echestItems = parseSlots(inv, "ender_chest_contents");
-            List<NbtCompound> allItems = new ArrayList<>(mainItems.size() + echestItems.size());
-            for (NbtCompound c : mainItems)   if (c != null) allItems.add(c);
-            for (NbtCompound c : echestItems) if (c != null) allItems.add(c);
+            List<CompoundTag> mainItems  = parseSlots(inv, "inv_contents");
+            List<CompoundTag> echestItems = parseSlots(inv, "ender_chest_contents");
+            List<CompoundTag> allItems = new ArrayList<>(mainItems.size() + echestItems.size());
+            for (CompoundTag c : mainItems)   if (c != null) allItems.add(c);
+            for (CompoundTag c : echestItems) if (c != null) allItems.add(c);
 
-            for (NbtCompound item : allItems) {
+            for (CompoundTag item : allItems) {
                 String id = getItemId(item);
                 if (result.ragnarockChimera < 0 && "RAGNAROCK_AXE".equals(id))
                     result.ragnarockChimera = getEnchantLevel(item, "chimera");
@@ -312,7 +311,7 @@ public class HypixelApi {
             }
 
             // Armor stars: inv_armor slots [0=boots, 1=legs, 2=chest, 3=head]
-            List<NbtCompound> armorSlots = parseSlots(inv, "inv_armor");
+            List<CompoundTag> armorSlots = parseSlots(inv, "inv_armor");
             if (!armorSlots.isEmpty()) {
                 result.armorStars = new int[]{
                     getStarCount(armorSlots.size() > 3 ? armorSlots.get(3) : null), // H
@@ -323,7 +322,7 @@ public class HypixelApi {
             }
 
             // Equipment stars: equipment_contents [0=necklace, 1=cloak, 2=belt, 3=gloves]
-            List<NbtCompound> equipSlots = parseSlots(inv, "equipment_contents");
+            List<CompoundTag> equipSlots = parseSlots(inv, "equipment_contents");
             if (!equipSlots.isEmpty()) {
                 result.equipStars = new int[]{
                     getStarCount(equipSlots.size() > 0 ? equipSlots.get(0) : null), // N
@@ -335,7 +334,7 @@ public class HypixelApi {
         } catch (Exception ignored) {}
     }
 
-    private static List<NbtCompound> parseSlots(JsonObject inventory, String key) {
+    private static List<CompoundTag> parseSlots(JsonObject inventory, String key) {
         try {
             if (!inventory.has(key)) return Collections.emptyList();
             JsonObject slot = inventory.getAsJsonObject(key);
@@ -343,13 +342,13 @@ public class HypixelApi {
             String b64 = slot.get("data").getAsString();
             if (b64.isEmpty()) return Collections.emptyList();
             byte[] bytes = java.util.Base64.getDecoder().decode(b64);
-            NbtCompound root = NbtIo.readCompressed(new ByteArrayInputStream(bytes), NbtSizeTracker.ofUnlimitedBytes());
-            Optional<NbtList> listOpt = root.getList("i");
-            NbtList items = listOpt.orElse(null);
+            CompoundTag root = NbtIo.readCompressed(new ByteArrayInputStream(bytes), NbtAccounter.unlimitedHeap());
+            Optional<ListTag> listOpt = root.getList("i");
+            ListTag items = listOpt.orElse(null);
             if (items == null) return Collections.emptyList();
-            List<NbtCompound> out = new ArrayList<>(items.size());
+            List<CompoundTag> out = new ArrayList<>(items.size());
             for (int i = 0; i < items.size(); i++) {
-                NbtCompound c = items.getCompound(i).orElse(null);
+                CompoundTag c = items.getCompound(i).orElse(null);
                 out.add(c != null && !c.isEmpty() ? c : null);
             }
             return out;
@@ -358,59 +357,59 @@ public class HypixelApi {
         }
     }
 
-    private static NbtCompound getTag(NbtCompound item) {
+    private static CompoundTag getTag(CompoundTag item) {
         if (item == null) return null;
         try {
-            NbtElement el = item.get("tag");
+            Tag el = item.get("tag");
             if (el == null) return null;
             return el.asCompound().orElse(null);
         } catch (Exception e) { return null; }
     }
 
-    private static NbtCompound getExtras(NbtCompound item) {
-        NbtCompound tag = getTag(item);
+    private static CompoundTag getExtras(CompoundTag item) {
+        CompoundTag tag = getTag(item);
         if (tag == null) return null;
         try {
-            NbtElement el = tag.get("ExtraAttributes");
+            Tag el = tag.get("ExtraAttributes");
             if (el == null) return null;
             return el.asCompound().orElse(null);
         } catch (Exception e) { return null; }
     }
 
-    private static String getItemId(NbtCompound item) {
-        NbtCompound extras = getExtras(item);
+    private static String getItemId(CompoundTag item) {
+        CompoundTag extras = getExtras(item);
         if (extras == null) return null;
         try {
-            NbtElement el = extras.get("id");
+            Tag el = extras.get("id");
             if (el == null) return null;
             return el.asString().orElse(null);
         } catch (Exception e) { return null; }
     }
 
-    private static int getEnchantLevel(NbtCompound item, String enchantName) {
-        NbtCompound extras = getExtras(item);
+    private static int getEnchantLevel(CompoundTag item, String enchantName) {
+        CompoundTag extras = getExtras(item);
         if (extras == null) return -1;
         try {
-            NbtElement encEl = extras.get("enchantments");
+            Tag encEl = extras.get("enchantments");
             if (encEl == null) return -1;
-            NbtCompound enchants = encEl.asCompound().orElse(null);
+            CompoundTag enchants = encEl.asCompound().orElse(null);
             if (enchants == null) return -1;
-            return enchants.getInt(enchantName, -1);
+            return enchants.getIntOr(enchantName, -1);
         } catch (Exception e) { return -1; }
     }
 
-    private static String getUltimateEnchant(NbtCompound item) {
-        NbtCompound extras = getExtras(item);
+    private static String getUltimateEnchant(CompoundTag item) {
+        CompoundTag extras = getExtras(item);
         if (extras == null) return null;
         try {
             // Check enchantments map for "ultimate_" prefixed keys
-            NbtElement encEl = extras.get("enchantments");
+            Tag encEl = extras.get("enchantments");
             if (encEl != null) {
-                NbtCompound enchants = encEl.asCompound().orElse(null);
+                CompoundTag enchants = encEl.asCompound().orElse(null);
                 if (enchants != null) {
-                    for (String k : enchants.getKeys()) {
+                    for (String k : enchants.keySet()) {
                         if (!k.startsWith("ultimate_")) continue;
-                        int lvl = enchants.getInt(k, 0);
+                        int lvl = enchants.getIntOr(k, 0);
                         String name = k.substring("ultimate_".length()).replace("_", " ");
                         name = Character.toUpperCase(name.charAt(0)) + name.substring(1);
                         return name + " " + toRoman(lvl);
@@ -418,13 +417,13 @@ public class HypixelApi {
                 }
             }
             // Fallback: scan lore for "Ultimate <Name> <Level>"
-            NbtCompound tag = getTag(item);
+            CompoundTag tag = getTag(item);
             if (tag == null) return null;
-            NbtElement displayEl = tag.get("display");
+            Tag displayEl = tag.get("display");
             if (displayEl == null) return null;
-            NbtCompound display = displayEl.asCompound().orElse(null);
+            CompoundTag display = displayEl.asCompound().orElse(null);
             if (display == null) return null;
-            NbtList lore = display.getList("Lore").orElse(null);
+            ListTag lore = display.getList("Lore").orElse(null);
             if (lore == null || lore.isEmpty()) return null;
             for (int i = 0; i < lore.size(); i++) {
                 String line = STRIP_COLOR.matcher(lore.getString(i).orElse("")).replaceAll("").trim();
@@ -435,23 +434,23 @@ public class HypixelApi {
         return null;
     }
 
-    private static int getStarCount(NbtCompound item) {
-        NbtCompound extras = getExtras(item);
+    private static int getStarCount(CompoundTag item) {
+        CompoundTag extras = getExtras(item);
         if (extras != null) {
             try {
-                int lvl = extras.getInt("dungeon_item_level", -1);
+                int lvl = extras.getIntOr("dungeon_item_level", -1);
                 if (lvl >= 0) return lvl;
             } catch (Exception ignored) {}
         }
         // Fallback: count ✪ in display name
         try {
-            NbtCompound tag = getTag(item);
+            CompoundTag tag = getTag(item);
             if (tag == null) return 0;
-            NbtElement displayEl = tag.get("display");
+            Tag displayEl = tag.get("display");
             if (displayEl == null) return 0;
-            NbtCompound display = displayEl.asCompound().orElse(null);
+            CompoundTag display = displayEl.asCompound().orElse(null);
             if (display == null) return 0;
-            NbtElement nameEl = display.get("Name");
+            Tag nameEl = display.get("Name");
             if (nameEl == null) return 0;
             String name = STRIP_COLOR.matcher(nameEl.asString().orElse("")).replaceAll("");
             return (int) name.chars().filter(c -> c == '\u272A').count();
@@ -473,24 +472,24 @@ public class HypixelApi {
         try {
             if (!member.has("accessory_bag_storage")) return -1;
             JsonObject abs = member.getAsJsonObject("accessory_bag_storage");
-            List<NbtCompound> items = parseSlots(abs, "bag_storage");
+            List<CompoundTag> items = parseSlots(abs, "bag_storage");
             if (items.isEmpty()) return -1;
 
             java.util.Set<String> seen = new java.util.HashSet<>();
             int total = 0;
-            for (NbtCompound item : items) {
+            for (CompoundTag item : items) {
                 if (item == null) continue;
                 // Deduplicate by item ID — only count each accessory once
                 String id = getItemId(item);
                 if (id != null && !seen.add(id)) continue;
 
-                NbtCompound tag = getTag(item);
+                CompoundTag tag = getTag(item);
                 if (tag == null) continue;
-                NbtElement displayEl = tag.get("display");
+                Tag displayEl = tag.get("display");
                 if (displayEl == null) continue;
-                NbtCompound display = displayEl.asCompound().orElse(null);
+                CompoundTag display = displayEl.asCompound().orElse(null);
                 if (display == null) continue;
-                NbtList lore = display.getList("Lore").orElse(null);
+                ListTag lore = display.getList("Lore").orElse(null);
                 if (lore == null || lore.isEmpty()) continue;
 
                 // Last non-empty lore line = "§X§lRARITY TYPE"
@@ -581,12 +580,12 @@ public class HypixelApi {
     }
 
     /** Look up by IGN: Mojang UUID lookup → Hypixel profiles. */
-    public static void getByName(MinecraftClient mc, String ign, DungeonDataCallback callback) {
+    public static void getByName(Minecraft mc, String ign, DungeonDataCallback callback) {
         if (!checkKey(mc)) return;
-        mc.send(() -> Misc.addChatMessage(Text.literal("§7Looking up " + ign + "...")));
+        mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Looking up " + ign + "...")));
         resolveUuid(ign, 0, uuid -> {
             if (uuid == null) {
-                mc.send(() -> Misc.addChatMessage(Text.literal("§cPlayer not found: " + ign)));
+                mc.schedule(() -> Misc.addChatMessage(Component.literal("§cPlayer not found: " + ign)));
                 return;
             }
             fetchProfiles(mc, uuid, callback);
@@ -661,11 +660,11 @@ public class HypixelApi {
     }
 
     /** Look up by local player's own UUID (no Mojang step needed). */
-    public static void getPlayerDungeonData(MinecraftClient mc, DungeonDataCallback callback) {
+    public static void getPlayerDungeonData(Minecraft mc, DungeonDataCallback callback) {
         if (!checkKey(mc)) return;
         if (mc.player == null) return;
-        String uuid = mc.player.getUuid().toString().replace("-", "");
-        mc.send(() -> Misc.addChatMessage(Text.literal("§7Fetching Hypixel data...")));
+        String uuid = mc.player.getUUID().toString().replace("-", "");
+        mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Fetching Hypixel data...")));
         fetchProfiles(mc, uuid, callback);
     }
 
@@ -784,11 +783,11 @@ public class HypixelApi {
         return -1;
     }
 
-    private static boolean checkKey(MinecraftClient mc) {
+    private static boolean checkKey(Minecraft mc) {
         return true; // API key no longer needed — requests go through proxy
     }
 
-    private static void fetchProfiles(MinecraftClient mc, String uuidStr, DungeonDataCallback callback) {
+    private static void fetchProfiles(Minecraft mc, String uuidStr, DungeonDataCallback callback) {
         HttpRequest req;
         try {
             req = HttpRequest.newBuilder()
@@ -804,13 +803,13 @@ public class HypixelApi {
             .thenAccept(resp -> {
                 String friendly = friendlyProxyError(resp);
                 if (friendly != null) {
-                    mc.send(() -> Misc.addChatMessage(Text.literal(friendly)));
+                    mc.schedule(() -> Misc.addChatMessage(Component.literal(friendly)));
                     return;
                 }
                 try {
                     JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
                     if (!root.get("success").getAsBoolean()) {
-                        mc.send(() -> Misc.addChatMessage(Text.literal("§cAPI error — proxy rejected request.")));
+                        mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI error — proxy rejected request.")));
                         return;
                     }
                     for (JsonElement profileEl : root.getAsJsonArray("profiles")) {
@@ -823,12 +822,12 @@ public class HypixelApi {
                         callback.onData(parseDungeonData(uuidStr, member));
                         return;
                     }
-                    mc.send(() -> Misc.addChatMessage(Text.literal("§cNo active Skyblock profile found.")));
+                    mc.schedule(() -> Misc.addChatMessage(Component.literal("§cNo active Skyblock profile found.")));
                 } catch (Exception e) {
-                    mc.send(() -> Misc.addChatMessage(Text.literal("§cAPI parse error: " + e.getMessage())));
+                    mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI parse error: " + e.getMessage())));
                 }
             })
-            .exceptionally(e -> { mc.send(() -> Misc.addChatMessage(Text.literal("§cAPI request failed."))); return null; });
+            .exceptionally(e -> { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI request failed."))); return null; });
     }
 
     /**
@@ -851,8 +850,8 @@ public class HypixelApi {
     }
 
     /** Dumps all top-level keys of the member object to chat — used to find which fields the proxy returns. */
-    public static void dumpMemberKeys(MinecraftClient mc, String ign) {
-        mc.send(() -> Misc.addChatMessage(Text.literal("§7Looking up " + ign + " (raw)...")));
+    public static void dumpMemberKeys(Minecraft mc, String ign) {
+        mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Looking up " + ign + " (raw)...")));
         HttpRequest uuidReq;
         try {
             uuidReq = HttpRequest.newBuilder()
@@ -873,25 +872,25 @@ public class HypixelApi {
                             JsonObject profile = profileEl.getAsJsonObject();
                             if (!profile.has("selected") || !profile.get("selected").getAsBoolean()) continue;
                             JsonObject member = profile.getAsJsonObject("members").getAsJsonObject(uuid);
-                            mc.send(() -> {
-                                Misc.addChatMessage(Text.literal("§b--- accessory_bag_storage keys ---"));
+                            mc.schedule(() -> {
+                                Misc.addChatMessage(Component.literal("§b--- accessory_bag_storage keys ---"));
                                 if (member.has("accessory_bag_storage")) {
                                     JsonObject abs = member.getAsJsonObject("accessory_bag_storage");
                                     for (String key : abs.keySet())
-                                        Misc.addChatMessage(Text.literal("§7" + key + " = " + abs.get(key).toString().substring(0, Math.min(60, abs.get(key).toString().length()))));
+                                        Misc.addChatMessage(Component.literal("§7" + key + " = " + abs.get(key).toString().substring(0, Math.min(60, abs.get(key).toString().length()))));
                                 } else {
-                                    Misc.addChatMessage(Text.literal("§cmissing"));
+                                    Misc.addChatMessage(Component.literal("§cmissing"));
                                 }
-                                Misc.addChatMessage(Text.literal("§b--- End ---"));
+                                Misc.addChatMessage(Component.literal("§b--- End ---"));
                             });
                             return;
                         }
                     } catch (Exception e) {
-                        mc.send(() -> Misc.addChatMessage(Text.literal("§cParse error: " + e.getMessage())));
+                        mc.schedule(() -> Misc.addChatMessage(Component.literal("§cParse error: " + e.getMessage())));
                     }
                 });
             } catch (Exception e) {
-                mc.send(() -> Misc.addChatMessage(Text.literal("§cUUID error: " + e.getMessage())));
+                mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUUID error: " + e.getMessage())));
             }
         });
     }
@@ -912,7 +911,7 @@ public class HypixelApi {
      * using the SkyHelper price list. Values liquid + items (base, recomb, enchants, hot-potato,
      * master stars) + pets. An estimate — close to in-game, no extra hosting / SkyCrypt needed.
      */
-    public static void getNetworth(MinecraftClient mc, String ign, NetworthCallback cb) {
+    public static void getNetworth(Minecraft mc, String ign, NetworthCallback cb) {
         java.util.concurrent.CompletableFuture.runAsync(() -> {
             String uuid = resolveUuidBlocking(ign);
             if (uuid == null) { cb.onData(-1, null); return; }
@@ -1005,7 +1004,7 @@ public class HypixelApi {
 
     private static double sumStorageNw(JsonObject inventory, String key, Map<String, Double> prices) {
         double total = 0;
-        for (NbtCompound item : parseSlots(inventory, key)) {
+        for (CompoundTag item : parseSlots(inventory, key)) {
             if (item != null) total += itemValueNw(item, prices);
         }
         return total;
@@ -1015,14 +1014,14 @@ public class HypixelApi {
      * Per-item modifier valuation, ported from SkyHelper-Networth's handler pipeline (non-cosmetic).
      * Each modifier is wrapped in try/catch so one bad field never zeroes the whole item.
      */
-    private static double itemValueNw(NbtCompound item, Map<String, Double> prices) {
-        NbtCompound ex = getExtras(item);
+    private static double itemValueNw(CompoundTag item, Map<String, Double> prices) {
+        CompoundTag ex = getExtras(item);
         if (ex == null) return 0;
         String id = getItemId(item);
         if (id == null) return 0;
 
         int count = 1;
-        try { count = item.getInt("Count", 1); if (count <= 0) count = 1; } catch (Exception ignored) {}
+        try { count = item.getIntOr("Count", 1); if (count <= 0) count = 1; } catch (Exception ignored) {}
         // Some lists store Count as byte; fall back gracefully.
 
         // Item metadata (category / gemstone_slots / upgrade_costs / prestige) for handlers that need it.
@@ -1033,25 +1032,25 @@ public class HypixelApi {
         // ---- Base price (ported getItemId): skin / shiny / starred / cake / rune variants ----
         String priceId = id;
         try {
-            String skin = ex.getString("skin", "");
+            String skin = ex.getStringOr("skin", "");
             if (!skin.isEmpty()) {
                 String skinned = id + "_SKINNED_" + skin;
                 if (price(prices, skinned) > price(prices, id)) priceId = skinned;
             }
             // Rune item -> RUNE_<type>_<tier>
             if ("RUNE".equals(id) || "UNIQUE_RUNE".equals(id)) {
-                NbtCompound runes = compound(ex, "runes");
-                if (runes != null) for (String rn : runes.getKeys()) {
-                    priceId = ("RUNE_" + rn + "_" + runes.getInt(rn, 0)).toUpperCase();
+                CompoundTag runes = compound(ex, "runes");
+                if (runes != null) for (String rn : runes.keySet()) {
+                    priceId = ("RUNE_" + rn + "_" + runes.getIntOr(rn, 0)).toUpperCase();
                     break;
                 }
             }
             if ("NEW_YEAR_CAKE".equals(id)) {
-                int cake = ex.getInt("new_years_cake", 0);
+                int cake = ex.getIntOr("new_years_cake", 0);
                 priceId = "NEW_YEAR_CAKE_" + cake;
             }
             // Shiny variant
-            if (ex.getInt("is_shiny", 0) > 0 && price(prices, id + "_SHINY") > 0) priceId = id + "_SHINY";
+            if (ex.getIntOr("is_shiny", 0) > 0 && price(prices, id + "_SHINY") > 0) priceId = id + "_SHINY";
             // Fragged: STARRED_ fallback to base
             if (id.startsWith("STARRED_") && price(prices, id) == 0 && price(prices, id.replace("STARRED_", "")) > 0)
                 priceId = id.replace("STARRED_", "");
@@ -1064,8 +1063,8 @@ public class HypixelApi {
         try {
             if ("CROWN_OF_AVARICE".equals(id)) {
                 long cc = 0;
-                try { cc = ex.getLong("collected_coins", 0L); }
-                catch (Exception e) { cc = (long) ex.getDouble("collected_coins", 0); }
+                try { cc = ex.getLongOr("collected_coins", 0L); }
+                catch (Exception e) { cc = (long) ex.getDoubleOr("collected_coins", 0); }
                 if (cc > 0) {
                     double zero = price(prices, "CROWN_OF_AVARICE");
                     double bil  = price(prices, "CROWN_OF_AVARICE_1B");
@@ -1078,7 +1077,7 @@ public class HypixelApi {
 
         // ---- Recombobulator x0.8 ----
         try {
-            boolean isRecomb = ex.getInt("rarity_upgrades", 0) > 0 && ex.getInt("item_tier", -1) < 0
+            boolean isRecomb = ex.getIntOr("rarity_upgrades", 0) > 0 && ex.getIntOr("item_tier", -1) < 0
                     && !ex.contains("item_tier");
             if (isRecomb) {
                 boolean hasEnch = compound(ex, "enchantments") != null;
@@ -1095,7 +1094,7 @@ public class HypixelApi {
 
         // ---- Potato books ----
         try {
-            int hpc = ex.getInt("hot_potato_count", 0);
+            int hpc = ex.getIntOr("hot_potato_count", 0);
             if (hpc > 0) {
                 v += price(prices, "HOT_POTATO_BOOK") * Math.min(hpc, 10) * fishmod.utils.networth.NwConstants.HOT_POTATO_BOOK;
                 if (hpc > 10) v += price(prices, "FUMING_POTATO_BOOK") * (hpc - 10) * fishmod.utils.networth.NwConstants.FUMING_POTATO_BOOK;
@@ -1104,13 +1103,13 @@ public class HypixelApi {
 
         // ---- Enchantments (EnchantedBook items valued differently) ----
         try {
-            NbtCompound enc = compound(ex, "enchantments");
-            if (enc != null && !enc.getKeys().isEmpty()) {
+            CompoundTag enc = compound(ex, "enchantments");
+            if (enc != null && !enc.keySet().isEmpty()) {
                 if ("ENCHANTED_BOOK".equals(id)) {
-                    boolean single = enc.getKeys().size() == 1;
+                    boolean single = enc.keySet().size() == 1;
                     double bookPrice = 0;
-                    for (String name : enc.getKeys()) {
-                        int lvl = enc.getInt(name, 0);
+                    for (String name : enc.keySet()) {
+                        int lvl = enc.getIntOr(name, 0);
                         double p = price(prices, "ENCHANTMENT_" + name.toUpperCase() + "_" + lvl);
                         if (p == 0) continue;
                         bookPrice += p * (single ? 1 : fishmod.utils.networth.NwConstants.ENCHANTMENTS);
@@ -1163,7 +1162,7 @@ public class HypixelApi {
 
         // ---- Reforge x1 (not for accessories) ----
         try {
-            String modifier = ex.getString("modifier", "");
+            String modifier = ex.getStringOr("modifier", "");
             if (!modifier.isEmpty() && !"ACCESSORY".equals(category)) {
                 String stone = fishmod.utils.networth.NwConstants.REFORGES.get(modifier);
                 if (stone != null) v += price(prices, stone) * fishmod.utils.networth.NwConstants.REFORGE;
@@ -1171,68 +1170,68 @@ public class HypixelApi {
         } catch (Exception ignored) {}
 
         // ---- Art of War x0.6 ----
-        try { int c = ex.getInt("art_of_war_count", 0); if (c > 0) v += price(prices, "THE_ART_OF_WAR") * c * fishmod.utils.networth.NwConstants.ART_OF_WAR; } catch (Exception ignored) {}
+        try { int c = ex.getIntOr("art_of_war_count", 0); if (c > 0) v += price(prices, "THE_ART_OF_WAR") * c * fishmod.utils.networth.NwConstants.ART_OF_WAR; } catch (Exception ignored) {}
         // ---- Art of Peace x0.8 ----
-        try { int c = ex.getInt("artOfPeaceApplied", 0); if (c > 0) v += price(prices, "THE_ART_OF_PEACE") * c * fishmod.utils.networth.NwConstants.ART_OF_PEACE; } catch (Exception ignored) {}
+        try { int c = ex.getIntOr("artOfPeaceApplied", 0); if (c > 0) v += price(prices, "THE_ART_OF_PEACE") * c * fishmod.utils.networth.NwConstants.ART_OF_PEACE; } catch (Exception ignored) {}
         // ---- Necron-blade ability scrolls x1 ----
         try {
-            NbtList scrolls = ex.getList("ability_scroll").orElse(null);
+            ListTag scrolls = ex.getList("ability_scroll").orElse(null);
             if (scrolls != null) for (int i = 0; i < scrolls.size(); i++)
                 v += price(prices, scrolls.getString(i).orElse("").toUpperCase()) * fishmod.utils.networth.NwConstants.NECRON_BLADE_SCROLL;
         } catch (Exception ignored) {}
         // ---- Gemstone power scroll x0.5 ----
-        try { String ps = ex.getString("power_ability_scroll", ""); if (!ps.isEmpty()) v += price(prices, ps) * fishmod.utils.networth.NwConstants.GEMSTONE_POWER_SCROLL; } catch (Exception ignored) {}
+        try { String ps = ex.getStringOr("power_ability_scroll", ""); if (!ps.isEmpty()) v += price(prices, ps) * fishmod.utils.networth.NwConstants.GEMSTONE_POWER_SCROLL; } catch (Exception ignored) {}
         // ---- Drill parts x1 ----
         try {
             for (String part : new String[]{"drill_part_upgrade_module","drill_part_fuel_tank","drill_part_engine"}) {
-                String pid = ex.getString(part, "");
+                String pid = ex.getStringOr(part, "");
                 if (!pid.isEmpty()) v += price(prices, pid.toUpperCase()) * fishmod.utils.networth.NwConstants.DRILL_PART;
             }
         } catch (Exception ignored) {}
         // ---- Rod parts x1 (line/hook/sinker -> compound with `part`) ----
         try {
             for (String part : new String[]{"line","hook","sinker"}) {
-                NbtCompound pc = compound(ex, part);
+                CompoundTag pc = compound(ex, part);
                 if (pc != null) {
-                    String pp = pc.getString("part", "");
+                    String pp = pc.getStringOr("part", "");
                     if (!pp.isEmpty()) v += price(prices, pp.toUpperCase()) * fishmod.utils.networth.NwConstants.ROD_PART;
                 }
             }
         } catch (Exception ignored) {}
         // ---- Etherwarp conduit x1 ----
-        try { if (ex.getInt("ethermerge", 0) > 0) v += price(prices, "ETHERWARP_CONDUIT") * fishmod.utils.networth.NwConstants.ETHERWARP; } catch (Exception ignored) {}
+        try { if (ex.getIntOr("ethermerge", 0) > 0) v += price(prices, "ETHERWARP_CONDUIT") * fishmod.utils.networth.NwConstants.ETHERWARP; } catch (Exception ignored) {}
         // ---- Transmission tuner x0.7 ----
-        try { int tt = ex.getInt("tuned_transmission", 0); if (tt > 0) v += price(prices, "TRANSMISSION_TUNER") * tt * fishmod.utils.networth.NwConstants.TUNED_TRANSMISSION; } catch (Exception ignored) {}
+        try { int tt = ex.getIntOr("tuned_transmission", 0); if (tt > 0) v += price(prices, "TRANSMISSION_TUNER") * tt * fishmod.utils.networth.NwConstants.TUNED_TRANSMISSION; } catch (Exception ignored) {}
         // ---- Wood singularity x0.5 ----
-        try { int c = ex.getInt("wood_singularity_count", 0); if (c > 0) v += price(prices, "WOOD_SINGULARITY") * c * fishmod.utils.networth.NwConstants.WOOD_SINGULARITY; } catch (Exception ignored) {}
+        try { int c = ex.getIntOr("wood_singularity_count", 0); if (c > 0) v += price(prices, "WOOD_SINGULARITY") * c * fishmod.utils.networth.NwConstants.WOOD_SINGULARITY; } catch (Exception ignored) {}
         // ---- Jalapeno book x0.8 ----
-        try { int c = ex.getInt("jalapeno_count", 0); if (c > 0) v += price(prices, "JALAPENO_BOOK") * c * fishmod.utils.networth.NwConstants.JALAPENO_BOOK; } catch (Exception ignored) {}
+        try { int c = ex.getIntOr("jalapeno_count", 0); if (c > 0) v += price(prices, "JALAPENO_BOOK") * c * fishmod.utils.networth.NwConstants.JALAPENO_BOOK; } catch (Exception ignored) {}
         // ---- Mana disintegrator x0.8 ----
-        try { int c = ex.getInt("mana_disintegrator_count", 0); if (c > 0) v += price(prices, "MANA_DISINTEGRATOR") * c * fishmod.utils.networth.NwConstants.MANA_DISINTEGRATOR; } catch (Exception ignored) {}
+        try { int c = ex.getIntOr("mana_disintegrator_count", 0); if (c > 0) v += price(prices, "MANA_DISINTEGRATOR") * c * fishmod.utils.networth.NwConstants.MANA_DISINTEGRATOR; } catch (Exception ignored) {}
         // ---- Farming for dummies x0.5 ----
-        try { int c = ex.getInt("farming_for_dummies_count", 0); if (c > 0) v += price(prices, "FARMING_FOR_DUMMIES") * c * fishmod.utils.networth.NwConstants.FARMING_FOR_DUMMIES; } catch (Exception ignored) {}
+        try { int c = ex.getIntOr("farming_for_dummies_count", 0); if (c > 0) v += price(prices, "FARMING_FOR_DUMMIES") * c * fishmod.utils.networth.NwConstants.FARMING_FOR_DUMMIES; } catch (Exception ignored) {}
         // ---- Overclocker 3000 x0.9 ----
-        try { int c = ex.getInt("levelable_overclocks", 0); if (c > 0) v += price(prices, "OVERCLOCKER_3000") * c * fishmod.utils.networth.NwConstants.OVERCLOCKER_3000; } catch (Exception ignored) {}
+        try { int c = ex.getIntOr("levelable_overclocks", 0); if (c > 0) v += price(prices, "OVERCLOCKER_3000") * c * fishmod.utils.networth.NwConstants.OVERCLOCKER_3000; } catch (Exception ignored) {}
         // ---- Polarvoid book x1 ----
-        try { int c = ex.getInt("polarvoid", 0); if (c > 0) v += price(prices, "POLARVOID_BOOK") * c * fishmod.utils.networth.NwConstants.POLARVOID_BOOK; } catch (Exception ignored) {}
+        try { int c = ex.getIntOr("polarvoid", 0); if (c > 0) v += price(prices, "POLARVOID_BOOK") * c * fishmod.utils.networth.NwConstants.POLARVOID_BOOK; } catch (Exception ignored) {}
         // ---- Pocket sack-in-a-sack x0.7 ----
-        try { int c = ex.getInt("sack_pss", 0); if (c > 0) v += price(prices, "POCKET_SACK_IN_A_SACK") * c * fishmod.utils.networth.NwConstants.POCKET_SACK_IN_A_SACK; } catch (Exception ignored) {}
+        try { int c = ex.getIntOr("sack_pss", 0); if (c > 0) v += price(prices, "POCKET_SACK_IN_A_SACK") * c * fishmod.utils.networth.NwConstants.POCKET_SACK_IN_A_SACK; } catch (Exception ignored) {}
         // ---- Divan powder coating x0.8 ----
-        try { int c = ex.getInt("divan_powder_coating", 0); if (c > 0) v += price(prices, "DIVAN_POWDER_COATING") * fishmod.utils.networth.NwConstants.DIVAN_POWDER_COATING; } catch (Exception ignored) {}
+        try { int c = ex.getIntOr("divan_powder_coating", 0); if (c > 0) v += price(prices, "DIVAN_POWDER_COATING") * fishmod.utils.networth.NwConstants.DIVAN_POWDER_COATING; } catch (Exception ignored) {}
         // ---- Dye x0.9 ----
-        try { String dye = ex.getString("dye_item", ""); if (!dye.isEmpty()) v += price(prices, dye.toUpperCase()) * fishmod.utils.networth.NwConstants.DYE; } catch (Exception ignored) {}
+        try { String dye = ex.getStringOr("dye_item", ""); if (!dye.isEmpty()) v += price(prices, dye.toUpperCase()) * fishmod.utils.networth.NwConstants.DYE; } catch (Exception ignored) {}
         // ---- Runes x0.6 (only on non-rune items) ----
         try {
-            NbtCompound runes = compound(ex, "runes");
-            if (runes != null && !id.startsWith("RUNE")) for (String rn : runes.getKeys()) {
-                String runeId = "RUNE_" + rn + "_" + runes.getInt(rn, 0);
+            CompoundTag runes = compound(ex, "runes");
+            if (runes != null && !id.startsWith("RUNE")) for (String rn : runes.keySet()) {
+                String runeId = "RUNE_" + rn + "_" + runes.getIntOr(rn, 0);
                 v += price(prices, runeId.toUpperCase()) * fishmod.utils.networth.NwConstants.RUNES;
                 break;
             }
         } catch (Exception ignored) {}
         // ---- Enrichment x0.5 (cheapest enrichment) ----
         try {
-            String enr = ex.getString("talisman_enrichment", "");
+            String enr = ex.getStringOr("talisman_enrichment", "");
             if (!enr.isEmpty()) {
                 double cheapest = Double.POSITIVE_INFINITY;
                 for (String e : fishmod.utils.networth.NwConstants.ENRICHMENTS) {
@@ -1244,7 +1243,7 @@ public class HypixelApi {
         } catch (Exception ignored) {}
         // ---- Boosters x0.8 ----
         try {
-            NbtList boosters = ex.getList("boosters").orElse(null);
+            ListTag boosters = ex.getList("boosters").orElse(null);
             if (boosters != null) for (int i = 0; i < boosters.size(); i++) {
                 String b = boosters.getString(i).orElse("");
                 if (!b.isEmpty()) v += price(prices, b.toUpperCase() + "_BOOSTER") * fishmod.utils.networth.NwConstants.BOOSTER;
@@ -1252,14 +1251,14 @@ public class HypixelApi {
         } catch (Exception ignored) {}
         // ---- New Year Cake Bag (sum of contained cakes, x1) ----
         try {
-            NbtList years = ex.getList("new_year_cake_bag_years").orElse(null);
+            ListTag years = ex.getList("new_year_cake_bag_years").orElse(null);
             if (years != null) for (int i = 0; i < years.size(); i++)
                 v += price(prices, "NEW_YEAR_CAKE_" + years.getInt(i).orElse(0));
         } catch (Exception ignored) {}
         // ---- Shen's Auction (price paid x0.85, replaces base if higher) ----
         try {
             if (ex.contains("price") && ex.contains("auction") && ex.contains("bid")) {
-                double pricePaid = ex.getDouble("price", 0) * fishmod.utils.networth.NwConstants.SHENS_AUCTION_PRICE;
+                double pricePaid = ex.getDoubleOr("price", 0) * fishmod.utils.networth.NwConstants.SHENS_AUCTION_PRICE;
                 if (pricePaid > base) v += (pricePaid - base);
             }
         } catch (Exception ignored) {}
@@ -1269,8 +1268,8 @@ public class HypixelApi {
             if (midas != null) {
                 long maxBid = (Long) midas[0];
                 String type = (String) midas[1];
-                double winning = ex.getDouble("winning_bid", 0);
-                double additional = ex.getDouble("additional_coins", 0);
+                double winning = ex.getDoubleOr("winning_bid", 0);
+                double additional = ex.getDoubleOr("additional_coins", 0);
                 if (winning + additional >= maxBid && price(prices, type) > 0)
                     v += (price(prices, type) - base);
             }
@@ -1278,16 +1277,16 @@ public class HypixelApi {
         // ---- Pickonimbus (durability reduces base) ----
         try {
             if ("PICKONIMBUS".equals(id)) {
-                int dur = ex.getInt("pickonimbus_durability", 5000);
+                int dur = ex.getIntOr("pickonimbus_durability", 5000);
                 if (dur < 5000) v += base * ((dur / 5000.0) - 1);
             }
         } catch (Exception ignored) {}
 
         // ---- BONUS (not in SkyHelper): item attributes -> ATTRIBUTE_SHARD_<NAME> x 2^(level-1) ----
         try {
-            NbtCompound att = compound(ex, "attributes");
-            if (att != null) for (String an : att.getKeys()) {
-                int lvl = att.getInt(an, 0);
+            CompoundTag att = compound(ex, "attributes");
+            if (att != null) for (String an : att.keySet()) {
+                int lvl = att.getIntOr(an, 0);
                 if (lvl > 0) {
                     double sp = price(prices, "ATTRIBUTE_SHARD_" + an.toUpperCase());
                     if (sp > 0) v += sp * Math.pow(2, lvl - 1);
@@ -1298,27 +1297,27 @@ public class HypixelApi {
         return v;
     }
 
-    private static NbtCompound compound(NbtCompound parent, String key) {
+    private static CompoundTag compound(CompoundTag parent, String key) {
         try {
-            NbtElement el = parent.get(key);
+            Tag el = parent.get(key);
             if (el == null) return null;
             return el.asCompound().orElse(null);
         } catch (Exception e) { return null; }
     }
 
     /** dungeon_item_level / upgrade_level, stripped of non-digits, max of the two. */
-    private static int upgradeLevel(NbtCompound ex) {
+    private static int upgradeLevel(CompoundTag ex) {
         int dil = digits(strOrInt(ex, "dungeon_item_level"));
         int ul = digits(strOrInt(ex, "upgrade_level"));
         return Math.max(dil, ul);
     }
-    private static String strOrInt(NbtCompound ex, String key) {
+    private static String strOrInt(CompoundTag ex, String key) {
         try {
-            NbtElement el = ex.get(key);
+            Tag el = ex.get(key);
             if (el == null) return "0";
             String s = el.asString().orElse(null);
             if (s != null) return s;
-            return String.valueOf(ex.getInt(key, 0));
+            return String.valueOf(ex.getIntOr(key, 0));
         } catch (Exception e) { return "0"; }
     }
     private static int digits(String s) {
@@ -1356,13 +1355,13 @@ public class HypixelApi {
     }
 
     /** Ported ItemEnchantments.js: per-enchant value with overrides, silex, upgrades. */
-    private static double enchantmentsValueNw(String id, NbtCompound enc, Map<String, Double> prices) {
+    private static double enchantmentsValueNw(String id, CompoundTag enc, Map<String, Double> prices) {
         double v = 0;
         java.util.Set<String> blocked = fishmod.utils.networth.NwConstants.BLOCKED_ENCHANTMENTS.get(id);
-        for (String rawName : enc.getKeys()) {
+        for (String rawName : enc.keySet()) {
             try {
                 String name = rawName.toUpperCase();
-                int value = enc.getInt(rawName, 0);
+                int value = enc.getIntOr(rawName, 0);
                 if (blocked != null && blocked.contains(name)) continue;
                 Integer ign = fishmod.utils.networth.NwConstants.IGNORED_ENCHANTMENTS.get(name);
                 if (ign != null && ign == value) continue;
@@ -1398,10 +1397,10 @@ public class HypixelApi {
      * for Divan armor (x0.9 gemstoneChambers) and Crimson-family armor (x0.6 gemstoneSlots),
      * replicating Gemstones.js.
      */
-    private static double gemsValueNw(String id, NbtCompound ex, com.google.gson.JsonObject meta, Map<String, Double> prices) {
-        NbtElement gemsEl = ex.get("gems");
+    private static double gemsValueNw(String id, CompoundTag ex, com.google.gson.JsonObject meta, Map<String, Double> prices) {
+        Tag gemsEl = ex.get("gems");
         if (gemsEl == null) return 0;
-        NbtCompound gems = gemsEl.asCompound().orElse(null);
+        CompoundTag gems = gemsEl.asCompound().orElse(null);
         if (gems == null) return 0;
         double total = 0;
 
@@ -1413,7 +1412,7 @@ public class HypixelApi {
                 double application = isDivan
                         ? fishmod.utils.networth.NwConstants.GEMSTONE_CHAMBERS
                         : fishmod.utils.networth.NwConstants.GEMSTONE_SLOTS;
-                NbtList unlocked = gems.getList("unlocked_slots").orElse(null);
+                ListTag unlocked = gems.getList("unlocked_slots").orElse(null);
                 if (unlocked != null) {
                     com.google.gson.JsonArray slots = meta.getAsJsonArray("gemstone_slots");
                     for (int u = 0; u < unlocked.size(); u++) {
@@ -1440,19 +1439,19 @@ public class HypixelApi {
                 }
             }
         } catch (Exception ignored) {}
-        for (String slot : gems.getKeys()) {
+        for (String slot : gems.keySet()) {
             if (slot.equals("unlocked_slots") || slot.endsWith("_gem")) continue;
             // Tier: either a bare string ("PERFECT") or a compound with "quality".
-            String tier = gems.getString(slot, "");
+            String tier = gems.getStringOr(slot, "");
             if (tier.isEmpty()) {
-                NbtCompound c = gems.get(slot) != null ? gems.get(slot).asCompound().orElse(null) : null;
-                if (c != null) tier = c.getString("quality", "");
+                CompoundTag c = gems.get(slot) != null ? gems.get(slot).asCompound().orElse(null) : null;
+                if (c != null) tier = c.getStringOr("quality", "");
             }
             if (tier.isEmpty()) continue;
             // Type: from slot name (e.g. "JASPER_0") or the companion "<slot>_gem" entry for universal slots.
             String type = slot.split("_")[0];
             if (!GEM_TYPES.contains(type)) {
-                String named = gems.getString(slot + "_gem", "");
+                String named = gems.getStringOr(slot + "_gem", "");
                 if (!named.isEmpty()) type = named;
             }
             if (!GEM_TYPES.contains(type)) continue;
@@ -1644,12 +1643,12 @@ public class HypixelApi {
     public interface PowderCallback { void onData(PowderData data); }
 
     /** Fetches mithril/gemstone/glacite powder from the player's selected SkyBlock profile. */
-    public static void getPowderByName(MinecraftClient mc, String ign, PowderCallback cb) {
+    public static void getPowderByName(Minecraft mc, String ign, PowderCallback cb) {
         if (!checkKey(mc)) return;
-        mc.send(() -> Misc.addChatMessage(Text.literal("§7Looking up " + ign + "'s powder...")));
+        mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Looking up " + ign + "'s powder...")));
         resolveUuid(ign, 0, uuid -> {
             if (uuid == null) {
-                mc.send(() -> Misc.addChatMessage(Text.literal("§cPlayer not found: " + ign)));
+                mc.schedule(() -> Misc.addChatMessage(Component.literal("§cPlayer not found: " + ign)));
                 mc.execute(() -> cb.onData(new PowderData()));
                 return;
             }
@@ -1657,7 +1656,7 @@ public class HypixelApi {
         });
     }
 
-    private static void fetchPowder(MinecraftClient mc, String uuidStr, PowderCallback cb) {
+    private static void fetchPowder(Minecraft mc, String uuidStr, PowderCallback cb) {
         HttpRequest req;
         try {
             req = HttpRequest.newBuilder()
@@ -1677,20 +1676,20 @@ public class HypixelApi {
                 try {
                     JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
                     if (!root.get("success").getAsBoolean()) {
-                        mc.send(() -> Misc.addChatMessage(Text.literal("§cAPI error — proxy rejected request.")));
+                        mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI error — proxy rejected request.")));
                         mc.execute(() -> cb.onData(new PowderData()));
                         return;
                     }
                     JsonObject member = findSelectedMember(root, uuidStr);
                     if (member != null) result = parsePowder(member);
                 } catch (Exception e) {
-                    mc.send(() -> Misc.addChatMessage(Text.literal("§cAPI parse error: " + e.getMessage())));
+                    mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI parse error: " + e.getMessage())));
                 }
                 PowderData finalResult = result;
                 mc.execute(() -> cb.onData(finalResult));
             })
             .exceptionally(e -> {
-                mc.send(() -> Misc.addChatMessage(Text.literal("§cAPI request failed.")));
+                mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI request failed.")));
                 mc.execute(() -> cb.onData(new PowderData()));
                 return null;
             });
@@ -1744,9 +1743,9 @@ public class HypixelApi {
     }
 
     /** Fetches bank balance, purse, and glacite corpses for the local player's selected profile. */
-    public static void getEconomy(MinecraftClient mc, EconomyCallback cb) {
+    public static void getEconomy(Minecraft mc, EconomyCallback cb) {
         if (mc.player == null) { cb.onData(-1, -1, null); return; }
-        String uuid = mc.player.getUuid().toString().replace("-", "");
+        String uuid = mc.player.getUUID().toString().replace("-", "");
         HttpRequest req;
         try {
             req = HttpRequest.newBuilder()
@@ -2053,9 +2052,9 @@ public class HypixelApi {
     }
 
     /** Fetches the local player's selected-profile member object (key held proxy-side). */
-    public static void getLocalMember(MinecraftClient mc, java.util.function.Consumer<JsonObject> cb) {
+    public static void getLocalMember(Minecraft mc, java.util.function.Consumer<JsonObject> cb) {
         if (mc.player == null) { cb.accept(null); return; }
-        String uuid = mc.player.getUuid().toString().replace("-", "");
+        String uuid = mc.player.getUUID().toString().replace("-", "");
         HttpRequest req;
         try {
             req = HttpRequest.newBuilder()
@@ -2076,7 +2075,7 @@ public class HypixelApi {
     }
 
     /** Fetches bank balance, purse, and glacite corpses for an arbitrary player by IGN. */
-    public static void getEconomyByName(MinecraftClient mc, String ign, EconomyCallback cb) {
+    public static void getEconomyByName(Minecraft mc, String ign, EconomyCallback cb) {
         java.util.concurrent.CompletableFuture.runAsync(() -> {
             try {
                 String uuid = resolveUuidBlocking(ign);
@@ -2138,10 +2137,10 @@ public class HypixelApi {
     }
 
     /** Debug: dumps economy/glacite-related fields for the local player's selected profile. */
-    public static void dumpEconomy(MinecraftClient mc) {
+    public static void dumpEconomy(Minecraft mc) {
         if (mc.player == null) return;
-        String uuid = mc.player.getUuid().toString().replace("-", "");
-        mc.send(() -> Misc.addChatMessage(Text.literal("§7Fetching profile economy fields...")));
+        String uuid = mc.player.getUUID().toString().replace("-", "");
+        mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Fetching profile economy fields...")));
         HttpRequest req;
         try {
             req = HttpRequest.newBuilder()
@@ -2156,34 +2155,34 @@ public class HypixelApi {
                     JsonObject profile = pe.getAsJsonObject();
                     if (!profile.has("selected") || !profile.get("selected").getAsBoolean()) continue;
                     JsonObject member = profile.getAsJsonObject("members").getAsJsonObject(uuid);
-                    mc.send(() -> {
-                        Misc.addChatMessage(Text.literal("§b--- Economy dump ---"));
+                    mc.schedule(() -> {
+                        Misc.addChatMessage(Component.literal("§b--- Economy dump ---"));
                         // Bank (profile-level)
                         if (profile.has("banking") && profile.getAsJsonObject("banking").has("balance"))
-                            Misc.addChatMessage(Text.literal("§7banking.balance = §f" + profile.getAsJsonObject("banking").get("balance")));
-                        else Misc.addChatMessage(Text.literal("§7banking.balance = §cmissing"));
+                            Misc.addChatMessage(Component.literal("§7banking.balance = §f" + profile.getAsJsonObject("banking").get("balance")));
+                        else Misc.addChatMessage(Component.literal("§7banking.balance = §cmissing"));
                         // Purse
-                        if (member.has("coin_purse")) Misc.addChatMessage(Text.literal("§7coin_purse = §f" + member.get("coin_purse")));
+                        if (member.has("coin_purse")) Misc.addChatMessage(Component.literal("§7coin_purse = §f" + member.get("coin_purse")));
                         if (member.has("currencies")) {
                             JsonObject cur = member.getAsJsonObject("currencies");
-                            Misc.addChatMessage(Text.literal("§7currencies keys = §f" + cur.keySet()));
-                            if (cur.has("coin_purse")) Misc.addChatMessage(Text.literal("§7currencies.coin_purse = §f" + cur.get("coin_purse")));
+                            Misc.addChatMessage(Component.literal("§7currencies keys = §f" + cur.keySet()));
+                            if (cur.has("coin_purse")) Misc.addChatMessage(Component.literal("§7currencies.coin_purse = §f" + cur.get("coin_purse")));
                         }
                         // Glacite corpses
                         if (member.has("glacite_player_data")) {
                             JsonObject g = member.getAsJsonObject("glacite_player_data");
-                            Misc.addChatMessage(Text.literal("§7glacite_player_data keys = §f" + g.keySet()));
-                            if (g.has("corpses")) Misc.addChatMessage(Text.literal("§7glacite.corpses = §f" + g.get("corpses")));
+                            Misc.addChatMessage(Component.literal("§7glacite_player_data keys = §f" + g.keySet()));
+                            if (g.has("corpses")) Misc.addChatMessage(Component.literal("§7glacite.corpses = §f" + g.get("corpses")));
                         } else {
-                            Misc.addChatMessage(Text.literal("§7glacite_player_data = §cmissing"));
+                            Misc.addChatMessage(Component.literal("§7glacite_player_data = §cmissing"));
                         }
-                        Misc.addChatMessage(Text.literal("§7member top keys = §f" + member.keySet()));
-                        Misc.addChatMessage(Text.literal("§b--- End ---"));
+                        Misc.addChatMessage(Component.literal("§7member top keys = §f" + member.keySet()));
+                        Misc.addChatMessage(Component.literal("§b--- End ---"));
                     });
                     return;
                 }
             } catch (Exception e) {
-                mc.send(() -> Misc.addChatMessage(Text.literal("§cdump error: " + e.getMessage())));
+                mc.schedule(() -> Misc.addChatMessage(Component.literal("§cdump error: " + e.getMessage())));
             }
         });
     }
@@ -2285,9 +2284,9 @@ public class HypixelApi {
      * when auto-detect is on, refreshes the pet-XP multipliers (taming/beastmaster/pet item/cookie).
      * The API is the authoritative source — tab scraping broke and dungeons have no pet tab entry.
      */
-    public static void getActivePet(MinecraftClient mc, PetCallback cb) {
+    public static void getActivePet(Minecraft mc, PetCallback cb) {
         if (mc.player == null) { cb.onData(new PetInfo()); return; }
-        final String uuid = mc.player.getUuid().toString().replace("-", "");
+        final String uuid = mc.player.getUUID().toString().replace("-", "");
         HttpRequest req;
         try {
             req = HttpRequest.newBuilder()
@@ -2389,12 +2388,12 @@ public class HypixelApi {
             String b64 = bag.get("data").getAsString();
             if (b64.isEmpty()) return 0;
             byte[] bytes = java.util.Base64.getDecoder().decode(b64);
-            NbtCompound rootNbt = NbtIo.readCompressed(new ByteArrayInputStream(bytes), NbtSizeTracker.ofUnlimitedBytes());
-            NbtList listItems = rootNbt.getList("i").orElse(null);
+            CompoundTag rootNbt = NbtIo.readCompressed(new ByteArrayInputStream(bytes), NbtAccounter.unlimitedHeap());
+            ListTag listItems = rootNbt.getList("i").orElse(null);
             if (listItems == null) return 0;
             int best = 0;
             for (int i = 0; i < listItems.size(); i++) {
-                NbtCompound item = listItems.getCompound(i).orElse(null);
+                CompoundTag item = listItems.getCompound(i).orElse(null);
                 if (item == null || item.isEmpty()) continue;
                 String id = getItemId(item);
                 if (id == null || !id.contains("BEASTMASTER_CREST")) continue;
@@ -2407,10 +2406,10 @@ public class HypixelApi {
     }
 
     /** Debug: dumps the Garden API JSON keys for the local player's selected profile (/fmgarden). */
-    public static void dumpGarden(MinecraftClient mc) {
+    public static void dumpGarden(Minecraft mc) {
         if (mc.player == null) return;
-        String uuid = mc.player.getUuid().toString().replace("-", "");
-        mc.send(() -> Misc.addChatMessage(Text.literal("§7Fetching garden...")));
+        String uuid = mc.player.getUUID().toString().replace("-", "");
+        mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Fetching garden...")));
         CompletableFuture.runAsync(() -> {
             try {
                 HttpRequest pr = HttpRequest.newBuilder()
@@ -2424,7 +2423,7 @@ public class HypixelApi {
                     if (profileId == null) profileId = p.get("profile_id").getAsString();
                     if (p.has("selected") && p.get("selected").getAsBoolean()) { profileId = p.get("profile_id").getAsString(); break; }
                 }
-                if (profileId == null) { mc.send(() -> Misc.addChatMessage(Text.literal("§cno profile"))); return; }
+                if (profileId == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cno profile"))); return; }
                 HttpRequest gr = HttpRequest.newBuilder()
                     .uri(URI.create(PROXY_URL + "/skyblock/garden?profile=" + profileId))
                     .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
@@ -2432,18 +2431,18 @@ public class HypixelApi {
                 String body = HTTP.send(gr, HttpResponse.BodyHandlers.ofString()).body();
                 JsonObject g = JsonParser.parseString(body).getAsJsonObject();
                 JsonObject garden = g.has("garden") && g.get("garden").isJsonObject() ? g.getAsJsonObject("garden") : g;
-                mc.send(() -> {
-                    Misc.addChatMessage(Text.literal("§b--- Garden keys ---"));
-                    Misc.addChatMessage(Text.literal("§7top: §f" + garden.keySet()));
+                mc.schedule(() -> {
+                    Misc.addChatMessage(Component.literal("§b--- Garden keys ---"));
+                    Misc.addChatMessage(Component.literal("§7top: §f" + garden.keySet()));
                     for (String k : new String[]{"commission_data","resources_collected","crop_milestones","unlocked_plots_ids"}) {
                         if (garden.has(k) && garden.get(k).isJsonObject())
-                            Misc.addChatMessage(Text.literal("§7" + k + ": §f" + garden.getAsJsonObject(k)));
+                            Misc.addChatMessage(Component.literal("§7" + k + ": §f" + garden.getAsJsonObject(k)));
                         else if (garden.has(k))
-                            Misc.addChatMessage(Text.literal("§7" + k + ": §f" + garden.get(k)));
+                            Misc.addChatMessage(Component.literal("§7" + k + ": §f" + garden.get(k)));
                     }
                 });
             } catch (Exception ex) {
-                mc.send(() -> Misc.addChatMessage(Text.literal("§cgarden err: " + ex)));
+                mc.schedule(() -> Misc.addChatMessage(Component.literal("§cgarden err: " + ex)));
             }
         });
     }
@@ -2517,10 +2516,10 @@ public class HypixelApi {
     }
 
     /** Debug: dumps every numeric field whose key contains "nucleus" or "crystal" (/fmnuc). */
-    public static void dumpNucleus(MinecraftClient mc) {
+    public static void dumpNucleus(Minecraft mc) {
         if (mc.player == null) return;
-        String uuid = mc.player.getUuid().toString().replace("-", "");
-        mc.send(() -> Misc.addChatMessage(Text.literal("§7Searching nucleus/crystal fields...")));
+        String uuid = mc.player.getUUID().toString().replace("-", "");
+        mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Searching nucleus/crystal fields...")));
         CompletableFuture.runAsync(() -> {
             try {
                 HttpRequest req = HttpRequest.newBuilder()
@@ -2534,27 +2533,27 @@ public class HypixelApi {
                     if (p.has("selected") && p.get("selected").getAsBoolean()) { chosen = p; break; }
                     if (chosen == null) chosen = p;
                 }
-                if (chosen == null) { mc.send(() -> Misc.addChatMessage(Text.literal("§cno profile"))); return; }
+                if (chosen == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cno profile"))); return; }
                 JsonObject member = chosen.getAsJsonObject("members").getAsJsonObject(uuid);
                 java.util.Map<String, Integer> nuc = new java.util.LinkedHashMap<>();
                 collectNumbersByKey(member, "nucleus", nuc);
                 java.util.Map<String, Integer> cry = new java.util.LinkedHashMap<>();
                 collectNumbersByKey(member, "crystal", cry);
-                mc.send(() -> {
-                    Misc.addChatMessage(Text.literal("§b--- nucleus keys ---"));
-                    if (nuc.isEmpty()) Misc.addChatMessage(Text.literal("§7(none)"));
-                    nuc.forEach((k, v) -> Misc.addChatMessage(Text.literal("§7" + k + ": §f" + v)));
-                    Misc.addChatMessage(Text.literal("§b--- crystal keys ---"));
-                    cry.forEach((k, v) -> Misc.addChatMessage(Text.literal("§7" + k + ": §f" + v)));
+                mc.schedule(() -> {
+                    Misc.addChatMessage(Component.literal("§b--- nucleus keys ---"));
+                    if (nuc.isEmpty()) Misc.addChatMessage(Component.literal("§7(none)"));
+                    nuc.forEach((k, v) -> Misc.addChatMessage(Component.literal("§7" + k + ": §f" + v)));
+                    Misc.addChatMessage(Component.literal("§b--- crystal keys ---"));
+                    cry.forEach((k, v) -> Misc.addChatMessage(Component.literal("§7" + k + ": §f" + v)));
                 });
             } catch (Exception ex) {
-                mc.send(() -> Misc.addChatMessage(Text.literal("§cnuc dump err: " + ex)));
+                mc.schedule(() -> Misc.addChatMessage(Component.literal("§cnuc dump err: " + ex)));
             }
         });
     }
 
     /** Crystal Nucleus runs completed (searches the profile member for the "nucleus" run field). */
-    public static void getNucleusRuns(MinecraftClient mc, String ign, IntCallback cb) {
+    public static void getNucleusRuns(Minecraft mc, String ign, IntCallback cb) {
         CompletableFuture.runAsync(() -> {
             String uuid = resolveUuidBlocking(ign);
             if (uuid == null) { cb.onData(-1); return; }
@@ -2588,7 +2587,7 @@ public class HypixelApi {
     public interface ProfileStatsCallback { void onData(double sbLevel, double farmingLevel); }
 
     /** Fetches the player's SkyBlock level (leveling.experience / 100) and Farming skill level. */
-    public static void getProfileStats(MinecraftClient mc, String ign, ProfileStatsCallback cb) {
+    public static void getProfileStats(Minecraft mc, String ign, ProfileStatsCallback cb) {
         CompletableFuture.runAsync(() -> {
             String uuid = resolveUuidBlocking(ign);
             if (uuid == null) { cb.onData(-1, -1); return; }
@@ -2668,7 +2667,7 @@ public class HypixelApi {
      * not confused with other "worm" families (water_worm, pest_worm, flaming_worm, …) and the lookup
      * survives a future bracket-number change.
      */
-    public static void getWormStats(MinecraftClient mc, String ign, WormStatsCallback cb) {
+    public static void getWormStats(Minecraft mc, String ign, WormStatsCallback cb) {
         CompletableFuture.runAsync(() -> {
             String uuid = resolveUuidBlocking(ign);
             if (uuid == null) { cb.onData(new WormStats()); return; }

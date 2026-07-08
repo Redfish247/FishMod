@@ -2,13 +2,13 @@ package fishmod.mixin;
 
 import fishmod.utils.Constants;
 import fishmod.utils.config.values.Visual;
+import net.minecraft.client.renderer.blockentity.SkullBlockRenderer;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.component.ResolvableProfile;
+import net.minecraft.world.level.block.SkullBlock;
+import net.minecraft.world.level.block.entity.SkullBlockEntity;
 import com.mojang.authlib.GameProfile;
-import net.minecraft.block.SkullBlock;
-import net.minecraft.block.entity.SkullBlockEntity;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.block.entity.SkullBlockEntityRenderer;
-import net.minecraft.component.type.ProfileComponent;
-import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -17,28 +17,28 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(SkullBlockEntityRenderer.class)
+@Mixin(SkullBlockRenderer.class)
 public abstract class SkullBlockEntityRendererMixin {
 
     @Unique
-    private static Identifier ESSENCE_TEXTURE = Identifier.of(Constants.NAMESPACE, "/textures/entity/essence.png");
+    private static Identifier ESSENCE_TEXTURE = Identifier.fromNamespaceAndPath(Constants.NAMESPACE, "/textures/entity/essence.png");
 
     @Shadow
-    public static RenderLayer getCutoutRenderLayer(SkullBlock.SkullType type, @Nullable Identifier texture) {
+    public static RenderType getSkullRenderType(SkullBlock.Type type, @Nullable Identifier texture) {
         return null;
     }
 
-    @Inject(method = "renderSkull", at = @At("HEAD"), cancellable = true)
-    private void renderEssence(SkullBlock.SkullType skullType, SkullBlockEntity blockEntity, CallbackInfoReturnable<RenderLayer> cir) {
-        if (!Visual.fixWitherEssence || skullType != SkullBlock.Type.PLAYER) return;
+    @Inject(method = "resolveSkullRenderType", at = @At("HEAD"), cancellable = true)
+    private void renderEssence(SkullBlock.Type skullType, SkullBlockEntity blockEntity, CallbackInfoReturnable<RenderType> cir) {
+        if (!Visual.fixWitherEssence || skullType != SkullBlock.Types.PLAYER) return;
 
-        ProfileComponent profileComponent = blockEntity.getOwner();
+        ResolvableProfile profileComponent = blockEntity.getOwnerProfile();
         if (profileComponent == null) return;
 
-        GameProfile profile = profileComponent.getGameProfile();
+        GameProfile profile = profileComponent.partialProfile();
 
         if (profile.id().toString().equals("e0f3e929-869e-3dca-9504-54c666ee6f23")) {
-            cir.setReturnValue(getCutoutRenderLayer(SkullBlock.Type.PLAYER, ESSENCE_TEXTURE));
+            cir.setReturnValue(getSkullRenderType(SkullBlock.Types.PLAYER, ESSENCE_TEXTURE));
         }
     }
 }

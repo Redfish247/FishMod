@@ -1,19 +1,18 @@
 package fishmod.cosmetic;
 
 import fishmod.mixin.ChatHudInvoker;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.hud.ChatHud;
-import net.minecraft.client.gui.hud.ChatHudLine;
-import net.minecraft.text.Text;
-
 import java.util.List;
+import net.minecraft.client.GuiMessage;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.ChatComponent;
+import net.minecraft.network.chat.Component;
 
 /**
  * Retroactively re-styles messages already sitting in the chat history when a cosmetic nick becomes
  * known. {@link fishmod.mixin.CosmeticChatMixin} swaps IGN→nick when a message is first added, so a
  * message that arrives before its sender's nick has loaded gets baked with the plain IGN. Once
  * {@link RemoteNicks} learns that nick (via the periodic {@link RemoteSync} poll or a chat-driven
- * lookup) it calls {@link #requestRefresh()}, which re-runs the swap over the stored {@link ChatHud}
+ * lookup) it calls {@link #requestRefresh()}, which re-runs the swap over the stored {@link ChatComponent}
  * messages and re-wraps them — so the past line flips from the IGN to the styled nick in place.
  *
  * Re-styling is idempotent ({@link NameRewriter#replaceName} no-ops on already-decorated text) and
@@ -29,24 +28,24 @@ public final class ChatNickRefresher {
     public static void requestRefresh() {
         if (scheduled) return;
         scheduled = true;
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         mc.execute(() -> { scheduled = false; reapply(mc); });
     }
 
-    private static void reapply(MinecraftClient mc) {
-        if (mc.inGameHud == null) return;
-        ChatHud hud = mc.inGameHud.getChatHud();
+    private static void reapply(Minecraft mc) {
+        if (mc.gui == null) return;
+        ChatComponent hud = mc.gui.getChat();
         if (hud == null) return;
-        List<ChatHudLine> messages = ((ChatHudInvoker) hud).getMessages();
+        List<GuiMessage> messages = ((ChatHudInvoker) hud).getMessages();
         if (messages == null || messages.isEmpty()) return;
 
         boolean changed = false;
         for (int i = 0; i < messages.size(); i++) {
-            ChatHudLine line = messages.get(i);
-            Text content = line.content();
-            Text swapped = swapKnown(content);
+            GuiMessage line = messages.get(i);
+            Component content = line.content();
+            Component swapped = swapKnown(content);
             if (swapped != content) {
-                messages.set(i, new ChatHudLine(line.creationTick(), swapped, line.signature(), line.indicator()));
+                messages.set(i, new GuiMessage(line.addedTime(), swapped, line.signature(), line.tag()));
                 changed = true;
             }
         }
@@ -54,8 +53,8 @@ public final class ChatNickRefresher {
     }
 
     /** Mirrors CosmeticChatMixin's swap but without firing new lookups (own nick + known remote nicks). */
-    private static Text swapKnown(Text text) {
-        Text out = text;
+    private static Component swapKnown(Component text) {
+        Component out = text;
         if (NickState.isActive()) {
             String real = NickState.realName();
             if (!real.isEmpty() && out.getString().contains(real))

@@ -4,12 +4,11 @@ import fishmod.utils.Location;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.events.Events;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.hud.InGameHud;
-import net.minecraft.entity.Entity;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.Entity;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -56,21 +55,21 @@ public final class SlayerAlerts {
         Events.ON_WORLD_CHANGE.register(() -> { seenSpawnIds.clear(); return false; });
     }
 
-    private static void tick(MinecraftClient mc) {
+    private static void tick(Minecraft mc) {
         if (!FishSettings.slayerAlertsEnabled || !FishSettings.slayerAlertBossSpawn) return;
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null || mc.level == null) return;
         if (++tickCount < 10) return;
         tickCount = 0;
 
         String self = mc.player.getGameProfile().name();
         String marker = "Spawned by: " + self;
-        for (Entity e : mc.world.getEntities()) {
+        for (Entity e : mc.level.entitiesForRendering()) {
             if (!e.hasCustomName()) continue;
-            Text name = e.getCustomName();
+            Component name = e.getCustomName();
             if (name == null) continue;
             String s = name.getString().replaceAll("§.", "");
             if (s.contains(marker) && seenSpawnIds.add(e.getId())) {
-                alert("§5§lSLAYER BOSS", "§dSpawned — slay it!", SoundEvents.ENTITY_WITHER_SPAWN);
+                alert("§5§lSLAYER BOSS", "§dSpawned — slay it!", SoundEvents.WITHER_SPAWN);
             }
         }
         // Keep the seen-set from growing without bound across a long session.
@@ -84,7 +83,7 @@ public final class SlayerAlerts {
 
         if (plain.contains("SLAYER QUEST COMPLETE")) {
             if (FishSettings.slayerAlertBossSlain)
-                alert("§a§lBOSS SLAIN", "§7Slayer quest complete", SoundEvents.ENTITY_PLAYER_LEVELUP);
+                alert("§a§lBOSS SLAIN", "§7Slayer quest complete", SoundEvents.PLAYER_LEVELUP);
             return;
         }
 
@@ -92,29 +91,29 @@ public final class SlayerAlerts {
             for (String line : MINIBOSS_LINES) {
                 if (plain.toLowerCase().contains(line.toLowerCase())) {
                     lastMinibossMs = now;
-                    alert("§c§lMINIBOSS", "§7" + line, SoundEvents.BLOCK_NOTE_BLOCK_PLING.value());
+                    alert("§c§lMINIBOSS", "§7" + line, SoundEvents.NOTE_BLOCK_PLING.value());
                     return;
                 }
             }
         }
 
         if (debugDump && Location.inSkyblock() && !plain.isEmpty()) {
-            MinecraftClient mc = MinecraftClient.getInstance();
+            Minecraft mc = Minecraft.getInstance();
             mc.execute(() -> {
-                if (mc.inGameHud != null)
-                    mc.inGameHud.getChatHud().addMessage(Text.literal("§8[slayerdump] §7" + plain));
+                if (mc.gui != null)
+                    mc.gui.getChat().addMessage(Component.literal("§8[slayerdump] §7" + plain));
             });
         }
     }
 
-    private static void alert(String title, String subtitle, net.minecraft.sound.SoundEvent sound) {
-        MinecraftClient mc = MinecraftClient.getInstance();
+    private static void alert(String title, String subtitle, net.minecraft.sounds.SoundEvent sound) {
+        Minecraft mc = Minecraft.getInstance();
         mc.execute(() -> {
-            InGameHud hud = mc.inGameHud;
+            Gui hud = mc.gui;
             if (hud == null) return;
-            hud.setTitleTicks(0, 25, 8);
-            hud.setTitle(Text.literal(title));
-            hud.setSubtitle(Text.literal(subtitle));
+            hud.setTimes(0, 25, 8);
+            hud.setTitle(Component.literal(title));
+            hud.setSubtitle(Component.literal(subtitle));
             if (FishSettings.slayerAlertSound && mc.player != null)
                 mc.player.playSound(sound, 1.0f, 1.0f);
         });

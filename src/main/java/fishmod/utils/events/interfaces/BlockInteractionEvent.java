@@ -1,7 +1,7 @@
 package fishmod.utils.events.interfaces;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.BlockHitResult;
 
 public interface BlockInteractionEvent {
 

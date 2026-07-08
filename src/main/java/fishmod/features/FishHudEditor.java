@@ -2,12 +2,6 @@ package fishmod.features;
 
 import fishmod.utils.config.FishConfig;
 import config.practical.hud.HUDComponent;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
@@ -15,6 +9,11 @@ import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
 
 public class FishHudEditor extends Screen {
 
@@ -82,13 +81,13 @@ public class FishHudEditor extends Screen {
         ENTRIES.add(new HudEntry(name,
             () -> Math.round(component.getScaledX() * component.getScale()),
             v -> {
-                int ww = MinecraftClient.getInstance().getWindow().getScaledWidth();
+                int ww = Minecraft.getInstance().getWindow().getGuiScaledWidth();
                 int cur = Math.round(component.getScaledX() * component.getScale());
                 component.move((double)(v - cur) / ww, 0);
             },
             () -> Math.round(component.getScaledY() * component.getScale()),
             v -> {
-                int wh = MinecraftClient.getInstance().getWindow().getScaledHeight();
+                int wh = Minecraft.getInstance().getWindow().getGuiScaledHeight();
                 int cur = Math.round(component.getScaledY() * component.getScale());
                 component.move(0, (double)(v - cur) / wh);
             },
@@ -164,18 +163,18 @@ public class FishHudEditor extends Screen {
     private boolean resetArmed = false;
 
     public FishHudEditor(Screen parent) {
-        super(Text.literal("Edit HUD"));
+        super(Component.literal("Edit HUD"));
         this.parent = parent;
     }
 
     @Override
-    public boolean shouldPause() { return false; }
+    public boolean isPauseScreen() { return false; }
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         ctx.fill(0, 0, this.width, this.height, 0x80000000);
 
-        ctx.drawCenteredTextWithShadow(this.textRenderer,
+        ctx.drawCenteredString(this.font,
                 "Drag to move · scroll to resize", this.width / 2, 10, 0xFFAAAAAA);
 
         // Done button
@@ -185,7 +184,7 @@ public class FishHudEditor extends Screen {
         boolean btnHov = mouseX >= btnX && mouseX <= btnX + btnW
                       && mouseY >= btnY && mouseY <= btnY + btnH;
         ctx.fill(btnX, btnY, btnX + btnW, btnY + btnH, btnHov ? ACCENT_HOVER : ACCENT);
-        ctx.drawCenteredTextWithShadow(this.textRenderer, "Done",
+        ctx.drawCenteredString(this.font, "Done",
                 btnX + btnW / 2, btnY + (btnH - 8) / 2, 0xFFFFFFFF);
 
         // Reset-positions button (bottom-left). First click arms, second click confirms.
@@ -193,7 +192,7 @@ public class FishHudEditor extends Screen {
                     && mouseY >= btnY && mouseY <= btnY + btnH;
         int rFill = resetArmed ? 0xFFAA3333 : (rHov ? 0xFF553333 : 0xFF442222);
         ctx.fill(RESET_X, btnY, RESET_X + RESET_W, btnY + btnH, rFill);
-        ctx.drawCenteredTextWithShadow(this.textRenderer,
+        ctx.drawCenteredString(this.font,
                 resetArmed ? "§fClick to confirm" : "Reset positions",
                 RESET_X + RESET_W / 2, btnY + (btnH - 8) / 2, 0xFFFFCCCC);
 
@@ -222,7 +221,7 @@ public class FishHudEditor extends Screen {
 
             int labelColor = e.locked() ? 0xFF888888 : (active ? 0xFFFFFFFF : 0xFFAAAAAA);
             String label = e.name() + (e.scale() != 1.0 ? String.format(" §7(%.2fx)", e.scale()) : "");
-            int labelW = this.textRenderer.getWidth(label);
+            int labelW = this.font.width(label);
             int labelX, labelY;
             if (labelW + 6 <= scaledW) {
                 // fits inside the box
@@ -235,14 +234,14 @@ public class FishHudEditor extends Screen {
                 labelY = (y + scaledH + 10 <= this.height) ? y + scaledH + 1 : y - 10;
                 ctx.fill(labelX - 1, labelY - 1, labelX + labelW + 1, labelY + 9, 0xC0000000);
             }
-            ctx.drawText(this.textRenderer, label, labelX, labelY, labelColor, true);
+            ctx.drawString(this.font, label, labelX, labelY, labelColor, true);
         }
 
         super.render(ctx, mouseX, mouseY, delta);
     }
 
     @Override
-    public boolean mouseClicked(Click click, boolean bl) {
+    public boolean mouseClicked(MouseButtonEvent click, boolean bl) {
         int mx = (int) click.x();
         int my = (int) click.y();
 
@@ -250,7 +249,7 @@ public class FishHudEditor extends Screen {
         int btnX = this.width / 2 - btnW / 2;
         int btnY = this.height - 28;
         if (mx >= btnX && mx <= btnX + btnW && my >= btnY && my <= btnY + btnH) {
-            this.close();
+            this.onClose();
             return true;
         }
 
@@ -280,7 +279,7 @@ public class FishHudEditor extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(Click click, double deltaX, double deltaY) {
+    public boolean mouseDragged(MouseButtonEvent click, double deltaX, double deltaY) {
         if (dragging != null) {
             int nx = (int) click.x() - dragOffX;
             int ny = (int) click.y() - dragOffY;
@@ -296,7 +295,7 @@ public class FishHudEditor extends Screen {
     }
 
     @Override
-    public boolean mouseReleased(Click click) {
+    public boolean mouseReleased(MouseButtonEvent click) {
         dragging = null;
         return super.mouseReleased(click);
     }
@@ -321,8 +320,8 @@ public class FishHudEditor extends Screen {
     }
 
     @Override
-    public void close() {
+    public void onClose() {
         FishConfig.manager.save();
-        MinecraftClient.getInstance().setScreen(parent);
+        Minecraft.getInstance().setScreen(parent);
     }
 }
