@@ -8,8 +8,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.PlayerFaceRenderer;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.PlayerFaceExtractor;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
 
@@ -63,7 +63,7 @@ public final class CompactTab {
         return false;
     }
 
-    public static void render(GuiGraphics ctx, int screenW, String tabHeader, String tabFooter) {
+    public static void render(GuiGraphicsExtractor ctx, int screenW, String tabHeader, String tabFooter) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.getConnection() == null) return;
         Font tr = mc.font;
@@ -138,9 +138,9 @@ public final class CompactTab {
             int cxL = x0 + i * cellW;
             if (i > 0) ctx.fill(cxL, y0 + 5, cxL + 1, y0 + headH - 5, DIVIDER);
             int cxC = cxL + cellW / 2;
-            ctx.drawCenteredString(tr, "§7" + labels[i], cxC, y0 + 5, LABEL);
+            ctx.centeredText(tr, "§7" + labels[i], cxC, y0 + 5, LABEL);
             int vc = (i == 1 && tps >= 0 && tps < 19) ? 0xFFFF5555 : VALUE;
-            ctx.drawCenteredString(tr, values[i], cxC, y0 + 16, vc);
+            ctx.centeredText(tr, values[i], cxC, y0 + 16, vc);
         }
         ctx.fill(x0 + 4, y0 + headH - 1, x0 + pw - 4, y0 + headH, DIVIDER);
 
@@ -159,18 +159,18 @@ public final class CompactTab {
                 int ry = cy + r * lh;
                 int tx = colX;
                 if (playersCol && r > 0) {
-                    try { PlayerFaceRenderer.draw(ctx, e.getSkin(), colX, ry - 1, 8); } catch (Exception ignored) {}
+                    try { PlayerFaceExtractor.extractRenderState(ctx, e.getSkin(), colX, ry - 1, 8); } catch (Exception ignored) {}
                     tx = colX + 10;
                 }
                 // draw styled text directly (no plain-string trim → keeps rank colors)
-                ctx.drawString(tr, dn, tx, ry, NAME, true);
+                ctx.text(tr, dn, tx, ry, NAME, true);
                 if (playersCol && r > 0 && e.getLatency() > 0)
                     drawSignal(ctx, colX + w - 13, ry, e.getLatency());
             }
             colX += w + gap;
         }
 
-        ctx.drawCenteredString(tr, footerLine(tabFooter), x0 + pw / 2, y0 + totalH - footH + 2, GOLD);
+        ctx.centeredText(tr, footerLine(tabFooter), x0 + pw / 2, y0 + totalH - footH + 2, GOLD);
     }
 
     private static boolean blank(PlayerInfo e) {
@@ -183,7 +183,7 @@ public final class CompactTab {
     }
 
     /** 2px-radius rounded rectangle fill. */
-    private static void roundRect(GuiGraphics ctx, int x1, int y1, int x2, int y2, int color) {
+    private static void roundRect(GuiGraphicsExtractor ctx, int x1, int y1, int x2, int y2, int color) {
         ctx.fill(x1 + 2, y1, x2 - 2, y1 + 1, color);
         ctx.fill(x1 + 1, y1 + 1, x2 - 1, y1 + 2, color);
         ctx.fill(x1, y1 + 2, x2, y2 - 2, color);
@@ -191,7 +191,7 @@ public final class CompactTab {
         ctx.fill(x1 + 2, y2 - 1, x2 - 2, y2, color);
     }
 
-    private static void drawSignal(GuiGraphics ctx, int x, int y, int latency) {
+    private static void drawSignal(GuiGraphicsExtractor ctx, int x, int y, int latency) {
         int filled = latency <= 75 ? 4 : latency <= 150 ? 3 : latency <= 300 ? 2 : 1;
         for (int b = 0; b < 4; b++) {
             int h = 2 + b * 2;

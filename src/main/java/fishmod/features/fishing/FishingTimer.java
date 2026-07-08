@@ -5,7 +5,7 @@ import fishmod.utils.config.values.FishSettings;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.projectile.FishingHook;
@@ -141,11 +141,11 @@ public final class FishingTimer {
         return FishSettings.fishingTimerEnabled && currentLine() != null;
     }
 
-    public static void renderHud(GuiGraphics ctx, DeltaTracker tick) {
+    public static void renderHud(GuiGraphicsExtractor ctx, DeltaTracker tick) {
         if (!FishSettings.fishingTimerEnabled || !Location.inSkyblock()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
 
         String line = currentLine();
         if (line == null) return;
@@ -154,7 +154,7 @@ public final class FishingTimer {
         ctx.pose().pushMatrix();
         ctx.pose().translate((float) FishSettings.fishingTimerHudX, (float) FishSettings.fishingTimerHudY);
         ctx.pose().scale(sc, sc);
-        ctx.drawString(mc.font, line, 0, 0, 0xFFFFFFFF, true);
+        ctx.text(mc.font, line, 0, 0, 0xFFFFFFFF, true);
         ctx.pose().popMatrix();
     }
 }

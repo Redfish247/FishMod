@@ -6,7 +6,7 @@ import fishmod.utils.config.values.FishSettings;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import java.util.Collection;
@@ -79,7 +79,7 @@ public class SoulflowHud {
         }
     }
 
-    public static void renderHud(GuiGraphics ctx, DeltaTracker tickCounter) {
+    public static void renderHud(GuiGraphicsExtractor ctx, DeltaTracker tickCounter) {
         if (!FishSettings.soulflowHudEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
@@ -103,7 +103,7 @@ public class SoulflowHud {
         ctx.pose().pushMatrix();
         ctx.pose().translate((float) FishSettings.soulflowHudX, (float) FishSettings.soulflowHudY);
         ctx.pose().scale(sc, sc);
-        ctx.drawString(mc.font, label, 0, 0, -1, true);
+        ctx.text(mc.font, label, 0, 0, -1, true);
         ctx.pose().popMatrix();
     }
 }

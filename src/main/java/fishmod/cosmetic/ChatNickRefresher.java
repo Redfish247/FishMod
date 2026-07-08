@@ -2,7 +2,7 @@ package fishmod.cosmetic;
 
 import fishmod.mixin.ChatHudInvoker;
 import java.util.List;
-import net.minecraft.client.GuiMessage;
+import net.minecraft.client.multiplayer.chat.GuiMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.network.chat.Component;
@@ -34,7 +34,7 @@ public final class ChatNickRefresher {
 
     private static void reapply(Minecraft mc) {
         if (mc.gui == null) return;
-        ChatComponent hud = mc.gui.getChat();
+        ChatComponent hud = mc.gui.hud.getChat();
         if (hud == null) return;
         List<GuiMessage> messages = ((ChatHudInvoker) hud).getMessages();
         if (messages == null || messages.isEmpty()) return;
@@ -45,7 +45,7 @@ public final class ChatNickRefresher {
             Component content = line.content();
             Component swapped = swapKnown(content);
             if (swapped != content) {
-                messages.set(i, new GuiMessage(line.addedTime(), swapped, line.signature(), line.tag()));
+                messages.set(i, new GuiMessage(line.addedTime(), swapped, line.signature(), line.source(), line.tag()));
                 changed = true;
             }
         }

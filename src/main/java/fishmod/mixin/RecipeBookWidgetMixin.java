@@ -1,7 +1,7 @@
 package fishmod.mixin;
 
 import fishmod.utils.config.values.ExtraOptions;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class RecipeBookWidgetMixin {
 
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         if (ExtraOptions.disableRecipeBook) {
             ci.cancel();
         }

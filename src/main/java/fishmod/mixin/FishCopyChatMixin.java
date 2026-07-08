@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
-import net.minecraft.client.GuiMessage;
+import net.minecraft.client.multiplayer.chat.GuiMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.client.gui.screens.ChatScreen;
@@ -32,7 +32,7 @@ public class FishCopyChatMixin extends Screen {
         if ((!ExtraOptions.copyChat && !smart) || click.button() != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
 
         Minecraft mc = Minecraft.getInstance();
-        ChatHudInvoker hudInvoker = (ChatHudInvoker) mc.gui.getChat();
+        ChatHudInvoker hudInvoker = (ChatHudInvoker) mc.gui.hud.getChat();
         if (hudInvoker == null) return;
 
         double x = toChatLineX(hudInvoker, click.x());

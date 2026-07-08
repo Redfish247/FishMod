@@ -4,7 +4,7 @@ import fishmod.features.FishModScreen;
 import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -45,44 +45,44 @@ public class Keybinds {
         category = KeyMapping.Category.register(Identifier.parse(Constants.NAMESPACE));
 
         //normal keybinds
-        openConfig = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        openConfig = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "FishMod: Open Config",
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_RIGHT_SHIFT,
                 category));
 
-        trades = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        trades = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "FishMod: Open trades menu",
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
 
-        potions = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        potions = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "FishMod: Open potion bag",
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
 
-        openItemWiki = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        openItemWiki = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "FishMod: Open item wiki",
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
 
         //debug keybinds
-        getItemLore = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        getItemLore = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "FishMod: Copy item lore",
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
 
-        getItemCustomData = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        getItemCustomData = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "FishMod: Copy item NBT",
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
 
-        getBlockInfo = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        getBlockInfo = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "FishMod: Copy block data",
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
@@ -94,7 +94,7 @@ public class Keybinds {
     public static void checkInputs(Minecraft client) {
 
         if (openConfig.consumeClick()) {
-            client.setScreen(new fishmod.features.FishModScreen());
+            client.gui.setScreen(new fishmod.features.FishModScreen());
         }
 
         if (trades.consumeClick()) {

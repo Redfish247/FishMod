@@ -10,7 +10,7 @@ import fishmod.utils.events.Events;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.component.DataComponents;
@@ -80,7 +80,7 @@ public final class TrophyFishTracker {
 
     // ── menu baseline ──────────────────────────────────────────────────────────
     private static void scanMenu(Minecraft mc) {
-        Screen scr = mc.screen;
+        Screen scr = mc.gui.screen();
         if (!(scr instanceof AbstractContainerScreen<?> hs)
                 || !(hs.getMenu() instanceof ChestMenu handler)
                 || !scr.getTitle().getString().replaceAll("§.", "").trim().contains("Trophy Fish")) {
@@ -157,7 +157,7 @@ public final class TrophyFishTracker {
             needsSync = true;
             Minecraft mc = Minecraft.getInstance();
             mc.execute(() -> {
-                if (mc.gui != null) mc.gui.getChat().addMessage(Component.literal(
+                if (mc.gui != null) mc.gui.hud.getChat().addClientSystemMessage(Component.literal(
                         "§e[FishMod] §7Trophy fish counts are now estimated — open the §bTrophy Fishing §7menu to correct them."));
             });
         }
@@ -217,22 +217,22 @@ public final class TrophyFishTracker {
         return FishSettings.trophyFishEnabled && !data.isEmpty() && inCrimson();
     }
 
-    public static void renderHud(GuiGraphics ctx, DeltaTracker tick) {
+    public static void renderHud(GuiGraphicsExtractor ctx, DeltaTracker tick) {
         if (!isVisible()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         draw(ctx, mc);
     }
 
-    public static void renderInScreen(GuiGraphics ctx) {
+    public static void renderInScreen(GuiGraphicsExtractor ctx) {
         if (!isVisible()) return;
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
+        if (!(mc.gui.screen() instanceof AbstractContainerScreen<?>)) return;
         draw(ctx, mc);
     }
 
-    private static void draw(GuiGraphics ctx, Minecraft mc) {
+    private static void draw(GuiGraphicsExtractor ctx, Minecraft mc) {
         int x = FishSettings.trophyFishHudX;
         int y = FishSettings.trophyFishHudY;
         float sc = (float) FishSettings.trophyFishHudScale;
@@ -256,13 +256,13 @@ public final class TrophyFishTracker {
         ctx.pose().pushMatrix();
         ctx.pose().translate((float) x, (float) y);
         ctx.pose().scale(sc, sc);
-        ctx.drawString(tr, "Trophy Fish", 0, 0, 0xFF000000 | C_HEADER, true);
+        ctx.text(tr, "Trophy Fish", 0, 0, 0xFF000000 | C_HEADER, true);
         int row = 1;
         for (var e : data.entrySet()) {
             int ty = lh * row;
             int[] t = e.getValue();
             int total = t[0] + t[1] + t[2] + t[3];
-            ctx.drawString(tr, e.getKey() + " ", 0, ty, 0xFF000000 | C_NAME, true);
+            ctx.text(tr, e.getKey() + " ", 0, ty, 0xFF000000 | C_NAME, true);
             drawTok(ctx, tr, "(" + total + ")", tr.width(e.getKey() + " "), ty, C_TOTAL);
             for (int i = 0; i < 4; i++) {
                 int cx = cellX[i];
@@ -275,8 +275,8 @@ public final class TrophyFishTracker {
         ctx.pose().popMatrix();
     }
 
-    private static void drawTok(GuiGraphics ctx, net.minecraft.client.gui.Font tr,
+    private static void drawTok(GuiGraphicsExtractor ctx, net.minecraft.client.gui.Font tr,
                                 String s, int cx, int ty, int color) {
-        ctx.drawString(tr, s, cx, ty, 0xFF000000 | color, true);
+        ctx.text(tr, s, cx, ty, 0xFF000000 | color, true);
     }
 }

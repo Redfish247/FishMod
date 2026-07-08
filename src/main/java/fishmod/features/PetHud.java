@@ -8,7 +8,7 @@ import fishmod.utils.events.Events;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -180,7 +180,7 @@ public class PetHud {
                 HypixelApi.getActivePet(client, PetHud::applyApiPet);
             }
 
-            scanPetsMenuIfOpen(client.screen);
+            scanPetsMenuIfOpen(client.gui.screen());
 
             // After an equip/summon, scan every tick for a short burst (tab can lag the chat msg).
             if (forceScanTicks > 0) {
@@ -340,7 +340,7 @@ public class PetHud {
                 FishSettings.petHudEnabled, petName, petLevel, xpCurrent, xpNext);
     }
 
-    public static void renderHud(GuiGraphics ctx, DeltaTracker tickCounter) {
+    public static void renderHud(GuiGraphicsExtractor ctx, DeltaTracker tickCounter) {
         if (!FishSettings.petHudEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || !Location.inSkyblock() || petName == null) return;
@@ -371,7 +371,7 @@ public class PetHud {
         ctx.pose().pushMatrix();
         ctx.pose().translate((float) FishSettings.petHudX, (float) FishSettings.petHudY);
         ctx.pose().scale(sc, sc);
-        ctx.drawString(mc.font, text.toString(), 0, 0, -1, true);
+        ctx.text(mc.font, text.toString(), 0, 0, -1, true);
         ctx.pose().popMatrix();
     }
 

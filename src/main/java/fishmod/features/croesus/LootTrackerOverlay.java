@@ -11,7 +11,7 @@ import java.text.DecimalFormat;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.input.CharacterEvent;
@@ -46,6 +46,7 @@ public final class LootTrackerOverlay {
     // text widgets (lazy, like SearchBar). searchBox = item search, numberBox = active count/runs edit.
     private static EditBox searchBox;
     private static EditBox numberBox;
+    private static boolean numberBoxFiltering = false;
     private static String query = "";
     private static List<String> suggestions = List.of();
     private static boolean dropdownOpen = false;
@@ -83,7 +84,7 @@ public final class LootTrackerOverlay {
     private static boolean active() {
         if (!FishSettings.lootTrackerEnabled) return false;
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.screen instanceof InventoryScreen)) return false;
+        if (!(mc.gui.screen() instanceof InventoryScreen)) return false;
         return Location.getCurrentLocation() == Location.DUNGEON_HUB;
     }
 
@@ -100,18 +101,24 @@ public final class LootTrackerOverlay {
         });
         numberBox = new EditBox(mc.font, 0, 0, rowCountW, COUNT_H, Component.literal(""));
         numberBox.setMaxLength(9);
-        numberBox.setFilter(s -> s.isEmpty() || s.matches("\\d{1,9}"));
+        // EditBox lost setFilter(Predicate<String>) in 26.2 — enforce digits-only reactively instead.
+        numberBox.setResponder(s -> {
+            if (numberBoxFiltering || s.isEmpty() || s.matches("\\d{1,9}")) return;
+            numberBoxFiltering = true;
+            numberBox.setValue(s.replaceAll("[^\\d]", ""));
+            numberBoxFiltering = false;
+        });
         return true;
     }
 
     // ── render ───────────────────────────────────────────────────────────────
-    public static void renderInScreen(GuiGraphics ctx, int mx, int my) {
+    public static void renderInScreen(GuiGraphicsExtractor ctx, int mx, int my) {
         visible = false;
         if (!active() || !exists()) return;
         CroesusPrices.refreshIfStale(); // fire-and-forget; warms price cache
         Minecraft mc = Minecraft.getInstance();
         Font tr = mc.font;
-        HandledScreenAccessor s = (HandledScreenAccessor) mc.screen;
+        HandledScreenAccessor s = (HandledScreenAccessor) mc.gui.screen();
         int bgX = s.getBgX(), bgY = s.getBgY(), bgW = s.getBgWidth();
         int screenW = mc.getWindow().getGuiScaledWidth();
         int screenH = mc.getWindow().getGuiScaledHeight();
@@ -158,15 +165,15 @@ public final class LootTrackerOverlay {
         int y = panelY + PAD;
         // title bar (drag handle)
         titleBarY = panelY; titleBarH = PAD + 9;
-        ctx.drawString(tr, "§l⠿ Loot Tracker", panelX + PAD, y, ACCENT, true);
+        ctx.text(tr, "§l⠿ Loot Tracker", panelX + PAD, y, ACCENT, true);
         y += TITLE_H;
 
         // search box
         searchX = panelX + PAD; searchY = y; searchW = panelW - PAD * 2; searchH = SEARCH_H;
         searchBox.setX(searchX); searchBox.setY(searchY); searchBox.setWidth(searchW);
-        searchBox.render(ctx, mx, my, 0f);
+        searchBox.extractRenderState(ctx, mx, my, 0f);
         if (!searchBox.isFocused() && searchBox.getValue().isEmpty())
-            ctx.drawString(tr, "§8+ add drop…", searchX + 4, searchY + 3, SUB, false);
+            ctx.text(tr, "§8+ add drop…", searchX + 4, searchY + 3, SUB, false);
         y += SEARCH_H + SEARCH_GAP;
 
         // autocomplete dropdown
@@ -174,13 +181,13 @@ public final class LootTrackerOverlay {
             sugStartY = y;
             if (suggestions.isEmpty()) {
                 ctx.fill(searchX, y, searchX + searchW, y + sugRowH, 0xFF0E151B);
-                ctx.drawString(tr, "§8loading items…", searchX + 4, y + 2, SUB, false);
+                ctx.text(tr, "§8loading items…", searchX + 4, y + 2, SUB, false);
                 y += sugRowH;
             } else {
                 for (int i = 0; i < suggestions.size(); i++) {
                     boolean hov = hit(mx, my, searchX, y, searchW, sugRowH);
                     ctx.fill(searchX, y, searchX + searchW, y + sugRowH, hov ? 0xFF142028 : 0xFF0E151B);
-                    ctx.drawString(tr, tr.plainSubstrByWidth(suggestions.get(i), searchW - 6),
+                    ctx.text(tr, tr.plainSubstrByWidth(suggestions.get(i), searchW - 6),
                             searchX + 4, y + 2, hov ? ACCENT2 : TEXT, false);
                     y += sugRowH;
                 }
@@ -196,7 +203,7 @@ public final class LootTrackerOverlay {
         int nameX = rowPlusX + BTN + 4;
         rowY = new int[rows.size()];
         if (rows.isEmpty()) {
-            ctx.drawString(tr, "§8no drops yet — type above", x0, y + 4, SUB, true);
+            ctx.text(tr, "§8no drops yet — type above", x0, y + 4, SUB, true);
             y += ROW_H;
         } else {
             for (int i = 0; i < rows.size(); i++) {
@@ -215,9 +222,9 @@ public final class LootTrackerOverlay {
                 String val = v > 0 ? fmtCoins(v) : "—";
                 int vw = tr.width(val);
                 int valX = panelX + panelW - PAD - vw;
-                ctx.drawString(tr, val, valX, y + 4, v > 0 ? GOLD : SUB, true);
+                ctx.text(tr, val, valX, y + 4, v > 0 ? GOLD : SUB, true);
                 int maxNameW = Math.max(10, valX - nameX - 4);
-                ctx.drawString(tr, tr.plainSubstrByWidth(r.name, maxNameW), nameX, y + 4, TEXT, true);
+                ctx.text(tr, tr.plainSubstrByWidth(r.name, maxNameW), nameX, y + 4, TEXT, true);
                 y += ROW_H;
             }
         }
@@ -229,7 +236,7 @@ public final class LootTrackerOverlay {
         // runs row: Runs:  [-] [count] [+]
         runsRowY = y;
         int rct = y + 2;
-        ctx.drawString(tr, "§7Runs:", x0, y + 4, TEXT, true);
+        ctx.text(tr, "§7Runs:", x0, y + 4, TEXT, true);
         runsPlusX  = panelX + panelW - PAD - BTN;
         runsCountX = runsPlusX - 2 - rowCountW;
         runsMinusX = runsCountX - 2 - BTN;
@@ -245,11 +252,11 @@ public final class LootTrackerOverlay {
         for (LootTrackerStore.Row r : rows) totalDrops += r.count;
         double total = totalValue();
         double perRun = total / Math.max(1, runsCount);
-        ctx.drawString(tr, "§7Drops: §f" + totalDrops + " §8(" + rows.size() + " types)", x0, y, TEXT, true);
+        ctx.text(tr, "§7Drops: §f" + totalDrops + " §8(" + rows.size() + " types)", x0, y, TEXT, true);
         y += LINE_H;
-        ctx.drawString(tr, "§7Total: §6" + fmtCoins(total), x0, y, TEXT, true);
+        ctx.text(tr, "§7Total: §6" + fmtCoins(total), x0, y, TEXT, true);
         y += LINE_H;
-        ctx.drawString(tr, "§7Per run: §6" + fmtCoins(perRun), x0, y, TEXT, true);
+        ctx.text(tr, "§7Per run: §6" + fmtCoins(perRun), x0, y, TEXT, true);
         y += LINE_H + 2;
 
         // clear button
@@ -258,29 +265,29 @@ public final class LootTrackerOverlay {
         ctx.fill(clearX, clearY, clearX + clearW, clearY + clearH, ch ? 0xFF3A1414 : BTN_BG);
         String cl = "§l[ Clear ]";
         int clw = tr.width(cl);
-        ctx.drawString(tr, ch ? "§c§l[ Clear ]" : cl, clearX + (clearW - clw) / 2,
+        ctx.text(tr, ch ? "§c§l[ Clear ]" : cl, clearX + (clearW - clw) / 2,
                 clearY + (clearH - 8) / 2, ch ? 0xFFFF6B6B : TEXT, true);
 
         visible = true;
     }
 
-    private static void renderNumberBox(GuiGraphics ctx, int mx, int my, int x, int y) {
+    private static void renderNumberBox(GuiGraphicsExtractor ctx, int mx, int my, int x, int y) {
         numberBox.setX(x); numberBox.setY(y); numberBox.setWidth(rowCountW);
-        numberBox.render(ctx, mx, my, 0f);
+        numberBox.extractRenderState(ctx, mx, my, 0f);
         numX = x; numY = y; numW = rowCountW; numH = COUNT_H;
     }
 
-    private static void drawCountCell(GuiGraphics ctx, Font tr, int x, int y, String text, boolean hov) {
+    private static void drawCountCell(GuiGraphicsExtractor ctx, Font tr, int x, int y, String text, boolean hov) {
         ctx.fill(x, y, x + rowCountW, y + COUNT_H, BORDER);
         ctx.fill(x + 1, y + 1, x + rowCountW - 1, y + COUNT_H - 1, hov ? BTN_HOV : BTN_BG);
         int tw = tr.width(text);
-        ctx.drawString(tr, text, x + (rowCountW - tw) / 2, y + (COUNT_H - 8) / 2, hov ? ACCENT2 : TEXT, false);
+        ctx.text(tr, text, x + (rowCountW - tw) / 2, y + (COUNT_H - 8) / 2, hov ? ACCENT2 : TEXT, false);
     }
 
-    private static void drawMini(GuiGraphics ctx, Font tr, int x, int y, String glyph, boolean hov) {
+    private static void drawMini(GuiGraphicsExtractor ctx, Font tr, int x, int y, String glyph, boolean hov) {
         ctx.fill(x, y, x + BTN, y + BTN, hov ? BTN_HOV : BTN_BG);
         int gw = tr.width(glyph);
-        ctx.drawString(tr, glyph, x + (BTN - gw) / 2, y + (BTN - 8) / 2, hov ? ACCENT2 : TEXT, false);
+        ctx.text(tr, glyph, x + (BTN - gw) / 2, y + (BTN - 8) / 2, hov ? ACCENT2 : TEXT, false);
     }
 
     // ── click ────────────────────────────────────────────────────────────────

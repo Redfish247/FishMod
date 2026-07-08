@@ -2,7 +2,7 @@ package fishmod.features.challenges;
 
 import java.util.List;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
@@ -60,10 +60,10 @@ public class ChallengeScreen extends Screen {
     }
 
     @Override public boolean isPauseScreen() { return false; }
-    @Override public void renderTransparentBackground(GuiGraphics ctx) {}
+    @Override public void extractTransparentBackground(GuiGraphicsExtractor ctx) {}
 
     @Override
-    public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+    public void extractBackground(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
         // Full-screen dim, plus subtle vignette band at top/bottom.
         ctx.fill(0, 0, this.width, this.height, PANEL_BG);
         ctx.fill(0, 0, this.width, 1, ACCENT);
@@ -81,7 +81,7 @@ public class ChallengeScreen extends Screen {
     }
     private static int slide(float r) { return Math.round((1f - r) * -10f); }
 
-    private static void roundRect(GuiGraphics ctx, int x1, int y1, int x2, int y2, int color) {
+    private static void roundRect(GuiGraphicsExtractor ctx, int x1, int y1, int x2, int y2, int color) {
         if (x2 - x1 < 4 || y2 - y1 < 4) { ctx.fill(x1, y1, x2, y2, color); return; }
         ctx.fill(x1 + 2, y1,     x2 - 2, y1 + 1, color);
         ctx.fill(x1 + 1, y1 + 1, x2 - 1, y1 + 2, color);
@@ -90,11 +90,11 @@ public class ChallengeScreen extends Screen {
         ctx.fill(x1 + 2, y2 - 1, x2 - 2, y2,     color);
     }
 
-    private void scaledText(GuiGraphics ctx, String s, int x, int y, int color, float scale) {
+    private void scaledText(GuiGraphicsExtractor ctx, String s, int x, int y, int color, float scale) {
         ctx.pose().pushMatrix();
         ctx.pose().translate((float) x, (float) y);
         ctx.pose().scale(scale, scale);
-        ctx.drawString(this.font, s, 0, 0, color, false);
+        ctx.text(this.font, s, 0, 0, color, false);
         ctx.pose().popMatrix();
     }
     private int scaledWidth(String s, float scale) {
@@ -102,8 +102,8 @@ public class ChallengeScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
-        super.render(ctx, mouseX, mouseY, delta);
+    public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
+        super.extractRenderState(ctx, mouseX, mouseY, delta);
         ChallengeProgress p = ChallengeProgress.get();
 
         // ── Header ───────────────────────────────────────────────────────────
@@ -112,7 +112,7 @@ public class ChallengeScreen extends Screen {
         int headerY = 22 + hdy;
         String title = "§l✦ FishMod Challenges ✦";
         int titleW = this.font.width(title);
-        ctx.drawString(this.font, title, (this.width - titleW) / 2, headerY, fade(0xFFFFD580, hr), false);
+        ctx.text(this.font, title, (this.width - titleW) / 2, headerY, fade(0xFFFFD580, hr), false);
 
         String rerollNote;
         int rerollsThisMonth = ChallengeProgress.currentMonthKey().equals(p.rerollMonthKey) ? p.rerollsUsedThisMonth : 0;
@@ -184,7 +184,7 @@ public class ChallengeScreen extends Screen {
                 ctx.pose().pushMatrix();
                 ctx.pose().translate((float)(startX + 60), (float) rowY);
                 ctx.pose().scale(TEXT_SCALE, TEXT_SCALE);
-                ctx.drawString(this.font, ChallengeApi.renderName(e.name).getVisualOrderText(), 0, 0, fade(TEXT, lr), false);
+                ctx.text(this.font, ChallengeApi.renderName(e.name).getVisualOrderText(), 0, 0, fade(TEXT, lr), false);
                 ctx.pose().popMatrix();
                 String pts = "§a§l" + e.totalPoints;
                 scaledText(ctx, pts, startX + lbW - 12 - scaledWidth(pts, TEXT_SCALE), rowY, fade(TEXT, lr), TEXT_SCALE);
@@ -195,17 +195,17 @@ public class ChallengeScreen extends Screen {
         // Footer hint
         String hint = "§8esc to close  §7•  §8right-click a tier card to reroll";
         int hw = this.font.width(hint);
-        ctx.drawString(this.font, hint, (this.width - hw) / 2, this.height - 14, fade(SUBTEXT, lr), false);
+        ctx.text(this.font, hint, (this.width - hw) / 2, this.height - 14, fade(SUBTEXT, lr), false);
     }
 
-    private void drawChip(GuiGraphics ctx, String label, int x, int y, int w, float a) {
+    private void drawChip(GuiGraphicsExtractor ctx, String label, int x, int y, int w, float a) {
         int h = 14;
         roundRect(ctx, x, y, x + w, y + h, fade(CARD_BG, a));
         ctx.fill(x, y, x + 2, y + h, fade(ACCENT, a)); // left rail
         scaledText(ctx, label, x + 7, y + (h - 8) / 2, fade(TEXT, a), TEXT_SCALE);
     }
 
-    private void renderCard(GuiGraphics ctx, Tier tier, Challenge active, int x, int y, int w, int h, int mx, int my, float a) {
+    private void renderCard(GuiGraphicsExtractor ctx, Tier tier, Challenge active, int x, int y, int w, int h, int mx, int my, float a) {
         boolean hover = mx >= x && mx <= x + w && my >= y && my <= y + h;
         roundRect(ctx, x, y, x + w, y + h, fade(hover ? CARD_HOVER : CARD_BG, a));
         // tier color accent strip
@@ -339,7 +339,7 @@ public class ChallengeScreen extends Screen {
 
     @Override
     public void onClose() {
-        Minecraft.getInstance().setScreen(parent);
+        Minecraft.getInstance().gui.setScreen(parent);
     }
 
     private static String formatMs(long ms) {

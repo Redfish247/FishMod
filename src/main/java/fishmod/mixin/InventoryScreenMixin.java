@@ -2,7 +2,7 @@ package fishmod.mixin;
 
 import fishmod.features.other.InventoryButton;
 import fishmod.utils.config.values.Buttons;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractRecipeBookScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
@@ -24,13 +24,13 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
     }
 
     @Inject(method = "renderLabels", at = @At("HEAD"), cancellable = true)
-    protected void drawForeground(GuiGraphics context, int mouseX, int mouseY, CallbackInfo ci) {
+    protected void drawForeground(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
         ci.cancel();
     }
 
     // Inventory command buttons (1:1 with blade-addons): render at the inventory's top-left origin.
     @Inject(method = "render", at = @At("TAIL"))
-    private void fishmod$renderInventoryButtons(GuiGraphics context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+    private void fishmod$renderInventoryButtons(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         if (!Buttons.enableInventoryButtons) return;
         Matrix3x2fStack stack = context.pose();
         stack.pushMatrix();

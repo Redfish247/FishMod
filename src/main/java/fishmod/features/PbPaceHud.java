@@ -7,7 +7,7 @@ import fishmod.utils.dungeon.RunHistory;
 import fishmod.utils.dungeon.Split;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.ChatScreen;
 
 /**
@@ -24,11 +24,11 @@ public final class PbPaceHud {
         return FishSettings.pbPaceEnabled && Phase.runStarted() && !Phase.getCurrentSplits().isEmpty();
     }
 
-    public static void renderHud(GuiGraphics ctx, DeltaTracker tick) {
+    public static void renderHud(GuiGraphicsExtractor ctx, DeltaTracker tick) {
         if (!FishSettings.pbPaceEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.screen != null && !(mc.screen instanceof ChatScreen)) return;
+        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof ChatScreen)) return;
         if (!Phase.runStarted()) return;
 
         java.util.List<Split> splits = Phase.getCurrentSplits();
@@ -65,13 +65,13 @@ public final class PbPaceHud {
         ctx.pose().translate((float) x, (float) y);
         ctx.pose().scale(sc, sc);
         int row = 0;
-        ctx.drawString(mc.font, "§6§lPB Pace §7(" + floor.toUpperCase() + ")", 0, row++ * lh, 0xFFFFFFFF, true);
+        ctx.text(mc.font, "§6§lPB Pace §7(" + floor.toUpperCase() + ")", 0, row++ * lh, 0xFFFFFFFF, true);
         if (lastHasPb)
-            ctx.drawString(mc.font, "§f" + last.getName() + " " + signed(lastDelta), 0, row++ * lh, 0xFFFFFFFF, true);
+            ctx.text(mc.font, "§f" + last.getName() + " " + signed(lastDelta), 0, row++ * lh, 0xFFFFFFFF, true);
         if (anyPb)
-            ctx.drawString(mc.font, "§7vs PB: " + (cumDelta <= 0 ? "§aahead " : "§cbehind ") + signed(cumDelta), 0, row++ * lh, 0xFFFFFFFF, true);
+            ctx.text(mc.font, "§7vs PB: " + (cumDelta <= 0 ? "§aahead " : "§cbehind ") + signed(cumDelta), 0, row++ * lh, 0xFFFFFFFF, true);
         else
-            ctx.drawString(mc.font, "§8building PB history…", 0, row++ * lh, 0xFFFFFFFF, true);
+            ctx.text(mc.font, "§8building PB history…", 0, row++ * lh, 0xFFFFFFFF, true);
         ctx.pose().popMatrix();
     }
 

@@ -12,7 +12,7 @@ import fishmod.utils.data.ItemUtil;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
@@ -576,8 +576,8 @@ if (sessionStartMs < 0 && totalCoins > 0) sessionStartMs = now;
         // Skip while a Forge / Anvil / Crafting GUI is open — items appearing in inv from those
         // are not drops and shouldn't be credited. Re-baseline silently while open so we don't
         // pick up the post-close diff either.
-        if (client.screen instanceof AbstractContainerScreen<?>) {
-            String title = client.screen.getTitle().getString();
+        if (client.gui.screen() instanceof AbstractContainerScreen<?>) {
+            String title = client.gui.screen().getTitle().getString();
             if (title.contains("Forge") || title.contains("The Forge") || title.contains("Anvil")
                     || title.contains("Crafting") || title.contains("Reforge") || title.contains("Recipe Book")) {
                 rebaselineUntilMs = System.currentTimeMillis() + 3_000;
@@ -878,12 +878,12 @@ long now = System.currentTimeMillis();
         };
     }
 
-    public static void renderHud(GuiGraphics ctx, DeltaTracker tick) {
+    public static void renderHud(GuiGraphicsExtractor ctx, DeltaTracker tick) {
         btnVisible = false;
         if (!FishSettings.miningTrackerEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         if (!inMiningArea()) return;
         int x = FishSettings.miningTrackerHudX;
         int y = FishSettings.miningTrackerHudY;
@@ -894,15 +894,15 @@ long now = System.currentTimeMillis();
         ctx.pose().translate((float) x, (float) y);
         ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+            ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
         ctx.pose().popMatrix();
     }
 
-    public static void renderInScreen(GuiGraphics ctx, int mouseX, int mouseY) {
+    public static void renderInScreen(GuiGraphicsExtractor ctx, int mouseX, int mouseY) {
         btnVisible = false;
         if (!FishSettings.miningTrackerEnabled) return;
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
+        if (!(mc.gui.screen() instanceof AbstractContainerScreen<?>)) return;
         if (!inMiningArea()) return;
         int x = FishSettings.miningTrackerHudX;
         int y = FishSettings.miningTrackerHudY;
@@ -938,9 +938,9 @@ long now = System.currentTimeMillis();
         ctx.pose().translate((float) x, (float) y);
         ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
-        ctx.drawString(mc.font, shownReset, padX, localBtnY + padY, 0xFFFFFFFF, true);
-        ctx.drawString(mc.font, shownPause, localPauseX + padX, localBtnY + padY, 0xFFFFFFFF, true);
+            ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+        ctx.text(mc.font, shownReset, padX, localBtnY + padY, 0xFFFFFFFF, true);
+        ctx.text(mc.font, shownPause, localPauseX + padX, localBtnY + padY, 0xFFFFFFFF, true);
         ctx.pose().popMatrix();
         btnVisible = true;
     }

@@ -7,7 +7,7 @@ import fishmod.utils.rendering.DrawEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -274,12 +274,12 @@ public class CooldownOverlay {
     }
 
     /** Hotbar render hook (called from FishModInit HudRenderCallback). */
-    public static void renderHotbar(GuiGraphics ctx, DeltaTracker tickCounter) {
+    public static void renderHotbar(GuiGraphicsExtractor ctx, DeltaTracker tickCounter) {
         if (!FishSettings.cooldownOverlayEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer p = mc.player;
         if (p == null || mc.level == null) return;
-        if (mc.options.hideGui) return;
+        if (mc.gui.hud.isHidden()) return;
         if (mc.getDebugOverlay() != null && mc.getDebugOverlay().showDebugScreen()) return;
 
         // Sweep expired entries before drawing.
@@ -325,7 +325,7 @@ public class CooldownOverlay {
         while (it.hasNext()) if (it.next().getValue() <= now) it.remove();
     }
 
-    private static void drawOverlay(GuiGraphics ctx, ItemStack stack, int x, int y) {
+    private static void drawOverlay(GuiGraphicsExtractor ctx, ItemStack stack, int x, int y) {
         if (stack == null || stack.isEmpty()) return;
         String id = ItemUtil.getId(stack);
         if (id == null) return;
@@ -353,7 +353,7 @@ public class CooldownOverlay {
             // Draw text on top of items (use 200 z-offset to clear item shading).
             ctx.pose().pushMatrix();
             ctx.pose().translate(0f, 0f);
-            ctx.drawString(mc.font, text, tx, ty, 0xFFFFFFFF, true);
+            ctx.text(mc.font, text, tx, ty, 0xFFFFFFFF, true);
             ctx.pose().popMatrix();
         }
     }

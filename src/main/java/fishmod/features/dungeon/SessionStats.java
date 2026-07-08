@@ -11,7 +11,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -283,12 +283,12 @@ public class SessionStats {
         };
     }
 
-    public static void renderHud(GuiGraphics ctx, DeltaTracker tick) {
+    public static void renderHud(GuiGraphicsExtractor ctx, DeltaTracker tick) {
         btnVisible = false;
         if (!FishSettings.sessionStatsEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         Location loc = Location.getCurrentLocation();
         boolean show = (loc == Location.DUNGEON    && FishSettings.sessionStatsInDungeon)
                     || (loc == Location.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub);
@@ -303,16 +303,16 @@ public class SessionStats {
         ctx.pose().translate((float)x, (float)y);
         ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+            ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
         ctx.pose().popMatrix();
     }
 
     /** Rendered on top of any HandledScreen (chest/inventory) with a clickable reset button. */
-    public static void renderInScreen(GuiGraphics ctx, int mouseX, int mouseY) {
+    public static void renderInScreen(GuiGraphicsExtractor ctx, int mouseX, int mouseY) {
         btnVisible = false;
         if (!FishSettings.sessionStatsEnabled) return;
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
+        if (!(mc.gui.screen() instanceof AbstractContainerScreen<?>)) return;
         Location loc = Location.getCurrentLocation();
         boolean show = (loc == Location.DUNGEON    && FishSettings.sessionStatsInDungeon)
                     || (loc == Location.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub);
@@ -352,9 +352,9 @@ public class SessionStats {
         ctx.pose().translate((float)x, (float)y);
         ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
-        ctx.drawString(mc.font, shownReset, padX, localBtnY + padY, 0xFFFFFFFF, true);
-        ctx.drawString(mc.font, shownPause, localPauseX + padX, localBtnY + padY, 0xFFFFFFFF, true);
+            ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+        ctx.text(mc.font, shownReset, padX, localBtnY + padY, 0xFFFFFFFF, true);
+        ctx.text(mc.font, shownPause, localPauseX + padX, localBtnY + padY, 0xFFFFFFFF, true);
         ctx.pose().popMatrix();
         btnVisible = true;
     }

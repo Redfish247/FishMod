@@ -247,13 +247,13 @@ public class Phase {
     );
 
     /** Explicit HUD render for the splits panel (auto-render is disabled above). */
-    public static void renderHud(net.minecraft.client.gui.GuiGraphics ctx) {
+    public static void renderHud(net.minecraft.client.gui.GuiGraphicsExtractor ctx) {
         if (enableSplits && runStarted()) {
             renderScaled(ctx, splitTimer, () -> renderSplitRows(ctx, splitTimer.getScaledX(), splitTimer.getScaledY()));
         }
     }
 
-    private static void renderScaled(net.minecraft.client.gui.GuiGraphics ctx, HUDComponent c, Runnable draw) {
+    private static void renderScaled(net.minecraft.client.gui.GuiGraphicsExtractor ctx, HUDComponent c, Runnable draw) {
         org.joml.Matrix3x2fStack stack = ctx.pose();
         stack.pushMatrix();
         stack.scale(c.getScale(), c.getScale());
@@ -262,7 +262,7 @@ public class Phase {
     }
 
     /** Renders split rows + separator. Called by splitTimer HUD (with blade) and renderSplitsHud (standalone). */
-    public static void renderSplitRows(net.minecraft.client.gui.GuiGraphics ctx, int x, int y) {
+    public static void renderSplitRows(net.minecraft.client.gui.GuiGraphicsExtractor ctx, int x, int y) {
         Font textRenderer = Minecraft.getInstance().font;
         if (currentSplits != null) {
             int splitCount = currentSplits.size();
@@ -300,7 +300,7 @@ public class Phase {
     }
 
     /** Direct HUD render for standalone mode (no blade / HUDComponent system). */
-    public static void renderSplitsHud(net.minecraft.client.gui.GuiGraphics ctx, int x, int y) {
+    public static void renderSplitsHud(net.minecraft.client.gui.GuiGraphicsExtractor ctx, int x, int y) {
         if (!enableSplits || !runStarted()) return;
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
         if (mc.player == null) return;

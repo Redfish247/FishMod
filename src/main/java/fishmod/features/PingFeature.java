@@ -6,7 +6,7 @@ import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.rendering.RenderUtils;
 import fishmod.utils.rendering.RenderingEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -70,7 +70,7 @@ public final class PingFeature {
         // don't double-register the category Identifier.
         KeyMapping.Category category = fishmod.utils.Keybinds.category;
         if (category == null) category = KeyMapping.Category.register(Identifier.parse(fishmod.utils.Constants.NAMESPACE));
-        pingKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        pingKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "FishMod: Ping location",
                 InputConstants.Type.MOUSE,
                 GLFW.GLFW_MOUSE_BUTTON_MIDDLE,
@@ -110,7 +110,7 @@ public final class PingFeature {
         boolean fired = false;
         while (pingKey.consumeClick()) fired = true; // drain queued presses
         if (fired && FishSettings.pingEnabled && mc.player != null && mc.level != null
-                && mc.screen == null && Location.inSkyblock()) {
+                && mc.gui.screen() == null && Location.inSkyblock()) {
             placePing(mc);
         }
 
@@ -185,7 +185,7 @@ public final class PingFeature {
         return elapsed >= dur ? 0 : 1.0 - (double) elapsed / dur;
     }
 
-    private static void render(net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext ctx,
+    private static void render(net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext ctx,
                               com.mojang.blaze3d.vertex.PoseStack matrices,
                               com.mojang.blaze3d.vertex.VertexConsumer vc) {
         if (!FishSettings.pingEnabled) return;
@@ -202,7 +202,7 @@ public final class PingFeature {
         }
     }
 
-    private static void drawPing(net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext ctx,
+    private static void drawPing(net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext ctx,
                                  com.mojang.blaze3d.vertex.PoseStack matrices,
                                  com.mojang.blaze3d.vertex.VertexConsumer vc, Ping ping) {
         double frac = remainingFraction(ping);

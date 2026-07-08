@@ -7,7 +7,7 @@ import org.lwjgl.glfw.GLFW;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
@@ -153,10 +153,10 @@ public class WikiScreen extends Screen {
     // ── rendering ──────────────────────────────────────────────────────────────
 
     @Override
-    public void renderBackground(GuiGraphics ctx, int mx, int my, float delta) {}
+    public void extractBackground(GuiGraphicsExtractor ctx, int mx, int my, float delta) {}
 
     @Override
-    public void render(GuiGraphics ctx, int mx, int my, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor ctx, int mx, int my, float delta) {
         // Smooth scroll
         if (browser != null && pendingScroll != 0.0) {
             long now = System.nanoTime();
@@ -186,17 +186,14 @@ public class WikiScreen extends Screen {
         int bW = browserW();
 
         // Browser content
-        if (browser != null && browser.isTextureReady()) {
-            ctx.blit(RenderPipelines.GUI_TEXTURED,
-                browser.getTextureIdentifier(),
-                0, BAR_H, 0f, 0f, bW, bH, bW, bH);
-        } else {
+        boolean drawn = browser != null && browser.isTextureReady() && drawBrowserTexture(ctx, bW, bH);
+        if (!drawn) {
             ctx.fill(0, BAR_H, bW, BAR_H + bH, 0xFF0d0e17);
             if (!MCEF.isInitialized()) {
-                ctx.drawCenteredString(font, "§cMCEF not installed!", bW/2, BAR_H + bH/2 - 10, 0xFFFFFFFF);
-                ctx.drawCenteredString(font, "§7Install §fMCEF §7from Modrinth for MC 1.21.11", bW/2, BAR_H + bH/2 + 4, 0xFFAAAAAA);
+                ctx.centeredText(font, "§cMCEF not installed!", bW/2, BAR_H + bH/2 - 10, 0xFFFFFFFF);
+                ctx.centeredText(font, "§7Install §fMCEF §7from Modrinth for MC 1.21.11", bW/2, BAR_H + bH/2 + 4, 0xFFAAAAAA);
             } else {
-                ctx.drawCenteredString(font, "§7Loading...", bW/2, BAR_H + bH/2, 0xFFAAAAAA);
+                ctx.centeredText(font, "§7Loading...", bW/2, BAR_H + bH/2, 0xFFAAAAAA);
             }
         }
 
@@ -226,7 +223,7 @@ public class WikiScreen extends Screen {
         if (zoomLevel != 0.0) {
             int pct = (int)(Math.pow(1.2, zoomLevel) * 100);
             String lbl = "§7" + pct + "%";
-            ctx.drawString(font, lbl,
+            ctx.text(font, lbl,
                 zoomOutX() - font.width(lbl) - 4,
                 bY + (BTN_H - 8) / 2, 0xFF888888);
         }
@@ -239,7 +236,7 @@ public class WikiScreen extends Screen {
             int fbY = height - FIND_BAR_H;
             ctx.fill(0, fbY, width, height, COL_BAR);
             ctx.fill(0, fbY, width, fbY + 1, 0xFF2a3a6a);
-            ctx.drawString(font, "§7Find:", 4, fbY + (FIND_BAR_H - 8) / 2, 0xFFAAAAAA);
+            ctx.text(font, "§7Find:", 4, fbY + (FIND_BAR_H - 8) / 2, 0xFFAAAAAA);
             ctx.fill(findFieldX() - 2, fbY + (FIND_BAR_H - 18) / 2,
                      findFieldX() + findFieldW() + 2, height - (FIND_BAR_H - 18) / 2, COL_INPUT);
             int fb = findBtnY();
@@ -248,10 +245,29 @@ public class WikiScreen extends Screen {
             drawBtn(ctx, findCloseX(), fb, "§cX");
         }
 
-        super.render(ctx, mx, my, delta);
+        super.extractRenderState(ctx, mx, my, delta);
     }
 
-    private void renderSidebar(GuiGraphics ctx, int mx, int my) {
+    /**
+     * MCEF's 2.2.1-26.2-fabric build still declares {@code getTextureIdentifier()} as returning the
+     * old intermediary name (class_2960) instead of the official {@link net.minecraft.resources.Identifier}
+     * — Loom 1.17 dropped the mod-remapping layer that used to paper over exactly this kind of stale
+     * third-party API, so javac can no longer resolve the declared return type directly. The class
+     * itself is unchanged (Fabric's runtime classloader still resolves it to the real Identifier), so
+     * reflection bridges the compile-time gap without needing MCEF to fix their own build.
+     */
+    private boolean drawBrowserTexture(GuiGraphicsExtractor ctx, int bW, int bH) {
+        try {
+            Object texId = browser.getClass().getMethod("getTextureIdentifier").invoke(browser);
+            ctx.blit(RenderPipelines.GUI_TEXTURED, (net.minecraft.resources.Identifier) texId,
+                    0, BAR_H, 0f, 0f, bW, bH, bW, bH);
+            return true;
+        } catch (ReflectiveOperationException | ClassCastException e) {
+            return false;
+        }
+    }
+
+    private void renderSidebar(GuiGraphicsExtractor ctx, int mx, int my) {
         int sx    = width - SIDEBAR_W;
         int sy    = BAR_H;
         int sh    = height - BAR_H;
@@ -263,7 +279,7 @@ public class WikiScreen extends Screen {
         // "★ Add" button
         int addY = sy + 3;
         ctx.fill(sx + 2, addY, sx + inner + 2, addY + BTN_H, COL_BTN);
-        ctx.drawCenteredString(font, "§e★ §7Add current page",
+        ctx.centeredText(font, "§e★ §7Add current page",
             sx + SIDEBAR_W / 2, addY + (BTN_H - 8) / 2, 0xFFFFFFFF);
 
         // Bookmarks list
@@ -281,25 +297,25 @@ public class WikiScreen extends Screen {
             ctx.fill(sx + 2, rowY, width - BTN_W - 4, rowY + rowH - 2, hovered ? 0xFF1e3050 : 0xFF0d1420);
 
             String title = bm[1].length() > 13 ? bm[1].substring(0, 13) + "…" : bm[1];
-            ctx.drawString(font, "§f" + title, sx + 5, rowY + (rowH - 10) / 2, 0xFFCCCCCC);
+            ctx.text(font, "§f" + title, sx + 5, rowY + (rowH - 10) / 2, 0xFFCCCCCC);
 
             // × remove button
             int xBtnX = width - BTN_W - 2;
             boolean xHov = mx >= xBtnX && mx <= xBtnX + BTN_W - 2 && my >= rowY && my <= rowY + rowH - 2;
             ctx.fill(xBtnX, rowY, xBtnX + BTN_W - 2, rowY + rowH - 2, xHov ? 0xFF501010 : 0xFF200808);
-            ctx.drawCenteredString(font, "§c×",
+            ctx.centeredText(font, "§c×",
                 xBtnX + (BTN_W - 2) / 2, rowY + (rowH - 8) / 2, 0xFFFF4444);
         }
 
         if (marks.isEmpty()) {
-            ctx.drawCenteredString(font, "§8No bookmarks yet",
+            ctx.centeredText(font, "§8No bookmarks yet",
                 sx + SIDEBAR_W / 2, listY + 10, 0xFF666666);
         }
     }
 
-    private void drawBtn(GuiGraphics ctx, int x, int y, String label) {
+    private void drawBtn(GuiGraphicsExtractor ctx, int x, int y, String label) {
         ctx.fill(x, y, x + BTN_W, y + BTN_H, COL_BTN);
-        ctx.drawCenteredString(font, label, x + BTN_W/2, y + (BTN_H - 8)/2, 0xFFFFFFFF);
+        ctx.centeredText(font, label, x + BTN_W/2, y + (BTN_H - 8)/2, 0xFFFFFFFF);
     }
 
     // ── input ──────────────────────────────────────────────────────────────────
@@ -413,7 +429,7 @@ public class WikiScreen extends Screen {
 
         if (key == GLFW.GLFW_KEY_ESCAPE) {
             if (findVisible) { closeFindBar(); return true; }
-            minecraft.setScreen(parent);
+            minecraft.gui.setScreen(parent);
             return true;
         }
         if (ctrl && key == GLFW.GLFW_KEY_F)     { toggleFindBar();                       return true; }
@@ -444,7 +460,7 @@ public class WikiScreen extends Screen {
     public boolean charTyped(CharacterEvent input) {
         if (findVisible && findField != null && findField.isFocused())         return super.charTyped(input);
         if (browser != null && input.codepoint() != 0) {
-            browser.sendKeyTyped((char) input.codepoint(), input.modifiers());
+            browser.sendKeyTyped((char) input.codepoint(), 0); // CharacterEvent lost modifiers() in 26.2
             browser.setFocus(true);
             return true;
         }

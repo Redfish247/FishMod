@@ -7,23 +7,23 @@ import java.util.Map;
 import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.LerpingBossEvent;
 import net.minecraft.network.chat.Component;
 
 public class BossBarFeature {
 
     /** Called from HudRenderCallback — fires BEFORE vanilla boss bar, so only used for non-boss-bar elements. */
-    public static void renderHud(GuiGraphics ctx) {
+    public static void renderHud(GuiGraphicsExtractor ctx) {
         // intentionally empty — boss HP drawn in renderAfterVanilla
     }
 
     /** Called from FishBossBarHudMixin @Inject(RETURN) — fires after vanilla draws its text. */
-    public static void renderAfterVanilla(GuiGraphics ctx) {
+    public static void renderAfterVanilla(GuiGraphicsExtractor ctx) {
         Minecraft mc = Minecraft.getInstance();
         if (mc == null || mc.player == null) return;
 
-        BossBarHudAccessor accessor = (BossBarHudAccessor) mc.gui.getBossOverlay();
+        BossBarHudAccessor accessor = (BossBarHudAccessor) mc.gui.hud.getBossOverlay();
         Map<UUID, LerpingBossEvent> bossBars = accessor.getBossBars();
         if (bossBars == null || bossBars.isEmpty()) return;
 
@@ -35,7 +35,7 @@ public class BossBarFeature {
             if (customText != null) {
                 int textWidth = mc.font.width(customText);
                 int textX = screenWidth / 2 - textWidth / 2;
-                ctx.drawString(mc.font, customText, textX, y - 9, 0xFFFFFF, true);
+                ctx.text(mc.font, customText, textX, y - 9, 0xFFFFFF, true);
             }
             y += 19;
         }

@@ -1,10 +1,8 @@
 package fishmod.utils.rendering;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.world.phys.Vec3;
 
 public class RenderingEvents {
@@ -18,109 +16,91 @@ public class RenderingEvents {
 
 
     public static void init() {
-        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(RenderingEvents::filled);
-        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(RenderingEvents::filledNoDepth);
-        WorldRenderEvents.AFTER_ENTITIES.register(RenderingEvents::entityFilled);
-        WorldRenderEvents.AFTER_ENTITIES.register(RenderingEvents::entityOutline);
-        WorldRenderEvents.AFTER_ENTITIES.register(RenderingEvents::entityOutlineNoDepth);
-        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(RenderingEvents::debugLine);
+        LevelRenderEvents.BEFORE_GIZMOS.register(RenderingEvents::filled);
+        LevelRenderEvents.BEFORE_GIZMOS.register(RenderingEvents::filledNoDepth);
+        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(RenderingEvents::entityFilled);
+        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(RenderingEvents::entityOutline);
+        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(RenderingEvents::entityOutlineNoDepth);
+        LevelRenderEvents.BEFORE_GIZMOS.register(RenderingEvents::debugLine);
 
     }
 
-    private static void filled(WorldRenderContext context) {
-        if (context.worldState() == null) return;
-        Vec3 camera = context.worldState().cameraRenderState.pos;
-        PoseStack matrices = context.matrices();
+    private static void filled(LevelRenderContext context) {
+        if (context.levelState() == null) return;
+        Vec3 camera = context.levelState().cameraRenderState.pos;
+        PoseStack matrices = context.poseStack();
         if (matrices == null) return;
         matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
-        MultiBufferSource consumers = context.consumers();
-        if (consumers == null) return;
-        VertexConsumer consumer = consumers.getBuffer(RenderLayers.FILLED_LAYER);
-
-        FILLED_BLOCK.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer));
+        context.submitNodeCollector().submitCustomGeometry(matrices, RenderLayers.FILLED_LAYER, (pose, consumer) ->
+                FILLED_BLOCK.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer)));
         matrices.popPose();
     }
 
-    private static void filledNoDepth(WorldRenderContext context) {
-        if (context.worldState() == null) return;
-        Vec3 camera = context.worldState().cameraRenderState.pos;
-        PoseStack matrices = context.matrices();
+    private static void filledNoDepth(LevelRenderContext context) {
+        if (context.levelState() == null) return;
+        Vec3 camera = context.levelState().cameraRenderState.pos;
+        PoseStack matrices = context.poseStack();
         if (matrices == null) return;
         matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
-        MultiBufferSource consumers = context.consumers();
-        if (consumers == null) return;
-        VertexConsumer consumer = consumers.getBuffer(RenderLayers.FILLED_LAYER_NO_DEPTH);
-
-        NO_DEPTH_FILLED.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer));
+        context.submitNodeCollector().submitCustomGeometry(matrices, RenderLayers.FILLED_LAYER_NO_DEPTH, (pose, consumer) ->
+                NO_DEPTH_FILLED.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer)));
         matrices.popPose();
     }
 
-    private static void entityFilled(WorldRenderContext context) {
-        if (context.worldState() == null) return;
-        Vec3 camera = context.worldState().cameraRenderState.pos;
-        PoseStack matrices = context.matrices();
+    private static void entityFilled(LevelRenderContext context) {
+        if (context.levelState() == null) return;
+        Vec3 camera = context.levelState().cameraRenderState.pos;
+        PoseStack matrices = context.poseStack();
         if (matrices == null) return;
         matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
-        MultiBufferSource consumers = context.consumers();
-        if (consumers == null) return;
-        VertexConsumer consumer = consumers.getBuffer(RenderLayers.FILLED_ENTITY_LAYER);
-
-        FILLED_ENTITY.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer));
+        context.submitNodeCollector().submitCustomGeometry(matrices, RenderLayers.FILLED_ENTITY_LAYER, (pose, consumer) ->
+                FILLED_ENTITY.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer)));
         matrices.popPose();
     }
 
 
-    private static void entityOutline(WorldRenderContext context) {
-        if (context.worldState() == null) return;
-        Vec3 camera = context.worldState().cameraRenderState.pos;
-        PoseStack matrices = context.matrices();
+    private static void entityOutline(LevelRenderContext context) {
+        if (context.levelState() == null) return;
+        Vec3 camera = context.levelState().cameraRenderState.pos;
+        PoseStack matrices = context.poseStack();
         if (matrices == null) return;
         matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
-        MultiBufferSource consumers = context.consumers();
-        if (consumers == null) return;
-        VertexConsumer consumer = consumers.getBuffer(RenderLayers.getOutline(4, true));
-
-        OUTLINE_ENTITY.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer));
+        context.submitNodeCollector().submitCustomGeometry(matrices, RenderLayers.getOutline(4, true), (pose, consumer) ->
+                OUTLINE_ENTITY.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer)));
         matrices.popPose();
     }
 
-    private static void entityOutlineNoDepth(WorldRenderContext context) {
-        if (context.worldState() == null) return;
-        Vec3 camera = context.worldState().cameraRenderState.pos;
-        PoseStack matrices = context.matrices();
+    private static void entityOutlineNoDepth(LevelRenderContext context) {
+        if (context.levelState() == null) return;
+        Vec3 camera = context.levelState().cameraRenderState.pos;
+        PoseStack matrices = context.poseStack();
         if (matrices == null) return;
         matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
-        MultiBufferSource consumers = context.consumers();
-        if (consumers == null) return;
-        VertexConsumer consumer = consumers.getBuffer(RenderLayers.getOutline(4, false));
-
-        NO_DEPTH_OUTLINE_ENTITY.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer));
+        context.submitNodeCollector().submitCustomGeometry(matrices, RenderLayers.getOutline(4, false), (pose, consumer) ->
+                NO_DEPTH_OUTLINE_ENTITY.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer)));
         matrices.popPose();
     }
 
-    private static void debugLine(WorldRenderContext context) {
-        if (context.worldState() == null) return;
-        Vec3 camera = context.worldState().cameraRenderState.pos;
-        PoseStack matrices = context.matrices();
+    private static void debugLine(LevelRenderContext context) {
+        if (context.levelState() == null) return;
+        Vec3 camera = context.levelState().cameraRenderState.pos;
+        PoseStack matrices = context.poseStack();
         if (matrices == null) return;
         matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
-        MultiBufferSource consumers = context.consumers();
-        if (consumers == null) return;
-        VertexConsumer consumer = consumers.getBuffer(RenderLayers.getOutline(4, true));
-
-        LINE.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer));
+        context.submitNodeCollector().submitCustomGeometry(matrices, RenderLayers.getOutline(4, true), (pose, consumer) ->
+                LINE.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer)));
         matrices.popPose();
     }
 

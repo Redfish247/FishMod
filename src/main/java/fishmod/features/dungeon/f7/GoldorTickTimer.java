@@ -7,7 +7,7 @@ import fishmod.utils.config.values.Floor7;
 import fishmod.utils.dungeon.Phase;
 import fishmod.utils.events.Events;
 import fishmod.utils.rendering.RenderUtils;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /** Goldor / terminals tick timer (3-tick cycle, optional tick-up). Ported from blade-addons. */
 public class GoldorTickTimer {
@@ -26,7 +26,7 @@ public class GoldorTickTimer {
         return Floor7.enableGoldorTickTimer && Location.inDungeon() && Phase.inTerminals();
     }
 
-    public static void render(HUDComponent component, GuiGraphics context) {
+    public static void render(HUDComponent component, GuiGraphicsExtractor context) {
         double num = tick * Constants.TICK_DURATION;
         double mod = num % 3;
         if (Floor7.inDeathTicks && !Floor7.makeGoldorTickUp) mod = 3.0 - mod;

@@ -13,7 +13,7 @@ import fishmod.utils.data.ItemUtil;
 import fishmod.utils.rendering.DrawEvents;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.KeyEvent;
@@ -44,21 +44,21 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     }
 
     @Inject(method = "render", at = @At("TAIL"))
-    private void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+    private void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         lastMx = mouseX;
         lastMy = mouseY;
         SearchBar.render(context, mouseX, mouseY, deltaTicks);
         WikiContextMenu.render(context, Minecraft.getInstance());
     }
 
-    @Inject(method = "renderSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;renderItem(Lnet/minecraft/world/item/ItemStack;III)V"))
-    public void drawBackground(GuiGraphics context, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
+    @Inject(method = "renderSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;renderItem(Lnet/minecraft/world/item/ItemStack;III)V"))
+    public void drawBackground(GuiGraphicsExtractor context, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
         ItemStack stack = slot.getItem();
         DrawEvents.INVENTORY_SLOT_BEFORE.invoke(event -> event.draw(context, stack, slot.x, slot.y));
     }
 
     @Inject(method = "renderSlot", at = @At(value = "TAIL"))
-    public void drawAfter(GuiGraphics context, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
+    public void drawAfter(GuiGraphicsExtractor context, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
         ItemStack stack = slot.getItem();
         DrawEvents.INVENTORY_SLOT_AFTER.invoke(event -> event.draw(context, stack, slot.x, slot.y));
     }

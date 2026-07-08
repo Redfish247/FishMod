@@ -5,7 +5,7 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ClipContext;
@@ -107,10 +107,10 @@ public final class WarpMapFeature {
 
     // ── HUD render ────────────────────────────────────────────────────────────
 
-    public static void renderHud(GuiGraphics ctx, DeltaTracker tickCounter) {
+    public static void renderHud(GuiGraphicsExtractor ctx, DeltaTracker tickCounter) {
         if (!fishmod.utils.config.values.FishSettings.warpMapHudEnabled) { hoveredWarp = null; inZone = false; return; }
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null || mc.screen != null) {
+        if (mc.player == null || mc.level == null || mc.gui.screen() != null) {
             hoveredWarp = null; inZone = false; return;
         }
         if (!isOnHypixel(mc)) { hoveredWarp = null; inZone = false; return; }
@@ -127,7 +127,7 @@ public final class WarpMapFeature {
         // In third-person (F5 / F5-front) the camera is offset from the player,
         // so we use the Camera object for all three axes and its own yaw/pitch.
         float delta  = tickCounter.getGameTimeDeltaPartialTick(true);
-        Camera camera = mc.gameRenderer.getMainCamera();
+        Camera camera = mc.gameRenderer.mainCamera();
         boolean thirdPerson = mc.options.getCameraType() != CameraType.FIRST_PERSON;
 
         double ex, ey, ez;
@@ -237,7 +237,7 @@ public final class WarpMapFeature {
             }
             if (ty < 0) ty = hoverSy + 8;
             ctx.fill(tx - padX, ty - padY, tx + textW + padX, ty + tr.lineHeight + padY, 0xC0000000);
-            ctx.drawString(tr, Component.literal(label), tx, ty, 0xFFFFFFFF);
+            ctx.text(tr, Component.literal(label), tx, ty, 0xFFFFFFFF);
         }
     }
 
@@ -246,7 +246,7 @@ public final class WarpMapFeature {
     private static boolean lastLeftDown = false;
 
     public static void tickClickDetection(Minecraft mc) {
-        if (mc.player == null || mc.screen != null || mc.getWindow() == null) {
+        if (mc.player == null || mc.gui.screen() != null || mc.getWindow() == null) {
             lastLeftDown = false;
             return;
         }
@@ -262,7 +262,7 @@ public final class WarpMapFeature {
                     && py >= BOX_Y0 && py <= BOX_Y1
                     && pz >= BOX_Z0 && pz <= BOX_Z1;
 
-        Camera camera = mc.gameRenderer.getMainCamera();
+        Camera camera = mc.gameRenderer.mainCamera();
         boolean thirdPerson = mc.options.getCameraType() != CameraType.FIRST_PERSON;
         double ex, ey, ez;
         float  yaw, pitch;
@@ -300,7 +300,7 @@ public final class WarpMapFeature {
         if (!zone || target == null || best > 0.12 * 0.12) return;
 
         mc.player.connection.sendCommand("warp " + target.name());
-        mc.player.displayClientMessage(Component.literal("§a[WarpMap] Warping to §l" + target.name() + "§r§a..."), true);
+        mc.player.sendOverlayMessage(Component.literal("§a[WarpMap] Warping to §l" + target.name() + "§r§a..."));
     }
 
     // ── Zone check ────────────────────────────────────────────────────────────
@@ -321,7 +321,7 @@ public final class WarpMapFeature {
         return s != null && s.ip.toLowerCase().contains("hypixel.net");
     }
 
-    private static void drawDot(GuiGraphics ctx, int sx, int sy, boolean hov, float zoom) {
+    private static void drawDot(GuiGraphicsExtractor ctx, int sx, int sy, boolean hov, float zoom) {
         float z = Math.max(1f, zoom);
         int s1 = Math.max(1, Math.round(1 * z));
         int s2 = Math.max(1, Math.round(2 * z));

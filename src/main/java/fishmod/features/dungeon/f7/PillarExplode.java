@@ -8,7 +8,7 @@ import fishmod.utils.config.values.Floor7;
 import fishmod.utils.dungeon.Phase;
 import fishmod.utils.events.Events;
 import fishmod.utils.rendering.RenderUtils;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 
@@ -35,13 +35,13 @@ public class PillarExplode {
 
     public static boolean displayTimer() { return Floor7.timePillarExplosion && tick > 0; }
 
-    public static void renderTimer(HUDComponent component, GuiGraphics context) {
+    public static void renderTimer(HUDComponent component, GuiGraphicsExtractor context) {
         RenderUtils.drawTimer(component, context, tick, tick < 6 ? Constants.GREEN : Constants.RED);
     }
 
     public static boolean display() { return Floor7.notifyStormCrush && tick > 0; }
 
-    public static void render(HUDComponent component, GuiGraphics context) {
+    public static void render(HUDComponent component, GuiGraphicsExtractor context) {
         RenderUtils.drawCenteredText(context, component, Component.literal("§6||| §bStorm crushed! §6|||"));
     }
 }

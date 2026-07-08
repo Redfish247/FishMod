@@ -185,7 +185,7 @@ public final class ItemCustomizer {
             boolean hasName = c.name() != null && !c.name().isEmpty();
             if (hasName || c.stars() > 0) {
                 String base = hasName ? fishmod.cosmetic.ProfanityFilter.censor(c.name())
-                                      : st.getItem().getName().getString();
+                                      : st.getItem().getName(st).getString();
                 net.minecraft.network.chat.Component styled = fishmod.cosmetic.NickState.parse(base + starSuffix(c.stars()));
                 // Vanilla auto-italicizes CUSTOM_NAME (anvil-rename behavior); explicitly clear it.
                 net.minecraft.network.chat.MutableComponent name = net.minecraft.network.chat.Component.empty()

@@ -12,7 +12,7 @@ import fishmod.utils.rendering.RenderUtils;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
@@ -75,7 +75,7 @@ public class CrystalSpawn {
         return tick > 0 && Location.inDungeon() && Phase.inP1() && Floor7.enableCrystalSpawnTime;
     }
 
-    public static void render(HUDComponent component, GuiGraphics context) {
+    public static void render(HUDComponent component, GuiGraphicsExtractor context) {
         RenderUtils.drawTimer(component, context, tick, Constants.LIGHT_PURPLE);
     }
 
@@ -84,7 +84,7 @@ public class CrystalSpawn {
                 && Location.inDungeon() && Phase.inP1() && Floor7.crystalPlaceReminder && pickedUp;
     }
 
-    public static void renderNotification(HUDComponent component, GuiGraphics context) {
+    public static void renderNotification(HUDComponent component, GuiGraphicsExtractor context) {
         RenderUtils.drawCenteredText(context, component, Component.literal("§bPlace Crystal!"));
     }
 }

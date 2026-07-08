@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.GuiMessage;
+import net.minecraft.client.multiplayer.chat.GuiMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.network.chat.Component;
@@ -40,7 +40,7 @@ public final class CompactChat {
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.gui == null) return false;
-        int nowTick = mc.gui.getGuiTicks();
+        int nowTick = mc.gui.hud.getGuiTicks();
 
         ChatHudInvoker acc = (ChatHudInvoker) hud;
         List<GuiMessage> messages = acc.getMessages();
@@ -56,7 +56,7 @@ public final class CompactChat {
             messages.remove(i);
             acc.invokeRefresh();          // drop the stale line's wrapped copies from visibleMessages
             ci.cancel();                  // suppress the un-counted add…
-            hud.addMessage(withCount(message, next)); // …and re-add it at the bottom with the count
+            hud.addClientSystemMessage(withCount(message, next)); // …and re-add it at the bottom with the count
             return true;
         }
         return false;

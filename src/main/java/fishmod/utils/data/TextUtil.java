@@ -106,11 +106,11 @@ public class TextUtil {
 
     private static char getFormatChar(int color) {
         for (ChatFormatting format: ChatFormatting.values()) {
-            Integer colorValue = format.getColor();
-            if (colorValue == null) continue;
+            TextColor tc = TextColor.fromLegacyFormat(format);
+            if (tc == null) continue;
 
-            if (colorValue == color) {
-                return format.getChar();
+            if (tc.getValue() == color) {
+                return format.toString().charAt(1);
             }
         }
 

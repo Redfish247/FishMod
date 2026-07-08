@@ -4,7 +4,7 @@ import config.practical.hud.HUDComponent;
 import config.practical.manager.ConfigValue;
 import fishmod.utils.config.values.Floor7;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.joml.Matrix3x2fStack;
 
 /**
@@ -68,7 +68,7 @@ public class F7Huds {
     }
 
     /** Render all enabled F7 HUDs (called from a HudRenderCallback in FishModInit). */
-    public static void renderHud(GuiGraphics ctx) {
+    public static void renderHud(GuiGraphicsExtractor ctx) {
         // Distinct left-column default targets so nothing stacks. These are only used to pull an
         // off-screen element back on-screen; once on-screen the user's dragged position is kept.
         renderOne(ctx, maxorTickTimer,   MaxorTickTimer.display(),          MaxorTickTimer::render,          10, 70);
@@ -82,7 +82,7 @@ public class F7Huds {
         renderOne(ctx, stormCrush,       PillarExplode.display(),           PillarExplode::render,           10, 28);
     }
 
-    private static void renderOne(GuiGraphics ctx, HUDComponent c, boolean show,
+    private static void renderOne(GuiGraphicsExtractor ctx, HUDComponent c, boolean show,
                                   HUDComponent.RenderSupplier render, int targetX, int targetY) {
         keepOnScreen(c, targetX, targetY);
         if (!show) return;

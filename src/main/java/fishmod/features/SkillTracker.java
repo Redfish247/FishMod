@@ -5,7 +5,7 @@ import fishmod.utils.config.values.FishSettings;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.ChatScreen;
 import java.text.DecimalFormat;
 import java.util.ArrayDeque;
@@ -247,22 +247,22 @@ public class SkillTracker {
         return sec + "s";
     }
 
-    public static void renderHud(GuiGraphics ctx, net.minecraft.client.DeltaTracker tick) {
+    public static void renderHud(GuiGraphicsExtractor ctx, net.minecraft.client.DeltaTracker tick) {
         if (!hasData()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.screen != null && !(mc.screen instanceof ChatScreen)) return;
+        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof ChatScreen)) return;
         draw(ctx, mc);
     }
 
-    public static void renderInScreen(GuiGraphics ctx, int mouseX, int mouseY) {
+    public static void renderInScreen(GuiGraphicsExtractor ctx, int mouseX, int mouseY) {
         if (!hasData()) return;
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>)) return;
+        if (!(mc.gui.screen() instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>)) return;
         draw(ctx, mc);
     }
 
-    private static void draw(GuiGraphics ctx, Minecraft mc) {
+    private static void draw(GuiGraphicsExtractor ctx, Minecraft mc) {
         int x = FishSettings.skillTrackerHudX;
         int y = FishSettings.skillTrackerHudY;
         int lh = Constants.TEXT_HEIGHT + 1;
@@ -272,7 +272,7 @@ public class SkillTracker {
         ctx.pose().translate((float) x, (float) y);
         ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+            ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
         ctx.pose().popMatrix();
     }
 }

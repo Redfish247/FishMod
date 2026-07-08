@@ -1,7 +1,7 @@
 package fishmod.features.streams;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -50,7 +50,7 @@ public class StreamsScreen extends Screen {
     private int cardH()  { return thumbH() + INFO_H; }
 
     @Override
-    public void render(GuiGraphics ctx, int mx, int my, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor ctx, int mx, int my, float delta) {
         int w = this.width, h = this.height;
         ctx.fill(0, 0, w, h, BG_COLOR);
 
@@ -63,9 +63,9 @@ public class StreamsScreen extends Screen {
         int top = contentTop() - scroll;
 
         if (st == TwitchStreams.State.LOADING) {
-            ctx.drawString(font, Component.literal("§7Loading streams…"), PADDING, contentTop(), SUBTEXT, false);
+            ctx.text(font, Component.literal("§7Loading streams…"), PADDING, contentTop(), SUBTEXT, false);
         } else if (st == TwitchStreams.State.DONE && list.isEmpty()) {
-            ctx.drawString(font, Component.literal("§7No live Hypixel SkyBlock streams found."), PADDING, contentTop(), SUBTEXT, false);
+            ctx.text(font, Component.literal("§7No live Hypixel SkyBlock streams found."), PADDING, contentTop(), SUBTEXT, false);
         }
 
         for (int i = 0; i < list.size(); i++) {
@@ -88,7 +88,7 @@ public class StreamsScreen extends Screen {
             } else {
                 String err = TwitchThumbnails.error(s.previewUrl());
                 String msg = err == null ? "§8loading…" : "§cno preview";
-                ctx.drawString(font, Component.literal(msg),
+                ctx.text(font, Component.literal(msg),
                         x + (cw - font.width(msg.replaceAll("§.", ""))) / 2, y + th / 2 - 4, SUBTEXT, false);
             }
 
@@ -96,7 +96,7 @@ public class StreamsScreen extends Screen {
             String viewers = NUM.format(s.viewers());
             ctx.fill(x + 4, y + 4, x + 4 + 10 + font.width(viewers) + 8, y + 16, 0xCC000000);
             ctx.fill(x + 8, y + 8, x + 12, y + 12, LIVE_RED);
-            ctx.drawString(font, Component.literal("§f" + viewers), x + 16, y + 6, TEXT_COLOR, false);
+            ctx.text(font, Component.literal("§f" + viewers), x + 16, y + 6, TEXT_COLOR, false);
 
             // Language pill (top-right of thumbnail), e.g. EN / DE / ES — falls back to the title.
             String langTag = languageTag(s);
@@ -104,14 +104,14 @@ public class StreamsScreen extends Screen {
                 int lw = font.width(langTag) + 8;
                 int lx = x + cw - 4 - lw;
                 ctx.fill(lx, y + 4, lx + lw, y + 16, 0xCC000000);
-                ctx.drawString(font, Component.literal("§f" + langTag), lx + 4, y + 6, TEXT_COLOR, false);
+                ctx.text(font, Component.literal("§f" + langTag), lx + 4, y + 6, TEXT_COLOR, false);
             }
 
             // streamer name
-            ctx.drawString(font, Component.literal((hov ? "§d" : "§f") + trim(s.displayName(), cw - 12)),
+            ctx.text(font, Component.literal((hov ? "§d" : "§f") + trim(s.displayName(), cw - 12)),
                     x + 6, y + th + 5, TEXT_COLOR, false);
             // title (1 line, trimmed)
-            ctx.drawString(font, Component.literal("§7" + trim(s.title(), cw - 12)),
+            ctx.text(font, Component.literal("§7" + trim(s.title(), cw - 12)),
                     x + 6, y + th + 16, SUBTEXT, false);
         }
         ctx.disableScissor();
@@ -119,28 +119,28 @@ public class StreamsScreen extends Screen {
         // ── header (drawn after grid so it overlaps cleanly) ──
         ctx.fill(0, 0, w, HEADER_H, HEADER_COLOR);
         ctx.fill(0, HEADER_H, w, HEADER_H + 1, BORDER_COLOR);
-        ctx.drawString(font, Component.literal("§dHypixel SkyBlock §fLive Streams"), PADDING, 12, TEXT_COLOR, false);
+        ctx.text(font, Component.literal("§dHypixel SkyBlock §fLive Streams"), PADDING, 12, TEXT_COLOR, false);
 
         String sub;
         if (st == TwitchStreams.State.LOADING) sub = "Loading…";
         else if (st == TwitchStreams.State.ERROR) sub = "§cError: " + TwitchStreams.error();
         else sub = list.size() + " live" + (TwitchStreams.fullCoverage() ? "" : " (limited — proxy unavailable)");
-        ctx.drawString(font, Component.literal("§7" + sub), PADDING, 26, SUBTEXT, false);
+        ctx.text(font, Component.literal("§7" + sub), PADDING, 26, SUBTEXT, false);
 
         drawButton(ctx, mx, my, refreshX(), 12, 70, 20, "Refresh", TWITCH, TWITCH_HOVER);
         drawButton(ctx, mx, my, closeX(), 12, 60, 20, "Close", 0xFF55555F, 0xFF6A6A77);
 
-        super.render(ctx, mx, my, delta);
+        super.extractRenderState(ctx, mx, my, delta);
     }
 
     private int refreshX() { return this.width - PADDING - 60 - 8 - 70; }
     private int closeX()   { return this.width - PADDING - 60; }
 
-    private void drawButton(GuiGraphics ctx, int mx, int my, int x, int y, int bw, int bh,
+    private void drawButton(GuiGraphicsExtractor ctx, int mx, int my, int x, int y, int bw, int bh,
                             String label, int col, int hover) {
         boolean hov = mx >= x && mx <= x + bw && my >= y && my <= y + bh;
         ctx.fill(x, y, x + bw, y + bh, hov ? hover : col);
-        ctx.drawString(font, label, x + (bw - font.width(label)) / 2, y + (bh - 8) / 2, 0xFFFFFFFF, false);
+        ctx.text(font, label, x + (bw - font.width(label)) / 2, y + (bh - 8) / 2, 0xFFFFFFFF, false);
     }
 
     /** 2-letter uppercase language tag for the badge — broadcastSettings.language first, then a
@@ -170,7 +170,7 @@ public class StreamsScreen extends Screen {
         int mx = (int) click.x(), my = (int) click.y();
 
         if (hit(mx, my, refreshX(), 12, 70, 20)) { TwitchStreams.refresh(); return true; }
-        if (hit(mx, my, closeX(), 12, 60, 20)) { Minecraft.getInstance().setScreen(parent); return true; }
+        if (hit(mx, my, closeX(), 12, 60, 20)) { Minecraft.getInstance().gui.setScreen(parent); return true; }
 
         // card clicks
         List<TwitchStreams.Stream> list = TwitchStreams.streams();

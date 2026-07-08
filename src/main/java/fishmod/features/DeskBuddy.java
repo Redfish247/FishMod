@@ -5,7 +5,7 @@ import fishmod.utils.events.Events;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.player.LocalPlayer;
 
@@ -136,11 +136,11 @@ public final class DeskBuddy {
         return "§7idle";
     }
 
-    public static void renderHud(GuiGraphics ctx, DeltaTracker tickCounter) {
+    public static void renderHud(GuiGraphicsExtractor ctx, DeltaTracker tickCounter) {
         if (!FishSettings.deskBuddyEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.screen != null && !(mc.screen instanceof ChatScreen)) return;
+        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof ChatScreen)) return;
 
         long now = System.currentTimeMillis();
         // Blink scheduler (only while awake & not mid-reaction).
@@ -181,9 +181,9 @@ public final class DeskBuddy {
         ctx.pose().pushMatrix();
         ctx.pose().translate((float) x, (float) y);
         ctx.pose().scale(sc, sc);
-        ctx.drawString(mc.font, "§6" + name, 0, 0, 0xFFFFFFFF, true);
-        ctx.drawString(mc.font, faceStr, Math.round(wiggle), lh + Math.round(bob), 0xFFFFFFFF, true);
-        ctx.drawString(mc.font, moodStr, 0, lh * 2 + 2, 0xFFFFFFFF, true);
+        ctx.text(mc.font, "§6" + name, 0, 0, 0xFFFFFFFF, true);
+        ctx.text(mc.font, faceStr, Math.round(wiggle), lh + Math.round(bob), 0xFFFFFFFF, true);
+        ctx.text(mc.font, moodStr, 0, lh * 2 + 2, 0xFFFFFFFF, true);
         ctx.pose().popMatrix();
     }
 }

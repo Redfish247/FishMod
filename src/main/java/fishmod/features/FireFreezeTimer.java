@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.data.ItemUtil;
 import fishmod.utils.rendering.RenderUtils;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -54,15 +54,15 @@ public class FireFreezeTimer {
             return InteractionResult.PASS;
         });
 
-        WorldRenderEvents.AFTER_ENTITIES.register(ctx -> {
-            if (!FishSettings.fireFreezeTimerEnabled || frozen.isEmpty() || ctx.worldState() == null) return;
+        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(ctx -> {
+            if (!FishSettings.fireFreezeTimerEnabled || frozen.isEmpty() || ctx.levelState() == null) return;
             Minecraft mc = Minecraft.getInstance();
             if (mc.level == null) return;
-            PoseStack matrices = ctx.matrices();
+            PoseStack matrices = ctx.poseStack();
             if (matrices == null) return;
 
             long now = System.currentTimeMillis();
-            Vec3 cam = ctx.worldState().cameraRenderState.pos;
+            Vec3 cam = ctx.levelState().cameraRenderState.pos;
             matrices.pushPose();
             matrices.translate(-cam.x, -cam.y, -cam.z);
 

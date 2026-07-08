@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -204,7 +204,7 @@ public class FishEstTotal {
         }
     }
 
-    public static void render(HUDComponent component, GuiGraphics context) {
+    public static void render(HUDComponent component, GuiGraphicsExtractor context) {
         if (currentSplits == null) return;
         Minecraft client = Minecraft.getInstance();
 
@@ -253,12 +253,12 @@ public class FishEstTotal {
         Component estTime  = Component.literal(estTimeStr).withColor(0xFF55FF55);
 
         int timeWidth = client.font.width(estTime);
-        context.drawString(client.font, estLabel, x, y, 0xFFFFFFFF, true);
-        context.drawString(client.font, estTime, x + Phase.SPLIT_LENGTH - timeWidth, y, 0xFFFFFFFF, true);
+        context.text(client.font, estLabel, x, y, 0xFFFFFFFF, true);
+        context.text(client.font, estTime, x + Phase.SPLIT_LENGTH - timeWidth, y, 0xFFFFFFFF, true);
     }
 
     /** Standalone render — called from HudRenderCallback when blade-addons is absent. */
-    public static void renderStandalone(GuiGraphics ctx, int baseX, int baseY) {
+    public static void renderStandalone(GuiGraphicsExtractor ctx, int baseX, int baseY) {
         if (!display()) return;
         Minecraft client = Minecraft.getInstance();
         if (client.player == null) return;
@@ -290,8 +290,8 @@ public class FishEstTotal {
         Component estLabel = Component.literal("Est. Total ").withColor(estColor);
         Component estTime  = Component.literal(estTimeStr).withColor(0xFF55FF55);
         int timeWidth = client.font.width(estTime);
-        ctx.drawString(client.font, estLabel, x, y, 0xFFFFFFFF, true);
-        ctx.drawString(client.font, estTime, x + Phase.SPLIT_LENGTH - timeWidth, y, 0xFFFFFFFF, true);
+        ctx.text(client.font, estLabel, x, y, 0xFFFFFFFF, true);
+        ctx.text(client.font, estTime, x + Phase.SPLIT_LENGTH - timeWidth, y, 0xFFFFFFFF, true);
     }
 
     // ── splits.json loader (FishMod's own jar via FishEstTotal.class) ─────────

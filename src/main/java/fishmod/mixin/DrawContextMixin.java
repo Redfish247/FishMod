@@ -1,7 +1,7 @@
 package fishmod.mixin;
 
 import fishmod.utils.config.values.Visual;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(GuiGraphics.class)
+@Mixin(GuiGraphicsExtractor.class)
 public class DrawContextMixin {
 
     @Final
@@ -34,7 +34,7 @@ public class DrawContextMixin {
         // uses (entity = the player); inventory slots delegate with a null entity and are handled by
         // INVENTORY_SLOT_BEFORE instead, so gating on entity != null avoids drawing it twice.
         if (entity != null) {
-            fishmod.features.ItemRarityHotbar.drawRarity((GuiGraphics) (Object) this, stack, x, y);
+            fishmod.features.ItemRarityHotbar.drawRarity((GuiGraphicsExtractor) (Object) this, stack, x, y);
         }
         if (Visual.oldPlayerHead && stack.getItem() == Items.PLAYER_HEAD) {
             float scale = 0.875f;

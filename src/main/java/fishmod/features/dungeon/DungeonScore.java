@@ -8,7 +8,7 @@ import fishmod.utils.events.Events;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -263,11 +263,11 @@ public class DungeonScore {
         return "§4D";
     }
 
-    public static void renderHud(GuiGraphics ctx, DeltaTracker tick) {
+    public static void renderHud(GuiGraphicsExtractor ctx, DeltaTracker tick) {
         if (!FishSettings.dungeonScoreEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         if (Location.getCurrentLocation() != Location.DUNGEON) return;
         if (fishmod.utils.dungeon.Phase.inBoss()) return;
 
@@ -300,7 +300,7 @@ public class DungeonScore {
         ctx.pose().translate((float) x, (float) y);
         ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+            ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
         ctx.pose().popMatrix();
     }
 }

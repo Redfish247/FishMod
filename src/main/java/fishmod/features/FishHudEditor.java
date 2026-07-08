@@ -10,7 +10,7 @@ import java.util.function.DoubleSupplier;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
@@ -171,10 +171,10 @@ public class FishHudEditor extends Screen {
     public boolean isPauseScreen() { return false; }
 
     @Override
-    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
         ctx.fill(0, 0, this.width, this.height, 0x80000000);
 
-        ctx.drawCenteredString(this.font,
+        ctx.centeredText(this.font,
                 "Drag to move · scroll to resize", this.width / 2, 10, 0xFFAAAAAA);
 
         // Done button
@@ -184,7 +184,7 @@ public class FishHudEditor extends Screen {
         boolean btnHov = mouseX >= btnX && mouseX <= btnX + btnW
                       && mouseY >= btnY && mouseY <= btnY + btnH;
         ctx.fill(btnX, btnY, btnX + btnW, btnY + btnH, btnHov ? ACCENT_HOVER : ACCENT);
-        ctx.drawCenteredString(this.font, "Done",
+        ctx.centeredText(this.font, "Done",
                 btnX + btnW / 2, btnY + (btnH - 8) / 2, 0xFFFFFFFF);
 
         // Reset-positions button (bottom-left). First click arms, second click confirms.
@@ -192,7 +192,7 @@ public class FishHudEditor extends Screen {
                     && mouseY >= btnY && mouseY <= btnY + btnH;
         int rFill = resetArmed ? 0xFFAA3333 : (rHov ? 0xFF553333 : 0xFF442222);
         ctx.fill(RESET_X, btnY, RESET_X + RESET_W, btnY + btnH, rFill);
-        ctx.drawCenteredString(this.font,
+        ctx.centeredText(this.font,
                 resetArmed ? "§fClick to confirm" : "Reset positions",
                 RESET_X + RESET_W / 2, btnY + (btnH - 8) / 2, 0xFFFFCCCC);
 
@@ -234,10 +234,10 @@ public class FishHudEditor extends Screen {
                 labelY = (y + scaledH + 10 <= this.height) ? y + scaledH + 1 : y - 10;
                 ctx.fill(labelX - 1, labelY - 1, labelX + labelW + 1, labelY + 9, 0xC0000000);
             }
-            ctx.drawString(this.font, label, labelX, labelY, labelColor, true);
+            ctx.text(this.font, label, labelX, labelY, labelColor, true);
         }
 
-        super.render(ctx, mouseX, mouseY, delta);
+        super.extractRenderState(ctx, mouseX, mouseY, delta);
     }
 
     @Override
@@ -322,6 +322,6 @@ public class FishHudEditor extends Screen {
     @Override
     public void onClose() {
         FishConfig.manager.save();
-        Minecraft.getInstance().setScreen(parent);
+        Minecraft.getInstance().gui.setScreen(parent);
     }
 }

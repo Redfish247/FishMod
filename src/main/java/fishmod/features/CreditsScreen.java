@@ -1,7 +1,7 @@
 package fishmod.features;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
@@ -36,8 +36,8 @@ public class CreditsScreen extends Screen {
     }
 
     @Override public boolean isPauseScreen() { return false; }
-    @Override public void renderBackground(GuiGraphics ctx, int mx, int my, float d) { }
-    @Override public void renderTransparentBackground(GuiGraphics ctx) { }
+    @Override public void extractBackground(GuiGraphicsExtractor ctx, int mx, int my, float d) { }
+    @Override public void extractTransparentBackground(GuiGraphicsExtractor ctx) { }
 
     private int pw() { return Math.min(360, this.width  - 20); }
     private int ph() { return Math.min(232, this.height - 20); }
@@ -45,7 +45,7 @@ public class CreditsScreen extends Screen {
     private int py() { return (this.height - ph()) / 2; }
 
     @Override
-    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
         ctx.fill(0, 0, this.width, this.height, SCRIM);
 
         int lx = px(), ty = py(), rx = lx + pw(), by = ty + ph();
@@ -57,8 +57,8 @@ public class CreditsScreen extends Screen {
         ctx.fill(rx - 1, ty, rx, by, BORDER);
 
         // wordmark
-        ctx.drawCenteredString(this.font, Component.literal("§lFish§b§lMod"), cx, ty + 14, TEXT);
-        ctx.drawCenteredString(this.font, Component.literal("Credits"), cx, ty + 26, SUBTEXT);
+        ctx.centeredText(this.font, Component.literal("§lFish§b§lMod"), cx, ty + 14, TEXT);
+        ctx.centeredText(this.font, Component.literal("Credits"), cx, ty + 26, SUBTEXT);
         ctx.fill(lx + 24, ty + 40, rx - 24, ty + 41, DIVIDER);
 
         int y = ty + 52;
@@ -74,7 +74,7 @@ public class CreditsScreen extends Screen {
         boolean linkHov = inside(mouseX, mouseY, linkX, linkY, linkW, linkH);
         ctx.fill(linkX, linkY, linkX + linkW, linkY + linkH, linkHov ? 0xFF1B2733 : 0xFF131B22);
         ctx.fill(linkX, linkY, linkX + linkW, linkY + 1, linkHov ? ACCENT_HOVER : DISCORD_BLURPLE);
-        ctx.drawCenteredString(this.font,
+        ctx.centeredText(this.font,
                 Component.literal((linkHov ? "§b" : "§9") + DISCORD), cx, linkY + 5, DISCORD_BLURPLE);
 
         // Back button
@@ -82,14 +82,14 @@ public class CreditsScreen extends Screen {
         backX = cx - backW / 2; backY = by - 32;
         boolean backHov = inside(mouseX, mouseY, backX, backY, backW, backH);
         ctx.fill(backX, backY, backX + backW, backY + backH, backHov ? ACCENT_HOVER : ACCENT);
-        ctx.drawCenteredString(this.font, Component.literal("Back"), cx, backY + (backH - 8) / 2, 0xFF052A29);
+        ctx.centeredText(this.font, Component.literal("Back"), cx, backY + (backH - 8) / 2, 0xFF052A29);
 
-        super.render(ctx, mouseX, mouseY, delta);
+        super.extractRenderState(ctx, mouseX, mouseY, delta);
     }
 
-    private void drawCredit(GuiGraphics ctx, int x, int y, String name, String role) {
-        ctx.drawString(this.font, Component.literal(name), x, y, TEXT, false);
-        ctx.drawString(this.font, Component.literal("§7" + role), x + 6, y + 11, SUBTEXT, false);
+    private void drawCredit(GuiGraphicsExtractor ctx, int x, int y, String name, String role) {
+        ctx.text(this.font, Component.literal(name), x, y, TEXT, false);
+        ctx.text(this.font, Component.literal("§7" + role), x + 6, y + 11, SUBTEXT, false);
     }
 
     private static boolean inside(int mx, int my, int x, int y, int w, int h) {
@@ -109,6 +109,6 @@ public class CreditsScreen extends Screen {
 
     @Override
     public void onClose() {
-        Minecraft.getInstance().setScreen(parent);
+        Minecraft.getInstance().gui.setScreen(parent);
     }
 }

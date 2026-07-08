@@ -7,7 +7,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -79,10 +79,10 @@ public class OptimizerScreen extends Screen {
     }
 
     @Override public boolean isPauseScreen() { return false; }
-    @Override public void renderTransparentBackground(GuiGraphics ctx) {}
+    @Override public void extractTransparentBackground(GuiGraphicsExtractor ctx) {}
 
     @Override
-    public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+    public void extractBackground(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
         ctx.fill(0, 0, this.width, this.height, BG);
         ctx.fill(0, 0, this.width, 1, ACCENT);
         ctx.fill(0, this.height - 1, this.width, this.height, ACCENT);
@@ -95,15 +95,15 @@ public class OptimizerScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
-        super.render(ctx, mouseX, mouseY, delta);
+    public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
+        super.extractRenderState(ctx, mouseX, mouseY, delta);
 
         int contentW = Math.min(this.width - 40, 580);
         int startX = (this.width - contentW) / 2;
 
         // ── Header ───────────────────────────────────────────────────────────
         String title = "§l✦ Profile Optimizer ✦";
-        ctx.drawString(this.font, title, (this.width - this.font.width(title)) / 2, 14, GOLD, false);
+        ctx.text(this.font, title, (this.width - this.font.width(title)) / 2, 14, GOLD, false);
         String sub = profileName != null ? "§7Profile: §f" + profileName : "§8your active SkyBlock profile";
         int sw = sw(sub, 0.85f);
         sst(ctx, sub, (this.width - sw) / 2, 28, SUBTEXT, 0.85f);
@@ -113,7 +113,7 @@ public class OptimizerScreen extends Screen {
             String msg = "§cCouldn't load your profile";
             String why = "§8" + (error == null || error.isEmpty() ? "unknown error" : error);
             String tip = "§7Make sure your SkyBlock API access is on, then press §fR §7to retry.";
-            ctx.drawString(this.font, msg, (this.width - this.font.width(msg)) / 2, this.height / 2 - 14, TEXT, false);
+            ctx.text(this.font, msg, (this.width - this.font.width(msg)) / 2, this.height / 2 - 14, TEXT, false);
             int ww = sw(why, 0.85f);
             sst(ctx, why, (this.width - ww) / 2, this.height / 2, DIM, 0.85f);
             int tw = sw(tip, 0.85f);
@@ -123,7 +123,7 @@ public class OptimizerScreen extends Screen {
         if (snap == null) {
             String dots = ".".repeat((int) ((System.currentTimeMillis() / 350) % 4));
             String msg = "§7Analyzing your profile" + dots;
-            ctx.drawString(this.font, msg, (this.width - this.font.width(msg)) / 2, this.height / 2 - 4, TEXT, false);
+            ctx.text(this.font, msg, (this.width - this.font.width(msg)) / 2, this.height / 2 - 4, TEXT, false);
             return;
         }
 
@@ -153,7 +153,7 @@ public class OptimizerScreen extends Screen {
         sst(ctx, hint, (this.width - sw(hint, 0.85f)) / 2, this.height - 14, SUBTEXT, 0.85f);
     }
 
-    private void renderSkillPanel(GuiGraphics ctx, int x, int y, int w, int bottom) {
+    private void renderSkillPanel(GuiGraphicsExtractor ctx, int x, int y, int w, int bottom) {
         panel(ctx, x, y, x + w, bottom);
         sst(ctx, "§e§lSKILL ROADMAP", x + 10, y + 8, TEXT, 0.85f);
         sst(ctx, "§8weakest first", x + w - sw("§8weakest first", 0.7f) - 10, y + 9, DIM, 0.7f);
@@ -175,7 +175,7 @@ public class OptimizerScreen extends Screen {
         }
     }
 
-    private void renderSuggestPanel(GuiGraphics ctx, int x, int y, int w, int bottom) {
+    private void renderSuggestPanel(GuiGraphicsExtractor ctx, int x, int y, int w, int bottom) {
         panel(ctx, x, y, x + w, bottom);
         sst(ctx, "§b§lWHAT TO DO NEXT", x + 10, y + 8, TEXT, 0.85f);
         sst(ctx, "§8nearest milestones", x + w - sw("§8nearest milestones", 0.7f) - 10, y + 9, DIM, 0.7f);
@@ -223,7 +223,7 @@ public class OptimizerScreen extends Screen {
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
-    private void panel(GuiGraphics ctx, int x1, int y1, int x2, int y2) {
+    private void panel(GuiGraphicsExtractor ctx, int x1, int y1, int x2, int y2) {
         ctx.fill(x1, y1, x2, y2, PANEL_BG);
         ctx.fill(x1, y1, x2, y1 + 2, ACCENT);            // top rail
         ctx.fill(x1, y2 - 1, x2, y2, BORDER);
@@ -231,7 +231,7 @@ public class OptimizerScreen extends Screen {
         ctx.fill(x2 - 1, y1, x2, y2, BORDER);
     }
 
-    private void drawChip(GuiGraphics ctx, int x, int y, int w, int h, String label, String value) {
+    private void drawChip(GuiGraphicsExtractor ctx, int x, int y, int w, int h, String label, String value) {
         ctx.fill(x, y, x + w, y + h, CHIP_BG);
         ctx.fill(x, y, x + 2, y + h, ACCENT);            // left rail
         int vw = sw(value, 0.9f);
@@ -241,11 +241,11 @@ public class OptimizerScreen extends Screen {
         sst(ctx, lab, x + (w - lw) / 2, y + 16, SUBTEXT, 0.6f);
     }
 
-    private void sst(GuiGraphics ctx, String s, int x, int y, int color, float scale) {
+    private void sst(GuiGraphicsExtractor ctx, String s, int x, int y, int color, float scale) {
         ctx.pose().pushMatrix();
         ctx.pose().translate((float) x, (float) y);
         ctx.pose().scale(scale, scale);
-        ctx.drawString(this.font, s, 0, 0, color, false);
+        ctx.text(this.font, s, 0, 0, color, false);
         ctx.pose().popMatrix();
     }
     private int sw(String s, float scale) { return (int) Math.ceil(this.font.width(s) * scale); }
@@ -270,6 +270,6 @@ public class OptimizerScreen extends Screen {
 
     @Override
     public void onClose() {
-        Minecraft.getInstance().setScreen(parent);
+        Minecraft.getInstance().gui.setScreen(parent);
     }
 }

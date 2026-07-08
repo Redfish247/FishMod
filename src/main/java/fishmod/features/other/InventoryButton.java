@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.function.Supplier;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 
@@ -37,14 +37,14 @@ public class InventoryButton {
         this.index = BUTTONS.size();
     }
 
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         String str = command.get();
         if (str == null || str.isEmpty()) return;
         context.blitSprite(RenderPipelines.GUI_TEXTURED, BUTTON_TEXTURE, x, y, SIZE, SIZE);
         Font textRenderer = Minecraft.getInstance().font;
         String label = "" + index;
         int center = textRenderer.width(label);
-        context.drawString(textRenderer, label,
+        context.text(textRenderer, label,
                 x + (SIZE - center) / 2 + 1, y + (SIZE - textRenderer.lineHeight) / 2 + 1, 0xffffffff, true);
     }
 
@@ -66,7 +66,7 @@ public class InventoryButton {
         }
     }
 
-    public static void renderAll(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+    public static void renderAll(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
         for (InventoryButton button : BUTTONS) {
             button.render(context, mouseX, mouseY, deltaTicks);
         }

@@ -101,8 +101,13 @@ public final class GradientNick {
         }
         ChatFormatting f = null;
         if (t.length() == 1) f = ChatFormatting.getByCode(t.charAt(0));
-        if (f == null) f = ChatFormatting.getByName(t.toUpperCase());
-        if (f != null && f.isColor() && f.getColor() != null) return rgb(f.getColor());
+        if (f == null) {
+            try { f = ChatFormatting.valueOf(t.toUpperCase()); } catch (IllegalArgumentException ignored) { }
+        }
+        if (f != null) {
+            net.minecraft.network.chat.TextColor tc = net.minecraft.network.chat.TextColor.fromLegacyFormat(f);
+            if (tc != null) return rgb(tc.getValue());
+        }
         return null;
     }
 

@@ -5,11 +5,12 @@ import fishmod.utils.Misc;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.dungeon.Phase;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.Identifier;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -95,7 +96,7 @@ public final class SimonSaysTracker {
 
         ClientTickEvents.END_CLIENT_TICK.register(SimonSaysTracker::debugTick);
         ClientTickEvents.END_CLIENT_TICK.register(SimonSaysTracker::tick);
-        HudRenderCallback.EVENT.register(SimonSaysTracker::renderHud);
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "simon_says_tracker"), SimonSaysTracker::renderHud);
 
         FishHudEditor.register("Simon Says",
                 () -> FishSettings.simonSaysHudX, v -> FishSettings.simonSaysHudX = v,
@@ -239,7 +240,7 @@ public final class SimonSaysTracker {
 
     public static int getStage() { return round; }
 
-    public static void renderHud(GuiGraphics ctx, DeltaTracker tc) {
+    public static void renderHud(GuiGraphicsExtractor ctx, DeltaTracker tc) {
         if (!FishSettings.simonSaysEnabled || !FishSettings.simonSaysHudEnabled) return;
         if (round <= 0) return;
         // Auto-hide 2 seconds after completion.
@@ -257,7 +258,7 @@ public final class SimonSaysTracker {
         ctx.pose().pushMatrix();
         ctx.pose().translate((float) FishSettings.simonSaysHudX, (float) FishSettings.simonSaysHudY);
         ctx.pose().scale(sc, sc);
-        ctx.drawString(mc.font, label, 0, 0, -1, true);
+        ctx.text(mc.font, label, 0, 0, -1, true);
         ctx.pose().popMatrix();
     }
 

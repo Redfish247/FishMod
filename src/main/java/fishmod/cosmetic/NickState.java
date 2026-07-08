@@ -128,7 +128,7 @@ public final class NickState {
                     }
                     if (fmt == ChatFormatting.RESET) {
                         style = Style.EMPTY;
-                    } else if (fmt.isColor()) {
+                    } else if (TextColor.fromLegacyFormat(fmt) != null) {
                         style = Style.EMPTY.withColor(fmt);
                     } else {
                         style = style.applyFormat(fmt);

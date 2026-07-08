@@ -9,7 +9,7 @@ import fishmod.utils.dungeon.Phase;
 import fishmod.utils.events.Events;
 import fishmod.utils.rendering.RenderUtils;
 import java.util.regex.Pattern;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 /** Storm (P2) tick timer + first-death time. Ported from blade-addons (spirit-mask warning omitted). */
@@ -53,7 +53,7 @@ public class StormTickTimer {
         return Floor7.enableStormTickTimer && Location.inDungeon() && Phase.inP2() && !Phase.stormDead();
     }
 
-    public static void render(HUDComponent component, GuiGraphics context) {
+    public static void render(HUDComponent component, GuiGraphicsExtractor context) {
         double num = tick * Constants.TICK_DURATION;
         if (Floor7.tickDownStormTickTimer) num = CRUSH_TICK * Constants.TICK_DURATION - num;
         RenderUtils.drawTimer(component, context, num, Floor7.stormTickTimerColor);
@@ -64,7 +64,7 @@ public class StormTickTimer {
                 && deathTime > 0 && deathStartDisplayTime > System.currentTimeMillis() - DEATH_DISPLAY_DURATION;
     }
 
-    public static void renderDeathTime(HUDComponent component, GuiGraphics context) {
+    public static void renderDeathTime(HUDComponent component, GuiGraphicsExtractor context) {
         RenderUtils.drawTimer(component, context, deathTime, Constants.DARK_PURPLE);
     }
 }

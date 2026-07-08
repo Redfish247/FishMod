@@ -5,7 +5,7 @@ import fishmod.features.item.ItemRarityHolder;
 import fishmod.utils.config.values.Visual;
 import fishmod.utils.rendering.DrawEvents;
 import java.util.List;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -35,7 +35,7 @@ public class ItemRarityHotbar {
     }
 
     /** Shared draw: parse (cached) rarity and blit the tinted sprite behind the 16x16 item icon. */
-    public static void drawRarity(GuiGraphics ctx, ItemStack stack, int x, int y) {
+    public static void drawRarity(GuiGraphicsExtractor ctx, ItemStack stack, int x, int y) {
         if (!Visual.itemRarityBackground || stack == null || stack.isEmpty()) return;
 
         ItemRarityHolder holder = (ItemRarityHolder) (Object) stack;

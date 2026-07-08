@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import fishmod.utils.Location;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.rendering.RenderUtils;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;
@@ -29,14 +29,14 @@ public class LeaderboardRenderer {
     private static boolean fetching = false;
 
     public static void init() {
-        WorldRenderEvents.AFTER_ENTITIES.register(LeaderboardRenderer::render);
+        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(LeaderboardRenderer::render);
     }
 
-    private static void render(net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext ctx) {
+    private static void render(net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext ctx) {
         if (!FishSettings.challengesEnabled) return;
         if (!FishSettings.challengeLeaderboardEnabled) return;
         if (!Location.in(Location.HUB)) return;
-        if (ctx.worldState() == null) return;
+        if (ctx.levelState() == null) return;
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
@@ -54,9 +54,9 @@ public class LeaderboardRenderer {
             });
         }
 
-        PoseStack matrices = ctx.matrices();
+        PoseStack matrices = ctx.poseStack();
         if (matrices == null) return;
-        Vec3 cam = ctx.worldState().cameraRenderState.pos;
+        Vec3 cam = ctx.levelState().cameraRenderState.pos;
 
         matrices.pushPose();
         matrices.translate(-cam.x, -cam.y, -cam.z);

@@ -2,7 +2,7 @@ package fishmod.utils.dungeon;
 
 import fishmod.utils.Constants;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import config.practical.manager.ConfigValue;
@@ -189,12 +189,12 @@ public class Split {
                         ));
     }
 
-    public void drawSplit(GuiGraphics context, Font textRenderer, int x, int y, int maxWidth) {
+    public void drawSplit(GuiGraphicsExtractor context, Font textRenderer, int x, int y, int maxWidth) {
         Component nameText = createNameText();
         Component timerText = createTimeText();
 
         int timerWidth = textRenderer.width(timerText);
-        context.drawString(textRenderer, nameText, x, y, 0xffffffff, true);
-        context.drawString(textRenderer, timerText, x + maxWidth - timerWidth, y, 0xffffffff, true);
+        context.text(textRenderer, nameText, x, y, 0xffffffff, true);
+        context.text(textRenderer, timerText, x + maxWidth - timerWidth, y, 0xffffffff, true);
     }
 }

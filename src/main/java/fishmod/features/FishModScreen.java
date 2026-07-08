@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
@@ -123,46 +123,46 @@ public class FishModScreen extends Screen {
     // -----------------------------------------------------------------------------------
 
     /** Filled rectangle with square corners (per the design). {@code r} ignored — retained for call sites. */
-    static void roundRect(GuiGraphics ctx, int x1, int y1, int x2, int y2, int r, int color) { ctx.fill(x1, y1, x2, y2, color); }
-    static void roundRect(GuiGraphics ctx, int x1, int y1, int x2, int y2, int color) { ctx.fill(x1, y1, x2, y2, color); }
+    static void roundRect(GuiGraphicsExtractor ctx, int x1, int y1, int x2, int y2, int r, int color) { ctx.fill(x1, y1, x2, y2, color); }
+    static void roundRect(GuiGraphicsExtractor ctx, int x1, int y1, int x2, int y2, int color) { ctx.fill(x1, y1, x2, y2, color); }
 
     /** Full capsule (square corners here): used by toggle tracks/knobs and slider bars. */
-    static void pill(GuiGraphics ctx, int x1, int y1, int x2, int y2, int color) { ctx.fill(x1, y1, x2, y2, color); }
+    static void pill(GuiGraphicsExtractor ctx, int x1, int y1, int x2, int y2, int color) { ctx.fill(x1, y1, x2, y2, color); }
 
     /** 1px border frame around a fill. */
-    static void panel(GuiGraphics ctx, int x1, int y1, int x2, int y2, int r, int fill, int border) {
+    static void panel(GuiGraphicsExtractor ctx, int x1, int y1, int x2, int y2, int r, int fill, int border) {
         ctx.fill(x1, y1, x2, y2, border);
         ctx.fill(x1 + 1, y1 + 1, x2 - 1, y2 - 1, fill);
     }
 
     /** Octagon-ish solid disc (square corners trimmed) — good enough for small circular glyphs. */
-    static void disc(GuiGraphics ctx, int cx, int cy, int r, int color) {
+    static void disc(GuiGraphicsExtractor ctx, int cx, int cy, int r, int color) {
         ctx.fill(cx - r, cy - r + 1, cx + r, cy + r - 1, color);
         ctx.fill(cx - r + 1, cy - r, cx + r - 1, cy + r, color);
     }
 
     /** Sub-panel menu text at TEXT_SCALE. */
-    static void st(GuiGraphics ctx, net.minecraft.client.gui.Font tr, String s, int x, int y, int color) {
+    static void st(GuiGraphicsExtractor ctx, net.minecraft.client.gui.Font tr, String s, int x, int y, int color) {
         ctx.pose().pushMatrix();
         ctx.pose().translate((float) x, (float) y + 1f);
         ctx.pose().scale(TEXT_SCALE, TEXT_SCALE);
-        ctx.drawString(tr, s, 0, 0, color, false);
+        ctx.text(tr, s, 0, 0, color, false);
         ctx.pose().popMatrix();
     }
     static int stw(net.minecraft.client.gui.Font tr, String s) { return (int) Math.ceil(tr.width(s) * TEXT_SCALE); }
 
     /** Text at an arbitrary scale. */
-    static void sst(GuiGraphics ctx, net.minecraft.client.gui.Font tr, String s, int x, int y, int color, float scale) {
+    static void sst(GuiGraphicsExtractor ctx, net.minecraft.client.gui.Font tr, String s, int x, int y, int color, float scale) {
         ctx.pose().pushMatrix();
         ctx.pose().translate((float) x, (float) y);
         ctx.pose().scale(scale, scale);
-        ctx.drawString(tr, s, 0, 0, color, false);
+        ctx.text(tr, s, 0, 0, color, false);
         ctx.pose().popMatrix();
     }
     static int sw(net.minecraft.client.gui.Font tr, String s, float scale) { return (int) Math.ceil(tr.width(s) * scale); }
 
     /** Chevron from fills: ▾ when {@code open}, ▸ when closed; {@code cy} is the vertical centre. */
-    static void drawChevron(GuiGraphics ctx, int gx, int cy, boolean open, int color) {
+    static void drawChevron(GuiGraphicsExtractor ctx, int gx, int cy, boolean open, int color) {
         if (open) {
             ctx.fill(gx,     cy - 2, gx + 7, cy - 1, color);
             ctx.fill(gx + 1, cy - 1, gx + 6, cy,     color);
@@ -177,7 +177,7 @@ public class FishModScreen extends Screen {
     }
 
     /** Tiny vector emblem (~14px) centred at (cx,cy). {@code bg} is the tile fill, for knockouts. */
-    private static void drawGlyph(GuiGraphics ctx, String t, int cx, int cy, int c, int bg) {
+    private static void drawGlyph(GuiGraphicsExtractor ctx, String t, int cx, int cy, int c, int bg) {
         switch (t) {
             case "gear" -> {
                 disc(ctx, cx, cy, 5, c);
@@ -567,7 +567,7 @@ public class FishModScreen extends Screen {
         {
             Feature f = new Feature("Customize", null, null);
             f.sub.add(new ButtonSetting("Open", "",
-                    () -> Minecraft.getInstance().setScreen(new fishmod.features.ItemCustomizeScreen())));
+                    () -> Minecraft.getInstance().gui.setScreen(new fishmod.features.ItemCustomizeScreen())));
             cosmetics.features.add(f);
         }
         {
@@ -889,14 +889,14 @@ public class FishModScreen extends Screen {
     // -----------------------------------------------------------------------------------
     // Background: solid dark (matches the mockup), no vanilla blur/dirt
     // -----------------------------------------------------------------------------------
-    @Override public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) { }
-    @Override public void renderTransparentBackground(GuiGraphics ctx) { }
+    @Override public void extractBackground(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) { }
+    @Override public void extractTransparentBackground(GuiGraphicsExtractor ctx) { }
 
     // -----------------------------------------------------------------------------------
     // Render
     // -----------------------------------------------------------------------------------
     @Override
-    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
         if (resetArmed && System.currentTimeMillis() - resetArmedAt > 3000) resetArmed = false;
         clampScroll();
 
@@ -919,10 +919,10 @@ public class FishModScreen extends Screen {
         renderContent(ctx, mouseX, mouseY);
         renderFooter(ctx, mouseX, mouseY);
 
-        super.render(ctx, mouseX, mouseY, delta);
+        super.extractRenderState(ctx, mouseX, mouseY, delta);
     }
 
-    private void renderTitleBar(GuiGraphics ctx, int mouseX, int mouseY) {
+    private void renderTitleBar(GuiGraphicsExtractor ctx, int mouseX, int mouseY) {
         int lx = left(), ty = top();
         // wordmark "FishMod"
         float ws = 1.6f;
@@ -958,11 +958,11 @@ public class FishModScreen extends Screen {
         } else {
             // nudge field right of the glyph
             searchField.setX(sx + 22); searchField.setWidth(swW - 28);
-            searchField.render(ctx, mouseX, mouseY, 0);
+            searchField.extractRenderState(ctx, mouseX, mouseY, 0);
         }
     }
 
-    private void renderSidebar(GuiGraphics ctx, int mouseX, int mouseY) {
+    private void renderSidebar(GuiGraphicsExtractor ctx, int mouseX, int mouseY) {
         int lx = left(), ty = top();
         ctx.fill(lx + SIDEBAR_W, ty + TITLE_H, lx + SIDEBAR_W + 1, bottom(), DIVIDER);
         int y = ty + TITLE_H + 10;
@@ -984,7 +984,7 @@ public class FishModScreen extends Screen {
         }
     }
 
-    private void renderContent(GuiGraphics ctx, int mouseX, int mouseY) {
+    private void renderContent(GuiGraphicsExtractor ctx, int mouseX, int mouseY) {
         int x0 = cx0(), x1 = cx1();
         int top = cyTop(), bot = cyBot();
         ctx.enableScissor(left() + SIDEBAR_W + 1, top, right(), bot);
@@ -1015,7 +1015,7 @@ public class FishModScreen extends Screen {
         }
     }
 
-    private void renderRow(GuiGraphics ctx, Feature f, int x0, int x1, int top, int mouseX, int mouseY) {
+    private void renderRow(GuiGraphicsExtractor ctx, Feature f, int x0, int x1, int top, int mouseX, int mouseY) {
         boolean on = f.hasMaster() && f.get.get();
         boolean inView = mouseY >= cyTop() && mouseY <= cyBot();
         boolean hover = inView && mouseX >= x0 && mouseX <= x1 && mouseY >= top && mouseY <= top + ROW_H;
@@ -1032,9 +1032,9 @@ public class FishModScreen extends Screen {
         int labelX = tx + ts + 9;
         String d = descFor(f.name);
         if (d.isEmpty()) {
-            ctx.drawString(this.font, f.name, labelX, top + (ROW_H - 8) / 2, TEXT_COLOR, false);
+            ctx.text(this.font, f.name, labelX, top + (ROW_H - 8) / 2, TEXT_COLOR, false);
         } else {
-            ctx.drawString(this.font, f.name, labelX, top + 8, TEXT_COLOR, false);
+            ctx.text(this.font, f.name, labelX, top + 8, TEXT_COLOR, false);
             sst(ctx, this.font, d, labelX, top + 21, SUBTEXT_COLOR, 0.85f);
         }
 
@@ -1049,7 +1049,7 @@ public class FishModScreen extends Screen {
         }
     }
 
-    private void drawBigToggle(GuiGraphics ctx, int x, int y, boolean on, boolean hover) {
+    private void drawBigToggle(GuiGraphicsExtractor ctx, int x, int y, boolean on, boolean hover) {
         int track = on ? (hover ? ACCENT_HOVER : ACCENT) : (hover ? 0xFF333D48 : 0xFF252D37);
         pill(ctx, x, y, x + TOG2_W, y + TOG2_H, track);
         int knobD = TOG2_H - 6;
@@ -1061,7 +1061,7 @@ public class FishModScreen extends Screen {
         sst(ctx, this.font, t, tx, y + (TOG2_H - 6) / 2, on ? 0xFF06302F : 0xFF8893A0, 0.8f);
     }
 
-    private void renderSubPanel(GuiGraphics ctx, Feature f, int x0, int x1, int top, int mouseX, int mouseY) {
+    private void renderSubPanel(GuiGraphicsExtractor ctx, Feature f, int x0, int x1, int top, int mouseX, int mouseY) {
         int subH = detailHeightForSelected() + 10;
         ctx.fill(x0, top, x1, top + subH, SUBROW_BG);
         ctx.fill(x0, top, x0 + 2, top + subH, ACCENT);
@@ -1077,7 +1077,7 @@ public class FishModScreen extends Screen {
         }
     }
 
-    private void renderFooter(GuiGraphics ctx, int mouseX, int mouseY) {
+    private void renderFooter(GuiGraphicsExtractor ctx, int mouseX, int mouseY) {
         int fY = bottom() - FOOTER_H;
         ctx.fill(left() + SIDEBAR_W, fY, right(), fY + 1, DIVIDER);
         int by = fY + (FOOTER_H - 26) / 2, bh = 26;
@@ -1103,21 +1103,21 @@ public class FishModScreen extends Screen {
     private boolean hovBtn(int mx, int my, int x, int y, int w, int h) {
         return mx >= x && mx <= x + w && my >= y && my <= y + h;
     }
-    private void drawButton(GuiGraphics ctx, int x, int y, int w, int h, String label, boolean filled, boolean hover) {
+    private void drawButton(GuiGraphicsExtractor ctx, int x, int y, int w, int h, String label, boolean filled, boolean hover) {
         drawButton(ctx, x, y, w, h, label, filled, hover, ACCENT);
     }
-    private void drawButton(GuiGraphics ctx, int x, int y, int w, int h, String label, boolean filled, boolean hover, int tint) {
+    private void drawButton(GuiGraphicsExtractor ctx, int x, int y, int w, int h, String label, boolean filled, boolean hover, int tint) {
         if (filled) {
             ctx.fill(x, y, x + w, y + h, hover ? ACCENT_HOVER : tint);
             int tw = this.font.width(label);
-            ctx.drawString(this.font, label, x + (w - tw) / 2, y + (h - 8) / 2, 0xFF052A29, false);
+            ctx.text(this.font, label, x + (w - tw) / 2, y + (h - 8) / 2, 0xFF052A29, false);
         } else {
             int bd = hover ? ACCENT_HOVER : tint;
             ctx.fill(x, y, x + w, y + h, hover ? 0xFF12222A : 0xFF0D141A);
             ctx.fill(x, y, x + w, y + 1, bd); ctx.fill(x, y + h - 1, x + w, y + h, bd);
             ctx.fill(x, y, x + 1, y + h, bd); ctx.fill(x + w - 1, y, x + w, y + h, bd);
             int tw = this.font.width(label);
-            ctx.drawString(this.font, label, x + (w - tw) / 2, y + (h - 8) / 2, bd, false);
+            ctx.text(this.font, label, x + (w - tw) / 2, y + (h - 8) / 2, bd, false);
         }
     }
 
@@ -1143,9 +1143,9 @@ public class FishModScreen extends Screen {
         // ----- footer buttons -----
         int fY = bottom() - FOOTER_H, by = fY + (FOOTER_H - 26) / 2, bh = 26;
         int ehW = 96, ehX = cx0();
-        if (hovBtn(mx, my, ehX, by, ehW, bh)) { Minecraft.getInstance().setScreen(new FishHudEditor(this)); return true; }
+        if (hovBtn(mx, my, ehX, by, ehW, bh)) { Minecraft.getInstance().gui.setScreen(new FishHudEditor(this)); return true; }
         int crW = 76, crX = ehX + ehW + 10;
-        if (hovBtn(mx, my, crX, by, crW, bh)) { Minecraft.getInstance().setScreen(new CreditsScreen(this)); return true; }
+        if (hovBtn(mx, my, crX, by, crW, bh)) { Minecraft.getInstance().gui.setScreen(new CreditsScreen(this)); return true; }
         int scW = 126, scX = cx1() - scW;
         if (hovBtn(mx, my, scX, by, scW, bh)) { onClose(); return true; }
         int rsW = 84, rsX = scX - 10 - rsW;
@@ -1316,7 +1316,7 @@ public class FishModScreen extends Screen {
     static abstract class Setting {
         String name, description;
         Setting(String name, String description) { this.name = name; this.description = description; }
-        abstract void render(GuiGraphics ctx, int leftX, int rightX, int settingY, int mouseX, int mouseY, net.minecraft.client.gui.Font tr);
+        abstract void render(GuiGraphicsExtractor ctx, int leftX, int rightX, int settingY, int mouseX, int mouseY, net.minecraft.client.gui.Font tr);
         boolean onClick(int mx, int my, int leftX, int rightX, int settingY, int button) { return false; }
         void onDrag(int mx, int sx, int sliderW) {}
         int getHeight() { return ITEM_HEIGHT; }
@@ -1326,7 +1326,7 @@ public class FishModScreen extends Screen {
         SubcategoryHeader(String name) { super(name, ""); }
         @Override int getHeight() { return SUBCAT_HEIGHT; }
         @Override
-        void render(GuiGraphics ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
+        void render(GuiGraphicsExtractor ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
             roundRect(ctx, leftX, sy, rightX, sy + SUBCAT_HEIGHT, 2, 0xFF11131A);
             ctx.fill(leftX + 1, sy + 2, leftX + 3, sy + SUBCAT_HEIGHT - 2, ACCENT);
             st(ctx, tr, name, leftX + 6, sy + (SUBCAT_HEIGHT - 8) / 2, ACCENT);
@@ -1339,7 +1339,7 @@ public class FishModScreen extends Screen {
             super(name, desc); this.getter = g; this.setter = s;
         }
         @Override
-        void render(GuiGraphics ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
+        void render(GuiGraphicsExtractor ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
             int tx = rightX - TOGGLE_W - 2;
             int ty = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
             boolean on = getter.get();
@@ -1368,7 +1368,7 @@ public class FishModScreen extends Screen {
             super(name, desc); this.getter = g; this.setter = s; this.min = mn; this.max = mx;
         }
         @Override
-        void render(GuiGraphics ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
+        void render(GuiGraphicsExtractor ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
             int slx = rightX - SLIDER_W - 2;
             int sly = sy + (ITEM_HEIGHT - SLIDER_H) / 2;
             float pct = (float)(getter.get() - min) / (max - min);
@@ -1391,7 +1391,7 @@ public class FishModScreen extends Screen {
             super(name, desc); this.getter = g; this.setter = s; this.min = mn; this.max = mx;
         }
         @Override
-        void render(GuiGraphics ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
+        void render(GuiGraphicsExtractor ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
             int slx = rightX - SLIDER_W - 2;
             int sly = sy + (ITEM_HEIGHT - SLIDER_H) / 2;
             float pct = (float)((getter.get() - min) / (max - min));
@@ -1417,7 +1417,7 @@ public class FishModScreen extends Screen {
             super(name, desc); this.values = vals; this.getter = g; this.setter = s;
         }
         @Override
-        void render(GuiGraphics ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
+        void render(GuiGraphicsExtractor ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
             int bw = DROP_W;
             int bx = rightX - bw - 2;
             int by = sy + (ITEM_HEIGHT - DROP_H) / 2;
@@ -1425,8 +1425,8 @@ public class FishModScreen extends Screen {
             panel(ctx, bx, by, bx + bw, by + DROP_H, 3, hov ? 0xFF252832 : SLIDER_BG, hov ? ACCENT_HOVER : ACCENT);
             String current = getter.get().toString();
             if (tr.width(current) > bw - 20) current = tr.plainSubstrByWidth(current, bw - 24) + "…";
-            ctx.drawString(tr, current, bx + 6, by + (DROP_H - 8) / 2, TEXT_COLOR, false);
-            ctx.drawString(tr, "›", bx + bw - 9, by + (DROP_H - 8) / 2, ACCENT, false);
+            ctx.text(tr, current, bx + 6, by + (DROP_H - 8) / 2, TEXT_COLOR, false);
+            ctx.text(tr, "›", bx + bw - 9, by + (DROP_H - 8) / 2, ACCENT, false);
         }
         @Override
         boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
@@ -1462,7 +1462,7 @@ public class FishModScreen extends Screen {
         }
         @Override int getHeight() { return hint != null ? 35 : 26; }
         @Override
-        void render(GuiGraphics ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
+        void render(GuiGraphicsExtractor ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
             initField(tr);
             st(ctx, tr, name, leftX + 2, sy + 1, TEXT_COLOR);
             int ix = leftX + 2;
@@ -1476,7 +1476,7 @@ public class FishModScreen extends Screen {
             ctx.pose().pushMatrix();
             ctx.pose().translate((float) ix, (float) iy);
             ctx.pose().scale(fs, fs);
-            textField.render(ctx, mx, my, 0);
+            textField.extractRenderState(ctx, mx, my, 0);
             ctx.pose().popMatrix();
             if (hint != null) st(ctx, tr, hint, leftX + 2, sy + 27, SUBTEXT_COLOR);
         }
@@ -1518,7 +1518,7 @@ public class FishModScreen extends Screen {
         }
         @Override int getHeight() { return ITEM_HEIGHT + 9; }
         @Override
-        void render(GuiGraphics ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
+        void render(GuiGraphicsExtractor ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
             st(ctx, tr, displayLabel, leftX + 2, sy + 1, TEXT_COLOR);
             initField(tr);
             int ix = rightX - INPUT_W - 2;
@@ -1530,7 +1530,7 @@ public class FishModScreen extends Screen {
             ctx.pose().pushMatrix();
             ctx.pose().translate((float) ix, (float) iy);
             ctx.pose().scale(fs, fs);
-            textField.render(ctx, mx, my, 0);
+            textField.extractRenderState(ctx, mx, my, 0);
             ctx.pose().popMatrix();
             int len = visibleLen(getter.get());
             String counter = len + "/" + maxVisible;
@@ -1569,14 +1569,14 @@ public class FishModScreen extends Screen {
             }
         }
         @Override
-        void render(GuiGraphics ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
+        void render(GuiGraphicsExtractor ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
             initField(tr);
             int ix = rightX - 50 - 2;
             int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
             ctx.fill(ix - 18, iy, ix - 2, iy + INPUT_H, 0xFF000000);
             ctx.fill(ix - 17, iy + 1, ix - 3, iy + INPUT_H - 1, getter.get());
             textField.setX(ix); textField.setY(iy);
-            textField.render(ctx, mx, my, 0);
+            textField.extractRenderState(ctx, mx, my, 0);
         }
         @Override
         boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
@@ -1633,7 +1633,7 @@ public class FishModScreen extends Screen {
             }
         }
         @Override
-        void render(GuiGraphics ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
+        void render(GuiGraphicsExtractor ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
             initField(tr);
             if (getter.get() != lastColor) { syncFromColor(getter.get()); textField.setValue(String.format("%06X", getter.get() & 0xFFFFFF)); }
 
@@ -1643,7 +1643,7 @@ public class FishModScreen extends Screen {
             ctx.fill(ix - 18, iy, ix - 2, iy + INPUT_H, 0xFF000000);
             ctx.fill(ix - 17, iy + 1, ix - 3, iy + INPUT_H - 1, getter.get());
             textField.setX(ix); textField.setY(iy);
-            textField.render(ctx, mx, my, 0);
+            textField.extractRenderState(ctx, mx, my, 0);
 
             sqX = leftX; sqY = sy + ITEM_HEIGHT + 2;
             for (int c = 0; c < sqW; c++) {
@@ -1707,7 +1707,7 @@ public class FishModScreen extends Screen {
             return super.getHeight();
         }
         @Override
-        void render(GuiGraphics ctx, int leftX, int rightX, int sy, int mx, int my,
+        void render(GuiGraphicsExtractor ctx, int leftX, int rightX, int sy, int mx, int my,
                     net.minecraft.client.gui.Font tr) {
             if (!visible.get()) return;
             super.render(ctx, leftX, rightX, sy, mx, my, tr);
@@ -1723,7 +1723,7 @@ public class FishModScreen extends Screen {
         Runnable action;
         ButtonSetting(String name, String desc, Runnable a) { super(name, desc); this.action = a; }
         @Override
-        void render(GuiGraphics ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
+        void render(GuiGraphicsExtractor ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
             int bw = 60;
             int bx = rightX - bw - 2;
             int by = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
@@ -1761,7 +1761,7 @@ public class FishModScreen extends Screen {
             }
         }
         @Override
-        void render(GuiGraphics ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
+        void render(GuiGraphicsExtractor ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
             initField(tr);
             int ix = rightX - INPUT_W - 2;
             int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
@@ -1772,7 +1772,7 @@ public class FishModScreen extends Screen {
             ctx.pose().pushMatrix();
             ctx.pose().translate((float) ix, (float) iy);
             ctx.pose().scale(fs, fs);
-            textField.render(ctx, mx, my, 0);
+            textField.extractRenderState(ctx, mx, my, 0);
             ctx.pose().popMatrix();
         }
         @Override
@@ -1805,7 +1805,7 @@ public class FishModScreen extends Screen {
             }
         }
         @Override
-        void render(GuiGraphics ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
+        void render(GuiGraphicsExtractor ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
             initField(tr);
             int ix = rightX - INPUT_W - 2;
             int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
@@ -1816,7 +1816,7 @@ public class FishModScreen extends Screen {
             ctx.pose().pushMatrix();
             ctx.pose().translate((float) ix, (float) iy);
             ctx.pose().scale(fs, fs);
-            textField.render(ctx, mx, my, 0);
+            textField.extractRenderState(ctx, mx, my, 0);
             ctx.pose().popMatrix();
         }
         @Override
@@ -1834,6 +1834,6 @@ public class FishModScreen extends Screen {
     static class LabelSetting extends Setting {
         LabelSetting(String name, String desc) { super(name, desc); }
         @Override
-        void render(GuiGraphics ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {}
+        void render(GuiGraphicsExtractor ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {}
     }
 }

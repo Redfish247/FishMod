@@ -44,11 +44,12 @@ import fishmod.utils.config.FishConfig;
 import net.fabricmc.api.ModInitializer;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.minecraft.resources.Identifier;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -266,32 +267,32 @@ public class FishModInit implements ModInitializer {
 
         // Always register /fm and /fmdbg regardless of whether blade is loaded
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
-            dispatcher.register(ClientCommandManager.literal("fm")
-                .then(ClientCommandManager.literal("customize").executes(context -> {
+            dispatcher.register(ClientCommands.literal("fm")
+                .then(ClientCommands.literal("customize").executes(context -> {
                     Minecraft.getInstance().schedule(() ->
-                        Minecraft.getInstance().setScreen(new fishmod.features.ItemCustomizeScreen()));
+                        Minecraft.getInstance().gui.setScreen(new fishmod.features.ItemCustomizeScreen()));
                     return Constants.SUCCESS;
                 }))
-                .then(ClientCommandManager.literal("optimize").executes(context -> {
+                .then(ClientCommands.literal("optimize").executes(context -> {
                     Minecraft.getInstance().schedule(() ->
-                        Minecraft.getInstance().setScreen(new fishmod.features.optimizer.OptimizerScreen(null)));
+                        Minecraft.getInstance().gui.setScreen(new fishmod.features.optimizer.OptimizerScreen(null)));
                     return Constants.SUCCESS;
                 }))
-                .then(ClientCommandManager.literal("commandhelp").executes(context -> {
+                .then(ClientCommands.literal("commandhelp").executes(context -> {
                     printCommandHelp();
                     return Constants.SUCCESS;
                 }))
-                .then(ClientCommandManager.literal("help").executes(context -> {
+                .then(ClientCommands.literal("help").executes(context -> {
                     printCommandHelp();
                     return Constants.SUCCESS;
                 }))
                 .executes(context -> {
                     Minecraft.getInstance().schedule(() ->
-                        Minecraft.getInstance().setScreen(new fishmod.features.FishModScreen()));
+                        Minecraft.getInstance().gui.setScreen(new fishmod.features.FishModScreen()));
                     return Constants.SUCCESS;
                 })
             );
-            dispatcher.register(ClientCommandManager.literal("fmloot")
+            dispatcher.register(ClientCommands.literal("fmloot")
                 .executes(ctx -> {
                     boolean on = !fishmod.utils.config.values.FishSettings.lootTrackerEnabled;
                     fishmod.utils.config.values.FishSettings.lootTrackerEnabled = on;
@@ -302,14 +303,14 @@ public class FishModInit implements ModInitializer {
                     return Constants.SUCCESS;
                 })
             );
-            dispatcher.register(ClientCommandManager.literal("po")
+            dispatcher.register(ClientCommands.literal("po")
                 .executes(ctx -> {
                     Minecraft mc = Minecraft.getInstance();
-                    mc.schedule(() -> mc.setScreen(new fishmod.features.optimizer.OptimizerScreen(mc.screen)));
+                    mc.schedule(() -> mc.gui.setScreen(new fishmod.features.optimizer.OptimizerScreen(mc.gui.screen())));
                     return Constants.SUCCESS;
                 })
             );
-            dispatcher.register(ClientCommandManager.literal("fmnicktest")
+            dispatcher.register(ClientCommands.literal("fmnicktest")
                 .executes(ctx -> {
                     if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
                     Minecraft mc = Minecraft.getInstance();
@@ -354,7 +355,7 @@ public class FishModInit implements ModInitializer {
                     return Constants.SUCCESS;
                 })
             );
-            dispatcher.register(ClientCommandManager.literal("fmitems")
+            dispatcher.register(ClientCommands.literal("fmitems")
                 .executes(ctx -> {
                     if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
                     Minecraft mc = Minecraft.getInstance();
@@ -399,7 +400,7 @@ public class FishModInit implements ModInitializer {
                     return Constants.SUCCESS;
                 })
             );
-            dispatcher.register(ClientCommandManager.literal("fmchping")
+            dispatcher.register(ClientCommands.literal("fmchping")
                 .executes(ctx -> {
                     if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
                     Minecraft mc = Minecraft.getInstance();
@@ -412,7 +413,7 @@ public class FishModInit implements ModInitializer {
                     return Constants.SUCCESS;
                 })
             );
-            dispatcher.register(ClientCommandManager.literal("fmchworker")
+            dispatcher.register(ClientCommands.literal("fmchworker")
                 .executes(ctx -> {
                     if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
                     String cur = fishmod.utils.config.values.FishSettings.challengeWorkerOverride;
@@ -421,14 +422,14 @@ public class FishModInit implements ModInitializer {
                     Misc.addChatMessage(Component.literal("§7Usage: §f/fmchworker <url> §7| §f/fmchworker reset"));
                     return Constants.SUCCESS;
                 })
-                .then(ClientCommandManager.literal("reset").executes(ctx -> {
+                .then(ClientCommands.literal("reset").executes(ctx -> {
                     if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
                     fishmod.utils.config.values.FishSettings.challengeWorkerOverride = "";
                     fishmod.utils.config.FishConfig.manager.save();
                     Misc.addChatMessage(Component.literal("§a[fmchworker] reset — using default worker."));
                     return Constants.SUCCESS;
                 }))
-                .then(ClientCommandManager.argument("url", StringArgumentType.greedyString()).executes(ctx -> {
+                .then(ClientCommands.argument("url", StringArgumentType.greedyString()).executes(ctx -> {
                     if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
                     String url = StringArgumentType.getString(ctx, "url").trim();
                     fishmod.utils.config.values.FishSettings.challengeWorkerOverride = url;
@@ -437,7 +438,7 @@ public class FishModInit implements ModInitializer {
                     return Constants.SUCCESS;
                 }))
             );
-            dispatcher.register(ClientCommandManager.literal("fmlbtest")
+            dispatcher.register(ClientCommands.literal("fmlbtest")
                 .executes(ctx -> {
                     if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
                     Minecraft mc = Minecraft.getInstance();
@@ -473,48 +474,48 @@ public class FishModInit implements ModInitializer {
             );
             // /fmchallenge is disabled — feature shelved pending redesign. Code still present
             // in fishmod.features.challenges.* and gated by FishSettings.challengesEnabled.
-            dispatcher.register(ClientCommandManager.literal("streams")
+            dispatcher.register(ClientCommands.literal("streams")
                 .executes(ctx -> {
                     Minecraft mc = Minecraft.getInstance();
-                    mc.schedule(() -> mc.setScreen(new fishmod.features.streams.StreamsScreen(mc.screen)));
+                    mc.schedule(() -> mc.gui.setScreen(new fishmod.features.streams.StreamsScreen(mc.gui.screen())));
                     return Constants.SUCCESS;
                 })
             );
-            dispatcher.register(ClientCommandManager.literal("wiki")
+            dispatcher.register(ClientCommands.literal("wiki")
                 .executes(ctx -> {
                     if (wikiUnavailable(ctx.getSource())) return Constants.SUCCESS;
                     Minecraft mc = Minecraft.getInstance();
-                    mc.schedule(() -> mc.setScreen(new WikiScreen(mc.screen, "")));
+                    mc.schedule(() -> mc.gui.setScreen(new WikiScreen(mc.gui.screen(), "")));
                     return Constants.SUCCESS;
                 })
-                .then(ClientCommandManager.argument("query", StringArgumentType.greedyString())
+                .then(ClientCommands.argument("query", StringArgumentType.greedyString())
                     .executes(ctx -> {
                         if (wikiUnavailable(ctx.getSource())) return Constants.SUCCESS;
                         String query = StringArgumentType.getString(ctx, "query");
                         Minecraft mc = Minecraft.getInstance();
-                        mc.schedule(() -> mc.setScreen(new WikiScreen(mc.screen, query)));
+                        mc.schedule(() -> mc.gui.setScreen(new WikiScreen(mc.gui.screen(), query)));
                         return Constants.SUCCESS;
                     })
                 )
             );
             // ── Reputation (vouch / shitter list) ─────────────────────────────
-            dispatcher.register(ClientCommandManager.literal("vouch")
-                .then(ClientCommandManager.argument("player", StringArgumentType.word())
+            dispatcher.register(ClientCommands.literal("vouch")
+                .then(ClientCommands.argument("player", StringArgumentType.word())
                     .executes(ctx -> { fishmod.features.Reputation.vote(StringArgumentType.getString(ctx, "player"), "up"); return Constants.SUCCESS; })));
-            dispatcher.register(ClientCommandManager.literal("shitter")
-                .then(ClientCommandManager.argument("player", StringArgumentType.word())
+            dispatcher.register(ClientCommands.literal("shitter")
+                .then(ClientCommands.argument("player", StringArgumentType.word())
                     .executes(ctx -> { fishmod.features.Reputation.vote(StringArgumentType.getString(ctx, "player"), "down"); return Constants.SUCCESS; })));
-            dispatcher.register(ClientCommandManager.literal("unrep")
-                .then(ClientCommandManager.argument("player", StringArgumentType.word())
+            dispatcher.register(ClientCommands.literal("unrep")
+                .then(ClientCommands.argument("player", StringArgumentType.word())
                     .executes(ctx -> { fishmod.features.Reputation.vote(StringArgumentType.getString(ctx, "player"), "none"); return Constants.SUCCESS; })));
-            dispatcher.register(ClientCommandManager.literal("rep")
+            dispatcher.register(ClientCommands.literal("rep")
                 .executes(ctx -> { fishmod.features.Reputation.listNearby(); return Constants.SUCCESS; })
-                .then(ClientCommandManager.argument("player", StringArgumentType.word())
+                .then(ClientCommands.argument("player", StringArgumentType.word())
                     .executes(ctx -> { fishmod.features.Reputation.lookup(StringArgumentType.getString(ctx, "player")); return Constants.SUCCESS; })));
 
             // ── Party alias commands ──────────────────────────────────────────
-            dispatcher.register(ClientCommandManager.literal("pk")
-                .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
+            dispatcher.register(ClientCommands.literal("pk")
+                .then(ClientCommands.argument("name", StringArgumentType.greedyString())
                     .executes(ctx -> {
                         String name = StringArgumentType.getString(ctx, "name");
                         Minecraft mc = Minecraft.getInstance();
@@ -523,15 +524,15 @@ public class FishModInit implements ModInitializer {
                     })
                 )
             );
-            dispatcher.register(ClientCommandManager.literal("pw")
+            dispatcher.register(ClientCommands.literal("pw")
                 .executes(ctx -> {
                     Minecraft mc = Minecraft.getInstance();
                     if (mc.getConnection() != null) mc.getConnection().sendCommand("p warp");
                     return Constants.SUCCESS;
                 })
             );
-            dispatcher.register(ClientCommandManager.literal("pt")
-                .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
+            dispatcher.register(ClientCommands.literal("pt")
+                .then(ClientCommands.argument("name", StringArgumentType.greedyString())
                     .executes(ctx -> {
                         String name = StringArgumentType.getString(ctx, "name");
                         Minecraft mc = Minecraft.getInstance();
@@ -540,8 +541,8 @@ public class FishModInit implements ModInitializer {
                     })
                 )
             );
-            dispatcher.register(ClientCommandManager.literal("pp")
-                .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
+            dispatcher.register(ClientCommands.literal("pp")
+                .then(ClientCommands.argument("name", StringArgumentType.greedyString())
                     .executes(ctx -> {
                         String name = StringArgumentType.getString(ctx, "name");
                         Minecraft mc = Minecraft.getInstance();
@@ -552,7 +553,7 @@ public class FishModInit implements ModInitializer {
             );
             // ─────────────────────────────────────────────────────────────────
 
-            dispatcher.register(ClientCommandManager.literal("fmpet").executes(context -> {
+            dispatcher.register(ClientCommands.literal("fmpet").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 Minecraft mc = Minecraft.getInstance();
                 mc.schedule(() -> {
@@ -564,7 +565,7 @@ public class FishModInit implements ModInitializer {
                 return Constants.SUCCESS;
             }));
 
-            dispatcher.register(ClientCommandManager.literal("fmtts")
+            dispatcher.register(ClientCommands.literal("fmtts")
                 .executes(ctx -> {
                     boolean on = fishmod.utils.config.values.FishSettings.ttsEnabled;
                     Misc.addChatMessage(Component.literal("§b[TTS] §7" + (on
@@ -572,34 +573,34 @@ public class FishModInit implements ModInitializer {
                     if (on) fishmod.utils.Tts.speak("Fish mod text to speech is working");
                     return Constants.SUCCESS;
                 })
-                .then(ClientCommandManager.argument("phrase", StringArgumentType.greedyString())
+                .then(ClientCommands.argument("phrase", StringArgumentType.greedyString())
                     .executes(ctx -> {
                         fishmod.utils.Tts.speak(StringArgumentType.getString(ctx, "phrase"));
                         return Constants.SUCCESS;
                     })));
 
-            dispatcher.register(ClientCommandManager.literal("fmbuddy").executes(context -> {
+            dispatcher.register(ClientCommands.literal("fmbuddy").executes(context -> {
                 fishmod.features.DeskBuddy.cheer();
                 Misc.addChatMessage(Component.literal("§6[Desk-Buddy] §7" + (fishmod.utils.config.values.FishSettings.deskBuddyEnabled
                         ? "§a\\(^o^)/ dancing!" : "§eenable it in §f/fm §8> §7Cosmetics §8> §7Desk-Buddy §7first.")));
                 return Constants.SUCCESS;
             }));
 
-            dispatcher.register(ClientCommandManager.literal("fmpetdump").executes(context -> {
+            dispatcher.register(ClientCommands.literal("fmpetdump").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 PetHud.debugDumpPetLines = !PetHud.debugDumpPetLines;
                 Misc.addChatMessage(Component.literal("§b[fmpet] dump pet-related chat lines: §f" + PetHud.debugDumpPetLines));
                 return Constants.SUCCESS;
             }));
 
-            dispatcher.register(ClientCommandManager.literal("fmcddump").executes(context -> {
+            dispatcher.register(ClientCommands.literal("fmcddump").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 CooldownOverlay.debugDumpSound = !CooldownOverlay.debugDumpSound;
                 Misc.addChatMessage(Component.literal("§b[fmcd] dump cooldown sound events: §f" + CooldownOverlay.debugDumpSound));
                 return Constants.SUCCESS;
             }));
 
-            dispatcher.register(ClientCommandManager.literal("fmblocks").executes(context -> {
+            dispatcher.register(ClientCommands.literal("fmblocks").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 Minecraft mc = Minecraft.getInstance();
                 mc.schedule(() -> {
@@ -622,46 +623,46 @@ public class FishModInit implements ModInitializer {
                 return Constants.SUCCESS;
             }));
 
-            dispatcher.register(ClientCommandManager.literal("fmssdebug").executes(context -> {
+            dispatcher.register(ClientCommands.literal("fmssdebug").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.features.dungeon.SimonSaysTracker.debug = !fishmod.features.dungeon.SimonSaysTracker.debug;
                 Misc.addChatMessage(Component.literal("§b[ssdbg] log Simon Says block transitions: §f" + fishmod.features.dungeon.SimonSaysTracker.debug));
                 return Constants.SUCCESS;
             }));
 
-            dispatcher.register(ClientCommandManager.literal("fmseadump").executes(context -> {
+            dispatcher.register(ClientCommands.literal("fmseadump").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.features.fishing.SeaCreatureTracker.debugDump = !fishmod.features.fishing.SeaCreatureTracker.debugDump;
                 Misc.addChatMessage(Component.literal("§b[fmsea] dump unmatched fishing chat lines: §f" + fishmod.features.fishing.SeaCreatureTracker.debugDump));
                 return Constants.SUCCESS;
             }));
 
-            dispatcher.register(ClientCommandManager.literal("fmslayerdump").executes(context -> {
+            dispatcher.register(ClientCommands.literal("fmslayerdump").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.features.slayer.SlayerAlerts.debugDump = !fishmod.features.slayer.SlayerAlerts.debugDump;
                 Misc.addChatMessage(Component.literal("§b[fmslayer] dump slayer chat lines: §f" + fishmod.features.slayer.SlayerAlerts.debugDump));
                 return Constants.SUCCESS;
             }));
 
-            dispatcher.register(ClientCommandManager.literal("fmnuc").executes(context -> {
+            dispatcher.register(ClientCommands.literal("fmnuc").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.utils.HypixelApi.dumpNucleus(Minecraft.getInstance());
                 return Constants.SUCCESS;
             }));
 
-            dispatcher.register(ClientCommandManager.literal("fmgarden").executes(context -> {
+            dispatcher.register(ClientCommands.literal("fmgarden").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.utils.HypixelApi.dumpGarden(Minecraft.getInstance());
                 return Constants.SUCCESS;
             }));
 
-            dispatcher.register(ClientCommandManager.literal("fmprofile").executes(context -> {
+            dispatcher.register(ClientCommands.literal("fmprofile").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.utils.HypixelApi.dumpEconomy(Minecraft.getInstance());
                 return Constants.SUCCESS;
             }));
 
-            dispatcher.register(ClientCommandManager.literal("fmtabdump").executes(context -> {
+            dispatcher.register(ClientCommands.literal("fmtabdump").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 Minecraft mc = Minecraft.getInstance();
                 mc.schedule(() -> {
@@ -682,14 +683,14 @@ public class FishModInit implements ModInitializer {
                 return Constants.SUCCESS;
             }));
 
-            dispatcher.register(ClientCommandManager.literal("fmskilldump").executes(context -> {
+            dispatcher.register(ClientCommands.literal("fmskilldump").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.features.SkillTracker.debugDump = !fishmod.features.SkillTracker.debugDump;
                 Misc.addChatMessage(Component.literal("§b[skill] dump raw action bar: §f" + fishmod.features.SkillTracker.debugDump));
                 return Constants.SUCCESS;
             }));
 
-            dispatcher.register(ClientCommandManager.literal("fmdbg").executes(context -> {
+            dispatcher.register(ClientCommands.literal("fmdbg").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 Minecraft mc = Minecraft.getInstance();
                 mc.schedule(() -> {
@@ -741,7 +742,7 @@ public class FishModInit implements ModInitializer {
                     Misc.addChatMessage(Component.literal("§b--- End Debug ---"));
                 });
                 return Constants.SUCCESS;
-            }).then(ClientCommandManager.argument("sub", StringArgumentType.greedyString())
+            }).then(ClientCommands.argument("sub", StringArgumentType.greedyString())
                 .executes(ctx -> {
                     String arg = StringArgumentType.getString(ctx, "sub");
                     Minecraft mc = Minecraft.getInstance();
@@ -836,26 +837,26 @@ public class FishModInit implements ModInitializer {
             for (String name : new String[]{"cata","rtca","secrets","sa","totalruns","mp","nw","networth",
                     "bank","corpse","corpses","level","sblvl","farming","nuc","nucleus","powder",
                     "worm","scatha","kick","transfer","promote"}) {
-                dispatcher.register(ClientCommandManager.literal(name)
+                dispatcher.register(ClientCommands.literal(name)
                     .executes(c -> runLocalLookup(name, null, null))
-                    .then(ClientCommandManager.argument("player", StringArgumentType.word()).suggests(playerSuggest)
+                    .then(ClientCommands.argument("player", StringArgumentType.word()).suggests(playerSuggest)
                         .executes(c -> runLocalLookup(name, StringArgumentType.getString(c, "player"), null))));
             }
             // NOTE: no "collection" here — Hypixel already owns /collection. The party-chat
             // ".collection" command still works via the chat handler.
             for (String name : new String[]{"pb","runs"}) {
-                dispatcher.register(ClientCommandManager.literal(name)
+                dispatcher.register(ClientCommands.literal(name)
                     .executes(c -> runLocalLookup(name, null, null))
-                    .then(ClientCommandManager.argument("player", StringArgumentType.word()).suggests(playerSuggest)
+                    .then(ClientCommands.argument("player", StringArgumentType.word()).suggests(playerSuggest)
                         .executes(c -> runLocalLookup(name, StringArgumentType.getString(c, "player"), null))
-                        .then(ClientCommandManager.argument("floor", StringArgumentType.word()).suggests(floorSuggest)
+                        .then(ClientCommands.argument("floor", StringArgumentType.word()).suggests(floorSuggest)
                             .executes(c -> runLocalLookup(name, StringArgumentType.getString(c, "player"), StringArgumentType.getString(c, "floor"))))));
             }
-            dispatcher.register(ClientCommandManager.literal("rtc")
+            dispatcher.register(ClientCommands.literal("rtc")
                 .executes(c -> runLocalLookup("rtc", null, null))
-                .then(ClientCommandManager.argument("player", StringArgumentType.word()).suggests(playerSuggest)
+                .then(ClientCommands.argument("player", StringArgumentType.word()).suggests(playerSuggest)
                     .executes(c -> runLocalLookup("rtc", StringArgumentType.getString(c, "player"), null))
-                    .then(ClientCommandManager.argument("level", StringArgumentType.word())
+                    .then(ClientCommands.argument("level", StringArgumentType.word())
                         .executes(c -> runLocalLookup("rtc", StringArgumentType.getString(c, "player"), StringArgumentType.getString(c, "level"))))));
             // /crtc [name] [class] [level] — XP for one class to reach a level (default 50).
             // Smart-parses in PartyCommandHandler: a leading class arg means "self".
@@ -865,26 +866,26 @@ public class FishModInit implements ModInitializer {
                     if (cl.startsWith(rem)) b.suggest(cl);
                 return b.buildFuture();
             };
-            dispatcher.register(ClientCommandManager.literal("crtc")
+            dispatcher.register(ClientCommands.literal("crtc")
                 .executes(c -> runLocalLookup("crtc", null, null, null))
-                .then(ClientCommandManager.argument("a1", StringArgumentType.word()).suggests(classSuggest)
+                .then(ClientCommands.argument("a1", StringArgumentType.word()).suggests(classSuggest)
                     .executes(c -> runLocalLookup("crtc", StringArgumentType.getString(c, "a1"), null, null))
-                    .then(ClientCommandManager.argument("a2", StringArgumentType.word()).suggests(classSuggest)
+                    .then(ClientCommands.argument("a2", StringArgumentType.word()).suggests(classSuggest)
                         .executes(c -> runLocalLookup("crtc", StringArgumentType.getString(c, "a1"), StringArgumentType.getString(c, "a2"), null))
-                        .then(ClientCommandManager.argument("a3", StringArgumentType.word())
+                        .then(ClientCommands.argument("a3", StringArgumentType.word())
                             .executes(c -> runLocalLookup("crtc", StringArgumentType.getString(c, "a1"), StringArgumentType.getString(c, "a2"), StringArgumentType.getString(c, "a3")))))));
             // No-arg commands: self metrics, party actions, and join-floor/Kuudra shortcuts.
             for (String name : new String[]{"fps","tps","ping","dprofit","ai","allinv","d",
                     "e","f1","f2","f3","f4","f5","f6","f7","m1","m2","m3","m4","m5","m6","m7",
                     "t1","t2","t3","t4","t5"}) {
-                dispatcher.register(ClientCommandManager.literal(name).executes(c -> runLocalLookup(name, null, null)));
+                dispatcher.register(ClientCommands.literal(name).executes(c -> runLocalLookup(name, null, null)));
             }
             // /warp — bare-form runs the local party action; with an argument, forward to
             // Hypixel's server-side /warp <dest> so the client command doesn't shadow it
             // with "Incorrect argument for command at position 5: warp <--[HERE]".
-            dispatcher.register(ClientCommandManager.literal("warp")
+            dispatcher.register(ClientCommands.literal("warp")
                 .executes(c -> runLocalLookup("warp", null, null))
-                .then(ClientCommandManager.argument("dest", StringArgumentType.greedyString())
+                .then(ClientCommands.argument("dest", StringArgumentType.greedyString())
                     .executes(c -> {
                         String dest = StringArgumentType.getString(c, "dest");
                         Minecraft mc = Minecraft.getInstance();
@@ -903,54 +904,54 @@ public class FishModInit implements ModInitializer {
         // registers LAST, which isn't deterministic at init. Re-register ours on each server
         // join — that runs after every mod's init-time registration, so ours wins.
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            com.mojang.brigadier.CommandDispatcher<FabricClientCommandSource> d = ClientCommandManager.getActiveDispatcher();
+            com.mojang.brigadier.CommandDispatcher<FabricClientCommandSource> d = ClientCommands.getActiveDispatcher();
             if (d == null) return;
             try {
-                d.register(ClientCommandManager.literal("cata")
+                d.register(ClientCommands.literal("cata")
                     .executes(c -> runLocalLookup("cata", null, null))
-                    .then(ClientCommandManager.argument("player", StringArgumentType.word())
+                    .then(ClientCommands.argument("player", StringArgumentType.word())
                         .executes(c -> runLocalLookup("cata", StringArgumentType.getString(c, "player"), null))));
             } catch (Exception ignored) {}
         });
 
 
         // ── Warp Map HUD + click detection ───────────────────────────────────
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> WarpMapFeature.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "warp_map"), (ctx, tickCounter) -> WarpMapFeature.renderHud(ctx, tickCounter));
         ClientTickEvents.END_CLIENT_TICK.register(WarpMapFeature::tickClickDetection);
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> SoulflowHud.renderHud(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> PetHud.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "soulflow_hud"), (ctx, tickCounter) -> SoulflowHud.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "pet_hud"), (ctx, tickCounter) -> PetHud.renderHud(ctx, tickCounter));
         // Rarity background is drawn behind items via DrawContextMixin (hotbar) + INVENTORY_SLOT_BEFORE
         // (inventory) — see ItemRarityHotbar.init(). No HudRenderCallback (that draws over the items).
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> CooldownOverlay.renderHotbar(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> SlayerXpTracker.renderHud(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.SkillTracker.renderHud(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> PowderTracker.renderHud(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> BossBarFeature.renderHud(ctx));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "cooldown_overlay_hotbar"), (ctx, tickCounter) -> CooldownOverlay.renderHotbar(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_xp_tracker"), (ctx, tickCounter) -> SlayerXpTracker.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "skill_tracker"), (ctx, tickCounter) -> fishmod.features.SkillTracker.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "powder_tracker"), (ctx, tickCounter) -> PowderTracker.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "boss_bar_feature"), (ctx, tickCounter) -> BossBarFeature.renderHud(ctx));
         // Splits panel + Maxor/Storm/Terminals split-time HUDs. Rendered here (not via practical-config's
         // HudElementRegistry auto-render, which doesn't fire reliably) — their condition-suppliers are
         // forced false in Phase so this is the single render path.
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> Phase.renderHud(ctx));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.dungeon.f7.F7Huds.renderHud(ctx));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> SessionStats.renderHud(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.dungeon.DungeonScore.renderHud(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.FarmingTracker.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "phase_splits"), (ctx, tickCounter) -> Phase.renderHud(ctx));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "f7_huds"), (ctx, tickCounter) -> fishmod.features.dungeon.f7.F7Huds.renderHud(ctx));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "session_stats"), (ctx, tickCounter) -> SessionStats.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_score"), (ctx, tickCounter) -> fishmod.features.dungeon.DungeonScore.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "farming_tracker"), (ctx, tickCounter) -> fishmod.features.FarmingTracker.renderHud(ctx, tickCounter));
         fishmod.features.dungeon.DungeonScore.init();
         fishmod.utils.SkyblockItems.initAsync();
         fishmod.features.FarmingTracker.init();
         fishmod.features.HarvestFeastTracker.init();
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.HarvestFeastTracker.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "harvest_feast_tracker"), (ctx, tickCounter) -> fishmod.features.HarvestFeastTracker.renderHud(ctx, tickCounter));
         fishmod.features.MiningTracker.init();
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.MiningTracker.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "mining_tracker"), (ctx, tickCounter) -> fishmod.features.MiningTracker.renderHud(ctx, tickCounter));
         fishmod.features.TrophyFrogTracker.init();
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.TrophyFrogTracker.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "trophy_frog_tracker"), (ctx, tickCounter) -> fishmod.features.TrophyFrogTracker.renderHud(ctx, tickCounter));
 
         // ── Fishing ──────────────────────────────────────────────────────────
         fishmod.features.fishing.FishingTimer.init();
         fishmod.features.fishing.SeaCreatureTracker.init();
         fishmod.features.fishing.TrophyFishTracker.init();
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.fishing.FishingTimer.renderHud(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.fishing.SeaCreatureTracker.renderHud(ctx, tickCounter));
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.fishing.TrophyFishTracker.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "fishing_timer"), (ctx, tickCounter) -> fishmod.features.fishing.FishingTimer.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "sea_creature_tracker"), (ctx, tickCounter) -> fishmod.features.fishing.SeaCreatureTracker.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "trophy_fish_tracker"), (ctx, tickCounter) -> fishmod.features.fishing.TrophyFishTracker.renderHud(ctx, tickCounter));
         FishHudEditor.register("Bobber Reminder",
                 () -> fishmod.utils.config.values.FishSettings.fishingTimerHudX,
                 v  -> fishmod.utils.config.values.FishSettings.fishingTimerHudX = v,
@@ -979,7 +980,7 @@ public class FishModInit implements ModInitializer {
         // ── Slayer ───────────────────────────────────────────────────────────
         fishmod.features.slayer.SlayerAlerts.init();
         fishmod.features.slayer.SlayerDropTracker.init();
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.slayer.SlayerDropTracker.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_drop_tracker"), (ctx, tickCounter) -> fishmod.features.slayer.SlayerDropTracker.renderHud(ctx, tickCounter));
         FishHudEditor.register("Slayer Drops",
                 () -> fishmod.utils.config.values.FishSettings.slayerDropsHudX,
                 v  -> fishmod.utils.config.values.FishSettings.slayerDropsHudX = v,
@@ -996,7 +997,7 @@ public class FishModInit implements ModInitializer {
         fishmod.features.TtsCallouts.init();
 
         // ── PB Pace (live delta vs personal-best splits) ─────────────────────
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.PbPaceHud.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "pb_pace_hud"), (ctx, tickCounter) -> fishmod.features.PbPaceHud.renderHud(ctx, tickCounter));
         FishHudEditor.register("PB Pace",
                 () -> fishmod.utils.config.values.FishSettings.pbPaceHudX,
                 v  -> fishmod.utils.config.values.FishSettings.pbPaceHudX = v,
@@ -1008,7 +1009,7 @@ public class FishModInit implements ModInitializer {
 
         // ── Desk-Buddy (kaomoji companion) ───────────────────────────────────
         fishmod.features.DeskBuddy.init();
-        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.DeskBuddy.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "desk_buddy"), (ctx, tickCounter) -> fishmod.features.DeskBuddy.renderHud(ctx, tickCounter));
         FishHudEditor.register("Desk-Buddy",
                 () -> fishmod.utils.config.values.FishSettings.deskBuddyHudX,
                 v  -> fishmod.utils.config.values.FishSettings.deskBuddyHudX = v,
@@ -1021,7 +1022,7 @@ public class FishModInit implements ModInitializer {
         // ── Daily/Weekly/Monthly Challenges ──────────────────────────────────
         fishmod.features.challenges.ChallengeManager.init();
         fishmod.features.challenges.LeaderboardRenderer.init();
-        HudRenderCallback.EVENT.register((ctx, tickCounter) ->
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "challenge_hud"), (ctx, tickCounter) ->
                 fishmod.features.challenges.ChallengeHud.renderHud(ctx, tickCounter));
         FishHudEditor.register("Challenges",
                 () -> fishmod.utils.config.values.FishSettings.challengeHudX,
@@ -1036,7 +1037,7 @@ public class FishModInit implements ModInitializer {
         // Tracker overlay (reset button) for HandledScreens — fires after full render chain
         ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
             if (!(screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>)) return;
-            net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.afterRender(screen).register((s, ctx, mx, my, delta) -> {
+            net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.afterExtract(screen).register((s, ctx, mx, my, delta) -> {
                 SessionStats.renderInScreen(ctx, mx, my);
                 PowderTracker.renderInScreen(ctx, mx, my);
                 SlayerXpTracker.renderInScreen(ctx, mx, my);

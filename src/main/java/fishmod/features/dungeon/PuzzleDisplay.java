@@ -6,7 +6,7 @@ import config.practical.hud.HUDComponent;
 import config.practical.manager.ConfigValue;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import java.util.ArrayList;
@@ -64,7 +64,7 @@ public class PuzzleDisplay {
         return FishSettings.showPuzzles && !puzzles.isEmpty();
     }
 
-    public static void render(HUDComponent component, GuiGraphics context) {
+    public static void render(HUDComponent component, GuiGraphicsExtractor context) {
         Minecraft client = Minecraft.getInstance();
         int x = component.getScaledX();
         int y = component.getScaledY();
@@ -76,7 +76,7 @@ public class PuzzleDisplay {
             else if (puzzle.contains("✔")) color = Constants.GREEN;
             else if (puzzle.contains("???")) color = Constants.BLUE;
             else color = Constants.RED;
-            context.drawString(client.font, puzzle, x, y + i * Constants.TEXT_HEIGHT, color, true);
+            context.text(client.font, puzzle, x, y + i * Constants.TEXT_HEIGHT, color, true);
         }
     }
 }

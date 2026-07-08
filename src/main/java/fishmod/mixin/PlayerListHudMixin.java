@@ -2,7 +2,7 @@ package fishmod.mixin;
 
 import fishmod.features.CompactTab;
 import fishmod.utils.config.values.FishSettings;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.PlayerTabOverlay;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.scores.Objective;
@@ -19,7 +19,7 @@ public class PlayerListHudMixin {
     @Shadow private Component footer;
 
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
-    private void fishmod$compactTab(GuiGraphics context, int scaledWindowWidth, Scoreboard scoreboard,
+    private void fishmod$compactTab(GuiGraphicsExtractor context, int scaledWindowWidth, Scoreboard scoreboard,
                                     Objective objective, CallbackInfo ci) {
         if (!FishSettings.compactTabEnabled) return;
         // Only take over on Hypixel lobby-style tabs that use the !A-/!B- column encoding.

@@ -39,8 +39,8 @@ public class Misc {
         try {
             if (INSTANCE == null) return;
             Gui gameHud = INSTANCE.gui;
-            ChatComponent hud = gameHud.getChat();
-            forceMainThread(() -> hud.addMessage(Component.literal(ExtraOptions.textPrefix).append(text)));
+            ChatComponent hud = gameHud.hud.getChat();
+            forceMainThread(() -> hud.addClientSystemMessage(Component.literal(ExtraOptions.textPrefix).append(text)));
         } catch (IndexOutOfBoundsException ignored) {
             Debug.LOGGER.error("Chat message failed to get added");
         }
@@ -51,13 +51,13 @@ public class Misc {
     }
 
     public static void setTitle(Component text) {
-        forceMainThread(() -> INSTANCE.gui.setTitle(text));
+        forceMainThread(() -> INSTANCE.gui.hud.setTitle(text));
     }
 
     public static void forceTitle(Component title, Component subtitle) {
         forceMainThread(() -> {
-            INSTANCE.gui.setTitle(title);
-            INSTANCE.gui.setSubtitle(subtitle);
+            INSTANCE.gui.hud.setTitle(title);
+            INSTANCE.gui.hud.setSubtitle(subtitle);
         });
     }
 

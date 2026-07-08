@@ -2,7 +2,7 @@ package fishmod.features;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
@@ -304,14 +304,14 @@ public class ItemCustomizeScreen extends Screen {
     // ── render ─────────────────────────────────────────────────────────────────
 
     @Override
-    public void renderBackground(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
-        super.renderBackground(ctx, mouseX, mouseY, delta);
+    public void extractBackground(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
+        super.extractBackground(ctx, mouseX, mouseY, delta);
         drawPanel(ctx, mouseX, mouseY);
     }
 
     @Override
-    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
-        super.render(ctx, mouseX, mouseY, delta); // renderBackground (panel + fields) + buttons
+    public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
+        super.extractRenderState(ctx, mouseX, mouseY, delta); // renderBackground (panel + fields) + buttons
         // Open dropdown lists float above everything else.
         ItemStack sel = inv().getItem(selectedIndex);
         if (dyeAllowed(sel)) dyeDropdown.renderOpen(ctx, mouseX, mouseY);
@@ -319,7 +319,7 @@ public class ItemCustomizeScreen extends Screen {
         trimPatDropdown.renderOpen(ctx, mouseX, mouseY);
     }
 
-    private void drawPanel(GuiGraphics ctx, int mouseX, int mouseY) {
+    private void drawPanel(GuiGraphicsExtractor ctx, int mouseX, int mouseY) {
         ItemStack sel = inv().getItem(selectedIndex);
         int p = panelX + 14;
 
@@ -328,17 +328,17 @@ public class ItemCustomizeScreen extends Screen {
         ctx.fill(panelX, panelY, panelX + panelW, panelY + panelH, BG_PANEL);
         ctx.fill(panelX, panelY, panelX + panelW, panelY + 22, BG_SECTION);
         ctx.fill(panelX, panelY + 22, panelX + panelW, panelY + 23, ACCENT);
-        ctx.drawCenteredString(this.font, "§b§lItem Customize", panelX + panelW / 2, panelY + 7, 0xFFFFFF);
+        ctx.centeredText(this.font, "§b§lItem Customize", panelX + panelW / 2, panelY + 7, 0xFFFFFF);
 
         // Current readout
         int curY = panelY + 28;
-        ctx.drawString(this.font, "§7Editing:", p, curY, TEXT_HINT);
-        ctx.drawString(this.font, sel.getHoverName(), p + 46, curY, TEXT_PRIM);
-        ctx.drawString(this.font, "§8" + idOf(sel), p, curY + 11, TEXT_HINT);
+        ctx.text(this.font, "§7Editing:", p, curY, TEXT_HINT);
+        ctx.text(this.font, sel.getHoverName(), p + 46, curY, TEXT_PRIM);
+        ctx.text(this.font, "§8" + idOf(sel), p, curY + 11, TEXT_HINT);
 
         // PICK ITEM
         int pickY = panelY + 54;
-        ctx.drawString(this.font, "§b▍ §fPICK ITEM §8— click armor or a slot", p, pickY, ACCENT);
+        ctx.text(this.font, "§b▍ §fPICK ITEM §8— click armor or a slot", p, pickY, ACCENT);
 
         int[] armorSlots = {39, 38, 37, 36};
         String[] armorTags = {"H", "C", "L", "B"};
@@ -349,9 +349,9 @@ public class ItemCustomizeScreen extends Screen {
             ctx.fill(x, y, x + 16, y + 16, SLOT_BG);
             if (s < inv().getContainerSize()) {
                 ItemStack a = inv().getItem(s);
-                if (!a.isEmpty()) ctx.renderItem(a, x, y);
+                if (!a.isEmpty()) ctx.item(a, x, y);
             }
-            ctx.drawString(this.font, "§8" + armorTags[r], x + 5, y + 18, TEXT_HINT);
+            ctx.text(this.font, "§8" + armorTags[r], x + 5, y + 18, TEXT_HINT);
         }
         for (int i = 0; i < mainCount(); i++) {
             int col = i % 9;
@@ -360,11 +360,11 @@ public class ItemCustomizeScreen extends Screen {
             if (i == selectedIndex) ctx.fill(x - 1, y - 1, x + 17, y + 17, SLOT_SEL);
             ctx.fill(x, y, x + 16, y + 16, SLOT_BG);
             ItemStack st = inv().getItem(i);
-            if (!st.isEmpty()) { ctx.renderItem(st, x, y); ctx.renderItemDecorations(this.font, st, x, y); }
+            if (!st.isEmpty()) { ctx.item(st, x, y); ctx.itemDecorations(this.font, st, x, y); }
         }
 
         // CUSTOMIZE header + &-code key
-        ctx.drawString(this.font, "§b▍ §fCUSTOMIZE", p, panelY + 150, ACCENT);
+        ctx.text(this.font, "§b▍ §fCUSTOMIZE", p, panelY + 150, ACCENT);
         drawColorKey(ctx, mouseX, mouseY);
 
         int labelW = 52;
@@ -385,10 +385,10 @@ public class ItemCustomizeScreen extends Screen {
         // Dye row: dropdown + hex, or a hint when the item can't be dyed.
         if (dyeAllowed(sel)) {
             dyeDropdown.renderClosed(ctx, mouseX, mouseY);
-            ctx.drawString(this.font, "§8#", fx + 150, dyeY + 3, TEXT_HINT);
+            ctx.text(this.font, "§8#", fx + 150, dyeY + 3, TEXT_HINT);
         } else {
             ctx.fill(fx, dyeY, fx + fw, dyeY + 14, BG_FIELD);
-            ctx.drawString(this.font, "§8leather armor only", fx + 4, dyeY + 3, TEXT_HINT);
+            ctx.text(this.font, "§8leather armor only", fx + 4, dyeY + 3, TEXT_HINT);
         }
 
         // Trim dropdowns
@@ -397,30 +397,30 @@ public class ItemCustomizeScreen extends Screen {
 
         // Skin row: an editable texture box for player heads, or a hint for everything else.
         if (isHead(sel)) {
-            ctx.drawString(this.font, "§8hash / url / value", fx, skinY + 16, TEXT_HINT);
+            ctx.text(this.font, "§8hash / url / value", fx, skinY + 16, TEXT_HINT);
         } else {
             ctx.fill(fx, skinY, fx + fw, skinY + 14, BG_FIELD);
-            ctx.drawString(this.font, "§8player heads only (pets)", fx + 4, skinY + 3, TEXT_HINT);
+            ctx.text(this.font, "§8player heads only (pets)", fx + 4, skinY + 3, TEXT_HINT);
         }
 
         // Live preview (name with &* stars resolved)
         int prevY = skinY + 28;
         String nameTxt = nameField.getValue();
-        ctx.drawString(this.font, "§7Preview:", p, prevY, TEXT_HINT);
-        ctx.drawString(this.font, fishmod.cosmetic.NickState.parse(nameTxt), fx, prevY, 0xFFFFFFFF);
+        ctx.text(this.font, "§7Preview:", p, prevY, TEXT_HINT);
+        ctx.text(this.font, fishmod.cosmetic.NickState.parse(nameTxt), fx, prevY, 0xFFFFFFFF);
     }
 
-    private void drawLabel(GuiGraphics ctx, String s, int x, int y) {
-        ctx.drawString(this.font, "§f" + s + ":", x, y + 3, TEXT_PRIM);
+    private void drawLabel(GuiGraphicsExtractor ctx, String s, int x, int y) {
+        ctx.text(this.font, "§f" + s + ":", x, y + 3, TEXT_PRIM);
     }
 
     /** Clickable color/format key. Click a color → inserts its code into the name at the cursor;
      *  the ✪ button inserts "&*". Rebuilds the hit-boxes each frame. */
-    private void drawColorKey(GuiGraphics ctx, int mouseX, int mouseY) {
+    private void drawColorKey(GuiGraphicsExtractor ctx, int mouseX, int mouseY) {
         keyRects.clear();
         keyCodes.clear();
 
-        ctx.drawString(this.font,
+        ctx.text(this.font,
                 "§8&-codes (click to insert) — §7&* §8= ✪ star in the color before it", legendX, legendY - 11, TEXT_HINT);
 
         int sw = 16, sh = 11, gap = 2;
@@ -434,7 +434,7 @@ public class ItemCustomizeScreen extends Screen {
             ctx.fill(colX - 1, colY - 1, colX + sw + 1, colY + sh + 1, hov ? ACCENT : BORDER_LT);
             ctx.fill(colX, colY, colX + sw, colY + sh, 0xFF000000 | rgb);
             int textCol = brightness(rgb) > 140 ? 0xFF000000 : 0xFFFFFFFF;
-            ctx.drawCenteredString(this.font, String.valueOf(code), colX + sw / 2, colY + 2, textCol);
+            ctx.centeredText(this.font, String.valueOf(code), colX + sw / 2, colY + 2, textCol);
             keyRects.add(new int[]{colX, colY, sw, sh});
             keyCodes.add("&" + code);
         }
@@ -447,7 +447,7 @@ public class ItemCustomizeScreen extends Screen {
             int w = this.font.width(sample) + 6;
             boolean hov = inBox(mouseX, mouseY, fxr, fyr, w, sh);
             ctx.fill(fxr, fyr, fxr + w, fyr + sh, hov ? ROW_HOVER : BG_FIELD);
-            ctx.drawString(this.font, sample, fxr + 3, fyr + 2, 0xFFFFFFFF);
+            ctx.text(this.font, sample, fxr + 3, fyr + 2, 0xFFFFFFFF);
             keyRects.add(new int[]{fxr, fyr, w, sh});
             keyCodes.add("&" + f[0]);
             fxr += w + gap;
@@ -458,7 +458,7 @@ public class ItemCustomizeScreen extends Screen {
         int starW = this.font.width("&* ✪") + 8;
         boolean hovStar = inBox(mouseX, mouseY, starX, starY, starW, sh);
         ctx.fill(starX, starY, starX + starW, starY + sh, hovStar ? ROW_HOVER : BG_FIELD);
-        ctx.drawString(this.font, "§7&* §6✪", starX + 4, starY + 2, 0xFFFFFFFF);
+        ctx.text(this.font, "§7&* §6✪", starX + 4, starY + 2, 0xFFFFFFFF);
         keyRects.add(new int[]{starX, starY, starW, sh});
         keyCodes.add("&*");
     }
@@ -549,7 +549,7 @@ public class ItemCustomizeScreen extends Screen {
 
         private int rowsShown() { return Math.min(maxVisible, labels.size()); }
 
-        void renderClosed(GuiGraphics ctx, int mx, int my) {
+        void renderClosed(GuiGraphicsExtractor ctx, int mx, int my) {
             boolean hov = inBox(mx, my, x, y, w, boxH);
             ctx.fill(x, y, x + w, y + boxH, hov ? BORDER_LT : BORDER);
             ctx.fill(x + 1, y + 1, x + w - 1, y + boxH - 1, BG_FIELD);
@@ -560,11 +560,11 @@ public class ItemCustomizeScreen extends Screen {
             }
             String label = selected >= 0 ? labels.get(selected) : placeholder;
             int col = selected >= 0 ? TEXT_PRIM : TEXT_HINT;
-            ctx.drawString(font, clip(label, w - (tx - x) - 12), tx, y + 3, col);
-            ctx.drawString(font, "§7▾", x + w - 9, y + 3, TEXT_HINT);
+            ctx.text(font, clip(label, w - (tx - x) - 12), tx, y + 3, col);
+            ctx.text(font, "§7▾", x + w - 9, y + 3, TEXT_HINT);
         }
 
-        void renderOpen(GuiGraphics ctx, int mx, int my) {
+        void renderOpen(GuiGraphicsExtractor ctx, int mx, int my) {
             if (!open) return;
             int rows = rowsShown();
             int ly = y + boxH;
@@ -582,7 +582,7 @@ public class ItemCustomizeScreen extends Screen {
                     tx = x + 16;
                 }
                 int col = idx == selected ? ACCENT : TEXT_PRIM;
-                ctx.drawString(font, clip(labels.get(idx), w - (tx - x) - 4), tx, ry + 3, col);
+                ctx.text(font, clip(labels.get(idx), w - (tx - x) - 4), tx, ry + 3, col);
             }
             if (labels.size() > maxVisible) {
                 // simple scroll indicator

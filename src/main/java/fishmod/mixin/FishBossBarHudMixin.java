@@ -1,7 +1,7 @@
 package fishmod.mixin;
 
 import fishmod.features.BossBarFeature;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.BossHealthOverlay;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class FishBossBarHudMixin {
 
     @Inject(method = "render", at = @At("RETURN"))
-    private void fishDrawBossHp(GuiGraphics context, CallbackInfo ci) {
+    private void fishDrawBossHp(GuiGraphicsExtractor context, CallbackInfo ci) {
         BossBarFeature.renderAfterVanilla(context);
     }
 }

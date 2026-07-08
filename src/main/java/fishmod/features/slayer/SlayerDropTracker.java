@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 
 /**
@@ -116,20 +116,20 @@ public final class SlayerDropTracker {
     // ── rendering ────────────────────────────────────────────────────────────
     public static boolean isVisible() { return FishSettings.slayerDropsEnabled; }
 
-    public static void renderHud(GuiGraphics ctx, DeltaTracker tick) {
+    public static void renderHud(GuiGraphicsExtractor ctx, DeltaTracker tick) {
         btnVisible = false;
         if (!FishSettings.slayerDropsEnabled || !any()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+        if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
         draw(ctx, mc, buildLines());
     }
 
-    public static void renderInScreen(GuiGraphics ctx, int mouseX, int mouseY) {
+    public static void renderInScreen(GuiGraphicsExtractor ctx, int mouseX, int mouseY) {
         btnVisible = false;
         if (!FishSettings.slayerDropsEnabled) return;
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.screen instanceof AbstractContainerScreen<?>)) return;
+        if (!(mc.gui.screen() instanceof AbstractContainerScreen<?>)) return;
 
         String[] lines = buildLines();
         int x = FishSettings.slayerDropsHudX, y = FishSettings.slayerDropsHudY;
@@ -148,7 +148,7 @@ public final class SlayerDropTracker {
         ctx.pose().pushMatrix();
         ctx.pose().translate((float) x, (float) y);
         ctx.pose().scale(sc, sc);
-        ctx.drawString(mc.font, hover ? "§c§l[ Reset ]" : label, padX, localY + padY, 0xFFFFFFFF, true);
+        ctx.text(mc.font, hover ? "§c§l[ Reset ]" : label, padX, localY + padY, 0xFFFFFFFF, true);
         ctx.pose().popMatrix();
         btnVisible = true;
     }
@@ -162,7 +162,7 @@ public final class SlayerDropTracker {
         return false;
     }
 
-    private static void draw(GuiGraphics ctx, Minecraft mc, String[] lines) {
+    private static void draw(GuiGraphicsExtractor ctx, Minecraft mc, String[] lines) {
         int x = FishSettings.slayerDropsHudX, y = FishSettings.slayerDropsHudY;
         float sc = (float) FishSettings.slayerDropsScale;
         int lh = Constants.TEXT_HEIGHT + 1;
@@ -170,7 +170,7 @@ public final class SlayerDropTracker {
         ctx.pose().translate((float) x, (float) y);
         ctx.pose().scale(sc, sc);
         for (int i = 0; i < lines.length; i++)
-            ctx.drawString(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
+            ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF, true);
         ctx.pose().popMatrix();
     }
 }

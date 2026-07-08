@@ -8,11 +8,11 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 /** Swaps the real IGN for the cosmetic name in on-screen text draws (scoreboard, tab list, tooltips, etc.). */
-@Mixin(GuiGraphics.class)
+@Mixin(GuiGraphicsExtractor.class)
 public abstract class CosmeticGuiTextMixin {
 
     @ModifyVariable(method = "drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;III)V", at = @At("HEAD"), argsOnly = true)
@@ -75,7 +75,7 @@ public abstract class CosmeticGuiTextMixin {
 
     /** True when a server-driven container GUI (chest menu) is open — where off-server names show up. */
     private static boolean fishmod$inMenu() {
-        return net.minecraft.client.Minecraft.getInstance().screen
+        return net.minecraft.client.Minecraft.getInstance().gui.screen()
                 instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
     }
 
