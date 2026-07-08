@@ -91,13 +91,15 @@ dependencies {
     runtimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
     runtimeOnly("org.apache.httpcomponents:httpclient:4.5.14")
 
-    // Hypixel Mod API is already pulled from repo.hypixel.net above (include implementation(...)),
-    // which for 1.0.2+ ships a proper fabric.mod.json — no local-jar workaround needed anymore.
-    // (The old workaround pointed at a stale 1.21-era local jar that actively conflicted with the
-    // real 26.2 dependency once both were on the runtime classpath.)
+    // Hypixel Mod API's runtime jar is already pulled from Modrinth above (include implementation),
+    // which ships a proper fabric.mod.json — no local-jar workaround needed anymore. (The old
+    // workaround pointed at a stale 1.21-era local jar that actively conflicted with the real 26.2
+    // dependency once both ended up on the runtime classpath together.)
 
     // MCEF — compile-only (users install at runtime from Modrinth). Use the local jar when
-    // present; otherwise pull from Modrinth's maven so CI can compile WikiScreen.
+    // present; otherwise pull from Modrinth's maven so CI can compile WikiScreen. No 26.2 launcher
+    // profile exists on this machine yet, so this currently always falls through to the Modrinth
+    // maven coordinate below — update this path once a 26.2 dev profile is set up locally.
     def mcefLocal = file('C:/Users/Eli/AppData/Roaming/ModrinthApp/profiles/Skyblock 1.21.8/mods/mcef_fabric_2.2.0_MC_1.21.11.jar')
     if (mcefLocal.exists()) {
         compileOnly files(mcefLocal)
