@@ -900,10 +900,6 @@ public class FishModInit implements ModInitializer {
                     })));
         });
 
-        // ── Cosmetic name changer: /nick <name> | /nick reset ────────────────
-        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
-                fishmod.cosmetic.command.NickCommand.register(dispatcher));
-
         // ── Override OdinClient's /cata ───────────────────────────────────────
         // Both mods register a client-side /cata; Brigadier hands the executes() to whoever
         // registers LAST, which isn't deterministic at init. Re-register ours on each server

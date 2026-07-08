@@ -425,6 +425,8 @@ public class FishModScreen extends Screen {
                 () -> FishSettings.chatMeow, v -> FishSettings.chatMeow = v));
         general.features.add(new Feature("Smart Copy Chat",
                 () -> FishSettings.smartCopyChat, v -> FishSettings.smartCopyChat = v));
+        general.features.add(new Feature("Compact Chat",
+                () -> FishSettings.chatCompact, v -> FishSettings.chatCompact = v));
         {
             Feature f = new Feature("Compact Tab",
                     () -> FishSettings.compactTabEnabled, v -> FishSettings.compactTabEnabled = v);

@@ -66,6 +66,11 @@ public class ChatHudMixin {
             if (tryDispatch(ALL_CMD, plain, "ac ", null)) return;
         }
 
+        // Collapse identical repeats into a single "(N)"-counted line. Runs last so filtered/
+        // dispatched lines are already handled; cancels + re-adds the message when it collapses.
+        if (FishSettings.chatCompact
+                && fishmod.features.CompactChat.tryCompact(message, (ChatHud) (Object) this, ci)) return;
+
         if (FishSettings.chatMeow) tryMeow(plain);
     }
 

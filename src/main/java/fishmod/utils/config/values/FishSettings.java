@@ -118,6 +118,9 @@ public class FishSettings {
     @ConfigValue public static boolean chatAll     = false; // opt-in (false-positive risk)
     // Meow auto-responder: replies "meow" when anyone says meow in an enabled chat.
     @ConfigValue public static boolean chatMeow    = false;
+    // Compact chat: collapse identical messages seen within the last minute into one line
+    // with a "(N)" count instead of repeating them.
+    @ConfigValue public static boolean chatCompact = false;
 
     // Compact custom tab list (replaces vanilla player list while tab is held). Opt-in.
     @ConfigValue public static boolean compactTabEnabled = false;
