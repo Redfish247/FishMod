@@ -139,10 +139,13 @@ jar {
 }
 
 // Modrinth publishing — run with: ./gradlew modrinth
-//   Requires env vars: MODRINTH_TOKEN, MODRINTH_PROJECT_ID (or override project.modrinth_project_id in gradle.properties)
-//   Optional: CHANGELOG (defaults to "Release ${mod_version}")
+//   Requires a token, sourced from (first found wins): env MODRINTH_TOKEN, then gradle property
+//   modrinth_token (put it in ~/.gradle/gradle.properties — NOT this repo's gradle.properties,
+//   which is tracked). Also requires MODRINTH_PROJECT_ID (or override project.modrinth_project_id
+//   in gradle.properties). Optional: CHANGELOG (defaults to "Release ${mod_version}")
 modrinth {
 	token       = providers.environmentVariable('MODRINTH_TOKEN')
+			.orElse(providers.gradleProperty('modrinth_token'))
 	projectId   = providers.environmentVariable('MODRINTH_PROJECT_ID')
 			.orElse(providers.gradleProperty('modrinth_project_id'))
 	versionNumber = project.findProperty('modrinth_version') ?: project.mod_version
