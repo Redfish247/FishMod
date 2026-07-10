@@ -201,6 +201,12 @@ public class FishSettings {
     // Explosive Shot: parse "Your Explosive Shot hit N enemy/enemies for D damage." and show the
     // per-enemy damage (D / N) as an on-screen title.
     @ConfigValue public static boolean explosiveShotEnabled    = false;
+    // Also announce the same per-enemy damage to party chat, only while playing Archer.
+    @ConfigValue public static boolean explosiveShotAnnounceParty = false;
+
+    // Loadout Title: parse "You equipped <Name>!" (item customizer loadout switch) and show the
+    // loadout name as an on-screen title.
+    @ConfigValue public static boolean loadoutTitleEnabled     = false;
 
     // M7/F7 lever waypoints: through-walls filled box on each boss lever; disappears once flipped.
     @ConfigValue public static boolean enableM7LeverWaypoints  = false;
