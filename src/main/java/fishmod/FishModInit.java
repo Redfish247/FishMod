@@ -1,12 +1,9 @@
 package fishmod;
 
 import fishmod.features.BossBarFeature;
-import fishmod.features.wiki.WikiScreen;
 import fishmod.features.BridgeBot;
 import fishmod.features.croesus.LootTrackerOverlay;
 import fishmod.features.FishHudEditor;
-import fishmod.features.PowderTracker;
-import fishmod.features.SlayerXpTracker;
 import fishmod.features.SoulflowHud;
 import fishmod.features.PetHud;
 import fishmod.features.CooldownOverlay;
@@ -15,7 +12,6 @@ import fishmod.mixin.accessors.ChatScreenAccessor;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents;
 import fishmod.features.dungeon.SessionStats;
-import fishmod.features.warpmap.WarpMapFeature;
 import fishmod.utils.config.FolderUtility;
 import fishmod.utils.config.Config;
 import fishmod.utils.Keybinds;
@@ -157,19 +153,11 @@ public class FishModInit implements ModInitializer {
         line.accept("");
         line.accept("§3§lScreens & Misc");
         line.accept("§e/fm §7— config GUI  §8·§7  §e/fm customize §7— item customizer  §8·§7  §e/fmloot §7— Croesus loot");
-        line.accept("§e/po §7or §e/fm optimize §7— Profile Optimizer §8(net worth, skill roadmap, what to do next)");
-        line.accept("§e/streams §8·§e /wiki §8<query> §8·§e /nick §8<name>|reset");
+        line.accept("§e/fm commandkeys §7— bind keys/mouse buttons to run slash commands");
+        line.accept("§e/fm aliases §7— make short commands (e.g. §f/dh§7) run longer ones (e.g. §f/warp dh§7)");
+        line.accept("§e/nick §8<name>|reset");
         line.accept("§e/fm commandhelp §7— this list  §8·§7  party chat: §f.help §7lists enabled party commands");
         line.accept("§b§m                                                                          ");
-    }
-
-    /** True if MCEF isn't installed — /wiki needs it, and constructing WikiScreen without it crashes
-     *  (NoClassDefFoundError on the MCEF-typed fields). Guard the command before touching WikiScreen. */
-    private static boolean wikiUnavailable(net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource source) {
-        if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("mcef")) return false;
-        source.sendFeedback(net.minecraft.network.chat.Component.literal(
-                "§c[FishMod] §7/wiki needs the §fMCEF §7mod — install it from Modrinth (MC 1.21.11)."));
-        return true;
     }
 
     @Override
@@ -202,6 +190,8 @@ public class FishModInit implements ModInitializer {
         SoulflowHud.init();
         PetHud.init();
         CooldownOverlay.init();
+        fishmod.features.other.CommandKeys.init();
+        fishmod.features.other.WardrobeHotkeys.init();
         // ItemRarityHotbar.init();   // rarity background: inventory-slot coverage (hotbar via HudRenderCallback)
         MayorApi.init();
         // BridgeBot.init();
@@ -267,15 +257,21 @@ public class FishModInit implements ModInitializer {
 
         // Always register /fm and /fmdbg regardless of whether blade is loaded
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            fishmod.features.other.CommandAliases.registerAll(dispatcher);
             dispatcher.register(ClientCommands.literal("fm")
                 .then(ClientCommands.literal("customize").executes(context -> {
                     Minecraft.getInstance().schedule(() ->
                         Minecraft.getInstance().setScreen(new fishmod.features.ItemCustomizeScreen()));
                     return Constants.SUCCESS;
                 }))
-                .then(ClientCommands.literal("optimize").executes(context -> {
+                .then(ClientCommands.literal("commandkeys").executes(context -> {
                     Minecraft.getInstance().schedule(() ->
-                        Minecraft.getInstance().setScreen(new fishmod.features.optimizer.OptimizerScreen(null)));
+                        Minecraft.getInstance().setScreen(new fishmod.features.CommandKeysScreen()));
+                    return Constants.SUCCESS;
+                }))
+                .then(ClientCommands.literal("aliases").executes(context -> {
+                    Minecraft.getInstance().schedule(() ->
+                        Minecraft.getInstance().setScreen(new fishmod.features.CommandAliasesScreen()));
                     return Constants.SUCCESS;
                 }))
                 .then(ClientCommands.literal("commandhelp").executes(context -> {
@@ -300,13 +296,6 @@ public class FishModInit implements ModInitializer {
                     Misc.addChatMessage(Component.literal("§7[FM] Loot tracker "
                             + (on ? "§aenabled §7— open your inventory in the Dungeon Hub"
                                   : "§cdisabled")));
-                    return Constants.SUCCESS;
-                })
-            );
-            dispatcher.register(ClientCommands.literal("po")
-                .executes(ctx -> {
-                    Minecraft mc = Minecraft.getInstance();
-                    mc.schedule(() -> mc.setScreen(new fishmod.features.optimizer.OptimizerScreen(mc.screen)));
                     return Constants.SUCCESS;
                 })
             );
@@ -399,104 +388,6 @@ public class FishModInit implements ModInitializer {
                     }, "fmitems-dump").start();
                     return Constants.SUCCESS;
                 })
-            );
-            dispatcher.register(ClientCommands.literal("fmchping")
-                .executes(ctx -> {
-                    if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
-                    Minecraft mc = Minecraft.getInstance();
-                    Misc.addChatMessage(Component.literal("§b[fmchping] §7Pinging worker…"));
-                    fishmod.features.challenges.ChallengeApi.pingWorker((status, body) -> mc.schedule(() -> {
-                        if (status == 200) Misc.addChatMessage(Component.literal("§a[fmchping] §7status=§a200 §7body=§f" + body));
-                        else if (status == -1) Misc.addChatMessage(Component.literal("§c[fmchping] network error: §7" + body));
-                        else Misc.addChatMessage(Component.literal("§c[fmchping] §7status=§c" + status + " §7body=§f" + body));
-                    }));
-                    return Constants.SUCCESS;
-                })
-            );
-            dispatcher.register(ClientCommands.literal("fmchworker")
-                .executes(ctx -> {
-                    if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
-                    String cur = fishmod.utils.config.values.FishSettings.challengeWorkerOverride;
-                    Misc.addChatMessage(Component.literal("§b[fmchworker] §7current: §f"
-                            + (cur == null || cur.isBlank() ? "(default)" : cur)));
-                    Misc.addChatMessage(Component.literal("§7Usage: §f/fmchworker <url> §7| §f/fmchworker reset"));
-                    return Constants.SUCCESS;
-                })
-                .then(ClientCommands.literal("reset").executes(ctx -> {
-                    if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
-                    fishmod.utils.config.values.FishSettings.challengeWorkerOverride = "";
-                    fishmod.utils.config.FishConfig.manager.save();
-                    Misc.addChatMessage(Component.literal("§a[fmchworker] reset — using default worker."));
-                    return Constants.SUCCESS;
-                }))
-                .then(ClientCommands.argument("url", StringArgumentType.greedyString()).executes(ctx -> {
-                    if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
-                    String url = StringArgumentType.getString(ctx, "url").trim();
-                    fishmod.utils.config.values.FishSettings.challengeWorkerOverride = url;
-                    fishmod.utils.config.FishConfig.manager.save();
-                    Misc.addChatMessage(Component.literal("§a[fmchworker] override set: §f" + url));
-                    return Constants.SUCCESS;
-                }))
-            );
-            dispatcher.register(ClientCommands.literal("fmlbtest")
-                .executes(ctx -> {
-                    if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
-                    Minecraft mc = Minecraft.getInstance();
-                    if (mc.player == null) return Constants.SUCCESS;
-                    String uuid = mc.player.getUUID().toString().replace("-", "");
-                    String name = fishmod.features.challenges.ChallengeApi.displayName();
-                    Misc.addChatMessage(Component.literal("§b[lbtest] §7Submitting test score…"));
-                    fishmod.features.challenges.ChallengeApi.submitScore(
-                            uuid, name, "test-" + System.currentTimeMillis(),
-                            fishmod.features.challenges.Tier.DAILY, 1, 0,
-                            (ok, total, rank) -> mc.schedule(() -> {
-                                if (ok) Misc.addChatMessage(Component.literal("§a[lbtest] §7submit OK — newTotal=§a"
-                                        + total + " §7rank=§e#" + rank));
-                                else    Misc.addChatMessage(Component.literal("§c[lbtest] submit FAILED — §7"
-                                        + (fishmod.features.challenges.ChallengeApi.lastSubmitError.isEmpty()
-                                            ? "unknown" : fishmod.features.challenges.ChallengeApi.lastSubmitError)));
-                                Misc.addChatMessage(Component.literal("§b[lbtest] §7Fetching leaderboard…"));
-                                fishmod.features.challenges.ChallengeApi.fetchLeaderboard(10, entries -> mc.schedule(() -> {
-                                    if (entries.isEmpty()) {
-                                        Misc.addChatMessage(Component.literal("§c[lbtest] leaderboard empty (or fetch failed — likely worker endpoint not deployed)"));
-                                    } else {
-                                        Misc.addChatMessage(Component.literal("§a[lbtest] leaderboard returned §f" + entries.size() + " §7entries:"));
-                                        int i = 1;
-                                        for (var e : entries) {
-                                            Misc.addChatMessage(Component.literal("§7  #" + i++ + " §f" + e.name + " §8— §a" + e.totalPoints + " §7pts"));
-                                            if (i > 10) break;
-                                        }
-                                    }
-                                }));
-                            }));
-                    return Constants.SUCCESS;
-                })
-            );
-            // /fmchallenge is disabled — feature shelved pending redesign. Code still present
-            // in fishmod.features.challenges.* and gated by FishSettings.challengesEnabled.
-            dispatcher.register(ClientCommands.literal("streams")
-                .executes(ctx -> {
-                    Minecraft mc = Minecraft.getInstance();
-                    mc.schedule(() -> mc.setScreen(new fishmod.features.streams.StreamsScreen(mc.screen)));
-                    return Constants.SUCCESS;
-                })
-            );
-            dispatcher.register(ClientCommands.literal("wiki")
-                .executes(ctx -> {
-                    if (wikiUnavailable(ctx.getSource())) return Constants.SUCCESS;
-                    Minecraft mc = Minecraft.getInstance();
-                    mc.schedule(() -> mc.setScreen(new WikiScreen(mc.screen, "")));
-                    return Constants.SUCCESS;
-                })
-                .then(ClientCommands.argument("query", StringArgumentType.greedyString())
-                    .executes(ctx -> {
-                        if (wikiUnavailable(ctx.getSource())) return Constants.SUCCESS;
-                        String query = StringArgumentType.getString(ctx, "query");
-                        Minecraft mc = Minecraft.getInstance();
-                        mc.schedule(() -> mc.setScreen(new WikiScreen(mc.screen, query)));
-                        return Constants.SUCCESS;
-                    })
-                )
             );
             // ── Reputation (vouch / shitter list) ─────────────────────────────
             dispatcher.register(ClientCommands.literal("vouch")
@@ -630,20 +521,6 @@ public class FishModInit implements ModInitializer {
                 return Constants.SUCCESS;
             }));
 
-            dispatcher.register(ClientCommands.literal("fmseadump").executes(context -> {
-                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
-                fishmod.features.fishing.SeaCreatureTracker.debugDump = !fishmod.features.fishing.SeaCreatureTracker.debugDump;
-                Misc.addChatMessage(Component.literal("§b[fmsea] dump unmatched fishing chat lines: §f" + fishmod.features.fishing.SeaCreatureTracker.debugDump));
-                return Constants.SUCCESS;
-            }));
-
-            dispatcher.register(ClientCommands.literal("fmslayerdump").executes(context -> {
-                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
-                fishmod.features.slayer.SlayerAlerts.debugDump = !fishmod.features.slayer.SlayerAlerts.debugDump;
-                Misc.addChatMessage(Component.literal("§b[fmslayer] dump slayer chat lines: §f" + fishmod.features.slayer.SlayerAlerts.debugDump));
-                return Constants.SUCCESS;
-            }));
-
             dispatcher.register(ClientCommands.literal("fmnuc").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 fishmod.utils.HypixelApi.dumpNucleus(Minecraft.getInstance());
@@ -680,13 +557,6 @@ public class FishModInit implements ModInitializer {
                     }
                     Misc.addChatMessage(Component.literal("§b--- End (" + n + ") ---"));
                 });
-                return Constants.SUCCESS;
-            }));
-
-            dispatcher.register(ClientCommands.literal("fmskilldump").executes(context -> {
-                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
-                fishmod.features.SkillTracker.debugDump = !fishmod.features.SkillTracker.debugDump;
-                Misc.addChatMessage(Component.literal("§b[skill] dump raw action bar: §f" + fishmod.features.SkillTracker.debugDump));
                 return Constants.SUCCESS;
             }));
 
@@ -1019,49 +889,17 @@ public class FishModInit implements ModInitializer {
                 // v  -> fishmod.utils.config.values.FishSettings.deskBuddyScale = v,
                 // () -> fishmod.utils.config.values.FishSettings.deskBuddyEnabled);
 
-        // ── Daily/Weekly/Monthly Challenges ──────────────────────────────────
-        fishmod.features.challenges.ChallengeManager.init();
-        fishmod.features.challenges.LeaderboardRenderer.init();
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "challenge_hud"), (ctx, tickCounter) ->
-                fishmod.features.challenges.ChallengeHud.renderHud(ctx, tickCounter));
-        FishHudEditor.register("Challenges",
-                () -> fishmod.utils.config.values.FishSettings.challengeHudX,
-                v -> fishmod.utils.config.values.FishSettings.challengeHudX = v,
-                () -> fishmod.utils.config.values.FishSettings.challengeHudY,
-                v -> fishmod.utils.config.values.FishSettings.challengeHudY = v, 200, 64,
-                () -> fishmod.utils.config.values.FishSettings.challengeHudScale,
-                v -> fishmod.utils.config.values.FishSettings.challengeHudScale = v,
-                () -> fishmod.utils.config.values.FishSettings.challengesEnabled
-                        && fishmod.utils.config.values.FishSettings.challengeHudEnabled);
-
         // Tracker overlay (reset button) for HandledScreens — fires after full render chain
         ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
             if (!(screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>)) return;
             net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.afterExtract(screen).register((s, ctx, mx, my, delta) -> {
                 SessionStats.renderInScreen(ctx, mx, my);
-                PowderTracker.renderInScreen(ctx, mx, my);
-                SlayerXpTracker.renderInScreen(ctx, mx, my);
-                fishmod.features.SkillTracker.renderInScreen(ctx, mx, my);
-                fishmod.features.FarmingTracker.renderInScreen(ctx, mx, my);
-                fishmod.features.HarvestFeastTracker.renderInScreen(ctx, mx, my);
-                fishmod.features.MiningTracker.renderInScreen(ctx, mx, my);
-                fishmod.features.TrophyFrogTracker.renderInScreen(ctx);
-                fishmod.features.fishing.SeaCreatureTracker.renderInScreen(ctx, mx, my);
-                fishmod.features.fishing.TrophyFishTracker.renderInScreen(ctx);
-                fishmod.features.slayer.SlayerDropTracker.renderInScreen(ctx, mx, my);
                 LootTrackerOverlay.renderInScreen(ctx, mx, my);
             });
             net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.allowMouseClick(screen).register((s, click) -> {
                 if (click.button() != 0) return true; // only left click resets
                 double mx = click.x(), my = click.y();
                 if (SessionStats.handleScreenClick(mx, my)) return false;
-                if (PowderTracker.handleScreenClick(mx, my)) return false;
-                if (SlayerXpTracker.handleScreenClick(mx, my)) return false;
-                if (fishmod.features.FarmingTracker.handleScreenClick(mx, my)) return false;
-                if (fishmod.features.HarvestFeastTracker.handleScreenClick(mx, my)) return false;
-                if (fishmod.features.MiningTracker.handleScreenClick(mx, my)) return false;
-                if (fishmod.features.fishing.SeaCreatureTracker.handleScreenClick(mx, my)) return false;
-                if (fishmod.features.slayer.SlayerDropTracker.handleScreenClick(mx, my)) return false;
                 return true;
             });
         });

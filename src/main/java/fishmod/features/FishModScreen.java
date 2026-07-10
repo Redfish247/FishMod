@@ -108,6 +108,7 @@ public class FishModScreen extends Screen {
     private int activeSliderX = 0;
     private Setting activeInput = null;
     private ColorPickerSetting activePicker = null;
+    private KeybindSetting capturingKeybind = null;
     private EditBox searchField;
     private boolean resetArmed = false;
     private long resetArmedAt = 0;
@@ -379,6 +380,19 @@ public class FishModScreen extends Screen {
             f.sub.add(makeButtonInput("Button 5", () -> fishmod.utils.config.values.Buttons.command5, v -> fishmod.utils.config.values.Buttons.command5 = v));
             f.sub.add(makeButtonInput("Button 6", () -> fishmod.utils.config.values.Buttons.command6, v -> fishmod.utils.config.values.Buttons.command6 = v));
             f.sub.add(makeButtonInput("Button 7", () -> fishmod.utils.config.values.Buttons.command7, v -> fishmod.utils.config.values.Buttons.command7 = v));
+            general.features.add(f);
+        }
+        {
+            Feature f = new Feature("Wardrobe Hotkeys",
+                    () -> FishSettings.wardrobeHotkeysEnabled, v -> FishSettings.wardrobeHotkeysEnabled = v);
+            f.sub.add(new ToggleSetting("Auto-Close GUI", "",
+                    () -> FishSettings.wardrobeHotkeysAutoClose, v -> FishSettings.wardrobeHotkeysAutoClose = v));
+            f.sub.add(new SubcategoryHeader("Click a slot, then press a key/mouse button (Esc unbinds)"));
+            for (int i = 0; i < fishmod.utils.Keybinds.wardrobeSlots.length; i++) {
+                final int idx = i;
+                f.sub.add(new KeybindSetting("Slot " + (idx + 1), "",
+                        () -> fishmod.utils.Keybinds.wardrobeSlots[idx]));
+            }
             general.features.add(f);
         }
         general.features.add(new Feature("Smart Copy Chat",
@@ -977,6 +991,12 @@ public class FishModScreen extends Screen {
         int my = (int) click.y();
         int btn = click.button();
 
+        if (capturingKeybind != null) {
+            capturingKeybind.applyKey(com.mojang.blaze3d.platform.InputConstants.Type.MOUSE.getOrCreate(btn));
+            capturingKeybind = null;
+            return true;
+        }
+
         if (activeInput instanceof InputSetting prevInput && prevInput.textField != null) prevInput.textField.setFocused(false);
         activeInput = null;
 
@@ -1055,6 +1075,7 @@ public class FishModScreen extends Screen {
                             }
                             if (s.onClick(mx, my, leftX, rightX, ssy, btn)) {
                                 if (s instanceof ColorPickerSetting cps && cps.dragMode != 0) activePicker = cps;
+                                if (s instanceof KeybindSetting ks && ks.capturing) capturingKeybind = ks;
                                 return true;
                             }
                             if (s instanceof SliderIntSetting || s instanceof SliderDoubleSetting) {
@@ -1105,6 +1126,13 @@ public class FishModScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyEvent input) {
+        if (capturingKeybind != null) {
+            capturingKeybind.applyKey(input.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE
+                    ? com.mojang.blaze3d.platform.InputConstants.UNKNOWN
+                    : com.mojang.blaze3d.platform.InputConstants.getKey(input));
+            capturingKeybind = null;
+            return true;
+        }
         if (activeInput instanceof InputSetting is && is.textField != null) { is.textField.keyPressed(input); return true; }
         if (activeInput instanceof InputIntSetting iis && iis.textField != null) { iis.textField.keyPressed(input); return true; }
         if (activeInput instanceof InputDoubleSetting ids && ids.textField != null) { ids.textField.keyPressed(input); return true; }
@@ -1587,6 +1615,50 @@ public class FishModScreen extends Screen {
                 action.run(); return true;
             }
             return false;
+        }
+    }
+
+    /** In-GUI rebind box for a vanilla {@link net.minecraft.client.KeyMapping} — click, then
+     *  press a key or mouse button to bind it (Esc unbinds). Stays in sync with Options > Controls
+     *  since it edits the same KeyMapping object. */
+    static class KeybindSetting extends Setting {
+        Supplier<net.minecraft.client.KeyMapping> getter;
+        boolean capturing = false;
+        static final int W = 110;
+        KeybindSetting(String name, String desc, Supplier<net.minecraft.client.KeyMapping> g) {
+            super(name, desc); this.getter = g;
+        }
+        private String label() {
+            if (capturing) return "> Press <";
+            net.minecraft.client.KeyMapping kb = getter.get();
+            if (kb == null) return "-";
+            return kb.isUnbound() ? "Unbound" : kb.getTranslatedKeyMessage().getString();
+        }
+        @Override
+        void render(GuiGraphicsExtractor ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.gui.Font tr) {
+            int bx = rightX - W - 2;
+            int by = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
+            boolean hov = mx >= bx && mx <= bx + W && my >= by && my <= by + TOGGLE_H;
+            roundRect(ctx, bx, by, bx + W, by + TOGGLE_H, 3, capturing ? ACCENT_HOVER : (hov ? 0xFF333D48 : 0xFF252D37));
+            String t = label();
+            st(ctx, tr, t, bx + (W - stw(tr, t)) / 2, by + (TOGGLE_H - 8) / 2, capturing ? 0xFF06302F : TEXT_COLOR);
+        }
+        @Override
+        boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
+            int bx = rightX - W - 2;
+            int by = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
+            if (mx >= bx && mx <= bx + W && my >= by && my <= by + TOGGLE_H) {
+                capturing = true; return true;
+            }
+            return false;
+        }
+        void applyKey(com.mojang.blaze3d.platform.InputConstants.Key key) {
+            net.minecraft.client.KeyMapping kb = getter.get();
+            if (kb == null) return;
+            kb.setKey(key);
+            net.minecraft.client.KeyMapping.resetMapping();
+            Minecraft.getInstance().options.save();
+            capturing = false;
         }
     }
 

@@ -20,23 +20,44 @@ import java.util.regex.Pattern;
 /**
  * Tracks Goldor (F7 P3) Simon Says rounds via block scanning.
  *
- * Detection is PLAYER-CENTERED (not hardcoded coordinates): we find the obsidian-backed device
- * near the player, lock the scan onto its centroid so walking around can't miscount stray
- * lanterns, and count demo "flashes" (lit sea-lantern rising edges).
+ * Detection uses a FIXED world-space box around the device: the player must be inside
+ * {@code DEVICE_BOX} to lock the scan onto {@code DEVICE_CENTER}, and from there we count
+ * demo "flashes" (lit sea-lantern rising edges).
  *
  * Announcing: on the FIRST light of each new demo, the rounds-completed count = the longest
  * sequence shown so far. A failed round re-shows the same/shorter sequence, so the max length
  * doesn't grow and (with the dedupe) nothing extra is sent. 5/5 comes from the in-game
  * "<you> completed a device!" message / completion title.
+ *
+ * Breaking: the fixed obsidian/button columns behind the device (same signal NoammAddons' SS
+ * solver uses) are watched for a reset — all buttons going to air after the device was active.
+ * On a break, round tracking resets to 0 and scanning goes fully quiet until the device is
+ * active again, so the next demo re-announces cleanly from 1/5.
  */
 public final class SimonSaysTracker {
 
     private SimonSaysTracker() {}
 
     private static final int SCAN_RADIUS  = 7;   // lit-cell box around the locked device center
-    private static final int PROX_RADIUS  = 6;   // obsidian search radius around the player
-    private static final int MIN_OBSIDIAN = 8;   // obsidian count that marks "at the device"
     private static final long BURST_GAP_MS = 550L;
+
+    // Fixed detection box around the Goldor SS device, from measured corner coords, extended
+    // upward a few blocks so the whole player (standing or jumping) counts as "at the device".
+    private static final net.minecraft.world.phys.AABB DEVICE_BOX = new net.minecraft.world.phys.AABB(
+            106.65, 120.0, 92.70,
+            110.70, 126.0, 95.30
+    );
+    private static final BlockPos DEVICE_CENTER = new BlockPos(108, 120, 94);
+
+    // Break/restart detection (same approach as NoammAddons' SS solver): a fixed obsidian
+    // column behind the device and the button column in front of it. Any obsidian cell not
+    // being obsidian = the device is "active" (mid demo/attempt). Once that settles for
+    // BREAK_COOLDOWN_TICKS and every button cell reads air, the device has reset — a break.
+    private static final int DEV_BUTTONS_X = 110;
+    private static final int DEV_OBSIDIAN_X = 111;
+    private static final int DEV_Y_MIN = 120, DEV_Y_MAX = 123;
+    private static final int DEV_Z_MIN = 92,  DEV_Z_MAX = 95;
+    private static final int BREAK_COOLDOWN_TICKS = 12;
 
     private static int  round         = 0;   // completed-round count shown on the HUD (0..5)
     private static int  maxLen        = 0;   // longest demo sequence length seen this run
@@ -46,6 +67,10 @@ public final class SimonSaysTracker {
     private static long lastAtDeviceMs = 0L; // last tick the player was at the device
     private static boolean primed     = false;
     private static boolean completed  = false; // SS done this run — ignore everything until next run
+    private static boolean armed      = false; // Goldor's intro line seen — scanning starts here
+    private static int  breakTicks    = 0;     // cooldown before an "inactive" reading can count as a break
+    private static boolean canBreak   = false; // device has been seen active since the last break
+    private static boolean broken     = false; // device just reset — fully off (no scan/announce) until it restarts
     private static boolean inP3       = false; // HUD only
     private static boolean atDevice   = false;
     private static net.minecraft.core.BlockPos deviceCenter = null;
@@ -55,6 +80,9 @@ public final class SimonSaysTracker {
     // Reads "Simon Says: N/5" out of party chat so the HUD also registers when SOMEONE ELSE
     // does SS (we can't block-scan their device — but their mod announces to party chat).
     private static final Pattern SS_CHAT = Pattern.compile("Simon Says: (\\d)/5");
+
+    // Goldor's intro line — arms scanning so we don't watch the device box before P3 starts.
+    private static final String GOLDOR_INTRO = "who dares trespass into my domain";
 
     // ── debug: log every block transition in a cube around the player (/ssdbg) ──
     public static boolean debug = false;
@@ -70,6 +98,12 @@ public final class SimonSaysTracker {
         fishmod.utils.events.Events.ON_GAME_MESSAGE.register(message -> {
             if (!FishSettings.simonSaysEnabled) return false;
             String s = message.getString().replaceAll("§.", "");
+
+            // Goldor's spawn line — start scanning the device box from here on.
+            if (!armed && s.toLowerCase().contains(GOLDOR_INTRO)) {
+                armed = true;
+                if (debug) log("armed (Goldor intro seen)");
+            }
 
             // Pick up "Simon Says: N/5" from party chat (ours echoed back, or a teammate's) so the
             // HUD shows progress even when WE aren't the one at the device.
@@ -115,12 +149,23 @@ public final class SimonSaysTracker {
         // Once SS is done this run, ignore everything until the next run (location change).
         if (completed) { atDevice = false; return; }
 
+        // Don't watch the device box until Goldor's intro line has been seen this run.
+        if (!armed) { atDevice = false; return; }
+
+        tickBreakState(client.level);
+        // Device just broke — full shutoff. No scanning, no announcing, until it restarts.
+        if (broken) {
+            atDevice = false; deviceCenter = null; primed = false; burstFlashes = 0; litPrev.clear();
+            return;
+        }
+
         long now = System.currentTimeMillis();
 
-        // Player at an obsidian-backed device? Also get the obsidian centroid to lock the scan.
-        long[] agg = new long[4]; // count, sumX, sumY, sumZ
-        int nearObsidian = countObsidian(client.level, client.player.blockPosition(), PROX_RADIUS, agg);
-        atDevice = nearObsidian >= MIN_OBSIDIAN;
+        // Anyone (not just us — a teammate may be the one doing SS) standing at the fixed device box?
+        atDevice = false;
+        for (net.minecraft.world.entity.player.Player p : client.level.players()) {
+            if (p.getBoundingBox().intersects(DEVICE_BOX)) { atDevice = true; break; }
+        }
         if (atDevice) lastAtDeviceMs = now;
 
         if (!atDevice) {
@@ -128,8 +173,8 @@ public final class SimonSaysTracker {
             return;
         }
 
-        if (deviceCenter == null && agg[0] > 0) {
-            deviceCenter = new BlockPos((int) (agg[1] / agg[0]), (int) (agg[2] / agg[0]), (int) (agg[3] / agg[0]));
+        if (deviceCenter == null) {
+            deviceCenter = DEVICE_CENTER;
             primed = false; burstFlashes = 0; litPrev.clear();
             if (debug) log("locked device center " + deviceCenter.toShortString());
         }
@@ -192,21 +237,54 @@ public final class SimonSaysTracker {
 
     // ── block scanning ──────────────────────────────────────────────────────────
 
-    /** Counts obsidian within {@code radius} of center; accumulates centroid into agg[count,x,y,z]. */
-    private static int countObsidian(Level world, BlockPos center, int radius, long[] agg) {
-        int obsidian = 0;
-        int cx = center.getX(), cy = center.getY(), cz = center.getZ();
+    /**
+     * Watches the fixed obsidian/button columns for a break, same signal NoammAddons uses.
+     * Any obsidian cell missing = device active. Once that's held for {@code BREAK_COOLDOWN_TICKS}
+     * and every button cell is air, the device reset — announce the fail, reset round tracking,
+     * and go fully quiet (see {@code broken} in {@link #tick}) until the device is active again.
+     */
+    private static void tickBreakState(Level world) {
+        breakTicks--;
+
+        boolean active = false;
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
-        for (int dx = -radius; dx <= radius; dx++)
-            for (int dy = -radius; dy <= radius; dy++)
-                for (int dz = -radius; dz <= radius; dz++) {
-                    m.set(cx + dx, cy + dy, cz + dz);
-                    if (world.getBlockState(m).getBlock() == Blocks.OBSIDIAN) {
-                        obsidian++;
-                        agg[0]++; agg[1] += m.getX(); agg[2] += m.getY(); agg[3] += m.getZ();
-                    }
-                }
-        return obsidian;
+        outer:
+        for (int y = DEV_Y_MIN; y <= DEV_Y_MAX; y++)
+            for (int z = DEV_Z_MIN; z <= DEV_Z_MAX; z++) {
+                m.set(DEV_OBSIDIAN_X, y, z);
+                if (world.getBlockState(m).getBlock() != Blocks.OBSIDIAN) { active = true; break outer; }
+            }
+
+        if (active) {
+            breakTicks = BREAK_COOLDOWN_TICKS;
+            canBreak = true;
+            if (broken) {
+                broken = false;
+                if (debug) log("device restarted — resuming");
+            }
+            return;
+        }
+
+        if (breakTicks > 0 || !canBreak) return;
+
+        boolean allAir = true;
+        outer2:
+        for (int y = DEV_Y_MIN; y <= DEV_Y_MAX; y++)
+            for (int z = DEV_Z_MIN; z <= DEV_Z_MAX; z++) {
+                m.set(DEV_BUTTONS_X, y, z);
+                if (world.getBlockState(m).getBlock() != Blocks.AIR) { allAir = false; break outer2; }
+            }
+        if (!allAir) return;
+
+        canBreak = false;
+        broken = true;
+        round = 0; maxLen = 0; lastAnnounced = 0; burstFlashes = 0;
+        if (debug) log("device broke — reset + fully off until restart");
+
+        if (FishSettings.simonSaysFailEnabled) {
+            Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§c" + FishSettings.simonSaysFailMessage));
+            if (FishSettings.simonSaysPartyChat) Misc.executeCommand("pc " + FishSettings.simonSaysFailMessage);
+        }
     }
 
     /** Fills {@code litOut} with lit sea-lantern positions in the box around the locked device center. */
@@ -233,6 +311,10 @@ public final class SimonSaysTracker {
         burstFlashes = 0;
         primed = false;
         completed = false;
+        armed = false;
+        breakTicks = 0;
+        canBreak = false;
+        broken = false;
         doneAtMs = 0L;
         litPrev.clear();
         deviceCenter = null;
