@@ -82,12 +82,13 @@ public class WardrobeHotkeys {
             if (target == null) return false;
 
             int containerId = handler.containerId;
-            int stateId = handler.getStateId();
             int slotId = target.index;
             pendingClick = () -> {
                 Minecraft mc = Minecraft.getInstance();
                 if (mc.player == null || mc.gameMode == null) return;
-                mc.gameMode.handleContainerInput(containerId, stateId, slotId, ContainerInput.PICKUP, mc.player);
+                // handleContainerInput(containerId, slotId, button, ContainerInput, player) — button
+                // 0 = left click, matching the old clickSlot(syncId, slotId, button, actionType, player).
+                mc.gameMode.handleContainerInput(containerId, slotId, 0, ContainerInput.PICKUP, mc.player);
                 // screen.onClose() (not player.closeContainer()) — matches what pressing Escape
                 // does: sends the close packet AND actually dismisses the on-screen GUI. Calling
                 // just closeContainer() left the GUI widget on screen out of sync with the
