@@ -71,7 +71,7 @@ public final class PingFeature {
         KeyBinding.Category category = fishmod.utils.Keybinds.category;
         if (category == null) category = KeyBinding.Category.create(Identifier.of(fishmod.utils.Constants.NAMESPACE));
         pingKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "FishMod: Ping location",
+                "FishMod - Ping location",
                 InputUtil.Type.MOUSE,
                 GLFW.GLFW_MOUSE_BUTTON_MIDDLE,
                 category));

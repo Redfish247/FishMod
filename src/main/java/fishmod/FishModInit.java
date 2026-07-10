@@ -158,6 +158,8 @@ public class FishModInit implements ModInitializer {
         line.accept("");
         line.accept("§3§lScreens & Misc");
         line.accept("§e/fm §7— config GUI  §8·§7  §e/fm customize §7— item customizer  §8·§7  §e/fmloot §7— Croesus loot");
+        line.accept("§e/fm commandkeys §7— bind keys/mouse buttons to run slash commands");
+        line.accept("§e/fm aliases §7— make short commands (e.g. §f/dh§7) run longer ones (e.g. §f/warp dh§7)");
         line.accept("§e/po §7or §e/fm optimize §7— Profile Optimizer §8(net worth, skill roadmap, what to do next)");
         line.accept("§e/streams §8·§e /wiki §8<query> §8·§e /nick §8<name>|reset");
         line.accept("§e/fm commandhelp §7— this list  §8·§7  party chat: §f.help §7lists enabled party commands");
@@ -207,6 +209,7 @@ public class FishModInit implements ModInitializer {
         MayorApi.init();
         BridgeBot.init();
         SlayerXpTracker.init();
+        fishmod.features.other.CommandKeys.init();
         fishmod.features.SkillTracker.init();
         fishmod.features.FireFreezeTimer.init();
         PowderTracker.init();
@@ -268,10 +271,21 @@ public class FishModInit implements ModInitializer {
 
         // Always register /fm and /fmdbg regardless of whether blade is loaded
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            fishmod.features.other.CommandAliases.registerAll(dispatcher);
             dispatcher.register(ClientCommandManager.literal("fm")
                 .then(ClientCommandManager.literal("customize").executes(context -> {
                     MinecraftClient.getInstance().send(() ->
                         MinecraftClient.getInstance().setScreen(new fishmod.features.ItemCustomizeScreen()));
+                    return Constants.SUCCESS;
+                }))
+                .then(ClientCommandManager.literal("commandkeys").executes(context -> {
+                    MinecraftClient.getInstance().send(() ->
+                        MinecraftClient.getInstance().setScreen(new fishmod.features.CommandKeysScreen()));
+                    return Constants.SUCCESS;
+                }))
+                .then(ClientCommandManager.literal("aliases").executes(context -> {
+                    MinecraftClient.getInstance().send(() ->
+                        MinecraftClient.getInstance().setScreen(new fishmod.features.CommandAliasesScreen()));
                     return Constants.SUCCESS;
                 }))
                 .then(ClientCommandManager.literal("optimize").executes(context -> {

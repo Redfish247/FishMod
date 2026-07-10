@@ -46,44 +46,44 @@ public class Keybinds {
 
         //normal keybinds
         openConfig = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "FishMod: Open Config",
+                "FishMod - Open Config",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_RIGHT_SHIFT,
                 category));
 
         trades = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "FishMod: Open trades menu",
+                "FishMod - Open trades menu",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
 
         potions = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "FishMod: Open potion bag",
+                "FishMod - Open potion bag",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
 
         openItemWiki = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "FishMod: Open item wiki",
+                "FishMod - Open item wiki",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
 
         //debug keybinds
         getItemLore = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "FishMod: Copy item lore",
+                "FishMod - Copy item lore",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
 
         getItemCustomData = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "FishMod: Copy item NBT",
+                "FishMod - Copy item NBT",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
 
         getBlockInfo = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "FishMod: Copy block data",
+                "FishMod - Copy block data",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
