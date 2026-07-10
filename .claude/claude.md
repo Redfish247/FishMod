@@ -12,7 +12,40 @@
 - After every change: bump version, build, copy new jar, remove old jar from mods folder
 
 # Future FishMod Features
--
+
+## Dungeons QoL ideas (gaps vs. current feature set)
+Current dungeon coverage is already deep on F7 (boss timers, terminals, relics, sections)
+and general run tracking (score, splits, session stats, class detection, PB pace). These
+are the notable gaps against that baseline — not yet implemented anywhere in the codebase:
+
+- **Livid finder (F5)** — highlight/glow the real Livid among the fake color-block
+  Livids using its unique name-tag offset, like Skytils/DSM do.
+- **Terminal answer solver (F7)** — `TerminalEvent` only reports completion; add
+  overlay hints for "click in order", "same color", "what starts with" terminal types
+  (highlight blocks/items, not auto-click — stay outside macro territory).
+- **Trivia (Devil's Riddle, F5) answer highlight** — glow the correct chat option
+  based on a bundled answer table, mirroring the terminal-solver approach.
+- **Boulder/Creeper-beam puzzle helper (F6)** — path/beam highlight for the
+  push-block room.
+- **Higher/Lower puzzle helper (F1)** — no assist exists yet for the sign puzzle.
+- **Blaze solve-order highlight (F7 P3)** — visually mark the correct blaze
+  click order instead of relying on memorized patterns.
+- **Necron P3 "Handles of Krul" progress tracker** — dedicated HUD element
+  distinct from the general boss health/tick timers.
+- **Teammate stat overlay** — HP/mana/absorption above teammates' heads
+  (useful for healers/tanks), separate from the existing class-color/name render.
+- **Live score-target projection** — "need N more secrets for S+/S++" using the
+  data `DungeonScore` already tracks (secretsPercent, deaths, completed rooms),
+  surfaced as a HUD line instead of only the final score.
+- **Run summary export** — on run completion, auto-copy or post to party chat a
+  one-line recap (score, secrets, splits vs PB, deaths, class comp) built from
+  `SessionStats`/`RunHistory`/`DungeonScore`, instead of only logging locally.
+- **Pre-run ready check** — HUD/chat check before `/warp` that flags missing
+  class levels, no active potion/god pot, or a duplicate class in party.
+- **Wither-door essence cost tracker** — running total of essence spent opening
+  wither doors this run/session.
+- **AFK/leech teammate flag** — surface a teammate who hasn't moved/dealt
+  damage in N seconds (builds on the movement tracking already in `SessionStats`).
 
 # PrismAgent (Electron App)
 - **Project path:** `E:\prism-agent`
