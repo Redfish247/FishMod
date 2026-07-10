@@ -641,8 +641,15 @@ public class FishModScreen extends Screen {
         }
         visuals.features.add(new Feature("Fire Freeze Timer",
                 () -> FishSettings.fireFreezeTimerEnabled, v -> FishSettings.fireFreezeTimerEnabled = v));
-        visuals.features.add(new Feature("Explosive Shot",
-                () -> FishSettings.explosiveShotEnabled, v -> FishSettings.explosiveShotEnabled = v));
+        {
+            Feature f = new Feature("Explosive Shot",
+                    () -> FishSettings.explosiveShotEnabled, v -> FishSettings.explosiveShotEnabled = v);
+            f.sub.add(new ToggleSetting("Announce to Party (Archer)", "",
+                    () -> FishSettings.explosiveShotAnnounceParty, v -> FishSettings.explosiveShotAnnounceParty = v));
+            visuals.features.add(f);
+        }
+        visuals.features.add(new Feature("Loadout Title",
+                () -> FishSettings.loadoutTitleEnabled, v -> FishSettings.loadoutTitleEnabled = v));
 
         // ===== Floor 7 (ported from blade-addons) =====
         {
