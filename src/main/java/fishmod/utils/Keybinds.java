@@ -40,53 +40,65 @@ public class Keybinds {
     private static KeyBinding getItemCustomData;
     private static KeyBinding getBlockInfo;
 
+    /** Wardrobe/Loadouts quick-swap hotkeys 1-12, row-major (matches WardrobeHotkeys' slot layout). */
+    public static KeyBinding[] wardrobeSlots;
+
     public static void init() {
 
         category = KeyBinding.Category.create(Identifier.of(Constants.NAMESPACE));
 
         //normal keybinds
         openConfig = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "FishMod: Open Config",
+                "FishMod - Open Config",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_RIGHT_SHIFT,
                 category));
 
         trades = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "FishMod: Open trades menu",
+                "FishMod - Open trades menu",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
 
         potions = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "FishMod: Open potion bag",
+                "FishMod - Open potion bag",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
 
         openItemWiki = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "FishMod: Open item wiki",
+                "FishMod - Open item wiki",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
 
         //debug keybinds
         getItemLore = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "FishMod: Copy item lore",
+                "FishMod - Copy item lore",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
 
         getItemCustomData = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "FishMod: Copy item NBT",
+                "FishMod - Copy item NBT",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
 
         getBlockInfo = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "FishMod: Copy block data",
+                "FishMod - Copy block data",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
+
+        wardrobeSlots = new KeyBinding[12];
+        for (int i = 0; i < wardrobeSlots.length; i++) {
+            wardrobeSlots[i] = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                    "FishMod - Wardrobe slot " + (i + 1),
+                    InputUtil.Type.KEYSYM,
+                    GLFW.GLFW_KEY_UNKNOWN,
+                    category));
+        }
 
         ClientTickEvents.END_CLIENT_TICK.register(Keybinds::checkInputs);
     }

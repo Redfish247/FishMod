@@ -91,7 +91,7 @@ public class FishEstTotal {
     private static final Pattern END_PATTERN =
             Pattern.compile("^\\s*☠ Defeated (.+) in 0?([\\dhms ]+)\\s*(\\(NEW RECORD!\\))?$");
     private static final Pattern FLOOR_PATTERN =
-            Pattern.compile("^ ⏣ The Catacombs .*$");
+            Pattern.compile("The Catacombs \\(");
 
     // floor → ordered list of LocalSplits (loaded from FishMod's own jar)
     private static final HashMap<String, ArrayList<LocalSplit>> FLOOR_SPLITS = loadSplits();
@@ -104,7 +104,7 @@ public class FishEstTotal {
 
     @ConfigValue
     public static HUDComponent estTotalHud = new HUDComponent(
-            0, 0, Phase.SPLIT_LENGTH, Constants.TEXT_HEIGHT + 4, 1, "Est. Total",
+            0, 0, Phase.SPLIT_LENGTH, Constants.TEXT_HEIGHT * 2 + 4, 1, "Est. Total",
             FishEstTotal::display,
             FishEstTotal::render,
             () -> { try { return Phase.enableSplits; } catch (Throwable t) { return false; } }
@@ -224,7 +224,9 @@ public class FishEstTotal {
             y = component.getScaledY();
         }
 
-        // Base = sum of all averages. Delta = (actual − avg) for ended splits only. Subtract accumulated run lag.
+        // Base = sum of all averages. Delta = (actual − avg) for ended splits, plus the
+        // overage of the currently running split once it exceeds its own avg (so the
+        // estimate starts counting up live instead of waiting for the split to end).
         int splitCount = currentSplits.size() - 1;
         double base = 0, delta = 0;
         int personalCount = 0, fallbackCount = 0;
@@ -237,11 +239,12 @@ public class FishEstTotal {
             if (personal > 0) { base += personal; personalCount++; }
             else               { base += s.avg;    fallbackCount++; }
             if (s.ended()) delta += s.getRealTime() - avg;
+            else if (s.started()) delta += Math.max(0, s.getRealTime() - avg);
         }
 
-        // Lag is already reflected in `delta` (ended splits use wall-clock time, which includes
-        // lag). Do NOT subtract it — doing so cancels the penalty and makes the estimate drop
-        // during lag spikes. Laggier splits should push the estimate UP via delta.
+        // Lag is already reflected in `delta` (ended/running splits use wall-clock time,
+        // which includes lag). Do NOT subtract it — doing so cancels the penalty and makes
+        // the estimate drop during lag spikes. Laggier splits should push the estimate UP via delta.
         double totalSeconds = Math.max(0, base + delta);
 
         int estColor = (personalCount > 0 && fallbackCount == 0) ? 0xFF00AACC
@@ -256,6 +259,18 @@ public class FishEstTotal {
         int timeWidth = client.textRenderer.getWidth(estTime);
         context.drawText(client.textRenderer, estLabel, x, y, 0xFFFFFFFF, true);
         context.drawText(client.textRenderer, estTime, x + Phase.SPLIT_LENGTH - timeWidth, y, 0xFFFFFFFF, true);
+
+        drawLagLine(context, client, x, y + Constants.TEXT_HEIGHT);
+    }
+
+    /** Running total of seconds lost to lag this run, drawn on the row beneath Est. Total. */
+    private static void drawLagLine(DrawContext context, MinecraftClient client, int x, int y) {
+        double lag = LagTracker.getCurrentLag();
+        Text lagLabel = Text.literal("Lag Lost ").withColor(0xFF888888);
+        Text lagTime  = Text.literal(Constants.DECIMAL_FORMAT.format(lag) + "s").withColor(0xFFFF5555);
+        int timeWidth = client.textRenderer.getWidth(lagTime);
+        context.drawText(client.textRenderer, lagLabel, x, y, 0xFFFFFFFF, true);
+        context.drawText(client.textRenderer, lagTime, x + Phase.SPLIT_LENGTH - timeWidth, y, 0xFFFFFFFF, true);
     }
 
     /** Standalone render — called from HudRenderCallback when blade-addons is absent. */
@@ -278,11 +293,12 @@ public class FishEstTotal {
             if (personal > 0) { base += personal; personalCount++; }
             else               { base += s.avg;    fallbackCount++; }
             if (s.ended()) delta += s.getRealTime() - avg;
+            else if (s.started()) delta += Math.max(0, s.getRealTime() - avg);
         }
 
-        // Lag is already reflected in `delta` (ended splits use wall-clock time, which includes
-        // lag). Do NOT subtract it — doing so cancels the penalty and makes the estimate drop
-        // during lag spikes. Laggier splits should push the estimate UP via delta.
+        // Lag is already reflected in `delta` (ended/running splits use wall-clock time,
+        // which includes lag). Do NOT subtract it — doing so cancels the penalty and makes
+        // the estimate drop during lag spikes. Laggier splits should push the estimate UP via delta.
         double totalSeconds = Math.max(0, base + delta);
         int estColor = (personalCount > 0 && fallbackCount == 0) ? 0xFF00AACC
                 : (personalCount > 0) ? 0xFFFFAA00 : 0xFF888888;
@@ -293,6 +309,8 @@ public class FishEstTotal {
         int timeWidth = client.textRenderer.getWidth(estTime);
         ctx.drawText(client.textRenderer, estLabel, x, y, 0xFFFFFFFF, true);
         ctx.drawText(client.textRenderer, estTime, x + Phase.SPLIT_LENGTH - timeWidth, y, 0xFFFFFFFF, true);
+
+        drawLagLine(ctx, client, x, y + Constants.TEXT_HEIGHT);
     }
 
     // ── splits.json loader (FishMod's own jar via FishEstTotal.class) ─────────
