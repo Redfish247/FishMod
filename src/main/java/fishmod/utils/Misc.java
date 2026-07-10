@@ -64,7 +64,11 @@ public class Misc {
     public static void executeCommand(String string) {
         ClientPlayNetworkHandler networkHandler = INSTANCE.getNetworkHandler();
         if (networkHandler == null) return;
-        forceMainThread(() -> networkHandler.sendChatCommand(string));
+        // sendChatCommand() expects no leading slash — strip one if the caller typed the command
+        // the way they'd type it in chat.
+        String trimmed = string.trim();
+        String command = trimmed.startsWith("/") ? trimmed.substring(1) : trimmed;
+        forceMainThread(() -> networkHandler.sendChatCommand(command));
     }
 
     public static void sendSound(SoundEvent soundEvent, float volume, float pitch) {
