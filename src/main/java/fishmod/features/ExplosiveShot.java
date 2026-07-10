@@ -1,7 +1,11 @@
 package fishmod.features;
 
+import fishmod.features.dungeon.ChatCommandState;
 import fishmod.utils.config.values.FishSettings;
+import fishmod.utils.dungeon.DungeonClass;
 import fishmod.utils.events.Events;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.minecraft.ChatFormatting;
@@ -62,7 +66,25 @@ public final class ExplosiveShot {
             hud.setTitle(title);
             hud.setSubtitle(subtitle);
         });
+
+        if (FishSettings.explosiveShotAnnounceParty && DungeonClass.isClass(DungeonClass.ARCHER)) {
+            announceToParty(dmg, enemies);
+        }
         return false; // keep the original chat line
+    }
+
+    /** Shares the same crit-hit info already shown on screen with the party. Delayed + rate-limit
+     *  suppressed the same way {@code PartyCommandHandler.sendCmd} does. */
+    private static void announceToParty(String dmg, int enemies) {
+        String message = "Explosive Shot: " + dmg + " dmg (" + enemies + (enemies == 1 ? " enemy)" : " enemies)");
+        CompletableFuture.delayedExecutor(250, TimeUnit.MILLISECONDS)
+                .execute(() -> Minecraft.getInstance().execute(() -> {
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.getConnection() != null) {
+                        mc.getConnection().sendCommand("pc " + message);
+                        ChatCommandState.lastPartyCommandAt = System.currentTimeMillis();
+                    }
+                }));
     }
 
     /** Whole numbers print with thousands separators; fractional values keep one decimal. */
