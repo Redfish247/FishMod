@@ -200,6 +200,7 @@ public class FishModInit implements ModInitializer {
         FishEstTotal.init();
         DungeonDeathMessage.init();
         fishmod.features.ExplosiveShot.init();
+        fishmod.features.LoadoutTitle.init();
         FishPartyTracker.init();
         PartyCommandHandler.init();
         SoulflowHud.init();
