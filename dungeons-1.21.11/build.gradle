@@ -193,7 +193,7 @@ tasks.register('announceDiscord') {
 		def ver = (project.findProperty('modrinth_version') ?: project.mod_version).toString()
 		def mcVer = project.minecraft_version.toString()
 		def changelogText = (System.getenv('CHANGELOG') ?: "Release ${project.mod_version}").toString()
-		def pageUrl = "https://modrinth.com/mod/fishmod/version/${ver}".toString()
+		def pageUrl = "https://modrinth.com/mod/7dRE7dga/version/${ver}".toString()
 		def payload = [
 			username        : 'FishMod Releases',
 			content         : "@everyone 📦 **FishMod ${ver}** is now live on Modrinth — update now!".toString(),
@@ -208,7 +208,7 @@ tasks.register('announceDiscord') {
 					[name: 'Minecraft',  value: mcVer,         inline: true],
 					[name: 'Loader',     value: 'Fabric',      inline: true],
 					[name: "What's new", value: changelogText, inline: false],
-					[name: 'Download',   value: "[modrinth.com/mod/fishmod](${pageUrl})".toString(), inline: false]
+					[name: 'Download',   value: "[modrinth.com/mod/7dRE7dga](${pageUrl})".toString(), inline: false]
 				],
 				thumbnail  : [url: 'https://cdn.modrinth.com/data/glXPWTyr/d8f3a4f7bb9d828eae870c1b7aa8ca86559e1f4a.webp'],
 				footer     : [text: 'Available on Modrinth']
@@ -219,7 +219,7 @@ tasks.register('announceDiscord') {
 		def request = java.net.http.HttpRequest.newBuilder()
 				.uri(java.net.URI.create(discordWebhook.get().trim()))
 				.header('Content-Type', 'application/json')
-				.header('User-Agent', 'FishMod-Release-Notifier (https://github.com/Redfish247/FishMod, 1.0)')
+				.header('User-Agent', 'FishMod-Release-Notifier (https://github.com/Redfish247/FishModDungeons, 1.0)')
 				.POST(java.net.http.HttpRequest.BodyPublishers.ofString(body, java.nio.charset.StandardCharsets.UTF_8))
 				.build()
 		def response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString())
