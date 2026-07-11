@@ -202,6 +202,7 @@ public class FishModInit implements ModInitializer {
         // PowderTracker.init();
         fishmod.features.dungeon.SimonSaysTracker.init();
         fishmod.features.dungeon.M7LeverWaypoints.init();
+        fishmod.features.dungeon.map.DungeonMapFeature.init();
         // Floor 7 boss timers (ported from blade-addons): Maxor/Storm/Goldor tick timers, crystal
         // spawn, term start, section progress, storm-crushed. HUDs auto-render via the practical
         // config system (F7Huds registered with FishConfig); register each for the Edit-HUD dragger.
@@ -218,6 +219,7 @@ public class FishModInit implements ModInitializer {
         FishHudEditor.register("Goldor Tick Timer", fishmod.features.dungeon.f7.F7Huds.goldorTickTimer);
         FishHudEditor.register("Term Start Timer",  fishmod.features.dungeon.f7.F7Huds.termStartTimer);
         FishHudEditor.register("Section Progress",  fishmod.features.dungeon.f7.F7Huds.sectionProgress);
+        FishHudEditor.register("Dungeon Map",       fishmod.features.dungeon.map.DungeonMapHud.dungeonMap);
         // Dungeon class detection (own class from the "stats are doubled" message + tab list) and the
         // class-colored boots feature that depends on it. Boots init AFTER ItemCustomizer.init (above)
         // so the class color wins over per-item boot dye while enabled.
@@ -629,6 +631,22 @@ public class FishModInit implements ModInitializer {
                                 + fishmod.features.croesus.CroesusPrices.debugSource(pid)))));
                         return Constants.SUCCESS;
                     }
+                    if (parts[0].equals("dungeonmap")) {
+                        mc.schedule(() -> {
+                            Misc.addChatMessage(Component.literal("§b--- Dungeon Map Debug ---"));
+                            Misc.addChatMessage(Component.literal("§7Calibrated: §f" + fishmod.utils.dungeon.map.MapReader.isCalibrated()));
+                            for (var entry : fishmod.utils.dungeon.map.DungeonGrid.allRooms().entrySet()) {
+                                fishmod.utils.dungeon.map.RoomTile t = entry.getValue();
+                                Misc.addChatMessage(Component.literal("§8ROOM " + entry.getKey() + ": §f" + t.type() + " " + t.state()));
+                            }
+                            for (var entry : fishmod.utils.dungeon.map.DungeonGrid.allDoors().entrySet()) {
+                                fishmod.utils.dungeon.map.DoorTile t = entry.getValue();
+                                Misc.addChatMessage(Component.literal("§8DOOR " + entry.getKey() + ": §f" + t.type() + " " + t.state()));
+                            }
+                            Misc.addChatMessage(Component.literal("§b--- End Dungeon Map Debug ---"));
+                        });
+                        return Constants.SUCCESS;
+                    }
                     if (parts[0].equals("mp")) {
                         String ign = parts.length > 1 ? parts[1] : (mc.player != null ? mc.player.getName().getString() : null);
                         if (ign == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUsage: /fmdbg mp <ign>"))); return Constants.SUCCESS; }
@@ -803,6 +821,7 @@ public class FishModInit implements ModInitializer {
         // forced false in Phase so this is the single render path.
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "phase_splits"), (ctx, tickCounter) -> Phase.renderHud(ctx));
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "f7_huds"), (ctx, tickCounter) -> fishmod.features.dungeon.f7.F7Huds.renderHud(ctx));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map"), (ctx, tickCounter) -> fishmod.features.dungeon.map.DungeonMapHud.renderHud(ctx));
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "session_stats"), (ctx, tickCounter) -> SessionStats.renderHud(ctx, tickCounter));
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_score"), (ctx, tickCounter) -> fishmod.features.dungeon.DungeonScore.renderHud(ctx, tickCounter));
         // HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "farming_tracker"), (ctx, tickCounter) -> fishmod.features.FarmingTracker.renderHud(ctx, tickCounter));

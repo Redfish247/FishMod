@@ -497,6 +497,39 @@ public class FishModScreen extends Screen {
                     () -> FishSettings.m7LeverWaypointColor, v -> FishSettings.m7LeverWaypointColor = v));
             dungeon.features.add(f);
         }
+        {
+            Feature f = new Feature("Dungeon Map",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.enabled,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.enabled = v);
+            f.sub.add(new ToggleSetting("Room Names", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.showRoomNames,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.showRoomNames = v));
+            f.sub.add(new ToggleSetting("Secret Counts", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.showSecretCounts,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.showSecretCounts = v));
+            f.sub.add(new ToggleSetting("Predict Undiscovered Types", "Blends colors for undiscovered rooms once your local room database narrows them down. Improves the more you dungeon.",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.predictionLayerEnabled,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.predictionLayerEnabled = v));
+            f.sub.add(new ColorPickerSetting("Normal Room", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.normalColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.normalColor = v));
+            f.sub.add(new ColorPickerSetting("Puzzle Room", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.puzzleColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.puzzleColor = v));
+            f.sub.add(new ColorPickerSetting("Trap Room", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.trapColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.trapColor = v));
+            f.sub.add(new ColorPickerSetting("Miniboss Room", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.minibossColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.minibossColor = v));
+            f.sub.add(new ColorPickerSetting("Fairy Room", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.fairyColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.fairyColor = v));
+            f.sub.add(new ColorPickerSetting("Blood Room", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.bloodColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.bloodColor = v));
+            dungeon.features.add(f);
+        }
 
         // ===== Cosmetics =====
         {
