@@ -5,6 +5,7 @@ import fishmod.features.SlayerXpTracker;
 import fishmod.features.croesus.LootTrackerOverlay;
 import fishmod.features.dungeon.SessionStats;
 import fishmod.features.other.SearchBar;
+import fishmod.features.other.WardrobeHotkeys;
 import fishmod.features.wiki.WikiContextMenu;
 import fishmod.mixin.accessors.KeyBindingAccessor;
 import fishmod.utils.Keybinds;
@@ -67,6 +68,7 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> extends Screen
     private void keyPressed(KeyInput input, CallbackInfoReturnable<Boolean> cir) {
         if (SearchBar.keyPressed(input)) { cir.setReturnValue(false); return; }
         if (LootTrackerOverlay.keyPressed(input)) { cir.setReturnValue(false); return; }
+        if (WardrobeHotkeys.keyPressed(input, (HandledScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
 
         // Wiki slot keybind — configurable, default unbound
         KeyBinding wikiKey = Keybinds.openItemWiki;
@@ -98,6 +100,8 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> extends Screen
             cir.setReturnValue(true);
             return;
         }
+
+        if (WardrobeHotkeys.mouseClicked(click, (HandledScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
 
         SearchBar.onMouseClick(click);
     }

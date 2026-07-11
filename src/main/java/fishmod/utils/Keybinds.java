@@ -40,6 +40,9 @@ public class Keybinds {
     private static KeyBinding getItemCustomData;
     private static KeyBinding getBlockInfo;
 
+    /** Wardrobe/Loadouts quick-swap hotkeys 1-12, row-major (matches WardrobeHotkeys' slot layout). */
+    public static KeyBinding[] wardrobeSlots;
+
     public static void init() {
 
         category = KeyBinding.Category.create(Identifier.of(Constants.NAMESPACE));
@@ -87,6 +90,15 @@ public class Keybinds {
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
+
+        wardrobeSlots = new KeyBinding[12];
+        for (int i = 0; i < wardrobeSlots.length; i++) {
+            wardrobeSlots[i] = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                    "FishMod - Wardrobe slot " + (i + 1),
+                    InputUtil.Type.KEYSYM,
+                    GLFW.GLFW_KEY_UNKNOWN,
+                    category));
+        }
 
         ClientTickEvents.END_CLIENT_TICK.register(Keybinds::checkInputs);
     }

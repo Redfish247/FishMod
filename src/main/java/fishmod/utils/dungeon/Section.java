@@ -35,14 +35,17 @@ public class Section {
     }
 
     private static final Split[] splits = {
-            new Split("1st", "", "", 16755200, 0.0),
-            new Split("2nd", "", "", 16755200, 0.0),
-            new Split("3rd", "", "", 16755200, 0.0),
-            new Split("4th", "", "", 16755200, 0.0),};
+            new Split("S1", "", "", 16755200, 0.0),
+            new Split("S2", "", "", 16755200, 0.0),
+            new Split("S3", "", "", 16755200, 0.0),
+            new Split("S4", "", "", 16755200, 0.0),
+            new Split("Total", "", "", Split.GREEN, 0.0),};
     private static final Pattern TERMINALS_DONE_PATTERN = Pattern.compile("^(\\w+) (activated|completed) a (terminal|device|lever)! \\((\\d)/(\\d)\\)$");
 
     public static int SPLIT_LENGTH = 120;
     private static final int TERM_PHASE_INDEX = 6;
+    /** Number of per-section splits (S1-S4) at the front of {@link #splits}; the trailing "Total" split is separate. */
+    private static final int SECTION_COUNT = 4;
 
     private static int currentSection = -1;
     private static int completed = 0;
@@ -51,6 +54,9 @@ public class Section {
 
     @ConfigValue
     public static boolean enableTerminalSplits = false;
+
+    @ConfigValue
+    public static boolean includeTotalTime = false;
 
     @ConfigValue
     public static DisplayTerminalSplitsWhen displayTerminalSplitsWhen = DisplayTerminalSplitsWhen.TERMINALS_ONLY;
@@ -72,6 +78,7 @@ public class Section {
                 }
                 currentSection = 1;
                 splits[0].start();
+                splits[SECTION_COUNT].start(); // Total: spans the whole terminals phase
             } else if (Phase.inGoldorTunnel()) {
                 if (Debug.termInfo) {
                     Misc.addChatMessage(Text.literal("Terminals ended"));
@@ -118,13 +125,13 @@ public class Section {
 
     private static void endSplit(int section) {
         int index = section - 1;
-        if (index < 0 || index >= splits.length) return;
+        if (index < 0 || index >= SECTION_COUNT) return;
         splits[index].end();
     }
 
     private static void startSplit(int section) {
         int index = section - 1;
-        if (index < 0 || index >= splits.length) return;
+        if (index < 0 || index >= SECTION_COUNT) return;
         splits[index].start();
     }
 
@@ -223,7 +230,7 @@ public class Section {
 
     public static double getSectionTime() {
         int index = currentSection - 1;
-        if (index < 0 || index >= splits.length) return -1;
+        if (index < 0 || index >= SECTION_COUNT) return -1;
         return splits[index].getRealTime();
     }
 
@@ -250,11 +257,15 @@ public class Section {
 
         TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
 
-        for (int i = 0; i < splits.length; i++) {
+        int count = includeTotalTime ? splits.length : SECTION_COUNT;
+        for (int i = 0; i < count; i++) {
             splits[i].drawSplit(context, textRenderer, x, y + Constants.TEXT_HEIGHT * i, SPLIT_LENGTH);
         }
     }
 
+    // Rendered explicitly via F7Huds.renderHud (HudRenderCallback in FishModInit) — the proven path
+    // every other FishMod HUD uses — so the condition-supplier is forced false to keep
+    // practical-config's HudElementRegistry auto-render (unreliable here) from double-drawing it.
     @ConfigValue
-    public static HUDComponent terminalSplits = new HUDComponent(0, 0, SPLIT_LENGTH, 50, 1, "Term splits", Section::display, Section::render, () -> enableTerminalSplits);
+    public static HUDComponent terminalSplits = new HUDComponent(0, 0, SPLIT_LENGTH, 50, 1, "Term splits", () -> false, Section::render, () -> enableTerminalSplits);
 }

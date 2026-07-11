@@ -110,6 +110,7 @@ public class FishModScreen extends Screen {
     private int activeSliderX = 0;
     private Setting activeInput = null;
     private ColorPickerSetting activePicker = null;
+    private KeybindSetting capturingKeybind = null;
     private TextFieldWidget searchField;
     private boolean resetArmed = false;
     private long resetArmedAt = 0;
@@ -266,7 +267,7 @@ public class FishModScreen extends Screen {
             case "Puzzle Overlay", "Simon Says", "M7 Lever Waypoints" -> "cube";
             case "Send Lag to Party", "Splits", "Cooldown Overlay", "Fire Freeze Timer",
                  "Maxor Tick Timer", "Crystal Spawn", "Storm Tick Timer", "Storm Death Time",
-                 "Goldor Tick Timer", "Term Start Timer" -> "clock";
+                 "Goldor Tick Timer", "Term Start Timer", "Goldor Splits", "LB Release Timer" -> "clock";
             case "Storm Crushed Noti" -> "bell";
             case "Section Progress" -> "star";
             case "Loot Tracker",
@@ -310,10 +311,12 @@ public class FishModScreen extends Screen {
             case "Crystal Spawn" -> "Crystal spawn countdown + reminder";
             case "Storm Tick Timer" -> "Tick timer during Storm (P2)";
             case "Storm Death Time" -> "Show when Storm died";
+            case "LB Release Timer" -> "Countdown 30s–34.35s: when to shoot Last Breath";
             case "Storm Crushed Noti" -> "Alert when Storm is crushed";
             case "Goldor Tick Timer" -> "Terminal-phase tick timer";
             case "Term Start Timer" -> "Countdown to terminals start";
             case "Section Progress" -> "Terminal section completed/total";
+            case "Goldor Splits" -> "S1-S4 terminal split timers + total time";
             case "Name Color" -> "Recolor your username gradient";
             case "See Others' Items" -> "Render other users' item cosmetics";
             case "Customize" -> "Rename, dye & re-model your items";
@@ -381,6 +384,19 @@ public class FishModScreen extends Screen {
             f.sub.add(makeButtonInput("Button 5", () -> fishmod.utils.config.values.Buttons.command5, v -> fishmod.utils.config.values.Buttons.command5 = v));
             f.sub.add(makeButtonInput("Button 6", () -> fishmod.utils.config.values.Buttons.command6, v -> fishmod.utils.config.values.Buttons.command6 = v));
             f.sub.add(makeButtonInput("Button 7", () -> fishmod.utils.config.values.Buttons.command7, v -> fishmod.utils.config.values.Buttons.command7 = v));
+            general.features.add(f);
+        }
+        {
+            Feature f = new Feature("Wardrobe Hotkeys",
+                    () -> FishSettings.wardrobeHotkeysEnabled, v -> FishSettings.wardrobeHotkeysEnabled = v);
+            f.sub.add(new ToggleSetting("Auto-Close GUI", "",
+                    () -> FishSettings.wardrobeHotkeysAutoClose, v -> FishSettings.wardrobeHotkeysAutoClose = v));
+            f.sub.add(new SubcategoryHeader("Click a slot, then press a key/mouse button (Esc unbinds)"));
+            for (int i = 0; i < fishmod.utils.Keybinds.wardrobeSlots.length; i++) {
+                final int idx = i;
+                f.sub.add(new KeybindSetting("Slot " + (idx + 1), "",
+                        () -> fishmod.utils.Keybinds.wardrobeSlots[idx]));
+            }
             general.features.add(f);
         }
         {
@@ -771,6 +787,13 @@ public class FishModScreen extends Screen {
         }
         floor7.features.add(new Feature("Storm Death Time",
                 () -> Floor7.enableStormDeathTime, v -> Floor7.enableStormDeathTime = v));
+        {
+            Feature f = new Feature("LB Release Timer",
+                    () -> Floor7.enableLbReleaseTimer, v -> Floor7.enableLbReleaseTimer = v);
+            f.sub.add(new ColorPickerSetting("Timer Color", "",
+                    () -> Floor7.lbReleaseTimerColor, v -> Floor7.lbReleaseTimerColor = v));
+            floor7.features.add(f);
+        }
         floor7.features.add(new Feature("Storm Crushed Noti",
                 () -> Floor7.notifyStormCrush, v -> Floor7.notifyStormCrush = v));
         {
@@ -791,6 +814,17 @@ public class FishModScreen extends Screen {
                     () -> Floor7.sectionColorProgress, v -> Floor7.sectionColorProgress = v));
             f.sub.add(new ToggleSetting("Prev Objective", "",
                     () -> Floor7.sectionPrevObjective, v -> Floor7.sectionPrevObjective = v));
+            floor7.features.add(f);
+        }
+        {
+            Feature f = new Feature("Goldor Splits",
+                    () -> fishmod.utils.dungeon.Section.enableTerminalSplits, v -> fishmod.utils.dungeon.Section.enableTerminalSplits = v);
+            f.sub.add(new ToggleSetting("Total Time", "",
+                    () -> fishmod.utils.dungeon.Section.includeTotalTime, v -> fishmod.utils.dungeon.Section.includeTotalTime = v));
+            f.sub.add(new DropdownSetting<>("Show During", "",
+                    fishmod.utils.dungeon.Section.DisplayTerminalSplitsWhen.values(),
+                    () -> fishmod.utils.dungeon.Section.displayTerminalSplitsWhen,
+                    v -> fishmod.utils.dungeon.Section.displayTerminalSplitsWhen = v));
             floor7.features.add(f);
         }
 
@@ -1138,6 +1172,12 @@ public class FishModScreen extends Screen {
         int my = (int) click.y();
         int btn = click.button();
 
+        if (capturingKeybind != null) {
+            capturingKeybind.applyKey(net.minecraft.client.util.InputUtil.Type.MOUSE.createFromCode(btn));
+            capturingKeybind = null;
+            return true;
+        }
+
         if (activeInput instanceof InputSetting prevInput && prevInput.textField != null) prevInput.textField.setFocused(false);
         activeInput = null;
 
@@ -1216,6 +1256,7 @@ public class FishModScreen extends Screen {
                             }
                             if (s.onClick(mx, my, leftX, rightX, ssy, btn)) {
                                 if (s instanceof ColorPickerSetting cps && cps.dragMode != 0) activePicker = cps;
+                                if (s instanceof KeybindSetting ks && ks.capturing) capturingKeybind = ks;
                                 return true;
                             }
                             if (s instanceof SliderIntSetting || s instanceof SliderDoubleSetting) {
@@ -1266,6 +1307,13 @@ public class FishModScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyInput input) {
+        if (capturingKeybind != null) {
+            capturingKeybind.applyKey(input.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE
+                    ? net.minecraft.client.util.InputUtil.UNKNOWN_KEY
+                    : net.minecraft.client.util.InputUtil.fromKeyCode(input));
+            capturingKeybind = null;
+            return true;
+        }
         if (activeInput instanceof InputSetting is && is.textField != null) { is.textField.keyPressed(input); return true; }
         if (activeInput instanceof InputIntSetting iis && iis.textField != null) { iis.textField.keyPressed(input); return true; }
         if (activeInput instanceof InputDoubleSetting ids && ids.textField != null) { ids.textField.keyPressed(input); return true; }
@@ -1748,6 +1796,47 @@ public class FishModScreen extends Screen {
                 action.run(); return true;
             }
             return false;
+        }
+    }
+
+    static class KeybindSetting extends Setting {
+        Supplier<net.minecraft.client.option.KeyBinding> getter;
+        boolean capturing = false;
+        static final int W = 110;
+        KeybindSetting(String name, String desc, Supplier<net.minecraft.client.option.KeyBinding> g) {
+            super(name, desc); this.getter = g;
+        }
+        private String label() {
+            if (capturing) return "> Press <";
+            net.minecraft.client.option.KeyBinding kb = getter.get();
+            if (kb == null) return "-";
+            return kb.isUnbound() ? "Unbound" : kb.getBoundKeyLocalizedText().getString();
+        }
+        @Override
+        void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
+            int bx = rightX - W - 2;
+            int by = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
+            boolean hov = mx >= bx && mx <= bx + W && my >= by && my <= by + TOGGLE_H;
+            roundRect(ctx, bx, by, bx + W, by + TOGGLE_H, 3, capturing ? ACCENT_HOVER : (hov ? 0xFF333D48 : 0xFF252D37));
+            String t = label();
+            st(ctx, tr, t, bx + (W - stw(tr, t)) / 2, by + (TOGGLE_H - 8) / 2, capturing ? 0xFF06302F : TEXT_COLOR);
+        }
+        @Override
+        boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
+            int bx = rightX - W - 2;
+            int by = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
+            if (mx >= bx && mx <= bx + W && my >= by && my <= by + TOGGLE_H) {
+                capturing = true; return true;
+            }
+            return false;
+        }
+        void applyKey(net.minecraft.client.util.InputUtil.Key key) {
+            net.minecraft.client.option.KeyBinding kb = getter.get();
+            if (kb == null) return;
+            kb.setBoundKey(key);
+            net.minecraft.client.option.KeyBinding.updateKeysByCode();
+            MinecraftClient.getInstance().options.write();
+            capturing = false;
         }
     }
 
