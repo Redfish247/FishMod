@@ -22,5 +22,7 @@ public class FishConfig {
                     fishmod.utils.config.values.Dungeons.class,
                     fishmod.utils.config.values.Floor7.class,
                     fishmod.utils.config.values.Buttons.class,
-                    fishmod.features.dungeon.f7.F7Huds.class));
+                    fishmod.features.dungeon.f7.F7Huds.class,
+                    fishmod.utils.config.values.DungeonMapSettings.class,
+                    fishmod.features.dungeon.map.DungeonMapHud.class));
 }

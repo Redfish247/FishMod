@@ -133,6 +133,7 @@ public class FishHudEditor extends Screen {
             java.util.Map.entry("Goldor Tick Timer",  new double[]{10,  80, 1.0}),
             java.util.Map.entry("Term Start Timer",   new double[]{10, 104, 1.0}),
             java.util.Map.entry("Section Progress",   new double[]{10, 116, 1.0}),
+            java.util.Map.entry("Dungeon Map",        new double[]{10, 200, 1.0}),
             java.util.Map.entry("Splits",             new double[]{ 0,   0, 1.0}),
             java.util.Map.entry("Puzzles",            new double[]{ 0,   0, 1.0}));
 

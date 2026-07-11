@@ -264,6 +264,7 @@ public class FishModScreen extends Screen {
             case "Compact Tab", "Party Commands" -> "people";
             case "Dungeon Score", "Session Stats", "Pet HUD", "Trophy Frogs" -> "star";
             case "Puzzle Overlay", "Simon Says", "M7 Lever Waypoints" -> "cube";
+            case "Dungeon Map" -> "map";
             case "Send Lag to Party", "Splits", "Cooldown Overlay", "Fire Freeze Timer",
                  "Maxor Tick Timer", "Crystal Spawn", "Storm Tick Timer", "Storm Death Time",
                  "Goldor Tick Timer", "Term Start Timer" -> "clock";
@@ -298,6 +299,7 @@ public class FishModScreen extends Screen {
             case "Explosive Shot" -> "Title with per-enemy damage";
             case "Dungeon Score" -> "Live S+ score tracker overlay";
             case "Puzzle Overlay" -> "Show solved puzzle names";
+            case "Dungeon Map" -> "Algorithmic room/door map + self-learning type prediction";
             case "Death Message" -> "Announce deaths with a template";
             case "Send Lag to Party" -> "Warn the party when your game lags";
             case "Splits" -> "Phase split timers for runs";
@@ -526,6 +528,60 @@ public class FishModScreen extends Screen {
         }
         dungeon.features.add(new Feature("Class Colored Boots",
                 () -> FishSettings.classColoredBootsEnabled, v -> FishSettings.classColoredBootsEnabled = v));
+        {
+            Feature f = new Feature("Dungeon Map",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.enabled,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.enabled = v);
+            f.sub.add(new ToggleSetting("Room Names", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.showRoomNames,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.showRoomNames = v));
+            f.sub.add(new ToggleSetting("Secret Counts", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.showSecretCounts,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.showSecretCounts = v));
+            f.sub.add(new ToggleSetting("Predict Undiscovered Types", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.predictionLayerEnabled,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.predictionLayerEnabled = v));
+            f.sub.add(new ColorPickerSetting("Normal Room", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.normalColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.normalColor = v));
+            f.sub.add(new ColorPickerSetting("Puzzle Room", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.puzzleColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.puzzleColor = v));
+            f.sub.add(new ColorPickerSetting("Trap Room", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.trapColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.trapColor = v));
+            f.sub.add(new ColorPickerSetting("Miniboss Room", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.minibossColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.minibossColor = v));
+            f.sub.add(new ColorPickerSetting("Fairy Room", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.fairyColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.fairyColor = v));
+            f.sub.add(new ColorPickerSetting("Blood Room", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.bloodColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.bloodColor = v));
+            f.sub.add(new ColorPickerSetting("Entrance Room", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.entranceColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.entranceColor = v));
+            f.sub.add(new ColorPickerSetting("Cleared Room", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.clearedColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.clearedColor = v));
+            f.sub.add(new ColorPickerSetting("Unopened Room", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.unopenedColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.unopenedColor = v));
+            f.sub.add(new ColorPickerSetting("Normal Door", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.normalDoorColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.normalDoorColor = v));
+            f.sub.add(new ColorPickerSetting("Entrance Door", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.entranceDoorColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.entranceDoorColor = v));
+            f.sub.add(new ColorPickerSetting("Blood Door", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.bloodDoorColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.bloodDoorColor = v));
+            f.sub.add(new ColorPickerSetting("Wither Door", "",
+                    () -> fishmod.utils.config.values.DungeonMapSettings.witherDoorColor,
+                    v -> fishmod.utils.config.values.DungeonMapSettings.witherDoorColor = v));
+            dungeon.features.add(f);
+        }
         {
             Feature f = new Feature("M7 Lever Waypoints",
                     () -> FishSettings.enableM7LeverWaypoints, v -> FishSettings.enableM7LeverWaypoints = v);
