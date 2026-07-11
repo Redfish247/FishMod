@@ -266,6 +266,11 @@ public class Section {
     // Rendered explicitly via F7Huds.renderHud (HudRenderCallback in FishModInit) — the proven path
     // every other FishMod HUD uses — so the condition-supplier is forced false to keep
     // practical-config's HudElementRegistry auto-render (unreliable here) from double-drawing it.
+    //
+    // Default position deliberately not (0,0): that's also Phase.splitTimer's default, and
+    // keepOnScreen's off-screen check treats (0,0) as "already on screen" so it never relocates —
+    // the two panels would otherwise silently render on top of each other the first time both are
+    // visible at once (Terminals/Goldor phase), which is exactly what happened before this fix.
     @ConfigValue
-    public static HUDComponent terminalSplits = new HUDComponent(0, 0, SPLIT_LENGTH, 50, 1, "Term splits", () -> false, Section::render, () -> enableTerminalSplits);
+    public static HUDComponent terminalSplits = new HUDComponent(10, 154, SPLIT_LENGTH, 50, 1, "Term splits", () -> false, Section::render, () -> enableTerminalSplits);
 }
