@@ -42,6 +42,10 @@ public class F7Huds {
             () -> false, StormTickTimer::renderDeathTime, () -> Floor7.enableStormDeathTime);
 
     @ConfigValue
+    public static HUDComponent lbReleaseTimer = new HUDComponent(10, 104, TICK_W, 10, 1, "LB Release Timer",
+            () -> false, StormTickTimer::renderLbReleaseTimer, () -> Floor7.enableLbReleaseTimer);
+
+    @ConfigValue
     public static HUDComponent stormCrush = new HUDComponent(0, 0, NOTI_W, 10, 1, "Storm Crushed",
             () -> false, PillarExplode::render, () -> Floor7.notifyStormCrush);
 
@@ -78,6 +82,7 @@ public class F7Huds {
         renderOne(ctx, crystalSpawnTime, CrystalSpawn.display(),            CrystalSpawn::render,            10, 118);
         renderOne(ctx, stormDeathTime,   StormTickTimer.displayDeathTime(), StormTickTimer::renderDeathTime, 10, 130);
         renderOne(ctx, sectionProgress,  SectionProgress.display(),         SectionProgress::render,         10, 142);
+        renderOne(ctx, lbReleaseTimer,   StormTickTimer.displayLbReleaseTimer(), StormTickTimer::renderLbReleaseTimer, 10, 166);
         renderOne(ctx, crystalReminder,  CrystalSpawn.displayNotification(),CrystalSpawn::renderNotification,10, 40);
         renderOne(ctx, stormCrush,       PillarExplode.display(),           PillarExplode::render,           10, 28);
     }

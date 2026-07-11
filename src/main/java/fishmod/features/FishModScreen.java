@@ -265,7 +265,7 @@ public class FishModScreen extends Screen {
             case "Puzzle Overlay", "Simon Says", "M7 Lever Waypoints" -> "cube";
             case "Send Lag to Party", "Splits", "Cooldown Overlay", "Fire Freeze Timer",
                  "Maxor Tick Timer", "Crystal Spawn", "Storm Tick Timer", "Storm Death Time",
-                 "Goldor Tick Timer", "Term Start Timer" -> "clock";
+                 "Goldor Tick Timer", "Term Start Timer", "LB Release Timer" -> "clock";
             case "Storm Crushed Noti" -> "bell";
             case "Section Progress" -> "star";
             case "Loot Tracker",
@@ -309,6 +309,7 @@ public class FishModScreen extends Screen {
             case "Crystal Spawn" -> "Crystal spawn countdown + reminder";
             case "Storm Tick Timer" -> "Tick timer during Storm (P2)";
             case "Storm Death Time" -> "Show when Storm died";
+            case "LB Release Timer" -> "Countdown 30s–34.35s: when to shoot Last Breath";
             case "Storm Crushed Noti" -> "Alert when Storm is crushed";
             case "Goldor Tick Timer" -> "Terminal-phase tick timer";
             case "Term Start Timer" -> "Countdown to terminals start";
@@ -663,6 +664,13 @@ public class FishModScreen extends Screen {
         }
         floor7.features.add(new Feature("Storm Death Time",
                 () -> Floor7.enableStormDeathTime, v -> Floor7.enableStormDeathTime = v));
+        {
+            Feature f = new Feature("LB Release Timer",
+                    () -> Floor7.enableLbReleaseTimer, v -> Floor7.enableLbReleaseTimer = v);
+            f.sub.add(new ColorPickerSetting("Timer Color", "",
+                    () -> Floor7.lbReleaseTimerColor, v -> Floor7.lbReleaseTimerColor = v));
+            floor7.features.add(f);
+        }
         floor7.features.add(new Feature("Storm Crushed Noti",
                 () -> Floor7.notifyStormCrush, v -> Floor7.notifyStormCrush = v));
         {

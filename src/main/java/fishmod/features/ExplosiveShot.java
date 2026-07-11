@@ -3,6 +3,7 @@ package fishmod.features;
 import fishmod.features.dungeon.ChatCommandState;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.dungeon.DungeonClass;
+import fishmod.utils.dungeon.Phase;
 import fishmod.utils.events.Events;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.InGameHud;
@@ -20,8 +21,8 @@ import java.util.regex.Pattern;
  *   "Your Explosive Shot hit 1 enemy for 472.5 damage."  → title "472.5", subtitle "Explosive Shot • 1 enemy"
  *   "Your Explosive Shot hit 8 enemies for 4,000 damage." → title "500",  subtitle "Explosive Shot • 8 enemies"
  *
- * Only active during the F7 Maxor fight: starts on Maxor's opening taunt, stops the moment Storm's
- * lightning line appears (Terminator/Explosive Shot readings aren't relevant to any other boss).
+ * Only active during the F7 Maxor fight ({@link Phase#inP1()}) — Terminator/Explosive Shot readings
+ * aren't relevant to any other boss phase.
  *
  * The damage in the message is the TOTAL across all enemies hit; dividing by the enemy count gives
  * the per-target hit. Reads {@link Events#ON_GAME_MESSAGE} but never cancels (the chat line stays).
@@ -34,13 +35,8 @@ public final class ExplosiveShot {
     private static final Pattern PATTERN = Pattern.compile(
             "Your Explosive Shot hit (\\d+) (?:enemy|enemies) for ([\\d,]+(?:\\.\\d+)?) damage");
 
-    private static final String MAXOR_START = "[BOSS] Maxor: WELL WELL WELL LOOK WHO'S HERE!";
-    private static final String MAXOR_END   = "[BOSS] Storm: The power of lightning is quite phenomenal. A single strike can vaporize a person whole.";
-    private static boolean maxorActive = false;
-
     public static void init() {
         Events.ON_GAME_MESSAGE.register(ExplosiveShot::onMessage);
-        Events.ON_WORLD_CHANGE.register(() -> { maxorActive = false; return false; });
     }
 
     private static boolean onMessage(Text text) {
@@ -48,10 +44,11 @@ public final class ExplosiveShot {
         String s = text.getString();
         if (s == null) return false;
 
-        if (s.equals(MAXOR_START)) { maxorActive = true; return false; }
-        if (s.equals(MAXOR_END))   { maxorActive = false; return false; }
-
-        if (!FishSettings.explosiveShotEnabled || !maxorActive) return false;
+        // Phase.inP1() is the same verified Maxor-phase detection MaxorTickTimer already relies on
+        // (driven by splits.json's boss chat lines) — reusing it instead of hand-matching the boss
+        // taunt text here directly, since a hand-typed copy of that text previously drifted out of
+        // sync with the real line and silently broke this gate (missing "!" after each "WELL").
+        if (!FishSettings.explosiveShotEnabled || !Phase.inP1()) return false;
         if (s.indexOf("Explosive Shot") < 0) return false;
 
         Matcher m = PATTERN.matcher(s);

@@ -228,6 +228,7 @@ public class FishModInit implements ModInitializer {
         FishHudEditor.register("Crystal Reminder",  fishmod.features.dungeon.f7.F7Huds.crystalReminder);
         FishHudEditor.register("Storm Tick Timer",  fishmod.features.dungeon.f7.F7Huds.stormTickTimer);
         FishHudEditor.register("Storm Death Time",  fishmod.features.dungeon.f7.F7Huds.stormDeathTime);
+        FishHudEditor.register("LB Release Timer",  fishmod.features.dungeon.f7.F7Huds.lbReleaseTimer);
         FishHudEditor.register("Storm Crushed",     fishmod.features.dungeon.f7.F7Huds.stormCrush);
         FishHudEditor.register("Goldor Tick Timer", fishmod.features.dungeon.f7.F7Huds.goldorTickTimer);
         FishHudEditor.register("Term Start Timer",  fishmod.features.dungeon.f7.F7Huds.termStartTimer);
