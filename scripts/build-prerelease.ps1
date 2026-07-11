@@ -94,7 +94,41 @@ $payload = @{
     )
 } | ConvertTo-Json -Depth 5
 
-Invoke-RestMethod -Uri $WebhookUrl -Method Post -ContentType "application/json" -Body $payload
+# Discord webhooks need the jars attached as real multipart file parts (not just linked/named in
+# the embed) for people in the channel to download them directly - Invoke-RestMethod on Windows
+# PowerShell 5.1 has no built-in multi-file multipart support, so this builds the request by hand
+# with System.Net.Http instead.
+Add-Type -AssemblyName System.Net.Http
 
-Write-Host "Posted prerelease notification to Discord."
+$httpClient = New-Object System.Net.Http.HttpClient
+try {
+    $multipart = New-Object System.Net.Http.MultipartFormDataContent
+    try {
+        $jsonContent = New-Object System.Net.Http.StringContent($payload, [System.Text.Encoding]::UTF8, "application/json")
+        $multipart.Add($jsonContent, "payload_json")
+
+        $fileStreams = @()
+        for ($i = 0; $i -lt $builtJars.Count; $i++) {
+            $jar = $builtJars[$i]
+            $stream = [System.IO.File]::OpenRead($jar.JarPath)
+            $fileStreams += $stream
+            $fileContent = New-Object System.Net.Http.StreamContent($stream)
+            $fileContent.Headers.ContentType = [System.Net.Http.Headers.MediaTypeHeaderValue]::Parse("application/java-archive")
+            $multipart.Add($fileContent, "files[$i]", $jar.JarName)
+        }
+
+        $response = $httpClient.PostAsync($WebhookUrl, $multipart).GetAwaiter().GetResult()
+        if (-not $response.IsSuccessStatusCode) {
+            $body = $response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+            throw "Discord webhook POST failed: $($response.StatusCode) - $body"
+        }
+    } finally {
+        foreach ($stream in $fileStreams) { $stream.Dispose() }
+        $multipart.Dispose()
+    }
+} finally {
+    $httpClient.Dispose()
+}
+
+Write-Host "Posted prerelease notification to Discord (with jar attachments)."
 $builtJars | Format-Table Track, Version, JarPath -AutoSize
