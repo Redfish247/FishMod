@@ -1,0 +1,16 @@
+pluginManagement {
+	repositories {
+		maven {
+			name = 'Fabric'
+			url = 'https://maven.fabricmc.net/'
+		}
+		mavenCentral()
+		gradlePluginPortal()
+	}
+}
+
+rootProject.name = 'FishModDungeons'
+
+include 'common'
+include 'dungeons-1.21.11'
+include 'dungeons-26.1.2'

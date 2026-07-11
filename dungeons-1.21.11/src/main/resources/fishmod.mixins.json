@@ -1,0 +1,51 @@
+{
+  "required": true,
+  "package": "fishmod.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ChunkMixin",
+    "ClientConnectionMixin",
+    "ClientPlayNetworkHandlerMixin",
+    "EntityMixin",
+    "ItemStackMixin",
+    "PlayerInventoryMixin",
+    "StuckArrowsFeatureRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  },
+  "client": [
+    "FishBossBarHudMixin",
+    "accessors.BossBarHudAccessor",
+    "accessors.ChatScreenAccessor",
+    "accessors.KeyBindingAccessor",
+    "accessors.GameRendererAccessor",
+    "accessors.HandledScreenAccessor",
+
+    "ChatHudInvoker",
+    "ChatHudMixin",
+    "FishCopyChatMixin",
+    "CosmeticChatMixin",
+    "CosmeticEntityNameMixin",
+    "CosmeticGuiTextMixin",
+    "ClientPlayNetworkHandlerMixin",
+    "DrawContextMixin",
+    "EntityRendererMixin",
+    "EntityRenderStateMixin",
+    "ItemModelBehaviorMixin",
+    "PlayerEntityRendererScaleMixin",
+    "HandledScreenMixin",
+    "InventoryScreenMixin",
+    "KeyboardMixin",
+    "MouseMixin",
+    "PlayerListHudMixin",
+    "PlayerNameLabelMixin",
+    "RecipeBookScreenMixin",
+    "RecipeBookWidgetMixin",
+    "SkullBlockEntityRendererMixin",
+    "StatusEffectsDisplayMixin"
+  ]
+}

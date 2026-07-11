@@ -1,0 +1,264 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+	id 'maven-publish'
+	id 'com.modrinth.minotaur' version '2.+'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
+    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+    // if it is present.
+    // If you remove this line, sources will not be generated.
+    withSourcesJar()
+}
+
+loom {
+    runConfigs.named("client") {
+        setIdeConfigGenerated(true)
+        vmArg("-Dmixin.debug.export=true")
+        vmArg("-Ddevauth.enabled=true")
+        vmArg("-Ddevauth.account=main")
+        // Only valid on JetBrains Runtime (IntelliJ); Adoptium/Hotspot rejects it
+        if (System.getProperty("java.vendor.version")?.contains("JBR") ||
+                System.getProperty("java.vm.vendor")?.contains("JetBrains")) {
+            vmArg("-XX:+AllowEnhancedClassRedefinition")
+        }
+    }
+
+    runConfigs.named("server") {
+        setIdeConfigGenerated(false)
+    }
+}
+
+
+
+repositories {
+	// Add repositories to retrieve artifacts from in here.
+	// You should only use this when depending on other mods because
+	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
+	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
+	// for more information about repositories.
+    maven  {url = "https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1" }
+
+	repositories {
+		mavenCentral()
+		maven { url 'https://jitpack.io' }
+	}
+
+	maven {
+		name = "Terraformers"
+		url = "https://maven.terraformersmc.com/"
+	}
+
+	repositories {
+		maven { url = 'https://repo.hypixel.net/repository/Hypixel/' }
+	}
+
+	// Modrinth maven — used as a fallback for mods (MCEF, Hypixel Mod API) when the
+	// developer-local jars under C:/Users/Eli/... aren't available (e.g. CI).
+	maven {
+		name = "Modrinth"
+		url = "https://api.modrinth.com/maven"
+		content { includeGroup "maven.modrinth" }
+	}
+}
+
+dependencies {
+	// Shared version-agnostic dungeon-map/room logic (see :common). Loom's `include` mechanism is
+	// for jar-in-jar mod dependencies, not plain local projects, so :common's compiled classes are
+	// merged into this module's own jar directly by the `jar { from(...) }` block below instead.
+	implementation project(':common')
+
+	// To change the versions see the gradle.properties file
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+	// Fabric API. This is technically optional, but you probably want it anyway.
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	implementation("com.terraformersmc:modmenu:${project.modmenu_version}")
+	// Hypixel Mod API needs two coordinates: Hypixel's own maven (repo.hypixel.net) publishes the
+	// core net.hypixel.modapi.* classes but no fabric.mod.json, so it's compile-only here. Modrinth's
+	// build carries proper Fabric metadata but only bundles the core classes as a nested
+	// META-INF/jars/ jar (a runtime-only Fabric Loader mechanism Gradle can't see at compile time) —
+	// that one is the actual runtime/shipped dependency.
+	compileOnly("net.hypixel:mod-api:${project.hypixel_api_core_version}")
+	include implementation("maven.modrinth:hypixel-mod-api:${project.hypixel_api_version}")
+	// Fork of BladeMasterGabe/practical-config ported to 26.2 (see gradle.properties)
+	include implementation("com.github.Redfish247:practical-config:${project.practical_config}")
+
+    runtimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
+    runtimeOnly("org.apache.httpcomponents:httpclient:4.5.14")
+
+    // Hypixel Mod API's runtime jar is already pulled from Modrinth above (include implementation),
+    // which ships a proper fabric.mod.json — no local-jar workaround needed anymore. (The old
+    // workaround pointed at a stale 1.21-era local jar that actively conflicted with the real 26.2
+    // dependency once both ended up on the runtime classpath together.)
+
+    // MCEF — compile-only (users install at runtime from Modrinth). Use the local jar when
+    // present; otherwise pull from Modrinth's maven so CI can compile WikiScreen. No 26.1.2 launcher
+    // profile exists on this machine yet, so this currently always falls through to the Modrinth
+    // maven coordinate below — update this path once a 26.1.2 dev profile is set up locally.
+    def mcefLocal = file('C:/Users/Eli/AppData/Roaming/ModrinthApp/profiles/Skyblock 1.21.8/mods/mcef_fabric_2.2.0_MC_1.21.11.jar')
+    if (mcefLocal.exists()) {
+        compileOnly files(mcefLocal)
+    } else {
+        compileOnly("maven.modrinth:mcef-keksuccino:2.2.0-26.1.1-fabric")
+    }
+}
+
+processResources {
+	inputs.property "version", project.version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": inputs.properties.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+}
+
+java {
+	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+	// if it is present.
+	// If you remove this line, sources will not be generated.
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+jar {
+	inputs.property "archivesName", project.base.archivesName
+
+	from("LICENSE") {
+		rename { "${it}_${inputs.properties.archivesName}"}
+	}
+
+	// Merge :common's compiled classes/resources straight into this module's jar before Loom
+	// remaps it — :common has zero net.minecraft references, so nothing there needs remapping.
+	from(project(':common').sourceSets.main.output)
+}
+
+// Modrinth publishing — run with: ./gradlew modrinth
+//   Requires a token, sourced from (first found wins): env MODRINTH_TOKEN, then gradle property
+//   modrinth_token (put it in ~/.gradle/gradle.properties — NOT this repo's gradle.properties,
+//   which is tracked). Also requires MODRINTH_PROJECT_ID (or override project.modrinth_project_id
+//   in gradle.properties). Optional: CHANGELOG (defaults to "Release ${mod_version}")
+modrinth {
+	token       = providers.environmentVariable('MODRINTH_TOKEN')
+			.orElse(providers.gradleProperty('modrinth_token'))
+	projectId   = providers.environmentVariable('MODRINTH_PROJECT_ID')
+			.orElse(providers.gradleProperty('modrinth_project_id'))
+	versionNumber = project.findProperty('modrinth_version') ?: project.mod_version
+	versionName   = "FishMod ${project.findProperty('modrinth_version') ?: project.mod_version}"
+	versionType   = 'release'
+	uploadFile    = tasks.jar
+	gameVersions  = [project.minecraft_version]
+	loaders       = ['fabric']
+	changelog     = providers.environmentVariable('CHANGELOG')
+			.orElse("Release ${project.mod_version}")
+	syncBodyFrom  = providers.fileContents(layout.projectDirectory.file('README.md'))
+			.asText.orElse('')
+	dependencies {
+		required.project 'fabric-api'
+		required.project 'mcef'              // Keksuccino's MCEF fork
+		required.project 'hypixel-mod-api'   // Hypixel Mod API
+	}
+}
+tasks.modrinth.dependsOn tasks.build
+
+// Auto-announce a Modrinth release in Discord right after a successful `./gradlew modrinth`.
+//   Webhook source (first found wins): env DISCORD_WEBHOOK, then gradle property discord_webhook
+//   (put it in ~/.gradle/gradle.properties — NOT this repo's gradle.properties, which is tracked).
+//   Skips with a warning (never fails the publish) if no webhook is configured, and is itself
+//   skipped if the modrinth upload failed. Uses the JDK HttpClient with a real User-Agent so
+//   Discord/Cloudflare doesn't reject it (the default UA gets a 403 error code 1010).
+def discordWebhook = providers.environmentVariable('DISCORD_WEBHOOK')
+		.orElse(providers.gradleProperty('discord_webhook'))
+
+tasks.register('announceDiscord') {
+	description = 'Posts a Modrinth release announcement to a Discord webhook.'
+	group = 'publishing'
+
+	onlyIf {
+		if (!discordWebhook.isPresent() || discordWebhook.get().trim().isEmpty()) {
+			logger.warn('announceDiscord: no DISCORD_WEBHOOK env var / discord_webhook property set — skipping Discord announcement.')
+			return false
+		}
+		if (tasks.modrinth.state.failure != null) {
+			logger.warn('announceDiscord: modrinth publish failed — skipping Discord announcement.')
+			return false
+		}
+		return true
+	}
+
+	doLast {
+		def ver = (project.findProperty('modrinth_version') ?: project.mod_version).toString()
+		def mcVer = project.minecraft_version.toString()
+		def changelogText = (System.getenv('CHANGELOG') ?: "Release ${project.mod_version}").toString()
+		def pageUrl = "https://modrinth.com/mod/fishmod/version/${ver}".toString()
+		def payload = [
+			username        : 'FishMod Releases',
+			content         : "@everyone 📦 **FishMod ${ver}** is now live on Modrinth — update now!".toString(),
+			allowed_mentions: [parse: ['everyone']],
+			embeds          : [[
+				title      : "🎣 FishMod ${ver} released on Modrinth".toString(),
+				url        : pageUrl,
+				description: 'A new version of FishMod is out now. Download or update straight from Modrinth.',
+				color      : 2406064,
+				fields     : [
+					[name: 'Version',    value: ver,           inline: true],
+					[name: 'Minecraft',  value: mcVer,         inline: true],
+					[name: 'Loader',     value: 'Fabric',      inline: true],
+					[name: "What's new", value: changelogText, inline: false],
+					[name: 'Download',   value: "[modrinth.com/mod/fishmod](${pageUrl})".toString(), inline: false]
+				],
+				thumbnail  : [url: 'https://cdn.modrinth.com/data/glXPWTyr/d8f3a4f7bb9d828eae870c1b7aa8ca86559e1f4a.webp'],
+				footer     : [text: 'Available on Modrinth']
+			]]
+		]
+		def body = groovy.json.JsonOutput.toJson(payload)
+		def client = java.net.http.HttpClient.newHttpClient()
+		def request = java.net.http.HttpRequest.newBuilder()
+				.uri(java.net.URI.create(discordWebhook.get().trim()))
+				.header('Content-Type', 'application/json')
+				.header('User-Agent', 'FishMod-Release-Notifier (https://github.com/Redfish247/FishMod, 1.0)')
+				.POST(java.net.http.HttpRequest.BodyPublishers.ofString(body, java.nio.charset.StandardCharsets.UTF_8))
+				.build()
+		def response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString())
+		if (response.statusCode() >= 200 && response.statusCode() < 300) {
+			logger.lifecycle("announceDiscord: posted FishMod ${ver} announcement to Discord (HTTP ${response.statusCode()}).")
+		} else {
+			throw new GradleException("announceDiscord: Discord webhook HTTP ${response.statusCode()} — ${response.body()}")
+		}
+	}
+}
+
+tasks.named('modrinth').configure { finalizedBy 'announceDiscord' }
+
+// configure the maven publication
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			artifactId = project.archives_base_name
+			from components.java
+		}
+	}
+
+	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
+	repositories {
+		// Add repositories to publish to here.
+		// Notice: This block does NOT have the same function as the block in the top level.
+		// The repositories here will be used for publishing your artifact, not for
+		// retrieving dependencies.
+	}
+}
+

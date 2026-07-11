@@ -1,0 +1,32 @@
+{
+	"schemaVersion": 1,
+	"id": "fishmod-dungeons",
+	"version": "${version}",
+	"name": "FishMod (Dungeons Only)",
+	"description": "Hypixel Skyblock dungeon utilities — curated Dungeons-only edition of FishMod",
+	"authors": [
+		"Eli"
+	],
+	"contact": {},
+	"license": "CC0-1.0",
+	"icon": "assets/fishmod/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"fishmod.FishModInit"
+		],
+		"modmenu": [
+			"fishmod.utils.config.ModMenu"
+		]
+	},
+	"mixins": [
+		"fishmod.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~26.1.2",
+		"java": ">=25",
+		"fabric-api": "*",
+		"hypixel-mod-api": "*"
+	}
+}

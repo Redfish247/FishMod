@@ -1,0 +1,956 @@
+package fishmod;
+
+import fishmod.features.BossBarFeature;
+import fishmod.features.BridgeBot;
+import fishmod.features.croesus.LootTrackerOverlay;
+import fishmod.features.FishHudEditor;
+import fishmod.features.SoulflowHud;
+import fishmod.features.PetHud;
+import fishmod.features.CooldownOverlay;
+import fishmod.features.ItemRarityHotbar;
+import fishmod.mixin.accessors.ChatScreenAccessor;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents;
+import fishmod.features.dungeon.SessionStats;
+import fishmod.utils.config.FolderUtility;
+import fishmod.utils.config.Config;
+import fishmod.utils.Keybinds;
+import fishmod.utils.events.CustomEvents;
+import fishmod.utils.debug.Debug;
+import fishmod.utils.Location;
+import fishmod.utils.MayorApi;
+import fishmod.utils.Scheduler;
+import fishmod.features.dungeon.DungeonDeathMessage;
+import fishmod.features.dungeon.PartyCommandHandler;
+import fishmod.features.dungeon.FishEstTotal;
+import fishmod.features.dungeon.FishPuzzleDisplay;
+import fishmod.features.dungeon.LagTracker;
+import fishmod.utils.data.FishPartyTracker;
+import fishmod.features.dungeon.PuzzleDisplay;
+import fishmod.utils.config.components.Components;
+import fishmod.utils.data.EntityUtil;
+import fishmod.utils.data.PartyUtil;
+import fishmod.utils.dungeon.Phase;
+import fishmod.utils.dungeon.Section;
+import fishmod.utils.rendering.RenderingEvents;
+import fishmod.features.FishModScreen;
+import fishmod.utils.Constants;
+import fishmod.utils.Misc;
+import fishmod.utils.config.FishConfig;
+import net.fabricmc.api.ModInitializer;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.minecraft.resources.Identifier;
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.network.chat.Component;
+import org.lwjgl.glfw.GLFW;
+
+public class FishModInit implements ModInitializer {
+
+    /** True when text matches "/pc .x", "/gc .x", etc. — a channel prefix followed by a dot-command. */
+    private static boolean looksLikeChannelDot(String text) {
+        int sp = text.indexOf(' ');
+        if (sp <= 0 || sp + 1 >= text.length() || text.charAt(sp + 1) != '.') return false;
+        String head = text.substring(0, sp).toLowerCase();
+        return head.equals("/pc") || head.equals("/gc") || head.equals("/ac")
+                || head.equals("/oc") || head.equals("/msg") || head.equals("/r");
+    }
+
+    /** Runs a party-command lookup locally and prints the result in your own chat (no party message). */
+    private static int runLocalLookup(String cmd, String arg1, String arg2) {
+        return runLocalLookup(cmd, arg1, arg2, null);
+    }
+
+    /** Three-arg variant (e.g. /crtc [name] [class] [level]). */
+    private static int runLocalLookup(String cmd, String arg1, String arg2, String arg3) {
+        Minecraft mc = Minecraft.getInstance();
+        String self = (mc.player != null) ? mc.player.getGameProfile().name() : null;
+        if (self == null) return Constants.SUCCESS;
+        fishmod.features.dungeon.PartyCommandHandler.onPartyCommand(
+                self, cmd, arg1, arg2, arg3, fishmod.features.dungeon.PartyCommandHandler.LOCAL);
+        return Constants.SUCCESS;
+    }
+
+    private static final java.util.regex.Pattern HELP_CMD_TOKEN =
+            java.util.regex.Pattern.compile("[/.][a-zA-Z][a-zA-Z0-9]*");
+
+    /**
+     * Prints one command-help line. If the line names exactly one command (e.g. "/cata [player]"),
+     * the whole line is made click-to-suggest so you can drop the command into chat with one click;
+     * lines listing several commands, headers, and prose are printed plain.
+     */
+    private static void helpLine(String text) {
+        java.util.regex.Matcher m = HELP_CMD_TOKEN.matcher(text);
+        String cmd = null;
+        if (m.find()) {
+            cmd = m.group();
+            if (m.find()) cmd = null; // more than one command on the line → leave it plain
+        }
+        if (cmd == null) {
+            Misc.addChatMessage(Component.literal(text));
+            return;
+        }
+        final String suggest = cmd;
+        net.minecraft.network.chat.MutableComponent t = Component.literal(text);
+        t.setStyle(t.getStyle()
+                .withClickEvent(new net.minecraft.network.chat.ClickEvent.SuggestCommand(suggest))
+                .withHoverEvent(new net.minecraft.network.chat.HoverEvent.ShowText(
+                        Component.literal("§7Click to put §f" + suggest + "§7 in chat"))));
+        Misc.addChatMessage(t);
+    }
+
+    /** Prints a formatted reference of FishMod's commands and their argument formats to the player's chat. */
+    private static void printCommandHelp() {
+        java.util.function.Consumer<String> line = FishModInit::helpLine;
+        line.accept("§b§m                    §r §3§lFishMod Commands §r§b§m                    ");
+        line.accept("§7Args in §f<>§7 are required, §8[]§7 optional. Stats commands default to §fyou§7 if no name is given.");
+        line.accept("§7All stats commands also work in party chat as §f.cmd§7 (toggle each in §f/fm §8> §7Party Commands).");
+
+        line.accept("");
+        line.accept("§3§lStats Lookups");
+        line.accept("§e/cata §8[player] §7— Catacombs level");
+        line.accept("§e/rtc §8[player] [level] §7— runs to a Cata level §8(default 50)");
+        line.accept("§e/rtca §8[player] §7— runs to class 50 for all 5 classes");
+        line.accept("§e/crtc §8[player] §f<class> §8[level] §7— XP + runs for one class to a level §8(default 50)");
+        line.accept("§8        class = healer | mage | berserk | archer | tank §8(e.g. §7.crtc mage 60§8)");
+        line.accept("§e/secrets §7or §e/sa §8[player] §7— total secrets / secret average");
+        line.accept("§e/runs §8[player] [floor] §7— floor run count §8(default m7)");
+        line.accept("§e/totalruns §8[player] §7— total dungeon runs");
+        line.accept("§e/pb §8[player] [floor] §7— floor personal best §8(default m7)");
+        line.accept("§e/mp §8[player] §7— Magical Power");
+        line.accept("§e/nw §8[player] §7— networth");
+        line.accept("§e/level §8[player] §7— Skyblock level");
+        line.accept("§e/farming §8[player] §7— farming weight");
+        line.accept("§e/nuc §8[player] §7— Crystal Nucleus runs");
+        line.accept("§e/worm §7or §e/scatha §8[player] §7— Worm + Scatha bestiary");
+        line.accept("§e/bank §8[player] §7— bank + purse");
+        line.accept("§e/powder §8[player] §7— Mithril / Gemstone / Glacite powder");
+        line.accept("§e/corpse §8[player] §7— Glacite corpses");
+        line.accept("§8floor = e, f1-f7, m1-m7 §7(party-only §f.collection [floor]§7 also available)");
+
+        line.accept("");
+        line.accept("§3§lYour Stats");
+        line.accept("§e/fps §8·§e /tps §8·§e /ping §8·§e /dprofit §7— FPS, server TPS, ping, Croesus profit/run");
+
+        line.accept("");
+        line.accept("§3§lDungeon / Kuudra Joins §8(party chat)");
+        line.accept("§f.e §8·§f .f1-.f7 §8·§f .m1-.m7 §7— join Catacombs floor");
+        line.accept("§f.t1-.t5 §7— join Kuudra tier");
+
+        line.accept("");
+        line.accept("§3§lParty Actions");
+        line.accept("§e/pk §f<player> §7— kick  §8·§7  §e/pw §7— warp  §8·§7  §e/pt §f<player> §7— transfer  §8·§7  §e/pp §f<player> §7— promote");
+        line.accept("§7In party chat: §f.ai §7(allinvite), §f.d §7(disband), §f.kick/.warp/.transfer/.promote");
+
+        line.accept("");
+        line.accept("§3§lScreens & Misc");
+        line.accept("§e/fm §7— config GUI  §8·§7  §e/fm customize §7— item customizer  §8·§7  §e/fmloot §7— Croesus loot");
+        line.accept("§e/fm commandkeys §7— bind keys/mouse buttons to run slash commands");
+        line.accept("§e/fm aliases §7— make short commands (e.g. §f/dh§7) run longer ones (e.g. §f/warp dh§7)");
+        line.accept("§e/nick §8<name>|reset");
+        line.accept("§e/fm commandhelp §7— this list  §8·§7  party chat: §f.help §7lists enabled party commands");
+        line.accept("§b§m                                                                          ");
+    }
+
+    @Override
+    public void onInitialize() {
+        // Load FishMod-specific config (always, separate from blade config)
+        FishConfig.manager.load();
+
+        // Cosmetic name changer — restore persisted /nick across sessions
+        fishmod.cosmetic.NickData.load();
+        // Shared nicks: publish ours + fetch other mod users' nicks
+        fishmod.cosmetic.RemoteNicks.init();
+
+        // Always init FishMod-exclusive classes (always load from FishMod's jar)
+        fishmod.features.ItemCustomizer.init();
+        // Shared item cosmetics: fetch + render other mod users' custom items/armor (after ItemCustomizer.init)
+        fishmod.cosmetic.RemoteItems.init();
+        // Shared player sizes: publish ours on join + render other mod users' shared sizes
+        fishmod.cosmetic.PlayerSize.init();
+        // Combined version-gated poller that drives RemoteNicks + RemoteItems + RemoteScales (after .init())
+        fishmod.cosmetic.RemoteSync.init();
+        fishmod.features.WelcomeMessage.init();
+        LagTracker.init();
+        SessionStats.init();
+        FishPuzzleDisplay.init();
+        FishEstTotal.init();
+        DungeonDeathMessage.init();
+        fishmod.features.ExplosiveShot.init();
+        fishmod.features.LoadoutTitle.init();
+        FishPartyTracker.init();
+        PartyCommandHandler.init();
+        SoulflowHud.init();
+        PetHud.init();
+        CooldownOverlay.init();
+        fishmod.features.other.CommandKeys.init();
+        fishmod.features.other.WardrobeHotkeys.init();
+        // ItemRarityHotbar.init();   // rarity background: inventory-slot coverage (hotbar via HudRenderCallback)
+        MayorApi.init();
+        // BridgeBot.init();
+        // SlayerXpTracker.init();
+        // fishmod.features.SkillTracker.init();
+        fishmod.features.FireFreezeTimer.init();
+        // PowderTracker.init();
+        fishmod.features.dungeon.SimonSaysTracker.init();
+        fishmod.features.dungeon.M7LeverWaypoints.init();
+        // Floor 7 boss timers (ported from blade-addons): Maxor/Storm/Goldor tick timers, crystal
+        // spawn, term start, section progress, storm-crushed. HUDs auto-render via the practical
+        // config system (F7Huds registered with FishConfig); register each for the Edit-HUD dragger.
+        fishmod.features.dungeon.f7.F7Huds.init();
+        // Inventory command buttons (ported 1:1 from blade-addons) — touch the class so its 7 buttons
+        // self-register; commands are edited in /fm → General → Inventory Buttons.
+        fishmod.utils.config.values.Buttons.init();
+        FishHudEditor.register("Maxor Tick Timer",  fishmod.features.dungeon.f7.F7Huds.maxorTickTimer);
+        FishHudEditor.register("Crystal Spawn Time", fishmod.features.dungeon.f7.F7Huds.crystalSpawnTime);
+        FishHudEditor.register("Crystal Reminder",  fishmod.features.dungeon.f7.F7Huds.crystalReminder);
+        FishHudEditor.register("Storm Tick Timer",  fishmod.features.dungeon.f7.F7Huds.stormTickTimer);
+        FishHudEditor.register("Storm Death Time",  fishmod.features.dungeon.f7.F7Huds.stormDeathTime);
+        FishHudEditor.register("LB Release Timer",  fishmod.features.dungeon.f7.F7Huds.lbReleaseTimer);
+        FishHudEditor.register("Storm Crushed",     fishmod.features.dungeon.f7.F7Huds.stormCrush);
+        FishHudEditor.register("Goldor Tick Timer", fishmod.features.dungeon.f7.F7Huds.goldorTickTimer);
+        FishHudEditor.register("Term Start Timer",  fishmod.features.dungeon.f7.F7Huds.termStartTimer);
+        FishHudEditor.register("Section Progress",  fishmod.features.dungeon.f7.F7Huds.sectionProgress);
+        FishHudEditor.register("Goldor Splits",     fishmod.utils.dungeon.Section.terminalSplits);
+        // Dungeon map: fixed 6x6 room/door grid read from the vanilla map item's own pixels.
+        fishmod.features.dungeon.map.DungeonMapFeature.init();
+        FishHudEditor.register("Dungeon Map",       fishmod.features.dungeon.map.DungeonMapHud.dungeonMap);
+        // Dungeon class detection (own class from the "stats are doubled" message + tab list) and the
+        // class-colored boots feature that depends on it. Boots init AFTER ItemCustomizer.init (above)
+        // so the class color wins over per-item boot dye while enabled.
+        fishmod.utils.dungeon.DungeonClass.init();
+        fishmod.features.ClassColoredBoots.init();
+
+        // Register all HUD elements in FishHudEditor (position drag editor)
+        FishHudEditor.register("Splits",    Phase.splitTimer);
+        FishHudEditor.registerLocked("Est. Total (follows Splits)",
+                () -> { try { return Phase.splitTimer.getScaledX(); } catch (Throwable t) { return 0; } },
+                () -> { try { return Phase.splitTimer.getScaledY() + fishmod.utils.Constants.TEXT_HEIGHT * Phase.getVisibleRowCount() + 8; } catch (Throwable t) { return Phase.splitTimer.getScaledY() + 20; } },
+                Phase.SPLIT_LENGTH, fishmod.utils.Constants.TEXT_HEIGHT + 4);
+        FishHudEditor.register("Puzzles",   FishPuzzleDisplay.puzzleHud);
+        // FishHudEditor.register("Slayer XP",
+                // () -> fishmod.utils.config.values.FishSettings.slayerXpHudX,
+                // v  -> fishmod.utils.config.values.FishSettings.slayerXpHudX = v,
+                // () -> fishmod.utils.config.values.FishSettings.slayerXpHudY,
+                // v  -> fishmod.utils.config.values.FishSettings.slayerXpHudY = v, 160, 30,
+                // () -> fishmod.utils.config.values.FishSettings.slayerXpScale,
+                // v  -> fishmod.utils.config.values.FishSettings.slayerXpScale = v,
+                // () -> fishmod.features.SlayerXpTracker.isBossActive());
+        // FishHudEditor.register("Skill XP",
+                // () -> fishmod.utils.config.values.FishSettings.skillTrackerHudX,
+                // v  -> fishmod.utils.config.values.FishSettings.skillTrackerHudX = v,
+                // () -> fishmod.utils.config.values.FishSettings.skillTrackerHudY,
+                // v  -> fishmod.utils.config.values.FishSettings.skillTrackerHudY = v, 160, 60,
+                // () -> fishmod.utils.config.values.FishSettings.skillTrackerScale,
+                // v  -> fishmod.utils.config.values.FishSettings.skillTrackerScale = v,
+                // () -> fishmod.features.SkillTracker.hasData());
+        // FishHudEditor.register("Powder",
+                // () -> fishmod.utils.config.values.FishSettings.powderTrackerHudX,
+                // v  -> fishmod.utils.config.values.FishSettings.powderTrackerHudX = v,
+                // () -> fishmod.utils.config.values.FishSettings.powderTrackerHudY,
+                // v  -> fishmod.utils.config.values.FishSettings.powderTrackerHudY = v, 160, 60,
+                // () -> fishmod.utils.config.values.FishSettings.powderTrackerScale,
+                // v  -> fishmod.utils.config.values.FishSettings.powderTrackerScale = v,
+                // () -> fishmod.features.PowderTracker.isInMiningArea() && fishmod.utils.config.values.FishSettings.powderTrackerEnabled);
+
+        // Always register /fm and /fmdbg regardless of whether blade is loaded
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            fishmod.features.other.CommandAliases.registerAll(dispatcher);
+            dispatcher.register(ClientCommands.literal("fm")
+                .then(ClientCommands.literal("customize").executes(context -> {
+                    Minecraft.getInstance().schedule(() ->
+                        Minecraft.getInstance().setScreen(new fishmod.features.ItemCustomizeScreen()));
+                    return Constants.SUCCESS;
+                }))
+                .then(ClientCommands.literal("commandkeys").executes(context -> {
+                    Minecraft.getInstance().schedule(() ->
+                        Minecraft.getInstance().setScreen(new fishmod.features.CommandKeysScreen()));
+                    return Constants.SUCCESS;
+                }))
+                .then(ClientCommands.literal("aliases").executes(context -> {
+                    Minecraft.getInstance().schedule(() ->
+                        Minecraft.getInstance().setScreen(new fishmod.features.CommandAliasesScreen()));
+                    return Constants.SUCCESS;
+                }))
+                .then(ClientCommands.literal("commandhelp").executes(context -> {
+                    printCommandHelp();
+                    return Constants.SUCCESS;
+                }))
+                .then(ClientCommands.literal("help").executes(context -> {
+                    printCommandHelp();
+                    return Constants.SUCCESS;
+                }))
+                .executes(context -> {
+                    Minecraft.getInstance().schedule(() ->
+                        Minecraft.getInstance().setScreen(new fishmod.features.FishModScreen()));
+                    return Constants.SUCCESS;
+                })
+            );
+            dispatcher.register(ClientCommands.literal("fmloot")
+                .executes(ctx -> {
+                    boolean on = !fishmod.utils.config.values.FishSettings.lootTrackerEnabled;
+                    fishmod.utils.config.values.FishSettings.lootTrackerEnabled = on;
+                    fishmod.utils.config.FishConfig.manager.save();
+                    Misc.addChatMessage(Component.literal("§7[FM] Loot tracker "
+                            + (on ? "§aenabled §7— open your inventory in the Dungeon Hub"
+                                  : "§cdisabled")));
+                    return Constants.SUCCESS;
+                })
+            );
+            dispatcher.register(ClientCommands.literal("fmnicktest")
+                .executes(ctx -> {
+                    if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.player == null || mc.getConnection() == null) {
+                        Misc.addChatMessage(Component.literal("§cNot in a world."));
+                        return Constants.SUCCESS;
+                    }
+                    boolean remoteOn = fishmod.utils.config.values.FishSettings.remoteNicksEnabled;
+                    Misc.addChatMessage(Component.literal("§b[fmnicktest] §7See Others: §f" + remoteOn
+                            + " §8|§7 own nick active: §f" + fishmod.cosmetic.NickState.isActive()
+                            + " §8|§7 raw: §f" + (fishmod.cosmetic.NickState.getRaw() == null ? "(none)" : fishmod.cosmetic.NickState.getRaw())));
+
+                    // Re-upload own nick
+                    fishmod.cosmetic.RemoteNicks.uploadOwn();
+                    Misc.addChatMessage(Component.literal("§b[fmnicktest] §7re-uploaded own nick."));
+
+                    // Force an immediate refresh so styledByName is up to date.
+                    fishmod.cosmetic.RemoteNicks.forceRefresh();
+                    Misc.addChatMessage(Component.literal("§b[fmnicktest] §7triggered RemoteNicks.refresh()…"));
+
+                    // Re-dump the cache shortly after so the async fetch finishes first.
+                    mc.schedule(() -> new Thread(() -> {
+                        try { Thread.sleep(1200); } catch (InterruptedException ignored) {}
+                        mc.schedule(() -> {
+                            var cache = fishmod.cosmetic.RemoteNicks.snapshot();
+                            Misc.addChatMessage(Component.literal("§b[fmnicktest] §7styledByName cache: §f"
+                                    + cache.size() + " §7entries"));
+                            int count = 0;
+                            for (var e : cache.entrySet()) {
+                                net.minecraft.network.chat.MutableComponent line = net.minecraft.network.chat.Component.literal("§7  " + e.getKey() + " §8→ ").copy();
+                                line.append(e.getValue());
+                                Misc.addChatMessage(line);
+                                if (++count > 10) { Misc.addChatMessage(Component.literal("§8  (…more)")); break; }
+                            }
+                            if (cache.isEmpty()) {
+                                Misc.addChatMessage(Component.literal("§c[fmnicktest] cache is empty — chat rewrite has nothing to apply. Check See Others toggle."));
+                            } else {
+                                Misc.addChatMessage(Component.literal("§a[fmnicktest] cache populated. If chat still shows IGNs, the mixin path isn't covering Hypixel's chat handler — paste a chat screenshot."));
+                            }
+                        });
+                    }, "fmnicktest-dump").start());
+                    return Constants.SUCCESS;
+                })
+            );
+            dispatcher.register(ClientCommands.literal("fmitems")
+                .executes(ctx -> {
+                    if (fishmod.utils.DevOnly.deny(ctx.getSource())) return Constants.SUCCESS;
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.player == null || mc.level == null) {
+                        Misc.addChatMessage(Component.literal("§cNot in a world."));
+                        return Constants.SUCCESS;
+                    }
+                    boolean on = fishmod.utils.config.values.FishSettings.remoteItemsEnabled;
+                    var ownKeys = fishmod.features.ItemCustomizer.debugKeys();
+                    Misc.addChatMessage(Component.literal("§b[fmitems] §7See Others' Items: §f" + on
+                            + " §8|§7 your customs: §f" + ownKeys.size()));
+                    for (String k : ownKeys) Misc.addChatMessage(Component.literal("§7  your key §8→ §f" + k));
+
+                    fishmod.features.ItemCustomizer.uploadOwn();
+                    fishmod.cosmetic.RemoteItems.forceRefresh();
+                    Misc.addChatMessage(Component.literal("§b[fmitems] §7re-uploaded own + forced sync…"));
+
+                    new Thread(() -> {
+                        try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
+                        mc.schedule(() -> {
+                            var loaded = fishmod.cosmetic.RemoteItems.snapshotKeys();
+                            Misc.addChatMessage(Component.literal("§b[fmitems] §7remote payloads loaded: §f"
+                                    + loaded.size() + " §7player(s)"));
+                            int shown = 0;
+                            for (net.minecraft.world.entity.player.Player p : mc.level.players()) {
+                                if (p == mc.player) continue;
+                                String u = p.getUUID().toString().replace("-", "");
+                                java.util.Set<String> customs = loaded.get(u);
+                                net.minecraft.world.item.ItemStack held = p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND);
+                                String heldVanilla = fishmod.features.ItemCustomizer.vanillaId(held);
+                                boolean match = customs != null && heldVanilla != null && customs.contains(heldVanilla);
+                                Misc.addChatMessage(Component.literal("§7  " + p.getGameProfile().name()
+                                        + " §8| customs:§f" + (customs == null ? 0 : customs.size())
+                                        + " §8| held:§f" + heldVanilla
+                                        + " §8| match:" + (match ? "§a✔" : "§c✘")));
+                                if (++shown >= 8) { Misc.addChatMessage(Component.literal("§8  (…more)")); break; }
+                            }
+                            if (loaded.isEmpty())
+                                Misc.addChatMessage(Component.literal("§c[fmitems] no remote customs fetched — nobody nearby has uploaded (their \"See Others' Items\" may be off, or they haven't customized anything)."));
+                        });
+                    }, "fmitems-dump").start();
+                    return Constants.SUCCESS;
+                })
+            );
+            // ── Reputation (vouch / shitter list) ─────────────────────────────
+            dispatcher.register(ClientCommands.literal("vouch")
+                .then(ClientCommands.argument("player", StringArgumentType.word())
+                    .executes(ctx -> { fishmod.features.Reputation.vote(StringArgumentType.getString(ctx, "player"), "up"); return Constants.SUCCESS; })));
+            dispatcher.register(ClientCommands.literal("shitter")
+                .then(ClientCommands.argument("player", StringArgumentType.word())
+                    .executes(ctx -> { fishmod.features.Reputation.vote(StringArgumentType.getString(ctx, "player"), "down"); return Constants.SUCCESS; })));
+            dispatcher.register(ClientCommands.literal("unrep")
+                .then(ClientCommands.argument("player", StringArgumentType.word())
+                    .executes(ctx -> { fishmod.features.Reputation.vote(StringArgumentType.getString(ctx, "player"), "none"); return Constants.SUCCESS; })));
+            dispatcher.register(ClientCommands.literal("rep")
+                .executes(ctx -> { fishmod.features.Reputation.listNearby(); return Constants.SUCCESS; })
+                .then(ClientCommands.argument("player", StringArgumentType.word())
+                    .executes(ctx -> { fishmod.features.Reputation.lookup(StringArgumentType.getString(ctx, "player")); return Constants.SUCCESS; })));
+
+            // ── Party alias commands ──────────────────────────────────────────
+            dispatcher.register(ClientCommands.literal("pk")
+                .then(ClientCommands.argument("name", StringArgumentType.greedyString())
+                    .executes(ctx -> {
+                        String name = StringArgumentType.getString(ctx, "name");
+                        Minecraft mc = Minecraft.getInstance();
+                        if (mc.getConnection() != null) mc.getConnection().sendCommand("p kick " + name);
+                        return Constants.SUCCESS;
+                    })
+                )
+            );
+            dispatcher.register(ClientCommands.literal("pw")
+                .executes(ctx -> {
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.getConnection() != null) mc.getConnection().sendCommand("p warp");
+                    return Constants.SUCCESS;
+                })
+            );
+            dispatcher.register(ClientCommands.literal("pt")
+                .then(ClientCommands.argument("name", StringArgumentType.greedyString())
+                    .executes(ctx -> {
+                        String name = StringArgumentType.getString(ctx, "name");
+                        Minecraft mc = Minecraft.getInstance();
+                        if (mc.getConnection() != null) mc.getConnection().sendCommand("p transfer " + name);
+                        return Constants.SUCCESS;
+                    })
+                )
+            );
+            dispatcher.register(ClientCommands.literal("pp")
+                .then(ClientCommands.argument("name", StringArgumentType.greedyString())
+                    .executes(ctx -> {
+                        String name = StringArgumentType.getString(ctx, "name");
+                        Minecraft mc = Minecraft.getInstance();
+                        if (mc.getConnection() != null) mc.getConnection().sendCommand("p promote " + name);
+                        return Constants.SUCCESS;
+                    })
+                )
+            );
+            // ─────────────────────────────────────────────────────────────────
+
+            dispatcher.register(ClientCommands.literal("fmpet").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
+                Minecraft mc = Minecraft.getInstance();
+                mc.schedule(() -> {
+                    Misc.addChatMessage(Component.literal("§b--- Pet HUD ---"));
+                    Misc.addChatMessage(Component.literal("§7" + PetHud.debugState()));
+                    Misc.addChatMessage(Component.literal("§b--- Cooldown Overlay ---"));
+                    Misc.addChatMessage(Component.literal("§7" + CooldownOverlay.debugState()));
+                });
+                return Constants.SUCCESS;
+            }));
+
+            dispatcher.register(ClientCommands.literal("fmtts")
+                .executes(ctx -> {
+                    boolean on = fishmod.utils.config.values.FishSettings.ttsEnabled;
+                    Misc.addChatMessage(Component.literal("§b[TTS] §7" + (on
+                            ? "speaking a test line…" : "§eenable it in §f/fm §8> §7General §8> §7TTS Callouts §7first.")));
+                    if (on) fishmod.utils.Tts.speak("Fish mod text to speech is working");
+                    return Constants.SUCCESS;
+                })
+                .then(ClientCommands.argument("phrase", StringArgumentType.greedyString())
+                    .executes(ctx -> {
+                        fishmod.utils.Tts.speak(StringArgumentType.getString(ctx, "phrase"));
+                        return Constants.SUCCESS;
+                    })));
+
+            dispatcher.register(ClientCommands.literal("fmbuddy").executes(context -> {
+                fishmod.features.DeskBuddy.cheer();
+                Misc.addChatMessage(Component.literal("§6[Desk-Buddy] §7" + (fishmod.utils.config.values.FishSettings.deskBuddyEnabled
+                        ? "§a\\(^o^)/ dancing!" : "§eenable it in §f/fm §8> §7Cosmetics §8> §7Desk-Buddy §7first.")));
+                return Constants.SUCCESS;
+            }));
+
+            dispatcher.register(ClientCommands.literal("fmpetdump").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
+                PetHud.debugDumpPetLines = !PetHud.debugDumpPetLines;
+                Misc.addChatMessage(Component.literal("§b[fmpet] dump pet-related chat lines: §f" + PetHud.debugDumpPetLines));
+                return Constants.SUCCESS;
+            }));
+
+            dispatcher.register(ClientCommands.literal("fmcddump").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
+                CooldownOverlay.debugDumpSound = !CooldownOverlay.debugDumpSound;
+                Misc.addChatMessage(Component.literal("§b[fmcd] dump cooldown sound events: §f" + CooldownOverlay.debugDumpSound));
+                return Constants.SUCCESS;
+            }));
+
+            dispatcher.register(ClientCommands.literal("fmblocks").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
+                Minecraft mc = Minecraft.getInstance();
+                mc.schedule(() -> {
+                    if (mc.player == null || mc.level == null) { Misc.addChatMessage(Component.literal("§cNo world")); return; }
+                    net.minecraft.core.BlockPos c = mc.player.blockPosition();
+                    java.util.Map<String, Integer> counts = new java.util.HashMap<>();
+                    int R = 7;
+                    net.minecraft.core.BlockPos.MutableBlockPos m = new net.minecraft.core.BlockPos.MutableBlockPos();
+                    for (int dx = -R; dx <= R; dx++) for (int dy = -R; dy <= R; dy++) for (int dz = -R; dz <= R; dz++) {
+                        m.set(c.getX() + dx, c.getY() + dy, c.getZ() + dz);
+                        net.minecraft.world.level.block.Block b = mc.level.getBlockState(m).getBlock();
+                        if (b == net.minecraft.world.level.block.Blocks.AIR) continue;
+                        String id = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(b).toString();
+                        counts.merge(id, 1, Integer::sum);
+                    }
+                    Misc.addChatMessage(Component.literal("§b--- Blocks within " + R + " (top 20) ---"));
+                    counts.entrySet().stream().sorted((a, b) -> b.getValue() - a.getValue()).limit(20)
+                        .forEach(e -> Misc.addChatMessage(Component.literal("§7" + e.getValue() + "x §f" + e.getKey())));
+                });
+                return Constants.SUCCESS;
+            }));
+
+            dispatcher.register(ClientCommands.literal("fmssdebug").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
+                fishmod.features.dungeon.SimonSaysTracker.debug = !fishmod.features.dungeon.SimonSaysTracker.debug;
+                Misc.addChatMessage(Component.literal("§b[ssdbg] log Simon Says block transitions: §f" + fishmod.features.dungeon.SimonSaysTracker.debug));
+                return Constants.SUCCESS;
+            }));
+
+            dispatcher.register(ClientCommands.literal("fmnuc").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
+                fishmod.utils.HypixelApi.dumpNucleus(Minecraft.getInstance());
+                return Constants.SUCCESS;
+            }));
+
+            dispatcher.register(ClientCommands.literal("fmgarden").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
+                fishmod.utils.HypixelApi.dumpGarden(Minecraft.getInstance());
+                return Constants.SUCCESS;
+            }));
+
+            dispatcher.register(ClientCommands.literal("fmprofile").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
+                fishmod.utils.HypixelApi.dumpEconomy(Minecraft.getInstance());
+                return Constants.SUCCESS;
+            }));
+
+            dispatcher.register(ClientCommands.literal("fmtabdump").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
+                Minecraft mc = Minecraft.getInstance();
+                mc.schedule(() -> {
+                    if (mc.getConnection() == null) { Misc.addChatMessage(Component.literal("§cNo network")); return; }
+                    Misc.addChatMessage(Component.literal("§b--- Tab entries (non-empty) ---"));
+                    int n = 0;
+                    for (net.minecraft.client.multiplayer.PlayerInfo e : mc.getConnection().getOnlinePlayers()) {
+                        if (e.getTabListDisplayName() == null) continue;
+                        String s = e.getTabListDisplayName().getString().replaceAll("§.", "").trim();
+                        if (s.isEmpty()) continue;
+                        if (s.toLowerCase().contains("pet") || s.contains("Lvl") || s.contains("XP") || s.contains("/")) {
+                            Misc.addChatMessage(Component.literal("§7" + s));
+                            if (++n > 30) break;
+                        }
+                    }
+                    Misc.addChatMessage(Component.literal("§b--- End (" + n + ") ---"));
+                });
+                return Constants.SUCCESS;
+            }));
+
+            dispatcher.register(ClientCommands.literal("fmdbg").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
+                Minecraft mc = Minecraft.getInstance();
+                mc.schedule(() -> {
+                    Misc.addChatMessage(Component.literal("§b--- FishMod Debug ---"));
+                    Misc.addChatMessage(Component.literal("§7Location: §f" + Location.getCurrentLocation()));
+                    Misc.addChatMessage(Component.literal("§7inSkyblock: §f" + Location.inSkyblock()));
+                    Misc.addChatMessage(Component.literal("§7inDungeon: §f" + Location.inDungeon()));
+                    Misc.addChatMessage(Component.literal("§7showPuzzles: §f" + fishmod.utils.config.values.FishSettings.showPuzzles));
+                    Misc.addChatMessage(Component.literal("§7Puzzle list (" + FishPuzzleDisplay.getPuzzles().size() + "): §f" + FishPuzzleDisplay.getPuzzles()));
+                    try { Misc.addChatMessage(Component.literal("§7Phase.runStarted: §f" + Phase.runStarted())); } catch (Throwable t) { Misc.addChatMessage(Component.literal("§cPhase.runStarted ERR: " + t.getMessage())); }
+                    try { Misc.addChatMessage(Component.literal("§7Phase.enableSplits: §f" + Phase.enableSplits)); } catch (Throwable t) { Misc.addChatMessage(Component.literal("§cPhase.enableSplits ERR: " + t.getMessage())); }
+                    try { Misc.addChatMessage(Component.literal("§7blade loaded: §f" + FabricLoader.getInstance().isModLoaded("blade-addons"))); } catch (Throwable t) { Misc.addChatMessage(Component.literal("§cloader ERR")); }
+                    // Dump tab list
+                    ClientPacketListener handler = mc.getConnection();
+                    if (handler == null) {
+                        Misc.addChatMessage(Component.literal("§cNo network handler"));
+                    } else {
+                        int total = 0, nullName = 0;
+                        for (PlayerInfo e : handler.getOnlinePlayers()) {
+                            total++;
+                            if (e.getTabListDisplayName() == null) { nullName++; continue; }
+                            String raw = e.getTabListDisplayName().getString();
+                            String clean = raw.replaceAll("§.", "").trim();
+                            if (!clean.isEmpty())
+                                Misc.addChatMessage(Component.literal("§8TAB: §7" + clean));
+                        }
+                        Misc.addChatMessage(Component.literal("§7Tab entries: §f" + total + " (§c" + nullName + " null§7)"));
+                    }
+                    // Dump scoreboard sidebar
+                    if (mc.level != null) {
+                        net.minecraft.world.scores.Scoreboard sb = mc.level.getScoreboard();
+                        net.minecraft.world.scores.Objective sidebar = sb.getDisplayObjective(net.minecraft.world.scores.DisplaySlot.SIDEBAR);
+                        if (sidebar == null) {
+                            Misc.addChatMessage(Component.literal("§7Sidebar: §cnone"));
+                        } else {
+                            Misc.addChatMessage(Component.literal("§7Sidebar obj: §f" + sidebar.getDisplayName().getString()));
+                            for (net.minecraft.world.scores.PlayerScoreEntry entry : sb.listPlayerScores(sidebar)) {
+                                String owner = entry.owner();
+                                net.minecraft.world.scores.PlayerTeam team = sb.getPlayersTeam(owner);
+                                String line = team != null
+                                    ? team.getPlayerPrefix().getString() + owner + team.getPlayerSuffix().getString()
+                                    : entry.ownerName().getString();
+                                String clean = line.replaceAll("§.", "").trim();
+                                if (!clean.isEmpty())
+                                    Misc.addChatMessage(Component.literal("§8SB: §7" + clean));
+                            }
+                        }
+                    }
+                    Misc.addChatMessage(Component.literal("§b--- End Debug ---"));
+                });
+                return Constants.SUCCESS;
+            }).then(ClientCommands.argument("sub", StringArgumentType.greedyString())
+                .executes(ctx -> {
+                    String arg = StringArgumentType.getString(ctx, "sub");
+                    Minecraft mc = Minecraft.getInstance();
+                    String[] parts = arg.trim().split("\\s+", 2);
+                    if (parts[0].equals("cprice")) {
+                        if (parts.length < 2) {
+                            mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUsage: /fmdbg cprice <ITEM_ID>")));
+                            return Constants.SUCCESS;
+                        }
+                        String pid = parts[1].trim().toUpperCase();
+                        fishmod.features.croesus.CroesusPrices.refreshIfStale().whenComplete((v, t) ->
+                            mc.schedule(() -> Misc.addChatMessage(Component.literal("§b" + pid + " §7→ §f"
+                                + fishmod.features.croesus.CroesusPrices.debugSource(pid)))));
+                        return Constants.SUCCESS;
+                    }
+                    if (parts[0].equals("dungeonmap")) {
+                        mc.schedule(() -> {
+                            Misc.addChatMessage(Component.literal("§b--- Dungeon Map Debug ---"));
+                            Misc.addChatMessage(Component.literal("§7Calibrated: §f" + fishmod.utils.dungeon.map.MapReader.isCalibrated()));
+                            for (var entry : fishmod.utils.dungeon.map.DungeonGrid.allRooms().entrySet()) {
+                                fishmod.utils.dungeon.map.RoomTile t = entry.getValue();
+                                Misc.addChatMessage(Component.literal("§8ROOM " + entry.getKey() + ": §f" + t.type() + " " + t.state()));
+                            }
+                            for (var entry : fishmod.utils.dungeon.map.DungeonGrid.allDoors().entrySet()) {
+                                fishmod.utils.dungeon.map.DoorTile t = entry.getValue();
+                                Misc.addChatMessage(Component.literal("§8DOOR " + entry.getKey() + ": §f" + t.type()));
+                            }
+                            Misc.addChatMessage(Component.literal("§b--- End Dungeon Map Debug ---"));
+                        });
+                        return Constants.SUCCESS;
+                    }
+                    if (parts[0].equals("mp")) {
+                        String ign = parts.length > 1 ? parts[1] : (mc.player != null ? mc.player.getName().getString() : null);
+                        if (ign == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUsage: /fmdbg mp <ign>"))); return Constants.SUCCESS; }
+                        final String finalIgn = ign;
+                        fishmod.utils.HypixelApi.getByName(mc, ign, data ->
+                            mc.schedule(() -> Misc.addChatMessage(Component.literal("§b" + finalIgn + " magicalPower=§f" + data.magicalPower))));
+                        return Constants.SUCCESS;
+                    }
+                    if (parts[0].equals("mpraw")) {
+                        String ign = parts.length > 1 ? parts[1] : (mc.player != null ? mc.player.getName().getString() : null);
+                        if (ign == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUsage: /fmdbg mpraw <ign>"))); return Constants.SUCCESS; }
+                        fishmod.utils.HypixelApi.dumpMemberKeys(mc, ign);
+                        return Constants.SUCCESS;
+                    }
+                    if (parts[0].equals("col")) {
+                        String ign = parts.length > 1 ? parts[1] : (mc.player != null ? mc.player.getName().getString() : null);
+                        if (ign == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUsage: /fmdbg col <ign>"))); return Constants.SUCCESS; }
+                        final String finalIgn = ign;
+                        fishmod.utils.HypixelApi.getByName(mc, ign, data -> mc.schedule(() -> {
+                            long cataTotal = 0; for (long t : data.cataTimes) cataTotal += t;
+                            long masterTotal = 0; for (int i = 1; i <= 7; i++) masterTotal += data.masterTimes[i];
+                            long col = cataTotal + masterTotal * 2;
+                            Misc.addChatMessage(Component.literal("§b--- Collection debug: " + finalIgn + " ---"));
+                            StringBuilder cata = new StringBuilder("§7cata: ");
+                            for (int i = 0; i <= 7; i++) cata.append(i == 0 ? "E" : "F" + i).append("=").append(data.cataTimes[i]).append(" ");
+                            Misc.addChatMessage(Component.literal(cata.toString()));
+                            StringBuilder master = new StringBuilder("§7master: ");
+                            for (int i = 1; i <= 7; i++) master.append("M").append(i).append("=").append(data.masterTimes[i]).append(" ");
+                            Misc.addChatMessage(Component.literal(master.toString()));
+                            Misc.addChatMessage(Component.literal("§7cataTotal=§f" + cataTotal + " §7masterTotal=§f" + masterTotal));
+                            Misc.addChatMessage(Component.literal("§7computed col=§f" + col + " §7(cata×1 + master×2)"));
+                        }));
+                        return Constants.SUCCESS;
+                    }
+                    if (parts[0].equals("runs")) {
+                        String ign = parts.length > 1 ? parts[1] : (mc.player != null ? mc.player.getName().getString() : null);
+                        if (ign == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUsage: /fmdbg runs <ign>"))); return Constants.SUCCESS; }
+                        final String finalIgn = ign;
+                        fishmod.utils.HypixelApi.getByName(mc, ign, data -> mc.schedule(() -> {
+                            Misc.addChatMessage(Component.literal("§b--- Runs debug: " + finalIgn + " ---"));
+                            Misc.addChatMessage(Component.literal("§7totalRuns: §f" + data.totalRuns));
+                            StringBuilder cata = new StringBuilder("§7cataTimes: ");
+                            for (int i = 0; i <= 7; i++) cata.append("F").append(i == 0 ? "E" : String.valueOf(i)).append("=").append(data.cataTimes[i]).append(" ");
+                            Misc.addChatMessage(Component.literal(cata.toString()));
+                            StringBuilder master = new StringBuilder("§7masterTimes: ");
+                            for (int i = 1; i <= 7; i++) master.append("M").append(i).append("=").append(data.masterTimes[i]).append(" ");
+                            Misc.addChatMessage(Component.literal(master.toString()));
+                            Misc.addChatMessage(Component.literal("§b--- End ---"));
+                        }));
+                    }
+                    return Constants.SUCCESS;
+                })
+            ));
+
+            // ── Local lookup /commands (native tab-complete; result shown in your own chat) ──
+            SuggestionProvider<FabricClientCommandSource> playerSuggest = (c, b) -> {
+                Minecraft mc = Minecraft.getInstance();
+                if (mc.getConnection() != null) {
+                    String rem = b.getRemaining().toLowerCase();
+                    java.util.Set<String> seen = new java.util.HashSet<>();
+                    for (PlayerInfo e : mc.getConnection().getOnlinePlayers()) {
+                        String n = e.getProfile().name();
+                        if (n == null || n.isBlank() || !seen.add(n.toLowerCase())) continue;
+                        if (n.toLowerCase().startsWith(rem)) b.suggest(n);
+                    }
+                }
+                return b.buildFuture();
+            };
+            String[] floors = {"e","f1","f2","f3","f4","f5","f6","f7","m1","m2","m3","m4","m5","m6","m7"};
+            SuggestionProvider<FabricClientCommandSource> floorSuggest = (c, b) -> {
+                String rem = b.getRemaining().toLowerCase();
+                for (String f : floors) if (f.startsWith(rem)) b.suggest(f);
+                return b.buildFuture();
+            };
+
+            // Lookups + player-arg party actions (kick/transfer/promote take a player name).
+            for (String name : new String[]{"cata","rtca","secrets","sa","totalruns","mp","nw","networth",
+                    "bank","corpse","corpses","level","sblvl","farming","nuc","nucleus","powder",
+                    "worm","scatha","kick","transfer","promote"}) {
+                dispatcher.register(ClientCommands.literal(name)
+                    .executes(c -> runLocalLookup(name, null, null))
+                    .then(ClientCommands.argument("player", StringArgumentType.word()).suggests(playerSuggest)
+                        .executes(c -> runLocalLookup(name, StringArgumentType.getString(c, "player"), null))));
+            }
+            // NOTE: no "collection" here — Hypixel already owns /collection. The party-chat
+            // ".collection" command still works via the chat handler.
+            for (String name : new String[]{"pb","runs"}) {
+                dispatcher.register(ClientCommands.literal(name)
+                    .executes(c -> runLocalLookup(name, null, null))
+                    .then(ClientCommands.argument("player", StringArgumentType.word()).suggests(playerSuggest)
+                        .executes(c -> runLocalLookup(name, StringArgumentType.getString(c, "player"), null))
+                        .then(ClientCommands.argument("floor", StringArgumentType.word()).suggests(floorSuggest)
+                            .executes(c -> runLocalLookup(name, StringArgumentType.getString(c, "player"), StringArgumentType.getString(c, "floor"))))));
+            }
+            dispatcher.register(ClientCommands.literal("rtc")
+                .executes(c -> runLocalLookup("rtc", null, null))
+                .then(ClientCommands.argument("player", StringArgumentType.word()).suggests(playerSuggest)
+                    .executes(c -> runLocalLookup("rtc", StringArgumentType.getString(c, "player"), null))
+                    .then(ClientCommands.argument("level", StringArgumentType.word())
+                        .executes(c -> runLocalLookup("rtc", StringArgumentType.getString(c, "player"), StringArgumentType.getString(c, "level"))))));
+            // /crtc [name] [class] [level] — XP for one class to reach a level (default 50).
+            // Smart-parses in PartyCommandHandler: a leading class arg means "self".
+            SuggestionProvider<FabricClientCommandSource> classSuggest = (c, b) -> {
+                String rem = b.getRemaining().toLowerCase();
+                for (String cl : new String[]{"healer","mage","berserk","archer","tank"})
+                    if (cl.startsWith(rem)) b.suggest(cl);
+                return b.buildFuture();
+            };
+            dispatcher.register(ClientCommands.literal("crtc")
+                .executes(c -> runLocalLookup("crtc", null, null, null))
+                .then(ClientCommands.argument("a1", StringArgumentType.word()).suggests(classSuggest)
+                    .executes(c -> runLocalLookup("crtc", StringArgumentType.getString(c, "a1"), null, null))
+                    .then(ClientCommands.argument("a2", StringArgumentType.word()).suggests(classSuggest)
+                        .executes(c -> runLocalLookup("crtc", StringArgumentType.getString(c, "a1"), StringArgumentType.getString(c, "a2"), null))
+                        .then(ClientCommands.argument("a3", StringArgumentType.word())
+                            .executes(c -> runLocalLookup("crtc", StringArgumentType.getString(c, "a1"), StringArgumentType.getString(c, "a2"), StringArgumentType.getString(c, "a3")))))));
+            // No-arg commands: self metrics, party actions, and join-floor/Kuudra shortcuts.
+            for (String name : new String[]{"fps","tps","ping","dprofit","ai","allinv","d",
+                    "e","f1","f2","f3","f4","f5","f6","f7","m1","m2","m3","m4","m5","m6","m7",
+                    "t1","t2","t3","t4","t5"}) {
+                dispatcher.register(ClientCommands.literal(name).executes(c -> runLocalLookup(name, null, null)));
+            }
+            // /warp — bare-form runs the local party action; with an argument, forward to
+            // Hypixel's server-side /warp <dest> so the client command doesn't shadow it
+            // with "Incorrect argument for command at position 5: warp <--[HERE]".
+            dispatcher.register(ClientCommands.literal("warp")
+                .executes(c -> runLocalLookup("warp", null, null))
+                .then(ClientCommands.argument("dest", StringArgumentType.greedyString())
+                    .executes(c -> {
+                        String dest = StringArgumentType.getString(c, "dest");
+                        Minecraft mc = Minecraft.getInstance();
+                        // Send the command packet DIRECTLY, bypassing Fabric's client command
+                        // dispatcher — otherwise it re-matches our /warp literal and infinitely
+                        // recurses into this same lambda, blowing the stack.
+                        if (mc.player != null && mc.player.connection != null)
+                            mc.player.connection.send(
+                                new net.minecraft.network.protocol.game.ServerboundChatCommandPacket("warp " + dest));
+                        return Constants.SUCCESS;
+                    })));
+        });
+
+        // ── Override OdinClient's /cata ───────────────────────────────────────
+        // Both mods register a client-side /cata; Brigadier hands the executes() to whoever
+        // registers LAST, which isn't deterministic at init. Re-register ours on each server
+        // join — that runs after every mod's init-time registration, so ours wins.
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            com.mojang.brigadier.CommandDispatcher<FabricClientCommandSource> d = ClientCommands.getActiveDispatcher();
+            if (d == null) return;
+            try {
+                d.register(ClientCommands.literal("cata")
+                    .executes(c -> runLocalLookup("cata", null, null))
+                    .then(ClientCommands.argument("player", StringArgumentType.word())
+                        .executes(c -> runLocalLookup("cata", StringArgumentType.getString(c, "player"), null))));
+            } catch (Exception ignored) {}
+        });
+
+
+        // ── Warp Map HUD + click detection ───────────────────────────────────
+        // HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "warp_map"), (ctx, tickCounter) -> WarpMapFeature.renderHud(ctx, tickCounter));
+        // ClientTickEvents.END_CLIENT_TICK.register(WarpMapFeature::tickClickDetection);
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "soulflow_hud"), (ctx, tickCounter) -> SoulflowHud.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "pet_hud"), (ctx, tickCounter) -> PetHud.renderHud(ctx, tickCounter));
+        // Rarity background is drawn behind items via DrawContextMixin (hotbar) + INVENTORY_SLOT_BEFORE
+        // (inventory) — see ItemRarityHotbar.init(). No HudRenderCallback (that draws over the items).
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "cooldown_overlay_hotbar"), (ctx, tickCounter) -> CooldownOverlay.renderHotbar(ctx, tickCounter));
+        // HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_xp_tracker"), (ctx, tickCounter) -> SlayerXpTracker.renderHud(ctx, tickCounter));
+        // HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "skill_tracker"), (ctx, tickCounter) -> fishmod.features.SkillTracker.renderHud(ctx, tickCounter));
+        // HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "powder_tracker"), (ctx, tickCounter) -> PowderTracker.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "boss_bar_feature"), (ctx, tickCounter) -> BossBarFeature.renderHud(ctx));
+        // Splits panel + Maxor/Storm/Terminals split-time HUDs. Rendered here (not via practical-config's
+        // HudElementRegistry auto-render, which doesn't fire reliably) — their condition-suppliers are
+        // forced false in Phase so this is the single render path.
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "phase_splits"), (ctx, tickCounter) -> Phase.renderHud(ctx));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "f7_huds"), (ctx, tickCounter) -> fishmod.features.dungeon.f7.F7Huds.renderHud(ctx));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map"), (ctx, tickCounter) -> fishmod.features.dungeon.map.DungeonMapHud.renderHud(ctx));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "session_stats"), (ctx, tickCounter) -> SessionStats.renderHud(ctx, tickCounter));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_score"), (ctx, tickCounter) -> fishmod.features.dungeon.DungeonScore.renderHud(ctx, tickCounter));
+        // HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "farming_tracker"), (ctx, tickCounter) -> fishmod.features.FarmingTracker.renderHud(ctx, tickCounter));
+        fishmod.features.dungeon.DungeonScore.init();
+        fishmod.utils.SkyblockItems.initAsync();
+        // fishmod.features.FarmingTracker.init();
+        // fishmod.features.HarvestFeastTracker.init();
+        // HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "harvest_feast_tracker"), (ctx, tickCounter) -> fishmod.features.HarvestFeastTracker.renderHud(ctx, tickCounter));
+        // fishmod.features.MiningTracker.init();
+        // HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "mining_tracker"), (ctx, tickCounter) -> fishmod.features.MiningTracker.renderHud(ctx, tickCounter));
+        // fishmod.features.TrophyFrogTracker.init();
+        // HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "trophy_frog_tracker"), (ctx, tickCounter) -> fishmod.features.TrophyFrogTracker.renderHud(ctx, tickCounter));
+
+        // ── Fishing ──────────────────────────────────────────────────────────
+        // fishmod.features.fishing.FishingTimer.init();
+        // fishmod.features.fishing.SeaCreatureTracker.init();
+        // fishmod.features.fishing.TrophyFishTracker.init();
+        // HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "fishing_timer"), (ctx, tickCounter) -> fishmod.features.fishing.FishingTimer.renderHud(ctx, tickCounter));
+        // HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "sea_creature_tracker"), (ctx, tickCounter) -> fishmod.features.fishing.SeaCreatureTracker.renderHud(ctx, tickCounter));
+        // HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "trophy_fish_tracker"), (ctx, tickCounter) -> fishmod.features.fishing.TrophyFishTracker.renderHud(ctx, tickCounter));
+        // FishHudEditor.register("Bobber Reminder",
+                // () -> fishmod.utils.config.values.FishSettings.fishingTimerHudX,
+                // v  -> fishmod.utils.config.values.FishSettings.fishingTimerHudX = v,
+                // () -> fishmod.utils.config.values.FishSettings.fishingTimerHudY,
+                // v  -> fishmod.utils.config.values.FishSettings.fishingTimerHudY = v, 90, 14,
+                // () -> fishmod.utils.config.values.FishSettings.fishingTimerScale,
+                // v  -> fishmod.utils.config.values.FishSettings.fishingTimerScale = v,
+                // () -> fishmod.utils.config.values.FishSettings.fishingTimerEnabled);
+        // FishHudEditor.register("Sea Creatures",
+                // () -> fishmod.utils.config.values.FishSettings.seaCreatureHudX,
+                // v  -> fishmod.utils.config.values.FishSettings.seaCreatureHudX = v,
+                // () -> fishmod.utils.config.values.FishSettings.seaCreatureHudY,
+                // v  -> fishmod.utils.config.values.FishSettings.seaCreatureHudY = v, 150, 14 * 5,
+                // () -> fishmod.utils.config.values.FishSettings.seaCreatureScale,
+                // v  -> fishmod.utils.config.values.FishSettings.seaCreatureScale = v,
+                // () -> fishmod.features.fishing.SeaCreatureTracker.isVisible());
+        // FishHudEditor.register("Trophy Fish",
+                // () -> fishmod.utils.config.values.FishSettings.trophyFishHudX,
+                // v  -> fishmod.utils.config.values.FishSettings.trophyFishHudX = v,
+                // () -> fishmod.utils.config.values.FishSettings.trophyFishHudY,
+                // v  -> fishmod.utils.config.values.FishSettings.trophyFishHudY = v, 160, 14 * 6,
+                // () -> fishmod.utils.config.values.FishSettings.trophyFishHudScale,
+                // v  -> fishmod.utils.config.values.FishSettings.trophyFishHudScale = v,
+                // () -> fishmod.features.fishing.TrophyFishTracker.isVisible());
+
+        // ── Slayer ───────────────────────────────────────────────────────────
+        // fishmod.features.slayer.SlayerAlerts.init();
+        // fishmod.features.slayer.SlayerDropTracker.init();
+        // HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_drop_tracker"), (ctx, tickCounter) -> fishmod.features.slayer.SlayerDropTracker.renderHud(ctx, tickCounter));
+        // FishHudEditor.register("Slayer Drops",
+                // () -> fishmod.utils.config.values.FishSettings.slayerDropsHudX,
+                // v  -> fishmod.utils.config.values.FishSettings.slayerDropsHudX = v,
+                // () -> fishmod.utils.config.values.FishSettings.slayerDropsHudY,
+                // v  -> fishmod.utils.config.values.FishSettings.slayerDropsHudY = v, 110, 14 * 4,
+                // () -> fishmod.utils.config.values.FishSettings.slayerDropsScale,
+                // v  -> fishmod.utils.config.values.FishSettings.slayerDropsScale = v,
+                // () -> fishmod.utils.config.values.FishSettings.slayerDropsEnabled);
+
+        // ── Reputation flag poll (tab ✘ for flagged players) ─────────────────
+        // fishmod.features.Reputation.init();
+
+        // ── TTS voice callouts (chat-driven) ─────────────────────────────────
+        // fishmod.features.TtsCallouts.init();
+
+        // ── PB Pace (live delta vs personal-best splits) ─────────────────────
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "pb_pace_hud"), (ctx, tickCounter) -> fishmod.features.PbPaceHud.renderHud(ctx, tickCounter));
+        FishHudEditor.register("PB Pace",
+                () -> fishmod.utils.config.values.FishSettings.pbPaceHudX,
+                v  -> fishmod.utils.config.values.FishSettings.pbPaceHudX = v,
+                () -> fishmod.utils.config.values.FishSettings.pbPaceHudY,
+                v  -> fishmod.utils.config.values.FishSettings.pbPaceHudY = v, 130, 14 * 3,
+                () -> fishmod.utils.config.values.FishSettings.pbPaceScale,
+                v  -> fishmod.utils.config.values.FishSettings.pbPaceScale = v,
+                () -> fishmod.features.PbPaceHud.isVisible());
+
+        // ── Desk-Buddy (kaomoji companion) ───────────────────────────────────
+        // fishmod.features.DeskBuddy.init();
+        // HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "desk_buddy"), (ctx, tickCounter) -> fishmod.features.DeskBuddy.renderHud(ctx, tickCounter));
+        // FishHudEditor.register("Desk-Buddy",
+                // () -> fishmod.utils.config.values.FishSettings.deskBuddyHudX,
+                // v  -> fishmod.utils.config.values.FishSettings.deskBuddyHudX = v,
+                // () -> fishmod.utils.config.values.FishSettings.deskBuddyHudY,
+                // v  -> fishmod.utils.config.values.FishSettings.deskBuddyHudY = v, 70, 14 * 3,
+                // () -> fishmod.utils.config.values.FishSettings.deskBuddyScale,
+                // v  -> fishmod.utils.config.values.FishSettings.deskBuddyScale = v,
+                // () -> fishmod.utils.config.values.FishSettings.deskBuddyEnabled);
+
+        // Tracker overlay (reset button) for HandledScreens — fires after full render chain
+        ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
+            if (!(screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>)) return;
+            net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.afterExtract(screen).register((s, ctx, mx, my, delta) -> {
+                SessionStats.renderInScreen(ctx, mx, my);
+                LootTrackerOverlay.renderInScreen(ctx, mx, my);
+            });
+            net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.allowMouseClick(screen).register((s, click) -> {
+                if (click.button() != 0) return true; // only left click resets
+                double mx = click.x(), my = click.y();
+                if (SessionStats.handleScreenClick(mx, my)) return false;
+                return true;
+            });
+        });
+
+        // Always init FishMod's own framework. (Pre-rename this was skipped when blade-addons was
+        // present because the classes were shared as blade.addon.*; after renaming to fishmod.* they
+        // are separate, so FishMod must initialize its own — otherwise Location/Config/Keybinds/etc.
+        // never run and features like the warp map silently break.) Each init is guarded so a single
+        // duplicate-registration clash with blade-addons can't take down the whole entrypoint.
+        safeInit("FolderUtility", FolderUtility::init);
+        safeInit("Components", Components::init);
+        safeInit("Config", () -> Config.manager.load());
+        safeInit("Keybinds", Keybinds::init);
+        safeInit("CustomEvents", CustomEvents::init);
+        safeInit("Debug", Debug::init);
+        safeInit("Location", Location::init);
+        safeInit("Phase", Phase::init);
+        safeInit("Section", Section::init);
+        safeInit("PartyUtil", PartyUtil::init);
+        safeInit("EntityUtil", EntityUtil::init);
+        safeInit("RenderingEvents", RenderingEvents::init);
+        safeInit("Scheduler", Scheduler::init);
+        // Location Ping needs the world render passes (RenderingEvents) registered first.
+        // safeInit("PingFeature", fishmod.features.PingFeature::init);
+    }
+
+    private static void safeInit(String name, Runnable init) {
+        try { init.run(); }
+        catch (Throwable t) { System.out.println("[FishMod] init failed for " + name + ": " + t); }
+    }
+}
