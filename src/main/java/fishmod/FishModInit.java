@@ -207,6 +207,10 @@ public class FishModInit implements ModInitializer {
         // spawn, term start, section progress, storm-crushed. HUDs auto-render via the practical
         // config system (F7Huds registered with FishConfig); register each for the Edit-HUD dragger.
         fishmod.features.dungeon.f7.F7Huds.init();
+        // Dungeon Map: reads Hypixel's own vanilla dungeon-map item pixel data each tick (Catlas-style
+        // room/door grid) and renders it as a draggable HUD, with a local self-learning prediction
+        // layer for undiscovered rooms (see RoomSignatureDB).
+        fishmod.features.dungeon.map.DungeonMapFeature.init();
         // Inventory command buttons (ported 1:1 from blade-addons) — touch the class so its 7 buttons
         // self-register; commands are edited in /fm → General → Inventory Buttons.
         fishmod.utils.config.values.Buttons.init();
@@ -215,10 +219,13 @@ public class FishModInit implements ModInitializer {
         FishHudEditor.register("Crystal Reminder",  fishmod.features.dungeon.f7.F7Huds.crystalReminder);
         FishHudEditor.register("Storm Tick Timer",  fishmod.features.dungeon.f7.F7Huds.stormTickTimer);
         FishHudEditor.register("Storm Death Time",  fishmod.features.dungeon.f7.F7Huds.stormDeathTime);
+        FishHudEditor.register("LB Release Timer",  fishmod.features.dungeon.f7.F7Huds.lbReleaseTimer);
         FishHudEditor.register("Storm Crushed",     fishmod.features.dungeon.f7.F7Huds.stormCrush);
         FishHudEditor.register("Goldor Tick Timer", fishmod.features.dungeon.f7.F7Huds.goldorTickTimer);
         FishHudEditor.register("Term Start Timer",  fishmod.features.dungeon.f7.F7Huds.termStartTimer);
         FishHudEditor.register("Section Progress",  fishmod.features.dungeon.f7.F7Huds.sectionProgress);
+        FishHudEditor.register("Goldor Splits",     fishmod.utils.dungeon.Section.terminalSplits);
+        FishHudEditor.register("Dungeon Map",       fishmod.features.dungeon.map.DungeonMapHud.dungeonMap);
         // Dungeon class detection (own class from the "stats are doubled" message + tab list) and the
         // class-colored boots feature that depends on it. Boots init AFTER ItemCustomizer.init (above)
         // so the class color wins over per-item boot dye while enabled.
@@ -664,6 +671,25 @@ public class FishModInit implements ModInitializer {
                         }));
                         return Constants.SUCCESS;
                     }
+                    if (parts[0].equals("dungeonmap")) {
+                        mc.send(() -> {
+                            Misc.addChatMessage(Text.literal("§b--- Dungeon Map Debug ---"));
+                            Misc.addChatMessage(Text.literal("§7calibrated: §f" + fishmod.utils.dungeon.map.MapReader.isCalibrated()));
+                            var rooms = fishmod.utils.dungeon.map.DungeonGrid.allRooms();
+                            var doors = fishmod.utils.dungeon.map.DungeonGrid.allDoors();
+                            Misc.addChatMessage(Text.literal("§7rooms: §f" + rooms.size() + " §7doors: §f" + doors.size()));
+                            for (var e : rooms.entrySet()) {
+                                Misc.addChatMessage(Text.literal("§8room " + e.getKey() + " §8-> §7"
+                                        + fishmod.features.dungeon.map.DungeonMapHud.describe(e.getValue())));
+                            }
+                            for (var e : doors.entrySet()) {
+                                Misc.addChatMessage(Text.literal("§8door " + e.getKey() + " §8-> §7"
+                                        + fishmod.features.dungeon.map.DungeonMapHud.describe(e.getValue())));
+                            }
+                            Misc.addChatMessage(Text.literal("§b--- End ---"));
+                        });
+                        return Constants.SUCCESS;
+                    }
                     if (parts[0].equals("runs")) {
                         String ign = parts.length > 1 ? parts[1] : (mc.player != null ? mc.player.getName().getString() : null);
                         if (ign == null) { mc.send(() -> Misc.addChatMessage(Text.literal("§cUsage: /fmdbg runs <ign>"))); return Constants.SUCCESS; }
@@ -804,6 +830,7 @@ public class FishModInit implements ModInitializer {
         // forced false in Phase so this is the single render path.
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> Phase.renderHud(ctx));
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.dungeon.f7.F7Huds.renderHud(ctx));
+        HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.dungeon.map.DungeonMapHud.renderHud(ctx));
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> SessionStats.renderHud(ctx, tickCounter));
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.dungeon.DungeonScore.renderHud(ctx, tickCounter));
         // HudRenderCallback.EVENT.register((ctx, tickCounter) -> fishmod.features.FarmingTracker.renderHud(ctx, tickCounter));

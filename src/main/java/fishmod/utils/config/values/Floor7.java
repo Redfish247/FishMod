@@ -30,6 +30,14 @@ public class Floor7 {
     @ConfigValue
     public static boolean enableStormDeathTime = false;
 
+    // LB (Last Breath) release window — countdown shown from 30s until 34.35s on the Storm (P2)
+    // clock, telling you when to shoot Last Breath.
+    @ConfigValue
+    public static boolean enableLbReleaseTimer = false;
+
+    @ConfigValue
+    public static int lbReleaseTimerColor = 0xffff5555;
+
     @ConfigValue
     public static boolean notifyUsedSpiritMask = false;
 
