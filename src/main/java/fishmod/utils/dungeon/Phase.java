@@ -23,8 +23,9 @@ import net.minecraft.network.chat.Component;
 public class Phase {
 
     private static final Pattern END_PATTERN = Pattern.compile("^\\s*☠ Defeated (.+) in 0?([\\dhms ]+)\\s*(\\(NEW RECORD!\\))?$");
-    private static final Pattern SEARCH_PATTERN = Pattern.compile("^ ⏣ The Catacombs .*$");
+    private static final Pattern SEARCH_PATTERN = Pattern.compile("The Catacombs \\(");
 
+    private static final String MORT_RUN_START = "Mort: Here, I found this map when I first entered the dungeon.";
     private static final Split DUMMY_SPLIT = new Split("test split", "if this is called idk", "if this is called idk", 43690, 0.0);
 
     private static final HashMap<String, ArrayList<Split>> FLOOR_SPLITS = JsonUtility.readSplits("/data/splits.json");
@@ -34,7 +35,7 @@ public class Phase {
 
     private static ArrayList<Split> currentSplits;
     private static int currentPhase = -1;
-    private static String floor = "";
+    private static String floor = null;
 
     private static boolean inFloor7 = false;
     private static boolean stormDead = false;
@@ -104,8 +105,17 @@ public class Phase {
 
     public static boolean parseGameMessage(Component message) {
         String string = message.getString();
-        if (currentSplits == null) return false;
         if (runOver) return false;
+
+        if (isMortRunStart(string) && currentPhase == -1) {
+            currentPhase = 0;
+            if (currentSplits != null && !currentSplits.isEmpty()) {
+                currentSplits.getFirst().start();
+            }
+            Events.ON_PHASE_CHANGE.invoke(PhaseEvent::onPhaseChange);
+        }
+
+        if (currentSplits == null) return false;
 
         for (int i = 0; i < currentSplits.size(); i++) {
 
@@ -143,6 +153,11 @@ public class Phase {
         }
 
         return false;
+    }
+
+    private static boolean isMortRunStart(String message) {
+        String normalized = message.replaceAll("§.", "").trim();
+        return normalized.contains(MORT_RUN_START);
     }
 
     private static void endRun() {

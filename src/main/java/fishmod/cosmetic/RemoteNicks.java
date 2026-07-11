@@ -37,6 +37,7 @@ public final class RemoteNicks {
         // Polling is driven by RemoteSync (combined version-gated /sync). We only (re)publish our
         // own nick on join here; incoming nicks arrive via acceptNicks().
         ClientPlayConnectionEvents.JOIN.register((h, s, c) -> uploadOwn());
+        ClientPlayConnectionEvents.JOIN.register((h, s, c) -> reportSeen());
     }
 
     /** Publish the local player's current nick (or clear it) to the shared store. */
@@ -46,6 +47,20 @@ public final class RemoteNicks {
         java.util.UUID id = mc.getUser().getProfileId();
         if (id == null) return;
         HypixelApi.uploadNick(id.toString().replace("-", ""), NickState.isActive() ? NickState.getRaw() : "");
+    }
+
+    /** Reports this install to the local usage dashboard (uuid + real IGN + mod version). */
+    private static void reportSeen() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getUser() == null) return;
+        java.util.UUID id = mc.getUser().getProfileId();
+        if (id == null) return;
+        String name = mc.getUser().getName();
+        String version = net.fabricmc.loader.api.FabricLoader.getInstance()
+                .getModContainer("fishmod")
+                .map(c -> c.getMetadata().getVersion().getFriendlyString())
+                .orElse("unknown");
+        HypixelApi.uploadSeen(id.toString().replace("-", ""), name, version);
     }
 
     /** Snapshot of the IGN→styled-Text cache. Used by debug commands. */

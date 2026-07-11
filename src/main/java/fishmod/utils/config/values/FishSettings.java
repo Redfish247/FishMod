@@ -383,6 +383,12 @@ public class FishSettings {
     // Show a red ✘ next to flagged (net-negative rep) players in the tab list.
     @ConfigValue public static boolean repFlagsEnabled = false;
 
+    // ── Wardrobe Hotkeys ────────────────────────────────────────────────────────
+    // Press a Wardrobe slot hotkey (bind in Options > Controls) to instantly click that
+    // set/loadout in an open Wardrobe or Loadouts GUI.
+    @ConfigValue public static boolean wardrobeHotkeysEnabled    = false;
+    @ConfigValue public static boolean wardrobeHotkeysAutoClose  = true;
+
     // ── Desk-Buddy ──────────────────────────────────────────────────────────────
     // A tiny kaomoji companion that idles, sleeps when you're AFK, and dances on RNG drops.
     @ConfigValue public static boolean deskBuddyEnabled       = false;

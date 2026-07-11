@@ -20,6 +20,10 @@ public class StormTickTimer {
     private static final int CRUSH_TICK = 31 * 20;
     private static final int COUNTDOWN_DURATION = 5 * 20;
 
+    // LB (Last Breath) release window: visible once the Storm clock hits 30s, counting down to 34.35s.
+    private static final int LB_START_TICK = 30 * 20;
+    private static final int LB_END_TICK = (int) Math.round(34.35 * 20);
+
     private static int tick = 0;
     private static double deathTime = 0;
     private static long deathStartDisplayTime = 0;
@@ -66,5 +70,15 @@ public class StormTickTimer {
 
     public static void renderDeathTime(HUDComponent component, GuiGraphicsExtractor context) {
         RenderUtils.drawTimer(component, context, deathTime, Constants.DARK_PURPLE);
+    }
+
+    public static boolean displayLbReleaseTimer() {
+        return Floor7.enableLbReleaseTimer && Location.inDungeon() && Phase.inP2() && !Phase.stormDead()
+                && tick >= LB_START_TICK && tick <= LB_END_TICK;
+    }
+
+    public static void renderLbReleaseTimer(HUDComponent component, GuiGraphicsExtractor context) {
+        double remaining = (LB_END_TICK - tick) * Constants.TICK_DURATION;
+        RenderUtils.drawTimer(component, context, remaining, Floor7.lbReleaseTimerColor);
     }
 }

@@ -69,6 +69,21 @@ public class DungeonScore {
     private static long runStartMs = -1;
     private static boolean alerted300 = false;
 
+    /** Total puzzle count for this run, parsed from the tab list's "Puzzles: (N)" line. 0 if not seen yet. */
+    public static int getPuzzleCount() {
+        return puzzleCount;
+    }
+
+    /** Secrets found so far this run, from the tab list's secret-percent/count lines. */
+    public static int getSecretCount() {
+        return secretCount;
+    }
+
+    /** Estimated total secrets in the dungeon (back-computed from found-count and percent). 0 if not known yet. */
+    public static int getTotalSecrets() {
+        return totalSecrets();
+    }
+
     public static void init() {
         FishHudEditor.register("Dungeon Score",
                 () -> FishSettings.dungeonScoreHudX, v -> FishSettings.dungeonScoreHudX = v,

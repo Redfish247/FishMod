@@ -1795,6 +1795,25 @@ public class HypixelApi {
         } catch (Exception ignored) {}
     }
 
+    /** Reports "this player is running FishMod" on join — feeds the local install/usage dashboard. */
+    public static void uploadSeen(String uuidNoDashes, String name, String modVersion) {
+        try {
+            JsonObject o = new JsonObject();
+            o.addProperty("uuid", uuidNoDashes);
+            o.addProperty("name", name == null ? "" : name);
+            o.addProperty("modVersion", modVersion == null ? "" : modVersion);
+            HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(PROXY_URL + "/seen"))
+                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("Content-Type", "application/json")
+                .header("User-Agent", "Mozilla/5.0")
+                .timeout(Duration.ofSeconds(10))
+                .POST(HttpRequest.BodyPublishers.ofString(o.toString()))
+                .build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception ignored) {}
+    }
+
     /** A shared location ping published by a FishMod user. */
     public record PingData(String uuid, String name, double x, double y, double z, String dim, long ts) {}
 
