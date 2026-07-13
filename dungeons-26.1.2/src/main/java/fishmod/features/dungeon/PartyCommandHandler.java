@@ -97,7 +97,7 @@ public class PartyCommandHandler {
      * or "msg PlayerName " for a private-message reply.
      */
     /** Responder sentinel for /command lookups — result is shown in your own chat, not sent anywhere. */
-    public static final String LOCAL = "";
+    public static final String LOCAL = "";
 
     /** Back-compat overload for callers that only have two args (rawArg3 = null). */
     public static void onPartyCommand(String typer, String cmd, String rawArg1, String rawArg2, String responder) {
@@ -118,7 +118,7 @@ public class PartyCommandHandler {
         String ign = rawArg1 != null ? rawArg1 : typer;
 
         switch (cmd) {
-            case "help", "?" -> { if (FishSettings.pcHelp && respond(cmd, typer, isLocal)) sendCmd(mc, responder + buildHelp()); }
+            case "help", "?" -> { if (FishSettings.pcHelp && respond(cmd, typer, isLocal)) sendCmd(mc, responder, buildHelp()); }
             // Stats lookups: respond to ANY party member's command (default target = typer if no arg)
             case "rtca"      -> { if (FishSettings.pcRtca && respond(cmd, typer, isLocal))    runRtcaForPlayer(mc, ign, responder);             }
             case "rtc"       -> { if (FishSettings.pcRtc  && respond(cmd, typer, isLocal)) {
@@ -182,14 +182,15 @@ public class PartyCommandHandler {
             case "fps"    -> { if (FishSettings.pcFps    && isMe) sendFps(mc, responder);  }
             case "tps"    -> { if (FishSettings.pcTps    && isMe) sendTps(mc, responder);  }
             case "ping"   -> { if (FishSettings.pcPing   && isMe) sendPing(mc, responder); }
-            case "ai", "allinv" -> { if (FishSettings.pcAllinvite && isMe) sendCmd(mc, "p settings allinvite"); }
-            case "d"            -> { if (FishSettings.pcDisband   && isMe) sendCmd(mc, "p disband");             }
+            case "ai", "allinv" -> { if (FishSettings.pcAllinvite && isMe) sendRawCommand(mc, "p settings allinvite"); }
+            case "d"            -> { if (FishSettings.pcDisband   && isMe) sendRawCommand(mc, "p disband");             }
             // Party actions: only honor from party chat or local /command (never from DM/guild/officer/all chat,
             // where someone saying ".warp" would otherwise make our client try `/p warp` and error out).
-            case "kick"     -> { if (partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendCmd(mc, "p kick " + rawArg1);     }
-            case "warp"     -> { if (partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe))                    sendCmd(mc, "p warp");                }
-            case "transfer" -> { if (partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendCmd(mc, "p transfer " + rawArg1); }
-            case "promote"  -> { if (partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendCmd(mc, "p promote " + rawArg1);  }
+            case "kick"                   -> { if (FishSettings.pcActionKick     && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p kick " + rawArg1);    }
+            case "warp", "w"              -> { if (FishSettings.pcActionWarp     && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe))                    sendRawCommand(mc, "p warp");                }
+            case "transfer", "pt", "ptme" -> { if (FishSettings.pcActionTransfer && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe))                    sendRawCommand(mc, "p transfer " + ign);     }
+            case "promote"                -> { if (FishSettings.pcActionPromote  && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p promote " + rawArg1);  }
+            case "demote"                 -> { if (FishSettings.pcActionDemote   && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p demote " + rawArg1);   }
             default -> {
                 if ((cmd.matches("[fm][1-7]") || cmd.equals("e")) && FishSettings.pcJoinFloor) handleJoinInstance(cmd, mc, responder);
                 else if (cmd.matches("t[1-5]") && FishSettings.pcJoinFloor) handleKuudra(cmd, mc, responder);
@@ -217,13 +218,25 @@ public class PartyCommandHandler {
         return true;
     }
 
-    /** Party actions (kick/warp/transfer/promote) only run from party chat or local /command. */
+    /** Party actions (kick/warp/transfer/promote/demote) only run from party chat or local /command. */
     private static boolean partyActionAllowed(String responder, boolean isLocal) {
         return isLocal || (responder != null && responder.startsWith("pc "));
     }
 
+    /**
+     * Who besides yourself may trigger a party action, per FishSettings.pcPartyActionsMode:
+     * "off"/"self" (nobody else), "whitelist" (listed names only), "blacklist" (anyone not listed),
+     * "everyone" (any party member). You can always trigger your own actions.
+     */
     private static boolean allowPartyAction(String typer, boolean isMe) {
-        return FishSettings.pcPartyActions;
+        if (isMe) return true;
+        return switch (FishSettings.pcPartyActionsMode) {
+            case "everyone"  -> true;
+            case "blacklist" -> !fishmod.utils.NameList.contains(FishSettings.pcPartyActionsBlacklist, typer);
+            case "whitelist" -> fishmod.utils.NameList.contains(FishSettings.pcPartyActionsWhitelist, typer)
+                             && !fishmod.utils.NameList.contains(FishSettings.pcPartyActionsBlacklist, typer);
+            default -> false; // "off"/"self"/unrecognised
+        };
     }
 
     /** Builds a list of currently-enabled dot-commands for .help / .?. */
@@ -252,19 +265,30 @@ public class PartyCommandHandler {
         if (FishSettings.pcPing)       cmds.add("ping");
         if (FishSettings.pcAllinvite)  cmds.add("ai");
         if (FishSettings.pcJoinFloor)  cmds.add("e/f1-7/m1-7/t1-5");
-        if (FishSettings.pcPartyActions) cmds.add("kick/warp/transfer/promote");
+        if (FishSettings.pcActionKick)     cmds.add("kick");
+        if (FishSettings.pcActionWarp)     cmds.add("warp/w");
+        if (FishSettings.pcActionTransfer) cmds.add("transfer/pt/ptme");
+        if (FishSettings.pcActionPromote)  cmds.add("promote");
+        if (FishSettings.pcActionDemote)   cmds.add("demote");
         if (FishSettings.pcDisband)    cmds.add("d");
         return "FishMod cmds: ." + String.join(" .", cmds);
     }
 
-    /** Sends a command to the server after a short delay to avoid rate-limiting. */
-    private static void sendCmd(Minecraft mc, String command) {
-        // Local /command lookups: show the result in your own chat instead of sending it anywhere.
-        if (command.startsWith(LOCAL)) {
-            String msg = command.substring(LOCAL.length());
-            mc.execute(() -> fishmod.utils.FishMsg.send("§f" + msg));
+    /**
+     * Sends a reply to a lookup. Local /command dispatch (responder == LOCAL) just prints the text
+     * to your own chat; party/guild/officer/all/DM dispatch relays "<responder><text>" to the server
+     * as a real chat command so the rest of the channel sees it.
+     */
+    private static void sendCmd(Minecraft mc, String responder, String text) {
+        if (LOCAL.equals(responder)) {
+            mc.execute(() -> fishmod.utils.FishMsg.send("§f" + text));
             return;
         }
+        sendRawCommand(mc, responder + text);
+    }
+
+    /** Sends a command to the server unconditionally (party actions, joininstance, etc.), after a short delay to avoid rate-limiting. */
+    private static void sendRawCommand(Minecraft mc, String command) {
         CompletableFuture.delayedExecutor(250, TimeUnit.MILLISECONDS)
             .execute(() -> mc.execute(() -> {
                 if (mc.getConnection() != null) {
@@ -293,11 +317,11 @@ public class PartyCommandHandler {
         switch (cmd) {
             case "help": case "?":
                 if (!FishSettings.pcHelp) return false;
-                sendCmd(mc, responder + buildHelp());
+                sendCmd(mc, responder, buildHelp());
                 return true;
             case "ai": case "allinv":
                 if (!FishSettings.pcAllinvite || target == null) return false;
-                sendCmd(mc, "p settings allinvite");
+                sendRawCommand(mc, "p settings allinvite");
                 return true;
             case "pb": {
                 if (!FishSettings.pcPb) return false;
@@ -365,7 +389,7 @@ public class PartyCommandHandler {
                 return true;
             case "d":
                 if (!FishSettings.pcDisband || target == null) return false;
-                sendCmd(mc, "p disband");
+                sendRawCommand(mc, "p disband");
                 return true;
             case "bank":
                 if (!FishSettings.pcBank || target == null) return false;
@@ -414,7 +438,7 @@ public class PartyCommandHandler {
         HypixelApi.getByName(mc, ign, data -> {
             String level  = HypixelApi.formatLevel(data.cataXp);
             String toNext = HypixelApi.xpToNextLevel(data.cataXp);
-            sendCmd(mc, responder + ign + "'s Cata: " + level + " | " + toNext + " XP to next");
+            sendCmd(mc, responder, ign + "'s Cata: " + level + " | " + toNext + " XP to next");
         });
     }
 
@@ -459,13 +483,13 @@ public class PartyCommandHandler {
                     sb.append(label).append(" Runs: ").append(String.format("%,d", count));
                 }
             }
-            sendCmd(mc, responder + sb);
+            sendCmd(mc, responder, sb.toString());
         });
     }
 
     private static void runTotalRunsForPlayer(Minecraft mc, String ign, String responder) {
         HypixelApi.getByName(mc, ign, data -> {
-            sendCmd(mc, responder + ign + "'s Total Runs: " + String.format("%,d", data.totalRuns));
+            sendCmd(mc, responder, ign + "'s Total Runs: " + String.format("%,d", data.totalRuns));
         });
     }
 
@@ -479,14 +503,14 @@ public class PartyCommandHandler {
             String[] pbs = isMaster ? data.masterPbs : data.cataPbs;
             String pb = (floorNum >= 0 && floorNum < pbs.length) ? pbs[floorNum] : null;
             String label = (isMaster ? "M" : "F") + floorNum + " PB";
-            sendCmd(mc, responder + ign + "'s " + label + ": " + (pb != null ? pb : "N/A"));
+            sendCmd(mc, responder, ign + "'s " + label + ": " + (pb != null ? pb : "N/A"));
         });
     }
 
     private static void runMpForPlayer(Minecraft mc, String ign, String responder) {
         HypixelApi.getByName(mc, ign, data -> {
             String val = data.magicalPower >= 0 ? String.valueOf(data.magicalPower) : "N/A";
-            sendCmd(mc, responder + ign + "'s MP: " + val);
+            sendCmd(mc, responder, ign + "'s MP: " + val);
         });
     }
 
@@ -524,14 +548,14 @@ public class PartyCommandHandler {
                 label = "Collection";
                 value = String.format("%,d", col);
             }
-            sendCmd(mc, responder + ign + "'s " + label + ": " + value);
+            sendCmd(mc, responder, ign + "'s " + label + ": " + value);
         });
     }
 
     private static void runRtcForPlayer(Minecraft mc, String ign, String levelArg, String responder) {
         int target = 50;
         if (levelArg != null) {
-            try { target = Math.max(1, Math.min(99, Integer.parseInt(levelArg))); } catch (NumberFormatException ignored) {}
+            try { target = Math.max(1, Math.min(999, Integer.parseInt(levelArg))); } catch (NumberFormatException ignored) {}
         }
         final int targetLevel = target;
         HypixelApi.getByName(mc, ign, data -> {
@@ -539,7 +563,7 @@ public class PartyCommandHandler {
             if (targetLevel < HypixelApi.CATA_XP_TABLE.length) {
                 xpNeeded = HypixelApi.CATA_XP_TABLE[targetLevel] - data.cataXp;
             } else {
-                long over = (long)(targetLevel - 50) * 200_000_000L;
+                long over = (long)(targetLevel - 50) * HypixelApi.CATA_OVERFLOW_XP_PER_LEVEL;
                 xpNeeded = HypixelApi.CATA_XP_TABLE[50] + over - data.cataXp;
             }
             long xpPerRun = Math.max(1, FishSettings.rtcCataXpPerRun);
@@ -560,7 +584,7 @@ public class PartyCommandHandler {
                 }
                 result = runs >= 1_000 ? String.format("%.1fk", runs / 1_000.0) : Long.toString(runs);
             }
-            sendCmd(mc, responder + ign + "'s runs to Cata " + targetLevel + ": " + result);
+            sendCmd(mc, responder, ign + "'s runs to Cata " + targetLevel + ": " + result);
         });
     }
 
@@ -584,12 +608,12 @@ public class PartyCommandHandler {
     private static void runCrtcForPlayer(Minecraft mc, String ign, String classArg, String levelArg, String responder) {
         String classKey = resolveClass(classArg);
         if (classKey == null) {
-            sendCmd(mc, responder + "Usage: .crtc [name] <healer|mage|berserk|archer|tank> [level]");
+            sendCmd(mc, responder, "Usage: .crtc [name] <healer|mage|berserk|archer|tank> [level]");
             return;
         }
         int target = 50;
         if (levelArg != null) {
-            try { target = Math.max(1, Math.min(99, Integer.parseInt(levelArg))); } catch (NumberFormatException ignored) {}
+            try { target = Math.max(1, Math.min(999, Integer.parseInt(levelArg))); } catch (NumberFormatException ignored) {}
         }
         final int targetLevel = target;
         HypixelApi.getByName(mc, ign, data -> {
@@ -598,7 +622,7 @@ public class PartyCommandHandler {
             if (targetLevel < HypixelApi.CATA_XP_TABLE.length) {
                 goalXp = HypixelApi.CATA_XP_TABLE[targetLevel];
             } else {
-                long over = (long)(targetLevel - 50) * 200_000_000L;
+                long over = (long)(targetLevel - 50) * HypixelApi.CATA_OVERFLOW_XP_PER_LEVEL;
                 goalXp = HypixelApi.CATA_XP_TABLE[50] + over;
             }
             long xpNeeded = goalXp - curXp;
@@ -619,7 +643,7 @@ public class PartyCommandHandler {
                 String runsStr = runs >= 1_000 ? String.format("%.1fk", runs / 1_000.0) : Long.toString(runs);
                 result = fmtCoins(xpNeeded) + " XP | " + runsStr + " runs";
             }
-            sendCmd(mc, responder + ign + "'s " + disp + " to " + targetLevel + ": " + result);
+            sendCmd(mc, responder, ign + "'s " + disp + " to " + targetLevel + ": " + result);
         });
     }
 
@@ -628,7 +652,7 @@ public class PartyCommandHandler {
         int runs = fishmod.features.croesus.LootTrackerOverlay.runsForChat();
         double avg = total / Math.max(1, runs);
         String pr = fishmod.features.croesus.LootTrackerOverlay.fmtCoinsPublic(avg);
-        sendCmd(mc, responder + "Profit Per Run: " + pr + " (" + runs + " runs)");
+        sendCmd(mc, responder, "Profit Per Run: " + pr + " (" + runs + " runs)");
     }
 
     private static void buildAndSendRtca(Minecraft mc, HypixelApi.DungeonData data, String ign, String responder) {
@@ -671,7 +695,7 @@ public class PartyCommandHandler {
             if (i < 4) sb.append(" | ");
         }
         String out = sb.toString();
-        sendCmd(mc, responder + out);
+        sendCmd(mc, responder, out);
     }
 
     // ─── local command implementations ───────────────────────────────────────
@@ -680,7 +704,7 @@ public class PartyCommandHandler {
         long elapsed = System.currentTimeMillis() - dungeonEnteredAt;
         if (elapsed < 26_000L) {
             long rem = (26_000L - elapsed) / 1_000L + 1L;
-            sendCmd(mc, responder + "Wait " + rem + "s before joining.");
+            sendCmd(mc, responder, "Wait " + rem + "s before joining.");
             return;
         }
         String floor;
@@ -693,45 +717,45 @@ public class PartyCommandHandler {
         }
         String joinCmd = "joininstance " + floor;
         Misc.addChatMessage(Component.literal("§7[FM] Sending: /" + joinCmd));
-        sendCmd(mc, joinCmd);
+        sendRawCommand(mc, joinCmd);
     }
 
     private static void handleKuudra(String cmd, Minecraft mc, String responder) {
         long elapsed = System.currentTimeMillis() - dungeonEnteredAt;
         if (elapsed < 30_000L) {
             long rem = (30_000L - elapsed) / 1_000L + 1L;
-            sendCmd(mc, responder + "Wait " + rem + "s before joining Kuudra.");
+            sendCmd(mc, responder, "Wait " + rem + "s before joining Kuudra.");
             return;
         }
         int tier = cmd.charAt(1) - '1'; // t1=0 … t5=4
         String joinCmd = "joininstance kuudra_" + KUUDRA_TIERS[tier];
         Misc.addChatMessage(Component.literal("§7[FM] Sending: /" + joinCmd));
-        sendCmd(mc, joinCmd);
+        sendRawCommand(mc, joinCmd);
     }
 
     private static void sendCorpse(Minecraft mc, String ign, String responder) {
         HypixelApi.getEconomyByName(mc, ign, (bank, purse, corpses) ->
-            sendCmd(mc, responder + ign + "'s Corpses: " + (corpses != null ? corpses : "N/A")));
+            sendCmd(mc, responder, ign + "'s Corpses: " + (corpses != null ? corpses : "N/A")));
     }
 
     private static void sendBank(Minecraft mc, String ign, String responder) {
         HypixelApi.getEconomyByName(mc, ign, (bank, purse, corpses) -> {
             String b = bank >= 0 ? fmtCoins(bank) : "N/A";
             String p = purse >= 0 ? fmtCoins(purse) : "N/A";
-            sendCmd(mc, responder + ign + "'s Bank: " + b + " | Purse: " + p);
+            sendCmd(mc, responder, ign + "'s Bank: " + b + " | Purse: " + p);
         });
     }
 
     private static void sendPowder(Minecraft mc, String ign, String responder) {
         HypixelApi.getPowderByName(mc, ign, data -> {
             if (!data.hasData()) {
-                sendCmd(mc, responder + ign + "'s Powder: N/A");
+                sendCmd(mc, responder, ign + "'s Powder: N/A");
                 return;
             }
             String m = data.mithril  >= 0 ? String.format("%,d", data.mithril)  : "N/A";
             String g = data.gemstone >= 0 ? String.format("%,d", data.gemstone) : "N/A";
             String l = data.glacite  >= 0 ? String.format("%,d", data.glacite)  : "N/A";
-            sendCmd(mc, responder + ign + "'s Powder: Mithril: " + m + " | Gemstone: " + g + " | Glacite: " + l);
+            sendCmd(mc, responder, ign + "'s Powder: Mithril: " + m + " | Gemstone: " + g + " | Glacite: " + l);
         });
     }
 
@@ -739,32 +763,32 @@ public class PartyCommandHandler {
         fishmod.features.croesus.CroesusPrices.refreshIfStale();
         Misc.addChatMessage(Component.literal("§7[FM] Looking up " + ign + "'s networth..."));
         HypixelApi.getNetworth(mc, ign, (nw, prof) -> {
-            if (nw < 0) { sendCmd(mc, responder + ign + "'s Networth: N/A"); return; }
-            sendCmd(mc, responder + ign + "'s Networth: " + fmtCoins(nw) + (prof != null ? " (" + prof + ")" : ""));
+            if (nw < 0) { sendCmd(mc, responder, ign + "'s Networth: N/A"); return; }
+            sendCmd(mc, responder, ign + "'s Networth: " + fmtCoins(nw) + (prof != null ? " (" + prof + ")" : ""));
         });
     }
 
     private static void sendSkyblockLevel(Minecraft mc, String ign, String responder) {
         HypixelApi.getProfileStats(mc, ign, (sb, farm) ->
-            sendCmd(mc, responder + ign + "'s SB Level: " + (sb >= 0 ? String.format("%.2f", sb) : "N/A")));
+            sendCmd(mc, responder, ign + "'s SB Level: " + (sb >= 0 ? String.format("%.2f", sb) : "N/A")));
     }
 
     private static void sendFarming(Minecraft mc, String ign, String responder) {
         HypixelApi.getProfileStats(mc, ign, (sb, farm) ->
-            sendCmd(mc, responder + ign + "'s Farming: " + (farm >= 0 ? String.format("%.2f", farm) : "N/A")));
+            sendCmd(mc, responder, ign + "'s Farming: " + (farm >= 0 ? String.format("%.2f", farm) : "N/A")));
     }
 
     private static void sendNucleus(Minecraft mc, String ign, String responder) {
         HypixelApi.getNucleusRuns(mc, ign, runs ->
-            sendCmd(mc, responder + ign + "'s Nucleus Runs: " + (runs >= 0 ? String.format("%,d", runs) : "N/A")));
+            sendCmd(mc, responder, ign + "'s Nucleus Runs: " + (runs >= 0 ? String.format("%,d", runs) : "N/A")));
     }
 
     private static void sendWorm(Minecraft mc, String ign, String responder) {
         HypixelApi.getWormStats(mc, ign, s -> {
-            if (!s.found) { sendCmd(mc, responder + ign + "'s Bestiary: N/A"); return; }
+            if (!s.found) { sendCmd(mc, responder, ign + "'s Bestiary: N/A"); return; }
             String tier = "Tier " + s.tier + "/" + s.maxTier
                     + (s.nextTierKills != null ? " (" + String.format("%,d", s.total) + "/" + String.format("%,d", s.nextTierKills) + ")" : " (MAX)");
-            sendCmd(mc, responder + ign + "'s Bestiary: Worm " + String.format("%,d", s.worm)
+            sendCmd(mc, responder, ign + "'s Bestiary: Worm " + String.format("%,d", s.worm)
                     + " | Scatha " + String.format("%,d", s.scatha) + " | " + tier);
         });
     }
@@ -778,7 +802,7 @@ public class PartyCommandHandler {
 
     private static void sendFps(Minecraft mc, String responder) {
         int fps = mc.getFps();
-        sendCmd(mc, responder + "FPS: " + fps);
+        sendCmd(mc, responder, "FPS: " + fps);
     }
 
     /** Current measured server TPS (0..20), or -1 if not enough samples yet. */
@@ -794,7 +818,7 @@ public class PartyCommandHandler {
     private static void sendTps(Minecraft mc, String responder) {
         int filled = Math.min(tickIdx, TICK_TIMES.length);
         if (filled == 0) {
-            sendCmd(mc, responder + "TPS: N/A");
+            sendCmd(mc, responder, "TPS: N/A");
             return;
         }
         long sum = 0;
@@ -802,7 +826,7 @@ public class PartyCommandHandler {
         double avgMs = (double) sum / filled;
         double tps = Math.min(20.0, 1000.0 / avgMs);
         String formatted = String.format("%.1f", tps);
-        sendCmd(mc, responder + "TPS: " + formatted);
+        sendCmd(mc, responder, "TPS: " + formatted);
     }
 
     private static void sendPing(Minecraft mc, String responder) {
@@ -819,7 +843,7 @@ public class PartyCommandHandler {
             try { var si = mc.getCurrentServer(); if (si != null && si.ping > 0) ping = (int) si.ping; }
             catch (Exception ignored) {}
         }
-        sendCmd(mc, responder + "Ping: " + (ping >= 0 ? ping + "ms" : "N/A"));
+        sendCmd(mc, responder, "Ping: " + (ping >= 0 ? ping + "ms" : "N/A"));
     }
 
 

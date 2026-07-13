@@ -68,7 +68,9 @@ public class DungeonScore {
     private static boolean bloodDone = false;
     private static boolean expectingBloodUpdate = false;
     private static long runStartMs = -1;
+    private static boolean alerted270 = false;
     private static boolean alerted300 = false;
+    private static boolean alertedMissing = false;
 
     /** Total puzzle count for this run, parsed from the tab list's "Puzzles: (N)" line. 0 if not seen yet. */
     public static int getPuzzleCount() {
@@ -134,6 +136,14 @@ public class DungeonScore {
             scanTick = 0;
             scanTabList(client);
             scanSidebar(client);
+            checkScoreAlerts();
+
+            if (!alertedMissing && FishSettings.dungeonScoreMissingMsg
+                    && runStartMs > 0 && System.currentTimeMillis() - runStartMs >= 60_000
+                    && !fishmod.utils.dungeon.Phase.inBoss()) {
+                alertedMissing = true;
+                sendMissingScoreMessage();
+            }
         });
     }
 
@@ -155,7 +165,9 @@ public class DungeonScore {
         bloodDone = false;
         expectingBloodUpdate = false;
         runStartMs = -1;
+        alerted270 = false;
         alerted300 = false;
+        alertedMissing = false;
         puzzleStatuses.clear();
     }
 
@@ -253,6 +265,87 @@ public class DungeonScore {
         return exploration + skill + 100 + bonus;
     }
 
+    /**
+     * One-minute check-in: projects the end-of-run score assuming a full clear (all rooms,
+     * all puzzles) with the secrets and bonuses collected so far, then breaks the gap to 300
+     * down into the remaining bonus sources plus however many extra secrets cover the rest.
+     */
+    /** Projected end-of-run score assuming a full clear (all rooms, all puzzles) with current secrets/bonuses. */
+    private static int projectedFullClearScore() {
+        int ts = totalSecrets();
+        double reqPct = currentFloor != null ? currentFloor.requiredPercentage : 1.0;
+        int secretScore = 0;
+        if (ts > 0) secretScore = Math.max(0, Math.min(40, (int) Math.floor(secretCount / (ts * reqPct) * 40.0)));
+        int deathPenalty = Math.max(0, deathCount * 2 - 1);
+        int skill = Math.max(20, Math.min(100, 100 - deathPenalty));
+        return 60 + secretScore + skill + 100 + getBonusScore();
+    }
+
+    private static void sendMissingScoreMessage() {
+        int ts = totalSecrets();
+        double reqPct = currentFloor != null ? currentFloor.requiredPercentage : 1.0;
+        int projected = projectedFullClearScore();
+        int missing = 300 - projected;
+
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc.getNetworkHandler() == null) return;
+
+        if (missing <= 0) {
+            mc.getNetworkHandler().sendChatCommand("pc On pace for 300! (projected " + projected + " on full clear)");
+            return;
+        }
+
+        java.util.List<String> parts = new java.util.ArrayList<>();
+        int remaining = missing;
+
+        if (!princeKilled && remaining > 0) {
+            parts.add("1 Prince [1 score max 1]");
+            remaining -= 1;
+        }
+        int cryptsAvail = 5 - Math.min(cryptCount, 5);
+        if (cryptsAvail > 0 && remaining > 0) {
+            int take = Math.min(cryptsAvail, remaining);
+            parts.add(take + " Crypt" + (take == 1 ? "" : "s") + " [1 each max 5]");
+            remaining -= take;
+        }
+        boolean mimicFloor = currentFloor != null && (currentFloor.floorNumber() == 6 || currentFloor.floorNumber() == 7);
+        if (!mimicKilled && mimicFloor && remaining > 0) {
+            parts.add("1 Mimic [2 score max 1]");
+            remaining -= 2;
+        }
+        if (remaining > 0) {
+            if (ts > 0) {
+                double perSecret = 40.0 / (ts * reqPct);
+                int need = (int) Math.ceil(remaining / perSecret);
+                parts.add(need + " Secret" + (need == 1 ? "" : "s") + " [" + remaining + " score]");
+            } else {
+                parts.add("Secrets [" + remaining + " score]");
+            }
+        }
+
+        mc.getNetworkHandler().sendChatCommand("pc " + missing + " Score Missing (" + String.join(", ", parts) + ")");
+    }
+
+    /** Fires the customizable 270/300 alerts once per run each. Jumping straight past 270 skips its alert. */
+    private static void checkScoreAlerts() {
+        int score = computeScore();
+        if (!alerted270 && score >= 270 && score < 300) {
+            alerted270 = true;
+            fireScoreAlert(FishSettings.score270TitleEnabled, FishSettings.score270ChatEnabled, FishSettings.score270Text);
+        }
+        if (!alerted300 && score >= 300) {
+            alerted270 = true;
+            alerted300 = true;
+            fireScoreAlert(FishSettings.score300TitleEnabled, FishSettings.score300ChatEnabled, FishSettings.score300Text);
+        }
+    }
+
+    private static void fireScoreAlert(boolean title, boolean chat, String text) {
+        var msg = net.minecraft.text.Text.literal(text.replace('&', '§'));
+        if (title) fishmod.utils.Misc.setTitle(msg);
+        if (chat) fishmod.utils.Misc.addChatMessage(msg);
+    }
+
     private static String colorizeScore(int s) {
         if (s < 270) return "§c" + s;
         if (s < 300) return "§e" + s;
@@ -293,7 +386,10 @@ public class DungeonScore {
                 ? Math.max(0, (int) Math.ceil(ts * currentFloor.requiredPercentage))
                 : 0;
 
-        String secretsLine = "§7Secrets: §b" + secretCount + "§7-§e" + needed + "§7-§c" + (ts > 0 ? ts : "?")
+        String tail = FishSettings.dungeonScoreShowLeft
+                ? "§7-§c" + Math.max(0, 300 - projectedFullClearScore()) + "§7 left"
+                : "§7-§c" + (ts > 0 ? ts : "?");
+        String secretsLine = "§7Secrets: §b" + secretCount + "§7-§e" + needed + tail
                 + "   §7Score: " + colorizeScore(score);
         String statsLine = "§7Deaths: " + colorizeDeaths(deathCount)
                 + "  §7M:" + (mimicKilled ? "§a✔" : "§c✘")
@@ -302,11 +398,6 @@ public class DungeonScore {
                 + (fishmod.utils.MayorApi.isPaulDungeonBonusActive() ? " §6Paul" : "");
 
         String[] lines = { secretsLine, statsLine};
-
-        if (!alerted300 && score >= 300) {
-            alerted300 = true;
-            fishmod.utils.Misc.addChatMessage(net.minecraft.text.Text.literal("§a§l300 Score!"));
-        }
 
         int x = FishSettings.dungeonScoreHudX;
         int y = FishSettings.dungeonScoreHudY;

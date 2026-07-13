@@ -47,6 +47,9 @@ public class HypixelApi {
 
     public static final long XP_FOR_50 = CATA_XP_TABLE[50];
 
+    /** Community-standard XP cost per "overflow" level past the level-50 cap (catacombs + class curves). */
+    public static final long CATA_OVERFLOW_XP_PER_LEVEL = 200_000_000L;
+
     // ─── proxy config ─────────────────────────────────────────────────────────
     private static final String PROXY_URL = "https://fishmod.redfish2471.workers.dev";
     private static final String MOD_TOKEN = "fishmod123";
@@ -753,7 +756,7 @@ public class HypixelApi {
         for (int i = CATA_XP_TABLE.length - 1; i >= 0; i--) {
             if (xp >= CATA_XP_TABLE[i]) {
                 if (i == CATA_XP_TABLE.length - 1)
-                    return (int)(i + (xp - CATA_XP_TABLE[i]) / 200_000_000L);
+                    return (int)(i + (xp - CATA_XP_TABLE[i]) / CATA_OVERFLOW_XP_PER_LEVEL);
                 return i;
             }
         }
@@ -2198,9 +2201,9 @@ public class HypixelApi {
                 return String.valueOf(needed);
             }
         }
-        // Overflow (level 50+): each extra level = 200,000,000 XP
+        // Overflow (level 50+): each extra level = CATA_OVERFLOW_XP_PER_LEVEL XP
         long overflow = xp - CATA_XP_TABLE[CATA_XP_TABLE.length - 1];
-        long needed = 200_000_000L - (overflow % 200_000_000L);
+        long needed = CATA_OVERFLOW_XP_PER_LEVEL - (overflow % CATA_OVERFLOW_XP_PER_LEVEL);
         if (needed >= 1_000_000) return String.format("%.2fm", needed / 1_000_000.0);
         if (needed >= 1_000)     return String.format("%.1fk", needed / 1_000.0);
         return String.valueOf(needed);
@@ -2211,8 +2214,8 @@ public class HypixelApi {
         for (int i = CATA_XP_TABLE.length - 1; i >= 0; i--) {
             if (xp >= CATA_XP_TABLE[i]) {
                 if (i == CATA_XP_TABLE.length - 1) {
-                    // Overflow: each extra level = 200,000,000 XP (from adjectils)
-                    double overflow = (double)(xp - CATA_XP_TABLE[i]) / 200_000_000.0;
+                    // Overflow: each extra level = CATA_OVERFLOW_XP_PER_LEVEL XP
+                    double overflow = (double)(xp - CATA_XP_TABLE[i]) / (double) CATA_OVERFLOW_XP_PER_LEVEL;
                     return String.format("%.2f", i + overflow);
                 }
                 double progress = (double)(xp - CATA_XP_TABLE[i]) / (CATA_XP_TABLE[i + 1] - CATA_XP_TABLE[i]);

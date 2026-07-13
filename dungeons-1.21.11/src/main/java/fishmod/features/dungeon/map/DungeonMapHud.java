@@ -17,6 +17,8 @@ import fishmod.utils.dungeon.map.Tile;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.PlayerSkinDrawer;
+import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.text.Text;
 import org.joml.Matrix3x2fStack;
 
@@ -71,7 +73,7 @@ public class DungeonMapHud {
                 (double) (targetY - y) * component.getScale() / screenHeight);
     }
 
-    private record LabelJob(int x, int y, int width, int height, String text, int color) {}
+    private record LabelJob(int centerX, int centerY, int maxWidth, String text, int color, String secretsText) {}
 
     public static void render(HUDComponent component, DrawContext ctx) {
         int baseX = component.getScaledX();
@@ -100,11 +102,11 @@ public class DungeonMapHud {
                         String text = room.name() != null ? room.name() : label(room.type());
                         if (!text.isEmpty()) {
                             int[] bbox = boundingBox(room);
-                            int boxX = baseX + bbox[0] * (ROOM_PX + DOOR_PX);
-                            int boxY = baseY + bbox[1] * (ROOM_PX + DOOR_PX);
                             int boxW = (bbox[2] - bbox[0]) * (ROOM_PX + DOOR_PX) + ROOM_PX;
-                            int boxH = (bbox[3] - bbox[1]) * (ROOM_PX + DOOR_PX) + ROOM_PX;
-                            labelJobs.add(new LabelJob(boxX, boxY, boxW, boxH, text, labelColor(room.state())));
+                            float[] centroid = centroidOf(room);
+                            int centerX = baseX + Math.round(centroid[0] * (ROOM_PX + DOOR_PX)) + ROOM_PX / 2;
+                            int centerY = baseY + Math.round(centroid[1] * (ROOM_PX + DOOR_PX)) + ROOM_PX / 2;
+                            labelJobs.add(new LabelJob(centerX, centerY, boxW - 2, text, labelColor(room.state()), secretsLabel(room)));
                         }
                     }
                 }
@@ -151,15 +153,24 @@ public class DungeonMapHud {
         // neighboring room's fill can never paint over a previously-drawn label (this was the
         // "text getting cut off" bug when labels were drawn inline during the fill loop).
         for (LabelJob job : labelJobs) {
-            drawLabel(ctx, job.x(), job.y(), job.width(), job.height(), job.text(), job.color());
+            drawLabel(ctx, job.centerX(), job.centerY(), job.maxWidth(), job.text(), job.color(), job.secretsText());
         }
 
         if (DungeonMapSettings.showPlayerMarkers) {
+            MinecraftClient mc = MinecraftClient.getInstance();
+            PlayerListEntry selfEntry = mc.player != null && mc.getNetworkHandler() != null
+                    ? mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid()) : null;
             for (var marker : DungeonGrid.playerMarkers()) {
                 int mx = baseX + Math.round(marker.tileX() * (ROOM_PX + DOOR_PX));
                 int my = baseY + Math.round(marker.tileZ() * (ROOM_PX + DOOR_PX));
-                int color = marker.self() ? DungeonMapSettings.selfMarkerColor : DungeonMapSettings.teammateMarkerColor;
-                drawPlayerArrow(ctx, mx, my, marker.yaw(), color);
+                if (marker.self()) {
+                    if (selfEntry != null) drawPlayerHead(ctx, selfEntry, mx, my, DungeonMapSettings.selfMarkerColor);
+                    else drawPlayerArrow(ctx, mx, my, marker.yaw(), DungeonMapSettings.selfMarkerColor);
+                } else {
+                    PlayerListEntry entry = findTabEntry(mc, marker.name());
+                    if (entry != null) drawPlayerHead(ctx, entry, mx, my, DungeonMapSettings.teammateMarkerColor);
+                    else drawPlayerArrow(ctx, mx, my, marker.yaw(), DungeonMapSettings.teammateMarkerColor);
+                }
             }
         }
 
@@ -178,6 +189,31 @@ public class DungeonMapHud {
         }
     }
 
+    /**
+     * Matches a map decoration's name against the tab list to find that teammate's skin — best
+     * effort, since Hypixel doesn't always populate the decoration name. Callers fall back to the
+     * plain directional arrow when this returns null, so an unresolved name just looks like it did
+     * before this feature existed rather than breaking anything.
+     */
+    private static PlayerListEntry findTabEntry(MinecraftClient mc, String decorationName) {
+        if (decorationName == null || mc.getNetworkHandler() == null) return null;
+        String stripped = decorationName.replaceAll("§.", "").trim();
+        if (stripped.isEmpty()) return null;
+        for (PlayerListEntry entry : mc.getNetworkHandler().getPlayerList()) {
+            if (entry.getProfile() != null && stripped.equalsIgnoreCase(entry.getProfile().name())) return entry;
+        }
+        return null;
+    }
+
+    /** An 8x8 skin head on a small colored backing square (green=self/white=teammate by default), matching Noamm's player-head map markers. */
+    private static void drawPlayerHead(DrawContext ctx, PlayerListEntry entry, int mx, int my, int borderColor) {
+        int size = 8;
+        ctx.fill(mx - size / 2 - 1, my - size / 2 - 1, mx + size / 2 + 1, my + size / 2 + 1, borderColor);
+        try {
+            PlayerSkinDrawer.draw(ctx, entry.getSkinTextures(), mx - size / 2, my - size / 2, size);
+        } catch (Exception ignored) {}
+    }
+
     /** A small rotated arrow pointing the direction the player is facing, matching Noamm's marker style. */
     private static void drawPlayerArrow(DrawContext ctx, int mx, int my, float yaw, int color) {
         Matrix3x2fStack stack = ctx.getMatrices();
@@ -193,25 +229,36 @@ public class DungeonMapHud {
     }
 
     /**
-     * A pie-chart-ish 2x2 quadrant split instead of horizontal stripes — {@code ctx.fill} only
-     * draws axis-aligned rects (no true angled wedges available), so this approximates a pie split
-     * using quadrants: 2 candidates alternate diagonally (top-left+bottom-right vs top-right+
-     * bottom-left) rather than a plain top/bottom split, reading more like alternating slices.
+     * Splits the room evenly among however many candidates remain: a plain left/right half split
+     * for 2, three equal vertical thirds for 3, and the 2x2 quadrant split only once there are
+     * actually 4 candidates to give each its own corner. Previously this always rendered as
+     * quadrants (alternating diagonally for 2, reusing a spare corner for 3), which read as "4
+     * colors" on screen even when there were really only 2 or 3.
      */
     private static void drawWedges(DrawContext ctx, int x, int y, int size, PredictedRoomTile predicted) {
         int count = predicted.candidates().size();
-        int half = size / 2;
-        int[] quadrantCandidate = switch (count) {
-            case 2 -> new int[]{0, 1, 1, 0};
-            case 3 -> new int[]{0, 1, 2, 0};
-            default -> new int[]{0, 1, 2, 3};
-        };
-        int[][] quadrantPos = {{0, 0}, {1, 0}, {0, 1}, {1, 1}}; // TL, TR, BL, BR
-        for (int i = 0; i < 4; i++) {
-            int candidateIndex = quadrantCandidate[i] % count;
-            int qx = x + quadrantPos[i][0] * half;
-            int qy = y + quadrantPos[i][1] * half;
-            ctx.fill(qx, qy, qx + half, qy + half, predicted.colorAt(candidateIndex));
+        switch (count) {
+            case 1 -> ctx.fill(x, y, x + size, y + size, predicted.colorAt(0));
+            case 2 -> {
+                int half = size / 2;
+                ctx.fill(x, y, x + half, y + size, predicted.colorAt(0));
+                ctx.fill(x + half, y, x + size, y + size, predicted.colorAt(1));
+            }
+            case 3 -> {
+                int third = size / 3;
+                ctx.fill(x, y, x + third, y + size, predicted.colorAt(0));
+                ctx.fill(x + third, y, x + 2 * third, y + size, predicted.colorAt(1));
+                ctx.fill(x + 2 * third, y, x + size, y + size, predicted.colorAt(2));
+            }
+            default -> {
+                int half = size / 2;
+                int[][] quadrantPos = {{0, 0}, {1, 0}, {0, 1}, {1, 1}}; // TL, TR, BL, BR
+                for (int i = 0; i < 4; i++) {
+                    int qx = x + quadrantPos[i][0] * half;
+                    int qy = y + quadrantPos[i][1] * half;
+                    ctx.fill(qx, qy, qx + half, qy + half, predicted.colorAt(i % count));
+                }
+            }
         }
     }
 
@@ -243,23 +290,59 @@ public class DungeonMapHud {
         return new int[]{minX, minZ, maxX, maxZ};
     }
 
-    /** Centered both horizontally and vertically across the room's full bounding box, so the name
-     *  sits at the room's true center point rather than hugging an edge, and scaled down to fit if
-     *  the name is too wide. */
-    private static void drawLabel(DrawContext ctx, int boxX, int boxY, int boxWidth, int boxHeight, String text, int color) {
+    /** Average tile position of the room's occupied cells. For an irregular shape like an L, the
+     *  bounding box's geometric center falls over the missing corner cell; the centroid instead
+     *  biases the label toward where the room actually is, matching Noamm/Odin's placement. */
+    private static float[] centroidOf(RoomTile anchor) {
+        List<RoomTile> segments = DungeonGrid.segmentsOf(anchor);
+        float sx = 0, sz = 0;
+        for (RoomTile seg : segments) {
+            sx += seg.pos().x();
+            sz += seg.pos().z();
+        }
+        return new float[]{sx / segments.size(), sz / segments.size()};
+    }
+
+    /** "N Secret(s)" for a room whose exact design (and therefore secret count) is known, or null otherwise. */
+    private static String secretsLabel(RoomTile room) {
+        if (!DungeonMapSettings.showSecretCounts) return null;
+        int secrets = room.secrets();
+        if (secrets < 0) return null;
+        return secrets == 1 ? "1 Secret" : secrets + " Secrets";
+    }
+
+    /** Centered on the room's centroid (not its raw bounding box — see {@link #centroidOf}), scaled
+     *  down to fit if the name is too wide. When a secrets line is known, the name shifts up half a
+     *  line so the name+secrets pair reads as one centered block instead of the name alone sitting
+     *  dead-center with secrets hanging off the bottom edge. */
+    private static void drawLabel(DrawContext ctx, int centerX, int centerY, int maxWidth, String text, int color, String secretsText) {
         if (text.isEmpty()) return;
         TextRenderer font = MinecraftClient.getInstance().textRenderer;
         if (font == null) return;
-        int textWidth = font.getWidth(text);
-        int maxWidth = boxWidth - 2;
-        float scale = (textWidth > maxWidth && textWidth > 0) ? (float) maxWidth / textWidth : 1f;
+        boolean hasSecrets = secretsText != null && !secretsText.isEmpty();
+        int lineHeight = font.fontHeight;
+        int totalLines = hasSecrets ? 2 : 1;
+        float topY = centerY - totalLines * lineHeight / 2f;
 
+        int textWidth = font.getWidth(text);
+        float scale = (textWidth > maxWidth && textWidth > 0) ? (float) maxWidth / textWidth : 1f;
         Matrix3x2fStack stack = ctx.getMatrices();
         stack.pushMatrix();
-        stack.translate(boxX + boxWidth / 2f, boxY + boxHeight / 2f - font.fontHeight / 2f);
+        stack.translate(centerX, topY);
         stack.scale(scale, scale);
         ctx.drawText(font, Text.literal(text), -textWidth / 2, 0, color, true);
         stack.popMatrix();
+
+        if (hasSecrets) {
+            int secretsWidth = font.getWidth(secretsText);
+            float secretsScale = (secretsWidth > maxWidth && secretsWidth > 0) ? (float) maxWidth / secretsWidth : 1f;
+            Matrix3x2fStack s2 = ctx.getMatrices();
+            s2.pushMatrix();
+            s2.translate(centerX, topY + lineHeight);
+            s2.scale(secretsScale, secretsScale);
+            ctx.drawText(font, Text.literal(secretsText), -secretsWidth / 2, 0, 0xffffd700, true);
+            s2.popMatrix();
+        }
     }
 
     /** Matches NoammAddons' text-color convention: the room fill always stays its type color, only the label reflects clear/fail state. */

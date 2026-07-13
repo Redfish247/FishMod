@@ -30,6 +30,7 @@ public class RoomData {
     public int trappedChests;
 
     private static final Map<Integer, RoomData> BY_CORE = new HashMap<>();
+    private static final Map<String, RoomData> BY_NAME = new HashMap<>();
 
     static {
         try (InputStream stream = RoomData.class.getResourceAsStream("/data/dungeon_rooms.json")) {
@@ -39,6 +40,7 @@ public class RoomData {
                     List<RoomData> rooms = new Gson().fromJson(reader, listType);
                     if (rooms != null) {
                         for (RoomData room : rooms) {
+                            if (room.name != null) BY_NAME.put(room.name, room);
                             if (room.cores == null) continue;
                             for (int core : room.cores) BY_CORE.put(core, room);
                         }
@@ -50,5 +52,21 @@ public class RoomData {
 
     public static RoomData byCore(int core) {
         return BY_CORE.get(core);
+    }
+
+    public static RoomData byName(String name) {
+        return BY_NAME.get(name);
+    }
+
+    /** Cell count implied by {@link #shape}, or -1 if unrecognized/unset. */
+    public int cellCount() {
+        if (shape == null) return -1;
+        return switch (shape) {
+            case "1x1" -> 1;
+            case "1x2" -> 2;
+            case "1x3", "L" -> 3;
+            case "1x4", "2x2" -> 4;
+            default -> -1;
+        };
     }
 }

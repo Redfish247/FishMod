@@ -80,6 +80,13 @@ public class FishModInit implements ModInitializer {
         return Constants.SUCCESS;
     }
 
+    /** Prints a party-action whitelist/blacklist to your own chat, e.g. from /fmcmd whitelist. */
+    private static void printNameList(String label, String csv) {
+        var names = fishmod.utils.NameList.toList(csv);
+        Misc.addChatMessage(Text.literal("§b[FM] Party-Action " + label + " §7(" + names.size() + "): §f"
+                + (names.isEmpty() ? "(empty)" : String.join(", ", names))));
+    }
+
     private static final java.util.regex.Pattern HELP_CMD_TOKEN =
             java.util.regex.Pattern.compile("[/.][a-zA-Z][a-zA-Z0-9]*");
 
@@ -148,8 +155,9 @@ public class FishModInit implements ModInitializer {
 
         line.accept("");
         line.accept("§3§lParty Actions");
-        line.accept("§e/pk §f<player> §7— kick  §8·§7  §e/pw §7— warp  §8·§7  §e/pt §f<player> §7— transfer  §8·§7  §e/pp §f<player> §7— promote");
-        line.accept("§7In party chat: §f.ai §7(allinvite), §f.d §7(disband), §f.kick/.warp/.transfer/.promote");
+        line.accept("§e/pk §f<player> §7— kick  §8·§7  §e/pw §7— warp  §8·§7  §e/pt §f<player> §7— transfer  §8·§7  §e/pp §f<player> §7— promote  §8·§7  §e/pd §f<player> §7— demote");
+        line.accept("§7In party chat: §f.ai §7(allinvite), §f.d §7(disband), §f.kick/.warp(.w)/.transfer(.pt/.ptme)/.promote/.demote");
+        line.accept("§7Control who else can trigger them: §f/fm §8> §7Party §8> §7Party Commands, and §f/fmcmd whitelist|blacklist add|remove|list");
 
         line.accept("");
         line.accept("§3§lScreens & Misc");
@@ -192,6 +200,7 @@ public class FishModInit implements ModInitializer {
         SoulflowHud.init();
         PetHud.init();
         CooldownOverlay.init();
+        fishmod.features.CatacombsOverflowOverlay.init();
         fishmod.features.other.CommandKeys.init();
         fishmod.features.other.WardrobeHotkeys.init();
         // ItemRarityHotbar.init();   // rarity background: inventory-slot coverage (hotbar via HudRenderCallback)
@@ -222,6 +231,7 @@ public class FishModInit implements ModInitializer {
         FishHudEditor.register("LB Release Timer",  fishmod.features.dungeon.f7.F7Huds.lbReleaseTimer);
         FishHudEditor.register("Storm Crushed",     fishmod.features.dungeon.f7.F7Huds.stormCrush);
         FishHudEditor.register("Goldor Tick Timer", fishmod.features.dungeon.f7.F7Huds.goldorTickTimer);
+        FishHudEditor.register("Goldor Leap Timer", fishmod.features.dungeon.f7.F7Huds.goldorLeapTimer);
         FishHudEditor.register("Term Start Timer",  fishmod.features.dungeon.f7.F7Huds.termStartTimer);
         FishHudEditor.register("Section Progress",  fishmod.features.dungeon.f7.F7Huds.sectionProgress);
         FishHudEditor.register("Goldor Splits",     fishmod.utils.dungeon.Section.terminalSplits);
@@ -447,6 +457,16 @@ public class FishModInit implements ModInitializer {
                         String name = StringArgumentType.getString(ctx, "name");
                         MinecraftClient mc = MinecraftClient.getInstance();
                         if (mc.getNetworkHandler() != null) mc.getNetworkHandler().sendChatCommand("p promote " + name);
+                        return Constants.SUCCESS;
+                    })
+                )
+            );
+            dispatcher.register(ClientCommandManager.literal("pd")
+                .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
+                    .executes(ctx -> {
+                        String name = StringArgumentType.getString(ctx, "name");
+                        MinecraftClient mc = MinecraftClient.getInstance();
+                        if (mc.getNetworkHandler() != null) mc.getNetworkHandler().sendChatCommand("p demote " + name);
                         return Constants.SUCCESS;
                     })
                 )
@@ -731,10 +751,59 @@ public class FishModInit implements ModInitializer {
                 return b.buildFuture();
             };
 
-            // Lookups + player-arg party actions (kick/transfer/promote take a player name).
+            // ── Party-action name-list management for .kick/.warp/.transfer/.promote/.demote ──
+            // /fmcmd whitelist|blacklist [add|remove|list] <name> — manages FishSettings.pcPartyActionsWhitelist/
+            // Blacklist; the "Who Can Trigger" dropdown in /fm > Party > Party Commands picks which list applies.
+            dispatcher.register(ClientCommandManager.literal("fmcmd")
+                .then(ClientCommandManager.literal("whitelist")
+                    .executes(ctx -> { printNameList("Whitelist", fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist); return Constants.SUCCESS; })
+                    .then(ClientCommandManager.literal("list").executes(ctx -> { printNameList("Whitelist", fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist); return Constants.SUCCESS; }))
+                    .then(ClientCommandManager.literal("add").then(ClientCommandManager.argument("name", StringArgumentType.word()).suggests(playerSuggest)
+                        .executes(ctx -> {
+                            String name = StringArgumentType.getString(ctx, "name");
+                            fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist =
+                                fishmod.utils.NameList.add(fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist, name);
+                            fishmod.utils.config.FishConfig.manager.save();
+                            Misc.addChatMessage(Text.literal("§7[FM] Added §f" + name + " §7to the party-action whitelist."));
+                            return Constants.SUCCESS;
+                        })))
+                    .then(ClientCommandManager.literal("remove").then(ClientCommandManager.argument("name", StringArgumentType.word())
+                        .executes(ctx -> {
+                            String name = StringArgumentType.getString(ctx, "name");
+                            fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist =
+                                fishmod.utils.NameList.remove(fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist, name);
+                            fishmod.utils.config.FishConfig.manager.save();
+                            Misc.addChatMessage(Text.literal("§7[FM] Removed §f" + name + " §7from the party-action whitelist."));
+                            return Constants.SUCCESS;
+                        }))))
+                .then(ClientCommandManager.literal("blacklist")
+                    .executes(ctx -> { printNameList("Blacklist", fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist); return Constants.SUCCESS; })
+                    .then(ClientCommandManager.literal("list").executes(ctx -> { printNameList("Blacklist", fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist); return Constants.SUCCESS; }))
+                    .then(ClientCommandManager.literal("add").then(ClientCommandManager.argument("name", StringArgumentType.word()).suggests(playerSuggest)
+                        .executes(ctx -> {
+                            String name = StringArgumentType.getString(ctx, "name");
+                            fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist =
+                                fishmod.utils.NameList.add(fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist, name);
+                            fishmod.utils.config.FishConfig.manager.save();
+                            Misc.addChatMessage(Text.literal("§7[FM] Added §f" + name + " §7to the party-action blacklist."));
+                            return Constants.SUCCESS;
+                        })))
+                    .then(ClientCommandManager.literal("remove").then(ClientCommandManager.argument("name", StringArgumentType.word())
+                        .executes(ctx -> {
+                            String name = StringArgumentType.getString(ctx, "name");
+                            fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist =
+                                fishmod.utils.NameList.remove(fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist, name);
+                            fishmod.utils.config.FishConfig.manager.save();
+                            Misc.addChatMessage(Text.literal("§7[FM] Removed §f" + name + " §7from the party-action blacklist."));
+                            return Constants.SUCCESS;
+                        })))
+                )
+            );
+
+            // Lookups + player-arg party actions (kick/transfer/promote/demote take a player name).
             for (String name : new String[]{"cata","rtca","secrets","sa","totalruns","mp","nw","networth",
                     "bank","corpse","corpses","level","sblvl","farming","nuc","nucleus","powder",
-                    "worm","scatha","kick","transfer","promote"}) {
+                    "worm","scatha","kick","transfer","promote","demote"}) {
                 dispatcher.register(ClientCommandManager.literal(name)
                     .executes(c -> runLocalLookup(name, null, null))
                     .then(ClientCommandManager.argument("player", StringArgumentType.word()).suggests(playerSuggest)

@@ -26,7 +26,6 @@ public class DungeonGrid {
      * rooms across these edges.
      */
     private static final Set<String> connectedPairs = java.util.concurrent.ConcurrentHashMap.newKeySet();
-    private static int nextRoomId = 0;
 
     /**
      * Puzzle count comes from the tab list (a per-module concern — parsing it needs Minecraft's
@@ -54,7 +53,6 @@ public class DungeonGrid {
         rooms.clear();
         doors.clear();
         connectedPairs.clear();
-        nextRoomId = 0;
         playerMarkers = List.of();
         smoothedPositions.clear();
     }
@@ -111,8 +109,15 @@ public class DungeonGrid {
         return sa.compareTo(sb) < 0 ? sa + "|" + sb : sb + "|" + sa;
     }
 
+    /**
+     * Rebuilds every tile's {@code roomId} from {@link #connectedPairs} via union-find, so cells
+     * joined only transitively (A-B and B-C confirmed, but never A-C directly) still end up in one
+     * group. An earlier version assigned ids edge-by-edge without following chains through
+     * already-processed nodes, so a third edge bridging two groups formed earlier in the same pass
+     * silently failed to merge them — fragmenting what should have been a single logical room.
+     */
     private static void recomputeShapes() {
-        Map<GridPos, Integer> assigned = new HashMap<>();
+        Map<GridPos, GridPos> parent = new HashMap<>();
         for (String edge : connectedPairs) {
             String[] parts = edge.split("\\|");
             GridPos a = parsePos(parts[0]);
@@ -121,16 +126,32 @@ public class DungeonGrid {
             RoomTile tb = rooms.get(b);
             if (ta == null || tb == null || ta.type() != tb.type()) continue;
 
-            int ia = assigned.getOrDefault(a, ta.roomId);
-            int ib = assigned.getOrDefault(b, tb.roomId);
-            int merged = ia >= 0 ? ia : (ib >= 0 ? ib : nextRoomId++);
-            assigned.put(a, merged);
-            assigned.put(b, merged);
+            parent.putIfAbsent(a, a);
+            parent.putIfAbsent(b, b);
+            GridPos ra = find(parent, a), rb = find(parent, b);
+            if (!ra.equals(rb)) parent.put(ra, rb);
         }
-        for (Map.Entry<GridPos, Integer> entry : assigned.entrySet()) {
-            RoomTile t = rooms.get(entry.getKey());
-            if (t != null) t.roomId = entry.getValue();
+
+        Map<GridPos, Integer> groupIds = new HashMap<>();
+        int nextId = 0;
+        for (GridPos pos : parent.keySet()) {
+            GridPos root = find(parent, pos);
+            Integer id = groupIds.get(root);
+            if (id == null) {
+                id = nextId++;
+                groupIds.put(root, id);
+            }
+            RoomTile t = rooms.get(pos);
+            if (t != null) t.roomId = id;
         }
+    }
+
+    private static GridPos find(Map<GridPos, GridPos> parent, GridPos x) {
+        GridPos p = parent.get(x);
+        if (p == null || p.equals(x)) return x;
+        GridPos root = find(parent, p);
+        parent.put(x, root); // path compression
+        return root;
     }
 
     private static GridPos parsePos(String s) {
@@ -158,8 +179,22 @@ public class DungeonGrid {
         return tile == anchor;
     }
 
-    /** Applies an identified exact room name to every segment of tile's logical room. */
+    /**
+     * Applies an identified exact room name to every segment of tile's logical room.
+     *
+     * <p>The pixel-based connector merge in {@link fishmod.utils.dungeon.map.MapReader} is a
+     * heuristic and occasionally false-positives a tile into a bigger group than it really belongs
+     * to (e.g. a genuinely 1x1 room rendering as part of an L-shape). Once a world-block scan gives
+     * the room's exact design, {@link RoomData#shape} is ground truth — if it says this tile's real
+     * footprint is smaller than the group the pixel heuristic put it in, detach it into its own
+     * standalone group instead of mislabeling the extra cell(s) too.
+     */
     public static void identifyRoom(RoomTile tile, String name) {
+        RoomData data = RoomData.byName(name);
+        if (data != null && tile.roomId >= 0) {
+            int expected = data.cellCount();
+            if (expected > 0 && expected < segmentsOf(tile).size()) tile.roomId = -1;
+        }
         for (RoomTile segment : segmentsOf(tile)) segment.setName(name);
     }
 

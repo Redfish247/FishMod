@@ -265,7 +265,7 @@ public class FishModScreen extends Screen {
             case "Puzzle Overlay", "Simon Says", "M7 Lever Waypoints" -> "cube";
             case "Send Lag to Party", "Splits", "Cooldown Overlay", "Fire Freeze Timer",
                  "Maxor Tick Timer", "Crystal Spawn", "Storm Tick Timer", "Storm Death Time",
-                 "Goldor Tick Timer", "Term Start Timer", "Goldor Splits", "LB Release Timer" -> "clock";
+                 "Goldor Tick Timer", "Goldor Leap Timer", "Term Start Timer", "Goldor Splits", "LB Release Timer" -> "clock";
             case "Storm Crushed Noti" -> "bell";
             case "Section Progress" -> "star";
             case "Loot Tracker",
@@ -310,9 +310,10 @@ public class FishModScreen extends Screen {
             case "Crystal Spawn" -> "Crystal spawn countdown + reminder";
             case "Storm Tick Timer" -> "Tick timer during Storm (P2)";
             case "Storm Death Time" -> "Show when Storm died";
-            case "LB Release Timer" -> "Countdown 30s–34.35s: when to shoot Last Breath";
+            case "LB Release Timer" -> "Countdown to the Last Breath shot: Archer 34.35s, Healer 34.05s";
             case "Storm Crushed Noti" -> "Alert when Storm is crushed";
             case "Goldor Tick Timer" -> "Terminal-phase tick timer";
+            case "Goldor Leap Timer" -> "Countdown from Goldor's death to when to leap";
             case "Term Start Timer" -> "Countdown to terminals start";
             case "Section Progress" -> "Terminal section completed/total";
             case "Goldor Splits" -> "S1-S4 terminal split timers + total time";
@@ -426,8 +427,31 @@ public class FishModScreen extends Screen {
         }
 
         // ===== Dungeon =====
-        dungeon.features.add(new Feature("Dungeon Score",
-                () -> FishSettings.dungeonScoreEnabled, v -> FishSettings.dungeonScoreEnabled = v));
+        {
+            Feature f = new Feature("Dungeon Score",
+                    () -> FishSettings.dungeonScoreEnabled, v -> FishSettings.dungeonScoreEnabled = v);
+            f.sub.add(new ToggleSetting("Score Missing Msg (1min)", "",
+                    () -> FishSettings.dungeonScoreMissingMsg, v -> FishSettings.dungeonScoreMissingMsg = v));
+            f.sub.add(new ToggleSetting("Score Left (not total secrets)", "",
+                    () -> FishSettings.dungeonScoreShowLeft, v -> FishSettings.dungeonScoreShowLeft = v));
+            f.sub.add(new ToggleSetting("270 Title", "",
+                    () -> FishSettings.score270TitleEnabled, v -> FishSettings.score270TitleEnabled = v));
+            f.sub.add(new ToggleSetting("270 Chat Msg", "",
+                    () -> FishSettings.score270ChatEnabled, v -> FishSettings.score270ChatEnabled = v));
+            InputSetting t270 = new InputSetting("270 Text", "",
+                    () -> FishSettings.score270Text, v -> FishSettings.score270Text = v);
+            t270.hint = "& color codes ok";
+            f.sub.add(t270);
+            f.sub.add(new ToggleSetting("300 Title", "",
+                    () -> FishSettings.score300TitleEnabled, v -> FishSettings.score300TitleEnabled = v));
+            f.sub.add(new ToggleSetting("300 Chat Msg", "",
+                    () -> FishSettings.score300ChatEnabled, v -> FishSettings.score300ChatEnabled = v));
+            InputSetting t300 = new InputSetting("300 Text", "",
+                    () -> FishSettings.score300Text, v -> FishSettings.score300Text = v);
+            t300.hint = "& color codes ok";
+            f.sub.add(t300);
+            dungeon.features.add(f);
+        }
         dungeon.features.add(new Feature("PB Pace",
                 () -> FishSettings.pbPaceEnabled, v -> FishSettings.pbPaceEnabled = v));
         dungeon.features.add(new Feature("Puzzle Overlay",
@@ -633,7 +657,22 @@ public class FishModScreen extends Screen {
             f.sub.add(new ToggleSetting(".nuc", "", () -> FishSettings.pcNuc, v -> FishSettings.pcNuc = v));
             f.sub.add(new ToggleSetting(".worm / .scatha", "", () -> FishSettings.pcWorm, v -> FishSettings.pcWorm = v));
             f.sub.add(new ToggleSetting(".help / .?", "", () -> FishSettings.pcHelp, v -> FishSettings.pcHelp = v));
-            f.sub.add(new ToggleSetting("Party Actions", "", () -> FishSettings.pcPartyActions, v -> FishSettings.pcPartyActions = v));
+            f.sub.add(new SubcategoryHeader("Party Actions"));
+            f.sub.add(new ToggleSetting(".kick", "", () -> FishSettings.pcActionKick, v -> FishSettings.pcActionKick = v));
+            f.sub.add(new ToggleSetting(".warp / .w", "", () -> FishSettings.pcActionWarp, v -> FishSettings.pcActionWarp = v));
+            f.sub.add(new ToggleSetting(".transfer / .pt / .ptme", "", () -> FishSettings.pcActionTransfer, v -> FishSettings.pcActionTransfer = v));
+            f.sub.add(new ToggleSetting(".promote", "", () -> FishSettings.pcActionPromote, v -> FishSettings.pcActionPromote = v));
+            f.sub.add(new ToggleSetting(".demote", "", () -> FishSettings.pcActionDemote, v -> FishSettings.pcActionDemote = v));
+            f.sub.add(new DropdownSetting<>("Who Can Trigger", "", new String[]{"off","self","whitelist","blacklist","everyone"},
+                    () -> FishSettings.pcPartyActionsMode, v -> FishSettings.pcPartyActionsMode = v));
+            InputSetting paWhitelist = new InputSetting("Whitelist", "",
+                    () -> FishSettings.pcPartyActionsWhitelist, v -> FishSettings.pcPartyActionsWhitelist = v);
+            paWhitelist.hint = "or /fmcmd whitelist add|remove|list";
+            f.sub.add(paWhitelist);
+            InputSetting paBlacklist = new InputSetting("Blacklist", "",
+                    () -> FishSettings.pcPartyActionsBlacklist, v -> FishSettings.pcPartyActionsBlacklist = v);
+            paBlacklist.hint = "or /fmcmd blacklist add|remove|list";
+            f.sub.add(paBlacklist);
             party.features.add(f);
         }
         {
@@ -657,6 +696,8 @@ public class FishModScreen extends Screen {
                     () -> FishSettings.cooldownInInventory, v -> FishSettings.cooldownInInventory = v));
             visuals.features.add(f);
         }
+        visuals.features.add(new Feature("Catacombs Overflow Levels",
+                () -> FishSettings.catacombsOverflowEnabled, v -> FishSettings.catacombsOverflowEnabled = v));
         {
             Feature f = new Feature("Pet HUD",
                     () -> FishSettings.petHudEnabled, v -> FishSettings.petHudEnabled = v);
@@ -735,6 +776,8 @@ public class FishModScreen extends Screen {
         }
         floor7.features.add(new Feature("Term Start Timer",
                 () -> Floor7.enableTermStartTimer, v -> Floor7.enableTermStartTimer = v));
+        floor7.features.add(new Feature("Goldor Leap Timer",
+                () -> Floor7.leapNotifications, v -> Floor7.leapNotifications = v));
         {
             Feature f = new Feature("Section Progress",
                     () -> Floor7.showSectionProgress, v -> Floor7.showSectionProgress = v);
