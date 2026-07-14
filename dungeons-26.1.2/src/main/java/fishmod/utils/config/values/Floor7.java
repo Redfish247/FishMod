@@ -116,6 +116,7 @@ public class Floor7 {
     @ConfigValue
     public static boolean notifiyMelody = false;
 
+    // Counts down 3.75s from Goldor's health hitting 0, then shows a "LEAP!" title + sound.
     @ConfigValue
     public static boolean leapNotifications = false;
 

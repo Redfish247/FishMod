@@ -19,7 +19,7 @@ public class ChatHudMixin {
     // ── Command Parsing Logic ──────────────────────────────────────────────────
 
     private static final String CMD_ALT =
-            "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|fps|tps|ping|ai|allinv|d|mp|collection|kick|warp|transfer|promote|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|help|\\?|e|[fm][1-7]|t[1-5]";
+            "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|fps|tps|ping|ai|allinv|d|mp|collection|kick|warp|w|transfer|pt|ptme|promote|demote|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|help|\\?|e|[fm][1-7]|t[1-5]";
 
     // Up to 3 args captured (groups 3/4/5): .crtc needs [name] [class] [level].
     private static final String ARG_TAIL = "(?:\\s+(\\w+)(?:\\s+(\\w+)(?:\\s+(\\w+))?)?)?\\s*$";

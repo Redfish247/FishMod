@@ -62,12 +62,17 @@ public class F7Huds {
     public static HUDComponent sectionProgress = new HUDComponent(10, 116, 40, 10, 1, "Section Progress",
             () -> false, SectionProgress::render, () -> Floor7.showSectionProgress);
 
+    @ConfigValue
+    public static HUDComponent goldorLeapTimer = new HUDComponent(10, 128, TICK_W, 10, 1, "Goldor Leap Timer",
+            () -> false, GoldorLeapTimer::render, () -> Floor7.leapNotifications);
+
     public static void init() {
         MaxorTickTimer.init();
         CrystalSpawn.init();
         StormTickTimer.init();
         PillarExplode.init();
         GoldorTickTimer.init();
+        GoldorLeapTimer.init();
         TermStartTimer.init();
         SectionProgress.init();
     }
@@ -87,6 +92,7 @@ public class F7Huds {
         renderOne(ctx, lbReleaseTimer,   StormTickTimer.displayLbReleaseTimer(), StormTickTimer::renderLbReleaseTimer, 10, 166);
         renderOne(ctx, crystalReminder,  CrystalSpawn.displayNotification(),CrystalSpawn::renderNotification,10, 40);
         renderOne(ctx, stormCrush,       PillarExplode.display(),           PillarExplode::render,           10, 28);
+        renderOne(ctx, goldorLeapTimer,  GoldorLeapTimer.display(),         GoldorLeapTimer::render,         10, 178);
     }
 
     private static void renderOne(GuiGraphicsExtractor ctx, HUDComponent c, boolean show,

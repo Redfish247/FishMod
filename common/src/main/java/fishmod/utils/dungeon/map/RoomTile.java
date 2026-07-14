@@ -11,6 +11,8 @@ public class RoomTile implements Tile {
     int roomId = -1;
     /** Exact room design name from {@link RoomData}, once world-block scanning identifies it. Null until then. */
     private String name;
+    /** Secret count for {@link #name}, looked up from {@link RoomData} the moment the name is set. -1 until known. */
+    private int secrets = -1;
     /** Set once a scan has been attempted at this tile, so a failed/unloaded attempt isn't retried every tick. */
     boolean scanAttempted = false;
 
@@ -38,8 +40,16 @@ public class RoomTile implements Tile {
         return name;
     }
 
+    /** Secret count for this room's exact design, or -1 if the room hasn't been identified by name yet. */
+    public int secrets() {
+        return secrets;
+    }
+
     void setName(String name) {
-        if (this.name == null) this.name = name;
+        if (this.name != null) return;
+        this.name = name;
+        RoomData data = RoomData.byName(name);
+        if (data != null) secrets = data.secrets;
     }
 
     void upgrade(RoomType newType, RoomState newState) {

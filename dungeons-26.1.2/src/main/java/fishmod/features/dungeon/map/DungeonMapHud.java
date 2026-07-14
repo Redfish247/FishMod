@@ -17,6 +17,8 @@ import fishmod.utils.dungeon.map.Tile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.PlayerFaceExtractor;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
 import org.joml.Matrix3x2fStack;
 
@@ -71,7 +73,7 @@ public class DungeonMapHud {
                 (double) (targetY - y) * component.getScale() / screenHeight);
     }
 
-    private record LabelJob(int x, int y, int width, int height, String text, int color) {}
+    private record LabelJob(int centerX, int centerY, String text, int color, String secretsText) {}
 
     public static void render(HUDComponent component, GuiGraphicsExtractor ctx) {
         int baseX = component.getScaledX();
@@ -99,12 +101,10 @@ public class DungeonMapHud {
                             && DungeonGrid.isLabelAnchor(room)) { // multi-cell room: label once, not per segment
                         String text = room.name() != null ? room.name() : label(room.type());
                         if (!text.isEmpty()) {
-                            int[] bbox = boundingBox(room);
-                            int boxX = baseX + bbox[0] * (ROOM_PX + DOOR_PX);
-                            int boxY = baseY + bbox[1] * (ROOM_PX + DOOR_PX);
-                            int boxW = (bbox[2] - bbox[0]) * (ROOM_PX + DOOR_PX) + ROOM_PX;
-                            int boxH = (bbox[3] - bbox[1]) * (ROOM_PX + DOOR_PX) + ROOM_PX;
-                            labelJobs.add(new LabelJob(boxX, boxY, boxW, boxH, text, labelColor(room.state())));
+                            float[] centroid = centroidOf(room);
+                            int centerX = baseX + Math.round(centroid[0] * (ROOM_PX + DOOR_PX)) + ROOM_PX / 2;
+                            int centerY = baseY + Math.round(centroid[1] * (ROOM_PX + DOOR_PX)) + ROOM_PX / 2;
+                            labelJobs.add(new LabelJob(centerX, centerY, text, labelColor(room.state()), secretsLabel(room)));
                         }
                     }
                 }
@@ -153,15 +153,24 @@ public class DungeonMapHud {
         // neighboring room's fill can never paint over a previously-drawn label (this was the
         // "text getting cut off" bug when labels were drawn inline during the fill loop).
         for (LabelJob job : labelJobs) {
-            drawLabel(ctx, job.x(), job.y(), job.width(), job.height(), job.text(), job.color());
+            drawLabel(ctx, job.centerX(), job.centerY(), job.text(), job.color(), job.secretsText());
         }
 
         if (DungeonMapSettings.showPlayerMarkers) {
+            Minecraft mc = Minecraft.getInstance();
+            PlayerInfo selfEntry = mc.player != null && mc.getConnection() != null
+                    ? mc.getConnection().getPlayerInfo(mc.player.getUUID()) : null;
             for (var marker : DungeonGrid.playerMarkers()) {
                 int mx = baseX + Math.round(marker.tileX() * (ROOM_PX + DOOR_PX));
                 int my = baseY + Math.round(marker.tileZ() * (ROOM_PX + DOOR_PX));
-                int color = marker.self() ? DungeonMapSettings.selfMarkerColor : DungeonMapSettings.teammateMarkerColor;
-                drawPlayerArrow(ctx, mx, my, marker.yaw(), color);
+                if (marker.self()) {
+                    if (selfEntry != null) drawPlayerHead(ctx, selfEntry, mx, my, DungeonMapSettings.selfMarkerColor);
+                    else drawPlayerArrow(ctx, mx, my, marker.yaw(), DungeonMapSettings.selfMarkerColor);
+                } else {
+                    PlayerInfo entry = findTabEntry(mc, marker.name());
+                    if (entry != null) drawPlayerHead(ctx, entry, mx, my, DungeonMapSettings.teammateMarkerColor);
+                    else drawPlayerArrow(ctx, mx, my, marker.yaw(), DungeonMapSettings.teammateMarkerColor);
+                }
             }
         }
 
@@ -181,12 +190,35 @@ public class DungeonMapHud {
     }
 
     /**
-     * A rotated arrow pointing the direction that player is facing — matching NoammAddons' "vanilla
-     * marker" style (a rotated directional icon for every player, not a per-player skin/head), used
-     * for both self and teammates now. The earlier per-teammate skin-head lookup (matching the map
-     * decoration's name against the tab list) turned out unreliable in practice — Hypixel's decoration
-     * names for other players didn't consistently resolve — so this drops that attempt entirely in
-     * favor of a simple, robust shape that only needs the position+yaw the map already gives us.
+     * Matches a map decoration's name against the tab list to find that teammate's skin — best
+     * effort, since Hypixel doesn't always populate the decoration name. Callers fall back to the
+     * plain directional arrow when this returns null, so an unresolved name just looks like it did
+     * before this feature existed rather than breaking anything.
+     */
+    private static PlayerInfo findTabEntry(Minecraft mc, String decorationName) {
+        if (decorationName == null || mc.getConnection() == null) return null;
+        String stripped = decorationName.replaceAll("§.", "").trim();
+        if (stripped.isEmpty()) return null;
+        for (PlayerInfo entry : mc.getConnection().getOnlinePlayers()) {
+            if (entry.getProfile() != null && stripped.equalsIgnoreCase(entry.getProfile().name())) return entry;
+        }
+        return null;
+    }
+
+    /** An 8x8 skin head on a small colored backing square (green=self/white=teammate by default), matching Noamm's player-head map markers. */
+    private static void drawPlayerHead(GuiGraphicsExtractor ctx, PlayerInfo entry, int mx, int my, int borderColor) {
+        int size = 8;
+        ctx.fill(mx - size / 2 - 1, my - size / 2 - 1, mx + size / 2 + 1, my + size / 2 + 1, borderColor);
+        try {
+            PlayerFaceExtractor.extractRenderState(ctx, entry.getSkin(), mx - size / 2, my - size / 2, size);
+        } catch (Exception ignored) {}
+    }
+
+    /**
+     * A rotated arrow pointing the direction that player is facing — the fallback marker for when
+     * {@link #drawPlayerHead} can't be used (self should always resolve via {@code mc.player}'s own
+     * tab-list entry; a teammate only falls back here if Hypixel's map decoration didn't carry a
+     * name that matches anyone in the tab list, which happens occasionally in practice).
      */
     private static void drawPlayerArrow(GuiGraphicsExtractor ctx, int mx, int my, float yaw, int color) {
         Matrix3x2fStack stack = ctx.pose();
@@ -204,25 +236,36 @@ public class DungeonMapHud {
     }
 
     /**
-     * A pie-chart-ish 2x2 quadrant split instead of horizontal stripes — {@code ctx.fill} only
-     * draws axis-aligned rects (no true angled wedges available), so this approximates a pie split
-     * using quadrants: 2 candidates alternate diagonally (top-left+bottom-right vs top-right+
-     * bottom-left) rather than a plain top/bottom split, reading more like alternating slices.
+     * Splits the room evenly among however many candidates remain: a plain left/right half split
+     * for 2, three equal vertical thirds for 3, and the 2x2 quadrant split only once there are
+     * actually 4 candidates to give each its own corner. Previously this always rendered as
+     * quadrants (alternating diagonally for 2, reusing a spare corner for 3), which read as "4
+     * colors" on screen even when there were really only 2 or 3.
      */
     private static void drawWedges(GuiGraphicsExtractor ctx, int x, int y, int size, PredictedRoomTile predicted) {
         int count = predicted.candidates().size();
-        int half = size / 2;
-        int[] quadrantCandidate = switch (count) {
-            case 2 -> new int[]{0, 1, 1, 0};
-            case 3 -> new int[]{0, 1, 2, 0};
-            default -> new int[]{0, 1, 2, 3};
-        };
-        int[][] quadrantPos = {{0, 0}, {1, 0}, {0, 1}, {1, 1}}; // TL, TR, BL, BR
-        for (int i = 0; i < 4; i++) {
-            int candidateIndex = quadrantCandidate[i] % count;
-            int qx = x + quadrantPos[i][0] * half;
-            int qy = y + quadrantPos[i][1] * half;
-            ctx.fill(qx, qy, qx + half, qy + half, predicted.colorAt(candidateIndex));
+        switch (count) {
+            case 1 -> ctx.fill(x, y, x + size, y + size, predicted.colorAt(0));
+            case 2 -> {
+                int half = size / 2;
+                ctx.fill(x, y, x + half, y + size, predicted.colorAt(0));
+                ctx.fill(x + half, y, x + size, y + size, predicted.colorAt(1));
+            }
+            case 3 -> {
+                int third = size / 3;
+                ctx.fill(x, y, x + third, y + size, predicted.colorAt(0));
+                ctx.fill(x + third, y, x + 2 * third, y + size, predicted.colorAt(1));
+                ctx.fill(x + 2 * third, y, x + size, y + size, predicted.colorAt(2));
+            }
+            default -> {
+                int half = size / 2;
+                int[][] quadrantPos = {{0, 0}, {1, 0}, {0, 1}, {1, 1}}; // TL, TR, BL, BR
+                for (int i = 0; i < 4; i++) {
+                    int qx = x + quadrantPos[i][0] * half;
+                    int qy = y + quadrantPos[i][1] * half;
+                    ctx.fill(qx, qy, qx + half, qy + half, predicted.colorAt(i % count));
+                }
+            }
         }
     }
 
@@ -241,46 +284,63 @@ public class DungeonMapHud {
         };
     }
 
-    /** All grid cells belonging to the same logical room as {@code anchor}, in tile coordinates. */
-    private static int[] boundingBox(RoomTile anchor) {
-        int minX = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
-        for (RoomTile seg : DungeonGrid.segmentsOf(anchor)) {
-            GridPos p = seg.pos();
-            minX = Math.min(minX, p.x());
-            maxX = Math.max(maxX, p.x());
-            minZ = Math.min(minZ, p.z());
-            maxZ = Math.max(maxZ, p.z());
+    /** Average tile position of the room's occupied cells. For an irregular shape like an L, the
+     *  bounding box's geometric center falls over the missing corner cell; the centroid instead
+     *  biases the label toward where the room actually is, matching Noamm/Odin's placement. */
+    private static float[] centroidOf(RoomTile anchor) {
+        List<RoomTile> segments = DungeonGrid.segmentsOf(anchor);
+        float sx = 0, sz = 0;
+        for (RoomTile seg : segments) {
+            sx += seg.pos().x();
+            sz += seg.pos().z();
         }
-        return new int[]{minX, minZ, maxX, maxZ};
+        return new float[]{sx / segments.size(), sz / segments.size()};
     }
 
-    /** Centered both horizontally and vertically across the room's full bounding box, so the name
-     *  sits at the room's true center point rather than hugging an edge. Left at full scale and
-     *  allowed to overflow the box horizontally (rooms are small, names aren't) rather than
-     *  shrinking to fit; only wraps onto a second line if the name is long enough that one line
-     *  would sprawl across most of the map. */
-    private static void drawLabel(GuiGraphicsExtractor ctx, int boxX, int boxY, int boxWidth, int boxHeight, String text, int color) {
+    /** "N Secret(s)" for a room whose exact design (and therefore secret count) is known, or null otherwise. */
+    private static String secretsLabel(RoomTile room) {
+        if (!DungeonMapSettings.showSecretCounts) return null;
+        int secrets = room.secrets();
+        if (secrets < 0) return null;
+        return secrets == 1 ? "1 Secret" : secrets + " Secrets";
+    }
+
+    /** Centered on the room's centroid (not its raw bounding box — see {@link #centroidOf}). Left at
+     *  full scale and allowed to overflow the box horizontally (rooms are small, names aren't)
+     *  rather than shrinking to fit; only wraps onto a second line if the name is long enough that
+     *  one line would sprawl across most of the map. A known secrets count renders as its own line
+     *  below the (possibly wrapped) name, and the whole block is centered together so the name
+     *  doesn't sit dead-center with secrets hanging off the bottom edge. */
+    private static void drawLabel(GuiGraphicsExtractor ctx, int centerX, int centerY, String text, int color, String secretsText) {
         if (text.isEmpty()) return;
         Font font = Minecraft.getInstance().font;
         if (font == null) return;
 
-        int centerX = boxX + boxWidth / 2;
-        int centerY = boxY + boxHeight / 2;
         int textWidth = font.width(text);
         int wrapThreshold = SIZE / 2;
+        List<String> nameLines = new ArrayList<>();
         if (textWidth <= wrapThreshold) {
-            ctx.text(font, Component.literal(text), centerX - textWidth / 2, centerY - font.lineHeight / 2, color, true);
-            return;
+            nameLines.add(text);
+        } else {
+            int splitAt = splitPoint(text);
+            nameLines.add(text.substring(0, splitAt).trim());
+            nameLines.add(text.substring(splitAt).trim());
         }
 
-        int splitAt = splitPoint(text);
-        String line1 = text.substring(0, splitAt).trim();
-        String line2 = text.substring(splitAt).trim();
-        int w1 = font.width(line1);
-        int w2 = font.width(line2);
-        int topY = centerY - font.lineHeight;
-        ctx.text(font, Component.literal(line1), centerX - w1 / 2, topY, color, true);
-        ctx.text(font, Component.literal(line2), centerX - w2 / 2, topY + font.lineHeight, color, true);
+        boolean hasSecrets = secretsText != null && !secretsText.isEmpty();
+        int lineHeight = font.lineHeight;
+        int totalLines = nameLines.size() + (hasSecrets ? 1 : 0);
+        int topY = centerY - totalLines * lineHeight / 2;
+
+        for (int i = 0; i < nameLines.size(); i++) {
+            String line = nameLines.get(i);
+            int w = font.width(line);
+            ctx.text(font, Component.literal(line), centerX - w / 2, topY + i * lineHeight, color, true);
+        }
+        if (hasSecrets) {
+            int sw = font.width(secretsText);
+            ctx.text(font, Component.literal(secretsText), centerX - sw / 2, topY + nameLines.size() * lineHeight, 0xffffd700, true);
+        }
     }
 
     /** Nearest space to the midpoint, so a wrapped room name breaks between words instead of

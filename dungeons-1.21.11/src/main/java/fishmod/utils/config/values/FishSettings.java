@@ -81,6 +81,9 @@ public class FishSettings {
     @ConfigValue public static boolean cooldownShowBar        = false;
     @ConfigValue public static boolean cooldownOnlyUnder3s    = false;
 
+    // Catacombs/class overflow levels — drawn on the real Hypixel level-up menu items past the level-50 cap
+    @ConfigValue public static boolean catacombsOverflowEnabled = false;
+
     // Bridge Bot
     @ConfigValue public static boolean bridgeBotEnabled = false;
     @ConfigValue public static String  bridgeBotName    = "";
@@ -158,6 +161,15 @@ public class FishSettings {
     @ConfigValue public static int     dungeonScoreHudX    = 10;
     @ConfigValue public static int     dungeonScoreHudY    = 200;
     @ConfigValue public static boolean dungeonScorePaulActive = false;
+    @ConfigValue public static boolean dungeonScoreMissingMsg = true;
+    @ConfigValue public static boolean dungeonScoreShowLeft = false;
+    // 270/300 score alerts — on-screen title + chat message, each toggleable, text customizable (& color codes ok).
+    @ConfigValue public static boolean score270TitleEnabled = true;
+    @ConfigValue public static boolean score270ChatEnabled  = true;
+    @ConfigValue public static String  score270Text         = "&e&l270 Score!";
+    @ConfigValue public static boolean score300TitleEnabled = true;
+    @ConfigValue public static boolean score300ChatEnabled  = true;
+    @ConfigValue public static String  score300Text         = "&a&l300 Score!";
 
     // Farming coin/hr tracker
     @ConfigValue public static boolean farmingTrackerEnabled = false;
@@ -267,12 +279,20 @@ public class FishSettings {
     @ConfigValue public static boolean pcMp         = false;
     @ConfigValue public static boolean pcCollection = false;
 
-    // Chat-triggered party actions (.kick / .warp / .transfer / .promote).
-    // pcPartyActionsMode: "off" | "self" | "whitelist" | "everyone".
+    // Chat-triggered party actions: .kick, .warp/.w, .transfer/.pt/.ptme, .promote, .demote.
+    // Each has its own on/off toggle. pcPartyActionsMode governs who besides yourself can trigger
+    // them: "off" (nobody, not even you) | "self" (only you) | "whitelist" (you + listed names) |
+    // "blacklist" (everyone except listed names) | "everyone" (any party member, no filter).
+    // Manage the lists in-game with /fmcmd whitelist|blacklist add|remove|list.
     // Default off for safety — only enable when you trust the party.
-    @ConfigValue public static boolean pcPartyActions          = false;
+    @ConfigValue public static boolean pcActionKick            = false;
+    @ConfigValue public static boolean pcActionWarp            = false;
+    @ConfigValue public static boolean pcActionTransfer        = false;
+    @ConfigValue public static boolean pcActionPromote         = false;
+    @ConfigValue public static boolean pcActionDemote          = false;
     @ConfigValue public static String  pcPartyActionsMode      = "self";
     @ConfigValue public static String  pcPartyActionsWhitelist = "";
+    @ConfigValue public static String  pcPartyActionsBlacklist = "";
 
     // Manual loot/profit tracker (in-inventory panel, Dungeon Hub only)
     @ConfigValue public static boolean lootTrackerEnabled = false;
