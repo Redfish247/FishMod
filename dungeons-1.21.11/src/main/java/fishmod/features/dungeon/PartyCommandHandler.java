@@ -194,8 +194,8 @@ public class PartyCommandHandler {
             case "promote"                -> { if (FishSettings.pcActionPromote  && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p promote " + rawArg1);  }
             case "demote"                 -> { if (FishSettings.pcActionDemote   && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p demote " + rawArg1);   }
             default -> {
-                if ((cmd.matches("[fm][1-7]") || cmd.equals("e")) && FishSettings.pcJoinFloor) handleJoinInstance(cmd, mc, responder);
-                else if (cmd.matches("t[1-5]") && FishSettings.pcJoinFloor) handleKuudra(cmd, mc, responder);
+                if ((cmd.matches("[fm][1-7]") || cmd.equals("e")) && FishSettings.pcJoinFloor && allowPartyAction(typer, isMe)) handleJoinInstance(cmd, mc, responder);
+                else if (cmd.matches("t[1-5]") && FishSettings.pcJoinFloor && allowPartyAction(typer, isMe)) handleKuudra(cmd, mc, responder);
             }
         }
     }
@@ -226,7 +226,8 @@ public class PartyCommandHandler {
     }
 
     /**
-     * Who besides yourself may trigger a party action, per FishSettings.pcPartyActionsMode:
+     * Who besides yourself may trigger a party action (kick/warp/promote/demote/transfer) or a
+     * floor/Kuudra join (.e/.f1-7/.m1-7/.t1-5), per FishSettings.pcPartyActionsMode:
      * "off"/"self" (nobody else), "whitelist" (listed names only), "blacklist" (anyone not listed),
      * "everyone" (any party member). You can always trigger your own actions.
      */

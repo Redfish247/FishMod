@@ -87,6 +87,24 @@ public class DungeonScore {
         return totalSecrets();
     }
 
+    /** Crypts opened this run, from the tab list's "Crypts: (N)" line. */
+    public static int getCryptCount() {
+        return cryptCount;
+    }
+
+    public static boolean isMimicKilled() {
+        return mimicKilled;
+    }
+
+    public static boolean isPrinceKilled() {
+        return princeKilled;
+    }
+
+    /** Team deaths this run, from the tab list's "Team Deaths: (N)" line. */
+    public static int getDeathCount() {
+        return deathCount;
+    }
+
     public static void init() {
         FishHudEditor.register("Dungeon Score",
                 () -> FishSettings.dungeonScoreHudX, v -> FishSettings.dungeonScoreHudX = v,

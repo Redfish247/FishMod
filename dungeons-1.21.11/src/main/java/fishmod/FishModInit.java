@@ -520,6 +520,13 @@ public class FishModInit implements ModInitializer {
                 return Constants.SUCCESS;
             }));
 
+            dispatcher.register(ClientCommandManager.literal("fmcatadump").executes(context -> {
+                if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
+                fishmod.features.CatacombsOverflowOverlay.debugDumpLines = !fishmod.features.CatacombsOverflowOverlay.debugDumpLines;
+                Misc.addChatMessage(Text.literal("§b[fmcata] dump Catacombs/class menu item lines: §f" + fishmod.features.CatacombsOverflowOverlay.debugDumpLines));
+                return Constants.SUCCESS;
+            }));
+
             dispatcher.register(ClientCommandManager.literal("fmblocks").executes(context -> {
                 if (fishmod.utils.DevOnly.deny(context.getSource())) return Constants.SUCCESS;
                 MinecraftClient mc = MinecraftClient.getInstance();

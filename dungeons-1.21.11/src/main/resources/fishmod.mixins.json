@@ -25,6 +25,8 @@
     "accessors.GameRendererAccessor",
     "accessors.HandledScreenAccessor",
 
+    "GameRendererNvgMixin",
+
     "ChatHudInvoker",
     "ChatHudMixin",
     "FishCopyChatMixin",

@@ -1,6 +1,7 @@
 package fishmod.features.dungeon.map;
 
 import fishmod.features.dungeon.DungeonScore;
+import fishmod.utils.dungeon.map.ClearInfoUpdater;
 import fishmod.utils.dungeon.map.DungeonGrid;
 import fishmod.utils.dungeon.map.MapReader;
 
@@ -10,6 +11,8 @@ public class DungeonMapFeature {
         // :common's DungeonGrid can't call DungeonScore directly (that class needs this module's
         // own Minecraft-API code), so it takes the puzzle count through this supplier instead.
         DungeonGrid.puzzleCountSupplier = DungeonScore::getPuzzleCount;
+        ClearInfoUpdater.secretCountSupplier = DungeonScore::getSecretCount;
+        ClearInfoUpdater.deathCountSupplier = DungeonScore::getDeathCount;
         MapReader.init();
     }
 }
