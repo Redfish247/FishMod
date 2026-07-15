@@ -20,8 +20,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.PlayerFaceExtractor;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.item.ItemStack;
 import org.joml.Matrix3x2fStack;
 
 import java.util.ArrayList;
@@ -82,18 +80,6 @@ public class DungeonMapHud {
         int baseY = component.getScaledY();
         List<LabelJob> labelJobs = new ArrayList<>();
 
-        if (DungeonMapSettings.backgroundColor != 0) {
-            ctx.fill(baseX, baseY, baseX + SIZE, baseY + SIZE, DungeonMapSettings.backgroundColor);
-        }
-        if (DungeonMapSettings.borderColor != 0 && DungeonMapSettings.borderThickness > 0) {
-            int t = DungeonMapSettings.borderThickness;
-            int c = DungeonMapSettings.borderColor;
-            ctx.fill(baseX - t, baseY - t, baseX + SIZE + t, baseY, c);
-            ctx.fill(baseX - t, baseY + SIZE, baseX + SIZE + t, baseY + SIZE + t, c);
-            ctx.fill(baseX - t, baseY, baseX, baseY + SIZE, c);
-            ctx.fill(baseX + SIZE, baseY, baseX + SIZE + t, baseY + SIZE, c);
-        }
-
         for (int tileX = 0; tileX < GRID_SIZE; tileX++) {
             for (int tileZ = 0; tileZ < GRID_SIZE; tileZ++) {
                 GridPos pos = new GridPos(tileX, tileZ);
@@ -109,10 +95,6 @@ public class DungeonMapHud {
                 } else {
                     int color = tile.color();
                     if (color != 0) ctx.fill(x, y, x + ROOM_PX, y + ROOM_PX, color);
-                    if (DungeonMapSettings.showCheckmarks && tile instanceof RoomTile room && room.type() != null
-                            && room.type() != RoomType.ENTRANCE && room.state() != RoomState.UNDISCOVERED) {
-                        drawCheckmark(ctx, x, y, room.state());
-                    }
                     if (DungeonMapSettings.showRoomNames && tile instanceof RoomTile room && room.type() != null
                             && room.type() != RoomType.ENTRANCE // always known/obvious, not worth labeling
                             && room.state() != RoomState.UNOPENED // type/name not actually confirmed yet
@@ -136,7 +118,6 @@ public class DungeonMapHud {
                         int doorH = ROOM_PX / 2;
                         int doorY = y + (ROOM_PX - doorH) / 2;
                         ctx.fill(x + ROOM_PX, doorY, x + ROOM_PX + DOOR_PX, doorY + doorH, door.color());
-                        drawWitherDoorEsp(ctx, door, x + ROOM_PX, doorY, DOOR_PX, doorH);
                     } else if (DungeonGrid.isMerged(pos, east)) {
                         // Same logical room on both sides of this gap — fill it so the room reads
                         // as one connected shape instead of two disconnected squares with a blank gap.
@@ -150,7 +131,6 @@ public class DungeonMapHud {
                         int doorW = ROOM_PX / 2;
                         int doorX = x + (ROOM_PX - doorW) / 2;
                         ctx.fill(doorX, y + ROOM_PX, doorX + doorW, y + ROOM_PX + DOOR_PX, door.color());
-                        drawWitherDoorEsp(ctx, door, doorX, y + ROOM_PX, doorW, DOOR_PX);
                     } else if (DungeonGrid.isMerged(pos, south)) {
                         ctx.fill(x, y + ROOM_PX, x + ROOM_PX, y + ROOM_PX + DOOR_PX, tile.color());
                     }
@@ -191,14 +171,9 @@ public class DungeonMapHud {
                     if (entry != null) drawPlayerHead(ctx, entry, mx, my, DungeonMapSettings.teammateMarkerColor);
                     else drawPlayerArrow(ctx, mx, my, marker.yaw(), DungeonMapSettings.teammateMarkerColor);
                 }
-                if (DungeonMapSettings.showPlayerNames) {
-                    String displayName = marker.self() && mc.player != null ? mc.player.getName().getString() : marker.name();
-                    if (displayName != null) drawPlayerNameLabel(ctx, mx, my, displayName);
-                }
             }
         }
 
-        int extraLineY = baseY + SIZE + 2;
         if (DungeonMapSettings.showSecretCounts) {
             int total = fishmod.features.dungeon.DungeonScore.getTotalSecrets();
             int found = fishmod.features.dungeon.DungeonScore.getSecretCount();
@@ -208,88 +183,10 @@ public class DungeonMapHud {
                 if (font != null) {
                     String text = "Secrets left: " + remaining;
                     int textWidth = font.width(text);
-                    ctx.text(font, Component.literal(text), baseX + (SIZE - textWidth) / 2, extraLineY, 0xffffffff, true);
-                    extraLineY += SECRETS_LINE_HEIGHT;
+                    ctx.text(font, Component.literal(text), baseX + (SIZE - textWidth) / 2, baseY + SIZE + 2, 0xffffffff, true);
                 }
             }
         }
-
-        if (DungeonMapSettings.showExtraInfoUnderMap) {
-            Font font = Minecraft.getInstance().font;
-            if (font != null) {
-                String text = "Crypts: " + fishmod.features.dungeon.DungeonScore.getCryptCount()
-                        + "  M:" + (fishmod.features.dungeon.DungeonScore.isMimicKilled() ? "✔" : "✘")
-                        + " P:" + (fishmod.features.dungeon.DungeonScore.isPrinceKilled() ? "✔" : "✘")
-                        + "  Deaths: " + fishmod.features.dungeon.DungeonScore.getDeathCount();
-                int textWidth = font.width(text);
-                ctx.text(font, Component.literal(text), baseX + (SIZE - textWidth) / 2, extraLineY, 0xffffffff, true);
-            }
-        }
-    }
-
-    /** Small clear-state icon drawn in the room's corner (or center if configured). Additive to the existing label-color signal. */
-    private static void drawCheckmark(GuiGraphicsExtractor ctx, int x, int y, RoomState state) {
-        if (DungeonMapSettings.hideUnknownCheckmark
-                && state != RoomState.CLEARED && state != RoomState.FAILED) return;
-        String symbol = switch (state) {
-            case CLEARED -> "✔";
-            case FAILED -> "✘";
-            default -> "?";
-        };
-        int color = switch (state) {
-            case CLEARED -> 0xff55ff55;
-            case FAILED -> 0xffff5555;
-            default -> 0xffaaaaaa;
-        };
-        Font font = Minecraft.getInstance().font;
-        if (font == null) return;
-        float scale = DungeonMapSettings.checkmarkScale;
-        int textWidth = font.width(symbol);
-        int cx = DungeonMapSettings.centerCheckmark ? x + ROOM_PX / 2 : x + ROOM_PX - 6;
-        int cy = DungeonMapSettings.centerCheckmark ? y + ROOM_PX / 2 : y + 1;
-        Matrix3x2fStack stack = ctx.pose();
-        stack.pushMatrix();
-        stack.translate(cx, cy);
-        stack.scale(scale, scale);
-        ctx.text(font, Component.literal(symbol), -textWidth / 2, 0, color, true);
-        stack.popMatrix();
-    }
-
-    /** Self-only wither-key ESP: outlines an unopened wither door based on whether the local player currently holds a Wither Key. */
-    private static void drawWitherDoorEsp(GuiGraphicsExtractor ctx, DoorTile door, int x, int y, int w, int h) {
-        if (!DungeonMapSettings.boxWitherDoors || door.type() != fishmod.utils.dungeon.map.DoorType.WITHER || door.opened()) return;
-        int color = hasWitherKey() ? DungeonMapSettings.witherKeyHeldColor : DungeonMapSettings.witherKeyMissingColor;
-        ctx.fill(x - 1, y - 1, x + w + 1, y, color);
-        ctx.fill(x - 1, y + h, x + w + 1, y + h + 1, color);
-        ctx.fill(x - 1, y, x, y + h, color);
-        ctx.fill(x + w, y, x + w + 1, y + h, color);
-    }
-
-    /** True if the local player currently has a Wither Key anywhere in their inventory. Self-only — no info about teammates is read or shown. */
-    private static boolean hasWitherKey() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return false;
-        Inventory inv = mc.player.getInventory();
-        for (int i = 0; i < inv.getContainerSize(); i++) {
-            ItemStack stack = inv.getItem(i);
-            if (stack != null && !stack.isEmpty() && stack.getHoverName().getString().contains("Wither Key")) return true;
-        }
-        return false;
-    }
-
-    private static void drawPlayerNameLabel(GuiGraphicsExtractor ctx, int mx, int my, String name) {
-        Font font = Minecraft.getInstance().font;
-        if (font == null) return;
-        String clean = name.replaceAll("§.", "").trim();
-        if (clean.isEmpty()) return;
-        int textWidth = font.width(clean);
-        float scale = DungeonMapSettings.playerNameScale;
-        Matrix3x2fStack stack = ctx.pose();
-        stack.pushMatrix();
-        stack.translate(mx, my - 8);
-        stack.scale(scale, scale);
-        ctx.text(font, Component.literal(clean), -textWidth / 2, 0, 0xffffffff, true);
-        stack.popMatrix();
     }
 
     /**

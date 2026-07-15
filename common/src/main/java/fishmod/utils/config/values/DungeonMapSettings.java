@@ -73,46 +73,5 @@ public class DungeonMapSettings {
     public static int teammateMarkerColor = 0xffffffff;
 
     @ConfigValue
-    public static boolean showCheckmarks = true;
-
-    @ConfigValue
-    public static float checkmarkScale = 1.0f;
-
-    @ConfigValue
-    public static boolean centerCheckmark = false;
-
-    @ConfigValue
-    public static boolean hideUnknownCheckmark = true;
-
-    @ConfigValue
-    public static boolean showPlayerNames = false;
-
-    @ConfigValue
-    public static float playerNameScale = 0.5f;
-
-    @ConfigValue
-    public static int backgroundColor = 0x00000000;
-
-    @ConfigValue
-    public static int borderColor = 0x00000000;
-
-    @ConfigValue
-    public static int borderThickness = 1;
-
-    // Self-only: colors the wither door based on whether YOU currently hold a Wither Key —
-    // no information about other players is inferred or shown.
-    @ConfigValue
-    public static boolean boxWitherDoors = false;
-
-    @ConfigValue
-    public static int witherKeyHeldColor = 0xff55ff55;
-
-    @ConfigValue
-    public static int witherKeyMissingColor = 0xffff5555;
-
-    @ConfigValue
-    public static boolean showExtraInfoUnderMap = false;
-
-    @ConfigValue
     public static boolean playerClearInfoEnabled = false;
 }
