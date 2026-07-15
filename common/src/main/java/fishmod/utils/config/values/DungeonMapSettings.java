@@ -71,4 +71,7 @@ public class DungeonMapSettings {
 
     @ConfigValue
     public static int teammateMarkerColor = 0xffffffff;
+
+    @ConfigValue
+    public static boolean playerClearInfoEnabled = false;
 }

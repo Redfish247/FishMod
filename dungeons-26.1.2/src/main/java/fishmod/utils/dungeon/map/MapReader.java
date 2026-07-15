@@ -73,7 +73,16 @@ public class MapReader {
     }
 
     private static void reset() {
-        if (currentMapId != null) DungeonGrid.finalizeRunObservations();
+        if (currentMapId != null) {
+            DungeonGrid.finalizeRunObservations();
+            if (DungeonMapSettings.playerClearInfoEnabled) {
+                Minecraft mc = Minecraft.getInstance();
+                if (mc.player != null) {
+                    mc.player.sendSystemMessage(net.minecraft.network.chat.Component.literal(ClearInfoUpdater.buildSummary()));
+                }
+            }
+        }
+        ClearInfoUpdater.reset();
         currentMapId = null;
         calibrated = false;
         roomSize = 16;
@@ -107,6 +116,7 @@ public class MapReader {
         updateDoorOpenedState(mc);
         updatePlayerMarkers(mc, map);
         identifyOneRoom(mc);
+        ClearInfoUpdater.tick();
     }
 
     /** Finds the entrance's green streak and derives the grid's pixel origin from its position modulo the room-grid period. */

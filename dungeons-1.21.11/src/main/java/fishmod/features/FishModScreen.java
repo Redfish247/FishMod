@@ -15,6 +15,8 @@ import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import fishmod.utils.Easing;
+import fishmod.utils.rendering.NvgRecorder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,97 +24,82 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * Sidebar + detail-list config screen (matches the FishMod design mockup).
+ * Multi-column config screen (matches the FishMod design mockup).
  *
  *  ┌──────────────────────────────────────────────────────────┐
  *  │  FishMod                                       [ search ]  │  title bar
- *  ├───────────┬──────────────────────────────────────────────┤
- *  │  General  │  [icon]  Label                        ( ON )  │
- *  │  Dungeon  │          description                          │  scrollable
- *  │  Cosmetic │  [icon]  Label                        ( OFF)  │  feature rows
- *  │  Party    │  ...                                          │
- *  │  Visuals  │                                               │
- *  ├───────────┴──────────────────────────────────────────────┤
+ *  ├──────┬──────┬──────┬──────┬──────┬───────────────────────┤
+ *  │ Genl │ Dngn │ Cosm │Party │ Vis. │  Floor7  │ each column  │
+ *  │ [ ]  │ [ ]  │ [ ]  │ [ ]  │ [ ]  │   [ ]    │ scrolls on   │
+ *  │ [ ]  │ [ ]  │ [ ]  │ [ ]  │ [ ]  │   [ ]    │ its own      │
+ *  ├──────┴──────┴──────┴──────┴──────┴───────────────────────┤
  *  │  Edit HUD                       Reset      Save & Close    │  footer
  *  └──────────────────────────────────────────────────────────┘
  *
- * Left-click a category to switch pages. Left-click a feature toggle = master on/off.
- * Left-click a feature row body (when it has sub-settings) = expand an inline panel
- * beneath it with the rich controls (sliders, dropdowns, colour pickers, text inputs).
+ * All columns render simultaneously; each scrolls independently. Left-click a feature
+ * toggle = master on/off. Left-click a feature row body (when it has sub-settings) =
+ * expand an inline panel beneath it with the rich controls (sliders, dropdowns, colour
+ * pickers, text inputs), animated open/closed with a cubic ease-in-out (see
+ * {@link Easing}). Multiple features (in the same or different columns) can be expanded
+ * at once — expanding one never collapses another.
  */
 public class FishModScreen extends Screen {
 
-    // ----- palette -----
+    // ----- palette (recolored teal — matches the mod's existing accent, not a reference-repo copy) -----
     static final int ACCENT          = 0xFF24B6B0;  // bright slate-teal
     static final int ACCENT_HOVER    = 0xFF3AD8D1;
-    static final int BG_TOP          = 0xFF0C1318;
-    static final int BG_BOT          = 0xFF06090C;
-    static final int SIDEBAR_BG      = 0xFF0A0F14;
-    static final int CONTENT_BG      = 0xFF090E12;
-    static final int ROW_BG          = 0xFF0E151B;
-    static final int ROW_BG_HOVER    = 0xFF142028;
-    static final int SUBROW_BG       = 0xFF0A1015;
-    static final int TILE_BG         = 0xFF10282B;
-    static final int TILE_BG_ON      = 0xFF123A3C;
-    static final int DIVIDER         = 0xFF18222C;
-    static final int SCRIM           = 0xB3000000;  // dim the live game behind the overlay
-    static final int PANEL_BORDER    = 0xFF24333C;  // 1px frame around the overlay
+    static final int DIM_TOP         = 0x2E000000;  // light scrim over the blurred game, just enough for text contrast
+    static final int DIM_BOT         = 0x50000000;
+    static final int CARD_BG         = 0xFF14181D;  // floating card body
+    static final int ROW_HOVER       = 0x1EFFFFFF;  // translucent hover wash over a row
+    static final int ROW_ENABLED     = 0x2624B6B0;  // translucent accent tint over an enabled row
+    static final int SUBROW_BG       = 0xFF0F1317;
+    static final int TRACK_OFF       = 0xFF3A3F48;  // toggle/keybind/dropdown pill track when inactive
     static final int TEXT_COLOR      = 0xFFEDF1F5;
-    static final int SUBTEXT_COLOR   = 0xFF7E8A98;
-    static final int CHEVRON_COLOR   = 0xFF5A6675;
-    static final int PANEL_BG        = 0xFF12141A;  // (legacy, referenced by helpers)
-    static final int BORDER_COLOR    = 0xFF2A2D38;  // (legacy)
+    static final int SUBTEXT_COLOR   = 0xFF8A96A3;
+    static final int CHEVRON_COLOR   = 0xFF6C7885;
 
-    // ----- setting-widget palette (consumed by the Setting subclasses below) -----
-    static final int TOGGLE_ON       = ACCENT;
-    static final int TOGGLE_OFF      = 0xFF2A2D38;
-    static final int TOGGLE_TEXT     = 0xFFFFFFFF;
-    static final int SLIDER_BG       = 0xFF1B1D24;
-    static final int SLIDER_FILL     = ACCENT;
-
-    // Sub-panel menu text scale (the rich controls render compactly).
     static final float TEXT_SCALE = 0.75f;
 
-    // ----- layout -----
-    static final int SIDEBAR_W   = 150;
-    static final int TITLE_H     = 38;
-    static final int FOOTER_H    = 40;
-    static final int CONTENT_PAD = 12;
-    static final int ROW_H       = 38;
-    static final int ROW_GAP     = 5;
-    static final int CAT_ITEM_H  = 34;
-    static final int TOG2_W      = 40;   // big row toggle
-    static final int TOG2_H      = 18;
+    // ----- screen chrome (floating elements, no bordered modal box) -----
+    static final int MARGIN         = 16;
+    static final int TOP_BAR_H      = 26;   // reserved space for wordmark + top-right pill buttons
+    static final int BOTTOM_RESERVE = 46;   // reserved space for the floating search pill
 
-    // ----- overlay panel geometry (fixed-size, centred; the game shows through behind) -----
-    static final int PANEL_W     = 700;
-    static final int PANEL_H     = 460;
+    // ----- multi-column layout -----
+    static final int COLUMN_GUTTER  = 12;   // px between column cards
+    static final int CARD_RADIUS    = 7;
+    static final int HEADER_H       = 24;   // header bar height (icon + name)
+    static final int HEADER_STRIP_H = 3;    // accent strip thickness at header top
+    static final int MIN_COLUMN_W   = 136;  // floor so controls don't clip
 
-    // ----- setting-widget geometry (consumed below) -----
-    static final int ITEM_HEIGHT   = 20;
-    static final int TOGGLE_W       = 36;
-    static final int TOGGLE_H       = 14;
-    static final int SLIDER_W       = 64;
-    static final int SLIDER_H       = 5;
-    static final int INPUT_W        = 70;
-    static final int INPUT_H        = 14;
-    static final int SUBCAT_HEIGHT  = 13;
+    // ----- row / setting-widget geometry -----
+    static final int ROW_H       = 22;
+    static final int ROW_GAP     = 3;
+    static final int ITEM_HEIGHT = 22;
+    static final int PILL_H      = 18;   // sub-setting toggle/dropdown/keybind pill height
+    static final int OPTION_H    = 16;   // dropdown option-list row height
+    static final int SLIDER_BG   = 0xFF2C3138;
+    static final int SLIDER_FILL = ACCENT;
+    static final int SLIDER_W    = 56;
+    static final int SLIDER_H    = 5;
+    static final int INPUT_W     = 62;
+    static final int INPUT_H     = 14;
+    static final int SUBCAT_HEIGHT = 13;
 
     // ----- state -----
     private final List<Column> columns = new ArrayList<>();
-    private int selectedCat = 0;
-    private int scroll = 0;
-    private Feature selectedFeature = null;
     private String searchText = "";
     private boolean searchFocused = false;
     private Setting activeSlider = null;
     private int activeSliderX = 0;
     private Setting activeInput = null;
-    private ColorPickerSetting activePicker = null;
     private KeybindSetting capturingKeybind = null;
     private TextFieldWidget searchField;
     private boolean resetArmed = false;
     private long resetArmedAt = 0;
+    private String hoverDesc = null;
+    private int hoverDescX = 0, hoverDescY = 0;
 
     public FishModScreen() {
         super(Text.literal("FishMod"));
@@ -123,58 +110,95 @@ public class FishModScreen extends Screen {
     // Drawing helpers
     // -----------------------------------------------------------------------------------
 
-    /** Filled rectangle with square corners (per the design). {@code r} ignored — retained for call sites. */
-    static void roundRect(DrawContext ctx, int x1, int y1, int x2, int y2, int r, int color) { ctx.fill(x1, y1, x2, y2, color); }
-    static void roundRect(DrawContext ctx, int x1, int y1, int x2, int y2, int color) { ctx.fill(x1, y1, x2, y2, color); }
+    /** Base NanoVG font size (px) that reads at roughly the same visual weight as Minecraft's
+     *  default font at its normal size; TEXT_SCALE/arbitrary scale factors multiply this. */
+    static final float NVG_BASE_TEXT_SIZE = 9.5f;
 
-    /** Full capsule (square corners here): used by toggle tracks/knobs and slider bars. */
-    static void pill(DrawContext ctx, int x1, int y1, int x2, int y2, int color) { ctx.fill(x1, y1, x2, y2, color); }
+    /** All shape/text helpers below now push into {@link NvgRecorder} instead of drawing via
+     *  {@code ctx} directly — NanoVG paints strictly after every vanilla draw this frame (see
+     *  GameRendererNvgMixin), so leaving any of these on vanilla would always render underneath
+     *  the converted ones regardless of call order. {@code ctx} is kept in each signature only to
+     *  avoid rippling through every existing call site. */
 
-    /** 1px border frame around a fill. */
-    static void panel(DrawContext ctx, int x1, int y1, int x2, int y2, int r, int fill, int border) {
-        ctx.fill(x1, y1, x2, y2, border);
-        ctx.fill(x1 + 1, y1 + 1, x2 - 1, y2 - 1, fill);
+    /** True filled rounded rectangle. */
+    static void roundedRect(DrawContext ctx, int x, int y, int w, int h, int r, int color) {
+        NvgRecorder.fillRoundedRect(x, y, w, h, r, color);
     }
 
-    /** Octagon-ish solid disc (square corners trimmed) — good enough for small circular glyphs. */
+    /** Corner-coordinate overload matching {@code ctx.fill}'s (x1,y1,x2,y2) convention. */
+    static void roundRect(DrawContext ctx, int x1, int y1, int x2, int y2, int r, int color) {
+        roundedRect(ctx, x1, y1, x2 - x1, y2 - y1, r, color);
+    }
+
+    /** A rounded rect with a hollow accent-colored ring of {@code strokeW} around it. */
+    static void roundedRectRing(DrawContext ctx, int x, int y, int w, int h, int r, int strokeW, int fillColor, int ringColor) {
+        NvgRecorder.roundedRectRing(x, y, w, h, r, strokeW, fillColor, ringColor);
+    }
+
+    /** True pill (fully rounded rectangle whose radius is half its height). Takes corner coordinates, like {@code ctx.fill}. */
+    static void pill(DrawContext ctx, int x1, int y1, int x2, int y2, int color) {
+        int h = y2 - y1;
+        roundedRect(ctx, x1, y1, x2 - x1, h, h / 2, color);
+    }
+
+    /** 1px border frame around a fill (square corners — used for tiny non-decorative frames). */
+    static void panel(DrawContext ctx, int x1, int y1, int x2, int y2, int r, int fill, int border) {
+        roundedRect(ctx, x1, y1, x2 - x1, y2 - y1, r, border);
+        roundedRect(ctx, x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), fill);
+    }
+
+    /** True filled circle — used for glyphs and toggle knobs. */
     static void disc(DrawContext ctx, int cx, int cy, int r, int color) {
-        ctx.fill(cx - r, cy - r + 1, cx + r, cy + r - 1, color);
-        ctx.fill(cx - r + 1, cy - r, cx + r - 1, cy + r, color);
+        NvgRecorder.disc(cx, cy, r, color);
     }
 
     /** Sub-panel menu text at TEXT_SCALE. */
     static void st(DrawContext ctx, net.minecraft.client.font.TextRenderer tr, String s, int x, int y, int color) {
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) x, (float) y + 1f);
-        ctx.getMatrices().scale(TEXT_SCALE, TEXT_SCALE);
-        ctx.drawText(tr, s, 0, 0, color, false);
-        ctx.getMatrices().popMatrix();
+        NvgRecorder.text(s, x, y, NVG_BASE_TEXT_SIZE * TEXT_SCALE, color);
     }
-    static int stw(net.minecraft.client.font.TextRenderer tr, String s) { return (int) Math.ceil(tr.getWidth(s) * TEXT_SCALE); }
+    static int stw(net.minecraft.client.font.TextRenderer tr, String s) { return (int) Math.ceil(NvgRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * TEXT_SCALE)); }
 
     /** Text at an arbitrary scale. */
     static void sst(DrawContext ctx, net.minecraft.client.font.TextRenderer tr, String s, int x, int y, int color, float scale) {
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) x, (float) y);
-        ctx.getMatrices().scale(scale, scale);
-        ctx.drawText(tr, s, 0, 0, color, false);
-        ctx.getMatrices().popMatrix();
+        NvgRecorder.text(s, x, y, NVG_BASE_TEXT_SIZE * scale, color);
     }
-    static int sw(net.minecraft.client.font.TextRenderer tr, String s, float scale) { return (int) Math.ceil(tr.getWidth(s) * scale); }
+    static int sw(net.minecraft.client.font.TextRenderer tr, String s, float scale) { return (int) Math.ceil(NvgRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * scale)); }
 
-    /** Chevron from fills: ▾ when {@code open}, ▸ when closed; {@code cy} is the vertical centre. */
-    static void drawChevron(DrawContext ctx, int gx, int cy, boolean open, int color) {
-        if (open) {
-            ctx.fill(gx,     cy - 2, gx + 7, cy - 1, color);
-            ctx.fill(gx + 1, cy - 1, gx + 6, cy,     color);
-            ctx.fill(gx + 2, cy,     gx + 5, cy + 1, color);
-            ctx.fill(gx + 3, cy + 1, gx + 4, cy + 2, color);
-        } else {
-            ctx.fill(gx,     cy - 3, gx + 1, cy + 4, color);
-            ctx.fill(gx + 1, cy - 2, gx + 2, cy + 3, color);
-            ctx.fill(gx + 2, cy - 1, gx + 3, cy + 2, color);
-            ctx.fill(gx + 3, cy,     gx + 4, cy + 1, color);
+    static final int INPUT_TEXT_SIZE = 7;
+
+    /** Draws a {@link TextFieldWidget}'s box + text + blinking caret entirely via NanoVG. A live
+     *  {@code textField.render(...)} call is a vanilla DrawContext draw, which flushes *before*
+     *  this frame's NanoVG column-card background — so it would render underneath that background
+     *  and be invisible, exactly like the search bar would be if it weren't carved out into its
+     *  own non-overlapping strip. The widget still owns cursor/selection/edit state (keyPressed/
+     *  charTyped delegate to it elsewhere); only the drawing is redone here, measured with
+     *  NanoVG's own font metrics since vanilla's getCharacterX() uses Minecraft's font instead. */
+    static void nvgTextField(TextFieldWidget tf, int x, int y, int w, int h) {
+        boolean focused = tf.isFocused();
+        NvgRecorder.roundedRectRing(x, y, w, h, 3, 1f, SUBROW_BG, focused ? ACCENT : TRACK_OFF);
+        nvgTextFieldContent(tf, x, y, w, h);
+    }
+
+    /** Just the text + blinking caret, no box — for fields whose box is drawn separately (the
+     *  search bar's own pill ring already serves as its box, so calling {@link #nvgTextField}
+     *  there would nest a second box inside it). */
+    static void nvgTextFieldContent(TextFieldWidget tf, int x, int y, int w, int h) {
+        String text = tf.getText();
+        int cursor = Math.min(tf.getCursor(), text.length());
+        float cursorX = NvgRecorder.textWidth(text.substring(0, cursor), INPUT_TEXT_SIZE);
+        float pad = 3f, visibleW = w - pad * 2f;
+        float scroll = Math.max(0f, cursorX - visibleW);
+        NvgRecorder.pushScissor(x + 1, y + 1, w - 2, h - 2);
+        NvgRecorder.text(text, x + pad - scroll, y + (h - INPUT_TEXT_SIZE) / 2f, INPUT_TEXT_SIZE, TEXT_COLOR);
+        if (tf.isFocused() && (System.currentTimeMillis() / 500) % 2 == 0) {
+            NvgRecorder.fillRect(x + pad + cursorX - scroll, y + 2, 1, h - 4, TEXT_COLOR);
         }
+        NvgRecorder.popScissor();
+    }
+
+    /** Small triangle: pointing down when {@code open}, right when closed; {@code cy} is the vertical centre. */
+    static void drawChevron(DrawContext ctx, int gx, int cy, boolean open, int color) {
+        NvgRecorder.chevron(gx, cy, open, color);
     }
 
     /** Tiny vector emblem (~14px) centred at (cx,cy). {@code bg} is the tile fill, for knockouts. */
@@ -252,37 +276,6 @@ public class FishModScreen extends Screen {
                 ctx.fill(cx - 5, cy - 5, cx - 3, cy + 5, c); ctx.fill(cx + 3, cy - 5, cx + 5, cy + 5, c);
             }
         }
-    }
-
-    /** Per-feature glyph (looked up by name to avoid threading an icon field through every Feature). */
-    private static String iconFor(String name) {
-        return switch (name) {
-            case "Mod Prefix" -> "text";
-            case "Inventory Buttons" -> "cube";
-            case "Auto Meow", "Smart Copy Chat", "Bridge Bot", "Death Message", "Chat Channels", "Chat Filter" -> "chat";
-            case "Explosive Shot" -> "star";
-            case "Compact Tab", "Party Commands" -> "people";
-            case "Dungeon Score", "Session Stats", "Pet HUD", "Trophy Frogs" -> "star";
-            case "Puzzle Overlay", "Simon Says", "M7 Lever Waypoints" -> "cube";
-            case "Send Lag to Party", "Splits", "Cooldown Overlay", "Fire Freeze Timer",
-                 "Maxor Tick Timer", "Crystal Spawn", "Storm Tick Timer", "Storm Death Time",
-                 "Goldor Tick Timer", "Goldor Leap Timer", "Term Start Timer", "Goldor Splits", "LB Release Timer" -> "clock";
-            case "Storm Crushed Noti" -> "bell";
-            case "Section Progress" -> "star";
-            case "Loot Tracker",
-                 "Slayer XP Tracker", "Skill XP Tracker", "Powder Tracker",
-                 "Farming Tracker", "Harvest Feast Tracker", "Mining Tracker" -> "coin";
-            case "Bobber Reminder" -> "bell";
-            case "Sea Creatures", "Trophy Fish", "Slayer Drops" -> "coin";
-            case "Slayer Alerts" -> "bell";
-            case "Class Colored Boots", "Name Color", "Customize", "Rarity Background" -> "palette";
-            case "See Others' Items" -> "eye";
-            case "Nametag" -> "tag";
-            case "Player Size" -> "slider";
-            case "Soulflow HUD" -> "bell";
-            case "Warp Map" -> "map";
-            default -> "box";
-        };
     }
 
     /** Short one-line description shown under each row label. */
@@ -829,51 +822,80 @@ public class FishModScreen extends Screen {
     }
 
     // -----------------------------------------------------------------------------------
-    // Region geometry
+    // Region geometry — floating over the full screen, no bordered modal box
     // -----------------------------------------------------------------------------------
-    // overlay panel bounds (centred, clamped to the window for small GUI scales)
-    private int panelW()  { return Math.min(PANEL_W, this.width  - 20); }
-    private int panelH()  { return Math.min(PANEL_H, this.height - 20); }
-    private int left()    { return (this.width  - panelW()) / 2; }
-    private int top()     { return (this.height - panelH()) / 2; }
-    private int right()   { return left() + panelW(); }
-    private int bottom()  { return top()  + panelH(); }
+    private int left()    { return 0; }
+    private int top()     { return 0; }
+    private int right()   { return this.width; }
+    private int bottom()  { return this.height; }
 
-    private int cx0()   { return left() + SIDEBAR_W + CONTENT_PAD; }
-    private int cx1()   { return right() - CONTENT_PAD; }
-    private int cyTop() { return top() + TITLE_H + 10; }
-    private int cyBot() { return bottom() - FOOTER_H - 6; }
+    private int cx0()   { return left() + MARGIN; }
+    private int cx1()   { return right() - MARGIN; }
+    private int cyTop() { return top() + TOP_BAR_H + MARGIN + HEADER_H; }
+    private int cyBot() { return bottom() - BOTTOM_RESERVE; }
 
-    private Column currentColumn() { return columns.get(selectedCat); }
-
-    private List<Feature> visibleFeatures() {
+    private List<Feature> visibleFeatures(Column c) {
         String f = searchText.toLowerCase();
         List<Feature> out = new ArrayList<>();
-        for (Feature ft : currentColumn().features) {
+        for (Feature ft : c.features) {
             if (f.isEmpty() || ft.name.toLowerCase().contains(f)) out.add(ft);
         }
         return out;
     }
 
-    private int detailHeightForSelected() {
-        if (selectedFeature == null) return 0;
-        int total = 0;
-        for (Setting s : selectedFeature.sub) total += s.getHeight();
-        return total;
-    }
-    private int subPanelHeight(Feature f) {
-        return (f == selectedFeature && !f.sub.isEmpty()) ? detailHeightForSelected() + 10 : 0;
+    private List<Column> visibleColumns() {
+        List<Column> out = new ArrayList<>();
+        for (Column c : columns) {
+            if (!visibleFeatures(c).isEmpty() || searchText.isEmpty()) out.add(c);
+        }
+        return out;
     }
 
-    private int contentTotalHeight() {
-        int h = 6;
-        for (Feature f : visibleFeatures()) {
-            h += ROW_H + subPanelHeight(f) + ROW_GAP;
-        }
-        return h;
+    private int columnWidth() {
+        int n = visibleColumns().size();
+        if (n == 0) return 0;
+        int avail = (cx1() - cx0()) - (n - 1) * COLUMN_GUTTER;
+        return Math.max(MIN_COLUMN_W, avail / n);
     }
-    private int maxScroll() { return Math.max(0, contentTotalHeight() - (cyBot() - cyTop())); }
-    private void clampScroll() { scroll = MathHelper.clamp(scroll, 0, maxScroll()); }
+
+    private int columnX0(int visibleIndex) {
+        return cx0() + visibleIndex * (columnWidth() + COLUMN_GUTTER);
+    }
+
+    /** A single computed row rect within a column; the one source of truth both render and hit-testing consume. */
+    private static final class RowLayout {
+        final Feature feature;
+        final int rowTop, rowBottom;
+        final int subTop, subBottom;
+        RowLayout(Feature feature, int rowTop, int rowBottom, int subTop, int subBottom) {
+            this.feature = feature; this.rowTop = rowTop; this.rowBottom = rowBottom;
+            this.subTop = subTop; this.subBottom = subBottom;
+        }
+    }
+
+    private List<RowLayout> layoutColumn(Column c, int scrollOffset) {
+        List<RowLayout> out = new ArrayList<>();
+        int y = cyTop() - scrollOffset;
+        for (Feature f : visibleFeatures(c)) {
+            int rowTop = y, rowBottom = y + ROW_H;
+            y = rowBottom;
+            int subH = f.animatedSubHeight();
+            int subTop = y, subBottom = y + subH;
+            if (subH > 0) y = subBottom;
+            y += ROW_GAP;
+            out.add(new RowLayout(f, rowTop, rowBottom, subTop, subBottom));
+        }
+        return out;
+    }
+
+    private int columnContentHeight(Column c) {
+        List<RowLayout> rows = layoutColumn(c, 0);
+        if (rows.isEmpty()) return 6;
+        RowLayout last = rows.get(rows.size() - 1);
+        return Math.max(last.rowBottom, last.subBottom) - cyTop() + ROW_GAP + 6;
+    }
+    private int maxScrollFor(Column c) { return Math.max(0, columnContentHeight(c) - (cyBot() - cyTop())); }
+    private void clampScroll(Column c) { c.scroll = MathHelper.clamp(c.scroll, 0, maxScrollFor(c)); }
 
     // -----------------------------------------------------------------------------------
     // Background: solid dark (matches the mockup), no vanilla blur/dirt
@@ -887,120 +909,140 @@ public class FishModScreen extends Screen {
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
         if (resetArmed && System.currentTimeMillis() - resetArmedAt > 3000) resetArmed = false;
-        clampScroll();
+        for (Column c : visibleColumns()) clampScroll(c);
 
-        // dim the live game behind the overlay
-        ctx.fill(0, 0, this.width, this.height, SCRIM);
+        // fresh batch of NanoVG draw commands this frame — replayed for real later, in
+        // paintNvgOverlay(), once GameRendererNvgMixin fires after the vanilla GUI flush
+        fishmod.utils.rendering.NvgRecorder.clear();
 
-        // centred overlay panel
-        int lx = left(), ty = top(), rx = right(), by = bottom();
-        ctx.fillGradient(lx, ty, rx, by, BG_TOP, BG_BOT);
-        ctx.fill(lx, ty + TITLE_H, lx + SIDEBAR_W, by, SIDEBAR_BG);
-        ctx.fill(lx + SIDEBAR_W, ty + TITLE_H, rx, by - FOOTER_H, CONTENT_BG);
-        // 1px frame around the panel
-        ctx.fill(lx, ty, rx, ty + 1, PANEL_BORDER);
-        ctx.fill(lx, by - 1, rx, by, PANEL_BORDER);
-        ctx.fill(lx, ty, lx + 1, by, PANEL_BORDER);
-        ctx.fill(rx - 1, ty, rx, by, PANEL_BORDER);
+        // blur the live game behind the columns instead of just darkening it, plus a light scrim for text contrast
+        applyBlur(ctx);
+        ctx.fillGradient(0, 0, this.width, this.height, DIM_TOP, DIM_BOT);
 
-        renderTitleBar(ctx, mouseX, mouseY);
-        renderSidebar(ctx, mouseX, mouseY);
+        hoverDesc = null;
+        renderTopBar(ctx, mouseX, mouseY);
         renderContent(ctx, mouseX, mouseY);
-        renderFooter(ctx, mouseX, mouseY);
+        renderSearchBar(ctx, mouseX, mouseY);
+        renderHoverTooltip(ctx);
 
         super.render(ctx, mouseX, mouseY, delta);
     }
 
-    private void renderTitleBar(DrawContext ctx, int mouseX, int mouseY) {
-        int lx = left(), ty = top();
-        // wordmark "FishMod"
-        float ws = 1.6f;
-        int wy = ty + (TITLE_H - (int) (8 * ws)) / 2;
-        sst(ctx, this.textRenderer, "Fish", lx + 22, wy, TEXT_COLOR, ws);
-        int fw = sw(this.textRenderer, "Fish", ws);
-        sst(ctx, this.textRenderer, "Mod", lx + 22 + fw, wy, ACCENT, ws);
-        int totalW = fw + sw(this.textRenderer, "Mod", ws);
-
-        // divider + teal accent under the wordmark
-        ctx.fill(lx, ty + TITLE_H, right(), ty + TITLE_H + 1, DIVIDER);
-        ctx.fill(lx + 22, ty + TITLE_H, lx + 22 + totalW, ty + TITLE_H + 1, ACCENT);
-
-        // search field (top-right)
-        int swW = 156, swH = 20;
-        int sx = right() - CONTENT_PAD - swW;
-        int sy = ty + (TITLE_H - swH) / 2;
-        if (searchField == null) {
-            searchField = new TextFieldWidget(this.textRenderer, sx + 6, sy + 6, swW - 12, swH - 6, Text.empty());
-            searchField.setMaxLength(48);
-            searchField.setDrawsBackground(false);
-            searchField.setChangedListener(s -> { searchText = s; scroll = 0; });
-        } else {
-            searchField.setX(sx + 6); searchField.setY(sy + 6); searchField.setWidth(swW - 12);
+    /** Geometry for the 4 top-right pill buttons — the one source of truth for both render and hit-testing. */
+    private int[][] topBarButtonRects() {
+        String[] labels = { "Edit HUD", "Credits", resetArmed ? "Confirm?" : "Reset", "Save & Close" };
+        int bh = 20, gap = 8, y = MARGIN - 2;
+        int[][] rects = new int[4][];
+        int x = right() - MARGIN;
+        for (int i = 3; i >= 0; i--) {
+            int w = sw(this.textRenderer, labels[i], 0.85f) + 20;
+            x -= w;
+            rects[i] = new int[]{x, y, w, bh};
+            x -= gap;
         }
-        panel(ctx, sx, sy, sx + swW, sy + swH, 0, ROW_BG, searchFocused ? ACCENT : DIVIDER);
-        // magnifier glyph
-        disc(ctx, sx + 11, sy + swH / 2 - 1, 3, SUBTEXT_COLOR);
-        disc(ctx, sx + 11, sy + swH / 2 - 1, 1, ROW_BG);
-        ctx.fill(sx + 13, sy + swH / 2 + 1, sx + 16, sy + swH / 2 + 2, SUBTEXT_COLOR);
-        if (searchText.isEmpty() && !searchFocused) {
-            sst(ctx, this.textRenderer, "Search…", sx + 22, sy + (swH - 8) / 2 + 1, SUBTEXT_COLOR, 0.9f);
-        } else {
-            // nudge field right of the glyph
-            searchField.setX(sx + 22); searchField.setWidth(swW - 28);
-            searchField.render(ctx, mouseX, mouseY, 0);
+        return rects;
+    }
+
+    private void renderTopBar(DrawContext ctx, int mouseX, int mouseY) {
+        // wordmark "FishMod" (top-left, no bar/border)
+        float ws = 1.3f;
+        sst(ctx, this.textRenderer, "Fish", MARGIN, MARGIN, TEXT_COLOR, ws);
+        int fw = sw(this.textRenderer, "Fish", ws);
+        sst(ctx, this.textRenderer, "Mod", MARGIN + fw, MARGIN, ACCENT, ws);
+
+        String[] labels = { "Edit HUD", "Credits", resetArmed ? "Confirm?" : "Reset", "Save & Close" };
+        boolean[] filled = { false, false, false, true };
+        int[] accents = { ACCENT, ACCENT, resetArmed ? 0xFFE05A5A : ACCENT, ACCENT };
+        int[][] rects = topBarButtonRects();
+        for (int i = 0; i < 4; i++) {
+            int[] r = rects[i];
+            boolean hover = mouseX >= r[0] && mouseX <= r[0] + r[2] && mouseY >= r[1] && mouseY <= r[1] + r[3];
+            drawPillButton(ctx, r[0], r[1], r[2], r[3], labels[i], filled[i], accents[i], hover);
         }
     }
 
-    private void renderSidebar(DrawContext ctx, int mouseX, int mouseY) {
-        int lx = left(), ty = top();
-        ctx.fill(lx + SIDEBAR_W, ty + TITLE_H, lx + SIDEBAR_W + 1, bottom(), DIVIDER);
-        int y = ty + TITLE_H + 10;
-        for (int i = 0; i < columns.size(); i++) {
-            Column c = columns.get(i);
-            int x0 = lx + 8, x1 = lx + SIDEBAR_W - 8;
-            boolean sel = i == selectedCat;
-            boolean hov = mouseX >= lx && mouseX <= lx + SIDEBAR_W && mouseY >= y && mouseY <= y + CAT_ITEM_H;
-            if (sel) {
-                ctx.fill(x0, y, x1, y + CAT_ITEM_H, 0xFF12262A);
-                ctx.fill(lx, y, lx + 3, y + CAT_ITEM_H, ACCENT);
-            } else if (hov) {
-                ctx.fill(x0, y, x1, y + CAT_ITEM_H, ROW_BG_HOVER);
-            }
-            int gx = x0 + 18, gcy = y + CAT_ITEM_H / 2;
-            drawGlyph(ctx, c.icon, gx, gcy, sel ? ACCENT_HOVER : 0xFF8893A0, sel ? 0xFF12262A : SIDEBAR_BG);
-            sst(ctx, this.textRenderer, c.name, gx + 18, gcy - 5, sel ? TEXT_COLOR : 0xFFAEB7C2, 1.1f);
-            y += CAT_ITEM_H + 4;
+    private void drawPillButton(DrawContext ctx, int x, int y, int w, int h, String label, boolean filled, int accent, boolean hover) {
+        int textW = sw(this.textRenderer, label, 0.85f);
+        if (filled) {
+            roundedRect(ctx, x, y, w, h, h / 2, hover ? ACCENT_HOVER : accent);
+            sst(ctx, this.textRenderer, label, x + (w - textW) / 2, y + (h - 8) / 2, 0xFF06302F, 0.85f);
+        } else {
+            roundedRectRing(ctx, x, y, w, h, h / 2 - 1, 1, hover ? 0xFF20272E : 0xFF171C21, hover ? ACCENT_HOVER : accent);
+            sst(ctx, this.textRenderer, label, x + (w - textW) / 2, y + (h - 8) / 2, hover ? ACCENT_HOVER : TEXT_COLOR, 0.85f);
         }
+    }
+
+    /** The pill box, magnifying-glass icon, and placeholder are drawn via NanoVG like everything
+     *  else; the live typed text + caret use {@link #nvgTextFieldContent} (text only, no box —
+     *  the pill ring above already is the box) since the real {@link TextFieldWidget} still owns
+     *  cursor/selection/IME state, just not its own rendering. */
+    private void renderSearchBar(DrawContext ctx, int mouseX, int mouseY) {
+        int bw = 190, bh = 24;
+        int bx = (this.width - bw) / 2;
+        int by = this.height - BOTTOM_RESERVE + (BOTTOM_RESERVE - bh) / 2 - 8;
+        roundedRectRing(ctx, bx, by, bw, bh, bh / 2, 1, 0xFF14181D, searchFocused ? ACCENT : 0xFF3A3F48);
+
+        int gx = bx + 16, gy = by + bh / 2 - 1;
+        disc(ctx, gx, gy, 3, SUBTEXT_COLOR);
+        NvgRecorder.fillRect(gx + 2, gy + 2, 4, 1, SUBTEXT_COLOR);
+
+        if (searchField == null) {
+            searchField = new TextFieldWidget(this.textRenderer, bx + 30, by + 6, bw - 40, bh - 12, Text.empty());
+            searchField.setMaxLength(48);
+            searchField.setDrawsBackground(false);
+            searchField.setChangedListener(s -> { searchText = s; for (Column c : columns) c.scroll = 0; });
+        } else {
+            searchField.setX(bx + 30); searchField.setY(by + 6); searchField.setWidth(bw - 40);
+        }
+        if (searchText.isEmpty() && !searchFocused) {
+            sst(ctx, this.textRenderer, "Search…", bx + 30, by + (bh - 8) / 2, SUBTEXT_COLOR, 0.9f);
+        } else {
+            nvgTextFieldContent(searchField, bx + 30, by + 6, bw - 40, bh - 12);
+        }
+    }
+
+    private void renderColumnCard(DrawContext ctx, Column c, int x0, int x1, int cardBottom, int mouseX, int mouseY) {
+        int hy = cyTop() - HEADER_H;
+        int w = x1 - x0;
+        NvgRecorder.dropShadow(x0, hy, w, cardBottom - hy, CARD_RADIUS, 10, 0x60000000);
+        roundedRect(ctx, x0, hy, w, cardBottom - hy, CARD_RADIUS, CARD_BG);
+        NvgRecorder.fillRect(x0 + CARD_RADIUS, hy, w - 2 * CARD_RADIUS, HEADER_STRIP_H, ACCENT);
+        sst(ctx, this.textRenderer, c.name, x0 + 10, hy + HEADER_STRIP_H + 6, TEXT_COLOR, 1f);
+    }
+
+    private void renderColumnScrollbar(DrawContext ctx, Column c, int x0, int x1, int top, int bot) {
+        int ms = maxScrollFor(c);
+        if (ms <= 0) return;
+        int trackX = x1 - 3;
+        int vp = bot - top;
+        int barH = Math.max(20, (int) ((long) vp * vp / columnContentHeight(c)));
+        int barY = top + (int) ((long) (vp - barH) * c.scroll / ms);
+        NvgRecorder.fillRect(trackX, top, 2, bot - top, 0xFF141A20);
+        NvgRecorder.fillRect(trackX, barY, 2, barH, ACCENT);
     }
 
     private void renderContent(DrawContext ctx, int mouseX, int mouseY) {
-        int x0 = cx0(), x1 = cx1();
-        int top = cyTop(), bot = cyBot();
-        ctx.enableScissor(left() + SIDEBAR_W + 1, top, right(), bot);
+        List<Column> cols = visibleColumns();
+        int top = cyTop(), bot = cyBot(), colW = columnWidth();
 
-        int y = top - scroll;
-        for (Feature f : visibleFeatures()) {
-            int rowTop = y;
-            if (rowTop + ROW_H > top && rowTop < bot) renderRow(ctx, f, x0, x1, rowTop, mouseX, mouseY);
-            y += ROW_H;
-            int subH = subPanelHeight(f);
-            if (subH > 0) {
-                if (y + subH > top && y < bot) renderSubPanel(ctx, f, x0, x1, y, mouseX, mouseY);
-                y += subH;
+        for (int i = 0; i < cols.size(); i++) {
+            Column c = cols.get(i);
+            int x0 = columnX0(i), x1 = x0 + colW;
+            int colBottom = Math.min(top + columnContentHeight(c), bot);
+
+            renderColumnCard(ctx, c, x0, x1, colBottom, mouseX, mouseY);
+
+            NvgRecorder.pushScissor(x0, top, x1 - x0, colBottom - top);
+            for (RowLayout rl : layoutColumn(c, c.scroll)) {
+                if (rl.rowBottom > top && rl.rowTop < colBottom) renderRow(ctx, rl.feature, x0, x1, rl.rowTop, mouseX, mouseY);
+                int animH = rl.subBottom - rl.subTop;
+                if (animH > 0 && rl.subBottom > top && rl.subTop < colBottom) {
+                    renderSubPanel(ctx, rl.feature, x0, x1, rl.subTop, animH, mouseX, mouseY);
+                }
             }
-            y += ROW_GAP;
-        }
-        ctx.disableScissor();
+            NvgRecorder.popScissor();
 
-        // scrollbar
-        int ms = maxScroll();
-        if (ms > 0) {
-            int trackX = x1 + 6;
-            int vp = bot - top;
-            int barH = Math.max(24, (int) ((long) vp * vp / contentTotalHeight()));
-            int barY = top + (int) ((long) (vp - barH) * scroll / ms);
-            ctx.fill(trackX, top, trackX + 3, bot, 0xFF141A20);
-            ctx.fill(trackX, barY, trackX + 3, barY + barH, ACCENT);
+            renderColumnScrollbar(ctx, c, x0, x1, top, colBottom);
         }
     }
 
@@ -1009,105 +1051,80 @@ public class FishModScreen extends Screen {
         boolean inView = mouseY >= cyTop() && mouseY <= cyBot();
         boolean hover = inView && mouseX >= x0 && mouseX <= x1 && mouseY >= top && mouseY <= top + ROW_H;
 
-        ctx.fill(x0, top, x1, top + ROW_H, hover ? ROW_BG_HOVER : ROW_BG);
-        if (on) ctx.fill(x0, top, x0 + 2, top + ROW_H, ACCENT);
+        if (on) NvgRecorder.fillRect(x0 + 2, top, x1 - x0 - 4, ROW_H, ROW_ENABLED);
+        if (hover) NvgRecorder.fillRect(x0 + 2, top, x1 - x0 - 4, ROW_H, ROW_HOVER);
+        if (on) NvgRecorder.fillRect(x0 + 2, top + 3, 2, ROW_H - 6, ACCENT);
 
-        // icon tile
-        int ts = 24, tx = x0 + 9, ty = top + (ROW_H - ts) / 2;
-        ctx.fill(tx, ty, tx + ts, ty + ts, on ? TILE_BG_ON : TILE_BG);
-        drawGlyph(ctx, iconFor(f.name), tx + ts / 2, ty + ts / 2, on ? ACCENT_HOVER : 0xFF49C9C3, on ? TILE_BG_ON : TILE_BG);
-
-        // texts
-        int labelX = tx + ts + 9;
-        String d = descFor(f.name);
-        if (d.isEmpty()) {
-            ctx.drawText(this.textRenderer, f.name, labelX, top + (ROW_H - 8) / 2, TEXT_COLOR, false);
-        } else {
-            ctx.drawText(this.textRenderer, f.name, labelX, top + 8, TEXT_COLOR, false);
-            sst(ctx, this.textRenderer, d, labelX, top + 21, SUBTEXT_COLOR, 0.85f);
+        String label = f.name;
+        int maxTextW = x1 - x0 - 20;
+        if (stw(this.textRenderer, label) > maxTextW) {
+            while (label.length() > 1 && stw(this.textRenderer, label + "…") > maxTextW) label = label.substring(0, label.length() - 1);
+            label = label + "…";
+        }
+        NvgRecorder.text(label, x0 + 10, top + (ROW_H - 8) / 2, NVG_BASE_TEXT_SIZE, on ? TEXT_COLOR : SUBTEXT_COLOR);
+        if (hover) {
+            String d = descFor(f.name);
+            if (!d.isEmpty()) { hoverDesc = d; hoverDescX = x1 + 8; hoverDescY = top; }
         }
 
-        // control
-        if (f.hasMaster()) {
-            int tgx = x1 - 14 - TOG2_W, tgy = top + (ROW_H - TOG2_H) / 2;
-            boolean th = inView && mouseX >= tgx && mouseX <= tgx + TOG2_W && mouseY >= tgy && mouseY <= tgy + TOG2_H;
-            drawBigToggle(ctx, tgx, tgy, on, th);
-            if (!f.sub.isEmpty()) drawChevron(ctx, tgx - 16, top + ROW_H / 2 - 2, f == selectedFeature, CHEVRON_COLOR);
-        } else if (!f.sub.isEmpty()) {
-            drawChevron(ctx, x1 - 18, top + ROW_H / 2 - 2, f == selectedFeature, f == selectedFeature ? ACCENT : 0xFF7A8694);
+        if (!f.sub.isEmpty()) {
+            drawChevron(ctx, x1 - 14, top + ROW_H / 2 - 2, f.expanded(), f.expanded() ? ACCENT : CHEVRON_COLOR);
         }
     }
 
-    private void drawBigToggle(DrawContext ctx, int x, int y, boolean on, boolean hover) {
-        int track = on ? (hover ? ACCENT_HOVER : ACCENT) : (hover ? 0xFF333D48 : 0xFF252D37);
-        pill(ctx, x, y, x + TOG2_W, y + TOG2_H, track);
-        int knobD = TOG2_H - 6;
-        int kcx = on ? x + TOG2_W - 3 - knobD / 2 : x + 3 + knobD / 2;
-        disc(ctx, kcx, y + TOG2_H / 2, knobD / 2 + 1, 0xFFFFFFFF);
-        String t = on ? "ON" : "OFF";
-        int tw = sw(this.textRenderer, t, 0.8f);
-        int tx = on ? x + 7 : x + TOG2_W - 7 - tw;
-        sst(ctx, this.textRenderer, t, tx, y + (TOG2_H - 6) / 2, on ? 0xFF06302F : 0xFF8893A0, 0.8f);
+    /** Odin-style rounded pill with a hollow accent ring and a sliding circular knob. Static so the
+     *  static nested Setting subclasses (which have no outer-instance reference) can call it too. */
+    static void drawTogglePill(DrawContext ctx, int x, int y, int w, int h, boolean on, float knobProgress, boolean hover) {
+        int track = on ? (hover ? ACCENT_HOVER : ACCENT) : TRACK_OFF;
+        int ring = on ? (hover ? ACCENT_HOVER : ACCENT) : (hover ? 0xFF565C68 : 0xFF464C56);
+        roundedRectRing(ctx, x, y, w, h, h / 2, 2, track, ring);
+        int knobR = h / 2 - 3;
+        int knobX = x + knobR + 3 + Math.round(knobProgress * (w - 2 * (knobR + 3)));
+        disc(ctx, knobX, y + h / 2, knobR, 0xFFFFFFFF);
     }
 
-    private void renderSubPanel(DrawContext ctx, Feature f, int x0, int x1, int top, int mouseX, int mouseY) {
-        int subH = detailHeightForSelected() + 10;
-        ctx.fill(x0, top, x1, top + subH, SUBROW_BG);
-        ctx.fill(x0, top, x0 + 2, top + subH, ACCENT);
+    /** Small floating tooltip drawn last, on top of everything, for the row the mouse is hovering. */
+    private void renderHoverTooltip(DrawContext ctx) {
+        if (hoverDesc == null) return;
+        int tw = stw(this.textRenderer, hoverDesc);
+        int bw = tw + 16, bh = 18;
+        int bx = Math.min(hoverDescX, this.width - bw - 4);
+        int by = hoverDescY;
+        roundedRectRing(ctx, bx, by, bw, bh, 5, 1, 0xFF14181D, ACCENT);
+        st(ctx, this.textRenderer, hoverDesc, bx + 8, by + 5, TEXT_COLOR);
+    }
+
+    /** While animating, pushes its own narrower scissor to hide the not-yet-revealed portion of
+     *  the panel, then pops it — NanoVG's nvgSave/nvgRestore stack (see NvgRecorder.pushScissor/
+     *  popScissor) makes this a real nested scope, so the caller's own wider clip (already pushed
+     *  in renderContent) is preserved automatically once this pops back out. */
+    private void renderSubPanel(DrawContext ctx, Feature f, int x0, int x1, int top, int animatedH, int mouseX, int mouseY) {
+        boolean animating = f.expandAnim.isAnimating();
+        if (animating) NvgRecorder.pushScissor(x0, top, x1 - x0, animatedH);
+
+        int subH = f.naturalSubHeight();
+        NvgRecorder.fillRect(x0, top, x1 - x0, subH, SUBROW_BG);
+        NvgRecorder.fillRect(x0, top, 2, subH, ACCENT);
         int leftX = x0 + 14, rightX = x1 - 12;
         int sy = top + 6;
         for (Setting s : f.sub) {
             int sh = s.getHeight();
-            if (!(s instanceof SubcategoryHeader) && !(s instanceof InputSetting)) {
-                st(ctx, this.textRenderer, s.name, leftX + 2, sy + (sh - 8) / 2, TEXT_COLOR);
+            if (!(s instanceof SubcategoryHeader) && !(s instanceof InputSetting) && !(s instanceof ColorPickerSetting)) {
+                // Center within the fixed top strip (ITEM_HEIGHT), not the full row height `sh` —
+                // for expandable settings (DropdownSetting) `sh` grows as the option list opens,
+                // which would otherwise drag this label downward mid-animation even though the
+                // label itself always lives in that fixed top strip.
+                st(ctx, this.textRenderer, s.name, leftX + 2, sy + (ITEM_HEIGHT - 8) / 2, TEXT_COLOR);
             }
             s.render(ctx, leftX, rightX, sy, mouseX, mouseY, this.textRenderer);
             sy += sh;
         }
-    }
 
-    private void renderFooter(DrawContext ctx, int mouseX, int mouseY) {
-        int fY = bottom() - FOOTER_H;
-        ctx.fill(left() + SIDEBAR_W, fY, right(), fY + 1, DIVIDER);
-        int by = fY + (FOOTER_H - 26) / 2, bh = 26;
-
-        // Edit HUD (left)
-        int ehW = 96, ehX = cx0();
-        drawButton(ctx, ehX, by, ehW, bh, "Edit HUD", false, hovBtn(mouseX, mouseY, ehX, by, ehW, bh));
-
-        // Credits (right of Edit HUD)
-        int crW = 76, crX = ehX + ehW + 10;
-        drawButton(ctx, crX, by, crW, bh, "Credits", false, hovBtn(mouseX, mouseY, crX, by, crW, bh));
-
-        // Save & Close (far right)
-        int scW = 126, scX = cx1() - scW;
-        drawButton(ctx, scX, by, scW, bh, "Save & Close", true, hovBtn(mouseX, mouseY, scX, by, scW, bh));
-
-        // Reset (left of Save & Close)
-        int rsW = 84, rsX = scX - 10 - rsW;
-        String rsLabel = resetArmed ? "Confirm?" : "Reset";
-        drawButton(ctx, rsX, by, rsW, bh, rsLabel, false, hovBtn(mouseX, mouseY, rsX, by, rsW, bh), resetArmed ? 0xFFE05A5A : ACCENT);
+        if (animating) NvgRecorder.popScissor();
     }
 
     private boolean hovBtn(int mx, int my, int x, int y, int w, int h) {
         return mx >= x && mx <= x + w && my >= y && my <= y + h;
-    }
-    private void drawButton(DrawContext ctx, int x, int y, int w, int h, String label, boolean filled, boolean hover) {
-        drawButton(ctx, x, y, w, h, label, filled, hover, ACCENT);
-    }
-    private void drawButton(DrawContext ctx, int x, int y, int w, int h, String label, boolean filled, boolean hover, int tint) {
-        if (filled) {
-            ctx.fill(x, y, x + w, y + h, hover ? ACCENT_HOVER : tint);
-            int tw = this.textRenderer.getWidth(label);
-            ctx.drawText(this.textRenderer, label, x + (w - tw) / 2, y + (h - 8) / 2, 0xFF052A29, false);
-        } else {
-            int bd = hover ? ACCENT_HOVER : tint;
-            ctx.fill(x, y, x + w, y + h, hover ? 0xFF12222A : 0xFF0D141A);
-            ctx.fill(x, y, x + w, y + 1, bd); ctx.fill(x, y + h - 1, x + w, y + h, bd);
-            ctx.fill(x, y, x + 1, y + h, bd); ctx.fill(x + w - 1, y, x + w, y + h, bd);
-            int tw = this.textRenderer.getWidth(label);
-            ctx.drawText(this.textRenderer, label, x + (w - tw) / 2, y + (h - 8) / 2, bd, false);
-        }
     }
 
     // -----------------------------------------------------------------------------------
@@ -1128,81 +1145,60 @@ public class FishModScreen extends Screen {
         if (activeInput instanceof InputSetting prevInput && prevInput.textField != null) prevInput.textField.setFocused(false);
         activeInput = null;
 
-        // ----- search -----
-        int swW = 156, swH = 20;
-        int sx = right() - CONTENT_PAD - swW, sy = top() + (TITLE_H - swH) / 2;
+        // ----- search (floating pill, bottom-center) -----
+        int swW = 190, swH = 24;
+        int sx = (this.width - swW) / 2;
+        int sy = this.height - BOTTOM_RESERVE + (BOTTOM_RESERVE - swH) / 2 - 8;
         searchFocused = mx >= sx && mx <= sx + swW && my >= sy && my <= sy + swH;
         if (searchField != null) searchField.setFocused(searchFocused);
         if (searchFocused) return true;
 
-        // ----- footer buttons -----
-        int fY = bottom() - FOOTER_H, by = fY + (FOOTER_H - 26) / 2, bh = 26;
-        int ehW = 96, ehX = cx0();
-        if (hovBtn(mx, my, ehX, by, ehW, bh)) { MinecraftClient.getInstance().setScreen(new FishHudEditor(this)); return true; }
-        int crW = 76, crX = ehX + ehW + 10;
-        if (hovBtn(mx, my, crX, by, crW, bh)) { MinecraftClient.getInstance().setScreen(new CreditsScreen(this)); return true; }
-        int scW = 126, scX = cx1() - scW;
-        if (hovBtn(mx, my, scX, by, scW, bh)) { close(); return true; }
-        int rsW = 84, rsX = scX - 10 - rsW;
-        if (hovBtn(mx, my, rsX, by, rsW, bh)) {
-            if (resetArmed) { resetCurrentCategory(); resetArmed = false; }
+        // ----- top-right pill buttons -----
+        int[][] rects = topBarButtonRects();
+        if (hovBtn(mx, my, rects[0][0], rects[0][1], rects[0][2], rects[0][3])) { MinecraftClient.getInstance().setScreen(new FishHudEditor(this)); return true; }
+        if (hovBtn(mx, my, rects[1][0], rects[1][1], rects[1][2], rects[1][3])) { MinecraftClient.getInstance().setScreen(new CreditsScreen(this)); return true; }
+        if (hovBtn(mx, my, rects[2][0], rects[2][1], rects[2][2], rects[2][3])) {
+            if (resetArmed) { resetAllColumns(); resetArmed = false; }
             else { resetArmed = true; resetArmedAt = System.currentTimeMillis(); }
             return true;
         }
+        if (hovBtn(mx, my, rects[3][0], rects[3][1], rects[3][2], rects[3][3])) { close(); return true; }
 
-        // ----- sidebar -----
-        if (mx >= left() && mx <= left() + SIDEBAR_W && my >= top() + TITLE_H && my <= bottom()) {
-            int y = top() + TITLE_H + 10;
-            for (int i = 0; i < columns.size(); i++) {
-                if (my >= y && my <= y + CAT_ITEM_H) {
-                    if (i != selectedCat) {
-                        selectedCat = i; selectedFeature = null; scroll = 0;
-                        searchText = ""; if (searchField != null) searchField.setText("");
-                    }
-                    return true;
-                }
-                y += CAT_ITEM_H + 4;
-            }
-            return true; // swallow clicks in the sidebar gutter
-        }
-
-        // ----- content rows / sub-panels -----
+        // ----- content columns / rows / sub-panels -----
         if (my >= cyTop() && my <= cyBot()) {
-            int x0 = cx0(), x1 = cx1();
-            int y = cyTop() - scroll;
-            for (Feature f : visibleFeatures()) {
-                int rowTop = y;
-                // row hit
-                if (mx >= x0 && mx <= x1 && my >= rowTop && my <= rowTop + ROW_H) {
-                    if (f.hasMaster()) {
-                        int tgx = x1 - 14 - TOG2_W, tgy = rowTop + (ROW_H - TOG2_H) / 2;
-                        if (mx >= tgx && mx <= tgx + TOG2_W && my >= tgy && my <= tgy + TOG2_H) {
-                            f.set.accept(!f.get.get()); return true;
+            List<Column> cols = visibleColumns();
+            int colW = columnWidth();
+            for (int ci = 0; ci < cols.size(); ci++) {
+                Column col = cols.get(ci);
+                int x0 = columnX0(ci), x1 = x0 + colW;
+                if (mx < x0 || mx > x1) continue;
+
+                for (RowLayout rl : layoutColumn(col, col.scroll)) {
+                    Feature f = rl.feature;
+                    // row hit — left-click toggles master on/off, right-click toggles the expand panel
+                    // (features with no master toggle expand on either click)
+                    if (my >= rl.rowTop && my <= rl.rowBottom) {
+                        if (f.hasMaster()) {
+                            if (btn == 1 && !f.sub.isEmpty()) f.toggleExpanded();
+                            else f.set.accept(!f.get.get());
+                        } else if (!f.sub.isEmpty()) {
+                            f.toggleExpanded();
                         }
-                        if (!f.sub.isEmpty()) { selectedFeature = (selectedFeature == f ? null : f); }
-                        else { f.set.accept(!f.get.get()); }
-                    } else if (!f.sub.isEmpty()) {
-                        selectedFeature = (selectedFeature == f ? null : f);
+                        return true;
                     }
-                    return true;
-                }
-                y += ROW_H;
-                int subH = subPanelHeight(f);
-                if (subH > 0) {
-                    int subTop = y;
-                    if (mx >= x0 && mx <= x1 && my >= subTop && my <= subTop + subH) {
-                        int leftX = x0 + 14, rightX = x1 - 12, ssy = subTop + 6;
+                    // sub-panel hit
+                    int subH = rl.subBottom - rl.subTop;
+                    if (subH > 0 && my >= rl.subTop && my <= rl.subBottom) {
+                        int leftX = x0 + 14, rightX = x1 - 12, ssy = rl.subTop + 6;
                         for (Setting s : f.sub) {
                             int sh = s.getHeight();
                             if (my >= ssy && my <= ssy + sh) {
                                 if (s instanceof InputSetting || s instanceof InputIntSetting
-                                        || s instanceof InputDoubleSetting || s instanceof ColorSetting
-                                        || s instanceof ColorPickerSetting) {
+                                        || s instanceof InputDoubleSetting) {
                                     activeInput = s;
                                 }
                             }
                             if (s.onClick(mx, my, leftX, rightX, ssy, btn)) {
-                                if (s instanceof ColorPickerSetting cps && cps.dragMode != 0) activePicker = cps;
                                 if (s instanceof KeybindSetting ks && ks.capturing) capturingKeybind = ks;
                                 return true;
                             }
@@ -1217,9 +1213,8 @@ public class FishModScreen extends Screen {
                         }
                         return true; // swallow clicks inside the body
                     }
-                    y += subH;
                 }
-                y += ROW_GAP;
+                return true; // swallow clicks in the column's empty space
             }
             return true;
         }
@@ -1229,25 +1224,32 @@ public class FishModScreen extends Screen {
     @Override
     public boolean mouseDragged(Click click, double deltaX, double deltaY) {
         if (activeSlider != null) { activeSlider.onDrag((int) click.x(), activeSliderX, SLIDER_W); return true; }
-        if (activePicker != null) { activePicker.updateFromMouse((int) click.x(), (int) click.y()); return true; }
         return super.mouseDragged(click, deltaX, deltaY);
     }
 
     @Override
     public boolean mouseReleased(Click click) {
         activeSlider = null;
-        if (activePicker != null) { activePicker.dragMode = 0; activePicker = null; }
         return super.mouseReleased(click);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        scroll = MathHelper.clamp((int) (scroll - verticalAmount * 18), 0, maxScroll());
+        List<Column> cols = visibleColumns();
+        int colW = columnWidth();
+        for (int i = 0; i < cols.size(); i++) {
+            int x0 = columnX0(i), x1 = x0 + colW;
+            if (mouseX >= x0 && mouseX <= x1) {
+                Column c = cols.get(i);
+                c.scroll = MathHelper.clamp((int) (c.scroll - verticalAmount * 18), 0, maxScrollFor(c));
+                return true;
+            }
+        }
         return true;
     }
 
-    private void resetCurrentCategory() {
-        for (Feature f : currentColumn().features) {
+    private void resetAllColumns() {
+        for (Column c : columns) for (Feature f : c.features) {
             if (f.hasMaster() && f.get.get()) f.set.accept(false);
         }
     }
@@ -1264,8 +1266,6 @@ public class FishModScreen extends Screen {
         if (activeInput instanceof InputSetting is && is.textField != null) { is.textField.keyPressed(input); return true; }
         if (activeInput instanceof InputIntSetting iis && iis.textField != null) { iis.textField.keyPressed(input); return true; }
         if (activeInput instanceof InputDoubleSetting ids && ids.textField != null) { ids.textField.keyPressed(input); return true; }
-        if (activeInput instanceof ColorSetting cs && cs.textField != null) { cs.textField.keyPressed(input); return true; }
-        if (activeInput instanceof ColorPickerSetting cp && cp.textField != null) { cp.textField.keyPressed(input); return true; }
         if (searchFocused && searchField != null) { searchField.keyPressed(input); return true; }
         return super.keyPressed(input);
     }
@@ -1277,10 +1277,36 @@ public class FishModScreen extends Screen {
         }
         if (activeInput instanceof InputIntSetting iis && iis.textField != null) { iis.textField.charTyped(input); return true; }
         if (activeInput instanceof InputDoubleSetting ids && ids.textField != null) { ids.textField.charTyped(input); return true; }
-        if (activeInput instanceof ColorSetting cs && cs.textField != null) { cs.textField.charTyped(input); return true; }
-        if (activeInput instanceof ColorPickerSetting cp && cp.textField != null) { cp.textField.charTyped(input); return true; }
-        if (searchFocused && searchField != null) { searchField.charTyped(input); searchText = searchField.getText(); scroll = 0; return true; }
+        if (searchFocused && searchField != null) { searchField.charTyped(input); searchText = searchField.getText(); for (Column c : columns) c.scroll = 0; return true; }
         return super.charTyped(input);
+    }
+
+    private final fishmod.utils.rendering.NvgGlStateGuard nvgGlState = new fishmod.utils.rendering.NvgGlStateGuard();
+
+    /** Called by GameRendererNvgMixin right after the vanilla GUI flush each frame this screen is
+     *  open — the one point per frame where NanoVG's immediate GL draws land after (not before)
+     *  all of this frame's vanilla content, giving correct z-ordering for free. */
+    public void paintNvgOverlay() {
+        nvgGlState.capture();
+        long ctx = fishmod.utils.rendering.NvgContext.get();
+
+        // Device pixel ratio must be real GUI-scale-derived, not a fixed 1.0 — NanoVG bakes font
+        // glyphs into its atlas at a resolution scaled by this ratio so they stay crisp once
+        // stretched across the (larger) real framebuffer viewport.
+        float pixelRatio = (float) net.minecraft.client.MinecraftClient.getInstance().getWindow().getScaleFactor();
+        org.lwjgl.nanovg.NanoVG.nvgBeginFrame(ctx, this.width, this.height, pixelRatio);
+        fishmod.utils.rendering.NvgRecorder.replay();
+        org.lwjgl.nanovg.NanoVG.nvgEndFrame(ctx);
+
+        fishmod$glCheck("after paintNvgOverlay");
+        nvgGlState.restore();
+    }
+
+    private void fishmod$glCheck(String where) {
+        int err;
+        while ((err = org.lwjgl.opengl.GL11.glGetError()) != org.lwjgl.opengl.GL11.GL_NO_ERROR) {
+            fishmod.utils.debug.Debug.LOGGER.warn("[NanoVG] GL error 0x{} at {}", Integer.toHexString(err), where);
+        }
     }
 
     @Override public boolean shouldPause() { return false; }
@@ -1299,6 +1325,7 @@ public class FishModScreen extends Screen {
         final String name;
         final String icon;
         final List<Feature> features = new ArrayList<>();
+        int scroll = 0;
         Column(String name, String icon) { this.name = name; this.icon = icon; }
     }
 
@@ -1307,10 +1334,24 @@ public class FishModScreen extends Screen {
         final Supplier<Boolean> get;
         final Consumer<Boolean> set;
         final List<Setting> sub = new ArrayList<>();
+        final Easing.Anim expandAnim = new Easing.Anim(250);
         Feature(String name, Supplier<Boolean> get, Consumer<Boolean> set) {
             this.name = name; this.get = get; this.set = set;
         }
         boolean hasMaster() { return get != null && set != null; }
+
+        boolean expanded() { return expandAnim.target(); }
+        void toggleExpanded() { expandAnim.setTarget(!expandAnim.target()); }
+        int naturalSubHeight() {
+            if (sub.isEmpty()) return 0;
+            int total = 0;
+            for (Setting s : sub) total += s.getHeight();
+            return total + 10;
+        }
+        int animatedSubHeight() {
+            int natural = naturalSubHeight();
+            return natural == 0 ? 0 : Math.round(natural * expandAnim.progress());
+        }
     }
 
     // -----------------------------------------------------------------------------------
@@ -1336,29 +1377,30 @@ public class FishModScreen extends Screen {
         }
     }
 
+    /** Odin-style rounded pill toggle with a hollow accent ring and an animated sliding knob. */
     static class ToggleSetting extends Setting {
+        static final int W = 34;
         Supplier<Boolean> getter; Consumer<Boolean> setter;
+        private final Easing.Anim knobAnim = new Easing.Anim(150);
+        private Boolean lastValue = null;
         ToggleSetting(String name, String desc, Supplier<Boolean> g, Consumer<Boolean> s) {
             super(name, desc); this.getter = g; this.setter = s;
         }
         @Override
         void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
-            int tx = rightX - TOGGLE_W - 2;
-            int ty = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
             boolean on = getter.get();
-            boolean hov = mx >= tx && mx <= tx + TOGGLE_W && my >= ty && my <= ty + TOGGLE_H;
-            int track = on ? (hov ? ACCENT_HOVER : TOGGLE_ON) : (hov ? 0xFF3A3D48 : TOGGLE_OFF);
-            pill(ctx, tx, ty, tx + TOGGLE_W, ty + TOGGLE_H, track);
-            int knob = TOGGLE_H - 4;
-            int kx = on ? tx + TOGGLE_W - knob - 2 : tx + 2;
-            int ky = ty + 2;
-            pill(ctx, kx, ky, kx + knob, ky + knob, 0xFFE8ECF2);
+            if (lastValue == null) { lastValue = on; knobAnim.setTarget(on); }
+            else if (lastValue != on) { lastValue = on; knobAnim.setTarget(on); }
+            int tx = rightX - W - 2;
+            int ty = sy + (ITEM_HEIGHT - PILL_H) / 2;
+            boolean hov = mx >= tx && mx <= tx + W && my >= ty && my <= ty + PILL_H;
+            drawTogglePill(ctx, tx, ty, W, PILL_H, on, knobAnim.progress(), hov);
         }
         @Override
         boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
-            int tx = rightX - TOGGLE_W - 2;
-            int ty = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
-            if (mx >= tx && mx <= tx + TOGGLE_W && my >= ty && my <= ty + TOGGLE_H) {
+            int tx = rightX - W - 2;
+            int ty = sy + (ITEM_HEIGHT - PILL_H) / 2;
+            if (mx >= tx && mx <= tx + W && my >= ty && my <= ty + PILL_H) {
                 setter.accept(!getter.get()); return true;
             }
             return false;
@@ -1412,37 +1454,82 @@ public class FishModScreen extends Screen {
     }
 
     // Click to advance to the next value; right-click goes back one.
+    /** Odin-style selector: a rounded pill showing the current value; click expands an animated
+     *  inline list of every option beneath it (right-click quick-cycles without expanding). */
     static class DropdownSetting<T> extends Setting {
-        static final int DROP_W = 120;
-        static final int DROP_H = 18;
         T[] values; Supplier<T> getter; Consumer<T> setter;
+        private final Easing.Anim expandAnim = new Easing.Anim(200);
+        private boolean expanded = false;
+        private int pillX = 0, pillW = 0;
+
         DropdownSetting(String name, String desc, T[] vals, Supplier<T> g, Consumer<T> s) {
             super(name, desc); this.values = vals; this.getter = g; this.setter = s;
         }
+
+        private int indexOfCurrent() {
+            T cur = getter.get();
+            for (int i = 0; i < values.length; i++) if (values[i] == cur || values[i].equals(cur)) return i;
+            return 0;
+        }
+
+        @Override int getHeight() {
+            return ITEM_HEIGHT + Math.round(values.length * OPTION_H * expandAnim.progress());
+        }
+
         @Override
         void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
-            int bw = DROP_W;
-            int bx = rightX - bw - 2;
-            int by = sy + (ITEM_HEIGHT - DROP_H) / 2;
-            boolean hov = mx >= bx && mx <= bx + bw && my >= by && my <= by + DROP_H;
-            panel(ctx, bx, by, bx + bw, by + DROP_H, 3, hov ? 0xFF252832 : SLIDER_BG, hov ? ACCENT_HOVER : ACCENT);
             String current = getter.get().toString();
-            if (tr.getWidth(current) > bw - 20) current = tr.trimToWidth(current, bw - 24) + "…";
-            ctx.drawText(tr, current, bx + 6, by + (DROP_H - 8) / 2, TEXT_COLOR, false);
-            ctx.drawText(tr, "›", bx + bw - 9, by + (DROP_H - 8) / 2, ACCENT, false);
+            int textW = stw(tr, current);
+            pillW = textW + 22;
+            pillX = rightX - pillW - 2;
+            int by = sy + (ITEM_HEIGHT - PILL_H) / 2;
+            boolean hov = mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H;
+            roundedRectRing(ctx, pillX, by, pillW, PILL_H, PILL_H / 2, 2, TRACK_OFF, hov ? ACCENT_HOVER : ACCENT);
+            st(ctx, tr, current, pillX + 10, by + (PILL_H - 8) / 2 - 1, TEXT_COLOR);
+
+            boolean animating = expandAnim.isAnimating();
+            if (expanded || animating) {
+                int animH = Math.round(values.length * OPTION_H * expandAnim.progress());
+                int oy = sy + ITEM_HEIGHT;
+                if (animating) ctx.enableScissor(leftX, oy, rightX, oy + animH);
+                roundedRect(ctx, leftX + 2, oy, rightX - leftX - 4, values.length * OPTION_H, 5, SUBROW_BG);
+                int curIdx = indexOfCurrent();
+                for (int i = 0; i < values.length; i++) {
+                    int rowY = oy + i * OPTION_H;
+                    boolean selected = i == curIdx;
+                    boolean rowHov = mx >= leftX + 2 && mx <= rightX - 2 && my >= rowY && my <= rowY + OPTION_H;
+                    if (rowHov) roundedRect(ctx, leftX + 4, rowY + 1, rightX - leftX - 8, OPTION_H - 2, 4, ROW_HOVER);
+                    st(ctx, tr, values[i].toString(), leftX + 10, rowY + (OPTION_H - 8) / 2,
+                            selected ? ACCENT_HOVER : (rowHov ? TEXT_COLOR : SUBTEXT_COLOR));
+                    if (selected) NvgRecorder.fillRect(leftX + 2, rowY + 3, 2, OPTION_H - 6, ACCENT);
+                }
+                if (animating) ctx.disableScissor();
+            }
         }
+
         @Override
         boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
-            int bw = DROP_W;
-            int bx = rightX - bw - 2;
-            int by = sy + (ITEM_HEIGHT - DROP_H) / 2;
-            if (mx >= bx && mx <= bx + bw && my >= by && my <= by + DROP_H) {
-                int idx = 0;
-                T cur = getter.get();
-                for (int i = 0; i < values.length; i++) if (values[i] == cur || values[i].equals(cur)) { idx = i; break; }
-                int next = (btn == 1) ? (idx - 1 + values.length) % values.length : (idx + 1) % values.length;
-                setter.accept(values[next]);
+            int by = sy + (ITEM_HEIGHT - PILL_H) / 2;
+            if (mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H) {
+                if (btn == 1) {
+                    setter.accept(values[(indexOfCurrent() + 1) % values.length]);
+                } else {
+                    expanded = !expanded;
+                    expandAnim.setTarget(expanded);
+                }
                 return true;
+            }
+            if (expanded) {
+                int oy = sy + ITEM_HEIGHT;
+                for (int i = 0; i < values.length; i++) {
+                    int rowY = oy + i * OPTION_H;
+                    if (mx >= leftX && mx <= rightX && my >= rowY && my <= rowY + OPTION_H) {
+                        setter.accept(values[i]);
+                        expanded = false;
+                        expandAnim.setTarget(false);
+                        return true;
+                    }
+                }
             }
             return false;
         }
@@ -1471,16 +1558,8 @@ public class FishModScreen extends Screen {
             int ix = leftX + 2;
             int iy = sy + 11;
             int fieldW = rightX - leftX - 4;
-            float fs = 0.7f;
-            textField.setWidth((int) (fieldW / fs));
-            textField.setHeight((int) (INPUT_H / fs));
             if (!textField.isFocused()) { textField.setSelectionStart(0); textField.setSelectionEnd(0); }
-            textField.setX(0); textField.setY(0);
-            ctx.getMatrices().pushMatrix();
-            ctx.getMatrices().translate((float) ix, (float) iy);
-            ctx.getMatrices().scale(fs, fs);
-            textField.render(ctx, mx, my, 0);
-            ctx.getMatrices().popMatrix();
+            nvgTextField(textField, ix, iy, fieldW, INPUT_H);
             if (hint != null) st(ctx, tr, hint, leftX + 2, sy + 27, SUBTEXT_COLOR);
         }
         @Override
@@ -1526,15 +1605,7 @@ public class FishModScreen extends Screen {
             initField(tr);
             int ix = rightX - INPUT_W - 2;
             int iy = sy + 2;
-            float fs = 0.7f;
-            textField.setWidth((int) (INPUT_W / fs));
-            textField.setHeight((int) (INPUT_H / fs));
-            textField.setX(0); textField.setY(0);
-            ctx.getMatrices().pushMatrix();
-            ctx.getMatrices().translate((float) ix, (float) iy);
-            ctx.getMatrices().scale(fs, fs);
-            textField.render(ctx, mx, my, 0);
-            ctx.getMatrices().popMatrix();
+            nvgTextField(textField, ix, iy, INPUT_W, INPUT_H);
             int len = visibleLen(getter.get());
             String counter = len + "/" + maxVisible;
             int color = len >= maxVisible ? 0xFFFF5555 : SUBTEXT_COLOR;
@@ -1552,146 +1623,103 @@ public class FishModScreen extends Screen {
         }
     }
 
-    static class ColorSetting extends Setting {
-        Supplier<Integer> getter; Consumer<Integer> setter;
-        TextFieldWidget textField;
-        ColorSetting(String name, String desc, Supplier<Integer> g, Consumer<Integer> s) {
-            super(name, desc); this.getter = g; this.setter = s;
-        }
-        void initField(net.minecraft.client.font.TextRenderer tr) {
-            if (textField == null) {
-                textField = new TextFieldWidget(tr, 0, 0, 50, INPUT_H, Text.empty());
-                textField.setMaxLength(6);
-                textField.setText(String.format("%06X", getter.get() & 0xFFFFFF));
-                textField.setChangedListener(s -> {
-                    if (s.length() == 6) {
-                        try { setter.accept(0xFF000000 | (int) Long.parseLong(s, 16)); }
-                        catch (NumberFormatException ignored) {}
-                    }
-                });
-            }
-        }
-        @Override
-        void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
-            initField(tr);
-            int ix = rightX - 50 - 2;
-            int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
-            ctx.fill(ix - 18, iy, ix - 2, iy + INPUT_H, 0xFF000000);
-            ctx.fill(ix - 17, iy + 1, ix - 3, iy + INPUT_H - 1, getter.get());
-            textField.setX(ix); textField.setY(iy);
-            textField.render(ctx, mx, my, 0);
-        }
-        @Override
-        boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
-            int ix = rightX - 50 - 2;
-            int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
-            if (mx >= ix && mx <= ix + 50 && my >= iy && my <= iy + INPUT_H) {
-                if (textField != null) textField.setFocused(true);
-                return true;
-            }
-            return false;
-        }
-    }
-
-    /** Visual color picker: saturation/brightness square + vertical hue bar + swatch + editable hex. */
+    /** Odin-style dropdown of preset named colors — same expand/collapse mechanic as
+     *  {@link DropdownSetting}, picked over a free-form HSB square + hue bar because it needs no
+     *  live vanilla widget and no drag-square geometry, just the same fixed-option-list pattern
+     *  that's already known to render correctly. */
     static class ColorPickerSetting extends Setting {
+        static final int[] PRESET_ARGB = {
+            0xFFFFFFFF, 0xFFFF5555, 0xFFFFAA00, 0xFFFFFF55, 0xFF55FF55, 0xFF55FFFF,
+            0xFF5555FF, 0xFFAA00AA, 0xFFFF55FF, 0xFFAAAAAA, 0xFF555555, 0xFF000000,
+        };
+        static final String[] PRESET_NAMES = {
+            "White", "Red", "Orange", "Yellow", "Green", "Aqua",
+            "Blue", "Purple", "Pink", "Gray", "Dark Gray", "Black",
+        };
+
         Supplier<Integer> getter; Consumer<Integer> setter;
-        TextFieldWidget textField;
-        float hsbH, hsbS, hsbV;
-        int lastColor = 0;
-        int dragMode = 0;
-        int sqX, sqY, sqW = 96, sqH = 46, hueX, hueY, hueW = 10, hueH = 46;
+        private final Easing.Anim expandAnim = new Easing.Anim(200);
+        private boolean expanded = false;
+        private int pillX = 0, pillW = 0;
 
         ColorPickerSetting(String name, String desc, Supplier<Integer> g, Consumer<Integer> s) {
             super(name, desc); this.getter = g; this.setter = s;
-            syncFromColor(getter.get());
         }
-        @Override int getHeight() { return ITEM_HEIGHT + sqH + 6; }
 
-        private void syncFromColor(int argb) {
-            float[] hsb = java.awt.Color.RGBtoHSB((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, null);
-            hsbH = hsb[0]; hsbS = hsb[1]; hsbV = hsb[2];
-            lastColor = argb;
-        }
-        private void commit() {
-            int rgb = java.awt.Color.HSBtoRGB(hsbH, hsbS, hsbV) & 0xFFFFFF;
-            int argb = 0xFF000000 | rgb;
-            lastColor = argb;
-            setter.accept(argb);
-            if (textField != null) textField.setText(String.format("%06X", rgb));
-        }
-        void initField(net.minecraft.client.font.TextRenderer tr) {
-            if (textField == null) {
-                textField = new TextFieldWidget(tr, 0, 0, 46, INPUT_H, Text.empty());
-                textField.setMaxLength(6);
-                textField.setText(String.format("%06X", getter.get() & 0xFFFFFF));
-                textField.setChangedListener(t -> {
-                    if (t.length() == 6) {
-                        try {
-                            int argb = 0xFF000000 | (int) Long.parseLong(t, 16);
-                            setter.accept(argb); syncFromColor(argb);
-                        } catch (NumberFormatException ignored) {}
-                    }
-                });
+        private int indexOfCurrent() {
+            int cur = getter.get() | 0xFF000000;
+            int best = 0, bestDist = Integer.MAX_VALUE;
+            for (int i = 0; i < PRESET_ARGB.length; i++) {
+                int dr = ((PRESET_ARGB[i] >> 16) & 0xFF) - ((cur >> 16) & 0xFF);
+                int dg = ((PRESET_ARGB[i] >> 8) & 0xFF) - ((cur >> 8) & 0xFF);
+                int db = (PRESET_ARGB[i] & 0xFF) - (cur & 0xFF);
+                int dist = dr * dr + dg * dg + db * db;
+                if (dist < bestDist) { bestDist = dist; best = i; }
             }
+            return best;
         }
+
+        @Override int getHeight() {
+            return ITEM_HEIGHT + Math.round(PRESET_ARGB.length * OPTION_H * expandAnim.progress());
+        }
+
         @Override
         void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
-            initField(tr);
-            if (getter.get() != lastColor) { syncFromColor(getter.get()); textField.setText(String.format("%06X", getter.get() & 0xFFFFFF)); }
-
             st(ctx, tr, name, leftX, sy + (ITEM_HEIGHT - 8) / 2, TEXT_COLOR);
-            int ix = rightX - 46 - 2;
-            int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
-            ctx.fill(ix - 18, iy, ix - 2, iy + INPUT_H, 0xFF000000);
-            ctx.fill(ix - 17, iy + 1, ix - 3, iy + INPUT_H - 1, getter.get());
-            textField.setX(ix); textField.setY(iy);
-            textField.render(ctx, mx, my, 0);
+            int idx = indexOfCurrent();
+            String label = PRESET_NAMES[idx];
+            int textW = stw(tr, label);
+            int swatchD = 8;
+            pillW = textW + swatchD + 26;
+            pillX = rightX - pillW - 2;
+            int by = sy + (ITEM_HEIGHT - PILL_H) / 2;
+            boolean hov = mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H;
+            roundedRectRing(ctx, pillX, by, pillW, PILL_H, PILL_H / 2, 2, TRACK_OFF, hov ? ACCENT_HOVER : ACCENT);
+            disc(ctx, pillX + 12, by + PILL_H / 2, swatchD / 2, getter.get() | 0xFF000000);
+            st(ctx, tr, label, pillX + 22, by + (PILL_H - 8) / 2 - 1, TEXT_COLOR);
 
-            sqX = leftX; sqY = sy + ITEM_HEIGHT + 2;
-            for (int c = 0; c < sqW; c++) {
-                float sat = (float) c / sqW;
-                int top = 0xFF000000 | (java.awt.Color.HSBtoRGB(hsbH, sat, 1f) & 0xFFFFFF);
-                ctx.fillGradient(sqX + c, sqY, sqX + c + 1, sqY + sqH, top, 0xFF000000);
+            boolean animating = expandAnim.isAnimating();
+            if (expanded || animating) {
+                int oy = sy + ITEM_HEIGHT;
+                roundedRect(ctx, leftX + 2, oy, rightX - leftX - 4, PRESET_ARGB.length * OPTION_H, 5, SUBROW_BG);
+                for (int i = 0; i < PRESET_ARGB.length; i++) {
+                    int rowY = oy + i * OPTION_H;
+                    boolean selected = i == idx;
+                    boolean rowHov = mx >= leftX + 2 && mx <= rightX - 2 && my >= rowY && my <= rowY + OPTION_H;
+                    if (rowHov) roundedRect(ctx, leftX + 4, rowY + 1, rightX - leftX - 8, OPTION_H - 2, 4, ROW_HOVER);
+                    disc(ctx, leftX + 12, rowY + OPTION_H / 2, 4, PRESET_ARGB[i]);
+                    st(ctx, tr, PRESET_NAMES[i], leftX + 22, rowY + (OPTION_H - 8) / 2,
+                            selected ? ACCENT_HOVER : (rowHov ? TEXT_COLOR : SUBTEXT_COLOR));
+                    if (selected) NvgRecorder.fillRect(leftX + 2, rowY + 3, 2, OPTION_H - 6, ACCENT);
+                }
             }
-            int msx = sqX + Math.round(hsbS * sqW);
-            int msy = sqY + Math.round((1 - hsbV) * sqH);
-            ctx.fill(msx - 2, msy - 1, msx + 2, msy, 0xFFFFFFFF);
-            ctx.fill(msx - 2, msy + 1, msx + 2, msy + 2, 0xFFFFFFFF);
-            ctx.fill(msx - 2, msy, msx - 1, msy + 1, 0xFFFFFFFF);
-            ctx.fill(msx + 1, msy, msx + 2, msy + 1, 0xFFFFFFFF);
-
-            hueX = sqX + sqW + 6; hueY = sqY;
-            for (int r = 0; r < sqH; r++) {
-                int col = 0xFF000000 | (java.awt.Color.HSBtoRGB((float) r / sqH, 1f, 1f) & 0xFFFFFF);
-                ctx.fill(hueX, hueY + r, hueX + hueW, hueY + r + 1, col);
-            }
-            int hmy = hueY + Math.round(hsbH * sqH);
-            ctx.fill(hueX - 1, hmy - 1, hueX + hueW + 1, hmy + 1, 0xFFFFFFFF);
         }
+
         @Override
         boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
-            int ix = rightX - 46 - 2;
-            int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
-            if (mx >= ix && mx <= ix + 46 && my >= iy && my <= iy + INPUT_H) {
-                if (textField != null) textField.setFocused(true); return true;
+            int by = sy + (ITEM_HEIGHT - PILL_H) / 2;
+            if (mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H) {
+                if (btn == 1) {
+                    setter.accept(PRESET_ARGB[(indexOfCurrent() + 1) % PRESET_ARGB.length]);
+                } else {
+                    expanded = !expanded;
+                    expandAnim.setTarget(expanded);
+                }
+                return true;
             }
-            if (mx >= sqX && mx <= sqX + sqW && my >= sqY && my <= sqY + sqH) {
-                dragMode = 1; updateFromMouse(mx, my); return true;
-            }
-            if (mx >= hueX && mx <= hueX + hueW && my >= hueY && my <= hueY + hueH) {
-                dragMode = 2; updateFromMouse(mx, my); return true;
+            if (expanded) {
+                int oy = sy + ITEM_HEIGHT;
+                for (int i = 0; i < PRESET_ARGB.length; i++) {
+                    int rowY = oy + i * OPTION_H;
+                    if (mx >= leftX && mx <= rightX && my >= rowY && my <= rowY + OPTION_H) {
+                        setter.accept(PRESET_ARGB[i]);
+                        expanded = false;
+                        expandAnim.setTarget(false);
+                        return true;
+                    }
+                }
             }
             return false;
-        }
-        void updateFromMouse(int mx, int my) {
-            if (dragMode == 1) {
-                hsbS = MathHelper.clamp((float) (mx - sqX) / sqW, 0f, 1f);
-                hsbV = MathHelper.clamp(1f - (float) (my - sqY) / sqH, 0f, 1f);
-            } else if (dragMode == 2) {
-                hsbH = MathHelper.clamp((float) (my - hueY) / sqH, 0f, 1f);
-            }
-            commit();
         }
     }
 
@@ -1729,17 +1757,17 @@ public class FishModScreen extends Screen {
         void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
             int bw = 60;
             int bx = rightX - bw - 2;
-            int by = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
-            boolean hov = mx >= bx && mx <= bx + bw && my >= by && my <= by + TOGGLE_H;
-            roundRect(ctx, bx, by, bx + bw, by + TOGGLE_H, 3, hov ? ACCENT_HOVER : ACCENT);
-            st(ctx, tr, "Open", bx + (bw - stw(tr, "Open")) / 2, by + (TOGGLE_H - 8) / 2, TEXT_COLOR);
+            int by = sy + (ITEM_HEIGHT - PILL_H) / 2;
+            boolean hov = mx >= bx && mx <= bx + bw && my >= by && my <= by + PILL_H;
+            roundedRect(ctx, bx, by, bw, PILL_H, PILL_H / 2, hov ? ACCENT_HOVER : ACCENT);
+            st(ctx, tr, "Open", bx + (bw - stw(tr, "Open")) / 2, by + (PILL_H - 8) / 2 - 1, 0xFF06302F);
         }
         @Override
         boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
             int bw = 60;
             int bx = rightX - bw - 2;
-            int by = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
-            if (mx >= bx && mx <= bx + bw && my >= by && my <= by + TOGGLE_H) {
+            int by = sy + (ITEM_HEIGHT - PILL_H) / 2;
+            if (mx >= bx && mx <= bx + bw && my >= by && my <= by + PILL_H) {
                 action.run(); return true;
             }
             return false;
@@ -1749,33 +1777,36 @@ public class FishModScreen extends Screen {
     /** In-GUI rebind box for a vanilla {@link net.minecraft.client.option.KeyBinding} — click, then
      *  press a key or mouse button to bind it (Esc unbinds). Stays in sync with Options > Controls
      *  since it edits the same KeyBinding object. */
+    /** Odin-style rounded pill rebind box — click, then press a key/mouse button (Esc unbinds). */
     static class KeybindSetting extends Setting {
         Supplier<net.minecraft.client.option.KeyBinding> getter;
         boolean capturing = false;
-        static final int W = 110;
+        private int pillX = 0, pillW = 0;
         KeybindSetting(String name, String desc, Supplier<net.minecraft.client.option.KeyBinding> g) {
             super(name, desc); this.getter = g;
         }
         private String label() {
-            if (capturing) return "> Press <";
+            if (capturing) return "...";
             net.minecraft.client.option.KeyBinding kb = getter.get();
             if (kb == null) return "-";
-            return kb.isUnbound() ? "Unbound" : kb.getBoundKeyLocalizedText().getString();
+            return kb.isUnbound() ? "Not Bound" : kb.getBoundKeyLocalizedText().getString();
         }
         @Override
         void render(DrawContext ctx, int leftX, int rightX, int sy, int mx, int my, net.minecraft.client.font.TextRenderer tr) {
-            int bx = rightX - W - 2;
-            int by = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
-            boolean hov = mx >= bx && mx <= bx + W && my >= by && my <= by + TOGGLE_H;
-            roundRect(ctx, bx, by, bx + W, by + TOGGLE_H, 3, capturing ? ACCENT_HOVER : (hov ? 0xFF333D48 : 0xFF252D37));
             String t = label();
-            st(ctx, tr, t, bx + (W - stw(tr, t)) / 2, by + (TOGGLE_H - 8) / 2, capturing ? 0xFF06302F : TEXT_COLOR);
+            int textW = stw(tr, t);
+            pillW = textW + 20;
+            pillX = rightX - pillW - 2;
+            int by = sy + (ITEM_HEIGHT - PILL_H) / 2;
+            boolean hov = mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H;
+            int ring = capturing ? ACCENT_HOVER : (hov ? ACCENT : 0xFF464C56);
+            roundedRectRing(ctx, pillX, by, pillW, PILL_H, PILL_H / 2, 2, TRACK_OFF, ring);
+            st(ctx, tr, t, pillX + (pillW - textW) / 2, by + (PILL_H - 8) / 2 - 1, capturing ? ACCENT_HOVER : TEXT_COLOR);
         }
         @Override
         boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
-            int bx = rightX - W - 2;
-            int by = sy + (ITEM_HEIGHT - TOGGLE_H) / 2;
-            if (mx >= bx && mx <= bx + W && my >= by && my <= by + TOGGLE_H) {
+            int by = sy + (ITEM_HEIGHT - PILL_H) / 2;
+            if (mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H) {
                 capturing = true; return true;
             }
             return false;
@@ -1812,15 +1843,7 @@ public class FishModScreen extends Screen {
             initField(tr);
             int ix = rightX - INPUT_W - 2;
             int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
-            float fs = 0.7f;
-            textField.setWidth((int) (INPUT_W / fs));
-            textField.setHeight((int) (INPUT_H / fs));
-            textField.setX(0); textField.setY(0);
-            ctx.getMatrices().pushMatrix();
-            ctx.getMatrices().translate((float) ix, (float) iy);
-            ctx.getMatrices().scale(fs, fs);
-            textField.render(ctx, mx, my, 0);
-            ctx.getMatrices().popMatrix();
+            nvgTextField(textField, ix, iy, INPUT_W, INPUT_H);
         }
         @Override
         boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {
@@ -1856,15 +1879,7 @@ public class FishModScreen extends Screen {
             initField(tr);
             int ix = rightX - INPUT_W - 2;
             int iy = sy + (ITEM_HEIGHT - INPUT_H) / 2;
-            float fs = 0.7f;
-            textField.setWidth((int) (INPUT_W / fs));
-            textField.setHeight((int) (INPUT_H / fs));
-            textField.setX(0); textField.setY(0);
-            ctx.getMatrices().pushMatrix();
-            ctx.getMatrices().translate((float) ix, (float) iy);
-            ctx.getMatrices().scale(fs, fs);
-            textField.render(ctx, mx, my, 0);
-            ctx.getMatrices().popMatrix();
+            nvgTextField(textField, ix, iy, INPUT_W, INPUT_H);
         }
         @Override
         boolean onClick(int mx, int my, int leftX, int rightX, int sy, int btn) {

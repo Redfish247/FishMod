@@ -231,6 +231,12 @@ public class SessionStats {
             pauseStartedMs = d.pauseStartedMs;
             autoPaused = d.autoPaused;
             lastActivityMs = d.lastActivityMs;
+            // If the session was still "running" when the client closed, freeze it at the
+            // last real activity now rather than letting the next tick pause at the current
+            // (post-relaunch) time, which would count the entire offline gap as session time.
+            if (!paused && sessionStartMs > 0) {
+                autoPause(1, lastActivityMs > 0 ? lastActivityMs : sessionStartMs);
+            }
         } catch (IOException | RuntimeException ignored) {}
     }
 

@@ -87,6 +87,17 @@ dependencies {
 	include modImplementation("net.hypixel:mod-api:${project.hypixel_api_version}")
 	include modImplementation("com.github.BladeMasterGabe:practical-config:${project.practical_config}")
 
+	// NanoVG (LWJGL binding) — real anti-aliased vector-graphics rendering for FishModScreen.
+	// Not one of Minecraft's own bundled LWJGL modules, so both the core jar and its natives
+	// must be declared explicitly and bundled into our own jar via Loom's include() (Nested
+	// Jars) — a plain Gradle dependency only reaches the dev classpath, never the shipped jar
+	// Fabric Loader actually loads for players.
+	include(implementation("org.lwjgl:lwjgl-nanovg:${project.lwjgl_version}"))
+	include(runtimeOnly("org.lwjgl:lwjgl-nanovg:${project.lwjgl_version}:natives-windows"))
+	include(runtimeOnly("org.lwjgl:lwjgl-nanovg:${project.lwjgl_version}:natives-linux"))
+	include(runtimeOnly("org.lwjgl:lwjgl-nanovg:${project.lwjgl_version}:natives-macos"))
+	include(runtimeOnly("org.lwjgl:lwjgl-nanovg:${project.lwjgl_version}:natives-macos-arm64"))
+
     modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
 
     // Dev runtime: prefer the local Hypixel Mod API jar (it has the fabric.mod.json that
