@@ -1282,24 +1282,38 @@ public class FishModScreen extends Screen {
     }
 
     private final fishmod.utils.rendering.NvgGlStateGuard nvgGlState = new fishmod.utils.rendering.NvgGlStateGuard();
+    private static boolean nvgFailureLogged = false;
 
     /** Called by GameRendererNvgMixin right after the vanilla GUI flush each frame this screen is
      *  open — the one point per frame where NanoVG's immediate GL draws land after (not before)
      *  all of this frame's vanilla content, giving correct z-ordering for free. */
     public void paintNvgOverlay() {
         nvgGlState.capture();
-        long ctx = fishmod.utils.rendering.NvgContext.get();
+        try {
+            long ctx = fishmod.utils.rendering.NvgContext.get();
 
-        // Device pixel ratio must be real GUI-scale-derived, not a fixed 1.0 — NanoVG bakes font
-        // glyphs into its atlas at a resolution scaled by this ratio so they stay crisp once
-        // stretched across the (larger) real framebuffer viewport.
-        float pixelRatio = (float) net.minecraft.client.MinecraftClient.getInstance().getWindow().getScaleFactor();
-        org.lwjgl.nanovg.NanoVG.nvgBeginFrame(ctx, this.width, this.height, pixelRatio);
-        fishmod.utils.rendering.NvgRecorder.replay();
-        org.lwjgl.nanovg.NanoVG.nvgEndFrame(ctx);
+            // Device pixel ratio must be real GUI-scale-derived, not a fixed 1.0 — NanoVG bakes font
+            // glyphs into its atlas at a resolution scaled by this ratio so they stay crisp once
+            // stretched across the (larger) real framebuffer viewport.
+            float pixelRatio = (float) net.minecraft.client.MinecraftClient.getInstance().getWindow().getScaleFactor();
+            org.lwjgl.nanovg.NanoVG.nvgBeginFrame(ctx, this.width, this.height, pixelRatio);
+            fishmod.utils.rendering.NvgRecorder.replay();
+            org.lwjgl.nanovg.NanoVG.nvgEndFrame(ctx);
 
-        fishmod$glCheck("after paintNvgOverlay");
-        nvgGlState.restore();
+            fishmod$glCheck("after paintNvgOverlay");
+        } catch (Throwable t) {
+            // Fail safe instead of crash-looping the render thread: the screen still opens with
+            // its vanilla dim/blur background, just missing the NanoVG-drawn buttons/text/cards.
+            // Logged once (this runs every frame the screen is open) - usually means the bundled
+            // LWJGL NanoVG native failed to load: wrong OS/arch natives, or the LWJGL version was
+            // overridden by a custom launcher instance and no longer matches what we bundled.
+            if (!nvgFailureLogged) {
+                nvgFailureLogged = true;
+                fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] paintNvgOverlay failed - settings screen will render without its NanoVG layer from now on", t);
+            }
+        } finally {
+            nvgGlState.restore();
+        }
     }
 
     private void fishmod$glCheck(String where) {
