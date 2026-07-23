@@ -335,8 +335,16 @@ public class FishModScreen extends Screen {
             case "Trophy Fish" -> "Trophy fish catch tracker (Crimson)";
             case "Slayer Alerts" -> "Title + ping on slayer boss events";
             case "Slayer Drops" -> "Session rare-drop counter";
-            default -> "";
+            default -> descForExternal(name);
         };
+    }
+
+    /** Description for a toggle registered via {@link FishModAddonApi} (e.g. from an addon mod). */
+    private static String descForExternal(String name) {
+        for (FishModAddonApi.ExternalToggle et : FishModAddonApi.dungeonToggles) {
+            if (et.name().equals(name)) return et.description();
+        }
+        return "";
     }
 
     /** Builds a command-input row for an inventory button (the hint reminds it's a command, no slash). */
@@ -811,6 +819,10 @@ public class FishModScreen extends Screen {
                     () -> fishmod.utils.dungeon.Section.displayTerminalSplitsWhen,
                     v -> fishmod.utils.dungeon.Section.displayTerminalSplitsWhen = v));
             floor7.features.add(f);
+        }
+
+        for (FishModAddonApi.ExternalToggle et : FishModAddonApi.dungeonToggles) {
+            dungeon.features.add(new Feature(et.name(), et.get(), et.set()));
         }
 
         columns.add(general);
