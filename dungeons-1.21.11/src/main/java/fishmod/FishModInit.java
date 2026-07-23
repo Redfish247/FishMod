@@ -200,6 +200,7 @@ public class FishModInit implements ModInitializer {
         SoulflowHud.init();
         PetHud.init();
         CooldownOverlay.init();
+        fishmod.features.croesus.CroesusLootDetector.init();
         fishmod.features.CatacombsOverflowOverlay.init();
         fishmod.features.other.CommandKeys.init();
         fishmod.features.other.WardrobeHotkeys.init();
@@ -997,6 +998,7 @@ public class FishModInit implements ModInitializer {
         // Tracker overlay (reset button) for HandledScreens — fires after full render chain
         ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
             if (!(screen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen<?>)) return;
+            fishmod.features.croesus.CroesusLootDetector.onScreenInit(screen);
             net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.afterRender(screen).register((s, ctx, mx, my, delta) -> {
                 SessionStats.renderInScreen(ctx, mx, my);
                 LootTrackerOverlay.renderInScreen(ctx, mx, my);

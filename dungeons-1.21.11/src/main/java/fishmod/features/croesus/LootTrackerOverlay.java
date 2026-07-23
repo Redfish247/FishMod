@@ -3,7 +3,6 @@ package fishmod.features.croesus;
 import fishmod.mixin.accessors.HandledScreenAccessor;
 import fishmod.mixin.accessors.KeyBindingAccessor;
 import fishmod.utils.Location;
-import fishmod.utils.SkyblockItems;
 import fishmod.utils.config.values.FishSettings;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -19,12 +18,13 @@ import java.text.DecimalFormat;
 import java.util.List;
 
 /**
- * Manual loot/profit tracker drawn on top of the player's inventory while in the Dungeon Hub.
- * Type an item name to add a drop row (autocompletes over Skyblock item names); each row has an
- * editable count (click the count cell to type, or use +/-), plus a runs counter, total value,
- * per-run average and a total drop count. The panel can be dragged by its title bar; its position
- * persists in config. Persists rows/runs via {@link LootTrackerStore}. Modeled on the in-inventory
- * text input in {@code fishmod.features.other.SearchBar} and the overlay in {@code SessionStats}.
+ * Loot/profit tracker drawn on top of the player's inventory while in the Dungeon Hub. Rows are
+ * populated automatically by {@link CroesusLootDetector} from real Croesus chest opens (no typing
+ * required); each row's count can still be nudged with +/- or edited directly (click the count
+ * cell to type a correction), alongside a runs counter (also auto-incremented, but still
+ * manually adjustable the same way), total value, per-run average and a total drop count. The
+ * panel can be dragged by its title bar; its position persists in config. Persists rows/runs via
+ * {@link LootTrackerStore}. Modeled on the overlay in {@code SessionStats}.
  */
 public final class LootTrackerOverlay {
 
@@ -40,15 +40,10 @@ public final class LootTrackerOverlay {
     private static final int BTN_BG  = 0xFF1B2228;
     private static final int BTN_HOV = 0xFF24333C;
 
-    private static final int MAX_SUGGEST = 6;
     private static final DecimalFormat NUM = new DecimalFormat("#,###");
 
-    // text widgets (lazy, like SearchBar). searchBox = item search, numberBox = active count/runs edit.
-    private static TextFieldWidget searchBox;
+    // text widget (lazy, like SearchBar). numberBox = active count/runs edit.
     private static TextFieldWidget numberBox;
-    private static String query = "";
-    private static List<String> suggestions = List.of();
-    private static boolean dropdownOpen = false;
 
     // which numeric value numberBox is editing: 0 none, 1 runs, 2 a drop row
     private static int editKind = 0;
@@ -62,9 +57,6 @@ public final class LootTrackerOverlay {
     private static boolean visible = false;
     private static int panelX, panelY, panelW, panelH;
     private static int titleBarY, titleBarH;
-    private static int searchX, searchY, searchW, searchH;
-    private static boolean dropVisible = false;
-    private static int sugStartY, sugRowH = 11;
     private static int rowMinusX, rowCountX, rowPlusX, rowCountW = 26;
     private static int[] rowY = new int[0];
     private static int runsMinusX, runsCountX, runsPlusX, runsRowY;
@@ -73,7 +65,7 @@ public final class LootTrackerOverlay {
 
     // layout constants
     private static final int PAD = 6, BTN = 11, COUNT_H = 12;
-    private static final int TITLE_H = 13, SEARCH_H = 14, SEARCH_GAP = 3;
+    private static final int TITLE_H = 13;
     private static final int ROW_H = 15, DIV_GAP = 4, RUNS_H = 15, LINE_H = 10, CLEAR_H = 15;
     private static final int PANEL_W = 190;
 
@@ -88,16 +80,9 @@ public final class LootTrackerOverlay {
     }
 
     private static boolean exists() {
-        if (searchBox != null) return true;
+        if (numberBox != null) return true;
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.textRenderer == null || mc.getWindow() == null) return false;
-        searchBox = new TextFieldWidget(mc.textRenderer, 0, 0, 100, SEARCH_H, Text.literal(""));
-        searchBox.setMaxLength(64);
-        searchBox.setChangedListener(s -> {
-            query = s.toLowerCase();
-            recomputeSuggestions();
-            dropdownOpen = !query.isEmpty();
-        });
         numberBox = new TextFieldWidget(mc.textRenderer, 0, 0, rowCountW, COUNT_H, Text.literal(""));
         numberBox.setMaxLength(9);
         numberBox.setTextPredicate(s -> s.isEmpty() || s.matches("\\d{1,9}"));
@@ -120,13 +105,8 @@ public final class LootTrackerOverlay {
         int runsCount = LootTrackerStore.runs();
         int drawnRows = Math.max(rows.size(), 1);
 
-        dropVisible = searchBox.isFocused() && !query.isEmpty()
-                && (!suggestions.isEmpty() || !SkyblockItems.isLoaded());
-        int dropRows = dropVisible ? (suggestions.isEmpty() ? 1 : suggestions.size()) : 0;
-        int dropH = dropVisible ? dropRows * sugRowH + 2 : 0;
-
         panelW = PANEL_W;
-        panelH = PAD + TITLE_H + SEARCH_H + SEARCH_GAP + dropH
+        panelH = PAD + TITLE_H
                 + drawnRows * ROW_H + DIV_GAP + RUNS_H + LINE_H * 3 + 2 + CLEAR_H + PAD;
 
         // stop a drag once the mouse button is released
@@ -161,33 +141,6 @@ public final class LootTrackerOverlay {
         ctx.drawText(tr, "§l⠿ Loot Tracker", panelX + PAD, y, ACCENT, true);
         y += TITLE_H;
 
-        // search box
-        searchX = panelX + PAD; searchY = y; searchW = panelW - PAD * 2; searchH = SEARCH_H;
-        searchBox.setX(searchX); searchBox.setY(searchY); searchBox.setWidth(searchW);
-        searchBox.render(ctx, mx, my, 0f);
-        if (!searchBox.isFocused() && searchBox.getText().isEmpty())
-            ctx.drawText(tr, "§8+ add drop…", searchX + 4, searchY + 3, SUB, false);
-        y += SEARCH_H + SEARCH_GAP;
-
-        // autocomplete dropdown
-        if (dropVisible) {
-            sugStartY = y;
-            if (suggestions.isEmpty()) {
-                ctx.fill(searchX, y, searchX + searchW, y + sugRowH, 0xFF0E151B);
-                ctx.drawText(tr, "§8loading items…", searchX + 4, y + 2, SUB, false);
-                y += sugRowH;
-            } else {
-                for (int i = 0; i < suggestions.size(); i++) {
-                    boolean hov = hit(mx, my, searchX, y, searchW, sugRowH);
-                    ctx.fill(searchX, y, searchX + searchW, y + sugRowH, hov ? 0xFF142028 : 0xFF0E151B);
-                    ctx.drawText(tr, tr.trimToWidth(suggestions.get(i), searchW - 6),
-                            searchX + 4, y + 2, hov ? ACCENT2 : TEXT, false);
-                    y += sugRowH;
-                }
-            }
-            y += 2;
-        }
-
         // drop rows: [-] [count] [+]  Name ............ value
         int x0 = panelX + PAD;
         rowMinusX = x0;
@@ -196,7 +149,7 @@ public final class LootTrackerOverlay {
         int nameX = rowPlusX + BTN + 4;
         rowY = new int[rows.size()];
         if (rows.isEmpty()) {
-            ctx.drawText(tr, "§8no drops yet — type above", x0, y + 4, SUB, true);
+            ctx.drawText(tr, "§8no drops yet — open a Croesus chest", x0, y + 4, SUB, true);
             y += ROW_H;
         } else {
             for (int i = 0; i < rows.size(); i++) {
@@ -301,20 +254,6 @@ public final class LootTrackerOverlay {
             return true;
         }
 
-        // autocomplete suggestions
-        if (dropVisible && !suggestions.isEmpty()) {
-            for (int i = 0; i < suggestions.size(); i++) {
-                if (hit(mx, my, searchX, sugStartY + i * sugRowH, searchW, sugRowH)) {
-                    addRowFromSuggestion(suggestions.get(i));
-                    searchBox.setText(""); query = ""; suggestions = List.of();
-                    dropdownOpen = false; searchBox.setFocused(false);
-                    return true;
-                }
-            }
-        }
-        // search box -> focus + consume
-        if (hit(mx, my, searchX, searchY, searchW, searchH)) { searchBox.setFocused(true); return true; }
-
         // runs controls
         if (hit(mx, my, runsMinusX, runsRowY + 2, BTN, BTN)) { LootTrackerStore.setRuns(LootTrackerStore.runs() - 1); return true; }
         if (hit(mx, my, runsPlusX, runsRowY + 2, BTN, BTN)) { LootTrackerStore.setRuns(LootTrackerStore.runs() + 1); return true; }
@@ -331,14 +270,13 @@ public final class LootTrackerOverlay {
 
         // clear
         if (hit(mx, my, clearX, clearY, clearW, clearH)) { LootTrackerStore.clear(); return true; }
-        // anywhere else inside the panel -> unfocus + consume
-        if (hit(mx, my, panelX, panelY, panelW, panelH)) { searchBox.setFocused(false); return true; }
-        // outside -> release focus, let the click reach the inventory
-        searchBox.setFocused(false);
+        // anywhere else inside the panel -> consume
+        if (hit(mx, my, panelX, panelY, panelW, panelH)) return true;
+        // outside -> let the click reach the inventory
         return false;
     }
 
-    // ── keyboard (mirrors SearchBar; routes to whichever field is focused) ─────
+    // ── keyboard (mirrors SearchBar; routes to the number box when it's focused) ─────
     public static boolean keyPressed(KeyInput input) {
         if (!active() || !exists()) return false;
         TextFieldWidget f = focusedField();
@@ -348,20 +286,16 @@ public final class LootTrackerOverlay {
             int dropCode = ((KeyBindingAccessor) (Object) MinecraftClient.getInstance().options.dropKey)
                     .getBoundKey().getCode();
             if (input.key() == dropCode) {
-                if (f == numberBox) commitNumber(); else f.setFocused(false);
+                commitNumber();
                 return false;
             }
         } catch (Exception ignored) {}
         if (input.key() == GLFW.GLFW_KEY_ESCAPE) {
-            if (f == numberBox) cancelNumber(); else f.setFocused(false);
+            cancelNumber();
             return false;
         }
         if (input.key() == GLFW.GLFW_KEY_ENTER || input.key() == GLFW.GLFW_KEY_KP_ENTER) {
-            if (f == searchBox) {
-                if (!suggestions.isEmpty()) { addRowFromSuggestion(suggestions.get(0)); searchBox.setText(""); }
-            } else if (f == numberBox) {
-                commitNumber();
-            }
+            commitNumber();
             return true;
         }
         f.keyPressed(input);
@@ -376,7 +310,6 @@ public final class LootTrackerOverlay {
 
     private static TextFieldWidget focusedField() {
         if (numberBox != null && numberBox.isFocused()) return numberBox;
-        if (searchBox != null && searchBox.isFocused()) return searchBox;
         return null;
     }
 
@@ -387,7 +320,6 @@ public final class LootTrackerOverlay {
         editName = name == null ? "" : name;
         numberBox.setText(String.valueOf(current));
         numberBox.setFocused(true);
-        searchBox.setFocused(false);
     }
 
     private static void commitNumber() {
@@ -413,16 +345,6 @@ public final class LootTrackerOverlay {
     }
 
     // ── helpers ────────────────────────────────────────────────────────────────
-    private static void recomputeSuggestions() {
-        suggestions = query.isEmpty() ? List.of() : SkyblockItems.searchNames(query, MAX_SUGGEST);
-    }
-
-    private static void addRowFromSuggestion(String displayName) {
-        String id = SkyblockItems.idFor(displayName);
-        LootTrackerStore.addOrIncrement(displayName, id, +1);
-        CroesusPrices.refreshIfStale();
-    }
-
     private static double rowValue(LootTrackerStore.Row r) {
         if (r.id == null || r.id.isEmpty()) return 0;
         return CroesusPrices.price(r.id) * r.count;
