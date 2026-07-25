@@ -530,6 +530,15 @@ public class FishModScreen extends Screen {
             dungeon.features.add(f);
         }
         {
+            Feature f = new Feature("Dupe Class Detector",
+                    () -> fishmod.utils.config.values.Dungeons.detectDuplicateClass,
+                    v -> fishmod.utils.config.values.Dungeons.detectDuplicateClass = v);
+            f.sub.add(new ToggleSetting("Ignore Mage", "",
+                    () -> fishmod.utils.config.values.Dungeons.ignoreDupeMage,
+                    v -> fishmod.utils.config.values.Dungeons.ignoreDupeMage = v));
+            dungeon.features.add(f);
+        }
+        {
             Feature f = new Feature("Dungeon Map",
                     () -> fishmod.utils.config.values.DungeonMapSettings.enabled,
                     v -> fishmod.utils.config.values.DungeonMapSettings.enabled = v);

@@ -144,11 +144,14 @@ public class PetHud {
                 return;
             }
             // Switching loadouts can silently change the equipped pet (no Autopet/summon line),
-            // so force an immediate API re-check to pick up whatever pet is now active.
+            // so force an immediate API re-check to pick up whatever pet is now active. Do NOT
+            // fall back to a forced tab scan here: the tab list update lags this chat line, so a
+            // forced scan can read the tab's still-stale previous-pet entry (e.g. a renamed pet)
+            // and briefly show the wrong name. The API is the authoritative source; let the
+            // periodic tab scan (every 5 ticks) pick things up naturally once the tab catches up.
             Matcher lo = LOADOUT_EQUIP_PAT.matcher(s);
             if (lo.find()) {
                 lastApiFetchAt = 0;
-                if (!Location.inDungeon()) forceScanTicks = 10; // tab is unreliable in dungeons; rely on API there
                 if (debugDumpPetLines) fishmod.utils.Misc.addChatMessage(net.minecraft.text.Text.literal("§d[pet] loadout equip → re-sync"));
             }
         });

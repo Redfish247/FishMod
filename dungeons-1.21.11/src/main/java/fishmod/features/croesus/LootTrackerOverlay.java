@@ -76,8 +76,18 @@ public final class LootTrackerOverlay {
 
     private LootTrackerOverlay() {}
 
+    // When true, renderInScreen()/handleScreenClick() are being driven by the standalone
+    // LootTrackerScreen (opened via /fmloot) instead of being painted on top of the vanilla
+    // inventory screen — skips the InventoryScreen/Dungeon-Hub gate and anchors to screen center.
+    private static boolean standalone = false;
+
+    public static void setStandalone(boolean value) { standalone = value; }
+
     // ── gates ────────────────────────────────────────────────────────────────
     private static boolean active() {
+        // Opening /fmloot is an explicit request to view the menu, so it always renders,
+        // independent of whether background auto-tracking (the FishSettings toggle) is on.
+        if (standalone) return true;
         if (!FishSettings.lootTrackerEnabled) return false;
         MinecraftClient mc = MinecraftClient.getInstance();
         if (!(mc.currentScreen instanceof InventoryScreen)) return false;
@@ -101,8 +111,6 @@ public final class LootTrackerOverlay {
         CroesusPrices.refreshIfStale(); // fire-and-forget; warms price cache
         MinecraftClient mc = MinecraftClient.getInstance();
         TextRenderer tr = mc.textRenderer;
-        HandledScreenAccessor s = (HandledScreenAccessor) mc.currentScreen;
-        int bgX = s.getBgX(), bgY = s.getBgY(), bgW = s.getBgWidth();
         int screenW = mc.getWindow().getScaledWidth();
         int screenH = mc.getWindow().getScaledHeight();
 
@@ -120,14 +128,20 @@ public final class LootTrackerOverlay {
                 GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
         if (dragging && !mouseDown) { dragging = false; fishmod.utils.config.FishConfig.manager.save(); }
 
-        // position: dragging > saved position > auto-anchor beside the inventory
+        // position: dragging > saved position > auto-anchor (beside the inventory, or centered
+        // on screen when opened standalone via /fmloot)
         if (dragging) {
             panelX = mx - dragGrabX;
             panelY = my - dragGrabY;
         } else if (FishSettings.lootTrackerX >= 0) {
             panelX = FishSettings.lootTrackerX;
             panelY = FishSettings.lootTrackerY;
+        } else if (standalone) {
+            panelX = (screenW - panelW) / 2;
+            panelY = (screenH - panelH) / 2;
         } else {
+            HandledScreenAccessor s = (HandledScreenAccessor) mc.currentScreen;
+            int bgX = s.getBgX(), bgY = s.getBgY(), bgW = s.getBgWidth();
             panelX = bgX + bgW + 6;
             if (panelX + panelW > screenW) panelX = bgX - panelW - 6;
             panelY = bgY;
