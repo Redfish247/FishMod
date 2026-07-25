@@ -32,6 +32,8 @@ public final class LootTrackerOverlay {
     private static final int ACCENT  = 0xFF24B6B0;
     private static final int ACCENT2 = 0xFF3AD8D1;
     private static final int BG      = 0xF00C1318;
+    private static final int PANEL2  = 0xF0101923; // slightly lighter than BG, for the stats footer
+    private static final int ROW_ALT = 0x14FFFFFF; // faint stripe on odd rows
     private static final int BORDER  = 0xFF24333C;
     private static final int DIVIDER = 0xFF18222C;
     private static final int TEXT    = 0xFFEDF1F5;
@@ -39,6 +41,8 @@ public final class LootTrackerOverlay {
     private static final int GOLD    = 0xFFFFD479;
     private static final int BTN_BG  = 0xFF1B2228;
     private static final int BTN_HOV = 0xFF24333C;
+    private static final int CLEAR_BG = 0xFF1B1414;
+    private static final int CLEAR_HOV = 0xFF3A1414;
 
     private static final DecimalFormat NUM = new DecimalFormat("#,###");
 
@@ -65,10 +69,11 @@ public final class LootTrackerOverlay {
     private static int numX, numY, numW, numH; // last-rendered numberBox rect
 
     // layout constants
-    private static final int PAD = 6, BTN = 11, COUNT_H = 12;
-    private static final int TITLE_H = 13;
-    private static final int ROW_H = 15, DIV_GAP = 4, RUNS_H = 15, LINE_H = 10, CLEAR_H = 15;
-    private static final int PANEL_W = 190;
+    private static final int PAD = 7, BTN = 12, COUNT_H = 13;
+    private static final int TITLE_H = 16;
+    private static final int ROW_H = 16, DIV_GAP = 6, RUNS_H = 17, LINE_H = 11, CLEAR_H = 16;
+    private static final int STATS_PAD = 5;
+    private static final int PANEL_W = 200;
 
     private LootTrackerOverlay() {}
 
@@ -113,8 +118,9 @@ public final class LootTrackerOverlay {
         int drawnRows = Math.max(rows.size(), 1);
 
         panelW = PANEL_W;
-        panelH = PAD + TITLE_H
-                + drawnRows * ROW_H + DIV_GAP + RUNS_H + LINE_H * 3 + 2 + CLEAR_H + PAD;
+        panelH = PAD + TITLE_H + 2
+                + drawnRows * ROW_H + DIV_GAP + RUNS_H + DIV_GAP
+                + STATS_PAD * 2 + LINE_H * 3 + STATS_PAD + CLEAR_H + PAD;
 
         // stop a drag once the mouse button is released
         boolean mouseDown = GLFW.glfwGetMouseButton(mc.getWindow().handle(),
@@ -144,16 +150,21 @@ public final class LootTrackerOverlay {
 
         int y = panelY + PAD;
         // title bar (drag handle)
-        titleBarY = panelY; titleBarH = PAD + 9;
-        ctx.text(tr, "§l⠿ Loot Tracker", panelX + PAD, y, ACCENT, true);
+        titleBarY = panelY; titleBarH = PAD + TITLE_H - 3;
+        ctx.text(tr, "§l⠿ Loot Tracker", panelX + PAD, y + 2, ACCENT, true);
+        String hdrCount = rows.size() + " types";
+        int hdrW = tr.width(hdrCount);
+        ctx.text(tr, "§8" + hdrCount, panelX + panelW - PAD - hdrW, y + 2, SUB, true);
         y += TITLE_H;
+        ctx.fill(panelX + PAD, y, panelX + panelW - PAD, y + 1, DIVIDER);
+        y += 2;
 
         // drop rows: [-] [count] [+]  Name ............ value
         int x0 = panelX + PAD;
         rowMinusX = x0;
-        rowCountX = x0 + BTN + 2;
-        rowPlusX  = rowCountX + rowCountW + 2;
-        int nameX = rowPlusX + BTN + 4;
+        rowCountX = x0 + BTN + 3;
+        rowPlusX  = rowCountX + rowCountW + 3;
+        int nameX = rowPlusX + BTN + 5;
         rowY = new int[rows.size()];
         if (rows.isEmpty()) {
             ctx.text(tr, "§8no drops yet — open a Croesus chest", x0, y + 4, SUB, true);
@@ -161,7 +172,8 @@ public final class LootTrackerOverlay {
         } else {
             for (int i = 0; i < rows.size(); i++) {
                 LootTrackerStore.Row r = rows.get(i);
-                int ct = y + 2;            // controls top
+                if ((i & 1) == 1) ctx.fill(panelX + 1, y, panelX + panelW - 1, y + ROW_H, ROW_ALT);
+                int ct = y + (ROW_H - BTN) / 2;   // controls top, vertically centered in the row
                 rowY[i] = ct;
                 drawMini(ctx, tr, rowMinusX, ct, "-", hit(mx, my, rowMinusX, ct, BTN, BTN));
                 drawMini(ctx, tr, rowPlusX, ct, "+", hit(mx, my, rowPlusX, ct, BTN, BTN));
@@ -175,9 +187,10 @@ public final class LootTrackerOverlay {
                 String val = v > 0 ? fmtCoins(v) : "—";
                 int vw = tr.width(val);
                 int valX = panelX + panelW - PAD - vw;
-                ctx.text(tr, val, valX, y + 4, v > 0 ? GOLD : SUB, true);
+                int textY = y + (ROW_H - 8) / 2;
+                ctx.text(tr, val, valX, textY, v > 0 ? GOLD : SUB, true);
                 int maxNameW = Math.max(10, valX - nameX - 4);
-                ctx.text(tr, tr.plainSubstrByWidth(r.name, maxNameW), nameX, y + 4, TEXT, true);
+                ctx.text(tr, tr.plainSubstrByWidth(r.name, maxNameW), nameX, textY, TEXT, true);
                 y += ROW_H;
             }
         }
@@ -188,38 +201,43 @@ public final class LootTrackerOverlay {
 
         // runs row: Runs:  [-] [count] [+]
         runsRowY = y;
-        int rct = y + 2;
-        ctx.text(tr, "§7Runs:", x0, y + 4, TEXT, true);
+        int rct = y + (RUNS_H - BTN) / 2;
+        ctx.text(tr, "§7Runs", x0, y + (RUNS_H - 8) / 2, TEXT, true);
         runsPlusX  = panelX + panelW - PAD - BTN;
-        runsCountX = runsPlusX - 2 - rowCountW;
-        runsMinusX = runsCountX - 2 - BTN;
+        runsCountX = runsPlusX - 3 - rowCountW;
+        runsMinusX = runsCountX - 3 - BTN;
         drawMini(ctx, tr, runsMinusX, rct, "-", hit(mx, my, runsMinusX, rct, BTN, BTN));
         drawMini(ctx, tr, runsPlusX, rct, "+", hit(mx, my, runsPlusX, rct, BTN, BTN));
         if (editKind == 1) renderNumberBox(ctx, mx, my, runsCountX, rct);
         else drawCountCell(ctx, tr, runsCountX, rct, String.valueOf(runsCount),
                 hit(mx, my, runsCountX, rct, rowCountW, COUNT_H));
         y += RUNS_H;
+        ctx.fill(panelX + PAD, y, panelX + panelW - PAD, y + 1, DIVIDER);
+        y += DIV_GAP;
 
-        // totals
+        // stats footer — its own shaded card so totals read as a distinct block from the rows
         int totalDrops = 0;
         for (LootTrackerStore.Row r : rows) totalDrops += r.count;
         double total = totalValue();
         double perRun = total / Math.max(1, runsCount);
-        ctx.text(tr, "§7Drops: §f" + totalDrops + " §8(" + rows.size() + " types)", x0, y, TEXT, true);
+        int statsH = STATS_PAD * 2 + LINE_H * 3;
+        ctx.fill(panelX + 1, y, panelX + panelW - 1, y + statsH, PANEL2);
+        y += STATS_PAD;
+        ctx.text(tr, "§7Drops  §f" + totalDrops + " §8· " + rows.size() + " types", x0, y, TEXT, true);
         y += LINE_H;
-        ctx.text(tr, "§7Total: §6" + fmtCoins(total), x0, y, TEXT, true);
+        ctx.text(tr, "§7Total  §6" + fmtCoins(total), x0, y, TEXT, true);
         y += LINE_H;
-        ctx.text(tr, "§7Per run: §6" + fmtCoins(perRun), x0, y, TEXT, true);
-        y += LINE_H + 2;
+        ctx.text(tr, "§7Per run  §6" + fmtCoins(perRun), x0, y, TEXT, true);
+        y += LINE_H + STATS_PAD;
 
         // clear button
         clearX = x0; clearY = y; clearW = panelW - PAD * 2; clearH = CLEAR_H;
         boolean ch = hit(mx, my, clearX, clearY, clearW, clearH);
-        ctx.fill(clearX, clearY, clearX + clearW, clearY + clearH, ch ? 0xFF3A1414 : BTN_BG);
-        String cl = "§l[ Clear ]";
+        ctx.fill(clearX, clearY, clearX + clearW, clearY + clearH, ch ? CLEAR_HOV : CLEAR_BG);
+        String cl = "Clear";
         int clw = tr.width(cl);
-        ctx.text(tr, ch ? "§c§l[ Clear ]" : cl, clearX + (clearW - clw) / 2,
-                clearY + (clearH - 8) / 2, ch ? 0xFFFF6B6B : TEXT, true);
+        ctx.text(tr, ch ? "§c" + cl : "§7" + cl, clearX + (clearW - clw) / 2,
+                clearY + (clearH - 8) / 2, ch ? 0xFFFF6B6B : SUB, true);
 
         visible = true;
     }
@@ -238,9 +256,10 @@ public final class LootTrackerOverlay {
     }
 
     private static void drawMini(GuiGraphicsExtractor ctx, Font tr, int x, int y, String glyph, boolean hov) {
-        ctx.fill(x, y, x + BTN, y + BTN, hov ? BTN_HOV : BTN_BG);
+        ctx.fill(x, y, x + BTN, y + BTN, BORDER);
+        ctx.fill(x + 1, y + 1, x + BTN - 1, y + BTN - 1, hov ? BTN_HOV : BTN_BG);
         int gw = tr.width(glyph);
-        ctx.text(tr, glyph, x + (BTN - gw) / 2, y + (BTN - 8) / 2, hov ? ACCENT2 : TEXT, false);
+        ctx.text(tr, glyph, x + (BTN - gw) / 2, y + (BTN - 8) / 2, hov ? ACCENT2 : SUB, false);
     }
 
     // ── click ────────────────────────────────────────────────────────────────
