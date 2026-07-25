@@ -35,6 +35,9 @@ public class PetHud {
     private static final Pattern SUMMON_PAT  = Pattern.compile("You summoned your\\s+(.+?)!");
     // "You despawned your Golden Dragon ✦!" / "Autopet despawned your ..."
     private static final Pattern DESPAWN_PAT = Pattern.compile("(?:You|Autopet) despawned your\\s+(.+?)!");
+    // "You equipped <Loadout Name>!" (item-customizer loadout switch) — can silently swap the
+    // active pet without an Autopet/summon line, so treat it as a signal to re-sync from the API.
+    private static final Pattern LOADOUT_EQUIP_PAT = Pattern.compile("^You equipped (.+)!$");
 
     private static final Pattern PET_ITEM_NAME = Pattern.compile("\\[Lvl\\s*(\\d+)\\]\\s*(.+)");
     private static final Pattern PROGRESS_PAT = Pattern.compile("Progress to Level \\d+:\\s*([\\d.]+)%");
@@ -137,6 +140,15 @@ public class PetHud {
                 lastApiFetchAt = 0; // force an immediate API refetch for the new pet
                 forceScanTicks = 10; // immediately pull level/xp/overflow from tab
                 if (debugDumpPetLines) fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§d[pet] summon → " + petName));
+                return;
+            }
+            // Switching loadouts can silently change the equipped pet (no Autopet/summon line),
+            // so force an immediate API re-check to pick up whatever pet is now active.
+            Matcher lo = LOADOUT_EQUIP_PAT.matcher(s);
+            if (lo.find()) {
+                lastApiFetchAt = 0;
+                if (!Location.inDungeon()) forceScanTicks = 10; // tab is unreliable in dungeons; rely on API there
+                if (debugDumpPetLines) fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§d[pet] loadout equip → re-sync"));
             }
         });
 
@@ -179,6 +191,11 @@ public class PetHud {
                 apiFetchInFlight = true;
                 HypixelApi.getActivePet(client, PetHud::applyApiPet);
             }
+
+            // Tab list and the /pets menu don't reliably reflect the active pet in dungeons
+            // (no Pet: tab entry) — in dungeons rely solely on chat (Autopet/summon/loadout
+            // messages) plus the API refresh above.
+            if (Location.inDungeon()) return;
 
             scanPetsMenuIfOpen(client.screen);
 
