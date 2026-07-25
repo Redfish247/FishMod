@@ -74,6 +74,9 @@ public class WardrobeHotkeys {
         // that happens to share a title substring.
         if (containerSize < 27 || containerSize % 9 != 0) return false;
 
+        if (tryPageTurn(handler, containerSize, screen, Keybinds.wardrobeNextPage, matches, "next page")) return true;
+        if (tryPageTurn(handler, containerSize, screen, Keybinds.wardrobePrevPage, matches, "previous page")) return true;
+
         for (int i = 0; i < Keybinds.wardrobeSlots.length; i++) {
             KeyBinding mapping = Keybinds.wardrobeSlots[i];
             if (mapping == null || mapping.isUnbound() || !matches.test(mapping)) continue;
@@ -101,6 +104,41 @@ public class WardrobeHotkeys {
         }
 
         return false;
+    }
+
+    /**
+     * Handles the next/previous-page keybind: finds the arrow icon whose display name reads
+     * "Next Page"/"Previous Page" (Hypixel's own pagination button, present in both Wardrobe and
+     * Loadouts once there's more than one page) and clicks it, without auto-closing the GUI.
+     */
+    private static boolean tryPageTurn(ScreenHandler handler, int containerSize, HandledScreen<?> screen,
+                                        KeyBinding mapping, java.util.function.Predicate<KeyBinding> matches, String label) {
+        if (mapping == null || mapping.isUnbound() || !matches.test(mapping)) return false;
+
+        Slot target = findByName(handler, containerSize, label);
+        if (target == null) return false;
+
+        int syncId = handler.syncId;
+        int slotId = target.id;
+        pendingClick = () -> {
+            MinecraftClient mc = MinecraftClient.getInstance();
+            if (mc.player == null || mc.interactionManager == null) return;
+            mc.interactionManager.clickSlot(syncId, slotId, 0, SlotActionType.PICKUP, mc.player);
+        };
+        pendingTicks = 1;
+        return true;
+    }
+
+    /** Scans the container region for an item whose display name contains {@code label} (case-insensitive). */
+    private static Slot findByName(ScreenHandler handler, int containerSize, String label) {
+        for (int i = 0; i < containerSize; i++) {
+            Slot slot = handler.slots.get(i);
+            ItemStack stack = slot.getStack();
+            if (stack.isEmpty()) continue;
+            String name = stack.getName().getString().replaceAll("§.", "").trim();
+            if (name.toLowerCase().contains(label)) return slot;
+        }
+        return null;
     }
 
     private static Slot resolveTarget(ScreenHandler handler, int containerSize, boolean isWardrobe, int hotkeyIndex) {

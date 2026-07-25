@@ -43,6 +43,10 @@ public class Keybinds {
     /** Wardrobe/Loadouts quick-swap hotkeys 1-12, row-major (matches WardrobeHotkeys' slot layout). */
     public static KeyMapping[] wardrobeSlots;
 
+    /** Wardrobe/Loadouts pagination — clicks whichever arrow icon reads "Next Page"/"Previous Page". */
+    public static KeyMapping wardrobeNextPage;
+    public static KeyMapping wardrobePrevPage;
+
     public static void init() {
 
         category = KeyMapping.Category.register(Identifier.parse(Constants.NAMESPACE));
@@ -99,6 +103,18 @@ public class Keybinds {
                     GLFW.GLFW_KEY_UNKNOWN,
                     category));
         }
+
+        wardrobeNextPage = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "FishMod: Wardrobe next page",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                category));
+
+        wardrobePrevPage = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "FishMod: Wardrobe previous page",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                category));
 
         ClientTickEvents.END_CLIENT_TICK.register(Keybinds::checkInputs);
     }
