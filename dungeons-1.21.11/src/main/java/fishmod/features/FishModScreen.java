@@ -541,6 +541,9 @@ public class FishModScreen extends Screen {
             f.sub.add(new ToggleSetting("Ignore Mage", "",
                     () -> fishmod.utils.config.values.Dungeons.ignoreDupeMage,
                     v -> fishmod.utils.config.values.Dungeons.ignoreDupeMage = v));
+            f.sub.add(new ToggleSetting("To Party", "",
+                    () -> fishmod.utils.config.values.Dungeons.dupeClassPartyChat,
+                    v -> fishmod.utils.config.values.Dungeons.dupeClassPartyChat = v));
             dungeon.features.add(f);
         }
         {

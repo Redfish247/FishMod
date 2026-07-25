@@ -54,6 +54,11 @@ public class DupeClassDetector {
 
             Misc.addChatMessage(Text.literal("§c§lDupe Class Detected §8> §f" + names.size()
                     + " " + capitalize(dungeonClass.name()) + " §7(" + joinNames(names) + ")"));
+
+            if (Dungeons.dupeClassPartyChat) {
+                Misc.executeCommand("pc Dupe Class Detected > " + names.size()
+                        + " " + capitalize(dungeonClass.name()) + " (" + joinNames(names) + ")");
+            }
         });
     }
 

@@ -89,6 +89,9 @@ public class Dungeons {
     public static boolean ignoreDupeMage = false;
 
     @ConfigValue
+    public static boolean dupeClassPartyChat = false;
+
+    @ConfigValue
     public static boolean detectPlayerCount = false;
 
     @ConfigValue
