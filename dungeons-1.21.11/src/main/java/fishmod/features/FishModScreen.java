@@ -335,6 +335,7 @@ public class FishModScreen extends Screen {
             case "Trophy Fish" -> "Trophy fish catch tracker (Crimson)";
             case "Slayer Alerts" -> "Title + ping on slayer boss events";
             case "Slayer Drops" -> "Session rare-drop counter";
+            case "Party Finder Join Stats" -> "Whispers print sender's MP/PB/Cata/Gear to your chat";
             default -> descForExternal(name);
         };
     }
@@ -705,6 +706,8 @@ public class FishModScreen extends Screen {
             f.sub.add(new ToggleSetting("All", "", () -> FishSettings.chatAll, v -> FishSettings.chatAll = v));
             party.features.add(f);
         }
+        party.features.add(new Feature("Party Finder Join Stats",
+                () -> FishSettings.pfStatsEnabled, v -> FishSettings.pfStatsEnabled = v));
 
         // ===== Visuals =====
         {

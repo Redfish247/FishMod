@@ -119,6 +119,9 @@ public class FishSettings {
     @ConfigValue public static boolean chatOfficer = false;
     @ConfigValue public static boolean chatPrivate = false;
     @ConfigValue public static boolean chatAll     = false; // opt-in (false-positive risk)
+    // Party Finder join-request stats: whispers you get while this is on print the sender's
+    // MP/PB/Cata/Gear to your own chat (local-only, nothing sent back to them).
+    @ConfigValue public static boolean pfStatsEnabled = false;
     // Meow auto-responder: replies "meow" when anyone says meow in an enabled chat.
     @ConfigValue public static boolean chatMeow    = false;
     // Compact chat: collapse identical messages seen within the last minute into one line
