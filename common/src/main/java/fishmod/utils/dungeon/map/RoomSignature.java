@@ -10,6 +10,40 @@ import java.util.List;
  */
 public record RoomSignature(String key, Shape shape) {
 
+    /** {@link #key()} paired with which of the 4 tried rotations produced it — see {@link #withRotation}. */
+    public record WithRotation(String key, int rotation) {}
+
+    /**
+     * Like {@link #of}, but also returns which rotation index (0-3, in {@link #rotate}'s 90-degree
+     * steps) produced the winning canonical serialization — needed by the dungeon-waypoint feature to
+     * convert between a room's live world orientation and the canonical orientation waypoints are
+     * stored in. Duplicates {@link #of}'s cell/door gathering rather than refactoring it, to avoid
+     * touching the existing method's behavior.
+     */
+    public static WithRotation withRotation(RoomTile tile) {
+        List<RoomTile> segments = DungeonGrid.segmentsOf(tile);
+        List<int[]> cells = new ArrayList<>();
+        for (RoomTile seg : segments) cells.add(new int[]{seg.pos().x(), seg.pos().z()});
+
+        List<int[]> doorOffsets = new ArrayList<>();
+        for (RoomTile seg : segments) doorOffsets.addAll(doorSidesOf(seg.pos()));
+
+        String best = null;
+        int bestRotation = 0;
+        List<int[]> rotCells = cells;
+        List<int[]> rotDoors = doorOffsets;
+        for (int r = 0; r < 4; r++) {
+            String serialized = serialize(rotCells, rotDoors);
+            if (best == null || serialized.compareTo(best) < 0) {
+                best = serialized;
+                bestRotation = r;
+            }
+            rotCells = rotate(rotCells);
+            rotDoors = rotate(rotDoors);
+        }
+        return new WithRotation(best, bestRotation);
+    }
+
     public static RoomSignature of(RoomTile tile) {
         List<RoomTile> segments = DungeonGrid.segmentsOf(tile);
         List<int[]> cells = new ArrayList<>();

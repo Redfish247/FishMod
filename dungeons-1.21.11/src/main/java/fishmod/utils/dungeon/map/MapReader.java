@@ -362,4 +362,41 @@ public class MapReader {
     public static boolean isCalibrated() {
         return calibrated;
     }
+
+    // --- World-position bridge, exposed for DungeonWaypoints (see that class for usage). Only valid
+    // once isCalibrated() is true (worldOriginX/Z are captured before calibration, but entranceTileX/Z
+    // — needed to convert an arbitrary tile index — only come from tryCalibrate). ---
+
+    public static int worldOriginX() {
+        return worldOriginX;
+    }
+
+    public static int worldOriginZ() {
+        return worldOriginZ;
+    }
+
+    public static int entranceTileX() {
+        return entranceTileX;
+    }
+
+    public static int entranceTileZ() {
+        return entranceTileZ;
+    }
+
+    /** World X of grid tile column tileX's northwest corner. */
+    public static int tileWorldOriginX(int tileX) {
+        return tileWorldOrigin(tileX);
+    }
+
+    /** World Z of grid tile row tileZ's northwest corner. */
+    public static int tileWorldOriginZ(int tileZ) {
+        return tileWorldOrigin(tileZ);
+    }
+
+    /** Which GridPos tile (0..5 range in normal play) a world X/Z position falls in. */
+    public static GridPos worldToGridPos(double worldX, double worldZ) {
+        int tileX = entranceTileX + Math.floorDiv((int) Math.floor(worldX) - worldOriginX, 32);
+        int tileZ = entranceTileZ + Math.floorDiv((int) Math.floor(worldZ) - worldOriginZ, 32);
+        return new GridPos(tileX, tileZ);
+    }
 }
