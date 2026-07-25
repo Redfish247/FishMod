@@ -309,12 +309,8 @@ public class FishModInit implements ModInitializer {
             );
             dispatcher.register(ClientCommands.literal("fmloot")
                 .executes(ctx -> {
-                    boolean on = !fishmod.utils.config.values.FishSettings.lootTrackerEnabled;
-                    fishmod.utils.config.values.FishSettings.lootTrackerEnabled = on;
-                    fishmod.utils.config.FishConfig.manager.save();
-                    Misc.addChatMessage(Component.literal("§7[FM] Loot tracker "
-                            + (on ? "§aenabled §7— open your inventory in the Dungeon Hub"
-                                  : "§cdisabled")));
+                    Minecraft.getInstance().schedule(() ->
+                        Minecraft.getInstance().setScreen(new fishmod.features.croesus.LootTrackerScreen()));
                     return Constants.SUCCESS;
                 })
             );
