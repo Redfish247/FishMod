@@ -242,6 +242,7 @@ public class FishModInit implements ModInitializer {
         // so the class color wins over per-item boot dye while enabled.
         fishmod.utils.dungeon.DungeonClass.init();
         fishmod.features.ClassColoredBoots.init();
+        fishmod.features.dungeon.DupeClassDetector.init();
 
         // Register all HUD elements in FishHudEditor (position drag editor)
         FishHudEditor.register("Splits",    Phase.splitTimer);

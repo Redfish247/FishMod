@@ -105,6 +105,10 @@ public enum DungeonClass {
         return getClass(player.getName().getString());
     }
 
+    public static java.util.Map<String, DungeonClass> getAll() {
+        return java.util.Collections.unmodifiableMap(nameClassMap);
+    }
+
     public static boolean isTeammate(PlayerEntity player) {
         if (player == null || EntityUtil.isClientPlayer(player)) return false;
         String name = player.getName().getString();
