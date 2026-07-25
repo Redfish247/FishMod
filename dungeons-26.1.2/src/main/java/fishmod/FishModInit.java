@@ -212,6 +212,7 @@ public class FishModInit implements ModInitializer {
         // PowderTracker.init();
         fishmod.features.dungeon.SimonSaysTracker.init();
         fishmod.features.dungeon.M7LeverWaypoints.init();
+        fishmod.features.dungeon.StarredMobHighlight.init();
         // Floor 7 boss timers (ported from blade-addons): Maxor/Storm/Goldor tick timers, crystal
         // spawn, term start, section progress, storm-crushed. HUDs auto-render via the practical
         // config system (F7Huds registered with FishConfig); register each for the Edit-HUD dragger.
