@@ -293,6 +293,7 @@ public class FishModScreen extends Screen {
             case "Simon Says" -> "F7 Goldor device solver";
             case "Class Colored Boots" -> "Dye boots by your dungeon class";
             case "M7 Lever Waypoints" -> "See F7/M7 levers through walls";
+            case "Starred Mob Highlight" -> "Outline dungeon mobs that need to be killed to clear the floor";
             case "Dungeon Map" -> "Fixed 6x6 room/door map read from the vanilla map item";
             case "Maxor Tick Timer" -> "Tick timer during Maxor (P1)";
             case "Crystal Spawn" -> "Crystal spawn countdown + reminder";
@@ -518,6 +519,13 @@ public class FishModScreen extends Screen {
                     () -> FishSettings.enableM7LeverWaypoints, v -> FishSettings.enableM7LeverWaypoints = v);
             f.sub.add(new ColorPickerSetting("Box Color", "",
                     () -> FishSettings.m7LeverWaypointColor, v -> FishSettings.m7LeverWaypointColor = v));
+            dungeon.features.add(f);
+        }
+        {
+            Feature f = new Feature("Starred Mob Highlight",
+                    () -> FishSettings.enableStarredMobHighlight, v -> FishSettings.enableStarredMobHighlight = v);
+            f.sub.add(new ColorPickerSetting("Outline Color", "",
+                    () -> FishSettings.starredMobHighlightColor, v -> FishSettings.starredMobHighlightColor = v));
             dungeon.features.add(f);
         }
         {

@@ -224,6 +224,11 @@ public class FishSettings {
     @ConfigValue public static boolean enableM7LeverWaypoints  = false;
     @ConfigValue public static int     m7LeverWaypointColor    = 0x13FF0086; // ARGB (faint magenta)
 
+    // Starred mob visualizer: outlines dungeon mobs whose nametag carries the gold ✯ (must be
+    // killed to clear the floor) so they stand out from regular fodder mobs.
+    @ConfigValue public static boolean enableStarredMobHighlight = false;
+    @ConfigValue public static int     starredMobHighlightColor  = 0x80FFAA00; // ARGB (translucent gold)
+
     // Name color: gradient applied to your real username
     @ConfigValue public static int nickColorStart = 0xFFFF5555; // red
     @ConfigValue public static int nickColorEnd   = 0xFF5555FF; // blue
