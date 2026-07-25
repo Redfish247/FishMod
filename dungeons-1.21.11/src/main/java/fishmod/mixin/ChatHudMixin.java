@@ -66,6 +66,11 @@ public class ChatHudMixin {
             if (tryDispatch(ALL_CMD, plain, "ac ", null)) return;
         }
 
+        if (FishSettings.pfStatsEnabled) {
+            Matcher pfm = FROM_MSG.matcher(plain);
+            if (pfm.find()) fishmod.features.dungeon.PartyFinderStats.onWhisper(pfm.group(1));
+        }
+
         // Collapse identical repeats into a single "(N)"-counted line. Runs last so filtered/
         // dispatched lines are already handled; cancels + re-adds the message when it collapses.
         if (FishSettings.chatCompact
