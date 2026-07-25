@@ -114,6 +114,90 @@ public class FishModInit implements ModInitializer {
         Misc.addChatMessage(t);
     }
 
+    /** Registers /dwp and its /dungeonwaypoints alias — dungeon waypoint editor, see {@link fishmod.features.dungeon.DungeonWaypoints}. */
+    private static void registerDungeonWaypointCommand(com.mojang.brigadier.CommandDispatcher<FabricClientCommandSource> dispatcher) {
+        com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> tree =
+                ClientCommands.literal("dwp")
+                    .executes(ctx -> { fishmod.features.dungeon.DungeonWaypoints.toggleEdit(); return Constants.SUCCESS; })
+                    .then(ClientCommands.literal("edit").executes(ctx -> {
+                        fishmod.features.dungeon.DungeonWaypoints.toggleEdit(); return Constants.SUCCESS;
+                    }))
+                    .then(ClientCommands.literal("fill").executes(ctx -> {
+                        fishmod.features.dungeon.DungeonWaypoints.toggleFill(); return Constants.SUCCESS;
+                    }))
+                    .then(ClientCommands.literal("size")
+                        .then(ClientCommands.argument("value", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0.1, 1.0))
+                            .executes(ctx -> {
+                                fishmod.features.dungeon.DungeonWaypoints.setSize(
+                                        com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(ctx, "value"));
+                                return Constants.SUCCESS;
+                            })))
+                    .then(ClientCommands.literal("distance")
+                        .then(ClientCommands.argument("value", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1))
+                            .executes(ctx -> {
+                                fishmod.features.dungeon.DungeonWaypoints.setDistance(
+                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "value"));
+                                return Constants.SUCCESS;
+                            })))
+                    .then(ClientCommands.literal("resetsecrets").executes(ctx -> {
+                        fishmod.features.dungeon.DungeonWaypoints.resetSecrets(); return Constants.SUCCESS;
+                    }))
+                    .then(ClientCommands.literal("type")
+                        .then(ClientCommands.argument("value", StringArgumentType.word())
+                            .suggests((ctx, builder) -> {
+                                for (String s : new String[]{"none", "normal", "secret", "etherwarp", "move", "blocketherwarp"}) builder.suggest(s);
+                                return builder.buildFuture();
+                            })
+                            .executes(ctx -> {
+                                fishmod.features.dungeon.DungeonWaypoints.setType(StringArgumentType.getString(ctx, "value"));
+                                return Constants.SUCCESS;
+                            })))
+                    .then(ClientCommands.literal("timer")
+                        .then(ClientCommands.argument("value", StringArgumentType.word())
+                            .suggests((ctx, builder) -> {
+                                for (String s : new String[]{"none", "start", "checkpoint", "end"}) builder.suggest(s);
+                                return builder.buildFuture();
+                            })
+                            .executes(ctx -> {
+                                fishmod.features.dungeon.DungeonWaypoints.setTimer(StringArgumentType.getString(ctx, "value"));
+                                return Constants.SUCCESS;
+                            })))
+                    .then(ClientCommands.literal("useblocksize").executes(ctx -> {
+                        fishmod.features.dungeon.DungeonWaypoints.toggleUseBlockSize(); return Constants.SUCCESS;
+                    }))
+                    .then(ClientCommands.literal("offset")
+                        .then(ClientCommands.argument("x", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg())
+                            .then(ClientCommands.argument("y", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg())
+                                .then(ClientCommands.argument("z", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg())
+                                    .executes(ctx -> {
+                                        fishmod.features.dungeon.DungeonWaypoints.setOffset(
+                                                com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(ctx, "x"),
+                                                com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(ctx, "y"),
+                                                com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(ctx, "z"));
+                                        return Constants.SUCCESS;
+                                    })))))
+                    .then(ClientCommands.literal("through").executes(ctx -> {
+                        fishmod.features.dungeon.DungeonWaypoints.toggleThrough(); return Constants.SUCCESS;
+                    }))
+                    .then(ClientCommands.literal("color")
+                        .then(ClientCommands.argument("hex", StringArgumentType.word())
+                            .executes(ctx -> {
+                                fishmod.features.dungeon.DungeonWaypoints.setColor(StringArgumentType.getString(ctx, "hex"));
+                                return Constants.SUCCESS;
+                            })))
+                    .then(ClientCommands.literal("export").executes(ctx -> {
+                        fishmod.features.dungeon.DungeonWaypoints.exportToClipboard(); return Constants.SUCCESS;
+                    }))
+                    .then(ClientCommands.literal("import").executes(ctx -> {
+                        fishmod.features.dungeon.DungeonWaypoints.importFromClipboard(); return Constants.SUCCESS;
+                    }))
+                    .then(ClientCommands.literal("reset").executes(ctx -> {
+                        fishmod.features.dungeon.DungeonWaypoints.resetCurrentRoom(); return Constants.SUCCESS;
+                    }));
+        com.mojang.brigadier.tree.LiteralCommandNode<FabricClientCommandSource> node = dispatcher.register(tree);
+        dispatcher.register(ClientCommands.literal("dungeonwaypoints").redirect(node));
+    }
+
     /** Prints a formatted reference of FishMod's commands and their argument formats to the player's chat. */
     private static void printCommandHelp() {
         java.util.function.Consumer<String> line = FishModInit::helpLine;
@@ -212,6 +296,7 @@ public class FishModInit implements ModInitializer {
         // PowderTracker.init();
         fishmod.features.dungeon.SimonSaysTracker.init();
         fishmod.features.dungeon.M7LeverWaypoints.init();
+        fishmod.features.dungeon.DungeonWaypoints.init();
         fishmod.features.dungeon.StarredMobHighlight.init();
         // Floor 7 boss timers (ported from blade-addons): Maxor/Storm/Goldor tick timers, crystal
         // spawn, term start, section progress, storm-crushed. HUDs auto-render via the practical
@@ -307,6 +392,7 @@ public class FishModInit implements ModInitializer {
                     return Constants.SUCCESS;
                 })
             );
+            registerDungeonWaypointCommand(dispatcher);
             dispatcher.register(ClientCommands.literal("fmloot")
                 .executes(ctx -> {
                     boolean on = !fishmod.utils.config.values.FishSettings.lootTrackerEnabled;
@@ -904,6 +990,7 @@ public class FishModInit implements ModInitializer {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "phase_splits"), (ctx, tickCounter) -> Phase.renderHud(ctx));
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "f7_huds"), (ctx, tickCounter) -> fishmod.features.dungeon.f7.F7Huds.renderHud(ctx));
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map"), (ctx, tickCounter) -> fishmod.features.dungeon.map.DungeonMapHud.renderHud(ctx));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_waypoints_overlay"), (ctx, tickCounter) -> fishmod.features.dungeon.DungeonWaypoints.renderOverlay(ctx));
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "session_stats"), (ctx, tickCounter) -> SessionStats.renderHud(ctx, tickCounter));
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_score"), (ctx, tickCounter) -> fishmod.features.dungeon.DungeonScore.renderHud(ctx, tickCounter));
         // HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "farming_tracker"), (ctx, tickCounter) -> fishmod.features.FarmingTracker.renderHud(ctx, tickCounter));
