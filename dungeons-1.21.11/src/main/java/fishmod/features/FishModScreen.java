@@ -299,6 +299,7 @@ public class FishModScreen extends Screen {
             case "Simon Says" -> "F7 Goldor device solver";
             case "Class Colored Boots" -> "Dye boots by your dungeon class";
             case "M7 Lever Waypoints" -> "See F7/M7 levers through walls";
+            case "Starred Mob Highlight" -> "Outline dungeon mobs that need to be killed to clear the floor";
             case "Maxor Tick Timer" -> "Tick timer during Maxor (P1)";
             case "Crystal Spawn" -> "Crystal spawn countdown + reminder";
             case "Storm Tick Timer" -> "Tick timer during Storm (P2)";
@@ -335,6 +336,7 @@ public class FishModScreen extends Screen {
             case "Trophy Fish" -> "Trophy fish catch tracker (Crimson)";
             case "Slayer Alerts" -> "Title + ping on slayer boss events";
             case "Slayer Drops" -> "Session rare-drop counter";
+            case "Party Finder Join Stats" -> "Whispers print sender's MP/PB/Cata/Gear to your chat";
             default -> descForExternal(name);
         };
     }
@@ -526,6 +528,13 @@ public class FishModScreen extends Screen {
             dungeon.features.add(f);
         }
         {
+            Feature f = new Feature("Starred Mob Highlight",
+                    () -> FishSettings.enableStarredMobHighlight, v -> FishSettings.enableStarredMobHighlight = v);
+            f.sub.add(new ColorPickerSetting("Outline Color", "",
+                    () -> FishSettings.starredMobHighlightColor, v -> FishSettings.starredMobHighlightColor = v));
+            dungeon.features.add(f);
+        }
+        {
             Feature f = new Feature("Dungeon Map",
                     () -> fishmod.utils.config.values.DungeonMapSettings.enabled,
                     v -> fishmod.utils.config.values.DungeonMapSettings.enabled = v);
@@ -705,6 +714,8 @@ public class FishModScreen extends Screen {
             f.sub.add(new ToggleSetting("All", "", () -> FishSettings.chatAll, v -> FishSettings.chatAll = v));
             party.features.add(f);
         }
+        party.features.add(new Feature("Party Finder Join Stats",
+                () -> FishSettings.pfStatsEnabled, v -> FishSettings.pfStatsEnabled = v));
 
         // ===== Visuals =====
         {

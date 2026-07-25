@@ -119,6 +119,9 @@ public class FishSettings {
     @ConfigValue public static boolean chatOfficer = false;
     @ConfigValue public static boolean chatPrivate = false;
     @ConfigValue public static boolean chatAll     = false; // opt-in (false-positive risk)
+    // Party Finder join-request stats: whispers you get while this is on print the sender's
+    // MP/PB/Cata/Gear to your own chat (local-only, nothing sent back to them).
+    @ConfigValue public static boolean pfStatsEnabled = false;
     // Meow auto-responder: replies "meow" when anyone says meow in an enabled chat.
     @ConfigValue public static boolean chatMeow    = false;
     // Compact chat: collapse identical messages seen within the last minute into one line
@@ -223,6 +226,11 @@ public class FishSettings {
     // M7/F7 lever waypoints: through-walls filled box on each boss lever; disappears once flipped.
     @ConfigValue public static boolean enableM7LeverWaypoints  = false;
     @ConfigValue public static int     m7LeverWaypointColor    = 0x13FF0086; // ARGB (faint magenta)
+
+    // Starred mob visualizer: outlines dungeon mobs whose nametag carries the gold ✯ (must be
+    // killed to clear the floor) so they stand out from regular fodder mobs.
+    @ConfigValue public static boolean enableStarredMobHighlight = false;
+    @ConfigValue public static int     starredMobHighlightColor  = 0x80FFAA00; // ARGB (translucent gold)
 
     // Name color: gradient applied to your real username
     @ConfigValue public static int nickColorStart = 0xFFFF5555; // red

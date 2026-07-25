@@ -297,6 +297,7 @@ public class FishModInit implements ModInitializer {
         fishmod.features.dungeon.SimonSaysTracker.init();
         fishmod.features.dungeon.M7LeverWaypoints.init();
         fishmod.features.dungeon.DungeonWaypoints.init();
+        fishmod.features.dungeon.StarredMobHighlight.init();
         // Floor 7 boss timers (ported from blade-addons): Maxor/Storm/Goldor tick timers, crystal
         // spawn, term start, section progress, storm-crushed. HUDs auto-render via the practical
         // config system (F7Huds registered with FishConfig); register each for the Edit-HUD dragger.
@@ -324,6 +325,7 @@ public class FishModInit implements ModInitializer {
         // so the class color wins over per-item boot dye while enabled.
         fishmod.utils.dungeon.DungeonClass.init();
         fishmod.features.ClassColoredBoots.init();
+        fishmod.features.dungeon.DupeClassDetector.init();
 
         // Register all HUD elements in FishHudEditor (position drag editor)
         FishHudEditor.register("Splits",    Phase.splitTimer);

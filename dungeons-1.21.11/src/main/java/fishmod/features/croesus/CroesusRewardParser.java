@@ -126,8 +126,11 @@ public final class CroesusRewardParser {
 
             String[] result = parseLine(line);
             if (result[0].equals("false")) {
+                // Skip lines we can't resolve (flavor text, bits, unmapped names) rather than
+                // discarding every reward in the chest — a single unrecognized line shouldn't
+                // silently zero out the whole claim.
                 if (errorOut != null) errorOut[0] = result[1];
-                return null;
+                continue;
             }
 
             RewardItem ri = new RewardItem();
