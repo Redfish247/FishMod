@@ -1,5 +1,6 @@
 plugins {
 	id 'fabric-loom' version "${loom_version}"
+	id 'org.jetbrains.kotlin.jvm' version "${kotlin_version}"
 	id 'maven-publish'
 	id 'com.modrinth.minotaur' version '2.+'
 }
@@ -84,6 +85,9 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
+	// Dungeon map feature (this module + :common) is written in Kotlin — bundles kotlin-stdlib as a
+	// nested jar-in-jar, same as any other Kotlin Fabric mod (Odin, NoammAddons, etc).
+	modImplementation "net.fabricmc:fabric-language-kotlin:${project.fabric_kotlin_version}"
 	include modImplementation("net.hypixel:mod-api:${project.hypixel_api_version}")
 	include modImplementation("com.github.BladeMasterGabe:practical-config:${project.practical_config}")
 

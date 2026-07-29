@@ -1,5 +1,6 @@
 plugins {
 	id 'java'
+	id 'org.jetbrains.kotlin.jvm' version "${kotlin_version}"
 }
 
 version = project.mod_version_base ?: '1.0.0'
@@ -9,6 +10,12 @@ java {
 	toolchain.languageVersion = JavaLanguageVersion.of(21)
 	sourceCompatibility = JavaVersion.VERSION_21
 	targetCompatibility = JavaVersion.VERSION_21
+}
+
+// common's compiled classes are merged directly into both dungeons-* module jars (one targets
+// Java 21, the other Java 25) — compiling Kotlin for JVM 21 keeps the bytecode loadable by both.
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+	compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
 }
 
 repositories {
@@ -23,4 +30,7 @@ dependencies {
 	// Only the @ConfigValue annotation shape is needed at compile time — each dungeons-* module
 	// brings its own actual practical-config version at runtime (they differ per MC version).
 	compileOnly 'com.github.BladeMasterGabe:practical-config:1.4.3'
+	// kotlin-stdlib is supplied at runtime by each dungeons-* module's own fabric-language-kotlin
+	// dependency — compile-only here so it isn't bundled twice.
+	compileOnly "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_version}"
 }
