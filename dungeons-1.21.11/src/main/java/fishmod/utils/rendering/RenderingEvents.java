@@ -15,6 +15,8 @@ public class RenderingEvents {
     public static RenderHandler OUTLINE_ENTITY = new RenderHandler();
     public static RenderHandler NO_DEPTH_OUTLINE_ENTITY = new RenderHandler();
     public static RenderHandler LINE = new RenderHandler();
+    /** Like LINE, but through walls (no depth test) — a true GL_LINES layer, unlike NO_DEPTH_FILLED's triangle-strip box layer. */
+    public static RenderHandler NO_DEPTH_LINE = new RenderHandler();
 
 
     public static void init() {
@@ -24,6 +26,7 @@ public class RenderingEvents {
         WorldRenderEvents.AFTER_ENTITIES.register(RenderingEvents::entityOutline);
         WorldRenderEvents.AFTER_ENTITIES.register(RenderingEvents::entityOutlineNoDepth);
         WorldRenderEvents.BEFORE_DEBUG_RENDER.register(RenderingEvents::debugLine);
+        WorldRenderEvents.BEFORE_DEBUG_RENDER.register(RenderingEvents::debugLineNoDepth);
 
     }
 
@@ -121,6 +124,22 @@ public class RenderingEvents {
         VertexConsumer consumer = consumers.getBuffer(RenderLayers.getOutline(4, true));
 
         LINE.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer));
+        matrices.pop();
+    }
+
+    private static void debugLineNoDepth(WorldRenderContext context) {
+        if (context.worldState() == null) return;
+        Vec3d camera = context.worldState().cameraRenderState.pos;
+        MatrixStack matrices = context.matrices();
+        if (matrices == null) return;
+        matrices.push();
+        matrices.translate(-camera.x, -camera.y, -camera.z);
+
+        VertexConsumerProvider consumers = context.consumers();
+        if (consumers == null) return;
+        VertexConsumer consumer = consumers.getBuffer(RenderLayers.getOutline(4, false));
+
+        NO_DEPTH_LINE.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer));
         matrices.pop();
     }
 

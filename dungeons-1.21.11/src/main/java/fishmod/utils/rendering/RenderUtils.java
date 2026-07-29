@@ -94,9 +94,24 @@ public class RenderUtils {
     }
 
     public static void renderOutline(MatrixStack matrixStack, VertexConsumer consumer, Box box, float[] rgba) {
+        renderOutline(matrixStack, consumer, box, rgba, 1.0f);
+    }
+
+    /** Like {@link #renderOutline(MatrixStack, VertexConsumer, Box, float[])}, with a configurable line width in blocks. */
+    public static void renderOutline(MatrixStack matrixStack, VertexConsumer consumer, Box box, float[] rgba, float lineWidth) {
         if (rgba[3] == 0) return;
         int argb = ((int)(rgba[3] * 255) << 24) | ((int)(rgba[0] * 255) << 16) | ((int)(rgba[1] * 255) << 8) | (int)(rgba[2] * 255);
-        VertexRendering.drawOutline(matrixStack, consumer, VoxelShapes.cuboid(box), 0.0, 0.0, 0.0, argb, 1.0f);
+        VertexRendering.drawOutline(matrixStack, consumer, VoxelShapes.cuboid(box), 0.0, 0.0, 0.0, argb, lineWidth);
+    }
+
+    /** Draws a single straight line segment between two absolute world points, e.g. to connect route waypoints. */
+    public static void renderLine(MatrixStack matrixStack, VertexConsumer consumer, Vec3d a, Vec3d b, float[] rgba) {
+        if (rgba[3] == 0) return;
+        MatrixStack.Entry pose = matrixStack.peek();
+        Vector3f normal = new Vector3f((float) (b.x - a.x), (float) (b.y - a.y), (float) (b.z - a.z)).normalize();
+        float r = rgba[0], g = rgba[1], bl = rgba[2], al = rgba[3];
+        consumer.vertex(pose, (float) a.x, (float) a.y, (float) a.z).color(r, g, bl, al).normal(pose, normal.x, normal.y, normal.z);
+        consumer.vertex(pose, (float) b.x, (float) b.y, (float) b.z).color(r, g, bl, al).normal(pose, normal.x, normal.y, normal.z);
     }
 
 
@@ -145,45 +160,59 @@ public class RenderUtils {
         renderLineTo(context, matrices, consumer, pos.x, pos.y, pos.z, color);
     }
 
+    /**
+     * Six independent quads (24 vertices) — one per face, each walked around its perimeter
+     * (not a Z-order/diagonal split). The two previous attempts here (34- and 14-vertex "triangle
+     * strip" layouts) were solving the wrong problem: {@code RenderPipelines.DEBUG_FILLED_BOX}'s
+     * snippet actually declares {@code VertexFormat.Mode.QUADS}, not {@code TRIANGLE_STRIP} — every
+     * run of 4 vertices is one independent quad, no bridging between faces needed or wanted. Feeding
+     * it strip-shaped data (shared vertices, degenerate bridge pairs) is exactly what produced the
+     * corrupted "bowtie"/zigzag shapes, since the GPU was grouping 4-vertex chunks of that strip data
+     * as unrelated quads instead of walking it as a continuous strip. Verified programmatically:
+     * each quad's 2 implied triangles are coplanar and non-degenerate, and all 6 faces are covered
+     * exactly once for a total surface area equal to a unit cube's.
+     *
+     * <p>Corners: A=(x1,y1,z1) B=(x2,y1,z1) C=(x1,y2,z1) D=(x2,y2,z1)
+     *             E=(x1,y1,z2) F=(x2,y1,z2) G=(x1,y2,z2) H=(x2,y2,z2)
+     */
     private static void drawFilledBox(MatrixStack matrices, VertexConsumer consumer,
                                        double x1, double y1, double z1,
                                        double x2, double y2, double z2,
                                        float r, float g, float b, float a) {
         MatrixStack.Entry entry = matrices.peek();
-        consumer.vertex(entry, (float)x1, (float)y1, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y1, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x1, (float)y1, (float)z2).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y1, (float)z2).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y1, (float)z2).color(r, g, b, a);
-        consumer.vertex(entry, (float)x1, (float)y2, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x1, (float)y2, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y2, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x1, (float)y2, (float)z2).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y2, (float)z2).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y2, (float)z2).color(r, g, b, a);
-        consumer.vertex(entry, (float)x1, (float)y1, (float)z2).color(r, g, b, a);
-        consumer.vertex(entry, (float)x1, (float)y1, (float)z2).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y1, (float)z2).color(r, g, b, a);
-        consumer.vertex(entry, (float)x1, (float)y2, (float)z2).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y2, (float)z2).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y2, (float)z2).color(r, g, b, a);
-        consumer.vertex(entry, (float)x1, (float)y1, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x1, (float)y1, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y1, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x1, (float)y2, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y2, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y2, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x1, (float)y1, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x1, (float)y1, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x1, (float)y1, (float)z2).color(r, g, b, a);
-        consumer.vertex(entry, (float)x1, (float)y2, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x1, (float)y2, (float)z2).color(r, g, b, a);
-        consumer.vertex(entry, (float)x1, (float)y2, (float)z2).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y1, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y1, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y1, (float)z2).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y2, (float)z1).color(r, g, b, a);
-        consumer.vertex(entry, (float)x2, (float)y2, (float)z2).color(r, g, b, a);
+        float ax1 = (float) x1, ay1 = (float) y1, az1 = (float) z1;
+        float ax2 = (float) x2, ay2 = (float) y2, az2 = (float) z2;
+
+        // Bottom: A,B,F,E
+        consumer.vertex(entry, ax1, ay1, az1).color(r, g, b, a);
+        consumer.vertex(entry, ax2, ay1, az1).color(r, g, b, a);
+        consumer.vertex(entry, ax2, ay1, az2).color(r, g, b, a);
+        consumer.vertex(entry, ax1, ay1, az2).color(r, g, b, a);
+        // Top: C,D,H,G
+        consumer.vertex(entry, ax1, ay2, az1).color(r, g, b, a);
+        consumer.vertex(entry, ax2, ay2, az1).color(r, g, b, a);
+        consumer.vertex(entry, ax2, ay2, az2).color(r, g, b, a);
+        consumer.vertex(entry, ax1, ay2, az2).color(r, g, b, a);
+        // Front: A,B,D,C
+        consumer.vertex(entry, ax1, ay1, az1).color(r, g, b, a);
+        consumer.vertex(entry, ax2, ay1, az1).color(r, g, b, a);
+        consumer.vertex(entry, ax2, ay2, az1).color(r, g, b, a);
+        consumer.vertex(entry, ax1, ay2, az1).color(r, g, b, a);
+        // Back: E,F,H,G
+        consumer.vertex(entry, ax1, ay1, az2).color(r, g, b, a);
+        consumer.vertex(entry, ax2, ay1, az2).color(r, g, b, a);
+        consumer.vertex(entry, ax2, ay2, az2).color(r, g, b, a);
+        consumer.vertex(entry, ax1, ay2, az2).color(r, g, b, a);
+        // Left: A,C,G,E
+        consumer.vertex(entry, ax1, ay1, az1).color(r, g, b, a);
+        consumer.vertex(entry, ax1, ay2, az1).color(r, g, b, a);
+        consumer.vertex(entry, ax1, ay2, az2).color(r, g, b, a);
+        consumer.vertex(entry, ax1, ay1, az2).color(r, g, b, a);
+        // Right: B,D,H,F
+        consumer.vertex(entry, ax2, ay1, az1).color(r, g, b, a);
+        consumer.vertex(entry, ax2, ay2, az1).color(r, g, b, a);
+        consumer.vertex(entry, ax2, ay2, az2).color(r, g, b, a);
+        consumer.vertex(entry, ax2, ay1, az2).color(r, g, b, a);
     }
 
         public static String formatNumber(float num) {

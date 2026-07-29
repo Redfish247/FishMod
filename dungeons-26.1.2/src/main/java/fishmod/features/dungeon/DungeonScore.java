@@ -70,6 +70,7 @@ public class DungeonScore {
     private static boolean alerted270 = false;
     private static boolean alerted300 = false;
     private static boolean alertedMissing = false;
+    private static boolean secretsMilestoneAlerted = false;
 
     public static void init() {
         FishHudEditor.register("Dungeon Score",
@@ -101,12 +102,12 @@ public class DungeonScore {
             Matcher pm = PARTY_MSG.matcher(s);
             if (pm.find()) {
                 String body = pm.group(1).toLowerCase();
-                if (MIMIC_CHAT.matcher(body).find() && currentFloor != null && (currentFloor.floorNumber() == 6 || currentFloor.floorNumber() == 7)) mimicKilled = true;
-                if (PRINCE_CHAT.matcher(body).find()) princeKilled = true;
+                if (MIMIC_CHAT.matcher(body).find() && currentFloor != null && (currentFloor.floorNumber() == 6 || currentFloor.floorNumber() == 7)) flagMimic();
+                if (PRINCE_CHAT.matcher(body).find()) flagPrince();
             } else {
                 // Local "Mimic dead!" type messages
-                if (MIMIC_CHAT.matcher(s).find() && currentFloor != null && (currentFloor.floorNumber() == 6 || currentFloor.floorNumber() == 7)) mimicKilled = true;
-                if (PRINCE_CHAT.matcher(s).find()) princeKilled = true;
+                if (MIMIC_CHAT.matcher(s).find() && currentFloor != null && (currentFloor.floorNumber() == 6 || currentFloor.floorNumber() == 7)) flagMimic();
+                if (PRINCE_CHAT.matcher(s).find()) flagPrince();
             }
             return false;
         });
@@ -152,7 +153,18 @@ public class DungeonScore {
         alerted270 = false;
         alerted300 = false;
         alertedMissing = false;
+        secretsMilestoneAlerted = false;
         puzzleStatuses.clear();
+    }
+
+    /** Marks the mimic as chat-detected killed. */
+    private static void flagMimic() {
+        mimicKilled = true;
+    }
+
+    /** Marks the Prince as chat-detected killed. */
+    private static void flagPrince() {
+        princeKilled = true;
     }
 
     private static void scanTabList(Minecraft mc) {
@@ -355,6 +367,18 @@ public class DungeonScore {
             alerted300 = true;
             fireScoreAlert(FishSettings.score300TitleEnabled, FishSettings.score300ChatEnabled, FishSettings.score300Text);
         }
+
+        int ts = totalSecrets();
+        if (!secretsMilestoneAlerted && ts > 0 && secretCount >= ts) {
+            secretsMilestoneAlerted = true;
+            announceMapMilestone("100% Secrets Found!");
+        }
+    }
+
+    /** Chat/sound cue for the 100%-secrets milestone. */
+    private static void announceMapMilestone(String text) {
+        fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§b§l[FishMod] §r§a" + text));
+        fishmod.utils.Misc.sendSound(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1f);
     }
 
     private static void fireScoreAlert(boolean title, boolean chat, String text) {

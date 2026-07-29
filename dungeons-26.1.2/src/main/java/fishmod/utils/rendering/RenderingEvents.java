@@ -13,6 +13,8 @@ public class RenderingEvents {
     public static RenderHandler OUTLINE_ENTITY = new RenderHandler();
     public static RenderHandler NO_DEPTH_OUTLINE_ENTITY = new RenderHandler();
     public static RenderHandler LINE = new RenderHandler();
+    /** Like LINE, but through walls (no depth test) — a true GL_LINES layer, unlike NO_DEPTH_FILLED's triangle-strip box layer. */
+    public static RenderHandler NO_DEPTH_LINE = new RenderHandler();
 
 
     public static void init() {
@@ -22,6 +24,7 @@ public class RenderingEvents {
         LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(RenderingEvents::entityOutline);
         LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(RenderingEvents::entityOutlineNoDepth);
         LevelRenderEvents.BEFORE_GIZMOS.register(RenderingEvents::debugLine);
+        LevelRenderEvents.BEFORE_GIZMOS.register(RenderingEvents::debugLineNoDepth);
 
     }
 
@@ -101,6 +104,19 @@ public class RenderingEvents {
 
         context.submitNodeCollector().submitCustomGeometry(matrices, RenderLayers.getOutline(4, true), (pose, consumer) ->
                 LINE.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer)));
+        matrices.popPose();
+    }
+
+    private static void debugLineNoDepth(LevelRenderContext context) {
+        if (context.levelState() == null) return;
+        Vec3 camera = context.levelState().cameraRenderState.pos;
+        PoseStack matrices = context.poseStack();
+        if (matrices == null) return;
+        matrices.pushPose();
+        matrices.translate(-camera.x, -camera.y, -camera.z);
+
+        context.submitNodeCollector().submitCustomGeometry(matrices, RenderLayers.getOutline(4, false), (pose, consumer) ->
+                NO_DEPTH_LINE.invoke(renderingEvent -> renderingEvent.render(context, matrices, consumer)));
         matrices.popPose();
     }
 

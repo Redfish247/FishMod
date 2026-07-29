@@ -20,6 +20,10 @@ public class StoredWaypoint {
     public String type;
     /** Enum name string, nullable. */
     public String timer;
+    /** Non-null when this waypoint is part of an ordered route (see DungeonWaypoints route recording); null for a standalone waypoint. */
+    public String routeId;
+    /** This waypoint's position within its route, ascending. Meaningless when routeId is null. */
+    public int routeOrder;
 
     public StoredWaypoint() {}
 

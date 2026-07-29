@@ -69,6 +69,14 @@ public class PetHud {
     private static long lastApiFetchAt = 0;
     private static boolean apiFetchInFlight = false;
 
+    // Hypixel's SkyBlock profile API is a periodic snapshot, not real-time — right after an
+    // Autopet/summon swap it can still lag behind and report the PREVIOUS pet for several
+    // seconds. Track the chat-confirmed name/time so a stale API response that disagrees with
+    // a recent chat message gets discarded instead of clobbering the correct name back.
+    private static final long CHAT_TRUST_WINDOW_MS = 15_000L;
+    private static String lastChatPetName = null;
+    private static long lastChatPetChangeAt = 0;
+
     // Hypixel wiki: a pet earns 1 Pet XP per 1 skill XP gained in its matching skill.
     // Non-matching skills give 0. Source: https://wiki.hypixel.net/Pets#Pet_XP
     private static final Pattern SKILL_XP_BAR = Pattern.compile(
@@ -124,6 +132,7 @@ public class PetHud {
                 petMaxed = false; // tab burst-scan re-confirms
                 xpCurrent = -1; xpNext = -1; pendingXp = 0; // reset XP for the newly-equipped pet
                 lastTabUpdate = System.currentTimeMillis();
+                lastChatPetName = petName; lastChatPetChangeAt = System.currentTimeMillis();
                 lastApiFetchAt = 0; // force an immediate API refetch for the new pet
                 forceScanTicks = 10; // immediately pull level/xp/overflow from tab
                 if (debugDumpPetLines) fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§d[pet] autopet → [" + petLevel + "] " + petName));
@@ -137,6 +146,7 @@ public class PetHud {
                 petMaxed = false; // tab burst-scan re-confirms
                 xpCurrent = -1; xpNext = -1; pendingXp = 0;
                 lastTabUpdate = System.currentTimeMillis();
+                lastChatPetName = petName; lastChatPetChangeAt = System.currentTimeMillis();
                 lastApiFetchAt = 0; // force an immediate API refetch for the new pet
                 forceScanTicks = 10; // immediately pull level/xp/overflow from tab
                 if (debugDumpPetLines) fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§d[pet] summon → " + petName));
@@ -266,6 +276,17 @@ public class PetHud {
     private static void applyApiPet(HypixelApi.PetInfo info) {
         apiFetchInFlight = false;
         if (info == null || !info.ok) return;
+
+        // The SkyBlock profile API is a periodic snapshot, not live — right after a chat-confirmed
+        // pet change it can still report the PREVIOUS pet for a while. Discard a mismatched result
+        // during the trust window instead of letting it clobber the correct chat-driven name, and
+        // retry sooner (a few seconds) rather than waiting the full periodic refresh interval.
+        boolean withinTrustWindow = System.currentTimeMillis() - lastChatPetChangeAt < CHAT_TRUST_WINDOW_MS;
+        if (withinTrustWindow && lastChatPetName != null && !lastChatPetName.equalsIgnoreCase(info.name)) {
+            lastApiFetchAt = System.currentTimeMillis() - API_REFRESH_MS + 3_000L; // retry in ~3s
+            return;
+        }
+
         petName = info.name;
         petLevel = info.level;
         petMaxed = info.maxed;
@@ -343,6 +364,8 @@ public class PetHud {
         petName = null;
         petLevel = -1;
         xpCurrent = -1;
+        lastChatPetName = null;
+        lastChatPetChangeAt = 0;
     }
 
     /** Strips rarity star, trailing punctuation, and whitespace from a pet name. */

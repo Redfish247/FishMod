@@ -62,6 +62,7 @@ public class WardrobeHotkeys {
 
     private static boolean tryActivate(AbstractContainerScreen<?> screen, java.util.function.Predicate<KeyMapping> matches) {
         if (!FishSettings.wardrobeHotkeysEnabled) return false;
+        if (Keybinds.wardrobeSlots == null) return false;
 
         String title = screen.getTitle().getString().replaceAll("§.", "").trim();
         boolean isWardrobe = title.contains("Armor Sets") || title.equals("Wardrobe");

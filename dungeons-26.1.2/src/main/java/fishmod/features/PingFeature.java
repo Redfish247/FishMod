@@ -68,8 +68,7 @@ public final class PingFeature {
     public static void init() {
         // Reuse the shared FishMod keybind category (created in Keybinds.init, which runs first) so we
         // don't double-register the category Identifier.
-        KeyMapping.Category category = fishmod.utils.Keybinds.category;
-        if (category == null) category = KeyMapping.Category.register(Identifier.parse(fishmod.utils.Constants.NAMESPACE));
+        KeyMapping.Category category = fishmod.utils.Keybinds.category();
         pingKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "FishMod: Ping location",
                 InputConstants.Type.MOUSE,

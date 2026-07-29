@@ -21,11 +21,11 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 /**
- * GSON-backed store of every user-placed dungeon waypoint, keyed by {@link
- * fishmod.utils.dungeon.map.RoomSignature#key()} (rotation-normalized). Same load-on-static-init,
- * save-on-mutation pattern as {@code RoomSignatureDB}.
+ * GSON-backed store of every user-placed dungeon waypoint, keyed by a per-grid-tile key (see
+ * {@code DungeonWaypoints.tileKey}) or a freeform global key outside calibrated dungeons.
+ * Load-on-static-init, save-on-mutation.
  *
- * <p>Stored in config/fishmod-dungeon-waypoints.json as {@code { signatureKey: [ StoredWaypoint, ... ] } }.
+ * <p>Stored in config/fishmod-dungeon-waypoints.json as {@code { key: [ StoredWaypoint, ... ] } }.
  */
 public class DungeonWaypointStore {
 
@@ -61,6 +61,37 @@ public class DungeonWaypointStore {
         if (data.remove(roomKey) != null) save();
     }
 
+    /** Removes the waypoint at {@code index} within {@code key}'s list. Returns true if one was removed. */
+    public static boolean removeAt(String key, int index) {
+        List<StoredWaypoint> list = data.get(key);
+        if (list == null || index < 0 || index >= list.size()) return false;
+        list.remove(index);
+        if (list.isEmpty()) data.remove(key);
+        save();
+        return true;
+    }
+
+    /** Renames the waypoint at {@code index} within {@code key}'s list. */
+    public static void setTitle(String key, int index, String title) {
+        List<StoredWaypoint> list = data.get(key);
+        if (list == null || index < 0 || index >= list.size()) return;
+        list.get(index).title = title;
+        save();
+    }
+
+    /** Removes every waypoint (across every room/global key) tagged with {@code routeId}. Returns the count removed. */
+    public static int removeRoute(String routeId) {
+        int removed = 0;
+        for (List<StoredWaypoint> list : data.values()) {
+            int before = list.size();
+            list.removeIf(w -> routeId.equals(w.routeId));
+            removed += before - list.size();
+        }
+        data.values().removeIf(List::isEmpty);
+        if (removed > 0) save();
+        return removed;
+    }
+
     public static Map<String, List<StoredWaypoint>> allData() {
         return data;
     }
@@ -68,19 +99,6 @@ public class DungeonWaypointStore {
     public static void replaceAll(Map<String, List<StoredWaypoint>> newData) {
         data = newData != null ? newData : new HashMap<>();
         save();
-    }
-
-    /** 90-degree rotation of a room-tile-relative point around its tile center. steps in [0,3], applied CCW to match {@code RoomSignature}'s (x,z) -> (z,-x). */
-    public static double[] rotate90(double x, double z, int steps) {
-        double rx = x, rz = z;
-        int n = ((steps % 4) + 4) % 4;
-        for (int i = 0; i < n; i++) {
-            double nx = rz;
-            double nz = -rx;
-            rx = nx;
-            rz = nz;
-        }
-        return new double[]{rx, rz};
     }
 
     public static String exportBase64() {

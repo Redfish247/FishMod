@@ -1,6 +1,5 @@
 package fishmod.mixin;
 
-import fishmod.features.croesus.LootTrackerOverlay;
 import fishmod.features.dungeon.SessionStats;
 import fishmod.features.other.SearchBar;
 import fishmod.features.other.WardrobeHotkeys;
@@ -47,7 +46,6 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void keyPressed(KeyEvent input, CallbackInfoReturnable<Boolean> cir) {
         if (SearchBar.keyPressed(input)) { cir.setReturnValue(false); return; }
-        if (LootTrackerOverlay.keyPressed(input)) { cir.setReturnValue(false); return; }
         if (WardrobeHotkeys.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
     }
 
@@ -55,8 +53,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     private void onMouseClick(MouseButtonEvent click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
         double cx = click.x(), cy = click.y();
 
-        if (SessionStats.handleScreenClick(cx, cy)
-                || LootTrackerOverlay.handleScreenClick(cx, cy)) {
+        if (SessionStats.handleScreenClick(cx, cy)) {
             cir.setReturnValue(true);
             return;
         }

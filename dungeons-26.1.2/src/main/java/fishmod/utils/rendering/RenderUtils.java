@@ -120,6 +120,55 @@ public class RenderUtils {
         edge(consumer, pose, x1, y1, z2, x1, y2, z2, r, g, b, a);
     }
 
+    /**
+     * Like {@link #renderOutline}, but each of the 12 edges is a thin filled box instead of a
+     * GL_LINES segment, so its thickness is an actual controllable size in blocks rather than GPU
+     * line-width state (which isn't reliably adjustable per-draw through the batched pipeline here).
+     * Must be submitted on the same triangle-strip layer as {@link #renderFilled} — see
+     * {@link fishmod.utils.rendering.RenderingEvents#NO_DEPTH_FILLED}.
+     */
+    public static void renderThickOutline(PoseStack matrixStack, VertexConsumer consumer, AABB box, float[] rgba, double lineWidth) {
+        if (rgba[3] == 0) return;
+        double hw = lineWidth / 2.0;
+        double x1 = box.minX, y1 = box.minY, z1 = box.minZ;
+        double x2 = box.maxX, y2 = box.maxY, z2 = box.maxZ;
+
+        thickEdge(matrixStack, consumer, x1, y1, z1, x2, y1, z1, hw, rgba);
+        thickEdge(matrixStack, consumer, x2, y1, z1, x2, y1, z2, hw, rgba);
+        thickEdge(matrixStack, consumer, x2, y1, z2, x1, y1, z2, hw, rgba);
+        thickEdge(matrixStack, consumer, x1, y1, z2, x1, y1, z1, hw, rgba);
+
+        thickEdge(matrixStack, consumer, x1, y2, z1, x2, y2, z1, hw, rgba);
+        thickEdge(matrixStack, consumer, x2, y2, z1, x2, y2, z2, hw, rgba);
+        thickEdge(matrixStack, consumer, x2, y2, z2, x1, y2, z2, hw, rgba);
+        thickEdge(matrixStack, consumer, x1, y2, z2, x1, y2, z1, hw, rgba);
+
+        thickEdge(matrixStack, consumer, x1, y1, z1, x1, y2, z1, hw, rgba);
+        thickEdge(matrixStack, consumer, x2, y1, z1, x2, y2, z1, hw, rgba);
+        thickEdge(matrixStack, consumer, x2, y1, z2, x2, y2, z2, hw, rgba);
+        thickEdge(matrixStack, consumer, x1, y1, z2, x1, y2, z2, hw, rgba);
+    }
+
+    /** One axis-aligned edge of {@link #renderThickOutline}, expanded to {@code halfWidth} on the two axes it doesn't run along. */
+    private static void thickEdge(PoseStack matrixStack, VertexConsumer consumer,
+                                   double ax, double ay, double az, double bx, double by, double bz,
+                                   double halfWidth, float[] rgba) {
+        double minX = Math.min(ax, bx), maxX = Math.max(ax, bx);
+        double minY = Math.min(ay, by), maxY = Math.max(ay, by);
+        double minZ = Math.min(az, bz), maxZ = Math.max(az, bz);
+        if (minX == maxX) { minX -= halfWidth; maxX += halfWidth; }
+        if (minY == maxY) { minY -= halfWidth; maxY += halfWidth; }
+        if (minZ == maxZ) { minZ -= halfWidth; maxZ += halfWidth; }
+        drawFilledBox(matrixStack, consumer, minX, minY, minZ, maxX, maxY, maxZ, rgba[0], rgba[1], rgba[2], rgba[3]);
+    }
+
+    /** Draws a single straight line segment between two absolute world points, e.g. to connect route waypoints. */
+    public static void renderLine(PoseStack matrixStack, VertexConsumer consumer, Vec3 a, Vec3 b, float[] rgba) {
+        if (rgba[3] == 0) return;
+        edge(consumer, matrixStack.last(), (float) a.x, (float) a.y, (float) a.z, (float) b.x, (float) b.y, (float) b.z,
+                rgba[0], rgba[1], rgba[2], rgba[3]);
+    }
+
     private static void edge(VertexConsumer consumer, PoseStack.Pose pose,
                               float x1, float y1, float z1, float x2, float y2, float z2,
                               float r, float g, float b, float a) {
@@ -174,45 +223,59 @@ public class RenderUtils {
         renderLineTo(context, matrices, consumer, pos.x, pos.y, pos.z, color);
     }
 
+    /**
+     * Six independent quads (24 vertices) — one per face, each walked around its perimeter
+     * (not a Z-order/diagonal split). The two previous attempts here (34- and 14-vertex "triangle
+     * strip" layouts) were solving the wrong problem: {@code RenderPipelines.DEBUG_FILLED_BOX}'s
+     * snippet actually declares {@code VertexFormat.Mode.QUADS}, not {@code TRIANGLE_STRIP} — every
+     * run of 4 vertices is one independent quad, no bridging between faces needed or wanted. Feeding
+     * it strip-shaped data (shared vertices, degenerate bridge pairs) is exactly what produced the
+     * corrupted "bowtie"/zigzag shapes, since the GPU was grouping 4-vertex chunks of that strip data
+     * as unrelated quads instead of walking it as a continuous strip. Verified programmatically:
+     * each quad's 2 implied triangles are coplanar and non-degenerate, and all 6 faces are covered
+     * exactly once for a total surface area equal to a unit cube's.
+     *
+     * <p>Corners: A=(x1,y1,z1) B=(x2,y1,z1) C=(x1,y2,z1) D=(x2,y2,z1)
+     *             E=(x1,y1,z2) F=(x2,y1,z2) G=(x1,y2,z2) H=(x2,y2,z2)
+     */
     private static void drawFilledBox(PoseStack matrices, VertexConsumer consumer,
                                        double x1, double y1, double z1,
                                        double x2, double y2, double z2,
                                        float r, float g, float b, float a) {
         PoseStack.Pose entry = matrices.last();
-        consumer.addVertex(entry, (float)x1, (float)y1, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y1, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x1, (float)y1, (float)z2).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y1, (float)z2).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y1, (float)z2).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x1, (float)y2, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x1, (float)y2, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y2, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x1, (float)y2, (float)z2).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y2, (float)z2).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y2, (float)z2).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x1, (float)y1, (float)z2).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x1, (float)y1, (float)z2).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y1, (float)z2).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x1, (float)y2, (float)z2).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y2, (float)z2).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y2, (float)z2).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x1, (float)y1, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x1, (float)y1, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y1, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x1, (float)y2, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y2, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y2, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x1, (float)y1, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x1, (float)y1, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x1, (float)y1, (float)z2).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x1, (float)y2, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x1, (float)y2, (float)z2).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x1, (float)y2, (float)z2).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y1, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y1, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y1, (float)z2).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y2, (float)z1).setColor(r, g, b, a);
-        consumer.addVertex(entry, (float)x2, (float)y2, (float)z2).setColor(r, g, b, a);
+        float ax1 = (float) x1, ay1 = (float) y1, az1 = (float) z1;
+        float ax2 = (float) x2, ay2 = (float) y2, az2 = (float) z2;
+
+        // Bottom: A,B,F,E
+        consumer.addVertex(entry, ax1, ay1, az1).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax2, ay1, az1).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax2, ay1, az2).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax1, ay1, az2).setColor(r, g, b, a);
+        // Top: C,D,H,G
+        consumer.addVertex(entry, ax1, ay2, az1).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax2, ay2, az1).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax2, ay2, az2).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax1, ay2, az2).setColor(r, g, b, a);
+        // Front: A,B,D,C
+        consumer.addVertex(entry, ax1, ay1, az1).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax2, ay1, az1).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax2, ay2, az1).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax1, ay2, az1).setColor(r, g, b, a);
+        // Back: E,F,H,G
+        consumer.addVertex(entry, ax1, ay1, az2).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax2, ay1, az2).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax2, ay2, az2).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax1, ay2, az2).setColor(r, g, b, a);
+        // Left: A,C,G,E
+        consumer.addVertex(entry, ax1, ay1, az1).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax1, ay2, az1).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax1, ay2, az2).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax1, ay1, az2).setColor(r, g, b, a);
+        // Right: B,D,H,F
+        consumer.addVertex(entry, ax2, ay1, az1).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax2, ay2, az1).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax2, ay2, az2).setColor(r, g, b, a);
+        consumer.addVertex(entry, ax2, ay1, az2).setColor(r, g, b, a);
     }
 
         public static String formatNumber(float num) {
