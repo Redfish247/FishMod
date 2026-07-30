@@ -34,6 +34,12 @@ class StoredWaypoint() {
     /** Enum name string, nullable. */
     @JvmField var timer: String? = null
 
+    /** Route grouping (e.g. dungeons-26.1.2's /fmwp route recording) — null if not part of a route. */
+    @JvmField var routeId: String? = null
+
+    /** Order of this waypoint within its route, when [routeId] is non-null. */
+    @JvmField var routeOrder: Int = 0
+
     constructor(
         x: Double, y: Double, z: Double,
         halfX: Double, halfY: Double, halfZ: Double,

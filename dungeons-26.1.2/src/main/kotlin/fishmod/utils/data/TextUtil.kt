@@ -1,0 +1,128 @@
+package fishmod.utils.data
+
+import fishmod.utils.Constants
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.Style
+import net.minecraft.network.chat.TextColor
+import net.minecraft.util.FormattedCharSequence
+
+object TextUtil {
+
+    private class StyleTracker {
+        var isBold = false
+        var isItalic = false
+        var isUnderlined = false
+        var isStrikeThrough = false
+        var isObfuscated = false
+        var currentColor = 0
+
+        override fun toString(): String {
+            return "StyleTracker{" +
+                    "isBold=" + isBold +
+                    ", isItalic=" + isItalic +
+                    ", isUnderlined=" + isUnderlined +
+                    ", isStrikeThrough=" + isStrikeThrough +
+                    ", isObfuscated=" + isObfuscated +
+                    ", currentColor=" + currentColor +
+                    '}'
+        }
+    }
+
+    @JvmStatic
+    fun orderedTextToString(text: FormattedCharSequence): String {
+        val builder = StringBuilder()
+        acceptOrderedText(builder, text)
+        return builder.toString()
+    }
+
+    @JvmStatic
+    fun acceptOrderedText(builder: StringBuilder, orderedText: FormattedCharSequence) {
+        val tracker = StyleTracker()
+        acceptOrderedText(builder, tracker, orderedText)
+    }
+
+    private fun acceptOrderedText(builder: StringBuilder, tracker: StyleTracker, orderedText: FormattedCharSequence) {
+        orderedText.accept { _, style, codePoint ->
+            acceptStyle(builder, tracker, style)
+            builder.appendCodePoint(codePoint)
+            true
+        }
+    }
+
+    /**
+     * Grabs the color codes that are missing to
+     * make it more convenient to use it in for example
+     * chat notifications
+     * @param builder StringBuilder
+     * @param tracker StyleTracker, keeps track of previous style
+     * @param style Style, the style of the current char
+     */
+    private fun acceptStyle(builder: StringBuilder, tracker: StyleTracker, style: Style?) {
+        if (style == null) return
+
+        val color = style.color
+        if (color != null && color.value != tracker.currentColor) {
+            builder.append('§')
+            builder.append(getFormatChar(color.value))
+            tracker.currentColor = color.value
+        }
+
+        if (style.isObfuscated && !tracker.isObfuscated) {
+            builder.append("§k")
+            tracker.isObfuscated = true
+        } else if (!style.isObfuscated && tracker.isObfuscated) {
+            tracker.isObfuscated = false
+        }
+
+        if (style.isBold && !tracker.isBold) {
+            builder.append("§l")
+            tracker.isBold = true
+        } else if (!style.isBold && tracker.isBold) {
+            tracker.isBold = false
+        }
+
+        if (style.isStrikethrough && !tracker.isStrikeThrough) {
+            builder.append("§m")
+            tracker.isStrikeThrough = true
+        } else if (!style.isStrikethrough && tracker.isStrikeThrough) {
+            tracker.isStrikeThrough = false
+        }
+
+        if (style.isUnderlined && !tracker.isUnderlined) {
+            builder.append("§n")
+            tracker.isUnderlined = true
+        } else if (!style.isUnderlined && tracker.isUnderlined) {
+            tracker.isUnderlined = false
+        }
+
+        if (style.isItalic && !tracker.isItalic) {
+            builder.append("§o")
+            tracker.isItalic = true
+        } else if (!style.isItalic && tracker.isItalic) {
+            tracker.isItalic = false
+        }
+    }
+
+    private fun getFormatChar(color: Int): Char {
+        for (format in ChatFormatting.values()) {
+            val tc = TextColor.fromLegacyFormat(format) ?: continue
+            if (tc.value == color) {
+                return format.toString()[1]
+            }
+        }
+
+        return '0'
+    }
+
+    @JvmStatic
+    fun formatTicks(tick: Int): String {
+        return Constants.DECIMAL_FORMAT.format(tick * Constants.TICK_DURATION)
+    }
+
+    @JvmStatic
+    fun capitaliseFirst(message: String): String {
+        val strippedMessage = message.trim()
+        if (strippedMessage.length < 2) return message
+        return strippedMessage.substring(0, 1).uppercase() + strippedMessage.substring(1).lowercase()
+    }
+}

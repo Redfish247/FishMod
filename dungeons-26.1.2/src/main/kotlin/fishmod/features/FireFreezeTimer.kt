@@ -1,0 +1,93 @@
+package fishmod.features
+
+import fishmod.utils.config.values.FishSettings
+import fishmod.utils.data.ItemUtil
+import fishmod.utils.rendering.RenderUtils
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents
+import net.fabricmc.fabric.api.event.player.UseItemCallback
+import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.player.Player
+import java.util.concurrent.ConcurrentHashMap
+
+/**
+ * Fire Freeze Staff timer — when you use the staff, nearby mobs are frozen for 5s.
+ * Renders a countdown floating at each frozen mob's hitbox center.
+ */
+object FireFreezeTimer {
+
+    private const val WAIT_MS = 5000L // cooldown/wait countdown before freeze
+    private const val FREEZE_MS = 10000L // freeze duration (10s)
+    private const val TOTAL_MS = WAIT_MS + FREEZE_MS
+    private const val RADIUS = 3.0 // Fire Freeze AOE is small (~2.5-3 blocks)
+
+    // entityId -> wall-clock ms when the staff was used (cast start)
+    private val frozen: MutableMap<Int, Long> = ConcurrentHashMap()
+
+    @JvmStatic
+    fun init() {
+        UseItemCallback.EVENT.register(UseItemCallback { player, world, hand ->
+            if (!FishSettings.fireFreezeTimerEnabled || hand != InteractionHand.MAIN_HAND) return@UseItemCallback InteractionResult.PASS
+            val mc = Minecraft.getInstance()
+            if (mc.player == null || mc.level == null) return@UseItemCallback InteractionResult.PASS
+            val stack = player.getItemInHand(hand)
+            if (stack == null || stack.isEmpty) return@UseItemCallback InteractionResult.PASS
+            if ("FIRE_FREEZE_STAFF" != ItemUtil.getId(stack)) return@UseItemCallback InteractionResult.PASS
+
+            val mcPlayer = mc.player!!
+            val start = System.currentTimeMillis()
+            val area = mcPlayer.boundingBox.inflate(RADIUS)
+            for (e in mc.level!!.getEntities(mcPlayer, area)) {
+                if (e is LivingEntity && e !is Player && e.isAlive
+                    && e.distanceToSqr(mcPlayer) <= RADIUS * RADIUS
+                ) {
+                    frozen[e.id] = start
+                }
+            }
+            InteractionResult.PASS
+        })
+
+        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(LevelRenderEvents.AfterTranslucentFeatures { ctx ->
+            if (!FishSettings.fireFreezeTimerEnabled || frozen.isEmpty() || ctx.levelState() == null) return@AfterTranslucentFeatures
+            val mc = Minecraft.getInstance()
+            if (mc.level == null) return@AfterTranslucentFeatures
+            val matrices = ctx.poseStack()
+            if (matrices == null) return@AfterTranslucentFeatures
+
+            val now = System.currentTimeMillis()
+            val cam = ctx.levelState().cameraRenderState.pos
+            matrices.pushPose()
+            matrices.translate(-cam.x, -cam.y, -cam.z)
+
+            val it = frozen.entries.iterator()
+            while (it.hasNext()) {
+                val en = it.next()
+                val elapsed = now - en.value
+                val e: Entity? = mc.level!!.getEntity(en.key)
+                if (elapsed >= TOTAL_MS || e == null || !e.isAlive) {
+                    it.remove()
+                    continue
+                }
+
+                val t: Component
+                if (elapsed < WAIT_MS) {
+                    // 5s cooldown/wait countdown with an hourglass.
+                    val secs = (WAIT_MS - elapsed) / 1000.0
+                    t = Component.literal("§e⌛ " + String.format("%.1fs", secs))
+                } else {
+                    // 10s freeze countdown with a snowflake.
+                    val secs = (TOTAL_MS - elapsed) / 1000.0
+                    val color = if (secs <= 2.0) "§c" else if (secs <= 5.0) "§b" else "§3"
+                    t = Component.literal(color + "❄ " + String.format("%.1fs", secs))
+                }
+                val y = e.y + e.bbHeight / 2.0
+                RenderUtils.renderText(ctx, matrices, t, e.x, y, e.z, 1.0f)
+            }
+            matrices.popPose()
+        })
+    }
+}

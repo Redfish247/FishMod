@@ -59,6 +59,18 @@ object DungeonWaypointStore {
         if (data.remove(roomKey) != null) save()
     }
 
+    /** Removes every waypoint tagged with [routeId] across all rooms. Returns how many were removed. */
+    @JvmStatic
+    fun removeRoute(routeId: String): Int {
+        var removed = 0
+        for (list in data.values) {
+            removed += list.count { it.routeId == routeId }
+            list.removeIf { it.routeId == routeId }
+        }
+        if (removed > 0) save()
+        return removed
+    }
+
     @JvmStatic
     fun allData(): MutableMap<String, MutableList<StoredWaypoint>> = data
 
