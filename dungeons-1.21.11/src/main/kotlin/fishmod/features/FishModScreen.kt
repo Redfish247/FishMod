@@ -2,7 +2,6 @@ package fishmod.features
 
 import fishmod.utils.config.Config
 import fishmod.utils.config.FishConfig
-import fishmod.cosmetic.NickState
 import fishmod.utils.config.values.Buttons
 import fishmod.utils.config.values.Dungeons
 import fishmod.utils.config.values.FishSettings
@@ -73,7 +72,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
     private fun buildCategories() {
         val general = Column("General", "gear")
         val dungeon = Column("Dungeon", "arch")
-        val cosmetics = Column("Cosmetics", "hanger")
         val party = Column("Party", "people")
         val visuals = Column("Visuals", "eye")
         val floor7 = Column("Floor 7", "arch")
@@ -260,80 +258,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
                 Consumer { v -> Dungeons.dupeClassPartyChat = v }))
             dungeon.features.add(f)
         }
-        // ===== Cosmetics =====
-        run {
-            val f = Feature("Name Color",
-                Supplier { NickState.isActive() },
-                Consumer { v -> if (!v) NickState.reset() else NickState.applyFromSettings() })
-            f.sub.add(LimitedInputSetting("Custom Name", "", 18,
-                Supplier { FishSettings.nickCustomName },
-                Consumer { v ->
-                    FishSettings.nickCustomName = v ?: ""
-                    if (NickState.isActive()) NickState.applyFromSettings()
-                }))
-            f.sub.add(DropdownSetting("Color Mode", "", arrayOf("GRADIENT", "SOLID"),
-                Supplier { FishSettings.nickColorMode },
-                Consumer { v -> FishSettings.nickColorMode = v; if (NickState.isActive()) NickState.applyFromSettings() }))
-            f.sub.add(ColorPickerSetting("Color", "",
-                Supplier { FishSettings.nickColorStart },
-                Consumer { v -> FishSettings.nickColorStart = v; if (NickState.isActive()) NickState.applyFromSettings() }))
-            f.sub.add(ConditionalColorPickerSetting("End Color", "",
-                Supplier { "GRADIENT".equals(FishSettings.nickColorMode, ignoreCase = true) },
-                Supplier { FishSettings.nickColorEnd },
-                Consumer { v -> FishSettings.nickColorEnd = v; if (NickState.isActive()) NickState.applyFromSettings() }))
-            f.sub.add(ToggleSetting("See Others", "",
-                Supplier { FishSettings.remoteNicksEnabled }, Consumer { v -> FishSettings.remoteNicksEnabled = v }))
-            cosmetics.features.add(f)
-        }
-        run {
-            val f = Feature("See Others' Items",
-                Supplier { FishSettings.remoteItemsEnabled },
-                Consumer { v ->
-                    FishSettings.remoteItemsEnabled = v
-                    if (v) fishmod.cosmetic.RemoteSync.forceSync()
-                    else fishmod.cosmetic.RemoteItems.clearAll()
-                })
-            cosmetics.features.add(f)
-        }
-        run {
-            val f = Feature("Customize", null, null)
-            f.sub.add(ButtonSetting("Open", "",
-                Runnable { MinecraftClient.getInstance().setScreen(ItemCustomizeScreen()) }))
-            cosmetics.features.add(f)
-        }
-        run {
-            val f = Feature("Nametag",
-                Supplier { FishSettings.nickPreviewEnabled }, Consumer { v -> FishSettings.nickPreviewEnabled = v })
-            f.sub.add(SliderDoubleSetting("Height", "",
-                Supplier { FishSettings.nickPreviewYOffset }, Consumer { v -> FishSettings.nickPreviewYOffset = v }, -1.5, 1.0))
-            cosmetics.features.add(f)
-        }
-        run {
-            val f = Feature("Player Size",
-                Supplier { FishSettings.playerSizeEnabled },
-                Consumer { v -> FishSettings.playerSizeEnabled = v; fishmod.cosmetic.PlayerSize.uploadOwn() })
-            f.sub.add(SliderDoubleSetting("Width (X)", "",
-                Supplier { FishSettings.playerSizeScaleX },
-                Consumer { v -> FishSettings.playerSizeScaleX = v; fishmod.cosmetic.PlayerSize.uploadOwn() },
-                fishmod.cosmetic.PlayerSize.MIN.toDouble(), fishmod.cosmetic.PlayerSize.MAX.toDouble()))
-            f.sub.add(SliderDoubleSetting("Height (Y)", "",
-                Supplier { FishSettings.playerSizeScaleY },
-                Consumer { v -> FishSettings.playerSizeScaleY = v; fishmod.cosmetic.PlayerSize.uploadOwn() },
-                fishmod.cosmetic.PlayerSize.MIN.toDouble(), fishmod.cosmetic.PlayerSize.MAX.toDouble()))
-            f.sub.add(SliderDoubleSetting("Depth (Z)", "",
-                Supplier { FishSettings.playerSizeScaleZ },
-                Consumer { v -> FishSettings.playerSizeScaleZ = v; fishmod.cosmetic.PlayerSize.uploadOwn() },
-                fishmod.cosmetic.PlayerSize.MIN.toDouble(), fishmod.cosmetic.PlayerSize.MAX.toDouble()))
-            f.sub.add(ToggleSetting("Share w/ All", "",
-                Supplier { FishSettings.playerSizeShared },
-                Consumer { v ->
-                    FishSettings.playerSizeShared = v
-                    if (v) { fishmod.cosmetic.PlayerSize.uploadOwn(); fishmod.cosmetic.RemoteSync.forceSync() }
-                    else { fishmod.cosmetic.PlayerSize.clearOwnShare(); fishmod.cosmetic.RemoteScales.clearAll() }
-                }))
-            cosmetics.features.add(f)
-        }
-
         // ===== Party =====
         run {
             val f = Feature("Party Commands", null, null)
@@ -434,9 +358,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
                 Supplier { FishSettings.explosiveShotAnnounceParty }, Consumer { v -> FishSettings.explosiveShotAnnounceParty = v }))
             visuals.features.add(f)
         }
-        visuals.features.add(Feature("Loadout Title",
-            Supplier { FishSettings.loadoutTitleEnabled }, Consumer { v -> FishSettings.loadoutTitleEnabled = v }))
-
         // ===== Floor 7 (ported from blade-addons) =====
         run {
             val f = Feature("Maxor Tick Timer",
@@ -512,7 +433,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
 
         columns.add(general)
         columns.add(dungeon)
-        columns.add(cosmetics)
         columns.add(party)
         columns.add(visuals)
         columns.add(floor7)
@@ -1755,10 +1675,8 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
             return when (name) {
                 "Mod Prefix" -> "Tag FishMod's chat output with a prefix"
                 "Inventory Buttons" -> "Clickable command buttons in your inventory"
-                "Auto Meow" -> "Auto-reply 'meow' when someone meows"
                 "Smart Copy Chat" -> "Right-click a chat line to copy it"
                 "Compact Tab" -> "Cleaner custom tab player list"
-                "Bridge Bot" -> "Relay Discord bridge messages"
                 "Chat Filter" -> "Hide selected chat spam"
                 "Explosive Shot" -> "Title with per-enemy damage"
                 "Dungeon Score" -> "Live S+ score tracker overlay"
@@ -1783,11 +1701,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
                 "Term Start Timer" -> "Countdown to terminals start"
                 "Section Progress" -> "Terminal section completed/total"
                 "Goldor Splits" -> "S1-S4 terminal split timers + total time"
-                "Name Color" -> "Recolor your username gradient"
-                "See Others' Items" -> "Render other users' item cosmetics"
-                "Customize" -> "Rename, dye & re-model your items"
-                "Nametag" -> "Show your own above-head nametag"
-                "Player Size" -> "Resize your model (render only)"
                 "Party Commands" -> "Dot-commands usable in party chat"
                 "Chat Channels" -> "Where dot-commands are allowed"
                 "Rarity Background" -> "Rarity-colored backing on all slots"
