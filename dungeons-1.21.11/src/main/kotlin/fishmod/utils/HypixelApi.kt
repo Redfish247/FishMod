@@ -51,7 +51,6 @@ object HypixelApi {
     @JvmField
     val CATA_OVERFLOW_XP_PER_LEVEL: Long = 200_000_000L
 
-    // ─── proxy config ─────────────────────────────────────────────────────────
     private const val PROXY_URL = "https://fishmod.redfish2471.workers.dev"
     private const val MOD_TOKEN = "fishmod123"
 
@@ -59,7 +58,6 @@ object HypixelApi {
         .connectTimeout(Duration.ofSeconds(10))
         .build()
 
-    // ─── persistent cache ──────────────────────────────────────────────────────
     private const val CACHE_TTL_MS = 30 * 60 * 1000L // 30 minutes
     /** lower-cased player name → UUID without dashes. Backed by an on-disk cache (see below). */
     @JvmField
@@ -68,13 +66,7 @@ object HypixelApi {
     @JvmField
     val dataTimestamp: MutableMap<String, Long> = ConcurrentHashMap()
 
-    // ─── persistent name→UUID cache ────────────────────────────────────────────
-    // A UUID never changes for an account and players rename only rarely, so name→UUID is cheap to keep
-    // on disk and saves a Mojang round-trip on every repeat lookup (party members, friends, etc.). Each
-    // entry carries the time it was written and expires after UUID_CACHE_TTL_MS, so a rename / recycle
-    // self-corrects within a bounded window — and the resolve that refreshes it is Mojang-authoritative
-    // (see resolveUuid), so we never re-introduce the stale-mirror bug. This does NOT touch the worker:
-    // name resolution hits Mojang, the worker is only used for the by-UUID stats fetch.
+    // On-disk cache of name->UUID; entries expire after UUID_CACHE_TTL_MS so renames self-correct.
     private const val UUID_CACHE_TTL_MS = 24 * 60 * 60 * 1000L // 24h
     private val uuidCachedAt: MutableMap<String, Long> = ConcurrentHashMap()
     @Volatile
@@ -298,7 +290,6 @@ object HypixelApi {
         @JvmField var magicalPower: Int = -1   // accessory_bag_storage.magical_power, –1 = unknown
     }
 
-    // ─── inventory / NBT helpers ──────────────────────────────────────────────
 
     private val STRIP_COLOR: Pattern = Pattern.compile("§.")
     private val ULTIMATE_PAT: Pattern = Pattern.compile("Ultimate ([A-Za-z ]+?) ([IVX]+)$")
@@ -308,7 +299,6 @@ object HypixelApi {
             if (!member.has("inventory")) return
             val inv = member.getAsJsonObject("inventory")
 
-            // Search main inv + echest for Ragnarock Axe / Terminator
             val mainItems = parseSlots(inv, "inv_contents")
             val echestItems = parseSlots(inv, "ender_chest_contents")
             val allItems = ArrayList<NbtCompound>(mainItems.size + echestItems.size)
@@ -521,14 +511,8 @@ object HypixelApi {
         fun onData(data: DungeonData)
     }
 
-    // ─── entry points ─────────────────────────────────────────────────────────
 
-    /**
-     * Silent Party Finder lookup — requires API key.
-     * Flow: Ashcon (UUID, fast/cached) → Hypixel profiles (stats).
-     * Falls back to Mojang for UUID if Ashcon fails.
-     * Always calls callback so pending is never stuck.
-     */
+    /** Silent Party Finder lookup: Ashcon for UUID (Mojang fallback) then Hypixel profiles; always calls back. */
     @JvmStatic
     fun getByNameSilent(ign: String, callback: DungeonDataCallback) {
         // Fast path: UUID already known (in-session or on-disk cache) — skip the name→UUID lookup.
@@ -588,16 +572,7 @@ object HypixelApi {
         }
     }
 
-    /**
-     * Resolves an IGN to a dash-less UUID, preferring Mojang's authoritative endpoint so name changes
-     * and recycled names resolve to whoever CURRENTLY owns the name. Ashcon / playerdb mirror Mojang
-     * but cache aggressively and can lag real name changes by days — so they're used only as a fallback
-     * for when Mojang itself can't answer (rate-limit / outage), never to override a Mojang answer.
-     *
-     * attempt: 0 = Mojang (authoritative) → 1 = Ashcon → 2 = playerdb. A definitive not-found from
-     * Mojang means "no account currently holds this name" — we stop there instead of asking the stale
-     * mirrors, which would happily hand back a recycled/old owner (the bug this ordering fixes).
-     */
+    /** Resolves IGN to UUID, preferring Mojang (authoritative) over Ashcon/playerdb to avoid stale-mirror rename bugs. */
     private fun resolveUuid(ign: String, attempt: Int, cb: java.util.function.Consumer<String?>) {
         if (attempt == 0) {
             val cached = getCachedUuid(ign)
@@ -626,9 +601,7 @@ object HypixelApi {
                 val code = resp.statusCode()
                 val uuid = if (code in 200..299) parseUuid(resp.body()) else null
                 if (uuid != null) { putUuid(ign, uuid); cb.accept(uuid); return@thenAccept }
-                // Only fall back to the mirrors when Mojang couldn't actually answer. A definitive
-                // not-found (404/400/empty-2xx) is authoritative — don't let a stale mirror resolve
-                // a recycled name to the wrong account.
+                // Only fall back to mirrors when Mojang itself couldn't answer; a clean not-found is authoritative.
                 val transientErr = code == 429 || code == 408 || code >= 500
                 if (attempt == 0 && !transientErr) { cb.accept(null); return@thenAccept }
                 resolveUuid(ign, next, cb)
@@ -667,7 +640,6 @@ object HypixelApi {
         fetchProfiles(mc, uuid, callback)
     }
 
-    // ─── internal ─────────────────────────────────────────────────────────────
 
     private fun parseDungeonData(uuidStr: String, member: JsonObject): DungeonData {
         val result = DungeonData()
@@ -684,9 +656,7 @@ object HypixelApi {
                     result.cataPbs[f] = extractFloorPb(cata, f)
             }
 
-            // Per-floor run counts + totalRuns
-            // Hypixel API: tier_completions[floor] = completions; times_played[floor] = attempts (incl. fails).
-            // master_catacombs typically only populates tier_completions, not times_played.
+            // tier_completions = completions; times_played = attempts including fails (master_catacombs only has the former).
             var totalRuns = 0L
             if (types.has("catacombs")) {
                 val dt = types.getAsJsonObject("catacombs")
@@ -831,10 +801,7 @@ object HypixelApi {
             .exceptionally { mc.send { Misc.addChatMessage(Text.literal("§cAPI request failed.")) }; null }
     }
 
-    /**
-     * Returns a user-friendly chat message if the proxy response is not parseable JSON
-     * (rate limits, Cloudflare error pages, etc.), or null if the body looks like JSON.
-     */
+    /** User-friendly message if the proxy response isn't parseable JSON, else null. */
     private fun friendlyProxyError(resp: HttpResponse<String>): String? {
         val code = resp.statusCode()
         val body = resp.body()
@@ -909,11 +876,7 @@ object HypixelApi {
         "personal_vault_contents", "talisman_bag", "wardrobe_contents", "fishing_bag", "potion_bag", "quiver", "candy_inventory_contents"
     )
 
-    /**
-     * Computes networth from the Hypixel profile (fetched via the proxy, which holds the API key)
-     * using the SkyHelper price list. Values liquid + items (base, recomb, enchants, hot-potato,
-     * master stars) + pets. An estimate — close to in-game, no extra hosting / SkyCrypt needed.
-     */
+    /** Computes networth via the proxy + SkyHelper price list: liquid + items + pets (estimate). */
     @JvmStatic
     fun getNetworth(mc: MinecraftClient, ign: String, cb: NetworthCallback) {
         CompletableFuture.runAsync {
@@ -962,9 +925,7 @@ object HypixelApi {
                     val bp = inv.getAsJsonObject("backpack_contents")
                     for (k in bp.keySet()) total += sumStorageNw(bp, k, prices)
                 }
-                // Accessory bag, fishing bag, potion bag, quiver, sacks bag live nested under
-                // bag_contents — NOT at the inventory top level. The accessory (talisman) bag
-                // is often several billion, so missing it badly undercounted networth.
+                // Accessory/fishing/potion/quiver/sacks bags live under bag_contents, not the inventory top level.
                 if (inv.has("bag_contents") && inv.get("bag_contents").isJsonObject) {
                     val bags = inv.getAsJsonObject("bag_contents")
                     for (k in bags.keySet()) total += sumStorageNw(bags, k, prices)
@@ -1014,10 +975,7 @@ object HypixelApi {
         return total
     }
 
-    /**
-     * Per-item modifier valuation, ported from SkyHelper-Networth's handler pipeline (non-cosmetic).
-     * Each modifier is wrapped in try/catch so one bad field never zeroes the whole item.
-     */
+    /** Per-item modifier valuation, ported from SkyHelper-Networth; each modifier is try/catch-isolated. */
     private fun itemValueNw(item: NbtCompound, prices: Map<String, Double>): Double {
         val ex = getExtras(item) ?: return 0.0
         val id = getItemId(item) ?: return 0.0
@@ -1393,11 +1351,7 @@ object HypixelApi {
     private val GEM_TYPES: Set<String> = java.util.Set.of(
         "RUBY", "AMBER", "SAPPHIRE", "JADE", "AMETHYST", "TOPAZ", "JASPER", "OPAL", "AQUAMARINE", "CITRINE", "ONYX", "PERIDOT")
 
-    /**
-     * Values applied gemstones in an item's `gems` compound (x1) PLUS gemstone-slot UNLOCK costs
-     * for Divan armor (x0.9 gemstoneChambers) and Crimson-family armor (x0.6 gemstoneSlots),
-     * replicating Gemstones.js.
-     */
+    /** Values applied gemstones plus gemstone-slot unlock costs (Divan/Crimson armor), per Gemstones.js. */
     private fun gemsValueNw(id: String?, ex: NbtCompound, meta: com.google.gson.JsonObject?, prices: Map<String, Double>): Double {
         val gemsEl = ex.get("gems") ?: return 0.0
         val gems = gemsEl.asCompound().orElse(null) ?: return 0.0
@@ -1551,12 +1505,7 @@ object HypixelApi {
         } catch (ignored: Exception) { return 0.0 }
     }
 
-    /**
-     * Values the Galatea/Foraging Attribute Shard system: loose captured shards
-     * (`member.shards.owned` → `SHARD_<TYPE>`) plus fused attribute stacks
-     * (`member.attributes.stacks` → `ATTRIBUTE_SHARD_<NAME>`). SkyHelper does not
-     * value this, so this is a market-resale estimate (shard count × current shard price).
-     */
+    /** Values Galatea attribute shards (owned + fused); SkyHelper doesn't value these, so this is an estimate. */
     private fun shardsValueNw(member: JsonObject, prices: Map<String, Double>): Double {
         var total = 0.0
         try {
@@ -1598,9 +1547,7 @@ object HypixelApi {
     private fun resolveUuidBlocking(ign: String): String? {
         val cached = getCachedUuid(ign)
         if (cached != null) return cached
-        // Mojang is authoritative for the CURRENT owner of a name. Only fall back to the (cache-laggy)
-        // Ashcon mirror when Mojang can't answer (rate-limit / outage) — never on a clean not-found,
-        // which would let a stale mirror resolve a recycled name to the wrong account.
+        // Mojang is authoritative; only fall back to the cache-laggy Ashcon mirror when Mojang can't answer.
         try {
             val req = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.mojang.com/users/profiles/minecraft/$ign"))
@@ -1800,13 +1747,7 @@ object HypixelApi {
         } catch (ignored: Exception) {}
     }
 
-    /**
-     * A shared location ping published by a FishMod user.
-     *
-     * Ported from the original Java `record PingData(...)`. Java callers may use record-style
-     * accessors, so this is a plain class with explicit accessor methods rather than a Kotlin
-     * data class (whose properties would compile to `getX()`-style accessors instead).
-     */
+    /** Ported from Java record PingData; plain class since Java callers use record-style accessors. */
     class PingData(
         private val uuidVal: String,
         private val nameVal: String,
@@ -1898,13 +1839,7 @@ object HypixelApi {
         } catch (e: Exception) { cb.accept(java.util.List.of()) }
     }
 
-    /**
-     * Aggregate reputation for a player: crowd-sourced up/down vote counts.
-     *
-     * Ported from the original Java `record RepData(String name, int up, int down)`. Java callers
-     * invoke record-style accessors `.up()` / `.down()` (see Reputation.java), so this is a plain
-     * class with explicit accessor methods rather than a Kotlin data class.
-     */
+    /** Ported from Java record RepData; plain class since Java callers use record-style accessors. */
     class RepData(
         private val nameVal: String,
         private val upVal: Int,
@@ -2039,16 +1974,11 @@ object HypixelApi {
 
     /** Result of a /sync poll: the server version, and (only when changed) the nick/item/scale maps. */
     fun interface SyncCallback {
-        /** version = current server version; nicks/items/scales null when nothing changed. */
+        /** null nicks/items/scales = nothing changed since last version. */
         fun onData(version: Long, nicks: Map<String, String>?, items: Map<String, String>?, scales: Map<String, String>?)
     }
 
-    /**
-     * Combined, version-gated poll. Sends the last-seen `version`; the worker returns just the
-     * version (nicks/items null) when nothing has changed, or both maps filtered to `uuids`
-     * when it has. Replaces the separate [fetchNicks]/fetchItems polls so the mod can
-     * refresh often while reading the full tables server-side only when something actually changed.
-     */
+    /** Version-gated poll: server returns just the version when unchanged, else version + full maps. */
     @JvmStatic
     fun fetchSync(uuidsNoDashes: Collection<String>?, version: Long, cb: SyncCallback) {
         if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.onData(version, null, null, null); return }
@@ -2304,7 +2234,6 @@ object HypixelApi {
         return "0.00"
     }
 
-    // ─── Active-pet XP (API-driven, replaces tab scraping + PetXpAutoDetect) ──────
 
     fun interface PetCallback { fun onData(p: PetInfo) }
 
@@ -2363,11 +2292,7 @@ object HypixelApi {
     private val BEASTMASTER_TIER: Map<String, Int> =
         java.util.Map.of("BRONZE", 30, "SILVER", 35, "GOLD", 40, "DIAMOND", 45)
 
-    /**
-     * Fetches the local player's ACTIVE pet (level + XP into level) from the Hypixel API and,
-     * when auto-detect is on, refreshes the pet-XP multipliers (taming/beastmaster/pet item/cookie).
-     * The API is the authoritative source — tab scraping broke and dungeons have no pet tab entry.
-     */
+    /** Fetches the local player's active pet and refreshes pet-XP multipliers if auto-detect is on. */
     @JvmStatic
     fun getActivePet(mc: MinecraftClient, cb: PetCallback) {
         if (mc.player == null) { cb.onData(PetInfo()); return }
@@ -2533,10 +2458,8 @@ object HypixelApi {
         }
     }
 
-    // ─── Skyblock level + farming level (profiles endpoint) ───────────────────
 
-    // General SkyBlock skill XP table (cumulative XP to reach each level, 0..60). NOT the Taming
-    // table (that one differs). Used for the Farming skill level.
+    // General SkyBlock skill XP table (cumulative), used for the Farming skill level; differs from the Taming table.
     private val SKILL_XP = LongArray(61)
     init {
         val per = intArrayOf(
@@ -2578,8 +2501,7 @@ object HypixelApi {
         }
     }
 
-    // The five crystals placed in the Crystal Nucleus. A run places all 5, so the (uncapped) run
-    // count = how many times each was placed → min of total_placed across them.
+    // The five Crystal Nucleus crystals; run count = min total_placed across them (uncapped).
     private val NUCLEUS_CRYSTALS =
         arrayOf("amber_crystal", "amethyst_crystal", "jade_crystal", "sapphire_crystal", "topaz_crystal")
 
@@ -2717,7 +2639,6 @@ object HypixelApi {
         }
     }
 
-    // ─── Worm / Scatha bestiary ────────────────────────────────────────────────
 
     /** Worm + Scatha bestiary kills and the (combined) Worm bestiary tier. */
     class WormStats {
@@ -2730,8 +2651,7 @@ object HypixelApi {
         @JvmField var found: Boolean = false // true if the profile's bestiary data was located
     }
 
-    // Hypixel "Worm" bestiary family (Crystal Hollows) — combines Worm + Scatha kills into one tier.
-    // Bracket 5 thresholds truncated at the family's 400-kill cap → 15 tiers. Source: Hypixel bestiary.
+    // Hypixel's Worm bestiary family combines Worm+Scatha kills; bracket 5 truncates at the 400-kill cap (15 tiers).
     private val WORM_BESTIARY_BRACKET =
         intArrayOf(1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 60, 120, 200, 300, 400)
 
@@ -2753,12 +2673,7 @@ object HypixelApi {
 
     fun interface WormStatsCallback { fun onData(data: WormStats) }
 
-    /**
-     * Fetches the player's Worm + Scatha bestiary kills from member.bestiary.kills and computes the
-     * Worm bestiary tier. Keys are matched as worm_<n> / scatha_<n> so the Crystal Hollows Worm is
-     * not confused with other "worm" families (water_worm, pest_worm, flaming_worm, …) and the lookup
-     * survives a future bracket-number change.
-     */
+    /** Fetches Worm + Scatha bestiary kills and computes the combined Worm bestiary tier. */
     @JvmStatic
     fun getWormStats(mc: MinecraftClient, ign: String, cb: WormStatsCallback) {
         CompletableFuture.runAsync {

@@ -13,16 +13,7 @@ import java.util.Base64
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
-/**
- * GSON-backed store of every user-placed dungeon waypoint, keyed by
- * [fishmod.utils.dungeon.map.RoomSignature.key] (rotation-normalized). Same load-on-static-init,
- * save-on-mutation pattern as `RoomSignatureDB`.
- *
- * Stored in config/fishmod-dungeon-waypoints.json as `{ signatureKey: [ StoredWaypoint, ... ] }`.
- *
- * Ported from a Java class with only static members — a Kotlin `object` with `@JvmStatic` on every
- * public member so Java call sites (e.g. `DungeonWaypointStore.get(...)`) keep working unchanged.
- */
+/** GSON-backed store of user-placed dungeon waypoints, keyed by rotation-normalized RoomSignature; stored in config/fishmod-dungeon-waypoints.json. */
 object DungeonWaypointStore {
 
     private const val FILE_PATH = "config/fishmod-dungeon-waypoints.json"

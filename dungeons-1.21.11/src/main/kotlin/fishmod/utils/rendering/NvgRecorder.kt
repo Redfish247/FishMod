@@ -4,14 +4,7 @@ import org.lwjgl.nanovg.NVGColor
 import org.lwjgl.nanovg.NVGPaint
 import org.lwjgl.nanovg.NanoVG
 
-/**
- * Records draw commands issued while FishModScreen.render() populates the vanilla
- * GuiRenderState, then replays them against the real NanoVG context later in the frame (see
- * GameRendererNvgMixin / FishModScreen.paintNvgOverlay). NanoVG can't draw immediately during
- * render() since that call only builds a deferred descriptor, not immediate GL — see the plan's
- * timing finding. Static (not instance state) because the Setting subclasses that call into this
- * are static nested classes with no outer-FishModScreen reference.
- */
+/** Records draw commands from FishModScreen.render() and replays them against NanoVG later in the frame, since render() only builds a deferred descriptor, not immediate GL. */
 object NvgRecorder {
 
     private val commands = ArrayList<Runnable>()

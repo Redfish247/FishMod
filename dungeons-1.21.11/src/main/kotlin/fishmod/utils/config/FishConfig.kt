@@ -12,10 +12,7 @@ import fishmod.utils.dungeon.Phase
 import fishmod.utils.dungeon.Section
 import fishmod.utils.dungeon.Split
 
-/**
- * Separate config manager for FishMod-specific settings.
- * Stored in config/fishmod-settings.json, independent of blade-addons config.
- */
+/** Separate config manager for FishMod-specific settings; stored in config/fishmod-settings.json. */
 object FishConfig {
 
     @JvmField

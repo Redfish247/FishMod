@@ -48,14 +48,7 @@ object TextUtil {
         }
     }
 
-    /**
-     * Grabs the color codes that are missing to
-     * make it more convenient to use it in for example
-     * chat notifications
-     * @param builder StringBuilder
-     * @param tracker StyleTracker, keeps track of previous style
-     * @param style Style, the style of the current char
-     */
+    /** Appends the color codes missing between the tracked style and the current char's style. */
     private fun acceptStyle(builder: StringBuilder, tracker: StyleTracker, style: Style?) {
         if (style == null) return
 

@@ -169,21 +169,7 @@ object RenderUtils {
         renderLineTo(context, matrices, consumer, pos.x, pos.y, pos.z, color)
     }
 
-    /**
-     * Six independent quads (24 vertices) — one per face, each walked around its perimeter
-     * (not a Z-order/diagonal split). The two previous attempts here (34- and 14-vertex "triangle
-     * strip" layouts) were solving the wrong problem: `RenderPipelines.DEBUG_FILLED_BOX`'s
-     * snippet actually declares `VertexFormat.Mode.QUADS`, not `TRIANGLE_STRIP` — every
-     * run of 4 vertices is one independent quad, no bridging between faces needed or wanted. Feeding
-     * it strip-shaped data (shared vertices, degenerate bridge pairs) is exactly what produced the
-     * corrupted "bowtie"/zigzag shapes, since the GPU was grouping 4-vertex chunks of that strip data
-     * as unrelated quads instead of walking it as a continuous strip. Verified programmatically:
-     * each quad's 2 implied triangles are coplanar and non-degenerate, and all 6 faces are covered
-     * exactly once for a total surface area equal to a unit cube's.
-     *
-     * Corners: A=(x1,y1,z1) B=(x2,y1,z1) C=(x1,y2,z1) D=(x2,y2,z1)
-     *          E=(x1,y1,z2) F=(x2,y1,z2) G=(x1,y2,z2) H=(x2,y2,z2)
-     */
+    /** Six independent quads (24 vertices), one per face — DEBUG_FILLED_BOX's pipeline is VertexFormat.Mode.QUADS, not TRIANGLE_STRIP, so strip-shaped data produced corrupted bowtie shapes. */
     private fun drawFilledBox(
         matrices: MatrixStack, consumer: VertexConsumer,
         x1: Double, y1: Double, z1: Double,

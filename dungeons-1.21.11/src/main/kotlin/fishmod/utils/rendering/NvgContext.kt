@@ -6,13 +6,7 @@ import org.lwjgl.system.MemoryUtil
 import java.io.IOException
 import java.nio.ByteBuffer
 
-/**
- * Owns the single NanoVG context used by FishModScreen. Created lazily on first use (not at
- * mod init) since GL-context timing relative to Fabric's ModInitializer entrypoint isn't
- * guaranteed, whereas FishModScreen's only construction site always runs post-boot on the
- * render thread. Lives for the process lifetime — Minecraft never recreates its GL context,
- * so there's nothing to tear down.
- */
+/** Owns FishModScreen's single NanoVG context, created lazily on first use since GL-context timing at mod init isn't guaranteed. Lives for the process lifetime. */
 object NvgContext {
 
     const val FONT_NAME: String = "inter"

@@ -75,9 +75,7 @@ object Dungeons {
     @ConfigValue @JvmField var tankColor: Int = 0xff00aa00.toInt()
 
     @ConfigValue @JvmField var mageColor: Int = 0xff55ffff.toInt()
-    // NOTE: 0x... values above overflow Int range as positive literals, so they are written
-    // as Long hex literals narrowed via .toInt() to reproduce the exact same 32-bit bit pattern
-    // Java's `int` hex literal produced.
+    // 0x... values above overflow Int as positive literals, so they're written as Long hex narrowed via .toInt() to match Java's bit pattern.
 
     @ConfigValue @JvmField var InvincibilityDuration: Boolean = false
 

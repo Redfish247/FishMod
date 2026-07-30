@@ -4,11 +4,7 @@ import net.hypixel.modapi.HypixelModAPI
 import net.hypixel.modapi.packet.impl.clientbound.ClientboundPartyInfoPacket
 import net.hypixel.modapi.packet.impl.serverbound.ServerboundPartyInfoPacket
 
-/**
- * FishMod-exclusive party tracker. Queries Hypixel's Mod API directly with
- * no minimum delay, so the state is always fresh — unlike blade's PartyUtil
- * which caches for 1 minute and returns stale data after leaving a party.
- */
+/** FishMod-exclusive party tracker; queries Hypixel's Mod API with no delay, unlike blade's PartyUtil which caches for 1 minute. */
 object FishPartyTracker {
 
     private var inParty = false

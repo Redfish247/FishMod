@@ -163,8 +163,7 @@ object Section {
             Events.ON_TERMINAL.invoke { terminalEvent -> terminalEvent.onComplete(name, action, objective, currentCompleted, totalNeeded) }
 
             if (Floor7.terminalTimeStamps) {
-                //have to do it like this because for some reason they have the color in the
-                //Style object and not in the string literal
+                // color lives in the Style object, not the string literal
                 val texts = message.siblings
                 if (texts.isNotEmpty()) {
                     Misc.addChatMessage(
@@ -197,7 +196,6 @@ object Section {
                 }
             }
         } else if (string == "The Core entrance is opening!") {
-            //so in "goldor tunnel" can be shown after terms are done
             currentSection = 5
             endAllSections()
             Debug.sendDebugMessage(Text.literal("Core section"))
@@ -255,14 +253,8 @@ object Section {
         }
     }
 
-    // Rendered explicitly via F7Huds.renderHud (HudRenderCallback in FishModInit) — the proven path
-    // every other FishMod HUD uses — so the condition-supplier is forced false to keep
-    // practical-config's HudElementRegistry auto-render (unreliable here) from double-drawing it.
-    //
-    // Default position deliberately not (0,0): that's also Phase.splitTimer's default, and
-    // keepOnScreen's off-screen check treats (0,0) as "already on screen" so it never relocates —
-    // the two panels would otherwise silently render on top of each other the first time both are
-    // visible at once (Terminals/Goldor phase), which is exactly what happened before this fix.
+    // Rendered explicitly via F7Huds.renderHud, so auto-render is forced false to avoid double-drawing.
+    // Default position isn't (0,0) since that collides with Phase.splitTimer's default (keepOnScreen treats (0,0) as already on-screen and never relocates it).
     @ConfigValue @JvmField
     var terminalSplits: HUDComponent = HUDComponent(
         10.0, 154.0, SPLIT_LENGTH, 50, 1f, "Term splits", { false }, Section::render, { enableTerminalSplits }

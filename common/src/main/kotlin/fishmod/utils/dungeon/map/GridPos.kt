@@ -1,19 +1,6 @@
 package fishmod.utils.dungeon.map
 
-/**
- * A cell in the dungeon's fixed 6x6 room grid, in half-unit coordinates (0..10): room-quadrant
- * cells sit at even (x, z); door/connector cells sit at odd/even or even/odd. Unlike earlier
- * versions of this class, grid coordinates are no longer derived from the player's world position
- * at all — the whole grid is indexed purely off the map's own pixel data (see MapReader), matching
- * how Odin (github.com/odtheking/Odin) does it. That sidesteps needing any correspondence between
- * world coordinates and map pixel space, which turned out to be the source of miscalibration.
- *
- * Ported from the original Java `record GridPos(int x, int z)`. Java callers invoke the record-style
- * accessors `.x()` / `.z()` (e.g. DungeonGrid, RoomSignature, MapReader), so this is a plain class
- * with explicit `x()`/`z()` methods rather than a Kotlin data class (whose `val x`/`val z` properties
- * would instead compile to `getX()`/`getZ()`, breaking those call sites) — equals/hashCode/toString
- * are implemented by hand to match record semantics since GridPos is used as a HashMap key.
- */
+/** A cell in the dungeon's 6x6 room grid (half-unit coords 0..10, room cells at even x/z), indexed purely from map pixel data (see MapReader), never world position. Plain class (not data class) with explicit x()/z() so Java call sites keep using record-style accessors. */
 class GridPos(private val xCoord: Int, private val zCoord: Int) {
 
     fun x(): Int = xCoord

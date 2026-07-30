@@ -4,10 +4,7 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.minecraft.client.MinecraftClient
 import net.minecraft.text.Text
 
-/**
- * Gate for developer-only debug commands. Only the player whose Minecraft UUID
- * appears in [DEV_UUIDS] can run them; everyone else sees a friendly refusal.
- */
+/** Gate for developer-only debug commands; only UUIDs in DEV_UUIDS can run them. */
 object DevOnly {
 
     /** Allowed dev UUIDs (no dashes, lowercase). */

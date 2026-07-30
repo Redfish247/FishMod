@@ -3,11 +3,7 @@ package fishmod.utils
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.text.Text
 
-/**
- * FishMod chat output with the configurable mod prefix. Lives in a FishMod-unique class so it is
- * NOT shadowed by blade-addons' copy of fishmod.utils.Misc (which lacks these methods).
- * Output still goes through Misc.addChatMessage, which exists in both jars.
- */
+/** FishMod chat output with the configurable mod prefix; kept out of Misc so blade-addons' copy can't shadow it. */
 object FishMsg {
 
     /** Formatted prefix, e.g. "§b§lFM §8> §r" (configurable, <=10 chars, via FishSettings.modPrefix). */

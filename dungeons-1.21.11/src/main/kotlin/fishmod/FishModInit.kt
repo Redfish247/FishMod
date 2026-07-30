@@ -347,12 +347,9 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.M7LeverWaypoints.init()
         fishmod.features.dungeon.DungeonWaypoints.init()
         fishmod.features.dungeon.StarredMobHighlight.init()
-        // Floor 7 boss timers (ported from blade-addons): Maxor/Storm/Goldor tick timers, crystal
-        // spawn, term start, section progress, storm-crushed. HUDs auto-render via the practical
-        // config system (F7Huds registered with FishConfig); register each for the Edit-HUD dragger.
+        // Floor 7 boss timers (ported from blade-addons); HUDs self-register with FishConfig for the Edit-HUD dragger.
         fishmod.features.dungeon.f7.F7Huds.init()
-        // Inventory command buttons (ported 1:1 from blade-addons) — touch the class so its 7 buttons
-        // self-register; commands are edited in /fm → General → Inventory Buttons.
+        // Inventory command buttons (ported from blade-addons); touching the class makes its 7 buttons self-register.
         fishmod.utils.config.values.Buttons.init()
         FishHudEditor.register("Maxor Tick Timer", fishmod.features.dungeon.f7.F7Huds.maxorTickTimer)
         FishHudEditor.register("Crystal Spawn Time", fishmod.features.dungeon.f7.F7Huds.crystalSpawnTime)
@@ -366,8 +363,7 @@ class FishModInit : ModInitializer {
         FishHudEditor.register("Term Start Timer", fishmod.features.dungeon.f7.F7Huds.termStartTimer)
         FishHudEditor.register("Section Progress", fishmod.features.dungeon.f7.F7Huds.sectionProgress)
         FishHudEditor.register("Goldor Splits", Section.terminalSplits)
-        // Dungeon class detection (own class from the "stats are doubled" message + tab list) and the
-        // class-colored boots feature that depends on it.
+        // Dungeon class detection (from the "stats are doubled" message + tab list) feeds the class-colored boots.
         fishmod.utils.dungeon.DungeonClass.init()
         fishmod.features.ClassColoredBoots.init()
         fishmod.features.dungeon.DupeClassDetector.init()
@@ -422,7 +418,7 @@ class FishModInit : ModInitializer {
                         Constants.SUCCESS
                     }
             )
-            // ── Party alias commands ──────────────────────────────────────────
+            // Party alias commands
             dispatcher.register(
                 ClientCommandManager.literal("pk")
                     .then(
@@ -479,7 +475,6 @@ class FishModInit : ModInitializer {
                             }
                     )
             )
-            // ─────────────────────────────────────────────────────────────────
 
             dispatcher.register(ClientCommandManager.literal("fmpet").executes { context ->
                 if (fishmod.utils.DevOnly.deny(context.source)) return@executes Constants.SUCCESS
@@ -748,7 +743,7 @@ class FishModInit : ModInitializer {
                 )
             )
 
-            // ── Local lookup /commands (native tab-complete; result shown in your own chat) ──
+            // Local lookup /commands (native tab-complete; result shown in your own chat)
             val playerSuggest = SuggestionProvider<FabricClientCommandSource> { c, b ->
                 val mc = MinecraftClient.getInstance()
                 if (mc.networkHandler != null) {
@@ -769,9 +764,7 @@ class FishModInit : ModInitializer {
                 b.buildFuture()
             }
 
-            // ── Party-action name-list management for .kick/.warp/.transfer/.promote/.demote ──
-            // /fmcmd whitelist|blacklist [add|remove|list] <name> — manages FishSettings.pcPartyActionsWhitelist/
-            // Blacklist; the "Who Can Trigger" dropdown in /fm > Party > Party Commands picks which list applies.
+            // /fmcmd whitelist|blacklist [add|remove|list] <name> manages the pcPartyActionsWhitelist/Blacklist settings.
             dispatcher.register(
                 ClientCommandManager.literal("fmcmd")
                     .then(
@@ -881,8 +874,7 @@ class FishModInit : ModInitializer {
                             )
                     )
             )
-            // /crtc [name] [class] [level] — XP for one class to reach a level (default 50).
-            // Smart-parses in PartyCommandHandler: a leading class arg means "self".
+            // /crtc [name] [class] [level]; PartyCommandHandler smart-parses a leading class arg as "self".
             val classSuggest = SuggestionProvider<FabricClientCommandSource> { _, b ->
                 val rem = b.remaining.lowercase()
                 for (cl in arrayOf("healer", "mage", "berserk", "archer", "tank"))
@@ -920,9 +912,7 @@ class FishModInit : ModInitializer {
             )) {
                 dispatcher.register(ClientCommandManager.literal(name).executes { c -> runLocalLookup(name, null, null) })
             }
-            // /warp — bare-form runs the local party action; with an argument, forward to
-            // Hypixel's server-side /warp <dest> so the client command doesn't shadow it
-            // with "Incorrect argument for command at position 5: warp <--[HERE]".
+            // /warp with no arg runs the local party action; with an arg, forward to Hypixel's server-side /warp.
             dispatcher.register(
                 ClientCommandManager.literal("warp")
                     .executes { c -> runLocalLookup("warp", null, null) }
@@ -931,9 +921,7 @@ class FishModInit : ModInitializer {
                             .executes { c ->
                                 val dest = StringArgumentType.getString(c, "dest")
                                 val mc = MinecraftClient.getInstance()
-                                // Send the command packet DIRECTLY, bypassing Fabric's client command
-                                // dispatcher — otherwise it re-matches our /warp literal and infinitely
-                                // recurses into this same lambda, blowing the stack.
+                                // Send the packet directly, bypassing Fabric's dispatcher, or /warp re-matches and recurses infinitely.
                                 if (mc.player != null && mc.player!!.networkHandler != null)
                                     mc.player!!.networkHandler.sendPacket(CommandExecutionC2SPacket("warp $dest"))
                                 Constants.SUCCESS
@@ -942,10 +930,7 @@ class FishModInit : ModInitializer {
             )
         })
 
-        // ── Override OdinClient's /cata ───────────────────────────────────────
-        // Both mods register a client-side /cata; Brigadier hands the executes() to whoever
-        // registers LAST, which isn't deterministic at init. Re-register ours on each server
-        // join — that runs after every mod's init-time registration, so ours wins.
+        // Both mods register a client-side /cata; Brigadier honors whoever registers last, so re-register on each join to win.
         ClientPlayConnectionEvents.JOIN.register(ClientPlayConnectionEvents.Join { handler, sender, client ->
             val d = ClientCommandManager.getActiveDispatcher() ?: return@Join
             try {
@@ -962,18 +947,13 @@ class FishModInit : ModInitializer {
         })
 
 
-        // ── Warp Map HUD + click detection ───────────────────────────────────
-        // HudRenderCallback.EVENT.register((ctx, tickCounter) -> WarpMapFeature.renderHud(ctx, tickCounter));
-        // ClientTickEvents.END_CLIENT_TICK.register(WarpMapFeature::tickClickDetection);
+        // Warp Map HUD + click detection (disabled)
         HudRenderCallback.EVENT.register(HudRenderCallback { ctx, tickCounter -> SoulflowHud.renderHud(ctx, tickCounter) })
         HudRenderCallback.EVENT.register(HudRenderCallback { ctx, tickCounter -> PetHud.renderHud(ctx, tickCounter) })
-        // Rarity background is drawn behind items via DrawContextMixin (hotbar) + INVENTORY_SLOT_BEFORE
-        // (inventory) — see ItemRarityHotbar.init(). No HudRenderCallback (that draws over the items).
+        // Rarity background is drawn via DrawContextMixin/INVENTORY_SLOT_BEFORE, not HudRenderCallback (which draws over items).
         HudRenderCallback.EVENT.register(HudRenderCallback { ctx, tickCounter -> CooldownOverlay.renderHotbar(ctx, tickCounter) })
         HudRenderCallback.EVENT.register(HudRenderCallback { ctx, _ -> fishmod.features.BossBarFeature.renderHud(ctx) })
-        // Splits panel + Maxor/Storm/Terminals split-time HUDs. Rendered here (not via practical-config's
-        // HudElementRegistry auto-render, which doesn't fire reliably) — their condition-suppliers are
-        // forced false in Phase so this is the single render path.
+        // Splits panel + F7 split-time HUDs are rendered here since practical-config's auto-render doesn't fire reliably.
         HudRenderCallback.EVENT.register(HudRenderCallback { ctx, _ -> Phase.renderHud(ctx) })
         HudRenderCallback.EVENT.register(HudRenderCallback { ctx, _ -> fishmod.features.dungeon.f7.F7Huds.renderHud(ctx) })
         HudRenderCallback.EVENT.register(HudRenderCallback { ctx, _ -> fishmod.features.dungeon.DungeonWaypoints.renderOverlay(ctx) })
@@ -982,7 +962,7 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.DungeonScore.init()
         fishmod.utils.SkyblockItems.initAsync()
 
-        // ── PB Pace (live delta vs personal-best splits) ─────────────────────
+        // PB Pace (live delta vs personal-best splits)
         HudRenderCallback.EVENT.register(HudRenderCallback { ctx, tickCounter -> fishmod.features.PbPaceHud.renderHud(ctx, tickCounter) })
         FishHudEditor.register(
             "PB Pace",
@@ -1013,11 +993,7 @@ class FishModInit : ModInitializer {
             })
         })
 
-        // Always init FishMod's own framework. (Pre-rename this was skipped when blade-addons was
-        // present because the classes were shared as blade.addon.*; after renaming to fishmod.* they
-        // are separate, so FishMod must initialize its own — otherwise Location/Config/Keybinds/etc.
-        // never run and features like the warp map silently break.) Each init is guarded so a single
-        // duplicate-registration clash with blade-addons can't take down the whole entrypoint.
+        // Always init FishMod's own framework (separate namespace from blade-addons since the fishmod.* rename); each init is guarded so one clash can't take down the entrypoint.
         safeInit("FolderUtility") { FolderUtility.init() }
         safeInit("Components") { Components.init() }
         safeInit("Config") { Config.manager.load() }

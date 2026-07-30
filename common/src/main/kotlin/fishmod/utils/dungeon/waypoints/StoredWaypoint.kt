@@ -1,17 +1,6 @@
 package fishmod.utils.dungeon.waypoints
 
-/**
- * A single waypoint as persisted in [DungeonWaypointStore]. Position is stored
- * room-tile-relative (offset from the owning grid tile's 32x32 footprint center) and in the room's
- * CANONICAL orientation (rotation index 0 of [fishmod.utils.dungeon.map.RoomSignature]) — see
- * [DungeonWaypointStore] for the rotate-in/rotate-out convention used to make a waypoint set on
- * one instance of a room replay correctly on a later, differently-rotated instance of the same room.
- *
- * Fields are `@JvmField` plain mutable fields (not Kotlin properties with getters) so that:
- *  - Java call sites keep using direct field access (e.g. `w.halfX`, `canonical.x`) unchanged.
- *  - Gson's default reflection-based (de)serialization keeps working exactly as it did against the
- *    original Java class's public fields.
- */
+/** A waypoint persisted in [DungeonWaypointStore], stored room-tile-relative in the room's canonical (rotation 0) orientation; `@JvmField` plain fields keep Java call sites and Gson reflection working unchanged. */
 class StoredWaypoint() {
     @JvmField var x: Double = 0.0
     @JvmField var y: Double = 0.0

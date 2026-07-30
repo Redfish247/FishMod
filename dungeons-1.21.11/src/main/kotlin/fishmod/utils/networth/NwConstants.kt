@@ -1,9 +1,6 @@
 package fishmod.utils.networth
 
-/**
- * Ported verbatim from SkyHelper-Networth constants (applicationWorth.js, misc.js, reforges.js,
- * prestiges.js). These drive the per-modifier multipliers and lookups used by the networth calc.
- */
+/** Ported verbatim from SkyHelper-Networth constants; drives the per-modifier multipliers/lookups used by the networth calc. */
 object NwConstants {
 
     // ---- APPLICATION_WORTH (applicationWorth.js) ----

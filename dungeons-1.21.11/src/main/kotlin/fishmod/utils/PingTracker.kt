@@ -1,13 +1,6 @@
 package fishmod.utils
 
-/**
- * Live ping (RTT) from the vanilla ping protocol. During play, Minecraft's own `PingMeasurer`
- * periodically sends a ping request (the value that drives the F3 ping graph); the server replies
- * with a `PingResultS2CPacket` that echoes the `startTime` we sent. We catch that pong on
- * the network channel and compute `now - startTime` for a true client->server->client round trip
- * — the same approach Odin uses, and accurate end-to-end even on proxied/anycast servers like Hypixel
- * (unlike a TCP-edge probe or a clock-skew estimate, which can read far too low).
- */
+/** Live ping (RTT): catches the vanilla PingResultS2CPacket pong and computes now - startTime for a true round trip, accurate even on proxied servers like Hypixel. */
 object PingTracker {
 
     @Volatile

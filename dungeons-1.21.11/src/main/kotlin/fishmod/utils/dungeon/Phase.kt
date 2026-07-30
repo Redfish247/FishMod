@@ -109,7 +109,6 @@ object Phase {
                 Events.ON_PHASE_CHANGE.invoke(PhaseEvent::onPhaseChange)
             }
 
-            //just for starting the run
             if (currentSplit.started() && currentPhase == -1) {
                 currentPhase = i
                 Events.ON_PHASE_CHANGE.invoke(PhaseEvent::onPhaseChange)
@@ -207,10 +206,7 @@ object Phase {
         return splits[index].getRealTime()
     }
 
-    // Splits panel. Rendered explicitly via Phase.renderHud (HudRenderCallback in FishModInit) — the
-    // proven path every other FishMod HUD uses — so its condition-supplier is forced false to keep
-    // practical-config's HudElementRegistry auto-render (unreliable here) from double-drawing it.
-    // (The per-phase Maxor/Storm/Terminals timers live in the Floor 7 tab as F7Huds tick timers.)
+    // Splits panel rendered explicitly via Phase.renderHud, so auto-render is forced false to avoid double-drawing.
     @ConfigValue @JvmField
     var splitTimer: HUDComponent = HUDComponent(0.0, 0.0, SPLIT_LENGTH, 100, 1f, "Splits",
         { false },

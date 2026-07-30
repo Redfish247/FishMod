@@ -8,13 +8,7 @@ import java.io.FileReader
 import java.io.FileWriter
 import java.lang.reflect.Type
 
-/**
- * Tracks your personal split times across runs and provides averages
- * for the EST display in the split timer.
- *
- * Stored in config/fishmod-runs.json as:
- * { "F7": { "Entrance": [45.2, 42.1, ...], "Blood Open": [...] }, ... }
- */
+/** Tracks personal split times across runs for the EST display; stored in config/fishmod-runs.json. */
 object RunHistory {
 
     private const val MAX_RUNS = 30
@@ -32,10 +26,7 @@ object RunHistory {
         load()
     }
 
-    /**
-     * Save raw split times (name → seconds) without depending on Split class.
-     * Used by FishEstTotal which avoids blade's Split to prevent classloader conflicts.
-     */
+    /** Saves raw split times without depending on Split (avoids a classloader conflict with blade's Split). */
     @JvmStatic
     fun saveSplitTimes(floor: String?, times: Map<String, Double>?) {
         if (floor == null || times == null || times.isEmpty()) return
@@ -51,9 +42,7 @@ object RunHistory {
         if (anyRecorded) save()
     }
 
-    /**
-     * Call this when a run completes. Saves every ended split's real time.
-     */
+    /** Call when a run completes; saves every ended split's real time. */
     @JvmStatic
     fun saveSplits(floor: String?, splits: List<Split>?) {
         if (floor == null || splits == null || splits.isEmpty()) return
@@ -76,9 +65,7 @@ object RunHistory {
         if (anyRecorded) save()
     }
 
-    /**
-     * Returns the personal average for a split, or -1 if no data yet.
-     */
+    /** Returns the personal average for a split, or -1 if no data yet. */
     @JvmStatic
     fun getPersonalAvg(floor: String?, splitName: String?): Double {
         if (floor == null || splitName == null) return -1.0

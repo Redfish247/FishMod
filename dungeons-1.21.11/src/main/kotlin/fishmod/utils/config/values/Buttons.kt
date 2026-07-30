@@ -3,11 +3,7 @@ package fishmod.utils.config.values
 import config.practical.manager.ConfigValue
 import fishmod.features.other.InventoryButton
 
-/**
- * Config + button instances for the inventory command buttons (1:1 port of blade-addons' Buttons).
- * The seven [InventoryButton]s sit in the empty corners of the survival inventory GUI; a button
- * only renders when its command string is non-empty. Registered with FishConfig so the commands persist.
- */
+/** Inventory command buttons (ported from blade-addons); the seven buttons sit in the survival inventory GUI's empty corners. */
 object Buttons {
 
     /** Master toggle — when off, nothing renders and clicks pass through (off by default). */
@@ -43,8 +39,7 @@ object Buttons {
     @JvmField
     var command7: String = ""
 
-    // Same fixed layout as blade-addons: 1-3 down the left of the player model, 4-5 top-right,
-    // 6-7 bottom-right. Constructed on class-load so they self-register with InventoryButton.
+    // Same fixed layout as blade-addons; constructed on class-load so they self-register with InventoryButton.
     @JvmField
     val button1: InventoryButton = InventoryButton(77, 5) { command1 }
     @JvmField

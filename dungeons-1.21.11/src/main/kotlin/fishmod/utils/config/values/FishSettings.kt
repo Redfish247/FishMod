@@ -2,10 +2,7 @@ package fishmod.utils.config.values
 
 import config.practical.manager.ConfigValue
 
-/**
- * Settings unique to FishMod — lives only in FishMod's jar so it always
- * loads from the correct class file even when blade-addons is also present.
- */
+/** Settings unique to FishMod, kept out of blade-addons so the right class always loads. */
 object FishSettings {
 
     @ConfigValue @JvmField var sendLagToParty: Boolean = false
@@ -30,11 +27,9 @@ object FishSettings {
 
     @ConfigValue @JvmField var warpMapDotColor: Int = 0xFFDB3737.toInt()
 
-    // Splits HUD (standalone position)
     @ConfigValue @JvmField var splitsHudX: Int = 5
     @ConfigValue @JvmField var splitsHudY: Int = 10
 
-    // Soulflow HUD
     @ConfigValue @JvmField var soulflowHudEnabled: Boolean = false
     @ConfigValue @JvmField var soulflowWarningThreshold: Int = 1000
     @ConfigValue @JvmField var soulflowMissingNotifier: Boolean = false
@@ -42,7 +37,6 @@ object FishSettings {
     @ConfigValue @JvmField var soulflowHudY: Int = 60
     @ConfigValue @JvmField var soulflowHudColor: Int = 0xFF55FFFF.toInt() // Aqua §b
 
-    // FishMod GUI
     @ConfigValue @JvmField var fmguiScale: String = "Normal" // Normal | 1.5x | 2x
 
     // Pet XP multipliers (see Hypixel wiki — Pets/Pet XP).
@@ -58,7 +52,6 @@ object FishSettings {
     /** When true, the four pet XP multipliers above are auto-detected from the Hypixel API every ~60s. */
     @ConfigValue @JvmField var petXpAutoDetect: Boolean = false
 
-    // Pet HUD
     @ConfigValue @JvmField var petHudEnabled: Boolean = false
     @ConfigValue @JvmField var petHudShowLevel: Boolean = false
     @ConfigValue @JvmField var petHudFadeIdle: Boolean = false
@@ -67,7 +60,6 @@ object FishSettings {
     @ConfigValue @JvmField var petHudY: Int = 80
     @ConfigValue @JvmField var petHudColor: Int = 0xFFFFD580.toInt()
 
-    // Cooldown overlay (per-item ability cooldowns drawn on hotbar / inventory slots)
     @ConfigValue @JvmField var cooldownOverlayEnabled: Boolean = false
     @ConfigValue @JvmField var cooldownShowText: Boolean = false
     @ConfigValue @JvmField var cooldownShowBar: Boolean = false
@@ -76,7 +68,6 @@ object FishSettings {
     // Catacombs/class overflow levels — drawn on the real Hypixel level-up menu items past the level-50 cap
     @ConfigValue @JvmField var catacombsOverflowEnabled: Boolean = false
 
-    // Slayer XP tracker
     @ConfigValue @JvmField var fireFreezeTimerEnabled: Boolean = false
     @ConfigValue @JvmField var skillTrackerEnabled: Boolean = false
     @ConfigValue @JvmField var skillTrackerHudX: Int = 10
@@ -87,12 +78,10 @@ object FishSettings {
     @ConfigValue @JvmField var slayerXpHudX: Int = 10
     @ConfigValue @JvmField var slayerXpHudY: Int = 80
 
-    // Powder tracker
     @ConfigValue @JvmField var powderTrackerEnabled: Boolean = false
     @ConfigValue @JvmField var powderTrackerHudX: Int = 10
     @ConfigValue @JvmField var powderTrackerHudY: Int = 100
 
-    // Session stats HUD
     @ConfigValue @JvmField var sessionStatsEnabled: Boolean = false
     @ConfigValue @JvmField var sessionStatsInDungeon: Boolean = false
     @ConfigValue @JvmField var sessionStatsInDungeonHub: Boolean = false
@@ -100,26 +89,21 @@ object FishSettings {
     @ConfigValue @JvmField var sessionStatsHudX: Int = 10
     @ConfigValue @JvmField var sessionStatsHudY: Int = 120
 
-    // Chat-channel compatibility — when on, dot-commands (.pb, .rtca, etc.) work in these
-    // channels in addition to party chat, and replies go back in the same channel.
+    // Chat-channel compatibility: dot-commands also work in these channels, replies go back to same channel.
     @ConfigValue @JvmField var chatParty: Boolean = false
     @ConfigValue @JvmField var chatGuild: Boolean = false
     @ConfigValue @JvmField var chatOfficer: Boolean = false
     @ConfigValue @JvmField var chatPrivate: Boolean = false
     @ConfigValue @JvmField var chatAll: Boolean = false // opt-in (false-positive risk)
-    // Party Finder join-request stats: whispers you get while this is on print the sender's
-    // MP/PB/Cata/Gear to your own chat (local-only, nothing sent back to them).
+    // Party Finder join-request stats: prints sender's MP/PB/Cata/Gear to your own chat, local-only.
     @ConfigValue @JvmField var pfStatsEnabled: Boolean = false
-    // Compact chat: collapse identical messages seen within the last minute into one line
-    // with a "(N)" count instead of repeating them.
+    // Compact chat: collapses identical messages seen in the last minute into one line with a "(N)" count.
     @ConfigValue @JvmField var chatCompact: Boolean = false
 
-    // Compact custom tab list (replaces vanilla player list while tab is held). Opt-in.
     @ConfigValue @JvmField var compactTabEnabled: Boolean = false
     /** Panel opacity percentage (0 = fully transparent, 100 = solid). Default 70%. */
     @ConfigValue @JvmField var compactTabOpacity: Int = 70
 
-    // Party command toggles
     @ConfigValue @JvmField var pcAllinvite: Boolean = false
     @ConfigValue @JvmField var pcPb: Boolean = false
     @ConfigValue @JvmField var pcCata: Boolean = false
@@ -137,15 +121,12 @@ object FishSettings {
     @ConfigValue @JvmField var pcNuc: Boolean = false
     @ConfigValue @JvmField var pcWorm: Boolean = false // .worm / .scatha (Worm + Scatha bestiary)
 
-    // Smart copy-chat: right-click a chat line to copy the whole message (joins wrapped lines,
-    // strips ---- / ▬▬▬ dividers).
+    // Smart copy-chat: right-click a chat line to copy the whole message (joins wrapped lines, strips dividers).
     @ConfigValue @JvmField var smartCopyChat: Boolean = false
 
-    // Mod chat prefix — shown as "<prefix> > <message>" on FishMod's chat output (max 10 chars).
     @ConfigValue @JvmField var modPrefixEnabled: Boolean = false
     @ConfigValue @JvmField var modPrefix: String = "FM"
 
-    // Dungeon Score (live S+ tracker)
     @ConfigValue @JvmField var dungeonScoreEnabled: Boolean = false
     @ConfigValue @JvmField var dungeonScoreHudX: Int = 10
     @ConfigValue @JvmField var dungeonScoreHudY: Int = 200
@@ -160,18 +141,15 @@ object FishSettings {
     @ConfigValue @JvmField var score300ChatEnabled: Boolean = true
     @ConfigValue @JvmField var score300Text: String = "&a&l300 Score!"
 
-    // Farming coin/hr tracker
     @ConfigValue @JvmField var farmingTrackerEnabled: Boolean = false
     @ConfigValue @JvmField var farmingTrackerHudX: Int = 10
     @ConfigValue @JvmField var farmingTrackerHudY: Int = 240
 
-    // Harvest Feast tracker
     @ConfigValue @JvmField var harvestFeastEnabled: Boolean = false
     @ConfigValue @JvmField var harvestFeastHudX: Int = 10
     @ConfigValue @JvmField var harvestFeastHudY: Int = 280
     @ConfigValue @JvmField var harvestFeastScale: Double = 1.0
 
-    // Mining coin/hr tracker
     @ConfigValue @JvmField var miningTrackerEnabled: Boolean = false
     @ConfigValue @JvmField var miningTrackerHudX: Int = 10
     @ConfigValue @JvmField var miningTrackerHudY: Int = 320
@@ -185,8 +163,7 @@ object FishSettings {
     @ConfigValue @JvmField var cfBazaar: Boolean = false // "[Bazaar] Executing instant buy..."
     @ConfigValue @JvmField var cfWarping: Boolean = false // "Warping..."
 
-    // Explosive Shot: parse "Your Explosive Shot hit N enemy/enemies for D damage." and show the
-    // per-enemy damage (D / N) as an on-screen title.
+    // Explosive Shot: parses the hit-damage chat line and shows per-enemy damage as an on-screen title.
     @ConfigValue @JvmField var explosiveShotEnabled: Boolean = false
     // Also announce the same per-enemy damage to party chat, only while playing Archer.
     @ConfigValue @JvmField var explosiveShotAnnounceParty: Boolean = false
@@ -195,12 +172,10 @@ object FishSettings {
     @ConfigValue @JvmField var enableM7LeverWaypoints: Boolean = false
     @ConfigValue @JvmField var m7LeverWaypointColor: Int = 0x13FF0086 // ARGB (faint magenta)
 
-    // Starred mob visualizer: outlines dungeon mobs whose nametag carries the gold ✯ (must be
-    // killed to clear the floor) so they stand out from regular fodder mobs.
+    // Starred mob visualizer: outlines mobs with the gold star nametag that must die to clear the floor.
     @ConfigValue @JvmField var enableStarredMobHighlight: Boolean = false
     @ConfigValue @JvmField var starredMobHighlightColor: Int = 0x80FFAA00.toInt() // ARGB (translucent gold)
 
-    // Trophy Frogs tab tracker
     @ConfigValue @JvmField var trophyFrogEnabled: Boolean = false
     @ConfigValue @JvmField var trophyFrogHudX: Int = 10
     @ConfigValue @JvmField var trophyFrogHudY: Int = 60
@@ -221,10 +196,8 @@ object FishSettings {
     @ConfigValue @JvmField var trackerPriceMode: Int = 0
     @ConfigValue @JvmField var pcCorpse: Boolean = false
 
-    // Cooldown overlay extras
     @ConfigValue @JvmField var cooldownInInventory: Boolean = false
 
-    // Per-HUD scale (1.0 = default). Adjusted via scroll wheel in HUD editor.
     @ConfigValue @JvmField var sessionStatsScale: Double = 1.0
     @ConfigValue @JvmField var powderTrackerScale: Double = 1.0
     @ConfigValue @JvmField var slayerXpScale: Double = 1.0
@@ -242,12 +215,7 @@ object FishSettings {
     @ConfigValue @JvmField var pcMp: Boolean = false
     @ConfigValue @JvmField var pcCollection: Boolean = false
 
-    // Chat-triggered party actions: .kick, .warp/.w, .transfer/.pt/.ptme, .promote, .demote.
-    // Each has its own on/off toggle. pcPartyActionsMode governs who besides yourself can trigger
-    // them: "off" (nobody, not even you) | "self" (only you) | "whitelist" (you + listed names) |
-    // "blacklist" (everyone except listed names) | "everyone" (any party member, no filter).
-    // Manage the lists in-game with /fmcmd whitelist|blacklist add|remove|list.
-    // Default off for safety — only enable when you trust the party.
+    // Chat-triggered party actions (.kick/.warp/.transfer/.promote/.demote); pcPartyActionsMode gates who can trigger them (off/self/whitelist/blacklist/everyone), managed via /fmcmd whitelist|blacklist. Default off.
     @ConfigValue @JvmField var pcActionKick: Boolean = false
     @ConfigValue @JvmField var pcActionWarp: Boolean = false
     @ConfigValue @JvmField var pcActionTransfer: Boolean = false
@@ -257,12 +225,10 @@ object FishSettings {
     @ConfigValue @JvmField var pcPartyActionsWhitelist: String = ""
     @ConfigValue @JvmField var pcPartyActionsBlacklist: String = ""
 
-    // Manual loot/profit tracker (in-inventory panel, Dungeon Hub only)
     @ConfigValue @JvmField var lootTrackerEnabled: Boolean = false
     @ConfigValue @JvmField var lootTrackerX: Int = -1 // -1 = auto-anchor beside the inventory
     @ConfigValue @JvmField var lootTrackerY: Int = -1
 
-    // Simon Says (F7 Goldor) tracker
     @ConfigValue @JvmField var simonSaysEnabled: Boolean = false
     @ConfigValue @JvmField var simonSaysHudEnabled: Boolean = false
     @ConfigValue @JvmField var simonSaysPartyChat: Boolean = false
@@ -272,7 +238,6 @@ object FishSettings {
     @ConfigValue @JvmField var simonSaysHudY: Int = 360
     @ConfigValue @JvmField var simonSaysHudScale: Double = 1.0
 
-    // Daily/Weekly/Monthly Challenges
     @ConfigValue @JvmField var challengesEnabled: Boolean = false
     @ConfigValue @JvmField var challengeHudEnabled: Boolean = false
     @ConfigValue @JvmField var challengeHudX: Int = 10
@@ -292,10 +257,7 @@ object FishSettings {
     // Class Colored Boots — recolor your dungeon boots (leather dye) by your detected class.
     @ConfigValue @JvmField var classColoredBootsEnabled: Boolean = false
 
-    // ── Fishing ───────────────────────────────────────────────────────────────
-    // Bobber Reminder: after a fish bites, count down; once the reminder delay passes without
-    // reeling, flash a customizable "!!!" alert (+ optional sound); if the catch window closes
-    // unreeled, show the "missed it" text. All drawn in one small HUD.
+    // Bobber Reminder: flashes a reel alert after a bite once the delay passes, or shows a missed-it message.
     @ConfigValue @JvmField var fishingTimerEnabled: Boolean = false
     /** Seconds after a bite before the "!!!" reel reminder flashes (countdown shows until then). */
     @ConfigValue @JvmField var fishingReminderDelay: Int = 3
@@ -309,7 +271,6 @@ object FishSettings {
     @ConfigValue @JvmField var fishingTimerHudY: Int = 140
     @ConfigValue @JvmField var fishingTimerScale: Double = 1.5
 
-    // Sea Creature Tracker: per-creature session counts + creatures/hr, with an optional
     // title+sound alert when a rare creature surfaces.
     @ConfigValue @JvmField var seaCreatureEnabled: Boolean = false
     @ConfigValue @JvmField var seaCreatureRareAlert: Boolean = true
@@ -317,13 +278,11 @@ object FishSettings {
     @ConfigValue @JvmField var seaCreatureHudY: Int = 160
     @ConfigValue @JvmField var seaCreatureScale: Double = 1.0
 
-    // Trophy Fish tab tracker (Crimson Isle) — same shape as Trophy Frogs.
     @ConfigValue @JvmField var trophyFishEnabled: Boolean = false
     @ConfigValue @JvmField var trophyFishHudX: Int = 10
     @ConfigValue @JvmField var trophyFishHudY: Int = 200
     @ConfigValue @JvmField var trophyFishHudScale: Double = 1.0
 
-    // ── Slayer ────────────────────────────────────────────────────────────────
     // Slayer Alerts: title + sound on miniboss spawn, boss spawn, and boss slain.
     @ConfigValue @JvmField var slayerAlertsEnabled: Boolean = false
     @ConfigValue @JvmField var slayerAlertMiniboss: Boolean = true
@@ -337,9 +296,7 @@ object FishSettings {
     @ConfigValue @JvmField var slayerDropsHudY: Int = 240
     @ConfigValue @JvmField var slayerDropsScale: Double = 1.0
 
-    // ── Location Ping ───────────────────────────────────────────────────────────
-    // Press the ping key (default middle mouse, rebindable in Options > Controls) to drop a
-    // through-walls waypoint where you're looking.
+    // Location Ping: press the ping key to drop a through-walls waypoint where you're looking.
     @ConfigValue @JvmField var pingEnabled: Boolean = true
     @ConfigValue @JvmField var pingSound: Boolean = true
     @ConfigValue @JvmField var pingAnnounceParty: Boolean = false  // also post coords to party chat
@@ -348,8 +305,7 @@ object FishSettings {
     @ConfigValue @JvmField var pingColor: Int = 0xFF55FFFF.toInt() // ARGB (aqua)
     @ConfigValue @JvmField var pingDurationSeconds: Int = 8
 
-    // ── Wardrobe Hotkeys ────────────────────────────────────────────────────────
-    // Press a Wardrobe slot hotkey (bind in Options > Controls) to instantly click that
+    // Wardrobe Hotkeys: press a bound key to instantly click that set/loadout in an open Wardrobe/Loadouts GUI.
     // set/loadout in an open Wardrobe or Loadouts GUI.
     @ConfigValue @JvmField var wardrobeHotkeysEnabled: Boolean = false
     @ConfigValue @JvmField var wardrobeHotkeysAutoClose: Boolean = true
