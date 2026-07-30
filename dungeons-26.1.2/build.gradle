@@ -1,5 +1,6 @@
 plugins {
 	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+	id 'org.jetbrains.kotlin.jvm' version "${kotlin_version}"
 	id 'maven-publish'
 	id 'com.modrinth.minotaur' version '2.+'
 }
@@ -83,6 +84,9 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	implementation("com.terraformersmc:modmenu:${project.modmenu_version}")
+	// Dungeon map feature (this module + :common) is written in Kotlin — bundles kotlin-stdlib as a
+	// nested jar-in-jar, same as any other Kotlin Fabric mod (Odin, NoammAddons, etc).
+	implementation "net.fabricmc:fabric-language-kotlin:${project.fabric_kotlin_version}"
 	// Hypixel Mod API needs two coordinates: Hypixel's own maven (repo.hypixel.net) publishes the
 	// core net.hypixel.modapi.* classes but no fabric.mod.json, so it's compile-only here. Modrinth's
 	// build carries proper Fabric metadata but only bundles the core classes as a nested
@@ -123,6 +127,10 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.release = 25
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+	compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
 }
 
 java {
