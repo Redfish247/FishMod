@@ -304,6 +304,7 @@ class FishModInit : ModInitializer {
             line.accept("§e/fm §7— config GUI  §8·§7  §e/fmloot §7— Croesus loot")
             line.accept("§e/fm commandkeys §7— bind keys/mouse buttons to run slash commands")
             line.accept("§e/fm aliases §7— make short commands (e.g. §f/dh§7) run longer ones (e.g. §f/warp dh§7)")
+            line.accept("§e/nick §8<name>|reset")
             line.accept("§e/fm commandhelp §7— this list  §8·§7  party chat: §f.help §7lists enabled party commands")
             line.accept("§b§m                                                                          ")
         }
@@ -321,6 +322,12 @@ class FishModInit : ModInitializer {
     override fun onInitialize() {
         // Load FishMod-specific config (always, separate from blade config)
         FishConfig.manager.load()
+
+        // Cosmetic name changer — restore persisted /nick across sessions, then sync with other mod users
+        fishmod.cosmetic.NickData.load()
+        fishmod.cosmetic.RemoteNicks.init()
+        fishmod.cosmetic.PlayerSize.init()
+        fishmod.cosmetic.RemoteSync.init()
 
         LagTracker.init()
         SessionStats.init()
@@ -415,6 +422,56 @@ class FishModInit : ModInitializer {
                 ClientCommandManager.literal("fmloot")
                     .executes { ctx ->
                         MinecraftClient.getInstance().send { MinecraftClient.getInstance().setScreen(fishmod.features.croesus.LootTrackerScreen()) }
+                        Constants.SUCCESS
+                    }
+            )
+            dispatcher.register(
+                ClientCommandManager.literal("fmnicktest")
+                    .executes { ctx ->
+                        if (fishmod.utils.DevOnly.deny(ctx.source)) return@executes Constants.SUCCESS
+                        val mc = MinecraftClient.getInstance()
+                        if (mc.player == null || mc.networkHandler == null) {
+                            Misc.addChatMessage(Text.literal("§cNot in a world."))
+                            return@executes Constants.SUCCESS
+                        }
+                        val remoteOn = fishmod.utils.config.values.FishSettings.remoteNicksEnabled
+                        Misc.addChatMessage(
+                            Text.literal(
+                                "§b[fmnicktest] §7See Others: §f$remoteOn" +
+                                    " §8|§7 own nick active: §f" + fishmod.cosmetic.NickState.isActive() +
+                                    " §8|§7 raw: §f" + (fishmod.cosmetic.NickState.getRaw() ?: "(none)")
+                            )
+                        )
+                        fishmod.cosmetic.RemoteNicks.uploadOwn()
+                        Misc.addChatMessage(Text.literal("§b[fmnicktest] §7re-uploaded own nick."))
+                        fishmod.cosmetic.RemoteNicks.forceRefresh()
+                        Misc.addChatMessage(Text.literal("§b[fmnicktest] §7triggered RemoteNicks.refresh()…"))
+                        mc.send {
+                            Thread({
+                                try {
+                                    Thread.sleep(1200)
+                                } catch (ignored: InterruptedException) {
+                                }
+                                mc.send {
+                                    val cache = fishmod.cosmetic.RemoteNicks.snapshot()
+                                    Misc.addChatMessage(Text.literal("§b[fmnicktest] §7styledByName cache: §f" + cache.size + " §7entries"))
+                                    var count = 0
+                                    for (e in cache.entries) {
+                                        val line: MutableText = Text.literal("§7  " + e.key + " §8→ ").copy()
+                                        line.append(e.value)
+                                        Misc.addChatMessage(line)
+                                        if (++count > 10) {
+                                            Misc.addChatMessage(Text.literal("§8  (…more)")); break
+                                        }
+                                    }
+                                    if (cache.isEmpty()) {
+                                        Misc.addChatMessage(Text.literal("§c[fmnicktest] cache is empty — chat rewrite has nothing to apply. Check See Others toggle."))
+                                    } else {
+                                        Misc.addChatMessage(Text.literal("§a[fmnicktest] cache populated. If chat still shows IGNs, the mixin path isn't covering Hypixel's chat handler — paste a chat screenshot."))
+                                    }
+                                }
+                            }, "fmnicktest-dump").start()
+                        }
                         Constants.SUCCESS
                     }
             )
