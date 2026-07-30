@@ -2,7 +2,6 @@ package fishmod.features;
 
 import fishmod.utils.config.Config;
 import fishmod.utils.config.FishConfig;
-import fishmod.cosmetic.NickState;
 import fishmod.utils.config.values.*;
 import fishmod.utils.dungeon.Phase;
 import fishmod.utils.dungeon.Split;
@@ -277,10 +276,8 @@ public class FishModScreen extends Screen {
         return switch (name) {
             case "Mod Prefix" -> "Tag FishMod's chat output with a prefix";
             case "Inventory Buttons" -> "Clickable command buttons in your inventory";
-            case "Auto Meow" -> "Auto-reply 'meow' when someone meows";
             case "Smart Copy Chat" -> "Right-click a chat line to copy it";
             case "Compact Tab" -> "Cleaner custom tab player list";
-            case "Bridge Bot" -> "Relay Discord bridge messages";
             case "Chat Filter" -> "Hide selected chat spam";
             case "Explosive Shot" -> "Title with per-enemy damage";
             case "Dungeon Score" -> "Live S+ score tracker overlay";
@@ -305,11 +302,6 @@ public class FishModScreen extends Screen {
             case "Term Start Timer" -> "Countdown to terminals start";
             case "Section Progress" -> "Terminal section completed/total";
             case "Goldor Splits" -> "S1-S4 terminal split timers + total time";
-            case "Name Color" -> "Recolor your username gradient";
-            case "See Others' Items" -> "Render other users' item cosmetics";
-            case "Customize" -> "Rename, dye & re-model your items";
-            case "Nametag" -> "Show your own above-head nametag";
-            case "Player Size" -> "Resize your model (render only)";
             case "Party Commands" -> "Dot-commands usable in party chat";
             case "Chat Channels" -> "Where dot-commands are allowed";
             case "Rarity Background" -> "Rarity-colored backing on all slots";
@@ -356,7 +348,6 @@ public class FishModScreen extends Screen {
     private void buildCategories() {
         Column general   = new Column("General",   "gear");
         Column dungeon   = new Column("Dungeon",   "arch");
-        Column cosmetics = new Column("Cosmetics", "hanger");
         Column party     = new Column("Party",     "people");
         Column visuals   = new Column("Visuals",   "eye");
         Column floor7    = new Column("Floor 7",   "arch");
@@ -542,74 +533,6 @@ public class FishModScreen extends Screen {
                     v -> fishmod.utils.config.values.Dungeons.dupeClassPartyChat = v));
             dungeon.features.add(f);
         }
-        // ===== Cosmetics =====
-        {
-            Feature f = new Feature("Name Color",
-                    NickState::isActive,
-                    v -> { if (!v) NickState.reset(); else NickState.applyFromSettings(); });
-            f.sub.add(new LimitedInputSetting("Custom Name", "", 18,
-                    () -> FishSettings.nickCustomName,
-                    v -> { FishSettings.nickCustomName = v == null ? "" : v;
-                           if (NickState.isActive()) NickState.applyFromSettings(); }));
-            f.sub.add(new DropdownSetting<>("Color Mode", "", new String[]{"GRADIENT", "SOLID"},
-                    () -> FishSettings.nickColorMode,
-                    v -> { FishSettings.nickColorMode = v; if (NickState.isActive()) NickState.applyFromSettings(); }));
-            f.sub.add(new ColorPickerSetting("Color", "",
-                    () -> FishSettings.nickColorStart,
-                    v -> { FishSettings.nickColorStart = v; if (NickState.isActive()) NickState.applyFromSettings(); }));
-            f.sub.add(new ConditionalColorPickerSetting("End Color", "",
-                    () -> "GRADIENT".equalsIgnoreCase(FishSettings.nickColorMode),
-                    () -> FishSettings.nickColorEnd,
-                    v -> { FishSettings.nickColorEnd = v; if (NickState.isActive()) NickState.applyFromSettings(); }));
-            f.sub.add(new ToggleSetting("See Others", "",
-                    () -> FishSettings.remoteNicksEnabled, v -> FishSettings.remoteNicksEnabled = v));
-            cosmetics.features.add(f);
-        }
-        {
-            Feature f = new Feature("See Others' Items",
-                    () -> FishSettings.remoteItemsEnabled,
-                    v -> { FishSettings.remoteItemsEnabled = v;
-                           if (v) fishmod.cosmetic.RemoteSync.forceSync();
-                           else fishmod.cosmetic.RemoteItems.clearAll(); });
-            cosmetics.features.add(f);
-        }
-        {
-            Feature f = new Feature("Customize", null, null);
-            f.sub.add(new ButtonSetting("Open", "",
-                    () -> Minecraft.getInstance().setScreen(new fishmod.features.ItemCustomizeScreen())));
-            cosmetics.features.add(f);
-        }
-        {
-            Feature f = new Feature("Nametag",
-                    () -> FishSettings.nickPreviewEnabled, v -> FishSettings.nickPreviewEnabled = v);
-            f.sub.add(new SliderDoubleSetting("Height", "",
-                    () -> FishSettings.nickPreviewYOffset, v -> FishSettings.nickPreviewYOffset = v, -1.5, 1.0));
-            cosmetics.features.add(f);
-        }
-        {
-            Feature f = new Feature("Player Size",
-                    () -> FishSettings.playerSizeEnabled,
-                    v -> { FishSettings.playerSizeEnabled = v; fishmod.cosmetic.PlayerSize.uploadOwn(); });
-            f.sub.add(new SliderDoubleSetting("Width (X)", "",
-                    () -> FishSettings.playerSizeScaleX,
-                    v -> { FishSettings.playerSizeScaleX = v; fishmod.cosmetic.PlayerSize.uploadOwn(); },
-                    fishmod.cosmetic.PlayerSize.MIN, fishmod.cosmetic.PlayerSize.MAX));
-            f.sub.add(new SliderDoubleSetting("Height (Y)", "",
-                    () -> FishSettings.playerSizeScaleY,
-                    v -> { FishSettings.playerSizeScaleY = v; fishmod.cosmetic.PlayerSize.uploadOwn(); },
-                    fishmod.cosmetic.PlayerSize.MIN, fishmod.cosmetic.PlayerSize.MAX));
-            f.sub.add(new SliderDoubleSetting("Depth (Z)", "",
-                    () -> FishSettings.playerSizeScaleZ,
-                    v -> { FishSettings.playerSizeScaleZ = v; fishmod.cosmetic.PlayerSize.uploadOwn(); },
-                    fishmod.cosmetic.PlayerSize.MIN, fishmod.cosmetic.PlayerSize.MAX));
-            f.sub.add(new ToggleSetting("Share w/ All", "",
-                    () -> FishSettings.playerSizeShared,
-                    v -> { FishSettings.playerSizeShared = v;
-                           if (v) { fishmod.cosmetic.PlayerSize.uploadOwn(); fishmod.cosmetic.RemoteSync.forceSync(); }
-                           else { fishmod.cosmetic.PlayerSize.clearOwnShare(); fishmod.cosmetic.RemoteScales.clearAll(); } }));
-            cosmetics.features.add(f);
-        }
-
         // ===== Party =====
         {
             Feature f = new Feature("Party Commands", null, null);
@@ -710,8 +633,6 @@ public class FishModScreen extends Screen {
                     () -> FishSettings.explosiveShotAnnounceParty, v -> FishSettings.explosiveShotAnnounceParty = v));
             visuals.features.add(f);
         }
-        visuals.features.add(new Feature("Loadout Title",
-                () -> FishSettings.loadoutTitleEnabled, v -> FishSettings.loadoutTitleEnabled = v));
 
         // ===== Floor 7 (ported from blade-addons) =====
         {
@@ -788,7 +709,6 @@ public class FishModScreen extends Screen {
 
         columns.add(general);
         columns.add(dungeon);
-        columns.add(cosmetics);
         columns.add(party);
         columns.add(visuals);
         columns.add(floor7);

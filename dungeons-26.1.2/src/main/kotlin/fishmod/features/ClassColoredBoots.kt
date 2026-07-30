@@ -10,12 +10,10 @@ import net.minecraft.world.item.component.DyedItemColor
 /**
  * Recolors the local player's worn boots (leather dye) to a color that matches their detected dungeon
  * class. Client-side only — re-applied every tick to the equipped feet stack so server slot updates
- * don't wipe it (same approach as [ItemCustomizer]). Class is detected by [DungeonClass]
+ * don't wipe it. Class is detected by [DungeonClass]
  * (chiefly the "Your <class> stats are doubled…" message + the dungeon tab list).
  *
- * Registered AFTER ItemCustomizer.init() so, while enabled, the class color wins over any per-item dye
- * the player set on those boots. Only shows on leather/dyeable boots (the DYED_COLOR tint is ignored
- * by non-dyeable models).
+ * Only shows on leather/dyeable boots (the DYED_COLOR tint is ignored by non-dyeable models).
  */
 object ClassColoredBoots {
 

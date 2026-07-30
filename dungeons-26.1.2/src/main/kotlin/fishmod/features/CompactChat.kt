@@ -17,8 +17,7 @@ import java.util.regex.Pattern
  *
  * Runs at display time from [fishmod.mixin.ChatHudMixin] (after chat-filter/command
  * parsing), so packet-level parsers are unaffected. It manipulates [ChatComponent]'s backing
- * `messages` list and re-wraps via [ChatHudInvoker.invokeRefresh] — the same
- * approach used by `fishmod.cosmetic.ChatNickRefresher`.
+ * `messages` list and re-wraps via [ChatHudInvoker.invokeRefresh].
  */
 object CompactChat {
 

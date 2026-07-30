@@ -6,7 +6,6 @@ import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.suggestion.SuggestionProvider
 import fishmod.features.BossBarFeature
-import fishmod.features.BridgeBot
 import fishmod.features.CooldownOverlay
 import fishmod.features.FishHudEditor
 import fishmod.features.ItemRarityHotbar
@@ -60,9 +59,6 @@ import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.protocol.game.ServerboundChatCommandPacket
 import net.minecraft.resources.Identifier
-import net.minecraft.world.entity.EquipmentSlot
-import net.minecraft.world.entity.player.Player
-import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.scores.DisplaySlot
@@ -353,10 +349,9 @@ class FishModInit : ModInitializer {
 
             line.accept("")
             line.accept("§3§lScreens & Misc")
-            line.accept("§e/fm §7— config GUI  §8·§7  §e/fm customize §7— item customizer  §8·§7  §e/fmloot §7— Croesus loot")
+            line.accept("§e/fm §7— config GUI  §8·§7  §e/fmloot §7— Croesus loot")
             line.accept("§e/fm commandkeys §7— bind keys/mouse buttons to run slash commands")
             line.accept("§e/fm aliases §7— make short commands (e.g. §f/dh§7) run longer ones (e.g. §f/warp dh§7)")
-            line.accept("§e/nick §8<name>|reset")
             line.accept("§e/fm commandhelp §7— this list  §8·§7  party chat: §f.help §7lists enabled party commands")
             line.accept("§b§m                                                                          ")
         }
@@ -375,27 +370,12 @@ class FishModInit : ModInitializer {
         // Load FishMod-specific config (always, separate from blade config)
         FishConfig.manager.load()
 
-        // Cosmetic name changer — restore persisted /nick across sessions
-        fishmod.cosmetic.NickData.load()
-        // Shared nicks: publish ours + fetch other mod users' nicks
-        fishmod.cosmetic.RemoteNicks.init()
-
-        // Always init FishMod-exclusive classes (always load from FishMod's jar)
-        fishmod.features.ItemCustomizer.init()
-        // Shared item cosmetics: fetch + render other mod users' custom items/armor (after ItemCustomizer.init)
-        fishmod.cosmetic.RemoteItems.init()
-        // Shared player sizes: publish ours on join + render other mod users' shared sizes
-        fishmod.cosmetic.PlayerSize.init()
-        // Combined version-gated poller that drives RemoteNicks + RemoteItems + RemoteScales (after .init())
-        fishmod.cosmetic.RemoteSync.init()
-        fishmod.features.WelcomeMessage.init()
         LagTracker.init()
         SessionStats.init()
         FishPuzzleDisplay.init()
         FishEstTotal.init()
         DungeonDeathMessage.init()
         fishmod.features.ExplosiveShot.init()
-        fishmod.features.LoadoutTitle.init()
         FishPartyTracker.init()
         PartyCommandHandler.init()
         SoulflowHud.init()
@@ -407,7 +387,6 @@ class FishModInit : ModInitializer {
         fishmod.features.other.WardrobeHotkeys.init()
         // ItemRarityHotbar.init();   // rarity background: inventory-slot coverage (hotbar via HudRenderCallback)
         MayorApi.init()
-        // BridgeBot.init();
         // SlayerXpTracker.init();
         // fishmod.features.SkillTracker.init();
         fishmod.features.FireFreezeTimer.init()
@@ -436,8 +415,7 @@ class FishModInit : ModInitializer {
         FishHudEditor.register("Section Progress", fishmod.features.dungeon.f7.F7Huds.sectionProgress)
         FishHudEditor.register("Goldor Splits", fishmod.utils.dungeon.Section.terminalSplits)
         // Dungeon class detection (own class from the "stats are doubled" message + tab list) and the
-        // class-colored boots feature that depends on it. Boots init AFTER ItemCustomizer.init (above)
-        // so the class color wins over per-item boot dye while enabled.
+        // class-colored boots feature that depends on it.
         fishmod.utils.dungeon.DungeonClass.init()
         fishmod.features.ClassColoredBoots.init()
         fishmod.features.dungeon.DupeClassDetector.init()
@@ -463,12 +441,6 @@ class FishModInit : ModInitializer {
             fishmod.features.other.CommandAliases.registerAll(dispatcher)
             dispatcher.register(
                 ClientCommands.literal("fm")
-                    .then(ClientCommands.literal("customize").executes {
-                        Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.ItemCustomizeScreen())
-                        }
-                        Constants.SUCCESS
-                    })
                     .then(ClientCommands.literal("commandkeys").executes {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().setScreen(fishmod.features.CommandKeysScreen())
@@ -506,158 +478,6 @@ class FishModInit : ModInitializer {
                         Constants.SUCCESS
                     }
             )
-            dispatcher.register(
-                ClientCommands.literal("fmnicktest")
-                    .executes { ctx ->
-                        if (fishmod.utils.DevOnly.deny(ctx.source)) return@executes Constants.SUCCESS
-                        val mc = Minecraft.getInstance()
-                        if (mc.player == null || mc.connection == null) {
-                            Misc.addChatMessage(Component.literal("§cNot in a world."))
-                            return@executes Constants.SUCCESS
-                        }
-                        val remoteOn = fishmod.utils.config.values.FishSettings.remoteNicksEnabled
-                        Misc.addChatMessage(
-                            Component.literal(
-                                "§b[fmnicktest] §7See Others: §f$remoteOn"
-                                    + " §8|§7 own nick active: §f" + fishmod.cosmetic.NickState.isActive()
-                                    + " §8|§7 raw: §f" + (fishmod.cosmetic.NickState.getRaw() ?: "(none)")
-                            )
-                        )
-
-                        // Re-upload own nick
-                        fishmod.cosmetic.RemoteNicks.uploadOwn()
-                        Misc.addChatMessage(Component.literal("§b[fmnicktest] §7re-uploaded own nick."))
-
-                        // Force an immediate refresh so styledByName is up to date.
-                        fishmod.cosmetic.RemoteNicks.forceRefresh()
-                        Misc.addChatMessage(Component.literal("§b[fmnicktest] §7triggered RemoteNicks.refresh()…"))
-
-                        // Re-dump the cache shortly after so the async fetch finishes first.
-                        mc.schedule {
-                            Thread({
-                                try {
-                                    Thread.sleep(1200)
-                                } catch (ignored: InterruptedException) {
-                                }
-                                mc.schedule {
-                                    val cache = fishmod.cosmetic.RemoteNicks.snapshot()
-                                    Misc.addChatMessage(
-                                        Component.literal(
-                                            "§b[fmnicktest] §7styledByName cache: §f" + cache.size + " §7entries"
-                                        )
-                                    )
-                                    var count = 0
-                                    for (e in cache.entries) {
-                                        val line = Component.literal("§7  " + e.key + " §8→ ").copy()
-                                        line.append(e.value)
-                                        Misc.addChatMessage(line)
-                                        if (++count > 10) {
-                                            Misc.addChatMessage(Component.literal("§8  (…more)")); break
-                                        }
-                                    }
-                                    if (cache.isEmpty()) {
-                                        Misc.addChatMessage(Component.literal("§c[fmnicktest] cache is empty — chat rewrite has nothing to apply. Check See Others toggle."))
-                                    } else {
-                                        Misc.addChatMessage(Component.literal("§a[fmnicktest] cache populated. If chat still shows IGNs, the mixin path isn't covering Hypixel's chat handler — paste a chat screenshot."))
-                                    }
-                                }
-                            }, "fmnicktest-dump").start()
-                        }
-                        Constants.SUCCESS
-                    }
-            )
-            dispatcher.register(
-                ClientCommands.literal("fmitems")
-                    .executes { ctx ->
-                        if (fishmod.utils.DevOnly.deny(ctx.source)) return@executes Constants.SUCCESS
-                        val mc = Minecraft.getInstance()
-                        if (mc.player == null || mc.level == null) {
-                            Misc.addChatMessage(Component.literal("§cNot in a world."))
-                            return@executes Constants.SUCCESS
-                        }
-                        val on = fishmod.utils.config.values.FishSettings.remoteItemsEnabled
-                        val ownKeys = fishmod.features.ItemCustomizer.debugKeys()
-                        Misc.addChatMessage(
-                            Component.literal(
-                                "§b[fmitems] §7See Others' Items: §f$on §8|§7 your customs: §f" + ownKeys.size
-                            )
-                        )
-                        for (k in ownKeys) Misc.addChatMessage(Component.literal("§7  your key §8→ §f$k"))
-
-                        fishmod.features.ItemCustomizer.uploadOwn()
-                        fishmod.cosmetic.RemoteItems.forceRefresh()
-                        Misc.addChatMessage(Component.literal("§b[fmitems] §7re-uploaded own + forced sync…"))
-
-                        Thread({
-                            try {
-                                Thread.sleep(1500)
-                            } catch (ignored: InterruptedException) {
-                            }
-                            mc.schedule {
-                                val loaded = fishmod.cosmetic.RemoteItems.snapshotKeys()
-                                Misc.addChatMessage(
-                                    Component.literal(
-                                        "§b[fmitems] §7remote payloads loaded: §f" + loaded.size + " §7player(s)"
-                                    )
-                                )
-                                var shown = 0
-                                for (p: Player in mc.level!!.players()) {
-                                    if (p == mc.player) continue
-                                    val u = p.uuid.toString().replace("-", "")
-                                    val customs: Set<String>? = loaded[u]
-                                    val held: ItemStack = p.getItemBySlot(EquipmentSlot.MAINHAND)
-                                    val heldVanilla = fishmod.features.ItemCustomizer.vanillaId(held)
-                                    val match = customs != null && heldVanilla != null && customs.contains(heldVanilla)
-                                    Misc.addChatMessage(
-                                        Component.literal(
-                                            "§7  " + p.gameProfile.name
-                                                + " §8| customs:§f" + (customs?.size ?: 0)
-                                                + " §8| held:§f" + heldVanilla
-                                                + " §8| match:" + (if (match) "§a✔" else "§c✘")
-                                        )
-                                    )
-                                    if (++shown >= 8) {
-                                        Misc.addChatMessage(Component.literal("§8  (…more)")); break
-                                    }
-                                }
-                                if (loaded.isEmpty())
-                                    Misc.addChatMessage(Component.literal("§c[fmitems] no remote customs fetched — nobody nearby has uploaded (their \"See Others' Items\" may be off, or they haven't customized anything)."))
-                            }
-                        }, "fmitems-dump").start()
-                        Constants.SUCCESS
-                    }
-            )
-            // ── Reputation (vouch / shitter list) ─────────────────────────────
-            dispatcher.register(
-                ClientCommands.literal("vouch")
-                    .then(
-                        ClientCommands.argument("player", StringArgumentType.word())
-                            .executes { ctx -> fishmod.features.Reputation.vote(StringArgumentType.getString(ctx, "player"), "up"); Constants.SUCCESS }
-                    )
-            )
-            dispatcher.register(
-                ClientCommands.literal("shitter")
-                    .then(
-                        ClientCommands.argument("player", StringArgumentType.word())
-                            .executes { ctx -> fishmod.features.Reputation.vote(StringArgumentType.getString(ctx, "player"), "down"); Constants.SUCCESS }
-                    )
-            )
-            dispatcher.register(
-                ClientCommands.literal("unrep")
-                    .then(
-                        ClientCommands.argument("player", StringArgumentType.word())
-                            .executes { ctx -> fishmod.features.Reputation.vote(StringArgumentType.getString(ctx, "player"), "none"); Constants.SUCCESS }
-                    )
-            )
-            dispatcher.register(
-                ClientCommands.literal("rep")
-                    .executes { fishmod.features.Reputation.listNearby(); Constants.SUCCESS }
-                    .then(
-                        ClientCommands.argument("player", StringArgumentType.word())
-                            .executes { ctx -> fishmod.features.Reputation.lookup(StringArgumentType.getString(ctx, "player")); Constants.SUCCESS }
-                    )
-            )
-
             // ── Party alias commands ──────────────────────────────────────────
             dispatcher.register(
                 ClientCommands.literal("pk")
@@ -727,39 +547,6 @@ class FishModInit : ModInitializer {
                         Misc.addChatMessage(Component.literal("§b--- Cooldown Overlay ---"))
                         Misc.addChatMessage(Component.literal("§7" + CooldownOverlay.debugState()))
                     }
-                    Constants.SUCCESS
-                }
-            )
-
-            dispatcher.register(
-                ClientCommands.literal("fmtts")
-                    .executes {
-                        val on = fishmod.utils.config.values.FishSettings.ttsEnabled
-                        Misc.addChatMessage(
-                            Component.literal(
-                                "§b[TTS] §7" + (if (on) "speaking a test line…" else "§eenable it in §f/fm §8> §7General §8> §7TTS Callouts §7first.")
-                            )
-                        )
-                        if (on) fishmod.utils.Tts.speak("Fish mod text to speech is working")
-                        Constants.SUCCESS
-                    }
-                    .then(
-                        ClientCommands.argument("phrase", StringArgumentType.greedyString())
-                            .executes { ctx ->
-                                fishmod.utils.Tts.speak(StringArgumentType.getString(ctx, "phrase"))
-                                Constants.SUCCESS
-                            }
-                    )
-            )
-
-            dispatcher.register(
-                ClientCommands.literal("fmbuddy").executes {
-                    fishmod.features.DeskBuddy.cheer()
-                    Misc.addChatMessage(
-                        Component.literal(
-                            "§6[Desk-Buddy] §7" + (if (fishmod.utils.config.values.FishSettings.deskBuddyEnabled) "§a\\(^o^)/ dancing!" else "§eenable it in §f/fm §8> §7Cosmetics §8> §7Desk-Buddy §7first.")
-                        )
-                    )
                     Constants.SUCCESS
                 }
             )

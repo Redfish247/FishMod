@@ -21,9 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *
  * <p>Purely client-side and cosmetic: item use on Hypixel is server-authoritative, so this only
  * changes how the held item is posed and animated on your own screen. The override keys off the
- * ITEM_MODEL component itself (the same component {@link fishmod.features.ItemCustomizer} sets), so
- * it applies to your items and to other players' shared customs alike (see
- * {@link fishmod.cosmetic.RemoteItems}).
+ * ITEM_MODEL component itself, wherever it's set.
  */
 @Mixin(ItemStack.class)
 public abstract class ItemModelBehaviorMixin {

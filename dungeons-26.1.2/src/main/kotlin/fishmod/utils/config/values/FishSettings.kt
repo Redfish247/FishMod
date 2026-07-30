@@ -76,10 +76,6 @@ object FishSettings {
     // Catacombs/class overflow levels — drawn on the real Hypixel level-up menu items past the level-50 cap
     @ConfigValue @JvmField var catacombsOverflowEnabled: Boolean = false
 
-    // Bridge Bot
-    @ConfigValue @JvmField var bridgeBotEnabled: Boolean = false
-    @ConfigValue @JvmField var bridgeBotName: String = ""
-
     // Slayer XP tracker
     @ConfigValue @JvmField var fireFreezeTimerEnabled: Boolean = false
     @ConfigValue @JvmField var skillTrackerEnabled: Boolean = false
@@ -114,8 +110,6 @@ object FishSettings {
     // Party Finder join-request stats: whispers you get while this is on print the sender's
     // MP/PB/Cata/Gear to your own chat (local-only, nothing sent back to them).
     @ConfigValue @JvmField var pfStatsEnabled: Boolean = false
-    // Meow auto-responder: replies "meow" when anyone says meow in an enabled chat.
-    @ConfigValue @JvmField var chatMeow: Boolean = false
     // Compact chat: collapse identical messages seen within the last minute into one line
     // with a "(N)" count instead of repeating them.
     @ConfigValue @JvmField var chatCompact: Boolean = false
@@ -183,20 +177,6 @@ object FishSettings {
     @ConfigValue @JvmField var miningTrackerHudY: Int = 320
     @ConfigValue @JvmField var miningTrackerScale: Double = 1.0
 
-    // Show other mod users' cosmetic nicks (your own always shows locally)
-    @ConfigValue @JvmField var remoteNicksEnabled: Boolean = false
-
-    // Show other mod users' custom item/armor cosmetics (dye, trim, model, name, stars)
-    @ConfigValue @JvmField var remoteItemsEnabled: Boolean = false
-
-    // Customizable player model size (render-only — no hitbox/attribute change). Own size shows
-    // locally when enabled; Share publishes it so other mod users render you at it (and you see theirs).
-    @ConfigValue @JvmField var playerSizeEnabled: Boolean = false
-    @ConfigValue @JvmField var playerSizeScaleX: Double = 1.0   // 0.25–5.0 width  multiplier
-    @ConfigValue @JvmField var playerSizeScaleY: Double = 1.0   // 0.25–5.0 height multiplier
-    @ConfigValue @JvmField var playerSizeScaleZ: Double = 1.0   // 0.25–5.0 depth  multiplier
-    @ConfigValue @JvmField var playerSizeShared: Boolean = false // publish mine + render others' sizes
-
     // Chat filter: hide selected categories of Hypixel chat spam. Master gate + per-category toggles.
     @ConfigValue @JvmField var chatFilterEnabled: Boolean = false
     @ConfigValue @JvmField var cfKillCombo: Boolean = true  // "+15 Kill Combo"
@@ -211,10 +191,6 @@ object FishSettings {
     // Also announce the same per-enemy damage to party chat, only while playing Archer.
     @ConfigValue @JvmField var explosiveShotAnnounceParty: Boolean = false
 
-    // Loadout Title: parse "You equipped <Name>!" (item customizer loadout switch) and show the
-    // loadout name as an on-screen title.
-    @ConfigValue @JvmField var loadoutTitleEnabled: Boolean = false
-
     // M7/F7 lever waypoints: through-walls filled box on each boss lever; disappears once flipped.
     @ConfigValue @JvmField var enableM7LeverWaypoints: Boolean = false
     @ConfigValue @JvmField var m7LeverWaypointColor: Int = 0x13FF0086 // ARGB (faint magenta)
@@ -223,19 +199,6 @@ object FishSettings {
     // killed to clear the floor) so they stand out from regular fodder mobs.
     @ConfigValue @JvmField var enableStarredMobHighlight: Boolean = false
     @ConfigValue @JvmField var starredMobHighlightColor: Int = 0x80FFAA00.toInt() // ARGB (translucent gold)
-
-    // Name color: gradient applied to your real username
-    @ConfigValue @JvmField var nickColorStart: Int = 0xFFFF5555.toInt() // red
-    @ConfigValue @JvmField var nickColorEnd: Int = 0xFF5555FF.toInt()   // blue
-    // Optional custom nick text (up to 18 visible chars, & color codes ok). Empty = use real IGN.
-    @ConfigValue @JvmField var nickCustomName: String = ""
-    // Color application mode for the nick (custom name or IGN). "GRADIENT" = Start→End across letters; "SOLID" = single Start color.
-    @ConfigValue @JvmField var nickColorMode: String = "GRADIENT"
-
-    // Your own above-head nametag (with [level] + emblem)
-    @ConfigValue @JvmField var nickPreviewEnabled: Boolean = false
-    @ConfigValue @JvmField var nickPreviewScale: Double = 1.0  // text size (best-effort; IF may pin it)
-    @ConfigValue @JvmField var nickPreviewYOffset: Double = 0.0  // raise(+)/lower(-) the tag, blocks
 
     // Trophy Frogs tab tracker
     @ConfigValue @JvmField var trophyFrogEnabled: Boolean = false
@@ -374,14 +337,6 @@ object FishSettings {
     @ConfigValue @JvmField var slayerDropsHudY: Int = 240
     @ConfigValue @JvmField var slayerDropsScale: Double = 1.0
 
-    // ── TTS Voice Callouts ──────────────────────────────────────────────────────
-    // Speak short alerts through the OS's built-in text-to-speech.
-    @ConfigValue @JvmField var ttsEnabled: Boolean = false
-    @ConfigValue @JvmField var ttsRareDrops: Boolean = true   // rare/insane drops, praise rngesus, great catch
-    @ConfigValue @JvmField var ttsSlayer: Boolean = true   // slayer quest started / complete / boss slain
-    @ConfigValue @JvmField var ttsFishing: Boolean = true   // spoken "Reel" when the bobber reminder fires
-    @ConfigValue @JvmField var ttsRate: Int = 0      // Windows speech rate (-10..10)
-
     // ── Location Ping ───────────────────────────────────────────────────────────
     // Press the ping key (default middle mouse, rebindable in Options > Controls) to drop a
     // through-walls waypoint where you're looking.
@@ -393,30 +348,10 @@ object FishSettings {
     @ConfigValue @JvmField var pingColor: Int = 0xFF55FFFF.toInt() // ARGB (aqua)
     @ConfigValue @JvmField var pingDurationSeconds: Int = 8
 
-    // ── Streamer Mode ───────────────────────────────────────────────────────────
-    // Anti-snipe: §k-scramble player IGNs in Party Finder menus + your own name in chat. Optional
-    // lobby tab scrambling for when you're idling in a hub.
-    @ConfigValue @JvmField var streamerMode: Boolean = false
-    @ConfigValue @JvmField var streamerHideTab: Boolean = false
-
-    // ── Reputation ──────────────────────────────────────────────────────────────
-    // Show a red ✘ next to flagged (net-negative rep) players in the tab list.
-    @ConfigValue @JvmField var repFlagsEnabled: Boolean = false
-
     // ── Wardrobe Hotkeys ────────────────────────────────────────────────────────
     // Press a Wardrobe slot hotkey (bind in Options > Controls) to instantly click that
     // set/loadout in an open Wardrobe or Loadouts GUI.
     @ConfigValue @JvmField var wardrobeHotkeysEnabled: Boolean = false
     @ConfigValue @JvmField var wardrobeHotkeysAutoClose: Boolean = true
-
-    // ── Desk-Buddy ──────────────────────────────────────────────────────────────
-    // A tiny kaomoji companion that idles, sleeps when you're AFK, and dances on RNG drops.
-    @ConfigValue @JvmField var deskBuddyEnabled: Boolean = false
-    @ConfigValue @JvmField var deskBuddyReactToRng: Boolean = true   // dance on rare drops / praise rngesus
-    @ConfigValue @JvmField var deskBuddyName: String = "Rocky"
-    @ConfigValue @JvmField var deskBuddyAfkSeconds: Int = 120    // idle this long → sleep
-    @ConfigValue @JvmField var deskBuddyHudX: Int = 10
-    @ConfigValue @JvmField var deskBuddyHudY: Int = 440
-    @ConfigValue @JvmField var deskBuddyScale: Double = 1.5
 
 }
