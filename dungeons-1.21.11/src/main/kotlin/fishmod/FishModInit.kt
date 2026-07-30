@@ -1002,7 +1002,7 @@ class FishModInit : ModInitializer {
                                         .executes { ctx ->
                                             val name = StringArgumentType.getString(ctx, "name")
                                             fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist =
-                                                fishmod.utils.NameList.add(fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist, name)
+                                                fishmod.utils.NameList.add(fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist, name) ?: ""
                                             fishmod.utils.config.FishConfig.manager.save()
                                             Misc.addChatMessage(Text.literal("§7[FM] Added §f$name §7to the party-action whitelist."))
                                             Constants.SUCCESS
@@ -1015,7 +1015,7 @@ class FishModInit : ModInitializer {
                                         .executes { ctx ->
                                             val name = StringArgumentType.getString(ctx, "name")
                                             fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist =
-                                                fishmod.utils.NameList.remove(fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist, name)
+                                                fishmod.utils.NameList.remove(fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist, name) ?: ""
                                             fishmod.utils.config.FishConfig.manager.save()
                                             Misc.addChatMessage(Text.literal("§7[FM] Removed §f$name §7from the party-action whitelist."))
                                             Constants.SUCCESS
@@ -1033,7 +1033,7 @@ class FishModInit : ModInitializer {
                                         .executes { ctx ->
                                             val name = StringArgumentType.getString(ctx, "name")
                                             fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist =
-                                                fishmod.utils.NameList.add(fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist, name)
+                                                fishmod.utils.NameList.add(fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist, name) ?: ""
                                             fishmod.utils.config.FishConfig.manager.save()
                                             Misc.addChatMessage(Text.literal("§7[FM] Added §f$name §7to the party-action blacklist."))
                                             Constants.SUCCESS
@@ -1046,7 +1046,7 @@ class FishModInit : ModInitializer {
                                         .executes { ctx ->
                                             val name = StringArgumentType.getString(ctx, "name")
                                             fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist =
-                                                fishmod.utils.NameList.remove(fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist, name)
+                                                fishmod.utils.NameList.remove(fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist, name) ?: ""
                                             fishmod.utils.config.FishConfig.manager.save()
                                             Misc.addChatMessage(Text.literal("§7[FM] Removed §f$name §7from the party-action blacklist."))
                                             Constants.SUCCESS
@@ -1218,7 +1218,7 @@ class FishModInit : ModInitializer {
         // Tracker overlay (reset button) for HandledScreens — fires after full render chain
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { client, screen, w, h ->
             if (screen !is net.minecraft.client.gui.screen.ingame.HandledScreen<*>) return@AfterInit
-            LootTrackerOverlay.onScreenInit(screen)
+            fishmod.features.croesus.CroesusLootDetector.onScreenInit(screen)
             ScreenEvents.afterRender(screen).register(ScreenEvents.AfterRender { s, ctx, mx, my, delta ->
                 SessionStats.renderInScreen(ctx, mx, my)
                 LootTrackerOverlay.renderInScreen(ctx, mx, my)

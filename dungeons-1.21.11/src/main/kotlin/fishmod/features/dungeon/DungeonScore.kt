@@ -52,8 +52,8 @@ object DungeonScore {
     private val DEATH_CHAT = Pattern.compile("☠ \\S+ (?:was|were) killed by|☠ \\S+ (?:died|quit)|and became a ghost")
     private val EXPECTING_BLOOD = Pattern.compile("^\\[BOSS\\] The Watcher: You have proven yourself")
     private val PARTY_MSG = Pattern.compile("^Party > .*?: (.+)$")
-    private val MIMIC_CHAT = Pattern.compile("(?i)mimic (?:killed|slain|dead)|killed a mimic|\\$skytils-dungeon-score-mimic\\$")
-    private val PRINCE_CHAT = Pattern.compile("(?i)prince (?:killed|slain|dead)|killed the prince|\\$skytils-dungeon-score-prince\\$")
+    private val MIMIC_CHAT = Pattern.compile("(?i)mimic (?:killed|slain|dead)|killed a mimic|\\\$skytils-dungeon-score-mimic\\\$")
+    private val PRINCE_CHAT = Pattern.compile("(?i)prince (?:killed|slain|dead)|killed the prince|\\\$skytils-dungeon-score-prince\\\$")
 
     // ── State ──
     private var currentFloor: Floor? = null

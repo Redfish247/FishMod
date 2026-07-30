@@ -45,7 +45,7 @@ object PbPaceHud {
             last = s
             val pb = RunHistory.getPersonalBest(floor, s.name)
             if (pb > 0) {
-                val d = s.realTime - pb
+                val d = s.getRealTime() - pb
                 cumDelta += d
                 anyPb = true
                 lastDelta = d
@@ -65,7 +65,7 @@ object PbPaceHud {
         ctx.matrices.translate(x.toFloat(), y.toFloat())
         ctx.matrices.scale(sc, sc)
         var row = 0
-        ctx.drawText(mc.textRenderer, "§6§lPB Pace §7(" + floor.uppercase() + ")", 0, row++ * lh, 0xFFFFFFFF.toInt(), true)
+        ctx.drawText(mc.textRenderer, "§6§lPB Pace §7(" + (floor?.uppercase() ?: "") + ")", 0, row++ * lh, 0xFFFFFFFF.toInt(), true)
         if (lastHasPb)
             ctx.drawText(mc.textRenderer, "§f" + last.name + " " + signed(lastDelta), 0, row++ * lh, 0xFFFFFFFF.toInt(), true)
         if (anyPb)

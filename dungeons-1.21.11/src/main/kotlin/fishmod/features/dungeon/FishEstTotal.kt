@@ -93,7 +93,7 @@ object FishEstTotal {
     @JvmField
     @ConfigValue
     var estTotalHud: HUDComponent = HUDComponent(
-        0, 0, Phase.SPLIT_LENGTH, Constants.TEXT_HEIGHT * 2 + 4, 1, "Est. Total",
+        0.0, 0.0, Phase.SPLIT_LENGTH, Constants.TEXT_HEIGHT * 2 + 4, 1f, "Est. Total",
         { display() },
         { component, context -> render(component, context) },
         { try { Phase.enableSplits } catch (t: Throwable) { false } }

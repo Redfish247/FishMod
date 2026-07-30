@@ -24,7 +24,7 @@ class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Scr
         val y = this.height / 2 - 10
 
         field = TextFieldWidget(this.textRenderer, x, y, w, h, Text.literal("Title"))
-        field.maxLength = 64
+        field.setMaxLength(64)
         addDrawableChild(field)
         setInitialFocus(field)
 

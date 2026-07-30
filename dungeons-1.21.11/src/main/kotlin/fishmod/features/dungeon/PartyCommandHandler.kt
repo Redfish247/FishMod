@@ -584,7 +584,7 @@ object PartyCommandHandler {
                 val over = (targetLevel - 50).toLong() * HypixelApi.CATA_OVERFLOW_XP_PER_LEVEL
                 xpNeeded = HypixelApi.CATA_XP_TABLE[50] + over - data.cataXp
             }
-            val xpPerRun = maxOf(1L, FishSettings.rtcCataXpPerRun)
+            val xpPerRun = maxOf(1L, FishSettings.rtcCataXpPerRun.toLong())
             val result: String
             if (xpNeeded <= 0) {
                 result = "Done ✔ :java:"
@@ -649,7 +649,7 @@ object PartyCommandHandler {
             if (xpNeeded <= 0) {
                 result = "Done ✔"
             } else {
-                val xpPerRun = maxOf(1L, FishSettings.rtcaClassXpPerRun)
+                val xpPerRun = maxOf(1L, FishSettings.rtcaClassXpPerRun.toLong())
                 val runs: Long
                 if (FishSettings.rtcaIncludeDailyBonus) {
                     val bonusXp = (5 * xpPerRun * 1.4).toLong() // 5 daily-bonus runs at +40%
@@ -674,8 +674,8 @@ object PartyCommandHandler {
     }
 
     private fun buildAndSendRtca(mc: MinecraftClient, data: HypixelApi.DungeonData, ign: String, responder: String?) {
-        val xpPerRun = maxOf(1L, FishSettings.rtcaClassXpPerRun)
-        val passiveXp = maxOf(0L, FishSettings.rtcaClassPassiveXpPerRun)
+        val xpPerRun = maxOf(1L, FishSettings.rtcaClassXpPerRun.toLong())
+        val passiveXp = maxOf(0L, FishSettings.rtcaClassPassiveXpPerRun.toLong())
 
         val classes = arrayOf("healer", "mage", "berserk", "archer", "tank")
         val shortNames = arrayOf("H", "M", "B", "A", "T")

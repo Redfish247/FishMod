@@ -38,11 +38,11 @@ object ItemRarityHotbar {
         if (!Visual.itemRarityBackground || stack == null || stack.isEmpty) return
 
         val holder = stack as ItemRarityHolder
-        if (!holder.fishmod$hasScanned()) holder.fishmod$setItemRarity(getRarity(stack))
-        if (!holder.fishmod$hasItemRarity()) return
+        if (!holder.`fishmod$hasScanned`()) holder.`fishmod$setItemRarity`(getRarity(stack))
+        if (!holder.`fishmod$hasItemRarity`()) return
 
         val sprite = if (Visual.circularRarityBackground) CIRCLE else SQUARE
-        ctx.drawGuiTexture(RenderPipelines.GUI_TEXTURED, sprite, x, y, 16, 16, getTintColor(holder.fishmod$getItemRarity()))
+        ctx.drawGuiTexture(RenderPipelines.GUI_TEXTURED, sprite, x, y, 16, 16, getTintColor(holder.`fishmod$getItemRarity`()))
     }
 
     private fun getTintColor(rarity: ItemRarity): Int {
