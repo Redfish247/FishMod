@@ -1,0 +1,118 @@
+package fishmod.features.dungeon.f7
+
+import config.practical.hud.HUDComponent
+import fishmod.utils.Constants
+import fishmod.utils.Location
+import fishmod.utils.Misc
+import fishmod.utils.Scheduler
+import fishmod.utils.config.values.Floor7
+import fishmod.utils.dungeon.DungeonClass
+import fishmod.utils.dungeon.Phase
+import fishmod.utils.events.Events
+import fishmod.utils.rendering.RenderUtils
+import net.minecraft.client.gui.DrawContext
+import net.minecraft.sound.SoundEvents
+import net.minecraft.text.Text
+import net.minecraft.util.Formatting
+import java.util.regex.Pattern
+
+/** Storm (P2) tick timer + first-death time. Ported from blade-addons (spirit-mask warning omitted). */
+object StormTickTimer {
+
+    private val PATTERN: Pattern = Pattern.compile("^⚠ Storm is enraged! ⚠$")
+    private const val DEATH_DISPLAY_DURATION = 2000L
+    private const val CRUSH_TICK = 31 * 20
+    private const val COUNTDOWN_DURATION = 5 * 20
+
+    // LB (Last Breath) release window: visible once the Storm clock hits 30s.
+    // Archer releases at 34.35s, Healer at 34.05s; hidden on other classes.
+    private const val LB_START_TICK = 30 * 20
+    private val LB_ARCHER_END_TICK: Int = Math.round(34.35 * 20).toInt()
+    private val LB_HEALER_END_TICK: Int = Math.round(34.05 * 20).toInt()
+
+    private var tick = 0
+    private var deathTime = 0.0
+    private var deathStartDisplayTime = 0L
+
+    @JvmStatic
+    fun init() {
+        Events.ON_SERVER_TICK.register {
+            if (Location.inDungeon() && Phase.inP2() && !Phase.stormDead()) {
+                tick++
+                val lbEnd = lbEndTick()
+                if (Floor7.enableLbReleaseTimer && lbEnd > 0 && tick == lbEnd) {
+                    Misc.forceTitle(Text.literal("RELEASE NOW!").formatted(Formatting.RED, Formatting.BOLD), Text.empty())
+                    Scheduler.scheduleSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), 1f, 1f)
+                }
+            }
+            false
+        }
+        Events.ON_LOCATION_CHANGE.register { newLocation ->
+            if (Location.inDungeon()) {
+                tick = 0; deathTime = 0.0; deathStartDisplayTime = 0
+            }
+            false
+        }
+        Events.ON_GAME_MESSAGE.register { text ->
+            if (!Location.inDungeon() || !Phase.inP2() || !Floor7.enableStormDeathTime) return@register false
+            if (PATTERN.matcher(text.string).find()) {
+                deathTime = tick * Constants.TICK_DURATION
+                deathStartDisplayTime = System.currentTimeMillis()
+                Misc.addChatMessage(
+                    Text.literal(
+                        "§aStorm died at: §e"
+                                + Constants.DECIMAL_FORMAT.format(deathTime) + "s§a."
+                    )
+                )
+            }
+            false
+        }
+    }
+
+    @JvmStatic
+    fun display(): Boolean {
+        if (Floor7.tickDownStormTickTimer) {
+            val diff = CRUSH_TICK - tick
+            if (diff > COUNTDOWN_DURATION || diff < 0) return false
+        }
+        return Floor7.enableStormTickTimer && Location.inDungeon() && Phase.inP2() && !Phase.stormDead()
+    }
+
+    @JvmStatic
+    fun render(component: HUDComponent, context: DrawContext) {
+        var num = tick * Constants.TICK_DURATION
+        if (Floor7.tickDownStormTickTimer) num = CRUSH_TICK * Constants.TICK_DURATION - num
+        RenderUtils.drawTimer(component, context, num, Floor7.stormTickTimerColor)
+    }
+
+    @JvmStatic
+    fun displayDeathTime(): Boolean {
+        return Floor7.enableStormDeathTime && Location.inDungeon() && Phase.inP2() && !Phase.stormDead()
+                && deathTime > 0 && deathStartDisplayTime > System.currentTimeMillis() - DEATH_DISPLAY_DURATION
+    }
+
+    @JvmStatic
+    fun renderDeathTime(component: HUDComponent, context: DrawContext) {
+        RenderUtils.drawTimer(component, context, deathTime, Constants.DARK_PURPLE)
+    }
+
+    /** Class-specific LB release tick, or -1 when the timer shouldn't show for this class. */
+    private fun lbEndTick(): Int {
+        if (DungeonClass.isClass(DungeonClass.ARCHER)) return LB_ARCHER_END_TICK
+        if (DungeonClass.isClass(DungeonClass.HEALER)) return LB_HEALER_END_TICK
+        return -1
+    }
+
+    @JvmStatic
+    fun displayLbReleaseTimer(): Boolean {
+        val lbEnd = lbEndTick()
+        return Floor7.enableLbReleaseTimer && lbEnd > 0 && Location.inDungeon() && Phase.inP2() && !Phase.stormDead()
+                && tick >= LB_START_TICK && tick <= lbEnd
+    }
+
+    @JvmStatic
+    fun renderLbReleaseTimer(component: HUDComponent, context: DrawContext) {
+        val remaining = (lbEndTick() - tick) * Constants.TICK_DURATION
+        RenderUtils.drawTimer(component, context, remaining, Floor7.lbReleaseTimerColor)
+    }
+}
