@@ -22,8 +22,7 @@ import fishmod.utils.Easing
 import fishmod.utils.rendering.NvgRecorder
 
 import java.util.ArrayList
-import java.util.function.Consumer
-import java.util.function.Supplier
+import kotlin.reflect.KMutableProperty0
 
 /**
  * Multi-column config screen (matches the FishMod design mockup).
@@ -78,357 +77,263 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
 
         // ===== General =====
         run {
-            val f = Feature("Mod Prefix",
-                Supplier { FishSettings.modPrefixEnabled }, Consumer { v -> FishSettings.modPrefixEnabled = v })
+            val f = Feature("Mod Prefix", FishSettings::modPrefixEnabled)
             f.sub.add(InputSetting("Prefix", "",
-                Supplier { FishSettings.modPrefix },
-                Consumer { v -> FishSettings.modPrefix = if (v != null && v.length > 10) v.substring(0, 10) else v }))
+                { FishSettings.modPrefix },
+                { v -> FishSettings.modPrefix = if (v != null && v.length > 10) v.substring(0, 10) else v }))
             general.features.add(f)
         }
         run {
-            val f = Feature("Inventory Buttons",
-                Supplier { Buttons.enableInventoryButtons },
-                Consumer { v -> Buttons.enableInventoryButtons = v })
-            f.sub.add(makeButtonInput("Button 1", Supplier { Buttons.command1 }, Consumer { v -> Buttons.command1 = v }))
-            f.sub.add(makeButtonInput("Button 2", Supplier { Buttons.command2 }, Consumer { v -> Buttons.command2 = v }))
-            f.sub.add(makeButtonInput("Button 3", Supplier { Buttons.command3 }, Consumer { v -> Buttons.command3 = v }))
-            f.sub.add(makeButtonInput("Button 4", Supplier { Buttons.command4 }, Consumer { v -> Buttons.command4 = v }))
-            f.sub.add(makeButtonInput("Button 5", Supplier { Buttons.command5 }, Consumer { v -> Buttons.command5 = v }))
-            f.sub.add(makeButtonInput("Button 6", Supplier { Buttons.command6 }, Consumer { v -> Buttons.command6 = v }))
-            f.sub.add(makeButtonInput("Button 7", Supplier { Buttons.command7 }, Consumer { v -> Buttons.command7 = v }))
+            val f = Feature("Inventory Buttons", Buttons::enableInventoryButtons)
+            f.sub.add(makeButtonInput("Button 1", Buttons::command1))
+            f.sub.add(makeButtonInput("Button 2", Buttons::command2))
+            f.sub.add(makeButtonInput("Button 3", Buttons::command3))
+            f.sub.add(makeButtonInput("Button 4", Buttons::command4))
+            f.sub.add(makeButtonInput("Button 5", Buttons::command5))
+            f.sub.add(makeButtonInput("Button 6", Buttons::command6))
+            f.sub.add(makeButtonInput("Button 7", Buttons::command7))
             general.features.add(f)
         }
         run {
-            val f = Feature("Wardrobe Hotkeys",
-                Supplier { FishSettings.wardrobeHotkeysEnabled }, Consumer { v -> FishSettings.wardrobeHotkeysEnabled = v })
-            f.sub.add(ToggleSetting("Auto-Close GUI", "",
-                Supplier { FishSettings.wardrobeHotkeysAutoClose }, Consumer { v -> FishSettings.wardrobeHotkeysAutoClose = v }))
+            val f = Feature("Wardrobe Hotkeys", FishSettings::wardrobeHotkeysEnabled)
+            f.sub.add(ToggleSetting("Auto-Close GUI", "", FishSettings::wardrobeHotkeysAutoClose))
             f.sub.add(SubcategoryHeader("Click a slot, then press a key/mouse button (Esc unbinds)"))
             val slots = fishmod.utils.Keybinds.wardrobeSlots
             if (slots != null) {
                 for (i in slots.indices) {
                     val idx = i
                     f.sub.add(KeybindSetting("Slot " + (idx + 1), "",
-                        Supplier { fishmod.utils.Keybinds.wardrobeSlots!![idx] }))
+                        { fishmod.utils.Keybinds.wardrobeSlots!![idx] }))
                 }
             }
             general.features.add(f)
         }
-        general.features.add(Feature("Smart Copy Chat",
-            Supplier { FishSettings.smartCopyChat }, Consumer { v -> FishSettings.smartCopyChat = v }))
-        general.features.add(Feature("Compact Chat",
-            Supplier { FishSettings.chatCompact }, Consumer { v -> FishSettings.chatCompact = v }))
+        general.features.add(Feature("Smart Copy Chat", FishSettings::smartCopyChat))
+        general.features.add(Feature("Compact Chat", FishSettings::chatCompact))
         run {
-            val f = Feature("Compact Tab",
-                Supplier { FishSettings.compactTabEnabled }, Consumer { v -> FishSettings.compactTabEnabled = v })
-            f.sub.add(SliderIntSetting("Opacity %", "",
-                Supplier { FishSettings.compactTabOpacity }, Consumer { v -> FishSettings.compactTabOpacity = v }, 0, 100))
+            val f = Feature("Compact Tab", FishSettings::compactTabEnabled)
+            f.sub.add(SliderIntSetting("Opacity %", "", FishSettings::compactTabOpacity, 0, 100))
             general.features.add(f)
         }
         run {
-            val f = Feature("Chat Filter",
-                Supplier { FishSettings.chatFilterEnabled }, Consumer { v -> FishSettings.chatFilterEnabled = v })
-            f.sub.add(ToggleSetting("Kill Combo", "",
-                Supplier { FishSettings.cfKillCombo }, Consumer { v -> FishSettings.cfKillCombo = v }))
-            f.sub.add(ToggleSetting("Boss Messages", "",
-                Supplier { FishSettings.cfBossMessages }, Consumer { v -> FishSettings.cfBossMessages = v }))
-            f.sub.add(ToggleSetting("Friend Join/Leave", "",
-                Supplier { FishSettings.cfFriendJoinLeave }, Consumer { v -> FishSettings.cfFriendJoinLeave = v }))
-            f.sub.add(ToggleSetting("Bazaar", "",
-                Supplier { FishSettings.cfBazaar }, Consumer { v -> FishSettings.cfBazaar = v }))
-            f.sub.add(ToggleSetting("Warping", "",
-                Supplier { FishSettings.cfWarping }, Consumer { v -> FishSettings.cfWarping = v }))
+            val f = Feature("Chat Filter", FishSettings::chatFilterEnabled)
+            f.sub.add(ToggleSetting("Kill Combo", "", FishSettings::cfKillCombo))
+            f.sub.add(ToggleSetting("Boss Messages", "", FishSettings::cfBossMessages))
+            f.sub.add(ToggleSetting("Friend Join/Leave", "", FishSettings::cfFriendJoinLeave))
+            f.sub.add(ToggleSetting("Bazaar", "", FishSettings::cfBazaar))
+            f.sub.add(ToggleSetting("Warping", "", FishSettings::cfWarping))
             general.features.add(f)
         }
 
         // ===== Dungeon =====
         run {
-            val f = Feature("Dungeon Score",
-                Supplier { FishSettings.dungeonScoreEnabled }, Consumer { v -> FishSettings.dungeonScoreEnabled = v })
-            f.sub.add(ToggleSetting("Score Missing Msg (1min)", "",
-                Supplier { FishSettings.dungeonScoreMissingMsg }, Consumer { v -> FishSettings.dungeonScoreMissingMsg = v }))
-            f.sub.add(ToggleSetting("Score Left (not total secrets)", "",
-                Supplier { FishSettings.dungeonScoreShowLeft }, Consumer { v -> FishSettings.dungeonScoreShowLeft = v }))
-            f.sub.add(ToggleSetting("270 Title", "",
-                Supplier { FishSettings.score270TitleEnabled }, Consumer { v -> FishSettings.score270TitleEnabled = v }))
-            f.sub.add(ToggleSetting("270 Chat Msg", "",
-                Supplier { FishSettings.score270ChatEnabled }, Consumer { v -> FishSettings.score270ChatEnabled = v }))
-            val t270 = InputSetting("270 Text", "",
-                Supplier { FishSettings.score270Text }, Consumer { v -> FishSettings.score270Text = v })
+            val f = Feature("Dungeon Score", FishSettings::dungeonScoreEnabled)
+            f.sub.add(ToggleSetting("Score Missing Msg (1min)", "", FishSettings::dungeonScoreMissingMsg))
+            f.sub.add(ToggleSetting("Score Left (not total secrets)", "", FishSettings::dungeonScoreShowLeft))
+            f.sub.add(ToggleSetting("270 Title", "", FishSettings::score270TitleEnabled))
+            f.sub.add(ToggleSetting("270 Chat Msg", "", FishSettings::score270ChatEnabled))
+            val t270 = InputSetting("270 Text", "", FishSettings::score270Text)
             t270.hint = "& color codes ok"
             f.sub.add(t270)
-            f.sub.add(ToggleSetting("300 Title", "",
-                Supplier { FishSettings.score300TitleEnabled }, Consumer { v -> FishSettings.score300TitleEnabled = v }))
-            f.sub.add(ToggleSetting("300 Chat Msg", "",
-                Supplier { FishSettings.score300ChatEnabled }, Consumer { v -> FishSettings.score300ChatEnabled = v }))
-            val t300 = InputSetting("300 Text", "",
-                Supplier { FishSettings.score300Text }, Consumer { v -> FishSettings.score300Text = v })
+            f.sub.add(ToggleSetting("300 Title", "", FishSettings::score300TitleEnabled))
+            f.sub.add(ToggleSetting("300 Chat Msg", "", FishSettings::score300ChatEnabled))
+            val t300 = InputSetting("300 Text", "", FishSettings::score300Text)
             t300.hint = "& color codes ok"
             f.sub.add(t300)
             dungeon.features.add(f)
         }
-        dungeon.features.add(Feature("PB Pace",
-            Supplier { FishSettings.pbPaceEnabled }, Consumer { v -> FishSettings.pbPaceEnabled = v }))
-        dungeon.features.add(Feature("Puzzle Overlay",
-            Supplier { FishSettings.showPuzzles }, Consumer { v -> FishSettings.showPuzzles = v }))
+        dungeon.features.add(Feature("PB Pace", FishSettings::pbPaceEnabled))
+        dungeon.features.add(Feature("Puzzle Overlay", FishSettings::showPuzzles))
         run {
-            val f = Feature("Death Message",
-                Supplier { FishSettings.deathMessageEnabled }, Consumer { v -> FishSettings.deathMessageEnabled = v })
-            val tmpl = InputSetting("Template", "",
-                Supplier { FishSettings.deathMessageTemplate }, Consumer { v -> FishSettings.deathMessageTemplate = v })
+            val f = Feature("Death Message", FishSettings::deathMessageEnabled)
+            val tmpl = InputSetting("Template", "", FishSettings::deathMessageTemplate)
             tmpl.hint = "{name} = player who died"
             f.sub.add(tmpl)
-            f.sub.add(ToggleSetting("To Party", "",
-                Supplier { FishSettings.deathMessageToParty }, Consumer { v -> FishSettings.deathMessageToParty = v }))
+            f.sub.add(ToggleSetting("To Party", "", FishSettings::deathMessageToParty))
             dungeon.features.add(f)
         }
-        dungeon.features.add(Feature("Send Lag to Party",
-            Supplier { FishSettings.sendLagToParty }, Consumer { v -> FishSettings.sendLagToParty = v }))
+        dungeon.features.add(Feature("Send Lag to Party", FishSettings::sendLagToParty))
         run {
-            val f = Feature("Splits",
-                Supplier { Phase.enableSplits }, Consumer { v -> Phase.enableSplits = v })
-            f.sub.add(ToggleSetting("Total Time", "",
-                Supplier { Phase.includeTotalTime }, Consumer { v -> Phase.includeTotalTime = v }))
-            f.sub.add(ToggleSetting("Send in Chat", "",
-                Supplier { Phase.sendSplitInChat }, Consumer { v -> Phase.sendSplitInChat = v }))
+            val f = Feature("Splits", Phase::enableSplits)
+            f.sub.add(ToggleSetting("Total Time", "", Phase::includeTotalTime))
+            f.sub.add(ToggleSetting("Send in Chat", "", Phase::sendSplitInChat))
             f.sub.add(DropdownSetting("Tick Timer", "",
-                Split.TimerType.values(), Supplier { Split.timerType }, Consumer { v -> Split.timerType = v }))
-            f.sub.add(ToggleSetting("Activated Only", "",
-                Supplier { Phase.onlyShowActivatedSplits }, Consumer { v -> Phase.onlyShowActivatedSplits = v }))
+                Split.TimerType.values(), { Split.timerType }, { v -> Split.timerType = v }))
+            f.sub.add(ToggleSetting("Activated Only", "", Phase::onlyShowActivatedSplits))
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Session Stats",
-                Supplier { FishSettings.sessionStatsEnabled }, Consumer { v -> FishSettings.sessionStatsEnabled = v })
-            f.sub.add(ToggleSetting("In Dungeon", "",
-                Supplier { FishSettings.sessionStatsInDungeon }, Consumer { v -> FishSettings.sessionStatsInDungeon = v }))
-            f.sub.add(ToggleSetting("In D Hub", "",
-                Supplier { FishSettings.sessionStatsInDungeonHub }, Consumer { v -> FishSettings.sessionStatsInDungeonHub = v }))
-            f.sub.add(ToggleSetting("Reset Relog", "",
-                Supplier { FishSettings.sessionStatsResetOnRelog }, Consumer { v -> FishSettings.sessionStatsResetOnRelog = v }))
+            val f = Feature("Session Stats", FishSettings::sessionStatsEnabled)
+            f.sub.add(ToggleSetting("In Dungeon", "", FishSettings::sessionStatsInDungeon))
+            f.sub.add(ToggleSetting("In D Hub", "", FishSettings::sessionStatsInDungeonHub))
+            f.sub.add(ToggleSetting("Reset Relog", "", FishSettings::sessionStatsResetOnRelog))
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Loot Tracker",
-                Supplier { FishSettings.lootTrackerEnabled }, Consumer { v -> FishSettings.lootTrackerEnabled = v })
+            val f = Feature("Loot Tracker", FishSettings::lootTrackerEnabled)
             f.sub.add(DropdownSetting("Price", "",
                 FishSettings.PriceMode.values(),
-                Supplier { FishSettings.trackerPriceModeEnum },
-                Consumer { v -> FishSettings.trackerPriceModeEnum = v; fishmod.features.croesus.CroesusPrices.applyPriceMode() }))
+                { FishSettings.trackerPriceModeEnum },
+                { v -> FishSettings.trackerPriceModeEnum = v; fishmod.features.croesus.CroesusPrices.applyPriceMode() }))
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Simon Says",
-                Supplier { FishSettings.simonSaysEnabled }, Consumer { v -> FishSettings.simonSaysEnabled = v })
-            f.sub.add(ToggleSetting("Show HUD", "",
-                Supplier { FishSettings.simonSaysHudEnabled }, Consumer { v -> FishSettings.simonSaysHudEnabled = v }))
-            f.sub.add(ToggleSetting("To Party", "",
-                Supplier { FishSettings.simonSaysPartyChat }, Consumer { v -> FishSettings.simonSaysPartyChat = v }))
-            f.sub.add(ToggleSetting("Fail Msg", "",
-                Supplier { FishSettings.simonSaysFailEnabled }, Consumer { v -> FishSettings.simonSaysFailEnabled = v }))
-            f.sub.add(InputSetting("Fail Text", "",
-                Supplier { FishSettings.simonSaysFailMessage }, Consumer { v -> FishSettings.simonSaysFailMessage = v }))
+            val f = Feature("Simon Says", FishSettings::simonSaysEnabled)
+            f.sub.add(ToggleSetting("Show HUD", "", FishSettings::simonSaysHudEnabled))
+            f.sub.add(ToggleSetting("To Party", "", FishSettings::simonSaysPartyChat))
+            f.sub.add(ToggleSetting("Fail Msg", "", FishSettings::simonSaysFailEnabled))
+            f.sub.add(InputSetting("Fail Text", "", FishSettings::simonSaysFailMessage))
             dungeon.features.add(f)
         }
-        dungeon.features.add(Feature("Class Colored Boots",
-            Supplier { FishSettings.classColoredBootsEnabled }, Consumer { v -> FishSettings.classColoredBootsEnabled = v }))
+        dungeon.features.add(Feature("Class Colored Boots", FishSettings::classColoredBootsEnabled))
         run {
-            val f = Feature("M7 Lever Waypoints",
-                Supplier { FishSettings.enableM7LeverWaypoints }, Consumer { v -> FishSettings.enableM7LeverWaypoints = v })
-            f.sub.add(ColorPickerSetting("Box Color", "",
-                Supplier { FishSettings.m7LeverWaypointColor }, Consumer { v -> FishSettings.m7LeverWaypointColor = v }))
+            val f = Feature("M7 Lever Waypoints", FishSettings::enableM7LeverWaypoints)
+            f.sub.add(ColorPickerSetting("Box Color", "", FishSettings::m7LeverWaypointColor))
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Starred Mob Highlight",
-                Supplier { FishSettings.enableStarredMobHighlight }, Consumer { v -> FishSettings.enableStarredMobHighlight = v })
-            f.sub.add(ColorPickerSetting("Outline Color", "",
-                Supplier { FishSettings.starredMobHighlightColor }, Consumer { v -> FishSettings.starredMobHighlightColor = v }))
+            val f = Feature("Starred Mob Highlight", FishSettings::enableStarredMobHighlight)
+            f.sub.add(ColorPickerSetting("Outline Color", "", FishSettings::starredMobHighlightColor))
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Dupe Class Detector",
-                Supplier { Dungeons.detectDuplicateClass },
-                Consumer { v -> Dungeons.detectDuplicateClass = v })
-            f.sub.add(ToggleSetting("Ignore Mage", "",
-                Supplier { Dungeons.ignoreDupeMage },
-                Consumer { v -> Dungeons.ignoreDupeMage = v }))
-            f.sub.add(ToggleSetting("To Party", "",
-                Supplier { Dungeons.dupeClassPartyChat },
-                Consumer { v -> Dungeons.dupeClassPartyChat = v }))
+            val f = Feature("Dupe Class Detector", Dungeons::detectDuplicateClass)
+            f.sub.add(ToggleSetting("Ignore Mage", "", Dungeons::ignoreDupeMage))
+            f.sub.add(ToggleSetting("To Party", "", Dungeons::dupeClassPartyChat))
             dungeon.features.add(f)
         }
         // ===== Party =====
         run {
             val f = Feature("Party Commands", null, null)
-            f.sub.add(ToggleSetting(".ai", "", Supplier { FishSettings.pcAllinvite }, Consumer { v -> FishSettings.pcAllinvite = v }))
-            f.sub.add(ToggleSetting(".pb", "", Supplier { FishSettings.pcPb }, Consumer { v -> FishSettings.pcPb = v }))
-            f.sub.add(ToggleSetting(".cata", "", Supplier { FishSettings.pcCata }, Consumer { v -> FishSettings.pcCata = v }))
-            f.sub.add(ToggleSetting(".rtca", "", Supplier { FishSettings.pcRtca }, Consumer { v -> FishSettings.pcRtca = v }))
-            f.sub.add(ToggleSetting(".rtc", "", Supplier { FishSettings.pcRtc }, Consumer { v -> FishSettings.pcRtc = v }))
-            f.sub.add(ToggleSetting(".crtc", "", Supplier { FishSettings.pcCrtc }, Consumer { v -> FishSettings.pcCrtc = v }))
-            f.sub.add(ToggleSetting(".dprofit", "", Supplier { FishSettings.pcDprofit }, Consumer { v -> FishSettings.pcDprofit = v }))
-            f.sub.add(ToggleSetting(".corpse", "", Supplier { FishSettings.pcCorpse }, Consumer { v -> FishSettings.pcCorpse = v }))
-            f.sub.add(ToggleSetting(".f# / .m#", "", Supplier { FishSettings.pcJoinFloor }, Consumer { v -> FishSettings.pcJoinFloor = v }))
-            f.sub.add(ToggleSetting(".fps", "", Supplier { FishSettings.pcFps }, Consumer { v -> FishSettings.pcFps = v }))
-            f.sub.add(ToggleSetting(".tps", "", Supplier { FishSettings.pcTps }, Consumer { v -> FishSettings.pcTps = v }))
-            f.sub.add(ToggleSetting(".ping", "", Supplier { FishSettings.pcPing }, Consumer { v -> FishSettings.pcPing = v }))
-            f.sub.add(ToggleSetting(".secrets", "", Supplier { FishSettings.pcSecrets }, Consumer { v -> FishSettings.pcSecrets = v }))
-            f.sub.add(ToggleSetting(".runs", "", Supplier { FishSettings.pcRuns }, Consumer { v -> FishSettings.pcRuns = v }))
-            f.sub.add(ToggleSetting(".d", "", Supplier { FishSettings.pcDisband }, Consumer { v -> FishSettings.pcDisband = v }))
-            f.sub.add(ToggleSetting(".mp", "", Supplier { FishSettings.pcMp }, Consumer { v -> FishSettings.pcMp = v }))
-            f.sub.add(ToggleSetting(".collection", "", Supplier { FishSettings.pcCollection }, Consumer { v -> FishSettings.pcCollection = v }))
-            f.sub.add(ToggleSetting(".nw", "", Supplier { FishSettings.pcNw }, Consumer { v -> FishSettings.pcNw = v }))
-            f.sub.add(ToggleSetting(".bank", "", Supplier { FishSettings.pcBank }, Consumer { v -> FishSettings.pcBank = v }))
-            f.sub.add(ToggleSetting(".powder", "", Supplier { FishSettings.pcPowder }, Consumer { v -> FishSettings.pcPowder = v }))
-            f.sub.add(ToggleSetting(".level", "", Supplier { FishSettings.pcLevel }, Consumer { v -> FishSettings.pcLevel = v }))
-            f.sub.add(ToggleSetting(".farming", "", Supplier { FishSettings.pcFarming }, Consumer { v -> FishSettings.pcFarming = v }))
-            f.sub.add(ToggleSetting(".nuc", "", Supplier { FishSettings.pcNuc }, Consumer { v -> FishSettings.pcNuc = v }))
-            f.sub.add(ToggleSetting(".worm / .scatha", "", Supplier { FishSettings.pcWorm }, Consumer { v -> FishSettings.pcWorm = v }))
-            f.sub.add(ToggleSetting(".help / .?", "", Supplier { FishSettings.pcHelp }, Consumer { v -> FishSettings.pcHelp = v }))
+            f.sub.add(ToggleSetting(".ai", "", FishSettings::pcAllinvite))
+            f.sub.add(ToggleSetting(".pb", "", FishSettings::pcPb))
+            f.sub.add(ToggleSetting(".cata", "", FishSettings::pcCata))
+            f.sub.add(ToggleSetting(".rtca", "", FishSettings::pcRtca))
+            f.sub.add(ToggleSetting(".rtc", "", FishSettings::pcRtc))
+            f.sub.add(ToggleSetting(".crtc", "", FishSettings::pcCrtc))
+            f.sub.add(ToggleSetting(".dprofit", "", FishSettings::pcDprofit))
+            f.sub.add(ToggleSetting(".corpse", "", FishSettings::pcCorpse))
+            f.sub.add(ToggleSetting(".f# / .m#", "", FishSettings::pcJoinFloor))
+            f.sub.add(ToggleSetting(".fps", "", FishSettings::pcFps))
+            f.sub.add(ToggleSetting(".tps", "", FishSettings::pcTps))
+            f.sub.add(ToggleSetting(".ping", "", FishSettings::pcPing))
+            f.sub.add(ToggleSetting(".secrets", "", FishSettings::pcSecrets))
+            f.sub.add(ToggleSetting(".runs", "", FishSettings::pcRuns))
+            f.sub.add(ToggleSetting(".d", "", FishSettings::pcDisband))
+            f.sub.add(ToggleSetting(".mp", "", FishSettings::pcMp))
+            f.sub.add(ToggleSetting(".collection", "", FishSettings::pcCollection))
+            f.sub.add(ToggleSetting(".nw", "", FishSettings::pcNw))
+            f.sub.add(ToggleSetting(".bank", "", FishSettings::pcBank))
+            f.sub.add(ToggleSetting(".powder", "", FishSettings::pcPowder))
+            f.sub.add(ToggleSetting(".level", "", FishSettings::pcLevel))
+            f.sub.add(ToggleSetting(".farming", "", FishSettings::pcFarming))
+            f.sub.add(ToggleSetting(".nuc", "", FishSettings::pcNuc))
+            f.sub.add(ToggleSetting(".worm / .scatha", "", FishSettings::pcWorm))
+            f.sub.add(ToggleSetting(".help / .?", "", FishSettings::pcHelp))
             f.sub.add(SubcategoryHeader("Party Actions"))
-            f.sub.add(ToggleSetting(".kick", "", Supplier { FishSettings.pcActionKick }, Consumer { v -> FishSettings.pcActionKick = v }))
-            f.sub.add(ToggleSetting(".warp / .w", "", Supplier { FishSettings.pcActionWarp }, Consumer { v -> FishSettings.pcActionWarp = v }))
-            f.sub.add(ToggleSetting(".transfer / .pt / .ptme", "", Supplier { FishSettings.pcActionTransfer }, Consumer { v -> FishSettings.pcActionTransfer = v }))
-            f.sub.add(ToggleSetting(".promote", "", Supplier { FishSettings.pcActionPromote }, Consumer { v -> FishSettings.pcActionPromote = v }))
-            f.sub.add(ToggleSetting(".demote", "", Supplier { FishSettings.pcActionDemote }, Consumer { v -> FishSettings.pcActionDemote = v }))
+            f.sub.add(ToggleSetting(".kick", "", FishSettings::pcActionKick))
+            f.sub.add(ToggleSetting(".warp / .w", "", FishSettings::pcActionWarp))
+            f.sub.add(ToggleSetting(".transfer / .pt / .ptme", "", FishSettings::pcActionTransfer))
+            f.sub.add(ToggleSetting(".promote", "", FishSettings::pcActionPromote))
+            f.sub.add(ToggleSetting(".demote", "", FishSettings::pcActionDemote))
             f.sub.add(DropdownSetting("Who Can Trigger", "", arrayOf("off", "self", "whitelist", "blacklist", "everyone"),
-                Supplier { FishSettings.pcPartyActionsMode }, Consumer { v -> FishSettings.pcPartyActionsMode = v }))
-            val paWhitelist = InputSetting("Whitelist", "",
-                Supplier { FishSettings.pcPartyActionsWhitelist }, Consumer { v -> FishSettings.pcPartyActionsWhitelist = v })
+                { FishSettings.pcPartyActionsMode }, { v -> FishSettings.pcPartyActionsMode = v }))
+            val paWhitelist = InputSetting("Whitelist", "", FishSettings::pcPartyActionsWhitelist)
             paWhitelist.hint = "or /fmcmd whitelist add|remove|list"
             f.sub.add(paWhitelist)
-            val paBlacklist = InputSetting("Blacklist", "",
-                Supplier { FishSettings.pcPartyActionsBlacklist }, Consumer { v -> FishSettings.pcPartyActionsBlacklist = v })
+            val paBlacklist = InputSetting("Blacklist", "", FishSettings::pcPartyActionsBlacklist)
             paBlacklist.hint = "or /fmcmd blacklist add|remove|list"
             f.sub.add(paBlacklist)
             party.features.add(f)
         }
         run {
             val f = Feature("Chat Channels", null, null)
-            f.sub.add(ToggleSetting("Personal Messages", "", Supplier { FishSettings.chatPrivate }, Consumer { v -> FishSettings.chatPrivate = v }))
-            f.sub.add(ToggleSetting("Party", "", Supplier { FishSettings.chatParty }, Consumer { v -> FishSettings.chatParty = v }))
-            f.sub.add(ToggleSetting("Guild", "", Supplier { FishSettings.chatGuild }, Consumer { v -> FishSettings.chatGuild = v }))
-            f.sub.add(ToggleSetting("All", "", Supplier { FishSettings.chatAll }, Consumer { v -> FishSettings.chatAll = v }))
+            f.sub.add(ToggleSetting("Personal Messages", "", FishSettings::chatPrivate))
+            f.sub.add(ToggleSetting("Party", "", FishSettings::chatParty))
+            f.sub.add(ToggleSetting("Guild", "", FishSettings::chatGuild))
+            f.sub.add(ToggleSetting("All", "", FishSettings::chatAll))
             party.features.add(f)
         }
-        party.features.add(Feature("Party Finder Join Stats",
-            Supplier { FishSettings.pfStatsEnabled }, Consumer { v -> FishSettings.pfStatsEnabled = v }))
+        party.features.add(Feature("Party Finder Join Stats", FishSettings::pfStatsEnabled))
 
         // ===== Visuals =====
         run {
-            val f = Feature("Cooldown Overlay",
-                Supplier { FishSettings.cooldownOverlayEnabled }, Consumer { v -> FishSettings.cooldownOverlayEnabled = v })
-            f.sub.add(ToggleSetting("Show Number", "",
-                Supplier { FishSettings.cooldownShowText }, Consumer { v -> FishSettings.cooldownShowText = v }))
-            f.sub.add(ToggleSetting("Under 3s Only", "",
-                Supplier { FishSettings.cooldownOnlyUnder3s }, Consumer { v -> FishSettings.cooldownOnlyUnder3s = v }))
-            f.sub.add(ToggleSetting("In Inventory", "",
-                Supplier { FishSettings.cooldownInInventory }, Consumer { v -> FishSettings.cooldownInInventory = v }))
+            val f = Feature("Cooldown Overlay", FishSettings::cooldownOverlayEnabled)
+            f.sub.add(ToggleSetting("Show Number", "", FishSettings::cooldownShowText))
+            f.sub.add(ToggleSetting("Under 3s Only", "", FishSettings::cooldownOnlyUnder3s))
+            f.sub.add(ToggleSetting("In Inventory", "", FishSettings::cooldownInInventory))
             visuals.features.add(f)
         }
-        visuals.features.add(Feature("Catacombs Overflow Levels",
-            Supplier { FishSettings.catacombsOverflowEnabled }, Consumer { v -> FishSettings.catacombsOverflowEnabled = v }))
+        visuals.features.add(Feature("Catacombs Overflow Levels", FishSettings::catacombsOverflowEnabled))
         run {
-            val f = Feature("Pet HUD",
-                Supplier { FishSettings.petHudEnabled }, Consumer { v -> FishSettings.petHudEnabled = v })
-            f.sub.add(ToggleSetting("Show Level", "",
-                Supplier { FishSettings.petHudShowLevel }, Consumer { v -> FishSettings.petHudShowLevel = v }))
-            f.sub.add(ToggleSetting("Fade Idle", "",
-                Supplier { FishSettings.petHudFadeIdle }, Consumer { v -> FishSettings.petHudFadeIdle = v }))
-            f.sub.add(SliderIntSetting("Fade ms", "",
-                Supplier { FishSettings.petHudFadeMs }, Consumer { v -> FishSettings.petHudFadeMs = v }, 1000, 30000))
+            val f = Feature("Pet HUD", FishSettings::petHudEnabled)
+            f.sub.add(ToggleSetting("Show Level", "", FishSettings::petHudShowLevel))
+            f.sub.add(ToggleSetting("Fade Idle", "", FishSettings::petHudFadeIdle))
+            f.sub.add(SliderIntSetting("Fade ms", "", FishSettings::petHudFadeMs, 1000, 30000))
             visuals.features.add(f)
         }
         run {
-            val f = Feature("Soulflow HUD",
-                Supplier { FishSettings.soulflowHudEnabled }, Consumer { v -> FishSettings.soulflowHudEnabled = v })
-            f.sub.add(InputIntSetting("Warning", "",
-                Supplier { FishSettings.soulflowWarningThreshold }, Consumer { v -> FishSettings.soulflowWarningThreshold = v }))
-            f.sub.add(ToggleSetting("Missing Warn", "",
-                Supplier { FishSettings.soulflowMissingNotifier }, Consumer { v -> FishSettings.soulflowMissingNotifier = v }))
+            val f = Feature("Soulflow HUD", FishSettings::soulflowHudEnabled)
+            f.sub.add(InputIntSetting("Warning", "", FishSettings::soulflowWarningThreshold))
+            f.sub.add(ToggleSetting("Missing Warn", "", FishSettings::soulflowMissingNotifier))
             visuals.features.add(f)
         }
-        visuals.features.add(Feature("Fire Freeze Timer",
-            Supplier { FishSettings.fireFreezeTimerEnabled }, Consumer { v -> FishSettings.fireFreezeTimerEnabled = v }))
+        visuals.features.add(Feature("Fire Freeze Timer", FishSettings::fireFreezeTimerEnabled))
         run {
-            val f = Feature("Explosive Shot",
-                Supplier { FishSettings.explosiveShotEnabled }, Consumer { v -> FishSettings.explosiveShotEnabled = v })
-            f.sub.add(ToggleSetting("Announce to Party (Archer)", "",
-                Supplier { FishSettings.explosiveShotAnnounceParty }, Consumer { v -> FishSettings.explosiveShotAnnounceParty = v }))
+            val f = Feature("Explosive Shot", FishSettings::explosiveShotEnabled)
+            f.sub.add(ToggleSetting("Announce to Party (Archer)", "", FishSettings::explosiveShotAnnounceParty))
             visuals.features.add(f)
         }
         // ===== Floor 7 (ported from blade-addons) =====
         run {
-            val f = Feature("Maxor Tick Timer",
-                Supplier { Floor7.enableMaxorTickTimer }, Consumer { v -> Floor7.enableMaxorTickTimer = v })
+            val f = Feature("Maxor Tick Timer", Floor7::enableMaxorTickTimer)
             floor7.features.add(f)
         }
         run {
-            val f = Feature("Crystal Spawn",
-                Supplier { Floor7.enableCrystalSpawnTime }, Consumer { v -> Floor7.enableCrystalSpawnTime = v })
-            f.sub.add(ToggleSetting("Place Reminder", "",
-                Supplier { Floor7.crystalPlaceReminder }, Consumer { v -> Floor7.crystalPlaceReminder = v }))
-            f.sub.add(ToggleSetting("Instant Reminder", "",
-                Supplier { Floor7.instantlyDisplayCrystalReminder }, Consumer { v -> Floor7.instantlyDisplayCrystalReminder = v }))
+            val f = Feature("Crystal Spawn", Floor7::enableCrystalSpawnTime)
+            f.sub.add(ToggleSetting("Place Reminder", "", Floor7::crystalPlaceReminder))
+            f.sub.add(ToggleSetting("Instant Reminder", "", Floor7::instantlyDisplayCrystalReminder))
             floor7.features.add(f)
         }
         run {
-            val f = Feature("Storm Tick Timer",
-                Supplier { Floor7.enableStormTickTimer }, Consumer { v -> Floor7.enableStormTickTimer = v })
-            f.sub.add(ToggleSetting("Tick Down From 5", "",
-                Supplier { Floor7.tickDownStormTickTimer }, Consumer { v -> Floor7.tickDownStormTickTimer = v }))
-            f.sub.add(ColorPickerSetting("Timer Color", "",
-                Supplier { Floor7.stormTickTimerColor }, Consumer { v -> Floor7.stormTickTimerColor = v }))
+            val f = Feature("Storm Tick Timer", Floor7::enableStormTickTimer)
+            f.sub.add(ToggleSetting("Tick Down From 5", "", Floor7::tickDownStormTickTimer))
+            f.sub.add(ColorPickerSetting("Timer Color", "", Floor7::stormTickTimerColor))
             floor7.features.add(f)
         }
-        floor7.features.add(Feature("Storm Death Time",
-            Supplier { Floor7.enableStormDeathTime }, Consumer { v -> Floor7.enableStormDeathTime = v }))
+        floor7.features.add(Feature("Storm Death Time", Floor7::enableStormDeathTime))
         run {
-            val f = Feature("LB Release Timer",
-                Supplier { Floor7.enableLbReleaseTimer }, Consumer { v -> Floor7.enableLbReleaseTimer = v })
-            f.sub.add(ColorPickerSetting("Timer Color", "",
-                Supplier { Floor7.lbReleaseTimerColor }, Consumer { v -> Floor7.lbReleaseTimerColor = v }))
+            val f = Feature("LB Release Timer", Floor7::enableLbReleaseTimer)
+            f.sub.add(ColorPickerSetting("Timer Color", "", Floor7::lbReleaseTimerColor))
             floor7.features.add(f)
         }
-        floor7.features.add(Feature("Storm Crushed Noti",
-            Supplier { Floor7.notifyStormCrush }, Consumer { v -> Floor7.notifyStormCrush = v }))
+        floor7.features.add(Feature("Storm Crushed Noti", Floor7::notifyStormCrush))
         run {
-            val f = Feature("Goldor Tick Timer",
-                Supplier { Floor7.enableGoldorTickTimer }, Consumer { v -> Floor7.enableGoldorTickTimer = v })
-            f.sub.add(ToggleSetting("In 3s Increments", "",
-                Supplier { Floor7.inDeathTicks }, Consumer { v -> Floor7.inDeathTicks = v }))
-            f.sub.add(ToggleSetting("Tick Up", "",
-                Supplier { Floor7.makeGoldorTickUp }, Consumer { v -> Floor7.makeGoldorTickUp = v }))
+            val f = Feature("Goldor Tick Timer", Floor7::enableGoldorTickTimer)
+            f.sub.add(ToggleSetting("In 3s Increments", "", Floor7::inDeathTicks))
+            f.sub.add(ToggleSetting("Tick Up", "", Floor7::makeGoldorTickUp))
             floor7.features.add(f)
         }
-        floor7.features.add(Feature("Term Start Timer",
-            Supplier { Floor7.enableTermStartTimer }, Consumer { v -> Floor7.enableTermStartTimer = v }))
-        floor7.features.add(Feature("Goldor Leap Timer",
-            Supplier { Floor7.leapNotifications }, Consumer { v -> Floor7.leapNotifications = v }))
+        floor7.features.add(Feature("Term Start Timer", Floor7::enableTermStartTimer))
+        floor7.features.add(Feature("Goldor Leap Timer", Floor7::leapNotifications))
         run {
-            val f = Feature("Section Progress",
-                Supplier { Floor7.showSectionProgress }, Consumer { v -> Floor7.showSectionProgress = v })
-            f.sub.add(ToggleSetting("Color w/ Progress", "",
-                Supplier { Floor7.sectionColorProgress }, Consumer { v -> Floor7.sectionColorProgress = v }))
-            f.sub.add(ToggleSetting("Prev Objective", "",
-                Supplier { Floor7.sectionPrevObjective }, Consumer { v -> Floor7.sectionPrevObjective = v }))
+            val f = Feature("Section Progress", Floor7::showSectionProgress)
+            f.sub.add(ToggleSetting("Color w/ Progress", "", Floor7::sectionColorProgress))
+            f.sub.add(ToggleSetting("Prev Objective", "", Floor7::sectionPrevObjective))
             floor7.features.add(f)
         }
         run {
-            val f = Feature("Goldor Splits",
-                Supplier { fishmod.utils.dungeon.Section.enableTerminalSplits }, Consumer { v -> fishmod.utils.dungeon.Section.enableTerminalSplits = v })
-            f.sub.add(ToggleSetting("Total Time", "",
-                Supplier { fishmod.utils.dungeon.Section.includeTotalTime }, Consumer { v -> fishmod.utils.dungeon.Section.includeTotalTime = v }))
+            val f = Feature("Goldor Splits", fishmod.utils.dungeon.Section::enableTerminalSplits)
+            f.sub.add(ToggleSetting("Total Time", "", fishmod.utils.dungeon.Section::includeTotalTime))
             f.sub.add(DropdownSetting("Show During", "",
                 fishmod.utils.dungeon.Section.DisplayTerminalSplitsWhen.values(),
-                Supplier { fishmod.utils.dungeon.Section.displayTerminalSplitsWhen },
-                Consumer { v -> fishmod.utils.dungeon.Section.displayTerminalSplitsWhen = v }))
+                { fishmod.utils.dungeon.Section.displayTerminalSplitsWhen },
+                { v -> fishmod.utils.dungeon.Section.displayTerminalSplitsWhen = v }))
             floor7.features.add(f)
         }
 
         for (et in FishModAddonApi.dungeonToggles) {
-            dungeon.features.add(Feature(et.name(), et.get(), et.set()))
+            dungeon.features.add(Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) }))
         }
 
         columns.add(general)
@@ -670,7 +575,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
     }
 
     private fun renderRow(ctx: DrawContext, f: Feature, x0: Int, x1: Int, top: Int, mouseX: Int, mouseY: Int) {
-        val on = f.hasMaster() && f.get!!.get()
+        val on = f.hasMaster() && f.get!!()
         val inView = mouseY >= cyTop() && mouseY <= cyBot()
         val hover = inView && mouseX >= x0 && mouseX <= x1 && mouseY >= top && mouseY <= top + ROW_H
 
@@ -797,7 +702,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
                     if (my >= rl.rowTop && my <= rl.rowBottom) {
                         if (f.hasMaster()) {
                             if (btn == 1 && f.sub.isNotEmpty()) f.toggleExpanded()
-                            else f.set!!.accept(!f.get!!.get())
+                            else f.set!!(!f.get!!())
                         } else if (f.sub.isNotEmpty()) {
                             f.toggleExpanded()
                         }
@@ -867,7 +772,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
 
     private fun resetAllColumns() {
         for (c in columns) for (f in c.features) {
-            if (f.hasMaster() && f.get!!.get()) f.set!!.accept(false)
+            if (f.hasMaster() && f.get!!()) f.set!!(false)
         }
     }
 
@@ -894,7 +799,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
     override fun charTyped(input: CharInput): Boolean {
         val ai = activeInput
         if (ai is InputSetting && ai.textField != null) {
-            ai.textField!!.charTyped(input); ai.setter.accept(ai.textField!!.text); return true
+            ai.textField!!.charTyped(input); ai.setter(ai.textField!!.text); return true
         }
         if (ai is InputIntSetting && ai.textField != null) { ai.textField!!.charTyped(input); return true }
         if (ai is InputDoubleSetting && ai.textField != null) { ai.textField!!.charTyped(input); return true }
@@ -961,7 +866,9 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         var scroll = 0
     }
 
-    class Feature(val name: String, val get: Supplier<Boolean>?, val set: Consumer<Boolean>?) {
+    class Feature(val name: String, val get: (() -> Boolean)?, val set: ((Boolean) -> Unit)?) {
+        constructor(name: String, prop: KMutableProperty0<Boolean>) : this(name, { prop.get() }, { prop.set(it) })
+
         val sub: MutableList<Setting> = ArrayList()
         val expandAnim = Easing.Anim(250)
         fun hasMaster(): Boolean = get != null && set != null
@@ -1000,11 +907,13 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
     }
 
     /** Odin-style rounded pill toggle with a hollow accent ring and an animated sliding knob. */
-    class ToggleSetting(name: String, desc: String, val getter: Supplier<Boolean>, val setter: Consumer<Boolean>) : Setting(name, desc) {
+    class ToggleSetting(name: String, desc: String, val getter: () -> Boolean, val setter: (Boolean) -> Unit) : Setting(name, desc) {
+        constructor(name: String, desc: String, prop: KMutableProperty0<Boolean>) : this(name, desc, { prop.get() }, { prop.set(it) })
+
         private val knobAnim = Easing.Anim(150)
         private var lastValue: Boolean? = null
         override fun render(ctx: DrawContext, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: TextRenderer) {
-            val on = getter.get()
+            val on = getter()
             if (lastValue == null) { lastValue = on; knobAnim.setTarget(on) }
             else if (lastValue != on) { lastValue = on; knobAnim.setTarget(on) }
             val tx = rightX - W - 2
@@ -1016,58 +925,62 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
             val tx = rightX - W - 2
             val ty = sy + (ITEM_HEIGHT - PILL_H) / 2
             if (mx >= tx && mx <= tx + W && my >= ty && my <= ty + PILL_H) {
-                setter.accept(!getter.get()); return true
+                setter(!getter()); return true
             }
             return false
         }
         companion object { const val W = 34 }
     }
 
-    class SliderIntSetting(name: String, desc: String, val getter: Supplier<Int>, val setter: Consumer<Int>, val min: Int, val max: Int) : Setting(name, desc) {
+    class SliderIntSetting(name: String, desc: String, val getter: () -> Int, val setter: (Int) -> Unit, val min: Int, val max: Int) : Setting(name, desc) {
+        constructor(name: String, desc: String, prop: KMutableProperty0<Int>, min: Int, max: Int) : this(name, desc, { prop.get() }, { prop.set(it) }, min, max)
+
         override fun render(ctx: DrawContext, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: TextRenderer) {
             val slx = rightX - SLIDER_W - 2
             val sly = sy + (ITEM_HEIGHT - SLIDER_H) / 2
-            val pct = (getter.get() - min).toFloat() / (max - min)
+            val pct = (getter() - min).toFloat() / (max - min)
             pill(ctx, slx, sly, slx + SLIDER_W, sly + SLIDER_H, SLIDER_BG)
             val fillW = (SLIDER_W * pct).toInt()
             if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
-            val v = getter.get().toString()
+            val v = getter().toString()
             st(ctx, tr, v, slx + SLIDER_W - stw(tr, v), sly - 9, SUBTEXT_COLOR)
         }
         override fun onDrag(mx: Int, sx: Int, sliderW: Int) {
             val pct = MathHelper.clamp((mx - sx).toFloat() / sliderW, 0f, 1f)
-            setter.accept(min + (pct * (max - min)).toInt())
+            setter(min + (pct * (max - min)).toInt())
         }
     }
 
-    class SliderDoubleSetting(name: String, desc: String, val getter: Supplier<Double>, val setter: Consumer<Double>, val min: Double, val max: Double) : Setting(name, desc) {
+    class SliderDoubleSetting(name: String, desc: String, val getter: () -> Double, val setter: (Double) -> Unit, val min: Double, val max: Double) : Setting(name, desc) {
+        constructor(name: String, desc: String, prop: KMutableProperty0<Double>, min: Double, max: Double) : this(name, desc, { prop.get() }, { prop.set(it) }, min, max)
+
         override fun render(ctx: DrawContext, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: TextRenderer) {
             val slx = rightX - SLIDER_W - 2
             val sly = sy + (ITEM_HEIGHT - SLIDER_H) / 2
-            val pct = ((getter.get() - min) / (max - min)).toFloat()
+            val pct = ((getter() - min) / (max - min)).toFloat()
             pill(ctx, slx, sly, slx + SLIDER_W, sly + SLIDER_H, SLIDER_BG)
             val fillW = (SLIDER_W * pct).toInt()
             if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
-            val v = String.format("%.1f", getter.get())
+            val v = String.format("%.1f", getter())
             st(ctx, tr, v, slx + SLIDER_W - stw(tr, v), sly - 9, SUBTEXT_COLOR)
         }
         override fun onDrag(mx: Int, sx: Int, sliderW: Int) {
             val pct = MathHelper.clamp((mx - sx).toFloat() / sliderW, 0f, 1f)
-            setter.accept(min + pct * (max - min))
+            setter(min + pct * (max - min))
         }
     }
 
     // Click to advance to the next value; right-click goes back one.
     /** Odin-style selector: a rounded pill showing the current value; click expands an animated
      *  inline list of every option beneath it (right-click quick-cycles without expanding). */
-    class DropdownSetting<T>(name: String, desc: String, val values: Array<T>, val getter: Supplier<T>, val setter: Consumer<T>) : Setting(name, desc) {
+    class DropdownSetting<T>(name: String, desc: String, val values: Array<T>, val getter: () -> T, val setter: (T) -> Unit) : Setting(name, desc) {
         private val expandAnim = Easing.Anim(200)
         private var expanded = false
         private var pillX = 0
         private var pillW = 0
 
         private fun indexOfCurrent(): Int {
-            val cur = getter.get()
+            val cur = getter()
             for (i in values.indices) if (values[i] === cur || values[i] == cur) return i
             return 0
         }
@@ -1077,7 +990,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         }
 
         override fun render(ctx: DrawContext, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: TextRenderer) {
-            val current = getter.get().toString()
+            val current = getter().toString()
             val textW = stw(tr, current)
             pillW = textW + 22
             pillX = rightX - pillW - 2
@@ -1110,7 +1023,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
             if (mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H) {
                 if (btn == 1) {
-                    setter.accept(values[(indexOfCurrent() + 1) % values.size])
+                    setter(values[(indexOfCurrent() + 1) % values.size])
                 } else {
                     expanded = !expanded
                     expandAnim.setTarget(expanded)
@@ -1122,7 +1035,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
                 for (i in values.indices) {
                     val rowY = oy + i * OPTION_H
                     if (mx >= leftX && mx <= rightX && my >= rowY && my <= rowY + OPTION_H) {
-                        setter.accept(values[i])
+                        setter(values[i])
                         expanded = false
                         expandAnim.setTarget(false)
                         return true
@@ -1133,15 +1046,17 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         }
     }
 
-    open class InputSetting(name: String, desc: String, val getter: Supplier<String>, val setter: Consumer<String>) : Setting(name, desc) {
+    open class InputSetting(name: String, desc: String, val getter: () -> String, val setter: (String) -> Unit) : Setting(name, desc) {
+        constructor(name: String, desc: String, prop: KMutableProperty0<String>) : this(name, desc, { prop.get() }, { prop.set(it) })
+
         var textField: TextFieldWidget? = null
         var hint: String? = null
         open fun initField(tr: TextRenderer) {
             if (textField == null) {
                 val tf = TextFieldWidget(tr, 0, 0, INPUT_W, INPUT_H, Text.empty())
                 tf.setMaxLength(256)
-                tf.text = getter.get()
-                tf.setChangedListener(setter)
+                tf.text = getter()
+                tf.setChangedListener { s -> setter(s) }
                 textField = tf
             }
         }
@@ -1174,7 +1089,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         }
     }
 
-    class LimitedInputSetting(name: String, desc: String, val maxVisible: Int, getter: Supplier<String>, setter: Consumer<String>) :
+    class LimitedInputSetting(name: String, desc: String, val maxVisible: Int, getter: () -> String, setter: (String) -> Unit) :
         InputSetting("", desc, getter, capWrapper(setter, maxVisible)) {
         val displayLabel: String = name
         override fun getHeight(): Int = ITEM_HEIGHT + 9
@@ -1184,7 +1099,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
             val ix = rightX - INPUT_W - 2
             val iy = sy + 2
             nvgTextField(textField!!, ix, iy, INPUT_W, INPUT_H)
-            val len = visibleLen(getter.get())
+            val len = visibleLen(getter())
             val counter = "$len/$maxVisible"
             val color = if (len >= maxVisible) 0xFFFF5555.toInt() else SUBTEXT_COLOR
             st(ctx, tr, counter, leftX + 2, sy + getHeight() - 9, color)
@@ -1203,11 +1118,11 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
                 if (s == null) return 0
                 return s.replace(Regex("&#[0-9a-fA-F]{6}"), "").replace(Regex("[&§][0-9a-fk-orxA-FK-ORX]"), "").length
             }
-            private fun capWrapper(inner: Consumer<String>, max: Int): Consumer<String> {
-                return Consumer { v ->
-                    var s = v ?: ""
+            private fun capWrapper(inner: (String) -> Unit, max: Int): (String) -> Unit {
+                return { v ->
+                    var s = v
                     while (s.isNotEmpty() && visibleLen(s) > max) s = s.substring(0, s.length - 1)
-                    inner.accept(s)
+                    inner(s)
                 }
             }
         }
@@ -1217,14 +1132,16 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
      *  [DropdownSetting], picked over a free-form HSB square + hue bar because it needs no
      *  live vanilla widget and no drag-square geometry, just the same fixed-option-list pattern
      *  that's already known to render correctly. */
-    open class ColorPickerSetting(name: String, desc: String, val getter: Supplier<Int>, val setter: Consumer<Int>) : Setting(name, desc) {
+    open class ColorPickerSetting(name: String, desc: String, val getter: () -> Int, val setter: (Int) -> Unit) : Setting(name, desc) {
+        constructor(name: String, desc: String, prop: KMutableProperty0<Int>) : this(name, desc, { prop.get() }, { prop.set(it) })
+
         private val expandAnim = Easing.Anim(200)
         private var expanded = false
         private var pillX = 0
         private var pillW = 0
 
         private fun indexOfCurrent(): Int {
-            val cur = getter.get() or 0xFF000000.toInt()
+            val cur = getter() or 0xFF000000.toInt()
             var best = 0
             var bestDist = Int.MAX_VALUE
             for (i in PRESET_ARGB.indices) {
@@ -1252,7 +1169,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
             val hov = mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H
             roundedRectRing(ctx, pillX, by, pillW, PILL_H, PILL_H / 2, 2, TRACK_OFF, if (hov) ACCENT_HOVER else ACCENT)
-            disc(ctx, pillX + 12, by + PILL_H / 2, swatchD / 2, getter.get() or 0xFF000000.toInt())
+            disc(ctx, pillX + 12, by + PILL_H / 2, swatchD / 2, getter() or 0xFF000000.toInt())
             st(ctx, tr, label, pillX + 22, by + (PILL_H - 8) / 2 - 1, TEXT_COLOR)
 
             val animating = expandAnim.isAnimating()
@@ -1276,7 +1193,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
             if (mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H) {
                 if (btn == 1) {
-                    setter.accept(PRESET_ARGB[(indexOfCurrent() + 1) % PRESET_ARGB.size])
+                    setter(PRESET_ARGB[(indexOfCurrent() + 1) % PRESET_ARGB.size])
                 } else {
                     expanded = !expanded
                     expandAnim.setTarget(expanded)
@@ -1288,7 +1205,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
                 for (i in PRESET_ARGB.indices) {
                     val rowY = oy + i * OPTION_H
                     if (mx >= leftX && mx <= rightX && my >= rowY && my <= rowY + OPTION_H) {
-                        setter.accept(PRESET_ARGB[i])
+                        setter(PRESET_ARGB[i])
                         expanded = false
                         expandAnim.setTarget(false)
                         return true
@@ -1311,21 +1228,21 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
     }
 
     class ConditionalColorPickerSetting(
-        name: String, desc: String, val visible: Supplier<Boolean>,
-        getter: Supplier<Int>, setter: Consumer<Int>
+        name: String, desc: String, val visible: () -> Boolean,
+        getter: () -> Int, setter: (Int) -> Unit
     ) : ColorPickerSetting(name, desc, getter, setter) {
         val shownName: String = name
         override fun getHeight(): Int {
-            if (!visible.get()) { this.name = ""; return 0 }
+            if (!visible()) { this.name = ""; return 0 }
             this.name = shownName
             return super.getHeight()
         }
         override fun render(ctx: DrawContext, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: TextRenderer) {
-            if (!visible.get()) return
+            if (!visible()) return
             super.render(ctx, leftX, rightX, sy, mx, my, tr)
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
-            if (!visible.get()) return false
+            if (!visible()) return false
             return super.onClick(mx, my, leftX, rightX, sy, btn)
         }
     }
@@ -1354,13 +1271,13 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
      *  press a key or mouse button to bind it (Esc unbinds). Stays in sync with Options > Controls
      *  since it edits the same KeyBinding object. */
     /** Odin-style rounded pill rebind box — click, then press a key/mouse button (Esc unbinds). */
-    class KeybindSetting(name: String, desc: String, val getter: Supplier<net.minecraft.client.option.KeyBinding?>) : Setting(name, desc) {
+    class KeybindSetting(name: String, desc: String, val getter: () -> net.minecraft.client.option.KeyBinding?) : Setting(name, desc) {
         var capturing = false
         private var pillX = 0
         private var pillW = 0
         private fun label(): String {
             if (capturing) return "..."
-            val kb = getter.get() ?: return "-"
+            val kb = getter() ?: return "-"
             return if (kb.isUnbound) "Not Bound" else kb.boundKeyLocalizedText.string
         }
         override fun render(ctx: DrawContext, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: TextRenderer) {
@@ -1382,7 +1299,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
             return false
         }
         fun applyKey(key: net.minecraft.client.util.InputUtil.Key) {
-            val kb = getter.get() ?: return
+            val kb = getter() ?: return
             kb.setBoundKey(key)
             net.minecraft.client.option.KeyBinding.updateKeysByCode()
             MinecraftClient.getInstance().options.write()
@@ -1390,15 +1307,17 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         }
     }
 
-    class InputIntSetting(name: String, desc: String, val getter: Supplier<Int>, val setter: Consumer<Int>) : Setting(name, desc) {
+    class InputIntSetting(name: String, desc: String, val getter: () -> Int, val setter: (Int) -> Unit) : Setting(name, desc) {
+        constructor(name: String, desc: String, prop: KMutableProperty0<Int>) : this(name, desc, { prop.get() }, { prop.set(it) })
+
         var textField: TextFieldWidget? = null
         fun initField(tr: TextRenderer) {
             if (textField == null) {
                 val tf = TextFieldWidget(tr, 0, 0, INPUT_W, INPUT_H, Text.empty())
                 tf.setMaxLength(10)
-                tf.text = getter.get().toString()
+                tf.text = getter().toString()
                 tf.setChangedListener { s ->
-                    try { setter.accept(Integer.parseInt(s.trim())) }
+                    try { setter(Integer.parseInt(s.trim())) }
                     catch (ignored: NumberFormatException) {}
                 }
                 textField = tf
@@ -1421,15 +1340,17 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         }
     }
 
-    class InputDoubleSetting(name: String, desc: String, val getter: Supplier<Double>, val setter: Consumer<Double>) : Setting(name, desc) {
+    class InputDoubleSetting(name: String, desc: String, val getter: () -> Double, val setter: (Double) -> Unit) : Setting(name, desc) {
+        constructor(name: String, desc: String, prop: KMutableProperty0<Double>) : this(name, desc, { prop.get() }, { prop.set(it) })
+
         var textField: TextFieldWidget? = null
         fun initField(tr: TextRenderer) {
             if (textField == null) {
                 val tf = TextFieldWidget(tr, 0, 0, INPUT_W, INPUT_H, Text.empty())
                 tf.setMaxLength(12)
-                tf.text = getter.get().toString()
+                tf.text = getter().toString()
                 tf.setChangedListener { s ->
-                    try { setter.accept(java.lang.Double.parseDouble(s.trim())) }
+                    try { setter(java.lang.Double.parseDouble(s.trim())) }
                     catch (ignored: NumberFormatException) {}
                 }
                 textField = tf
@@ -1735,8 +1656,8 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         }
 
         /** Builds a command-input row for an inventory button (the hint reminds it's a command, no slash). */
-        private fun makeButtonInput(name: String, getter: Supplier<String>, setter: Consumer<String>): InputSetting {
-            val s = InputSetting(name, "", getter, setter)
+        private fun makeButtonInput(name: String, prop: KMutableProperty0<String>): InputSetting {
+            val s = InputSetting(name, "", prop)
             s.hint = "command without /"
             return s
         }
