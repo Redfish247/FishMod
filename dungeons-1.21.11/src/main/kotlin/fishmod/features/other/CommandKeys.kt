@@ -11,19 +11,10 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-/**
- * User-defined "command keys": press a key in-game to run a slash command.
- *
- * Keys are stored as vanilla [InputUtil.Key] translation keys (not vanilla
- * `net.minecraft.client.option.KeyBinding`s) so entries can be freely added, rebound, and
- * removed at runtime from /fm commandkeys without touching the Controls screen, options.txt, or
- * the static KeyBinding registry (which Fabric API expects to be populated once at mod init).
- */
+/** User-defined "command keys": press a key in-game to run a slash command. */
 object CommandKeys {
 
-    /** Ported from the original Java `record Entry(InputUtil.Key key, String command)`. Callers
-     *  use the record-style accessors `.key()` / `.command()`, so this stays a plain class with
-     *  explicit methods rather than a Kotlin data class. */
+    /** Ported from the original Java `record Entry(InputUtil.Key key, String command)`. */
     class Entry(private val keyValue: InputUtil.Key, private val commandValue: String) {
         fun key(): InputUtil.Key = keyValue
         fun command(): String = commandValue

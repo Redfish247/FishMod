@@ -4,12 +4,7 @@ import fishmod.utils.FishMsg
 import fishmod.utils.HypixelApi
 import net.minecraft.client.MinecraftClient
 
-/**
- * Party Finder join-request helper: while FishSettings.pfStatsEnabled is on, any whisper you
- * receive (typically someone asking to join your party) triggers a local-only lookup of their
- * MP/PB/Cata/Gear, printed to your own chat so you can vet them before inviting. Nothing is ever
- * sent back to the sender.
- */
+/** Party Finder join-request helper: looks up stats for whoever whispers you asking to join. */
 object PartyFinderStats {
 
     private val lastLookupAt: MutableMap<String, Long> = HashMap()

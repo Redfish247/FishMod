@@ -12,11 +12,7 @@ import net.minecraft.client.render.RenderTickCounter
 import net.minecraft.scoreboard.ScoreboardDisplaySlot
 import java.util.regex.Pattern
 
-/**
- * Live S+ tracker using Odin's exact scoring formula.
- * Data sources: tab list (puzzles/secrets/rooms/crypts/deaths/time), sidebar (cleared %, floor),
- * chat (mimic/prince/blood-door/death messages). No map scanning required for the score itself.
- */
+/** Live S+ tracker using Odin's exact scoring formula. */
 object DungeonScore {
 
     // ── Floor + required-secret-percent table (from Odin DungeonEnums.Floor) ──
@@ -297,11 +293,6 @@ object DungeonScore {
         return exploration + skill + 100 + bonus
     }
 
-    /**
-     * One-minute check-in: projects the end-of-run score assuming a full clear (all rooms,
-     * all puzzles) with the secrets and bonuses collected so far, then breaks the gap to 300
-     * down into the remaining bonus sources plus however many extra secrets cover the rest.
-     */
     /** Projected end-of-run score assuming a full clear (all rooms, all puzzles) with current secrets/bonuses. */
     private fun projectedFullClearScore(): Int {
         val ts = totalSecrets()

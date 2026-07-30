@@ -24,29 +24,9 @@ import fishmod.utils.rendering.NvgRecorder
 import java.util.ArrayList
 import kotlin.reflect.KMutableProperty0
 
-/**
- * Multi-column config screen (matches the FishMod design mockup).
- *
- *  ┌──────────────────────────────────────────────────────────┐
- *  │  FishMod                                       [ search ]  │  title bar
- *  ├──────┬──────┬──────┬──────┬──────┬───────────────────────┤
- *  │ Genl │ Dngn │ Cosm │Party │ Vis. │  Floor7  │ each column  │
- *  │ [ ]  │ [ ]  │ [ ]  │ [ ]  │ [ ]  │   [ ]    │ scrolls on   │
- *  │ [ ]  │ [ ]  │ [ ]  │ [ ]  │ [ ]  │   [ ]    │ its own      │
- *  ├──────┴──────┴──────┴──────┴──────┴───────────────────────┤
- *  │  Edit HUD                       Reset      Save & Close    │  footer
- *  └──────────────────────────────────────────────────────────┘
- *
- * All columns render simultaneously; each scrolls independently. Left-click a feature
- * toggle = master on/off. Left-click a feature row body (when it has sub-settings) =
- * expand an inline panel beneath it with the rich controls (sliders, dropdowns, colour
- * pickers, text inputs), animated open/closed with a cubic ease-in-out (see
- * [Easing]). Multiple features (in the same or different columns) can be expanded
- * at once — expanding one never collapses another.
- */
+/** Multi-column config screen, see FishMod design mockup. */
 class FishModScreen : Screen(Text.literal("FishMod")) {
 
-    // ----- state -----
     private val columns: MutableList<Column> = ArrayList()
     private var searchText = ""
     private var searchFocused = false
@@ -65,9 +45,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         buildCategories()
     }
 
-    // -----------------------------------------------------------------------------------
-    // Category / feature graph
-    // -----------------------------------------------------------------------------------
     private fun buildCategories() {
         val general = Column("General", "gear")
         val dungeon = Column("Dungeon", "arch")
@@ -343,9 +320,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         columns.add(floor7)
     }
 
-    // -----------------------------------------------------------------------------------
-    // Region geometry — floating over the full screen, no bordered modal box
-    // -----------------------------------------------------------------------------------
     private fun left(): Int = 0
     private fun top(): Int = 0
     private fun right(): Int = this.width
@@ -384,7 +358,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         return cx0() + visibleIndex * (columnWidth() + COLUMN_GUTTER)
     }
 
-    /** A single computed row rect within a column; the one source of truth both render and hit-testing consume. */
+    /** Single source of truth for a row's geometry, consumed by both render and hit-testing. */
     private class RowLayout(
         val feature: Feature,
         val rowTop: Int, val rowBottom: Int,
@@ -417,24 +391,16 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
     private fun maxScrollFor(c: Column): Int = Math.max(0, columnContentHeight(c) - (cyBot() - cyTop()))
     private fun clampScroll(c: Column) { c.scroll = MathHelper.clamp(c.scroll, 0, maxScrollFor(c)) }
 
-    // -----------------------------------------------------------------------------------
-    // Background: solid dark (matches the mockup), no vanilla blur/dirt
-    // -----------------------------------------------------------------------------------
     override fun renderBackground(ctx: DrawContext, mouseX: Int, mouseY: Int, delta: Float) { }
     override fun renderInGameBackground(ctx: DrawContext) { }
 
-    // -----------------------------------------------------------------------------------
-    // Render
-    // -----------------------------------------------------------------------------------
     override fun render(ctx: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
         if (resetArmed && System.currentTimeMillis() - resetArmedAt > 3000) resetArmed = false
         for (c in visibleColumns()) clampScroll(c)
 
-        // fresh batch of NanoVG draw commands this frame — replayed for real later, in
-        // paintNvgOverlay(), once GameRendererNvgMixin fires after the vanilla GUI flush
+        // draw commands replayed later in paintNvgOverlay() after the vanilla GUI flush
         NvgRecorder.clear()
 
-        // blur the live game behind the columns instead of just darkening it, plus a light scrim for text contrast
         applyBlur(ctx)
         ctx.fillGradient(0, 0, this.width, this.height, DIM_TOP, DIM_BOT)
 
@@ -447,7 +413,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         super.render(ctx, mouseX, mouseY, delta)
     }
 
-    /** Geometry for the 4 top-right pill buttons — the one source of truth for both render and hit-testing. */
+    /** Geometry for the 4 top-right pill buttons, shared by render and hit-testing. */
     private fun topBarButtonRects(): Array<IntArray> {
         val labels = arrayOf("Edit HUD", "Credits", if (resetArmed) "Confirm?" else "Reset", "Save & Close")
         val bh = 20
@@ -465,7 +431,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
     }
 
     private fun renderTopBar(ctx: DrawContext, mouseX: Int, mouseY: Int) {
-        // wordmark "FishMod" (top-left, no bar/border)
         val ws = 1.3f
         sst(ctx, this.textRenderer, "Fish", MARGIN, MARGIN, TEXT_COLOR, ws)
         val fw = sw(this.textRenderer, "Fish", ws)
@@ -493,10 +458,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         }
     }
 
-    /** The pill box, magnifying-glass icon, and placeholder are drawn via NanoVG like everything
-     *  else; the live typed text + caret use [nvgTextFieldContent] (text only, no box —
-     *  the pill ring above already is the box) since the real [TextFieldWidget] still owns
-     *  cursor/selection/IME state, just not its own rendering. */
+    /** [TextFieldWidget] still owns cursor/selection/IME state; only its drawing is redone via NanoVG. */
     private fun renderSearchBar(ctx: DrawContext, mouseX: Int, mouseY: Int) {
         val bw = 190
         val bh = 24
@@ -600,7 +562,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         }
     }
 
-    /** Small floating tooltip drawn last, on top of everything, for the row the mouse is hovering. */
     private fun renderHoverTooltip(ctx: DrawContext) {
         val desc = hoverDesc ?: return
         val tw = stw(this.textRenderer, desc)
@@ -612,10 +573,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         st(ctx, this.textRenderer, desc, bx + 8, by + 5, TEXT_COLOR)
     }
 
-    /** While animating, pushes its own narrower scissor to hide the not-yet-revealed portion of
-     *  the panel, then pops it — NanoVG's nvgSave/nvgRestore stack (see NvgRecorder.pushScissor/
-     *  popScissor) makes this a real nested scope, so the caller's own wider clip (already pushed
-     *  in renderContent) is preserved automatically once this pops back out. */
     private fun renderSubPanel(ctx: DrawContext, f: Feature, x0: Int, x1: Int, top: Int, animatedH: Int, mouseX: Int, mouseY: Int) {
         val animating = f.expandAnim.isAnimating()
         if (animating) NvgRecorder.pushScissor(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), animatedH.toFloat())
@@ -629,10 +586,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         for (s in f.sub) {
             val sh = s.getHeight()
             if (s !is SubcategoryHeader && s !is InputSetting && s !is ColorPickerSetting) {
-                // Center within the fixed top strip (ITEM_HEIGHT), not the full row height `sh` —
-                // for expandable settings (DropdownSetting) `sh` grows as the option list opens,
-                // which would otherwise drag this label downward mid-animation even though the
-                // label itself always lives in that fixed top strip.
+                // Center in the fixed top strip (ITEM_HEIGHT), not the growing row height `sh`.
                 st(ctx, this.textRenderer, s.name, leftX + 2, sy + (ITEM_HEIGHT - 8) / 2, TEXT_COLOR)
             }
             s.render(ctx, leftX, rightX, sy, mouseX, mouseY, this.textRenderer)
@@ -646,9 +600,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         return mx >= x && mx <= x + w && my >= y && my <= y + h
     }
 
-    // -----------------------------------------------------------------------------------
-    // Input
-    // -----------------------------------------------------------------------------------
     override fun mouseClicked(click: Click, bl: Boolean): Boolean {
         val mx = click.x().toInt()
         val my = click.y().toInt()
@@ -665,7 +616,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         if (prevInput is InputSetting && prevInput.textField != null) prevInput.textField!!.setFocused(false)
         activeInput = null
 
-        // ----- search (floating pill, bottom-center) -----
         val swW = 190
         val swH = 24
         val sx = (this.width - swW) / 2
@@ -674,7 +624,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         searchField?.setFocused(searchFocused)
         if (searchFocused) return true
 
-        // ----- top-right pill buttons -----
         val rects = topBarButtonRects()
         if (hovBtn(mx, my, rects[0][0], rects[0][1], rects[0][2], rects[0][3])) { MinecraftClient.getInstance().setScreen(FishHudEditor(this)); return true }
         if (hovBtn(mx, my, rects[1][0], rects[1][1], rects[1][2], rects[1][3])) { MinecraftClient.getInstance().setScreen(CreditsScreen(this)); return true }
@@ -685,7 +634,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         }
         if (hovBtn(mx, my, rects[3][0], rects[3][1], rects[3][2], rects[3][3])) { close(); return true }
 
-        // ----- content columns / rows / sub-panels -----
         if (my >= cyTop() && my <= cyBot()) {
             val cols = visibleColumns()
             val colW = columnWidth()
@@ -697,8 +645,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
 
                 for (rl in layoutColumn(col, col.scroll)) {
                     val f = rl.feature
-                    // row hit — left-click toggles master on/off, right-click toggles the expand panel
-                    // (features with no master toggle expand on either click)
                     if (my >= rl.rowTop && my <= rl.rowBottom) {
                         if (f.hasMaster()) {
                             if (btn == 1 && f.sub.isNotEmpty()) f.toggleExpanded()
@@ -708,7 +654,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
                         }
                         return true
                     }
-                    // sub-panel hit
                     val subH = rl.subBottom - rl.subTop
                     if (subH > 0 && my >= rl.subTop && my <= rl.subBottom) {
                         val leftX = x0 + 14
@@ -811,17 +756,13 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
 
     private val nvgGlState = fishmod.utils.rendering.NvgGlStateGuard()
 
-    /** Called by GameRendererNvgMixin right after the vanilla GUI flush each frame this screen is
-     *  open — the one point per frame where NanoVG's immediate GL draws land after (not before)
-     *  all of this frame's vanilla content, giving correct z-ordering for free. */
+    /** Called by GameRendererNvgMixin right after the vanilla GUI flush each frame, for correct z-ordering. */
     fun paintNvgOverlay() {
         nvgGlState.capture()
         try {
             val ctx = fishmod.utils.rendering.NvgContext.get()
 
-            // Device pixel ratio must be real GUI-scale-derived, not a fixed 1.0 — NanoVG bakes font
-            // glyphs into its atlas at a resolution scaled by this ratio so they stay crisp once
-            // stretched across the (larger) real framebuffer viewport.
+            // Must use the real GUI scale factor, not 1.0, or NanoVG's baked font glyphs blur when stretched.
             val pixelRatio = MinecraftClient.getInstance().window.scaleFactor.toFloat()
             org.lwjgl.nanovg.NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
             NvgRecorder.replay()
@@ -829,11 +770,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
 
             fishmod_glCheck("after paintNvgOverlay")
         } catch (t: Throwable) {
-            // Fail safe instead of crash-looping the render thread: the screen still opens with
-            // its vanilla dim/blur background, just missing the NanoVG-drawn buttons/text/cards.
-            // Logged once (this runs every frame the screen is open) - usually means the bundled
-            // LWJGL NanoVG native failed to load: wrong OS/arch natives, or the LWJGL version was
-            // overridden by a custom launcher instance and no longer matches what we bundled.
+            // Fail safe instead of crash-looping the render thread; likely a bundled NanoVG native failing to load.
             if (!nvgFailureLogged) {
                 nvgFailureLogged = true
                 fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] paintNvgOverlay failed - settings screen will render without its NanoVG layer from now on", t)
@@ -858,9 +795,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         super.close()
     }
 
-    // -----------------------------------------------------------------------------------
-    // Model
-    // -----------------------------------------------------------------------------------
     class Column(val name: String, val icon: String) {
         val features: MutableList<Feature> = ArrayList()
         var scroll = 0
@@ -887,9 +821,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         }
     }
 
-    // -----------------------------------------------------------------------------------
-    // Setting widgets
-    // -----------------------------------------------------------------------------------
     abstract class Setting(var name: String, var description: String) {
         abstract fun render(ctx: DrawContext, leftX: Int, rightX: Int, settingY: Int, mouseX: Int, mouseY: Int, tr: TextRenderer)
         open fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, settingY: Int, button: Int): Boolean = false
@@ -906,7 +837,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         }
     }
 
-    /** Odin-style rounded pill toggle with a hollow accent ring and an animated sliding knob. */
     class ToggleSetting(name: String, desc: String, val getter: () -> Boolean, val setter: (Boolean) -> Unit) : Setting(name, desc) {
         constructor(name: String, desc: String, prop: KMutableProperty0<Boolean>) : this(name, desc, { prop.get() }, { prop.set(it) })
 
@@ -970,9 +900,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         }
     }
 
-    // Click to advance to the next value; right-click goes back one.
-    /** Odin-style selector: a rounded pill showing the current value; click expands an animated
-     *  inline list of every option beneath it (right-click quick-cycles without expanding). */
+    /** Click advances to the next value; right-click goes back one. */
     class DropdownSetting<T>(name: String, desc: String, val values: Array<T>, val getter: () -> T, val setter: (T) -> Unit) : Setting(name, desc) {
         private val expandAnim = Easing.Anim(200)
         private var expanded = false
@@ -1128,10 +1056,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         }
     }
 
-    /** Odin-style dropdown of preset named colors — same expand/collapse mechanic as
-     *  [DropdownSetting], picked over a free-form HSB square + hue bar because it needs no
-     *  live vanilla widget and no drag-square geometry, just the same fixed-option-list pattern
-     *  that's already known to render correctly. */
     open class ColorPickerSetting(name: String, desc: String, val getter: () -> Int, val setter: (Int) -> Unit) : Setting(name, desc) {
         constructor(name: String, desc: String, prop: KMutableProperty0<Int>) : this(name, desc, { prop.get() }, { prop.set(it) })
 
@@ -1267,10 +1191,7 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
         }
     }
 
-    /** In-GUI rebind box for a vanilla [net.minecraft.client.option.KeyBinding] — click, then
-     *  press a key or mouse button to bind it (Esc unbinds). Stays in sync with Options > Controls
-     *  since it edits the same KeyBinding object. */
-    /** Odin-style rounded pill rebind box — click, then press a key/mouse button (Esc unbinds). */
+    /** Click, then press a key/mouse button to bind (Esc unbinds); stays in sync with the vanilla KeyBinding. */
     class KeybindSetting(name: String, desc: String, val getter: () -> net.minecraft.client.option.KeyBinding?) : Setting(name, desc) {
         var capturing = false
         private var pillX = 0
@@ -1378,7 +1299,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
     }
 
     companion object {
-        // ----- palette (recolored teal — matches the mod's existing accent, not a reference-repo copy) -----
         private val ACCENT = 0xFF24B6B0.toInt()
         private val ACCENT_HOVER = 0xFF3AD8D1.toInt()
         private const val DIM_TOP = 0x2E000000 // light scrim over the blurred game, just enough for text contrast
@@ -1394,19 +1314,16 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
 
         private const val TEXT_SCALE = 0.75f
 
-        // ----- screen chrome (floating elements, no bordered modal box) -----
         private const val MARGIN = 16
         private const val TOP_BAR_H = 26 // reserved space for wordmark + top-right pill buttons
         private const val BOTTOM_RESERVE = 46 // reserved space for the floating search pill
 
-        // ----- multi-column layout -----
         private const val COLUMN_GUTTER = 12 // px between column cards
         private const val CARD_RADIUS = 7
         private const val HEADER_H = 24 // header bar height (icon + name)
         private const val HEADER_STRIP_H = 3 // accent strip thickness at header top
         private const val MIN_COLUMN_W = 136 // floor so controls don't clip
 
-        // ----- row / setting-widget geometry -----
         private const val ROW_H = 22
         private const val ROW_GAP = 3
         private const val ITEM_HEIGHT = 22
@@ -1422,55 +1339,41 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
 
         private var nvgFailureLogged = false
 
-        /** Base NanoVG font size (px) that reads at roughly the same visual weight as Minecraft's
-         *  default font at its normal size; TEXT_SCALE/arbitrary scale factors multiply this. */
+        /** Roughly matches Minecraft's default font weight; TEXT_SCALE multiplies this. */
         private const val NVG_BASE_TEXT_SIZE = 9.5f
 
-        /** All shape/text helpers below now push into [NvgRecorder] instead of drawing via
-         *  `ctx` directly — NanoVG paints strictly after every vanilla draw this frame (see
-         *  GameRendererNvgMixin), so leaving any of these on vanilla would always render underneath
-         *  the converted ones regardless of call order. `ctx` is kept in each signature only to
-         *  avoid rippling through every existing call site. */
-
-        /** True filled rounded rectangle. */
+        // Shape/text helpers push into NvgRecorder (not `ctx`) so they paint after vanilla draws each frame; `ctx` is kept only to avoid rippling through call sites.
         fun roundedRect(ctx: DrawContext, x: Int, y: Int, w: Int, h: Int, r: Int, color: Int) {
             NvgRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), color)
         }
 
-        /** Corner-coordinate overload matching `ctx.fill`'s (x1,y1,x2,y2) convention. */
         fun roundRect(ctx: DrawContext, x1: Int, y1: Int, x2: Int, y2: Int, r: Int, color: Int) {
             roundedRect(ctx, x1, y1, x2 - x1, y2 - y1, r, color)
         }
 
-        /** A rounded rect with a hollow accent-colored ring of `strokeW` around it. */
         fun roundedRectRing(ctx: DrawContext, x: Int, y: Int, w: Int, h: Int, r: Int, strokeW: Int, fillColor: Int, ringColor: Int) {
             NvgRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), strokeW.toFloat(), fillColor, ringColor)
         }
 
-        /** True pill (fully rounded rectangle whose radius is half its height). Takes corner coordinates, like `ctx.fill`. */
         fun pill(ctx: DrawContext, x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
             val h = y2 - y1
             roundedRect(ctx, x1, y1, x2 - x1, h, h / 2, color)
         }
 
-        /** 1px border frame around a fill (square corners — used for tiny non-decorative frames). */
         fun panel(ctx: DrawContext, x1: Int, y1: Int, x2: Int, y2: Int, r: Int, fill: Int, border: Int) {
             roundedRect(ctx, x1, y1, x2 - x1, y2 - y1, r, border)
             roundedRect(ctx, x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), fill)
         }
 
-        /** True filled circle — used for glyphs and toggle knobs. */
         fun disc(ctx: DrawContext, cx: Int, cy: Int, r: Int, color: Int) {
             NvgRecorder.disc(cx.toFloat(), cy.toFloat(), r.toFloat(), color)
         }
 
-        /** Sub-panel menu text at TEXT_SCALE. */
         fun st(ctx: DrawContext, tr: TextRenderer, s: String, x: Int, y: Int, color: Int) {
             NvgRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * TEXT_SCALE, color)
         }
         fun stw(tr: TextRenderer, s: String): Int = Math.ceil(NvgRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
 
-        /** Text at an arbitrary scale. */
         fun sst(ctx: DrawContext, tr: TextRenderer, s: String, x: Int, y: Int, color: Int, scale: Float) {
             NvgRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * scale, color)
         }
@@ -1478,22 +1381,14 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
 
         private const val INPUT_TEXT_SIZE = 7f
 
-        /** Draws a [TextFieldWidget]'s box + text + blinking caret entirely via NanoVG. A live
-         *  `textField.render(...)` call is a vanilla DrawContext draw, which flushes *before*
-         *  this frame's NanoVG column-card background — so it would render underneath that background
-         *  and be invisible, exactly like the search bar would be if it weren't carved out into its
-         *  own non-overlapping strip. The widget still owns cursor/selection/edit state (keyPressed/
-         *  charTyped delegate to it elsewhere); only the drawing is redone here, measured with
-         *  NanoVG's own font metrics since vanilla's getCharacterX() uses Minecraft's font instead. */
+        /** A vanilla textField.render() call would flush before the NanoVG column background and be invisible, so this redraws it entirely via NanoVG instead. */
         fun nvgTextField(tf: TextFieldWidget, x: Int, y: Int, w: Int, h: Int) {
             val focused = tf.isFocused
             NvgRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), 3f, 1f, SUBROW_BG, if (focused) ACCENT else TRACK_OFF)
             nvgTextFieldContent(tf, x, y, w, h)
         }
 
-        /** Just the text + blinking caret, no box — for fields whose box is drawn separately (the
-         *  search bar's own pill ring already serves as its box, so calling [nvgTextField]
-         *  there would nest a second box inside it). */
+        /** Text + caret only, no box — for fields whose box (e.g. the search bar's pill ring) is drawn separately. */
         fun nvgTextFieldContent(tf: TextFieldWidget, x: Int, y: Int, w: Int, h: Int) {
             val text = tf.text
             val cursor = Math.min(tf.cursor, text.length)
@@ -1509,12 +1404,10 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
             NvgRecorder.popScissor()
         }
 
-        /** Small triangle: pointing down when `open`, right when closed; `cy` is the vertical centre. */
         fun drawChevron(ctx: DrawContext, gx: Int, cy: Int, open: Boolean, color: Int) {
             NvgRecorder.chevron(gx.toFloat(), cy.toFloat(), open, color)
         }
 
-        /** Tiny vector emblem (~14px) centred at (cx,cy). `bg` is the tile fill, for knockouts. */
         private fun drawGlyph(ctx: DrawContext, t: String, cx: Int, cy: Int, c: Int, bg: Int) {
             when (t) {
                 "gear" -> {
@@ -1591,7 +1484,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
             }
         }
 
-        /** Short one-line description shown under each row label. */
         private fun descFor(name: String): String {
             return when (name) {
                 "Mod Prefix" -> "Tag FishMod's chat output with a prefix"
@@ -1647,7 +1539,6 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
             }
         }
 
-        /** Description for a toggle registered via [FishModAddonApi] (e.g. from an addon mod). */
         private fun descForExternal(name: String): String {
             for (et in FishModAddonApi.dungeonToggles) {
                 if (et.name() == name) return et.description()
@@ -1655,15 +1546,12 @@ class FishModScreen : Screen(Text.literal("FishMod")) {
             return ""
         }
 
-        /** Builds a command-input row for an inventory button (the hint reminds it's a command, no slash). */
         private fun makeButtonInput(name: String, prop: KMutableProperty0<String>): InputSetting {
             val s = InputSetting(name, "", prop)
             s.hint = "command without /"
             return s
         }
 
-        /** Odin-style rounded pill with a hollow accent ring and a sliding circular knob. Static so the
-         *  static nested Setting subclasses (which have no outer-instance reference) can call it too. */
         fun drawTogglePill(ctx: DrawContext, x: Int, y: Int, w: Int, h: Int, on: Boolean, knobProgress: Float, hover: Boolean) {
             val track = if (on) (if (hover) ACCENT_HOVER else ACCENT) else TRACK_OFF
             val ring = if (on) (if (hover) ACCENT_HOVER else ACCENT) else (if (hover) 0xFF565C68.toInt() else 0xFF464C56.toInt())

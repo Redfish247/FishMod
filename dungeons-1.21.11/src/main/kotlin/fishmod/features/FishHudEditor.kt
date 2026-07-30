@@ -15,9 +15,7 @@ import java.util.function.IntSupplier
 
 class FishHudEditor(private val parent: Screen) : Screen(Text.literal("Edit HUD")) {
 
-    /** Ported from the original Java `record HudEntry(...)`. Java callers use record-style
-     *  accessors (`.name()`, `.getX()`, `.locked()`, etc.), so this stays a plain class rather
-     *  than a Kotlin data class. */
+    /** Ported from the original Java `record HudEntry(...)`. */
     class HudEntry @JvmOverloads constructor(
         private val nameVal: String,
         private val getXVal: IntSupplier,
@@ -91,14 +89,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Text.literal("Edit HUD"
             ENTRIES.add(HudEntry(name, getX, IntConsumer { }, getY, IntConsumer { }, w, h, true))
         }
 
-        /**
-         * Register a HUDComponent — position get/set bridges through component.move().
-         *
-         * We work in TRUE pixel space (`getScaledX() * scale == x * screenWidth`), not raw
-         * `getScaledX()`: the latter is scale-dependent, so the editor box would drift when you
-         * resize. Using the scale-independent pixel position keeps the box anchored at its top-left
-         * while scaling — matching where the HUD actually renders.
-         */
+        /** Register a HUDComponent — position get/set bridges through component.move(). */
         @JvmStatic
         fun register(name: String, component: HUDComponent) {
             ENTRIES.add(
@@ -124,11 +115,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Text.literal("Edit HUD"
             )
         }
 
-        /**
-         * Default position (pixels) and scale for each registered HUD, mirroring the defaults in its
-         * `register(...)` call (FishSettings field initializers / HUDComponent constructors).
-         * Used by the "Reset positions" button. Keep in sync when a HUD's default changes.
-         */
+        /** Default position (pixels) and scale for each registered HUD, mirroring its `register(...)` call. */
         private val DEFAULTS: Map<String, DoubleArray> = java.util.Map.ofEntries(
             java.util.Map.entry("Farming Coins", doubleArrayOf(10.0, 240.0, 1.0)),
             java.util.Map.entry("Pet", doubleArrayOf(10.0, 80.0, 1.0)),

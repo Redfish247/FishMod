@@ -9,12 +9,7 @@ import net.minecraft.text.Text
 import kotlin.math.max
 import kotlin.math.min
 
-/**
- * /fm aliases — map a short command (e.g. "dh") to run a longer one (e.g. "warp dh").
- *
- * Same editing convention as [CommandKeysScreen]: `aliases`/`commands` are
- * the source of truth, widgets are rebuilt from them on every add/remove/scroll.
- */
+/** /fm aliases — maps a short command to a longer one. */
 class CommandAliasesScreen : Screen(Text.literal("Command Aliases")) {
 
     companion object {

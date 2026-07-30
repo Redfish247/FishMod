@@ -15,12 +15,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-/**
- * Compact custom tab list. Hypixel packs every column (Players / Info / Trophy Frogs / Active
- * Effects) into the player-list entries, ordered column-major by their `!A-a`/`!B-a`
- * sort keys — so we render those entries verbatim into a translucent panel rather than re-deriving
- * data. Adds a header stat bar (Players / Server / TPS / Ping) and a footer. Opt-in via config.
- */
+/** Compact custom tab list; re-renders Hypixel's column-major `!A-a`/`!B-a`-keyed entries into a translucent panel with a header stat bar and footer. */
 object CompactTab {
 
     private const val BG_RGB = 0x0B0D13
@@ -28,14 +23,14 @@ object CompactTab {
     /** Panel background alpha derived from the FishSettings slider (0..100). */
     private fun bgPanel(): Int {
         val pct = max(0, min(100, FishSettings.compactTabOpacity))
-        val a = (pct * 2.55).roundToInt() // 0..255
+        val a = (pct * 2.55).roundToInt()
         return (a shl 24) or BG_RGB
     }
 
     /** Header strip uses ~45% of the panel alpha so it reads as a lighter band. */
     private fun bgHead(): Int {
         val pct = max(0, min(100, FishSettings.compactTabOpacity))
-        val a = (pct * 2.55 * 0.45).roundToInt() // 0..115
+        val a = (pct * 2.55 * 0.45).roundToInt()
         return (a shl 24) or BG_RGB
     }
 
@@ -51,12 +46,7 @@ object CompactTab {
     private val COL_KEY: Pattern = Pattern.compile("^!([A-Za-z])")
     private val SERVER_ID: Pattern = Pattern.compile("\\b((?:mini|mega|m)\\d+[A-Za-z]{1,3})\\b")
 
-    /**
-     * Returns true if the current tab uses Hypixel's lobby column-major encoding
-     * (entries named "!A-…"/"!B-…"). Dungeons, Kuudra, Rift, Garden, Crimson Isle
-     * sub-servers etc. don't use this — for those we fall back to vanilla rendering
-     * via [shouldRender] so we just draw whatever Hypixel sent verbatim.
-     */
+    /** True if the tab uses Hypixel's lobby column-major encoding ("!A-…"); dungeons/Kuudra/etc. don't. */
     @JvmStatic
     fun shouldRender(): Boolean {
         val mc = MinecraftClient.getInstance()
@@ -74,7 +64,6 @@ object CompactTab {
         val tr = mc.textRenderer
         val lh = 10
 
-        // group entries into Hypixel's tab columns (by their !X- sort key)
         val all = ArrayList(mc.networkHandler!!.playerList)
         all.sortWith(Comparator { a, b -> nameOf(a).compareTo(nameOf(b), ignoreCase = true) })
         val grouped = LinkedHashMap<String, MutableList<PlayerListEntry>>()
@@ -82,11 +71,8 @@ object CompactTab {
             val m = COL_KEY.matcher(nameOf(e))
             if (m.find()) grouped.getOrPut(m.group(1).uppercase()) { ArrayList() }.add(e)
         }
-        // Non-lobby tabs (dungeons / Kuudra / Rift / Garden / etc.) have no !X- keys —
-        // caller should have routed to vanilla via shouldRender(); guard anyway.
         if (grouped.isEmpty()) return
 
-        // smart sizing: trim trailing blank rows, drop empty columns, width = content
         val columns = ArrayList<List<PlayerListEntry>>()
         val colWidths = ArrayList<Int>()
         var rows = 0
@@ -98,7 +84,7 @@ object CompactTab {
                 last = i
                 nonBlank++
             }
-            // Drop empty columns AND header-only columns (e.g. an "Info" column with no content).
+            // Drop empty columns and header-only ones with no real content.
             if (last < 0 || nonBlank <= 1) {
                 first = false
                 continue
@@ -111,7 +97,7 @@ object CompactTab {
                 val dn = e.displayName
                 if (dn != null) maxW = max(maxW, tr.getWidth(dn))
             }
-            val extra = if (playersCol) 26 else 8 // head + signal bars on players col
+            val extra = if (playersCol) 26 else 8
             val w = max(if (playersCol) 116 else 60, min(maxW + extra, 230))
             columns.add(trimmed)
             colWidths.add(w)
@@ -125,7 +111,6 @@ object CompactTab {
         val tps = PartyCommandHandler.currentTps()
         val server = findServer(mc, tabFooter, tabHeader)
 
-        // panel geometry
         val pad = 8
         val gap = 8
         var contentW = 0
@@ -139,11 +124,9 @@ object CompactTab {
         val footH = 12
         val totalH = headH + bodyH + footH
 
-        // rounded translucent panel
         roundRect(ctx, x0, y0, x0 + pw, y0 + totalH, bgPanel())
         roundRect(ctx, x0, y0, x0 + pw, y0 + headH, bgHead())
 
-        // header stat bar (PLAYERS cell removed — count already shown atop the Players column)
         val labels = arrayOf("SERVER", "TPS", "FPS", "PING")
         val values = arrayOf(
             server,
@@ -162,7 +145,6 @@ object CompactTab {
         }
         ctx.fill(x0 + 4, y0 + headH - 1, x0 + pw - 4, y0 + headH, DIVIDER)
 
-        // columns
         val cy = y0 + headH + 3
         var colX = x0 + pad
         for (c in columns.indices) {
@@ -187,8 +169,7 @@ object CompactTab {
                     }
                     tx = colX + 10
                 }
-                // draw styled text directly (no plain-string trim -> keeps rank colors)
-                ctx.drawText(tr, dn, tx, ry, NAME, true)
+                ctx.drawText(tr, dn, tx, ry, NAME, true) // styled text directly, keeps rank colors
                 if (playersCol && r > 0 && e.latency > 0) drawSignal(ctx, colX + w - 13, ry, e.latency)
                 r++
             }
@@ -200,8 +181,7 @@ object CompactTab {
 
     private fun blank(e: PlayerListEntry): Boolean {
         val dn = e.displayName ?: return true
-        // Strip color codes AND invisible formatting chars (NBSP, LRM/RLM, ZWJ, separators) so
-        // Hypixel's hidden-character padding rows are recognized as blank.
+        // Strip color codes and invisible padding chars so Hypixel's blank rows are recognized.
         val s = dn.string.replace(Regex("§."), "").replace(Regex("[\\p{Cf}\\p{Z}\\s]"), "")
         return s.isEmpty()
     }
@@ -232,12 +212,7 @@ object CompactTab {
         }
     }
 
-    /**
-     * Real ping. The vanilla ping/pong round trip ([PingTracker]) is the most
-     * accurate, freshest end-to-end source — a true client->server->client measurement, the same one
-     * Odin uses. Fall back to server-measured tab latency, then server-list join ping, only when a
-     * live measurement isn't available yet (briefly after join).
-     */
+    /** Prefers the live ping/pong round trip; falls back to tab latency, then join ping. */
     private fun realPing(mc: MinecraftClient): Int {
         val live = PingTracker.latest()
         if (live > 0) return live
@@ -256,7 +231,6 @@ object CompactTab {
 
     private fun findServer(mc: MinecraftClient, footer: String?, header: String?): String {
         var hay = (footer ?: "") + " " + (header ?: "")
-        // sidebar often carries the server id (e.g. "05/27/26 m108AB")
         try {
             if (mc.world != null) {
                 val sb = mc.world!!.scoreboard

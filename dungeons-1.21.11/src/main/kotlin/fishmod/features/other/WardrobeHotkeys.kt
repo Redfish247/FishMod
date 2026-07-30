@@ -15,21 +15,7 @@ import net.minecraft.screen.slot.Slot
 import net.minecraft.screen.slot.SlotActionType
 import java.util.function.Predicate
 
-/**
- * Wardrobe/Loadouts quick-swap: pressing FishMod's slot-N hotkey (keyboard or mouse button,
- * whatever it's bound to in Controls) clicks the matching slot in the currently open Wardrobe
- * (Armor Sets) or Loadouts GUI.
- *
- * Loadouts uses a fixed slot layout (verified in-game): 3 columns x 4 rows of "select this
- * loadout" icons at raw slot indices 14/15/16, 23/24/25, 32/33/34, 41/42/43 — hardcoded below.
- *
- * Wardrobe's clickable "select this set" icon moves depending on how many sets are on the page,
- * so instead of a fixed index it's found each time by scanning the hotkey's column for
- * Hypixel's wool/dye/barrier icon.
- *
- * The actual click is deferred by one client tick after the key/click event, since firing it
- * synchronously in the same tick as the input event was causing visual glitches in Hypixel's GUI.
- */
+/** Wardrobe/Loadouts quick-swap: pressing FishMod's slot-N hotkey clicks the matching slot in the GUI. */
 object WardrobeHotkeys {
 
     private const val PLAYER_INV_SLOTS = 36

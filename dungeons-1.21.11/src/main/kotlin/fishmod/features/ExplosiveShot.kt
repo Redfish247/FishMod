@@ -12,18 +12,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
-/**
- * Parses the Terminator "Explosive Shot" chat line and shows the per-enemy damage as a title.
- *
- *   "Your Explosive Shot hit 1 enemy for 472.5 damage."  -> title "472.5", subtitle "Explosive Shot . 1 enemy"
- *   "Your Explosive Shot hit 8 enemies for 4,000 damage." -> title "500",  subtitle "Explosive Shot . 8 enemies"
- *
- * Only active during the F7 Maxor fight ([Phase.inP1]) — Terminator/Explosive Shot readings
- * aren't relevant to any other boss phase.
- *
- * The damage in the message is the TOTAL across all enemies hit; dividing by the enemy count gives
- * the per-target hit. Reads [Events.ON_GAME_MESSAGE] but never cancels (the chat line stays).
- */
+/** Parses the Terminator "Explosive Shot" chat line and shows the per-enemy damage as a title. */
 object ExplosiveShot {
 
     // hit N enemy/enemies for D damage  (D may carry thousands commas and a decimal)
@@ -82,8 +71,7 @@ object ExplosiveShot {
         return false // keep the original chat line
     }
 
-    /** Shares the same crit-hit info already shown on screen with the party. Delayed + rate-limit
-     *  suppressed the same way `PartyCommandHandler.sendCmd` does. */
+    /** Shares the same crit-hit info already shown on screen with the party. */
     private fun announceToParty(dmg: String, enemies: Int) {
         val message = "Explosive Shot: $dmg dmg (" + enemies + (if (enemies == 1) " enemy)" else " enemies)")
         CompletableFuture.delayedExecutor(250, TimeUnit.MILLISECONDS)

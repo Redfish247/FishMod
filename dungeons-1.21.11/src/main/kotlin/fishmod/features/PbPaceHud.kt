@@ -10,12 +10,7 @@ import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.ChatScreen
 import net.minecraft.client.render.RenderTickCounter
 
-/**
- * PB Pace — a racing-style "ghost" for dungeon runs. As each split completes it compares your live
- * time to your personal best for that split and shows a running delta: green when you're ahead of
- * your PB pace, red when you're behind. Pure read-over of the existing split + run-history systems,
- * so it costs nothing until you actually start a run with recorded history.
- */
+/** PB Pace — a racing-style "ghost" for dungeon runs. */
 object PbPaceHud {
 
     @JvmStatic

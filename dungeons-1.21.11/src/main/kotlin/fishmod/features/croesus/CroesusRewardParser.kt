@@ -3,18 +3,7 @@ package fishmod.features.croesus
 import fishmod.utils.SkyblockItems
 import java.util.regex.Pattern
 
-/**
- * Parses a Croesus reward-chest tooltip (item display name + lore lines, in that order) into
- * SkyBlock item ids, quantities and display names — one [RewardItem] per reward line, up to
- * (but not including) the "Cost" line and anything after it.
- *
- * Ported from FishModAddons' `fishmodaddons.util.ItemParser` (itself ported from
- * AutoCroesus's ItemParser, originally by UnclaimedBloom6, ported with permission) — same regexes,
- * same enchanted-book/essence/hardcoded-name handling, same cost-line detection. Trimmed for the
- * passive loot tracker: no cost/value/profit math (that's the addon's job for auto-claiming), and
- * display-name → item-id resolution goes through [SkyblockItems.idFor] (this mod's own
- * async-loaded name table) instead of the addon's CroesusDataStore price list.
- */
+/** Parses a Croesus reward-chest tooltip (name + lore) into SkyBlock item ids, quantities and display names. */
 object CroesusRewardParser {
     private val COLOR_STRIP: Pattern = Pattern.compile("§.")
 
@@ -111,13 +100,7 @@ object CroesusRewardParser {
         return arrayOf("false", "Could not find item ID for line \"$clean\"")
     }
 
-    /**
-     * @param fullTooltip item display name followed by its lore lines, in render order
-     * @param errorOut    optional 1-element out-param; set to a human-readable reason on failure
-     * @return parsed rewards (everything before the "Cost" line), or null if the tooltip couldn't
-     *         be parsed (no Cost line found yet — e.g. the container hasn't finished loading — or
-     *         a reward line's item id couldn't be resolved).
-     */
+    
     @JvmStatic
     fun parseRewards(fullTooltip: List<String>, errorOut: Array<String?>?): ChestInfo? {
         var costIdx = -1

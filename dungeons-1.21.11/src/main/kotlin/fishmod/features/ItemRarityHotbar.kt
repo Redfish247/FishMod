@@ -10,12 +10,7 @@ import net.minecraft.component.DataComponentTypes
 import net.minecraft.item.ItemStack
 import net.minecraft.util.Identifier
 
-/**
- * Rarity background — draws a tinted sprite (square or circle) BEHIND every item, coloured by its
- * SkyBlock rarity. Blade-addons' sprite approach: inventory slots via [DrawEvents.INVENTORY_SLOT_BEFORE]
- * and the hotbar via `DrawContextMixin` (both before the item draw). Rarity is parsed once and
- * cached per ItemStack ([ItemRarityHolder]).
- */
+/** Rarity background — draws a tinted sprite (square or circle) BEHIND every item, coloured by its SkyBlock rarity. */
 object ItemRarityHotbar {
 
     private val SQUARE: Identifier = Identifier.of("fishmod", "rarity-background")

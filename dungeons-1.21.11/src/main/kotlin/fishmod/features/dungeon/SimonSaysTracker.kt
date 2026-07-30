@@ -19,40 +19,21 @@ import net.minecraft.util.math.BlockPos
 import net.minecraft.world.World
 import java.util.regex.Pattern
 
-/**
- * Tracks Goldor (F7 P3) Simon Says rounds via block scanning.
- *
- * Detection uses a FIXED world-space box around the device: the player must be inside
- * `DEVICE_BOX` to lock the scan onto `DEVICE_CENTER`, and from there we count
- * demo "flashes" (lit sea-lantern rising edges).
- *
- * Announcing: on the FIRST light of each new demo, the rounds-completed count = the longest
- * sequence shown so far. A failed round re-shows the same/shorter sequence, so the max length
- * doesn't grow and (with the dedupe) nothing extra is sent. 5/5 comes from the in-game
- * "<you> completed a device!" message / completion title.
- *
- * Breaking: the fixed obsidian/button columns behind the device (same signal NoammAddons' SS
- * solver uses) are watched for a reset — all buttons going to air after the device was active.
- * On a break, round tracking resets to 0 and scanning goes fully quiet until the device is
- * active again, so the next demo re-announces cleanly from 1/5.
- */
+/** Tracks Goldor (F7 P3) Simon Says rounds via block scanning of a fixed world-space device box. */
 object SimonSaysTracker {
 
     private const val SCAN_RADIUS = 7 // lit-cell box around the locked device center
     private const val BURST_GAP_MS = 550L
 
-    // Fixed detection box around the Goldor SS device, from measured corner coords, extended
-    // upward a few blocks so the whole player (standing or jumping) counts as "at the device".
+    // Fixed box around the Goldor SS device, extended upward so a jumping player still counts as "at the device".
     private val DEVICE_BOX = Box(
         106.65, 120.0, 92.70,
         110.70, 126.0, 95.30
     )
     private val DEVICE_CENTER = BlockPos(108, 120, 94)
 
-    // Break/restart detection (same approach as NoammAddons' SS solver): a fixed obsidian
-    // column behind the device and the button column in front of it. Any obsidian cell not
-    // being obsidian = the device is "active" (mid demo/attempt). Once that settles for
-    // BREAK_COOLDOWN_TICKS and every button cell reads air, the device has reset — a break.
+    // Break detection: obsidian column behind device (active = any cell not obsidian), button column in front
+    // (reset = all air) once settled for BREAK_COOLDOWN_TICKS.
     private const val DEV_BUTTONS_X = 110
     private const val DEV_OBSIDIAN_X = 111
     private const val DEV_Y_MIN = 120
@@ -79,11 +60,9 @@ object SimonSaysTracker {
     private var doneAtMs = 0L // when 5/5 fired — HUD unrenders 2s later
     private val litPrev = HashSet<Long>()
 
-    // Reads "Simon Says: N/5" out of party chat so the HUD also registers when SOMEONE ELSE
-    // does SS (we can't block-scan their device — but their mod announces to party chat).
+    // Reads "Simon Says: N/5" from party chat so the HUD also registers a teammate doing SS.
     private val SS_CHAT: Pattern = Pattern.compile("Simon Says: (\\d)/5")
 
-    // Goldor's intro line — arms scanning so we don't watch the device box before P3 starts.
     private const val GOLDOR_INTRO = "who dares trespass into my domain"
 
     // ── debug: log every block transition in a cube around the player (/ssdbg) ──
@@ -94,23 +73,17 @@ object SimonSaysTracker {
 
     @JvmStatic
     fun init() {
-        // New run (entering/leaving the dungeon) → reset everything.
         fishmod.utils.events.Events.ON_LOCATION_CHANGE.register { reset(); false }
 
-        // "<you> completed a device! (x/7) (time | time)" → our SS finish (5/5). Use the mod's own
-        // game-message event (the same hook party commands use) for reliability.
         fishmod.utils.events.Events.ON_GAME_MESSAGE.register { message ->
             if (!FishSettings.simonSaysEnabled) return@register false
             val s = message.string.replace(Regex("§."), "")
 
-            // Goldor's spawn line — start scanning the device box from here on.
             if (!armed && s.lowercase().contains(GOLDOR_INTRO)) {
                 armed = true
                 if (debug) log("armed (Goldor intro seen)")
             }
 
-            // Pick up "Simon Says: N/5" from party chat (ours echoed back, or a teammate's) so the
-            // HUD shows progress even when WE aren't the one at the device.
             val ss = SS_CHAT.matcher(s)
             if (ss.find()) {
                 val n = ss.group(1)[0] - '0'
@@ -122,8 +95,7 @@ object SimonSaysTracker {
 
             if (debug && s.contains("device")) log("msg: \"$s\"")
             if (!s.contains("completed a device")) return@register false
-            // Must be OUR completion (teammates' device completions also broadcast). Match the name
-            // loosely (anywhere in the line) so color-code spacing can't break it.
+            // Loose name match since teammates' completions also broadcast and color codes can shift spacing.
             val mc = MinecraftClient.getInstance()
             val self = mc.player?.gameProfile?.name
             val mine = (self == null) || s.contains(self)
@@ -152,14 +124,10 @@ object SimonSaysTracker {
         }
         inP3 = safeInP3()
 
-        // Once SS is done this run, ignore everything until the next run (location change).
         if (completed) { atDevice = false; return }
-
-        // Don't watch the device box until Goldor's intro line has been seen this run.
         if (!armed) { atDevice = false; return }
 
         tickBreakState(client.world!!)
-        // Device just broke — full shutoff. No scanning, no announcing, until it restarts.
         if (broken) {
             atDevice = false; deviceCenter = null; primed = false; burstFlashes = 0; litPrev.clear()
             return
@@ -167,7 +135,6 @@ object SimonSaysTracker {
 
         val now = System.currentTimeMillis()
 
-        // Anyone (not just us — a teammate may be the one doing SS) standing at the fixed device box?
         atDevice = false
         for (p: PlayerEntity in client.world!!.players) {
             if (p.boundingBox.intersects(DEVICE_BOX)) { atDevice = true; break }
@@ -197,7 +164,7 @@ object SimonSaysTracker {
         litPrev.addAll(cur)
 
         if (newlyLit > 0) {
-            // A gap before this light = a NEW demo just started. Announce here, on the FIRST light.
+            // A gap before this light means a new demo just started; announce on the first light.
             if (now - lastFlashMs > BURST_GAP_MS) {
                 if (burstFlashes > maxLen) maxLen = burstFlashes // finalize previous demo
                 burstFlashes = 0
@@ -214,10 +181,7 @@ object SimonSaysTracker {
         }
     }
 
-    /**
-     * 5/5 finish, triggered by the in-game "<you> completed a device!" message (the reliable
-     * signal — block detection of rounds can miss). Fires once per run; the run reset clears it.
-     */
+    /** 5/5 finish, triggered by the in-game completion message; fires once per run. */
     private fun tryComplete() {
         if (debug) log("tryComplete called (completed=$completed)")
         if (completed) return
@@ -242,14 +206,7 @@ object SimonSaysTracker {
         if (FishSettings.simonSaysPartyChat) Misc.executeCommand("pc Simon Says: $label")
     }
 
-    // ── block scanning ──────────────────────────────────────────────────────────
-
-    /**
-     * Watches the fixed obsidian/button columns for a break, same signal NoammAddons uses.
-     * Any obsidian cell missing = device active. Once that's held for `BREAK_COOLDOWN_TICKS`
-     * and every button cell is air, the device reset — announce the fail, reset round tracking,
-     * and go fully quiet (see `broken` in `tick`) until the device is active again.
-     */
+    /** Watches the fixed obsidian/button columns for a break and resets round tracking when one occurs. */
     private fun tickBreakState(world: World) {
         breakTicks--
 
@@ -332,11 +289,10 @@ object SimonSaysTracker {
     fun renderHud(ctx: DrawContext, tc: RenderTickCounter) {
         if (!FishSettings.simonSaysEnabled || !FishSettings.simonSaysHudEnabled) return
         if (round <= 0) return
-        // Auto-hide 2 seconds after completion.
         if (round >= 5 && doneAtMs > 0 && System.currentTimeMillis() - doneAtMs > 2000) return
         val mc = MinecraftClient.getInstance()
         val player = mc.player ?: return
-        // Don't render when standing right at the device (~3 blocks) — you can see it yourself.
+        // Don't render when standing at the device (~3 blocks) — you can see it yourself.
         val dc = deviceCenter
         if (dc != null && player.blockPos.getSquaredDistance(dc) <= 12) return
 

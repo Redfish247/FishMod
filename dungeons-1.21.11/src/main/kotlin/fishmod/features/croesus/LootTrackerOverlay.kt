@@ -15,15 +15,7 @@ import net.minecraft.text.Text
 import org.lwjgl.glfw.GLFW
 import java.text.DecimalFormat
 
-/**
- * Loot/profit tracker drawn on top of the player's inventory while in the Dungeon Hub. Rows are
- * populated automatically by [CroesusLootDetector] from real Croesus chest opens (no typing
- * required); each row's count can still be nudged with +/- or edited directly (click the count
- * cell to type a correction), alongside a runs counter (also auto-incremented, but still
- * manually adjustable the same way), total value, per-run average and a total drop count. The
- * panel can be dragged by its title bar; its position persists in config. Persists rows/runs via
- * [LootTrackerStore]. Modeled on the overlay in `SessionStats`.
- */
+/** Loot/profit tracker drawn over the player's inventory in the Dungeon Hub; rows auto-populated by [CroesusLootDetector]. */
 object LootTrackerOverlay {
 
     // palette (matches FishModScreen slate/teal, square corners)
@@ -96,9 +88,7 @@ object LootTrackerOverlay {
     private const val STATS_PAD = 5
     private const val PANEL_W = 200
 
-    // When true, renderInScreen()/handleScreenClick() are being driven by the standalone
-    // LootTrackerScreen (opened via /fmloot) instead of being painted on top of the vanilla
-    // inventory screen — skips the InventoryScreen/Dungeon-Hub gate and anchors to screen center.
+    // True when driven by the standalone LootTrackerScreen (/fmloot) instead of the vanilla inventory screen.
     private var standalone = false
 
     @JvmStatic
@@ -106,8 +96,7 @@ object LootTrackerOverlay {
 
     // ── gates ────────────────────────────────────────────────────────────────
     private fun active(): Boolean {
-        // Opening /fmloot is an explicit request to view the menu, so it always renders,
-        // independent of whether background auto-tracking (the FishSettings toggle) is on.
+        // /fmloot always renders regardless of the background auto-tracking toggle.
         if (standalone) return true
         if (!FishSettings.lootTrackerEnabled) return false
         val mc = MinecraftClient.getInstance()
@@ -150,8 +139,7 @@ object LootTrackerOverlay {
         val mouseDown = GLFW.glfwGetMouseButton(mc.window.handle, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS
         if (dragging && !mouseDown) { dragging = false; fishmod.utils.config.FishConfig.manager.save() }
 
-        // position: dragging > saved position > auto-anchor (beside the inventory, or centered
-        // on screen when opened standalone via /fmloot)
+        // Position priority: dragging > saved position > auto-anchor.
         if (dragging) {
             panelX = mx - dragGrabX
             panelY = my - dragGrabY

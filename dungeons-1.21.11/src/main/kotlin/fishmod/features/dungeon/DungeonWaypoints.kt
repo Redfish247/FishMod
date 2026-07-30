@@ -33,13 +33,7 @@ import net.minecraft.util.math.Vec3d
 import net.minecraft.world.RaycastContext
 import org.lwjgl.glfw.GLFW
 
-/**
- * /dwp — an OdinLegacy-style dungeon waypoint editor (github.com/odtheking/OdinLegacy,
- * DungeonWaypoints.kt/DungeonWaypointCommand.kt/DungeonWaypointConfig.kt). Waypoints are stored
- * per-room, keyed by [RoomSignature.key] (rotation-normalized), so a waypoint set on one
- * instance of a room shape+door pattern replays correctly the next time that same room appears,
- * even if it's rotated differently — see [toCanonical] / [toLive].
- */
+/** /dwp — an OdinLegacy-style dungeon waypoint editor (github.com/odtheking/OdinLegacy, DungeonWaypoints.kt/DungeonWaypointCommand.kt/DungeonWaypointConfig.kt). */
 object DungeonWaypoints {
 
     private const val PLACE_EPSILON = 0.05

@@ -7,15 +7,7 @@ import fishmod.utils.dungeon.Section
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 
-/**
- * Holds the Floor 7 timer/notification HUD components and renders them.
- *
- * Like the splits/boss-timer HUDs in `Phase`, these are rendered explicitly from a
- * HudRenderCallback ([renderHud]) rather than through practical-config's HudElementRegistry
- * auto-render — so their condition-suppliers are forced `{ false }`. Each frame we also pull
- * them back on-screen if their saved position is an out-of-range fraction (older builds saved pixel
- * coords like x=10, which `getScaledX` blows up to 10*screenWidth → off-screen).
- */
+/** Holds the Floor 7 timer/notification HUD components and renders them. */
 object F7Huds {
 
     private const val TICK_W = 60

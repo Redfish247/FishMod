@@ -13,16 +13,7 @@ import org.lwjgl.glfw.GLFW
 import kotlin.math.max
 import kotlin.math.min
 
-/**
- * /fm commandkeys — bind arbitrary keys/mouse buttons to slash commands.
- *
- * Entries are kept as plain `keys`/`commands` lists (the source of truth) and
- * widgets are rebuilt from them on every add/remove/scroll/rebind — simplest way to support a
- * variable-length, scrollable row list without hand-rolled widget recycling.
- *
- * Key capture mirrors [FishModScreen]'s existing keybind-rebind convention: click a key
- * box to arm capture, then the next key or mouse click is bound; Escape unbinds instead.
- */
+/** /fm commandkeys — bind arbitrary keys/mouse buttons to slash commands. */
 class CommandKeysScreen : Screen(Text.literal("Command Keys")) {
 
     companion object {

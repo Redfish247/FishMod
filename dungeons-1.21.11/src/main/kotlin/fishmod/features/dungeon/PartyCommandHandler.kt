@@ -11,17 +11,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
-/**
- * Handles party commands typed by the local player:
- *   .ai / .allinv  — /p settings allinvite
- *   .pb            — fetch M7 PB from Hypixel API and send to party chat
- *   .cata          — send cata level (requires API key)
- *   .rtca          — send runs-to-class-50 (requires API key)
- *   .powder        — fetch mithril/gemstone/glacite powder (requires API key via proxy)
- *   .e             — /joininstance catacombs_entrance
- *   .f1-.f7        — /joininstance catacombs_floor_X
- *   .m1-.m7        — /joininstance master_catacombs_floor_X
- */
+/** Handles party dot-commands (.pb, .cata, .rtca, .powder, .e/.f1-7/.m1-7, etc.) typed by the local player. */
 object PartyCommandHandler {
 
     private val NUM_WORDS = arrayOf("one", "two", "three", "four", "five", "six", "seven")
@@ -30,16 +20,14 @@ object PartyCommandHandler {
 
     private var dungeonEnteredAt: Long = 0
 
-    // TPS tracking — rolling average of last 20 client tick intervals
+    // Rolling average of last 20 client tick intervals, for TPS tracking.
     private val TICK_TIMES = LongArray(20)
     private var tickIdx = 0
     private var lastTickMs: Long = -1
 
     @JvmStatic
     fun init() {
-        // When the local player sends a chat message starting with a command prefix,
-        // pre-arm the suppression window so Hypixel's "Unknown party command." reply
-        // (which can race ahead of the party echo) is hidden.
+        // Pre-arm suppression so Hypixel's "Unknown party command." reply (can race ahead of the party echo) is hidden.
         net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents.ALLOW_CHAT.register { message ->
             val t = message.trim()
             if (t.startsWith(".") || t.startsWith("!")) {
@@ -48,13 +36,11 @@ object PartyCommandHandler {
             true
         }
 
-        // Track when the player enters a dungeon or Kuudra (for 30s joininstance guard)
         Events.ON_LOCATION_CHANGE.register { loc ->
             if (loc == Location.DUNGEON || loc == Location.KUUDRA) dungeonEnteredAt = System.currentTimeMillis()
             false
         }
 
-        // Server tick timing for real TPS (CommonPingS2CPacket fires once per server tick)
         Events.ON_SERVER_TICK.register {
             val now = System.currentTimeMillis()
             if (lastTickMs > 0) {
@@ -73,38 +59,21 @@ object PartyCommandHandler {
         return l == "e" || l.matches(Regex("[fm][1-7]"))
     }
 
-    /**
-     * Called from ChatHudMixin for every party command message.
-     * typer   = who typed it
-     * cmd     = the command keyword
-     * rawArg1 = first word after the command (may be an IGN, a floor, or null)
-     * rawArg2 = second word after the command (may be a floor or null)
-     *
-     * For .runs the args are parsed smartly:
-     *   .runs            → ign=typer,   floor=m7 (default)
-     *   .runs m7         → ign=typer,   floor=m7
-     *   .runs PlayerName → ign=Player,  floor=m7 (default)
-     *   .runs Player m7  → ign=Player,  floor=m7
-     */
-    /** Back-compat overload — defaults responder to party chat ("pc "). */
+    /** Called from ChatHudMixin for every party command message; defaults responder to party chat ("pc "). */
     @JvmStatic
     @JvmOverloads
     fun onPartyCommand(typer: String, cmd: String, rawArg1: String?, rawArg2: String?, rawArg3: String? = null, responder: String? = "pc ") {
         val mc = MinecraftClient.getInstance()
         if (mc.networkHandler == null) return
-        // Use the real account name (GameProfile), NOT getName() — a cosmetic /nick overrides
-        // getName() and would break the isMe check for self-only commands (.ping/.fps/.corpse...).
+        // Real account name (GameProfile), not getName() — a cosmetic /nick would break the isMe check.
         val selfName = mc.player?.gameProfile?.name()
         val isMe = selfName != null && typer.equals(selfName, ignoreCase = true)
-        // Local /command lookups bypass the party-dedup so they always respond immediately.
         val isLocal = LOCAL == responder
 
-        // Default target for non-runs commands: explicit arg or fall back to typer
         val ign = rawArg1 ?: typer
 
         when (cmd) {
             "help", "?" -> { if (FishSettings.pcHelp && respond(cmd, typer, isLocal)) sendCmd(mc, responder, buildHelp()) }
-            // Stats lookups: respond to ANY party member's command (default target = typer if no arg)
             "rtca" -> { if (FishSettings.pcRtca && respond(cmd, typer, isLocal)) runRtcaForPlayer(mc, ign, responder) }
             "rtc" -> {
                 if (FishSettings.pcRtc && respond(cmd, typer, isLocal)) {
@@ -164,7 +133,6 @@ object PartyCommandHandler {
                 runStatsForPlayer(mc, runsIgn, cmd, floor, responder)
             }
             "totalruns" -> { if (FishSettings.pcRuns && respond(cmd, typer, isLocal)) runTotalRunsForPlayer(mc, ign, responder) }
-            // Self-only metrics: only the typer's own mod responds (data is local to each player)
             "dprofit" -> { if (FishSettings.pcDprofit && isMe) sendDprofit(mc, responder) }
             "corpse", "corpses" -> { if (FishSettings.pcCorpse && respond(cmd, typer, isLocal)) sendCorpse(mc, ign, responder) }
             "bank" -> { if (FishSettings.pcBank && respond(cmd, typer, isLocal)) sendBank(mc, ign, responder) }
@@ -179,8 +147,7 @@ object PartyCommandHandler {
             "ping" -> { if (FishSettings.pcPing && isMe) sendPing(mc, responder) }
             "ai", "allinv" -> { if (FishSettings.pcAllinvite && isMe) sendRawCommand(mc, "p settings allinvite") }
             "d" -> { if (FishSettings.pcDisband && isMe) sendRawCommand(mc, "p disband") }
-            // Party actions: only honor from party chat or local /command (never from DM/guild/officer/all chat,
-            // where someone saying ".warp" would otherwise make our client try `/p warp` and error out).
+            // Party actions only honor party chat or local /command, never DM/guild/all chat.
             "kick" -> { if (FishSettings.pcActionKick && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p kick $rawArg1") }
             "warp", "w" -> { if (FishSettings.pcActionWarp && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) sendRawCommand(mc, "p warp") }
             "transfer", "pt", "ptme" -> { if (FishSettings.pcActionTransfer && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) sendRawCommand(mc, "p transfer $ign") }
@@ -193,8 +160,7 @@ object PartyCommandHandler {
         }
     }
 
-    // Per-command dedup so multiple FishMod-running party members don't all spam the same response.
-    // Each (cmd|typer) pair can only fire once per 5 seconds across the whole party.
+    // Dedups (cmd|typer) so multiple FishMod-running party members don't all spam the same response.
     private val RECENT_RESPONSES = ConcurrentHashMap<String, Long>()
     private const val RESPONSE_DEDUP_MS = 5000L
 
@@ -209,7 +175,6 @@ object PartyCommandHandler {
         val last = RECENT_RESPONSES[key]
         if (last != null && now - last < RESPONSE_DEDUP_MS) return false
         RECENT_RESPONSES[key] = now
-        // Light GC: drop entries older than 30s
         RECENT_RESPONSES.entries.removeIf { now - it.value > 30_000 }
         return true
     }
@@ -219,12 +184,7 @@ object PartyCommandHandler {
         return isLocal || (responder != null && responder.startsWith("pc "))
     }
 
-    /**
-     * Who besides yourself may trigger a party action (kick/warp/promote/demote/transfer) or a
-     * floor/Kuudra join (.e/.f1-7/.m1-7/.t1-5), per FishSettings.pcPartyActionsMode:
-     * "off"/"self" (nobody else), "whitelist" (listed names only), "blacklist" (anyone not listed),
-     * "everyone" (any party member). You can always trigger your own actions.
-     */
+    /** Whether `typer` may trigger a party action or floor/Kuudra join, per FishSettings.pcPartyActionsMode. */
     private fun allowPartyAction(typer: String, isMe: Boolean): Boolean {
         if (isMe) return true
         return when (FishSettings.pcPartyActionsMode) {
@@ -271,11 +231,7 @@ object PartyCommandHandler {
         return "FishMod cmds: ." + cmds.joinToString(" .")
     }
 
-    /**
-     * Sends a reply to a lookup. Local /command dispatch (responder == LOCAL) just prints the text
-     * to your own chat; party/guild/officer/all/DM dispatch relays "<responder><text>" to the server
-     * as a real chat command so the rest of the channel sees it.
-     */
+    /** Local /command dispatch prints to your own chat; otherwise relays "<responder><text>" as a chat command. */
     private fun sendCmd(mc: MinecraftClient, responder: String?, text: String) {
         if (LOCAL == responder) {
             mc.execute { fishmod.utils.FishMsg.send("§f$text") }
@@ -291,14 +247,11 @@ object PartyCommandHandler {
                 mc.execute {
                     if (mc.networkHandler != null) {
                         mc.networkHandler!!.sendChatCommand(command)
-                        // Refresh the suppression window so Hypixel's error replies stay hidden.
                         ChatCommandState.lastPartyCommandAt = System.currentTimeMillis()
                     }
                 }
             }
     }
-
-    // ─── command dispatcher ───────────────────────────────────────────────────
 
     @JvmStatic
     fun handleCommand(fullCmd: String): Boolean {
@@ -306,11 +259,9 @@ object PartyCommandHandler {
         if (mc.networkHandler == null) return false
         val responder = "pc "
 
-        // Split "rtca PlayerName" → cmd="rtca", arg="PlayerName" (or null)
         val parts = fullCmd.split(Regex("\\s+"), 2)
         val cmd = parts[0]
         val arg = if (parts.size > 1) parts[1] else null
-        // If no arg, default to local player name
         val localName = mc.player?.name?.string
         val target = arg ?: localName
 
@@ -361,7 +312,6 @@ object PartyCommandHandler {
                 return true
             }
             "runs" -> {
-                // Support: runs [ign] [floor]  e.g. "runs SomePlayer m7" or "runs m7" or "runs"
                 val rp = fullCmd.split(Regex("\\s+"), 3)
                 val runTarget = if (rp.size > 1) rp[1] else localName
                 val floorArg = if (rp.size > 2) rp[2] else null
@@ -444,10 +394,6 @@ object PartyCommandHandler {
         return false
     }
 
-    // ─── command implementations ──────────────────────────────────────────────
-
-    // ─── party-triggered lookups (by IGN) ────────────────────────────────────
-
     private fun runRtcaForPlayer(mc: MinecraftClient, ign: String, responder: String?) {
         HypixelApi.getByName(mc, ign) { data -> buildAndSendRtca(mc, data, ign, responder) }
     }
@@ -460,11 +406,7 @@ object PartyCommandHandler {
         }
     }
 
-    /**
-     * Handles .secrets, .sa, .runs [floor] commands.
-     * For .runs, floor defaults to "m7" if not provided.
-     * Floor format: "m1"-"m7" (master), "f1"-"f7" (normal), "e" (entrance).
-     */
+    /** Handles .secrets, .sa, .runs [floor]; floor defaults to "m7" if not provided. */
     private fun runStatsForPlayer(mc: MinecraftClient, ign: String, cmd: String, floorArg: String?, responder: String?) {
         HypixelApi.getByName(mc, ign) { data ->
             val sb = StringBuilder("$ign's ")
@@ -494,7 +436,6 @@ object PartyCommandHandler {
                             label = "F$num"
                         }
                     } else {
-                        // Unrecognised floor — fall back to total
                         count = data.totalRuns
                         label = "Total"
                     }
@@ -532,7 +473,7 @@ object PartyCommandHandler {
         }
     }
 
-    // Hypixel catacombs collection milestones (per floor): tiers unlock at these points.
+    // Catacombs collection milestones (per floor) where tiers unlock.
     private val COLLECTION_MILESTONES = longArrayOf(1, 5, 10, 25, 50, 100, 250, 500, 1000)
     private const val COLLECTION_MAX = 1000L
 
@@ -619,10 +560,7 @@ object PartyCommandHandler {
         }
     }
 
-    /**
-     * .crtc — XP needed for a single class to reach a target level (default 50, or above if specified).
-     * Class XP uses the same curve as catacombs (CATA_XP_TABLE); levels above 50 cost 200M XP each.
-     */
+    /** .crtc — XP needed for a class to reach a target level; levels above 50 cost 200M XP each. */
     private fun runCrtcForPlayer(mc: MinecraftClient, ign: String, classArg: String?, levelArg: String?, responder: String?) {
         val classKey = resolveClass(classArg)
         if (classKey == null) {
@@ -715,8 +653,6 @@ object PartyCommandHandler {
         val out = sb.toString()
         sendCmd(mc, responder, out)
     }
-
-    // ─── local command implementations ───────────────────────────────────────
 
     private fun handleJoinInstance(cmd: String, mc: MinecraftClient, responder: String?) {
         val elapsed = System.currentTimeMillis() - dungeonEnteredAt
@@ -854,9 +790,7 @@ object PartyCommandHandler {
 
     private fun sendPing(mc: MinecraftClient, responder: String?) {
         if (mc.player == null || mc.networkHandler == null) return
-        // The vanilla ping/pong round trip is the most accurate, freshest end-to-end source (the same
-        // one Odin uses). Server-measured tab latency and the server-list join ping are fallbacks only
-        // for the brief window before a live measurement is available.
+        // Ping/pong round trip is most accurate; tab latency and join ping are fallbacks until it's available.
         var ping = fishmod.utils.PingTracker.latest()
         if (ping < 0) {
             val entry = mc.networkHandler!!.getPlayerListEntry(mc.player!!.uuid)

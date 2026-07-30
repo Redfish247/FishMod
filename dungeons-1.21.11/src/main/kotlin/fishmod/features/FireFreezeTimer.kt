@@ -14,10 +14,7 @@ import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
 import java.util.concurrent.ConcurrentHashMap
 
-/**
- * Fire Freeze Staff timer — when you use the staff, nearby mobs are frozen for 5s.
- * Renders a countdown floating at each frozen mob's hitbox center.
- */
+/** Fire Freeze Staff timer — when you use the staff, nearby mobs are frozen for 5s. */
 object FireFreezeTimer {
 
     private const val WAIT_MS = 5000L // cooldown/wait countdown before freeze

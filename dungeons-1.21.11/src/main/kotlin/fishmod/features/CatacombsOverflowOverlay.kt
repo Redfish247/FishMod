@@ -15,11 +15,7 @@ import net.minecraft.item.ItemStack
 import net.minecraft.text.Text
 import java.util.regex.Pattern
 
-/**
- * Hypixel's own Catacombs/class level-up menu items just show "MAX LEVEL" once you pass
- * level 50, with no indication of overflow progress. This draws the real (SkyHanni-style)
- * overflow level on top of those items, computed from the player's own dungeons API data.
- */
+/** Hypixel's own Catacombs/class level-up menu items just show "MAX LEVEL" once you pass level 50, with no indication of overflow progress. */
 object CatacombsOverflowOverlay {
 
     private val COLOR_STRIP: Pattern = Pattern.compile("§.")

@@ -9,16 +9,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-/**
- * Collapses repeated chat lines. When a message identical to one shown within the last
- * [WINDOW_TICKS] arrives, the older line is removed and re-added at the bottom with a
- * trailing "§7(N)" count (e.g. `Hi im RedFish2471 (2)`) instead of stacking duplicates.
- *
- * Runs at display time from [fishmod.mixin.ChatHudMixin] (after chat-filter/command
- * parsing), so packet-level parsers are unaffected. It manipulates [ChatHud]'s backing
- * `messages` list and re-wraps via [ChatHudInvoker.invokeRefresh] — the same
- * approach used by `fishmod.cosmetic.ChatNickRefresher`.
- */
+/** Collapses repeated chat lines. */
 object CompactChat {
 
     /** Duplicate window ~ 1 minute (20 ticks/second). */
@@ -27,10 +18,7 @@ object CompactChat {
     /** Trailing " (N)" count we previously appended. */
     private val COUNT_SUFFIX: Pattern = Pattern.compile("\\s\\((\\d+)\\)$")
 
-    /**
-     * @return true if the message duplicated a recent line and was collapsed into a count (in which
-     *         case `ci` is cancelled and the caller must stop processing this add).
-     */
+    
     @JvmStatic
     fun tryCompact(message: Text, hud: ChatHud, ci: CallbackInfo): Boolean {
         val incoming = stripKey(message.string)

@@ -10,27 +10,7 @@ import net.minecraft.item.ItemStack
 import net.minecraft.screen.ScreenHandler
 import java.util.regex.Pattern
 
-/**
- * Passively auto-populates [LootTrackerStore] from real Croesus chest claims — no typing
- * required, and it works the same whether the chest was opened by hand or by another mod automating
- * the clicks (this is pure passive tooltip-reading triggered by screens opening).
- *
- * Two-phase, mirroring how `fishmodaddons.croesus.CroesusClaimer` actually reads this UI:
- * 1. Hypixel's run-selection GUI (title matching [RUN_GUI_PATTERN], e.g.
- *    "Catacombs - Floor 7") shows up to 6 chest-tier icons (items literally named
- *    "Wood"/"Gold"/.../"Bedrock"), each with a lore tooltip listing every reward followed by a
- *    "Cost" line — a *preview* of what each tier currently contains. All 6 are visible at
- *    once, before the player has chosen one, so these get cached by chest-type name rather than
- *    logged immediately (logging all 6 would count loot the player never actually claimed).
- * 2. Once the player clicks a tier, a confirmation screen opens whose *title* alone
- *    (color-stripped) is that tier's name (matching [CHEST_SCREEN_PATTERN]) — that title
- *    is enough to know which cached preview to log and clear; its own contents aren't read.
- *
- * Also auto-increments [LootTrackerStore.runs], once per run-selection GUI visit (not once
- * per chest — a Chest Key can open a second chest on the same run): armed fresh every time that GUI
- * transitions from closed to open, and the actual bump happens on the first reward logged during
- * that visit (rather than on the GUI closing, which fires before the chosen chest's screen opens).
- */
+/** Passively auto-populates [LootTrackerStore] from real Croesus chest claims, no typing required. */
 object CroesusLootDetector {
     private val COLOR_STRIP: Pattern = Pattern.compile("§.")
     private val CHEST_SCREEN_PATTERN: Pattern = Pattern.compile("^(Wood|Gold|Diamond|Emerald|Obsidian|Bedrock)(?: Chest)?$")

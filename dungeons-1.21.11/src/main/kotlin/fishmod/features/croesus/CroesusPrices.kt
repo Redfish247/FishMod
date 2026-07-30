@@ -56,8 +56,7 @@ object CroesusPrices {
         }
     }
 
-    /** Returns best estimated price for a SkyBlock item id, or 0 if unknown.
-     *  If all bulk sources miss, kicks off an async coflnet lookup for next time. */
+    /** Returns best estimated price for a SkyBlock item id, or 0 if unknown. */
     @JvmStatic
     fun price(id: String?): Double {
         if (id == null || id.isEmpty()) return 0.0

@@ -11,10 +11,7 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import java.util.regex.Pattern
 
-/**
- * FishMod-exclusive puzzle display — lives only in FishMod's jar so it
- * always loads correctly even when blade-addons is also present.
- */
+/** FishMod-exclusive puzzle display — lives only in FishMod's jar so it always loads correctly even when blade-addons is also present. */
 object FishPuzzleDisplay {
 
     private val COLOR_STRIP: Pattern = Pattern.compile("§.")

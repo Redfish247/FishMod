@@ -24,18 +24,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-/**
- * Location ping — press the ping key (default middle mouse) to drop a through-walls waypoint where
- * you're looking, like a MOBA ping. The marker (a glowing column + floating "⚑ name • dist") fades
- * out after a few seconds.
- *
- * Two reach levels:
- *   • Local — always on; your own ping renders for you, and (optionally) the coords go to party chat.
- *   • Shared — opt-in. Your ping is published to the worker and other FishMod users on your server
- *     (your tab list, same scope as the cosmetic /sync) see it in their world, labelled with your
- *     name. Their pings show up for you the same way. Needs the /ping worker route deployed
- *     (worker-pings-snippet.js); it silently no-ops until then.
- */
+/** Location ping — press the ping key (default middle mouse) to drop a through-walls waypoint where you're looking, like a MOBA ping. */
 object PingFeature {
 
     private const val REACH = 160.0    // how far the ping ray travels before landing in air

@@ -15,11 +15,7 @@ import net.minecraft.entity.decoration.EndCrystalEntity
 import net.minecraft.text.Text
 import java.util.regex.Pattern
 
-/**
- * Maxor crystal spawn countdown + "place crystal" reminder. Ported from blade-addons; the
- * personal-best timing the original recorded is dropped (no PersonalBests in FishMod), but the
- * crystal-placed detection is kept so the reminder dismisses when you place it.
- */
+/** Maxor crystal spawn countdown + "place crystal" reminder. */
 object CrystalSpawn {
 
     private val RELIC_PICK_UP: Pattern = Pattern.compile("(\\w+) picked up an Energy Crystal!$")

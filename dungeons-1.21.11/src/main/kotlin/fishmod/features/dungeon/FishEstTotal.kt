@@ -15,17 +15,8 @@ import net.minecraft.text.Text
 import java.io.InputStreamReader
 import java.util.regex.Pattern
 
-/**
- * FishMod-exclusive Est. Total row for the split timer.
- *
- * When blade-addons is installed alongside FishMod, blade's Phase/Split classes
- * load instead of FishMod's. FishEstTotal uses its own inner LocalSplit class so
- * it never touches fishmod.utils.dungeon.Split, avoiding NoSuchMethodError
- * on blade's different constructor.
- */
+/** FishMod-exclusive Est. Total row; uses its own LocalSplit (not fishmod.utils.dungeon.Split) to avoid NoSuchMethodError when blade-addons' Phase classloads instead. */
 object FishEstTotal {
-
-    // ── LocalSplit — never references fishmod.utils.dungeon.Split ─────────
 
     private class LocalSplit(
         val name: String,
@@ -43,7 +34,7 @@ object FishEstTotal {
             startedFlag = false; endedFlag = false; startTime = 0; endTime = 0
         }
 
-        fun tick() { /* unused counter kept for parity, no-op besides guard */ }
+        fun tick() {}
 
         fun parseMessage(msg: String) {
             if (!startedFlag && msg == startMsg) {
@@ -65,9 +56,7 @@ object FishEstTotal {
         fun ended(): Boolean = endedFlag
 
         fun getRealTime(): Double {
-            // startTime == 0 means this split was never started.
-            // Without this guard, force-ending a never-started split via endRun()
-            // produces (currentTimeMs - 0) / 1000 ≈ 55 years → "infinite time" in the EST.
+            // startTime == 0 means never started; without this guard force-ending it makes getRealTime() ~55 years.
             if (startTime == 0L) return 0.0
             if (endedFlag) return (endTime - startTime) / 1000.0
             if (startedFlag) return (System.currentTimeMillis() - startTime) / 1000.0
@@ -75,20 +64,15 @@ object FishEstTotal {
         }
     }
 
-    // ── State ─────────────────────────────────────────────────────────────────
-
     private val END_PATTERN: Pattern =
         Pattern.compile("^\\s*☠ Defeated (.+) in 0?([\\dhms ]+)\\s*(\\(NEW RECORD!\\))?$")
     private val FLOOR_PATTERN: Pattern = Pattern.compile("The Catacombs \\(")
 
-    // floor → ordered list of LocalSplits (loaded from FishMod's own jar)
     private val FLOOR_SPLITS: HashMap<String, ArrayList<LocalSplit>> = loadSplits()
 
     private var currentSplits: ArrayList<LocalSplit>? = null
     private var floor: String? = null
     private var runOver = false
-
-    // ── HUD ───────────────────────────────────────────────────────────────────
 
     @JvmField
     @ConfigValue
@@ -98,8 +82,6 @@ object FishEstTotal {
         { component, context -> render(component, context) },
         { try { Phase.enableSplits } catch (t: Throwable) { false } }
     )
-
-    // ── init ─────────────────────────────────────────────────────────────────
 
     @JvmStatic
     fun init() {
@@ -113,8 +95,6 @@ object FishEstTotal {
         }
     }
 
-    // ── floor detection ───────────────────────────────────────────────────────
-
     private fun detectFloor(line: String): Boolean {
         if (floor != null) return false
         if (!FLOOR_PATTERN.matcher(line).find()) return false
@@ -126,8 +106,6 @@ object FishEstTotal {
         currentSplits?.forEach { it.reset() }
         return false
     }
-
-    // ── message parsing ───────────────────────────────────────────────────────
 
     private fun parseGameMessage(message: Text): Boolean {
         val string = message.string
@@ -143,14 +121,13 @@ object FishEstTotal {
     private fun endRun() {
         runOver = true
         val splits = currentSplits ?: return
-        // Only finalise splits that actually started — skipping splits with startTime == 0
-        // prevents (currentTime - 0) / 1000 ≈ 55-year getRealTime() blowing up the EST total.
+        // Only finalise splits that actually started, or getRealTime() blows up to ~55 years.
         for (s in splits) {
             if (s.startTime > 0) s.end()
         }
         val times = LinkedHashMap<String, Double>()
         for (s in splits) {
-            if (s.avg < 0) continue // skip cumulative entries
+            if (s.avg < 0) continue
             if (s.ended()) times[s.name] = s.getRealTime()
         }
         RunHistory.saveSplitTimes(floor, times)
@@ -162,14 +139,7 @@ object FishEstTotal {
         runOver = false
     }
 
-    // ── HUD display/render ────────────────────────────────────────────────────
-
-    /**
-     * Mirrors Phase.getVisibleRowCount() but works against FishEstTotal's own LocalSplits,
-     * so it stays accurate even when blade-addons' Phase is the one rendering. Each call to
-     * onPartyCommand splits-list grows as splits start, so this value increases each time a
-     * new split begins — which pushes Est. Total down to "stick" to the bottom of the list.
-     */
+    /** Mirrors Phase.getVisibleRowCount() against our own LocalSplits, so Est. Total still tracks correctly when blade-addons' Phase is rendering. */
     private fun computeVisibleRowCount(): Int {
         val splits = currentSplits ?: return 0
         var onlyActivated = true
@@ -177,7 +147,7 @@ object FishEstTotal {
         try { onlyActivated = Phase.onlyShowActivatedSplits } catch (ignored: Throwable) {}
         try { includeTotal = Phase.includeTotalTime } catch (ignored: Throwable) {}
         var count = splits.size
-        if (!includeTotal) count-- // last row is the cumulative "total" split
+        if (!includeTotal) count--
         if (!onlyActivated) return Math.max(0, count)
         var visible = 0
         for (i in 0 until count) {
@@ -201,11 +171,7 @@ object FishEstTotal {
         val splits = currentSplits ?: return
         val client = MinecraftClient.getInstance()
 
-        // Auto-snap below Phase.splitTimer rows + separator. Compute the visible-row count
-        // from our OWN LocalSplits so this works even when blade-addons' Phase wins the
-        // classload (its Phase has no getVisibleRowCount()) — otherwise the throwable catch
-        // would drop us back to the user's draggable position and the est. total would stop
-        // tracking the splits as they're added.
+        // Uses our own LocalSplits' row count since blade-addons' Phase has no getVisibleRowCount().
         val x: Int
         val y: Int
         try {
@@ -220,9 +186,7 @@ object FishEstTotal {
     }
 
     private fun renderAt(context: DrawContext, client: MinecraftClient, splits: ArrayList<LocalSplit>, x: Int, y: Int) {
-        // Base = sum of all averages. Delta = (actual − avg) for ended splits, plus the
-        // overage of the currently running split once it exceeds its own avg (so the
-        // estimate starts counting up live instead of waiting for the split to end).
+        // Base = sum of averages; delta = (actual - avg) for ended splits, plus overage of the running one.
         val splitCount = splits.size - 1
         var base = 0.0
         var delta = 0.0
@@ -239,9 +203,7 @@ object FishEstTotal {
             else if (s.started()) delta += Math.max(0.0, s.getRealTime() - avg)
         }
 
-        // Lag is already reflected in `delta` (ended/running splits use wall-clock time,
-        // which includes lag). Do NOT subtract it — doing so cancels the penalty and makes
-        // the estimate drop during lag spikes. Laggier splits should push the estimate UP via delta.
+        // Don't subtract lag from delta — it's wall-clock already, and subtracting would cancel the penalty.
         val totalSeconds = Math.max(0.0, base + delta)
 
         val estColor = if (personalCount > 0 && fallbackCount == 0) 0xFF00AACC.toInt()
@@ -296,9 +258,7 @@ object FishEstTotal {
             else if (s.started()) delta += Math.max(0.0, s.getRealTime() - avg)
         }
 
-        // Lag is already reflected in `delta` (ended/running splits use wall-clock time,
-        // which includes lag). Do NOT subtract it — doing so cancels the penalty and makes
-        // the estimate drop during lag spikes. Laggier splits should push the estimate UP via delta.
+        // Don't subtract lag from delta — it's wall-clock already, and subtracting would cancel the penalty.
         val totalSeconds = Math.max(0.0, base + delta)
         val estColor = if (personalCount > 0 && fallbackCount == 0) 0xFF00AACC.toInt()
         else if (personalCount > 0) 0xFFFFAA00.toInt() else 0xFF888888.toInt()
@@ -312,8 +272,6 @@ object FishEstTotal {
 
         drawLagLine(ctx, client, x, y + Constants.TEXT_HEIGHT)
     }
-
-    // ── splits.json loader (FishMod's own jar via FishEstTotal.class) ─────────
 
     private fun loadSplits(): HashMap<String, ArrayList<LocalSplit>> {
         try {

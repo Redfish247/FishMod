@@ -5,11 +5,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-/**
- * Persistent store for the manual loot/profit tracker shown in the Dungeon-Hub inventory.
- * Holds a run counter and a list of manually-added drop rows. Persists to
- * `config/fishmod/loot_tracker.json`.
- */
+/** Persistent store for the manual loot/profit tracker shown in the Dungeon-Hub inventory. */
 object LootTrackerStore {
 
     private val FILE: Path = Paths.get("config/fishmod/loot_tracker.json")
@@ -59,10 +55,7 @@ object LootTrackerStore {
         return data!!.rows
     }
 
-    /**
-     * Adds `delta` to an existing row (matched by id when non-empty, else by name),
-     * creating the row when needed. Removes the row when its count drops to 0 or below.
-     */
+    /** Adds `delta` to an existing row (matched by id when non-empty, else by name), creating the row when needed. */
     @JvmStatic
     @Synchronized
     fun addOrIncrement(name: String?, id: String?, delta: Int) {

@@ -15,13 +15,7 @@ import net.minecraft.entity.decoration.ArmorStandEntity
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.util.math.Box
 
-/**
- * Outlines dungeon mobs marked as "starred" elites. Hypixel doesn't put the ✯ on the mob's own
- * nametag — it's on a separate invisible armor stand riding/hovering above the mob that also
- * shows its health (e.g. "Zombie Knight ✯300,000/300,000❤"). So detection works by scanning
- * armor-stand nametags for the star + heart markers, then picking the nearest non-armor-stand
- * living entity underneath as the actual mob to outline (same approach NoammAddons uses).
- */
+/** Outlines dungeon mobs marked as "starred" elites. */
 object StarredMobHighlight {
 
     private const val STAR = "✯"

@@ -4,11 +4,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
 import java.util.function.Supplier
 
-/**
- * Small public extension point so other mods (e.g. FishModAddons) can register a toggle into the
- * Dungeon column of /fm without FishMod depending on them, and without exposing FishModScreen's
- * private Feature/Column types across the mod boundary.
- */
+/** Small public extension point so other mods can register their own toggles into FishMod's config screen. */
 object FishModAddonApi {
 
     class ExternalToggle(
