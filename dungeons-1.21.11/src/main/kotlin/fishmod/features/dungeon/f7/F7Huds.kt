@@ -24,77 +24,77 @@ object F7Huds {
     @JvmField
     @ConfigValue
     var maxorTickTimer: HUDComponent = HUDComponent(
-        10, 80, TICK_W, 10, 1, "Maxor Tick Timer",
+        10.0, 80.0, TICK_W, 10, 1f, "Maxor Tick Timer",
         { false }, MaxorTickTimer::render, { Floor7.enableMaxorTickTimer }
     )
 
     @JvmField
     @ConfigValue
     var crystalSpawnTime: HUDComponent = HUDComponent(
-        10, 92, TICK_W, 10, 1, "Crystal Spawn Time",
+        10.0, 92.0, TICK_W, 10, 1f, "Crystal Spawn Time",
         { false }, CrystalSpawn::render, { Floor7.enableCrystalSpawnTime }
     )
 
     @JvmField
     @ConfigValue
     var crystalReminder: HUDComponent = HUDComponent(
-        0, 0, NOTI_W, 10, 1, "Crystal Reminder",
+        0.0, 0.0, NOTI_W, 10, 1f, "Crystal Reminder",
         { false }, CrystalSpawn::renderNotification, { Floor7.crystalPlaceReminder }
     )
 
     @JvmField
     @ConfigValue
     var stormTickTimer: HUDComponent = HUDComponent(
-        10, 80, TICK_W, 10, 1, "Storm Tick Timer",
+        10.0, 80.0, TICK_W, 10, 1f, "Storm Tick Timer",
         { false }, StormTickTimer::render, { Floor7.enableStormTickTimer }
     )
 
     @JvmField
     @ConfigValue
     var stormDeathTime: HUDComponent = HUDComponent(
-        10, 92, 40, 10, 1, "Storm Death Time",
+        10.0, 92.0, 40, 10, 1f, "Storm Death Time",
         { false }, StormTickTimer::renderDeathTime, { Floor7.enableStormDeathTime }
     )
 
     @JvmField
     @ConfigValue
     var lbReleaseTimer: HUDComponent = HUDComponent(
-        10, 104, TICK_W, 10, 1, "LB Release Timer",
+        10.0, 104.0, TICK_W, 10, 1f, "LB Release Timer",
         { false }, StormTickTimer::renderLbReleaseTimer, { Floor7.enableLbReleaseTimer }
     )
 
     @JvmField
     @ConfigValue
     var stormCrush: HUDComponent = HUDComponent(
-        0, 0, NOTI_W, 10, 1, "Storm Crushed",
+        0.0, 0.0, NOTI_W, 10, 1f, "Storm Crushed",
         { false }, PillarExplode::render, { Floor7.notifyStormCrush }
     )
 
     @JvmField
     @ConfigValue
     var goldorTickTimer: HUDComponent = HUDComponent(
-        10, 80, TICK_W, 10, 1, "Goldor Tick Timer",
+        10.0, 80.0, TICK_W, 10, 1f, "Goldor Tick Timer",
         { false }, GoldorTickTimer::render, { Floor7.enableGoldorTickTimer }
     )
 
     @JvmField
     @ConfigValue
     var termStartTimer: HUDComponent = HUDComponent(
-        10, 104, TICK_W, 10, 1, "Term Start Timer",
+        10.0, 104.0, TICK_W, 10, 1f, "Term Start Timer",
         { false }, TermStartTimer::render, { Floor7.enableTermStartTimer }
     )
 
     @JvmField
     @ConfigValue
     var sectionProgress: HUDComponent = HUDComponent(
-        10, 116, 40, 10, 1, "Section Progress",
+        10.0, 116.0, 40, 10, 1f, "Section Progress",
         { false }, SectionProgress::render, { Floor7.showSectionProgress }
     )
 
     @JvmField
     @ConfigValue
     var goldorLeapTimer: HUDComponent = HUDComponent(
-        10, 128, TICK_W, 10, 1, "Goldor Leap Timer",
+        10.0, 128.0, TICK_W, 10, 1f, "Goldor Leap Timer",
         { false }, GoldorLeapTimer::render, { Floor7.leapNotifications }
     )
 

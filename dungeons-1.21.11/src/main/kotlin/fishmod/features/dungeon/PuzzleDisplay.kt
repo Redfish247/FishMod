@@ -17,7 +17,7 @@ object PuzzleDisplay {
     @JvmField
     @ConfigValue
     var puzzleHud: HUDComponent = HUDComponent(
-        0, 0, 150, 100, 1, "Puzzles",
+        0.0, 0.0, 150, 100, 1f, "Puzzles",
         { display() },
         { component, context -> render(component, context) },
         { true }

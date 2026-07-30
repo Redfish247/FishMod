@@ -91,7 +91,7 @@ object EntityUtil {
 
     @JvmStatic
     fun getBox(entity: Entity): Box {
-        val tickProgress = MinecraftClient.getInstance().renderTickCounter.getTickProgress(false)
+        val tickProgress = MinecraftClient.getInstance().renderTickCounter.getTickProgress(false).toDouble()
 
         val pos = Misc.getPos(entity, tickProgress)
 
@@ -101,7 +101,7 @@ object EntityUtil {
 
     @JvmStatic
     fun getLerpedPos(entity: Entity): Vec3d {
-        val tickProgress = MinecraftClient.getInstance().renderTickCounter.getTickProgress(false)
+        val tickProgress = MinecraftClient.getInstance().renderTickCounter.getTickProgress(false).toDouble()
         return Misc.getPos(entity, tickProgress)
     }
 }

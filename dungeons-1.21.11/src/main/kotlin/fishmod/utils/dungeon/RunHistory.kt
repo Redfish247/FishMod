@@ -64,7 +64,7 @@ object RunHistory {
         for (split in splits) {
             if (!split.ended()) continue
             if (split.avg < 0) continue  // skip cumulative/total splits
-            val t = split.realTime
+            val t = split.getRealTime()
             if (t <= 0 || t > MAX_SPLIT_SECONDS) continue  // reject corrupt/impossible values
 
             val times = floorData.getOrPut(split.name) { ArrayList() }

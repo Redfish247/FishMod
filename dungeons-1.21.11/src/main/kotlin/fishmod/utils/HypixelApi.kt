@@ -1377,7 +1377,7 @@ object HypixelApi {
                     fishmod.utils.networth.NwConstants.ENCHANTMENT_UPGRADE_TIER[name]!![0] else null
                 if (tierReq != null && value >= tierReq) {
                     val up = fishmod.utils.networth.NwConstants.ENCHANTMENT_UPGRADE_ITEM[name]
-                    v += price(prices, up) * fishmod.utils.networth.NwConstants.ENCHANTMENT_UPGRADES
+                    if (up != null) v += price(prices, up) * fishmod.utils.networth.NwConstants.ENCHANTMENT_UPGRADES
                 }
                 // Base enchantment value
                 val mult = if (fishmod.utils.networth.NwConstants.ENCHANTMENTS_WORTH.containsKey(name))
@@ -2415,7 +2415,7 @@ object HypixelApi {
                             info.maxed = level >= maxLevel
                             info.level = minOf(level, maxLevel)
                             info.xpIntoLevel = remaining
-                            info.xpForNext = cost
+                            info.xpForNext = cost.toDouble()
                             info.pct = if (cost > 0) (remaining / cost * 100.0).toFloat() else 0f
                             info.ok = true
                         }

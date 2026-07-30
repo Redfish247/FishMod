@@ -31,10 +31,11 @@ object PartyFinderStats {
             val pb = if (data.masterPbs != null && data.masterPbs.size > 7 && data.masterPbs[7] != null)
                 data.masterPbs[7] else "N/A"
             val cata = HypixelApi.formatLevel(data.cataXp)
-            val gear = if (data.armorStars != null)
+            val armorStars = data.armorStars
+            val gear = if (armorStars != null)
                 String.format(
-                    "H%d C%d L%d B%d", data.armorStars[0], data.armorStars[1],
-                    data.armorStars[2], data.armorStars[3]
+                    "H%d C%d L%d B%d", armorStars[0], armorStars[1],
+                    armorStars[2], armorStars[3]
                 )
             else "N/A"
             FishMsg.send(
