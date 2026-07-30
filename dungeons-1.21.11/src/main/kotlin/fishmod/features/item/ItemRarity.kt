@@ -13,7 +13,5 @@ enum class ItemRarity(val color: Int) {
     SPECIAL(0xffff5555.toInt()),
     VERY_SPECIAL(0xffc44747.toInt()),
     ULTIMATE(0xffa10202.toInt()),
-    ADMIN(0xffaa0000.toInt());
-
-    fun getColor(): Int = color
+    ADMIN(0xffaa0000.toInt())
 }

@@ -368,10 +368,6 @@ class FishModInit : ModInitializer {
         // spawn, term start, section progress, storm-crushed. HUDs auto-render via the practical
         // config system (F7Huds registered with FishConfig); register each for the Edit-HUD dragger.
         fishmod.features.dungeon.f7.F7Huds.init()
-        // Dungeon Map: reads Hypixel's own vanilla dungeon-map item pixel data each tick (Catlas-style
-        // room/door grid) and renders it as a draggable HUD, with a local self-learning prediction
-        // layer for undiscovered rooms (see RoomSignatureDB).
-        fishmod.features.dungeon.map.DungeonMapFeature.init()
         // Inventory command buttons (ported 1:1 from blade-addons) — touch the class so its 7 buttons
         // self-register; commands are edited in /fm → General → Inventory Buttons.
         fishmod.utils.config.values.Buttons.init()
@@ -387,7 +383,6 @@ class FishModInit : ModInitializer {
         FishHudEditor.register("Term Start Timer", fishmod.features.dungeon.f7.F7Huds.termStartTimer)
         FishHudEditor.register("Section Progress", fishmod.features.dungeon.f7.F7Huds.sectionProgress)
         FishHudEditor.register("Goldor Splits", Section.terminalSplits)
-        FishHudEditor.register("Dungeon Map", fishmod.features.dungeon.map.DungeonMapHud.dungeonMap)
         // Dungeon class detection (own class from the "stats are doubled" message + tab list) and the
         // class-colored boots feature that depends on it. Boots init AFTER ItemCustomizer.init (above)
         // so the class color wins over per-item boot dye while enabled.
@@ -920,27 +915,6 @@ class FishModInit : ModInitializer {
                                 }
                                 return@executes Constants.SUCCESS
                             }
-                            if (parts[0] == "dungeonmap") {
-                                mc.send {
-                                    Misc.addChatMessage(Text.literal("§b--- Dungeon Map Debug ---"))
-                                    Misc.addChatMessage(Text.literal("§7calibrated: §f" + fishmod.utils.dungeon.map.MapReader.isCalibrated()))
-                                    val rooms = fishmod.utils.dungeon.map.DungeonGrid.allRooms()
-                                    val doors = fishmod.utils.dungeon.map.DungeonGrid.allDoors()
-                                    Misc.addChatMessage(Text.literal("§7rooms: §f" + rooms.size + " §7doors: §f" + doors.size))
-                                    for (e in rooms.entries) {
-                                        Misc.addChatMessage(
-                                            Text.literal("§8room " + e.key + " §8-> §7" + fishmod.features.dungeon.map.DungeonMapHud.describe(e.value))
-                                        )
-                                    }
-                                    for (e in doors.entries) {
-                                        Misc.addChatMessage(
-                                            Text.literal("§8door " + e.key + " §8-> §7" + fishmod.features.dungeon.map.DungeonMapHud.describe(e.value))
-                                        )
-                                    }
-                                    Misc.addChatMessage(Text.literal("§b--- End ---"))
-                                }
-                                return@executes Constants.SUCCESS
-                            }
                             if (parts[0] == "runs") {
                                 val ign = if (parts.size > 1) parts[1] else mc.player?.name?.string
                                 if (ign == null) {
@@ -1194,7 +1168,6 @@ class FishModInit : ModInitializer {
         // forced false in Phase so this is the single render path.
         HudRenderCallback.EVENT.register(HudRenderCallback { ctx, _ -> Phase.renderHud(ctx) })
         HudRenderCallback.EVENT.register(HudRenderCallback { ctx, _ -> fishmod.features.dungeon.f7.F7Huds.renderHud(ctx) })
-        HudRenderCallback.EVENT.register(HudRenderCallback { ctx, _ -> fishmod.features.dungeon.map.DungeonMapHud.renderHud(ctx) })
         HudRenderCallback.EVENT.register(HudRenderCallback { ctx, _ -> fishmod.features.dungeon.DungeonWaypoints.renderOverlay(ctx) })
         HudRenderCallback.EVENT.register(HudRenderCallback { ctx, tickCounter -> SessionStats.renderHud(ctx, tickCounter) })
         HudRenderCallback.EVENT.register(HudRenderCallback { ctx, tickCounter -> fishmod.features.dungeon.DungeonScore.renderHud(ctx, tickCounter) })
