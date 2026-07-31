@@ -45,6 +45,8 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     private var hoverDesc: String? = null
     private var hoverDescX = 0
     private var hoverDescY = 0
+    private var hScroll = 0
+    private var draggingHScrollbar = false
 
     init {
         buildCategories()
@@ -495,7 +497,20 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     }
 
     private fun columnX0(visibleIndex: Int): Int {
-        return cx0() + visibleIndex * (columnWidth() + COLUMN_GUTTER)
+        return cx0() + visibleIndex * (columnWidth() + COLUMN_GUTTER) - hScroll
+    }
+
+    /** Total width needed to lay out every visible column side by side, ignoring the viewport. */
+    private fun totalColumnsWidth(): Int {
+        val n = visibleColumns().size
+        if (n == 0) return 0
+        return n * columnWidth() + (n - 1) * COLUMN_GUTTER
+    }
+
+    private fun maxHScroll(): Int = Math.max(0, totalColumnsWidth() - (cx1() - cx0()))
+
+    private fun clampHScroll() {
+        hScroll = Mth.clamp(hScroll, 0, maxHScroll())
     }
 
     /** One source of truth for a row's geometry, used by both render and hit-testing. */
@@ -537,12 +552,14 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         if (resetArmed && System.currentTimeMillis() - resetArmedAt > 3000) resetArmed = false
         for (c in visibleColumns()) clampScroll(c)
+        clampHScroll()
 
         extractBlurredBackground(ctx)
         ctx.fillGradient(0, 0, this.width, this.height, DIM_TOP, DIM_BOT)
 
         hoverDesc = null
         renderTopBar(ctx, mouseX, mouseY)
+        renderHScrollbar(ctx)
         renderContent(ctx, mouseX, mouseY)
         renderSearchBar(ctx, mouseX, mouseY)
         renderHoverTooltip(ctx)
@@ -630,6 +647,26 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         roundedRect(ctx, x0, hy, w, cardBottom - hy, CARD_RADIUS, CARD_BG)
         ctx.fill(x0 + CARD_RADIUS, hy, x1 - CARD_RADIUS, hy + HEADER_STRIP_H, ACCENT)
         sst(ctx, this.font, c.name, x0 + 10, hy + HEADER_STRIP_H + 6, TEXT_COLOR, 1f)
+    }
+
+    /** Geometry of the horizontal-scroll track/bar drawn in the gap above the column headers. Null if nothing to scroll. */
+    private fun hScrollbarRect(): IntArray? {
+        val ms = maxHScroll()
+        if (ms <= 0) return null
+        val trackX0 = cx0()
+        val trackW = cx1() - cx0()
+        val y = cyTop() - HEADER_H - 8
+        val total = totalColumnsWidth()
+        val barW = Math.max(30, (trackW.toLong() * trackW / total).toInt())
+        val barX = trackX0 + ((trackW - barW).toLong() * hScroll / ms).toInt()
+        return intArrayOf(trackX0, y, trackW, barX, barW)
+    }
+
+    private fun renderHScrollbar(ctx: GuiGraphicsExtractor) {
+        val r = hScrollbarRect() ?: return
+        val (trackX0, y, trackW, barX, barW) = r
+        ctx.fill(trackX0, y, trackX0 + trackW, y + 3, 0xFF141A20.toInt())
+        ctx.fill(barX, y, barX + barW, y + 3, ACCENT)
     }
 
     private fun renderColumnScrollbar(ctx: GuiGraphicsExtractor, c: Column, x0: Int, x1: Int, top: Int, bot: Int) {
@@ -758,6 +795,16 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         searchField?.setFocused(searchFocused)
         if (searchFocused) return true
 
+        val hbar = hScrollbarRect()
+        if (hbar != null) {
+            val (trackX0, trackY, trackW, _, _) = hbar
+            if (mx >= trackX0 && mx <= trackX0 + trackW && my >= trackY - 3 && my <= trackY + 6) {
+                draggingHScrollbar = true
+                scrollHScrollbarTo(mx, hbar)
+                return true
+            }
+        }
+
         val rects = topBarButtonRects()
         if (hovBtn(mx, my, rects[0][0], rects[0][1], rects[0][2], rects[0][3])) { Minecraft.getInstance().setScreen(FishHudEditor(this)); return true }
         if (hovBtn(mx, my, rects[1][0], rects[1][1], rects[1][2], rects[1][3])) { Minecraft.getInstance().setScreen(CreditsScreen(this)); return true }
@@ -827,6 +874,11 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     }
 
     override fun mouseDragged(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
+        if (draggingHScrollbar) {
+            val hbar = hScrollbarRect()
+            if (hbar != null) scrollHScrollbarTo(click.x().toInt(), hbar)
+            return true
+        }
         val slider = activeSlider
         if (slider != null) { slider.onDrag(click.x().toInt(), activeSliderX, SLIDER_W); return true }
         val picker = activePicker
@@ -834,14 +886,31 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         return super.mouseDragged(click, deltaX, deltaY)
     }
 
+    /** Maps a mouse X position on the h-scrollbar track to a hScroll value. */
+    private fun scrollHScrollbarTo(mx: Int, hbar: IntArray) {
+        val (trackX0, _, trackW, _, barW) = hbar
+        val usable = Math.max(1, trackW - barW)
+        val frac = ((mx - trackX0 - barW / 2).toDouble() / usable).coerceIn(0.0, 1.0)
+        hScroll = Math.round(frac * maxHScroll()).toInt()
+    }
+
     override fun mouseReleased(click: MouseButtonEvent): Boolean {
         activeSlider = null
+        draggingHScrollbar = false
         val picker = activePicker
         if (picker != null) { picker.dragMode = 0; activePicker = null }
         return super.mouseReleased(click)
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
+        // Shift+wheel or a trackpad's horizontal swipe pans between columns when they overflow the screen.
+        val shiftDown = InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_LEFT_SHIFT) ||
+            InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_RIGHT_SHIFT)
+        if (horizontalAmount != 0.0 || shiftDown) {
+            val amount = if (horizontalAmount != 0.0) horizontalAmount else verticalAmount
+            hScroll = Mth.clamp((hScroll - amount * 24).toInt(), 0, maxHScroll())
+            return true
+        }
         val cols = visibleColumns()
         val colW = columnWidth()
         for (i in cols.indices) {
@@ -1536,6 +1605,17 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         private const val INPUT_H = 14
         private const val SUBCAT_HEIGHT = 13
 
+        /** Blends `color`'s alpha channel by `coverage` (0..1), keeping RGB unchanged. */
+        private fun withCoverage(color: Int, coverage: Double): Int {
+            val a = ((color ushr 24) and 0xFF)
+            val newA = Math.round(a * coverage.coerceIn(0.0, 1.0)).toInt().coerceIn(0, 255)
+            return (newA shl 24) or (color and 0x00FFFFFF)
+        }
+
+        /**
+         * Rounded rect with a single-pixel anti-aliased fringe on each corner (fractional circle
+         * coverage blended into the boundary pixel) instead of a hard-edged pixel-stairstep corner.
+         */
         fun roundedRect(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, color: Int) {
             if (w <= 0 || h <= 0) return
             val rr = Math.max(0, Math.min(r, Math.min(w, h) / 2))
@@ -1544,15 +1624,26 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             ctx.fill(x, y + rr, x + rr, y + h - rr, color)
             ctx.fill(x + w - rr, y + rr, x + w, y + h - rr, color)
             for (i in 0 until rr) {
-                val dy = rr - i
-                val dx = Math.round(Math.sqrt(Math.max(0.0, rr.toDouble() * rr - dy.toDouble() * dy))).toInt()
-                val inset = rr - dx
+                val dy = (rr - i).toDouble() - 0.5
+                val dxExact = Math.sqrt(Math.max(0.0, rr.toDouble() * rr - dy * dy))
+                val dxFloor = Math.floor(dxExact).toInt()
+                val coverage = dxExact - dxFloor
+                val inset = rr - dxFloor
                 val topY = y + i
                 val botY = y + h - 1 - i
+                // solid interior of the corner
                 ctx.fill(x + inset, topY, x + rr, topY + 1, color)
                 ctx.fill(x + w - rr, topY, x + w - inset, topY + 1, color)
                 ctx.fill(x + inset, botY, x + rr, botY + 1, color)
                 ctx.fill(x + w - rr, botY, x + w - inset, botY + 1, color)
+                // one partially-covered fringe pixel, softening the stairstep edge
+                if (inset > 0) {
+                    val aa = withCoverage(color, coverage)
+                    ctx.fill(x + inset - 1, topY, x + inset, topY + 1, aa)
+                    ctx.fill(x + w - inset, topY, x + w - inset + 1, topY + 1, aa)
+                    ctx.fill(x + inset - 1, botY, x + inset, botY + 1, aa)
+                    ctx.fill(x + w - inset, botY, x + w - inset + 1, botY + 1, aa)
+                }
             }
         }
 
@@ -1577,8 +1668,16 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
 
         fun disc(ctx: GuiGraphicsExtractor, cx: Int, cy: Int, r: Int, color: Int) {
             for (dy in -r..r) {
-                val dx = Math.round(Math.sqrt(Math.max(0.0, r.toDouble() * r - dy.toDouble() * dy))).toInt()
-                ctx.fill(cx - dx, cy + dy, cx + dx + 1, cy + dy + 1, color)
+                val dyF = dy.toDouble()
+                val dxExact = Math.sqrt(Math.max(0.0, r.toDouble() * r - dyF * dyF))
+                val dxFloor = Math.floor(dxExact).toInt()
+                val coverage = dxExact - dxFloor
+                ctx.fill(cx - dxFloor, cy + dy, cx + dxFloor + 1, cy + dy + 1, color)
+                if (dxFloor >= 0) {
+                    val aa = withCoverage(color, coverage)
+                    ctx.fill(cx - dxFloor - 1, cy + dy, cx - dxFloor, cy + dy + 1, aa)
+                    ctx.fill(cx + dxFloor + 1, cy + dy, cx + dxFloor + 2, cy + dy + 1, aa)
+                }
             }
         }
 
