@@ -1111,6 +1111,7 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.map.MapInfoHud.register()
         fishmod.features.dungeon.map.MapImageLoader.init()
         fishmod.features.dungeon.map.DungeonScore.register()
+        fishmod.features.dungeon.map.DoorHighlight.init()
         fishmod.utils.events.Events.ON_GAME_MESSAGE.register { message ->
             fishmod.features.dungeon.map.DungeonState.onChatMessage(message.string)
             fishmod.features.dungeon.map.DungeonScore.onChatMessage(message.string)

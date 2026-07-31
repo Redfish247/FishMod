@@ -322,6 +322,17 @@ object DungeonMapSettings {
     @JvmField
     var mapDoorFairyColorFilled: Int = 871633803
 
+    // Legit (depth-tested) world-space door highlight — see DoorHighlight.kt. Unlike mapDoorEsp*
+    // (intentionally excluded, through-wall), this only ever draws already-seen doors and is
+    // normally occluded by terrain, so it needs no "legit mode" gate of its own.
+    @ConfigValue
+    @JvmField
+    var mapDoorHighlightEnabled: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var mapDoorHighlightWidth: Float = 3.0f
+
     // HUD position/scale (ported from System22 DataStore's separate HUD-position statics; defaults match originals).
     @ConfigValue
     @JvmField

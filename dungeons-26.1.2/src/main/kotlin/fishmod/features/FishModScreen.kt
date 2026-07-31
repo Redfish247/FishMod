@@ -432,6 +432,14 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             dungeonMap.features.add(f)
         }
         run {
+            val f = Feature("Door Highlight", fishmod.utils.config.values.DungeonMapSettings::mapDoorHighlightEnabled)
+            f.sub.add(SliderDoubleSetting("Width", "",
+                { fishmod.utils.config.values.DungeonMapSettings.mapDoorHighlightWidth.toDouble() },
+                { v -> fishmod.utils.config.values.DungeonMapSettings.mapDoorHighlightWidth = v.toFloat() },
+                1.0, 10.0))
+            dungeonMap.features.add(f)
+        }
+        run {
             val f = Feature("Room Colors", fishmod.utils.config.values.DungeonMapSettings::mapTextCenter)
             f.sub.add(ColorPickerSetting("Unopened", "", fishmod.utils.config.values.DungeonMapSettings::mapUnopenedRoomColor))
             f.sub.add(ColorPickerSetting("Blood", "", fishmod.utils.config.values.DungeonMapSettings::mapBloodRoomColor))
