@@ -57,6 +57,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         val party = Column("Party", "people")
         val visuals = Column("Visuals", "eye")
         val floor7 = Column("Floor 7", "arch")
+        val dungeonMap = Column("Dungeon Map", "map")
 
         // ===== General =====
         run {
@@ -371,12 +372,92 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             dungeon.features.add(Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) }))
         }
 
+        // ===== Dungeon Map (ported from System22) =====
+        run {
+            val f = Feature("Enable Map", fishmod.utils.config.values.DungeonMapSettings::mapEnabled)
+            f.sub.add(ToggleSetting("Legit Mode", "", fishmod.utils.config.values.DungeonMapSettings::mapLegitMode))
+            f.sub.add(ToggleSetting("Insight Legit", "", fishmod.utils.config.values.DungeonMapSettings::mapInsightLegit))
+            f.sub.add(ColorPickerSetting("Background Color", "", fishmod.utils.config.values.DungeonMapSettings::mapBackgroundColor))
+            f.sub.add(SliderIntSetting("Text Scale %", "",
+                { (fishmod.utils.config.values.DungeonMapSettings.mapTextScaling * 100).toInt() },
+                { v -> fishmod.utils.config.values.DungeonMapSettings.mapTextScaling = v / 100.0f },
+                10, 200))
+            f.sub.add(ToggleSetting("Ugly Question Marks", "", fishmod.utils.config.values.DungeonMapSettings::mapUglyQuestionMarks))
+            dungeonMap.features.add(f)
+        }
+        run {
+            val f = Feature("Info HUD", { fishmod.utils.config.values.DungeonMapSettings.mapInfoEnabled == true },
+                { v -> fishmod.utils.config.values.DungeonMapSettings.mapInfoEnabled = v })
+            f.sub.add(ToggleSetting("No Words", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoNoWords))
+            f.sub.add(ToggleSetting("Tied to Map", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoMapTied))
+            f.sub.add(ToggleSetting("Show Secrets", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowSecrets))
+            f.sub.add(ToggleSetting("Show Score", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowScore))
+            f.sub.add(ToggleSetting("Show Deaths", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowDeaths))
+            f.sub.add(ToggleSetting("Show Mimic", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowMimic))
+            f.sub.add(ToggleSetting("Show Prince", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowPrince))
+            f.sub.add(ToggleSetting("Show Crypts", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowCrypts))
+            dungeonMap.features.add(f)
+        }
+        run {
+            val f = Feature("Player Heads", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadDrawOwnLast)
+            f.sub.add(ColorPickerSetting("Head Background", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadBackground))
+            f.sub.add(ColorPickerSetting("Own Head Background", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadOwnBackground))
+            f.sub.add(ToggleSetting("Ugly Pointer (Own)", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerUglyPointer))
+            f.sub.add(ColorPickerSetting("Name Color", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerNameColor))
+            dungeonMap.features.add(f)
+        }
+        run {
+            val f = Feature("Room Additions", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsPrince)
+            f.sub.add(ToggleSetting("Mimic Reveal", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsMimic))
+            f.sub.add(ToggleSetting("Mimic on Insight", "", fishmod.utils.config.values.DungeonMapSettings::mapMimicOnInsight))
+            f.sub.add(ColorPickerSetting("Mimic Room Color", "", fishmod.utils.config.values.DungeonMapSettings::mapMimicRoomColor))
+            dungeonMap.features.add(f)
+        }
+        run {
+            val f = Feature("Door Colors", fishmod.utils.config.values.DungeonMapSettings::mapDoorGay)
+            f.sub.add(ColorPickerSetting("Unopened", "", fishmod.utils.config.values.DungeonMapSettings::mapUnopenedDoorColor))
+            f.sub.add(ColorPickerSetting("Blood", "", fishmod.utils.config.values.DungeonMapSettings::mapBloodDoorColor))
+            f.sub.add(ColorPickerSetting("Wither", "", fishmod.utils.config.values.DungeonMapSettings::mapWitherDoorColor))
+            f.sub.add(ColorPickerSetting("Normal", "", fishmod.utils.config.values.DungeonMapSettings::mapNormalDoorColor))
+            f.sub.add(ColorPickerSetting("Puzzle", "", fishmod.utils.config.values.DungeonMapSettings::mapPuzzleDoorColor))
+            f.sub.add(ColorPickerSetting("Champion", "", fishmod.utils.config.values.DungeonMapSettings::mapChampionDoorColor))
+            f.sub.add(ColorPickerSetting("Trap", "", fishmod.utils.config.values.DungeonMapSettings::mapTrapDoorColor))
+            f.sub.add(ColorPickerSetting("Fairy", "", fishmod.utils.config.values.DungeonMapSettings::mapFairyDoorColor))
+            f.sub.add(ColorPickerSetting("Rare", "", fishmod.utils.config.values.DungeonMapSettings::mapRareDoorColor))
+            dungeonMap.features.add(f)
+        }
+        run {
+            val f = Feature("Room Colors", fishmod.utils.config.values.DungeonMapSettings::mapTextCenter)
+            f.sub.add(ColorPickerSetting("Unopened", "", fishmod.utils.config.values.DungeonMapSettings::mapUnopenedRoomColor))
+            f.sub.add(ColorPickerSetting("Blood", "", fishmod.utils.config.values.DungeonMapSettings::mapBloodRoomColor))
+            f.sub.add(ColorPickerSetting("Normal", "", fishmod.utils.config.values.DungeonMapSettings::mapNormalRoomColor))
+            f.sub.add(ColorPickerSetting("Puzzle", "", fishmod.utils.config.values.DungeonMapSettings::mapPuzzleRoomColor))
+            f.sub.add(ColorPickerSetting("Champion", "", fishmod.utils.config.values.DungeonMapSettings::mapChampionRoomColor))
+            f.sub.add(ColorPickerSetting("Trap", "", fishmod.utils.config.values.DungeonMapSettings::mapTrapRoomColor))
+            f.sub.add(ColorPickerSetting("Fairy", "", fishmod.utils.config.values.DungeonMapSettings::mapFairyRoomColor))
+            f.sub.add(ColorPickerSetting("Rare", "", fishmod.utils.config.values.DungeonMapSettings::mapRareRoomColor))
+            dungeonMap.features.add(f)
+        }
+        run {
+            val f = Feature("Score Messages", fishmod.utils.config.values.DungeonMapSettings::mapScoreMessages)
+            f.sub.add(ToggleSetting("270 Title", "", fishmod.utils.config.values.DungeonMapSettings::mapScore270Title))
+            f.sub.add(ToggleSetting("270 Chat", "", fishmod.utils.config.values.DungeonMapSettings::mapScore270MessageEnabled))
+            f.sub.add(ToggleSetting("300 Title", "", fishmod.utils.config.values.DungeonMapSettings::mapScore300Title))
+            f.sub.add(ToggleSetting("300 Chat", "", fishmod.utils.config.values.DungeonMapSettings::mapScore300MessageEnabled))
+            f.sub.add(ToggleSetting("Title Sound", "", fishmod.utils.config.values.DungeonMapSettings::mapScoreTitleSound))
+            f.sub.add(DropdownSetting("Sound", "", fishmod.features.dungeon.map.ScoreMessages.SOUND_OPTIONS,
+                { fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleSoundId },
+                { v -> fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleSoundId = v }))
+            dungeonMap.features.add(f)
+        }
+
         columns.add(general)
         columns.add(dungeon)
         columns.add(cosmetics)
         columns.add(party)
         columns.add(visuals)
         columns.add(floor7)
+        columns.add(dungeonMap)
     }
 
     private fun left(): Int = 0

@@ -1102,6 +1102,21 @@ class FishModInit : ModInitializer {
             { fishmod.features.PbPaceHud.isVisible() }
         )
 
+        // ── Dungeon Map (ported from System22) ───────────────────────────────
+        fishmod.features.dungeon.map.DungeonMap.init()
+        fishmod.features.dungeon.map.Scan.register()
+        fishmod.features.dungeon.map.Mimic.register()
+        fishmod.features.dungeon.map.MapHud.register()
+        fishmod.features.dungeon.map.MapInfoHud.register()
+        fishmod.features.dungeon.map.MapImageLoader.init()
+        fishmod.features.dungeon.map.DungeonScore.register()
+        fishmod.utils.events.Events.ON_GAME_MESSAGE.register { message ->
+            fishmod.features.dungeon.map.DungeonState.onChatMessage(message.string)
+            fishmod.features.dungeon.map.DungeonScore.onChatMessage(message.string)
+            false
+        }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map_score_messages")) { ctx, tickCounter -> fishmod.features.dungeon.map.ScoreMessages.renderHud(ctx, tickCounter) }
+
         // Tracker overlay (reset button) for HandledScreens — fires after full render chain
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>) return@AfterInit

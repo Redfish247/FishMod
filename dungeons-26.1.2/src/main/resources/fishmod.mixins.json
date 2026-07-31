@@ -23,6 +23,7 @@
     "accessors.ChatScreenAccessor",
     "accessors.KeyBindingAccessor",
     "accessors.HandledScreenAccessor",
+    "accessors.MapItemSavedDataAccessor",
 
     "ChatHudInvoker",
     "ChatHudMixin",
