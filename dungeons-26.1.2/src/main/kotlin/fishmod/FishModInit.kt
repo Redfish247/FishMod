@@ -1103,6 +1103,7 @@ class FishModInit : ModInitializer {
         )
 
         // ── Dungeon Map (ported from System22) ───────────────────────────────
+        fishmod.features.dungeon.map.MapColors.init()
         fishmod.features.dungeon.map.DungeonMap.init()
         fishmod.features.dungeon.map.Scan.register()
         fishmod.features.dungeon.map.Mimic.register()
@@ -1116,6 +1117,28 @@ class FishModInit : ModInitializer {
             false
         }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map_score_messages")) { ctx, tickCounter -> fishmod.features.dungeon.map.ScoreMessages.renderHud(ctx, tickCounter) }
+
+        FishHudEditor.register(
+            "Dungeon Map",
+            java.util.function.IntSupplier { fishmod.utils.config.values.DungeonMapSettings.mapX.toInt() },
+            java.util.function.IntConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapX = v.toFloat() },
+            java.util.function.IntSupplier { fishmod.utils.config.values.DungeonMapSettings.mapY.toInt() },
+            java.util.function.IntConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapY = v.toFloat() },
+            160, 160,
+            java.util.function.DoubleSupplier { fishmod.utils.config.values.DungeonMapSettings.mapScale.toDouble() },
+            java.util.function.DoubleConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapScale = v.toFloat() }
+        )
+        FishHudEditor.register(
+            "Dungeon Map Info",
+            java.util.function.IntSupplier { fishmod.utils.config.values.DungeonMapSettings.mapInfoX.toInt() },
+            java.util.function.IntConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapInfoX = v.toFloat() },
+            java.util.function.IntSupplier { fishmod.utils.config.values.DungeonMapSettings.mapInfoY.toInt() },
+            java.util.function.IntConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapInfoY = v.toFloat() },
+            160, 40,
+            java.util.function.DoubleSupplier { fishmod.utils.config.values.DungeonMapSettings.mapInfoScale.toDouble() },
+            java.util.function.DoubleConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapInfoScale = v.toFloat() },
+            java.util.function.BooleanSupplier { fishmod.features.dungeon.map.MapInfoHud.enabled() }
+        )
 
         // Tracker overlay (reset button) for HandledScreens — fires after full render chain
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->

@@ -377,14 +377,17 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         // ===== Dungeon Map (ported from System22) =====
         run {
             val f = Feature("Enable Map", fishmod.utils.config.values.DungeonMapSettings::mapEnabled)
-            f.sub.add(ToggleSetting("Legit Mode", "", fishmod.utils.config.values.DungeonMapSettings::mapLegitMode))
-            f.sub.add(ToggleSetting("Insight Legit", "", fishmod.utils.config.values.DungeonMapSettings::mapInsightLegit))
+            if (fishmod.utils.Addons.fishModAddonsInstalled) {
+                f.sub.add(ToggleSetting("Legit Mode", "", fishmod.utils.config.values.DungeonMapSettings::mapLegitMode))
+                f.sub.add(ToggleSetting("Insight Legit", "", fishmod.utils.config.values.DungeonMapSettings::mapInsightLegit))
+            }
             f.sub.add(ColorPickerSetting("Background Color", "", fishmod.utils.config.values.DungeonMapSettings::mapBackgroundColor))
             f.sub.add(SliderIntSetting("Text Scale %", "",
                 { (fishmod.utils.config.values.DungeonMapSettings.mapTextScaling * 100).toInt() },
                 { v -> fishmod.utils.config.values.DungeonMapSettings.mapTextScaling = v / 100.0f },
                 10, 200))
             f.sub.add(ToggleSetting("Ugly Question Marks", "", fishmod.utils.config.values.DungeonMapSettings::mapUglyQuestionMarks))
+            f.sub.add(ToggleSetting("Show Room Secrets", "", fishmod.utils.config.values.DungeonMapSettings::mapShowRoomSecrets))
             dungeonMap.features.add(f)
         }
         run {

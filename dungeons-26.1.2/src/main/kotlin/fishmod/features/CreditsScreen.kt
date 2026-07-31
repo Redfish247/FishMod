@@ -42,7 +42,7 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
     override fun extractTransparentBackground(ctx: GuiGraphicsExtractor) {}
 
     private fun pw(): Int = min(360, this.width - 20)
-    private fun ph(): Int = min(232, this.height - 20)
+    private fun ph(): Int = min(260, this.height - 20)
     private fun px(): Int = (this.width - pw()) / 2
     private fun py(): Int = (this.height - ph()) / 2
 
@@ -70,6 +70,8 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         drawCredit(ctx, lx + 26, y, "BladeMasterGabe", "splits & dungeon features")
         y += 28
         drawCredit(ctx, lx + 26, y, "Sushiest", "dungeon help & UI changes")
+        y += 28
+        drawCredit(ctx, lx + 26, y, "22yrs", "dungeon map, ported with permission")
         y += 28
 
         linkW = this.font.width(DISCORD) + 24

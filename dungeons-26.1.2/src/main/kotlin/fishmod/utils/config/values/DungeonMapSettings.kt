@@ -169,6 +169,11 @@ object DungeonMapSettings {
     @JvmField
     var mapUglyQuestionMarks: Boolean = false
 
+    /** Shows the room's known secret count on a second line under its name. */
+    @ConfigValue
+    @JvmField
+    var mapShowRoomSecrets: Boolean = false
+
     @ConfigValue
     @JvmField
     var mapPlayerHeadBackground: Int = -1308622848

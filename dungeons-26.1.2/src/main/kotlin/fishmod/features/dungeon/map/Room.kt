@@ -179,7 +179,9 @@ class Room(
 
         if (showName) {
             val splitName = data!!.name!!.split(" ")
-            val defaultHeight = 8.0f - fontHeight / (2.0f * textFactor) - ((splitName.size - 1) / 2.0f * (fontHeight / textFactor)).toInt()
+            val showSecrets = DungeonMapSettings.mapShowRoomSecrets && data!!.secrets > 0
+            val lineCount = splitName.size + (if (showSecrets) 1 else 0)
+            val defaultHeight = 8.0f - fontHeight / (2.0f * textFactor) - ((lineCount - 1) / 2.0f * (fontHeight / textFactor)).toInt()
             val placement = textPlacement()
 
             for (index in splitName.indices) {
@@ -194,6 +196,14 @@ class Room(
                     else -> -1
                 }
                 context.centeredText(mc.font, splitName[index], 0, 0, color)
+                matrices.popMatrix()
+            }
+
+            if (showSecrets) {
+                matrices.pushMatrix()
+                matrices.translate(placement.x + 8.0f, placement.z + splitName.size * (fontHeight / textFactor) + defaultHeight)
+                matrices.scale(DungeonMapSettings.mapTextScaling)
+                context.centeredText(mc.font, "§e${data!!.secrets}§7s", 0, 0, -1)
                 matrices.popMatrix()
             }
         } else {

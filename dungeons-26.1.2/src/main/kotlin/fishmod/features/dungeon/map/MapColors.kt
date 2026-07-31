@@ -1,6 +1,7 @@
 package fishmod.features.dungeon.map
 
 import com.mojang.blaze3d.platform.InputConstants
+import fishmod.utils.Addons
 import fishmod.utils.Keybinds
 import fishmod.utils.config.values.DungeonMapSettings
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
@@ -34,9 +35,12 @@ object MapColors {
         return a shl 24 or (r shl 16) or (g shl 8) or b
     }
 
+    /** Non-legit mode is a FishModAddons-only option; without it, the map is always legit. */
     @JvmStatic
-    fun legit(): Boolean =
-        DungeonMapSettings.mapLegitMode && (!peeking() || DungeonMapSettings.mapInsightLegit)
+    fun legit(): Boolean {
+        if (!Addons.fishModAddonsInstalled) return true
+        return DungeonMapSettings.mapLegitMode && (!peeking() || DungeonMapSettings.mapInsightLegit)
+    }
 
     @JvmStatic
     fun peeking(): Boolean = mapInsightKey?.isDown == true
