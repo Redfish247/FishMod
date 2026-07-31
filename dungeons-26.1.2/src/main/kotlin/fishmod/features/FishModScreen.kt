@@ -36,6 +36,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     private var searchFocused = false
     private var activeSlider: Setting? = null
     private var activeSliderX = 0
+    private var activeSliderW = SLIDER_W
     private var activeInput: Setting? = null
     private var capturingKeybind: KeybindSetting? = null
     private var searchField: EditBox? = null
@@ -45,7 +46,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     private var hoverDescX = 0
     private var hoverDescY = 0
     private var hScroll = 0
-    private var draggingHScrollbar = false
+    private var hScrollAnim = 0.0
 
     init {
         buildCategories()
@@ -554,7 +555,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     }
 
     private fun columnX0(visibleIndex: Int): Int {
-        return cx0() + visibleIndex * (columnWidth() + COLUMN_GUTTER) - hScroll
+        return cx0() + visibleIndex * (columnWidth() + COLUMN_GUTTER) - Math.round(hScrollAnim).toInt()
     }
 
     /** Total width needed to lay out every visible column side by side, ignoring the viewport. */
@@ -568,6 +569,8 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
 
     private fun clampHScroll() {
         hScroll = Mth.clamp(hScroll, 0, maxHScroll())
+        hScrollAnim += (hScroll - hScrollAnim) * 0.35
+        if (Math.abs(hScroll - hScrollAnim) < 0.5) hScrollAnim = hScroll.toDouble()
     }
 
     /** One source of truth for a row's geometry, used by both render and hit-testing. */
@@ -616,7 +619,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
 
         hoverDesc = null
         renderTopBar(ctx, mouseX, mouseY)
-        renderHScrollbar(ctx)
         renderContent(ctx, mouseX, mouseY)
         renderSearchBar(ctx, mouseX, mouseY)
         renderHoverTooltip(ctx)
@@ -704,26 +706,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         roundedRect(ctx, x0, hy, w, cardBottom - hy, CARD_RADIUS, CARD_BG)
         ctx.fill(x0 + CARD_RADIUS, hy, x1 - CARD_RADIUS, hy + HEADER_STRIP_H, ACCENT)
         sst(ctx, this.font, c.name, x0 + 10, hy + HEADER_STRIP_H + 6, TEXT_COLOR, 1f)
-    }
-
-    /** Geometry of the horizontal-scroll track/bar drawn in the gap above the column headers. Null if nothing to scroll. */
-    private fun hScrollbarRect(): IntArray? {
-        val ms = maxHScroll()
-        if (ms <= 0) return null
-        val trackX0 = cx0()
-        val trackW = cx1() - cx0()
-        val y = cyTop() - HEADER_H - 8
-        val total = totalColumnsWidth()
-        val barW = Math.max(30, (trackW.toLong() * trackW / total).toInt())
-        val barX = trackX0 + ((trackW - barW).toLong() * hScroll / ms).toInt()
-        return intArrayOf(trackX0, y, trackW, barX, barW)
-    }
-
-    private fun renderHScrollbar(ctx: GuiGraphicsExtractor) {
-        val r = hScrollbarRect() ?: return
-        val (trackX0, y, trackW, barX, barW) = r
-        ctx.fill(trackX0, y, trackX0 + trackW, y + 3, 0xFF141A20.toInt())
-        ctx.fill(barX, y, barX + barW, y + 3, ACCENT)
     }
 
     private fun renderColumnScrollbar(ctx: GuiGraphicsExtractor, c: Column, x0: Int, x1: Int, top: Int, bot: Int) {
@@ -816,7 +798,8 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         var sy = top + 6
         for (s in f.sub) {
             val sh = s.getHeight()
-            if (s !is SubcategoryHeader && s !is InputSetting) {
+            if (s !is SubcategoryHeader && s !is InputSetting && s !is SliderIntSetting && s !is SliderDoubleSetting &&
+                s !is InputIntSetting && s !is InputDoubleSetting) {
                 st(ctx, this.font, s.name, leftX + 2, sy + (sh - 8) / 2, TEXT_COLOR)
             }
             s.render(ctx, leftX, rightX, sy, mouseX, mouseY, this.font)
@@ -851,16 +834,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         searchFocused = mx >= sx && mx <= sx + swW && my >= sy0 && my <= sy0 + swH
         searchField?.setFocused(searchFocused)
         if (searchFocused) return true
-
-        val hbar = hScrollbarRect()
-        if (hbar != null) {
-            val (trackX0, trackY, trackW, _, _) = hbar
-            if (mx >= trackX0 && mx <= trackX0 + trackW && my >= trackY - 3 && my <= trackY + 6) {
-                draggingHScrollbar = true
-                scrollHScrollbarTo(mx, hbar)
-                return true
-            }
-        }
 
         val rects = topBarButtonRects()
         if (hovBtn(mx, my, rects[0][0], rects[0][1], rects[0][2], rects[0][3])) { Minecraft.getInstance().setScreen(FishHudEditor(this)); return true }
@@ -910,10 +883,11 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
                                 return true
                             }
                             if (s is SliderIntSetting || s is SliderDoubleSetting) {
-                                val slx = rightX - SLIDER_W - 2
-                                val sly = ssy + (ITEM_HEIGHT - SLIDER_H) / 2
-                                if (mx >= slx && mx <= slx + SLIDER_W && my >= sly - 4 && my <= sly + SLIDER_H + 4) {
-                                    activeSlider = s; activeSliderX = slx; s.onDrag(mx, slx, SLIDER_W); return true
+                                val slx = leftX + 2
+                                val slw = rightX - leftX - 4
+                                val sly = ssy + TWO_LINE_CTRL_Y
+                                if (mx >= slx && mx <= slx + slw && my >= sly - 4 && my <= sly + SLIDER_H + 4) {
+                                    activeSlider = s; activeSliderX = slx; activeSliderW = slw; s.onDrag(mx, slx, slw); return true
                                 }
                             }
                             ssy += sh
@@ -929,35 +903,22 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     }
 
     override fun mouseDragged(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
-        if (draggingHScrollbar) {
-            val hbar = hScrollbarRect()
-            if (hbar != null) scrollHScrollbarTo(click.x().toInt(), hbar)
-            return true
-        }
         val slider = activeSlider
-        if (slider != null) { slider.onDrag(click.x().toInt(), activeSliderX, SLIDER_W); return true }
+        if (slider != null) { slider.onDrag(click.x().toInt(), activeSliderX, activeSliderW); return true }
         return super.mouseDragged(click, deltaX, deltaY)
-    }
-
-    /** Maps a mouse X position on the h-scrollbar track to a hScroll value. */
-    private fun scrollHScrollbarTo(mx: Int, hbar: IntArray) {
-        val (trackX0, _, trackW, _, barW) = hbar
-        val usable = Math.max(1, trackW - barW)
-        val frac = ((mx - trackX0 - barW / 2).toDouble() / usable).coerceIn(0.0, 1.0)
-        hScroll = Math.round(frac * maxHScroll()).toInt()
     }
 
     override fun mouseReleased(click: MouseButtonEvent): Boolean {
         activeSlider = null
-        draggingHScrollbar = false
         return super.mouseReleased(click)
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
-        // Shift+wheel or a trackpad's horizontal swipe pans between columns when they overflow the screen.
+        // Shift+wheel, a trackpad's horizontal swipe, or plain scrolling over the column headers
+        // (above the row content, where there's nothing to scroll vertically anyway) pans sideways.
         val shiftDown = InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_LEFT_SHIFT) ||
             InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_RIGHT_SHIFT)
-        if (horizontalAmount != 0.0 || shiftDown) {
+        if (horizontalAmount != 0.0 || shiftDown || mouseY < cyTop()) {
             val amount = if (horizontalAmount != 0.0) horizontalAmount else verticalAmount
             hScroll = Mth.clamp((hScroll - amount * 24).toInt(), 0, maxHScroll())
             return true
@@ -1011,6 +972,44 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             searchField!!.charTyped(input); searchText = searchField!!.value; for (c in columns) c.scroll = 0; return true
         }
         return super.charTyped(input)
+    }
+
+    private val nvgGlState = fishmod.utils.rendering.NvgGlStateGuard()
+    private var nvgFailureLogged = false
+
+    /** Called by GameRendererNvgMixin right after the vanilla GUI flush each frame, for correct z-ordering.
+     *  NOTE: infra-only right now — [fishmod.utils.rendering.NvgRecorder] is not yet populated by this
+     *  screen's render() path, so this currently paints an empty NanoVG frame every tick (proves the
+     *  context/GL-guard/mixin plumbing works end-to-end without corrupting vanilla GL state) rather than
+     *  the full NanoVG-painted UI described in the porting plan. */
+    fun paintNvgOverlay() {
+        nvgGlState.capture()
+        try {
+            val ctx = fishmod.utils.rendering.NvgContext.get()
+
+            // Must use the real GUI scale factor, not 1.0, or NanoVG's baked font glyphs blur when stretched.
+            val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
+            org.lwjgl.nanovg.NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
+            fishmod.utils.rendering.NvgRecorder.replay()
+            org.lwjgl.nanovg.NanoVG.nvgEndFrame(ctx)
+
+            fishmod_glCheck("after paintNvgOverlay")
+        } catch (t: Throwable) {
+            // Fail safe instead of crash-looping the render thread; likely a bundled NanoVG native failing to load.
+            if (!nvgFailureLogged) {
+                nvgFailureLogged = true
+                fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] paintNvgOverlay failed - settings screen will render without its NanoVG layer from now on", t)
+            }
+        } finally {
+            nvgGlState.restore()
+        }
+    }
+
+    private fun fishmod_glCheck(where: String) {
+        var err: Int
+        while (org.lwjgl.opengl.GL11.glGetError().also { err = it } != org.lwjgl.opengl.GL11.GL_NO_ERROR) {
+            fishmod.utils.debug.Debug.LOGGER.warn("[NanoVG] GL error 0x{} at {}", Integer.toHexString(err), where)
+        }
     }
 
     override fun isPauseScreen(): Boolean = false
@@ -1073,33 +1072,41 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             if (lastValue == null) { lastValue = on; knobAnim.setTarget(on) }
             else if (lastValue != on) { lastValue = on; knobAnim.setTarget(on) }
             val tx = rightX - W - 2
-            val ty = sy + (ITEM_HEIGHT - PILL_H) / 2
-            val hov = mx >= tx && mx <= tx + W && my >= ty && my <= ty + PILL_H
-            drawTogglePill(ctx, tx, ty, W, PILL_H, on, knobAnim.progress(), hov)
+            val ty = sy + (ITEM_HEIGHT - H) / 2
+            val hov = mx >= tx && mx <= tx + W && my >= ty && my <= ty + H
+            drawTogglePill(ctx, tx, ty, W, H, on, knobAnim.progress(), hov)
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
             val tx = rightX - W - 2
-            val ty = sy + (ITEM_HEIGHT - PILL_H) / 2
-            if (mx >= tx && mx <= tx + W && my >= ty && my <= ty + PILL_H) {
+            val ty = sy + (ITEM_HEIGHT - H) / 2
+            if (mx >= tx && mx <= tx + W && my >= ty && my <= ty + H) {
                 setter(!getter()); return true
             }
             return false
         }
-        companion object { const val W = 34 }
+        // Own compact size (not the shared PILL_H used by dropdown/color/keybind pills) so the
+        // toggle reads as a small modern switch rather than a big pill dominating the row.
+        companion object { const val W = 26; const val H = 14 }
     }
 
+    /** Slider/text-input settings render on two lines: name on line 1 (full-width, left-aligned,
+     *  no competing control), the actual control on line 2 below it — so a long label never
+     *  visually overlaps a right-aligned control on the same row. See TWO_LINE_H. */
     class SliderIntSetting(name: String, desc: String, val getter: () -> Int, val setter: (Int) -> Unit, val min: Int, val max: Int) : Setting(name, desc) {
         constructor(name: String, desc: String, prop: KMutableProperty0<Int>, min: Int, max: Int) : this(name, desc, { prop.get() }, { prop.set(it) }, min, max)
 
+        override fun getHeight(): Int = TWO_LINE_H
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
-            val slx = rightX - SLIDER_W - 2
-            val sly = sy + (ITEM_HEIGHT - SLIDER_H) / 2
+            st(ctx, tr, name, leftX + 2, sy + 2, TEXT_COLOR)
+            val slx = leftX + 2
+            val slw = rightX - leftX - 4
+            val sly = sy + TWO_LINE_CTRL_Y
             val pct = (getter() - min).toFloat() / (max - min)
-            pill(ctx, slx, sly, slx + SLIDER_W, sly + SLIDER_H, SLIDER_BG)
-            val fillW = (SLIDER_W * pct).toInt()
+            pill(ctx, slx, sly, slx + slw, sly + SLIDER_H, SLIDER_BG)
+            val fillW = (slw * pct).toInt()
             if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
             val v = getter().toString()
-            st(ctx, tr, v, slx + SLIDER_W - stw(tr, v), sly - 9, SUBTEXT_COLOR)
+            st(ctx, tr, v, slx + slw - stw(tr, v), sly - 9, SUBTEXT_COLOR)
         }
         override fun onDrag(mx: Int, sx: Int, sliderW: Int) {
             val pct = Mth.clamp((mx - sx).toFloat() / sliderW, 0f, 1f)
@@ -1110,15 +1117,18 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     class SliderDoubleSetting(name: String, desc: String, val getter: () -> Double, val setter: (Double) -> Unit, val min: Double, val max: Double) : Setting(name, desc) {
         constructor(name: String, desc: String, prop: KMutableProperty0<Double>, min: Double, max: Double) : this(name, desc, { prop.get() }, { prop.set(it) }, min, max)
 
+        override fun getHeight(): Int = TWO_LINE_H
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
-            val slx = rightX - SLIDER_W - 2
-            val sly = sy + (ITEM_HEIGHT - SLIDER_H) / 2
+            st(ctx, tr, name, leftX + 2, sy + 2, TEXT_COLOR)
+            val slx = leftX + 2
+            val slw = rightX - leftX - 4
+            val sly = sy + TWO_LINE_CTRL_Y
             val pct = ((getter() - min) / (max - min)).toFloat()
-            pill(ctx, slx, sly, slx + SLIDER_W, sly + SLIDER_H, SLIDER_BG)
-            val fillW = (SLIDER_W * pct).toInt()
+            pill(ctx, slx, sly, slx + slw, sly + SLIDER_H, SLIDER_BG)
+            val fillW = (slw * pct).toInt()
             if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
             val v = String.format("%.1f", getter())
-            st(ctx, tr, v, slx + SLIDER_W - stw(tr, v), sly - 9, SUBTEXT_COLOR)
+            st(ctx, tr, v, slx + slw - stw(tr, v), sly - 9, SUBTEXT_COLOR)
         }
         override fun onDrag(mx: Int, sx: Int, sliderW: Int) {
             val pct = Mth.clamp((mx - sx).toFloat() / sliderW, 0f, 1f)
@@ -1491,10 +1501,12 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
                 textField = tf
             }
         }
+        override fun getHeight(): Int = TWO_LINE_H
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
+            st(ctx, tr, name, leftX + 2, sy + 2, TEXT_COLOR)
             initField(tr)
-            val ix = rightX - INPUT_W - 2
-            val iy = sy + (ITEM_HEIGHT - INPUT_H) / 2
+            val ix = leftX + 2
+            val iy = sy + TWO_LINE_CTRL_Y
             val fs = 0.7f
             val tf = textField!!
             tf.width = (INPUT_W / fs).toInt()
@@ -1507,8 +1519,8 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             ctx.pose().popMatrix()
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
-            val ix = rightX - INPUT_W - 2
-            val iy = sy + (ITEM_HEIGHT - INPUT_H) / 2
+            val ix = leftX + 2
+            val iy = sy + TWO_LINE_CTRL_Y
             if (mx >= ix && mx <= ix + INPUT_W && my >= iy && my <= iy + INPUT_H) {
                 textField?.setFocused(true)
                 return true
@@ -1533,10 +1545,12 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
                 textField = tf
             }
         }
+        override fun getHeight(): Int = TWO_LINE_H
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
+            st(ctx, tr, name, leftX + 2, sy + 2, TEXT_COLOR)
             initField(tr)
-            val ix = rightX - INPUT_W - 2
-            val iy = sy + (ITEM_HEIGHT - INPUT_H) / 2
+            val ix = leftX + 2
+            val iy = sy + TWO_LINE_CTRL_Y
             val fs = 0.7f
             val tf = textField!!
             tf.width = (INPUT_W / fs).toInt()
@@ -1549,8 +1563,8 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             ctx.pose().popMatrix()
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
-            val ix = rightX - INPUT_W - 2
-            val iy = sy + (ITEM_HEIGHT - INPUT_H) / 2
+            val ix = leftX + 2
+            val iy = sy + TWO_LINE_CTRL_Y
             if (mx >= ix && mx <= ix + INPUT_W && my >= iy && my <= iy + INPUT_H) {
                 textField?.setFocused(true)
                 return true
@@ -1583,11 +1597,11 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         private const val TOP_BAR_H = 26
         private const val BOTTOM_RESERVE = 46
 
-        private const val COLUMN_GUTTER = 12
+        private const val COLUMN_GUTTER = 6
         private const val CARD_RADIUS = 7
         private const val HEADER_H = 24
         private const val HEADER_STRIP_H = 3
-        private const val MIN_COLUMN_W = 136 // floor so controls don't clip
+        private const val MIN_COLUMN_W = 172 // floor so controls don't clip; widened so column tabs read as spacious, not cramped
 
         private const val ROW_H = 22
         private const val ROW_GAP = 3
@@ -1601,6 +1615,10 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         private const val INPUT_W = 62
         private const val INPUT_H = 14
         private const val SUBCAT_HEIGHT = 13
+        // Sliders/text-inputs render name + control on two separate lines (see class docs above
+        // SliderIntSetting) instead of squeezing a right-aligned control onto the name's row.
+        private const val TWO_LINE_H = 36
+        private const val TWO_LINE_CTRL_Y = 20
 
         // Drawing primitives now live in [ScreenTheme] (shared with CommandAliasesScreen/CommandKeysScreen);
         // these delegate so the rest of this file's unqualified calls keep working unchanged.

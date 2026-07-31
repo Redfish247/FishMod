@@ -33,6 +33,7 @@
     "CosmeticGuiTextMixin",
     "ClientPlayNetworkHandlerMixin",
     "DrawContextMixin",
+    "GameRendererNvgMixin",
     "EntityRendererMixin",
     "EntityRenderStateMixin",
     "ItemModelBehaviorMixin",
