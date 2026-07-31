@@ -7,17 +7,9 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.item.component.DyedItemColor
 
-/**
- * Recolors the local player's worn boots (leather dye) to a color that matches their detected dungeon
- * class. Client-side only — re-applied every tick to the equipped feet stack so server slot updates
- * don't wipe it. Class is detected by [DungeonClass]
- * (chiefly the "Your <class> stats are doubled…" message + the dungeon tab list).
- *
- * Only shows on leather/dyeable boots (the DYED_COLOR tint is ignored by non-dyeable models).
- */
+/** Recolors the local player's worn boots to match their detected dungeon class. Client-side only — re-applied every tick since server slot updates would otherwise wipe it. Only visible on leather/dyeable boots. */
 object ClassColoredBoots {
 
-    /** Boot dye color per dungeon class (RGB), per the requested palette. */
     private fun colorFor(c: DungeonClass?): Int {
         if (c == null) return -1
         return when (c) {

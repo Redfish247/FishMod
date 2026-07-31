@@ -13,7 +13,6 @@ object ItemUtil {
         return if (compound.contains("id")) compound.getStringOr("id", "") else null
     }
 
-    /** Reads a raw string value out of an item's CUSTOM_DATA NBT (e.g. "petInfo"), or null. */
     @JvmStatic
     fun getNbtString(item: ItemStack, key: String): String? {
         val nbt = item.get(DataComponents.CUSTOM_DATA) ?: return null

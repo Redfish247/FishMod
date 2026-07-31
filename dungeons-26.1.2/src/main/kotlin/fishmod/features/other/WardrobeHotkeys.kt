@@ -16,19 +16,10 @@ import net.minecraft.world.item.ItemStack
 import java.util.function.Predicate
 
 /**
- * Wardrobe/Loadouts quick-swap: pressing FishMod's slot-N hotkey (keyboard or mouse button,
- * whatever it's bound to in Controls) clicks the matching slot in the currently open Wardrobe
- * (Armor Sets) or Loadouts GUI.
- *
- * Loadouts uses a fixed slot layout (verified in-game): 3 columns x 4 rows of "select this
- * loadout" icons at raw slot indices 14/15/16, 23/24/25, 32/33/34, 41/42/43 — hardcoded below.
- *
- * Wardrobe's clickable "select this set" icon moves depending on how many sets are on the page,
- * so instead of a fixed index it's found each time by scanning the hotkey's column for
- * Hypixel's wool/dye/barrier icon.
- *
- * The actual click is deferred by one client tick after the key/click event, since firing it
- * synchronously in the same tick as the input event was causing visual glitches in Hypixel's GUI.
+ * Wardrobe/Loadouts quick-swap: FishMod's slot-N hotkey clicks the matching slot in the open
+ * Wardrobe or Loadouts GUI. Loadouts uses a fixed, hardcoded slot layout; Wardrobe's "select
+ * this set" icon moves per page, so it's found by scanning for Hypixel's wool/dye/barrier icon.
+ * The click is deferred one tick — firing synchronously caused visual glitches in Hypixel's GUI.
  */
 object WardrobeHotkeys {
 
@@ -75,8 +66,7 @@ object WardrobeHotkeys {
 
         val handler: AbstractContainerMenu = screen.menu
         val containerSize = handler.slots.size - PLAYER_INV_SLOTS
-        // Sanity check: this must actually be a chest-style GUI, not some other screen
-        // that happens to share a title substring.
+        // Must actually be a chest-style GUI, not some other screen sharing a title substring.
         if (containerSize < 27 || containerSize % 9 != 0) return false
 
         for (i in slots.indices) {
@@ -91,14 +81,10 @@ object WardrobeHotkeys {
                 val mc = Minecraft.getInstance()
                 val mcPlayer = mc.player
                 if (mcPlayer == null || mc.gameMode == null) return@Runnable
-                // handleContainerInput(containerId, slotId, button, ContainerInput, player) — button
-                // 0 = left click, matching the old clickSlot(syncId, slotId, button, actionType, player).
+                // button 0 = left click.
                 mc.gameMode!!.handleContainerInput(containerId, slotId, 0, ContainerInput.PICKUP, mcPlayer)
-                // screen.onClose() (not player.closeContainer()) — matches what pressing Escape
-                // does: sends the close packet AND actually dismisses the on-screen GUI. Calling
-                // just closeContainer() left the GUI widget on screen out of sync with the
-                // now-reset player.containerMenu, which showed up as a close/reopen/close
-                // flicker once the server's own state caught up.
+                // screen.onClose(), not closeContainer() — the latter left the GUI widget out of
+                // sync with the reset containerMenu, causing a close/reopen/close flicker.
                 if (FishSettings.wardrobeHotkeysAutoClose && mc.screen === screen) {
                     screen.onClose()
                 }

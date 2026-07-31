@@ -15,12 +15,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-/**
- * Compact custom tab list. Hypixel packs every column (Players / Info / Trophy Frogs / Active
- * Effects) into the player-list entries, ordered column-major by their `!A-a`/`!B-a`
- * sort keys — so we render those entries verbatim into a translucent panel rather than re-deriving
- * data. Adds a header stat bar (Players / Server / TPS / Ping) and a footer. Opt-in via config.
- */
+/** Compact custom tab list. Hypixel packs every column into player-list entries ordered column-major by `!A-a`/`!B-a` sort keys, so entries are rendered verbatim into a translucent panel rather than re-deriving data. Adds a header stat bar and footer. Opt-in via config. */
 object CompactTab {
 
     private const val BG_RGB = 0x0B0D13
@@ -51,12 +46,7 @@ object CompactTab {
     private val COL_KEY: Pattern = Pattern.compile("^!([A-Za-z])")
     private val SERVER_ID: Pattern = Pattern.compile("\\b((?:mini|mega|m)\\d+[A-Za-z]{1,3})\\b")
 
-    /**
-     * Returns true if the current tab uses Hypixel's lobby column-major encoding
-     * (entries named "!A-…"/"!B-…"). Dungeons, Kuudra, Rift, Garden, Crimson Isle
-     * sub-servers etc. don't use this — for those we fall back to vanilla rendering
-     * via [shouldRender] so we just draw whatever Hypixel sent verbatim.
-     */
+    /** True if the current tab uses Hypixel's lobby column-major encoding (entries named "!A-…"/"!B-…"); dungeons/Kuudra/Rift/Garden etc. don't, and fall back to vanilla rendering. */
     @JvmStatic
     fun shouldRender(): Boolean {
         val mc = Minecraft.getInstance()
@@ -200,8 +190,7 @@ object CompactTab {
 
     private fun blank(e: PlayerInfo): Boolean {
         val dn = e.tabListDisplayName ?: return true
-        // Strip color codes AND invisible formatting chars (NBSP, LRM/RLM, ZWJ, separators) so
-        // Hypixel's hidden-character padding rows are recognized as blank.
+        // Strip color codes and invisible formatting chars so Hypixel's hidden-char padding rows read as blank.
         val s = dn.string.replace(Regex("§."), "").replace(Regex("[\\p{Cf}\\p{Z}\\s]"), "")
         return s.isEmpty()
     }
@@ -232,12 +221,7 @@ object CompactTab {
         }
     }
 
-    /**
-     * Real ping. The vanilla ping/pong round trip ([PingTracker]) is the most
-     * accurate, freshest end-to-end source — a true client->server->client measurement, the same one
-     * Odin uses. Fall back to server-measured tab latency, then server-list join ping, only when a
-     * live measurement isn't available yet (briefly after join).
-     */
+    /** [PingTracker]'s client->server->client round trip is the freshest source; falls back to tab latency then server-list ping when unavailable (briefly after join). */
     private fun realPing(mc: Minecraft): Int {
         val live = PingTracker.latest()
         if (live > 0) return live

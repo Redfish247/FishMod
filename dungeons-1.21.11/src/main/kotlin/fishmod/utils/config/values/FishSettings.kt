@@ -156,7 +156,6 @@ object FishSettings {
     @ConfigValue @JvmField var miningTrackerScale: Double = 1.0
 
     @ConfigValue @JvmField var remoteNicksEnabled: Boolean = false
-    @ConfigValue @JvmField var remoteItemsEnabled: Boolean = false
 
     // Render-only player model size; Share publishes it so other mod users render you at it too.
     @ConfigValue @JvmField var playerSizeEnabled: Boolean = false

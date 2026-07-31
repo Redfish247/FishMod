@@ -15,11 +15,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
 import java.util.regex.Pattern
 
-/**
- * Hypixel's own Catacombs/class level-up menu items just show "MAX LEVEL" once you pass
- * level 50, with no indication of overflow progress. This draws the real (SkyHanni-style)
- * overflow level on top of those items, computed from the player's own dungeons API data.
- */
+/** Hypixel's Catacombs/class items just show "MAX LEVEL" past 50 with no overflow progress; this draws the real overflow level on top, computed from the player's own dungeons API data. */
 object CatacombsOverflowOverlay {
 
     private val COLOR_STRIP: Pattern = Pattern.compile("§.")
@@ -90,8 +86,7 @@ object CatacombsOverflowOverlay {
 
     private fun draw(ctx: GuiGraphicsExtractor, stack: ItemStack?, x: Int, y: Int) {
         if (stack == null || stack.isEmpty) return
-        // Hypixel appends a "✦" (and sometimes trailing punctuation) to maxed item names —
-        // same convention as maxed pets — so strip it before matching, like PetHud does.
+        // Hypixel appends a "✦" (and sometimes trailing punctuation) to maxed item names, same as maxed pets.
         val name = COLOR_STRIP.matcher(stack.hoverName.string).replaceAll("")
             .replace("✦", "").replace(Regex("[!.]+$"), "").trim()
 
@@ -104,8 +99,7 @@ object CatacombsOverflowOverlay {
         val xp = if (isCata) selfCataXp else selfClassXp.getOrDefault(key, -1L)
         // Only decorate once actually past the level-50 cap — below that Hypixel's own progress display is fine.
         if (xp <= HypixelApi.XP_FOR_50) return
-        // Loose confirmation that this is really a leveled item (wording for "maxed" lore isn't confirmed
-        // exactly) — the name match above is already specific enough that this is just a safety net.
+        // Safety net only — the name match above is already specific enough.
         if (!ItemUtil.containsIgnoreCaseLore(stack, "level")) return
 
         val levelStr = HypixelApi.formatLevel(xp)

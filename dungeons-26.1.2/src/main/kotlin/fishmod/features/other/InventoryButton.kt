@@ -9,13 +9,9 @@ import net.minecraft.resources.Identifier
 import java.util.function.Supplier
 
 /**
- * Clickable command buttons drawn over the survival inventory's empty space — a 1:1 port of
- * blade-addons' InventoryButton. Each button runs a configurable command when clicked and is
- * numbered by registration order. A button with an empty command string renders nothing.
- *
- * Coordinates are relative to the inventory background's top-left; the `InventoryScreenMixin`
- * translates the matrix to that origin before calling [renderAll], and offsets mouse clicks by
- * the same amount before calling [parseClicks].
+ * Clickable command buttons drawn over the survival inventory's empty space, numbered by
+ * registration order. Coordinates are relative to the inventory background's top-left;
+ * `InventoryScreenMixin` translates the matrix/mouse offsets before calling [renderAll]/[parseClicks].
  */
 class InventoryButton(private val x: Int, private val y: Int, private val command: Supplier<String?>) {
 

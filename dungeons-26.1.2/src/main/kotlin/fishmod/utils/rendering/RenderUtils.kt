@@ -98,11 +98,7 @@ object RenderUtils {
         drawFilledBox(matrixStack, consumer, box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, rgba[0], rgba[1], rgba[2], rgba[3])
     }
 
-    /**
-     * Draws the 12-edge wireframe of an AABB. ShapeRenderer (the old generic VoxelShape outline
-     * helper) was removed in 26.2; FishMod only ever outlines plain boxes here, so the edges are
-     * emitted directly instead of routing through a VoxelShape.
-     */
+    /** Emits the 12 box edges directly since ShapeRenderer (the old VoxelShape outline helper) was removed in 26.2. */
     @JvmStatic
     fun renderOutline(matrixStack: PoseStack, consumer: VertexConsumer, box: AABB, rgba: FloatArray) {
         if (rgba[3] == 0f) return
@@ -128,13 +124,7 @@ object RenderUtils {
         edge(consumer, pose, x1, y1, z2, x1, y2, z2, r, g, b, a)
     }
 
-    /**
-     * Like [renderOutline], but each of the 12 edges is a thin filled box instead of a
-     * GL_LINES segment, so its thickness is an actual controllable size in blocks rather than GPU
-     * line-width state (which isn't reliably adjustable per-draw through the batched pipeline here).
-     * Must be submitted on the same triangle-strip layer as [renderFilled] — see
-     * [fishmod.utils.rendering.RenderingEvents.NO_DEPTH_FILLED].
-     */
+    /** Like [renderOutline], but edges are thin filled boxes so thickness is a real block size, not unreliable GPU line-width state. Must be submitted on the same layer as [renderFilled] (see [RenderingEvents.NO_DEPTH_FILLED]). */
     @JvmStatic
     fun renderThickOutline(matrixStack: PoseStack, consumer: VertexConsumer, box: AABB, rgba: FloatArray, lineWidth: Double) {
         if (rgba[3] == 0f) return
@@ -240,21 +230,7 @@ object RenderUtils {
         renderLineTo(context, matrices, consumer, pos.x, pos.y, pos.z, color)
     }
 
-    /**
-     * Six independent quads (24 vertices) — one per face, each walked around its perimeter
-     * (not a Z-order/diagonal split). The two previous attempts here (34- and 14-vertex "triangle
-     * strip" layouts) were solving the wrong problem: `RenderPipelines.DEBUG_FILLED_BOX`'s
-     * snippet actually declares `VertexFormat.Mode.QUADS`, not `TRIANGLE_STRIP` — every
-     * run of 4 vertices is one independent quad, no bridging between faces needed or wanted. Feeding
-     * it strip-shaped data (shared vertices, degenerate bridge pairs) is exactly what produced the
-     * corrupted "bowtie"/zigzag shapes, since the GPU was grouping 4-vertex chunks of that strip data
-     * as unrelated quads instead of walking it as a continuous strip. Verified programmatically:
-     * each quad's 2 implied triangles are coplanar and non-degenerate, and all 6 faces are covered
-     * exactly once for a total surface area equal to a unit cube's.
-     *
-     * Corners: A=(x1,y1,z1) B=(x2,y1,z1) C=(x1,y2,z1) D=(x2,y2,z1)
-     *          E=(x1,y1,z2) F=(x2,y1,z2) G=(x1,y2,z2) H=(x2,y2,z2)
-     */
+    /** 6 independent quads, not a triangle strip: DEBUG_FILLED_BOX's snippet uses VertexFormat.Mode.QUADS, and feeding it strip-shaped (shared-vertex) data previously produced corrupted bowtie/zigzag shapes. */
     private fun drawFilledBox(
         matrices: PoseStack, consumer: VertexConsumer,
         x1: Double, y1: Double, z1: Double,

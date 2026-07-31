@@ -31,13 +31,10 @@ import org.lwjgl.glfw.GLFW
 import java.util.LinkedHashMap
 
 /**
- * /fmwp — an OdinLegacy-style dungeon waypoint editor (github.com/odtheking/OdinLegacy,
- * DungeonWaypoints.kt/DungeonWaypointCommand.kt/DungeonWaypointConfig.kt). In a calibrated Hypixel
- * dungeon, waypoints are stored per grid tile (see [tileKey]), keyed off the fixed 32-block
- * world grid via [MapReader.worldToGridPos] — no room-shape/door detection is involved, so a
- * waypoint only replays automatically when the same tile position recurs (no rotation normalization).
- * Outside a calibrated dungeon (any other server/world), waypoints instead fall back to a freeform
- * mode keyed by island/server+dimension and stored at absolute world coordinates — see [globalKey].
+ * /fmwp — an OdinLegacy-style dungeon waypoint editor. In a calibrated dungeon, waypoints are
+ * keyed per fixed 32-block grid tile (see [tileKey]/[MapReader.worldToGridPos], no rotation
+ * normalization); elsewhere they fall back to a freeform mode keyed by island/server+dimension
+ * at absolute coordinates (see [globalKey]).
  */
 object DungeonWaypoints {
 
@@ -73,7 +70,6 @@ object DungeonWaypoints {
     /** routeId -> set of routeOrder values already reached on the current run; cleared by endRoute. Session-only. */
     private val routeReached: MutableMap<String, MutableSet<Int>> = HashMap()
 
-    /** A waypoint applied to the currently-live room, in real world coordinates. */
     private class LiveWaypoint(
         @JvmField val box: AABB,
         @JvmField val color: Int,
@@ -102,19 +98,14 @@ object DungeonWaypoints {
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc -> onTick(mc) })
         RenderingEvents.NO_DEPTH_FILLED.register { ctx, matrices, vc -> render(ctx, matrices, vc) }
-        // All GL_LINES geometry (route connector lines, edit-mode cursor box) goes through a
-        // dedicated lines layer, never the box-fill layer's triangle strip — see renderLines().
+        // Route lines/cursor box use a dedicated GL_LINES layer, never the box-fill triangle strip.
         RenderingEvents.NO_DEPTH_LINE.register { _, matrices, vc -> renderLines(matrices, vc) }
     }
 
     /**
-     * Whether [target] is actually visible from the player's eyes right now — used for
-     * non-through-walls waypoints. Everything here always renders on a no-depth (through-walls)
-     * layer regardless of the per-waypoint flag: registering on this mod's depth-tested layer
-     * (FILLED_BLOCK/LINE) turned out to be unproven plumbing nothing else in the codebase actually
-     * exercises, and it silently broke room waypoints outright rather than just occluding them. A
-     * simple line-of-sight raycast — the same ClipContext machinery [aimPoint] already uses —
-     * gets the same "hidden behind a wall" result without depending on that.
+     * Whether [target] is visible from the player's eyes — everything renders on the no-depth
+     * layer regardless of the per-waypoint flag (the depth-tested layer silently broke room
+     * waypoints), so occlusion is faked with a manual raycast instead.
      */
     private fun hasLineOfSight(mc: Minecraft, target: Vec3): Boolean {
         val p = mc.player ?: return true
@@ -259,7 +250,6 @@ object DungeonWaypoints {
         Misc.addChatMessage(Component.literal("§aCleared waypoints for the current room."))
     }
 
-    /** Key for the waypoint bucket belonging to a single fixed grid tile. */
     private fun tileKey(tile: GridPos): String {
         return "tile:${tile.x()},${tile.z()}"
     }
@@ -269,13 +259,7 @@ object DungeonWaypoints {
 
     // ================= Routes =================
 
-    /**
-     * Toggles route recording, on or off — a plain on/off switch like toggleFill/toggleThrough.
-     * Off -> on: waypoints placed from now on are appended, in order, to a route instead of being
-     * standalone. Plain `/fmwp route` (no name) auto-names it "route1", "route2", etc.; a name
-     * can still be given to pick one explicitly. On -> off: stops recording (any name argument is
-     * ignored on the way off, so `/fmwp route` always ends whatever's currently recording).
-     */
+    /** Toggles route recording; unnamed auto-numbers as "route1", "route2", etc. */
     @JvmStatic
     fun toggleRoute(name: String?) {
         if (recordingRouteId != null) {
@@ -336,13 +320,7 @@ object DungeonWaypoints {
         return Location.inDungeon() && MapReader.isCalibrated()
     }
 
-    /**
-     * Key for the current freeform waypoint bucket, used outside calibrated dungeons. On Hypixel
-     * Skyblock this is keyed by the current island/zone (per [Location], e.g. HUB, THE_PARK,
-     * CRYSTAL_HOLLOWS) rather than the Minecraft dimension — Skyblock crams most islands into a single
-     * dimension, so a dimension-keyed bucket would mix waypoints from unrelated places together.
-     * Off Skyblock, falls back to server address + dimension.
-     */
+    /** Keyed by Skyblock island/zone rather than dimension, since Skyblock crams islands into one dimension. */
     private fun globalKey(): String {
         if (Location.inSkyblock()) {
             return "global:skyblock:" + Location.getCurrentLocation().name
@@ -441,9 +419,7 @@ object DungeonWaypoints {
             ClipContext(eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, p)
         )
         if (hit != null && hit.type != HitResult.Type.MISS) {
-            // Center on the targeted block itself, same as the X/Z centering below — the old code
-            // only added the +0.5 on X/Z and left Y as the block's raw (bottom) coordinate, so the
-            // marker sat half a block low and got clipped by the block underneath it.
+            // Center on Y too (not just X/Z) — old code left Y at the block's bottom, clipping the marker.
             val bp: BlockPos = hit.blockPos
             return Vec3(bp.x + 0.5, bp.y + 0.5, bp.z + 0.5)
         }
@@ -496,7 +472,6 @@ object DungeonWaypoints {
         w.routeOrder = recordingNextOrder++
     }
 
-    /** Places/removes a freeform waypoint at absolute world coordinates, used outside calibrated dungeons. */
     private fun handlePlaceGlobal(mc: Minecraft) {
         val aim = aimPoint(mc)
         val px = aim.x + offsetX
@@ -536,7 +511,6 @@ object DungeonWaypoints {
         applyGlobal()
     }
 
-    /** Loads the freeform waypoints for the current server+dimension as live, absolute-coordinate boxes. */
     private fun applyGlobal() {
         val result = ArrayList<LiveWaypoint>()
         for (w in DungeonWaypointStore.get(globalKey())) {
@@ -604,10 +578,8 @@ object DungeonWaypoints {
             if (!w.throughWalls && !hasLineOfSight(mc, w.center)) continue
             if (w.routeId != null && routeReached.getOrDefault(w.routeId, emptySet()).contains(w.routeOrder)) continue
             val rgba = RenderUtils.toFloats(w.color)
-            // Outlines are thin filled boxes (renderThickOutline), not GL_LINES — that keeps their
-            // thickness an actual configurable size and, just as importantly, keeps them on the same
-            // triangle-strip layer as filled boxes so nothing gets mixed with real GL_LINES data
-            // (mixing topologies on one layer is what caused the earlier "bowtie" corruption).
+            // Outlines are thin filled boxes, not GL_LINES, to keep them on the same triangle-strip
+            // layer as fills — mixing topologies on one layer caused the earlier "bowtie" corruption.
             if (w.filled) RenderUtils.renderFilled(matrices, vc, w.box, rgba)
             else RenderUtils.renderThickOutline(matrices, vc, w.box, rgba, lineWidth)
             if (w.title != null && w.title.isNotBlank()) {
@@ -625,14 +597,7 @@ object DungeonWaypoints {
         }
     }
 
-    /**
-     * Draws the one thing that's genuine GL_LINES geometry: route connector lines. Runs on a
-     * dedicated GL_LINES layer (see [RenderingEvents.NO_DEPTH_LINE]) — this must never share a
-     * VertexConsumer with [render] (box fills/outlines + text), which uses a triangle-strip
-     * layer. Pushing line-pair vertices into that triangle-strip buffer is exactly what produced the
-     * corrupted "bowtie" shapes users reported: each 2-vertex line got stitched into the strip as a
-     * stray, often huge, degenerate triangle connecting unrelated geometry.
-     */
+    /** Route connector lines only — must never share a VertexConsumer with [render]'s triangle-strip layer. */
     private fun renderLines(matrices: PoseStack, vc: VertexConsumer) {
         for ((key, value) in groupRoutes()) {
             val reached = routeReached.getOrDefault(key, emptySet())

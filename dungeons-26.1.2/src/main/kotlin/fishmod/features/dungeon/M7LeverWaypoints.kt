@@ -40,7 +40,6 @@ object M7LeverWaypoints {
         RenderingEvents.NO_DEPTH_FILLED.register { ctx, matrices, vc -> render(matrices, vc) }
     }
 
-    /** Active only while the feature is on and we're in the F7/M7 boss. */
     private fun active(): Boolean {
         return FishSettings.enableM7LeverWaypoints && Phase.isInFloor7() && Phase.inBoss()
     }

@@ -60,7 +60,6 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         ctx.fill(lx, ty, lx + 1, by, BORDER)
         ctx.fill(rx - 1, ty, rx, by, BORDER)
 
-        // wordmark
         ctx.centeredText(this.font, Component.literal("§lFish§b§lMod"), cx, ty + 14, TEXT)
         ctx.centeredText(this.font, Component.literal("Credits"), cx, ty + 26, SUBTEXT)
         ctx.fill(lx + 24, ty + 40, rx - 24, ty + 41, DIVIDER)
@@ -73,7 +72,6 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         drawCredit(ctx, lx + 26, y, "Sushiest", "dungeon help & UI changes")
         y += 28
 
-        // Discord link button
         linkW = this.font.width(DISCORD) + 24
         linkH = 18
         linkX = cx - linkW / 2
@@ -86,7 +84,6 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
             Component.literal((if (linkHov) "§b" else "§9") + DISCORD), cx, linkY + 5, DISCORD_BLURPLE
         )
 
-        // Back button
         backW = 72
         backH = 22
         backX = cx - backW / 2

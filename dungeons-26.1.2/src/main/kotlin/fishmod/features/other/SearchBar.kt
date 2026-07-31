@@ -73,8 +73,7 @@ object SearchBar {
             shouldDisplayVal = !shouldDisplayVal
             return true
         } else if (shouldDisplay() && bar.isFocused) {
-            // Never eat the player's drop key — pressing it should drop the item, not type into search.
-            // Unfocus the search so the keystroke falls through to vanilla's drop handling.
+            // Unfocus on the drop key so it falls through to vanilla's drop handling instead of typing.
             try {
                 val mc = Minecraft.getInstance()
                 val dropCode = (mc.options.keyDrop as KeyBindingAccessor).boundKey.value

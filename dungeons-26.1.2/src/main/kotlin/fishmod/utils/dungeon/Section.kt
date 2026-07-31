@@ -164,8 +164,7 @@ object Section {
             Events.ON_TERMINAL.invoke { terminalEvent -> terminalEvent.onComplete(name, action, objective, currentCompleted, totalNeeded) }
 
             if (Floor7.terminalTimeStamps) {
-                //have to do it like this because for some reason they have the color in the
-                //Style object and not in the string literal
+                // Color lives in the sibling's Style, not the string literal itself.
                 val texts = message.siblings
                 if (texts.isNotEmpty()) {
                     Misc.addChatMessage(
@@ -198,7 +197,6 @@ object Section {
                 }
             }
         } else if (string == "The Core entrance is opening!") {
-            //so in "goldor tunnel" can be shown after terms are done
             currentSection = 5
             endAllSections()
             Debug.sendDebugMessage(Component.literal("Core section"))
@@ -256,14 +254,10 @@ object Section {
         }
     }
 
-    // Rendered explicitly via F7Huds.renderHud (HudRenderCallback in FishModInit) — the proven path
-    // every other FishMod HUD uses — so the condition-supplier is forced false to keep
-    // practical-config's HudElementRegistry auto-render (unreliable here) from double-drawing it.
-    //
-    // Default position deliberately not (0,0): that's also Phase.splitTimer's default, and
-    // keepOnScreen's off-screen check treats (0,0) as "already on screen" so it never relocates —
-    // the two panels would otherwise silently render on top of each other the first time both are
-    // visible at once (Terminals/Goldor phase), which is exactly what happened before this fix.
+    // Condition-supplier forced false: rendered explicitly via F7Huds.renderHud instead, to avoid
+    // double-drawing via practical-config's auto-render. Default position isn't (0,0) because
+    // keepOnScreen treats (0,0) as already on-screen and never relocates it — that would overlap
+    // Phase.splitTimer (same default) whenever both panels are visible at once.
     @ConfigValue @JvmField
     var terminalSplits: HUDComponent = HUDComponent(
         10.0, 154.0, SPLIT_LENGTH, 50, 1f, "Term splits", { false }, Section::render, { enableTerminalSplits }

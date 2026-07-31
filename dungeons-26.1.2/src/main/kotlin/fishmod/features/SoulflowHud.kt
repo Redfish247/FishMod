@@ -21,7 +21,7 @@ object SoulflowHud {
 
     private var missCount = 0
     private var warnedThisSession = false
-    private const val MISS_SCANS_BEFORE_WARN = 5 // ~5s at 10-tick scan interval
+    private const val MISS_SCANS_BEFORE_WARN = 5
 
     @JvmStatic
     fun init() {
@@ -91,11 +91,8 @@ object SoulflowHud {
         if (!Location.inSkyblock()) return
         if (soulflow < 0) return
 
-        // Check for the warning threshold
         val warn = FishSettings.soulflowWarningThreshold > 0 && soulflow < FishSettings.soulflowWarningThreshold
 
-        // Force the format: §e is Yellow (&e), §
-        // If warning, we can keep it Red or add the warning symbol
         val label = if (warn) {
             "§3Soulflow: " + String.format("%,d", soulflow) + " ⚠"
         } else {

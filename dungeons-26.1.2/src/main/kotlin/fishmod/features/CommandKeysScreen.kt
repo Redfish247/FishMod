@@ -16,12 +16,9 @@ import kotlin.math.min
 /**
  * /fm commandkeys — bind arbitrary keys/mouse buttons to slash commands.
  *
- * Entries are kept as plain `keys`/`commands` lists (the source of truth) and
- * widgets are rebuilt from them on every add/remove/scroll/rebind — simplest way to support a
- * variable-length, scrollable row list without hand-rolled widget recycling.
- *
- * Key capture mirrors [FishModScreen]'s existing keybind-rebind convention: click a key
- * box to arm capture, then the next key or mouse click is bound; Escape unbinds instead.
+ * `keys`/`commands` lists are the source of truth; widgets are rebuilt from them on every
+ * add/remove/scroll/rebind. Key capture mirrors [FishModScreen]'s rebind convention: click a
+ * key box to arm capture, then the next key or mouse click is bound; Escape unbinds instead.
  */
 class CommandKeysScreen : Screen(Component.literal("Command Keys")) {
 

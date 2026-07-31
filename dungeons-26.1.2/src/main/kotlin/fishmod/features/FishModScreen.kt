@@ -6,6 +6,7 @@ import fishmod.utils.config.Config
 import fishmod.utils.config.FishConfig
 import fishmod.utils.config.values.Buttons
 import fishmod.utils.config.values.Dungeons
+import fishmod.cosmetic.NickState
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.config.values.Floor7
 import fishmod.utils.dungeon.Phase
@@ -27,29 +28,9 @@ import java.util.function.Consumer
 import java.util.function.Supplier
 import kotlin.reflect.KMutableProperty0
 
-/**
- * Multi-column config screen (matches the FishMod design mockup).
- *
- *  ┌──────────────────────────────────────────────────────────┐
- *  │  FishMod                                       [ search ]  │  title bar
- *  ├──────┬──────┬──────┬──────┬──────┬───────────────────────┤
- *  │ Genl │ Dngn │ Cosm │Party │ Vis. │  Floor7  │ each column  │
- *  │ [ ]  │ [ ]  │ [ ]  │ [ ]  │ [ ]  │   [ ]    │ scrolls on   │
- *  │ [ ]  │ [ ]  │ [ ]  │ [ ]  │ [ ]  │   [ ]    │ its own      │
- *  ├──────┴──────┴──────┴──────┴──────┴───────────────────────┤
- *  │  Edit HUD                       Reset      Save & Close    │  footer
- *  └──────────────────────────────────────────────────────────┘
- *
- * All columns render simultaneously; each scrolls independently. Left-click a feature
- * toggle = master on/off. Left-click a feature row body (when it has sub-settings) =
- * expand an inline panel beneath it with the rich controls (sliders, dropdowns, colour
- * pickers, text inputs), animated open/closed with a cubic ease-in-out (see
- * [Easing]). Multiple features (in the same or different columns) can be expanded
- * at once — expanding one never collapses another.
- */
+/** Multi-column config screen; each column scrolls independently and rows expand inline sub-panels. */
 class FishModScreen : Screen(Component.literal("FishMod")) {
 
-    // ----- state -----
     private val columns: MutableList<Column> = ArrayList()
     private var searchText = ""
     private var searchFocused = false
@@ -69,12 +50,10 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         buildCategories()
     }
 
-    // -----------------------------------------------------------------------------------
-    // Category / feature graph
-    // -----------------------------------------------------------------------------------
     private fun buildCategories() {
         val general = Column("General", "gear")
         val dungeon = Column("Dungeon", "arch")
+        val cosmetics = Column("Cosmetics", "hanger")
         val party = Column("Party", "people")
         val visuals = Column("Visuals", "eye")
         val floor7 = Column("Floor 7", "arch")
@@ -205,6 +184,57 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             f.sub.add(ToggleSetting("Ignore Mage", "", Dungeons::ignoreDupeMage))
             f.sub.add(ToggleSetting("To Party", "", Dungeons::dupeClassPartyChat))
             dungeon.features.add(f)
+        }
+        // ===== Cosmetics =====
+        run {
+            val f = Feature("Name Color",
+                { NickState.isActive() },
+                { v -> if (!v) NickState.reset() else NickState.applyFromSettings() })
+            f.sub.add(LimitedInputSetting("Custom Name", "", 18,
+                { FishSettings.nickCustomName },
+                { v -> FishSettings.nickCustomName = v ?: ""; if (NickState.isActive()) NickState.applyFromSettings() }))
+            f.sub.add(DropdownSetting("Color Mode", "", arrayOf("GRADIENT", "SOLID"),
+                { FishSettings.nickColorMode },
+                { v -> FishSettings.nickColorMode = v; if (NickState.isActive()) NickState.applyFromSettings() }))
+            f.sub.add(ColorPickerSetting("Color", "",
+                { FishSettings.nickColorStart },
+                { v -> FishSettings.nickColorStart = v; if (NickState.isActive()) NickState.applyFromSettings() }))
+            f.sub.add(ConditionalColorPickerSetting("End Color", "",
+                { "GRADIENT".equals(FishSettings.nickColorMode, ignoreCase = true) },
+                { FishSettings.nickColorEnd },
+                { v -> FishSettings.nickColorEnd = v; if (NickState.isActive()) NickState.applyFromSettings() }))
+            f.sub.add(ToggleSetting("See Others", "", FishSettings::remoteNicksEnabled))
+            cosmetics.features.add(f)
+        }
+        run {
+            val f = Feature("Nametag", FishSettings::nickPreviewEnabled)
+            f.sub.add(SliderDoubleSetting("Height", "", FishSettings::nickPreviewYOffset, -1.5, 1.0))
+            cosmetics.features.add(f)
+        }
+        run {
+            val f = Feature("Player Size",
+                { FishSettings.playerSizeEnabled },
+                { v -> FishSettings.playerSizeEnabled = v; fishmod.cosmetic.PlayerSize.uploadOwn() })
+            f.sub.add(SliderDoubleSetting("Width (X)", "",
+                { FishSettings.playerSizeScaleX },
+                { v -> FishSettings.playerSizeScaleX = v; fishmod.cosmetic.PlayerSize.uploadOwn() },
+                fishmod.cosmetic.PlayerSize.MIN.toDouble(), fishmod.cosmetic.PlayerSize.MAX.toDouble()))
+            f.sub.add(SliderDoubleSetting("Height (Y)", "",
+                { FishSettings.playerSizeScaleY },
+                { v -> FishSettings.playerSizeScaleY = v; fishmod.cosmetic.PlayerSize.uploadOwn() },
+                fishmod.cosmetic.PlayerSize.MIN.toDouble(), fishmod.cosmetic.PlayerSize.MAX.toDouble()))
+            f.sub.add(SliderDoubleSetting("Depth (Z)", "",
+                { FishSettings.playerSizeScaleZ },
+                { v -> FishSettings.playerSizeScaleZ = v; fishmod.cosmetic.PlayerSize.uploadOwn() },
+                fishmod.cosmetic.PlayerSize.MIN.toDouble(), fishmod.cosmetic.PlayerSize.MAX.toDouble()))
+            f.sub.add(ToggleSetting("Share w/ All", "",
+                { FishSettings.playerSizeShared },
+                { v ->
+                    FishSettings.playerSizeShared = v
+                    if (v) { fishmod.cosmetic.PlayerSize.uploadOwn(); fishmod.cosmetic.RemoteSync.forceSync() }
+                    else { fishmod.cosmetic.PlayerSize.clearOwnShare(); fishmod.cosmetic.RemoteScales.clearAll() }
+                }))
+            cosmetics.features.add(f)
         }
         // ===== Party =====
         run {
@@ -343,14 +373,12 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
 
         columns.add(general)
         columns.add(dungeon)
+        columns.add(cosmetics)
         columns.add(party)
         columns.add(visuals)
         columns.add(floor7)
     }
 
-    // -----------------------------------------------------------------------------------
-    // Region geometry — floating over the full screen, no bordered modal box
-    // -----------------------------------------------------------------------------------
     private fun left(): Int = 0
     private fun top(): Int = 0
     private fun right(): Int = this.width
@@ -389,7 +417,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         return cx0() + visibleIndex * (columnWidth() + COLUMN_GUTTER)
     }
 
-    /** A single computed row rect within a column; the one source of truth both render and hit-testing consume. */
+    /** One source of truth for a row's geometry, used by both render and hit-testing. */
     private class RowLayout(
         val feature: Feature,
         val rowTop: Int, val rowBottom: Int,
@@ -422,20 +450,13 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     private fun maxScrollFor(c: Column): Int = Math.max(0, columnContentHeight(c) - (cyBot() - cyTop()))
     private fun clampScroll(c: Column) { c.scroll = Mth.clamp(c.scroll, 0, maxScrollFor(c)) }
 
-    // -----------------------------------------------------------------------------------
-    // Background: solid dark (matches the mockup), no vanilla blur/dirt
-    // -----------------------------------------------------------------------------------
     override fun extractBackground(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) { }
     override fun extractTransparentBackground(ctx: GuiGraphicsExtractor) { }
 
-    // -----------------------------------------------------------------------------------
-    // Render
-    // -----------------------------------------------------------------------------------
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         if (resetArmed && System.currentTimeMillis() - resetArmedAt > 3000) resetArmed = false
         for (c in visibleColumns()) clampScroll(c)
 
-        // blur the live game behind the columns instead of just darkening it, plus a light scrim for text contrast
         extractBlurredBackground(ctx)
         ctx.fillGradient(0, 0, this.width, this.height, DIM_TOP, DIM_BOT)
 
@@ -448,7 +469,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
 
-    /** Geometry for the 4 top-right pill buttons — the one source of truth for both render and hit-testing. */
+    /** One source of truth for the 4 top-right pill buttons' geometry, for render and hit-testing. */
     private fun topBarButtonRects(): Array<IntArray> {
         val labels = arrayOf("Edit HUD", "Credits", if (resetArmed) "Confirm?" else "Reset", "Save & Close")
         val bh = 20
@@ -466,7 +487,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     }
 
     private fun renderTopBar(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
-        // wordmark "FishMod" (top-left, no bar/border)
         val ws = 1.3f
         sst(ctx, this.font, "Fish", MARGIN, MARGIN, TEXT_COLOR, ws)
         val fw = sw(this.font, "Fish", ws)
@@ -609,9 +629,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         st(ctx, this.font, desc, bx + 8, by + 5, TEXT_COLOR)
     }
 
-    /** Note: while animating this narrows the caller's scissor to hide the not-yet-revealed
-     *  portion of the panel; it never disables scissoring, so the caller is responsible for
-     *  re-establishing its own (wider) clip immediately afterward. */
+    /** While animating this narrows the caller's scissor and never restores it — caller must re-clip after. */
     private fun renderSubPanel(ctx: GuiGraphicsExtractor, f: Feature, x0: Int, x1: Int, top: Int, animatedH: Int, mouseX: Int, mouseY: Int) {
         if (f.expandAnim.isAnimating()) ctx.enableScissor(x0, top, x1, top + animatedH)
 
@@ -635,9 +653,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         return mx >= x && mx <= x + w && my >= y && my <= y + h
     }
 
-    // -----------------------------------------------------------------------------------
-    // Input
-    // -----------------------------------------------------------------------------------
     override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean {
         val mx = click.x().toInt()
         val my = click.y().toInt()
@@ -654,7 +669,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         if (prevInput is InputSetting && prevInput.textField != null) prevInput.textField!!.setFocused(false)
         activeInput = null
 
-        // ----- search (floating pill, bottom-center) -----
         val swW = 190
         val swH = 24
         val sx = (this.width - swW) / 2
@@ -663,7 +677,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         searchField?.setFocused(searchFocused)
         if (searchFocused) return true
 
-        // ----- top-right pill buttons -----
         val rects = topBarButtonRects()
         if (hovBtn(mx, my, rects[0][0], rects[0][1], rects[0][2], rects[0][3])) { Minecraft.getInstance().setScreen(FishHudEditor(this)); return true }
         if (hovBtn(mx, my, rects[1][0], rects[1][1], rects[1][2], rects[1][3])) { Minecraft.getInstance().setScreen(CreditsScreen(this)); return true }
@@ -674,7 +687,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         }
         if (hovBtn(mx, my, rects[3][0], rects[3][1], rects[3][2], rects[3][3])) { onClose(); return true }
 
-        // ----- content columns / rows / sub-panels -----
         if (my >= cyTop() && my <= cyBot()) {
             val cols = visibleColumns()
             val colW = columnWidth()
@@ -686,8 +698,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
 
                 for (rl in layoutColumn(col, col.scroll)) {
                     val f = rl.feature
-                    // row hit — left-click toggles master on/off, right-click toggles the expand panel
-                    // (features with no master toggle expand on either click)
+                    // left-click toggles on/off, right-click expands (either click expands if no master toggle)
                     if (my >= rl.rowTop && my <= rl.rowBottom) {
                         if (f.hasMaster()) {
                             if (btn == 1 && f.sub.isNotEmpty()) f.toggleExpanded()
@@ -697,7 +708,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
                         }
                         return true
                     }
-                    // sub-panel hit
                     val subH = rl.subBottom - rl.subTop
                     if (subH > 0 && my >= rl.subTop && my <= rl.subBottom) {
                         val leftX = x0 + 14
@@ -728,7 +738,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
                         return true // swallow clicks inside the body
                     }
                 }
-                return true // swallow clicks in the column's empty space
+                return true
             }
             return true
         }
@@ -814,9 +824,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         super.onClose()
     }
 
-    // -----------------------------------------------------------------------------------
-    // Model
-    // -----------------------------------------------------------------------------------
     class Column(val name: String, val icon: String) {
         val features: MutableList<Feature> = ArrayList()
         var scroll = 0
@@ -843,9 +850,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         }
     }
 
-    // -----------------------------------------------------------------------------------
-    // Setting widgets
-    // -----------------------------------------------------------------------------------
     abstract class Setting(var name: String, var description: String) {
         abstract fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, settingY: Int, mouseX: Int, mouseY: Int, tr: Font)
         open fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, settingY: Int, button: Int): Boolean = false
@@ -862,7 +866,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         }
     }
 
-    /** Odin-style rounded pill toggle with a hollow accent ring and an animated sliding knob. */
     class ToggleSetting(name: String, desc: String, val getter: () -> Boolean, val setter: (Boolean) -> Unit) : Setting(name, desc) {
         constructor(name: String, desc: String, prop: KMutableProperty0<Boolean>) : this(name, desc, { prop.get() }, { prop.set(it) })
 
@@ -926,9 +929,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         }
     }
 
-    // Click to advance to the next value; right-click goes back one.
-    /** Odin-style selector: a rounded pill showing the current value; click expands an animated
-     *  inline list of every option beneath it (right-click quick-cycles without expanding). */
+    /** Click expands an inline option list; right-click quick-cycles to the next value without expanding. */
     class DropdownSetting<T>(name: String, desc: String, val values: Array<T>, val getter: () -> T, val setter: (T) -> Unit) : Setting(name, desc) {
         private val expandAnim = Easing.Anim(200)
         private var expanded = false
@@ -1140,7 +1141,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         }
     }
 
-    /** Visual color picker: saturation/brightness square + vertical hue bar + swatch + editable hex. */
     open class ColorPickerSetting(name: String, desc: String, val getter: () -> Int, val setter: (Int) -> Unit) : Setting(name, desc) {
         constructor(name: String, desc: String, prop: KMutableProperty0<Int>) : this(name, desc, { prop.get() }, { prop.set(it) })
 
@@ -1291,10 +1291,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         }
     }
 
-    /** In-GUI rebind box for a vanilla [net.minecraft.client.KeyMapping] — click, then
-     *  press a key or mouse button to bind it (Esc unbinds). Stays in sync with Options > Controls
-     *  since it edits the same KeyMapping object. */
-    /** Odin-style rounded pill rebind box — click, then press a key/mouse button (Esc unbinds). */
+    /** Click then press a key/mouse button to bind (Esc unbinds); edits the vanilla KeyMapping directly. */
     class KeybindSetting(name: String, desc: String, val getter: () -> KeyMapping?) : Setting(name, desc) {
         var capturing = false
         private var pillX = 0
@@ -1420,40 +1417,36 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     }
 
     companion object {
-        // ----- palette (recolored teal — matches the mod's existing accent, not a reference-repo copy) -----
         private val ACCENT = 0xFF24B6B0.toInt()
         private val ACCENT_HOVER = 0xFF3AD8D1.toInt()
-        private const val DIM_TOP = 0x2E000000 // light scrim over the blurred game, just enough for text contrast
+        private const val DIM_TOP = 0x2E000000
         private const val DIM_BOT = 0x50000000
-        private val CARD_BG = 0xFF14181D.toInt() // floating card body
-        private const val ROW_HOVER = 0x1EFFFFFF // translucent hover wash over a row
-        private const val ROW_ENABLED = 0x2624B6B0 // translucent accent tint over an enabled row
+        private val CARD_BG = 0xFF14181D.toInt()
+        private const val ROW_HOVER = 0x1EFFFFFF
+        private const val ROW_ENABLED = 0x2624B6B0
         private val SUBROW_BG = 0xFF0F1317.toInt()
-        private val TRACK_OFF = 0xFF3A3F48.toInt() // toggle/keybind/dropdown pill track when inactive
+        private val TRACK_OFF = 0xFF3A3F48.toInt()
         private val TEXT_COLOR = 0xFFEDF1F5.toInt()
         private val SUBTEXT_COLOR = 0xFF8A96A3.toInt()
         private val CHEVRON_COLOR = 0xFF6C7885.toInt()
 
         private const val TEXT_SCALE = 0.75f
 
-        // ----- screen chrome (floating elements, no bordered modal box) -----
         private const val MARGIN = 16
-        private const val TOP_BAR_H = 26 // reserved space for wordmark + top-right pill buttons
-        private const val BOTTOM_RESERVE = 46 // reserved space for the floating search pill
+        private const val TOP_BAR_H = 26
+        private const val BOTTOM_RESERVE = 46
 
-        // ----- multi-column layout -----
-        private const val COLUMN_GUTTER = 12 // px between column cards
+        private const val COLUMN_GUTTER = 12
         private const val CARD_RADIUS = 7
-        private const val HEADER_H = 24 // header bar height (icon + name)
-        private const val HEADER_STRIP_H = 3 // accent strip thickness at header top
+        private const val HEADER_H = 24
+        private const val HEADER_STRIP_H = 3
         private const val MIN_COLUMN_W = 136 // floor so controls don't clip
 
-        // ----- row / setting-widget geometry -----
         private const val ROW_H = 22
         private const val ROW_GAP = 3
         private const val ITEM_HEIGHT = 22
-        private const val PILL_H = 18 // sub-setting toggle/dropdown/keybind pill height
-        private const val OPTION_H = 16 // dropdown option-list row height
+        private const val PILL_H = 18
+        private const val OPTION_H = 16
         private val SLIDER_BG = 0xFF2C3138.toInt()
         private val SLIDER_FILL = ACCENT
         private const val SLIDER_W = 56
@@ -1462,7 +1455,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         private const val INPUT_H = 14
         private const val SUBCAT_HEIGHT = 13
 
-        /** True filled rounded rectangle via horizontal scanlines (genuine rounding, not a faked square). */
         fun roundedRect(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, color: Int) {
             if (w <= 0 || h <= 0) return
             val rr = Math.max(0, Math.min(r, Math.min(w, h) / 2))
@@ -1483,30 +1475,25 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             }
         }
 
-        /** Corner-coordinate overload matching `ctx.fill`'s (x1,y1,x2,y2) convention. */
         fun roundRect(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, r: Int, color: Int) {
             roundedRect(ctx, x1, y1, x2 - x1, y2 - y1, r, color)
         }
 
-        /** A rounded rect with a hollow accent-colored ring of `strokeW` around it. */
         fun roundedRectRing(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, strokeW: Int, fillColor: Int, ringColor: Int) {
             roundedRect(ctx, x - strokeW, y - strokeW, w + strokeW * 2, h + strokeW * 2, r + strokeW, ringColor)
             roundedRect(ctx, x, y, w, h, r, fillColor)
         }
 
-        /** True pill (fully rounded rectangle whose radius is half its height). Takes corner coordinates, like `ctx.fill`. */
         fun pill(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
             val h = y2 - y1
             roundedRect(ctx, x1, y1, x2 - x1, h, h / 2, color)
         }
 
-        /** 1px border frame around a fill (square corners — used for tiny non-decorative frames). */
         fun panel(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, r: Int, fill: Int, border: Int) {
             roundedRect(ctx, x1, y1, x2 - x1, y2 - y1, r, border)
             roundedRect(ctx, x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), fill)
         }
 
-        /** True filled circle via horizontal scanlines — used for glyphs and toggle knobs. */
         fun disc(ctx: GuiGraphicsExtractor, cx: Int, cy: Int, r: Int, color: Int) {
             for (dy in -r..r) {
                 val dx = Math.round(Math.sqrt(Math.max(0.0, r.toDouble() * r - dy.toDouble() * dy))).toInt()
@@ -1514,7 +1501,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             }
         }
 
-        /** Sub-panel menu text at TEXT_SCALE. */
         fun st(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int) {
             ctx.pose().pushMatrix()
             ctx.pose().translate(x.toFloat(), y + 1f)
@@ -1524,7 +1510,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         }
         fun stw(tr: Font, s: String): Int = Math.ceil((tr.width(s) * TEXT_SCALE).toDouble()).toInt()
 
-        /** Text at an arbitrary scale. */
         fun sst(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int, scale: Float) {
             ctx.pose().pushMatrix()
             ctx.pose().translate(x.toFloat(), y.toFloat())
@@ -1534,7 +1519,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         }
         fun sw(tr: Font, s: String, scale: Float): Int = Math.ceil((tr.width(s) * scale).toDouble()).toInt()
 
-        /** Chevron from fills: ▾ when `open`, ▸ when closed; `cy` is the vertical centre. */
         fun drawChevron(ctx: GuiGraphicsExtractor, gx: Int, cy: Int, open: Boolean, color: Int) {
             if (open) {
                 ctx.fill(gx, cy - 2, gx + 7, cy - 1, color)
@@ -1549,7 +1533,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             }
         }
 
-        /** Tiny vector emblem (~14px) centred at (cx,cy). `bg` is the tile fill, for knockouts. */
         private fun drawGlyph(ctx: GuiGraphicsExtractor, t: String, cx: Int, cy: Int, c: Int, bg: Int) {
             when (t) {
                 "gear" -> {
@@ -1619,14 +1602,13 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
                     ctx.fill(cx - 6, cy - 5, cx + 6, cy + 5, c); ctx.fill(cx - 1, cy - 5, cx + 1, cy + 5, bg)
                     ctx.fill(cx - 6, cy - 1, cx + 6, cy + 1, bg)
                 }
-                else -> { // box
+                else -> {
                     ctx.fill(cx - 5, cy - 5, cx + 5, cy - 3, c); ctx.fill(cx - 5, cy + 3, cx + 5, cy + 5, c)
                     ctx.fill(cx - 5, cy - 5, cx - 3, cy + 5, c); ctx.fill(cx + 3, cy - 5, cx + 5, cy + 5, c)
                 }
             }
         }
 
-        /** Short one-line description shown under each row label. */
         private fun descFor(name: String): String {
             return when (name) {
                 "Mod Prefix" -> "Tag FishMod's chat output with a prefix"
@@ -1657,6 +1639,9 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
                 "Term Start Timer" -> "Countdown to terminals start"
                 "Section Progress" -> "Terminal section completed/total"
                 "Goldor Splits" -> "S1-S4 terminal split timers + total time"
+                "Name Color" -> "Recolor your username gradient"
+                "Nametag" -> "Show your own above-head nametag"
+                "Player Size" -> "Resize your model (render only)"
                 "Party Commands" -> "Dot-commands usable in party chat"
                 "Chat Channels" -> "Where dot-commands are allowed"
                 "Rarity Background" -> "Rarity-colored backing on all slots"
@@ -1682,7 +1667,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             }
         }
 
-        /** Description for a toggle registered via [FishModAddonApi] (e.g. from an addon mod). */
         private fun descForExternal(name: String): String {
             for (et in FishModAddonApi.dungeonToggles) {
                 if (et.name() == name) return et.description()
@@ -1690,15 +1674,13 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             return ""
         }
 
-        /** Builds a command-input row for an inventory button (the hint reminds it's a command, no slash). */
         private fun makeButtonInput(name: String, prop: KMutableProperty0<String>): InputSetting {
             val s = InputSetting(name, "", prop)
             s.hint = "command without /"
             return s
         }
 
-        /** Odin-style rounded pill with a hollow accent ring and a sliding circular knob. Static so the
-         *  static nested Setting subclasses (which have no outer-instance reference) can call it too. */
+        /** Static so the nested Setting subclasses, which have no outer-instance reference, can call it. */
         fun drawTogglePill(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, on: Boolean, knobProgress: Float, hover: Boolean) {
             val track = if (on) (if (hover) ACCENT_HOVER else ACCENT) else TRACK_OFF
             val ring = if (on) (if (hover) ACCENT_HOVER else ACCENT) else (if (hover) 0xFF565C68.toInt() else 0xFF464C56.toInt())

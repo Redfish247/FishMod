@@ -23,19 +23,10 @@ import java.util.regex.Pattern
 import kotlin.math.ceil
 import kotlin.math.min
 
-/**
- * Per-item ability cooldown overlay. Detects cooldown start via the Hypixel
- * "ability cooldown" sound (Enderman teleport at pitch 0 / volume 8) and renders
- * a countdown bar + number on the held item's slot until the cooldown expires.
- *
- * Hotbar and inventory-GUI slots both render the overlay.
- */
+/** Per-item ability cooldown overlay. Detects cooldown start via the Hypixel "ability cooldown" sound (Enderman teleport at pitch 0 / volume 8) and renders a countdown on the held item's slot (hotbar + inventory GUI) until it expires. */
 object CooldownOverlay {
 
-    /**
-     * Known item-id -> cooldown duration (ms). Values pulled from the Hypixel Skyblock wiki:
-     * https://hypixelskyblock.minecraft.wiki/
-     */
+    // Known item-id -> cooldown duration (ms), from the Hypixel Skyblock wiki.
     private val COOLDOWNS: MutableMap<String, Long> = HashMap()
 
     init {
@@ -202,14 +193,13 @@ object CooldownOverlay {
 
         val baseCdRaw = COOLDOWNS[id] ?: return
 
-        // --- DECLARE VARIABLES ---
         var mageLvl = 0
         var isMage = false
         val baseCd = baseCdRaw.toDouble()
         var finalCdResult: Double
         val inDungeon = Location.inDungeon()
 
-        // --- TAB LIST SCANNING (Mage detection) ---
+        // Mage detection via tab list
         for (entry in mc.connection!!.onlinePlayers) {
             if (entry.tabListDisplayName != null) {
                 val line = entry.tabListDisplayName!!.string
@@ -226,12 +216,10 @@ object CooldownOverlay {
             }
         }
 
-        // --- HYPERION OVERRIDE ---
-        // Hyperion ability cooldown is hardcoded to 5s by Hypixel regardless of CDR.
+        // Hyperion cooldown is hardcoded to 5s by Hypixel regardless of CDR.
         finalCdResult = if (id == "HYPERION") {
             baseCd
         } else if (isMage && inDungeon) {
-            // --- MAGE REDUCTION CALCULATION ---
             val classReduction: Double = if (liveMageCdrPercent > 0) {
                 // Game told us exact CDR via "[Mage] Cooldown Reduction X% -> Y%" chat — use it.
                 liveMageCdrPercent / 100.0
@@ -246,12 +234,10 @@ object CooldownOverlay {
             baseCd
         }
 
-        // --- RAGNAROCK AXE OUTSIDE BUFFER ---
-        // If not in a dungeon and item is Ragnarock Axe, add 3000ms (3s)
+        // Ragnarock Axe needs a 3s buffer outside dungeons, and for non-Mages inside them.
         if (!inDungeon && id == "RAGNAROCK_AXE") {
             finalCdResult += 3000.0
         }
-        // Non-Mage in dungeons: Ragnarock Axe needs a 3s buffer.
         if (inDungeon && !isMage && id == "RAGNAROCK_AXE") {
             finalCdResult += 3000
         }
@@ -273,21 +259,13 @@ object CooldownOverlay {
         active[id] = now + finalCd
     }
 
-    // Helper to extract level if ScoreboardUtil isn't doing it
     private fun parseLevelFromTab(line: String): Int {
         if (line.contains("XLIX")) return 49
         if (line.contains("L")) return 50
-        // You could add a full Roman Numeral parser here if needed,
-        // but checking the top levels is usually enough for testing.
         return 0
     }
 
-    // (Ensure there is only ONE getLevelFromXp method below this)
-
-    /**
-     * Standard Skyblock Dungeon Level XP Requirements.
-     * You can expand this array to include all 50 levels.
-     */
+    // Skyblock Dungeon Level XP requirements.
     private fun getLevelFromXp(xp: Long): Int {
         val levelXp = longArrayOf(
             0, 50, 125, 235, 395, 625, 955, 1425, 2095, 3045,
@@ -313,7 +291,6 @@ object CooldownOverlay {
         if (mc.options.hideGui) return
         if (mc.debugOverlay != null && mc.debugOverlay.showDebugScreen()) return
 
-        // Sweep expired entries before drawing.
         pruneExpired()
         if (active.isEmpty()) return
 

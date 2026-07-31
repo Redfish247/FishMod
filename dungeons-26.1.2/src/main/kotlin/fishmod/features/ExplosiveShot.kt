@@ -14,15 +14,8 @@ import java.util.regex.Pattern
 
 /**
  * Parses the Terminator "Explosive Shot" chat line and shows the per-enemy damage as a title.
- *
- *   "Your Explosive Shot hit 1 enemy for 472.5 damage."  → title "472.5", subtitle "Explosive Shot • 1 enemy"
- *   "Your Explosive Shot hit 8 enemies for 4,000 damage." → title "500",  subtitle "Explosive Shot • 8 enemies"
- *
- * Only active during the F7 Maxor fight ([Phase.inP1]) — Terminator/Explosive Shot readings
- * aren't relevant to any other boss phase.
- *
- * The damage in the message is the TOTAL across all enemies hit; dividing by the enemy count gives
- * the per-target hit. Reads [Events.ON_GAME_MESSAGE] but never cancels (the chat line stays).
+ * Only active during the F7 Maxor fight ([Phase.inP1]). The chat damage is the TOTAL across all
+ * enemies hit, so it's divided by enemy count for the per-target hit. Never cancels the chat line.
  */
 object ExplosiveShot {
 
@@ -40,10 +33,8 @@ object ExplosiveShot {
         if (text == null) return false
         val s = text.string ?: return false
 
-        // Phase.inP1() is the same verified Maxor-phase detection MaxorTickTimer already relies on
-        // (driven by splits.json's boss chat lines) — reusing it instead of hand-matching the boss
-        // taunt text here directly, since a hand-typed copy of that text previously drifted out of
-        // sync with the real line and silently broke this gate (missing "!" after each "WELL").
+        // Reuses Phase.inP1() (same detection MaxorTickTimer relies on) instead of hand-matching the
+        // boss taunt text — a hand-typed copy previously drifted out of sync and silently broke this gate.
         if (!FishSettings.explosiveShotEnabled || !Phase.inP1()) return false
         if (s.indexOf("Explosive Shot") < 0) return false
 
@@ -82,8 +73,7 @@ object ExplosiveShot {
         return false // keep the original chat line
     }
 
-    /** Shares the same crit-hit info already shown on screen with the party. Delayed + rate-limit
-     *  suppressed the same way `PartyCommandHandler.sendCmd` does. */
+    /** Shares the same info shown on screen with the party, delayed the same way `PartyCommandHandler.sendCmd` does. */
     private fun announceToParty(dmg: String, enemies: Int) {
         val message = "Explosive Shot: $dmg dmg (" + enemies + (if (enemies == 1) " enemy)" else " enemies)")
         CompletableFuture.delayedExecutor(250, TimeUnit.MILLISECONDS)

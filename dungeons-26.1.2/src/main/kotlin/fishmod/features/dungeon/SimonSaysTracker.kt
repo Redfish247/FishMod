@@ -20,21 +20,11 @@ import net.minecraft.world.phys.AABB
 import java.util.regex.Pattern
 
 /**
- * Tracks Goldor (F7 P3) Simon Says rounds via block scanning.
- *
- * Detection uses a FIXED world-space box around the device: the player must be inside
- * `DEVICE_BOX` to lock the scan onto `DEVICE_CENTER`, and from there we count
- * demo "flashes" (lit sea-lantern rising edges).
- *
- * Announcing: on the FIRST light of each new demo, the rounds-completed count = the longest
- * sequence shown so far. A failed round re-shows the same/shorter sequence, so the max length
- * doesn't grow and (with the dedupe) nothing extra is sent. 5/5 comes from the in-game
- * "<you> completed a device!" message / completion title.
- *
- * Breaking: the fixed obsidian/button columns behind the device (same signal NoammAddons' SS
- * solver uses) are watched for a reset — all buttons going to air after the device was active.
- * On a break, round tracking resets to 0 and scanning goes fully quiet until the device is
- * active again, so the next demo re-announces cleanly from 1/5.
+ * Tracks Goldor (F7 P3) Simon Says rounds via block scanning. Player must be inside `DEVICE_BOX`
+ * to lock onto `DEVICE_CENTER`, then rounds are counted by demo "flashes" (lit sea-lantern rising
+ * edges); 5/5 instead comes from the in-game "completed a device!" message. A break is detected
+ * via the same fixed obsidian/button-column signal NoammAddons' SS solver uses, which resets
+ * tracking to 0 until the device goes active again.
  */
 object SimonSaysTracker {
 
@@ -244,12 +234,7 @@ object SimonSaysTracker {
 
     // ── block scanning ──────────────────────────────────────────────────────────
 
-    /**
-     * Watches the fixed obsidian/button columns for a break, same signal NoammAddons uses.
-     * Any obsidian cell missing = device active. Once that's held for `BREAK_COOLDOWN_TICKS`
-     * and every button cell is air, the device reset — announce the fail, reset round tracking,
-     * and go fully quiet (see `broken` in `tick`) until the device is active again.
-     */
+    /** Obsidian cell missing = active; once that holds for `BREAK_COOLDOWN_TICKS` and buttons are all air, it's a break. */
     private fun tickBreakState(world: Level) {
         breakTicks--
 

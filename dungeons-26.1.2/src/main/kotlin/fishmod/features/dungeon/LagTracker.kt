@@ -5,13 +5,7 @@ import fishmod.utils.events.Events
 import net.minecraft.client.Minecraft
 import java.util.regex.Pattern
 
-/**
- * Self-contained lag tracker — measures seconds lost to server lag during a
- * dungeon run by comparing wall-clock time to server-tick count.
- *
- * This replaces reading Blade's "Xs lost to lag" chat message, so the feature
- * works regardless of whether Blade's lag message setting is on.
- */
+/** Measures seconds lost to lag by comparing wall-clock time to server-tick count, instead of reading Blade's chat message. */
 object LagTracker {
 
     // Same start trigger the split timer uses (includes § color codes)
@@ -36,8 +30,6 @@ object LagTracker {
 
     @JvmStatic
     fun init() {
-
-        // Detect run start / end from game messages
         Events.ON_GAME_MESSAGE.register { message ->
             val s = message.string
 
@@ -63,13 +55,11 @@ object LagTracker {
             false
         }
 
-        // Count server ticks while a run is active
         Events.ON_SERVER_TICK.register {
             if (active) ticks++
             false
         }
 
-        // Reset on location change (left dungeon, lobby, etc.)
         Events.ON_LOCATION_CHANGE.register { _ ->
             active = false
             startMs = 0

@@ -177,6 +177,15 @@ object FishSettings {
     @ConfigValue @JvmField var miningTrackerHudY: Int = 320
     @ConfigValue @JvmField var miningTrackerScale: Double = 1.0
 
+    @ConfigValue @JvmField var remoteNicksEnabled: Boolean = false
+
+    // Render-only player model size; Share publishes it so other mod users render you at it too.
+    @ConfigValue @JvmField var playerSizeEnabled: Boolean = false
+    @ConfigValue @JvmField var playerSizeScaleX: Double = 1.0
+    @ConfigValue @JvmField var playerSizeScaleY: Double = 1.0
+    @ConfigValue @JvmField var playerSizeScaleZ: Double = 1.0
+    @ConfigValue @JvmField var playerSizeShared: Boolean = false
+
     // Chat filter: hide selected categories of Hypixel chat spam. Master gate + per-category toggles.
     @ConfigValue @JvmField var chatFilterEnabled: Boolean = false
     @ConfigValue @JvmField var cfKillCombo: Boolean = true  // "+15 Kill Combo"
@@ -190,6 +199,16 @@ object FishSettings {
     @ConfigValue @JvmField var explosiveShotEnabled: Boolean = false
     // Also announce the same per-enemy damage to party chat, only while playing Archer.
     @ConfigValue @JvmField var explosiveShotAnnounceParty: Boolean = false
+
+    // Gradient/solid color applied to your real username.
+    @ConfigValue @JvmField var nickColorStart: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var nickColorEnd: Int = 0xFF5555FF.toInt()
+    @ConfigValue @JvmField var nickCustomName: String = ""
+    @ConfigValue @JvmField var nickColorMode: String = "GRADIENT"
+
+    @ConfigValue @JvmField var nickPreviewEnabled: Boolean = false
+    @ConfigValue @JvmField var nickPreviewScale: Double = 1.0
+    @ConfigValue @JvmField var nickPreviewYOffset: Double = 0.0
 
     // M7/F7 lever waypoints: through-walls filled box on each boss lever; disappears once flipped.
     @ConfigValue @JvmField var enableM7LeverWaypoints: Boolean = false

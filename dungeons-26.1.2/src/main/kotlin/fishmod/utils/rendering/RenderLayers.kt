@@ -16,27 +16,15 @@ object RenderLayers {
     @JvmField
     val FILLED_ENTITY_LAYER: RenderType = RenderType.create("fishmod_filled_en", RenderSetup.builder(RenderPipelines.DEBUG_FILLED_BOX).createRenderSetup())
 
-    // Through-walls layers: a clone of the base pipeline with depth testing disabled, so boxes/lines
-    // (e.g. the M7 lever waypoints) show through terrain. The vanilla DEBUG_FILLED_BOX / LINES
-    // pipelines depth-test, so reusing them here would let walls occlude the highlight — which is
-    // exactly the "doesn't render through walls" bug. We rebuild the pipeline from its own snippets
-    // and override only the depth-test function.
+    // Through-walls layers: clones of the base pipeline with depth testing disabled, since the
+    // vanilla DEBUG_FILLED_BOX/LINES pipelines depth-test and would let walls occlude the highlight.
     @JvmField
     val FILLED_LAYER_NO_DEPTH: RenderType = noDepth(RenderPipelines.DEBUG_FILLED_BOX, "fishmod/filled_no_depth", "fishmod_filled_nd")
 
     private val OUTLINE_LAYER: RenderType = RenderType.create("fishmod_lines", RenderSetup.builder(RenderPipelines.LINES).createRenderSetup())
     private val OUTLINE_LAYER_NO_DEPTH: RenderType = noDepth(RenderPipelines.LINES, "fishmod/lines_no_depth", "fishmod_lines_nd")
 
-    /**
-     * Builds a render layer whose pipeline is [base] with depth testing turned off, so geometry
-     * drawn through it renders on top of (through) the world instead of being occluded by it.
-     *
-     * 26.1.2's [RenderPipeline] is a transitional shape: [com.mojang.blaze3d.pipeline.ColorTargetState]/
-     * [DepthStencilState] already exist as composite objects, but samplers/uniforms/vertex format
-     * are still flat properties (no `BindGroupLayout`/per-buffer vertex bindings yet — those are
-     * 26.2-only). Don't reuse the 26.2 branch's version of this file as-is; the Builder API genuinely
-     * differs between the two versions, not just renamed.
-     */
+    /** 26.1.2's RenderPipeline builder API is transitional (flat samplers/uniforms/vertex format, no BindGroupLayout yet) — don't reuse the 26.2 branch's version of this function as-is. */
     private fun noDepth(base: RenderPipeline, location: String, layerName: String): RenderType {
         val baseDepth = base.depthStencilState!!
         val noDepthTest = DepthStencilState(
@@ -51,12 +39,10 @@ object RenderLayers {
             .withCull(base.isCull)
             .withPolygonMode(base.polygonMode)
             .withColorTargetState(base.colorTargetState)
-            // The whole point of this layer: render through walls.
             .withDepthStencilState(noDepthTest)
 
-        // Copy shader defines: bare flags directly, keyed values numerically (the builder only exposes
-        // int/float keyed defines). The base debug/line pipelines carry no defines, so this is normally
-        // a no-op — it just keeps the copy faithful if that ever changes.
+        // Builder only exposes int/float keyed defines; base pipelines carry none today so this is
+        // normally a no-op, kept for fidelity if that changes.
         base.shaderDefines.flags().forEach { builder.withShaderDefine(it) }
         base.shaderDefines.values().forEach { name, value ->
             try {
@@ -70,7 +56,6 @@ object RenderLayers {
             }
         }
 
-        // Copy samplers and uniforms so the shader still has everything it expects.
         base.samplers.forEach { builder.withSampler(it) }
         for (uniform: RenderPipeline.UniformDescription in base.uniforms) {
             if (uniform.type() == UniformType.TEXEL_BUFFER) {

@@ -12,18 +12,13 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 /**
- * User-defined "command keys": press a key in-game to run a slash command.
- *
- * Keys are stored as vanilla [InputConstants.Key] translation keys (not vanilla
- * `net.minecraft.client.KeyMapping`s) so entries can be freely added, rebound, and
- * removed at runtime from /fm commandkeys without touching the Controls screen, options.txt, or
- * the static KeyMapping registry (which Fabric API expects to be populated once at mod init).
+ * User-defined "command keys": press a key to run a slash command. Stored as raw
+ * [InputConstants.Key]s rather than `KeyMapping`s so entries can be freely added/rebound at
+ * runtime without touching the static KeyMapping registry (populated once at mod init).
  */
 object CommandKeys {
 
-    /** Ported from the original Java `record Entry(InputConstants.Key key, String command)`. Callers
-     *  use the record-style accessors `.key()` / `.command()`, so this stays a plain class with
-     *  explicit methods rather than a Kotlin data class. */
+    /** Kept as a plain class (not a data class) so Java callers keep the record-style `.key()`/`.command()` accessors. */
     class Entry(private val keyValue: InputConstants.Key, private val commandValue: String) {
         fun key(): InputConstants.Key = keyValue
         fun command(): String = commandValue
@@ -68,8 +63,7 @@ object CommandKeys {
         ensureLoaded()
         if (entries.isEmpty()) return
 
-        // Only fire while actually playing — not in chat, inventory, or any other GUI, so typing
-        // never accidentally triggers a bound command key.
+        // Don't fire while any GUI (chat, inventory) is open.
         if (client.screen != null || client.player == null) {
             held.clear()
             return

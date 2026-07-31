@@ -10,12 +10,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.ChatScreen
 
-/**
- * PB Pace — a racing-style "ghost" for dungeon runs. As each split completes it compares your live
- * time to your personal best for that split and shows a running delta: green when you're ahead of
- * your PB pace, red when you're behind. Pure read-over of the existing split + run-history systems,
- * so it costs nothing until you actually start a run with recorded history.
- */
+/** Racing-style ghost: compares live split times to your personal best and shows a running delta. */
 object PbPaceHud {
 
     @JvmStatic
@@ -75,7 +70,6 @@ object PbPaceHud {
         ctx.pose().popMatrix()
     }
 
-    /** Format a delta vs PB: green & "-" when faster, red & "+" when slower. */
     private fun signed(d: Double): String {
         val num = Constants.DECIMAL_FORMAT.format(Math.abs(d))
         return if (d <= 0) "§a-" + num + "s" else "§c+" + num + "s"

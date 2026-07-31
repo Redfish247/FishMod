@@ -14,14 +14,11 @@ import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.player.Player
 import java.util.concurrent.ConcurrentHashMap
 
-/**
- * Fire Freeze Staff timer — when you use the staff, nearby mobs are frozen for 5s.
- * Renders a countdown floating at each frozen mob's hitbox center.
- */
+/** Fire Freeze Staff timer: renders a countdown at each frozen mob after use. */
 object FireFreezeTimer {
 
-    private const val WAIT_MS = 5000L // cooldown/wait countdown before freeze
-    private const val FREEZE_MS = 10000L // freeze duration (10s)
+    private const val WAIT_MS = 5000L
+    private const val FREEZE_MS = 10000L
     private const val TOTAL_MS = WAIT_MS + FREEZE_MS
     private const val RADIUS = 3.0 // Fire Freeze AOE is small (~2.5-3 blocks)
 

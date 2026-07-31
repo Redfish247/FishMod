@@ -166,12 +166,10 @@ object DungeonScore {
         puzzleStatuses.clear()
     }
 
-    /** Marks the mimic as chat-detected killed. */
     private fun flagMimic() {
         mimicKilled = true
     }
 
-    /** Marks the Prince as chat-detected killed. */
     private fun flagPrince() {
         princeKilled = true
     }
@@ -258,19 +256,16 @@ object DungeonScore {
 
     private fun inBoss(): Int = 0 // approximate: treat as not-in-boss until phase tracking added
 
-    /** Total puzzle count for this run, parsed from the tab list's "Puzzles: (N)" line. 0 if not seen yet. */
     @JvmStatic
     fun getPuzzleCount(): Int = puzzleCount
 
-    /** Secrets found so far this run, from the tab list's secret-percent/count lines. */
     @JvmStatic
     fun getSecretCount(): Int = secretCount
 
-    /** Estimated total secrets in the dungeon (back-computed from found-count and percent). 0 if not known yet. */
+    /** Back-computed from found-count and percent; 0 if not known yet. */
     @JvmStatic
     fun getTotalSecrets(): Int = totalSecrets()
 
-    /** Crypts opened this run, from the tab list's "Crypts: (N)" line. */
     @JvmStatic
     fun getCryptCount(): Int = cryptCount
 
@@ -280,7 +275,6 @@ object DungeonScore {
     @JvmStatic
     fun isPrinceKilled(): Boolean = princeKilled
 
-    /** Team deaths this run, from the tab list's "Team Deaths: (N)" line. */
     @JvmStatic
     fun getDeathCount(): Int = deathCount
 
@@ -308,12 +302,7 @@ object DungeonScore {
         return exploration + skill + 100 + bonus
     }
 
-    /**
-     * One-minute check-in: projects the end-of-run score assuming a full clear (all rooms,
-     * all puzzles) with the secrets and bonuses collected so far, then breaks the gap to 300
-     * down into the remaining bonus sources plus however many extra secrets cover the rest.
-     */
-    /** Projected end-of-run score assuming a full clear (all rooms, all puzzles) with current secrets/bonuses. */
+    /** Projected end-of-run score assuming a full clear with current secrets/bonuses. */
     private fun projectedFullClearScore(): Int {
         val ts = totalSecrets()
         val reqPct = if (currentFloor != null) currentFloor!!.requiredPercentage.toDouble() else 1.0
@@ -389,7 +378,6 @@ object DungeonScore {
         }
     }
 
-    /** Chat/sound cue for the 100%-secrets milestone. */
     private fun announceMapMilestone(text: String) {
         fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§b§l[FishMod] §r§a$text"))
         fishmod.utils.Misc.sendSound(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1f)

@@ -20,7 +20,6 @@ object FishPartyTracker {
         ) { packet -> inParty = packet.isInParty }
     }
 
-    /** Sends a fresh party-info request then returns the last known state. */
     @JvmStatic
     fun isInParty(): Boolean {
         try {

@@ -4,16 +4,9 @@ import fishmod.utils.SkyblockItems
 import java.util.regex.Pattern
 
 /**
- * Parses a Croesus reward-chest tooltip (item display name + lore lines, in that order) into
- * SkyBlock item ids, quantities and display names — one [RewardItem] per reward line, up to
- * (but not including) the "Cost" line and anything after it.
- *
- * Ported from FishModAddons' `fishmodaddons.util.ItemParser` (itself ported from
- * AutoCroesus's ItemParser, originally by UnclaimedBloom6, ported with permission) — same regexes,
- * same enchanted-book/essence/hardcoded-name handling, same cost-line detection. Trimmed for the
- * passive loot tracker: no cost/value/profit math (that's the addon's job for auto-claiming), and
- * display-name → item-id resolution goes through [SkyblockItems.idFor] (this mod's own
- * async-loaded name table) instead of the addon's CroesusDataStore price list.
+ * Parses a Croesus reward-chest tooltip into item ids/quantities/display names, one [RewardItem]
+ * per reward line up to the "Cost" line. Ported from FishModAddons' ItemParser (via AutoCroesus,
+ * UnclaimedBloom6, used with permission); item-id resolution uses [SkyblockItems.idFor] instead.
  */
 object CroesusRewardParser {
     private val COLOR_STRIP: Pattern = Pattern.compile("§.")
@@ -94,7 +87,7 @@ object CroesusRewardParser {
         return if (!m.matches()) null else arrayOf("ESSENCE_" + m.group(1).uppercase(), m.group(2))
     }
 
-    /** @return {id, qty} on success, or {"false", errorMessage} when the line couldn't be resolved. */
+    /** Returns {id, qty}, or {"false", errorMessage} when the line couldn't be resolved. */
     @JvmStatic
     fun parseLine(line: String): Array<String> {
         val book = tryParseBook(line)
@@ -111,13 +104,7 @@ object CroesusRewardParser {
         return arrayOf("false", "Could not find item ID for line \"$clean\"")
     }
 
-    /**
-     * @param fullTooltip item display name followed by its lore lines, in render order
-     * @param errorOut    optional 1-element out-param; set to a human-readable reason on failure
-     * @return parsed rewards (everything before the "Cost" line), or null if the tooltip couldn't
-     *         be parsed (no Cost line found yet — e.g. the container hasn't finished loading — or
-     *         a reward line's item id couldn't be resolved).
-     */
+    /** Returns null if no "Cost" line was found (e.g. container still loading). */
     @JvmStatic
     fun parseRewards(fullTooltip: List<String>, errorOut: Array<String?>?): ChestInfo? {
         var costIdx = -1
@@ -141,9 +128,7 @@ object CroesusRewardParser {
 
             val result = parseLine(line)
             if (result[0] == "false") {
-                // Skip lines we can't resolve (flavor text, bits, unmapped names) rather than
-                // discarding every reward in the chest — a single unrecognized line shouldn't
-                // silently zero out the whole claim.
+                // Skip unresolved lines rather than discarding the whole chest's rewards.
                 if (errorOut != null) errorOut[0] = result[1]
                 continue
             }

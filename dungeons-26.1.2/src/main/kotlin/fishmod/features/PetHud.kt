@@ -21,19 +21,14 @@ object PetHud {
 
     private val COLOR_STRIP: Pattern = Pattern.compile("§.")
 
-    // Tab patterns for 2-line layout
     private val TAB_NAME_LINE: Pattern = Pattern.compile("\\[Lvl\\s*(\\d+)\\]\\s+(.+)")
     private val TAB_XP_LINE: Pattern = Pattern.compile("([\\d.,]+[KMB]?)\\s*/\\s*([\\d.,]+[KMB]?)\\s*XP")
 
-    // Chat detection — the authoritative source for the active pet.
-    // "Autopet equipped your [Lvl 100] Griffin! VIEW RULE"
+    // Chat is the authoritative source for the active pet, matched against these Hypixel message formats.
     private val AUTOPET_PAT: Pattern = Pattern.compile("Autopet equipped your \\[Lvl\\s*(\\d+)\\]\\s*(.+?)!")
-    // "You summoned your Golden Dragon ✦!"
     private val SUMMON_PAT: Pattern = Pattern.compile("You summoned your\\s+(.+?)!")
-    // "You despawned your Golden Dragon ✦!" / "Autopet despawned your ..."
     private val DESPAWN_PAT: Pattern = Pattern.compile("(?:You|Autopet) despawned your\\s+(.+?)!")
-    // "You equipped <Loadout Name>!" (item-customizer loadout switch) — can silently swap the
-    // active pet without an Autopet/summon line, so treat it as a signal to re-sync from the API.
+    // Loadout switch can silently swap pets with no Autopet/summon line, so it just triggers an API re-sync.
     private val LOADOUT_EQUIP_PAT: Pattern = Pattern.compile("^You equipped (.+)!$")
 
     private val PET_ITEM_NAME: Pattern = Pattern.compile("\\[Lvl\\s*(\\d+)\\]\\s*(.+)")
@@ -49,7 +44,7 @@ object PetHud {
     private var petLevel = -1
     private var petOverflowLevel = -1
     private var petMaxed = false
-    private var forceScanTicks = 0 // after equip/summon, scan tab every tick briefly
+    private var forceScanTicks = 0
     private var pendingXp = 0.0
     private var lastXpAt = 0L
     private var tickCount = 0
@@ -58,25 +53,20 @@ object PetHud {
     private var xpNext = -1.0
     private var xpPct = -1f
 
-    // Prevents /pets menu from overwriting Tab list data
-    private var lastTabUpdate = 0L
+    private var lastTabUpdate = 0L // guards against /pets menu overwriting fresher tab-list data
 
-    // API is the authoritative source for the active pet's level/XP (tab format broke and dungeons
-    // have no pet tab entry). Refresh periodically and immediately after a pet change.
+    // Tab format broke and dungeons have no pet tab entry, so the API is authoritative for level/XP.
     private const val API_REFRESH_MS = 60_000L
     private var lastApiFetchAt = 0L
     private var apiFetchInFlight = false
 
-    // Hypixel's SkyBlock profile API is a periodic snapshot, not real-time — right after an
-    // Autopet/summon swap it can still lag behind and report the PREVIOUS pet for several
-    // seconds. Track the chat-confirmed name/time so a stale API response that disagrees with
-    // a recent chat message gets discarded instead of clobbering the correct name back.
+    // The SkyBlock profile API is a periodic snapshot; right after a pet swap it can still lag and
+    // report the previous pet, so a stale API response disagreeing with a recent chat msg is discarded.
     private const val CHAT_TRUST_WINDOW_MS = 15_000L
     private var lastChatPetName: String? = null
     private var lastChatPetChangeAt = 0L
 
-    // Hypixel wiki: a pet earns 1 Pet XP per 1 skill XP gained in its matching skill.
-    // Non-matching skills give 0. Source: https://wiki.hypixel.net/Pets#Pet_XP
+    // A pet earns 1 Pet XP per 1 skill XP in its matching skill, 0 otherwise. Source: wiki.hypixel.net/Pets#Pet_XP
     private val SKILL_XP_BAR: Pattern = Pattern.compile(
             "\\+\\s*([\\d,.]+)\\s+(Farming|Mining|Combat|Foraging|Fishing|Enchanting|Alchemy|Carpentry|Runecrafting|Taming)\\b")
     private val PET_SKILL: Map<String, String> = java.util.Map.ofEntries(
@@ -118,8 +108,7 @@ object PetHud {
                 120, 10,
                 { FishSettings.petHudScale }, { v -> FishSettings.petHudScale = v })
 
-        // Chat listener: the active pet is announced on summon / autopet-rule equip.
-        // This is the authoritative source (tab/menu scraping is a fallback).
+        // Chat is authoritative for the active pet (tab/menu scraping is a fallback).
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register { msg, overlay ->
             if (overlay || !FishSettings.petHudEnabled) return@register
             val s = COLOR_STRIP.matcher(msg.string).replaceAll("").trim()
@@ -140,7 +129,6 @@ object PetHud {
             val su = SUMMON_PAT.matcher(s)
             if (su.find()) {
                 val n = cleanPetName(su.group(1))
-                // Ignore non-pet "summoned your" lines (e.g. mounts) by keeping it simple — set name.
                 petName = n
                 petMaxed = false // tab burst-scan re-confirms
                 xpCurrent = -1.0; xpNext = -1.0; pendingXp = 0.0
@@ -151,12 +139,8 @@ object PetHud {
                 if (debugDumpPetLines) fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§d[pet] summon → $petName"))
                 return@register
             }
-            // Switching loadouts can silently change the equipped pet (no Autopet/summon line),
-            // so force an immediate API re-check to pick up whatever pet is now active. Do NOT
-            // fall back to a forced tab scan here: the tab list update lags this chat line, so a
-            // forced scan can read the tab's still-stale previous-pet entry (e.g. a renamed pet)
-            // and briefly show the wrong name. The API is the authoritative source; let the
-            // periodic tab scan (every 5 ticks) pick things up naturally once the tab catches up.
+            // Force an API re-check on loadout switch; don't force a tab scan since the tab list
+            // lags this chat line and would briefly read the stale previous-pet entry.
             val lo = LOADOUT_EQUIP_PAT.matcher(s)
             if (lo.find()) {
                 lastApiFetchAt = 0
@@ -174,7 +158,6 @@ object PetHud {
                 if (!m.group(2).equals(matchSkill, ignoreCase = true)) continue
                 try {
                     val rawSkillXp = m.group(1).replace(",", "").toDouble()
-                    // Apply Hypixel pet-XP multipliers (wiki).
                     val mult = 1.0 *
                             (1 + FishSettings.petXpTamingLevel * 0.01) *
                             (1 + FishSettings.petXpBeastmasterBonus / 100.0) *
@@ -195,7 +178,6 @@ object PetHud {
                 return@register
             }
 
-            // Authoritative pet level/XP + multipliers from the API.
             val nowMs = System.currentTimeMillis()
             if (!apiFetchInFlight && nowMs - lastApiFetchAt >= API_REFRESH_MS) {
                 lastApiFetchAt = nowMs
@@ -203,14 +185,12 @@ object PetHud {
                 HypixelApi.getActivePet(client, ::applyApiPet)
             }
 
-            // Tab list and the /pets menu don't reliably reflect the active pet in dungeons
-            // (no Pet: tab entry) — in dungeons rely solely on chat (Autopet/summon/loadout
-            // messages) plus the API refresh above.
+            // Tab/menu don't reliably reflect the active pet in dungeons; rely on chat + API there.
             if (Location.inDungeon()) return@register
 
             scanPetsMenuIfOpen(client.screen)
 
-            // After an equip/summon, scan every tick for a short burst (tab can lag the chat msg).
+            // Scan every tick for a short burst after an equip/summon, since tab can lag the chat msg.
             if (forceScanTicks > 0) {
                 forceScanTicks--
                 scanTabList(client.connection!!)
@@ -225,10 +205,7 @@ object PetHud {
     }
 
     private fun scanTabList(handler: ClientPacketListener) {
-        // The equipped pet shows in the tab list as "[Lvl N] Name" (under the "Pet:" header).
-        // The "[Lvl " prefix is unique to the pet line — player names use "[519]"/"[MVP+]" —
-        // so we just match it directly. (The old code required a separate "x/y XP" line that
-        // the tab never has, so it never committed; the pet maxed shows "MAX LEVEL" instead.)
+        // "[Lvl N] Name" under the tab's "Pet:" header; "[Lvl " is unique vs player tags like "[519]".
         var tempName: String? = null
         var tempLevel = -1
         var maxed = false
@@ -244,7 +221,7 @@ object PetHud {
             } else if (text.equals("MAX LEVEL", ignoreCase = true)) {
                 maxed = true
             } else {
-                val ov = TAB_OVERFLOW_XP.matcher(text) // "+1,234 XP" overflow line under Pet:
+                val ov = TAB_OVERFLOW_XP.matcher(text)
                 if (ov.find()) overflowXp = parseAbbrev(ov.group(1))
             }
         }
@@ -255,7 +232,6 @@ object PetHud {
             petMaxed = maxed
             if (maxed) {
                 xpNext = -1.0 // forces the HUD's MAXED display
-                // Overflow level: total XP = overflow shown + XP to reach the max level.
                 if (overflowXp >= 0 && tempLevel > 0) {
                     val rar = OverflowPetLevels.Rarity.LEGENDARY
                     val total = overflowXp + OverflowPetLevels.getCalculativeXpForLevel(tempLevel, rar)
@@ -266,19 +242,16 @@ object PetHud {
             } else {
                 petOverflowLevel = -1
             }
-            lastTabUpdate = System.currentTimeMillis() // authority mark
+            lastTabUpdate = System.currentTimeMillis()
         }
     }
 
-    /** Applies the API-fetched active pet as the authoritative baseline (runs on the client thread). */
     private fun applyApiPet(info: HypixelApi.PetInfo?) {
         apiFetchInFlight = false
         if (info == null || !info.ok) return
 
-        // The SkyBlock profile API is a periodic snapshot, not live — right after a chat-confirmed
-        // pet change it can still report the PREVIOUS pet for a while. Discard a mismatched result
-        // during the trust window instead of letting it clobber the correct chat-driven name, and
-        // retry sooner (a few seconds) rather than waiting the full periodic refresh interval.
+        // Discard a stale API result that disagrees with a recent chat-confirmed pet change,
+        // and retry sooner (~3s) rather than waiting the full refresh interval.
         val withinTrustWindow = System.currentTimeMillis() - lastChatPetChangeAt < CHAT_TRUST_WINDOW_MS
         if (withinTrustWindow && lastChatPetName != null && !lastChatPetName.equals(info.name, ignoreCase = true)) {
             lastApiFetchAt = System.currentTimeMillis() - API_REFRESH_MS + 3_000L // retry in ~3s
@@ -296,17 +269,15 @@ object PetHud {
             xpNext = info.xpForNext
             xpPct = info.pct
         }
-        pendingXp = 0.0 // baseline re-synced; clear accumulated live estimate
-        lastTabUpdate = System.currentTimeMillis() // treat API as authority over the menu scraper
+        pendingXp = 0.0
+        lastTabUpdate = System.currentTimeMillis()
     }
 
-    /** Overflow level for a maxed pet (e.g. 142 for a Lvl 100 pet past max), or -1 if not maxed/unknown. */
     @JvmStatic
     fun getOverflowLevel(): Int = petOverflowLevel
 
     private fun scanPetsMenuIfOpen(current: Screen?) {
-        // Stop flopping: If Tab updated in last 2 seconds, don't use menu data
-        if (System.currentTimeMillis() - lastTabUpdate < 2000) return
+        if (System.currentTimeMillis() - lastTabUpdate < 2000) return // don't fight a recent tab update
 
         if (current !is ContainerScreen) return
         val title = COLOR_STRIP.matcher(current.title.string).replaceAll("").trim()
@@ -366,7 +337,6 @@ object PetHud {
         lastChatPetChangeAt = 0
     }
 
-    /** Strips rarity star, trailing punctuation, and whitespace from a pet name. */
     private fun cleanPetName(s: String?): String? {
         if (s == null) return null
         return s.replace("✦", "").replace(Regex("[!.]+$"), "").trim()
@@ -396,7 +366,6 @@ object PetHud {
         if (FishSettings.petHudShowLevel && petLevel >= 0) text.append("§7[Lvl ").append(petLevel).append("] ")
         text.append("§6").append(petName)
 
-        // Detect max-level pet (Golden Dragon = 200, all others = 100). No progress line in lore at max.
         val maxLvl = if ("Golden Dragon".equals(petName, ignoreCase = true)) 200 else 100
         val maxed = petLevel >= maxLvl || petMaxed
 

@@ -14,17 +14,7 @@ import java.nio.file.Path
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
-/**
- * Lazily fetches and caches the public Hypixel SkyBlock items resource
- * (https://api.hypixel.net/v2/resources/skyblock/items — no API key required) and indexes
- * each entry by its `id`. The DB provides per-item metadata that SkyHelper's networth
- * pipeline relies on: `category`, `gemstone_slots`, `upgrade_costs`, `prestige`.
- *
- * Caching: kept in-memory and refreshed if older than 12h. Also persisted to
- * `<gameDir>/fishmod-networth/items.json` so the first calculation after a restart isn't
- * blocked on the network. Fetches run on a background thread; if the DB isn't loaded yet, callers
- * get null from [get] and the metadata-dependent handlers simply contribute 0.
- */
+/** Lazily fetches/caches the Hypixel SkyBlock items resource, refreshed every 12h, persisted to disk so a restart isn't blocked on the network. */
 object ItemsDb {
 
     private const val ITEMS_URL = "https://api.hypixel.net/v2/resources/skyblock/items"
@@ -45,10 +35,7 @@ object ItemsDb {
         return ITEMS[id]
     }
 
-    /**
-     * Ensures the items DB is being loaded. Loads from disk once (fast, non-blocking-ish) and kicks
-     * off a background refresh if the in-memory copy is empty or stale. Never blocks on the network.
-     */
+    /** Loads from disk once, and kicks off a background refresh if stale. Never blocks on the network. */
     @JvmStatic
     fun ensureLoaded() {
         if (!loadedFromDisk) {

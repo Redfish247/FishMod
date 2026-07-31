@@ -1,9 +1,6 @@
 package fishmod.features
 
-/**
- * Computes "overflow" pet levels — the level a maxed pet (Lvl 100 / 200) keeps climbing to
- * as it gains XP past max. Ported from NopoMod's OverflowPetLevels (XP table + math).
- */
+/** Computes "overflow" pet levels that a maxed pet (Lvl 100/200) keeps climbing to past max XP. */
 object OverflowPetLevels {
 
     enum class Rarity(@JvmField val offset: Int) {
@@ -26,7 +23,6 @@ object OverflowPetLevels {
         return if (offset < LIST_OF_XP.size) LIST_OF_XP[offset] else 1886700
     }
 
-    /** Total XP required to reach `level` from 0 for the given rarity. */
     @JvmStatic
     fun getCalculativeXpForLevel(level: Int, rarity: Rarity): Long {
         var xp = 0L
@@ -34,7 +30,6 @@ object OverflowPetLevels {
         return xp
     }
 
-    /** The overflow level for a given total XP. */
     @JvmStatic
     fun calcLevel(totalXp: Double, rarity: Rarity): Int {
         var exp = totalXp
@@ -47,7 +42,6 @@ object OverflowPetLevels {
         return maxOf(1, i)
     }
 
-    /** Leftover XP into the current overflow level (progress numerator). */
     @JvmStatic
     fun calcLeftOverXp(totalXp: Double, rarity: Rarity): Double {
         var exp = totalXp

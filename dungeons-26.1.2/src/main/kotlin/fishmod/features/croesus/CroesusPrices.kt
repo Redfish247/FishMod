@@ -32,7 +32,6 @@ object CroesusPrices {
     @Volatile private var lastAvgLbin = 0L
     @Volatile private var inFlight: CompletableFuture<Void>? = null
 
-    /** Rebuild the active `bazaar` map from the chosen FishSettings.trackerPriceMode. */
     @JvmStatic
     fun applyPriceMode() {
         val mode = fishmod.utils.config.values.FishSettings.trackerPriceModeEnum
@@ -56,8 +55,7 @@ object CroesusPrices {
         }
     }
 
-    /** Returns best estimated price for a SkyBlock item id, or 0 if unknown.
-     *  If all bulk sources miss, kicks off an async coflnet lookup for next time. */
+    /** Falls back to an async coflnet lookup (cached for next call) if all bulk sources miss. */
     @JvmStatic
     fun price(id: String?): Double {
         if (id == null || id.isEmpty()) return 0.0
@@ -69,7 +67,6 @@ object CroesusPrices {
         if (a != null && a > 0) return a
         val c = coflnet[id]
         if (c != null && c > 0) return c
-        // Nothing found — fetch from coflnet in the background if not already in flight.
         fetchCoflnetItem(id)
         return 0.0
     }

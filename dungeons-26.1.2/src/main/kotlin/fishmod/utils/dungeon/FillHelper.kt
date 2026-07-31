@@ -10,12 +10,6 @@ object FillHelper {
     const val INFLATABLE_JERRY: String = "Inflatable Jerry"
     const val DECOY: String = "Decoy"
 
-    /**
-     * @param itemName Name of item
-     * @param minThreshold an integer that the item count has to be lower than to fill
-     * @param maxCount the max count of the item
-     * @return 1 if it succeeds else 0 for fail
-     */
     @JvmStatic
     fun fillItem(itemName: String, minThreshold: Int, maxCount: Int, needAtleastOne: Boolean): Int {
         val player = Minecraft.getInstance().player ?: return Constants.FAIL

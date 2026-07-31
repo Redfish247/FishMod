@@ -10,29 +10,20 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.resources.Identifier
 import net.minecraft.world.item.ItemStack
 
-/**
- * Rarity background — draws a tinted sprite (square or circle) BEHIND every item, coloured by its
- * SkyBlock rarity. Blade-addons' sprite approach: inventory slots via [DrawEvents.INVENTORY_SLOT_BEFORE]
- * and the hotbar via `DrawContextMixin` (both before the item draw). Rarity is parsed once and
- * cached per ItemStack ([ItemRarityHolder]).
- */
+/** Draws a rarity-tinted sprite behind every item; rarity is parsed once and cached per ItemStack. */
 object ItemRarityHotbar {
 
     private val SQUARE: Identifier = Identifier.fromNamespaceAndPath("fishmod", "rarity-background")
     private val CIRCLE: Identifier = Identifier.fromNamespaceAndPath("fishmod", "rarity-background-circle")
 
-    // The raw rarity colors are very bright/saturated. Tone them WAY down so the backing is a subtle
-    // hint rather than a glaring block: drop to a low alpha and blend halfway toward grey.
-    private const val TINT_ALPHA = 0xFF     // ~100% opacity
-    private const val DESATURATE = 0.55f    // 0 = full color, 1 = grey
+    private const val TINT_ALPHA = 0xFF
+    private const val DESATURATE = 0.55f // blend raw rarity color halfway toward grey so it's a subtle hint
 
-    /** Inventory coverage — the slot-before event fires for every rendered inventory slot. */
     @JvmStatic
     fun init() {
         DrawEvents.INVENTORY_SLOT_BEFORE.register(::drawRarity)
     }
 
-    /** Shared draw: parse (cached) rarity and blit the tinted sprite behind the 16x16 item icon. */
     @JvmStatic
     fun drawRarity(ctx: GuiGraphicsExtractor, stack: ItemStack?, x: Int, y: Int) {
         if (!Visual.itemRarityBackground || stack == null || stack.isEmpty) return
@@ -62,7 +53,6 @@ object ItemRarityHotbar {
     private fun desaturate(channel: Int, grey: Int): Int =
         Math.round(channel + (grey - channel) * DESATURATE)
 
-    /** Reads the rarity keyword from the last lore lines (e.g. "LEGENDARY DUNGEON SWORD"). */
     @JvmStatic
     fun getRarity(stack: ItemStack): ItemRarity {
         val lore = stack.get(DataComponents.LORE) ?: return ItemRarity.NONE

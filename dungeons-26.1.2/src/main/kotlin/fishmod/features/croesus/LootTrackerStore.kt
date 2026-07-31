@@ -51,7 +51,6 @@ object LootTrackerStore {
         save()
     }
 
-    /** Live list — callers iterate on the render/click thread (single-threaded GUI). */
     @JvmStatic
     @Synchronized
     fun rows(): MutableList<Row> {
@@ -59,10 +58,7 @@ object LootTrackerStore {
         return data!!.rows
     }
 
-    /**
-     * Adds `delta` to an existing row (matched by id when non-empty, else by name),
-     * creating the row when needed. Removes the row when its count drops to 0 or below.
-     */
+    /** Matches by id when non-empty, else by name; removes the row if count drops to 0. */
     @JvmStatic
     @Synchronized
     fun addOrIncrement(name: String?, id: String?, delta: Int) {
@@ -84,7 +80,6 @@ object LootTrackerStore {
         save()
     }
 
-    /** Sets a row's count directly (removing it at 0), matched by id when set else by name. */
     @JvmStatic
     @Synchronized
     fun setCount(name: String?, id: String?, count: Int) {

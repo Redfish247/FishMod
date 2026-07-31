@@ -12,12 +12,7 @@ import net.minecraft.util.Mth
 import org.lwjgl.glfw.GLFW
 import java.text.DecimalFormat
 
-/**
- * Full-page /fmloot screen — a real dedicated page (fills the window, like the main FishMod
- * config screen) instead of a small centered card. Adds a search bar to filter tracked drops
- * by name. Rows are populated automatically by `CroesusLootDetector` from real Croesus
- * chest opens; everything here is just the view.
- */
+/** Full-page /fmloot screen; rows are populated by `CroesusLootDetector`, this is just the view. */
 class LootTrackerScreen : Screen(Component.literal("Loot Tracker")) {
 
     // computed each frame

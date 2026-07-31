@@ -6,12 +6,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.protocol.game.ClientboundMapItemDataPacket
 import net.minecraft.world.level.saveddata.maps.MapId
 
-/**
- * Reads the dungeon's vanilla map item each tick purely to calibrate a world-position bridge for
- * [fishmod.features.dungeon.DungeonWaypoints]: which fixed 32-block grid tile a world X/Z
- * position falls in. No room/door type tracking or HUD rendering — this only locates the entrance's
- * green streak in the map's pixel data once, to anchor [worldToGridPos].
- */
+/** Calibrates a world-position -> 32-block grid-tile bridge for DungeonWaypoints from the map's entrance pixel streak. */
 object MapReader {
     private const val ENTRANCE_MAP_COLOR: Byte = 30
 
@@ -21,9 +16,8 @@ object MapReader {
     private var entranceTileX = 0
     private var entranceTileZ = 0
 
-    // World-position bridge — captured once, from the player's position the first tick the dungeon
-    // map is seen (reliably at/near the entrance, since that's where a run starts). Hypixel dungeons
-    // are always instanced 8 blocks off a fixed 32-block grid.
+    // Captured once from the player's position on the first tick the dungeon map is seen (reliably
+    // at/near the entrance). Hypixel dungeons are instanced 8 blocks off a fixed 32-block grid.
     private var worldAnchored = false
     private var worldOriginX = 0
     private var worldOriginZ = 0
@@ -33,10 +27,8 @@ object MapReader {
         Events.ON_PACKET.register { packet ->
             if (Location.inDungeon() && packet is ClientboundMapItemDataPacket) {
                 val newId = packet.mapId()
-                // Each dungeon run gets its own fresh map item ID. Location alone doesn't reliably
-                // signal "new run" — going from one run straight into another via the dungeon hub
-                // can stay at Location.DUNGEON the whole time, so ON_LOCATION_CHANGE never fires
-                // between runs. A changed map ID is a direct, run-specific signal instead.
+                // Location alone doesn't reliably signal "new run" (back-to-back runs via the hub can
+                // stay at Location.DUNGEON), so use a changed map ID instead.
                 if (currentMapId != null && currentMapId != newId) reset()
                 currentMapId = newId
             }
@@ -116,9 +108,7 @@ object MapReader {
     @JvmStatic
     fun isCalibrated(): Boolean = calibrated
 
-    // --- World-position bridge, exposed for DungeonWaypoints (see that class for usage). Only valid
-    // once isCalibrated() is true (worldOriginX/Z are captured before calibration, but entranceTileX/Z
-    // — needed to convert an arbitrary tile index — only come from tryCalibrate). ---
+    // World-position bridge below is only valid once isCalibrated() is true.
 
     /** World X of grid tile column tileX's northwest corner. */
     @JvmStatic

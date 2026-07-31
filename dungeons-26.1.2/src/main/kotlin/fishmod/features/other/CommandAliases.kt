@@ -13,21 +13,13 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 /**
- * User-defined command aliases: typing "/dh" (say) runs "/warp dh" instead.
- *
- * Registered as real Brigadier client commands (not a chat interceptor) so aliases get normal
- * tab-completion and work exactly like any other /fm command. [registerAll] is called from
- * FishModInit's existing ClientCommandRegistrationCallback, which Fabric re-fires on every (re)join
- * — [replaceAll] additionally re-registers onto the last-seen dispatcher so edits/adds made
- * from the editor screen take effect immediately without reconnecting. Brigadier has no clean way
- * to unregister a node, so a removed/renamed alias's old literal lingers (still runs the old
- * mapping) until the next join, when it's simply not re-registered.
+ * User-defined command aliases (e.g. "/dh" runs "/warp dh"), registered as real Brigadier
+ * commands for normal tab-completion. Brigadier has no clean way to unregister a node, so a
+ * removed/renamed alias's old literal lingers until the next join, when it's not re-registered.
  */
 object CommandAliases {
 
-    /** Ported from the original Java `record Entry(String alias, String command)`. Java/Kotlin
-     *  callers use the record-style accessors `.alias()` / `.command()`, so this stays a plain
-     *  class with explicit methods rather than a Kotlin data class. */
+    /** Kept as a plain class (not a data class) so Java callers keep the record-style `.alias()`/`.command()` accessors. */
     class Entry(private val aliasValue: String, private val commandValue: String) {
         fun alias(): String = aliasValue
         fun command(): String = commandValue
@@ -62,8 +54,7 @@ object CommandAliases {
         for (e in entries) registerNode(dispatcher, e)
     }
 
-    /** Replaces the whole list (used by the editor screen after add/remove/edit) and, if a
-     *  dispatcher is already live, re-registers immediately so the change takes effect now. */
+    /** Re-registers onto the live dispatcher (if any) so edits take effect without reconnecting. */
     @JvmStatic
     fun replaceAll(newEntries: List<Entry>) {
         ensureLoaded()
@@ -77,8 +68,7 @@ object CommandAliases {
     }
 
     private fun registerNode(dispatcher: CommandDispatcher<FabricClientCommandSource>, e: Entry) {
-        // Brigadier literals can't contain a slash, so the alias (not the target command — that's
-        // handled by Misc.executeCommand) needs it stripped.
+        // Brigadier literals can't contain a slash, so strip it from the alias.
         var alias = e.alias().trim()
         if (alias.startsWith("/")) alias = alias.substring(1)
         val target = e.command().trim()

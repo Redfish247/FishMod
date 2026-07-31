@@ -22,42 +22,29 @@ import org.lwjgl.glfw.GLFW
 import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 
-/**
- * Location ping — press the ping key (default middle mouse) to drop a through-walls waypoint where
- * you're looking, like a MOBA ping. The marker (a glowing column + floating "⚑ name • dist") fades
- * out after a few seconds.
- *
- * Two reach levels:
- *   • Local — always on; your own ping renders for you, and (optionally) the coords go to party chat.
- *   • Shared — opt-in. Your ping is published to the worker and other FishMod users on your server
- *     (your tab list, same scope as the cosmetic /sync) see it in their world, labelled with your
- *     name. Their pings show up for you the same way. Needs the /ping worker route deployed
- *     (worker-pings-snippet.js); it silently no-ops until then.
- */
+/** MOBA-style location ping (default middle mouse); optionally shared to other FishMod users via the worker. */
 object PingFeature {
 
-    private const val REACH = 160.0    // how far the ping ray travels before landing in air
-    private const val POLL_TICKS = 40  // ~2s between shared-ping polls
+    private const val REACH = 160.0
+    private const val POLL_TICKS = 40 // ~2s between shared-ping polls
 
-    /** One ping marker — your own or a remote user's. */
     private class Ping(val pos: Vec3, val startMs: Long, val name: String?, val srcTs: Long)
 
     private var pingKey: KeyMapping? = null
     private var self: Ping? = null
-    private var chatPing: Ping? = null            // latest coords parsed out of chat
-    private val remote: MutableMap<String, Ping> = ConcurrentHashMap() // uuid → their ping
+    private var chatPing: Ping? = null // latest coords parsed out of chat
+    private val remote: MutableMap<String, Ping> = ConcurrentHashMap() // uuid -> their ping
     private var pollTick = 0
-    private var lastSeenTs = 0L                   // newest source ts we've pulled, for the `since` filter
+    private var lastSeenTs = 0L // newest source ts pulled, for the `since` filter
 
-    // "x: 12 y: 34 z: -56", "x12 y34 z-56", "x=12, y=34, z=-56" — labelled so it won't grab random numbers.
+    // Requires labelled coords ("x: 12 y: 34 z: -56") so it won't grab random numbers from chat.
     private val COORD_PAT: Pattern = Pattern.compile(
             "(?i)x[:=]?\\s*(-?\\d{1,6})[ ,]+y[:=]?\\s*(-?\\d{1,4})[ ,]+z[:=]?\\s*(-?\\d{1,6})")
     private val NAME_PAT: Pattern = Pattern.compile("([A-Za-z0-9_]{2,16}):")
 
     @JvmStatic
     fun init() {
-        // Reuse the shared FishMod keybind category (created in Keybinds.init, which runs first) so we
-        // don't double-register the category Identifier.
+        // Reuses the shared category from Keybinds.init (which runs first) to avoid double-registering it.
         val category = fishmod.utils.Keybinds.category()
         pingKey = KeyMappingHelper.registerKeyMapping(KeyMapping(
                 "FishMod: Ping location",
@@ -74,7 +61,6 @@ object PingFeature {
         }
     }
 
-    /** Detect "x: N y: N z: N" in a chat line and drop a waypoint there, labelled with the speaker. */
     private fun parseChatCoords(plain: String?) {
         if (plain.isNullOrEmpty()) return
         val m = COORD_PAT.matcher(plain)
@@ -85,9 +71,8 @@ object PingFeature {
             y = m.group(2).toInt()
             z = m.group(3).toInt()
         } catch (e: NumberFormatException) { return }
-        if (y < -64 || y > 320) return // implausible Y → almost certainly not a location
-        // Best-effort speaker name: the last "Name:" token before the message body.
-        var label = "ping"
+        if (y < -64 || y > 320) return // implausible Y, almost certainly not a location
+        var label = "ping" // best-effort: the last "Name:" token before the message body
         val nm = NAME_PAT.matcher(plain.substring(0, m.start()))
         while (nm.find()) label = nm.group(1)
         chatPing = Ping(Vec3(x + 0.5, y.toDouble(), z + 0.5), System.currentTimeMillis(), label, 0)
@@ -103,7 +88,6 @@ object PingFeature {
             placePing(mc)
         }
 
-        // Poll for other users' shared pings.
         if (FishSettings.pingEnabled && FishSettings.pingShareEnabled) {
             if (++pollTick >= POLL_TICKS) { pollTick = 0; pollRemote(mc) }
         } else if (remote.isNotEmpty()) {
@@ -125,7 +109,7 @@ object PingFeature {
             val bp: BlockPos = hit.blockPos
             Vec3(bp.x + 0.5, bp.y.toDouble(), bp.z + 0.5)
         } else {
-            end // landed in air — ping the point you're aiming at
+            end
         }
 
         self = Ping(target, System.currentTimeMillis(), null, 0)
@@ -206,7 +190,7 @@ object PingFeature {
         val rgba = floatArrayOf(r, g, b, a)
 
         val x = ping.pos.x; val y = ping.pos.y; val z = ping.pos.z
-        // Base cube on the block + a tall thin beam so it's spottable from across the room.
+        // Cube on the block plus a tall beam so it's spottable from across the room.
         RenderUtils.renderFilled(matrices, vc, AABB(x - 0.5, y, z - 0.5, x + 0.5, y + 1, z + 0.5), rgba)
         RenderUtils.renderFilled(matrices, vc, AABB(x - 0.15, y, z - 0.15, x + 0.15, y + 6, z + 0.15), rgba)
 

@@ -18,8 +18,7 @@ enum class DungeonClass {
         private val PATTERN: Pattern = Pattern.compile("^\\[(Archer|Berserk|Healer|Mage|Tank)]")
         private val NAME_CLASS_PATTERN: Pattern = Pattern.compile("^\\[\\d+] (.+) \\((Archer|Berserk|Healer|Mage|Tank) ")
 
-        /** "Your Berserk stats are doubled because you are the only player using this class!" — the most
-         *  reliable signal of the LOCAL player's own dungeon class (fires at the start of a run). */
+        /** Most reliable signal of the local player's own class — fires at the start of a run. */
         private val STATS_DOUBLED_PATTERN: Pattern =
             Pattern.compile("Your (Archer|Berserk|Healer|Mage|Tank) stats are doubled because you are the only player using this class!")
 

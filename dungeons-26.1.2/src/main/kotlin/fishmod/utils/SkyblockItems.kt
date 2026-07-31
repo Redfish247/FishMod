@@ -8,12 +8,7 @@ import java.net.http.HttpResponse
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 
-/**
- * Resolves display names -> Skyblock item IDs by fetching the canonical list from
- * https://api.hypixel.net/v2/resources/skyblock/items at startup.
- * Falls back silently to a null/empty map if the fetch fails — callers should keep their
- * hardcoded fallback maps for that case.
- */
+/** Resolves display names to Skyblock item IDs via the Hypixel items API; falls back silently to an empty map on fetch failure. */
 object SkyblockItems {
     private val HTTP: HttpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()
     private val nameToId = HashMap<String, String>()
@@ -65,11 +60,7 @@ object SkyblockItems {
             .exceptionally { loading.set(false); null }
     }
 
-    /**
-     * Case-insensitive name search for autocomplete. Prefix matches rank before substring
-     * matches; both are sorted alphabetically and the combined result is capped at `limit`.
-     * Returns display names (resolve to ids via [idFor]).
-     */
+    /** Prefix matches rank before substring matches; returns display names, resolve via [idFor]. */
     @JvmStatic
     fun searchNames(query: String?, limit: Int): List<String> {
         if (query == null || query.isBlank()) return listOf()
@@ -93,7 +84,6 @@ object SkyblockItems {
         return if (out.size > limit) ArrayList(out.subList(0, limit)) else out
     }
 
-    /** @return canonical id for the given display name, or null if not loaded/unknown */
     @JvmStatic
     fun idFor(name: String?): String? {
         if (name == null) return null

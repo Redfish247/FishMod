@@ -15,9 +15,7 @@ import java.util.function.IntSupplier
 
 class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit HUD")) {
 
-    /** Ported from the original Java `record HudEntry(...)`. Java callers use record-style
-     *  accessors (`.name()`, `.getX()`, `.locked()`, etc.), so this stays a plain class rather
-     *  than a Kotlin data class. */
+    /** Plain class, not a data class, so Java callers keep record-style accessors like `.name()`. */
     class HudEntry @JvmOverloads constructor(
         private val nameVal: String,
         private val getXVal: IntSupplier,
@@ -60,7 +58,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             ENTRIES.add(HudEntry(name, getX, setX, getY, setY, w, h))
         }
 
-        /** Register with a scale getter/setter so the editor can scroll-resize the element. */
         @JvmStatic
         fun register(
             name: String,
@@ -72,7 +69,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             ENTRIES.add(HudEntry(name, getX, setX, getY, setY, w, h, false, getScale, setScale, null))
         }
 
-        /** Register with scale + visibility predicate — only shown when the HUD is actually rendering. */
         @JvmStatic
         fun register(
             name: String,
@@ -85,20 +81,12 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             ENTRIES.add(HudEntry(name, getX, setX, getY, setY, w, h, false, getScale, setScale, visible))
         }
 
-        /** Register a read-only locked entry that shows where a HUD element will appear but can't be dragged. */
         @JvmStatic
         fun registerLocked(name: String, getX: IntSupplier, getY: IntSupplier, w: Int, h: Int) {
             ENTRIES.add(HudEntry(name, getX, IntConsumer { }, getY, IntConsumer { }, w, h, true))
         }
 
-        /**
-         * Register a HUDComponent — position get/set bridges through component.move().
-         *
-         * We work in TRUE pixel space (`getScaledX() * scale == x * screenWidth`), not raw
-         * `getScaledX()`: the latter is scale-dependent, so the editor box would drift when you
-         * resize. Using the scale-independent pixel position keeps the box anchored at its top-left
-         * while scaling — matching where the HUD actually renders.
-         */
+        /** Uses true pixel space, not `getScaledX()`, so the box stays anchored while scaling. */
         @JvmStatic
         fun register(name: String, component: HUDComponent) {
             ENTRIES.add(
@@ -124,11 +112,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             )
         }
 
-        /**
-         * Default position (pixels) and scale for each registered HUD, mirroring the defaults in its
-         * `register(...)` call (FishSettings field initializers / HUDComponent constructors).
-         * Used by the "Reset positions" button. Keep in sync when a HUD's default changes.
-         */
+        /** Default position/scale per HUD for "Reset positions"; keep in sync with defaults elsewhere. */
         private val DEFAULTS: Map<String, DoubleArray> = java.util.Map.ofEntries(
             java.util.Map.entry("Farming Coins", doubleArrayOf(10.0, 240.0, 1.0)),
             java.util.Map.entry("Pet", doubleArrayOf(10.0, 80.0, 1.0)),
@@ -165,7 +149,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             java.util.Map.entry("Puzzles", doubleArrayOf(0.0, 0.0, 1.0))
         )
 
-        /** Restore every registered HUD to its default position/scale and persist the change. */
         @JvmStatic
         fun resetAll() {
             for (e in ENTRIES) {
@@ -192,7 +175,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     private var dragOffX = 0
     private var dragOffY = 0
 
-    /** First click on Reset arms it; a second click confirms. Any drag/other click disarms. */
     private var resetArmed = false
 
     override fun isPauseScreen(): Boolean = false
@@ -205,7 +187,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Drag to move · scroll to resize", this.width / 2, 10, 0xFFAAAAAA.toInt()
         )
 
-        // Done button
         val btnW = 60
         val btnH = 18
         val btnX = this.width / 2 - btnW / 2
@@ -227,9 +208,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             RESET_X + RESET_W / 2, btnY + (btnH - 8) / 2, 0xFFFFCCCC.toInt()
         )
 
-        // HUD element boxes — only show entries that are actually active right now (feature enabled
-        // and in the right context). Hiding inactive ones keeps the editor uncluttered so elements
-        // don't overlap and get moved by accident.
+        // Only show entries active right now, so inactive ones can't overlap and get moved by accident.
         for (e in ENTRIES) {
             if (!e.isVisible()) continue
             val active = true
@@ -255,12 +234,10 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             var labelX: Int
             var labelY: Int
             if (labelW + 6 <= scaledW) {
-                // fits inside the box
                 labelX = x + 3
                 labelY = y + (scaledH - 8) / 2
             } else {
-                // too wide for the box — drop the label just below it (or above if it would run off
-                // the bottom of the screen), with a dark backing so it stays readable over other boxes
+                // too wide — drop label below (or above near screen bottom) with a dark backing
                 labelX = x
                 labelY = if (y + scaledH + 10 <= this.height) y + scaledH + 1 else y - 10
                 ctx.fill(labelX - 1, labelY - 1, labelX + labelW + 1, labelY + 9, 0xC0000000.toInt())

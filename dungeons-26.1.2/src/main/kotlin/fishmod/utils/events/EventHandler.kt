@@ -2,11 +2,7 @@ package fishmod.utils.events
 
 import java.util.function.Predicate
 
-/**
- * This class handles some specified Event
- * to cancel the event if implemented return true
- * else return false
- */
+/** Listener returning true cancels the event. */
 class EventHandler<T> {
 
     private val listeners = ArrayList<T>()

@@ -4,22 +4,12 @@ import fishmod.utils.config.values.FishSettings
 import net.minecraft.network.chat.Component
 import java.util.regex.Pattern
 
-/**
- * Decides which Hypixel chat lines to hide. This is a pure predicate — it is checked at the chat
- * DISPLAY layer (`ChatHudMixin.addMessage`), NOT on the `ON_GAME_MESSAGE` packet event.
- *
- * That distinction matters: dungeon splits, DungeonScore, Simon Says, etc. all parse chat via
- * `ON_GAME_MESSAGE`, and that event short-circuits — a handler that cancels a message starves
- * every handler after it. Filtering on the packet event would therefore eat trigger lines (e.g.
- * "[BOSS] …") before the splits parser sees them. Doing it at display time keeps parsing intact and
- * only suppresses the visible line.
- */
+/** Pure predicate checked at the chat DISPLAY layer (`ChatHudMixin.addMessage`), not on `ON_GAME_MESSAGE` — that packet event short-circuits, so filtering there would eat trigger lines (e.g. "[BOSS] …") before splits/DungeonScore/Simon Says parsers see them. */
 object ChatFilter {
 
     // "Friend > <name> joined." / "... left." — the friend-list online/offline notices.
     private val FRIEND_JOIN_LEAVE: Pattern = Pattern.compile("Friend > \\S+ (?:joined|left)\\.")
 
-    /** @return true if this chat line should be hidden from the chat HUD. */
     @JvmStatic
     fun shouldHide(text: Component?): Boolean {
         if (!FishSettings.chatFilterEnabled || text == null) return false

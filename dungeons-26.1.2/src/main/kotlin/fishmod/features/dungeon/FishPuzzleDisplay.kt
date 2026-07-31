@@ -45,7 +45,6 @@ object FishPuzzleDisplay {
             }
             updatePuzzles(client)
         })
-        // Reset on location change (new dungeon run)
         Events.ON_LOCATION_CHANGE.register { _ ->
             bossReached = false
             puzzles.clear()

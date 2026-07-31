@@ -8,13 +8,9 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
 /**
- * Holds the Floor 7 timer/notification HUD components and renders them.
- *
- * Like the splits/boss-timer HUDs in `Phase`, these are rendered explicitly from a
- * HudRenderCallback ([renderHud]) rather than through practical-config's HudElementRegistry
- * auto-render — so their condition-suppliers are forced `{ false }`. Each frame we also pull
- * them back on-screen if their saved position is an out-of-range fraction (older builds saved pixel
- * coords like x=10, which `getScaledX` blows up to 10*screenWidth → off-screen).
+ * Holds the Floor 7 timer/notification HUD components and renders them explicitly via
+ * [renderHud] (condition-suppliers forced `{ false }`), pulling any back on-screen each frame
+ * if older-format saved pixel coords made `getScaledX` blow up to an off-screen fraction.
  */
 object F7Huds {
 
@@ -113,8 +109,7 @@ object F7Huds {
     /** Render all enabled F7 HUDs (called from a HudRenderCallback in FishModInit). */
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor) {
-        // Distinct left-column default targets so nothing stacks. These are only used to pull an
-        // off-screen element back on-screen; once on-screen the user's dragged position is kept.
+        // Distinct default targets (only used to pull off-screen elements back; dragged positions are kept).
         renderOne(ctx, maxorTickTimer, MaxorTickTimer.display(), MaxorTickTimer::render, 10, 70)
         renderOne(ctx, stormTickTimer, StormTickTimer.display(), StormTickTimer::render, 10, 82)
         renderOne(ctx, goldorTickTimer, GoldorTickTimer.display(), GoldorTickTimer::render, 10, 94)

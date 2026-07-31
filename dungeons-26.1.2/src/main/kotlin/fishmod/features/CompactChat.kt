@@ -11,13 +11,9 @@ import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 /**
- * Collapses repeated chat lines. When a message identical to one shown within the last
- * [WINDOW_TICKS] arrives, the older line is removed and re-added at the bottom with a
- * trailing "§7(N)" count (e.g. `Hi im RedFish2471 (2)`) instead of stacking duplicates.
- *
- * Runs at display time from [fishmod.mixin.ChatHudMixin] (after chat-filter/command
- * parsing), so packet-level parsers are unaffected. It manipulates [ChatComponent]'s backing
- * `messages` list and re-wraps via [ChatHudInvoker.invokeRefresh].
+ * Collapses repeated chat lines: a duplicate within [WINDOW_TICKS] removes the older line and
+ * re-adds it at the bottom with a trailing "§7(N)" count instead of stacking duplicates.
+ * Runs at display time from [fishmod.mixin.ChatHudMixin], so packet-level parsers are unaffected.
  */
 object CompactChat {
 
@@ -27,10 +23,7 @@ object CompactChat {
     /** Trailing " (N)" count we previously appended. */
     private val COUNT_SUFFIX: Pattern = Pattern.compile("\\s\\((\\d+)\\)$")
 
-    /**
-     * @return true if the message duplicated a recent line and was collapsed into a count (in which
-     *         case `ci` is cancelled and the caller must stop processing this add).
-     */
+    /** Returns true if collapsed into an existing line's count; `ci` is cancelled in that case. */
     @JvmStatic
     fun tryCompact(message: Component, hud: ChatComponent, ci: CallbackInfo): Boolean {
         val incoming = stripKey(message.string)
@@ -52,9 +45,9 @@ object CompactChat {
 
             val next = extractCount(line.content().string) + 1
             messages.removeAt(i)
-            acc.invokeRefresh() // drop the stale line's wrapped copies from visibleMessages
-            ci.cancel() // suppress the un-counted add…
-            hud.addClientSystemMessage(withCount(message, next)) // …and re-add it at the bottom with the count
+            acc.invokeRefresh() // drop stale wrapped copies from visibleMessages
+            ci.cancel()
+            hud.addClientSystemMessage(withCount(message, next))
             return true
         }
         return false
