@@ -2,28 +2,47 @@ package fishmod.features
 
 import fishmod.features.other.CommandAliases
 import net.minecraft.client.gui.GuiGraphicsExtractor
-import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import kotlin.math.max
 import kotlin.math.min
 
-/** /fm aliases — map a short command (e.g. "dh") to a longer one (e.g. "warp dh"). Same convention as [CommandKeysScreen]: `aliases`/`commands` are the source of truth, widgets rebuilt from them on every add/remove/scroll. */
+/**
+ * /fm aliases — map a short command (e.g. "dh") to a longer one (e.g. "warp dh"). Same convention
+ * as [CommandKeysScreen]: `aliases`/`commands` are the source of truth, rows rebuilt from them on
+ * every add/remove/scroll. Reskinned to match [FishModScreen]'s smooth pill/rounded-rect look via
+ * [ScreenTheme] — the "+ Add Alias"/"Done"/remove-"X" buttons are custom click-region pills
+ * (no vanilla [net.minecraft.client.gui.components.Button]), and the [EditBox] fields are
+ * borderless with a hand-drawn rounded-rect container behind them.
+ */
 class CommandAliasesScreen : Screen(Component.literal("Command Aliases")) {
 
     companion object {
+        private val ACCENT = ScreenTheme.ACCENT
+        private val ACCENT_HOVER = ScreenTheme.ACCENT_HOVER
+        private val TEXT_COLOR = ScreenTheme.TEXT_COLOR
+        private val SUBTEXT_COLOR = ScreenTheme.SUBTEXT_COLOR
+        private val DANGER = ScreenTheme.DANGER
+        private val DANGER_HOVER = ScreenTheme.DANGER_HOVER
+
         private const val BG_PANEL = 0xF20E1016.toInt()
         private const val BG_SECTION = 0xFF171A22.toInt()
         private const val BORDER = 0xFF2A2D38.toInt()
-        private const val ACCENT = 0xFF55FFFF.toInt()
-        private const val TEXT_HINT = 0xFF8A8F9C.toInt()
+        private val FIELD_BG = 0xFF1A1E26.toInt()
+        private val FIELD_BORDER = 0xFF2E333D.toInt()
         private const val LIST_BG = 0xFF14161D.toInt()
 
         private const val ROW_H = 24
         private const val MAX_VISIBLE = 6
         private const val ALIAS_FIELD_W = 90
         private const val REMOVE_BTN_W = 20
+    }
+
+    /** A clickable pill region drawn+hit-tested by hand instead of a vanilla widget. */
+    private class ClickRect(var x: Int, var y: Int, var w: Int, var h: Int, val action: () -> Unit) {
+        fun hit(mx: Int, my: Int): Boolean = mx >= x && mx <= x + w && my >= y && my <= y + h
     }
 
     private val aliases: MutableList<String> = ArrayList()
@@ -41,6 +60,11 @@ class CommandAliasesScreen : Screen(Component.literal("Command Aliases")) {
     private var cmdFieldX = 0
     private var cmdFieldW = 0
     private var removeBtnX = 0
+
+    private val editBoxes: MutableList<EditBox> = ArrayList()
+    private val clickRects: MutableList<ClickRect> = ArrayList()
+    private var addBtn: ClickRect? = null
+    private var doneBtn: ClickRect? = null
 
     override fun init() {
         for (e in CommandAliases.all()) {
@@ -71,55 +95,52 @@ class CommandAliasesScreen : Screen(Component.literal("Command Aliases")) {
 
     private fun rebuildRows() {
         clearWidgets()
+        editBoxes.clear()
+        clickRects.clear()
 
         for (i in aliases.indices) {
             val rowTop = listY + i * ROW_H - scroll
             if (rowTop + ROW_H < listY || rowTop > listY + listH) continue
             val idx = i
 
-            val aliasField = EditBox(this.font, listX, rowTop + 3, ALIAS_FIELD_W, 18, Component.literal("Alias"))
+            val aliasField = EditBox(this.font, listX + 3, rowTop + 3, ALIAS_FIELD_W - 6, 18, Component.literal("Alias"))
             aliasField.setMaxLength(32)
+            aliasField.setBordered(false)
             aliasField.setValue(aliases[i])
             aliasField.setResponder { s ->
                 aliases[idx] = s
                 persist()
             }
             addRenderableWidget(aliasField)
+            editBoxes.add(aliasField)
 
-            val cmdField = EditBox(this.font, cmdFieldX, rowTop + 3, cmdFieldW, 18, Component.literal("Command"))
+            val cmdField = EditBox(this.font, cmdFieldX + 4, rowTop + 3, cmdFieldW - 8, 18, Component.literal("Command"))
             cmdField.setMaxLength(256)
+            cmdField.setBordered(false)
             cmdField.setValue(commands[i])
             cmdField.setResponder { s ->
                 commands[idx] = s
                 persist()
             }
             addRenderableWidget(cmdField)
+            editBoxes.add(cmdField)
 
-            addRenderableWidget(
-                Button.builder(Component.literal("§cX")) {
-                    aliases.removeAt(idx)
-                    commands.removeAt(idx)
-                    persist()
-                    rebuildRows()
-                }
-                    .bounds(removeBtnX, rowTop + 3, REMOVE_BTN_W, 18).build()
-            )
+            clickRects.add(ClickRect(removeBtnX, rowTop + 3, REMOVE_BTN_W, 18) {
+                aliases.removeAt(idx)
+                commands.removeAt(idx)
+                persist()
+                rebuildRows()
+            })
         }
 
         val btnY = listY + listH + 8
-        addRenderableWidget(
-            Button.builder(Component.literal("+ Add Alias")) {
-                aliases.add("")
-                commands.add("")
-                persist()
-                rebuildRows()
-            }
-                .bounds(panelX + 14, btnY, 120, 20).build()
-        )
-        addRenderableWidget(
-            Button.builder(Component.literal("Done")) { onClose() }
-                .bounds(panelX + panelW - 14 - 70, btnY, 70, 20).build()
-        )
+        addBtn = ClickRect(panelX + 14, btnY, 120, 20) {
+            aliases.add("")
+            commands.add("")
+            persist()
+            rebuildRows()
+        }
+        doneBtn = ClickRect(panelX + panelW - 14 - 70, btnY, 70, 20) { onClose() }
     }
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
@@ -131,15 +152,58 @@ class CommandAliasesScreen : Screen(Component.literal("Command Aliases")) {
         ctx.text(
             this.font,
             "§7Alias §f(no slash) §7→ Command it runs. New/edited aliases work right away;",
-            panelX + 14, panelY + 30, TEXT_HINT
+            panelX + 14, panelY + 30, SUBTEXT_COLOR
         )
         ctx.text(
             this.font,
             "§7removing/renaming one fully clears after you rejoin.",
-            panelX + 14, panelY + 39, TEXT_HINT
+            panelX + 14, panelY + 39, SUBTEXT_COLOR
         )
-        ctx.fill(listX - 2, listY - 2, listX + listW + 2, listY + listH + 2, LIST_BG)
+        ScreenTheme.roundedRect(ctx, listX - 2, listY - 2, listW + 4, listH + 4, 6, LIST_BG)
+
+        // rounded-rect field backgrounds behind each row's EditBoxes
+        for (i in aliases.indices) {
+            val rowTop = listY + i * ROW_H - scroll
+            if (rowTop + ROW_H < listY || rowTop > listY + listH) continue
+            ScreenTheme.roundedRectRing(ctx, listX, rowTop + 3, ALIAS_FIELD_W, 18, 5, 1, FIELD_BG, FIELD_BORDER)
+            ScreenTheme.roundedRectRing(ctx, cmdFieldX, rowTop + 3, cmdFieldW, 18, 5, 1, FIELD_BG, FIELD_BORDER)
+        }
+
+        for (r in clickRects) {
+            val hover = r.hit(mouseX, mouseY)
+            ScreenTheme.pill(ctx, r.x, r.y, r.x + r.w, r.y + r.h, if (hover) DANGER_HOVER else DANGER)
+            val label = "X"
+            val tw = ScreenTheme.stw(this.font, label)
+            ScreenTheme.st(ctx, this.font, label, r.x + (r.w - tw) / 2, r.y + (r.h - 8) / 2, 0xFF2A0808.toInt())
+        }
+
+        addBtn?.let { r ->
+            val hover = r.hit(mouseX, mouseY)
+            ScreenTheme.pill(ctx, r.x, r.y, r.x + r.w, r.y + r.h, if (hover) ACCENT_HOVER else ACCENT)
+            val label = "+ Add Alias"
+            val tw = ScreenTheme.stw(this.font, label)
+            ScreenTheme.st(ctx, this.font, label, r.x + (r.w - tw) / 2, r.y + (r.h - 8) / 2, 0xFF06302F.toInt())
+        }
+        doneBtn?.let { r ->
+            val hover = r.hit(mouseX, mouseY)
+            ScreenTheme.roundedRectRing(ctx, r.x, r.y, r.w, r.h, r.h / 2, 1, 0xFF14181D.toInt(), if (hover) ACCENT_HOVER else ACCENT)
+            val label = "Done"
+            val tw = ScreenTheme.stw(this.font, label)
+            ScreenTheme.st(ctx, this.font, label, r.x + (r.w - tw) / 2, r.y + (r.h - 8) / 2, if (hover) ACCENT_HOVER else TEXT_COLOR)
+        }
+
         super.extractRenderState(ctx, mouseX, mouseY, delta)
+    }
+
+    override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean {
+        val mx = click.x().toInt()
+        val my = click.y().toInt()
+        for (r in clickRects) {
+            if (r.hit(mx, my)) { r.action(); return true }
+        }
+        addBtn?.let { if (it.hit(mx, my)) { it.action(); return true } }
+        doneBtn?.let { if (it.hit(mx, my)) { it.action(); return true } }
+        return super.mouseClicked(click, bl)
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
