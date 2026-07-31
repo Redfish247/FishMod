@@ -141,7 +141,6 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")) {
     }
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
-        super.extractRenderState(ctx, mouseX, mouseY, delta)
         ctx.fill(panelX - 1, panelY - 1, panelX + panelW + 1, panelY + panelH + 1, BORDER)
         ctx.fill(panelX, panelY, panelX + panelW, panelY + panelH, BG_PANEL)
         ctx.fill(panelX, panelY, panelX + panelW, panelY + 22, BG_SECTION)
@@ -153,6 +152,7 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")) {
             panelX + 14, panelY + 30, TEXT_HINT
         )
         ctx.fill(listX - 2, listY - 2, listX + listW + 2, listY + listH + 2, LIST_BG)
+        super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
 
     override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
