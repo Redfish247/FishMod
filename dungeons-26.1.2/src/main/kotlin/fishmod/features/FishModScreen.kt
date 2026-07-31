@@ -37,7 +37,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     private var activeSlider: Setting? = null
     private var activeSliderX = 0
     private var activeInput: Setting? = null
-    private var activePicker: ColorPickerSetting? = null
     private var capturingKeybind: KeybindSetting? = null
     private var searchField: EditBox? = null
     private var resetArmed = false
@@ -855,13 +854,11 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
                         for (s in f.sub) {
                             val sh = s.getHeight()
                             if (my >= ssy && my <= ssy + sh) {
-                                if (s is InputSetting || s is InputIntSetting || s is InputDoubleSetting
-                                    || s is ColorSetting || s is ColorPickerSetting) {
+                                if (s is InputSetting || s is InputIntSetting || s is InputDoubleSetting) {
                                     activeInput = s
                                 }
                             }
                             if (s.onClick(mx, my, leftX, rightX, ssy, btn)) {
-                                if (s is ColorPickerSetting && s.dragMode != 0) activePicker = s
                                 if (s is KeybindSetting && s.capturing) capturingKeybind = s
                                 return true
                             }
@@ -892,8 +889,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         }
         val slider = activeSlider
         if (slider != null) { slider.onDrag(click.x().toInt(), activeSliderX, SLIDER_W); return true }
-        val picker = activePicker
-        if (picker != null) { picker.updateFromMouse(click.x().toInt(), click.y().toInt()); return true }
         return super.mouseDragged(click, deltaX, deltaY)
     }
 
@@ -908,8 +903,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     override fun mouseReleased(click: MouseButtonEvent): Boolean {
         activeSlider = null
         draggingHScrollbar = false
-        val picker = activePicker
-        if (picker != null) { picker.dragMode = 0; activePicker = null }
         return super.mouseReleased(click)
     }
 
@@ -956,8 +949,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         if (ai is InputSetting && ai.textField != null) { ai.textField!!.keyPressed(input); return true }
         if (ai is InputIntSetting && ai.textField != null) { ai.textField!!.keyPressed(input); return true }
         if (ai is InputDoubleSetting && ai.textField != null) { ai.textField!!.keyPressed(input); return true }
-        if (ai is ColorSetting && ai.textField != null) { ai.textField!!.keyPressed(input); return true }
-        if (ai is ColorPickerSetting && ai.textField != null) { ai.textField!!.keyPressed(input); return true }
         if (searchFocused && searchField != null) { searchField!!.keyPressed(input); return true }
         return super.keyPressed(input)
     }
@@ -969,8 +960,6 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         }
         if (ai is InputIntSetting && ai.textField != null) { ai.textField!!.charTyped(input); return true }
         if (ai is InputDoubleSetting && ai.textField != null) { ai.textField!!.charTyped(input); return true }
-        if (ai is ColorSetting && ai.textField != null) { ai.textField!!.charTyped(input); return true }
-        if (ai is ColorPickerSetting && ai.textField != null) { ai.textField!!.charTyped(input); return true }
         if (searchFocused && searchField != null) {
             searchField!!.charTyped(input); searchText = searchField!!.value; for (c in columns) c.scroll = 0; return true
         }
@@ -1263,152 +1252,102 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         }
     }
 
-    class ColorSetting(name: String, desc: String, val getter: () -> Int, val setter: (Int) -> Unit) : Setting(name, desc) {
-        constructor(name: String, desc: String, prop: KMutableProperty0<Int>) : this(name, desc, { prop.get() }, { prop.set(it) })
-
-        var textField: EditBox? = null
-        fun initField(tr: Font) {
-            if (textField == null) {
-                val tf = EditBox(tr, 0, 0, 50, INPUT_H, Component.empty())
-                tf.setMaxLength(6)
-                tf.value = String.format("%06X", getter() and 0xFFFFFF)
-                tf.setResponder { s ->
-                    if (s.length == 6) {
-                        try { setter(0xFF000000.toInt() or java.lang.Long.parseLong(s, 16).toInt()) }
-                        catch (ignored: NumberFormatException) {}
-                    }
-                }
-                textField = tf
-            }
-        }
-        override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
-            initField(tr)
-            val ix = rightX - 50 - 2
-            val iy = sy + (ITEM_HEIGHT - INPUT_H) / 2
-            ctx.fill(ix - 18, iy, ix - 2, iy + INPUT_H, 0xFF000000.toInt())
-            ctx.fill(ix - 17, iy + 1, ix - 3, iy + INPUT_H - 1, getter())
-            val tf = textField!!
-            tf.setX(ix); tf.setY(iy)
-            tf.extractRenderState(ctx, mx, my, 0f)
-        }
-        override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
-            val ix = rightX - 50 - 2
-            val iy = sy + (ITEM_HEIGHT - INPUT_H) / 2
-            if (mx >= ix && mx <= ix + 50 && my >= iy && my <= iy + INPUT_H) {
-                textField?.setFocused(true)
-                return true
-            }
-            return false
-        }
-    }
-
     open class ColorPickerSetting(name: String, desc: String, val getter: () -> Int, val setter: (Int) -> Unit) : Setting(name, desc) {
         constructor(name: String, desc: String, prop: KMutableProperty0<Int>) : this(name, desc, { prop.get() }, { prop.set(it) })
 
-        var textField: EditBox? = null
-        private var hsbH = 0f
-        private var hsbS = 0f
-        private var hsbV = 0f
-        private var lastColor = 0
-        var dragMode = 0
-        private var sqX = 0
-        private var sqY = 0
-        private val sqW = 82
-        private val sqH = 46
-        private var hueX = 0
-        private var hueY = 0
-        private val hueW = 8
-        private val hueH = 46
+        private val expandAnim = Easing.Anim(200)
+        private var expanded = false
+        private var pillX = 0
+        private var pillW = 0
 
-        init {
-            syncFromColor(getter())
+        private fun indexOfCurrent(): Int {
+            val cur = getter() or 0xFF000000.toInt()
+            var best = 0
+            var bestDist = Int.MAX_VALUE
+            for (i in PRESET_ARGB.indices) {
+                val dr = ((PRESET_ARGB[i] shr 16) and 0xFF) - ((cur shr 16) and 0xFF)
+                val dg = ((PRESET_ARGB[i] shr 8) and 0xFF) - ((cur shr 8) and 0xFF)
+                val db = (PRESET_ARGB[i] and 0xFF) - (cur and 0xFF)
+                val dist = dr * dr + dg * dg + db * db
+                if (dist < bestDist) { bestDist = dist; best = i }
+            }
+            return best
         }
-        override fun getHeight(): Int = ITEM_HEIGHT + sqH + 6
 
-        private fun syncFromColor(argb: Int) {
-            val hsb = java.awt.Color.RGBtoHSB((argb shr 16) and 0xFF, (argb shr 8) and 0xFF, argb and 0xFF, null)
-            hsbH = hsb[0]; hsbS = hsb[1]; hsbV = hsb[2]
-            lastColor = argb
+        override fun getHeight(): Int {
+            return ITEM_HEIGHT + Math.round(PRESET_ARGB.size * OPTION_H * expandAnim.progress())
         }
-        private fun commit() {
-            val rgb = java.awt.Color.HSBtoRGB(hsbH, hsbS, hsbV) and 0xFFFFFF
-            val argb = 0xFF000000.toInt() or rgb
-            lastColor = argb
-            setter(argb)
-            textField?.value = String.format("%06X", rgb)
+
+        override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
+            st(ctx, tr, name, leftX, sy + (ITEM_HEIGHT - 8) / 2, TEXT_COLOR)
+            val idx = indexOfCurrent()
+            val label = PRESET_NAMES[idx]
+            val textW = stw(tr, label)
+            val swatchD = 8
+            pillW = textW + swatchD + 26
+            pillX = rightX - pillW - 2
+            val by = sy + (ITEM_HEIGHT - PILL_H) / 2
+            val hov = mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H
+            roundedRectRing(ctx, pillX, by, pillW, PILL_H, PILL_H / 2, 2, TRACK_OFF, if (hov) ACCENT_HOVER else ACCENT)
+            disc(ctx, pillX + 12, by + PILL_H / 2, swatchD / 2, getter() or 0xFF000000.toInt())
+            st(ctx, tr, label, pillX + 22, by + (PILL_H - 8) / 2 - 1, TEXT_COLOR)
+
+            val animating = expandAnim.isAnimating()
+            if (expanded || animating) {
+                val oy = sy + ITEM_HEIGHT
+                roundedRect(ctx, leftX + 2, oy, rightX - leftX - 4, PRESET_ARGB.size * OPTION_H, 5, SUBROW_BG)
+                for (i in PRESET_ARGB.indices) {
+                    val rowY = oy + i * OPTION_H
+                    val selected = i == idx
+                    val rowHov = mx >= leftX + 2 && mx <= rightX - 2 && my >= rowY && my <= rowY + OPTION_H
+                    if (rowHov) roundedRect(ctx, leftX + 4, rowY + 1, rightX - leftX - 8, OPTION_H - 2, 4, ROW_HOVER)
+                    disc(ctx, leftX + 12, rowY + OPTION_H / 2, 4, PRESET_ARGB[i])
+                    st(ctx, tr, PRESET_NAMES[i], leftX + 22, rowY + (OPTION_H - 8) / 2,
+                        if (selected) ACCENT_HOVER else (if (rowHov) TEXT_COLOR else SUBTEXT_COLOR))
+                    if (selected) ctx.fill(leftX + 2, rowY + 3, leftX + 4, rowY + OPTION_H - 3, ACCENT)
+                }
+            }
         }
-        fun initField(tr: Font) {
-            if (textField == null) {
-                val tf = EditBox(tr, 0, 0, 46, INPUT_H, Component.empty())
-                tf.setMaxLength(6)
-                tf.value = String.format("%06X", getter() and 0xFFFFFF)
-                tf.setResponder { t ->
-                    if (t.length == 6) {
-                        try {
-                            val argb = 0xFF000000.toInt() or java.lang.Long.parseLong(t, 16).toInt()
-                            setter(argb); syncFromColor(argb)
-                        } catch (ignored: NumberFormatException) {}
+
+        override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
+            val by = sy + (ITEM_HEIGHT - PILL_H) / 2
+            if (mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H) {
+                if (btn == 1) {
+                    setter(PRESET_ARGB[(indexOfCurrent() + 1) % PRESET_ARGB.size])
+                } else {
+                    expanded = !expanded
+                    expandAnim.setTarget(expanded)
+                }
+                return true
+            }
+            if (expanded) {
+                val oy = sy + ITEM_HEIGHT
+                for (i in PRESET_ARGB.indices) {
+                    val rowY = oy + i * OPTION_H
+                    if (mx >= leftX && mx <= rightX && my >= rowY && my <= rowY + OPTION_H) {
+                        setter(PRESET_ARGB[i])
+                        expanded = false
+                        expandAnim.setTarget(false)
+                        return true
                     }
                 }
-                textField = tf
-            }
-        }
-        override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
-            initField(tr)
-            val tf = textField!!
-            if (getter() != lastColor) { syncFromColor(getter()); tf.value = String.format("%06X", getter() and 0xFFFFFF) }
-
-            st(ctx, tr, name, leftX, sy + (ITEM_HEIGHT - 8) / 2, TEXT_COLOR)
-            val ix = rightX - 46 - 2
-            val iy = sy + (ITEM_HEIGHT - INPUT_H) / 2
-            ctx.fill(ix - 18, iy, ix - 2, iy + INPUT_H, 0xFF000000.toInt())
-            ctx.fill(ix - 17, iy + 1, ix - 3, iy + INPUT_H - 1, getter())
-            tf.setX(ix); tf.setY(iy)
-            tf.extractRenderState(ctx, mx, my, 0f)
-
-            sqX = leftX; sqY = sy + ITEM_HEIGHT + 2
-            for (c in 0 until sqW) {
-                val sat = c.toFloat() / sqW
-                val top = 0xFF000000.toInt() or (java.awt.Color.HSBtoRGB(hsbH, sat, 1f) and 0xFFFFFF)
-                ctx.fillGradient(sqX + c, sqY, sqX + c + 1, sqY + sqH, top, 0xFF000000.toInt())
-            }
-            val msx = sqX + Math.round(hsbS * sqW)
-            val msy = sqY + Math.round((1 - hsbV) * sqH)
-            ctx.fill(msx - 2, msy - 1, msx + 2, msy, 0xFFFFFFFF.toInt())
-            ctx.fill(msx - 2, msy + 1, msx + 2, msy + 2, 0xFFFFFFFF.toInt())
-            ctx.fill(msx - 2, msy, msx - 1, msy + 1, 0xFFFFFFFF.toInt())
-            ctx.fill(msx + 1, msy, msx + 2, msy + 1, 0xFFFFFFFF.toInt())
-
-            hueX = sqX + sqW + 5; hueY = sqY
-            for (r in 0 until sqH) {
-                val col = 0xFF000000.toInt() or (java.awt.Color.HSBtoRGB(r.toFloat() / sqH, 1f, 1f) and 0xFFFFFF)
-                ctx.fill(hueX, hueY + r, hueX + hueW, hueY + r + 1, col)
-            }
-            val hmy = hueY + Math.round(hsbH * sqH)
-            ctx.fill(hueX - 1, hmy - 1, hueX + hueW + 1, hmy + 1, 0xFFFFFFFF.toInt())
-        }
-        override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
-            val ix = rightX - 46 - 2
-            val iy = sy + (ITEM_HEIGHT - INPUT_H) / 2
-            if (mx >= ix && mx <= ix + 46 && my >= iy && my <= iy + INPUT_H) {
-                textField?.setFocused(true); return true
-            }
-            if (mx >= sqX && mx <= sqX + sqW && my >= sqY && my <= sqY + sqH) {
-                dragMode = 1; updateFromMouse(mx, my); return true
-            }
-            if (mx >= hueX && mx <= hueX + hueW && my >= hueY && my <= hueY + hueH) {
-                dragMode = 2; updateFromMouse(mx, my); return true
             }
             return false
         }
-        fun updateFromMouse(mx: Int, my: Int) {
-            if (dragMode == 1) {
-                hsbS = Mth.clamp((mx - sqX).toFloat() / sqW, 0f, 1f)
-                hsbV = Mth.clamp(1f - (my - sqY).toFloat() / sqH, 0f, 1f)
-            } else if (dragMode == 2) {
-                hsbH = Mth.clamp((my - hueY).toFloat() / sqH, 0f, 1f)
-            }
-            commit()
+
+        companion object {
+            val PRESET_ARGB: IntArray = intArrayOf(
+                0xFFFFFFFF.toInt(), 0xFFFF5555.toInt(), 0xFFAA0000.toInt(), 0xFFFFAA00.toInt(), 0xFFFFFF55.toInt(),
+                0xFF55FF55.toInt(), 0xFF00AA00.toInt(), 0xFF55FFFF.toInt(), 0xFF00AAAA.toInt(), 0xFF5555FF.toInt(),
+                0xFF0000AA.toInt(), 0xFFAA00AA.toInt(), 0xFFFF55FF.toInt(), 0xFF663311.toInt(), 0xFFAAAAAA.toInt(),
+                0xFF555555.toInt(), 0xFF000000.toInt()
+            )
+            val PRESET_NAMES: Array<String> = arrayOf(
+                "White", "Red", "Dark Red", "Orange", "Yellow",
+                "Green", "Dark Green", "Aqua", "Dark Aqua", "Blue",
+                "Dark Blue", "Purple", "Pink", "Brown", "Gray",
+                "Dark Gray", "Black"
+            )
         }
     }
 
