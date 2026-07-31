@@ -381,12 +381,44 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
                 f.sub.add(ToggleSetting("Insight Legit", "", fishmod.utils.config.values.DungeonMapSettings::mapInsightLegit))
             }
             f.sub.add(ColorPickerSetting("Background Color", "", fishmod.utils.config.values.DungeonMapSettings::mapBackgroundColor))
+            f.sub.add(SliderIntSetting("Background Opacity %", "",
+                { ((fishmod.utils.config.values.DungeonMapSettings.mapBackgroundColor ushr 24) and 0xFF) * 100 / 255 },
+                { v ->
+                    val alpha = (v * 255 / 100).coerceIn(0, 255)
+                    val rgb = fishmod.utils.config.values.DungeonMapSettings.mapBackgroundColor and 0xFFFFFF
+                    fishmod.utils.config.values.DungeonMapSettings.mapBackgroundColor = (alpha shl 24) or rgb
+                },
+                0, 100))
+            f.sub.add(SliderIntSetting("Background Size", "",
+                { fishmod.utils.config.values.DungeonMapSettings.mapBackgroundSize.toInt() },
+                { v -> fishmod.utils.config.values.DungeonMapSettings.mapBackgroundSize = v.toFloat() },
+                0, 100))
             f.sub.add(SliderIntSetting("Text Scale %", "",
                 { (fishmod.utils.config.values.DungeonMapSettings.mapTextScaling * 100).toInt() },
                 { v -> fishmod.utils.config.values.DungeonMapSettings.mapTextScaling = v / 100.0f },
                 10, 200))
+            f.sub.add(ToggleSetting("Center Text", "", fishmod.utils.config.values.DungeonMapSettings::mapTextCenter))
             f.sub.add(ToggleSetting("Ugly Question Marks", "", fishmod.utils.config.values.DungeonMapSettings::mapUglyQuestionMarks))
             f.sub.add(ToggleSetting("Show Room Secrets", "", fishmod.utils.config.values.DungeonMapSettings::mapShowRoomSecrets))
+            dungeonMap.features.add(f)
+        }
+        run {
+            val f = Feature("Background Image", { fishmod.utils.config.values.DungeonMapSettings.mapImageSelection.isNotEmpty() },
+                { v -> fishmod.utils.config.values.DungeonMapSettings.mapImageSelection = if (v) fishmod.utils.config.values.DungeonMapSettings.mapImageSelection else "" })
+            f.sub.add(ButtonSetting("Open Images Folder", "") {
+                try {
+                    fishmod.features.dungeon.map.MapImageLoader.init()
+                    net.minecraft.util.Util.getPlatform().openUri(fishmod.features.dungeon.map.MapImageLoader.getImagesPath().toUri())
+                } catch (ignored: Exception) {}
+            })
+            val imageNames: Array<String> = run {
+                val names = fishmod.features.dungeon.map.MapImageLoader.getImageNames()
+                (if (names.isEmpty()) listOf("No image") else names).toTypedArray()
+            }
+            f.sub.add(DropdownSetting("Image", "", imageNames,
+                { if (fishmod.utils.config.values.DungeonMapSettings.mapImageSelection in imageNames) fishmod.utils.config.values.DungeonMapSettings.mapImageSelection else imageNames[0] },
+                { v -> fishmod.utils.config.values.DungeonMapSettings.mapImageSelection = v }))
+            f.sub.add(SliderIntSetting("Image Alpha", "", fishmod.utils.config.values.DungeonMapSettings::mapImageAlpha, 0, 255))
             dungeonMap.features.add(f)
         }
         run {
@@ -406,7 +438,12 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             val f = Feature("Player Heads", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadDrawOwnLast)
             f.sub.add(ColorPickerSetting("Head Background", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadBackground))
             f.sub.add(ColorPickerSetting("Own Head Background", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadOwnBackground))
+            f.sub.add(SliderIntSetting("Outline Size", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadBackgroundSize, 0, 5))
             f.sub.add(ToggleSetting("Ugly Pointer (Own)", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerUglyPointer))
+            f.sub.add(SliderIntSetting("Player Name Scale %", "",
+                { (fishmod.utils.config.values.DungeonMapSettings.mapPlayerNamesScaling * 100).toInt() },
+                { v -> fishmod.utils.config.values.DungeonMapSettings.mapPlayerNamesScaling = v / 100.0f },
+                0, 150))
             f.sub.add(ColorPickerSetting("Name Color", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerNameColor))
             dungeonMap.features.add(f)
         }
@@ -415,10 +452,18 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             f.sub.add(ToggleSetting("Mimic Reveal", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsMimic))
             f.sub.add(ToggleSetting("Mimic on Insight", "", fishmod.utils.config.values.DungeonMapSettings::mapMimicOnInsight))
             f.sub.add(ColorPickerSetting("Mimic Room Color", "", fishmod.utils.config.values.DungeonMapSettings::mapMimicRoomColor))
+            f.sub.add(SliderIntSetting("Darken Multiplier %", "",
+                { (fishmod.utils.config.values.DungeonMapSettings.mapDarkenMultiplier * 100).toInt() },
+                { v -> fishmod.utils.config.values.DungeonMapSettings.mapDarkenMultiplier = v / 100.0f },
+                0, 100))
             dungeonMap.features.add(f)
         }
         run {
             val f = Feature("Door Colors", fishmod.utils.config.values.DungeonMapSettings::mapDoorGay)
+            f.sub.add(SliderDoubleSetting("Door Thickness", "",
+                { fishmod.utils.config.values.DungeonMapSettings.mapDoorThickness.toDouble() },
+                { v -> fishmod.utils.config.values.DungeonMapSettings.mapDoorThickness = v.toFloat() },
+                0.0, 10.0))
             f.sub.add(ColorPickerSetting("Unopened", "", fishmod.utils.config.values.DungeonMapSettings::mapUnopenedDoorColor))
             f.sub.add(ColorPickerSetting("Blood", "", fishmod.utils.config.values.DungeonMapSettings::mapBloodDoorColor))
             f.sub.add(ColorPickerSetting("Wither", "", fishmod.utils.config.values.DungeonMapSettings::mapWitherDoorColor))
@@ -426,6 +471,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             f.sub.add(ColorPickerSetting("Puzzle", "", fishmod.utils.config.values.DungeonMapSettings::mapPuzzleDoorColor))
             f.sub.add(ColorPickerSetting("Champion", "", fishmod.utils.config.values.DungeonMapSettings::mapChampionDoorColor))
             f.sub.add(ColorPickerSetting("Trap", "", fishmod.utils.config.values.DungeonMapSettings::mapTrapDoorColor))
+            f.sub.add(ColorPickerSetting("Entrance", "", fishmod.utils.config.values.DungeonMapSettings::mapEntranceDoorColor))
             f.sub.add(ColorPickerSetting("Fairy", "", fishmod.utils.config.values.DungeonMapSettings::mapFairyDoorColor))
             f.sub.add(ColorPickerSetting("Rare", "", fishmod.utils.config.values.DungeonMapSettings::mapRareDoorColor))
             dungeonMap.features.add(f)
@@ -446,6 +492,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             f.sub.add(ColorPickerSetting("Puzzle", "", fishmod.utils.config.values.DungeonMapSettings::mapPuzzleRoomColor))
             f.sub.add(ColorPickerSetting("Champion", "", fishmod.utils.config.values.DungeonMapSettings::mapChampionRoomColor))
             f.sub.add(ColorPickerSetting("Trap", "", fishmod.utils.config.values.DungeonMapSettings::mapTrapRoomColor))
+            f.sub.add(ColorPickerSetting("Entrance", "", fishmod.utils.config.values.DungeonMapSettings::mapEntranceRoomColor))
             f.sub.add(ColorPickerSetting("Fairy", "", fishmod.utils.config.values.DungeonMapSettings::mapFairyRoomColor))
             f.sub.add(ColorPickerSetting("Rare", "", fishmod.utils.config.values.DungeonMapSettings::mapRareRoomColor))
             dungeonMap.features.add(f)
