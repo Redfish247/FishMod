@@ -65,6 +65,9 @@ object WardrobeHotkeys {
         // that happens to share a title substring.
         if (containerSize < 27 || containerSize % 9 != 0) return false
 
+        if (tryPageTurn(handler, containerSize, screen, Keybinds.wardrobeNextPage, matches, "next page")) return true
+        if (tryPageTurn(handler, containerSize, screen, Keybinds.wardrobePrevPage, matches, "previous page")) return true
+
         for (i in slots.indices) {
             val mapping = slots[i]
             if (mapping == null || mapping.isUnbound || !matches.test(mapping)) continue
@@ -91,6 +94,35 @@ object WardrobeHotkeys {
         }
 
         return false
+    }
+
+    /** Clicks whichever arrow icon reads "Next Page"/"Previous Page" (Hypixel's own pagination button). */
+    private fun tryPageTurn(handler: ScreenHandler, containerSize: Int, screen: HandledScreen<*>, mapping: KeyBinding?, matches: Predicate<KeyBinding>, label: String): Boolean {
+        if (mapping == null || mapping.isUnbound || !matches.test(mapping)) return false
+
+        val target = findByName(handler, containerSize, label) ?: return false
+
+        val syncId = handler.syncId
+        val slotId = target.id
+        pendingClick = Runnable {
+            val mc = MinecraftClient.getInstance()
+            if (mc.player == null || mc.interactionManager == null) return@Runnable
+            mc.interactionManager!!.clickSlot(syncId, slotId, 0, SlotActionType.PICKUP, mc.player)
+        }
+        pendingTicks = 1
+        return true
+    }
+
+    /** Scans the container region for an item whose display name contains `label` (case-insensitive). */
+    private fun findByName(handler: ScreenHandler, containerSize: Int, label: String): Slot? {
+        for (i in 0 until containerSize) {
+            val slot = handler.slots[i]
+            val stack = slot.stack
+            if (stack.isEmpty) continue
+            val name = stack.name.string.replace(Regex("§."), "").trim()
+            if (name.lowercase().contains(label)) return slot
+        }
+        return null
     }
 
     private fun resolveTarget(handler: ScreenHandler, containerSize: Int, isWardrobe: Boolean, hotkeyIndex: Int): Slot? {

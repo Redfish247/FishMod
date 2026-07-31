@@ -49,27 +49,16 @@ public class Keybinds {
     /** Wardrobe/Loadouts quick-swap hotkeys 1-12, row-major (matches WardrobeHotkeys' slot layout). */
     public static KeyMapping[] wardrobeSlots;
 
-    /**
-     * Backup of every FishMod keybind's bound key, written to our own config file instead of
-     * relying solely on vanilla's options.txt. Several users reported their GUI keybind silently
-     * reverting to the RIGHT_SHIFT default after updating the mod — options.txt persists keys by
-     * the KeyMapping's translation-key string, and anything that causes that lookup to miss on a
-     * fresh launch (a regenerated/blank options.txt, a per-version profile folder, etc.) falls back
-     * to the hardcoded default with no way to recover the old binding. Mirroring the bound key here
-     * lets {@link #init()} restore it even when options.txt comes back empty.
-     */
+    /** Wardrobe/Loadouts pagination — clicks whichever arrow icon reads "Next Page"/"Previous Page". */
+    public static KeyMapping wardrobeNextPage;
+    public static KeyMapping wardrobePrevPage;
+
+    /** Backs up bound keys to our own config file so a keybind isn't silently lost when options.txt comes back empty/regenerated. */
     private static final Path KEYBIND_BACKUP_FILE = Paths.get(fishmod.utils.config.FolderUtility.CONFIG_PATH + "keybinds.txt");
     private static final Map<String, KeyMapping> TRACKED = new LinkedHashMap<>();
     private static final Map<String, String> lastKnown = new LinkedHashMap<>();
 
-    /**
-     * Lazily creates the shared category exactly once. {@code DungeonWaypoints.init()} runs
-     * before {@code Keybinds.init()} in the mod's init order and needs a category too — if each
-     * class created its own {@code KeyMapping.Category} for the same Identifier independently,
-     * whichever ran first would claim it and the second would throw "already registered" (this
-     * used to happen every launch, leaving {@code category}/{@code wardrobeSlots} permanently
-     * null). Everyone must go through this single accessor instead.
-     */
+    /** Lazily creates the shared category exactly once, since multiple classes (e.g. DungeonWaypoints) need it before init order guarantees this ran. */
     public static synchronized KeyMapping.Category category() {
         if (category == null) {
             category = KeyMapping.Category.register(Identifier.parse(Constants.NAMESPACE + ":keys"));
@@ -141,6 +130,18 @@ public class Keybinds {
                     category));
             TRACKED.put("wardrobe_slot_" + i, wardrobeSlots[i]);
         }
+
+        wardrobeNextPage = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "FishMod: Wardrobe next page",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                category));
+
+        wardrobePrevPage = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "FishMod: Wardrobe previous page",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                category));
 
         restoreKeybindBackup();
 

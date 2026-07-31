@@ -69,6 +69,9 @@ object WardrobeHotkeys {
         // Must actually be a chest-style GUI, not some other screen sharing a title substring.
         if (containerSize < 27 || containerSize % 9 != 0) return false
 
+        if (tryPageTurn(handler, containerSize, screen, Keybinds.wardrobeNextPage, matches, "next page")) return true
+        if (tryPageTurn(handler, containerSize, screen, Keybinds.wardrobePrevPage, matches, "previous page")) return true
+
         for (i in slots.indices) {
             val mapping = slots[i]
             if (mapping == null || mapping.isUnbound || !matches.test(mapping)) continue
@@ -94,6 +97,36 @@ object WardrobeHotkeys {
         }
 
         return false
+    }
+
+    /** Clicks whichever arrow icon reads "Next Page"/"Previous Page" (Hypixel's own pagination button). */
+    private fun tryPageTurn(handler: AbstractContainerMenu, containerSize: Int, screen: AbstractContainerScreen<*>, mapping: KeyMapping?, matches: Predicate<KeyMapping>, label: String): Boolean {
+        if (mapping == null || mapping.isUnbound || !matches.test(mapping)) return false
+
+        val target = findByName(handler, containerSize, label) ?: return false
+
+        val containerId = handler.containerId
+        val slotId = target.index
+        pendingClick = Runnable {
+            val mc = Minecraft.getInstance()
+            val mcPlayer = mc.player
+            if (mcPlayer == null || mc.gameMode == null) return@Runnable
+            mc.gameMode!!.handleContainerInput(containerId, slotId, 0, ContainerInput.PICKUP, mcPlayer)
+        }
+        pendingTicks = 1
+        return true
+    }
+
+    /** Scans the container region for an item whose display name contains `label` (case-insensitive). */
+    private fun findByName(handler: AbstractContainerMenu, containerSize: Int, label: String): Slot? {
+        for (i in 0 until containerSize) {
+            val slot = handler.slots[i]
+            val stack = slot.item
+            if (stack.isEmpty) continue
+            val name = stack.hoverName.string.replace(Regex("§."), "").trim()
+            if (name.lowercase().contains(label)) return slot
+        }
+        return null
     }
 
     private fun resolveTarget(handler: AbstractContainerMenu, containerSize: Int, isWardrobe: Boolean, hotkeyIndex: Int): Slot? {
