@@ -11,26 +11,34 @@ import net.minecraft.client.renderer.rendertype.RenderType
 object RenderLayers {
 
     // Depth-tested layers: occluded by terrain (only drawn where the box is actually visible).
+    //
+    // These must NOT bare-wrap the vanilla RenderPipelines.DEBUG_FILLED_BOX/LINES singletons via
+    // RenderType.create(...) directly. Multiple fishmod RenderTypes (this file's *_LAYER and
+    // *_LAYER_NO_DEPTH) would then all reference the exact same shared RenderPipeline instance,
+    // and the no-depth variants prove that identity matters here: they only work because
+    // noDepth() rebuilds a genuinely distinct RenderPipeline object (new withLocation(...)) rather
+    // than reusing vanilla's static instance. A bare RenderType.create(vanillaPipeline) wrapper
+    // rendered nothing in-world for the depth-tested box (through walls it worked fine once
+    // depth-testing was disabled), consistent with the renderer's pipeline-switch/state-rebind
+    // logic keying off pipeline identity and skipping a fresh depth-attachment bind when it
+    // thinks nothing changed. Rebuilding (withDepth(), mirroring noDepth() but preserving the
+    // original DepthStencilState instead of forcing ALWAYS_PASS) gives every fishmod RenderType
+    // its own pipeline identity, matching the one pattern already proven to work.
     @JvmField
-    val FILLED_LAYER: RenderType = RenderType.create("fishmod_filled", RenderSetup.builder(RenderPipelines.DEBUG_FILLED_BOX).createRenderSetup())
+    val FILLED_LAYER: RenderType = withDepth(RenderPipelines.DEBUG_FILLED_BOX, "fishmod/filled", "fishmod_filled")
     @JvmField
-    val FILLED_ENTITY_LAYER: RenderType = RenderType.create("fishmod_filled_en", RenderSetup.builder(RenderPipelines.DEBUG_FILLED_BOX).createRenderSetup())
+    val FILLED_ENTITY_LAYER: RenderType = withDepth(RenderPipelines.DEBUG_FILLED_BOX, "fishmod/filled_en", "fishmod_filled_en")
 
     // Through-walls layers: clones of the base pipeline with depth testing disabled, since the
     // vanilla DEBUG_FILLED_BOX/LINES pipelines depth-test and would let walls occlude the highlight.
     @JvmField
     val FILLED_LAYER_NO_DEPTH: RenderType = noDepth(RenderPipelines.DEBUG_FILLED_BOX, "fishmod/filled_no_depth", "fishmod_filled_nd")
 
-    private val OUTLINE_LAYER: RenderType = RenderType.create("fishmod_lines", RenderSetup.builder(RenderPipelines.LINES).createRenderSetup())
+    private val OUTLINE_LAYER: RenderType = withDepth(RenderPipelines.LINES, "fishmod/lines", "fishmod_lines")
     private val OUTLINE_LAYER_NO_DEPTH: RenderType = noDepth(RenderPipelines.LINES, "fishmod/lines_no_depth", "fishmod_lines_nd")
 
     /** 26.1.2's RenderPipeline builder API is transitional (flat samplers/uniforms/vertex format, no BindGroupLayout yet) — don't reuse the 26.2 branch's version of this function as-is. */
-    private fun noDepth(base: RenderPipeline, location: String, layerName: String): RenderType {
-        val baseDepth = base.depthStencilState!!
-        val noDepthTest = DepthStencilState(
-            CompareOp.ALWAYS_PASS, baseDepth.writeDepth(), baseDepth.depthBiasScaleFactor(), baseDepth.depthBiasConstant()
-        )
-
+    private fun rebuild(base: RenderPipeline, location: String, layerName: String, depth: DepthStencilState): RenderType {
         val builder = RenderPipeline.builder()
             .withLocation(location)
             .withVertexShader(base.vertexShader)
@@ -39,7 +47,7 @@ object RenderLayers {
             .withCull(base.isCull)
             .withPolygonMode(base.polygonMode)
             .withColorTargetState(base.colorTargetState)
-            .withDepthStencilState(noDepthTest)
+            .withDepthStencilState(depth)
 
         // Builder only exposes int/float keyed defines; base pipelines carry none today so this is
         // normally a no-op, kept for fidelity if that changes.
@@ -66,6 +74,21 @@ object RenderLayers {
         }
 
         return RenderType.create(layerName, RenderSetup.builder(builder.build()).createRenderSetup())
+    }
+
+    private fun noDepth(base: RenderPipeline, location: String, layerName: String): RenderType {
+        val baseDepth = base.depthStencilState!!
+        val noDepthTest = DepthStencilState(
+            CompareOp.ALWAYS_PASS, baseDepth.writeDepth(), baseDepth.depthBiasScaleFactor(), baseDepth.depthBiasConstant()
+        )
+        return rebuild(base, location, layerName, noDepthTest)
+    }
+
+    /** Sibling of [noDepth]: rebuilds `base` into its own distinct RenderPipeline object (so this
+     * RenderType isn't sharing a vanilla singleton's pipeline identity with any other RenderType),
+     * while preserving the base pipeline's own depth-tested DepthStencilState unchanged. */
+    private fun withDepth(base: RenderPipeline, location: String, layerName: String): RenderType {
+        return rebuild(base, location, layerName, base.depthStencilState!!)
     }
 
     @JvmStatic
