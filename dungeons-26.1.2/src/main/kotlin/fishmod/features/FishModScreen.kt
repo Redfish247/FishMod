@@ -23,6 +23,7 @@ import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.util.Mth
+import fishmod.utils.rendering.NvgRecorder
 import org.lwjgl.glfw.GLFW
 import java.util.function.Consumer
 import java.util.function.Supplier
@@ -614,6 +615,9 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         for (c in visibleColumns()) clampScroll(c)
         clampHScroll()
 
+        // draw commands replayed later in paintNvgOverlay() after the vanilla GUI flush
+        NvgRecorder.clear()
+
         extractBlurredBackground(ctx)
         ctx.fillGradient(0, 0, this.width, this.height, DIM_TOP, DIM_BOT)
 
@@ -681,7 +685,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         val gx = bx + 16
         val gy = by + bh / 2 - 1
         disc(ctx, gx, gy, 3, SUBTEXT_COLOR)
-        ctx.fill(gx + 2, gy + 2, gx + 6, gy + 3, SUBTEXT_COLOR)
+        NvgRecorder.fillRect((gx + 2).toFloat(), (gy + 2).toFloat(), 4f, 1f, SUBTEXT_COLOR)
 
         var field = searchField
         if (field == null) {
@@ -696,15 +700,16 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         if (searchText.isEmpty() && !searchFocused) {
             sst(ctx, this.font, "Search…", bx + 30, by + (bh - 8) / 2, SUBTEXT_COLOR, 0.9f)
         } else {
-            field.extractRenderState(ctx, mouseX, mouseY, 0f)
+            nvgTextFieldContent(field, bx + 30, by + 6, bw - 40, bh - 12)
         }
     }
 
     private fun renderColumnCard(ctx: GuiGraphicsExtractor, c: Column, x0: Int, x1: Int, cardBottom: Int, mouseX: Int, mouseY: Int) {
         val hy = cyTop() - HEADER_H
         val w = x1 - x0
+        NvgRecorder.dropShadow(x0.toFloat(), hy.toFloat(), w.toFloat(), (cardBottom - hy).toFloat(), CARD_RADIUS.toFloat(), 10f, 0x60000000)
         roundedRect(ctx, x0, hy, w, cardBottom - hy, CARD_RADIUS, CARD_BG)
-        ctx.fill(x0 + CARD_RADIUS, hy, x1 - CARD_RADIUS, hy + HEADER_STRIP_H, ACCENT)
+        NvgRecorder.fillRect((x0 + CARD_RADIUS).toFloat(), hy.toFloat(), (w - 2 * CARD_RADIUS).toFloat(), HEADER_STRIP_H.toFloat(), ACCENT)
         sst(ctx, this.font, c.name, x0 + 10, hy + HEADER_STRIP_H + 6, TEXT_COLOR, 1f)
     }
 
@@ -715,8 +720,8 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         val vp = bot - top
         val barH = Math.max(20, (vp.toLong() * vp / columnContentHeight(c)).toInt())
         val barY = top + ((vp - barH).toLong() * c.scroll / ms).toInt()
-        ctx.fill(trackX, top, trackX + 2, bot, 0xFF141A20.toInt())
-        ctx.fill(trackX, barY, trackX + 2, barY + barH, ACCENT)
+        NvgRecorder.fillRect(trackX.toFloat(), top.toFloat(), 2f, (bot - top).toFloat(), 0xFF141A20.toInt())
+        NvgRecorder.fillRect(trackX.toFloat(), barY.toFloat(), 2f, barH.toFloat(), ACCENT)
     }
 
     private fun renderContent(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
@@ -733,16 +738,15 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
 
             renderColumnCard(ctx, c, x0, x1, colBottom, mouseX, mouseY)
 
-            ctx.enableScissor(x0, top, x1, colBottom)
+            NvgRecorder.pushScissor(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), (colBottom - top).toFloat())
             for (rl in layoutColumn(c, c.scroll)) {
                 if (rl.rowBottom > top && rl.rowTop < colBottom) renderRow(ctx, rl.feature, x0, x1, rl.rowTop, mouseX, mouseY)
                 val animH = rl.subBottom - rl.subTop
                 if (animH > 0 && rl.subBottom > top && rl.subTop < colBottom) {
                     renderSubPanel(ctx, rl.feature, x0, x1, rl.subTop, animH, mouseX, mouseY)
-                    ctx.enableScissor(x0, top, x1, colBottom) // restore the column-wide clip renderSubPanel may have narrowed
                 }
             }
-            ctx.disableScissor()
+            NvgRecorder.popScissor()
 
             renderColumnScrollbar(ctx, c, x0, x1, top, colBottom)
         }
@@ -753,9 +757,9 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         val inView = mouseY >= cyTop() && mouseY <= cyBot()
         val hover = inView && mouseX >= x0 && mouseX <= x1 && mouseY >= top && mouseY <= top + ROW_H
 
-        if (on) ctx.fill(x0 + 2, top, x1 - 2, top + ROW_H, ROW_ENABLED)
-        if (hover) ctx.fill(x0 + 2, top, x1 - 2, top + ROW_H, ROW_HOVER)
-        if (on) ctx.fill(x0 + 2, top + 3, x0 + 4, top + ROW_H - 3, ACCENT)
+        if (on) NvgRecorder.fillRect((x0 + 2).toFloat(), top.toFloat(), (x1 - x0 - 4).toFloat(), ROW_H.toFloat(), ROW_ENABLED)
+        if (hover) NvgRecorder.fillRect((x0 + 2).toFloat(), top.toFloat(), (x1 - x0 - 4).toFloat(), ROW_H.toFloat(), ROW_HOVER)
+        if (on) NvgRecorder.fillRect((x0 + 2).toFloat(), (top + 3).toFloat(), 2f, (ROW_H - 6).toFloat(), ACCENT)
 
         var label = f.name
         val maxTextW = x1 - x0 - 20
@@ -763,7 +767,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             while (label.length > 1 && stw(this.font, "$label…") > maxTextW) label = label.substring(0, label.length - 1)
             label = "$label…"
         }
-        ctx.text(this.font, label, x0 + 10, top + (ROW_H - 8) / 2, if (on) TEXT_COLOR else SUBTEXT_COLOR, false)
+        NvgRecorder.text(label, (x0 + 10).toFloat(), (top + (ROW_H - 8) / 2).toFloat(), NVG_BASE_TEXT_SIZE, if (on) TEXT_COLOR else SUBTEXT_COLOR)
         if (hover) {
             val d = descFor(f.name)
             if (d.isNotEmpty()) { hoverDesc = d; hoverDescX = x1 + 8; hoverDescY = top }
@@ -786,13 +790,13 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         st(ctx, this.font, desc, bx + 8, by + 5, TEXT_COLOR)
     }
 
-    /** While animating this narrows the caller's scissor and never restores it — caller must re-clip after. */
     private fun renderSubPanel(ctx: GuiGraphicsExtractor, f: Feature, x0: Int, x1: Int, top: Int, animatedH: Int, mouseX: Int, mouseY: Int) {
-        if (f.expandAnim.isAnimating()) ctx.enableScissor(x0, top, x1, top + animatedH)
+        val animating = f.expandAnim.isAnimating()
+        if (animating) NvgRecorder.pushScissor(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), animatedH.toFloat())
 
         val subH = f.naturalSubHeight()
-        ctx.fill(x0, top, x1, top + subH, SUBROW_BG)
-        ctx.fill(x0, top, x0 + 2, top + subH, ACCENT)
+        NvgRecorder.fillRect(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), subH.toFloat(), SUBROW_BG)
+        NvgRecorder.fillRect(x0.toFloat(), top.toFloat(), 2f, subH.toFloat(), ACCENT)
         val leftX = x0 + 14
         val rightX = x1 - 12
         var sy = top + 6
@@ -805,6 +809,8 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             s.render(ctx, leftX, rightX, sy, mouseX, mouseY, this.font)
             sy += sh
         }
+
+        if (animating) NvgRecorder.popScissor()
     }
 
     private fun hovBtn(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int): Boolean {
@@ -977,11 +983,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     private val nvgGlState = fishmod.utils.rendering.NvgGlStateGuard()
     private var nvgFailureLogged = false
 
-    /** Called by GameRendererNvgMixin right after the vanilla GUI flush each frame, for correct z-ordering.
-     *  NOTE: infra-only right now — [fishmod.utils.rendering.NvgRecorder] is not yet populated by this
-     *  screen's render() path, so this currently paints an empty NanoVG frame every tick (proves the
-     *  context/GL-guard/mixin plumbing works end-to-end without corrupting vanilla GL state) rather than
-     *  the full NanoVG-painted UI described in the porting plan. */
+    /** Called by GameRendererNvgMixin right after the vanilla GUI flush each frame, for correct z-ordering. */
     fun paintNvgOverlay() {
         nvgGlState.capture()
         try {
@@ -1057,7 +1059,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         override fun getHeight(): Int = SUBCAT_HEIGHT
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             roundRect(ctx, leftX, sy, rightX, sy + SUBCAT_HEIGHT, 2, 0xFF11131A.toInt())
-            ctx.fill(leftX + 1, sy + 2, leftX + 3, sy + SUBCAT_HEIGHT - 2, ACCENT)
+            NvgRecorder.fillRect((leftX + 1).toFloat(), (sy + 2).toFloat(), 2f, (SUBCAT_HEIGHT - 4).toFloat(), ACCENT)
             st(ctx, tr, name, leftX + 6, sy + (SUBCAT_HEIGHT - 8) / 2, ACCENT)
         }
     }
@@ -1167,7 +1169,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             if (expanded || animating) {
                 val animH = Math.round(values.size * OPTION_H * expandAnim.progress())
                 val oy = sy + ITEM_HEIGHT
-                if (animating) ctx.enableScissor(leftX, oy, rightX, oy + animH)
+                if (animating) NvgRecorder.pushScissor(leftX.toFloat(), oy.toFloat(), (rightX - leftX).toFloat(), animH.toFloat())
                 roundedRect(ctx, leftX + 2, oy, rightX - leftX - 4, values.size * OPTION_H, 5, SUBROW_BG)
                 val curIdx = indexOfCurrent()
                 for (i in values.indices) {
@@ -1177,9 +1179,9 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
                     if (rowHov) roundedRect(ctx, leftX + 4, rowY + 1, rightX - leftX - 8, OPTION_H - 2, 4, ROW_HOVER)
                     st(ctx, tr, values[i].toString(), leftX + 10, rowY + (OPTION_H - 8) / 2,
                         if (selected) ACCENT_HOVER else (if (rowHov) TEXT_COLOR else SUBTEXT_COLOR))
-                    if (selected) ctx.fill(leftX + 2, rowY + 3, leftX + 4, rowY + OPTION_H - 3, ACCENT)
+                    if (selected) NvgRecorder.fillRect((leftX + 2).toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
                 }
-                if (animating) ctx.disableScissor()
+                if (animating) NvgRecorder.popScissor()
             }
         }
 
@@ -1231,17 +1233,9 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             val ix = leftX + 2
             val iy = sy + 11
             val fieldW = rightX - leftX - 4
-            val fs = 0.7f
             val tf = textField!!
-            tf.width = (fieldW / fs).toInt()
-            tf.height = (INPUT_H / fs).toInt()
             if (!tf.isFocused) { tf.cursorPosition = 0; tf.setHighlightPos(0) }
-            tf.setX(0); tf.setY(0)
-            ctx.pose().pushMatrix()
-            ctx.pose().translate(ix.toFloat(), iy.toFloat())
-            ctx.pose().scale(fs, fs)
-            tf.extractRenderState(ctx, mx, my, 0f)
-            ctx.pose().popMatrix()
+            nvgTextField(tf, ix, iy, fieldW, INPUT_H)
             hint?.let { st(ctx, tr, it, leftX + 2, sy + 27, SUBTEXT_COLOR) }
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
@@ -1270,16 +1264,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             initField(tr)
             val ix = rightX - INPUT_W - 2
             val iy = sy + 2
-            val fs = 0.7f
-            val tf = textField!!
-            tf.width = (INPUT_W / fs).toInt()
-            tf.height = (INPUT_H / fs).toInt()
-            tf.setX(0); tf.setY(0)
-            ctx.pose().pushMatrix()
-            ctx.pose().translate(ix.toFloat(), iy.toFloat())
-            ctx.pose().scale(fs, fs)
-            tf.extractRenderState(ctx, mx, my, 0f)
-            ctx.pose().popMatrix()
+            nvgTextField(textField!!, ix, iy, INPUT_W, INPUT_H)
             val len = visibleLen(getter())
             val counter = "$len/$maxVisible"
             val color = if (len >= maxVisible) 0xFFFF5555.toInt() else SUBTEXT_COLOR
@@ -1361,7 +1346,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
                     disc(ctx, leftX + 12, rowY + OPTION_H / 2, 4, PRESET_ARGB[i])
                     st(ctx, tr, PRESET_NAMES[i], leftX + 22, rowY + (OPTION_H - 8) / 2,
                         if (selected) ACCENT_HOVER else (if (rowHov) TEXT_COLOR else SUBTEXT_COLOR))
-                    if (selected) ctx.fill(leftX + 2, rowY + 3, leftX + 4, rowY + OPTION_H - 3, ACCENT)
+                    if (selected) NvgRecorder.fillRect((leftX + 2).toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
                 }
             }
         }
@@ -1507,16 +1492,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             initField(tr)
             val ix = leftX + 2
             val iy = sy + TWO_LINE_CTRL_Y
-            val fs = 0.7f
-            val tf = textField!!
-            tf.width = (INPUT_W / fs).toInt()
-            tf.height = (INPUT_H / fs).toInt()
-            tf.setX(0); tf.setY(0)
-            ctx.pose().pushMatrix()
-            ctx.pose().translate(ix.toFloat(), iy.toFloat())
-            ctx.pose().scale(fs, fs)
-            tf.extractRenderState(ctx, mx, my, 0f)
-            ctx.pose().popMatrix()
+            nvgTextField(textField!!, ix, iy, INPUT_W, INPUT_H)
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
             val ix = leftX + 2
@@ -1551,16 +1527,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
             initField(tr)
             val ix = leftX + 2
             val iy = sy + TWO_LINE_CTRL_Y
-            val fs = 0.7f
-            val tf = textField!!
-            tf.width = (INPUT_W / fs).toInt()
-            tf.height = (INPUT_H / fs).toInt()
-            tf.setX(0); tf.setY(0)
-            ctx.pose().pushMatrix()
-            ctx.pose().translate(ix.toFloat(), iy.toFloat())
-            ctx.pose().scale(fs, fs)
-            tf.extractRenderState(ctx, mx, my, 0f)
-            ctx.pose().popMatrix()
+            nvgTextField(textField!!, ix, iy, INPUT_W, INPUT_H)
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
             val ix = leftX + 2
@@ -1620,36 +1587,77 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         private const val TWO_LINE_H = 36
         private const val TWO_LINE_CTRL_Y = 20
 
-        // Drawing primitives now live in [ScreenTheme] (shared with CommandAliasesScreen/CommandKeysScreen);
-        // these delegate so the rest of this file's unqualified calls keep working unchanged.
-        fun roundedRect(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, color: Int) =
-            ScreenTheme.roundedRect(ctx, x, y, w, h, r, color)
+        /** Roughly matches Minecraft's default font weight; TEXT_SCALE multiplies this. */
+        private const val NVG_BASE_TEXT_SIZE = 9.5f
+        private const val INPUT_TEXT_SIZE = 7f
 
-        fun roundRect(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, r: Int, color: Int) =
-            ScreenTheme.roundRect(ctx, x1, y1, x2, y2, r, color)
+        // Shape/text helpers push into NvgRecorder (not `ctx`) so they paint after vanilla draws each
+        // frame, in the deferred paintNvgOverlay() pass; `ctx` is kept only to avoid rippling through call
+        // sites (and because vanilla widgets like EditBox still need it for their own state, not drawing).
+        fun roundedRect(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, color: Int) {
+            NvgRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), color)
+        }
 
-        fun roundedRectRing(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, strokeW: Int, fillColor: Int, ringColor: Int) =
-            ScreenTheme.roundedRectRing(ctx, x, y, w, h, r, strokeW, fillColor, ringColor)
+        fun roundRect(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, r: Int, color: Int) {
+            roundedRect(ctx, x1, y1, x2 - x1, y2 - y1, r, color)
+        }
 
-        fun pill(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, color: Int) =
-            ScreenTheme.pill(ctx, x1, y1, x2, y2, color)
+        fun roundedRectRing(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, strokeW: Int, fillColor: Int, ringColor: Int) {
+            NvgRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), strokeW.toFloat(), fillColor, ringColor)
+        }
 
-        fun panel(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, r: Int, fill: Int, border: Int) =
-            ScreenTheme.panel(ctx, x1, y1, x2, y2, r, fill, border)
+        fun pill(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
+            val h = y2 - y1
+            roundedRect(ctx, x1, y1, x2 - x1, h, h / 2, color)
+        }
 
-        fun disc(ctx: GuiGraphicsExtractor, cx: Int, cy: Int, r: Int, color: Int) =
-            ScreenTheme.disc(ctx, cx, cy, r, color)
+        fun panel(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, r: Int, fill: Int, border: Int) {
+            roundedRect(ctx, x1, y1, x2 - x1, y2 - y1, r, border)
+            roundedRect(ctx, x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), fill)
+        }
 
-        fun st(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int) =
-            ScreenTheme.st(ctx, tr, s, x, y, color)
-        fun stw(tr: Font, s: String): Int = ScreenTheme.stw(tr, s)
+        fun disc(ctx: GuiGraphicsExtractor, cx: Int, cy: Int, r: Int, color: Int) {
+            NvgRecorder.disc(cx.toFloat(), cy.toFloat(), r.toFloat(), color)
+        }
 
-        fun sst(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int, scale: Float) =
-            ScreenTheme.sst(ctx, tr, s, x, y, color, scale)
-        fun sw(tr: Font, s: String, scale: Float): Int = ScreenTheme.sw(tr, s, scale)
+        fun st(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int) {
+            NvgRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * TEXT_SCALE, color)
+        }
+        fun stw(tr: Font, s: String): Int = Math.ceil(NvgRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
 
-        fun drawChevron(ctx: GuiGraphicsExtractor, gx: Int, cy: Int, open: Boolean, color: Int) =
-            ScreenTheme.drawChevron(ctx, gx, cy, open, color)
+        fun sst(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int, scale: Float) {
+            NvgRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * scale, color)
+        }
+        fun sw(tr: Font, s: String, scale: Float): Int = Math.ceil(NvgRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * scale).toDouble()).toInt()
+
+        fun drawChevron(ctx: GuiGraphicsExtractor, gx: Int, cy: Int, open: Boolean, color: Int) {
+            NvgRecorder.chevron(gx.toFloat(), cy.toFloat(), open, color)
+        }
+
+        /** A vanilla EditBox.extractRenderState() call would flush before the NanoVG column
+         *  background and be invisible, so this redraws the field entirely via NanoVG instead;
+         *  the EditBox itself is kept only for cursor/selection/IME state, never for drawing. */
+        fun nvgTextField(tf: EditBox, x: Int, y: Int, w: Int, h: Int) {
+            val focused = tf.isFocused
+            NvgRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), 3f, 1f, SUBROW_BG, if (focused) ACCENT else TRACK_OFF)
+            nvgTextFieldContent(tf, x, y, w, h)
+        }
+
+        /** Text + caret only, no box — for fields whose box (e.g. the search bar's pill ring) is drawn separately. */
+        fun nvgTextFieldContent(tf: EditBox, x: Int, y: Int, w: Int, h: Int) {
+            val text = tf.value
+            val cursor = Math.min(tf.cursorPosition, text.length)
+            val cursorX = NvgRecorder.textWidth(text.substring(0, cursor), INPUT_TEXT_SIZE)
+            val pad = 3f
+            val visibleW = w - pad * 2f
+            val scroll = Math.max(0f, cursorX - visibleW)
+            NvgRecorder.pushScissor((x + 1).toFloat(), (y + 1).toFloat(), (w - 2).toFloat(), (h - 2).toFloat())
+            NvgRecorder.text(text, x + pad - scroll, y + (h - INPUT_TEXT_SIZE) / 2f, INPUT_TEXT_SIZE, TEXT_COLOR)
+            if (tf.isFocused && (System.currentTimeMillis() / 500) % 2 == 0L) {
+                NvgRecorder.fillRect(x + pad + cursorX - scroll, (y + 2).toFloat(), 1f, (h - 4).toFloat(), TEXT_COLOR)
+            }
+            NvgRecorder.popScissor()
+        }
 
         private fun drawGlyph(ctx: GuiGraphicsExtractor, t: String, cx: Int, cy: Int, c: Int, bg: Int) {
             when (t) {
