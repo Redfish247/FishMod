@@ -51,6 +51,12 @@ object SimonSaysTracker {
     private const val DEV_Z_MAX = 95
     private const val BREAK_COOLDOWN_TICKS = 12
 
+    // Grace window after the "all reset" block pattern first appears before it's treated as a
+    // break. A legit 5/5 finish flips the exact same obsidian/button cells as a break does — the
+    // only difference is the "completed a device!" chat message, which can arrive a tick or two
+    // after the block update under lag. Waiting this long lets that message win the race.
+    private const val BREAK_GRACE_MS = 700L
+
     private var round = 0          // completed-round count shown on the HUD (0..5)
     private var maxLen = 0         // longest demo sequence length seen this run
     private var lastAnnounced = 0  // highest count already sent (dedupe)
@@ -63,6 +69,7 @@ object SimonSaysTracker {
     private var breakTicks = 0    // cooldown before an "inactive" reading can count as a break
     private var canBreak = false  // device has been seen active since the last break
     private var broken = false    // device just reset — fully off (no scan/announce) until it restarts
+    private var breakArmedAtMs = 0L // all-air reset pattern first seen; grace period before treating it as a break
     private var inP3 = false      // HUD only
     private var atDevice = false
     private var deviceCenter: BlockPos? = null
@@ -132,7 +139,7 @@ object SimonSaysTracker {
             { FishSettings.simonSaysHudY }, { v -> FishSettings.simonSaysHudY = v },
             110, 14,
             { FishSettings.simonSaysHudScale }, { v -> FishSettings.simonSaysHudScale = v },
-            { FishSettings.simonSaysHudEnabled && round > 0 }
+            { FishSettings.simonSaysHudEnabled }
         )
     }
 
@@ -174,6 +181,10 @@ object SimonSaysTracker {
             primed = false; burstFlashes = 0; litPrev.clear()
             if (debug) log("locked device center " + deviceCenter!!.toShortString())
         }
+
+        // Skip this tick's scan entirely on an unloaded chunk — a stale/empty read would look
+        // like every lantern just went dark, corrupting the demo-length count.
+        if (!client.level!!.hasChunk(deviceCenter!!.x shr 4, deviceCenter!!.z shr 4)) return
 
         val cur = HashSet<Long>()
         scanLitCells(client.level!!, deviceCenter!!, cur)
@@ -236,6 +247,10 @@ object SimonSaysTracker {
 
     /** Obsidian cell missing = active; once that holds for `BREAK_COOLDOWN_TICKS` and buttons are all air, it's a break. */
     private fun tickBreakState(world: Level) {
+        // Don't trust block reads from a chunk that isn't actually loaded — under lag/chunk churn
+        // an unloaded chunk can read back as air, which looks identical to a break.
+        if (!world.hasChunk(DEV_OBSIDIAN_X shr 4, DEV_Z_MIN shr 4)) { breakArmedAtMs = 0L; return }
+
         breakTicks--
 
         var active = false
@@ -249,6 +264,7 @@ object SimonSaysTracker {
         if (active) {
             breakTicks = BREAK_COOLDOWN_TICKS
             canBreak = true
+            breakArmedAtMs = 0L
             if (broken) {
                 broken = false
                 if (debug) log("device restarted — resuming")
@@ -264,10 +280,18 @@ object SimonSaysTracker {
                 m.set(DEV_BUTTONS_X, y, z)
                 if (world.getBlockState(m).block != Blocks.AIR) { allAir = false; break@outer2 }
             }
-        if (!allAir) return
+        if (!allAir) { breakArmedAtMs = 0L; return }
+
+        // All-air reset pattern seen — could be a break, or it could be the exact same block
+        // flip a legit 5/5 finish causes. Give the "completed a device!" chat message a grace
+        // window to arrive and set `completed` before committing to a break.
+        val now = System.currentTimeMillis()
+        if (breakArmedAtMs == 0L) { breakArmedAtMs = now; return }
+        if (now - breakArmedAtMs < BREAK_GRACE_MS) return
 
         canBreak = false
         broken = true
+        breakArmedAtMs = 0L
         round = 0; maxLen = 0; lastAnnounced = 0; burstFlashes = 0
         if (debug) log("device broke — reset + fully off until restart")
 
@@ -305,6 +329,7 @@ object SimonSaysTracker {
         breakTicks = 0
         canBreak = false
         broken = false
+        breakArmedAtMs = 0L
         doneAtMs = 0L
         litPrev.clear()
         deviceCenter = null

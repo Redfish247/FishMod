@@ -6,8 +6,6 @@ import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.Constants
 import fishmod.utils.Location
 import fishmod.utils.Misc
-import fishmod.utils.dungeon.map.GridPos
-import fishmod.utils.dungeon.map.MapReader
 import fishmod.utils.dungeon.waypoints.DungeonWaypointStore
 import fishmod.utils.dungeon.waypoints.StoredWaypoint
 import fishmod.utils.dungeon.waypoints.TimerType
@@ -31,10 +29,9 @@ import org.lwjgl.glfw.GLFW
 import java.util.LinkedHashMap
 
 /**
- * /fmwp — an OdinLegacy-style dungeon waypoint editor. In a calibrated dungeon, waypoints are
- * keyed per fixed 32-block grid tile (see [tileKey]/[MapReader.worldToGridPos], no rotation
- * normalization); elsewhere they fall back to a freeform mode keyed by island/server+dimension
- * at absolute coordinates (see [globalKey]).
+ * /fm wp — an OdinLegacy-style waypoint editor. Disabled while [Location.inDungeon] is true;
+ * outside dungeons, waypoints are keyed by Skyblock island/server+dimension at absolute
+ * coordinates (see [globalKey]) — the same island-detection reason used elsewhere in the mod.
  */
 object DungeonWaypoints {
 
@@ -60,7 +57,6 @@ object DungeonWaypoints {
     private var lineWidth = 0.05
 
     private var placeKey: KeyMapping? = null
-    private var lastTile: GridPos? = null
     private var lastGlobalDim: String? = null
 
     // --- Route recording (see toggleRoute) ---
@@ -129,31 +125,31 @@ object DungeonWaypoints {
     @JvmStatic
     fun toggleFill() {
         fill = !fill
-        Misc.addChatMessage(Component.literal("§7[fmwp] Fill: " + (if (fill) "§afilled" else "§coutline")))
+        Misc.addChatMessage(Component.literal("§7[fm wp] Fill: " + (if (fill) "§afilled" else "§coutline")))
     }
 
     @JvmStatic
     fun setSize(s: Double) {
         size = s.coerceIn(0.1, 1.0)
-        Misc.addChatMessage(Component.literal("§7[fmwp] Size: §f$size"))
+        Misc.addChatMessage(Component.literal("§7[fm wp] Size: §f$size"))
     }
 
     @JvmStatic
     fun setDistance(d: Int) {
         distance = maxOf(1, d)
-        Misc.addChatMessage(Component.literal("§7[fmwp] Distance: §f$distance"))
+        Misc.addChatMessage(Component.literal("§7[fm wp] Distance: §f$distance"))
     }
 
     @JvmStatic
     fun resetSecrets() {
-        Misc.addChatMessage(Component.literal("§7[fmwp] Secret tracking reset (no-op in this version)."))
+        Misc.addChatMessage(Component.literal("§7[fm wp] Secret tracking reset (no-op in this version)."))
     }
 
     @JvmStatic
     fun setType(name: String) {
         try {
             type = WaypointType.valueOf(name.uppercase())
-            Misc.addChatMessage(Component.literal("§7[fmwp] Type: §f$type"))
+            Misc.addChatMessage(Component.literal("§7[fm wp] Type: §f$type"))
         } catch (e: IllegalArgumentException) {
             Misc.addChatMessage(Component.literal("§cUnknown waypoint type: $name"))
         }
@@ -163,7 +159,7 @@ object DungeonWaypoints {
     fun setTimer(name: String) {
         try {
             timer = TimerType.valueOf(name.uppercase())
-            Misc.addChatMessage(Component.literal("§7[fmwp] Timer: §f$timer"))
+            Misc.addChatMessage(Component.literal("§7[fm wp] Timer: §f$timer"))
         } catch (e: IllegalArgumentException) {
             Misc.addChatMessage(Component.literal("§cUnknown timer type: $name"))
         }
@@ -172,26 +168,26 @@ object DungeonWaypoints {
     @JvmStatic
     fun toggleUseBlockSize() {
         useBlockSize = !useBlockSize
-        Misc.addChatMessage(Component.literal("§7[fmwp] Use block size: " + (if (useBlockSize) "§aon" else "§coff")))
+        Misc.addChatMessage(Component.literal("§7[fm wp] Use block size: " + (if (useBlockSize) "§aon" else "§coff")))
     }
 
     @JvmStatic
     fun setOffset(x: Double, y: Double, z: Double) {
         offsetX = x; offsetY = y; offsetZ = z
-        Misc.addChatMessage(Component.literal("§7[fmwp] One-shot offset set to §f$x, $y, $z"))
+        Misc.addChatMessage(Component.literal("§7[fm wp] One-shot offset set to §f$x, $y, $z"))
     }
 
     @JvmStatic
     fun toggleThrough() {
         through = !through
-        Misc.addChatMessage(Component.literal("§7[fmwp] Through walls: " + (if (through) "§aon" else "§coff")))
+        Misc.addChatMessage(Component.literal("§7[fm wp] Through walls: " + (if (through) "§aon" else "§coff")))
     }
 
     /** Outline thickness in blocks — only visible when fill is off. */
     @JvmStatic
     fun setLineWidth(w: Double) {
         lineWidth = w.coerceIn(0.01, 0.5)
-        Misc.addChatMessage(Component.literal("§7[fmwp] Line size: §f$lineWidth"))
+        Misc.addChatMessage(Component.literal("§7[fm wp] Line size: §f$lineWidth"))
     }
 
     @JvmStatic
@@ -207,7 +203,7 @@ object DungeonWaypoints {
             val b = ((rgba shr 8) and 0xFF).toInt()
             val a = (rgba and 0xFF).toInt()
             color = (a shl 24) or (r shl 16) or (g shl 8) or b
-            Misc.addChatMessage(Component.literal("§7[fmwp] Color set."))
+            Misc.addChatMessage(Component.literal("§7[fm wp] Color set."))
         } catch (e: NumberFormatException) {
             Misc.addChatMessage(Component.literal("§cInvalid hex color: $hex"))
         }
@@ -231,7 +227,7 @@ object DungeonWaypoints {
         val clip = mc.keyboardHandler.clipboard
         val ok = DungeonWaypointStore.importBase64(clip)
         if (ok) {
-            lastTile = null // force re-apply
+            refreshLive() // force re-apply
             Misc.addChatMessage(Component.literal("§aWaypoint database imported from clipboard."))
         } else {
             Misc.addChatMessage(Component.literal("§cImport failed — clipboard doesn't look like a valid waypoint export."))
@@ -239,19 +235,14 @@ object DungeonWaypoints {
     }
 
     @JvmStatic
-    fun resetCurrentRoom() {
-        val tile = currentTile()
-        if (tile == null) {
-            Misc.addChatMessage(Component.literal("§cNot in a known dungeon room."))
+    fun resetCurrentArea() {
+        if (Location.inDungeon()) {
+            Misc.addChatMessage(Component.literal("§cWaypoints aren't available inside dungeons."))
             return
         }
-        DungeonWaypointStore.clearRoom(tileKey(tile))
-        applyRoom(tile)
-        Misc.addChatMessage(Component.literal("§aCleared waypoints for the current room."))
-    }
-
-    private fun tileKey(tile: GridPos): String {
-        return "tile:${tile.x()},${tile.z()}"
+        DungeonWaypointStore.clearRoom(globalKey())
+        applyGlobal()
+        Misc.addChatMessage(Component.literal("§aCleared waypoints for the current area."))
     }
 
     @JvmStatic
@@ -269,7 +260,7 @@ object DungeonWaypoints {
         }
         recordingRouteId = if (name == null || name.isBlank()) nextAutoRouteName() else name
         recordingNextOrder = 0
-        Misc.addChatMessage(Component.literal("§aRecording route '$recordingRouteId' — place waypoints in order, then §f/fmwp route§a to finish."))
+        Misc.addChatMessage(Component.literal("§aRecording route '$recordingRouteId' — place waypoints in order, then §f/fm wp route§a to finish."))
     }
 
     @JvmStatic
@@ -302,7 +293,7 @@ object DungeonWaypoints {
     @JvmStatic
     fun deleteRoute(name: String?) {
         if (name == null || name.isBlank()) {
-            Misc.addChatMessage(Component.literal("§cGive a route name: /fmwp route delete <name>"))
+            Misc.addChatMessage(Component.literal("§cGive a route name: /fm wp route delete <name>"))
             return
         }
         val n = DungeonWaypointStore.removeRoute(name)
@@ -316,9 +307,8 @@ object DungeonWaypoints {
         )
     }
 
-    private fun dungeonMode(): Boolean {
-        return Location.inDungeon() && MapReader.isCalibrated()
-    }
+    /** Waypoints are dungeon-run-specific ground truth we don't have; only usable outside a dungeon. */
+    private fun blocked(): Boolean = Location.inDungeon()
 
     /** Keyed by Skyblock island/zone rather than dimension, since Skyblock crams islands into one dimension. */
     private fun globalKey(): String {
@@ -345,25 +335,21 @@ object DungeonWaypoints {
     private fun onTick(mc: Minecraft) {
         if (mc.player == null || mc.level == null) {
             liveWaypoints.clear()
-            lastTile = null
             lastGlobalDim = null
             return
         }
 
-        if (dungeonMode()) {
+        if (blocked()) {
+            liveWaypoints.clear()
             lastGlobalDim = null
-            val tile = MapReader.worldToGridPos(mc.player!!.x, mc.player!!.z)
-            if (tile != lastTile) {
-                lastTile = tile
-                applyRoom(tile)
-            }
-        } else {
-            lastTile = null
-            val key = globalKey()
-            if (key != lastGlobalDim) {
-                lastGlobalDim = key
-                applyGlobal()
-            }
+            while (placeKey != null && placeKey!!.consumeClick()) { /* drop clicks while unavailable */ }
+            return
+        }
+
+        val key = globalKey()
+        if (key != lastGlobalDim) {
+            lastGlobalDim = key
+            applyGlobal()
         }
 
         advanceRouteProgress(mc)
@@ -401,12 +387,6 @@ object DungeonWaypoints {
         }
     }
 
-    private fun currentTile(): GridPos? {
-        val mc = Minecraft.getInstance()
-        if (mc.player == null || !MapReader.isCalibrated()) return null
-        return MapReader.worldToGridPos(mc.player!!.x, mc.player!!.z)
-    }
-
     /** Raycasts along the player's look vector, per [fishmod.features.PingFeature.placePing]. */
     private fun aimPoint(mc: Minecraft): Vec3 {
         val p = mc.player!!
@@ -427,42 +407,11 @@ object DungeonWaypoints {
     }
 
     private fun handlePlace(mc: Minecraft) {
-        if (!dungeonMode()) {
-            handlePlaceGlobal(mc)
+        if (blocked()) {
+            Misc.addChatMessage(Component.literal("§cWaypoints aren't available inside dungeons."))
             return
         }
-
-        val tile = currentTile()
-        if (tile == null) {
-            Misc.addChatMessage(Component.literal("§cNot in a known dungeon room."))
-            return
-        }
-
-        val aim = aimPoint(mc)
-        val px = aim.x + offsetX
-        val py = aim.y + offsetY
-        val pz = aim.z + offsetZ
-        offsetX = 0.0; offsetY = 0.0; offsetZ = 0.0 // one-shot
-
-        val key = tileKey(tile)
-        val canonical = toCanonical(tile, px, py, pz)
-
-        if (mc.player!!.isShiftKeyDown) {
-            mc.setScreen(DungeonWaypointTitleScreen { title ->
-                canonical.title = title
-                tagRoute(canonical)
-                DungeonWaypointStore.add(key, canonical)
-                applyRoom(tile)
-            })
-            return
-        }
-
-        val removed = DungeonWaypointStore.removeNear(key, canonical.x, canonical.y, canonical.z, PLACE_EPSILON)
-        if (!removed) {
-            tagRoute(canonical)
-            DungeonWaypointStore.add(key, canonical)
-        }
-        applyRoom(tile)
+        handlePlaceGlobal(mc)
     }
 
     /** If a route is currently being recorded, tags [w] with it and advances the recording order. */
@@ -526,48 +475,7 @@ object DungeonWaypoints {
     /** Called by the waypoint list GUI after it edits/deletes entries, to refresh what's currently rendering. */
     @JvmStatic
     fun refreshLive() {
-        if (dungeonMode()) {
-            val tile = currentTile()
-            if (tile != null) applyRoom(tile) else liveWaypoints.clear()
-        } else {
-            applyGlobal()
-        }
-    }
-
-    // ================= Canonical <-> live conversion =================
-
-    private fun toCanonical(tile: GridPos, worldX: Double, worldY: Double, worldZ: Double): StoredWaypoint {
-        val originX = MapReader.tileWorldOriginX(tile.x())
-        val originZ = MapReader.tileWorldOriginZ(tile.z())
-        val lx = worldX - (originX + 16)
-        val lz = worldZ - (originZ + 16)
-
-        val half = if (useBlockSize) 0.5 else size / 2.0
-        return StoredWaypoint(
-            lx, worldY, lz, half, half, half,
-            color, fill, through, null,
-            if (type == WaypointType.NONE) null else type.name,
-            if (timer == TimerType.NONE) null else timer.name
-        )
-    }
-
-    private fun toLive(w: StoredWaypoint, tile: GridPos): Vec3 {
-        val originX = MapReader.tileWorldOriginX(tile.x())
-        val originZ = MapReader.tileWorldOriginZ(tile.z())
-        return Vec3(originX + 16 + w.x, w.y, originZ + 16 + w.z)
-    }
-
-    private fun applyRoom(tile: GridPos) {
-        val result = ArrayList<LiveWaypoint>()
-        for (w in DungeonWaypointStore.get(tileKey(tile))) {
-            val center = toLive(w, tile)
-            val box = AABB(
-                center.x - w.halfX, center.y - w.halfY, center.z - w.halfZ,
-                center.x + w.halfX, center.y + w.halfY, center.z + w.halfZ
-            )
-            result.add(LiveWaypoint(box, w.color, w.filled, w.throughWalls, w.title, w.routeId, w.routeOrder))
-        }
-        liveWaypoints = result
+        if (blocked()) liveWaypoints.clear() else applyGlobal()
     }
 
     // ================= Rendering =================
@@ -619,7 +527,7 @@ object DungeonWaypoints {
         val cx = ctx.guiWidth() / 2
         val y = ctx.guiHeight() / 2 + 30
         val line = Component.literal(
-            "§b[fmwp] §7fill:" + (if (fill) "§ay" else "§cn") + " §7size:§f" + size
+            "§b[fm wp] §7fill:" + (if (fill) "§ay" else "§cn") + " §7size:§f" + size
                 + " §7dist:§f" + distance + " §7blockSize:" + (if (useBlockSize) "§ay" else "§cn")
                 + " §7through:" + (if (through) "§ay" else "§cn") + " §7type:§f" + type + " §7timer:§f" + timer
                 + (if (!fill) " §7line:§f$lineWidth" else "")

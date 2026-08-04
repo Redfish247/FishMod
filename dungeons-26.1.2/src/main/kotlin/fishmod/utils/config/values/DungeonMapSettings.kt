@@ -344,7 +344,7 @@ object DungeonMapSettings {
 
     @ConfigValue
     @JvmField
-    var mapScale: Float = 1.5f
+    var mapScale: Float = 1.0f
 
     @ConfigValue
     @JvmField

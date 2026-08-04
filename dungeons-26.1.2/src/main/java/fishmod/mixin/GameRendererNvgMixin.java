@@ -1,6 +1,7 @@
 package fishmod.mixin;
 
-import fishmod.features.FishModScreen;
+import fishmod.features.HasNvgOverlay;
+import fishmod.features.item.AnimatedDyeAnimator;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
@@ -39,7 +40,8 @@ public class GameRendererNvgMixin {
         )
     )
     private void fishmod$paintNvgOverlay(DeltaTracker deltaTracker, boolean tick, CallbackInfo ci) {
-        if (Minecraft.getInstance().screen instanceof FishModScreen screen) {
+        AnimatedDyeAnimator.tickFrame();
+        if (Minecraft.getInstance().screen instanceof HasNvgOverlay screen) {
             screen.paintNvgOverlay();
         }
     }

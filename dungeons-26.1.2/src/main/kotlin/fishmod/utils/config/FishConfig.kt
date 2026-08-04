@@ -6,6 +6,7 @@ import fishmod.features.dungeon.FishPuzzleDisplay
 import fishmod.features.dungeon.f7.F7Huds
 import fishmod.utils.config.values.Buttons
 import fishmod.utils.config.values.Dungeons
+import fishmod.utils.config.values.DungeonMapSettings
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.config.values.Floor7
 import fishmod.utils.dungeon.Phase
@@ -29,7 +30,8 @@ object FishConfig {
             Dungeons::class.java,
             Floor7::class.java,
             Buttons::class.java,
-            F7Huds::class.java
+            F7Huds::class.java,
+            DungeonMapSettings::class.java
         )
     )
 }

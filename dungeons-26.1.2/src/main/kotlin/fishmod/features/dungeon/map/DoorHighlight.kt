@@ -5,20 +5,18 @@ import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.config.values.DungeonMapSettings
 import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
+import net.minecraft.client.Minecraft
 import net.minecraft.world.phys.AABB
 
 /**
- * Legit (depth-tested) world-space highlight for already-seen locked doors, ported from System22's
- * `DoorEsp.drawDoorAuto`/`drawDoor` color-choice logic — but NOT `DoorEsp.java`'s rendering pipeline.
+ * World-space highlight for already-seen locked doors, ported from System22's
+ * `DoorEsp.drawDoorAuto`/`drawDoor` color-choice logic — but NOT `DoorEsp.java`'s "always visible
+ * through every wall" rendering.
  *
- * The excluded `DoorEsp.java` always rendered with `DepthTestFunction.NO_DEPTH_TEST`, i.e. through
- * walls, which is why it was left out of the earlier dungeon-map port. This feature is intentionally
- * different: it only ever highlights doors where [Door.seen] is already true (the player has
- * legitimately walked into a room touching that door), and it submits to [RenderingEvents.FILLED_BLOCK]
- * (backed by [fishmod.utils.rendering.RenderLayers.FILLED_LAYER]/[fishmod.utils.rendering.RenderLayers.getOutline]
- * with `depthCheck = true`), so normal terrain occludes it exactly like any other block. There is no
- * "legit mode" toggle here because it has no illegit behavior to gate — unlike the 2D map's
- * [DungeonMapSettings.mapLegitMode], which hides *unseen* info.
+ * `DoorEsp.java` was always visible from anywhere via `NO_DEPTH_TEST`. This port draws on the
+ * depth-tested [RenderingEvents.FILLED_BLOCK] layer instead, so it's properly occluded by any wall
+ * or terrain in front of it, and is additionally gated to only draw while the player is standing in
+ * one of [Door.rooms] — [visibleFromCurrentRoom].
  *
  * Color logic mirrors `DoorEsp.drawDoorAuto`: a door is "openable" once the player holds the
  * matching key (a Wither Key for a locked WITHER door, the Blood Key for a locked BLOOD door), using
@@ -27,7 +25,7 @@ import net.minecraft.world.phys.AABB
  * [DungeonMapSettings.mapDoorOpenableColor]/`Filled`; doors still locked without the key fall back to
  * the door's own already-ported per-type 2D-map color ([MapColors] via [Door]'s BLOOD/WITHER color
  * fields) so this doesn't need the `mapDoorEsp*` fields that were deliberately excluded from
- * [DungeonMapSettings] (that pair belongs to a separate through-wall addon, not this legit feature).
+ * [DungeonMapSettings] (that pair belongs to a separate through-wall addon, not this feature).
  */
 object DoorHighlight {
 
@@ -36,10 +34,6 @@ object DoorHighlight {
 
     @JvmStatic
     fun init() {
-        // Both the fill and the outline emit QUADS (renderThickOutline draws thin filled boxes for
-        // its edges, same as renderFilled's box), so both must go on the same depth-tested layer —
-        // mirrors DungeonWaypoints.kt's convention of pairing renderFilled + renderThickOutline on
-        // one RenderHandler, just using the depth-tested FILLED_BLOCK layer instead of NO_DEPTH_FILLED.
         RenderingEvents.FILLED_BLOCK.register { _, matrices, vc -> render(matrices, vc) }
     }
 
@@ -47,9 +41,17 @@ object DoorHighlight {
         return DungeonMapSettings.mapDoorHighlightEnabled && DungeonState.isInDungeon()
     }
 
+    /** True only while the player is standing in one of this door's own two adjacent rooms. */
+    private fun visibleFromCurrentRoom(door: Door): Boolean {
+        val player = Minecraft.getInstance().player ?: return false
+        val idx = MapVec2i(player.blockX, player.blockZ).index()
+        val here = Scan.roomsList.getOrNull(idx)?.owner ?: return false
+        return door.rooms.any { it.owner === here }
+    }
+
     private fun eligibleDoors(): List<Door> {
         return ArrayList(Scan.doors).filter { d ->
-            d.type != Door.Type.NORMAL && d.locked && d.seen
+            d.type != Door.Type.NORMAL && d.locked && d.seen && visibleFromCurrentRoom(d)
         }
     }
 
@@ -83,10 +85,14 @@ object DoorHighlight {
         }
     }
 
+    // Coincides exactly with the door's own solid blocks, which would z-fight against that same
+    // geometry. Inflating slightly pushes every face just in front of the block it highlights, so
+    // it wins the fight from the room side while still being properly occluded by any actual
+    // wall/terrain further away.
     private fun box(door: Door): AABB {
         val x = door.pos.x.toDouble()
         val z = door.pos.z.toDouble()
-        return AABB(x - 1.0, Y_MIN, z - 1.0, x + 2.0, Y_MAX, z + 2.0)
+        return AABB(x - 1.0, Y_MIN, z - 1.0, x + 2.0, Y_MAX, z + 2.0).inflate(0.02)
     }
 
     private fun render(matrices: PoseStack, vc: VertexConsumer) {

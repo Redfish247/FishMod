@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.Options;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
@@ -169,7 +170,11 @@ public class Keybinds {
             }
             if (changed) {
                 KeyMapping.resetMapping();
-                Minecraft.getInstance().options.save();
+                // options is null this early in startup (Minecraft's own constructor hasn't run
+                // yet); the rebound keys are already live in memory, options.txt just catches up
+                // whenever vanilla next saves on its own.
+                Options options = Minecraft.getInstance().options;
+                if (options != null) options.save();
             }
         } catch (IOException ignored) {}
     }

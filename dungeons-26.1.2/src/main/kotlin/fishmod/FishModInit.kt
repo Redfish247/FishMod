@@ -135,10 +135,10 @@ class FishModInit : ModInitializer {
             Misc.addChatMessage(t)
         }
 
-        /** Registers /fmwp (and its /dungeonwaypoints alias) — dungeon waypoint editor, see [fishmod.features.dungeon.DungeonWaypoints]. */
+        /** Builds the /fm wp (and /fm waypoint, /fm waypoints) subtree — waypoint editor, see [fishmod.features.dungeon.DungeonWaypoints]. */
         @JvmStatic
-        private fun registerDungeonWaypointCommand(dispatcher: CommandDispatcher<FabricClientCommandSource>) {
-            val tree = ClientCommands.literal("fmwp")
+        private fun waypointSubcommand(name: String): com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> {
+            val tree = ClientCommands.literal(name)
                 .executes { fishmod.features.dungeon.DungeonWaypoints.toggleEdit(); Constants.SUCCESS }
                 .then(ClientCommands.literal("edit").executes {
                     fishmod.features.dungeon.DungeonWaypoints.toggleEdit(); Constants.SUCCESS
@@ -256,7 +256,7 @@ class FishModInit : ModInitializer {
                     fishmod.features.dungeon.DungeonWaypoints.importFromClipboard(); Constants.SUCCESS
                 })
                 .then(ClientCommands.literal("reset").executes {
-                    fishmod.features.dungeon.DungeonWaypoints.resetCurrentRoom(); Constants.SUCCESS
+                    fishmod.features.dungeon.DungeonWaypoints.resetCurrentArea(); Constants.SUCCESS
                 })
                 .then(
                     ClientCommands.literal("route")
@@ -294,8 +294,7 @@ class FishModInit : ModInitializer {
                                 )
                         )
                 )
-            val node = dispatcher.register(tree)
-            dispatcher.register(ClientCommands.literal("dungeonwaypoints").redirect(node))
+            return tree
         }
 
         /** Prints a formatted reference of FishMod's commands and their argument formats to the player's chat. */
@@ -446,6 +445,12 @@ class FishModInit : ModInitializer {
                         }
                         Constants.SUCCESS
                     })
+                    .then(ClientCommands.literal("customize").executes {
+                        Minecraft.getInstance().schedule {
+                            Minecraft.getInstance().setScreen(fishmod.features.item.ItemCustomizeScreen())
+                        }
+                        Constants.SUCCESS
+                    })
                     .then(ClientCommands.literal("aliases").executes {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().setScreen(fishmod.features.CommandAliasesScreen())
@@ -460,6 +465,9 @@ class FishModInit : ModInitializer {
                         printCommandHelp()
                         Constants.SUCCESS
                     })
+                    .then(waypointSubcommand("wp"))
+                    .then(waypointSubcommand("waypoint"))
+                    .then(waypointSubcommand("waypoints"))
                     .executes {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().setScreen(fishmod.features.FishModScreen())
@@ -467,7 +475,6 @@ class FishModInit : ModInitializer {
                         Constants.SUCCESS
                     }
             )
-            registerDungeonWaypointCommand(dispatcher)
             dispatcher.register(
                 ClientCommands.literal("fmloot")
                     .executes {

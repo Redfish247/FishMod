@@ -30,7 +30,7 @@ import java.util.function.Supplier
 import kotlin.reflect.KMutableProperty0
 
 /** Multi-column config screen; each column scrolls independently and rows expand inline sub-panels. */
-class FishModScreen : Screen(Component.literal("FishMod")) {
+class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
     private val columns: MutableList<Column> = ArrayList()
     private var searchText = ""
@@ -610,6 +610,8 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     override fun extractBackground(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) { }
     override fun extractTransparentBackground(ctx: GuiGraphicsExtractor) { }
 
+    private var widgetRenderFailureLogged = false
+
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         if (resetArmed && System.currentTimeMillis() - resetArmedAt > 3000) resetArmed = false
         for (c in visibleColumns()) clampScroll(c)
@@ -622,10 +624,19 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         ctx.fillGradient(0, 0, this.width, this.height, DIM_TOP, DIM_BOT)
 
         hoverDesc = null
-        renderTopBar(ctx, mouseX, mouseY)
-        renderContent(ctx, mouseX, mouseY)
-        renderSearchBar(ctx, mouseX, mouseY)
-        renderHoverTooltip(ctx)
+        try {
+            renderTopBar(ctx, mouseX, mouseY)
+            renderContent(ctx, mouseX, mouseY)
+            renderSearchBar(ctx, mouseX, mouseY)
+            renderHoverTooltip(ctx)
+        } catch (t: Throwable) {
+            // Blur/dim above are already appended to the render state by this point; don't let a widget-layer
+            // exception strand the screen as blur-only with no diagnostic. Log once per screen instance.
+            if (!widgetRenderFailureLogged) {
+                widgetRenderFailureLogged = true
+                fishmod.utils.debug.Debug.LOGGER.error("[FishModScreen] widget rendering failed - screen will show blur only", t)
+            }
+        }
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
@@ -803,7 +814,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         for (s in f.sub) {
             val sh = s.getHeight()
             if (s !is SubcategoryHeader && s !is InputSetting && s !is SliderIntSetting && s !is SliderDoubleSetting &&
-                s !is InputIntSetting && s !is InputDoubleSetting) {
+                s !is InputIntSetting && s !is InputDoubleSetting && s !is ColorPickerSetting) {
                 st(ctx, this.font, s.name, leftX + 2, sy + (sh - 8) / 2, TEXT_COLOR)
             }
             s.render(ctx, leftX, rightX, sy, mouseX, mouseY, this.font)
@@ -924,22 +935,26 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
         // (above the row content, where there's nothing to scroll vertically anyway) pans sideways.
         val shiftDown = InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_LEFT_SHIFT) ||
             InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_RIGHT_SHIFT)
-        if (horizontalAmount != 0.0 || shiftDown || mouseY < cyTop()) {
-            val amount = if (horizontalAmount != 0.0) horizontalAmount else verticalAmount
-            hScroll = Mth.clamp((hScroll - amount * 24).toInt(), 0, maxHScroll())
-            return true
-        }
+
         val cols = visibleColumns()
         val colW = columnWidth()
-        for (i in cols.indices) {
-            val x0 = columnX0(i)
-            val x1 = x0 + colW
-            if (mouseX >= x0 && mouseX <= x1) {
-                val c = cols[i]
-                c.scroll = Mth.clamp((c.scroll - verticalAmount * 18).toInt(), 0, maxScrollFor(c))
-                return true
+        if (horizontalAmount == 0.0 && !shiftDown && mouseY >= cyTop()) {
+            for (i in cols.indices) {
+                val x0 = columnX0(i)
+                val x1 = x0 + colW
+                val colBottom = Math.min(cyTop() + columnContentHeight(cols[i]), cyBot())
+                if (mouseX >= x0 && mouseX <= x1 && mouseY <= colBottom) {
+                    val c = cols[i]
+                    c.scroll = Mth.clamp((c.scroll - verticalAmount * 18).toInt(), 0, maxScrollFor(c))
+                    return true
+                }
             }
         }
+
+        // Anywhere else in the panel (headers, blank gutters, below a short column's content)
+        // pans sideways instead of doing nothing.
+        val amount = if (horizontalAmount != 0.0) horizontalAmount else verticalAmount
+        hScroll = Mth.clamp((hScroll - amount * 24).toInt(), 0, maxHScroll())
         return true
     }
 
@@ -984,7 +999,7 @@ class FishModScreen : Screen(Component.literal("FishMod")) {
     private var nvgFailureLogged = false
 
     /** Called by GameRendererNvgMixin right after the vanilla GUI flush each frame, for correct z-ordering. */
-    fun paintNvgOverlay() {
+    override fun paintNvgOverlay() {
         nvgGlState.capture()
         try {
             val ctx = fishmod.utils.rendering.NvgContext.get()

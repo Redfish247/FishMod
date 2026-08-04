@@ -2,6 +2,7 @@ package fishmod.features
 
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import fishmod.utils.rendering.NvgRecorder
 
 /**
  * Shared smooth/anti-aliased drawing primitives + color palette for FishMod's custom GUI screens
@@ -113,6 +114,17 @@ object ScreenTheme {
         ctx.pose().popMatrix()
     }
     fun sw(tr: Font, s: String, scale: Float): Int = Math.ceil((tr.width(s) * scale).toDouble()).toInt()
+
+    private const val NVG_BASE_TEXT_SIZE = 9.5f
+
+    /** NanoVG (vector-font) text — for any new screen; avoids the blur [st]/[sst] produce when
+     *  they scale down Minecraft's bitmap font. Must be replayed later via a NanoVG overlay pass
+     *  (see [HasNvgOverlay]), never drawn immediately. */
+    fun nst(s: String, x: Int, y: Int, color: Int, scale: Float = TEXT_SCALE) {
+        NvgRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * scale, color)
+    }
+    fun nstw(s: String, scale: Float = TEXT_SCALE): Int =
+        Math.ceil(NvgRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * scale).toDouble()).toInt()
 
     fun drawChevron(ctx: GuiGraphicsExtractor, gx: Int, cy: Int, open: Boolean, color: Int) {
         if (open) {

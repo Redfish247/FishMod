@@ -119,6 +119,26 @@ object NvgRecorder {
         })
     }
 
+    /** Horizontal linear-gradient fill over a rect, left color to right color. */
+    @JvmStatic
+    fun fillRectHGradient(x: Float, y: Float, w: Float, h: Float, leftColor: Int, rightColor: Int) {
+        record(Runnable {
+            val ctx = NvgContext.get()
+            val paint = NVGPaint.calloc()
+            try {
+                val from = argb(leftColor, colorA)
+                val to = argb(rightColor, colorB)
+                NanoVG.nvgLinearGradient(ctx, x, y, x + w, y, from, to, paint)
+                NanoVG.nvgBeginPath(ctx)
+                NanoVG.nvgRect(ctx, x, y, w, h)
+                NanoVG.nvgFillPaint(ctx, paint)
+                NanoVG.nvgFill(ctx)
+            } finally {
+                paint.free()
+            }
+        })
+    }
+
     /** Small filled triangle: pointing down when `open`, right when closed. */
     @JvmStatic
     fun chevron(gx: Float, cy: Float, open: Boolean, color: Int) {
