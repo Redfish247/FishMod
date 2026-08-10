@@ -5,8 +5,7 @@ import java.util.regex.Pattern
 
 /**
  * Parses a Croesus reward-chest tooltip into item ids/quantities/display names, one [RewardItem]
- * per reward line up to the "Cost" line. Ported from FishModAddons' ItemParser (via AutoCroesus,
- * UnclaimedBloom6, used with permission); item-id resolution uses [SkyblockItems.idFor] instead.
+ * per reward line up to the "Cost" line.
  */
 object CroesusRewardParser {
     private val COLOR_STRIP: Pattern = Pattern.compile("§.")

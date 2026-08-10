@@ -377,11 +377,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
         // ===== Dungeon Map (ported from System22) =====
         run {
+            // Legit Mode / Insight Legit toggles live in FishModAddons only (via
+            // FishModAddonApi.registerDungeonToggle) — this core mod never exposes a way to turn
+            // legit mode off, and forces it back on every join regardless (see FishModInit).
             val f = Feature("Enable Map", fishmod.utils.config.values.DungeonMapSettings::mapEnabled)
-            if (fishmod.utils.Addons.fishModAddonsInstalled) {
-                f.sub.add(ToggleSetting("Legit Mode", "", fishmod.utils.config.values.DungeonMapSettings::mapLegitMode))
-                f.sub.add(ToggleSetting("Insight Legit", "", fishmod.utils.config.values.DungeonMapSettings::mapInsightLegit))
-            }
             f.sub.add(ColorPickerSetting("Background Color", "", fishmod.utils.config.values.DungeonMapSettings::mapBackgroundColor))
             f.sub.add(SliderIntSetting("Background Opacity %", "",
                 { ((fishmod.utils.config.values.DungeonMapSettings.mapBackgroundColor ushr 24) and 0xFF) * 100 / 255 },

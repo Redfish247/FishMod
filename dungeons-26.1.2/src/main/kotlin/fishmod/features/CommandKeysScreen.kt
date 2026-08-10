@@ -2,6 +2,10 @@ package fishmod.features
 
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.features.other.CommandKeys
+import fishmod.utils.rendering.NvgContext
+import fishmod.utils.rendering.NvgGlStateGuard
+import fishmod.utils.rendering.NvgRecorder
+import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
@@ -9,6 +13,7 @@ import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import org.lwjgl.glfw.GLFW
+import org.lwjgl.nanovg.NanoVG
 import kotlin.math.max
 import kotlin.math.min
 
@@ -23,7 +28,7 @@ import kotlin.math.min
  * (no vanilla [net.minecraft.client.gui.components.Button]), and the command [EditBox] fields
  * are borderless with a hand-drawn rounded-rect container behind them.
  */
-class CommandKeysScreen : Screen(Component.literal("Command Keys")) {
+class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverlay {
 
     companion object {
         private val ACCENT = ScreenTheme.ACCENT
@@ -75,8 +80,11 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")) {
 
     private val keyRects: MutableList<KeyRect> = ArrayList()
     private val removeRects: MutableList<ClickRect> = ArrayList()
+    private val cmdFields: MutableList<EditBox> = ArrayList()
+    private val cmdFieldRects: MutableList<ClickRect> = ArrayList()
     private var addBtn: ClickRect? = null
     private var doneBtn: ClickRect? = null
+    private var focusedRow = -1
 
     override fun init() {
         for (e in CommandKeys.all()) {
@@ -106,9 +114,10 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")) {
     }
 
     private fun rebuildRows() {
-        clearWidgets()
         keyRects.clear()
         removeRects.clear()
+        cmdFields.clear()
+        cmdFieldRects.clear()
 
         for (i in keys.indices) {
             val rowTop = listY + i * ROW_H - scroll
@@ -117,19 +126,20 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")) {
 
             keyRects.add(KeyRect(idx, listX, rowTop + 3, KEY_BTN_W, 18))
 
+            // Kept only for value/cursor state — never added as a Screen widget (its own
+            // extractRenderState() would flush before the NanoVG overlay and be invisible under it).
             val cmdField = EditBox(this.font, cmdFieldX + 4, rowTop + 3, cmdFieldW - 8, 18, Component.literal("Command"))
             cmdField.setMaxLength(256)
             cmdField.setBordered(false)
             cmdField.setValue(commands[i])
-            cmdField.setResponder { s ->
-                commands[idx] = s
-                persist()
-            }
-            addRenderableWidget(cmdField)
+            if (focusedRow == idx) cmdField.isFocused = true
+            cmdFields.add(cmdField)
+            cmdFieldRects.add(ClickRect(cmdFieldX, rowTop + 3, cmdFieldW, 18) { focusedRow = idx })
 
             removeRects.add(ClickRect(removeBtnX, rowTop + 3, REMOVE_BTN_W, 18) {
                 keys.removeAt(idx)
                 commands.removeAt(idx)
+                if (focusedRow == idx) focusedRow = -1
                 persist()
                 rebuildRows()
             })
@@ -146,19 +156,18 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")) {
     }
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
-        ctx.fill(panelX - 1, panelY - 1, panelX + panelW + 1, panelY + panelH + 1, BORDER)
-        ctx.fill(panelX, panelY, panelX + panelW, panelY + panelH, BG_PANEL)
-        ctx.fill(panelX, panelY, panelX + panelW, panelY + 22, BG_SECTION)
-        ctx.fill(panelX, panelY + 22, panelX + panelW, panelY + 23, ACCENT)
-        ctx.centeredText(this.font, "§b§lCommand Keys", panelX + panelW / 2, panelY + 7, 0xFFFFFF)
-        ctx.text(
-            this.font,
-            "§7Click a key box, then press a key or click a mouse button §8(Esc to unbind)",
-            panelX + 14, panelY + 30, SUBTEXT_COLOR
+        NvgRecorder.clear()
+        ScreenTheme.nPanel(panelX, panelY, panelX + panelW, panelY + panelH, 8, BG_PANEL, BORDER)
+        ScreenTheme.nRect(panelX, panelY, panelW, 22, BG_SECTION)
+        ScreenTheme.nRect(panelX, panelY + 22, panelW, 1, ACCENT)
+        ScreenTheme.nst("Command Keys", panelX + 14, panelY + 7, TEXT_COLOR)
+        ScreenTheme.nst(
+            "Click a key box, then press a key or click a mouse button (Esc to unbind)",
+            panelX + 14, panelY + 30, SUBTEXT_COLOR, 0.5f
         )
-        ScreenTheme.roundedRect(ctx, listX - 2, listY - 2, listW + 4, listH + 4, 6, LIST_BG)
+        ScreenTheme.nRoundedRect(listX - 2, listY - 2, listW + 4, listH + 4, 6, LIST_BG)
 
-        for (r in keyRects) {
+        for ((i, r) in keyRects.withIndex()) {
             val hover = r.hit(mouseX, mouseY)
             val capturing = capturingIndex == r.idx
             val k = keys[r.idx]
@@ -168,41 +177,41 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")) {
                 else -> k.displayName.string
             }
             val ring = if (capturing) ACCENT_HOVER else if (hover) ACCENT else FIELD_BORDER
-            ScreenTheme.roundedRectRing(ctx, r.x, r.y, r.w, r.h, 5, 1, FIELD_BG, ring)
-            var tw = ScreenTheme.stw(this.font, label)
+            ScreenTheme.nRoundedRectRing(r.x, r.y, r.w, r.h, 5, 1, FIELD_BG, ring)
+            var tw = ScreenTheme.nstw(label)
             var text = label
             val maxTextW = r.w - 8
             if (tw > maxTextW) {
-                while (text.length > 1 && ScreenTheme.stw(this.font, "$text…") > maxTextW) text = text.substring(0, text.length - 1)
-                text = "$text…"
-                tw = ScreenTheme.stw(this.font, text)
+                while (text.length > 1 && ScreenTheme.nstw("$text...") > maxTextW) text = text.substring(0, text.length - 1)
+                text = "$text..."
+                tw = ScreenTheme.nstw(text)
             }
-            ScreenTheme.st(ctx, this.font, text, r.x + (r.w - tw) / 2, r.y + (r.h - 8) / 2, if (capturing) ACCENT_HOVER else TEXT_COLOR)
+            ScreenTheme.nst(text, r.x + (r.w - tw) / 2, r.y + (r.h - 8) / 2, if (capturing) ACCENT_HOVER else TEXT_COLOR)
 
-            ScreenTheme.roundedRectRing(ctx, cmdFieldX, r.y, cmdFieldW, 18, 5, 1, FIELD_BG, FIELD_BORDER)
+            if (i < cmdFields.size) ScreenTheme.nTextField(cmdFields[i], cmdFields[i].isFocused, cmdFieldX, r.y, cmdFieldW, 18)
         }
 
         for (r in removeRects) {
             val hover = r.hit(mouseX, mouseY)
-            ScreenTheme.pill(ctx, r.x, r.y, r.x + r.w, r.y + r.h, if (hover) DANGER_HOVER else DANGER)
+            ScreenTheme.nPill(r.x, r.y, r.x + r.w, r.y + r.h, if (hover) DANGER_HOVER else DANGER)
             val label = "X"
-            val tw = ScreenTheme.stw(this.font, label)
-            ScreenTheme.st(ctx, this.font, label, r.x + (r.w - tw) / 2, r.y + (r.h - 8) / 2, 0xFF2A0808.toInt())
+            val tw = ScreenTheme.nstw(label)
+            ScreenTheme.nst(label, r.x + (r.w - tw) / 2, r.y + (r.h - 8) / 2, 0xFF2A0808.toInt())
         }
 
         addBtn?.let { r ->
             val hover = r.hit(mouseX, mouseY)
-            ScreenTheme.pill(ctx, r.x, r.y, r.x + r.w, r.y + r.h, if (hover) ACCENT_HOVER else ACCENT)
+            ScreenTheme.nPill(r.x, r.y, r.x + r.w, r.y + r.h, if (hover) ACCENT_HOVER else ACCENT)
             val label = "+ Add Command Key"
-            val tw = ScreenTheme.stw(this.font, label)
-            ScreenTheme.st(ctx, this.font, label, r.x + (r.w - tw) / 2, r.y + (r.h - 8) / 2, 0xFF06302F.toInt())
+            val tw = ScreenTheme.nstw(label)
+            ScreenTheme.nst(label, r.x + (r.w - tw) / 2, r.y + (r.h - 8) / 2, 0xFF06302F.toInt())
         }
         doneBtn?.let { r ->
             val hover = r.hit(mouseX, mouseY)
-            ScreenTheme.roundedRectRing(ctx, r.x, r.y, r.w, r.h, r.h / 2, 1, 0xFF14181D.toInt(), if (hover) ACCENT_HOVER else ACCENT)
+            ScreenTheme.nRoundedRectRing(r.x, r.y, r.w, r.h, r.h / 2, 1, 0xFF14181D.toInt(), if (hover) ACCENT_HOVER else ACCENT)
             val label = "Done"
-            val tw = ScreenTheme.stw(this.font, label)
-            ScreenTheme.st(ctx, this.font, label, r.x + (r.w - tw) / 2, r.y + (r.h - 8) / 2, if (hover) ACCENT_HOVER else TEXT_COLOR)
+            val tw = ScreenTheme.nstw(label)
+            ScreenTheme.nst(label, r.x + (r.w - tw) / 2, r.y + (r.h - 8) / 2, if (hover) ACCENT_HOVER else TEXT_COLOR)
         }
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
@@ -222,7 +231,10 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")) {
         }
 
         for (r in keyRects) {
-            if (r.hit(mx, my)) { capturingIndex = r.idx; return true }
+            if (r.hit(mx, my)) { capturingIndex = r.idx; focusedRow = -1; return true }
+        }
+        for (r in cmdFieldRects) {
+            if (r.hit(mx, my)) { r.action(); return true }
         }
         for (r in removeRects) {
             if (r.hit(mx, my)) { r.action(); return true }
@@ -230,6 +242,7 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")) {
         addBtn?.let { if (it.hit(mx, my)) { it.action(); return true } }
         doneBtn?.let { if (it.hit(mx, my)) { it.action(); return true } }
 
+        focusedRow = -1
         return super.mouseClicked(click, doubled)
     }
 
@@ -242,7 +255,30 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")) {
             rebuildRows()
             return true
         }
+        if (focusedRow in commands.indices) {
+            val fi = cmdFields.indexOfFirst { it.isFocused }
+            if (fi >= 0) {
+                if (input.key() == GLFW.GLFW_KEY_ESCAPE) { focusedRow = -1; cmdFields[fi].isFocused = false; return true }
+                cmdFields[fi].keyPressed(input)
+                commands[focusedRow] = cmdFields[fi].value
+                persist()
+                return true
+            }
+        }
         return super.keyPressed(input)
+    }
+
+    override fun charTyped(input: net.minecraft.client.input.CharacterEvent): Boolean {
+        if (focusedRow in commands.indices) {
+            val fi = cmdFields.indexOfFirst { it.isFocused }
+            if (fi >= 0) {
+                cmdFields[fi].charTyped(input)
+                commands[focusedRow] = cmdFields[fi].value
+                persist()
+                return true
+            }
+        }
+        return super.charTyped(input)
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
@@ -250,5 +286,28 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")) {
         scroll = max(0, min(maxScroll, scroll - (verticalAmount * ROW_H).toInt()))
         rebuildRows()
         return true
+    }
+
+    // ── NanoVG overlay ───────────────────────────────────────────────────────────
+
+    private val nvgGlState = NvgGlStateGuard()
+    private var nvgFailureLogged = false
+
+    override fun paintNvgOverlay() {
+        nvgGlState.capture()
+        try {
+            val ctx = NvgContext.get()
+            val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
+            NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
+            NvgRecorder.replay()
+            NanoVG.nvgEndFrame(ctx)
+        } catch (t: Throwable) {
+            if (!nvgFailureLogged) {
+                nvgFailureLogged = true
+                fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] CommandKeysScreen paintNvgOverlay failed", t)
+            }
+        } finally {
+            nvgGlState.restore()
+        }
     }
 }

@@ -126,6 +126,67 @@ object ScreenTheme {
     fun nstw(s: String, scale: Float = TEXT_SCALE): Int =
         Math.ceil(NvgRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * scale).toDouble()).toInt()
 
+    // ----- true NanoVG (deferred, vector) shape helpers — use these for any screen painted via
+    // HasNvgOverlay instead of the ctx.fill-based helpers above, which draw immediately and can't
+    // be used from extractRenderState on an NvgRecorder-backed screen. -----
+
+    fun nRoundedRect(x: Int, y: Int, w: Int, h: Int, r: Int, color: Int) {
+        NvgRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), color)
+    }
+
+    fun nRect(x: Int, y: Int, w: Int, h: Int, color: Int) {
+        NvgRecorder.fillRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), color)
+    }
+
+    fun nRoundedRectRing(x: Int, y: Int, w: Int, h: Int, r: Int, strokeW: Int, fillColor: Int, ringColor: Int) {
+        NvgRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), strokeW.toFloat(), fillColor, ringColor)
+    }
+
+    fun nPill(x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
+        val h = y2 - y1
+        nRoundedRect(x1, y1, x2 - x1, h, h / 2, color)
+    }
+
+    fun nPanel(x1: Int, y1: Int, x2: Int, y2: Int, r: Int, fill: Int, border: Int) {
+        nRoundedRect(x1, y1, x2 - x1, y2 - y1, r, border)
+        nRoundedRect(x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), fill)
+    }
+
+    fun nDisc(cx: Int, cy: Int, r: Int, color: Int) {
+        NvgRecorder.disc(cx.toFloat(), cy.toFloat(), r.toFloat(), color)
+    }
+
+    fun nChevron(gx: Int, cy: Int, open: Boolean, color: Int) {
+        NvgRecorder.chevron(gx.toFloat(), cy.toFloat(), open, color)
+    }
+
+    /** A vanilla EditBox.extractRenderState() call would flush immediately and be invisible behind
+     *  the NanoVG overlay drawn after it, so this redraws the field's box + text + caret entirely
+     *  via NanoVG instead; the EditBox itself must be kept only as data/cursor state (never added
+     *  to the Screen's widget list — drive keyPressed/charTyped/mouseClicked to it by hand). */
+    fun nTextField(field: net.minecraft.client.gui.components.EditBox, focused: Boolean, x: Int, y: Int, w: Int, h: Int, textSize: Float = 7f) {
+        nRoundedRectRing(x, y, w, h, 3, 1, FIELD_BG_DEFAULT, if (focused) ACCENT else FIELD_BORDER_DEFAULT)
+        nTextFieldContent(field, focused, x, y, w, h, textSize)
+    }
+
+    fun nTextFieldContent(field: net.minecraft.client.gui.components.EditBox, focused: Boolean, x: Int, y: Int, w: Int, h: Int, textSize: Float = 7f) {
+        val text = field.value
+        val cursor = field.cursorPosition.coerceIn(0, text.length)
+        val cursorX = NvgRecorder.textWidth(text.substring(0, cursor), textSize)
+        val pad = 3f
+        val visibleW = w - pad * 2f
+        val scroll = Math.max(0f, cursorX - visibleW)
+        NvgRecorder.pushScissor((x + 1).toFloat(), (y + 1).toFloat(), (w - 2).toFloat(), (h - 2).toFloat())
+        NvgRecorder.text(text, x + pad - scroll, y + (h - textSize) / 2f, textSize, TEXT_COLOR)
+        if (focused && (System.currentTimeMillis() / 500) % 2 == 0L) {
+            NvgRecorder.fillRect(x + pad + cursorX - scroll, (y + 2).toFloat(), 1f, (h - 4).toFloat(), TEXT_COLOR)
+        }
+        NvgRecorder.popScissor()
+    }
+
+    private val FIELD_BG_DEFAULT = 0xFF1A1E26.toInt()
+    private val FIELD_BORDER_DEFAULT = 0xFF2E333D.toInt()
+
     fun drawChevron(ctx: GuiGraphicsExtractor, gx: Int, cy: Int, open: Boolean, color: Int) {
         if (open) {
             ctx.fill(gx, cy - 2, gx + 7, cy - 1, color)

@@ -1,5 +1,10 @@
 package fishmod.features.croesus
 
+import fishmod.features.HasNvgOverlay
+import fishmod.features.ScreenTheme
+import fishmod.utils.rendering.NvgContext
+import fishmod.utils.rendering.NvgGlStateGuard
+import fishmod.utils.rendering.NvgRecorder
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.EditBox
@@ -10,10 +15,11 @@ import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.util.Mth
 import org.lwjgl.glfw.GLFW
+import org.lwjgl.nanovg.NanoVG
 import java.text.DecimalFormat
 
 /** Full-page /fmloot screen; rows are populated by `CroesusLootDetector`, this is just the view. */
-class LootTrackerScreen : Screen(Component.literal("Loot Tracker")) {
+class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverlay {
 
     // computed each frame
     private var contentX0 = 0
@@ -80,31 +86,32 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")) {
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         curMx = mouseX; curMy = mouseY
-        ctx.fillGradient(0, 0, this.width, this.height, BG_TOP, BG_BOT)
+        NvgRecorder.clear()
+        NvgRecorder.fillRectVGradient(0f, 0f, this.width.toFloat(), this.height.toFloat(), BG_TOP, BG_BOT)
 
         contentX0 = MARGIN
         contentX1 = this.width - MARGIN
         contentY0 = MARGIN
         contentY1 = this.height - MARGIN
 
-        ctx.fill(contentX0 - 1, contentY0 - 1, contentX1 + 1, contentY1 + 1, PANEL_BORDER)
-        ctx.fill(contentX0, contentY0, contentX1, contentY1, PANEL_BG)
-        ctx.fill(contentX0, contentY0, contentX1, contentY0 + 3, ACCENT)
+        ScreenTheme.nRect(contentX0 - 1, contentY0 - 1, contentX1 - contentX0 + 2, contentY1 - contentY0 + 2, PANEL_BORDER)
+        ScreenTheme.nRect(contentX0, contentY0, contentX1 - contentX0, contentY1 - contentY0, PANEL_BG)
+        ScreenTheme.nRect(contentX0, contentY0, contentX1 - contentX0, 3, ACCENT)
 
         val allRows = LootTrackerStore.rows()
         val runs = LootTrackerStore.runs()
         val rows = filterRows(allRows)
 
-        renderHeader(ctx)
-        val statBottom = renderStats(ctx, allRows, runs)
-        val searchBottom = renderSearch(ctx, statBottom + GAP)
+        renderHeader()
+        val statBottom = renderStats(allRows, runs)
+        val searchBottom = renderSearch(statBottom + GAP)
 
         listTop = searchBottom + GAP
         listX0 = contentX0 + PAD
         listX1 = contentX1 - PAD
         listH = (contentY1 - PAD - FOOTER_H) - listTop
-        renderList(ctx, rows)
-        renderFooter(ctx, allRows, rows)
+        renderList(rows)
+        renderFooter(allRows, rows)
 
         if (clearArmed && System.currentTimeMillis() - clearArmedAt > 3000) clearArmed = false
 
@@ -121,20 +128,22 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")) {
         return out
     }
 
-    private fun renderHeader(ctx: GuiGraphicsExtractor) {
+    private fun renderHeader() {
         val y = contentY0 + PAD
-        ctx.text(this.font, "§l§bLoot Tracker", contentX0 + PAD, y, TEXT, true)
-        ctx.text(this.font, "§8Auto-tracked from Croesus chests", contentX0 + PAD, y + 11, SUBTEXT, true)
+        ScreenTheme.nst("Loot Tracker", contentX0 + PAD, y, ACCENT)
+        ScreenTheme.nst("Auto-tracked from Croesus chests", contentX0 + PAD, y + 11, SUBTEXT, 0.5f)
 
         closeS = 18
         closeX = contentX1 - PAD - closeS
         closeY = contentY0 + PAD - 3
         val hov = hit(curMx.toDouble(), curMy.toDouble(), closeX, closeY, closeS, closeS)
-        ctx.fill(closeX, closeY, closeX + closeS, closeY + closeS, if (hov) BTN_HOV else BTN_BG)
-        ctx.centeredText(this.font, Component.literal("§7x"), closeX + closeS / 2, closeY + 5, if (hov) 0xFFFFFFFF.toInt() else SUBTEXT)
+        ScreenTheme.nRect(closeX, closeY, closeS, closeS, if (hov) BTN_HOV else BTN_BG)
+        val label = "x"
+        val tw = ScreenTheme.nstw(label)
+        ScreenTheme.nst(label, closeX + closeS / 2 - tw / 2, closeY + 5, if (hov) 0xFFFFFFFF.toInt() else SUBTEXT)
     }
 
-    private fun renderStats(ctx: GuiGraphicsExtractor, rows: List<LootTrackerStore.Row>, runs: Int): Int {
+    private fun renderStats(rows: List<LootTrackerStore.Row>, runs: Int): Int {
         val y = contentY0 + HEADER_H
         var totalDrops = 0
         var total = 0.0
@@ -147,69 +156,65 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")) {
         val usableW = contentX1 - contentX0 - PAD * 2
         val tileW = (usableW - 6 * 3) / 4
         var x = contentX0 + PAD
-        statTile(ctx, x, y, tileW, "TOTAL", fmtCoins(total), GOLD); x += tileW + 6
-        statTile(ctx, x, y, tileW, "PER RUN", fmtCoins(perRun), GOLD); x += tileW + 6
-        statTile(ctx, x, y, tileW, "DROPS", totalDrops.toString(), TEXT); x += tileW + 6
+        statTile(x, y, tileW, "TOTAL", fmtCoins(total), GOLD); x += tileW + 6
+        statTile(x, y, tileW, "PER RUN", fmtCoins(perRun), GOLD); x += tileW + 6
+        statTile(x, y, tileW, "DROPS", totalDrops.toString(), TEXT); x += tileW + 6
 
         // runs tile — click the value to edit it directly (no +/- steppers)
         runsY = y
         runsTileX = x
         val rx = x
         val rhov = hit(curMx.toDouble(), curMy.toDouble(), rx, y, tileW, STAT_H - 6)
-        ctx.fill(rx, y, rx + tileW, y + STAT_H - 6, if (rhov) BTN_HOV else TILE_BG)
-        ctx.fill(rx, y, rx + tileW, y + 1, TILE_BORDER)
-        ctx.text(this.font, "§8RUNS", rx + 6, y + 5, SUBTEXT, false)
+        ScreenTheme.nRect(rx, y, tileW, STAT_H - 6, if (rhov) BTN_HOV else TILE_BG)
+        ScreenTheme.nRect(rx, y, tileW, 1, TILE_BORDER)
+        ScreenTheme.nst("RUNS", rx + 6, y + 5, SUBTEXT, 0.5f)
         if (editKind == 1) {
-            renderEditBox(ctx, rx + 6, y + 17)
+            renderEditBox(rx + 6, y + 17)
         } else {
-            val rs = runs.toString()
-            ctx.text(this.font, "§f$rs", rx + 6, y + 18, TEXT, false)
+            ScreenTheme.nst(runs.toString(), rx + 6, y + 18, TEXT)
         }
 
         return y + STAT_H
     }
 
-    private fun statTile(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, label: String, value: String, color: Int) {
-        ctx.fill(x, y, x + w, y + STAT_H - 6, TILE_BG)
-        ctx.fill(x, y, x + w, y + 1, TILE_BORDER)
-        ctx.text(this.font, "§8$label", x + 6, y + 5, SUBTEXT, false)
-        val v = this.font.plainSubstrByWidth(value, w - 10)
-        ctx.text(this.font, v, x + 6, y + 18, color, false)
+    private fun statTile(x: Int, y: Int, w: Int, label: String, value: String, color: Int) {
+        ScreenTheme.nRect(x, y, w, STAT_H - 6, TILE_BG)
+        ScreenTheme.nRect(x, y, w, 1, TILE_BORDER)
+        ScreenTheme.nst(label, x + 6, y + 5, SUBTEXT, 0.5f)
+        ScreenTheme.nst(clip(value, w - 10), x + 6, y + 18, color)
     }
 
-    private fun renderSearch(ctx: GuiGraphicsExtractor, y: Int): Int {
+    private fun renderSearch(y: Int): Int {
         searchX = contentX0 + PAD
         searchY = y
         searchW = contentX1 - contentX0 - PAD * 2
         searchH = SEARCH_H
 
         val focused = searchField.isFocused
-        ctx.fill(searchX, searchY, searchX + searchW, searchY + searchH, if (focused) SEARCH_BG_FOCUS else SEARCH_BG)
-        ctx.fill(searchX, searchY, searchX + searchW, searchY + 1, if (focused) ACCENT else TILE_BORDER)
+        ScreenTheme.nRect(searchX, searchY, searchW, searchH, if (focused) SEARCH_BG_FOCUS else SEARCH_BG)
+        ScreenTheme.nRect(searchX, searchY, searchW, 1, if (focused) ACCENT else TILE_BORDER)
 
-        ctx.text(this.font, "§8🔍", searchX + 6, searchY + (searchH - 8) / 2, SUBTEXT, false)
+        ScreenTheme.nst("search:", searchX + 6, searchY + (searchH - 8) / 2, SUBTEXT, 0.5f)
 
-        searchField.setX(searchX + 16)
-        searchField.setY(searchY + (searchH - (searchH - 8)) / 2)
-        searchField.width = searchW - 22
-        searchField.extractRenderState(ctx, curMx, curMy, 0f)
-        if (searchField.value.isEmpty() && !searchField.isFocused) {
-            ctx.text(this.font, "§8Search drops...", searchX + 16 + 2, searchY + (searchH - 8) / 2, SUBTEXT, false)
+        val fieldX = searchX + 34
+        ScreenTheme.nTextFieldContent(searchField, focused, fieldX, searchY, searchW - 40, searchH)
+        if (searchField.value.isEmpty() && !focused) {
+            ScreenTheme.nst("Search drops...", fieldX + 2, searchY + (searchH - 8) / 2, SUBTEXT, 0.5f)
         }
 
         return searchY + searchH
     }
 
-    private fun renderList(ctx: GuiGraphicsExtractor, rows: List<LootTrackerStore.Row>) {
+    private fun renderList(rows: List<LootTrackerStore.Row>) {
         val x0 = listX0
         val x1 = listX1
-        ctx.enableScissor(x0, listTop, x1, listTop + listH)
+        NvgRecorder.pushScissor(x0.toFloat(), listTop.toFloat(), (x1 - x0).toFloat(), listH.toFloat())
 
         val searching = searchField.value.trim().isNotEmpty()
 
         if (rows.isEmpty()) {
-            val msg = if (searching) "§8no drops match your search" else "§8no drops tracked yet — open a Croesus chest"
-            ctx.text(this.font, msg, x0, listTop + 6, SUBTEXT, true)
+            val msg = if (searching) "no drops match your search" else "no drops tracked yet - open a Croesus chest"
+            ScreenTheme.nst(msg, x0, listTop + 6, SUBTEXT, 0.5f)
             rowY = IntArray(0)
         } else {
             val maxScroll = Math.max(0, rows.size * ROW_H - listH)
@@ -228,29 +233,29 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")) {
 
                 val hov = hit(curMx.toDouble(), curMy.toDouble(), x0, rowTop, x1 - x0, ROW_H)
                 val bg = if (hov) ROW_HOVER else (if ((i and 1) == 1) ROW_BG_ALT else ROW_BG)
-                ctx.fill(x0, rowTop, x1, rowTop + ROW_H - 1, bg)
+                ScreenTheme.nRect(x0, rowTop, x1 - x0, ROW_H - 1, bg)
 
                 rowY[i] = rowTop
 
                 val countY = rowTop + (ROW_H - rowCountH) / 2
                 if (isEditingRow(r)) {
-                    renderEditBox(ctx, rowCountX, countY)
+                    renderEditBox(rowCountX, countY)
                 } else {
                     val chov = hit(curMx.toDouble(), curMy.toDouble(), rowCountX, countY, rowCountW, rowCountH)
-                    ctx.fill(rowCountX, countY, rowCountX + rowCountW, countY + rowCountH, if (chov) BTN_HOV else BTN_BG)
+                    ScreenTheme.nRect(rowCountX, countY, rowCountW, rowCountH, if (chov) BTN_HOV else BTN_BG)
                     val cs = r.count.toString()
-                    val cw = this.font.width(cs)
-                    ctx.text(this.font, cs, rowCountX + (rowCountW - cw) / 2, countY + 4, if (chov) ACCENT else TEXT, false)
+                    val cw = ScreenTheme.nstw(cs)
+                    ScreenTheme.nst(cs, rowCountX + (rowCountW - cw) / 2, countY + 4, if (chov) ACCENT else TEXT)
                 }
 
                 val v = rowValue(r)
-                val value = if (v > 0) fmtCoins(v) else "—"
-                val vw = this.font.width(value)
+                val value = if (v > 0) fmtCoins(v) else "-"
+                val vw = ScreenTheme.nstw(value)
                 val valX = x1 - 8 - vw
                 val textY = rowTop + (ROW_H - 8) / 2
-                ctx.text(this.font, value, valX, textY, if (v > 0) GOLD else SUBTEXT, false)
+                ScreenTheme.nst(value, valX, textY, if (v > 0) GOLD else SUBTEXT)
                 val maxNameW = Math.max(10, valX - nameX - 6)
-                ctx.text(this.font, this.font.plainSubstrByWidth(r.name, maxNameW), nameX, textY, TEXT, false)
+                ScreenTheme.nst(clip(r.name, maxNameW), nameX, textY, TEXT)
             }
 
             if (maxScroll > 0) {
@@ -258,35 +263,42 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")) {
                 val trackH = listH
                 val barH = Math.max(10, trackH * listH / (rows.size * ROW_H))
                 val barY = listTop + (trackH - barH) * scroll / Math.max(1, maxScroll)
-                ctx.fill(barX, listTop, barX + 2, listTop + trackH, 0x33FFFFFF)
-                ctx.fill(barX, barY, barX + 2, barY + barH, ACCENT)
+                ScreenTheme.nRect(barX, listTop, 2, trackH, 0x33FFFFFF)
+                ScreenTheme.nRect(barX, barY, 2, barH, ACCENT)
             }
         }
 
-        ctx.disableScissor()
+        NvgRecorder.popScissor()
     }
 
-    private fun renderFooter(ctx: GuiGraphicsExtractor, allRows: List<LootTrackerStore.Row>, shownRows: List<LootTrackerStore.Row>) {
+    private fun renderFooter(allRows: List<LootTrackerStore.Row>, shownRows: List<LootTrackerStore.Row>) {
         val y = contentY1 - PAD - FOOTER_H + 8
 
         val clearW0 = 140
         clearX = contentX0 + PAD; clearY = y; clearW = clearW0; clearH = FOOTER_H - 8
         val hov = hit(curMx.toDouble(), curMy.toDouble(), clearX, clearY, clearW, clearH)
-        ctx.fill(clearX, clearY, clearX + clearW, clearY + clearH, if (hov) DANGER_HOV else DANGER_BG)
+        ScreenTheme.nRect(clearX, clearY, clearW, clearH, if (hov) DANGER_HOV else DANGER_BG)
         val label = if (clearArmed) "Click again to confirm" else "Clear All"
-        val lw = this.font.width(label)
-        ctx.text(this.font, label, clearX + (clearW - lw) / 2, clearY + (clearH - 8) / 2, DANGER, false)
+        val lw = ScreenTheme.nstw(label)
+        ScreenTheme.nst(label, clearX + (clearW - lw) / 2, clearY + (clearH - 8) / 2, DANGER)
 
         if (shownRows.size != allRows.size) {
             val info = shownRows.size.toString() + " / " + allRows.size + " drops shown"
-            val iw = this.font.width(info)
-            ctx.text(this.font, "§8$info", contentX1 - PAD - iw, y + (clearH - 8) / 2, SUBTEXT, false)
+            val iw = ScreenTheme.nstw(info)
+            ScreenTheme.nst(info, contentX1 - PAD - iw, y + (clearH - 8) / 2, SUBTEXT, 0.5f)
         }
     }
 
-    private fun renderEditBox(ctx: GuiGraphicsExtractor, x: Int, y: Int) {
+    private fun renderEditBox(x: Int, y: Int) {
         editBox.setX(x); editBox.setY(y); editBox.width = rowCountW
-        editBox.extractRenderState(ctx, curMx, curMy, 0f)
+        ScreenTheme.nTextField(editBox, true, x, y, rowCountW, rowCountH)
+    }
+
+    private fun clip(s: String, maxW: Int): String {
+        if (ScreenTheme.nstw(s) <= maxW) return s
+        var out = s
+        while (out.length > 1 && ScreenTheme.nstw("$out...") > maxW) out = out.substring(0, out.length - 1)
+        return "$out..."
     }
 
     // ── input ────────────────────────────────────────────────────────────────
@@ -407,6 +419,29 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")) {
     }
 
     override fun isPauseScreen(): Boolean = false
+
+    // ── NanoVG overlay ───────────────────────────────────────────────────────────
+
+    private val nvgGlState = NvgGlStateGuard()
+    private var nvgFailureLogged = false
+
+    override fun paintNvgOverlay() {
+        nvgGlState.capture()
+        try {
+            val ctx = NvgContext.get()
+            val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
+            NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
+            NvgRecorder.replay()
+            NanoVG.nvgEndFrame(ctx)
+        } catch (t: Throwable) {
+            if (!nvgFailureLogged) {
+                nvgFailureLogged = true
+                fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] LootTrackerScreen paintNvgOverlay failed", t)
+            }
+        } finally {
+            nvgGlState.restore()
+        }
+    }
 
     companion object {
         // palette — dark slate with a teal accent, matches the rest of FishMod's screens

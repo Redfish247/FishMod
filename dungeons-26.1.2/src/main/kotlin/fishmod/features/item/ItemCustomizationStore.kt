@@ -21,7 +21,8 @@ object ItemCustomizationStore {
         val dyeColors: MutableMap<String, Int> = HashMap(),
         val animatedDyes: MutableMap<String, AnimatedDye> = HashMap(),
         val armorTrims: MutableMap<String, ArmorTrimId> = HashMap(),
-        val itemNames: MutableMap<String, String> = HashMap()
+        val itemNames: MutableMap<String, String> = HashMap(),
+        val modelIds: MutableMap<String, String> = HashMap()
     )
 
     private var data = Data()
@@ -43,6 +44,11 @@ object ItemCustomizationStore {
     @JvmStatic fun getItemName(uuid: String): String? = data.itemNames[uuid]
     @JvmStatic fun setItemName(uuid: String, name: String) { data.itemNames[uuid] = name; save() }
     @JvmStatic fun removeItemName(uuid: String) { if (data.itemNames.remove(uuid) != null) save() }
+
+    /** Custom ITEM_MODEL override (e.g. "minecraft:trident") — reskins the item as another item's model. */
+    @JvmStatic fun getModelId(uuid: String): String? = data.modelIds[uuid]
+    @JvmStatic fun setModelId(uuid: String, id: String) { data.modelIds[uuid] = id; save() }
+    @JvmStatic fun removeModelId(uuid: String) { if (data.modelIds.remove(uuid) != null) save() }
 
     private fun load() {
         val file = File(FILE_PATH)

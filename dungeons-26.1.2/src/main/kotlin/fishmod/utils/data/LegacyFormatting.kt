@@ -5,9 +5,10 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
 
-/** Parses a raw string containing legacy '&sect;'-formatting codes into a real styled [Component],
- *  so custom item names typed with color/format codes in /fm customize actually render styled
- *  wherever the item's hover name is drawn (tooltips, hotbar, etc), not just as literal text. */
+/** Parses a raw string containing legacy '&'/'§'-formatting codes (plus "&*" ✪ stars and "&#rrggbb"
+ *  hex colors) into a real styled [Component], so custom item names typed with color/format codes
+ *  in /fm customize actually render styled wherever the item's hover name is drawn (tooltips,
+ *  hotbar, etc), not just as literal text. Mirrors [fishmod.cosmetic.NickState.parse]. */
 object LegacyFormatting {
 
     @JvmStatic
@@ -26,8 +27,24 @@ object LegacyFormatting {
 
         while (i < raw.length) {
             val c = raw[i]
-            if (c == '§' && i + 1 < raw.length) {
-                val fmt = ChatFormatting.getByCode(raw[i + 1])
+            if ((c == '&' || c == '§') && i + 1 < raw.length) {
+                val next = raw[i + 1]
+                // "&*" inserts a SkyBlock star (✪) in the color set right before it.
+                if (next == '*') {
+                    sb.append('✪')
+                    i += 2
+                    continue
+                }
+                if (next == '#' && i + 7 < raw.length) {
+                    val hex = raw.substring(i + 2, i + 8)
+                    if (hex.matches(Regex("[0-9a-fA-F]{6}"))) {
+                        flush()
+                        style = Style.EMPTY.withColor(net.minecraft.network.chat.TextColor.parseColor("#$hex").getOrThrow())
+                        i += 8
+                        continue
+                    }
+                }
+                val fmt = ChatFormatting.getByCode(next.lowercaseChar())
                 if (fmt != null) {
                     flush()
                     style = if (fmt == ChatFormatting.RESET) Style.EMPTY else style.applyFormat(fmt)
@@ -53,8 +70,22 @@ object LegacyFormatting {
         fun flush() { if (sb.isNotEmpty()) { out.add(sb.toString() to color); sb.setLength(0) } }
         while (i < raw.length) {
             val c = raw[i]
-            if (c == '§' && i + 1 < raw.length) {
-                val fmt = ChatFormatting.getByCode(raw[i + 1])
+            if ((c == '&' || c == '§') && i + 1 < raw.length) {
+                val next = raw[i + 1]
+                // NanoVG-only preview: use a plain '*' since the Inter face used by NanoVG previews
+                // doesn't carry the ✪ glyph (the real name, rendered via Minecraft's own font
+                // wherever the item is actually shown, keeps the true '✪' character — see [parse]).
+                if (next == '*') { sb.append('*'); i += 2; continue }
+                if (next == '#' && i + 7 < raw.length) {
+                    val hex = raw.substring(i + 2, i + 8)
+                    if (hex.matches(Regex("[0-9a-fA-F]{6}"))) {
+                        flush()
+                        color = (0xFF shl 24) or hex.toInt(16)
+                        i += 8
+                        continue
+                    }
+                }
+                val fmt = ChatFormatting.getByCode(next.lowercaseChar())
                 if (fmt != null) {
                     flush()
                     if (fmt == ChatFormatting.RESET) color = 0xFFFFFFFF.toInt()

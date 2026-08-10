@@ -188,7 +188,7 @@ object DungeonScore {
 
     @JvmStatic
     fun calculateMaxBonusScore(): Int {
-        val prince = if (DungeonMapSettings.mapLegitMode) Prince.legitPrince else Prince.cheaterPrince
+        val prince = if (MapColors.legit()) Prince.legitPrince else Prince.cheaterPrince
         return 5 + (if (prince) 1 else 0) + (if (DungeonState.floorNumber() >= 6) 2 else 0)
     }
 

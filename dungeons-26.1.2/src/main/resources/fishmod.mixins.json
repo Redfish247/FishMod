@@ -39,6 +39,7 @@
     "EntityRendererMixin",
     "EntityRenderStateMixin",
     "ItemModelBehaviorMixin",
+    "ItemModelOverrideMixin",
     "PlayerEntityRendererScaleMixin",
     "HandledScreenMixin",
     "InventoryScreenMixin",

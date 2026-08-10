@@ -1063,6 +1063,14 @@ class FishModInit : ModInitializer {
             )
         })
 
+        // Legit-mode map settings are only ever toggled off by FishModAddons; they must never stay
+        // off silently across a relog/update, so force them back to their safe (legit) defaults on
+        // every server join. FishModAddons re-applies whatever it wants after this fires.
+        ClientPlayConnectionEvents.JOIN.register(ClientPlayConnectionEvents.Join { _, _, _ ->
+            fishmod.utils.config.values.DungeonMapSettings.mapLegitMode = true
+            fishmod.utils.config.values.DungeonMapSettings.mapInsightLegit = false
+        })
+
         // Both mods register /cata; Brigadier honors whichever executes() registered last, which isn't
         // deterministic at init — so we re-register ours on every server join to win.
         ClientPlayConnectionEvents.JOIN.register(ClientPlayConnectionEvents.Join { _, _, _ ->

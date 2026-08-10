@@ -13,9 +13,11 @@ object DungeonMapSettings {
     @JvmField
     var mapEnabled: Boolean = false
 
+    // Forced back to true (and mapInsightLegit to false) on every server join — see FishModInit's
+    // JOIN listener. Only FishModAddons ever flips these off, and only for the current session.
     @ConfigValue
     @JvmField
-    var mapLegitMode: Boolean = false
+    var mapLegitMode: Boolean = true
 
     @ConfigValue
     @JvmField

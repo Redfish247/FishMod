@@ -1,15 +1,19 @@
 package fishmod.features
 
+import fishmod.utils.rendering.NvgContext
+import fishmod.utils.rendering.NvgGlStateGuard
+import fishmod.utils.rendering.NvgRecorder
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.util.Util
+import org.lwjgl.nanovg.NanoVG
 import kotlin.math.min
 
 /** Small centered credits panel (matches the FishMod overlay style) with a clickable Discord link. */
-class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Credits")) {
+class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Credits")), HasNvgOverlay {
 
     companion object {
         private const val ACCENT = 0xFF24B6B0.toInt()
@@ -47,59 +51,61 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
     private fun py(): Int = (this.height - ph()) / 2
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
-        ctx.fill(0, 0, this.width, this.height, SCRIM)
+        NvgRecorder.clear()
+        ScreenTheme.nRect(0, 0, this.width, this.height, SCRIM)
 
         val lx = px()
         val ty = py()
         val rx = lx + pw()
         val by = ty + ph()
         val cx = (lx + rx) / 2
-        ctx.fillGradient(lx, ty, rx, by, BG_TOP, BG_BOT)
-        ctx.fill(lx, ty, rx, ty + 1, BORDER)
-        ctx.fill(lx, by - 1, rx, by, BORDER)
-        ctx.fill(lx, ty, lx + 1, by, BORDER)
-        ctx.fill(rx - 1, ty, rx, by, BORDER)
+        NvgRecorder.fillRectVGradient(lx.toFloat(), ty.toFloat(), (rx - lx).toFloat(), (by - ty).toFloat(), BG_TOP, BG_BOT)
+        ScreenTheme.nRect(lx, ty, rx - lx, 1, BORDER)
+        ScreenTheme.nRect(lx, by - 1, rx - lx, 1, BORDER)
+        ScreenTheme.nRect(lx, ty, 1, by - ty, BORDER)
+        ScreenTheme.nRect(rx - 1, ty, 1, by - ty, BORDER)
 
-        ctx.centeredText(this.font, Component.literal("§lFish§b§lMod"), cx, ty + 14, TEXT)
-        ctx.centeredText(this.font, Component.literal("Credits"), cx, ty + 26, SUBTEXT)
-        ctx.fill(lx + 24, ty + 40, rx - 24, ty + 41, DIVIDER)
+        centeredNst("FishMod", cx, ty + 14, TEXT)
+        centeredNst("Credits", cx, ty + 26, SUBTEXT, 0.5f)
+        ScreenTheme.nRect(lx + 24, ty + 40, rx - lx - 48, 1, DIVIDER)
 
         var y = ty + 52
-        drawCredit(ctx, lx + 26, y, "RedFish", "creator — everything else")
+        drawCredit(lx + 26, y, "RedFish", "creator - everything else")
         y += 28
-        drawCredit(ctx, lx + 26, y, "BladeMasterGabe", "splits & dungeon features")
+        drawCredit(lx + 26, y, "BladeMasterGabe", "splits & dungeon features")
         y += 28
-        drawCredit(ctx, lx + 26, y, "Sushiest", "dungeon help & UI changes")
+        drawCredit(lx + 26, y, "Sushiest", "dungeon help & UI changes")
         y += 28
-        drawCredit(ctx, lx + 26, y, "22yrs", "dungeon map, ported with permission")
+        drawCredit(lx + 26, y, "22yrs", "dungeon map, ported with permission")
         y += 28
 
-        linkW = this.font.width(DISCORD) + 24
+        linkW = ScreenTheme.nstw(DISCORD) + 24
         linkH = 18
         linkX = cx - linkW / 2
         linkY = by - 60
         val linkHov = inside(mouseX, mouseY, linkX, linkY, linkW, linkH)
-        ctx.fill(linkX, linkY, linkX + linkW, linkY + linkH, if (linkHov) 0xFF1B2733.toInt() else 0xFF131B22.toInt())
-        ctx.fill(linkX, linkY, linkX + linkW, linkY + 1, if (linkHov) ACCENT_HOVER else DISCORD_BLURPLE)
-        ctx.centeredText(
-            this.font,
-            Component.literal((if (linkHov) "§b" else "§9") + DISCORD), cx, linkY + 5, DISCORD_BLURPLE
-        )
+        ScreenTheme.nRect(linkX, linkY, linkW, linkH, if (linkHov) 0xFF1B2733.toInt() else 0xFF131B22.toInt())
+        ScreenTheme.nRect(linkX, linkY, linkW, 1, if (linkHov) ACCENT_HOVER else DISCORD_BLURPLE)
+        centeredNst(DISCORD, cx, linkY + 5, DISCORD_BLURPLE)
 
         backW = 72
         backH = 22
         backX = cx - backW / 2
         backY = by - 32
         val backHov = inside(mouseX, mouseY, backX, backY, backW, backH)
-        ctx.fill(backX, backY, backX + backW, backY + backH, if (backHov) ACCENT_HOVER else ACCENT)
-        ctx.centeredText(this.font, Component.literal("Back"), cx, backY + (backH - 8) / 2, 0xFF052A29.toInt())
+        ScreenTheme.nRoundedRect(backX, backY, backW, backH, 4, if (backHov) ACCENT_HOVER else ACCENT)
+        centeredNst("Back", cx, backY + (backH - 8) / 2, 0xFF052A29.toInt())
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
 
-    private fun drawCredit(ctx: GuiGraphicsExtractor, x: Int, y: Int, name: String, role: String) {
-        ctx.text(this.font, Component.literal(name), x, y, TEXT, false)
-        ctx.text(this.font, Component.literal("§7$role"), x + 6, y + 11, SUBTEXT, false)
+    private fun centeredNst(s: String, cx: Int, y: Int, color: Int, scale: Float = ScreenTheme.TEXT_SCALE) {
+        ScreenTheme.nst(s, cx - ScreenTheme.nstw(s, scale) / 2, y, color, scale)
+    }
+
+    private fun drawCredit(x: Int, y: Int, name: String, role: String) {
+        ScreenTheme.nst(name, x, y, TEXT)
+        ScreenTheme.nst(role, x + 6, y + 11, SUBTEXT, 0.5f)
     }
 
     private fun inside(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int): Boolean {
@@ -125,5 +131,28 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
 
     override fun onClose() {
         Minecraft.getInstance().setScreen(parent)
+    }
+
+    // ── NanoVG overlay ───────────────────────────────────────────────────────────
+
+    private val nvgGlState = NvgGlStateGuard()
+    private var nvgFailureLogged = false
+
+    override fun paintNvgOverlay() {
+        nvgGlState.capture()
+        try {
+            val ctx = NvgContext.get()
+            val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
+            NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
+            NvgRecorder.replay()
+            NanoVG.nvgEndFrame(ctx)
+        } catch (t: Throwable) {
+            if (!nvgFailureLogged) {
+                nvgFailureLogged = true
+                fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] CreditsScreen paintNvgOverlay failed", t)
+            }
+        } finally {
+            nvgGlState.restore()
+        }
     }
 }

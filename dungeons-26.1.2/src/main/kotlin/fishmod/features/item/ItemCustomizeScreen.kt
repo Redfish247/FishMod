@@ -15,6 +15,7 @@ import net.minecraft.client.input.CharacterEvent
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
+import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.item.ItemStack
 import org.lwjgl.glfw.GLFW
 import org.lwjgl.nanovg.NanoVG
@@ -22,552 +23,557 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * /fm customize — local-only cosmetic item editor (solid/animated dye, armor trim, rename),
- * keyed by an item's Hypixel instance uuid. Heavily modeled on Skyblocker's CustomizeScreen +
- * ColorSelectionWidget + AnimatedDyeTimelineWidget + ItemSelectPopup (github.com/SkyblockerMod/
- * Skyblocker, MIT), restyled onto FishMod's own NanoVG pill/dropdown visual language instead of
- * vanilla widgets. Item texture/model overrides are intentionally out of scope (see project notes).
+ * /fm customize — a clearer, friendlier item customizer (restored flat layout, replacing the
+ * tabbed/animated-dye design). PICK an item (worn armor or inventory slot), then edit its Name,
+ * Dye and armor Trim. Backed by [ItemCustomizationStore] (client-only, keyed by the item's
+ * Hypixel instance uuid) — the same persistence used by [DyedItemColorMixin]/[ItemTrimMixin]/
+ * [ItemStackMixin], so item-model and head-skin overrides from the original pre-port screen are
+ * intentionally out of scope (no persistence/render path for them anymore).
+ *
+ * Painted entirely through [NvgRecorder] following [fishmod.features.FishModScreen]'s pattern —
+ * widget interaction (EditBox focus, grid/legend/dropdown hit-testing) stays plain Screen code.
  */
-class ItemCustomizeScreen : Screen(Component.literal("Customize Item")), HasNvgOverlay {
+class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgOverlay {
 
     private companion object {
+        const val CELL = 22
+
+        val BG_PANEL = 0xF20E1016.toInt()
+        val BG_SECTION = 0xFF171A22.toInt()
+        val PANEL_BORDER = 0xFF2A2D38.toInt()
+        val FIELD_BG = 0xFF1B1E27.toInt()
+        val FIELD_BORDER = 0xFF2E333D.toInt()
         val ACCENT = ScreenTheme.ACCENT
         val ACCENT_HOVER = ScreenTheme.ACCENT_HOVER
-        val TEXT_COLOR = ScreenTheme.TEXT_COLOR
-        val SUBTEXT_COLOR = ScreenTheme.SUBTEXT_COLOR
+        val TEXT_PRIM = ScreenTheme.TEXT_COLOR
+        val TEXT_HINT = ScreenTheme.SUBTEXT_COLOR
+        val SLOT_BG = 0xFF2A2D38.toInt()
+        val SLOT_SEL = 0xFF55FF55.toInt()
+        val ROW_HOVER = 0xFF2A2D38.toInt()
+        val LIST_BG = 0xFF14161D.toInt()
         val DANGER = ScreenTheme.DANGER
         val DANGER_HOVER = ScreenTheme.DANGER_HOVER
-        const val BG_PANEL = 0xF20E1016.toInt()
-        const val BG_SECTION = 0xFF171A22.toInt()
-        const val BORDER = 0xFF2A2D38.toInt()
-        val FIELD_BG = 0xFF1A1E26.toInt()
-        val FIELD_BORDER = 0xFF2E333D.toInt()
 
-        val PRESETS = intArrayOf(
-            0xFFFFFFFF.toInt(), 0xFFFF5555.toInt(), 0xFFFF9F40.toInt(), 0xFFFFD34D.toInt(),
-            0xFF6BE36B.toInt(), 0xFF40C4FF.toInt(), 0xFF5C7CFF.toInt(), 0xFFB25CFF.toInt(),
-            0xFFFF5CD3.toInt(), 0xFF2B2B2B.toInt()
+        // &-code → RGB for the clickable color key (matches the main /fm legend).
+        val CODE_COLORS: Array<IntArray> = arrayOf(
+            intArrayOf('0'.code, 0x000000), intArrayOf('1'.code, 0x0000AA), intArrayOf('2'.code, 0x00AA00), intArrayOf('3'.code, 0x00AAAA),
+            intArrayOf('4'.code, 0xAA0000), intArrayOf('5'.code, 0xAA00AA), intArrayOf('6'.code, 0xFFAA00), intArrayOf('7'.code, 0xAAAAAA),
+            intArrayOf('8'.code, 0x555555), intArrayOf('9'.code, 0x5555FF), intArrayOf('a'.code, 0x55FF55), intArrayOf('b'.code, 0x55FFFF),
+            intArrayOf('c'.code, 0xFF5555), intArrayOf('d'.code, 0xFF55FF), intArrayOf('e'.code, 0xFFFF55), intArrayOf('f'.code, 0xFFFFFF)
+        )
+        val CODE_FORMATS: Array<Array<String>> = arrayOf(
+            arrayOf("l", "B"), arrayOf("o", "I"), arrayOf("n", "U"), arrayOf("m", "S"), arrayOf("k", "K"), arrayOf("r", "R")
         )
 
-        val NAME_COLORS = intArrayOf(
-            0xFF000000.toInt(), 0xFF0000AA.toInt(), 0xFF00AA00.toInt(), 0xFF00AAAA.toInt(),
-            0xFFAA0000.toInt(), 0xFFAA00AA.toInt(), 0xFFFFAA00.toInt(), 0xFFAAAAAA.toInt(),
-            0xFF555555.toInt(), 0xFF5555FF.toInt(), 0xFF55FF55.toInt(), 0xFF55FFFF.toInt(),
-            0xFFFF5555.toInt(), 0xFFFF55FF.toInt(), 0xFFFFFF55.toInt(), 0xFFFFFFFF.toInt()
+        // Hypixel SkyBlock dyes (name, RRGGBB). Not exhaustive — the hex box covers anything missing.
+        val DYES: Array<Array<String>> = arrayOf(
+            arrayOf("Pure White", "FFFFFF"), arrayOf("Pure Black", "000000"), arrayOf("Pure Yellow", "FFF700"), arrayOf("Pure Blue", "0013FF"),
+            arrayOf("Aquamarine", "7FFFD4"), arrayOf("Bingo Blue", "002FA7"), arrayOf("Bone", "E3DAC9"), arrayOf("Brick Red", "CB4154"),
+            arrayOf("Byzantium", "702963"), arrayOf("Carmine", "960018"), arrayOf("Celadon", "ACE1AF"), arrayOf("Celeste", "B2FFFF"),
+            arrayOf("Cyclamen", "F56FA1"), arrayOf("Dark Purple", "301934"), arrayOf("Emerald", "50C878"), arrayOf("Flame", "E25822"),
+            arrayOf("Holly", "3C6746"), arrayOf("Iceberg", "71A6D2"), arrayOf("Livid", "6699CC"), arrayOf("Mango", "FDBE02"),
+            arrayOf("Midnight", "702670"), arrayOf("Nadeshiko", "F6ADC6"), arrayOf("Necron", "E7413C"), arrayOf("Nyanza", "E9FFDB"),
+            arrayOf("Tentacle", "324D6C"), arrayOf("Wild Strawberry", "FF43A4"),
+            arrayOf("White", "F9FFFE"), arrayOf("Light Gray", "999999"), arrayOf("Gray", "4C4C4C"), arrayOf("Ink Sac (Black)", "191919"),
+            arrayOf("Rose Red", "993333"), arrayOf("Orange", "D87F33"), arrayOf("Dandelion Yellow", "E5E533"), arrayOf("Lime", "7FCC19"),
+            arrayOf("Cactus Green", "667F33"), arrayOf("Light Blue", "6699D8"), arrayOf("Cyan", "4C7F99"), arrayOf("Lapis (Blue)", "334CB2"),
+            arrayOf("Purple", "7F3FB2"), arrayOf("Magenta", "B24CD8"), arrayOf("Pink", "F27FA5"), arrayOf("Cocoa (Brown)", "664C33")
         )
-        val NAME_CODES = charArrayOf('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
+        val DYE_RGB: IntArray = IntArray(DYES.size) { i -> java.lang.Long.parseLong(DYES[i][1], 16).toInt() }
+
+        fun dyeIndex(rgbIn: Int): Int {
+            val rgb = rgbIn and 0xFFFFFF
+            for (i in DYE_RGB.indices) if ((DYE_RGB[i] and 0xFFFFFF) == rgb) return i
+            return -1
+        }
+
+        fun cap(s: String): String = if (s.isEmpty()) s else s[0].uppercaseChar() + s.substring(1)
+
+        fun inBox(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int): Boolean =
+            mx >= x && mx <= x + w && my >= y && my <= y + h
+
+        fun brightness(rgb: Int): Int {
+            val r = (rgb shr 16) and 0xFF; val g = (rgb shr 8) and 0xFF; val b = rgb and 0xFF
+            return (r * 299 + g * 587 + b * 114) / 1000
+        }
     }
 
-    private class ClickRect(var x: Int, var y: Int, var w: Int, var h: Int, val action: () -> Unit) {
-        fun hit(mx: Int, my: Int) = mx in x..(x + w) && my in y..(y + h)
-    }
-
-    private class SliderInfo { var x = 0; var y = 0; var w = 0; var h = 8; var min = 0f; var max = 1f }
-
-    private var uuid: String? = null
-    private var currentItem: ItemStack = ItemStack.EMPTY
     private var panelX = 0
     private var panelY = 0
-    private val panelW = 480
-    private val panelH = 430
+    private val panelW = 440
+    private val panelH = 434
+    private var gridX = 0
+    private var gridY = 0
+    private var armorX = 0
+    private var armorY = 0
+    private var legendX = 0
+    private var legendY = 0
+    private var selectedIndex = 0
+    private lateinit var nameField: EditBox
+    private lateinit var modelField: EditBox
+    private lateinit var dyeField: EditBox
+    private lateinit var dyeDropdown: Dropdown
+    private lateinit var trimMatDropdown: Dropdown
+    private lateinit var trimPatDropdown: Dropdown
 
-    private var mode = "dye" // dye | trim | name
-    private val modeTabs = ArrayList<Pair<String, ClickRect>>()
-    private var changeItemBtn: ClickRect? = null
-
-    // ----- item picker -----
-    private var pickerOpen = false
-    private val pickerRects = ArrayList<Pair<ItemStack, ClickRect>>()
-    private var pickerCancelBtn: ClickRect? = null
-
-    // ----- dye -----
-    private var animated = false
-    private var solidColor = 0xFFFFFFFF.toInt()
-    private val presetRects = ArrayList<Pair<Int, ClickRect>>()
-    private var animatedToggle: ClickRect? = null
-    private var cycleBackToggle: ClickRect? = null
-    private var hexField: EditBox? = null
-    private var hexRect = ClickRect(0, 0, 0, 0) {}
-
-    private class KeyframeRow(var color: Int, var time: Float, val locked: Boolean)
-    private val keyframes = ArrayList<KeyframeRow>()
-    private var selectedFrame = 0
-    private var draggingFrame = -1
-    private val frameMarkerRects = ArrayList<Pair<Int, ClickRect>>()
-    private var cycleBack = true
-    private var delay = 0f
-    private var duration = 1f
-    private var timelineRect = ClickRect(0, 0, 0, 0) {}
-    private val delaySlider = SliderInfo()
-    private val durationSlider = SliderInfo()
-    private var draggingSlider = 0 // 0 none, 1 delay, 2 duration
-
-    // ----- trim -----
     private val trimMaterials by lazy { ArmorTrimCache.materials() }
     private val trimPatterns by lazy { ArmorTrimCache.patterns() }
-    private var trimMaterialIdx = 0
-    private var trimPatternIdx = 0
-    private val materialRects = ArrayList<Pair<Int, ClickRect>>()
-    private val patternRects = ArrayList<Pair<Int, ClickRect>>()
 
-    // ----- rename -----
-    private var nameField: EditBox? = null
-    private var nameFieldRect = ClickRect(0, 0, 0, 0) {}
-    private val colorRects = ArrayList<Pair<Char, ClickRect>>()
-    private val formatRects = ArrayList<Pair<Char, ClickRect>>()
-    private var resetNameBtn: ClickRect? = null
+    // &-code key hit-boxes, rebuilt each frame, consumed by mouseClicked.
+    private val keyRects = ArrayList<IntArray>()
+    private val keyCodes = ArrayList<String>()
 
-    private var applyBtn: ClickRect? = null
-    private var clearBtn: ClickRect? = null
-    private var doneBtn: ClickRect? = null
-
-    private var focusedField: EditBox? = null
+    private fun inv(): Inventory = minecraft!!.player!!.inventory
+    private fun mainCount(): Int = min(36, inv().containerSize)
 
     override fun init() {
+        if (minecraft == null || minecraft!!.player == null) return
+
         panelX = (this.width - panelW) / 2
         panelY = max(8, (this.height - panelH) / 2)
 
-        val held = Minecraft.getInstance().player?.mainHandItem
-        if (held != null && !held.isEmpty && ItemUtil.getUuid(held) != null) {
-            currentItem = held
-            uuid = ItemUtil.getUuid(held)
-            loadFromStore()
+        val held = minecraft!!.player!!.mainHandItem
+        for (i in 0 until mainCount()) if (inv().getItem(i) === held) { selectedIndex = i; break }
+
+        val p = panelX + 14
+        val contentW = panelW - 28
+
+        val pickY = panelY + 58
+        armorX = p
+        armorY = pickY + 16
+        gridX = p + 4 * CELL + 12
+        gridY = armorY
+
+        legendX = p
+        legendY = panelY + 192
+
+        val labelW = 46
+        val fx = p + labelW
+        val fw = contentW - labelW
+
+        val nameY = legendY + 58
+        val dyeY = nameY + 28
+        val trimY = dyeY + 28
+        val modelY = trimY + 28
+
+        // Kept only for value/cursor state — never added as a Screen widget (its own
+        // extractRenderState() would flush before the NanoVG overlay and be invisible under it).
+        nameField = EditBox(this.font, fx, nameY, fw, 18, Component.literal("Name"))
+        nameField.setMaxLength(128)
+        nameField.setBordered(false)
+
+        modelField = EditBox(this.font, fx, modelY, fw, 18, Component.literal("Model"))
+        modelField.setMaxLength(64)
+        modelField.setBordered(false)
+
+        dyeField = EditBox(this.font, fx + 190, dyeY, fw - 190, 18, Component.literal("Hex"))
+        dyeField.setMaxLength(6)
+        dyeField.setBordered(false)
+
+        dyeDropdown = Dropdown("Pick a dye...", fx, dyeY, 184)
+        for (d in DYES) dyeDropdown.labels.add(d[0])
+        dyeDropdown.swatches = DYE_RGB
+        dyeDropdown.onChange = Runnable {
+            if (dyeDropdown.selected >= 0) { dyeField.setValue(DYES[dyeDropdown.selected][1]); applyDye() }
+        }
+
+        val half = (fw - 6) / 2
+        trimMatDropdown = Dropdown("Material", fx, trimY, half)
+        for (s in trimMaterials) trimMatDropdown.labels.add(cap(s.substringAfterLast(':')))
+        trimMatDropdown.onChange = Runnable { applyTrim() }
+        trimPatDropdown = Dropdown("Pattern", fx + half + 6, trimY, half)
+        for (s in trimPatterns) trimPatDropdown.labels.add(cap(s.substringAfterLast(':')))
+        trimPatDropdown.onChange = Runnable { applyTrim() }
+
+        val btnY = panelY + panelH - 30
+        val btnW = 90
+        val btnX = panelX + (panelW - btnW * 3 - 12) / 2
+        resetRect = ClickRect(btnX, btnY, btnW, 20) { reset() }
+        doneRect = ClickRect(btnX + btnW + 6, btnY, btnW, 20) { onClose() }
+        applyRect = ClickRect(btnX + (btnW + 6) * 2, btnY, btnW, 20) { applyAll() }
+
+        loadFields()
+    }
+
+    private class ClickRect(val x: Int, val y: Int, val w: Int, val h: Int, val action: () -> Unit) {
+        fun hit(mx: Int, my: Int) = inBox(mx, my, x, y, w, h)
+    }
+
+    private var resetRect: ClickRect? = null
+    private var doneRect: ClickRect? = null
+    private var applyRect: ClickRect? = null
+
+    // ── load / apply / reset ───────────────────────────────────────────────────
+
+    private fun uuidOf(st: ItemStack): String? = if (st.isEmpty) null else ItemUtil.getUuid(st)
+
+    private fun loadFields() {
+        val sel = inv().getItem(selectedIndex)
+        val id = uuidOf(sel)
+
+        nameField.setValue(if (id != null) ItemCustomizationStore.getItemName(id) ?: "" else "")
+
+        val defaultModel = if (!sel.isEmpty) net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(sel.item).toString() else ""
+        modelField.setValue(if (id != null) ItemCustomizationStore.getModelId(id) ?: defaultModel else defaultModel)
+
+        val dye = if (id != null) ItemCustomizationStore.getDyeColor(id) else null
+        dyeField.setValue(if (dye != null) String.format("%06X", dye and 0xFFFFFF) else "")
+        dyeDropdown.selected = if (dye != null) dyeIndex(dye) else -1
+
+        val trim = if (id != null) ItemCustomizationStore.getArmorTrim(id) else null
+        trimMatDropdown.selected = if (trim != null) trimMaterials.indexOf(trim.material) else -1
+        trimPatDropdown.selected = if (trim != null) trimPatterns.indexOf(trim.pattern) else -1
+
+        dyeDropdown.close(); trimMatDropdown.close(); trimPatDropdown.close()
+    }
+
+    private fun dyeAllowed(st: ItemStack?): Boolean {
+        if (st == null || st.isEmpty) return false
+        return try { st.has(net.minecraft.core.component.DataComponents.DYED_COLOR) } catch (e: Exception) { false }
+    }
+
+    private fun applyName() {
+        val id = uuidOf(inv().getItem(selectedIndex)) ?: return
+        val v = nameField.value
+        if (v.isBlank()) ItemCustomizationStore.removeItemName(id) else ItemCustomizationStore.setItemName(id, v)
+    }
+
+    private fun applyModel() {
+        val sel = inv().getItem(selectedIndex)
+        val id = uuidOf(sel) ?: return
+        val v = modelField.value.trim()
+        val defaultModel = if (!sel.isEmpty) net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(sel.item).toString() else ""
+        if (v.isBlank() || v == defaultModel || net.minecraft.resources.Identifier.tryParse(v) == null) {
+            ItemCustomizationStore.removeModelId(id)
         } else {
-            pickerOpen = true
-        }
-        buildStaticLayout()
-    }
-
-    private fun buildStaticLayout() {
-        modeTabs.clear()
-        val tabs = listOf("dye" to "Dye", "trim" to "Trim", "name" to "Rename")
-        val tabW = (panelW - 28) / tabs.size
-        val tabY = panelY + 58
-        for ((i, m) in tabs.withIndex()) {
-            val x = panelX + 14 + i * tabW
-            modeTabs.add(m.first to ClickRect(x, tabY, tabW - 4, 20) { mode = m.first; focusField(null) })
-        }
-        changeItemBtn = ClickRect(panelX + panelW - 14 - 100, panelY + 30, 100, 20) { openPicker() }
-
-        val btnY = panelY + panelH - 32
-        applyBtn = ClickRect(panelX + 14, btnY, 90, 20) { apply() }
-        clearBtn = ClickRect(panelX + 110, btnY, 90, 20) { clear() }
-        doneBtn = ClickRect(panelX + panelW - 14 - 70, btnY, 70, 20) { onClose() }
-    }
-
-    private fun openPicker() { focusField(null); pickerOpen = true }
-
-    private fun selectItem(item: ItemStack) {
-        currentItem = item
-        uuid = ItemUtil.getUuid(item)
-        pickerOpen = false
-        loadFromStore()
-    }
-
-    private fun loadFromStore() {
-        val id = uuid ?: return
-        animated = false
-        solidColor = 0xFFFFFFFF.toInt()
-        keyframes.clear()
-        cycleBack = true; delay = 0f; duration = 1f
-        selectedFrame = 0
-
-        ItemCustomizationStore.getDyeColor(id)?.let { solidColor = it }
-        val dye = ItemCustomizationStore.getAnimatedDye(id)
-        if (dye != null) {
-            animated = true
-            dye.keyframes.forEachIndexed { i, kf -> keyframes.add(KeyframeRow(kf.color, kf.time, i == 0 || i == dye.keyframes.size - 1)) }
-            cycleBack = dye.cycleBack; delay = dye.delay; duration = dye.duration
-        }
-        if (keyframes.isEmpty()) {
-            keyframes.add(KeyframeRow(0xFFFF0000.toInt(), 0f, true))
-            keyframes.add(KeyframeRow(0xFF0000FF.toInt(), 1f, true))
-        }
-
-        trimMaterialIdx = 0; trimPatternIdx = 0
-        ItemCustomizationStore.getArmorTrim(id)?.let { t ->
-            trimMaterialIdx = trimMaterials.indexOf(t.material).coerceAtLeast(0)
-            trimPatternIdx = trimPatterns.indexOf(t.pattern).coerceAtLeast(0)
-        }
-
-        hexField = EditBox(this.font, 0, 0, 90, 20, Component.literal("Hex")).also {
-            it.setMaxLength(6)
-            it.setValue(String.format("%06X", (if (animated) keyframes[selectedFrame].color else solidColor) and 0xFFFFFF))
-        }
-        nameField = EditBox(this.font, 0, 0, panelW - 28, 20, Component.literal("Name")).also {
-            it.setMaxLength(256)
-            it.setValue(ItemCustomizationStore.getItemName(id) ?: "")
+            ItemCustomizationStore.setModelId(id, v)
         }
     }
 
-    // ----- apply/clear -----
-
-    private fun applySolid() { val id = uuid ?: return; ItemCustomizationStore.setDyeColor(id, solidColor) }
-    private fun applyAnimated() {
-        val id = uuid ?: return
-        ItemCustomizationStore.setAnimatedDye(
-            id,
-            ItemCustomizationStore.AnimatedDye(keyframes.map { ItemCustomizationStore.Keyframe(it.color, it.time) }, cycleBack, delay, duration)
-        )
+    private fun applyDye() {
+        val sel = inv().getItem(selectedIndex)
+        val id = uuidOf(sel) ?: return
+        if (!dyeAllowed(sel)) return
+        val d = dyeField.value.trim()
+        if (d.length == 6) {
+            try {
+                val rgb = d.toLong(16).toInt()
+                ItemCustomizationStore.setDyeColor(id, (0xFF shl 24) or (rgb and 0xFFFFFF))
+            } catch (ignored: NumberFormatException) {}
+        } else if (d.isEmpty()) {
+            ItemCustomizationStore.removeDyeColor(id)
+        }
     }
+
     private fun applyTrim() {
-        val id = uuid ?: return
-        if (trimMaterials.isNotEmpty() && trimPatterns.isNotEmpty()) {
-            ItemCustomizationStore.setArmorTrim(id, ItemCustomizationStore.ArmorTrimId(trimMaterials[trimMaterialIdx], trimPatterns[trimPatternIdx]))
-        }
-    }
-    private fun applyName() { val id = uuid ?: return; nameField?.value?.let { if (it.isNotBlank()) ItemCustomizationStore.setItemName(id, it) } }
-
-    private fun apply() {
-        when (mode) {
-            "dye" -> if (animated) applyAnimated() else applySolid()
-            "trim" -> applyTrim()
-            "name" -> applyName()
+        val id = uuidOf(inv().getItem(selectedIndex)) ?: return
+        if (trimMatDropdown.selected >= 0 && trimPatDropdown.selected >= 0 &&
+            trimMaterials.isNotEmpty() && trimPatterns.isNotEmpty()
+        ) {
+            ItemCustomizationStore.setArmorTrim(
+                id, ItemCustomizationStore.ArmorTrimId(trimMaterials[trimMatDropdown.selected], trimPatterns[trimPatDropdown.selected])
+            )
+        } else {
+            ItemCustomizationStore.removeArmorTrim(id)
         }
     }
 
-    private fun clear() {
-        val id = uuid ?: return
-        when (mode) {
-            "dye" -> {
-                ItemCustomizationStore.removeDyeColor(id)
-                ItemCustomizationStore.removeAnimatedDye(id)
-                animated = false; solidColor = 0xFFFFFFFF.toInt()
-                hexField?.setValue("FFFFFF")
-            }
-            "trim" -> ItemCustomizationStore.removeArmorTrim(id)
-            "name" -> { ItemCustomizationStore.removeItemName(id); nameField?.setValue("") }
-        }
+    private fun applyAll() { applyName(); applyModel(); applyDye(); applyTrim() }
+
+    private fun reset() {
+        val id = uuidOf(inv().getItem(selectedIndex)) ?: return
+        ItemCustomizationStore.removeItemName(id)
+        ItemCustomizationStore.removeModelId(id)
+        ItemCustomizationStore.removeDyeColor(id)
+        ItemCustomizationStore.removeArmorTrim(id)
+        loadFields()
     }
 
-    private fun onColorPick(c: Int) {
-        if (animated) keyframes.getOrNull(selectedFrame)?.let { it.color = c; applyAnimated() }
-        else { solidColor = c; applySolid() }
-        hexField?.setValue(String.format("%06X", c and 0xFFFFFF))
-    }
-
-    private fun toggleAnimated() {
-        animated = !animated
-        if (animated) applyAnimated() else applySolid()
-        val c = if (animated) keyframes.getOrNull(selectedFrame)?.color ?: solidColor else solidColor
-        hexField?.setValue(String.format("%06X", c and 0xFFFFFF))
-    }
-
-    private fun onHexChanged() {
-        val v = hexField?.value ?: return
-        if (v.length == 6 && v.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }) {
-            val c = (0xFF shl 24) or v.toInt(16)
-            if (animated) keyframes.getOrNull(selectedFrame)?.let { it.color = c; applyAnimated() }
-            else { solidColor = c; applySolid() }
-        }
-    }
-
-    private fun insertNameCode(code: Char) {
-        val f = nameField ?: return
-        f.insertText("§$code")
-    }
-
+    /** Manually-tracked field focus — the fields are never added to the Screen's widget list. */
+    private var focusedField: EditBox? = null
     private fun focusField(f: EditBox?) {
         focusedField?.isFocused = false
         focusedField = f
         focusedField?.isFocused = true
     }
 
-    // ----- rendering -----
+    private fun insertIntoName(code: String) {
+        val t = nameField.value
+        val cur = min(nameField.cursorPosition, t.length)
+        val nt = t.substring(0, cur) + code + t.substring(cur)
+        if (nt.length > 128) return
+        nameField.setValue(nt)
+        nameField.moveCursorTo(cur + code.length, false)
+        focusField(nameField)
+        applyName()
+    }
+
+    // ── render ─────────────────────────────────────────────────────────────────
+
+    /** Item icons are real 3D-rendered models (immediate GL) — NanoVG can't reproduce them, so the
+     *  panel backdrop + slot grid (the only area actual item icons sit on top of) stays on the
+     *  normal immediate GuiGraphics path via extractBackground, drawn before the icons. Everything
+     *  else (header/labels/legend/dropdowns/fields/buttons) is a NanoVG overlay drawn after, which
+     *  only ever paints thin chrome (borders, text) that doesn't need to cover the item pixels. */
+    override fun extractBackground(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        super.extractBackground(ctx, mouseX, mouseY, delta)
+        if (minecraft?.player == null) return
+
+        ScreenTheme.panel(ctx, panelX, panelY, panelX + panelW, panelY + panelH, 8, BG_PANEL, PANEL_BORDER)
+        ctx.fill(panelX, panelY, panelX + panelW, panelY + 22, BG_SECTION)
+        ctx.fill(panelX, panelY + 22, panelX + panelW, panelY + 23, ACCENT)
+
+        val armorSlots = intArrayOf(39, 38, 37, 36)
+        for (r in 0 until 4) {
+            val s = armorSlots[r]
+            val x = armorX + r * CELL
+            val y = armorY
+            if (s == selectedIndex) ScreenTheme.roundedRectRing(ctx, x - 1, y - 1, 18, 18, 3, 1, SLOT_BG, SLOT_SEL)
+            else ScreenTheme.roundedRect(ctx, x, y, 16, 16, 2, SLOT_BG)
+            if (s < inv().containerSize) {
+                val a = inv().getItem(s)
+                if (!a.isEmpty) ctx.item(a, x, y)
+            }
+        }
+        for (i in 0 until mainCount()) {
+            val col = i % 9
+            val row = if (i < 9) 3 else (i - 9) / 9
+            val x = gridX + col * CELL
+            val y = gridY + row * CELL
+            if (i == selectedIndex) ScreenTheme.roundedRectRing(ctx, x - 1, y - 1, 18, 18, 3, 1, SLOT_BG, SLOT_SEL)
+            else ScreenTheme.roundedRect(ctx, x, y, 16, 16, 2, SLOT_BG)
+            val st = inv().getItem(i)
+            if (!st.isEmpty) ctx.item(st, x, y)
+        }
+    }
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         NvgRecorder.clear()
-        ScreenTheme.panel(ctx, panelX, panelY, panelX + panelW, panelY + panelH, 8, BG_PANEL, BORDER)
-        ctx.fill(panelX, panelY, panelX + panelW, panelY + 22, BG_SECTION)
-        ScreenTheme.nst("Customize Item", panelX + 14, panelY + 7, TEXT_COLOR)
-
-        if (pickerOpen) {
-            drawPicker(ctx, mouseX, mouseY)
-            super.extractRenderState(ctx, mouseX, mouseY, delta)
-            return
-        }
-
-        ctx.item(currentItem, panelX + 14, panelY + 28)
-        ScreenTheme.nst(currentItem.hoverName.string, panelX + 40, panelY + 34, TEXT_COLOR)
-        changeItemBtn?.let { r ->
-            val hov = r.hit(mouseX, mouseY)
-            ScreenTheme.pill(ctx, r.x, r.y, r.x + r.w, r.y + r.h, if (hov) FIELD_BORDER else FIELD_BG)
-            val label = "Change Item"
-            ScreenTheme.nst(label, r.x + (r.w - ScreenTheme.nstw(label, 0.55f)) / 2, r.y + 6, TEXT_COLOR, 0.55f)
-        }
-
-        for ((m, r) in modeTabs) {
-            val active = m == mode
-            val hov = r.hit(mouseX, mouseY)
-            ScreenTheme.pill(ctx, r.x, r.y, r.x + r.w, r.y + r.h, if (active) ACCENT else if (hov) FIELD_BORDER else FIELD_BG)
-            val label = when (m) { "dye" -> "Dye"; "trim" -> "Trim"; else -> "Rename" }
-            val tw = ScreenTheme.nstw(label)
-            ScreenTheme.nst(label, r.x + (r.w - tw) / 2, r.y + 6, if (active) 0xFF06302F.toInt() else TEXT_COLOR)
-        }
-
-        val contentY = panelY + 128
-        when (mode) {
-            "dye" -> drawDyeTab(ctx, mouseX, mouseY, contentY)
-            "trim" -> drawTrimTab(ctx, mouseX, mouseY, contentY)
-            "name" -> drawNameTab(ctx, mouseX, mouseY, contentY)
-        }
-
-        drawFooterButtons(ctx, mouseX, mouseY)
+        drawChrome(mouseX, mouseY)
         super.extractRenderState(ctx, mouseX, mouseY, delta)
+        // Open dropdown lists float above everything else.
+        val sel = if (minecraft?.player != null) inv().getItem(selectedIndex) else ItemStack.EMPTY
+        if (dyeAllowed(sel)) dyeDropdown.renderOpen(mouseX, mouseY)
+        trimMatDropdown.renderOpen(mouseX, mouseY)
+        trimPatDropdown.renderOpen(mouseX, mouseY)
     }
 
-    private fun drawPicker(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
-        pickerRects.clear()
-        val inv = Minecraft.getInstance().player?.inventory
-        ScreenTheme.nst("Select an item to customize:", panelX + 14, panelY + 34, SUBTEXT_COLOR)
-        ScreenTheme.nst("Items with a Hypixel instance UUID are enabled; others are dimmed.", panelX + 14, panelY + 48, SUBTEXT_COLOR, 0.55f)
+    private fun drawChrome(mouseX: Int, mouseY: Int) {
+        if (minecraft?.player == null) return
+        val sel = inv().getItem(selectedIndex)
+        val p = panelX + 14
 
-        if (inv != null) {
-            val cols = 9
-            val cell = 40
-            val gap = 4
-            val gridX = panelX + 14
-            val gridY = panelY + 64
-            for (i in 0 until inv.containerSize) {
-                val stack = inv.getItem(i)
-                if (stack.isEmpty) continue
-                val col = i % cols
-                val row = i / cols
-                val x = gridX + col * (cell + gap)
-                val y = gridY + row * (cell + gap)
-                if (y > panelY + panelH - 40) continue
-                val eligible = ItemUtil.getUuid(stack) != null
-                val hov = mouseX in x..(x + cell) && mouseY in y..(y + cell)
-                ScreenTheme.roundedRectRing(ctx, x, y, cell, cell, 5, 1, FIELD_BG, if (!eligible) BORDER else if (hov) ACCENT else FIELD_BORDER)
-                ctx.item(stack, x + (cell - 16) / 2, y + (cell - 16) / 2)
-                if (!eligible) ctx.fill(x, y, x + cell, y + cell, 0x80000000.toInt())
-                else pickerRects.add(stack to ClickRect(x, y, cell, cell) { selectItem(stack) })
-            }
+        ScreenTheme.nst("Item Customize", panelX + 14, panelY + 7, TEXT_PRIM)
+
+        val curY = panelY + 28
+        ScreenTheme.nst("Editing:", p, curY, TEXT_HINT)
+        ScreenTheme.nst(sel.hoverName.string, p + 44, curY, TEXT_PRIM)
+        val idText = ItemUtil.getUuid(sel) ?: "(no Hypixel instance uuid — can't be customized)"
+        ScreenTheme.nst(idText, p, curY + 11, TEXT_HINT, 0.65f)
+
+        val pickY = panelY + 58
+        ScreenTheme.nst("PICK ITEM — click armor or a slot", p, pickY, ACCENT)
+
+        val armorSlots = intArrayOf(39, 38, 37, 36)
+        val armorTags = arrayOf("H", "C", "L", "B")
+        for (r in 0 until 4) {
+            val x = armorX + r * CELL
+            val y = armorY
+            ScreenTheme.nst(armorTags[r], x + 5, y + 18, TEXT_HINT, 0.65f)
         }
 
-        val label = if (uuid != null) "Cancel" else "Close"
-        val r = ClickRect(panelX + panelW - 14 - 80, panelY + panelH - 32, 80, 20) { if (uuid != null) pickerOpen = false else onClose() }
-        pickerCancelBtn = r
-        val hov = r.hit(mouseX, mouseY)
-        ScreenTheme.pill(ctx, r.x, r.y, r.x + r.w, r.y + r.h, if (hov) FIELD_BORDER else FIELD_BG)
-        ScreenTheme.nst(label, r.x + (r.w - ScreenTheme.nstw(label)) / 2, r.y + 6, TEXT_COLOR)
-    }
+        ScreenTheme.nst("CUSTOMIZE", p, panelY + 168, ACCENT)
+        drawColorKey(mouseX, mouseY)
 
-    private fun drawDyeTab(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, top: Int) {
-        presetRects.clear()
-        ScreenTheme.nst("Solid dye color:", panelX + 14, top - 16, SUBTEXT_COLOR)
-        val swatch = 26; val gap = 8
-        val activeColor = if (animated) keyframes.getOrNull(selectedFrame)?.color else solidColor
-        for ((i, c) in PRESETS.withIndex()) {
-            val x = panelX + 14 + i * (swatch + gap)
-            val r = ClickRect(x, top, swatch, swatch) { onColorPick(c) }
-            presetRects.add(c to r)
-            val hov = r.hit(mouseX, mouseY)
-            val selected = c == activeColor
-            ScreenTheme.roundedRectRing(ctx, r.x, r.y, r.w, r.h, 6, if (selected) 2 else 1, c, if (selected) ACCENT_HOVER else if (hov) ACCENT else FIELD_BORDER)
+        val labelW = 46
+        val fx = p + labelW
+        val fw = panelW - 28 - labelW
+        val nameY = legendY + 58
+        val dyeY = nameY + 28
+        val trimY = dyeY + 28
+        val modelY = trimY + 28
+
+        drawLabel("Name", p, nameY)
+        drawLabel("Dye", p, dyeY)
+        drawLabel("Trim", p, trimY)
+        drawLabel("Model", p, modelY)
+
+        ScreenTheme.nTextField(nameField, focusedField === nameField, fx, nameY - 3, fw, 20, 9f)
+        ScreenTheme.nTextField(modelField, focusedField === modelField, fx, modelY - 3, fw, 20, 9f)
+
+        if (dyeAllowed(sel)) {
+            dyeDropdown.renderClosed(mouseX, mouseY)
+            ScreenTheme.nst("#", fx + 184, dyeY + 3, TEXT_HINT, 0.65f)
+            ScreenTheme.nTextField(dyeField, focusedField === dyeField, fx + 190, dyeY - 3, fw - 190, 20, 9f)
+        } else {
+            ScreenTheme.nRect(fx, dyeY, fw, 14, FIELD_BG)
+            ScreenTheme.nst("dyeable items only", fx + 4, dyeY + 3, TEXT_HINT, 0.65f)
         }
 
-        val hexY = top + swatch + 16
-        ScreenTheme.nst("Hex:", panelX + 14, hexY + 6, SUBTEXT_COLOR)
-        hexRect = ClickRect(panelX + 48, hexY, 90, 20) {}
-        val hexFocused = focusedField === hexField
-        ScreenTheme.roundedRectRing(ctx, hexRect.x, hexRect.y, hexRect.w, hexRect.h, 4, 1, FIELD_BG, if (hexFocused) ACCENT else FIELD_BORDER)
-        drawEditBoxText(hexField, hexRect.x + 6, hexRect.y + 10)
-
-        val toggleY = hexY + 30
-        animatedToggle = ClickRect(panelX + 14, toggleY, 18, 18) { toggleAnimated() }
-        drawCheckbox(ctx, animatedToggle!!, animated)
-        ScreenTheme.nst("Animated dye", panelX + 38, toggleY + 5, TEXT_COLOR)
-
-        if (!animated) return
-
-        val tY = toggleY + 34
-        drawTimeline(ctx, mouseX, mouseY, tY)
-
-        val belowTimeline = tY + 44
-        cycleBackToggle = ClickRect(panelX + 14, belowTimeline, 18, 18) { cycleBack = !cycleBack; applyAnimated() }
-        drawCheckbox(ctx, cycleBackToggle!!, cycleBack)
-        ScreenTheme.nst("Cycle back", panelX + 38, belowTimeline + 5, TEXT_COLOR)
-
-        val sliderY = belowTimeline + 32
-        drawSlider(ctx, panelX + 14, sliderY, 200, "Delay", delay, 0f, 2f, delaySlider)
-        drawSlider(ctx, panelX + 14, sliderY + 32, 200, "Duration", duration, 0.1f, 10f, durationSlider)
-    }
-
-    private fun drawTimeline(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, top: Int) {
-        frameMarkerRects.clear()
-        val w = panelW - 28
-        val h = 22
-        timelineRect = ClickRect(panelX + 14, top, w, h) {}
-        ScreenTheme.roundedRectRing(ctx, timelineRect.x, timelineRect.y, w, h, 4, 1, FIELD_BG, FIELD_BORDER)
-
-        val sorted = keyframes.sortedBy { it.time }
-        val innerX0 = timelineRect.x + 2
-        val innerW = max(1, w - 4)
-        for (i in 0 until sorted.size - 1) {
-            val a = sorted[i]; val b = sorted[i + 1]
-            val x0 = (innerX0 + a.time * innerW).toInt()
-            val x1 = (innerX0 + b.time * innerW).toInt().coerceAtLeast(x0 + 1)
-            for (x in x0 until x1) {
-                val t = (x - x0).toFloat() / (x1 - x0).toFloat()
-                ctx.fill(x, timelineRect.y + 2, x + 1, timelineRect.y + h - 2, lerpColor(a.color, b.color, t))
-            }
-        }
-
-        for ((idx, kf) in keyframes.withIndex()) {
-            val mx = (innerX0 + kf.time * innerW).toInt()
-            val selected = idx == selectedFrame
-            val r = ClickRect(mx - 4, timelineRect.y - 4, 8, h + 8) {}
-            frameMarkerRects.add(idx to r)
-            ScreenTheme.roundedRectRing(ctx, r.x, r.y, r.w, r.h, 2, if (selected) 2 else 1, kf.color, if (selected) ACCENT_HOVER else FIELD_BORDER)
-        }
-        ScreenTheme.nst("Click bar to add, drag to move, right-click to delete", panelX + 14, top + h + 6, SUBTEXT_COLOR, 0.5f)
-    }
-
-    private fun lerpColor(a: Int, b: Int, t: Float): Int {
-        val ar = (a shr 16) and 0xFF; val ag = (a shr 8) and 0xFF; val ab = a and 0xFF
-        val br = (b shr 16) and 0xFF; val bg = (b shr 8) and 0xFF; val bb = b and 0xFF
-        val r = (ar + (br - ar) * t).toInt().coerceIn(0, 255)
-        val g = (ag + (bg - ag) * t).toInt().coerceIn(0, 255)
-        val bl = (ab + (bb - ab) * t).toInt().coerceIn(0, 255)
-        return (0xFF shl 24) or (r shl 16) or (g shl 8) or bl
-    }
-
-    private fun drawCheckbox(ctx: GuiGraphicsExtractor, r: ClickRect, checked: Boolean) {
-        ScreenTheme.roundedRectRing(ctx, r.x, r.y, r.w, r.h, 4, 1, if (checked) ACCENT else FIELD_BG, FIELD_BORDER)
-        if (checked) ScreenTheme.roundedRect(ctx, r.x + 4, r.y + 4, r.w - 8, r.h - 8, 2, TEXT_COLOR)
-    }
-
-    private fun drawSlider(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, label: String, value: Float, min: Float, max: Float, info: SliderInfo) {
-        info.x = x; info.y = y; info.w = w; info.h = 8; info.min = min; info.max = max
-        ScreenTheme.nst("$label: ${"%.2f".format(value)}s", x, y - 14, SUBTEXT_COLOR, 0.55f)
-        ScreenTheme.roundedRect(ctx, x, y, w, 8, 4, FIELD_BG)
-        val frac = ((value - min) / (max - min)).coerceIn(0f, 1f)
-        ScreenTheme.roundedRect(ctx, x, y, max((w * frac).toInt(), 4), 8, 4, ACCENT)
-    }
-
-    private fun sliderHit(info: SliderInfo, mx: Int, my: Int) = mx in info.x..(info.x + info.w) && my in (info.y - 6)..(info.y + info.h + 6)
-    private fun sliderValueAt(mx: Int, info: SliderInfo): Float {
-        val t = ((mx - info.x).toFloat() / max(1, info.w).toFloat()).coerceIn(0f, 1f)
-        return info.min + t * (info.max - info.min)
-    }
-
-    private fun drawTrimTab(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, top: Int) {
-        materialRects.clear(); patternRects.clear()
         if (trimMaterials.isEmpty() || trimPatterns.isEmpty()) {
-            ScreenTheme.nst("Trim registries unavailable (must be in-world).", panelX + 14, top, SUBTEXT_COLOR)
-            return
-        }
-        val maxX = panelX + panelW - 14
-        val cell = 62; val h = 20; val gap = 6
-
-        ScreenTheme.nst("Material:", panelX + 14, top - 16, SUBTEXT_COLOR)
-        var x = panelX + 14; var y = top
-        for ((i, m) in trimMaterials.withIndex()) {
-            val label = m.substringAfterLast(':').take(10)
-            val w = max(cell, ScreenTheme.nstw(label, 0.5f) + 16)
-            if (x + w > maxX) { x = panelX + 14; y += h + gap }
-            val r = ClickRect(x, y, w, h) { trimMaterialIdx = i; applyTrim() }
-            materialRects.add(i to r)
-            val selected = i == trimMaterialIdx
-            ScreenTheme.pill(ctx, r.x, r.y, r.x + r.w, r.y + r.h, if (selected) ACCENT else if (r.hit(mouseX, mouseY)) FIELD_BORDER else FIELD_BG)
-            ScreenTheme.nst(label, r.x + 8, r.y + 6, if (selected) 0xFF06302F.toInt() else TEXT_COLOR, 0.5f)
-            x += w + gap
+            ScreenTheme.nRect(fx, trimY, fw, 14, FIELD_BG)
+            ScreenTheme.nst("trim registries unavailable (must be in-world)", fx + 4, trimY + 3, TEXT_HINT, 0.62f)
+        } else {
+            trimMatDropdown.renderClosed(mouseX, mouseY)
+            trimPatDropdown.renderClosed(mouseX, mouseY)
         }
 
-        y += h + gap + 18
-        ScreenTheme.nst("Pattern:", panelX + 14, y - 16, SUBTEXT_COLOR)
-        x = panelX + 14
-        for ((i, p) in trimPatterns.withIndex()) {
-            val label = p.substringAfterLast(':').take(10)
-            val w = max(cell, ScreenTheme.nstw(label, 0.5f) + 16)
-            if (x + w > maxX) { x = panelX + 14; y += h + gap }
-            val r = ClickRect(x, y, w, h) { trimPatternIdx = i; applyTrim() }
-            patternRects.add(i to r)
-            val selected = i == trimPatternIdx
-            ScreenTheme.pill(ctx, r.x, r.y, r.x + r.w, r.y + r.h, if (selected) ACCENT else if (r.hit(mouseX, mouseY)) FIELD_BORDER else FIELD_BG)
-            ScreenTheme.nst(label, r.x + 8, r.y + 6, if (selected) 0xFF06302F.toInt() else TEXT_COLOR, 0.5f)
-            x += w + gap
-        }
-    }
-
-    private fun drawNameTab(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, top: Int) {
-        colorRects.clear(); formatRects.clear()
-        ScreenTheme.nst("Custom display name:", panelX + 14, top - 16, SUBTEXT_COLOR)
-        nameFieldRect = ClickRect(panelX + 14, top, panelW - 28, 20) {}
-        val focused = focusedField === nameField
-        ScreenTheme.roundedRectRing(ctx, nameFieldRect.x, nameFieldRect.y, nameFieldRect.w, nameFieldRect.h, 4, 1, FIELD_BG, if (focused) ACCENT else FIELD_BORDER)
-        drawEditBoxText(nameField, nameFieldRect.x + 6, nameFieldRect.y + 10)
-
-        val previewY = top + 34
-        ScreenTheme.nst("Preview:", panelX + 14, previewY - 14, SUBTEXT_COLOR)
-        var px = panelX + 14
-        for ((text, color) in LegacyFormatting.previewRuns(nameField?.value ?: "")) {
-            ScreenTheme.nst(text, px, previewY, color)
+        val prevY = modelY + 28
+        ScreenTheme.nst("Preview:", p, prevY, TEXT_HINT)
+        var px = fx
+        for ((text, color) in fishmod.utils.data.LegacyFormatting.previewRuns(nameField.value)) {
+            ScreenTheme.nst(text, px, prevY, color)
             px += ScreenTheme.nstw(text)
         }
-
-        val colorY = previewY + 24
-        ScreenTheme.nst("Color:", panelX + 14, colorY - 14, SUBTEXT_COLOR)
-        for ((i, c) in NAME_COLORS.withIndex()) {
-            val x = panelX + 14 + i * 20
-            val r = ClickRect(x, colorY, 16, 16) { insertNameCode(NAME_CODES[i]) }
-            colorRects.add(NAME_CODES[i] to r)
-            ScreenTheme.roundedRectRing(ctx, x, colorY, 16, 16, 4, 1, c, if (r.hit(mouseX, mouseY)) ACCENT else FIELD_BORDER)
-        }
-
-        val fmtY = colorY + 28
-        ScreenTheme.nst("Format:", panelX + 14, fmtY - 14, SUBTEXT_COLOR)
-        val fmts = listOf('l' to "B", 'o' to "I", 'n' to "U", 'm' to "S", 'k' to "K")
-        for ((i, pair) in fmts.withIndex()) {
-            val (code, label) = pair
-            val x = panelX + 14 + i * 30
-            val r = ClickRect(x, fmtY, 24, 18) { insertNameCode(code) }
-            formatRects.add(code to r)
-            ScreenTheme.pill(ctx, r.x, r.y, r.x + r.w, r.y + r.h, if (r.hit(mouseX, mouseY)) FIELD_BORDER else FIELD_BG)
-            ScreenTheme.nst(label, r.x + 8, r.y + 5, TEXT_COLOR, 0.5f)
-        }
-
-        val resetY = fmtY + 26
-        val r = ClickRect(panelX + 14, resetY, 60, 18) { insertNameCode('r') }
-        resetNameBtn = r
-        ScreenTheme.pill(ctx, r.x, r.y, r.x + r.w, r.y + r.h, if (r.hit(mouseX, mouseY)) FIELD_BORDER else FIELD_BG)
-        ScreenTheme.nst("Reset", r.x + 10, r.y + 5, TEXT_COLOR, 0.5f)
     }
 
-    private fun drawEditBoxText(field: EditBox?, x: Int, y: Int) {
-        field ?: return
-        val text = field.value
-        ScreenTheme.nst(text, x, y, TEXT_COLOR, 0.6f)
-        if (field.isFocused && (System.currentTimeMillis() / 500) % 2 == 0L) {
-            val cursor = field.cursorPosition.coerceIn(0, text.length)
-            val cx = x + ScreenTheme.nstw(text.substring(0, cursor), 0.6f)
-            ScreenTheme.nst("|", cx - 2, y, TEXT_COLOR, 0.6f)
-        }
+    private fun drawLabel(s: String, x: Int, y: Int) {
+        ScreenTheme.nst("$s:", x, y + 3, TEXT_PRIM, 0.65f)
     }
 
-    private fun drawFooterButtons(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
-        applyBtn?.let { r ->
-            val hov = r.hit(mouseX, mouseY)
-            ScreenTheme.pill(ctx, r.x, r.y, r.x + r.w, r.y + r.h, if (hov) ACCENT_HOVER else ACCENT)
-            val label = "Apply"
-            ScreenTheme.nst(label, r.x + (r.w - ScreenTheme.nstw(label)) / 2, r.y + 6, 0xFF06302F.toInt())
+    /** Clickable color/format key. Click a color → inserts its code into the name at the cursor. */
+    private fun drawColorKey(mouseX: Int, mouseY: Int) {
+        keyRects.clear()
+        keyCodes.clear()
+
+        ScreenTheme.nst("&-codes (click to insert) — &* = star in the color before it", legendX, legendY - 11, TEXT_HINT, 0.62f)
+
+        val sw = 20; val sh = 14; val gap = 3
+        for (i in CODE_COLORS.indices) {
+            val code = CODE_COLORS[i][0].toChar()
+            val rgb = CODE_COLORS[i][1]
+            val colX = legendX + (i % 8) * (sw + gap)
+            val colY = legendY + (i / 8) * (sh + gap)
+            val hov = inBox(mouseX, mouseY, colX, colY, sw, sh)
+            ScreenTheme.nRoundedRectRing(colX, colY, sw, sh, 2, 1, (0xFF000000.toInt()) or rgb, if (hov) ACCENT else FIELD_BORDER)
+            val textCol = if (brightness(rgb) > 140) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
+            val cw = ScreenTheme.nstw(code.toString(), 0.62f)
+            ScreenTheme.nst(code.toString(), colX + (sw - cw) / 2, colY + 2, textCol, 0.62f)
+            keyRects.add(intArrayOf(colX, colY, sw, sh))
+            keyCodes.add("&$code")
         }
-        clearBtn?.let { r ->
-            val hov = r.hit(mouseX, mouseY)
-            ScreenTheme.pill(ctx, r.x, r.y, r.x + r.w, r.y + r.h, if (hov) DANGER_HOVER else DANGER)
-            val label = "Clear"
-            ScreenTheme.nst(label, r.x + (r.w - ScreenTheme.nstw(label)) / 2, r.y + 6, 0xFF2A0808.toInt())
+
+        var fxr = legendX + 8 * (sw + gap) + 8
+        val fyr = legendY
+        for (f in CODE_FORMATS) {
+            val sample = f[1]
+            val w = ScreenTheme.nstw(sample, 0.62f) + 6
+            val hov = inBox(mouseX, mouseY, fxr, fyr, w, sh)
+            ScreenTheme.nRect(fxr, fyr, w, sh, if (hov) ROW_HOVER else FIELD_BG)
+            ScreenTheme.nst(sample, fxr + 3, fyr + 2, TEXT_PRIM, 0.62f)
+            keyRects.add(intArrayOf(fxr, fyr, w, sh))
+            keyCodes.add("&" + f[0])
+            fxr += w + gap
         }
-        doneBtn?.let { r ->
-            val hov = r.hit(mouseX, mouseY)
-            ScreenTheme.roundedRectRing(ctx, r.x, r.y, r.w, r.h, r.h / 2, 1, 0xFF14181D.toInt(), if (hov) ACCENT_HOVER else ACCENT)
-            val label = "Done"
-            ScreenTheme.nst(label, r.x + (r.w - ScreenTheme.nstw(label)) / 2, r.y + 6, if (hov) ACCENT_HOVER else TEXT_COLOR)
-        }
+
+        // Star button, on the row under the format codes.
+        val starX = legendX + 8 * (sw + gap) + 8
+        val starY = legendY + sh + gap
+        val starLabel = "&* *"
+        val starW = ScreenTheme.nstw(starLabel, 0.62f) + 8
+        val hovStar = inBox(mouseX, mouseY, starX, starY, starW, sh)
+        ScreenTheme.nRect(starX, starY, starW, sh, if (hovStar) ROW_HOVER else FIELD_BG)
+        ScreenTheme.nst(starLabel, starX + 4, starY + 2, TEXT_PRIM, 0.62f)
+        keyRects.add(intArrayOf(starX, starY, starW, sh))
+        keyCodes.add("&*")
     }
 
-    // ----- NanoVG overlay -----
+    // ── input ──────────────────────────────────────────────────────────────────
+
+    override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean {
+        if (minecraft?.player == null) return super.mouseClicked(click, bl)
+        val mx = click.x().toInt()
+        val my = click.y().toInt()
+        val sel = inv().getItem(selectedIndex)
+
+        if (dyeAllowed(sel) && dyeDropdown.click(mx, my)) { closeOthers(dyeDropdown); focusField(null); return true }
+        if (trimMatDropdown.click(mx, my)) { closeOthers(trimMatDropdown); focusField(null); return true }
+        if (trimPatDropdown.click(mx, my)) { closeOthers(trimPatDropdown); focusField(null); return true }
+
+        for (i in keyRects.indices) {
+            val r = keyRects[i]
+            if (inBox(mx, my, r[0], r[1], r[2], r[3])) { insertIntoName(keyCodes[i]); return true }
+        }
+
+        val p = panelX + 14
+        val labelW = 46
+        val fx = p + labelW
+        val fw = panelW - 28 - labelW
+        val nameY = legendY + 58
+        val dyeY = nameY + 28
+        val trimY = dyeY + 28
+        val modelY = trimY + 28
+        if (inBox(mx, my, fx, nameY - 3, fw, 20)) { focusField(nameField); return true }
+        if (dyeAllowed(sel) && inBox(mx, my, fx + 190, dyeY - 3, fw - 190, 20)) { focusField(dyeField); return true }
+        if (inBox(mx, my, fx, modelY - 3, fw, 20)) { focusField(modelField); return true }
+
+        val armorSlots = intArrayOf(39, 38, 37, 36)
+        for (r in 0 until 4) {
+            val x = armorX + r * CELL
+            if (mx in x..(x + 16) && my in armorY..(armorY + 16)) {
+                selectedIndex = armorSlots[r]; loadFields(); focusField(null); return true
+            }
+        }
+        for (i in 0 until mainCount()) {
+            val col = i % 9
+            val row = if (i < 9) 3 else (i - 9) / 9
+            val x = gridX + col * CELL
+            val y = gridY + row * CELL
+            if (mx in x..(x + 16) && my in y..(y + 16)) {
+                selectedIndex = i; loadFields(); focusField(null); return true
+            }
+        }
+
+        resetRect?.let { if (it.hit(mx, my)) { focusField(null); it.action(); return true } }
+        doneRect?.let { if (it.hit(mx, my)) { it.action(); return true } }
+        applyRect?.let { if (it.hit(mx, my)) { focusField(null); it.action(); return true } }
+
+        focusField(null)
+        return super.mouseClicked(click, bl)
+    }
+
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
+        val mx = mouseX.toInt(); val my = mouseY.toInt()
+        if (dyeDropdown.scrolled(mx, my, verticalAmount)) return true
+        if (trimMatDropdown.scrolled(mx, my, verticalAmount)) return true
+        if (trimPatDropdown.scrolled(mx, my, verticalAmount)) return true
+        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)
+    }
+
+    override fun keyPressed(input: KeyEvent): Boolean {
+        val f = focusedField
+        if (f != null) {
+            f.keyPressed(input)
+            if (f === dyeField) applyDye()
+            if (f === nameField) applyName()
+            if (f === modelField) applyModel()
+            return true
+        }
+        if (input.key() == GLFW.GLFW_KEY_ESCAPE) { onClose(); return true }
+        return super.keyPressed(input)
+    }
+
+    override fun charTyped(input: CharacterEvent): Boolean {
+        val f = focusedField
+        if (f != null) {
+            f.charTyped(input)
+            if (f === dyeField) applyDye()
+            if (f === nameField) applyName()
+            if (f === modelField) applyModel()
+            return true
+        }
+        return super.charTyped(input)
+    }
+
+    private fun closeOthers(keep: Dropdown) {
+        if (dyeDropdown !== keep) dyeDropdown.close()
+        if (trimMatDropdown !== keep) trimMatDropdown.close()
+        if (trimPatDropdown !== keep) trimPatDropdown.close()
+    }
+
+    override fun isPauseScreen(): Boolean = false
+
+    // ── NanoVG overlay ───────────────────────────────────────────────────────────
 
     private val nvgGlState = NvgGlStateGuard()
     private var nvgFailureLogged = false
@@ -590,112 +596,92 @@ class ItemCustomizeScreen : Screen(Component.literal("Customize Item")), HasNvgO
         }
     }
 
-    // ----- input -----
+    // ── lightweight dropdown, painted via ScreenTheme's NanoVG helpers ─────────────
 
-    override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
-        val mx = click.x().toInt()
-        val my = click.y().toInt()
+    private inner class Dropdown(val placeholder: String, val x: Int, val y: Int, val w: Int) {
+        val boxH = 18
+        val rowH = 17
+        val maxVisible = 7
+        val labels = ArrayList<String>()
+        var swatches: IntArray? = null
+        var selected = -1
+        var open = false
+        var scroll = 0
+        var onChange: Runnable? = null
 
-        if (pickerOpen) {
-            for ((_, r) in pickerRects) if (r.hit(mx, my)) { r.action(); return true }
-            pickerCancelBtn?.let { if (it.hit(mx, my)) { it.action(); return true } }
-            return super.mouseClicked(click, doubled)
+        fun close() { open = false; scroll = 0 }
+        private fun rowsShown(): Int = min(maxVisible, labels.size)
+
+        fun renderClosed(mx: Int, my: Int) {
+            val hov = inBox(mx, my, x, y, w, boxH)
+            ScreenTheme.nRoundedRectRing(x, y, w, boxH, 3, 1, FIELD_BG, if (hov) FIELD_BORDER else FIELD_BORDER)
+            if (hov) ScreenTheme.nRoundedRectRing(x, y, w, boxH, 3, 1, FIELD_BG, ACCENT_HOVER)
+            var tx = x + 4
+            val sw = swatches
+            if (sw != null && selected in labels.indices) {
+                ScreenTheme.nRoundedRect(x + 4, y + 3, 8, 8, 1, 0xFF000000.toInt() or sw[selected])
+                tx = x + 16
+            }
+            val label = if (selected in labels.indices) labels[selected] else placeholder
+            val col = if (selected in labels.indices) TEXT_PRIM else TEXT_HINT
+            ScreenTheme.nst(clip(label, w - (tx - x) - 12), tx, y + 3, col, 0.62f)
+            ScreenTheme.nst("v", x + w - 9, y + 3, TEXT_HINT, 0.62f)
         }
 
-        changeItemBtn?.let { if (it.hit(mx, my)) { it.action(); return true } }
-        for ((_, r) in modeTabs) if (r.hit(mx, my)) { r.action(); return true }
-
-        if (mode == "dye") {
-            if (hexRect.hit(mx, my)) { focusField(hexField); return true }
-            for ((_, r) in presetRects) if (r.hit(mx, my)) { focusField(null); r.action(); return true }
-            animatedToggle?.let { if (it.hit(mx, my)) { focusField(null); it.action(); return true } }
-            if (animated) {
-                for ((idx, r) in frameMarkerRects) {
-                    if (r.hit(mx, my)) {
-                        focusField(null)
-                        if (click.button() == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-                            if (!keyframes[idx].locked && keyframes.size > 2) { keyframes.removeAt(idx); selectedFrame = 0; applyAnimated() }
-                        } else {
-                            selectedFrame = idx
-                            draggingFrame = if (keyframes[idx].locked) -1 else idx
-                        }
-                        return true
-                    }
+        fun renderOpen(mx: Int, my: Int) {
+            if (!open) return
+            val rows = rowsShown()
+            val ly = y + boxH
+            val lh = rows * rowH
+            ScreenTheme.nRoundedRectRing(x, ly, w, lh, 3, 1, LIST_BG, FIELD_BORDER)
+            for (r in 0 until rows) {
+                val idx = scroll + r
+                if (idx >= labels.size) break
+                val ry = ly + r * rowH
+                if (inBox(mx, my, x, ry, w, rowH)) ScreenTheme.nRect(x, ry, w, rowH, ROW_HOVER)
+                var tx = x + 4
+                val sw = swatches
+                if (sw != null) {
+                    ScreenTheme.nRoundedRect(x + 4, ry + 3, 8, 8, 1, 0xFF000000.toInt() or sw[idx])
+                    tx = x + 16
                 }
-                if (timelineRect.hit(mx, my)) {
-                    focusField(null)
-                    val t = ((mx - timelineRect.x - 2).toFloat() / max(1, timelineRect.w - 4).toFloat()).coerceIn(0f, 1f)
-                    keyframes.add(KeyframeRow(0xFFFF0000.toInt(), t, false))
-                    selectedFrame = keyframes.size - 1
-                    applyAnimated()
-                    return true
-                }
-                cycleBackToggle?.let { if (it.hit(mx, my)) { focusField(null); it.action(); return true } }
-                if (sliderHit(delaySlider, mx, my)) { focusField(null); draggingSlider = 1; delay = sliderValueAt(mx, delaySlider); return true }
-                if (sliderHit(durationSlider, mx, my)) { focusField(null); draggingSlider = 2; duration = sliderValueAt(mx, durationSlider).coerceAtLeast(0.1f); return true }
+                val col = if (idx == selected) ACCENT else TEXT_PRIM
+                ScreenTheme.nst(clip(labels[idx], w - (tx - x) - 4), tx, ry + 3, col, 0.62f)
             }
         }
-        if (mode == "trim") {
-            for ((_, r) in materialRects) if (r.hit(mx, my)) { focusField(null); r.action(); return true }
-            for ((_, r) in patternRects) if (r.hit(mx, my)) { focusField(null); r.action(); return true }
-        }
-        if (mode == "name") {
-            if (nameFieldRect.hit(mx, my)) { focusField(nameField); return true }
-            for ((_, r) in colorRects) if (r.hit(mx, my)) { r.action(); return true }
-            for ((_, r) in formatRects) if (r.hit(mx, my)) { r.action(); return true }
-            resetNameBtn?.let { if (it.hit(mx, my)) { it.action(); return true } }
+
+        fun click(mx: Int, my: Int): Boolean {
+            if (inBox(mx, my, x, y, w, boxH)) { open = !open; if (open) scroll = 0; return true }
+            if (open) {
+                val rows = rowsShown()
+                val ly = y + boxH
+                if (inBox(mx, my, x, ly, w, rows * rowH)) {
+                    val idx = scroll + (my - ly) / rowH
+                    if (idx in labels.indices) { selected = idx; open = false; onChange?.run() }
+                    return true
+                }
+                open = false
+            }
+            return false
         }
 
-        applyBtn?.let { if (it.hit(mx, my)) { focusField(null); it.action(); return true } }
-        clearBtn?.let { if (it.hit(mx, my)) { focusField(null); it.action(); return true } }
-        doneBtn?.let { if (it.hit(mx, my)) { it.action(); return true } }
+        fun scrolled(mx: Int, my: Int, amount: Double): Boolean {
+            if (!open) return false
+            val rows = rowsShown()
+            val ly = y + boxH
+            if (inBox(mx, my, x, ly, w, rows * rowH)) {
+                val max = max(0, labels.size - maxVisible)
+                scroll = max(0, min(max, scroll - Math.signum(amount).toInt()))
+                return true
+            }
+            return false
+        }
 
-        focusField(null)
-        return super.mouseClicked(click, doubled)
+        private fun clip(s: String, maxW: Int): String {
+            if (ScreenTheme.nstw(s, 0.62f) <= maxW) return s
+            var out = s
+            while (out.length > 1 && ScreenTheme.nstw("$out...", 0.62f) > maxW) out = out.substring(0, out.length - 1)
+            return "$out..."
+        }
     }
-
-    override fun mouseDragged(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
-        val mx = click.x().toInt()
-        if (draggingFrame in keyframes.indices) {
-            val t = ((mx - timelineRect.x - 2).toFloat() / max(1, timelineRect.w - 4).toFloat()).coerceIn(0f, 1f)
-            keyframes[draggingFrame].time = t
-            return true
-        }
-        if (draggingSlider == 1) { delay = sliderValueAt(mx, delaySlider); return true }
-        if (draggingSlider == 2) { duration = sliderValueAt(mx, durationSlider).coerceAtLeast(0.1f); return true }
-        return super.mouseDragged(click, deltaX, deltaY)
-    }
-
-    override fun mouseReleased(click: MouseButtonEvent): Boolean {
-        if (draggingFrame in keyframes.indices) {
-            val moved = keyframes[draggingFrame]
-            keyframes.sortBy { it.time }
-            selectedFrame = keyframes.indexOf(moved)
-            draggingFrame = -1
-            applyAnimated()
-        }
-        if (draggingSlider != 0) { draggingSlider = 0; applyAnimated() }
-        return super.mouseReleased(click)
-    }
-
-    override fun keyPressed(input: KeyEvent): Boolean {
-        if (pickerOpen) {
-            if (input.key() == GLFW.GLFW_KEY_ESCAPE) { onClose(); return true }
-            return super.keyPressed(input)
-        }
-        focusedField?.let { it.keyPressed(input); if (it === hexField) onHexChanged(); return true }
-        if (input.key() == GLFW.GLFW_KEY_ESCAPE) { onClose(); return true }
-        return super.keyPressed(input)
-    }
-
-    override fun charTyped(input: CharacterEvent): Boolean {
-        focusedField?.let {
-            it.charTyped(input)
-            if (it === hexField) onHexChanged()
-            return true
-        }
-        return super.charTyped(input)
-    }
-
-    override fun isPauseScreen(): Boolean = false
 }
