@@ -66,6 +66,13 @@ object PetHud {
     private var lastChatPetName: String? = null
     private var lastChatPetChangeAt = 0L
 
+    // Short guard just for scanTabList's forced burst-rescan right after a chat-confirmed swap: the
+    // server's tab list can take a few ticks to catch up, and without this a stale tab entry read
+    // during that window would clobber the already-correct chat-driven name back to the old pet.
+    // Much shorter than CHAT_TRUST_WINDOW_MS so it doesn't also block a genuinely different, silent
+    // (non-chat) swap that happens moments later.
+    private const val TAB_CLOBBER_GUARD_MS = 2_000L
+
     // A pet earns 1 Pet XP per 1 skill XP in its matching skill, 0 otherwise. Source: wiki.hypixel.net/Pets#Pet_XP
     private val SKILL_XP_BAR: Pattern = Pattern.compile(
             "\\+\\s*([\\d,.]+)\\s+(Farming|Mining|Combat|Foraging|Fishing|Enchanting|Alchemy|Carpentry|Runecrafting|Taming)\\b")
@@ -227,6 +234,14 @@ object PetHud {
         }
 
         if (tempName != null) {
+            // Right after a chat-confirmed swap the tab list itself can still lag a few ticks behind
+            // the server; without this guard the forced burst-rescan below reads that stale entry and
+            // clobbers the already-correct chat-driven name back to the old pet until tab finally
+            // catches up, which is what made swaps look like they took ~0.5-1s to register.
+            val withinClobberGuard = System.currentTimeMillis() - lastChatPetChangeAt < TAB_CLOBBER_GUARD_MS
+            if (withinClobberGuard && lastChatPetName != null && !tempName.equals(lastChatPetName, ignoreCase = true)) {
+                return
+            }
             petName = tempName
             petLevel = tempLevel
             petMaxed = maxed
@@ -344,6 +359,22 @@ object PetHud {
 
     private fun safeInt(s: String?, fallback: Int): Int {
         return try { s!!.toInt() } catch (e: NumberFormatException) { fallback } catch (e: NullPointerException) { fallback }
+    }
+
+    /** Current pet as a single formatted line, for reuse outside the standalone HUD (e.g. the
+     *  Custom Scoreboard's Pet section). Null when no pet is tracked yet. Reuses whatever state
+     *  PetHud already resolved (chat/tab/API) -- no new fetch, no new source. */
+    @JvmStatic
+    fun currentPetLine(): String? {
+        val name = petName ?: return null
+        val text = StringBuilder("§7[Lvl ").append(petLevel).append("] §6").append(name)
+        val maxLvl = if ("Golden Dragon".equals(name, ignoreCase = true)) 200 else 100
+        if (petLevel >= maxLvl || petMaxed) {
+            text.append(" §a§lMAXED")
+        } else if (xpCurrent >= 0 && xpNext > 0) {
+            text.append(String.format(" §7(%.1f%%)", xpPct))
+        }
+        return text.toString()
     }
 
     @JvmStatic

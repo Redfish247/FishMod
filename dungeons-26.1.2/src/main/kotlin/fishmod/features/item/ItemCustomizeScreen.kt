@@ -129,8 +129,10 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
     override fun init() {
         if (minecraft == null || minecraft!!.player == null) return
 
-        panelX = (this.width - panelW) / 2
-        panelY = max(8, (this.height - panelH) / 2)
+        val vw = (this.width / fishmod.utils.rendering.UiScale.factor()).toInt()
+        val vh = (this.height / fishmod.utils.rendering.UiScale.factor()).toInt()
+        panelX = (vw - panelW) / 2
+        panelY = max(8, (vh - panelH) / 2)
 
         val held = minecraft!!.player!!.mainHandItem
         for (i in 0 until mainCount()) if (inv().getItem(i) === held) { selectedIndex = i; break }
@@ -319,6 +321,12 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
         super.extractBackground(ctx, mouseX, mouseY, delta)
         if (minecraft?.player == null) return
 
+        // panelX/panelY etc. are in virtual (pre-shrink) space; scale the pose so this immediate
+        // GL path (item icons can't go through NvgRecorder) lines up with the NanoVG chrome.
+        val scale = fishmod.utils.rendering.UiScale.factor()
+        ctx.pose().pushMatrix()
+        ctx.pose().scale(scale, scale)
+
         ScreenTheme.panel(ctx, panelX, panelY, panelX + panelW, panelY + panelH, 8, BG_PANEL, PANEL_BORDER)
         ctx.fill(panelX, panelY, panelX + panelW, panelY + 22, BG_SECTION)
         ctx.fill(panelX, panelY + 22, panelX + panelW, panelY + 23, ACCENT)
@@ -345,9 +353,13 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
             val st = inv().getItem(i)
             if (!st.isEmpty) ctx.item(st, x, y)
         }
+
+        ctx.pose().popMatrix()
     }
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        val mouseX = fishmod.utils.rendering.UiScale.vx(mouseX)
+        val mouseY = fishmod.utils.rendering.UiScale.vx(mouseY)
         NvgRecorder.clear()
         drawChrome(mouseX, mouseY)
         super.extractRenderState(ctx, mouseX, mouseY, delta)
@@ -482,8 +494,8 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
 
     override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean {
         if (minecraft?.player == null) return super.mouseClicked(click, bl)
-        val mx = click.x().toInt()
-        val my = click.y().toInt()
+        val mx = fishmod.utils.rendering.UiScale.vx(click.x())
+        val my = fishmod.utils.rendering.UiScale.vx(click.y())
         val sel = inv().getItem(selectedIndex)
 
         if (dyeAllowed(sel) && dyeDropdown.click(mx, my)) { closeOthers(dyeDropdown); focusField(null); return true }
@@ -533,7 +545,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
-        val mx = mouseX.toInt(); val my = mouseY.toInt()
+        val mx = fishmod.utils.rendering.UiScale.vx(mouseX); val my = fishmod.utils.rendering.UiScale.vx(mouseY)
         if (dyeDropdown.scrolled(mx, my, verticalAmount)) return true
         if (trimMatDropdown.scrolled(mx, my, verticalAmount)) return true
         if (trimPatDropdown.scrolled(mx, my, verticalAmount)) return true
@@ -584,7 +596,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
             val ctx = NvgContext.get()
             val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
             NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
-            NvgRecorder.replay()
+            NvgRecorder.replay(fishmod.utils.rendering.UiScale.factor())
             NanoVG.nvgEndFrame(ctx)
         } catch (t: Throwable) {
             if (!nvgFailureLogged) {

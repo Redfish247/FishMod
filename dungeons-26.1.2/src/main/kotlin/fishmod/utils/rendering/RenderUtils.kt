@@ -98,6 +98,33 @@ object RenderUtils {
         drawFilledBox(matrixStack, consumer, box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, rgba[0], rgba[1], rgba[2], rgba[3])
     }
 
+    /**
+     * Fills a single flat quad (e.g. one face of a door frame) rather than a whole box. Deliberately
+     * NOT a box collapsed to near-zero thickness on one axis — that leaves its own front/back faces
+     * only a hair apart, which z-fight against each other and flicker frame to frame. `corners` must
+     * be exactly 4 points in order around the quad (matches DEBUG_FILLED_BOX's QUADS vertex mode).
+     */
+    @JvmStatic
+    fun renderFilledQuad(matrixStack: PoseStack, consumer: VertexConsumer, corners: Array<Vec3>, rgba: FloatArray) {
+        if (rgba[3] == 0f) return
+        val pose = matrixStack.last()
+        for (c in corners) {
+            consumer.addVertex(pose, c.x.toFloat(), c.y.toFloat(), c.z.toFloat()).setColor(rgba[0], rgba[1], rgba[2], rgba[3])
+        }
+    }
+
+    /** Border of the 4 edges around [corners], for pairing with [renderFilledQuad]. */
+    @JvmStatic
+    fun renderQuadOutline(matrixStack: PoseStack, consumer: VertexConsumer, corners: Array<Vec3>, rgba: FloatArray) {
+        if (rgba[3] == 0f) return
+        val pose = matrixStack.last()
+        for (i in corners.indices) {
+            val a = corners[i]
+            val b = corners[(i + 1) % corners.size]
+            edge(consumer, pose, a.x.toFloat(), a.y.toFloat(), a.z.toFloat(), b.x.toFloat(), b.y.toFloat(), b.z.toFloat(), rgba[0], rgba[1], rgba[2], rgba[3])
+        }
+    }
+
     /** Emits the 12 box edges directly since ShapeRenderer (the old VoxelShape outline helper) was removed in 26.2. */
     @JvmStatic
     fun renderOutline(matrixStack: PoseStack, consumer: VertexConsumer, box: AABB, rgba: FloatArray) {
@@ -173,14 +200,20 @@ object RenderUtils {
         )
     }
 
+    // RenderPipelines.LINES' vertex format carries a per-vertex LineWidth element in 26.1.2 (used
+    // to be fixed GL line-width state); omitting setLineWidth throws "Missing elements in vertex:
+    // LineWidth" from BufferBuilder. 4 matches the width every RenderLayers.getOutline(4, ...)
+    // caller already requests (that parameter itself is otherwise unused).
+    private const val LINE_WIDTH = 4f
+
     private fun edge(
         consumer: VertexConsumer, pose: PoseStack.Pose,
         x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float,
         r: Float, g: Float, b: Float, a: Float
     ) {
         val normal = Vector3f(x2 - x1, y2 - y1, z2 - z1).normalize()
-        consumer.addVertex(pose, x1, y1, z1).setColor(r, g, b, a).setNormal(pose, normal.x, normal.y, normal.z)
-        consumer.addVertex(pose, x2, y2, z2).setColor(r, g, b, a).setNormal(pose, normal.x, normal.y, normal.z)
+        consumer.addVertex(pose, x1, y1, z1).setColor(r, g, b, a).setNormal(pose, normal.x, normal.y, normal.z).setLineWidth(LINE_WIDTH)
+        consumer.addVertex(pose, x2, y2, z2).setColor(r, g, b, a).setNormal(pose, normal.x, normal.y, normal.z).setLineWidth(LINE_WIDTH)
     }
 
     @JvmStatic
@@ -221,8 +254,8 @@ object RenderUtils {
         val b = (color and 0xFF) / 255f
         var a = ((color shr 24) and 0xFF) / 255f
         if (a == 0f) a = 1.0f
-        consumer.addVertex(matrices.last(), startPos.x, startPos.y, startPos.z).setColor(r, g, b, a).setNormal(matrices.last(), normal.x, normal.y, normal.z)
-        consumer.addVertex(matrices.last(), endVec.x.toFloat() + startPos.x, endVec.y.toFloat() + startPos.y, endVec.z.toFloat() + startPos.z).setColor(r, g, b, a).setNormal(matrices.last(), normal.x, normal.y, normal.z)
+        consumer.addVertex(matrices.last(), startPos.x, startPos.y, startPos.z).setColor(r, g, b, a).setNormal(matrices.last(), normal.x, normal.y, normal.z).setLineWidth(LINE_WIDTH)
+        consumer.addVertex(matrices.last(), endVec.x.toFloat() + startPos.x, endVec.y.toFloat() + startPos.y, endVec.z.toFloat() + startPos.z).setColor(r, g, b, a).setNormal(matrices.last(), normal.x, normal.y, normal.z).setLineWidth(LINE_WIDTH)
     }
 
     @JvmStatic

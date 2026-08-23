@@ -49,11 +49,15 @@ object NickState {
             reset()
             return
         }
-        val stops: Array<IntArray>
-        if ("SOLID".equals(fishmod.utils.config.values.FishSettings.nickColorMode, ignoreCase = true)) {
-            stops = arrayOf(GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorStart))
-        } else {
-            stops = arrayOf(
+        val stops: Array<IntArray> = when (fishmod.utils.config.values.FishSettings.nickColorMode.uppercase()) {
+            "SOLID" -> arrayOf(GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorStart))
+            "GRADIENT3" -> arrayOf(
+                GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorStart),
+                GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorMid),
+                GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorEnd)
+            )
+            "RAINBOW" -> GradientNick.rainbow()
+            else -> arrayOf(
                 GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorStart),
                 GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorEnd)
             )

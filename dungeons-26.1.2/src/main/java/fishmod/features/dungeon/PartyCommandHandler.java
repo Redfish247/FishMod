@@ -105,6 +105,7 @@ public class PartyCommandHandler {
     }
 
     public static void onPartyCommand(String typer, String cmd, String rawArg1, String rawArg2, String rawArg3, String responder) {
+        if (!FishSettings.partyCommandsEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.getConnection() == null) return;
         // Use the real account name (GameProfile), NOT getName() — a cosmetic /nick overrides
@@ -171,6 +172,7 @@ public class PartyCommandHandler {
             case "totalruns" -> { if (FishSettings.pcRuns && respond(cmd, typer, isLocal))    runTotalRunsForPlayer(mc, ign, responder);        }
             // Self-only metrics: only the typer's own mod responds (data is local to each player)
             case "dprofit"   -> { if (FishSettings.pcDprofit && isMe) sendDprofit(mc, responder);              }
+            case "crit"      -> { if (FishSettings.pcCrit    && isMe) sendCmd(mc, responder, fishmod.features.CritTracker.buildMessage()); }
             case "corpse", "corpses" -> { if (FishSettings.pcCorpse && respond(cmd, typer, isLocal)) sendCorpse(mc, ign, responder);  }
             case "bank" -> { if (FishSettings.pcBank && respond(cmd, typer, isLocal)) sendBank(mc, ign, responder); }
             case "powder" -> { if (FishSettings.pcPowder && respond(cmd, typer, isLocal)) sendPowder(mc, ign, responder); }
@@ -261,6 +263,7 @@ public class PartyCommandHandler {
         if (FishSettings.pcPowder)     cmds.add("powder");
         if (FishSettings.pcCorpse)     cmds.add("corpses");
         if (FishSettings.pcDprofit)    cmds.add("dprofit");
+        if (FishSettings.pcCrit)       cmds.add("crit");
         if (FishSettings.pcFps)        cmds.add("fps");
         if (FishSettings.pcTps)        cmds.add("tps");
         if (FishSettings.pcPing)       cmds.add("ping");
@@ -303,6 +306,7 @@ public class PartyCommandHandler {
     // ─── command dispatcher ───────────────────────────────────────────────────
 
     public static boolean handleCommand(String fullCmd) {
+        if (!FishSettings.partyCommandsEnabled) return false;
         Minecraft mc = Minecraft.getInstance();
         if (mc.getConnection() == null) return false;
         final String responder = "pc ";

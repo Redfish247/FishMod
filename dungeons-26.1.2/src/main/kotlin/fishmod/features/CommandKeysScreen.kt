@@ -94,8 +94,10 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
 
         listH = ROW_H * MAX_VISIBLE
         panelH = 50 + listH + 46
-        panelX = (this.width - panelW) / 2
-        panelY = max(8, (this.height - panelH) / 2)
+        val vw = (this.width / fishmod.utils.rendering.UiScale.factor()).toInt()
+        val vh = (this.height / fishmod.utils.rendering.UiScale.factor()).toInt()
+        panelX = (vw - panelW) / 2
+        panelY = max(8, (vh - panelH) / 2)
 
         listX = panelX + 14
         listY = panelY + 44
@@ -134,7 +136,11 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
             cmdField.setValue(commands[i])
             if (focusedRow == idx) cmdField.isFocused = true
             cmdFields.add(cmdField)
-            cmdFieldRects.add(ClickRect(cmdFieldX, rowTop + 3, cmdFieldW, 18) { focusedRow = idx })
+            cmdFieldRects.add(ClickRect(cmdFieldX, rowTop + 3, cmdFieldW, 18) {
+                focusedRow = idx
+                cmdFields.forEach { it.isFocused = false }
+                cmdField.isFocused = true
+            })
 
             removeRects.add(ClickRect(removeBtnX, rowTop + 3, REMOVE_BTN_W, 18) {
                 keys.removeAt(idx)
@@ -156,6 +162,8 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
     }
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        val mouseX = fishmod.utils.rendering.UiScale.vx(mouseX)
+        val mouseY = fishmod.utils.rendering.UiScale.vx(mouseY)
         NvgRecorder.clear()
         ScreenTheme.nPanel(panelX, panelY, panelX + panelW, panelY + panelH, 8, BG_PANEL, BORDER)
         ScreenTheme.nRect(panelX, panelY, panelW, 22, BG_SECTION)
@@ -218,8 +226,8 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
     }
 
     override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
-        val mx = click.x().toInt()
-        val my = click.y().toInt()
+        val mx = fishmod.utils.rendering.UiScale.vx(click.x())
+        val my = fishmod.utils.rendering.UiScale.vx(click.y())
 
         val idx = capturingIndex
         if (idx != null) {
@@ -243,6 +251,7 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
         doneBtn?.let { if (it.hit(mx, my)) { it.action(); return true } }
 
         focusedRow = -1
+        cmdFields.forEach { it.isFocused = false }
         return super.mouseClicked(click, doubled)
     }
 
@@ -299,7 +308,7 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
             val ctx = NvgContext.get()
             val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
             NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
-            NvgRecorder.replay()
+            NvgRecorder.replay(fishmod.utils.rendering.UiScale.factor())
             NanoVG.nvgEndFrame(ctx)
         } catch (t: Throwable) {
             if (!nvgFailureLogged) {

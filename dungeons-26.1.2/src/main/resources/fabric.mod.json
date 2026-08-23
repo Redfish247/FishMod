@@ -5,7 +5,7 @@
 	"name": "FishMod (Dungeons Only)",
 	"description": "Hypixel Skyblock dungeon utilities — curated Dungeons-only edition of FishMod",
 	"authors": [
-		"Eli"
+		"Redfish2471"
 	],
 	"contact": {},
 	"license": "CC0-1.0",
@@ -27,6 +27,7 @@
 		"minecraft": "~26.1.2",
 		"java": ">=25",
 		"fabric-api": "*",
-		"hypixel-mod-api": "*"
+		"hypixel-mod-api": "*",
+		"immediatelyfast": "*"
 	}
 }

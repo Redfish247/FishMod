@@ -17,8 +17,20 @@ object NvgRecorder {
     }
 
     @JvmStatic
-    fun replay() {
+    fun size(): Int = commands.size
+
+    @JvmStatic
+    @JvmOverloads
+    fun replay(scale: Float = 1f) {
+        if (scale == 1f) {
+            for (r in commands) r.run()
+            return
+        }
+        val ctx = NvgContext.get()
+        NanoVG.nvgSave(ctx)
+        NanoVG.nvgScale(ctx, scale, scale)
         for (r in commands) r.run()
+        NanoVG.nvgRestore(ctx)
     }
 
     private fun record(r: Runnable) {
@@ -99,9 +111,10 @@ object NvgRecorder {
         })
     }
 
-    /** Vertical linear-gradient fill over a rect, top color to bottom color. */
+    /** Vertical linear-gradient fill over a rect (optionally rounded), top color to bottom color. */
     @JvmStatic
-    fun fillRectVGradient(x: Float, y: Float, w: Float, h: Float, topColor: Int, botColor: Int) {
+    @JvmOverloads
+    fun fillRectVGradient(x: Float, y: Float, w: Float, h: Float, topColor: Int, botColor: Int, r: Float = 0f) {
         record(Runnable {
             val ctx = NvgContext.get()
             val paint = NVGPaint.calloc()
@@ -110,7 +123,7 @@ object NvgRecorder {
                 val to = argb(botColor, colorB)
                 NanoVG.nvgLinearGradient(ctx, x, y, x, y + h, from, to, paint)
                 NanoVG.nvgBeginPath(ctx)
-                NanoVG.nvgRect(ctx, x, y, w, h)
+                if (r > 0f) NanoVG.nvgRoundedRect(ctx, x, y, w, h, r) else NanoVG.nvgRect(ctx, x, y, w, h)
                 NanoVG.nvgFillPaint(ctx, paint)
                 NanoVG.nvgFill(ctx)
             } finally {
@@ -157,6 +170,26 @@ object NvgRecorder {
             NanoVG.nvgClosePath(ctx)
             NanoVG.nvgFillColor(ctx, argb(color, colorA))
             NanoVG.nvgFill(ctx)
+        })
+    }
+
+    /** Small "detach" glyph (↗ with a short shaft) used to pop a stacked column back out to its
+     *  own top-level slot; drawn in a [size]x[size] box anchored at (x, y). */
+    @JvmStatic
+    fun popOutIcon(x: Float, y: Float, size: Float, color: Int) {
+        record(Runnable {
+            val ctx = NvgContext.get()
+            NanoVG.nvgStrokeWidth(ctx, 1.4f)
+            NanoVG.nvgStrokeColor(ctx, argb(color, colorA))
+            NanoVG.nvgBeginPath(ctx)
+            NanoVG.nvgMoveTo(ctx, x, y + size)
+            NanoVG.nvgLineTo(ctx, x + size, y)
+            NanoVG.nvgStroke(ctx)
+            NanoVG.nvgBeginPath(ctx)
+            NanoVG.nvgMoveTo(ctx, x + size * 0.5f, y)
+            NanoVG.nvgLineTo(ctx, x + size, y)
+            NanoVG.nvgLineTo(ctx, x + size, y + size * 0.5f)
+            NanoVG.nvgStroke(ctx)
         })
     }
 

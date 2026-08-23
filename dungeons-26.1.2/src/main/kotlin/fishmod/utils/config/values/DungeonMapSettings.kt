@@ -91,6 +91,18 @@ object DungeonMapSettings {
     @JvmField
     var mapInfoShowCrypts: Boolean = true
 
+    // Info HUD's secrets line normally shows found-needed-total; when true, the trailing number
+    // becomes points still missing for a 300 instead of the total secret count.
+    @ConfigValue
+    @JvmField
+    var mapInfoShowLeft: Boolean = false
+
+    // Auto party-chat nudge ("X Score Missing (...)") once 60s into a run, breaking down exactly
+    // what's needed (prince/crypts/mimic/secrets) to reach 300 on a full clear.
+    @ConfigValue
+    @JvmField
+    var mapScoreMissingMsg: Boolean = true
+
     @ConfigValue
     @JvmField
     var mapScoreMessages: Boolean = false

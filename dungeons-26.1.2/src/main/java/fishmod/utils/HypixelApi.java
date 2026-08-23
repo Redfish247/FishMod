@@ -1780,6 +1780,46 @@ public class HypixelApi {
         }).exceptionally(t -> { cb.onData(-1, -1, null); return null; });
     }
 
+    /** Result of a /seen heartbeat: the worker's current broadcast config (all fields may be null). */
+    public interface SeenCallback {
+        /** @param updateLinks label→url (e.g. "github"/"modrinth"/"discord"), null if the request failed. */
+        void onData(String latestVersion, Map<String, String> updateLinks, String welcomeText, String discordUrl);
+    }
+
+    /**
+     * Reports this install to the worker's install/usage tracker (D1 table `players`, powers the
+     * admin installs dashboard) and, in the same round trip, fetches the broadcast update/welcome
+     * config the worker operator controls without a mod release (see LATEST_VERSION etc. in worker.js).
+     */
+    public static void reportSeen(String uuidNoDashes, String name, String modVersion, SeenCallback cb) {
+        try {
+            JsonObject o = new JsonObject();
+            o.addProperty("uuid", uuidNoDashes);
+            o.addProperty("name", name == null ? "" : name);
+            o.addProperty("modVersion", modVersion == null ? "" : modVersion);
+            HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(PROXY_URL + "/seen"))
+                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("Content-Type", "application/json")
+                .header("User-Agent", "Mozilla/5.0")
+                .timeout(Duration.ofSeconds(10))
+                .POST(HttpRequest.BodyPublishers.ofString(o.toString()))
+                .build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
+                try {
+                    JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
+                    if (!root.has("success") || !root.get("success").getAsBoolean()) { cb.onData(null, null, null, null); return; }
+                    String latest = root.has("latestVersion") ? root.get("latestVersion").getAsString() : null;
+                    Map<String, String> links = root.has("updateLinks") && root.get("updateLinks").isJsonObject()
+                        ? parseStringMap(root, "updateLinks") : null;
+                    String welcome = root.has("welcomeText") ? root.get("welcomeText").getAsString() : null;
+                    String discord = root.has("discordUrl") ? root.get("discordUrl").getAsString() : null;
+                    cb.onData(latest, links, welcome, discord);
+                } catch (Exception ignored) { cb.onData(null, null, null, null); }
+            }).exceptionally(t -> { cb.onData(null, null, null, null); return null; });
+        } catch (Exception e) { cb.onData(null, null, null, null); }
+    }
+
     /** Uploads the local player's cosmetic nick (empty/null clears it) so other mod users can see it. */
     public static void uploadNick(String uuidNoDashes, String nick) {
         try {

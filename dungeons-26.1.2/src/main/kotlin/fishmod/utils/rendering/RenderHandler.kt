@@ -17,4 +17,6 @@ class RenderHandler {
         }
     }
 
+    fun size(): Int = listeners.size
+
 }

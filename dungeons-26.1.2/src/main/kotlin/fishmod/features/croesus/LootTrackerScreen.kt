@@ -85,14 +85,18 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
     override fun extractTransparentBackground(ctx: GuiGraphicsExtractor) {}
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
-        curMx = mouseX; curMy = mouseY
+        curMx = fishmod.utils.rendering.UiScale.vx(mouseX); curMy = fishmod.utils.rendering.UiScale.vx(mouseY)
         NvgRecorder.clear()
-        NvgRecorder.fillRectVGradient(0f, 0f, this.width.toFloat(), this.height.toFloat(), BG_TOP, BG_BOT)
+        val vw = (this.width / fishmod.utils.rendering.UiScale.factor()).toInt()
+        val vh = (this.height / fishmod.utils.rendering.UiScale.factor()).toInt()
+        // Recorded in virtual space like everything else so replay()'s uniform scale brings it
+        // back to exactly this.width/this.height — a real-space size here would get shrunk too.
+        NvgRecorder.fillRectVGradient(0f, 0f, vw.toFloat(), vh.toFloat(), BG_TOP, BG_BOT)
 
         contentX0 = MARGIN
-        contentX1 = this.width - MARGIN
+        contentX1 = vw - MARGIN
         contentY0 = MARGIN
-        contentY1 = this.height - MARGIN
+        contentY1 = vh - MARGIN
 
         ScreenTheme.nRect(contentX0 - 1, contentY0 - 1, contentX1 - contentX0 + 2, contentY1 - contentY0 + 2, PANEL_BORDER)
         ScreenTheme.nRect(contentX0, contentY0, contentX1 - contentX0, contentY1 - contentY0, PANEL_BG)
@@ -120,12 +124,8 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
 
     private fun filterRows(rows: List<LootTrackerStore.Row>): List<LootTrackerStore.Row> {
         val q = searchField.value.trim().lowercase()
-        if (q.isEmpty()) return rows
-        val out = ArrayList<LootTrackerStore.Row>()
-        for (r in rows) {
-            if (r.name.lowercase().contains(q)) out.add(r)
-        }
-        return out
+        val matched = if (q.isEmpty()) rows else rows.filter { it.name.lowercase().contains(q) }
+        return matched.sortedByDescending { rowValue(it) }
     }
 
     private fun renderHeader() {
@@ -303,8 +303,8 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
 
     // ── input ────────────────────────────────────────────────────────────────
     override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
-        val mx = click.x()
-        val my = click.y()
+        val mx = fishmod.utils.rendering.UiScale.vx(click.x()).toDouble()
+        val my = fishmod.utils.rendering.UiScale.vx(click.y()).toDouble()
 
         if (editKind != 0) {
             val ex = editBox.x
@@ -350,6 +350,8 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
+        val mouseX = fishmod.utils.rendering.UiScale.vx(mouseX).toDouble()
+        val mouseY = fishmod.utils.rendering.UiScale.vx(mouseY).toDouble()
         if (hit(mouseX, mouseY, listX0, listTop, listX1 - listX0, listH)) {
             scroll -= (verticalAmount * ROW_H).toInt()
             return true
@@ -431,7 +433,7 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
             val ctx = NvgContext.get()
             val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
             NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
-            NvgRecorder.replay()
+            NvgRecorder.replay(fishmod.utils.rendering.UiScale.factor())
             NanoVG.nvgEndFrame(ctx)
         } catch (t: Throwable) {
             if (!nvgFailureLogged) {

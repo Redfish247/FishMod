@@ -152,11 +152,6 @@ object Floor7 {
     @JvmField
     var notifiyMelody: Boolean = false
 
-    // Counts down 3.75s from Goldor's health hitting 0, then shows a "LEAP!" title + sound.
-    @ConfigValue
-    @JvmField
-    var leapNotifications: Boolean = false
-
     @ConfigValue
     @JvmField
     var disableTitlesAtPre4: Boolean = false
@@ -221,6 +216,12 @@ object Floor7 {
     @JvmField
     var sectionChangeSound: SoundData = SoundData(SoundEvents.NOTE_BLOCK_PLING.value(), 0f, 1f)
 
+    // Master switch for the combined "Tick Timers" settings group (Maxor/Storm/Goldor + related
+    // P2/terminal notifications); when off, none of that group renders regardless of its own toggle.
+    @ConfigValue
+    @JvmField
+    var enableTickTimers: Boolean = true
+
     @ConfigValue
     @JvmField
     var enableMaxorTickTimer: Boolean = false
@@ -248,4 +249,65 @@ object Floor7 {
     @ConfigValue
     @JvmField
     var assumeSplitEE2: Boolean = false
+
+    // --- S4 term/leap failure tracker ---
+
+    @ConfigValue
+    @JvmField
+    var s4TrackerEnabled: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var s4DebugHudEnabled: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var s4AlertsEnabled: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var s4AlertSoundEnabled: Boolean = true
+
+    @ConfigValue
+    @JvmField
+    var s4EarlyLeapAlert: Boolean = true
+
+    @ConfigValue
+    @JvmField
+    var s4LateLeapAlert: Boolean = true
+
+    @ConfigValue
+    @JvmField
+    var s4MissedTermAlert: Boolean = true
+
+    @ConfigValue
+    @JvmField
+    var s4DeathAlert: Boolean = true
+
+    // Time after Section 5 (Core open) starts before someone still outside Core is flagged "late".
+    @ConfigValue
+    @JvmField
+    var s4LateLeapThresholdTicks: Int = 100
+
+    @ConfigValue
+    @JvmField
+    var s4AlertDurationTicks: Int = 60
+
+    @ConfigValue
+    @JvmField
+    var s4AlertCooldownTicks: Int = 40
+
+    @ConfigValue
+    @JvmField
+    var s4AlertSound: SoundData = SoundData(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 0.5f)
+
+    // --- Gate Display: big world-space X/check over each Goldor gate (S1-S3) ---
+
+    @ConfigValue
+    @JvmField
+    var gateDisplayEnabled: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var gateDisplayScale: Float = 6f
 }

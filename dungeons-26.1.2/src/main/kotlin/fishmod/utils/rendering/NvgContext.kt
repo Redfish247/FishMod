@@ -12,13 +12,21 @@ object NvgContext {
     const val FONT_NAME: String = "inter"
 
     private var handle: Long = 0L
+    private var createFailed = false
 
     @JvmStatic
     fun get(): Long {
+        if (createFailed) throw IllegalStateException("NanoVG context previously failed to create - not retrying")
         if (handle == 0L) {
-            handle = NanoVGGL3.nvgCreate(NanoVGGL3.NVG_ANTIALIAS or NanoVGGL3.NVG_STENCIL_STROKES)
-            if (handle == 0L) throw IllegalStateException("Failed to create NanoVG context")
-            loadFont(handle)
+            try {
+                handle = NanoVGGL3.nvgCreate(NanoVGGL3.NVG_ANTIALIAS or NanoVGGL3.NVG_STENCIL_STROKES)
+                if (handle == 0L) throw IllegalStateException("Failed to create NanoVG context")
+                loadFont(handle)
+            } catch (t: Throwable) {
+                createFailed = true
+                handle = 0L
+                throw t
+            }
         }
         return handle
     }

@@ -51,9 +51,15 @@ object RemoteNicks {
     @JvmStatic
     fun snapshot(): Map<String, Component> = HashMap(styledByName)
 
-    /** Force an immediate refresh from the tab list. */
+    /**
+     * Force an immediate refresh from the tab list. [RemoteSync] only covers other players (it
+     * skips the local UUID), so also re-upload our own nick and retroactively re-style chat —
+     * otherwise pressing this button visibly does nothing when testing alone / no one else nearby.
+     */
     @JvmStatic
     fun forceRefresh() {
+        uploadOwn()
+        ChatNickRefresher.requestRefresh()
         RemoteSync.forceSync()
     }
 
