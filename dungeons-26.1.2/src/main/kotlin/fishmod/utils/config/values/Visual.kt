@@ -11,6 +11,10 @@ object Visual {
     @ConfigValue @JvmField var hideDeadEntities: Boolean = false
 
     @ConfigValue @JvmField var itemRarityBackground: Boolean = false
+    /** Background tint opacity 0-100% (NoammAddons default is ~30). */
+    @ConfigValue @JvmField var itemRarityOpacity: Int = 35
+    /** Use Hypixel's per-rarity colours instead of blade-addons' darker palette. */
+    @ConfigValue @JvmField var itemRarityHypixelColors: Boolean = true
 
     @ConfigValue @JvmField var hideStatusOverLay: Boolean = false
 

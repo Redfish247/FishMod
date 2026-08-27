@@ -542,6 +542,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("Item Rarity Background", Visual::itemRarityBackground)
+            f.sub.add(SliderIntSetting("Opacity %", "", Visual::itemRarityOpacity, 0, 100))
+            f.sub.add(ToggleSetting("Hypixel Colors", "Brighter, accurate per-rarity colours", Visual::itemRarityHypixelColors))
             f.sub.add(ToggleSetting("Circular", "", Visual::circularRarityBackground))
             visuals.features.add(f)
         }

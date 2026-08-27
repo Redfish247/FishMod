@@ -16,8 +16,20 @@ object ItemRarityHotbar {
     private val SQUARE: Identifier = Identifier.fromNamespaceAndPath("fishmod", "rarity-background")
     private val CIRCLE: Identifier = Identifier.fromNamespaceAndPath("fishmod", "rarity-background-circle")
 
-    private const val TINT_ALPHA = 0xFF
-    private const val DESATURATE = 0.55f // blend raw rarity color halfway toward grey so it's a subtle hint
+    /** Hypixel's per-rarity RGB (matches NoammAddons' getHypixelColor). */
+    private val HYPIXEL: Map<ItemRarity, Int> = mapOf(
+        ItemRarity.COMMON to 0xFFFFFF,
+        ItemRarity.UNCOMMON to 0x21FF2A,
+        ItemRarity.RARE to 0x459BFF,
+        ItemRarity.EPIC to 0xA335EE,
+        ItemRarity.LEGENDARY to 0xFFA216,
+        ItemRarity.MYTHIC to 0xFF55FF,
+        ItemRarity.DIVINE to 0x55FFFF,
+        ItemRarity.SPECIAL to 0xFF5555,
+        ItemRarity.VERY_SPECIAL to 0xD13228,
+        ItemRarity.ULTIMATE to 0xD13228,
+        ItemRarity.ADMIN to 0xD13228,
+    )
 
     @JvmStatic
     fun init() {
@@ -37,21 +49,11 @@ object ItemRarityHotbar {
     }
 
     private fun getTintColor(rarity: ItemRarity): Int {
-        val color = rarity.color
-        var red = (color shr 16) and 0xff
-        var green = (color shr 8) and 0xff
-        var blue = color and 0xff
-        val grey = (red + green + blue) / 3
-
-        red = desaturate(red, grey)
-        green = desaturate(green, grey)
-        blue = desaturate(blue, grey)
-
-        return (TINT_ALPHA shl 24) or (red shl 16) or (green shl 8) or blue
+        val rgb = if (Visual.itemRarityHypixelColors) HYPIXEL[rarity] ?: (rarity.color and 0xFFFFFF)
+                  else rarity.color and 0xFFFFFF
+        val alpha = Visual.itemRarityOpacity.coerceIn(0, 100) * 255 / 100
+        return (alpha shl 24) or rgb
     }
-
-    private fun desaturate(channel: Int, grey: Int): Int =
-        Math.round(channel + (grey - channel) * DESATURATE)
 
     @JvmStatic
     fun getRarity(stack: ItemStack): ItemRarity {
