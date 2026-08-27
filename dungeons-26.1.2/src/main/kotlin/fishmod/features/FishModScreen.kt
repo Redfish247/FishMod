@@ -226,6 +226,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ColorPickerSetting("Other Blazes", "", FishSettings::blazeOtherColor))
             f.sub.add(ToggleSetting("Connecting Line", "", FishSettings::blazeLine))
             f.sub.add(SliderIntSetting("Line Count", "", FishSettings::blazeLineCount, 1, 9))
+            f.sub.add(SubcategoryHeader("Quiz"))
+            f.sub.add(ToggleSetting("Quiz Solver", "", FishSettings::quizSolver))
+            f.sub.add(ColorPickerSetting("Quiz Color", "", FishSettings::quizColor))
             dungeon.features.add(f)
         }
         run {

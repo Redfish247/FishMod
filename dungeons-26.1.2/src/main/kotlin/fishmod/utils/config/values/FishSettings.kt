@@ -401,6 +401,9 @@ object FishSettings {
     @ConfigValue @JvmField var blazeOtherColor: Int = 0x66FFFFFF
     @ConfigValue @JvmField var blazeLine: Boolean = true
     @ConfigValue @JvmField var blazeLineCount: Int = 1
+    // Quiz (Oruo trivia)
+    @ConfigValue @JvmField var quizSolver: Boolean = true
+    @ConfigValue @JvmField var quizColor: Int = 0xC055FF55.toInt()
 
     // ── F7 Terminal Solver (Odin TerminalSolver port) ──────────────────────────
     @ConfigValue @JvmField var terminalSolverEnabled: Boolean = false

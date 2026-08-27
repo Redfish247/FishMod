@@ -37,6 +37,7 @@ object PuzzleSolvers {
             ThreeWeirdosSolver(),
             BlazeSolver("Lower Blaze", ascending = false),
             BlazeSolver("Higher Blaze", ascending = true),
+            QuizSolver(),
         )
 
         ClientTickEvents.END_CLIENT_TICK.register { mc -> tick(mc) }
