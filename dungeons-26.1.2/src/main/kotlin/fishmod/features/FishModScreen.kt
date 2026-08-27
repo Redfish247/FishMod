@@ -688,10 +688,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Circular", "", Visual::circularRarityBackground))
             visuals.features.add(f)
         }
-        visuals.features.add(Feature("Item Quality Tooltip", FishSettings::itemQualityTooltip))
         run {
-            val f = Feature("Item Price Tooltip", FishSettings::itemTooltipPrices)
+            val f = Feature("Item Tooltip", FishSettings::itemTooltipPrices)
+            f.sub.add(SubcategoryHeader("Extra lines on SkyBlock item tooltips"))
+            f.sub.add(ToggleSetting("Prices", "Value = base + modifiers (enchants, HPB, recomb, gems, reforge…)", FishSettings::itemTooltipPrices))
             f.sub.add(ToggleSetting("NPC Sell Price", "", FishSettings::itemTooltipNpcSell))
+            f.sub.add(ToggleSetting("Dungeon Quality", "Stat-boost % + floor", FishSettings::itemQualityTooltip))
             visuals.features.add(f)
         }
         run {

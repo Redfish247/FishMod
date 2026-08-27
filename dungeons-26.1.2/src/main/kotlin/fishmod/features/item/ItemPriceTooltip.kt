@@ -33,11 +33,14 @@ object ItemPriceTooltip {
             val id = ItemUtil.getId(stack) ?: return@ItemTooltipCallback
             val count = stack.count
 
-            val unit = CroesusPrices.price(id)
+            val base = CroesusPrices.price(id)
+            val mods = ModifierValue.calc(stack)
+            val unit = base + mods
             if (unit > 0.0) {
                 val each = "§eValue: §6${abbr(unit)}"
                 val stackPart = if (count > 1) " §7(×$count = §6${abbr(unit * count)}§7)" else ""
                 lines.add(Component.literal("$each$stackPart"))
+                if (mods > 0.0 && base > 0.0) lines.add(Component.literal("§7  base §6${abbr(base)} §7+ modifiers §6${abbr(mods)}"))
             }
 
             if (FishSettings.itemTooltipNpcSell) {
