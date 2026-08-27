@@ -338,7 +338,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         run {
             val f = Feature("Leap", FishSettings::leapMenuEnabled)
             f.sub.add(SubcategoryHeader("── Menu (custom 2x2 Spirit Leap GUI, click a cell or press 1-4) ──"))
-            f.sub.add(SliderIntSetting("Menu Scale %", "", FishSettings::leapMenuScale, 40, 150))
+            f.sub.add(SliderIntSetting("Menu Scale %", "", FishSettings::leapMenuScale, 40, 220))
             f.sub.add(ToggleSetting("Number Keybinds", "1-4 leap to that cell", FishSettings::leapMenuKeybinds))
             f.sub.add(ToggleSetting("Left-Click Only", "Ignore right/middle click", FishSettings::leapMenuLeftClickOnly))
             f.sub.add(ToggleSetting("Tint Dead Players", "", FishSettings::leapMenuTintDead))

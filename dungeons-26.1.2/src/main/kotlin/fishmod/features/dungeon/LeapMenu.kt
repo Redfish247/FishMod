@@ -50,15 +50,15 @@ object LeapMenu {
         }.take(4)
     }
 
-    private fun scale(): Float = (FishSettings.leapMenuScale.coerceIn(40, 150) / 100f)
+    private fun scale(): Float = (FishSettings.leapMenuScale.coerceIn(40, 220) / 100f)
 
     // 2x2 layout rects in GUI-scaled space.
     private fun cellRects(mc: Minecraft): Array<IntArray> {
         val w = mc.window.guiScaledWidth
         val h = mc.window.guiScaledHeight
-        val cw = (150 * scale()).toInt()
-        val ch = (46 * scale()).toInt()
-        val pad = (14 * scale()).toInt()
+        val cw = (188 * scale()).toInt()
+        val ch = (58 * scale()).toInt()
+        val pad = (16 * scale()).toInt()
         val gx = w / 2 - cw - pad / 2
         val gy = h / 2 - ch - pad / 2
         return arrayOf(
@@ -91,33 +91,32 @@ object LeapMenu {
 
         val rects = cellRects(mc)
         val hov = hovered(mc, mouseX, mouseY)
+        val rad = (6 * scale()).toInt().coerceIn(3, 12)
         cache.forEachIndexed { i, t ->
             val r = rects[i]
             val classCol = DungeonClass.getColor(t.clazz) and 0xFFFFFF
             var bg = 0xCC1E1E1E.toInt()
             if (i == hov) bg = 0xE0333333.toInt()
             if (FishSettings.leapMenuTintDead && t.dead) bg = if (i == hov) 0xE0662222.toInt() else 0xCC4A1E1E.toInt()
-            ctx.fill(r[0], r[1], r[0] + r[2], r[1] + r[3], bg)
-            border(ctx, r[0], r[1], r[2], r[3], 0xFF000000.toInt() or classCol)
+            roundFill(ctx, r[0], r[1], r[2], r[3], rad, 0xFF000000.toInt() or classCol)   // border
+            roundFill(ctx, r[0] + 2, r[1] + 2, r[2] - 4, r[3] - 4, rad - 1, bg)            // inner
 
-            val headSize = (r[3] - 12)
-            val hx = r[0] + 6
-            val hy = r[1] + 6
-            ctx.fill(hx, hy, hx + headSize, hy + headSize, 0xFF000000.toInt() or classCol)
+            val headSize = r[3] - 14
+            val hx = r[0] + 8
+            val hy = r[1] + 7
+            roundFill(ctx, hx - 1, hy - 1, headSize + 2, headSize + 2, 3, 0xFF000000.toInt() or classCol)
             val skin = DungeonPlayers.get(t.name)?.skin
             if (skin != null) {
-                // Native 8x8 face, centred in the class-coloured avatar tile.
-                val fo = (headSize - 8) / 2
-                ctx.blit(RenderPipelines.GUI_TEXTURED, skin.body().texturePath(), hx + fo, hy + fo, 8f, 8f, 8, 8, 64, 64, -1)
+                ctx.blit(RenderPipelines.GUI_TEXTURED, skin.body().texturePath(), hx, hy, 8f, 8f, headSize, headSize, 8, 8, 64, 64)
             }
-            val tx = hx + headSize + 6
+            val tx = hx + headSize + 8
             val showName = FishSettings.leapMenuShowName
             val showClass = FishSettings.leapMenuShowClass
             val status = if (t.dead) "§cDEAD" else "§7${t.clazz?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "?"}"
             when {
                 showName && showClass -> {
-                    ctx.text(mc.font, "§f${t.name}", tx, r[1] + r[3] / 2 - 9, -1)
-                    ctx.text(mc.font, status, tx, r[1] + r[3] / 2 + 1, -1)
+                    ctx.text(mc.font, "§f${t.name}", tx, r[1] + r[3] / 2 - 10, -1)
+                    ctx.text(mc.font, status, tx, r[1] + r[3] / 2 + 2, -1)
                 }
                 showName -> ctx.text(mc.font, "§f${t.name}", tx, r[1] + r[3] / 2 - 4, -1)
                 showClass -> ctx.text(mc.font, status, tx, r[1] + r[3] / 2 - 4, -1)
@@ -125,11 +124,17 @@ object LeapMenu {
         }
     }
 
-    private fun border(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, c: Int) {
-        ctx.fill(x, y, x + w, y + 1, c)
-        ctx.fill(x, y + h - 1, x + w, y + h, c)
-        ctx.fill(x, y, x + 1, y + h, c)
-        ctx.fill(x + w - 1, y, x + w, y + h, c)
+    /** Filled rect with circular-ish rounded corners of radius [rad]. */
+    private fun roundFill(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, rad: Int, c: Int) {
+        if (rad <= 0) { ctx.fill(x, y, x + w, y + h, c); return }
+        ctx.fill(x + rad, y, x + w - rad, y + h, c)
+        ctx.fill(x, y + rad, x + rad, y + h - rad, c)
+        ctx.fill(x + w - rad, y + rad, x + w, y + h - rad, c)
+        for (i in 0 until rad) {
+            val inset = rad - Math.sqrt((rad * rad - (rad - 1 - i) * (rad - 1 - i)).toDouble()).toInt()
+            ctx.fill(x + inset, y + i, x + w - inset, y + i + 1, c)
+            ctx.fill(x + inset, y + h - 1 - i, x + w - inset, y + h - i, c)
+        }
     }
 
     /** @return true to swallow. */
