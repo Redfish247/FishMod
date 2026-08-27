@@ -33,7 +33,7 @@ object PuzzleSolvers {
 
     @JvmStatic
     fun init() {
-        // register(...) concrete solvers here as they land (Phase 3).
+        register(ThreeWeirdosSolver())
 
         ClientTickEvents.END_CLIENT_TICK.register { mc -> tick(mc) }
 

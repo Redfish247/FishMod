@@ -212,6 +212,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         dungeon.features.add(Feature("PB Pace", FishSettings::pbPaceEnabled))
         dungeon.features.add(Feature("Puzzle Overlay", FishSettings::showPuzzles))
         run {
+            val f = Feature("Puzzle Solvers", FishSettings::puzzleSolversEnabled)
+            f.sub.add(DropdownSetting("Box Style", "", arrayOf("Filled", "Outline", "Filled Outline"),
+                { FishSettings.puzzleSolverStyle }, { v -> FishSettings.puzzleSolverStyle = v }))
+            f.sub.add(SubcategoryHeader("Three Weirdos"))
+            f.sub.add(ToggleSetting("Weirdos Solver", "", FishSettings::weirdosSolver))
+            f.sub.add(ColorPickerSetting("Correct Color", "", FishSettings::weirdosCorrectColor))
+            f.sub.add(ColorPickerSetting("Wrong Color", "", FishSettings::weirdosWrongColor))
+            dungeon.features.add(f)
+        }
+        run {
             val f = Feature("Leap Messages", Dungeons::enableLeapMessages)
             f.sub.add(ToggleSetting("Title", "", FishSettings::leapMessagesTitle))
             f.sub.add(ToggleSetting("Sound", "", FishSettings::leapMessagesSound))
@@ -2420,6 +2430,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Blessing Display" -> "Active dungeon blessings from the tab footer"
                 "Invincibility Timer" -> "Spirit / Bonzo / Phoenix proc + cooldown timers"
                 "Secret Clicked" -> "Box + chime when you click a dungeon secret"
+                "Puzzle Solvers" -> "In-world solutions for dungeon puzzles"
                 "Auto Requeue" -> "Send /instancerequeue when a run ends (leader only)"
                 "Warp Cooldown" -> "Countdown until you can /warp again"
                 "Death Message" -> "Announce deaths with a template"

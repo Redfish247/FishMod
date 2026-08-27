@@ -387,9 +387,13 @@ object FishSettings {
     @ConfigValue @JvmField var soundMasterEnabled: Boolean = true
     @ConfigValue @JvmField var soundMasterVolume: Int = 100
 
-    // Puzzle solver framework (fishmod.features.dungeon.puzzles). Concrete solvers gate on this;
-    // wired to a screen toggle once the first solvers land (Phase 3).
+    // Puzzle solver framework (fishmod.features.dungeon.puzzles).
     @ConfigValue @JvmField var puzzleSolversEnabled: Boolean = false
+    @ConfigValue @JvmField var puzzleSolverStyle: String = "Filled Outline" // Filled | Outline | Filled Outline
+    // Three Weirdos
+    @ConfigValue @JvmField var weirdosSolver: Boolean = true
+    @ConfigValue @JvmField var weirdosCorrectColor: Int = 0xB355FF55.toInt()
+    @ConfigValue @JvmField var weirdosWrongColor: Int = 0xB3FF5555.toInt()
 
     // Warp Cooldown HUD (revives Dungeons.enableWarpCooldown). Cooldown starts on the party's
     // "entered <floor> Catacombs" chat line (Odin logic); 30s is Hypixel's real re-entry gate.
