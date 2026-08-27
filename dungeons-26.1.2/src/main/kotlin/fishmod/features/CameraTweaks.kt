@@ -8,39 +8,44 @@ import net.minecraft.world.effect.MobEffects
  * Small camera/screen QoL toggles (subset of NoammAddons' Camera). Tick-driven overrides only —
  * the render-overlay-hiding options (fire/portal/water) that need mixins are a follow-up.
  *
- * - Custom FOV: forces `options.fov`.
- * - Full Bright: forces gamma to max.
- * - Disable Blindness / Nausea: strips the effect client-side each tick.
+ * The original value is captured exactly once when an override first takes effect (via the
+ * `applied*` latch) and only re-written when it has actually drifted, so nothing fights the
+ * option every tick (that was causing the full-bright flicker).
  */
 object CameraTweaks {
 
-    private var savedFov = -1
-    private var savedGamma = -1.0
+    private var appliedFov = false
+    private var origFov = 70
+    private var appliedGamma = false
+    private var origGamma = 0.5
+
+    private const val FULLBRIGHT = 1.0 // vanilla clamps gamma here; true fullbright needs a mixin
 
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
-            if (!FishSettings.cameraTweaksEnabled) {
-                if (savedFov >= 0) { mc.options?.fov()?.set(savedFov); savedFov = -1 }
-                if (savedGamma >= 0) { mc.options?.gamma()?.set(savedGamma); savedGamma = -1.0 }
-                return@register
-            }
             val opts = mc.options ?: return@register
+            val on = FishSettings.cameraTweaksEnabled
 
-            if (FishSettings.cameraCustomFov) {
-                if (savedFov < 0) savedFov = opts.fov().get()
-                opts.fov().set(FishSettings.cameraFov)
-            } else if (savedFov >= 0) {
-                opts.fov().set(savedFov); savedFov = -1
+            // ── FOV ──
+            val wantFov = on && FishSettings.cameraCustomFov
+            if (wantFov && !appliedFov) { origFov = opts.fov().get(); appliedFov = true }
+            if (appliedFov) {
+                val target = if (wantFov) FishSettings.cameraFov else origFov
+                if (opts.fov().get() != target) opts.fov().set(target)
+                if (!wantFov) appliedFov = false
             }
 
-            if (FishSettings.cameraFullBright) {
-                if (savedGamma < 0) savedGamma = opts.gamma().get()
-                opts.gamma().set(1.0) // vanilla clamps gamma to 1.0; true fullbright needs a mixin
-            } else if (savedGamma >= 0) {
-                opts.gamma().set(savedGamma); savedGamma = -1.0
+            // ── Full Bright ──
+            val wantGamma = on && FishSettings.cameraFullBright
+            if (wantGamma && !appliedGamma) { origGamma = opts.gamma().get(); appliedGamma = true }
+            if (appliedGamma) {
+                val target = if (wantGamma) FULLBRIGHT else origGamma
+                if (opts.gamma().get() != target) opts.gamma().set(target)
+                if (!wantGamma) appliedGamma = false
             }
 
+            if (!on) return@register
             val p = mc.player ?: return@register
             if (FishSettings.cameraNoBlindness) p.removeEffect(MobEffects.BLINDNESS)
             if (FishSettings.cameraNoNausea) p.removeEffect(MobEffects.NAUSEA)

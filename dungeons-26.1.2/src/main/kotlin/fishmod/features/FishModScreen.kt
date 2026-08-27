@@ -310,7 +310,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("Auto Requeue", Dungeons::enableAutoRequeue)
-            f.sub.add(SliderIntSetting("Delay (ms)", "After the \"> EXTRA STATS <\" line", FishSettings::autoRequeueDelayMs, 0, 8000))
+            f.sub.add(SliderDoubleSetting("Delay (s)", "After the \"> EXTRA STATS <\" line",
+                { FishSettings.autoRequeueDelayMs / 1000.0 },
+                { v -> FishSettings.autoRequeueDelayMs = (v * 1000).toInt() }, 0.0, 10.0))
             dungeon.features.add(f)
         }
         run {
