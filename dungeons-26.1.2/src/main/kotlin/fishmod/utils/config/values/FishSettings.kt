@@ -484,6 +484,9 @@ object FishSettings {
     @ConfigValue @JvmField var springBootsHudY: Int = 200
     @ConfigValue @JvmField var springBootsScale: Double = 1.0
 
+    // ── Terracotta Timer (F6) ────────────────────────────────────────────────
+    @ConfigValue @JvmField var terracottaTimerEnabled: Boolean = false
+
     // ── Dungeon Abilities ────────────────────────────────────────────────────
     @ConfigValue @JvmField var dungeonAbilitiesEnabled: Boolean = false
     @ConfigValue @JvmField var dungeonAbilitiesAutoUlt: Boolean = false

@@ -432,6 +432,7 @@ class FishModInit : ModInitializer {
         fishmod.features.SpringBoots.init()
         fishmod.features.VisualTweaks.init()
         fishmod.features.dungeon.DungeonAbilities.init()
+        fishmod.features.dungeon.f6.TerracottaTimer.init()
         fishmod.features.dungeon.LeapAnnounce.init()
         fishmod.features.dungeon.KeyNotifier.init()
         fishmod.features.dungeon.AutoRequeue.init()
