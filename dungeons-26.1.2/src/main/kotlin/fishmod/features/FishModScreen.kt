@@ -755,6 +755,29 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Cauldron Box", "Box + tracer the cauldron for the relic you hold", Floor7::renderRelicHighlight))
             floor7.features.add(f)
         }
+        run {
+            val f = Feature("Wither Dragons", FishSettings::witherDragonsEnabled)
+            f.sub.add(ToggleSetting("Spawn Timer", "In-world + centred countdown until each dragon spawns", FishSettings::witherDragonsTimer))
+            f.sub.add(DropdownSetting("Timer Style", "", arrayOf("Milliseconds", "Seconds", "Ticks"),
+                { arrayOf("Milliseconds", "Seconds", "Ticks")[FishSettings.witherDragonsTimerStyle] },
+                { v -> FishSettings.witherDragonsTimerStyle = arrayOf("Milliseconds", "Seconds", "Ticks").indexOf(v).coerceAtLeast(0) }))
+            f.sub.add(ToggleSetting("Dragon Health", "", FishSettings::witherDragonsHealth))
+            f.sub.add(ToggleSetting("Skip Box", "", FishSettings::witherDragonsSkipBox))
+            f.sub.add(ToggleSetting("Fill Skip Box", "", FishSettings::witherDragonsBoxFill))
+            f.sub.add(ToggleSetting("Priority Tracer", "Line to the highest-priority spawning dragon", FishSettings::witherDragonsTracer))
+            f.sub.add(ToggleSetting("Aim Assist", "Box at the arrow-lead point for the ice spray", FishSettings::witherDragonsAimAssist))
+            f.sub.add(ColorPickerSetting("Tracer / Aim Color", "", FishSettings::witherDragonsAimColor))
+            f.sub.add(ToggleSetting("Send Kill Stats", "Time / arrows / spray to chat on each dragon death", FishSettings::witherDragonsSendStats))
+            f.sub.add(SubcategoryHeader("Priority"))
+            f.sub.add(ToggleSetting("Custom Priority", "Factor in blessing power + your class", FishSettings::witherDragonsPriority))
+            f.sub.add(SliderDoubleSetting("Normal Power", "", FishSettings::witherDragonsNormalPower, 0.0, 32.0))
+            f.sub.add(SliderDoubleSetting("Easy Power", "", FishSettings::witherDragonsEasyPower, 0.0, 32.0))
+            f.sub.add(DropdownSetting("Purple Solo Debuff", "", arrayOf("Tank", "Healer"),
+                { arrayOf("Tank", "Healer")[FishSettings.witherDragonsSoloDebuff] },
+                { v -> FishSettings.witherDragonsSoloDebuff = arrayOf("Tank", "Healer").indexOf(v).coerceAtLeast(0) }))
+            f.sub.add(ToggleSetting("Solo Debuff on All Splits", "", FishSettings::witherDragonsSoloDebuffAll))
+            floor7.features.add(f)
+        }
 
         for (et in FishModAddonApi.dungeonToggles) {
             dungeon.features.add(Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) }))

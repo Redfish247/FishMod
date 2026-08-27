@@ -487,6 +487,27 @@ object FishSettings {
     // ── Terracotta Timer (F6) ────────────────────────────────────────────────
     @ConfigValue @JvmField var terracottaTimerEnabled: Boolean = false
 
+    // ── Wither Dragons (M7 P5) ───────────────────────────────────────────────
+    @ConfigValue @JvmField var witherDragonsEnabled: Boolean = false
+    @ConfigValue @JvmField var witherDragonsTimer: Boolean = true
+    @ConfigValue @JvmField var witherDragonsTimerStyle: Int = 0        // 0 ms, 1 s, 2 ticks
+    @ConfigValue @JvmField var witherDragonsHealth: Boolean = true
+    @ConfigValue @JvmField var witherDragonsSkipBox: Boolean = true
+    @ConfigValue @JvmField var witherDragonsBoxFill: Boolean = false
+    @ConfigValue @JvmField var witherDragonsTracer: Boolean = false
+    @ConfigValue @JvmField var witherDragonsAimAssist: Boolean = false
+    @ConfigValue @JvmField var witherDragonsAimColor: Int = 0xFF00FFFF.toInt()
+    @ConfigValue @JvmField var witherDragonsSendStats: Boolean = true
+    @ConfigValue @JvmField var witherDragonsHudX: Int = -1             // <0 = centred
+    @ConfigValue @JvmField var witherDragonsHudY: Int = 100
+    @ConfigValue @JvmField var witherDragonsHudScale: Double = 2.0
+    // priority
+    @ConfigValue @JvmField var witherDragonsPriority: Boolean = false
+    @ConfigValue @JvmField var witherDragonsNormalPower: Double = 0.0
+    @ConfigValue @JvmField var witherDragonsEasyPower: Double = 0.0
+    @ConfigValue @JvmField var witherDragonsSoloDebuff: Int = 0        // 0 Tank, 1 Healer
+    @ConfigValue @JvmField var witherDragonsSoloDebuffAll: Boolean = true
+
     // ── Leap Counter ─────────────────────────────────────────────────────────
     @ConfigValue @JvmField var leapCounterEnabled: Boolean = false
     @ConfigValue @JvmField var leapCounterHudX: Int = 10
