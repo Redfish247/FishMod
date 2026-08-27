@@ -44,17 +44,16 @@ public abstract class ItemInHandRendererMixin {
             float sign = hand == InteractionHand.MAIN_HAND ? 1f : -1f;
             pose.translate((float) FishSettings.animX * sign, (float) FishSettings.animY, (float) FishSettings.animZ);
         }
+    }
 
-        // Sword Blocking — classic pre-1.9 first-person "block" pose while RMB is held on a sword.
-        if (FishSettings.swordBlockingEnabled && hand == InteractionHand.MAIN_HAND
-                && itemStack.is(ItemTags.SWORDS)
+    @org.spongepowered.asm.mixin.Unique
+    private static boolean fishmod$isSwordBlocking(AbstractClientPlayer player, ItemStack stack, InteractionHand hand) {
+        return FishSettings.swordBlockingEnabled
+                && hand == InteractionHand.MAIN_HAND
+                && !stack.isEmpty()
+                && stack.is(ItemTags.SWORDS)
                 && Minecraft.getInstance().options.keyUse.isDown()
-                && !player.isUsingItem()) {
-            pose.translate(-0.14142136f, 0.08f, 0.14142136f);
-            pose.mulPose(Axis.XP.rotationDegrees(-102.25f));
-            pose.mulPose(Axis.YP.rotationDegrees(13.365f));
-            pose.mulPose(Axis.ZP.rotationDegrees(78.05f));
-        }
+                && !player.isUsingItem();
     }
 
     @ModifyVariable(method = "renderArmWithItem", at = @At("HEAD"), ordinal = 2, argsOnly = true)
@@ -69,6 +68,15 @@ public abstract class ItemInHandRendererMixin {
     private void fishmod$animRotScale(AbstractClientPlayer player, float f, float g, InteractionHand hand, float attack,
                                      ItemStack itemStack, float inverseArmHeight, PoseStack pose,
                                      SubmitNodeCollector col, int light, CallbackInfo ci) {
+        // Sword Blocking — applied here (after vanilla positioning, before the item renders) so it
+        // stacks on the real held-item pose instead of being double-transformed off-screen.
+        if (fishmod$isSwordBlocking(player, itemStack, hand)) {
+            pose.translate(-0.05f, 0.05f, -0.05f);
+            pose.mulPose(Axis.YP.rotationDegrees(-20f));
+            pose.mulPose(Axis.ZP.rotationDegrees(-25f));
+            pose.mulPose(Axis.XP.rotationDegrees(-15f));
+        }
+
         if (!FishSettings.animEnabled) return;
         pose.mulPose(Axis.XP.rotationDegrees((float) FishSettings.animRotX));
         pose.mulPose(Axis.YP.rotationDegrees((float) FishSettings.animRotY));

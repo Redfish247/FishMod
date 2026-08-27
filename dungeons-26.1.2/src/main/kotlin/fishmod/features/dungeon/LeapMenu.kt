@@ -41,7 +41,13 @@ object LeapMenu {
             val dp = DungeonPlayers.get(name)
             out.add(Target(i, name, DungeonClass.getClass(name), dp?.isDead() == true))
         }
-        return out.sortedWith(compareBy({ it.clazz?.ordinal ?: 9 }, { it.name.lowercase() })).take(4)
+        return when (FishSettings.leapMenuSort) {
+            1 -> out.sortedBy { it.name.lowercase() }
+            else -> {
+                val order = FishSettings.leapMenuClassOrder.split(",").map { it.trim().uppercase() }
+                out.sortedWith(compareBy({ order.indexOf(it.clazz?.name ?: "").let { i -> if (i < 0) 99 else i } }, { it.name.lowercase() }))
+            }
+        }.take(4)
     }
 
     private fun scale(): Float = (FishSettings.leapMenuScale.coerceIn(40, 150) / 100f)
@@ -105,9 +111,17 @@ object LeapMenu {
                 ctx.blit(RenderPipelines.GUI_TEXTURED, skin.body().texturePath(), hx + fo, hy + fo, 8f, 8f, 8, 8, 64, 64, -1)
             }
             val tx = hx + headSize + 6
-            ctx.text(mc.font, "§f${t.name}", tx, r[1] + r[3] / 2 - 9, -1)
+            val showName = FishSettings.leapMenuShowName
+            val showClass = FishSettings.leapMenuShowClass
             val status = if (t.dead) "§cDEAD" else "§7${t.clazz?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "?"}"
-            ctx.text(mc.font, status, tx, r[1] + r[3] / 2 + 1, -1)
+            when {
+                showName && showClass -> {
+                    ctx.text(mc.font, "§f${t.name}", tx, r[1] + r[3] / 2 - 9, -1)
+                    ctx.text(mc.font, status, tx, r[1] + r[3] / 2 + 1, -1)
+                }
+                showName -> ctx.text(mc.font, "§f${t.name}", tx, r[1] + r[3] / 2 - 4, -1)
+                showClass -> ctx.text(mc.font, status, tx, r[1] + r[3] / 2 - 4, -1)
+            }
         }
     }
 

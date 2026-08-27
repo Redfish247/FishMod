@@ -464,6 +464,8 @@ object FishSettings {
     @ConfigValue @JvmField var animSwingX: Double = 1.0      // 0..2 multipliers
     @ConfigValue @JvmField var animSwingY: Double = 1.0
     @ConfigValue @JvmField var animSwingZ: Double = 1.0
+    @ConfigValue @JvmField var animSwingSpeed: Double = 0.0  // -2..1 (0 = normal, 1 = instant, -2 = 3x slower)
+    @ConfigValue @JvmField var animIgnoreHaste: Boolean = false
     @ConfigValue @JvmField var animNoEquip: Boolean = false
     @ConfigValue @JvmField var animNoHandMove: Boolean = false
 
@@ -477,6 +479,10 @@ object FishSettings {
     @ConfigValue @JvmField var leapMenuLeftClickOnly: Boolean = false
     @ConfigValue @JvmField var leapMenuKeybinds: Boolean = true
     @ConfigValue @JvmField var leapMenuTintDead: Boolean = true
+    @ConfigValue @JvmField var leapMenuShowName: Boolean = true
+    @ConfigValue @JvmField var leapMenuShowClass: Boolean = true
+    @ConfigValue @JvmField var leapMenuSort: Int = 0        // 0 = class order below, 1 = name A-Z
+    @ConfigValue @JvmField var leapMenuClassOrder: String = "MAGE,BERSERK,ARCHER,HEALER,TANK"
 
     // ── Item Tooltip prices ──────────────────────────────────────────────────
     @ConfigValue @JvmField var itemTooltipPrices: Boolean = false
@@ -576,15 +582,8 @@ object FishSettings {
     @ConfigValue @JvmField var witherDragonsSoloDebuff: Int = 0        // 0 Tank, 1 Healer
     @ConfigValue @JvmField var witherDragonsSoloDebuffAll: Boolean = true
 
-    // ── Leap Counter ─────────────────────────────────────────────────────────
-
-    // ── Auto GFS (refill dungeon consumables from your own sacks) ─────────────
-    @ConfigValue @JvmField var autoGfsEnabled: Boolean = false
-    @ConfigValue @JvmField var autoGfsDelaySec: Int = 20
-    @ConfigValue @JvmField var autoGfsPearls: Boolean = true
-    @ConfigValue @JvmField var autoGfsTnt: Boolean = false
-    @ConfigValue @JvmField var autoGfsLeaps: Boolean = false
-    @ConfigValue @JvmField var autoGfsJerry: Boolean = false
+    // ── Architect's First Draft auto-refill (after a puzzle fail) ─────────────
+    @ConfigValue @JvmField var architectDraftRefill: Boolean = false
 
     // ── Tac Timer ────────────────────────────────────────────────────────────
     @ConfigValue @JvmField var tacTimerEnabled: Boolean = false

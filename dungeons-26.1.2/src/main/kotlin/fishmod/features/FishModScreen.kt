@@ -158,6 +158,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(SliderDoubleSetting("Swing X", "1 = normal", FishSettings::animSwingX, 0.0, 2.0))
             f.sub.add(SliderDoubleSetting("Swing Y", "1 = normal", FishSettings::animSwingY, 0.0, 2.0))
             f.sub.add(SliderDoubleSetting("Swing Z", "1 = normal", FishSettings::animSwingZ, 0.0, 2.0))
+            f.sub.add(SliderDoubleSetting("Swing Speed", "0 normal · 1 instant · -2 slow", FishSettings::animSwingSpeed, -2.0, 1.0))
+            f.sub.add(ToggleSetting("Ignore Haste", "Swing speed isn't affected by Haste", FishSettings::animIgnoreHaste))
             f.sub.add(ToggleSetting("No Equip Animation", "", FishSettings::animNoEquip))
             f.sub.add(ToggleSetting("No Hand Movement", "Stop the item bobbing when you look around", FishSettings::animNoHandMove))
             visuals.features.add(f)
@@ -348,6 +350,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Number Keybinds", "1-4 leap to that cell", FishSettings::leapMenuKeybinds))
             f.sub.add(ToggleSetting("Left-Click Only", "Ignore right/middle click", FishSettings::leapMenuLeftClickOnly))
             f.sub.add(ToggleSetting("Tint Dead Players", "", FishSettings::leapMenuTintDead))
+            f.sub.add(ToggleSetting("Show Name", "", FishSettings::leapMenuShowName))
+            f.sub.add(ToggleSetting("Show Class", "", FishSettings::leapMenuShowClass))
+            f.sub.add(DropdownSetting("Sort By", "", arrayOf("Class Order", "Name A-Z"),
+                { arrayOf("Class Order", "Name A-Z")[FishSettings.leapMenuSort] },
+                { v -> FishSettings.leapMenuSort = arrayOf("Class Order", "Name A-Z").indexOf(v).coerceAtLeast(0) }))
+            f.sub.add(InputSetting("Class Order", "Comma-separated: MAGE,BERSERK,ARCHER,HEALER,TANK",
+                { FishSettings.leapMenuClassOrder }, { v -> FishSettings.leapMenuClassOrder = v }))
             dungeon.features.add(f)
         }
         run {
@@ -361,13 +370,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         dungeon.features.add(Feature("Terracotta Timer", FishSettings::terracottaTimerEnabled))
         run {
-            val f = Feature("Auto GFS", FishSettings::autoGfsEnabled)
-            f.sub.add(SubcategoryHeader("Refills low consumables from YOUR sacks with /gfs while in a dungeon"))
-            f.sub.add(SliderIntSetting("Check Delay (s)", "", FishSettings::autoGfsDelaySec, 5, 60))
-            f.sub.add(ToggleSetting("Ender Pearls", "", FishSettings::autoGfsPearls))
-            f.sub.add(ToggleSetting("Superboom TNT", "", FishSettings::autoGfsTnt))
-            f.sub.add(ToggleSetting("Spirit Leaps", "", FishSettings::autoGfsLeaps))
-            f.sub.add(ToggleSetting("Inflatable Jerry", "", FishSettings::autoGfsJerry))
+            val f = Feature("Architect Draft Refill", FishSettings::architectDraftRefill)
+            f.sub.add(SubcategoryHeader("Runs /gfs ARCHITECT_FIRST_DRAFT 1 after you fail a puzzle"))
             dungeon.features.add(f)
         }
         run {

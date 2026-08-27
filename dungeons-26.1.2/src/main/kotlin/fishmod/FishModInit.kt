@@ -442,7 +442,7 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.f6.TerracottaTimer.init()
         fishmod.features.dungeon.f7.dragons.WitherDragons.init()
         fishmod.features.TacTimer.init()
-        fishmod.features.dungeon.AutoGFS.init()
+        fishmod.features.dungeon.ArchitectDraft.init()
         fishmod.features.dungeon.LeapAnnounce.init()
         fishmod.features.dungeon.KeyNotifier.init()
         fishmod.features.dungeon.AutoRequeue.init()
