@@ -24,12 +24,18 @@ object LeapAnnounce {
             val s = message.string.replace(Regex("§."), "")
             val m = TARGET.matcher(s)
             if (m.find()) {
-                val msg = FishSettings.leapMessagesText.replace("&", "§").replace("{name}", m.group(1).trim())
+                val target = m.group(1).trim()
                 if (FishSettings.leapMessagesTitle) {
+                    val msg = FishSettings.leapMessagesText.replace("&", "§").replace("{name}", target)
                     Misc.forceTitle(Component.literal(msg), Component.empty())
                 }
-                if (FishSettings.leapMessagesChat) {
-                    Misc.addChatMessage(Component.literal(msg))
+                if (FishSettings.leapMessagesParty) {
+                    // Party chat can't carry formatting codes — send the plain text.
+                    val plain = FishSettings.leapMessagesText.replace(Regex("[&§]."), "").replace("{name}", target).trim()
+                    if (plain.isNotEmpty()) {
+                        val mc = net.minecraft.client.Minecraft.getInstance()
+                        mc.execute { mc.connection?.sendCommand("pc $plain") }
+                    }
                 }
                 if (FishSettings.leapMessagesSound) {
                     SoundManager.play(net.minecraft.sounds.SoundEvents.ENDERMAN_TELEPORT, 0.6f, 1.4f, "leap", 250)

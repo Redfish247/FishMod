@@ -249,7 +249,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(InputSetting("Text", "{name} = leap target; & for colours",
                 { FishSettings.leapMessagesText }, { v -> FishSettings.leapMessagesText = v ?: "" }))
             f.sub.add(ToggleSetting("Title", "", FishSettings::leapMessagesTitle))
-            f.sub.add(ToggleSetting("Chat", "", FishSettings::leapMessagesChat))
+            f.sub.add(ToggleSetting("Send to Party", "Post the message in party chat", FishSettings::leapMessagesParty))
             f.sub.add(ToggleSetting("Sound", "", FishSettings::leapMessagesSound))
             dungeon.features.add(f)
         }

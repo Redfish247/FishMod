@@ -31,6 +31,12 @@ object AutoRequeue {
 
     @JvmStatic
     fun init() {
+        // Any party member typing "!dt" during the run cancels the requeue for this run.
+        Events.ON_PARTY_MESSAGE.register { _, message ->
+            if (message.trim().equals("!dt", ignoreCase = true)) disabled = true
+            false
+        }
+
         Events.ON_GAME_MESSAGE.register { text ->
             val s = COLOR.replace(text.string, "")
             when {

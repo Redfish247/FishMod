@@ -526,7 +526,8 @@ object FishSettings {
 
     // ── Leap Messages (revives Dungeons.enableLeapMessages) ─────────────────────
     @ConfigValue @JvmField var leapMessagesTitle: Boolean = true
-    @ConfigValue @JvmField var leapMessagesChat: Boolean = false
+    /** Send the leap message to party chat (/pc). */
+    @ConfigValue @JvmField var leapMessagesParty: Boolean = false
     @ConfigValue @JvmField var leapMessagesSound: Boolean = true
     /** {name} = the Spirit-Leap target. */
     @ConfigValue @JvmField var leapMessagesText: String = "&b&lLEAP &r&7-> &f{name}"
