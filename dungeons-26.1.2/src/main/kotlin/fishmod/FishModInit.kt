@@ -421,8 +421,11 @@ class FishModInit : ModInitializer {
         fishmod.features.FireFreezeTimer.init()
         fishmod.features.LoadoutTitle.init()
         fishmod.features.AutoSprint.init()
+        fishmod.features.WarpCooldown.init()
         fishmod.features.dungeon.LeapAnnounce.init()
         fishmod.features.dungeon.KeyNotifier.init()
+        fishmod.features.dungeon.AutoRequeue.init()
+        fishmod.features.dungeon.puzzles.PuzzleSolvers.init()
         // PowderTracker.init();
         fishmod.features.dungeon.SimonSaysTracker.init()
         fishmod.features.chat.ChatRuleHandler.init()
@@ -1137,6 +1140,7 @@ class FishModInit : ModInitializer {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "f7_huds")) { ctx, _ -> fishmod.features.dungeon.f7.F7Huds.renderHud(ctx) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_waypoints_overlay")) { ctx, _ -> fishmod.features.dungeon.DungeonWaypoints.renderOverlay(ctx) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "session_stats")) { ctx, tickCounter -> SessionStats.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "warp_cooldown")) { ctx, tickCounter -> fishmod.features.WarpCooldown.renderHud(ctx, tickCounter) }
         fishmod.utils.SkyblockItems.initAsync()
 
         // ── PB Pace (live delta vs personal-best splits) ─────────────────────

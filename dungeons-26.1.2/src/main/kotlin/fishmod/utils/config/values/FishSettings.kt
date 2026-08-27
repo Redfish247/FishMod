@@ -387,6 +387,16 @@ object FishSettings {
     @ConfigValue @JvmField var soundMasterEnabled: Boolean = true
     @ConfigValue @JvmField var soundMasterVolume: Int = 100
 
+    // Puzzle solver framework (fishmod.features.dungeon.puzzles). Concrete solvers gate on this;
+    // wired to a screen toggle once the first solvers land (Phase 3).
+    @ConfigValue @JvmField var puzzleSolversEnabled: Boolean = false
+
+    // Warp Cooldown HUD (revives Dungeons.enableWarpCooldown).
+    @ConfigValue @JvmField var warpCooldownSeconds: Int = 3
+    @ConfigValue @JvmField var warpCooldownHudX: Int = 10
+    @ConfigValue @JvmField var warpCooldownHudY: Int = 160
+    @ConfigValue @JvmField var warpCooldownScale: Double = 1.0
+
     // ── Custom Scoreboard ────────────────────────────────────────────────────────
     // Replaces vanilla's sidebar scoreboard with one where each line category can be hidden
     // and big numbers (Purse/Bank/Bits/etc) can be shown compact (1,234,567 -> 1.2M).

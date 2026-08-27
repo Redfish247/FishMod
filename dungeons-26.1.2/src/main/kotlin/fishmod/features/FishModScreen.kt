@@ -210,6 +210,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         dungeon.features.add(Feature("Leap Messages", Dungeons::enableLeapMessages))
         dungeon.features.add(Feature("Key Notifier", Dungeons::enableKeyNotifier))
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
+        dungeon.features.add(Feature("Auto Requeue", Dungeons::enableAutoRequeue))
+        run {
+            val f = Feature("Warp Cooldown", Dungeons::enableWarpCooldown)
+            f.sub.add(SliderIntSetting("Cooldown (s)", "", FishSettings::warpCooldownSeconds, 1, 30))
+            dungeon.features.add(f)
+        }
         run {
             val f = Feature("Death Message", FishSettings::deathMessageEnabled)
             val tmpl = InputSetting("Template", "", FishSettings::deathMessageTemplate)
@@ -2343,6 +2349,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Explosive Shot" -> "Title with per-enemy damage"
                 "Dungeon Score" -> "Live S+ score tracker overlay"
                 "Puzzle Overlay" -> "Show solved puzzle names"
+                "Auto Sprint" -> "Keep sprinting while holding forward"
+                "Sound Manager" -> "Master toggle & volume for FishMod cues"
+                "Leap Messages" -> "Title with the Spirit-Leap target"
+                "Key Notifier" -> "Title + cue on Wither/Blood key pickup"
+                "Boss Health Numbers" -> "Numeric HP on the M7 boss bar"
+                "Auto Requeue" -> "Send /instancerequeue when a run ends (leader only)"
+                "Warp Cooldown" -> "Countdown until you can /warp again"
                 "Death Message" -> "Announce deaths with a template"
                 "Send Lag to Party" -> "Warn the party when your game lags"
                 "Splits" -> "Phase split timers for runs"
