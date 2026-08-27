@@ -66,22 +66,14 @@ object PuzzleSolvers {
             false
         }
 
-        RenderingEvents.FILLED_BLOCK.register { _, matrices, vc ->
-            if (enabled()) active?.renderWorld(matrices, vc)
+        // Boxes AND text both go through the RenderingEvents (END_MAIN) pass — the node collector
+        // that submitText() feeds is already drained by AFTER_TRANSLUCENT_FEATURES, so text
+        // submitted there never draws.
+        RenderingEvents.FILLED_BLOCK.register { ctx, matrices, vc ->
+            if (!enabled()) return@register
+            active?.renderWorld(matrices, vc)
+            active?.renderWorldText(ctx, matrices)
         }
-
-        net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(
-            net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents.AfterTranslucentFeatures { ctx ->
-                val a = active ?: return@AfterTranslucentFeatures
-                if (!enabled()) return@AfterTranslucentFeatures
-                val matrices = ctx.poseStack() ?: return@AfterTranslucentFeatures
-                val cam = ctx.levelState()?.cameraRenderState?.pos ?: return@AfterTranslucentFeatures
-                matrices.pushPose()
-                matrices.translate(-cam.x, -cam.y, -cam.z)
-                a.renderWorldText(ctx, matrices)
-                matrices.popPose()
-            }
-        )
     }
 
     private fun currentRoom(mc: Minecraft): Room? {
@@ -107,7 +99,16 @@ object PuzzleSolvers {
                 active?.onExit()
                 activeRoom = room
                 active = if (room?.type == Room.Type.PUZZLE) room.data?.name?.let { byRoom[it] } else null
-                if (active != null && room != null) active!!.onEnter(room)
+                if (active != null && room != null) {
+                    active!!.onEnter(room)
+                    fishmod.utils.Misc.addChatMessage(
+                        net.minecraft.network.chat.Component.literal("§b[Puzzle] §7${room.data?.name} solver active")
+                    )
+                } else if (room?.type == Room.Type.PUZZLE) {
+                    fishmod.utils.Misc.addChatMessage(
+                        net.minecraft.network.chat.Component.literal("§b[Puzzle] §8no solver for '${room.data?.name}'")
+                    )
+                }
             }
         }
         active?.onTick(mc)

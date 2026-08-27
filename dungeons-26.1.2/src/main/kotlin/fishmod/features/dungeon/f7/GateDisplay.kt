@@ -59,21 +59,14 @@ object GateDisplay {
             }
             false
         }
-        // World text must be submitted from the translucent-features pass, not the END_MAIN block
-        // batch used by RenderingEvents — the node collector isn't flushed there, so the old
-        // registration drew nothing (this is why the gates never showed in Goldor).
-        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(
-            LevelRenderEvents.AfterTranslucentFeatures { ctx ->
-                if (!Floor7.gateDisplayEnabled || !Location.inDungeon()) return@AfterTranslucentFeatures
-                if (state.all { it == GateState.HIDDEN }) return@AfterTranslucentFeatures
-                val matrices = ctx.poseStack() ?: return@AfterTranslucentFeatures
-                val cam = ctx.levelState()?.cameraRenderState?.pos ?: return@AfterTranslucentFeatures
-                matrices.pushPose()
-                matrices.translate(-cam.x, -cam.y, -cam.z)
-                render(ctx, matrices)
-                matrices.popPose()
-            }
-        )
+        // Text renders from the RenderingEvents (END_MAIN) pass — that's where submitText's node
+        // collector is still live (same as DungeonWaypoints). The matrices handed to the handler
+        // are already -camera translated.
+        fishmod.utils.rendering.RenderingEvents.NO_DEPTH_LINE.register { ctx, matrices, _ ->
+            if (!Floor7.gateDisplayEnabled || !Location.inDungeon()) return@register
+            if (state.all { it == GateState.HIDDEN }) return@register
+            render(ctx, matrices)
+        }
     }
 
     private fun show(index: Int) {

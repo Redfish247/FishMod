@@ -82,19 +82,12 @@ object WitherDragons {
             false
         }
 
-        RenderingEvents.NO_DEPTH_LINE.register { ctx, m, vc -> if (on()) renderLines(ctx, m, vc) }
+        RenderingEvents.NO_DEPTH_LINE.register { ctx, m, vc ->
+            if (!on()) return@register
+            renderLines(ctx, m, vc)
+            renderText(ctx, m)   // text via the same END_MAIN pass — AFTER_TRANSLUCENT drains the collector too early
+        }
         RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> if (on()) renderFills(m, vc) }
-
-        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(
-            LevelRenderEvents.AfterTranslucentFeatures { ctx ->
-                if (!on()) return@AfterTranslucentFeatures
-                val m = ctx.poseStack() ?: return@AfterTranslucentFeatures
-                val cam = ctx.levelState()?.cameraRenderState?.pos ?: return@AfterTranslucentFeatures
-                m.pushPose(); m.translate(-cam.x, -cam.y, -cam.z)
-                renderText(ctx, m)
-                m.popPose()
-            }
-        )
     }
 
     // ── death detection ──────────────────────────────────────────────────────

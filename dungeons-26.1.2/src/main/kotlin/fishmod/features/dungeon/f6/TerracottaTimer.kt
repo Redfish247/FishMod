@@ -4,7 +4,7 @@ import fishmod.features.dungeon.map.DungeonState
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents
+import fishmod.utils.rendering.RenderingEvents
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket
@@ -45,25 +45,21 @@ object TerracottaTimer {
 
         Events.ON_WORLD_CHANGE.register { spawning.clear(); false }
 
-        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(
-            LevelRenderEvents.AfterTranslucentFeatures { ctx ->
-                if (!active() || spawning.isEmpty()) return@AfterTranslucentFeatures
-                val matrices = ctx.poseStack() ?: return@AfterTranslucentFeatures
-                val cam = ctx.levelState()?.cameraRenderState?.pos ?: return@AfterTranslucentFeatures
-                matrices.pushPose()
-                matrices.translate(-cam.x, -cam.y, -cam.z)
-                for (t in spawning) {
-                    RenderUtils.renderText(ctx, matrices, Component.literal("${"%.1f".format(t.time)}s"), t.pos, 0.03f)
-                }
-                matrices.popPose()
+        // Text via the RenderingEvents (END_MAIN) pass — see PuzzleSolvers note.
+        RenderingEvents.NO_DEPTH_LINE.register { ctx, matrices, _ ->
+            if (!active() || spawning.isEmpty()) return@register
+            for (t in spawning) {
+                RenderUtils.renderText(ctx, matrices, Component.literal("${"%.1f".format(t.time)}s"), t.pos, 0.03f)
             }
-        )
+        }
     }
 
     private fun onBlock(pos: BlockPos, state: BlockState) {
-        if (!active() || !state.`is`(Blocks.FLOWER_POT)) return
+        if (!state.`is`(Blocks.FLOWER_POT)) return
+        if (!active()) return
         val at = Vec3(pos.x + 0.5, pos.y + 1.5, pos.z + 0.5)
         if (spawning.any { it.pos.distanceToSqr(at) < 0.01 }) return
         spawning.add(Terra(at, if (DungeonState.isMasterMode()) 12f else 15f))
+        fishmod.utils.Misc.addChatMessage(Component.literal("§6[Terracotta] §7pot at ${pos.x},${pos.y},${pos.z} — ${spawning.last().time}s"))
     }
 }
