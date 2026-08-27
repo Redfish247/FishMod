@@ -469,9 +469,10 @@ object FishSettings {
     @ConfigValue @JvmField var animNoEquip: Boolean = false
     @ConfigValue @JvmField var animNoHandMove: Boolean = false
 
-    // ── Storage Overlay (read-only all-pages viewer) ─────────────────────────
+    // ── Storage Overlay (all-pages viewer + search over /storage) ────────────
     @ConfigValue @JvmField var storageOverlayEnabled: Boolean = false
     @ConfigValue @JvmField var storageViewerColumns: Int = 3
+    @ConfigValue @JvmField var storageHideNonMatching: Boolean = false
 
     // ── Leap Menu (custom Spirit Leap GUI) ───────────────────────────────────
     @ConfigValue @JvmField var leapMenuEnabled: Boolean = false

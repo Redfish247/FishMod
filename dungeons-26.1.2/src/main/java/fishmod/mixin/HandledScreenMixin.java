@@ -30,6 +30,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     private void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         SearchBar.render(context, mouseX, mouseY, deltaTicks);
         fishmod.features.dungeon.LeapMenu.render(context, mouseX, mouseY, (AbstractContainerScreen<?>) (Object) this);
+        fishmod.features.storage.StorageOverlay.render(context, mouseX, mouseY, (AbstractContainerScreen<?>) (Object) this);
     }
 
     @Inject(method = "extractSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;item(Lnet/minecraft/world/item/ItemStack;III)V"))
@@ -47,6 +48,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void keyPressed(KeyEvent input, CallbackInfoReturnable<Boolean> cir) {
         if (SearchBar.keyPressed(input)) { cir.setReturnValue(false); return; }
+        if (fishmod.features.storage.StorageOverlay.keyPressed(input.key(), (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
         if (fishmod.features.dungeon.LeapMenu.keyPressed(input.key(), (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
         if (WardrobeHotkeys.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
     }
@@ -57,6 +59,11 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
 
         if (fishmod.features.dungeon.f7.terminal.TerminalSolver.onMouseClick(
                 click.button(), (AbstractContainerScreen<?>) (Object) this)) {
+            cir.setReturnValue(true);
+            return;
+        }
+
+        if (fishmod.features.storage.StorageOverlay.mouseClicked(click.button(), cx, cy, (AbstractContainerScreen<?>) (Object) this)) {
             cir.setReturnValue(true);
             return;
         }
@@ -79,5 +86,17 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
         if (WardrobeHotkeys.mouseClicked(click, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
 
         SearchBar.onMouseClick(click);
+    }
+
+    @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
+    private void fishmod$storageScroll(double mx, double my, double hz, double vt, CallbackInfoReturnable<Boolean> cir) {
+        if (fishmod.features.storage.StorageOverlay.mouseScrolled(vt, (AbstractContainerScreen<?>) (Object) this)) {
+            cir.setReturnValue(true);
+        }
+    }
+
+    @Inject(method = "removed", at = @At("HEAD"))
+    private void fishmod$storageClosed(CallbackInfo ci) {
+        fishmod.features.storage.StorageOverlay.onClosed();
     }
 }

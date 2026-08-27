@@ -188,9 +188,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("Storage Overlay", FishSettings::storageOverlayEnabled)
-            f.sub.add(SubcategoryHeader("Caches storage pages as you browse /storage — view all at once with /storageview or the keybind"))
-            f.sub.add(SliderIntSetting("Viewer Columns", "", FishSettings::storageViewerColumns, 1, 6))
-            f.sub.add(KeybindSetting("Open Viewer", "", { fishmod.utils.Keybinds.storageViewer }))
+            f.sub.add(SubcategoryHeader("All pages + search over /storage; also /storageview"))
+            f.sub.add(SliderIntSetting("Columns", "", FishSettings::storageViewerColumns, 1, 6))
+            f.sub.add(ToggleSetting("Hide Non-Matching Pages", "While searching", FishSettings::storageHideNonMatching))
+            f.sub.add(KeybindSetting("Open Viewer", "Standalone cache browser", { fishmod.utils.Keybinds.storageViewer }))
             general.features.add(f)
         }
         run {
