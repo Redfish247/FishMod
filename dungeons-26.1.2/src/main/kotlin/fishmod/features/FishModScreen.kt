@@ -581,6 +581,21 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             visuals.features.add(f)
         }
         run {
+            val f = Feature("Mage Beam", FishSettings::mageBeamEnabled)
+            f.sub.add(ColorPickerSetting("Color", "", FishSettings::mageBeamColor))
+            f.sub.add(SliderIntSetting("Duration (ticks)", "", FishSettings::mageBeamDurationTicks, 1, 100))
+            f.sub.add(ToggleSetting("Hide Particles", "", FishSettings::mageBeamHideParticles))
+            f.sub.add(ToggleSetting("Depth Check", "", FishSettings::mageBeamDepth))
+            dungeon.features.add(f)
+        }
+        run {
+            val f = Feature("Spring Boots", FishSettings::springBootsEnabled)
+            f.sub.add(ToggleSetting("Show Blocks", "Blocks instead of charge %", FishSettings::springBootsShowBlocks))
+            f.sub.add(ToggleSetting("Landing Box", "", FishSettings::springBootsBox))
+            f.sub.add(ColorPickerSetting("Box Color", "", FishSettings::springBootsBoxColor))
+            visuals.features.add(f)
+        }
+        run {
             val f = Feature("Camera Tweaks", FishSettings::cameraTweaksEnabled)
             f.sub.add(ToggleSetting("Custom FOV", "", FishSettings::cameraCustomFov))
             f.sub.add(SliderIntSetting("FOV", "", FishSettings::cameraFov, 30, 179))

@@ -468,6 +468,22 @@ object FishSettings {
     @ConfigValue @JvmField var gyroBoxColor: Int = 0xFF55FFFF.toInt()
     @ConfigValue @JvmField var gyroRingColor: Int = 0xFF55FFFF.toInt()
 
+    // ── Mage Beam ──────────────────────────────────────────────────────────
+    @ConfigValue @JvmField var mageBeamEnabled: Boolean = false
+    @ConfigValue @JvmField var mageBeamColor: Int = 0xFFAA0000.toInt()
+    @ConfigValue @JvmField var mageBeamDurationTicks: Int = 40
+    @ConfigValue @JvmField var mageBeamHideParticles: Boolean = true
+    @ConfigValue @JvmField var mageBeamDepth: Boolean = true
+
+    // ── Spring Boots ───────────────────────────────────────────────────────
+    @ConfigValue @JvmField var springBootsEnabled: Boolean = false
+    @ConfigValue @JvmField var springBootsShowBlocks: Boolean = false
+    @ConfigValue @JvmField var springBootsBox: Boolean = true
+    @ConfigValue @JvmField var springBootsBoxColor: Int = 0xFF55FF55.toInt()
+    @ConfigValue @JvmField var springBootsHudX: Int = 10
+    @ConfigValue @JvmField var springBootsHudY: Int = 200
+    @ConfigValue @JvmField var springBootsScale: Double = 1.0
+
     // ── Camera Tweaks ─────────────────────────────────────────────────────────
     @ConfigValue @JvmField var cameraTweaksEnabled: Boolean = false
     @ConfigValue @JvmField var cameraCustomFov: Boolean = false
