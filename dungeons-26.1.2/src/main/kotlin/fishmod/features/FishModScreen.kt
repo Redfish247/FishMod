@@ -163,6 +163,21 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             visuals.features.add(f)
         }
         run {
+            val f = Feature("Etherwarp Helper", FishSettings::etherwarpHelperEnabled)
+            f.sub.add(SubcategoryHeader("Sneak + hold an AOTV-type item to see the landing guess"))
+            f.sub.add(ToggleSetting("Show Guess Box", "", FishSettings::etherwarpShowGuess))
+            f.sub.add(ColorPickerSetting("Box Color", "", FishSettings::etherwarpColor))
+            f.sub.add(ToggleSetting("Show When Failed", "", FishSettings::etherwarpShowFail))
+            f.sub.add(ColorPickerSetting("Failed Color", "", FishSettings::etherwarpFailColor))
+            f.sub.add(ToggleSetting("Full Block", "Box the whole block, not its shape", FishSettings::etherwarpFullBlock))
+            f.sub.add(ToggleSetting("Through Walls", "", FishSettings::etherwarpDepth))
+            f.sub.add(SliderIntSetting("Range", "Blocks", FishSettings::etherwarpRange, 1, 61))
+            f.sub.add(ToggleSetting("Cast Sound", "", FishSettings::etherwarpSoundEnabled))
+            f.sub.add(DropdownSetting("Sound", "", fishmod.utils.sound.SoundManager.presetNames(),
+                { FishSettings.etherwarpSoundName }, { v -> FishSettings.etherwarpSoundName = v }))
+            visuals.features.add(f)
+        }
+        run {
             val f = Feature("Lava To Water", FishSettings::lavaToWaterEnabled)
             f.sub.add(ToggleSetting("Custom Tint", "", FishSettings::lavaToWaterTint))
             f.sub.add(ColorPickerSetting("Tint Color", "", FishSettings::lavaToWaterColor))

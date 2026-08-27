@@ -467,6 +467,18 @@ object FishSettings {
     @ConfigValue @JvmField var animNoEquip: Boolean = false
     @ConfigValue @JvmField var animNoHandMove: Boolean = false
 
+    // ── Etherwarp Helper ─────────────────────────────────────────────────────
+    @ConfigValue @JvmField var etherwarpHelperEnabled: Boolean = false
+    @ConfigValue @JvmField var etherwarpShowGuess: Boolean = true
+    @ConfigValue @JvmField var etherwarpColor: Int = 0x80FFAA00.toInt()
+    @ConfigValue @JvmField var etherwarpShowFail: Boolean = true
+    @ConfigValue @JvmField var etherwarpFailColor: Int = 0x80FF5555.toInt()
+    @ConfigValue @JvmField var etherwarpFullBlock: Boolean = false
+    @ConfigValue @JvmField var etherwarpDepth: Boolean = false
+    @ConfigValue @JvmField var etherwarpRange: Int = 61
+    @ConfigValue @JvmField var etherwarpSoundEnabled: Boolean = false
+    @ConfigValue @JvmField var etherwarpSoundName: String = "Blaze Hit"
+
     // ── Extra Stats (post-run dungeon summary) ───────────────────────────────
     @ConfigValue @JvmField var extraStatsEnabled: Boolean = false
     @ConfigValue @JvmField var extraStatsBits: Boolean = true

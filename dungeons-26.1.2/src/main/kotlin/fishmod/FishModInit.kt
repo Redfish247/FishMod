@@ -435,6 +435,7 @@ class FishModInit : ModInitializer {
         fishmod.features.BridgeBot.init()
         fishmod.features.LavaToWater.init()
         fishmod.features.dungeon.ExtraStats.init()
+        fishmod.features.EtherwarpHelper.init()
         fishmod.features.dungeon.DungeonAbilities.init()
         fishmod.features.dungeon.f6.TerracottaTimer.init()
         fishmod.features.dungeon.f7.dragons.WitherDragons.init()
