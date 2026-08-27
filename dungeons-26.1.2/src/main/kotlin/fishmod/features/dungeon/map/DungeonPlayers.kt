@@ -177,6 +177,10 @@ object DungeonPlayers {
 
     private fun find(name: String): DungeonPlayer? = teammates.firstOrNull { it.name == name }
 
+    /** Public lookup for the Leap Menu (class / skin / dead state by IGN, case-insensitive). */
+    @JvmStatic
+    fun get(name: String): DungeonPlayer? = teammates.firstOrNull { it.name.equals(name, ignoreCase = true) }
+
     @JvmStatic
     fun shouldRenderNames(mc: Minecraft): Boolean {
         if (mc.player == null) return false

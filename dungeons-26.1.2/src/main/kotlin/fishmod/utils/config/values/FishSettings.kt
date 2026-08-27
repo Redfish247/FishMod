@@ -467,6 +467,13 @@ object FishSettings {
     @ConfigValue @JvmField var animNoEquip: Boolean = false
     @ConfigValue @JvmField var animNoHandMove: Boolean = false
 
+    // ── Leap Menu (custom Spirit Leap GUI) ───────────────────────────────────
+    @ConfigValue @JvmField var leapMenuEnabled: Boolean = false
+    @ConfigValue @JvmField var leapMenuScale: Int = 100
+    @ConfigValue @JvmField var leapMenuLeftClickOnly: Boolean = false
+    @ConfigValue @JvmField var leapMenuKeybinds: Boolean = true
+    @ConfigValue @JvmField var leapMenuTintDead: Boolean = true
+
     // ── Item Tooltip prices ──────────────────────────────────────────────────
     @ConfigValue @JvmField var itemTooltipPrices: Boolean = false
     @ConfigValue @JvmField var itemTooltipNpcSell: Boolean = false

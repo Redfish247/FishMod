@@ -29,6 +29,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         SearchBar.render(context, mouseX, mouseY, deltaTicks);
+        fishmod.features.dungeon.LeapMenu.render(context, mouseX, mouseY, (AbstractContainerScreen<?>) (Object) this);
     }
 
     @Inject(method = "extractSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;item(Lnet/minecraft/world/item/ItemStack;III)V"))
@@ -46,6 +47,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void keyPressed(KeyEvent input, CallbackInfoReturnable<Boolean> cir) {
         if (SearchBar.keyPressed(input)) { cir.setReturnValue(false); return; }
+        if (fishmod.features.dungeon.LeapMenu.keyPressed(input.key(), (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
         if (WardrobeHotkeys.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
     }
 
@@ -60,6 +62,11 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
         }
 
         if (fishmod.features.SlotBinds.onMouseClick(click, (AbstractContainerScreen<?>) (Object) this)) {
+            cir.setReturnValue(true);
+            return;
+        }
+
+        if (fishmod.features.dungeon.LeapMenu.mouseClicked(click.button(), cx, cy, (AbstractContainerScreen<?>) (Object) this)) {
             cir.setReturnValue(true);
             return;
         }

@@ -335,6 +335,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
         run {
+            val f = Feature("Leap Menu", FishSettings::leapMenuEnabled)
+            f.sub.add(SubcategoryHeader("Custom 2x2 Spirit Leap GUI — click a cell or press 1-4"))
+            f.sub.add(SliderIntSetting("Scale %", "", FishSettings::leapMenuScale, 40, 150))
+            f.sub.add(ToggleSetting("Number Keybinds", "1-4 leap to that cell", FishSettings::leapMenuKeybinds))
+            f.sub.add(ToggleSetting("Left-Click Only", "Ignore right/middle click", FishSettings::leapMenuLeftClickOnly))
+            f.sub.add(ToggleSetting("Tint Dead Players", "", FishSettings::leapMenuTintDead))
+            dungeon.features.add(f)
+        }
+        run {
             val f = Feature("Extra Stats", FishSettings::extraStatsEnabled)
             f.sub.add(SubcategoryHeader("Replaces Hypixel's post-run stats block with a tidy summary"))
             f.sub.add(ToggleSetting("Show Bits", "", FishSettings::extraStatsBits))
