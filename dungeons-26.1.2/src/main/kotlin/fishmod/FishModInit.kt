@@ -430,6 +430,7 @@ class FishModInit : ModInitializer {
         fishmod.features.GyroHelper.init()
         fishmod.features.dungeon.MageBeam.init()
         fishmod.features.SpringBoots.init()
+        fishmod.features.VisualTweaks.init()
         fishmod.features.dungeon.LeapAnnounce.init()
         fishmod.features.dungeon.KeyNotifier.init()
         fishmod.features.dungeon.AutoRequeue.init()

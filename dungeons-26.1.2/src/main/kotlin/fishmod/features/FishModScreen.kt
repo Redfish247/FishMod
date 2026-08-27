@@ -574,6 +574,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             visuals.features.add(f)
         }
         visuals.features.add(Feature("Item Quality Tooltip", FishSettings::itemQualityTooltip))
+        visuals.features.add(Feature("Hide Dead Entities", Visual::hideDeadEntities))
+        run {
+            val f = Feature("Hide Nearby Players", Visual::hidePlayersInRange)
+            f.sub.add(SliderDoubleSetting("Range", "Blocks", Visual::hidePlayerRange, 1.0, 12.0))
+            visuals.features.add(f)
+        }
+        visuals.features.add(Feature("Stop Shovel Flattening", Visual::stopShovelFlattening))
+        visuals.features.add(Feature("Highlight Protected Items", Visual::highlightProtectedItem))
         run {
             val f = Feature("Gyro Helper", FishSettings::gyroHelperEnabled)
             f.sub.add(ColorPickerSetting("Box Color", "", FishSettings::gyroBoxColor))

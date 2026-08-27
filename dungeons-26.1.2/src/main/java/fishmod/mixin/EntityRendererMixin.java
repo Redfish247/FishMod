@@ -12,9 +12,13 @@ import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(EntityRenderer.class)
 public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> {
@@ -57,6 +61,28 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
                 && FishSettings.nickPreviewEnabled && FishSettings.nickPreviewYOffset != 0.0
                 && state.nameTagAttachment != null) {
             state.nameTagAttachment = state.nameTagAttachment.add(0, FishSettings.nickPreviewYOffset, 0);
+        }
+    }
+
+    // Visual.kt cull flags: hide nearby other players / dead mobs entirely (blade "hidePlayersInRange",
+    // "hideDeadEntities"). shouldRender is cancellable so we can drop the entity from the render pass.
+    @Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true)
+    private void fishmod$cullEntities(T entity, Frustum frustum, double camX, double camY, double camZ,
+                                     CallbackInfoReturnable<Boolean> cir) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || entity == mc.player) return;
+
+        if (Visual.hidePlayersInRange && entity instanceof Player) {
+            double r = Visual.hidePlayerRange;
+            if (r > 0 && entity.distanceToSqr(mc.player) <= r * r) {
+                cir.setReturnValue(false);
+                return;
+            }
+        }
+
+        if (Visual.hideDeadEntities && entity instanceof LivingEntity le
+                && (le.isDeadOrDying() || le.getHealth() <= 0f)) {
+            cir.setReturnValue(false);
         }
     }
 }
