@@ -285,6 +285,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         dungeon.features.add(Feature("Leap Counter", FishSettings::leapCounterEnabled))
         dungeon.features.add(Feature("Architect Draft Announce", FishSettings::architectDraftAnnounce))
         run {
+            val f = Feature("Auto GFS", FishSettings::autoGfsEnabled)
+            f.sub.add(SubcategoryHeader("Refills low consumables from YOUR sacks with /gfs while in a dungeon"))
+            f.sub.add(SliderIntSetting("Check Delay (s)", "", FishSettings::autoGfsDelaySec, 5, 60))
+            f.sub.add(ToggleSetting("Ender Pearls", "", FishSettings::autoGfsPearls))
+            f.sub.add(ToggleSetting("Superboom TNT", "", FishSettings::autoGfsTnt))
+            f.sub.add(ToggleSetting("Spirit Leaps", "", FishSettings::autoGfsLeaps))
+            f.sub.add(ToggleSetting("Inflatable Jerry", "", FishSettings::autoGfsJerry))
+            dungeon.features.add(f)
+        }
+        run {
             val f = Feature("Dungeon Abilities", FishSettings::dungeonAbilitiesEnabled)
             f.sub.add(SubcategoryHeader("Bind a key under Controls: FishMod: Use Dungeon Ability"))
             f.sub.add(ToggleSetting("Auto Ult", "Auto-drop on Maxor/Goldor/Sadan enrage lines", FishSettings::dungeonAbilitiesAutoUlt))

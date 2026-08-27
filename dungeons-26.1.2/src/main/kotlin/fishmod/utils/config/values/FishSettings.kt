@@ -496,6 +496,14 @@ object FishSettings {
     // ── Architect's First Draft ──────────────────────────────────────────────
     @ConfigValue @JvmField var architectDraftAnnounce: Boolean = false
 
+    // ── Auto GFS (refill dungeon consumables from your own sacks) ─────────────
+    @ConfigValue @JvmField var autoGfsEnabled: Boolean = false
+    @ConfigValue @JvmField var autoGfsDelaySec: Int = 20
+    @ConfigValue @JvmField var autoGfsPearls: Boolean = true
+    @ConfigValue @JvmField var autoGfsTnt: Boolean = false
+    @ConfigValue @JvmField var autoGfsLeaps: Boolean = false
+    @ConfigValue @JvmField var autoGfsJerry: Boolean = false
+
     // ── Tac Timer ────────────────────────────────────────────────────────────
     @ConfigValue @JvmField var tacTimerEnabled: Boolean = false
     @ConfigValue @JvmField var tacTimerReverse: Boolean = false
