@@ -46,6 +46,7 @@
     "HandledScreenMixin",
     "InventoryScreenMixin",
     "KeyboardMixin",
+    "LightmapMixin",
     "MouseMixin",
     "PlayerListHudMixin",
     "PlayerNameLabelMixin",
