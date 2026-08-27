@@ -3,162 +3,66 @@ package fishmod.utils.rendering
 import com.mojang.blaze3d.vertex.PoseStack
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents
-import net.minecraft.world.phys.Vec3
+import net.minecraft.client.Minecraft
+import net.minecraft.client.renderer.MultiBufferSource
+import net.minecraft.client.renderer.rendertype.RenderType
 
+/**
+ * World-overlay dispatch, rebuilt on the System22 `WaypointTest` pattern (see [RenderLayers]).
+ *
+ * Everything draws in one [LevelRenderEvents.END_MAIN] pass: translate the pose by `-camera`, grab
+ * a [MultiBufferSource.BufferSource] buffer per [RenderType], let every registered handler write to
+ * it, then `endBatch` that type immediately. No deferred `submitCustomGeometry`, no per-submission
+ * pose snapshots — the handler's `matrixStack` is the live, correctly-translated stack.
+ *
+ * Handler signature (`RenderingEvent`) is unchanged, so every feature keeps working as-is; the
+ * `LevelRenderContext` arg is still passed through for handlers that want camera/level state.
+ */
 object RenderingEvents {
 
-    @JvmField
-    var FILLED_BLOCK = RenderHandler()
-    @JvmField
-    var NO_DEPTH_FILLED = RenderHandler()
-    @JvmField
-    var FILLED_ENTITY = RenderHandler()
-    @JvmField
-    var OUTLINE_ENTITY = RenderHandler()
-    @JvmField
-    var NO_DEPTH_OUTLINE_ENTITY = RenderHandler()
-    @JvmField
-    var LINE = RenderHandler()
+    @JvmField var FILLED_BLOCK = RenderHandler()
+    @JvmField var NO_DEPTH_FILLED = RenderHandler()
+    @JvmField var FILLED_ENTITY = RenderHandler()
+    @JvmField var OUTLINE_ENTITY = RenderHandler()
+    @JvmField var NO_DEPTH_OUTLINE_ENTITY = RenderHandler()
+    @JvmField var LINE = RenderHandler()
+    @JvmField var NO_DEPTH_LINE = RenderHandler()
 
-    /** Like LINE, but through walls (no depth test) — a true GL_LINES layer, unlike NO_DEPTH_FILLED's triangle-strip box layer. */
-    @JvmField
-    var NO_DEPTH_LINE = RenderHandler()
+    @Volatile private var registered = false
 
-    /**
-     * All 7 handlers submit their geometry on [LevelRenderEvents.COLLECT_SUBMITS] — not
-     * BEFORE_GIZMOS/AFTER_TRANSLUCENT_FEATURES, despite those sounding more apt by name. The
-     * engine flushes the solid/translucent custom-geometry submission buckets (via
-     * FeatureRenderDispatcher.renderSolidFeatures()/renderTranslucentFeatures(), inside
-     * CustomFeatureRenderer.renderSolid()/renderTranslucent()) *before* either of those two
-     * events fire, so anything submitted from them arrives one flush too late and is silently
-     * dropped every frame — no exception, no gate failure, nothing ever drawn. COLLECT_SUBMITS
-     * fires earlier in the frame, before that flush, which is the only point these submissions
-     * actually get picked up.
-     */
     @JvmStatic
     fun init() {
-        LevelRenderEvents.COLLECT_SUBMITS.register(this::filled)
-        LevelRenderEvents.COLLECT_SUBMITS.register(this::filledNoDepth)
-        LevelRenderEvents.COLLECT_SUBMITS.register(this::entityFilled)
-        LevelRenderEvents.COLLECT_SUBMITS.register(this::entityOutline)
-        LevelRenderEvents.COLLECT_SUBMITS.register(this::entityOutlineNoDepth)
-        LevelRenderEvents.COLLECT_SUBMITS.register(this::debugLine)
-        LevelRenderEvents.COLLECT_SUBMITS.register(this::debugLineNoDepth)
+        if (registered) return
+        registered = true
+        LevelRenderEvents.END_MAIN.register(LevelRenderEvents.EndMain { ctx -> render(ctx) })
     }
 
-    /**
-     * `submitCustomGeometry`'s renderer callback runs *later*, when the engine flushes the
-     * solid/translucent custom-geometry buckets — not synchronously here. Its `pose` parameter is
-     * a correctly-snapshotted copy taken at submission time for exactly this reason. The 7
-     * handlers below used to ignore that parameter and close over the shared, mutable
-     * `context.poseStack()` instead — which had already had `popPose()` called on it (right after
-     * submission, well before the deferred callback ever runs) and could be in any arbitrary state
-     * by the time rendering actually happened. That produced no exception (the pose is always a
-     * valid transform, just the wrong one) and matched every symptom seen: geometry submitted with
-     * correct world data, camera/gate checks all passing, nothing ever appearing on screen. Fix is
-     * to build a fresh PoseStack seeded from the deferred `pose` and hand that down instead.
-     */
-    private fun poseStackFrom(pose: PoseStack.Pose): PoseStack {
-        val stack = PoseStack()
-        stack.last().set(pose)
-        return stack
+    private fun render(ctx: LevelRenderContext) {
+        val mc = Minecraft.getInstance()
+        if (mc.level == null) return
+        val buffers: MultiBufferSource.BufferSource = ctx.bufferSource() ?: return
+        val ps: PoseStack = ctx.poseStack() ?: return
+
+        val cam = mc.gameRenderer.mainCamera.position()
+        ps.pushPose()
+        ps.translate(-cam.x, -cam.y, -cam.z)
+
+        // Depth-tested first (occluded by terrain), then through-walls on top.
+        drawLayer(ctx, ps, buffers, RenderLayers.FILL, FILLED_BLOCK, FILLED_ENTITY)
+        drawLayer(ctx, ps, buffers, RenderLayers.LINE, OUTLINE_ENTITY, LINE)
+        drawLayer(ctx, ps, buffers, RenderLayers.FILL_ND, NO_DEPTH_FILLED)
+        drawLayer(ctx, ps, buffers, RenderLayers.LINE_ND, NO_DEPTH_OUTLINE_ENTITY, NO_DEPTH_LINE)
+
+        ps.popPose()
     }
 
-    private fun filled(context: LevelRenderContext) {
-        if (context.levelState() == null) return
-        val camera: Vec3 = context.levelState().cameraRenderState.pos
-        val matrices: PoseStack = context.poseStack() ?: return
-        matrices.pushPose()
-        matrices.translate(-camera.x, -camera.y, -camera.z)
-
-        context.submitNodeCollector().submitCustomGeometry(matrices, RenderLayers.FILLED_LAYER) { pose, consumer ->
-            val local = poseStackFrom(pose)
-            FILLED_BLOCK.invoke { renderingEvent -> renderingEvent.render(context, local, consumer) }
-        }
-        matrices.popPose()
-    }
-
-    private fun filledNoDepth(context: LevelRenderContext) {
-        if (context.levelState() == null) return
-        val camera: Vec3 = context.levelState().cameraRenderState.pos
-        val matrices: PoseStack = context.poseStack() ?: return
-        matrices.pushPose()
-        matrices.translate(-camera.x, -camera.y, -camera.z)
-
-        context.submitNodeCollector().submitCustomGeometry(matrices, RenderLayers.FILLED_LAYER_NO_DEPTH) { pose, consumer ->
-            val local = poseStackFrom(pose)
-            NO_DEPTH_FILLED.invoke { renderingEvent -> renderingEvent.render(context, local, consumer) }
-        }
-        matrices.popPose()
-    }
-
-    private fun entityFilled(context: LevelRenderContext) {
-        if (context.levelState() == null) return
-        val camera: Vec3 = context.levelState().cameraRenderState.pos
-        val matrices: PoseStack = context.poseStack() ?: return
-        matrices.pushPose()
-        matrices.translate(-camera.x, -camera.y, -camera.z)
-
-        context.submitNodeCollector().submitCustomGeometry(matrices, RenderLayers.FILLED_ENTITY_LAYER) { pose, consumer ->
-            val local = poseStackFrom(pose)
-            FILLED_ENTITY.invoke { renderingEvent -> renderingEvent.render(context, local, consumer) }
-        }
-        matrices.popPose()
-    }
-
-    private fun entityOutline(context: LevelRenderContext) {
-        if (context.levelState() == null) return
-        val camera: Vec3 = context.levelState().cameraRenderState.pos
-        val matrices: PoseStack = context.poseStack() ?: return
-        matrices.pushPose()
-        matrices.translate(-camera.x, -camera.y, -camera.z)
-
-        context.submitNodeCollector().submitCustomGeometry(matrices, RenderLayers.getOutline(4, true)) { pose, consumer ->
-            val local = poseStackFrom(pose)
-            OUTLINE_ENTITY.invoke { renderingEvent -> renderingEvent.render(context, local, consumer) }
-        }
-        matrices.popPose()
-    }
-
-    private fun entityOutlineNoDepth(context: LevelRenderContext) {
-        if (context.levelState() == null) return
-        val camera: Vec3 = context.levelState().cameraRenderState.pos
-        val matrices: PoseStack = context.poseStack() ?: return
-        matrices.pushPose()
-        matrices.translate(-camera.x, -camera.y, -camera.z)
-
-        context.submitNodeCollector().submitCustomGeometry(matrices, RenderLayers.getOutline(4, false)) { pose, consumer ->
-            val local = poseStackFrom(pose)
-            NO_DEPTH_OUTLINE_ENTITY.invoke { renderingEvent -> renderingEvent.render(context, local, consumer) }
-        }
-        matrices.popPose()
-    }
-
-    private fun debugLine(context: LevelRenderContext) {
-        if (context.levelState() == null) return
-        val camera: Vec3 = context.levelState().cameraRenderState.pos
-        val matrices: PoseStack = context.poseStack() ?: return
-        matrices.pushPose()
-        matrices.translate(-camera.x, -camera.y, -camera.z)
-
-        context.submitNodeCollector().submitCustomGeometry(matrices, RenderLayers.getOutline(4, true)) { pose, consumer ->
-            val local = poseStackFrom(pose)
-            LINE.invoke { renderingEvent -> renderingEvent.render(context, local, consumer) }
-        }
-        matrices.popPose()
-    }
-
-    private fun debugLineNoDepth(context: LevelRenderContext) {
-        if (context.levelState() == null) return
-        val camera: Vec3 = context.levelState().cameraRenderState.pos
-        val matrices: PoseStack = context.poseStack() ?: return
-        matrices.pushPose()
-        matrices.translate(-camera.x, -camera.y, -camera.z)
-
-        context.submitNodeCollector().submitCustomGeometry(matrices, RenderLayers.getOutline(4, false)) { pose, consumer ->
-            val local = poseStackFrom(pose)
-            NO_DEPTH_LINE.invoke { renderingEvent -> renderingEvent.render(context, local, consumer) }
-        }
-        matrices.popPose()
+    private fun drawLayer(
+        ctx: LevelRenderContext, ps: PoseStack, buffers: MultiBufferSource.BufferSource,
+        layer: RenderType, vararg handlers: RenderHandler,
+    ) {
+        if (handlers.all { it.size() == 0 }) return
+        val vc = buffers.getBuffer(layer)
+        for (h in handlers) h.invoke { it.render(ctx, ps, vc) }
+        buffers.endBatch(layer)
     }
 }

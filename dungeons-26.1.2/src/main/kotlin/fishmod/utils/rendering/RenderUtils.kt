@@ -200,20 +200,15 @@ object RenderUtils {
         )
     }
 
-    // RenderPipelines.LINES' vertex format carries a per-vertex LineWidth element in 26.1.2 (used
-    // to be fixed GL line-width state); omitting setLineWidth throws "Missing elements in vertex:
-    // LineWidth" from BufferBuilder. 4 matches the width every RenderLayers.getOutline(4, ...)
-    // caller already requests (that parameter itself is otherwise unused).
-    private const val LINE_WIDTH = 4f
-
+    // RenderLayers.LINE / LINE_ND are plain POSITION_COLOR + DEBUG_LINES pipelines (System22
+    // WaypointTest pattern) — 2 verts per segment, position + colour only, no Normal/LineWidth.
     private fun edge(
         consumer: VertexConsumer, pose: PoseStack.Pose,
         x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float,
         r: Float, g: Float, b: Float, a: Float
     ) {
-        val normal = Vector3f(x2 - x1, y2 - y1, z2 - z1).normalize()
-        consumer.addVertex(pose, x1, y1, z1).setColor(r, g, b, a).setNormal(pose, normal.x, normal.y, normal.z).setLineWidth(LINE_WIDTH)
-        consumer.addVertex(pose, x2, y2, z2).setColor(r, g, b, a).setNormal(pose, normal.x, normal.y, normal.z).setLineWidth(LINE_WIDTH)
+        consumer.addVertex(pose, x1, y1, z1).setColor(r, g, b, a)
+        consumer.addVertex(pose, x2, y2, z2).setColor(r, g, b, a)
     }
 
     @JvmStatic
@@ -248,14 +243,13 @@ object RenderUtils {
 
         val startPos = playerPos.toVector3f().add(0f, eyeHeight.toFloat(), 0f).add(lookat)
         val endVec = Vec3(x, y, z).subtract(playerPos).subtract(lookat.x.toDouble(), (lookat.y + eyeHeight).toDouble(), lookat.z.toDouble())
-        val normal = Vector3f(endVec.x.toFloat(), endVec.y.toFloat(), endVec.z.toFloat()).normalize()
         val r = ((color shr 16) and 0xFF) / 255f
         val g = ((color shr 8) and 0xFF) / 255f
         val b = (color and 0xFF) / 255f
         var a = ((color shr 24) and 0xFF) / 255f
         if (a == 0f) a = 1.0f
-        consumer.addVertex(matrices.last(), startPos.x, startPos.y, startPos.z).setColor(r, g, b, a).setNormal(matrices.last(), normal.x, normal.y, normal.z).setLineWidth(LINE_WIDTH)
-        consumer.addVertex(matrices.last(), endVec.x.toFloat() + startPos.x, endVec.y.toFloat() + startPos.y, endVec.z.toFloat() + startPos.z).setColor(r, g, b, a).setNormal(matrices.last(), normal.x, normal.y, normal.z).setLineWidth(LINE_WIDTH)
+        consumer.addVertex(matrices.last(), startPos.x, startPos.y, startPos.z).setColor(r, g, b, a)
+        consumer.addVertex(matrices.last(), endVec.x.toFloat() + startPos.x, endVec.y.toFloat() + startPos.y, endVec.z.toFloat() + startPos.z).setColor(r, g, b, a)
     }
 
     @JvmStatic
