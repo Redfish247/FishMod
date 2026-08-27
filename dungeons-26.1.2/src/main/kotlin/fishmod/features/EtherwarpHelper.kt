@@ -116,14 +116,16 @@ object EtherwarpHelper {
         val lineRgba = floatArrayOf(rgba[0], rgba[1], rgba[2], 1f)
         val lvl = Minecraft.getInstance().level ?: return
 
-        // Trace the real collision shape so a slab/stair guess is drawn (and can be read) as the
-        // half / stepped box you'd actually stand on, not a full cube. Full Block forces a cube.
+        // Trace the block's real shape so slabs/stairs/heads/lanterns/walls draw (and read) as the
+        // box you'd actually stand on, not a full cube. Use the visual outline shape first: a wall's
+        // collision box is 1.5 blocks tall for mob pathing, which would poke the guess above the
+        // block — the outline shape is the ~1-tall post+arms you actually see. Full Block forces a cube.
         val boxes: List<AABB> = if (FishSettings.etherwarpFullBlock) {
             listOf(FULL)
         } else {
             val st = lvl.getBlockState(bp)
-            var shape = st.getCollisionShape(lvl, bp)
-            if (shape.isEmpty) shape = st.getShape(lvl, bp)
+            var shape = st.getShape(lvl, bp)
+            if (shape.isEmpty) shape = st.getCollisionShape(lvl, bp)
             if (shape.isEmpty) listOf(FULL) else shape.toAabbs()
         }
 
