@@ -142,6 +142,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         general.features.add(Feature("Smart Copy Chat", FishSettings::smartCopyChat))
         general.features.add(Feature("Compact Chat", FishSettings::chatCompact))
         run {
+            val f = Feature("Guild Bridge Bot", FishSettings::bridgeBotEnabled)
+            f.sub.add(SubcategoryHeader("Reformats \"Guild > Bot: Player » msg\" and hides the raw bot line"))
+            f.sub.add(InputSetting("Bot Name", "The bridge bot's exact in-game name",
+                { FishSettings.bridgeBotName },
+                { v -> FishSettings.bridgeBotName = v; fishmod.features.BridgeBot.rebuildPattern() }))
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Auto Sprint", FishSettings::autoSprintEnabled)
             f.sub.add(ToggleSetting("Dungeons Only", "", FishSettings::autoSprintDungeonOnly))
             general.features.add(f)

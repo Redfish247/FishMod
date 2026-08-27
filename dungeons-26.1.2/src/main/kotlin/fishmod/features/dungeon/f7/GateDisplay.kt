@@ -8,8 +8,8 @@ import fishmod.utils.dungeon.Phase
 import fishmod.utils.dungeon.Section
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
-import fishmod.utils.rendering.RenderingEvents
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
@@ -59,7 +59,21 @@ object GateDisplay {
             }
             false
         }
-        RenderingEvents.NO_DEPTH_FILLED.register { ctx, matrices, _ -> render(ctx, matrices) }
+        // World text must be submitted from the translucent-features pass, not the END_MAIN block
+        // batch used by RenderingEvents — the node collector isn't flushed there, so the old
+        // registration drew nothing (this is why the gates never showed in Goldor).
+        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(
+            LevelRenderEvents.AfterTranslucentFeatures { ctx ->
+                if (!Floor7.gateDisplayEnabled || !Location.inDungeon()) return@AfterTranslucentFeatures
+                if (state.all { it == GateState.HIDDEN }) return@AfterTranslucentFeatures
+                val matrices = ctx.poseStack() ?: return@AfterTranslucentFeatures
+                val cam = ctx.levelState()?.cameraRenderState?.pos ?: return@AfterTranslucentFeatures
+                matrices.pushPose()
+                matrices.translate(-cam.x, -cam.y, -cam.z)
+                render(ctx, matrices)
+                matrices.popPose()
+            }
+        )
     }
 
     private fun show(index: Int) {

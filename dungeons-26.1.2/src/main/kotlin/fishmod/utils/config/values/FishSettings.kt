@@ -120,6 +120,11 @@ object FishSettings {
     // with a "(N)" count instead of repeating them.
     @ConfigValue @JvmField var chatCompact: Boolean = false
 
+    // Guild bridge bot: reformat "Guild > BotName: Player » msg" into a clean
+    // "Guild > [Bridge] Player: msg" line and hide the raw bot message.
+    @ConfigValue @JvmField var bridgeBotEnabled: Boolean = false
+    @ConfigValue @JvmField var bridgeBotName: String = ""
+
     // Compact custom tab list (replaces vanilla player list while tab is held). Opt-in.
     @ConfigValue @JvmField var compactTabEnabled: Boolean = false
     /** Panel opacity percentage (0 = fully transparent, 100 = solid). Default 70%. */

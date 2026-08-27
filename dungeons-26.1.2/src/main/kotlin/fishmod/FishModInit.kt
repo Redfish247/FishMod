@@ -432,6 +432,7 @@ class FishModInit : ModInitializer {
         fishmod.features.SpringBoots.init()
         fishmod.features.VisualTweaks.init()
         fishmod.features.SlotBinds.init()
+        fishmod.features.BridgeBot.init()
         fishmod.features.dungeon.DungeonAbilities.init()
         fishmod.features.dungeon.f6.TerracottaTimer.init()
         fishmod.features.dungeon.f7.dragons.WitherDragons.init()
