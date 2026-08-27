@@ -2271,6 +2271,7 @@ public class HypixelApi {
     public static final class PetInfo {
         public boolean ok = false;
         public String name;
+        public String tier; // "COMMON".."MYTHIC" / "LEGENDARY" fallback
         public int level;
         public boolean maxed;
         public int overflowLevel = -1;
@@ -2369,6 +2370,7 @@ public class HypixelApi {
                                 cost = fishmod.features.OverflowPetLevels.getXpForLevel(level - 1, rar);
                             }
                             info.name = petTypeToName(type);
+                            info.tier = tier;
                             info.overflowLevel = level;
                             info.maxed = level >= maxLevel;
                             info.level = Math.min(level, maxLevel);

@@ -419,6 +419,7 @@ class FishModInit : ModInitializer {
         // SlayerXpTracker.init();
         // fishmod.features.SkillTracker.init();
         fishmod.features.FireFreezeTimer.init()
+        fishmod.features.LoadoutTitle.init()
         // PowderTracker.init();
         fishmod.features.dungeon.SimonSaysTracker.init()
         fishmod.features.chat.ChatRuleHandler.init()

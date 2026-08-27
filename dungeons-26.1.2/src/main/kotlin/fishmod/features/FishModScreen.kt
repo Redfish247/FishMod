@@ -142,6 +142,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(SliderIntSetting("Opacity %", "", FishSettings::customScoreboardOpacity, 0, 100))
             f.sub.add(SliderIntSetting("Y Offset", "", FishSettings::customScoreboardHudY, 0, 200))
             f.sub.add(ToggleSetting("Compact Numbers", "1,234,567 -> 1.2M", FishSettings::customScoreboardCompactNumbers))
+            f.sub.add(ToggleSetting("Vanilla In Dungeons", "Show vanilla's sidebar while in a dungeon", FishSettings::customScoreboardHideInDungeon))
             f.sub.add(SubcategoryHeader("Location & Time"))
             f.sub.add(ToggleSetting("Date", "", FishSettings::sbSectionDate))
             f.sub.add(ToggleSetting("Time of Day", "", FishSettings::sbSectionTime))
@@ -394,6 +395,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         run {
             val f = Feature("Pet HUD", FishSettings::petHudEnabled)
             f.sub.add(ToggleSetting("Show Level", "", FishSettings::petHudShowLevel))
+            f.sub.add(ToggleSetting("Show Rarity", "Colour the pet name by its rarity", FishSettings::petHudShowRarity))
             f.sub.add(ToggleSetting("Fade Idle", "", FishSettings::petHudFadeIdle))
             f.sub.add(SliderIntSetting("Fade ms", "", FishSettings::petHudFadeMs, 1000, 30000))
             visuals.features.add(f)
@@ -405,6 +407,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             visuals.features.add(f)
         }
         visuals.features.add(Feature("Fire Freeze Timer", FishSettings::fireFreezeTimerEnabled))
+        visuals.features.add(Feature("Loadout Title", FishSettings::loadoutTitleEnabled))
         run {
             val f = Feature("Explosive Shot", FishSettings::explosiveShotEnabled)
             f.sub.add(ToggleSetting("Announce to Party (Archer)", "", FishSettings::explosiveShotAnnounceParty))
@@ -423,6 +426,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Storm Death Time", "", Floor7::enableStormDeathTime))
             f.sub.add(ToggleSetting("LB Release Timer", "", Floor7::enableLbReleaseTimer))
             f.sub.add(ColorPickerSetting("LB Release Timer Color", "", Floor7::lbReleaseTimerColor))
+            f.sub.add(SliderIntSetting("LB Release Ping (ms)", "Fires the release cue this much earlier to offset latency", Floor7::lbReleaseTimerPingMs, 0, 500))
             f.sub.add(ToggleSetting("Storm Crushed Noti", "", Floor7::notifyStormCrush))
             f.sub.add(SubcategoryHeader("Goldor"))
             f.sub.add(ToggleSetting("Goldor", "", Floor7::enableGoldorTickTimer))
@@ -591,6 +595,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 { fishmod.utils.config.values.DungeonMapSettings.mapDoorHighlightWidth.toDouble() },
                 { v -> fishmod.utils.config.values.DungeonMapSettings.mapDoorHighlightWidth = v.toFloat() },
                 1.0, 10.0))
+            f.sub.add(ToggleSetting("Through Walls", "Every highlighted door, not just Wither",
+                fishmod.utils.config.values.DungeonMapSettings::mapDoorHighlightThroughWall))
+            f.sub.add(ToggleSetting("Full Box", "Highlight the whole frame, not just the near face",
+                fishmod.utils.config.values.DungeonMapSettings::mapDoorHighlightFullBox))
+            f.sub.add(ColorPickerSetting("Wither: No Key", "Wither-door box until the Wither Key is picked up (turns green once held)",
+                fishmod.utils.config.values.DungeonMapSettings::mapWitherHighlightMissingColor))
             dungeonMap.features.add(f)
         }
         run {

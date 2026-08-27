@@ -66,6 +66,7 @@ object FishSettings {
     // Pet HUD
     @ConfigValue @JvmField var petHudEnabled: Boolean = false
     @ConfigValue @JvmField var petHudShowLevel: Boolean = false
+    @ConfigValue @JvmField var petHudShowRarity: Boolean = true
     @ConfigValue @JvmField var petHudFadeIdle: Boolean = false
     @ConfigValue @JvmField var petHudFadeMs: Int = 5000
     @ConfigValue @JvmField var petHudX: Int = 10
@@ -374,11 +375,17 @@ object FishSettings {
     @ConfigValue @JvmField var wardrobeHotkeysEnabled: Boolean = false
     @ConfigValue @JvmField var wardrobeHotkeysAutoClose: Boolean = true
 
+    // Loadout Title: parse "You equipped <Name>!" (item-customizer loadout switch) and flash the
+    // loadout name as an on-screen title.
+    @ConfigValue @JvmField var loadoutTitleEnabled: Boolean = false
+
     // ── Custom Scoreboard ────────────────────────────────────────────────────────
     // Replaces vanilla's sidebar scoreboard with one where each line category can be hidden
     // and big numbers (Purse/Bank/Bits/etc) can be shown compact (1,234,567 -> 1.2M).
     @ConfigValue @JvmField var customScoreboardEnabled: Boolean = false
     @ConfigValue @JvmField var customScoreboardCompactNumbers: Boolean = false
+    /** In dungeons, fall back to vanilla's sidebar instead of the custom one (the map info HUD already carries score). */
+    @ConfigValue @JvmField var customScoreboardHideInDungeon: Boolean = false
     @ConfigValue @JvmField var customScoreboardOpacity: Int = 30
     @ConfigValue @JvmField var customScoreboardHudY: Int = 2
     @ConfigValue @JvmField var sbSectionDate: Boolean = true

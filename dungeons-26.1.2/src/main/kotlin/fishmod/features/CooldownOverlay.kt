@@ -142,14 +142,22 @@ object CooldownOverlay {
                 return@register
             }
             val pid = pendingId
-            if (pid != null && System.currentTimeMillis() - pendingAt < 2000
-                && pendingManaBefore >= 0 && mana < pendingManaBefore
-            ) {
-                if (debugDumpSound) {
-                    Misc.addChatMessage(Component.literal("§d[fmcd] mana $pendingManaBefore→$mana confirms $pid"))
+            if (pid != null && System.currentTimeMillis() - pendingAt < 2500) {
+                when {
+                    // No valid pre-cast baseline yet — `lastMana` was still -1 when the ability was
+                    // armed (first cast after a world change / right after the feature was toggled on).
+                    // Adopt the first post-arm reading as the baseline, and keep tracking it upward so
+                    // mana regenerated between the arm and the cast doesn't leave the baseline too low.
+                    // This makes the very first right-click register instead of only the second.
+                    pendingManaBefore < 0 || mana > pendingManaBefore -> pendingManaBefore = mana
+                    mana < pendingManaBefore -> {
+                        if (debugDumpSound) {
+                            Misc.addChatMessage(Component.literal("§d[fmcd] mana $pendingManaBefore→$mana confirms $pid"))
+                        }
+                        pendingId = null
+                        onAbilityFired()
+                    }
                 }
-                pendingId = null
-                onAbilityFired()
             }
             lastMana = mana
         }

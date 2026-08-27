@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.features.item.ItemRarity
 import fishmod.utils.HypixelApi
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
@@ -41,6 +42,7 @@ object PetHud {
     private val TAB_OVERFLOW_XP: Pattern = Pattern.compile("\\+([\\d.,]+[KMB]?)\\s*XP")
 
     private var petName: String? = null
+    private var petRarity: ItemRarity = ItemRarity.NONE
     private var petLevel = -1
     private var petOverflowLevel = -1
     private var petMaxed = false
@@ -124,6 +126,7 @@ object PetHud {
             if (a.find()) {
                 petLevel = safeInt(a.group(1), -1)
                 petName = cleanPetName(a.group(2))
+                petRarity = rarityBeforeName(msg.string, petName)
                 petMaxed = false // tab burst-scan re-confirms
                 xpCurrent = -1.0; xpNext = -1.0; pendingXp = 0.0 // reset XP for the newly-equipped pet
                 lastTabUpdate = System.currentTimeMillis()
@@ -137,6 +140,7 @@ object PetHud {
             if (su.find()) {
                 val n = cleanPetName(su.group(1))
                 petName = n
+                petRarity = rarityBeforeName(msg.string, n)
                 petMaxed = false // tab burst-scan re-confirms
                 xpCurrent = -1.0; xpNext = -1.0; pendingXp = 0.0
                 lastTabUpdate = System.currentTimeMillis()
@@ -215,16 +219,19 @@ object PetHud {
         // "[Lvl N] Name" under the tab's "Pet:" header; "[Lvl " is unique vs player tags like "[519]".
         var tempName: String? = null
         var tempLevel = -1
+        var tempRarity = ItemRarity.NONE
         var maxed = false
         var overflowXp = -1.0
 
         for (entry: PlayerInfo in handler.onlinePlayers) {
             if (entry.tabListDisplayName == null) continue
-            val text = COLOR_STRIP.matcher(entry.tabListDisplayName!!.string).replaceAll("").trim()
+            val raw = entry.tabListDisplayName!!.string
+            val text = COLOR_STRIP.matcher(raw).replaceAll("").trim()
             val nameMatch = TAB_NAME_LINE.matcher(text)
             if (nameMatch.find()) {
                 tempLevel = safeInt(nameMatch.group(1), -1)
                 tempName = nameMatch.group(2).replace("✦", "").trim()
+                tempRarity = rarityBeforeName(raw, tempName)
             } else if (text.equals("MAX LEVEL", ignoreCase = true)) {
                 maxed = true
             } else {
@@ -244,6 +251,7 @@ object PetHud {
             }
             petName = tempName
             petLevel = tempLevel
+            if (tempRarity != ItemRarity.NONE) petRarity = tempRarity
             petMaxed = maxed
             if (maxed) {
                 xpNext = -1.0 // forces the HUD's MAXED display
@@ -274,6 +282,7 @@ object PetHud {
         }
 
         petName = info.name
+        rarityFromTier(info.tier).let { if (it != ItemRarity.NONE) petRarity = it }
         petLevel = info.level
         petMaxed = info.maxed
         petOverflowLevel = if (info.maxed) info.overflowLevel else -1
@@ -308,6 +317,7 @@ object PetHud {
             if (m.find()) {
                 petLevel = safeInt(m.group(1), petLevel)
                 petName = m.group(2).trim()
+                rarityBeforeName(stack.hoverName.string, petName).let { if (it != ItemRarity.NONE) petRarity = it }
             }
             scanProgressFromLore(stack)
             return
@@ -346,6 +356,7 @@ object PetHud {
 
     private fun reset() {
         petName = null
+        petRarity = ItemRarity.NONE
         petLevel = -1
         xpCurrent = -1.0
         lastChatPetName = null
@@ -357,6 +368,60 @@ object PetHud {
         return s.replace("✦", "").replace(Regex("[!.]+$"), "").trim()
     }
 
+    private val RARITY_BY_CODE: Map<Char, ItemRarity> = mapOf(
+        'f' to ItemRarity.COMMON, 'a' to ItemRarity.UNCOMMON, '9' to ItemRarity.RARE,
+        '5' to ItemRarity.EPIC, '6' to ItemRarity.LEGENDARY, 'd' to ItemRarity.MYTHIC,
+        'b' to ItemRarity.DIVINE, 'c' to ItemRarity.SPECIAL
+    )
+
+    /** Rarity from the colour code Hypixel puts right before the pet's name in a raw (un-stripped)
+     *  chat/tab/menu string, skipping plain formatting codes (§l/§o/…). NONE if it can't be read. */
+    private fun rarityBeforeName(raw: String?, name: String?): ItemRarity {
+        if (raw == null || name.isNullOrEmpty()) return ItemRarity.NONE
+        val plain = name.substringBefore("✦").trim()
+        if (plain.isEmpty()) return ItemRarity.NONE
+        val idx = raw.indexOf(plain)
+        if (idx < 2) return ItemRarity.NONE
+        var i = idx - 1
+        while (i >= 1) {
+            if (raw[i - 1] == '§') {
+                val r = RARITY_BY_CODE[raw[i].lowercaseChar()]
+                if (r != null) return r
+                i -= 2
+                continue
+            }
+            i--
+        }
+        return ItemRarity.NONE
+    }
+
+    private fun rarityFromTier(tier: String?): ItemRarity = when (tier?.uppercase()) {
+        "COMMON" -> ItemRarity.COMMON
+        "UNCOMMON" -> ItemRarity.UNCOMMON
+        "RARE" -> ItemRarity.RARE
+        "EPIC" -> ItemRarity.EPIC
+        "LEGENDARY" -> ItemRarity.LEGENDARY
+        "MYTHIC" -> ItemRarity.MYTHIC
+        "DIVINE" -> ItemRarity.DIVINE
+        else -> ItemRarity.NONE
+    }
+
+    private fun rarityCode(r: ItemRarity): String = when (r) {
+        ItemRarity.COMMON -> "§f"
+        ItemRarity.UNCOMMON -> "§a"
+        ItemRarity.RARE -> "§9"
+        ItemRarity.EPIC -> "§5"
+        ItemRarity.LEGENDARY -> "§6"
+        ItemRarity.MYTHIC -> "§d"
+        ItemRarity.DIVINE -> "§b"
+        ItemRarity.SPECIAL, ItemRarity.VERY_SPECIAL -> "§c"
+        else -> "§6"
+    }
+
+    /** Colour code for the pet name: rarity-based when known and enabled, else the legacy gold. */
+    private fun nameColorCode(): String =
+        if (FishSettings.petHudShowRarity && petRarity != ItemRarity.NONE) rarityCode(petRarity) else "§6"
+
     private fun safeInt(s: String?, fallback: Int): Int {
         return try { s!!.toInt() } catch (e: NumberFormatException) { fallback } catch (e: NullPointerException) { fallback }
     }
@@ -367,7 +432,7 @@ object PetHud {
     @JvmStatic
     fun currentPetLine(): String? {
         val name = petName ?: return null
-        val text = StringBuilder("§7[Lvl ").append(petLevel).append("] §6").append(name)
+        val text = StringBuilder("§7[Lvl ").append(petLevel).append("] ").append(nameColorCode()).append(name)
         val maxLvl = if ("Golden Dragon".equals(name, ignoreCase = true)) 200 else 100
         if (petLevel >= maxLvl || petMaxed) {
             text.append(" §a§lMAXED")
@@ -395,7 +460,7 @@ object PetHud {
 
         val text = StringBuilder()
         if (FishSettings.petHudShowLevel && petLevel >= 0) text.append("§7[Lvl ").append(petLevel).append("] ")
-        text.append("§6").append(petName)
+        text.append(nameColorCode()).append(petName)
 
         val maxLvl = if ("Golden Dragon".equals(petName, ignoreCase = true)) 200 else 100
         val maxed = petLevel >= maxLvl || petMaxed

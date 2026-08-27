@@ -347,6 +347,25 @@ object DungeonMapSettings {
     @JvmField
     var mapDoorHighlightWidth: Float = 3.0f
 
+    // Draw every highlighted door (not just Wither) through walls. Off = only Wither doors pierce
+    // terrain, everything else is occluded (the original System22-port behaviour).
+    @ConfigValue
+    @JvmField
+    var mapDoorHighlightThroughWall: Boolean = false
+
+    // Highlight the whole door-frame box instead of just the flat face turned toward the player.
+    // (Wither doors are always drawn as a full box regardless of this toggle.)
+    @ConfigValue
+    @JvmField
+    var mapDoorHighlightFullBox: Boolean = false
+
+    // Wither-door full-box highlight while you still lack the Wither Key. Once you have it the box
+    // switches to the shared [mapDoorOpenableColor] (same green Blood doors use when openable).
+    // ARGB; the box fill's alpha is applied separately.
+    @ConfigValue
+    @JvmField
+    var mapWitherHighlightMissingColor: Int = 0xFFFF0000.toInt()
+
     // HUD position/scale (ported from System22 DataStore's separate HUD-position statics; defaults match originals).
     @ConfigValue
     @JvmField

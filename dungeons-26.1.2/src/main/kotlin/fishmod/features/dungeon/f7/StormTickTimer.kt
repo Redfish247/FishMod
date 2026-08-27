@@ -15,6 +15,8 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.sounds.SoundEvents
 import java.util.regex.Pattern
+import kotlin.math.ceil
+import kotlin.math.max
 
 /** Storm (P2) tick timer + first-death time. Ported from blade-addons (spirit-mask warning omitted). */
 object StormTickTimer {
@@ -91,11 +93,18 @@ object StormTickTimer {
         RenderUtils.drawTimer(component, context, deathTime, Constants.DARK_PURPLE)
     }
 
-    /** Class-specific LB release tick, or -1 when the timer shouldn't show for this class. */
+    /** Ping compensation in ticks (20 tps): shifts the release cue earlier so the arrow leaves on time. */
+    private fun pingTicks(): Int = ceil(max(0, Floor7.lbReleaseTimerPingMs) / 50.0).toInt()
+
+    /** Class-specific LB release tick (ping-compensated), or -1 when the timer shouldn't show for this class. */
     private fun lbEndTick(): Int {
-        if (DungeonClass.isClass(DungeonClass.ARCHER)) return LB_ARCHER_END_TICK
-        if (DungeonClass.isClass(DungeonClass.HEALER)) return LB_HEALER_END_TICK
-        return -1
+        val base = when {
+            DungeonClass.isClass(DungeonClass.ARCHER) -> LB_ARCHER_END_TICK
+            DungeonClass.isClass(DungeonClass.HEALER) -> LB_HEALER_END_TICK
+            else -> return -1
+        }
+        // Never pull the cue before the window even opens.
+        return max(LB_START_TICK + 1, base - pingTicks())
     }
 
     @JvmStatic

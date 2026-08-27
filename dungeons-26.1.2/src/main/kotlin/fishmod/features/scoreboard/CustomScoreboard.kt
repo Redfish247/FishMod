@@ -75,7 +75,7 @@ object CustomScoreboard {
         val entries = sb.listPlayerScores(obj)
             .filter { !it.isHidden }
             .sortedWith(compareByDescending<PlayerScoreEntry> { it.value() }.thenBy { it.owner() })
-            .take(15)
+            .take(20) // Hypixel event boards (e.g. mining/fishing festival) can run past 15 lines
 
         val raw = ArrayList<Line>()
         var lastSection: ScoreboardSection? = null

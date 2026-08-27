@@ -48,6 +48,12 @@ object Floor7 {
     @JvmField
     var lbReleaseTimerColor: Int = 0xffff5555.toInt()
 
+    // Your ping (ms). The release cue (countdown-to-zero + "RELEASE NOW!" title/sound) fires this
+    // much earlier so Last Breath actually leaves the bow on time despite latency. 0 = no shift.
+    @ConfigValue
+    @JvmField
+    var lbReleaseTimerPingMs: Int = 0
+
     @ConfigValue
     @JvmField
     var notifyUsedSpiritMask: Boolean = false
