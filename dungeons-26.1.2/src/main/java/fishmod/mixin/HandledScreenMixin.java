@@ -53,6 +53,12 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     private void onMouseClick(MouseButtonEvent click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
         double cx = click.x(), cy = click.y();
 
+        if (fishmod.features.dungeon.f7.terminal.TerminalSolver.onMouseClick(
+                click.button(), (AbstractContainerScreen<?>) (Object) this)) {
+            cir.setReturnValue(true);
+            return;
+        }
+
         if (SessionStats.handleScreenClick(cx, cy)) {
             cir.setReturnValue(true);
             return;

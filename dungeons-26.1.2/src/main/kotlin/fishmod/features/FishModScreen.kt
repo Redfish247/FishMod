@@ -569,6 +569,19 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 { Floor7.s4AlertCooldownTicks }, { v -> Floor7.s4AlertCooldownTicks = v }, 10, 200))
             floor7.features.add(f)
         }
+        run {
+            val f = Feature("Terminal Solver", FishSettings::terminalSolverEnabled)
+            f.sub.add(ToggleSetting("Block Wrong Clicks", "", FishSettings::terminalBlockWrongClicks))
+            f.sub.add(ToggleSetting("Stop Melody Solver", "", FishSettings::terminalStopMelody))
+            f.sub.add(ToggleSetting("Solve Sound", "Ping when you finish a terminal", FishSettings::terminalSolverSound))
+            f.sub.add(ColorPickerSetting("Highlight", "Panes / Starts With / Select", FishSettings::terminalHighlightColor))
+            f.sub.add(ColorPickerSetting("Order 1st", "", FishSettings::terminalOrderColor1))
+            f.sub.add(ColorPickerSetting("Order 2nd", "", FishSettings::terminalOrderColor2))
+            f.sub.add(ColorPickerSetting("Order 3rd", "", FishSettings::terminalOrderColor3))
+            f.sub.add(ColorPickerSetting("Rubix", "", FishSettings::terminalRubixColor))
+            f.sub.add(ColorPickerSetting("Melody", "", FishSettings::terminalMelodyColor))
+            floor7.features.add(f)
+        }
 
         for (et in FishModAddonApi.dungeonToggles) {
             dungeon.features.add(Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) }))

@@ -395,6 +395,18 @@ object FishSettings {
     @ConfigValue @JvmField var weirdosCorrectColor: Int = 0xB355FF55.toInt()
     @ConfigValue @JvmField var weirdosWrongColor: Int = 0xB3FF5555.toInt()
 
+    // ── F7 Terminal Solver (Odin TerminalSolver port) ──────────────────────────
+    @ConfigValue @JvmField var terminalSolverEnabled: Boolean = false
+    @ConfigValue @JvmField var terminalBlockWrongClicks: Boolean = true
+    @ConfigValue @JvmField var terminalStopMelody: Boolean = false
+    @ConfigValue @JvmField var terminalSolverSound: Boolean = true
+    @ConfigValue @JvmField var terminalHighlightColor: Int = 0x9955FF55.toInt()
+    @ConfigValue @JvmField var terminalOrderColor1: Int = 0x9955FF55.toInt()
+    @ConfigValue @JvmField var terminalOrderColor2: Int = 0x9922AA22.toInt()
+    @ConfigValue @JvmField var terminalOrderColor3: Int = 0x99116611.toInt()
+    @ConfigValue @JvmField var terminalRubixColor: Int = 0x9900AAAA.toInt()
+    @ConfigValue @JvmField var terminalMelodyColor: Int = 0x99AA00AA.toInt()
+
     // Warp Cooldown HUD (revives Dungeons.enableWarpCooldown). Cooldown starts on the party's
     // "entered <floor> Catacombs" chat line (Odin logic); 30s is Hypixel's real re-entry gate.
     @ConfigValue @JvmField var warpCooldownSeconds: Int = 30

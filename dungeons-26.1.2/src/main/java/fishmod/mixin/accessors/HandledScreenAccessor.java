@@ -1,6 +1,7 @@
 package fishmod.mixin.accessors;
 
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.world.inventory.Slot;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
@@ -15,4 +16,5 @@ public interface HandledScreenAccessor {
     @Accessor("topPos") int getBgY();
     @Accessor("imageWidth")  int getBgWidth();
     @Accessor("imageHeight") int getBgHeight();
+    @Accessor("hoveredSlot") Slot fishmod$getHoveredSlot();
 }
