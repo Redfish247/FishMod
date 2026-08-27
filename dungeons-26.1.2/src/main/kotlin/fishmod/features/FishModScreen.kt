@@ -645,6 +645,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Show Secrets", "", FishSettings::pfShowSecrets))
             f.sub.add(ToggleSetting("Show PB", "Fastest S+ for the listing's floor", FishSettings::pfShowPb))
             f.sub.add(ToggleSetting("Missing List in Tooltip", "", FishSettings::pfTooltipMissingList))
+            f.sub.add(ToggleSetting("Highlight Joinable", "Green head for a party missing your class", FishSettings::pfHighlightJoinable))
+            f.sub.add(DropdownSetting("My Class", "For the joinable highlight", arrayOf("Auto", "Archer", "Berserk", "Healer", "Mage", "Tank"),
+                { FishSettings.pfMyClass }, { v -> FishSettings.pfMyClass = v ?: "Auto" }))
             party.features.add(f)
         }
         run {

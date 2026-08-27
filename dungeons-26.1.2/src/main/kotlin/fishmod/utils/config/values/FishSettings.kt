@@ -125,6 +125,8 @@ object FishSettings {
     @ConfigValue @JvmField var pfShowSecrets: Boolean = true
     @ConfigValue @JvmField var pfShowPb: Boolean = true
     @ConfigValue @JvmField var pfTooltipMissingList: Boolean = true
+    @ConfigValue @JvmField var pfHighlightJoinable: Boolean = true
+    @ConfigValue @JvmField var pfMyClass: String = "Auto"
     // Party Finder auto-kick: while leader, kick a joiner whose S+ PB / secrets miss the bar.
     @ConfigValue @JvmField var pfAutoKick: Boolean = false
     @ConfigValue @JvmField var pfAutoKickMaster: Boolean = true

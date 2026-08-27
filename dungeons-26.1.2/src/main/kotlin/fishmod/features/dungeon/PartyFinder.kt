@@ -5,8 +5,10 @@ import fishmod.utils.HypixelApi
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.PartyUtil
+import fishmod.utils.dungeon.DungeonClass
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.DrawEvents
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -19,12 +21,13 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 
 /**
- * In-menu Party Finder helper, ported from NoammAddons' `PartyFinder` (the overlay + tooltip half —
- * the auto-kick half is intentionally left for a later pass).
+ * In-menu Party Finder helper, ported from NoammAddons' `PartyFinder`.
  *
  *  - draws the red Dungeon-Level-Required number and the missing-class letters on each party head
+ *  - green-highlights any party head that's still missing YOUR dungeon class ([myClass])
  *  - rewrites each "Name: Class (lvl)" tooltip line with the player's Cata level / secrets / floor PB,
  *    fetched lazily through [HypixelApi] into a session cache, and appends a "Missing: …" line
+ *  - auto-kick: while party leader, kicks a joiner whose S+ PB / secrets miss the configured bar
  */
 object PartyFinder {
 
@@ -32,7 +35,11 @@ object PartyFinder {
     private val MEMBER = Pattern.compile("^\\s*(\\w{1,16}):?\\s+(Archer|Tank|Berserk|Healer|Mage)\\s*\\((\\d+)\\)\\s*$")
     private val LEVEL_REQ = Pattern.compile("Dungeon Level Required:\\s*(\\d+)")
     private val FLOOR = Pattern.compile("Floor:\\s*(?:Floor\\s+)?(\\w+)")
+    private val SELECTED_CLASS = Pattern.compile("Currently Selected:\\s*(\\w+)")
     private val COLOR = Regex("§.")
+
+    /** Last "Currently Selected: X" seen in the Catacombs Gate menu — seeds "Auto" my-class. */
+    @Volatile private var capturedClass: String? = null
 
     // "Party Finder > Name joined the dungeon group! (Archer Level 42)"
     private val PF_JOIN = Pattern.compile("^Party Finder > (\\w{1,16}) joined the dungeon group! \\(\\w+ Level \\d+\\)$")
@@ -45,8 +52,10 @@ object PartyFinder {
 
     @JvmStatic
     fun init() {
+        DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y -> onSlotBefore(ctx, stack, x, y) }
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y -> onSlot(ctx, stack, x, y) }
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines -> onTooltip(stack, lines) })
+        ClientTickEvents.END_CLIENT_TICK.register { captureSelectedClass() }
 
         Events.ON_GAME_MESSAGE.register { text ->
             if (FishSettings.pfAutoKick) {
@@ -130,6 +139,45 @@ object PartyFinder {
 
     private fun lore(stack: ItemStack): List<String> =
         stack.get(DataComponents.LORE)?.lines()?.map { COLOR.replace(it.string, "") } ?: emptyList()
+
+    // ── my class (for the "can I join" highlight) ───────────────────────────
+
+    private fun captureSelectedClass() {
+        val s = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return
+        if (COLOR.replace(s.title.string, "") != "Catacombs Gate") return
+        for (slot in s.menu.slots) {
+            for (line in lore(slot.item)) {
+                val m = SELECTED_CLASS.matcher(line)
+                if (m.find()) {
+                    val c = m.group(1).lowercase().replaceFirstChar { it.uppercase() }
+                    if (c in CLASSES) { capturedClass = c; return }
+                }
+            }
+        }
+    }
+
+    /** The dungeon class to test parties against — explicit config, else live class, else last captured. */
+    private fun myClass(): String? {
+        val cfg = FishSettings.pfMyClass
+        if (cfg in CLASSES) return cfg
+        DungeonClass.currentClass?.let { return it.name.lowercase().replaceFirstChar { c -> c.uppercase() } }
+        return capturedClass
+    }
+
+    // ── joinable highlight (behind the head) ────────────────────────────────
+
+    private fun onSlotBefore(ctx: GuiGraphicsExtractor, stack: ItemStack, x: Int, y: Int) {
+        if (!inPartyFinder() || !FishSettings.pfHighlightJoinable) return
+        if (stack.isEmpty || !stack.`is`(Items.PLAYER_HEAD)) return
+        val mine = myClass() ?: return
+        val present = HashSet<String>()
+        for (line in lore(stack)) {
+            val m = MEMBER.matcher(line)
+            if (m.matches()) present.add(m.group(2))
+        }
+        if (present.isEmpty() || mine in present) return
+        ctx.fill(x - 1, y - 1, x + 17, y + 17, 0x6055FF55)
+    }
 
     // ── head overlay ────────────────────────────────────────────────────────
 
