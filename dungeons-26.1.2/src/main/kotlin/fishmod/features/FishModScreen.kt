@@ -163,6 +163,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             visuals.features.add(f)
         }
         run {
+            val f = Feature("Lava To Water", FishSettings::lavaToWaterEnabled)
+            f.sub.add(ToggleSetting("Custom Tint", "", FishSettings::lavaToWaterTint))
+            f.sub.add(ColorPickerSetting("Tint Color", "", FishSettings::lavaToWaterColor))
+            f.sub.add(ToggleSetting("Hide Lava Fog", "", FishSettings::lavaToWaterHideFog))
+            visuals.features.add(f)
+        }
+        run {
             val f = Feature("Guild Bridge Bot", FishSettings::bridgeBotEnabled)
             f.sub.add(SubcategoryHeader("Reformats \"Guild > Bot: Player » msg\" and hides the raw bot line"))
             f.sub.add(InputSetting("Bot Name", "The bridge bot's exact in-game name",

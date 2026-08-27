@@ -467,6 +467,12 @@ object FishSettings {
     @ConfigValue @JvmField var animNoEquip: Boolean = false
     @ConfigValue @JvmField var animNoHandMove: Boolean = false
 
+    // ── Lava To Water ────────────────────────────────────────────────────────
+    @ConfigValue @JvmField var lavaToWaterEnabled: Boolean = false
+    @ConfigValue @JvmField var lavaToWaterTint: Boolean = false
+    @ConfigValue @JvmField var lavaToWaterColor: Int = 0xFF3F76E4.toInt()
+    @ConfigValue @JvmField var lavaToWaterHideFog: Boolean = true
+
     // ── Block Overlay ─────────────────────────────────────────────────────────
     @ConfigValue @JvmField var blockOverlayEnabled: Boolean = false
     @ConfigValue @JvmField var blockOverlayMode: Int = 2 // 0 outline, 1 fill, 2 filled outline

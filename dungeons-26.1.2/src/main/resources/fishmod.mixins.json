@@ -41,6 +41,8 @@
     "EntityRendererMixin",
     "EntityRenderStateMixin",
     "ItemInHandRendererMixin",
+    "FluidStateModelSetMixin",
+    "LavaFogEnvironmentMixin",
     "ItemModelBehaviorMixin",
     "ItemModelOverrideMixin",
     "PlayerEntityRendererScaleMixin",
