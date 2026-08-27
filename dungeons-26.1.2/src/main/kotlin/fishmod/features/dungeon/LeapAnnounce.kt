@@ -3,6 +3,7 @@ package fishmod.features.dungeon
 import fishmod.utils.Misc
 import fishmod.utils.config.values.Dungeons
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.dungeon.DungeonClass
 import fishmod.utils.events.Events
 import fishmod.utils.sound.SoundManager
 import net.minecraft.network.chat.Component
@@ -25,17 +26,20 @@ object LeapAnnounce {
             val m = TARGET.matcher(s)
             if (m.find()) {
                 val target = m.group(1).trim()
+                val clazz = DungeonClass.getClass(target)
+                val className = clazz?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "?"
+                val classLetter = DungeonClass.getChar(clazz)
+                fun fill(t: String) = t.replace("{name}", target).replace("{class}", className).replace("{c}", classLetter)
                 if (FishSettings.leapMessagesTitle) {
-                    val msg = FishSettings.leapMessagesText.replace("&", "§").replace("{name}", target)
+                    val msg = fill(FishSettings.leapMessagesText.replace("&", "§"))
                     Misc.forceTitle(Component.literal(msg), Component.empty())
                 }
                 if (FishSettings.leapMessagesParty) {
                     // Party chat can't carry formatting codes — strip only real colour codes
-                    // ([&§] + a code char) so a lone "&" in prose survives, then fill {name}.
-                    val plain = FishSettings.leapMessagesText
-                        .replace(Regex("[&§][0-9A-FK-ORa-fk-or]"), "")
-                        .replace("{name}", target)
-                        .trim()
+                    // ([&§] + a code char) so a lone "&" in prose survives, then fill placeholders.
+                    val plain = fill(
+                        FishSettings.leapMessagesText.replace(Regex("[&§][0-9A-FK-ORa-fk-or]"), "")
+                    ).trim()
                     if (plain.isNotEmpty()) {
                         val mc = net.minecraft.client.Minecraft.getInstance()
                         mc.execute { mc.connection?.sendCommand("pc $plain") }

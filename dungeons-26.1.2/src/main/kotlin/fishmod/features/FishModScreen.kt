@@ -327,15 +327,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             solvers.features.add(f)
         }
         run {
-            val f = Feature("Leap Messages", Dungeons::enableLeapMessages)
-            f.sub.add(InputSetting("Text", "{name} = leap target; & for colours",
-                { FishSettings.leapMessagesText }, { v -> FishSettings.leapMessagesText = v ?: "" }))
-            f.sub.add(ToggleSetting("Title", "", FishSettings::leapMessagesTitle))
-            f.sub.add(ToggleSetting("Send to Party", "Post the message in party chat", FishSettings::leapMessagesParty))
-            f.sub.add(ToggleSetting("Sound", "", FishSettings::leapMessagesSound))
-            dungeon.features.add(f)
-        }
-        run {
             val f = Feature("Key Notifier", Dungeons::enableKeyNotifier)
             f.sub.add(ToggleSetting("Title", "", FishSettings::keyNotifierTitle))
             f.sub.add(ToggleSetting("Chat", "", FishSettings::keyNotifierChat))
@@ -344,9 +335,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
         run {
-            val f = Feature("Leap Menu", FishSettings::leapMenuEnabled)
-            f.sub.add(SubcategoryHeader("Custom 2x2 Spirit Leap GUI — click a cell or press 1-4"))
-            f.sub.add(SliderIntSetting("Scale %", "", FishSettings::leapMenuScale, 40, 150))
+            val f = Feature("Leap", FishSettings::leapMenuEnabled)
+            f.sub.add(SubcategoryHeader("── Menu (custom 2x2 Spirit Leap GUI, click a cell or press 1-4) ──"))
+            f.sub.add(SliderIntSetting("Menu Scale %", "", FishSettings::leapMenuScale, 40, 150))
             f.sub.add(ToggleSetting("Number Keybinds", "1-4 leap to that cell", FishSettings::leapMenuKeybinds))
             f.sub.add(ToggleSetting("Left-Click Only", "Ignore right/middle click", FishSettings::leapMenuLeftClickOnly))
             f.sub.add(ToggleSetting("Tint Dead Players", "", FishSettings::leapMenuTintDead))
@@ -357,6 +348,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 { v -> FishSettings.leapMenuSort = arrayOf("Class Order", "Name A-Z").indexOf(v).coerceAtLeast(0) }))
             f.sub.add(InputSetting("Class Order", "Comma-separated: MAGE,BERSERK,ARCHER,HEALER,TANK",
                 { FishSettings.leapMenuClassOrder }, { v -> FishSettings.leapMenuClassOrder = v }))
+            f.sub.add(SubcategoryHeader("── Message (on Spirit Leap) ──"))
+            f.sub.add(ToggleSetting("Leap Message", "", Dungeons::enableLeapMessages))
+            f.sub.add(LabelSetting("Placeholders", "{name} target · {class} class · {c} class letter · & for colours"))
+            f.sub.add(InputSetting("Message Text", "",
+                { FishSettings.leapMessagesText }, { v -> FishSettings.leapMessagesText = v ?: "" }))
+            f.sub.add(ToggleSetting("As Title", "", FishSettings::leapMessagesTitle))
+            f.sub.add(ToggleSetting("Send to Party", "Post the message in party chat", FishSettings::leapMessagesParty))
+            f.sub.add(ToggleSetting("Cue Sound", "", FishSettings::leapMessagesSound))
             dungeon.features.add(f)
         }
         run {

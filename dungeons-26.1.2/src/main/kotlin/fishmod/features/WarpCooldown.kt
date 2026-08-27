@@ -38,14 +38,16 @@ object WarpCooldown {
         Events.ON_GAME_MESSAGE.register { text ->
             val s = COLOR.replace(text.string, "")
             if (ENTERED.matcher(s).find()) {
-                enteredAt = System.currentTimeMillis()
+                // Start the clock on the FIRST "entered" line only — party members' lines print
+                // over a couple of seconds and were each resetting it to full ("always 30s").
+                if (remainingMs() <= 0L) enteredAt = System.currentTimeMillis()
             } else if (Dungeons.enableWarpCooldown && FishSettings.warpAnnounceKick && KICKED.matcher(s).matches()) {
                 val mc = Minecraft.getInstance()
                 mc.execute { mc.connection?.sendCommand("pc ${FishSettings.warpKickText}") }
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { false }
+        Events.ON_WORLD_CHANGE.register { enteredAt = 0L; false }
     }
 
     private fun remainingMs(): Long {

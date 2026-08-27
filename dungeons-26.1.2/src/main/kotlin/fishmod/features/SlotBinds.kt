@@ -163,14 +163,14 @@ object SlotBinds {
     }
 
     private fun border(ctx: GuiGraphicsExtractor, x: Int, y: Int, color: Int) {
-        ctx.fill(x - 1, y - 1, x + 17, y + 1, color)
-        ctx.fill(x - 1, y + 15, x + 17, y + 17, color)
-        ctx.fill(x - 1, y - 1, x + 1, y + 17, color)
-        ctx.fill(x + 15, y - 1, x + 17, y + 17, color)
+        // 1px outline flush to the 16x16 slot.
+        ctx.fill(x, y, x + 16, y + 1, color)
+        ctx.fill(x, y + 15, x + 16, y + 16, color)
+        ctx.fill(x, y, x + 1, y + 16, color)
+        ctx.fill(x + 15, y, x + 16, y + 16, color)
     }
 
-    /** Diagonal line as a run of small filled squares stepped along the path (no pose transform,
-     *  so it can't be defeated by matrix handling — if the slot borders draw, this draws). */
+    /** 1px diagonal connector as a run of single pixels stepped along the path. */
     private fun line(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
         val dx = x2 - x1
         val dy = y2 - y1
@@ -179,7 +179,7 @@ object SlotBinds {
         for (i in 0..steps) {
             val x = x1 + dx * i / steps
             val y = y1 + dy * i / steps
-            ctx.fill(x - 1, y - 1, x + 2, y + 2, color)
+            ctx.fill(x, y, x + 1, y + 1, color)
         }
     }
 }
