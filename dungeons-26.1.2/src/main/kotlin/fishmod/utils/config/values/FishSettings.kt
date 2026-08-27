@@ -404,6 +404,11 @@ object FishSettings {
     // Quiz (Oruo trivia)
     @ConfigValue @JvmField var quizSolver: Boolean = true
     @ConfigValue @JvmField var quizColor: Int = 0xC055FF55.toInt()
+    // Water Board
+    @ConfigValue @JvmField var waterSolver: Boolean = true
+    @ConfigValue @JvmField var waterOptimized: Boolean = false
+    @ConfigValue @JvmField var waterFirstColor: Int = 0x8055FF55.toInt()
+    @ConfigValue @JvmField var waterSecondColor: Int = 0xC0FFAA00.toInt()
 
     // ── F7 Terminal Solver (Odin TerminalSolver port) ──────────────────────────
     @ConfigValue @JvmField var terminalSolverEnabled: Boolean = false

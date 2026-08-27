@@ -38,9 +38,17 @@ object PuzzleSolvers {
             BlazeSolver("Lower Blaze", ascending = false),
             BlazeSolver("Higher Blaze", ascending = true),
             QuizSolver(),
+            WaterSolver(),
         )
 
         ClientTickEvents.END_CLIENT_TICK.register { mc -> tick(mc) }
+
+        net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register { _, _, hand, hit ->
+            if (hand == net.minecraft.world.InteractionHand.MAIN_HAND && enabled()) {
+                active?.onBlockClick(hit.blockPos)
+            }
+            net.minecraft.world.InteractionResult.PASS
+        }
 
         Events.ON_GAME_MESSAGE.register { text ->
             val a = active
@@ -56,6 +64,19 @@ object PuzzleSolvers {
         RenderingEvents.FILLED_BLOCK.register { _, matrices, vc ->
             if (enabled()) active?.renderWorld(matrices, vc)
         }
+
+        net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(
+            net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents.AfterTranslucentFeatures { ctx ->
+                val a = active ?: return@AfterTranslucentFeatures
+                if (!enabled()) return@AfterTranslucentFeatures
+                val matrices = ctx.poseStack() ?: return@AfterTranslucentFeatures
+                val cam = ctx.levelState()?.cameraRenderState?.pos ?: return@AfterTranslucentFeatures
+                matrices.pushPose()
+                matrices.translate(-cam.x, -cam.y, -cam.z)
+                a.renderWorldText(ctx, matrices)
+                matrices.popPose()
+            }
+        )
     }
 
     private fun currentRoom(mc: Minecraft): Room? {

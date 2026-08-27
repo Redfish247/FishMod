@@ -229,6 +229,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(SubcategoryHeader("Quiz"))
             f.sub.add(ToggleSetting("Quiz Solver", "", FishSettings::quizSolver))
             f.sub.add(ColorPickerSetting("Quiz Color", "", FishSettings::quizColor))
+            f.sub.add(SubcategoryHeader("Water Board"))
+            f.sub.add(ToggleSetting("Water Solver", "", FishSettings::waterSolver))
+            f.sub.add(ToggleSetting("Optimized Solutions", "", FishSettings::waterOptimized))
+            f.sub.add(ColorPickerSetting("Next Lever", "", FishSettings::waterFirstColor))
+            f.sub.add(ColorPickerSetting("Then Lever", "", FishSettings::waterSecondColor))
             dungeon.features.add(f)
         }
         run {
