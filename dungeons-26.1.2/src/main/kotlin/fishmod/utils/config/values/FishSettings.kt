@@ -446,6 +446,12 @@ object FishSettings {
     @ConfigValue @JvmField var arrowHitSoundVolume: Int = 100
     @ConfigValue @JvmField var arrowHitSoundPitch: Double = 1.4
 
+    // ── Misc client tweaks ───────────────────────────────────────────────────
+    @ConfigValue @JvmField var noCursorReset: Boolean = false
+    @ConfigValue @JvmField var arrowFixEnabled: Boolean = false
+    @ConfigValue @JvmField var monoAudioEnabled: Boolean = false
+    @ConfigValue @JvmField var swordBlockingEnabled: Boolean = false
+
     // ── Block Overlay ─────────────────────────────────────────────────────────
     @ConfigValue @JvmField var blockOverlayEnabled: Boolean = false
     @ConfigValue @JvmField var blockOverlayMode: Int = 2 // 0 outline, 1 fill, 2 filled outline

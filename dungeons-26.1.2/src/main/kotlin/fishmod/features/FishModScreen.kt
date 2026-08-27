@@ -141,6 +141,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         general.features.add(Feature("Smart Copy Chat", FishSettings::smartCopyChat))
         general.features.add(Feature("Compact Chat", FishSettings::chatCompact))
+        general.features.add(Feature("No Cursor Reset", FishSettings::noCursorReset))
+        general.features.add(Feature("Arrow Fix (shortbow pullback)", FishSettings::arrowFixEnabled))
+        general.features.add(Feature("Mono Audio", FishSettings::monoAudioEnabled))
         run {
             val f = Feature("Guild Bridge Bot", FishSettings::bridgeBotEnabled)
             f.sub.add(SubcategoryHeader("Reformats \"Guild > Bot: Player » msg\" and hides the raw bot line"))
