@@ -91,6 +91,11 @@ object DungeonMapSettings {
     @JvmField
     var mapInfoShowCrypts: Boolean = true
 
+    /** When true, the Mimic / Prince / Crypts pieces drop off the Info HUD once they're done. */
+    @ConfigValue
+    @JvmField
+    var mapInfoHideCompleted: Boolean = false
+
     // Info HUD's secrets line normally shows found-needed-total; when true, the trailing number
     // becomes points still missing for a 300 instead of the total secret count.
     @ConfigValue

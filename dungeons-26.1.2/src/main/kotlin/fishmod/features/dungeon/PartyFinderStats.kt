@@ -17,6 +17,7 @@ object PartyFinderStats {
 
     @JvmStatic
     fun onWhisper(sender: String?) {
+        if (!fishmod.utils.Location.inDungeonHub()) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || sender == null) return
         if (sender.equals(mc.player!!.name.string, ignoreCase = true)) return

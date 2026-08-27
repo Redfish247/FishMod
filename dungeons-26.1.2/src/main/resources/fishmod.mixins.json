@@ -54,6 +54,7 @@
     "ChannelMixin",
     "SoundEngineMixin",
     "LivingEntityArrowFixMixin",
+    "LevelTimeMixin",
     "PlayerListHudMixin",
     "PlayerNameLabelMixin",
     "RecipeBookScreenMixin",

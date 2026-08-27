@@ -97,6 +97,9 @@ enum class Location(val name2: String) {
         }
 
         @JvmStatic
+        fun inDungeonHub(): Boolean = inSkyblockFlag && currentLocation == DUNGEON_HUB
+
+        @JvmStatic
         fun getCurrentLocation(): Location = currentLocation
 
         @JvmStatic

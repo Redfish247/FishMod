@@ -605,6 +605,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting(".transfer / .pt / .ptme", "", FishSettings::pcActionTransfer))
             f.sub.add(ToggleSetting(".promote", "", FishSettings::pcActionPromote))
             f.sub.add(ToggleSetting(".demote", "", FishSettings::pcActionDemote))
+            party.features.add(f)
+        }
+        run {
+            val f = Feature("Command Access List", null, null)
+            f.sub.add(SubcategoryHeader("Who can trigger .kick / .warp / .transfer / .promote / .demote"))
             f.sub.add(DropdownSetting("Who Can Trigger", "", arrayOf("off", "self", "whitelist", "blacklist", "everyone"),
                 { FishSettings.pcPartyActionsMode }, { v -> FishSettings.pcPartyActionsMode = v }))
             val paWhitelist = InputSetting("Whitelist", "", FishSettings::pcPartyActionsWhitelist)
@@ -896,25 +901,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeonMap.features.add(f)
         }
         run {
-            val f = Feature("Background Image", { fishmod.utils.config.values.DungeonMapSettings.mapImageSelection.isNotEmpty() },
-                { v -> fishmod.utils.config.values.DungeonMapSettings.mapImageSelection = if (v) fishmod.utils.config.values.DungeonMapSettings.mapImageSelection else "" })
-            f.sub.add(ButtonSetting("Open Images Folder", "") {
-                try {
-                    fishmod.features.dungeon.map.MapImageLoader.init()
-                    net.minecraft.util.Util.getPlatform().openUri(fishmod.features.dungeon.map.MapImageLoader.getImagesPath().toUri())
-                } catch (ignored: Exception) {}
-            })
-            val imageNames: Array<String> = run {
-                val names = fishmod.features.dungeon.map.MapImageLoader.getImageNames()
-                (if (names.isEmpty()) listOf("No image") else names).toTypedArray()
-            }
-            f.sub.add(DropdownSetting("Image", "", imageNames,
-                { if (fishmod.utils.config.values.DungeonMapSettings.mapImageSelection in imageNames) fishmod.utils.config.values.DungeonMapSettings.mapImageSelection else imageNames[0] },
-                { v -> fishmod.utils.config.values.DungeonMapSettings.mapImageSelection = v }))
-            f.sub.add(SliderIntSetting("Image Alpha", "", fishmod.utils.config.values.DungeonMapSettings::mapImageAlpha, 0, 255))
-            dungeonMap.features.add(f)
-        }
-        run {
             val f = Feature("Info HUD", { fishmod.utils.config.values.DungeonMapSettings.mapInfoEnabled == true },
                 { v -> fishmod.utils.config.values.DungeonMapSettings.mapInfoEnabled = v })
             f.sub.add(ToggleSetting("No Words", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoNoWords))
@@ -926,6 +912,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Show Mimic", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowMimic))
             f.sub.add(ToggleSetting("Show Prince", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowPrince))
             f.sub.add(ToggleSetting("Show Crypts", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowCrypts))
+            f.sub.add(ToggleSetting("Hide When Done", "Drop Mimic/Prince/Crypts once complete", fishmod.utils.config.values.DungeonMapSettings::mapInfoHideCompleted))
             dungeonMap.features.add(f)
         }
         run {

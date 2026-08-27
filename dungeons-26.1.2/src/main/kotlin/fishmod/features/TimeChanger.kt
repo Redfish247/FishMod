@@ -1,12 +1,12 @@
 package fishmod.features
 
 import fishmod.utils.config.values.FishSettings
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import java.time.LocalTime
 
 /**
- * Client-side world time override (ported from NoammAddons' TimeChanger). Re-applies the chosen
- * time each tick so the server's day/night cycle can't fight it.
+ * Client-side world-time override (NoammAddons' TimeChanger). The value is injected into the
+ * level's clock getter every frame ([fishmod.mixin.LevelTimeMixin]) rather than pushed once per
+ * tick — pushing per tick fought the server's own time packet and flickered.
  */
 object TimeChanger {
 
@@ -17,14 +17,15 @@ object TimeChanger {
     fun modes(): Array<String> = MODES.toTypedArray()
 
     @JvmStatic
-    fun init() {
-        ClientTickEvents.END_CLIENT_TICK.register { mc ->
-            if (!FishSettings.timeChangerEnabled) return@register
-            val level = mc.level ?: return@register
-            val idx = MODES.indexOf(FishSettings.timeChangerMode)
-            val time = VALUES.getOrElse(idx) { realTimeTicks() }
-            level.setTimeFromServer(time)
-        }
+    fun init() { /* nothing — the mixin reads [overrideTicks] directly */ }
+
+    @JvmStatic
+    fun active(): Boolean = FishSettings.timeChangerEnabled
+
+    @JvmStatic
+    fun overrideTicks(): Long {
+        val idx = MODES.indexOf(FishSettings.timeChangerMode)
+        return VALUES.getOrElse(idx) { realTimeTicks() }
     }
 
     private fun realTimeTicks(): Long {
