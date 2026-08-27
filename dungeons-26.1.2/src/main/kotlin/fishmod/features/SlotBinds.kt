@@ -6,6 +6,8 @@ import fishmod.mixin.accessors.KeyBindingAccessor
 import fishmod.utils.Keybinds
 import fishmod.utils.config.FolderUtility
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.rendering.DrawEvents
+import fishmod.utils.rendering.drawevents.SlotEvent
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -31,6 +33,11 @@ object SlotBinds {
     private val binds = LinkedHashMap<Int, Int>()
     private var previousSlot: Int? = null
     private var loaded = false
+
+    @JvmStatic
+    fun init() {
+        DrawEvents.INVENTORY_SLOT_AFTER.register(SlotEvent { ctx, _, x, y -> drawSlot(ctx, x, y) })
+    }
 
     private fun ensureLoaded() {
         if (loaded) return
@@ -125,33 +132,33 @@ object SlotBinds {
     private fun feedback(msg: String) =
         fishmod.utils.Misc.addChatMessage(Component.literal("§dSlot Binds §7» §r$msg"))
 
-    @JvmStatic
-    fun render(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
-        if (!FishSettings.slotBindsEnabled || !FishSettings.slotBindsShow || screen !is InventoryScreen) return
+    /**
+     * Drawn per-slot from [DrawEvents.INVENTORY_SLOT_AFTER] (same reliable pass the rarity
+     * background uses). Coords here are GUI-local — [net.minecraft.world.inventory.Slot.x]/`y` are
+     * in the same space, so no leftPos/topPos offset is needed.
+     */
+    private fun drawSlot(ctx: GuiGraphicsExtractor, x: Int, y: Int) {
+        if (!FishSettings.slotBindsEnabled || !FishSettings.slotBindsShow) return
+        val screen = Minecraft.getInstance().screen as? InventoryScreen ?: return
         ensureLoaded()
         if (binds.isEmpty()) return
-        val acc = screen as HandledScreenAccessor
-        val bgX = acc.bgX
-        val bgY = acc.bgY
-        val color = FishSettings.slotBindsColor
         val slots = screen.menu.slots
+        val self = slots.firstOrNull { it.x == x && it.y == y } ?: return
+        val idx = self.index
+        val partner = partnerOf(idx) ?: return
+        val other = slots.getOrNull(partner) ?: slots.firstOrNull { it.index == partner } ?: return
 
-        // Compute hover geometrically from the passed cursor rather than trusting the vanilla
-        // hoveredSlot, which isn't reliably populated during the render-state extraction pass.
-        fun over(s: net.minecraft.world.inventory.Slot): Boolean =
-            mouseX >= bgX + s.x && mouseX < bgX + s.x + 16 && mouseY >= bgY + s.y && mouseY < bgY + s.y + 16
+        if (FishSettings.slotBindsHoverOnly) {
+            val hov = (screen as HandledScreenAccessor).`fishmod$getHoveredSlot`()?.index
+            if (hov != idx && hov != partner) return
+        }
 
-        for ((inv, hb) in binds) {
-            val s1 = slots.getOrNull(inv) ?: continue
-            val s2 = slots.getOrNull(hb) ?: continue
-            if (FishSettings.slotBindsHoverOnly && !over(s1) && !over(s2)) continue
-            if (FishSettings.slotBindsLine) {
-                line(ctx, bgX + s1.x + 8, bgY + s1.y + 8, bgX + s2.x + 8, bgY + s2.y + 8, color)
-            }
-            if (FishSettings.slotBindsBorder) {
-                border(ctx, bgX + s1.x, bgY + s1.y, color)
-                border(ctx, bgX + s2.x, bgY + s2.y, color)
-            }
+        val color = FishSettings.slotBindsColor
+        if (FishSettings.slotBindsBorder) border(ctx, x, y, color)
+        // Draw the connector once per pair, on the later-iterated (higher-index) endpoint so it
+        // lands on top of the slots it crosses.
+        if (FishSettings.slotBindsLine && idx > partner) {
+            line(ctx, x + 8, y + 8, other.x + 8, other.y + 8, color)
         }
     }
 

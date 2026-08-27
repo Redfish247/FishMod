@@ -2,21 +2,18 @@ package fishmod.features
 
 import fishmod.utils.config.values.Visual
 import fishmod.utils.data.ItemUtil
-import fishmod.utils.rendering.DrawEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.InteractionResult
-import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.ShovelItem
 import net.minecraft.world.level.block.Blocks
 
 /**
- * Small quality-of-life client tweaks ported from Odin / NoammAddons. The first three are gated
- * behind the [Visual.renderOptimizer] master switch (the "Render Optimizer" feature):
+ * Small client tweaks gated behind the [Visual.renderOptimizer] master switch (the "Render
+ * Optimizer" feature):
  *  - noSwingAnimation: zero the first-person hand-swing state each tick
  *  - stopShovelFlattening: cancel the shovel "make path" interaction on dirt-likes
- * [highlightProtectedItem] is independent (its own Visuals feature).
+ * (Hide Nearby Players / Hide Dead Entities live in EntityRendererMixin.)
  */
 object VisualTweaks {
 
@@ -47,14 +44,5 @@ object VisualTweaks {
             }
             InteractionResult.PASS
         })
-
-        DrawEvents.INVENTORY_SLOT_BEFORE.register(::drawProtected)
-    }
-
-    @JvmStatic
-    fun drawProtected(ctx: GuiGraphicsExtractor, stack: ItemStack?, x: Int, y: Int) {
-        if (!Visual.highlightProtectedItem || stack == null || stack.isEmpty) return
-        if (!ItemUtil.containsIgnoreCaseLore(stack, "this item is protected")) return
-        ctx.fill(x, y, x + 16, y + 16, 0x66FF3030.toInt())
     }
 }

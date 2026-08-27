@@ -9,6 +9,7 @@ import fishmod.utils.config.values.Dungeons
 import fishmod.utils.config.values.DungeonMapSettings
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.config.values.Floor7
+import fishmod.utils.config.values.Visual
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.dungeon.Section
 import fishmod.utils.dungeon.Split
@@ -29,6 +30,7 @@ object FishConfig {
             Split::class.java,
             Dungeons::class.java,
             Floor7::class.java,
+            Visual::class.java,
             Buttons::class.java,
             F7Huds::class.java,
             DungeonMapSettings::class.java

@@ -511,10 +511,6 @@ object FishSettings {
     @ConfigValue @JvmField var witherDragonsSoloDebuffAll: Boolean = true
 
     // ── Leap Counter ─────────────────────────────────────────────────────────
-    @ConfigValue @JvmField var leapCounterEnabled: Boolean = false
-    @ConfigValue @JvmField var leapCounterHudX: Int = 10
-    @ConfigValue @JvmField var leapCounterHudY: Int = 160
-    @ConfigValue @JvmField var leapCounterScale: Double = 1.0
 
     // ── Auto GFS (refill dungeon consumables from your own sacks) ─────────────
     @ConfigValue @JvmField var autoGfsEnabled: Boolean = false

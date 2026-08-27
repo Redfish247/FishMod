@@ -431,11 +431,11 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.MageBeam.init()
         fishmod.features.SpringBoots.init()
         fishmod.features.VisualTweaks.init()
+        fishmod.features.SlotBinds.init()
         fishmod.features.dungeon.DungeonAbilities.init()
         fishmod.features.dungeon.f6.TerracottaTimer.init()
         fishmod.features.dungeon.f7.dragons.WitherDragons.init()
         fishmod.features.TacTimer.init()
-        fishmod.features.dungeon.LeapCounter.init()
         fishmod.features.dungeon.AutoGFS.init()
         fishmod.features.dungeon.LeapAnnounce.init()
         fishmod.features.dungeon.KeyNotifier.init()
@@ -1168,7 +1168,6 @@ class FishModInit : ModInitializer {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "relic_timer")) { ctx, tickCounter -> fishmod.features.dungeon.f7.M7Relics.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "spring_boots")) { ctx, tickCounter -> fishmod.features.SpringBoots.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "tac_timer")) { ctx, tickCounter -> fishmod.features.TacTimer.renderHud(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "leap_counter")) { ctx, tickCounter -> fishmod.features.dungeon.LeapCounter.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "wither_dragons")) { ctx, tickCounter -> fishmod.features.dungeon.f7.dragons.WitherDragons.renderHud(ctx, tickCounter) }
         fishmod.utils.SkyblockItems.initAsync()
 

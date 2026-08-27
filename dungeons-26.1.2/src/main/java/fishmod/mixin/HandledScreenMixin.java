@@ -29,7 +29,6 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         SearchBar.render(context, mouseX, mouseY, deltaTicks);
-        fishmod.features.SlotBinds.render(context, mouseX, mouseY, (AbstractContainerScreen<?>) (Object) this);
     }
 
     @Inject(method = "extractSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;item(Lnet/minecraft/world/item/ItemStack;III)V"))

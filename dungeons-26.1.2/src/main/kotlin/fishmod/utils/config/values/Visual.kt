@@ -29,7 +29,6 @@ object Visual {
 
     @ConfigValue @JvmField var drawStarCount: Boolean = false
 
-    @ConfigValue @JvmField var highlightProtectedItem: Boolean = false
 
     @ConfigValue @JvmField var compactHoppityMsgs: Boolean = false
 

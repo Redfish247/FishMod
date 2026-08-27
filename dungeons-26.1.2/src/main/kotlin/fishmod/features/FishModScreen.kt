@@ -284,7 +284,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
         dungeon.features.add(Feature("Terracotta Timer", FishSettings::terracottaTimerEnabled))
-        dungeon.features.add(Feature("Leap Counter", FishSettings::leapCounterEnabled))
         run {
             val f = Feature("Auto GFS", FishSettings::autoGfsEnabled)
             f.sub.add(SubcategoryHeader("Refills low consumables from YOUR sacks with /gfs while in a dungeon"))
@@ -615,7 +614,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Stop Shovel Flattening", "Cancel the shovel make-path interaction", Visual::stopShovelFlattening))
             visuals.features.add(f)
         }
-        visuals.features.add(Feature("Highlight Protected Items", Visual::highlightProtectedItem))
         run {
             val f = Feature("Gyro Helper", FishSettings::gyroHelperEnabled)
             f.sub.add(ColorPickerSetting("Box Color", "", FishSettings::gyroBoxColor))
