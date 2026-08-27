@@ -446,6 +446,8 @@ object FishSettings {
     @ConfigValue @JvmField var blockOverlayMode: Int = 2 // 0 outline, 1 fill, 2 filled outline
     @ConfigValue @JvmField var blockOverlayFillColor: Int = 0x40FFFFFF
     @ConfigValue @JvmField var blockOverlayOutlineColor: Int = 0xFFFFFFFF.toInt()
+    /** Extra multiplier (0-100%) on the fill alpha, on top of the fill colour's own alpha. */
+    @ConfigValue @JvmField var blockOverlayOpacity: Int = 100
     @ConfigValue @JvmField var blockOverlayPhase: Boolean = false
 
     // ── Wither ESP (F7) ──────────────────────────────────────────────────────

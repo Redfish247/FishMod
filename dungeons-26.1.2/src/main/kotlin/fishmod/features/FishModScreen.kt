@@ -590,6 +590,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 { arrayOf("Outline", "Fill", "Filled Outline")[FishSettings.blockOverlayMode] },
                 { v -> FishSettings.blockOverlayMode = arrayOf("Outline", "Fill", "Filled Outline").indexOf(v).coerceAtLeast(0) }))
             f.sub.add(ColorPickerSetting("Fill Color", "", FishSettings::blockOverlayFillColor))
+            f.sub.add(SliderIntSetting("Fill Opacity %", "", FishSettings::blockOverlayOpacity, 0, 100))
             f.sub.add(ColorPickerSetting("Outline Color", "", FishSettings::blockOverlayOutlineColor))
             f.sub.add(ToggleSetting("Phase (through walls)", "", FishSettings::blockOverlayPhase))
             visuals.features.add(f)

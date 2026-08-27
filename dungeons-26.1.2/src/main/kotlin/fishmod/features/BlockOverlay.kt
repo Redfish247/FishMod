@@ -39,7 +39,11 @@ object BlockOverlay {
             .move(pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble()).inflate(0.002)
 
         val mode = FishSettings.blockOverlayMode // 0 outline, 1 fill, 2 filled outline
-        if (mode != 0) RenderUtils.renderFilled(matrices, vc, box, RenderUtils.toFloats(FishSettings.blockOverlayFillColor))
+        if (mode != 0) {
+            val fill = RenderUtils.toFloats(FishSettings.blockOverlayFillColor)
+            fill[3] *= FishSettings.blockOverlayOpacity.coerceIn(0, 100) / 100f
+            RenderUtils.renderFilled(matrices, vc, box, fill)
+        }
         if (mode != 1) RenderUtils.renderOutline(matrices, vc, box, RenderUtils.toFloats(FishSettings.blockOverlayOutlineColor))
     }
 }
