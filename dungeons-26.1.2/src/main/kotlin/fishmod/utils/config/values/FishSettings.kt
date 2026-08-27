@@ -423,6 +423,9 @@ object FishSettings {
     @ConfigValue @JvmField var boulderSolver: Boolean = true
     @ConfigValue @JvmField var boulderShowAll: Boolean = true
     @ConfigValue @JvmField var boulderColor: Int = 0x9955FF55.toInt()
+    // Ice Fill
+    @ConfigValue @JvmField var iceFillSolver: Boolean = true
+    @ConfigValue @JvmField var iceFillColor: Int = 0xFFFF55FF.toInt()
 
     // ── Arrow Align (F7 P3 device) ─────────────────────────────────────────────
     @ConfigValue @JvmField var arrowAlignEnabled: Boolean = false

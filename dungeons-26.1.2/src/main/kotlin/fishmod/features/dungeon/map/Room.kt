@@ -320,11 +320,12 @@ class Room(
         }
 
     /** NoammAddons `ScanUtils.getRealCoord`: centre-relative, north-up [local] -> world. */
-    fun realCoord(local: BlockPos): BlockPos? {
+    @JvmOverloads
+    fun realCoord(local: BlockPos, deg: Int = rotationDegrees): BlockPos? {
         val c = centerBlock ?: return null
         val x = local.x; val z = local.z
         val rx: Int; val rz: Int
-        when (rotationDegrees) {
+        when (((deg % 360) + 360) % 360) {
             90 -> { rx = z; rz = -x }
             180 -> { rx = -x; rz = -z }
             270 -> { rx = -z; rz = x }

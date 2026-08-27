@@ -43,6 +43,7 @@ object PuzzleSolvers {
             TPMazeSolver(),
             TicTacToeSolver(),
             BoulderSolver(),
+            IceFillSolver(),
         )
 
         ClientTickEvents.END_CLIENT_TICK.register { mc -> tick(mc) }

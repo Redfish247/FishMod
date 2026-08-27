@@ -250,6 +250,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Boulder Solver", "", FishSettings::boulderSolver))
             f.sub.add(ToggleSetting("Show All Clicks", "", FishSettings::boulderShowAll))
             f.sub.add(ColorPickerSetting("Boulder Color", "", FishSettings::boulderColor))
+            f.sub.add(SubcategoryHeader("Ice Fill"))
+            f.sub.add(ToggleSetting("Ice Fill Solver", "", FishSettings::iceFillSolver))
+            f.sub.add(ColorPickerSetting("Ice Fill Color", "", FishSettings::iceFillColor))
             solvers.features.add(f)
         }
         run {
