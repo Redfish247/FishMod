@@ -282,6 +282,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
         run {
+            val f = Feature("Dungeon Abilities", FishSettings::dungeonAbilitiesEnabled)
+            f.sub.add(SubcategoryHeader("Bind a key under Controls: FishMod: Use Dungeon Ability"))
+            f.sub.add(ToggleSetting("Auto Ult", "Auto-drop on Maxor/Goldor/Sadan enrage lines", FishSettings::dungeonAbilitiesAutoUlt))
+            dungeon.features.add(f)
+        }
+        run {
             val f = Feature("Blessing Display", FishSettings::blessingDisplayEnabled)
             f.sub.add(ToggleSetting("Power", "", FishSettings::blessingPower))
             f.sub.add(ColorPickerSetting("Power Color", "", FishSettings::blessingPowerColor))

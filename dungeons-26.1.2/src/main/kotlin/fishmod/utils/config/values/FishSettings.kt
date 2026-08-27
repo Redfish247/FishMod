@@ -484,6 +484,10 @@ object FishSettings {
     @ConfigValue @JvmField var springBootsHudY: Int = 200
     @ConfigValue @JvmField var springBootsScale: Double = 1.0
 
+    // ── Dungeon Abilities ────────────────────────────────────────────────────
+    @ConfigValue @JvmField var dungeonAbilitiesEnabled: Boolean = false
+    @ConfigValue @JvmField var dungeonAbilitiesAutoUlt: Boolean = false
+
     // ── Slot Binds ───────────────────────────────────────────────────────────
     @ConfigValue @JvmField var slotBindsEnabled: Boolean = false
     @ConfigValue @JvmField var slotBindsShow: Boolean = true
