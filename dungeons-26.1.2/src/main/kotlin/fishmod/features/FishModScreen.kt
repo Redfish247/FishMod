@@ -158,7 +158,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(SliderDoubleSetting("Swing X", "1 = normal", FishSettings::animSwingX, 0.0, 2.0))
             f.sub.add(SliderDoubleSetting("Swing Y", "1 = normal", FishSettings::animSwingY, 0.0, 2.0))
             f.sub.add(SliderDoubleSetting("Swing Z", "1 = normal", FishSettings::animSwingZ, 0.0, 2.0))
-            f.sub.add(SliderDoubleSetting("Swing Speed", "0 normal · 1 instant · -2 slow", FishSettings::animSwingSpeed, -2.0, 1.0))
+            f.sub.add(SliderDoubleSetting("Swing Speed", "0 normal · +5 fast · -5 slow", FishSettings::animSwingSpeed, -5.0, 5.0))
             f.sub.add(ToggleSetting("Ignore Haste", "Swing speed isn't affected by Haste", FishSettings::animIgnoreHaste))
             f.sub.add(ToggleSetting("No Equip Animation", "", FishSettings::animNoEquip))
             f.sub.add(ToggleSetting("No Hand Movement", "Stop the item bobbing when you look around", FishSettings::animNoHandMove))
@@ -348,9 +348,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 { v -> FishSettings.leapMenuSort = arrayOf("Class Order", "Name A-Z").indexOf(v).coerceAtLeast(0) }))
             f.sub.add(InputSetting("Class Order", "Comma-separated: MAGE,BERSERK,ARCHER,HEALER,TANK",
                 { FishSettings.leapMenuClassOrder }, { v -> FishSettings.leapMenuClassOrder = v }))
-            f.sub.add(SubcategoryHeader("── Message (on Spirit Leap) ──"))
+            f.sub.add(SubcategoryHeader("── Message ──"))
             f.sub.add(ToggleSetting("Leap Message", "", Dungeons::enableLeapMessages))
-            f.sub.add(LabelSetting("Placeholders", "{name} target · {class} class · {c} class letter · & for colours"))
+            f.sub.add(LabelSetting("{name} target  {class} class", "{c} class letter  ·  & = colours"))
             f.sub.add(InputSetting("Message Text", "",
                 { FishSettings.leapMessagesText }, { v -> FishSettings.leapMessagesText = v ?: "" }))
             f.sub.add(ToggleSetting("As Title", "", FishSettings::leapMessagesTitle))
@@ -370,7 +370,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         dungeon.features.add(Feature("Terracotta Timer", FishSettings::terracottaTimerEnabled))
         run {
             val f = Feature("Architect Draft Refill", FishSettings::architectDraftRefill)
-            f.sub.add(SubcategoryHeader("Runs /gfs ARCHITECT_FIRST_DRAFT 1 after you fail a puzzle"))
+            f.sub.add(SubcategoryHeader("Auto /gfs a First Draft after a puzzle fail"))
             dungeon.features.add(f)
         }
         run {
@@ -2017,6 +2017,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         open fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, settingY: Int, button: Int): Boolean = false
         open fun onDrag(mx: Int, sx: Int, sliderW: Int) {}
         open fun getHeight(): Int = ITEM_HEIGHT
+
+        /** Trim [s] with an ellipsis so it fits within [maxW] px at the sub-panel text size. */
+        protected fun fit(s: String, maxW: Int): String {
+            fun w(t: String) = Math.ceil(NvgRecorder.textWidth(t, NVG_BASE_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
+            if (maxW <= 4 || w(s) <= maxW) return s
+            var t = s
+            while (t.length > 1 && w("$t…") > maxW) t = t.dropLast(1)
+            return "$t…"
+        }
     }
 
     class SubcategoryHeader(name: String) : Setting(name, "") {
@@ -2024,7 +2033,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             roundRect(ctx, leftX, sy, rightX, sy + SUBCAT_HEIGHT, 2, 0xFF11131A.toInt())
             NvgRecorder.fillRect((leftX + 1).toFloat(), (sy + 2).toFloat(), 2f, (SUBCAT_HEIGHT - 4).toFloat(), ACCENT)
-            st(ctx, tr, name, leftX + 6, sy + (SUBCAT_HEIGHT - 8) / 2, ACCENT)
+            st(ctx, tr, fit(name, rightX - leftX - 12), leftX + 6, sy + (SUBCAT_HEIGHT - 8) / 2, ACCENT)
         }
     }
 
@@ -2505,7 +2514,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     }
 
     class LabelSetting(name: String, desc: String) : Setting(name, desc) {
-        override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {}
+        override fun getHeight(): Int = if (description.isEmpty()) ITEM_HEIGHT else TWO_LINE_H
+        override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
+            val w = rightX - leftX - 4
+            st(ctx, tr, fit(name, w), leftX + 2, sy + 2, TEXT_COLOR)
+            if (description.isNotEmpty()) st(ctx, tr, fit(description, w), leftX + 2, sy + 12, SUBTEXT_COLOR)
+        }
     }
 
     companion object {

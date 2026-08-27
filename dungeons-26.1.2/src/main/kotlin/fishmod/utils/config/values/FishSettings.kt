@@ -464,7 +464,7 @@ object FishSettings {
     @ConfigValue @JvmField var animSwingX: Double = 1.0      // 0..2 multipliers
     @ConfigValue @JvmField var animSwingY: Double = 1.0
     @ConfigValue @JvmField var animSwingZ: Double = 1.0
-    @ConfigValue @JvmField var animSwingSpeed: Double = 0.0  // -2..1 (0 = normal, 1 = instant, -2 = 3x slower)
+    @ConfigValue @JvmField var animSwingSpeed: Double = 0.0  // -5..5 (0 normal, +5 ~6x faster, -5 ~6x slower)
     @ConfigValue @JvmField var animIgnoreHaste: Boolean = false
     @ConfigValue @JvmField var animNoEquip: Boolean = false
     @ConfigValue @JvmField var animNoHandMove: Boolean = false

@@ -35,8 +35,10 @@ public abstract class LivingEntityArrowFixMixin {
         if (!FishSettings.animEnabled) return original;
         if ((Object) this != Minecraft.getInstance().player) return original;
         int base = FishSettings.animIgnoreHaste ? 6 : original;
-        if (FishSettings.animSwingSpeed == 0.0 && !FishSettings.animIgnoreHaste) return original;
-        int scaled = (int) Math.round(base * (1.0 - FishSettings.animSwingSpeed));
-        return Math.max(1, scaled);
+        double s = FishSettings.animSwingSpeed;
+        if (s == 0.0 && !FishSettings.animIgnoreHaste) return original;
+        // +s -> faster (divide), -s -> slower (multiply); s in [-5, 5].
+        double mult = s >= 0 ? 1.0 / (1.0 + s) : 1.0 + (-s);
+        return Math.max(1, (int) Math.round(base * mult));
     }
 }
