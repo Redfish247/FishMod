@@ -53,7 +53,7 @@
     "MouseMixin",
     "ChannelMixin",
     "SoundEngineMixin",
-    "PlayerEntityMixin",
+    "LivingEntityArrowFixMixin",
     "PlayerListHudMixin",
     "PlayerNameLabelMixin",
     "RecipeBookScreenMixin",
