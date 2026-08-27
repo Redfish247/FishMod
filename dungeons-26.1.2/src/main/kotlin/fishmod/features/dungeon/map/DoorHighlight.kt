@@ -50,8 +50,13 @@ object DoorHighlight {
 
     @JvmStatic
     fun init() {
-        RenderingEvents.FILLED_BLOCK.register { _, matrices, vc -> render(matrices, vc, depthTested = true) }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, matrices, vc -> render(matrices, vc, depthTested = false) }
+        // Fills go on the FILL layers, outlines on the LINE layers — never mix the two topologies on
+        // one VertexConsumer (line verts regrouped as quads render as bowtie/triangle garbage; that
+        // was exactly the "old messed up" green-plate-with-a-triangle DoorHighlight bug).
+        RenderingEvents.FILLED_BLOCK.register { _, matrices, vc -> render(matrices, vc, depthTested = true, fill = true) }
+        RenderingEvents.LINE.register { _, matrices, vc -> render(matrices, vc, depthTested = true, fill = false) }
+        RenderingEvents.NO_DEPTH_FILLED.register { _, matrices, vc -> render(matrices, vc, depthTested = false, fill = true) }
+        RenderingEvents.NO_DEPTH_LINE.register { _, matrices, vc -> render(matrices, vc, depthTested = false, fill = false) }
     }
 
     /** WITHER doors always pierce walls (knowing one is behind you is the point); the config toggle
@@ -155,28 +160,28 @@ object DoorHighlight {
         }
     }
 
-    private fun render(matrices: PoseStack, vc: VertexConsumer, depthTested: Boolean) {
+    private fun render(matrices: PoseStack, vc: VertexConsumer, depthTested: Boolean, fill: Boolean) {
         if (!active()) return
         val fullBox = DungeonMapSettings.mapDoorHighlightFullBox
         for (door in ArrayList(Scan.doors)) {
             if (door.type == Door.Type.NORMAL || !door.locked || !door.seen) continue
-            // Each door renders on exactly one layer: the no-depth pass if it should pierce walls,
-            // the depth-tested pass otherwise.
+            // Each door renders on exactly one depth layer: the no-depth pass if it should pierce
+            // walls, the depth-tested pass otherwise.
             if (throughWall(door.type) == depthTested) continue
             val hereTile = facingRoomTile(door) ?: continue
 
             val isWither = door.type == Door.Type.WITHER
             // Wither doors are always the full 3x3x5 frame box, coloured by Wither Key pickup state.
-            val fill = RenderUtils.toFloats(if (isWither) witherFill(door) else fillColor(door))
-            val line = RenderUtils.toFloats(if (isWither) witherLine(door) else lineColor(door))
+            val fillC = RenderUtils.toFloats(if (isWither) witherFill(door) else fillColor(door))
+            val lineC = RenderUtils.toFloats(if (isWither) witherLine(door) else lineColor(door))
             if (fullBox || isWither) {
                 val box = box(door)
-                RenderUtils.renderFilled(matrices, vc, box, fill)
-                RenderUtils.renderOutline(matrices, vc, box, line)
+                if (fill) RenderUtils.renderFilled(matrices, vc, box, fillC)
+                else RenderUtils.renderOutline(matrices, vc, box, lineC)
             } else {
                 val quad = faceQuad(door, hereTile) ?: continue
-                RenderUtils.renderFilledQuad(matrices, vc, quad, fill)
-                RenderUtils.renderQuadOutline(matrices, vc, quad, line)
+                if (fill) RenderUtils.renderFilledQuad(matrices, vc, quad, fillC)
+                else RenderUtils.renderQuadOutline(matrices, vc, quad, lineC)
             }
         }
     }

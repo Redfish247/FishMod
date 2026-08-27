@@ -1,8 +1,8 @@
 package fishmod.mixin;
 
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
+import fishmod.features.NoCursorReset;
 import fishmod.utils.config.values.ExtraOptions;
-import fishmod.utils.config.values.FishSettings;
 import net.minecraft.client.MouseHandler;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,15 +20,15 @@ public class MouseMixin {
         }
     }
 
-    // No Cursor Reset — skip re-centring xpos/ypos in grabMouse() so the cursor keeps its position
-    // when moving between GUIs (Odin/Noamm both left this feature stubbed; this is the direct impl).
+    // No Cursor Reset — skip the grabMouse() xpos/ypos recentre, but only within a short window
+    // around a container close (Odin's model), so normal gameplay still recentres.
     @WrapWithCondition(method = "grabMouse", at = @At(value = "FIELD", target = "Lnet/minecraft/client/MouseHandler;xpos:D", opcode = Opcodes.PUTFIELD))
     private boolean fishmod$keepXpos(MouseHandler instance, double value) {
-        return !FishSettings.noCursorReset;
+        return !NoCursorReset.shouldHook();
     }
 
     @WrapWithCondition(method = "grabMouse", at = @At(value = "FIELD", target = "Lnet/minecraft/client/MouseHandler;ypos:D", opcode = Opcodes.PUTFIELD))
     private boolean fishmod$keepYpos(MouseHandler instance, double value) {
-        return !FishSettings.noCursorReset;
+        return !NoCursorReset.shouldHook();
     }
 }
