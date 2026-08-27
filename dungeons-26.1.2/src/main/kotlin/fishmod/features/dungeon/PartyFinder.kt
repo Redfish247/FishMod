@@ -1,7 +1,11 @@
 package fishmod.features.dungeon
 
+import fishmod.utils.FishMsg
 import fishmod.utils.HypixelApi
+import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.data.PartyUtil
+import fishmod.utils.events.Events
 import fishmod.utils.rendering.DrawEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.minecraft.client.Minecraft
@@ -30,14 +34,93 @@ object PartyFinder {
     private val FLOOR = Pattern.compile("Floor:\\s*(?:Floor\\s+)?(\\w+)")
     private val COLOR = Regex("§.")
 
+    // "Party Finder > Name joined the dungeon group! (Archer Level 42)"
+    private val PF_JOIN = Pattern.compile("^Party Finder > (\\w{1,16}) joined the dungeon group! \\(\\w+ Level \\d+\\)$")
+    private val PB_LINE = Regex("^(\\d+):(\\d{2})\\s+(S\\+?)$")
+
     private val cache = ConcurrentHashMap<String, HypixelApi.DungeonData>()
     private val pending = ConcurrentHashMap.newKeySet<String>()
+    /** lowercased names kicked this lobby — re-kicked on sight until a world change clears it. */
+    private val kicked = ConcurrentHashMap.newKeySet<String>()
 
     @JvmStatic
     fun init() {
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y -> onSlot(ctx, stack, x, y) }
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines -> onTooltip(stack, lines) })
+
+        Events.ON_GAME_MESSAGE.register { text ->
+            if (FishSettings.pfAutoKick) {
+                val m = PF_JOIN.matcher(COLOR.replace(text.string, ""))
+                if (m.find()) tryAutoKick(m.group(1))
+            }
+            false
+        }
+        Events.ON_WORLD_CHANGE.register { kicked.clear(); false }
     }
+
+    // ── auto kick ───────────────────────────────────────────────────────────
+
+    private fun tryAutoKick(name: String) {
+        val mc = Minecraft.getInstance()
+        val self = mc.player?.name?.string ?: return
+        if (name.equals(self, ignoreCase = true)) return
+        if (!PartyUtil.amLeader()) return
+
+        val key = name.lowercase()
+        if (key in kicked) {
+            mc.execute {
+                FishMsg.send("§9AutoKick §7> re-kicking §e$name §7(previously kicked)")
+                Misc.executeCommand("party kick $name")
+            }
+            return
+        }
+
+        val cached = cache[key]
+        if (cached != null) { finishAutoKick(name, key, evaluate(cached)); return }
+        HypixelApi.getByNameSilent(name) { d ->
+            cache[key] = d
+            finishAutoKick(name, key, evaluate(d))
+        }
+    }
+
+    private fun finishAutoKick(name: String, key: String, reasons: List<String>) {
+        if (reasons.isEmpty() || !kicked.add(key)) return
+        Minecraft.getInstance().execute {
+            if (!PartyUtil.amLeader()) { kicked.remove(key); return@execute }
+            if (FishSettings.pfAutoKickInform) {
+                Misc.executeCommand("pc AutoKick $name: ${reasons.joinToString(", ")}")
+            } else {
+                FishMsg.send("§cKicking §e$name§c: §7${reasons.joinToString(", ")}")
+            }
+            Misc.executeCommand("party kick $name")
+        }
+    }
+
+    private fun evaluate(d: HypixelApi.DungeonData): List<String> {
+        val reasons = ArrayList<String>()
+        val floor = FishSettings.pfAutoKickFloor.coerceIn(1, 7)
+        val master = FishSettings.pfAutoKickMaster
+        val maxSec = FishSettings.pfAutoKickMaxSeconds
+        val prefix = if (master) "M" else "F"
+
+        val pb = PB_LINE.find((if (master) d.masterPbs else d.cataPbs).getOrNull(floor)?.trim() ?: "")
+        when {
+            pb == null || pb.groupValues[3] != "S+" ->
+                reasons.add("$prefix$floor PB(no S+/${fmt(maxSec)})")
+            else -> {
+                val secs = pb.groupValues[1].toInt() * 60 + pb.groupValues[2].toInt()
+                if (secs > maxSec) reasons.add("$prefix$floor PB(${fmt(secs)}/${fmt(maxSec)})")
+            }
+        }
+
+        val minK = FishSettings.pfAutoKickMinSecretsK
+        if (minK > 0 && d.totalSecrets < minK * 1000L) {
+            reasons.add("Secrets(${d.totalSecrets / 1000}k/${minK}k)")
+        }
+        return reasons
+    }
+
+    private fun fmt(sec: Int): String = "${sec / 60}:${(sec % 60).toString().padStart(2, '0')}"
 
     private fun inPartyFinder(): Boolean {
         if (!FishSettings.pfMenuEnabled) return false

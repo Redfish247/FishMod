@@ -125,6 +125,13 @@ object FishSettings {
     @ConfigValue @JvmField var pfShowSecrets: Boolean = true
     @ConfigValue @JvmField var pfShowPb: Boolean = true
     @ConfigValue @JvmField var pfTooltipMissingList: Boolean = true
+    // Party Finder auto-kick: while leader, kick a joiner whose S+ PB / secrets miss the bar.
+    @ConfigValue @JvmField var pfAutoKick: Boolean = false
+    @ConfigValue @JvmField var pfAutoKickMaster: Boolean = true
+    @ConfigValue @JvmField var pfAutoKickFloor: Int = 7
+    @ConfigValue @JvmField var pfAutoKickMaxSeconds: Int = 400
+    @ConfigValue @JvmField var pfAutoKickMinSecretsK: Int = 0
+    @ConfigValue @JvmField var pfAutoKickInform: Boolean = false
     // Compact chat: collapse identical messages seen within the last minute into one line
     // with a "(N)" count instead of repeating them.
     @ConfigValue @JvmField var chatCompact: Boolean = false

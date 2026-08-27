@@ -647,6 +647,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Missing List in Tooltip", "", FishSettings::pfTooltipMissingList))
             party.features.add(f)
         }
+        run {
+            val f = Feature("Party Finder Auto Kick", FishSettings::pfAutoKick)
+            f.sub.add(SubcategoryHeader("Only fires while you're party leader"))
+            f.sub.add(ToggleSetting("Master Mode", "Check Master PBs instead of normal", FishSettings::pfAutoKickMaster))
+            f.sub.add(SliderIntSetting("Floor", "Which floor's PB to check", FishSettings::pfAutoKickFloor, 1, 7))
+            f.sub.add(SliderIntSetting("Max S+ Seconds", "Kick if their S+ PB is slower (or missing)", FishSettings::pfAutoKickMaxSeconds, 60, 480))
+            f.sub.add(SliderIntSetting("Min Secrets (k)", "0 = don't check secrets", FishSettings::pfAutoKickMinSecretsK, 0, 200))
+            f.sub.add(ToggleSetting("Announce in Party", "Send a /pc line before kicking", FishSettings::pfAutoKickInform))
+            party.features.add(f)
+        }
 
         // ===== Visuals =====
         run {
@@ -2812,6 +2822,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Slayer Drops" -> "Session rare-drop counter"
                 "Party Finder Join Stats" -> "Whisper or PF-join prints their MP/PB/Cata/Gear to chat — also /pfs [name]"
                 "Party Finder Menu" -> "Level req + missing classes on heads, stats in party-member tooltips"
+                "Party Finder Auto Kick" -> "As leader, kick joiners who miss the S+ PB / secrets bar"
                 else -> descForExternal(name)
             }
         }
