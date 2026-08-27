@@ -237,6 +237,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(SubcategoryHeader("Creeper Beams"))
             f.sub.add(ToggleSetting("Beams Solver", "", FishSettings::beamsSolver))
             f.sub.add(ToggleSetting("Beams Tracer", "", FishSettings::beamsTracer))
+            f.sub.add(SubcategoryHeader("Teleport Maze"))
+            f.sub.add(ToggleSetting("TP Maze Solver", "", FishSettings::tpMazeSolver))
+            f.sub.add(ColorPickerSetting("Next Pad", "", FishSettings::tpMazeNextColor))
+            f.sub.add(ColorPickerSetting("Visited Pad", "", FishSettings::tpMazeVisitedColor))
             dungeon.features.add(f)
         }
         run {

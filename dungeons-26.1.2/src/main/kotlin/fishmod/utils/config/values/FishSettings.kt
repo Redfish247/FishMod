@@ -412,6 +412,10 @@ object FishSettings {
     // Creeper Beams
     @ConfigValue @JvmField var beamsSolver: Boolean = true
     @ConfigValue @JvmField var beamsTracer: Boolean = false
+    // Teleport Maze
+    @ConfigValue @JvmField var tpMazeSolver: Boolean = true
+    @ConfigValue @JvmField var tpMazeNextColor: Int = 0x8055FF55.toInt()
+    @ConfigValue @JvmField var tpMazeVisitedColor: Int = 0x80FF5555.toInt()
 
     // ── F7 Terminal Solver (Odin TerminalSolver port) ──────────────────────────
     @ConfigValue @JvmField var terminalSolverEnabled: Boolean = false

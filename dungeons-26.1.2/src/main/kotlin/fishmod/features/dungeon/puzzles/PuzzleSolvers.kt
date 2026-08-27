@@ -40,6 +40,7 @@ object PuzzleSolvers {
             QuizSolver(),
             WaterSolver(),
             BeamsSolver(),
+            TPMazeSolver(),
         )
 
         ClientTickEvents.END_CLIENT_TICK.register { mc -> tick(mc) }
