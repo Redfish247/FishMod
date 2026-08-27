@@ -1,6 +1,7 @@
 package fishmod.features.dungeon
 
 import fishmod.utils.config.values.Dungeons
+import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.Events
 import net.minecraft.client.Minecraft
 import java.util.concurrent.CompletableFuture
@@ -35,7 +36,8 @@ object AutoRequeue {
             when {
                 BREAKUP.matcher(s).find() -> disabled = true
                 Dungeons.enableAutoRequeue && !disabled && EXTRA_STATS.matcher(s).find() -> {
-                    CompletableFuture.delayedExecutor(2000, TimeUnit.MILLISECONDS).execute {
+                    val delay = FishSettings.autoRequeueDelayMs.coerceIn(0, 15000).toLong()
+                    CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS).execute {
                         Minecraft.getInstance().execute {
                             val mc = Minecraft.getInstance()
                             if (Dungeons.enableAutoRequeue && !disabled && mc.connection != null) {

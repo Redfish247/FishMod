@@ -17,7 +17,12 @@ object ArrowHitSound {
         Events.ON_SOUND.register { event, _, _ ->
             if (!FishSettings.arrowHitSoundEnabled) return@register false
             if (event !== SoundEvents.ARROW_HIT_PLAYER) return@register false
-            SoundManager.play(SoundEvents.NOTE_BLOCK_HARP.value(), 1f, 1.4f, "arrowHit", 40)
+            SoundManager.play(
+                SoundManager.preset(FishSettings.arrowHitSoundName),
+                FishSettings.arrowHitSoundVolume.coerceIn(0, 100) / 100f,
+                FishSettings.arrowHitSoundPitch.toFloat().coerceIn(0f, 2f),
+                "arrowHit", 40,
+            )
             FishSettings.arrowHitSoundSuppress
         }
     }

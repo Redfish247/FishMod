@@ -246,7 +246,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("Leap Messages", Dungeons::enableLeapMessages)
+            f.sub.add(InputSetting("Text", "{name} = leap target; & for colours",
+                { FishSettings.leapMessagesText }, { v -> FishSettings.leapMessagesText = v ?: "" }))
             f.sub.add(ToggleSetting("Title", "", FishSettings::leapMessagesTitle))
+            f.sub.add(ToggleSetting("Chat", "", FishSettings::leapMessagesChat))
             f.sub.add(ToggleSetting("Sound", "", FishSettings::leapMessagesSound))
             dungeon.features.add(f)
         }
@@ -299,11 +302,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Box In Boss", "", FishSettings::secretClickedInBoss))
             f.sub.add(ToggleSetting("Chime", "Sound on secret click", FishSettings::secretClickedChime))
             f.sub.add(ToggleSetting("Chime In Boss", "", FishSettings::secretClickedChimeInBoss))
+            f.sub.add(DropdownSetting("Chime Sound", "", fishmod.utils.sound.SoundManager.presetNames(),
+                { FishSettings.secretClickedSoundName }, { v -> FishSettings.secretClickedSoundName = v }))
             f.sub.add(SliderIntSetting("Chime Volume %", "", FishSettings::secretClickedVolume, 0, 100))
             f.sub.add(SliderDoubleSetting("Chime Pitch", "", FishSettings::secretClickedPitch, 0.0, 2.0))
             dungeon.features.add(f)
         }
-        dungeon.features.add(Feature("Auto Requeue", Dungeons::enableAutoRequeue))
+        run {
+            val f = Feature("Auto Requeue", Dungeons::enableAutoRequeue)
+            f.sub.add(SliderIntSetting("Delay (ms)", "After the \"> EXTRA STATS <\" line", FishSettings::autoRequeueDelayMs, 0, 8000))
+            dungeon.features.add(f)
+        }
         run {
             val f = Feature("Warp Cooldown", Dungeons::enableWarpCooldown)
             f.sub.add(SliderIntSetting("Cooldown (s)", "Hypixel's real gate is 30s", FishSettings::warpCooldownSeconds, 1, 120))
@@ -527,6 +536,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("Arrow Hit Sound", FishSettings::arrowHitSoundEnabled)
+            f.sub.add(DropdownSetting("Sound", "", fishmod.utils.sound.SoundManager.presetNames(),
+                { FishSettings.arrowHitSoundName }, { v -> FishSettings.arrowHitSoundName = v }))
+            f.sub.add(SliderIntSetting("Volume %", "", FishSettings::arrowHitSoundVolume, 0, 100))
+            f.sub.add(SliderDoubleSetting("Pitch", "", FishSettings::arrowHitSoundPitch, 0.0, 2.0))
             f.sub.add(ToggleSetting("Suppress Vanilla Sound", "", FishSettings::arrowHitSoundSuppress))
             visuals.features.add(f)
         }

@@ -19,6 +19,35 @@ object SoundManager {
     private val enabled: Boolean get() = FishSettings.soundMasterEnabled
     private val masterVol: Float get() = FishSettings.soundMasterVolume.coerceIn(0, 100) / 100f
 
+    // Named cue presets for feature dropdowns. Values are mixed SoundEvent / Holder<SoundEvent>
+    // (the SoundEvents constants aren't consistently one or the other), resolved in [preset].
+    private val PRESETS: Map<String, Any> = linkedMapOf(
+        "Note: Pling" to SoundEvents.NOTE_BLOCK_PLING,
+        "Note: Harp" to SoundEvents.NOTE_BLOCK_HARP,
+        "Note: Bell" to SoundEvents.NOTE_BLOCK_BELL,
+        "Note: Bass" to SoundEvents.NOTE_BLOCK_BASS,
+        "Blaze Hit" to SoundEvents.BLAZE_HURT,
+        "Fire Ignite" to SoundEvents.FLINTANDSTEEL_USE,
+        "Orb Pickup" to SoundEvents.EXPERIENCE_ORB_PICKUP,
+        "Item Break" to SoundEvents.ITEM_BREAK,
+        "Guardian Hit" to SoundEvents.GUARDIAN_HURT,
+        "Anvil Land" to SoundEvents.ANVIL_LAND,
+        "Amethyst" to SoundEvents.AMETHYST_BLOCK_CHIME,
+    )
+
+    @JvmStatic
+    fun presetNames(): Array<String> = PRESETS.keys.toTypedArray()
+
+    private fun resolve(v: Any?): SoundEvent = when (v) {
+        is SoundEvent -> v
+        is net.minecraft.core.Holder<*> -> v.value() as SoundEvent
+        else -> SoundEvents.NOTE_BLOCK_PLING.value()
+    }
+
+    /** Resolve a preset name to its [SoundEvent]; falls back to Note: Pling. */
+    @JvmStatic
+    fun preset(name: String?): SoundEvent = resolve(PRESETS[name])
+
     private val lastPlayed = HashMap<String, Long>()
 
     /**

@@ -75,7 +75,7 @@ object SecretClicked {
         if (now - lastChime <= 10) return
         lastChime = now
         SoundManager.play(
-            SoundEvents.BLAZE_HURT,
+            SoundManager.preset(FishSettings.secretClickedSoundName),
             FishSettings.secretClickedVolume.coerceIn(0, 100) / 100f,
             FishSettings.secretClickedPitch.toFloat().coerceIn(0f, 2f),
             "secretChime", 0

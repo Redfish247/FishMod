@@ -427,6 +427,9 @@ object FishSettings {
     // ── Arrow Hit Sound ───────────────────────────────────────────────────────
     @ConfigValue @JvmField var arrowHitSoundEnabled: Boolean = false
     @ConfigValue @JvmField var arrowHitSoundSuppress: Boolean = false
+    @ConfigValue @JvmField var arrowHitSoundName: String = "Note: Harp"
+    @ConfigValue @JvmField var arrowHitSoundVolume: Int = 100
+    @ConfigValue @JvmField var arrowHitSoundPitch: Double = 1.4
 
     // ── Block Overlay ─────────────────────────────────────────────────────────
     @ConfigValue @JvmField var blockOverlayEnabled: Boolean = false
@@ -523,10 +526,16 @@ object FishSettings {
 
     // ── Leap Messages (revives Dungeons.enableLeapMessages) ─────────────────────
     @ConfigValue @JvmField var leapMessagesTitle: Boolean = true
+    @ConfigValue @JvmField var leapMessagesChat: Boolean = false
     @ConfigValue @JvmField var leapMessagesSound: Boolean = true
+    /** {name} = the Spirit-Leap target. */
+    @ConfigValue @JvmField var leapMessagesText: String = "&b&lLEAP &r&7-> &f{name}"
 
     // ── Auto Sprint ─────────────────────────────────────────────────────────────
     @ConfigValue @JvmField var autoSprintDungeonOnly: Boolean = false
+
+    // ── Auto Requeue delay (ms after the "> EXTRA STATS <" line) ───────────────
+    @ConfigValue @JvmField var autoRequeueDelayMs: Int = 2000
 
     // ── Secret Clicked (Odin SecretClicked port) ───────────────────────────────
     @ConfigValue @JvmField var secretClickedEnabled: Boolean = false
@@ -540,6 +549,7 @@ object FishSettings {
     @ConfigValue @JvmField var secretClickedInBoss: Boolean = false
     @ConfigValue @JvmField var secretClickedChime: Boolean = true
     @ConfigValue @JvmField var secretClickedChimeInBoss: Boolean = false
+    @ConfigValue @JvmField var secretClickedSoundName: String = "Blaze Hit"
     @ConfigValue @JvmField var secretClickedVolume: Int = 100
     @ConfigValue @JvmField var secretClickedPitch: Double = 2.0
 
