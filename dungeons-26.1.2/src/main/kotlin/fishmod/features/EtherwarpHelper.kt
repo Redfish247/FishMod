@@ -104,22 +104,33 @@ object EtherwarpHelper {
         }
     }
 
+    private val FULL = AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
+
     private fun render(matrices: PoseStack, vc: VertexConsumer, fill: Boolean) {
         if (!FishSettings.etherwarpHelperEnabled || !FishSettings.etherwarpShowGuess) return
         val bp = target ?: return
         if (!valid && !FishSettings.etherwarpShowFail) return
         val color = if (valid) FishSettings.etherwarpColor else FishSettings.etherwarpFailColor
         val rgba = RenderUtils.toFloats(color)
-        val mc = Minecraft.getInstance()
-        val box = if (FishSettings.etherwarpFullBlock) {
-            AABB(bp.x.toDouble(), bp.y.toDouble(), bp.z.toDouble(), bp.x + 1.0, bp.y + 1.0, bp.z + 1.0)
+        val fillRgba = floatArrayOf(rgba[0], rgba[1], rgba[2], rgba[3] * 0.4f)
+        val lineRgba = floatArrayOf(rgba[0], rgba[1], rgba[2], 1f)
+        val lvl = Minecraft.getInstance().level ?: return
+
+        // Trace the real collision shape so a slab/stair guess is drawn (and can be read) as the
+        // half / stepped box you'd actually stand on, not a full cube. Full Block forces a cube.
+        val boxes: List<AABB> = if (FishSettings.etherwarpFullBlock) {
+            listOf(FULL)
         } else {
-            val lvl = mc.level
-            val shape = lvl?.getBlockState(bp)?.getShape(lvl, bp)
-            (if (shape == null || shape.isEmpty) AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0) else shape.bounds())
-                .move(bp.x.toDouble(), bp.y.toDouble(), bp.z.toDouble())
-        }.inflate(0.002)
-        if (fill) RenderUtils.renderFilled(matrices, vc, box, floatArrayOf(rgba[0], rgba[1], rgba[2], rgba[3] * 0.4f))
-        else RenderUtils.renderOutline(matrices, vc, box, floatArrayOf(rgba[0], rgba[1], rgba[2], 1f))
+            val st = lvl.getBlockState(bp)
+            var shape = st.getCollisionShape(lvl, bp)
+            if (shape.isEmpty) shape = st.getShape(lvl, bp)
+            if (shape.isEmpty) listOf(FULL) else shape.toAabbs()
+        }
+
+        for (b in boxes) {
+            val box = b.move(bp.x.toDouble(), bp.y.toDouble(), bp.z.toDouble()).inflate(0.002)
+            if (fill) RenderUtils.renderFilled(matrices, vc, box, fillRgba)
+            else RenderUtils.renderOutline(matrices, vc, box, lineRgba)
+        }
     }
 }
