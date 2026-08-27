@@ -2,22 +2,28 @@ package fishmod.features
 
 import fishmod.utils.config.values.Dungeons
 import fishmod.utils.config.values.FishSettings
-import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents
+import fishmod.utils.events.Events
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import java.util.regex.Pattern
 
 /**
- * Revives blade-addons' `enableWarpCooldown`: after you fire a `/warp` (or the island shortcuts),
- * shows a small countdown until Hypixel will accept another warp, so you're not blind-spamming the
- * command. Duration is [FishSettings.warpCooldownSeconds] (Hypixel's is ~3s for island warps).
+ * Revives blade-addons' `enableWarpCooldown` (logic ported from Odin's WarpCooldown): Hypixel gates
+ * re-entering a dungeon for ~30s after the party enters one. The clock starts on the
+ * "<player> entered <floor> Catacombs, Floor <n>!" chat line (not on `/warp`, which was wrong), and
+ * the HUD counts it down. Optionally announces to party chat if you get kicked mid-join.
  */
 object WarpCooldown {
 
     private const val NAME = "Warp Cooldown"
-    private val WARP_HEADS = setOf("warp", "warpforge", "is", "hub", "dungeonhub", "dhub", "garden")
+    private val ENTERED: Pattern =
+        Pattern.compile("\\b(\\w{1,16}) entered (?:MM )?\\w+ Catacombs, Floor \\w+!")
+    private val KICKED: Pattern =
+        Pattern.compile("^(?:You were kicked while joining that server!|You are no longer allowed to access this instance!)$")
+    private val COLOR = Regex("§.")
 
-    @Volatile private var warpAt = 0L
+    @Volatile private var enteredAt = 0L
 
     @JvmStatic
     fun init() {
@@ -29,17 +35,23 @@ object WarpCooldown {
             { FishSettings.warpCooldownScale }, { v -> FishSettings.warpCooldownScale = v }
         )
 
-        ClientSendMessageEvents.COMMAND.register { command ->
-            if (!Dungeons.enableWarpCooldown) return@register
-            val head = command.trim().substringBefore(' ').lowercase()
-            if (head in WARP_HEADS) warpAt = System.currentTimeMillis()
+        Events.ON_GAME_MESSAGE.register { text ->
+            val s = COLOR.replace(text.string, "")
+            if (ENTERED.matcher(s).find()) {
+                enteredAt = System.currentTimeMillis()
+            } else if (Dungeons.enableWarpCooldown && FishSettings.warpAnnounceKick && KICKED.matcher(s).matches()) {
+                val mc = Minecraft.getInstance()
+                mc.execute { mc.connection?.sendCommand("pc ${FishSettings.warpKickText}") }
+            }
+            false
         }
+        Events.ON_WORLD_CHANGE.register { false }
     }
 
     private fun remainingMs(): Long {
-        if (warpAt == 0L) return 0
-        val total = FishSettings.warpCooldownSeconds.coerceIn(1, 30) * 1000L
-        return (total - (System.currentTimeMillis() - warpAt)).coerceAtLeast(0)
+        if (enteredAt == 0L) return 0
+        val total = FishSettings.warpCooldownSeconds.coerceIn(1, 120) * 1000L
+        return (total - (System.currentTimeMillis() - enteredAt)).coerceAtLeast(0)
     }
 
     @JvmStatic
@@ -50,7 +62,9 @@ object WarpCooldown {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
 
-        val label = "§bWarp §f" + String.format("%.1fs", rem / 1000.0)
+        val label = net.minecraft.network.chat.Component.literal("§eWarp: ")
+            .append(net.minecraft.network.chat.Component.literal(String.format("%.1fs", rem / 1000.0))
+                .withColor(FishSettings.warpCooldownColor and 0xFFFFFF))
         val sc = FishSettings.warpCooldownScale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.warpCooldownHudX.toFloat(), FishSettings.warpCooldownHudY.toFloat())

@@ -391,22 +391,58 @@ object FishSettings {
     // wired to a screen toggle once the first solvers land (Phase 3).
     @ConfigValue @JvmField var puzzleSolversEnabled: Boolean = false
 
-    // Warp Cooldown HUD (revives Dungeons.enableWarpCooldown).
-    @ConfigValue @JvmField var warpCooldownSeconds: Int = 3
+    // Warp Cooldown HUD (revives Dungeons.enableWarpCooldown). Cooldown starts on the party's
+    // "entered <floor> Catacombs" chat line (Odin logic); 30s is Hypixel's real re-entry gate.
+    @ConfigValue @JvmField var warpCooldownSeconds: Int = 30
+    @ConfigValue @JvmField var warpCooldownColor: Int = 0xFF55FF55.toInt()
+    @ConfigValue @JvmField var warpAnnounceKick: Boolean = false
+    @ConfigValue @JvmField var warpKickText: String = "Kicked!"
     @ConfigValue @JvmField var warpCooldownHudX: Int = 10
     @ConfigValue @JvmField var warpCooldownHudY: Int = 160
     @ConfigValue @JvmField var warpCooldownScale: Double = 1.0
 
-    // Blessing Display HUD (Odin-style; reads the tab footer).
+    // ── Blessing Display (Odin BlessingDisplay port; reads the tab footer) ────────
     @ConfigValue @JvmField var blessingDisplayEnabled: Boolean = false
+    @ConfigValue @JvmField var blessingPower: Boolean = true
+    @ConfigValue @JvmField var blessingPowerColor: Int = 0xFFAA0000.toInt()
+    @ConfigValue @JvmField var blessingTime: Boolean = true
+    @ConfigValue @JvmField var blessingTimeColor: Int = 0xFFAA00AA.toInt()
+    @ConfigValue @JvmField var blessingStone: Boolean = false
+    @ConfigValue @JvmField var blessingStoneColor: Int = 0xFFAAAAAA.toInt()
+    @ConfigValue @JvmField var blessingLife: Boolean = false
+    @ConfigValue @JvmField var blessingLifeColor: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var blessingWisdom: Boolean = false
+    @ConfigValue @JvmField var blessingWisdomColor: Int = 0xFF5555FF.toInt()
     @ConfigValue @JvmField var blessingHudX: Int = 10
     @ConfigValue @JvmField var blessingHudY: Int = 100
     @ConfigValue @JvmField var blessingScale: Double = 1.0
 
-    // Invincibility Timer HUD (enable is Dungeons.displayInvincibilityTimer).
+    // ── Invincibility Timer (Odin InvincibilityTimer port) ──────────────────────
+    // enable is Dungeons.displayInvincibilityTimer; Dungeons.InvincibilityDuration = show "X.Xs"
+    // vs a plain icon; Dungeons.useStatusColorForInvincibility = gold/red/green by state.
+    @ConfigValue @JvmField var invincAnnounce: Boolean = true
+    @ConfigValue @JvmField var invincShowCooldown: Boolean = true
+    @ConfigValue @JvmField var invincShowWhen: String = "Any" // Always | Any | Active | Cooldown
+    @ConfigValue @JvmField var invincShowInBoss: Boolean = false
+    @ConfigValue @JvmField var invincShowSpirit: Boolean = true
+    @ConfigValue @JvmField var invincShowBonzo: Boolean = true
+    @ConfigValue @JvmField var invincShowPhoenix: Boolean = true
+    @ConfigValue @JvmField var invincEquippedMaskColor: Int = 0xFFAA00AA.toInt()
     @ConfigValue @JvmField var invincHudX: Int = 10
     @ConfigValue @JvmField var invincHudY: Int = 140
     @ConfigValue @JvmField var invincScale: Double = 1.0
+
+    // ── Key Notifier (revives Dungeons.enableKeyNotifier) ───────────────────────
+    @ConfigValue @JvmField var keyNotifierTitle: Boolean = true
+    @ConfigValue @JvmField var keyNotifierChat: Boolean = false
+    @ConfigValue @JvmField var keyNotifierSound: Boolean = true
+
+    // ── Leap Messages (revives Dungeons.enableLeapMessages) ─────────────────────
+    @ConfigValue @JvmField var leapMessagesTitle: Boolean = true
+    @ConfigValue @JvmField var leapMessagesSound: Boolean = true
+
+    // ── Auto Sprint ─────────────────────────────────────────────────────────────
+    @ConfigValue @JvmField var autoSprintDungeonOnly: Boolean = false
 
     // ── Custom Scoreboard ────────────────────────────────────────────────────────
     // Replaces vanilla's sidebar scoreboard with one where each line category can be hidden

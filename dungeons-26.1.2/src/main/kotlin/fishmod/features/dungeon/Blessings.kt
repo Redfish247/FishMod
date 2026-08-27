@@ -8,6 +8,7 @@ import fishmod.utils.events.Events
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.network.chat.Component
 
 /**
  * Dungeon Blessing display (ported from Odin's BlessingDisplay). Blessing levels are read from the
@@ -16,12 +17,22 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
  */
 object Blessings {
 
-    enum class Type(val regex: Regex, val display: String, val color: String) {
-        POWER(Regex("Blessing of Power (X{0,3}(?:IX|IV|V?I{0,3}))"), "Power", "§4"),
-        LIFE(Regex("Blessing of Life (X{0,3}(?:IX|IV|V?I{0,3}))"), "Life", "§c"),
-        WISDOM(Regex("Blessing of Wisdom (X{0,3}(?:IX|IV|V?I{0,3}))"), "Wisdom", "§9"),
-        STONE(Regex("Blessing of Stone (X{0,3}(?:IX|IV|V?I{0,3}))"), "Stone", "§7"),
-        TIME(Regex("Blessing of Time (V)"), "Time", "§5");
+    enum class Type(
+        val regex: Regex,
+        val display: String,
+        val enabled: () -> Boolean,
+        val color: () -> Int,
+    ) {
+        POWER(Regex("Blessing of Power (X{0,3}(?:IX|IV|V?I{0,3}))"), "Power",
+            { FishSettings.blessingPower }, { FishSettings.blessingPowerColor }),
+        LIFE(Regex("Blessing of Life (X{0,3}(?:IX|IV|V?I{0,3}))"), "Life",
+            { FishSettings.blessingLife }, { FishSettings.blessingLifeColor }),
+        WISDOM(Regex("Blessing of Wisdom (X{0,3}(?:IX|IV|V?I{0,3}))"), "Wisdom",
+            { FishSettings.blessingWisdom }, { FishSettings.blessingWisdomColor }),
+        STONE(Regex("Blessing of Stone (X{0,3}(?:IX|IV|V?I{0,3}))"), "Stone",
+            { FishSettings.blessingStone }, { FishSettings.blessingStoneColor }),
+        TIME(Regex("Blessing of Time (V)"), "Time",
+            { FishSettings.blessingTime }, { FishSettings.blessingTimeColor });
 
         @JvmField var current = 0
     }
@@ -77,7 +88,7 @@ object Blessings {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
 
-        val shown = Type.entries.filter { it.current > 0 }
+        val shown = Type.entries.filter { it.enabled() && it.current > 0 }
         if (shown.isEmpty()) return
 
         val sc = FishSettings.blessingScale.toFloat()
@@ -85,7 +96,9 @@ object Blessings {
         ctx.pose().translate(FishSettings.blessingHudX.toFloat(), FishSettings.blessingHudY.toFloat())
         ctx.pose().scale(sc, sc)
         shown.forEachIndexed { i, t ->
-            ctx.text(mc.font, "${t.color}${t.display}: §a${t.current}", 0, i * LINE_H, -1, true)
+            val label = Component.literal("${t.display}: ").withColor(t.color() and 0xFFFFFF)
+                .append(Component.literal(t.current.toString()).withColor(0x55FF55))
+            ctx.text(mc.font, label, 0, i * LINE_H, -1, true)
         }
         ctx.pose().popMatrix()
     }

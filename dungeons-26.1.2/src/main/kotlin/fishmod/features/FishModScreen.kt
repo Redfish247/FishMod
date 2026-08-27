@@ -128,7 +128,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         general.features.add(Feature("Smart Copy Chat", FishSettings::smartCopyChat))
         general.features.add(Feature("Compact Chat", FishSettings::chatCompact))
-        general.features.add(Feature("Auto Sprint", FishSettings::autoSprintEnabled))
+        run {
+            val f = Feature("Auto Sprint", FishSettings::autoSprintEnabled)
+            f.sub.add(ToggleSetting("Dungeons Only", "", FishSettings::autoSprintDungeonOnly))
+            general.features.add(f)
+        }
         run {
             val f = Feature("Sound Manager", FishSettings::soundMasterEnabled)
             f.sub.add(SliderIntSetting("Master Volume %", "Applied to every FishMod feature cue", FishSettings::soundMasterVolume, 0, 100))
@@ -207,15 +211,55 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         // Score Messages alerts) — see below, folded together instead of duplicating a second tracker here.
         dungeon.features.add(Feature("PB Pace", FishSettings::pbPaceEnabled))
         dungeon.features.add(Feature("Puzzle Overlay", FishSettings::showPuzzles))
-        dungeon.features.add(Feature("Leap Messages", Dungeons::enableLeapMessages))
-        dungeon.features.add(Feature("Key Notifier", Dungeons::enableKeyNotifier))
+        run {
+            val f = Feature("Leap Messages", Dungeons::enableLeapMessages)
+            f.sub.add(ToggleSetting("Title", "", FishSettings::leapMessagesTitle))
+            f.sub.add(ToggleSetting("Sound", "", FishSettings::leapMessagesSound))
+            dungeon.features.add(f)
+        }
+        run {
+            val f = Feature("Key Notifier", Dungeons::enableKeyNotifier)
+            f.sub.add(ToggleSetting("Title", "", FishSettings::keyNotifierTitle))
+            f.sub.add(ToggleSetting("Chat", "", FishSettings::keyNotifierChat))
+            f.sub.add(ToggleSetting("Sound", "", FishSettings::keyNotifierSound))
+            dungeon.features.add(f)
+        }
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
-        dungeon.features.add(Feature("Blessing Display", FishSettings::blessingDisplayEnabled))
-        dungeon.features.add(Feature("Invincibility Timer", Dungeons::displayInvincibilityTimer))
+        run {
+            val f = Feature("Blessing Display", FishSettings::blessingDisplayEnabled)
+            f.sub.add(ToggleSetting("Power", "", FishSettings::blessingPower))
+            f.sub.add(ColorPickerSetting("Power Color", "", FishSettings::blessingPowerColor))
+            f.sub.add(ToggleSetting("Time", "", FishSettings::blessingTime))
+            f.sub.add(ColorPickerSetting("Time Color", "", FishSettings::blessingTimeColor))
+            f.sub.add(ToggleSetting("Stone", "", FishSettings::blessingStone))
+            f.sub.add(ColorPickerSetting("Stone Color", "", FishSettings::blessingStoneColor))
+            f.sub.add(ToggleSetting("Life", "", FishSettings::blessingLife))
+            f.sub.add(ColorPickerSetting("Life Color", "", FishSettings::blessingLifeColor))
+            f.sub.add(ToggleSetting("Wisdom", "", FishSettings::blessingWisdom))
+            f.sub.add(ColorPickerSetting("Wisdom Color", "", FishSettings::blessingWisdomColor))
+            dungeon.features.add(f)
+        }
+        run {
+            val f = Feature("Invincibility Timer", Dungeons::displayInvincibilityTimer)
+            f.sub.add(ToggleSetting("Announce Proc to Party", "", FishSettings::invincAnnounce))
+            f.sub.add(ToggleSetting("Show Numeric Time", "X.Xs vs a dot", Dungeons::InvincibilityDuration))
+            f.sub.add(ToggleSetting("State Colors", "Gold active / red cooldown / green ready", Dungeons::useStatusColorForInvincibility))
+            f.sub.add(ToggleSetting("Mask Cooldown Bar", "Durability-style bar on the mask item", FishSettings::invincShowCooldown))
+            f.sub.add(DropdownSetting("Show", "", arrayOf("Always", "Any", "Active", "Cooldown"),
+                { FishSettings.invincShowWhen }, { v -> FishSettings.invincShowWhen = v }))
+            f.sub.add(ToggleSetting("Only In Boss", "", FishSettings::invincShowInBoss))
+            f.sub.add(ToggleSetting("Spirit Mask", "", FishSettings::invincShowSpirit))
+            f.sub.add(ToggleSetting("Bonzo Mask", "", FishSettings::invincShowBonzo))
+            f.sub.add(ToggleSetting("Phoenix Pet", "", FishSettings::invincShowPhoenix))
+            dungeon.features.add(f)
+        }
         dungeon.features.add(Feature("Auto Requeue", Dungeons::enableAutoRequeue))
         run {
             val f = Feature("Warp Cooldown", Dungeons::enableWarpCooldown)
-            f.sub.add(SliderIntSetting("Cooldown (s)", "", FishSettings::warpCooldownSeconds, 1, 30))
+            f.sub.add(SliderIntSetting("Cooldown (s)", "Hypixel's real gate is 30s", FishSettings::warpCooldownSeconds, 1, 120))
+            f.sub.add(ColorPickerSetting("Timer Color", "", FishSettings::warpCooldownColor))
+            f.sub.add(ToggleSetting("Announce Kick", "Post to party chat if you get kicked mid-join", FishSettings::warpAnnounceKick))
+            f.sub.add(InputSetting("Kick Text", "", { FishSettings.warpKickText }, { v -> FishSettings.warpKickText = v ?: "" }))
             dungeon.features.add(f)
         }
         run {

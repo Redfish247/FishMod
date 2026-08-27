@@ -3,6 +3,7 @@ package fishmod.features.dungeon
 import fishmod.utils.Location
 import fishmod.utils.Misc
 import fishmod.utils.config.values.Dungeons
+import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.Events
 import fishmod.utils.sound.SoundManager
 import net.minecraft.network.chat.Component
@@ -24,16 +25,20 @@ object KeyNotifier {
             if (!Dungeons.enableKeyNotifier || !Location.inDungeon()) return@register false
             val s = text.string.replace(Regex("§."), "").trim()
             when {
-                s == "A Wither Key was picked up!" || WITHER.matcher(s).matches() -> {
-                    Misc.forceTitle(Component.literal("§8§lWITHER KEY"), Component.empty())
-                    SoundManager.play(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 0.7f, "witherKey", 500)
-                }
-                s == "A Blood Key was picked up!" || BLOOD.matcher(s).matches() -> {
-                    Misc.forceTitle(Component.literal("§c§lBLOOD KEY"), Component.empty())
-                    SoundManager.play(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1.2f, "bloodKey", 500)
-                }
+                s == "A Wither Key was picked up!" || WITHER.matcher(s).matches() ->
+                    notify("§8§lWITHER KEY", "§8Wither key picked up", 0.7f, "witherKey")
+                s == "A Blood Key was picked up!" || BLOOD.matcher(s).matches() ->
+                    notify("§c§lBLOOD KEY", "§cBlood key picked up", 1.2f, "bloodKey")
             }
             false
+        }
+    }
+
+    private fun notify(title: String, chat: String, pitch: Float, key: String) {
+        if (FishSettings.keyNotifierTitle) Misc.forceTitle(Component.literal(title), Component.empty())
+        if (FishSettings.keyNotifierChat) Misc.addChatMessage(Component.literal(chat))
+        if (FishSettings.keyNotifierSound) {
+            SoundManager.play(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_PLING.value(), 1f, pitch, key, 500)
         }
     }
 }

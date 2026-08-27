@@ -18,6 +18,7 @@ object AutoSprint {
             val p = mc.player ?: return@register
             if (mc.screen != null) return@register
             if (!Location.inSkyblock()) return@register
+            if (FishSettings.autoSprintDungeonOnly && !Location.inDungeon()) return@register
             if (p.isSprinting || p.isSpectator || p.isPassenger) return@register
             // zza is the per-tick forward-movement input (>0 only while holding forward).
             if (p.zza <= 0f) return@register

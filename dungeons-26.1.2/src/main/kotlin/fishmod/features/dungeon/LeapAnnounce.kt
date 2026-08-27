@@ -2,6 +2,7 @@ package fishmod.features.dungeon
 
 import fishmod.utils.Misc
 import fishmod.utils.config.values.Dungeons
+import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.Events
 import fishmod.utils.sound.SoundManager
 import net.minecraft.network.chat.Component
@@ -23,8 +24,12 @@ object LeapAnnounce {
             val s = message.string.replace(Regex("§."), "")
             val m = TARGET.matcher(s)
             if (m.find()) {
-                Misc.forceTitle(Component.literal("§b§lLEAP §r§7→ §f" + m.group(1).trim()), Component.empty())
-                SoundManager.play(net.minecraft.sounds.SoundEvents.ENDERMAN_TELEPORT, 0.6f, 1.4f, "leap", 250)
+                if (FishSettings.leapMessagesTitle) {
+                    Misc.forceTitle(Component.literal("§b§lLEAP §r§7→ §f" + m.group(1).trim()), Component.empty())
+                }
+                if (FishSettings.leapMessagesSound) {
+                    SoundManager.play(net.minecraft.sounds.SoundEvents.ENDERMAN_TELEPORT, 0.6f, 1.4f, "leap", 250)
+                }
             }
             false
         }
