@@ -116,6 +116,15 @@ object FishSettings {
     // Party Finder join-request stats: whispers you get while this is on print the sender's
     // MP/PB/Cata/Gear to your own chat (local-only, nothing sent back to them).
     @ConfigValue @JvmField var pfStatsEnabled: Boolean = false
+    // Party Finder in-menu overlay (NoammAddons port): head level-req + missing classes, and
+    // Cata/Secrets/PB injected into the party-member tooltip lines.
+    @ConfigValue @JvmField var pfMenuEnabled: Boolean = false
+    @ConfigValue @JvmField var pfShowLevelReq: Boolean = true
+    @ConfigValue @JvmField var pfShowMissingClasses: Boolean = true
+    @ConfigValue @JvmField var pfTooltipStats: Boolean = true
+    @ConfigValue @JvmField var pfShowSecrets: Boolean = true
+    @ConfigValue @JvmField var pfShowPb: Boolean = true
+    @ConfigValue @JvmField var pfTooltipMissingList: Boolean = true
     // Compact chat: collapse identical messages seen within the last minute into one line
     // with a "(N)" count instead of repeating them.
     @ConfigValue @JvmField var chatCompact: Boolean = false

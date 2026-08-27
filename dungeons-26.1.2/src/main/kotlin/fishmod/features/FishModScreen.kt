@@ -637,6 +637,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             party.features.add(f)
         }
         party.features.add(Feature("Party Finder Join Stats", FishSettings::pfStatsEnabled))
+        run {
+            val f = Feature("Party Finder Menu", FishSettings::pfMenuEnabled)
+            f.sub.add(ToggleSetting("Level Req on Head", "Red Dungeon-Level-Required number", FishSettings::pfShowLevelReq))
+            f.sub.add(ToggleSetting("Missing Classes on Head", "", FishSettings::pfShowMissingClasses))
+            f.sub.add(ToggleSetting("Tooltip Stats", "Cata / Secrets / PB per listed member", FishSettings::pfTooltipStats))
+            f.sub.add(ToggleSetting("Show Secrets", "", FishSettings::pfShowSecrets))
+            f.sub.add(ToggleSetting("Show PB", "Fastest S+ for the listing's floor", FishSettings::pfShowPb))
+            f.sub.add(ToggleSetting("Missing List in Tooltip", "", FishSettings::pfTooltipMissingList))
+            party.features.add(f)
+        }
 
         // ===== Visuals =====
         run {
@@ -2801,6 +2811,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Slayer Alerts" -> "Title + ping on slayer boss events"
                 "Slayer Drops" -> "Session rare-drop counter"
                 "Party Finder Join Stats" -> "Whisper or PF-join prints their MP/PB/Cata/Gear to chat — also /pfs [name]"
+                "Party Finder Menu" -> "Level req + missing classes on heads, stats in party-member tooltips"
                 else -> descForExternal(name)
             }
         }

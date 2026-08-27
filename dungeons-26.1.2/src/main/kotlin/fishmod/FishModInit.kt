@@ -456,6 +456,7 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.f7.ArrowsDevice.init()
         fishmod.features.dungeon.f7.MelodyMessage.init()
         fishmod.features.dungeon.PartyFinderStats.init()
+        fishmod.features.dungeon.PartyFinder.init()
         fishmod.features.dungeon.f7.WitherESP.init()
         fishmod.features.dungeon.f7.M7Relics.init()
         fishmod.features.dungeon.puzzles.PuzzleSolvers.init()
