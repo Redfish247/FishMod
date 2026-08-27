@@ -665,6 +665,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         visuals.features.add(Feature("Item Quality Tooltip", FishSettings::itemQualityTooltip))
         run {
+            val f = Feature("Item Price Tooltip", FishSettings::itemTooltipPrices)
+            f.sub.add(ToggleSetting("NPC Sell Price", "", FishSettings::itemTooltipNpcSell))
+            visuals.features.add(f)
+        }
+        run {
             val f = Feature("Render Optimizer", Visual::renderOptimizer)
             f.sub.add(ToggleSetting("Hide Nearby Players", "Hide other players within range", Visual::hidePlayersInRange))
             f.sub.add(SliderDoubleSetting("Player Range", "Blocks", Visual::hidePlayerRange, 1.0, 12.0))

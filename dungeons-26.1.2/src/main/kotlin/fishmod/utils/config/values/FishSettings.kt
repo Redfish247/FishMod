@@ -467,6 +467,10 @@ object FishSettings {
     @ConfigValue @JvmField var animNoEquip: Boolean = false
     @ConfigValue @JvmField var animNoHandMove: Boolean = false
 
+    // ── Item Tooltip prices ──────────────────────────────────────────────────
+    @ConfigValue @JvmField var itemTooltipPrices: Boolean = false
+    @ConfigValue @JvmField var itemTooltipNpcSell: Boolean = false
+
     // ── Etherwarp Helper ─────────────────────────────────────────────────────
     @ConfigValue @JvmField var etherwarpHelperEnabled: Boolean = false
     @ConfigValue @JvmField var etherwarpShowGuess: Boolean = true
