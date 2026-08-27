@@ -450,6 +450,11 @@ object FishSettings {
     // ── Item Quality Tooltip ─────────────────────────────────────────────────
     @ConfigValue @JvmField var itemQualityTooltip: Boolean = false
 
+    // ── Gyro Helper ─────────────────────────────────────────────────────────
+    @ConfigValue @JvmField var gyroHelperEnabled: Boolean = false
+    @ConfigValue @JvmField var gyroBoxColor: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var gyroRingColor: Int = 0xFF55FFFF.toInt()
+
     // ── Camera Tweaks ─────────────────────────────────────────────────────────
     @ConfigValue @JvmField var cameraTweaksEnabled: Boolean = false
     @ConfigValue @JvmField var cameraCustomFov: Boolean = false

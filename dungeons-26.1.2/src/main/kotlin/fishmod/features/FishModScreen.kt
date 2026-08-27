@@ -547,6 +547,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         visuals.features.add(Feature("Item Quality Tooltip", FishSettings::itemQualityTooltip))
         run {
+            val f = Feature("Gyro Helper", FishSettings::gyroHelperEnabled)
+            f.sub.add(ColorPickerSetting("Box Color", "", FishSettings::gyroBoxColor))
+            f.sub.add(ColorPickerSetting("Ring Color", "", FishSettings::gyroRingColor))
+            visuals.features.add(f)
+        }
+        run {
             val f = Feature("Camera Tweaks", FishSettings::cameraTweaksEnabled)
             f.sub.add(ToggleSetting("Custom FOV", "", FishSettings::cameraCustomFov))
             f.sub.add(SliderIntSetting("FOV", "", FishSettings::cameraFov, 30, 179))
@@ -2521,6 +2527,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Arrow Align" -> "F7 P3 arrow device — clicks needed per frame"
                 "Item Rarity Background" -> "Rarity-tinted sprite behind every item"
                 "Item Quality Tooltip" -> "Dungeon-item stat boost % + floor in the tooltip"
+                "Gyro Helper" -> "Gyrokinetic Wand landing box + sucking-range ring"
                 "Wither ESP" -> "Outline the F7 wither boss by phase"
                 "M7 Relics" -> "P5 relic spawn timer + cauldron box"
                 "Auto Requeue" -> "Send /instancerequeue when a run ends (leader only)"
