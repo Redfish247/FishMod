@@ -409,6 +409,9 @@ object FishSettings {
     @ConfigValue @JvmField var waterOptimized: Boolean = false
     @ConfigValue @JvmField var waterFirstColor: Int = 0x8055FF55.toInt()
     @ConfigValue @JvmField var waterSecondColor: Int = 0xC0FFAA00.toInt()
+    // Creeper Beams
+    @ConfigValue @JvmField var beamsSolver: Boolean = true
+    @ConfigValue @JvmField var beamsTracer: Boolean = false
 
     // ── F7 Terminal Solver (Odin TerminalSolver port) ──────────────────────────
     @ConfigValue @JvmField var terminalSolverEnabled: Boolean = false

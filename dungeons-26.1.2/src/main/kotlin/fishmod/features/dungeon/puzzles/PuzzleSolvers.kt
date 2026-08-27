@@ -39,6 +39,7 @@ object PuzzleSolvers {
             BlazeSolver("Higher Blaze", ascending = true),
             QuizSolver(),
             WaterSolver(),
+            BeamsSolver(),
         )
 
         ClientTickEvents.END_CLIENT_TICK.register { mc -> tick(mc) }

@@ -234,6 +234,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Optimized Solutions", "", FishSettings::waterOptimized))
             f.sub.add(ColorPickerSetting("Next Lever", "", FishSettings::waterFirstColor))
             f.sub.add(ColorPickerSetting("Then Lever", "", FishSettings::waterSecondColor))
+            f.sub.add(SubcategoryHeader("Creeper Beams"))
+            f.sub.add(ToggleSetting("Beams Solver", "", FishSettings::beamsSolver))
+            f.sub.add(ToggleSetting("Beams Tracer", "", FishSettings::beamsTracer))
             dungeon.features.add(f)
         }
         run {
