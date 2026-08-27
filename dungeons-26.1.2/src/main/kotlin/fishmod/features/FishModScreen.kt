@@ -635,6 +635,20 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             floor7.features.add(f)
         }
         floor7.features.add(Feature("Arrow Align", FishSettings::arrowAlignEnabled))
+        run {
+            val f = Feature("Wither ESP", FishSettings::witherEspEnabled)
+            f.sub.add(ColorPickerSetting("Maxor", "", FishSettings::witherEspMaxorColor))
+            f.sub.add(ColorPickerSetting("Storm", "", FishSettings::witherEspStormColor))
+            f.sub.add(ColorPickerSetting("Goldor", "", FishSettings::witherEspGoldorColor))
+            f.sub.add(ColorPickerSetting("Necron", "", FishSettings::witherEspNecronColor))
+            floor7.features.add(f)
+        }
+        run {
+            val f = Feature("M7 Relics", Floor7::enableRelicStartTimer)
+            f.sub.add(SliderIntSetting("Spawn Ticks", "Ticks after Necron's P5 line", Floor7::relicSpawnTicks, 1, 200))
+            f.sub.add(ToggleSetting("Cauldron Box", "Box + tracer the cauldron for the relic you hold", Floor7::renderRelicHighlight))
+            floor7.features.add(f)
+        }
 
         for (et in FishModAddonApi.dungeonToggles) {
             dungeon.features.add(Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) }))

@@ -434,6 +434,8 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.SecretClicked.init()
         fishmod.features.dungeon.f7.terminal.TerminalSolver.init()
         fishmod.features.dungeon.f7.ArrowAlign.init()
+        fishmod.features.dungeon.f7.WitherESP.init()
+        fishmod.features.dungeon.f7.M7Relics.init()
         fishmod.features.dungeon.puzzles.PuzzleSolvers.init()
         // PowderTracker.init();
         fishmod.features.dungeon.SimonSaysTracker.init()
@@ -1152,6 +1154,7 @@ class FishModInit : ModInitializer {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "warp_cooldown")) { ctx, tickCounter -> fishmod.features.WarpCooldown.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "blessings")) { ctx, tickCounter -> fishmod.features.dungeon.Blessings.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "invincibility")) { ctx, tickCounter -> fishmod.features.dungeon.InvincibilityTracker.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "relic_timer")) { ctx, tickCounter -> fishmod.features.dungeon.f7.M7Relics.renderHud(ctx, tickCounter) }
         fishmod.utils.SkyblockItems.initAsync()
 
         // ── PB Pace (live delta vs personal-best splits) ─────────────────────

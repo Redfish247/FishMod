@@ -435,6 +435,18 @@ object FishSettings {
     @ConfigValue @JvmField var blockOverlayOutlineColor: Int = 0xFFFFFFFF.toInt()
     @ConfigValue @JvmField var blockOverlayPhase: Boolean = false
 
+    // ── Wither ESP (F7) ──────────────────────────────────────────────────────
+    @ConfigValue @JvmField var witherEspEnabled: Boolean = false
+    @ConfigValue @JvmField var witherEspMaxorColor: Int = 0xFF5804A4.toInt()
+    @ConfigValue @JvmField var witherEspStormColor: Int = 0xFF00D0FF.toInt()
+    @ConfigValue @JvmField var witherEspGoldorColor: Int = 0xFFFFFFFF.toInt()
+    @ConfigValue @JvmField var witherEspNecronColor: Int = 0xFFFF0000.toInt()
+
+    // ── M7 Relics HUD (enable flags are Floor7.enableRelicStartTimer / renderRelicHighlight) ──
+    @ConfigValue @JvmField var relicTimerHudX: Int = 10
+    @ConfigValue @JvmField var relicTimerHudY: Int = 180
+    @ConfigValue @JvmField var relicTimerScale: Double = 1.0
+
     // ── Camera Tweaks ─────────────────────────────────────────────────────────
     @ConfigValue @JvmField var cameraTweaksEnabled: Boolean = false
     @ConfigValue @JvmField var cameraCustomFov: Boolean = false
