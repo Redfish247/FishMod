@@ -9,7 +9,6 @@ import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.core.BlockPos

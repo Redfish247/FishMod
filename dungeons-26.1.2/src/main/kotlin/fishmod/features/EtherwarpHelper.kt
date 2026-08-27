@@ -25,7 +25,12 @@ import net.minecraft.world.phys.Vec3
 object EtherwarpHelper {
 
     private val ITEMS = setOf("ASPECT_OF_THE_VOID", "ASPECT_OF_THE_END", "ETHERWARP_CONDUIT")
-    private val ENDERMAN_TP = SoundEvents.ENDERMAN_TELEPORT.location
+
+    // Hypixel confirms a successful etherwarp by sending exactly this sound packet: the ender dragon
+    // hurt sound at volume 1.0 and this one magic pitch. Odin's EtherWarpHelper keys off the same
+    // signature (1.8 "mob.enderdragon.hit" / vol 1 / pitch 0.53968257) — no sneak/hold check needed,
+    // the triple is unique enough on its own.
+    private const val ETHERWARP_PITCH = 0.53968257f
 
     @Volatile private var target: BlockPos? = null
     @Volatile private var valid = false
@@ -46,14 +51,14 @@ object EtherwarpHelper {
             raycast(mc)
         }
 
-        Events.ON_SOUND.register { event, _, _ ->
+        Events.ON_SOUND.register { event, volume, pitch ->
             if (FishSettings.etherwarpHelperEnabled && FishSettings.etherwarpSoundEnabled
-                && event.location == ENDERMAN_TP && holdingEtherItem()
-                && (Minecraft.getInstance().player?.isShiftKeyDown == true)
+                && event == SoundEvents.ENDER_DRAGON_HURT && volume == 1f && pitch == ETHERWARP_PITCH
+                && Location.inSkyblock()
             ) {
                 SoundManager.preset(FishSettings.etherwarpSoundName)
-            }
-            false
+                true // swallow Hypixel's dragon-hurt cue; we replaced it with the chosen sound
+            } else false
         }
 
         RenderingEvents.FILLED_BLOCK.register { _, m, vc -> if (!FishSettings.etherwarpDepth) render(m, vc, fill = true) }

@@ -3,7 +3,7 @@ package fishmod.features
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemUtil
 import fishmod.utils.rendering.RenderUtils
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents
+import fishmod.utils.rendering.RenderingEvents
 import net.fabricmc.fabric.api.event.player.UseItemCallback
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -48,18 +48,15 @@ object FireFreezeTimer {
             InteractionResult.PASS
         })
 
-        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(LevelRenderEvents.AfterTranslucentFeatures { ctx ->
-            if (!FishSettings.fireFreezeTimerEnabled || frozen.isEmpty() || ctx.levelState() == null) return@AfterTranslucentFeatures
+        // World text renders in the single END_MAIN pass (RenderingEvents) — the node collector that
+        // submitText() feeds is already drained by AFTER_TRANSLUCENT_FEATURES. Pose is pre-translated
+        // by -camera here, so no manual push/translate.
+        RenderingEvents.NO_DEPTH_LINE.register { ctx, matrices, _ ->
+            if (!FishSettings.fireFreezeTimerEnabled || frozen.isEmpty()) return@register
             val mc = Minecraft.getInstance()
-            if (mc.level == null) return@AfterTranslucentFeatures
-            val matrices = ctx.poseStack()
-            if (matrices == null) return@AfterTranslucentFeatures
+            if (mc.level == null) return@register
 
             val now = System.currentTimeMillis()
-            val cam = ctx.levelState().cameraRenderState.pos
-            matrices.pushPose()
-            matrices.translate(-cam.x, -cam.y, -cam.z)
-
             val it = frozen.entries.iterator()
             while (it.hasNext()) {
                 val en = it.next()
@@ -84,7 +81,6 @@ object FireFreezeTimer {
                 val y = e.y + e.bbHeight / 2.0
                 RenderUtils.renderText(ctx, matrices, t, e.x, y, e.z, 1.0f)
             }
-            matrices.popPose()
-        })
+        }
     }
 }

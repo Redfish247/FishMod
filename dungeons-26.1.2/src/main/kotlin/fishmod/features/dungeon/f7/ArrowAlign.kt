@@ -3,8 +3,8 @@ package fishmod.features.dungeon.f7
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.rendering.RenderUtils
+import fishmod.utils.rendering.RenderingEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
@@ -34,14 +34,10 @@ object ArrowAlign {
             solve(mc)
         }
 
-        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(LevelRenderEvents.AfterTranslucentFeatures { ctx ->
-            if (!FishSettings.arrowAlignEnabled || clicksRemaining.isEmpty() || !Phase.inP3()) return@AfterTranslucentFeatures
-            val mc = Minecraft.getInstance()
-            if (mc.level == null) return@AfterTranslucentFeatures
-            val matrices = ctx.poseStack() ?: return@AfterTranslucentFeatures
-            val cam = ctx.levelState()?.cameraRenderState?.pos ?: return@AfterTranslucentFeatures
-            matrices.pushPose()
-            matrices.translate(-cam.x, -cam.y, -cam.z)
+        // Text renders in the single END_MAIN pass; pose is already -camera translated there.
+        RenderingEvents.NO_DEPTH_LINE.register { ctx, matrices, _ ->
+            if (!FishSettings.arrowAlignEnabled || clicksRemaining.isEmpty() || !Phase.inP3()) return@register
+            if (Minecraft.getInstance().level == null) return@register
             for ((index, need) in clicksRemaining) {
                 if (need <= 0) continue
                 val color = if (need < 3) "§2" else if (need < 5) "§6" else "§c"
@@ -49,8 +45,7 @@ object ArrowAlign {
                 RenderUtils.renderText(ctx, matrices, Component.literal("$color$need"),
                     p.x + 0.5, p.y + 0.6, p.z + 0.5, 0.03f)
             }
-            matrices.popPose()
-        })
+        }
     }
 
     private fun framePos(index: Int): BlockPos = CORNER.offset(0, index % 5, index / 5)

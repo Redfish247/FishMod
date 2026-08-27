@@ -9,7 +9,6 @@ import fishmod.utils.dungeon.Section
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
