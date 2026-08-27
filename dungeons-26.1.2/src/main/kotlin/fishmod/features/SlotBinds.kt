@@ -11,11 +11,14 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.client.gui.screens.inventory.InventoryScreen
 import net.minecraft.client.input.MouseButtonEvent
+import net.minecraft.network.chat.Component
 import net.minecraft.world.inventory.ContainerInput
 import org.lwjgl.glfw.GLFW
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
+import kotlin.math.atan2
+import kotlin.math.sqrt
 
 /**
  * Slot Binds (ported from NoammAddons' SlotBinding). Hold [Keybinds.slotBind] and click a hotbar
@@ -84,14 +87,19 @@ object SlotBinds {
                     val hb = if (prevHb) prev else slotId
                     binds[inv] = hb
                     save()
+                    feedback("§aLinked§7 inv slot §f$inv§7 ↔ hotbar §f${hb - 36 + 1}")
+                } else {
+                    feedback("§cPick one hotbar slot and one inventory slot")
                 }
             } else {
                 if (slotId in binds || binds.values.contains(slotId)) {
                     binds.remove(slotId)
                     binds.entries.removeIf { it.value == slotId }
                     save()
+                    feedback("§eUnlinked slot §f$slotId")
                 } else {
                     previousSlot = slotId
+                    feedback("§7Now click the slot to link with…")
                 }
             }
             return true
@@ -116,6 +124,9 @@ object SlotBinds {
     @JvmStatic
     fun onClose() { previousSlot = null }
 
+    private fun feedback(msg: String) =
+        fishmod.utils.Misc.addChatMessage(Component.literal("§dSlot Binds §7» §r$msg"))
+
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
         if (!FishSettings.slotBindsEnabled || !FishSettings.slotBindsShow || screen !is InventoryScreen) return
@@ -136,8 +147,13 @@ object SlotBinds {
             val s1 = slots.getOrNull(inv) ?: continue
             val s2 = slots.getOrNull(hb) ?: continue
             if (FishSettings.slotBindsHoverOnly && !over(s1) && !over(s2)) continue
-            border(ctx, bgX + s1.x, bgY + s1.y, color)
-            border(ctx, bgX + s2.x, bgY + s2.y, color)
+            if (FishSettings.slotBindsLine) {
+                line(ctx, bgX + s1.x + 8, bgY + s1.y + 8, bgX + s2.x + 8, bgY + s2.y + 8, color)
+            }
+            if (FishSettings.slotBindsBorder) {
+                border(ctx, bgX + s1.x, bgY + s1.y, color)
+                border(ctx, bgX + s2.x, bgY + s2.y, color)
+            }
         }
     }
 
@@ -146,5 +162,19 @@ object SlotBinds {
         ctx.fill(x, y + 15, x + 16, y + 16, color)
         ctx.fill(x, y, x + 1, y + 16, color)
         ctx.fill(x + 15, y, x + 16, y + 16, color)
+    }
+
+    /** Diagonal 2px line via a rotated axis-aligned fill on the 2D pose stack. */
+    private fun line(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
+        val dx = (x2 - x1).toFloat()
+        val dy = (y2 - y1).toFloat()
+        val len = sqrt(dx * dx + dy * dy)
+        if (len < 1f) return
+        val pose = ctx.pose()
+        pose.pushMatrix()
+        pose.translate(x1.toFloat(), y1.toFloat())
+        pose.rotate(atan2(dy, dx))
+        ctx.fill(0, -1, len.toInt(), 1, color)
+        pose.popMatrix()
     }
 }

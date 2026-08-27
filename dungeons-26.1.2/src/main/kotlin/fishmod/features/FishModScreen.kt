@@ -131,10 +131,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         run {
             val f = Feature("Slot Binds", FishSettings::slotBindsEnabled)
             f.sub.add(SubcategoryHeader("Hold the bind key + click a hotbar slot then an inv slot to link; shift-left-click to swap"))
-            f.sub.add(KeybindSetting("Bind Key (hold)", "", { fishmod.utils.Keybinds.slotBind }))
+            f.sub.add(KeybindSetting("Bind Key (hold)", "Default R", { fishmod.utils.Keybinds.slotBind }))
             f.sub.add(ToggleSetting("Show Bound Slots", "", FishSettings::slotBindsShow))
+            f.sub.add(ToggleSetting("Connecting Line", "Draw a line between a bound pair", FishSettings::slotBindsLine))
+            f.sub.add(ToggleSetting("Slot Border", "Outline each bound slot", FishSettings::slotBindsBorder))
             f.sub.add(ToggleSetting("Hover Only", "Only show a link when hovering one of its slots", FishSettings::slotBindsHoverOnly))
-            f.sub.add(ColorPickerSetting("Border Color", "", FishSettings::slotBindsColor))
+            f.sub.add(ColorPickerSetting("Colour", "", FishSettings::slotBindsColor))
             general.features.add(f)
         }
         general.features.add(Feature("Smart Copy Chat", FishSettings::smartCopyChat))

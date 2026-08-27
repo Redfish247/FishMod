@@ -541,6 +541,8 @@ object FishSettings {
     // ── Slot Binds ───────────────────────────────────────────────────────────
     @ConfigValue @JvmField var slotBindsEnabled: Boolean = false
     @ConfigValue @JvmField var slotBindsShow: Boolean = true
+    @ConfigValue @JvmField var slotBindsBorder: Boolean = true
+    @ConfigValue @JvmField var slotBindsLine: Boolean = true
     @ConfigValue @JvmField var slotBindsHoverOnly: Boolean = false
     @ConfigValue @JvmField var slotBindsColor: Int = 0xFFFF55FF.toInt()
 

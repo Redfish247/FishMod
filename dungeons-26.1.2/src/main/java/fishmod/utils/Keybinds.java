@@ -154,7 +154,7 @@ public class Keybinds {
         slotBind = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "FishMod: Slot Bind (hold)",
                 InputConstants.Type.KEYSYM,
-                GLFW.GLFW_KEY_UNKNOWN,
+                GLFW.GLFW_KEY_R,
                 category));
         TRACKED.put("slot_bind", slotBind);
 
