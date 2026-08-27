@@ -379,6 +379,14 @@ object FishSettings {
     // loadout name as an on-screen title.
     @ConfigValue @JvmField var loadoutTitleEnabled: Boolean = false
 
+    // Auto Sprint — keep sprinting while holding forward (only sets the flag, never clears it).
+    @ConfigValue @JvmField var autoSprintEnabled: Boolean = false
+
+    // Sound Manager — master gate + volume (0-100%) for every FishMod feature cue routed through
+    // fishmod.utils.sound.SoundManager.
+    @ConfigValue @JvmField var soundMasterEnabled: Boolean = true
+    @ConfigValue @JvmField var soundMasterVolume: Int = 100
+
     // ── Custom Scoreboard ────────────────────────────────────────────────────────
     // Replaces vanilla's sidebar scoreboard with one where each line category can be hidden
     // and big numbers (Purse/Bank/Bits/etc) can be shown compact (1,234,567 -> 1.2M).

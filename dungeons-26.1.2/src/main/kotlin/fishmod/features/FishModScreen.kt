@@ -128,6 +128,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         general.features.add(Feature("Smart Copy Chat", FishSettings::smartCopyChat))
         general.features.add(Feature("Compact Chat", FishSettings::chatCompact))
+        general.features.add(Feature("Auto Sprint", FishSettings::autoSprintEnabled))
+        run {
+            val f = Feature("Sound Manager", FishSettings::soundMasterEnabled)
+            f.sub.add(SliderIntSetting("Master Volume %", "Applied to every FishMod feature cue", FishSettings::soundMasterVolume, 0, 100))
+            general.features.add(f)
+        }
         run {
             val f = Feature("Compact Tab", FishSettings::compactTabEnabled)
             f.sub.add(SliderIntSetting("Opacity %", "", FishSettings::compactTabOpacity, 0, 100))
@@ -201,6 +207,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         // Score Messages alerts) — see below, folded together instead of duplicating a second tracker here.
         dungeon.features.add(Feature("PB Pace", FishSettings::pbPaceEnabled))
         dungeon.features.add(Feature("Puzzle Overlay", FishSettings::showPuzzles))
+        dungeon.features.add(Feature("Leap Messages", Dungeons::enableLeapMessages))
+        dungeon.features.add(Feature("Key Notifier", Dungeons::enableKeyNotifier))
         run {
             val f = Feature("Death Message", FishSettings::deathMessageEnabled)
             val tmpl = InputSetting("Template", "", FishSettings::deathMessageTemplate)
