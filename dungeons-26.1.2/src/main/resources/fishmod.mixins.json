@@ -24,6 +24,7 @@
     "accessors.KeyBindingAccessor",
     "accessors.HandledScreenAccessor",
     "accessors.MapItemSavedDataAccessor",
+    "accessors.PlayerTabOverlayAccessor",
 
     "ChatHudInvoker",
     "ChatHudMixin",

@@ -210,6 +210,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         dungeon.features.add(Feature("Leap Messages", Dungeons::enableLeapMessages))
         dungeon.features.add(Feature("Key Notifier", Dungeons::enableKeyNotifier))
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
+        dungeon.features.add(Feature("Blessing Display", FishSettings::blessingDisplayEnabled))
+        dungeon.features.add(Feature("Invincibility Timer", Dungeons::displayInvincibilityTimer))
         dungeon.features.add(Feature("Auto Requeue", Dungeons::enableAutoRequeue))
         run {
             val f = Feature("Warp Cooldown", Dungeons::enableWarpCooldown)
@@ -2354,6 +2356,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Leap Messages" -> "Title with the Spirit-Leap target"
                 "Key Notifier" -> "Title + cue on Wither/Blood key pickup"
                 "Boss Health Numbers" -> "Numeric HP on the M7 boss bar"
+                "Blessing Display" -> "Active dungeon blessings from the tab footer"
+                "Invincibility Timer" -> "Spirit / Bonzo / Phoenix proc + cooldown timers"
                 "Auto Requeue" -> "Send /instancerequeue when a run ends (leader only)"
                 "Warp Cooldown" -> "Countdown until you can /warp again"
                 "Death Message" -> "Announce deaths with a template"

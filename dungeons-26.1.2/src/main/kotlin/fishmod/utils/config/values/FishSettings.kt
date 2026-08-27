@@ -397,6 +397,17 @@ object FishSettings {
     @ConfigValue @JvmField var warpCooldownHudY: Int = 160
     @ConfigValue @JvmField var warpCooldownScale: Double = 1.0
 
+    // Blessing Display HUD (Odin-style; reads the tab footer).
+    @ConfigValue @JvmField var blessingDisplayEnabled: Boolean = false
+    @ConfigValue @JvmField var blessingHudX: Int = 10
+    @ConfigValue @JvmField var blessingHudY: Int = 100
+    @ConfigValue @JvmField var blessingScale: Double = 1.0
+
+    // Invincibility Timer HUD (enable is Dungeons.displayInvincibilityTimer).
+    @ConfigValue @JvmField var invincHudX: Int = 10
+    @ConfigValue @JvmField var invincHudY: Int = 140
+    @ConfigValue @JvmField var invincScale: Double = 1.0
+
     // ── Custom Scoreboard ────────────────────────────────────────────────────────
     // Replaces vanilla's sidebar scoreboard with one where each line category can be hidden
     // and big numbers (Purse/Bank/Bits/etc) can be shown compact (1,234,567 -> 1.2M).
