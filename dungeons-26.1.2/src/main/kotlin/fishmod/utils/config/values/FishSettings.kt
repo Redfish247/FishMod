@@ -560,6 +560,25 @@ object FishSettings {
     @ConfigValue @JvmField var springBootsHudY: Int = 200
     @ConfigValue @JvmField var springBootsScale: Double = 1.0
 
+    // ── Melody Message (F7 P3) ─────────────────────────────────────────────
+    @ConfigValue @JvmField var melodyMessageEnabled: Boolean = false
+    @ConfigValue @JvmField var melodyMessageOnOpen: Boolean = true
+    @ConfigValue @JvmField var melodyMessageText: String = "Melody Terminal start!"
+    @ConfigValue @JvmField var melodyMessageProgress: Boolean = false
+
+    // ── Arrows Device (F7 P3 Sharp Shooter) ────────────────────────────────
+    @ConfigValue @JvmField var arrowsDeviceEnabled: Boolean = false
+    @ConfigValue @JvmField var arrowsDeviceDepth: Boolean = true
+    @ConfigValue @JvmField var arrowsDeviceCompleteAlert: Boolean = true
+    @ConfigValue @JvmField var arrowsDeviceTargetColor: Int = 0x80FF55FF.toInt()
+    @ConfigValue @JvmField var arrowsDeviceMarkedColor: Int = 0x8055FFFF.toInt()
+
+    // ── Ragnarock ──────────────────────────────────────────────────────────
+    @ConfigValue @JvmField var ragnarockEnabled: Boolean = false
+    @ConfigValue @JvmField var ragnarockCastAlert: Boolean = true
+    @ConfigValue @JvmField var ragnarockCancelAlert: Boolean = true
+    @ConfigValue @JvmField var ragnarockAnnounceParty: Boolean = false
+
     // ── Terracotta Timer (F6) ────────────────────────────────────────────────
     @ConfigValue @JvmField var terracottaTimerEnabled: Boolean = false
 

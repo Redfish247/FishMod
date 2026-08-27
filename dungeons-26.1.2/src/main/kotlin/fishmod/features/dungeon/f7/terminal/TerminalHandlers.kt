@@ -167,11 +167,16 @@ class RubixHandler : TerminalHandler(TerminalType.RUBIX) {
 }
 
 class MelodyHandler : TerminalHandler(TerminalType.MELODY) {
+    /** Row (0-based) the green clay marker currently sits on — MelodyMessage reads this for progress %. */
+    @Volatile var greenClayRow: Int = -1
+        private set
+
     override fun handleSlotUpdate(slot: Int): Boolean {
         solution.clear()
         val greenPane = items.indexOfLast { it?.`is`(LIME_PANE) == true }.takeIf { it != -1 } ?: return true
         val magentaPane = items.indexOfFirst { it?.`is`(MAGENTA_PANE) == true }.takeIf { it != -1 } ?: return true
         val greenClay = items.indexOfLast { it?.`is`(LIME_TERRACOTTA) == true }.takeIf { it != -1 } ?: return true
+        greenClayRow = greenClay / 9
         solution.addAll(items.mapIndexedNotNull { i, it ->
             when {
                 i == greenPane || it?.`is`(MAGENTA_PANE) == true -> i

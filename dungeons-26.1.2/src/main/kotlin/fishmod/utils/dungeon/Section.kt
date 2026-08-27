@@ -200,9 +200,23 @@ object Section {
             currentSection = 5
             endAllSections()
             Debug.sendDebugMessage(Component.literal("Core section"))
+            if (Floor7.terminalTimeStamps) sendTerminalTimesSummary()
         }
 
         return shouldCancelMessage
+    }
+
+    /** Odin "Terminal Times" style recap: each section split then the total, sent once the Core opens. */
+    private fun sendTerminalTimesSummary() {
+        val fmt = Constants.DECIMAL_FORMAT
+        val sections = (0 until SECTION_COUNT)
+            .map { splits[it].getRealTime() }
+            .filter { it > 0.0 }
+        if (sections.isEmpty()) return
+        val list = sections.joinToString(" §8| ") { "§a${fmt.format(it)}s" }
+        val totalSplit = splits[SECTION_COUNT].getRealTime()
+        val total = if (totalSplit > 0.0) totalSplit else sections.sum()
+        Misc.addChatMessage(Component.literal("§bTerminal times: $list§8, §bTotal: §a${fmt.format(total)}s"))
     }
 
     @JvmStatic

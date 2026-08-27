@@ -431,6 +431,7 @@ class FishModInit : ModInitializer {
         fishmod.features.GyroHelper.init()
         fishmod.features.dungeon.MageBeam.init()
         fishmod.features.SpringBoots.init()
+        fishmod.features.Ragnarock.init()
         fishmod.features.VisualTweaks.init()
         fishmod.features.NoCursorReset.init()
         fishmod.features.SlotBinds.init()
@@ -452,6 +453,9 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.SecretClicked.init()
         fishmod.features.dungeon.f7.terminal.TerminalSolver.init()
         fishmod.features.dungeon.f7.ArrowAlign.init()
+        fishmod.features.dungeon.f7.ArrowsDevice.init()
+        fishmod.features.dungeon.f7.MelodyMessage.init()
+        fishmod.features.dungeon.PartyFinderStats.init()
         fishmod.features.dungeon.f7.WitherESP.init()
         fishmod.features.dungeon.f7.M7Relics.init()
         fishmod.features.dungeon.puzzles.PuzzleSolvers.init()
@@ -550,6 +554,17 @@ class FishModInit : ModInitializer {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().setScreen(fishmod.features.croesus.LootTrackerScreen())
                         }
+                        Constants.SUCCESS
+                    }
+            )
+            dispatcher.register(
+                ClientCommands.literal("pfs")
+                    .then(ClientCommands.argument("name", StringArgumentType.word()).executes { ctx ->
+                        fishmod.features.dungeon.PartyFinderStats.command(StringArgumentType.getString(ctx, "name"))
+                        Constants.SUCCESS
+                    })
+                    .executes {
+                        fishmod.features.dungeon.PartyFinderStats.command(null)
                         Constants.SUCCESS
                     }
             )

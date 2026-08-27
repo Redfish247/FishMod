@@ -146,6 +146,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         general.features.add(Feature("Mono Audio", FishSettings::monoAudioEnabled))
         general.features.add(Feature("Sword Blocking", FishSettings::swordBlockingEnabled))
         run {
+            val f = Feature("Ragnarock", FishSettings::ragnarockEnabled)
+            f.sub.add(ToggleSetting("Cast Alert", "Title when you start casting", FishSettings::ragnarockCastAlert))
+            f.sub.add(ToggleSetting("Cancelled Alert", "Title when a cast is interrupted", FishSettings::ragnarockCancelAlert))
+            f.sub.add(ToggleSetting("Announce Cast to Party", "", FishSettings::ragnarockAnnounceParty))
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Animations", FishSettings::animEnabled)
             f.sub.add(SubcategoryHeader("First-person hand view-model"))
             f.sub.add(SliderDoubleSetting("Item Scale", "0 = normal", FishSettings::animItemScale, -1.5, 1.5))
@@ -833,6 +840,22 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             solvers.features.add(f)
         }
         solvers.features.add(Feature("Arrow Align", FishSettings::arrowAlignEnabled))
+        run {
+            val f = Feature("Melody Message", FishSettings::melodyMessageEnabled)
+            f.sub.add(ToggleSetting("Announce on Open", "Party message when the melody terminal opens", FishSettings::melodyMessageOnOpen))
+            f.sub.add(InputSetting("Open Message", "",
+                { FishSettings.melodyMessageText }, { v -> FishSettings.melodyMessageText = v ?: "" }))
+            f.sub.add(ToggleSetting("Progress Calls", "Party-message 25/50/75% as the marker drops", FishSettings::melodyMessageProgress))
+            solvers.features.add(f)
+        }
+        run {
+            val f = Feature("Arrows Device", FishSettings::arrowsDeviceEnabled)
+            f.sub.add(ToggleSetting("Through Walls", "", FishSettings::arrowsDeviceDepth))
+            f.sub.add(ToggleSetting("Complete Alert", "Title when the device finishes", FishSettings::arrowsDeviceCompleteAlert))
+            f.sub.add(ColorPickerSetting("Target", "Emerald block to shoot", FishSettings::arrowsDeviceTargetColor))
+            f.sub.add(ColorPickerSetting("Hit", "Already-shot block", FishSettings::arrowsDeviceMarkedColor))
+            solvers.features.add(f)
+        }
         run {
             val f = Feature("Wither ESP", FishSettings::witherEspEnabled)
             f.sub.add(ColorPickerSetting("Maxor", "", FishSettings::witherEspMaxorColor))
@@ -2730,6 +2753,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Secret Clicked" -> "Box + chime when you click a dungeon secret"
                 "Puzzle Solvers" -> "In-world solutions for dungeon puzzles"
                 "Arrow Align" -> "F7 P3 arrow device — clicks needed per frame"
+                "Ragnarock" -> "Alerts when your Ragnarock Axe cast succeeds or is cancelled"
+                "Arrows Device" -> "F7 P3 Sharp Shooter — boxes targets vs already-hit blocks"
+                "Melody Message" -> "Party-announce the F7 melody terminal + its progress"
                 "Item Rarity Background" -> "Rarity-tinted sprite behind every item"
                 "Item Quality Tooltip" -> "Dungeon-item stat boost % + floor in the tooltip"
                 "Gyro Helper" -> "Gyrokinetic Wand landing box + sucking-range ring"
@@ -2774,7 +2800,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Trophy Fish" -> "Trophy fish catch tracker (Crimson)"
                 "Slayer Alerts" -> "Title + ping on slayer boss events"
                 "Slayer Drops" -> "Session rare-drop counter"
-                "Party Finder Join Stats" -> "Whispers print sender's MP/PB/Cata/Gear to your chat"
+                "Party Finder Join Stats" -> "Whisper or PF-join prints their MP/PB/Cata/Gear to chat — also /pfs [name]"
                 else -> descForExternal(name)
             }
         }
