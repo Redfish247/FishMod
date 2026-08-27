@@ -33,7 +33,11 @@ object PuzzleSolvers {
 
     @JvmStatic
     fun init() {
-        register(ThreeWeirdosSolver())
+        register(
+            ThreeWeirdosSolver(),
+            BlazeSolver("Lower Blaze", ascending = false),
+            BlazeSolver("Higher Blaze", ascending = true),
+        )
 
         ClientTickEvents.END_CLIENT_TICK.register { mc -> tick(mc) }
 

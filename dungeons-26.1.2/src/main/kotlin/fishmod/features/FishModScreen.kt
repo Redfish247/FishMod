@@ -219,6 +219,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Weirdos Solver", "", FishSettings::weirdosSolver))
             f.sub.add(ColorPickerSetting("Correct Color", "", FishSettings::weirdosCorrectColor))
             f.sub.add(ColorPickerSetting("Wrong Color", "", FishSettings::weirdosWrongColor))
+            f.sub.add(SubcategoryHeader("Blaze"))
+            f.sub.add(ToggleSetting("Blaze Solver", "", FishSettings::blazeSolver))
+            f.sub.add(ColorPickerSetting("Next Blaze", "", FishSettings::blazeFirstColor))
+            f.sub.add(ColorPickerSetting("Second Blaze", "", FishSettings::blazeSecondColor))
+            f.sub.add(ColorPickerSetting("Other Blazes", "", FishSettings::blazeOtherColor))
+            f.sub.add(ToggleSetting("Connecting Line", "", FishSettings::blazeLine))
+            f.sub.add(SliderIntSetting("Line Count", "", FishSettings::blazeLineCount, 1, 9))
             dungeon.features.add(f)
         }
         run {

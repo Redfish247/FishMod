@@ -394,6 +394,13 @@ object FishSettings {
     @ConfigValue @JvmField var weirdosSolver: Boolean = true
     @ConfigValue @JvmField var weirdosCorrectColor: Int = 0xB355FF55.toInt()
     @ConfigValue @JvmField var weirdosWrongColor: Int = 0xB3FF5555.toInt()
+    // Blaze (Lower/Higher)
+    @ConfigValue @JvmField var blazeSolver: Boolean = true
+    @ConfigValue @JvmField var blazeFirstColor: Int = 0xC055FF55.toInt()
+    @ConfigValue @JvmField var blazeSecondColor: Int = 0xC0FFAA00.toInt()
+    @ConfigValue @JvmField var blazeOtherColor: Int = 0x66FFFFFF
+    @ConfigValue @JvmField var blazeLine: Boolean = true
+    @ConfigValue @JvmField var blazeLineCount: Int = 1
 
     // ── F7 Terminal Solver (Odin TerminalSolver port) ──────────────────────────
     @ConfigValue @JvmField var terminalSolverEnabled: Boolean = false
