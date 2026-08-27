@@ -124,14 +124,18 @@ object SlotBinds {
         val acc = screen as HandledScreenAccessor
         val bgX = acc.bgX
         val bgY = acc.bgY
-        val hovered = acc.`fishmod$getHoveredSlot`()?.index
         val color = FishSettings.slotBindsColor
         val slots = screen.menu.slots
 
+        // Compute hover geometrically from the passed cursor rather than trusting the vanilla
+        // hoveredSlot, which isn't reliably populated during the render-state extraction pass.
+        fun over(s: net.minecraft.world.inventory.Slot): Boolean =
+            mouseX >= bgX + s.x && mouseX < bgX + s.x + 16 && mouseY >= bgY + s.y && mouseY < bgY + s.y + 16
+
         for ((inv, hb) in binds) {
-            if (FishSettings.slotBindsHoverOnly && hovered != inv && hovered != hb) continue
             val s1 = slots.getOrNull(inv) ?: continue
             val s2 = slots.getOrNull(hb) ?: continue
+            if (FishSettings.slotBindsHoverOnly && !over(s1) && !over(s2)) continue
             border(ctx, bgX + s1.x, bgY + s1.y, color)
             border(ctx, bgX + s2.x, bgY + s2.y, color)
         }

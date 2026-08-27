@@ -30,8 +30,12 @@ object LeapAnnounce {
                     Misc.forceTitle(Component.literal(msg), Component.empty())
                 }
                 if (FishSettings.leapMessagesParty) {
-                    // Party chat can't carry formatting codes — send the plain text.
-                    val plain = FishSettings.leapMessagesText.replace(Regex("[&§]."), "").replace("{name}", target).trim()
+                    // Party chat can't carry formatting codes — strip only real colour codes
+                    // ([&§] + a code char) so a lone "&" in prose survives, then fill {name}.
+                    val plain = FishSettings.leapMessagesText
+                        .replace(Regex("[&§][0-9A-FK-ORa-fk-or]"), "")
+                        .replace("{name}", target)
+                        .trim()
                     if (plain.isNotEmpty()) {
                         val mc = net.minecraft.client.Minecraft.getInstance()
                         mc.execute { mc.connection?.sendCommand("pc $plain") }
