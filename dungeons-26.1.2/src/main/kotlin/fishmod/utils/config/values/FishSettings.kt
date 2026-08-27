@@ -487,6 +487,15 @@ object FishSettings {
     // ── Terracotta Timer (F6) ────────────────────────────────────────────────
     @ConfigValue @JvmField var terracottaTimerEnabled: Boolean = false
 
+    // ── Leap Counter ─────────────────────────────────────────────────────────
+    @ConfigValue @JvmField var leapCounterEnabled: Boolean = false
+    @ConfigValue @JvmField var leapCounterHudX: Int = 10
+    @ConfigValue @JvmField var leapCounterHudY: Int = 160
+    @ConfigValue @JvmField var leapCounterScale: Double = 1.0
+
+    // ── Architect's First Draft ──────────────────────────────────────────────
+    @ConfigValue @JvmField var architectDraftAnnounce: Boolean = false
+
     // ── Tac Timer ────────────────────────────────────────────────────────────
     @ConfigValue @JvmField var tacTimerEnabled: Boolean = false
     @ConfigValue @JvmField var tacTimerReverse: Boolean = false

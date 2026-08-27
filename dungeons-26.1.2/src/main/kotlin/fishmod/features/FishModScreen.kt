@@ -282,6 +282,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
         dungeon.features.add(Feature("Terracotta Timer", FishSettings::terracottaTimerEnabled))
+        dungeon.features.add(Feature("Leap Counter", FishSettings::leapCounterEnabled))
+        dungeon.features.add(Feature("Architect Draft Announce", FishSettings::architectDraftAnnounce))
         run {
             val f = Feature("Dungeon Abilities", FishSettings::dungeonAbilitiesEnabled)
             f.sub.add(SubcategoryHeader("Bind a key under Controls: FishMod: Use Dungeon Ability"))

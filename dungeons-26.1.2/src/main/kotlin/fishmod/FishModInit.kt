@@ -434,6 +434,8 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.DungeonAbilities.init()
         fishmod.features.dungeon.f6.TerracottaTimer.init()
         fishmod.features.TacTimer.init()
+        fishmod.features.dungeon.LeapCounter.init()
+        fishmod.features.dungeon.ArchitectDraft.init()
         fishmod.features.dungeon.LeapAnnounce.init()
         fishmod.features.dungeon.KeyNotifier.init()
         fishmod.features.dungeon.AutoRequeue.init()
@@ -1165,6 +1167,7 @@ class FishModInit : ModInitializer {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "relic_timer")) { ctx, tickCounter -> fishmod.features.dungeon.f7.M7Relics.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "spring_boots")) { ctx, tickCounter -> fishmod.features.SpringBoots.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "tac_timer")) { ctx, tickCounter -> fishmod.features.TacTimer.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "leap_counter")) { ctx, tickCounter -> fishmod.features.dungeon.LeapCounter.renderHud(ctx, tickCounter) }
         fishmod.utils.SkyblockItems.initAsync()
 
         // ── PB Pace (live delta vs personal-best splits) ─────────────────────
