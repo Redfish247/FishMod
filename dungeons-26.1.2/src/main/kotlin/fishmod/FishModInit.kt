@@ -427,6 +427,7 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.AutoRequeue.init()
         fishmod.features.dungeon.Blessings.init()
         fishmod.features.dungeon.InvincibilityTracker.init()
+        fishmod.features.dungeon.SecretClicked.init()
         fishmod.features.dungeon.puzzles.PuzzleSolvers.init()
         // PowderTracker.init();
         fishmod.features.dungeon.SimonSaysTracker.init()

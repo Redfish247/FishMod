@@ -444,6 +444,21 @@ object FishSettings {
     // ── Auto Sprint ─────────────────────────────────────────────────────────────
     @ConfigValue @JvmField var autoSprintDungeonOnly: Boolean = false
 
+    // ── Secret Clicked (Odin SecretClicked port) ───────────────────────────────
+    @ConfigValue @JvmField var secretClickedEnabled: Boolean = false
+    @ConfigValue @JvmField var secretClickedBoxes: Boolean = true
+    @ConfigValue @JvmField var secretClickedStyle: String = "Filled Outline" // Filled | Outline | Filled Outline
+    @ConfigValue @JvmField var secretClickedColor: Int = 0x66FFAA00 // ~40% gold (ARGB)
+    @ConfigValue @JvmField var secretClickedLockedColor: Int = 0x66FF5555
+    @ConfigValue @JvmField var secretClickedLineWidth: Double = 2.0
+    @ConfigValue @JvmField var secretClickedTimeToStay: Int = 7 // seconds
+    @ConfigValue @JvmField var secretClickedDepthCheck: Boolean = false // true = through walls
+    @ConfigValue @JvmField var secretClickedInBoss: Boolean = false
+    @ConfigValue @JvmField var secretClickedChime: Boolean = true
+    @ConfigValue @JvmField var secretClickedChimeInBoss: Boolean = false
+    @ConfigValue @JvmField var secretClickedVolume: Int = 100
+    @ConfigValue @JvmField var secretClickedPitch: Double = 2.0
+
     // ── Custom Scoreboard ────────────────────────────────────────────────────────
     // Replaces vanilla's sidebar scoreboard with one where each line category can be hidden
     // and big numbers (Purse/Bank/Bits/etc) can be shown compact (1,234,567 -> 1.2M).

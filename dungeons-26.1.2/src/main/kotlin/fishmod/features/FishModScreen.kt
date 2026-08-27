@@ -253,6 +253,23 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Phoenix Pet", "", FishSettings::invincShowPhoenix))
             dungeon.features.add(f)
         }
+        run {
+            val f = Feature("Secret Clicked", FishSettings::secretClickedEnabled)
+            f.sub.add(ToggleSetting("Boxes", "", FishSettings::secretClickedBoxes))
+            f.sub.add(DropdownSetting("Box Style", "", arrayOf("Filled", "Outline", "Filled Outline"),
+                { FishSettings.secretClickedStyle }, { v -> FishSettings.secretClickedStyle = v }))
+            f.sub.add(ColorPickerSetting("Color", "", FishSettings::secretClickedColor))
+            f.sub.add(ColorPickerSetting("Locked Color", "", FishSettings::secretClickedLockedColor))
+            f.sub.add(SliderDoubleSetting("Line Width", "", FishSettings::secretClickedLineWidth, 0.5, 10.0))
+            f.sub.add(SliderIntSetting("Time To Stay (s)", "", FishSettings::secretClickedTimeToStay, 1, 20))
+            f.sub.add(ToggleSetting("Through Walls", "", FishSettings::secretClickedDepthCheck))
+            f.sub.add(ToggleSetting("Box In Boss", "", FishSettings::secretClickedInBoss))
+            f.sub.add(ToggleSetting("Chime", "Sound on secret click", FishSettings::secretClickedChime))
+            f.sub.add(ToggleSetting("Chime In Boss", "", FishSettings::secretClickedChimeInBoss))
+            f.sub.add(SliderIntSetting("Chime Volume %", "", FishSettings::secretClickedVolume, 0, 100))
+            f.sub.add(SliderDoubleSetting("Chime Pitch", "", FishSettings::secretClickedPitch, 0.0, 2.0))
+            dungeon.features.add(f)
+        }
         dungeon.features.add(Feature("Auto Requeue", Dungeons::enableAutoRequeue))
         run {
             val f = Feature("Warp Cooldown", Dungeons::enableWarpCooldown)
@@ -2402,6 +2419,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Boss Health Numbers" -> "Numeric HP on the M7 boss bar"
                 "Blessing Display" -> "Active dungeon blessings from the tab footer"
                 "Invincibility Timer" -> "Spirit / Bonzo / Phoenix proc + cooldown timers"
+                "Secret Clicked" -> "Box + chime when you click a dungeon secret"
                 "Auto Requeue" -> "Send /instancerequeue when a run ends (leader only)"
                 "Warp Cooldown" -> "Countdown until you can /warp again"
                 "Death Message" -> "Announce deaths with a template"
