@@ -185,6 +185,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             visuals.features.add(f)
         }
         run {
+            val f = Feature("Storage Overlay", FishSettings::storageOverlayEnabled)
+            f.sub.add(SubcategoryHeader("Caches storage pages as you browse /storage — view all at once with /storageview or the keybind"))
+            f.sub.add(SliderIntSetting("Viewer Columns", "", FishSettings::storageViewerColumns, 1, 6))
+            f.sub.add(KeybindSetting("Open Viewer", "", { fishmod.utils.Keybinds.storageViewer }))
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Guild Bridge Bot", FishSettings::bridgeBotEnabled)
             f.sub.add(SubcategoryHeader("Reformats \"Guild > Bot: Player » msg\" and hides the raw bot line"))
             f.sub.add(InputSetting("Bot Name", "The bridge bot's exact in-game name",

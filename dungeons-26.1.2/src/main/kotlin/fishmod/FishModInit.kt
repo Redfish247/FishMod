@@ -435,6 +435,7 @@ class FishModInit : ModInitializer {
         fishmod.features.SlotBinds.init()
         fishmod.features.BridgeBot.init()
         fishmod.features.LavaToWater.init()
+        fishmod.features.storage.StorageCache.init()
         fishmod.features.dungeon.ExtraStats.init()
         fishmod.features.EtherwarpHelper.init()
         fishmod.features.dungeon.DungeonAbilities.init()
@@ -548,6 +549,13 @@ class FishModInit : ModInitializer {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().setScreen(fishmod.features.croesus.LootTrackerScreen())
                         }
+                        Constants.SUCCESS
+                    }
+            )
+            dispatcher.register(
+                ClientCommands.literal("storageview")
+                    .executes {
+                        Minecraft.getInstance().schedule { fishmod.features.storage.StorageViewerScreen.open() }
                         Constants.SUCCESS
                     }
             )

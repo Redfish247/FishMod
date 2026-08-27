@@ -61,6 +61,9 @@ public class Keybinds {
     public static KeyMapping dungeonAbility;
     public static KeyMapping dungeonAbilityMini;
 
+    /** Opens the read-only Storage Viewer. */
+    public static KeyMapping storageViewer;
+
     /** Backs up bound keys to our own config file so a keybind isn't silently lost when options.txt comes back empty/regenerated. */
     private static final Path KEYBIND_BACKUP_FILE = Paths.get(fishmod.utils.config.FolderUtility.CONFIG_PATH + "keybinds.txt");
     private static final Map<String, KeyMapping> TRACKED = new LinkedHashMap<>();
@@ -172,6 +175,13 @@ public class Keybinds {
                 category));
         TRACKED.put("dungeon_ability_mini", dungeonAbilityMini);
 
+        storageViewer = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "FishMod: Open Storage Viewer",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                category));
+        TRACKED.put("storage_viewer", storageViewer);
+
         restoreKeybindBackup();
 
         ClientTickEvents.END_CLIENT_TICK.register(Keybinds::checkInputs);
@@ -234,6 +244,10 @@ public class Keybinds {
 
         if (openConfig.consumeClick()) {
             client.setScreen(new fishmod.features.FishModScreen());
+        }
+
+        if (storageViewer.consumeClick()) {
+            fishmod.features.storage.StorageViewerScreen.open();
         }
 
         if (trades.consumeClick()) {
