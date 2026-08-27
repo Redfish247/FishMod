@@ -1490,7 +1490,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         var sy = top + 6
         for (s in f.sub) {
             val sh = s.getHeight()
-            if (s !is SubcategoryHeader && s !is InputSetting && s !is SliderIntSetting && s !is SliderDoubleSetting &&
+            if (s !is SubcategoryHeader && s !is LabelSetting && s !is InputSetting && s !is SliderIntSetting && s !is SliderDoubleSetting &&
                 s !is InputIntSetting && s !is InputDoubleSetting && s !is ColorPickerSetting) {
                 val labelH = if (s is DropdownSetting<*>) ITEM_HEIGHT else sh
                 st(ctx, this.font, s.name, leftX + 2, sy + (labelH - 8) / 2, TEXT_COLOR)
