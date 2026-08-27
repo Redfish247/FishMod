@@ -417,6 +417,9 @@ object FishSettings {
     @ConfigValue @JvmField var tpMazeNextColor: Int = 0x8055FF55.toInt()
     @ConfigValue @JvmField var tpMazeVisitedColor: Int = 0x80FF5555.toInt()
 
+    // ── Arrow Align (F7 P3 device) ─────────────────────────────────────────────
+    @ConfigValue @JvmField var arrowAlignEnabled: Boolean = false
+
     // ── F7 Terminal Solver (Odin TerminalSolver port) ──────────────────────────
     @ConfigValue @JvmField var terminalSolverEnabled: Boolean = false
     @ConfigValue @JvmField var terminalBlockWrongClicks: Boolean = true

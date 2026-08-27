@@ -604,6 +604,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ColorPickerSetting("Melody", "", FishSettings::terminalMelodyColor))
             floor7.features.add(f)
         }
+        floor7.features.add(Feature("Arrow Align", FishSettings::arrowAlignEnabled))
 
         for (et in FishModAddonApi.dungeonToggles) {
             dungeon.features.add(Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) }))
@@ -2466,6 +2467,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Invincibility Timer" -> "Spirit / Bonzo / Phoenix proc + cooldown timers"
                 "Secret Clicked" -> "Box + chime when you click a dungeon secret"
                 "Puzzle Solvers" -> "In-world solutions for dungeon puzzles"
+                "Arrow Align" -> "F7 P3 arrow device — clicks needed per frame"
                 "Auto Requeue" -> "Send /instancerequeue when a run ends (leader only)"
                 "Warp Cooldown" -> "Countdown until you can /warp again"
                 "Death Message" -> "Announce deaths with a template"
