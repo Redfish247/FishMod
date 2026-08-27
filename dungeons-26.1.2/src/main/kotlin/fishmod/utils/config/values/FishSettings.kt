@@ -452,6 +452,21 @@ object FishSettings {
     @ConfigValue @JvmField var monoAudioEnabled: Boolean = false
     @ConfigValue @JvmField var swordBlockingEnabled: Boolean = false
 
+    // ── Animations (first-person hand view-model editor) ──────────────────────
+    @ConfigValue @JvmField var animEnabled: Boolean = false
+    @ConfigValue @JvmField var animItemScale: Double = 0.0   // -1.5..1.5 (0 = normal)
+    @ConfigValue @JvmField var animX: Double = 0.0           // -2..2
+    @ConfigValue @JvmField var animY: Double = 0.0
+    @ConfigValue @JvmField var animZ: Double = 0.0
+    @ConfigValue @JvmField var animRotX: Double = 0.0        // degrees, -50..50
+    @ConfigValue @JvmField var animRotY: Double = 0.0
+    @ConfigValue @JvmField var animRotZ: Double = 0.0
+    @ConfigValue @JvmField var animSwingX: Double = 1.0      // 0..2 multipliers
+    @ConfigValue @JvmField var animSwingY: Double = 1.0
+    @ConfigValue @JvmField var animSwingZ: Double = 1.0
+    @ConfigValue @JvmField var animNoEquip: Boolean = false
+    @ConfigValue @JvmField var animNoHandMove: Boolean = false
+
     // ── Block Overlay ─────────────────────────────────────────────────────────
     @ConfigValue @JvmField var blockOverlayEnabled: Boolean = false
     @ConfigValue @JvmField var blockOverlayMode: Int = 2 // 0 outline, 1 fill, 2 filled outline
