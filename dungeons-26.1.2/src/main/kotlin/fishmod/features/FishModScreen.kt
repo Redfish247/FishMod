@@ -620,6 +620,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             visuals.features.add(f)
         }
         run {
+            val f = Feature("Tac Timer", FishSettings::tacTimerEnabled)
+            f.sub.add(ToggleSetting("Reverse (count up)", "", FishSettings::tacTimerReverse))
+            f.sub.add(ToggleSetting("\"Tac:\" Prefix", "", FishSettings::tacTimerPrefix))
+            f.sub.add(ToggleSetting("\"s\" Suffix", "", FishSettings::tacTimerSuffix))
+            f.sub.add(ToggleSetting("Start Waypoint", "", FishSettings::tacTimerWaypoint))
+            f.sub.add(ColorPickerSetting("Waypoint Color", "", FishSettings::tacTimerColor))
+            visuals.features.add(f)
+        }
+        run {
             val f = Feature("Camera Tweaks", FishSettings::cameraTweaksEnabled)
             f.sub.add(ToggleSetting("Custom FOV", "", FishSettings::cameraCustomFov))
             f.sub.add(SliderIntSetting("FOV", "", FishSettings::cameraFov, 30, 179))

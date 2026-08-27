@@ -487,6 +487,17 @@ object FishSettings {
     // ── Terracotta Timer (F6) ────────────────────────────────────────────────
     @ConfigValue @JvmField var terracottaTimerEnabled: Boolean = false
 
+    // ── Tac Timer ────────────────────────────────────────────────────────────
+    @ConfigValue @JvmField var tacTimerEnabled: Boolean = false
+    @ConfigValue @JvmField var tacTimerReverse: Boolean = false
+    @ConfigValue @JvmField var tacTimerPrefix: Boolean = true
+    @ConfigValue @JvmField var tacTimerSuffix: Boolean = false
+    @ConfigValue @JvmField var tacTimerWaypoint: Boolean = false
+    @ConfigValue @JvmField var tacTimerColor: Int = 0xFFAA00AA.toInt()
+    @ConfigValue @JvmField var tacTimerHudX: Int = 10
+    @ConfigValue @JvmField var tacTimerHudY: Int = 180
+    @ConfigValue @JvmField var tacTimerScale: Double = 1.0
+
     // ── Dungeon Abilities ────────────────────────────────────────────────────
     @ConfigValue @JvmField var dungeonAbilitiesEnabled: Boolean = false
     @ConfigValue @JvmField var dungeonAbilitiesAutoUlt: Boolean = false
