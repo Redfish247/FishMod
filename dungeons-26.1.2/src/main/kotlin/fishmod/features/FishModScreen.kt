@@ -519,6 +519,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         visuals.features.add(Feature("Fire Freeze Timer", FishSettings::fireFreezeTimerEnabled))
         visuals.features.add(Feature("Loadout Title", FishSettings::loadoutTitleEnabled))
         run {
+            val f = Feature("Time Changer", FishSettings::timeChangerEnabled)
+            f.sub.add(DropdownSetting("Time", "", fishmod.features.TimeChanger.modes(),
+                { FishSettings.timeChangerMode }, { v -> FishSettings.timeChangerMode = v }))
+            visuals.features.add(f)
+        }
+        run {
+            val f = Feature("Arrow Hit Sound", FishSettings::arrowHitSoundEnabled)
+            f.sub.add(ToggleSetting("Suppress Vanilla Sound", "", FishSettings::arrowHitSoundSuppress))
+            visuals.features.add(f)
+        }
+        run {
             val f = Feature("Explosive Shot", FishSettings::explosiveShotEnabled)
             f.sub.add(ToggleSetting("Announce to Party (Archer)", "", FishSettings::explosiveShotAnnounceParty))
             visuals.features.add(f)

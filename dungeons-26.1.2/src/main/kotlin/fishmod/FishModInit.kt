@@ -422,6 +422,8 @@ class FishModInit : ModInitializer {
         fishmod.features.LoadoutTitle.init()
         fishmod.features.AutoSprint.init()
         fishmod.features.WarpCooldown.init()
+        fishmod.features.TimeChanger.init()
+        fishmod.features.ArrowHitSound.init()
         fishmod.features.dungeon.LeapAnnounce.init()
         fishmod.features.dungeon.KeyNotifier.init()
         fishmod.features.dungeon.AutoRequeue.init()

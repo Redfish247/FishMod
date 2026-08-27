@@ -420,6 +420,14 @@ object FishSettings {
     // ── Arrow Align (F7 P3 device) ─────────────────────────────────────────────
     @ConfigValue @JvmField var arrowAlignEnabled: Boolean = false
 
+    // ── Time Changer (client-side world time) ──────────────────────────────────
+    @ConfigValue @JvmField var timeChangerEnabled: Boolean = false
+    @ConfigValue @JvmField var timeChangerMode: String = "Day"
+
+    // ── Arrow Hit Sound ───────────────────────────────────────────────────────
+    @ConfigValue @JvmField var arrowHitSoundEnabled: Boolean = false
+    @ConfigValue @JvmField var arrowHitSoundSuppress: Boolean = false
+
     // ── F7 Terminal Solver (Odin TerminalSolver port) ──────────────────────────
     @ConfigValue @JvmField var terminalSolverEnabled: Boolean = false
     @ConfigValue @JvmField var terminalBlockWrongClicks: Boolean = true
