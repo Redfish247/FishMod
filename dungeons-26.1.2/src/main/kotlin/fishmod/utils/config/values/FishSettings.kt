@@ -416,6 +416,13 @@ object FishSettings {
     @ConfigValue @JvmField var tpMazeSolver: Boolean = true
     @ConfigValue @JvmField var tpMazeNextColor: Int = 0x8055FF55.toInt()
     @ConfigValue @JvmField var tpMazeVisitedColor: Int = 0x80FF5555.toInt()
+    // Tic Tac Toe
+    @ConfigValue @JvmField var tttSolver: Boolean = true
+    @ConfigValue @JvmField var tttColor: Int = 0x9955FF55.toInt()
+    // Boulder
+    @ConfigValue @JvmField var boulderSolver: Boolean = true
+    @ConfigValue @JvmField var boulderShowAll: Boolean = true
+    @ConfigValue @JvmField var boulderColor: Int = 0x9955FF55.toInt()
 
     // ── Arrow Align (F7 P3 device) ─────────────────────────────────────────────
     @ConfigValue @JvmField var arrowAlignEnabled: Boolean = false

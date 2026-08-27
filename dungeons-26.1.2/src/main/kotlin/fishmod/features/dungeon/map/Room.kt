@@ -301,6 +301,38 @@ class Room(
         return rotated.offset(clay.x, 0, clay.z)
     }
 
+    /** Room content centre in world coords (y is meaningless — pass your own on [local]). */
+    val centerBlock: BlockPos?
+        get() {
+            if (tiles.isEmpty()) return null
+            val xs = tiles.map { it.pos.x }
+            val zs = tiles.map { it.pos.z }
+            return BlockPos((xs.min() + xs.max()) / 2 + 15, 0, (zs.min() + zs.max()) / 2 + 15)
+        }
+
+    /** [rotation] as NoammAddons/ScanUtils-style degrees. */
+    val rotationDegrees: Int
+        get() = when (rotation) {
+            Rotation.EAST -> 90
+            Rotation.NORTH -> 180
+            Rotation.WEST -> 270
+            else -> 0
+        }
+
+    /** NoammAddons `ScanUtils.getRealCoord`: centre-relative, north-up [local] -> world. */
+    fun realCoord(local: BlockPos): BlockPos? {
+        val c = centerBlock ?: return null
+        val x = local.x; val z = local.z
+        val rx: Int; val rz: Int
+        when (rotationDegrees) {
+            90 -> { rx = z; rz = -x }
+            180 -> { rx = -x; rz = -z }
+            270 -> { rx = -z; rz = x }
+            else -> { rx = x; rz = z }
+        }
+        return BlockPos(c.x + rx, local.y, c.z + rz)
+    }
+
     enum class Type {
         BLOOD, CHAMPION, ENTRANCE, FAIRY, NORMAL, PUZZLE, RARE, TRAP, UNKNOWN
     }

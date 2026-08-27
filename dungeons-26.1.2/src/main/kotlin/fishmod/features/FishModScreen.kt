@@ -92,6 +92,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val party = Column("Party", "people")
         val visuals = Column("Visuals", "eye")
         val floor7 = Column("Floor 7", "arch")
+        val solvers = Column("Solvers", "arch")
         val dungeonMap = Column("Dungeon Map", "map")
 
         // ===== General =====
@@ -242,7 +243,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("TP Maze Solver", "", FishSettings::tpMazeSolver))
             f.sub.add(ColorPickerSetting("Next Pad", "", FishSettings::tpMazeNextColor))
             f.sub.add(ColorPickerSetting("Visited Pad", "", FishSettings::tpMazeVisitedColor))
-            dungeon.features.add(f)
+            f.sub.add(SubcategoryHeader("Tic Tac Toe"))
+            f.sub.add(ToggleSetting("TTT Solver", "", FishSettings::tttSolver))
+            f.sub.add(ColorPickerSetting("TTT Color", "", FishSettings::tttColor))
+            f.sub.add(SubcategoryHeader("Boulder"))
+            f.sub.add(ToggleSetting("Boulder Solver", "", FishSettings::boulderSolver))
+            f.sub.add(ToggleSetting("Show All Clicks", "", FishSettings::boulderShowAll))
+            f.sub.add(ColorPickerSetting("Boulder Color", "", FishSettings::boulderColor))
+            solvers.features.add(f)
         }
         run {
             val f = Feature("Leap Messages", Dungeons::enableLeapMessages)
@@ -662,9 +670,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ColorPickerSetting("Order 3rd", "", FishSettings::terminalOrderColor3))
             f.sub.add(ColorPickerSetting("Rubix", "", FishSettings::terminalRubixColor))
             f.sub.add(ColorPickerSetting("Melody", "", FishSettings::terminalMelodyColor))
-            floor7.features.add(f)
+            solvers.features.add(f)
         }
-        floor7.features.add(Feature("Arrow Align", FishSettings::arrowAlignEnabled))
+        solvers.features.add(Feature("Arrow Align", FishSettings::arrowAlignEnabled))
         run {
             val f = Feature("Wither ESP", FishSettings::witherEspEnabled)
             f.sub.add(ColorPickerSetting("Maxor", "", FishSettings::witherEspMaxorColor))
@@ -861,6 +869,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         columns.add(party)
         columns.add(visuals)
         columns.add(floor7)
+        columns.add(solvers)
         columns.add(dungeonMap)
     }
 
