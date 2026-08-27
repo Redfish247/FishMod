@@ -34,6 +34,7 @@ object EtherwarpHelper {
 
     @Volatile private var target: BlockPos? = null
     @Volatile private var valid = false
+    private var lastCue = 0L
 
     private fun holdingEtherItem(): Boolean {
         val p = Minecraft.getInstance().player ?: return false
@@ -52,13 +53,23 @@ object EtherwarpHelper {
         }
 
         Events.ON_SOUND.register { event, volume, pitch ->
-            if (FishSettings.etherwarpHelperEnabled && FishSettings.etherwarpSoundEnabled
-                && event == SoundEvents.ENDER_DRAGON_HURT && volume == 1f && pitch == ETHERWARP_PITCH
-                && Location.inSkyblock()
-            ) {
-                SoundManager.preset(FishSettings.etherwarpSoundName)
-                true // swallow Hypixel's dragon-hurt cue; we replaced it with the chosen sound
-            } else false
+            if (!FishSettings.etherwarpHelperEnabled || !FishSettings.etherwarpSoundEnabled) return@register false
+            if (volume != 1f || pitch != ETHERWARP_PITCH || !Location.inSkyblock()) return@register false
+            // vol 1.0 + pitch 0.53968257 is already a near-unique fingerprint; also require either the
+            // dragon-hurt id (name may not survive Hypixel's 1.8->modern sound translation) or that
+            // an ether item is/was in hand.
+            val looksRight = event == SoundEvents.ENDER_DRAGON_HURT ||
+                event.location.path.let { it.contains("dragon") && (it.contains("hurt") || it.contains("hit")) } ||
+                holdingEtherItem()
+            if (!looksRight) return@register false
+            // Emit directly (not SoundManager.play, which is gated by the global sound-master toggle
+            // and, importantly, preset() only *resolves* a name — it never played anything, which is
+            // why this was silent). This feature's own two toggles are gate enough.
+            val now = System.currentTimeMillis()
+            if (now - lastCue < 150L) return@register true
+            lastCue = now
+            fishmod.utils.Misc.sendSound(SoundManager.preset(FishSettings.etherwarpSoundName), 1f, 1f)
+            true // swallow Hypixel's dragon-hurt cue; we replaced it with the chosen sound
         }
 
         RenderingEvents.FILLED_BLOCK.register { _, m, vc -> if (!FishSettings.etherwarpDepth) render(m, vc, fill = true) }
