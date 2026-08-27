@@ -530,6 +530,25 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             visuals.features.add(f)
         }
         run {
+            val f = Feature("Block Overlay", FishSettings::blockOverlayEnabled)
+            f.sub.add(DropdownSetting("Mode", "", arrayOf("Outline", "Fill", "Filled Outline"),
+                { arrayOf("Outline", "Fill", "Filled Outline")[FishSettings.blockOverlayMode] },
+                { v -> FishSettings.blockOverlayMode = arrayOf("Outline", "Fill", "Filled Outline").indexOf(v).coerceAtLeast(0) }))
+            f.sub.add(ColorPickerSetting("Fill Color", "", FishSettings::blockOverlayFillColor))
+            f.sub.add(ColorPickerSetting("Outline Color", "", FishSettings::blockOverlayOutlineColor))
+            f.sub.add(ToggleSetting("Phase (through walls)", "", FishSettings::blockOverlayPhase))
+            visuals.features.add(f)
+        }
+        run {
+            val f = Feature("Camera Tweaks", FishSettings::cameraTweaksEnabled)
+            f.sub.add(ToggleSetting("Custom FOV", "", FishSettings::cameraCustomFov))
+            f.sub.add(SliderIntSetting("FOV", "", FishSettings::cameraFov, 30, 179))
+            f.sub.add(ToggleSetting("Full Bright", "", FishSettings::cameraFullBright))
+            f.sub.add(ToggleSetting("Disable Blindness", "", FishSettings::cameraNoBlindness))
+            f.sub.add(ToggleSetting("Disable Nausea", "", FishSettings::cameraNoNausea))
+            visuals.features.add(f)
+        }
+        run {
             val f = Feature("Explosive Shot", FishSettings::explosiveShotEnabled)
             f.sub.add(ToggleSetting("Announce to Party (Archer)", "", FishSettings::explosiveShotAnnounceParty))
             visuals.features.add(f)

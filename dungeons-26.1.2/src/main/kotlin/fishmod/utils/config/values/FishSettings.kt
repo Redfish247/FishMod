@@ -428,6 +428,21 @@ object FishSettings {
     @ConfigValue @JvmField var arrowHitSoundEnabled: Boolean = false
     @ConfigValue @JvmField var arrowHitSoundSuppress: Boolean = false
 
+    // ── Block Overlay ─────────────────────────────────────────────────────────
+    @ConfigValue @JvmField var blockOverlayEnabled: Boolean = false
+    @ConfigValue @JvmField var blockOverlayMode: Int = 2 // 0 outline, 1 fill, 2 filled outline
+    @ConfigValue @JvmField var blockOverlayFillColor: Int = 0x40FFFFFF
+    @ConfigValue @JvmField var blockOverlayOutlineColor: Int = 0xFFFFFFFF.toInt()
+    @ConfigValue @JvmField var blockOverlayPhase: Boolean = false
+
+    // ── Camera Tweaks ─────────────────────────────────────────────────────────
+    @ConfigValue @JvmField var cameraTweaksEnabled: Boolean = false
+    @ConfigValue @JvmField var cameraCustomFov: Boolean = false
+    @ConfigValue @JvmField var cameraFov: Int = 110
+    @ConfigValue @JvmField var cameraFullBright: Boolean = false
+    @ConfigValue @JvmField var cameraNoBlindness: Boolean = false
+    @ConfigValue @JvmField var cameraNoNausea: Boolean = false
+
     // ── F7 Terminal Solver (Odin TerminalSolver port) ──────────────────────────
     @ConfigValue @JvmField var terminalSolverEnabled: Boolean = false
     @ConfigValue @JvmField var terminalBlockWrongClicks: Boolean = true
