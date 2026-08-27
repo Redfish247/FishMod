@@ -414,7 +414,8 @@ class FishModInit : ModInitializer {
         fishmod.features.scoreboard.FireSaleInfo.init()
         fishmod.features.other.CommandKeys.init()
         fishmod.features.other.WardrobeHotkeys.init()
-        // ItemRarityHotbar.init();   // rarity background: inventory-slot coverage (hotbar via HudRenderCallback)
+        ItemRarityHotbar.init()   // rarity background behind items (Visual.itemRarityBackground gate)
+        fishmod.features.item.ItemQualityTooltip.init()
         MayorApi.init()
         // SlayerXpTracker.init();
         // fishmod.features.SkillTracker.init();

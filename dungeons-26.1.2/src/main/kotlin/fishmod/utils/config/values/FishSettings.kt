@@ -447,6 +447,9 @@ object FishSettings {
     @ConfigValue @JvmField var relicTimerHudY: Int = 180
     @ConfigValue @JvmField var relicTimerScale: Double = 1.0
 
+    // ── Item Quality Tooltip ─────────────────────────────────────────────────
+    @ConfigValue @JvmField var itemQualityTooltip: Boolean = false
+
     // ── Camera Tweaks ─────────────────────────────────────────────────────────
     @ConfigValue @JvmField var cameraTweaksEnabled: Boolean = false
     @ConfigValue @JvmField var cameraCustomFov: Boolean = false

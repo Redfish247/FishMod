@@ -9,6 +9,7 @@ import fishmod.utils.config.values.Dungeons
 import fishmod.cosmetic.NickState
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.config.values.Floor7
+import fishmod.utils.config.values.Visual
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.dungeon.Section
 import fishmod.utils.dungeon.Split
@@ -539,6 +540,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Phase (through walls)", "", FishSettings::blockOverlayPhase))
             visuals.features.add(f)
         }
+        run {
+            val f = Feature("Item Rarity Background", Visual::itemRarityBackground)
+            f.sub.add(ToggleSetting("Circular", "", Visual::circularRarityBackground))
+            visuals.features.add(f)
+        }
+        visuals.features.add(Feature("Item Quality Tooltip", FishSettings::itemQualityTooltip))
         run {
             val f = Feature("Camera Tweaks", FishSettings::cameraTweaksEnabled)
             f.sub.add(ToggleSetting("Custom FOV", "", FishSettings::cameraCustomFov))
@@ -2512,6 +2519,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Secret Clicked" -> "Box + chime when you click a dungeon secret"
                 "Puzzle Solvers" -> "In-world solutions for dungeon puzzles"
                 "Arrow Align" -> "F7 P3 arrow device — clicks needed per frame"
+                "Item Rarity Background" -> "Rarity-tinted sprite behind every item"
+                "Item Quality Tooltip" -> "Dungeon-item stat boost % + floor in the tooltip"
+                "Wither ESP" -> "Outline the F7 wither boss by phase"
+                "M7 Relics" -> "P5 relic spawn timer + cauldron box"
                 "Auto Requeue" -> "Send /instancerequeue when a run ends (leader only)"
                 "Warp Cooldown" -> "Countdown until you can /warp again"
                 "Death Message" -> "Announce deaths with a template"
