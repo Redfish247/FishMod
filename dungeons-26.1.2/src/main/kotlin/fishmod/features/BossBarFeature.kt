@@ -20,6 +20,7 @@ object BossBarFeature {
     /** Called from FishBossBarHudMixin @Inject(RETURN) — fires after vanilla draws its text. */
     @JvmStatic
     fun renderAfterVanilla(ctx: GuiGraphicsExtractor) {
+        if (!fishmod.utils.config.values.Dungeons.bossHealthNumbers) return
         val mc = Minecraft.getInstance()
         if (mc == null || mc.player == null) return
 

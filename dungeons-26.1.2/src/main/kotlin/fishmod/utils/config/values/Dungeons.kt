@@ -90,7 +90,7 @@ object Dungeons {
 
     @ConfigValue @JvmField var quizTimer: Boolean = false
 
-    @ConfigValue @JvmField var bossHealthNumbers: Boolean = false
+    @ConfigValue @JvmField var bossHealthNumbers: Boolean = true
 
     @ConfigValue @JvmField var removeMaskPart: Boolean = true
 

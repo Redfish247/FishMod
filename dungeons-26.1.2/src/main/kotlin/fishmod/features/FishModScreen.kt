@@ -209,6 +209,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         dungeon.features.add(Feature("Puzzle Overlay", FishSettings::showPuzzles))
         dungeon.features.add(Feature("Leap Messages", Dungeons::enableLeapMessages))
         dungeon.features.add(Feature("Key Notifier", Dungeons::enableKeyNotifier))
+        dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
         run {
             val f = Feature("Death Message", FishSettings::deathMessageEnabled)
             val tmpl = InputSetting("Template", "", FishSettings::deathMessageTemplate)
