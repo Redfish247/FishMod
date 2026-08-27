@@ -71,10 +71,12 @@ public abstract class ItemInHandRendererMixin {
         // Sword Blocking — applied here (after vanilla positioning, before the item renders) so it
         // stacks on the real held-item pose instead of being double-transformed off-screen.
         if (fishmod$isSwordBlocking(player, itemStack, hand)) {
-            // Pull the blade back toward the camera (rotate about X), a little yaw across the view.
-            pose.translate(-0.06f, 0.05f, -0.72f);
-            pose.mulPose(Axis.XP.rotationDegrees(-78f));
-            pose.mulPose(Axis.YP.rotationDegrees(-12f));
+            // Vanilla 1.8 ItemRenderer.transformFirstPersonItem() blocking branch — small offset,
+            // then X/Y/Z rotations for the diagonal across-the-view pose.
+            pose.translate(-0.14142136f, 0.08f, 0.14142136f);
+            pose.mulPose(Axis.XP.rotationDegrees(-102.25f));
+            pose.mulPose(Axis.YP.rotationDegrees(13.365f));
+            pose.mulPose(Axis.ZP.rotationDegrees(78.05f));
         }
 
         if (!FishSettings.animEnabled) return;
