@@ -17,8 +17,6 @@ import org.lwjgl.glfw.GLFW
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
-import kotlin.math.atan2
-import kotlin.math.sqrt
 
 /**
  * Slot Binds (ported from NoammAddons' SlotBinding). Hold [Keybinds.slotBind] and click a hotbar
@@ -158,23 +156,23 @@ object SlotBinds {
     }
 
     private fun border(ctx: GuiGraphicsExtractor, x: Int, y: Int, color: Int) {
-        ctx.fill(x, y, x + 16, y + 1, color)
-        ctx.fill(x, y + 15, x + 16, y + 16, color)
-        ctx.fill(x, y, x + 1, y + 16, color)
-        ctx.fill(x + 15, y, x + 16, y + 16, color)
+        ctx.fill(x - 1, y - 1, x + 17, y + 1, color)
+        ctx.fill(x - 1, y + 15, x + 17, y + 17, color)
+        ctx.fill(x - 1, y - 1, x + 1, y + 17, color)
+        ctx.fill(x + 15, y - 1, x + 17, y + 17, color)
     }
 
-    /** Diagonal 2px line via a rotated axis-aligned fill on the 2D pose stack. */
+    /** Diagonal line as a run of small filled squares stepped along the path (no pose transform,
+     *  so it can't be defeated by matrix handling — if the slot borders draw, this draws). */
     private fun line(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
-        val dx = (x2 - x1).toFloat()
-        val dy = (y2 - y1).toFloat()
-        val len = sqrt(dx * dx + dy * dy)
-        if (len < 1f) return
-        val pose = ctx.pose()
-        pose.pushMatrix()
-        pose.translate(x1.toFloat(), y1.toFloat())
-        pose.rotate(atan2(dy, dx))
-        ctx.fill(0, -1, len.toInt(), 1, color)
-        pose.popMatrix()
+        val dx = x2 - x1
+        val dy = y2 - y1
+        val steps = maxOf(kotlin.math.abs(dx), kotlin.math.abs(dy))
+        if (steps == 0) return
+        for (i in 0..steps) {
+            val x = x1 + dx * i / steps
+            val y = y1 + dy * i / steps
+            ctx.fill(x - 1, y - 1, x + 2, y + 2, color)
+        }
     }
 }
