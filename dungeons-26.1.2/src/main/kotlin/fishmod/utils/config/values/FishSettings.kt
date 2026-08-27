@@ -514,9 +514,6 @@ object FishSettings {
     @ConfigValue @JvmField var leapCounterHudY: Int = 160
     @ConfigValue @JvmField var leapCounterScale: Double = 1.0
 
-    // ── Architect's First Draft ──────────────────────────────────────────────
-    @ConfigValue @JvmField var architectDraftAnnounce: Boolean = false
-
     // ── Auto GFS (refill dungeon consumables from your own sacks) ─────────────
     @ConfigValue @JvmField var autoGfsEnabled: Boolean = false
     @ConfigValue @JvmField var autoGfsDelaySec: Int = 20
@@ -538,7 +535,6 @@ object FishSettings {
 
     // ── Dungeon Abilities ────────────────────────────────────────────────────
     @ConfigValue @JvmField var dungeonAbilitiesEnabled: Boolean = false
-    @ConfigValue @JvmField var dungeonAbilitiesAutoUlt: Boolean = false
 
     // ── Slot Binds ───────────────────────────────────────────────────────────
     @ConfigValue @JvmField var slotBindsEnabled: Boolean = false

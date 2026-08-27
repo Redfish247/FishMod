@@ -283,7 +283,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
         dungeon.features.add(Feature("Terracotta Timer", FishSettings::terracottaTimerEnabled))
         dungeon.features.add(Feature("Leap Counter", FishSettings::leapCounterEnabled))
-        dungeon.features.add(Feature("Architect Draft Announce", FishSettings::architectDraftAnnounce))
         run {
             val f = Feature("Auto GFS", FishSettings::autoGfsEnabled)
             f.sub.add(SubcategoryHeader("Refills low consumables from YOUR sacks with /gfs while in a dungeon"))
@@ -296,8 +295,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("Dungeon Abilities", FishSettings::dungeonAbilitiesEnabled)
-            f.sub.add(SubcategoryHeader("Bind a key under Controls: FishMod: Use Dungeon Ability"))
-            f.sub.add(ToggleSetting("Auto Ult", "Auto-drop on Maxor/Goldor/Sadan enrage lines", FishSettings::dungeonAbilitiesAutoUlt))
+            f.sub.add(SubcategoryHeader("Ult = tap-drop (one item) · Mini Ult = ctrl-drop (whole stack)"))
+            f.sub.add(KeybindSetting("Ult (drop)", "", { fishmod.utils.Keybinds.dungeonAbility }))
+            f.sub.add(KeybindSetting("Mini Ult (ctrl+drop)", "", { fishmod.utils.Keybinds.dungeonAbilityMini }))
             dungeon.features.add(f)
         }
         run {
@@ -602,16 +602,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             visuals.features.add(f)
         }
         visuals.features.add(Feature("Item Quality Tooltip", FishSettings::itemQualityTooltip))
-        visuals.features.add(Feature("Hide Dead Entities", Visual::hideDeadEntities))
         run {
-            val f = Feature("Hide Nearby Players", Visual::hidePlayersInRange)
-            f.sub.add(SliderDoubleSetting("Range", "Blocks", Visual::hidePlayerRange, 1.0, 12.0))
-            visuals.features.add(f)
-        }
-        visuals.features.add(Feature("Stop Shovel Flattening", Visual::stopShovelFlattening))
-        run {
-            val f = Feature("No Swing Animation", Visual::noSwingAnimation)
-            f.sub.add(ToggleSetting("Terminator Only", "Only suppress while holding a Terminator", Visual::noSwingTerminatorOnly))
+            val f = Feature("Render Optimizer", Visual::renderOptimizer)
+            f.sub.add(ToggleSetting("Hide Nearby Players", "Hide other players within range", Visual::hidePlayersInRange))
+            f.sub.add(SliderDoubleSetting("Player Range", "Blocks", Visual::hidePlayerRange, 1.0, 12.0))
+            f.sub.add(ToggleSetting("Hide Dead Entities", "Drop dying / 0-HP mobs from the render pass", Visual::hideDeadEntities))
+            f.sub.add(ToggleSetting("No Swing Animation", "Suppress the first-person hand swing", Visual::noSwingAnimation))
+            f.sub.add(ToggleSetting("Swing: Terminator Only", "Only suppress while holding a Terminator", Visual::noSwingTerminatorOnly))
+            f.sub.add(ToggleSetting("Stop Shovel Flattening", "Cancel the shovel make-path interaction", Visual::stopShovelFlattening))
             visuals.features.add(f)
         }
         visuals.features.add(Feature("Highlight Protected Items", Visual::highlightProtectedItem))

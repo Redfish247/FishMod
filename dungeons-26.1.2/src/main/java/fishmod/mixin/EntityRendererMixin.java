@@ -69,6 +69,7 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
     @Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true)
     private void fishmod$cullEntities(T entity, Frustum frustum, double camX, double camY, double camZ,
                                      CallbackInfoReturnable<Boolean> cir) {
+        if (!Visual.renderOptimizer) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || entity == mc.player) return;
 

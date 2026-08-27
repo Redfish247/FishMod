@@ -8,6 +8,9 @@ object Visual {
 
     @ConfigValue @JvmField var hideStuckArrows: Boolean = false
 
+    /** Master gate for the Render Optimizer group (hide players/dead entities, no-swing, shovel). */
+    @ConfigValue @JvmField var renderOptimizer: Boolean = false
+
     @ConfigValue @JvmField var hideDeadEntities: Boolean = false
 
     /** Hide other players within [hidePlayerRange] blocks (declutter crowded hubs / boss fights). */

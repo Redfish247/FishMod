@@ -12,9 +12,11 @@ import net.minecraft.world.item.ShovelItem
 import net.minecraft.world.level.block.Blocks
 
 /**
- * Small quality-of-life client tweaks ported from Odin / NoammAddons:
+ * Small quality-of-life client tweaks ported from Odin / NoammAddons. The first three are gated
+ * behind the [Visual.renderOptimizer] master switch (the "Render Optimizer" feature):
+ *  - noSwingAnimation: zero the first-person hand-swing state each tick
  *  - stopShovelFlattening: cancel the shovel "make path" interaction on dirt-likes
- *  - highlightProtectedItem: red outline behind inventory items whose lore marks them protected
+ * [highlightProtectedItem] is independent (its own Visuals feature).
  */
 object VisualTweaks {
 
@@ -27,7 +29,7 @@ object VisualTweaks {
     fun init() {
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { mc ->
             val p = mc.player ?: return@register
-            if (!Visual.noSwingAnimation) return@register
+            if (!Visual.renderOptimizer || !Visual.noSwingAnimation) return@register
             if (Visual.noSwingTerminatorOnly && ItemUtil.getId(p.mainHandItem) != "TERMINATOR") return@register
             p.swinging = false
             p.swingTime = 0
@@ -36,7 +38,7 @@ object VisualTweaks {
         }
 
         UseBlockCallback.EVENT.register(UseBlockCallback { player, level, hand, hit ->
-            if (Visual.stopShovelFlattening
+            if (Visual.renderOptimizer && Visual.stopShovelFlattening
                 && player === Minecraft.getInstance().player
                 && player.getItemInHand(hand).item is ShovelItem
                 && level.getBlockState(hit.blockPos).block in FLATTENABLE

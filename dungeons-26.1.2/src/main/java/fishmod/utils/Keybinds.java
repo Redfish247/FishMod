@@ -57,8 +57,9 @@ public class Keybinds {
     /** Hold-key for Slot Binds: hold + click a hotbar slot then an inventory slot to link them. */
     public static KeyMapping slotBind;
 
-    /** Press to use your dungeon class ability (drops the held item, like vanilla Q). */
+    /** Dungeon class ability: ult = tap-drop (one item), mini ult = ctrl-drop (whole stack). */
     public static KeyMapping dungeonAbility;
+    public static KeyMapping dungeonAbilityMini;
 
     /** Backs up bound keys to our own config file so a keybind isn't silently lost when options.txt comes back empty/regenerated. */
     private static final Path KEYBIND_BACKUP_FILE = Paths.get(fishmod.utils.config.FolderUtility.CONFIG_PATH + "keybinds.txt");
@@ -158,11 +159,18 @@ public class Keybinds {
         TRACKED.put("slot_bind", slotBind);
 
         dungeonAbility = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-                "FishMod: Use Dungeon Ability",
+                "FishMod: Dungeon Ability - Ult (drop)",
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
         TRACKED.put("dungeon_ability", dungeonAbility);
+
+        dungeonAbilityMini = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "FishMod: Dungeon Ability - Mini Ult (ctrl+drop)",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                category));
+        TRACKED.put("dungeon_ability_mini", dungeonAbilityMini);
 
         restoreKeybindBackup();
 
