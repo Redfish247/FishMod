@@ -44,6 +44,10 @@ object Visual {
 
     @ConfigValue @JvmField var stopPearlSwing: Boolean = false
 
+    /** Suppress the first-person hand swing animation (optionally only while holding a Terminator). */
+    @ConfigValue @JvmField var noSwingAnimation: Boolean = false
+    @ConfigValue @JvmField var noSwingTerminatorOnly: Boolean = false
+
     @ConfigValue @JvmField var circularRarityBackground: Boolean = false
 
 }

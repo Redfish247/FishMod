@@ -25,6 +25,16 @@ object VisualTweaks {
 
     @JvmStatic
     fun init() {
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { mc ->
+            val p = mc.player ?: return@register
+            if (!Visual.noSwingAnimation) return@register
+            if (Visual.noSwingTerminatorOnly && ItemUtil.getId(p.mainHandItem) != "TERMINATOR") return@register
+            p.swinging = false
+            p.swingTime = 0
+            p.attackAnim = 0f
+            p.oAttackAnim = 0f
+        }
+
         UseBlockCallback.EVENT.register(UseBlockCallback { player, level, hand, hit ->
             if (Visual.stopShovelFlattening
                 && player === Minecraft.getInstance().player

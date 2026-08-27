@@ -609,6 +609,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             visuals.features.add(f)
         }
         visuals.features.add(Feature("Stop Shovel Flattening", Visual::stopShovelFlattening))
+        run {
+            val f = Feature("No Swing Animation", Visual::noSwingAnimation)
+            f.sub.add(ToggleSetting("Terminator Only", "Only suppress while holding a Terminator", Visual::noSwingTerminatorOnly))
+            visuals.features.add(f)
+        }
         visuals.features.add(Feature("Highlight Protected Items", Visual::highlightProtectedItem))
         run {
             val f = Feature("Gyro Helper", FishSettings::gyroHelperEnabled)
