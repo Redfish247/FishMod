@@ -319,6 +319,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeon.features.add(f)
         }
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
+        run {
+            val f = Feature("Extra Stats", FishSettings::extraStatsEnabled)
+            f.sub.add(SubcategoryHeader("Replaces Hypixel's post-run stats block with a tidy summary"))
+            f.sub.add(ToggleSetting("Show Bits", "", FishSettings::extraStatsBits))
+            f.sub.add(ToggleSetting("Show Class EXP", "", FishSettings::extraStatsClassExp))
+            f.sub.add(ToggleSetting("Show Combat Stats", "Damage / kills / healing", FishSettings::extraStatsCombat))
+            f.sub.add(ToggleSetting("Show Teammates", "", FishSettings::extraStatsTeammates))
+            dungeon.features.add(f)
+        }
         dungeon.features.add(Feature("Terracotta Timer", FishSettings::terracottaTimerEnabled))
         run {
             val f = Feature("Auto GFS", FishSettings::autoGfsEnabled)

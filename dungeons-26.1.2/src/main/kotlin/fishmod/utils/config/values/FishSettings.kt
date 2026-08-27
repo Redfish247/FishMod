@@ -467,6 +467,13 @@ object FishSettings {
     @ConfigValue @JvmField var animNoEquip: Boolean = false
     @ConfigValue @JvmField var animNoHandMove: Boolean = false
 
+    // ── Extra Stats (post-run dungeon summary) ───────────────────────────────
+    @ConfigValue @JvmField var extraStatsEnabled: Boolean = false
+    @ConfigValue @JvmField var extraStatsBits: Boolean = true
+    @ConfigValue @JvmField var extraStatsClassExp: Boolean = true
+    @ConfigValue @JvmField var extraStatsCombat: Boolean = true
+    @ConfigValue @JvmField var extraStatsTeammates: Boolean = false
+
     // ── Lava To Water ────────────────────────────────────────────────────────
     @ConfigValue @JvmField var lavaToWaterEnabled: Boolean = false
     @ConfigValue @JvmField var lavaToWaterTint: Boolean = false
