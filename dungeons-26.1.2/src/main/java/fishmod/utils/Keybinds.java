@@ -54,6 +54,9 @@ public class Keybinds {
     public static KeyMapping wardrobeNextPage;
     public static KeyMapping wardrobePrevPage;
 
+    /** Hold-key for Slot Binds: hold + click a hotbar slot then an inventory slot to link them. */
+    public static KeyMapping slotBind;
+
     /** Backs up bound keys to our own config file so a keybind isn't silently lost when options.txt comes back empty/regenerated. */
     private static final Path KEYBIND_BACKUP_FILE = Paths.get(fishmod.utils.config.FolderUtility.CONFIG_PATH + "keybinds.txt");
     private static final Map<String, KeyMapping> TRACKED = new LinkedHashMap<>();
@@ -143,6 +146,13 @@ public class Keybinds {
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
+
+        slotBind = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "FishMod: Slot Bind (hold)",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                category));
+        TRACKED.put("slot_bind", slotBind);
 
         restoreKeybindBackup();
 

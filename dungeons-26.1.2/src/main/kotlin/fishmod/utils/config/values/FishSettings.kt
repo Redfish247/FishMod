@@ -484,6 +484,12 @@ object FishSettings {
     @ConfigValue @JvmField var springBootsHudY: Int = 200
     @ConfigValue @JvmField var springBootsScale: Double = 1.0
 
+    // ── Slot Binds ───────────────────────────────────────────────────────────
+    @ConfigValue @JvmField var slotBindsEnabled: Boolean = false
+    @ConfigValue @JvmField var slotBindsShow: Boolean = true
+    @ConfigValue @JvmField var slotBindsHoverOnly: Boolean = false
+    @ConfigValue @JvmField var slotBindsColor: Int = 0xFFFF55FF.toInt()
+
     // ── Camera Tweaks ─────────────────────────────────────────────────────────
     @ConfigValue @JvmField var cameraTweaksEnabled: Boolean = false
     @ConfigValue @JvmField var cameraCustomFov: Boolean = false
