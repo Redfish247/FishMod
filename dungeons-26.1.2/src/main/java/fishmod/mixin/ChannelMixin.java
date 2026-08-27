@@ -2,6 +2,7 @@ package fishmod.mixin;
 
 import fishmod.features.MonoAudio;
 import fishmod.utils.config.values.FishSettings;
+import fishmod.utils.sound.IMonoAudioChannel;
 import com.mojang.blaze3d.audio.Channel;
 import net.minecraft.world.phys.Vec3;
 import org.lwjgl.openal.AL10;

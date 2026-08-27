@@ -1,6 +1,7 @@
 package fishmod.mixin;
 
 import fishmod.utils.config.values.FishSettings;
+import fishmod.utils.sound.IMonoAudioChannel;
 import net.minecraft.client.Camera;
 import net.minecraft.client.sounds.ChannelAccess;
 import net.minecraft.client.sounds.SoundEngine;
