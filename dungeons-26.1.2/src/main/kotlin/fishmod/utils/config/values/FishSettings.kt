@@ -472,6 +472,7 @@ object FishSettings {
     // ── Storage Overlay (all-pages viewer + search over /storage) ────────────
     @ConfigValue @JvmField var storageOverlayEnabled: Boolean = false
     @ConfigValue @JvmField var storageViewerColumns: Int = 3
+    @ConfigValue @JvmField var storageMaxHeight: Int = 360
     @ConfigValue @JvmField var storageHideNonMatching: Boolean = false
 
     // ── Leap Menu (custom Spirit Leap GUI) ───────────────────────────────────

@@ -23,5 +23,12 @@ data class StoragePage(val index: Int) : Comparable<StoragePage> {
             BACKPACK.find(title)?.groupValues?.get(1)?.toIntOrNull()?.let { return StoragePage(it - 1 + 9) }
             return null
         }
+
+        /** Overview slot -> page index (NoammAddons layout: ender 9..17, backpack 27..44). */
+        fun overviewIndex(slot: Int): Int? = when (slot) {
+            in 9..17 -> slot - 9
+            in 27..44 -> slot - 27 + 9
+            else -> null
+        }
     }
 }

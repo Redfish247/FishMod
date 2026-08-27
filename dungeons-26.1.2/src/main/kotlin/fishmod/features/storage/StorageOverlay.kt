@@ -26,17 +26,20 @@ object StorageOverlay {
     private const val PLAYER_W = SLOT * 9 + 6
     private const val PLAYER_H = SLOT * 4 + 18
 
-    // NoammAddons palette
-    private val MENU_BG = 0xFF18181B.toInt()
-    private val MENU_BORDER = 0xFF3C3C41.toInt()
-    private val CELL_BG = 0xFF1E1E22.toInt()
-    private val CELL_BORDER = 0xFF37373C.toInt()
-    private val UNLOADED_BG = 0xC8323237.toInt()
+    // liquid-glass palette (translucent — the game is blurred behind)
+    private val MENU_BG = 0x55_1B2130
+    private val GLASS_TOP = 0x26_FFFFFF
+    private val GLASS_BOT = 0x06_FFFFFF
+    private val MENU_BORDER = 0x55_FFFFFF
+    private val EDGE_D = 0x33_000000
+    private val CELL_BG = 0x2A_10121C
+    private val CELL_BORDER = 0x22_8FA0C0
+    private val UNLOADED_BG = 0x33_2A3242
     private val ACTIVE_BORDER = 0xFF3BC9C0.toInt()
-    private val SCROLL_BG = 0xB41E1E23.toInt()
-    private val SCROLL_FG = 0xFF787882.toInt()
-    private val FIELD_BG = 0xFF101014.toInt()
-    private val BLACKOUT = 0xF00A0A0C.toInt()
+    private val SCROLL_BG = 0x33_101018
+    private val SCROLL_FG = 0x66_C8D2E6
+    private val FIELD_BG = 0x50_0A0C14
+    private val BLACKOUT = 0x66_0A0A12
     private val DIM = 0xB0000000.toInt()
 
     @Volatile var search = ""
@@ -76,7 +79,9 @@ object StorageOverlay {
         val font = mc.font
         val W = screen.width; val H = screen.height
 
-        // full black-out of the vanilla GUI
+        // frost the game, then a translucent tint over the (now hidden) vanilla GUI
+        runCatching { ctx.blurBeforeThisStratum() }
+        runCatching { ctx.nextStratum() }
         ctx.fill(0, 0, W, H, BLACKOUT)
 
         val active = activeIdx(screen)
@@ -86,16 +91,21 @@ object StorageOverlay {
             .coerceAtMost(max(1, (W - PAD) / (PAGE_W + PAD)))
         val innerW = PAGE_W * cols + (cols - 1) * PAD
         val overviewW = innerW + 3 * PAD + SCROLL_W
-        val overviewH = (H - PLAYER_H - minOf(80, H / 10)).coerceIn(120, 600)
+        val overviewH = (H - PLAYER_H - minOf(80, H / 10))
+            .coerceAtMost(FishSettings.storageMaxHeight.coerceIn(120, 900)).coerceIn(120, 900)
         val innerH = overviewH - PAD * 2
         val ox = W / 2 - overviewW / 2
         val oy = H / 2 - (overviewH + PLAYER_H) / 2
         val playerX = W / 2 - PLAYER_W / 2
         val playerY = oy + overviewH + 2
 
-        // main panel
+        // main panel — glass: translucent base, top sheen, bright top/left lip, dark bottom/right
         ctx.fill(ox, oy, ox + overviewW, oy + overviewH, MENU_BG)
-        border(ctx, ox, oy, overviewW, overviewH, MENU_BORDER)
+        runCatching { ctx.fillGradient(ox, oy, ox + overviewW, oy + overviewH / 2, GLASS_TOP, GLASS_BOT) }
+        ctx.fill(ox, oy, ox + overviewW, oy + 1, MENU_BORDER)
+        ctx.fill(ox, oy, ox + 1, oy + overviewH, MENU_BORDER)
+        ctx.fill(ox, oy + overviewH - 1, ox + overviewW, oy + overviewH, EDGE_D)
+        ctx.fill(ox + overviewW - 1, oy, ox + overviewW, oy + overviewH, EDGE_D)
 
         // header: title + search field
         ctx.text(font, "§fStorage  §7${pages.size} pages", ox + PAD, oy + 4, -1)
@@ -197,12 +207,16 @@ object StorageOverlay {
     private fun buildPages(screen: AbstractContainerScreen<*>, active: Int): List<Pair<Int, List<ItemStack>?>> {
         val map = sortedMapOf<Int, List<ItemStack>?>()
         for ((i, inv) in StorageCache.view()) map[i] = inv.stacks
-        // always show all 27 slots so un-cached pages are click-to-load
-        for (i in 0 until 27) map.putIfAbsent(i, null)
+        // only offer "click to load" for pages we know exist (learned from the /storage overview)
+        for (i in StorageCache.knownPages()) map.putIfAbsent(i, null)
         if (active >= 0) {
             val menu = screen.menu
             val rc = (menu as? ChestMenu)?.rowCount ?: ((menu.slots.size - 36) / 9)
-            if (rc > 1) map[active] = menu.slots.subList(9, rc * 9).map { it.item }
+            if (rc > 1) {
+                val live = menu.slots.subList(9, rc * 9).map { it.item }
+                map[active] = live
+                StorageCache.put(active, live)   // keep the cache fresh even for a quick click-through
+            }
         }
         return map.entries.map { it.key to it.value }
     }
