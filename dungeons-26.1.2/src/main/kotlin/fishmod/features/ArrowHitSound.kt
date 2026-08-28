@@ -36,7 +36,7 @@ object ArrowHitSound {
         if (!FishSettings.arrowHitSoundEnabled) return
         SoundManager.play(
             SoundManager.preset(FishSettings.arrowHitSoundName),
-            FishSettings.arrowHitSoundVolume.coerceIn(0, 100) / 100f,
+            FishSettings.arrowHitSoundVolume.coerceIn(0, 500) / 100f,
             FishSettings.arrowHitSoundPitch.toFloat().coerceIn(0f, 2f),
             "arrowHit", 40,
         )

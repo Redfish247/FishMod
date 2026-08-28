@@ -187,7 +187,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Cast Sound", "", FishSettings::etherwarpSoundEnabled))
             f.sub.add(SoundSearchSetting("Sound", "Type to search every game sound",
                 { FishSettings.etherwarpSoundName }, { v -> FishSettings.etherwarpSoundName = v }))
-            f.sub.add(SliderIntSetting("Sound Volume %", "Above 100 = louder up close", FishSettings::etherwarpSoundVolume, 0, 500, 10))
+            f.sub.add(SliderIntSetting("Sound Volume %", "Above 100 = louder (stacked plays)", FishSettings::etherwarpSoundVolume, 0, 500, 10))
             f.sub.add(SliderDoubleSetting("Sound Pitch", "", FishSettings::etherwarpSoundPitch, 0.5, 2.0))
             visuals.features.add(f)
         }
@@ -706,7 +706,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             val f = Feature("Arrow Hit Sound", FishSettings::arrowHitSoundEnabled)
             f.sub.add(SoundSearchSetting("Sound", "Type to search every game sound",
                 { FishSettings.arrowHitSoundName }, { v -> FishSettings.arrowHitSoundName = v }))
-            f.sub.add(SliderIntSetting("Volume %", "", FishSettings::arrowHitSoundVolume, 0, 100))
+            f.sub.add(SliderIntSetting("Volume %", "Above 100 = louder (stacked plays)", FishSettings::arrowHitSoundVolume, 0, 500, 10))
             f.sub.add(SliderDoubleSetting("Pitch", "", FishSettings::arrowHitSoundPitch, 0.0, 2.0))
             f.sub.add(ToggleSetting("Suppress Vanilla Sound", "", FishSettings::arrowHitSoundSuppress))
             combat.features.add(f)

@@ -78,7 +78,21 @@ object Misc {
     @JvmStatic
     fun sendSound(soundEvent: SoundEvent, volume: Float, pitch: Float) {
         val player: LocalPlayer = INSTANCE.player ?: return
-        forceMainThread { player.playSound(soundEvent, volume, pitch) }
+        forceMainThread {
+            if (volume <= 1f) {
+                player.playSound(soundEvent, volume, pitch)
+            } else {
+                // Minecraft clamps a sound's gain to 1.0 at the listener, so volume > 1 alone only
+                // widens the falloff radius (audible from further away), not the actual loudness.
+                // Stack copies so a ">100%" cue is genuinely louder — 500% ≈ five overlaid plays.
+                // Hard-capped so a stray value can't spam the mixer.
+                var remaining = volume.coerceAtMost(6f)
+                while (remaining > 0f) {
+                    player.playSound(soundEvent, remaining.coerceAtMost(1f), pitch)
+                    remaining -= 1f
+                }
+            }
+        }
     }
 
     @JvmStatic
