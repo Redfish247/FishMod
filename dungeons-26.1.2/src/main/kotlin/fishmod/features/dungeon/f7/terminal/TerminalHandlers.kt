@@ -150,8 +150,9 @@ class RubixHandler : TerminalHandler(TerminalType.RUBIX) {
 
     private fun solve(): List<Int> {
         val panes = items.withIndex().filter { (_, s) -> s.isPane() && s?.`is`(BLACK_PANE) == false }
-        var best: List<Int> = List(100) { it }
         val candidates = if (lastColorIdx != null) listOf(lastColorIdx!!) else RUBIX_ORDER.indices.toList()
+        var best: List<Int> = List(100) { it }
+        var bestTarget = lastColorIdx ?: -1
         for (target in candidates) {
             val attempt = panes.flatMap { (idx, stack) ->
                 val ci = colorIdxOf(stack)
@@ -159,9 +160,13 @@ class RubixHandler : TerminalHandler(TerminalType.RUBIX) {
             }
             if (realSize(attempt) < realSize(best)) {
                 best = attempt
-                if (lastColorIdx == null) lastColorIdx = target
+                bestTarget = target
             }
         }
+        // Lock the winning colour once, so post-click recomputes don't re-pick a different target
+        // and shuffle every indicator. (The old code locked whichever colour first beat the sentinel
+        // — always orange — not the colour that actually won.)
+        if (lastColorIdx == null && bestTarget >= 0) lastColorIdx = bestTarget
         return best
     }
 }
