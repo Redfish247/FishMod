@@ -43,10 +43,18 @@ public class ChatHudMixin {
     @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
             at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Component message, MessageSignature signature, GuiMessageSource source, GuiMessageTag tag, CallbackInfo ci) {
-        // Chat filter: hide selected spam lines at DISPLAY time. Packet-level parsers (dungeon
-        // splits/score, Simon Says, …) already ran via ON_GAME_MESSAGE before the line reaches
-        // here, so suppressing it now never breaks those features.
-        if (fishmod.features.ChatFilter.shouldHide(message)) { ci.cancel(); return; }
+        // Chat filter + chat-rule "Hide Original Message": hide selected lines at DISPLAY time.
+        // Packet-level parsers (dungeon splits/score, Simon Says, …) and vanilla's own chat logging
+        // already ran before the line reaches here, so the line stays in logs/latest.log for mods to
+        // review — it just isn't drawn. Cancelling at addMessage() HEAD also means no blank slot is
+        // left behind; a lone trailing spacer line from Hypixel is swallowed too.
+        if (fishmod.features.ChatFilter.shouldHide(message)
+                || fishmod.features.chat.ChatRuleHandler.shouldHideAtDisplay(message)) {
+            fishmod.features.chat.ChatHideState.noteSuppressed();
+            ci.cancel();
+            return;
+        }
+        if (fishmod.features.chat.ChatHideState.shouldSwallowBlank(message)) { ci.cancel(); return; }
 
         String plain = message.getString().replaceAll("§.", "");
 

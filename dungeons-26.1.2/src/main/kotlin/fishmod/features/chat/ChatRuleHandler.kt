@@ -29,14 +29,16 @@ object ChatRuleHandler {
         fishmod.utils.events.Events.ON_GAME_MESSAGE.register { message ->
             if (!ChatRuleStore.isMasterEnabled()) return@register false
             val raw = message.string.replace(Regex("§."), "")
-            var hide = false
             for (rule in ChatRuleStore.rules()) {
                 if (!rule.enabled || rule.filter.isBlank()) continue
                 if (!matches(rule, raw)) continue
                 fire(rule)
-                if (rule.hideMessage) hide = true
             }
-            hide
+            // Never drop the packet here — that would also skip vanilla's chat logging, so the line
+            // would vanish from logs/latest.log too. "Hide Original Message" is applied at the chat
+            // DISPLAY layer instead (see [shouldHideAtDisplay] / ChatHudMixin): the line still parses
+            // and still logs, it just isn't drawn in your chat.
+            false
         }
 
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "chat_notifications")) { ctx, tc -> renderHud(ctx, tc) }
@@ -49,6 +51,22 @@ object ChatRuleHandler {
             { ChatRuleStore.hudScale() }, { v -> ChatRuleStore.setHudScale(v) },
             { ChatRuleStore.isMasterEnabled() }
         )
+    }
+
+    /**
+     * DISPLAY-layer predicate (called from ChatHudMixin): true if some enabled rule with
+     * "Hide Original Message" matches this line. Pure — side-effect outputs already fired from the
+     * packet-level handler above, so this only decides whether to draw the line.
+     */
+    @JvmStatic
+    fun shouldHideAtDisplay(message: Component?): Boolean {
+        if (message == null || !ChatRuleStore.isMasterEnabled()) return false
+        val raw = message.string?.replace(Regex("§."), "") ?: return false
+        for (rule in ChatRuleStore.rules()) {
+            if (!rule.enabled || !rule.hideMessage || rule.filter.isBlank()) continue
+            if (matches(rule, raw)) return true
+        }
+        return false
     }
 
     @JvmStatic

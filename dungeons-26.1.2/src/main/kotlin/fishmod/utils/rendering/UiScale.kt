@@ -17,12 +17,24 @@ object UiScale {
     private const val REFERENCE_GUI_SCALE = 2.0
     private const val FLAT_SHRINK = 0.77f
 
+    // FishModScreen's sibling popups (Chat Notifications, Command Aliases/Keys, Loot Tracker, Item
+    // Customize, Credits) render 30% larger than the main /fm panel so they stay readable — the
+    // panel itself is deliberately left at the base size.
+    private const val SIBLING_ENLARGE = 1.30f
+
     /** Combined scale to shrink a screen's drawing by; also divide incoming mouse coordinates by
      *  this before hit-testing against layout computed in the same (virtual) space. */
     fun factor(): Float {
         val guiScale = Minecraft.getInstance().window.guiScale
         val compensation = (REFERENCE_GUI_SCALE / guiScale).coerceAtMost(1.0)
-        return (compensation * FLAT_SHRINK).toFloat()
+        val base = (compensation * FLAT_SHRINK).toFloat()
+        return if (isSiblingScreen()) base * SIBLING_ENLARGE else base
+    }
+
+    /** True when the open screen is one of FishModScreen's NanoVG siblings (not the panel itself). */
+    private fun isSiblingScreen(): Boolean {
+        val s = Minecraft.getInstance().screen ?: return false
+        return s is fishmod.features.HasNvgOverlay && s !is fishmod.features.FishModScreen
     }
 
     /** Converts a real mouse/screen coordinate into the virtual (pre-shrink) space screens lay
