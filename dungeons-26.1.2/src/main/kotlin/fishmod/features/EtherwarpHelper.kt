@@ -68,7 +68,9 @@ object EtherwarpHelper {
             val now = System.currentTimeMillis()
             if (now - lastCue < 150L) return@register true
             lastCue = now
-            fishmod.utils.Misc.sendSound(SoundManager.preset(FishSettings.etherwarpSoundName), 1f, 1f)
+            val vol = FishSettings.etherwarpSoundVolume.coerceIn(0, 500) / 100f
+            val pit = FishSettings.etherwarpSoundPitch.toFloat().coerceIn(0.5f, 2f)
+            fishmod.utils.Misc.sendSound(SoundManager.preset(FishSettings.etherwarpSoundName), vol, pit)
             true // swallow Hypixel's dragon-hurt cue; we replaced it with the chosen sound
         }
 

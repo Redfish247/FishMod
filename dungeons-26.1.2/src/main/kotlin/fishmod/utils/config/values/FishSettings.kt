@@ -523,6 +523,8 @@ object FishSettings {
     @ConfigValue @JvmField var etherwarpRange: Int = 61
     @ConfigValue @JvmField var etherwarpSoundEnabled: Boolean = false
     @ConfigValue @JvmField var etherwarpSoundName: String = "Blaze Hit"
+    @ConfigValue @JvmField var etherwarpSoundVolume: Int = 100  // percent; >100 widens falloff so it's louder up close
+    @ConfigValue @JvmField var etherwarpSoundPitch: Double = 1.0
 
     // ── Extra Stats (post-run dungeon summary) ───────────────────────────────
     @ConfigValue @JvmField var extraStatsEnabled: Boolean = false

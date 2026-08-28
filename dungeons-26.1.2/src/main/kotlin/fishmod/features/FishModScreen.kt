@@ -184,6 +184,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Cast Sound", "", FishSettings::etherwarpSoundEnabled))
             f.sub.add(DropdownSetting("Sound", "", fishmod.utils.sound.SoundManager.presetNames(),
                 { FishSettings.etherwarpSoundName }, { v -> FishSettings.etherwarpSoundName = v }))
+            f.sub.add(SliderIntSetting("Sound Volume %", "Above 100 = louder up close", FishSettings::etherwarpSoundVolume, 0, 500, 10))
+            f.sub.add(SliderDoubleSetting("Sound Pitch", "", FishSettings::etherwarpSoundPitch, 0.5, 2.0))
             visuals.features.add(f)
         }
         run {
