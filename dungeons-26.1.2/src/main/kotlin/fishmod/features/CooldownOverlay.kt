@@ -92,7 +92,10 @@ object CooldownOverlay {
             if (!FishSettings.cooldownOverlayEnabled) {
                 false
             } else {
-                if (pitch <= 0.0001f && volume >= 7.9f && event.location == SoundEvents.ENDERMAN_TELEPORT.location) {
+                // Hypixel's ability-cooldown cue is a pitch-0 enderman teleport played very loud.
+                // Real endermen teleport at pitch ~1, so the near-zero pitch alone is the tell;
+                // keep a loose volume floor only to drop faint ambient ones.
+                if (pitch <= 0.05f && volume >= 3f && event.location == SoundEvents.ENDERMAN_TELEPORT.location) {
                     if (debugDumpSound) {
                         Misc.addChatMessage(Component.literal("§d[fmcd] cooldown sound detected"))
                     }
@@ -165,8 +168,11 @@ object CooldownOverlay {
             lastMana = mana
         }
 
-        // Right-click trigger — ARMS the pending confirmation only. Cooldown is registered by the
-        // mana tracker above when mana actually drops, so a no-mana right-click won't start it.
+        // Right-click trigger — start the cooldown immediately. The mana-drop / sound / mana-line
+        // paths above are kept as accurate secondary confirms, but they were the *only* triggers
+        // before and the very first cast after a world change had no mana baseline yet, so it never
+        // registered. Firing on the click itself makes the overlay show on the first proc; a
+        // genuinely no-mana / on-cooldown click is a no-op (onAbilityFired bails if already active).
         UseItemCallback.EVENT.register(UseItemCallback { player, world, hand ->
             if (!FishSettings.cooldownOverlayEnabled) return@UseItemCallback InteractionResult.PASS
             if (hand != InteractionHand.MAIN_HAND) return@UseItemCallback InteractionResult.PASS
@@ -174,12 +180,10 @@ object CooldownOverlay {
             if (stack != null && !stack.isEmpty) {
                 val id = ItemUtil.getId(stack)
                 if (id != null && COOLDOWNS.containsKey(id)) {
-                    pendingId = id
-                    pendingAt = System.currentTimeMillis()
-                    pendingManaBefore = lastMana
                     if (debugDumpSound) {
-                        Misc.addChatMessage(Component.literal("§d[fmcd] armed $id (mana=$lastMana)"))
+                        Misc.addChatMessage(Component.literal("§d[fmcd] right-click $id → start"))
                     }
+                    onAbilityFired()
                 }
             }
             InteractionResult.PASS
