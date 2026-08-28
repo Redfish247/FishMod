@@ -285,6 +285,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Friend Join/Leave", "", FishSettings::cfFriendJoinLeave))
             f.sub.add(ToggleSetting("Bazaar", "", FishSettings::cfBazaar))
             f.sub.add(ToggleSetting("Warping", "", FishSettings::cfWarping))
+            f.sub.add(ToggleSetting("Skyblock/Dungeon Spam", "NoammAddons' full useless-message list", FishSettings::cfNoammSpam))
+            f.sub.add(ToggleSetting("Collapse Blank Lines", "Drop repeated empty chat lines", FishSettings::cfCollapseBlank))
+            f.sub.add(ToggleSetting("Custom Regex", "Apply the list below", FishSettings::cfCustom))
+            f.sub.add(InputSetting("Patterns", "One regex per line (or ;-separated)",
+                { FishSettings.cfCustomPatterns }, { v -> FishSettings.cfCustomPatterns = v ?: "" }))
             general.features.add(f)
         }
 
@@ -2767,7 +2772,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Inventory Buttons" -> "Clickable command buttons in your inventory"
                 "Smart Copy Chat" -> "Right-click a chat line to copy it"
                 "Compact Tab" -> "Cleaner custom tab player list"
-                "Chat Filter" -> "Hide selected chat spam"
+                "Chat Filter" -> "Hide selected chat spam + NoammAddons' list + custom regex"
                 "Explosive Shot" -> "Title with per-enemy damage"
                 "Dungeon Score" -> "Live S+ score tracker overlay"
                 "Puzzle Overlay" -> "Show solved puzzle names"

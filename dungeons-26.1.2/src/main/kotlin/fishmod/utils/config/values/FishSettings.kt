@@ -215,6 +215,10 @@ object FishSettings {
     @ConfigValue @JvmField var cfFriendJoinLeave: Boolean = false // "Friend > X joined./left."
     @ConfigValue @JvmField var cfBazaar: Boolean = false // "[Bazaar] Executing instant buy..."
     @ConfigValue @JvmField var cfWarping: Boolean = false // "Warping..."
+    @ConfigValue @JvmField var cfNoammSpam: Boolean = false // NoammAddons' bundled "useless messages" list
+    @ConfigValue @JvmField var cfCollapseBlank: Boolean = false // drop consecutive blank chat lines
+    @ConfigValue @JvmField var cfCustom: Boolean = false // apply cfCustomPatterns
+    @ConfigValue @JvmField var cfCustomPatterns: String = "" // user regexes, newline- or ;-separated
 
     // Explosive Shot: parse "Your Explosive Shot hit N enemy/enemies for D damage." and show the
     // per-enemy damage (D / N) as an on-screen title.
