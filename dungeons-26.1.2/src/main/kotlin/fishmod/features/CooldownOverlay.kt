@@ -85,11 +85,14 @@ object CooldownOverlay {
     @JvmStatic
     fun init() {
         // Primary trigger: cooldown sound (Enderman teleport, pitch=0, volume=8).
+        // Match on the sound id, not `===` — the engine instance is never the SoundEvents.* constant,
+        // so the old identity check never passed and this fast path was dead (fell back to the slow
+        // mana-drop confirmation).
         Events.ON_SOUND.register { event, volume, pitch ->
             if (!FishSettings.cooldownOverlayEnabled) {
                 false
             } else {
-                if (pitch == 0.0f && volume == 8.0f && event === SoundEvents.ENDERMAN_TELEPORT) {
+                if (pitch <= 0.0001f && volume >= 7.9f && event.location == SoundEvents.ENDERMAN_TELEPORT.location) {
                     if (debugDumpSound) {
                         Misc.addChatMessage(Component.literal("§d[fmcd] cooldown sound detected"))
                     }
