@@ -692,6 +692,13 @@ object FishSettings {
     @ConfigValue @JvmField var terminalMelodyPointerColor: Int = 0x9955FF55.toInt()
     @ConfigValue @JvmField var terminalWrongCover: Int = 0xF01A1A22.toInt()
     @ConfigValue @JvmField var termSimPbs: String = ""                            // csv of 6 best times (s)
+    // Odin "Custom GUI" render mode: 0 = overlay on the vanilla chest, 1 = replace it with a big
+    // rounded slot board (works in real terminals + /fmtermsim).
+    @ConfigValue @JvmField var terminalRenderMode: Int = 0
+    @ConfigValue @JvmField var terminalCustomScale: Double = 1.0
+    @ConfigValue @JvmField var terminalCustomRoundness: Int = 8
+    @ConfigValue @JvmField var terminalCustomGap: Int = 4
+    @ConfigValue @JvmField var terminalCustomBg: Int = 0xC0141414.toInt()
 
     // Warp Cooldown HUD (revives Dungeons.enableWarpCooldown). Cooldown starts on the party's
     // "entered <floor> Catacombs" chat line (Odin logic); 30s is Hypixel's real re-entry gate.

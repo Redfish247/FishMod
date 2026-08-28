@@ -175,7 +175,7 @@ object TerminalSolver {
         }
     }
 
-    private fun slotColor(term: TerminalHandler, idx: Int): Int = when (term.type) {
+    fun slotColor(term: TerminalHandler, idx: Int): Int = when (term.type) {
         TerminalType.NUMBERS -> when (term.solution.indexOf(idx)) {
             0 -> FishSettings.terminalOrderColor1
             1 -> FishSettings.terminalOrderColor2

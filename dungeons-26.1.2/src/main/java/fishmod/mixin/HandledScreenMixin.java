@@ -31,7 +31,17 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
         SearchBar.render(context, mouseX, mouseY, deltaTicks);
         fishmod.features.dungeon.LeapMenu.render(context, mouseX, mouseY, (AbstractContainerScreen<?>) (Object) this);
         fishmod.features.storage.StorageOverlay.render(context, mouseX, mouseY, (AbstractContainerScreen<?>) (Object) this);
+        if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) {
+            fishmod.features.dungeon.f7.terminal.TermCustomGui.render(context, this.width, this.height);
+        }
         if ((Object) this instanceof fishmod.features.dungeon.f7.terminal.TermSimScreen ts) ts.overlay(context);
+    }
+
+    // Custom GUI mode: hide every vanilla slot (items + hover highlight + the solver's own overlay);
+    // TermCustomGui draws its board on top in extractRenderState instead.
+    @Inject(method = "extractSlots", at = @At("HEAD"), cancellable = true)
+    private void fishmod$customTermHideSlots(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
+        if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) ci.cancel();
     }
 
     @Inject(method = "extractSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;item(Lnet/minecraft/world/item/ItemStack;III)V"))
@@ -57,6 +67,14 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void onMouseClick(MouseButtonEvent click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
         double cx = click.x(), cy = click.y();
+
+        if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) {
+            int idx = fishmod.features.dungeon.f7.terminal.TermCustomGui.slotAt((int) cx, (int) cy);
+            fishmod.features.dungeon.f7.terminal.TermCustomGui.handleClick(
+                    (AbstractContainerScreen<?>) (Object) this, idx, click.button());
+            cir.setReturnValue(true);
+            return;
+        }
 
         if (fishmod.features.dungeon.f7.terminal.TerminalSolver.onMouseClick(
                 click.button(), (AbstractContainerScreen<?>) (Object) this)) {

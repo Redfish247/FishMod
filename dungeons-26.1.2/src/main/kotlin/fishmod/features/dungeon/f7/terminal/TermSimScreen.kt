@@ -200,9 +200,13 @@ class TermSimScreen private constructor(
 
     override fun slotClicked(slot: Slot, slotId: Int, mouseButton: Int, input: ContainerInput) {
         if (slot.container !== box) return  // ignore player inventory
-        val idx = slot.index
+        simClick(slot.index, mouseButton)
+    }
+
+    /** Apply the Hypixel effect for a click on board slot [idx]. Also called from the Custom GUI path. */
+    fun simClick(idx: Int, button: Int) {
         if (idx < 0 || idx >= type.windowSize) return
-        val right = mouseButton == 1
+        val right = button == 1
         val st = box.getItem(idx)
 
         when (type) {
@@ -236,7 +240,7 @@ class TermSimScreen private constructor(
                 if ((0 until 54).none { val s = box.getItem(it); !s.hasFoil() && selectMatch(s) }) win()
             }
             TerminalType.MELODY -> {
-                if (slot.index % 9 != 7 || slot.index / 9 != melRow || melLime != melTarget) { misses++; return }
+                if (idx % 9 != 7 || idx / 9 != melRow || melLime != melTarget) { misses++; return }
                 melRow++
                 melTarget = 1 + Random.nextInt(5)
                 ping()

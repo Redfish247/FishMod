@@ -858,6 +858,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("Terminal Solver", FishSettings::terminalSolverEnabled)
+            f.sub.add(DropdownSetting("Render Mode", "Custom GUI replaces the chest with a big rounded board",
+                arrayOf("Overlay", "Custom GUI"),
+                { arrayOf("Overlay", "Custom GUI")[FishSettings.terminalRenderMode] },
+                { v -> FishSettings.terminalRenderMode = arrayOf("Overlay", "Custom GUI").indexOf(v).coerceAtLeast(0) }))
+            f.sub.add(SliderDoubleSetting("Custom Scale", "", FishSettings::terminalCustomScale, 0.5, 3.0))
+            f.sub.add(SliderIntSetting("Custom Roundness", "", FishSettings::terminalCustomRoundness, 0, 15))
+            f.sub.add(SliderIntSetting("Custom Gap", "", FishSettings::terminalCustomGap, 0, 15))
+            f.sub.add(ColorPickerSetting("Custom Background", "", FishSettings::terminalCustomBg))
             f.sub.add(ToggleSetting("Block Wrong Clicks", "", FishSettings::terminalBlockWrongClicks))
             f.sub.add(ToggleSetting("Stop Tooltips", "Hide hover tooltips in terminals", FishSettings::terminalStopTooltips))
             f.sub.add(ToggleSetting("Hide Wrong Items", "Cover non-solution slots", FishSettings::terminalHideWrong))
