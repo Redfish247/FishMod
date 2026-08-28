@@ -871,6 +871,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         solvers.features.add(Feature("Arrow Align", FishSettings::arrowAlignEnabled))
         run {
+            val f = Feature("Simon Says Solver", FishSettings::simonSolverEnabled)
+            f.sub.add(ToggleSetting("Through Walls", "", FishSettings::simonSolverDepth))
+            f.sub.add(ColorPickerSetting("Next", "", FishSettings::simonSolverColor1))
+            f.sub.add(ColorPickerSetting("Second", "", FishSettings::simonSolverColor2))
+            f.sub.add(ColorPickerSetting("Rest", "", FishSettings::simonSolverColor3))
+            solvers.features.add(f)
+        }
+        run {
             val f = Feature("Melody Message", FishSettings::melodyMessageEnabled)
             f.sub.add(ToggleSetting("Announce on Open", "Party message when the melody terminal opens", FishSettings::melodyMessageOnOpen))
             f.sub.add(InputSetting("Open Message", "",
@@ -2790,6 +2798,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Arrow Align" -> "F7 P3 arrow device — clicks needed per frame"
                 "Ragnarock" -> "Alerts when your Ragnarock Axe cast succeeds or is cancelled"
                 "Arrows Device" -> "F7 P3 Sharp Shooter — boxes targets vs already-hit blocks"
+                "Simon Says Solver" -> "F7 P3 Goldor device — boxes the buttons to press, in order"
                 "Melody Message" -> "Party-announce the F7 melody terminal + its progress"
                 "Item Rarity Background" -> "Rarity-tinted sprite behind every item"
                 "Item Quality Tooltip" -> "Dungeon-item stat boost % + floor in the tooltip"

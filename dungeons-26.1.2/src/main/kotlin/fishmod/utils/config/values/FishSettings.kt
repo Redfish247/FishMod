@@ -590,6 +590,13 @@ object FishSettings {
     @ConfigValue @JvmField var melodyMessageText: String = "Melody Terminal start!"
     @ConfigValue @JvmField var melodyMessageProgress: Boolean = false
 
+    // ── Simon Says Solver (F7 P3) ──────────────────────────────────────────
+    @ConfigValue @JvmField var simonSolverEnabled: Boolean = false
+    @ConfigValue @JvmField var simonSolverDepth: Boolean = false
+    @ConfigValue @JvmField var simonSolverColor1: Int = 0x8055FF55.toInt()
+    @ConfigValue @JvmField var simonSolverColor2: Int = 0x80FFAA00.toInt()
+    @ConfigValue @JvmField var simonSolverColor3: Int = 0x80FF5555.toInt()
+
     // ── Arrows Device (F7 P3 Sharp Shooter) ────────────────────────────────
     @ConfigValue @JvmField var arrowsDeviceEnabled: Boolean = false
     @ConfigValue @JvmField var arrowsDeviceDepth: Boolean = true
