@@ -1212,7 +1212,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val n = visibleColumns().size
         if (n == 0) return 0
         val avail = (cx1() - cx0()) - (n - 1) * COLUMN_GUTTER
-        return Math.max(MIN_COLUMN_W, avail / n)
+        // Cap the width so a search that matches only one or two columns keeps them at a normal
+        // column size instead of stretching each one across the whole screen.
+        return (avail / n).coerceIn(MIN_COLUMN_W, MAX_COLUMN_W)
     }
 
     private fun columnX0(visibleIndex: Int): Int {
@@ -2325,6 +2327,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         private var cacheKey: String? = null
         private var cached: List<String> = emptyList()
         private val rowRects = ArrayList<Pair<IntArray, String>>()
+        private var testRect: IntArray? = null
+
+        private fun preview() {
+            fishmod.utils.Misc.sendSound(fishmod.utils.sound.SoundManager.preset(valueGetter()), 1f, 1f)
+        }
 
         override fun initField(tr: Font) {
             if (textField == null) {
@@ -2359,8 +2366,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             initField(tr)
             st(ctx, tr, name, leftX + 2, sy + 1, TEXT_COLOR)
+            // "Test" button — plays the currently-selected sound.
+            val btnW = stw(tr, "Test") + 14
+            val btnH = 11
+            val btnX = rightX - btnW - 2
+            val btnHov = mx >= btnX && mx <= btnX + btnW && my >= sy && my <= sy + btnH
+            roundedRect(ctx, btnX, sy, btnW, btnH, btnH / 2, if (btnHov) ACCENT else TRACK_OFF)
+            st(ctx, tr, "Test", btnX + 7, sy + 2, TEXT_COLOR)
+            testRect = intArrayOf(btnX, sy, btnX + btnW, sy + btnH)
             val cur = valueGetter()
-            if (cur.isNotBlank()) st(ctx, tr, cur, rightX - stw(tr, cur) - 2, sy + 1, ACCENT_HOVER)
+            if (cur.isNotBlank()) st(ctx, tr, cur, btnX - stw(tr, cur) - 6, sy + 1, ACCENT_HOVER)
             val ix = leftX + 2
             val iy = sy + 12
             val fieldW = rightX - leftX - 4
@@ -2380,6 +2395,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
 
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
+            testRect?.let { r ->
+                if (mx >= r[0] && mx <= r[2] && my >= r[1] && my <= r[3]) { preview(); return true }
+            }
             val ix = leftX + 2
             val iy = sy + 12
             val fieldW = rightX - leftX - 4
@@ -2718,6 +2736,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         private const val HEADER_H = 24
         private const val HEADER_STRIP_H = 3
         private const val MIN_COLUMN_W = 172 // floor so controls don't clip; widened so column tabs read as spacious, not cramped
+        private const val MAX_COLUMN_W = 260 // ceiling so a narrow search result doesn't stretch a column across the whole screen
 
         private const val ROW_H = 22
         private const val ROW_GAP = 3
