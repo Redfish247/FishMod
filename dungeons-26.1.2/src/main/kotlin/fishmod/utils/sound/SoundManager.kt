@@ -3,6 +3,8 @@ package fishmod.utils.sound
 import config.practical.data.SoundData
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.resources.Identifier
 import net.minecraft.sounds.SoundEvent
 import net.minecraft.sounds.SoundEvents
 
@@ -33,10 +35,32 @@ object SoundManager {
         "Guardian Hit" to SoundEvents.GUARDIAN_HURT,
         "Anvil Land" to SoundEvents.ANVIL_LAND,
         "Amethyst" to SoundEvents.AMETHYST_BLOCK_CHIME,
+        "Arrow Hit" to SoundEvents.ARROW_HIT,
+        "Arrow Hit Player" to SoundEvents.ARROW_HIT_PLAYER,
+        "Bow Shoot" to SoundEvents.ARROW_SHOOT,
+        "Crit" to SoundEvents.PLAYER_ATTACK_CRIT,
+        "Levelup" to SoundEvents.PLAYER_LEVELUP,
+        "Villager Yes" to SoundEvents.VILLAGER_YES,
+        "Dispenser" to SoundEvents.DISPENSER_DISPENSE,
+        "Totem" to SoundEvents.TOTEM_USE,
     )
 
     @JvmStatic
     fun presetNames(): Array<String> = PRESETS.keys.toTypedArray()
+
+    /** Every sound event id in the registry as `namespace:path` strings — for the search picker. */
+    val allSoundIds: List<String> by lazy {
+        BuiltInRegistries.SOUND_EVENT.keySet().map { it.toString() }.sorted()
+    }
+
+    /** Shown in the search picker before you type anything. */
+    val shortlist: List<String> = listOf(
+        "minecraft:block.note_block.pling", "minecraft:block.note_block.harp",
+        "minecraft:block.note_block.bell", "minecraft:block.note_block.bass",
+        "minecraft:entity.arrow.hit", "minecraft:entity.arrow.hit_player",
+        "minecraft:entity.experience_orb.pickup", "minecraft:entity.player.levelup",
+        "minecraft:block.anvil.land", "minecraft:entity.item.break",
+    )
 
     private fun resolve(v: Any?): SoundEvent = when (v) {
         is SoundEvent -> v
@@ -44,9 +68,20 @@ object SoundManager {
         else -> SoundEvents.NOTE_BLOCK_PLING.value()
     }
 
-    /** Resolve a preset name to its [SoundEvent]; falls back to Note: Pling. */
+    /**
+     * Resolve a stored sound name to a [SoundEvent]. Accepts either a named preset ("Note: Pling")
+     * or a raw registry id ("minecraft:entity.arrow.hit_player" / "entity.arrow.hit_player").
+     * Falls back to Note: Pling.
+     */
     @JvmStatic
-    fun preset(name: String?): SoundEvent = resolve(PRESETS[name])
+    fun preset(name: String?): SoundEvent {
+        if (name.isNullOrBlank()) return SoundEvents.NOTE_BLOCK_PLING.value()
+        PRESETS[name]?.let { return resolve(it) }
+        val id = Identifier.tryParse(if (':' in name) name else "minecraft:$name")
+        val fromRegistry: SoundEvent? =
+            id?.let { BuiltInRegistries.SOUND_EVENT.getOptional(it).orElse(null) }
+        return fromRegistry ?: SoundEvents.NOTE_BLOCK_PLING.value()
+    }
 
     private val lastPlayed = HashMap<String, Long>()
 

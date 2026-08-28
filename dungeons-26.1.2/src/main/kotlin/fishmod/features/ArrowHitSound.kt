@@ -12,11 +12,17 @@ import net.minecraft.sounds.SoundEvents
  */
 object ArrowHitSound {
 
+    // Compare by id, not identity — the sound-engine instance is not the SoundEvents.* constant.
+    private val ARROW_HITS = setOf(
+        SoundEvents.ARROW_HIT_PLAYER.location,
+        SoundEvents.ARROW_HIT.location,
+    )
+
     @JvmStatic
     fun init() {
         Events.ON_SOUND.register { event, _, _ ->
             if (!FishSettings.arrowHitSoundEnabled) return@register false
-            if (event !== SoundEvents.ARROW_HIT_PLAYER) return@register false
+            if (event.location !in ARROW_HITS) return@register false
             SoundManager.play(
                 SoundManager.preset(FishSettings.arrowHitSoundName),
                 FishSettings.arrowHitSoundVolume.coerceIn(0, 100) / 100f,

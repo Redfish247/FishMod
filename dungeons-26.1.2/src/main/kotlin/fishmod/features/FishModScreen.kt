@@ -182,7 +182,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Through Walls", "", FishSettings::etherwarpDepth))
             f.sub.add(SliderIntSetting("Range", "Blocks", FishSettings::etherwarpRange, 1, 61))
             f.sub.add(ToggleSetting("Cast Sound", "", FishSettings::etherwarpSoundEnabled))
-            f.sub.add(DropdownSetting("Sound", "", fishmod.utils.sound.SoundManager.presetNames(),
+            f.sub.add(SoundSearchSetting("Sound", "Type to search every game sound",
                 { FishSettings.etherwarpSoundName }, { v -> FishSettings.etherwarpSoundName = v }))
             f.sub.add(SliderIntSetting("Sound Volume %", "Above 100 = louder up close", FishSettings::etherwarpSoundVolume, 0, 500, 10))
             f.sub.add(SliderDoubleSetting("Sound Pitch", "", FishSettings::etherwarpSoundPitch, 0.5, 2.0))
@@ -437,7 +437,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Box In Boss", "", FishSettings::secretClickedInBoss))
             f.sub.add(ToggleSetting("Chime", "Sound on secret click", FishSettings::secretClickedChime))
             f.sub.add(ToggleSetting("Chime In Boss", "", FishSettings::secretClickedChimeInBoss))
-            f.sub.add(DropdownSetting("Chime Sound", "", fishmod.utils.sound.SoundManager.presetNames(),
+            f.sub.add(SoundSearchSetting("Chime Sound", "Type to search every game sound",
                 { FishSettings.secretClickedSoundName }, { v -> FishSettings.secretClickedSoundName = v }))
             f.sub.add(SliderIntSetting("Chime Volume %", "", FishSettings::secretClickedVolume, 0, 100))
             f.sub.add(SliderDoubleSetting("Chime Pitch", "", FishSettings::secretClickedPitch, 0.0, 2.0))
@@ -701,7 +701,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("Arrow Hit Sound", FishSettings::arrowHitSoundEnabled)
-            f.sub.add(DropdownSetting("Sound", "", fishmod.utils.sound.SoundManager.presetNames(),
+            f.sub.add(SoundSearchSetting("Sound", "Type to search every game sound",
                 { FishSettings.arrowHitSoundName }, { v -> FishSettings.arrowHitSoundName = v }))
             f.sub.add(SliderIntSetting("Volume %", "", FishSettings::arrowHitSoundVolume, 0, 100))
             f.sub.add(SliderDoubleSetting("Pitch", "", FishSettings::arrowHitSoundPitch, 0.0, 2.0))
@@ -2299,6 +2299,95 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                     tf.cursorPosition = len; tf.setHighlightPos(len)
                 }
                 return true
+            }
+            return false
+        }
+    }
+
+    /**
+     * Type to filter every sound event in the registry; shows the top 10 matches as clickable rows.
+     * Stores the picked id string (resolved back to a SoundEvent by [fishmod.utils.sound.SoundManager.preset]).
+     */
+    class SoundSearchSetting(
+        name: String,
+        desc: String,
+        private val valueGetter: () -> String,
+        private val valueSetter: (String) -> Unit,
+    ) : InputSetting(name, desc, { "" }, { }) {
+
+        private var query = ""
+        private var cacheKey: String? = null
+        private var cached: List<String> = emptyList()
+        private val rowRects = ArrayList<Pair<IntArray, String>>()
+
+        override fun initField(tr: Font) {
+            if (textField == null) {
+                val tf = EditBox(tr, 0, 0, INPUT_W, INPUT_H, Component.empty())
+                tf.setMaxLength(128)
+                tf.value = ""
+                tf.setResponder { s -> query = s }
+                textField = tf
+            }
+        }
+
+        private fun matches(): List<String> {
+            val cur = valueGetter()
+            val key = "${query.trim().lowercase()}|$cur"
+            cacheKey?.let { if (it == key) return cached }
+            val q = query.trim().lowercase().replace(' ', '_')
+            val out = if (q.isEmpty()) {
+                (listOf(cur).filter { it.isNotBlank() && ':' in it } +
+                    fishmod.utils.sound.SoundManager.shortlist).distinct().take(10)
+            } else {
+                fishmod.utils.sound.SoundManager.allSoundIds.asSequence()
+                    .filter { it.contains(q) }
+                    .sortedWith(compareBy({ !it.substringAfter(':').startsWith(q) }, { it.length }, { it }))
+                    .take(10).toList()
+            }
+            cacheKey = key; cached = out
+            return out
+        }
+
+        override fun getHeight(): Int = 28 + matches().size * OPTION_H + 4
+
+        override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
+            initField(tr)
+            st(ctx, tr, name, leftX + 2, sy + 1, TEXT_COLOR)
+            val cur = valueGetter()
+            if (cur.isNotBlank()) st(ctx, tr, cur, rightX - stw(tr, cur) - 2, sy + 1, ACCENT_HOVER)
+            val ix = leftX + 2
+            val iy = sy + 12
+            val fieldW = rightX - leftX - 4
+            nvgTextField(textField!!, ix, iy, fieldW, INPUT_H)
+            rowRects.clear()
+            var ry = iy + INPUT_H + 2
+            for (id in matches()) {
+                val hov = mx >= leftX + 2 && mx <= rightX - 2 && my >= ry && my <= ry + OPTION_H
+                if (hov) roundedRect(ctx, leftX + 4, ry + 1, rightX - leftX - 8, OPTION_H - 2, 4, ROW_HOVER)
+                val sel = id == cur
+                val short = id.removePrefix("minecraft:")
+                st(ctx, tr, short, leftX + 10, ry + (OPTION_H - 8) / 2,
+                    if (sel) ACCENT_HOVER else if (hov) TEXT_COLOR else SUBTEXT_COLOR)
+                rowRects.add(intArrayOf(leftX + 2, ry, rightX - 2, ry + OPTION_H) to id)
+                ry += OPTION_H
+            }
+        }
+
+        override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
+            val ix = leftX + 2
+            val iy = sy + 12
+            val fieldW = rightX - leftX - 4
+            if (mx >= ix && mx <= ix + fieldW && my >= iy && my <= iy + INPUT_H) {
+                textField?.let { it.setFocused(true); val n = it.value.length; it.cursorPosition = n; it.setHighlightPos(n) }
+                return true
+            }
+            for ((r, id) in rowRects) {
+                if (mx >= r[0] && mx <= r[2] && my >= r[1] && my <= r[3]) {
+                    valueSetter(id)
+                    fishmod.utils.sound.SoundManager.play(fishmod.utils.sound.SoundManager.preset(id), 1f, 1f)
+                    cacheKey = null
+                    return true
+                }
             }
             return false
         }
