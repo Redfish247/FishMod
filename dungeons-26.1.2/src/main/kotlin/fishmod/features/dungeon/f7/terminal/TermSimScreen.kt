@@ -136,7 +136,9 @@ class TermSimScreen private constructor(
     private fun genNumbers() {
         for (i in 0 until 36) box.setItem(i, ItemStack(BLACK))
         val nums = (1..14).shuffled().iterator()
-        for (row in 1..2) for (col in 1..7) box.setItem(row * 9 + col, ItemStack(RED, nums.next()))
+        for (row in 1..2) for (col in 1..7) {
+            box.setItem(row * 9 + col, ItemStack(RED).also { it.count = nums.next() })
+        }
     }
 
     private fun genRubix() {

@@ -67,16 +67,19 @@ object TermCustomGui {
             rects[i] = intArrayOf(cx, cy, cell, cell)
 
             if (numbers) {
-                // Numbers: never draw the red pane — just tint the next 3 in the order colours and
-                // print the count on every number cell.
-                when (sol.indexOf(i)) {
-                    0 -> roundFill(ctx, cx, cy, cell, cell, round, FishSettings.terminalOrderColor1)
-                    1 -> roundFill(ctx, cx, cy, cell, cell, round, FishSettings.terminalOrderColor2)
-                    2 -> roundFill(ctx, cx, cy, cell, cell, round, FishSettings.terminalOrderColor3)
-                    else -> roundFill(ctx, cx, cy, cell, cell, round, 0x33101820)
+                // Numbers: never draw the red pane. Only the next 3 clicks get a coloured cell;
+                // every other number stays a blank slot with a dim digit so it can't be confused
+                // for a target. The digit is pose-scaled so it reads as a number, not an artifact.
+                val ord = sol.indexOf(i)
+                val col = when (ord) {
+                    0 -> FishSettings.terminalOrderColor1
+                    1 -> FishSettings.terminalOrderColor2
+                    2 -> FishSettings.terminalOrderColor3
+                    else -> 0
                 }
+                if (col != 0) roundFill(ctx, cx, cy, cell, cell, round, col)
                 val n = st?.count ?: 0
-                if (n > 0) drawCentered(ctx, mc, n.toString(), cx, cy, cell)
+                if (n > 0) drawBig(ctx, mc, n.toString(), cx, cy, cell, if (ord in 0..2) -0x1 else -0x777778)
                 continue
             }
 
@@ -109,6 +112,18 @@ object TermCustomGui {
     private fun drawCentered(ctx: GuiGraphicsExtractor, mc: Minecraft, s: String, cx: Int, cy: Int, cell: Int) {
         val w = mc.font.width(s)
         ctx.text(mc.font, s, cx + (cell - w) / 2, cy + cell / 2 - 4, -0x1, true)
+    }
+
+    /** Centred digit scaled up to fill the cell — used for the Numbers board so counts read clearly. */
+    private fun drawBig(ctx: GuiGraphicsExtractor, mc: Minecraft, s: String, cx: Int, cy: Int, cell: Int, color: Int) {
+        val sc = (cell / 14f).coerceIn(1f, 2.5f)
+        val w = mc.font.width(s) * sc
+        val ps = ctx.pose()
+        ps.pushMatrix()
+        ps.translate(cx + (cell - w) / 2f, cy + cell / 2f - 4f * sc)
+        ps.scale(sc, sc)
+        ctx.text(mc.font, s, 0, 0, color, true)
+        ps.popMatrix()
     }
 
     @JvmStatic
