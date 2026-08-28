@@ -11,6 +11,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.network.chat.Component
+import net.minecraft.network.protocol.game.ClientboundContainerSetContentPacket
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket
 import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket
 import net.minecraft.world.entity.player.Inventory
@@ -44,6 +45,7 @@ object TerminalSolver {
         Events.ON_PACKET.register { packet ->
             when (packet) {
                 is ClientboundOpenScreenPacket -> onOpen(packet)
+                is ClientboundContainerSetContentPacket -> onSetContent(packet)
                 is ClientboundContainerSetSlotPacket -> onSetSlot(packet)
             }
             false
@@ -83,6 +85,20 @@ object TerminalSolver {
                 if (path != null) SelectAllHandler(path) else null
             }
         }
+    }
+
+    /**
+     * The whole-window fill Hypixel sends right after the terminal opens. Without this the per-slot
+     * updates alone never populate a full [TerminalHandler.items] array on a fresh terminal, so no
+     * solution is ever computed and nothing highlights.
+     */
+    private fun onSetContent(packet: ClientboundContainerSetContentPacket) {
+        val term = current ?: return
+        if (packet.containerId() == 0) return // 0 = player inventory, not the terminal
+        val items = packet.items()
+        val n = minOf(items.size, term.type.windowSize)
+        for (i in 0 until n) term.items[i] = items[i]
+        term.handleSlotUpdate(term.type.windowSize - 1) // force the solution recompute
     }
 
     private fun onSetSlot(packet: ClientboundContainerSetSlotPacket) {
