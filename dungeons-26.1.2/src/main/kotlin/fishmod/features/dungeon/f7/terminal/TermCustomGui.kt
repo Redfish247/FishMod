@@ -4,7 +4,9 @@ import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.world.inventory.ContainerInput
+import net.minecraft.world.item.ItemStack
 import kotlin.math.sqrt
 
 /**
@@ -55,17 +57,22 @@ object TermCustomGui {
         for (i in 0 until size) {
             val cx = ox + (i % cols) * (cell + gap)
             val cy = oy + (i / cols) * (cell + gap)
+            val st = t.items[i]
+            val inSol = i in sol
+
+            // Filler slots (the black/grey pane border/background) stay blank unless they're a click.
+            if (!inSol && (st == null || st.isEmpty || isFiller(st))) continue
             rects[i] = intArrayOf(cx, cy, cell, cell)
 
-            roundFill(ctx, cx, cy, cell, cell, round, 0x40101218)
-            val inSol = i in sol
-            if (inSol) roundFill(ctx, cx, cy, cell, cell, round, TerminalSolver.slotColor(t, i))
-            else if (FishSettings.terminalHideWrong && t.type != TerminalType.NUMBERS) {
+            if (inSol) {
+                roundFill(ctx, cx, cy, cell, cell, round, TerminalSolver.slotColor(t, i))
+            } else if (FishSettings.terminalHideWrong && t.type != TerminalType.NUMBERS) {
                 roundFill(ctx, cx, cy, cell, cell, round, FishSettings.terminalWrongCover)
                 continue
+            } else {
+                roundFill(ctx, cx, cy, cell, cell, round, 0x40101820)  // neutral cell for a non-click item
             }
 
-            val st = t.items[i]
             if (st != null && !st.isEmpty) {
                 val ps = ctx.pose()
                 ps.pushMatrix()
@@ -109,6 +116,12 @@ object TermCustomGui {
         t.simulateClick(idx, right)
         t.isClicked = true
     }
+
+    private val FILLER = setOf(
+        "black_stained_glass_pane", "gray_stained_glass_pane", "light_gray_stained_glass_pane",
+    )
+    private fun isFiller(st: ItemStack): Boolean =
+        BuiltInRegistries.ITEM.getKey(st.item).path in FILLER
 
     /** Stepped rounded rect (no NVG dependency), same idea as LeapMenu.roundFill. */
     private fun roundFill(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, rad: Int, color: Int) {

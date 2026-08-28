@@ -33,6 +33,9 @@ object TerminalSolver {
     @Volatile var simActive = false
     @JvmStatic fun setSimTerminal(h: TerminalHandler?) { current = h; simActive = h != null }
 
+    /** Called from HandledScreenMixin.removed — a real terminal closed, drop the stale board. */
+    @JvmStatic fun onScreenClosed() { if (!simActive) current = null }
+
     private val STARTS_WITH_LETTER = Pattern.compile("What starts with: '?(\\w+)'?")
     private val ACTIVATED = Pattern.compile("(.{1,16}) activated a terminal! \\((\\d)/(\\d)\\)")
     private val COLOR = Regex("§.")
@@ -54,6 +57,10 @@ object TerminalSolver {
             false
         }
         Events.ON_WORLD_CHANGE.register { current = null; false }
+        Events.ON_PACKET.register { packet ->
+            if (packet is net.minecraft.network.protocol.game.ClientboundContainerClosePacket && !simActive) current = null
+            false
+        }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { tickReload() }
 
         Events.ON_GAME_MESSAGE.register { text ->

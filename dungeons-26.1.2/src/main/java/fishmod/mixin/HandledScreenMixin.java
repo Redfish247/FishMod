@@ -117,5 +117,6 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     @Inject(method = "removed", at = @At("HEAD"))
     private void fishmod$storageClosed(CallbackInfo ci) {
         fishmod.features.storage.StorageOverlay.onClosed();
+        fishmod.features.dungeon.f7.terminal.TerminalSolver.onScreenClosed();
     }
 }
