@@ -571,6 +571,18 @@ class FishModInit : ModInitializer {
                     }
             )
             dispatcher.register(
+                ClientCommands.literal("fmtermsim")
+                    .then(ClientCommands.argument("type", StringArgumentType.word()).executes { ctx ->
+                        val a = StringArgumentType.getString(ctx, "type")
+                        Minecraft.getInstance().schedule { fishmod.features.dungeon.f7.terminal.TermSimScreen.open(a) }
+                        Constants.SUCCESS
+                    })
+                    .executes {
+                        Minecraft.getInstance().schedule { fishmod.features.dungeon.f7.terminal.TermSimScreen.open(null) }
+                        Constants.SUCCESS
+                    }
+            )
+            dispatcher.register(
                 ClientCommands.literal("storageview")
                     .executes {
                         Minecraft.getInstance().schedule { fishmod.features.storage.StorageViewerScreen.open() }

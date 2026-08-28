@@ -25,7 +25,16 @@ object ModifierValue {
                 if (lvl <= 0) continue
                 if (NwConstants.IGNORED_ENCHANTMENTS[name] == lvl) continue
                 if (name in NwConstants.STACKING_ENCHANTMENTS) continue
-                v += CroesusPrices.price("ENCHANTMENT_${name}_$lvl") * NwConstants.ENCHANTMENTS
+                v += enchPrice(name, lvl) * NwConstants.ENCHANTMENTS
+            }
+        }
+
+        // Necron-blade ability scrolls (Wither Shield / Shadow Warp / Implosion / Wither Impact) —
+        // the single biggest chunk of a Hyperion/Valkyrie/Astraea/Scylla's worth, previously missed.
+        tag.getList("ability_scroll").ifPresent { scrolls ->
+            for (i in scrolls.indices) {
+                val s = scrolls.getStringOr(i, "")
+                if (s.isNotBlank()) v += CroesusPrices.price(s) * NwConstants.NECRON_BLADE_SCROLL
             }
         }
 
@@ -64,5 +73,21 @@ object ModifierValue {
         if (tag.getIntOr("art_of_war_count", 0) > 0) v += CroesusPrices.price("THE_ART_OF_WAR") * NwConstants.ART_OF_WAR
 
         return v
+    }
+
+    /**
+     * Book price for an enchant at [lvl]. Prefers the exact bazaar/lbin key; otherwise most ultimates
+     * (and many normals) only sell at level 1 and each level doubles the books, so
+     * `<name>_1 × 2^(lvl-1)`. CHIMERA is crafted via the Necron's-handle path, not book-doubled, so it
+     * falls back flat to whatever level is priced.
+     */
+    private fun enchPrice(name: String, lvl: Int): Double {
+        val exact = CroesusPrices.price("ENCHANTMENT_${name}_$lvl")
+        if (exact > 0.0) return exact
+        for (l in lvl - 1 downTo 1) {
+            val p = CroesusPrices.price("ENCHANTMENT_${name}_$l")
+            if (p > 0.0) return if (name == "CHIMERA") p else p * (1 shl (lvl - l))
+        }
+        return 0.0
     }
 }
