@@ -81,15 +81,10 @@ class TermSimScreen private constructor(
         openedAt = System.currentTimeMillis()
         misses = 0
 
-        when (t) {
-            TerminalType.PANES -> genPanes()
-            TerminalType.NUMBERS -> genNumbers()
-            TerminalType.RUBIX -> genRubix()
-            TerminalType.STARTS_WITH -> { startLetter = "ABCDGMNRST"[Random.nextInt(10)].toString(); genStartsWith() }
-            TerminalType.SELECT -> { selColor = SELECT_COLORS.random(); genSelect() }
-            TerminalType.MELODY -> genMelody()
-        }
-
+        // Pick per-type params first so the handler can be built before generation (melody's
+        // generator calls sync() and needs `handler` set).
+        if (t == TerminalType.STARTS_WITH) startLetter = "ABCDGMNRST"[Random.nextInt(10)].toString()
+        if (t == TerminalType.SELECT) selColor = SELECT_COLORS.random()
         handler = when (t) {
             TerminalType.PANES -> PanesHandler()
             TerminalType.NUMBERS -> NumbersHandler()
@@ -98,11 +93,21 @@ class TermSimScreen private constructor(
             TerminalType.SELECT -> SelectAllHandler(selColor)
             TerminalType.MELODY -> MelodyHandler()
         }
+
+        when (t) {
+            TerminalType.PANES -> genPanes()
+            TerminalType.NUMBERS -> genNumbers()
+            TerminalType.RUBIX -> genRubix()
+            TerminalType.STARTS_WITH -> genStartsWith()
+            TerminalType.SELECT -> genSelect()
+            TerminalType.MELODY -> genMelody()
+        }
         sync()
     }
 
     /** Copy the board into the handler and re-point the solver at it. */
     private fun sync() {
+        if (!::handler.isInitialized) return
         for (i in 0 until type.windowSize) handler.items[i] = box.getItem(i)
         handler.handleSlotUpdate(type.windowSize - 1)
         TerminalSolver.setSimTerminal(handler)
@@ -189,7 +194,7 @@ class TermSimScreen private constructor(
 
     override fun containerTick() {
         super.containerTick()
-        if (type != TerminalType.MELODY) return
+        if (!built || type != TerminalType.MELODY) return
         if (melTick++ % 6 != 0) return
         melLime += melDir
         if (melLime <= 1 || melLime >= 5) melDir = -melDir
