@@ -32,7 +32,6 @@ object TerminalSolver {
     private val STARTS_WITH_LETTER = Pattern.compile("What starts with: '?(\\w+)'?")
     private val ACTIVATED = Pattern.compile("(.{1,16}) activated a terminal! \\((\\d)/(\\d)\\)")
     private val COLOR = Regex("§.")
-    private const val RELOAD_MS = 600L
     private var lastClick = 0L
 
     private val DYE_PATHS = arrayOf(
@@ -63,6 +62,14 @@ object TerminalSolver {
 
         DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y -> drawSlot(ctx, x, y, before = true) }
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y -> drawSlot(ctx, x, y, before = false) }
+
+        // Odin "Stop Tooltips" — no hover tooltips while a terminal is open (they cover the solution).
+        net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback.EVENT.register(
+            net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback { _, _, _, lines ->
+                if (FishSettings.terminalSolverEnabled && FishSettings.terminalStopTooltips && current != null
+                    && Minecraft.getInstance().screen is AbstractContainerScreen<*>
+                ) lines.clear()
+            })
     }
 
     private fun onOpen(packet: ClientboundOpenScreenPacket) {
@@ -133,30 +140,61 @@ object TerminalSolver {
         val slot = screen.menu.slots.firstOrNull { it.x == x && it.y == y } ?: return
         if (slot.container is Inventory) return
         val idx = slot.index
-        if (idx !in term.solution) return
+        val inSol = idx in term.solution
+
+        if (!inSol) {
+            // Odin "Stop Rendering Wrong" — paint over non-solution terminal items on the AFTER pass.
+            if (!before && FishSettings.terminalHideWrong && idx < term.type.windowSize
+                && term.type != TerminalType.NUMBERS  // numbers panes are handled below / not distracting
+            ) {
+                ctx.fill(x, y, x + 16, y + 16, FishSettings.terminalWrongCover)
+            }
+            return
+        }
 
         if (before) {
-            val color = when (term.type) {
-                TerminalType.NUMBERS -> when (term.solution.indexOf(idx)) {
-                    0 -> FishSettings.terminalOrderColor1
-                    1 -> FishSettings.terminalOrderColor2
-                    else -> FishSettings.terminalOrderColor3
+            ctx.fill(x, y, x + 16, y + 16, slotColor(term, idx))
+        } else {
+            if (!FishSettings.terminalShowNumbers) return
+            when (term.type) {
+                TerminalType.RUBIX -> {
+                    val needed = term.solution.count { it == idx }
+                    val n = if (needed < 3) needed else needed - 5
+                    if (n != 0) ctx.text(mc.font, n.toString(), x + 5, y + 4, 0xFFFFFFFF.toInt(), true)
                 }
-                TerminalType.RUBIX -> FishSettings.terminalRubixColor
-                TerminalType.MELODY -> FishSettings.terminalMelodyColor
-                else -> FishSettings.terminalHighlightColor
+                TerminalType.NUMBERS -> {
+                    val ord = term.solution.indexOf(idx)
+                    if (ord in 0..2) ctx.text(mc.font, (ord + 1).toString(), x + 5, y + 4, 0xFFFFFFFF.toInt(), true)
+                }
+                else -> {}
             }
-            ctx.fill(x, y, x + 16, y + 16, color)
-        } else if (term.type == TerminalType.RUBIX) {
-            val needed = term.solution.count { it == idx }
-            val n = if (needed < 3) needed else needed - 5
-            if (n != 0) ctx.text(mc.font, n.toString(), x + 5, y + 4, 0xFFFFFFFF.toInt(), true)
         }
+    }
+
+    private fun slotColor(term: TerminalHandler, idx: Int): Int = when (term.type) {
+        TerminalType.NUMBERS -> when (term.solution.indexOf(idx)) {
+            0 -> FishSettings.terminalOrderColor1
+            1 -> FishSettings.terminalOrderColor2
+            else -> FishSettings.terminalOrderColor3
+        }
+        TerminalType.RUBIX -> {
+            val needed = term.solution.count { it == idx }
+            when (if (needed < 3) needed else needed - 5) {
+                1 -> FishSettings.terminalRubixColor
+                2 -> FishSettings.terminalRubixColor2
+                -1 -> FishSettings.terminalRubixNeg1
+                else -> FishSettings.terminalRubixNeg2
+            }
+        }
+        TerminalType.MELODY -> FishSettings.terminalMelodyPointerColor
+        TerminalType.STARTS_WITH -> FishSettings.terminalStartsWithColor
+        TerminalType.SELECT -> FishSettings.terminalSelectColor
+        TerminalType.PANES -> FishSettings.terminalHighlightColor
     }
 
     private fun tickReload() {
         val term = current ?: return
-        if (term.isClicked && System.currentTimeMillis() - lastClick >= RELOAD_MS) {
+        if (term.isClicked && System.currentTimeMillis() - lastClick >= FishSettings.terminalReloadMs.coerceIn(300, 1000).toLong()) {
             term.isClicked = false
         }
     }

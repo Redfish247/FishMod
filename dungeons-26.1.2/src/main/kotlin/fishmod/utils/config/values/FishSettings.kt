@@ -676,8 +676,22 @@ object FishSettings {
     @ConfigValue @JvmField var terminalOrderColor1: Int = 0x9955FF55.toInt()
     @ConfigValue @JvmField var terminalOrderColor2: Int = 0x9922AA22.toInt()
     @ConfigValue @JvmField var terminalOrderColor3: Int = 0x99116611.toInt()
-    @ConfigValue @JvmField var terminalRubixColor: Int = 0x9900AAAA.toInt()
+    @ConfigValue @JvmField var terminalRubixColor: Int = 0x9900AAAA.toInt()       // +1
     @ConfigValue @JvmField var terminalMelodyColor: Int = 0x99AA00AA.toInt()
+    // ── Odin Terminal Solver parity ──
+    @ConfigValue @JvmField var terminalStopTooltips: Boolean = true
+    @ConfigValue @JvmField var terminalShowNumbers: Boolean = true
+    @ConfigValue @JvmField var terminalHideWrong: Boolean = false                 // paint over non-solution slots
+    @ConfigValue @JvmField var terminalReloadMs: Int = 600
+    @ConfigValue @JvmField var terminalStartsWithColor: Int = 0x9900AAAA.toInt()
+    @ConfigValue @JvmField var terminalSelectColor: Int = 0x9900AAAA.toInt()
+    @ConfigValue @JvmField var terminalRubixColor2: Int = 0x99006464.toInt()      // +2
+    @ConfigValue @JvmField var terminalRubixNeg1: Int = 0x99AA5500.toInt()        // -1
+    @ConfigValue @JvmField var terminalRubixNeg2: Int = 0x99D25500.toInt()        // -2
+    @ConfigValue @JvmField var terminalMelodyRowColor: Int = 0x99FF5555.toInt()
+    @ConfigValue @JvmField var terminalMelodyPointerColor: Int = 0x9955FF55.toInt()
+    @ConfigValue @JvmField var terminalWrongCover: Int = 0xF01A1A22.toInt()
+    @ConfigValue @JvmField var termSimPbs: String = ""                            // csv of 6 best times (s)
 
     // Warp Cooldown HUD (revives Dungeons.enableWarpCooldown). Cooldown starts on the party's
     // "entered <floor> Catacombs" chat line (Odin logic); 30s is Hypixel's real re-entry gate.
