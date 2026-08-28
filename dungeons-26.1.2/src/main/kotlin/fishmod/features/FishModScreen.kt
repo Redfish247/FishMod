@@ -655,7 +655,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(SubcategoryHeader("Only fires while you're party leader"))
             f.sub.add(ToggleSetting("Master Mode", "Check Master PBs instead of normal", FishSettings::pfAutoKickMaster))
             f.sub.add(SliderIntSetting("Floor", "Which floor's PB to check", FishSettings::pfAutoKickFloor, 1, 7))
-            f.sub.add(SliderIntSetting("Max S+ Seconds", "Kick if their S+ PB is slower (or missing)", FishSettings::pfAutoKickMaxSeconds, 60, 480))
+            f.sub.add(SliderIntSetting("Max S+ Seconds", "Kick if their S+ PB is slower (or missing)", FishSettings::pfAutoKickMaxSeconds, 60, 480, 5))
             f.sub.add(SliderIntSetting("Min Secrets (k)", "0 = don't check secrets", FishSettings::pfAutoKickMinSecretsK, 0, 200))
             f.sub.add(ToggleSetting("Announce in Party", "Send a /pc line before kicking", FishSettings::pfAutoKickInform))
             party.features.add(f)
@@ -2104,8 +2104,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     /** Slider/text-input settings render on two lines: name on line 1 (full-width, left-aligned,
      *  no competing control), the actual control on line 2 below it — so a long label never
      *  visually overlaps a right-aligned control on the same row. See TWO_LINE_H. */
-    class SliderIntSetting(name: String, desc: String, val getter: () -> Int, val setter: (Int) -> Unit, val min: Int, val max: Int) : Setting(name, desc) {
-        constructor(name: String, desc: String, prop: KMutableProperty0<Int>, min: Int, max: Int) : this(name, desc, { prop.get() }, { prop.set(it) }, min, max)
+    class SliderIntSetting(name: String, desc: String, val getter: () -> Int, val setter: (Int) -> Unit, val min: Int, val max: Int, val step: Int = 1) : Setting(name, desc) {
+        constructor(name: String, desc: String, prop: KMutableProperty0<Int>, min: Int, max: Int, step: Int = 1) : this(name, desc, { prop.get() }, { prop.set(it) }, min, max, step)
+
+        private fun snap(v: Int): Int {
+            if (step <= 1) return v.coerceIn(min, max)
+            return (min + Math.round((v - min).toFloat() / step) * step).coerceIn(min, max)
+        }
 
         override fun getHeight(): Int = TWO_LINE_H
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
@@ -2122,7 +2127,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         override fun onDrag(mx: Int, sx: Int, sliderW: Int) {
             val pct = Mth.clamp((mx - sx).toFloat() / sliderW, 0f, 1f)
-            setter(min + (pct * (max - min)).toInt())
+            setter(snap(min + (pct * (max - min)).toInt()))
         }
     }
 
