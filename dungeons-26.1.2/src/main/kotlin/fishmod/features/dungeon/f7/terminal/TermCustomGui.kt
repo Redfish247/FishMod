@@ -54,6 +54,8 @@ object TermCustomGui {
 
         val sol = t.solution
         val itemScale = (cell - 4) / 16f
+        val numbers = t.type == TerminalType.NUMBERS
+
         for (i in 0 until size) {
             val cx = ox + (i % cols) * (cell + gap)
             val cy = oy + (i / cols) * (cell + gap)
@@ -64,9 +66,23 @@ object TermCustomGui {
             if (!inSol && (st == null || st.isEmpty || isFiller(st))) continue
             rects[i] = intArrayOf(cx, cy, cell, cell)
 
+            if (numbers) {
+                // Numbers: never draw the red pane — just tint the next 3 in the order colours and
+                // print the count on every number cell.
+                when (sol.indexOf(i)) {
+                    0 -> roundFill(ctx, cx, cy, cell, cell, round, FishSettings.terminalOrderColor1)
+                    1 -> roundFill(ctx, cx, cy, cell, cell, round, FishSettings.terminalOrderColor2)
+                    2 -> roundFill(ctx, cx, cy, cell, cell, round, FishSettings.terminalOrderColor3)
+                    else -> roundFill(ctx, cx, cy, cell, cell, round, 0x33101820)
+                }
+                val n = st?.count ?: 0
+                if (n > 0) drawCentered(ctx, mc, n.toString(), cx, cy, cell)
+                continue
+            }
+
             if (inSol) {
                 roundFill(ctx, cx, cy, cell, cell, round, TerminalSolver.slotColor(t, i))
-            } else if (FishSettings.terminalHideWrong && t.type != TerminalType.NUMBERS) {
+            } else if (FishSettings.terminalHideWrong) {
                 roundFill(ctx, cx, cy, cell, cell, round, FishSettings.terminalWrongCover)
                 continue
             } else {
@@ -83,18 +99,16 @@ object TermCustomGui {
                 ctx.itemDecorations(mc.font, st, cx + 2, cy + 2)
             }
 
-            if (inSol && FishSettings.terminalShowNumbers) {
-                val label = when (t.type) {
-                    TerminalType.RUBIX -> {
-                        val n = t.solution.count { it == i }.let { if (it < 3) it else it - 5 }
-                        if (n != 0) n.toString() else ""
-                    }
-                    TerminalType.NUMBERS -> t.solution.indexOf(i).takeIf { it in 0..2 }?.plus(1)?.toString() ?: ""
-                    else -> ""
-                }
-                if (label.isNotEmpty()) ctx.text(mc.font, label, cx + cell / 2 - 3, cy + cell / 2 - 4, -0x1, true)
+            if (inSol && t.type == TerminalType.RUBIX && FishSettings.terminalShowNumbers) {
+                val n = sol.count { it == i }.let { if (it < 3) it else it - 5 }
+                if (n != 0) drawCentered(ctx, mc, n.toString(), cx, cy, cell)
             }
         }
+    }
+
+    private fun drawCentered(ctx: GuiGraphicsExtractor, mc: Minecraft, s: String, cx: Int, cy: Int, cell: Int) {
+        val w = mc.font.width(s)
+        ctx.text(mc.font, s, cx + (cell - w) / 2, cy + cell / 2 - 4, -0x1, true)
     }
 
     @JvmStatic
