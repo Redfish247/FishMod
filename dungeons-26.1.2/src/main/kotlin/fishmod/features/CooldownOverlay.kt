@@ -67,8 +67,9 @@ object CooldownOverlay {
     @Volatile
     private var liveMageCdrPercent = -1
 
-    // Action-bar mana, e.g. "590/770✎". Used to confirm an ability actually fired (mana spent).
-    private val MANA_BAR: Pattern = Pattern.compile("([\\d,]+)/[\\d,]+✎")
+    // Action-bar mana, e.g. "590/770✎" or "1,234/1,234✎ Mana". The mana segment is always on the
+    // dungeon action bar, so a right-click that drops it is a reliable "ability fired" signal.
+    private val MANA_BAR: Pattern = Pattern.compile("([\\d,]+)\\s*/\\s*[\\d,]+\\s*✎")
 
     @Volatile
     private var lastMana = -1
@@ -133,9 +134,10 @@ object CooldownOverlay {
             }
         }
 
-        // Action-bar mana tracker. A right-click only *arms* a pending ability; the cooldown is
-        // registered only once the action-bar mana actually DROPS shortly after. If no mana was
-        // spent (off cooldown but you didn't have/use mana, missed cast, etc.) it never registers.
+        // Action-bar mana tracker — keeps `lastMana` current, and confirms an armed right-click once
+        // that mana actually DROPS below the value captured at click time. Baseline is NOT nudged
+        // upward here: the reading right after a cast is already post-spend, so raising the baseline
+        // to it would swallow the very drop we're looking for (the old first-proc bug).
         ClientReceiveMessageEvents.GAME.register { msg, overlay ->
             if (!overlay || !FishSettings.cooldownOverlayEnabled) return@register
             val s = COLOR_STRIP.matcher(msg.string).replaceAll("")
@@ -148,31 +150,24 @@ object CooldownOverlay {
                 return@register
             }
             val pid = pendingId
-            if (pid != null && System.currentTimeMillis() - pendingAt < 2500) {
-                when {
-                    // No valid pre-cast baseline yet — `lastMana` was still -1 when the ability was
-                    // armed (first cast after a world change / right after the feature was toggled on).
-                    // Adopt the first post-arm reading as the baseline, and keep tracking it upward so
-                    // mana regenerated between the arm and the cast doesn't leave the baseline too low.
-                    // This makes the very first right-click register instead of only the second.
-                    pendingManaBefore < 0 || mana > pendingManaBefore -> pendingManaBefore = mana
-                    mana < pendingManaBefore -> {
-                        if (debugDumpSound) {
-                            Misc.addChatMessage(Component.literal("§d[fmcd] mana $pendingManaBefore→$mana confirms $pid"))
-                        }
-                        pendingId = null
-                        onAbilityFired()
-                    }
+            if (pid != null && System.currentTimeMillis() - pendingAt < 2500 &&
+                pendingManaBefore >= 0 && mana < pendingManaBefore
+            ) {
+                if (debugDumpSound) {
+                    Misc.addChatMessage(Component.literal("§d[fmcd] mana $pendingManaBefore→$mana confirms $pid"))
                 }
+                pendingId = null
+                onAbilityFired()
             }
             lastMana = mana
         }
 
-        // Right-click trigger — start the cooldown immediately. The mana-drop / sound / mana-line
-        // paths above are kept as accurate secondary confirms, but they were the *only* triggers
-        // before and the very first cast after a world change had no mana baseline yet, so it never
-        // registered. Firing on the click itself makes the overlay show on the first proc; a
-        // genuinely no-mana / on-cooldown click is a no-op (onAbilityFired bails if already active).
+        // Right-click trigger — ARM the pending ability with a fresh mana baseline (the value the
+        // action bar showed a moment before the click). The mana tracker above starts the cooldown
+        // when that mana drops, so a no-mana / on-cooldown click never starts a phantom overlay.
+        // Only if the mana bar hasn't been parsed even once yet (`lastMana < 0` — dungeon just
+        // loaded, or the feature was toggled mid-run) do we start optimistically, since drop
+        // detection has nothing to compare against for that first cast.
         UseItemCallback.EVENT.register(UseItemCallback { player, world, hand ->
             if (!FishSettings.cooldownOverlayEnabled) return@UseItemCallback InteractionResult.PASS
             if (hand != InteractionHand.MAIN_HAND) return@UseItemCallback InteractionResult.PASS
@@ -180,10 +175,16 @@ object CooldownOverlay {
             if (stack != null && !stack.isEmpty) {
                 val id = ItemUtil.getId(stack)
                 if (id != null && COOLDOWNS.containsKey(id)) {
+                    pendingId = id
+                    pendingAt = System.currentTimeMillis()
+                    pendingManaBefore = lastMana
                     if (debugDumpSound) {
-                        Misc.addChatMessage(Component.literal("§d[fmcd] right-click $id → start"))
+                        Misc.addChatMessage(Component.literal("§d[fmcd] armed $id (mana=$lastMana)"))
                     }
-                    onAbilityFired()
+                    if (lastMana < 0) {
+                        pendingId = null
+                        onAbilityFired()
+                    }
                 }
             }
             InteractionResult.PASS
