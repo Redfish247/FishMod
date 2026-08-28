@@ -29,6 +29,10 @@ object TerminalSolver {
     @Volatile var current: TerminalHandler? = null
         private set
 
+    /** Set while a /fmtermsim board is open — feeds the highlight/click logic without a real terminal. */
+    @Volatile var simActive = false
+    @JvmStatic fun setSimTerminal(h: TerminalHandler?) { current = h; simActive = h != null }
+
     private val STARTS_WITH_LETTER = Pattern.compile("What starts with: '?(\\w+)'?")
     private val ACTIVATED = Pattern.compile("(.{1,16}) activated a terminal! \\((\\d)/(\\d)\\)")
     private val COLOR = Regex("§.")
@@ -66,7 +70,7 @@ object TerminalSolver {
         // Odin "Stop Tooltips" — no hover tooltips while a terminal is open (they cover the solution).
         net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback.EVENT.register(
             net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback { _, _, _, lines ->
-                if (FishSettings.terminalSolverEnabled && FishSettings.terminalStopTooltips && current != null
+                if ((FishSettings.terminalSolverEnabled || simActive) && FishSettings.terminalStopTooltips && current != null
                     && Minecraft.getInstance().screen is AbstractContainerScreen<*>
                 ) lines.clear()
             })
@@ -120,7 +124,7 @@ object TerminalSolver {
     @JvmStatic
     fun onMouseClick(button: Int, screen: AbstractContainerScreen<*>): Boolean {
         val term = current ?: return false
-        if (!FishSettings.terminalSolverEnabled) return false
+        if (!FishSettings.terminalSolverEnabled && !simActive) return false
         val slot = (screen as HandledScreenAccessor).`fishmod$getHoveredSlot`() ?: return false
         if (slot.container is Inventory) return false
         lastClick = System.currentTimeMillis()
@@ -132,7 +136,7 @@ object TerminalSolver {
     }
 
     private fun drawSlot(ctx: GuiGraphicsExtractor, x: Int, y: Int, before: Boolean) {
-        if (!FishSettings.terminalSolverEnabled) return
+        if (!FishSettings.terminalSolverEnabled && !simActive) return
         val term = current ?: return
         if (term.type == TerminalType.MELODY && FishSettings.terminalStopMelody) return
         val mc = Minecraft.getInstance()
