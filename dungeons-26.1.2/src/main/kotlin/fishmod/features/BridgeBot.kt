@@ -19,9 +19,11 @@ object BridgeBot {
         val name = FishSettings.bridgeBotName.trim()
         if (name.isBlank()) return Pattern.compile("(?!)") // never matches
         val bot = Pattern.quote(name)
-        // rank before the bot name and a guild-rank tag after it are both optional; the
-        // player/message separator can be » : > | etc.
-        return Pattern.compile("^Guild > (?:\\[\\S+] )?$bot(?:\\s+\\[[^\\]]+])?: (\\S+)[^\\w]+(.+)$")
+        // rank before the bot name and a guild-rank tag after it are both optional. The player name
+        // is a strict Hypixel name (\w, 2-16) so the "name : message" separator colon can't be
+        // swallowed into the capture (that was doubling the colon on reprint); the separator itself
+        // can be » : > | - or just spaces.
+        return Pattern.compile("^Guild > (?:\\[\\S+] )?$bot(?:\\s+\\[[^\\]]+])?[:\\s]+(\\w{1,16})[^\\w]+(.+)$")
     }
 
     @JvmStatic
