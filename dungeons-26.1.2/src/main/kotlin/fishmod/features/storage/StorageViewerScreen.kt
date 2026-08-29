@@ -36,6 +36,7 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
     private var scroll = 0
     private var contentHeight = 0
     private val titleRects = ArrayList<IntArray>()
+    private var loadAllRect = IntArray(4)
 
     override fun extractBackground(ctx: GuiGraphicsExtractor, mx: Int, my: Int, d: Float) {}
     override fun extractTransparentBackground(ctx: GuiGraphicsExtractor) {}
@@ -59,7 +60,16 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
         glassPanel(ctx, panelX, panelY, panelX2, panelY2)
 
         ctx.text(font, "§fStorage Viewer  §7${data.size} pages", panelX + 12, panelY + 9, -1)
-        ctx.text(font, "§8scroll · click a page title to open it", panelX2 - font.width("scroll · click a page title to open it") - 12, panelY + 9, -1)
+
+        // "Load all" — pages through every storage page so they're all cached.
+        val btn = if (StorageAutoLoader.running()) "§e● loading… (click to stop)" else "§b[ Load all pages ]"
+        val btnW = font.width(btn.replace(Regex("§."), ""))
+        val bx = panelX2 - btnW - 14
+        val by = panelY + 5
+        val bHover = mouseX in bx - 4..bx + btnW + 4 && mouseY in by - 2..by + 12
+        if (bHover) ctx.fill(bx - 4, by - 2, bx + btnW + 4, by + 11, HOVER)
+        ctx.text(font, btn, bx, by + 2, -1)
+        loadAllRect = intArrayOf(bx - 4, by - 2, btnW + 8, 13)
 
         val viewTop = panelY + HEADER
         val viewBot = panelY2 - 8
@@ -150,6 +160,13 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
 
     override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
         val mx = click.x().toInt(); val my = click.y().toInt()
+        loadAllRect.let { r ->
+            if (mx in r[0]..(r[0] + r[2]) && my in r[1]..(r[1] + r[3])) {
+                if (StorageAutoLoader.running()) StorageAutoLoader.stop()
+                else { StorageAutoLoader.start(); onClose() }
+                return true
+            }
+        }
         for (r in titleRects) {
             if (mx in r[0]..(r[0] + r[2]) && my in r[1]..(r[1] + r[3])) {
                 StoragePage(r[4]).open(); onClose(); return true

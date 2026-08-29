@@ -438,6 +438,7 @@ class FishModInit : ModInitializer {
         fishmod.features.BridgeBot.init()
         fishmod.features.LavaToWater.init()
         fishmod.features.storage.StorageCache.init()
+        fishmod.features.storage.StorageAutoLoader.init()
         fishmod.features.dungeon.ExtraStats.init()
         fishmod.features.EtherwarpHelper.init()
         fishmod.features.dungeon.DungeonAbilities.init()
@@ -586,6 +587,17 @@ class FishModInit : ModInitializer {
                 ClientCommands.literal("storageview")
                     .executes {
                         Minecraft.getInstance().schedule { fishmod.features.storage.StorageViewerScreen.open() }
+                        Constants.SUCCESS
+                    }
+            )
+            dispatcher.register(
+                ClientCommands.literal("storageload")
+                    .then(ClientCommands.literal("stop").executes {
+                        fishmod.features.storage.StorageAutoLoader.stop()
+                        Constants.SUCCESS
+                    })
+                    .executes {
+                        fishmod.features.storage.StorageAutoLoader.start()
                         Constants.SUCCESS
                     }
             )
