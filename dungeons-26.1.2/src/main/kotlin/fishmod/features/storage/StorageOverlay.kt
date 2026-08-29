@@ -524,14 +524,11 @@ object StorageOverlay {
 
         if (inRect(rx, ry, scrollPanelX, scrollPanelY, scrollPanelW, scrollPanelH)) {
             val data = visibleData(activePage, null)
-            if (activePage != null) activePageSlotAt(rx, ry, activePage, data)?.let { return dispatchSlotClick(it, button, modifiers) }
-            var handled = false
+            if (activePage != null) activePageSlotAt(rx, ry, activePage, data)?.let { dispatchSlotClick(it, button, modifiers); return true }
             layoutedForEach(data) { x, y, pw, ph, page, _ ->
-                if (!handled && inRect(rx, ry, x, y, pw, ph) && activePage != page && button == 0) {
-                    page.open(); handled = true
-                }
+                if (inRect(rx, ry, x, y, pw, ph) && activePage != page && button == 0) page.open()
             }
-            return handled
+            return true
         }
 
         if (inRect(rx, ry, scrollBarX, scrollBarY, SCROLL_BAR_WIDTH, scrollBarH)) {
@@ -541,8 +538,8 @@ object StorageOverlay {
             return true
         }
 
-        val playerSlot = playerSlotAt(rx.toInt(), ry.toInt()) ?: return false
-        return dispatchSlotClick(playerSlot, button, modifiers)
+        playerSlotAt(rx.toInt(), ry.toInt())?.let { dispatchSlotClick(it, button, modifiers) }
+        return true   // overlay owns all mouse input while it's up — never let vanilla see the click
     }
 
     @JvmStatic
@@ -559,9 +556,8 @@ object StorageOverlay {
             dragStartSlot = null
             return true
         }
-        if (!knobGrabbed) return false
         knobGrabbed = false
-        return true
+        return true   // swallow the release so vanilla doesn't treat it as a drop
     }
 
     @JvmStatic
@@ -574,9 +570,10 @@ object StorageOverlay {
             resolveSlotUnder(rx, ry, activePage(screen))?.let { dragSlots.add(it.index) }
             return true
         }
-        if (!knobGrabbed) return false
-        val pct = ((ry - scrollBarY) / scrollBarH.toDouble()).coerceIn(0.0, 1.0)
-        scroll = (maxScroll * pct).toFloat()
+        if (knobGrabbed) {
+            val pct = ((ry - scrollBarY) / scrollBarH.toDouble()).coerceIn(0.0, 1.0)
+            scroll = (maxScroll * pct).toFloat()
+        }
         return true
     }
 
