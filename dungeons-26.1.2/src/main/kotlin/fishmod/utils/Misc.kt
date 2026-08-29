@@ -82,15 +82,10 @@ object Misc {
             if (volume <= 1f) {
                 player.playSound(soundEvent, volume, pitch)
             } else {
-                // Minecraft clamps a sound's gain to 1.0 at the listener, so volume > 1 alone only
-                // widens the falloff radius (audible from further away), not the actual loudness.
-                // Stack copies so a ">100%" cue is genuinely louder — 500% ≈ five overlaid plays.
-                // Hard-capped so a stray value can't spam the mixer.
-                var remaining = volume.coerceAtMost(6f)
-                while (remaining > 0f) {
-                    player.playSound(soundEvent, remaining.coerceAtMost(1f), pitch)
-                    remaining -= 1f
-                }
+                // Minecraft clamps a sound instance's gain to 1.0, so volume > 1 via playSound()
+                // only widens the falloff radius, never the loudness. Route through a
+                // LoudSoundInstance whose gain the SoundEngine/Channel mixins let exceed 1.0.
+                INSTANCE.soundManager.play(fishmod.utils.sound.LoudSoundInstance(soundEvent, pitch, volume))
             }
         }
     }
