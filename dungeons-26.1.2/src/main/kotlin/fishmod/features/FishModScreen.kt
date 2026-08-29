@@ -1344,6 +1344,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             renderTopBar(ctx, vmx, vmy)
             renderContent(ctx, vmx, vmy)
             renderSearchBar(ctx, vmx, vmy)
+            renderHint(ctx)
             renderHoverTooltip(ctx)
         } catch (t: Throwable) {
             // Blur/dim above are already appended to the render state by this point; don't let a widget-layer
@@ -1433,6 +1434,22 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             sst(ctx, this.font, "Search…", bx + 30, by + (bh - 8) / 2, SUBTEXT_COLOR, 0.9f)
         } else {
             nvgTextFieldContent(field, bx + 30, by + 6, bw - 40, bh - 12)
+        }
+    }
+
+    /** Small controls cheat-sheet, bottom-right of the screen. */
+    private fun renderHint(ctx: GuiGraphicsExtractor) {
+        val lines = arrayOf(
+            "Scroll inside a column to see more of it",
+            "Drag a column's header to move it",
+            "Right-drag a header onto another to merge them",
+        )
+        val sc = 0.8f
+        val lh = 9
+        var y = bottom() - BOTTOM_RESERVE + (BOTTOM_RESERVE - lines.size * lh) / 2 - 8
+        for (line in lines) {
+            sst(ctx, this.font, line, right() - MARGIN - sw(this.font, line, sc), y, SUBTEXT_COLOR, sc)
+            y += lh
         }
     }
 
