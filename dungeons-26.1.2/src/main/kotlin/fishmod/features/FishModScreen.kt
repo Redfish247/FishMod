@@ -93,7 +93,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val dungeonMap = Column("Dungeon Map", "map")
         val solvers = Column("Dungeon Solvers", "slider")
         val floor7 = Column("Floor 7", "clock")
-        val combat = Column("Combat", "star")
         val hud = Column("HUD & Overlays", "bell")
         val visuals = Column("Visuals & Rendering", "eye")
         val cosmetics = Column("Cosmetics", "hanger")
@@ -144,7 +143,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         general.features.add(Feature("Smart Copy Chat", FishSettings::smartCopyChat))
         general.features.add(Feature("Compact Chat", FishSettings::chatCompact))
-        general.features.add(Feature("No Cursor Reset", FishSettings::noCursorReset))
+        run {
+            val f = Feature("No Cursor Reset", FishSettings::noCursorReset)
+            f.sub.add(SliderIntSetting("Reset Timeout", "Ticks the cursor pos is held before recentring",
+                FishSettings::noCursorResetTicks, 50, 500, 5))
+            general.features.add(f)
+        }
         general.features.add(Feature("Arrow Fix (shortbow pullback)", FishSettings::arrowFixEnabled))
         general.features.add(Feature("Mono Audio", FishSettings::monoAudioEnabled))
         general.features.add(Feature("Sword Blocking", FishSettings::swordBlockingEnabled))
@@ -715,7 +719,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(SliderIntSetting("Volume %", "Above 100 = louder (stacked plays)", FishSettings::arrowHitSoundVolume, 0, 500, 10))
             f.sub.add(SliderDoubleSetting("Pitch", "", FishSettings::arrowHitSoundPitch, 0.0, 2.0))
             f.sub.add(ToggleSetting("Suppress Vanilla Sound", "", FishSettings::arrowHitSoundSuppress))
-            combat.features.add(f)
+            general.features.add(f)
         }
         run {
             val f = Feature("Block Overlay", FishSettings::blockOverlayEnabled)
@@ -757,7 +761,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             val f = Feature("Gyro Helper", FishSettings::gyroHelperEnabled)
             f.sub.add(ColorPickerSetting("Box Color", "", FishSettings::gyroBoxColor))
             f.sub.add(ColorPickerSetting("Ring Color", "", FishSettings::gyroRingColor))
-            combat.features.add(f)
+            general.features.add(f)
         }
         run {
             val f = Feature("Mage Beam", FishSettings::mageBeamEnabled)
@@ -795,7 +799,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         run {
             val f = Feature("Explosive Shot", FishSettings::explosiveShotEnabled)
             f.sub.add(ToggleSetting("Announce to Party (Archer)", "", FishSettings::explosiveShotAnnounceParty))
-            combat.features.add(f)
+            dungeon.features.add(f)
         }
 
         // ===== Floor 7 (ported from blade-addons) =====
@@ -1124,7 +1128,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         columns.add(dungeonMap)
         columns.add(solvers)
         columns.add(floor7)
-        columns.add(combat)
         columns.add(hud)
         columns.add(visuals)
         columns.add(cosmetics)
