@@ -91,9 +91,10 @@ object StorageOverlay {
         val view = StorageCache.view()
         for (i in (StorageCache.knownPages() + view.keys).sorted()) {
             val inv = view[i]
-            // A cached ender-chest page with < 5 rows is a bad old snapshot — show it as "click to
-            // load" instead of a stunted grid.
-            out[StoragePage(i)] = if (inv != null && i < 9 && inv.rows < 5) null else inv
+            // If the API told us this page's real size, drop a cached snapshot that's smaller than
+            // that (a stale partial capture) and show "click to load" instead.
+            val exp = StorageCache.expectedRows(i)
+            out[StoragePage(i)] = if (inv != null && exp != null && inv.rows < exp) null else inv
         }
         return out
     }
@@ -137,9 +138,11 @@ object StorageOverlay {
         innerW = PAGE_WIDTH * pageWidthCount + (pageWidthCount - 1) * PADDING
         overviewW = innerW + 3 * PADDING + SCROLL_BAR_WIDTH
         mx0 = vw / 2 - overviewW / 2
-        overviewH = minOf(vh - PLAYER_HEIGHT - minOf(80, vh / 10), FishSettings.storageMaxHeight.coerceIn(80, 900))
+        // leave a margin at top and bottom so the panel + player inv never touch the screen edge
+        val avail = vh - PLAYER_HEIGHT - 12
+        overviewH = minOf(avail, FishSettings.storageMaxHeight.coerceIn(80, 900)).coerceAtLeast(80)
         innerH = overviewH - PADDING * 2
-        my0 = vh / 2 - (overviewH + PLAYER_HEIGHT) / 2
+        my0 = (vh / 2 - (overviewH + PLAYER_HEIGHT) / 2).coerceAtLeast(6)
         playerX0 = vw / 2 - PLAYER_WIDTH / 2
         playerY0 = my0 + overviewH + 2
     }
@@ -163,7 +166,6 @@ object StorageOverlay {
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
         if (!on(screen)) return
-        updateBounds(screen)
         recomputeGeometry()
         dragPreview = computeDragPreview()
         val prevHovered = hoveredOverlayItem
@@ -616,12 +618,4 @@ object StorageOverlay {
 
     private fun inRect(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int) = mx >= x && mx < x + w && my >= y && my < y + h
     private fun inRect(mx: Double, my: Double, x: Int, y: Int, w: Int, h: Int) = mx >= x && mx < x + w && my >= y && my < y + h
-
-    private fun updateBounds(screen: AbstractContainerScreen<*>) {
-        val acc = screen as fishmod.mixin.accessors.HandledScreenAccessor
-        acc.`fishmod$setLeftPos`(0)
-        acc.`fishmod$setTopPos`(0)
-        acc.`fishmod$setImageWidth`(screen.width)
-        acc.`fishmod$setImageHeight`(screen.height)
-    }
 }

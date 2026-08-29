@@ -2778,9 +2778,13 @@ public class HypixelApi {
                 JsonObject inv = member.getAsJsonObject("inventory");
                 Map<Integer, Integer> rows = new HashMap<>();
 
-                // Ender chest is one flat list, 45 slots (5 rows) per page -> pages 0..8.
+                // Ender chest is one flat list; a page is up to 45 slots (5 rows) but the last page
+                // is only as tall as it needs to be if the chest isn't maxed.
                 int ecCount = slotListSize(inv.has("ender_chest_contents") ? inv.getAsJsonObject("ender_chest_contents") : null);
-                for (int p = 0; p * 45 < ecCount && p < 9; p++) rows.put(p, 5);
+                for (int p = 0; p * 45 < ecCount && p < 9; p++) {
+                    int pageItems = Math.min(ecCount, (p + 1) * 45) - p * 45;
+                    rows.put(p, Math.max(1, Math.min(5, (pageItems + 8) / 9)));
+                }
 
                 // Backpacks: { "<slot>": {type,data}, ... } -> page slot+9, rows = ceil(size / 9).
                 if (inv.has("backpack_contents") && inv.get("backpack_contents").isJsonObject()) {

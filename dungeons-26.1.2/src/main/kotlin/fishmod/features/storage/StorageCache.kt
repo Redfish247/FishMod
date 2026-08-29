@@ -104,10 +104,12 @@ object StorageCache {
 
         val menu = screen.menu as? ChestMenu ?: return   // storage pages are always chest menus
         val rows = menu.rowCount
-        // Reject a not-yet-synced container: an ender-chest page's GUI is always 6 rows (45 content
-        // slots). A backpack GUI is (its size / 9) + 1 nav row, so >= 2. Snapshotting a partially
-        // filled window is what left "Ender Chest #8" showing a single row.
-        if (page.isEnderChest) { if (rows != 6) return } else if (rows < 2) return
+        if (rows < 2) return                              // row 0 is the nav row; need >= 1 content row
+        val contentRows = rows - 1
+        // If the API told us the page's real size, only snapshot once the window matches it — a
+        // partially-synced container is what produced stunted pages.
+        val exp = expectedRows[page.index]
+        if (exp != null && contentRows != exp) return
 
         val items = menu.slots.subList(9, rows * 9).map { it.item.copy() }
         pages[page.index] = NBTInventory(items)
