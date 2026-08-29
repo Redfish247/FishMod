@@ -3,11 +3,15 @@ package fishmod.features
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.EntityUtil
 import fishmod.utils.data.ItemUtil
+import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.fabricmc.fabric.api.event.player.UseBlockCallback
+import net.fabricmc.fabric.api.event.player.UseEntityCallback
 import net.fabricmc.fabric.api.event.player.UseItemCallback
 import net.minecraft.client.Minecraft
+import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.network.chat.Component
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
@@ -15,53 +19,98 @@ import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
+import net.minecraft.world.phys.Vec3
 import java.util.concurrent.ConcurrentHashMap
 
-/** Fire Freeze Staff timer: renders a countdown at each frozen mob after use. */
+/** Fire Freeze Staff timer: renders a countdown at each mob caught in the freeze cloud after use. */
 object FireFreezeTimer {
 
     private const val WAIT_MS = 5000L
     private const val FREEZE_MS = 10000L
     private const val TOTAL_MS = WAIT_MS + FREEZE_MS
-    private const val RADIUS = 4.5         // matches the black particle cloud Fire Freeze makes
-    private const val CATCH_WINDOW_MS = 2000L // keep scanning briefly after the cast — mobs wander in
+    private const val RADIUS = 4.5          // the black particle cloud Fire Freeze makes is ~4.5 blocks
+    private const val ARM_WINDOW_MS = 1500L // how long after a right-click we treat a smoke burst as the cast
+    private const val CATCH_WINDOW_MS = 2500L // keep scanning briefly after the cast — mobs wander in
 
     // entityId -> wall-clock ms when the staff was used (cast start)
     private val frozen: MutableMap<Int, Long> = ConcurrentHashMap()
 
-    @Volatile private var castAt = 0L
+    @Volatile private var armedAt = 0L                 // last Fire Freeze Staff right-click
+    @Volatile private var castAt = 0L                  // when the freeze actually registered
+    @Volatile private var center: Vec3 = Vec3.ZERO     // freeze cloud centre (particle burst, or the player)
 
     @JvmStatic
     fun init() {
-        UseItemCallback.EVENT.register(UseItemCallback { player, world, hand ->
-            if (!FishSettings.fireFreezeTimerEnabled || hand != InteractionHand.MAIN_HAND) return@UseItemCallback InteractionResult.PASS
-            val mc = Minecraft.getInstance()
-            if (mc.player == null || mc.level == null) return@UseItemCallback InteractionResult.PASS
-            val stack = player.getItemInHand(hand)
-            if (stack == null || stack.isEmpty) return@UseItemCallback InteractionResult.PASS
-            if ("FIRE_FREEZE_STAFF" != ItemUtil.getId(stack)) return@UseItemCallback InteractionResult.PASS
-
-            castAt = System.currentTimeMillis()
-            scanFrozen()
+        // Any right-click route with the staff in hand — air, block, or entity — arms detection.
+        UseItemCallback.EVENT.register(UseItemCallback { player, _, hand ->
+            if (isFireFreezeUse(player, hand)) arm()
+            InteractionResult.PASS
+        })
+        UseBlockCallback.EVENT.register(UseBlockCallback { player, _, hand, _ ->
+            if (isFireFreezeUse(player, hand)) arm()
+            InteractionResult.PASS
+        })
+        UseEntityCallback.EVENT.register(UseEntityCallback { player, _, hand, _, _ ->
+            if (isFireFreezeUse(player, hand)) arm()
             InteractionResult.PASS
         })
 
-        // Re-scan for a short window after the cast — the freeze lands when the projectile arrives,
-        // not on the click, and mobs can walk into range in between.
+        // The freeze's black smoke burst is the real "it happened" signal (and gives its centre,
+        // so a ranged cast is handled too). Only trust it right after a staff right-click.
+        Events.ON_PARTICLE.register { packet ->
+            if (FishSettings.fireFreezeTimerEnabled &&
+                System.currentTimeMillis() - armedAt <= ARM_WINDOW_MS &&
+                packet.count >= 4 &&
+                (packet.particle.type === ParticleTypes.LARGE_SMOKE || packet.particle.type === ParticleTypes.SMOKE)
+            ) {
+                val mc = Minecraft.getInstance()
+                val p = mc.player
+                val pos = Vec3(packet.x, packet.y, packet.z)
+                if (p != null && p.position().closerThan(pos, 40.0)) {
+                    center = pos
+                    castAt = System.currentTimeMillis()
+                    scanFrozen()
+                }
+            }
+            false
+        }
+
+        // Re-scan for a short window after the cast — the cloud lingers and mobs walk into it.
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick {
-            if (castAt != 0L && System.currentTimeMillis() - castAt <= CATCH_WINDOW_MS) scanFrozen()
+            val now = System.currentTimeMillis()
+            if (castAt != 0L && now - castAt <= CATCH_WINDOW_MS) {
+                scanFrozen()
+            } else if (armedAt != 0L && castAt < armedAt && now - armedAt in 250..ARM_WINDOW_MS) {
+                // No smoke burst matched (wrong particle id / not sent) — fall back to a
+                // player-centred cast so the timer still shows.
+                Minecraft.getInstance().player?.let {
+                    center = it.position()
+                    castAt = now
+                    scanFrozen()
+                }
+            }
         })
 
         registerRender()
     }
 
+    private fun isFireFreezeUse(player: Player, hand: InteractionHand): Boolean {
+        if (!FishSettings.fireFreezeTimerEnabled || hand != InteractionHand.MAIN_HAND) return false
+        if (Minecraft.getInstance().level == null) return false
+        val stack = player.getItemInHand(hand)
+        return stack != null && !stack.isEmpty && "FIRE_FREEZE_STAFF" == ItemUtil.getId(stack)
+    }
+
+    private fun arm() {
+        armedAt = System.currentTimeMillis()
+    }
+
     private fun scanFrozen() {
-        val mc = Minecraft.getInstance()
-        val p = mc.player ?: return
-        val level = mc.level ?: return
-        for (e in level.getEntities(p, p.boundingBox.inflate(RADIUS))) {
+        val level = Minecraft.getInstance().level ?: return
+        val box = net.minecraft.world.phys.AABB.ofSize(center, RADIUS * 2, RADIUS * 2, RADIUS * 2)
+        for (e in level.getEntities(null as Entity?, box)) {
             if (e is LivingEntity && e !is Player && e !is ArmorStand && e.isAlive &&
-                e.distanceToSqr(p) <= RADIUS * RADIUS
+                e.position().closerThan(center, RADIUS)
             ) {
                 frozen.putIfAbsent(e.id, castAt)
             }
@@ -90,18 +139,14 @@ object FireFreezeTimer {
 
                 val t: Component
                 if (elapsed < WAIT_MS) {
-                    // 5s cooldown/wait countdown with an hourglass.
                     val secs = (WAIT_MS - elapsed) / 1000.0
                     t = Component.literal("§e⌛ " + String.format("%.1fs", secs))
                 } else {
-                    // 10s freeze countdown with a snowflake.
                     val secs = (TOTAL_MS - elapsed) / 1000.0
                     val color = if (secs <= 2.0) "§c" else if (secs <= 5.0) "§b" else "§3"
                     t = Component.literal(color + "❄ " + String.format("%.1fs", secs))
                 }
-                // Interpolated position + a fixed offset above the head — the old body-centre spot
-                // used the un-lerped tick position, so the label lagged behind a moving mob and
-                // read as "stuck"/jittery. Draw it clearly above the mob instead.
+                // Interpolated position, anchored above the head so it's easy to read.
                 val p = EntityUtil.getLerpedPos(e)
                 val y = p.y + e.bbHeight + 0.55
                 RenderUtils.renderText(ctx, matrices, t, p.x, y, p.z, 1.35f)
