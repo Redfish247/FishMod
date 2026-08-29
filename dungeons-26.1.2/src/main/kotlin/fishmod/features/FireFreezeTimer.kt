@@ -5,6 +5,7 @@ import fishmod.utils.data.EntityUtil
 import fishmod.utils.data.ItemUtil
 import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.event.player.UseItemCallback
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -12,6 +13,7 @@ import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
 import java.util.concurrent.ConcurrentHashMap
 
@@ -21,10 +23,13 @@ object FireFreezeTimer {
     private const val WAIT_MS = 5000L
     private const val FREEZE_MS = 10000L
     private const val TOTAL_MS = WAIT_MS + FREEZE_MS
-    private const val RADIUS = 3.0 // Fire Freeze AOE is small (~2.5-3 blocks)
+    private const val RADIUS = 16.0        // Fire Freeze is a large AOE, and it's usually cast from range
+    private const val CATCH_WINDOW_MS = 2000L // keep scanning while the projectile travels / mobs wander in
 
     // entityId -> wall-clock ms when the staff was used (cast start)
     private val frozen: MutableMap<Int, Long> = ConcurrentHashMap()
+
+    @Volatile private var castAt = 0L
 
     @JvmStatic
     fun init() {
@@ -36,19 +41,34 @@ object FireFreezeTimer {
             if (stack == null || stack.isEmpty) return@UseItemCallback InteractionResult.PASS
             if ("FIRE_FREEZE_STAFF" != ItemUtil.getId(stack)) return@UseItemCallback InteractionResult.PASS
 
-            val mcPlayer = mc.player!!
-            val start = System.currentTimeMillis()
-            val area = mcPlayer.boundingBox.inflate(RADIUS)
-            for (e in mc.level!!.getEntities(mcPlayer, area)) {
-                if (e is LivingEntity && e !is Player && e.isAlive
-                    && e.distanceToSqr(mcPlayer) <= RADIUS * RADIUS
-                ) {
-                    frozen[e.id] = start
-                }
-            }
+            castAt = System.currentTimeMillis()
+            scanFrozen()
             InteractionResult.PASS
         })
 
+        // Re-scan for a short window after the cast — the freeze lands when the projectile arrives,
+        // not on the click, and mobs can walk into range in between.
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick {
+            if (castAt != 0L && System.currentTimeMillis() - castAt <= CATCH_WINDOW_MS) scanFrozen()
+        })
+
+        registerRender()
+    }
+
+    private fun scanFrozen() {
+        val mc = Minecraft.getInstance()
+        val p = mc.player ?: return
+        val level = mc.level ?: return
+        for (e in level.getEntities(p, p.boundingBox.inflate(RADIUS))) {
+            if (e is LivingEntity && e !is Player && e !is ArmorStand && e.isAlive &&
+                e.distanceToSqr(p) <= RADIUS * RADIUS
+            ) {
+                frozen.putIfAbsent(e.id, castAt)
+            }
+        }
+    }
+
+    private fun registerRender() {
         // World text renders in the single END_MAIN pass (RenderingEvents) — the node collector that
         // submitText() feeds is already drained by AFTER_TRANSLUCENT_FEATURES. Pose is pre-translated
         // by -camera here, so no manual push/translate.

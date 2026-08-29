@@ -186,7 +186,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(SliderIntSetting("Range", "Blocks", FishSettings::etherwarpRange, 1, 61))
             f.sub.add(ToggleSetting("Cast Sound", "", FishSettings::etherwarpSoundEnabled))
             f.sub.add(SoundSearchSetting("Sound", "Type to search every game sound",
-                { FishSettings.etherwarpSoundName }, { v -> FishSettings.etherwarpSoundName = v }))
+                { FishSettings.etherwarpSoundName }, { v -> FishSettings.etherwarpSoundName = v },
+                { FishSettings.etherwarpSoundVolume }, { FishSettings.etherwarpSoundPitch }))
             f.sub.add(SliderIntSetting("Sound Volume %", "Above 100 = louder (stacked plays)", FishSettings::etherwarpSoundVolume, 0, 500, 10))
             f.sub.add(SliderDoubleSetting("Sound Pitch", "", FishSettings::etherwarpSoundPitch, 0.5, 2.0))
             visuals.features.add(f)
@@ -441,7 +442,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Chime", "Sound on secret click", FishSettings::secretClickedChime))
             f.sub.add(ToggleSetting("Chime In Boss", "", FishSettings::secretClickedChimeInBoss))
             f.sub.add(SoundSearchSetting("Chime Sound", "Type to search every game sound",
-                { FishSettings.secretClickedSoundName }, { v -> FishSettings.secretClickedSoundName = v }))
+                { FishSettings.secretClickedSoundName }, { v -> FishSettings.secretClickedSoundName = v },
+                { FishSettings.secretClickedVolume }, { FishSettings.secretClickedPitch }))
             f.sub.add(SliderIntSetting("Chime Volume %", "", FishSettings::secretClickedVolume, 0, 100))
             f.sub.add(SliderDoubleSetting("Chime Pitch", "", FishSettings::secretClickedPitch, 0.0, 2.0))
             dungeon.features.add(f)
@@ -705,7 +707,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         run {
             val f = Feature("Arrow Hit Sound", FishSettings::arrowHitSoundEnabled)
             f.sub.add(SoundSearchSetting("Sound", "Type to search every game sound",
-                { FishSettings.arrowHitSoundName }, { v -> FishSettings.arrowHitSoundName = v }))
+                { FishSettings.arrowHitSoundName }, { v -> FishSettings.arrowHitSoundName = v },
+                { FishSettings.arrowHitSoundVolume }, { FishSettings.arrowHitSoundPitch }))
             f.sub.add(SliderIntSetting("Volume %", "Above 100 = louder (stacked plays)", FishSettings::arrowHitSoundVolume, 0, 500, 10))
             f.sub.add(SliderDoubleSetting("Pitch", "", FishSettings::arrowHitSoundPitch, 0.0, 2.0))
             f.sub.add(ToggleSetting("Suppress Vanilla Sound", "", FishSettings::arrowHitSoundSuppress))
@@ -2321,6 +2324,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         desc: String,
         private val valueGetter: () -> String,
         private val valueSetter: (String) -> Unit,
+        // Optional: let the "Test" button preview at the feature's configured volume/pitch instead
+        // of a flat 100% / 1.0. volumePct is 0..500 (percent).
+        private val volumePct: (() -> Int)? = null,
+        private val pitchGetter: (() -> Double)? = null,
     ) : InputSetting(name, desc, { "" }, { }) {
 
         private var query = ""
@@ -2330,7 +2337,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         private var testRect: IntArray? = null
 
         private fun preview() {
-            fishmod.utils.Misc.sendSound(fishmod.utils.sound.SoundManager.preset(valueGetter()), 1f, 1f)
+            val vol = (volumePct?.invoke() ?: 100).coerceIn(0, 500) / 100f
+            val pit = (pitchGetter?.invoke() ?: 1.0).toFloat().coerceIn(0f, 2f)
+            fishmod.utils.Misc.sendSound(fishmod.utils.sound.SoundManager.preset(valueGetter()), vol, pit)
         }
 
         override fun initField(tr: Font) {
