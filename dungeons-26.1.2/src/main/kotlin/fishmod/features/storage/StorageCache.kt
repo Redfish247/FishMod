@@ -35,12 +35,27 @@ object StorageCache {
 
     @Volatile private var pages: TreeMap<Int, NBTInventory> = TreeMap()
     @Volatile private var known: MutableSet<Int> = sortedSetOf()
+    /** pageIndex -> expected content rows, learned from the API layout fetch (in-memory only). */
+    private val expectedRows = HashMap<Int, Int>()
     private var loadedFor: String? = null
     private var dirty = false
     private var lastSnapshot = 0L
 
     @JvmStatic fun view(): Map<Int, NBTInventory> = Collections.unmodifiableMap(pages)
     @JvmStatic fun knownPages(): Set<Int> = Collections.unmodifiableSet(known)
+    @JvmStatic fun expectedRows(idx: Int): Int? = expectedRows[idx]
+
+    /** Register which pages exist (+ their row counts) from the API layout fetch, without items. */
+    @JvmStatic
+    fun registerLayout(rows: Map<Int, Int>) {
+        ensureLoaded()
+        var changed = false
+        for ((idx, r) in rows) {
+            expectedRows[idx] = r
+            if (known.add(idx)) changed = true
+        }
+        if (changed) { dirty = true; forceSave() }
+    }
 
     /** Load this player's on-disk cache if it isn't loaded yet (for callers outside [tick]). */
     @JvmStatic
@@ -84,14 +99,17 @@ object StorageCache {
         val page = StoragePage.fromTitle(plainTitle) ?: run { flush(); return }
 
         val now = System.currentTimeMillis()
-        if (now - lastSnapshot < 300) return
+        if (now - lastSnapshot < 100) return
         lastSnapshot = now
 
-        val menu = screen.menu
-        val rows = (menu as? ChestMenu)?.rowCount ?: ((menu.slots.size - 36) / 9)
-        if (rows <= 1) return
+        val menu = screen.menu as? ChestMenu ?: return   // storage pages are always chest menus
+        val rows = menu.rowCount
+        // Reject a not-yet-synced container: an ender-chest page's GUI is always 6 rows (45 content
+        // slots). A backpack GUI is (its size / 9) + 1 nav row, so >= 2. Snapshotting a partially
+        // filled window is what left "Ender Chest #8" showing a single row.
+        if (page.isEnderChest) { if (rows != 6) return } else if (rows < 2) return
+
         val items = menu.slots.subList(9, rows * 9).map { it.item.copy() }
-        if (items.all { it.isEmpty }) return
         pages[page.index] = NBTInventory(items)
         known.add(page.index)
         dirty = true

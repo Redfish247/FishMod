@@ -97,14 +97,6 @@ dependencies {
 	// Fork of BladeMasterGabe/practical-config ported to 26.2 (see gradle.properties)
 	include implementation("com.github.Redfish247:practical-config:${project.practical_config}")
 
-	// Legacy (pre-1.13) item-NBT -> modern ItemStack converter, for decoding the Hypixel API's
-	// ender-chest / backpack contents. This is NoammAddons' own JitPack fork of owdding's `dfu`
-	// (package me.owdding.dfu). Bundled jar-in-jar — nothing for the user to install. Minecraft
-	// already ships DataFixerUpper, so don't nest a second copy of it.
-	include(implementation("com.github.Noamm9:datafixer:d60875927e") {
-		exclude group: 'com.mojang', module: 'datafixerupper'
-	})
-
 	// NanoVG (LWJGL binding) — real anti-aliased vector-graphics rendering for FishModScreen.
 	// Not one of Minecraft's own bundled LWJGL modules, so both the core jar and its natives
 	// must be declared explicitly and bundled into our own jar via Loom's include() (Nested

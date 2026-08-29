@@ -7,11 +7,11 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 
 /**
- * Manual "load everything" for the storage overlay/viewer — pulls every ender-chest and backpack
- * page from the Hypixel API in one shot (via FishMod's proxy) and caches them, instead of making
- * you open each `/enderchest` / `/backpack` by hand.
+ * Learns which ender-chest / backpack pages you own (and their sizes) from the Hypixel API, so the
+ * storage overlay lists every real page even before you've opened it. Item contents are still
+ * captured load-based by [StorageCache] as you page through `/storage`.
  *
- * Trigger: the "Load all pages" button in the Storage Viewer, or `/storageload`.
+ * Trigger: the "Load pages" button in the Storage Viewer, or `/storageload`.
  */
 object StorageAutoLoader {
 
@@ -21,8 +21,7 @@ object StorageAutoLoader {
 
     @JvmStatic fun running(): Boolean = busy
 
-    @JvmStatic
-    fun stop() { busy = false } // the API call is one request; nothing to truly cancel
+    @JvmStatic fun stop() { busy = false }
 
     @JvmStatic
     fun start() {
@@ -34,24 +33,15 @@ object StorageAutoLoader {
         if (busy) { msg("§e[Storage] Already loading…"); return }
 
         busy = true
-        msg("§b[Storage] Fetching all pages from the Hypixel API…")
-        HypixelApi.getStorage(mc) { pages, error ->
+        msg("§b[Storage] Reading your storage layout from the API…")
+        HypixelApi.getStorageLayout(mc) { rows, error ->
             mc.execute {
                 try {
-                    if (pages == null) {
-                        msg("§c[Storage] ${error ?: "request failed"}")
-                        return@execute
-                    }
-                    StorageCache.ensureLoaded()
-                    var n = 0
-                    for ((idx, items) in pages) {
-                        if (items.any { !it.isEmpty }) { StorageCache.put(idx, items); n++ }
-                    }
-                    StorageCache.forceSave()
-                    msg(
-                        if (n == 0) "§e[Storage] API returned no filled pages." + (error?.let { " §7($it)" } ?: "")
-                        else "§a[Storage] Loaded $n page(s) from the API."
-                    )
+                    if (rows == null) { msg("§c[Storage] ${error ?: "request failed"}"); return@execute }
+                    StorageCache.registerLayout(rows)
+                    val ec = rows.keys.count { it < 9 }
+                    val bp = rows.keys.count { it >= 9 }
+                    msg("§a[Storage] Found $ec ender chest page(s) + $bp backpack(s) — open each to load its items.")
                 } finally {
                     busy = false
                 }

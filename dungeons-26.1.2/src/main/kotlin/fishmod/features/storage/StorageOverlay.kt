@@ -78,6 +78,10 @@ object StorageOverlay {
         return t == "Storage" || StoragePage.fromTitle(t) != null
     }
 
+    /** True while the overlay covers this screen — used by the mixin to suppress vanilla slot draw. */
+    @JvmStatic
+    fun isActive(screen: AbstractContainerScreen<*>): Boolean = on(screen)
+
     private fun activePage(screen: AbstractContainerScreen<*>): StoragePage? =
         StoragePage.fromTitle(screen.title.string.replace(Regex("§."), ""))
 
@@ -85,7 +89,12 @@ object StorageOverlay {
     private fun allData(): TreeMap<StoragePage, NBTInventory?> {
         val out = TreeMap<StoragePage, NBTInventory?>()
         val view = StorageCache.view()
-        for (i in (StorageCache.knownPages() + view.keys).sorted()) out[StoragePage(i)] = view[i]
+        for (i in (StorageCache.knownPages() + view.keys).sorted()) {
+            val inv = view[i]
+            // A cached ender-chest page with < 5 rows is a bad old snapshot — show it as "click to
+            // load" instead of a stunted grid.
+            out[StoragePage(i)] = if (inv != null && i < 9 && inv.rows < 5) null else inv
+        }
         return out
     }
 
@@ -166,10 +175,10 @@ object StorageOverlay {
         val smx = (mouseX / s).toInt()
         val smy = (mouseY / s).toInt()
 
-        // frosted backdrop so vanilla content is hidden
+        // opaque backdrop so the vanilla chest GUI behind it is fully hidden
         runCatching { ctx.blurBeforeThisStratum() }
         runCatching { ctx.nextStratum() }
-        rect(ctx, 0, 0, vw, vh, 0x66_0A0A12)
+        rect(ctx, 0, 0, vw + 2, vh + 2, 0xFF0E0E14.toInt())
 
         val menu = screen.menu
         val chestEnd = rowCountOf(menu) * 9
