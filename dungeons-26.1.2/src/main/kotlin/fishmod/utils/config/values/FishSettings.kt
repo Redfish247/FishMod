@@ -470,6 +470,7 @@ object FishSettings {
 
     // ── Misc client tweaks ───────────────────────────────────────────────────
     @ConfigValue @JvmField var noCursorReset: Boolean = false
+    @ConfigValue @JvmField var noCursorResetTicks: Int = 100   // 50..500 (step 5) — ticks the cursor pos is held before recentring
     @ConfigValue @JvmField var arrowFixEnabled: Boolean = false
     @ConfigValue @JvmField var monoAudioEnabled: Boolean = false
     @ConfigValue @JvmField var swordBlockingEnabled: Boolean = false
@@ -499,6 +500,7 @@ object FishSettings {
     @ConfigValue @JvmField var storageOverlayScale: Double = 1.0   // 0.5..2.0 — NoammAddons "Scale"
     @ConfigValue @JvmField var storageScrollSpeed: Int = 10        // 1..50
     @ConfigValue @JvmField var storageRetainScroll: Boolean = true
+    @ConfigValue @JvmField var containerValueEnabled: Boolean = false   // no-bg value list beside the open container / storage overlay
 
     // ── Leap Menu (custom Spirit Leap GUI) ───────────────────────────────────
     @ConfigValue @JvmField var leapMenuEnabled: Boolean = false
@@ -514,6 +516,11 @@ object FishSettings {
     // ── Item Tooltip prices ──────────────────────────────────────────────────
     @ConfigValue @JvmField var itemTooltipPrices: Boolean = false
     @ConfigValue @JvmField var itemTooltipNpcSell: Boolean = false
+
+    // Scrollable tooltips (NoammAddons port): scroll = move, shift+scroll = sideways, ctrl+scroll = scale.
+    @ConfigValue @JvmField var tooltipScrollEnabled: Boolean = false
+    @ConfigValue @JvmField var tooltipScrollScale: Int = 100   // percent, 30..150
+    @ConfigValue @JvmField var tooltipScrollSpeed: Int = 3     // 1..10
 
     // ── Etherwarp Helper ─────────────────────────────────────────────────────
     @ConfigValue @JvmField var etherwarpHelperEnabled: Boolean = false
@@ -662,10 +669,8 @@ object FishSettings {
     @ConfigValue @JvmField var slotBindsHoverOnly: Boolean = false
     @ConfigValue @JvmField var slotBindsColor: Int = 0xFFFF55FF.toInt()
 
-    // ── Camera Tweaks ─────────────────────────────────────────────────────────
+    // ── Visual Effects ───────────────────────────────────────────────────────
     @ConfigValue @JvmField var cameraTweaksEnabled: Boolean = false
-    @ConfigValue @JvmField var cameraCustomFov: Boolean = false
-    @ConfigValue @JvmField var cameraFov: Int = 110
     @ConfigValue @JvmField var cameraFullBright: Boolean = false
     @ConfigValue @JvmField var cameraNoBlindness: Boolean = false
     @ConfigValue @JvmField var cameraNoNausea: Boolean = false

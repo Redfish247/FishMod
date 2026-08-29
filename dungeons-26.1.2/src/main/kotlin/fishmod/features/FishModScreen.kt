@@ -215,6 +215,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(KeybindSetting("Open Viewer", "Standalone cache browser", { fishmod.utils.Keybinds.storageViewer }))
             invStorage.features.add(f)
         }
+        invStorage.features.add(Feature("Container Value", FishSettings::containerValueEnabled))
         run {
             val f = Feature("Guild Bridge Bot", FishSettings::bridgeBotEnabled)
             f.sub.add(SubcategoryHeader("Reformats \"Guild > Bot: Player » msg\" and hides the raw bot line"))
@@ -476,9 +477,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             tmpl.hint = "{name} = player who died"
             f.sub.add(tmpl)
             f.sub.add(ToggleSetting("To Party", "", FishSettings::deathMessageToParty))
-            party.features.add(f)
+            dungeon.features.add(f)
         }
-        party.features.add(Feature("Send Lag to Party", FishSettings::sendLagToParty))
+        dungeon.features.add(Feature("Send Lag to Party", FishSettings::sendLagToParty))
         run {
             val f = Feature("Splits", Phase::enableSplits)
             f.sub.add(ToggleSetting("Total Time", "", Phase::includeTotalTime))
@@ -745,6 +746,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Prices", "Value = base + modifiers (enchants, HPB, recomb, gems, reforge…)", FishSettings::itemTooltipPrices))
             f.sub.add(ToggleSetting("NPC Sell Price", "", FishSettings::itemTooltipNpcSell))
             f.sub.add(ToggleSetting("Dungeon Quality", "Stat-boost % + floor", FishSettings::itemQualityTooltip))
+            f.sub.add(SubcategoryHeader("Scrollable Tooltips — scroll: move · shift: sideways · ctrl: scale"))
+            f.sub.add(ToggleSetting("Scrollable Tooltips", "", FishSettings::tooltipScrollEnabled))
+            f.sub.add(SliderIntSetting("Tooltip Scale %", "", FishSettings::tooltipScrollScale, 30, 150, 5))
+            f.sub.add(SliderIntSetting("Scroll Speed", "", FishSettings::tooltipScrollSpeed, 1, 10))
             hud.features.add(f)
         }
         run {
@@ -3022,6 +3027,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Party Finder Join Stats" -> "Whisper or PF-join prints their MP/PB/Cata/Gear to chat — also /pfs [name]"
                 "Party Finder Menu" -> "Level req + missing classes on heads, stats in party-member tooltips"
                 "Party Finder Auto Kick" -> "As leader, kick joiners who miss the S+ PB / secrets bar"
+                "Container Value" -> "No-background value list + total beside the open container / storage overlay"
                 else -> descForExternal(name)
             }
         }

@@ -6,14 +6,21 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner;
+import net.minecraft.resources.Identifier;
 import org.joml.Matrix3x2fStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.List;
 
 @Mixin(GuiGraphicsExtractor.class)
 public class DrawContextMixin {
@@ -21,6 +28,27 @@ public class DrawContextMixin {
     @Final
     @Shadow
     private Matrix3x2fStack pose;
+
+    @Unique private boolean fishmod$tooltipShifted;
+
+    // Scrollable / scalable tooltips: nudge + scale the pose around the tooltip draw.
+    @Inject(method = "tooltip", at = @At("HEAD"))
+    private void fishmod$tooltipScrollPush(Font font, List<ClientTooltipComponent> lines, int xo, int yo,
+                                          ClientTooltipPositioner positioner, Identifier style, CallbackInfo ci) {
+        fishmod$tooltipShifted = fishmod.features.ScrollableTooltip.isEnabled();
+        if (!fishmod$tooltipShifted) return;
+        pose.pushMatrix();
+        pose.translate(xo, yo);
+        pose.scale(fishmod.features.ScrollableTooltip.effectiveScale());
+        pose.translate(fishmod.features.ScrollableTooltip.offsetX, fishmod.features.ScrollableTooltip.offsetY);
+        pose.translate(-xo, -yo);
+    }
+
+    @Inject(method = "tooltip", at = @At("TAIL"))
+    private void fishmod$tooltipScrollPop(Font font, List<ClientTooltipComponent> lines, int xo, int yo,
+                                         ClientTooltipPositioner positioner, Identifier style, CallbackInfo ci) {
+        if (fishmod$tooltipShifted) { pose.popMatrix(); fishmod$tooltipShifted = false; }
+    }
 
 
     @ModifyVariable(method = "itemCooldown", at=@At("STORE"), ordinal = 0)

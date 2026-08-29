@@ -31,6 +31,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
         SearchBar.render(context, mouseX, mouseY, deltaTicks);
         fishmod.features.dungeon.LeapMenu.render(context, mouseX, mouseY, (AbstractContainerScreen<?>) (Object) this);
         fishmod.features.storage.StorageOverlay.render(context, mouseX, mouseY, (AbstractContainerScreen<?>) (Object) this);
+        fishmod.features.item.ContainerValue.render(context, (AbstractContainerScreen<?>) (Object) this);
         if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) {
             fishmod.features.dungeon.f7.terminal.TermCustomGui.render(context, this.width, this.height);
         }
@@ -114,6 +115,21 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     private void fishmod$storageScroll(double mx, double my, double hz, double vt, CallbackInfoReturnable<Boolean> cir) {
         if (fishmod.features.storage.StorageOverlay.mouseScrolled(vt, (AbstractContainerScreen<?>) (Object) this)) {
             cir.setReturnValue(true);
+            return;
+        }
+        // Scrollable tooltips: scroll over a hovered item moves / scales its tooltip.
+        if (fishmod.features.ScrollableTooltip.isEnabled()) {
+            Slot hs = ((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot();
+            if (hs != null && !hs.getItem().isEmpty()) {
+                long win = net.minecraft.client.Minecraft.getInstance().getWindow().handle();
+                boolean shift = org.lwjgl.glfw.GLFW.glfwGetKey(win, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS
+                        || org.lwjgl.glfw.GLFW.glfwGetKey(win, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+                boolean ctrl = org.lwjgl.glfw.GLFW.glfwGetKey(win, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL) == org.lwjgl.glfw.GLFW.GLFW_PRESS
+                        || org.lwjgl.glfw.GLFW.glfwGetKey(win, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_CONTROL) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+                if (fishmod.features.ScrollableTooltip.onScroll(vt, hs.index, shift, ctrl)) {
+                    cir.setReturnValue(true);
+                }
+            }
         }
     }
 
@@ -134,6 +150,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     @Inject(method = "removed", at = @At("HEAD"))
     private void fishmod$storageClosed(CallbackInfo ci) {
         fishmod.features.storage.StorageOverlay.onClosed();
+        fishmod.features.ScrollableTooltip.resetScroll();
         fishmod.features.dungeon.f7.terminal.TerminalSolver.onScreenClosed();
     }
 }
