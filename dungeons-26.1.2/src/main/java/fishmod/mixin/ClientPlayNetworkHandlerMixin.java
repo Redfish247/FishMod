@@ -100,10 +100,15 @@ public class ClientPlayNetworkHandlerMixin {
     }
 
 
-    @Inject(method = "setTitleText", at = @At("HEAD"))
+    @Inject(method = "setTitleText", at = @At("HEAD"), cancellable = true)
     private void onTitle(ClientboundSetTitleTextPacket packet, CallbackInfo ci) {
-        if (packet.text() != null) {
-            fishmod.features.dungeon.SimonSaysTracker.onTitle(packet.text().getString());
+        Component text = packet.text();
+        if (text != null) {
+            fishmod.features.dungeon.SimonSaysTracker.onTitle(text.getString());
+
+            if (fishmod.features.dungeon.f7.TitleHider.shouldHideTitle(text) || fishmod.features.dungeon.f7.DeviceNotifier.disableTitles(text)) {
+                ci.cancel();
+            }
         }
     }
 

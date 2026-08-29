@@ -115,25 +115,7 @@ object CompactTab {
         val tps = PartyCommandHandler.currentTps()
         val server = findServer(mc, tabFooter, tabHeader)
 
-        // panel geometry
-        val pad = 8
-        val gap = 8
-        var contentW = 0
-        for (w in colWidths) contentW += w
-        contentW += gap * (columns.size - 1)
-        val pw = min(screenW - 12, contentW + pad * 2)
-        val x0 = (screenW - pw) / 2
-        val y0 = 4
-        val headH = 28
-        val bodyH = rows * lh + 6
-        val footH = 12
-        val totalH = headH + bodyH + footH
-
-        // rounded translucent panel
-        roundRect(ctx, x0, y0, x0 + pw, y0 + totalH, bgPanel())
-        roundRect(ctx, x0, y0, x0 + pw, y0 + headH, bgHead())
-
-        // header stat bar (PLAYERS cell removed — count already shown atop the Players column)
+        // header/side stat bar (PLAYERS cell removed — count already shown atop the Players column)
         val labels = arrayOf("SERVER", "TPS", "FPS", "PING")
         val values = arrayOf(
             server,
@@ -141,20 +123,98 @@ object CompactTab {
             fps.toString(),
             if (ping < 0) "—" else "${ping}ms"
         )
-        val cellW = pw / labels.size
-        for (i in labels.indices) {
-            val cxL = x0 + i * cellW
-            if (i > 0) ctx.fill(cxL, y0 + 5, cxL + 1, y0 + headH - 5, DIVIDER)
-            val cxC = cxL + cellW / 2
-            ctx.centeredText(tr, "§7" + labels[i], cxC, y0 + 5, LABEL)
-            val vc = if (i == 1 && tps >= 0 && tps < 19) 0xFFFF5555.toInt() else VALUE
-            ctx.centeredText(tr, values[i], cxC, y0 + 16, vc)
-        }
-        ctx.fill(x0 + 4, y0 + headH - 1, x0 + pw - 4, y0 + headH, DIVIDER)
+        fun valueColor(i: Int) = if (i == 1 && tps >= 0 && tps < 19) 0xFFFF5555.toInt() else VALUE
 
-        // columns
-        val cy = y0 + headH + 3
-        var colX = x0 + pad
+        // panel geometry — the player-column panel is always sized to its own content only (never
+        // stretched to the screen or to match the stat bar's height); the stat bar, when on, is a
+        // second, separate box placed beside/above/below it with a small gap between the two.
+        val pad = 8
+        val gap = 8
+        var contentW = 0
+        for (w in colWidths) contentW += w
+        contentW += gap * (columns.size - 1)
+        val bodyH = rows * lh + 6
+        val footH = 12
+        val topPad = 8
+        val tabW = contentW + pad * 2
+        val tabH = topPad + bodyH + footH
+        val boxGap = 8
+
+        if (!FishSettings.compactTabStatBarEnabled) {
+            val w = min(screenW - 12, tabW)
+            val x0 = (screenW - w) / 2
+            val y0 = 4
+            roundRect(ctx, x0, y0, x0 + w, y0 + tabH, bgPanel())
+            drawColumns(ctx, tr, columns, colWidths, x0 + pad, y0 + topPad, rows, gap, lh)
+            ctx.centeredText(tr, footerLine(tabFooter), x0 + w / 2, y0 + tabH - footH + 2, GOLD)
+            return
+        }
+
+        val pos = FishSettings.compactTabStatBarPosition.uppercase()
+        if (pos == "LEFT" || pos == "RIGHT") {
+            val statLineH = 14
+            var statW = 0
+            for (i in labels.indices) statW = max(statW, tr.width("§7" + labels[i] + " " + values[i]))
+            statW += 16
+            // Sidebar always matches the tab panel's full height (like the old single-panel layout),
+            // just as its own separate box now instead of being merged into one.
+            val statH = tabH
+
+            val totalW = tabW + boxGap + statW
+            val w = min(screenW - 12, totalW)
+            val x0 = (screenW - w) / 2
+            val y0 = 4
+            val tabX0 = if (pos == "LEFT") x0 + statW + boxGap else x0
+            val statX0 = if (pos == "LEFT") x0 else x0 + tabW + boxGap
+
+            roundRect(ctx, tabX0, y0, tabX0 + tabW, y0 + tabH, bgPanel())
+            drawColumns(ctx, tr, columns, colWidths, tabX0 + pad, y0 + topPad, rows, gap, lh)
+            ctx.centeredText(tr, footerLine(tabFooter), tabX0 + tabW / 2, y0 + tabH - footH + 2, GOLD)
+
+            roundRect(ctx, statX0, y0, statX0 + statW, y0 + statH, bgPanel())
+            // Rows split the sidebar's full height evenly (not clumped in the middle), each
+            // vertically centered within its own equal slice — same idea as the sketch's stacked cells.
+            val cellH = statH / labels.size
+            for (i in labels.indices) {
+                val cellTop = y0 + i * cellH
+                val sy = cellTop + (cellH - statLineH) / 2 + 3
+                if (i > 0) ctx.fill(statX0 + 6, cellTop, statX0 + statW - 6, cellTop + 1, DIVIDER)
+                ctx.text(tr, "§7" + labels[i] + " ", statX0 + 8, sy, LABEL, false)
+                val lw = tr.width("§7" + labels[i] + " ")
+                ctx.text(tr, values[i], statX0 + 8 + lw, sy, valueColor(i), false)
+            }
+        } else {
+            val statBarH = 32
+            val gapTB = 4
+            val w = min(screenW - 12, tabW)
+            val x0 = (screenW - w) / 2
+            val y0 = 4
+            val bottom = pos == "BOTTOM"
+            val tabY0 = if (bottom) y0 else y0 + statBarH + gapTB
+            val statY0 = if (bottom) tabY0 + tabH + gapTB else y0
+
+            roundRect(ctx, x0, tabY0, x0 + w, tabY0 + tabH, bgPanel())
+            drawColumns(ctx, tr, columns, colWidths, x0 + pad, tabY0 + topPad, rows, gap, lh)
+            ctx.centeredText(tr, footerLine(tabFooter), x0 + w / 2, tabY0 + tabH - footH + 2, GOLD)
+
+            roundRect(ctx, x0, statY0, x0 + w, statY0 + statBarH, bgPanel())
+            val cellW = w / labels.size
+            for (i in labels.indices) {
+                val cxL = x0 + i * cellW
+                if (i > 0) ctx.fill(cxL, statY0 + 6, cxL + 1, statY0 + statBarH - 6, DIVIDER)
+                val cxC = cxL + cellW / 2
+                ctx.centeredText(tr, "§7" + labels[i], cxC, statY0 + 7, LABEL)
+                ctx.centeredText(tr, values[i], cxC, statY0 + 18, valueColor(i))
+            }
+        }
+    }
+
+    private fun drawColumns(
+        ctx: GuiGraphicsExtractor, tr: Font,
+        columns: List<List<PlayerInfo>>, colWidths: List<Int>,
+        startX: Int, cy: Int, rows: Int, gap: Int, lh: Int
+    ) {
+        var colX = startX
         for (c in columns.indices) {
             val w = colWidths[c]
             if (c > 0) ctx.fill(colX - gap / 2, cy, colX - gap / 2 + 1, cy + rows * lh, DIVIDER)
@@ -184,8 +244,6 @@ object CompactTab {
             }
             colX += w + gap
         }
-
-        ctx.centeredText(tr, footerLine(tabFooter), x0 + pw / 2, y0 + totalH - footH + 2, GOLD)
     }
 
     private fun blank(e: PlayerInfo): Boolean {

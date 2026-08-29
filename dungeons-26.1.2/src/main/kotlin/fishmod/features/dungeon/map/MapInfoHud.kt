@@ -94,9 +94,12 @@ object MapInfoHud {
         if (example) {
             s = "§b0§7-§e0§7-§c0"
         } else {
-            val total = DungeonScore.calculateTotalSecrets()
             val needed = DungeonScore.calculateMinimumSecrets(false, false)
-            s = "§b${DungeonScore.secretsFound}§7-§e$needed§7-§c$total"
+            val tail = if (DungeonMapSettings.mapInfoShowLeft)
+                Math.max(0, 300 - DungeonScore.projectedFullClearScore())
+            else
+                DungeonScore.calculateTotalSecrets()
+            s = "§b${DungeonScore.secretsFound}§7-§e$needed§7-§c$tail"
         }
         return if (noWords()) s else "§fSecrets: $s"
     }

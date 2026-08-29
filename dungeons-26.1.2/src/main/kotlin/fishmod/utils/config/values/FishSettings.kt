@@ -10,6 +10,9 @@ object FishSettings {
 
     @ConfigValue @JvmField var sendLagToParty: Boolean = false
 
+    /** Whether the first-join welcome chat message has already been shown on this install. */
+    @ConfigValue @JvmField var hasSeenWelcomeMessage: Boolean = false
+
     @ConfigValue @JvmField var showPuzzles: Boolean = false
 
     @ConfigValue @JvmField var deathMessageEnabled: Boolean = false
@@ -44,6 +47,8 @@ object FishSettings {
 
     // FishMod GUI
     @ConfigValue @JvmField var fmguiScale: String = "Normal" // Normal | 1.5x | 2x
+    /** Comma-separated column names, left-to-right, saved from drag-reordering the /fm screen's tabs. */
+    @ConfigValue @JvmField var fmColumnOrder: String = ""
 
     // Pet XP multipliers (see Hypixel wiki — Pets/Pet XP).
     // Pet XP gained = skill XP × (1 + taming×0.01) × (1 + beastmaster%/100) × (1 + petItem%/100) × extraMult.
@@ -118,13 +123,21 @@ object FishSettings {
     @ConfigValue @JvmField var compactTabEnabled: Boolean = false
     /** Panel opacity percentage (0 = fully transparent, 100 = solid). Default 70%. */
     @ConfigValue @JvmField var compactTabOpacity: Int = 70
+    /** Master switch for the SERVER/TPS/FPS/PING stat strip; when off only the player columns render. */
+    @ConfigValue @JvmField var compactTabStatBarEnabled: Boolean = true
+    /** Where the SERVER/TPS/FPS/PING stat strip sits relative to the player columns: TOP/BOTTOM/LEFT/RIGHT. */
+    @ConfigValue @JvmField var compactTabStatBarPosition: String = "TOP"
 
     // Party command toggles
+    /** Master switch for the whole .dot-command system; when off, none of the individual
+     *  per-command toggles below fire regardless of their own state. */
+    @ConfigValue @JvmField var partyCommandsEnabled: Boolean = true
     @ConfigValue @JvmField var pcAllinvite: Boolean = false
     @ConfigValue @JvmField var pcPb: Boolean = false
     @ConfigValue @JvmField var pcCata: Boolean = false
     @ConfigValue @JvmField var pcRtca: Boolean = false
     @ConfigValue @JvmField var pcDprofit: Boolean = false
+    @ConfigValue @JvmField var pcCrit: Boolean = false // .crit — latest/average Explosive Shot crit + average storm kill (Archer only)
     @ConfigValue @JvmField var pcRtc: Boolean = false
     @ConfigValue @JvmField var pcCrtc: Boolean = false
     @ConfigValue @JvmField var pcHelp: Boolean = false
@@ -144,21 +157,6 @@ object FishSettings {
     // Mod chat prefix — shown as "<prefix> > <message>" on FishMod's chat output (max 10 chars).
     @ConfigValue @JvmField var modPrefixEnabled: Boolean = false
     @ConfigValue @JvmField var modPrefix: String = "FM"
-
-    // Dungeon Score (live S+ tracker)
-    @ConfigValue @JvmField var dungeonScoreEnabled: Boolean = false
-    @ConfigValue @JvmField var dungeonScoreHudX: Int = 10
-    @ConfigValue @JvmField var dungeonScoreHudY: Int = 200
-    @ConfigValue @JvmField var dungeonScorePaulActive: Boolean = false
-    @ConfigValue @JvmField var dungeonScoreMissingMsg: Boolean = true
-    @ConfigValue @JvmField var dungeonScoreShowLeft: Boolean = false
-    // 270/300 score alerts — on-screen title + chat message, each toggleable, text customizable (& color codes ok).
-    @ConfigValue @JvmField var score270TitleEnabled: Boolean = true
-    @ConfigValue @JvmField var score270ChatEnabled: Boolean = true
-    @ConfigValue @JvmField var score270Text: String = "&e&l270 Score!"
-    @ConfigValue @JvmField var score300TitleEnabled: Boolean = true
-    @ConfigValue @JvmField var score300ChatEnabled: Boolean = true
-    @ConfigValue @JvmField var score300Text: String = "&a&l300 Score!"
 
     // Farming coin/hr tracker
     @ConfigValue @JvmField var farmingTrackerEnabled: Boolean = false
@@ -200,8 +198,11 @@ object FishSettings {
     // Also announce the same per-enemy damage to party chat, only while playing Archer.
     @ConfigValue @JvmField var explosiveShotAnnounceParty: Boolean = false
 
-    // Gradient/solid color applied to your real username.
+    // Color applied to your real username (or Custom Name). Mode picks how many of the three stops
+    // are used: SOLID (start only), GRADIENT (start→end), GRADIENT3 (start→mid→end), RAINBOW (fixed
+    // 6-stop rainbow, start/mid/end ignored).
     @ConfigValue @JvmField var nickColorStart: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var nickColorMid: Int = 0xFFFFFF55.toInt()
     @ConfigValue @JvmField var nickColorEnd: Int = 0xFF5555FF.toInt()
     @ConfigValue @JvmField var nickCustomName: String = ""
     @ConfigValue @JvmField var nickColorMode: String = "GRADIENT"
@@ -248,7 +249,6 @@ object FishSettings {
     @ConfigValue @JvmField var powderTrackerScale: Double = 1.0
     @ConfigValue @JvmField var slayerXpScale: Double = 1.0
     @ConfigValue @JvmField var farmingTrackerScale: Double = 1.0
-    @ConfigValue @JvmField var dungeonScoreScale: Double = 1.0
     @ConfigValue @JvmField var petHudScale: Double = 1.0
     @ConfigValue @JvmField var soulflowHudScale: Double = 1.0
     @ConfigValue @JvmField var pcSecrets: Boolean = false
@@ -290,6 +290,7 @@ object FishSettings {
     @ConfigValue @JvmField var simonSaysHudX: Int = 10
     @ConfigValue @JvmField var simonSaysHudY: Int = 360
     @ConfigValue @JvmField var simonSaysHudScale: Double = 1.0
+
 
     // Daily/Weekly/Monthly Challenges
     @ConfigValue @JvmField var challengesEnabled: Boolean = false
@@ -372,5 +373,53 @@ object FishSettings {
     // set/loadout in an open Wardrobe or Loadouts GUI.
     @ConfigValue @JvmField var wardrobeHotkeysEnabled: Boolean = false
     @ConfigValue @JvmField var wardrobeHotkeysAutoClose: Boolean = true
+
+    // ── Custom Scoreboard ────────────────────────────────────────────────────────
+    // Replaces vanilla's sidebar scoreboard with one where each line category can be hidden
+    // and big numbers (Purse/Bank/Bits/etc) can be shown compact (1,234,567 -> 1.2M).
+    @ConfigValue @JvmField var customScoreboardEnabled: Boolean = false
+    @ConfigValue @JvmField var customScoreboardCompactNumbers: Boolean = false
+    @ConfigValue @JvmField var customScoreboardOpacity: Int = 30
+    @ConfigValue @JvmField var customScoreboardHudY: Int = 2
+    @ConfigValue @JvmField var sbSectionDate: Boolean = true
+    @ConfigValue @JvmField var sbSectionTime: Boolean = true
+    @ConfigValue @JvmField var sbSectionLocation: Boolean = true
+    @ConfigValue @JvmField var sbSectionPlayers: Boolean = true
+    @ConfigValue @JvmField var sbSectionGameMode: Boolean = true
+    @ConfigValue @JvmField var sbSectionPurse: Boolean = true
+    @ConfigValue @JvmField var sbSectionBank: Boolean = true
+    @ConfigValue @JvmField var sbSectionMotes: Boolean = true
+    @ConfigValue @JvmField var sbSectionBits: Boolean = true
+    @ConfigValue @JvmField var sbSectionCopper: Boolean = true
+    @ConfigValue @JvmField var sbSectionSowdust: Boolean = true
+    @ConfigValue @JvmField var sbSectionGems: Boolean = true
+    @ConfigValue @JvmField var sbSectionHeat: Boolean = true
+    @ConfigValue @JvmField var sbSectionCold: Boolean = true
+    @ConfigValue @JvmField var sbSectionNorthStars: Boolean = true
+    @ConfigValue @JvmField var sbSectionSoulflow: Boolean = true
+    @ConfigValue @JvmField var sbSectionGuild: Boolean = true
+    @ConfigValue @JvmField var sbSectionCookie: Boolean = true
+    @ConfigValue @JvmField var sbSectionSkillAverage: Boolean = true
+    @ConfigValue @JvmField var sbSectionObjective: Boolean = true
+    @ConfigValue @JvmField var sbSectionSlayer: Boolean = true
+    @ConfigValue @JvmField var sbSectionPowder: Boolean = true
+    @ConfigValue @JvmField var sbSectionDiana: Boolean = true
+    @ConfigValue @JvmField var sbSectionParty: Boolean = true
+    @ConfigValue @JvmField var sbSectionEquipment: Boolean = true
+    @ConfigValue @JvmField var sbSectionDungeon: Boolean = true
+    @ConfigValue @JvmField var sbSectionPet: Boolean = true
+    @ConfigValue @JvmField var sbSectionOther: Boolean = true
+    // Synthetic extras (not real scoreboard lines) appended at the bottom, same values shown in Compact Tab.
+    @ConfigValue @JvmField var sbSectionTps: Boolean = true
+    @ConfigValue @JvmField var sbSectionPing: Boolean = true
+    @ConfigValue @JvmField var sbSectionFps: Boolean = true
+    // API/HUD-backed extras -- not on the real Hypixel sidebar, sourced from PetHud's already-tracked
+    // pet state and a 60s Hypixel-API skill-level poll (see fishmod.features.scoreboard.SkillLevels).
+    @ConfigValue @JvmField var sbSectionPetExtra: Boolean = false
+    @ConfigValue @JvmField var sbSectionSkills: Boolean = false
+    @ConfigValue @JvmField var sbSectionBestiary: Boolean = false
+    @ConfigValue @JvmField var sbSectionCollections: Boolean = false
+    @ConfigValue @JvmField var sbSectionElection: Boolean = false
+    @ConfigValue @JvmField var sbSectionFireSales: Boolean = false
 
 }

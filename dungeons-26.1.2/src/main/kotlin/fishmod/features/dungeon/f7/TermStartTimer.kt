@@ -30,7 +30,7 @@ object TermStartTimer {
 
     @JvmStatic
     fun display(): Boolean {
-        return Floor7.enableTermStartTimer && Location.inDungeon() && Phase.inP2() && Phase.stormDead()
+        return Floor7.enableTickTimers && Floor7.enableTermStartTimer && Location.inDungeon() && Phase.inP2() && Phase.stormDead()
     }
 
     @JvmStatic

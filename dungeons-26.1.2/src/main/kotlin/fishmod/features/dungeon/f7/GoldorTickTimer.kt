@@ -5,35 +5,30 @@ import fishmod.utils.Constants
 import fishmod.utils.Location
 import fishmod.utils.config.values.Floor7
 import fishmod.utils.dungeon.Phase
-import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
 /** Goldor / terminals tick timer (3-tick cycle, optional tick-up). Ported from blade-addons. */
 object GoldorTickTimer {
 
-    private var tick = 0
+    private val timer = TickTimer()
 
     @JvmStatic
     fun init() {
-        Events.ON_SERVER_TICK.register {
-            if (Location.inDungeon() && Phase.inTerminals()) tick++
-            false
-        }
-        Events.ON_LOCATION_CHANGE.register { newLocation ->
-            if (Location.inDungeon()) tick = 0
-            false
-        }
+        timer.init(
+            shouldCount = { Location.inDungeon() && Phase.inTerminals() },
+            resetOn = { Location.inDungeon() }
+        )
     }
 
     @JvmStatic
     fun display(): Boolean {
-        return Floor7.enableGoldorTickTimer && Location.inDungeon() && Phase.inTerminals()
+        return Floor7.enableTickTimers && Floor7.enableGoldorTickTimer && Location.inDungeon() && Phase.inTerminals()
     }
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
-        var num = tick * Constants.TICK_DURATION
+        var num = timer.tick * Constants.TICK_DURATION
         var mod = num % 3
         if (Floor7.inDeathTicks && !Floor7.makeGoldorTickUp) mod = 3.0 - mod
         if (Floor7.inDeathTicks) num = mod

@@ -48,9 +48,40 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     private var hoverDescY = 0
     private var hScroll = 0
     private var hScrollAnim = 0.0
+    private var dragColumn: Column? = null
+    private var dragGrabDX = 0
+    private var dragMouseX = 0
+    /** True when the current [dragColumn] drag was started with right-click: on release it merges
+     *  onto whatever header it's dropped over instead of just reordering top-level slots. */
+    private var dragColumnMerge = false
+
+    // Stack-segment drag state (nested columns-under-a-column, rendered as a vertical stack).
+    // Left-drag reorders a segment among its siblings live, mirroring dragColumn's snap;
+    // right-drag restructures on release instead — dropped onto another column it merges there,
+    // dropped onto empty space it pops back out to top level, dropped back onto its own parent
+    // it's left alone.
+    private var dragTabParent: Column? = null
+    private var dragTabChild: Column? = null
+    private var dragTabGrabDY = 0
+    private var dragTabMouseX = 0
+    private var dragTabMouseY = 0
+    private var dragTabRightClick = false
 
     init {
         buildCategories()
+        applySavedColumnOrder()
+        // Watchdog: paintNvgOverlay() is only ever invoked via GameRendererNvgMixin, so if that
+        // injection never fires for some reason (e.g. another rendering mod reshaping the render
+        // pipeline this mixin targets), the screen would otherwise sit blank forever with zero log
+        // output. Surface it to the player instead of failing silently.
+        fishmod.utils.Scheduler.scheduleTask({
+            if (paintCount == 0 && Minecraft.getInstance().screen === this) {
+                fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] paintNvgOverlay was never invoked - the GameRendererNvgMixin hook didn't fire (likely a rendering-mod conflict)")
+                fishmod.utils.Misc.addChatMessage(Component.literal(
+                    "§c[FishMod] The /fm screen failed to render (a rendering mod may be conflicting). Please report this to the mod author."
+                ))
+            }
+        }, 40)
     }
 
     private fun buildCategories() {
@@ -100,6 +131,58 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         run {
             val f = Feature("Compact Tab", FishSettings::compactTabEnabled)
             f.sub.add(SliderIntSetting("Opacity %", "", FishSettings::compactTabOpacity, 0, 100))
+            f.sub.add(ToggleSetting("Stat Bar", "SERVER/TPS/FPS/PING strip", FishSettings::compactTabStatBarEnabled))
+            f.sub.add(DropdownSetting("Stat Bar Position", "", arrayOf("TOP", "BOTTOM", "LEFT", "RIGHT"),
+                { FishSettings.compactTabStatBarPosition },
+                { v -> FishSettings.compactTabStatBarPosition = v }))
+            general.features.add(f)
+        }
+        run {
+            val f = Feature("Custom Scoreboard", FishSettings::customScoreboardEnabled)
+            f.sub.add(SliderIntSetting("Opacity %", "", FishSettings::customScoreboardOpacity, 0, 100))
+            f.sub.add(SliderIntSetting("Y Offset", "", FishSettings::customScoreboardHudY, 0, 200))
+            f.sub.add(ToggleSetting("Compact Numbers", "1,234,567 -> 1.2M", FishSettings::customScoreboardCompactNumbers))
+            f.sub.add(SubcategoryHeader("Location & Time"))
+            f.sub.add(ToggleSetting("Date", "", FishSettings::sbSectionDate))
+            f.sub.add(ToggleSetting("Time of Day", "", FishSettings::sbSectionTime))
+            f.sub.add(ToggleSetting("Location", "", FishSettings::sbSectionLocation))
+            f.sub.add(ToggleSetting("Players", "", FishSettings::sbSectionPlayers))
+            f.sub.add(ToggleSetting("Game Mode", "", FishSettings::sbSectionGameMode))
+            f.sub.add(SubcategoryHeader("Currencies"))
+            f.sub.add(ToggleSetting("Purse", "", FishSettings::sbSectionPurse))
+            f.sub.add(ToggleSetting("Bank", "", FishSettings::sbSectionBank))
+            f.sub.add(ToggleSetting("Motes", "", FishSettings::sbSectionMotes))
+            f.sub.add(ToggleSetting("Bits", "", FishSettings::sbSectionBits))
+            f.sub.add(ToggleSetting("Copper", "", FishSettings::sbSectionCopper))
+            f.sub.add(ToggleSetting("Sowdust", "", FishSettings::sbSectionSowdust))
+            f.sub.add(ToggleSetting("Gems", "", FishSettings::sbSectionGems))
+            f.sub.add(ToggleSetting("North Stars", "", FishSettings::sbSectionNorthStars))
+            f.sub.add(ToggleSetting("Soulflow", "", FishSettings::sbSectionSoulflow))
+            f.sub.add(SubcategoryHeader("Activities"))
+            f.sub.add(ToggleSetting("Heat", "", FishSettings::sbSectionHeat))
+            f.sub.add(ToggleSetting("Cold", "", FishSettings::sbSectionCold))
+            f.sub.add(ToggleSetting("Guild", "", FishSettings::sbSectionGuild))
+            f.sub.add(ToggleSetting("Cookie Buff", "", FishSettings::sbSectionCookie))
+            f.sub.add(ToggleSetting("Skill Average", "", FishSettings::sbSectionSkillAverage))
+            f.sub.add(ToggleSetting("Objective", "", FishSettings::sbSectionObjective))
+            f.sub.add(ToggleSetting("Slayer", "", FishSettings::sbSectionSlayer))
+            f.sub.add(ToggleSetting("Powder (HotM)", "", FishSettings::sbSectionPowder))
+            f.sub.add(ToggleSetting("Diana", "", FishSettings::sbSectionDiana))
+            f.sub.add(ToggleSetting("Party", "", FishSettings::sbSectionParty))
+            f.sub.add(ToggleSetting("Power/Tuning", "", FishSettings::sbSectionEquipment))
+            f.sub.add(ToggleSetting("Dungeon Stats", "", FishSettings::sbSectionDungeon))
+            f.sub.add(ToggleSetting("Pet", "", FishSettings::sbSectionPet))
+            f.sub.add(ToggleSetting("Other Lines", "", FishSettings::sbSectionOther))
+            f.sub.add(SubcategoryHeader("Extras"))
+            f.sub.add(ToggleSetting("TPS", "", FishSettings::sbSectionTps))
+            f.sub.add(ToggleSetting("Ping", "", FishSettings::sbSectionPing))
+            f.sub.add(ToggleSetting("FPS", "", FishSettings::sbSectionFps))
+            f.sub.add(ToggleSetting("Pet", "Same pet PetHud already tracks", FishSettings::sbSectionPetExtra))
+            f.sub.add(ToggleSetting("Skills", "Hypixel API, refreshes every 60s", FishSettings::sbSectionSkills))
+            f.sub.add(ToggleSetting("Bestiary %", "Hypixel API, refreshes every 60s", FishSettings::sbSectionBestiary))
+            f.sub.add(ToggleSetting("Collections", "Hypixel API, refreshes every 60s", FishSettings::sbSectionCollections))
+            f.sub.add(ToggleSetting("Election (Mayor)", "Public Hypixel API, refreshes hourly", FishSettings::sbSectionElection))
+            f.sub.add(ToggleSetting("Fire Sales", "Public Hypixel API, refreshes every 5min", FishSettings::sbSectionFireSales))
             general.features.add(f)
         }
         run {
@@ -113,22 +196,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
 
         // ===== Dungeon =====
-        run {
-            val f = Feature("Dungeon Score", FishSettings::dungeonScoreEnabled)
-            f.sub.add(ToggleSetting("Score Missing Msg (1min)", "", FishSettings::dungeonScoreMissingMsg))
-            f.sub.add(ToggleSetting("Score Left (not total secrets)", "", FishSettings::dungeonScoreShowLeft))
-            f.sub.add(ToggleSetting("270 Title", "", FishSettings::score270TitleEnabled))
-            f.sub.add(ToggleSetting("270 Chat Msg", "", FishSettings::score270ChatEnabled))
-            val t270 = InputSetting("270 Text", "", FishSettings::score270Text)
-            t270.hint = "& color codes ok"
-            f.sub.add(t270)
-            f.sub.add(ToggleSetting("300 Title", "", FishSettings::score300TitleEnabled))
-            f.sub.add(ToggleSetting("300 Chat Msg", "", FishSettings::score300ChatEnabled))
-            val t300 = InputSetting("300 Text", "", FishSettings::score300Text)
-            t300.hint = "& color codes ok"
-            f.sub.add(t300)
-            dungeon.features.add(f)
-        }
+        // Dungeon Score lives entirely under the Dungeon Map column now (Info HUD readout +
+        // Score Messages alerts) — see below, folded together instead of duplicating a second tracker here.
         dungeon.features.add(Feature("PB Pace", FishSettings::pbPaceEnabled))
         dungeon.features.add(Feature("Puzzle Overlay", FishSettings::showPuzzles))
         run {
@@ -194,20 +263,38 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             val f = Feature("Name Color",
                 { NickState.isActive() },
                 { v -> if (!v) NickState.reset() else NickState.applyFromSettings() })
-            f.sub.add(LimitedInputSetting("Custom Name", "", 18,
+            val name = LimitedInputSetting("Custom Name", "", 18,
                 { FishSettings.nickCustomName },
-                { v -> FishSettings.nickCustomName = v ?: ""; if (NickState.isActive()) NickState.applyFromSettings() }))
-            f.sub.add(DropdownSetting("Color Mode", "", arrayOf("GRADIENT", "SOLID"),
+                { v -> FishSettings.nickCustomName = v ?: ""; if (NickState.isActive()) NickState.applyFromSettings() })
+            name.hint = "blank = your IGN; &l/&o/&m/&n/&k/&r formats, &* star"
+            f.sub.add(name)
+            f.sub.add(DropdownSetting("Color Mode", "", arrayOf("SOLID", "GRADIENT", "GRADIENT3", "RAINBOW"),
                 { FishSettings.nickColorMode },
                 { v -> FishSettings.nickColorMode = v; if (NickState.isActive()) NickState.applyFromSettings() }))
-            f.sub.add(ColorPickerSetting("Color", "",
+            f.sub.add(ConditionalColorPickerSetting("Start Color", "",
+                { !"RAINBOW".equals(FishSettings.nickColorMode, ignoreCase = true) },
                 { FishSettings.nickColorStart },
                 { v -> FishSettings.nickColorStart = v; if (NickState.isActive()) NickState.applyFromSettings() }))
+            f.sub.add(ConditionalColorPickerSetting("Mid Color", "",
+                { "GRADIENT3".equals(FishSettings.nickColorMode, ignoreCase = true) },
+                { FishSettings.nickColorMid },
+                { v -> FishSettings.nickColorMid = v; if (NickState.isActive()) NickState.applyFromSettings() }))
             f.sub.add(ConditionalColorPickerSetting("End Color", "",
-                { "GRADIENT".equals(FishSettings.nickColorMode, ignoreCase = true) },
+                { "GRADIENT".equals(FishSettings.nickColorMode, ignoreCase = true) || "GRADIENT3".equals(FishSettings.nickColorMode, ignoreCase = true) },
                 { FishSettings.nickColorEnd },
                 { v -> FishSettings.nickColorEnd = v; if (NickState.isActive()) NickState.applyFromSettings() }))
+            f.sub.add(SubcategoryHeader("Modes"))
+            f.sub.add(SubcategoryHeader("SOLID: 1 color"))
+            f.sub.add(SubcategoryHeader("GRADIENT: start → end"))
+            f.sub.add(SubcategoryHeader("GRADIENT3: start → mid → end"))
+            f.sub.add(SubcategoryHeader("RAINBOW: fixed 6 colors"))
+            f.sub.add(SubcategoryHeader("Codes"))
+            f.sub.add(SubcategoryHeader("&l bold   &o italic"))
+            f.sub.add(SubcategoryHeader("&m strike   &n underline"))
+            f.sub.add(SubcategoryHeader("&k magic   &r reset"))
+            f.sub.add(SubcategoryHeader("&* star   &#rrggbb hex"))
             f.sub.add(ToggleSetting("See Others", "", FishSettings::remoteNicksEnabled))
+            f.sub.add(ButtonSetting("Refresh Now", "", Runnable { fishmod.cosmetic.RemoteNicks.forceRefresh() }))
             cosmetics.features.add(f)
         }
         run {
@@ -242,7 +329,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         // ===== Party =====
         run {
-            val f = Feature("Party Commands", null, null)
+            val f = Feature("Party Commands", FishSettings::partyCommandsEnabled)
             f.sub.add(ToggleSetting(".ai", "", FishSettings::pcAllinvite))
             f.sub.add(ToggleSetting(".pb", "", FishSettings::pcPb))
             f.sub.add(ToggleSetting(".cata", "", FishSettings::pcCata))
@@ -250,6 +337,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting(".rtc", "", FishSettings::pcRtc))
             f.sub.add(ToggleSetting(".crtc", "", FishSettings::pcCrtc))
             f.sub.add(ToggleSetting(".dprofit", "", FishSettings::pcDprofit))
+            f.sub.add(ToggleSetting(".crit", "", FishSettings::pcCrit))
             f.sub.add(ToggleSetting(".corpse", "", FishSettings::pcCorpse))
             f.sub.add(ToggleSetting(".f# / .m#", "", FishSettings::pcJoinFloor))
             f.sub.add(ToggleSetting(".fps", "", FishSettings::pcFps))
@@ -325,7 +413,22 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
         // ===== Floor 7 (ported from blade-addons) =====
         run {
-            val f = Feature("Maxor Tick Timer", Floor7::enableMaxorTickTimer)
+            val f = Feature("Tick Timers", Floor7::enableTickTimers)
+            f.sub.add(SubcategoryHeader("Maxor"))
+            f.sub.add(ToggleSetting("Maxor", "", Floor7::enableMaxorTickTimer))
+            f.sub.add(SubcategoryHeader("Storm"))
+            f.sub.add(ToggleSetting("Storm", "", Floor7::enableStormTickTimer))
+            f.sub.add(ToggleSetting("Tick Down From 5", "", Floor7::tickDownStormTickTimer))
+            f.sub.add(ColorPickerSetting("Storm Timer Color", "", Floor7::stormTickTimerColor))
+            f.sub.add(ToggleSetting("Storm Death Time", "", Floor7::enableStormDeathTime))
+            f.sub.add(ToggleSetting("LB Release Timer", "", Floor7::enableLbReleaseTimer))
+            f.sub.add(ColorPickerSetting("LB Release Timer Color", "", Floor7::lbReleaseTimerColor))
+            f.sub.add(ToggleSetting("Storm Crushed Noti", "", Floor7::notifyStormCrush))
+            f.sub.add(SubcategoryHeader("Goldor"))
+            f.sub.add(ToggleSetting("Goldor", "", Floor7::enableGoldorTickTimer))
+            f.sub.add(ToggleSetting("In 3s Increments", "", Floor7::inDeathTicks))
+            f.sub.add(ToggleSetting("Tick Up", "", Floor7::makeGoldorTickUp))
+            f.sub.add(ToggleSetting("Term Start Timer", "", Floor7::enableTermStartTimer))
             floor7.features.add(f)
         }
         run {
@@ -334,27 +437,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Instant Reminder", "", Floor7::instantlyDisplayCrystalReminder))
             floor7.features.add(f)
         }
-        run {
-            val f = Feature("Storm Tick Timer", Floor7::enableStormTickTimer)
-            f.sub.add(ToggleSetting("Tick Down From 5", "", Floor7::tickDownStormTickTimer))
-            f.sub.add(ColorPickerSetting("Timer Color", "", Floor7::stormTickTimerColor))
-            floor7.features.add(f)
-        }
-        floor7.features.add(Feature("Storm Death Time", Floor7::enableStormDeathTime))
-        run {
-            val f = Feature("LB Release Timer", Floor7::enableLbReleaseTimer)
-            f.sub.add(ColorPickerSetting("Timer Color", "", Floor7::lbReleaseTimerColor))
-            floor7.features.add(f)
-        }
-        floor7.features.add(Feature("Storm Crushed Noti", Floor7::notifyStormCrush))
-        run {
-            val f = Feature("Goldor Tick Timer", Floor7::enableGoldorTickTimer)
-            f.sub.add(ToggleSetting("In 3s Increments", "", Floor7::inDeathTicks))
-            f.sub.add(ToggleSetting("Tick Up", "", Floor7::makeGoldorTickUp))
-            floor7.features.add(f)
-        }
-        floor7.features.add(Feature("Term Start Timer", Floor7::enableTermStartTimer))
-        floor7.features.add(Feature("Goldor Leap Timer", Floor7::leapNotifications))
         run {
             val f = Feature("Section Progress", Floor7::showSectionProgress)
             f.sub.add(ToggleSetting("Color w/ Progress", "", Floor7::sectionColorProgress))
@@ -368,6 +450,31 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 Section.DisplayTerminalSplitsWhen.values(),
                 { Section.displayTerminalSplitsWhen },
                 { v -> Section.displayTerminalSplitsWhen = v }))
+            floor7.features.add(f)
+        }
+        run {
+            val f = Feature("Gate Display", Floor7::gateDisplayEnabled)
+            f.sub.add(SliderDoubleSetting("Text Scale", "",
+                { Floor7.gateDisplayScale.toDouble() },
+                { v -> Floor7.gateDisplayScale = v.toFloat() },
+                1.0, 12.0))
+            floor7.features.add(f)
+        }
+        run {
+            val f = Feature("S4 Term/Leap Tracker", Floor7::s4TrackerEnabled)
+            f.sub.add(ToggleSetting("Debug HUD", "", Floor7::s4DebugHudEnabled))
+            f.sub.add(ToggleSetting("Alerts", "", Floor7::s4AlertsEnabled))
+            f.sub.add(ToggleSetting("Alert Sound", "", Floor7::s4AlertSoundEnabled))
+            f.sub.add(ToggleSetting("Early Leap Alert", "", Floor7::s4EarlyLeapAlert))
+            f.sub.add(ToggleSetting("Late Leap Alert", "", Floor7::s4LateLeapAlert))
+            f.sub.add(ToggleSetting("Missed Term Alert", "", Floor7::s4MissedTermAlert))
+            f.sub.add(ToggleSetting("Death Alert", "", Floor7::s4DeathAlert))
+            f.sub.add(SliderIntSetting("Late Leap Threshold (ticks)", "",
+                { Floor7.s4LateLeapThresholdTicks }, { v -> Floor7.s4LateLeapThresholdTicks = v }, 20, 400))
+            f.sub.add(SliderIntSetting("Alert Duration (ticks)", "",
+                { Floor7.s4AlertDurationTicks }, { v -> Floor7.s4AlertDurationTicks = v }, 20, 200))
+            f.sub.add(SliderIntSetting("Alert Cooldown (ticks)", "",
+                { Floor7.s4AlertCooldownTicks }, { v -> Floor7.s4AlertCooldownTicks = v }, 10, 200))
             floor7.features.add(f)
         }
 
@@ -428,6 +535,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("No Words", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoNoWords))
             f.sub.add(ToggleSetting("Tied to Map", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoMapTied))
             f.sub.add(ToggleSetting("Show Secrets", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowSecrets))
+            f.sub.add(ToggleSetting("Secrets Tail = Left (not total)", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowLeft))
             f.sub.add(ToggleSetting("Show Score", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowScore))
             f.sub.add(ToggleSetting("Show Deaths", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowDeaths))
             f.sub.add(ToggleSetting("Show Mimic", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowMimic))
@@ -500,10 +608,38 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("Score Messages", fishmod.utils.config.values.DungeonMapSettings::mapScoreMessages)
-            f.sub.add(ToggleSetting("270 Title", "", fishmod.utils.config.values.DungeonMapSettings::mapScore270Title))
-            f.sub.add(ToggleSetting("270 Chat", "", fishmod.utils.config.values.DungeonMapSettings::mapScore270MessageEnabled))
-            f.sub.add(ToggleSetting("300 Title", "", fishmod.utils.config.values.DungeonMapSettings::mapScore300Title))
-            f.sub.add(ToggleSetting("300 Chat", "", fishmod.utils.config.values.DungeonMapSettings::mapScore300MessageEnabled))
+            f.sub.add(ToggleSetting("Score Missing Msg (1min, to party)", "", fishmod.utils.config.values.DungeonMapSettings::mapScoreMissingMsg))
+            f.sub.add(SubcategoryHeader("270 Score"))
+            f.sub.add(ToggleSetting("Title", "", fishmod.utils.config.values.DungeonMapSettings::mapScore270Title))
+            val t270t = InputSetting("Title Text", "", fishmod.utils.config.values.DungeonMapSettings::mapScore270TitleText)
+            t270t.hint = "& color codes, <time> ok"
+            f.sub.add(t270t)
+            f.sub.add(ToggleSetting("Party Chat", "", fishmod.utils.config.values.DungeonMapSettings::mapScore270MessageEnabled))
+            val t270c = InputSetting("Party Chat Text", "", fishmod.utils.config.values.DungeonMapSettings::mapScore270Message)
+            t270c.hint = "<time> ok"
+            f.sub.add(t270c)
+            f.sub.add(ToggleSetting("Client-only Msg", "", fishmod.utils.config.values.DungeonMapSettings::mapScore270ClientEnabled))
+            val t270cl = InputSetting("Client-only Text", "", fishmod.utils.config.values.DungeonMapSettings::mapScore270ClientMessage)
+            t270cl.hint = "& color codes, <time> ok"
+            f.sub.add(t270cl)
+            f.sub.add(SubcategoryHeader("300 Score"))
+            f.sub.add(ToggleSetting("Title", "", fishmod.utils.config.values.DungeonMapSettings::mapScore300Title))
+            val t300t = InputSetting("Title Text", "", fishmod.utils.config.values.DungeonMapSettings::mapScore300TitleText)
+            t300t.hint = "& color codes, <time> ok"
+            f.sub.add(t300t)
+            f.sub.add(ToggleSetting("Party Chat", "", fishmod.utils.config.values.DungeonMapSettings::mapScore300MessageEnabled))
+            val t300c = InputSetting("Party Chat Text", "", fishmod.utils.config.values.DungeonMapSettings::mapScore300Message)
+            t300c.hint = "<time> ok"
+            f.sub.add(t300c)
+            f.sub.add(ToggleSetting("Client-only Msg", "", fishmod.utils.config.values.DungeonMapSettings::mapScore300ClientEnabled))
+            val t300cl = InputSetting("Client-only Text", "", fishmod.utils.config.values.DungeonMapSettings::mapScore300ClientMessage)
+            t300cl.hint = "& color codes, <time> ok"
+            f.sub.add(t300cl)
+            f.sub.add(SubcategoryHeader("Title Display"))
+            f.sub.add(SliderDoubleSetting("Title Scale", "",
+                { fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleScale.toDouble() },
+                { v -> fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleScale = v.toFloat() },
+                0.5, 4.0))
             f.sub.add(ToggleSetting("Title Sound", "", fishmod.utils.config.values.DungeonMapSettings::mapScoreTitleSound))
             f.sub.add(DropdownSetting("Sound", "", fishmod.features.dungeon.map.ScoreMessages.SOUND_OPTIONS,
                 { fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleSoundId },
@@ -520,10 +656,66 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         columns.add(dungeonMap)
     }
 
+    /** Restores column order AND tab groupings saved from a previous drag. Each slot is either a
+     *  bare name (standalone) or "activeIdx:NameA+NameB+..." (a tab group, first name becomes the
+     *  self-including host — see [Column.children]). Falls back to the default layout if anything
+     *  doesn't resolve cleanly (unknown name, name used twice, etc). */
+    private fun applySavedColumnOrder() {
+        val saved = FishSettings.fmColumnOrder
+        if (saved.isBlank()) return
+        val byName = columns.associateBy { it.name }
+        val used = HashSet<String>()
+        // Validate every name resolves and appears exactly once before mutating anything, so a
+        // malformed/stale save can't leave some columns half-grouped.
+        data class Slot(val names: List<String>, val activeIdx: Int)
+        val slots = ArrayList<Slot>()
+        for (slot in saved.split(",")) {
+            if (slot.isBlank()) continue
+            val colon = slot.indexOf(':')
+            val (names, activeIdx) = if (colon > 0 && slot.substring(0, colon).all { it.isDigit() })
+                slot.substring(colon + 1).split("+") to (slot.substring(0, colon).toIntOrNull() ?: 0)
+            else
+                listOf(slot) to 0
+            for (n in names) {
+                if (byName[n] == null || !used.add(n)) return
+            }
+            slots.add(Slot(names, activeIdx))
+        }
+        if (used.size != columns.size) return
+
+        val reordered = ArrayList<Column>(columns.size)
+        for (slot in slots) {
+            val members = slot.names.map { byName.getValue(it) }
+            val host = members[0]
+            host.children.clear()
+            if (members.size > 1) {
+                host.children.addAll(members)
+                host.activeChild = slot.activeIdx.coerceIn(0, members.size - 1)
+            }
+            reordered.add(host)
+        }
+        columns.clear()
+        columns.addAll(reordered)
+    }
+
+    private fun saveColumnOrder() {
+        FishSettings.fmColumnOrder = columns.joinToString(",") { top ->
+            if (top.isGroup()) top.activeChild.toString() + ":" + top.children.joinToString("+") { it.name }
+            else top.name
+        }
+    }
+
     private fun left(): Int = 0
     private fun top(): Int = 0
-    private fun right(): Int = this.width
-    private fun bottom(): Int = this.height
+    /** Virtual (pre-shrink) screen bounds: the whole layout below is computed in this space, then
+     *  [paintNvgOverlay] scales the recorded drawing down by [fishmod.utils.rendering.UiScale.factor]
+     *  so it occupies the same fraction of the real screen regardless of Minecraft's GUI scale. */
+    private fun right(): Int = (this.width / fishmod.utils.rendering.UiScale.factor()).toInt()
+    private fun bottom(): Int = (this.height / fishmod.utils.rendering.UiScale.factor()).toInt()
+
+    /** Converts a real mouse coordinate (as delivered by vanilla input callbacks) into the same
+     *  virtual space [right]/[bottom] use, so hit-testing lines up with the shrunk visuals. */
+    private fun vx(real: Number): Int = (real.toDouble() / fishmod.utils.rendering.UiScale.factor()).toInt()
 
     private fun cx0(): Int = left() + MARGIN
     private fun cx1(): Int = right() - MARGIN
@@ -542,7 +734,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     private fun visibleColumns(): List<Column> {
         val out = ArrayList<Column>()
         for (c in columns) {
-            if (visibleFeatures(c).isNotEmpty() || searchText.isEmpty()) out.add(c)
+            val matches = if (c.isGroup()) c.children.any { visibleFeatures(it).isNotEmpty() } else visibleFeatures(c).isNotEmpty()
+            if (matches || searchText.isEmpty()) out.add(c)
         }
         return out
     }
@@ -580,9 +773,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val subTop: Int, val subBottom: Int
     )
 
-    private fun layoutColumn(c: Column, scrollOffset: Int): List<RowLayout> {
+    private fun layoutColumn(c: Column, scrollOffset: Int, topY: Int = cyTop()): List<RowLayout> {
         val out = ArrayList<RowLayout>()
-        var y = cyTop() - scrollOffset
+        var y = topY - scrollOffset
         for (f in visibleFeatures(c)) {
             val rowTop = y
             val rowBottom = y + ROW_H
@@ -603,17 +796,57 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val last = rows[rows.size - 1]
         return Math.max(last.rowBottom, last.subBottom) - cyTop() + ROW_GAP + 6
     }
-    private fun maxScrollFor(c: Column): Int = Math.max(0, columnContentHeight(c) - (cyBot() - cyTop()))
-    private fun clampScroll(c: Column) { c.scroll = Mth.clamp(c.scroll, 0, maxScrollFor(c)) }
+    private fun maxScrollFor(c: Column, viewportH: Int): Int = Math.max(0, columnContentHeight(c) - viewportH)
+    private fun clampScroll(c: Column, viewportH: Int) { c.scroll = Mth.clamp(c.scroll, 0, maxScrollFor(c, viewportH)) }
+
+    /** Clamps scroll for every visible column, sizing each stacked child's viewport to its actual
+     *  rendered band (see [stackSegments]) instead of an even split. */
+    private fun clampAllScrolls() {
+        val full = cyBot() - cyTop()
+        for (c in visibleColumns()) {
+            if (c.isGroup()) {
+                for (seg in stackSegments(c, cyTop() - HEADER_H, cyBot())) clampScroll(seg.col, seg.segBot - seg.bodyTop)
+            } else {
+                clampScroll(c, full)
+            }
+        }
+    }
+
+    /** One child's band within [c]'s vertical stack: [segTop] is where its own header starts,
+     *  [bodyTop] (segTop + HEADER_H) is where its rows/scrolling begin, [segBot] is the band's
+     *  bottom — each child renders as a fully normal, independent column card within its band. */
+    private class StackSegment(val col: Column, val segTop: Int, val segBot: Int) {
+        val bodyTop: Int get() = segTop + HEADER_H
+    }
+
+    /** Packs each child's card directly beneath the previous one (separated by the same
+     *  [COLUMN_GUTTER] gap used between side-by-side columns), sized to its own content — no
+     *  leftover blank band like an even split would leave for a short column. Only the last child
+     *  stretches to fill whatever height remains, so it can still scroll if it's long. */
+    private fun stackSegments(c: Column, top: Int, bot: Int): List<StackSegment> {
+        val n = c.children.size
+        if (n == 0) return emptyList()
+        val out = ArrayList<StackSegment>(n)
+        var y = top
+        for (i in 0 until n) {
+            val child = c.children[i]
+            val segTop = y
+            val segBot = if (i == n - 1) bot else Math.min(bot, segTop + HEADER_H + columnContentHeight(child))
+            out.add(StackSegment(child, segTop, segBot))
+            y = segBot + COLUMN_GUTTER
+        }
+        return out
+    }
 
     override fun extractBackground(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) { }
     override fun extractTransparentBackground(ctx: GuiGraphicsExtractor) { }
 
     private var widgetRenderFailureLogged = false
+    private var recorderSizeLogged = false
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         if (resetArmed && System.currentTimeMillis() - resetArmedAt > 3000) resetArmed = false
-        for (c in visibleColumns()) clampScroll(c)
+        clampAllScrolls()
         clampHScroll()
 
         // draw commands replayed later in paintNvgOverlay() after the vanilla GUI flush
@@ -622,11 +855,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         extractBlurredBackground(ctx)
         ctx.fillGradient(0, 0, this.width, this.height, DIM_TOP, DIM_BOT)
 
+        // Hit-testing and layout throughout this class work in the virtual (pre-shrink) coordinate
+        // space right()/bottom() use; convert the real mouse position once here at the entry point.
+        val vmx = vx(mouseX)
+        val vmy = vx(mouseY)
+
         hoverDesc = null
         try {
-            renderTopBar(ctx, mouseX, mouseY)
-            renderContent(ctx, mouseX, mouseY)
-            renderSearchBar(ctx, mouseX, mouseY)
+            renderTopBar(ctx, vmx, vmy)
+            renderContent(ctx, vmx, vmy)
+            renderSearchBar(ctx, vmx, vmy)
             renderHoverTooltip(ctx)
         } catch (t: Throwable) {
             // Blur/dim above are already appended to the render state by this point; don't let a widget-layer
@@ -635,6 +873,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 widgetRenderFailureLogged = true
                 fishmod.utils.debug.Debug.LOGGER.error("[FishModScreen] widget rendering failed - screen will show blur only", t)
             }
+        }
+
+        if (!recorderSizeLogged) {
+            recorderSizeLogged = true
+            fishmod.utils.debug.Debug.LOGGER.info("[NanoVG] extractRenderState queued {} draw commands", NvgRecorder.size())
         }
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
@@ -688,8 +931,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     private fun renderSearchBar(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         val bw = 190
         val bh = 24
-        val bx = (this.width - bw) / 2
-        val by = this.height - BOTTOM_RESERVE + (BOTTOM_RESERVE - bh) / 2 - 8
+        val bx = (right() - bw) / 2
+        val by = bottom() - BOTTOM_RESERVE + (BOTTOM_RESERVE - bh) / 2 - 8
         roundedRectRing(ctx, bx, by, bw, bh, bh / 2, 1, 0xFF14181D.toInt(), if (searchFocused) ACCENT else 0xFF3A3F48.toInt())
 
         val gx = bx + 16
@@ -714,20 +957,33 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
     }
 
-    private fun renderColumnCard(ctx: GuiGraphicsExtractor, c: Column, x0: Int, x1: Int, cardBottom: Int, mouseX: Int, mouseY: Int) {
-        val hy = cyTop() - HEADER_H
+    private fun renderColumnCard(ctx: GuiGraphicsExtractor, c: Column, x0: Int, x1: Int, headerTop: Int, cardBottom: Int, mouseX: Int, mouseY: Int, showPopOut: Boolean = false) {
+        val hy = headerTop
         val w = x1 - x0
         NvgRecorder.dropShadow(x0.toFloat(), hy.toFloat(), w.toFloat(), (cardBottom - hy).toFloat(), CARD_RADIUS.toFloat(), 10f, 0x60000000)
         roundedRect(ctx, x0, hy, w, cardBottom - hy, CARD_RADIUS, CARD_BG)
         NvgRecorder.fillRect((x0 + CARD_RADIUS).toFloat(), hy.toFloat(), (w - 2 * CARD_RADIUS).toFloat(), HEADER_STRIP_H.toFloat(), ACCENT)
-        sst(ctx, this.font, c.name, x0 + 10, hy + HEADER_STRIP_H + 6, TEXT_COLOR, 1f)
+        sst(ctx, this.font, ellipsize(c.name, w - (if (showPopOut) 40 else 20)), x0 + 10, hy + HEADER_STRIP_H + 6, TEXT_COLOR, 1f)
+        if (showPopOut) {
+            val r = popOutIconRect(x1, hy)
+            val hov = mouseX in r[0]..r[2] && mouseY in r[1]..r[3]
+            NvgRecorder.popOutIcon(r[0].toFloat(), r[1].toFloat(), (r[2] - r[0]).toFloat(), if (hov) ACCENT else SUBTEXT_COLOR)
+        }
+    }
+
+    /** Bounding box of a stacked column's "pop back out to top level" button, top-right of its header. */
+    private fun popOutIconRect(x1: Int, headerTop: Int): IntArray {
+        val s = 10
+        val px = x1 - s - 8
+        val py = headerTop + HEADER_STRIP_H + (HEADER_H - HEADER_STRIP_H - s) / 2
+        return intArrayOf(px, py, px + s, py + s)
     }
 
     private fun renderColumnScrollbar(ctx: GuiGraphicsExtractor, c: Column, x0: Int, x1: Int, top: Int, bot: Int) {
-        val ms = maxScrollFor(c)
+        val vp = bot - top
+        val ms = maxScrollFor(c, vp)
         if (ms <= 0) return
         val trackX = x1 - 3
-        val vp = bot - top
         val barH = Math.max(20, (vp.toLong() * vp / columnContentHeight(c)).toInt())
         val barY = top + ((vp - barH).toLong() * c.scroll / ms).toInt()
         NvgRecorder.fillRect(trackX.toFloat(), top.toFloat(), 2f, (bot - top).toFloat(), 0xFF141A20.toInt())
@@ -739,27 +995,68 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val top = cyTop()
         val bot = cyBot()
         val colW = columnWidth()
+        val dc = dragColumn
 
         for (i in cols.indices) {
             val c = cols[i]
-            val x0 = columnX0(i)
-            val x1 = x0 + colW
-            val colBottom = Math.min(top + columnContentHeight(c), bot)
-
-            renderColumnCard(ctx, c, x0, x1, colBottom, mouseX, mouseY)
-
-            NvgRecorder.pushScissor(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), (colBottom - top).toFloat())
-            for (rl in layoutColumn(c, c.scroll)) {
-                if (rl.rowBottom > top && rl.rowTop < colBottom) renderRow(ctx, rl.feature, x0, x1, rl.rowTop, mouseX, mouseY)
-                val animH = rl.subBottom - rl.subTop
-                if (animH > 0 && rl.subBottom > top && rl.subTop < colBottom) {
-                    renderSubPanel(ctx, rl.feature, x0, x1, rl.subTop, animH, mouseX, mouseY)
-                }
-            }
-            NvgRecorder.popScissor()
-
-            renderColumnScrollbar(ctx, c, x0, x1, top, colBottom)
+            if (c === dc) continue
+            renderOneColumn(ctx, c, columnX0(i), colW, top, bot, mouseX, mouseY)
         }
+
+        // Dragged column renders last (on top of its neighbors) and follows the mouse instead of its slot.
+        if (dc != null) {
+            renderOneColumn(ctx, dc, dragMouseX - dragGrabDX, colW, top, bot, mouseX, mouseY)
+        }
+    }
+
+    private fun renderOneColumn(ctx: GuiGraphicsExtractor, c: Column, x0: Int, colW: Int, top: Int, bot: Int, mouseX: Int, mouseY: Int) {
+        val x1 = x0 + colW
+
+        if (c.isGroup()) {
+            val dragged = if (dragTabParent === c) dragTabChild else null
+            for (seg in stackSegments(c, top - HEADER_H, bot)) {
+                if (seg.col === dragged) continue
+                renderColumnBlock(ctx, seg.col, x0, x1, seg.segTop, seg.segBot, mouseX, mouseY, showPopOut = true)
+            }
+            // The child being dragged out of/around the stack floats at the cursor, rendered as a
+            // full card (not a bare label) so it reads exactly like any other column mid-drag.
+            if (dragged != null) {
+                renderColumnBlock(ctx, dragged, x0, x1, dragTabMouseY - dragTabGrabDY, bot, mouseX, mouseY)
+            }
+            return
+        }
+
+        renderColumnBlock(ctx, c, x0, x1, top - HEADER_H, bot, mouseX, mouseY)
+    }
+
+    /** Renders one column as a normal, fully independent card — header, rows, scrollbar — sized to
+     *  its own content and capped to [bandBot]. Used both for standalone top-level columns and for
+     *  each member of a vertical stack, so a stacked column looks exactly like a plain one, just
+     *  placed directly beneath its neighbor instead of beside it. */
+    private fun renderColumnBlock(ctx: GuiGraphicsExtractor, c: Column, x0: Int, x1: Int, headerTop: Int, bandBot: Int, mouseX: Int, mouseY: Int, showPopOut: Boolean = false) {
+        val bodyTop = headerTop + HEADER_H
+        val colBottom = Math.min(bodyTop + columnContentHeight(c), bandBot)
+
+        renderColumnCard(ctx, c, x0, x1, headerTop, colBottom, mouseX, mouseY, showPopOut)
+
+        NvgRecorder.pushScissor(x0.toFloat(), bodyTop.toFloat(), (x1 - x0).toFloat(), (colBottom - bodyTop).toFloat())
+        for (rl in layoutColumn(c, c.scroll, bodyTop)) {
+            if (rl.rowBottom > bodyTop && rl.rowTop < colBottom) renderRow(ctx, rl.feature, x0, x1, rl.rowTop, mouseX, mouseY)
+            val animH = rl.subBottom - rl.subTop
+            if (animH > 0 && rl.subBottom > bodyTop && rl.subTop < colBottom) {
+                renderSubPanel(ctx, rl.feature, x0, x1, rl.subTop, animH, mouseX, mouseY)
+            }
+        }
+        NvgRecorder.popScissor()
+
+        renderColumnScrollbar(ctx, c, x0, x1, bodyTop, colBottom)
+    }
+
+    private fun ellipsize(text: String, maxW: Int, scale: Float = 1f): String {
+        if (sw(this.font, text, scale) <= maxW) return text
+        var label = text
+        while (label.length > 1 && sw(this.font, "$label…", scale) > maxW) label = label.substring(0, label.length - 1)
+        return "$label…"
     }
 
     private fun renderRow(ctx: GuiGraphicsExtractor, f: Feature, x0: Int, x1: Int, top: Int, mouseX: Int, mouseY: Int) {
@@ -794,7 +1091,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val tw = stw(this.font, desc)
         val bw = tw + 16
         val bh = 18
-        val bx = Math.min(hoverDescX, this.width - bw - 4)
+        val bx = Math.min(hoverDescX, right() - bw - 4)
         val by = hoverDescY
         roundedRectRing(ctx, bx, by, bw, bh, 5, 1, 0xFF14181D.toInt(), ACCENT)
         st(ctx, this.font, desc, bx + 8, by + 5, TEXT_COLOR)
@@ -814,7 +1111,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             val sh = s.getHeight()
             if (s !is SubcategoryHeader && s !is InputSetting && s !is SliderIntSetting && s !is SliderDoubleSetting &&
                 s !is InputIntSetting && s !is InputDoubleSetting && s !is ColorPickerSetting) {
-                st(ctx, this.font, s.name, leftX + 2, sy + (sh - 8) / 2, TEXT_COLOR)
+                val labelH = if (s is DropdownSetting<*>) ITEM_HEIGHT else sh
+                st(ctx, this.font, s.name, leftX + 2, sy + (labelH - 8) / 2, TEXT_COLOR)
             }
             s.render(ctx, leftX, rightX, sy, mouseX, mouseY, this.font)
             sy += sh
@@ -828,8 +1126,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     }
 
     override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean {
-        val mx = click.x().toInt()
-        val my = click.y().toInt()
+        val mx = vx(click.x())
+        val my = vx(click.y())
         val btn = click.button()
 
         val cap = capturingKeybind
@@ -845,8 +1143,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
         val swW = 190
         val swH = 24
-        val sx = (this.width - swW) / 2
-        val sy0 = this.height - BOTTOM_RESERVE + (BOTTOM_RESERVE - swH) / 2 - 8
+        val sx = (right() - swW) / 2
+        val sy0 = bottom() - BOTTOM_RESERVE + (BOTTOM_RESERVE - swH) / 2 - 8
         searchFocused = mx >= sx && mx <= sx + swW && my >= sy0 && my <= sy0 + swH
         searchField?.setFocused(searchFocused)
         if (searchFocused) return true
@@ -861,72 +1159,299 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         if (hovBtn(mx, my, rects[3][0], rects[3][1], rects[3][2], rects[3][3])) { onClose(); return true }
 
+        // Grabbing a column's header card starts a drag; only meaningful when the visible column
+        // order matches the master list 1:1, i.e. no active search filter. Left-drag reorders,
+        // right-drag restructures (stack/pop a column) — see mouseReleased.
+        val headerTop = cyTop() - HEADER_H
+        if (searchText.isEmpty() && my >= headerTop && my < cyTop()) {
+            val cols = visibleColumns()
+            val colW = columnWidth()
+            for (ci in cols.indices) {
+                val x0 = columnX0(ci)
+                val x1 = x0 + colW
+                if (mx < x0 || mx > x1) continue
+                dragColumn = cols[ci]
+                dragColumnMerge = btn == 1
+                dragGrabDX = mx - x0
+                dragMouseX = mx
+                return true
+            }
+        }
+
+        // A stacked column's mini segment headers live inside the normal content band; grabbing
+        // one starts the same kind of drag as above, scoped to reordering/popping within the stack.
+        if (searchText.isEmpty() && my >= cyTop() && my <= cyBot()) {
+            val cols = visibleColumns()
+            val colW = columnWidth()
+            for (ci in cols.indices) {
+                val slot = cols[ci]
+                if (!slot.isGroup()) continue
+                val x0 = columnX0(ci)
+                val x1 = x0 + colW
+                if (mx < x0 || mx > x1) continue
+                for (seg in stackSegments(slot, cyTop() - HEADER_H, cyBot())) {
+                    if (my < seg.segTop || my >= seg.bodyTop) continue
+                    val pr = popOutIconRect(x1, seg.segTop)
+                    if (mx in pr[0]..pr[2] && my in pr[1]..pr[3]) {
+                        popOutChild(slot, seg.col)
+                        return true
+                    }
+                    dragTabParent = slot
+                    dragTabChild = seg.col
+                    dragTabGrabDY = my - seg.segTop
+                    dragTabMouseX = mx
+                    dragTabMouseY = my
+                    dragTabRightClick = btn == 1
+                    return true
+                }
+                break
+            }
+        }
+
         if (my >= cyTop() && my <= cyBot()) {
             val cols = visibleColumns()
             val colW = columnWidth()
             for (ci in cols.indices) {
-                val col = cols[ci]
+                val slot = cols[ci]
                 val x0 = columnX0(ci)
                 val x1 = x0 + colW
                 if (mx < x0 || mx > x1) continue
 
-                for (rl in layoutColumn(col, col.scroll)) {
-                    val f = rl.feature
-                    // left-click toggles on/off, right-click expands (either click expands if no master toggle)
-                    if (my >= rl.rowTop && my <= rl.rowBottom) {
-                        if (f.hasMaster()) {
-                            if (btn == 1 && f.sub.isNotEmpty()) f.toggleExpanded()
-                            else f.set!!(!f.get!!())
-                        } else if (f.sub.isNotEmpty()) {
-                            f.toggleExpanded()
-                        }
-                        return true
+                if (slot.isGroup()) {
+                    for (seg in stackSegments(slot, cyTop() - HEADER_H, cyBot())) {
+                        if (my < seg.bodyTop || my > seg.segBot) continue
+                        return handleRowClick(seg.col, x0, x1, mx, my, btn, seg.bodyTop)
                     }
-                    val subH = rl.subBottom - rl.subTop
-                    if (subH > 0 && my >= rl.subTop && my <= rl.subBottom) {
-                        val leftX = x0 + 14
-                        val rightX = x1 - 12
-                        var ssy = rl.subTop + 6
-                        for (s in f.sub) {
-                            val sh = s.getHeight()
-                            if (my >= ssy && my <= ssy + sh) {
-                                if (s is InputSetting || s is InputIntSetting || s is InputDoubleSetting) {
-                                    activeInput = s
-                                }
-                            }
-                            if (s.onClick(mx, my, leftX, rightX, ssy, btn)) {
-                                if (s is KeybindSetting && s.capturing) capturingKeybind = s
-                                return true
-                            }
-                            if (s is SliderIntSetting || s is SliderDoubleSetting) {
-                                val slx = leftX + 2
-                                val slw = rightX - leftX - 4
-                                val sly = ssy + TWO_LINE_CTRL_Y
-                                if (mx >= slx && mx <= slx + slw && my >= sly - 4 && my <= sly + SLIDER_H + 4) {
-                                    activeSlider = s; activeSliderX = slx; activeSliderW = slw; s.onDrag(mx, slx, slw); return true
-                                }
-                            }
-                            ssy += sh
-                        }
-                        return true // swallow clicks inside the body
-                    }
+                    return true
                 }
-                return true
+                return handleRowClick(slot, x0, x1, mx, my, btn, cyTop())
             }
             return true
         }
         return super.mouseClicked(click, bl)
     }
 
+    /** Removes [child] from [parent]'s stack and reinserts it as a standalone top-level column
+     *  right next to where the stack sits — the "move it to the side" undo for stacking. */
+    private fun popOutChild(parent: Column, child: Column) {
+        val idx = columns.indexOf(parent)
+        parent.children.remove(child)
+        collapseIfNeeded(parent)
+        columns.add(if (idx >= 0) idx + 1 else columns.size, child)
+        saveColumnOrder()
+    }
+
+    /** Row/sub-panel hit-testing for one column's body, shared by standalone columns and each
+     *  segment of a vertical stack — only the content's origin y ([topY]) differs between them. */
+    private fun handleRowClick(col: Column, x0: Int, x1: Int, mx: Int, my: Int, btn: Int, topY: Int): Boolean {
+        for (rl in layoutColumn(col, col.scroll, topY)) {
+            val f = rl.feature
+            // left-click toggles on/off, right-click expands (either click expands if no master toggle)
+            if (my >= rl.rowTop && my <= rl.rowBottom) {
+                if (f.hasMaster()) {
+                    if (btn == 1 && f.sub.isNotEmpty()) f.toggleExpanded()
+                    else f.set!!(!f.get!!())
+                } else if (f.sub.isNotEmpty()) {
+                    f.toggleExpanded()
+                }
+                return true
+            }
+            val subH = rl.subBottom - rl.subTop
+            if (subH > 0 && my >= rl.subTop && my <= rl.subBottom) {
+                val leftX = x0 + 14
+                val rightX = x1 - 12
+                var ssy = rl.subTop + 6
+                for (s in f.sub) {
+                    val sh = s.getHeight()
+                    if (my >= ssy && my <= ssy + sh) {
+                        if (s is InputSetting || s is InputIntSetting || s is InputDoubleSetting) {
+                            activeInput = s
+                        }
+                    }
+                    if (s.onClick(mx, my, leftX, rightX, ssy, btn)) {
+                        if (s is KeybindSetting && s.capturing) capturingKeybind = s
+                        return true
+                    }
+                    if (s is SliderIntSetting || s is SliderDoubleSetting) {
+                        val slx = leftX + 2
+                        val slw = rightX - leftX - 4
+                        val sly = ssy + TWO_LINE_CTRL_Y
+                        if (mx >= slx && mx <= slx + slw && my >= sly - 4 && my <= sly + SLIDER_H + 4) {
+                            activeSlider = s; activeSliderX = slx; activeSliderW = slw; s.onDrag(mx, slx, slw); return true
+                        }
+                    }
+                    ssy += sh
+                }
+                return true // swallow clicks inside the body
+            }
+        }
+        return true
+    }
+
     override fun mouseDragged(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
         val slider = activeSlider
-        if (slider != null) { slider.onDrag(click.x().toInt(), activeSliderX, activeSliderW); return true }
+        if (slider != null) { slider.onDrag(vx(click.x()), activeSliderX, activeSliderW); return true }
+        val dc = dragColumn
+        if (dc != null) {
+            dragMouseX = vx(click.x())
+            // Merge-mode (right-drag) leaves slot order alone while dragging so the target header
+            // stays put under the cursor instead of hopping away; only a plain left-drag live-snaps.
+            if (!dragColumnMerge) updateDragReorder(dc)
+            return true
+        }
+        val tc = dragTabChild
+        if (tc != null) {
+            dragTabMouseX = vx(click.x())
+            dragTabMouseY = vx(click.y())
+            if (!dragTabRightClick) {
+                val tp = dragTabParent
+                if (tp != null) updateTabDragReorder(tp, tc)
+            }
+            return true
+        }
         return super.mouseDragged(click, deltaX, deltaY)
     }
 
     override fun mouseReleased(click: MouseButtonEvent): Boolean {
         activeSlider = null
+
+        val dc = dragColumn
+        if (dc != null) {
+            if (dragColumnMerge) {
+                val over = headerColumnAt(vx(click.x()), vx(click.y()))
+                if (over != null && over !== dc) {
+                    columns.remove(dc)
+                    mergeInto(over, dc)
+                }
+            }
+            dragColumn = null
+            dragColumnMerge = false
+            saveColumnOrder()
+        }
+
+        val tp = dragTabParent
+        val tc = dragTabChild
+        if (tc != null) {
+            if (dragTabRightClick) {
+                val mx = vx(click.x())
+                val my = vx(click.y())
+                val over = headerColumnAt(mx, my)
+                if (over != null && over !== tp) {
+                    tp?.children?.remove(tc)
+                    mergeInto(over, tc)
+                    if (tp != null) collapseIfNeeded(tp)
+                } else if (over == null) {
+                    tp?.children?.remove(tc)
+                    if (tp != null) collapseIfNeeded(tp)
+                    insertAtNearestSlot(tc, mx)
+                }
+                // over === tp: dropped back onto its own parent's header — leave it alone.
+            }
+            dragTabParent = null
+            dragTabChild = null
+            dragTabRightClick = false
+            saveColumnOrder()
+        }
+
         return super.mouseReleased(click)
+    }
+
+    /** Live swap-based reorder: whichever slot the dragged column's floating center is nearest
+     *  becomes its new position in the master list, so the other tabs snap out of the way as you drag. */
+    private fun updateDragReorder(dc: Column) {
+        val cols = visibleColumns()
+        val colW = columnWidth()
+        val floatCenter = (dragMouseX - dragGrabDX) + colW / 2
+        val curIdx = columns.indexOf(dc)
+        if (curIdx < 0) return
+        var targetIdx = curIdx
+        var bestDist = Int.MAX_VALUE
+        for (ci in cols.indices) {
+            val center = columnX0(ci) + colW / 2
+            val dist = Math.abs(center - floatCenter)
+            if (dist < bestDist) { bestDist = dist; targetIdx = columns.indexOf(cols[ci]) }
+        }
+        if (targetIdx != curIdx && targetIdx >= 0) {
+            columns.removeAt(curIdx)
+            columns.add(targetIdx, dc)
+        }
+    }
+
+    /** Same swap-based snap as [updateDragReorder], scoped to one group's vertical stack. */
+    private fun updateTabDragReorder(parent: Column, child: Column) {
+        val segs = stackSegments(parent, cyTop() - HEADER_H, cyBot())
+        if (segs.isEmpty()) return
+        // Bands are no longer uniform height, so use the dragged child's own natural height (not
+        // some other sibling's) to convert its grabbed point back into a comparable center.
+        val draggedH = HEADER_H + columnContentHeight(child)
+        val floatCenter = (dragTabMouseY - dragTabGrabDY) + draggedH / 2
+        val curIdx = parent.children.indexOf(child)
+        if (curIdx < 0) return
+        var targetIdx = curIdx
+        var bestDist = Int.MAX_VALUE
+        for (i in segs.indices) {
+            val center = (segs[i].segTop + segs[i].segBot) / 2
+            val dist = Math.abs(center - floatCenter)
+            if (dist < bestDist) { bestDist = dist; targetIdx = i }
+        }
+        if (targetIdx != curIdx) {
+            parent.children.removeAt(curIdx)
+            parent.children.add(targetIdx, child)
+        }
+    }
+
+    /** Top-level column (if any) whose card — header or stacked body — the given point sits over. */
+    private fun headerColumnAt(mx: Int, my: Int): Column? {
+        if (my < cyTop() - HEADER_H || my > cyBot()) return null
+        val cols = visibleColumns()
+        val colW = columnWidth()
+        for (ci in cols.indices) {
+            val x0 = columnX0(ci)
+            val x1 = x0 + colW
+            if (mx in x0..x1) return cols[ci]
+        }
+        return null
+    }
+
+    /** Folds [incoming] into [target]'s vertical stack, turning a standalone target into a fresh
+     *  self-including group first if needed (see [Column.children]). */
+    private fun mergeInto(target: Column, incoming: Column) {
+        if (!target.isGroup()) target.children.add(target)
+        // Flatten rather than nest: if incoming is itself a stack (a whole group dragged by its
+        // outer header), fold its members in directly so stacks never nest inside one another.
+        val toAdd = if (incoming.isGroup()) ArrayList(incoming.children) else listOf(incoming)
+        incoming.children.clear()
+        for (m in toAdd) if (m !in target.children) target.children.add(m)
+        target.activeChild = 0
+    }
+
+    /** When a group is down to one member, that survivor takes over the slot directly instead of
+     *  staying wrapped in a now-pointless single-tab group. */
+    private fun collapseIfNeeded(parent: Column) {
+        if (parent.children.size == 1) {
+            val survivor = parent.children[0]
+            parent.children.clear()
+            val idx = columns.indexOf(parent)
+            if (idx >= 0) columns[idx] = survivor
+        } else if (parent.activeChild >= parent.children.size) {
+            parent.activeChild = 0
+        }
+    }
+
+    /** Inserts a popped-out tab as a new top-level slot, snapping to whichever slot position is
+     *  closest to the drop's x — the same "nearest slot" rule [updateDragReorder] uses. */
+    private fun insertAtNearestSlot(newCol: Column, mx: Int) {
+        val cols = visibleColumns()
+        if (cols.isEmpty()) { columns.add(newCol); return }
+        val colW = columnWidth()
+        var bestIdx = columns.size
+        var bestDist = Int.MAX_VALUE
+        for (ci in cols.indices) {
+            val center = columnX0(ci) + colW / 2
+            val dist = Math.abs(center - mx)
+            if (dist < bestDist) { bestDist = dist; bestIdx = columns.indexOf(cols[ci]) }
+        }
+        columns.add(bestIdx, newCol)
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
@@ -935,16 +1460,28 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val shiftDown = InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_LEFT_SHIFT) ||
             InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_RIGHT_SHIFT)
 
+        val mouseX = vx(mouseX).toDouble()
+        val mouseY = vx(mouseY).toDouble()
         val cols = visibleColumns()
         val colW = columnWidth()
         if (horizontalAmount == 0.0 && !shiftDown && mouseY >= cyTop()) {
             for (i in cols.indices) {
                 val x0 = columnX0(i)
                 val x1 = x0 + colW
-                val colBottom = Math.min(cyTop() + columnContentHeight(cols[i]), cyBot())
-                if (mouseX >= x0 && mouseX <= x1 && mouseY <= colBottom) {
-                    val c = cols[i]
-                    c.scroll = Mth.clamp((c.scroll - verticalAmount * 18).toInt(), 0, maxScrollFor(c))
+                if (mouseX < x0 || mouseX > x1) continue
+                val slot = cols[i]
+                if (slot.isGroup()) {
+                    for (seg in stackSegments(slot, cyTop() - HEADER_H, cyBot())) {
+                        if (mouseY < seg.bodyTop || mouseY > seg.segBot) continue
+                        val vp = seg.segBot - seg.bodyTop
+                        seg.col.scroll = Mth.clamp((seg.col.scroll - verticalAmount * 18).toInt(), 0, maxScrollFor(seg.col, vp))
+                        return true
+                    }
+                    return true
+                }
+                val colBottom = Math.min(cyTop() + columnContentHeight(slot), cyBot())
+                if (mouseY <= colBottom) {
+                    slot.scroll = Mth.clamp((slot.scroll - verticalAmount * 18).toInt(), 0, maxScrollFor(slot, colBottom - cyTop()))
                     return true
                 }
             }
@@ -958,8 +1495,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     }
 
     private fun resetAllColumns() {
-        for (c in columns) for (f in c.features) {
-            if (f.hasMaster() && f.get!!()) f.set!!(false)
+        for (c in columns) {
+            val targets = if (c.isGroup()) c.children else listOf(c)
+            for (t in targets) for (f in t.features) {
+                if (f.hasMaster() && f.get!!()) f.set!!(false)
+            }
         }
     }
 
@@ -996,17 +1536,24 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
     private val nvgGlState = fishmod.utils.rendering.NvgGlStateGuard()
     private var nvgFailureLogged = false
+    private var paintCount = 0
+    private var replaySizeLogged = false
 
     /** Called by GameRendererNvgMixin right after the vanilla GUI flush each frame, for correct z-ordering. */
     override fun paintNvgOverlay() {
+        paintCount++
         nvgGlState.capture()
         try {
             val ctx = fishmod.utils.rendering.NvgContext.get()
 
             // Must use the real GUI scale factor, not 1.0, or NanoVG's baked font glyphs blur when stretched.
             val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
+            if (!replaySizeLogged) {
+                replaySizeLogged = true
+                fishmod.utils.debug.Debug.LOGGER.info("[NanoVG] paintNvgOverlay replaying {} draw commands", fishmod.utils.rendering.NvgRecorder.size())
+            }
             org.lwjgl.nanovg.NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
-            fishmod.utils.rendering.NvgRecorder.replay()
+            fishmod.utils.rendering.NvgRecorder.replay(fishmod.utils.rendering.UiScale.factor())
             org.lwjgl.nanovg.NanoVG.nvgEndFrame(ctx)
 
             fishmod_glCheck("after paintNvgOverlay")
@@ -1039,6 +1586,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     class Column(val name: String, val icon: String) {
         val features: MutableList<Feature> = ArrayList()
         var scroll = 0
+
+        /** Non-empty when this slot is a vertical stack: [children] all render at once, sharing
+         *  the card and splitting its height evenly, each independently scrollable — saves
+         *  horizontal space by letting several columns share one slot instead of sitting side by
+         *  side. Right-click-drag a whole column onto another to stack them; drag a child's mini
+         *  header to reorder it within the stack or right-drag it out to merge elsewhere/pop back
+         *  to top level. */
+        val children: MutableList<Column> = ArrayList()
+        var activeChild: Int = 0
+
+        fun isGroup(): Boolean = children.isNotEmpty()
+        fun content(): Column = if (isGroup()) children[activeChild.coerceIn(0, children.size - 1)] else this
     }
 
     class Feature(val name: String, val get: (() -> Boolean)?, val set: ((Boolean) -> Unit)?) {
@@ -1634,6 +2193,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             NvgRecorder.disc(cx.toFloat(), cy.toFloat(), r.toFloat(), color)
         }
 
+        /** Deferred equivalent of `ctx.fill(x1, y1, x2, y2, color)` — glyph icons must go through
+         *  NvgRecorder like everything else on this screen so [UiScale]'s shrink applies to them too. */
+        private fun nf(x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
+            NvgRecorder.fillRect(x1.toFloat(), y1.toFloat(), (x2 - x1).toFloat(), (y2 - y1).toFloat(), color)
+        }
+
         fun st(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int) {
             NvgRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * TEXT_SCALE, color)
         }
@@ -1677,74 +2242,74 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             when (t) {
                 "gear" -> {
                     disc(ctx, cx, cy, 5, c)
-                    ctx.fill(cx - 1, cy - 7, cx + 1, cy + 7, c); ctx.fill(cx - 7, cy - 1, cx + 7, cy + 1, c)
-                    ctx.fill(cx - 5, cy - 5, cx - 3, cy - 3, c); ctx.fill(cx + 3, cy - 5, cx + 5, cy - 3, c)
-                    ctx.fill(cx - 5, cy + 3, cx - 3, cy + 5, c); ctx.fill(cx + 3, cy + 3, cx + 5, cy + 5, c)
+                    nf(cx - 1, cy - 7, cx + 1, cy + 7, c); nf(cx - 7, cy - 1, cx + 7, cy + 1, c)
+                    nf(cx - 5, cy - 5, cx - 3, cy - 3, c); nf(cx + 3, cy - 5, cx + 5, cy - 3, c)
+                    nf(cx - 5, cy + 3, cx - 3, cy + 5, c); nf(cx + 3, cy + 3, cx + 5, cy + 5, c)
                     disc(ctx, cx, cy, 2, bg)
                 }
                 "arch" -> {
-                    ctx.fill(cx - 6, cy - 6, cx - 3, cy + 7, c); ctx.fill(cx + 3, cy - 6, cx + 6, cy + 7, c)
-                    ctx.fill(cx - 6, cy - 6, cx + 6, cy - 3, c)
+                    nf(cx - 6, cy - 6, cx - 3, cy + 7, c); nf(cx + 3, cy - 6, cx + 6, cy + 7, c)
+                    nf(cx - 6, cy - 6, cx + 6, cy - 3, c)
                 }
                 "hanger" -> {
-                    ctx.fill(cx - 7, cy + 2, cx + 7, cy + 4, c)
-                    ctx.fill(cx - 1, cy - 5, cx + 1, cy + 3, c)
-                    ctx.fill(cx - 1, cy - 6, cx + 3, cy - 4, c)
+                    nf(cx - 7, cy + 2, cx + 7, cy + 4, c)
+                    nf(cx - 1, cy - 5, cx + 1, cy + 3, c)
+                    nf(cx - 1, cy - 6, cx + 3, cy - 4, c)
                 }
                 "people" -> {
                     disc(ctx, cx - 4, cy - 3, 3, c); disc(ctx, cx + 4, cy - 3, 3, c)
-                    ctx.fill(cx - 7, cy + 2, cx + 7, cy + 6, c)
+                    nf(cx - 7, cy + 2, cx + 7, cy + 6, c)
                 }
                 "eye" -> {
-                    ctx.fill(cx - 7, cy - 1, cx + 7, cy + 1, c); ctx.fill(cx - 5, cy - 3, cx + 5, cy + 3, c)
+                    nf(cx - 7, cy - 1, cx + 7, cy + 1, c); nf(cx - 5, cy - 3, cx + 5, cy + 3, c)
                     disc(ctx, cx, cy, 2, bg); disc(ctx, cx, cy, 1, c)
                 }
                 "text" -> {
-                    ctx.fill(cx - 5, cy - 5, cx + 5, cy - 3, c); ctx.fill(cx - 1, cy - 5, cx + 1, cy + 6, c)
+                    nf(cx - 5, cy - 5, cx + 5, cy - 3, c); nf(cx - 1, cy - 5, cx + 1, cy + 6, c)
                 }
                 "chat" -> {
-                    ctx.fill(cx - 7, cy - 5, cx + 7, cy + 2, c); ctx.fill(cx - 5, cy + 2, cx - 1, cy + 6, c)
-                    ctx.fill(cx - 4, cy - 2, cx + 4, cy - 1, bg); ctx.fill(cx - 4, cy, cx + 2, cy + 1, bg)
+                    nf(cx - 7, cy - 5, cx + 7, cy + 2, c); nf(cx - 5, cy + 2, cx - 1, cy + 6, c)
+                    nf(cx - 4, cy - 2, cx + 4, cy - 1, bg); nf(cx - 4, cy, cx + 2, cy + 1, bg)
                 }
                 "star" -> {
-                    ctx.fill(cx - 1, cy - 7, cx + 1, cy + 7, c); ctx.fill(cx - 7, cy - 1, cx + 7, cy + 1, c)
-                    ctx.fill(cx - 4, cy - 4, cx - 2, cy - 2, c); ctx.fill(cx + 2, cy - 4, cx + 4, cy - 2, c)
-                    ctx.fill(cx - 4, cy + 2, cx - 2, cy + 4, c); ctx.fill(cx + 2, cy + 2, cx + 4, cy + 4, c)
+                    nf(cx - 1, cy - 7, cx + 1, cy + 7, c); nf(cx - 7, cy - 1, cx + 7, cy + 1, c)
+                    nf(cx - 4, cy - 4, cx - 2, cy - 2, c); nf(cx + 2, cy - 4, cx + 4, cy - 2, c)
+                    nf(cx - 4, cy + 2, cx - 2, cy + 4, c); nf(cx + 2, cy + 2, cx + 4, cy + 4, c)
                 }
                 "cube" -> {
-                    ctx.fill(cx - 6, cy - 6, cx + 6, cy - 4, c); ctx.fill(cx - 6, cy + 4, cx + 6, cy + 6, c)
-                    ctx.fill(cx - 6, cy - 6, cx - 4, cy + 6, c); ctx.fill(cx + 4, cy - 6, cx + 6, cy + 6, c)
+                    nf(cx - 6, cy - 6, cx + 6, cy - 4, c); nf(cx - 6, cy + 4, cx + 6, cy + 6, c)
+                    nf(cx - 6, cy - 6, cx - 4, cy + 6, c); nf(cx + 4, cy - 6, cx + 6, cy + 6, c)
                 }
                 "clock" -> {
                     disc(ctx, cx, cy, 6, c); disc(ctx, cx, cy, 4, bg)
-                    ctx.fill(cx - 1, cy - 4, cx + 1, cy + 1, c); ctx.fill(cx - 1, cy - 1, cx + 4, cy + 1, c)
+                    nf(cx - 1, cy - 4, cx + 1, cy + 1, c); nf(cx - 1, cy - 1, cx + 4, cy + 1, c)
                 }
                 "coin" -> {
                     disc(ctx, cx, cy, 6, c); disc(ctx, cx, cy, 3, bg); disc(ctx, cx, cy, 1, c)
                 }
                 "palette" -> {
                     disc(ctx, cx, cy, 6, c)
-                    ctx.fill(cx - 3, cy - 3, cx - 1, cy - 1, bg); ctx.fill(cx + 1, cy - 3, cx + 3, cy - 1, bg)
-                    ctx.fill(cx - 1, cy + 1, cx + 1, cy + 3, bg)
+                    nf(cx - 3, cy - 3, cx - 1, cy - 1, bg); nf(cx + 1, cy - 3, cx + 3, cy - 1, bg)
+                    nf(cx - 1, cy + 1, cx + 1, cy + 3, bg)
                 }
                 "tag" -> {
-                    ctx.fill(cx - 6, cy - 4, cx + 2, cy + 4, c); ctx.fill(cx + 2, cy - 3, cx + 4, cy + 3, c)
-                    ctx.fill(cx + 4, cy - 1, cx + 6, cy + 1, c); disc(ctx, cx - 3, cy, 1, bg)
+                    nf(cx - 6, cy - 4, cx + 2, cy + 4, c); nf(cx + 2, cy - 3, cx + 4, cy + 3, c)
+                    nf(cx + 4, cy - 1, cx + 6, cy + 1, c); disc(ctx, cx - 3, cy, 1, bg)
                 }
                 "slider" -> {
-                    ctx.fill(cx - 7, cy - 1, cx + 7, cy + 1, c); ctx.fill(cx, cy - 4, cx + 4, cy + 4, c)
+                    nf(cx - 7, cy - 1, cx + 7, cy + 1, c); nf(cx, cy - 4, cx + 4, cy + 4, c)
                 }
                 "bell" -> {
-                    ctx.fill(cx - 4, cy - 3, cx + 4, cy + 3, c); ctx.fill(cx - 5, cy + 3, cx + 5, cy + 4, c)
-                    ctx.fill(cx - 1, cy - 6, cx + 1, cy - 4, c); ctx.fill(cx - 1, cy + 4, cx + 1, cy + 6, c)
+                    nf(cx - 4, cy - 3, cx + 4, cy + 3, c); nf(cx - 5, cy + 3, cx + 5, cy + 4, c)
+                    nf(cx - 1, cy - 6, cx + 1, cy - 4, c); nf(cx - 1, cy + 4, cx + 1, cy + 6, c)
                 }
                 "map" -> {
-                    ctx.fill(cx - 6, cy - 5, cx + 6, cy + 5, c); ctx.fill(cx - 1, cy - 5, cx + 1, cy + 5, bg)
-                    ctx.fill(cx - 6, cy - 1, cx + 6, cy + 1, bg)
+                    nf(cx - 6, cy - 5, cx + 6, cy + 5, c); nf(cx - 1, cy - 5, cx + 1, cy + 5, bg)
+                    nf(cx - 6, cy - 1, cx + 6, cy + 1, bg)
                 }
                 else -> {
-                    ctx.fill(cx - 5, cy - 5, cx + 5, cy - 3, c); ctx.fill(cx - 5, cy + 3, cx + 5, cy + 5, c)
-                    ctx.fill(cx - 5, cy - 5, cx - 3, cy + 5, c); ctx.fill(cx + 3, cy - 5, cx + 5, cy + 5, c)
+                    nf(cx - 5, cy - 5, cx + 5, cy - 3, c); nf(cx - 5, cy + 3, cx + 5, cy + 5, c)
+                    nf(cx - 5, cy - 5, cx - 3, cy + 5, c); nf(cx + 3, cy - 5, cx + 5, cy + 5, c)
                 }
             }
         }
@@ -1768,17 +2333,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Class Colored Boots" -> "Dye boots by your dungeon class"
                 "M7 Lever Waypoints" -> "See F7/M7 levers through walls"
                 "Starred Mob Highlight" -> "Outline dungeon mobs that need to be killed to clear the floor"
-                "Maxor Tick Timer" -> "Tick timer during Maxor (P1)"
+                "Tick Timers" -> "Maxor/Storm/Goldor tick timers + related P2/terminal notifications"
                 "Crystal Spawn" -> "Crystal spawn countdown + reminder"
-                "Storm Tick Timer" -> "Tick timer during Storm (P2)"
-                "Storm Death Time" -> "Show when Storm died"
-                "LB Release Timer" -> "Countdown to the Last Breath shot: Archer 34.35s, Healer 34.05s"
-                "Storm Crushed Noti" -> "Alert when Storm is crushed"
-                "Goldor Tick Timer" -> "Terminal-phase tick timer"
-                "Goldor Leap Timer" -> "Countdown from Goldor's death to when to leap"
-                "Term Start Timer" -> "Countdown to terminals start"
                 "Section Progress" -> "Terminal section completed/total"
                 "Goldor Splits" -> "S1-S4 terminal split timers + total time"
+                "S4 Term/Leap Tracker" -> "Flags early/late Core leaps and terminals that look unfinished during S4"
                 "Name Color" -> "Recolor your username gradient"
                 "Nametag" -> "Show your own above-head nametag"
                 "Player Size" -> "Resize your model (render only)"

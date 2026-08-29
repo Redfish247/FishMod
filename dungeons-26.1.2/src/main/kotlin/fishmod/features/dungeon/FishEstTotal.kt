@@ -294,7 +294,7 @@ object FishEstTotal {
 
     private fun loadSplits(): HashMap<String, ArrayList<LocalSplit>> {
         try {
-            javaClass.getResourceAsStream("/data/fishmod-splits.json").use { stream ->
+            javaClass.getResourceAsStream("/data/splits.json").use { stream ->
                 if (stream == null) return HashMap()
                 InputStreamReader(stream).use { reader ->
                     val root: JsonElement = JsonParser.parseReader(reader)

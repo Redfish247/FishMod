@@ -19,9 +19,9 @@ data class MapVec2i(val x: Int, val z: Int) {
 
     fun roomListIndex(): Int = x * 6 + z
 
-    fun index(): Int = (x + 201) / 32 * 6 + (z + 201) / 32
+    fun index(): Int = (x + 185) / 32 * 6 + (z + 185) / 32
 
-    fun roomTilePos(): MapVec2i = this.add(MapVec2i(201, 201)).divide(32)
+    fun roomTilePos(): MapVec2i = this.add(MapVec2i(185, 185)).divide(32)
 
     override fun toString(): String = "MapVec2i($x, $z)"
 }

@@ -4,6 +4,9 @@ import config.practical.hud.HUDComponent
 import config.practical.manager.ConfigValue
 import fishmod.utils.config.values.Floor7
 import fishmod.utils.dungeon.Section
+import fishmod.features.dungeon.f7.s4.S4Alerts
+import fishmod.features.dungeon.f7.s4.S4DebugHud
+import fishmod.features.dungeon.f7.s4.S4Tracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
@@ -19,9 +22,10 @@ object F7Huds {
 
     @JvmField
     @ConfigValue
-    var maxorTickTimer: HUDComponent = HUDComponent(
-        10.0, 80.0, TICK_W, 10, 1f, "Maxor Tick Timer",
-        { false }, MaxorTickTimer::render, { Floor7.enableMaxorTickTimer }
+    var tickTimer: HUDComponent = HUDComponent(
+        10.0, 80.0, TICK_W, 10, 1f, "Tick Timer",
+        { false }, BossTickTimer::render,
+        { Floor7.enableTickTimers && (Floor7.enableMaxorTickTimer || Floor7.enableStormTickTimer || Floor7.enableGoldorTickTimer) }
     )
 
     @JvmField
@@ -40,44 +44,30 @@ object F7Huds {
 
     @JvmField
     @ConfigValue
-    var stormTickTimer: HUDComponent = HUDComponent(
-        10.0, 80.0, TICK_W, 10, 1f, "Storm Tick Timer",
-        { false }, StormTickTimer::render, { Floor7.enableStormTickTimer }
-    )
-
-    @JvmField
-    @ConfigValue
     var stormDeathTime: HUDComponent = HUDComponent(
         10.0, 92.0, 40, 10, 1f, "Storm Death Time",
-        { false }, StormTickTimer::renderDeathTime, { Floor7.enableStormDeathTime }
+        { false }, StormTickTimer::renderDeathTime, { Floor7.enableTickTimers && Floor7.enableStormDeathTime }
     )
 
     @JvmField
     @ConfigValue
     var lbReleaseTimer: HUDComponent = HUDComponent(
         10.0, 104.0, TICK_W, 10, 1f, "LB Release Timer",
-        { false }, StormTickTimer::renderLbReleaseTimer, { Floor7.enableLbReleaseTimer }
+        { false }, StormTickTimer::renderLbReleaseTimer, { Floor7.enableTickTimers && Floor7.enableLbReleaseTimer }
     )
 
     @JvmField
     @ConfigValue
     var stormCrush: HUDComponent = HUDComponent(
         0.0, 0.0, NOTI_W, 10, 1f, "Storm Crushed",
-        { false }, PillarExplode::render, { Floor7.notifyStormCrush }
-    )
-
-    @JvmField
-    @ConfigValue
-    var goldorTickTimer: HUDComponent = HUDComponent(
-        10.0, 80.0, TICK_W, 10, 1f, "Goldor Tick Timer",
-        { false }, GoldorTickTimer::render, { Floor7.enableGoldorTickTimer }
+        { false }, PillarExplode::render, { Floor7.enableTickTimers && Floor7.notifyStormCrush }
     )
 
     @JvmField
     @ConfigValue
     var termStartTimer: HUDComponent = HUDComponent(
         10.0, 104.0, TICK_W, 10, 1f, "Term Start Timer",
-        { false }, TermStartTimer::render, { Floor7.enableTermStartTimer }
+        { false }, TermStartTimer::render, { Floor7.enableTickTimers && Floor7.enableTermStartTimer }
     )
 
     @JvmField
@@ -89,9 +79,44 @@ object F7Huds {
 
     @JvmField
     @ConfigValue
-    var goldorLeapTimer: HUDComponent = HUDComponent(
-        10.0, 128.0, TICK_W, 10, 1f, "Goldor Leap Timer",
-        { false }, GoldorLeapTimer::render, { Floor7.leapNotifications }
+    var currentSection: HUDComponent = HUDComponent(
+        10.0, 190.0, TICK_W, 10, 1f, "Current Section",
+        { false }, CurrentSection::render, { Floor7.showCurrentSection }
+    )
+
+    @JvmField
+    @ConfigValue
+    var deviceNotifier: HUDComponent = HUDComponent(
+        0.0, 0.0, NOTI_W, 10, 1f, "Device Completed",
+        { false }, DeviceNotifier::render, { Floor7.notifyPre4Completion || Floor7.notifySSCompletion }
+    )
+
+    @JvmField
+    @ConfigValue
+    var melodyWarning: HUDComponent = HUDComponent(
+        0.0, 0.0, NOTI_W, 10, 1f, "Melody Warning",
+        { false }, MelodyWarning::render, { Floor7.notifiyMelody }
+    )
+
+    @JvmField
+    @ConfigValue
+    var sectionCompletion: HUDComponent = HUDComponent(
+        0.0, 0.0, NOTI_W, 10, 1f, "Section Completion",
+        { false }, SectionCompletion::render, { Floor7.sectionCompletionNotification }
+    )
+
+    @JvmField
+    @ConfigValue
+    var s4Alert: HUDComponent = HUDComponent(
+        0.0, 0.0, 160, 12, 1.5f, "S4 Alert",
+        { false }, S4Alerts::render, { Floor7.s4AlertsEnabled }
+    )
+
+    @JvmField
+    @ConfigValue
+    var s4DebugHud: HUDComponent = HUDComponent(
+        10.0, 220.0, 120, 60, 1f, "S4 Debug",
+        { false }, S4DebugHud::render, { Floor7.s4DebugHudEnabled }
     )
 
     @JvmStatic
@@ -101,18 +126,21 @@ object F7Huds {
         StormTickTimer.init()
         PillarExplode.init()
         GoldorTickTimer.init()
-        GoldorLeapTimer.init()
         TermStartTimer.init()
         SectionProgress.init()
+        CurrentSection.init()
+        DeviceNotifier.init()
+        MelodyWarning.init()
+        SectionCompletion.init()
+        S4Tracker.init()
+        GateDisplay.init()
     }
 
     /** Render all enabled F7 HUDs (called from a HudRenderCallback in FishModInit). */
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor) {
         // Distinct default targets (only used to pull off-screen elements back; dragged positions are kept).
-        renderOne(ctx, maxorTickTimer, MaxorTickTimer.display(), MaxorTickTimer::render, 10, 70)
-        renderOne(ctx, stormTickTimer, StormTickTimer.display(), StormTickTimer::render, 10, 82)
-        renderOne(ctx, goldorTickTimer, GoldorTickTimer.display(), GoldorTickTimer::render, 10, 94)
+        renderOne(ctx, tickTimer, BossTickTimer.display(), BossTickTimer::render, 10, 70)
         renderOne(ctx, termStartTimer, TermStartTimer.display(), TermStartTimer::render, 10, 106)
         renderOne(ctx, crystalSpawnTime, CrystalSpawn.display(), CrystalSpawn::render, 10, 118)
         renderOne(ctx, stormDeathTime, StormTickTimer.displayDeathTime(), StormTickTimer::renderDeathTime, 10, 130)
@@ -121,7 +149,12 @@ object F7Huds {
         renderOne(ctx, lbReleaseTimer, StormTickTimer.displayLbReleaseTimer(), StormTickTimer::renderLbReleaseTimer, 10, 166)
         renderOne(ctx, crystalReminder, CrystalSpawn.displayNotification(), CrystalSpawn::renderNotification, 10, 40)
         renderOne(ctx, stormCrush, PillarExplode.display(), PillarExplode::render, 10, 28)
-        renderOne(ctx, goldorLeapTimer, GoldorLeapTimer.display(), GoldorLeapTimer::render, 10, 178)
+        renderOne(ctx, currentSection, CurrentSection.display(), CurrentSection::render, 10, 202)
+        renderOne(ctx, deviceNotifier, DeviceNotifier.display(), DeviceNotifier::render, 10, 52)
+        renderOne(ctx, melodyWarning, MelodyWarning.display(), MelodyWarning::render, 10, 64)
+        renderOne(ctx, sectionCompletion, SectionCompletion.display(), SectionCompletion::render, 10, 16)
+        renderOne(ctx, s4Alert, S4Alerts.display(), S4Alerts::render, 0, 90)
+        renderOne(ctx, s4DebugHud, S4DebugHud.display(), S4DebugHud::render, 10, 220)
     }
 
     private fun renderOne(

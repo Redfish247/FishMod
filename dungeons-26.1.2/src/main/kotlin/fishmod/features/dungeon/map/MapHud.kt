@@ -17,7 +17,7 @@ object MapHud {
 
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map_hud")) { g, _ ->
             val mc = Minecraft.getInstance()
-            if (DungeonMapSettings.mapEnabled && !mc.options.hideGui && DungeonState.isInDungeon() &&
+            if (DungeonMapSettings.mapEnabled && !mc.options.hideGui && !mc.options.keyPlayerList.isDown && DungeonState.isInDungeon() &&
                 (!DungeonState.isInBoss() || MapColors.peeking())
             ) {
                 renderAt(g, mc, DungeonMapSettings.mapX, DungeonMapSettings.mapY, DungeonMapSettings.mapScale, false)

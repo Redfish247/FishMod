@@ -297,6 +297,26 @@ class FishModInit : ModInitializer {
             return tree
         }
 
+        private fun chatNotificationsSubcommand(name: String): com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> {
+            return ClientCommands.literal(name)
+                .executes {
+                    Minecraft.getInstance().schedule {
+                        Minecraft.getInstance().setScreen(fishmod.features.chat.ChatNotificationsScreen())
+                    }
+                    Constants.SUCCESS
+                }
+                .then(ClientCommands.literal("on").executes {
+                    fishmod.features.chat.ChatRuleStore.setMasterEnabled(true)
+                    Misc.addChatMessage(Component.literal("§b[FM] Chat Notifications: §aON"))
+                    Constants.SUCCESS
+                })
+                .then(ClientCommands.literal("off").executes {
+                    fishmod.features.chat.ChatRuleStore.setMasterEnabled(false)
+                    Misc.addChatMessage(Component.literal("§b[FM] Chat Notifications: §cOFF"))
+                    Constants.SUCCESS
+                })
+        }
+
         /** Prints a formatted reference of FishMod's commands and their argument formats to the player's chat. */
         @JvmStatic
         private fun printCommandHelp() {
@@ -371,6 +391,7 @@ class FishModInit : ModInitializer {
         fishmod.cosmetic.RemoteNicks.init()
         fishmod.cosmetic.PlayerSize.init()
         fishmod.cosmetic.RemoteSync.init()
+        fishmod.utils.InstallHeartbeat.init()
 
         LagTracker.init()
         SessionStats.init()
@@ -378,6 +399,7 @@ class FishModInit : ModInitializer {
         FishEstTotal.init()
         DungeonDeathMessage.init()
         fishmod.features.ExplosiveShot.init()
+        fishmod.features.CritTracker.init()
         FishPartyTracker.init()
         PartyCommandHandler.init()
         SoulflowHud.init()
@@ -385,6 +407,11 @@ class FishModInit : ModInitializer {
         CooldownOverlay.init()
         fishmod.features.croesus.CroesusLootDetector.init()
         fishmod.features.CatacombsOverflowOverlay.init()
+        fishmod.features.scoreboard.SkillLevels.init()
+        fishmod.features.scoreboard.BestiaryProgress.init()
+        fishmod.features.scoreboard.CollectionsProgress.init()
+        fishmod.features.scoreboard.ElectionInfo.init()
+        fishmod.features.scoreboard.FireSaleInfo.init()
         fishmod.features.other.CommandKeys.init()
         fishmod.features.other.WardrobeHotkeys.init()
         // ItemRarityHotbar.init();   // rarity background: inventory-slot coverage (hotbar via HudRenderCallback)
@@ -394,6 +421,7 @@ class FishModInit : ModInitializer {
         fishmod.features.FireFreezeTimer.init()
         // PowderTracker.init();
         fishmod.features.dungeon.SimonSaysTracker.init()
+        fishmod.features.chat.ChatRuleHandler.init()
         fishmod.features.dungeon.M7LeverWaypoints.init()
         fishmod.features.dungeon.DungeonWaypoints.init()
         fishmod.features.dungeon.StarredMobHighlight.init()
@@ -401,17 +429,20 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.f7.F7Huds.init()
         // Touching Buttons registers its 7 inventory command buttons (self-registering).
         fishmod.utils.config.values.Buttons.init()
-        FishHudEditor.register("Maxor Tick Timer", fishmod.features.dungeon.f7.F7Huds.maxorTickTimer)
+        FishHudEditor.register("Tick Timer", fishmod.features.dungeon.f7.F7Huds.tickTimer)
         FishHudEditor.register("Crystal Spawn Time", fishmod.features.dungeon.f7.F7Huds.crystalSpawnTime)
         FishHudEditor.register("Crystal Reminder", fishmod.features.dungeon.f7.F7Huds.crystalReminder)
-        FishHudEditor.register("Storm Tick Timer", fishmod.features.dungeon.f7.F7Huds.stormTickTimer)
         FishHudEditor.register("Storm Death Time", fishmod.features.dungeon.f7.F7Huds.stormDeathTime)
         FishHudEditor.register("LB Release Timer", fishmod.features.dungeon.f7.F7Huds.lbReleaseTimer)
         FishHudEditor.register("Storm Crushed", fishmod.features.dungeon.f7.F7Huds.stormCrush)
-        FishHudEditor.register("Goldor Tick Timer", fishmod.features.dungeon.f7.F7Huds.goldorTickTimer)
-        FishHudEditor.register("Goldor Leap Timer", fishmod.features.dungeon.f7.F7Huds.goldorLeapTimer)
         FishHudEditor.register("Term Start Timer", fishmod.features.dungeon.f7.F7Huds.termStartTimer)
         FishHudEditor.register("Section Progress", fishmod.features.dungeon.f7.F7Huds.sectionProgress)
+        FishHudEditor.register("Current Section", fishmod.features.dungeon.f7.F7Huds.currentSection)
+        FishHudEditor.register("Device Completed", fishmod.features.dungeon.f7.F7Huds.deviceNotifier)
+        FishHudEditor.register("Melody Warning", fishmod.features.dungeon.f7.F7Huds.melodyWarning)
+        FishHudEditor.register("Section Completion", fishmod.features.dungeon.f7.F7Huds.sectionCompletion)
+        FishHudEditor.register("S4 Alert", fishmod.features.dungeon.f7.F7Huds.s4Alert)
+        FishHudEditor.register("S4 Debug", fishmod.features.dungeon.f7.F7Huds.s4DebugHud)
         FishHudEditor.register("Goldor Splits", fishmod.utils.dungeon.Section.terminalSplits)
         // Own-class detection (from "stats are doubled" message + tab list); boots feature depends on it.
         fishmod.utils.dungeon.DungeonClass.init()
@@ -468,6 +499,8 @@ class FishModInit : ModInitializer {
                     .then(waypointSubcommand("wp"))
                     .then(waypointSubcommand("waypoint"))
                     .then(waypointSubcommand("waypoints"))
+                    .then(chatNotificationsSubcommand("chatnotifications"))
+                    .then(chatNotificationsSubcommand("cn"))
                     .executes {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().setScreen(fishmod.features.FishModScreen())
@@ -1038,7 +1071,7 @@ class FishModInit : ModInitializer {
             )
             // No-arg commands: self metrics, party actions, and join-floor/Kuudra shortcuts.
             for (name in arrayOf(
-                "fps", "tps", "ping", "dprofit", "ai", "allinv", "d",
+                "fps", "tps", "ping", "dprofit", "crit", "ai", "allinv", "d",
                 "e", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "m1", "m2", "m3", "m4", "m5", "m6", "m7",
                 "t1", "t2", "t3", "t4", "t5"
             )) {
@@ -1100,8 +1133,6 @@ class FishModInit : ModInitializer {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "f7_huds")) { ctx, _ -> fishmod.features.dungeon.f7.F7Huds.renderHud(ctx) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_waypoints_overlay")) { ctx, _ -> fishmod.features.dungeon.DungeonWaypoints.renderOverlay(ctx) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "session_stats")) { ctx, tickCounter -> SessionStats.renderHud(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_score")) { ctx, tickCounter -> fishmod.features.dungeon.DungeonScore.renderHud(ctx, tickCounter) }
-        fishmod.features.dungeon.DungeonScore.init()
         fishmod.utils.SkyblockItems.initAsync()
 
         // ── PB Pace (live delta vs personal-best splits) ─────────────────────
@@ -1140,7 +1171,11 @@ class FishModInit : ModInitializer {
             java.util.function.IntConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapX = v.toFloat() },
             java.util.function.IntSupplier { fishmod.utils.config.values.DungeonMapSettings.mapY.toInt() },
             java.util.function.IntConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapY = v.toFloat() },
-            160, 160,
+            // Match MapHud's actual render size (a hardcoded 160x160 box here made the editor
+            // preview noticeably bigger than the real in-game map, which is only ~116px + the
+            // background-size setting on each side for the default room grid).
+            fishmod.features.dungeon.map.MapHud.baseWidth(net.minecraft.client.Minecraft.getInstance()),
+            fishmod.features.dungeon.map.MapHud.baseHeight(net.minecraft.client.Minecraft.getInstance()),
             java.util.function.DoubleSupplier { fishmod.utils.config.values.DungeonMapSettings.mapScale.toDouble() },
             java.util.function.DoubleConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapScale = v.toFloat() }
         )

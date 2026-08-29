@@ -24,6 +24,9 @@ object DungeonScore {
     @JvmStatic var score = 0
     @JvmStatic var paul = false
 
+    private var runStartMs = -1L
+    private var alertedMissing = false
+
     private val SECRET_PERCENT = Pattern.compile("^ ?Secrets Found: ([\\d.]+)%$")
     private val SECRET_COUNT = Pattern.compile("^ ?Secrets Found: (\\d+)$")
     private val COMPLETED_ROOMS = Pattern.compile("^ ?Completed Rooms: (\\d+)$")
@@ -45,12 +48,21 @@ object DungeonScore {
         if (!DungeonState.isInDungeon()) return
         val st = DungeonMapSettings
         if (st.mapEnabled || st.mapInfoEnabled == true || st.mapScoreMessages) {
+            if (runStartMs < 0) runStartMs = System.currentTimeMillis()
             parseTab(mc)
             parseSidebar(mc)
             DungeonPlayers.updateRoster(mc)
             score = calculateScore()
             ScoreMessages.update(mc, score)
             paul = MayorApi.isPaulDungeonBonusActive()
+
+            if (!alertedMissing && st.mapScoreMissingMsg
+                && System.currentTimeMillis() - runStartMs >= 60_000
+                && !DungeonState.isInBoss()
+            ) {
+                alertedMissing = true
+                sendMissingScoreMessage(mc)
+            }
         }
     }
 
@@ -68,6 +80,8 @@ object DungeonScore {
         princeKilled = false
         elapsedTime = "0s"
         score = 0
+        runStartMs = -1L
+        alertedMissing = false
         ScoreMessages.reset()
     }
 
@@ -227,6 +241,59 @@ object DungeonScore {
         val found = if (!forceNeeded && DungeonMapSettings.mapScoreNeededInsteadOfMissing) 0 else secretsFound
         val need = Math.ceil((calculateTotalSecrets() * secretFactor() * (40 - bonus + Math.max(deaths * 2 - 1, 0)) / 40.0f).toDouble()).toInt() - found
         return Math.max(need, 0)
+    }
+
+    /** Projected end-of-run score assuming a full clear (100 room score) with current secrets/bonuses. */
+    @JvmStatic
+    fun projectedFullClearScore(): Int {
+        val ts = calculateTotalSecrets()
+        var secretScore = 0
+        if (ts > 0) secretScore = clampInt(Math.floor((secretsFound / (ts * secretFactor()) * 40.0f).toDouble()).toInt(), 0, 40)
+        val skill = clampInt(100 - Math.max(deaths * 2 - 1, 0), 20, 100)
+        return 60 + secretScore + skill + 100 + calculateBonusScore()
+    }
+
+    /** Auto party-chat breakdown of exactly what's missing (prince/crypts/mimic/secrets) for a 300 on full clear. */
+    private fun sendMissingScoreMessage(mc: Minecraft) {
+        val connection = mc.connection ?: return
+        val projected = projectedFullClearScore()
+        val missing = 300 - projected
+
+        if (missing <= 0) {
+            connection.sendCommand("pc On pace for 300! (projected $projected on full clear)")
+            return
+        }
+
+        val parts = ArrayList<String>()
+        var remaining = missing
+
+        if (!princeKilled && remaining > 0) {
+            parts.add("1 Prince [1 score max 1]")
+            remaining -= 1
+        }
+        val cryptsAvail = 5 - Math.min(crypts, 5)
+        if (cryptsAvail > 0 && remaining > 0) {
+            val take = Math.min(cryptsAvail, remaining)
+            parts.add(take.toString() + " Crypt" + (if (take == 1) "" else "s") + " [1 each max 5]")
+            remaining -= take
+        }
+        val mimicFloor = DungeonState.floorNumber() >= 6
+        if (!mimicKilled && mimicFloor && remaining > 0) {
+            parts.add("1 Mimic [2 score max 1]")
+            remaining -= 2
+        }
+        if (remaining > 0) {
+            val ts = calculateTotalSecrets()
+            if (ts > 0) {
+                val perSecret = 40.0 / (ts * secretFactor())
+                val need = Math.ceil(remaining / perSecret).toInt()
+                parts.add(need.toString() + " Secret" + (if (need == 1) "" else "s") + " [$remaining score]")
+            } else {
+                parts.add("Secrets [$remaining score]")
+            }
+        }
+
+        connection.sendCommand("pc $missing Score Missing (" + java.lang.String.join(", ", parts) + ")")
     }
 
     private fun clampInt(v: Int, lo: Int, hi: Int): Int = Math.max(lo, Math.min(hi, v))

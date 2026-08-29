@@ -76,10 +76,16 @@ object RenderLayers {
         return RenderType.create(layerName, RenderSetup.builder(builder.build()).createRenderSetup())
     }
 
+    // writeDepth is forced false (not baseDepth.writeDepth(), which is true on the vanilla debug
+    // pipelines): an ALWAYS_PASS layer that still WRITES depth leaves whatever it drew last as the
+    // new depth-buffer value at those pixels, so later draws in the same frame — including this
+    // same RenderType's own other faces/doors, or the next frame's terrain re-render — start
+    // fighting over which write wins, seen as the highlight intermittently vanishing/reappearing
+    // through walls. A pure paint-on-top overlay must neither read nor write depth.
     private fun noDepth(base: RenderPipeline, location: String, layerName: String): RenderType {
         val baseDepth = base.depthStencilState!!
         val noDepthTest = DepthStencilState(
-            CompareOp.ALWAYS_PASS, baseDepth.writeDepth(), baseDepth.depthBiasScaleFactor(), baseDepth.depthBiasConstant()
+            CompareOp.ALWAYS_PASS, false, baseDepth.depthBiasScaleFactor(), baseDepth.depthBiasConstant()
         )
         return rebuild(base, location, layerName, noDepthTest)
     }

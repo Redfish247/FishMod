@@ -46,7 +46,7 @@ object PillarExplode {
     }
 
     @JvmStatic
-    fun display(): Boolean = Floor7.notifyStormCrush && tick > 0
+    fun display(): Boolean = Floor7.enableTickTimers && Floor7.notifyStormCrush && tick > 0
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {

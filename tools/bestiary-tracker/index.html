@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bestiary Rebalance — RedFish2471</title>
+<style>
+:root{
+  --bg:#f5f3ee;
+  --surface:#ffffff;
+  --border:#e0dcd0;
+  --ink:#25231f;
+  --ink-dim:#6b6759;
+  --accent:#3a6b52;
+  --accent-soft:#e4ede8;
+  --warn:#a8631f;
+  --warn-soft:#f5e9da;
+  --good:#3a6b52;
+  --track:#e9e5d8;
+  --stripe:#faf8f3;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#15140f;
+    --surface:#1d1c16;
+    --border:#332f24;
+    --ink:#ece7d9;
+    --ink-dim:#a39c88;
+    --accent:#7fc9a3;
+    --accent-soft:#22322a;
+    --warn:#e0a458;
+    --warn-soft:#332a1a;
+    --good:#7fc9a3;
+    --track:#2a281f;
+    --stripe:#232219;
+  }
+}
+* { box-sizing: border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  padding: 40px 28px 80px;
+}
+.wrap{ max-width: 980px; margin: 0 auto; }
+h1{
+  font-family: Georgia, 'Iowan Old Style', serif;
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+.sub{
+  color: var(--ink-dim);
+  font-size: 0.92rem;
+  margin: 0 0 8px;
+}
+.sub code{
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+.status{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+  margin-bottom: 24px;
+}
+.dot{
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--good);
+}
+.dot.stale{ background: var(--warn); }
+#refreshBtn{
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+#refreshBtn:hover{ filter: brightness(1.05); }
+#refreshBtn:disabled{ opacity: 0.5; cursor: default; }
+#loadBtn{
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--border);
+  padding: 7px 14px;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+#loadBtn:hover{ filter: brightness(1.05); }
+#exportBtn{
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  padding: 7px 12px;
+  border-radius: 7px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+#exportBtn:hover{ border-color: var(--accent); color: var(--accent); }
+
+.stats{
+  display:grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+.stat{ background: var(--surface); padding: 16px 18px; }
+.stat .n{ font-variant-numeric: tabular-nums; font-size: 1.5rem; font-weight: 600; line-height: 1.1; }
+.stat .l{ color: var(--ink-dim); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }
+.stat.accent .n{ color: var(--accent); }
+.stat.warn .n{ color: var(--warn); }
+
+.controls{
+  display:flex; gap:8px; align-items:center; margin-bottom: 14px; flex-wrap: wrap;
+}
+.controls input, .controls select{
+  background: var(--surface); border: 1px solid var(--border); color: var(--ink);
+  padding: 7px 10px; border-radius: 7px; font-size: 0.85rem; font-family: inherit;
+}
+.controls input{ flex: 1; min-width: 160px; }
+.count{ color: var(--ink-dim); font-size: 0.78rem; margin-left: auto; }
+
+.tablewrap{ overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+table{ width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+thead th{
+  position: sticky; top: 0; background: var(--surface); text-align: left; padding: 10px 14px;
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-dim);
+  border-bottom: 1px solid var(--border); cursor: pointer; white-space: nowrap; user-select: none;
+}
+thead th:hover{ color: var(--ink); }
+thead th.num{ text-align:right; }
+tbody td{ padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tbody tr:last-child td{ border-bottom: none; }
+tbody tr:nth-child(even){ background: var(--stripe); }
+tbody tr:hover{ background: var(--accent-soft); }
+td.num{ text-align: right; font-variant-numeric: tabular-nums; }
+.cat{ color: var(--ink-dim); font-size: 0.78rem; }
+.progress{ display:flex; align-items:center; gap:8px; min-width: 140px; }
+.track{ flex:1; height: 6px; background: var(--track); border-radius: 3px; overflow:hidden; }
+.fill{ height:100%; background: var(--accent); border-radius: 3px; }
+.remaining{ font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
+.remaining.close{ color: var(--good); }
+.remaining.maxed{ color: var(--good); }
+.badge{
+  display:inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--good);
+  background: var(--accent-soft);
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.checkline{
+  display:flex; align-items:center; gap:6px;
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+.checkline input{ accent-color: var(--accent); }
+tr.maxed-row{ opacity: 0.75; }
+
+.section{ margin-bottom: 44px; }
+.section h2{
+  font-family: Georgia, 'Iowan Old Style', serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+.section .hint{
+  color: var(--ink-dim);
+  font-size: 0.84rem;
+  margin: 0 0 14px;
+}
+
+footer{ margin-top: 24px; color: var(--ink-dim); font-size: 0.78rem; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Bestiary Rebalance To-Do</h1>
+  <p class="sub">Player <code id="ign">…</code> — selected SkyBlock profile — live against the public
+    <em>Bestiary Rebalancing</em> sheet's new kill caps.</p>
+
+  <div class="controls" style="margin-bottom: 16px;">
+    <input id="ignInput" type="text" placeholder="IGN, e.g. RedFish2471" style="flex: 0 1 240px;">
+    <button id="loadBtn">Load</button>
+  </div>
+
+  <div class="status">
+    <span class="dot" id="dot"></span>
+    <span id="statusText">loading…</span>
+    <button id="refreshBtn">Refresh now</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="stat-total"></div><div class="l">Mobs Tracked</div></div>
+    <div class="stat accent"><div class="n" id="stat-maxed"></div><div class="l">Already Maxed</div></div>
+    <div class="stat warn"><div class="n" id="stat-remaining"></div><div class="l">Still Need Work</div></div>
+    <div class="stat"><div class="n" id="stat-kills"></div><div class="l">Total Kills Left</div></div>
+    <div class="stat"><div class="n" id="xp-stat-xp"></div><div class="l">Total Bestiary XP Missing</div></div>
+  </div>
+
+  <div class="controls">
+    <input id="search" type="text" placeholder="Filter by mob or category…">
+    <select id="catFilter"><option value="">All categories</option></select>
+    <label class="checkline"><input type="checkbox" id="showMaxed"> Show maxed</label>
+    <button id="exportBtn">Export CSV</button>
+    <span class="count" id="rowcount"></span>
+  </div>
+
+  <p class="hint" style="margin: -6px 0 14px;">
+    Kills left is raw progress toward the new kill cap. Bestiary XP is earned <strong>+1 per tier</strong> gained,
+    not per kill — so a mob needing 3,000 more kills but only 1 more tier is cheaper XP than one needing 50 kills
+    for 2 tiers. Sort by whichever column matches what you're optimizing for.
+  </p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th data-key="Mob">Mob</th>
+          <th data-key="Category">Category</th>
+          <th class="num" data-key="Current Kills">Current</th>
+          <th class="num" data-key="New Cap">New Cap</th>
+          <th data-key="Remaining">Kill Progress</th>
+          <th class="num" data-key="Remaining">Kills Left</th>
+          <th data-key="TiersRemaining">Tier Progress</th>
+          <th class="num" data-key="XpMissing">XP Missing</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <footer>
+    Served locally from <code>tools/bestiary-tracker/server.py</code>. The server refetches Hypixel + the sheet every
+    5 minutes on its own; this page just polls the local <code>/api/data</code> endpoint to pick up whatever the
+    server last fetched.
+  </footer>
+</div>
+
+<script>
+const REFRESH_POLL_MS = 5 * 60 * 1000; // poll local server every 5 min
+let DATA = [];
+let sortKey = "Remaining", sortDir = 1;
+
+function getCurrentIgn() {
+  const fromUrl = new URLSearchParams(location.search).get('ign');
+  if (fromUrl) return fromUrl;
+  const stored = localStorage.getItem('bestiary-ign');
+  if (stored) return stored;
+  return 'RedFish2471';
+}
+
+function setCurrentIgn(ign) {
+  localStorage.setItem('bestiary-ign', ign);
+  const url = new URL(location.href);
+  url.searchParams.set('ign', ign);
+  history.replaceState(null, '', url);
+}
+
+function renderActive() {
+  render();
+}
+
+function render() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const cat = document.getElementById('catFilter').value;
+  const showMaxed = document.getElementById('showMaxed').checked;
+  let rows = showMaxed ? DATA.slice() : DATA.filter(r => r.Remaining > 0 || r.TiersRemaining > 0);
+  if (q) rows = rows.filter(r => r.Mob.toLowerCase().includes(q) || r.Category.toLowerCase().includes(q));
+  if (cat) rows = rows.filter(r => r.Category === cat);
+  rows = rows.slice().sort((a,b) => {
+    // fully-maxed rows (both kills and tiers) sink below everything still in progress
+    const aMaxed = a.Remaining === 0 && a.TiersRemaining === 0, bMaxed = b.Remaining === 0 && b.TiersRemaining === 0;
+    if (aMaxed !== bMaxed) return aMaxed ? 1 : -1;
+    const av = a[sortKey], bv = b[sortKey];
+    if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
+    return (av - bv) * sortDir;
+  });
+
+  document.getElementById('rowcount').textContent = rows.length + ' shown';
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = rows.map(r => {
+    const killsMaxed = r.Remaining === 0;
+    const tiersMaxed = r.TiersRemaining === 0;
+    const pct = Math.max(2, Math.min(100, Math.round((r['Current Kills'] / r['New Cap']) * 100)));
+    const close = r.Remaining > 0 && r.Remaining <= 50;
+
+    const killsCell = killsMaxed
+      ? `<span class="badge">Maxed</span>`
+      : `<span class="remaining ${close ? 'close' : ''}">${r.Remaining.toLocaleString()}</span>`;
+
+    const hasTiers = r.NewTiers !== null && r.NewTiers !== undefined;
+    const tierPct = hasTiers ? Math.max(2, Math.min(100, Math.round((r.CurrentTier / r.NewTiers) * 100))) : 0;
+    const xpClose = hasTiers && r.TiersRemaining > 0 && r.TiersRemaining <= 2;
+    const tierProgressCell = hasTiers
+      ? `<div class="progress"><div class="track"><div class="fill" style="width:${tierPct}%"></div></div><span style="font-size:0.72rem;color:var(--ink-dim)">${r.CurrentTier}/${r.NewTiers}</span></div>`
+      : `<span style="color:var(--ink-dim)">—</span>`;
+    const xpCell = !hasTiers
+      ? `<span style="color:var(--ink-dim)">—</span>`
+      : tiersMaxed
+        ? `<span class="badge">Maxed</span>`
+        : `<span class="remaining ${xpClose ? 'close' : ''}">${r.XpMissing.toLocaleString()}</span>`;
+
+    return `<tr class="${killsMaxed && tiersMaxed ? 'maxed-row' : ''}">
+      <td>${r.Mob}</td>
+      <td class="cat">${r.Category}</td>
+      <td class="num">${r['Current Kills'].toLocaleString()}</td>
+      <td class="num">${r['New Cap'].toLocaleString()}</td>
+      <td><div class="progress"><div class="track"><div class="fill" style="width:${pct}%"></div></div><span style="font-size:0.72rem;color:var(--ink-dim)">${pct}%</span></div></td>
+      <td class="num">${killsCell}</td>
+      <td>${tierProgressCell}</td>
+      <td class="num">${xpCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+function populateFilters() {
+  const cats = [...new Set(DATA.map(r => r.Category))].sort();
+  const sel = document.getElementById('catFilter');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">All categories</option>' +
+    cats.map(c => `<option value="${c}">${c}</option>`).join('');
+  sel.value = prev;
+}
+
+function updateStats() {
+  const notMaxed = DATA.filter(r => r.Remaining > 0);
+  const maxed = DATA.length - notMaxed.length;
+  document.getElementById('stat-total').textContent = DATA.length;
+  document.getElementById('stat-maxed').textContent = maxed;
+  document.getElementById('stat-remaining').textContent = notMaxed.length;
+  document.getElementById('stat-kills').textContent = notMaxed.reduce((s,r) => s + r.Remaining, 0).toLocaleString();
+  const xpEligible = DATA.filter(r => r.NewTiers !== null && r.NewTiers !== undefined && r.TiersRemaining > 0);
+  document.getElementById('xp-stat-xp').textContent = xpEligible.reduce((s,r) => s + r.XpMissing, 0).toLocaleString();
+}
+
+function setStatus(text, stale) {
+  document.getElementById('statusText').textContent = text;
+  document.getElementById('dot').classList.toggle('stale', !!stale);
+}
+
+async function pull() {
+  const ign = getCurrentIgn();
+  try {
+    const res = await fetch('/api/data?ign=' + encodeURIComponent(ign), { cache: 'no-store' });
+    const data = await res.json();
+    document.getElementById('ign').textContent = data.ign || ign;
+
+    if (data.lastError) {
+      setStatus('Last refresh failed: ' + data.lastError, true);
+      if (!data.rows || !data.rows.length) { DATA = []; renderActive(); updateStats(); }
+    } else if (data.rows && data.rows.length) {
+      DATA = data.rows;
+      populateFilters();
+      updateStats();
+      renderActive();
+      const when = data.lastUpdated ? new Date(data.lastUpdated).toLocaleTimeString() : '—';
+      setStatus((data.refreshing ? 'Refreshing… ' : '') + 'Updated ' + when, data.refreshing);
+    }
+  } catch (e) {
+    setStatus('Cannot reach local server', true);
+  }
+}
+
+function loadIgn(rawName) {
+  const name = (rawName || '').trim();
+  if (!name) return;
+  setCurrentIgn(name);
+  document.getElementById('ignInput').value = name;
+  setStatus('Loading ' + name + '…', true);
+  pull();
+}
+
+document.getElementById('refreshBtn').addEventListener('click', async () => {
+  document.getElementById('refreshBtn').disabled = true;
+  setStatus('Refresh requested…', true);
+  await fetch('/api/refresh?ign=' + encodeURIComponent(getCurrentIgn()), { method: 'POST' });
+  setTimeout(async () => { await pull(); document.getElementById('refreshBtn').disabled = false; }, 4000);
+});
+
+document.getElementById('loadBtn').addEventListener('click', () => {
+  loadIgn(document.getElementById('ignInput').value);
+});
+document.getElementById('ignInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') loadIgn(document.getElementById('ignInput').value);
+});
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const showMaxed = document.getElementById('showMaxed').checked;
+  const url = '/api/export.csv?ign=' + encodeURIComponent(getCurrentIgn()) + '&maxed=' + (showMaxed ? '1' : '0');
+  window.location.href = url;
+});
+
+document.getElementById('search').addEventListener('input', renderActive);
+document.getElementById('catFilter').addEventListener('change', renderActive);
+document.getElementById('showMaxed').addEventListener('change', renderActive);
+document.querySelectorAll('thead th').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.key;
+    if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = 1; }
+    render();
+  });
+});
+
+document.getElementById('ignInput').value = getCurrentIgn();
+pull();
+setInterval(pull, REFRESH_POLL_MS);
+</script>
+</body>
+</html>

@@ -7,3 +7,5 @@ out/
 run/
 */run/
 .DS_Store
+.claude/
+.wrangler/
