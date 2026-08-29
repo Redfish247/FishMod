@@ -1,6 +1,7 @@
 package fishmod.features
 
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.data.EntityUtil
 import fishmod.utils.data.ItemUtil
 import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
@@ -78,8 +79,12 @@ object FireFreezeTimer {
                     val color = if (secs <= 2.0) "§c" else if (secs <= 5.0) "§b" else "§3"
                     t = Component.literal(color + "❄ " + String.format("%.1fs", secs))
                 }
-                val y = e.y + e.bbHeight / 2.0
-                RenderUtils.renderText(ctx, matrices, t, e.x, y, e.z, 1.0f)
+                // Interpolated position + a fixed offset above the head — the old body-centre spot
+                // used the un-lerped tick position, so the label lagged behind a moving mob and
+                // read as "stuck"/jittery. Draw it clearly above the mob instead.
+                val p = EntityUtil.getLerpedPos(e)
+                val y = p.y + e.bbHeight + 0.55
+                RenderUtils.renderText(ctx, matrices, t, p.x, y, p.z, 1.35f)
             }
         }
     }
