@@ -26,7 +26,6 @@
     "accessors.MapItemSavedDataAccessor",
     "accessors.PlayerTabOverlayAccessor",
 
-    "AbstractArrowMixin",
     "ChatHudInvoker",
     "ChatHudMixin",
     "FishCopyChatMixin",

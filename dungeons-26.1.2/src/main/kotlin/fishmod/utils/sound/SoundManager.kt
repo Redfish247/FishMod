@@ -116,6 +116,29 @@ object SoundManager {
     fun play(data: SoundData, key: String? = null, debounceMs: Long = 0L): Boolean =
         play(SoundEvent.createVariableRangeEvent(data.sound), data.volume, data.pitch, key, debounceMs)
 
+    /** Like [play] but the cue is played "in your ear" — no positional panning / distance falloff. */
+    @JvmStatic
+    @JvmOverloads
+    fun play2D(
+        sound: SoundEvent,
+        volume: Float = 1f,
+        pitch: Float = 1f,
+        key: String? = null,
+        debounceMs: Long = 0L,
+    ): Boolean {
+        if (!enabled) return false
+        val v = volume * masterVol
+        if (v <= 0f) return false
+        if (key != null && debounceMs > 0L) {
+            val now = System.currentTimeMillis()
+            val prev = lastPlayed[key]
+            if (prev != null && now - prev < debounceMs) return false
+            lastPlayed[key] = now
+        }
+        Misc.sendSound2D(sound, v, pitch)
+        return true
+    }
+
     /** High-pitched confirmation blip. */
     @JvmStatic
     @JvmOverloads

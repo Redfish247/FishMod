@@ -7,18 +7,20 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 
 /**
- * A non-positional cue (relative, no attenuation, at the listener) whose effective gain may go past
- * 1.0 — see {@link FishLoudSound}. The instance volume stays 1.0; the extra loudness is applied as a
- * multiplier by the sound-engine mixins so it stacks correctly with the player's category sliders.
+ * A non-positional cue: relative, no attenuation, at the listener — i.e. "in your ear", no panning
+ * or distance falloff. Its effective gain may also exceed 1.0 (see {@link FishLoudSound}): the
+ * instance volume is capped at 1.0 and any excess is applied as a multiplier by the sound-engine
+ * mixins, so the ">100%" cue sliders actually get louder.
  */
 public class LoudSoundInstance extends SimpleSoundInstance implements FishLoudSound {
 
     private final float boost;
 
-    public LoudSoundInstance(SoundEvent event, float pitch, float boost) {
-        super(event.location(), SoundSource.PLAYERS, 1.0f, pitch, RandomSource.create(),
-                false, 0, SoundInstance.Attenuation.NONE, 0.0, 0.0, 0.0, true);
-        this.boost = Math.max(1.0f, Math.min(boost, 8.0f));
+    /** @param volume 0..~8 as a linear factor (1.0 = 100%). */
+    public LoudSoundInstance(SoundEvent event, float volume, float pitch) {
+        super(event.location(), SoundSource.PLAYERS, Math.min(Math.max(volume, 0f), 1.0f), pitch,
+                RandomSource.create(), false, 0, SoundInstance.Attenuation.NONE, 0.0, 0.0, 0.0, true);
+        this.boost = Math.max(1.0f, Math.min(volume, 8.0f));
     }
 
     @Override

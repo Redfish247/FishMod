@@ -85,8 +85,17 @@ object Misc {
                 // Minecraft clamps a sound instance's gain to 1.0, so volume > 1 via playSound()
                 // only widens the falloff radius, never the loudness. Route through a
                 // LoudSoundInstance whose gain the SoundEngine/Channel mixins let exceed 1.0.
-                INSTANCE.soundManager.play(fishmod.utils.sound.LoudSoundInstance(soundEvent, pitch, volume))
+                INSTANCE.soundManager.play(fishmod.utils.sound.LoudSoundInstance(soundEvent, volume, pitch))
             }
+        }
+    }
+
+    /** Play a cue "in your ear" — no positional panning or distance falloff, any volume incl. >100%. */
+    @JvmStatic
+    fun sendSound2D(soundEvent: SoundEvent, volume: Float, pitch: Float) {
+        if (INSTANCE.player == null) return
+        forceMainThread {
+            INSTANCE.soundManager.play(fishmod.utils.sound.LoudSoundInstance(soundEvent, volume, pitch))
         }
     }
 

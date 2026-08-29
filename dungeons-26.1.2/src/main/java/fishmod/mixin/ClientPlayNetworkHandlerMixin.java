@@ -62,6 +62,8 @@ public class ClientPlayNetworkHandlerMixin {
             Misc.addChatMessage(Component.literal("Sound: " + event.location() + " Volume: " + volume + " Pitch: " + pitch));
         }
 
+        fishmod.features.ArrowHitSound.onArrowHitSoundAt(event.location(), packet.getX(), packet.getY(), packet.getZ());
+
         if (Events.ON_SOUND.invoke(soundEvent -> soundEvent.onSound(event, volume, pitch))) {
             ci.cancel();
         }
