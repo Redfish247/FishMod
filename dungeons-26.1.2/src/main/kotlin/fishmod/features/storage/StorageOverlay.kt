@@ -177,10 +177,11 @@ object StorageOverlay {
         val smx = (mouseX / s).toInt()
         val smy = (mouseY / s).toInt()
 
-        // opaque backdrop so the vanilla chest GUI behind it is fully hidden
+        // frost + a light dim; the vanilla slots are suppressed by the mixin (extractSlots cancel),
+        // so the game stays visible around the panel without the "weird boxes".
         runCatching { ctx.blurBeforeThisStratum() }
         runCatching { ctx.nextStratum() }
-        rect(ctx, 0, 0, vw + 2, vh + 2, 0xFF0E0E14.toInt())
+        rect(ctx, 0, 0, vw + 2, vh + 2, 0x66_0A0A12)
 
         val menu = screen.menu
         val chestEnd = rowCountOf(menu) * 9
@@ -199,6 +200,7 @@ object StorageOverlay {
         drawPlayerInventory(ctx, smx, smy, mouseX, mouseY)
         drawPagesDecorations(ctx, data, active, chestSlots)
         drawPlayerInventoryDecorations(ctx)
+        drawCarriedItem(ctx, smx, smy)
 
         ctx.pose().popMatrix()
 
@@ -395,6 +397,18 @@ object StorageOverlay {
             val (sx, sy) = playerSlotPos(i)
             if (!deco.isEmpty) ctx.itemDecorations(font, deco, sx, sy)
         }
+    }
+
+    /** The overlay covers the vanilla screen, so it has to draw the cursor-carried stack itself. */
+    private fun drawCarriedItem(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
+        val carried = screenMenu()?.carried ?: return
+        if (carried.isEmpty) return
+        val shown = dragPreview?.let { carried.copyWithCount(it.carriedCount) } ?: carried
+        if (shown.isEmpty) return
+        val x = mouseX - 8
+        val y = mouseY - 8
+        ctx.item(shown, x, y)
+        ctx.itemDecorations(font, shown, x, y)
     }
 
     // ── slot resolution + click dispatch (Noamm) ────────────────────────────
