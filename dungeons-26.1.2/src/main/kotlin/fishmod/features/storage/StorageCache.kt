@@ -105,12 +105,6 @@ object StorageCache {
         val menu = screen.menu as? ChestMenu ?: return   // storage pages are always chest menus
         val rows = menu.rowCount
         if (rows < 2) return                              // row 0 is the nav row; need >= 1 content row
-        val contentRows = rows - 1
-        // If the API told us the page's real size, only snapshot once the window matches it — a
-        // partially-synced container is what produced stunted pages.
-        val exp = expectedRows[page.index]
-        if (exp != null && contentRows != exp) return
-
         val items = menu.slots.subList(9, rows * 9).map { it.item.copy() }
         pages[page.index] = NBTInventory(items)
         known.add(page.index)

@@ -89,13 +89,7 @@ object StorageOverlay {
     private fun allData(): TreeMap<StoragePage, NBTInventory?> {
         val out = TreeMap<StoragePage, NBTInventory?>()
         val view = StorageCache.view()
-        for (i in (StorageCache.knownPages() + view.keys).sorted()) {
-            val inv = view[i]
-            // If the API told us this page's real size, drop a cached snapshot that's smaller than
-            // that (a stale partial capture) and show "click to load" instead.
-            val exp = StorageCache.expectedRows(i)
-            out[StoragePage(i)] = if (inv != null && exp != null && inv.rows < exp) null else inv
-        }
+        for (i in (StorageCache.knownPages() + view.keys).sorted()) out[StoragePage(i)] = view[i]
         return out
     }
 
