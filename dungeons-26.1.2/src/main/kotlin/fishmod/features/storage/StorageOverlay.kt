@@ -1,57 +1,76 @@
 package fishmod.features.storage
 
+import fishmod.features.ScreenTheme
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.client.input.MouseButtonEvent
+import net.minecraft.core.component.DataComponents
+import net.minecraft.network.chat.Component
+import net.minecraft.world.entity.player.Inventory
+import net.minecraft.world.inventory.AbstractContainerMenu
 import net.minecraft.world.inventory.ChestMenu
 import net.minecraft.world.inventory.ContainerInput
+import net.minecraft.world.inventory.Slot
 import net.minecraft.world.item.ItemStack
 import org.lwjgl.glfw.GLFW
-import kotlin.math.max
+import java.util.TreeMap
 
 /**
- * Storage Overlay — a close port of NoammAddons' StorageOverlayScreen: while a Storage / ender-chest
- * / backpack GUI is open, draw every cached page (the open one live) in a scrollable panel with the
- * player inventory beneath, a search box and a scroll bar. Clicking a slot on the open page does a
- * real container click; clicking anything on another (or an un-cached) page opens it.
+ * Storage overlay — a faithful port of NoammAddons' `StorageOverlayScreen` (Noamm9/NoammAddons,
+ * branch 26.1.2), wired to FishMod's mixin hooks and render helpers instead of Noamm's Render2D /
+ * ItemRenderer / Resolution / config stack. Page contents come from [StorageCache] (captured as you
+ * page through `/storage`). Layout math, drag-to-place, scrollbar grab and page centering match the
+ * original.
  */
 object StorageOverlay {
 
-    private const val SLOT = 17
-    private const val PAD = 10
-    private const val PAGE_W = SLOT * 9 + 4
-    private const val SCROLL_W = 8
-    private const val SCROLL_KNOB = 16
-    private const val PLAYER_W = SLOT * 9 + 6
-    private const val PLAYER_H = SLOT * 4 + 18
+    // ── layout constants (Noamm) ─────────────────────────────────────────────
+    private const val SLOT_SIZE = 17           // 17 not 16 — 1px border
+    private const val PADDING = 10
+    private const val PAGE_WIDTH = SLOT_SIZE * 9 + 4
+    private const val ACTIVE_PAGE_BORDER_THICKNESS = 2
+    private const val SCROLL_BAR_WIDTH = 8
+    private const val SCROLL_BAR_HEIGHT = 16
+    private const val PLAYER_WIDTH = SLOT_SIZE * 9 + 6
+    private const val PLAYER_HEIGHT = SLOT_SIZE * 4 + 18
 
-    // liquid-glass palette (translucent — the game is blurred behind)
-    private val MENU_BG = 0x55_1B2130
-    private val GLASS_TOP = 0x26_FFFFFF
-    private val GLASS_BOT = 0x06_FFFFFF
-    private val MENU_BORDER = 0x55_FFFFFF
-    private val EDGE_D = 0x33_000000
-    private val CELL_BG = 0x2A_10121C
-    private val CELL_BORDER = 0x22_8FA0C0
-    private val UNLOADED_BG = 0x33_2A3242
-    private val ACTIVE_BORDER = 0xFF3BC9C0.toInt()
-    private val SCROLL_BG = 0x33_101018
-    private val SCROLL_FG = 0x66_C8D2E6
-    private val FIELD_BG = 0x50_0A0C14
-    private val BLACKOUT = 0x66_0A0A12
-    private val DIM = 0xB0000000.toInt()
+    // ── colours (Noamm's java.awt.Color values -> ARGB) ──────────────────────
+    private const val MENU_BG = 0xFF18181B.toInt()
+    private const val MENU_BORDER = 0xFF3C3C41.toInt()
+    private const val SLOT_BG = 0xC8323237.toInt()
+    private const val SLOT_CELL_BG = 0xFF1E1E22.toInt()
+    private const val SLOT_CELL_BORDER = 0xFF37373C.toInt()
+    private const val SCROLL_BG = 0xB41E1E23.toInt()
+    private const val SCROLL_KNOB = 0xFF787882.toInt()
+    private const val HOVER_WHITE = 0x32FFFFFF
+    private const val TEXT_DIM = 0xFFB4B4B4.toInt()
+    private const val SEARCH_MATCH = 0x5533C9C0
+    private val ACCENT get() = ScreenTheme.ACCENT
 
-    @Volatile var search = ""
-    private var searchFocused = false
+    // ── per-open state ───────────────────────────────────────────────────────
     private var scroll = 0f
-    private var innerHeight = 0
+    private var lastRenderedInnerHeight = 0
+    private var pageWidthCount = 3
+    private var knobGrabbed = false
+    private var hoveredOverlayItem: ItemStack? = null
 
-    private val slotHits = ArrayList<IntArray>()   // x, y, pageIdx, cacheIdx
-    private val pageHits = ArrayList<IntArray>()    // x, y, w, h, pageIdx
-    private val playerHits = ArrayList<IntArray>()  // x, y, playerSlot
-    private var fieldHit = IntArray(4)
-    private var scrollBar = IntArray(4)
+    private var dragType = 0
+    private var dragStartSlot: Slot? = null
+    private val dragSlots = LinkedHashSet<Int>()
+    private var dragPreview: DragPreview? = null
+    private val dragArmed get() = dragStartSlot != null
+    private val dragActive get() = dragSlots.size >= 2
+
+    // search (FishMod keeps a small field — Noamm relies on a global InventorySearch we don't have)
+    var search = ""
+    private var searchFocused = false
+
+    private val mc get() = Minecraft.getInstance()
+    private val font get() = mc.font
+    private val scale get() = FishSettings.storageOverlayScale.coerceIn(0.5, 2.0).toFloat()
 
     private fun on(screen: AbstractContainerScreen<*>): Boolean {
         if (!FishSettings.storageOverlayEnabled) return false
@@ -59,227 +78,488 @@ object StorageOverlay {
         return t == "Storage" || StoragePage.fromTitle(t) != null
     }
 
-    private fun activeIdx(screen: AbstractContainerScreen<*>): Int =
-        StoragePage.fromTitle(screen.title.string.replace(Regex("§."), ""))?.index ?: -1
+    private fun activePage(screen: AbstractContainerScreen<*>): StoragePage? =
+        StoragePage.fromTitle(screen.title.string.replace(Regex("§."), ""))
+
+    // ── data: build Noamm's SortedMap<StoragePage, NBTInventory?> from StorageCache ──
+    private fun allData(): TreeMap<StoragePage, NBTInventory?> {
+        val out = TreeMap<StoragePage, NBTInventory?>()
+        val view = StorageCache.view()
+        for (i in (StorageCache.knownPages() + view.keys).sorted()) out[StoragePage(i)] = view[i]
+        return out
+    }
+
+    private val isSearching get() = search.isNotBlank()
+    private val shouldFilterPages get() = FishSettings.storageHideNonMatching && isSearching
 
     private fun matches(s: ItemStack): Boolean {
-        if (search.isBlank()) return true
+        if (s.isEmpty) return false
         val q = search.lowercase()
         if (s.hoverName.string.lowercase().contains(q)) return true
-        val lore = s.get(net.minecraft.core.component.DataComponents.LORE) ?: return false
+        val lore = s.get(DataComponents.LORE) ?: return false
         return lore.lines().any { it.string.lowercase().contains(q) }
     }
 
-    // ── render ───────────────────────────────────────────────────────────────
+    private fun visibleData(activePage: StoragePage?, activeSlots: List<Slot>?): TreeMap<StoragePage, NBTInventory?> {
+        val data = allData()
+        if (!shouldFilterPages) return data
+        return TreeMap<StoragePage, NBTInventory?>().apply {
+            for ((page, inv) in data) {
+                val hit = if (page == activePage && activeSlots != null) activeSlots.any { matches(it.item) }
+                else inv?.stacks?.any(::matches) == true
+                if (hit) this[page] = inv
+            }
+        }
+    }
+
+    // ── geometry (Noamm Measurements) ────────────────────────────────────────
+    private var vw = 0
+    private var vh = 0
+    private var mx0 = 0; private var my0 = 0
+    private var overviewW = 0; private var overviewH = 0
+    private var innerW = 0; private var innerH = 0
+    private var playerX0 = 0; private var playerY0 = 0
+
+    private fun recomputeGeometry() {
+        vw = (mc.window.guiScaledWidth / scale).toInt()
+        vh = (mc.window.guiScaledHeight / scale).toInt()
+        pageWidthCount = FishSettings.storageViewerColumns.coerceIn(1, 10)
+            .coerceAtMost(((vw - PADDING) / (PAGE_WIDTH + PADDING)).coerceAtLeast(1))
+        innerW = PAGE_WIDTH * pageWidthCount + (pageWidthCount - 1) * PADDING
+        overviewW = innerW + 3 * PADDING + SCROLL_BAR_WIDTH
+        mx0 = vw / 2 - overviewW / 2
+        overviewH = minOf(vh - PLAYER_HEIGHT - minOf(80, vh / 10), FishSettings.storageMaxHeight.coerceIn(80, 900))
+        innerH = overviewH - PADDING * 2
+        my0 = vh / 2 - (overviewH + PLAYER_HEIGHT) / 2
+        playerX0 = vw / 2 - PLAYER_WIDTH / 2
+        playerY0 = my0 + overviewH + 2
+    }
+
+    private val scrollPanelX get() = mx0 + PADDING
+    private val scrollPanelY get() = my0 + PADDING
+    private val scrollPanelW get() = innerW
+    private val scrollPanelH get() = innerH
+    private val scrollBarX get() = mx0 + PADDING + innerW + PADDING
+    private val scrollBarY get() = my0 + PADDING
+    private val scrollBarH get() = innerH
+    private val maxScroll get() = (lastRenderedInnerHeight.toFloat() + 6 - innerH).coerceAtLeast(0f)
+
+    private fun screenMenu(): AbstractContainerMenu? =
+        (mc.screen as? AbstractContainerScreen<*>)?.menu
+
+    private fun rowCountOf(menu: AbstractContainerMenu): Int =
+        (menu as? ChestMenu)?.rowCount ?: ((menu.slots.size - 36) / 9)
+
+    // ── entry points (called from HandledScreenMixin) ───────────────────────
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
         if (!on(screen)) return
-        slotHits.clear(); pageHits.clear(); playerHits.clear()
-        val mc = Minecraft.getInstance()
-        val font = mc.font
-        val W = screen.width; val H = screen.height
+        updateBounds(screen)
+        recomputeGeometry()
+        dragPreview = computeDragPreview()
+        val prevHovered = hoveredOverlayItem
+        hoveredOverlayItem = null
 
-        // frost the game, then a translucent tint over the (now hidden) vanilla GUI
+        val s = scale
+        ctx.pose().pushMatrix()
+        ctx.pose().scale(s, s)
+        val smx = (mouseX / s).toInt()
+        val smy = (mouseY / s).toInt()
+
+        // frosted backdrop so vanilla content is hidden
         runCatching { ctx.blurBeforeThisStratum() }
         runCatching { ctx.nextStratum() }
-        ctx.fill(0, 0, W, H, BLACKOUT)
+        rect(ctx, 0, 0, vw, vh, 0x66_0A0A12)
 
-        val active = activeIdx(screen)
-        val pages: List<Pair<Int, List<ItemStack>?>> = buildPages(screen, active)
+        val menu = screen.menu
+        val chestEnd = rowCountOf(menu) * 9
+        val chestSlots = if (chestEnd > 9) menu.slots.subList(9, chestEnd) else emptyList()
+        val active = activePage(screen)
+        val data = visibleData(active, chestSlots)
+        if (shouldFilterPages) updateLayoutHeight(data)
 
-        val cols = FishSettings.storageViewerColumns.coerceIn(1, 10)
-            .coerceAtMost(max(1, (W - PAD) / (PAGE_W + PAD)))
-        val innerW = PAGE_W * cols + (cols - 1) * PAD
-        val overviewW = innerW + 3 * PAD + SCROLL_W
-        val overviewH = (H - PLAYER_H - minOf(80, H / 10))
-            .coerceAtMost(FishSettings.storageMaxHeight.coerceIn(120, 900)).coerceIn(120, 900)
-        val innerH = overviewH - PAD * 2
-        val ox = W / 2 - overviewW / 2
-        val oy = H / 2 - (overviewH + PLAYER_H) / 2
-        val playerX = W / 2 - PLAYER_W / 2
-        val playerY = oy + overviewH + 2
+        // main panel
+        rect(ctx, mx0, my0, overviewW, overviewH, MENU_BG)
+        border(ctx, mx0, my0, overviewW, overviewH, MENU_BORDER, 1)
 
-        // main panel — glass: translucent base, top sheen, bright top/left lip, dark bottom/right
-        ctx.fill(ox, oy, ox + overviewW, oy + overviewH, MENU_BG)
-        runCatching { ctx.fillGradient(ox, oy, ox + overviewW, oy + overviewH / 2, GLASS_TOP, GLASS_BOT) }
-        ctx.fill(ox, oy, ox + overviewW, oy + 1, MENU_BORDER)
-        ctx.fill(ox, oy, ox + 1, oy + overviewH, MENU_BORDER)
-        ctx.fill(ox, oy + overviewH - 1, ox + overviewW, oy + overviewH, EDGE_D)
-        ctx.fill(ox + overviewW - 1, oy, ox + overviewW, oy + overviewH, EDGE_D)
+        drawHeader(ctx, smx, smy)
+        drawPages(ctx, data, smx, smy, active, chestSlots, mouseX, mouseY)
+        drawScrollBar(ctx)
+        drawPlayerInventory(ctx, smx, smy, mouseX, mouseY)
+        drawPagesDecorations(ctx, data, active, chestSlots)
+        drawPlayerInventoryDecorations(ctx)
 
-        // header: title + search field
-        ctx.text(font, "§fStorage  §7${pages.size} pages", ox + PAD, oy + 4, -1)
-        val fw = 150; val fh = 12
-        val fx = ox + overviewW - fw - PAD; val fy = oy + 2
-        fieldHit = intArrayOf(fx, fy, fw, fh)
-        ctx.fill(fx, fy, fx + fw, fy + fh, FIELD_BG)
-        border(ctx, fx, fy, fw, fh, if (searchFocused) ACTIVE_BORDER else CELL_BORDER)
-        ctx.text(font, if (search.isEmpty()) "§8search…" else "§f$search${if (searchFocused && blink()) "_" else ""}", fx + 3, fy + 2, -1)
+        ctx.pose().popMatrix()
 
-        // scrolling page area
-        val panelX = ox + PAD
-        val panelY = oy + PAD + 12
-        val panelH = innerH - 12
-        runCatching { ctx.enableScissor(panelX, panelY, panelX + innerW + 2, panelY + panelH) }
-
-        var y = panelY - scroll.toInt()
-        var x = panelX
-        var col = 0
-        var rowMax = 0
-        var hoverStack: ItemStack? = null
-
-        for ((idx, stacks) in pages) {
-            if (FishSettings.storageHideNonMatching && search.isNotBlank() && stacks != null && stacks.none { matches(it) }) continue
-            val ph: Int
-            if (stacks == null) {
-                ctx.fill(x, y, x + PAGE_W, y + 18, UNLOADED_BG)
-                border(ctx, x, y, PAGE_W, 18, MENU_BORDER)
-                ctx.text(font, "§7${StoragePage(idx).name} §8— click to load", x + 4, y + 5, -1)
-                pageHits.add(intArrayOf(x, y, PAGE_W, 18, idx))
-                ph = 18
-            } else {
-                val rows = max(1, (stacks.size + 8) / 9)
-                val slotsY = y + 5 + font.lineHeight
-                ph = rows * SLOT + 8 + font.lineHeight
-                val isActive = idx == active
-                if (isActive) border(ctx, x, y, PAGE_W + 1, ph, ACTIVE_BORDER)
-                ctx.text(font, (if (isActive) "§b" else "§f") + StoragePage(idx).name + (if (isActive) " §7(open)" else ""), x + 4, y + 3, -1)
-                grid(ctx, x + 2, slotsY, rows)
-                for (i in stacks.indices) {
-                    val sx = x + 3 + (i % 9) * SLOT
-                    val sy = slotsY + 1 + (i / 9) * SLOT
-                    val st = stacks[i]
-                    if (!st.isEmpty) {
-                        ctx.item(st, sx, sy)
-                        ctx.itemDecorations(font, st, sx, sy)
-                        if (search.isNotBlank() && !matches(st)) ctx.fill(sx, sy, sx + 16, sy + 16, DIM)
-                    }
-                    slotHits.add(intArrayOf(sx, sy, idx, i))
-                    if (mouseX in sx..(sx + 16) && mouseY in sy..(sy + 16) && !st.isEmpty) hoverStack = st
-                }
-                pageHits.add(intArrayOf(x, y, PAGE_W, 5 + font.lineHeight, idx))
-            }
-            rowMax = max(rowMax, ph + 6)
-            col++
-            if (col >= cols) { col = 0; x = panelX; y += rowMax; rowMax = 0 } else x += PAGE_W + PAD
-        }
-        innerHeight = (y + rowMax - (panelY - scroll.toInt()))
-        runCatching { ctx.disableScissor() }
-
-        // scroll bar
-        val sbX = ox + PAD + innerW + PAD
-        scrollBar = intArrayOf(sbX, panelY, SCROLL_W, panelH)
-        ctx.fill(sbX, panelY, sbX + SCROLL_W, panelY + panelH, SCROLL_BG)
-        val maxS = maxScroll(panelH)
-        if (maxS > 0f) {
-            val ky = panelY + ((scroll / maxS) * (panelH - SCROLL_KNOB)).toInt()
-            ctx.fill(sbX, ky, sbX + SCROLL_W, ky + SCROLL_KNOB, SCROLL_FG)
-        }
-
-        // player inventory
-        drawPlayerInv(ctx, screen, playerX, playerY, mouseX, mouseY)?.let { hoverStack = it }
-
-        if (pages.isEmpty()) ctx.text(font, "§7Page through /storage once to cache your pages.", panelX + 6, panelY + 6, -1)
-        hoverStack?.let { ctx.setTooltipForNextFrame(font, it, mouseX, mouseY) }
+        if (hoveredOverlayItem !== prevHovered) { /* tooltip-scroll reset hook — no-op here */ }
     }
 
-    private fun drawPlayerInv(ctx: GuiGraphicsExtractor, screen: AbstractContainerScreen<*>, px: Int, py: Int, mouseX: Int, mouseY: Int): ItemStack? {
-        val items = Minecraft.getInstance().player?.inventory?.nonEquipmentItems ?: return null
-        val font = Minecraft.getInstance().font
-        val baseX = px + (PLAYER_W - 9 * SLOT) / 2
-        val invY = py + 8
-        val hotY = invY + 3 * SLOT + 4
-        grid(ctx, baseX - 1, invY - 1, 3)
-        grid(ctx, baseX - 1, hotY - 1, 1)
-        var hover: ItemStack? = null
+    private fun drawHeader(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
+        ctx.text(font, "§fStorage  §7${allData().size} pages", mx0 + PADDING, my0 + 4, -1, false)
+        // small search field, right side of the header
+        val fw = 130; val fh = 12
+        val fx = mx0 + overviewW - fw - PADDING; val fy = my0 + 2
+        rect(ctx, fx, fy, fw, fh, 0x500A0C14)
+        border(ctx, fx, fy, fw, fh, if (searchFocused) ACCENT else SLOT_CELL_BORDER, 1)
+        val shown = if (search.isEmpty()) "§8search…" else "§f$search${if (searchFocused && (System.currentTimeMillis() / 500) % 2 == 0L) "_" else ""}"
+        ctx.text(font, shown, fx + 3, fy + 2, -1, false)
+        searchFieldRect = intArrayOf(fx, fy, fw, fh)
+    }
+
+    private var searchFieldRect = IntArray(4)
+
+    // ── page grid ───────────────────────────────────────────────────────────
+    private inline fun layoutedForEach(
+        data: TreeMap<StoragePage, NBTInventory?>,
+        func: (x: Int, y: Int, pageWidth: Int, pageHeight: Int, page: StoragePage, inv: NBTInventory?) -> Unit,
+    ) {
+        var yOffset = -scroll.toInt()
+        var xOffset = 0
+        var maxHeight = 0
+        for ((page, inv) in data.entries) {
+            val h = inv?.let { it.rows * SLOT_SIZE + 6 + font.lineHeight } ?: 18
+            maxHeight = maxOf(maxHeight, h)
+            val rectX = mx0 + PADDING + (PAGE_WIDTH + PADDING) * xOffset
+            val rectY = yOffset + my0 + PADDING
+            func(rectX, rectY, PAGE_WIDTH, h, page, inv)
+            xOffset++
+            if (xOffset >= pageWidthCount) { yOffset += maxHeight; xOffset = 0; maxHeight = 0 }
+        }
+        lastRenderedInnerHeight = maxHeight + yOffset + scroll.toInt()
+    }
+
+    private fun updateLayoutHeight(data: TreeMap<StoragePage, NBTInventory?>) {
+        lastRenderedInnerHeight = data.entries.chunked(pageWidthCount)
+            .sumOf { row -> row.maxOf { (_, inv) -> inv?.let { it.rows * SLOT_SIZE + 6 + font.lineHeight } ?: 18 } }
+        scroll = scroll.coerceIn(0f, maxScroll)
+    }
+
+    private fun drawPages(
+        ctx: GuiGraphicsExtractor, data: TreeMap<StoragePage, NBTInventory?>,
+        mouseX: Int, mouseY: Int, excluding: StoragePage?, slots: List<Slot>?, origMx: Int, origMy: Int,
+    ) {
+        scissor(ctx, scrollPanelX, scrollPanelY, scrollPanelW + ACTIVE_PAGE_BORDER_THICKNESS, scrollPanelH)
+        val viewTop = scrollPanelY
+        val viewBot = scrollPanelY + scrollPanelH
+        layoutedForEach(data) { x, y, _, ph, page, inv ->
+            if (y + ph < viewTop || y > viewBot) return@layoutedForEach
+            drawPage(ctx, x, y, page, inv, if (excluding == page) slots else null, mouseX, mouseY, origMx, origMy)
+        }
+        ctx.disableScissor()
+    }
+
+    private fun drawPagesDecorations(
+        ctx: GuiGraphicsExtractor, data: TreeMap<StoragePage, NBTInventory?>, excluding: StoragePage?, slots: List<Slot>?,
+    ) {
+        scissor(ctx, scrollPanelX, scrollPanelY, scrollPanelW + ACTIVE_PAGE_BORDER_THICKNESS, scrollPanelH)
+        val viewTop = scrollPanelY
+        val viewBot = scrollPanelY + scrollPanelH
+        layoutedForEach(data) { x, y, _, ph, page, inv ->
+            if (y + ph < viewTop || y > viewBot) return@layoutedForEach
+            val rows = inv?.rows ?: (if (excluding == page) (slots?.size?.div(9)?.coerceIn(1, 5) ?: 3) else 0)
+            if (rows == 0 && inv == null) return@layoutedForEach
+            val slotsY = y + 5 + font.lineHeight
+            val invStacks = inv?.stacks
+            val count = invStacks?.size ?: (if (excluding == page) slots?.size ?: (rows * 9) else 0)
+            for (i in 0 until count) {
+                val sx = (i % 9) * SLOT_SIZE + x + 3
+                val sy = (i / 9) * SLOT_SIZE + slotsY + 1
+                if (sy + 16 < viewTop || sy > viewBot) continue
+                val menuSlot = if (excluding == page && slots != null && i < slots.size) slots[i] else null
+                val deco = menuSlot?.let { dragPreview?.stacks?.get(it.index) } ?: menuSlot?.item ?: invStacks?.getOrNull(i) ?: continue
+                if (!deco.isEmpty) ctx.itemDecorations(font, deco, sx, sy)
+            }
+        }
+        ctx.disableScissor()
+    }
+
+    private fun drawPage(
+        ctx: GuiGraphicsExtractor, x: Int, y: Int, page: StoragePage, inv: NBTInventory?, slots: List<Slot>?,
+        mouseX: Int, mouseY: Int, origMx: Int, origMy: Int,
+    ): Int {
+        if (inv == null && slots == null) {
+            rect(ctx, x, y, PAGE_WIDTH, 18, SLOT_BG)
+            border(ctx, x, y, PAGE_WIDTH, 18, MENU_BORDER, 1)
+            ctx.text(font, "${page.name} - Click to load", x + 4, y + 5, TEXT_DIM, false)
+            return 18
+        }
+        val rows = inv?.rows ?: (slots?.size?.div(9)?.coerceIn(1, 5) ?: 3)
+        val isActive = slots != null
+        val slotsY = y + 5 + font.lineHeight
+        val pageHeight = rows * SLOT_SIZE + 8 + font.lineHeight
+
+        if (isActive) border(ctx, x, y, PAGE_WIDTH + 1, pageHeight, ACCENT, ACTIVE_PAGE_BORDER_THICKNESS)
+        ctx.text(font, Component.literal(page.name), x + 6, y + 3, if (isActive) ACCENT else -1, true)
+
+        drawSlotGrid(ctx, x + 2, slotsY, rows)
+
+        val invStacks = inv?.stacks
+        val count = invStacks?.size ?: (slots?.size ?: (rows * 9))
+        var hovered: ItemStack? = null
+        for (i in 0 until count) {
+            val sx = (i % 9) * SLOT_SIZE + x + 3
+            val sy = (i / 9) * SLOT_SIZE + slotsY + 1
+            if (sy + 16 < scrollPanelY || sy > scrollPanelY + scrollPanelH) continue
+            val menuSlot = if (slots != null && i < slots.size) slots[i] else null
+            val display = menuSlot?.item ?: invStacks?.getOrNull(i) ?: continue
+            val renderStack = menuSlot?.let { dragPreview?.stacks?.get(it.index) } ?: display
+            val hot = inRect(mouseX, mouseY, sx - 1, sy - 1, 18, 18) &&
+                inRect(mouseX, mouseY, scrollPanelX, scrollPanelY, scrollPanelW, scrollPanelH)
+            if (!renderStack.isEmpty) {
+                if (isSearching && matches(renderStack)) rect(ctx, sx, sy, 16, 16, SEARCH_MATCH)
+                ctx.item(renderStack, sx, sy)
+                if (hot && hovered == null && !display.isEmpty) hovered = display
+            }
+            if (hot) rect(ctx, sx, sy, 16, 16, HOVER_WHITE)
+        }
+        if (hovered != null) {
+            if (isActive) hoveredOverlayItem = hovered
+            ctx.setTooltipForNextFrame(font, hovered, origMx, origMy)
+        }
+        return pageHeight + 6
+    }
+
+    private fun drawSlotGrid(ctx: GuiGraphicsExtractor, x: Int, y: Int, rows: Int) {
+        val w = 9 * SLOT_SIZE
+        val h = rows * SLOT_SIZE
+        ctx.fill(x, y, x + w, y + h, SLOT_CELL_BG)
+        for (c in 0..9) ctx.fill(x + c * SLOT_SIZE, y, x + c * SLOT_SIZE + 1, y + h, SLOT_CELL_BORDER)
+        for (r in 0..rows) ctx.fill(x, y + r * SLOT_SIZE, x + w, y + r * SLOT_SIZE + 1, SLOT_CELL_BORDER)
+    }
+
+    private fun drawScrollBar(ctx: GuiGraphicsExtractor) {
+        rect(ctx, scrollBarX, scrollBarY, SCROLL_BAR_WIDTH, scrollBarH, SCROLL_BG)
+        val ms = maxScroll
+        val pct = if (ms > 0) scroll / ms else 0f
+        val knobY = scrollBarY + (pct * (scrollBarH - SCROLL_BAR_HEIGHT)).toInt()
+        rect(ctx, scrollBarX, knobY, SCROLL_BAR_WIDTH, SCROLL_BAR_HEIGHT, SCROLL_KNOB)
+    }
+
+    // ── player inventory ────────────────────────────────────────────────────
+    private fun playerSlotPos(index: Int): Pair<Int, Int> {
+        val slotsWidth = 9 * SLOT_SIZE
+        val baseX = playerX0 + (PLAYER_WIDTH - slotsWidth) / 2 - SLOT_SIZE / 2 + 1
+        val baseY = playerY0 + 8
+        return if (index < 9) Pair(baseX + index * SLOT_SIZE, baseY + 3 * SLOT_SIZE + 4)
+        else Pair(baseX + (index % 9) * SLOT_SIZE, baseY + (index / 9 - 1) * SLOT_SIZE)
+    }
+
+    private fun playerSlotIndexAt(mouseX: Int, mouseY: Int): Int? {
         for (i in 0 until 36) {
-            val col = i % 9
-            val sx = baseX + col * SLOT
-            val sy = if (i < 9) hotY else invY + (i / 9 - 1) * SLOT
-            val st = items[i]
-            if (!st.isEmpty) { ctx.item(st, sx, sy); ctx.itemDecorations(font, st, sx, sy) }
-            playerHits.add(intArrayOf(sx, sy, i))
-            if (mouseX in sx..(sx + 16) && mouseY in sy..(sy + 16) && !st.isEmpty) hover = st
+            val (sx, sy) = playerSlotPos(i)
+            if (inRect(mouseX, mouseY, sx, sy, 17, 17)) return i
         }
-        return hover
+        return null
     }
 
-    private fun buildPages(screen: AbstractContainerScreen<*>, active: Int): List<Pair<Int, List<ItemStack>?>> {
-        val map = sortedMapOf<Int, List<ItemStack>?>()
-        for ((i, inv) in StorageCache.view()) map[i] = inv.stacks
-        // only offer "click to load" for pages we know exist (learned from the /storage overview)
-        for (i in StorageCache.knownPages()) map.putIfAbsent(i, null)
-        if (active >= 0) {
-            val menu = screen.menu
-            val rc = (menu as? ChestMenu)?.rowCount ?: ((menu.slots.size - 36) / 9)
-            if (rc > 1) {
-                val live = menu.slots.subList(9, rc * 9).map { it.item }
-                map[active] = live
-                StorageCache.put(active, live)   // keep the cache fresh even for a quick click-through
+    private fun drawPlayerInventory(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, origMx: Int, origMy: Int) {
+        val items = mc.player?.inventory?.nonEquipmentItems ?: return
+        val (invX, invY) = playerSlotPos(9)
+        val (hotX, hotY) = playerSlotPos(0)
+        drawSlotGrid(ctx, invX - 1, invY - 1, 3)
+        drawSlotGrid(ctx, hotX - 1, hotY - 1, 1)
+        var hovered: ItemStack? = null
+        for (i in 0 until 36) {
+            val item = items[i]
+            val renderStack = dragPreview?.playerStacks?.get(i) ?: item
+            val (sx, sy) = playerSlotPos(i)
+            val hot = inRect(mouseX, mouseY, sx - 1, sy - 1, 18, 18)
+            if (!renderStack.isEmpty) {
+                if (isSearching && matches(renderStack)) rect(ctx, sx, sy, 16, 16, SEARCH_MATCH)
+                ctx.item(renderStack, sx, sy)
+                if (hovered == null && hot && !item.isEmpty) hovered = item
             }
+            if (hot) rect(ctx, sx, sy, 16, 16, HOVER_WHITE)
         }
-        return map.entries.map { it.key to it.value }
+        if (hovered != null) {
+            hoveredOverlayItem = hovered
+            ctx.setTooltipForNextFrame(font, hovered, origMx, origMy)
+        }
     }
 
-    private fun grid(ctx: GuiGraphicsExtractor, x: Int, y: Int, rows: Int) {
-        val w = 9 * SLOT; val h = rows * SLOT
-        ctx.fill(x, y, x + w, y + h, CELL_BG)
-        for (c in 0..9) ctx.fill(x + c * SLOT, y, x + c * SLOT + 1, y + h, CELL_BORDER)
-        for (r in 0..rows) ctx.fill(x, y + r * SLOT, x + w, y + r * SLOT + 1, CELL_BORDER)
+    private fun drawPlayerInventoryDecorations(ctx: GuiGraphicsExtractor) {
+        val items = mc.player?.inventory?.nonEquipmentItems ?: return
+        for (i in 0 until 36) {
+            val deco = dragPreview?.playerStacks?.get(i) ?: items[i]
+            val (sx, sy) = playerSlotPos(i)
+            if (!deco.isEmpty) ctx.itemDecorations(font, deco, sx, sy)
+        }
     }
 
-    private fun border(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, c: Int) {
-        ctx.fill(x, y, x + w, y + 1, c)
-        ctx.fill(x, y + h - 1, x + w, y + h, c)
-        ctx.fill(x, y, x + 1, y + h, c)
-        ctx.fill(x + w - 1, y, x + w, y + h, c)
+    // ── slot resolution + click dispatch (Noamm) ────────────────────────────
+    private fun activePageSlotAt(mouseX: Double, mouseY: Double, activePage: StoragePage, data: TreeMap<StoragePage, NBTInventory?>): Slot? {
+        val menu = screenMenu() ?: return null
+        val chestEnd = menu.slots.size - 36
+        if (chestEnd <= 9) return null
+        val chestSlots = menu.slots.subList(9, chestEnd)
+        var hit = -1
+        layoutedForEach(data) { x, y, _, _, page, inv ->
+            if (page != activePage) return@layoutedForEach
+            val v = inv ?: return@layoutedForEach
+            val rows = v.rows
+            val gx = x + 3
+            val gy = y + 5 + font.lineHeight + 1
+            if (!inRect(mouseX, mouseY, gx, gy, 9 * SLOT_SIZE, rows * SLOT_SIZE)) return@layoutedForEach
+            val col = ((mouseX - gx) / SLOT_SIZE).toInt().coerceIn(0, 8)
+            val row = ((mouseY - gy) / SLOT_SIZE).toInt().coerceIn(0, rows - 1)
+            hit = row * 9 + col
+        }
+        return chestSlots.getOrNull(hit)
     }
 
-    private fun blink() = (System.currentTimeMillis() / 500) % 2 == 0L
-    private fun maxScroll(panelH: Int) = (innerHeight - panelH + 6).coerceAtLeast(0).toFloat()
+    private fun playerSlotAt(mouseX: Int, mouseY: Int): Slot? {
+        val idx = playerSlotIndexAt(mouseX, mouseY) ?: return null
+        val menu = screenMenu() ?: return null
+        return menu.slots.firstOrNull { it.container is Inventory && it.containerSlot == idx }
+    }
 
-    // ── input ────────────────────────────────────────────────────────────────
+    private fun resolveSlotUnder(mouseX: Double, mouseY: Double, activePage: StoragePage?): Slot? {
+        if (activePage != null) activePageSlotAt(mouseX, mouseY, activePage, visibleData(activePage, null))?.let { return it }
+        return playerSlotAt(mouseX.toInt(), mouseY.toInt())
+    }
+
+    private fun dispatchSlotClick(slot: Slot, button: Int, modifiers: Int, input: ContainerInput? = null): Boolean {
+        val menu = screenMenu() ?: return false
+        val player = mc.player ?: return false
+        val gm = mc.gameMode ?: return false
+        val shift = modifiers and GLFW.GLFW_MOD_SHIFT != 0
+        val type = input ?: if (shift) ContainerInput.QUICK_MOVE else ContainerInput.PICKUP
+        gm.handleContainerInput(menu.containerId, slot.index, button, type, player)
+        return true
+    }
+
+    // ── drag-to-place (Noamm) ───────────────────────────────────────────────
+    private class DragPreview(val stacks: Map<Int, ItemStack>, val playerStacks: Map<Int, ItemStack>, val carriedCount: Int)
+
+    private fun canDragInto(slot: Slot, carried: ItemStack) =
+        slot.mayPlace(carried) && AbstractContainerMenu.canItemQuickReplace(slot, carried, true)
+
+    private fun computeDragPreview(): DragPreview? {
+        if (!dragActive) return null
+        val menu = screenMenu() ?: return null
+        val carried = menu.carried
+        if (carried.isEmpty) return null
+        val eligible = dragSlots.mapNotNull { menu.slots.getOrNull(it) }.filter { canDragInto(it, carried) }.take(carried.count)
+        if (eligible.size < 2) return null
+        val base = AbstractContainerMenu.getQuickCraftPlaceCount(eligible.size, dragType, carried)
+        var remaining = carried.count
+        val stacks = HashMap<Int, ItemStack>()
+        val playerStacks = HashMap<Int, ItemStack>()
+        for (slot in eligible) {
+            val existing = slot.item
+            val existingCount = if (existing.isEmpty) 0 else existing.count
+            val max = minOf(carried.maxStackSize, slot.getMaxStackSize(carried))
+            val amount = (existingCount + base).coerceAtMost(max)
+            remaining -= amount - existingCount
+            val ghost = carried.copyWithCount(amount)
+            stacks[slot.index] = ghost
+            if (slot.container is Inventory) playerStacks[slot.containerSlot] = ghost
+        }
+        return DragPreview(stacks, playerStacks, remaining.coerceAtLeast(0))
+    }
+
+    private fun endDrag() {
+        val menu = screenMenu() ?: return
+        val player = mc.player ?: return
+        val gm = mc.gameMode ?: return
+        val id = menu.containerId
+        gm.handleContainerInput(id, -999, AbstractContainerMenu.getQuickcraftMask(0, dragType), ContainerInput.QUICK_CRAFT, player)
+        for (index in dragSlots) gm.handleContainerInput(id, index, AbstractContainerMenu.getQuickcraftMask(1, dragType), ContainerInput.QUICK_CRAFT, player)
+        gm.handleContainerInput(id, -999, AbstractContainerMenu.getQuickcraftMask(2, dragType), ContainerInput.QUICK_CRAFT, player)
+    }
+
+    // ── input entry points ──────────────────────────────────────────────────
     @JvmStatic
-    fun mouseClicked(button: Int, mx: Double, my: Double, screen: AbstractContainerScreen<*>): Boolean {
+    fun onOverlayClick(click: MouseButtonEvent, doubled: Boolean, screen: AbstractContainerScreen<*>): Boolean {
         if (!on(screen)) return false
-        val ix = mx.toInt(); val iy = my.toInt()
-        if (hit(fieldHit, ix, iy)) { searchFocused = true; return true }
+        val s = scale
+        val rx = click.x() / s
+        val ry = click.y() / s
+        val button = click.button()
+        val modifiers = click.modifiers()
+
+        if (inRect(rx, ry, searchFieldRect[0], searchFieldRect[1], searchFieldRect[2], searchFieldRect[3])) {
+            searchFocused = true; return true
+        }
         searchFocused = false
 
-        val mc = Minecraft.getInstance()
-        val p = mc.player ?: return true
-        val menu = p.containerMenu
-        val shift = GLFW.glfwGetKey(mc.window.handle(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS ||
-            GLFW.glfwGetKey(mc.window.handle(), GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS
-        val type = if (shift) ContainerInput.QUICK_MOVE else ContainerInput.PICKUP
-        val active = activeIdx(screen)
+        val activePage = activePage(screen)
+        val carried = screenMenu()?.carried
+        if (carried != null && !carried.isEmpty && (button == 0 || button == 1)) {
+            val slot = resolveSlotUnder(rx, ry, activePage)
+            if (slot != null) {
+                if (doubled && button == 0) return dispatchSlotClick(slot, 0, 0, ContainerInput.PICKUP_ALL)
+                dragType = button
+                dragStartSlot = slot
+                dragSlots.clear()
+                dragSlots.add(slot.index)
+                return true
+            }
+        }
 
-        for (s in slotHits) {
-            if (ix in s[0]..(s[0] + 16) && iy in s[1]..(s[1] + 16)) {
-                if (s[2] == active) mc.gameMode?.handleContainerInput(menu.containerId, 9 + s[3], button, type, p)
-                else StoragePage(s[2]).open()
-                return true
+        if (inRect(rx, ry, scrollPanelX, scrollPanelY, scrollPanelW, scrollPanelH)) {
+            val data = visibleData(activePage, null)
+            if (activePage != null) activePageSlotAt(rx, ry, activePage, data)?.let { return dispatchSlotClick(it, button, modifiers) }
+            var handled = false
+            layoutedForEach(data) { x, y, pw, ph, page, _ ->
+                if (!handled && inRect(rx, ry, x, y, pw, ph) && activePage != page && button == 0) {
+                    page.open(); handled = true
+                }
             }
+            return handled
         }
-        for (h in playerHits) {
-            if (ix in h[0]..(h[0] + 16) && iy in h[1]..(h[1] + 16)) {
-                val chestSize = menu.slots.size - 36
-                mc.gameMode?.handleContainerInput(menu.containerId, chestSize + h[2], button, type, p)
-                return true
-            }
-        }
-        for (t in pageHits) if (ix in t[0]..(t[0] + t[2]) && iy in t[1]..(t[1] + t[3])) {
-            if (t[4] != active) StoragePage(t[4]).open()
+
+        if (inRect(rx, ry, scrollBarX, scrollBarY, SCROLL_BAR_WIDTH, scrollBarH)) {
+            val pct = ((ry - scrollBarY) / scrollBarH.toDouble()).coerceIn(0.0, 1.0)
+            scroll = (maxScroll * pct).toFloat()
+            knobGrabbed = true
             return true
         }
-        return true // swallow clicks over the blackout
+
+        val playerSlot = playerSlotAt(rx.toInt(), ry.toInt()) ?: return false
+        return dispatchSlotClick(playerSlot, button, modifiers)
     }
 
     @JvmStatic
-    fun mouseScrolled(amount: Double, screen: AbstractContainerScreen<*>): Boolean {
+    fun mouseReleased(screen: AbstractContainerScreen<*>): Boolean {
         if (!on(screen)) return false
-        val panelH = ((screen.height - PLAYER_H - minOf(80, screen.height / 10)).coerceIn(120, 600) - 20 - 12)
-        scroll = (scroll - amount.toFloat() * 24f).coerceIn(0f, maxScroll(panelH))
+        if (dragArmed) {
+            if (dragActive) endDrag()
+            else dragStartSlot?.let {
+                val shift = GLFW.glfwGetKey(mc.window.handle(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS ||
+                    GLFW.glfwGetKey(mc.window.handle(), GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS
+                dispatchSlotClick(it, dragType, if (shift) GLFW.GLFW_MOD_SHIFT else 0)
+            }
+            dragSlots.clear()
+            dragStartSlot = null
+            return true
+        }
+        if (!knobGrabbed) return false
+        knobGrabbed = false
+        return true
+    }
+
+    @JvmStatic
+    fun mouseDragged(mouseX: Double, mouseY: Double, screen: AbstractContainerScreen<*>): Boolean {
+        if (!on(screen)) return false
+        val s = scale
+        val rx = mouseX / s
+        val ry = mouseY / s
+        if (dragArmed) {
+            resolveSlotUnder(rx, ry, activePage(screen))?.let { dragSlots.add(it.index) }
+            return true
+        }
+        if (!knobGrabbed) return false
+        val pct = ((ry - scrollBarY) / scrollBarH.toDouble()).coerceIn(0.0, 1.0)
+        scroll = (maxScroll * pct).toFloat()
+        return true
+    }
+
+    @JvmStatic
+    fun mouseScrolled(verticalAmount: Double, screen: AbstractContainerScreen<*>): Boolean {
+        if (!on(screen)) return false
+        val speed = verticalAmount * FishSettings.storageScrollSpeed.coerceIn(1, 50) * -1
+        scroll = (scroll + speed.toFloat()).coerceIn(0f, maxScroll)
         return true
     }
 
@@ -297,7 +577,42 @@ object StorageOverlay {
     }
 
     @JvmStatic
-    fun onClosed() { searchFocused = false; scroll = 0f }
+    fun onClosed() {
+        if (!FishSettings.storageRetainScroll) scroll = 0f
+        searchFocused = false
+        knobGrabbed = false
+        dragStartSlot = null
+        dragSlots.clear()
+        dragPreview = null
+        hoveredOverlayItem = null
+    }
 
-    private fun hit(r: IntArray, x: Int, y: Int) = r.size == 4 && x in r[0]..(r[0] + r[2]) && y in r[1]..(r[1] + r[3])
+    // ── render helpers (Render2D equivalents) ───────────────────────────────
+    private fun rect(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, color: Int) =
+        ctx.fill(x, y, x + w, y + h, color)
+
+    private fun border(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, color: Int, t: Int) {
+        ctx.fill(x, y, x + w, y + t, color)
+        ctx.fill(x, y + h - t, x + w, y + h, color)
+        ctx.fill(x, y, x + t, y + h, color)
+        ctx.fill(x + w - t, y, x + w, y + h, color)
+    }
+
+    private fun scissor(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int) {
+        val s = scale
+        runCatching {
+            ctx.enableScissor((x * s).toInt(), (y * s).toInt(), ((x + w) * s).toInt(), ((y + h) * s).toInt())
+        }
+    }
+
+    private fun inRect(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int) = mx >= x && mx < x + w && my >= y && my < y + h
+    private fun inRect(mx: Double, my: Double, x: Int, y: Int, w: Int, h: Int) = mx >= x && mx < x + w && my >= y && my < y + h
+
+    private fun updateBounds(screen: AbstractContainerScreen<*>) {
+        val acc = screen as fishmod.mixin.accessors.HandledScreenAccessor
+        acc.`fishmod$setLeftPos`(0)
+        acc.`fishmod$setTopPos`(0)
+        acc.`fishmod$setImageWidth`(screen.width)
+        acc.`fishmod$setImageHeight`(screen.height)
+    }
 }

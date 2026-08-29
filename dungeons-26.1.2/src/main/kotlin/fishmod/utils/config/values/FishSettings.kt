@@ -496,6 +496,9 @@ object FishSettings {
     @ConfigValue @JvmField var storageViewerColumns: Int = 3
     @ConfigValue @JvmField var storageMaxHeight: Int = 360
     @ConfigValue @JvmField var storageHideNonMatching: Boolean = false
+    @ConfigValue @JvmField var storageOverlayScale: Double = 1.0   // 0.5..2.0 — NoammAddons "Scale"
+    @ConfigValue @JvmField var storageScrollSpeed: Int = 10        // 1..50
+    @ConfigValue @JvmField var storageRetainScroll: Boolean = true
 
     // ── Leap Menu (custom Spirit Leap GUI) ───────────────────────────────────
     @ConfigValue @JvmField var leapMenuEnabled: Boolean = false

@@ -82,7 +82,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
             return;
         }
 
-        if (fishmod.features.storage.StorageOverlay.mouseClicked(click.button(), cx, cy, (AbstractContainerScreen<?>) (Object) this)) {
+        if (fishmod.features.storage.StorageOverlay.onOverlayClick(click, doubled, (AbstractContainerScreen<?>) (Object) this)) {
             cir.setReturnValue(true);
             return;
         }
@@ -110,6 +110,20 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
     private void fishmod$storageScroll(double mx, double my, double hz, double vt, CallbackInfoReturnable<Boolean> cir) {
         if (fishmod.features.storage.StorageOverlay.mouseScrolled(vt, (AbstractContainerScreen<?>) (Object) this)) {
+            cir.setReturnValue(true);
+        }
+    }
+
+    @Inject(method = "mouseReleased", at = @At("HEAD"), cancellable = true)
+    private void fishmod$storageRelease(MouseButtonEvent click, CallbackInfoReturnable<Boolean> cir) {
+        if (fishmod.features.storage.StorageOverlay.mouseReleased((AbstractContainerScreen<?>) (Object) this)) {
+            cir.setReturnValue(true);
+        }
+    }
+
+    @Inject(method = "mouseDragged", at = @At("HEAD"), cancellable = true)
+    private void fishmod$storageDrag(MouseButtonEvent click, double dx, double dy, CallbackInfoReturnable<Boolean> cir) {
+        if (fishmod.features.storage.StorageOverlay.mouseDragged(click.x(), click.y(), (AbstractContainerScreen<?>) (Object) this)) {
             cir.setReturnValue(true);
         }
     }

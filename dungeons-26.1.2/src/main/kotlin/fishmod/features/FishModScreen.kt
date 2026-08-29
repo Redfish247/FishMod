@@ -202,8 +202,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         run {
             val f = Feature("Storage Overlay", FishSettings::storageOverlayEnabled)
             f.sub.add(SubcategoryHeader("All pages + search over /storage; also /storageview"))
-            f.sub.add(SliderIntSetting("Columns (width)", "", FishSettings::storageViewerColumns, 1, 8))
-            f.sub.add(SliderIntSetting("Max Height", "", FishSettings::storageMaxHeight, 160, 700))
+            f.sub.add(SliderIntSetting("Columns (width)", "", FishSettings::storageViewerColumns, 1, 10))
+            f.sub.add(SliderIntSetting("Max Height", "", FishSettings::storageMaxHeight, 80, 900))
+            f.sub.add(SliderDoubleSetting("Scale", "Overlay size", FishSettings::storageOverlayScale, 0.5, 2.0))
+            f.sub.add(SliderIntSetting("Scroll Speed", "", FishSettings::storageScrollSpeed, 1, 50))
+            f.sub.add(ToggleSetting("Retain Scroll", "Keep scroll offset after closing", FishSettings::storageRetainScroll))
             f.sub.add(ToggleSetting("Hide Non-Matching Pages", "While searching", FishSettings::storageHideNonMatching))
             f.sub.add(KeybindSetting("Open Viewer", "Standalone cache browser", { fishmod.utils.Keybinds.storageViewer }))
             invStorage.features.add(f)
