@@ -41,6 +41,17 @@ public class ClientPlayNetworkHandlerMixin {
         Events.ON_PLAYER_ENTRY.invoke(playerListEvent -> playerListEvent.onNewPlayerEntry(receivedEntry));
     }
 
+    @Inject(method = "handleAddEntity", at = @At("HEAD"), cancellable = true)
+    private void fishmod$renderOptimizerHideEntities(net.minecraft.network.protocol.game.ClientboundAddEntityPacket packet, CallbackInfo ci) {
+        if (!fishmod.utils.config.values.Visual.renderOptimizer) return;
+        net.minecraft.world.entity.EntityType<?> t = packet.getType();
+        if ((fishmod.utils.config.values.Visual.roHideFallingBlocks && t == net.minecraft.world.entity.EntityType.FALLING_BLOCK)
+                || (fishmod.utils.config.values.Visual.roHideLightning && t == net.minecraft.world.entity.EntityType.LIGHTNING_BOLT)
+                || (fishmod.utils.config.values.Visual.roHideExperienceOrbs && t == net.minecraft.world.entity.EntityType.EXPERIENCE_ORB)) {
+            ci.cancel();
+        }
+    }
+
     @Inject(method = "handleSetPlayerTeamPacket", at = @At(value = "TAIL"))
     private void onTeam(ClientboundSetPlayerTeamPacket packet, CallbackInfo ci, @Local PlayerTeam team) {
         if (team == null) return;

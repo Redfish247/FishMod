@@ -84,6 +84,20 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
         if (Visual.hideDeadEntities && entity instanceof LivingEntity le
                 && (le.isDeadOrDying() || le.getHealth() <= 0f)) {
             cir.setReturnValue(false);
+            return;
+        }
+
+        // Odin Render Optimizer: hide mobs playing their death animation, and (optionally) the
+        // nametag armor stand riding a dying mob.
+        if (fishmod.features.RenderOptimizer.hideDeathAnimation()) {
+            if (entity instanceof net.minecraft.world.entity.decoration.ArmorStand) {
+                if (fishmod.features.RenderOptimizer.hideDyingArmorStands()
+                        && entity.getVehicle() instanceof LivingEntity mount && mount.deathTime > 0) {
+                    cir.setReturnValue(false);
+                }
+            } else if (entity instanceof LivingEntity dying && dying.deathTime > 0) {
+                cir.setReturnValue(false);
+            }
         }
     }
 }

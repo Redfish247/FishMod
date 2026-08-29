@@ -433,6 +433,7 @@ class FishModInit : ModInitializer {
         fishmod.features.SpringBoots.init()
         fishmod.features.Ragnarock.init()
         fishmod.features.VisualTweaks.init()
+        fishmod.features.RenderOptimizer.init()
         fishmod.features.NoCursorReset.init()
         fishmod.features.SlotBinds.init()
         fishmod.features.BridgeBot.init()

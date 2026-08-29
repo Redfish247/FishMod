@@ -755,6 +755,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("No Swing Animation", "Suppress the first-person hand swing", Visual::noSwingAnimation))
             f.sub.add(ToggleSetting("Swing: Terminator Only", "Only suppress while holding a Terminator", Visual::noSwingTerminatorOnly))
             f.sub.add(ToggleSetting("Stop Shovel Flattening", "Cancel the shovel make-path interaction", Visual::stopShovelFlattening))
+            f.sub.add(SubcategoryHeader("Odin clutter hiders"))
+            f.sub.add(ToggleSetting("Hide Falling Blocks", "", Visual::roHideFallingBlocks))
+            f.sub.add(ToggleSetting("Hide Lightning", "", Visual::roHideLightning))
+            f.sub.add(ToggleSetting("Hide Experience Orbs", "", Visual::roHideExperienceOrbs))
+            f.sub.add(ToggleSetting("Hide Death Animation", "Hide mobs that are dying", Visual::roHideDeathAnimation))
+            f.sub.add(ToggleSetting("Hide Armor Stands", "Nametag stands on dying mobs (needs Hide Death Animation)", Visual::roHideDyingArmorStands))
+            f.sub.add(ToggleSetting("Hide Explosion Particles", "", Visual::roHideExplosionParticles))
+            f.sub.add(ToggleSetting("Hide Archer Passive", "The archer passive's floating bone meal", Visual::roHideArcherPassive))
+            f.sub.add(ToggleSetting("Hide Healer Fairy", "The healer fairy held by some mobs", Visual::roHideHealerFairy))
+            f.sub.add(ToggleSetting("Hide Soul Weaver", "The soul weaver helmet worn by some mobs", Visual::roHideSoulWeaver))
+            f.sub.add(ToggleSetting("Hide Tentacle Head", "The tentacle head worn by some mobs", Visual::roHideTentacleHead))
+            f.sub.add(ToggleSetting("Hide Fire Overlay", "The first-person fire overlay", Visual::roHideFireOverlay))
             visuals.features.add(f)
         }
         run {
@@ -788,9 +800,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             hud.features.add(f)
         }
         run {
-            val f = Feature("Camera Tweaks", FishSettings::cameraTweaksEnabled)
-            f.sub.add(ToggleSetting("Custom FOV", "", FishSettings::cameraCustomFov))
-            f.sub.add(SliderIntSetting("FOV", "", FishSettings::cameraFov, 30, 179))
+            val f = Feature("Visual Effects", FishSettings::cameraTweaksEnabled)
             f.sub.add(ToggleSetting("Full Bright", "", FishSettings::cameraFullBright))
             f.sub.add(ToggleSetting("Disable Blindness", "", FishSettings::cameraNoBlindness))
             f.sub.add(ToggleSetting("Disable Nausea", "", FishSettings::cameraNoNausea))

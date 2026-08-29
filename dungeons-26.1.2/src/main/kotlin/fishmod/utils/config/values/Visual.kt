@@ -13,6 +13,19 @@ object Visual {
 
     @ConfigValue @JvmField var hideDeadEntities: Boolean = false
 
+    // Render Optimizer — clutter hiders ported 1:1 from Odin's RenderOptimizer.
+    @ConfigValue @JvmField var roHideFallingBlocks: Boolean = false
+    @ConfigValue @JvmField var roHideLightning: Boolean = false
+    @ConfigValue @JvmField var roHideExperienceOrbs: Boolean = false
+    @ConfigValue @JvmField var roHideDeathAnimation: Boolean = false
+    @ConfigValue @JvmField var roHideDyingArmorStands: Boolean = false
+    @ConfigValue @JvmField var roHideExplosionParticles: Boolean = false
+    @ConfigValue @JvmField var roHideArcherPassive: Boolean = false
+    @ConfigValue @JvmField var roHideHealerFairy: Boolean = false
+    @ConfigValue @JvmField var roHideSoulWeaver: Boolean = false
+    @ConfigValue @JvmField var roHideTentacleHead: Boolean = false
+    @ConfigValue @JvmField var roHideFireOverlay: Boolean = false
+
     /** Hide other players within [hidePlayerRange] blocks (declutter crowded hubs / boss fights). */
     @ConfigValue @JvmField var hidePlayersInRange: Boolean = false
     @ConfigValue @JvmField var hidePlayerRange: Double = 3.0

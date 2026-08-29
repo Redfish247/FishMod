@@ -53,6 +53,7 @@
     "MouseMixin",
     "ChannelMixin",
     "SoundEngineMixin",
+    "ScreenEffectRendererMixin",
     "LivingEntityArrowFixMixin",
     "LevelTimeMixin",
     "PlayerListHudMixin",
