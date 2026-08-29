@@ -42,6 +42,20 @@ object StorageCache {
     @JvmStatic fun view(): Map<Int, NBTInventory> = Collections.unmodifiableMap(pages)
     @JvmStatic fun knownPages(): Set<Int> = Collections.unmodifiableSet(known)
 
+    /** Load this player's on-disk cache if it isn't loaded yet (for callers outside [tick]). */
+    @JvmStatic
+    fun ensureLoaded() {
+        val id = uuid() ?: return
+        if (id != loadedFor) { load(id); loadedFor = id }
+    }
+
+    /** Persist the cache right now (used by [StorageAutoLoader] after a bulk API load). */
+    @JvmStatic
+    fun forceSave() {
+        if (loadedFor == null) loadedFor = uuid()
+        if (loadedFor != null) { save(); dirty = false }
+    }
+
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc -> tick(mc) }

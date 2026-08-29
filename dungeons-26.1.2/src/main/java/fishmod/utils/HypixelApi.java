@@ -14,6 +14,7 @@ import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -2756,5 +2757,82 @@ public class HypixelApi {
                 cb.onData(new WormStats());
             }
         });
+    }
+
+    // ─── storage (ender chest + backpacks) from the Hypixel API ────────────────
+
+    public interface StorageCallback {
+        /** pages = pageIndex -> item list (ender chest 0..8, backpacks 9..26); null on error. */
+        void onStorage(Map<Integer, List<ItemStack>> pages, String error);
+    }
+
+    /** One-shot fetch of every ender-chest + backpack page for the local player, decoded to modern
+     *  ItemStacks via the bundled legacy datafixer. Callback runs on the main thread. */
+    public static void getStorage(Minecraft mc, StorageCallback cb) {
+        getLocalMember(mc, member -> {
+            if (member == null || !member.has("inventory")) {
+                cb.onStorage(null, "No profile data — is the inventory API enabled on your profile?");
+                return;
+            }
+            try {
+                JsonObject inv = member.getAsJsonObject("inventory");
+                Map<Integer, List<ItemStack>> pages = new HashMap<>();
+
+                // Ender chest is one flat list, 45 slots per page -> pages 0..8.
+                List<CompoundTag> ec = parseSlots(inv, "ender_chest_contents");
+                for (int p = 0; p * 45 < ec.size() && p < 9; p++) {
+                    int from = p * 45, to = Math.min(from + 45, ec.size());
+                    pages.put(p, toStacks(ec.subList(from, to)));
+                }
+
+                // Backpacks: { "<slot>": {type,data}, ... } -> page slot+9.
+                if (inv.has("backpack_contents") && inv.get("backpack_contents").isJsonObject()) {
+                    for (Map.Entry<String, JsonElement> e : inv.getAsJsonObject("backpack_contents").entrySet()) {
+                        int slot;
+                        try { slot = Integer.parseInt(e.getKey()); } catch (NumberFormatException ex) { continue; }
+                        if (slot < 0 || slot > 17 || !e.getValue().isJsonObject()) continue;
+                        List<CompoundTag> items = parseSlotObj(e.getValue().getAsJsonObject());
+                        if (!items.isEmpty()) pages.put(slot + 9, toStacks(items));
+                    }
+                }
+
+                cb.onStorage(pages, pages.isEmpty() ? "No storage pages found on this profile." : null);
+            } catch (Exception ex) {
+                cb.onStorage(null, "parse error: " + ex.getMessage());
+            }
+        });
+    }
+
+    /** Like {@link #parseSlots(JsonObject, String)} but for an already-resolved {type,data} object. */
+    private static List<CompoundTag> parseSlotObj(JsonObject slot) {
+        try {
+            if (slot == null || !slot.has("data")) return Collections.emptyList();
+            String b64 = slot.get("data").getAsString();
+            if (b64.isEmpty()) return Collections.emptyList();
+            byte[] bytes = java.util.Base64.getDecoder().decode(b64);
+            CompoundTag root = NbtIo.readCompressed(new ByteArrayInputStream(bytes), NbtAccounter.unlimitedHeap());
+            ListTag items = root.getList("i").orElse(null);
+            if (items == null) return Collections.emptyList();
+            List<CompoundTag> out = new ArrayList<>(items.size());
+            for (int i = 0; i < items.size(); i++) {
+                CompoundTag c = items.getCompound(i).orElse(null);
+                out.add(c != null && !c.isEmpty() ? c : null);
+            }
+            return out;
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    private static List<ItemStack> toStacks(List<CompoundTag> tags) {
+        List<ItemStack> out = new ArrayList<>(tags.size());
+        for (CompoundTag t : tags) {
+            if (t == null || t.isEmpty()) { out.add(ItemStack.EMPTY); continue; }
+            ItemStack s = null;
+            try { s = me.owdding.dfu.item.LegacyDataFixer.INSTANCE.fromTag(t); }
+            catch (Throwable ignored) {}
+            out.add(s == null ? ItemStack.EMPTY : s);
+        }
+        return out;
     }
 }
