@@ -23,8 +23,8 @@ object FireFreezeTimer {
     private const val WAIT_MS = 5000L
     private const val FREEZE_MS = 10000L
     private const val TOTAL_MS = WAIT_MS + FREEZE_MS
-    private const val RADIUS = 16.0        // Fire Freeze is a large AOE, and it's usually cast from range
-    private const val CATCH_WINDOW_MS = 2000L // keep scanning while the projectile travels / mobs wander in
+    private const val RADIUS = 4.5         // matches the black particle cloud Fire Freeze makes
+    private const val CATCH_WINDOW_MS = 2000L // keep scanning briefly after the cast — mobs wander in
 
     // entityId -> wall-clock ms when the staff was used (cast start)
     private val frozen: MutableMap<Int, Long> = ConcurrentHashMap()
