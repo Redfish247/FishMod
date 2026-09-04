@@ -10,8 +10,7 @@ import org.lwjgl.glfw.GLFW
 import java.util.function.Consumer
 
 /**
- * Minimal one-field title-entry screen, opened when sneak-right-clicking to place a waypoint —
- * mirrors OdinLegacy's `GuiSign` but built on this mod's own Fabric/Screen APIs.
+ * Minimal one-field title-entry screen, opened when sneak-right-clicking to place a waypoint.
  */
 class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Screen(Component.literal("Dungeon Waypoint Title")) {
 

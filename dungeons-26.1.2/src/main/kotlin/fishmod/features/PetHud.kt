@@ -1,7 +1,9 @@
 package fishmod.features
 
+import fishmod.features.item.ItemRarity
 import fishmod.utils.HypixelApi
 import fishmod.utils.Location
+import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemUtil
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -10,19 +12,13 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.ContainerScreen
-import net.minecraft.client.multiplayer.ClientPacketListener
-import net.minecraft.client.multiplayer.PlayerInfo
 import net.minecraft.world.inventory.AbstractContainerMenu
 import net.minecraft.world.item.ItemStack
-import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 object PetHud {
 
-    private val COLOR_STRIP: Pattern = Pattern.compile("§.")
-
     private val TAB_NAME_LINE: Pattern = Pattern.compile("\\[Lvl\\s*(\\d+)\\]\\s+(.+)")
-    private val TAB_XP_LINE: Pattern = Pattern.compile("([\\d.,]+[KMB]?)\\s*/\\s*([\\d.,]+[KMB]?)\\s*XP")
 
     // Chat is the authoritative source for the active pet, matched against these Hypixel message formats.
     private val AUTOPET_PAT: Pattern = Pattern.compile("Autopet equipped your \\[Lvl\\s*(\\d+)\\]\\s*(.+?)!")
@@ -41,6 +37,7 @@ object PetHud {
     private val TAB_OVERFLOW_XP: Pattern = Pattern.compile("\\+([\\d.,]+[KMB]?)\\s*XP")
 
     private var petName: String? = null
+    private var petRarity: ItemRarity = ItemRarity.NONE
     private var petLevel = -1
     private var petOverflowLevel = -1
     private var petMaxed = false
@@ -60,20 +57,15 @@ object PetHud {
     private var lastApiFetchAt = 0L
     private var apiFetchInFlight = false
 
-    // The SkyBlock profile API is a periodic snapshot; right after a pet swap it can still lag and
-    // report the previous pet, so a stale API response disagreeing with a recent chat msg is discarded.
+    // the profile API is a periodic snapshot and lags a pet swap, so a stale response disagreeing with recent chat is discarded
     private const val CHAT_TRUST_WINDOW_MS = 15_000L
     private var lastChatPetName: String? = null
     private var lastChatPetChangeAt = 0L
 
-    // Short guard just for scanTabList's forced burst-rescan right after a chat-confirmed swap: the
-    // server's tab list can take a few ticks to catch up, and without this a stale tab entry read
-    // during that window would clobber the already-correct chat-driven name back to the old pet.
-    // Much shorter than CHAT_TRUST_WINDOW_MS so it doesn't also block a genuinely different, silent
-    // (non-chat) swap that happens moments later.
+    // brief guard so scanTabList's burst-rescan can't clobber a chat-confirmed name with a stale tab entry; shorter than CHAT_TRUST_WINDOW_MS so it doesn't block a later silent swap
     private const val TAB_CLOBBER_GUARD_MS = 2_000L
 
-    // A pet earns 1 Pet XP per 1 skill XP in its matching skill, 0 otherwise. Source: wiki.hypixel.net/Pets#Pet_XP
+    // a pet earns 1 Pet XP per 1 skill XP in its matching skill, 0 otherwise
     private val SKILL_XP_BAR: Pattern = Pattern.compile(
             "\\+\\s*([\\d,.]+)\\s+(Farming|Mining|Combat|Foraging|Fishing|Enchanting|Alchemy|Carpentry|Runecrafting|Taming)\\b")
     private val PET_SKILL: Map<String, String> = java.util.Map.ofEntries(
@@ -118,14 +110,15 @@ object PetHud {
         // Chat is authoritative for the active pet (tab/menu scraping is a fallback).
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register { msg, overlay ->
             if (overlay || !FishSettings.petHudEnabled) return@register
-            val s = COLOR_STRIP.matcher(msg.string).replaceAll("").trim()
+            val s = HypixelApi.STRIP_COLOR.matcher(msg.string).replaceAll("").trim()
 
             val a = AUTOPET_PAT.matcher(s)
             if (a.find()) {
                 petLevel = safeInt(a.group(1), -1)
                 petName = cleanPetName(a.group(2))
+                petRarity = rarityBeforeName(msg.string, petName)
                 petMaxed = false // tab burst-scan re-confirms
-                xpCurrent = -1.0; xpNext = -1.0; pendingXp = 0.0 // reset XP for the newly-equipped pet
+                xpCurrent = -1.0; xpNext = -1.0; pendingXp = 0.0
                 lastTabUpdate = System.currentTimeMillis()
                 lastChatPetName = petName; lastChatPetChangeAt = System.currentTimeMillis()
                 lastApiFetchAt = 0 // force an immediate API refetch for the new pet
@@ -137,6 +130,7 @@ object PetHud {
             if (su.find()) {
                 val n = cleanPetName(su.group(1))
                 petName = n
+                petRarity = rarityBeforeName(msg.string, n)
                 petMaxed = false // tab burst-scan re-confirms
                 xpCurrent = -1.0; xpNext = -1.0; pendingXp = 0.0
                 lastTabUpdate = System.currentTimeMillis()
@@ -146,8 +140,7 @@ object PetHud {
                 if (debugDumpPetLines) fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§d[pet] summon → $petName"))
                 return@register
             }
-            // Force an API re-check on loadout switch; don't force a tab scan since the tab list
-            // lags this chat line and would briefly read the stale previous-pet entry.
+            // force an API re-check on loadout switch, but no tab scan (tab lags this line and reads the stale previous pet)
             val lo = LOADOUT_EQUIP_PAT.matcher(s)
             if (lo.find()) {
                 lastApiFetchAt = 0
@@ -158,7 +151,7 @@ object PetHud {
         // Action-bar listener: Hypixel emits "+X.X <Skill> (current/next)" each gain.
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register { msg, overlay ->
             if (!FishSettings.petHudEnabled || !overlay || petName == null) return@register
-            val s = COLOR_STRIP.matcher(msg.string).replaceAll("")
+            val s = HypixelApi.STRIP_COLOR.matcher(msg.string).replaceAll("")
             val matchSkill = PET_SKILL[petName] ?: return@register
             val m = SKILL_XP_BAR.matcher(s)
             while (m.find()) {
@@ -198,33 +191,38 @@ object PetHud {
             scanPetsMenuIfOpen(client.screen)
 
             // Scan every tick for a short burst after an equip/summon, since tab can lag the chat msg.
+            // Force an immediate shared-cache rescan too, since the burst exists specifically to
+            // beat TabListCache's normal 5-tick cadence.
             if (forceScanTicks > 0) {
                 forceScanTicks--
-                scanTabList(client.connection!!)
+                TabListCache.forceScan()
+                scanTabList()
             }
 
             tickCount++
             if (tickCount >= 5) {
                 tickCount = 0
-                scanTabList(client.connection!!)
+                scanTabList()
             }
         }
     }
 
-    private fun scanTabList(handler: ClientPacketListener) {
+    private fun scanTabList() {
         // "[Lvl N] Name" under the tab's "Pet:" header; "[Lvl " is unique vs player tags like "[519]".
         var tempName: String? = null
         var tempLevel = -1
+        var tempRarity = ItemRarity.NONE
         var maxed = false
         var overflowXp = -1.0
 
-        for (entry: PlayerInfo in handler.onlinePlayers) {
-            if (entry.tabListDisplayName == null) continue
-            val text = COLOR_STRIP.matcher(entry.tabListDisplayName!!.string).replaceAll("").trim()
+        for (entry in TabListCache.entries) {
+            val raw = entry.info.tabListDisplayName?.string ?: continue
+            val text = entry.stripped.trim()
             val nameMatch = TAB_NAME_LINE.matcher(text)
             if (nameMatch.find()) {
                 tempLevel = safeInt(nameMatch.group(1), -1)
                 tempName = nameMatch.group(2).replace("✦", "").trim()
+                tempRarity = rarityBeforeName(raw, tempName)
             } else if (text.equals("MAX LEVEL", ignoreCase = true)) {
                 maxed = true
             } else {
@@ -234,16 +232,14 @@ object PetHud {
         }
 
         if (tempName != null) {
-            // Right after a chat-confirmed swap the tab list itself can still lag a few ticks behind
-            // the server; without this guard the forced burst-rescan below reads that stale entry and
-            // clobbers the already-correct chat-driven name back to the old pet until tab finally
-            // catches up, which is what made swaps look like they took ~0.5-1s to register.
+            // tab list lags a chat-confirmed swap by a few ticks; without this guard the burst-rescan reads the stale entry and reverts the name
             val withinClobberGuard = System.currentTimeMillis() - lastChatPetChangeAt < TAB_CLOBBER_GUARD_MS
             if (withinClobberGuard && lastChatPetName != null && !tempName.equals(lastChatPetName, ignoreCase = true)) {
                 return
             }
             petName = tempName
             petLevel = tempLevel
+            if (tempRarity != ItemRarity.NONE) petRarity = tempRarity
             petMaxed = maxed
             if (maxed) {
                 xpNext = -1.0 // forces the HUD's MAXED display
@@ -265,15 +261,15 @@ object PetHud {
         apiFetchInFlight = false
         if (info == null || !info.ok) return
 
-        // Discard a stale API result that disagrees with a recent chat-confirmed pet change,
-        // and retry sooner (~3s) rather than waiting the full refresh interval.
+        // discard a stale API result that disagrees with a recent chat-confirmed swap, and retry in ~3s
         val withinTrustWindow = System.currentTimeMillis() - lastChatPetChangeAt < CHAT_TRUST_WINDOW_MS
         if (withinTrustWindow && lastChatPetName != null && !lastChatPetName.equals(info.name, ignoreCase = true)) {
-            lastApiFetchAt = System.currentTimeMillis() - API_REFRESH_MS + 3_000L // retry in ~3s
+            lastApiFetchAt = System.currentTimeMillis() - API_REFRESH_MS + 3_000L
             return
         }
 
         petName = info.name
+        rarityFromTier(info.tier).let { if (it != ItemRarity.NONE) petRarity = it }
         petLevel = info.level
         petMaxed = info.maxed
         petOverflowLevel = if (info.maxed) info.overflowLevel else -1
@@ -288,14 +284,11 @@ object PetHud {
         lastTabUpdate = System.currentTimeMillis()
     }
 
-    @JvmStatic
-    fun getOverflowLevel(): Int = petOverflowLevel
-
     private fun scanPetsMenuIfOpen(current: Screen?) {
         if (System.currentTimeMillis() - lastTabUpdate < 2000) return // don't fight a recent tab update
 
         if (current !is ContainerScreen) return
-        val title = COLOR_STRIP.matcher(current.title.string).replaceAll("").trim()
+        val title = HypixelApi.STRIP_COLOR.matcher(current.title.string).replaceAll("").trim()
         if (!title.startsWith("Pets")) return
 
         val handler: AbstractContainerMenu = current.menu
@@ -303,11 +296,12 @@ object PetHud {
             val stack: ItemStack = slot.item
             if (stack == null || stack.isEmpty || !ItemUtil.containsLore(stack, "Click to despawn")) continue
 
-            val displayName = COLOR_STRIP.matcher(stack.hoverName.string).replaceAll("").trim()
+            val displayName = HypixelApi.STRIP_COLOR.matcher(stack.hoverName.string).replaceAll("").trim()
             val m = PET_ITEM_NAME.matcher(displayName)
             if (m.find()) {
                 petLevel = safeInt(m.group(1), petLevel)
                 petName = m.group(2).trim()
+                rarityBeforeName(stack.hoverName.string, petName).let { if (it != ItemRarity.NONE) petRarity = it }
             }
             scanProgressFromLore(stack)
             return
@@ -318,12 +312,12 @@ object PetHud {
         val lore = stack.get(net.minecraft.core.component.DataComponents.LORE) ?: return
         val lines: List<net.minecraft.network.chat.Component> = lore.lines()
         for (i in lines.indices) {
-            val s = COLOR_STRIP.matcher(lines[i].string).replaceAll("").trim()
+            val s = HypixelApi.STRIP_COLOR.matcher(lines[i].string).replaceAll("").trim()
             val pm = PROGRESS_PAT.matcher(s)
             if (!pm.find()) continue
             try { xpPct = pm.group(1).toFloat() } catch (ignored: NumberFormatException) {}
             if (i + 1 < lines.size) {
-                val s2 = COLOR_STRIP.matcher(lines[i + 1].string).replaceAll("").trim()
+                val s2 = HypixelApi.STRIP_COLOR.matcher(lines[i + 1].string).replaceAll("").trim()
                 val xm = PROGRESS_XP_PAT.matcher(s2)
                 if (xm.find()) {
                     xpCurrent = parseAbbrev(xm.group(1))
@@ -346,6 +340,7 @@ object PetHud {
 
     private fun reset() {
         petName = null
+        petRarity = ItemRarity.NONE
         petLevel = -1
         xpCurrent = -1.0
         lastChatPetName = null
@@ -357,6 +352,60 @@ object PetHud {
         return s.replace("✦", "").replace(Regex("[!.]+$"), "").trim()
     }
 
+    private val RARITY_BY_CODE: Map<Char, ItemRarity> = mapOf(
+        'f' to ItemRarity.COMMON, 'a' to ItemRarity.UNCOMMON, '9' to ItemRarity.RARE,
+        '5' to ItemRarity.EPIC, '6' to ItemRarity.LEGENDARY, 'd' to ItemRarity.MYTHIC,
+        'b' to ItemRarity.DIVINE, 'c' to ItemRarity.SPECIAL
+    )
+
+    /** Rarity from the colour code Hypixel puts right before the pet's name in a raw (un-stripped)
+     *  chat/tab/menu string, skipping plain formatting codes (§l/§o/…). NONE if it can't be read. */
+    private fun rarityBeforeName(raw: String?, name: String?): ItemRarity {
+        if (raw == null || name.isNullOrEmpty()) return ItemRarity.NONE
+        val plain = name.substringBefore("✦").trim()
+        if (plain.isEmpty()) return ItemRarity.NONE
+        val idx = raw.indexOf(plain)
+        if (idx < 2) return ItemRarity.NONE
+        var i = idx - 1
+        while (i >= 1) {
+            if (raw[i - 1] == '§') {
+                val r = RARITY_BY_CODE[raw[i].lowercaseChar()]
+                if (r != null) return r
+                i -= 2
+                continue
+            }
+            i--
+        }
+        return ItemRarity.NONE
+    }
+
+    private fun rarityFromTier(tier: String?): ItemRarity = when (tier?.uppercase()) {
+        "COMMON" -> ItemRarity.COMMON
+        "UNCOMMON" -> ItemRarity.UNCOMMON
+        "RARE" -> ItemRarity.RARE
+        "EPIC" -> ItemRarity.EPIC
+        "LEGENDARY" -> ItemRarity.LEGENDARY
+        "MYTHIC" -> ItemRarity.MYTHIC
+        "DIVINE" -> ItemRarity.DIVINE
+        else -> ItemRarity.NONE
+    }
+
+    private fun rarityCode(r: ItemRarity): String = when (r) {
+        ItemRarity.COMMON -> "§f"
+        ItemRarity.UNCOMMON -> "§a"
+        ItemRarity.RARE -> "§9"
+        ItemRarity.EPIC -> "§5"
+        ItemRarity.LEGENDARY -> "§6"
+        ItemRarity.MYTHIC -> "§d"
+        ItemRarity.DIVINE -> "§b"
+        ItemRarity.SPECIAL, ItemRarity.VERY_SPECIAL -> "§c"
+        else -> "§6"
+    }
+
+    /** Colour code for the pet name: rarity-based when known and enabled, else the legacy gold. */
+    private fun nameColorCode(): String =
+        if (FishSettings.petHudShowRarity && petRarity != ItemRarity.NONE) rarityCode(petRarity) else "§6"
+
     private fun safeInt(s: String?, fallback: Int): Int {
         return try { s!!.toInt() } catch (e: NumberFormatException) { fallback } catch (e: NullPointerException) { fallback }
     }
@@ -367,7 +416,7 @@ object PetHud {
     @JvmStatic
     fun currentPetLine(): String? {
         val name = petName ?: return null
-        val text = StringBuilder("§7[Lvl ").append(petLevel).append("] §6").append(name)
+        val text = StringBuilder("§7[Lvl ").append(petLevel).append("] ").append(nameColorCode()).append(name)
         val maxLvl = if ("Golden Dragon".equals(name, ignoreCase = true)) 200 else 100
         if (petLevel >= maxLvl || petMaxed) {
             text.append(" §a§lMAXED")
@@ -395,7 +444,7 @@ object PetHud {
 
         val text = StringBuilder()
         if (FishSettings.petHudShowLevel && petLevel >= 0) text.append("§7[Lvl ").append(petLevel).append("] ")
-        text.append("§6").append(petName)
+        text.append(nameColorCode()).append(petName)
 
         val maxLvl = if ("Golden Dragon".equals(petName, ignoreCase = true)) 200 else 100
         val maxed = petLevel >= maxLvl || petMaxed

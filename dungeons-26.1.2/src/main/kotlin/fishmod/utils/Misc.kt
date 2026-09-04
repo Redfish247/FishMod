@@ -26,12 +26,12 @@ object Misc {
     }
 
     @JvmStatic
-    fun getDistance(e1: Entity, e2: Entity): Double {
-        return getDistance(e1.x, e1.z, e2.x, e2.z)
+    fun getDistanceSq(e1: Entity, e2: Entity): Double {
+        return getDistanceSq(e1.x, e1.z, e2.x, e2.z)
     }
 
     @JvmStatic
-    fun getDistance(x1: Double, z1: Double, x2: Double, z2: Double): Double {
+    fun getDistanceSq(x1: Double, z1: Double, x2: Double, z2: Double): Double {
         return ((x1 - x2) * (x1 - x2)) + ((z1 - z2) * (z1 - z2))
     }
 
@@ -65,11 +65,24 @@ object Misc {
         }
     }
 
+    /** Like [forceTitle] but holds the title on screen for [stayMs] (fade in/out fixed). */
+    @JvmStatic
+    fun forceTitle(title: Component, subtitle: Component, stayMs: Int) {
+        forceMainThread {
+            val gui = INSTANCE.gui
+            val acc = gui as fishmod.mixin.accessors.GuiAccessor
+            acc.`fishmod$setTitleFadeInTime`(5)
+            acc.`fishmod$setTitleStayTime`((stayMs / 50).coerceIn(1, 20 * 120))
+            acc.`fishmod$setTitleFadeOutTime`(10)
+            gui.setTitle(title)
+            gui.setSubtitle(subtitle)
+        }
+    }
+
     @JvmStatic
     fun executeCommand(string: String) {
         val networkHandler = INSTANCE.connection ?: return
-        // sendCommand() expects no leading slash — strip one if the caller typed the command
-        // the way they'd type it in chat.
+        // sendCommand() expects no leading slash
         val trimmed = string.trim()
         val command = if (trimmed.startsWith("/")) trimmed.substring(1) else trimmed
         forceMainThread { networkHandler.sendCommand(command) }
@@ -78,7 +91,23 @@ object Misc {
     @JvmStatic
     fun sendSound(soundEvent: SoundEvent, volume: Float, pitch: Float) {
         val player: LocalPlayer = INSTANCE.player ?: return
-        forceMainThread { player.playSound(soundEvent, volume, pitch) }
+        forceMainThread {
+            if (volume <= 1f) {
+                player.playSound(soundEvent, volume, pitch)
+            } else {
+                // MC clamps sound gain to 1.0; volume > 1 via playSound() only widens falloff. LoudSoundInstance lets the mixins exceed 1.0.
+                INSTANCE.soundManager.play(fishmod.utils.sound.LoudSoundInstance(soundEvent, volume, pitch))
+            }
+        }
+    }
+
+    /** Play a cue "in your ear" — no positional panning or distance falloff, any volume incl. >100%. */
+    @JvmStatic
+    fun sendSound2D(soundEvent: SoundEvent, volume: Float, pitch: Float) {
+        if (INSTANCE.player == null) return
+        forceMainThread {
+            INSTANCE.soundManager.play(fishmod.utils.sound.LoudSoundInstance(soundEvent, volume, pitch))
+        }
     }
 
     @JvmStatic

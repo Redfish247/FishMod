@@ -1,20 +1,17 @@
 package fishmod.features
 
-import fishmod.utils.Constants
 import fishmod.utils.Location
+import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
-import net.minecraft.client.multiplayer.ClientPacketListener
-import net.minecraft.client.multiplayer.PlayerInfo
 import java.util.regex.Pattern
 
 object SoulflowHud {
 
     private val SF_PATTERN: Pattern = Pattern.compile("Soulflow:\\s*([\\d,]+)")
-    private val COLOR_STRIP: Pattern = Pattern.compile("§.")
 
     private var soulflow = -1
     private var tickCount = 0
@@ -46,15 +43,13 @@ object SoulflowHud {
             tickCount++
             if (tickCount < 10) return@register
             tickCount = 0
-            scanTabList(client.getConnection()!!)
+            scanTabList()
         }
     }
 
-    private fun scanTabList(handler: ClientPacketListener) {
-        val entries: Collection<PlayerInfo> = handler.getOnlinePlayers()
-        for (entry in entries) {
-            val displayName = entry.getTabListDisplayName() ?: continue
-            val text = COLOR_STRIP.matcher(displayName.getString()).replaceAll("").trim()
+    private fun scanTabList() {
+        for (entry in TabListCache.entries) {
+            val text = entry.stripped.trim()
             val m = SF_PATTERN.matcher(text)
             if (m.find()) {
                 val numStr = m.group(1).replace(",", "")

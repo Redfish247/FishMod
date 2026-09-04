@@ -39,7 +39,6 @@ object Events {
     @JvmField val ON_TERMINAL = EventHandler<TerminalEvent>()
     @JvmField val ON_SECTION_CHANGE = EventHandler<SectionEvent>()
 
-    @JvmField val ON_ENTITY_TRACKED = EventHandler<EntityEvent>()
     @JvmField val ON_ENTITY_SPAWNED = EventHandler<EntityEvent>()
 
     @JvmField val ON_GAME_MESSAGE = EventHandler<GameMessageEvent>()

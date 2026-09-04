@@ -49,28 +49,28 @@ public class HypixelApi {
     /** Community-standard XP cost per "overflow" level past the level-50 cap (catacombs + class curves). */
     public static final long CATA_OVERFLOW_XP_PER_LEVEL = 200_000_000L;
 
-    // ─── proxy config ─────────────────────────────────────────────────────────
-    private static final String PROXY_URL = "https://fishmod.redfish2471.workers.dev";
+    private static final String PROXY_URL = "https://fishmod.dev";
     private static final String MOD_TOKEN = "fishmod123";
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(10))
         .build();
 
-    // ─── persistent cache ──────────────────────────────────────────────────────
+    /** Bounded daemon pool for blocking API HTTP — keeps it off ForkJoinPool.commonPool(). */
+    private static final java.util.concurrent.Executor API_EXECUTOR =
+        java.util.concurrent.Executors.newFixedThreadPool(4, r -> {
+            Thread t = new Thread(r, "FishMod-HypixelApi");
+            t.setDaemon(true);
+            return t;
+        });
+
     private static final long CACHE_TTL_MS = 30 * 60 * 1000L; // 30 minutes
     /** lower-cased player name → UUID without dashes. Backed by an on-disk cache (see below). */
     public  static final Map<String, String> uuidByName    = new ConcurrentHashMap<>();
     /** player name → epoch-ms when DungeonData was last fetched */
     public  static final Map<String, Long>   dataTimestamp = new ConcurrentHashMap<>();
 
-    // ─── persistent name→UUID cache ────────────────────────────────────────────
-    // A UUID never changes for an account and players rename only rarely, so name→UUID is cheap to keep
-    // on disk and saves a Mojang round-trip on every repeat lookup (party members, friends, etc.). Each
-    // entry carries the time it was written and expires after UUID_CACHE_TTL_MS, so a rename / recycle
-    // self-corrects within a bounded window — and the resolve that refreshes it is Mojang-authoritative
-    // (see resolveUuid), so we never re-introduce the stale-mirror bug. This does NOT touch the worker:
-    // name resolution hits Mojang, the worker is only used for the by-UUID stats fetch.
+    // name→UUID cache: disk-cached, 24h TTL, Mojang-authoritative refresh (see resolveUuid)
     private static final long UUID_CACHE_TTL_MS = 24 * 60 * 60 * 1000L; // 24h
     private static final Map<String, Long> uuidCachedAt = new ConcurrentHashMap<>();
     private static volatile boolean uuidCacheLoaded = false;
@@ -86,7 +86,7 @@ public class HypixelApi {
         String k = nameKey(name);
         Long ts = uuidCachedAt.get(k);
         if (ts == null) return null;
-        if (System.currentTimeMillis() - ts > UUID_CACHE_TTL_MS) { // expired — drop it
+        if (System.currentTimeMillis() - ts > UUID_CACHE_TTL_MS) {
             uuidByName.remove(k);
             uuidCachedAt.remove(k);
             return null;
@@ -116,7 +116,7 @@ public class HypixelApi {
                     try {
                         JsonObject o = e.getValue().getAsJsonObject();
                         long ts = o.get("ts").getAsLong();
-                        if (now - ts > UUID_CACHE_TTL_MS) continue; // stale — skip
+                        if (now - ts > UUID_CACHE_TTL_MS) continue;
                         String uuid = o.get("uuid").getAsString();
                         if (uuid == null || uuid.isEmpty()) continue;
                         uuidByName.put(e.getKey(), uuid);
@@ -125,7 +125,7 @@ public class HypixelApi {
                 }
             }
         } catch (Exception ignored) {}
-        // Flush on shutdown so the most recent lookups survive even a hard close.
+        // flush on shutdown so recent lookups survive a hard close
         try { Runtime.getRuntime().addShutdownHook(new Thread(HypixelApi::saveUuidCacheNow, "fishmod-uuid-cache-flush")); }
         catch (Exception ignored) {}
         uuidCacheLoaded = true;
@@ -169,7 +169,7 @@ public class HypixelApi {
                 String     name = e.getKey();
                 JsonObject obj  = e.getValue().getAsJsonObject();
                 long ts = obj.get("timestamp").getAsLong();
-                if (now - ts > CACHE_TTL_MS) continue; // stale — skip
+                if (now - ts > CACHE_TTL_MS) continue;
                 if (obj.has("uuid")) uuidByName.put(name, obj.get("uuid").getAsString());
                 dataTimestamp.put(name, ts);
                 DungeonData d = new DungeonData();
@@ -264,7 +264,7 @@ public class HypixelApi {
                 root.add("entries", entries);
                 Files.writeString(file, root.toString());
             } catch (Exception ignored) {}
-        });
+        }, API_EXECUTOR);
     }
 
     public static class DungeonData {
@@ -288,9 +288,8 @@ public class HypixelApi {
         public int      magicalPower     = -1;   // accessory_bag_storage.magical_power, –1 = unknown
     }
 
-    // ─── inventory / NBT helpers ──────────────────────────────────────────────
 
-    private static final Pattern STRIP_COLOR    = Pattern.compile("§.");
+    public static final Pattern STRIP_COLOR    = Pattern.compile("§.");
     private static final Pattern ULTIMATE_PAT   = Pattern.compile("Ultimate ([A-Za-z ]+?) ([IVX]+)$");
 
     private static void parseInventoryData(JsonObject member, DungeonData result) {
@@ -298,7 +297,7 @@ public class HypixelApi {
             if (!member.has("inventory")) return;
             JsonObject inv = member.getAsJsonObject("inventory");
 
-            // Search main inv + echest for Ragnarock Axe / Terminator
+            // main inv + echest — scan for Ragnarock Axe / Terminator
             List<CompoundTag> mainItems  = parseSlots(inv, "inv_contents");
             List<CompoundTag> echestItems = parseSlots(inv, "ender_chest_contents");
             List<CompoundTag> allItems = new ArrayList<>(mainItems.size() + echestItems.size());
@@ -342,12 +341,69 @@ public class HypixelApi {
             if (!inventory.has(key)) return Collections.emptyList();
             JsonObject slot = inventory.getAsJsonObject(key);
             if (!slot.has("data")) return Collections.emptyList();
-            String b64 = slot.get("data").getAsString();
-            if (b64.isEmpty()) return Collections.emptyList();
+            return decodeItemData(slot.get("data").getAsString());
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    /** Toolkit blobs decode to a bare ExtraAttributes compound (no {@code i} wrapper). */
+    private static CompoundTag decodeRawCompound(String b64) {
+        try {
+            if (b64 == null || b64.isEmpty()) return null;
+            byte[] bytes = java.util.Base64.getDecoder().decode(b64);
+            return NbtIo.readCompressed(new ByteArrayInputStream(bytes), NbtAccounter.unlimitedHeap());
+        } catch (Exception e) { return null; }
+    }
+
+    /**
+     * Values the farming + hunting toolkits (member.garden_player_data.farming_toolkit /
+     * member.foraging.hunting_toolkit). Each category maps to entries of {@code {type,data}} where
+     * data decodes straight to an ExtraAttributes compound; SkyHelper runs those through the normal
+     * item pipeline, so we wrap each in a synthetic {@code {tag:{ExtraAttributes}}} and reuse itemValueNw.
+     */
+    private static double toolkitsValueNw(JsonObject member, Map<String, Double> prices) {
+        double total = 0;
+        JsonObject[] kits = new JsonObject[2];
+        try {
+            if (member.has("garden_player_data") && member.getAsJsonObject("garden_player_data").has("farming_toolkit"))
+                kits[0] = member.getAsJsonObject("garden_player_data").getAsJsonObject("farming_toolkit");
+        } catch (Exception ignored) {}
+        try {
+            if (member.has("foraging") && member.getAsJsonObject("foraging").has("hunting_toolkit"))
+                kits[1] = member.getAsJsonObject("foraging").getAsJsonObject("hunting_toolkit");
+        } catch (Exception ignored) {}
+        for (JsonObject kit : kits) {
+            if (kit == null) continue;
+            try { if (kit.has("IS_UNLOCKED") && !kit.get("IS_UNLOCKED").getAsBoolean()) continue; } catch (Exception ignored) {}
+            for (Map.Entry<String, JsonElement> cat : kit.entrySet()) {
+                String k = cat.getKey();
+                if (k.equals("IS_UNLOCKED") || k.equals("IN_USE") || !cat.getValue().isJsonArray()) continue;
+                for (JsonElement se : cat.getValue().getAsJsonArray()) {
+                    try {
+                        JsonObject so = se.getAsJsonObject();
+                        if (!so.has("data")) continue;
+                        CompoundTag exa = decodeRawCompound(so.get("data").getAsString());
+                        if (exa == null || !exa.contains("id")) continue;
+                        CompoundTag tag = new CompoundTag();
+                        tag.put("ExtraAttributes", exa);
+                        CompoundTag item = new CompoundTag();
+                        item.put("tag", tag);
+                        total += itemValueNw(item, prices);
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+        return total;
+    }
+
+    /** Decodes a base64 gzipped item-list blob ({@code {i:[...]}}) into its slot compounds. */
+    private static List<CompoundTag> decodeItemData(String b64) {
+        try {
+            if (b64 == null || b64.isEmpty()) return Collections.emptyList();
             byte[] bytes = java.util.Base64.getDecoder().decode(b64);
             CompoundTag root = NbtIo.readCompressed(new ByteArrayInputStream(bytes), NbtAccounter.unlimitedHeap());
-            Optional<ListTag> listOpt = root.getList("i");
-            ListTag items = listOpt.orElse(null);
+            ListTag items = root.getList("i").orElse(null);
             if (items == null) return Collections.emptyList();
             List<CompoundTag> out = new ArrayList<>(items.size());
             for (int i = 0; i < items.size(); i++) {
@@ -389,6 +445,21 @@ public class HypixelApi {
         } catch (Exception e) { return null; }
     }
 
+    /** True for a soulbound item: donated_museum flag, or a "(Co-op) Soulbound" lore line. */
+    private static boolean isSoulboundItem(CompoundTag item, CompoundTag ex) {
+        try { if (ex != null && ex.contains("donated_museum")) return true; } catch (Exception ignored) {}
+        try {
+            CompoundTag tag = getTag(item);
+            CompoundTag disp = tag != null ? compound(tag, "display") : null;
+            ListTag lore = disp != null ? disp.getList("Lore").orElse(null) : null;
+            if (lore != null) for (int i = 0; i < lore.size(); i++) {
+                String s = lore.getString(i).orElse("");
+                if (s.contains("Co-op Soulbound") || s.contains("§8Soulbound")) return true;
+            }
+        } catch (Exception ignored) {}
+        return false;
+    }
+
     private static int getEnchantLevel(CompoundTag item, String enchantName) {
         CompoundTag extras = getExtras(item);
         if (extras == null) return -1;
@@ -405,7 +476,6 @@ public class HypixelApi {
         CompoundTag extras = getExtras(item);
         if (extras == null) return null;
         try {
-            // Check enchantments map for "ultimate_" prefixed keys
             Tag encEl = extras.get("enchantments");
             if (encEl != null) {
                 CompoundTag enchants = encEl.asCompound().orElse(null);
@@ -419,7 +489,7 @@ public class HypixelApi {
                     }
                 }
             }
-            // Fallback: scan lore for "Ultimate <Name> <Level>"
+            // fallback: scan lore for "Ultimate <Name> <Level>"
             CompoundTag tag = getTag(item);
             if (tag == null) return null;
             Tag displayEl = tag.get("display");
@@ -445,7 +515,7 @@ public class HypixelApi {
                 if (lvl >= 0) return lvl;
             } catch (Exception ignored) {}
         }
-        // Fallback: count ✪ in display name
+        // fallback: count ✪ in display name
         try {
             CompoundTag tag = getTag(item);
             if (tag == null) return 0;
@@ -471,7 +541,7 @@ public class HypixelApi {
             }
         } catch (Exception ignored) {}
 
-        // Compute from bag NBT: parse each accessory's rarity → sum MP values
+        // else compute from bag NBT: sum MP by each accessory's rarity
         try {
             if (!member.has("accessory_bag_storage")) return -1;
             JsonObject abs = member.getAsJsonObject("accessory_bag_storage");
@@ -482,7 +552,6 @@ public class HypixelApi {
             int total = 0;
             for (CompoundTag item : items) {
                 if (item == null) continue;
-                // Deduplicate by item ID — only count each accessory once
                 String id = getItemId(item);
                 if (id != null && !seen.add(id)) continue;
 
@@ -495,7 +564,7 @@ public class HypixelApi {
                 ListTag lore = display.getList("Lore").orElse(null);
                 if (lore == null || lore.isEmpty()) continue;
 
-                // Last non-empty lore line = "§X§lRARITY TYPE"
+                // last non-empty lore line = "§X§lRARITY TYPE"
                 for (int i = lore.size() - 1; i >= 0; i--) {
                     String line = STRIP_COLOR.matcher(lore.getString(i).orElse("")).replaceAll("").trim();
                     if (!line.isEmpty()) { total += mpForRarity(line); break; }
@@ -530,7 +599,6 @@ public class HypixelApi {
         void onData(DungeonData data);
     }
 
-    // ─── entry points ─────────────────────────────────────────────────────────
 
     /**
      * Silent Party Finder lookup — requires API key.
@@ -539,10 +607,10 @@ public class HypixelApi {
      * Always calls callback so pending is never stuck.
      */
     public static void getByNameSilent(String ign, DungeonDataCallback callback) {
-        // Fast path: UUID already known (in-session or on-disk cache) — skip the name→UUID lookup.
+        // fast path: UUID already cached — skip the name→UUID lookup
         String cachedUuid = getCachedUuid(ign);
         if (cachedUuid != null) { fetchProfilesSilent(cachedUuid, callback); return; }
-        // Mojang-authoritative resolve (see resolveUuid) so recycled/changed names hit the right account.
+        // Mojang-authoritative resolve so recycled/changed names hit the right account
         resolveUuid(ign, 0, uuid -> {
             if (uuid == null) { callback.onData(new DungeonData()); return; }
             fetchProfilesSilent(uuid, callback);
@@ -632,9 +700,7 @@ public class HypixelApi {
                     int code = resp.statusCode();
                     String uuid = (code >= 200 && code < 300) ? parseUuid(resp.body()) : null;
                     if (uuid != null) { putUuid(ign, uuid); cb.accept(uuid); return; }
-                    // Only fall back to the mirrors when Mojang couldn't actually answer. A definitive
-                    // not-found (404/400/empty-2xx) is authoritative — don't let a stale mirror resolve
-                    // a recycled name to the wrong account.
+                    // fall back to mirrors only when Mojang couldn't answer — a definitive not-found is authoritative
                     boolean transientErr = code == 429 || code == 408 || code >= 500;
                     if (attempt == 0 && !transientErr) { cb.accept(null); return; }
                     resolveUuid(ign, next, cb);
@@ -671,7 +737,6 @@ public class HypixelApi {
         fetchProfiles(mc, uuid, callback);
     }
 
-    // ─── internal ─────────────────────────────────────────────────────────────
 
     private static DungeonData parseDungeonData(String uuidStr, JsonObject member) {
         DungeonData result = new DungeonData();
@@ -688,9 +753,7 @@ public class HypixelApi {
                     result.cataPbs[f] = extractFloorPb(cata, f);
             }
 
-            // Per-floor run counts + totalRuns
-            // Hypixel API: tier_completions[floor] = completions; times_played[floor] = attempts (incl. fails).
-            // master_catacombs typically only populates tier_completions, not times_played.
+            // per-floor runs: tier_completions=completions, times_played=attempts (master usually only has tier_completions)
             long totalRuns = 0;
             if (types.has("catacombs")) {
                 JsonObject dt = types.getAsJsonObject("catacombs");
@@ -900,9 +963,11 @@ public class HypixelApi {
 
     public interface NetworthCallback { void onData(double networth, String profileName); }
 
-    // SkyHelper public price list (item/pet/modifier prices). Cached.
+    // public price list (item/pet/modifier prices), cached
     private static final Map<String, Double> NW_PRICES = new ConcurrentHashMap<>();
+    private static final Object NW_PRICES_LOCK = new Object();
     private static volatile long nwPricesAt = 0;
+    private static volatile long nwPricesFailAt = 0;
 
     private static final String[] NW_STORAGES = {
         "inv_contents","inv_armor","ender_chest_contents","equipment_contents",
@@ -918,8 +983,36 @@ public class HypixelApi {
         java.util.concurrent.CompletableFuture.runAsync(() -> {
             String uuid = resolveUuidBlocking(ign);
             if (uuid == null) { cb.onData(-1, null); return; }
+            // prefer the proxy's networth endpoint (real library, includes museum); local estimate is the fallback
+            if (getNetworthRemote(uuid, cb)) return;
             getNetworthLocal(uuid, cb);
-        });
+        }, API_EXECUTOR);
+    }
+
+    /**
+     * Asks the proxy for a SkyHelper-Networth figure ({@code /networth?uuid=}). Expected body:
+     * {@code {"success":true,"networth":<number>,"profile":"<cute_name>"}}. Returns true if a
+     * value was delivered to [cb]; false (nothing delivered) so the caller can fall back.
+     */
+    private static boolean getNetworthRemote(String uuid, NetworthCallback cb) {
+        try {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(PROXY_URL + "/networth?uuid=" + uuid))
+                    .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                    .timeout(Duration.ofSeconds(15)).GET().build();
+            HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
+            if (r.statusCode() != 200) return false;
+            JsonObject o = JsonParser.parseString(r.body()).getAsJsonObject();
+            if (!o.has("networth") || o.get("networth").isJsonNull()) return false;
+            if (o.has("success") && !o.get("success").getAsBoolean()) return false;
+            double nw = o.get("networth").getAsDouble();
+            String pname = o.has("profile") && !o.get("profile").isJsonNull() ? o.get("profile").getAsString() : null;
+            cb.onData(nw, pname);
+            return true;
+        } catch (Exception e) {
+            fishmod.utils.debug.Debug.LOGGER.warn("[Networth] remote endpoint: {}", e.toString());
+            return false;
+        }
     }
 
     /** Client-side networth estimate using the SkyHelper price list. */
@@ -953,26 +1046,61 @@ public class HypixelApi {
                 if (member.has("currencies") && member.getAsJsonObject("currencies").has("coin_purse"))
                     total += member.getAsJsonObject("currencies").get("coin_purse").getAsDouble();
                 else if (member.has("coin_purse")) total += member.get("coin_purse").getAsDouble();
+                // personal bank — counted as liquid
+                if (member.has("profile") && member.getAsJsonObject("profile").has("bank_account"))
+                    total += member.getAsJsonObject("profile").get("bank_account").getAsDouble();
 
+                double liquid = total;
+                double invVal = 0, storageVal = 0, bagsVal = 0, wardrobeVal = 0, equipLoadoutVal = 0;
                 if (member.has("inventory")) {
                     JsonObject inv = member.getAsJsonObject("inventory");
-                    for (String k : NW_STORAGES) total += sumStorageNw(inv, k, prices);
+                    for (String k : NW_STORAGES) invVal += sumStorageNw(inv, k, prices);
                     if (inv.has("backpack_contents") && inv.get("backpack_contents").isJsonObject()) {
                         JsonObject bp = inv.getAsJsonObject("backpack_contents");
-                        for (String k : bp.keySet()) total += sumStorageNw(bp, k, prices);
+                        for (String k : bp.keySet()) storageVal += sumStorageNw(bp, k, prices);
                     }
-                    // Accessory bag, fishing bag, potion bag, quiver, sacks bag live nested under
-                    // bag_contents — NOT at the inventory top level. The accessory (talisman) bag
-                    // is often several billion, so missing it badly undercounted networth.
+                    // these bags nest under bag_contents, not inventory top level — missing the talisman bag undercounts badly
                     if (inv.has("bag_contents") && inv.get("bag_contents").isJsonObject()) {
                         JsonObject bags = inv.getAsJsonObject("bag_contents");
-                        for (String k : bags.keySet()) total += sumStorageNw(bags, k, prices);
+                        for (String k : bags.keySet()) bagsVal += sumStorageNw(bags, k, prices);
                     }
                 }
-                total += petsValueNw(member, prices);
-                total += sacksValueNw(member, prices);
-                total += essenceValueNw(member, prices);
-                total += shardsValueNw(member, prices);
+                // wardrobe + equipment loadouts now live at member.loadout.{armor,equipment} (per-slot {SLOT:{data}} maps)
+                if (member.has("loadout") && member.get("loadout").isJsonObject()) {
+                    JsonObject lo = member.getAsJsonObject("loadout");
+                    if (lo.has("armor") && lo.get("armor").isJsonObject()) {
+                        for (Map.Entry<String, JsonElement> e : lo.getAsJsonObject("armor").entrySet()) {
+                            if (!e.getValue().isJsonObject()) continue;
+                            JsonObject layout = e.getValue().getAsJsonObject();
+                            for (String p : new String[]{"HELMET", "CHESTPLATE", "LEGGINGS", "BOOTS"})
+                                wardrobeVal += sumStorageNw(layout, p, prices);
+                        }
+                    }
+                    if (lo.has("equipment") && lo.get("equipment").isJsonObject()) {
+                        for (Map.Entry<String, JsonElement> e : lo.getAsJsonObject("equipment").entrySet()) {
+                            if (!e.getValue().isJsonObject()) continue;
+                            JsonObject layout = e.getValue().getAsJsonObject();
+                            for (String p : new String[]{"EQUIPMENT_SLOT_1", "EQUIPMENT_SLOT_2",
+                                                         "EQUIPMENT_SLOT_3", "EQUIPMENT_SLOT_4"})
+                                equipLoadoutVal += sumStorageNw(layout, p, prices);
+                        }
+                    }
+                }
+                total = liquid + invVal + storageVal + bagsVal + wardrobeVal + equipLoadoutVal;
+                fishmod.utils.debug.Debug.LOGGER.info(
+                        "[Networth] buckets: liquid={} inv(NW_STORAGES)={} storage/backpacks={} bag_contents={} wardrobe={} equipLoadout={}",
+                        liquid, invVal, storageVal, bagsVal, wardrobeVal, equipLoadoutVal);
+                double liquidAndItems = total;
+                double pets = petsValueNw(member, prices);
+                double sacks = sacksValueNw(member, prices);
+                double essence = essenceValueNw(member, prices);
+                double toolkits = toolkitsValueNw(member, prices);
+                double museum = chosen.has("profile_id")
+                        ? museumValueNw(uuid, chosen.get("profile_id").getAsString(), prices) : 0;
+                total = liquidAndItems + pets + sacks + essence + toolkits + museum;
+                fishmod.utils.debug.Debug.LOGGER.info(
+                        "[Networth] {} total={} (liquid+items={} pets={} sacks={} essence={} toolkits={} museum={})",
+                        pname, total, liquidAndItems, pets, sacks, essence, toolkits, museum);
 
                 cb.onData(total, pname);
             } catch (Exception ex) {
@@ -981,8 +1109,13 @@ public class HypixelApi {
             }
     }
 
-    private static synchronized Map<String, Double> nwPrices() {
-        if (System.currentTimeMillis() - nwPricesAt < 10 * 60 * 1000L && !NW_PRICES.isEmpty()) return NW_PRICES;
+    private static Map<String, Double> nwPrices() {
+        long now = System.currentTimeMillis();
+        if (now - nwPricesAt < 10 * 60 * 1000L && !NW_PRICES.isEmpty()) return NW_PRICES;
+        // failure cool-down: after a failed refresh, don't retry for 60s
+        if (now - nwPricesFailAt < 60 * 1000L) return NW_PRICES;
+        // HTTP GET runs outside any lock so the class monitor isn't held across a 20s request
+        Map<String, Double> fetched = null;
         try {
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create("https://raw.githubusercontent.com/SkyHelperBot/Prices/main/pricesV2.json"))
@@ -990,13 +1123,22 @@ public class HypixelApi {
             HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
             if (r.statusCode() == 200) {
                 JsonObject o = JsonParser.parseString(r.body()).getAsJsonObject();
-                NW_PRICES.clear();
+                fetched = new HashMap<>();
                 for (Map.Entry<String, JsonElement> e : o.entrySet()) {
-                    try { NW_PRICES.put(e.getKey(), e.getValue().getAsDouble()); } catch (Exception ignored) {}
+                    try { fetched.put(e.getKey(), e.getValue().getAsDouble()); } catch (Exception ignored) {}
                 }
-                nwPricesAt = System.currentTimeMillis();
             }
         } catch (Exception e) { fishmod.utils.debug.Debug.LOGGER.warn("[Networth] prices fetch: {}", e.getMessage()); }
+        if (fetched == null || fetched.isEmpty()) {
+            nwPricesFailAt = System.currentTimeMillis();
+            return NW_PRICES;
+        }
+        synchronized (NW_PRICES_LOCK) {
+            NW_PRICES.clear();
+            NW_PRICES.putAll(fetched);
+            nwPricesAt = System.currentTimeMillis();
+            nwPricesFailAt = 0;
+        }
         return NW_PRICES;
     }
 
@@ -1014,8 +1156,8 @@ public class HypixelApi {
     }
 
     /**
-     * Per-item modifier valuation, ported from SkyHelper-Networth's handler pipeline (non-cosmetic).
-     * Each modifier is wrapped in try/catch so one bad field never zeroes the whole item.
+     * Per-item modifier valuation (non-cosmetic). Each modifier is wrapped in its own try/catch so
+     * one bad field never zeroes the whole item.
      */
     private static double itemValueNw(CompoundTag item, Map<String, Double> prices) {
         CompoundTag ex = getExtras(item);
@@ -1024,15 +1166,15 @@ public class HypixelApi {
         if (id == null) return 0;
 
         int count = 1;
+        // some lists store Count as byte
         try { count = item.getIntOr("Count", 1); if (count <= 0) count = 1; } catch (Exception ignored) {}
-        // Some lists store Count as byte; fall back gracefully.
 
-        // Item metadata (category / gemstone_slots / upgrade_costs / prestige) for handlers that need it.
+        // item metadata (category / gemstone_slots / upgrade_costs / prestige)
         com.google.gson.JsonObject meta = fishmod.utils.networth.ItemsDb.get(id);
         String category = "";
         try { if (meta != null && meta.has("category")) category = meta.get("category").getAsString(); } catch (Exception ignored) {}
 
-        // ---- Base price (ported getItemId): skin / shiny / starred / cake / rune variants ----
+        // base price: skin / shiny / starred / cake / rune variants
         String priceId = id;
         try {
             String skin = ex.getStringOr("skin", "");
@@ -1052,7 +1194,6 @@ public class HypixelApi {
                 int cake = ex.getIntOr("new_years_cake", 0);
                 priceId = "NEW_YEAR_CAKE_" + cake;
             }
-            // Shiny variant
             if (ex.getIntOr("is_shiny", 0) > 0 && price(prices, id + "_SHINY") > 0) priceId = id + "_SHINY";
             // Fragged: STARRED_ fallback to base
             if (id.startsWith("STARRED_") && price(prices, id) == 0 && price(prices, id.replace("STARRED_", "")) > 0)
@@ -1062,7 +1203,7 @@ public class HypixelApi {
         double base = price(prices, priceId) * count;
         double v = base;
 
-        // ---- Crown of Avarice: collected coins interpolate base between 0 and 1B price ----
+        // Crown of Avarice: collected coins interpolate base between 0 and 1B price
         try {
             if ("CROWN_OF_AVARICE".equals(id)) {
                 long cc = 0;
@@ -1073,12 +1214,12 @@ public class HypixelApi {
                     double bil  = price(prices, "CROWN_OF_AVARICE_1B");
                     double coins = Math.min(cc, 1_000_000_000.0);
                     double newBase = zero + (bil - zero) * (coins / 1_000_000_000.0);
-                    v += (newBase - base); // SkyHelper replaces the base price with the interpolated value
+                    v += (newBase - base); // replaces the base price with the interpolated value
                 }
             }
         } catch (Exception ignored) {}
 
-        // ---- Recombobulator x0.8 ----
+        // Recombobulator x0.8
         try {
             boolean isRecomb = ex.getIntOr("rarity_upgrades", 0) > 0 && ex.getIntOr("item_tier", -1) < 0
                     && !ex.contains("item_tier");
@@ -1095,7 +1236,7 @@ public class HypixelApi {
             }
         } catch (Exception ignored) {}
 
-        // ---- Potato books ----
+        // Potato books
         try {
             int hpc = ex.getIntOr("hot_potato_count", 0);
             if (hpc > 0) {
@@ -1104,7 +1245,7 @@ public class HypixelApi {
             }
         } catch (Exception ignored) {}
 
-        // ---- Enchantments (EnchantedBook items valued differently) ----
+        // Enchantments (EnchantedBook items valued differently)
         try {
             CompoundTag enc = compound(ex, "enchantments");
             if (enc != null && !enc.keySet().isEmpty()) {
@@ -1117,17 +1258,17 @@ public class HypixelApi {
                         if (p == 0) continue;
                         bookPrice += p * (single ? 1 : fishmod.utils.networth.NwConstants.ENCHANTMENTS);
                     }
-                    if (bookPrice > 0) v += bookPrice; // replaces basePrice (which is ~0 for the book item)
+                    if (bookPrice > 0) v += bookPrice; // replaces base (~0 for the book item)
                 } else {
                     v += enchantmentsValueNw(id, enc, prices);
                 }
             }
         } catch (Exception ignored) {}
 
-        // ---- Gemstones (gems themselves + unlock slot costs for Divan/Crimson armor) ----
+        // Gemstones (gems themselves + unlock slot costs for Divan/Crimson armor)
         try { v += gemsValueNw(id, ex, meta, prices); } catch (Exception ignored) {}
 
-        // ---- Master Stars (stars 6-10) ----
+        // Master Stars (stars 6-10)
         try {
             int up = upgradeLevel(ex);
             if (meta != null && meta.has("upgrade_costs") && up > 5) {
@@ -1139,7 +1280,7 @@ public class HypixelApi {
             }
         } catch (Exception ignored) {}
 
-        // ---- Essence Stars ----
+        // Essence Stars
         try {
             int up = upgradeLevel(ex);
             if (meta != null && meta.has("upgrade_costs") && up > 0) {
@@ -1147,7 +1288,7 @@ public class HypixelApi {
             }
         } catch (Exception ignored) {}
 
-        // ---- Prestige ----
+        // Prestige
         try {
             String[] chain = fishmod.utils.networth.NwConstants.PRESTIGES.get(id);
             if (chain != null && price(prices, id) == 0) {
@@ -1163,7 +1304,7 @@ public class HypixelApi {
             }
         } catch (Exception ignored) {}
 
-        // ---- Reforge x1 (not for accessories) ----
+        // Reforge x1 (not for accessories)
         try {
             String modifier = ex.getStringOr("modifier", "");
             if (!modifier.isEmpty() && !"ACCESSORY".equals(category)) {
@@ -1172,26 +1313,26 @@ public class HypixelApi {
             }
         } catch (Exception ignored) {}
 
-        // ---- Art of War x0.6 ----
+        // Art of War x0.6
         try { int c = ex.getIntOr("art_of_war_count", 0); if (c > 0) v += price(prices, "THE_ART_OF_WAR") * c * fishmod.utils.networth.NwConstants.ART_OF_WAR; } catch (Exception ignored) {}
-        // ---- Art of Peace x0.8 ----
+        // Art of Peace x0.8
         try { int c = ex.getIntOr("artOfPeaceApplied", 0); if (c > 0) v += price(prices, "THE_ART_OF_PEACE") * c * fishmod.utils.networth.NwConstants.ART_OF_PEACE; } catch (Exception ignored) {}
-        // ---- Necron-blade ability scrolls x1 ----
+        // Necron-blade ability scrolls x1
         try {
             ListTag scrolls = ex.getList("ability_scroll").orElse(null);
             if (scrolls != null) for (int i = 0; i < scrolls.size(); i++)
                 v += price(prices, scrolls.getString(i).orElse("").toUpperCase()) * fishmod.utils.networth.NwConstants.NECRON_BLADE_SCROLL;
         } catch (Exception ignored) {}
-        // ---- Gemstone power scroll x0.5 ----
+        // Gemstone power scroll x0.5
         try { String ps = ex.getStringOr("power_ability_scroll", ""); if (!ps.isEmpty()) v += price(prices, ps) * fishmod.utils.networth.NwConstants.GEMSTONE_POWER_SCROLL; } catch (Exception ignored) {}
-        // ---- Drill parts x1 ----
+        // Drill parts x1
         try {
             for (String part : new String[]{"drill_part_upgrade_module","drill_part_fuel_tank","drill_part_engine"}) {
                 String pid = ex.getStringOr(part, "");
                 if (!pid.isEmpty()) v += price(prices, pid.toUpperCase()) * fishmod.utils.networth.NwConstants.DRILL_PART;
             }
         } catch (Exception ignored) {}
-        // ---- Rod parts x1 (line/hook/sinker -> compound with `part`) ----
+        // Rod parts x1 (line/hook/sinker -> compound with `part`)
         try {
             for (String part : new String[]{"line","hook","sinker"}) {
                 CompoundTag pc = compound(ex, part);
@@ -1201,29 +1342,48 @@ public class HypixelApi {
                 }
             }
         } catch (Exception ignored) {}
-        // ---- Etherwarp conduit x1 ----
+        // Etherwarp conduit x1
         try { if (ex.getIntOr("ethermerge", 0) > 0) v += price(prices, "ETHERWARP_CONDUIT") * fishmod.utils.networth.NwConstants.ETHERWARP; } catch (Exception ignored) {}
-        // ---- Transmission tuner x0.7 ----
+        // Transmission tuner x0.7
         try { int tt = ex.getIntOr("tuned_transmission", 0); if (tt > 0) v += price(prices, "TRANSMISSION_TUNER") * tt * fishmod.utils.networth.NwConstants.TUNED_TRANSMISSION; } catch (Exception ignored) {}
-        // ---- Wood singularity x0.5 ----
+        // Wood singularity x0.5
         try { int c = ex.getIntOr("wood_singularity_count", 0); if (c > 0) v += price(prices, "WOOD_SINGULARITY") * c * fishmod.utils.networth.NwConstants.WOOD_SINGULARITY; } catch (Exception ignored) {}
-        // ---- Jalapeno book x0.8 ----
+        // Jalapeno book x0.8
         try { int c = ex.getIntOr("jalapeno_count", 0); if (c > 0) v += price(prices, "JALAPENO_BOOK") * c * fishmod.utils.networth.NwConstants.JALAPENO_BOOK; } catch (Exception ignored) {}
-        // ---- Mana disintegrator x0.8 ----
+        // Mana disintegrator x0.8
         try { int c = ex.getIntOr("mana_disintegrator_count", 0); if (c > 0) v += price(prices, "MANA_DISINTEGRATOR") * c * fishmod.utils.networth.NwConstants.MANA_DISINTEGRATOR; } catch (Exception ignored) {}
-        // ---- Farming for dummies x0.5 ----
+        // Farming for dummies x0.5
         try { int c = ex.getIntOr("farming_for_dummies_count", 0); if (c > 0) v += price(prices, "FARMING_FOR_DUMMIES") * c * fishmod.utils.networth.NwConstants.FARMING_FOR_DUMMIES; } catch (Exception ignored) {}
-        // ---- Overclocker 3000 x0.9 ----
+        // Overclocker 3000 x0.9
         try { int c = ex.getIntOr("levelable_overclocks", 0); if (c > 0) v += price(prices, "OVERCLOCKER_3000") * c * fishmod.utils.networth.NwConstants.OVERCLOCKER_3000; } catch (Exception ignored) {}
-        // ---- Polarvoid book x1 ----
+        // Polarvoid book x1
         try { int c = ex.getIntOr("polarvoid", 0); if (c > 0) v += price(prices, "POLARVOID_BOOK") * c * fishmod.utils.networth.NwConstants.POLARVOID_BOOK; } catch (Exception ignored) {}
-        // ---- Pocket sack-in-a-sack x0.7 ----
+        // Pocket sack-in-a-sack x0.7
         try { int c = ex.getIntOr("sack_pss", 0); if (c > 0) v += price(prices, "POCKET_SACK_IN_A_SACK") * c * fishmod.utils.networth.NwConstants.POCKET_SACK_IN_A_SACK; } catch (Exception ignored) {}
-        // ---- Divan powder coating x0.8 ----
+        // Divan powder coating x0.8
         try { int c = ex.getIntOr("divan_powder_coating", 0); if (c > 0) v += price(prices, "DIVAN_POWDER_COATING") * fishmod.utils.networth.NwConstants.DIVAN_POWDER_COATING; } catch (Exception ignored) {}
-        // ---- Dye x0.9 ----
+        // Dye x0.9
         try { String dye = ex.getStringOr("dye_item", ""); if (!dye.isEmpty()) v += price(prices, dye.toUpperCase()) * fishmod.utils.networth.NwConstants.DYE; } catch (Exception ignored) {}
-        // ---- Runes x0.6 (only on non-rune items) ----
+        // Soulbound Skin x0.8: skin value on a soulbound item not already priced via _SKINNED_ (museum items are soulbound)
+        try {
+            String skin = ex.getStringOr("skin", "");
+            if (!skin.isEmpty() && !priceId.contains(skin) && isSoulboundItem(item, ex)) {
+                double sp = price(prices, skin);
+                if (sp == 0) sp = price(prices, skin.toUpperCase());
+                v += sp * fishmod.utils.networth.NwConstants.SOULBOUND_SKINS;
+            }
+        } catch (Exception ignored) {}
+        // Pulse Ring: Thunder in a Bottle x0.8 (per 50k charge, capped 5M)
+        try {
+            if ("PULSE_RING".equals(id)) {
+                long tc = ex.getLongOr("thunder_charge", 0L);
+                if (tc > 0) {
+                    int up = (int) (Math.min(tc, 5_000_000L) / 50_000L);
+                    v += price(prices, "THUNDER_IN_A_BOTTLE") * up * fishmod.utils.networth.NwConstants.THUNDER_IN_A_BOTTLE;
+                }
+            }
+        } catch (Exception ignored) {}
+        // Runes x0.6 (only on non-rune items)
         try {
             CompoundTag runes = compound(ex, "runes");
             if (runes != null && !id.startsWith("RUNE")) for (String rn : runes.keySet()) {
@@ -1232,7 +1392,7 @@ public class HypixelApi {
                 break;
             }
         } catch (Exception ignored) {}
-        // ---- Enrichment x0.5 (cheapest enrichment) ----
+        // Enrichment x0.5 (cheapest enrichment)
         try {
             String enr = ex.getStringOr("talisman_enrichment", "");
             if (!enr.isEmpty()) {
@@ -1244,28 +1404,42 @@ public class HypixelApi {
                 if (cheapest != Double.POSITIVE_INFINITY) v += cheapest * fishmod.utils.networth.NwConstants.ENRICHMENT;
             }
         } catch (Exception ignored) {}
-        // ---- Boosters x0.8 ----
+        // Boosters x0.8 (booster_tiers = base + each tier upgrade; else legacy `boosters` list)
         try {
-            ListTag boosters = ex.getList("boosters").orElse(null);
-            if (boosters != null) for (int i = 0; i < boosters.size(); i++) {
-                String b = boosters.getString(i).orElse("");
-                if (!b.isEmpty()) v += price(prices, b.toUpperCase() + "_BOOSTER") * fishmod.utils.networth.NwConstants.BOOSTER;
+            CompoundTag bt = compound(ex, "booster_tiers");
+            if (bt != null && !bt.keySet().isEmpty()) {
+                for (String b : bt.keySet()) {
+                    int tier = bt.getIntOr(b, 0);
+                    String bu = b.toUpperCase();
+                    double p = price(prices, bu + "_BOOSTER");
+                    if (p == 0) p = price(prices, bu + "_BOOSTER_COMMON");
+                    if (p > 0) v += p * fishmod.utils.networth.NwConstants.BOOSTER;
+                    for (int t = 1; t < tier && t < fishmod.utils.networth.NwConstants.PET_TIERS.length; t++)
+                        v += price(prices, bu + "_BOOSTER_" + fishmod.utils.networth.NwConstants.PET_TIERS[t])
+                                * fishmod.utils.networth.NwConstants.BOOSTER;
+                }
+            } else {
+                ListTag boosters = ex.getList("boosters").orElse(null);
+                if (boosters != null) for (int i = 0; i < boosters.size(); i++) {
+                    String b = boosters.getString(i).orElse("");
+                    if (!b.isEmpty()) v += price(prices, b.toUpperCase() + "_BOOSTER") * fishmod.utils.networth.NwConstants.BOOSTER;
+                }
             }
         } catch (Exception ignored) {}
-        // ---- New Year Cake Bag (sum of contained cakes, x1) ----
+        // New Year Cake Bag (sum of contained cakes, x1)
         try {
             ListTag years = ex.getList("new_year_cake_bag_years").orElse(null);
             if (years != null) for (int i = 0; i < years.size(); i++)
                 v += price(prices, "NEW_YEAR_CAKE_" + years.getInt(i).orElse(0));
         } catch (Exception ignored) {}
-        // ---- Shen's Auction (price paid x0.85, replaces base if higher) ----
+        // Shen's Auction (price paid x0.85, replaces base if higher)
         try {
             if (ex.contains("price") && ex.contains("auction") && ex.contains("bid")) {
                 double pricePaid = ex.getDoubleOr("price", 0) * fishmod.utils.networth.NwConstants.SHENS_AUCTION_PRICE;
                 if (pricePaid > base) v += (pricePaid - base);
             }
         } catch (Exception ignored) {}
-        // ---- Midas weapon (max-bid variant replaces base) ----
+        // Midas weapon (max-bid variant replaces base)
         try {
             Object[] midas = fishmod.utils.networth.NwConstants.MIDAS_SWORDS.get(id);
             if (midas != null) {
@@ -1277,23 +1451,11 @@ public class HypixelApi {
                     v += (price(prices, type) - base);
             }
         } catch (Exception ignored) {}
-        // ---- Pickonimbus (durability reduces base) ----
+        // Pickonimbus (durability reduces base)
         try {
             if ("PICKONIMBUS".equals(id)) {
                 int dur = ex.getIntOr("pickonimbus_durability", 5000);
                 if (dur < 5000) v += base * ((dur / 5000.0) - 1);
-            }
-        } catch (Exception ignored) {}
-
-        // ---- BONUS (not in SkyHelper): item attributes -> ATTRIBUTE_SHARD_<NAME> x 2^(level-1) ----
-        try {
-            CompoundTag att = compound(ex, "attributes");
-            if (att != null) for (String an : att.keySet()) {
-                int lvl = att.getIntOr(an, 0);
-                if (lvl > 0) {
-                    double sp = price(prices, "ATTRIBUTE_SHARD_" + an.toUpperCase());
-                    if (sp > 0) v += sp * Math.pow(2, lvl - 1);
-                }
             }
         } catch (Exception ignored) {}
 
@@ -1329,7 +1491,7 @@ public class HypixelApi {
         try { return b.length() == 0 ? 0 : Integer.parseInt(b.toString()); } catch (Exception e) { return 0; }
     }
 
-    /** Ported helper/essenceStars.js starCosts. Sums slice(0, level) of an upgrade_costs array. */
+    /** Sums slice(0, level) of an item's upgrade_costs array. */
     private static double starCostsNw(JsonArray upgrades, int level, Map<String, Double> prices, boolean prestigeItem) {
         double price = 0;
         int limit = Math.min(level, upgrades.size());
@@ -1357,7 +1519,7 @@ public class HypixelApi {
         return 0;
     }
 
-    /** Ported ItemEnchantments.js: per-enchant value with overrides, silex, upgrades. */
+    /** Per-enchant value with overrides, silex, upgrades. */
     private static double enchantmentsValueNw(String id, CompoundTag enc, Map<String, Double> prices) {
         double v = 0;
         java.util.Set<String> blocked = fishmod.utils.networth.NwConstants.BLOCKED_ENCHANTMENTS.get(id);
@@ -1397,8 +1559,7 @@ public class HypixelApi {
 
     /**
      * Values applied gemstones in an item's `gems` compound (x1) PLUS gemstone-slot UNLOCK costs
-     * for Divan armor (x0.9 gemstoneChambers) and Crimson-family armor (x0.6 gemstoneSlots),
-     * replicating Gemstones.js.
+     * for Divan armor (x0.9 gemstoneChambers) and Crimson-family armor (x0.6 gemstoneSlots).
      */
     private static double gemsValueNw(String id, CompoundTag ex, com.google.gson.JsonObject meta, Map<String, Double> prices) {
         Tag gemsEl = ex.get("gems");
@@ -1407,7 +1568,7 @@ public class HypixelApi {
         if (gems == null) return 0;
         double total = 0;
 
-        // ---- Gemstone slot unlock costs (Divan / Crimson family armor) ----
+        // Gemstone slot unlock costs (Divan / Crimson family armor)
         try {
             boolean isDivan = id != null && id.matches("DIVAN_(HELMET|CHESTPLATE|LEGGINGS|BOOTS)");
             boolean isCrimson = id != null && id.matches("(HOT_|FIERY_|BURNING_|INFERNAL_)?(AURORA|CRIMSON|TERROR|HOLLOW|FERVOR)(_HELMET|_CHESTPLATE|_LEGGINGS|_BOOTS)");
@@ -1477,29 +1638,54 @@ public class HypixelApi {
                 String tier = pet.has("tier") ? pet.get("tier").getAsString() : null;
                 if (type == null || tier == null) continue;
                 double exp = pet.has("exp") ? pet.get("exp").getAsDouble() : 0;
-                int maxLevel = "GOLDEN_DRAGON".equals(type) ? 200 : 100;
-                int level = Math.min(maxLevel, fishmod.features.OverflowPetLevels.calcLevel(exp, petRarity(tier)));
+                String heldItem = pet.has("heldItem") && !pet.get("heldItem").isJsonNull() ? pet.get("heldItem").getAsString() : null;
                 String skin = pet.has("skin") && !pet.get("skin").isJsonNull() ? pet.get("skin").getAsString() : null;
-                String basePetId = tier + "_" + type;
+
+                // PET_ITEM_TIER_BOOST prices the pet one rarity higher.
+                String effTier = tier;
+                if ("PET_ITEM_TIER_BOOST".equals(heldItem)) {
+                    int ti = java.util.Arrays.asList(fishmod.utils.networth.NwConstants.PET_TIERS).indexOf(tier);
+                    if (ti >= 0 && ti + 1 < fishmod.utils.networth.NwConstants.PET_TIERS.length)
+                        effTier = fishmod.utils.networth.NwConstants.PET_TIERS[ti + 1];
+                }
+
+                int maxLevel = fishmod.utils.networth.NwConstants.PET_SPECIAL_MAX.getOrDefault(type, 100);
+                int level = Math.min(maxLevel, fishmod.features.OverflowPetLevels.calcLevel(exp, petRarity(effTier)));
+                String basePetId = effTier + "_" + type;
                 String petId = skin != null ? basePetId + "_SKINNED_" + skin : basePetId;
-                // pet skin uses max(skinned, base) at each level point (non-cosmetic falls back to base)
-                double p1 = Math.max(price(prices, "LVL_1_" + petId), price(prices, "LVL_1_" + basePetId));
-                double pMax = Math.max(price(prices, "LVL_" + maxLevel + "_" + petId), price(prices, "LVL_" + maxLevel + "_" + basePetId));
-                double frac = maxLevel <= 1 ? 1 : (double) (level - 1) / (maxLevel - 1);
-                double base = p1 + (pMax - p1) * frac;
-                if (base <= 0) base = pMax > 0 ? pMax : p1;
+
+                // skinned pets take max(skinned, base) at each level point
+                double lvl1   = Math.max(price(prices, "LVL_1_" + petId),   price(prices, "LVL_1_" + basePetId));
+                double lvl100 = Math.max(price(prices, "LVL_100_" + petId), price(prices, "LVL_100_" + basePetId));
+                double lvl200 = Math.max(price(prices, "LVL_200_" + petId), price(prices, "LVL_200_" + basePetId));
+
+                // base price: XP-fraction interpolation
+                Double xpTo100 = fishmod.utils.networth.NwConstants.PET_XP_TO_100.get(petRarity(effTier).name());
+                double base;
+                if (level > 100 && level < 200) {
+                    base = (lvl200 - lvl100) / 100.0 * (level - 100) + lvl100;
+                } else if (level >= 200) {
+                    base = lvl200 > 0 ? lvl200 : lvl100;
+                } else if (level < 100 && xpTo100 != null && xpTo100 > 0 && (lvl100 - lvl1) != 0) {
+                    base = (lvl100 - lvl1) / xpTo100 * exp + lvl1;
+                } else {
+                    base = lvl100;
+                }
+                if (base <= 0) base = lvl100 > 0 ? lvl100 : lvl1;
 
                 double extra = 0;
-                String heldItem = pet.has("heldItem") && !pet.get("heldItem").isJsonNull() ? pet.get("heldItem").getAsString() : null;
                 // held pet item x1
                 if (heldItem != null) extra += price(prices, heldItem) * fishmod.utils.networth.NwConstants.PET_ITEM;
                 // pet skin x0.8
                 if (skin != null) extra += price(prices, "PET_SKIN_" + skin) * fishmod.utils.networth.NwConstants.SOULBOUND_PET_SKINS;
 
-                // pet candy reduction (PetCandy.js): reduces the candy-added value portion
+                // pet candy reduction — skipped for blocked pets and for pets above max XP once candy XP is discounted
                 try {
                     int candyUsed = pet.has("candyUsed") && !pet.get("candyUsed").isJsonNull() ? pet.get("candyUsed").getAsInt() : 0;
-                    if (candyUsed > 0) {
+                    double xpMax = xpTo100 != null ? xpTo100 : 0;
+                    if (maxLevel > 100) xpMax += 100 * 1_886_700.0;
+                    boolean blocked = fishmod.utils.networth.NwConstants.BLOCKED_CANDY_REDUCE_PETS.contains(type);
+                    if (candyUsed > 0 && !blocked && (exp - candyUsed * 1_000_000.0) < xpMax) {
                         double reduceValue = base * (1 - fishmod.utils.networth.NwConstants.PET_CANDY);
                         double maxReduction = level == 100 ? 5_000_000 : 2_500_000;
                         reduceValue = Math.min(reduceValue, maxReduction);
@@ -1592,6 +1778,60 @@ public class HypixelApi {
         return total;
     }
 
+    /**
+     * Values donated museum items (armor sets, weapons, special items). SkyHelper counts these —
+     * omitting them undercounts an endgame profile by tens of billions. Needs a second proxy call
+     * to /skyblock/museum; failures are swallowed and contribute 0.
+     */
+    private static double museumValueNw(String uuid, String profileId, Map<String, Double> prices) {
+        try {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(PROXY_URL + "/skyblock/museum?profile=" + profileId))
+                    .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                    .timeout(Duration.ofSeconds(12)).GET().build();
+            HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
+            JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
+            if (!root.has("members") || !root.getAsJsonObject("members").has(uuid)) {
+                fishmod.utils.debug.Debug.LOGGER.info("[Networth] museum: http={} no members/uuid (body {}b)",
+                        r.statusCode(), r.body().length());
+                return 0;
+            }
+            JsonObject m = root.getAsJsonObject("members").getAsJsonObject(uuid);
+
+            double total = 0;
+            int slots = 0, decoded = 0;
+            if (m.has("items") && m.get("items").isJsonObject()) {
+                for (Map.Entry<String, JsonElement> e : m.getAsJsonObject("items").entrySet()) {
+                    try {
+                        JsonObject slot = e.getValue().getAsJsonObject();
+                        if (slot.has("borrowing") && slot.get("borrowing").getAsBoolean()) continue;
+                        if (!slot.has("items") || !slot.getAsJsonObject("items").has("data")) continue;
+                        slots++;
+                        for (CompoundTag it : decodeItemData(slot.getAsJsonObject("items").get("data").getAsString()))
+                            if (it != null) { decoded++; total += itemValueNw(it, prices); }
+                    } catch (Exception ignored) {}
+                }
+            }
+            if (m.has("special") && m.get("special").isJsonArray()) {
+                for (JsonElement se : m.getAsJsonArray("special")) {
+                    try {
+                        JsonObject so = se.getAsJsonObject();
+                        if (!so.has("items") || !so.getAsJsonObject("items").has("data")) continue;
+                        slots++;
+                        for (CompoundTag it : decodeItemData(so.getAsJsonObject("items").get("data").getAsString()))
+                            if (it != null) { decoded++; total += itemValueNw(it, prices); }
+                    } catch (Exception ignored) {}
+                }
+            }
+            fishmod.utils.debug.Debug.LOGGER.info("[Networth] museum: {} slots, {} items decoded, value {}",
+                    slots, decoded, total);
+            return total;
+        } catch (Exception e) {
+            fishmod.utils.debug.Debug.LOGGER.warn("[Networth] museum fetch: {}", e.toString());
+            return 0;
+        }
+    }
+
     private static fishmod.features.OverflowPetLevels.Rarity petRarity(String tier) {
         try { return fishmod.features.OverflowPetLevels.Rarity.valueOf(tier); }
         catch (Exception e) { return fishmod.features.OverflowPetLevels.Rarity.LEGENDARY; }
@@ -1601,9 +1841,7 @@ public class HypixelApi {
     private static String resolveUuidBlocking(String ign) {
         String cached = getCachedUuid(ign);
         if (cached != null) return cached;
-        // Mojang is authoritative for the CURRENT owner of a name. Only fall back to the (cache-laggy)
-        // Ashcon mirror when Mojang can't answer (rate-limit / outage) — never on a clean not-found,
-        // which would let a stale mirror resolve a recycled name to the wrong account.
+        // Mojang is authoritative; fall back to Ashcon only when Mojang can't answer, never on a clean not-found
         try {
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create("https://api.mojang.com/users/profiles/minecraft/" + ign))
@@ -1617,7 +1855,7 @@ public class HypixelApi {
             boolean transientErr = code == 429 || code == 408 || code >= 500;
             if (!transientErr) return null; // authoritative not-found — don't ask the stale mirror
         } catch (Exception ignored) {}
-        // Mojang unreachable / rate-limited — fall back to Ashcon.
+        // Mojang unreachable / rate-limited — fall back to Ashcon
         try {
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create("https://api.ashcon.app/mojang/v2/user/" + ign))
@@ -2094,9 +2332,35 @@ public class HypixelApi {
         } catch (Exception e) { cb.accept(java.util.Map.of()); }
     }
 
-    /** Fetches the local player's selected-profile member object (key held proxy-side). */
+    // getLocalMember cache: 4 independent ~60s pollers (CatacombsOverflowOverlay, BestiaryProgress,
+    // CollectionsProgress, SkillLevels) hit this; a shared TTL cache collapses them to ~1 fetch/60s.
+    // Mirrors the nwPrices() TTL + failure-backoff pattern above.
+    private static volatile JsonObject localMemberCache = null;
+    private static volatile long localMemberAt = 0;
+    private static volatile long localMemberFailAt = 0;
+    private static final Object LOCAL_MEMBER_LOCK = new Object();
+    private static boolean localMemberFetchInProgress = false;
+    private static List<java.util.function.Consumer<JsonObject>> localMemberWaiters = null;
+
+    /** Fetches the local player's selected-profile member object (key held proxy-side). TTL-cached ~60s. */
     public static void getLocalMember(Minecraft mc, java.util.function.Consumer<JsonObject> cb) {
         if (mc.player == null) { cb.accept(null); return; }
+        long now = System.currentTimeMillis();
+        // cache hit within TTL
+        if (now - localMemberAt < 60 * 1000L) { cb.accept(localMemberCache); return; }
+        // failure cool-down: after a failed refresh, don't retry for 60s
+        if (now - localMemberFailAt < 60 * 1000L) { cb.accept(localMemberCache); return; }
+
+        synchronized (LOCAL_MEMBER_LOCK) {
+            if (localMemberFetchInProgress) {
+                // a refresh is already in flight (e.g. 4 pollers landed on the same tick) — piggyback on it
+                if (localMemberWaiters == null) localMemberWaiters = new ArrayList<>();
+                localMemberWaiters.add(cb);
+                return;
+            }
+            localMemberFetchInProgress = true;
+        }
+
         String uuid = mc.player.getUUID().toString().replace("-", "");
         HttpRequest req;
         try {
@@ -2104,7 +2368,11 @@ public class HypixelApi {
                 .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
                 .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10)).GET().build();
-        } catch (Exception e) { cb.accept(null); return; }
+        } catch (Exception e) {
+            finishLocalMemberFetch(null, false);
+            cb.accept(null);
+            return;
+        }
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
             JsonObject member = null;
             try {
@@ -2113,8 +2381,26 @@ public class HypixelApi {
                     member = findSelectedMember(root, uuid);
             } catch (Exception ignored) {}
             JsonObject fm = member;
-            mc.execute(() -> cb.accept(fm));
-        }).exceptionally(t -> { mc.execute(() -> cb.accept(null)); return null; });
+            mc.execute(() -> { cb.accept(fm); finishLocalMemberFetch(fm, true); });
+        }).exceptionally(t -> { mc.execute(() -> { cb.accept(null); finishLocalMemberFetch(null, false); }); return null; });
+    }
+
+    /** Updates the getLocalMember cache/backoff state and flushes any callbacks that piggybacked on this fetch. */
+    private static void finishLocalMemberFetch(JsonObject result, boolean success) {
+        List<java.util.function.Consumer<JsonObject>> waiters;
+        synchronized (LOCAL_MEMBER_LOCK) {
+            if (success) {
+                localMemberCache = result;
+                localMemberAt = System.currentTimeMillis();
+                localMemberFailAt = 0;
+            } else {
+                localMemberFailAt = System.currentTimeMillis();
+            }
+            localMemberFetchInProgress = false;
+            waiters = localMemberWaiters;
+            localMemberWaiters = null;
+        }
+        if (waiters != null) for (java.util.function.Consumer<JsonObject> w : waiters) w.accept(result);
     }
 
     /** Fetches bank balance, purse, and glacite corpses for an arbitrary player by IGN. */
@@ -2153,7 +2439,7 @@ public class HypixelApi {
                 fishmod.utils.debug.Debug.LOGGER.warn("[Economy] error: {}", ex.toString());
                 cb.onData(-1, -1, null);
             }
-        });
+        }, API_EXECUTOR);
     }
 
     /** corpses_looted is an object {type:count}; format as "12L, 3T, ... (total N)". */
@@ -2200,18 +2486,15 @@ public class HypixelApi {
                     JsonObject member = profile.getAsJsonObject("members").getAsJsonObject(uuid);
                     mc.schedule(() -> {
                         Misc.addChatMessage(Component.literal("§b--- Economy dump ---"));
-                        // Bank (profile-level)
                         if (profile.has("banking") && profile.getAsJsonObject("banking").has("balance"))
                             Misc.addChatMessage(Component.literal("§7banking.balance = §f" + profile.getAsJsonObject("banking").get("balance")));
                         else Misc.addChatMessage(Component.literal("§7banking.balance = §cmissing"));
-                        // Purse
                         if (member.has("coin_purse")) Misc.addChatMessage(Component.literal("§7coin_purse = §f" + member.get("coin_purse")));
                         if (member.has("currencies")) {
                             JsonObject cur = member.getAsJsonObject("currencies");
                             Misc.addChatMessage(Component.literal("§7currencies keys = §f" + cur.keySet()));
                             if (cur.has("coin_purse")) Misc.addChatMessage(Component.literal("§7currencies.coin_purse = §f" + cur.get("coin_purse")));
                         }
-                        // Glacite corpses
                         if (member.has("glacite_player_data")) {
                             JsonObject g = member.getAsJsonObject("glacite_player_data");
                             Misc.addChatMessage(Component.literal("§7glacite_player_data keys = §f" + g.keySet()));
@@ -2264,23 +2547,19 @@ public class HypixelApi {
         return "0.00";
     }
 
-    // ─── Active-pet XP (API-driven, replaces tab scraping + PetXpAutoDetect) ──────
+    // active-pet XP, API-driven
 
     public interface PetCallback { void onData(PetInfo p); }
 
     public static final class PetInfo {
         public boolean ok = false;
         public String name;
+        public String tier; // "COMMON".."MYTHIC" / "LEGENDARY" fallback
         public int level;
         public boolean maxed;
         public int overflowLevel = -1;
         public double xpIntoLevel = -1, xpForNext = -1;
         public float pct = -1;
-    }
-
-    private static fishmod.features.OverflowPetLevels.Rarity petRarityOf(String tier) {
-        try { return fishmod.features.OverflowPetLevels.Rarity.valueOf(tier); }
-        catch (Exception e) { return fishmod.features.OverflowPetLevels.Rarity.LEGENDARY; }
     }
 
     /** "GOLDEN_DRAGON" → "Golden Dragon" (matches PetHud's skill map display names). */
@@ -2359,7 +2638,7 @@ public class HypixelApi {
                             String type = active.get("type").getAsString();
                             String tier = active.has("tier") ? active.get("tier").getAsString() : "LEGENDARY";
                             double exp  = active.has("exp") ? active.get("exp").getAsDouble() : 0;
-                            fishmod.features.OverflowPetLevels.Rarity rar = petRarityOf(tier);
+                            fishmod.features.OverflowPetLevels.Rarity rar = petRarity(tier);
                             int maxLevel = "GOLDEN_DRAGON".equals(type) ? 200 : 100;
                             double remaining = exp;
                             int level = 1;
@@ -2369,6 +2648,7 @@ public class HypixelApi {
                                 cost = fishmod.features.OverflowPetLevels.getXpForLevel(level - 1, rar);
                             }
                             info.name = petTypeToName(type);
+                            info.tier = tier;
                             info.overflowLevel = level;
                             info.maxed = level >= maxLevel;
                             info.level = Math.min(level, maxLevel);
@@ -2487,13 +2767,10 @@ public class HypixelApi {
             } catch (Exception ex) {
                 mc.schedule(() -> Misc.addChatMessage(Component.literal("§cgarden err: " + ex)));
             }
-        });
+        }, API_EXECUTOR);
     }
 
-    // ─── Skyblock level + farming level (profiles endpoint) ───────────────────
-
-    // General SkyBlock skill XP table (cumulative XP to reach each level, 0..60). NOT the Taming
-    // table (that one differs). Used for the Farming skill level.
+    // general SkyBlock skill XP table (cumulative, 0..60) — NOT the Taming table; for the Farming skill
     private static final long[] SKILL_XP = new long[61];
     static {
         int[] per = {50,125,200,300,500,750,1000,1500,2000,3500,5000,7500,10000,15000,20000,30000,
@@ -2533,8 +2810,7 @@ public class HypixelApi {
         }
     }
 
-    // The five crystals placed in the Crystal Nucleus. A run places all 5, so the (uncapped) run
-    // count = how many times each was placed → min of total_placed across them.
+    // the 5 Crystal Nucleus crystals — a run places all 5, so uncapped runs = min(total_placed) across them
     private static final String[] NUCLEUS_CRYSTALS =
         {"amber_crystal", "amethyst_crystal", "jade_crystal", "sapphire_crystal", "topaz_crystal"};
 
@@ -2550,7 +2826,7 @@ public class HypixelApi {
             }
             if (min >= 0 && min != Integer.MAX_VALUE) return min;
         } catch (Exception ignored) {}
-        // Fallback: the leveling completion counter (Hypixel caps this at 50).
+        // fallback: the leveling completion counter (Hypixel caps this at 50)
         try {
             JsonObject comp = member.getAsJsonObject("leveling").getAsJsonObject("completions");
             if (comp.has("NUCLEUS_RUNS")) return comp.get("NUCLEUS_RUNS").getAsInt();
@@ -2592,7 +2868,7 @@ public class HypixelApi {
             } catch (Exception ex) {
                 mc.schedule(() -> Misc.addChatMessage(Component.literal("§cnuc dump err: " + ex)));
             }
-        });
+        }, API_EXECUTOR);
     }
 
     /** Crystal Nucleus runs completed (searches the profile member for the "nucleus" run field). */
@@ -2624,7 +2900,7 @@ public class HypixelApi {
                 fishmod.utils.debug.Debug.LOGGER.warn("[Nucleus] error: {}", ex.toString());
                 cb.onData(-1);
             }
-        });
+        }, API_EXECUTOR);
     }
 
     public interface ProfileStatsCallback { void onData(double sbLevel, double farmingLevel); }
@@ -2665,10 +2941,8 @@ public class HypixelApi {
                 fishmod.utils.debug.Debug.LOGGER.warn("[ProfileStats] error: {}", ex.toString());
                 cb.onData(-1, -1);
             }
-        });
+        }, API_EXECUTOR);
     }
-
-    // ─── Worm / Scatha bestiary ────────────────────────────────────────────────
 
     /** Worm + Scatha bestiary kills and the (combined) Worm bestiary tier. */
     public static class WormStats {
@@ -2681,8 +2955,7 @@ public class HypixelApi {
         public boolean found   = false; // true if the profile's bestiary data was located
     }
 
-    // Hypixel "Worm" bestiary family (Crystal Hollows) — combines Worm + Scatha kills into one tier.
-    // Bracket 5 thresholds truncated at the family's 400-kill cap → 15 tiers. Source: Hypixel bestiary.
+    // Hypixel "Worm" bestiary family (Crystal Hollows): Worm + Scatha kills combined; last bracket capped at 400
     private static final int[] WORM_BESTIARY_BRACKET =
         {1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 60, 120, 200, 300, 400};
 
@@ -2753,6 +3026,64 @@ public class HypixelApi {
                 fishmod.utils.debug.Debug.LOGGER.warn("[WormStats] error: {}", ex.toString());
                 cb.onData(new WormStats());
             }
+        }, API_EXECUTOR);
+    }
+
+    public interface StorageLayoutCallback {
+        /** rows = pageIndex -> number of content rows (ender chest 0..8, backpacks 9..26); null on error. */
+        void onLayout(Map<Integer, Integer> rows, String error);
+    }
+
+    /** Fetches only the *shape* of the local player's storage — which pages exist and how many rows
+     *  each has — NOT the items (those are captured load-based as you open pages). Callback runs on
+     *  the main thread. */
+    public static void getStorageLayout(Minecraft mc, StorageLayoutCallback cb) {
+        getLocalMember(mc, member -> {
+            if (member == null || !member.has("inventory")) {
+                cb.onLayout(null, "No profile data — is the inventory API enabled on your profile?");
+                return;
+            }
+            try {
+                JsonObject inv = member.getAsJsonObject("inventory");
+                Map<Integer, Integer> rows = new HashMap<>();
+
+                // ender chest is one flat list; a page is up to 45 slots (5 rows), last page only as tall as needed
+                int ecCount = slotListSize(inv.has("ender_chest_contents") ? inv.getAsJsonObject("ender_chest_contents") : null);
+                for (int p = 0; p * 45 < ecCount && p < 9; p++) {
+                    int pageItems = Math.min(ecCount, (p + 1) * 45) - p * 45;
+                    rows.put(p, Math.max(1, Math.min(5, (pageItems + 8) / 9)));
+                }
+
+                // Backpacks: { "<slot>": {type,data}, ... } -> page slot+9, rows = ceil(size / 9).
+                if (inv.has("backpack_contents") && inv.get("backpack_contents").isJsonObject()) {
+                    for (Map.Entry<String, JsonElement> e : inv.getAsJsonObject("backpack_contents").entrySet()) {
+                        int slot;
+                        try { slot = Integer.parseInt(e.getKey()); } catch (NumberFormatException ex) { continue; }
+                        if (slot < 0 || slot > 17 || !e.getValue().isJsonObject()) continue;
+                        int size = slotListSize(e.getValue().getAsJsonObject());
+                        if (size > 0) rows.put(slot + 9, Math.max(1, Math.min(6, (size + 8) / 9)));
+                    }
+                }
+
+                cb.onLayout(rows, rows.isEmpty() ? "No storage pages found on this profile." : null);
+            } catch (Exception ex) {
+                cb.onLayout(null, "parse error: " + ex.getMessage());
+            }
         });
+    }
+
+    /** Number of NBT list entries in a Hypixel {type,data} inventory blob, without decoding items. */
+    private static int slotListSize(JsonObject slot) {
+        try {
+            if (slot == null || !slot.has("data")) return 0;
+            String b64 = slot.get("data").getAsString();
+            if (b64.isEmpty()) return 0;
+            byte[] bytes = java.util.Base64.getDecoder().decode(b64);
+            CompoundTag root = NbtIo.readCompressed(new ByteArrayInputStream(bytes), NbtAccounter.unlimitedHeap());
+            ListTag items = root.getList("i").orElse(null);
+            return items == null ? 0 : items.size();
+        } catch (Exception e) {
+            return 0;
+        }
     }
 }

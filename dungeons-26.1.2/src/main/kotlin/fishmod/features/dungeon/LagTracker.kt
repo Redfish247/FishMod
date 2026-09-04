@@ -2,13 +2,12 @@ package fishmod.features.dungeon
 
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.Events
-import net.minecraft.client.Minecraft
 import java.util.regex.Pattern
 
-/** Measures seconds lost to lag by comparing wall-clock time to server-tick count, instead of reading Blade's chat message. */
+/** Measures seconds lost to lag by comparing wall-clock time to server-tick count. */
 object LagTracker {
 
-    // Same start trigger the split timer uses (includes § color codes)
+    // Includes the § color codes so the literal match works.
     private const val RUN_START_MSG =
         "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon."
 
@@ -46,10 +45,7 @@ object LagTracker {
 
                 if (FishSettings.sendLagToParty && lag >= 0.1) {
                     val formatted = String.format("%.2f", lag)
-                    val mc = Minecraft.getInstance()
-                    if (mc.connection != null) {
-                        mc.schedule { mc.connection!!.sendCommand("pc " + formatted + "s lost to lag.") }
-                    }
+                    fishmod.utils.ChatQueue.enqueue("pc " + formatted + "s lost to lag.")
                 }
             }
             false

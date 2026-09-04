@@ -134,6 +134,7 @@ object F7Huds {
         SectionCompletion.init()
         S4Tracker.init()
         GateDisplay.init()
+        BloodSolver.init()
     }
 
     /** Render all enabled F7 HUDs (called from a HudRenderCallback in FishModInit). */

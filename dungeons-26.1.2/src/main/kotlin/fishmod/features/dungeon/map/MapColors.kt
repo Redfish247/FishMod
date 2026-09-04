@@ -8,6 +8,9 @@ import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
 import net.minecraft.client.KeyMapping
 import org.lwjgl.glfw.GLFW
 
+/** Shared §/& colour-code stripper for the dungeon-map chat/tab parsers (per-player / per-line / per-tick hot paths). */
+internal val MAP_COLOR_CODES: Regex = Regex("(?i)[&§][0-9a-fk-or]")
+
 /** Color math + "legit mode" gating for the dungeon map feature. */
 object MapColors {
 

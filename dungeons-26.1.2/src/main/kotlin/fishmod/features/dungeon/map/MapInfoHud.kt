@@ -9,6 +9,12 @@ import net.minecraft.resources.Identifier
 /** Secondary HUD line(s): secrets/score/deaths/mimic/prince/crypts readout, optionally anchored under [MapHud]. */
 object MapInfoHud {
 
+    // Underlying DungeonScore fields only update every PARSE_INTERVAL_TICKS ticks, but this HUD is
+    // rendered every frame — cache the width measurement and only remeasure when the lines actually change.
+    private var cachedL1: String = ""
+    private var cachedL2: String = ""
+    private var cachedBlockW: Int = 0
+
     @JvmStatic
     fun enabled(): Boolean = DungeonMapSettings.mapInfoEnabled == true
 
@@ -52,11 +58,15 @@ object MapInfoHud {
             drawLines(g, mc, l1, l2, 0, lh)
             pose.popMatrix()
         } else {
-            val blockW = maxOf(mc.font.width(l1), mc.font.width(l2))
+            if (l1 != cachedL1 || l2 != cachedL2) {
+                cachedL1 = l1
+                cachedL2 = l2
+                cachedBlockW = maxOf(mc.font.width(l1), mc.font.width(l2))
+            }
             pose.pushMatrix()
             pose.translate(DungeonMapSettings.mapInfoX, DungeonMapSettings.mapInfoY)
             pose.scale(s, s)
-            drawLines(g, mc, l1, l2, blockW / 2, lh)
+            drawLines(g, mc, l1, l2, cachedBlockW / 2, lh)
             pose.popMatrix()
         }
     }
@@ -127,6 +137,7 @@ object MapInfoHud {
 
     private fun mimicPiece(example: Boolean): String {
         if (!DungeonMapSettings.mapInfoShowMimic) return ""
+        if (!example && DungeonMapSettings.mapInfoHideCompleted && DungeonScore.mimicKilled) return ""
         val m = if (example) "§c✖" else if (DungeonScore.mimicKilled) "§a✔" else "§c✖"
         val prefix = if (noWords()) "§7M: " else "§fM: "
         return prefix + m
@@ -134,6 +145,7 @@ object MapInfoHud {
 
     private fun princePiece(example: Boolean): String {
         if (!DungeonMapSettings.mapInfoShowPrince) return ""
+        if (!example && DungeonMapSettings.mapInfoHideCompleted && DungeonScore.princeKilled) return ""
         val p = if (example) "§c✖" else if (DungeonScore.princeKilled) "§a✔" else "§c✖"
         val prefix = if (noWords()) "§7P: " else "§fP: "
         return prefix + p
@@ -143,6 +155,7 @@ object MapInfoHud {
         if (!DungeonMapSettings.mapInfoShowCrypts) return ""
         if (example) return if (noWords()) "§c0§7/§a5" else "§fCrypts: §c0"
         val cr = minOf(DungeonScore.crypts, 5)
+        if (DungeonMapSettings.mapInfoHideCompleted && cr >= 5) return ""
         val cc = if (cr >= 5) "§a" else if (cr >= 3) "§e" else "§c"
         return if (noWords()) "$cc$cr§7/§a5" else "§fCrypts: $cc$cr"
     }

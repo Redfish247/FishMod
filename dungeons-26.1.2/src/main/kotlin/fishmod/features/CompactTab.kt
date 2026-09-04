@@ -2,6 +2,7 @@ package fishmod.features
 
 import fishmod.features.dungeon.PartyCommandHandler
 import fishmod.utils.PingTracker
+import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
@@ -46,15 +47,20 @@ object CompactTab {
     private val COL_KEY: Pattern = Pattern.compile("^!([A-Za-z])")
     private val SERVER_ID: Pattern = Pattern.compile("\\b((?:mini|mega|m)\\d+[A-Za-z]{1,3})\\b")
 
-    /** True if the current tab uses Hypixel's lobby column-major encoding (entries named "!A-…"/"!B-…"); dungeons/Kuudra/Rift/Garden etc. don't, and fall back to vanilla rendering. */
+    private var shouldRenderVersion = -1
+    private var shouldRenderCached = false
+
+    /** True if the current tab uses Hypixel's lobby column-major encoding (entries named "!A-…"/"!B-…"); dungeons/Kuudra/Rift/Garden etc. don't, and fall back to vanilla rendering.
+     *  Called every frame while Tab is held, so the answer is cached against [TabListCache.version] rather than re-scanning entries each call. */
     @JvmStatic
     fun shouldRender(): Boolean {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.connection == null) return false
-        for (e in mc.connection!!.onlinePlayers) {
-            if (COL_KEY.matcher(nameOf(e)).find()) return true
-        }
-        return false
+        val v = TabListCache.version
+        if (v == shouldRenderVersion) return shouldRenderCached
+        shouldRenderVersion = v
+        shouldRenderCached = TabListCache.entries.any { COL_KEY.matcher(nameOf(it.info)).find() }
+        return shouldRenderCached
     }
 
     @JvmStatic
@@ -64,19 +70,150 @@ object CompactTab {
         val tr = mc.font
         val lh = 10
 
-        // group entries into Hypixel's tab columns (by their !X- sort key)
-        val all = ArrayList(mc.connection!!.onlinePlayers)
+        val mdl = model(mc, tabHeader, tabFooter) ?: return
+        val columns = mdl.columns
+        val colWidths = mdl.colWidths
+        val rows = mdl.rows
+
+        val ping = realPing(mc)
+        val fps = mc.fps
+        val tps = PartyCommandHandler.currentTps()
+        val server = mdl.server
+
+        // no PLAYERS cell — count already shown atop the Players column
+        val labels = arrayOf("SERVER", "TPS", "FPS", "PING")
+        val values = arrayOf(
+            server,
+            if (tps < 0) "—" else String.format("%.2f", tps),
+            fps.toString(),
+            if (ping < 0) "—" else "${ping}ms"
+        )
+        fun valueColor(i: Int) = if (i == 1 && tps >= 0 && tps < 19) 0xFFFF5555.toInt() else VALUE
+
+        val pad = 8
+        val gap = 8
+        var contentW = 0
+        for (w in colWidths) contentW += w
+        contentW += gap * (columns.size - 1)
+        val bodyH = rows * lh + 6
+        val footH = 12
+        val topPad = 8
+        val tabW = contentW + pad * 2
+        val tabH = topPad + bodyH + footH
+        val boxGap = 8
+
+        if (!FishSettings.compactTabStatBarEnabled) {
+            val w = min(screenW - 12, tabW)
+            val x0 = (screenW - w) / 2
+            val y0 = 4
+            roundRect(ctx, x0, y0, x0 + w, y0 + tabH, bgPanel())
+            drawColumns(ctx, tr, columns, colWidths, x0 + pad, y0 + topPad, rows, gap, lh)
+            ctx.centeredText(tr, mdl.footer, x0 + w / 2, y0 + tabH - footH + 2, GOLD)
+            return
+        }
+
+        val pos = FishSettings.compactTabStatBarPosition.uppercase()
+        if (pos == "LEFT" || pos == "RIGHT") {
+            val statLineH = 14
+            var statW = 0
+            for (i in labels.indices) statW = max(statW, tr.width("§7" + labels[i] + " " + values[i]))
+            statW += 16
+            val statH = tabH
+
+            val totalW = tabW + boxGap + statW
+            val w = min(screenW - 12, totalW)
+            val x0 = (screenW - w) / 2
+            val y0 = 4
+            val tabX0 = if (pos == "LEFT") x0 + statW + boxGap else x0
+            val statX0 = if (pos == "LEFT") x0 else x0 + tabW + boxGap
+
+            roundRect(ctx, tabX0, y0, tabX0 + tabW, y0 + tabH, bgPanel())
+            drawColumns(ctx, tr, columns, colWidths, tabX0 + pad, y0 + topPad, rows, gap, lh)
+            ctx.centeredText(tr, mdl.footer, tabX0 + tabW / 2, y0 + tabH - footH + 2, GOLD)
+
+            roundRect(ctx, statX0, y0, statX0 + statW, y0 + statH, bgPanel())
+            val cellH = statH / labels.size
+            for (i in labels.indices) {
+                val cellTop = y0 + i * cellH
+                val sy = cellTop + (cellH - statLineH) / 2 + 3
+                if (i > 0) ctx.fill(statX0 + 6, cellTop, statX0 + statW - 6, cellTop + 1, DIVIDER)
+                ctx.text(tr, "§7" + labels[i] + " ", statX0 + 8, sy, LABEL, false)
+                val lw = tr.width("§7" + labels[i] + " ")
+                ctx.text(tr, values[i], statX0 + 8 + lw, sy, valueColor(i), false)
+            }
+        } else {
+            val statBarH = 32
+            val gapTB = 4
+            val w = min(screenW - 12, tabW)
+            val x0 = (screenW - w) / 2
+            val y0 = 4
+            val bottom = pos == "BOTTOM"
+            val tabY0 = if (bottom) y0 else y0 + statBarH + gapTB
+            val statY0 = if (bottom) tabY0 + tabH + gapTB else y0
+
+            roundRect(ctx, x0, tabY0, x0 + w, tabY0 + tabH, bgPanel())
+            drawColumns(ctx, tr, columns, colWidths, x0 + pad, tabY0 + topPad, rows, gap, lh)
+            ctx.centeredText(tr, mdl.footer, x0 + w / 2, tabY0 + tabH - footH + 2, GOLD)
+
+            roundRect(ctx, x0, statY0, x0 + w, statY0 + statBarH, bgPanel())
+            val cellW = w / labels.size
+            for (i in labels.indices) {
+                val cxL = x0 + i * cellW
+                if (i > 0) ctx.fill(cxL, statY0 + 6, cxL + 1, statY0 + statBarH - 6, DIVIDER)
+                val cxC = cxL + cellW / 2
+                ctx.centeredText(tr, "§7" + labels[i], cxC, statY0 + 7, LABEL)
+                ctx.centeredText(tr, values[i], cxC, statY0 + 18, valueColor(i))
+            }
+        }
+    }
+
+    private class Model(
+        val columns: List<List<PlayerInfo>>,
+        val colWidths: List<Int>,
+        val rows: Int,
+        val server: String,
+        val footer: String,
+    )
+
+    // 1s backstop on top of the version check: findServer() also reads the scoreboard sidebar,
+    // which TabListCache's version doesn't cover, so a sidebar-only change still refreshes eventually.
+    private const val MODEL_TTL_MS = 1000L
+    private var modelVersion = -1
+    private var modelHeaderFooterSig = ""
+    private var modelAt = 0L
+    private var cachedModel: Model? = null
+
+    /** Column layout + server/footer strings. Rebuilt only when [TabListCache.version] bumps, the
+     *  tab header/footer text changes, or the 1s backstop elapses. Faces, signal bars, ping/fps/tps
+     *  stay per-frame. Same output as building it inline every frame, minus the regex/sort churn. */
+    private fun model(mc: Minecraft, tabHeader: String?, tabFooter: String?): Model? {
+        val now = System.currentTimeMillis()
+        val v = TabListCache.version
+        val hf = (tabHeader ?: "") + " " + (tabFooter ?: "")
+        val cached = cachedModel
+        if (cached != null && v == modelVersion && hf == modelHeaderFooterSig && now - modelAt < MODEL_TTL_MS) return cached
+        modelVersion = v
+        modelHeaderFooterSig = hf
+        modelAt = now
+        cachedModel = buildModel(mc, tabHeader, tabFooter)
+        return cachedModel
+    }
+
+    private fun buildModel(mc: Minecraft, tabHeader: String?, tabFooter: String?): Model? {
+        val tr = mc.font
+        // group entries by Hypixel's !X- column sort key
+        val all = ArrayList<PlayerInfo>(TabListCache.entries.size)
+        for (e in TabListCache.entries) all.add(e.info)
         all.sortWith(Comparator { a, b -> nameOf(a).compareTo(nameOf(b), ignoreCase = true) })
         val grouped = LinkedHashMap<String, MutableList<PlayerInfo>>()
         for (e in all) {
             val m = COL_KEY.matcher(nameOf(e))
             if (m.find()) grouped.getOrPut(m.group(1).uppercase()) { ArrayList() }.add(e)
         }
-        // Non-lobby tabs (dungeons / Kuudra / Rift / Garden / etc.) have no !X- keys —
-        // caller should have routed to vanilla via shouldRender(); guard anyway.
-        if (grouped.isEmpty()) return
+        // non-lobby tabs have no !X- keys; shouldRender should've routed to vanilla, guard anyway
+        if (grouped.isEmpty()) return null
 
-        // smart sizing: trim trailing blank rows, drop empty columns, width = content
+        // trim trailing blank rows, drop empty columns, width = content
         val columns = ArrayList<List<PlayerInfo>>()
         val colWidths = ArrayList<Int>()
         var rows = 0
@@ -107,106 +244,10 @@ object CompactTab {
             colWidths.add(w)
             rows = max(rows, trimmed.size)
         }
-        if (columns.isEmpty()) return
+        if (columns.isEmpty()) return null
         rows = min(rows, 22)
 
-        val ping = realPing(mc)
-        val fps = mc.fps
-        val tps = PartyCommandHandler.currentTps()
-        val server = findServer(mc, tabFooter, tabHeader)
-
-        // header/side stat bar (PLAYERS cell removed — count already shown atop the Players column)
-        val labels = arrayOf("SERVER", "TPS", "FPS", "PING")
-        val values = arrayOf(
-            server,
-            if (tps < 0) "—" else String.format("%.2f", tps),
-            fps.toString(),
-            if (ping < 0) "—" else "${ping}ms"
-        )
-        fun valueColor(i: Int) = if (i == 1 && tps >= 0 && tps < 19) 0xFFFF5555.toInt() else VALUE
-
-        // panel geometry — the player-column panel is always sized to its own content only (never
-        // stretched to the screen or to match the stat bar's height); the stat bar, when on, is a
-        // second, separate box placed beside/above/below it with a small gap between the two.
-        val pad = 8
-        val gap = 8
-        var contentW = 0
-        for (w in colWidths) contentW += w
-        contentW += gap * (columns.size - 1)
-        val bodyH = rows * lh + 6
-        val footH = 12
-        val topPad = 8
-        val tabW = contentW + pad * 2
-        val tabH = topPad + bodyH + footH
-        val boxGap = 8
-
-        if (!FishSettings.compactTabStatBarEnabled) {
-            val w = min(screenW - 12, tabW)
-            val x0 = (screenW - w) / 2
-            val y0 = 4
-            roundRect(ctx, x0, y0, x0 + w, y0 + tabH, bgPanel())
-            drawColumns(ctx, tr, columns, colWidths, x0 + pad, y0 + topPad, rows, gap, lh)
-            ctx.centeredText(tr, footerLine(tabFooter), x0 + w / 2, y0 + tabH - footH + 2, GOLD)
-            return
-        }
-
-        val pos = FishSettings.compactTabStatBarPosition.uppercase()
-        if (pos == "LEFT" || pos == "RIGHT") {
-            val statLineH = 14
-            var statW = 0
-            for (i in labels.indices) statW = max(statW, tr.width("§7" + labels[i] + " " + values[i]))
-            statW += 16
-            // Sidebar always matches the tab panel's full height (like the old single-panel layout),
-            // just as its own separate box now instead of being merged into one.
-            val statH = tabH
-
-            val totalW = tabW + boxGap + statW
-            val w = min(screenW - 12, totalW)
-            val x0 = (screenW - w) / 2
-            val y0 = 4
-            val tabX0 = if (pos == "LEFT") x0 + statW + boxGap else x0
-            val statX0 = if (pos == "LEFT") x0 else x0 + tabW + boxGap
-
-            roundRect(ctx, tabX0, y0, tabX0 + tabW, y0 + tabH, bgPanel())
-            drawColumns(ctx, tr, columns, colWidths, tabX0 + pad, y0 + topPad, rows, gap, lh)
-            ctx.centeredText(tr, footerLine(tabFooter), tabX0 + tabW / 2, y0 + tabH - footH + 2, GOLD)
-
-            roundRect(ctx, statX0, y0, statX0 + statW, y0 + statH, bgPanel())
-            // Rows split the sidebar's full height evenly (not clumped in the middle), each
-            // vertically centered within its own equal slice — same idea as the sketch's stacked cells.
-            val cellH = statH / labels.size
-            for (i in labels.indices) {
-                val cellTop = y0 + i * cellH
-                val sy = cellTop + (cellH - statLineH) / 2 + 3
-                if (i > 0) ctx.fill(statX0 + 6, cellTop, statX0 + statW - 6, cellTop + 1, DIVIDER)
-                ctx.text(tr, "§7" + labels[i] + " ", statX0 + 8, sy, LABEL, false)
-                val lw = tr.width("§7" + labels[i] + " ")
-                ctx.text(tr, values[i], statX0 + 8 + lw, sy, valueColor(i), false)
-            }
-        } else {
-            val statBarH = 32
-            val gapTB = 4
-            val w = min(screenW - 12, tabW)
-            val x0 = (screenW - w) / 2
-            val y0 = 4
-            val bottom = pos == "BOTTOM"
-            val tabY0 = if (bottom) y0 else y0 + statBarH + gapTB
-            val statY0 = if (bottom) tabY0 + tabH + gapTB else y0
-
-            roundRect(ctx, x0, tabY0, x0 + w, tabY0 + tabH, bgPanel())
-            drawColumns(ctx, tr, columns, colWidths, x0 + pad, tabY0 + topPad, rows, gap, lh)
-            ctx.centeredText(tr, footerLine(tabFooter), x0 + w / 2, tabY0 + tabH - footH + 2, GOLD)
-
-            roundRect(ctx, x0, statY0, x0 + w, statY0 + statBarH, bgPanel())
-            val cellW = w / labels.size
-            for (i in labels.indices) {
-                val cxL = x0 + i * cellW
-                if (i > 0) ctx.fill(cxL, statY0 + 6, cxL + 1, statY0 + statBarH - 6, DIVIDER)
-                val cxC = cxL + cellW / 2
-                ctx.centeredText(tr, "§7" + labels[i], cxC, statY0 + 7, LABEL)
-                ctx.centeredText(tr, values[i], cxC, statY0 + 18, valueColor(i))
-            }
-        }
+        return Model(columns, colWidths, rows, findServer(mc, tabFooter, tabHeader), footerLine(tabFooter))
     }
 
     private fun drawColumns(
@@ -237,7 +278,7 @@ object CompactTab {
                     }
                     tx = colX + 10
                 }
-                // draw styled text directly (no plain-string trim -> keeps rank colors)
+                // styled Component, not plain string — keeps rank colors
                 ctx.text(tr, dn, tx, ry, NAME, true)
                 if (playersCol && r > 0 && e.latency > 0) drawSignal(ctx, colX + w - 13, ry, e.latency)
                 r++
@@ -246,10 +287,13 @@ object CompactTab {
         }
     }
 
+    private val BLANK_COLOR: Pattern = Pattern.compile("§.")
+    private val BLANK_INVISIBLE: Pattern = Pattern.compile("[\\p{Cf}\\p{Z}\\s]")
+
     private fun blank(e: PlayerInfo): Boolean {
         val dn = e.tabListDisplayName ?: return true
         // Strip color codes and invisible formatting chars so Hypixel's hidden-char padding rows read as blank.
-        val s = dn.string.replace(Regex("§."), "").replace(Regex("[\\p{Cf}\\p{Z}\\s]"), "")
+        val s = BLANK_INVISIBLE.matcher(BLANK_COLOR.matcher(dn.string).replaceAll("")).replaceAll("")
         return s.isEmpty()
     }
 

@@ -36,7 +36,6 @@ object ScoreboardUtil {
             if (start == -1 || end == -1) return null
 
             val inside = display.substring(start + 1, end).trim()
-            // inside = "Mage XLIX"
 
             val parts = inside.split(" ")
             if (parts.size != 2) return null

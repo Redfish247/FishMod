@@ -6,6 +6,8 @@ import net.minecraft.network.chat.TextColor
 /** Builds a per-character &rrggbb gradient string over a fixed name (no custom text allowed). */
 object GradientNick {
 
+    private val HEX6 = Regex("[0-9a-fA-F]{6}")
+
     /**
      * Interpolates the given RGB stops across the visible characters of `name`, preserving any
      * inline format codes (`&l`/`&o`/`&m`/`&n`/`&k`/`&r`). Color
@@ -17,14 +19,13 @@ object GradientNick {
     fun build(name: String?, stops: Array<IntArray>?): String? {
         if (name == null || name.isEmpty() || stops == null || stops.isEmpty()) return name
 
-        // First pass: count visible characters (those that aren't part of a color/format code).
         var letterCount = 0
         var i = 0
         while (i < name.length) {
             val c = name[i]
             if ((c == '&' || c == '§') && i + 1 < name.length) {
                 val next = name[i + 1]
-                if (next == '#' && i + 7 < name.length && name.substring(i + 2, i + 8).matches(Regex("[0-9a-fA-F]{6}"))) {
+                if (next == '#' && i + 7 < name.length && name.substring(i + 2, i + 8).matches(HEX6)) {
                     i += 7
                     i++
                     continue
@@ -41,7 +42,6 @@ object GradientNick {
         }
         if (letterCount == 0) return name
 
-        // Second pass: emit each letter prefixed by the per-position color AND any active formats.
         val out = StringBuilder()
         val activeFormats = StringBuilder()
         var letterIdx = 0
@@ -53,7 +53,7 @@ object GradientNick {
             val c = name[i]
             if ((c == '&' || c == '§') && i + 1 < name.length) {
                 val next = name[i + 1]
-                if (next == '#' && i + 7 < name.length && name.substring(i + 2, i + 8).matches(Regex("[0-9a-fA-F]{6}"))) {
+                if (next == '#' && i + 7 < name.length && name.substring(i + 2, i + 8).matches(HEX6)) {
                     i += 7
                     i++
                     continue // hex color — overridden by gradient
@@ -78,7 +78,6 @@ object GradientNick {
                     continue
                 }
             }
-            // Visible character → emit color, formats, then the char.
             val colorPrefix: String?
             if (solid) {
                 colorPrefix = solidHex
@@ -118,7 +117,7 @@ object GradientNick {
         var t = token.trim()
         if (t.startsWith("&")) t = t.substring(1)
         if (t.startsWith("#")) t = t.substring(1)
-        if (t.matches(Regex("[0-9a-fA-F]{6}"))) {
+        if (t.matches(HEX6)) {
             return intArrayOf(
                 t.substring(0, 2).toInt(16),
                 t.substring(2, 4).toInt(16),

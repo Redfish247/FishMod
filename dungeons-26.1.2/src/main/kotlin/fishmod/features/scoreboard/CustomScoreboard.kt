@@ -31,6 +31,14 @@ object CustomScoreboard {
     /** One row: either a real vanilla line (kept styling) or a blank spacer. */
     private class Line(val component: Component, val blank: Boolean)
 
+    // body cache: buildLines() is regex-heavy, so rebuild only on a content/toggle signature change (250ms backstop); extraLines() stays per-frame
+    private const val CACHE_TTL_MS = 250L
+    private var sig = 0
+    private var sigAt = 0L
+    private var cachedBody: List<Line> = emptyList()
+    private var cachedBodyWidth = 0
+    private var cachedTitleWidth = 0
+
     private fun bgColor(): Int {
         val pct = max(0, min(100, FishSettings.customScoreboardOpacity))
         val a = (pct * 2.55).roundToInt()
@@ -46,11 +54,19 @@ object CustomScoreboard {
         val tr = mc.font
 
         val title = obj.displayName
-        val lines = buildLines(mc, obj) + extraLines(mc)
-        if (lines.isEmpty() && title.string.isBlank()) return
+        if (refreshBody(mc, sb, obj, title)) {
+            var w = 0
+            for (l in cachedBody) w = max(w, tr.width(l.component))
+            cachedBodyWidth = w
+            cachedTitleWidth = tr.width(title)
+        }
 
-        var width = tr.width(title)
-        for (l in lines) width = max(width, tr.width(l.component))
+        val extra = extraLines(mc)
+        if (cachedBody.isEmpty() && extra.isEmpty() && title.string.isBlank()) return
+        val lines = cachedBody + extra
+
+        var width = max(cachedTitleWidth, cachedBodyWidth)
+        for (l in extra) width = max(width, tr.width(l.component))
         width += 6
 
         val x2 = screenW - 3
@@ -68,6 +84,34 @@ object CustomScoreboard {
         }
     }
 
+    /** Rebuilds [cachedBody] when the scoreboard content or a relevant toggle changed, or the
+     *  250ms backstop elapsed. Returns true when a rebuild happened. */
+    private fun refreshBody(mc: Minecraft, sb: net.minecraft.world.scores.Scoreboard, obj: Objective, title: Component): Boolean {
+        val now = System.currentTimeMillis()
+        val newSig = buildSig(sb, obj, title)
+        if (newSig == sig && now - sigAt < CACHE_TTL_MS) return false
+        sig = newSig
+        sigAt = now
+        cachedBody = buildLines(mc, obj)
+        return true
+    }
+
+    /** Cheap fingerprint of everything [buildLines] reads. No sort, no filter chain, no per-entry
+     *  team lookup or string concat -- just a rolling hash over the raw (unsorted, unfiltered) score
+     *  entries' identity/value fields, since its only job is "did anything change", not reproducing
+     *  the final sorted/filtered/formatted output. */
+    private fun buildSig(sb: net.minecraft.world.scores.Scoreboard, obj: Objective, title: Component): Int {
+        var h = title.string.hashCode()
+        h = h * 31 + (if (FishSettings.customScoreboardCompactNumbers) 1 else 0)
+        for (s in ScoreboardSection.entries) h = h * 31 + (if (sectionEnabled(s)) 1 else 0)
+        for (entry in sb.listPlayerScores(obj)) {
+            h = h * 31 + entry.value()
+            h = h * 31 + entry.owner().hashCode()
+            h = h * 31 + (if (entry.isHidden) 1 else 0)
+        }
+        return h
+    }
+
     private fun buildLines(mc: Minecraft, obj: Objective): List<Line> {
         val level = mc.level ?: return emptyList()
         val sb = level.scoreboard
@@ -75,7 +119,7 @@ object CustomScoreboard {
         val entries = sb.listPlayerScores(obj)
             .filter { !it.isHidden }
             .sortedWith(compareByDescending<PlayerScoreEntry> { it.value() }.thenBy { it.owner() })
-            .take(15)
+            .take(20) // Hypixel event boards (e.g. mining/fishing festival) can run past 15 lines
 
         val raw = ArrayList<Line>()
         var lastSection: ScoreboardSection? = null
@@ -91,9 +135,7 @@ object CustomScoreboard {
                 continue
             }
 
-            // Indented "- Voidgloom Seraph III" / "- 12/120 Kills" style sub-lines don't match a
-            // header pattern themselves, so they inherit whatever section header preceded them
-            // (their own toggle would otherwise misclassify them as OTHER).
+            // indented "- ..." sub-lines don't match a header pattern, so they inherit the preceding section (else they'd classify as OTHER)
             val isContinuation = CONTINUATION.matcher(stripped).find() && lastSection != null
             val section = if (isContinuation) lastSection!! else ScoreboardSection.classify(stripped)
             if (!isContinuation) lastSection = section

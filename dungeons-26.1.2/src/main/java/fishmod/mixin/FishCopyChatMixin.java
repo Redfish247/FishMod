@@ -28,7 +28,8 @@ public class FishCopyChatMixin extends Screen {
 
     @Inject(method = "mouseClicked", at = @At("HEAD"))
     private static void mouseClicked(MouseButtonEvent click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
-        boolean smart = fishmod.utils.config.values.FishSettings.smartCopyChat;
+        boolean smart = fishmod.utils.config.values.FishSettings.chatFeatureEnabled
+                && fishmod.utils.config.values.FishSettings.smartCopyChat;
         if ((!ExtraOptions.copyChat && !smart) || click.button() != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
 
         Minecraft mc = Minecraft.getInstance();
@@ -39,7 +40,6 @@ public class FishCopyChatMixin extends Screen {
         double y = toChatLineY(hudInvoker, click.y(), mc);
 
         String string;
-        // Smart mode always copies the full wrapped message (ignores the line-only option).
         if (ExtraOptions.copyLineOnly && !smart) {
             int index = getMessageLineIndex(hudInvoker, mc, x, y);
             List<GuiMessage.Line> visibleMessages = hudInvoker.getVisibleMessages();
@@ -53,8 +53,7 @@ public class FishCopyChatMixin extends Screen {
 
         if (string == null) return;
 
-        // Smart copy always strips codes: Minecraft's chat input drops the "§" on paste, which would
-        // otherwise leave bare code digits behind (e.g. "§9Party" → "9Party").
+        // MC chat input drops "§" on paste, leaving bare code digits behind
         if (ExtraOptions.removeColorCodes || smart) {
             string = string.replaceAll("§.", "");
         } else if (ExtraOptions.replaceColorChars) {
@@ -72,8 +71,8 @@ public class FishCopyChatMixin extends Screen {
     @Unique
     private static String cleanCopied(String s) {
         if (s == null) return null;
-        s = s.replaceAll("[-=_~─━▬—⎯]{4,}", " "); // divider lines
-        s = s.replaceAll("\\s{2,}", " ").trim();    // collapse joined-wrap whitespace
+        s = s.replaceAll("[-=_~─━▬—⎯]{4,}", " ");
+        s = s.replaceAll("\\s{2,}", " ").trim();
         return s;
     }
 

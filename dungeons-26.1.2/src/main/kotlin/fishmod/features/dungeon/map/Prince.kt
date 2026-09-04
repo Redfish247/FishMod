@@ -10,27 +10,10 @@ object Prince {
     var cheaterPrince = true
         private set
 
-    private var indicatorLatched = false
-
-    @JvmStatic
-    fun princeIndicatorShown(): Boolean {
-        if (!indicatorLatched) {
-            for (r in ArrayList(Scan.rooms)) {
-                val d = r.data
-                if (d != null && d.prince) {
-                    indicatorLatched = true
-                    break
-                }
-            }
-        }
-        return indicatorLatched
-    }
-
     @JvmStatic
     fun reset() {
         legitPrince = true
         cheaterPrince = true
-        indicatorLatched = false
     }
 
     @JvmStatic

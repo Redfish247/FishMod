@@ -99,13 +99,11 @@ object ProfanityFilter {
         return out.toString()
     }
 
-    // ── internals ────────────────────────────────────────────────────────────
-
     private data class Unit(val code: String?, val ch: Char)
 
     private class Visible {
         val units = ArrayList<Unit>()
-        val chars = ArrayList<Char>() // visible chars only, in order
+        val chars = ArrayList<Char>()
     }
 
     private class Compact {

@@ -2,6 +2,7 @@ package fishmod.features.dungeon.map
 
 import com.mojang.blaze3d.platform.NativeImage
 import fishmod.utils.Misc
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.texture.DynamicTexture
@@ -47,8 +48,21 @@ object MapImageLoader {
             val t = Thread(::watchLoop, "FishMod-MapImageLoader")
             t.isDaemon = true
             t.start()
+
+            ClientLifecycleEvents.CLIENT_STOPPING.register { close() }
         } catch (e: Exception) {
         }
+    }
+
+    /** Stops the directory-watch thread. Wired to [ClientLifecycleEvents.CLIENT_STOPPING] in [init]. */
+    @JvmStatic
+    fun close() {
+        started = false
+        try {
+            watchService?.close()
+        } catch (e: Exception) {
+        }
+        watchService = null
     }
 
     private fun watchLoop() {
@@ -57,6 +71,8 @@ object MapImageLoader {
             val key = try {
                 ws.poll(1L, TimeUnit.SECONDS)
             } catch (e: InterruptedException) {
+                return
+            } catch (e: java.nio.file.ClosedWatchServiceException) {
                 return
             }
 
@@ -100,7 +116,13 @@ object MapImageLoader {
                 Minecraft.getInstance().execute {
                     val tex = DynamicTexture({ id.toString() }, img)
                     Minecraft.getInstance().textureManager.register(id, tex)
-                    LOADED[fileName] = ImageData(id, tex)
+                    val prev = LOADED.put(fileName, ImageData(id, tex))
+                    if (prev != null) {
+                        try {
+                            Minecraft.getInstance().textureManager.release(prev.id)
+                        } catch (e: Exception) {
+                        }
+                    }
                     Misc.addChatMessage(Component.literal("§a[Map] Loaded image: §f$fileName §7(${w}x$h)"))
                 }
             }

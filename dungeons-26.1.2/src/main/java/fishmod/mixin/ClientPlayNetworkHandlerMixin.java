@@ -4,6 +4,7 @@ import fishmod.utils.Misc;
 import fishmod.utils.config.values.ExtraOptions;
 import fishmod.utils.debug.Debug;
 import fishmod.utils.events.Events;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
@@ -19,6 +20,7 @@ import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.scores.PlayerTeam;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -41,15 +43,35 @@ public class ClientPlayNetworkHandlerMixin {
         Events.ON_PLAYER_ENTRY.invoke(playerListEvent -> playerListEvent.onNewPlayerEntry(receivedEntry));
     }
 
+    @Inject(method = "handleAddEntity", at = @At("HEAD"), cancellable = true)
+    private void fishmod$renderOptimizerHideEntities(net.minecraft.network.protocol.game.ClientboundAddEntityPacket packet, CallbackInfo ci) {
+        if (!fishmod.utils.config.values.Visual.renderOptimizer) return;
+        net.minecraft.world.entity.EntityType<?> t = packet.getType();
+        if ((fishmod.utils.config.values.Visual.roHideFallingBlocks && t == net.minecraft.world.entity.EntityType.FALLING_BLOCK)
+                || (fishmod.utils.config.values.Visual.roHideLightning && t == net.minecraft.world.entity.EntityType.LIGHTNING_BOLT)
+                || (fishmod.utils.config.values.Visual.roHideExperienceOrbs && t == net.minecraft.world.entity.EntityType.EXPERIENCE_ORB)) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = "handleAddEntity", at = @At("TAIL"))
+    private void fishmod$onEntitySpawned(net.minecraft.network.protocol.game.ClientboundAddEntityPacket packet, CallbackInfo ci, @Local Entity entity) {
+        if (entity == null) return;
+        Events.ON_ENTITY_SPAWNED.invoke(e -> e.onEntity(entity, this.level));
+    }
+
     @Inject(method = "handleSetPlayerTeamPacket", at = @At(value = "TAIL"))
     private void onTeam(ClientboundSetPlayerTeamPacket packet, CallbackInfo ci, @Local PlayerTeam team) {
         if (team == null) return;
-        String teamStr = (team.getPlayerPrefix().getString() + team.getPlayerSuffix().getString()).replaceAll("§.", "");
+        String teamStr = fishmod.utils.HypixelApi.STRIP_COLOR.matcher(
+                team.getPlayerPrefix().getString() + team.getPlayerSuffix().getString()).replaceAll("");
         Events.ON_TEAM.invoke(scoreBoardEvent -> scoreBoardEvent.onTeam(teamStr));
     }
 
     @Inject(method = "handleSoundEvent", at = @At(value = "HEAD"), cancellable = true)
     private void onSound(ClientboundSoundPacket packet, CallbackInfo ci) {
+        // handleSoundEvent fires twice — netty thread then main thread; only dispatch on the main pass
+        if (!Minecraft.getInstance().isSameThread()) return;
         float volume = packet.getVolume();
         float pitch = packet.getPitch();
         SoundEvent event = packet.getSound().value();
@@ -69,6 +91,7 @@ public class ClientPlayNetworkHandlerMixin {
 
     @Inject(method = "handleSoundEntityEvent", at = @At(value = "HEAD"), cancellable = true)
     private void onLocationSound(ClientboundSoundEntityPacket packet, CallbackInfo ci) {
+        if (!Minecraft.getInstance().isSameThread()) return;
         float volume = packet.getVolume();
         float pitch = packet.getPitch();
         SoundEvent event = packet.getSound().value();
@@ -95,6 +118,10 @@ public class ClientPlayNetworkHandlerMixin {
             }
         }
 
+        // Not a double-fire with ClientConnectionMixin#channelRead0: that one sees the ClientboundBundlePacket
+        // wrapper itself on the netty thread, never these unwrapped sub-packets. This site fires once per
+        // sub-packet, on the main thread, right before it is handed to its real listener — the safe place for
+        // handlers that touch client state. A standalone (non-bundled) packet only ever goes through the other site.
         Events.ON_PACKET.invoke(packetEvent -> packetEvent.onPacket(packet));
         original.call(packet, listener);
     }

@@ -18,8 +18,6 @@ class RoomData {
     var type: Room.Type? = null
     var cores: List<Int>? = null
         private set
-    var crypts: Int = 0
-        private set
     var secrets: Int = 0
         private set
     var shape: Room.Shape? = null

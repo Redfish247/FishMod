@@ -1,73 +1,57 @@
 package fishmod.features
 
-import fishmod.mixin.accessors.BossBarHudAccessor
-import fishmod.utils.debug.Debug
-import fishmod.utils.rendering.RenderUtils
-import net.minecraft.ChatFormatting
-import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.GuiGraphicsExtractor
+import fishmod.mixin.accessors.LerpingBossEventAccessor
+import fishmod.utils.Location
+import fishmod.utils.config.values.Dungeons
+import fishmod.utils.dungeon.Phase
 import net.minecraft.client.gui.components.LerpingBossEvent
 import net.minecraft.network.chat.Component
+import java.util.Locale
+import kotlin.math.roundToInt
 
+/**
+ * Boss-bar health number. The mixin wraps the boss-bar name; here we append " - <cur>/<max>❤" for
+ * the bosses whose max HP is known. Uses the boss bar's target percent (snappy, not the lerped fill).
+ */
 object BossBarFeature {
 
-    /** Called from HudRenderCallback — fires BEFORE vanilla boss bar, so only used for non-boss-bar elements. */
     @JvmStatic
-    fun renderHud(ctx: GuiGraphicsExtractor) {
-        // intentionally empty — boss HP drawn in renderAfterVanilla
+    fun appendHealth(instance: LerpingBossEvent, name: Component): Component {
+        if (!Dungeons.bossHealthNumbers || !Location.inDungeon()) return name
+        val maxHealth = getMaxHealth(name) ?: return name
+
+        val percent = (instance as LerpingBossEventAccessor).targetPercent
+        val currentHealth = (percent * maxHealth).roundToInt().toFloat()
+
+        return name.copy().append(
+            Component.literal(" §r§8- §a${formatHealth(currentHealth)}§7/§a${formatHealth(maxHealth)}§c❤")
+        )
     }
 
-    /** Called from FishBossBarHudMixin @Inject(RETURN) — fires after vanilla draws its text. */
-    @JvmStatic
-    fun renderAfterVanilla(ctx: GuiGraphicsExtractor) {
-        val mc = Minecraft.getInstance()
-        if (mc == null || mc.player == null) return
+    private fun getMaxHealth(nameComponent: Component): Float? {
+        val name = nameComponent.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()
+        val floor = Phase.getFloor()
+        val master = floor?.startsWith("M", ignoreCase = true) == true
+        val floorNum = floor?.filter { it.isDigit() }?.toFloatOrNull() ?: 0f
 
-        val accessor = mc.gui.bossOverlay as BossBarHudAccessor
-        val bossBars = accessor.bossBars
-        if (bossBars == null || bossBars.isEmpty()) return
-
-        val screenWidth = ctx.guiWidth()
-        var y = 12
-
-        for (bar in bossBars.values) {
-            val customText = buildText(bar)
-            if (customText != null) {
-                val textWidth = mc.font.width(customText)
-                val textX = screenWidth / 2 - textWidth / 2
-                ctx.text(mc.font, customText, textX, y - 9, 0xFFFFFF, true)
-            }
-            y += 19
+        return when (name) {
+            "The Watcher" -> 12f + floorNum
+            "Thorn" -> if (master) 6f else 4f
+            "Maxor" -> if (master) 800_000_000f else 100_000_000f
+            "Storm" -> if (master) 1_000_000_000f else 400_000_000f
+            "Goldor" -> if (master) 1_200_000_000f else 750_000_000f
+            "Necron" -> if (master) 1_400_000_000f else 1_000_000_000f
+            else -> null
         }
     }
 
-    private fun buildText(bar: LerpingBossEvent): Component? {
-        try {
-            val name = bar.name.string.replace(Regex("§."), "").trim()
-            val pct = bar.progress * 100f
-            val pctStr = if (pct >= 10) String.format("%.1f%%", pct) else String.format("%.2f%%", pct)
-
-            val maxHp: Float = when {
-                name.contains("Maxor") -> 2.5e8f
-                name.contains("Storm") -> 5e8f
-                name.contains("Goldor") -> 7.5e8f
-                name.contains("Necron") -> 1e9f
-                else -> -1f
-            }
-
-            if (maxHp < 0) {
-                return Component.literal("$name ").withStyle(ChatFormatting.RED)
-                    .append(Component.literal(pctStr).withStyle(ChatFormatting.GREEN))
-            }
-
-            val currHp = maxHp * bar.progress
-            return Component.literal("$name ").withStyle(ChatFormatting.RED)
-                .append(Component.literal(RenderUtils.formatNumber(currHp)).withStyle(ChatFormatting.GREEN))
-                .append(Component.literal("/").withStyle(ChatFormatting.GRAY))
-                .append(Component.literal(RenderUtils.formatNumber(maxHp)).withStyle(ChatFormatting.GREEN))
-        } catch (e: Exception) {
-            Debug.LOGGER.error("BossBarFeature buildText error: {}", e.message)
-            return null
+    private fun formatHealth(health: Float): String = when {
+        health >= 1_000_000_000 -> {
+            val h = health / 1_000_000_000f
+            if (h % 1f == 0f) "${h.toInt()}B" else String.format(Locale.US, "%.1fB", h)
         }
+        health >= 1_000_000 -> "${(health / 1_000_000f).toInt()}M"
+        health >= 1000 -> "${(health / 1000f).toInt()}k"
+        else -> health.toInt().toString()
     }
 }

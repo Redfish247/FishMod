@@ -45,8 +45,6 @@ object NvgRecorder {
         return out.r(r).g(g).b(b).a(a)
     }
 
-    // ----- shapes -----
-
     @JvmStatic
     fun fillRoundedRect(x: Float, y: Float, w: Float, h: Float, r: Float, color: Int) {
         record(Runnable {
@@ -61,6 +59,25 @@ object NvgRecorder {
     @JvmStatic
     fun fillRect(x: Float, y: Float, w: Float, h: Float, color: Int) {
         fillRoundedRect(x, y, w, h, 0f, color)
+    }
+
+    /** Rect rounded only on its top two corners (radius [rTop]), square on the bottom — for a strip
+     *  meant to sit flush against a card's own rounded top without poking past its corners. */
+    @JvmStatic
+    fun fillRectTopRounded(x: Float, y: Float, w: Float, h: Float, rTop: Float, color: Int) {
+        record(Runnable {
+            val ctx = NvgContext.get()
+            NanoVG.nvgBeginPath(ctx)
+            NanoVG.nvgRoundedRectVarying(ctx, x, y, w, h, rTop, rTop, 0f, 0f)
+            NanoVG.nvgFillColor(ctx, argb(color, colorA))
+            NanoVG.nvgFill(ctx)
+        })
+    }
+
+    /** Small pill (fully rounded ends) — softer than [fillRect] for thin accent ticks/bars. */
+    @JvmStatic
+    fun fillPillBar(x: Float, y: Float, w: Float, h: Float, color: Int) {
+        fillRoundedRect(x, y, w, h, Math.min(w, h) / 2f, color)
     }
 
     /** Hollow ring stroked in `ringColor` around a rect filled with `fillColor`. */
@@ -193,8 +210,6 @@ object NvgRecorder {
         })
     }
 
-    // ----- text -----
-
     @JvmStatic
     fun text(s: String, x: Float, y: Float, size: Float, color: Int) {
         record(Runnable {
@@ -217,8 +232,6 @@ object NvgRecorder {
         val bounds = FloatArray(4)
         return NanoVG.nvgTextBounds(ctx, 0f, 0f, s, bounds)
     }
-
-    // ----- scissor (nested via NanoVG's own save/restore state stack) -----
 
     @JvmStatic
     fun pushScissor(x: Float, y: Float, w: Float, h: Float) {

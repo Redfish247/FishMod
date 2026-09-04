@@ -17,23 +17,20 @@ import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.ArrayDeque
 import java.util.regex.Pattern
 
 object SessionStats {
 
     private val DEATH_PAT = Pattern.compile("☠ \\S+ (?:was|were) killed by|☠ \\S+ (?:died|quit)")
 
-    // Mort's intro line — fires the moment the dungeon run actually starts (same trigger LagTracker uses).
+    // Mort's intro line — fires the moment the dungeon run actually starts.
     private const val MORT_START = "[NPC] Mort: Here, I found this map when I first entered the dungeon."
 
-    private const val WINDOW_MS = 3_600_000L // 1 hour for R/hr
     private const val IDLE_MS = 5 * 60_000L // pause after 5 min idle in-dungeon
 
     // Auto-pause reason: 0 = none, 1 = location (hub/lobby/pre-Mort), 2 = idle.
     private var autoPauseReason = 0
 
-    // Movement tracking for idle detection
     private var lastX = 0.0
     private var lastY = 0.0
     private var lastZ = 0.0
@@ -42,9 +39,7 @@ object SessionStats {
     private var sessionStartMs: Long = -1
     private var runs = 0
     private var deaths = 0
-    private val runTimes = ArrayDeque<Long>()
 
-    // Persistence
     private val SAVE_FILE: Path = Paths.get("config/fishmod/session_stats.json")
     private val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
 
@@ -67,7 +62,6 @@ object SessionStats {
         var sessionStartMs: Long = 0
         var runs = 0
         var deaths = 0
-        var runTimes: LongArray? = null
         var paused = false
         var pauseStartedMs: Long = 0
         var autoPaused = false
@@ -129,13 +123,11 @@ object SessionStats {
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
             if (!FishSettings.sessionStatsEnabled) return@EndTick
             val loc = Location.getCurrentLocation()
-            // Pause whenever not actively inside a dungeon run (dungeon hub, lobby, etc.).
             if (loc != Location.DUNGEON) {
                 havePos = false
                 autoPause(1, System.currentTimeMillis())
                 return@EndTick
             }
-            // Inside the dungeon: track movement so we can pause after 5 min idle (AFK).
             if (client.player != null) {
                 val x = client.player!!.x
                 val y = client.player!!.y
@@ -158,7 +150,7 @@ object SessionStats {
         }
 
         Events.ON_LOCATION_CHANGE.register { _ ->
-            havePos = false // recalibrate movement baseline on every location change
+            havePos = false // recalibrate movement baseline
             false
         }
 
@@ -169,16 +161,14 @@ object SessionStats {
             if (sessionStartMs < 0) sessionStartMs = now
             lastActivityMs = now
             runs++
-            runTimes.addLast(now)
             save()
             false
         }
 
         Events.ON_GAME_MESSAGE.register { message ->
             if (!FishSettings.sessionStatsEnabled) return@register false
-            val s = message.string.replace(Regex("§."), "")
+            val s = message.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
 
-            // Dungeon run started (Mort's intro) — start the clock and resume any auto-pause.
             if (s == MORT_START) {
                 if (sessionStartMs < 0) sessionStartMs = System.currentTimeMillis()
                 autoResume()
@@ -228,7 +218,6 @@ object SessionStats {
         sessionStartMs = -1
         runs = 0
         deaths = 0
-        runTimes.clear()
         paused = false
         pauseStartedMs = 0
         autoPaused = false
@@ -247,8 +236,6 @@ object SessionStats {
             sessionStartMs = d.sessionStartMs
             runs = d.runs
             deaths = d.deaths
-            runTimes.clear()
-            if (d.runTimes != null) for (t in d.runTimes!!) runTimes.addLast(t)
             paused = d.paused
             pauseStartedMs = d.pauseStartedMs
             autoPaused = d.autoPaused
@@ -270,7 +257,6 @@ object SessionStats {
             d.sessionStartMs = sessionStartMs
             d.runs = runs
             d.deaths = deaths
-            d.runTimes = runTimes.map { it }.toLongArray()
             d.paused = paused
             d.pauseStartedMs = pauseStartedMs
             d.autoPaused = autoPaused
@@ -280,14 +266,13 @@ object SessionStats {
         }
     }
 
+    // Cumulative pace over the whole active, non-paused session.
     private fun runsPerHour(): Double {
+        if (runs <= 0 || sessionStartMs <= 0) return 0.0
         val now = if (paused && pauseStartedMs > 0) pauseStartedMs else System.currentTimeMillis()
-        val cutoff = now - WINDOW_MS
-        while (runTimes.isNotEmpty() && runTimes.peekFirst() < cutoff) runTimes.pollFirst()
-        if (runTimes.size < 2) return if (runTimes.size == 1) 0.0 else 0.0
-        val window = runTimes.peekLast() - runTimes.peekFirst()
-        if (window < 1000) return 0.0
-        return (runTimes.size - 1) * 3_600_000.0 / window
+        val elapsed = now - sessionStartMs
+        if (elapsed < 1000) return 0.0
+        return runs * 3_600_000.0 / elapsed
     }
 
     private fun formatTime(ms: Long): String {

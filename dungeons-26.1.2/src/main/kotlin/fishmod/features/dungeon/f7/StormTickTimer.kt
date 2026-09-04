@@ -1,6 +1,7 @@
 package fishmod.features.dungeon.f7
 
 import config.practical.hud.HUDComponent
+import fishmod.features.CritTracker
 import fishmod.utils.Constants
 import fishmod.utils.Location
 import fishmod.utils.Misc
@@ -15,8 +16,10 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.sounds.SoundEvents
 import java.util.regex.Pattern
+import kotlin.math.ceil
+import kotlin.math.max
 
-/** Storm (P2) tick timer + first-death time. Ported from blade-addons (spirit-mask warning omitted). */
+/** Storm (P2) tick timer + first-death time. */
 object StormTickTimer {
 
     private val PATTERN: Pattern = Pattern.compile("^⚠ Storm is enraged! ⚠$")
@@ -49,16 +52,20 @@ object StormTickTimer {
             onReset = { deathTime = 0.0; deathStartDisplayTime = 0 }
         )
         Events.ON_GAME_MESSAGE.register { text ->
-            if (!Location.inDungeon() || !Phase.inP2() || !Floor7.enableStormDeathTime) return@register false
+            if (!Location.inDungeon() || !Phase.inP2()) return@register false
             if (PATTERN.matcher(text.string).find()) {
                 deathTime = timer.tick * Constants.TICK_DURATION
                 deathStartDisplayTime = System.currentTimeMillis()
-                Misc.addChatMessage(
-                    Component.literal(
-                        "§aStorm died at: §e"
-                                + Constants.DECIMAL_FORMAT.format(deathTime) + "s§a."
+                // CritTracker.onStormDeath applies its own Archer-only gate.
+                CritTracker.onStormDeath(deathTime)
+                if (Floor7.enableStormDeathTime) {
+                    Misc.addChatMessage(
+                        Component.literal(
+                            "§aStorm died at: §e"
+                                    + Constants.DECIMAL_FORMAT.format(deathTime) + "s§a."
+                        )
                     )
-                )
+                }
             }
             false
         }
@@ -91,11 +98,18 @@ object StormTickTimer {
         RenderUtils.drawTimer(component, context, deathTime, Constants.DARK_PURPLE)
     }
 
-    /** Class-specific LB release tick, or -1 when the timer shouldn't show for this class. */
+    /** Ping compensation in ticks (20 tps): shifts the release cue earlier so the arrow leaves on time. */
+    private fun pingTicks(): Int = ceil(max(0, Floor7.lbReleaseTimerPingMs) / 50.0).toInt()
+
+    /** Class-specific LB release tick (ping-compensated), or -1 when the timer shouldn't show for this class. */
     private fun lbEndTick(): Int {
-        if (DungeonClass.isClass(DungeonClass.ARCHER)) return LB_ARCHER_END_TICK
-        if (DungeonClass.isClass(DungeonClass.HEALER)) return LB_HEALER_END_TICK
-        return -1
+        val base = when {
+            DungeonClass.isClass(DungeonClass.ARCHER) -> LB_ARCHER_END_TICK
+            DungeonClass.isClass(DungeonClass.HEALER) -> LB_HEALER_END_TICK
+            else -> return -1
+        }
+        // Never pull the cue before the window even opens.
+        return max(LB_START_TICK + 1, base - pingTicks())
     }
 
     @JvmStatic

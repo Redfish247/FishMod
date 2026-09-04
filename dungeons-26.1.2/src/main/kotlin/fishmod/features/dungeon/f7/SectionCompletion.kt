@@ -9,7 +9,7 @@ import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-/** "Section completed!" notification + sound on section change. Ported from blade-addons. */
+/** "Section completed!" notification + sound on section change. */
 object SectionCompletion {
 
     private var prevTime = 0L

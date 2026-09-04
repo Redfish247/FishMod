@@ -14,14 +14,12 @@ object NickState {
 
     @JvmStatic
     fun set(name: String?) {
-        // Censor banned words before anything is stored, displayed or uploaded. This is the single
-        // chokepoint for every nick path (gradient, solid, custom text) — the filter understands
-        // color codes, so it works even on a fully gradient-coded string.
+        // Single chokepoint: censor banned words before anything is stored/shown/uploaded (filter understands color codes).
         var n = name
         if (n != null && n.isNotEmpty()) n = ProfanityFilter.censor(n)
         nick = if (n != null && n.isNotEmpty()) n else null
         NickData.save(nick)
-        RemoteNicks.uploadOwn() // publish so other mod users see the change
+        RemoteNicks.uploadOwn()
     }
 
     /** Recolors the player's real username with a gradient over the given RGB stops. */
@@ -39,9 +37,7 @@ object NickState {
     fun applyFromSettings() {
         val custom = fishmod.utils.config.values.FishSettings.nickCustomName
         val base = if (custom != null && custom.isNotEmpty()) custom else realName()
-        // Strip ONLY color codes (hex + 0-9/a-f/x) so the chosen palette wins. Keep format codes
-        // (&l/&o/&m/&n/&k/&r) intact — GradientNick re-emits them after every per-letter color so
-        // bold/italic etc. survive the gradient.
+        // Strip only color codes; keep format codes so GradientNick can re-emit them per letter.
         val stripped = base.replace(Regex("&#[0-9a-fA-F]{6}"), "").replace(Regex("[&§][0-9a-fxA-FX]"), "")
         // Empty-visible check (strip format codes too, just for this test).
         val visibleOnly = stripped.replace(Regex("[&§][klmnorKLMNOR]"), "")
@@ -112,8 +108,7 @@ object NickState {
             val c = input[i]
             if ((c == '&' || c == '§') && i + 1 < input.length) {
                 val next = input[i + 1]
-                // "&*" inserts a SkyBlock star (✪) in the CURRENT color — pick the color with the code
-                // right before it (e.g. "&6&*" = gold star, "&d&*" = pink). Replaces the old star counter.
+                // "&*" inserts a SkyBlock star (✪) in the current color, e.g. "&6&*" = gold star.
                 if (next == '*') {
                     buf.append('✪')
                     i += 2

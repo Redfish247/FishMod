@@ -80,7 +80,7 @@ object ScoreMessages {
 
     private fun sendClientMessage(raw: String?, time: String, updatePb: Boolean) {
         val key = floorKey()
-        // PB tracking not yet ported to this module — best (if any) comes back null until a store exists.
+        // PB tracking not in this module yet — best stays null
         val best: String? = null
         var msg = (raw ?: "").replace("<time>", time).replace('&', '§')
         val hover = if (best != null) "§bPersonal Best: §a$best" else "§7No PB yet"
@@ -90,7 +90,7 @@ object ScoreMessages {
 
     private fun chatText(raw: String?, time: String): String {
         val s = (raw ?: "").replace("<time>", time)
-        return s.replace(Regex("(?i)[&§][0-9a-fk-or]"), "")
+        return s.replace(MAP_COLOR_CODES, "")
     }
 
     private fun titleText(raw: String?, time: String): String {
@@ -99,7 +99,7 @@ object ScoreMessages {
 
     private fun sendPartyChat(mc: Minecraft, msg: String?) {
         if (mc.player != null && mc.connection != null && !msg.isNullOrBlank()) {
-            mc.connection!!.sendCommand("pc $msg")
+            fishmod.utils.ChatQueue.enqueue("pc $msg")
         }
     }
 

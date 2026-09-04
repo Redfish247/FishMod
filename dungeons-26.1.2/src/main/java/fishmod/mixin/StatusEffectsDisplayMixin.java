@@ -18,6 +18,7 @@ public class StatusEffectsDisplayMixin {
         }
     }
 
+    // No drawStatusEffectTooltip on EffectsInInventory in 26.1.2 — require = 0 keeps this a no-op.
     @Inject(method = "drawStatusEffectTooltip", at=@At("HEAD"), cancellable = true, require = 0)
     public void drawToolTip(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
         if (Visual.hideStatusOverLay) {

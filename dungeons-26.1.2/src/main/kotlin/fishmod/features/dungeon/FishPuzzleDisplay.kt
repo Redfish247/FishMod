@@ -1,6 +1,7 @@
 package fishmod.features.dungeon
 
 import fishmod.utils.Constants
+import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.events.Events
@@ -9,7 +10,6 @@ import config.practical.manager.ConfigValue
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
-import java.util.regex.Pattern
 
 /**
  * FishMod-exclusive puzzle display — lives only in FishMod's jar so it
@@ -17,7 +17,6 @@ import java.util.regex.Pattern
  */
 object FishPuzzleDisplay {
 
-    private val COLOR_STRIP: Pattern = Pattern.compile("§.")
     private val puzzles: MutableList<String> = ArrayList()
     private var tickCounter = 0
     private var bossReached = false
@@ -53,16 +52,13 @@ object FishPuzzleDisplay {
     }
 
     private fun updatePuzzles(client: Minecraft) {
+        if (client.connection == null) return
         puzzles.clear()
-        val handler = client.connection ?: return
 
-        val entries = handler.onlinePlayers
         var puzzleHeader: String? = null
 
-        for (entry in entries) {
-            val displayName = entry.tabListDisplayName ?: continue
-            val line = displayName.string
-            val clean = COLOR_STRIP.matcher(line).replaceAll("").trim()
+        for (entry in TabListCache.entries) {
+            val clean = entry.stripped.trim()
 
             if (clean.startsWith("Puzzles:")) {
                 puzzleHeader = clean
@@ -91,10 +87,10 @@ object FishPuzzleDisplay {
         for (i in puzzles.indices) {
             val puzzle = puzzles[i]
             val color = when {
-                puzzle.startsWith("Puzzles:") -> 0xFFFFFFFF.toInt() // white header
-                puzzle.contains("✔") -> Constants.GREEN // solved
-                puzzle.contains("???") -> Constants.BLUE // undiscovered
-                else -> Constants.RED // discovered, unsolved
+                puzzle.startsWith("Puzzles:") -> 0xFFFFFFFF.toInt()
+                puzzle.contains("✔") -> Constants.GREEN
+                puzzle.contains("???") -> Constants.BLUE
+                else -> Constants.RED
             }
             context.text(client.font, puzzle, x, y + i * Constants.TEXT_HEIGHT, color, true)
         }

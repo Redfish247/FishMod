@@ -13,8 +13,8 @@ public abstract class ChunkMixin {
 
     @Inject(method = "setBlockEntity", at=@At("HEAD"))
     public void onBlockEntity(BlockEntity blockEntity, CallbackInfo ci) {
+        if (Events.ON_BLOCK_ENTITY.isEmpty()) return;
         Events.ON_BLOCK_ENTITY.invoke(blockEntityEvent -> blockEntityEvent.on(blockEntity));
-
     }
 
 }

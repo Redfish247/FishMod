@@ -73,7 +73,7 @@ object DungeonPlayers {
         }
     }
 
-    private fun stripColors(s: String): String = s.replace(Regex("(?i)[&§][0-9a-fk-or]"), "")
+    private fun stripColors(s: String): String = s.replace(MAP_COLOR_CODES, "")
 
     private fun playerInfoOrder(): Comparator<PlayerInfo> =
         compareBy<PlayerInfo> { if (isSpectator(it)) 1 else 0 }
@@ -167,8 +167,7 @@ object DungeonPlayers {
         if (self && uglyPointer) {
             g.blit(RenderPipelines.GUI_TEXTURED, MapTextures.SELF_MARKER, -5, -5, 0.0f, 0.0f, 10, 10, 10, 10, -1)
         } else if (player.skin != null) {
-            // No PlayerFaceRenderer in this MC version; blit the 8x8 face region directly off the
-            // skin's body texture (standard 64x64 skin layout: face at u=8,v=8).
+            // no PlayerFaceRenderer here; blit the 8x8 face off the skin body (64x64 layout: face at u=8,v=8)
             g.blit(RenderPipelines.GUI_TEXTURED, player.skin!!.body().texturePath(), -4, -4, 8.0f, 8.0f, 8, 8, 64, 64, -1)
         }
 
@@ -176,6 +175,14 @@ object DungeonPlayers {
     }
 
     private fun find(name: String): DungeonPlayer? = teammates.firstOrNull { it.name == name }
+
+    /** Public lookup for the Leap Menu (class / skin / dead state by IGN, case-insensitive). */
+    @JvmStatic
+    fun get(name: String): DungeonPlayer? = teammates.firstOrNull { it.name.equals(name, ignoreCase = true) }
+
+    /** Number of teammates the dungeon tab list currently shows (self included). */
+    @JvmStatic
+    fun count(): Int = teammates.size
 
     @JvmStatic
     fun shouldRenderNames(mc: Minecraft): Boolean {

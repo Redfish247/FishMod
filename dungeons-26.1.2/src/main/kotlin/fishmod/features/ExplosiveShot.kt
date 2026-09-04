@@ -1,6 +1,5 @@
 package fishmod.features
 
-import fishmod.features.dungeon.ChatCommandState
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.DungeonClass
 import fishmod.utils.dungeon.Phase
@@ -8,8 +7,6 @@ import fishmod.utils.events.Events
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
 /**
@@ -33,8 +30,7 @@ object ExplosiveShot {
         if (text == null) return false
         val s = text.string ?: return false
 
-        // Reuses Phase.inP1() (same detection MaxorTickTimer relies on) instead of hand-matching the
-        // boss taunt text — a hand-typed copy previously drifted out of sync and silently broke this gate.
+        // Phase.inP1() rather than matching the boss taunt text — a hand-typed copy drifted out of sync and broke this gate
         if (!FishSettings.explosiveShotEnabled || !Phase.inP1()) return false
         if (s.indexOf("Explosive Shot") < 0) return false
 
@@ -73,19 +69,10 @@ object ExplosiveShot {
         return false // keep the original chat line
     }
 
-    /** Shares the same info shown on screen with the party, delayed the same way `PartyCommandHandler.sendCmd` does. */
+    /** Shares the same info shown on screen with the party, throttled via the shared [fishmod.utils.ChatQueue]. */
     private fun announceToParty(dmg: String, enemies: Int) {
-        val message = "Explosive Shot: $dmg dmg (" + enemies + (if (enemies == 1) " enemy)" else " enemies)")
-        CompletableFuture.delayedExecutor(250, TimeUnit.MILLISECONDS)
-            .execute {
-                Minecraft.getInstance().execute {
-                    val mc = Minecraft.getInstance()
-                    if (mc.connection != null) {
-                        mc.connection!!.sendCommand("pc $message")
-                        ChatCommandState.lastPartyCommandAt = System.currentTimeMillis()
-                    }
-                }
-            }
+        val message = "Explosive Shot: $dmg dmg per enemy(" + enemies + (if (enemies == 1) " enemy)" else " enemies)")
+        fishmod.utils.ChatQueue.enqueue("pc $message")
     }
 
     /** Whole numbers print with thousands separators; fractional values keep one decimal. */

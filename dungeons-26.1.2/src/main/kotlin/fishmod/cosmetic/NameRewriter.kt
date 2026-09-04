@@ -24,14 +24,9 @@ object NameRewriter {
         val full = sb.toString()
         if (!full.contains(realName)) return original
 
-        // The cosmetic name usually embeds the real IGN (e.g. "RedFish2471 [Twitch]" or
-        // "[TTV] RedFish2471"). After one swap the text still contains the IGN, so a second pass
-        // would decorate it again — and since chat insert and GUI draw both swap, it compounds.
-        // To stay idempotent we detect an already-decorated block: an IGN occurrence whose
-        // surrounding text exactly matches the full cosmetic string at the right offset. Such a
-        // block is consumed whole and emitted as a single cosmetic, so re-running is a no-op.
+        // Idempotent: an IGN already wrapped in a full cosmetic block is consumed whole, so re-running is a no-op.
         val cosmetic = replacement.string
-        val nameOffInCosmetic = cosmetic.indexOf(realName) // where the IGN sits inside the cosmetic
+        val nameOffInCosmetic = cosmetic.indexOf(realName)
 
         val out: MutableComponent = Component.empty()
         var charPos = 0
@@ -44,14 +39,12 @@ object NameRewriter {
                     && blockStart + cosmetic.length <= full.length
                     && full.regionMatches(blockStart, cosmetic, 0, cosmetic.length)
                 ) {
-                    // Already decorated here — emit text before the block, then one cosmetic.
                     appendRange(out, segs, charPos, blockStart)
                     out.append(replacement.copy())
                     charPos = blockStart + cosmetic.length
                     continue
                 }
             }
-            // Bare IGN occurrence — replace it with the cosmetic name.
             appendRange(out, segs, charPos, idx)
             out.append(replacement.copy())
             charPos = idx + realName.length

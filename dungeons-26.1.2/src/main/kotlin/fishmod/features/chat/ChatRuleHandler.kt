@@ -9,34 +9,33 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import net.minecraft.sounds.SoundEvents
-import java.util.regex.Pattern
-import java.util.regex.PatternSyntaxException
 
 /**
  * Watches chat against user-defined [ChatRule]s (see [ChatRuleStore]) and fires each rule's
  * outputs on a match: optionally hide the original line, echo a reply to your own chat, show an
- * action-bar message, show a fading on-screen title, and/or play a sound. Matching logic mirrors
- * Skyblocker's ChatRule (github.com/SkyblockerMod/Skyblocker, MIT): plain substring/exact or
- * regex, case-sensitivity toggle, partial-vs-full match toggle.
+ * action-bar message, show a fading on-screen title, and/or play a sound. Matching supports plain
+ * substring/exact or regex, a case-sensitivity toggle, and a partial-vs-full match toggle.
  */
 object ChatRuleHandler {
 
     private class ActiveTitle(val text: String, val untilMs: Long)
     private val activeTitles = ArrayList<ActiveTitle>()
 
+    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
+
     @JvmStatic
     fun init() {
         fishmod.utils.events.Events.ON_GAME_MESSAGE.register { message ->
             if (!ChatRuleStore.isMasterEnabled()) return@register false
-            val raw = message.string.replace(Regex("§."), "")
-            var hide = false
+            val raw = message.string.replace(COLOR, "")
             for (rule in ChatRuleStore.rules()) {
                 if (!rule.enabled || rule.filter.isBlank()) continue
                 if (!matches(rule, raw)) continue
                 fire(rule)
-                if (rule.hideMessage) hide = true
             }
-            hide
+            // return false: dropping the packet would also skip vanilla chat logging; hiding happens
+            // at the display layer instead (shouldHideAtDisplay / ChatHudMixin)
+            false
         }
 
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "chat_notifications")) { ctx, tc -> renderHud(ctx, tc) }
@@ -51,6 +50,22 @@ object ChatRuleHandler {
         )
     }
 
+    /**
+     * DISPLAY-layer predicate (called from ChatHudMixin): true if some enabled rule with
+     * "Hide Original Message" matches this line. Pure — side-effect outputs already fired from the
+     * packet-level handler above, so this only decides whether to draw the line.
+     */
+    @JvmStatic
+    fun shouldHideAtDisplay(message: Component?): Boolean {
+        if (message == null || !ChatRuleStore.isMasterEnabled()) return false
+        val raw = message.string?.replace(COLOR, "") ?: return false
+        for (rule in ChatRuleStore.rules()) {
+            if (!rule.enabled || !rule.hideMessage || rule.filter.isBlank()) continue
+            if (matches(rule, raw)) return true
+        }
+        return false
+    }
+
     @JvmStatic
     fun matches(rule: ChatRule, raw: String): Boolean {
         val testStr = if (rule.ignoreCase) raw.lowercase() else raw
@@ -58,11 +73,7 @@ object ChatRuleHandler {
         if (testFilter.isBlank()) return false
 
         return if (rule.regex) {
-            val pattern = try {
-                Pattern.compile(testFilter)
-            } catch (e: PatternSyntaxException) {
-                return false
-            }
+            val pattern = rule.compiledPattern() ?: return false
             val m = pattern.matcher(testStr)
             if (rule.partialMatch) m.find() else m.matches()
         } else {

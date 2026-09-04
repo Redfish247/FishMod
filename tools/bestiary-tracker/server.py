@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 # ---- Config -----------------------------------------------------------
 
-PROXY_URL = "https://fishmod.redfish2471.workers.dev"
+PROXY_URL = "https://fishmod.dev"
 MOD_TOKEN = "fishmod123"
 DEFAULT_IGN = "RedFish2471"
 

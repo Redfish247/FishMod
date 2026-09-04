@@ -49,7 +49,7 @@ object PbPaceHud {
                 lastHasPb = false
             }
         }
-        if (last == null) return // no split finished yet — nothing to pace against
+        if (last == null) return
 
         val x = FishSettings.pbPaceHudX
         val y = FishSettings.pbPaceHudY

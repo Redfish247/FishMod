@@ -14,10 +14,10 @@ object RemoteSync {
     private const val STEP_TICKS = 20 * 5   // grow 5s per idle (unchanged) poll
 
     private var tick = 0
-    private var interval = BASE_TICKS       // current poll spacing (adaptive)
+    private var interval = BASE_TICKS
     @Volatile
     private var version: Long = -1          // last server version we've applied
-    private var lastUuids: Set<String> = setOf() // uuids covered by the last successful sync
+    private var lastUuids: Set<String> = setOf()
     private var lastTabSize = 0             // tab-list size at last (re)sync, for cheap growth detection
 
     @JvmStatic
@@ -27,8 +27,7 @@ object RemoteSync {
             refresh()
         }
         ClientTickEvents.END_CLIENT_TICK.register { client ->
-            // Cheap O(1) check: if players just appeared in the tab list, snap to fast and poll now —
-            // a roster change doesn't move the server version, so we must fetch the newcomers eagerly.
+            // A roster change doesn't move the server version, so on tab-list growth snap to fast and poll now.
             val size = tabSize()
             if (size != lastTabSize) {
                 val grew = size > lastTabSize
@@ -94,7 +93,7 @@ object RemoteSync {
         val since = if (newPlayers) -1L else version
         val keys: Set<String> = HashSet(uuidToName.keys)
 
-        HypixelApi.fetchSync(uuidToName.keys, since) { ver, nicks, items, scales ->
+        HypixelApi.fetchSync(uuidToName.keys, since) { ver, nicks, _, scales ->
             mc.execute {
                 version = ver
                 lastUuids = keys

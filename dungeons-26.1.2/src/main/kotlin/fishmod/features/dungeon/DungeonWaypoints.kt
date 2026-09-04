@@ -29,9 +29,9 @@ import org.lwjgl.glfw.GLFW
 import java.util.LinkedHashMap
 
 /**
- * /fm wp — an OdinLegacy-style waypoint editor. Disabled while [Location.inDungeon] is true;
+ * /fm wp — a waypoint editor. Disabled while [Location.inDungeon] is true;
  * outside dungeons, waypoints are keyed by Skyblock island/server+dimension at absolute
- * coordinates (see [globalKey]) — the same island-detection reason used elsewhere in the mod.
+ * coordinates (see [globalKey]).
  */
 object DungeonWaypoints {
 
@@ -39,7 +39,7 @@ object DungeonWaypoints {
     private const val ROUTE_REACH_RADIUS = 1.75
     private val ROUTE_LINE_RGBA = floatArrayOf(1f, 1f, 1f, 0.6f)
 
-    // --- Edit-mode placement settings (apply to the NEXT waypoint placed) ---
+    // Applied to the NEXT waypoint placed.
     private var editMode = false
     private var fill = false
     private var size = 0.5
@@ -59,7 +59,6 @@ object DungeonWaypoints {
     private var placeKey: KeyMapping? = null
     private var lastGlobalDim: String? = null
 
-    // --- Route recording (see toggleRoute) ---
     private var recordingRouteId: String? = null
     private var recordingNextOrder = 0
 
@@ -76,6 +75,8 @@ object DungeonWaypoints {
         @JvmField val routeOrder: Int
     ) {
         @JvmField val center: Vec3 = box.center
+        // Built once here instead of every render frame — title text is immutable for this waypoint's lifetime.
+        @JvmField val titleComponent: Component? = if (title != null && title.isNotBlank()) Component.literal(title) else null
     }
 
     private var liveWaypoints: MutableList<LiveWaypoint> = ArrayList()
@@ -113,8 +114,6 @@ object DungeonWaypoints {
         )
         return hit == null || hit.type == HitResult.Type.MISS
     }
-
-    // ================= Commands =================
 
     @JvmStatic
     fun toggleEdit() {
@@ -227,7 +226,7 @@ object DungeonWaypoints {
         val clip = mc.keyboardHandler.clipboard
         val ok = DungeonWaypointStore.importBase64(clip)
         if (ok) {
-            refreshLive() // force re-apply
+            refreshLive()
             Misc.addChatMessage(Component.literal("§aWaypoint database imported from clipboard."))
         } else {
             Misc.addChatMessage(Component.literal("§cImport failed — clipboard doesn't look like a valid waypoint export."))
@@ -247,8 +246,6 @@ object DungeonWaypoints {
 
     @JvmStatic
     fun isEditMode(): Boolean = editMode
-
-    // ================= Routes =================
 
     /** Toggles route recording; unnamed auto-numbers as "route1", "route2", etc. */
     @JvmStatic
@@ -330,8 +327,6 @@ object DungeonWaypoints {
     @JvmStatic
     fun currentGlobalKeyForGui(): String = globalKey()
 
-    // ================= Tick / interaction =================
-
     private fun onTick(mc: Minecraft) {
         if (mc.player == null || mc.level == null) {
             liveWaypoints.clear()
@@ -387,7 +382,7 @@ object DungeonWaypoints {
         }
     }
 
-    /** Raycasts along the player's look vector, per [fishmod.features.PingFeature.placePing]. */
+    /** Raycasts along the player's look vector. */
     private fun aimPoint(mc: Minecraft): Vec3 {
         val p = mc.player!!
         val delta = mc.deltaTracker.getGameTimeDeltaPartialTick(false)
@@ -478,8 +473,6 @@ object DungeonWaypoints {
         if (blocked()) liveWaypoints.clear() else applyGlobal()
     }
 
-    // ================= Rendering =================
-
     private fun render(ctx: LevelRenderContext, matrices: PoseStack, vc: VertexConsumer) {
         val mc = Minecraft.getInstance()
         for (w in liveWaypoints) {
@@ -490,8 +483,8 @@ object DungeonWaypoints {
             // layer as fills — mixing topologies on one layer caused the earlier "bowtie" corruption.
             if (w.filled) RenderUtils.renderFilled(matrices, vc, w.box, rgba)
             else RenderUtils.renderThickOutline(matrices, vc, w.box, rgba, lineWidth)
-            if (w.title != null && w.title.isNotBlank()) {
-                RenderUtils.renderText(ctx, matrices, Component.literal(w.title), w.center.x, w.box.maxY + 0.4, w.center.z, 1.0f)
+            if (w.titleComponent != null) {
+                RenderUtils.renderText(ctx, matrices, w.titleComponent, w.center.x, w.box.maxY + 0.4, w.center.z, 1.0f)
             }
         }
 
@@ -518,22 +511,35 @@ object DungeonWaypoints {
         }
     }
 
+    // Overlay text only changes when a /fm wp setting command runs, not every frame — cache the built
+    // Component and its measured width, keyed on the settings that feed into the string.
+    private var cachedOverlayKey: String? = null
+    private var cachedOverlayLine: Component? = null
+    private var cachedOverlayWidth: Int = 0
+
     /** Small on-screen settings readout while edit mode is on, drawn near screen center via HudRenderCallback. */
     @JvmStatic
     fun renderOverlay(ctx: GuiGraphicsExtractor) {
         if (!editMode) return
         val mc = Minecraft.getInstance()
         if (mc.font == null) return
+
+        val key = "$fill|$size|$distance|$useBlockSize|$through|$type|$timer|$lineWidth|$recordingRouteId"
+        if (key != cachedOverlayKey) {
+            cachedOverlayKey = key
+            val line = Component.literal(
+                "§b[fm wp] §7fill:" + (if (fill) "§ay" else "§cn") + " §7size:§f" + size
+                    + " §7dist:§f" + distance + " §7blockSize:" + (if (useBlockSize) "§ay" else "§cn")
+                    + " §7through:" + (if (through) "§ay" else "§cn") + " §7type:§f" + type + " §7timer:§f" + timer
+                    + (if (!fill) " §7line:§f$lineWidth" else "")
+                    + (if (recordingRouteId != null) " §d🔗route:$recordingRouteId" else "")
+            )
+            cachedOverlayLine = line
+            cachedOverlayWidth = mc.font!!.width(line)
+        }
+
         val cx = ctx.guiWidth() / 2
         val y = ctx.guiHeight() / 2 + 30
-        val line = Component.literal(
-            "§b[fm wp] §7fill:" + (if (fill) "§ay" else "§cn") + " §7size:§f" + size
-                + " §7dist:§f" + distance + " §7blockSize:" + (if (useBlockSize) "§ay" else "§cn")
-                + " §7through:" + (if (through) "§ay" else "§cn") + " §7type:§f" + type + " §7timer:§f" + timer
-                + (if (!fill) " §7line:§f$lineWidth" else "")
-                + (if (recordingRouteId != null) " §d🔗route:$recordingRouteId" else "")
-        )
-        val textWidth = mc.font!!.width(line)
-        ctx.text(mc.font, line, cx - textWidth / 2, y, 0xFFFFFFFF.toInt(), true)
+        ctx.text(mc.font, cachedOverlayLine!!, cx - cachedOverlayWidth / 2, y, 0xFFFFFFFF.toInt(), true)
     }
 }

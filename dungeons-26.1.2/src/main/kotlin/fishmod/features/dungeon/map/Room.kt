@@ -7,15 +7,14 @@ import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
 
-/** A discovered/inferred dungeon room. Ported 1:1 from System22's Room.java. */
+/** A discovered/inferred dungeon room. */
 class Room(
     var type: Type?,
     var shape: Shape?,
     var data: RoomData?,
-    var height: Int?,
-    var floorHeight: Int?
+    var height: Int?
 ) {
-    constructor(data: RoomData, height: Int, floorHeight: Int) : this(data.type, data.shape, data, height, floorHeight)
+    constructor(data: RoomData, height: Int) : this(data.type, data.shape, data, height)
 
     val tiles: MutableList<Tile> = ArrayList()
     val places: MutableList<MapVec2i> = ArrayList()
@@ -340,9 +339,6 @@ class Room(
             val z = (pos.z + 185) shr 5
             placement = MapVec2i(x * 20, z * 20)
         }
-
-        val listIndex: Int
-            get() = (pos.x + 185) / 32 * 6 + (pos.z + 185) / 32
     }
 
     class StateUpdated(val room: Room, val old: State, val neu: State)

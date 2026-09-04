@@ -10,7 +10,7 @@ import fishmod.utils.rendering.RenderUtils
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-/** Counts down ~5s from Storm's death to terminal start. Ported from blade-addons. */
+/** Counts down ~5s from Storm's death to terminal start. */
 object TermStartTimer {
 
     private const val TOTAL_TICKS = 100

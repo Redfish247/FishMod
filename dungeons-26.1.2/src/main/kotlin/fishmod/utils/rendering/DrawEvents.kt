@@ -7,8 +7,4 @@ object DrawEvents {
     var INVENTORY_SLOT_AFTER = DrawHandler<SlotEvent>()
     @JvmField
     var INVENTORY_SLOT_BEFORE = DrawHandler<SlotEvent>()
-    @JvmField
-    var HUD_SLOT_AFTER = DrawHandler<SlotEvent>()
-    @JvmField
-    var HUD_SLOT_BEFORE = DrawHandler<SlotEvent>()
 }

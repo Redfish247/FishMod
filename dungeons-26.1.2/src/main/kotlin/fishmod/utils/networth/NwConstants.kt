@@ -1,9 +1,8 @@
 package fishmod.utils.networth
 
-/** Ported verbatim from SkyHelper-Networth constants (applicationWorth.js, misc.js, reforges.js, prestiges.js). */
 object NwConstants {
 
-    // ---- APPLICATION_WORTH (applicationWorth.js) ----
+    // APPLICATION_WORTH: fraction of value retained when each modifier is applied
     @JvmField val ENRICHMENT = 0.5
     @JvmField val FARMING_FOR_DUMMIES = 0.5
     @JvmField val OVERCLOCKER_3000 = 0.9
@@ -44,7 +43,6 @@ object NwConstants {
     @JvmField val SOULBOUND_SKINS = 0.8
     @JvmField val PET_ITEM = 1.0
 
-    // ---- ENCHANTMENTS_WORTH (applicationWorth.js) ----
     @JvmField
     val ENCHANTMENTS_WORTH: MutableMap<String, Double> = HashMap<String, Double>().apply {
         put("COUNTER_STRIKE", 0.2)
@@ -55,7 +53,6 @@ object NwConstants {
         put("ULTIMATE_FATAL_TEMPO", 0.65)
     }
 
-    // ---- misc.js ----
     @JvmField
     val BLOCKED_ENCHANTMENTS: MutableMap<String, Set<String>> = HashMap<String, Set<String>>().apply {
         put("BONE_BOOMERANG", hashSetOf("OVERLOAD", "POWER", "ULTIMATE_SOUL_EATER"))
@@ -79,6 +76,31 @@ object NwConstants {
 
     @JvmField
     val IGNORE_SILEX: Set<String> = hashSetOf("PROMISING_SPADE", "PROMISING_AXE")
+
+    // total pet XP required to reach level 100, per rarity
+    @JvmField
+    val PET_XP_TO_100: Map<String, Double> = mapOf(
+        "COMMON" to 5_624_785.0, "UNCOMMON" to 8_644_220.0, "RARE" to 12_626_665.0,
+        "EPIC" to 18_608_500.0, "LEGENDARY" to 25_353_230.0, "MYTHIC" to 25_353_230.0,
+    )
+
+    // order is load-bearing (drives PET_ITEM_TIER_BOOST)
+    @JvmField
+    val PET_TIERS: Array<String> = arrayOf(
+        "COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC",
+        "DIVINE", "SPECIAL", "VERY_SPECIAL", "ULTIMATE",
+    )
+
+    @JvmField
+    val BLOCKED_CANDY_REDUCE_PETS: Set<String> = hashSetOf(
+        "ENDER_DRAGON", "GOLDEN_DRAGON", "SCATHA", "JADE_DRAGON", "ROSE_DRAGON",
+    )
+
+    // pets that go past level 100
+    @JvmField
+    val PET_SPECIAL_MAX: Map<String, Int> = mapOf(
+        "GOLDEN_DRAGON" to 200, "JADE_DRAGON" to 200, "ROSE_DRAGON" to 200,
+    )
 
     @JvmField
     val MASTER_STARS: Array<String> = arrayOf(
@@ -110,7 +132,7 @@ object NwConstants {
         "COMBAT", "OFFENSIVE", "DEFENSIVE", "MINING", "UNIVERSAL", "CHISEL"
     )
 
-    // ENCHANTMENT_UPGRADES (ItemEnchantments.js): enchant -> {upgradeItem, tier}
+    // ENCHANTMENT_UPGRADES: enchant -> {upgradeItem, tier}
     @JvmField
     val ENCHANTMENT_UPGRADE_TIER: MutableMap<String, IntArray> = HashMap()
     @JvmField
@@ -132,7 +154,7 @@ object NwConstants {
         put("VENOMOUS", "FATEFUL_STINGER", 7)
     }
 
-    // MIDAS_SWORDS (MidasWeapon.js): id -> {maxBid, type}
+    // MIDAS_SWORDS: id -> {maxBid, type}
     @JvmField
     val MIDAS_SWORDS: MutableMap<String, Array<Any>> = HashMap<String, Array<Any>>().apply {
         put("MIDAS_SWORD", arrayOf(50_000_000L, "MIDAS_SWORD_50M"))
@@ -141,7 +163,7 @@ object NwConstants {
         put("STARRED_MIDAS_STAFF", arrayOf(500_000_000L, "STARRED_MIDAS_STAFF_500M"))
     }
 
-    // REFORGES (reforges.js): reforge modifier -> reforge-stone item id
+    // REFORGES: reforge modifier -> reforge-stone item id
     @JvmField
     val REFORGES: MutableMap<String, String> = HashMap<String, String>().apply {
         put("stiff", "HARDENED_WOOD")
@@ -225,7 +247,7 @@ object NwConstants {
         put("greater_spook", "BOO_STONE")
     }
 
-    // PRESTIGES (prestiges.js): item id -> list of prestige item ids (in order)
+    // PRESTIGES: item id -> list of prestige item ids (in order)
     @JvmField
     val PRESTIGES: MutableMap<String, Array<String>> = HashMap()
 

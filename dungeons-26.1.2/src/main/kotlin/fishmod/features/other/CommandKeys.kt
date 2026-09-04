@@ -19,19 +19,24 @@ import java.nio.file.Paths
 object CommandKeys {
 
     /** Kept as a plain class (not a data class) so Java callers keep the record-style `.key()`/`.command()` accessors. */
-    class Entry(private val keyValue: InputConstants.Key, private val commandValue: String) {
+    class Entry(
+        private val keyValue: InputConstants.Key,
+        private val commandValue: String,
+        private val enabledValue: Boolean = true,
+    ) {
         fun key(): InputConstants.Key = keyValue
         fun command(): String = commandValue
+        fun enabled(): Boolean = enabledValue
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is Entry) return false
-            return keyValue == other.keyValue && commandValue == other.commandValue
+            return keyValue == other.keyValue && commandValue == other.commandValue && enabledValue == other.enabledValue
         }
 
-        override fun hashCode(): Int = 31 * keyValue.hashCode() + commandValue.hashCode()
+        override fun hashCode(): Int = 31 * (31 * keyValue.hashCode() + commandValue.hashCode()) + enabledValue.hashCode()
 
-        override fun toString(): String = "Entry[key=$keyValue, command=$commandValue]"
+        override fun toString(): String = "Entry[key=$keyValue, command=$commandValue, enabled=$enabledValue]"
     }
 
     private val FILE: Path = Paths.get(FolderUtility.CONFIG_PATH + "command_keys.txt")
@@ -63,7 +68,6 @@ object CommandKeys {
         ensureLoaded()
         if (entries.isEmpty()) return
 
-        // Don't fire while any GUI (chat, inventory) is open.
         if (client.screen != null || client.player == null) {
             held.clear()
             return
@@ -71,6 +75,7 @@ object CommandKeys {
 
         for (e in entries) {
             if (e.key() == InputConstants.UNKNOWN || e.command().isBlank()) continue
+            if (!e.enabled()) { held.remove(e.key()); continue }
 
             val down = if (e.key().type == InputConstants.Type.MOUSE)
                 GLFW.glfwGetMouseButton(client.window.handle(), e.key().value) == GLFW.GLFW_PRESS
@@ -92,10 +97,15 @@ object CommandKeys {
         if (!Files.exists(FILE)) return
         try {
             for (line in Files.readAllLines(FILE)) {
-                val parts = line.split("\t", limit = 2)
-                if (parts.size != 2 || parts[0].isBlank()) continue
+                val parts = line.split("\t", limit = 3)
+                if (parts.size < 2 || parts[0].isBlank()) continue
                 val key = InputConstants.getKey(parts[0].trim())
-                entries.add(Entry(key, parts[1].trim()))
+                // New format: key\t<0|1>\tcommand. Old format: key\tcommand (command may itself contain tabs).
+                if (parts.size == 3 && (parts[1] == "0" || parts[1] == "1")) {
+                    entries.add(Entry(key, parts[2].trim(), parts[1] == "1"))
+                } else {
+                    entries.add(Entry(key, line.substringAfter('\t').trim()))
+                }
             }
         } catch (ignored: IOException) {
         }
@@ -105,7 +115,7 @@ object CommandKeys {
         try {
             Files.createDirectories(FILE.parent)
             val sb = StringBuilder()
-            for (e in entries) sb.append(e.key().name).append('\t').append(e.command()).append('\n')
+            for (e in entries) sb.append(e.key().name).append('\t').append(if (e.enabled()) '1' else '0').append('\t').append(e.command()).append('\n')
             Files.writeString(FILE, sb.toString())
         } catch (ignored: IOException) {
         }

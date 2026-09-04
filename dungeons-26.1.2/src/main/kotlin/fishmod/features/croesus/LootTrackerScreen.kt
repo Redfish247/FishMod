@@ -21,7 +21,6 @@ import java.text.DecimalFormat
 /** Full-page /fmloot screen; rows are populated by `CroesusLootDetector`, this is just the view. */
 class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverlay {
 
-    // computed each frame
     private var contentX0 = 0
     private var contentX1 = 0
     private var contentY0 = 0
@@ -34,7 +33,6 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
     private var curMx = 0
     private var curMy = 0
 
-    // click hit-rects captured each frame
     private var closeX = 0
     private var closeY = 0
     private var closeS = 0
@@ -89,8 +87,7 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
         NvgRecorder.clear()
         val vw = (this.width / fishmod.utils.rendering.UiScale.factor()).toInt()
         val vh = (this.height / fishmod.utils.rendering.UiScale.factor()).toInt()
-        // Recorded in virtual space like everything else so replay()'s uniform scale brings it
-        // back to exactly this.width/this.height — a real-space size here would get shrunk too.
+        // recorded in virtual space so replay()'s uniform scale maps it back to full size
         NvgRecorder.fillRectVGradient(0f, 0f, vw.toFloat(), vh.toFloat(), BG_TOP, BG_BOT)
 
         contentX0 = MARGIN
@@ -160,7 +157,6 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
         statTile(x, y, tileW, "PER RUN", fmtCoins(perRun), GOLD); x += tileW + 6
         statTile(x, y, tileW, "DROPS", totalDrops.toString(), TEXT); x += tileW + 6
 
-        // runs tile — click the value to edit it directly (no +/- steppers)
         runsY = y
         runsTileX = x
         val rx = x
@@ -301,7 +297,6 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
         return "$out..."
     }
 
-    // ── input ────────────────────────────────────────────────────────────────
     override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
         val mx = fishmod.utils.rendering.UiScale.vx(click.x()).toDouble()
         val my = fishmod.utils.rendering.UiScale.vx(click.y()).toDouble()
@@ -422,8 +417,6 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
 
     override fun isPauseScreen(): Boolean = false
 
-    // ── NanoVG overlay ───────────────────────────────────────────────────────────
-
     private val nvgGlState = NvgGlStateGuard()
     private var nvgFailureLogged = false
 
@@ -446,7 +439,6 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
     }
 
     companion object {
-        // palette — dark slate with a teal accent, matches the rest of FishMod's screens
         private val BG_TOP = 0xEE0A0E12.toInt()
         private val BG_BOT = 0xF2050709.toInt()
         private val PANEL_BG = 0xFF11161C.toInt()
@@ -479,7 +471,6 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
         private const val GAP = 10
         private const val PAD = 14
 
-        // ── helpers ──────────────────────────────────────────────────────────────
         private fun rowValue(r: LootTrackerStore.Row): Double {
             if (r.id.isEmpty()) return 0.0
             return CroesusPrices.price(r.id) * r.count
@@ -498,7 +489,6 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
             return NUM.format(v)
         }
 
-        // public helpers for the .dprofit party command
         @JvmStatic
         fun totalValueForChat(): Double {
             var sum = 0.0

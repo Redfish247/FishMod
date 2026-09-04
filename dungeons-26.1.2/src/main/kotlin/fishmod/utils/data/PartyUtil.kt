@@ -4,6 +4,7 @@ import fishmod.utils.debug.Debug
 import net.hypixel.modapi.HypixelModAPI
 import net.hypixel.modapi.packet.impl.clientbound.ClientboundPartyInfoPacket
 import net.hypixel.modapi.packet.impl.serverbound.ServerboundPartyInfoPacket
+import net.minecraft.client.Minecraft
 import java.util.UUID
 
 object PartyUtil {
@@ -14,6 +15,7 @@ object PartyUtil {
     private var grabbedTime: Long = 0
     private var memberMap: Map<UUID, ClientboundPartyInfoPacket.PartyMember>? = null
     private var inParty = false
+    private var leaderUuid: UUID? = null
 
     @JvmStatic
     fun init() {
@@ -21,7 +23,18 @@ object PartyUtil {
             Debug.LOGGER.info("Received party info packet")
             memberMap = packet.memberMap
             inParty = packet.isInParty
+            leaderUuid = packet.memberMap.entries
+                .firstOrNull { it.value.role == ClientboundPartyInfoPacket.PartyRole.LEADER }?.key
         }
+    }
+
+    /** True only when we're in a party and hold the LEADER role. */
+    @JvmStatic
+    fun amLeader(): Boolean {
+        sendPacket()
+        if (!inParty) return false
+        val self = Minecraft.getInstance().player?.gameProfile?.id ?: return false
+        return leaderUuid == self
     }
 
     @JvmStatic

@@ -6,6 +6,12 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner;
+import net.minecraft.resources.Identifier;
+import com.llamalad7.mixinextras.sugar.Share;
+import com.llamalad7.mixinextras.sugar.ref.LocalBooleanRef;
 import org.joml.Matrix3x2fStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,12 +21,39 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.List;
+
 @Mixin(GuiGraphicsExtractor.class)
 public class DrawContextMixin {
 
     @Final
     @Shadow
     private Matrix3x2fStack pose;
+
+    // @Share + @At("RETURN") keep pushMatrix/popMatrix balanced when tooltip() bails early
+    @Inject(method = "tooltip", at = @At("HEAD"))
+    private void fishmod$tooltipScrollPush(Font font, List<ClientTooltipComponent> lines, int xo, int yo,
+                                          ClientTooltipPositioner positioner, Identifier style, CallbackInfo ci,
+                                          @Share("fishmod$ttShift") LocalBooleanRef shifted) {
+        float scale = fishmod.features.ScrollableTooltip.effectiveScale();
+        float ox = fishmod.features.ScrollableTooltip.offsetX;
+        float oy = fishmod.features.ScrollableTooltip.offsetY;
+        boolean on = fishmod.features.ScrollableTooltip.isEnabled() && (scale != 1f || ox != 0f || oy != 0f);
+        shifted.set(on);
+        if (!on) return;
+        pose.pushMatrix();
+        pose.translate(xo, yo);
+        pose.scale(scale);
+        pose.translate(ox, oy);
+        pose.translate(-xo, -yo);
+    }
+
+    @Inject(method = "tooltip", at = @At("RETURN"))
+    private void fishmod$tooltipScrollPop(Font font, List<ClientTooltipComponent> lines, int xo, int yo,
+                                          ClientTooltipPositioner positioner, Identifier style, CallbackInfo ci,
+                                          @Share("fishmod$ttShift") LocalBooleanRef shifted) {
+        if (shifted.get()) pose.popMatrix();
+    }
 
 
     @ModifyVariable(method = "itemCooldown", at=@At("STORE"), ordinal = 0)
@@ -30,9 +63,7 @@ public class DrawContextMixin {
 
     @Inject(method = "item(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;III)V", at=@At("HEAD"))
     private void scaleUp(LivingEntity entity, Level world, ItemStack stack, int x, int y, int seed, CallbackInfo ci) {
-        // Rarity background BEHIND the item. The entity-context drawItem overload is what the hotbar
-        // uses (entity = the player); inventory slots delegate with a null entity and are handled by
-        // INVENTORY_SLOT_BEFORE instead, so gating on entity != null avoids drawing it twice.
+        // gate on entity != null so inventory slots (null entity) don't double-draw the rarity bg
         if (entity != null) {
             fishmod.features.ItemRarityHotbar.drawRarity((GuiGraphicsExtractor) (Object) this, stack, x, y);
         }

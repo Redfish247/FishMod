@@ -21,7 +21,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *
  * <p>Purely client-side and cosmetic: item use on Hypixel is server-authoritative, so this only
  * changes how the held item is posed and animated on your own screen. The override keys off the
- * ITEM_MODEL component itself, wherever it's set.
+ * ITEM_MODEL component itself, wherever it's set (including the local override painted on by the
+ * ITEM_MODEL branch of {@link ItemTrimMixin}).
  */
 @Mixin(ItemStack.class)
 public abstract class ItemModelBehaviorMixin {
@@ -33,12 +34,9 @@ public abstract class ItemModelBehaviorMixin {
         if (modelId == null) return;
 
         Item modelItem = BuiltInRegistries.ITEM.getValue(modelId);
-        // Skip when the model id isn't a real item (custom resource-pack model) or is the item's own
-        // model (a no-op swap) — otherwise we'd recurse and/or change nothing.
+        // Skip non-items and self-model swaps; the guard also stops the call below from recursing
         if (modelItem == null || modelItem == Items.AIR || modelItem == self.getItem()) return;
 
-        // The model item's default stack reports its own model id, so this call hits the guard above
-        // and returns its real use action without re-entering for this stack.
         cir.setReturnValue(modelItem.getDefaultInstance().getUseAnimation());
     }
 }

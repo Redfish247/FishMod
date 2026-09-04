@@ -101,6 +101,8 @@ class Split(
     fun start() {
         startTime = System.currentTimeMillis()
         started = true
+        // a re-start after end() must clear `ended`, else getRealTime() returns oldEnd - newStart (garbage)
+        ended = false
     }
 
     fun started(): Boolean = started
@@ -110,8 +112,7 @@ class Split(
     fun getTickTime(): Double = tick * Constants.TICK_DURATION
 
     fun getRealTime(): Double {
-        // startTime == 0 means start() was never called; guard against returning
-        // epoch-time-in-seconds when printSplits() force-ends a never-started split.
+        // startTime == 0 => start() never called; don't return epoch-seconds for a force-ended split
         if (startTime == 0L) return 0.0
         return if (ended) {
             (endTime - startTime) / 1000.0
@@ -156,7 +157,6 @@ class Split(
                 Constants.DECIMAL_FORMAT.format(diff) + "s"
             }
         } else {
-            // default to tick timer
             Constants.DECIMAL_FORMAT.format(tickTime) + "s"
         }
 

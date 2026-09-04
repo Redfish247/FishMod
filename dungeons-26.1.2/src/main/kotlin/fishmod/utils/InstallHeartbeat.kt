@@ -21,20 +21,27 @@ object InstallHeartbeat {
 
     private const val BORDER_WIDTH = 53
 
+    // Fixed for the session — resolve once, not per server hop.
+    private val modVersion: String = FabricLoader.getInstance()
+        .getModContainer("fishmod-dungeons")
+        .map { it.metadata.version.friendlyString }
+        .orElse("unknown")
+
+    // JOIN fires on every Hypixel server hop; the heartbeat HTTP call only needs to go out once.
+    private var reportedThisSession = false
+
     @JvmStatic
     fun init() {
         ClientPlayConnectionEvents.JOIN.register { _, _, _ -> report() }
     }
 
     private fun report() {
+        if (reportedThisSession) return
         val mc = Minecraft.getInstance()
         val player = mc.player ?: return
         val uuid = player.getUUID().toString().replace("-", "")
         val name = player.gameProfile.name() ?: return
-        val modVersion = FabricLoader.getInstance()
-            .getModContainer("fishmod-dungeons")
-            .map { it.metadata.version.friendlyString }
-            .orElse("unknown")
+        reportedThisSession = true
 
         HypixelApi.reportSeen(uuid, name, modVersion) { latestVersion, updateLinks, welcomeText, discordUrl ->
             mc.execute {

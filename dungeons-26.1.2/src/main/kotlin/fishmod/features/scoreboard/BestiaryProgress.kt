@@ -9,12 +9,11 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import java.io.InputStreamReader
 
 /** Overall Bestiary completion for the Custom Scoreboard's "Bestiary" extra. Hypixel doesn't
- *  expose a ready-made percentage, so this mirrors SkyCrypt's own algorithm: each mob family has
- *  a kill-count bracket (one of 7 shared threshold curves) capped at that family's max kills, its
- *  current tier is how many thresholds its summed kills clear, and the overall score is
- *  (sum of current tiers) / (sum of max tiers). The family/bracket/cap table (`data/bestiary.json`)
- *  is machine-generated from SkyCrypt's `src/constants/bestiary.js` (208 families, 809 kill keys)
- *  rather than hand-transcribed, since that data is too large to retype without introducing errors. */
+ *  expose a ready-made percentage, so this computes it: each mob family has a kill-count bracket
+ *  (one of 7 shared threshold curves) capped at that family's max kills, its current tier is how
+ *  many thresholds its summed kills clear, and the overall score is (sum of current tiers) /
+ *  (sum of max tiers). The family/bracket/cap table is `data/bestiary.json` (208 families,
+ *  809 kill keys). */
 object BestiaryProgress {
 
     private class Family(val bracket: Int, val cap: Int, val keys: List<String>)

@@ -23,12 +23,12 @@ import java.util.regex.Pattern
  * Tracks Goldor (F7 P3) Simon Says rounds via block scanning. Player must be inside `DEVICE_BOX`
  * to lock onto `DEVICE_CENTER`, then rounds are counted by demo "flashes" (lit sea-lantern rising
  * edges); 5/5 instead comes from the in-game "completed a device!" message. A break is detected
- * via the same fixed obsidian/button-column signal NoammAddons' SS solver uses, which resets
- * tracking to 0 until the device goes active again.
+ * via a fixed obsidian/button-column signal, which resets tracking to 0 until the device goes
+ * active again.
  */
 object SimonSaysTracker {
 
-    private const val SCAN_RADIUS = 7 // lit-cell box around the locked device center
+    private const val SCAN_RADIUS = 3 // lit-cell box around the locked device center (covers the 4x4 lantern grid)
     private const val BURST_GAP_MS = 550L
 
     // Fixed detection box around the Goldor SS device, from measured corner coords, extended
@@ -39,7 +39,7 @@ object SimonSaysTracker {
     )
     private val DEVICE_CENTER = BlockPos(108, 120, 94)
 
-    // Break/restart detection (same approach as NoammAddons' SS solver): a fixed obsidian
+    // Break/restart detection: a fixed obsidian
     // column behind the device and the button column in front of it. Any obsidian cell not
     // being obsidian = the device is "active" (mid demo/attempt). Once that settles for
     // BREAK_COOLDOWN_TICKS and every button cell reads air, the device has reset — a break.
@@ -75,6 +75,9 @@ object SimonSaysTracker {
     private var deviceCenter: BlockPos? = null
     private var doneAtMs = 0L // when 5/5 fired — HUD unrenders 2s later
     private val litPrev = HashSet<Long>()
+    private val scanBuf = HashSet<Long>() // reused scratch set for scanLitCells — avoids a per-tick allocation
+    private var scanCounter = 0
+    private const val SCAN_INTERVAL_TICKS = 2 // throttle the 7^3 block scan; 100ms max added latency is well under BURST_GAP_MS
 
     // Reads "Simon Says: N/5" out of party chat so the HUD also registers when SOMEONE ELSE
     // does SS (we can't block-scan their device — but their mod announces to party chat).
@@ -83,7 +86,7 @@ object SimonSaysTracker {
     // Goldor's intro line — arms scanning so we don't watch the device box before P3 starts.
     private const val GOLDOR_INTRO = "who dares trespass into my domain"
 
-    // ── debug: log every block transition in a cube around the player (/ssdbg) ──
+    // debug: log every block transition in a cube around the player (/ssdbg)
     @JvmField
     var debug = false
     private const val DBG_R = 6
@@ -91,23 +94,18 @@ object SimonSaysTracker {
 
     @JvmStatic
     fun init() {
-        // New run (entering/leaving the dungeon) → reset everything.
         fishmod.utils.events.Events.ON_LOCATION_CHANGE.register { reset(); false }
 
-        // "<you> completed a device! (x/7) (time | time)" → our SS finish (5/5). Use the mod's own
-        // game-message event (the same hook party commands use) for reliability.
+        // "<you> completed a device! (x/7) (time | time)" → our SS finish (5/5).
         fishmod.utils.events.Events.ON_GAME_MESSAGE.register { message ->
             if (!FishSettings.simonSaysEnabled) return@register false
-            val s = message.string.replace(Regex("§."), "")
+            val s = message.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
 
-            // Goldor's spawn line — start scanning the device box from here on.
             if (!armed && s.lowercase().contains(GOLDOR_INTRO)) {
                 armed = true
                 if (debug) log("armed (Goldor intro seen)")
             }
 
-            // Pick up "Simon Says: N/5" from party chat (ours echoed back, or a teammate's) so the
-            // HUD shows progress even when WE aren't the one at the device.
             val ss = SS_CHAT.matcher(s)
             if (ss.find()) {
                 val n = ss.group(1)[0] - '0'
@@ -129,8 +127,7 @@ object SimonSaysTracker {
             false
         }
 
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { debugTick(it) })
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { tick(it) })
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { debugTick(it); tick(it) })
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "simon_says_tracker")) { ctx, tc -> renderHud(ctx, tc) }
 
         FishHudEditor.register(
@@ -149,14 +146,11 @@ object SimonSaysTracker {
         }
         inP3 = safeInP3()
 
-        // Once SS is done this run, ignore everything until the next run (location change).
         if (completed) { atDevice = false; return }
 
-        // Don't watch the device box until Goldor's intro line has been seen this run.
         if (!armed) { atDevice = false; return }
 
         tickBreakState(client.level!!)
-        // Device just broke — full shutoff. No scanning, no announcing, until it restarts.
         if (broken) {
             atDevice = false; deviceCenter = null; primed = false; burstFlashes = 0; litPrev.clear()
             return
@@ -186,8 +180,15 @@ object SimonSaysTracker {
         // like every lantern just went dark, corrupting the demo-length count.
         if (!client.level!!.hasChunk(deviceCenter!!.x shr 4, deviceCenter!!.z shr 4)) return
 
-        val cur = HashSet<Long>()
-        scanLitCells(client.level!!, deviceCenter!!, cur)
+        // Throttle the block scan itself — skipped ticks just keep last tick's lit set (litPrev)
+        // and burst state untouched, so state stays consistent between scans.
+        scanCounter++
+        if (scanCounter < SCAN_INTERVAL_TICKS) return
+        scanCounter = 0
+
+        scanBuf.clear()
+        scanLitCells(client.level!!, deviceCenter!!, scanBuf)
+        val cur = scanBuf
 
         // Prime on the first scan so the always-lit decorative frame lanterns aren't miscounted.
         if (!primed) { litPrev.clear(); litPrev.addAll(cur); primed = true; return }
@@ -233,17 +234,15 @@ object SimonSaysTracker {
     @JvmStatic
     fun onTitle(title: String?) {
         if (!FishSettings.simonSaysEnabled || title == null) return
-        val s = title.replace(Regex("§."), "").lowercase()
+        val s = title.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").lowercase()
         if (s.contains("device") && s.contains("complete")) tryComplete()
     }
 
     private fun announceRound(r: Int) {
         val label = "$r/5" + (if (r >= 5) " (done)" else "")
         Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§bSimon Says: §a" + label))
-        if (FishSettings.simonSaysPartyChat) Misc.executeCommand("pc Simon Says: $label")
+        if (FishSettings.simonSaysPartyChat) fishmod.utils.ChatQueue.enqueue("pc Simon Says: $label")
     }
-
-    // ── block scanning ──────────────────────────────────────────────────────────
 
     /** Obsidian cell missing = active; once that holds for `BREAK_COOLDOWN_TICKS` and buttons are all air, it's a break. */
     private fun tickBreakState(world: Level) {
@@ -297,7 +296,7 @@ object SimonSaysTracker {
 
         if (FishSettings.simonSaysFailEnabled) {
             Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§c" + FishSettings.simonSaysFailMessage))
-            if (FishSettings.simonSaysPartyChat) Misc.executeCommand("pc " + FishSettings.simonSaysFailMessage)
+            if (FishSettings.simonSaysPartyChat) fishmod.utils.ChatQueue.enqueue("pc " + FishSettings.simonSaysFailMessage)
         }
     }
 
@@ -313,7 +312,7 @@ object SimonSaysTracker {
                 }
     }
 
-    /** Phase.inP3() but never throws — blade-addons' Phase may differ; treat errors as false. */
+    /** Phase.inP3() but never throws; treat errors as false. */
     private fun safeInP3(): Boolean {
         return try { Phase.inP3() } catch (t: Throwable) { false }
     }
@@ -332,6 +331,7 @@ object SimonSaysTracker {
         breakArmedAtMs = 0L
         doneAtMs = 0L
         litPrev.clear()
+        scanCounter = 0
         deviceCenter = null
     }
 
