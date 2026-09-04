@@ -1,6 +1,7 @@
 package fishmod.features.croesus
 
-import fishmod.utils.SkyblockItems
+import fishmod.utils.HypixelApi
+import fishmod.utils.networth.ItemsDb
 import java.util.regex.Pattern
 
 /**
@@ -8,7 +9,7 @@ import java.util.regex.Pattern
  * per reward line up to the "Cost" line.
  */
 object CroesusRewardParser {
-    private val COLOR_STRIP: Pattern = Pattern.compile("§.")
+    private val ITALIC_PREFIX = Regex("^§5§o")
 
     private val ULTIMATE_ENCHANTS: Set<String> = setOf(
         "Bank", "Bobbin Time", "Chimera", "Combo", "Duplex", "Fatal Tempo", "Flash",
@@ -25,6 +26,7 @@ object CroesusRewardParser {
         ITEM_REPLACEMENTS["Shiny Wither Leggings"] = "WITHER_LEGGINGS"
         ITEM_REPLACEMENTS["Shiny Wither Chestplate"] = "WITHER_CHESTPLATE"
         ITEM_REPLACEMENTS["Shiny Wither Helmet"] = "WITHER_HELMET"
+        ITEM_REPLACEMENTS["Necron's Handle"] = "NECRON_HANDLE"
         ITEM_REPLACEMENTS["Shiny Necron's Handle"] = "NECRON_HANDLE"
         ITEM_REPLACEMENTS["Wither Shard"] = "SHARD_WITHER"
         ITEM_REPLACEMENTS["Thorn Shard"] = "SHARD_THORN"
@@ -60,7 +62,7 @@ object CroesusRewardParser {
         return sum
     }
 
-    private fun strip(s: String): String = COLOR_STRIP.matcher(s).replaceAll("")
+    private fun strip(s: String): String = HypixelApi.STRIP_COLOR.matcher(s).replaceAll("")
 
     private fun tryParseBook(line: String): Array<String>? {
         val m = BOOK_PATTERN.matcher(line)
@@ -97,7 +99,7 @@ object CroesusRewardParser {
         if (essence != null) return essence
         if (ITEM_REPLACEMENTS.containsKey(clean)) return arrayOf(ITEM_REPLACEMENTS[clean]!!, "1")
 
-        val id = SkyblockItems.idFor(clean)
+        val id = ItemsDb.idFor(clean)
         if (id != null && !id.startsWith("STARRED_")) return arrayOf(id, "1")
 
         return arrayOf("false", "Could not find item ID for line \"$clean\"")
@@ -129,13 +131,16 @@ object CroesusRewardParser {
             if (result[0] == "false") {
                 // Skip unresolved lines rather than discarding the whole chest's rewards.
                 if (errorOut != null) errorOut[0] = result[1]
+                fishmod.utils.debug.Debug.LOGGER.info("[Loot] unresolved reward line: '{}'", clean)
                 continue
             }
 
             val ri = RewardItem()
             ri.id = result[0]
-            ri.qty = result[1].toInt()
-            ri.displayName = line.replace(Regex("^§5§o"), "").trim()
+            ri.qty = result[1].toIntOrNull()?.coerceAtLeast(1) ?: 1
+            // Fully colour-stripped so rows don't split/mislabel on stray codes.
+            ri.displayName = clean
+            fishmod.utils.debug.Debug.LOGGER.info("[Loot] reward '{}' -> id={} qty={}", clean, ri.id, ri.qty)
             info.items.add(ri)
         }
         return info

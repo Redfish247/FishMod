@@ -28,9 +28,14 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
+        Slot fishmod$hs = ((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot();
+        fishmod.features.ScrollableTooltip.trackHoveredSlot(
+                fishmod$hs != null && !fishmod$hs.getItem().isEmpty() ? fishmod$hs.index : -1);
         SearchBar.render(context, mouseX, mouseY, deltaTicks);
         fishmod.features.dungeon.LeapMenu.render(context, mouseX, mouseY, (AbstractContainerScreen<?>) (Object) this);
+        fishmod.features.dungeon.PartyFinderPanel.render(context, mouseX, mouseY, (AbstractContainerScreen<?>) (Object) this);
         fishmod.features.storage.StorageOverlay.render(context, mouseX, mouseY, (AbstractContainerScreen<?>) (Object) this);
+        fishmod.features.croesus.CroesusProfit.render(context, (AbstractContainerScreen<?>) (Object) this);
         fishmod.features.item.ContainerValue.render(context, (AbstractContainerScreen<?>) (Object) this);
         if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) {
             fishmod.features.dungeon.f7.terminal.TermCustomGui.render(context, this.width, this.height);
@@ -38,14 +43,19 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
         if ((Object) this instanceof fishmod.features.dungeon.f7.terminal.TermSimScreen ts) ts.overlay(context);
     }
 
-    // Custom GUI mode: hide every vanilla slot (items + hover highlight + the solver's own overlay);
-    // TermCustomGui draws its board on top in extractRenderState instead.
+    // Custom GUI mode: hide vanilla slots; TermCustomGui draws on top instead
     @Inject(method = "extractSlots", at = @At("HEAD"), cancellable = true)
     private void fishmod$customTermHideSlots(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
         if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) { ci.cancel(); return; }
-        // Storage overlay draws its own grids over an opaque backdrop — don't let vanilla slots
-        // (and their hover highlights / tooltips) render behind it.
-        if (fishmod.features.storage.StorageOverlay.isActive((AbstractContainerScreen<?>) (Object) this)) ci.cancel();
+        // Storage overlay covers the screen — don't render vanilla slots behind it
+        if (fishmod.features.storage.StorageOverlay.isActive((AbstractContainerScreen<?>) (Object) this)) { ci.cancel(); return; }
+        if (fishmod.features.dungeon.LeapMenu.isActive((AbstractContainerScreen<?>) (Object) this)) ci.cancel();
+    }
+
+    // Leap menu draws its own title — drop Hypixel's labels
+    @Inject(method = "extractLabels", at = @At("HEAD"), cancellable = true)
+    private void fishmod$hideLeapMenuLabels(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
+        if (fishmod.features.dungeon.LeapMenu.isActive((AbstractContainerScreen<?>) (Object) this)) ci.cancel();
     }
 
     @Inject(method = "extractSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;item(Lnet/minecraft/world/item/ItemStack;III)V"))
@@ -62,7 +72,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
 
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void keyPressed(KeyEvent input, CallbackInfoReturnable<Boolean> cir) {
-        if (SearchBar.keyPressed(input)) { cir.setReturnValue(false); return; }
+        if (SearchBar.keyPressed(input)) { cir.setReturnValue(true); return; }
         if (fishmod.features.storage.StorageOverlay.keyPressed(input.key(), (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
         if (fishmod.features.dungeon.LeapMenu.keyPressed(input.key(), (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
         if (WardrobeHotkeys.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
@@ -101,6 +111,11 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
             return;
         }
 
+        if (fishmod.features.dungeon.PartyFinderPanel.mouseClicked(click.button(), cx, cy, (AbstractContainerScreen<?>) (Object) this)) {
+            cir.setReturnValue(true);
+            return;
+        }
+
         if (SessionStats.handleScreenClick(cx, cy)) {
             cir.setReturnValue(true);
             return;
@@ -117,7 +132,10 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
             cir.setReturnValue(true);
             return;
         }
-        // Scrollable tooltips: scroll over a hovered item moves / scales its tooltip.
+        if (fishmod.features.dungeon.PartyFinderPanel.mouseScrolled(mx, my, vt, (AbstractContainerScreen<?>) (Object) this)) {
+            cir.setReturnValue(true);
+            return;
+        }
         if (fishmod.features.ScrollableTooltip.isEnabled()) {
             Slot hs = ((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot();
             if (hs != null && !hs.getItem().isEmpty()) {

@@ -56,7 +56,7 @@ object DupeClassDetector {
             )
 
             if (Dungeons.dupeClassPartyChat) {
-                Misc.executeCommand(
+                fishmod.utils.ChatQueue.enqueue(
                     "pc Dupe Class Detected > " + names.size +
                         " " + capitalize(dungeonClass.name) + " (" + joinNames(names) + ")"
                 )

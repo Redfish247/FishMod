@@ -17,9 +17,7 @@ object UiScale {
     private const val REFERENCE_GUI_SCALE = 2.0
     private const val FLAT_SHRINK = 0.77f
 
-    // FishModScreen's sibling popups (Chat Notifications, Command Aliases/Keys, Loot Tracker, Item
-    // Customize, Credits) render 30% larger than the main /fm panel so they stay readable — the
-    // panel itself is deliberately left at the base size.
+    // sibling popups render 30% larger than the main /fm panel so they stay readable
     private const val SIBLING_ENLARGE = 1.30f
 
     /** Combined scale to shrink a screen's drawing by; also divide incoming mouse coordinates by

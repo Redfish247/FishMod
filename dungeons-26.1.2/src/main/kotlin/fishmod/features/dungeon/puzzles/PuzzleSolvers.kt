@@ -1,116 +1,131 @@
 package fishmod.features.dungeon.puzzles
 
-import fishmod.features.dungeon.map.MapVec2i
-import fishmod.features.dungeon.map.Room
-import fishmod.features.dungeon.map.Scan
+import fishmod.features.dungeon.puzzles.odin.BeamsSolver
+import fishmod.features.dungeon.puzzles.odin.BlazeSolver
+import fishmod.features.dungeon.puzzles.odin.BoulderSolver
+import fishmod.features.dungeon.puzzles.odin.IceFillSolver
+import fishmod.features.dungeon.puzzles.odin.ORoomType
+import fishmod.features.dungeon.puzzles.odin.OdinScan
+import fishmod.features.dungeon.puzzles.odin.QuizSolver
+import fishmod.features.dungeon.puzzles.odin.TPMazeSolver
+import fishmod.features.dungeon.puzzles.odin.WaterSolver
+import fishmod.features.dungeon.puzzles.odin.WeirdosSolver
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.dungeon.Phase
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderingEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.client.Minecraft
+import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.InteractionResult
 
 /**
- * Shared detection + lifecycle for [PuzzleSolver]s. Resolves which puzzle room the player is
- * standing in (via [Scan]'s room grid) and forwards tick / chat / render / reset to that room's
- * registered solver only — so a solver never has to re-implement "am I in my room?".
+ * Dispatcher for the puzzle solvers: owns the event wiring and forwards to the individual solver
+ * objects in [fishmod.features.dungeon.puzzles.odin].
  *
- * Concrete solvers register in [init] and are gated behind [FishSettings.puzzleSolversEnabled].
+ * TicTacToe keeps its own solver in [TicTacToeSolver].
  */
 object PuzzleSolvers {
 
-    private val byRoom = HashMap<String, PuzzleSolver>()
-    private var active: PuzzleSolver? = null
-    private var activeRoom: Room? = null
+    private val weirdosRegex = Regex("\\[NPC] (.+): (.+).?")
+    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private var tickAcc = 0
-    private val COLOR = Regex("§.")
 
-    fun register(vararg solvers: PuzzleSolver) {
-        for (s in solvers) byRoom[s.roomName] = s
-    }
-
-    private fun enabled(): Boolean = FishSettings.puzzleSolversEnabled && Location.inDungeon()
+    private val enabled: Boolean get() = FishSettings.puzzleSolversEnabled
+    private val inClear: Boolean get() = Location.inDungeon() && !Phase.inBoss()
+    private val isInPuzzle: Boolean get() = OdinScan.currentRoom?.data?.type == ORoomType.PUZZLE
 
     @JvmStatic
     fun init() {
-        register(
-            ThreeWeirdosSolver(),
-            BlazeSolver("Lower Blaze", ascending = false),
-            BlazeSolver("Higher Blaze", ascending = true),
-            QuizSolver(),
-            WaterSolver(),
-            BeamsSolver(),
-            TPMazeSolver(),
-            TicTacToeSolver(),
-            BoulderSolver(),
-            IceFillSolver(),
-        )
+        OdinScan.init()
 
-        ClientTickEvents.END_CLIENT_TICK.register { mc -> tick(mc) }
+        OdinScan.onRoomEnter { room ->
+            BoulderSolver.onRoomEnter(room)
+            IceFillSolver.onRoomEnter(room, FishSettings.iceFillOptimized)
+            TPMazeSolver.onRoomEnter(room)
+            BeamsSolver.onRoomEnter(room)
+            QuizSolver.onRoomEnter(room)
+            WaterSolver.onRoomEnter(room)
+        }
 
-        net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register { _, _, hand, hit ->
-            if (hand == net.minecraft.world.InteractionHand.MAIN_HAND && enabled()) {
-                active?.onBlockClick(hit.blockPos)
+        ClientTickEvents.END_CLIENT_TICK.register { _ ->
+            if (!enabled) return@register
+            if (isInPuzzle && ++tickAcc >= 10) {
+                tickAcc = 0
+                if (FishSettings.blazeSolver) BlazeSolver.getBlaze()
+                if (FishSettings.waterSolver) WaterSolver.onTick()
             }
-            net.minecraft.world.InteractionResult.PASS
+            if (!inClear) return@register
+            if (FishSettings.beamsSolver) BeamsSolver.onTick()
+            if (FishSettings.boulderSolver) BoulderSolver.onTick()
+            if (FishSettings.iceFillSolver) IceFillSolver.onTick(FishSettings.iceFillOptimized)
+            if (FishSettings.tttSolver) TicTacToeSolver.onTick()
         }
 
-        Events.ON_GAME_MESSAGE.register { text ->
-            val a = active
-            if (a == null || !enabled()) false else a.onChat(COLOR.replace(text.string, ""))
-        }
-
-        Events.ON_WORLD_CHANGE.register {
-            clearActive()
-            byRoom.values.forEach { it.reset() }
+        Events.ON_SERVER_TICK.register {
+            if (inClear && FishSettings.waterSolver) WaterSolver.onServerTick()
             false
         }
 
-        // Boxes AND text both go through the RenderingEvents (END_MAIN) pass — the node collector
-        // that submitText() feeds is already drained by AFTER_TRANSLUCENT_FEATURES, so text
-        // submitted there never draws.
-        RenderingEvents.FILLED_BLOCK.register { ctx, matrices, vc ->
-            if (!enabled()) return@register
-            active?.renderWorld(matrices, vc)
-            active?.renderWorldText(ctx, matrices)
+        Events.ON_WORLD_CHANGE.register {
+            IceFillSolver.reset(); WeirdosSolver.reset(); BoulderSolver.reset(); TPMazeSolver.reset()
+            WaterSolver.reset(); BlazeSolver.reset(); BeamsSolver.reset(); QuizSolver.reset()
+            TicTacToeSolver.reset()
+            false
         }
-    }
 
-    private fun currentRoom(mc: Minecraft): Room? {
-        val p = mc.player ?: return null
-        return Scan.roomsList.getOrNull(MapVec2i(p.blockX, p.blockZ).index())?.owner
-    }
-
-    private fun clearActive() {
-        active?.onExit()
-        active = null
-        activeRoom = null
-    }
-
-    private fun tick(mc: Minecraft) {
-        if (!enabled()) {
-            if (active != null) clearActive()
-            return
-        }
-        if (++tickAcc >= 5) {
-            tickAcc = 0
-            val room = currentRoom(mc)
-            if (room !== activeRoom) {
-                active?.onExit()
-                activeRoom = room
-                active = if (room?.type == Room.Type.PUZZLE) room.data?.name?.let { byRoom[it] } else null
-                if (active != null && room != null) {
-                    active!!.onEnter(room)
-                    fishmod.utils.Misc.addChatMessage(
-                        net.minecraft.network.chat.Component.literal("§b[Puzzle] §7${room.data?.name} solver active")
-                    )
-                } else if (room?.type == Room.Type.PUZZLE) {
-                    fishmod.utils.Misc.addChatMessage(
-                        net.minecraft.network.chat.Component.literal("§b[Puzzle] §8no solver for '${room.data?.name}'")
-                    )
-                }
+        Events.ON_PACKET.register { packet ->
+            if (enabled && isInPuzzle && FishSettings.tpMazeSolver && packet is ClientboundPlayerPositionPacket) {
+                Minecraft.getInstance().execute { TPMazeSolver.tpPacket(packet) }
             }
+            false
         }
-        active?.onTick(mc)
+
+        UseBlockCallback.EVENT.register(UseBlockCallback { _, _, hand, hit ->
+            if (enabled && inClear && hand == InteractionHand.MAIN_HAND) {
+                if (FishSettings.tttSolver && TicTacToeSolver.shouldBlock(hit.blockPos)) {
+                    return@UseBlockCallback InteractionResult.FAIL
+                }
+                if (FishSettings.waterSolver) WaterSolver.waterInteract(hit.blockPos)
+                if (FishSettings.boulderSolver) BoulderSolver.playerInteract(hit.blockPos)
+            }
+            InteractionResult.PASS
+        })
+
+        Events.ON_GAME_MESSAGE.register { text ->
+            // Quiz/Weirdos are chat-driven and self-validating; don't gate on isInPuzzle, or the
+            // first Oruo question (which fires the instant you step in, before the room resolves)
+            // gets dropped.
+            if (!enabled || !Location.inDungeon()) return@register false
+            val msg = COLOR.replace(text.string, "")
+            if (FishSettings.weirdosSolver) weirdosRegex.find(msg)?.let {
+                WeirdosSolver.onNPCMessage(it.groupValues[1], it.groupValues[2])
+            }
+            if (FishSettings.quizSolver) QuizSolver.onMessage(msg)
+            false
+        }
+
+        RenderingEvents.GIZMO.register { _ ->
+            if (!enabled || !inClear) return@register
+            if (FishSettings.iceFillSolver) IceFillSolver.onRenderWorld()
+            if (FishSettings.weirdosSolver) WeirdosSolver.onRenderWorld()
+            if (FishSettings.boulderSolver) BoulderSolver.onRenderWorld()
+            if (FishSettings.blazeSolver) BlazeSolver.onRenderWorld()
+            if (FishSettings.beamsSolver) BeamsSolver.onRenderWorld()
+            if (FishSettings.waterSolver) WaterSolver.onRenderWorld()
+            if (FishSettings.quizSolver) QuizSolver.onRenderWorld()
+            if (FishSettings.tpMazeSolver) TPMazeSolver.onRenderWorld()
+            if (FishSettings.tttSolver) TicTacToeSolver.onRenderWorld()
+        }
+    }
+
+    /** Solvers call this on completion (currently just a chat line). */
+    @JvmStatic
+    fun onPuzzleComplete(puzzleName: String) {
+        fishmod.utils.Misc.addChatMessage(
+            net.minecraft.network.chat.Component.literal("§b[Puzzle] §a$puzzleName solved"))
     }
 }

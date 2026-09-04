@@ -18,8 +18,7 @@ import net.minecraft.world.phys.Vec3
 import java.util.regex.Pattern
 
 /**
- * M7 Relics (ported from NoammAddons' M7Relics) — revives blade's dormant `Floor7.enableRelicStartTimer`
- * / `relicSpawnTicks` / `renderRelicHighlight`.
+ * M7 Relics — drives `Floor7.enableRelicStartTimer` / `relicSpawnTicks` / `renderRelicHighlight`.
  *
  * - Spawn Timer: countdown of [Floor7.relicSpawnTicks] ticks after Necron's "All this, for nothing..."
  *   (P5 start), shown on a small HUD.
@@ -36,7 +35,7 @@ object M7Relics {
     }
 
     private const val NAME = "Relic Spawn Timer"
-    private val COLOR = Regex("§.")
+    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val P5_START = Pattern.compile("\\[BOSS] Necron: All this, for nothing\\.\\.\\.")
 
     @Volatile private var spawnEndMs = 0L

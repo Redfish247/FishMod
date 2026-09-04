@@ -5,25 +5,27 @@ import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
+import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket
 import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket
-import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.block.FlowerPotBlock
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.Vec3
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * Terracotta Timer (ported from Odin's TerracottaTimer). On F6 Sadan's boss, when a terracotta dies
- * Hypixel drops an empty flower pot where it stood and respawns the mob ~15s later (~12s on Master
- * Mode). We watch block-update packets for those pots and float the countdown in-world.
+ * Terracotta Timer. On F6 Sadan's boss a terracotta dying makes Hypixel plant a flower-pot block
+ * where it stood; the mob respawns 15s later (12s on Master Mode). Match `state.block is FlowerPotBlock`
+ * — Hypixel can use a *potted* variant, not just the empty `Blocks.FLOWER_POT`, which the old
+ * behaviour missed.
  */
 object TerracottaTimer {
 
-    private class Terra(val pos: Vec3, var time: Float)
+    private data class Terracotta(val pos: BlockPos, var time: Float)
 
-    private val spawning = CopyOnWriteArrayList<Terra>()
+    private val spawning = CopyOnWriteArrayList<Terracotta>()
 
     private fun active(): Boolean =
         FishSettings.terracottaTimerEnabled && DungeonState.isInBoss() && DungeonState.floorNumber() == 6
@@ -32,8 +34,10 @@ object TerracottaTimer {
     fun init() {
         Events.ON_PACKET.register { packet ->
             when (packet) {
-                is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
-                is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::onBlock)
+                is ClientboundBlockUpdatePacket ->
+                    Minecraft.getInstance().execute { onBlock(packet.pos, packet.blockState) }
+                is ClientboundSectionBlocksUpdatePacket ->
+                    Minecraft.getInstance().execute { packet.runUpdates(::onBlock) }
             }
             false
         }
@@ -45,21 +49,27 @@ object TerracottaTimer {
 
         Events.ON_WORLD_CHANGE.register { spawning.clear(); false }
 
-        // Text via the RenderingEvents (END_MAIN) pass — see PuzzleSolvers note.
-        RenderingEvents.NO_DEPTH_LINE.register { ctx, matrices, _ ->
+        RenderingEvents.GIZMO.register { _ ->
             if (!active() || spawning.isEmpty()) return@register
             for (t in spawning) {
-                RenderUtils.renderText(ctx, matrices, Component.literal("${"%.1f".format(t.time)}s"), t.pos, 0.03f)
+                RenderUtils.gizmoText(
+                    Component.literal("§${color(t.time)}%.1fs".format(t.time)),
+                    Vec3(t.pos.x + 0.5, t.pos.y + 1.5, t.pos.z + 0.5), 1f, -0x1,
+                )
             }
         }
     }
 
     private fun onBlock(pos: BlockPos, state: BlockState) {
-        if (!state.`is`(Blocks.FLOWER_POT)) return
         if (!active()) return
-        val at = Vec3(pos.x + 0.5, pos.y + 1.5, pos.z + 0.5)
-        if (spawning.any { it.pos.distanceToSqr(at) < 0.01 }) return
-        spawning.add(Terra(at, if (DungeonState.isMasterMode()) 12f else 15f))
-        fishmod.utils.Misc.addChatMessage(Component.literal("§6[Terracotta] §7pot at ${pos.x},${pos.y},${pos.z} — ${spawning.last().time}s"))
+        if (state.block !is FlowerPotBlock) return
+        if (spawning.any { it.pos == pos }) return
+        spawning.add(Terracotta(pos.immutable(), if (DungeonState.isMasterMode()) 12f else 15f))
+    }
+
+    private fun color(time: Float): Char = when {
+        time > 5f -> 'a'
+        time > 2f -> '6'
+        else -> 'c'
     }
 }

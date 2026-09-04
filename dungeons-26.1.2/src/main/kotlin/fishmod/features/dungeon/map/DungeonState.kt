@@ -1,10 +1,11 @@
 package fishmod.features.dungeon.map
 
 import net.minecraft.client.Minecraft
+import net.minecraft.world.level.Level
 import net.minecraft.world.scores.DisplaySlot
 import java.util.regex.Pattern
 
-/** Dungeon lifecycle + floor tracking, ported from System22's DungeonState/DoorEsp chat trackers. */
+/** Dungeon lifecycle + floor tracking. */
 object DungeonState {
 
     private val SIDEBAR_FLOOR = Pattern.compile("The Catacombs \\(([FM])(\\d)\\)")
@@ -43,7 +44,6 @@ object DungeonState {
         "                Master Mode The Catacombs - Floor VII"
     )
 
-    // DoorEsp.java's blood-key chat tracking (rendering itself excluded, this half is kept).
     private val WITHER_KEY_CLAIM = Pattern.compile("(?:\\[[A-Za-z+]+] )?([A-Za-z0-9_]+) has obtained Wither Key!")
     private val WITHER_DOOR_OPEN = Pattern.compile("([A-Za-z0-9_]+) opened a WITHER door!")
     private val BLOOD_KEY_CLAIM = Pattern.compile("(?:\\[[A-Za-z+]+] )?([A-Za-z0-9_]+) has obtained Blood Key!")
@@ -96,7 +96,7 @@ object DungeonState {
         if (WITHER_KEY_CLAIM.matcher(s).matches() || s == "A Wither Key was picked up!") {
             witherKeys++
         } else if (WITHER_DOOR_OPEN.matcher(s).matches()) {
-            witherKeys--
+            witherKeys = maxOf(0, witherKeys - 1)
         } else if (BLOOD_KEY_CLAIM.matcher(s).matches() || s == "A Blood Key was picked up!") {
             bloodKey = true
         } else if (s == "The BLOOD DOOR has been opened!") {
@@ -105,7 +105,7 @@ object DungeonState {
         }
     }
 
-    private fun stripColors(s: String): String = s.replace(Regex("(?i)[&§][0-9a-fk-or]"), "")
+    private fun stripColors(s: String): String = s.replace(MAP_COLOR_CODES, "")
 
     private fun parseRomanFloor(s0: String?): Int {
         if (s0 == null) return -1
@@ -136,12 +136,30 @@ object DungeonState {
         witherKeys = 0
         bloodKey = false
         bloodOpened = false
+        inDungeonCacheLevel = null
     }
+
+    // isInDungeon() is polled per-frame/per-tick; the tab/sidebar scan only changes on a world swap or
+    // tab update, so cache on level identity + a ~1s TTL.
+    private var inDungeonCacheLevel: Level? = null
+    private var inDungeonCacheStamp = 0L
+    private var inDungeonCacheValue = false
+    private const val IN_DUNGEON_TTL_MS = 1000L
 
     @JvmStatic
     fun isInDungeon(): Boolean {
+        val mc = Minecraft.getInstance()
+        val level = mc.level
+        val now = System.currentTimeMillis()
+        if (level === inDungeonCacheLevel && now - inDungeonCacheStamp < IN_DUNGEON_TTL_MS) return inDungeonCacheValue
+        inDungeonCacheLevel = level
+        inDungeonCacheStamp = now
+        inDungeonCacheValue = computeInDungeon(mc)
+        return inDungeonCacheValue
+    }
+
+    private fun computeInDungeon(mc: Minecraft): Boolean {
         try {
-            val mc = Minecraft.getInstance()
             val conn = mc.connection
             if (mc.player == null || conn == null) return false
 
@@ -157,6 +175,19 @@ object DungeonState {
 
     @JvmStatic
     fun floorNumber(): Int = if (chatFloor >= 0) chatFloor else sidebarFloorNumber()
+
+    /**
+     * Splits-file floor key ("F1".."F7", "M1".."M7") derived from [floorNumber]/[isMasterMode] —
+     * the single shared source for anything that used to re-derive this from raw chat/sidebar text
+     * (previously duplicated in Phase.kt and FishEstTotal.kt). Null outside a numbered floor
+     * (Entrance or not in a dungeon).
+     */
+    @JvmStatic
+    fun currentFloorKey(): String? {
+        val f = floorNumber()
+        if (f <= 0) return null
+        return (if (isMasterMode()) "M" else "F") + f
+    }
 
     private fun sidebarFloorNumber(): Int {
         try {

@@ -7,7 +7,7 @@ import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Displays the current terminal section number. Ported from blade-addons. */
+/** Displays the current terminal section number. */
 object CurrentSection {
 
     private var section = 1

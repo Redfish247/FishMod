@@ -17,9 +17,9 @@ import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.phys.AABB
 
 /**
- * Spring Boots charge tracker (ported from NoammAddons' SpringBoots). The jump charge is read from
- * the note-block sound pitches Hypixel plays while you hold the crouch charge; a firework sound
- * resets it. Shows the charge on a HUD and a box at the predicted landing height.
+ * Spring Boots charge tracker. The jump charge is read from the note-block sound pitches Hypixel
+ * plays while you hold the crouch charge; a firework sound resets it. Shows the charge on a HUD and
+ * a box at the predicted landing height.
  */
 object SpringBoots {
 
@@ -57,6 +57,7 @@ object SpringBoots {
             { FishSettings.springBootsScale }, { v -> FishSettings.springBootsScale = v }
         )
 
+        // on-ground gate: only the charge plings played while standing count — airborne ones inflate the charge
         Events.ON_SOUND.register { event, _, pitch ->
             if (!FishSettings.springBootsEnabled || !Location.inSkyblock()) return@register false
             val p = Minecraft.getInstance().player ?: return@register false
@@ -75,9 +76,8 @@ object SpringBoots {
         }
 
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
-            if (currentHeight <= 0f) return@register
             val p = mc.player ?: return@register
-            if (!p.isCrouching || !p.onGround()) reset()
+            if (!p.isCrouching || !wearingSpringBoots() || !Location.inSkyblock()) reset()
         }
 
         RenderingEvents.NO_DEPTH_LINE.register { _, m, vc -> renderBox(m, vc) }
@@ -86,7 +86,8 @@ object SpringBoots {
     private fun renderBox(matrices: PoseStack, vc: VertexConsumer) {
         if (!FishSettings.springBootsEnabled || !FishSettings.springBootsBox || currentHeight <= 0f) return
         val p = Minecraft.getInstance().player ?: return
-        val box = AABB(p.x - 0.5, p.y + currentHeight, p.z - 0.5, p.x + 0.5, p.y + currentHeight + 1.0, p.z + 0.5)
+        val y = p.y + currentHeight
+        val box = AABB(p.x - 0.5, y, p.z - 0.5, p.x + 0.5, y + 1.0, p.z + 0.5)
         RenderUtils.renderOutline(matrices, vc, box, RenderUtils.toFloats(FishSettings.springBootsBoxColor))
     }
 

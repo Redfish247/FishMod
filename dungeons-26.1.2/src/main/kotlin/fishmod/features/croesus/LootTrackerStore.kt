@@ -16,8 +16,8 @@ object LootTrackerStore {
     private val GSON = GsonBuilder().setPrettyPrinting().create()
 
     class Row {
-        @JvmField var name: String = ""  // display name as typed/selected
-        @JvmField var id: String = ""    // resolved Skyblock item id (may be "" if unresolved)
+        @JvmField var name: String = ""
+        @JvmField var id: String = ""    // "" if unresolved
         @JvmField var count: Int = 0
     }
 

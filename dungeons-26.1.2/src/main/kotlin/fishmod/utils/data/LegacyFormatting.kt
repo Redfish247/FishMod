@@ -72,9 +72,7 @@ object LegacyFormatting {
             val c = raw[i]
             if ((c == '&' || c == '§') && i + 1 < raw.length) {
                 val next = raw[i + 1]
-                // NanoVG-only preview: use a plain '*' since the Inter face used by NanoVG previews
-                // doesn't carry the ✪ glyph (the real name, rendered via Minecraft's own font
-                // wherever the item is actually shown, keeps the true '✪' character — see [parse]).
+                // plain '*' here: the NanoVG Inter face has no ✪ glyph (the real name via MC's font keeps '✪' — see parse)
                 if (next == '*') { sb.append('*'); i += 2; continue }
                 if (next == '#' && i + 7 < raw.length) {
                     val hex = raw.substring(i + 2, i + 8)

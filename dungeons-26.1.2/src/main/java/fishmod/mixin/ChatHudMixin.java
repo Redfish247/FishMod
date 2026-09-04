@@ -18,8 +18,6 @@ import net.minecraft.network.chat.MessageSignature;
 @Mixin(ChatComponent.class)
 public class ChatHudMixin {
 
-    // ── Command Parsing Logic ──────────────────────────────────────────────────
-
     private static final String CMD_ALT =
             "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|crit|fps|tps|ping|ai|allinv|d|mp|collection|kick|warp|w|transfer|pt|ptme|promote|demote|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|help|\\?|e|[fm][1-7]|t[1-5]";
 
@@ -43,11 +41,7 @@ public class ChatHudMixin {
     @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
             at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Component message, MessageSignature signature, GuiMessageSource source, GuiMessageTag tag, CallbackInfo ci) {
-        // Chat filter + chat-rule "Hide Original Message": hide selected lines at DISPLAY time.
-        // Packet-level parsers (dungeon splits/score, Simon Says, …) and vanilla's own chat logging
-        // already ran before the line reaches here, so the line stays in logs/latest.log for mods to
-        // review — it just isn't drawn. Cancelling at addMessage() HEAD also means no blank slot is
-        // left behind; a lone trailing spacer line from Hypixel is swallowed too.
+        // Cancel at addMessage() HEAD: packet parsers already ran, and no blank slot is left behind
         if (fishmod.features.ChatFilter.shouldHide(message)
                 || fishmod.features.chat.ChatRuleHandler.shouldHideAtDisplay(message)) {
             fishmod.features.chat.ChatHideState.noteSuppressed();
@@ -56,7 +50,15 @@ public class ChatHudMixin {
         }
         if (fishmod.features.chat.ChatHideState.shouldSwallowBlank(message)) { ci.cancel(); return; }
 
-        String plain = message.getString().replaceAll("§.", "");
+        // Skip the strip/regex when nothing downstream needs the plain text
+        if (!FishSettings.chatParty && !FishSettings.chatGuild && !FishSettings.chatOfficer
+                && !FishSettings.chatPrivate && !FishSettings.chatAll && !FishSettings.pfStatsEnabled
+                && !(FishSettings.chatFeatureEnabled && FishSettings.chatCompact)
+                && System.currentTimeMillis() - fishmod.features.dungeon.ChatCommandState.lastPartyCommandAt >= 6000) {
+            return;
+        }
+
+        String plain = fishmod.utils.HypixelApi.STRIP_COLOR.matcher(message.getString()).replaceAll("");
 
         if (System.currentTimeMillis() - fishmod.features.dungeon.ChatCommandState.lastPartyCommandAt < 6000) {
             if (plain.startsWith("Unknown party command")
@@ -83,9 +85,8 @@ public class ChatHudMixin {
             if (pfm.find()) fishmod.features.dungeon.PartyFinderStats.onWhisper(pfm.group(1));
         }
 
-        // Collapse identical repeats into a single "(N)"-counted line. Runs last so filtered/
-        // dispatched lines are already handled; cancels + re-adds the message when it collapses.
-        if (FishSettings.chatCompact
+        // Runs last (after filter/dispatch); cancels + re-adds the message when it collapses
+        if (FishSettings.chatFeatureEnabled && FishSettings.chatCompact
                 && fishmod.features.CompactChat.tryCompact(message, (ChatComponent) (Object) this, ci)) return;
     }
 
@@ -98,9 +99,7 @@ public class ChatHudMixin {
         String rawArg1 = m.group(3);
         String rawArg2 = m.group(4);
         String rawArg3 = m.group(5);
-        // The typer is always the message sender (group 1), so stats lookups (.nw/.cata/.pb/...)
-        // with no explicit arg default to the SENDER, not the local player. For a DM we reply
-        // privately to the sender; for channels we reply in that channel.
+        // No-arg stats lookups default to the sender (group 1), not the local player
         String responder = (dmPrefix != null) ? dmPrefix + matchedName + " " : channelResponder;
         PartyCommandHandler.onPartyCommand(matchedName, cmd, rawArg1, rawArg2, rawArg3, responder);
         return true;

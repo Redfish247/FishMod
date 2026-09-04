@@ -14,9 +14,9 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.item.ItemStack
 
 /**
- * Invincibility Timer (ported from Odin's InvincibilityTimer). Each "saved your life" item has a
- * fixed proc: chat line -> [maxActive] ticks of invulnerability, then [maxCooldown] ticks before it
- * can proc again. Counters tick down on the server tick (20/s).
+ * Invincibility Timer. Each "saved your life" item has a fixed proc: chat line -> [maxActive] ticks
+ * of invulnerability, then [maxCooldown] ticks before it can proc again. Counters tick down on the
+ * server tick (20/s).
  *
  * Enable: [Dungeons.displayInvincibilityTimer]. [Dungeons.InvincibilityDuration] shows the numeric
  * "X.Xs" vs a plain dot; [Dungeons.useStatusColorForInvincibility] colours by state (gold active /
@@ -49,7 +49,7 @@ object InvincibilityTracker {
 
     private const val NAME = "Invincibility Timer"
     private const val LINE_H = 10
-    private val COLOR = Regex("§.")
+    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     @JvmStatic
     fun init() {
@@ -67,8 +67,7 @@ object InvincibilityTracker {
                 Type.entries.firstOrNull { it.regex.matches(s) }?.let { t ->
                     t.proc()
                     if (FishSettings.invincAnnounce) {
-                        val mc = Minecraft.getInstance()
-                        mc.execute { mc.connection?.sendCommand("pc ${t.label} Procced!") }
+                        fishmod.utils.ChatQueue.enqueue("pc ${t.label} Procced!")
                     }
                 }
             }
@@ -77,14 +76,13 @@ object InvincibilityTracker {
         Events.ON_SERVER_TICK.register { Type.entries.forEach { it.tick() }; false }
         Events.ON_WORLD_CHANGE.register { Type.entries.forEach { it.reset() }; false }
 
-        // Durability-style cooldown bar on the mask item in any slot GUI.
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             if (!Dungeons.displayInvincibilityTimer || !FishSettings.invincShowCooldown) return@register
             drawSlotBar(ctx, stack, x, y)
         }
     }
 
-    /** Odin's "Show" selector: which entries appear given their active/cooldown state. */
+    /** Which entries appear given their active/cooldown state. */
     private fun visible(t: Type): Boolean {
         if (!t.show()) return false
         return when (FishSettings.invincShowWhen) {

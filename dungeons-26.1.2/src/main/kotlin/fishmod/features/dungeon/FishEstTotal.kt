@@ -22,7 +22,7 @@ import java.util.regex.Pattern
  */
 object FishEstTotal {
 
-    // ── LocalSplit — never references fishmod.utils.dungeon.Split ─────────
+    // LocalSplit — never references fishmod.utils.dungeon.Split
 
     private class LocalSplit(
         val name: String,
@@ -39,8 +39,6 @@ object FishEstTotal {
         fun reset() {
             startedFlag = false; endedFlag = false; startTime = 0; endTime = 0
         }
-
-        fun tick() { /* unused counter kept for parity, no-op besides guard */ }
 
         fun parseMessage(msg: String) {
             if (!startedFlag && msg == startMsg) {
@@ -70,20 +68,40 @@ object FishEstTotal {
         }
     }
 
-    // ── State ─────────────────────────────────────────────────────────────────
-
     private val END_PATTERN: Pattern =
         Pattern.compile("^\\s*☠ Defeated (.+) in 0?([\\dhms ]+)\\s*(\\(NEW RECORD!\\))?$")
-    private val FLOOR_PATTERN: Pattern = Pattern.compile("The Catacombs \\(")
 
-    // floor → ordered list of LocalSplits (loaded from FishMod's own jar)
+    // floor → ordered list of LocalSplits
     private val FLOOR_SPLITS: HashMap<String, ArrayList<LocalSplit>> = loadSplits()
 
     private var currentSplits: ArrayList<LocalSplit>? = null
     private var floor: String? = null
     private var runOver = false
 
-    // ── HUD ───────────────────────────────────────────────────────────────────
+    // Est. Total / Lag Lost text changes at DECIMAL_FORMAT resolution (0.01s), far less often than every
+    // render frame — cache the built Components and measured width, keyed on the text that actually varies.
+    private var cachedEstKey: String? = null
+    private var cachedEstLabel: Component? = null
+    private var cachedEstTime: Component? = null
+    private var cachedEstTimeWidth: Int = 0
+
+    private val LAG_LABEL: Component = Component.literal("Lag Lost ").withColor(0xFF888888.toInt())
+    private var cachedLagStr: String? = null
+    private var cachedLagTime: Component? = null
+    private var cachedLagTimeWidth: Int = 0
+
+    private fun estComponents(client: Minecraft, estColor: Int, estTimeStr: String): Triple<Component, Component, Int> {
+        val key = "$estColor|$estTimeStr"
+        if (key != cachedEstKey) {
+            cachedEstKey = key
+            val label = Component.literal("Est. Total ").withColor(estColor)
+            val time = Component.literal(estTimeStr).withColor(0xFF55FF55.toInt())
+            cachedEstLabel = label
+            cachedEstTime = time
+            cachedEstTimeWidth = client.font.width(time)
+        }
+        return Triple(cachedEstLabel!!, cachedEstTime!!, cachedEstTimeWidth)
+    }
 
     @JvmField
     @ConfigValue
@@ -94,35 +112,22 @@ object FishEstTotal {
         { try { Phase.enableSplits } catch (t: Throwable) { false } }
     )
 
-    // ── init ─────────────────────────────────────────────────────────────────
-
     @JvmStatic
     fun init() {
-        Events.ON_TEAM.register { line -> detectFloor(line) }
+        Events.ON_SERVER_TICK.register { if (floor == null) detectFloor(); false }
         Events.ON_GAME_MESSAGE.register { message -> parseGameMessage(message) }
         Events.ON_LOCATION_CHANGE.register { _ -> reset(); false }
-        Events.ON_SERVER_TICK.register {
-            if (currentSplits == null || runOver) return@register false
-            for (s in currentSplits!!) s.tick()
-            false
-        }
     }
 
-    // ── floor detection ───────────────────────────────────────────────────────
-
-    private fun detectFloor(line: String): Boolean {
-        if (floor != null) return false
-        if (!FLOOR_PATTERN.matcher(line).find()) return false
-        val start = line.indexOf("(")
-        val end = line.indexOf(")")
-        if (start < 0 || end <= start) return false
-        floor = line.substring(start + 1, end)
+    // Floor key ("F7"/"M7") now comes from the shared fishmod.features.dungeon.map.DungeonState
+    // (chat + sidebar based) instead of re-parsing the "The Catacombs (" sidebar/team line here.
+    private fun detectFloor() {
+        if (floor != null) return
+        val key = fishmod.features.dungeon.map.DungeonState.currentFloorKey() ?: return
+        floor = key
         currentSplits = FLOOR_SPLITS[floor]
         currentSplits?.forEach { it.reset() }
-        return false
     }
-
-    // ── message parsing ───────────────────────────────────────────────────────
 
     private fun parseGameMessage(message: Component): Boolean {
         val string = message.string
@@ -138,13 +143,13 @@ object FishEstTotal {
     private fun endRun() {
         runOver = true
         val splits = currentSplits ?: return
-        // Only finalize splits that actually started (see getRealTime's guard above).
+        // Only finalize splits that actually started.
         for (s in splits) {
             if (s.startTime > 0) s.end()
         }
         val times = LinkedHashMap<String, Double>()
         for (s in splits) {
-            if (s.avg < 0) continue // skip cumulative entries
+            if (s.avg < 0) continue
             if (s.ended()) times[s.name] = s.getRealTime()
         }
         RunHistory.saveSplitTimes(floor, times)
@@ -155,8 +160,6 @@ object FishEstTotal {
         floor = null
         runOver = false
     }
-
-    // ── HUD display/render ────────────────────────────────────────────────────
 
     /** Mirrors Phase.getVisibleRowCount() against our own LocalSplits so it works even under blade-addons' Phase. */
     private fun computeVisibleRowCount(): Int {
@@ -230,10 +233,7 @@ object FishEstTotal {
         val mins = if (totalSeconds >= 60) (totalSeconds / 60).toInt().toString() + "m " else ""
         val estTimeStr = mins + Constants.DECIMAL_FORMAT.format(totalSeconds % 60) + "s"
 
-        val estLabel = Component.literal("Est. Total ").withColor(estColor)
-        val estTime = Component.literal(estTimeStr).withColor(0xFF55FF55.toInt())
-
-        val timeWidth = client.font.width(estTime)
+        val (estLabel, estTime, timeWidth) = estComponents(client, estColor, estTimeStr)
         context.text(client.font, estLabel, x, y, 0xFFFFFFFF.toInt(), true)
         context.text(client.font, estTime, x + Phase.SPLIT_LENGTH - timeWidth, y, 0xFFFFFFFF.toInt(), true)
 
@@ -243,11 +243,15 @@ object FishEstTotal {
     /** Running total of seconds lost to lag this run, drawn on the row beneath Est. Total. */
     private fun drawLagLine(context: GuiGraphicsExtractor, client: Minecraft, x: Int, y: Int) {
         val lag = LagTracker.getCurrentLag()
-        val lagLabel = Component.literal("Lag Lost ").withColor(0xFF888888.toInt())
-        val lagTime = Component.literal(Constants.DECIMAL_FORMAT.format(lag) + "s").withColor(0xFFFF5555.toInt())
-        val timeWidth = client.font.width(lagTime)
-        context.text(client.font, lagLabel, x, y, 0xFFFFFFFF.toInt(), true)
-        context.text(client.font, lagTime, x + Phase.SPLIT_LENGTH - timeWidth, y, 0xFFFFFFFF.toInt(), true)
+        val lagStr = Constants.DECIMAL_FORMAT.format(lag) + "s"
+        if (lagStr != cachedLagStr) {
+            cachedLagStr = lagStr
+            val time = Component.literal(lagStr).withColor(0xFFFF5555.toInt())
+            cachedLagTime = time
+            cachedLagTimeWidth = client.font.width(time)
+        }
+        context.text(client.font, LAG_LABEL, x, y, 0xFFFFFFFF.toInt(), true)
+        context.text(client.font, cachedLagTime!!, x + Phase.SPLIT_LENGTH - cachedLagTimeWidth, y, 0xFFFFFFFF.toInt(), true)
     }
 
     @JvmStatic
@@ -281,16 +285,14 @@ object FishEstTotal {
         else if (personalCount > 0) 0xFFFFAA00.toInt() else 0xFF888888.toInt()
         val estTimeStr = (if (totalSeconds >= 60) (totalSeconds / 60).toInt().toString() + "m " else "") +
             Constants.DECIMAL_FORMAT.format(totalSeconds % 60) + "s"
-        val estLabel = Component.literal("Est. Total ").withColor(estColor)
-        val estTime = Component.literal(estTimeStr).withColor(0xFF55FF55.toInt())
-        val timeWidth = client.font.width(estTime)
+        val (estLabel, estTime, timeWidth) = estComponents(client, estColor, estTimeStr)
         ctx.text(client.font, estLabel, x, y, 0xFFFFFFFF.toInt(), true)
         ctx.text(client.font, estTime, x + Phase.SPLIT_LENGTH - timeWidth, y, 0xFFFFFFFF.toInt(), true)
 
         drawLagLine(ctx, client, x, y + Constants.TEXT_HEIGHT)
     }
 
-    // ── splits.json loader (FishMod's own jar via FishEstTotal.class) ─────────
+    // splits.json loader — FishMod's own jar via FishEstTotal.class
 
     private fun loadSplits(): HashMap<String, ArrayList<LocalSplit>> {
         try {

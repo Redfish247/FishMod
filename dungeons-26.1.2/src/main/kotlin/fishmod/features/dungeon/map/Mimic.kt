@@ -27,11 +27,7 @@ object Mimic {
                 for (room in ArrayList(Scan.rooms)) {
                     val data = room.data
                     val rot = room.rotation != Room.Rotation.NONE
-                    val chestPositions: List<BlockPos>? =
-                        if (data != null && data.secretDetails != null)
-                            @Suppress("UNCHECKED_CAST")
-                            (data.secretDetails!!["chest"] as? List<BlockPos>)
-                        else null
+                    val chestPositions: List<BlockPos>? = data?.secretDetails?.get("chest")
 
                     if (rot && chestPositions != null) {
                         for (local in chestPositions) {

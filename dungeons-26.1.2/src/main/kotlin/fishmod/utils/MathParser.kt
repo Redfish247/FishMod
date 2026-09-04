@@ -78,7 +78,6 @@ object MathParser {
         if (stack.size < 2) {
             if (stack.size == 1) {
                 if (token == "-") {
-                    // handles unary negation, e.g. -(2+3)
                     stack.push(stack.pop() * -1)
                     return
                 }

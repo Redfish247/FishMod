@@ -37,7 +37,7 @@ object OverflowPetLevels {
         while (exp > 0) {
             exp -= getXpForLevel(i, rarity)
             i++
-            if (i > 1000) break // safety
+            if (i > 1000) break
         }
         return maxOf(1, i)
     }

@@ -38,6 +38,12 @@ object Debug {
     @JvmField
     var sendNotiDebug = false
 
+    @JvmField
+    var ssDebug = false
+
+    @JvmField
+    var roomCores = false
+
     @JvmStatic
     fun init() {
         ClientCommandRegistrationCallback.EVENT.register(ClientCommandRegistrationCallback { dispatcher, registryAccess ->
@@ -66,7 +72,7 @@ object Debug {
                                 Misc.addChatMessage(Component.literal("§cNo boss bars active."))
                             } else {
                                 bars.values.forEach { bar ->
-                                    val stripped = bar.name.string.replace(Regex("§."), "").trim()
+                                    val stripped = bar.name.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()
                                     Misc.addChatMessage(Component.literal("§eBar: §f\"" + stripped + "\" §7(" + String.format("%.1f%%", bar.progress * 100f) + ")"))
                                 }
                             }
@@ -91,6 +97,18 @@ object Debug {
                 .then(ClientCommands.literal("sound").executes { _ ->
                     sendSound = !sendSound
                     Misc.addChatMessage(Component.literal("Send Sound: ").append(Misc.getStatusText(sendSound)))
+                    Constants.SUCCESS
+                })
+
+                .then(ClientCommands.literal("ssDebug").executes { _ ->
+                    ssDebug = !ssDebug
+                    Misc.addChatMessage(Component.literal("Simon Says debug: ").append(Misc.getStatusText(ssDebug)))
+                    Constants.SUCCESS
+                })
+
+                .then(ClientCommands.literal("roomCores").executes { _ ->
+                    roomCores = !roomCores
+                    Misc.addChatMessage(Component.literal("Room core hashes: ").append(Misc.getStatusText(roomCores)))
                     Constants.SUCCESS
                 })
 

@@ -13,7 +13,6 @@ object Visual {
 
     @ConfigValue @JvmField var hideDeadEntities: Boolean = false
 
-    // Render Optimizer — clutter hiders ported 1:1 from Odin's RenderOptimizer.
     @ConfigValue @JvmField var roHideFallingBlocks: Boolean = false
     @ConfigValue @JvmField var roHideLightning: Boolean = false
     @ConfigValue @JvmField var roHideExperienceOrbs: Boolean = false
@@ -31,7 +30,7 @@ object Visual {
     @ConfigValue @JvmField var hidePlayerRange: Double = 3.0
 
     @ConfigValue @JvmField var itemRarityBackground: Boolean = false
-    /** Background tint opacity 0-100% (NoammAddons default is ~30). */
+    /** Background tint opacity, 0-100%. */
     @ConfigValue @JvmField var itemRarityOpacity: Int = 35
     /** Use Hypixel's per-rarity colours instead of blade-addons' darker palette. */
     @ConfigValue @JvmField var itemRarityHypixelColors: Boolean = true

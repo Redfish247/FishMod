@@ -17,8 +17,8 @@ import net.minecraft.world.phys.AABB
 import kotlin.math.abs
 
 /**
- * Tac Timer (ported from NoammAddons' TacTimer). Tactical Insertion re-teleports you to where you
- * cast it after 3s; Hypixel plays a flint-and-steel sound at a fixed pitch (0.74603176) on cast.
+ * Tac Timer. Tactical Insertion re-teleports you to where you cast it after 3s; Hypixel plays a
+ * flint-and-steel sound at a fixed pitch (0.74603176) on cast.
  * We start a 60-tick countdown on that sound while holding the item, with an optional start
  * waypoint.
  */

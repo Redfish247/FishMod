@@ -55,7 +55,7 @@ object CompactChat {
 
     /** Message content minus color codes and any trailing " (N)" count, trimmed. */
     private fun stripKey(s: String): String {
-        var plain = s.replace(Regex("§."), "")
+        var plain = s.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
         val m: Matcher = COUNT_SUFFIX.matcher(plain)
         if (m.find()) plain = plain.substring(0, m.start())
         return plain.trim()
@@ -63,7 +63,7 @@ object CompactChat {
 
     /** Current count baked into a line (1 if it carries no "(N)" suffix yet). */
     private fun extractCount(s: String): Int {
-        val m = COUNT_SUFFIX.matcher(s.replace(Regex("§."), ""))
+        val m = COUNT_SUFFIX.matcher(s.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, ""))
         return if (m.find()) m.group(1).toInt() else 1
     }
 

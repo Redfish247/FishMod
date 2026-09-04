@@ -12,7 +12,7 @@ import net.minecraft.world.level.chunk.LevelChunk
 import java.util.Collections
 import java.util.LinkedHashSet
 
-/** World-scan half of System22's dungeon map feature: identifies rooms via their block "core" hash and infers doors/rotations. */
+/** World-scan half of the dungeon map feature: identifies rooms via their block "core" hash and infers doors/rotations. */
 object Scan {
 
     @JvmField
@@ -43,6 +43,8 @@ object Scan {
     var chest: BlockPos? = null
 
     private var shouldScan = false
+    private var lastScanMs = 0L
+    private const val MIN_SCAN_INTERVAL_MS = 250L
     private val BLACKLISTED = arrayOf(Blocks.CHEST, Blocks.TRAPPED_CHEST)
 
     @JvmStatic
@@ -58,14 +60,19 @@ object Scan {
     @JvmStatic
     fun register() {
         ClientChunkEvents.CHUNK_LOAD.register(ClientChunkEvents.Load { _, _ ->
-            if (DungeonState.isInDungeon()) shouldScan = true
+            // once every tile is identified the world scan is fixed (wither unlocks come via the map packet), so stop re-arming
+            if (!loadedAllRooms && DungeonState.isInDungeon()) shouldScan = true
         })
         ClientTickEvents.END_LEVEL_TICK.register(ClientTickEvents.EndLevelTick { world ->
             if (shouldScan) {
-                shouldScan = false
-                try {
-                    scan(world)
-                } catch (t: Throwable) {
+                val now = System.currentTimeMillis()
+                if (now - lastScanMs >= MIN_SCAN_INTERVAL_MS) {
+                    shouldScan = false
+                    lastScanMs = now
+                    try {
+                        scan(world)
+                    } catch (t: Throwable) {
+                    }
                 }
             }
         })
@@ -90,6 +97,7 @@ object Scan {
         puzzles = ArrayList()
         chest = null
         shouldScan = false
+        lastScanMs = 0L
     }
 
     @JvmStatic
@@ -206,6 +214,11 @@ object Scan {
         for (x in 0 until 6) {
             for (z in 0 until 6) {
                 val place = MapVec2i(x, z)
+
+                // don't re-hash a fully-identified tile: a transient bad core read was flipping resolved rooms and resetting puzzle solvers
+                val resolved = roomsList[place.roomListIndex()].owner
+                if (resolved != null && resolved.data != null && resolved.rotation != Room.Rotation.NONE) continue
+
                 val curr = topLeftRoom.add(MapVec2i(x, z).multiply(32))
                 val chunk = world.getChunk(curr.x shr 4, curr.z shr 4)
 
@@ -214,7 +227,12 @@ object Scan {
                 val height = core[1]
                 if (coreHash == 48696) continue
 
-                val rd = RoomData.getRoomData(coreHash) ?: continue
+                val rd = RoomData.getRoomData(coreHash)
+                if (fishmod.utils.debug.Debug.roomCores) {
+                    fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal(
+                        "§b[roomCore] §7cell ($x,$z) §fhash=§e$coreHash §7-> §f${rd?.name ?: "§cUNKNOWN"}"))
+                }
+                if (rd == null) continue
 
                 var found: Room? = null
                 for (r in ArrayList(rooms)) {
@@ -234,9 +252,13 @@ object Scan {
                         }
                     }
                     if (already) continue
+
+                    // cap tiles at the room's shape: a bad far-cell core read hashing to a known name was welding on a stray tile
+                    val cap = (found.shape ?: rd.shape)?.tileCount ?: 0
+                    if (cap > 0 && found.tiles.size >= cap) continue
                 }
 
-                val bottomY = getBottomY(chunk, curr) ?: continue
+                if (getBottomY(chunk, curr) == null) continue
                 val mapItemRoom = roomsList[place.roomListIndex()].owner
 
                 if (mapItemRoom != null) {
@@ -267,13 +289,12 @@ object Scan {
                             mapItemRoom.type = rd.type
                             mapItemRoom.shape = rd.shape
                             mapItemRoom.height = height
-                            mapItemRoom.floorHeight = bottomY
                         }
                     }
                 } else {
                     var actualFound = found
                     if (actualFound == null) {
-                        actualFound = Room(rd, height, bottomY)
+                        actualFound = Room(rd, height)
                         rooms.add(actualFound)
                     }
                     actualFound.roomTile(curr)
@@ -310,8 +331,7 @@ object Scan {
         val chunk = world.getChunk(pos.x shr 4, pos.z shr 4)
         val top = getTopY(chunk, pos) ?: return
         val height = top
-        // Door.rooms is typed as an immutable List by Door.kt but Scan/DungeonMap later mutate it in
-        // place (absorbStrayRooms, room-merge rewiring) — must be a real ArrayList, not listOf().
+        // Door.rooms is later mutated in place (room-merge rewiring), so it must be a real ArrayList, not listOf()
         val tiles = arrayListOf(t1, t2)
 
         if (height != 73 && height != 81) {

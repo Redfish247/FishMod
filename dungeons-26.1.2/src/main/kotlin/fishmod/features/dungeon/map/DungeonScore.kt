@@ -1,13 +1,14 @@
 package fishmod.features.dungeon.map
 
 import fishmod.utils.MayorApi
+import fishmod.utils.TabListCache
 import fishmod.utils.config.values.DungeonMapSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.world.scores.DisplaySlot
 import java.util.regex.Pattern
 
-/** Port of System22's map-package DungeonScore. Distinct from fishmod.features.dungeon.DungeonScore (unrelated existing feature). */
+/** Distinct from fishmod.features.dungeon.DungeonScore (an unrelated existing feature). */
 object DungeonScore {
 
     @JvmStatic var secretsFound = 0
@@ -26,6 +27,10 @@ object DungeonScore {
 
     private var runStartMs = -1L
     private var alertedMissing = false
+
+    // Tab/sidebar/roster only change on chat or tab updates (~1 Hz). Re-parse every N ticks, not 20 Hz.
+    private var parseTickCounter = 0
+    private const val PARSE_INTERVAL_TICKS = 10
 
     private val SECRET_PERCENT = Pattern.compile("^ ?Secrets Found: ([\\d.]+)%$")
     private val SECRET_COUNT = Pattern.compile("^ ?Secrets Found: (\\d+)$")
@@ -49,12 +54,15 @@ object DungeonScore {
         val st = DungeonMapSettings
         if (st.mapEnabled || st.mapInfoEnabled == true || st.mapScoreMessages) {
             if (runStartMs < 0) runStartMs = System.currentTimeMillis()
-            parseTab(mc)
-            parseSidebar(mc)
-            DungeonPlayers.updateRoster(mc)
-            score = calculateScore()
-            ScoreMessages.update(mc, score)
-            paul = MayorApi.isPaulDungeonBonusActive()
+
+            if (parseTickCounter++ % PARSE_INTERVAL_TICKS == 0) {
+                parseTab(mc)
+                parseSidebar(mc)
+                DungeonPlayers.updateRoster(mc)
+                score = calculateScore()
+                ScoreMessages.update(mc, score)
+                paul = MayorApi.isPaulDungeonBonusActive()
+            }
 
             if (!alertedMissing && st.mapScoreMissingMsg
                 && System.currentTimeMillis() - runStartMs >= 60_000
@@ -82,6 +90,7 @@ object DungeonScore {
         score = 0
         runStartMs = -1L
         alertedMissing = false
+        parseTickCounter = 0
         ScoreMessages.reset()
     }
 
@@ -96,15 +105,15 @@ object DungeonScore {
         if (lower.contains("mimic dead") || lower.contains("mimic killed")) mimicKilled = true
     }
 
-    private fun stripColors(s: String): String = s.replace(Regex("(?i)[&§][0-9a-fk-or]"), "")
+    private fun stripColors(s: String): String = s.replace(MAP_COLOR_CODES, "")
 
     private fun parseTab(mc: Minecraft) {
-        val conn = mc.connection ?: return
+        if (mc.connection == null) return
         var completedPuzzles = 0
 
-        for (info in conn.onlinePlayers) {
-            val disp = info.tabListDisplayName ?: continue
-            val line = stripColors(disp.string)
+        // Raw scan + color-strip is shared across features via TabListCache; only the parsing below is ours.
+        for (entry in TabListCache.entries) {
+            val line = entry.stripped
             var m = SECRET_PERCENT.matcher(line)
             if (m.find()) {
                 try {
@@ -255,12 +264,12 @@ object DungeonScore {
 
     /** Auto party-chat breakdown of exactly what's missing (prince/crypts/mimic/secrets) for a 300 on full clear. */
     private fun sendMissingScoreMessage(mc: Minecraft) {
-        val connection = mc.connection ?: return
+        if (mc.connection == null) return
         val projected = projectedFullClearScore()
         val missing = 300 - projected
 
         if (missing <= 0) {
-            connection.sendCommand("pc On pace for 300! (projected $projected on full clear)")
+            fishmod.utils.ChatQueue.enqueue("pc On pace for 300! (projected $projected on full clear)")
             return
         }
 
@@ -293,7 +302,7 @@ object DungeonScore {
             }
         }
 
-        connection.sendCommand("pc $missing Score Missing (" + java.lang.String.join(", ", parts) + ")")
+        fishmod.utils.ChatQueue.enqueue("pc $missing Score Missing (" + java.lang.String.join(", ", parts) + ")")
     }
 
     private fun clampInt(v: Int, lo: Int, hi: Int): Int = Math.max(lo, Math.min(hi, v))

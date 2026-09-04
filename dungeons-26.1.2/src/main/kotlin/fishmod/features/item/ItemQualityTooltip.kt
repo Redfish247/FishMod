@@ -7,9 +7,9 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.network.chat.Component
 
 /**
- * Appends a "Quality Bonus: +X% (floor)" line to dungeon-item tooltips (ported from NoammAddons'
- * ItemTooltip item-quality section). Reads `baseStatBoostPercentage` / `dungeon_skill_req` /
- * `item_tier` from the item's `custom_data` — no network dependency.
+ * Appends a "Quality Bonus: +X% (floor)" line to dungeon-item tooltips. Reads
+ * `baseStatBoostPercentage` / `dungeon_skill_req` / `item_tier` from the item's `custom_data` —
+ * no network dependency.
  */
 object ItemQualityTooltip {
 

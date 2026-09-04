@@ -21,7 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class SkullBlockEntityRendererMixin {
 
     @Unique
-    private static Identifier ESSENCE_TEXTURE = Identifier.fromNamespaceAndPath(Constants.NAMESPACE, "/textures/entity/essence.png");
+    private static final Identifier ESSENCE_TEXTURE = Identifier.fromNamespaceAndPath(Constants.NAMESPACE, "textures/entity/essence.png");
 
     @Shadow
     public static RenderType getSkullRenderType(SkullBlock.Type type, @Nullable Identifier texture) {
@@ -37,7 +37,7 @@ public abstract class SkullBlockEntityRendererMixin {
 
         GameProfile profile = profileComponent.partialProfile();
 
-        if (profile.id().toString().equals("e0f3e929-869e-3dca-9504-54c666ee6f23")) {
+        if (profile.id() != null && profile.id().toString().equals("e0f3e929-869e-3dca-9504-54c666ee6f23")) {
             cir.setReturnValue(getSkullRenderType(SkullBlock.Types.PLAYER, ESSENCE_TEXTURE));
         }
     }

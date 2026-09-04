@@ -19,17 +19,14 @@ import org.lwjgl.glfw.GLFW
 import java.util.TreeMap
 
 /**
- * Storage overlay — a faithful port of NoammAddons' `StorageOverlayScreen` (Noamm9/NoammAddons,
- * branch 26.1.2), wired to FishMod's mixin hooks and render helpers instead of Noamm's Render2D /
- * ItemRenderer / Resolution / config stack. Page contents come from [StorageCache] (captured as you
- * page through `/storage`). Layout math, drag-to-place, scrollbar grab and page centering match the
- * original.
+ * Storage overlay — replaces the vanilla `/storage` screen with a scrollable multi-page grid.
+ * Page contents come from [StorageCache] (captured as you page through `/storage`).
  */
 object StorageOverlay {
 
-    // ── layout constants (Noamm) ─────────────────────────────────────────────
     private const val SLOT_SIZE = 17           // 17 not 16 — 1px border
     private const val PADDING = 10
+    private const val HEADER_H = 16           // band under the panel top for the title + search field
     private const val PAGE_WIDTH = SLOT_SIZE * 9 + 4
     private const val ACTIVE_PAGE_BORDER_THICKNESS = 2
     private const val SCROLL_BAR_WIDTH = 8
@@ -37,7 +34,6 @@ object StorageOverlay {
     private const val PLAYER_WIDTH = SLOT_SIZE * 9 + 6
     private const val PLAYER_HEIGHT = SLOT_SIZE * 4 + 18
 
-    // ── colours (Noamm's java.awt.Color values -> ARGB) ──────────────────────
     private const val MENU_BG = 0xFF18181B.toInt()
     private const val MENU_BORDER = 0xFF3C3C41.toInt()
     private const val SLOT_BG = 0xC8323237.toInt()
@@ -50,7 +46,6 @@ object StorageOverlay {
     private const val SEARCH_MATCH = 0x5533C9C0
     private val ACCENT get() = ScreenTheme.ACCENT
 
-    // ── per-open state ───────────────────────────────────────────────────────
     private var scroll = 0f
     private var lastRenderedInnerHeight = 0
     private var pageWidthCount = 3
@@ -64,7 +59,6 @@ object StorageOverlay {
     private val dragArmed get() = dragStartSlot != null
     private val dragActive get() = dragSlots.size >= 2
 
-    // search (FishMod keeps a small field — Noamm relies on a global InventorySearch we don't have)
     var search = ""
     private var searchFocused = false
 
@@ -74,7 +68,7 @@ object StorageOverlay {
 
     private fun on(screen: AbstractContainerScreen<*>): Boolean {
         if (!FishSettings.storageOverlayEnabled) return false
-        val t = screen.title.string.replace(Regex("§."), "")
+        val t = screen.title.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
         return t == "Storage" || StoragePage.fromTitle(t) != null
     }
 
@@ -82,10 +76,17 @@ object StorageOverlay {
     @JvmStatic
     fun isActive(screen: AbstractContainerScreen<*>): Boolean = on(screen)
 
-    private fun activePage(screen: AbstractContainerScreen<*>): StoragePage? =
-        StoragePage.fromTitle(screen.title.string.replace(Regex("§."), ""))
+    /** Panel top-left in real (GUI-scaled) screen space — for anchoring sibling overlays like
+     *  [fishmod.features.item.ContainerValue]. Only meaningful right after [render] this frame. */
+    @JvmStatic
+    fun panelLeftScreenX(): Int = (mx0 * scale).toInt()
 
-    // ── data: build Noamm's SortedMap<StoragePage, NBTInventory?> from StorageCache ──
+    @JvmStatic
+    fun panelTopScreenY(): Int = (my0 * scale).toInt()
+
+    private fun activePage(screen: AbstractContainerScreen<*>): StoragePage? =
+        StoragePage.fromTitle(screen.title.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, ""))
+
     private fun allData(): TreeMap<StoragePage, NBTInventory?> {
         val out = TreeMap<StoragePage, NBTInventory?>()
         val view = StorageCache.view()
@@ -116,7 +117,6 @@ object StorageOverlay {
         }
     }
 
-    // ── geometry (Noamm Measurements) ────────────────────────────────────────
     private var vw = 0
     private var vh = 0
     private var mx0 = 0; private var my0 = 0
@@ -135,18 +135,26 @@ object StorageOverlay {
         // leave a margin at top and bottom so the panel + player inv never touch the screen edge
         val avail = vh - PLAYER_HEIGHT - 12
         overviewH = minOf(avail, FishSettings.storageMaxHeight.coerceIn(80, 900)).coerceAtLeast(80)
-        innerH = overviewH - PADDING * 2
+        innerH = overviewH - PADDING * 2 - HEADER_H
         my0 = (vh / 2 - (overviewH + PLAYER_HEIGHT) / 2).coerceAtLeast(6)
         playerX0 = vw / 2 - PLAYER_WIDTH / 2
         playerY0 = my0 + overviewH + 2
+
+        // shift right so the panel clears Container Value's left-gutter list (no-op when that's off)
+        val sidebar = (fishmod.features.item.ContainerValue.storageSidebarWidthGuiPx() / scale).toInt()
+        if (sidebar > 0) {
+            val shift = (sidebar + 8 - mx0).coerceAtLeast(0)
+            mx0 += shift
+            playerX0 += shift
+        }
     }
 
     private val scrollPanelX get() = mx0 + PADDING
-    private val scrollPanelY get() = my0 + PADDING
+    private val scrollPanelY get() = my0 + PADDING + HEADER_H
     private val scrollPanelW get() = innerW
     private val scrollPanelH get() = innerH
     private val scrollBarX get() = mx0 + PADDING + innerW + PADDING
-    private val scrollBarY get() = my0 + PADDING
+    private val scrollBarY get() = my0 + PADDING + HEADER_H
     private val scrollBarH get() = innerH
     private val maxScroll get() = (lastRenderedInnerHeight.toFloat() + 6 - innerH).coerceAtLeast(0f)
 
@@ -156,7 +164,6 @@ object StorageOverlay {
     private fun rowCountOf(menu: AbstractContainerMenu): Int =
         (menu as? ChestMenu)?.rowCount ?: ((menu.slots.size - 36) / 9)
 
-    // ── entry points (called from HandledScreenMixin) ───────────────────────
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
         if (!on(screen)) return
@@ -171,8 +178,7 @@ object StorageOverlay {
         val smx = (mouseX / s).toInt()
         val smy = (mouseY / s).toInt()
 
-        // frost + a light dim; the vanilla slots are suppressed by the mixin (extractSlots cancel),
-        // so the game stays visible around the panel without the "weird boxes".
+        // frost + dim; vanilla slots are suppressed by the mixin so the game shows around the panel
         runCatching { ctx.blurBeforeThisStratum() }
         runCatching { ctx.nextStratum() }
         rect(ctx, 0, 0, vw + 2, vh + 2, 0x66_0A0A12)
@@ -184,7 +190,6 @@ object StorageOverlay {
         val data = visibleData(active, chestSlots)
         if (shouldFilterPages) updateLayoutHeight(data)
 
-        // main panel
         rect(ctx, mx0, my0, overviewW, overviewH, MENU_BG)
         border(ctx, mx0, my0, overviewW, overviewH, MENU_BORDER, 1)
 
@@ -203,7 +208,6 @@ object StorageOverlay {
 
     private fun drawHeader(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         ctx.text(font, "§fStorage  §7${allData().size} pages", mx0 + PADDING, my0 + 4, -1, false)
-        // small search field, right side of the header
         val fw = 130; val fh = 12
         val fx = mx0 + overviewW - fw - PADDING; val fy = my0 + 2
         rect(ctx, fx, fy, fw, fh, 0x500A0C14)
@@ -215,7 +219,6 @@ object StorageOverlay {
 
     private var searchFieldRect = IntArray(4)
 
-    // ── page grid ───────────────────────────────────────────────────────────
     private inline fun layoutedForEach(
         data: TreeMap<StoragePage, NBTInventory?>,
         func: (x: Int, y: Int, pageWidth: Int, pageHeight: Int, page: StoragePage, inv: NBTInventory?) -> Unit,
@@ -227,7 +230,7 @@ object StorageOverlay {
             val h = inv?.let { it.rows * SLOT_SIZE + 6 + font.lineHeight } ?: 18
             maxHeight = maxOf(maxHeight, h)
             val rectX = mx0 + PADDING + (PAGE_WIDTH + PADDING) * xOffset
-            val rectY = yOffset + my0 + PADDING
+            val rectY = yOffset + scrollPanelY
             func(rectX, rectY, PAGE_WIDTH, h, page, inv)
             xOffset++
             if (xOffset >= pageWidthCount) { yOffset += maxHeight; xOffset = 0; maxHeight = 0 }
@@ -342,7 +345,6 @@ object StorageOverlay {
         rect(ctx, scrollBarX, knobY, SCROLL_BAR_WIDTH, SCROLL_BAR_HEIGHT, SCROLL_KNOB)
     }
 
-    // ── player inventory ────────────────────────────────────────────────────
     private fun playerSlotPos(index: Int): Pair<Int, Int> {
         val slotsWidth = 9 * SLOT_SIZE
         val baseX = playerX0 + (PLAYER_WIDTH - slotsWidth) / 2 - SLOT_SIZE / 2 + 1
@@ -405,7 +407,6 @@ object StorageOverlay {
         ctx.itemDecorations(font, shown, x, y)
     }
 
-    // ── slot resolution + click dispatch (Noamm) ────────────────────────────
     private fun activePageSlotAt(mouseX: Double, mouseY: Double, activePage: StoragePage, data: TreeMap<StoragePage, NBTInventory?>): Slot? {
         val menu = screenMenu() ?: return null
         val chestEnd = menu.slots.size - 36
@@ -447,7 +448,6 @@ object StorageOverlay {
         return true
     }
 
-    // ── drag-to-place (Noamm) ───────────────────────────────────────────────
     private class DragPreview(val stacks: Map<Int, ItemStack>, val playerStacks: Map<Int, ItemStack>, val carriedCount: Int)
 
     private fun canDragInto(slot: Slot, carried: ItemStack) =
@@ -487,7 +487,6 @@ object StorageOverlay {
         gm.handleContainerInput(id, -999, AbstractContainerMenu.getQuickcraftMask(2, dragType), ContainerInput.QUICK_CRAFT, player)
     }
 
-    // ── input entry points ──────────────────────────────────────────────────
     @JvmStatic
     fun onOverlayClick(click: MouseButtonEvent, doubled: Boolean, screen: AbstractContainerScreen<*>): Boolean {
         if (!on(screen)) return false
@@ -603,7 +602,6 @@ object StorageOverlay {
         hoveredOverlayItem = null
     }
 
-    // ── render helpers (Render2D equivalents) ───────────────────────────────
     private fun rect(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, color: Int) =
         ctx.fill(x, y, x + w, y + h, color)
 

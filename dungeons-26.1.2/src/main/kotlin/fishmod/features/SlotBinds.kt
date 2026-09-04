@@ -21,16 +21,22 @@ import java.nio.file.Files
 import java.nio.file.Paths
 
 /**
- * Slot Binds (ported from NoammAddons' SlotBinding). Hold [Keybinds.slotBind] and click a hotbar
- * slot then an inventory slot to link them; afterwards shift-left-click either slot to hot-swap the
- * two stacks. Links persist to `slot_binds.txt`. Only active in the player's own inventory.
+ * Slot Binds. Hold [Keybinds.slotBind] and click a hotbar slot then an inventory slot to link them;
+ * afterwards shift-left-click either slot to hot-swap the two stacks. Only active in the player's own
+ * inventory.
+ *
+ * Binds are grouped into nameable **profiles** so several bind sets can coexist and be switched
+ * between (config screen field, or [Keybinds.slotBindCycleProfile] in-game). The active profile
+ * name lives in [FishSettings.slotBindsProfile]; all profiles persist to `slot_binds.txt` as
+ * `[Name]`-headed sections (a header-less legacy file loads as the "Default" profile).
  */
 object SlotBinds {
 
+    private const val DEFAULT = "Default"
     private val FILE = Paths.get(FolderUtility.CONFIG_PATH + "slot_binds.txt")
 
-    /** inventory-slot index -> hotbar-slot index (both are container slot ids; hotbar is 36..44). */
-    private val binds = LinkedHashMap<Int, Int>()
+    /** profile name -> (inventory-slot index -> hotbar-slot index); slot ids are container-space, hotbar is 36..44. */
+    private val profiles = LinkedHashMap<String, LinkedHashMap<Int, Int>>()
     private var previousSlot: Int? = null
     private var loaded = false
 
@@ -39,17 +45,35 @@ object SlotBinds {
         DrawEvents.INVENTORY_SLOT_AFTER.register(SlotEvent { ctx, _, x, y -> drawSlot(ctx, x, y) })
     }
 
+    private fun activeName(): String = FishSettings.slotBindsProfile.trim().ifEmpty { DEFAULT }
+
+    /** Bind map for the active profile — created on demand so typing a fresh name starts a new set. */
+    private val binds: LinkedHashMap<Int, Int>
+        get() {
+            ensureLoaded()
+            return profiles.getOrPut(activeName()) { LinkedHashMap() }
+        }
+
     private fun ensureLoaded() {
         if (loaded) return
         loaded = true
+        profiles.getOrPut(DEFAULT) { LinkedHashMap() }
         if (!Files.exists(FILE)) return
         try {
-            for (line in Files.readAllLines(FILE)) {
+            var current = profiles.getValue(DEFAULT)
+            for (raw in Files.readAllLines(FILE)) {
+                val line = raw.trim()
+                if (line.isEmpty()) continue
+                if (line.startsWith("[") && line.endsWith("]")) {
+                    val name = line.substring(1, line.length - 1).trim().ifEmpty { DEFAULT }
+                    current = profiles.getOrPut(name) { LinkedHashMap() }
+                    continue
+                }
                 val p = line.split("\t", limit = 2)
                 if (p.size != 2) continue
                 val a = p[0].trim().toIntOrNull() ?: continue
                 val b = p[1].trim().toIntOrNull() ?: continue
-                binds[a] = b
+                current[a] = b
             }
         } catch (ignored: IOException) {}
     }
@@ -57,8 +81,64 @@ object SlotBinds {
     private fun save() {
         try {
             Files.createDirectories(FILE.parent)
-            Files.writeString(FILE, binds.entries.joinToString("\n") { "${it.key}\t${it.value}" })
+            val keep = profiles.filter { it.value.isNotEmpty() || it.key == DEFAULT || it.key == activeName() }
+            val text = keep.entries.joinToString("\n") { (name, map) ->
+                "[$name]\n" + map.entries.joinToString("\n") { "${it.key}\t${it.value}" }
+            }
+            Files.writeString(FILE, text)
         } catch (ignored: IOException) {}
+    }
+
+    /** Ordered profile names (empty sets are hidden unless Default or currently active). */
+    @JvmStatic
+    fun profileNames(): List<String> {
+        ensureLoaded()
+        return profiles.filter { it.value.isNotEmpty() || it.key == DEFAULT || it.key == activeName() }.keys.toList()
+    }
+
+    @JvmStatic
+    fun activeProfile(): String { ensureLoaded(); return activeName() }
+
+    /** Adds "Profile N" and switches to it. */
+    @JvmStatic
+    fun newProfile() {
+        ensureLoaded()
+        var n = 1
+        while (profiles.containsKey("Profile $n")) n++
+        val name = "Profile $n"
+        profiles[name] = LinkedHashMap()
+        FishSettings.slotBindsProfile = name
+        save()
+        feedback("§aNew profile §f$name")
+    }
+
+    /** Removes the active profile (Default is only cleared, never removed) and falls back to Default. */
+    @JvmStatic
+    fun deleteActiveProfile() {
+        ensureLoaded()
+        val name = activeName()
+        if (name == DEFAULT) {
+            profiles.getValue(DEFAULT).clear()
+            save()
+            feedback("§eCleared §f$DEFAULT")
+            return
+        }
+        profiles.remove(name)
+        FishSettings.slotBindsProfile = DEFAULT
+        profiles.getOrPut(DEFAULT) { LinkedHashMap() }
+        save()
+        feedback("§cDeleted profile §f$name")
+    }
+
+    /** Advances [FishSettings.slotBindsProfile] to the next profile in order. */
+    @JvmStatic
+    fun cycleProfile() {
+        ensureLoaded()
+        val names = profileNames()
+        if (names.size < 2) { feedback("§7Only one profile"); return }
+        val next = names[(names.indexOf(activeName()) + 1).mod(names.size)]
+        FishSettings.slotBindsProfile = next
+        feedback("§aProfile → §f$next §7(${profiles[next]?.size ?: 0} binds)")
     }
 
     private fun bindKeyHeld(): Boolean {
@@ -155,15 +235,13 @@ object SlotBinds {
 
         val color = FishSettings.slotBindsColor
         if (FishSettings.slotBindsBorder) border(ctx, x, y, color)
-        // Draw the connector once per pair, on the later-iterated (higher-index) endpoint so it
-        // lands on top of the slots it crosses.
+        // draw the connector once per pair, on the higher-index endpoint so it lands on top of the slots it crosses
         if (FishSettings.slotBindsLine && idx > partner) {
             line(ctx, x + 8, y + 8, other.x + 8, other.y + 8, color)
         }
     }
 
     private fun border(ctx: GuiGraphicsExtractor, x: Int, y: Int, color: Int) {
-        // 1px outline flush to the 16x16 slot.
         ctx.fill(x, y, x + 16, y + 1, color)
         ctx.fill(x, y + 15, x + 16, y + 16, color)
         ctx.fill(x, y, x + 1, y + 16, color)

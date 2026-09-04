@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Animations module + Sword Blocking + the Render-Optimizer "No Swing" (NoammAddons port). */
+/** Animations module + Sword Blocking + the Render-Optimizer "No Swing". */
 @Mixin(ItemInHandRenderer.class)
 public abstract class ItemInHandRendererMixin {
 
@@ -68,11 +68,9 @@ public abstract class ItemInHandRendererMixin {
     private void fishmod$animRotScale(AbstractClientPlayer player, float f, float g, InteractionHand hand, float attack,
                                      ItemStack itemStack, float inverseArmHeight, PoseStack pose,
                                      SubmitNodeCollector col, int light, CallbackInfo ci) {
-        // Sword Blocking — applied here (after vanilla positioning, before the item renders) so it
-        // stacks on the real held-item pose instead of being double-transformed off-screen.
+        // Injected after vanilla positioning so the block pose stacks on the real held-item pose
         if (fishmod$isSwordBlocking(player, itemStack, hand)) {
-            // Vanilla 1.8 ItemRenderer.transformFirstPersonItem() blocking branch — small offset,
-            // then X/Y/Z rotations for the diagonal across-the-view pose.
+            // Values from vanilla 1.8 ItemRenderer.transformFirstPersonItem() blocking branch
             pose.translate(-0.14142136f, 0.08f, 0.14142136f);
             pose.mulPose(Axis.XP.rotationDegrees(-102.25f));
             pose.mulPose(Axis.YP.rotationDegrees(13.365f));

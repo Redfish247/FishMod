@@ -31,15 +31,12 @@ public class PartyCommandHandler {
 
     private static long dungeonEnteredAt = 0;
 
-    // TPS tracking — rolling average of last 20 client tick intervals
     private static final long[] TICK_TIMES = new long[20];
     private static int tickIdx = 0;
     private static long lastTickMs = -1;
 
     public static void init() {
-        // When the local player sends a chat message starting with a command prefix,
-        // pre-arm the suppression window so Hypixel's "Unknown party command." reply
-        // (which can race ahead of the party echo) is hidden.
+        // pre-arm suppression so Hypixel's "Unknown party command." reply (races the party echo) stays hidden
         net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents.ALLOW_CHAT.register(message -> {
             String t = message.trim();
             if (t.startsWith(".") || t.startsWith("!")) {
@@ -48,13 +45,13 @@ public class PartyCommandHandler {
             return true;
         });
 
-        // Track when the player enters a dungeon or Kuudra (for 30s joininstance guard)
+        // record dungeon/Kuudra entry — used by the joininstance cooldown guard
         Events.ON_LOCATION_CHANGE.register(loc -> {
             if (loc == Location.DUNGEON || loc == Location.KUUDRA) dungeonEnteredAt = System.currentTimeMillis();
             return false;
         });
 
-        // Server tick timing for real TPS (CommonPingS2CPacket fires once per server tick)
+        // CommonPingS2CPacket fires once per server tick — use it for real TPS
         Events.ON_SERVER_TICK.register(() -> {
             long now = System.currentTimeMillis();
             if (lastTickMs > 0) {
@@ -108,19 +105,15 @@ public class PartyCommandHandler {
         if (!FishSettings.partyCommandsEnabled) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.getConnection() == null) return;
-        // Use the real account name (GameProfile), NOT getName() — a cosmetic /nick overrides
-        // getName() and would break the isMe check for self-only commands (.ping/.fps/.corpse...).
+        // GameProfile name, not getName() — a cosmetic /nick would break the isMe check for self-only commands
         String selfName = (mc.player != null) ? mc.player.getGameProfile().name() : null;
         boolean isMe = selfName != null && typer.equalsIgnoreCase(selfName);
-        // Local /command lookups bypass the party-dedup so they always respond immediately.
         boolean isLocal = LOCAL.equals(responder);
 
-        // Default target for non-runs commands: explicit arg or fall back to typer
         String ign = rawArg1 != null ? rawArg1 : typer;
 
         switch (cmd) {
             case "help", "?" -> { if (FishSettings.pcHelp && respond(cmd, typer, isLocal)) sendCmd(mc, responder, buildHelp()); }
-            // Stats lookups: respond to ANY party member's command (default target = typer if no arg)
             case "rtca"      -> { if (FishSettings.pcRtca && respond(cmd, typer, isLocal))    runRtcaForPlayer(mc, ign, responder);             }
             case "rtc"       -> { if (FishSettings.pcRtc  && respond(cmd, typer, isLocal)) {
                 String rtcIgn; String levelArg;
@@ -129,7 +122,7 @@ public class PartyCommandHandler {
                 runRtcForPlayer(mc, rtcIgn, levelArg, responder);
             } }
             case "crtc"      -> { if (FishSettings.pcCrtc && respond(cmd, typer, isLocal)) {
-                // .crtc [name] <class> [level] — smart-parse: if arg1 is a class, name defaults to typer.
+                // .crtc [name] <class> [level] — if arg1 is a class, name defaults to typer
                 String cIgn, cClass, cLevel;
                 if (resolveClass(rawArg1) != null) { cIgn = typer; cClass = rawArg1; cLevel = rawArg2; }
                 else { cIgn = rawArg1 != null ? rawArg1 : typer; cClass = rawArg2; cLevel = rawArg3; }
@@ -170,7 +163,7 @@ public class PartyCommandHandler {
                 runStatsForPlayer(mc, runsIgn, cmd, floor, responder);
             }
             case "totalruns" -> { if (FishSettings.pcRuns && respond(cmd, typer, isLocal))    runTotalRunsForPlayer(mc, ign, responder);        }
-            // Self-only metrics: only the typer's own mod responds (data is local to each player)
+            // self-only: data is local to each player, so only the typer's own mod responds
             case "dprofit"   -> { if (FishSettings.pcDprofit && isMe) sendDprofit(mc, responder);              }
             case "crit"      -> { if (FishSettings.pcCrit    && isMe) sendCmd(mc, responder, fishmod.features.CritTracker.buildMessage()); }
             case "corpse", "corpses" -> { if (FishSettings.pcCorpse && respond(cmd, typer, isLocal)) sendCorpse(mc, ign, responder);  }
@@ -186,8 +179,7 @@ public class PartyCommandHandler {
             case "ping"   -> { if (FishSettings.pcPing   && isMe) sendPing(mc, responder); }
             case "ai", "allinv" -> { if (FishSettings.pcAllinvite && isMe) sendRawCommand(mc, "p settings allinvite"); }
             case "d"            -> { if (FishSettings.pcDisband   && isMe) sendRawCommand(mc, "p disband");             }
-            // Party actions: only honor from party chat or local /command (never from DM/guild/officer/all chat,
-            // where someone saying ".warp" would otherwise make our client try `/p warp` and error out).
+            // party actions: only from party chat or local /command (else ".warp" said in DM/guild → bogus /p warp)
             case "kick"                   -> { if (FishSettings.pcActionKick     && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p kick " + rawArg1);    }
             case "warp", "w"              -> { if (FishSettings.pcActionWarp     && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe))                    sendRawCommand(mc, "p warp");                }
             case "transfer", "pt", "ptme" -> { if (FishSettings.pcActionTransfer && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe))                    sendRawCommand(mc, "p transfer " + ign);     }
@@ -200,8 +192,7 @@ public class PartyCommandHandler {
         }
     }
 
-    // Per-command dedup so multiple FishMod-running party members don't all spam the same response.
-    // Each (cmd|typer) pair can only fire once per 5 seconds across the whole party.
+    // per-command dedup so multiple FishMod users don't all answer — once per 5s per (cmd|typer)
     private static final java.util.Map<String, Long> RECENT_RESPONSES = new java.util.concurrent.ConcurrentHashMap<>();
     private static final long RESPONSE_DEDUP_MS = 5000;
     /** Local /command lookups always respond; party/guild echoes go through the dedup. */
@@ -215,7 +206,6 @@ public class PartyCommandHandler {
         Long last = RECENT_RESPONSES.get(key);
         if (last != null && now - last < RESPONSE_DEDUP_MS) return false;
         RECENT_RESPONSES.put(key, now);
-        // Light GC: drop entries older than 30s
         RECENT_RESPONSES.entrySet().removeIf(e -> now - e.getValue() > 30_000);
         return true;
     }
@@ -238,7 +228,7 @@ public class PartyCommandHandler {
             case "blacklist" -> !fishmod.utils.NameList.contains(FishSettings.pcPartyActionsBlacklist, typer);
             case "whitelist" -> fishmod.utils.NameList.contains(FishSettings.pcPartyActionsWhitelist, typer)
                              && !fishmod.utils.NameList.contains(FishSettings.pcPartyActionsBlacklist, typer);
-            default -> false; // "off"/"self"/unrecognised
+            default -> false;
         };
     }
 
@@ -258,7 +248,7 @@ public class PartyCommandHandler {
         if (FishSettings.pcLevel)      cmds.add("level");
         if (FishSettings.pcFarming)    cmds.add("farming");
         if (FishSettings.pcNuc)        cmds.add("nuc");
-        if (FishSettings.pcWorm)       cmds.add("worm"); // .scatha is a hidden alias
+        if (FishSettings.pcWorm)       cmds.add("worm");
         if (FishSettings.pcBank)       cmds.add("bank");
         if (FishSettings.pcPowder)     cmds.add("powder");
         if (FishSettings.pcCorpse)     cmds.add("corpses");
@@ -297,13 +287,11 @@ public class PartyCommandHandler {
             .execute(() -> mc.execute(() -> {
                 if (mc.getConnection() != null) {
                     mc.getConnection().sendCommand(command);
-                    // Refresh the suppression window so Hypixel's error replies stay hidden.
+                    // refresh suppression window so Hypixel's error replies stay hidden
                     ChatCommandState.lastPartyCommandAt = System.currentTimeMillis();
                 }
             }));
     }
-
-    // ─── command dispatcher ───────────────────────────────────────────────────
 
     public static boolean handleCommand(String fullCmd) {
         if (!FishSettings.partyCommandsEnabled) return false;
@@ -311,11 +299,9 @@ public class PartyCommandHandler {
         if (mc.getConnection() == null) return false;
         final String responder = "pc ";
 
-        // Split "rtca PlayerName" → cmd="rtca", arg="PlayerName" (or null)
         String[] parts = fullCmd.split("\\s+", 2);
         String cmd = parts[0];
         String arg = parts.length > 1 ? parts[1] : null;
-        // If no arg, default to local player name
         String localName = mc.player != null ? mc.player.getName().getString() : null;
         String target = arg != null ? arg : localName;
 
@@ -360,7 +346,7 @@ public class PartyCommandHandler {
                 runStatsForPlayer(mc, target, cmd, null, responder);
                 return true;
             case "runs": {
-                // Support: runs [ign] [floor]  e.g. "runs SomePlayer m7" or "runs m7" or "runs"
+                // runs [ign] [floor]  e.g. "runs SomePlayer m7" | "runs m7" | "runs"
                 String[] rp = fullCmd.split("\\s+", 3);
                 String runTarget = rp.length > 1 ? rp[1] : localName;
                 String floorArg  = rp.length > 2 ? rp[2] : null;
@@ -431,10 +417,6 @@ public class PartyCommandHandler {
         return false;
     }
 
-    // ─── command implementations ──────────────────────────────────────────────
-
-    // ─── party-triggered lookups (by IGN) ────────────────────────────────────
-
     private static void runRtcaForPlayer(Minecraft mc, String ign, String responder) {
         HypixelApi.getByName(mc, ign, data -> buildAndSendRtca(mc, data, ign, responder));
     }
@@ -473,15 +455,10 @@ public class PartyCommandHandler {
                     } else if (floor.matches("[fm][1-7]")) {
                         char type = floor.charAt(0);
                         int num   = floor.charAt(1) - '0';
-                        if (type == 'm') {
-                            count = data.masterTimes[num];
-                            label = "M" + num;
-                        } else {
-                            count = data.cataTimes[num];
-                            label = "F" + num;
-                        }
+                        long[] times = (type == 'm') ? data.masterTimes : data.cataTimes;
+                        count = num < times.length ? times[num] : 0;
+                        label = (type == 'm' ? "M" : "F") + num;
                     } else {
-                        // Unrecognised floor — fall back to total
                         count = data.totalRuns;
                         label = "Total";
                     }
@@ -519,7 +496,7 @@ public class PartyCommandHandler {
         });
     }
 
-    // Hypixel catacombs collection milestones (per floor): tiers unlock at these points.
+    // Hypixel catacombs collection milestones (per floor) — tiers unlock at these points
     private static final long[] COLLECTION_MILESTONES = {1, 5, 10, 25, 50, 100, 250, 500, 1000};
     private static final long COLLECTION_MAX = 1000;
 
@@ -578,7 +555,7 @@ public class PartyCommandHandler {
             } else {
                 long runs;
                 if (FishSettings.rtcaIncludeDailyBonus) {
-                    long bonusXp = (long)(5 * xpPerRun * 1.4); // 5 daily-bonus runs at +50%
+                    long bonusXp = (long)(5 * xpPerRun * 1.4); // 5 daily-bonus runs at +40%
                     if (xpNeeded <= bonusXp) {
                         runs = (long) Math.ceil(xpNeeded / (xpPerRun * 1.4));
                     } else {
@@ -702,8 +679,6 @@ public class PartyCommandHandler {
         String out = sb.toString();
         sendCmd(mc, responder, out);
     }
-
-    // ─── local command implementations ───────────────────────────────────────
 
     private static void handleJoinInstance(String cmd, Minecraft mc, String responder) {
         long elapsed = System.currentTimeMillis() - dungeonEnteredAt;
@@ -836,9 +811,7 @@ public class PartyCommandHandler {
 
     private static void sendPing(Minecraft mc, String responder) {
         if (mc.player == null || mc.getConnection() == null) return;
-        // The vanilla ping/pong round trip is the most accurate, freshest end-to-end source (the same
-        // one Odin uses). Server-measured tab latency and the server-list join ping are fallbacks only
-        // for the brief window before a live measurement is available.
+        // prefer the vanilla ping/pong round trip; tab latency and the join ping are fallbacks only
         int ping = fishmod.utils.PingTracker.latest();
         if (ping < 0) {
             var entry = mc.getConnection().getPlayerInfo(mc.player.getUUID());
@@ -850,6 +823,5 @@ public class PartyCommandHandler {
         }
         sendCmd(mc, responder, "Ping: " + (ping >= 0 ? ping + "ms" : "N/A"));
     }
-
 
 }

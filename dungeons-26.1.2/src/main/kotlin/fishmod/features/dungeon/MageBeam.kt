@@ -13,9 +13,8 @@ import net.minecraft.world.phys.Vec3
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * Mage Beam — recolours the Mage ultimate beam (ported from Odin's MageBeam). Collects the
- * `FIREWORK` particle packets, groups the ~collinear runs into beams and draws each as a 3D line;
- * can hide the vanilla particles.
+ * Mage Beam — recolours the Mage ultimate beam. Collects the `FIREWORK` particle packets, groups
+ * the ~collinear runs into beams and draws each as a 3D line; can hide the vanilla particles.
  */
 object MageBeam {
 
@@ -44,8 +43,17 @@ object MageBeam {
             FishSettings.mageBeamHideParticles
         }
 
-        RenderingEvents.LINE.register { _, m, vc -> if (FishSettings.mageBeamDepth) render(m, vc) }
+        RenderingEvents.GIZMO.register { _ -> if (FishSettings.mageBeamDepth) renderGizmo() }
         RenderingEvents.NO_DEPTH_LINE.register { _, m, vc -> if (!FishSettings.mageBeamDepth) render(m, vc) }
+    }
+
+    private fun renderGizmo() {
+        if (!FishSettings.mageBeamEnabled) return
+        val argb = FishSettings.mageBeamColor
+        for (beam in beams) {
+            if (beam.points.size < 8) continue
+            for (i in 1 until beam.points.size) RenderUtils.gizmoLine(beam.points[i - 1], beam.points[i], argb)
+        }
     }
 
     private fun inLine(points: List<Vec3>, next: Vec3): Boolean {

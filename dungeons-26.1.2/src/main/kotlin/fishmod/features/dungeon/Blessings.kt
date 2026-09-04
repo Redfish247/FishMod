@@ -11,9 +11,8 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
 /**
- * Dungeon Blessing display (ported from Odin's BlessingDisplay). Blessing levels are read from the
- * tab-list **footer** — Hypixel writes the active blessings there as "Blessing of Power IX" etc.
- * (Odin parses the same S47 header/footer packet text.) Roman numeral -> int via [romanToInt].
+ * Dungeon Blessing display. Blessing levels are read from the tab-list **footer** — Hypixel writes
+ * the active blessings there as "Blessing of Power IX" etc. Roman numeral -> int via [romanToInt].
  */
 object Blessings {
 
@@ -39,7 +38,7 @@ object Blessings {
 
     private const val NAME = "Blessings"
     private const val LINE_H = 10
-    private val COLOR = Regex("§.")
+    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val ROMAN = mapOf('I' to 1, 'V' to 5, 'X' to 10, 'L' to 50, 'C' to 100, 'D' to 500, 'M' to 1000)
     private var tickAcc = 0
 

@@ -16,6 +16,12 @@ object DungeonMap {
     private var mapSize: MapVec2i? = null
     private var roomSize: Int? = null
 
+    /** Fired once per room state transition detected in a map rescan (see [RoomTimer]). */
+    private val stateListeners = ArrayList<(Room.StateUpdated) -> Unit>()
+
+    @JvmStatic
+    fun onRoomStateChange(cb: (Room.StateUpdated) -> Unit) { stateListeners.add(cb) }
+
     @JvmStatic
     fun getMapSize(): MapVec2i? = mapSize
 
@@ -25,8 +31,6 @@ object DungeonMap {
     @JvmStatic
     fun getRoomSize(): Int? = roomSize
 
-    // secretDisplay/doorEsp/puzzleOverlay* from Java's Settings aren't modeled in DungeonMapSettings
-    // (doorEsp is the excluded ESP addon; the others are unrelated, separately-owned features).
     @JvmStatic
     fun anyFeatureEnabled(): Boolean {
         val s = DungeonMapSettings
@@ -92,7 +96,10 @@ object DungeonMap {
         DungeonPlayers.updateDecorations((state as MapItemSavedDataAccessor).decorations)
         if (!Scan.loadedAllRooms) updateRoomTiles(colors)
 
-        updateRoomState(colors)
+        val stateChanges = updateRoomState(colors)
+        if (stateListeners.isNotEmpty()) {
+            for (u in stateChanges) for (l in stateListeners) runCatching { l(u) }
+        }
         scanDoors(colors)
 
         var bloodDoor: Door? = null
@@ -307,7 +314,7 @@ object DungeonMap {
                 if (strays != null) absorbStrayRooms(found, strays)
                 if (type != Room.Type.UNKNOWN) Scan.updateRotationOffShape(found)
             } else {
-                val room = Room(type, shape, null, null, null)
+                val room = Room(type, shape, null, null)
                 Scan.rooms.add(room)
                 for (tile in u.tiles) {
                     room.roomTile(tile.multiply(32).add(-185, -185))
@@ -447,6 +454,14 @@ object DungeonMap {
         if (door == null) {
             door = Door(pos, type, rooms)
             Scan.doors.add(door)
+        } else {
+            // self-heal: doors are often created before both room tiles have owners; back-fill any now-known tile each map packet
+            for (t in rooms) {
+                if (door.rooms.none { it === t }) {
+                    door.rooms.add(t)
+                    t.owner?.doors?.add(door)
+                }
+            }
         }
 
         if (type == Door.Type.WITHER && door.type != Door.Type.WITHER) {

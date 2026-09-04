@@ -17,7 +17,7 @@ import net.minecraft.world.phys.Vec3
 
 /**
  * "Device Completed!" notification at the pre-4th-device / Simon Says (SS) spots, plus the
- * title-suppression logic for those same spots. Ported from blade-addons.
+ * title-suppression logic for those same spots.
  */
 object DeviceNotifier {
 

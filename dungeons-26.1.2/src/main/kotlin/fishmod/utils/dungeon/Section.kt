@@ -22,12 +22,12 @@ object Section {
         override fun toString(): String = label
     }
 
+    // 1:1 with blade-addons' Section.java: four per-gate splits, no synthetic "Total" row.
     private val splits: Array<Split> = arrayOf(
-        Split("S1", "", "", 16755200, 0.0),
-        Split("S2", "", "", 16755200, 0.0),
-        Split("S3", "", "", 16755200, 0.0),
-        Split("S4", "", "", 16755200, 0.0),
-        Split("Total", "", "", Split.GREEN, 0.0)
+        Split("1st", "", "", 16755200, 0.0),
+        Split("2nd", "", "", 16755200, 0.0),
+        Split("3rd", "", "", 16755200, 0.0),
+        Split("4th", "", "", 16755200, 0.0),
     )
     private val TERMINALS_DONE_PATTERN: Pattern =
         Pattern.compile("^(\\w+) (activated|completed) a (terminal|device|lever)! \\((\\d)/(\\d)\\)$")
@@ -36,17 +36,12 @@ object Section {
     var SPLIT_LENGTH: Int = 120
     private const val TERM_PHASE_INDEX = 6
 
-    /** Number of per-section splits (S1-S4) at the front of [splits]; the trailing "Total" split is separate. */
-    private const val SECTION_COUNT = 4
-
     private var currentSection = -1
     private var completed = 0
     private var total = 7
     private var gateBlownUp = false
 
     @ConfigValue @JvmField var enableTerminalSplits: Boolean = false
-
-    @ConfigValue @JvmField var includeTotalTime: Boolean = false
 
     @ConfigValue @JvmField var displayTerminalSplitsWhen: DisplayTerminalSplitsWhen = DisplayTerminalSplitsWhen.TERMINALS_ONLY
 
@@ -58,6 +53,8 @@ object Section {
             false
         }
         Events.ON_PHASE_CHANGE.register {
+            Debug.LOGGER.info("[Section] ON_PHASE_CHANGE phase={} inTerminals={} inGoldorTunnel={} currentSection={}",
+                Phase.getPhase(), Phase.inTerminals(), Phase.inGoldorTunnel(), currentSection)
             if (Phase.inP2()) {
                 currentSection = 0
             }
@@ -67,8 +64,8 @@ object Section {
                     Misc.addChatMessage(Component.literal("Terminals started"))
                 }
                 currentSection = 1
+                total = totalFor(1)
                 splits[0].start()
-                splits[SECTION_COUNT].start() // Total: spans the whole terminals phase
             } else if (Phase.inGoldorTunnel()) {
                 if (Debug.termInfo) {
                     Misc.addChatMessage(Component.literal("Terminals ended"))
@@ -100,10 +97,21 @@ object Section {
         gateBlownUp = false
     }
 
+    /** Devices needed to open the given section's gate — every section is 7 except S2, which is 8. */
+    @JvmStatic
+    fun totalFor(section: Int): Int = if (section == 2) 8 else 7
+
     private fun incrementSection() {
+        Debug.LOGGER.info("[Section] incrementSection: {} -> {} (completed={} total={} gate={})",
+            currentSection, currentSection + 1, completed, total, gateBlownUp)
         resetSection()
         endSplit(currentSection)
         currentSection++
+        // Seed the new section's expected count up front — waiting on its first device message left
+        // `total` at the previous section's count, so a gate blown before that first message came in
+        // (or that message racing the "gate destroyed" line) compared `completed == total` wrong and
+        // mistimed the split.
+        total = totalFor(currentSection)
 
         if (Debug.termInfo) {
             Misc.addChatMessage(Component.literal("section: $currentSection"))
@@ -115,13 +123,13 @@ object Section {
 
     private fun endSplit(section: Int) {
         val index = section - 1
-        if (index < 0 || index >= SECTION_COUNT) return
+        if (index < 0 || index >= splits.size) return
         splits[index].end()
     }
 
     private fun startSplit(section: Int) {
         val index = section - 1
-        if (index < 0 || index >= SECTION_COUNT) return
+        if (index < 0 || index >= splits.size) return
         splits[index].start()
     }
 
@@ -176,6 +184,11 @@ object Section {
             }
 
             if (shouldIncrement(currentCompleted)) {
+                if (Debug.termInfo) {
+                    val why = if (currentCompleted == total && gateBlownUp) "count==total & gate already blown"
+                              else "count($currentCompleted) < completed($completed), completed had reached total($total)"
+                    Misc.addChatMessage(Component.literal("§eincrementSection via device msg §7($why)"))
+                }
                 incrementSection()
                 Misc.forceTitle(Component.empty(), message)
             } else {
@@ -187,6 +200,13 @@ object Section {
             if (string == "The gate has been destroyed!") {
                 gateBlownUp = true
 
+                if (Debug.termInfo) {
+                    Misc.addChatMessage(Component.literal(
+                        "§egate destroyed msg: section=$currentSection completed=$completed total=$total" +
+                            (if (completed == total) " §a-> incrementing now" else " §c-> NOT incrementing (waiting on a device msg)")
+                    ))
+                }
+
                 if (completed == total) {
                     incrementSection()
                 }
@@ -197,26 +217,13 @@ object Section {
                 }
             }
         } else if (string == "The Core entrance is opening!") {
+            // so "goldor tunnel" can be shown after terms are done
             currentSection = 5
             endAllSections()
             Debug.sendDebugMessage(Component.literal("Core section"))
-            if (Floor7.terminalTimeStamps) sendTerminalTimesSummary()
         }
 
         return shouldCancelMessage
-    }
-
-    /** Odin "Terminal Times" style recap: each section split then the total, sent once the Core opens. */
-    private fun sendTerminalTimesSummary() {
-        val fmt = Constants.DECIMAL_FORMAT
-        val sections = (0 until SECTION_COUNT)
-            .map { splits[it].getRealTime() }
-            .filter { it > 0.0 }
-        if (sections.isEmpty()) return
-        val list = sections.joinToString(" §8| ") { "§a${fmt.format(it)}s" }
-        val totalSplit = splits[SECTION_COUNT].getRealTime()
-        val total = if (totalSplit > 0.0) totalSplit else sections.sum()
-        Misc.addChatMessage(Component.literal("§bTerminal times: $list§8, §bTotal: §a${fmt.format(total)}s"))
     }
 
     @JvmStatic
@@ -234,7 +241,7 @@ object Section {
     @JvmStatic
     fun getSectionTime(): Double {
         val index = currentSection - 1
-        if (index < 0 || index >= SECTION_COUNT) return -1.0
+        if (index < 0 || index >= splits.size) return -1.0
         return splits[index].getRealTime()
     }
 
@@ -252,7 +259,13 @@ object Section {
 
     @JvmStatic
     fun shouldIncrement(recentlyCompleted: Int): Boolean {
-        return (recentlyCompleted == total && gateBlownUp) || (recentlyCompleted < completed)
+        // The second clause is a fallback for a missed "gate has been destroyed!" line: a low count on
+        // a fresh section reads as "went backward" from the previous section's count. With multiple
+        // players finishing devices in parallel, two of THIS section's own progress messages can also
+        // land out of order (e.g. "3/8" then a race-delayed "2/8") — that's not a new section, and
+        // firing on it jumped straight to the next section (and its gate marker) mid-way through this
+        // one. Only trust "went backward" once this section had actually reached its full count.
+        return (recentlyCompleted == total && gateBlownUp) || (recentlyCompleted < completed && completed >= total)
     }
 
     @JvmStatic
@@ -262,16 +275,13 @@ object Section {
 
         val textRenderer: Font = Minecraft.getInstance().font
 
-        val count = if (includeTotalTime) splits.size else SECTION_COUNT
-        for (i in 0 until count) {
+        for (i in splits.indices) {
             splits[i].drawSplit(context, textRenderer, x, y + Constants.TEXT_HEIGHT * i, SPLIT_LENGTH)
         }
     }
 
-    // Condition-supplier forced false: rendered explicitly via F7Huds.renderHud instead, to avoid
-    // double-drawing via practical-config's auto-render. Default position isn't (0,0) because
-    // keepOnScreen treats (0,0) as already on-screen and never relocates it — that would overlap
-    // Phase.splitTimer (same default) whenever both panels are visible at once.
+    // condition forced false: rendered explicitly via F7Huds.renderHud. Default pos isn't (0,0) because
+    // keepOnScreen treats (0,0) as on-screen and never relocates it, leaving it atop Phase.splitTimer.
     @ConfigValue @JvmField
     var terminalSplits: HUDComponent = HUDComponent(
         10.0, 154.0, SPLIT_LENGTH, 50, 1f, "Term splits", { false }, Section::render, { enableTerminalSplits }

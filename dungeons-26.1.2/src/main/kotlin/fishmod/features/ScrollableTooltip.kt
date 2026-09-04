@@ -3,7 +3,7 @@ package fishmod.features
 import fishmod.utils.config.values.FishSettings
 
 /**
- * Scrollable / scalable item tooltips (ported from NoammAddons' ItemTooltip):
+ * Scrollable / scalable item tooltips:
  *  - scroll over a hovered item to move its tooltip up/down
  *  - shift + scroll to move it left/right
  *  - ctrl + scroll to scale it
@@ -15,7 +15,7 @@ object ScrollableTooltip {
 
     @JvmField var offsetX = 0f
     @JvmField var offsetY = 0f
-    @JvmField var scaleOverride = 0f          // tenths added onto the base scale (Noamm's convention)
+    @JvmField var scaleOverride = 0f          // tenths added onto the base scale
 
     private var lastSlot = Int.MIN_VALUE
 
@@ -30,6 +30,16 @@ object ScrollableTooltip {
     @JvmStatic
     fun resetScroll() {
         offsetX = 0f; offsetY = 0f; scaleOverride = 0f
+    }
+
+    /**
+     * Drop the offset/scale as soon as the hovered slot changes (or you stop hovering), so a
+     * tooltip nudged off one item doesn't render displaced over the next item / empty space.
+     * Called every screen frame from [fishmod.mixin.HandledScreenMixin].
+     */
+    @JvmStatic
+    fun trackHoveredSlot(slot: Int) {
+        if (slot != lastSlot) { resetScroll(); lastSlot = slot }
     }
 
     /** @param slot hovered slot index (< 0 = none). @return true if the scroll was consumed. */

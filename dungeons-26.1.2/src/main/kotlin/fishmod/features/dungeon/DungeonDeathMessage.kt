@@ -41,7 +41,7 @@ object DungeonDeathMessage {
         if (playerName.equals("You", ignoreCase = true) || playerName.equals(localName, ignoreCase = true)) return false
 
         if (FishSettings.deathMessageToParty && mc.connection != null) {
-            mc.connection!!.sendCommand("pc " + FishSettings.deathMessageTemplate.replace("{name}", playerName))
+            fishmod.utils.ChatQueue.enqueue("pc " + FishSettings.deathMessageTemplate.replace("{name}", playerName))
         }
 
         return false

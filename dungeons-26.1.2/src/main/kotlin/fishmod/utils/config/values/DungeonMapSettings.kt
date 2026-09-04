@@ -3,9 +3,8 @@ package fishmod.utils.config.values
 import config.practical.manager.ConfigValue
 
 /**
- * Settings for the dungeon-map feature (ported from System22's Settings.java `map*` fields).
- * `mapDoorEsp*` fields are intentionally excluded — that's a through-wall ESP feature going to a
- * separate addon, not part of this port.
+ * Settings for the dungeon-map feature. `mapDoorEsp*` fields are intentionally excluded — that's a
+ * through-wall ESP feature going to a separate addon.
  */
 object DungeonMapSettings {
 
@@ -13,8 +12,7 @@ object DungeonMapSettings {
     @JvmField
     var mapEnabled: Boolean = false
 
-    // Forced back to true (and mapInsightLegit to false) on every server join — see FishModInit's
-    // JOIN listener. Only FishModAddons ever flips these off, and only for the current session.
+    // forced back to true (mapInsightLegit to false) on every server join — see FishModInit's JOIN listener
     @ConfigValue
     @JvmField
     var mapLegitMode: Boolean = true
@@ -96,14 +94,12 @@ object DungeonMapSettings {
     @JvmField
     var mapInfoHideCompleted: Boolean = false
 
-    // Info HUD's secrets line normally shows found-needed-total; when true, the trailing number
-    // becomes points still missing for a 300 instead of the total secret count.
+    // when true, the secrets line's trailing number is points-missing-for-300, not total secret count
     @ConfigValue
     @JvmField
     var mapInfoShowLeft: Boolean = false
 
-    // Auto party-chat nudge ("X Score Missing (...)") once 60s into a run, breaking down exactly
-    // what's needed (prince/crypts/mimic/secrets) to reach 300 on a full clear.
+    // auto party-chat nudge 60s into a run: what's still needed (prince/crypts/mimic/secrets) for 300
     @ConfigValue
     @JvmField
     var mapScoreMissingMsg: Boolean = true
@@ -114,7 +110,7 @@ object DungeonMapSettings {
 
     @ConfigValue
     @JvmField
-    var mapScore270Message: String = "270 Score"
+    var mapScore270Message: String = "On pace for 270"
 
     @ConfigValue
     @JvmField
@@ -122,7 +118,7 @@ object DungeonMapSettings {
 
     @ConfigValue
     @JvmField
-    var mapScore270TitleText: String = "270 Score"
+    var mapScore270TitleText: String = "On pace for 270"
 
     @ConfigValue
     @JvmField
@@ -134,11 +130,11 @@ object DungeonMapSettings {
 
     @ConfigValue
     @JvmField
-    var mapScore270ClientMessage: String = "&f270 Score Reached! &b<time>"
+    var mapScore270ClientMessage: String = "&fOn pace for 270 &b<time>"
 
     @ConfigValue
     @JvmField
-    var mapScore300Message: String = "300 Score"
+    var mapScore300Message: String = "On pace for 300"
 
     @ConfigValue
     @JvmField
@@ -146,7 +142,7 @@ object DungeonMapSettings {
 
     @ConfigValue
     @JvmField
-    var mapScore300TitleText: String = "300 Score"
+    var mapScore300TitleText: String = "On pace for 300"
 
     @ConfigValue
     @JvmField
@@ -158,7 +154,7 @@ object DungeonMapSettings {
 
     @ConfigValue
     @JvmField
-    var mapScore300ClientMessage: String = "&f300 Score Reached! &b<time>"
+    var mapScore300ClientMessage: String = "&fOn pace for 300 &b<time>"
 
     @ConfigValue
     @JvmField
@@ -341,9 +337,7 @@ object DungeonMapSettings {
     @JvmField
     var mapDoorFairyColorFilled: Int = 871633803
 
-    // Legit (depth-tested) world-space door highlight — see DoorHighlight.kt. Unlike mapDoorEsp*
-    // (intentionally excluded, through-wall), this only ever draws already-seen doors and is
-    // normally occluded by terrain, so it needs no "legit mode" gate of its own.
+    // legit depth-tested door highlight (DoorHighlight.kt): only already-seen doors, occluded by terrain, so no legit-mode gate
     @ConfigValue
     @JvmField
     var mapDoorHighlightEnabled: Boolean = false
@@ -352,26 +346,23 @@ object DungeonMapSettings {
     @JvmField
     var mapDoorHighlightWidth: Float = 3.0f
 
-    // Draw every highlighted door (not just Wither) through walls. Off = only Wither doors pierce
-    // terrain, everything else is occluded (the original System22-port behaviour).
+    // draw every highlighted door through walls; off = only Wither doors pierce terrain
     @ConfigValue
     @JvmField
     var mapDoorHighlightThroughWall: Boolean = false
 
-    // Highlight the whole door-frame box instead of just the flat face turned toward the player.
-    // (Wither doors are always drawn as a full box regardless of this toggle.)
+    // highlight the whole door-frame box, not just the near face (Wither doors are always full-box)
     @ConfigValue
     @JvmField
     var mapDoorHighlightFullBox: Boolean = false
 
-    // Wither-door full-box highlight while you still lack the Wither Key. Once you have it the box
-    // switches to the shared [mapDoorOpenableColor] (same green Blood doors use when openable).
-    // ARGB; the box fill's alpha is applied separately.
+    // Wither-door full-box highlight while you lack the Wither Key; with the key it uses mapDoorOpenableColor.
+    // ARGB; box fill alpha applied separately.
     @ConfigValue
     @JvmField
     var mapWitherHighlightMissingColor: Int = 0xFFFF0000.toInt()
 
-    // HUD position/scale (ported from System22 DataStore's separate HUD-position statics; defaults match originals).
+    // HUD position/scale
     @ConfigValue
     @JvmField
     var mapX: Float = 100.0f
@@ -396,7 +387,7 @@ object DungeonMapSettings {
     @JvmField
     var mapInfoScale: Float = 1.0f
 
-    // -1 means "auto-centered" (matches System22's sentinel default for the score title overlay).
+    // -1 means "auto-centered" (score title overlay)
     @ConfigValue
     @JvmField
     var mapScoreTitleX: Float = -1.0f

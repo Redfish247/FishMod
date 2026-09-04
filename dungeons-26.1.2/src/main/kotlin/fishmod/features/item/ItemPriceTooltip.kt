@@ -2,7 +2,7 @@ package fishmod.features.item
 
 import fishmod.features.croesus.CroesusPrices
 import fishmod.utils.Location
-import fishmod.utils.SkyblockItems
+import fishmod.utils.networth.ItemsDb
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemUtil
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -11,8 +11,7 @@ import net.minecraft.network.chat.Component
 
 /**
  * Adds a value line (Bazaar/BIN blended, via [CroesusPrices]) and an optional NPC-sell line to
- * item tooltips in SkyBlock — the price half of NoammAddons' ItemTooltip. Prices are lazily
- * refreshed on a TTL while the feature is on.
+ * item tooltips in SkyBlock. Prices are lazily refreshed on a TTL while the feature is on.
  */
 object ItemPriceTooltip {
 
@@ -44,7 +43,7 @@ object ItemPriceTooltip {
             }
 
             if (FishSettings.itemTooltipNpcSell) {
-                val npc = SkyblockItems.npcSellPriceFor(id)
+                val npc = ItemsDb.npcSellPriceFor(id)
                 if (npc > 0.0) {
                     val total = if (count > 1) npc * count else npc
                     lines.add(Component.literal("§eNPC Sell: §6${abbr(total)}"))

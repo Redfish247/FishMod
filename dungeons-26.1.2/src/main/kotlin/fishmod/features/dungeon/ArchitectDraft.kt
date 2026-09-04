@@ -8,12 +8,12 @@ import net.minecraft.client.Minecraft
 import java.util.regex.Pattern
 
 /**
- * Architect's First Draft auto-refill (NoammAddons ArchitectDraft, refill half). When *you* fail a
- * dungeon puzzle, pull one Architect's First Draft from your sacks so the next attempt has one
- * ready.
+ * Architect's First Draft auto-refill. When *you* fail a dungeon puzzle, pull one Architect's First
+ * Draft from your sacks so the next attempt has one ready.
  */
 object ArchitectDraft {
 
+    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val PUZZLE_FAIL = Pattern.compile("PUZZLE FAIL! (\\w{1,16}) .+")
     private val ORUO_WRONG = Pattern.compile("\\[STATUE] Oruo the Omniscient: (\\w{1,16}) chose the wrong answer!.*")
 
@@ -23,7 +23,7 @@ object ArchitectDraft {
     fun init() {
         Events.ON_GAME_MESSAGE.register { text ->
             if (!FishSettings.architectDraftRefill || !Location.inDungeon()) return@register false
-            val s = text.string.replace(Regex("§."), "").trim()
+            val s = text.string.replace(COLOR, "").trim()
             val self = Minecraft.getInstance().player?.gameProfile?.name ?: return@register false
             val m1 = PUZZLE_FAIL.matcher(s)
             val m2 = ORUO_WRONG.matcher(s)

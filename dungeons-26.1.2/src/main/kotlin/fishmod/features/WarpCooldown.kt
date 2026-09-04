@@ -9,8 +9,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import java.util.regex.Pattern
 
 /**
- * Revives blade-addons' `enableWarpCooldown` (logic ported from Odin's WarpCooldown): Hypixel gates
- * re-entering a dungeon for ~30s after the party enters one. The clock starts on the
+ * Hypixel gates re-entering a dungeon for ~30s after the party enters one. The clock starts on the
  * "<player> entered <floor> Catacombs, Floor <n>!" chat line (not on `/warp`, which was wrong), and
  * the HUD counts it down. Optionally announces to party chat if you get kicked mid-join.
  */
@@ -21,7 +20,7 @@ object WarpCooldown {
         Pattern.compile("\\b(\\w{1,16}) entered (?:MM )?\\w+ Catacombs, Floor \\w+!")
     private val KICKED: Pattern =
         Pattern.compile("^(?:You were kicked while joining that server!|You are no longer allowed to access this instance!)$")
-    private val COLOR = Regex("§.")
+    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     @Volatile private var enteredAt = 0L
 
@@ -38,12 +37,10 @@ object WarpCooldown {
         Events.ON_GAME_MESSAGE.register { text ->
             val s = COLOR.replace(text.string, "")
             if (ENTERED.matcher(s).find()) {
-                // Start the clock on the FIRST "entered" line only — party members' lines print
-                // over a couple of seconds and were each resetting it to full ("always 30s").
+                // first "entered" line only — party members' lines trickle in and were each resetting it to full
                 if (remainingMs() <= 0L) enteredAt = System.currentTimeMillis()
             } else if (Dungeons.enableWarpCooldown && FishSettings.warpAnnounceKick && KICKED.matcher(s).matches()) {
-                val mc = Minecraft.getInstance()
-                mc.execute { mc.connection?.sendCommand("pc ${FishSettings.warpKickText}") }
+                fishmod.utils.ChatQueue.enqueue("pc ${FishSettings.warpKickText}")
             }
             false
         }

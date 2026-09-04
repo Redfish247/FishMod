@@ -33,8 +33,7 @@ object RemoteNicks {
 
     @JvmStatic
     fun init() {
-        // Polling is driven by RemoteSync (combined version-gated /sync). We only (re)publish our
-        // own nick on join here; incoming nicks arrive via acceptNicks().
+        // Polling is driven by RemoteSync; here we only re-publish our own nick on join.
         ClientPlayConnectionEvents.JOIN.register { _, _, _ -> uploadOwn() }
     }
 
@@ -50,6 +49,10 @@ object RemoteNicks {
     /** Snapshot of the IGN->styled-Text cache. Used by debug commands. */
     @JvmStatic
     fun snapshot(): Map<String, Component> = HashMap(styledByName)
+
+    /** True when no remote nick is currently known (nothing for [apply]/[applyResolvedOnly] to do). */
+    @JvmStatic
+    fun isEmpty(): Boolean = styledByName.isEmpty()
 
     /**
      * Force an immediate refresh from the tab list. [RemoteSync] only covers other players (it
@@ -88,7 +91,7 @@ object RemoteNicks {
             if (raw != null && raw.isNotEmpty()) {
                 val prev = styledByName.put(name, NickState.parse(ProfanityFilter.censor(raw)))
                 negativeCache.remove(name)
-                if (prev == null) newlyResolved = true // a name we showed plainly now has a nick
+                if (prev == null) newlyResolved = true
             } else {
                 styledByName.remove(name)
                 negativeCache[name] = now + NEGATIVE_TTL_MS
@@ -134,8 +137,7 @@ object RemoteNicks {
             fetchOne(name, cachedUuid)
             return
         }
-        // Mojang-authoritative resolve (shared with stats lookups) so a recycled/changed name maps to
-        // the player who currently owns it — otherwise we'd style the wrong person's nick onto it.
+        // Mojang-authoritative resolve so a recycled/changed name maps to its current owner, not the wrong player.
         HypixelApi.resolveUuidAsync(name) { uuid ->
             if (uuid != null) fetchOne(name, uuid) else markNotFound(name)
         }
@@ -148,8 +150,7 @@ object RemoteNicks {
             if (raw != null && raw.isNotEmpty()) {
                 val prev = styledByName.put(name, NickState.parse(ProfanityFilter.censor(raw)))
                 negativeCache.remove(name)
-                // The message that triggered this chat lookup is already in history showing the IGN;
-                // retroactively re-style it (and any earlier ones) now that the nick is known.
+                // The triggering message is already in history showing the IGN — re-style it (and earlier ones) now.
                 if (prev == null) ChatNickRefresher.requestRefresh()
             } else {
                 negativeCache[name] = System.currentTimeMillis() + NEGATIVE_TTL_MS
@@ -167,9 +168,7 @@ object RemoteNicks {
     fun apply(text: Component?): Component? {
         if (text == null) return text
         if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) return text
-        // Trigger background lookups for any new IGNs in this line. The current rewrite uses
-        // whatever's in styledByName right now; the first message from an unknown player won't
-        // be rewritten but subsequent ones will be (typical 200-500ms after the lookup completes).
+        // Fires background lookups; this pass uses styledByName as-is, so an unknown player's first line isn't rewritten.
         ensureKnownFromChat(text.string)
         if (styledByName.isEmpty()) return text
         var s = text.string

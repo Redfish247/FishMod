@@ -1,5 +1,6 @@
 package fishmod.features.croesus
 
+import fishmod.utils.HypixelApi
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
@@ -17,7 +18,6 @@ import java.util.regex.Pattern
  * (matched by title alone) — otherwise unclaimed tiers would be counted as loot.
  */
 object CroesusLootDetector {
-    private val COLOR_STRIP: Pattern = Pattern.compile("§.")
     private val CHEST_SCREEN_PATTERN: Pattern = Pattern.compile("^(Wood|Gold|Diamond|Emerald|Obsidian|Bedrock)(?: Chest)?$")
     private val CHEST_ITEM_PATTERN: Pattern = Pattern.compile("^(Wood|Gold|Diamond|Emerald|Obsidian|Bedrock)$")
     private val RUN_GUI_PATTERN: Pattern = Pattern.compile("^(?:Master )?Catacombs - .+$")
@@ -61,7 +61,7 @@ object CroesusLootDetector {
             if (stack.isEmpty) continue
             val name = strip(stack.hoverName.string)
             if (!CHEST_ITEM_PATTERN.matcher(name).matches()) continue
-            if (pendingChests.containsKey(name)) continue // already cached this visit
+            if (pendingChests.containsKey(name)) continue
 
             val info = CroesusRewardParser.parseRewards(getTooltip(stack), arrayOf<String?>(null))
             if (info != null) pendingChests[name] = info
@@ -84,14 +84,13 @@ object CroesusLootDetector {
         val title = if (mc.screen == null) "" else strip(mc.screen!!.title.string)
         val runGuiOpenNow = RUN_GUI_PATTERN.matcher(title).matches()
         if (runGuiOpenNow && !runGuiOpenPrev) {
-            // Fresh GUI visit — clear stale previews and rearm the once-per-visit runs++.
             pendingChests.clear()
             loggedThisVisit = false
         }
         runGuiOpenPrev = runGuiOpenNow
     }
 
-    private fun strip(s: String): String = COLOR_STRIP.matcher(s).replaceAll("")
+    private fun strip(s: String): String = HypixelApi.STRIP_COLOR.matcher(s).replaceAll("")
 
     private fun getSlot(menu: AbstractContainerMenu, index: Int): ItemStack =
         if (index >= 0 && index < menu.slots.size) menu.slots[index].item else ItemStack.EMPTY

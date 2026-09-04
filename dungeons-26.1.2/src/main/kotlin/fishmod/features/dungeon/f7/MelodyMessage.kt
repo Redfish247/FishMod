@@ -1,6 +1,5 @@
 package fishmod.features.dungeon.f7
 
-import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.events.Events
@@ -9,9 +8,8 @@ import fishmod.features.dungeon.f7.terminal.TerminalSolver
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 
 /**
- * Melody Message, ported from Odin's `MelodyMessage` (the party-messaging half — Odin's cross-user
- * websocket progress GUI is not ported). Announces the melody terminal to party chat when it opens
- * and, optionally, calls out 25 / 50 / 75 % as the green-clay marker moves down — the same lines
+ * Melody Message. Announces the melody terminal to party chat when it opens and, optionally,
+ * calls out 25 / 50 / 75 % as the green-clay marker moves down — the same lines
  * [fishmod.features.dungeon.f7.MelodyWarning] already listens for.
  */
 object MelodyMessage {
@@ -36,7 +34,7 @@ object MelodyMessage {
             wasOpen = true
             lastPctSent = -1
             if (FishSettings.melodyMessageOnOpen && FishSettings.melodyMessageText.isNotBlank()) {
-                Misc.executeCommand("pc ${FishSettings.melodyMessageText}")
+                fishmod.utils.ChatQueue.enqueue("pc ${FishSettings.melodyMessageText}")
             }
         } else if (!open && wasOpen) {
             reset()
@@ -51,7 +49,7 @@ object MelodyMessage {
             }
             if (pct > 0 && pct != lastPctSent) {
                 lastPctSent = pct
-                Misc.executeCommand("pc Melody $pct%")
+                fishmod.utils.ChatQueue.enqueue("pc Melody $pct%")
             }
         }
     }

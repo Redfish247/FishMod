@@ -22,12 +22,12 @@ public class ChannelMixin implements IMonoAudioChannel {
     @Unique private Vec3 fishmod$lastPos = Vec3.ZERO;
     @Unique private boolean fishmod$relative;
 
-    // Allow gain > 1.0 for FishMod's ">100%" cues. OpenAL clamps AL_GAIN to AL_MAX_GAIN (default
-    // 1.0); raise the ceiling to whatever gain is being set (min 1.0, so normal sounds are
-    // unaffected — Channel.setVolume is called every time a channel is (re)used).
+    // OpenAL clamps AL_GAIN to AL_MAX_GAIN (default 1.0); raise the ceiling for ">100%" cues
     @Inject(method = "setVolume", at = @At("HEAD"))
     private void fishmod$allowGainAboveOne(float volume, CallbackInfo ci) {
-        AL10.alSourcef(source, AL10.AL_MAX_GAIN, Math.max(1.0f, volume));
+        // default 1.0 ceiling already fine for normal sounds — skip the per-call JNI write
+        if (volume <= 1.0f) return;
+        AL10.alSourcef(source, AL10.AL_MAX_GAIN, volume);
     }
 
     @Inject(method = "setSelfPosition", at = @At("HEAD"), cancellable = true)

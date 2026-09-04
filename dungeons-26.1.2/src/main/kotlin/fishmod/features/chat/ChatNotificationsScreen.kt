@@ -21,11 +21,9 @@ import kotlin.math.min
 /**
  * /fm chatnotifications (/fm cn) — a dedicated rule-list editor for the chat-notification system
  * (see [ChatRuleStore]/[ChatRuleHandler]). Left pane lists rules (toggle/select/delete), right
- * pane edits the selected rule's filter + outputs. Modeled on Skyblocker's chat-rule screens
- * (github.com/SkyblockerMod/Skyblocker, MIT) but painted through [NvgRecorder], following
- * [fishmod.features.item.ItemCustomizeScreen]'s pattern (fields kept as bare [EditBox] state,
- * never added as real Screen widgets, since a real widget's render would flush before the NanoVG
- * overlay and be invisible under it).
+ * pane edits the selected rule's filter + outputs. Painted through [NvgRecorder]: fields are kept
+ * as bare [EditBox] state, never added as real Screen widgets, since a real widget's render would
+ * flush before the NanoVG overlay and be invisible under it.
  */
 class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")), HasNvgOverlay {
 
@@ -44,6 +42,13 @@ class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")),
         val ROW_SEL = 0xFF1E2A2A.toInt()
         val DANGER = ScreenTheme.DANGER
         val DANGER_HOVER = ScreenTheme.DANGER_HOVER
+
+        // drawEditor() stacks fields with these pitches; mouseClicked() re-derives the same Ys — both must match
+        const val ED_ROW = 24          // labelled-field row pitch
+        const val ED_TOGGLE_ROW = 20   // Regex / Partial / Ignore-Case row
+        const val ED_SECTION_HDR = 14  // "OUTPUTS" header height
+        // editY -> first OUTPUTS field: Name + Filter + Hide-Original + toggles + header
+        const val ED_OUTPUTS_DY = ED_ROW * 3 + ED_TOGGLE_ROW + ED_SECTION_HDR
 
         fun inBox(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int): Boolean =
             mx >= x && mx <= x + w && my >= y && my <= y + h
@@ -99,12 +104,12 @@ class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")),
         editY = listY
         editW = panelX + panelW - 14 - editX
 
-        nameField = mkField(panelW, chatFor = false)
-        filterField = mkField(panelW, chatFor = false)
-        chatMessageField = mkField(panelW, chatFor = false)
-        actionBarField = mkField(panelW, chatFor = false)
-        titleField = mkField(panelW, chatFor = false)
-        durationField = mkField(panelW, chatFor = false)
+        nameField = mkField()
+        filterField = mkField()
+        chatMessageField = mkField()
+        actionBarField = mkField()
+        titleField = mkField()
+        durationField = mkField()
         durationField.setMaxLength(6)
 
         if (selected == null || !ChatRuleStore.rules().contains(selected)) {
@@ -122,7 +127,7 @@ class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")),
         }
     }
 
-    private fun mkField(panelW: Int, chatFor: Boolean): EditBox {
+    private fun mkField(): EditBox {
         val f = EditBox(this.font, 0, 0, 100, 18, Component.literal("field"))
         f.setMaxLength(256)
         f.setBordered(false)
@@ -152,8 +157,6 @@ class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")),
         loadFields()
     }
 
-    // ── field -> rule apply (called on every keystroke, same pattern as ItemCustomizeScreen) ──
-
     private fun applyName() { selected?.let { it.name = nameField.value; ChatRuleStore.save() } }
     private fun applyFilter() { selected?.let { it.filter = filterField.value; ChatRuleStore.save() } }
     private fun applyChatMessage() { selected?.let { it.chatMessage = chatMessageField.value; ChatRuleStore.save() } }
@@ -166,8 +169,6 @@ class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")),
             ChatRuleStore.save()
         }
     }
-
-    // ── render ─────────────────────────────────────────────────────────────────
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         val mouseX = fishmod.utils.rendering.UiScale.vx(mouseX)
@@ -229,7 +230,6 @@ class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")),
             val bg = if (rule === selected) ROW_SEL else if (hov) ROW_HOVER else ROW_BG
             ScreenTheme.nRect(listX, ry, listW, rowH - 1, bg)
 
-            // Enabled checkbox
             val ckSize = 12
             val ckX = listX + 6
             val ckY = ry + (rowH - ckSize) / 2
@@ -259,40 +259,40 @@ class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")),
 
         drawLabel("Name", editX, y)
         ScreenTheme.nTextField(nameField, focusedField === nameField, editX + 60, y - 2, editW - 60, 18, 8f)
-        y += 24
+        y += ED_ROW
 
         drawLabel("Filter", editX, y)
         ScreenTheme.nTextField(filterField, focusedField === filterField, editX + 60, y - 2, editW - 60, 18, 8f)
-        y += 24
+        y += ED_ROW
 
         val third = editW / 3
         drawToggle("Regex", editX, y, third - 4, r.regex) { r.regex = !r.regex; ChatRuleStore.save() }
         drawToggle("Partial", editX + third, y, third - 4, r.partialMatch) { r.partialMatch = !r.partialMatch; ChatRuleStore.save() }
         drawToggle("Ignore Case", editX + third * 2, y, third - 4, r.ignoreCase) { r.ignoreCase = !r.ignoreCase; ChatRuleStore.save() }
-        y += 20
+        y += ED_TOGGLE_ROW
 
         drawToggle("Hide Original Message", editX, y, editW, r.hideMessage) { r.hideMessage = !r.hideMessage; ChatRuleStore.save() }
-        y += 24
+        y += ED_ROW
 
         ScreenTheme.nst("OUTPUTS", editX, y, ACCENT, 0.6f)
-        y += 14
+        y += ED_SECTION_HDR
 
         drawLabel("Chat Reply", editX, y)
         ScreenTheme.nTextField(chatMessageField, focusedField === chatMessageField, editX + 74, y - 2, editW - 74, 18, 8f)
-        y += 24
+        y += ED_ROW
 
         drawLabel("Action Bar", editX, y)
         ScreenTheme.nTextField(actionBarField, focusedField === actionBarField, editX + 74, y - 2, editW - 74, 18, 8f)
-        y += 24
+        y += ED_ROW
 
         drawLabel("Title", editX, y)
         ScreenTheme.nTextField(titleField, focusedField === titleField, editX + 74, y - 2, editW - 74, 18, 8f)
-        y += 24
+        y += ED_ROW
 
         drawLabel("Duration (s)", editX, y)
         ScreenTheme.nTextField(durationField, focusedField === durationField, editX + 74, y - 2, 40, 18, 8f)
         drawToggle("Sound", editX + 130, y - 2, editW - 130, r.soundEnabled) { r.soundEnabled = !r.soundEnabled; ChatRuleStore.save() }
-        y += 24
+        y += ED_ROW
     }
 
     private fun drawLabel(s: String, x: Int, y: Int) {
@@ -301,7 +301,6 @@ class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")),
 
     private fun drawToggle(label: String, x: Int, y: Int, w: Int, checked: Boolean, onToggle: () -> Unit) {
         val ckSize = 12
-        val hov = false // hover styling omitted (no mouse coords threaded here); kept simple
         ScreenTheme.nRoundedRectRing(x, y + 2, ckSize, ckSize, 2, 1, FIELD_BG, FIELD_BORDER)
         if (checked) ScreenTheme.nRoundedRect(x + 2, y + 4, ckSize - 4, ckSize - 4, 1, ACCENT)
         ScreenTheme.nst(label, x + ckSize + 5, y + 3, TEXT_PRIM, 0.6f)
@@ -314,8 +313,6 @@ class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")),
         while (out.length > 1 && ScreenTheme.nstw("$out...", 0.62f) > maxW) out = out.substring(0, out.length - 1)
         return "$out..."
     }
-
-    // ── input ──────────────────────────────────────────────────────────────────
 
     override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean {
         val mx = fishmod.utils.rendering.UiScale.vx(click.x())
@@ -352,15 +349,15 @@ class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")),
         }
 
         if (inBox(mx, my, editX + 60, editY - 2, editW - 60, 18)) { focusField(nameField); return true }
-        if (inBox(mx, my, editX + 60, editY + 22, editW - 60, 18)) { focusField(filterField); return true }
+        if (inBox(mx, my, editX + 60, editY + ED_ROW - 2, editW - 60, 18)) { focusField(filterField); return true }
 
-        var y = editY + 24 + 24 + 20 + 24 + 14
+        var y = editY + ED_OUTPUTS_DY
         if (inBox(mx, my, editX + 74, y - 2, editW - 74, 18)) { focusField(chatMessageField); return true }
-        y += 24
+        y += ED_ROW
         if (inBox(mx, my, editX + 74, y - 2, editW - 74, 18)) { focusField(actionBarField); return true }
-        y += 24
+        y += ED_ROW
         if (inBox(mx, my, editX + 74, y - 2, editW - 74, 18)) { focusField(titleField); return true }
-        y += 24
+        y += ED_ROW
         if (inBox(mx, my, editX + 74, y - 2, 40, 18)) { focusField(durationField); return true }
 
         focusField(null)
@@ -415,8 +412,6 @@ class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")),
     }
 
     override fun isPauseScreen(): Boolean = false
-
-    // ── NanoVG overlay ───────────────────────────────────────────────────────────
 
     private val nvgGlState = NvgGlStateGuard()
     private var nvgFailureLogged = false

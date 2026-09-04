@@ -8,18 +8,6 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
-    var enableBossWaypoints: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var nextWaypointColor: Int = 0xff00F7F7.toInt()
-
-    @ConfigValue
-    @JvmField
-    var nextWaypointThroughWall: Boolean = false
-
-    @ConfigValue
-    @JvmField
     var enableCrystalSpawnTime: Boolean = false
 
     @ConfigValue
@@ -38,8 +26,7 @@ object Floor7 {
     @JvmField
     var enableStormDeathTime: Boolean = false
 
-    // LB (Last Breath) release window — countdown shown from 30s until 34.35s on the Storm (P2)
-    // clock, telling you when to shoot Last Breath.
+    // LB release window — countdown from 30s to 34.35s on the Storm (P2) clock
     @ConfigValue
     @JvmField
     var enableLbReleaseTimer: Boolean = false
@@ -48,19 +35,10 @@ object Floor7 {
     @JvmField
     var lbReleaseTimerColor: Int = 0xffff5555.toInt()
 
-    // Your ping (ms). The release cue (countdown-to-zero + "RELEASE NOW!" title/sound) fires this
-    // much earlier so Last Breath actually leaves the bow on time despite latency. 0 = no shift.
+    // ping (ms) to fire the release cue early so the shot leaves the bow on time; 0 = no shift
     @ConfigValue
     @JvmField
     var lbReleaseTimerPingMs: Int = 0
-
-    @ConfigValue
-    @JvmField
-    var notifyUsedSpiritMask: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var displayDistanceToLedge: Boolean = false
 
     @ConfigValue
     @JvmField
@@ -76,10 +54,6 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
-    var enablePositionalMessages: Boolean = false
-
-    @ConfigValue
-    @JvmField
     var enableRelicStartTimer: Boolean = false
 
     @ConfigValue
@@ -88,59 +62,7 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
-    var enableRelicPlaceTime: Boolean = false
-
-    @ConfigValue
-    @JvmField
     var renderRelicHighlight: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var blockIncorrectRelicPlace: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var replaceWithProgressBar: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var useValleyBar: Boolean = true
-
-    @ConfigValue
-    @JvmField
-    var combineTickTimers: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var dragSpawnTimers: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var sendSoundOnDragSpawn: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var displayLocationNotification: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var notificationDuration: Int = 15
-
-    @ConfigValue
-    @JvmField
-    var atLocationSound: SoundData = SoundData(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1f)
-
-    @ConfigValue
-    @JvmField
-    var notificationRepetitions: Int = 3
-
-    @ConfigValue
-    @JvmField
-    var predevForAll: Boolean = true
-
-    @ConfigValue
-    @JvmField
-    var showAllRelicTimes: Boolean = true
 
     @ConfigValue
     @JvmField
@@ -161,14 +83,6 @@ object Floor7 {
     @ConfigValue
     @JvmField
     var disableTitlesAtPre4: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var showDistanceAtYellowOnly: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var dontNotifiyForYourself: Boolean = true
 
     @ConfigValue
     @JvmField
@@ -200,14 +114,6 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
-    var dragonHealth: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var maxorStunDuration: Boolean = false
-
-    @ConfigValue
-    @JvmField
     var makeGoldorTickUp: Boolean = true
 
     @ConfigValue
@@ -222,8 +128,7 @@ object Floor7 {
     @JvmField
     var sectionChangeSound: SoundData = SoundData(SoundEvents.NOTE_BLOCK_PLING.value(), 0f, 1f)
 
-    // Master switch for the combined "Tick Timers" settings group (Maxor/Storm/Goldor + related
-    // P2/terminal notifications); when off, none of that group renders regardless of its own toggle.
+    // master gate for the Tick Timers group; when off nothing in it renders regardless of child toggles
     @ConfigValue
     @JvmField
     var enableTickTimers: Boolean = true
@@ -243,20 +148,6 @@ object Floor7 {
     @ConfigValue
     @JvmField
     var sectionPrevObjective: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var dragonTracer: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var assumeCore: Boolean = true
-
-    @ConfigValue
-    @JvmField
-    var assumeSplitEE2: Boolean = false
-
-    // --- S4 term/leap failure tracker ---
 
     @ConfigValue
     @JvmField
@@ -307,8 +198,7 @@ object Floor7 {
     @JvmField
     var s4AlertSound: SoundData = SoundData(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 0.5f)
 
-    // --- Gate Display: big world-space X/check over each Goldor gate (S1-S3) ---
-
+    // Gate Display: world-space X/check over each Goldor gate (S1-S3)
     @ConfigValue
     @JvmField
     var gateDisplayEnabled: Boolean = false
@@ -316,4 +206,37 @@ object Floor7 {
     @ConfigValue
     @JvmField
     var gateDisplayScale: Float = 6f
+
+    // Blood Solver: Watcher speed alert + blood-mob move predictor
+    @ConfigValue
+    @JvmField
+    var bloodSolverEnabled: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var bloodSolverKillTitle: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var bloodSolverSpeedAlert: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var bloodSolverSpeedAlertParty: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var bloodSolverDecimals: Int = 1
+
+    @ConfigValue
+    @JvmField
+    var bloodSolverBoxColor: Int = 0xffff00ff.toInt()
+
+    @ConfigValue
+    @JvmField
+    var bloodSolverLineColor: Int = 0xff55ffff.toInt()
+
+    @ConfigValue
+    @JvmField
+    var bloodSolverTimerColor: Int = 0xffffffff.toInt()
 }

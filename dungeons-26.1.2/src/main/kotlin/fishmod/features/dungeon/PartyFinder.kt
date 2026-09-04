@@ -3,6 +3,7 @@ package fishmod.features.dungeon
 import fishmod.utils.FishMsg
 import fishmod.utils.HypixelApi
 import fishmod.utils.Misc
+import fishmod.utils.Scheduler
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.PartyUtil
 import fishmod.utils.dungeon.DungeonClass
@@ -21,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 
 /**
- * In-menu Party Finder helper, ported from NoammAddons' `PartyFinder`.
+ * In-menu Party Finder helper.
  *
  *  - draws the red Dungeon-Level-Required number and the missing-class letters on each party head
  *  - green-highlights any party head that's still missing YOUR dungeon class ([myClass])
@@ -36,16 +37,18 @@ object PartyFinder {
     private val LEVEL_REQ = Pattern.compile("Dungeon Level Required:\\s*(\\d+)")
     private val FLOOR = Pattern.compile("Floor:\\s*(?:Floor\\s+)?(\\w+)")
     private val SELECTED_CLASS = Pattern.compile("Currently Selected:\\s*(\\w+)")
-    private val COLOR = Regex("§.")
+    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     /** Last "Currently Selected: X" seen in the Catacombs Gate menu — seeds "Auto" my-class. */
     @Volatile private var capturedClass: String? = null
 
     // "Party Finder > Name joined the dungeon group! (Archer Level 42)"
-    private val PF_JOIN = Pattern.compile("^Party Finder > (\\w{1,16}) joined the dungeon group! \\(\\w+ Level \\d+\\)$")
+    private val PF_JOIN = Pattern.compile("^Party Finder > (\\w{1,16}) joined the dungeon group! \\((\\w+) Level \\d+\\)$")
     private val PB_LINE = Regex("^(\\d+):(\\d{2})\\s+(S\\+?)$")
 
     private val cache = ConcurrentHashMap<String, HypixelApi.DungeonData>()
+    /** SkyBlock level per lowercased IGN, cached for the session (–1 = fetch failed). */
+    private val sbCache = ConcurrentHashMap<String, Double>()
     private val pending = ConcurrentHashMap.newKeySet<String>()
     /** lowercased names kicked this lobby — re-kicked on sight until a world change clears it. */
     private val kicked = ConcurrentHashMap.newKeySet<String>()
@@ -60,16 +63,14 @@ object PartyFinder {
         Events.ON_GAME_MESSAGE.register { text ->
             if (FishSettings.pfAutoKick) {
                 val m = PF_JOIN.matcher(COLOR.replace(text.string, ""))
-                if (m.find()) tryAutoKick(m.group(1))
+                if (m.find()) tryAutoKick(m.group(1), m.group(2))
             }
             false
         }
         Events.ON_WORLD_CHANGE.register { kicked.clear(); false }
     }
 
-    // ── auto kick ───────────────────────────────────────────────────────────
-
-    private fun tryAutoKick(name: String) {
+    private fun tryAutoKick(name: String, clazz: String?) {
         val mc = Minecraft.getInstance()
         val self = mc.player?.name?.string ?: return
         if (name.equals(self, ignoreCase = true)) return
@@ -85,28 +86,72 @@ object PartyFinder {
         }
 
         val cached = cache[key]
-        if (cached != null) { finishAutoKick(name, key, evaluate(cached)); return }
+        if (cached != null) { evalThenFinish(name, key, clazz, cached); return }
         HypixelApi.getByNameSilent(name) { d ->
             cache[key] = d
-            finishAutoKick(name, key, evaluate(d))
+            evalThenFinish(name, key, clazz, d)
         }
+    }
+
+    /** Runs [evaluate], then — only when a per-class SkyBlock-level bar is set — fetches the
+     *  SkyBlock level (once per session) before handing the combined reasons to [finishAutoKick]. */
+    private fun evalThenFinish(name: String, key: String, clazz: String?, d: HypixelApi.DungeonData) {
+        val base = evaluate(d, clazz)
+        val sbMin = clazz?.let { sbReqFor(it) } ?: 0
+        if (sbMin <= 0) { finishAutoKick(name, key, base); return }
+        sbCache[key]?.let { finishAutoKick(name, key, base + sbReason(clazz!!, it, sbMin)); return }
+        HypixelApi.getProfileStats(Minecraft.getInstance(), name) { sb, _ ->
+            sbCache[key] = sb
+            finishAutoKick(name, key, base + sbReason(clazz!!, sb, sbMin))
+        }
+    }
+
+    private fun sbReason(clazz: String, sb: Double, min: Int): List<String> =
+        if (sb >= 0 && sb < min) listOf("${clazz} SbLvl(${sb.toInt()}/$min)") else emptyList()
+
+    private fun cataReqFor(clazz: String): Int = when (clazz.lowercase()) {
+        "archer"  -> FishSettings.pfAutoKickArcherCata
+        "berserk" -> FishSettings.pfAutoKickBerserkCata
+        "healer"  -> FishSettings.pfAutoKickHealerCata
+        "mage"    -> FishSettings.pfAutoKickMageCata
+        "tank"    -> FishSettings.pfAutoKickTankCata
+        else -> 0
+    }
+
+    private fun sbReqFor(clazz: String): Int = when (clazz.lowercase()) {
+        "archer"  -> FishSettings.pfAutoKickArcherSb
+        "berserk" -> FishSettings.pfAutoKickBerserkSb
+        "healer"  -> FishSettings.pfAutoKickHealerSb
+        "mage"    -> FishSettings.pfAutoKickMageSb
+        "tank"    -> FishSettings.pfAutoKickTankSb
+        else -> 0
     }
 
     private fun finishAutoKick(name: String, key: String, reasons: List<String>) {
         if (reasons.isEmpty() || !kicked.add(key)) return
         Minecraft.getInstance().execute {
             if (!PartyUtil.amLeader()) { kicked.remove(key); return@execute }
+            FishMsg.send("§9AutoKick §7> kicking §e$name§7: §f${reasons.joinToString(", ")}")
+            // Hypixel drops a second command sent in the same tick ("sending commands too fast"),
+            // so announce in party chat now and fire the kick a few ticks later.
             if (FishSettings.pfAutoKickInform) {
-                Misc.executeCommand("pc AutoKick $name: ${reasons.joinToString(", ")}")
+                fishmod.utils.ChatQueue.enqueue("pc AutoKick $name: ${reasons.joinToString(", ")}")
+                Scheduler.scheduleTask({ Misc.executeCommand("party kick $name") }, 6)
             } else {
-                FishMsg.send("§cKicking §e$name§c: §7${reasons.joinToString(", ")}")
+                Misc.executeCommand("party kick $name")
             }
-            Misc.executeCommand("party kick $name")
         }
     }
 
-    private fun evaluate(d: HypixelApi.DungeonData): List<String> {
+    private fun evaluate(d: HypixelApi.DungeonData, clazz: String? = null): List<String> {
         val reasons = ArrayList<String>()
+
+        // per-class minimum Catacombs level (0 = off; skip when the API had no data)
+        clazz?.let { c ->
+            val minCata = cataReqFor(c)
+            if (minCata > 0 && d.cataLevel in 1 until minCata) reasons.add("$c Cata(${d.cataLevel}/$minCata)")
+        }
+
         val floor = FishSettings.pfAutoKickFloor.coerceIn(1, 7)
         val master = FishSettings.pfAutoKickMaster
         val maxSec = FishSettings.pfAutoKickMaxSeconds
@@ -140,8 +185,6 @@ object PartyFinder {
     private fun lore(stack: ItemStack): List<String> =
         stack.get(DataComponents.LORE)?.lines()?.map { COLOR.replace(it.string, "") } ?: emptyList()
 
-    // ── my class (for the "can I join" highlight) ───────────────────────────
-
     private fun captureSelectedClass() {
         val s = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return
         if (COLOR.replace(s.title.string, "") != "Catacombs Gate") return
@@ -164,22 +207,31 @@ object PartyFinder {
         return capturedClass
     }
 
-    // ── joinable highlight (behind the head) ────────────────────────────────
-
     private fun onSlotBefore(ctx: GuiGraphicsExtractor, stack: ItemStack, x: Int, y: Int) {
-        if (!inPartyFinder() || !FishSettings.pfHighlightJoinable) return
+        if (!inPartyFinder()) return
         if (stack.isEmpty || !stack.`is`(Items.PLAYER_HEAD)) return
-        val mine = myClass() ?: return
+
         val present = HashSet<String>()
+        var minLevel = Int.MAX_VALUE
         for (line in lore(stack)) {
             val m = MEMBER.matcher(line)
-            if (m.matches()) present.add(m.group(2))
+            if (m.matches()) {
+                present.add(m.group(2))
+                m.group(3).toIntOrNull()?.let { if (it < minLevel) minLevel = it }
+            }
         }
+
+        // Party with a sub-Cata-50 member -> orange (takes precedence over the joinable highlight).
+        if (FishSettings.pfHighlightNonCata50 && minLevel != Int.MAX_VALUE && minLevel < 50) {
+            ctx.fill(x - 1, y - 1, x + 17, y + 17, 0x60FFAA00)
+            return
+        }
+
+        if (!FishSettings.pfHighlightJoinable) return
+        val mine = myClass() ?: return
         if (present.isEmpty() || mine in present) return
         ctx.fill(x - 1, y - 1, x + 17, y + 17, 0x6055FF55)
     }
-
-    // ── head overlay ────────────────────────────────────────────────────────
 
     private fun onSlot(ctx: GuiGraphicsExtractor, stack: ItemStack, x: Int, y: Int) {
         if (!inPartyFinder() || stack.isEmpty || !stack.`is`(Items.PLAYER_HEAD)) return
@@ -225,8 +277,6 @@ object PartyFinder {
         pose.popMatrix()
     }
 
-    // ── tooltip ─────────────────────────────────────────────────────────────
-
     private fun onTooltip(stack: ItemStack, lines: MutableList<Component>) {
         if (!inPartyFinder() || !FishSettings.pfTooltipStats || stack.isEmpty || !stack.`is`(Items.PLAYER_HEAD)) return
 
@@ -253,7 +303,11 @@ object PartyFinder {
 
         if (FishSettings.pfTooltipMissingList) {
             val missing = CLASSES.filter { it !in present }
-            if (missing.isNotEmpty()) lines.add(Component.literal("§cMissing: §7" + missing.joinToString(", ")))
+            if (missing.isNotEmpty()) {
+                val mine = myClass()
+                val rendered = missing.joinToString("§7, ") { if (it == mine) "§a§l$it§r" else "§7$it" }
+                lines.add(Component.literal("§cMissing: $rendered"))
+            }
         }
     }
 
@@ -270,6 +324,13 @@ object PartyFinder {
         }
         return sb.toString()
     }
+
+    /** Session-cache accessors for [PartyFinderPanel] so the list panel never double-fetches. */
+    @JvmStatic
+    fun cached(name: String): HypixelApi.DungeonData? = cache[name.lowercase()]
+
+    @JvmStatic
+    fun prefetch(name: String) = request(name)
 
     private fun request(name: String) {
         val key = name.lowercase()

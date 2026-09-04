@@ -15,15 +15,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Gui.class)
 public class GuiScoreboardMixin {
 
+    private static boolean fishmod$loggedRenderError = false;
+
     @Inject(method = "extractScoreboardSidebar", at = @At("HEAD"), cancellable = true)
     private void fishmod$customScoreboard(GuiGraphicsExtractor context, DeltaTracker tickCounter, CallbackInfo ci) {
         if (!FishSettings.customScoreboardEnabled) return;
-        // Optionally leave dungeons to vanilla's sidebar — the dungeon map info HUD already carries score.
+        // dungeon map HUD already carries score
         if (FishSettings.customScoreboardHideInDungeon && Location.inDungeon()) return;
         try {
             int screenW = Minecraft.getInstance().getWindow().getGuiScaledWidth();
             CustomScoreboard.render(context, screenW);
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            if (!fishmod$loggedRenderError) {
+                fishmod$loggedRenderError = true;
+                fishmod.utils.debug.Debug.LOGGER.error("[FishMod] CustomScoreboard.render failed; sidebar suppressed (logged once)", e);
+            }
+        }
         ci.cancel();
     }
 }

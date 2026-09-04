@@ -1,52 +1,34 @@
 package fishmod.features
 
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.events.Events
 import fishmod.utils.sound.SoundManager
-import net.minecraft.client.Minecraft
+import net.minecraft.client.resources.sounds.SoundInstance
 import net.minecraft.sounds.SoundEvents
-import net.minecraft.world.entity.Entity
-import net.minecraft.world.entity.LivingEntity
-import net.minecraft.world.entity.player.Player
-import net.minecraft.world.phys.AABB
 
 /**
- * Plays a configurable cue, in your ear, when an arrow lands a hit on a living entity (ported from
- * NoammAddons' ArrowHitSound).
+ * Plays a configurable cue, in your ear, when one of YOUR arrows lands a hit on an entity.
  *
- * Trigger is the server-sent `entity.arrow.hit` sound packet (reliable — the client's own
- * `onHitEntity` fires only ~half the time on Hypixel), gated to "there's a mob at the sound's
- * position" so block hits don't count. Driven from [onArrowHitSoundAt] in ClientPlayNetworkHandlerMixin.
+ * The client plays `entity.arrow.hit_player` locally as the shooter's "you hit something" feedback,
+ * so it's already "my arrows only" with no tracking needed. It never arrives as a `ClientboundSound*`
+ * packet, which is why the old packet-hook version (with mob/arrow-distance heuristics) missed almost
+ * every hit. Instead we intercept it at the real chokepoint — `SoundEngine.play(SoundInstance)` — via
+ * [fishmod.mixin.SoundEngineMixin], which sees every sound the client plays, local or networked.
  */
 object ArrowHitSound {
 
-    private val ARROW_HIT_IDS = setOf(
-        SoundEvents.ARROW_HIT_PLAYER.location,
-        SoundEvents.ARROW_HIT.location,
-    )
-
     @JvmStatic
     fun init() {
-        // Optionally mute the vanilla hit tick.
-        Events.ON_SOUND.register { event, _, _ ->
-            FishSettings.arrowHitSoundEnabled &&
-                FishSettings.arrowHitSoundSuppress &&
-                event.location in ARROW_HIT_IDS
-        }
+        // Nothing to register — driven entirely by SoundEngineMixin -> onLocalSound().
     }
 
-    /** Called from the sound-packet mixin for every positioned sound. */
+    /**
+     * Called from [fishmod.mixin.SoundEngineMixin] for every sound the client is about to play.
+     * @return true to swallow the vanilla `arrow.hit_player` tick (the "Suppress" setting).
+     */
     @JvmStatic
-    fun onArrowHitSoundAt(soundId: net.minecraft.resources.Identifier, x: Double, y: Double, z: Double) {
-        if (!FishSettings.arrowHitSoundEnabled) return
-        if (soundId != SoundEvents.ARROW_HIT.location && soundId != SoundEvents.ARROW_HIT_PLAYER.location) return
-
-        val level = Minecraft.getInstance().level ?: return
-        val box = AABB(x - 2.0, y - 2.0, z - 2.0, x + 2.0, y + 2.0, z + 2.0)
-        val hitMob = level.getEntities(null as Entity?, box) { e ->
-            e is LivingEntity && e !is Player && e.isAlive
-        }.isNotEmpty()
-        if (!hitMob) return
+    fun onLocalSound(instance: SoundInstance): Boolean {
+        if (!FishSettings.arrowHitSoundEnabled) return false
+        if (instance.identifier != SoundEvents.ARROW_HIT_PLAYER.location) return false
 
         SoundManager.play2D(
             SoundManager.preset(FishSettings.arrowHitSoundName),
@@ -54,5 +36,6 @@ object ArrowHitSound {
             FishSettings.arrowHitSoundPitch.toFloat().coerceIn(0f, 2f),
             "arrowHit", 40,
         )
+        return FishSettings.arrowHitSoundSuppress
     }
 }

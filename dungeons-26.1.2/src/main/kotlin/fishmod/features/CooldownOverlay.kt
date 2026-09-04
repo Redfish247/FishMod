@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.HypixelApi
 import fishmod.utils.Location
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
@@ -26,7 +27,7 @@ import kotlin.math.min
 /** Per-item ability cooldown overlay. Detects cooldown start via the Hypixel "ability cooldown" sound (Enderman teleport at pitch 0 / volume 8) and renders a countdown on the held item's slot (hotbar + inventory GUI) until it expires. */
 object CooldownOverlay {
 
-    // Known item-id -> cooldown duration (ms), from the Hypixel Skyblock wiki.
+    // item-id -> cooldown duration (ms)
     private val COOLDOWNS: MutableMap<String, Long> = HashMap()
 
     init {
@@ -46,9 +47,11 @@ object CooldownOverlay {
         COOLDOWNS["ROGUE_SWORD"] = 5_000L
         COOLDOWNS["WITHER_CLOAK"] = 10_000L
         COOLDOWNS["DEIFIC_SPADE"] = 1_000L
-        COOLDOWNS["WIERDER_TUBA"] = 20_000L
-        COOLDOWNS["WIERD_TUBA"] = 20_000L
-        COOLDOWNS["FIRE_FREEZE_STAFF"] = 10_000L
+        COOLDOWNS["WEIRDER_TUBA"] = 20_000L
+        COOLDOWNS["WEIRD_TUBA"] = 20_000L
+        COOLDOWNS["INFINITE_SPIRIT_LEAP"] = 2_000L
+        COOLDOWNS["EXTREMELY_REAL_SHURIKEN"] = 1_000L
+        COOLDOWNS["HOTSPLOT_RADAR"] = 2_000L
     }
 
     /** itemId -> wall-clock millisecond at which the cooldown ends. */
@@ -59,7 +62,6 @@ object CooldownOverlay {
 
     // Hypixel mana-cost chat line, e.g. "-300 Mana (Wither Impact)".
     private val MANA_LINE: Pattern = Pattern.compile("-\\s*[\\d,]+\\s*Mana\\s*\\(([^)]+)\\)")
-    private val COLOR_STRIP: Pattern = Pattern.compile("§.")
 
     // Hypixel "[Mage] Cooldown Reduction 49% -> 74%" — exact live CDR from the game.
     private val MAGE_CDR_LINE: Pattern = Pattern.compile("\\[Mage\\] Cooldown Reduction \\d+% -> (\\d+)%")
@@ -67,8 +69,7 @@ object CooldownOverlay {
     @Volatile
     private var liveMageCdrPercent = -1
 
-    // Action-bar mana, e.g. "590/770✎" or "1,234/1,234✎ Mana". The mana segment is always on the
-    // dungeon action bar, so a right-click that drops it is a reliable "ability fired" signal.
+    // action-bar mana; a right-click that drops it is a reliable "ability fired" signal
     private val MANA_BAR: Pattern = Pattern.compile("([\\d,]+)\\s*/\\s*[\\d,]+\\s*✎")
 
     @Volatile
@@ -85,17 +86,12 @@ object CooldownOverlay {
 
     @JvmStatic
     fun init() {
-        // Primary trigger: cooldown sound (Enderman teleport, pitch=0, volume=8).
-        // Match on the sound id, not `===` — the engine instance is never the SoundEvents.* constant,
-        // so the old identity check never passed and this fast path was dead (fell back to the slow
-        // mana-drop confirmation).
+        // primary trigger: cooldown sound (enderman teleport, pitch 0, volume 8); match on sound id — the engine instance is never the SoundEvents constant
         Events.ON_SOUND.register { event, volume, pitch ->
             if (!FishSettings.cooldownOverlayEnabled) {
                 false
             } else {
-                // Hypixel's ability-cooldown cue is a pitch-0 enderman teleport played very loud.
-                // Real endermen teleport at pitch ~1, so the near-zero pitch alone is the tell;
-                // keep a loose volume floor only to drop faint ambient ones.
+                // Hypixel's cooldown cue is a pitch-0 enderman teleport; real endermen teleport at pitch ~1, so near-zero pitch is the tell (volume floor just drops faint ambient ones)
                 if (pitch <= 0.05f && volume >= 3f && event.location == SoundEvents.ENDERMAN_TELEPORT.location) {
                     if (debugDumpSound) {
                         Misc.addChatMessage(Component.literal("§d[fmcd] cooldown sound detected"))
@@ -111,7 +107,7 @@ object CooldownOverlay {
             if (!FishSettings.cooldownOverlayEnabled) {
                 false
             } else {
-                val s = COLOR_STRIP.matcher(text!!.string).replaceAll("")
+                val s = HypixelApi.STRIP_COLOR.matcher(text!!.string).replaceAll("")
                 if (debugDumpSound && s.lowercase().contains("mana")) {
                     Misc.addChatMessage(Component.literal("§d[fmcd] chat: §7$s"))
                 }
@@ -134,13 +130,10 @@ object CooldownOverlay {
             }
         }
 
-        // Action-bar mana tracker — keeps `lastMana` current, and confirms an armed right-click once
-        // that mana actually DROPS below the value captured at click time. Baseline is NOT nudged
-        // upward here: the reading right after a cast is already post-spend, so raising the baseline
-        // to it would swallow the very drop we're looking for (the old first-proc bug).
+        // mana tracker: confirms an armed right-click when mana drops below the click-time value; don't raise the baseline here or the first proc is swallowed
         ClientReceiveMessageEvents.GAME.register { msg, overlay ->
             if (!overlay || !FishSettings.cooldownOverlayEnabled) return@register
-            val s = COLOR_STRIP.matcher(msg.string).replaceAll("")
+            val s = HypixelApi.STRIP_COLOR.matcher(msg.string).replaceAll("")
             val m = MANA_BAR.matcher(s)
             if (!m.find()) return@register
             val mana: Int
@@ -162,12 +155,7 @@ object CooldownOverlay {
             lastMana = mana
         }
 
-        // Right-click trigger — ARM the pending ability with a fresh mana baseline (the value the
-        // action bar showed a moment before the click). The mana tracker above starts the cooldown
-        // when that mana drops, so a no-mana / on-cooldown click never starts a phantom overlay.
-        // Only if the mana bar hasn't been parsed even once yet (`lastMana < 0` — dungeon just
-        // loaded, or the feature was toggled mid-run) do we start optimistically, since drop
-        // detection has nothing to compare against for that first cast.
+        // right-click arms the pending ability with a fresh mana baseline; the mana tracker starts the cooldown on the drop, so a no-mana click can't start a phantom overlay (start optimistically only when lastMana < 0)
         UseItemCallback.EVENT.register(UseItemCallback { player, world, hand ->
             if (!FishSettings.cooldownOverlayEnabled) return@UseItemCallback InteractionResult.PASS
             if (hand != InteractionHand.MAIN_HAND) return@UseItemCallback InteractionResult.PASS
@@ -190,7 +178,6 @@ object CooldownOverlay {
             InteractionResult.PASS
         })
 
-        // Inventory-GUI slot overlay (chest GUIs, player inventory open, etc.)
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             if (!FishSettings.cooldownOverlayEnabled) return@register
             drawOverlay(ctx, stack, x, y)
@@ -215,7 +202,6 @@ object CooldownOverlay {
         var finalCdResult: Double
         val inDungeon = Location.inDungeon()
 
-        // Mage detection via tab list
         for (entry in mc.connection!!.onlinePlayers) {
             if (entry.tabListDisplayName != null) {
                 val line = entry.tabListDisplayName!!.string
@@ -237,10 +223,9 @@ object CooldownOverlay {
             baseCd
         } else if (isMage && inDungeon) {
             val classReduction: Double = if (liveMageCdrPercent > 0) {
-                // Game told us exact CDR via "[Mage] Cooldown Reduction X% -> Y%" chat — use it.
                 liveMageCdrPercent / 100.0
             } else {
-                // Fallback: level-based estimate (25% -> 70% across Mage 1..50).
+                // level-based estimate: 25% -> 70% across Mage 1..50
                 val level = if (mageLvl > 0) min(mageLvl, 50) else 50
                 0.25 + (level - 1) * (0.45 / 49.0)
             }
@@ -273,28 +258,6 @@ object CooldownOverlay {
         if (existing != null && existing > now) return
 
         active[id] = now + finalCd
-    }
-
-    private fun parseLevelFromTab(line: String): Int {
-        if (line.contains("XLIX")) return 49
-        if (line.contains("L")) return 50
-        return 0
-    }
-
-    // Skyblock Dungeon Level XP requirements.
-    private fun getLevelFromXp(xp: Long): Int {
-        val levelXp = longArrayOf(
-            0, 50, 125, 235, 395, 625, 955, 1425, 2095, 3045,
-            4385, 6275, 8940, 12700, 17960, 25340, 35640, 50040, 70040, 97640,
-            135640, 187640, 258640, 356640, 488640, 668640, 911640, 1239640, 1677640, 2262640,
-            3037640, 4057640, 5407640, 7157640, 9457640, 12457640, 16357640, 21357640, 27857640, 36357640,
-            47357640, 61357640, 79357640, 102357640, 131357640, 168357640, 215357640, 275357640, 351357640, 448357640, 569857640
-        )
-
-        for (i in levelXp.indices.reversed()) {
-            if (xp >= levelXp[i]) return i
-        }
-        return 0
     }
 
     /** Hotbar render hook (called from FishModInit HudRenderCallback). */
@@ -362,7 +325,6 @@ object CooldownOverlay {
         val total = COOLDOWNS[id]
         if (total == null || total <= 0) return
 
-        // "Only show when < 3s left" option — gate text + bar visibility.
         val inFocusWindow = remaining < 3_000L
         if (FishSettings.cooldownOnlyUnder3s && !inFocusWindow) return
 
@@ -373,11 +335,8 @@ object CooldownOverlay {
             val mc = Minecraft.getInstance()
             val tx = x + 16 - mc.font.width(text)
             val ty = y + 8 - mc.font.lineHeight / 2 + 1
-            // Draw text on top of items (use 200 z-offset to clear item shading).
-            ctx.pose().pushMatrix()
-            ctx.pose().translate(0f, 0f)
+            // drawn after the slot's item so the digits stay legible
             ctx.text(mc.font, text, tx, ty, 0xFFFFFFFF.toInt(), true)
-            ctx.pose().popMatrix()
         }
     }
 
@@ -391,7 +350,6 @@ object CooldownOverlay {
         if (r.equals("XLVI", ignoreCase = true)) return 46
         if (r.equals("XLV", ignoreCase = true)) return 45
 
-        // Fallback for numeric strings if it's already a number
         return try {
             r.replace(Regex("[^0-9]"), "").toInt()
         } catch (e: Exception) {

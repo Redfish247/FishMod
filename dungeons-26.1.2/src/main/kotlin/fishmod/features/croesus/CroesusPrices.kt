@@ -19,8 +19,10 @@ object CroesusPrices {
         .build()
 
     private const val TTL_MS = 5 * 60 * 1000L
+    // back off this long on failure instead of retrying every tick
+    private const val FAIL_TTL_MS = 15 * 60 * 1000L
 
-    private val bazaar = HashMap<String, Double>()     // selected mode (rebuilt on swap)
+    private val bazaar = HashMap<String, Double>()     // active price mode (rebuilt on swap)
     private val bazaarBuy = HashMap<String, Double>()  // buyPrice  = highest buy order  = instasell
     private val bazaarSell = HashMap<String, Double>() // sellPrice = lowest  sell offer = instabuy
     private val lbin = HashMap<String, Double>()
@@ -30,7 +32,11 @@ object CroesusPrices {
     @Volatile private var lastBazaar = 0L
     @Volatile private var lastLbin = 0L
     @Volatile private var lastAvgLbin = 0L
+    @Volatile private var lbinFailLogged = false
     @Volatile private var inFlight: CompletableFuture<Void>? = null
+
+    /** Timestamp to stamp on a failed fetch so the next retry is [FAIL_TTL_MS] out, not [TTL_MS]. */
+    private fun failStamp(): Long = System.currentTimeMillis() - TTL_MS + FAIL_TTL_MS
 
     @JvmStatic
     fun applyPriceMode() {
@@ -38,19 +44,18 @@ object CroesusPrices {
         synchronized(bazaar) {
             bazaar.clear()
             if (mode == fishmod.utils.config.values.FishSettings.PriceMode.SELL_OFFER) {
-                bazaar.putAll(bazaarSell) // Sell Offer (instabuy cost)
+                bazaar.putAll(bazaarSell)
             } else if (mode == fishmod.utils.config.values.FishSettings.PriceMode.NPC_SELL) {
-                // NPC Sell: pulled from SkyblockItems.npcSellPriceFor(id)
                 for ((key, _) in bazaarBuy) {
-                    val npc = fishmod.utils.SkyblockItems.npcSellPriceFor(key)
+                    val npc = fishmod.utils.networth.ItemsDb.npcSellPriceFor(key)
                     if (npc > 0) bazaar[key] = npc
                 }
-                // Also include items that aren't bazaarable but have NPC price
-                for ((key, value) in fishmod.utils.SkyblockItems.npcSellPriceMap()) {
+                // non-bazaar items that still have an NPC price
+                for ((key, value) in fishmod.utils.networth.ItemsDb.npcSellPriceMap()) {
                     if (!bazaar.containsKey(key) && value > 0) bazaar[key] = value
                 }
             } else {
-                bazaar.putAll(bazaarBuy) // Instasell (default)
+                bazaar.putAll(bazaarBuy)
             }
         }
     }
@@ -86,7 +91,7 @@ object CroesusPrices {
     }
 
     private fun fetchCoflnetItem(id: String) {
-        if (!fetching.add(id)) return // already in flight
+        if (!fetching.add(id)) return
         val url = "https://sky.coflnet.com/api/item/price/$id"
         val req = HttpRequest.newBuilder()
             .uri(URI.create(url))
@@ -98,9 +103,10 @@ object CroesusPrices {
                 try {
                     if (r.statusCode() != 200) return@thenAccept
                     val obj = JsonParser.parseString(r.body()).asJsonObject
-                    // Response: {min, median, max, mode, volume}
-                    var med: JsonElement? = obj.get("min")
-                    if (med == null || med.isJsonNull) med = obj.get("median")
+                    // Response: {min, median, max, mode, volume}; prefer median, then mode, then min
+                    var med: JsonElement? = obj.get("median")
+                    if (med == null || med.isJsonNull) med = obj.get("mode")
+                    if (med == null || med.isJsonNull) med = obj.get("min")
                     if (med != null && !med.isJsonNull) {
                         val p = med.asDouble
                         if (p > 0) {
@@ -121,14 +127,12 @@ object CroesusPrices {
         val currentInFlight = inFlight
         if (currentInFlight != null && !currentInFlight.isDone) return currentInFlight
         val needB = now - lastBazaar > TTL_MS
-        val needL = now - lastLbin > TTL_MS
-        val needA = now - lastAvgLbin > TTL_MS
-        if (!needB && !needL && !needA) return CompletableFuture.completedFuture(null)
+        val needLbin = now - lastLbin > TTL_MS || now - lastAvgLbin > TTL_MS
+        if (!needB && !needLbin) return CompletableFuture.completedFuture(null)
 
         val bz = if (needB) fetchBazaar() else CompletableFuture.completedFuture(null)
-        val lb = if (needL) fetchLbin() else CompletableFuture.completedFuture(null)
-        val av = if (needA) fetchAvgLbin() else CompletableFuture.completedFuture(null)
-        val all = CompletableFuture.allOf(bz, lb, av)
+        val lb = if (needLbin) fetchLbin() else CompletableFuture.completedFuture(null)
+        val all = CompletableFuture.allOf(bz, lb)
         inFlight = all
         return all
     }
@@ -170,51 +174,52 @@ object CroesusPrices {
             }.exceptionally { t -> Debug.LOGGER.warn("[CroesusPrices] bazaar fetch error: {}", t.message); null }
     }
 
-    private fun fetchAvgLbin(): CompletableFuture<Void> {
-        val req = HttpRequest.newBuilder()
-            .uri(URI.create("https://moulberry.codes/auction_averages_lbin/1day.json"))
-            .timeout(Duration.ofSeconds(15))
-            .GET().build()
-        return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-            .thenAccept { r ->
-                try {
-                    if (r.statusCode() != 200) return@thenAccept
-                    val root = JsonParser.parseString(r.body()).asJsonObject
-                    val next = HashMap<String, Double>()
-                    for ((key, value) in root.entrySet()) {
-                        if (value.isJsonNull) continue
-                        // value is a number directly
-                        try { next[key] = value.asDouble } catch (ignored: Exception) {}
-                    }
-                    synchronized(avgLbin) { avgLbin.clear(); avgLbin.putAll(next) }
-                    lastAvgLbin = System.currentTimeMillis()
-                } catch (ignored: Exception) {}
-            }.exceptionally { null }
-    }
-
+    /**
+     * Bulk lowest-BIN fetch. moulberry.codes (lowestbin.json / auction_averages_lbin) is dead (HTTP 525
+     * for months), so this uses Coflnet's bulk NEU-format price dump instead: a single call returns
+     * a {itemTag: price} map for every tracked item (server-cached ~10min on Coflnet's side already).
+     * No API key needed. Populates both [lbin] and [avgLbin] since Coflnet doesn't expose the two as
+     * separate bulk endpoints - callers already treat lbin/avgLbin as a fallback chain, so this is a
+     * harmless drop-in.
+     */
     private fun fetchLbin(): CompletableFuture<Void> {
         val req = HttpRequest.newBuilder()
-            .uri(URI.create("https://moulberry.codes/lowestbin.json"))
+            .uri(URI.create("https://sky.coflnet.com/api/prices/neu"))
             .timeout(Duration.ofSeconds(15))
             .GET().build()
         return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
             .thenAccept { r ->
                 try {
-                    if (r.statusCode() != 200) { Debug.LOGGER.warn("[CroesusPrices] lbin status={}", r.statusCode()); return@thenAccept }
+                    if (r.statusCode() != 200) {
+                        if (!lbinFailLogged) { Debug.LOGGER.warn("[CroesusPrices] lbin status={} - backing off {}m", r.statusCode(), FAIL_TTL_MS / 60000); lbinFailLogged = true }
+                        lastLbin = failStamp()
+                        lastAvgLbin = failStamp()
+                        return@thenAccept
+                    }
                     val root = JsonParser.parseString(r.body()).asJsonObject
                     val next = HashMap<String, Double>()
                     for ((key, value) in root.entrySet()) {
-                        if (!value.isJsonNull) next[key] = value.asDouble
+                        if (!value.isJsonNull) {
+                            try { next[key] = value.asDouble } catch (ignored: Exception) {}
+                        }
                     }
-                    synchronized(lbin) {
-                        lbin.clear()
-                        lbin.putAll(next)
-                    }
-                    lastLbin = System.currentTimeMillis()
-                    Debug.LOGGER.info("[CroesusPrices] lbin loaded {} entries", next.size)
+                    synchronized(lbin) { lbin.clear(); lbin.putAll(next) }
+                    synchronized(avgLbin) { avgLbin.clear(); avgLbin.putAll(next) }
+                    val now = System.currentTimeMillis()
+                    lastLbin = now
+                    lastAvgLbin = now
+                    lbinFailLogged = false
+                    Debug.LOGGER.info("[CroesusPrices] coflnet lbin loaded {} entries", next.size)
                 } catch (ex: Exception) {
-                    Debug.LOGGER.warn("[CroesusPrices] lbin parse error: {}", ex.message)
+                    if (!lbinFailLogged) { Debug.LOGGER.warn("[CroesusPrices] lbin parse error: {}", ex.message); lbinFailLogged = true }
+                    lastLbin = failStamp()
+                    lastAvgLbin = failStamp()
                 }
-            }.exceptionally { t -> Debug.LOGGER.warn("[CroesusPrices] lbin fetch error: {}", t.message); null }
+            }.exceptionally { t ->
+                if (!lbinFailLogged) { Debug.LOGGER.warn("[CroesusPrices] lbin fetch error: {}", t.message); lbinFailLogged = true }
+                lastLbin = failStamp()
+                lastAvgLbin = failStamp()
+                null
+            }
     }
 }

@@ -5,15 +5,18 @@ import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.DungeonClass
 import fishmod.utils.events.Events
+import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.components.ChatComponent
 import net.minecraft.network.chat.Component
 
 /**
- * Extra Stats (ported from Odin's ExtraStats). Swallows Hypixel's `> EXTRA STATS <` block and
- * reprints a tidy summary with PB markers. Team secret/crypt counts aren't reprinted (no reliable
- * client source); everything else is parsed straight from the same chat lines.
+ * Extra Stats. Swallows Hypixel's `> EXTRA STATS <` block and reprints a tidy summary with PB
+ * markers. Team secret/crypt counts aren't reprinted (no reliable client source); everything else
+ * is parsed straight from the same chat lines.
  */
 object ExtraStats {
 
+    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val HEADER = Regex(" {29}> EXTRA STATS <")
     private val TITLE = Regex("^\\s*(Master Mode)? ?(?:The )?Catacombs - (Entrance|Floor .{1,3})( Stats)?$")
     private val DEFEATED = Regex("^\\s*☠ Defeated (.+) in 0?([\\dhms ]+?)\\s*(\\(NEW RECORD!\\))?$")
@@ -44,7 +47,10 @@ object ExtraStats {
     private var kills = "0"; private var killsPB = false
     private var deaths = 0
     private var secrets = 0
+    private var requested = false   // sent /showextrastats this run
+    private var printed = false     // already reprinted the summary this run
 
+    /** Parse state only — the run-guard flags ([requested]/[printed]) live until the next world change. */
     private fun reset() {
         floorTitle = ""; defeated = null; timePB = false; time = ""
         score = 0; scoreLetter = ""; scorePB = false
@@ -53,16 +59,29 @@ object ExtraStats {
         deaths = 0; secrets = 0
     }
 
+    private fun resetRun() {
+        reset()
+        requested = false; printed = false
+    }
+
     @JvmStatic
     fun init() {
-        Events.ON_WORLD_CHANGE.register { reset(); false }
+        Events.ON_WORLD_CHANGE.register { resetRun(); false }
 
         Events.ON_GAME_MESSAGE.register { text ->
             if (!FishSettings.extraStatsEnabled || !Location.inDungeon()) return@register false
-            val s = text.string.replace(Regex("§."), "")
+            val s = text.string.replace(COLOR, "")
+
+            // Modern Hypixel doesn't auto-print the stat lines under the header — you have to ask.
+            // Fire /showextrastats once, then parse + hide the reply the same as before. Without
+            // this the reprint never triggers -> "nothing shows at all".
+            if (HEADER.containsMatchIn(s)) {
+                if (!requested) { requested = true; Misc.executeCommand("showextrastats") }
+                return@register true
+            }
 
             TITLE.find(s)?.let { m ->
-                floorTitle = (if (m.groupValues[1].isNotEmpty()) "§cMaster Mode " else "§cThe Catacombs ") + "§r- §e" + m.groupValues[2]
+                floorTitle = (if (m.groupValues[1].isNotEmpty()) "§cMaster Mode" else "§cThe Catacombs") + " §r- §e" + m.groupValues[2]
             }
             DEFEATED.find(s)?.let { m -> defeated = m.groupValues[1]; time = m.groupValues[2].trim(); timePB = m.groupValues[3].isNotEmpty() }
             SCORE.find(s)?.let { m -> score = m.groupValues[1].toIntOrNull() ?: 0; scoreLetter = m.groupValues[2]; scorePB = m.groupValues[3].isNotEmpty() }
@@ -72,37 +91,71 @@ object ExtraStats {
             HEAL.find(s)?.let { m -> heal = m.groupValues[1]; healPB = m.groupValues[2].isNotEmpty() }
             KILLS.find(s)?.let { m -> kills = m.groupValues[1]; killsPB = m.groupValues[2].isNotEmpty() }
             DEATHS.find(s)?.let { m -> deaths = m.groupValues[1].toIntOrNull() ?: 0 }
-            SECRETS.find(s)?.let { m -> secrets = m.groupValues[1].toIntOrNull() ?: 0; print() }
+            SECRETS.find(s)?.let { m ->
+                secrets = m.groupValues[1].toIntOrNull() ?: 0
+                if (!printed) { printed = true; print() }
+            }
 
             cancelIfInDungeon.any { it.containsMatchIn(s) } || FAIL.containsMatchIn(s)
         }
     }
 
-    private fun pb(flag: Boolean) = if (flag) " §d§l(PB!)" else ""
+    private fun pbNumber(flag: Boolean) = if (flag) "§d§l(NEW PB!)" else ""
+
+    /** Strikethrough divider spanning the full chat width. */
+    private fun chatBreak(): String {
+        val mc = Minecraft.getInstance()
+        val chatWidth = ChatComponent.getWidth(mc.options.chatWidth().get())
+        val dashW = mc.font.width("-").coerceAtLeast(1)
+        return "§9§m" + "-".repeat(chatWidth / dashW)
+    }
+
+    /** Pads [text] with leading spaces so it renders centered in the chat box. */
+    private fun centered(text: String): String {
+        val stripped = text.replace(COLOR, "")
+        if (stripped.isEmpty()) return text
+        val mc = Minecraft.getInstance()
+        val textWidth = mc.font.width(stripped)
+        val chatWidth = ChatComponent.getWidth(mc.options.chatWidth().get())
+        if (textWidth >= chatWidth) return text
+        val spaces = ((chatWidth - textWidth) / 2 / 4).coerceAtLeast(0)
+        return " ".repeat(spaces) + text
+    }
 
     private fun print() {
-        val out = mutableListOf<String>()
-        out.add("§8§m                                        ")
-        if (floorTitle.isNotEmpty()) out.add(floorTitle)
-        out.add(
-            if (defeated == null) "§c§lFAILED §7- §e$time"
-            else "§aDefeated §c${defeated} §7in §e$time${pb(timePB)}"
-        )
-        val bitsTxt = if (bits != null && FishSettings.extraStatsBits) "   §b$bits" else ""
-        out.add("§aScore: §6$score §a(§b$scoreLetter§a)${pb(scorePB)}$bitsTxt")
+        val defeatedText =
+            if (defeated == null) "§c§lFAILED §a- §e$time"
+            else "§aDefeated §c$defeated §ain §e$time${if (timePB) " §d§l(NEW RECORD!)" else ""}"
+
+        val lines = mutableListOf<String>()
+        lines.add(chatBreak())
+        lines.add("")
+        if (floorTitle.isNotEmpty()) { lines.add(centered(floorTitle)); lines.add("") }
+        lines.add(centered(defeatedText))
+
+        val bitsTxt = if (bits != null && FishSettings.extraStatsBits) "    §b$bits" else ""
+        lines.add(centered("§aScore: §6$score §a(§b$scoreLetter§a)${if (scorePB) " §d§l(NEW RECORD!)" else ""}$bitsTxt"))
+
         if (xpLines.isNotEmpty()) {
-            out.add(if (FishSettings.extraStatsClassExp) xpLines.joinToString("  §r") else xpLines.first())
+            val xpText = xpLines.first() + if (FishSettings.extraStatsClassExp && xpLines.size > 1) "  ${xpLines[1]}" else ""
+            lines.add(centered(xpText))
         }
+
         if (FishSettings.extraStatsCombat) {
-            out.add("§eDmg §f${damage}${pb(damagePB)} §7| §bKills §f${kills}${pb(killsPB)} §7| §aHeal §f${heal}${pb(healPB)}")
+            lines.add(centered("§e$damage${pbNumber(damagePB)}§r-§b$kills${pbNumber(killsPB)}§r-§a$heal${pbNumber(healPB)}"))
         }
-        out.add("§bSecrets §f$secrets §7| §cDeaths §f$deaths")
+
+        lines.add(centered("§b$secrets§r-§c$deaths"))
+
         if (FishSettings.extraStatsTeammates) {
-            val mates = DungeonClass.getAll().entries.filter { it.key != net.minecraft.client.Minecraft.getInstance().player?.gameProfile?.name }
-            out.add(if (mates.isEmpty()) "§3Solo" else mates.joinToString("§r, ") { "${colorOf(it.value)}${it.key}" })
+            val mates = DungeonClass.getAll().entries.filter { it.key != Minecraft.getInstance().player?.gameProfile?.name }
+            lines.add(centered(if (mates.isEmpty()) "§3Solo" else mates.joinToString("§r, ") { "${colorOf(it.value)}${it.key}" }))
         }
-        out.add("§8§m                                        ")
-        out.forEach { Misc.addChatMessage(Component.literal(it)) }
+
+        lines.add("")
+        lines.add(chatBreak())
+
+        Misc.addChatMessage(Component.literal(lines.joinToString("\n")))
         reset()
     }
 

@@ -52,16 +52,14 @@ public abstract class CosmeticGuiTextMixin {
 
     private static Component fishmod$swap(Component text) {
         if (text == null) return text;
+        if (!NickState.isActive() && fishmod.cosmetic.RemoteNicks.isEmpty()) return text;
         Component out = text;
         if (NickState.isActive()) {
             String real = NickState.realName();
             if (!real.isEmpty() && out.getString().contains(real))
                 out = NameRewriter.replaceName(out, real, NickState.asComponent());
         }
-        // In a container menu (friends list, player menus, AH, etc.) discover unknown names so
-        // off-server players get nick-rewritten — those names appear nowhere else (not in tab/chat).
-        // On the bare HUD (scoreboard/tab, redrawn every frame) use the lookup-free path to avoid
-        // per-frame request spam; on-server players there are already covered by the bulk poll.
+        // In a container menu, discover unknown names; on the per-frame HUD use the lookup-free path
         boolean inMenu = fishmod$inMenu();
         out = inMenu
             ? fishmod.cosmetic.RemoteNicks.apply(out)

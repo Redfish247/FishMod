@@ -36,12 +36,10 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         private val CREDITS = listOf(
             Credit("RedFish", "creator - everything else", 0xFF24B6B0.toInt()),
             Credit("BladeMasterGabe", "splits & dungeon features", 0xFFE0A63A.toInt()),
-            Credit("Sushiest", "dungeon help & UI changes", 0xFFE0596E.toInt()),
-            Credit("22yrs", "dungeon map, ported with permission", 0xFF7A8CE0.toInt()),
+            Credit("22yrs", "shared the dungeon map and blessed the port", 0xFF7A8CE0.toInt()),
         )
     }
 
-    // hit rects (set during render, read on click)
     private var backX = 0
     private var backY = 0
     private var backW = 0
@@ -66,8 +64,7 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         val mouseX = fishmod.utils.rendering.UiScale.vx(mouseX)
         val mouseY = fishmod.utils.rendering.UiScale.vx(mouseY)
         NvgRecorder.clear()
-        // Recorded in virtual space so replay()'s uniform scale brings the scrim back to exactly
-        // this.width/this.height instead of shrinking it away from full-screen.
+        // virtual space so replay()'s uniform scale restores the scrim to full-screen
         ScreenTheme.nRect(0, 0, vw(), vh(), SCRIM)
 
         val lx = px()
@@ -158,8 +155,6 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
     override fun onClose() {
         Minecraft.getInstance().setScreen(parent)
     }
-
-    // ── NanoVG overlay ───────────────────────────────────────────────────────────
 
     private val nvgGlState = NvgGlStateGuard()
     private var nvgFailureLogged = false

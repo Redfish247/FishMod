@@ -14,7 +14,8 @@ import java.util.concurrent.CompletableFuture
 object MayorApi {
 
     private const val URL = "https://api.hypixel.net/v2/resources/skyblock/election"
-    private const val CACHE_MS = 10 * 60 * 1000L // 10 minutes
+    private const val CACHE_MS = 10 * 60 * 1000L
+    private const val FAIL_CACHE_MS = 60 * 1000L // retry a minute after a failed fetch, not 10
     private val HTTP: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(5))
         .build()
@@ -25,6 +26,11 @@ object MayorApi {
     private var paulDungeonBonus = false
     @Volatile
     private var lastFetch = 0L
+    @Volatile
+    private var fetching = false
+
+    /** Stamp on a failed fetch so the next retry is [FAIL_CACHE_MS] out, not [CACHE_MS]. */
+    private fun failStamp(): Long = System.currentTimeMillis() - CACHE_MS + FAIL_CACHE_MS
 
     @JvmStatic
     fun init() {
@@ -46,7 +52,8 @@ object MayorApi {
 
     @JvmStatic
     fun refresh() {
-        lastFetch = System.currentTimeMillis() // prevent parallel fetches
+        if (fetching) return
+        fetching = true
         CompletableFuture.supplyAsync {
             try {
                 val req = HttpRequest.newBuilder()
@@ -60,14 +67,23 @@ object MayorApi {
                 null
             }
         }.thenAccept { body ->
-            if (body == null) return@thenAccept
             try {
-                aatroxSlayerBonus = parseAatrox(body)
-                paulDungeonBonus = parsePaul(body)
-            } catch (e: Exception) {
-                Debug.LOGGER.warn("MayorApi: parse failed - {}", e.message)
+                if (body == null) {
+                    lastFetch = failStamp()
+                    return@thenAccept
+                }
+                try {
+                    aatroxSlayerBonus = parseAatrox(body)
+                    paulDungeonBonus = parsePaul(body)
+                    lastFetch = System.currentTimeMillis()
+                } catch (e: Exception) {
+                    Debug.LOGGER.warn("MayorApi: parse failed - {}", e.message)
+                    lastFetch = failStamp()
+                }
+            } finally {
+                fetching = false
             }
-        }
+        }.exceptionally { fetching = false; null }
     }
 
     private fun parseAatrox(body: String): Boolean {
@@ -92,17 +108,25 @@ object MayorApi {
         val root = JsonParser.parseString(body).asJsonObject
         if (!root.has("mayor")) return false
         val mayor = root.getAsJsonObject("mayor")
-        if ("paul".equals(mayor.get("key").asString, ignoreCase = true)) return true
+        // +10 dungeon score needs the active EZPZ perk, not just Paul being mayor (perks rotate each election)
+        if ("paul".equals(mayor.get("key")?.asString, ignoreCase = true) && hasEzpz(mayor.getAsJsonArray("perks"))) {
+            return true
+        }
         if (mayor.has("minister")) {
             val minister = mayor.getAsJsonObject("minister")
-            if ("paul".equals(minister.get("key").asString, ignoreCase = true)) {
-                if (minister.has("perk")) {
-                    val perkName = minister.getAsJsonObject("perk")
-                        .get("name").asString.lowercase()
-                    // Paul's dungeon bonus perk is "EZPZ" (+10 dungeon score)
-                    return perkName.contains("ezpz")
-                }
+            if ("paul".equals(minister.get("key")?.asString, ignoreCase = true) && minister.has("perk")) {
+                val perkName = minister.getAsJsonObject("perk").get("name").asString.lowercase()
+                return perkName.contains("ezpz")
             }
+        }
+        return false
+    }
+
+    private fun hasEzpz(perks: com.google.gson.JsonArray?): Boolean {
+        if (perks == null) return false
+        for (p in perks) {
+            val n = runCatching { p.asJsonObject.get("name").asString }.getOrNull() ?: continue
+            if (n.lowercase().contains("ezpz")) return true
         }
         return false
     }

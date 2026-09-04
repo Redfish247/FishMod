@@ -5,6 +5,8 @@ import net.minecraft.network.protocol.game.ClientboundAddEntityPacket
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket
 import net.minecraft.network.protocol.game.ClientboundSetEquipmentPacket
+import net.minecraft.network.protocol.game.ClientboundSoundPacket
+import net.minecraft.sounds.SoundEvents
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon
@@ -14,7 +16,7 @@ import net.minecraft.world.phys.Vec3
 import net.minecraft.world.scores.DisplaySlot
 import net.minecraft.world.scores.PlayerTeam
 
-/** Packet decoders for the M7 dragons (ported from NoammAddons' DragonCheck). */
+/** Packet decoders for the M7 dragons. */
 object DragonCheck {
 
     private val HEALTH_TOKEN = Regex("\\d+(?:\\.\\d+)?[bBmMkK]")
@@ -27,6 +29,7 @@ object DragonCheck {
         if (p.xDist != 2f || p.yDist != 3f || p.zDist != 2f) return
 
         val spawning = mutableListOf<WitherDragon>()
+        var anyNew = false
         for (d in WitherDragon.real) {
             if (d.state == WitherDragonState.SPAWNING) { spawning.add(d); continue }
             if (p.x in d.xRange && p.z in d.zRange) {
@@ -34,9 +37,13 @@ object DragonCheck {
                 d.timeToSpawn = 100
                 d.spawnedTick = tick
                 spawning.add(d)
+                anyNew = true
             }
         }
-        if (spawning.isNotEmpty()) WitherDragons.priorityDragon = DragonPriority.findPriority(spawning)
+        if (spawning.isNotEmpty()) {
+            WitherDragons.priorityDragon = DragonPriority.findPriority(spawning)
+            if (anyNew) WitherDragons.onDragonsSpawning(spawning)
+        }
     }
 
     fun dragonSpawn(p: ClientboundAddEntityPacket, tick: Long) {
@@ -71,6 +78,18 @@ object DragonCheck {
         }
     }
 
+    /**
+     * Arrow-drag counter. Keys only off the broadcast `ClientboundSoundPacket` for
+     * `arrow.hit_player`, never the client's local hit cue or entity-attached sounds, so a drag
+     * isn't over-counted.
+     */
+    fun trackArrows(p: ClientboundSoundPacket, tick: Long) {
+        if (p.sound.value().location != SoundEvents.ARROW_HIT_PLAYER.location) return
+        val d = WitherDragons.priorityDragon
+        if (d == WitherDragon.NONE || d.state != WitherDragonState.ALIVE) return
+        if (tick - d.spawnedTick <= d.skipKillTime) d.arrowsHit++
+    }
+
     /** Scoreboard fallback: is this dragon still listed with non-zero health on the sidebar? */
     fun isAliveOnScoreboard(d: WitherDragon): Boolean {
         val sb = Minecraft.getInstance().level?.scoreboard ?: return true
@@ -78,7 +97,7 @@ object DragonCheck {
         for (score in sb.listPlayerScores(obj)) {
             val team = sb.getPlayersTeam(score.owner())
             val line = PlayerTeam.formatNameForTeam(team, net.minecraft.network.chat.Component.literal(score.owner()))
-                .string.replace(Regex("§."), "")
+                .string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
             if (line.contains(d.displayName, ignoreCase = true) && HEALTH_TOKEN.find(line)?.value != "0") return true
         }
         return false

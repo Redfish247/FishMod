@@ -11,10 +11,13 @@ import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
-import net.minecraft.client.player.LocalPlayer
+import net.minecraft.gizmos.Gizmos
+import net.minecraft.gizmos.GizmoStyle
+import net.minecraft.gizmos.TextGizmo
 import net.minecraft.network.chat.Component
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
+import org.joml.Quaternionf
 import org.joml.Vector3f
 
 object RenderUtils {
@@ -30,15 +33,33 @@ object RenderUtils {
         return floatArrayOf(r, g, b, a)
     }
 
+    // gizmo* helpers: absolute world-space coords; ONLY legal from a RenderingEvents.GIZMO handler (BEFORE_GIZMOS); alpha 0 skipped
+
+    /** Fill + outline of [box] as two vanilla cuboid gizmos, occluded by terrain. */
     @JvmStatic
-    fun getStatusColor(minGreen: Int, minOrange: Int, value: Int): Int {
-        return if (value >= minGreen) Constants.GREEN else if (value >= minOrange) Constants.GOLD else Constants.RED
+    fun gizmoBox(box: AABB, fillArgb: Int, strokeArgb: Int) {
+        if ((fillArgb ushr 24) != 0) Gizmos.cuboid(box, GizmoStyle.fill(fillArgb))
+        if ((strokeArgb ushr 24) != 0) Gizmos.cuboid(box, GizmoStyle.stroke(strokeArgb))
     }
 
+    /** A single flat quad from its 4 corners (order around the quad), for door-frame faces. */
     @JvmStatic
-    fun drawText(context: GuiGraphicsExtractor, component: HUDComponent, text: Component, color: Int) {
-        val textRenderer = Minecraft.getInstance().font ?: return
-        context.text(textRenderer, text, component.scaledX, component.scaledY, color, true)
+    fun gizmoQuad(corners: Array<Vec3>, fillArgb: Int, strokeArgb: Int) {
+        if (corners.size < 4) return
+        Gizmos.rect(corners[0], corners[1], corners[2], corners[3], GizmoStyle.strokeAndFill(strokeArgb, 2f, fillArgb))
+    }
+
+    /** Straight world-space segment (route connectors, beam paths), occluded by terrain. */
+    @JvmStatic
+    fun gizmoLine(a: Vec3, b: Vec3, argb: Int) {
+        // Match renderLineTo: a colour with no alpha byte means "opaque", not "invisible".
+        Gizmos.line(a, b, if ((argb ushr 24) == 0) argb or (0xFF shl 24) else argb)
+    }
+
+    /** Billboarded world text, occluded by terrain — drains with the gizmo pass, unlike submitText. */
+    @JvmStatic
+    fun gizmoText(text: Component, pos: Vec3, scale: Float, argb: Int) {
+        Gizmos.billboardText(text.string, pos, TextGizmo.Style.forColorAndCentered(argb).withScale(scale))
     }
 
     @JvmStatic
@@ -72,16 +93,6 @@ object RenderUtils {
         val y = component.scaledY
 
         drawCenteredText(context, Minecraft.getInstance().font, Component.literal(Constants.DECIMAL_FORMAT.format(num)), x, y, component.width, color)
-    }
-
-    @JvmStatic
-    fun drawPrefixedTimer(component: HUDComponent, context: GuiGraphicsExtractor, prefix: String, num: Int) {
-        drawPrefixedText(component, context, prefix, Constants.DECIMAL_FORMAT.format(num * Constants.TICK_DURATION) + "s")
-    }
-
-    @JvmStatic
-    fun drawPrefixedTimer(component: HUDComponent, context: GuiGraphicsExtractor, prefix: String, num: Double) {
-        drawPrefixedText(component, context, prefix, Constants.DECIMAL_FORMAT.format(num) + "s")
     }
 
     @JvmStatic
@@ -134,7 +145,6 @@ object RenderUtils {
         val x2 = box.maxX.toFloat(); val y2 = box.maxY.toFloat(); val z2 = box.maxZ.toFloat()
         val r = rgba[0]; val g = rgba[1]; val b = rgba[2]; val a = rgba[3]
 
-        // bottom, top, then the 4 verticals
         edge(consumer, pose, x1, y1, z1, x2, y1, z1, r, g, b, a)
         edge(consumer, pose, x2, y1, z1, x2, y1, z2, r, g, b, a)
         edge(consumer, pose, x2, y1, z2, x1, y1, z2, r, g, b, a)
@@ -200,8 +210,7 @@ object RenderUtils {
         )
     }
 
-    // RenderLayers.LINE / LINE_ND are plain POSITION_COLOR + DEBUG_LINES pipelines (System22
-    // WaypointTest pattern) — 2 verts per segment, position + colour only, no Normal/LineWidth.
+    // RenderLayers.LINE_ND is a plain POSITION_COLOR + DEBUG_LINES pipeline — 2 verts per segment, position + colour only, no Normal/LineWidth.
     private fun edge(
         consumer: VertexConsumer, pose: PoseStack.Pose,
         x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float,
@@ -215,15 +224,20 @@ object RenderUtils {
     fun renderText(context: LevelRenderContext, matrices: PoseStack, text: Component, x: Double, y: Double, z: Double, scale: Float) {
         val client = Minecraft.getInstance()
         val textRenderer = client.font
-        val player: LocalPlayer = client.player ?: return
+        client.player ?: return
+
+        // submitText() drains after the view matrix is gone, so rotate (worldPos-camera) into view space ourselves and cancel the upstream -camera translate
+        val cam = client.gameRenderer.mainCamera.position()
+        val viewPos = Vector3f(
+            (x - cam.x).toFloat(), (y - cam.y).toFloat(), (z - cam.z).toFloat(),
+        )
+        Quaternionf(context.levelState().cameraRenderState.orientation).conjugate().transform(viewPos)
 
         matrices.pushPose()
-        matrices.translate(x, y, z)
-        matrices.mulPose(context.levelState().cameraRenderState.orientation)
+        matrices.translate(viewPos.x + cam.x, viewPos.y + cam.y, viewPos.z + cam.z)
         matrices.scale(TEXT_SCALE * scale, -TEXT_SCALE * scale, TEXT_SCALE * scale)
 
-        val halfWidth = textRenderer.width(text.string) / 2f
-
+        val halfWidth = textRenderer.width(text) / 2f
         context.submitNodeCollector().submitText(matrices, -halfWidth, 0f, text.visualOrderText, true, Font.DisplayMode.SEE_THROUGH, 15728880, -0x1, 0, 0)
         matrices.popPose()
     }
@@ -268,32 +282,26 @@ object RenderUtils {
         val ax1 = x1.toFloat(); val ay1 = y1.toFloat(); val az1 = z1.toFloat()
         val ax2 = x2.toFloat(); val ay2 = y2.toFloat(); val az2 = z2.toFloat()
 
-        // Bottom: A,B,F,E
         consumer.addVertex(entry, ax1, ay1, az1).setColor(r, g, b, a)
         consumer.addVertex(entry, ax2, ay1, az1).setColor(r, g, b, a)
         consumer.addVertex(entry, ax2, ay1, az2).setColor(r, g, b, a)
         consumer.addVertex(entry, ax1, ay1, az2).setColor(r, g, b, a)
-        // Top: C,D,H,G
         consumer.addVertex(entry, ax1, ay2, az1).setColor(r, g, b, a)
         consumer.addVertex(entry, ax2, ay2, az1).setColor(r, g, b, a)
         consumer.addVertex(entry, ax2, ay2, az2).setColor(r, g, b, a)
         consumer.addVertex(entry, ax1, ay2, az2).setColor(r, g, b, a)
-        // Front: A,B,D,C
         consumer.addVertex(entry, ax1, ay1, az1).setColor(r, g, b, a)
         consumer.addVertex(entry, ax2, ay1, az1).setColor(r, g, b, a)
         consumer.addVertex(entry, ax2, ay2, az1).setColor(r, g, b, a)
         consumer.addVertex(entry, ax1, ay2, az1).setColor(r, g, b, a)
-        // Back: E,F,H,G
         consumer.addVertex(entry, ax1, ay1, az2).setColor(r, g, b, a)
         consumer.addVertex(entry, ax2, ay1, az2).setColor(r, g, b, a)
         consumer.addVertex(entry, ax2, ay2, az2).setColor(r, g, b, a)
         consumer.addVertex(entry, ax1, ay2, az2).setColor(r, g, b, a)
-        // Left: A,C,G,E
         consumer.addVertex(entry, ax1, ay1, az1).setColor(r, g, b, a)
         consumer.addVertex(entry, ax1, ay2, az1).setColor(r, g, b, a)
         consumer.addVertex(entry, ax1, ay2, az2).setColor(r, g, b, a)
         consumer.addVertex(entry, ax1, ay1, az2).setColor(r, g, b, a)
-        // Right: B,D,H,F
         consumer.addVertex(entry, ax2, ay1, az1).setColor(r, g, b, a)
         consumer.addVertex(entry, ax2, ay2, az1).setColor(r, g, b, a)
         consumer.addVertex(entry, ax2, ay2, az2).setColor(r, g, b, a)

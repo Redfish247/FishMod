@@ -17,7 +17,6 @@ import java.util.regex.Pattern
 object Phase {
 
     private val END_PATTERN: Pattern = Pattern.compile("^\\s*☠ Defeated (.+) in 0?([\\dhms ]+)\\s*(\\(NEW RECORD!\\))?$")
-    private val SEARCH_PATTERN: Pattern = Pattern.compile("The Catacombs \\(")
 
     private val DUMMY_SPLIT = Split("test split", "if this is called idk", "if this is called idk", 43690, 0.0)
 
@@ -45,6 +44,7 @@ object Phase {
     @JvmStatic
     fun init() {
         Events.ON_SERVER_TICK.register {
+            if (floor == null) detectFloor()
             if (currentSplits == null || runOver) return@register false
             for (split in currentSplits!!) {
                 split.tick()
@@ -58,25 +58,18 @@ object Phase {
         }
 
         Events.ON_GAME_MESSAGE.register(Phase::parseGameMessage)
-        Events.ON_TEAM.register(Phase::detectFloor)
     }
 
-    private fun detectFloor(line: String): Boolean {
-        if (floor != null) return false
-
-        val matcher = SEARCH_PATTERN.matcher(line)
-        if (!matcher.find()) return false
-        val start = line.indexOf("(")
-        val end = line.indexOf(")")
-        floor = line.substring(start + 1, end)
+    // Floor key ("F7"/"M7") now comes from the shared fishmod.features.dungeon.map.DungeonState
+    // (chat + sidebar based) instead of re-parsing the "The Catacombs (" sidebar/team line here.
+    private fun detectFloor() {
+        if (floor != null) return
+        val key = fishmod.features.dungeon.map.DungeonState.currentFloorKey() ?: return
+        floor = key
 
         currentSplits = FLOOR_SPLITS[floor]
         currentSplits?.forEach { it.reset() }
-        if (floor != null) {
-            if (floor!!.contains("7")) inFloor7 = true
-        }
-
-        return false
+        if (floor!!.contains("7")) inFloor7 = true
     }
 
     private fun reset() {
@@ -155,45 +148,49 @@ object Phase {
         }
     }
 
-    @JvmStatic
-    fun getPhase(): Int = currentPhase
+    /** The effective phase — a [PracticeMode] override on a practice server, else the real tracker. */
+    private fun phase(): Int =
+        if (PracticeMode.active && PracticeMode.phaseOverride >= 0) PracticeMode.phaseOverride else currentPhase
 
     @JvmStatic
-    fun isInFloor7(): Boolean = inFloor7
+    fun getPhase(): Int = phase()
 
     @JvmStatic
-    fun runStarted(): Boolean = currentPhase >= 0
+    fun isInFloor7(): Boolean = inFloor7 || PracticeMode.active
+
+    @JvmStatic
+    fun runStarted(): Boolean = phase() >= 0
 
     /** Live splits for the current run (empty when no run is active). Read-only use only. */
     @JvmStatic
     fun getCurrentSplits(): List<Split> = currentSplits ?: java.util.List.of()
 
     @JvmStatic
-    fun runJustStarted(): Boolean = currentPhase == 0
+    fun runJustStarted(): Boolean = phase() == 0
 
     @JvmStatic
-    fun inBoss(): Boolean = currentPhase > 3
+    fun inBoss(): Boolean = phase() > 3
 
     @JvmStatic
-    fun inP1(): Boolean = currentPhase == 4 && inFloor7
+    fun inP1(): Boolean = phase() == 4 && isInFloor7()
 
     @JvmStatic
-    fun inP2(): Boolean = currentPhase == 5 && inFloor7
+    fun inP2(): Boolean = phase() == 5 && isInFloor7()
 
     @JvmStatic
     fun stormDead(): Boolean = stormDead
 
     @JvmStatic
-    fun inTerminals(): Boolean = currentPhase == 6 && inFloor7
+    fun inTerminals(): Boolean = phase() == 6 && isInFloor7()
 
     @JvmStatic
-    fun inGoldorTunnel(): Boolean = currentPhase == 7 && inFloor7
+    fun inGoldorTunnel(): Boolean = phase() == 7 && isInFloor7()
 
     @JvmStatic
-    fun inP3(): Boolean = (currentPhase == 6 || currentPhase == 7) && inFloor7
+    fun inP3(): Boolean = (phase() == 6 || phase() == 7) && isInFloor7()
 
     @JvmStatic
-    fun inP5(): Boolean = currentPhase == 9 && inFloor7
+    fun inP5(): Boolean = phase() == 9 && isInFloor7()
 
     @JvmStatic
     fun runOver(): Boolean = runOver
@@ -205,8 +202,7 @@ object Phase {
         return splits[index].getRealTime()
     }
 
-    // Condition-supplier forced false: rendered explicitly via Phase.renderHud instead, to avoid
-    // double-drawing via practical-config's auto-render.
+    // condition forced false: rendered explicitly via renderHud to avoid double-drawing via auto-render
     @ConfigValue @JvmField
     var splitTimer: HUDComponent = HUDComponent(0.0, 0.0, SPLIT_LENGTH, 100, 1f, "Splits",
         { false },

@@ -9,8 +9,7 @@ import java.util.regex.Pattern
 
 /**
  * Hides other players' "activated/completed a terminal/device/lever!" titles during P3 so only
- * your own progress pops a title. Pure function, stateless — no init()/HUD needed. Ported from
- * blade-addons.
+ * your own progress pops a title. Pure function, stateless — no init()/HUD needed.
  */
 object TitleHider {
 
@@ -20,7 +19,7 @@ object TitleHider {
     @JvmStatic
     fun shouldHideTitle(title: Component): Boolean {
         if (!(Floor7.hideTerminalTitles && Phase.inP3() && Location.inDungeon())) return false
-        val titleString = title.string.replace(Regex("§."), "")
+        val titleString = title.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
 
         val matcher = TERMINALS_DONE_PATTERN.matcher(titleString)
         return if (matcher.find()) {

@@ -26,6 +26,7 @@ import java.util.TreeMap
  */
 object StorageCache {
 
+    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val dir: Path = Paths.get(FolderUtility.CONFIG_PATH + "storage")
     private val EMPTY_MARKERS = setOf(
         Blocks.RED_STAINED_GLASS_PANE.asItem(),
@@ -93,7 +94,7 @@ object StorageCache {
         if (id != loadedFor) { load(id); loadedFor = id }
 
         val screen = mc.screen as? AbstractContainerScreen<*> ?: run { flush(); return }
-        val plainTitle = screen.title.string.replace(Regex("§."), "")
+        val plainTitle = screen.title.string.replace(COLOR, "")
 
         if (plainTitle == "Storage") { scanOverview(screen); return }
         val page = StoragePage.fromTitle(plainTitle) ?: run { flush(); return }

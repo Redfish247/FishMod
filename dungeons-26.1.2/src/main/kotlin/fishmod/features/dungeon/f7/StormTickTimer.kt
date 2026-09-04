@@ -1,6 +1,7 @@
 package fishmod.features.dungeon.f7
 
 import config.practical.hud.HUDComponent
+import fishmod.features.CritTracker
 import fishmod.utils.Constants
 import fishmod.utils.Location
 import fishmod.utils.Misc
@@ -18,7 +19,7 @@ import java.util.regex.Pattern
 import kotlin.math.ceil
 import kotlin.math.max
 
-/** Storm (P2) tick timer + first-death time. Ported from blade-addons (spirit-mask warning omitted). */
+/** Storm (P2) tick timer + first-death time. */
 object StormTickTimer {
 
     private val PATTERN: Pattern = Pattern.compile("^⚠ Storm is enraged! ⚠$")
@@ -51,16 +52,20 @@ object StormTickTimer {
             onReset = { deathTime = 0.0; deathStartDisplayTime = 0 }
         )
         Events.ON_GAME_MESSAGE.register { text ->
-            if (!Location.inDungeon() || !Phase.inP2() || !Floor7.enableStormDeathTime) return@register false
+            if (!Location.inDungeon() || !Phase.inP2()) return@register false
             if (PATTERN.matcher(text.string).find()) {
                 deathTime = timer.tick * Constants.TICK_DURATION
                 deathStartDisplayTime = System.currentTimeMillis()
-                Misc.addChatMessage(
-                    Component.literal(
-                        "§aStorm died at: §e"
-                                + Constants.DECIMAL_FORMAT.format(deathTime) + "s§a."
+                // CritTracker.onStormDeath applies its own Archer-only gate.
+                CritTracker.onStormDeath(deathTime)
+                if (Floor7.enableStormDeathTime) {
+                    Misc.addChatMessage(
+                        Component.literal(
+                            "§aStorm died at: §e"
+                                    + Constants.DECIMAL_FORMAT.format(deathTime) + "s§a."
+                        )
                     )
-                )
+                }
             }
             false
         }

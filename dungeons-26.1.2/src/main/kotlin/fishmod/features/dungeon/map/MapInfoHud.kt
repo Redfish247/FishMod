@@ -9,6 +9,12 @@ import net.minecraft.resources.Identifier
 /** Secondary HUD line(s): secrets/score/deaths/mimic/prince/crypts readout, optionally anchored under [MapHud]. */
 object MapInfoHud {
 
+    // Underlying DungeonScore fields only update every PARSE_INTERVAL_TICKS ticks, but this HUD is
+    // rendered every frame — cache the width measurement and only remeasure when the lines actually change.
+    private var cachedL1: String = ""
+    private var cachedL2: String = ""
+    private var cachedBlockW: Int = 0
+
     @JvmStatic
     fun enabled(): Boolean = DungeonMapSettings.mapInfoEnabled == true
 
@@ -52,11 +58,15 @@ object MapInfoHud {
             drawLines(g, mc, l1, l2, 0, lh)
             pose.popMatrix()
         } else {
-            val blockW = maxOf(mc.font.width(l1), mc.font.width(l2))
+            if (l1 != cachedL1 || l2 != cachedL2) {
+                cachedL1 = l1
+                cachedL2 = l2
+                cachedBlockW = maxOf(mc.font.width(l1), mc.font.width(l2))
+            }
             pose.pushMatrix()
             pose.translate(DungeonMapSettings.mapInfoX, DungeonMapSettings.mapInfoY)
             pose.scale(s, s)
-            drawLines(g, mc, l1, l2, blockW / 2, lh)
+            drawLines(g, mc, l1, l2, cachedBlockW / 2, lh)
             pose.popMatrix()
         }
     }

@@ -16,9 +16,8 @@ import net.minecraft.world.entity.boss.enderdragon.EndCrystal
 import java.util.regex.Pattern
 
 /**
- * Maxor crystal spawn countdown + "place crystal" reminder. Ported from blade-addons; the
- * personal-best timing the original recorded is dropped (no PersonalBests in FishMod), but the
- * crystal-placed detection is kept so the reminder dismisses when you place it.
+ * Maxor crystal spawn countdown + "place crystal" reminder. Crystal-placed detection dismisses
+ * the reminder when you place it.
  */
 object CrystalSpawn {
 
@@ -69,7 +68,7 @@ object CrystalSpawn {
             if (entity is EndCrystal) {
                 val player = Minecraft.getInstance().player
                 if (player == null) return@register false
-                if (Misc.getDistance(player, entity) < 6 && entity.y == 224.375) {
+                if (Misc.getDistanceSq(player, entity) < 36 && entity.y == 224.375) {
                     pickedUp = false
                     tickSincePicked = 0
                 }

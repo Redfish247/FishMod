@@ -21,8 +21,7 @@ object SoundManager {
     private val enabled: Boolean get() = FishSettings.soundMasterEnabled
     private val masterVol: Float get() = FishSettings.soundMasterVolume.coerceIn(0, 100) / 100f
 
-    // Named cue presets for feature dropdowns. Values are mixed SoundEvent / Holder<SoundEvent>
-    // (the SoundEvents constants aren't consistently one or the other), resolved in [preset].
+    // values are mixed SoundEvent / Holder<SoundEvent> (constants aren't consistent), resolved in [preset]
     private val PRESETS: Map<String, Any> = linkedMapOf(
         "Note: Pling" to SoundEvents.NOTE_BLOCK_PLING,
         "Note: Harp" to SoundEvents.NOTE_BLOCK_HARP,

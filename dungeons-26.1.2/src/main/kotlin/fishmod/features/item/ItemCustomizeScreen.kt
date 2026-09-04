@@ -23,12 +23,10 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * /fm customize — a clearer, friendlier item customizer (restored flat layout, replacing the
- * tabbed/animated-dye design). PICK an item (worn armor or inventory slot), then edit its Name,
- * Dye and armor Trim. Backed by [ItemCustomizationStore] (client-only, keyed by the item's
- * Hypixel instance uuid) — the same persistence used by [DyedItemColorMixin]/[ItemTrimMixin]/
- * [ItemStackMixin], so item-model and head-skin overrides from the original pre-port screen are
- * intentionally out of scope (no persistence/render path for them anymore).
+ * /fm customize — an item customizer. PICK an item (worn armor or inventory slot), then edit its
+ * Name, Model, Dye and armor Trim. Backed by [ItemCustomizationStore] (client-only, keyed by the
+ * item's Hypixel instance uuid) — the same persistence used by [DyedItemColorMixin]/[ItemTrimMixin]
+ * (which also paints the ITEM_MODEL override, merged in alongside TRIM)/[ItemStackMixin].
  *
  * Painted entirely through [NvgRecorder] following [fishmod.features.FishModScreen]'s pattern —
  * widget interaction (EditBox focus, grid/legend/dropdown hit-testing) stays plain Screen code.
@@ -54,7 +52,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
         val DANGER = ScreenTheme.DANGER
         val DANGER_HOVER = ScreenTheme.DANGER_HOVER
 
-        // &-code → RGB for the clickable color key (matches the main /fm legend).
+        // &-code → RGB for the clickable color key
         val CODE_COLORS: Array<IntArray> = arrayOf(
             intArrayOf('0'.code, 0x000000), intArrayOf('1'.code, 0x0000AA), intArrayOf('2'.code, 0x00AA00), intArrayOf('3'.code, 0x00AAAA),
             intArrayOf('4'.code, 0xAA0000), intArrayOf('5'.code, 0xAA00AA), intArrayOf('6'.code, 0xFFAA00), intArrayOf('7'.code, 0xAAAAAA),
@@ -65,7 +63,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
             arrayOf("l", "B"), arrayOf("o", "I"), arrayOf("n", "U"), arrayOf("m", "S"), arrayOf("k", "K"), arrayOf("r", "R")
         )
 
-        // Hypixel SkyBlock dyes (name, RRGGBB). Not exhaustive — the hex box covers anything missing.
+        // Hypixel SkyBlock dyes (name, RRGGBB); not exhaustive — the hex box covers the rest
         val DYES: Array<Array<String>> = arrayOf(
             arrayOf("Pure White", "FFFFFF"), arrayOf("Pure Black", "000000"), arrayOf("Pure Yellow", "FFF700"), arrayOf("Pure Blue", "0013FF"),
             arrayOf("Aquamarine", "7FFFD4"), arrayOf("Bingo Blue", "002FA7"), arrayOf("Bone", "E3DAC9"), arrayOf("Brick Red", "CB4154"),
@@ -158,8 +156,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
         val trimY = dyeY + 28
         val modelY = trimY + 28
 
-        // Kept only for value/cursor state — never added as a Screen widget (its own
-        // extractRenderState() would flush before the NanoVG overlay and be invisible under it).
+        // value/cursor state only — never added as a Screen widget (would render under the NanoVG overlay)
         nameField = EditBox(this.font, fx, nameY, fw, 18, Component.literal("Name"))
         nameField.setMaxLength(128)
         nameField.setBordered(false)
@@ -204,8 +201,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
     private var resetRect: ClickRect? = null
     private var doneRect: ClickRect? = null
     private var applyRect: ClickRect? = null
-
-    // ── load / apply / reset ───────────────────────────────────────────────────
 
     private fun uuidOf(st: ItemStack): String? = if (st.isEmpty) null else ItemUtil.getUuid(st)
 
@@ -310,8 +305,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
         applyName()
     }
 
-    // ── render ─────────────────────────────────────────────────────────────────
-
     /** Item icons are real 3D-rendered models (immediate GL) — NanoVG can't reproduce them, so the
      *  panel backdrop + slot grid (the only area actual item icons sit on top of) stays on the
      *  normal immediate GuiGraphics path via extractBackground, drawn before the icons. Everything
@@ -321,8 +314,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
         super.extractBackground(ctx, mouseX, mouseY, delta)
         if (minecraft?.player == null) return
 
-        // panelX/panelY etc. are in virtual (pre-shrink) space; scale the pose so this immediate
-        // GL path (item icons can't go through NvgRecorder) lines up with the NanoVG chrome.
+        // panel coords are virtual (pre-shrink) space — scale the pose so this immediate-GL path lines up with the NanoVG chrome
         val scale = fishmod.utils.rendering.UiScale.factor()
         ctx.pose().pushMatrix()
         ctx.pose().scale(scale, scale)
@@ -363,7 +355,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
         NvgRecorder.clear()
         drawChrome(mouseX, mouseY)
         super.extractRenderState(ctx, mouseX, mouseY, delta)
-        // Open dropdown lists float above everything else.
+        // open dropdown lists render last, above everything
         val sel = if (minecraft?.player != null) inv().getItem(selectedIndex) else ItemStack.EMPTY
         if (dyeAllowed(sel)) dyeDropdown.renderOpen(mouseX, mouseY)
         trimMatDropdown.renderOpen(mouseX, mouseY)
@@ -437,10 +429,28 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
             ScreenTheme.nst(text, px, prevY, color)
             px += ScreenTheme.nstw(text)
         }
+
+        resetRect?.let { drawButton(it, "Reset", mouseX, mouseY, DANGER, filled = false) }
+        doneRect?.let { drawButton(it, "Done", mouseX, mouseY, FIELD_BORDER, filled = false) }
+        applyRect?.let { drawButton(it, "Apply", mouseX, mouseY, ACCENT, filled = true) }
     }
 
     private fun drawLabel(s: String, x: Int, y: Int) {
         ScreenTheme.nst("$s:", x, y + 3, TEXT_PRIM, 0.65f)
+    }
+
+    private fun drawButton(r: ClickRect, label: String, mx: Int, my: Int, accent: Int, filled: Boolean) {
+        val hov = r.hit(mx, my)
+        val hoverAccent = if (accent == DANGER) DANGER_HOVER else ACCENT_HOVER
+        if (filled) {
+            ScreenTheme.nRoundedRect(r.x, r.y, r.w, r.h, r.h / 2, if (hov) hoverAccent else accent)
+            val tw = ScreenTheme.nstw(label, 0.8f)
+            ScreenTheme.nst(label, r.x + (r.w - tw) / 2, r.y + (r.h - 8) / 2, 0xFF06302F.toInt(), 0.8f)
+        } else {
+            ScreenTheme.nRoundedRectRing(r.x, r.y, r.w, r.h, r.h / 2 - 1, 1, if (hov) BG_SECTION else FIELD_BG, if (hov) hoverAccent else accent)
+            val tw = ScreenTheme.nstw(label, 0.8f)
+            ScreenTheme.nst(label, r.x + (r.w - tw) / 2, r.y + (r.h - 8) / 2, if (hov) hoverAccent else TEXT_PRIM, 0.8f)
+        }
     }
 
     /** Clickable color/format key. Click a color → inserts its code into the name at the cursor. */
@@ -478,7 +488,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
             fxr += w + gap
         }
 
-        // Star button, on the row under the format codes.
         val starX = legendX + 8 * (sw + gap) + 8
         val starY = legendY + sh + gap
         val starLabel = "&* *"
@@ -489,8 +498,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
         keyRects.add(intArrayOf(starX, starY, starW, sh))
         keyCodes.add("&*")
     }
-
-    // ── input ──────────────────────────────────────────────────────────────────
 
     override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean {
         if (minecraft?.player == null) return super.mouseClicked(click, bl)
@@ -585,8 +592,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
 
     override fun isPauseScreen(): Boolean = false
 
-    // ── NanoVG overlay ───────────────────────────────────────────────────────────
-
     private val nvgGlState = NvgGlStateGuard()
     private var nvgFailureLogged = false
 
@@ -607,8 +612,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
             nvgGlState.restore()
         }
     }
-
-    // ── lightweight dropdown, painted via ScreenTheme's NanoVG helpers ─────────────
 
     private inner class Dropdown(val placeholder: String, val x: Int, val y: Int, val w: Int) {
         val boxH = 18

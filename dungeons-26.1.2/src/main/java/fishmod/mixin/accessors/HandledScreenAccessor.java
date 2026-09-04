@@ -18,8 +18,7 @@ public interface HandledScreenAccessor {
     @Accessor("imageHeight") int getBgHeight();
     @Accessor("hoveredSlot") Slot fishmod$getHoveredSlot();
 
-    // Setters — the storage overlay zeroes the container geometry so vanilla slot render/hover
-    // doesn't leak through while the overlay covers the screen (NoammAddons' updateBounds()).
+    // Setters: storage overlay zeroes container geometry so vanilla slot render/hover can't leak through
     @Accessor("leftPos") void fishmod$setLeftPos(int v);
     @Accessor("topPos") void fishmod$setTopPos(int v);
     @Accessor("imageWidth") void fishmod$setImageWidth(int v);

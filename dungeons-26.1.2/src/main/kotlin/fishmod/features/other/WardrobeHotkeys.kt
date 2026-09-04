@@ -25,6 +25,8 @@ object WardrobeHotkeys {
 
     private const val PLAYER_INV_SLOTS = 36
 
+    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
+
     /** Raw slot index for Loadout hotkeys 1-12, in the same row-major order as Keybinds.wardrobeSlots. */
     private val LOADOUT_SLOTS = intArrayOf(14, 15, 16, 23, 24, 25, 32, 33, 34, 41, 42, 43)
 
@@ -59,7 +61,7 @@ object WardrobeHotkeys {
         if (!FishSettings.wardrobeHotkeysEnabled) return false
         val slots = Keybinds.wardrobeSlots ?: return false
 
-        val title = screen.title.string.replace(Regex("§."), "").trim()
+        val title = screen.title.string.replace(COLOR, "").trim()
         val isWardrobe = title.contains("Armor Sets") || title == "Wardrobe"
         val isLoadout = title.contains("Loadouts")
         if (!isWardrobe && !isLoadout) return false
@@ -86,8 +88,7 @@ object WardrobeHotkeys {
                 if (mcPlayer == null || mc.gameMode == null) return@Runnable
                 // button 0 = left click.
                 mc.gameMode!!.handleContainerInput(containerId, slotId, 0, ContainerInput.PICKUP, mcPlayer)
-                // screen.onClose(), not closeContainer() — the latter left the GUI widget out of
-                // sync with the reset containerMenu, causing a close/reopen/close flicker.
+                // screen.onClose(), not closeContainer() — the latter desynced the GUI widget from the menu and flickered
                 if (FishSettings.wardrobeHotkeysAutoClose && mc.screen === screen) {
                     screen.onClose()
                 }
@@ -123,7 +124,7 @@ object WardrobeHotkeys {
             val slot = handler.slots[i]
             val stack = slot.item
             if (stack.isEmpty) continue
-            val name = stack.hoverName.string.replace(Regex("§."), "").trim()
+            val name = stack.hoverName.string.replace(COLOR, "").trim()
             if (name.lowercase().contains(label)) return slot
         }
         return null

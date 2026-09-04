@@ -37,7 +37,7 @@ enum class ScoreboardSection(val label: String, private val pattern: Pattern?) {
     EQUIPMENT("Power/Tuning", Pattern.compile("^(Power|Tuning):")),
     DUNGEON("Dungeon Stats", Pattern.compile("Secrets Found|Completed Rooms|Crypts:|Team Deaths|Puzzles:|Cleared:|^Time:|The Catacombs", Pattern.CASE_INSENSITIVE)),
     PET("Pet", Pattern.compile("^Pet:")),
-    OTHER("Other Lines", null); // catch-all, checked last
+    OTHER("Other Lines", null);
 
     fun matches(strippedLine: String): Boolean = pattern != null && pattern.matcher(strippedLine).find()
 

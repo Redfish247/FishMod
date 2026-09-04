@@ -25,7 +25,6 @@ object PlayerSize {
 
     @JvmStatic
     fun init() {
-        // Re-publish our size on join (only does anything when sharing is enabled).
         ClientPlayConnectionEvents.JOIN.register { _, _, _ -> uploadOwn() }
     }
 

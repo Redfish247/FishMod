@@ -41,7 +41,6 @@ public class Keybinds {
     private static KeyMapping openConfig;
     private static KeyMapping trades;
     private static KeyMapping potions;
-    public  static KeyMapping openItemWiki;
 
     private static KeyMapping getItemLore;
     private static KeyMapping getItemCustomData;
@@ -57,12 +56,18 @@ public class Keybinds {
     /** Hold-key for Slot Binds: hold + click a hotbar slot then an inventory slot to link them. */
     public static KeyMapping slotBind;
 
+    /** Cycles Slot Binds to the next saved profile. */
+    public static KeyMapping slotBindCycleProfile;
+
     /** Dungeon class ability: ult = tap-drop (one item), mini ult = ctrl-drop (whole stack). */
     public static KeyMapping dungeonAbility;
     public static KeyMapping dungeonAbilityMini;
 
     /** Opens the read-only Storage Viewer. */
     public static KeyMapping storageViewer;
+
+    /** Toggles the Chat Search field on the open chat screen (unbound by default). */
+    public static KeyMapping chatSearchToggle;
 
     /** Backs up bound keys to our own config file so a keybind isn't silently lost when options.txt comes back empty/regenerated. */
     private static final Path KEYBIND_BACKUP_FILE = Paths.get(fishmod.utils.config.FolderUtility.CONFIG_PATH + "keybinds.txt");
@@ -81,7 +86,6 @@ public class Keybinds {
 
         category();
 
-        //normal keybinds
         openConfig = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "FishMod: Open Config",
                 InputConstants.Type.KEYSYM,
@@ -103,14 +107,6 @@ public class Keybinds {
                 category));
         TRACKED.put("potions", potions);
 
-        openItemWiki = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-                "FishMod: Open item wiki",
-                InputConstants.Type.KEYSYM,
-                GLFW.GLFW_KEY_UNKNOWN,
-                category));
-        TRACKED.put("open_item_wiki", openItemWiki);
-
-        //debug keybinds
         getItemLore = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "FishMod: Copy item lore",
                 InputConstants.Type.KEYSYM,
@@ -147,12 +143,14 @@ public class Keybinds {
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
+        TRACKED.put("wardrobe_next_page", wardrobeNextPage);
 
         wardrobePrevPage = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "FishMod: Wardrobe previous page",
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
+        TRACKED.put("wardrobe_prev_page", wardrobePrevPage);
 
         slotBind = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "FishMod: Slot Bind (hold)",
@@ -160,6 +158,13 @@ public class Keybinds {
                 GLFW.GLFW_KEY_R,
                 category));
         TRACKED.put("slot_bind", slotBind);
+
+        slotBindCycleProfile = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "FishMod: Slot Bind - cycle profile",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                category));
+        TRACKED.put("slot_bind_cycle_profile", slotBindCycleProfile);
 
         dungeonAbility = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "FishMod: Dungeon Ability - Ult (drop)",
@@ -181,6 +186,14 @@ public class Keybinds {
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
         TRACKED.put("storage_viewer", storageViewer);
+
+        // read by ChatSearchMixin off the chat screen — consumeClick never fires while a screen is up
+        chatSearchToggle = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "FishMod: Toggle Chat Search",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                category));
+        TRACKED.put("chat_search_toggle", chatSearchToggle);
 
         restoreKeybindBackup();
 
@@ -208,9 +221,7 @@ public class Keybinds {
             }
             if (changed) {
                 KeyMapping.resetMapping();
-                // options is null this early in startup (Minecraft's own constructor hasn't run
-                // yet); the rebound keys are already live in memory, options.txt just catches up
-                // whenever vanilla next saves on its own.
+                // options is null this early in startup — rebound keys are already live in memory, options.txt catches up later
                 Options options = Minecraft.getInstance().options;
                 if (options != null) options.save();
             }
@@ -250,6 +261,10 @@ public class Keybinds {
             fishmod.features.storage.StorageViewerScreen.open();
         }
 
+        while (slotBindCycleProfile.consumeClick()) {
+            fishmod.features.SlotBinds.cycleProfile();
+        }
+
         if (trades.consumeClick()) {
             Misc.executeCommand("trades");
         }
@@ -257,76 +272,74 @@ public class Keybinds {
             Misc.executeCommand("potionbag");
         }
 
-        if (getItemLore.consumeClick()) {
-            LocalPlayer player = client.player;
-            if (player == null) {
-                Misc.addChatMessage(Component.literal("player is null"));
-                return;
-            }
+        if (getItemLore.consumeClick()) dumpItemLore(client);
+        if (getItemCustomData.consumeClick()) dumpItemNbt(client);
+        if (getBlockInfo.consumeClick()) dumpBlockInfo(client);
+    }
 
-            ItemStack heldStack = player.getMainHandItem();
-            ItemLore lore = heldStack.get(DataComponents.LORE);
-            if (lore == null) {
-                Misc.addChatMessage(Component.literal("lore is null"));
-                return;
-            }
-
-            List<Component> lines = lore.lines();
-            for (Component line : lines) {
-                Misc.addChatMessage(line);
-            }
-
-            Misc.addChatMessage(Component.literal("(item rarity display removed)"));
+    private static void dumpItemLore(Minecraft client) {
+        LocalPlayer player = client.player;
+        if (player == null) {
+            Misc.addChatMessage(Component.literal("player is null"));
+            return;
         }
 
-        if (getItemCustomData.consumeClick()) {
-            LocalPlayer player = client.player;
-            if (player == null) {
-                Misc.addChatMessage(Component.literal("player is null"));
-                return;
-            }
-
-            ItemStack heldStack = player.getMainHandItem();
-            CustomData nbt = heldStack.get(DataComponents.CUSTOM_DATA);
-            if (nbt == null) {
-                Misc.addChatMessage(Component.literal("nbt is null"));
-                return;
-            }
-
-            Misc.addChatMessage(Component.literal(nbt.toString()));
-
+        ItemStack heldStack = player.getMainHandItem();
+        ItemLore lore = heldStack.get(DataComponents.LORE);
+        if (lore == null) {
+            Misc.addChatMessage(Component.literal("lore is null"));
+            return;
         }
 
-        if (getBlockInfo.consumeClick()) {
-            LocalPlayer player = client.player;
-            ClientLevel world = client.level;
-            if (player == null || world == null) {
-                Misc.addChatMessage(Component.literal("player or world is null"));
-                return;
-            }
+        List<Component> lines = lore.lines();
+        for (Component line : lines) {
+            Misc.addChatMessage(line);
+        }
+    }
 
-            HitResult result = player.pick(4, client.getDeltaTracker().getGameTimeDeltaPartialTick(false), true);
+    private static void dumpItemNbt(Minecraft client) {
+        LocalPlayer player = client.player;
+        if (player == null) {
+            Misc.addChatMessage(Component.literal("player is null"));
+            return;
+        }
 
-            if (result instanceof BlockHitResult blockHitResult) {
-                BlockPos pos = blockHitResult.getBlockPos();
-                BlockState state = world.getBlockState(pos);
-                Misc.addChatMessage(Component.literal("Pos: " + pos));
-                if (state.hasBlockEntity()) {
-                    BlockEntity entity = world.getBlockEntity(pos);
-                    Misc.addChatMessage(Component.literal(entity.toString()));
+        ItemStack heldStack = player.getMainHandItem();
+        CustomData nbt = heldStack.get(DataComponents.CUSTOM_DATA);
+        if (nbt == null) {
+            Misc.addChatMessage(Component.literal("nbt is null"));
+            return;
+        }
 
-                    if (entity instanceof SkullBlockEntity skullEntity) {
-                        ResolvableProfile component = skullEntity.getOwnerProfile();
-                        if (component != null) {
-                            GameProfile profile = component.partialProfile();
-                            Misc.addChatMessage(Component.literal("name: " + profile.name() + " id: " + profile.id()));
-                        }
+        Misc.addChatMessage(Component.literal(nbt.toString()));
+    }
+
+    private static void dumpBlockInfo(Minecraft client) {
+        LocalPlayer player = client.player;
+        ClientLevel world = client.level;
+        if (player == null || world == null) {
+            Misc.addChatMessage(Component.literal("player or world is null"));
+            return;
+        }
+
+        HitResult result = player.pick(4, client.getDeltaTracker().getGameTimeDeltaPartialTick(false), true);
+
+        if (result instanceof BlockHitResult blockHitResult) {
+            BlockPos pos = blockHitResult.getBlockPos();
+            BlockState state = world.getBlockState(pos);
+            Misc.addChatMessage(Component.literal("Pos: " + pos));
+            if (state.hasBlockEntity()) {
+                BlockEntity entity = world.getBlockEntity(pos);
+                Misc.addChatMessage(Component.literal(entity.toString()));
+
+                if (entity instanceof SkullBlockEntity skullEntity) {
+                    ResolvableProfile component = skullEntity.getOwnerProfile();
+                    if (component != null) {
+                        GameProfile profile = component.partialProfile();
+                        Misc.addChatMessage(Component.literal("name: " + profile.name() + " id: " + profile.id()));
                     }
                 }
             }
-
-            //wither essence uuid
-            //e0f3e929-869e-3dca-9504-54c666ee6f23
         }
     }
 }

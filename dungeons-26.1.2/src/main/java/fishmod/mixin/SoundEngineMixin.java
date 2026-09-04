@@ -18,18 +18,24 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(SoundEngine.class)
 public class SoundEngineMixin {
 
     @Shadow @Final private ChannelAccess channelAccess;
 
-    // ── ">100%" feature-cue volume ────────────────────────────────────────────
-    // Minecraft clamps a sound instance's volume to [0,1] before it becomes channel gain, so the
-    // etherwarp / arrow-hit "up to 500%" sliders never actually got louder. For a FishLoudSound we
-    // multiply the computed volume back up past 1.0 (ChannelMixin lifts AL_MAX_GAIN so the OpenAL
-    // driver keeps it). Two hooks: the initial gain in play(), and the per-tick refresh.
+    // play(SoundInstance) is the single chokepoint every sound funnels through
+    @Inject(
+        method = "play(Lnet/minecraft/client/resources/sounds/SoundInstance;)Lnet/minecraft/client/sounds/SoundEngine$PlayResult;",
+        at = @At("HEAD"), cancellable = true)
+    private void fishmod$arrowHitCue(SoundInstance instance, CallbackInfoReturnable<SoundEngine.PlayResult> cir) {
+        if (fishmod.features.ArrowHitSound.onLocalSound(instance)) {
+            cir.setReturnValue(SoundEngine.PlayResult.NOT_STARTED);
+        }
+    }
 
+    // MC clamps volume to [0,1] before channel gain; ChannelMixin lifts AL_MAX_GAIN so the boost past 1.0 survives
     @WrapOperation(
         method = "play(Lnet/minecraft/client/resources/sounds/SoundInstance;)Lnet/minecraft/client/sounds/SoundEngine$PlayResult;",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/client/sounds/SoundEngine;calculateVolume(FLnet/minecraft/sounds/SoundSource;)F"))

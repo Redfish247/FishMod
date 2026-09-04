@@ -5,9 +5,8 @@ import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.DungeonClass
 
 /**
- * Which spawning dragon to kill first (ported from NoammAddons' DragonPriority). With the priority
- * toggle off this is just the fixed Red > Orange > Blue > Purple > Green order; on, it factors in
- * blessing power and your class the same way NoammAddons does.
+ * Which spawning dragon to kill first. With the priority toggle off this is just the fixed
+ * Red > Orange > Blue > Purple > Green order; on, it factors in blessing power and your class.
  */
 object DragonPriority {
 

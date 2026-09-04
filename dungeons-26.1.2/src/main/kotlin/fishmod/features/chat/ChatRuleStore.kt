@@ -6,11 +6,12 @@ import com.google.gson.reflect.TypeToken
 import java.io.File
 import java.io.FileReader
 import java.io.FileWriter
+import java.util.regex.Pattern
+import java.util.regex.PatternSyntaxException
 
 /**
  * One chat-watch rule: filter text (plain substring/exact or regex) plus a set of outputs fired
- * on a match. Modeled after Skyblocker's `ChatRule` (github.com/SkyblockerMod/Skyblocker, MIT),
- * scaled down to the outputs FishMod actually renders (no toast-icon/sound-browser).
+ * on a match.
  */
 data class ChatRule(
     var name: String = "New Rule",
@@ -25,7 +26,28 @@ data class ChatRule(
     var titleMessage: String = "",
     var titleDurationMs: Long = 3000L,
     var soundEnabled: Boolean = false
-)
+) {
+    // regex cache; matches() is a hot path — per rule per line on both the packet and display paths
+    @Transient private var patternCache: Pattern? = null
+    @Transient private var patternKey: String? = null
+
+    /**
+     * [filter] compiled for regex matching (only meaningful when [regex] is true). Rebuilt when
+     * [filter] or [ignoreCase] changes; null when [filter] isn't valid regex.
+     */
+    fun compiledPattern(): Pattern? {
+        val key = (if (ignoreCase) "i:" else "s:") + filter
+        if (key != patternKey) {
+            patternKey = key
+            patternCache = try {
+                Pattern.compile(if (ignoreCase) filter.lowercase() else filter)
+            } catch (e: PatternSyntaxException) {
+                null
+            }
+        }
+        return patternCache
+    }
+}
 
 /** Client-only chat-notification rules, persisted separately from [fishmod.utils.config.values.FishSettings] since it's a list of complex objects, not scalars. */
 object ChatRuleStore {

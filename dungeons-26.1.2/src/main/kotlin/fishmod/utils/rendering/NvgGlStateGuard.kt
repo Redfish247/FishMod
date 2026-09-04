@@ -1,5 +1,6 @@
 package fishmod.utils.rendering
 
+import com.mojang.blaze3d.opengl.GlStateManager
 import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL13
 import org.lwjgl.opengl.GL14
@@ -14,6 +15,7 @@ class NvgGlStateGuard {
     private var vao = 0
     private var program = 0
     private var arrayBuffer = 0
+    private var activeTexture = 0
     private var texture2d = 0
     private var blendEnabled = false
     private var scissorEnabled = false
@@ -34,20 +36,13 @@ class NvgGlStateGuard {
     private var frameBuffer = 0
     private var frameBufferLogged = false
 
-    // Sampler objects are GL 3.3; some GPUs/drivers (or a render pipeline substituted by another
-    // mod) only expose an older context where LWJGL's GL33 bindings throw. Tracked so a missing
-    // capability only skips that one step instead of aborting capture()/restore() entirely.
+    // GL33 sampler objects can be missing on old contexts; a missing capability skips only that step
     private var samplerObjectsSupported = true
 
     /** Never throws — a partially-captured state is safe (restore() just no-ops the missing bits). */
     fun capture() {
         try {
-            // Draw onto whatever framebuffer is currently bound rather than forcing a specific one:
-            // Minecraft's real render target isn't always framebuffer 0 on this version's GPU-buffer
-            // based pipeline (confirmed: it was FBO 4 with ImmediatelyFast's "avoid redundant
-            // framebuffer switching" keeping it bound, vs. 0 without it, once something else had
-            // already switched back by the time this ran) — forcing 0 unconditionally previously
-            // broke the working case. Logged once for diagnosis.
+            // capture whatever framebuffer is bound; MC's real target isn't always FBO 0, forcing 0 broke it
             frameBuffer = GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING)
             if (!frameBufferLogged) {
                 frameBufferLogged = true
@@ -57,6 +52,7 @@ class NvgGlStateGuard {
             vao = GL11.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING)
             program = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM)
             arrayBuffer = GL11.glGetInteger(GL15.GL_ARRAY_BUFFER_BINDING)
+            activeTexture = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE)
             GL13.glActiveTexture(GL13.GL_TEXTURE0)
             texture2d = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D)
 
@@ -100,9 +96,11 @@ class NvgGlStateGuard {
     /** Never throws — best-effort restore; a failed step just leaves that bit of GL state as NanoVG left it. */
     fun restore() {
         try {
-            GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, frameBuffer)
+            // framebuffer + program via GlStateManager so blaze3d's state cache stays in sync
+            GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, frameBuffer)
+            GlStateManager._glUseProgram(program)
+            // VAO + array buffer: no cache-syncing equivalent on the public surface, leave raw.
             GL30.glBindVertexArray(vao)
-            GL20.glUseProgram(program)
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, arrayBuffer)
             GL13.glActiveTexture(GL13.GL_TEXTURE0)
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, texture2d)
@@ -124,6 +122,9 @@ class NvgGlStateGuard {
 
             GL11.glViewport(viewport[0], viewport[1], viewport[2], viewport[3])
             GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, unpackAlignment)
+
+            // Last: put the active texture unit back (capture()/restore() force GL_TEXTURE0 above).
+            GL13.glActiveTexture(activeTexture)
         } catch (t: Throwable) {
             fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] NvgGlStateGuard.restore() failed", t)
         }

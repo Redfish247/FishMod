@@ -18,6 +18,7 @@ object MapHud {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map_hud")) { g, _ ->
             val mc = Minecraft.getInstance()
             if (DungeonMapSettings.mapEnabled && !mc.options.hideGui && !mc.options.keyPlayerList.isDown && DungeonState.isInDungeon() &&
+                !fishmod.features.dungeon.LeapMenu.isOverlayOpen() &&
                 (!DungeonState.isInBoss() || MapColors.peeking())
             ) {
                 renderAt(g, mc, DungeonMapSettings.mapX, DungeonMapSettings.mapY, DungeonMapSettings.mapScale, false)
@@ -30,7 +31,9 @@ object MapHud {
         renderAt(g, mc, DungeonMapSettings.mapX, DungeonMapSettings.mapY, DungeonMapSettings.mapScale, true)
     }
 
-    private fun renderAt(g: GuiGraphicsExtractor, mc: Minecraft, x: Float, y: Float, scale: Float, edit: Boolean) {
+    /** Public so the Leap menu's map view can place the map at its own position/scale. */
+    @JvmStatic
+    fun renderAt(g: GuiGraphicsExtractor, mc: Minecraft, x: Float, y: Float, scale: Float, edit: Boolean) {
         val pose = g.pose()
         pose.pushMatrix()
         pose.translate(x, y)

@@ -7,15 +7,14 @@ import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
 
-/** A discovered/inferred dungeon room. Ported 1:1 from System22's Room.java. */
+/** A discovered/inferred dungeon room. */
 class Room(
     var type: Type?,
     var shape: Shape?,
     var data: RoomData?,
-    var height: Int?,
-    var floorHeight: Int?
+    var height: Int?
 ) {
-    constructor(data: RoomData, height: Int, floorHeight: Int) : this(data.type, data.shape, data, height, floorHeight)
+    constructor(data: RoomData, height: Int) : this(data.type, data.shape, data, height)
 
     val tiles: MutableList<Tile> = ArrayList()
     val places: MutableList<MapVec2i> = ArrayList()
@@ -301,39 +300,6 @@ class Room(
         return rotated.offset(clay.x, 0, clay.z)
     }
 
-    /** Room content centre in world coords (y is meaningless — pass your own on [local]). */
-    val centerBlock: BlockPos?
-        get() {
-            if (tiles.isEmpty()) return null
-            val xs = tiles.map { it.pos.x }
-            val zs = tiles.map { it.pos.z }
-            return BlockPos((xs.min() + xs.max()) / 2 + 15, 0, (zs.min() + zs.max()) / 2 + 15)
-        }
-
-    /** [rotation] as NoammAddons/ScanUtils-style degrees. */
-    val rotationDegrees: Int
-        get() = when (rotation) {
-            Rotation.EAST -> 90
-            Rotation.NORTH -> 180
-            Rotation.WEST -> 270
-            else -> 0
-        }
-
-    /** NoammAddons `ScanUtils.getRealCoord`: centre-relative, north-up [local] -> world. */
-    @JvmOverloads
-    fun realCoord(local: BlockPos, deg: Int = rotationDegrees): BlockPos? {
-        val c = centerBlock ?: return null
-        val x = local.x; val z = local.z
-        val rx: Int; val rz: Int
-        when (((deg % 360) + 360) % 360) {
-            90 -> { rx = z; rz = -x }
-            180 -> { rx = -x; rz = -z }
-            270 -> { rx = -z; rz = x }
-            else -> { rx = x; rz = z }
-        }
-        return BlockPos(c.x + rx, local.y, c.z + rz)
-    }
-
     enum class Type {
         BLOOD, CHAMPION, ENTRANCE, FAIRY, NORMAL, PUZZLE, RARE, TRAP, UNKNOWN
     }
@@ -373,9 +339,6 @@ class Room(
             val z = (pos.z + 185) shr 5
             placement = MapVec2i(x * 20, z * 20)
         }
-
-        val listIndex: Int
-            get() = (pos.x + 185) / 32 * 6 + (pos.z + 185) / 32
     }
 
     class StateUpdated(val room: Room, val old: State, val neu: State)

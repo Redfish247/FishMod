@@ -16,7 +16,7 @@ private const val GAP = 12
 private const val MARGIN = 18
 private const val HEADER = 26
 
-// "Liquid glass" palette — translucent so the blurred game shows through.
+// translucent palette so the blurred game shows through
 private const val BASE_TINT = 0x22_0A0A12
 private const val PANEL_BG = 0x40_1B2130
 private const val GLASS_TOP = 0x26_FFFFFF
@@ -44,7 +44,6 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         titleRects.clear()
-        // Frost the game behind, then draw on a fresh stratum.
         runCatching { ctx.blurBeforeThisStratum() }
         runCatching { ctx.nextStratum() }
         ctx.fill(0, 0, width, height, BASE_TINT)
@@ -61,9 +60,8 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
 
         ctx.text(font, "§fStorage Viewer  §7${data.size} pages", panelX + 12, panelY + 9, -1)
 
-        // "Load all" — pages through every storage page so they're all cached.
         val btn = if (StorageAutoLoader.running()) "§e● loading… (click to stop)" else "§b[ Load all pages ]"
-        val btnW = font.width(btn.replace(Regex("§."), ""))
+        val btnW = font.width(btn.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, ""))
         val bx = panelX2 - btnW - 14
         val by = panelY + 5
         val bHover = mouseX in bx - 4..bx + btnW + 4 && mouseY in by - 2..by + 12
@@ -95,7 +93,6 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
         contentHeight = (y + rowMaxH) - topBase + 24
         runCatching { ctx.disableScissor() }
 
-        // slim scroll indicator
         val maxScroll = maxScroll()
         if (maxScroll > 0) {
             val trackH = viewBot - viewTop
@@ -113,7 +110,6 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
     private fun glassPanel(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int) {
         ctx.fill(x1, y1, x2, y2, PANEL_BG)
         runCatching { ctx.fillGradient(x1, y1, x2, y1 + (y2 - y1) / 2, GLASS_TOP, GLASS_BOT) }
-        // edges: bright top/left, dark bottom/right — the classic "glass lip"
         ctx.fill(x1, y1, x2, y1 + 1, EDGE_LIGHT)
         ctx.fill(x1, y1, x1 + 1, y2, EDGE_LIGHT)
         ctx.fill(x1, y2 - 1, x2, y2, EDGE_DARK)

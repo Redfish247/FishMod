@@ -120,8 +120,7 @@ class CommandAliasesScreen : Screen(Component.literal("Command Aliases")), HasNv
             if (rowTop + ROW_H < listY || rowTop > listY + listH) continue
             val idx = i
 
-            // Kept only for value/cursor state — never added as a Screen widget (its own
-            // extractRenderState() would flush before the NanoVG overlay and be invisible under it).
+            // value/cursor state only — not a Screen widget (its extractRenderState would flush before the NanoVG overlay)
             val aliasField = EditBox(this.font, listX + 3, rowTop + 3, ALIAS_FIELD_W - 6, 18, Component.literal("Alias"))
             aliasField.setMaxLength(32)
             aliasField.setBordered(false)
@@ -253,8 +252,6 @@ class CommandAliasesScreen : Screen(Component.literal("Command Aliases")), HasNv
         rebuildRows()
         return true
     }
-
-    // ── NanoVG overlay ───────────────────────────────────────────────────────────
 
     private val nvgGlState = NvgGlStateGuard()
     private var nvgFailureLogged = false

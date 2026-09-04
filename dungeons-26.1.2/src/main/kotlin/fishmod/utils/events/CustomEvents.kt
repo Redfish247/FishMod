@@ -14,33 +14,29 @@ object CustomEvents {
 
     @JvmStatic
     fun init() {
-        // party event
         ClientReceiveMessageEvents.GAME.register { message, _ ->
             val string = message.string
 
             val matcher = PARTY_PATTERN.matcher(string)
             if (!matcher.find()) return@register
 
-            var index = string.indexOf(":")
+            val index = string.indexOf(":")
             if (index < PARTY_MSG_OFFSET) {
                 Debug.LOGGER.error("{} had bad index", string)
                 return@register
             }
 
-            var tempUsername = string.substring(PARTY_MSG_OFFSET, index).replace(Regex("§."), "")
+            var tempUsername = string.substring(PARTY_MSG_OFFSET, index).replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
             if (index + 2 >= string.length) return@register
             val sentMessage = string.substring(index + 2).trim()
 
-            index = tempUsername.indexOf("]") + 2
-            if (index > -1 && index < tempUsername.length) {
-                tempUsername = tempUsername.substring(index)
-            }
+            val b = tempUsername.indexOf("]")
+            if (b >= 0 && b + 2 <= tempUsername.length) tempUsername = tempUsername.substring(b + 2)
 
             val username = tempUsername
             Events.ON_PARTY_MESSAGE.invoke { partyMessageEvent -> partyMessageEvent.sentMessage(username, sentMessage) }
         }
 
-        // leap event
         ClientReceiveMessageEvents.GAME.register { message, _ ->
             if (Location.inDungeon()) {
                 val string = message.string

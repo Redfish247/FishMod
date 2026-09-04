@@ -47,6 +47,7 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
 
         private const val ROW_H = 24
         private const val MAX_VISIBLE = 6
+        private const val TOGGLE_BTN_W = 30
         private const val KEY_BTN_W = 120
         private const val REMOVE_BTN_W = 20
     }
@@ -58,6 +59,7 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
 
     private val keys: MutableList<InputConstants.Key> = ArrayList()
     private val commands: MutableList<String> = ArrayList()
+    private val enabled: MutableList<Boolean> = ArrayList()
     private var capturingIndex: Int? = null
     private var scroll = 0
 
@@ -79,6 +81,7 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
     }
 
     private val keyRects: MutableList<KeyRect> = ArrayList()
+    private val toggleRects: MutableList<ClickRect> = ArrayList()
     private val removeRects: MutableList<ClickRect> = ArrayList()
     private val cmdFields: MutableList<EditBox> = ArrayList()
     private val cmdFieldRects: MutableList<ClickRect> = ArrayList()
@@ -90,6 +93,7 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
         for (e in CommandKeys.all()) {
             keys.add(e.key())
             commands.add(e.command())
+            enabled.add(e.enabled())
         }
 
         listH = ROW_H * MAX_VISIBLE
@@ -102,8 +106,8 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
         listX = panelX + 14
         listY = panelY + 44
         listW = panelW - 28
-        cmdFieldX = listX + KEY_BTN_W + 6
-        cmdFieldW = listW - KEY_BTN_W - 6 - REMOVE_BTN_W - 6
+        cmdFieldX = listX + TOGGLE_BTN_W + 6 + KEY_BTN_W + 6
+        cmdFieldW = listW - TOGGLE_BTN_W - 6 - KEY_BTN_W - 6 - REMOVE_BTN_W - 6
         removeBtnX = listX + listW - REMOVE_BTN_W
 
         rebuildRows()
@@ -111,12 +115,13 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
 
     private fun persist() {
         val list = ArrayList<CommandKeys.Entry>()
-        for (i in keys.indices) list.add(CommandKeys.Entry(keys[i], commands[i]))
+        for (i in keys.indices) list.add(CommandKeys.Entry(keys[i], commands[i], enabled[i]))
         CommandKeys.replaceAll(list)
     }
 
     private fun rebuildRows() {
         keyRects.clear()
+        toggleRects.clear()
         removeRects.clear()
         cmdFields.clear()
         cmdFieldRects.clear()
@@ -126,10 +131,15 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
             if (rowTop + ROW_H < listY || rowTop > listY + listH) continue
             val idx = i
 
-            keyRects.add(KeyRect(idx, listX, rowTop + 3, KEY_BTN_W, 18))
+            toggleRects.add(ClickRect(listX, rowTop + 3, TOGGLE_BTN_W, 18) {
+                enabled[idx] = !enabled[idx]
+                persist()
+                rebuildRows()
+            })
 
-            // Kept only for value/cursor state — never added as a Screen widget (its own
-            // extractRenderState() would flush before the NanoVG overlay and be invisible under it).
+            keyRects.add(KeyRect(idx, listX + TOGGLE_BTN_W + 6, rowTop + 3, KEY_BTN_W, 18))
+
+            // value/cursor state only — not a Screen widget (its extractRenderState would flush before the NanoVG overlay)
             val cmdField = EditBox(this.font, cmdFieldX + 4, rowTop + 3, cmdFieldW - 8, 18, Component.literal("Command"))
             cmdField.setMaxLength(256)
             cmdField.setBordered(false)
@@ -145,6 +155,7 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
             removeRects.add(ClickRect(removeBtnX, rowTop + 3, REMOVE_BTN_W, 18) {
                 keys.removeAt(idx)
                 commands.removeAt(idx)
+                enabled.removeAt(idx)
                 if (focusedRow == idx) focusedRow = -1
                 persist()
                 rebuildRows()
@@ -155,6 +166,7 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
         addBtn = ClickRect(panelX + 14, btnY, 160, 20) {
             keys.add(InputConstants.UNKNOWN)
             commands.add("")
+            enabled.add(true)
             persist()
             rebuildRows()
         }
@@ -179,6 +191,17 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
             val hover = r.hit(mouseX, mouseY)
             val capturing = capturingIndex == r.idx
             val k = keys[r.idx]
+            val on = enabled[r.idx]
+
+            if (i < toggleRects.size) {
+                val t = toggleRects[i]
+                val tHover = t.hit(mouseX, mouseY)
+                val tFill = if (on) (if (tHover) ACCENT_HOVER else ACCENT) else (if (tHover) 0xFF4A505C.toInt() else 0xFF3A3F4A.toInt())
+                ScreenTheme.nPill(t.x, t.y, t.x + t.w, t.y + t.h, tFill)
+                val tLabel = if (on) "On" else "Off"
+                val ttw = ScreenTheme.nstw(tLabel)
+                ScreenTheme.nst(tLabel, t.x + (t.w - ttw) / 2, t.y + (t.h - 8) / 2, if (on) 0xFF06302F.toInt() else SUBTEXT_COLOR)
+            }
             val label = when {
                 capturing -> "> Press a key <"
                 k == InputConstants.UNKNOWN -> "Unbound"
@@ -194,7 +217,7 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
                 text = "$text..."
                 tw = ScreenTheme.nstw(text)
             }
-            ScreenTheme.nst(text, r.x + (r.w - tw) / 2, r.y + (r.h - 8) / 2, if (capturing) ACCENT_HOVER else TEXT_COLOR)
+            ScreenTheme.nst(text, r.x + (r.w - tw) / 2, r.y + (r.h - 8) / 2, if (capturing) ACCENT_HOVER else if (!on) SUBTEXT_COLOR else TEXT_COLOR)
 
             if (i < cmdFields.size) ScreenTheme.nTextField(cmdFields[i], cmdFields[i].isFocused, cmdFieldX, r.y, cmdFieldW, 18)
         }
@@ -238,6 +261,9 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
             return true
         }
 
+        for (r in toggleRects) {
+            if (r.hit(mx, my)) { r.action(); return true }
+        }
         for (r in keyRects) {
             if (r.hit(mx, my)) { capturingIndex = r.idx; focusedRow = -1; return true }
         }
@@ -296,8 +322,6 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
         rebuildRows()
         return true
     }
-
-    // ── NanoVG overlay ───────────────────────────────────────────────────────────
 
     private val nvgGlState = NvgGlStateGuard()
     private var nvgFailureLogged = false

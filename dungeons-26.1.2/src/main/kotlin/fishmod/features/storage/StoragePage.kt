@@ -2,7 +2,7 @@ package fishmod.features.storage
 
 import net.minecraft.client.Minecraft
 
-/** One storage page: ender-chest pages are index 0..8, backpack pages 9..26 (Noamm's layout). */
+/** One storage page: ender-chest pages are index 0..8, backpack pages 9..26. */
 data class StoragePage(val index: Int) : Comparable<StoragePage> {
     val isEnderChest get() = index < 9
     val name get() = if (isEnderChest) "Ender Chest #${index + 1}" else "Backpack #${index - 9 + 1}"
@@ -24,7 +24,7 @@ data class StoragePage(val index: Int) : Comparable<StoragePage> {
             return null
         }
 
-        /** Overview slot -> page index (NoammAddons layout: ender 9..17, backpack 27..44). */
+        /** Overview slot -> page index (ender 9..17, backpack 27..44). */
         fun overviewIndex(slot: Int): Int? = when (slot) {
             in 9..17 -> slot - 9
             in 27..44 -> slot - 27 + 9

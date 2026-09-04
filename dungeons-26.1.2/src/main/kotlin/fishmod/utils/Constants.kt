@@ -27,4 +27,6 @@ object Constants {
 
     @JvmField val FAIL: Int = 0
     @JvmField val SUCCESS: Int = 1
+
+    @JvmField val STRIP_COLOR_REGEX: Regex = Regex("§.")
 }

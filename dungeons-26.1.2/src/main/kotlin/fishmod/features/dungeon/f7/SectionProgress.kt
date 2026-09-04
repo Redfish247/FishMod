@@ -10,7 +10,7 @@ import fishmod.utils.rendering.RenderUtils
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-/** Terminal-section progress (completed/total), optional prev-objective label. Ported from blade-addons. */
+/** Terminal-section progress (completed/total), optional prev-objective label. */
 object SectionProgress {
 
     private var completed = 0
@@ -74,9 +74,7 @@ object SectionProgress {
         else "§c"
     }
 
-    private fun getTotal(): Int {
-        return if (Section.getSection() != 2) 7 else 8
-    }
+    private fun getTotal(): Int = Section.totalFor(Section.getSection())
 
     private fun getProgressText(): Component {
         if (Floor7.sectionColorProgress) {

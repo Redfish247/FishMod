@@ -13,23 +13,20 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.sounds.SoundEvents
+import net.minecraft.util.ARGB
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 
 /**
- * Etherwarp Helper (ported from Odin's EtherWarpHelper, visual/audio feedback core only — the
- * rotator / trigger-bot bits are intentionally left out). Steps the look vector up to ~61 blocks,
- * boxes the block you'd warp onto (green when you could stand there, red when you couldn't), and
- * can play a cue on the teleport.
+ * Etherwarp Helper (visual/audio feedback only — the rotator / trigger-bot bits are intentionally
+ * left out). Steps the look vector up to ~61 blocks, boxes the block you'd warp onto (green when you
+ * could stand there, red when you couldn't), and can play a cue on the teleport.
  */
 object EtherwarpHelper {
 
     private val ITEMS = setOf("ASPECT_OF_THE_VOID", "ASPECT_OF_THE_END", "ETHERWARP_CONDUIT")
 
-    // Hypixel confirms a successful etherwarp by sending exactly this sound packet: the ender dragon
-    // hurt sound at volume 1.0 and this one magic pitch. Odin's EtherWarpHelper keys off the same
-    // signature (1.8 "mob.enderdragon.hit" / vol 1 / pitch 0.53968257) — no sneak/hold check needed,
-    // the triple is unique enough on its own.
+    // Hypixel's successful-etherwarp cue: ender dragon hurt sound at volume 1.0 and this exact pitch
     private const val ETHERWARP_PITCH = 0.53968257f
 
     @Volatile private var target: BlockPos? = null
@@ -55,16 +52,12 @@ object EtherwarpHelper {
         Events.ON_SOUND.register { event, volume, pitch ->
             if (!FishSettings.etherwarpHelperEnabled || !FishSettings.etherwarpSoundEnabled) return@register false
             if (volume != 1f || pitch != ETHERWARP_PITCH || !Location.inSkyblock()) return@register false
-            // vol 1.0 + pitch 0.53968257 is already a near-unique fingerprint; also require either the
-            // dragon-hurt id (name may not survive Hypixel's 1.8->modern sound translation) or that
-            // an ether item is/was in hand.
+            // pitch+volume is near-unique already; also require a dragon-hurt id (may not survive Hypixel's 1.8->modern translation) or an ether item in hand
             val looksRight = event == SoundEvents.ENDER_DRAGON_HURT ||
                 event.location.path.let { it.contains("dragon") && (it.contains("hurt") || it.contains("hit")) } ||
                 holdingEtherItem()
             if (!looksRight) return@register false
-            // Emit directly (not SoundManager.play, which is gated by the global sound-master toggle
-            // and, importantly, preset() only *resolves* a name — it never played anything, which is
-            // why this was silent). This feature's own two toggles are gate enough.
+            // emit directly — SoundManager.play is gated by the sound-master toggle, and preset() only resolves a name (that's why this was silent)
             val now = System.currentTimeMillis()
             if (now - lastCue < 150L) return@register true
             lastCue = now
@@ -74,9 +67,8 @@ object EtherwarpHelper {
             true // swallow Hypixel's dragon-hurt cue; we replaced it with the chosen sound
         }
 
-        RenderingEvents.FILLED_BLOCK.register { _, m, vc -> if (!FishSettings.etherwarpDepth) render(m, vc, fill = true) }
+        RenderingEvents.GIZMO.register { _ -> if (!FishSettings.etherwarpDepth) renderGizmo() }
         RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> if (FishSettings.etherwarpDepth) render(m, vc, fill = true) }
-        RenderingEvents.LINE.register { _, m, vc -> if (!FishSettings.etherwarpDepth) render(m, vc, fill = false) }
         RenderingEvents.NO_DEPTH_LINE.register { _, m, vc -> if (FishSettings.etherwarpDepth) render(m, vc, fill = false) }
     }
 
@@ -108,21 +100,15 @@ object EtherwarpHelper {
 
     private val FULL = AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
 
-    private fun render(matrices: PoseStack, vc: VertexConsumer, fill: Boolean) {
-        if (!FishSettings.etherwarpHelperEnabled || !FishSettings.etherwarpShowGuess) return
-        val bp = target ?: return
-        if (!valid && !FishSettings.etherwarpShowFail) return
-        val color = if (valid) FishSettings.etherwarpColor else FishSettings.etherwarpFailColor
-        val rgba = RenderUtils.toFloats(color)
-        val fillRgba = floatArrayOf(rgba[0], rgba[1], rgba[2], rgba[3] * 0.4f)
-        val lineRgba = floatArrayOf(rgba[0], rgba[1], rgba[2], 1f)
-        val lvl = Minecraft.getInstance().level ?: return
+    /** The guess boxes in world space, or null if nothing should draw. */
+    private fun guessBoxes(): List<AABB>? {
+        if (!FishSettings.etherwarpHelperEnabled || !FishSettings.etherwarpShowGuess) return null
+        val bp = target ?: return null
+        if (!valid && !FishSettings.etherwarpShowFail) return null
+        val lvl = Minecraft.getInstance().level ?: return null
 
-        // Trace the block's real shape so slabs/stairs/heads/lanterns/walls draw (and read) as the
-        // box you'd actually stand on, not a full cube. Use the visual outline shape first: a wall's
-        // collision box is 1.5 blocks tall for mob pathing, which would poke the guess above the
-        // block — the outline shape is the ~1-tall post+arms you actually see. Full Block forces a cube.
-        val boxes: List<AABB> = if (FishSettings.etherwarpFullBlock) {
+        // use the visual outline shape, not collision: a wall's 1.5-tall collision box would poke the guess above the block
+        val local: List<AABB> = if (FishSettings.etherwarpFullBlock) {
             listOf(FULL)
         } else {
             val st = lvl.getBlockState(bp)
@@ -130,9 +116,25 @@ object EtherwarpHelper {
             if (shape.isEmpty) shape = st.getCollisionShape(lvl, bp)
             if (shape.isEmpty) listOf(FULL) else shape.toAabbs()
         }
+        return local.map { it.move(bp.x.toDouble(), bp.y.toDouble(), bp.z.toDouble()).inflate(0.002) }
+    }
 
-        for (b in boxes) {
-            val box = b.move(bp.x.toDouble(), bp.y.toDouble(), bp.z.toDouble()).inflate(0.002)
+    private fun guessColor(): Int = if (valid) FishSettings.etherwarpColor else FishSettings.etherwarpFailColor
+
+    private fun renderGizmo() {
+        val boxes = guessBoxes() ?: return
+        val color = guessColor()
+        val fillArgb = ARGB.multiplyAlpha(color, 0.4f)
+        val lineArgb = ARGB.opaque(color)
+        for (box in boxes) RenderUtils.gizmoBox(box, fillArgb, lineArgb)
+    }
+
+    private fun render(matrices: PoseStack, vc: VertexConsumer, fill: Boolean) {
+        val boxes = guessBoxes() ?: return
+        val rgba = RenderUtils.toFloats(guessColor())
+        val fillRgba = floatArrayOf(rgba[0], rgba[1], rgba[2], rgba[3] * 0.4f)
+        val lineRgba = floatArrayOf(rgba[0], rgba[1], rgba[2], 1f)
+        for (box in boxes) {
             if (fill) RenderUtils.renderFilled(matrices, vc, box, fillRgba)
             else RenderUtils.renderOutline(matrices, vc, box, lineRgba)
         }

@@ -23,7 +23,7 @@ object ChatHideState {
     @JvmStatic
     fun shouldSwallowBlank(message: Component?): Boolean {
         if (message == null) return false
-        val s = message.string?.replace(Regex("§."), "")?.trim() ?: return false
+        val s = message.string?.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")?.trim() ?: return false
         if (s.isNotEmpty()) return false
         // Same packet bundle is processed back-to-back; 40ms is generous slack.
         val hit = (System.nanoTime() - suppressedAtNanos) <= 40_000_000L

@@ -11,14 +11,16 @@ import java.util.regex.Pattern
  * Party Finder join-request helper: while [FishSettings.pfStatsEnabled] is on, a local-only lookup
  * of a player's MP/PB/Cata/Gear is printed to your own chat so you can vet them. Triggers on both a
  * received whisper (someone asking to join) and the "Party Finder > X joined the dungeon group!"
- * line (ported from NoammAddons' PartyFinder join-stats). Nothing is ever sent back.
+ * line. Nothing is ever sent back.
  */
 object PartyFinderStats {
 
     private val lastLookupAt: MutableMap<String, Long> = HashMap()
     private const val COOLDOWN_MS = 15_000L
 
-    // NoammAddons' trigger: "Party Finder > Name joined the dungeon group! (Archer Level 42)"
+    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
+
+    // Trigger: "Party Finder > Name joined the dungeon group! (Archer Level 42)"
     private val PF_JOIN: Pattern =
         Pattern.compile("^Party Finder > (\\w{1,16}) joined the dungeon group! \\((\\w+) Level (\\d+)\\)$")
 
@@ -26,15 +28,20 @@ object PartyFinderStats {
     fun init() {
         Events.ON_GAME_MESSAGE.register { text ->
             if (!FishSettings.pfStatsEnabled) return@register false
-            val m = PF_JOIN.matcher(text.string.replace(Regex("§."), ""))
+            val m = PF_JOIN.matcher(text.string.replace(COLOR, ""))
             if (m.find()) lookup(m.group(1), joinLine = true)
             false
         }
     }
 
+    // Hypixel prints "From stash: <item>" for every item you pull with /pickupstash — that matches
+    // the generic "From X: …" whisper pattern, so guard against it (and any other reserved sender).
+    private val NON_PLAYER_SENDERS = setOf("stash")
+
     /** Whisper path (kept for direct "From X:" join requests). */
     @JvmStatic
     fun onWhisper(sender: String?) {
+        if (sender != null && sender.lowercase() in NON_PLAYER_SENDERS) return
         lookup(sender, joinLine = false)
     }
 

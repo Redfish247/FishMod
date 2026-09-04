@@ -39,11 +39,11 @@ class TermSimScreen private constructor(
     private var startLetter = "A"
     private var selColor = "red"
     private var openedAt = 0L
+    private var startedAt = 0L   // set on the first click of a round — that's when the clock starts
     private var lastMs = 0L
     private var misses = 0
     private var solvedCount = 0
 
-    // melody state
     private var melRow = 1
     private var melTarget = 1
     private var melLime = 1
@@ -62,8 +62,6 @@ class TermSimScreen private constructor(
         super.removed()
     }
 
-    // ── PB persistence ─────────────────────────────────────────────────────
-
     private fun loadPbs() = FishSettings.termSimPbs.split(',').forEachIndexed { i, s ->
         if (i < pbs.size) s.trim().toDoubleOrNull()?.let { pbs[i] = it }
     }
@@ -73,16 +71,14 @@ class TermSimScreen private constructor(
         runCatching { FishConfig.manager.save() }
     }
 
-    // ── flow ───────────────────────────────────────────────────────────────
-
     private fun newRound(t: TerminalType) {
         type = t
         for (i in 0 until box.containerSize) box.setItem(i, ItemStack.EMPTY)
         openedAt = System.currentTimeMillis()
+        startedAt = 0L
         misses = 0
 
-        // Pick per-type params first so the handler can be built before generation (melody's
-        // generator calls sync() and needs `handler` set).
+        // pick per-type params first so the handler is built before generation (melody's generator calls sync() and needs handler set)
         if (t == TerminalType.STARTS_WITH) startLetter = "ABCDGMNRST"[Random.nextInt(10)].toString()
         if (t == TerminalType.SELECT) selColor = SELECT_COLORS.random()
         handler = when (t) {
@@ -114,16 +110,17 @@ class TermSimScreen private constructor(
     }
 
     private fun win() {
-        lastMs = System.currentTimeMillis() - openedAt
+        lastMs = System.currentTimeMillis() - (if (startedAt != 0L) startedAt else openedAt)
         val o = type.ordinal
         if (lastMs / 1000.0 < pbs[o]) { pbs[o] = lastMs / 1000.0; savePbs() }
         solvedCount++
+        if (fishmod.utils.config.values.FishSettings.terminalSolverSound) {
+            fishmod.utils.sound.SoundManager.ping("termSimSolved", 0)
+        }
         newRound(type)
     }
 
     private fun ping() = Minecraft.getInstance().player?.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 0.4f, 1.6f)
-
-    // ── generation (Hypixel layouts, from Odin's *Sim classes) ─────────────
 
     private fun genPanes() {
         for (i in 0 until 45) box.setItem(i, ItemStack(BLACK))
@@ -203,8 +200,6 @@ class TermSimScreen private constructor(
         rebuildMelody()
     }
 
-    // ── clicks ─────────────────────────────────────────────────────────────
-
     override fun slotClicked(slot: Slot, slotId: Int, mouseButton: Int, input: ContainerInput) {
         if (slot.container !== box) return  // ignore player inventory
         simClick(slot.index, mouseButton)
@@ -213,6 +208,7 @@ class TermSimScreen private constructor(
     /** Apply the Hypixel effect for a click on board slot [idx]. Also called from the Custom GUI path. */
     fun simClick(idx: Int, button: Int) {
         if (idx < 0 || idx >= type.windowSize) return
+        if (startedAt == 0L) startedAt = System.currentTimeMillis()   // clock starts on the first click
         val right = button == 1
         val st = box.getItem(idx)
 
@@ -262,8 +258,6 @@ class TermSimScreen private constructor(
         return path.contains(selColor) && (selColor == "light_blue" || !path.contains("light_blue"))
     }
 
-    // ── keys ───────────────────────────────────────────────────────────────
-
     override fun keyPressed(input: KeyEvent): Boolean {
         val k = input.key()
         if (k in GLFW.GLFW_KEY_1..GLFW.GLFW_KEY_6) {
@@ -273,11 +267,10 @@ class TermSimScreen private constructor(
         return super.keyPressed(input)
     }
 
-    // ── overlay (timer / PB / controls) — called from HandledScreenMixin ───
-
+    // called from HandledScreenMixin
     fun overlay(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
-        val t = (System.currentTimeMillis() - openedAt) / 1000.0
+        val t = if (startedAt == 0L) 0.0 else (System.currentTimeMillis() - startedAt) / 1000.0
         val best = pbs[type.ordinal].let { if (it == Double.MAX_VALUE) "--" else "%.2fs".format(it) }
         val last = if (lastMs == 0L) "--" else "%.2fs".format(lastMs / 1000.0)
         ctx.text(mc.font, "§e${hyTitle(type, startLetter, selColor)}", 6, 6, -1, true)
@@ -312,7 +305,7 @@ class TermSimScreen private constructor(
             SELECT_MATS.mapNotNull { BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath("minecraft", "${color}_$it")) }
                 .ifEmpty { listOf(Items.WHITE_WOOL) }
 
-        private fun plain(s: ItemStack): String = s.hoverName.string.replace(Regex("§."), "").trim()
+        private fun plain(s: ItemStack): String = s.hoverName.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()
 
         private fun hyTitle(t: TerminalType, letter: String, color: String): String = when (t) {
             TerminalType.PANES -> "Correct all the panes!"

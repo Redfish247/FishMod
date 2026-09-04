@@ -15,21 +15,23 @@ import net.minecraft.client.renderer.rendertype.RenderType
 import net.minecraft.resources.Identifier
 
 /**
- * World-overlay render layers, rebuilt on the System22 `WaypointTest` pattern: plain
+ * World-overlay render layers: plain
  * `core/position_color` pipelines drawn straight onto the main target from
  * [LevelRenderEvents.END_MAIN][net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents.END_MAIN]
  * with an immediate `endBatch`, instead of the old deferred `submitCustomGeometry` path (which
  * dropped geometry a flush too late and needed the elaborate DEBUG_FILLED_BOX pipeline surgery).
  *
- * - [FILL] / [FILL_ND]  — POSITION_COLOR, QUADS       (6 quads per box). ND = through walls.
- * - [LINE] / [LINE_ND]  — POSITION_COLOR, DEBUG_LINES (2 verts per edge). ND = through walls.
+ * - [FILL_ND]  — POSITION_COLOR, QUADS       (6 quads per box), ALWAYS_PASS (through walls).
+ * - [LINE_ND]  — POSITION_COLOR, DEBUG_LINES (2 verts per edge), ALWAYS_PASS (through walls).
  *
- * All four disable depth *writes* (pure paint-on-top). The depth-tested pair reads depth with
- * LESS_THAN_OR_EQUAL so terrain occludes them; the ND pair uses ALWAYS_PASS.
+ * Both disable depth *writes* and use `ALWAYS_PASS` — pure paint-on-top, matching the reference's
+ * `renderEsp`. Occluded (depth-tested) highlights do NOT live here anymore: they go through vanilla
+ * `net.minecraft.gizmos.Gizmos` (see [RenderingEvents.GIZMO]), which the hand-rolled
+ * `LESS_THAN_OR_EQUAL` pipeline never rendered correctly from the `END_MAIN` pass.
  */
 object RenderLayers {
 
-    private fun pipeline(name: String, mode: VertexFormat.Mode, depthTested: Boolean): RenderPipeline =
+    private fun pipeline(name: String, mode: VertexFormat.Mode): RenderPipeline =
         RenderPipelines.register(
             RenderPipeline.builder()
                 .withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
@@ -37,9 +39,7 @@ object RenderLayers {
                 .withVertexShader("core/position_color")
                 .withFragmentShader("core/position_color")
                 .withColorTargetState(ColorTargetState(BlendFunction.TRANSLUCENT))
-                .withDepthStencilState(
-                    DepthStencilState(if (depthTested) CompareOp.LESS_THAN_OR_EQUAL else CompareOp.ALWAYS_PASS, false)
-                )
+                .withDepthStencilState(DepthStencilState(CompareOp.ALWAYS_PASS, false))
                 .withCull(false)
                 .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, mode)
                 .withLocation(Identifier.fromNamespaceAndPath("fishmod", name))
@@ -49,12 +49,6 @@ object RenderLayers {
     private fun renderType(name: String, p: RenderPipeline): RenderType =
         RenderType.create(name, RenderSetup.builder(p).setOutputTarget(OutputTarget.MAIN_TARGET).createRenderSetup())
 
-    @JvmField val FILL: RenderType = renderType("fishmod:esp_fill", pipeline("pipeline/esp_fill", VertexFormat.Mode.QUADS, true))
-    @JvmField val FILL_ND: RenderType = renderType("fishmod:esp_fill_nd", pipeline("pipeline/esp_fill_nd", VertexFormat.Mode.QUADS, false))
-    @JvmField val LINE: RenderType = renderType("fishmod:esp_line", pipeline("pipeline/esp_line", VertexFormat.Mode.DEBUG_LINES, true))
-    @JvmField val LINE_ND: RenderType = renderType("fishmod:esp_line_nd", pipeline("pipeline/esp_line_nd", VertexFormat.Mode.DEBUG_LINES, false))
-
-    /** Back-compat helper used by [RenderingEvents]. */
-    @JvmStatic
-    fun getOutline(@Suppress("UNUSED_PARAMETER") width: Int, depthCheck: Boolean): RenderType = if (depthCheck) LINE else LINE_ND
+    @JvmField val FILL_ND: RenderType = renderType("fishmod:esp_fill_nd", pipeline("pipeline/esp_fill_nd", VertexFormat.Mode.QUADS))
+    @JvmField val LINE_ND: RenderType = renderType("fishmod:esp_line_nd", pipeline("pipeline/esp_line_nd", VertexFormat.Mode.DEBUG_LINES))
 }

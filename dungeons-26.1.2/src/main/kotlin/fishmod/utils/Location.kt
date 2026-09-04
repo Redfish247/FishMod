@@ -86,12 +86,14 @@ enum class Location(val name2: String) {
 
         @JvmStatic
         fun `in`(location: Location): Boolean {
+            if (fishmod.utils.dungeon.PracticeMode.active && location == DUNGEON) return true
             if (!inSkyblockFlag) return false
             return currentLocation == location
         }
 
         @JvmStatic
         fun inDungeon(): Boolean {
+            if (fishmod.utils.dungeon.PracticeMode.active) return true
             if (!inSkyblockFlag) return false
             return currentLocation == DUNGEON
         }
@@ -103,7 +105,7 @@ enum class Location(val name2: String) {
         fun getCurrentLocation(): Location = currentLocation
 
         @JvmStatic
-        fun inSkyblock(): Boolean = inSkyblockFlag
+        fun inSkyblock(): Boolean = inSkyblockFlag || fishmod.utils.dungeon.PracticeMode.active
 
         @JvmStatic
         fun hasReceivedLocation(): Boolean = detectedNewLocation

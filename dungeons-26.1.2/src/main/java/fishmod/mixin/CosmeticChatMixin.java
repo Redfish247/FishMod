@@ -11,9 +11,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 @Mixin(ChatComponent.class)
 public abstract class CosmeticChatMixin {
 
-    // addPlayerMessage/addClientSystemMessage/addServerSystemMessage all funnel into this private
-    // 4-arg addMessage internally (confirmed via bytecode disassembly), so hooking it once here
-    // catches every message source without double-applying the swap.
+    // All add*Message paths funnel into this private 4-arg addMessage — hook once, no double-swap
     @ModifyVariable(
         method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
         at = @At("HEAD"), argsOnly = true)

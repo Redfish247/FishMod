@@ -13,16 +13,15 @@ import java.util.regex.Pattern
  */
 object BridgeBot {
 
+    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
+
     @Volatile private var pattern: Pattern = buildPattern()
 
     private fun buildPattern(): Pattern {
         val name = FishSettings.bridgeBotName.trim()
         if (name.isBlank()) return Pattern.compile("(?!)") // never matches
         val bot = Pattern.quote(name)
-        // rank before the bot name and a guild-rank tag after it are both optional. The player name
-        // is a strict Hypixel name (\w, 2-16) so the "name : message" separator colon can't be
-        // swallowed into the capture (that was doubling the colon on reprint); the separator itself
-        // can be » : > | - or just spaces.
+        // strict \w{1,16} player name keeps the "name : message" separator colon out of the capture (it was doubling the colon on reprint)
         return Pattern.compile("^Guild > (?:\\[\\S+] )?$bot(?:\\s+\\[[^\\]]+])?[:\\s]+(\\w{1,16})[^\\w]+(.+)$")
     }
 
@@ -31,10 +30,10 @@ object BridgeBot {
 
     @JvmStatic
     fun init() {
-        rebuildPattern() // pick up a name already restored from config
+        rebuildPattern()
         ClientReceiveMessageEvents.ALLOW_GAME.register { message, overlay ->
             if (overlay || !FishSettings.bridgeBotEnabled || FishSettings.bridgeBotName.isBlank()) return@register true
-            val plain = message.string.replace(Regex("§."), "").trim()
+            val plain = message.string.replace(COLOR, "").trim()
             val m = pattern.matcher(plain)
             if (!m.matches()) return@register true
             Misc.addChatMessage(Component.literal("§2Guild > §r§a[Bridge] §r${m.group(1)}§r: ${m.group(2)}"))

@@ -8,24 +8,25 @@ import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.rendertype.RenderType
 
 /**
- * World-overlay dispatch, rebuilt on the System22 `WaypointTest` pattern (see [RenderLayers]).
+ * World-overlay dispatch, split two ways:
  *
- * Everything draws in one [LevelRenderEvents.END_MAIN] pass: translate the pose by `-camera`, grab
- * a [MultiBufferSource.BufferSource] buffer per [RenderType], let every registered handler write to
- * it, then `endBatch` that type immediately. No deferred `submitCustomGeometry`, no per-submission
- * pose snapshots — the handler's `matrixStack` is the live, correctly-translated stack.
+ * - **Occluded highlights** ([GIZMO]) emit vanilla `net.minecraft.gizmos.Gizmos` from
+ *   [LevelRenderEvents.BEFORE_GIZMOS]. Vanilla draws them at the right pipeline stage, so terrain
+ *   occludes them. `Gizmos.*` is ONLY legal inside this window.
+ * - **Through-walls ESP** ([NO_DEPTH_FILLED] / [NO_DEPTH_LINE]) draws in
+ *   one [LevelRenderEvents.END_MAIN] pass: translate the pose by
+ *   `-camera`, grab a [MultiBufferSource.BufferSource] buffer per [RenderType], let every handler
+ *   write, then `endBatch` immediately.
  *
- * Handler signature (`RenderingEvent`) is unchanged, so every feature keeps working as-is; the
- * `LevelRenderContext` arg is still passed through for handlers that want camera/level state.
+ * The hand-rolled depth-tested `END_MAIN` layers (old `FILLED_BLOCK` / `LINE` / `OUTLINE_ENTITY`)
+ * are gone — they never rendered right. Features that used them now register on [GIZMO].
  */
 object RenderingEvents {
 
-    @JvmField var FILLED_BLOCK = RenderHandler()
+    /** Emit vanilla gizmos here (via [RenderUtils.gizmoBox] / [RenderUtils.gizmoQuad] / etc.). */
+    @JvmField var GIZMO = GizmoHandler()
+
     @JvmField var NO_DEPTH_FILLED = RenderHandler()
-    @JvmField var FILLED_ENTITY = RenderHandler()
-    @JvmField var OUTLINE_ENTITY = RenderHandler()
-    @JvmField var NO_DEPTH_OUTLINE_ENTITY = RenderHandler()
-    @JvmField var LINE = RenderHandler()
     @JvmField var NO_DEPTH_LINE = RenderHandler()
 
     @Volatile private var registered = false
@@ -34,7 +35,13 @@ object RenderingEvents {
     fun init() {
         if (registered) return
         registered = true
+        LevelRenderEvents.BEFORE_GIZMOS.register(LevelRenderEvents.BeforeGizmos { ctx -> gizmos(ctx) })
         LevelRenderEvents.END_MAIN.register(LevelRenderEvents.EndMain { ctx -> render(ctx) })
+    }
+
+    private fun gizmos(ctx: LevelRenderContext) {
+        if (Minecraft.getInstance().level == null) return
+        GIZMO.invoke { it.emit(ctx) }
     }
 
     private fun render(ctx: LevelRenderContext) {
@@ -47,11 +54,8 @@ object RenderingEvents {
         ps.pushPose()
         ps.translate(-cam.x, -cam.y, -cam.z)
 
-        // Depth-tested first (occluded by terrain), then through-walls on top.
-        drawLayer(ctx, ps, buffers, RenderLayers.FILL, FILLED_BLOCK, FILLED_ENTITY)
-        drawLayer(ctx, ps, buffers, RenderLayers.LINE, OUTLINE_ENTITY, LINE)
         drawLayer(ctx, ps, buffers, RenderLayers.FILL_ND, NO_DEPTH_FILLED)
-        drawLayer(ctx, ps, buffers, RenderLayers.LINE_ND, NO_DEPTH_OUTLINE_ENTITY, NO_DEPTH_LINE)
+        drawLayer(ctx, ps, buffers, RenderLayers.LINE_ND, NO_DEPTH_LINE)
 
         ps.popPose()
     }
