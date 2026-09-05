@@ -1326,6 +1326,59 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeonMap.features.add(f)
         }
 
+        val slayer = Column("Slayer", "slider")
+        run {
+            // Each Slayer feature is its own toggle in the column — no shared master.
+            val spawnAlert = Feature("Mini/Boss Spawn Alert", FishSettings::slayerSpawnAlertEnabled)
+            spawnAlert.sub.add(ToggleSetting("Mini-Boss Alerts", "Alert when a slayer miniboss spawns", FishSettings::slayerMiniBossAlert))
+            spawnAlert.sub.add(ToggleSetting("Boss Alerts", "Alert when the main slayer boss spawns", FishSettings::slayerBossAlert))
+            spawnAlert.sub.add(SliderIntSetting("Alert Duration (ms)", "On-screen time for spawn alerts", FishSettings::slayerAlertDurationMs, 250, 8000, 250))
+            slayer.features.add(spawnAlert)
+
+            val cocoon = Feature("Cocoon Alert", FishSettings::slayerCocoonAlertEnabled)
+            cocoon.sub.add(SubcategoryHeader("Fires on \"YOU COCOONED YOUR SLAYER BOSS\""))
+            cocoon.sub.add(SliderIntSetting("Alert Duration (ms)", "", FishSettings::slayerCocoonAlertDurationMs, 250, 8000, 250))
+            slayer.features.add(cocoon)
+
+            val spawnHud = Feature("Spawn Progress HUD", FishSettings::slayerSpawnHudEnabled)
+            spawnHud.sub.add(SubcategoryHeader("Live spawn-bar %  ·  drag position with Edit HUD"))
+            spawnHud.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerSpawnHudScale, 0.5, 3.0))
+            slayer.features.add(spawnHud)
+
+            val statsHud = Feature("Slayer Stats HUD", FishSettings::slayerStatsHudEnabled)
+            statsHud.sub.add(SubcategoryHeader("Session XP / kills / rates  ·  drag position with Edit HUD"))
+            statsHud.sub.add(ToggleSetting("Show XP", "", FishSettings::slayerStatsShowXp))
+            statsHud.sub.add(ToggleSetting("Show Kills", "", FishSettings::slayerStatsShowKills))
+            statsHud.sub.add(ToggleSetting("Show XP/hr", "", FishSettings::slayerStatsShowXpHr))
+            statsHud.sub.add(ToggleSetting("Show Kills/hr", "", FishSettings::slayerStatsShowKillsHr))
+            statsHud.sub.add(ToggleSetting("Background", "Dark panel behind the stats", FishSettings::slayerStatsBackground))
+            statsHud.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerStatsHudScale, 0.5, 3.0))
+            statsHud.sub.add(ButtonSetting("Reset Session Stats", "Zero the XP / kills / time counters", Runnable { fishmod.features.slayers.SlayerStatsTracker.reset() }))
+            slayer.features.add(statsHud)
+
+            val profit = Feature("Profit Tracker", FishSettings::slayerProfitEnabled)
+            profit.sub.add(SubcategoryHeader("Prices real drops for $/hr  ·  drag position with Edit HUD"))
+            profit.sub.add(SubcategoryHeader("Bulk sack drops need Hypixel \"Sack Notifications\" on"))
+            profit.sub.add(SliderIntSetting("Drop Rows", "Max item rows shown (highest value first)", FishSettings::slayerProfitLines, 1, 20, 1))
+            profit.sub.add(SliderIntSetting("Spawn Cost / Boss", "Coins subtracted per boss; 0 hides the line", FishSettings::slayerProfitSpawnCost, 0, 500000, 5000))
+            profit.sub.add(SliderIntSetting("Idle Pause (s)", "No drop/kill this long → pause & rewind the clock by this much", FishSettings::slayerProfitIdleSeconds, 15, 600, 15))
+            profit.sub.add(ToggleSetting("Background", "Dark panel behind the tracker", FishSettings::slayerProfitBackground))
+            profit.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerProfitHudScale, 0.5, 3.0))
+            profit.sub.add(ButtonSetting("Reset Profit Tracker", "Clear drops / bosses / time for every slayer", Runnable { fishmod.features.slayers.SlayerProfitTracker.reset() }))
+            slayer.features.add(profit)
+
+            val timer = Feature("Boss Timer", FishSettings::slayerTimerEnabled)
+            timer.sub.add(SubcategoryHeader("Spawn-to-kill time + PB  ·  drag position with Edit HUD"))
+            timer.sub.add(DropdownSetting("Start Mode", "When the clock starts", arrayOf("Spawned", "Fully Spawned"),
+                { FishSettings.slayerTimerStartMode },
+                { v -> FishSettings.slayerTimerStartMode = v }))
+            timer.sub.add(ToggleSetting("Show Current Timer", "", FishSettings::slayerTimerShowCurrent))
+            timer.sub.add(ToggleSetting("Show PB", "", FishSettings::slayerTimerShowPb))
+            timer.sub.add(ToggleSetting("Show New PB", "", FishSettings::slayerTimerShowNewPb))
+            timer.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerTimerHudScale, 0.5, 3.0))
+            slayer.features.add(timer)
+        }
+
         columns.add(general)
         columns.add(invStorage)
         columns.add(party)
@@ -1335,6 +1388,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         columns.add(solvers)
         columns.add(floor7)
         columns.add(hud)
+        columns.add(slayer)
         columns.add(visuals)
         columns.add(cosmetics)
     }
