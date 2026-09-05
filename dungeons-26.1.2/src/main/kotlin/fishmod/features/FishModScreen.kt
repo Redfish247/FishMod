@@ -1358,9 +1358,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
             val profit = Feature("Profit Tracker", FishSettings::slayerProfitEnabled)
             profit.sub.add(SubcategoryHeader("Prices real drops for $/hr  ·  drag position with Edit HUD"))
+            profit.sub.add(SubcategoryHeader("Spawn cost read from the real purse/bank charge"))
             profit.sub.add(SubcategoryHeader("Bulk sack drops need Hypixel \"Sack Notifications\" on"))
             profit.sub.add(SliderIntSetting("Drop Rows", "Max item rows shown (highest value first)", FishSettings::slayerProfitLines, 1, 20, 1))
-            profit.sub.add(SliderIntSetting("Spawn Cost / Boss", "Coins subtracted per boss; 0 hides the line", FishSettings::slayerProfitSpawnCost, 0, 500000, 5000))
             profit.sub.add(SliderIntSetting("Idle Pause (s)", "No drop/kill this long → pause & rewind the clock by this much", FishSettings::slayerProfitIdleSeconds, 15, 600, 15))
             profit.sub.add(ToggleSetting("Background", "Dark panel behind the tracker", FishSettings::slayerProfitBackground))
             profit.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerProfitHudScale, 0.5, 3.0))

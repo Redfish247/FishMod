@@ -133,22 +133,55 @@ object SlayerHuds {
         val type = SlayerManager.type ?: return
         if (!SlayerProfitTracker.hasData(type)) return
 
-        val rows = SlayerProfitTracker.rows(type)
-        val lines = ArrayList<String>(rows.size + 5)
-        lines.add("§6§l${type.displayName} ${roman(SlayerManager.tier)} Profit" +
-            (if (SlayerProfitTracker.isPaused()) " §8§l(idle)" else ""))
-        for (r in rows.take(FishSettings.slayerProfitLines.coerceIn(1, 20))) {
-            val v = if (r.priced) "§7${SlayerStatsTracker.short(r.value)}" else "§8?"
-            lines.add("§b${fmt(r.count.toDouble())}x §f${r.name} $v")
-        }
-        val cost = SlayerProfitTracker.spawnCost(type)
-        if (cost > 0) lines.add("§7Spawn Cost: §c-${SlayerStatsTracker.short(cost)}")
-        lines.add("§7Bosses killed: §f${SlayerProfitTracker.bosses(type)}")
-        lines.add("§6Total Profit: §a${SlayerStatsTracker.short(SlayerProfitTracker.profit(type))}")
-        lines.add("§7$/hr: §6${rate(SlayerProfitTracker.profitPerHour(type))}")
+        // rows are (left label, right value); right "" draws left only
+        val rows = ArrayList<Pair<String, String>>(16)
+        rows.add("§6§l${type.displayName} ${roman(SlayerManager.tier)} Profit" +
+            (if (SlayerProfitTracker.isPaused()) " §8(idle)" else "") to "")
 
-        drawBlock(ctx, FishSettings.slayerProfitHudX, FishSettings.slayerProfitHudY,
-            FishSettings.slayerProfitHudScale, lines, background = FishSettings.slayerProfitBackground)
+        val drops = SlayerProfitTracker.rows(type)
+        for (r in drops.take(FishSettings.slayerProfitLines.coerceIn(1, 20))) {
+            val v = if (r.priced) "§a${SlayerStatsTracker.short(r.value)}" else "§8?"
+            rows.add("§7${fmt(r.count.toDouble())}x §f${r.name}" to v)
+        }
+        val mkc = SlayerProfitTracker.mobKillCoins(type)
+        if (mkc > 0) {
+            val hits = SlayerProfitTracker.mobKillCoinHits(type)
+            rows.add("§7${fmt(hits.toDouble())}x §6Mob Kill Coins" to "§a${SlayerStatsTracker.short(mkc.toDouble())}")
+        }
+
+        val cost = SlayerProfitTracker.spawnCost(type)
+        if (cost > 0) rows.add("§7Slayer Spawn Costs:" to "§c-${SlayerStatsTracker.short(cost.toDouble())}")
+        rows.add("§7Bosses killed:" to "§e${SlayerProfitTracker.bosses(type)}")
+        val profit = SlayerProfitTracker.profit(type)
+        rows.add("§6Total Profit:" to "${if (profit < 0) "§c" else "§a"}${String.format("%,d", profit.toLong())}")
+        rows.add("§7$/hr:" to "§6${rate(SlayerProfitTracker.profitPerHour(type))}")
+
+        drawTwoCol(ctx, FishSettings.slayerProfitHudX, FishSettings.slayerProfitHudY,
+            FishSettings.slayerProfitHudScale, rows, FishSettings.slayerProfitBackground)
+    }
+
+    /** Left label + right-aligned value per row, like SkyHanni's trackers. */
+    private fun drawTwoCol(
+        ctx: GuiGraphicsExtractor, x: Int, y: Int, scale: Double,
+        rows: List<Pair<String, String>>, background: Boolean,
+    ) {
+        val mc = Minecraft.getInstance()
+        val f = mc.font
+        val lh = Constants.TEXT_HEIGHT + 2
+        val gap = 8
+        var panelW = 0
+        for ((l, r) in rows) panelW = Math.max(panelW, f.width(l) + (if (r.isEmpty()) 0 else gap + f.width(r)))
+        val sc = scale.toFloat()
+        ctx.pose().pushMatrix()
+        ctx.pose().translate(x.toFloat(), y.toFloat())
+        ctx.pose().scale(sc, sc)
+        if (background) ctx.fill(-3, -2, panelW + 3, lh * rows.size + 1, 0x90000000.toInt())
+        for (i in rows.indices) {
+            val (l, r) = rows[i]
+            ctx.text(f, l, 0, lh * i, 0xFFFFFFFF.toInt(), true)
+            if (r.isNotEmpty()) ctx.text(f, r, panelW - f.width(r), lh * i, 0xFFFFFFFF.toInt(), true)
+        }
+        ctx.pose().popMatrix()
     }
 
     // ------------------------------------------------------------------ Boss Timer

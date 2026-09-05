@@ -70,6 +70,9 @@ object SlayerManager {
     private val PCT = Pattern.compile("(\\d{1,3})%")
     private val FRACTION = Pattern.compile("\\(?([\\d,.]+)\\s*/\\s*([\\d,.]+)\\)?")
 
+    // sidebar purse line ("Purse: 1,234,567" / "Piggy: 1,234,567") -> profit tracker spawn cost / mob-kill coins
+    private val PURSE = Pattern.compile("(?:Purse|Piggy):\\s*([\\d,]+)")
+
 
     private const val SCAN_INTERVAL_TICKS = 5
     private var scanCounter = 0
@@ -86,6 +89,13 @@ object SlayerManager {
     private var lastCategoryLine = ""
     private var lastProgressLine = ""
     private var cocoonLatchedAt = 0L
+
+    // ON_GAME_MESSAGE fires from two mixin sites (system chat + bundle unwrap), so one Hypixel line
+    // can arrive twice. Swallow a repeat of the same one-shot within this window.
+    private const val CHAT_DEDUPE_MS = 3_000L
+    private var lastQuestCompleteMs = 0L
+    private var lastQuestStartedMs = 0L
+    private var lastCocoonChatMs = 0L
 
     // Hypixel's sidebar drops lines for a scan or two under load, especially mid-fight. Don't tear
     // down the quest (which would reset the timer and re-arm every spawn alert) until the "Slayer
@@ -143,11 +153,28 @@ object SlayerManager {
         Events.ON_GAME_MESSAGE.register { text ->
             if (!FishSettings.slayerAnyEnabled()) return@register false
             val s = text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim()
+            val now = System.currentTimeMillis()
             when {
-                QUEST_STARTED.matcher(s).find() -> SlayerStatsTracker.onQuestStarted()
-                QUEST_COMPLETE.matcher(s).find() -> onQuestComplete()
+                QUEST_STARTED.matcher(s).find() -> {
+                    if (now - lastQuestStartedMs > CHAT_DEDUPE_MS) {
+                        lastQuestStartedMs = now
+                        SlayerStatsTracker.onQuestStarted()
+                        SlayerProfitTracker.onQuestStarted()
+                    }
+                }
+                QUEST_COMPLETE.matcher(s).find() -> {
+                    if (now - lastQuestCompleteMs > CHAT_DEDUPE_MS) {
+                        lastQuestCompleteMs = now
+                        onQuestComplete()
+                    }
+                }
                 QUEST_FAILED.matcher(s).find() -> onQuestFailed()
-                COCOON_CHAT.matcher(s).find() -> enterCocoon()
+                COCOON_CHAT.matcher(s).find() -> {
+                    if (now - lastCocoonChatMs > CHAT_DEDUPE_MS) {
+                        lastCocoonChatMs = now
+                        enterCocoon()
+                    }
+                }
             }
             false
         }
@@ -157,6 +184,13 @@ object SlayerManager {
 
     private fun scanScoreboard(mc: Minecraft) {
         val lines = sidebarLines(mc)
+
+        var purse = -1.0
+        for (l in lines) {
+            val m = PURSE.matcher(l)
+            if (m.find()) { purse = m.group(1).replace(",", "").toDoubleOrNull() ?: -1.0; break }
+        }
+        SlayerProfitTracker.observePurse(purse)
 
         // Cocoon has no distinct progress string (still "Slay the boss!"), so it can't self-clear
         // from the scoreboard — time it out (cocoon bursts in ~5s, +grace) back to the fight.

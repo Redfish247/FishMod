@@ -18,42 +18,53 @@ import java.util.regex.Pattern
 
 /**
  * Slayer drop-value / coins-per-hour tracker — the FishMod equivalent of SkyHanni's
- * "<Boss> Profit Tracker" panel.
+ * "<Boss> Profit Tracker" panel, kept per slayer type and persisted to disk.
  *
- * What it counts
- * --------------
- * Drops are taken from the chat lines Hypixel actually prints:
+ * Drops
+ * -----
+ * From the chat lines Hypixel actually prints:
  *  - the `RARE DROP! <item>` / `PET DROP! <item>` family (always shown), and
- *  - sack-pickup lines `+<n> <item>` (shown only if you have Hypixel "Sack Notifications" on —
- *    without them the bulk flesh/shard drops go to sacks silently and can't be seen client-side).
- * Each drop is stored per slayer type by its display name; value = `CroesusPrices.price(idFor(name))`
- * × count at render time, so switching price mode (Bazaar / BIN / NPC) reprices everything live.
- * Direct coin lines and items with no price id are still listed (with a "?" value).
+ *  - sack-pickup lines `+<n> <item>` (shown only if Hypixel "Sack Notifications" is on — without
+ *    them the bulk flesh/shard drops go to sacks silently and can't be seen client-side).
+ * Stored by display name; value = `CroesusPrices.price(idFor(name)) × count` at render time, so
+ * changing price mode reprices everything. Unpriceable items are still listed (shown as "?").
  *
- * Spawn cost
- * ----------
- * `bosses × [FishSettings.slayerProfitSpawnCost]` is subtracted from the gross (set the per-boss
- * cost yourself — it's the combat-XP grind's opportunity cost and varies wildly by setup, so there's
- * no honest default; 0 = don't show the line).
+ * Spawn cost — read, not guessed
+ * ------------------------------
+ * The coins Hypixel actually takes to start the quest, exactly like SkyHanni:
+ *  - the purse drop right after `SLAYER QUEST STARTED!` (manual start), and
+ *  - the `Took <n> coins from your bank for auto-slayer...` chat line (auto-slayer).
+ * No hard-coded per-tier table (the wikis disagree and it varies by boss/version).
+ *
+ * Mob Kill Coins
+ * -------------
+ * Small purse *gains* while grinding in the slayer area (each < 100k, to exclude bazaar/AH/quest
+ * payouts) are summed as "Mob Kill Coins" and count as profit.
  *
  * Active time & the idle rule
  * ---------------------------
- * `activeMs` accrues only while [SlayerManager.isActiveSlayer]. If no drop or kill happens for
- * [FishSettings.slayerProfitIdleSeconds] (default 60) the tracker **pauses and rewinds `activeMs`
- * by that idle window**, so the grace period you were AFK/looting/among menus never counts toward
- * `$/hr`. Any drop or kill resumes it. World / island / quest changes also stop the clock.
+ * `activeMs` accrues only while [SlayerManager.isActiveSlayer]. If no drop/kill/coin happens for
+ * [FishSettings.slayerProfitIdleSeconds] (default 60) the tracker pauses AND rewinds `activeMs` by
+ * that window, so an AFK/looting gap never inflates `$/hr`. Any drop, kill or coin gain resumes it.
  *
- * `$/hr = (gross − spawnCost) / activeMs × 3_600_000`.
+ * `$/hr = (dropValue + mobKillCoins − spawnCost) / activeMs × 3_600_000`.
  */
 object SlayerProfitTracker {
 
     private const val MAX_TICK_MS = 2_000L
     private const val FILE_PATH = "config/fishmod/slayer_profit.json"
+    private const val MOB_COIN_CAP = 100_000L      // per-gain cap for "mob kill coins"
+    private const val SPAWN_COST_CAP = 500_000L    // sanity cap for one quest-start deduction
+    private const val QUEST_START_WINDOW_MS = 8_000L
     private val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
 
     // matched against a colour-stripped, trimmed line
-    private val RARE_DROP = Pattern.compile("(?:^|\\s)(?:PET |[A-Z]+ )*?(?:RARE|PET) DROP! (.+?)(?: \\(\\+.*)?$")
+    //  "RARE DROP! (Revenant Viscera)"  /  "CRAZY RARE DROP! (4x Foul Flesh) (+751% Magic Find!)"
+    //  /  "PET DROP! Zombie (Epic)"
+    private val DROP_LINE = Pattern.compile("(?:[A-Z]{3,} )+DROP! \\(?(?:([\\d,]+)x )?(.+?)\\)?(?: \\(\\+.*)?$")
+    private val LEADING_GLYPHS = Regex("^[^\\p{L}\\p{N}]+")
     private val SACK_PICKUP = Pattern.compile("^\\+\\s*([\\d,]+)\\s+([A-Za-z'’. ]+?)(?:\\s*\\(.*\\))?$")
+    private val AUTO_SLAYER_BANK = Pattern.compile("Took ([\\d,.]+[kmb]?) coins from your bank for auto-slayer")
 
     private val writeExecutor = Executors.newSingleThreadExecutor { r ->
         Thread(r, "fishmod-slayer-profit-io").apply { isDaemon = true }
@@ -63,6 +74,9 @@ object SlayerProfitTracker {
     private class Data {
         var drops: MutableMap<String, Long> = LinkedHashMap() // display name -> count
         var bosses: Int = 0
+        var spawnCost: Long = 0        // coins spent starting quests (positive number, subtracted)
+        var mobKillCoins: Long = 0     // small purse gains while grinding
+        var mobKillCoinHits: Long = 0  // how many such gains (the "Nx" in the Mob Kill Coins row)
         var activeMs: Long = 0
     }
 
@@ -73,6 +87,12 @@ object SlayerProfitTracker {
     private var lastActivityMs = 0L
     private var idlePaused = false
     private var lastPriceRefresh = 0L
+    private var lastPurse = -1.0
+    private var lastQuestStartMs = 0L
+
+    // ON_GAME_MESSAGE fires twice for one Hypixel line (system-chat + bundle sites); swallow the echo
+    private var lastLine = ""
+    private var lastLineMs = 0L
 
     private fun idleMs(): Long = FishSettings.slayerProfitIdleSeconds.coerceIn(10, 3600) * 1000L
 
@@ -83,6 +103,8 @@ object SlayerProfitTracker {
     @JvmStatic
     fun init() {
         load()
+        ItemsDb.initAsync()
+        CroesusPrices.refreshIfStale()
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { tick() })
         Events.ON_GAME_MESSAGE.register { text ->
             if (enabled()) onChat(text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim())
@@ -122,28 +144,92 @@ object SlayerProfitTracker {
         idlePaused = false
     }
 
+    // ---------------------------------------------------------------- hooks
+
+    fun onQuestStarted() { lastQuestStartMs = System.currentTimeMillis() }
+
     fun onBossKill(type: SlayerType) {
         synchronized(lock) { data(type).bosses++ }
         noteActivity()
         save()
     }
 
-    private fun onChat(s: String) {
+    /** Purse value from the sidebar scan (or -1). Attributes deductions to spawn cost and small
+     *  gains to mob-kill coins; ignores everything else. */
+    fun observePurse(purse: Double) {
+        if (purse < 0) { lastPurse = -1.0; return }
+        val prev = lastPurse
+        lastPurse = purse
+        if (!enabled() || prev < 0) return
         val type = SlayerManager.type ?: return
         if (!SlayerManager.isActiveSlayer()) return
 
-        val rare = RARE_DROP.matcher(s)
-        if (rare.find()) {
-            addDrop(type, rare.group(1).trim(), 1)
+        val delta = (purse - prev).toLong()
+        if (delta == 0L) return
+        if (delta < 0) {
+            val cost = -delta
+            if (cost in 1..SPAWN_COST_CAP &&
+                System.currentTimeMillis() - lastQuestStartMs <= QUEST_START_WINDOW_MS
+            ) {
+                synchronized(lock) { data(type).spawnCost += cost }
+                noteActivity()
+                save()
+            }
+        } else if (delta in 1..MOB_COIN_CAP) {
+            synchronized(lock) { val d = data(type); d.mobKillCoins += delta; d.mobKillCoinHits++ }
+            noteActivity()
+            save()
+        }
+    }
+
+    private fun onChat(s: String) {
+        val type = SlayerManager.type ?: return
+
+        // de-dupe the double-fired line (ON_GAME_MESSAGE fires from two mixin sites)
+        val now = System.currentTimeMillis()
+        if (s == lastLine && now - lastLineMs < 1_500L) return
+        lastLine = s
+        lastLineMs = now
+
+        val bank = AUTO_SLAYER_BANK.matcher(s)
+        if (bank.find()) {
+            val c = parseShort(bank.group(1))
+            if (c in 1..SPAWN_COST_CAP) {
+                synchronized(lock) { data(type).spawnCost += c }
+                noteActivity()
+                save()
+            }
+            return
+        }
+
+        if (!SlayerManager.isActiveSlayer()) return
+
+        val drop = DROP_LINE.matcher(s)
+        if (drop.find()) {
+            val count = drop.group(1)?.replace(",", "")?.toLongOrNull() ?: 1L
+            val name = LEADING_GLYPHS.replace(drop.group(2).trim(), "").trim()
+            addDrop(type, name, count)
             return
         }
         val sack = SACK_PICKUP.matcher(s)
         if (sack.matches()) {
             val n = sack.group(1).replace(",", "").toLongOrNull() ?: return
             val name = sack.group(2).trim()
-            // only accept sack lines we can resolve to a real item (or a coin line) — rejects generic "+N Mana" spam
+            // only accept sack lines we can resolve to a real item (rejects generic "+N Mana" spam)
             if (name.endsWith("Coins") || ItemsDb.idFor(name) != null) addDrop(type, name, n)
         }
+    }
+
+    private fun parseShort(s: String): Long {
+        val t = s.lowercase().replace(",", "")
+        val mult = when {
+            t.endsWith("k") -> 1_000.0
+            t.endsWith("m") -> 1_000_000.0
+            t.endsWith("b") -> 1_000_000_000.0
+            else -> 1.0
+        }
+        val body = if (mult == 1.0) t else t.dropLast(1)
+        return ((body.toDoubleOrNull() ?: 0.0) * mult).toLong()
     }
 
     private fun addDrop(type: SlayerType, name: String, count: Long) {
@@ -160,7 +246,7 @@ object SlayerProfitTracker {
 
     class Row(@JvmField val name: String, @JvmField val count: Long, @JvmField val value: Double, @JvmField val priced: Boolean)
 
-    /** Priced drop rows for [type], highest value first. */
+    /** Priced drop rows for [type], highest value first (Mob Kill Coins appended by the HUD). */
     fun rows(type: SlayerType): List<Row> {
         val snap = synchronized(lock) { LinkedHashMap(data(type).drops) }
         val out = ArrayList<Row>(snap.size)
@@ -173,12 +259,16 @@ object SlayerProfitTracker {
         return out
     }
 
-    fun grossValue(type: SlayerType): Double = rows(type).sumOf { it.value }
-    fun spawnCost(type: SlayerType): Double = bosses(type).toDouble() * FishSettings.slayerProfitSpawnCost.coerceAtLeast(0)
-    fun profit(type: SlayerType): Double = grossValue(type) - spawnCost(type)
-    fun bosses(type: SlayerType): Int = synchronized(lock) { data(type).bosses }
-    fun activeMs(type: SlayerType): Long = synchronized(lock) { data(type).activeMs }
+    fun dropValue(type: SlayerType): Double = rows(type).sumOf { it.value }
+    fun mobKillCoins(type: SlayerType): Long = synchronized(lock) { all[type.name]?.mobKillCoins ?: 0L }
+    fun mobKillCoinHits(type: SlayerType): Long = synchronized(lock) { all[type.name]?.mobKillCoinHits ?: 0L }
+    fun spawnCost(type: SlayerType): Long = synchronized(lock) { all[type.name]?.spawnCost ?: 0L }
+    fun bosses(type: SlayerType): Int = synchronized(lock) { all[type.name]?.bosses ?: 0 }
+    fun activeMs(type: SlayerType): Long = synchronized(lock) { all[type.name]?.activeMs ?: 0L }
     fun isPaused(): Boolean = idlePaused
+
+    fun profit(type: SlayerType): Double =
+        dropValue(type) + mobKillCoins(type).toDouble() - spawnCost(type).toDouble()
 
     fun profitPerHour(type: SlayerType): Double {
         val ms = activeMs(type)
@@ -188,7 +278,7 @@ object SlayerProfitTracker {
 
     fun hasData(type: SlayerType): Boolean = synchronized(lock) {
         val d = all[type.name] ?: return false
-        d.bosses > 0 || d.drops.isNotEmpty()
+        d.bosses > 0 || d.drops.isNotEmpty() || d.spawnCost > 0 || d.mobKillCoins > 0
     }
 
     @JvmStatic
@@ -196,6 +286,7 @@ object SlayerProfitTracker {
         synchronized(lock) { all.clear() }
         idlePaused = false
         lastActivityMs = 0
+        lastPurse = -1.0
         save()
     }
 

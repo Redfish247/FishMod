@@ -822,8 +822,6 @@ object FishSettings {
     @ConfigValue @JvmField var slayerProfitEnabled: Boolean = false
     /** Max drop rows shown on the HUD (highest value first). */
     @ConfigValue @JvmField var slayerProfitLines: Int = 8
-    /** Coins subtracted per boss as "spawn cost" (your combat-XP grind cost); 0 hides the line. */
-    @ConfigValue @JvmField var slayerProfitSpawnCost: Int = 0
     /** Idle seconds before the tracker pauses AND rewinds its clock by this much. */
     @ConfigValue @JvmField var slayerProfitIdleSeconds: Int = 60
     @ConfigValue @JvmField var slayerProfitBackground: Boolean = true
