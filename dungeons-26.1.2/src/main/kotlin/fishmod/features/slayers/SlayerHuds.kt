@@ -104,7 +104,8 @@ object SlayerHuds {
         if (!FishSettings.slayerStatsHudEnabled) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
-        if (!Location.inSkyblock() || !SlayerStatsTracker.hasData()) return
+        // only while actually doing slayer, like the Spawn / Timer / Profit HUDs
+        if (!SlayerManager.isActiveSlayer() || !SlayerStatsTracker.hasData()) return
 
         val lines = ArrayList<String>(7)
         lines.add("§5§lSLAYER STATS")
