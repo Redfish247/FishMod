@@ -158,6 +158,7 @@ object SlayerManager {
                 QUEST_STARTED.matcher(s).find() -> {
                     if (now - lastQuestStartedMs > CHAT_DEDUPE_MS) {
                         lastQuestStartedMs = now
+                        rearmForNextBoss()
                         SlayerStatsTracker.onQuestStarted()
                         SlayerProfitTracker.onQuestStarted()
                     }
@@ -243,9 +244,25 @@ object SlayerManager {
 
             else -> {
                 progress = parseProgress(line)
-                if (state == State.NONE || state == State.BOSS_SLAIN) setState(State.GRINDING)
+                if (state == State.NONE || state == State.BOSS_SLAIN) {
+                    // grind bar is back = a new quest is under way (auto-slayer keeps the same
+                    // category line, so onQuestChange never fires) — re-arm the once-per-boss latches
+                    if (state == State.BOSS_SLAIN) rearmForNextBoss()
+                    setState(State.GRINDING)
+                }
             }
         }
+    }
+
+    /** Re-arm everything that is "once per boss" so the next boss of a same-tier auto-slayer run
+     *  alerts / times / counts adds again. */
+    private fun rearmForNextBoss() {
+        bossEntity = null
+        cocoonLatchedAt = 0L
+        // NOT SlayerTimer.reset() — keep the last kill time on the HUD through the next grind;
+        // SlayerTimer.onBossSpawned() clears it when the next boss actually appears.
+        SlayerAlerts.reset()
+        SlayerBossDetector.clearSeenMiniBosses()
     }
 
     private fun parseProgress(line: String): SpawnProgress {
