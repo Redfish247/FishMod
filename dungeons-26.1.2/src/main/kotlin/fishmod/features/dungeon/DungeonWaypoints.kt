@@ -29,15 +29,18 @@ import org.lwjgl.glfw.GLFW
 import java.util.LinkedHashMap
 
 /**
- * /fm wp — a waypoint editor. Disabled while [Location.inDungeon] is true;
- * outside dungeons, waypoints are keyed by Skyblock island/server+dimension at absolute
- * coordinates (see [globalKey]).
+ * /fm wp — a waypoint editor. Works everywhere, dungeons included. Outside dungeons waypoints are
+ * keyed by Skyblock island/server+dimension at absolute world coordinates; inside a dungeon they're
+ * keyed by room name and stored in that room's canonical frame ([DungeonRoomAnchor]), so they carry
+ * across runs regardless of where the room instance spawned or how it's rotated. Boss rooms and any
+ * spot the map scanner can't resolve fall back to absolute coordinates. See [globalKey].
  */
 object DungeonWaypoints {
 
     private const val PLACE_EPSILON = 0.05
     private const val ROUTE_REACH_RADIUS = 1.75
     private val ROUTE_LINE_RGBA = floatArrayOf(1f, 1f, 1f, 0.6f)
+    private const val ROUTE_LINE_ARGB = 0x99FFFFFF.toInt()
 
     // Applied to the NEXT waypoint placed.
     private var editMode = false
@@ -94,25 +97,12 @@ object DungeonWaypoints {
         )
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc -> onTick(mc) })
+        // Occluded (non-through-wall) waypoints + their route lines go through vanilla Gizmos, which
+        // depth-test against terrain for real. Through-wall waypoints and the edit cursor stay on the
+        // hand-rolled no-depth layers (fills on QUADS, lines on DEBUG_LINES — never mixed).
+        RenderingEvents.GIZMO.register { _ -> renderGizmo() }
         RenderingEvents.NO_DEPTH_FILLED.register { ctx, matrices, vc -> render(ctx, matrices, vc) }
-        // Route lines/cursor box use a dedicated GL_LINES layer, never the box-fill triangle strip.
         RenderingEvents.NO_DEPTH_LINE.register { _, matrices, vc -> renderLines(matrices, vc) }
-    }
-
-    /**
-     * Whether [target] is visible from the player's eyes — everything renders on the no-depth
-     * layer regardless of the per-waypoint flag (the depth-tested layer silently broke room
-     * waypoints), so occlusion is faked with a manual raycast instead.
-     */
-    private fun hasLineOfSight(mc: Minecraft, target: Vec3): Boolean {
-        val p = mc.player ?: return true
-        if (mc.level == null) return true
-        val delta = mc.deltaTracker.getGameTimeDeltaPartialTick(false)
-        val eye = p.getEyePosition(delta)
-        val hit: BlockHitResult? = mc.level!!.clip(
-            ClipContext(eye, target, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p)
-        )
-        return hit == null || hit.type == HitResult.Type.MISS
     }
 
     @JvmStatic
@@ -235,10 +225,6 @@ object DungeonWaypoints {
 
     @JvmStatic
     fun resetCurrentArea() {
-        if (Location.inDungeon()) {
-            Misc.addChatMessage(Component.literal("§cWaypoints aren't available inside dungeons."))
-            return
-        }
         DungeonWaypointStore.clearRoom(globalKey())
         applyGlobal()
         Misc.addChatMessage(Component.literal("§aCleared waypoints for the current area."))
@@ -304,11 +290,19 @@ object DungeonWaypoints {
         )
     }
 
-    /** Waypoints are dungeon-run-specific ground truth we don't have; only usable outside a dungeon. */
-    private fun blocked(): Boolean = Location.inDungeon()
+    private const val ROOM_KEY_PREFIX = "dungeon:room:"
+    private fun isRoomKey(key: String) = key.startsWith(ROOM_KEY_PREFIX)
 
-    /** Keyed by Skyblock island/zone rather than dimension, since Skyblock crams islands into one dimension. */
+    /**
+     * Inside a dungeon, key by room name and store coordinates in the room's canonical frame (see
+     * [DungeonRoomAnchor]) so a waypoint carries across runs. Elsewhere, key by Skyblock island/zone
+     * (or server+dimension) at absolute coordinates.
+     */
     private fun globalKey(): String {
+        if (Location.inDungeon()) {
+            val a = DungeonRoomAnchor.current()
+            if (a != null) return ROOM_KEY_PREFIX + a.name
+        }
         if (Location.inSkyblock()) {
             return "global:skyblock:" + Location.getCurrentLocation().name
         }
@@ -334,16 +328,13 @@ object DungeonWaypoints {
             return
         }
 
-        if (blocked()) {
-            liveWaypoints.clear()
-            lastGlobalDim = null
-            while (placeKey != null && placeKey!!.consumeClick()) { /* drop clicks while unavailable */ }
-            return
-        }
-
         val key = globalKey()
         if (key != lastGlobalDim) {
             lastGlobalDim = key
+            applyGlobal()
+        } else if (isRoomKey(key)) {
+            // The room anchor (rotation/clay) can shift for a tick or two as the map scanner refines
+            // the room, so re-project room-anchored waypoints every tick while inside one.
             applyGlobal()
         }
 
@@ -402,10 +393,6 @@ object DungeonWaypoints {
     }
 
     private fun handlePlace(mc: Minecraft) {
-        if (blocked()) {
-            Misc.addChatMessage(Component.literal("§cWaypoints aren't available inside dungeons."))
-            return
-        }
         handlePlaceGlobal(mc)
     }
 
@@ -418,13 +405,26 @@ object DungeonWaypoints {
 
     private fun handlePlaceGlobal(mc: Minecraft) {
         val aim = aimPoint(mc)
-        val px = aim.x + offsetX
-        val py = aim.y + offsetY
-        val pz = aim.z + offsetZ
+        var px = aim.x + offsetX
+        var py = aim.y + offsetY
+        var pz = aim.z + offsetZ
         offsetX = 0.0; offsetY = 0.0; offsetZ = 0.0 // one-shot
 
         val half = if (useBlockSize) 0.5 else size / 2.0
         val key = globalKey()
+
+        // Inside a resolved room, persist as the block's canonical-frame coords (+0.5 centre) so the
+        // waypoint carries across runs. Block-granular on purpose: rotating a fractional centre lands
+        // a block off on 90° room rotations.
+        if (isRoomKey(key)) {
+            val a = DungeonRoomAnchor.current()
+            if (a != null) {
+                val local = DungeonRoomAnchor.toLocal(
+                    a, BlockPos(Math.floor(px).toInt(), Math.floor(py).toInt(), Math.floor(pz).toInt())
+                )
+                px = local.x + 0.5; py = local.y + 0.5; pz = local.z + 0.5
+            }
+        }
 
         if (mc.player!!.isShiftKeyDown) {
             mc.setScreen(DungeonWaypointTitleScreen { title ->
@@ -456,11 +456,26 @@ object DungeonWaypoints {
     }
 
     private fun applyGlobal() {
+        val key = globalKey()
+        val anchor = if (isRoomKey(key)) DungeonRoomAnchor.current() else null
+        // Room key but the room isn't currently resolvable (doorway, mid-rescan): draw nothing rather
+        // than treat the stored room-local coords as absolute.
+        if (isRoomKey(key) && anchor == null) {
+            liveWaypoints = ArrayList()
+            return
+        }
+
         val result = ArrayList<LiveWaypoint>()
-        for (w in DungeonWaypointStore.get(globalKey())) {
+        for (w in DungeonWaypointStore.get(key)) {
+            val c = if (anchor != null) {
+                val wb = DungeonRoomAnchor.toWorld(
+                    anchor, BlockPos(Math.floor(w.x).toInt(), Math.floor(w.y).toInt(), Math.floor(w.z).toInt())
+                )
+                Vec3(wb.x + 0.5, wb.y + 0.5, wb.z + 0.5)
+            } else Vec3(w.x, w.y, w.z)
             val box = AABB(
-                w.x - w.halfX, w.y - w.halfY, w.z - w.halfZ,
-                w.x + w.halfX, w.y + w.halfY, w.z + w.halfZ
+                c.x - w.halfX, c.y - w.halfY, c.z - w.halfZ,
+                c.x + w.halfX, c.y + w.halfY, c.z + w.halfZ
             )
             result.add(LiveWaypoint(box, w.color, w.filled, w.throughWalls, w.title, w.routeId, w.routeOrder))
         }
@@ -470,14 +485,38 @@ object DungeonWaypoints {
     /** Called by the waypoint list GUI after it edits/deletes entries, to refresh what's currently rendering. */
     @JvmStatic
     fun refreshLive() {
-        if (blocked()) liveWaypoints.clear() else applyGlobal()
+        applyGlobal()
     }
 
+    private fun reached(w: LiveWaypoint): Boolean =
+        w.routeId != null && routeReached.getOrDefault(w.routeId, emptySet()).contains(w.routeOrder)
+
+    /** Occluded pass: non-through-wall waypoints, titles and route lines as vanilla gizmos. */
+    private fun renderGizmo() {
+        for (w in liveWaypoints) {
+            if (w.throughWalls || reached(w)) continue
+            if (w.filled) RenderUtils.gizmoBox(w.box, w.color, 0)
+            else RenderUtils.gizmoThickOutline(w.box, w.color, lineWidth)
+            if (w.titleComponent != null) {
+                RenderUtils.gizmoText(w.titleComponent, Vec3(w.center.x, w.box.maxY + 0.4, w.center.z), 1.0f, -0x1)
+            }
+        }
+        for ((_, value) in groupRoutes()) {
+            var prev: LiveWaypoint? = null
+            for (w in value) {
+                if (reached(w)) continue
+                val p = prev
+                if (p != null && !p.throughWalls && !w.throughWalls) RenderUtils.gizmoLine(p.center, w.center, ROUTE_LINE_ARGB)
+                prev = w
+            }
+        }
+    }
+
+    /** Through-walls pass: through-wall waypoints (+ their titles) and the edit cursor, on the no-depth layers. */
     private fun render(ctx: LevelRenderContext, matrices: PoseStack, vc: VertexConsumer) {
         val mc = Minecraft.getInstance()
         for (w in liveWaypoints) {
-            if (!w.throughWalls && !hasLineOfSight(mc, w.center)) continue
-            if (w.routeId != null && routeReached.getOrDefault(w.routeId, emptySet()).contains(w.routeOrder)) continue
+            if (!w.throughWalls || reached(w)) continue
             val rgba = RenderUtils.toFloats(w.color)
             // Outlines are thin filled boxes, not GL_LINES, to keep them on the same triangle-strip
             // layer as fills — mixing topologies on one layer caused the earlier "bowtie" corruption.
@@ -498,14 +537,15 @@ object DungeonWaypoints {
         }
     }
 
-    /** Route connector lines only — must never share a VertexConsumer with [render]'s triangle-strip layer. */
+    /** Route connector lines for through-wall routes only — gizmo routes are drawn in [renderGizmo]. */
     private fun renderLines(matrices: PoseStack, vc: VertexConsumer) {
         for ((key, value) in groupRoutes()) {
             val reached = routeReached.getOrDefault(key, emptySet())
             var prev: LiveWaypoint? = null
             for (w in value) {
                 if (reached.contains(w.routeOrder)) continue
-                if (prev != null) RenderUtils.renderLine(matrices, vc, prev.center, w.center, ROUTE_LINE_RGBA)
+                val p = prev
+                if (p != null && (p.throughWalls || w.throughWalls)) RenderUtils.renderLine(matrices, vc, p.center, w.center, ROUTE_LINE_RGBA)
                 prev = w
             }
         }

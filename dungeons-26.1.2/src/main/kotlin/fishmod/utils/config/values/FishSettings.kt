@@ -38,6 +38,28 @@ object FishSettings {
     /** Comma-separated column names, left-to-right, saved from drag-reordering the /fm screen's tabs. */
     @ConfigValue @JvmField var fmColumnOrder: String = ""
 
+    // /fm screen UI Customization (cascading curtain open/close + column card appearance)
+    /** Which background swatch is active: "Dark Glass" (default), "Deep Blue", "Crimson", "Violet", or "Custom". */
+    @ConfigValue @JvmField var fmBgPreset: String = "Dark Glass"
+    /** Used when fmBgPreset == "Custom". Alpha channel is overridden by fmBgAlpha at render time. */
+    @ConfigValue @JvmField var fmBgCustomColor: Int = 0xFF14181D.toInt()
+    /** Column card background opacity, 0 (invisible) - 100 (solid). */
+    @ConfigValue @JvmField var fmBgAlpha: Int = 100
+    /** Column drop-in/drop-out animation duration in ms, 200 (snappy) - 1200 (dramatic). */
+    @ConfigValue @JvmField var fmDropDurationMs: Int = 450
+    /** Extra delay in ms added per column, left to right, for the cascading wave effect. */
+    @ConfigValue @JvmField var fmStaggerDelayMs: Int = 60
+    /** Exit animation style: "Floor Fall" (drop off the bottom) or "Reverse Curtain" (retract up off the top). */
+    @ConfigValue @JvmField var fmExitStyle: String = "Floor Fall"
+    /** Accent colour — headers, chevrons, hover glow, tooltip borders, and the on-state of toggle switches/rows. */
+    @ConfigValue @JvmField var fmButtonColor: Int = 0xFF24B6B0.toInt()
+    /** Accent opacity, 0 (invisible) - 100 (solid). */
+    @ConfigValue @JvmField var fmButtonAlpha: Int = 100
+    /** Row-tint colour behind an enabled feature row (e.g. "Door Colors" when its master toggle is on). Independent of fmBgAlpha (card background) and fmButtonColor (accent). */
+    @ConfigValue @JvmField var fmRowColor: Int = 0xFF24B6B0.toInt()
+    /** Row-tint opacity, 0 (invisible) - 100 (solid). Matches today’s fixed ~15%. */
+    @ConfigValue @JvmField var fmRowAlpha: Int = 15
+
     // Pet XP gained = skill XP × (1 + taming×0.01) × (1 + beastmaster%/100) × (1 + petItem%/100) × extraMult.
     /** Taming level — adds +1% pet XP per level (max 60 = +60%). */
     @ConfigValue @JvmField var petXpTamingLevel: Int = 0
@@ -117,14 +139,19 @@ object FishSettings {
     // the "X joined the dungeon group! (<Class> Level N)" message.
     @ConfigValue @JvmField var pfAutoKickArcherCata:  Int = 0
     @ConfigValue @JvmField var pfAutoKickArcherSb:    Int = 0
+    @ConfigValue @JvmField var pfAutoKickArcherMp:    Int = 0
     @ConfigValue @JvmField var pfAutoKickBerserkCata: Int = 0
     @ConfigValue @JvmField var pfAutoKickBerserkSb:   Int = 0
+    @ConfigValue @JvmField var pfAutoKickBerserkMp:   Int = 0
     @ConfigValue @JvmField var pfAutoKickHealerCata:  Int = 0
     @ConfigValue @JvmField var pfAutoKickHealerSb:    Int = 0
+    @ConfigValue @JvmField var pfAutoKickHealerMp:    Int = 0
     @ConfigValue @JvmField var pfAutoKickMageCata:    Int = 0
     @ConfigValue @JvmField var pfAutoKickMageSb:      Int = 0
+    @ConfigValue @JvmField var pfAutoKickMageMp:      Int = 0
     @ConfigValue @JvmField var pfAutoKickTankCata:    Int = 0
     @ConfigValue @JvmField var pfAutoKickTankSb:      Int = 0
+    @ConfigValue @JvmField var pfAutoKickTankMp:      Int = 0
     /** Master switch for the whole Chat card (Smart Copy Chat, Compact Chat, Infinite Chat History,
      *  Chat Search, Chat Filter); when off, none of them fire regardless of their own state. */
     @ConfigValue @JvmField var chatFeatureEnabled: Boolean = true
@@ -285,6 +312,30 @@ object FishSettings {
     @ConfigValue @JvmField var simonSaysHudX: Int = 10
     @ConfigValue @JvmField var simonSaysHudY: Int = 360
     @ConfigValue @JvmField var simonSaysHudScale: Double = 1.0
+
+    // Simon Says per-round announce messages (System22 port) — sent to party chat when that round is reached.
+    @ConfigValue @JvmField var simon1Enabled: Boolean = false
+    @ConfigValue @JvmField var simon1Message: String = "Simon Says: 1/5"
+    @ConfigValue @JvmField var simon2Enabled: Boolean = false
+    @ConfigValue @JvmField var simon2Message: String = "Simon Says: 2/5"
+    @ConfigValue @JvmField var simon3Enabled: Boolean = false
+    @ConfigValue @JvmField var simon3Message: String = "Simon Says: 3/5"
+    @ConfigValue @JvmField var simon4Enabled: Boolean = false
+    @ConfigValue @JvmField var simon4Message: String = "Simon Says: 4/5"
+    @ConfigValue @JvmField var simon5Enabled: Boolean = false
+    @ConfigValue @JvmField var simon5Message: String = "Simon Says: 5/5"
+
+    // Simon Says HUD — three independent states (progress / completed / reset), each with its own
+    // enable toggle, text (progress text substitutes "(n)" for the current round), and color.
+    @ConfigValue @JvmField var ssProgressShowProgress: Boolean = true
+    @ConfigValue @JvmField var ssProgressProgressText: String = "SS at (n)/5"
+    @ConfigValue @JvmField var ssProgressProgressColor: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var ssProgressShowCompleted: Boolean = true
+    @ConfigValue @JvmField var ssProgressCompletedText: String = "SS Completed"
+    @ConfigValue @JvmField var ssProgressCompletedColor: Int = 0xFF55FF55.toInt()
+    @ConfigValue @JvmField var ssProgressShowReset: Boolean = true
+    @ConfigValue @JvmField var ssProgressResetText: String = "SS RESET!"
+    @ConfigValue @JvmField var ssProgressResetColor: Int = 0xFFFF5555.toInt()
 
 
     // PB Pace — live delta vs your personal-best splits during a dungeon run.
@@ -530,6 +581,7 @@ object FishSettings {
     @ConfigValue @JvmField var ragnarockTimerHudX: Int = 10
     @ConfigValue @JvmField var ragnarockTimerHudY: Int = 150
     @ConfigValue @JvmField var ragnarockTimerScale: Double = 1.5
+    @ConfigValue @JvmField var p5RagEnabled: Boolean = false          // title "Rag" on Wither King’s pre-fight taunt
 
     // Terracotta Timer (F6)
     @ConfigValue @JvmField var terracottaTimerEnabled: Boolean = false

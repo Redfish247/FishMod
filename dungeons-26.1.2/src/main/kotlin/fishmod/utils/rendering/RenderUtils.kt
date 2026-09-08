@@ -42,6 +42,47 @@ object RenderUtils {
         if ((strokeArgb ushr 24) != 0) Gizmos.cuboid(box, GizmoStyle.stroke(strokeArgb))
     }
 
+    /**
+     * Occluded box outline whose edge thickness is a real block size — 12 thin filled cuboid gizmos,
+     * since `GizmoStyle.stroke` is a fixed vanilla line width. Mirrors [renderThickOutline].
+     */
+    @JvmStatic
+    fun gizmoThickOutline(box: AABB, argb: Int, lineWidth: Double) {
+        if ((argb ushr 24) == 0) return
+        val hw = lineWidth / 2.0
+        val x1 = box.minX; val y1 = box.minY; val z1 = box.minZ
+        val x2 = box.maxX; val y2 = box.maxY; val z2 = box.maxZ
+
+        gizmoThickEdge(x1, y1, z1, x2, y1, z1, hw, argb)
+        gizmoThickEdge(x2, y1, z1, x2, y1, z2, hw, argb)
+        gizmoThickEdge(x2, y1, z2, x1, y1, z2, hw, argb)
+        gizmoThickEdge(x1, y1, z2, x1, y1, z1, hw, argb)
+
+        gizmoThickEdge(x1, y2, z1, x2, y2, z1, hw, argb)
+        gizmoThickEdge(x2, y2, z1, x2, y2, z2, hw, argb)
+        gizmoThickEdge(x2, y2, z2, x1, y2, z2, hw, argb)
+        gizmoThickEdge(x1, y2, z2, x1, y2, z1, hw, argb)
+
+        gizmoThickEdge(x1, y1, z1, x1, y2, z1, hw, argb)
+        gizmoThickEdge(x2, y1, z1, x2, y2, z1, hw, argb)
+        gizmoThickEdge(x2, y1, z2, x2, y2, z2, hw, argb)
+        gizmoThickEdge(x1, y1, z2, x1, y2, z2, hw, argb)
+    }
+
+    /** One axis-aligned edge of [gizmoThickOutline], expanded to `halfWidth` on the two axes it doesn't run along. */
+    private fun gizmoThickEdge(
+        ax: Double, ay: Double, az: Double, bx: Double, by: Double, bz: Double,
+        halfWidth: Double, argb: Int
+    ) {
+        var minX = minOf(ax, bx); var maxX = maxOf(ax, bx)
+        var minY = minOf(ay, by); var maxY = maxOf(ay, by)
+        var minZ = minOf(az, bz); var maxZ = maxOf(az, bz)
+        if (minX == maxX) { minX -= halfWidth; maxX += halfWidth }
+        if (minY == maxY) { minY -= halfWidth; maxY += halfWidth }
+        if (minZ == maxZ) { minZ -= halfWidth; maxZ += halfWidth }
+        Gizmos.cuboid(AABB(minX, minY, minZ, maxX, maxY, maxZ), GizmoStyle.fill(argb))
+    }
+
     /** A single flat quad from its 4 corners (order around the quad), for door-frame faces. */
     @JvmStatic
     fun gizmoQuad(corners: Array<Vec3>, fillArgb: Int, strokeArgb: Int) {

@@ -26,10 +26,29 @@ object Ragnarock {
     private const val BUFF_TICKS = 200 // the strength buff lasts 10s
     private val CANCELLED: Pattern =
         Pattern.compile("Ragnarock was cancelled due to (?:being hit|taking damage)!")
+    // Shortened to the distinctive opening clause so trailing punctuation quirks can't break the match.
+    private val P5_TAUNT: Pattern =
+        Pattern.compile(Pattern.quote("Wither King: I no longer wish to fight"))
 
     private const val NAME = "Rag Timer"
 
     @Volatile private var ticksLeft = 0
+    @Volatile private var lastTauntMs = 0L
+
+    /**
+     * Checked from both [Events.ON_GAME_MESSAGE] and [fishmod.mixin.ChatHudMixin] (before its
+     * hide-from-chat cancel) so the "Rag" title still pops even when FishMod's own Chat Filter
+     * "Boss Messages" toggle is hiding the taunt line from the chat display.
+     */
+    @JvmStatic
+    fun checkP5Taunt(raw: String?) {
+        if (!FishSettings.ragnarockEnabled || !FishSettings.p5RagEnabled || raw == null) return
+        if (!P5_TAUNT.matcher(raw).find()) return
+        val now = System.currentTimeMillis()
+        if (now - lastTauntMs < 2000) return // dedupe: same line reaches us via two hooks
+        lastTauntMs = now
+        Misc.forceTitle(Component.literal("§5Rag"), Component.empty())
+    }
 
     private fun holdingAxe(): Boolean {
         val p = Minecraft.getInstance().player ?: return false
@@ -66,6 +85,7 @@ object Ragnarock {
                 if (FishSettings.ragnarockCancelAlert) Misc.forceTitle(Component.literal("§cRagnarock Cancelled"), Component.empty())
                 ticksLeft = 0
             }
+            checkP5Taunt(text.string)
             false
         }
 

@@ -24,17 +24,28 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.phys.AABB
 
 /**
- * F7 P3 Simon Says device solver. ON_PACKET carries only the new block state, so the previous
- * block is reconstructed from [prev]; packet/tick handlers hop to the client thread.
+ * F7 P3 Simon Says device solver — 1:1 port of Odin's `SimonSays` module
+ * (github.com/odtheking/Odin, features/impl/boss/SimonSays.kt).
+ *
+ * The lantern column (x=111) records order when a *lit* sea lantern reverts to obsidian — not when
+ * it lights up, which is the reverse of what you'd guess from watching the device. During "first
+ * phase" (the initial demo run, before the sequence has ever been solved once) Odin auto-corrects
+ * the recorded order in place: a 2-lantern sequence gets reversed, a 3-lantern one drops its middle
+ * entry. First phase ends the moment the full sequence gets clicked correctly, or a tick-based
+ * watchdog notices the grid went quiet (no new lantern for 10+ ticks) while most of the button grid
+ * has already reverted to stone buttons (i.e. the demo silently reset without a clean signal).
  */
 object SimonSaysSolver {
 
     private val startButton = BlockPos(110, 121, 91)
+    private val grid: Set<BlockPos> = buildSet {
+        for (y in 120..123) for (z in 92..95) add(BlockPos(110, y, z))
+    }
+
     private val clickInOrder = ArrayList<BlockPos>()
-    private var lastLanternTick = -1
     private var clickNeeded = 0
     private var firstPhase = true
-    private var startClickCounter = 0
+    private var lastLanternTick = -1
     private val prev = HashMap<Long, Block>()
 
     private fun resetSolution() {
@@ -58,15 +69,8 @@ object SimonSaysSolver {
             Minecraft.getInstance().execute {
                 resetSolution()
                 firstPhase = true
-                startClickCounter = 0
                 prev.clear()
             }
-            false
-        }
-
-        Events.ON_GAME_MESSAGE.register { text ->
-            if (fishmod.utils.HypixelApi.STRIP_COLOR.matcher(text.string).replaceAll("") == "[BOSS] Goldor: Who dares trespass into my domain?")
-                Minecraft.getInstance().execute { startClickCounter = 0 }
             false
         }
 
@@ -79,23 +83,22 @@ object SimonSaysSolver {
         }
 
         Events.ON_SERVER_TICK.register {
-            Minecraft.getInstance().execute {
-                if (!inP3() || !firstPhase) return@execute
-                if (lastLanternTick++ > 10 &&
-                    grid.count { Minecraft.getInstance().level?.getBlockState(it)?.block == Blocks.STONE_BUTTON } > 8
-                ) {
-                    dbg("Grid reset detected. (${clickInOrder.size})")
-                    firstPhase = false
-                    startClickCounter = 0
-                }
-            }
+            Minecraft.getInstance().execute { tick() }
             false
         }
 
-        // Hypixel never sends the button-POWERED packet, so advance clickNeeded on the click itself.
+        // Hypixel doesn't always echo the button-POWERED block update on click, so also advance
+        // clickNeeded from the click itself as a safety net — the real trigger is still onBlock().
         UseBlockCallback.EVENT.register(UseBlockCallback { _, _, _, hit ->
             val pos = hit.blockPos
-            if (!inP3() || pos.x != 110 || pos.y !in 120..123 || pos.z !in 92..95)
+            if (!inP3()) return@UseBlockCallback InteractionResult.PASS
+
+            if (pos == startButton) {
+                Minecraft.getInstance().execute { resetSolution(); firstPhase = true }
+                return@UseBlockCallback InteractionResult.PASS
+            }
+
+            if (pos.x != 110 || pos.y !in 120..123 || pos.z !in 92..95)
                 return@UseBlockCallback InteractionResult.PASS
             val lantern = pos.east()
 
@@ -108,10 +111,7 @@ object SimonSaysSolver {
             if (idx >= 0) {
                 clickNeeded = idx + 1
                 dbg("click ${pos.y}:${pos.z} -> clickNeeded=$clickNeeded")
-                if (clickNeeded >= clickInOrder.size) {
-                    resetSolution()
-                    firstPhase = false
-                }
+                if (clickNeeded >= clickInOrder.size) { resetSolution(); firstPhase = false }
             }
             InteractionResult.PASS
         })
@@ -124,6 +124,17 @@ object SimonSaysSolver {
     private fun queueBlock(pos: BlockPos, state: BlockState) {
         val p = pos.immutable()
         Minecraft.getInstance().execute { onBlock(p, state) }
+    }
+
+    /** Grid-reset watchdog: if the demo goes quiet for 10+ ticks while most of the grid is still
+     *  unclicked stone buttons, the "first phase" correction window is over. */
+    private fun tick() {
+        if (!inP3() || !firstPhase) return
+        lastLanternTick++
+        if (lastLanternTick > 10 && grid.count { Minecraft.getInstance().level?.getBlockState(it)?.block === Blocks.STONE_BUTTON } > 8) {
+            dbg("grid reset detected (${clickInOrder.size})")
+            firstPhase = false
+        }
     }
 
     private fun onBlock(pos: BlockPos, updated: BlockState) {
@@ -140,31 +151,29 @@ object SimonSaysSolver {
         if (pos.y !in 120..123 || pos.z !in 92..95) return
 
         when (pos.x) {
-            111 ->
+            111 -> // the lantern column: order is recorded when a *lit* lantern goes dark, not when it lights
                 if (updated.block === Blocks.OBSIDIAN && old === Blocks.SEA_LANTERN && pos !in clickInOrder) {
                     clickInOrder.add(pos.immutable())
                     lastLanternTick = 0
+                    dbg("lantern ${pos.y}:${pos.z} added (${clickInOrder.size})")
                     if (!firstPhase) return
-                    dbg(
-                        if (clickInOrder.size == 2) "size == 2 reverse."
-                        else if (clickInOrder.size == 3) "size == 3 reverse again + skip first"
-                        else return
-                    )
                     when (clickInOrder.size) {
-                        2 -> clickInOrder.reverse()
-                        3 -> clickInOrder.removeAt(clickInOrder.lastIndex - 1)
+                        2 -> { clickInOrder.reverse(); dbg("first-phase correction: size 2 -> reverse") }
+                        3 -> { clickInOrder.removeAt(clickInOrder.lastIndex - 1); dbg("first-phase correction: size 3 -> drop middle") }
                     }
                 }
 
-            110 ->
+            110 -> // the button column
                 if (updated.block === Blocks.AIR) {
-                    if (grid.count { Minecraft.getInstance().level?.getBlockState(it)?.isAir == true } > 8) resetSolution()
+                    // Odin treats >8/16 grid positions going AIR as a full puzzle reset, but on this
+                    // client the device's own block-refresh animation transiently reports the same
+                    // thing without an actual reset — that false trigger was wiping clickInOrder
+                    // (and the rendered boxes) about a second into a run. Left a no-op; the AIR
+                    // column write itself carries no useful order information anyway.
                 } else if (old === Blocks.STONE_BUTTON && powered(updated)) {
                     clickNeeded = clickInOrder.indexOf(pos.east()) + 1
-                    if (clickNeeded >= clickInOrder.size) {
-                        resetSolution()
-                        firstPhase = false
-                    }
+                    dbg("click ${pos.y}:${pos.z} -> clickNeeded=$clickNeeded")
+                    if (clickNeeded >= clickInOrder.size) { resetSolution(); firstPhase = false }
                 }
         }
     }
@@ -199,11 +208,4 @@ object SimonSaysSolver {
             else RenderUtils.renderOutline(matrices, vc, box, floatArrayOf(rgba[0], rgba[1], rgba[2], 1f))
         }
     }
-
-    private val grid = setOf(
-        BlockPos(110, 123, 92), BlockPos(110, 123, 93), BlockPos(110, 123, 94), BlockPos(110, 123, 95),
-        BlockPos(110, 122, 92), BlockPos(110, 122, 93), BlockPos(110, 122, 94), BlockPos(110, 122, 95),
-        BlockPos(110, 121, 92), BlockPos(110, 121, 93), BlockPos(110, 121, 94), BlockPos(110, 121, 95),
-        BlockPos(110, 120, 92), BlockPos(110, 120, 93), BlockPos(110, 120, 94), BlockPos(110, 120, 95),
-    )
 }

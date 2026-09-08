@@ -27,8 +27,17 @@ object InstallHeartbeat {
         .map { it.metadata.version.friendlyString }
         .orElse("unknown")
 
-    // JOIN fires on every Hypixel server hop; the heartbeat HTTP call only needs to go out once.
-    private var reportedThisSession = false
+    // JOIN fires on every Hypixel server hop (lobby → skyblock hub → private island), each of which
+    // is a real disconnect+reconnect at the network layer — so a plain "once per session" flag never
+    // resets and silently swallows every heartbeat after the very first one, including genuine
+    // rejoins after actually leaving and coming back (no welcome, no update check, nothing at all).
+    // A cooldown collapses the rapid-fire hops into one heartbeat while still letting a real, later
+    // rejoin send a fresh one.
+    private var lastReportedAt = 0L
+    private const val REPORT_COOLDOWN_MS = 2 * 60 * 1000L // 2 min
+
+    // Show the outdated-version box at most once per session, whichever source it comes from.
+    private var updateNoticeShown = false
 
     @JvmStatic
     fun init() {
@@ -36,12 +45,13 @@ object InstallHeartbeat {
     }
 
     private fun report() {
-        if (reportedThisSession) return
+        val now = System.currentTimeMillis()
+        if (now - lastReportedAt < REPORT_COOLDOWN_MS) return
         val mc = Minecraft.getInstance()
         val player = mc.player ?: return
         val uuid = player.getUUID().toString().replace("-", "")
         val name = player.gameProfile.name() ?: return
-        reportedThisSession = true
+        lastReportedAt = now
 
         HypixelApi.reportSeen(uuid, name, modVersion) { latestVersion, updateLinks, welcomeText, discordUrl ->
             mc.execute {
@@ -50,7 +60,18 @@ object InstallHeartbeat {
                     FishSettings.hasSeenWelcomeMessage = true
                     FishConfig.manager.save()
                 } else if (isOutdated(modVersion, latestVersion) && updateLinks != null) {
-                    sendUpdateBox(latestVersion!!, updateLinks)
+                    if (!updateNoticeShown) { sendUpdateBox(latestVersion!!, updateLinks); updateNoticeShown = true }
+                } else if (latestVersion.isNullOrBlank() && !updateNoticeShown) {
+                    // Worker set no broadcast version -> check Modrinth directly.
+                    UpdateChecker.latestVersion { modrinthVersion ->
+                        mc.execute {
+                            if (!updateNoticeShown && isOutdated(modVersion, modrinthVersion)) {
+                                val links = discordUrl?.let { UpdateChecker.links + ("discord" to it) } ?: UpdateChecker.links
+                                sendUpdateBox(modrinthVersion!!, links)
+                                updateNoticeShown = true
+                            }
+                        }
+                    }
                 }
             }
         }
