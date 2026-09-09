@@ -53,9 +53,12 @@ object SimonSaysTracker {
 
     // Grace window after the "all reset" block pattern first appears before it's treated as a
     // break. A legit 5/5 finish flips the exact same obsidian/button cells as a break does — the
-    // only difference is the "completed a device!" chat message, which can arrive a tick or two
-    // after the block update under lag. Waiting this long lets that message win the race.
-    private const val BREAK_GRACE_MS = 700L
+    // only difference is the "completed a device!" chat message. Under P3 chat load that line
+    // regularly lags 1-2s behind the block update, and if the break commits first it fires a
+    // bogus "Simon Says: FAILED!" that a moment later is contradicted by 5/5. Wait long enough
+    // that completion reliably wins the race; a genuine grief's FAILED notice being ~2.5s late
+    // is harmless. Completion also disarms a pending break outright (see tryComplete()).
+    private const val BREAK_GRACE_MS = 2500L
 
     private var round = 0          // completed-round count shown on the HUD (0..5)
     private var maxLen = 0         // longest demo sequence length seen this run
@@ -65,6 +68,10 @@ object SimonSaysTracker {
     private var lastAtDeviceMs = 0L // last tick the player was at the device
     private var primed = false
     private var completed = false // SS done this run — ignore everything until next run
+    // Authoritative completion lock. Once the current device instance has been completed, no later
+    // scan / break-grace / party-chat message may re-open scanning, emit "FAILED", or lower the
+    // round. Cleared only by reset() (ON_LOCATION_CHANGE = genuine new dungeon/puzzle instance).
+    private var completeLatched = false
     private var armed = false     // Goldor's intro line seen — scanning starts here
     private var breakTicks = 0    // cooldown before an "inactive" reading can count as a break
     private var canBreak = false  // device has been seen active since the last break
@@ -106,12 +113,23 @@ object SimonSaysTracker {
                 if (debug) log("armed (Goldor intro seen)")
             }
 
-            val ss = SS_CHAT.matcher(s)
-            if (ss.find()) {
-                val n = ss.group(1)[0] - '0'
-                if (n in 1..5) {
-                    round = n
-                    if (n >= 5) doneAtMs = System.currentTimeMillis()
+            // A locked completion outranks any later party-chat "Simon Says: N/5" (a teammate's
+            // stale/duplicate announce must not drag a finished 5/5 back down).
+            if (!completeLatched) {
+                val ss = SS_CHAT.matcher(s)
+                if (ss.find()) {
+                    val n = ss.group(1)[0] - '0'
+                    if (n in 1..4) {
+                        round = n
+                    } else if (n >= 5) {
+                        // A "5/5" seen in chat (ours echoed back, or a teammate's) — lock the
+                        // tracker done. No announce here: re-broadcasting would echo the line to
+                        // party chat from every observer.
+                        round = 5
+                        doneAtMs = System.currentTimeMillis()
+                        completed = true
+                        completeLatched = true
+                    }
                 }
             }
 
@@ -228,6 +246,13 @@ object SimonSaysTracker {
         doneAtMs = System.currentTimeMillis()
         announceRound(5)
         completed = true
+        completeLatched = true
+        // Disarm any break that was mid-grace: the all-air pattern we were about to call a
+        // FAILED is actually this finish. Also clears `broken` so a race can't leave the tracker
+        // wedged "off" after a completed run.
+        breakArmedAtMs = 0L
+        canBreak = false
+        broken = false
     }
 
     /** Center-screen title hook (titles are local-only, so a loose match is safe). */
@@ -246,6 +271,9 @@ object SimonSaysTracker {
 
     /** Obsidian cell missing = active; once that holds for `BREAK_COOLDOWN_TICKS` and buttons are all air, it's a break. */
     private fun tickBreakState(world: Level) {
+        // A locked completion is final — never re-interpret the board as a break afterwards.
+        // (tick() already returns before this on `completed`; this is the explicit invariant.)
+        if (completeLatched) { breakArmedAtMs = 0L; return }
         // Don't trust block reads from a chunk that isn't actually loaded — under lag/chunk churn
         // an unloaded chunk can read back as air, which looks identical to a break.
         if (!world.hasChunk(DEV_OBSIDIAN_X shr 4, DEV_Z_MIN shr 4)) { breakArmedAtMs = 0L; return }
@@ -324,6 +352,7 @@ object SimonSaysTracker {
         burstFlashes = 0
         primed = false
         completed = false
+        completeLatched = false
         armed = false
         breakTicks = 0
         canBreak = false
