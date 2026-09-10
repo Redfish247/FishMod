@@ -261,6 +261,8 @@ object FishSettings {
     @ConfigValue @JvmField var prestigeColorsGradientTiers: Boolean = true
     @ConfigValue @JvmField var prestigeColorsAnimated: Boolean = true
     @ConfigValue @JvmField var prestigeColorsAnimSpeed: Double = 1.0
+    // FADE = whole number is one colour cycling the palette; FLOW = band slides across the digits
+    @ConfigValue @JvmField var prestigeColorsAnimStyle: String = "FADE"
 
     // M7/F7 lever waypoints: through-walls box on each boss lever; disappears once flipped.
     @ConfigValue @JvmField var enableM7LeverWaypoints: Boolean = false

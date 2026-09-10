@@ -744,6 +744,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 { FishSettings.prestigeColorsAnimSpeed },
                 { v -> FishSettings.prestigeColorsAnimSpeed = v }, 0.0, 3.0)
                 .gatedBy { FishSettings.prestigeColorsGradientTiers && FishSettings.prestigeColorsAnimated })
+            f.sub.add(DropdownSetting("Animation Style", "", arrayOf("FADE", "FLOW"),
+                { FishSettings.prestigeColorsAnimStyle },
+                { v -> FishSettings.prestigeColorsAnimStyle = v })
+                .gatedBy { FishSettings.prestigeColorsGradientTiers && FishSettings.prestigeColorsAnimated })
             cosmetics.features.add(f)
         }
         run {

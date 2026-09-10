@@ -260,15 +260,17 @@ object PrestigeLevelColors {
         }
         val speed = FishSettings.prestigeColorsAnimSpeed
         val animated = FishSettings.prestigeColorsAnimated && speed > 0.0
-        // phase drifts ~1 full loop every 5s at speed 1; the band slides across the number.
+        // phase drifts ~1 full loop every 5s at speed 1
         val phase = if (animated) (animSeconds() * speed / 5.0).toFloat() else 0f
+        // FADE: digits share (near-)one colour that cycles the palette over time — smoothest for a
+        // short badge. FLOW: the A→B→C band is spread across the digits and slides left→right.
+        val digitSpan = if (FishSettings.prestigeColorsAnimStyle.equals("FLOW", true)) 0.6f else 0.05f
         val n = text.length
         val root: MutableComponent = Component.empty()
         for (i in 0 until n) {
             val spread = if (n <= 1) 0.5f else i.toFloat() / (n - 1)
             val rgb = if (animated) {
-                // 0.6 of the loop spans the digits, minus phase = flow left→right, seamless wrap
-                cyclicGradientRgb(t, spread * 0.6f - phase)
+                cyclicGradientRgb(t, spread * digitSpan - phase)
             } else {
                 gradientRgb(t, spread) // static A→B→C across the number
             }
