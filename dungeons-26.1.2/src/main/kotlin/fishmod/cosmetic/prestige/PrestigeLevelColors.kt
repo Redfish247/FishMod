@@ -163,9 +163,9 @@ object PrestigeLevelColors {
     private val seen = HashSet<String>()
 
     /**
-     * If [c] begins with a "[123]" SkyBlock level badge, return a copy with that badge recoloured
-     * by its prestige tier; otherwise return [c] unchanged. Everything after the "]" keeps its
-     * original styling.
+     * If [c] begins with a "[123]" SkyBlock level badge, return a copy with just the **number**
+     * recoloured by its prestige tier. The brackets, any emblem glyph, and the rest of the name
+     * keep their original styling; otherwise [c] is returned unchanged.
      */
     @JvmStatic
     fun colorizeLevelPrefix(c: Component?): Component? {
@@ -183,17 +183,29 @@ object PrestigeLevelColors {
             )
         }
         if (m == null) return c
-        val level = m.groupValues[1].toIntOrNull() ?: return c
-        val cut = m.range.last + 1
+        val digits = m.groups[1] ?: return c
+        val level = digits.value.toIntOrNull() ?: return c
+        val numFrom = digits.range.first
+        val numTo = digits.range.last + 1
 
-        val baseStyle = segs.first().style
         val out: MutableComponent = Component.empty()
-        out.append(styledPrefix(level, full.substring(0, cut), baseStyle))
-        appendRange(out, segs, cut, full.length)
+        appendRange(out, segs, 0, numFrom)                 // leading spaces + "[" — untouched
+        out.append(styledNumber(level, digits.value, styleAt(segs, numFrom))) // recoloured number only
+        appendRange(out, segs, numTo, full.length)         // emblem + "]" + rest of the name — untouched
         return out
     }
 
-    private fun styledPrefix(level: Int, text: String, baseStyle: Style): MutableComponent {
+    /** Style in effect at flattened-text index [idx] (the number's own segment style). */
+    private fun styleAt(segs: List<Seg>, idx: Int): Style {
+        var pos = 0
+        for (s in segs) {
+            if (idx < pos + s.text.length) return s.style
+            pos += s.text.length
+        }
+        return segs.first().style
+    }
+
+    private fun styledNumber(level: Int, text: String, baseStyle: Style): MutableComponent {
         val t = tierAt(level)
         val useGradient = t.gradient && FishSettings.prestigeColorsGradientTiers
         if (!useGradient) {
