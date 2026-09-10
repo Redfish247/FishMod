@@ -139,6 +139,21 @@ object PrestigeLevelColors {
         else lerp(t.b, t.c, smoothstep((f - 0.5f) / 0.5f))
     }
 
+    /**
+     * Seamless looping colour ramp A→B→C→B→A over [p] mod 1, smoothstep on each quarter. Because
+     * the ends meet (p and p+1 both give A) a phase that drifts with time slides the band along the
+     * text with no jump — a fade, not a flash.
+     */
+    fun cyclicGradientRgb(t: Tier, p: Float): Int {
+        val x = p - Math.floor(p.toDouble()).toFloat() // wrap into [0,1), negatives included
+        return when {
+            x < 0.25f -> lerp(t.a, t.b, smoothstep(x / 0.25f))
+            x < 0.50f -> lerp(t.b, t.c, smoothstep((x - 0.25f) / 0.25f))
+            x < 0.75f -> lerp(t.c, t.b, smoothstep((x - 0.50f) / 0.25f))
+            else      -> lerp(t.b, t.a, smoothstep((x - 0.75f) / 0.25f))
+        }
+    }
+
     private val START_NANOS = System.nanoTime()
     private fun animSeconds(): Double = (System.nanoTime() - START_NANOS) / 1_000_000_000.0
 
@@ -244,17 +259,22 @@ object PrestigeLevelColors {
             return Component.literal(text).setStyle(baseStyle.withColor(TextColor.fromRgb(rgb(level))))
         }
         val speed = FishSettings.prestigeColorsAnimSpeed
-        val shimmer = if (FishSettings.prestigeColorsAnimated && speed > 0.0)
-            (Math.sin(animSeconds() * speed * 0.5 * 2.0 * Math.PI) * 0.15).toFloat() else 0f
-        val base = 0.30f * localFraction(level)
+        val animated = FishSettings.prestigeColorsAnimated && speed > 0.0
+        // phase drifts ~1 full loop every 5s at speed 1; the band slides across the number.
+        val phase = if (animated) (animSeconds() * speed / 5.0).toFloat() else 0f
         val n = text.length
         val root: MutableComponent = Component.empty()
         for (i in 0 until n) {
-            val spread = if (n <= 1) 0f else i.toFloat() / (n - 1)
-            val frac = (base + 0.70f * spread + shimmer).coerceIn(0f, 1f)
+            val spread = if (n <= 1) 0.5f else i.toFloat() / (n - 1)
+            val rgb = if (animated) {
+                // 0.6 of the loop spans the digits, minus phase = flow left→right, seamless wrap
+                cyclicGradientRgb(t, spread * 0.6f - phase)
+            } else {
+                gradientRgb(t, spread) // static A→B→C across the number
+            }
             root.append(
                 Component.literal(text[i].toString())
-                    .setStyle(baseStyle.withColor(TextColor.fromRgb(gradientRgb(t, frac))))
+                    .setStyle(baseStyle.withColor(TextColor.fromRgb(rgb)))
             )
         }
         return root
