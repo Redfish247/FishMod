@@ -154,7 +154,13 @@ object PrestigeLevelColors {
     // Component recolouring — the entry point both mixins call
     // ---------------------------------------------------------------------
 
-    private val LEVEL_PREFIX = Regex("""^\[(\d{1,4})]""")
+    // "[123]" optionally with an emblem glyph before the closing bracket ("[123✿]"), after up to
+    // a couple of leading spaces. Anchored at the string start.
+    private val LEVEL_PREFIX = Regex("""^\s{0,2}\[(\d{1,4})[^\[\]\d]{0,4}]""")
+
+    // one-shot diagnostics: log the first few distinct name strings we're handed
+    @JvmField var debug = false
+    private val seen = HashSet<String>()
 
     /**
      * If [c] begins with a "[123]" SkyBlock level badge, return a copy with that badge recoloured
@@ -164,16 +170,20 @@ object PrestigeLevelColors {
     @JvmStatic
     fun colorizeLevelPrefix(c: Component?): Component? {
         if (c == null || !FishSettings.prestigeColorsEnabled) return c
-        val quick = c.string
-        if (quick.length < 3 || quick[0] != '[') return c
-        val m = LEVEL_PREFIX.find(quick) ?: return c
-        val level = m.groupValues[1].toIntOrNull() ?: return c
 
         val segs = ArrayList<Seg>()
         c.visit({ style, text -> if (text.isNotEmpty()) segs.add(Seg(text, style)); Optional.empty<Any>() }, Style.EMPTY)
         if (segs.isEmpty()) return c
         val full = buildString { for (s in segs) append(s.text) }
-        if (!full.startsWith(quick.substring(0, m.range.last + 1))) return c
+
+        val m = LEVEL_PREFIX.find(full)
+        if (seen.size < 12 && seen.add(full)) {
+            fishmod.utils.debug.Debug.LOGGER.info(
+                "[PrestigeDBG] match=${m != null} lvl=${m?.groupValues?.get(1)} segs=${segs.size} raw=\"$full\""
+            )
+        }
+        if (m == null) return c
+        val level = m.groupValues[1].toIntOrNull() ?: return c
         val cut = m.range.last + 1
 
         val baseStyle = segs.first().style
