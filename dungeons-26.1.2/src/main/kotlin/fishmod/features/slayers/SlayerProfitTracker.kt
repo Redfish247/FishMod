@@ -19,38 +19,42 @@ import java.util.regex.Pattern
 /**
  * Slayer drop-value / coins-per-hour tracker — a close port of SkyHanni's "<Boss> Profit Tracker".
  *
- * Two views, switched by clicking the mode line on the HUD (or the /fm dropdown):
- *  - **Total**       — persisted to disk, all-time, the default.
+ * Like SkyHanni, one bucket per **slayer type + tier** ("Revenant Horror 5" is separate from
+ * "Revenant Horror 4"), and two views switched from the HUD (chat open) or the /fm dropdown:
+ *  - **Total**        — persisted to disk, all-time, the default.
  *  - **This Session** — in-memory only, cleared every game launch.
  * Both accumulate at once; a read picks the one named by [FishSettings.slayerProfitDisplayMode].
- * Each view is kept per [SlayerType].
  *
- * Drops come from the chat lines Hypixel actually prints — the `RARE DROP! (item)` family and, if
- * Hypixel "Sack Notifications" is on, `+<n> <item>` sack lines. Stored by display name; value is
- * `CroesusPrices.price(idFor(name)) × count`, priced at render time so a price-mode change reprices
- * everything. Right-clicking a row hides it (mode-independent, persisted); a hidden row drops out of
- * the list and the total unless "Show Hidden Rows" is on. Rows under "Hide Below" — and any beyond
- * the row cap — fold into one "N items" line that still counts toward the total.
+ * Drops come from the chat lines Hypixel prints — the `RARE DROP! (item)` family and, if Hypixel
+ * "Sack Notifications" is on, `+<n> <item>` sack lines (SkyHanni instead diffs the inventory/sacks;
+ * client-side without that infra, chat is what we have). Value = `CroesusPrices.price(idFor(name)) ×
+ * count`, priced at render time so a price-mode change reprices everything.
  *
- * Spawn cost is read, not guessed: the purse charge right after `SLAYER QUEST STARTED!`, or the
- * `Took <n> coins from your bank for auto-slayer` line. Small purse *gains* while in the slayer area
- * (each < 100k) are summed as "Mob Kill Coins" and count as profit when "Count Kill Coins" is on.
+ * "Mob Kill Coins" is a synthetic drop row (SkyHanni's `SKYBLOCK_COIN` pseudo-item): small purse
+ * *gains* while in the slayer area, each < 100k, summed; its "count" is the number of paying kills.
+ *
+ * Spawn cost is read, not guessed: the purse charge (−350k cap) right after `SLAYER QUEST STARTED!`,
+ * or the `Took <n> coins from your bank for auto-slayer` line. It shows on its own line and is
+ * subtracted from profit.
  *
  * `activeMs` accrues only while [SlayerManager.isActiveSlayer]; after
  * [FishSettings.slayerProfitIdleSeconds] with no drop/kill/coin it pauses and rewinds that window so
- * an AFK gap never inflates coins/hr.
+ * an AFK gap never inflates coins/hr (SkyHanni's `afkTimeout`, default 60s).
+ *
+ * Left-click a drop row (chat open) to hide it; right-click the title to arm a 3s "click again to
+ * reset" that clears the shown view.
  */
 object SlayerProfitTracker {
 
     private const val MAX_TICK_MS = 2_000L
     private const val FILE_PATH = "config/fishmod/slayer_profit.json"
-    private const val MOB_COIN_CAP = 100_000L      // per-gain cap for "mob kill coins"
-    private const val SPAWN_COST_CAP = 500_000L    // sanity cap for one quest-start deduction
+    private const val MOB_COIN_CAP = 100_000L      // reject a single "mob kill" gain >= this
+    private const val SPAWN_COST_CAP = 350_000L    // SkyHanni's coinsCap for one quest-start charge
     private const val QUEST_START_WINDOW_MS = 8_000L
     private const val RESET_CONFIRM_MS = 3_000L
+    private const val COINS_ROW = "Mob Kill Coins"
     private val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
 
-    // matched against a colour-stripped, trimmed line
     //  "RARE DROP! (Revenant Viscera)"  /  "CRAZY RARE DROP! (4x Foul Flesh) (+751% Magic Find!)"
     //  /  "PET DROP! Zombie (Epic)"  /  "VERY RARE DROP! (Warden Heart)"
     private val DROP_LINE = Pattern.compile("(?:[A-Z]{3,} )+DROP! \\(?(?:([\\d,]+)x )?(.+?)\\)?(?: \\(\\+.*)?$")
@@ -66,16 +70,16 @@ object SlayerProfitTracker {
     private class Data {
         var drops: MutableMap<String, Long> = LinkedHashMap() // display name -> count
         var bosses: Int = 0
-        var spawnCost: Long = 0        // coins spent starting quests (positive number, subtracted)
+        var spawnCost: Long = 0        // coins spent starting quests (positive; subtracted)
         var mobKillCoins: Long = 0     // small purse gains while grinding
-        var mobKillCoinHits: Long = 0  // how many such gains (the "Nx" in the Mob Kill Coins row)
+        var mobKillCoinHits: Long = 0  // how many such gains
         var activeMs: Long = 0
     }
 
-    // keyed by SlayerType.name
+    // keyed by "<SlayerType.name> <tier>"
     private var total: MutableMap<String, Data> = HashMap()             // persisted
     private val session: MutableMap<String, Data> = HashMap()           // in-memory, per launch
-    private var hidden: MutableMap<String, MutableSet<String>> = HashMap() // type -> hidden drop names (persisted, mode-independent)
+    private var hidden: MutableMap<String, MutableSet<String>> = HashMap() // key -> hidden drop names (persisted, mode-independent)
 
     private var lastTickMs = 0L
     private var lastActivityMs = 0L
@@ -85,26 +89,29 @@ object SlayerProfitTracker {
     private var lastQuestStartMs = 0L
     private var resetArmedAt = 0L
 
-    // ON_GAME_MESSAGE fires twice for one Hypixel line (system-chat + bundle sites); swallow the echo
+    // ON_GAME_MESSAGE fires twice for one Hypixel line; swallow the echo
     private var lastLine = ""
     private var lastLineMs = 0L
 
     private fun idleMs(): Long = FishSettings.slayerProfitIdleSeconds.coerceIn(10, 3600) * 1000L
-
     private fun sessionMode(): Boolean = FishSettings.slayerProfitDisplayMode.equals("This Session", true)
+    private fun countKillCoins(): Boolean = FishSettings.slayerProfitCountKillCoins
 
-    /** Both backing maps' Data for [type] — every mutation writes to both so the views stay in sync. */
-    private fun bothData(type: SlayerType): Pair<Data, Data> = synchronized(lock) {
-        total.getOrPut(type.name) { Data() } to session.getOrPut(type.name) { Data() }
+    private fun key(type: SlayerType, tier: Int): String = "${type.name} $tier"
+    private fun curKey(): String? {
+        val t = SlayerManager.type ?: return null
+        return key(t, SlayerManager.tier)
     }
 
-    /** The Data for the view currently on screen. */
-    private fun viewData(type: SlayerType): Data = synchronized(lock) {
-        (if (sessionMode()) session else total).getOrPut(type.name) { Data() }
+    /** Both backing maps' Data for [k] — every mutation writes to both so the views stay in sync. */
+    private fun bothData(k: String): Pair<Data, Data> = synchronized(lock) {
+        total.getOrPut(k) { Data() } to session.getOrPut(k) { Data() }
     }
 
-    private fun hiddenSet(type: SlayerType): MutableSet<String> =
-        synchronized(lock) { hidden.getOrPut(type.name) { LinkedHashSet() } }
+    private fun viewMap(): MutableMap<String, Data> = if (sessionMode()) session else total
+    private fun view(k: String): Data? = synchronized(lock) { viewMap()[k] }
+    private fun hiddenSet(k: String): MutableSet<String> =
+        synchronized(lock) { hidden.getOrPut(k) { LinkedHashSet() } }
 
     @JvmStatic fun enabled(): Boolean = FishSettings.slayerProfitEnabled
 
@@ -129,9 +136,9 @@ object SlayerProfitTracker {
         if (now - lastPriceRefresh > 60_000L) { lastPriceRefresh = now; CroesusPrices.refreshIfStale() }
         if (resetArmedAt != 0L && now - resetArmedAt > RESET_CONFIRM_MS) resetArmedAt = 0L
 
-        val type = SlayerManager.type
-        if (type == null || !SlayerManager.isActiveSlayer()) return
-        val (t, s) = bothData(type)
+        val k = curKey()
+        if (k == null || !SlayerManager.isActiveSlayer()) return
+        val (t, s) = bothData(k)
 
         if (idlePaused) return // wait for activity to resume
 
@@ -156,24 +163,24 @@ object SlayerProfitTracker {
         idlePaused = false
     }
 
-    // ---------------------------------------------------------------- hooks
+    // ---------------------------------------------------------------- hooks (called by SlayerManager)
 
     fun onQuestStarted() { lastQuestStartMs = System.currentTimeMillis() }
 
     fun onBossKill(type: SlayerType) {
-        synchronized(lock) { val (t, s) = bothData(type); t.bosses++; s.bosses++ }
+        val k = key(type, SlayerManager.tier)
+        synchronized(lock) { val (t, s) = bothData(k); t.bosses++; s.bosses++ }
         noteActivity()
         save()
     }
 
-    /** Purse value from the sidebar scan (or -1). Attributes deductions to spawn cost and small
-     *  gains to mob-kill coins; ignores everything else. */
+    /** Purse value from the sidebar scan (or -1). Deductions → spawn cost, small gains → mob coins. */
     fun observePurse(purse: Double) {
         if (purse < 0) { lastPurse = -1.0; return }
         val prev = lastPurse
         lastPurse = purse
         if (!enabled() || prev < 0) return
-        val type = SlayerManager.type ?: return
+        val k = curKey() ?: return
         if (!SlayerManager.isActiveSlayer()) return
 
         val delta = (purse - prev).toLong()
@@ -183,13 +190,13 @@ object SlayerProfitTracker {
             if (cost in 1..SPAWN_COST_CAP &&
                 System.currentTimeMillis() - lastQuestStartMs <= QUEST_START_WINDOW_MS
             ) {
-                synchronized(lock) { val (t, s) = bothData(type); t.spawnCost += cost; s.spawnCost += cost }
+                synchronized(lock) { val (t, s) = bothData(k); t.spawnCost += cost; s.spawnCost += cost }
                 noteActivity()
                 save()
             }
-        } else if (delta in 1..MOB_COIN_CAP) {
+        } else if (delta in 1 until MOB_COIN_CAP) {
             synchronized(lock) {
-                val (t, s) = bothData(type)
+                val (t, s) = bothData(k)
                 t.mobKillCoins += delta; t.mobKillCoinHits++
                 s.mobKillCoins += delta; s.mobKillCoinHits++
             }
@@ -199,9 +206,9 @@ object SlayerProfitTracker {
     }
 
     private fun onChat(s: String) {
-        val type = SlayerManager.type ?: return
+        val k = curKey() ?: return
 
-        // de-dupe the double-fired line (ON_GAME_MESSAGE fires from two mixin sites)
+        // de-dupe the double-fired line
         val now = System.currentTimeMillis()
         if (s == lastLine && now - lastLineMs < 1_500L) return
         lastLine = s
@@ -211,7 +218,7 @@ object SlayerProfitTracker {
         if (bank.find()) {
             val c = parseShort(bank.group(1))
             if (c in 1..SPAWN_COST_CAP) {
-                synchronized(lock) { val (t, se) = bothData(type); t.spawnCost += c; se.spawnCost += c }
+                synchronized(lock) { val (t, se) = bothData(k); t.spawnCost += c; se.spawnCost += c }
                 noteActivity()
                 save()
             }
@@ -224,15 +231,14 @@ object SlayerProfitTracker {
         if (drop.find()) {
             val count = drop.group(1)?.replace(",", "")?.toLongOrNull() ?: 1L
             val name = LEADING_GLYPHS.replace(drop.group(2).trim(), "").trim()
-            addDrop(type, name, count)
+            addDrop(k, name, count)
             return
         }
         val sack = SACK_PICKUP.matcher(s)
         if (sack.matches()) {
             val n = sack.group(1).replace(",", "").toLongOrNull() ?: return
             val name = sack.group(2).trim()
-            // only accept sack lines we can resolve to a real item (rejects generic "+N Mana" spam)
-            if (name.endsWith("Coins") || ItemsDb.idFor(name) != null) addDrop(type, name, n)
+            if (name.endsWith("Coins") || ItemsDb.idFor(name) != null) addDrop(k, name, n)
         }
     }
 
@@ -248,10 +254,10 @@ object SlayerProfitTracker {
         return ((body.toDoubleOrNull() ?: 0.0) * mult).toLong()
     }
 
-    private fun addDrop(type: SlayerType, name: String, count: Long) {
-        if (name.isEmpty() || count <= 0) return
+    private fun addDrop(k: String, name: String, count: Long) {
+        if (name.isEmpty() || count <= 0 || name == COINS_ROW) return
         synchronized(lock) {
-            val (t, s) = bothData(type)
+            val (t, s) = bothData(k)
             t.drops[name] = (t.drops[name] ?: 0L) + count
             s.drops[name] = (s.drops[name] ?: 0L) + count
         }
@@ -270,141 +276,32 @@ object SlayerProfitTracker {
 
     @JvmStatic fun modeLabel(): String = if (sessionMode()) "This Session" else "Total"
 
-    fun isHidden(type: SlayerType, name: String): Boolean = synchronized(lock) { hiddenSet(type).contains(name) }
+    private fun isHiddenKey(k: String, name: String): Boolean = synchronized(lock) { hiddenSet(k).contains(name) }
 
-    /** Right-click a drop row: toggle its hidden flag (mode-independent, saved). */
-    fun toggleHidden(type: SlayerType, name: String) {
+    /** Left-click a drop row (chat open): toggle its hidden flag (mode-independent, saved). */
+    fun toggleHidden(type: SlayerType, tier: Int, name: String) {
+        val k = key(type, tier)
         synchronized(lock) {
-            val h = hiddenSet(type)
+            val h = hiddenSet(k)
             if (!h.remove(name)) h.add(name)
         }
         save()
     }
 
-    /** True once armed and still inside the confirm window. */
     fun resetArmed(): Boolean = resetArmedAt != 0L && System.currentTimeMillis() - resetArmedAt <= RESET_CONFIRM_MS
 
-    /** Right-click the title: first press arms, a second press inside [RESET_CONFIRM_MS] resets. */
+    /** Right-click the title: first press arms, a second inside [RESET_CONFIRM_MS] resets the shown view. */
     @JvmStatic
     fun armOrConfirmReset() {
         if (resetArmed()) { resetArmedAt = 0L; reset() }
         else resetArmedAt = System.currentTimeMillis()
     }
 
-    // ---------------------------------------------------------------- readout for the HUD
-
-    class Row(@JvmField val name: String, @JvmField val count: Long, @JvmField val value: Double, @JvmField val priced: Boolean)
-
-    /** All priced drop rows for [type] in the current view, highest value first (includes hidden). */
-    fun rows(type: SlayerType): List<Row> {
-        val snap = synchronized(lock) { LinkedHashMap(viewData(type).drops) }
-        val out = ArrayList<Row>(snap.size)
-        for ((name, count) in snap) {
-            val id = if (name.endsWith("Coins")) null else ItemsDb.idFor(name)
-            val unit = if (id != null) CroesusPrices.price(id) else 0.0
-            out.add(Row(name, count, unit * count, id != null && unit > 0))
-        }
-        out.sortByDescending { it.value }
-        return out
-    }
-
-    private fun countKillCoins(): Boolean = FishSettings.slayerProfitCountKillCoins
-
-    fun dropValue(type: SlayerType): Double = rows(type).filter { !isHidden(type, it.name) }.sumOf { it.value }
-    fun mobKillCoins(type: SlayerType): Long = synchronized(lock) { view(type)?.mobKillCoins ?: 0L }
-    fun mobKillCoinHits(type: SlayerType): Long = synchronized(lock) { view(type)?.mobKillCoinHits ?: 0L }
-    fun spawnCost(type: SlayerType): Long = synchronized(lock) { view(type)?.spawnCost ?: 0L }
-    fun bosses(type: SlayerType): Int = synchronized(lock) { view(type)?.bosses ?: 0 }
-    fun activeMs(type: SlayerType): Long = synchronized(lock) { view(type)?.activeMs ?: 0L }
-    fun isPaused(): Boolean = idlePaused
-
-    private fun view(type: SlayerType): Data? = (if (sessionMode()) session else total)[type.name]
-
-    fun profit(type: SlayerType): Double {
-        val coins = if (countKillCoins()) mobKillCoins(type).toDouble() else 0.0
-        return dropValue(type) + coins - spawnCost(type).toDouble()
-    }
-
-    fun profitPerHour(type: SlayerType): Double {
-        val ms = activeMs(type)
-        if (ms < 5_000L) return 0.0
-        return profit(type) * 3_600_000.0 / ms
-    }
-
-    fun hasData(type: SlayerType): Boolean = synchronized(lock) {
-        val d = view(type) ?: return false
-        d.bosses > 0 || d.drops.isNotEmpty() || d.spawnCost > 0 || d.mobKillCoins > 0
-    }
-
-    /** One display line: [label] on the left, right-aligned [value] ("" = none), [tag] routes clicks. */
-    class DisplayRow(@JvmField val label: String, @JvmField val value: String, @JvmField val tag: String)
-
-    private fun sh(v: Double): String = SlayerStatsTracker.short(v)
-
-    /**
-     * The full SkyHanni-style panel for [type], top to bottom. Tags: `title`, `item:<name>`,
-     * `collapsed`, `coins`, `cost`, `bosses`, `profit`, `rate`, `mode`, `spacer`, `hint`.
-     */
-    fun display(type: SlayerType): List<DisplayRow> {
-        val out = ArrayList<DisplayRow>(20)
-        val armed = resetArmed()
-        val title = "§6§l${type.displayName} Profit Tracker" +
-            (if (isPaused()) " §8(idle)" else "")
-        out.add(DisplayRow(if (armed) "§c§lClick again to reset!" else title, "", "title"))
-
-        val cap = FishSettings.slayerProfitLines.coerceIn(1, 20)
-        val minVal = FishSettings.slayerProfitMinValue.coerceAtLeast(0).toDouble()
-        val showHidden = FishSettings.slayerProfitShowHidden
-
-        val all = rows(type)
-        val shown = ArrayList<Row>()
-        var collapsedValue = 0.0
-        var collapsedCount = 0
-        for (r in all) {
-            val hiddenRow = isHidden(type, r.name)
-            if (hiddenRow && !showHidden) {           // hidden: not drawn, not counted
-                continue
-            }
-            if (!hiddenRow && (shown.size >= cap || (minVal > 0 && r.value < minVal))) {
-                collapsedValue += r.value
-                collapsedCount++
-                continue
-            }
-            shown.add(r)
-            val strike = if (hiddenRow) "§m" else ""
-            val v = if (r.priced) "§a$strike${sh(r.value)}" else "§8$strike?"
-            out.add(DisplayRow("§7${fmt(r.count)}x §f$strike${r.name}", v, "item:${r.name}"))
-        }
-        if (collapsedCount > 0) {
-            val noun = if (collapsedCount == 1) "item" else "items"
-            out.add(DisplayRow("§7$collapsedCount more $noun", "§a${sh(collapsedValue)}", "collapsed"))
-        }
-
-        if (countKillCoins()) {
-            val mkc = mobKillCoins(type)
-            if (mkc > 0) {
-                val hits = mobKillCoinHits(type)
-                out.add(DisplayRow("§7${fmt(hits)}x §6Mob Kill Coins", "§a${sh(mkc.toDouble())}", "coins"))
-            }
-        }
-
-        val cost = spawnCost(type)
-        if (cost > 0) out.add(DisplayRow("§7Spawn Cost", "§c-${sh(cost.toDouble())}", "cost"))
-
-        out.add(DisplayRow("§7Bosses Killed", "§e${fmt(bosses(type).toLong())}", "bosses"))
-
-        val p = profit(type)
-        out.add(DisplayRow("§6§lTotal Profit", "${if (p < 0) "§c" else "§a"}${if (p < 0) "-" else "+"}${sh(Math.abs(p))}", "profit"))
-        out.add(DisplayRow("§6Profit/h", "§6${rate(profitPerHour(type))}", "rate"))
-
-        out.add(DisplayRow("§7[ ${if (sessionMode()) "§7Total §8| §a§lThis Session" else "§a§lTotal §8| §7This Session"} §7]", "", "mode"))
-        return out
-    }
-
     @JvmStatic
     fun reset() {
+        val k = curKey()
         synchronized(lock) {
-            if (sessionMode()) session.clear() else { total.clear() }
+            if (k != null) viewMap().remove(k) else viewMap().clear()
         }
         idlePaused = false
         lastActivityMs = 0
@@ -412,8 +309,127 @@ object SlayerProfitTracker {
         save()
     }
 
-    private fun fmt(v: Long): String = String.format("%,d", v)
-    private fun rate(v: Double): String = if (v <= 0.0) "§8—" else sh(v)
+    // ---------------------------------------------------------------- readout
+
+    class Row(
+        @JvmField val name: String,
+        @JvmField val count: Long,
+        @JvmField val value: Double,
+        @JvmField val priced: Boolean,
+        @JvmField val coins: Boolean = false,
+    )
+
+    /** All rows for the shown view of [type]/[tier], highest value first. Includes the synthetic
+     *  "Mob Kill Coins" row and hidden rows (callers filter). */
+    fun rows(type: SlayerType, tier: Int): List<Row> {
+        val k = key(type, tier)
+        val d = view(k)
+        val snap = synchronized(lock) { if (d != null) LinkedHashMap(d.drops) else LinkedHashMap() }
+        val out = ArrayList<Row>(snap.size + 1)
+        for ((name, count) in snap) {
+            val id = if (name.endsWith("Coins")) null else ItemsDb.idFor(name)
+            val unit = if (id != null) CroesusPrices.price(id) else 0.0
+            out.add(Row(name, count, unit * count, id != null && unit > 0))
+        }
+        if (countKillCoins()) {
+            val mkc = d?.mobKillCoins ?: 0L
+            if (mkc > 0) out.add(Row(COINS_ROW, d?.mobKillCoinHits ?: 0L, mkc.toDouble(), priced = true, coins = true))
+        }
+        out.sortByDescending { it.value }
+        return out
+    }
+
+    fun spawnCost(type: SlayerType, tier: Int): Long = view(key(type, tier))?.spawnCost ?: 0L
+    fun bosses(type: SlayerType, tier: Int): Int = view(key(type, tier))?.bosses ?: 0
+    fun activeMs(type: SlayerType, tier: Int): Long = view(key(type, tier))?.activeMs ?: 0L
+    fun isPaused(): Boolean = idlePaused
+
+    /** Sum of visible (non-hidden) row values minus spawn cost. */
+    fun profit(type: SlayerType, tier: Int): Double {
+        val k = key(type, tier)
+        val gained = rows(type, tier).filter { !isHiddenKey(k, it.name) }.sumOf { it.value }
+        return gained - spawnCost(type, tier).toDouble()
+    }
+
+    fun profitPerHour(type: SlayerType, tier: Int): Double {
+        val ms = activeMs(type, tier)
+        if (ms < 5_000L) return 0.0
+        return profit(type, tier) * 3_600_000.0 / ms
+    }
+
+    fun hasData(type: SlayerType, tier: Int): Boolean {
+        val d = view(key(type, tier)) ?: return false
+        return synchronized(lock) { d.bosses > 0 || d.drops.isNotEmpty() || d.spawnCost > 0 || d.mobKillCoins > 0 }
+    }
+
+    /** One display line: [label] left, right-aligned [value] ("" = none); [tag] routes clicks. */
+    class DisplayRow(@JvmField val label: String, @JvmField val value: String, @JvmField val tag: String)
+
+    private fun sh(v: Double): String = SlayerStatsTracker.short(v)
+    private fun sep(v: Long): String = String.format("%,d", v)
+
+    /**
+     * The SkyHanni-style panel for [type]/[tier], top to bottom. [interactive] (chat open) reveals
+     * hidden rows struck-through and appends the mode switcher line.
+     * Tags: `title`, `item:<name>`, `coins`, `collapsed`, `cost`, `bosses`, `profit`, `rate`, `mode`.
+     */
+    fun display(type: SlayerType, tier: Int, interactive: Boolean): List<DisplayRow> {
+        val k = key(type, tier)
+        val out = ArrayList<DisplayRow>(24)
+
+        val cat = "${type.displayName} $tier"
+        out.add(
+            if (resetArmed()) DisplayRow("§c§lClick again to reset ${modeLabel()}!", "", "title")
+            else DisplayRow("§e§l$cat Profit Tracker" + (if (isPaused()) " §8(idle)" else ""), "", "title")
+        )
+
+        val cap = FishSettings.slayerProfitLines.coerceIn(3, 30)
+        val minVal = FishSettings.slayerProfitMinValue.coerceAtLeast(0).toDouble()
+        val revealHidden = interactive || FishSettings.slayerProfitShowHidden
+
+        var visibleShown = 0
+        var collapsedValue = 0.0
+        var collapsedCount = 0
+        for (r in rows(type, tier)) {
+            val hiddenRow = isHiddenKey(k, r.name)
+            if (hiddenRow && !revealHidden) continue
+            if (!hiddenRow && (visibleShown >= cap || (minVal > 0 && r.value < minVal && !r.coins))) {
+                collapsedValue += r.value
+                collapsedCount++
+                continue
+            }
+            if (!hiddenRow) visibleShown++
+            val nm = if (r.coins) "§6Mob Kill Coins" else "§f${r.name}"
+            val label = if (hiddenRow) "§7${sep(r.count)}x §8§m${r.name}" else "§7${sep(r.count)}x $nm"
+            val value = when {
+                hiddenRow -> "§7§m${sh(r.value)}"
+                r.priced -> "§6${sh(r.value)}"
+                else -> "§8?"
+            }
+            out.add(DisplayRow(label, value, if (r.coins) "coins" else "item:${r.name}"))
+        }
+        if (collapsedCount > 0) {
+            val noun = if (collapsedCount == 1) "item" else "items"
+            out.add(DisplayRow("§7$collapsedCount more $noun", "§6${sh(collapsedValue)}", "collapsed"))
+        }
+
+        out.add(DisplayRow(" §7Slayer Spawn Costs:", "§c-${sh(spawnCost(type, tier).toDouble())}", "cost"))
+        out.add(DisplayRow("§7Bosses killed:", "§e${sep(bosses(type, tier).toLong())}", "bosses"))
+
+        val p = profit(type, tier)
+        val pc = if (p < 0) "§c" else "§6"
+        val coinWord = if (Math.abs(p.toLong()) == 1L) "coin" else "coins"
+        out.add(DisplayRow("§e${modeLabel()} Profit:", "$pc${sep(p.toLong())} $coinWord", "profit"))
+
+        val pph = profitPerHour(type, tier)
+        out.add(DisplayRow("§eProfit/h:", if (pph == 0.0) "§8—" else "${if (pph < 0) "§c" else "§6"}${sh(pph)}", "rate"))
+
+        if (interactive) {
+            val sw = if (sessionMode()) "§7[ §7Total §8| §a§lThis Session §7]" else "§7[ §a§lTotal §8| §7This Session §7]"
+            out.add(DisplayRow("§7Mode: $sw", "", "mode"))
+        }
+        return out
+    }
 
     // ---------------------------------------------------------------- persistence
 
@@ -433,9 +449,9 @@ object SlayerProfitTracker {
                     val p: Persisted? = GSON.fromJson(root, Persisted::class.java)
                     total = p?.total ?: HashMap()
                     hidden = HashMap()
-                    p?.hidden?.forEach { (k, v) -> hidden[k] = LinkedHashSet(v) }
+                    p?.hidden?.forEach { (kk, v) -> hidden[kk] = LinkedHashSet(v) }
                 } else {
-                    // legacy: file was a bare Map<String, Data>
+                    // legacy: file was a bare Map<String, Data> keyed by SlayerType.name (no tier)
                     val t: Type = object : TypeToken<MutableMap<String, Data>>() {}.type
                     total = GSON.fromJson(root, t) ?: HashMap()
                 }
@@ -449,7 +465,7 @@ object SlayerProfitTracker {
             val p = Persisted()
             p.total = total
             val h = HashMap<String, MutableList<String>>()
-            hidden.forEach { (k, v) -> h[k] = ArrayList(v) }
+            hidden.forEach { (kk, v) -> h[kk] = ArrayList(v) }
             p.hidden = h
             GSON.toJson(p)
         }

@@ -142,9 +142,11 @@ object SlayerHuds {
         if (mc.screen != null && mc.screen !is net.minecraft.client.gui.screens.ChatScreen) return
         if (!Location.inSkyblock()) return
         val type = SlayerManager.type ?: return
-        if (!SlayerProfitTracker.hasData(type)) return
+        val tier = SlayerManager.tier
+        if (!SlayerProfitTracker.hasData(type, tier)) return
 
-        val rows = SlayerProfitTracker.display(type)
+        val interactive = mc.screen is net.minecraft.client.gui.screens.ChatScreen
+        val rows = SlayerProfitTracker.display(type, tier, interactive)
         val f = mc.font
         val lh = Constants.TEXT_HEIGHT + 2
         val gap = 8
@@ -180,7 +182,8 @@ object SlayerHuds {
 
     /**
      * Route a click over the profit HUD (chat open, GUI-scaled coords). Returns true if consumed.
-     * `mode` row → switch view; `title` right-click → arm/confirm reset; `item:` right-click → hide.
+     * `mode` line → switch view (either button); `item:` left-click → hide/unhide that drop;
+     * `title` right-click → arm, then confirm, the reset of the shown view.
      */
     @JvmStatic
     fun onProfitClick(mx: Double, my: Double, button: Int): Boolean {
@@ -188,6 +191,7 @@ object SlayerHuds {
         if (System.currentTimeMillis() - profitFrameMs > 500) return false   // not drawn recently
         if (mx < profitLeft || mx > profitRight) return false
         val type = SlayerManager.type ?: return false
+        val tier = SlayerManager.tier
         for (i in profitRowTag.indices) {
             if (my < profitRowTop[i] || my > profitRowBot[i]) continue
             val tag = profitRowTag[i]
@@ -197,9 +201,9 @@ object SlayerHuds {
                     fishmod.utils.config.FishConfig.manager.save()   // persist the chosen view
                     return true
                 }
-                tag == "title" -> { if (button == 1) { SlayerProfitTracker.armOrConfirmReset(); return true } }
-                tag.startsWith("item:") -> {
-                    if (button == 1) { SlayerProfitTracker.toggleHidden(type, tag.substring(5)); return true }
+                tag == "title" -> if (button == 1) { SlayerProfitTracker.armOrConfirmReset(); return true }
+                tag.startsWith("item:") -> if (button == 0) {
+                    SlayerProfitTracker.toggleHidden(type, tier, tag.substring(5)); return true
                 }
             }
             return false

@@ -886,11 +886,12 @@ object FishSettings {
     @ConfigValue @JvmField var slayerTimerHudY: Int = 255
     @ConfigValue @JvmField var slayerTimerHudScale: Double = 1.0
 
-    // Profit Tracker (drop value + $/hr) — SkyHanni-style, prices real drops
+    // Profit Tracker (drop value + coins/hr) — SkyHanni-style, prices real drops.
+    // Kept per (slayer type + tier), like SkyHanni. Price source = the shared trackerPriceModeEnum.
     @ConfigValue @JvmField var slayerProfitEnabled: Boolean = false
-    /** Max drop rows shown on the HUD (highest value first); the rest fold into one "N items" row. */
-    @ConfigValue @JvmField var slayerProfitLines: Int = 8
-    /** Idle seconds before the tracker pauses AND rewinds its clock by this much. */
+    /** Max drop rows shown on the HUD (highest value first); the rest fold into one "N more items" row. */
+    @ConfigValue @JvmField var slayerProfitLines: Int = 10
+    /** Idle seconds before the tracker pauses AND rewinds its clock by this much (SkyHanni afkTimeout). */
     @ConfigValue @JvmField var slayerProfitIdleSeconds: Int = 60
     @ConfigValue @JvmField var slayerProfitBackground: Boolean = true
     @ConfigValue @JvmField var slayerProfitHudX: Int = 10
@@ -898,11 +899,11 @@ object FishSettings {
     @ConfigValue @JvmField var slayerProfitHudScale: Double = 1.0
     /** Which figures the tracker shows — "Total" (persisted, all-time) or "This Session" (since launch). */
     @ConfigValue @JvmField var slayerProfitDisplayMode: String = "Total"
-    /** Reveal right-click-hidden item rows (struck through) so they can be un-hidden. */
+    /** Keep right-click-hidden rows on screen (dark + struck) even when chat is closed. */
     @ConfigValue @JvmField var slayerProfitShowHidden: Boolean = false
-    /** Drop rows worth less than this many coins are folded into the "N items" row (0 = show all). */
+    /** Drop rows worth less than this many coins fold into the "N more items" row (0 = show all). */
     @ConfigValue @JvmField var slayerProfitMinValue: Int = 0
-    /** Also count each boss-kill's own coin reward (the "+N Coins" splash) as profit. */
+    /** Count "Mob Kill Coins" (small purse gains while grinding) as a drop row + profit. */
     @ConfigValue @JvmField var slayerProfitCountKillCoins: Boolean = true
 
     /** True when any individual Slayer feature is on — gates the whole Slayer scan/track subsystem. */

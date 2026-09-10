@@ -1444,14 +1444,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
             val profit = Feature("Profit Tracker", FishSettings::slayerProfitEnabled)
             profit.sub.add(SubcategoryHeader("SkyHanni-style: prices real drops for coins/hr  ·  drag with Edit HUD"))
-            profit.sub.add(SubcategoryHeader("Click the mode line on the HUD to switch  ·  right-click a row to hide it  ·  right-click the title to reset"))
+            profit.sub.add(SubcategoryHeader("With chat open: click the mode line to switch  ·  left-click a row to hide it  ·  right-click the title to reset"))
             profit.sub.add(DropdownSetting("Display", "Total = all-time (saved); This Session = since this launch", arrayOf("Total", "This Session"),
                 { FishSettings.slayerProfitDisplayMode },
                 { v -> FishSettings.slayerProfitDisplayMode = v }))
-            profit.sub.add(SliderIntSetting("Drop Rows", "Max item rows shown (highest value first); the rest fold into one row", FishSettings::slayerProfitLines, 1, 20, 1))
-            profit.sub.add(SliderIntSetting("Hide Below (coins)", "Rows worth less than this fold into the \"N items\" row (0 = show all)", FishSettings::slayerProfitMinValue, 0, 1_000_000, 10_000))
-            profit.sub.add(ToggleSetting("Count Boss Kill Coins", "Also count each boss's own \"+N Coins\" splash as profit", FishSettings::slayerProfitCountKillCoins))
-            profit.sub.add(ToggleSetting("Show Hidden Rows", "Reveal right-click-hidden rows (struck through) so they can be un-hidden", FishSettings::slayerProfitShowHidden))
+            profit.sub.add(SliderIntSetting("Drop Rows", "Max item rows shown (highest value first); the rest fold into one row", FishSettings::slayerProfitLines, 3, 30, 1))
+            profit.sub.add(SliderIntSetting("Hide Below (coins)", "Rows worth less than this fold into the \"N more items\" row (0 = show all)", FishSettings::slayerProfitMinValue, 0, 1_000_000, 10_000))
+            profit.sub.add(ToggleSetting("Count Mob Kill Coins", "Count small purse gains while grinding as a \"Mob Kill Coins\" drop row + profit", FishSettings::slayerProfitCountKillCoins))
+            profit.sub.add(ToggleSetting("Always Show Hidden Rows", "Keep hidden rows on screen (dark + struck) even when chat is closed", FishSettings::slayerProfitShowHidden))
             profit.sub.add(SliderIntSetting("Idle Pause (s)", "No drop/kill this long → pause & rewind the clock by this much", FishSettings::slayerProfitIdleSeconds, 15, 600, 15))
             profit.sub.add(ToggleSetting("Background", "Dark panel behind the tracker", FishSettings::slayerProfitBackground))
             profit.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerProfitHudScale, 0.5, 3.0))
