@@ -38,6 +38,10 @@ object FishSettings {
     /** Comma-separated column names, left-to-right, saved from drag-reordering the /fm screen's tabs. */
     @ConfigValue @JvmField var fmColumnOrder: String = ""
 
+    /** Master switch for the /fm screen's own animations (open/close cascade, section expand, toggle
+     *  slides). Off = everything snaps instantly. */
+    @ConfigValue @JvmField var fmAnimations: Boolean = true
+
     // /fm screen UI Customization (cascading curtain open/close + column card appearance)
     /** Which background swatch is active: "Dark Glass" (default), "Deep Blue", "Crimson", "Violet", or "Custom". */
     @ConfigValue @JvmField var fmBgPreset: String = "Dark Glass"

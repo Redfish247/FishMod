@@ -34,6 +34,7 @@ object Easing {
         fun target(): Boolean = target
 
         fun progress(): Float {
+            if (!fishmod.utils.config.values.FishSettings.fmAnimations) return if (target) 1f else 0f
             val elapsed = System.currentTimeMillis() - startTime
             val t = if (durationMs <= 0) 1f else Math.min(1f, elapsed / durationMs.toFloat())
             val eased = easeInOutCubic(t)

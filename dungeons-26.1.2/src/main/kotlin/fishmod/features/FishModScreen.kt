@@ -113,11 +113,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ColorPickerSetting("Button Color", "Tint behind an enabled row, e.g. Door Colors", FishSettings::fmRowColor))
             f.sub.add(SliderIntSetting("Button Opacity %", "0% invisible - 100% solid", FishSettings::fmRowAlpha, 0, 100))
             f.sub.add(SubcategoryHeader("Cascade Animation"))
-            f.sub.add(SliderIntSetting("Drop Duration (ms)", "200 snappy - 1200 dramatic", FishSettings::fmDropDurationMs, 200, 1200, 25))
-            f.sub.add(SliderIntSetting("Stagger Delay (ms)", "Extra delay per column, 0 = all at once", FishSettings::fmStaggerDelayMs, 0, 120, 5))
+            f.sub.add(ToggleSetting("Menu Animations", "Off = the menu just appears; no cascade / expand / toggle slides", FishSettings::fmAnimations))
+            f.sub.add(SliderIntSetting("Drop Duration (ms)", "200 snappy - 1200 dramatic", FishSettings::fmDropDurationMs, 200, 1200, 25).gatedBy { FishSettings.fmAnimations })
+            f.sub.add(SliderIntSetting("Stagger Delay (ms)", "Extra delay per column, 0 = all at once", FishSettings::fmStaggerDelayMs, 0, 120, 5).gatedBy { FishSettings.fmAnimations })
             f.sub.add(DropdownSetting("Exit Style", "How columns animate on close", arrayOf("Floor Fall", "Reverse Curtain"),
                 { FishSettings.fmExitStyle },
-                { v -> FishSettings.fmExitStyle = v }))
+                { v -> FishSettings.fmExitStyle = v }).gatedBy { FishSettings.fmAnimations })
             general.features.add(f)
         }
         run {
@@ -1509,10 +1510,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
     // --- Cascading curtain animation -----------------------------------------------------------
 
+    // "Menu Animations" off → zero out all cascade timing so the screen just appears / closes.
+    private fun fmDropMs(): Int = if (FishSettings.fmAnimations) FishSettings.fmDropDurationMs else 0
+    private fun fmStagMs(): Int = if (FishSettings.fmAnimations) FishSettings.fmStaggerDelayMs else 0
+
     /** Total wall-clock time the exit animation needs, given the current column count/settings. */
     private fun exitTotalDurationMs(): Long {
         val n = visibleColumns().size
-        return FishSettings.fmDropDurationMs.toLong() + FishSettings.fmStaggerDelayMs.toLong() * Math.max(0, n - 1)
+        return fmDropMs().toLong() + fmStagMs().toLong() * Math.max(0, n - 1)
     }
 
     /** Starts the exit (closing) animation instead of closing immediately. Safe to call more than
@@ -1525,10 +1530,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
     /** 0f (not started) .. ~1f at rest, with a brief >1 overshoot for the elastic landing feel. */
     private fun openEase(index: Int): Float {
-        val delay = index.toLong() * FishSettings.fmStaggerDelayMs
+        if (!FishSettings.fmAnimations) return 1f
+        val delay = index.toLong() * fmStagMs()
         val elapsed = System.currentTimeMillis() - screenOpenTime - delay
         if (elapsed <= 0L) return 0f
-        val dur = FishSettings.fmDropDurationMs.toFloat()
+        val dur = fmDropMs().toFloat()
         val t = if (dur <= 0f) 1f else Mth.clamp(elapsed / dur, 0f, 1f)
         return Easing.easeOutBack(t)
     }
@@ -1536,29 +1542,31 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     /** 0f (not started) .. 1f (fully off-screen), eased. Column order is reversed vs. open: the
      *  last (rightmost) visible column leads the exit wave. */
     private fun closeEase(index: Int): Float {
+        if (!FishSettings.fmAnimations) return 1f
         val n = visibleColumns().size
         val order = n - 1 - index
-        val delay = order.toLong() * FishSettings.fmStaggerDelayMs
+        val delay = order.toLong() * fmStagMs()
         val elapsed = System.currentTimeMillis() - closeStartTime - delay
         if (elapsed <= 0L) return 0f
-        val dur = FishSettings.fmDropDurationMs.toFloat()
+        val dur = fmDropMs().toFloat()
         val t = if (dur <= 0f) 1f else Mth.clamp(elapsed / dur, 0f, 1f)
         return Easing.easeInOutCubic(t)
     }
 
     private fun isColumnOpening(index: Int): Boolean {
-        val delay = index.toLong() * FishSettings.fmStaggerDelayMs
+        if (!FishSettings.fmAnimations) return false
+        val delay = index.toLong() * fmStagMs()
         val elapsed = System.currentTimeMillis() - screenOpenTime - delay
-        return elapsed < FishSettings.fmDropDurationMs
+        return elapsed < fmDropMs()
     }
 
     private fun isColumnClosing(index: Int): Boolean {
-        if (!closing) return false
+        if (!closing || !FishSettings.fmAnimations) return false
         val n = visibleColumns().size
         val order = n - 1 - index
-        val delay = order.toLong() * FishSettings.fmStaggerDelayMs
+        val delay = order.toLong() * fmStagMs()
         val elapsed = System.currentTimeMillis() - closeStartTime - delay
-        return elapsed < FishSettings.fmDropDurationMs
+        return elapsed < fmDropMs()
     }
 
     /** True while any visible column is still mid drop-in or exit animation — used to suppress
