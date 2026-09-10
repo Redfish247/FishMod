@@ -252,6 +252,15 @@ object FishSettings {
     @ConfigValue @JvmField var nametagStatsEnabled: Boolean = false
     @ConfigValue @JvmField var nametagStatsShowSelf: Boolean = false
 
+    // Prestige Colors: recolour Hypixel's SkyBlock "[level]" badge (nametags + tab) by a level-driven
+    // tier progression — 15 solid tiers to 300, then 20 three-stop gradient tiers to 700.
+    @ConfigValue @JvmField var prestigeColorsEnabled: Boolean = false
+    @ConfigValue @JvmField var prestigeColorsNametags: Boolean = true
+    @ConfigValue @JvmField var prestigeColorsTab: Boolean = true
+    @ConfigValue @JvmField var prestigeColorsGradientTiers: Boolean = true
+    @ConfigValue @JvmField var prestigeColorsAnimated: Boolean = true
+    @ConfigValue @JvmField var prestigeColorsAnimSpeed: Double = 1.0
+
     // M7/F7 lever waypoints: through-walls box on each boss lever; disappears once flipped.
     @ConfigValue @JvmField var enableM7LeverWaypoints: Boolean = false
     @ConfigValue @JvmField var m7LeverWaypointColor: Int = 0xFFFF0086.toInt() // RGB used; alpha ignored

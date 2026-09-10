@@ -64,6 +64,7 @@
     "ClientClockManagerMixin",
     "PlayerListHudMixin",
     "PlayerNameLabelMixin",
+    "PrestigeTabNameMixin",
     "RecipeBookScreenMixin",
     "RecipeBookWidgetMixin",
     "SkullBlockEntityRendererMixin",

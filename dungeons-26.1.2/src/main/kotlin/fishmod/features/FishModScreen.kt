@@ -731,6 +731,21 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             cosmetics.features.add(f)
         }
         run {
+            val f = Feature("Prestige Colors", FishSettings::prestigeColorsEnabled)
+            f.sub.add(SubcategoryHeader("Recolors Hypixel's SkyBlock [level] badge by level"))
+            f.sub.add(SubcategoryHeader("0–300: 15 solid tiers · 300–700: 20 gradient tiers"))
+            f.sub.add(ToggleSetting("On Nametags", "", FishSettings::prestigeColorsNametags))
+            f.sub.add(ToggleSetting("In Tab List", "", FishSettings::prestigeColorsTab))
+            f.sub.add(ToggleSetting("Gradient Tiers (300+)", "", FishSettings::prestigeColorsGradientTiers))
+            f.sub.add(ToggleSetting("Animate Gradients", "", FishSettings::prestigeColorsAnimated)
+                .gatedBy { FishSettings.prestigeColorsGradientTiers })
+            f.sub.add(SliderDoubleSetting("Animation Speed", "",
+                { FishSettings.prestigeColorsAnimSpeed },
+                { v -> FishSettings.prestigeColorsAnimSpeed = v }, 0.0, 3.0)
+                .gatedBy { FishSettings.prestigeColorsGradientTiers && FishSettings.prestigeColorsAnimated })
+            cosmetics.features.add(f)
+        }
+        run {
             val f = Feature("Player Size",
                 { FishSettings.playerSizeEnabled },
                 { v -> FishSettings.playerSizeEnabled = v; fishmod.cosmetic.PlayerSize.uploadOwn() })
