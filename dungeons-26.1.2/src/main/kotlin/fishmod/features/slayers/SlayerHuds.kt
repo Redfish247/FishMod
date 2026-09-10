@@ -220,7 +220,7 @@ object SlayerHuds {
         if (mc.player == null || mc.options.hideGui) return
         if (!SlayerManager.hasActiveQuest()) return
 
-        val lines = ArrayList<String>(3)
+        val lines = ArrayList<String>(4)
         if (SlayerTimer.running()) {
             if (FishSettings.slayerTimerShowCurrent)
                 lines.add("§6Boss: §f${String.format("%.2fs", SlayerTimer.elapsedSeconds())}")
@@ -233,7 +233,14 @@ object SlayerHuds {
             }
             if (FishSettings.slayerTimerShowNewPb && SlayerTimer.lastWasPb())
                 lines.add("§a§lNEW PB!")
-        } else return
+        }
+        if (FishSettings.slayerTimerShowCycle) {
+            if (SlayerTimer.lastCycleSeconds() >= 0.0)
+                lines.add("§7Cycle: §f${String.format("%.1fs", SlayerTimer.lastCycleSeconds())}")
+            val since = SlayerTimer.cycleElapsedSeconds()
+            if (SlayerTimer.hasCycle() && since in 0.0..1800.0)
+                lines.add("§7Since kill: §f${String.format("%.1fs", since)}")
+        }
         if (lines.isEmpty()) return
 
         drawBlock(ctx, FishSettings.slayerTimerHudX, FishSettings.slayerTimerHudY,

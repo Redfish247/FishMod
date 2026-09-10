@@ -882,6 +882,8 @@ object FishSettings {
     @ConfigValue @JvmField var slayerTimerShowCurrent: Boolean = true
     @ConfigValue @JvmField var slayerTimerShowPb: Boolean = true
     @ConfigValue @JvmField var slayerTimerShowNewPb: Boolean = true
+    /** Full-cycle line: wall-clock time from one boss kill to the next (fight + loot + walk + refill). */
+    @ConfigValue @JvmField var slayerTimerShowCycle: Boolean = true
     @ConfigValue @JvmField var slayerTimerHudX: Int = 10
     @ConfigValue @JvmField var slayerTimerHudY: Int = 255
     @ConfigValue @JvmField var slayerTimerHudScale: Double = 1.0

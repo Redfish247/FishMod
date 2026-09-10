@@ -65,6 +65,9 @@ object SlayerManager {
     private val QUEST_COMPLETE = Pattern.compile("SLAYER QUEST COMPLETE!")
     private val QUEST_FAILED = Pattern.compile("SLAYER QUEST FAILED!")
     private val COCOON_CHAT = Pattern.compile("YOU COCOONED YOUR SLAYER BOSS")
+    //  "SLAYER MINI-BOSS Atoned Champion has spawned! (2)"  — the trailing " (N)" is Hypixel's own
+    //  chat-repeat counter; group 1 is the miniboss name.
+    private val MINIBOSS_CHAT = Pattern.compile("SLAYER MINI-?BOSS (.+?) has spawned!")
 
     // progress-line shapes
     private val PCT = Pattern.compile("(\\d{1,3})%")
@@ -96,6 +99,8 @@ object SlayerManager {
     private var lastQuestCompleteMs = 0L
     private var lastQuestStartedMs = 0L
     private var lastCocoonChatMs = 0L
+    private var lastMiniBossLine = ""
+    private var lastMiniBossMs = 0L
 
     // Hypixel's sidebar drops lines for a scan or two under load, especially mid-fight. Don't tear
     // down the quest (which would reset the timer and re-arm every spawn alert) until the "Slayer
@@ -174,6 +179,18 @@ object SlayerManager {
                     if (now - lastCocoonChatMs > CHAT_DEDUPE_MS) {
                         lastCocoonChatMs = now
                         enterCocoon()
+                    }
+                }
+                else -> {
+                    val mb = MINIBOSS_CHAT.matcher(s)
+                    if (mb.find()) {
+                        // ON_GAME_MESSAGE double-fires the same line; swallow only the immediate echo
+                        // so two different minibosses close together still both alert.
+                        if (s != lastMiniBossLine || now - lastMiniBossMs > 1_000L) {
+                            lastMiniBossLine = s
+                            lastMiniBossMs = now
+                            SlayerAlerts.miniBoss(mb.group(1).trim())
+                        }
                     }
                 }
             }
@@ -262,7 +279,6 @@ object SlayerManager {
         // NOT SlayerTimer.reset() — keep the last kill time on the HUD through the next grind;
         // SlayerTimer.onBossSpawned() clears it when the next boss actually appears.
         SlayerAlerts.reset()
-        SlayerBossDetector.clearSeenMiniBosses()
     }
 
     private fun parseProgress(line: String): SpawnProgress {
@@ -323,7 +339,6 @@ object SlayerManager {
         lastProgressLine = ""
         state = State.GRINDING
         SlayerTimer.reset()
-        SlayerBossDetector.clearSeenMiniBosses()
         SlayerAlerts.reset()
         SlayerStatsTracker.onQuestChange(newType, newTier)
     }
@@ -337,6 +352,7 @@ object SlayerManager {
             val isPb = SlayerPersonalBests.record(t, tier, secs)
             SlayerTimer.publishResult(secs, isPb)
         }
+        SlayerTimer.onBossKilled() // full-cycle timer (kill -> kill); internally deduped
     }
 
     private fun onQuestComplete() {
@@ -353,6 +369,7 @@ object SlayerManager {
             }
             state = State.BOSS_SLAIN
         }
+        SlayerTimer.onBossKilled() // full-cycle timer; deduped against the onBossSlain() call above
     }
 
     private fun onQuestFailed() {

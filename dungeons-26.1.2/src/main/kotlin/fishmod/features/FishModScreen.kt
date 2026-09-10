@@ -1466,6 +1466,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             timer.sub.add(ToggleSetting("Show Current Timer", "", FishSettings::slayerTimerShowCurrent))
             timer.sub.add(ToggleSetting("Show PB", "", FishSettings::slayerTimerShowPb))
             timer.sub.add(ToggleSetting("Show New PB", "", FishSettings::slayerTimerShowNewPb))
+            timer.sub.add(ToggleSetting("Show Cycle", "Full kill-to-kill time (fight + loot + walk + refill) + a live 'since kill' counter", FishSettings::slayerTimerShowCycle))
             timer.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerTimerHudScale, 0.5, 3.0))
             slayer.features.add(timer)
         }
