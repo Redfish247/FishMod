@@ -132,6 +132,7 @@ object SlayerManager {
         SlayerTimer.init()
         SlayerAlerts.init()
         SlayerBossDetector.init()
+        SlayerBossPhases.init()
         SlayerHuds.init()
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->

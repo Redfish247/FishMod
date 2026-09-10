@@ -1469,6 +1469,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             timer.sub.add(ToggleSetting("Show Cycle", "Full kill-to-kill time (fight + loot + walk + refill) + a live 'since kill' counter", FishSettings::slayerTimerShowCycle))
             timer.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerTimerHudScale, 0.5, 3.0))
             slayer.features.add(timer)
+
+            val phases = Feature("Boss Phases", FishSettings::slayerPhaseEnabled)
+            phases.sub.add(SubcategoryHeader("SkyHanni-style attack/phase cues on the boss — all 6 slayers"))
+            phases.sub.add(SubcategoryHeader("Voidgloom laser/hits/beacon · Inferno shield+dagger/fire pillar/pits · Bloodfiend twinclaws/steak/mania · Rev BOOM · Sven PUPS · Tara hatchlings"))
+            phases.sub.add(ToggleSetting("World Text", "Draw the cue as text above the boss", FishSettings::slayerPhaseWorldText))
+            phases.sub.add(ToggleSetting("Title Warnings", "Big title for BOOM / PUPS / HATCHLINGS / FIRE PITS / TWINCLAWS / STEAK / BEACON", FishSettings::slayerPhaseTitles))
+            phases.sub.add(ToggleSetting("Health Phase Split", "Show the 1/3 · 2/3 phase fraction (Voidgloom / Inferno)", FishSettings::slayerPhaseHealthSplit))
+            slayer.features.add(phases)
         }
 
         columns.add(general)

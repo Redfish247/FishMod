@@ -908,10 +908,19 @@ object FishSettings {
     /** Count "Mob Kill Coins" (small purse gains while grinding) as a drop row + profit. */
     @ConfigValue @JvmField var slayerProfitCountKillCoins: Boolean = true
 
+    // Boss Phases — SkyHanni-style attack/phase cues on the boss (all 6 slayers)
+    @ConfigValue @JvmField var slayerPhaseEnabled: Boolean = false
+    /** Draw the cue as billboarded world text above the boss. */
+    @ConfigValue @JvmField var slayerPhaseWorldText: Boolean = true
+    /** Big title for the one-shot cues (BOOM / PUPS / HATCHLINGS / FIRE PITS / TWINCLAWS / STEAK / BEACON). */
+    @ConfigValue @JvmField var slayerPhaseTitles: Boolean = true
+    /** Show the health-phase fraction (1/3 · 2/3 …) for Voidgloom / Inferno. */
+    @ConfigValue @JvmField var slayerPhaseHealthSplit: Boolean = true
+
     /** True when any individual Slayer feature is on — gates the whole Slayer scan/track subsystem. */
     @JvmStatic
     fun slayerAnyEnabled(): Boolean =
         slayerSpawnAlertEnabled || slayerCocoonAlertEnabled || slayerSpawnHudEnabled ||
-            slayerStatsHudEnabled || slayerTimerEnabled || slayerProfitEnabled
+            slayerStatsHudEnabled || slayerTimerEnabled || slayerProfitEnabled || slayerPhaseEnabled
 
 }
