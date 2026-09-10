@@ -843,4 +843,72 @@ object FishSettings {
     @ConfigValue @JvmField var sbSectionElection: Boolean = false
     @ConfigValue @JvmField var sbSectionFireSales: Boolean = false
 
+    // ---------------- Slayer ----------------
+    // No single master toggle — each of the five Slayer features below is its own switch. The
+    // subsystem (scoreboard scan + entity scan) idles unless [slayerAnyEnabled] is true.
+
+    // Mini/Boss Spawn Alert
+    @ConfigValue @JvmField var slayerSpawnAlertEnabled: Boolean = false
+    @ConfigValue @JvmField var slayerMiniBossAlert: Boolean = true
+    @ConfigValue @JvmField var slayerBossAlert: Boolean = true
+    /** Alert on-screen time, ms (shared by mini/boss/cocoon alerts). */
+    @ConfigValue @JvmField var slayerAlertDurationMs: Int = 1500
+
+    // Cocoon Alert
+    @ConfigValue @JvmField var slayerCocoonAlertEnabled: Boolean = false
+    @ConfigValue @JvmField var slayerCocoonAlertDurationMs: Int = 2000
+
+    // Spawn Progress HUD
+    @ConfigValue @JvmField var slayerSpawnHudEnabled: Boolean = false
+    @ConfigValue @JvmField var slayerSpawnHudX: Int = 10
+    @ConfigValue @JvmField var slayerSpawnHudY: Int = 140
+    @ConfigValue @JvmField var slayerSpawnHudScale: Double = 1.0
+
+    // Slayer Stats HUD
+    @ConfigValue @JvmField var slayerStatsHudEnabled: Boolean = false
+    @ConfigValue @JvmField var slayerStatsShowXp: Boolean = true
+    @ConfigValue @JvmField var slayerStatsShowKills: Boolean = true
+    @ConfigValue @JvmField var slayerStatsShowXpHr: Boolean = true
+    @ConfigValue @JvmField var slayerStatsShowKillsHr: Boolean = true
+    @ConfigValue @JvmField var slayerStatsBackground: Boolean = true
+    @ConfigValue @JvmField var slayerStatsHudX: Int = 10
+    @ConfigValue @JvmField var slayerStatsHudY: Int = 170
+    @ConfigValue @JvmField var slayerStatsHudScale: Double = 1.0
+
+    // Boss Timer HUD
+    @ConfigValue @JvmField var slayerTimerEnabled: Boolean = false
+    /** "Spawned" = timer starts when the boss spawns; "Fully Spawned" = starts once it's attackable. */
+    @ConfigValue @JvmField var slayerTimerStartMode: String = "Spawned"
+    @ConfigValue @JvmField var slayerTimerShowCurrent: Boolean = true
+    @ConfigValue @JvmField var slayerTimerShowPb: Boolean = true
+    @ConfigValue @JvmField var slayerTimerShowNewPb: Boolean = true
+    @ConfigValue @JvmField var slayerTimerHudX: Int = 10
+    @ConfigValue @JvmField var slayerTimerHudY: Int = 255
+    @ConfigValue @JvmField var slayerTimerHudScale: Double = 1.0
+
+    // Profit Tracker (drop value + $/hr) — SkyHanni-style, prices real drops
+    @ConfigValue @JvmField var slayerProfitEnabled: Boolean = false
+    /** Max drop rows shown on the HUD (highest value first); the rest fold into one "N items" row. */
+    @ConfigValue @JvmField var slayerProfitLines: Int = 8
+    /** Idle seconds before the tracker pauses AND rewinds its clock by this much. */
+    @ConfigValue @JvmField var slayerProfitIdleSeconds: Int = 60
+    @ConfigValue @JvmField var slayerProfitBackground: Boolean = true
+    @ConfigValue @JvmField var slayerProfitHudX: Int = 10
+    @ConfigValue @JvmField var slayerProfitHudY: Int = 300
+    @ConfigValue @JvmField var slayerProfitHudScale: Double = 1.0
+    /** Which figures the tracker shows — "Total" (persisted, all-time) or "This Session" (since launch). */
+    @ConfigValue @JvmField var slayerProfitDisplayMode: String = "Total"
+    /** Reveal right-click-hidden item rows (struck through) so they can be un-hidden. */
+    @ConfigValue @JvmField var slayerProfitShowHidden: Boolean = false
+    /** Drop rows worth less than this many coins are folded into the "N items" row (0 = show all). */
+    @ConfigValue @JvmField var slayerProfitMinValue: Int = 0
+    /** Also count each boss-kill's own coin reward (the "+N Coins" splash) as profit. */
+    @ConfigValue @JvmField var slayerProfitCountKillCoins: Boolean = true
+
+    /** True when any individual Slayer feature is on — gates the whole Slayer scan/track subsystem. */
+    @JvmStatic
+    fun slayerAnyEnabled(): Boolean =
+        slayerSpawnAlertEnabled || slayerCocoonAlertEnabled || slayerSpawnHudEnabled ||
+            slayerStatsHudEnabled || slayerTimerEnabled || slayerProfitEnabled
+
 }
