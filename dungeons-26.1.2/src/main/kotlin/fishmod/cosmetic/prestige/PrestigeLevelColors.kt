@@ -27,25 +27,26 @@ object PrestigeLevelColors {
     private const val TIER_WIDTH = 20
     private const val MAX_LEVEL = 700
 
-    // vanilla §-colour RGBs
+    // Tuned full-RGB palette — same tier identities as the vanilla §-colours they're named after,
+    // but hand-picked hex so every tier (and every gradient stop) reads richer than the flat 16.
     private const val WHITE = 0xFFFFFF
-    private const val GRAY = 0xAAAAAA
-    private const val DARK_GRAY = 0x555555
-    private const val BLACK = 0x000000
-    private const val AQUA = 0x55FFFF          // "Light Blue"
-    private const val DARK_AQUA = 0x00AAAA     // "Cyan"
-    private const val BLUE = 0x5555FF
-    private const val DARK_BLUE = 0x0000AA
-    private const val GREEN = 0x55FF55         // "Lime"
-    private const val DARK_GREEN = 0x00AA00
-    private const val YELLOW = 0xFFFF55
-    private const val GOLD = 0xFFAA00
-    private const val LIGHT_PURPLE = 0xFF55FF  // "Pink" (solid tier) / "Light Purple" (gradient stop)
-    private const val DARK_PURPLE = 0xAA00AA   // "Purple"
-    private const val RED = 0xFF5555
-    private const val DARK_RED = 0xAA0000
-    private const val PINK = 0xFFA6C9          // gradient-stop "Pink"
-    private const val MID_GREEN = 0x22AA22     // gradient-stop "Green"
+    private const val GRAY = 0xB9C2CF
+    private const val DARK_GRAY = 0x5B6472
+    private const val BLACK = 0x17171C
+    private const val AQUA = 0x59C4FF          // "Light Blue"
+    private const val DARK_AQUA = 0x21E6C1     // "Cyan"
+    private const val BLUE = 0x4D7CFF
+    private const val DARK_BLUE = 0x2740E0
+    private const val GREEN = 0x86FF4D         // "Lime"
+    private const val DARK_GREEN = 0x23B94B
+    private const val YELLOW = 0xFFDA2E
+    private const val GOLD = 0xFFA92E
+    private const val LIGHT_PURPLE = 0xFF6FC5  // "Pink" (solid tier) / "Light Purple" (gradient stop)
+    private const val DARK_PURPLE = 0xB061F0   // "Purple"
+    private const val RED = 0xFF4757
+    private const val DARK_RED = 0xC31F2C
+    private const val PINK = 0xFFB3D9          // gradient-stop pastel "Pink"
+    private const val MID_GREEN = 0x3FD467     // gradient-stop "Green"
 
     class Tier(
         @JvmField val index: Int,
