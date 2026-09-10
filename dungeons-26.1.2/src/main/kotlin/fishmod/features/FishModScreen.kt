@@ -736,6 +736,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(SubcategoryHeader("0–300: 15 solid tiers · 300–700: 20 gradient tiers"))
             f.sub.add(ToggleSetting("On Nametags", "", FishSettings::prestigeColorsNametags))
             f.sub.add(ToggleSetting("In Tab List", "", FishSettings::prestigeColorsTab))
+            f.sub.add(ToggleSetting("In Chat", "", FishSettings::prestigeColorsChat))
             f.sub.add(ToggleSetting("Gradient Tiers (300+)", "", FishSettings::prestigeColorsGradientTiers))
             f.sub.add(ToggleSetting("Animate Gradients", "", FishSettings::prestigeColorsAnimated)
                 .gatedBy { FishSettings.prestigeColorsGradientTiers })

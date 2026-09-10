@@ -154,21 +154,35 @@ object PrestigeLevelColors {
     // Component recolouring — the entry point both mixins call
     // ---------------------------------------------------------------------
 
-    // "[123]" optionally with an emblem glyph before the closing bracket ("[123✿]"), after up to
-    // a couple of leading spaces. Anchored at the string start.
+    // "[123]" optionally with an emblem glyph before the closing bracket ("[123✿]").
+    // Anchored form (nametags / tab): only up to a couple of leading spaces before it.
     private val LEVEL_PREFIX = Regex("""^\s{0,2}\[(\d{1,4})[^\[\]\d]{0,4}]""")
+    // Unanchored form (chat): the first such badge anywhere in the line.
+    private val LEVEL_ANYWHERE = Regex("""\[(\d{1,4})[^\[\]\d]{0,4}]""")
 
     // one-shot diagnostics: log the first few distinct name strings we're handed
-    @JvmField var debug = false
+    @JvmField var debug = true
     private val seen = HashSet<String>()
 
     /**
      * If [c] begins with a "[123]" SkyBlock level badge, return a copy with just the **number**
      * recoloured by its prestige tier. The brackets, any emblem glyph, and the rest of the name
-     * keep their original styling; otherwise [c] is returned unchanged.
+     * keep their original styling; otherwise [c] is returned unchanged. Used for nametags + tab.
      */
     @JvmStatic
-    fun colorizeLevelPrefix(c: Component?): Component? {
+    fun colorizeLevelPrefix(c: Component?): Component? = recolor(c, LEVEL_PREFIX, "prefix")
+
+    /**
+     * Chat lines: recolour the number in the **first** "[123]" badge anywhere in the line (covers
+     * "Guild > [123] Name: ...", "[123] Name: ...", party/co-op/whisper prefixes, etc).
+     */
+    @JvmStatic
+    fun colorizeChatLevel(c: Component?): Component? {
+        if (!FishSettings.prestigeColorsChat) return c
+        return recolor(c, LEVEL_ANYWHERE, "chat")
+    }
+
+    private fun recolor(c: Component?, pattern: Regex, tag: String): Component? {
         if (c == null || !FishSettings.prestigeColorsEnabled) return c
 
         val segs = ArrayList<Seg>()
@@ -176,10 +190,10 @@ object PrestigeLevelColors {
         if (segs.isEmpty()) return c
         val full = buildString { for (s in segs) append(s.text) }
 
-        val m = LEVEL_PREFIX.find(full)
-        if (seen.size < 12 && seen.add(full)) {
+        val m = pattern.find(full)
+        if (debug && seen.size < 16 && seen.add(tag + "|" + full)) {
             fishmod.utils.debug.Debug.LOGGER.info(
-                "[PrestigeDBG] match=${m != null} lvl=${m?.groupValues?.get(1)} segs=${segs.size} raw=\"$full\""
+                "[PrestigeDBG] $tag match=${m != null} lvl=${m?.groupValues?.get(1)} segs=${segs.size} raw=\"$full\""
             )
         }
         if (m == null) return c
@@ -189,9 +203,9 @@ object PrestigeLevelColors {
         val numTo = digits.range.last + 1
 
         val out: MutableComponent = Component.empty()
-        appendRange(out, segs, 0, numFrom)                 // leading spaces + "[" — untouched
+        appendRange(out, segs, 0, numFrom)                 // everything up to the number — untouched
         out.append(styledNumber(level, digits.value, styleAt(segs, numFrom))) // recoloured number only
-        appendRange(out, segs, numTo, full.length)         // emblem + "]" + rest of the name — untouched
+        appendRange(out, segs, numTo, full.length)         // emblem + "]" + rest of the line — untouched
         return out
     }
 

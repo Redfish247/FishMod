@@ -257,6 +257,7 @@ object FishSettings {
     @ConfigValue @JvmField var prestigeColorsEnabled: Boolean = false
     @ConfigValue @JvmField var prestigeColorsNametags: Boolean = true
     @ConfigValue @JvmField var prestigeColorsTab: Boolean = true
+    @ConfigValue @JvmField var prestigeColorsChat: Boolean = true
     @ConfigValue @JvmField var prestigeColorsGradientTiers: Boolean = true
     @ConfigValue @JvmField var prestigeColorsAnimated: Boolean = true
     @ConfigValue @JvmField var prestigeColorsAnimSpeed: Double = 1.0
