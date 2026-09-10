@@ -1309,6 +1309,17 @@ class FishModInit : ModInitializer {
             })
         })
 
+        // Slayer Profit tracker is clickable while chat is open (it keeps rendering over the chat
+        // screen). Left/right click on its rows switches view / hides a drop / arms the reset.
+        ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
+            if (screen !is net.minecraft.client.gui.screens.ChatScreen) return@AfterInit
+            ScreenMouseEvents.allowMouseClick(screen).register(ScreenMouseEvents.AllowMouseClick { _, click ->
+                if (fishmod.features.slayers.SlayerHuds.onProfitClick(click.x(), click.y(), click.button()))
+                    return@AllowMouseClick false
+                true
+            })
+        })
+
         safeInit("FolderUtility") { FolderUtility.init() }
         safeInit("Config") { Config.manager.load() }
         safeInit("Keybinds") { Keybinds.init() }

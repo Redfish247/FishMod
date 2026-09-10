@@ -125,64 +125,86 @@ object SlayerHuds {
 
     // ------------------------------------------------------------------ Slayer Profit
 
+    // last-frame hit regions for the clickable HUD (screen coords). Parallel lists.
+    private var profitFrameMs = 0L
+    private var profitLeft = 0.0
+    private var profitRight = 0.0
+    private val profitRowTop = ArrayList<Double>()
+    private val profitRowBot = ArrayList<Double>()
+    private val profitRowTag = ArrayList<String>()
+
     @JvmStatic
     fun renderProfit(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.slayerProfitEnabled) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
+        // keep drawing while chat is open so it can be clicked (SkyHanni behaviour)
+        if (mc.screen != null && mc.screen !is net.minecraft.client.gui.screens.ChatScreen) return
         if (!Location.inSkyblock()) return
         val type = SlayerManager.type ?: return
         if (!SlayerProfitTracker.hasData(type)) return
 
-        // rows are (left label, right value); right "" draws left only
-        val rows = ArrayList<Pair<String, String>>(16)
-        rows.add("§6§l${type.displayName} ${roman(SlayerManager.tier)} Profit" +
-            (if (SlayerProfitTracker.isPaused()) " §8(idle)" else "") to "")
-
-        val drops = SlayerProfitTracker.rows(type)
-        for (r in drops.take(FishSettings.slayerProfitLines.coerceIn(1, 20))) {
-            val v = if (r.priced) "§a${SlayerStatsTracker.short(r.value)}" else "§8?"
-            rows.add("§7${fmt(r.count.toDouble())}x §f${r.name}" to v)
-        }
-        val mkc = SlayerProfitTracker.mobKillCoins(type)
-        if (mkc > 0) {
-            val hits = SlayerProfitTracker.mobKillCoinHits(type)
-            rows.add("§7${fmt(hits.toDouble())}x §6Mob Kill Coins" to "§a${SlayerStatsTracker.short(mkc.toDouble())}")
-        }
-
-        val cost = SlayerProfitTracker.spawnCost(type)
-        if (cost > 0) rows.add("§7Slayer Spawn Costs:" to "§c-${SlayerStatsTracker.short(cost.toDouble())}")
-        rows.add("§7Bosses killed:" to "§e${SlayerProfitTracker.bosses(type)}")
-        val profit = SlayerProfitTracker.profit(type)
-        rows.add("§6Total Profit:" to "${if (profit < 0) "§c" else "§a"}${String.format("%,d", profit.toLong())}")
-        rows.add("§7$/hr:" to "§6${rate(SlayerProfitTracker.profitPerHour(type))}")
-
-        drawTwoCol(ctx, FishSettings.slayerProfitHudX, FishSettings.slayerProfitHudY,
-            FishSettings.slayerProfitHudScale, rows, FishSettings.slayerProfitBackground)
-    }
-
-    /** Left label + right-aligned value per row, like SkyHanni's trackers. */
-    private fun drawTwoCol(
-        ctx: GuiGraphicsExtractor, x: Int, y: Int, scale: Double,
-        rows: List<Pair<String, String>>, background: Boolean,
-    ) {
-        val mc = Minecraft.getInstance()
+        val rows = SlayerProfitTracker.display(type)
         val f = mc.font
         val lh = Constants.TEXT_HEIGHT + 2
         val gap = 8
         var panelW = 0
-        for ((l, r) in rows) panelW = Math.max(panelW, f.width(l) + (if (r.isEmpty()) 0 else gap + f.width(r)))
-        val sc = scale.toFloat()
+        for (r in rows) panelW = Math.max(panelW, f.width(r.label) + (if (r.value.isEmpty()) 0 else gap + f.width(r.value)))
+
+        val x = FishSettings.slayerProfitHudX
+        val y = FishSettings.slayerProfitHudY
+        val sc = FishSettings.slayerProfitHudScale.toFloat()
+
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())
         ctx.pose().scale(sc, sc)
-        if (background) ctx.fill(-3, -2, panelW + 3, lh * rows.size + 1, 0x90000000.toInt())
+        if (FishSettings.slayerProfitBackground) ctx.fill(-3, -2, panelW + 3, lh * rows.size + 1, 0x90000000.toInt())
         for (i in rows.indices) {
-            val (l, r) = rows[i]
-            ctx.text(f, l, 0, lh * i, 0xFFFFFFFF.toInt(), true)
-            if (r.isNotEmpty()) ctx.text(f, r, panelW - f.width(r), lh * i, 0xFFFFFFFF.toInt(), true)
+            val r = rows[i]
+            ctx.text(f, r.label, 0, lh * i, 0xFFFFFFFF.toInt(), true)
+            if (r.value.isNotEmpty()) ctx.text(f, r.value, panelW - f.width(r.value), lh * i, 0xFFFFFFFF.toInt(), true)
         }
         ctx.pose().popMatrix()
+
+        // record hit regions for onProfitClick
+        profitFrameMs = System.currentTimeMillis()
+        profitLeft = x.toDouble()
+        profitRight = x + panelW.toDouble() * sc
+        profitRowTop.clear(); profitRowBot.clear(); profitRowTag.clear()
+        for (i in rows.indices) {
+            profitRowTop.add(y + lh.toDouble() * i * sc)
+            profitRowBot.add(y + lh.toDouble() * (i + 1) * sc)
+            profitRowTag.add(rows[i].tag)
+        }
+    }
+
+    /**
+     * Route a click over the profit HUD (chat open, GUI-scaled coords). Returns true if consumed.
+     * `mode` row → switch view; `title` right-click → arm/confirm reset; `item:` right-click → hide.
+     */
+    @JvmStatic
+    fun onProfitClick(mx: Double, my: Double, button: Int): Boolean {
+        if (!FishSettings.slayerProfitEnabled) return false
+        if (System.currentTimeMillis() - profitFrameMs > 500) return false   // not drawn recently
+        if (mx < profitLeft || mx > profitRight) return false
+        val type = SlayerManager.type ?: return false
+        for (i in profitRowTag.indices) {
+            if (my < profitRowTop[i] || my > profitRowBot[i]) continue
+            val tag = profitRowTag[i]
+            when {
+                tag == "mode" -> {
+                    SlayerProfitTracker.cycleMode()
+                    fishmod.utils.config.FishConfig.manager.save()   // persist the chosen view
+                    return true
+                }
+                tag == "title" -> { if (button == 1) { SlayerProfitTracker.armOrConfirmReset(); return true } }
+                tag.startsWith("item:") -> {
+                    if (button == 1) { SlayerProfitTracker.toggleHidden(type, tag.substring(5)); return true }
+                }
+            }
+            return false
+        }
+        return false
     }
 
     // ------------------------------------------------------------------ Boss Timer
