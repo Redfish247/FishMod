@@ -160,9 +160,18 @@ object PrestigeLevelColors {
     // Unanchored form (chat): the first such badge anywhere in the line.
     private val LEVEL_ANYWHERE = Regex("""\[(\d{1,4})[^\[\]\d]{0,4}]""")
 
-    // one-shot diagnostics: log the first few distinct name strings we're handed
+    // one-shot diagnostics: log the first few distinct strings per call-site
     @JvmField var debug = true
-    private val seen = HashSet<String>()
+    private val seenByTag = HashMap<String, HashSet<String>>()
+
+    @JvmStatic
+    fun dbg(tag: String, raw: String?) {
+        if (!debug || raw == null) return
+        val set = seenByTag.getOrPut(tag) { HashSet() }
+        if (set.size < 10 && set.add(raw)) {
+            fishmod.utils.debug.Debug.LOGGER.info("[PrestigeDBG] $tag raw=\"$raw\"")
+        }
+    }
 
     /**
      * If [c] begins with a "[123]" SkyBlock level badge, return a copy with just the **number**
@@ -190,17 +199,25 @@ object PrestigeLevelColors {
         if (segs.isEmpty()) return c
         val full = buildString { for (s in segs) append(s.text) }
 
-        val m = pattern.find(full)
-        if (debug && seen.size < 16 && seen.add(tag + "|" + full)) {
-            fishmod.utils.debug.Debug.LOGGER.info(
-                "[PrestigeDBG] $tag match=${m != null} lvl=${m?.groupValues?.get(1)} segs=${segs.size} raw=\"$full\""
-            )
+        // Some sources (Hypixel lobby tab) hand us a flat string with literal "§x" codes rather
+        // than styled sub-components. Match against a code-free copy, keeping a map back to `full`.
+        val clean = StringBuilder(full.length)
+        val mapToFull = IntArray(full.length)
+        var i = 0
+        while (i < full.length) {
+            if (full[i] == '§' && i + 1 < full.length) { i += 2; continue }
+            mapToFull[clean.length] = i
+            clean.append(full[i]); i++
         }
+        val cleanStr = clean.toString()
+
+        val m = pattern.find(cleanStr)
+        if (debug) dbg(tag, full)
         if (m == null) return c
         val digits = m.groups[1] ?: return c
         val level = digits.value.toIntOrNull() ?: return c
-        val numFrom = digits.range.first
-        val numTo = digits.range.last + 1
+        val numFrom = mapToFull[digits.range.first]
+        val numTo = mapToFull[digits.range.last] + 1
 
         val out: MutableComponent = Component.empty()
         appendRange(out, segs, 0, numFrom)                 // everything up to the number — untouched

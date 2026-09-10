@@ -27,9 +27,11 @@ public abstract class CosmeticEntityNameMixin {
         // Only re-style already-resolved nicks here; no per-frame name→uuid lookups
         out = fishmod.cosmetic.RemoteNicks.applyResolvedOnly(out);
         // Prestige Colors: recolour the leading [level] badge on player nametags
-        if (entity instanceof Player
-                && FishSettings.prestigeColorsEnabled && FishSettings.prestigeColorsNametags) {
-            out = PrestigeLevelColors.colorizeLevelPrefix(out);
+        if (entity instanceof Player) {
+            PrestigeLevelColors.dbg("NAMETAG", out.getString());
+            if (FishSettings.prestigeColorsEnabled && FishSettings.prestigeColorsNametags) {
+                out = PrestigeLevelColors.colorizeLevelPrefix(out);
+            }
         }
         return out;
     }
