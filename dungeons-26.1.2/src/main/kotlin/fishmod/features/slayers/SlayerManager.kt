@@ -110,12 +110,47 @@ object SlayerManager {
 
     @JvmStatic fun hasActiveQuest(): Boolean = type != null
 
-    /** Right island for the active quest's slayer type. */
-    /** Best-effort "is the quest's slayer island the one we're on". Only advisory — the Hypixel
-     *  location packet is island-level, and some slayers live in a sub-zone (Sven in The Park), so
-     *  a false here doesn't disable anything on its own. */
+    /** A slayer whose spawn zone is a specific named place *within* its island (per Eli's spec,
+     *  2026-09-10), rather than the whole island. [areas] is matched against the scoreboard's own
+     *  area-name line — the Hypixel location *packet* [Location] reads is island-level only, but the
+     *  sidebar's location text is finer-grained and updates as you cross zone boundaries. `null`
+     *  areas means the whole island counts (Voidgloom/The End, Bloodfiend/The Rift, and Tarantula's
+     *  Spider's Den half — see [AREA_RULES]). */
+    private data class AreaRule(val island: Location, val areas: Set<String>?)
+
+    private val AREA_RULES: Map<SlayerType, List<AreaRule>> = mapOf(
+        SlayerType.REVENANT to listOf(AreaRule(Location.HUB, setOf("Graveyard", "Crypt", "Crypts", "Castle"))),
+        SlayerType.SVEN to listOf(AreaRule(Location.THE_PARK, setOf("Howling Cave"))),
+        SlayerType.VOIDGLOOM to listOf(AreaRule(Location.THE_END, null)),
+        SlayerType.INFERNO to listOf(AreaRule(Location.CRIMSON_ISLE, setOf("Smoldering Tomb"))),
+        // Tarantula is fought on two different islands with two different rules: anywhere on
+        // Spider's Den, or only the Burning Desert zone of Crimson Isle (which also hosts Inferno).
+        SlayerType.TARANTULA to listOf(
+            AreaRule(Location.SPIDERS_DEN, null),
+            AreaRule(Location.CRIMSON_ISLE, setOf("Burning Desert")),
+        ),
+    )
+
+    @Volatile private var correctArea: Boolean = false
+
+    private fun updateAreaMatch(lines: List<String>) {
+        val t = type
+        correctArea = if (t == null) false else areaMatches(t, lines)
+    }
+
+    private fun areaMatches(t: SlayerType, lines: List<String>): Boolean {
+        val rules = AREA_RULES[t] ?: return Location.`in`(t.island)
+        val rule = rules.firstOrNull { Location.`in`(it.island) } ?: return false
+        val names = rule.areas ?: return true
+        return lines.any { line -> names.any { line.contains(it, ignoreCase = true) } }
+    }
+
+    /** True when we're on the right island AND, for a slayer that needs a specific sub-area there,
+     *  the scoreboard's area line currently names it. Refreshed on the same 5-tick scoreboard scan
+     *  as everything else (not read live). Gates the HUDs ([SlayerHuds]) — a false here doesn't
+     *  touch quest/timer/profit state, so tracking keeps running if you step out for a second. */
     @JvmStatic
-    fun inCorrectArea(): Boolean = type?.let { Location.`in`(it.island) } ?: false
+    fun inCorrectArea(): Boolean = correctArea
 
     /** Actively grinding/fighting: a live "Slayer Quest" block on the board while in SkyBlock. The
      *  block is only present during a quest and vanishes on complete/fail, so this is a reliable
@@ -227,6 +262,7 @@ object SlayerManager {
         if (parsed == null) {
             // no readable quest this scan — tolerate a couple before tearing down (scoreboard flicker)
             if (type != null && ++questMissScans >= QUEST_LOSS_GRACE) endQuest()
+            updateAreaMatch(lines)
             return
         }
         questMissScans = 0
@@ -244,6 +280,7 @@ object SlayerManager {
             lastProgressLine = progressLine
             applyProgress(progressLine)
         }
+        updateAreaMatch(lines)
     }
 
     private fun applyProgress(line: String) {

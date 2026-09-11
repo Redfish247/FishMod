@@ -71,7 +71,7 @@ object SlayerHuds {
         if (!FishSettings.slayerSpawnHudEnabled) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
-        if (!SlayerManager.isActiveSlayer()) return
+        if (!SlayerManager.isActiveSlayer() || !SlayerManager.inCorrectArea()) return
         val type = SlayerManager.type ?: return
 
         val lines = ArrayList<String>(3)
@@ -105,7 +105,7 @@ object SlayerHuds {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
         // only while actually doing slayer, like the Spawn / Timer / Profit HUDs
-        if (!SlayerManager.isActiveSlayer() || !SlayerStatsTracker.hasData()) return
+        if (!SlayerManager.isActiveSlayer() || !SlayerManager.inCorrectArea() || !SlayerStatsTracker.hasData()) return
 
         val lines = ArrayList<String>(7)
         lines.add("§5§lSLAYER STATS")
@@ -140,7 +140,7 @@ object SlayerHuds {
         if (mc.player == null || mc.options.hideGui) return
         // keep drawing while chat is open so it can be clicked (SkyHanni behaviour)
         if (mc.screen != null && mc.screen !is net.minecraft.client.gui.screens.ChatScreen) return
-        if (!Location.inSkyblock()) return
+        if (!Location.inSkyblock() || !SlayerManager.inCorrectArea()) return
         val type = SlayerManager.type ?: return
         val tier = SlayerManager.tier
         if (!SlayerProfitTracker.hasData(type, tier)) return
@@ -218,7 +218,7 @@ object SlayerHuds {
         if (!FishSettings.slayerTimerEnabled) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
-        if (!SlayerManager.hasActiveQuest()) return
+        if (!SlayerManager.hasActiveQuest() || !SlayerManager.inCorrectArea()) return
 
         val lines = ArrayList<String>(4)
         if (SlayerTimer.running()) {
