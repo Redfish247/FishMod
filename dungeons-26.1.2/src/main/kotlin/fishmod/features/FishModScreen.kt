@@ -183,6 +183,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Chat Search", "", FishSettings::chatSearch))
             f.sub.add(SubcategoryHeader("Bind \"FishMod: Toggle Chat Search\" in Options → Controls; press it while chat is open to show the search field")
                 .gatedBy { FishSettings.chatSearch })
+            f.sub.add(SubcategoryHeader("Chat Peek"))
+            f.sub.add(ToggleSetting("Chat Peek", "Hold the bound key to pull up chat fully opaque and scroll through it, without opening the chat box", FishSettings::chatPeek))
+            f.sub.add(KeybindSetting("Peek Key (hold)", "Unbound by default", { fishmod.utils.Keybinds.chatPeek }).gatedBy { FishSettings.chatPeek })
             f.sub.add(SubcategoryHeader("Chat Filter"))
             f.sub.add(ToggleSetting("Chat Filter", "", FishSettings::chatFilterEnabled))
             f.sub.add(ToggleSetting("Kill Combo", "", FishSettings::cfKillCombo).gatedBy { FishSettings.chatFilterEnabled })
@@ -1001,6 +1004,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Scrollable Tooltips", "", FishSettings::tooltipScrollEnabled))
             f.sub.add(SliderIntSetting("Tooltip Scale %", "", FishSettings::tooltipScrollScale, 30, 150, 5).gatedBy { FishSettings.tooltipScrollEnabled })
             f.sub.add(SliderIntSetting("Scroll Speed", "", FishSettings::tooltipScrollSpeed, 1, 10).gatedBy { FishSettings.tooltipScrollEnabled })
+            hud.features.add(f)
+        }
+        run {
+            val f = Feature("Auto BIN Price", FishSettings::auctionPriceAutofillEnabled)
+            f.sub.add(SubcategoryHeader("Prefills the AH \"Create Auction\" price field with item value minus a discount"))
+            f.sub.add(SliderIntSetting("Discount %", "", FishSettings::auctionAutofillPercent, 0, 50))
             hud.features.add(f)
         }
         run {
@@ -2572,13 +2581,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                     for (seg in stackSegments(slot, cyTop() - HEADER_H, cyBot())) {
                         if (mouseY < seg.bodyTop || mouseY > seg.segBot) continue
                         val vp = seg.segBot - seg.bodyTop
+                        if (maxScrollFor(seg.col, vp) <= 0) break
                         seg.col.scroll = Mth.clamp((seg.col.scroll - verticalAmount * 18).toInt(), 0, maxScrollFor(seg.col, vp))
                         return true
                     }
-                    return true
+                    break
                 }
                 val colBottom = Math.min(cyTop() + columnContentHeight(slot), cyBot())
                 if (mouseY <= colBottom) {
+                    if (maxScrollFor(slot, colBottom - cyTop()) <= 0) break
                     slot.scroll = Mth.clamp((slot.scroll - verticalAmount * 18).toInt(), 0, maxScrollFor(slot, colBottom - cyTop()))
                     return true
                 }

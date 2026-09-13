@@ -28,12 +28,25 @@ object CroesusPrices {
     private val lbin = HashMap<String, Double>()
     private val avgLbin = HashMap<String, Double>()
     private val coflnet = ConcurrentHashMap<String, Double>()
+    private val threeDayAvg = ConcurrentHashMap<String, Double>()
+    // "TAG" -> (lowest active BIN, fetched timestamp)
+    private val lowBinCache = ConcurrentHashMap<String, Pair<Double, Long>>()
     private val fetching: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    private val fetchingLowBin: MutableSet<String> = ConcurrentHashMap.newKeySet()
     @Volatile private var lastBazaar = 0L
     @Volatile private var lastLbin = 0L
     @Volatile private var lastAvgLbin = 0L
     @Volatile private var lbinFailLogged = false
     @Volatile private var inFlight: CompletableFuture<Void>? = null
+
+    // "TAG:boost" -> (lowest active BIN at that exact quality roll, fetched timestamp)
+    private val qualityBin = ConcurrentHashMap<String, Pair<Double, Long>>()
+    private val qualityFetching: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    private const val QUALITY_TTL_MS = 10 * 60 * 1000L
+
+    // cache key (tag + quality/stars/recomb/enchants) -> (lowest active BIN matching all of it, timestamp)
+    private val dynamicBin = ConcurrentHashMap<String, Pair<Double, Long>>()
+    private val dynamicFetching: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     /** Timestamp to stamp on a failed fetch so the next retry is [FAIL_TTL_MS] out, not [TTL_MS]. */
     private fun failStamp(): Long = System.currentTimeMillis() - TTL_MS + FAIL_TTL_MS
@@ -90,6 +103,158 @@ object CroesusPrices {
         return "miss (bz=${bazaar.size} lbin=${lbin.size} avg=${avgLbin.size} cf=${coflnet.size})"
     }
 
+    /**
+     * Lowest active BIN for [tag] filtered to exactly [boost]% dungeon quality (Coflnet's
+     * `BaseStatBoost` auction filter — the same "quality" stat [fishmod.features.item.ItemQualityTooltip]
+     * shows). Class-specific dungeon armor/weapons swing 10-100x in value across the quality range,
+     * so the bulk bazaar/lbin dump (which mixes all rolls together) is useless for these — this hits
+     * the live auction list instead. Returns 0 (and kicks off a background fetch) until cached.
+     */
+    @JvmStatic
+    fun qualityBinPrice(tag: String, boost: Int): Double {
+        val key = "$tag:$boost"
+        val cached = qualityBin[key]
+        val now = System.currentTimeMillis()
+        if (cached != null && now - cached.second < QUALITY_TTL_MS) return cached.first
+        fetchQualityBin(tag, boost, key)
+        return cached?.first ?: 0.0
+    }
+
+    private fun fetchQualityBin(tag: String, boost: Int, key: String) {
+        if (!qualityFetching.add(key)) return
+        val url = "https://sky.coflnet.com/api/auctions/tag/$tag/active/bin?query.BaseStatBoost=$boost"
+        val req = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .timeout(Duration.ofSeconds(10))
+            .GET().build()
+        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+            .thenAccept { r ->
+                qualityFetching.remove(key)
+                try {
+                    if (r.statusCode() != 200) return@thenAccept
+                    val arr = JsonParser.parseString(r.body()).asJsonArray
+                    var min = Double.MAX_VALUE
+                    for (el in arr) {
+                        val bid = el.asJsonObject.get("startingBid")
+                        if (bid != null && !bid.isJsonNull && bid.asDouble < min) min = bid.asDouble
+                    }
+                    if (min < Double.MAX_VALUE) {
+                        qualityBin[key] = min to System.currentTimeMillis()
+                        Debug.LOGGER.info("[CroesusPrices] qualityBin {} = {}", key, min)
+                    }
+                } catch (ex: Exception) {
+                    Debug.LOGGER.warn("[CroesusPrices] qualityBin {} error: {}", key, ex.message)
+                }
+            }.exceptionally { qualityFetching.remove(key); null }
+    }
+
+    /**
+     * Lowest active BIN matching this exact item's price-relevant attributes (quality roll, stars,
+     * recomb, per-enchant levels) — asks Coflnet's own `/item/filters` what auction filters apply to
+     * this item, then queries `/active/bin` with all of them at once. [qualityBinPrice] alone (just
+     * the quality roll) still lumps together e.g. a 0-star and a 10-star item at the same roll, which
+     * for class-specific dungeon gear (Skeleton Master armor, Necron's pieces, ...) is a 10-100x
+     * difference — this is the actual apples-to-apples comparison Hypixel's own AH BIN search would
+     * show. [cacheKey] must vary with exactly [itemName]/[enchantments]/[extraAttributes] (a plain
+     * sorted concatenation is enough; this isn't a real hash, just a stable dedup key). Returns 0
+     * (and kicks off a background fetch) until cached; on a miss, callers should fall back to
+     * [qualityBinPrice] or [price].
+     */
+    @JvmStatic
+    fun dynamicBinPrice(
+        tag: String,
+        cacheKey: String,
+        itemName: String,
+        enchantments: Map<String, Int>,
+        extraAttributes: Map<String, Any>,
+        reforge: String? = null
+    ): Double {
+        val cached = dynamicBin[cacheKey]
+        val now = System.currentTimeMillis()
+        if (cached != null && now - cached.second < QUALITY_TTL_MS) return cached.first
+        fetchDynamicBin(tag, cacheKey, itemName, enchantments, extraAttributes, reforge)
+        return cached?.first ?: 0.0
+    }
+
+    private fun fetchDynamicBin(
+        tag: String,
+        cacheKey: String,
+        itemName: String,
+        enchantments: Map<String, Int>,
+        extraAttributes: Map<String, Any>,
+        reforge: String?
+    ) {
+        if (!dynamicFetching.add(cacheKey)) return
+
+        val enchObj = JsonObject()
+        for ((k, v) in enchantments) enchObj.addProperty(k, v)
+        val extraObj = JsonObject()
+        for ((k, v) in extraAttributes) {
+            when (v) {
+                is Int -> extraObj.addProperty(k, v)
+                is Long -> extraObj.addProperty(k, v)
+                is String -> extraObj.addProperty(k, v)
+                else -> extraObj.addProperty(k, v.toString())
+            }
+        }
+        val body = JsonObject()
+        body.addProperty("tag", tag)
+        body.addProperty("itemName", itemName)
+        body.addProperty("count", 1)
+        body.add("enchantments", enchObj)
+        body.add("extraAttributes", extraObj)
+
+        val filterReq = HttpRequest.newBuilder()
+            .uri(URI.create("https://sky.coflnet.com/api/item/filters"))
+            .timeout(Duration.ofSeconds(10))
+            .header("content-type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
+            .build()
+
+        HTTP.sendAsync(filterReq, HttpResponse.BodyHandlers.ofString())
+            .thenCompose { r ->
+                if (r.statusCode() != 200) return@thenCompose CompletableFuture.completedFuture<HttpResponse<String>?>(null)
+                val filters = try { JsonParser.parseString(r.body()).asJsonObject } catch (ex: Exception) { null }
+                if ((filters == null || filters.entrySet().isEmpty()) && reforge == null) {
+                    return@thenCompose CompletableFuture.completedFuture<HttpResponse<String>?>(null)
+                }
+                // Reforge swings price heavily (a desirable one vs. an off-meta one on otherwise
+                // identical gear) but /item/filters never surfaces it as a filter key itself —
+                // Coflnet's auction search still accepts it directly, so it's added by hand.
+                val pairs = ArrayList<Pair<String, String>>()
+                filters?.entrySet()?.forEach { (k, v) -> pairs.add(k to v.asString) }
+                if (reforge != null) pairs.add("Reforge" to reforge)
+                val qs = pairs.joinToString("&") { (k, v) ->
+                    "query.${java.net.URLEncoder.encode(k, "UTF-8")}=${java.net.URLEncoder.encode(v, "UTF-8")}"
+                }
+                val binReq = HttpRequest.newBuilder()
+                    .uri(URI.create("https://sky.coflnet.com/api/auctions/tag/$tag/active/bin?$qs"))
+                    .timeout(Duration.ofSeconds(10))
+                    .GET().build()
+                HTTP.sendAsync(binReq, HttpResponse.BodyHandlers.ofString())
+            }
+            .thenAccept { r ->
+                dynamicFetching.remove(cacheKey)
+                if (r == null) return@thenAccept
+                try {
+                    if (r.statusCode() != 200) return@thenAccept
+                    val arr = JsonParser.parseString(r.body()).asJsonArray
+                    var min = Double.MAX_VALUE
+                    for (el in arr) {
+                        val bid = el.asJsonObject.get("startingBid")
+                        if (bid != null && !bid.isJsonNull && bid.asDouble < min) min = bid.asDouble
+                    }
+                    if (min < Double.MAX_VALUE) {
+                        dynamicBin[cacheKey] = min to System.currentTimeMillis()
+                        Debug.LOGGER.info("[CroesusPrices] dynamicBin {} = {}", cacheKey, min)
+                    }
+                } catch (ex: Exception) {
+                    Debug.LOGGER.warn("[CroesusPrices] dynamicBin {} parse error: {}", cacheKey, ex.message)
+                }
+            }
+            .exceptionally { dynamicFetching.remove(cacheKey); null }
+    }
+
     private fun fetchCoflnetItem(id: String) {
         if (!fetching.add(id)) return
         val url = "https://sky.coflnet.com/api/item/price/$id"
@@ -103,7 +268,9 @@ object CroesusPrices {
                 try {
                     if (r.statusCode() != 200) return@thenAccept
                     val obj = JsonParser.parseString(r.body()).asJsonObject
-                    // Response: {min, median, max, mode, volume}; prefer median, then mode, then min
+                    // Response: {min, median, mean, max, mode, volume} over Coflnet's rolling
+                    // ~3-day sold-auction window; prefer median, then mode, then min for the
+                    // blended price, and mean separately for the "3 Day Avg" tooltip line.
                     var med: JsonElement? = obj.get("median")
                     if (med == null || med.isJsonNull) med = obj.get("mode")
                     if (med == null || med.isJsonNull) med = obj.get("min")
@@ -114,10 +281,67 @@ object CroesusPrices {
                             Debug.LOGGER.info("[CroesusPrices] coflnet {} = {}", id, p)
                         }
                     }
+                    val mean = obj.get("mean")
+                    if (mean != null && !mean.isJsonNull && mean.asDouble > 0) {
+                        threeDayAvg[id] = mean.asDouble
+                    }
                 } catch (ex: Exception) {
                     Debug.LOGGER.warn("[CroesusPrices] coflnet {} error: {}", id, ex.message)
                 }
             }.exceptionally { fetching.remove(id); null }
+    }
+
+    /** 3-day average sold price (Coflnet's rolling mean). 0 (and kicks off a fetch) until cached. */
+    @JvmStatic
+    fun threeDayAvg(id: String?): Double {
+        if (id == null || id.isEmpty()) return 0.0
+        val v = threeDayAvg[id]
+        if (v != null && v > 0) return v
+        fetchCoflnetItem(id)
+        return 0.0
+    }
+
+    /** Lowest currently-active BIN listing for [id]. 0 (and kicks off a fetch) until cached. */
+    @JvmStatic
+    fun currentLowBin(id: String?): Double {
+        if (id == null || id.isEmpty()) return 0.0
+        val cached = lowBinCache[id]
+        val now = System.currentTimeMillis()
+        if (cached != null && now - cached.second < QUALITY_TTL_MS) return cached.first
+        fetchLowBin(id)
+        return cached?.first ?: 0.0
+    }
+
+    private fun fetchLowBin(id: String) {
+        if (!fetchingLowBin.add(id)) return
+        val url = "https://sky.coflnet.com/api/auctions/tag/$id/active/bin"
+        val req = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .timeout(Duration.ofSeconds(10))
+            .GET().build()
+        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+            .thenAccept { r ->
+                fetchingLowBin.remove(id)
+                try {
+                    if (r.statusCode() != 200) return@thenAccept
+                    val arr = JsonParser.parseString(r.body()).asJsonArray
+                    var min = Double.MAX_VALUE
+                    for (el in arr) {
+                        val obj = el.asJsonObject
+                        val bid = obj.get("startingBid") ?: continue
+                        if (bid.isJsonNull) continue
+                        val count = obj.get("count")?.takeIf { !it.isJsonNull }?.asInt ?: 1
+                        val unit = bid.asDouble / count.coerceAtLeast(1)
+                        if (unit < min) min = unit
+                    }
+                    if (min < Double.MAX_VALUE) {
+                        lowBinCache[id] = min to System.currentTimeMillis()
+                        Debug.LOGGER.info("[CroesusPrices] lowBin {} = {}", id, min)
+                    }
+                } catch (ex: Exception) {
+                    Debug.LOGGER.warn("[CroesusPrices] lowBin {} error: {}", id, ex.message)
+                }
+            }.exceptionally { fetchingLowBin.remove(id); null }
     }
 
     @JvmStatic

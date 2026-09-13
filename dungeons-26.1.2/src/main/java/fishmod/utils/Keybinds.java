@@ -69,10 +69,20 @@ public class Keybinds {
     /** Toggles the Chat Search field on the open chat screen (unbound by default). */
     public static KeyMapping chatSearchToggle;
 
+    /** Hold to force the chat HUD fully opaque + scrollable, without opening the real chat screen (unbound by default). */
+    public static KeyMapping chatPeek;
+
     /** Backs up bound keys to our own config file so a keybind isn't silently lost when options.txt comes back empty/regenerated. */
     private static final Path KEYBIND_BACKUP_FILE = Paths.get(fishmod.utils.config.FolderUtility.CONFIG_PATH + "keybinds.txt");
     private static final Map<String, KeyMapping> TRACKED = new LinkedHashMap<>();
     private static final Map<String, String> lastKnown = new LinkedHashMap<>();
+
+    /** Held-key + master-toggle gate for the chat peek feature; shared by the render and scroll mixins. */
+    public static boolean chatPeekActive() {
+        return chatPeek != null && chatPeek.isDown()
+                && fishmod.utils.config.values.FishSettings.chatFeatureEnabled
+                && fishmod.utils.config.values.FishSettings.chatPeek;
+    }
 
     /** Lazily creates the shared category exactly once, since multiple classes (e.g. DungeonWaypoints) need it before init order guarantees this ran. */
     public static synchronized KeyMapping.Category category() {
@@ -194,6 +204,13 @@ public class Keybinds {
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
         TRACKED.put("chat_search_toggle", chatSearchToggle);
+
+        chatPeek = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "FishMod: Chat Peek (hold to view chat)",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_UNKNOWN,
+                category));
+        TRACKED.put("chat_peek", chatPeek);
 
         restoreKeybindBackup();
 

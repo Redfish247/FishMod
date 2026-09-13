@@ -23,11 +23,13 @@
     "accessors.GuiAccessor",
     "accessors.KeyBindingAccessor",
     "accessors.HandledScreenAccessor",
+    "accessors.AbstractSignEditScreenAccessor",
     "accessors.MapItemSavedDataAccessor",
     "accessors.PlayerTabOverlayAccessor",
 
     "ChatHudInvoker",
     "ChatHudMixin",
+    "ChatPeekMixin",
     "ChatHistoryMixin",
     "ChatSearchMixin",
     "FishCopyChatMixin",

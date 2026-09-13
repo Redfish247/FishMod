@@ -53,6 +53,9 @@ object DragonCheck {
             it.state == WitherDragonState.SPAWNING &&
                 v.x in it.box.minX..it.box.maxX && v.z in it.box.minZ..it.box.maxZ
         }
+        if (fishmod.utils.debug.Debug.dragonDebug) {
+            modMessage("&7dragonSpawn id=${p.id} pos=${v} matched=${inBox?.name ?: "none"}")
+        }
         if (inBox != null) { inBox.setAlive(p.id, tick); return }
         WitherDragon.real.firstOrNull { it.state == WitherDragonState.ALIVE && it.entity == null && it.entityId == p.id }
             ?.let { it.entityId = p.id }
@@ -62,8 +65,16 @@ object DragonCheck {
         val d = WitherDragon.byEntityId(p.id()) ?: return
         if (d.entity == null || d.entity?.isAlive != true) {
             d.entity = Minecraft.getInstance().level?.getEntity(p.id()) as? EnderDragon
+            if (fishmod.utils.debug.Debug.dragonDebug) {
+                modMessage("&7dragonUpdate ${d.name} resolved entity=${d.entity != null}")
+            }
         }
-        val hp = p.packedItems().firstOrNull { it.id() == HEALTH_DATA_ID }?.value as? Float ?: return
+        val ids = p.packedItems().map { it.id() }
+        val hp = p.packedItems().firstOrNull { it.id() == HEALTH_DATA_ID }?.value as? Float
+        if (fishmod.utils.debug.Debug.dragonDebug) {
+            modMessage("&7dragonUpdate ${d.name} ids=$ids hp=${hp ?: "none"}")
+        }
+        if (hp == null) return
         d.health = hp
         if (hp <= 0f && d.state != WitherDragonState.DEAD) d.setDead(false, tick)
     }

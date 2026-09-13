@@ -419,6 +419,7 @@ class FishModInit : ModInitializer {
         fishmod.features.item.ItemQualityTooltip.init()
         fishmod.features.item.ItemPriceTooltip.init()
         fishmod.features.item.ContainerValue.init()
+        fishmod.features.item.AuctionPriceAutofill.init()
         MayorApi.init()
         fishmod.features.FireFreezeTimer.init()
         fishmod.features.LoadoutTitle.init()
@@ -1332,5 +1333,6 @@ class FishModInit : ModInitializer {
         safeInit("RenderingEvents") { RenderingEvents.init() }
         safeInit("Scheduler") { Scheduler.init() }
         safeInit("ChatQueue") { fishmod.utils.ChatQueue.init() }
+        safeInit("PrestigeChatFade") { fishmod.cosmetic.prestige.PrestigeChatFade.init() }
     }
 }

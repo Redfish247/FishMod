@@ -170,6 +170,9 @@ object FishSettings {
     // search field on the chat screen that live-filters the visible scrollback
     @ConfigValue @JvmField var chatSearch: Boolean = false
 
+    // hold a keybind to force the chat HUD fully opaque + scrollable without opening the real chat screen
+    @ConfigValue @JvmField var chatPeek: Boolean = true
+
     // reformat "Guild > BotName: Player » msg" into "Guild > [Bridge] Player: msg" and hide the raw bot line
     @ConfigValue @JvmField var bridgeBotEnabled: Boolean = false
     @ConfigValue @JvmField var bridgeBotName: String = ""
@@ -496,6 +499,10 @@ object FishSettings {
 
     @ConfigValue @JvmField var itemTooltipPrices: Boolean = false
     @ConfigValue @JvmField var itemTooltipNpcSell: Boolean = false
+
+    // Auction House "Create BIN/Auction" price sign: prefill with (item value - discount %)
+    @ConfigValue @JvmField var auctionPriceAutofillEnabled: Boolean = false
+    @ConfigValue @JvmField var auctionAutofillPercent: Int = 5   // 0..50, discount off the looked-up value
 
     // scroll = move, shift+scroll = sideways, ctrl+scroll = scale
     @ConfigValue @JvmField var tooltipScrollEnabled: Boolean = false
