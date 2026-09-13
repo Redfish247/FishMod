@@ -84,6 +84,12 @@ object DungeonWaypoints {
 
     private var liveWaypoints: MutableList<LiveWaypoint> = ArrayList()
 
+    // Merged-waypoint geometry is comparatively expensive (a 3D occupancy grid per color/fill group) and
+    // only changes when liveWaypoints does, so it's traced once per applyGlobal() call and cached here
+    // rather than every render frame.
+    private var cachedMergedOccluded: List<MergedGroup> = emptyList()
+    private var cachedMergedThrough: List<MergedGroup> = emptyList()
+
     @JvmStatic
     fun init() {
         val category = fishmod.utils.Keybinds.category()
@@ -490,6 +496,8 @@ object DungeonWaypoints {
         // than treat the stored room-local coords as absolute.
         if (isRoomKey(key) && anchor == null) {
             liveWaypoints = ArrayList()
+            cachedMergedOccluded = emptyList()
+            cachedMergedThrough = emptyList()
             return
         }
 
@@ -511,6 +519,8 @@ object DungeonWaypoints {
             result.add(LiveWaypoint(box, w.color, w.filled, w.throughWalls, w.title, w.routeId, w.routeOrder))
         }
         liveWaypoints = result
+        cachedMergedOccluded = buildMergedGroups(throughWalls = false)
+        cachedMergedThrough = buildMergedGroups(throughWalls = true)
     }
 
     /** Called by the waypoint list GUI after it edits/deletes entries, to refresh what's currently rendering. */
@@ -524,22 +534,6 @@ object DungeonWaypoints {
 
     private const val MERGE_EPSILON = 1e-4
 
-    private fun mergeRoundKey(v: Double): Double = Math.round(v / MERGE_EPSILON) * MERGE_EPSILON
-
-    /**
-     * The traced 2D (XZ) shape of a group of same-height waypoint boxes that have been merged: the
-     * fewest rectangles that fill the same footprint ([fillRects], for filled draws), and the true
-     * outer boundary of that footprint as wall segments ([wallSegments]) plus their corner points
-     * ([corners]) — used for both the outline draw and (extruded top/bottom/walls) the filled draw.
-     * Tracing the real boundary, rather than just unioning boxes pairwise, is what makes an L-shaped
-     * bend of adjacent waypoints render as one solid shape instead of two boxes with an internal seam.
-     */
-    private class MergedFootprint(
-        @JvmField val fillRects: List<DoubleArray>, // minX, minZ, maxX, maxZ
-        @JvmField val wallSegments: List<DoubleArray>, // x1, z1, x2, z2
-        @JvmField val corners: List<DoubleArray> // x, z
-    )
-
     private fun compressAxis(values: List<Double>): List<Double> {
         val sorted = values.sorted()
         val result = ArrayList<Double>()
@@ -549,177 +543,201 @@ object DungeonWaypoints {
         return result
     }
 
-    /** Traces the union footprint of [boxes] (their XZ extents only — callers ensure they share one Y range) via a coordinate-compressed occupancy grid. */
-    private fun traceFootprint(boxes: List<AABB>): MergedFootprint {
-        val xs = compressAxis(boxes.flatMap { listOf(it.minX, it.maxX) })
-        val zs = compressAxis(boxes.flatMap { listOf(it.minZ, it.maxZ) })
-        val nx = xs.size - 1
-        val nz = zs.size - 1
-        if (nx <= 0 || nz <= 0) return MergedFootprint(emptyList(), emptyList(), emptyList())
-
-        val occ = Array(nx) { i ->
-            BooleanArray(nz) { j ->
-                val cx = (xs[i] + xs[i + 1]) / 2.0
-                val cz = (zs[j] + zs[j + 1]) / 2.0
-                boxes.any { cx > it.minX + MERGE_EPSILON && cx < it.maxX - MERGE_EPSILON && cz > it.minZ + MERGE_EPSILON && cz < it.maxZ - MERGE_EPSILON }
-            }
-        }
-        fun occAt(i: Int, j: Int) = i in 0 until nx && j in 0 until nz && occ[i][j]
-
-        // Greedy rectangle cover of the occupied cells, for filled top/bottom faces.
-        val used = Array(nx) { BooleanArray(nz) }
-        val fillRects = ArrayList<DoubleArray>()
-        for (i in 0 until nx) {
-            for (j in 0 until nz) {
-                if (occ[i][j] && !used[i][j]) {
-                    var j2 = j
-                    while (j2 + 1 < nz && occ[i][j2 + 1] && !used[i][j2 + 1]) j2++
-                    var i2 = i
-                    outer@ while (i2 + 1 < nx) {
-                        for (jj in j..j2) if (!occ[i2 + 1][jj] || used[i2 + 1][jj]) break@outer
-                        i2++
+    /** Greedy rectangle cover of the `true` cells in a 2D boolean grid — `n1`x`n2` cells, indices exclusive on the high end. */
+    private fun greedyRects(occ: Array<BooleanArray>, n1: Int, n2: Int): List<IntArray> {
+        val used = Array(n1) { BooleanArray(n2) }
+        val result = ArrayList<IntArray>()
+        for (a in 0 until n1) {
+            for (b in 0 until n2) {
+                if (occ[a][b] && !used[a][b]) {
+                    var b2 = b
+                    while (b2 + 1 < n2 && occ[a][b2 + 1] && !used[a][b2 + 1]) b2++
+                    var a2 = a
+                    outer@ while (a2 + 1 < n1) {
+                        for (bb in b..b2) if (!occ[a2 + 1][bb] || used[a2 + 1][bb]) break@outer
+                        a2++
                     }
-                    for (ii in i..i2) for (jj in j..j2) used[ii][jj] = true
-                    fillRects.add(doubleArrayOf(xs[i], zs[j], xs[i2 + 1], zs[j2 + 1]))
+                    for (aa in a..a2) for (bb in b..b2) used[aa][bb] = true
+                    result.add(intArrayOf(a, b, a2 + 1, b2 + 1))
                 }
             }
         }
-
-        // Boundary edges: an edge between two cells is on the true outer boundary only when exactly
-        // one side is occupied — internal edges between two occupied cells cancel out entirely, which
-        // is what removes the seam at a straight join and traces the real corner at a bend.
-        val wallSegments = ArrayList<DoubleArray>()
-        for (i in 0..nx) {
-            var j = 0
-            while (j < nz) {
-                if (occAt(i - 1, j) != occAt(i, j)) {
-                    var j2 = j
-                    while (j2 + 1 < nz && occAt(i - 1, j2 + 1) != occAt(i, j2 + 1)) j2++
-                    wallSegments.add(doubleArrayOf(xs[i], zs[j], xs[i], zs[j2 + 1]))
-                    j = j2 + 1
-                } else j++
-            }
-        }
-        for (j in 0..nz) {
-            var i = 0
-            while (i < nx) {
-                if (occAt(i, j - 1) != occAt(i, j)) {
-                    var i2 = i
-                    while (i2 + 1 < nx && occAt(i2 + 1, j - 1) != occAt(i2 + 1, j)) i2++
-                    wallSegments.add(doubleArrayOf(xs[i], zs[j], xs[i2 + 1], zs[j]))
-                    i = i2 + 1
-                } else i++
-            }
-        }
-
-        val cornerSet = LinkedHashMap<Pair<Double, Double>, DoubleArray>()
-        for (s in wallSegments) {
-            cornerSet[Pair(mergeRoundKey(s[0]), mergeRoundKey(s[1]))] = doubleArrayOf(s[0], s[1])
-            cornerSet[Pair(mergeRoundKey(s[2]), mergeRoundKey(s[3]))] = doubleArrayOf(s[2], s[3])
-        }
-
-        return MergedFootprint(fillRects, wallSegments, cornerSet.values.toList())
+        return result
     }
 
     private class MergedGroup(
         @JvmField val color: Int,
         @JvmField val filled: Boolean,
-        @JvmField val minY: Double,
-        @JvmField val maxY: Double,
-        @JvmField val footprint: MergedFootprint
+        @JvmField val quads: List<Array<Vec3>>, // exposed faces of the merged solid, for filled draws
+        @JvmField val edges: List<DoubleArray> // x1,y1,z1,x2,y2,z2 — the solid's silhouette edges, for outline draws
     )
 
     /**
-     * Waypoints without a title or route are plain area markers — placing several side by side, even
-     * around a corner, is meant to mark one contiguous region rather than a row of separate boxes.
-     * Groups those (matching [throughWalls]) by color/fill/height and traces each group's true footprint
-     * boundary via [traceFootprint], so a bend merges into one shape instead of leaving an internal seam
-     * at the join. Groups of one, and titled/routed waypoints (each needs its own box for its label/route
-     * position), are returned as plain singles instead.
+     * Traces the true exterior surface of the union of [boxes] via a coordinate-compressed 3D occupancy
+     * grid: [quads] are the exposed faces (an internal face between two touching boxes is never emitted,
+     * so a straight join has no seam), and [edges] are the silhouette wireframe (an edge is drawn only
+     * where the 4 cells around it aren't all the same — a flat face's rim, or a genuine corner/bend on
+     * any axis, but never a cut line inside a flat run). This is what lets adjacent waypoints merge into
+     * one shape around a turn — including a vertical one — instead of two boxes with an internal seam.
      */
-    private fun buildRenderSets(throughWalls: Boolean): Pair<List<MergedGroup>, List<LiveWaypoint>> {
-        val candidates = ArrayList<LiveWaypoint>()
-        val singles = ArrayList<LiveWaypoint>()
-        for (w in liveWaypoints) {
-            if (w.throughWalls != throughWalls || reached(w)) continue
-            if (w.routeId == null && w.titleComponent == null) candidates.add(w) else singles.add(w)
-        }
-        val mergedGroups = ArrayList<MergedGroup>()
-        val byShape = candidates.groupBy {
-            Triple(it.color, it.filled, Pair(mergeRoundKey(it.box.minY), mergeRoundKey(it.box.maxY)))
-        }
-        for ((key, group) in byShape) {
-            if (group.size == 1) {
-                singles.add(group[0])
-            } else {
-                mergedGroups.add(MergedGroup(key.first, key.second, group[0].box.minY, group[0].box.maxY, traceFootprint(group.map { it.box })))
+    private fun traceSurface(boxes: List<AABB>): Pair<List<Array<Vec3>>, List<DoubleArray>>? {
+        val xs = compressAxis(boxes.flatMap { listOf(it.minX, it.maxX) })
+        val ys = compressAxis(boxes.flatMap { listOf(it.minY, it.maxY) })
+        val zs = compressAxis(boxes.flatMap { listOf(it.minZ, it.maxZ) })
+        val nx = xs.size - 1
+        val ny = ys.size - 1
+        val nz = zs.size - 1
+        if (nx <= 0 || ny <= 0 || nz <= 0) return null
+
+        val occ = Array(nx) { i ->
+            Array(ny) { j ->
+                BooleanArray(nz) { k ->
+                    val cx = (xs[i] + xs[i + 1]) / 2.0
+                    val cy = (ys[j] + ys[j + 1]) / 2.0
+                    val cz = (zs[k] + zs[k + 1]) / 2.0
+                    boxes.any {
+                        cx > it.minX + MERGE_EPSILON && cx < it.maxX - MERGE_EPSILON &&
+                            cy > it.minY + MERGE_EPSILON && cy < it.maxY - MERGE_EPSILON &&
+                            cz > it.minZ + MERGE_EPSILON && cz < it.maxZ - MERGE_EPSILON
+                    }
+                }
             }
         }
-        return Pair(mergedGroups, singles)
+        fun occAt(i: Int, j: Int, k: Int) = i in 0 until nx && j in 0 until ny && k in 0 until nz && occ[i][j][k]
+
+        val quads = ArrayList<Array<Vec3>>()
+        // +Y / -Y faces: slice over (X,Z) per Y layer.
+        for (j in 0 until ny) {
+            val top = Array(nx) { i -> BooleanArray(nz) { k -> occ[i][j][k] && !occAt(i, j + 1, k) } }
+            for (r in greedyRects(top, nx, nz)) {
+                val x1 = xs[r[0]]; val z1 = zs[r[1]]; val x2 = xs[r[2]]; val z2 = zs[r[3]]; val y = ys[j + 1]
+                quads.add(arrayOf(Vec3(x1, y, z1), Vec3(x2, y, z1), Vec3(x2, y, z2), Vec3(x1, y, z2)))
+            }
+            val bottom = Array(nx) { i -> BooleanArray(nz) { k -> occ[i][j][k] && !occAt(i, j - 1, k) } }
+            for (r in greedyRects(bottom, nx, nz)) {
+                val x1 = xs[r[0]]; val z1 = zs[r[1]]; val x2 = xs[r[2]]; val z2 = zs[r[3]]; val y = ys[j]
+                quads.add(arrayOf(Vec3(x1, y, z1), Vec3(x1, y, z2), Vec3(x2, y, z2), Vec3(x2, y, z1)))
+            }
+        }
+        // +X / -X faces: slice over (Y,Z) per X layer.
+        for (i in 0 until nx) {
+            val pos = Array(ny) { j -> BooleanArray(nz) { k -> occ[i][j][k] && !occAt(i + 1, j, k) } }
+            for (r in greedyRects(pos, ny, nz)) {
+                val y1 = ys[r[0]]; val z1 = zs[r[1]]; val y2 = ys[r[2]]; val z2 = zs[r[3]]; val x = xs[i + 1]
+                quads.add(arrayOf(Vec3(x, y1, z1), Vec3(x, y1, z2), Vec3(x, y2, z2), Vec3(x, y2, z1)))
+            }
+            val neg = Array(ny) { j -> BooleanArray(nz) { k -> occ[i][j][k] && !occAt(i - 1, j, k) } }
+            for (r in greedyRects(neg, ny, nz)) {
+                val y1 = ys[r[0]]; val z1 = zs[r[1]]; val y2 = ys[r[2]]; val z2 = zs[r[3]]; val x = xs[i]
+                quads.add(arrayOf(Vec3(x, y1, z1), Vec3(x, y2, z1), Vec3(x, y2, z2), Vec3(x, y1, z2)))
+            }
+        }
+        // +Z / -Z faces: slice over (X,Y) per Z layer.
+        for (k in 0 until nz) {
+            val pos = Array(nx) { i -> BooleanArray(ny) { j -> occ[i][j][k] && !occAt(i, j, k + 1) } }
+            for (r in greedyRects(pos, nx, ny)) {
+                val x1 = xs[r[0]]; val y1 = ys[r[1]]; val x2 = xs[r[2]]; val y2 = ys[r[3]]; val z = zs[k + 1]
+                quads.add(arrayOf(Vec3(x1, y1, z), Vec3(x2, y1, z), Vec3(x2, y2, z), Vec3(x1, y2, z)))
+            }
+            val neg = Array(nx) { i -> BooleanArray(ny) { j -> occ[i][j][k] && !occAt(i, j, k - 1) } }
+            for (r in greedyRects(neg, nx, ny)) {
+                val x1 = xs[r[0]]; val y1 = ys[r[1]]; val x2 = xs[r[2]]; val y2 = ys[r[3]]; val z = zs[k]
+                quads.add(arrayOf(Vec3(x1, y1, z), Vec3(x1, y2, z), Vec3(x2, y2, z), Vec3(x2, y1, z)))
+            }
+        }
+
+        // Silhouette edges: an edge is on the surface unless the (up to) 4 cells around it are all the
+        // same — i.e. it's a flat face's rim or a real corner, never a straight cut inside a flat run.
+        val edges = ArrayList<DoubleArray>()
+        for (i in 0..nx) for (j in 0..ny) {
+            var k = 0
+            while (k < nz) {
+                fun uniform(kk: Int) = occAt(i - 1, j - 1, kk) == occAt(i, j - 1, kk) && occAt(i, j - 1, kk) == occAt(i - 1, j, kk) && occAt(i - 1, j, kk) == occAt(i, j, kk)
+                if (!uniform(k)) {
+                    var k2 = k
+                    while (k2 + 1 < nz && !uniform(k2 + 1)) k2++
+                    edges.add(doubleArrayOf(xs[i], ys[j], zs[k], xs[i], ys[j], zs[k2 + 1]))
+                    k = k2 + 1
+                } else k++
+            }
+        }
+        for (j in 0..ny) for (k in 0..nz) {
+            var i = 0
+            while (i < nx) {
+                fun uniform(ii: Int) = occAt(ii, j - 1, k - 1) == occAt(ii, j, k - 1) && occAt(ii, j, k - 1) == occAt(ii, j - 1, k) && occAt(ii, j - 1, k) == occAt(ii, j, k)
+                if (!uniform(i)) {
+                    var i2 = i
+                    while (i2 + 1 < nx && !uniform(i2 + 1)) i2++
+                    edges.add(doubleArrayOf(xs[i], ys[j], zs[k], xs[i2 + 1], ys[j], zs[k]))
+                    i = i2 + 1
+                } else i++
+            }
+        }
+        for (i in 0..nx) for (k in 0..nz) {
+            var j = 0
+            while (j < ny) {
+                fun uniform(jj: Int) = occAt(i - 1, jj, k - 1) == occAt(i, jj, k - 1) && occAt(i, jj, k - 1) == occAt(i - 1, jj, k) && occAt(i - 1, jj, k) == occAt(i, jj, k)
+                if (!uniform(j)) {
+                    var j2 = j
+                    while (j2 + 1 < ny && !uniform(j2 + 1)) j2++
+                    edges.add(doubleArrayOf(xs[i], ys[j], zs[k], xs[i], ys[j2 + 1], zs[k]))
+                    j = j2 + 1
+                } else j++
+            }
+        }
+
+        return Pair(quads, edges)
     }
 
+    /**
+     * Waypoints without a title or route are plain area markers — placing several side by side, even
+     * around a bend (including a vertical one), is meant to mark one contiguous region rather than a row
+     * of separate boxes. Groups those (matching [throughWalls]) by color/fill and traces each group's true
+     * surface via [traceSurface], so a bend merges into one shape instead of leaving an internal seam at
+     * the join. Titled/routed waypoints (each needs its own box for its label/route position) aren't merged.
+     */
+    private fun buildMergedGroups(throughWalls: Boolean): List<MergedGroup> {
+        val candidates = liveWaypoints.filter { it.throughWalls == throughWalls && it.routeId == null && it.titleComponent == null }
+        val result = ArrayList<MergedGroup>()
+        for ((key, group) in candidates.groupBy { Pair(it.color, it.filled) }) {
+            val (quads, edges) = traceSurface(group.map { it.box }) ?: continue
+            result.add(MergedGroup(key.first, key.second, quads, edges))
+        }
+        return result
+    }
+
+    private fun buildSingles(throughWalls: Boolean): List<LiveWaypoint> =
+        liveWaypoints.filter { it.throughWalls == throughWalls && !reached(it) && (it.routeId != null || it.titleComponent != null) }
+
     private fun drawMergedFillGizmo(g: MergedGroup) {
-        for (r in g.footprint.fillRects) {
-            val (x1, z1, x2, z2) = r
-            RenderUtils.gizmoQuad(arrayOf(Vec3(x1, g.maxY, z1), Vec3(x2, g.maxY, z1), Vec3(x2, g.maxY, z2), Vec3(x1, g.maxY, z2)), g.color, 0)
-            RenderUtils.gizmoQuad(arrayOf(Vec3(x1, g.minY, z1), Vec3(x1, g.minY, z2), Vec3(x2, g.minY, z2), Vec3(x2, g.minY, z1)), g.color, 0)
-        }
-        for (s in g.footprint.wallSegments) {
-            val (x1, z1, x2, z2) = s
-            RenderUtils.gizmoQuad(arrayOf(Vec3(x1, g.minY, z1), Vec3(x2, g.minY, z2), Vec3(x2, g.maxY, z2), Vec3(x1, g.maxY, z1)), g.color, 0)
-        }
+        for (q in g.quads) RenderUtils.gizmoQuad(q, g.color, 0)
     }
 
     private fun drawMergedFillThrough(matrices: PoseStack, vc: VertexConsumer, g: MergedGroup) {
         val rgba = RenderUtils.toFloats(g.color)
         if (rgba[3] == 0f) return
-        for (r in g.footprint.fillRects) {
-            val (x1, z1, x2, z2) = r
-            RenderUtils.renderFilledQuad(matrices, vc, arrayOf(Vec3(x1, g.maxY, z1), Vec3(x2, g.maxY, z1), Vec3(x2, g.maxY, z2), Vec3(x1, g.maxY, z2)), rgba)
-            RenderUtils.renderFilledQuad(matrices, vc, arrayOf(Vec3(x1, g.minY, z1), Vec3(x1, g.minY, z2), Vec3(x2, g.minY, z2), Vec3(x2, g.minY, z1)), rgba)
-        }
-        for (s in g.footprint.wallSegments) {
-            val (x1, z1, x2, z2) = s
-            RenderUtils.renderFilledQuad(matrices, vc, arrayOf(Vec3(x1, g.minY, z1), Vec3(x2, g.minY, z2), Vec3(x2, g.maxY, z2), Vec3(x1, g.maxY, z1)), rgba)
-        }
+        for (q in g.quads) RenderUtils.renderFilledQuad(matrices, vc, q, rgba)
     }
 
     private fun drawMergedOutlineGizmo(g: MergedGroup) {
         if ((g.color ushr 24) == 0) return
         val hw = lineWidth / 2.0
-        for (s in g.footprint.wallSegments) {
-            val (x1, z1, x2, z2) = s
-            RenderUtils.gizmoThickEdge(Vec3(x1, g.minY, z1), Vec3(x2, g.minY, z2), hw, g.color)
-            RenderUtils.gizmoThickEdge(Vec3(x1, g.maxY, z1), Vec3(x2, g.maxY, z2), hw, g.color)
-        }
-        for (c in g.footprint.corners) {
-            val (x, z) = c
-            RenderUtils.gizmoThickEdge(Vec3(x, g.minY, z), Vec3(x, g.maxY, z), hw, g.color)
-        }
+        for (e in g.edges) RenderUtils.gizmoThickEdge(Vec3(e[0], e[1], e[2]), Vec3(e[3], e[4], e[5]), hw, g.color)
     }
 
     private fun drawMergedOutlineThrough(matrices: PoseStack, vc: VertexConsumer, g: MergedGroup) {
         val rgba = RenderUtils.toFloats(g.color)
         if (rgba[3] == 0f) return
         val hw = lineWidth / 2.0
-        for (s in g.footprint.wallSegments) {
-            val (x1, z1, x2, z2) = s
-            RenderUtils.renderThickEdge(matrices, vc, Vec3(x1, g.minY, z1), Vec3(x2, g.minY, z2), hw, rgba)
-            RenderUtils.renderThickEdge(matrices, vc, Vec3(x1, g.maxY, z1), Vec3(x2, g.maxY, z2), hw, rgba)
-        }
-        for (c in g.footprint.corners) {
-            val (x, z) = c
-            RenderUtils.renderThickEdge(matrices, vc, Vec3(x, g.minY, z), Vec3(x, g.maxY, z), hw, rgba)
-        }
+        for (e in g.edges) RenderUtils.renderThickEdge(matrices, vc, Vec3(e[0], e[1], e[2]), Vec3(e[3], e[4], e[5]), hw, rgba)
     }
 
     /** Occluded pass: non-through-wall waypoints, titles and route lines as vanilla gizmos. */
     private fun renderGizmo() {
-        val (mergedGroups, singles) = buildRenderSets(throughWalls = false)
-        for (g in mergedGroups) {
+        for (g in cachedMergedOccluded) {
             if (g.filled) drawMergedFillGizmo(g) else drawMergedOutlineGizmo(g)
         }
-        for (w in singles) {
+        for (w in buildSingles(throughWalls = false)) {
             if (w.filled) RenderUtils.gizmoBox(w.box, w.color, 0)
             else RenderUtils.gizmoThickOutline(w.box, w.color, lineWidth)
         }
@@ -741,11 +759,10 @@ object DungeonWaypoints {
     /** Through-walls pass: through-wall waypoints (+ their titles) and the edit cursor, on the no-depth layers. */
     private fun render(ctx: LevelRenderContext, matrices: PoseStack, vc: VertexConsumer) {
         val mc = Minecraft.getInstance()
-        val (mergedGroups, singles) = buildRenderSets(throughWalls = true)
-        for (g in mergedGroups) {
+        for (g in cachedMergedThrough) {
             if (g.filled) drawMergedFillThrough(matrices, vc, g) else drawMergedOutlineThrough(matrices, vc, g)
         }
-        for (w in singles) {
+        for (w in buildSingles(throughWalls = true)) {
             val rgba = RenderUtils.toFloats(w.color)
             // Outlines are thin filled boxes, not GL_LINES, to keep them on the same triangle-strip
             // layer as fills — mixing topologies on one layer caused the earlier "bowtie" corruption.
