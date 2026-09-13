@@ -646,16 +646,20 @@ object DungeonWaypoints {
             }
         }
 
-        // Silhouette edges: an edge is on the surface unless the (up to) 4 cells around it are all the
-        // same — i.e. it's a flat face's rim or a real corner, never a straight cut inside a flat run.
+        // Silhouette edges: standard boundary-tracing parity rule — an edge is on the surface exactly
+        // when an ODD number of the (up to) 4 cells around it are occupied. An even count (0, 2 flat-
+        // matching, or 4) means either nothing here or a flat run continuing straight through with no
+        // real corner, so no edge; odd means a genuine face rim or a bend. (Using "not all 4 equal"
+        // instead — as if a flat run's own two matching sides made it a boundary — drew a seam at every
+        // straight join, which is why nothing merged cleanly on any axis.)
         val edges = ArrayList<DoubleArray>()
         for (i in 0..nx) for (j in 0..ny) {
             var k = 0
             while (k < nz) {
-                fun uniform(kk: Int) = occAt(i - 1, j - 1, kk) == occAt(i, j - 1, kk) && occAt(i, j - 1, kk) == occAt(i - 1, j, kk) && occAt(i - 1, j, kk) == occAt(i, j, kk)
-                if (!uniform(k)) {
+                fun boundary(kk: Int) = occAt(i - 1, j - 1, kk) xor occAt(i, j - 1, kk) xor occAt(i - 1, j, kk) xor occAt(i, j, kk)
+                if (boundary(k)) {
                     var k2 = k
-                    while (k2 + 1 < nz && !uniform(k2 + 1)) k2++
+                    while (k2 + 1 < nz && boundary(k2 + 1)) k2++
                     edges.add(doubleArrayOf(xs[i], ys[j], zs[k], xs[i], ys[j], zs[k2 + 1]))
                     k = k2 + 1
                 } else k++
@@ -664,10 +668,10 @@ object DungeonWaypoints {
         for (j in 0..ny) for (k in 0..nz) {
             var i = 0
             while (i < nx) {
-                fun uniform(ii: Int) = occAt(ii, j - 1, k - 1) == occAt(ii, j, k - 1) && occAt(ii, j, k - 1) == occAt(ii, j - 1, k) && occAt(ii, j - 1, k) == occAt(ii, j, k)
-                if (!uniform(i)) {
+                fun boundary(ii: Int) = occAt(ii, j - 1, k - 1) xor occAt(ii, j, k - 1) xor occAt(ii, j - 1, k) xor occAt(ii, j, k)
+                if (boundary(i)) {
                     var i2 = i
-                    while (i2 + 1 < nx && !uniform(i2 + 1)) i2++
+                    while (i2 + 1 < nx && boundary(i2 + 1)) i2++
                     edges.add(doubleArrayOf(xs[i], ys[j], zs[k], xs[i2 + 1], ys[j], zs[k]))
                     i = i2 + 1
                 } else i++
@@ -676,10 +680,10 @@ object DungeonWaypoints {
         for (i in 0..nx) for (k in 0..nz) {
             var j = 0
             while (j < ny) {
-                fun uniform(jj: Int) = occAt(i - 1, jj, k - 1) == occAt(i, jj, k - 1) && occAt(i, jj, k - 1) == occAt(i - 1, jj, k) && occAt(i - 1, jj, k) == occAt(i, jj, k)
-                if (!uniform(j)) {
+                fun boundary(jj: Int) = occAt(i - 1, jj, k - 1) xor occAt(i, jj, k - 1) xor occAt(i - 1, jj, k) xor occAt(i, jj, k)
+                if (boundary(j)) {
                     var j2 = j
-                    while (j2 + 1 < ny && !uniform(j2 + 1)) j2++
+                    while (j2 + 1 < ny && boundary(j2 + 1)) j2++
                     edges.add(doubleArrayOf(xs[i], ys[j], zs[k], xs[i], ys[j2 + 1], zs[k]))
                     j = j2 + 1
                 } else j++
