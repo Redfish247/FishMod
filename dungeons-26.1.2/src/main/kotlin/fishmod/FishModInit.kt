@@ -1259,8 +1259,6 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.map.MapHud.register()
         fishmod.features.dungeon.map.MapInfoHud.register()
         fishmod.features.dungeon.map.MapImageLoader.init()
-        // Background Image feature was removed — clear any previously-saved selection so it stops drawing.
-        fishmod.utils.config.values.DungeonMapSettings.mapImageSelection = ""
         fishmod.features.dungeon.map.DungeonScore.register()
         fishmod.features.dungeon.map.DoorHighlight.init()
         fishmod.utils.events.Events.ON_GAME_MESSAGE.register { message ->

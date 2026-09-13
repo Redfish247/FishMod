@@ -10,6 +10,7 @@ import fishmod.utils.dungeon.waypoints.DungeonWaypointStore
 import fishmod.utils.dungeon.waypoints.StoredWaypoint
 import fishmod.utils.dungeon.waypoints.TimerType
 import fishmod.utils.dungeon.waypoints.WaypointType
+import fishmod.utils.config.values.FishSettings
 import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -738,6 +739,7 @@ object DungeonWaypoints {
 
     /** Occluded pass: non-through-wall waypoints, titles and route lines as vanilla gizmos. */
     private fun renderGizmo() {
+        if (!FishSettings.dungeonWaypointsEnabled) return
         for (g in cachedMergedOccluded) {
             if (g.filled) drawMergedFillGizmo(g) else drawMergedOutlineGizmo(g)
         }
@@ -763,19 +765,21 @@ object DungeonWaypoints {
     /** Through-walls pass: through-wall waypoints (+ their titles) and the edit cursor, on the no-depth layers. */
     private fun render(ctx: LevelRenderContext, matrices: PoseStack, vc: VertexConsumer) {
         val mc = Minecraft.getInstance()
-        for (g in cachedMergedThrough) {
-            if (g.filled) drawMergedFillThrough(matrices, vc, g) else drawMergedOutlineThrough(matrices, vc, g)
-        }
-        for (w in buildSingles(throughWalls = true)) {
-            val rgba = RenderUtils.toFloats(w.color)
-            // Outlines are thin filled boxes, not GL_LINES, to keep them on the same triangle-strip
-            // layer as fills — mixing topologies on one layer caused the earlier "bowtie" corruption.
-            if (w.filled) RenderUtils.renderFilled(matrices, vc, w.box, rgba)
-            else RenderUtils.renderThickOutline(matrices, vc, w.box, rgba, lineWidth)
-        }
-        for (w in liveWaypoints) {
-            if (!w.throughWalls || reached(w) || w.titleComponent == null) continue
-            RenderUtils.renderText(ctx, matrices, w.titleComponent, w.center.x, w.box.maxY + 0.4, w.center.z, 1.0f)
+        if (FishSettings.dungeonWaypointsEnabled) {
+            for (g in cachedMergedThrough) {
+                if (g.filled) drawMergedFillThrough(matrices, vc, g) else drawMergedOutlineThrough(matrices, vc, g)
+            }
+            for (w in buildSingles(throughWalls = true)) {
+                val rgba = RenderUtils.toFloats(w.color)
+                // Outlines are thin filled boxes, not GL_LINES, to keep them on the same triangle-strip
+                // layer as fills — mixing topologies on one layer caused the earlier "bowtie" corruption.
+                if (w.filled) RenderUtils.renderFilled(matrices, vc, w.box, rgba)
+                else RenderUtils.renderThickOutline(matrices, vc, w.box, rgba, lineWidth)
+            }
+            for (w in liveWaypoints) {
+                if (!w.throughWalls || reached(w) || w.titleComponent == null) continue
+                RenderUtils.renderText(ctx, matrices, w.titleComponent, w.center.x, w.box.maxY + 0.4, w.center.z, 1.0f)
+            }
         }
 
         if (editMode) {
@@ -795,6 +799,7 @@ object DungeonWaypoints {
 
     /** Route connector lines for through-wall routes only — gizmo routes are drawn in [renderGizmo]. */
     private fun renderLines(matrices: PoseStack, vc: VertexConsumer) {
+        if (!FishSettings.dungeonWaypointsEnabled) return
         for ((key, value) in groupRoutes()) {
             val reached = routeReached.getOrDefault(key, emptySet())
             var prev: LiveWaypoint? = null

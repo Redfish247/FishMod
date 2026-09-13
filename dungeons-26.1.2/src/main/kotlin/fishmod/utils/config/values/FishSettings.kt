@@ -268,6 +268,9 @@ object FishSettings {
     // FADE = whole number is one colour cycling the palette; FLOW = band slides across the digits
     @ConfigValue @JvmField var prestigeColorsAnimStyle: String = "FADE"
 
+    // Master toggle for the /fm wp dungeon waypoint editor's rendering (boxes, titles, route lines).
+    @ConfigValue @JvmField var dungeonWaypointsEnabled: Boolean = true
+
     // M7/F7 lever waypoints: through-walls box on each boss lever; disappears once flipped.
     @ConfigValue @JvmField var enableM7LeverWaypoints: Boolean = false
     @ConfigValue @JvmField var m7LeverWaypointColor: Int = 0xFFFF0086.toInt() // RGB used; alpha ignored

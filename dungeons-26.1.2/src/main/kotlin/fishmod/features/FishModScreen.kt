@@ -445,6 +445,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
         run {
+            val f = Feature("Waypoints", FishSettings::dungeonWaypointsEnabled)
+            f.sub.add(SubcategoryHeader("Master toggle for /fm wp — placed boxes, titles and route lines"))
+            dungeon.features.add(f)
+        }
+        run {
             val f = Feature("Leap", FishSettings::leapMenuEnabled)
             f.sub.add(SubcategoryHeader("Menu (custom 2x2 Spirit Leap GUI, click a cell or press 1-4)"))
             f.sub.add(ToggleSetting("Map View", "Show the dungeon map instead — click a teammate's head to leap (1-4 still work)", FishSettings::leapMenuMap))
@@ -1281,6 +1286,25 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Center Text", "", fishmod.utils.config.values.DungeonMapSettings::mapTextCenter))
             f.sub.add(ToggleSetting("Ugly Question Marks", "", fishmod.utils.config.values.DungeonMapSettings::mapUglyQuestionMarks))
             f.sub.add(ToggleSetting("Show Room Secrets", "", fishmod.utils.config.values.DungeonMapSettings::mapShowRoomSecrets))
+            dungeonMap.features.add(f)
+        }
+        run {
+            val f = Feature("Background Image", { fishmod.utils.config.values.DungeonMapSettings.mapImageSelection.isNotEmpty() },
+                { v -> fishmod.utils.config.values.DungeonMapSettings.mapImageSelection = if (v) fishmod.utils.config.values.DungeonMapSettings.mapImageSelection else "" })
+            f.sub.add(ButtonSetting("Open Images Folder", "") {
+                try {
+                    fishmod.features.dungeon.map.MapImageLoader.init()
+                    net.minecraft.util.Util.getPlatform().openUri(fishmod.features.dungeon.map.MapImageLoader.getImagesPath().toUri())
+                } catch (ignored: Exception) {}
+            })
+            val imageNames: Array<String> = run {
+                val names = fishmod.features.dungeon.map.MapImageLoader.getImageNames()
+                (if (names.isEmpty()) listOf("No image") else names).toTypedArray()
+            }
+            f.sub.add(DropdownSetting("Image", "", imageNames,
+                { if (fishmod.utils.config.values.DungeonMapSettings.mapImageSelection in imageNames) fishmod.utils.config.values.DungeonMapSettings.mapImageSelection else imageNames[0] },
+                { v -> fishmod.utils.config.values.DungeonMapSettings.mapImageSelection = v }))
+            f.sub.add(SliderIntSetting("Image Alpha", "", fishmod.utils.config.values.DungeonMapSettings::mapImageAlpha, 0, 255))
             dungeonMap.features.add(f)
         }
         run {
