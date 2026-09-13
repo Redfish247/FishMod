@@ -373,8 +373,16 @@ object DungeonWaypoints {
         }
     }
 
-    /** Raycasts along the player's look vector. */
-    private fun aimPoint(mc: Minecraft): Vec3 {
+    /** Result of an aim raycast: the point to center a waypoint on, and the aimed block's actual shape (null on a miss). */
+    private class AimResult(@JvmField val point: Vec3, @JvmField val blockBox: AABB?)
+
+    /**
+     * Raycasts along the player's look vector. When it hits a block, [AimResult.blockBox] carries that
+     * block's real collision-shape bounds in world space — e.g. a slab reports a half-height box at the
+     * correct top/bottom half — so callers using block-size placement match the block instead of always
+     * assuming a full 1x1x1 cube.
+     */
+    private fun aimPoint(mc: Minecraft): AimResult {
         val p = mc.player!!
         val delta = mc.deltaTracker.getGameTimeDeltaPartialTick(false)
         val eye = p.getEyePosition(delta)
@@ -385,11 +393,17 @@ object DungeonWaypoints {
             ClipContext(eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, p)
         )
         if (hit != null && hit.type != HitResult.Type.MISS) {
-            // Center on Y too (not just X/Z) — old code left Y at the block's bottom, clipping the marker.
             val bp: BlockPos = hit.blockPos
-            return Vec3(bp.x + 0.5, bp.y + 0.5, bp.z + 0.5)
+            val state = mc.level!!.getBlockState(bp)
+            val shape = state.getShape(mc.level!!, bp)
+            val bounds = if (shape.isEmpty) AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0) else shape.bounds()
+            val worldBox = AABB(
+                bp.x + bounds.minX, bp.y + bounds.minY, bp.z + bounds.minZ,
+                bp.x + bounds.maxX, bp.y + bounds.maxY, bp.z + bounds.maxZ
+            )
+            return AimResult(worldBox.center, worldBox)
         }
-        return end
+        return AimResult(end, null)
     }
 
     private fun handlePlace(mc: Minecraft) {
@@ -404,32 +418,46 @@ object DungeonWaypoints {
     }
 
     private fun handlePlaceGlobal(mc: Minecraft) {
-        val aim = aimPoint(mc)
+        val aimResult = aimPoint(mc)
+        val aim = aimResult.point
         var px = aim.x + offsetX
         var py = aim.y + offsetY
         var pz = aim.z + offsetZ
         offsetX = 0.0; offsetY = 0.0; offsetZ = 0.0 // one-shot
 
-        val half = if (useBlockSize) 0.5 else size / 2.0
+        // Block-size placement matches the aimed block's real shape — a slab gets a half-height box at
+        // the correct top/bottom half instead of always a full 1x1x1 cube.
+        val halfX: Double; val halfY: Double; val halfZ: Double
+        if (useBlockSize && aimResult.blockBox != null) {
+            halfX = (aimResult.blockBox.maxX - aimResult.blockBox.minX) / 2.0
+            halfY = (aimResult.blockBox.maxY - aimResult.blockBox.minY) / 2.0
+            halfZ = (aimResult.blockBox.maxZ - aimResult.blockBox.minZ) / 2.0
+        } else {
+            val half = if (useBlockSize) 0.5 else size / 2.0
+            halfX = half; halfY = half; halfZ = half
+        }
+
         val key = globalKey()
 
-        // Inside a resolved room, persist as the block's canonical-frame coords (+0.5 centre) so the
-        // waypoint carries across runs. Block-granular on purpose: rotating a fractional centre lands
-        // a block off on 90° room rotations.
+        // Inside a resolved room, persist as the block's canonical-frame coords so the waypoint carries
+        // across runs. X/Z are block-granular on purpose: rotating a fractional centre lands a block off
+        // on 90° room rotations. Y isn't touched by room rotation, so its fractional part (e.g. a slab's
+        // half-height centre) is preserved as-is rather than snapped to the full-block centre.
         if (isRoomKey(key)) {
             val a = DungeonRoomAnchor.current()
             if (a != null) {
                 val local = DungeonRoomAnchor.toLocal(
                     a, BlockPos(Math.floor(px).toInt(), Math.floor(py).toInt(), Math.floor(pz).toInt())
                 )
-                px = local.x + 0.5; py = local.y + 0.5; pz = local.z + 0.5
+                val fracY = py - Math.floor(py)
+                px = local.x + 0.5; py = local.y + fracY; pz = local.z + 0.5
             }
         }
 
         if (mc.player!!.isShiftKeyDown) {
             mc.setScreen(DungeonWaypointTitleScreen { title ->
                 val w = StoredWaypoint(
-                    px, py, pz, half, half, half,
+                    px, py, pz, halfX, halfY, halfZ,
                     color, fill, through, title,
                     if (type == WaypointType.NONE) null else type.name,
                     if (timer == TimerType.NONE) null else timer.name
@@ -444,7 +472,7 @@ object DungeonWaypoints {
         val removed = DungeonWaypointStore.removeNear(key, px, py, pz, PLACE_EPSILON)
         if (!removed) {
             val w = StoredWaypoint(
-                px, py, pz, half, half, half,
+                px, py, pz, halfX, halfY, halfZ,
                 color, fill, through, null,
                 if (type == WaypointType.NONE) null else type.name,
                 if (timer == TimerType.NONE) null else timer.name
@@ -471,7 +499,10 @@ object DungeonWaypoints {
                 val wb = DungeonRoomAnchor.toWorld(
                     anchor, BlockPos(Math.floor(w.x).toInt(), Math.floor(w.y).toInt(), Math.floor(w.z).toInt())
                 )
-                Vec3(wb.x + 0.5, wb.y + 0.5, wb.z + 0.5)
+                // Y isn't touched by room rotation — reapply the stored fractional Y (e.g. a slab's
+                // half-height centre) instead of snapping back to the full-block centre.
+                val fracY = w.y - Math.floor(w.y)
+                Vec3(wb.x + 0.5, wb.y + fracY, wb.z + 0.5)
             } else Vec3(w.x, w.y, w.z)
             val box = AABB(
                 c.x - w.halfX, c.y - w.halfY, c.z - w.halfZ,
@@ -491,15 +522,82 @@ object DungeonWaypoints {
     private fun reached(w: LiveWaypoint): Boolean =
         w.routeId != null && routeReached.getOrDefault(w.routeId, emptySet()).contains(w.routeOrder)
 
+    private const val MERGE_EPSILON = 1e-4
+
+    private fun near(a: Double, b: Double) = Math.abs(a - b) < MERGE_EPSILON
+
+    /** Combines [a] and [b] into their union box if they're equal-footprint boxes touching face-to-face on exactly one axis. Null if they don't tile cleanly. */
+    private fun tryMergeBoxes(a: AABB, b: AABB): AABB? {
+        if (near(a.minY, b.minY) && near(a.maxY, b.maxY) && near(a.minZ, b.minZ) && near(a.maxZ, b.maxZ)) {
+            if (near(a.maxX, b.minX)) return AABB(a.minX, a.minY, a.minZ, b.maxX, a.maxY, a.maxZ)
+            if (near(b.maxX, a.minX)) return AABB(b.minX, a.minY, a.minZ, a.maxX, a.maxY, a.maxZ)
+        }
+        if (near(a.minX, b.minX) && near(a.maxX, b.maxX) && near(a.minZ, b.minZ) && near(a.maxZ, b.maxZ)) {
+            if (near(a.maxY, b.minY)) return AABB(a.minX, a.minY, a.minZ, a.maxX, b.maxY, a.maxZ)
+            if (near(b.maxY, a.minY)) return AABB(a.minX, b.minY, a.minZ, a.maxX, a.maxY, a.maxZ)
+        }
+        if (near(a.minX, b.minX) && near(a.maxX, b.maxX) && near(a.minY, b.minY) && near(a.maxY, b.maxY)) {
+            if (near(a.maxZ, b.minZ)) return AABB(a.minX, a.minY, a.minZ, a.maxX, a.maxY, b.maxZ)
+            if (near(b.maxZ, a.minZ)) return AABB(a.minX, a.minY, b.minZ, a.maxX, a.maxY, a.maxZ)
+        }
+        return null
+    }
+
+    /** Greedily merges every pair of touching, equal-footprint boxes in [boxes] until no more merges apply. */
+    private fun mergeBoxGroup(boxes: List<AABB>): List<AABB> {
+        val result = boxes.toMutableList()
+        var merged = true
+        while (merged) {
+            merged = false
+            outer@ for (i in result.indices) {
+                for (j in i + 1 until result.size) {
+                    val combined = tryMergeBoxes(result[i], result[j])
+                    if (combined != null) {
+                        result[i] = combined
+                        result.removeAt(j)
+                        merged = true
+                        break@outer
+                    }
+                }
+            }
+        }
+        return result
+    }
+
+    /**
+     * Waypoints without a title or route are plain area markers — placing several side by side is meant
+     * to mark one contiguous region, not a row of separate boxes. Merges each color/fill group of those
+     * (matching [throughWalls]) into the fewest boxes that cover the same space, so adjacent waypoints
+     * draw as a single solid box instead of two boxes with a seam at the shared face. Titled and routed
+     * waypoints are left untouched (each needs its own box for its label/route position) and returned as-is.
+     */
+    private fun mergedBoxesFor(throughWalls: Boolean): List<LiveWaypoint> {
+        val candidates = ArrayList<LiveWaypoint>()
+        val fixed = ArrayList<LiveWaypoint>()
+        for (w in liveWaypoints) {
+            if (w.throughWalls != throughWalls || reached(w)) continue
+            if (w.routeId == null && w.titleComponent == null) candidates.add(w) else fixed.add(w)
+        }
+        val merged = ArrayList<LiveWaypoint>()
+        for ((_, group) in candidates.groupBy { Pair(it.color, it.filled) }) {
+            val proto = group[0]
+            for (box in mergeBoxGroup(group.map { it.box })) {
+                merged.add(LiveWaypoint(box, proto.color, proto.filled, proto.throughWalls, null, null, 0))
+            }
+        }
+        merged.addAll(fixed)
+        return merged
+    }
+
     /** Occluded pass: non-through-wall waypoints, titles and route lines as vanilla gizmos. */
     private fun renderGizmo() {
-        for (w in liveWaypoints) {
-            if (w.throughWalls || reached(w)) continue
+        for (w in mergedBoxesFor(throughWalls = false)) {
             if (w.filled) RenderUtils.gizmoBox(w.box, w.color, 0)
             else RenderUtils.gizmoThickOutline(w.box, w.color, lineWidth)
-            if (w.titleComponent != null) {
-                RenderUtils.gizmoText(w.titleComponent, Vec3(w.center.x, w.box.maxY + 0.4, w.center.z), 1.0f, -0x1)
-            }
+        }
+        for (w in liveWaypoints) {
+            if (w.throughWalls || reached(w) || w.titleComponent == null) continue
+            RenderUtils.gizmoText(w.titleComponent, Vec3(w.center.x, w.box.maxY + 0.4, w.center.z), 1.0f, -0x1)
         }
         for ((_, value) in groupRoutes()) {
             var prev: LiveWaypoint? = null
@@ -515,23 +613,28 @@ object DungeonWaypoints {
     /** Through-walls pass: through-wall waypoints (+ their titles) and the edit cursor, on the no-depth layers. */
     private fun render(ctx: LevelRenderContext, matrices: PoseStack, vc: VertexConsumer) {
         val mc = Minecraft.getInstance()
-        for (w in liveWaypoints) {
-            if (!w.throughWalls || reached(w)) continue
+        for (w in mergedBoxesFor(throughWalls = true)) {
             val rgba = RenderUtils.toFloats(w.color)
             // Outlines are thin filled boxes, not GL_LINES, to keep them on the same triangle-strip
             // layer as fills — mixing topologies on one layer caused the earlier "bowtie" corruption.
             if (w.filled) RenderUtils.renderFilled(matrices, vc, w.box, rgba)
             else RenderUtils.renderThickOutline(matrices, vc, w.box, rgba, lineWidth)
-            if (w.titleComponent != null) {
-                RenderUtils.renderText(ctx, matrices, w.titleComponent, w.center.x, w.box.maxY + 0.4, w.center.z, 1.0f)
-            }
+        }
+        for (w in liveWaypoints) {
+            if (!w.throughWalls || reached(w) || w.titleComponent == null) continue
+            RenderUtils.renderText(ctx, matrices, w.titleComponent, w.center.x, w.box.maxY + 0.4, w.center.z, 1.0f)
         }
 
         if (editMode) {
             if (mc.player != null && mc.level != null) {
-                val aim = aimPoint(mc)
-                val half = if (useBlockSize) 0.5 else size / 2.0
-                val box = AABB(aim.x - half, aim.y - half, aim.z - half, aim.x + half, aim.y + half, aim.z + half)
+                val aimResult = aimPoint(mc)
+                val aim = aimResult.point
+                val box = if (useBlockSize && aimResult.blockBox != null) {
+                    aimResult.blockBox
+                } else {
+                    val half = if (useBlockSize) 0.5 else size / 2.0
+                    AABB(aim.x - half, aim.y - half, aim.z - half, aim.x + half, aim.y + half, aim.z + half)
+                }
                 RenderUtils.renderThickOutline(matrices, vc, box, floatArrayOf(1f, 1f, 1f, 0.9f), lineWidth)
             }
         }
