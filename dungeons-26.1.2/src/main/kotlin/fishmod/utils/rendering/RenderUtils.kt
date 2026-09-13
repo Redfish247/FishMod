@@ -69,6 +69,12 @@ object RenderUtils {
         gizmoThickEdge(x1, y1, z2, x1, y2, z2, hw, argb)
     }
 
+    /** Public single-edge entry point for [gizmoThickEdge], e.g. drawing a merged-waypoint outline's boundary edges one segment at a time. */
+    @JvmStatic
+    fun gizmoThickEdge(a: Vec3, b: Vec3, halfWidth: Double, argb: Int) {
+        gizmoThickEdge(a.x, a.y, a.z, b.x, b.y, b.z, halfWidth, argb)
+    }
+
     /** One axis-aligned edge of [gizmoThickOutline], expanded to `halfWidth` on the two axes it doesn't run along. */
     private fun gizmoThickEdge(
         ax: Double, ay: Double, az: Double, bx: Double, by: Double, bz: Double,
@@ -224,6 +230,12 @@ object RenderUtils {
         thickEdge(matrixStack, consumer, x2, y1, z1, x2, y2, z1, hw, rgba)
         thickEdge(matrixStack, consumer, x2, y1, z2, x2, y2, z2, hw, rgba)
         thickEdge(matrixStack, consumer, x1, y1, z2, x1, y2, z2, hw, rgba)
+    }
+
+    /** Public single-edge entry point for [thickEdge], e.g. drawing a merged-waypoint outline's boundary edges one segment at a time. */
+    @JvmStatic
+    fun renderThickEdge(matrixStack: PoseStack, consumer: VertexConsumer, a: Vec3, b: Vec3, halfWidth: Double, rgba: FloatArray) {
+        thickEdge(matrixStack, consumer, a.x, a.y, a.z, b.x, b.y, b.z, halfWidth, rgba)
     }
 
     /** One axis-aligned edge of [renderThickOutline], expanded to `halfWidth` on the two axes it doesn't run along. */
