@@ -843,4 +843,84 @@ object FishSettings {
     @ConfigValue @JvmField var sbSectionElection: Boolean = false
     @ConfigValue @JvmField var sbSectionFireSales: Boolean = false
 
+    // ---------------- Slayer ----------------
+    // No single master toggle — each of the five Slayer features below is its own switch. The
+    // subsystem (scoreboard scan + entity scan) idles unless [slayerAnyEnabled] is true.
+
+    // Mini/Boss Spawn Alert
+    @ConfigValue @JvmField var slayerSpawnAlertEnabled: Boolean = false
+    @ConfigValue @JvmField var slayerMiniBossAlert: Boolean = true
+    @ConfigValue @JvmField var slayerBossAlert: Boolean = true
+    /** Alert on-screen time, ms (shared by mini/boss/cocoon alerts). */
+    @ConfigValue @JvmField var slayerAlertDurationMs: Int = 1500
+
+    // Cocoon Alert
+    @ConfigValue @JvmField var slayerCocoonAlertEnabled: Boolean = false
+    @ConfigValue @JvmField var slayerCocoonAlertDurationMs: Int = 2000
+
+    // Spawn Progress HUD
+    @ConfigValue @JvmField var slayerSpawnHudEnabled: Boolean = false
+    @ConfigValue @JvmField var slayerSpawnHudX: Int = 10
+    @ConfigValue @JvmField var slayerSpawnHudY: Int = 140
+    @ConfigValue @JvmField var slayerSpawnHudScale: Double = 1.0
+
+    // Slayer Stats HUD
+    @ConfigValue @JvmField var slayerStatsHudEnabled: Boolean = false
+    @ConfigValue @JvmField var slayerStatsShowXp: Boolean = true
+    @ConfigValue @JvmField var slayerStatsShowKills: Boolean = true
+    @ConfigValue @JvmField var slayerStatsShowXpHr: Boolean = true
+    @ConfigValue @JvmField var slayerStatsShowKillsHr: Boolean = true
+    @ConfigValue @JvmField var slayerStatsBackground: Boolean = true
+    @ConfigValue @JvmField var slayerStatsHudX: Int = 10
+    @ConfigValue @JvmField var slayerStatsHudY: Int = 170
+    @ConfigValue @JvmField var slayerStatsHudScale: Double = 1.0
+
+    // Boss Timer HUD
+    @ConfigValue @JvmField var slayerTimerEnabled: Boolean = false
+    /** "Spawned" = timer starts when the boss spawns; "Fully Spawned" = starts once it's attackable. */
+    @ConfigValue @JvmField var slayerTimerStartMode: String = "Spawned"
+    @ConfigValue @JvmField var slayerTimerShowCurrent: Boolean = true
+    @ConfigValue @JvmField var slayerTimerShowPb: Boolean = true
+    @ConfigValue @JvmField var slayerTimerShowNewPb: Boolean = true
+    /** Full-cycle line: wall-clock time from one boss kill to the next (fight + loot + walk + refill). */
+    @ConfigValue @JvmField var slayerTimerShowCycle: Boolean = true
+    @ConfigValue @JvmField var slayerTimerHudX: Int = 10
+    @ConfigValue @JvmField var slayerTimerHudY: Int = 255
+    @ConfigValue @JvmField var slayerTimerHudScale: Double = 1.0
+
+    // Profit Tracker (drop value + coins/hr) — SkyHanni-style, prices real drops.
+    // Kept per (slayer type + tier), like SkyHanni. Price source = the shared trackerPriceModeEnum.
+    @ConfigValue @JvmField var slayerProfitEnabled: Boolean = false
+    /** Max drop rows shown on the HUD (highest value first); the rest fold into one "N more items" row. */
+    @ConfigValue @JvmField var slayerProfitLines: Int = 10
+    /** Idle seconds before the tracker pauses AND rewinds its clock by this much (SkyHanni afkTimeout). */
+    @ConfigValue @JvmField var slayerProfitIdleSeconds: Int = 60
+    @ConfigValue @JvmField var slayerProfitBackground: Boolean = true
+    @ConfigValue @JvmField var slayerProfitHudX: Int = 10
+    @ConfigValue @JvmField var slayerProfitHudY: Int = 300
+    @ConfigValue @JvmField var slayerProfitHudScale: Double = 1.0
+    /** Which figures the tracker shows — "Total" (persisted, all-time) or "This Session" (since launch). */
+    @ConfigValue @JvmField var slayerProfitDisplayMode: String = "Total"
+    /** Keep right-click-hidden rows on screen (dark + struck) even when chat is closed. */
+    @ConfigValue @JvmField var slayerProfitShowHidden: Boolean = false
+    /** Drop rows worth less than this many coins fold into the "N more items" row (0 = show all). */
+    @ConfigValue @JvmField var slayerProfitMinValue: Int = 0
+    /** Count "Mob Kill Coins" (small purse gains while grinding) as a drop row + profit. */
+    @ConfigValue @JvmField var slayerProfitCountKillCoins: Boolean = true
+
+    // Boss Phases — SkyHanni-style attack/phase cues on the boss (all 6 slayers)
+    @ConfigValue @JvmField var slayerPhaseEnabled: Boolean = false
+    /** Draw the cue as billboarded world text above the boss. */
+    @ConfigValue @JvmField var slayerPhaseWorldText: Boolean = true
+    /** Big title for the one-shot cues (BOOM / PUPS / HATCHLINGS / FIRE PITS / TWINCLAWS / STEAK / BEACON). */
+    @ConfigValue @JvmField var slayerPhaseTitles: Boolean = true
+    /** Show the health-phase fraction (1/3 · 2/3 …) for Voidgloom / Inferno. */
+    @ConfigValue @JvmField var slayerPhaseHealthSplit: Boolean = true
+
+    /** True when any individual Slayer feature is on — gates the whole Slayer scan/track subsystem. */
+    @JvmStatic
+    fun slayerAnyEnabled(): Boolean =
+        slayerSpawnAlertEnabled || slayerCocoonAlertEnabled || slayerSpawnHudEnabled ||
+            slayerStatsHudEnabled || slayerTimerEnabled || slayerProfitEnabled || slayerPhaseEnabled
+
 }

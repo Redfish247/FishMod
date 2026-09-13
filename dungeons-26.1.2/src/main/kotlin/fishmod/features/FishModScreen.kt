@@ -1412,6 +1412,73 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeonMap.features.add(f)
         }
 
+        val slayer = Column("Slayer", "slider")
+        run {
+            // Each Slayer feature is its own toggle in the column — no shared master.
+            val spawnAlert = Feature("Mini/Boss Spawn Alert", FishSettings::slayerSpawnAlertEnabled)
+            spawnAlert.sub.add(ToggleSetting("Mini-Boss Alerts", "Alert when a slayer miniboss spawns", FishSettings::slayerMiniBossAlert))
+            spawnAlert.sub.add(ToggleSetting("Boss Alerts", "Alert when the main slayer boss spawns", FishSettings::slayerBossAlert))
+            spawnAlert.sub.add(SliderIntSetting("Alert Duration (ms)", "On-screen time for spawn alerts", FishSettings::slayerAlertDurationMs, 250, 8000, 250))
+            slayer.features.add(spawnAlert)
+
+            val cocoon = Feature("Cocoon Alert", FishSettings::slayerCocoonAlertEnabled)
+            cocoon.sub.add(SubcategoryHeader("Fires on \"YOU COCOONED YOUR SLAYER BOSS\""))
+            cocoon.sub.add(SliderIntSetting("Alert Duration (ms)", "", FishSettings::slayerCocoonAlertDurationMs, 250, 8000, 250))
+            slayer.features.add(cocoon)
+
+            val spawnHud = Feature("Spawn Progress HUD", FishSettings::slayerSpawnHudEnabled)
+            spawnHud.sub.add(SubcategoryHeader("Live spawn-bar %  ·  drag position with Edit HUD"))
+            spawnHud.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerSpawnHudScale, 0.5, 3.0))
+            slayer.features.add(spawnHud)
+
+            val statsHud = Feature("Slayer Stats HUD", FishSettings::slayerStatsHudEnabled)
+            statsHud.sub.add(SubcategoryHeader("Session XP / kills / rates  ·  drag position with Edit HUD"))
+            statsHud.sub.add(ToggleSetting("Show XP", "", FishSettings::slayerStatsShowXp))
+            statsHud.sub.add(ToggleSetting("Show Kills", "", FishSettings::slayerStatsShowKills))
+            statsHud.sub.add(ToggleSetting("Show XP/hr", "", FishSettings::slayerStatsShowXpHr))
+            statsHud.sub.add(ToggleSetting("Show Kills/hr", "", FishSettings::slayerStatsShowKillsHr))
+            statsHud.sub.add(ToggleSetting("Background", "Dark panel behind the stats", FishSettings::slayerStatsBackground))
+            statsHud.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerStatsHudScale, 0.5, 3.0))
+            statsHud.sub.add(ButtonSetting("Reset Session Stats", "Zero the XP / kills / time counters", Runnable { fishmod.features.slayers.SlayerStatsTracker.reset() }))
+            slayer.features.add(statsHud)
+
+            val profit = Feature("Profit Tracker", FishSettings::slayerProfitEnabled)
+            profit.sub.add(SubcategoryHeader("SkyHanni-style: prices real drops for coins/hr  ·  drag with Edit HUD"))
+            profit.sub.add(SubcategoryHeader("With chat open: click the mode line to switch  ·  left-click a row to hide it  ·  right-click the title to reset"))
+            profit.sub.add(DropdownSetting("Display", "Total = all-time (saved); This Session = since this launch", arrayOf("Total", "This Session"),
+                { FishSettings.slayerProfitDisplayMode },
+                { v -> FishSettings.slayerProfitDisplayMode = v }))
+            profit.sub.add(SliderIntSetting("Drop Rows", "Max item rows shown (highest value first); the rest fold into one row", FishSettings::slayerProfitLines, 3, 30, 1))
+            profit.sub.add(SliderIntSetting("Hide Below (coins)", "Rows worth less than this fold into the \"N more items\" row (0 = show all)", FishSettings::slayerProfitMinValue, 0, 1_000_000, 10_000))
+            profit.sub.add(ToggleSetting("Count Mob Kill Coins", "Count small purse gains while grinding as a \"Mob Kill Coins\" drop row + profit", FishSettings::slayerProfitCountKillCoins))
+            profit.sub.add(ToggleSetting("Always Show Hidden Rows", "Keep hidden rows on screen (dark + struck) even when chat is closed", FishSettings::slayerProfitShowHidden))
+            profit.sub.add(SliderIntSetting("Idle Pause (s)", "No drop/kill this long → pause & rewind the clock by this much", FishSettings::slayerProfitIdleSeconds, 15, 600, 15))
+            profit.sub.add(ToggleSetting("Background", "Dark panel behind the tracker", FishSettings::slayerProfitBackground))
+            profit.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerProfitHudScale, 0.5, 3.0))
+            profit.sub.add(ButtonSetting("Reset This Mode", "Clear drops / bosses / time for the current Display mode, every slayer", Runnable { fishmod.features.slayers.SlayerProfitTracker.reset() }))
+            slayer.features.add(profit)
+
+            val timer = Feature("Boss Timer", FishSettings::slayerTimerEnabled)
+            timer.sub.add(SubcategoryHeader("Spawn-to-kill time + PB  ·  drag position with Edit HUD"))
+            timer.sub.add(DropdownSetting("Start Mode", "When the clock starts", arrayOf("Spawned", "Fully Spawned"),
+                { FishSettings.slayerTimerStartMode },
+                { v -> FishSettings.slayerTimerStartMode = v }))
+            timer.sub.add(ToggleSetting("Show Current Timer", "", FishSettings::slayerTimerShowCurrent))
+            timer.sub.add(ToggleSetting("Show PB", "", FishSettings::slayerTimerShowPb))
+            timer.sub.add(ToggleSetting("Show New PB", "", FishSettings::slayerTimerShowNewPb))
+            timer.sub.add(ToggleSetting("Show Cycle", "Full kill-to-kill time (fight + loot + walk + refill) + a live 'since kill' counter", FishSettings::slayerTimerShowCycle))
+            timer.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerTimerHudScale, 0.5, 3.0))
+            slayer.features.add(timer)
+
+            val phases = Feature("Boss Phases", FishSettings::slayerPhaseEnabled)
+            phases.sub.add(SubcategoryHeader("SkyHanni-style attack/phase cues on the boss — all 6 slayers"))
+            phases.sub.add(SubcategoryHeader("Voidgloom laser/hits/beacon · Inferno shield+dagger/fire pillar/pits · Bloodfiend twinclaws/steak/mania · Rev BOOM · Sven PUPS · Tara hatchlings"))
+            phases.sub.add(ToggleSetting("World Text", "Draw the cue as text above the boss", FishSettings::slayerPhaseWorldText))
+            phases.sub.add(ToggleSetting("Title Warnings", "Big title for BOOM / PUPS / HATCHLINGS / FIRE PITS / TWINCLAWS / STEAK / BEACON", FishSettings::slayerPhaseTitles))
+            phases.sub.add(ToggleSetting("Health Phase Split", "Show the 1/3 · 2/3 phase fraction (Voidgloom / Inferno)", FishSettings::slayerPhaseHealthSplit))
+            slayer.features.add(phases)
+        }
+
         columns.add(general)
         columns.add(invStorage)
         columns.add(party)
@@ -1421,6 +1488,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         columns.add(solvers)
         columns.add(floor7)
         columns.add(hud)
+        columns.add(slayer)
         columns.add(visuals)
         columns.add(cosmetics)
     }

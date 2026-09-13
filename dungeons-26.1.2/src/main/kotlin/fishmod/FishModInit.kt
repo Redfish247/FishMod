@@ -474,6 +474,7 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.M7LeverWaypoints.init()
         fishmod.features.dungeon.DungeonWaypoints.init()
         fishmod.features.dungeon.StarredMobHighlight.init()
+        fishmod.features.slayers.SlayerManager.init()
         // F7 boss timers; registered here for the Edit-HUD dragger.
         fishmod.features.dungeon.f7.F7Huds.init()
         fishmod.utils.config.values.Buttons.init()
@@ -1236,6 +1237,10 @@ class FishModInit : ModInitializer {
         fishmod.utils.networth.ItemsDb.initAsync()
 
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "pb_pace_hud")) { ctx, tickCounter -> fishmod.features.PbPaceHud.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_spawn_hud")) { ctx, tickCounter -> fishmod.features.slayers.SlayerHuds.renderSpawn(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_stats_hud")) { ctx, tickCounter -> fishmod.features.slayers.SlayerHuds.renderStats(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_timer_hud")) { ctx, tickCounter -> fishmod.features.slayers.SlayerHuds.renderTimer(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_profit_hud")) { ctx, tickCounter -> fishmod.features.slayers.SlayerHuds.renderProfit(ctx, tickCounter) }
         FishHudEditor.register(
             "PB Pace",
             { fishmod.utils.config.values.FishSettings.pbPaceHudX },
@@ -1300,6 +1305,17 @@ class FishModInit : ModInitializer {
                 val mx = click.x()
                 val my = click.y()
                 if (SessionStats.handleScreenClick(mx, my)) return@AllowMouseClick false
+                true
+            })
+        })
+
+        // Slayer Profit tracker is clickable while chat is open (it keeps rendering over the chat
+        // screen). Left/right click on its rows switches view / hides a drop / arms the reset.
+        ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
+            if (screen !is net.minecraft.client.gui.screens.ChatScreen) return@AfterInit
+            ScreenMouseEvents.allowMouseClick(screen).register(ScreenMouseEvents.AllowMouseClick { _, click ->
+                if (fishmod.features.slayers.SlayerHuds.onProfitClick(click.x(), click.y(), click.button()))
+                    return@AllowMouseClick false
                 true
             })
         })
