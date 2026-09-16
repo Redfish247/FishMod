@@ -34,7 +34,7 @@ object WarpCooldown {
 
         Events.ON_GAME_MESSAGE.register { text ->
             val s = COLOR.replace(text.string, "")
-            if (ENTERED.matcher(s).find()) {
+            if (Dungeons.enableWarpCooldown && ENTERED.matcher(s).find()) {
                 if (remainingMs() <= 0L) armedAt = System.currentTimeMillis()
             } else if (Dungeons.enableWarpCooldown && FishSettings.warpAnnounceKick && KICKED.matcher(s).matches()) {
                 fishmod.utils.ChatQueue.enqueue("pc ${FishSettings.warpKickText}")
