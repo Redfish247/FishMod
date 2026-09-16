@@ -1,7 +1,7 @@
 package fishmod.utils.config.values
 
-import config.practical.data.SoundData
-import config.practical.manager.ConfigValue
+import fishmod.shaded.practicalconfig.data.SoundData
+import fishmod.shaded.practicalconfig.manager.ConfigValue
 import net.minecraft.sounds.SoundEvents
 
 object Floor7 {

@@ -1,6 +1,6 @@
 package fishmod.features.dungeon.f7
 
-import config.practical.hud.HUDComponent
+import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.features.CritTracker
 import fishmod.utils.Constants
 import fishmod.utils.Location

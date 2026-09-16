@@ -1,7 +1,7 @@
 package fishmod.utils.dungeon
 
-import config.practical.hud.HUDComponent
-import config.practical.manager.ConfigValue
+import fishmod.shaded.practicalconfig.hud.HUDComponent
+import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.Constants
 import fishmod.utils.Location
 import fishmod.utils.Misc

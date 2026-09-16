@@ -1,6 +1,6 @@
 package fishmod.utils.config.values
 
-import config.practical.manager.ConfigValue
+import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.features.other.InventoryButton
 
 /** The seven [InventoryButton]s sit in the empty corners of the survival inventory GUI; a button only renders when its command is non-empty. */
