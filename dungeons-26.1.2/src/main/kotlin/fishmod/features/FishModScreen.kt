@@ -1673,12 +1673,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeonMap.features.add(f)
         }
         run {
-            val f = Feature("Player Heads", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadDrawOwnLast)
+            val f = Feature("Player Heads", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadsEnabled)
             f.sub.add(ColorPickerSetting("Head Background", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadBackground))
             f.sub.add(ColorPickerSetting("Own Head Background", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadOwnBackground))
             f.sub.add(SliderIntSetting("Outline Size", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadBackgroundSize, 0, 5))
             f.sub.add(ToggleSetting("Ugly Pointer (Own)", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerUglyPointer))
             f.sub.add(ToggleSetting("Class Color Outline", "Border the head in the teammate's dungeon class color", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadClassOutline))
+            f.sub.add(ToggleSetting("Draw Own Head Last", "Own head renders on top instead of z-ordered with the rest", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadDrawOwnLast))
             f.sub.add(SliderIntSetting("Player Name Scale %", "",
                 { (fishmod.utils.config.values.DungeonMapSettings.mapPlayerNamesScaling * 100).toInt() },
                 { v -> fishmod.utils.config.values.DungeonMapSettings.mapPlayerNamesScaling = v / 100.0f },
@@ -1687,7 +1688,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeonMap.features.add(f)
         }
         run {
-            val f = Feature("Room Additions", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsPrince)
+            val f = Feature("Room Additions", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsEnabled)
+            f.sub.add(ToggleSetting("Prince Crown Icon", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsPrince))
             f.sub.add(ToggleSetting("Mimic Reveal", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsMimic))
             f.sub.add(ToggleSetting("Mimic on Insight", "", fishmod.utils.config.values.DungeonMapSettings::mapMimicOnInsight)
                 .gatedBy { fishmod.utils.config.values.DungeonMapSettings.mapRoomAdditionsMimic })

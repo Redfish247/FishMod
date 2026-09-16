@@ -127,6 +127,7 @@ object DungeonPlayers {
 
     @JvmStatic
     fun render(g: GuiGraphicsExtractor, renderNames: Boolean) {
+        if (!DungeonMapSettings.mapPlayerHeadsEnabled) return
         val mc = Minecraft.getInstance()
         val matrices = g.pose()
         val list = ArrayList(teammates)
