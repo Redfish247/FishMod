@@ -41,6 +41,11 @@ public class ChatHudMixin {
     @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
             at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Component message, MessageSignature signature, GuiMessageSource source, GuiMessageTag tag, CallbackInfo ci) {
+        // Catches party chat regardless of packet type (signed player chat vs. unsigned system
+        // chat) — the network-level ON_GAME_MESSAGE hook only sees unsigned system chat, which
+        // in-dungeon party messages don't always arrive as.
+        fishmod.features.dungeon.AutoRequeue.onChatLine(message.getString());
+
         // Cancel at addMessage() HEAD: packet parsers already ran, and no blank slot is left behind
         if (fishmod.features.ChatFilter.shouldHide(message)
                 || fishmod.features.chat.ChatRuleHandler.shouldHideAtDisplay(message)) {
