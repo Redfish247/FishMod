@@ -29,7 +29,11 @@ object SlayerBossPhases {
     private val EGG_SAC = Regex("^\\d+s \\d+/\\d+$")
     private val TWINCLAWS = Regex("TWINCLAWS.*?([\\d.]+)s", RegexOption.IGNORE_CASE)
     private val NAMETAG_HP = Regex("([\\d,.]+)\\s*([kKmMbB])?\\s*❤")
+    private val HELLION_HITS = Regex("\\u2668\\s*(\\d+)")
     private const val HATCHLINGS_LINE = "You need to kill the Broodfather's hatchlings before it can be damaged again!"
+
+    private const val SCAN_INTERVAL_TICKS = 5
+    private var scanCounter = 0
 
     @Volatile private var show = false
     @Volatile private var line1 = ""
@@ -74,6 +78,7 @@ object SlayerBossPhases {
         steakTitleFired = false
         hpBossId = 0; hpMaxSeen = 0.0
         titleAt.clear()
+        scanCounter = 0
     }
 
     private fun onChat(s: String) {
@@ -84,15 +89,18 @@ object SlayerBossPhases {
     }
 
     private fun tick() {
+        if (!enabled()) { show = false; line1 = ""; line2 = ""; return }
+        val mc = Minecraft.getInstance()
+        if (mc.player == null || mc.level == null || mc.options.hideGui || !Location.inSkyblock()) {
+            show = false; line1 = ""; line2 = ""; return
+        }
+
+        // throttle the entity scans below, not the cheap checks above
+        if (scanCounter++ % SCAN_INTERVAL_TICKS != 0) return
+
         show = false
         var l1 = ""
         var l2 = ""
-        if (!enabled()) { line1 = ""; line2 = ""; return }
-        val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.level == null || mc.options.hideGui || !Location.inSkyblock()) {
-            line1 = ""; line2 = ""; return
-        }
-
         val combatType = SlayerManager.type
         val combatBoss = SlayerManager.bossEntity
         var boss: LivingEntity? = null
@@ -180,7 +188,7 @@ object SlayerBossPhases {
                     val shield = HELLION.entries.firstOrNull { sh -> stands.any { it.contains(sh.tag, true) } }
                     if (shield != null) {
                         val stand = stands.first { it.contains(shield.tag, true) }
-                        val hits = Regex("\\u2668\\s*(\\d+)").find(stand)?.groupValues?.get(1)
+                        val hits = HELLION_HITS.find(stand)?.groupValues?.get(1)
                         l1 = "${shield.color}§l${shield.tag.uppercase()}" + (hits?.let { " §7♨$it" } ?: "")
                         l2 = "§7→ §f${shield.dagger} Dagger"
                     }
