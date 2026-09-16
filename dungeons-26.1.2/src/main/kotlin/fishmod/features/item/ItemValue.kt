@@ -2,7 +2,6 @@ package fishmod.features.item
 
 import fishmod.features.croesus.CroesusPrices
 import fishmod.utils.data.ItemUtil
-import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
 
 object ItemValue {
@@ -12,7 +11,7 @@ object ItemValue {
         if (stack.isEmpty) return 0.0
         val id = ItemUtil.getId(stack) ?: return 0.0
         val mods = ModifierValue.calc(stack)
-        val tag = stack.get(DataComponents.CUSTOM_DATA)?.copyTag()
+        val tag = stack.fishmodCustomDataTag()
         val boost = tag?.getInt("baseStatBoostPercentage")?.orElse(0) ?: 0
 
         if (boost > 0 && tag != null) {
