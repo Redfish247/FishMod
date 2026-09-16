@@ -3569,16 +3569,23 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         getter: () -> Int, setter: (Int) -> Unit
     ) : ColorPickerSetting(name, desc, getter, setter) {
         val shownName: String = name
+
+        /** Keeps [name] in sync with visibility regardless of which override runs first this frame —
+         *  getHeight()/render()/onClick() each call this instead of relying on call order. */
+        private fun syncName() { this.name = if (visible()) shownName else "" }
+
         override fun getHeight(): Int {
-            if (!visible()) { this.name = ""; return 0 }
-            this.name = shownName
+            syncName()
+            if (!visible()) return 0
             return super.getHeight()
         }
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
+            syncName()
             if (!visible()) return
             super.render(ctx, leftX, rightX, sy, mx, my, tr)
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
+            syncName()
             if (!visible()) return false
             return super.onClick(mx, my, leftX, rightX, sy, btn)
         }
