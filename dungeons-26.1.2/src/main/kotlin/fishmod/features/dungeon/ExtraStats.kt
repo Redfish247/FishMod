@@ -44,6 +44,7 @@ object ExtraStats {
     private var secrets = 0
     private var requested = false
     private var printed = false
+    private var inBlock = false
 
     private fun reset() {
         floorTitle = ""; defeated = null; timePB = false; time = ""
@@ -51,6 +52,7 @@ object ExtraStats {
         xpLines.clear(); bits = null
         damage = "0"; damagePB = false; heal = "0"; healPB = false; kills = "0"; killsPB = false
         deaths = 0; secrets = 0
+        inBlock = false
     }
 
     private fun resetRun() {
@@ -68,8 +70,12 @@ object ExtraStats {
 
             if (HEADER.containsMatchIn(s)) {
                 if (!requested) { requested = true; Misc.executeCommand("showextrastats") }
+                inBlock = true
                 return@register true
             }
+
+            // stat lines only appear inside the HEADER block
+            if (!inBlock) return@register false
 
             TITLE.find(s)?.let { m ->
                 floorTitle = (if (m.groupValues[1].isNotEmpty()) "§cMaster Mode" else "§cThe Catacombs") + " §r- §e" + m.groupValues[2]
@@ -85,6 +91,7 @@ object ExtraStats {
             SECRETS.find(s)?.let { m ->
                 secrets = m.groupValues[1].toIntOrNull() ?: 0
                 if (!printed) { printed = true; print() }
+                inBlock = false
             }
 
             cancelIfInDungeon.any { it.containsMatchIn(s) } || FAIL.containsMatchIn(s)
