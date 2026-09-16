@@ -1,10 +1,12 @@
 package fishmod.mixin;
 
+import fishmod.features.item.ItemCustomDataHolder;
 import fishmod.features.item.ItemCustomizationStore;
 import fishmod.features.item.ItemRarity;
 import fishmod.features.item.ItemRarityHolder;
 import fishmod.utils.data.ItemUtil;
 import fishmod.utils.data.LegacyFormatting;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
@@ -14,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ItemStack.class)
-public class ItemStackMixin implements ItemRarityHolder {
+public class ItemStackMixin implements ItemRarityHolder, ItemCustomDataHolder {
 
     @Inject(method = "getHoverName", at = @At("RETURN"), cancellable = true)
     private void fishmod$customItemName(CallbackInfoReturnable<Component> cir) {
@@ -38,4 +40,21 @@ public class ItemStackMixin implements ItemRarityHolder {
 
     @Override
     public boolean fishmod$hasScanned() { return fishmod$itemRarity != null; }
+
+    @Unique
+    private CompoundTag fishmod$cachedCustomData = null;
+    @Unique
+    private boolean fishmod$scannedCustomData = false;
+
+    @Override
+    public CompoundTag fishmod$getCachedCustomData() { return fishmod$cachedCustomData; }
+
+    @Override
+    public void fishmod$setCachedCustomData(CompoundTag tag) {
+        fishmod$cachedCustomData = tag;
+        fishmod$scannedCustomData = true;
+    }
+
+    @Override
+    public boolean fishmod$hasScannedCustomData() { return fishmod$scannedCustomData; }
 }
