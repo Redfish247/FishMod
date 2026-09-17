@@ -1116,40 +1116,51 @@ public class HypixelApi {
      * using the SkyHelper price list. Values liquid + items (base, recomb, enchants, hot-potato,
      * master stars) + pets. An estimate — close to in-game, no extra hosting / SkyCrypt needed.
      */
+    /** Sentinel networth value meaning "the proxy rejected this because YOU are blocked", distinct from -1 (not found / error). */
+    public static final double NETWORTH_BLOCKED = -2.0;
+
     public static void getNetworth(Minecraft mc, String ign, NetworthCallback cb) {
         NetworthCallback marshaled = (networth, profileName) -> mc.execute(() -> cb.onData(networth, profileName));
         java.util.concurrent.CompletableFuture.runAsync(() -> {
             String uuid = resolveUuidBlocking(ign);
             if (uuid == null) { marshaled.onData(-1, null); return; }
             // prefer the proxy's networth endpoint (real library, includes museum); local estimate is the fallback
-            if (getNetworthRemote(uuid, marshaled)) return;
+            Boolean blocked = getNetworthRemote(uuid, marshaled);
+            if (blocked == null) return; // delivered (value or NETWORTH_BLOCKED)
+            if (blocked) { marshaled.onData(NETWORTH_BLOCKED, null); return; } // no point falling back — same block applies
             getNetworthLocal(uuid, marshaled);
         }, API_EXECUTOR);
     }
 
     /**
      * Asks the proxy for a SkyHelper-Networth figure ({@code /networth?uuid=}). Expected body:
-     * {@code {"success":true,"networth":<number>,"profile":"<cute_name>"}}. Returns true if a
-     * value was delivered to [cb]; false (nothing delivered) so the caller can fall back.
+     * {@code {"success":true,"networth":<number>,"profile":"<cute_name>"}}. Returns null if a value
+     * was delivered to [cb] (done); Boolean.TRUE if the caller is blocked (no point falling back to
+     * the local estimate — it hits the same block); Boolean.FALSE if nothing was delivered so the
+     * caller should fall back.
      */
-    private static boolean getNetworthRemote(String uuid, NetworthCallback cb) {
+    private static Boolean getNetworthRemote(String uuid, NetworthCallback cb) {
         try {
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(PROXY_URL + "/networth?uuid=" + uuid))
                     .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                     .timeout(Duration.ofSeconds(15)).GET().build();
             HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
-            if (r.statusCode() != 200) return false;
+            if (r.statusCode() == 403) return Boolean.TRUE;
+            if (r.statusCode() != 200) return Boolean.FALSE;
             JsonObject o = JsonParser.parseString(r.body()).getAsJsonObject();
-            if (!o.has("networth") || o.get("networth").isJsonNull()) return false;
-            if (o.has("success") && !o.get("success").getAsBoolean()) return false;
+            if (o.has("success") && !o.get("success").getAsBoolean()) {
+                if (o.has("cause") && "blocked".equals(o.get("cause").getAsString())) return Boolean.TRUE;
+                return Boolean.FALSE;
+            }
+            if (!o.has("networth") || o.get("networth").isJsonNull()) return Boolean.FALSE;
             double nw = o.get("networth").getAsDouble();
             String pname = o.has("profile") && !o.get("profile").isJsonNull() ? o.get("profile").getAsString() : null;
             cb.onData(nw, pname);
-            return true;
+            return null;
         } catch (Exception e) {
             fishmod.utils.debug.Debug.LOGGER.warn("[Networth] remote endpoint: {}", e.toString());
-            return false;
+            return Boolean.FALSE;
         }
     }
 
@@ -1166,7 +1177,9 @@ public class HypixelApi {
                 HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
                 JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
                 if (!root.has("success") || !root.get("success").getAsBoolean() || !root.has("profiles")) {
-                    cb.onData(-1, null); return;
+                    boolean blocked = r.statusCode() == 403
+                        || (root.has("cause") && "blocked".equals(root.get("cause").getAsString()));
+                    cb.onData(blocked ? NETWORTH_BLOCKED : -1, null); return;
                 }
                 JsonObject chosen = null;
                 for (JsonElement pe : root.getAsJsonArray("profiles")) {
