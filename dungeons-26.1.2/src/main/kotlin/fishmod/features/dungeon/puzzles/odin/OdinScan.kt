@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets
 /** Rides on FishMod's own dungeon-map scanner ([DungeonMap]/[MapRoom]) instead of an earlier standalone scanner that only matched 26.1 reliably ~half the time. */
 object OdinScan {
 
-    /** Room table — kept only for `type` / `cores` metadata by room name. */
+    /** Room table — kept only for `type` / `shape` metadata by room name. */
     private val nameToData: Map<String, ORoomData> = run {
         try {
             OdinScan::class.java.getResourceAsStream("/odin_rooms.json")!!.use { s ->
@@ -89,7 +89,6 @@ object OdinScan {
         val data = nameToData[name] ?: ORoomData(
             name = name,
             type = runCatching { ORoomType.valueOf(m.type?.name ?: "") }.getOrDefault(ORoomType.NORMAL),
-            cores = emptyList(),
             shape = m.shape?.let { runCatching { ORoomShape.valueOf(mapShapeName(it)) }.getOrNull() }
                 ?: ORoomShape.UNKNOWN,
         )
