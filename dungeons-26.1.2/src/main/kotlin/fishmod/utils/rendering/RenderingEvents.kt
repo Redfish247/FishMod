@@ -15,10 +15,10 @@ import net.minecraft.client.renderer.rendertype.RenderType
 object RenderingEvents {
 
     /** Emit vanilla gizmos here (via [RenderUtils.gizmoBox] / [RenderUtils.gizmoQuad] / etc.). */
-    @JvmField var GIZMO = GizmoHandler()
+    @JvmField var GIZMO = SimpleHandler<GizmoEvent>()
 
-    @JvmField var NO_DEPTH_FILLED = RenderHandler()
-    @JvmField var NO_DEPTH_LINE = RenderHandler()
+    @JvmField var NO_DEPTH_FILLED = SimpleHandler<RenderingEvent>()
+    @JvmField var NO_DEPTH_LINE = SimpleHandler<RenderingEvent>()
 
     @Volatile private var registered = false
 
@@ -54,7 +54,7 @@ object RenderingEvents {
     // Only ever called with a single handler — a plain parameter avoids the vararg's per-call array allocation.
     private fun drawLayer(
         ctx: LevelRenderContext, ps: PoseStack, buffers: MultiBufferSource.BufferSource,
-        layer: RenderType, handler: RenderHandler,
+        layer: RenderType, handler: SimpleHandler<RenderingEvent>,
     ) {
         if (handler.size() == 0) return
         val vc = buffers.getBuffer(layer)

@@ -1210,12 +1210,7 @@ public class HypixelApi {
                         || (root.has("cause") && "blocked".equals(root.get("cause").getAsString()));
                     cb.onData(blocked ? NETWORTH_BLOCKED : -1, null); return;
                 }
-                JsonObject chosen = null;
-                for (JsonElement pe : root.getAsJsonArray("profiles")) {
-                    JsonObject p = pe.getAsJsonObject();
-                    if (p.has("selected") && p.get("selected").getAsBoolean()) { chosen = p; break; }
-                    if (chosen == null) chosen = p;
-                }
+                JsonObject chosen = findSelectedProfile(root);
                 if (chosen == null) { cb.onData(-1, null); return; }
                 String pname = chosen.has("cute_name") ? chosen.get("cute_name").getAsString() : null;
                 JsonObject member = chosen.getAsJsonObject("members").getAsJsonObject(uuid);
@@ -1718,8 +1713,7 @@ public class HypixelApi {
                     if (eff > 0) v += price(prices, "SIL_EX") * eff * fishmod.utils.networth.NwConstants.SILEX;
                 }
                 // Enchantment upgrades
-                Integer tierReq = fishmod.utils.networth.NwConstants.ENCHANTMENT_UPGRADE_TIER.containsKey(name)
-                        ? fishmod.utils.networth.NwConstants.ENCHANTMENT_UPGRADE_TIER.get(name)[0] : null;
+                Integer tierReq = fishmod.utils.networth.NwConstants.ENCHANTMENT_UPGRADE_TIER.get(name);
                 if (tierReq != null && value >= tierReq) {
                     String up = fishmod.utils.networth.NwConstants.ENCHANTMENT_UPGRADE_ITEM.get(name);
                     v += price(prices, up) * fishmod.utils.networth.NwConstants.ENCHANTMENT_UPGRADES;
@@ -2114,7 +2108,9 @@ public class HypixelApi {
             });
     }
 
-    private static JsonObject findSelectedMember(JsonObject root, String uuidStr) {
+    /** Picks the profile marked {@code "selected":true}, or the first profile if none is marked —
+     *  Hypixel's own "active profile" semantics. Returns null if {@code profiles} is missing/null/empty. */
+    private static JsonObject findSelectedProfile(JsonObject root) {
         if (!root.has("profiles") || root.get("profiles").isJsonNull()) return null;
         JsonObject chosen = null;
         for (JsonElement pe : root.getAsJsonArray("profiles")) {
@@ -2122,6 +2118,11 @@ public class HypixelApi {
             if (p.has("selected") && p.get("selected").getAsBoolean()) { chosen = p; break; }
             if (chosen == null) chosen = p;
         }
+        return chosen;
+    }
+
+    private static JsonObject findSelectedMember(JsonObject root, String uuidStr) {
+        JsonObject chosen = findSelectedProfile(root);
         if (chosen == null || !chosen.has("members")) return null;
         JsonObject members = chosen.getAsJsonObject("members");
         return members.has(uuidStr) ? members.getAsJsonObject(uuidStr) : null;
@@ -2596,12 +2597,7 @@ public class HypixelApi {
                 double bank = -1, purse = -1; String corpses = null;
                 JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
                 if (root.has("profiles") && !root.get("profiles").isJsonNull()) {
-                    JsonObject chosen = null;
-                    for (JsonElement pe : root.getAsJsonArray("profiles")) {
-                        JsonObject p = pe.getAsJsonObject();
-                        if (p.has("selected") && p.get("selected").getAsBoolean()) { chosen = p; break; }
-                        if (chosen == null) chosen = p;
-                    }
+                    JsonObject chosen = findSelectedProfile(root);
                     if (chosen != null) {
                         if (chosen.has("banking") && chosen.getAsJsonObject("banking").has("balance"))
                             bank = chosen.getAsJsonObject("banking").get("balance").getAsDouble();
@@ -2919,12 +2915,8 @@ public class HypixelApi {
                     .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                     .timeout(Duration.ofSeconds(12)).GET().build();
                 JsonObject root = JsonParser.parseString(HTTP.send(pr, HttpResponse.BodyHandlers.ofString()).body()).getAsJsonObject();
-                String profileId = null;
-                for (JsonElement pe : root.getAsJsonArray("profiles")) {
-                    JsonObject p = pe.getAsJsonObject();
-                    if (profileId == null) profileId = p.get("profile_id").getAsString();
-                    if (p.has("selected") && p.get("selected").getAsBoolean()) { profileId = p.get("profile_id").getAsString(); break; }
-                }
+                JsonObject chosenProfile = findSelectedProfile(root);
+                String profileId = chosenProfile != null && chosenProfile.has("profile_id") ? chosenProfile.get("profile_id").getAsString() : null;
                 if (profileId == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cno profile"))); return; }
                 HttpRequest gr = HttpRequest.newBuilder()
                     .uri(URI.create(PROXY_URL + "/skyblock/garden?profile=" + profileId))
@@ -3025,12 +3017,7 @@ public class HypixelApi {
                     .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                     .timeout(Duration.ofSeconds(12)).GET().build();
                 JsonObject root = JsonParser.parseString(HTTP.send(req, HttpResponse.BodyHandlers.ofString()).body()).getAsJsonObject();
-                JsonObject chosen = null;
-                for (JsonElement pe : root.getAsJsonArray("profiles")) {
-                    JsonObject p = pe.getAsJsonObject();
-                    if (p.has("selected") && p.get("selected").getAsBoolean()) { chosen = p; break; }
-                    if (chosen == null) chosen = p;
-                }
+                JsonObject chosen = findSelectedProfile(root);
                 if (chosen == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cno profile"))); return; }
                 JsonObject member = chosen.getAsJsonObject("members").getAsJsonObject(uuid);
                 java.util.Map<String, Integer> nuc = new java.util.LinkedHashMap<>();
@@ -3064,12 +3051,7 @@ public class HypixelApi {
                 JsonObject root = JsonParser.parseString(HTTP.send(req, HttpResponse.BodyHandlers.ofString()).body()).getAsJsonObject();
                 int runs = -1;
                 if (root.has("profiles") && !root.get("profiles").isJsonNull()) {
-                    JsonObject chosen = null;
-                    for (JsonElement pe : root.getAsJsonArray("profiles")) {
-                        JsonObject p = pe.getAsJsonObject();
-                        if (p.has("selected") && p.get("selected").getAsBoolean()) { chosen = p; break; }
-                        if (chosen == null) chosen = p;
-                    }
+                    JsonObject chosen = findSelectedProfile(root);
                     if (chosen != null) {
                         JsonObject member = chosen.getAsJsonObject("members").getAsJsonObject(uuid);
                         runs = pickNucleusRuns(member);
@@ -3100,12 +3082,7 @@ public class HypixelApi {
                 JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
                 double sb = -1, farm = -1;
                 if (root.has("profiles") && !root.get("profiles").isJsonNull()) {
-                    JsonObject chosen = null;
-                    for (JsonElement pe : root.getAsJsonArray("profiles")) {
-                        JsonObject p = pe.getAsJsonObject();
-                        if (p.has("selected") && p.get("selected").getAsBoolean()) { chosen = p; break; }
-                        if (chosen == null) chosen = p;
-                    }
+                    JsonObject chosen = findSelectedProfile(root);
                     if (chosen != null) {
                         JsonObject member = chosen.getAsJsonObject("members").getAsJsonObject(uuid);
                         if (member.has("leveling") && member.getAsJsonObject("leveling").has("experience"))
@@ -3173,12 +3150,7 @@ public class HypixelApi {
                 JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
                 int worm = 0, scatha = 0; boolean found = false;
                 if (root.has("profiles") && !root.get("profiles").isJsonNull()) {
-                    JsonObject chosen = null;
-                    for (JsonElement pe : root.getAsJsonArray("profiles")) {
-                        JsonObject p = pe.getAsJsonObject();
-                        if (p.has("selected") && p.get("selected").getAsBoolean()) { chosen = p; break; }
-                        if (chosen == null) chosen = p;
-                    }
+                    JsonObject chosen = findSelectedProfile(root);
                     if (chosen != null) {
                         JsonObject member = chosen.getAsJsonObject("members").getAsJsonObject(uuid);
                         if (member.has("bestiary") && member.get("bestiary").isJsonObject()) {

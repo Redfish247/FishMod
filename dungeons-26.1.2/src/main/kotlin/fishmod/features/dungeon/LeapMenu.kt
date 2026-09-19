@@ -12,6 +12,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.client.renderer.RenderPipelines
+import net.minecraft.network.chat.Component
 import net.minecraft.world.inventory.ContainerInput
 import net.minecraft.world.item.Items
 import org.lwjgl.glfw.GLFW
@@ -166,7 +167,7 @@ object LeapMenu {
 
         if (!DungeonState.isInDungeon() || Scan.rooms.isEmpty()) {
             markers = emptyList()
-            ctx.centeredText(mc.font, net.minecraft.network.chat.Component.literal("§7Map not ready"), w / 2, h / 2, -1)
+            ctx.centeredText(mc.font, Component.literal("§7Map not ready"), w / 2, h / 2, -1)
             return
         }
 
@@ -196,11 +197,11 @@ object LeapMenu {
             ctx.fill(m.x + r - 1, m.y - r, m.x + r, m.y + r, col)
             if (m === hov) {
                 val cls = m.target.clazz?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "?"
-                ctx.centeredText(mc.font, net.minecraft.network.chat.Component.literal("§f${m.target.name} §7$cls"),
+                ctx.centeredText(mc.font, Component.literal("§f${m.target.name} §7$cls"),
                     m.x, m.y - r - 11, -1)
             }
         }
-        ctx.centeredText(mc.font, net.minecraft.network.chat.Component.literal("§7Click a teammate to leap"), w / 2, h - 16, -1)
+        ctx.centeredText(mc.font, Component.literal("§7Click a teammate to leap"), w / 2, h - 16, -1)
     }
 
     @JvmStatic
@@ -212,7 +213,7 @@ object LeapMenu {
         ctx.fill(0, 0, mc.window.guiScaledWidth, mc.window.guiScaledHeight, 0xC0000000.toInt())
 
         if (cache.isEmpty()) {
-            ctx.centeredText(mc.font, net.minecraft.network.chat.Component.literal("§4No players found"),
+            ctx.centeredText(mc.font, Component.literal("§4No players found"),
                 mc.window.guiScaledWidth / 2, mc.window.guiScaledHeight / 2, -1)
             return
         }
