@@ -23,18 +23,7 @@ import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.phys.AABB
 
-/**
- * F7 P3 Simon Says device solver — 1:1 port of Odin's `SimonSays` module
- * (github.com/odtheking/Odin, features/impl/boss/SimonSays.kt).
- *
- * The lantern column (x=111) records order when a *lit* sea lantern reverts to obsidian — not when
- * it lights up, which is the reverse of what you'd guess from watching the device. During "first
- * phase" (the initial demo run, before the sequence has ever been solved once) Odin auto-corrects
- * the recorded order in place: a 2-lantern sequence gets reversed, a 3-lantern one drops its middle
- * entry. First phase ends the moment the full sequence gets clicked correctly, or a tick-based
- * watchdog notices the grid went quiet (no new lantern for 10+ ticks) while most of the button grid
- * has already reverted to stone buttons (i.e. the demo silently reset without a clean signal).
- */
+/** F7 P3 Simon Says device solver — 1:1 port of Odin's `SimonSays` module. */
 object SimonSaysSolver {
 
     private val startButton = BlockPos(110, 121, 91)
@@ -54,7 +43,20 @@ object SimonSaysSolver {
         lastLanternTick = -1
     }
 
-    private fun inP3(): Boolean = try { Phase.inP3() } catch (t: Throwable) { false }
+    private fun inP3(): Boolean = FishSettings.simonSolverEnabled && try { Phase.inP3() } catch (t: Throwable) { false }
+
+    // Click-order bookkeeping (not the gizmo/blocking behavior) runs whenever we're in P3 at all,
+    // regardless of whether the visual solver is toggled on — SimonSaysTracker relies on
+    // `lastRoundCompleteMs` to tell a genuine finish apart from a break, and that needs to work
+    // even for players who only have the Tracker enabled.
+    private fun trackingActive(): Boolean = try { Phase.inP3() } catch (t: Throwable) { false }
+
+    // Timestamp of the last time a round's full click sequence was completed correctly (all
+    // buttons in clickInOrder pressed in order). Driven by block-update packets, which land far
+    // faster and more reliably than Hypixel's "completed a device!" chat line — SimonSaysTracker
+    // uses this as a near-instant, non-racy signal that a board reset is a real finish rather than
+    // a break.
+    @JvmField var lastRoundCompleteMs: Long = 0L
 
     private fun dbg(msg: String) {
         if (Debug.ssDebug) Minecraft.getInstance().execute { Misc.addChatMessage(Component.literal("§7[SS] §f$msg")) }
@@ -70,6 +72,7 @@ object SimonSaysSolver {
                 resetSolution()
                 firstPhase = true
                 prev.clear()
+                lastRoundCompleteMs = 0L
             }
             false
         }
@@ -87,8 +90,7 @@ object SimonSaysSolver {
             false
         }
 
-        // Hypixel doesn't always echo the button-POWERED block update on click, so also advance
-        // clickNeeded from the click itself as a safety net — the real trigger is still onBlock().
+        // Safety net: Hypixel doesn't always echo the button-POWERED update on click, so also advance clickNeeded from the click itself.
         UseBlockCallback.EVENT.register(UseBlockCallback { _, _, _, hit ->
             val pos = hit.blockPos
             if (!inP3()) return@UseBlockCallback InteractionResult.PASS
@@ -111,7 +113,10 @@ object SimonSaysSolver {
             if (idx >= 0) {
                 clickNeeded = idx + 1
                 dbg("click ${pos.y}:${pos.z} -> clickNeeded=$clickNeeded")
-                if (clickNeeded >= clickInOrder.size) { resetSolution(); firstPhase = false }
+                if (clickNeeded >= clickInOrder.size) {
+                    lastRoundCompleteMs = System.currentTimeMillis()
+                    resetSolution(); firstPhase = false
+                }
             }
             InteractionResult.PASS
         })
@@ -126,10 +131,8 @@ object SimonSaysSolver {
         Minecraft.getInstance().execute { onBlock(p, state) }
     }
 
-    /** Grid-reset watchdog: if the demo goes quiet for 10+ ticks while most of the grid is still
-     *  unclicked stone buttons, the "first phase" correction window is over. */
     private fun tick() {
-        if (!inP3() || !firstPhase) return
+        if (!trackingActive() || !firstPhase) return
         lastLanternTick++
         if (lastLanternTick > 10 && grid.count { Minecraft.getInstance().level?.getBlockState(it)?.block === Blocks.STONE_BUTTON } > 8) {
             dbg("grid reset detected (${clickInOrder.size})")
@@ -138,7 +141,7 @@ object SimonSaysSolver {
     }
 
     private fun onBlock(pos: BlockPos, updated: BlockState) {
-        if (!inP3()) return
+        if (!trackingActive()) return
 
         val old = prev.put(pos.asLong(), updated.block)
 
@@ -151,7 +154,7 @@ object SimonSaysSolver {
         if (pos.y !in 120..123 || pos.z !in 92..95) return
 
         when (pos.x) {
-            111 -> // the lantern column: order is recorded when a *lit* lantern goes dark, not when it lights
+            111 ->
                 if (updated.block === Blocks.OBSIDIAN && old === Blocks.SEA_LANTERN && pos !in clickInOrder) {
                     clickInOrder.add(pos.immutable())
                     lastLanternTick = 0
@@ -163,17 +166,16 @@ object SimonSaysSolver {
                     }
                 }
 
-            110 -> // the button column
+            110 ->
                 if (updated.block === Blocks.AIR) {
-                    // Odin treats >8/16 grid positions going AIR as a full puzzle reset, but on this
-                    // client the device's own block-refresh animation transiently reports the same
-                    // thing without an actual reset — that false trigger was wiping clickInOrder
-                    // (and the rendered boxes) about a second into a run. Left a no-op; the AIR
-                    // column write itself carries no useful order information anyway.
+                    // AIR here is a transient block-refresh animation, not a real reset.
                 } else if (old === Blocks.STONE_BUTTON && powered(updated)) {
                     clickNeeded = clickInOrder.indexOf(pos.east()) + 1
                     dbg("click ${pos.y}:${pos.z} -> clickNeeded=$clickNeeded")
-                    if (clickNeeded >= clickInOrder.size) { resetSolution(); firstPhase = false }
+                    if (clickNeeded >= clickInOrder.size) {
+                        lastRoundCompleteMs = System.currentTimeMillis()
+                        resetSolution(); firstPhase = false
+                    }
                 }
         }
     }

@@ -14,15 +14,7 @@ import net.minecraft.core.BlockPos
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 
-/**
- * Room model for the puzzle solvers. An earlier stand-alone scanner never matched 26.1 reliably
- * (~half the time), which made every box-placing solver misfire.
- *
- * It now rides on FishMod's own dungeon-map scanner ([DungeonMap] / [MapRoom]), which already
- * resolves room identity, rotation and the clay-corner every scan tick and retries until it lands.
- * The [ORoom] we hand the solvers carries that rotation + clayPos verbatim; [ORoom.getRealCoords]
- * is identical to [MapRoom.offset], so solutions land exactly where the map says the room is.
- */
+/** Rides on FishMod's own dungeon-map scanner ([DungeonMap]/[MapRoom]) instead of an earlier standalone scanner that only matched 26.1 reliably ~half the time. */
 object OdinScan {
 
     /** Room table — kept only for `type` / `cores` metadata by room name. */

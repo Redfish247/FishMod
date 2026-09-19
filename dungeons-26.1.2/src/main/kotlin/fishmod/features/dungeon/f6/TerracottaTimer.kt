@@ -15,12 +15,7 @@ import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.Vec3
 import java.util.concurrent.CopyOnWriteArrayList
 
-/**
- * Terracotta Timer. On F6 Sadan's boss a terracotta dying makes Hypixel plant a flower-pot block
- * where it stood; the mob respawns 15s later (12s on Master Mode). Match `state.block is FlowerPotBlock`
- * — Hypixel can use a *potted* variant, not just the empty `Blocks.FLOWER_POT`, which the old
- * behaviour missed.
- */
+// Match `state.block is FlowerPotBlock`, not just `Blocks.FLOWER_POT` — Hypixel can plant a potted variant.
 object TerracottaTimer {
 
     private data class Terracotta(val pos: BlockPos, var time: Float)

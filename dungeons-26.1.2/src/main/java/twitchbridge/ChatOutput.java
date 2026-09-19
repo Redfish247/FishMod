@@ -64,7 +64,7 @@ public final class ChatOutput {
 			return Integer.parseInt(colorHex.substring(1), 16);
 		}
 		if (!cfg.useTwitchColors) {
-			return 0xD69BF5; // light purple
+			return 0xD69BF5;
 		}
 		int idx = Math.floorMod(name.toLowerCase().hashCode(), PALETTE.length);
 		return PALETTE[idx];

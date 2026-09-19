@@ -101,7 +101,6 @@ class TermSimScreen private constructor(
         sync()
     }
 
-    /** Copy the board into the handler and re-point the solver at it. */
     private fun sync() {
         if (!::handler.isInitialized) return
         for (i in 0 until type.windowSize) handler.items[i] = box.getItem(i)
@@ -201,14 +200,14 @@ class TermSimScreen private constructor(
     }
 
     override fun slotClicked(slot: Slot, slotId: Int, mouseButton: Int, input: ContainerInput) {
-        if (slot.container !== box) return  // ignore player inventory
+        if (slot.container !== box) return
         simClick(slot.index, mouseButton)
     }
 
     /** Apply the Hypixel effect for a click on board slot [idx]. Also called from the Custom GUI path. */
     fun simClick(idx: Int, button: Int) {
         if (idx < 0 || idx >= type.windowSize) return
-        if (startedAt == 0L) startedAt = System.currentTimeMillis()   // clock starts on the first click
+        if (startedAt == 0L) startedAt = System.currentTimeMillis()
         val right = button == 1
         val st = box.getItem(idx)
 

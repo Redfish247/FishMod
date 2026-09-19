@@ -13,16 +13,7 @@ import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/**
- * Hides clutter entities / particles / overlays:
- *  - falling blocks / lightning / xp orbs — cancelled in [fishmod.mixin.ClientPlayNetworkHandlerMixin]
- *    (handleAddEntity).
- *  - explosion particles — cancelled here via [Events.ON_PARTICLE].
- *  - archer-passive bone meal + skull-equipped fairy / soul weaver / tentacle mobs — the carrying
- *    entity is dropped from the client world here.
- *  - death animation / dying-mob armor stands — [fishmod.mixin.EntityRendererMixin].
- *  - fire overlay — [fishmod.mixin.ScreenEffectRendererMixin].
- */
+/** Hides clutter entities/particles/overlays across several chokepoints: entity-add mixin, [Events.ON_PARTICLE], entity renderer, and screen-effect renderer. */
 object RenderOptimizer {
 
     // Base64 skull textures

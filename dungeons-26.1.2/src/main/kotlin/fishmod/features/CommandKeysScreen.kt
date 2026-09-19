@@ -17,17 +17,7 @@ import org.lwjgl.nanovg.NanoVG
 import kotlin.math.max
 import kotlin.math.min
 
-/**
- * /fm commandkeys — bind arbitrary keys/mouse buttons to slash commands.
- *
- * `keys`/`commands` lists are the source of truth; rows are rebuilt from them on every
- * add/remove/scroll/rebind. Key capture mirrors [FishModScreen]'s rebind convention: click a
- * key box to arm capture, then the next key or mouse click is bound; Escape unbinds instead.
- * Reskinned to match [FishModScreen]'s smooth pill/rounded-rect look via [ScreenTheme] — the
- * key-capture/"+ Add Command Key"/"Done"/remove-"X" buttons are custom click-region pills
- * (no vanilla [net.minecraft.client.gui.components.Button]), and the command [EditBox] fields
- * are borderless with a hand-drawn rounded-rect container behind them.
- */
+/** `keys`/`commands` lists are the source of truth, rows rebuilt from them on every add/remove/scroll/rebind; key capture mirrors [FishModScreen]'s rebind convention. */
 class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverlay {
 
     companion object {

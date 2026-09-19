@@ -8,18 +8,9 @@ import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.rendertype.RenderType
 
 /**
- * World-overlay dispatch, split two ways:
- *
- * - **Occluded highlights** ([GIZMO]) emit vanilla `net.minecraft.gizmos.Gizmos` from
- *   [LevelRenderEvents.BEFORE_GIZMOS]. Vanilla draws them at the right pipeline stage, so terrain
- *   occludes them. `Gizmos.*` is ONLY legal inside this window.
- * - **Through-walls ESP** ([NO_DEPTH_FILLED] / [NO_DEPTH_LINE]) draws in
- *   one [LevelRenderEvents.END_MAIN] pass: translate the pose by
- *   `-camera`, grab a [MultiBufferSource.BufferSource] buffer per [RenderType], let every handler
- *   write, then `endBatch` immediately.
- *
- * The hand-rolled depth-tested `END_MAIN` layers (old `FILLED_BLOCK` / `LINE` / `OUTLINE_ENTITY`)
- * are gone — they never rendered right. Features that used them now register on [GIZMO].
+ * World-overlay dispatch: [GIZMO] emits vanilla gizmos (occluded by terrain) from
+ * [LevelRenderEvents.BEFORE_GIZMOS]; [NO_DEPTH_FILLED]/[NO_DEPTH_LINE] draw through walls in one
+ * [LevelRenderEvents.END_MAIN] pass.
  */
 object RenderingEvents {
 

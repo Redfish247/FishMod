@@ -103,13 +103,7 @@ object CroesusPrices {
         return "miss (bz=${bazaar.size} lbin=${lbin.size} avg=${avgLbin.size} cf=${coflnet.size})"
     }
 
-    /**
-     * Lowest active BIN for [tag] filtered to exactly [boost]% dungeon quality (Coflnet's
-     * `BaseStatBoost` auction filter — the same "quality" stat [fishmod.features.item.ItemQualityTooltip]
-     * shows). Class-specific dungeon armor/weapons swing 10-100x in value across the quality range,
-     * so the bulk bazaar/lbin dump (which mixes all rolls together) is useless for these — this hits
-     * the live auction list instead. Returns 0 (and kicks off a background fetch) until cached.
-     */
+    /** Hits the live auction list since the bulk bazaar/lbin dump mixes all quality rolls together; returns 0 and kicks off a fetch until cached. */
     @JvmStatic
     fun qualityBinPrice(tag: String, boost: Int): Double {
         val key = "$tag:$boost"
@@ -148,18 +142,7 @@ object CroesusPrices {
             }.exceptionally { qualityFetching.remove(key); null }
     }
 
-    /**
-     * Lowest active BIN matching this exact item's price-relevant attributes (quality roll, stars,
-     * recomb, per-enchant levels) — asks Coflnet's own `/item/filters` what auction filters apply to
-     * this item, then queries `/active/bin` with all of them at once. [qualityBinPrice] alone (just
-     * the quality roll) still lumps together e.g. a 0-star and a 10-star item at the same roll, which
-     * for class-specific dungeon gear (Skeleton Master armor, Necron's pieces, ...) is a 10-100x
-     * difference — this is the actual apples-to-apples comparison Hypixel's own AH BIN search would
-     * show. [cacheKey] must vary with exactly [itemName]/[enchantments]/[extraAttributes] (a plain
-     * sorted concatenation is enough; this isn't a real hash, just a stable dedup key). Returns 0
-     * (and kicks off a background fetch) until cached; on a miss, callers should fall back to
-     * [qualityBinPrice] or [price].
-     */
+    /** Matches exact attributes (stars, recomb, enchants) since [qualityBinPrice] alone still lumps star counts together; falls back to it on a miss. */
     @JvmStatic
     fun dynamicBinPrice(
         tag: String,
@@ -399,12 +382,8 @@ object CroesusPrices {
     }
 
     /**
-     * Bulk lowest-BIN fetch. moulberry.codes (lowestbin.json / auction_averages_lbin) is dead (HTTP 525
-     * for months), so this uses Coflnet's bulk NEU-format price dump instead: a single call returns
-     * a {itemTag: price} map for every tracked item (server-cached ~10min on Coflnet's side already).
-     * No API key needed. Populates both [lbin] and [avgLbin] since Coflnet doesn't expose the two as
-     * separate bulk endpoints - callers already treat lbin/avgLbin as a fallback chain, so this is a
-     * harmless drop-in.
+     * Bulk lowest-BIN fetch via Coflnet's NEU-format price dump (moulberry.codes has been dead for
+     * months). Populates both [lbin] and [avgLbin] since Coflnet doesn't expose them separately.
      */
     private fun fetchLbin(): CompletableFuture<Void> {
         val req = HttpRequest.newBuilder()

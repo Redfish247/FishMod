@@ -5,20 +5,16 @@ import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.Events
 import java.util.regex.Pattern
 
-/** Measures seconds lost to lag by comparing wall-clock time to server-tick count. */
 object LagTracker {
 
-    // Colour-code-free substring of the Mort NPC line so chat mods that recolour/reformat it don't
-    // break the trigger. Earliest and most accurate start (from t=0), when dialogue is shown.
+    // Colour-code-free substring so chat mods that recolour/reformat the line don't break the trigger.
     private const val RUN_START_FRAGMENT =
         "I found this map when I first entered the dungeon"
 
     private val RUN_END_PATTERN: Pattern =
         Pattern.compile("^\\s*☠ Defeated (.+) in 0?([\\dhms ]+)\\s*(\\(NEW RECORD!\\))?$")
 
-    // Dungeon tab-list / sidebar run clock: "Time: 1m 4s" / "Time Elapsed: 1m 4s". This ticks up
-    // only once the run actually starts (stays at "0s" through the pre-run lobby), so it's the
-    // universal start signal for players who have all NPC dialogue turned off.
+    // Ticks up only once the run actually starts (stays "0s" through the pre-run lobby).
     private val RUN_TIME: Pattern =
         Pattern.compile("^ ?Time(?: Elapsed)?: ((?:\\d+h ?)?(?:\\d+m ?)?\\d+s)$")
     private val HMS: Pattern = Pattern.compile("(\\d+)([hms])")
@@ -34,7 +30,6 @@ object LagTracker {
         active = true
     }
 
-    /** Returns seconds of accumulated lag for the current run, or 0 if no run is active. */
     @JvmStatic
     fun getCurrentLag(): Double {
         if (!active || startMs == 0L) return 0.0
@@ -43,7 +38,6 @@ object LagTracker {
         return maxOf(0.0, wallSec - tickSec)
     }
 
-    /** Parsed run-clock seconds from the tab list, or -1 if no "Time:" line is present. */
     private fun scoreboardRunSeconds(): Int {
         for (entry in TabListCache.entries) {
             val m = RUN_TIME.matcher(entry.stripped.trim())
@@ -84,8 +78,7 @@ object LagTracker {
         }
 
         Events.ON_SERVER_TICK.register {
-            // Fallback start for players with NPC dialogue off: the scoreboard run clock has begun
-            // counting. Never a silent no-op, and it doesn't fire during the pre-run lobby (0s).
+            // Fallback start for players with NPC dialogue off.
             if (!active && !ended && scoreboardRunSeconds() > 0) start()
             if (active) ticks++
             false

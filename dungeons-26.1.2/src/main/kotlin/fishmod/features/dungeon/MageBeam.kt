@@ -12,10 +12,6 @@ import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.world.phys.Vec3
 import java.util.concurrent.CopyOnWriteArrayList
 
-/**
- * Mage Beam — recolours the Mage ultimate beam. Collects the `FIREWORK` particle packets, groups
- * the ~collinear runs into beams and draws each as a 3D line; can hide the vanilla particles.
- */
 object MageBeam {
 
     private class Beam(val points: CopyOnWriteArrayList<Vec3> = CopyOnWriteArrayList(), var lastTick: Int = 0)

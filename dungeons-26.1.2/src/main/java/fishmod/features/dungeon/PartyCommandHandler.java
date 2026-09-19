@@ -8,19 +8,10 @@ import fishmod.utils.events.Events;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
 
-/**
- * Handles party commands typed by the local player:
- *   .ai / .allinv  — /p settings allinvite
- *   .pb            — fetch M7 PB from Hypixel API and send to party chat
- *   .cata          — send cata level (requires API key)
- *   .rtca          — send runs-to-class-50 (requires API key)
- *   .powder        — fetch mithril/gemstone/glacite powder (requires API key via proxy)
- *   .e             — /joininstance catacombs_entrance
- *   .f1-.f7        — /joininstance catacombs_floor_X
- *   .m1-.m7        — /joininstance master_catacombs_floor_X
- */
+/** Handles dot-prefixed party commands typed by the local player (stat lookups, joininstance shortcuts, party actions). */
 public class PartyCommandHandler {
 
     private static final String[] NUM_WORDS =
@@ -71,19 +62,7 @@ public class PartyCommandHandler {
         return l.equals("e") || l.matches("[fm][1-7]");
     }
 
-    /**
-     * Called from ChatHudMixin for every party command message.
-     * typer   = who typed it
-     * cmd     = the command keyword
-     * rawArg1 = first word after the command (may be an IGN, a floor, or null)
-     * rawArg2 = second word after the command (may be a floor or null)
-     *
-     * For .runs the args are parsed smartly:
-     *   .runs            → ign=typer,   floor=m7 (default)
-     *   .runs m7         → ign=typer,   floor=m7
-     *   .runs PlayerName → ign=Player,  floor=m7 (default)
-     *   .runs Player m7  → ign=Player,  floor=m7
-     */
+    /** Called from ChatHudMixin for every party command message; args are typer/cmd/rawArg1/rawArg2, parsed per-command (e.g. .runs accepts an optional IGN and/or floor in either order). */
     /** Back-compat overload — defaults responder to party chat ("pc "). */
     public static void onPartyCommand(String typer, String cmd, String rawArg1, String rawArg2) {
         onPartyCommand(typer, cmd, rawArg1, rawArg2, null, "pc ");
@@ -180,14 +159,14 @@ public class PartyCommandHandler {
             case "ai", "allinv" -> { if (FishSettings.pcAllinvite && isMe) sendRawCommand(mc, "p settings allinvite"); }
             case "d"            -> { if (FishSettings.pcDisband   && isMe) sendRawCommand(mc, "p disband");             }
             // party actions: only from party chat or local /command (else ".warp" said in DM/guild → bogus /p warp)
-            case "kick"                   -> { if (FishSettings.pcActionKick     && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p kick " + rawArg1);    }
+            case "kick", "k"              -> { if (FishSettings.pcActionKick     && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p kick " + resolvePartyTarget(mc, rawArg1));    }
             case "warp", "w"              -> { if (FishSettings.pcActionWarp     && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe))                    sendRawCommand(mc, "p warp");                }
-            case "transfer", "pt", "ptme" -> { if (FishSettings.pcActionTransfer && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe))                    sendRawCommand(mc, "p transfer " + ign);     }
-            case "promote"                -> { if (FishSettings.pcActionPromote  && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p promote " + rawArg1);  }
-            case "demote"                 -> { if (FishSettings.pcActionDemote   && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p demote " + rawArg1);   }
+            case "transfer", "pt", "ptme" -> { if (FishSettings.pcActionTransfer && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe))                    sendRawCommand(mc, "p transfer " + resolvePartyTarget(mc, ign));     }
+            case "promote", "pro"         -> { if (FishSettings.pcActionPromote  && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p promote " + resolvePartyTarget(mc, rawArg1));  }
+            case "demote", "dem"          -> { if (FishSettings.pcActionDemote   && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p demote " + resolvePartyTarget(mc, rawArg1));   }
             default -> {
-                if ((cmd.matches("[fm][1-7]") || cmd.equals("e")) && FishSettings.pcJoinFloor && allowPartyAction(typer, isMe)) handleJoinInstance(cmd, mc, responder);
-                else if (cmd.matches("t[1-5]") && FishSettings.pcJoinFloor && allowPartyAction(typer, isMe)) handleKuudra(cmd, mc, responder);
+                if ((cmd.matches("[fm][1-7]") || cmd.equals("e")) && FishSettings.pcJoinFloor && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) handleJoinInstance(cmd, mc, responder);
+                else if (cmd.matches("t[1-5]") && FishSettings.pcJoinFloor && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) handleKuudra(cmd, mc, responder);
             }
         }
     }
@@ -206,7 +185,8 @@ public class PartyCommandHandler {
         Long last = RECENT_RESPONSES.get(key);
         if (last != null && now - last < RESPONSE_DEDUP_MS) return false;
         RECENT_RESPONSES.put(key, now);
-        RECENT_RESPONSES.entrySet().removeIf(e -> now - e.getValue() > 30_000);
+        // only sweep once the map has grown enough to matter, not on every call
+        if (RECENT_RESPONSES.size() > 64) RECENT_RESPONSES.entrySet().removeIf(e -> now - e.getValue() > 30_000);
         return true;
     }
 
@@ -215,21 +195,65 @@ public class PartyCommandHandler {
         return isLocal || (responder != null && responder.startsWith("pc "));
     }
 
-    /**
-     * Who besides yourself may trigger a party action (kick/warp/promote/demote/transfer) or a
-     * floor/Kuudra join (.e/.f1-7/.m1-7/.t1-5), per FishSettings.pcPartyActionsMode:
-     * "off"/"self" (nobody else), "whitelist" (listed names only), "blacklist" (anyone not listed),
-     * "everyone" (any party member). You can always trigger your own actions.
-     */
+    /** Who besides yourself may trigger a party action or floor/Kuudra join, per FishSettings.pcPartyActionsMode (off/self, whitelist, blacklist, everyone). The blacklist always blocks, regardless of mode. */
     private static boolean allowPartyAction(String typer, boolean isMe) {
         if (isMe) return true;
+        if (fishmod.utils.NameList.contains(FishSettings.pcPartyActionsBlacklist, typer)) return false;
         return switch (FishSettings.pcPartyActionsMode) {
-            case "everyone"  -> true;
-            case "blacklist" -> !fishmod.utils.NameList.contains(FishSettings.pcPartyActionsBlacklist, typer);
-            case "whitelist" -> fishmod.utils.NameList.contains(FishSettings.pcPartyActionsWhitelist, typer)
-                             && !fishmod.utils.NameList.contains(FishSettings.pcPartyActionsBlacklist, typer);
+            case "everyone", "blacklist" -> true;
+            case "whitelist" -> fishmod.utils.NameList.contains(FishSettings.pcPartyActionsWhitelist, typer);
             default -> false;
         };
+    }
+
+    /**
+     * Resolves a possibly-truncated/mistyped target name (e.g. ".kick cc" for "cclc101310") against
+     * currently online players (tab list), so Hypixel doesn't reject it with "not in your party".
+     * Prefix matches win outright (shortest wins on ambiguity); otherwise falls back to whichever
+     * online name is closest by edit distance, only if that distance is small relative to what was
+     * typed. Returns the original fragment unchanged if nothing online is a confident match.
+     */
+    private static String resolvePartyTarget(Minecraft mc, String fragment) {
+        if (fragment == null || fragment.isBlank()) return fragment;
+        // Prefer the exact name Hypixel used in the join/invite chat line (handles /nick'd players
+        // and avoids the tab list not having caught up yet right after someone joins).
+        String tracked = fishmod.features.dungeon.PartyMemberTracker.resolve(fragment);
+        if (tracked != null) return tracked;
+        if (mc.getConnection() == null) return fragment;
+        String frag = fragment.toLowerCase();
+        String bestPrefix = null;
+        String bestFuzzy = null;
+        int bestFuzzyDist = Integer.MAX_VALUE;
+        for (PlayerInfo info : mc.getConnection().getOnlinePlayers()) {
+            String name = info.getProfile().name();
+            if (name == null) continue;
+            String lname = name.toLowerCase();
+            if (lname.equals(frag)) return name;
+            if (lname.startsWith(frag)) {
+                if (bestPrefix == null || lname.length() < bestPrefix.length()) bestPrefix = name;
+            } else {
+                int d = levenshtein(lname, frag);
+                if (d < bestFuzzyDist) { bestFuzzyDist = d; bestFuzzy = name; }
+            }
+        }
+        if (bestPrefix != null) return bestPrefix;
+        if (bestFuzzy != null && bestFuzzyDist <= Math.max(1, frag.length() / 2)) return bestFuzzy;
+        return fragment;
+    }
+
+    private static int levenshtein(String a, String b) {
+        int[] prev = new int[b.length() + 1];
+        int[] cur = new int[b.length() + 1];
+        for (int j = 0; j <= b.length(); j++) prev[j] = j;
+        for (int i = 1; i <= a.length(); i++) {
+            cur[0] = i;
+            for (int j = 1; j <= b.length(); j++) {
+                int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
+                cur[j] = Math.min(Math.min(cur[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
+            }
+            int[] tmp = prev; prev = cur; cur = tmp;
+        }
+        return prev[b.length()];
     }
 
     /** Builds a list of currently-enabled dot-commands for .help / .?. */
@@ -259,11 +283,11 @@ public class PartyCommandHandler {
         if (FishSettings.pcPing)       cmds.add("ping");
         if (FishSettings.pcAllinvite)  cmds.add("ai");
         if (FishSettings.pcJoinFloor)  cmds.add("e/f1-7/m1-7/t1-5");
-        if (FishSettings.pcActionKick)     cmds.add("kick");
+        if (FishSettings.pcActionKick)     cmds.add("kick/k");
         if (FishSettings.pcActionWarp)     cmds.add("warp/w");
         if (FishSettings.pcActionTransfer) cmds.add("transfer/pt/ptme");
-        if (FishSettings.pcActionPromote)  cmds.add("promote");
-        if (FishSettings.pcActionDemote)   cmds.add("demote");
+        if (FishSettings.pcActionPromote)  cmds.add("promote/pro");
+        if (FishSettings.pcActionDemote)   cmds.add("demote/dem");
         if (FishSettings.pcDisband)    cmds.add("d");
         return "FishMod cmds: ." + String.join(" .", cmds);
     }
@@ -346,7 +370,6 @@ public class PartyCommandHandler {
                 runStatsForPlayer(mc, target, cmd, null, responder);
                 return true;
             case "runs": {
-                // runs [ign] [floor]  e.g. "runs SomePlayer m7" | "runs m7" | "runs"
                 String[] rp = fullCmd.split("\\s+", 3);
                 String runTarget = rp.length > 1 ? rp[1] : localName;
                 String floorArg  = rp.length > 2 ? rp[2] : null;

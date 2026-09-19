@@ -30,7 +30,6 @@ object ScoreboardUtil {
 
             val display = entry.tabListDisplayName?.string ?: profileName
 
-            // Look for "(Mage XLIX)"
             val start = display.indexOf("(")
             val end = display.indexOf(")")
             if (start == -1 || end == -1) return null

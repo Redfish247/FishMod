@@ -7,15 +7,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.player.Player
 import java.util.UUID
 
-/**
- * Customizable player model size with independent X (width), Y (height) and Z (depth) axes. This is
- * purely a RENDER scale (a `matrices.scale()` applied in the player renderer) — it never touches
- * the scale attribute, hitbox or any packet, so it's safe on Hypixel and works offline too.
- *
- * Your own size is always shown to you locally when enabled. When "Share" is on it is published to the
- * shared store so other mod users render you at that size, and you render theirs — the multiplayer
- * counterpart, riding the same version-gated [RemoteSync] poll as nicks/items.
- */
+/** Purely a render-time `matrices.scale()` — never touches the scale attribute, hitbox or any packet, so it's safe on Hypixel. */
 object PlayerSize {
 
     const val MIN = 0.25f

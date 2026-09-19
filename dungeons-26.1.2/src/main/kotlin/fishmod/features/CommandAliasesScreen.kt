@@ -17,14 +17,7 @@ import org.lwjgl.nanovg.NanoVG
 import kotlin.math.max
 import kotlin.math.min
 
-/**
- * /fm aliases — map a short command (e.g. "dh") to a longer one (e.g. "warp dh"). Same convention
- * as [CommandKeysScreen]: `aliases`/`commands` are the source of truth, rows rebuilt from them on
- * every add/remove/scroll. Reskinned to match [FishModScreen]'s smooth pill/rounded-rect look via
- * [ScreenTheme] — the "+ Add Alias"/"Done"/remove-"X" buttons are custom click-region pills
- * (no vanilla [net.minecraft.client.gui.components.Button]), and the [EditBox] fields are
- * borderless with a hand-drawn rounded-rect container behind them.
- */
+/** Same convention as [CommandKeysScreen]: `aliases`/`commands` are the source of truth, rows rebuilt from them on every add/remove/scroll. */
 class CommandAliasesScreen : Screen(Component.literal("Command Aliases")), HasNvgOverlay {
 
     companion object {

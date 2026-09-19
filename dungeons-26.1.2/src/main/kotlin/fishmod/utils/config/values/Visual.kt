@@ -1,6 +1,6 @@
 package fishmod.utils.config.values
 
-import config.practical.manager.ConfigValue
+import fishmod.shaded.practicalconfig.manager.ConfigValue
 
 object Visual {
 
@@ -63,5 +63,11 @@ object Visual {
     @ConfigValue @JvmField var noSwingTerminatorOnly: Boolean = false
 
     @ConfigValue @JvmField var circularRarityBackground: Boolean = false
+
+    /** Noamm's Dark Mode: a flat black tint over the screen, adjustable strength. */
+    @ConfigValue @JvmField var darkModeEnabled: Boolean = false
+    @ConfigValue @JvmField var darkModeOpacity: Int = 25
+    /** Also tint HUD elements (hotbar, chat, etc.), not just the world behind them. */
+    @ConfigValue @JvmField var darkModeTintHud: Boolean = false
 
 }

@@ -20,16 +20,7 @@ import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
 
-/**
- * Slot Binds. Hold [Keybinds.slotBind] and click a hotbar slot then an inventory slot to link them;
- * afterwards shift-left-click either slot to hot-swap the two stacks. Only active in the player's own
- * inventory.
- *
- * Binds are grouped into nameable **profiles** so several bind sets can coexist and be switched
- * between (config screen field, or [Keybinds.slotBindCycleProfile] in-game). The active profile
- * name lives in [FishSettings.slotBindsProfile]; all profiles persist to `slot_binds.txt` as
- * `[Name]`-headed sections (a header-less legacy file loads as the "Default" profile).
- */
+/** Hold [Keybinds.slotBind] + click two slots to link them, then shift-click either to hot-swap. Binds group into nameable profiles persisted to `slot_binds.txt` as `[Name]`-headed sections. */
 object SlotBinds {
 
     private const val DEFAULT = "Default"

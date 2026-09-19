@@ -5,16 +5,8 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.multiplayer.PlayerInfo
 import java.util.regex.Pattern
 
-/** Shared scan of the Hypixel tab list. Several features (CompactTab, CustomScoreboard's Pet
- *  section, DungeonScore, FishPuzzleDisplay, SoulflowHud, PetHud) each used to walk
- *  `connection.onlinePlayers` and strip color codes independently on their own tick cadence — same
- *  packet, parsed 5+ times. This scans + strips ONCE on a short tick interval and publishes the
- *  result; per-feature regex parsing (floor score, puzzle status, soulflow %, pet info, ...) still
- *  lives in each feature, only the raw scan + strip moved here.
- *
- *  [version] increments only when the scanned content actually changed, so a consumer that only
- *  needs to react to real changes (e.g. CompactTab's rebuilt/measured column model) can cheaply
- *  skip re-parsing via `if (lastSeenVersion == TabListCache.version) return cached`. */
+/** Shared scan of the Hypixel tab list — several features used to each walk `onlinePlayers` and
+ *  strip color codes independently; this scans + strips once and publishes the result via [version]. */
 object TabListCache {
 
     private val COLOR_STRIP: Pattern = Pattern.compile("§.")

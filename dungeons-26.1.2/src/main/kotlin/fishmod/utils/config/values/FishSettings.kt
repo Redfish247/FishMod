@@ -1,6 +1,6 @@
 package fishmod.utils.config.values
 
-import config.practical.manager.ConfigValue
+import fishmod.shaded.practicalconfig.manager.ConfigValue
 
 /**
  * Settings unique to FishMod — lives only in FishMod's jar so it always
@@ -240,6 +240,10 @@ object FishSettings {
 
     // parse "Your Explosive Shot hit N enemy/enemies for D damage." and title the per-enemy damage (D / N)
     @ConfigValue @JvmField var explosiveShotEnabled: Boolean = false
+    // Show the HUD title/subtitle popup for the per-enemy damage.
+    @ConfigValue @JvmField var explosiveShotShowTitle: Boolean = true
+    // Also print the per-enemy damage to your own chat (local only, not sent to the server).
+    @ConfigValue @JvmField var explosiveShotChatMessage: Boolean = false
     // Also announce the same per-enemy damage to party chat, only while playing Archer.
     @ConfigValue @JvmField var explosiveShotAnnounceParty: Boolean = false
 
@@ -255,9 +259,14 @@ object FishSettings {
     @ConfigValue @JvmField var nickPreviewEnabled: Boolean = false
     @ConfigValue @JvmField var nickPreviewYOffset: Double = 0.0
 
-    // Networth (and cata level / secret avg in the Dungeon Hub) under every player's nametag.
+    // Networth + skill avg (anywhere), and cata level / secret avg (Dungeon Hub only) under every player's nametag.
     @ConfigValue @JvmField var nametagStatsEnabled: Boolean = false
     @ConfigValue @JvmField var nametagStatsShowSelf: Boolean = false
+    @ConfigValue @JvmField var nametagStatsShowNetworth: Boolean = true
+    @ConfigValue @JvmField var nametagStatsShowCataLevel: Boolean = true
+    @ConfigValue @JvmField var nametagStatsShowSecretAvg: Boolean = true
+    @ConfigValue @JvmField var nametagStatsShowSkillAvg: Boolean = true
+    @ConfigValue @JvmField var nametagStatsAbove: Boolean = true
 
     // Prestige Colors: recolour Hypixel's SkyBlock "[level]" badge (nametags + tab) by a level-driven
     // tier progression — 15 solid tiers to 300, then 20 three-stop gradient tiers to 700.
@@ -270,6 +279,15 @@ object FishSettings {
     @ConfigValue @JvmField var prestigeColorsAnimSpeed: Double = 1.0
     // FADE = whole number is one colour cycling the palette; FLOW = band slides across the digits
     @ConfigValue @JvmField var prestigeColorsAnimStyle: String = "FADE"
+
+    // Custom Crosshair: replaces the vanilla crosshair with either a user-supplied PNG from
+    // config/FishMod/crosshairs/ or a built-in drawn preset shape, tinted and scaled.
+    @ConfigValue @JvmField var crosshairEnabled: Boolean = false
+    @ConfigValue @JvmField var crosshairMode: String = "Preset"          // "Image" or "Preset"
+    @ConfigValue @JvmField var crosshairImageSelection: String = "No image"
+    @ConfigValue @JvmField var crosshairPreset: String = "Cross"         // Dot, Cross, Plus, Square
+    @ConfigValue @JvmField var crosshairColor: Int = 0xFFFFFFFF.toInt()
+    @ConfigValue @JvmField var crosshairScale: Double = 1.0
 
     // Master toggle for the /fm wp dungeon waypoint editor's rendering (boxes, titles, route lines).
     @ConfigValue @JvmField var dungeonWaypointsEnabled: Boolean = true
@@ -319,6 +337,11 @@ object FishSettings {
     @ConfigValue @JvmField var pcPartyActionsMode: String = "self"
     @ConfigValue @JvmField var pcPartyActionsWhitelist: String = ""
     @ConfigValue @JvmField var pcPartyActionsBlacklist: String = ""
+
+    // Auto Kick List: anyone on this list gets auto-kicked from your party whenever you're leader.
+    // Manage via /fm kicklist or /fmcmd kicklist add|remove|list.
+    @ConfigValue @JvmField var pcKickListEnabled: Boolean = false
+    @ConfigValue @JvmField var pcKickList: String = ""
 
     // manual loot/profit tracker (in-inventory panel, Dungeon Hub only)
     @ConfigValue @JvmField var lootTrackerEnabled: Boolean = false
@@ -541,6 +564,7 @@ object FishSettings {
     /** Extra multiplier (0-100%) on the fill alpha, on top of the fill colour's own alpha. */
     @ConfigValue @JvmField var blockOverlayOpacity: Int = 100
     @ConfigValue @JvmField var blockOverlayPhase: Boolean = false
+    @ConfigValue @JvmField var blockOverlayOutlineThickness: Double = 0.02
 
     // Wither ESP (F7)
     @ConfigValue @JvmField var witherEspEnabled: Boolean = false
@@ -873,6 +897,7 @@ object FishSettings {
     @ConfigValue @JvmField var slayerSpawnHudX: Int = 10
     @ConfigValue @JvmField var slayerSpawnHudY: Int = 140
     @ConfigValue @JvmField var slayerSpawnHudScale: Double = 1.0
+    @ConfigValue @JvmField var slayerSpawnOpacity: Int = 0
 
     // Slayer Stats HUD
     @ConfigValue @JvmField var slayerStatsHudEnabled: Boolean = false
@@ -880,7 +905,7 @@ object FishSettings {
     @ConfigValue @JvmField var slayerStatsShowKills: Boolean = true
     @ConfigValue @JvmField var slayerStatsShowXpHr: Boolean = true
     @ConfigValue @JvmField var slayerStatsShowKillsHr: Boolean = true
-    @ConfigValue @JvmField var slayerStatsBackground: Boolean = true
+    @ConfigValue @JvmField var slayerStatsOpacity: Int = 50
     @ConfigValue @JvmField var slayerStatsHudX: Int = 10
     @ConfigValue @JvmField var slayerStatsHudY: Int = 170
     @ConfigValue @JvmField var slayerStatsHudScale: Double = 1.0
@@ -897,6 +922,7 @@ object FishSettings {
     @ConfigValue @JvmField var slayerTimerHudX: Int = 10
     @ConfigValue @JvmField var slayerTimerHudY: Int = 255
     @ConfigValue @JvmField var slayerTimerHudScale: Double = 1.0
+    @ConfigValue @JvmField var slayerTimerOpacity: Int = 0
 
     // Profit Tracker (drop value + coins/hr) — SkyHanni-style, prices real drops.
     // Kept per (slayer type + tier), like SkyHanni. Price source = the shared trackerPriceModeEnum.
@@ -905,7 +931,7 @@ object FishSettings {
     @ConfigValue @JvmField var slayerProfitLines: Int = 10
     /** Idle seconds before the tracker pauses AND rewinds its clock by this much (SkyHanni afkTimeout). */
     @ConfigValue @JvmField var slayerProfitIdleSeconds: Int = 60
-    @ConfigValue @JvmField var slayerProfitBackground: Boolean = true
+    @ConfigValue @JvmField var slayerProfitOpacity: Int = 56
     @ConfigValue @JvmField var slayerProfitHudX: Int = 10
     @ConfigValue @JvmField var slayerProfitHudY: Int = 300
     @ConfigValue @JvmField var slayerProfitHudScale: Double = 1.0

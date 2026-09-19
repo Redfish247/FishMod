@@ -11,15 +11,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import java.util.regex.Pattern
 
-/**
- * Ragnarock Axe state alerts.
- *
- * A successful cast is confirmed by Hypixel's sound packet: the wolf-howl cue at the one magic
- * pitch `1.4920635` (1.8 "mob.wolf.howl") while a Ragnarock Axe is in hand. The wolf-howl SoundEvent
- * constant was dropped in modern mappings and the id Hypixel's 1.8→modern translation lands on is
- * unreliable, so we match on the pitch + held item + skyblock, which is already a unique-enough
- * signature. Cancellation is caught from the chat line.
- */
+/** Cast is confirmed via the wolf-howl sound packet's magic pitch `1.4920635` + held item, since the modern SoundEvent id Hypixel's 1.8 translation lands on is unreliable. */
 object Ragnarock {
 
     private const val CAST_PITCH = 1.4920635f

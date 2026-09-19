@@ -36,6 +36,8 @@ object PetHud {
 
     private val TAB_OVERFLOW_XP: Pattern = Pattern.compile("\\+([\\d.,]+[KMB]?)\\s*XP")
 
+    @JvmStatic fun activePetName(): String? = petName
+
     private var petName: String? = null
     private var petRarity: ItemRarity = ItemRarity.NONE
     private var petLevel = -1

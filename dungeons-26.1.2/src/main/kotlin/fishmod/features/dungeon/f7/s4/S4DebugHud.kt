@@ -1,13 +1,12 @@
 package fishmod.features.dungeon.f7.s4
 
-import config.practical.hud.HUDComponent
+import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.Constants
 import fishmod.utils.config.values.Floor7
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-/** Optional S4 state table: name, S4 contributions, and current status per tracked player. */
 object S4DebugHud {
 
     @JvmStatic

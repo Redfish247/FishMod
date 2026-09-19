@@ -13,15 +13,7 @@ import net.minecraft.world.item.equipment.trim.ArmorTrim;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-/**
- * Paints locally-stored item-data overrides onto the {@code DataComponentHolder.get()} read path:
- * armor TRIM (was {@code ItemTrimMixin}) and the ITEM_MODEL id (was {@code ItemModelOverrideMixin},
- * read by vanilla item rendering and by {@link ItemModelBehaviorMixin}). Merged into one
- * {@code @ModifyReturnValue} intercept on the hottest item-data read path — every {@code get()}
- * call on ANY component pays this mixin's cost, so two separate intercepts here would double it
- * for no reason: neither branch depends on the other's result or ordering, they just dispatch on
- * the component type.
- */
+/** Merges the former separate TRIM and ITEM_MODEL intercepts into one, since every {@code get()} call on ANY component pays this mixin's cost and the two branches don't depend on each other. */
 @Mixin(DataComponentHolder.class)
 public interface ItemTrimMixin {
 

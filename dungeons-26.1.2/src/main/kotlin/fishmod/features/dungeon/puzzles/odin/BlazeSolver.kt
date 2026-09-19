@@ -52,7 +52,7 @@ object BlazeSolver {
             ORender.styledBox(aabb, color, style)
             if (FishSettings.blazeLine && index in 1..FishSettings.blazeLineCount) {
                 val prev = blazes[index - 1].boundingBox.inflate(0.5, 1.0, 0.5).move(0.0, -1.0, 0.0).center
-                ORender.line(prev, aabb.center, color)
+                ORender.thickLine(prev, aabb.center, color)
             }
         }
     }

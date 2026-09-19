@@ -1,7 +1,7 @@
 package fishmod.utils.dungeon
 
-import config.practical.hud.HUDComponent
-import config.practical.manager.ConfigValue
+import fishmod.shaded.practicalconfig.hud.HUDComponent
+import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.Constants
 import fishmod.utils.JsonUtility
 import fishmod.utils.Misc
@@ -20,7 +20,11 @@ object Phase {
 
     private val DUMMY_SPLIT = Split("test split", "if this is called idk", "if this is called idk", 43690, 0.0)
 
-    private val FLOOR_SPLITS: HashMap<String, ArrayList<Split>> = JsonUtility.readSplits("/data/splits.json")
+    // Unique filename (not "splits.json") so this can't resolve to blade-addons' own bundled copy of a
+    // near-identical file at the same path — Fabric's merged classloader searches every mod jar, and
+    // whichever copy resolves first "wins"; blade's lacks an "avg" field, silently zeroing every split's
+    // average (see FishEstTotal's identical fix for the same collision).
+    private val FLOOR_SPLITS: HashMap<String, ArrayList<Split>> = JsonUtility.readSplits("/data/fishmod_splits.json")
 
     private const val DUMMY_SIZE = 10
     const val SPLIT_LENGTH: Int = 165

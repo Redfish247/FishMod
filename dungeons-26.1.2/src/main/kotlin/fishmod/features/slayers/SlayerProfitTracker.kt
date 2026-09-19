@@ -17,39 +17,15 @@ import java.util.concurrent.Executors
 import java.util.regex.Pattern
 
 /**
- * Slayer drop-value / coins-per-hour tracker — a close port of SkyHanni's "<Boss> Profit Tracker".
- *
- * Like SkyHanni, one bucket per **slayer type + tier** ("Revenant Horror 5" is separate from
- * "Revenant Horror 4"), and two views switched from the HUD (chat open) or the /fm dropdown:
- *  - **Total**        — persisted to disk, all-time, the default.
- *  - **This Session** — in-memory only, cleared every game launch.
- * Both accumulate at once; a read picks the one named by [FishSettings.slayerProfitDisplayMode].
- *
- * Drops come from the chat lines Hypixel prints — the `RARE DROP! (item)` family and, if Hypixel
- * "Sack Notifications" is on, `+<n> <item>` sack lines (SkyHanni instead diffs the inventory/sacks;
- * client-side without that infra, chat is what we have). Value = `CroesusPrices.price(idFor(name)) ×
- * count`, priced at render time so a price-mode change reprices everything.
- *
- * "Mob Kill Coins" is a synthetic drop row (SkyHanni's `SKYBLOCK_COIN` pseudo-item): small purse
- * *gains* while in the slayer area, each < 100k, summed; its "count" is the number of paying kills.
- *
- * Spawn cost is read, not guessed: the purse charge (−350k cap) right after `SLAYER QUEST STARTED!`,
- * or the `Took <n> coins from your bank for auto-slayer` line. It shows on its own line and is
- * subtracted from profit.
- *
- * `activeMs` accrues only while [SlayerManager.isActiveSlayer]; after
- * [FishSettings.slayerProfitIdleSeconds] with no drop/kill/coin it pauses and rewinds that window so
- * an AFK gap never inflates coins/hr (SkyHanni's `afkTimeout`, default 60s).
- *
- * Left-click a drop row (chat open) to hide it; right-click the title to arm a 3s "click again to
- * reset" that clears the shown view.
+ * Slayer drop-value / coins-per-hour tracker, a close port of SkyHanni's "<Boss> Profit Tracker". Tracks
+ * Total (persisted) and This Session (in-memory) buckets per slayer type+tier in parallel.
  */
 object SlayerProfitTracker {
 
     private const val MAX_TICK_MS = 2_000L
     private const val FILE_PATH = "config/fishmod/slayer_profit.json"
     private const val MOB_COIN_CAP = 100_000L      // reject a single "mob kill" gain >= this
-    private const val SPAWN_COST_CAP = 350_000L    // SkyHanni's coinsCap for one quest-start charge
+    private const val SPAWN_COST_CAP = 350_000L    // cap for one quest-start charge
     private const val QUEST_START_WINDOW_MS = 8_000L
     private const val RESET_CONFIRM_MS = 3_000L
     private const val COINS_ROW = "Mob Kill Coins"

@@ -14,17 +14,6 @@ import net.minecraft.world.InteractionResult
 import net.minecraft.world.level.block.LeverBlock
 import net.minecraft.world.phys.AABB
 
-/**
- * Highlights the four F7/M7 boss levers with a through-walls box so you can
- * spot them before reaching the lever room. Lever positions are hardcoded per section (each section
- * has two candidate spots); the box is drawn on whichever spot actually holds an un-flipped lever
- * and DISAPPEARS the instant it's flicked ([LeverBlock.POWERED] flips), since state is read live.
- *
- * The box traces the lever's real hitbox (its [net.minecraft.world.phys.shapes.VoxelShape] bounds),
- * not the full block cube, so it sits tight on the lever wherever it's mounted.
- *
- * Render-only — it only reads block state and draws; it never edits the world or sends packets.
- */
 object M7LeverWaypoints {
 
     private const val EXPAND = 0.005 // tiny inflate so the box doesn't z-fight the lever

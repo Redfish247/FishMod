@@ -11,25 +11,19 @@ import fishmod.utils.events.Events
 import fishmod.utils.rendering.DrawEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
+import net.fabricmc.fabric.api.event.Event
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.core.component.DataComponents
 import net.minecraft.network.chat.Component
+import net.minecraft.resources.Identifier
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 
-/**
- * In-menu Party Finder helper.
- *
- *  - draws the red Dungeon-Level-Required number and the missing-class letters on each party head
- *  - green-highlights any party head that's still missing YOUR dungeon class ([myClass])
- *  - rewrites each "Name: Class (lvl)" tooltip line with the player's Cata level / secrets / floor PB,
- *    fetched lazily through [HypixelApi] into a session cache, and appends a "Missing: …" line
- *  - auto-kick: while party leader, kicks a joiner whose S+ PB / secrets miss the configured bar
- */
+/** In-menu Party Finder helper: annotates party heads with level/class/PB info fetched via [HypixelApi], and auto-kicks joiners under the configured bar while you're party leader. */
 object PartyFinder {
 
     private val CLASSES = listOf("Archer", "Tank", "Berserk", "Healer", "Mage")
@@ -38,6 +32,9 @@ object PartyFinder {
     private val FLOOR = Pattern.compile("Floor:\\s*(?:Floor\\s+)?(\\w+)")
     private val SELECTED_CLASS = Pattern.compile("Currently Selected:\\s*(\\w+)")
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
+    // Runs after the default phase so other mods' (e.g. SkyHanni's) own "Missing: X" tooltip
+    // line, if any, is already in `lines` by the time we check for a duplicate below.
+    private val TOOLTIP_LAST_PHASE = Identifier.fromNamespaceAndPath("fishmod", "party_finder_tooltip_last")
 
     /** Last "Currently Selected: X" seen in the Catacombs Gate menu — seeds "Auto" my-class. */
     @Volatile private var capturedClass: String? = null
@@ -57,7 +54,8 @@ object PartyFinder {
     fun init() {
         DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y -> onSlotBefore(ctx, stack, x, y) }
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y -> onSlot(ctx, stack, x, y) }
-        ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines -> onTooltip(stack, lines) })
+        ItemTooltipCallback.EVENT.addPhaseOrdering(Event.DEFAULT_PHASE, TOOLTIP_LAST_PHASE)
+        ItemTooltipCallback.EVENT.register(TOOLTIP_LAST_PHASE, ItemTooltipCallback { stack, _, _, lines -> onTooltip(stack, lines) })
         ClientTickEvents.END_CLIENT_TICK.register { captureSelectedClass() }
 
         Events.ON_GAME_MESSAGE.register { text ->
@@ -312,7 +310,7 @@ object PartyFinder {
             lines[i] = Component.literal(" §b$name: §e$cls ${classColor(lvl)}$lvl${statsFor(name, floor, master)}")
         }
 
-        if (FishSettings.pfTooltipMissingList) {
+        if (FishSettings.pfTooltipMissingList && lines.none { COLOR.replace(it.string, "").trimStart().startsWith("Missing:") }) {
             val missing = CLASSES.filter { it !in present }
             if (missing.isNotEmpty()) {
                 val mine = myClass()

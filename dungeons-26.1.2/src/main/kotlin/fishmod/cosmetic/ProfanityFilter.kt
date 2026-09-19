@@ -1,21 +1,9 @@
 package fishmod.cosmetic
 
-/**
- * Client-side bad-word filter for cosmetic text (custom nicks + item names). It censors banned
- * words in the VISIBLE text of a Minecraft-formatted string (codes like `&a`, `§l` and
- * `&#rrggbb` are preserved) and is robust to the usual evasions: leetspeak (`n1gg3r`),
- * separators between letters (`f-u-c-k`) and padded letters (`shiiit`).
- *
- * Used in both directions: our own nick/item names are censored before they're shown or uploaded,
- * and other players' incoming nicks/item names are censored before they're displayed locally.
- */
+/** Censors banned words in cosmetic text while preserving Minecraft color codes; robust to leetspeak/separator/padding evasions. */
 object ProfanityFilter {
 
-    /**
-     * Banned words as canonical de-leeted, run-collapsed base forms (see [collapse]). The
-     * list targets unambiguous slurs/profanity; short words that collide with normal text (e.g.
-     * "ass") are intentionally left out to avoid false positives in legitimate names.
-     */
+    /** Canonical de-leeted base forms (see [collapse]); short words that collide with normal names (e.g. "ass") are excluded. */
     private val RAW_WORDS = arrayOf(
         "hitler", "nazi",
         "fuck", "fuk", "fuq", "motherfucker", "fucker",

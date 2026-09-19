@@ -1,6 +1,6 @@
 package fishmod.features.dungeon.f7
 
-import config.practical.hud.HUDComponent
+import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.Constants
 import fishmod.utils.Location
 import fishmod.utils.config.values.Floor7
@@ -8,7 +8,6 @@ import fishmod.utils.dungeon.Phase
 import fishmod.utils.rendering.RenderUtils
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Goldor / terminals tick timer (3-tick cycle, optional tick-up). */
 object GoldorTickTimer {
 
     private val timer = TickTimer()

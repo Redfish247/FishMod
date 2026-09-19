@@ -19,7 +19,13 @@ object TPMazeSolver {
     private var best: BlockPos? = null
 
     fun onRoomEnter(room: ORoom?) {
-        if (room?.data?.name == "Teleport Maze")
+        // OdinScan re-fires room-enter on every map-tile/clay re-key, which happens repeatedly
+        // while hopping around inside the maze itself. Re-anchoring tpPads on those repeats (vs.
+        // only the first real entry) can shift the coordinate frame if the rescan reports a
+        // slightly different clayPos, desyncing `visited` from the freshly computed pads and
+        // making already-visited portals look unvisited again. Only anchor once per maze visit;
+        // reset() re-arms this for the next dungeon run.
+        if (room?.data?.name == "Teleport Maze" && tpPads.isEmpty())
             tpPads = endPortalFrameLocations.map { room.getRealCoords(it) }
     }
 
@@ -81,6 +87,7 @@ object TPMazeSolver {
     }
 
     fun reset() {
+        tpPads = listOf()
         correctPortals = listOf()
         visited.clear()
         best = null

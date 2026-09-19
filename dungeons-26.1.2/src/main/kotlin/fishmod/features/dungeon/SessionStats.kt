@@ -150,7 +150,7 @@ object SessionStats {
         }
 
         Events.ON_LOCATION_CHANGE.register { _ ->
-            havePos = false // recalibrate movement baseline
+            havePos = false
             false
         }
 

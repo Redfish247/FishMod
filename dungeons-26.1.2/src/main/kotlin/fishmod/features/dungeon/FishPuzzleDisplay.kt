@@ -5,8 +5,8 @@ import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.events.Events
-import config.practical.hud.HUDComponent
-import config.practical.manager.ConfigValue
+import fishmod.shaded.practicalconfig.hud.HUDComponent
+import fishmod.shaded.practicalconfig.manager.ConfigValue
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor

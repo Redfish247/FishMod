@@ -20,9 +20,11 @@ object BlockOverlay {
     @JvmStatic
     fun init() {
         RenderingEvents.GIZMO.register { _ -> if (!FishSettings.blockOverlayPhase) renderGizmo() }
-        // Through-walls: fills on the QUADS layer, outlines on the DEBUG_LINES layer — never mix.
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> if (FishSettings.blockOverlayPhase) renderNoDepth(m, vc, fill = true) }
-        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc -> if (FishSettings.blockOverlayPhase) renderNoDepth(m, vc, fill = false) }
+        // Through-walls: outline is a thin filled box (see RenderUtils.renderThickOutline), so it
+        // must share the QUADS layer with the fill, not the DEBUG_LINES layer.
+        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
+            if (FishSettings.blockOverlayPhase) { renderNoDepth(m, vc, fill = true); renderNoDepth(m, vc, fill = false) }
+        }
     }
 
     /** The block the crosshair is on, boxed to its real shape, or null if nothing to draw. */
@@ -47,11 +49,8 @@ object BlockOverlay {
     private fun renderGizmo() {
         val box = targetBox() ?: return
         val mode = FishSettings.blockOverlayMode // 0 outline, 1 fill, 2 filled outline
-        RenderUtils.gizmoBox(
-            box,
-            if (mode != 0) fillArgb() else 0,
-            if (mode != 1) FishSettings.blockOverlayOutlineColor else 0,
-        )
+        if (mode != 0) RenderUtils.gizmoBox(box, fillArgb(), 0)
+        if (mode != 1) RenderUtils.gizmoThickOutline(box, FishSettings.blockOverlayOutlineColor, FishSettings.blockOverlayOutlineThickness)
     }
 
     private fun renderNoDepth(matrices: PoseStack, vc: VertexConsumer, fill: Boolean) {
@@ -60,7 +59,7 @@ object BlockOverlay {
         if (fill) {
             if (mode != 0) RenderUtils.renderFilled(matrices, vc, box, RenderUtils.toFloats(fillArgb()))
         } else {
-            if (mode != 1) RenderUtils.renderOutline(matrices, vc, box, RenderUtils.toFloats(FishSettings.blockOverlayOutlineColor))
+            if (mode != 1) RenderUtils.renderThickOutline(matrices, vc, box, RenderUtils.toFloats(FishSettings.blockOverlayOutlineColor), FishSettings.blockOverlayOutlineThickness)
         }
     }
 }

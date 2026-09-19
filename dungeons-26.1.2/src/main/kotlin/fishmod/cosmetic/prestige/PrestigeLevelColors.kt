@@ -9,18 +9,8 @@ import java.util.Optional
 
 /**
  * Re-skins the Hypixel SkyBlock level badge — the leading "[123]" on player nametags and tab-list
- * entries — with a level-driven colour progression instead of Hypixel's own steps.
- *
- * 0–300: 15 solid tiers of width 20, each the vanilla §-colour it is named after.
- * 300–700: 20 three-stop (A→B→C) gradient tiers of width 20, optionally animated.
- * Past 700 the final tier holds.
- *
- * Tier table is the palette agreed with Eli (see Obsidian: "Prestige Colors Addon (standalone)").
- * Two readings that the spec left implicit:
- *   - gradient stop "Pink" uses a real pastel pink (0xFFA6C9), not §d, so "Ender Pastel" reads
- *     pink→purple→light-purple rather than repeating §d twice.
- *   - gradient stop "Green" (Radioactive Slime / Forest Shadow) uses a mid green (0x22AA22),
- *     distinct from the "Lime" (§a) and "Dark Green" (§2) solid tiers.
+ * entries — with a level-driven colour progression: 15 solid tiers (0-300), then 20 three-stop
+ * gradient tiers (300-700, optionally animated), holding at the final tier past 700.
  */
 object PrestigeLevelColors {
 
@@ -139,11 +129,7 @@ object PrestigeLevelColors {
         else lerp(t.b, t.c, smoothstep((f - 0.5f) / 0.5f))
     }
 
-    /**
-     * Seamless looping colour ramp A→B→C→B→A over [p] mod 1, smoothstep on each quarter. Because
-     * the ends meet (p and p+1 both give A) a phase that drifts with time slides the band along the
-     * text with no jump — a fade, not a flash.
-     */
+    /** Seamless looping colour ramp A→B→C→B→A over [p] mod 1, smoothstep on each quarter. */
     fun cyclicGradientRgb(t: Tier, p: Float): Int {
         val x = p - Math.floor(p.toDouble()).toFloat() // wrap into [0,1), negatives included
         return when {
@@ -189,18 +175,11 @@ object PrestigeLevelColors {
         }
     }
 
-    /**
-     * If [c] begins with a "[123]" SkyBlock level badge, return a copy with just the **number**
-     * recoloured by its prestige tier. The brackets, any emblem glyph, and the rest of the name
-     * keep their original styling; otherwise [c] is returned unchanged. Used for nametags + tab.
-     */
+    /** Recolours just the number in a leading "[123]" badge, keeping brackets/rest unchanged. Used for nametags + tab. */
     @JvmStatic
     fun colorizeLevelPrefix(c: Component?): Component? = recolor(c, LEVEL_PREFIX, "prefix")
 
-    /**
-     * Chat lines: recolour the number in the **first** "[123]" badge anywhere in the line (covers
-     * "Guild > [123] Name: ...", "[123] Name: ...", party/co-op/whisper prefixes, etc).
-     */
+    /** Chat lines: recolour the number in the first "[123]" badge anywhere in the line. */
     @JvmStatic
     fun colorizeChatLevel(c: Component?): Component? {
         if (!FishSettings.prestigeColorsChat) return c
@@ -267,6 +246,8 @@ object PrestigeLevelColors {
         val digitSpan = if (FishSettings.prestigeColorsAnimStyle.equals("FLOW", true)) 0.6f else 0.05f
         val n = text.length
         val root: MutableComponent = Component.empty()
+        var runStart = 0
+        var runRgb = -1
         for (i in 0 until n) {
             val spread = if (n <= 1) 0.5f else i.toFloat() / (n - 1)
             val rgb = if (animated) {
@@ -274,11 +255,16 @@ object PrestigeLevelColors {
             } else {
                 gradientRgb(t, spread) // static A→B→C across the number
             }
-            root.append(
-                Component.literal(text[i].toString())
-                    .setStyle(baseStyle.withColor(TextColor.fromRgb(rgb)))
-            )
+            if (runRgb == -1) runRgb = rgb
+            if (rgb != runRgb) {
+                // Flush the run of digits that shared a colour as one sibling — avoids splitting
+                // the number into more components than its actual colour changes require.
+                root.append(Component.literal(text.substring(runStart, i)).setStyle(baseStyle.withColor(TextColor.fromRgb(runRgb))))
+                runStart = i
+                runRgb = rgb
+            }
         }
+        root.append(Component.literal(text.substring(runStart, n)).setStyle(baseStyle.withColor(TextColor.fromRgb(runRgb))))
         return root
     }
 

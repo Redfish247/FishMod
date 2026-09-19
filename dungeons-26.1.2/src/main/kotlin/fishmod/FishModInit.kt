@@ -199,6 +199,9 @@ class FishModInit : ModInitializer {
                 .then(ClientCommands.literal("useblocksize").executes {
                     fishmod.features.dungeon.DungeonWaypoints.toggleUseBlockSize(); Constants.SUCCESS
                 })
+                .then(ClientCommands.literal("pixel").executes {
+                    fishmod.features.dungeon.DungeonWaypoints.togglePixelMode(); Constants.SUCCESS
+                })
                 .then(
                     ClientCommands.literal("offset")
                         .then(
@@ -360,7 +363,7 @@ class FishModInit : ModInitializer {
             line.accept("")
             line.accept("§3§lParty Actions")
             line.accept("§e/pk §f<player> §7— kick  §8·§7  §e/pw §7— warp  §8·§7  §e/pt §f<player> §7— transfer  §8·§7  §e/pp §f<player> §7— promote  §8·§7  §e/pd §f<player> §7— demote")
-            line.accept("§7In party chat: §f.ai §7(allinvite), §f.d §7(disband), §f.kick/.warp(.w)/.transfer(.pt/.ptme)/.promote/.demote")
+            line.accept("§7In party chat: §f.ai §7(allinvite), §f.d §7(disband), §f.kick(.k)/.warp(.w)/.transfer(.pt/.ptme)/.promote(.pro)/.demote(.dem)")
             line.accept("§7Control who else can trigger them: §f/fm §8> §7Party §8> §7Party Commands, and §f/fmcmd whitelist|blacklist add|remove|list")
 
             line.accept("")
@@ -466,6 +469,8 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.f7.MelodyMessage.init()
         fishmod.features.dungeon.PartyFinderStats.init()
         fishmod.features.dungeon.PartyFinder.init()
+        fishmod.features.dungeon.KickListManager.init()
+        fishmod.features.dungeon.PartyMemberTracker.init()
         fishmod.features.dungeon.PartyFinderPanel.init()
         fishmod.features.dungeon.f7.WitherESP.init()
         fishmod.features.dungeon.f7.M7Relics.init()
@@ -534,6 +539,36 @@ class FishModInit : ModInitializer {
                     .then(ClientCommands.literal("aliases").executes {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().setScreen(fishmod.features.CommandAliasesScreen())
+                        }
+                        Constants.SUCCESS
+                    })
+                    .then(ClientCommands.literal("whitelist").executes {
+                        Minecraft.getInstance().schedule {
+                            Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
+                                "Party Action Whitelist", "Who may trigger .kick / .warp / .transfer / .promote / .demote", "+ Add Name",
+                                { fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist },
+                                { v -> fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist = v }
+                            ))
+                        }
+                        Constants.SUCCESS
+                    })
+                    .then(ClientCommands.literal("blacklist").executes {
+                        Minecraft.getInstance().schedule {
+                            Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
+                                "Party Action Blacklist", "Always blocked from triggering party actions", "+ Add Name",
+                                { fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist },
+                                { v -> fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist = v }
+                            ))
+                        }
+                        Constants.SUCCESS
+                    })
+                    .then(ClientCommands.literal("kicklist").executes {
+                        Minecraft.getInstance().schedule {
+                            Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
+                                "Kick List", "Auto-kicked from your party whenever you're leader", "+ Add Name",
+                                { fishmod.utils.config.values.FishSettings.pcKickList },
+                                { v -> fishmod.utils.config.values.FishSettings.pcKickList = v }
+                            ))
                         }
                         Constants.SUCCESS
                     })
@@ -968,6 +1003,26 @@ class FishModInit : ModInitializer {
                                 fishmod.utils.HypixelApi.dumpMemberKeys(mc, ign)
                                 return@executes Constants.SUCCESS
                             }
+                            if (parts[0] == "sklraw") {
+                                val ign = if (parts.size > 1) parts[1] else mc.player?.name?.string
+                                if (ign == null) {
+                                    mc.schedule { Misc.addChatMessage(Component.literal("§cUsage: /fmdbg sklraw <ign>")) }
+                                    return@executes Constants.SUCCESS
+                                }
+                                fishmod.utils.HypixelApi.dumpSkillKeys(mc, ign)
+                                return@executes Constants.SUCCESS
+                            }
+                            if (parts[0] == "skl") {
+                                val ign = if (parts.size > 1) parts[1] else mc.player?.name?.string
+                                if (ign == null) {
+                                    mc.schedule { Misc.addChatMessage(Component.literal("§cUsage: /fmdbg skl <ign>")) }
+                                    return@executes Constants.SUCCESS
+                                }
+                                fishmod.utils.HypixelApi.getByName(mc, ign) { data ->
+                                    mc.schedule { Misc.addChatMessage(Component.literal("§b$ign skillAverage=§f" + data.skillAverage)) }
+                                }
+                                return@executes Constants.SUCCESS
+                            }
                             if (parts[0] == "col") {
                                 val ign = if (parts.size > 1) parts[1] else mc.player?.name?.string
                                 if (ign == null) {
@@ -1099,6 +1154,37 @@ class FishModInit : ModInitializer {
                                                 fishmod.utils.NameList.remove(fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist, name) ?: ""
                                             fishmod.utils.config.FishConfig.manager.save()
                                             Misc.addChatMessage(Component.literal("§7[FM] Removed §f$name §7from the party-action blacklist."))
+                                            Constants.SUCCESS
+                                        }
+                                )
+                            )
+                    )
+                    .then(
+                        ClientCommands.literal("kicklist")
+                            .executes { printNameList("Kick List", fishmod.utils.config.values.FishSettings.pcKickList); Constants.SUCCESS }
+                            .then(ClientCommands.literal("list").executes { printNameList("Kick List", fishmod.utils.config.values.FishSettings.pcKickList); Constants.SUCCESS })
+                            .then(
+                                ClientCommands.literal("add").then(
+                                    ClientCommands.argument("name", StringArgumentType.word()).suggests(playerSuggest)
+                                        .executes { ctx ->
+                                            val name = StringArgumentType.getString(ctx, "name")
+                                            fishmod.utils.config.values.FishSettings.pcKickList =
+                                                fishmod.utils.NameList.add(fishmod.utils.config.values.FishSettings.pcKickList, name) ?: ""
+                                            fishmod.utils.config.FishConfig.manager.save()
+                                            Misc.addChatMessage(Component.literal("§7[FM] Added §f$name §7to the kick list."))
+                                            Constants.SUCCESS
+                                        }
+                                )
+                            )
+                            .then(
+                                ClientCommands.literal("remove").then(
+                                    ClientCommands.argument("name", StringArgumentType.word())
+                                        .executes { ctx ->
+                                            val name = StringArgumentType.getString(ctx, "name")
+                                            fishmod.utils.config.values.FishSettings.pcKickList =
+                                                fishmod.utils.NameList.remove(fishmod.utils.config.values.FishSettings.pcKickList, name) ?: ""
+                                            fishmod.utils.config.FishConfig.manager.save()
+                                            Misc.addChatMessage(Component.literal("§7[FM] Removed §f$name §7from the kick list."))
                                             Constants.SUCCESS
                                         }
                                 )
@@ -1253,13 +1339,14 @@ class FishModInit : ModInitializer {
             { fishmod.features.PbPaceHud.isVisible() }
         )
 
-        fishmod.features.dungeon.map.MapColors.init()
         fishmod.features.dungeon.map.DungeonMap.init()
         fishmod.features.dungeon.map.Scan.register()
         fishmod.features.dungeon.map.Mimic.register()
         fishmod.features.dungeon.map.MapHud.register()
         fishmod.features.dungeon.map.MapInfoHud.register()
         fishmod.features.dungeon.map.MapImageLoader.init()
+        fishmod.features.CrosshairImageLoader.init()
+        fishmod.features.CustomCrosshair.register()
         fishmod.features.dungeon.map.DungeonScore.register()
         fishmod.features.dungeon.map.DoorHighlight.init()
         fishmod.utils.events.Events.ON_GAME_MESSAGE.register { message ->

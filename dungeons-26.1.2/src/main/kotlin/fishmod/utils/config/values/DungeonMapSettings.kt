@@ -1,6 +1,6 @@
 package fishmod.utils.config.values
 
-import config.practical.manager.ConfigValue
+import fishmod.shaded.practicalconfig.manager.ConfigValue
 
 /**
  * Settings for the dungeon-map feature. `mapDoorEsp*` fields are intentionally excluded — that's a
@@ -32,6 +32,12 @@ object DungeonMapSettings {
     @ConfigValue
     @JvmField
     var mapImageSelection: String = ""
+
+    // remembers the last picked image across the master toggle being switched off, so switching it
+    // back on restores the same image instead of leaving mapImageSelection empty (see FishModScreen)
+    @ConfigValue
+    @JvmField
+    var mapImageLastSelection: String = ""
 
     @ConfigValue
     @JvmField
@@ -209,6 +215,11 @@ object DungeonMapSettings {
     @JvmField
     var mapPlayerUglyPointer: Boolean = false
 
+    /** Draws a border around each teammate's map head in their dungeon class color (Archer/Berserk/Healer/Mage/Tank). */
+    @ConfigValue
+    @JvmField
+    var mapPlayerHeadClassOutline: Boolean = false
+
     @ConfigValue
     @JvmField
     var mapPlayerNamesScaling: Float = 0.75f
@@ -280,6 +291,10 @@ object DungeonMapSettings {
     @ConfigValue
     @JvmField
     var mapRareDoorColor: Int = -13479
+
+    @ConfigValue
+    @JvmField
+    var mapRoomColorsEnabled: Boolean = true
 
     @ConfigValue
     @JvmField

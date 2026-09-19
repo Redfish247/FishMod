@@ -14,14 +14,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-/** Custom sidebar scoreboard renderer. Reads the live vanilla scoreboard, buckets each line into
- *  a [ScoreboardSection], drops sections the user disabled, optionally compacts large numbers,
- *  then draws the result in vanilla's own top-right slot -- with the same colors/icons/spacing
- *  vanilla shows, since lines are combined and drawn as real [Component]s (via
- *  [PlayerTeam.formatNameForTeam], vanilla's own prefix+name+suffix combinator) rather than
- *  hand-glued strings, which also sidesteps Hypixel's anti-scrape formatting-code noise inside big numbers.
- *  No drag-to-reorder -- just show/hide and reformat. Vanilla's own draw is cancelled by
- *  `fishmod.mixin.GuiScoreboardMixin`. */
+/** Buckets the live vanilla scoreboard into [ScoreboardSection]s and redraws via [PlayerTeam.formatNameForTeam] (not hand-glued strings) to sidestep Hypixel's anti-scrape formatting noise. */
 object CustomScoreboard {
 
     private const val LINE_H = 9

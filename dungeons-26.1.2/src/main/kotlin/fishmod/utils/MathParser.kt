@@ -32,10 +32,10 @@ object MathParser {
 
         val rpnTokens = toRPN(tokens) ?: return Double.NaN
 
-        try {
-            return parseRPN(rpnTokens)
-        } catch (e: IllegalArgumentException) {
-            return Double.NaN
+        return try {
+            parseRPN(rpnTokens)
+        } catch (e: RuntimeException) {
+            Double.NaN
         }
     }
 
@@ -157,9 +157,9 @@ object MathParser {
             stack.push(token)
             return true
         } else if (token == ")") {
+            if (stack.isEmpty()) return false
             var top = stack.peek()
             while (top != "(") {
-                if (stack.isEmpty()) return false
                 output.add(stack.pop())
                 if (stack.isEmpty()) return false
                 top = stack.peek()
@@ -196,7 +196,6 @@ object MathParser {
         val output = ArrayList<String>()
         var copiedString = string.replace(" ", "")
 
-        // tracks previous token type to disambiguate binary vs unary subtraction
         var wasPrevNum = false
 
         while (copiedString.isNotEmpty()) {

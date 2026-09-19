@@ -12,26 +12,9 @@ import net.minecraft.world.scores.PlayerScoreEntry
 import java.util.regex.Pattern
 
 /**
- * Owns Slayer quest state. Everything else in the package (detector, alerts, timer, stats, HUDs)
- * reads cached fields off this object or reacts to the hooks it fires — nothing else parses the
- * scoreboard or tracks the quest lifecycle.
- *
- * Detection strategy
- * -----------------
- * The authoritative source is Hypixel's own "Slayer Quest" sidebar block, which every SkyBlock
- * mod relies on:
- *
- * ```
- * Slayer Quest
- *  Revenant Horror IV        <- category  (type + tier)
- *  Combat XP: 41%            <- progress  (grinding: % or current/max)
- * ```
- * When the boss is up the progress line becomes `Slay the boss!`, and after it dies `Boss slain!`.
- * Quest start / complete / fail and the boss cocoon are taken from chat because they're exact,
- * one-shot lines that can't bounce like a scoreboard value can.
- *
- * The scoreboard is parsed on a 5-tick cadence (never per frame), only strings that changed are
- * re-classified, and the heavy entity scan lives in [SlayerBossDetector] gated on this state.
+ * Owns Slayer quest state, parsed from Hypixel's "Slayer Quest" sidebar block (category + progress
+ * lines) on a 5-tick cadence; quest start/complete/fail and cocoon come from one-shot chat lines instead
+ * since those can't bounce like a scoreboard value. Everything else in the package reads off this object.
  */
 object SlayerManager {
 
@@ -110,12 +93,8 @@ object SlayerManager {
 
     @JvmStatic fun hasActiveQuest(): Boolean = type != null
 
-    /** A slayer whose spawn zone is a specific named place *within* its island (per Eli's spec,
-     *  2026-09-10), rather than the whole island. [areas] is matched against the scoreboard's own
-     *  area-name line — the Hypixel location *packet* [Location] reads is island-level only, but the
-     *  sidebar's location text is finer-grained and updates as you cross zone boundaries. `null`
-     *  areas means the whole island counts (Voidgloom/The End, Bloodfiend/The Rift, and Tarantula's
-     *  Spider's Den half — see [AREA_RULES]). */
+    /** A slayer whose spawn zone is a specific named place within its island; [areas] is matched against the
+     *  scoreboard's own (finer-grained than [Location]) area-name line. `null` means the whole island counts. */
     private data class AreaRule(val island: Location, val areas: Set<String>?)
 
     private val AREA_RULES: Map<SlayerType, List<AreaRule>> = mapOf(
@@ -145,17 +124,12 @@ object SlayerManager {
         return lines.any { line -> names.any { line.contains(it, ignoreCase = true) } }
     }
 
-    /** True when we're on the right island AND, for a slayer that needs a specific sub-area there,
-     *  the scoreboard's area line currently names it. Refreshed on the same 5-tick scoreboard scan
-     *  as everything else (not read live). Gates the HUDs ([SlayerHuds]) — a false here doesn't
-     *  touch quest/timer/profit state, so tracking keeps running if you step out for a second. */
+    /** True when on the right island (and sub-area, if the slayer needs one). Gates HUD visibility only —
+     *  quest/timer/profit tracking keeps running regardless. */
     @JvmStatic
     fun inCorrectArea(): Boolean = correctArea
 
-    /** Actively grinding/fighting: a live "Slayer Quest" block on the board while in SkyBlock. The
-     *  block is only present during a quest and vanishes on complete/fail, so this is a reliable
-     *  gate for HUD visibility and the stats "active time" clock (paired with idle detection so
-     *  standing at the bank mid-quest still doesn't inflate rates). */
+    /** Actively grinding/fighting: a live "Slayer Quest" block on the board while in SkyBlock. */
     @JvmStatic
     fun isActiveSlayer(): Boolean = hasActiveQuest() && Location.inSkyblock()
 
@@ -463,8 +437,7 @@ object SlayerManager {
 
     // ---------------------------------------------------------------- sidebar read
 
-    /** Color-stripped sidebar rows, top-to-bottom. Mirrors DungeonState's reader: Hypixel puts the
-     *  visible text in the team prefix+suffix, so the score owner token is ignored. */
+    /** Color-stripped sidebar rows, top-to-bottom (mirrors DungeonState's reader). */
     private fun sidebarLines(mc: Minecraft): List<String> {
         val level = mc.level ?: return emptyList()
         val sb = level.scoreboard

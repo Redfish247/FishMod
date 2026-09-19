@@ -12,10 +12,7 @@ import java.net.http.HttpResponse
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
-/** Current SkyBlock mayor for the Custom Scoreboard's "Election" extra. `/resources/skyblock/election`
- *  is one of Hypixel's public "resources" endpoints -- confirmed live, no API key required -- so this
- *  calls api.hypixel.net directly instead of going through FishMod's own proxy. Mayors only change
- *  every few real-world days, so this refreshes hourly. */
+// Current SkyBlock mayor for the Custom Scoreboard's "Election" extra; polls Hypixel's public resources endpoint hourly.
 object ElectionInfo {
 
     private val HTTP: HttpClient = HttpClient.newHttpClient()
@@ -46,8 +43,9 @@ object ElectionInfo {
                     .uri(URI.create("https://api.hypixel.net/v2/resources/skyblock/election"))
                     .header("User-Agent", "Mozilla/5.0")
                     .timeout(Duration.ofSeconds(10)).GET().build()
-                val body = HTTP.send(req, HttpResponse.BodyHandlers.ofString()).body()
-                val root = JsonParser.parseString(body).asJsonObject
+                val resp = HTTP.send(req, HttpResponse.BodyHandlers.ofString())
+                if (resp.statusCode() != 200) { mc.execute { fetchInFlight = false }; return@runAsync }
+                val root = JsonParser.parseString(resp.body()).asJsonObject
                 val mayor = root.getAsJsonObject("mayor")
                 val name = mayor.get("name").asString
                 val perk = mayor.getAsJsonArray("perks").firstOrNull()?.asJsonObject?.get("name")?.asString
