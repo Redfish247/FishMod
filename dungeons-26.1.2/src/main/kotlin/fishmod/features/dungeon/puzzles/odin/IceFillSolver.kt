@@ -30,6 +30,7 @@ object IceFillSolver {
     private val currentPatterns = ArrayList<Vec3>()
     private var scanned = false
     private var attempts = 0
+    private var tickAcc = 0
 
     fun onRoomEnter(room: ORoom?, optimize: Boolean) {
         if (room?.data?.name != "Ice Fill") { reset(); return }
@@ -39,7 +40,9 @@ object IceFillSolver {
 
     fun onTick(optimize: Boolean) {
         if (scanned || OdinScan.currentRoomName != "Ice Fill") return
-        if (attempts++ > 300) { scanned = true; return }
+        if (++tickAcc < 5) return
+        tickAcc = 0
+        if (attempts++ > 60) { scanned = true; return }
         OdinScan.currentRoom?.let { scan(it, optimize) }
     }
 
@@ -75,5 +78,6 @@ object IceFillSolver {
         currentPatterns.clear()
         scanned = false
         attempts = 0
+        tickAcc = 0
     }
 }
