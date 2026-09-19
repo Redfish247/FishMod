@@ -29,10 +29,12 @@ public final class TwitchBridgeClient {
 
 		if (FishSettings.twitchBridgeEnabled && config.autoConnect && !config.channel.isBlank()) {
 			// delay so the game finishes starting first
-			new Thread(() -> {
+			Thread t = new Thread(() -> {
 				sleep(3000);
 				connect(config.channel);
-			}, "twitch-bridge-autoconnect").start();
+			}, "twitch-bridge-autoconnect");
+			t.setDaemon(true);
+			t.start();
 		}
 	}
 

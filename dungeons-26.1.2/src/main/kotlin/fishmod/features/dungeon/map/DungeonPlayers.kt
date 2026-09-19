@@ -145,11 +145,21 @@ object DungeonPlayers {
         }
     }
 
+    @Volatile private var lastRenderHeadDiag = 0L
+    private fun diagRenderHead(t: Throwable) {
+        val now = System.currentTimeMillis()
+        if (now - lastRenderHeadDiag > 3000) {
+            lastRenderHeadDiag = now
+            fishmod.utils.debug.Debug.LOGGER.error("[DungeonPlayers] renderHead failed", t)
+        }
+    }
+
     /** One bad teammate's data (unresolved skin, stale entity ref) must not blank out everyone else's head. */
     private fun safeRenderHead(g: GuiGraphicsExtractor, matrices: org.joml.Matrix3x2fStack, mc: Minecraft, player: DungeonPlayer, renderNames: Boolean) {
         try {
             renderHead(g, matrices, mc, player, renderNames)
         } catch (t: Throwable) {
+            diagRenderHead(t)
         }
     }
 
