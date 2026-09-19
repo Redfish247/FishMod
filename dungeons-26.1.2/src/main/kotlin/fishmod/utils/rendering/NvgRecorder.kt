@@ -222,6 +222,21 @@ object NvgRecorder {
         })
     }
 
+    /** Faux-bold: only "Inter-Regular" is bundled (no bold weight), so this fakes the heavier
+     *  stroke by drawing the glyphs twice with a sub-pixel horizontal offset. */
+    @JvmStatic
+    fun textBold(s: String, x: Float, y: Float, size: Float, color: Int) {
+        record(Runnable {
+            val ctx = NvgContext.get()
+            NanoVG.nvgFontFace(ctx, NvgContext.FONT_NAME)
+            NanoVG.nvgFontSize(ctx, size)
+            NanoVG.nvgTextAlign(ctx, NanoVG.NVG_ALIGN_LEFT or NanoVG.NVG_ALIGN_TOP)
+            NanoVG.nvgFillColor(ctx, argb(color, colorA))
+            NanoVG.nvgText(ctx, x, y, s)
+            NanoVG.nvgText(ctx, x + 0.4f, y, s)
+        })
+    }
+
     /** Text width at a given size, for layout/centering/truncation — must be measured with
      *  NanoVG's own font metrics since it draws with a different font than Minecraft's Font. */
     @JvmStatic

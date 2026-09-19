@@ -27,6 +27,12 @@ public abstract class CosmeticChatMixin {
             if (!real.isEmpty() && out.getString().contains(real))
                 out = NameRewriter.replaceName(out, real, NickState.asComponent());
         }
-        return fishmod.cosmetic.RemoteNicks.apply(out);
+        out = fishmod.cosmetic.RemoteNicks.apply(out);
+        // Prestige Colors: recolour the [level] badge on chat lines
+        if (fishmod.utils.config.values.FishSettings.prestigeColorsEnabled
+                && fishmod.utils.config.values.FishSettings.prestigeColorsChat) {
+            out = fishmod.cosmetic.prestige.PrestigeLevelColors.colorizeChatLevel(out);
+        }
+        return out;
     }
 }

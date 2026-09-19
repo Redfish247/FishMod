@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.features.FishHudEditor
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.data.EntityUtil
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
@@ -164,14 +165,15 @@ object WitherDragons {
         for (d in WitherDragon.real) {
             if (FishSettings.witherDragonsHealth && d.state == WitherDragonState.ALIVE) {
                 d.entity?.let { e ->
-                    RenderUtils.renderText(ctx, m, Component.literal(formatHealth(d.health)),
-                        Vec3(e.x, e.y - 1.0, e.z), 0.05f)
+                    val p = EntityUtil.getLerpedPos(e)
+                    RenderUtils.renderText(ctx, m, formatHealth(d.health),
+                        Vec3(p.x, p.y + 5.0, p.z), 3.0f)
                 }
             }
             if (FishSettings.witherDragonsTimerWorld && d.state == WitherDragonState.SPAWNING && d.timeToSpawn > 0) {
                 RenderUtils.renderText(ctx, m,
-                    Component.literal("§${d.colorCode}${d.name}: ${timerText(d.timeToSpawn)}"),
-                    d.box.center, 0.05f)
+                    Component.literal("${d.name}: ${timerText(d.timeToSpawn)}").withColor(d.rgb),
+                    d.box.center, 2.5f)
             }
         }
     }
@@ -209,9 +211,9 @@ object WitherDragons {
         else -> "${t}t"
     }
 
-    private fun formatHealth(h: Float): String {
+    private fun formatHealth(h: Float): Component {
         val c = when {
-            h >= 750_000_000 -> "§a"; h >= 500_000_000 -> "§e"; h >= 250_000_000 -> "§6"; else -> "§c"
+            h >= 750_000_000 -> 0x55FF55; h >= 500_000_000 -> 0xFFFF55; h >= 250_000_000 -> 0xFFAA00; else -> 0xFF5555
         }
         val s = when {
             h >= 1_000_000_000 -> { val b = h / 1_000_000_000; if (b > 1) "%.1fb".format(b) else "${b.toInt()}b" }
@@ -219,7 +221,7 @@ object WitherDragons {
             h >= 1_000 -> "${(h / 1_000).toInt()}k"
             else -> "${h.toInt()}"
         }
-        return c + s
+        return Component.literal(s).withColor(c)
     }
 
     /** Arrow-lead ballistic solve for the ice-spray aim point. */

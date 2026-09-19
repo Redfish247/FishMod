@@ -127,6 +127,15 @@ object PartyFinder {
         else -> 0
     }
 
+    private fun mpReqFor(clazz: String): Int = when (clazz.lowercase()) {
+        "archer"  -> FishSettings.pfAutoKickArcherMp
+        "berserk" -> FishSettings.pfAutoKickBerserkMp
+        "healer"  -> FishSettings.pfAutoKickHealerMp
+        "mage"    -> FishSettings.pfAutoKickMageMp
+        "tank"    -> FishSettings.pfAutoKickTankMp
+        else -> 0
+    }
+
     private fun finishAutoKick(name: String, key: String, reasons: List<String>) {
         if (reasons.isEmpty() || !kicked.add(key)) return
         Minecraft.getInstance().execute {
@@ -146,10 +155,12 @@ object PartyFinder {
     private fun evaluate(d: HypixelApi.DungeonData, clazz: String? = null): List<String> {
         val reasons = ArrayList<String>()
 
-        // per-class minimum Catacombs level (0 = off; skip when the API had no data)
+        // per-class minimum Catacombs level / Magical Power (0 = off; skip when the API had no data)
         clazz?.let { c ->
             val minCata = cataReqFor(c)
             if (minCata > 0 && d.cataLevel in 1 until minCata) reasons.add("$c Cata(${d.cataLevel}/$minCata)")
+            val minMp = mpReqFor(c)
+            if (minMp > 0 && d.magicalPower in 1 until minMp) reasons.add("$c MP(${d.magicalPower}/$minMp)")
         }
 
         val floor = FishSettings.pfAutoKickFloor.coerceIn(1, 7)

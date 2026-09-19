@@ -264,7 +264,7 @@ object CompactTab {
             var r = 0
             while (r < entries.size && r < rows) {
                 val e = entries[r]
-                val dn = e.tabListDisplayName
+                val dn = fishmod.cosmetic.prestige.PrestigeLevelColors.colorizeLevelPrefix(e.tabListDisplayName)
                 if (dn == null) {
                     r++
                     continue

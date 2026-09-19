@@ -64,6 +64,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     private var dragTabMouseY = 0
     private var dragTabRightClick = false
 
+    // Cascading curtain open/close animation. Timestamp-driven (not frame-counted) since this is a
+    // NanoVG immediate-mode renderer and duration/stagger are user-configurable at runtime.
+    private val screenOpenTime = System.currentTimeMillis()
+    private var closing = false
+    private var closeStartTime = 0L
+    private var closeFinalized = false
+
     init {
         buildCategories()
         applySavedColumnOrder()
@@ -91,6 +98,29 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val visuals = Column("Visuals & Rendering", "eye")
         val cosmetics = Column("Cosmetics", "hanger")
 
+        run {
+            val f = Feature("UI Customization", null, null)
+            f.sub.add(SubcategoryHeader("Background"))
+            f.sub.add(DropdownSetting("Background Preset", "", arrayOf("Dark Glass", "Deep Blue", "Crimson", "Violet", "Custom"),
+                { FishSettings.fmBgPreset },
+                { v -> FishSettings.fmBgPreset = v }))
+            f.sub.add(ColorPickerSetting("Custom Color", "", FishSettings::fmBgCustomColor).gatedBy { FishSettings.fmBgPreset == "Custom" })
+            f.sub.add(SliderIntSetting("Background Alpha %", "0% invisible - 100% solid", FishSettings::fmBgAlpha, 0, 100))
+            f.sub.add(SubcategoryHeader("Accent"))
+            f.sub.add(ColorPickerSetting("Accent Color", "", FishSettings::fmButtonColor))
+            f.sub.add(SliderIntSetting("Accent Opacity %", "0% invisible - 100% solid", FishSettings::fmButtonAlpha, 0, 100))
+            f.sub.add(SubcategoryHeader("Buttons"))
+            f.sub.add(ColorPickerSetting("Button Color", "Tint behind an enabled row, e.g. Door Colors", FishSettings::fmRowColor))
+            f.sub.add(SliderIntSetting("Button Opacity %", "0% invisible - 100% solid", FishSettings::fmRowAlpha, 0, 100))
+            f.sub.add(SubcategoryHeader("Cascade Animation"))
+            f.sub.add(ToggleSetting("Menu Animations", "Off = the menu just appears; no cascade / expand / toggle slides", FishSettings::fmAnimations))
+            f.sub.add(SliderIntSetting("Drop Duration (ms)", "200 snappy - 1200 dramatic", FishSettings::fmDropDurationMs, 200, 1200, 25).gatedBy { FishSettings.fmAnimations })
+            f.sub.add(SliderIntSetting("Stagger Delay (ms)", "Extra delay per column, 0 = all at once", FishSettings::fmStaggerDelayMs, 0, 120, 5).gatedBy { FishSettings.fmAnimations })
+            f.sub.add(DropdownSetting("Exit Style", "How columns animate on close", arrayOf("Floor Fall", "Reverse Curtain"),
+                { FishSettings.fmExitStyle },
+                { v -> FishSettings.fmExitStyle = v }).gatedBy { FishSettings.fmAnimations })
+            general.features.add(f)
+        }
         run {
             val f = Feature("Mod Prefix", FishSettings::modPrefixEnabled)
             f.sub.add(InputSetting("Prefix", "",
@@ -153,6 +183,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Chat Search", "", FishSettings::chatSearch))
             f.sub.add(SubcategoryHeader("Bind \"FishMod: Toggle Chat Search\" in Options → Controls; press it while chat is open to show the search field")
                 .gatedBy { FishSettings.chatSearch })
+            f.sub.add(SubcategoryHeader("Chat Peek"))
+            f.sub.add(ToggleSetting("Chat Peek", "Hold the bound key to pull up chat fully opaque and scroll through it, without opening the chat box", FishSettings::chatPeek))
+            f.sub.add(KeybindSetting("Peek Key (hold)", "Unbound by default", { fishmod.utils.Keybinds.chatPeek }).gatedBy { FishSettings.chatPeek })
             f.sub.add(SubcategoryHeader("Chat Filter"))
             f.sub.add(ToggleSetting("Chat Filter", "", FishSettings::chatFilterEnabled))
             f.sub.add(ToggleSetting("Kill Combo", "", FishSettings::cfKillCombo).gatedBy { FishSettings.chatFilterEnabled })
@@ -183,6 +216,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Cancelled Alert", "Title when a cast is interrupted", FishSettings::ragnarockCancelAlert))
             f.sub.add(ToggleSetting("Announce Cast to Party", "", FishSettings::ragnarockAnnounceParty))
             f.sub.add(ToggleSetting("Strength Timer", "Moveable HUD countdown of the 10s Ragnarock buff (edit position in the HUD editor)", FishSettings::ragnarockTimer))
+            f.sub.add(ToggleSetting("P5 Rag", "Title \"Rag\" when Wither King's pre-fight taunt appears", FishSettings::p5RagEnabled))
             general.features.add(f)
         }
         run {
@@ -393,7 +427,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             // Key Notifier + Room Timer — two small, unrelated on-screen-title alerts, one card.
-            val f = Feature("Key & Room Timer", null, null)
+            // Master toggle mirrors "either sub-feature on"; flipping it drives both at once.
+            val f = Feature("Key & Room Timer",
+                { Dungeons.enableKeyNotifier || FishSettings.roomTimerEnabled },
+                { v -> Dungeons.enableKeyNotifier = v; FishSettings.roomTimerEnabled = v })
             f.sub.add(SubcategoryHeader("Key Notifier"))
             f.sub.add(ToggleSetting("Key Notifier", "", Dungeons::enableKeyNotifier))
             f.sub.add(ToggleSetting("Title", "", FishSettings::keyNotifierTitle).gatedBy { Dungeons.enableKeyNotifier })
@@ -411,8 +448,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
         run {
+            val f = Feature("Waypoints", FishSettings::dungeonWaypointsEnabled)
+            f.sub.add(SubcategoryHeader("Master toggle for /fm wp — placed boxes, titles and route lines"))
+            dungeon.features.add(f)
+        }
+        run {
             val f = Feature("Leap", FishSettings::leapMenuEnabled)
-            f.sub.add(SubcategoryHeader("── Menu (custom 2x2 Spirit Leap GUI, click a cell or press 1-4) ──"))
+            f.sub.add(SubcategoryHeader("Menu (custom 2x2 Spirit Leap GUI, click a cell or press 1-4)"))
             f.sub.add(ToggleSetting("Map View", "Show the dungeon map instead — click a teammate's head to leap (1-4 still work)", FishSettings::leapMenuMap))
             f.sub.add(ToggleSetting("Map View: Only After BR", "Map view stays off until the blood door is opened", FishSettings::leapMenuMapAfterBR).gatedBy { FishSettings.leapMenuMap })
             f.sub.add(SliderIntSetting("Menu Scale %", "", FishSettings::leapMenuScale, 40, 220))
@@ -426,7 +468,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 { v -> FishSettings.leapMenuSort = arrayOf("Class Order", "Name A-Z", "Odin Sorting").indexOf(v).coerceAtLeast(0) }))
             f.sub.add(InputSetting("Class Order", "Comma-separated: MAGE,BERSERK,ARCHER,HEALER,TANK",
                 { FishSettings.leapMenuClassOrder }, { v -> FishSettings.leapMenuClassOrder = v }).gatedBy { FishSettings.leapMenuSort == 0 })
-            f.sub.add(SubcategoryHeader("── Message ──"))
+            f.sub.add(SubcategoryHeader("Message"))
             f.sub.add(ToggleSetting("Leap Message", "", Dungeons::enableLeapMessages))
             f.sub.add(LabelSetting("{name} target  {class} class", "{c} class letter  ·  & = colours")
                 .gatedBy { Dungeons.enableLeapMessages })
@@ -598,6 +640,33 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("To Party", "", FishSettings::simonSaysPartyChat))
             f.sub.add(ToggleSetting("Fail Msg", "", FishSettings::simonSaysFailEnabled))
             f.sub.add(InputSetting("Fail Text", "", FishSettings::simonSaysFailMessage).gatedBy { FishSettings.simonSaysFailEnabled })
+
+            f.sub.add(SubcategoryHeader("HUD Text (shown when watching someone else's device)"))
+            f.sub.add(ToggleSetting("Show Progress", "", FishSettings::ssProgressShowProgress))
+            f.sub.add(InputSetting("Progress Text", "\"(n)\" is replaced by the current round", FishSettings::ssProgressProgressText).gatedBy { FishSettings.ssProgressShowProgress })
+            f.sub.add(ColorPickerSetting("Progress Color", "", FishSettings::ssProgressProgressColor).gatedBy { FishSettings.ssProgressShowProgress })
+            f.sub.add(ToggleSetting("Show Completed", "", FishSettings::ssProgressShowCompleted))
+            f.sub.add(InputSetting("Completed Text", "", FishSettings::ssProgressCompletedText).gatedBy { FishSettings.ssProgressShowCompleted })
+            f.sub.add(ColorPickerSetting("Completed Color", "", FishSettings::ssProgressCompletedColor).gatedBy { FishSettings.ssProgressShowCompleted })
+            f.sub.add(ToggleSetting("Show Reset", "", FishSettings::ssProgressShowReset))
+            f.sub.add(InputSetting("Reset Text", "", FishSettings::ssProgressResetText).gatedBy { FishSettings.ssProgressShowReset })
+            f.sub.add(ColorPickerSetting("Reset Color", "", FishSettings::ssProgressResetColor).gatedBy { FishSettings.ssProgressShowReset })
+
+            f.sub.add(SubcategoryHeader("Round 1"))
+            f.sub.add(ToggleSetting("Announce", "", FishSettings::simon1Enabled))
+            f.sub.add(InputSetting("Message", "", FishSettings::simon1Message).gatedBy { FishSettings.simon1Enabled })
+            f.sub.add(SubcategoryHeader("Round 2"))
+            f.sub.add(ToggleSetting("Announce", "", FishSettings::simon2Enabled))
+            f.sub.add(InputSetting("Message", "", FishSettings::simon2Message).gatedBy { FishSettings.simon2Enabled })
+            f.sub.add(SubcategoryHeader("Round 3"))
+            f.sub.add(ToggleSetting("Announce", "", FishSettings::simon3Enabled))
+            f.sub.add(InputSetting("Message", "", FishSettings::simon3Message).gatedBy { FishSettings.simon3Enabled })
+            f.sub.add(SubcategoryHeader("Round 4"))
+            f.sub.add(ToggleSetting("Announce", "", FishSettings::simon4Enabled))
+            f.sub.add(InputSetting("Message", "", FishSettings::simon4Message).gatedBy { FishSettings.simon4Enabled })
+            f.sub.add(SubcategoryHeader("Round 5"))
+            f.sub.add(ToggleSetting("Announce", "", FishSettings::simon5Enabled))
+            f.sub.add(InputSetting("Message", "", FishSettings::simon5Message).gatedBy { FishSettings.simon5Enabled })
             solvers.features.add(f)
         }
         dungeon.features.add(Feature("Class Colored Boots", FishSettings::classColoredBootsEnabled))
@@ -668,6 +737,26 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             val f = Feature("Nametag Stats", FishSettings::nametagStatsEnabled)
             f.sub.add(SubcategoryHeader("Networth under every player; Cata level + secret avg in the Dungeon Hub"))
             f.sub.add(ToggleSetting("Show Own", "", FishSettings::nametagStatsShowSelf))
+            cosmetics.features.add(f)
+        }
+        run {
+            val f = Feature("Prestige Colors", FishSettings::prestigeColorsEnabled)
+            f.sub.add(SubcategoryHeader("Recolors Hypixel's SkyBlock [level] badge by level"))
+            f.sub.add(SubcategoryHeader("0–300: 15 solid tiers · 300–700: 20 gradient tiers"))
+            f.sub.add(ToggleSetting("On Nametags", "", FishSettings::prestigeColorsNametags))
+            f.sub.add(ToggleSetting("In Tab List", "", FishSettings::prestigeColorsTab))
+            f.sub.add(ToggleSetting("In Chat", "", FishSettings::prestigeColorsChat))
+            f.sub.add(ToggleSetting("Gradient Tiers (300+)", "", FishSettings::prestigeColorsGradientTiers))
+            f.sub.add(ToggleSetting("Animate Gradients", "", FishSettings::prestigeColorsAnimated)
+                .gatedBy { FishSettings.prestigeColorsGradientTiers })
+            f.sub.add(SliderDoubleSetting("Animation Speed", "",
+                { FishSettings.prestigeColorsAnimSpeed },
+                { v -> FishSettings.prestigeColorsAnimSpeed = v }, 0.0, 3.0)
+                .gatedBy { FishSettings.prestigeColorsGradientTiers && FishSettings.prestigeColorsAnimated })
+            f.sub.add(DropdownSetting("Animation Style", "", arrayOf("FADE", "FLOW"),
+                { FishSettings.prestigeColorsAnimStyle },
+                { v -> FishSettings.prestigeColorsAnimStyle = v })
+                .gatedBy { FishSettings.prestigeColorsGradientTiers && FishSettings.prestigeColorsAnimated })
             cosmetics.features.add(f)
         }
         run {
@@ -805,18 +894,23 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(SubcategoryHeader("Archer"))
             f.sub.add(SliderIntSetting("Min Cata", "Kick an Archer below this Catacombs level", FishSettings::pfAutoKickArcherCata, 0, 60))
             f.sub.add(SliderIntSetting("Min SB", "Kick an Archer below this SkyBlock level", FishSettings::pfAutoKickArcherSb, 0, 500, 5))
+            f.sub.add(SliderIntSetting("Min MP", "Kick an Archer below this Magical Power", FishSettings::pfAutoKickArcherMp, 0, 1500, 25))
             f.sub.add(SubcategoryHeader("Berserk"))
             f.sub.add(SliderIntSetting("Min Cata", "Kick a Berserk below this Catacombs level", FishSettings::pfAutoKickBerserkCata, 0, 60))
             f.sub.add(SliderIntSetting("Min SB", "Kick a Berserk below this SkyBlock level", FishSettings::pfAutoKickBerserkSb, 0, 500, 5))
+            f.sub.add(SliderIntSetting("Min MP", "Kick a Berserk below this Magical Power", FishSettings::pfAutoKickBerserkMp, 0, 1500, 25))
             f.sub.add(SubcategoryHeader("Healer"))
             f.sub.add(SliderIntSetting("Min Cata", "Kick a Healer below this Catacombs level", FishSettings::pfAutoKickHealerCata, 0, 60))
             f.sub.add(SliderIntSetting("Min SB", "Kick a Healer below this SkyBlock level", FishSettings::pfAutoKickHealerSb, 0, 500, 5))
+            f.sub.add(SliderIntSetting("Min MP", "Kick a Healer below this Magical Power", FishSettings::pfAutoKickHealerMp, 0, 1500, 25))
             f.sub.add(SubcategoryHeader("Mage"))
             f.sub.add(SliderIntSetting("Min Cata", "Kick a Mage below this Catacombs level", FishSettings::pfAutoKickMageCata, 0, 60))
             f.sub.add(SliderIntSetting("Min SB", "Kick a Mage below this SkyBlock level", FishSettings::pfAutoKickMageSb, 0, 500, 5))
+            f.sub.add(SliderIntSetting("Min MP", "Kick a Mage below this Magical Power", FishSettings::pfAutoKickMageMp, 0, 1500, 25))
             f.sub.add(SubcategoryHeader("Tank"))
             f.sub.add(SliderIntSetting("Min Cata", "Kick a Tank below this Catacombs level", FishSettings::pfAutoKickTankCata, 0, 60))
             f.sub.add(SliderIntSetting("Min SB", "Kick a Tank below this SkyBlock level", FishSettings::pfAutoKickTankSb, 0, 500, 5))
+            f.sub.add(SliderIntSetting("Min MP", "Kick a Tank below this Magical Power", FishSettings::pfAutoKickTankMp, 0, 1500, 25))
             party.features.add(f)
         }
 
@@ -910,6 +1004,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Scrollable Tooltips", "", FishSettings::tooltipScrollEnabled))
             f.sub.add(SliderIntSetting("Tooltip Scale %", "", FishSettings::tooltipScrollScale, 30, 150, 5).gatedBy { FishSettings.tooltipScrollEnabled })
             f.sub.add(SliderIntSetting("Scroll Speed", "", FishSettings::tooltipScrollSpeed, 1, 10).gatedBy { FishSettings.tooltipScrollEnabled })
+            hud.features.add(f)
+        }
+        run {
+            val f = Feature("Auto BIN Price", FishSettings::auctionPriceAutofillEnabled)
+            f.sub.add(SubcategoryHeader("Prefills the AH \"Create Auction\" price field with item value minus a discount"))
+            f.sub.add(SliderIntSetting("Discount %", "", FishSettings::auctionAutofillPercent, 0, 50))
             hud.features.add(f)
         }
         run {
@@ -1198,6 +1298,25 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeonMap.features.add(f)
         }
         run {
+            val f = Feature("Background Image", { fishmod.utils.config.values.DungeonMapSettings.mapImageSelection.isNotEmpty() },
+                { v -> fishmod.utils.config.values.DungeonMapSettings.mapImageSelection = if (v) fishmod.utils.config.values.DungeonMapSettings.mapImageSelection else "" })
+            f.sub.add(ButtonSetting("Open Images Folder", "") {
+                try {
+                    fishmod.features.dungeon.map.MapImageLoader.init()
+                    net.minecraft.util.Util.getPlatform().openUri(fishmod.features.dungeon.map.MapImageLoader.getImagesPath().toUri())
+                } catch (ignored: Exception) {}
+            })
+            val imageNames: Array<String> = run {
+                val names = fishmod.features.dungeon.map.MapImageLoader.getImageNames()
+                (if (names.isEmpty()) listOf("No image") else names).toTypedArray()
+            }
+            f.sub.add(DropdownSetting("Image", "", imageNames,
+                { if (fishmod.utils.config.values.DungeonMapSettings.mapImageSelection in imageNames) fishmod.utils.config.values.DungeonMapSettings.mapImageSelection else imageNames[0] },
+                { v -> fishmod.utils.config.values.DungeonMapSettings.mapImageSelection = v }))
+            f.sub.add(SliderIntSetting("Image Alpha", "", fishmod.utils.config.values.DungeonMapSettings::mapImageAlpha, 0, 255))
+            dungeonMap.features.add(f)
+        }
+        run {
             val f = Feature("Info HUD", { fishmod.utils.config.values.DungeonMapSettings.mapInfoEnabled == true },
                 { v -> fishmod.utils.config.values.DungeonMapSettings.mapInfoEnabled = v })
             f.sub.add(ToggleSetting("No Words", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoNoWords))
@@ -1326,6 +1445,73 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeonMap.features.add(f)
         }
 
+        val slayer = Column("Slayer", "slider")
+        run {
+            // Each Slayer feature is its own toggle in the column — no shared master.
+            val spawnAlert = Feature("Mini/Boss Spawn Alert", FishSettings::slayerSpawnAlertEnabled)
+            spawnAlert.sub.add(ToggleSetting("Mini-Boss Alerts", "Alert when a slayer miniboss spawns", FishSettings::slayerMiniBossAlert))
+            spawnAlert.sub.add(ToggleSetting("Boss Alerts", "Alert when the main slayer boss spawns", FishSettings::slayerBossAlert))
+            spawnAlert.sub.add(SliderIntSetting("Alert Duration (ms)", "On-screen time for spawn alerts", FishSettings::slayerAlertDurationMs, 250, 8000, 250))
+            slayer.features.add(spawnAlert)
+
+            val cocoon = Feature("Cocoon Alert", FishSettings::slayerCocoonAlertEnabled)
+            cocoon.sub.add(SubcategoryHeader("Fires on \"YOU COCOONED YOUR SLAYER BOSS\""))
+            cocoon.sub.add(SliderIntSetting("Alert Duration (ms)", "", FishSettings::slayerCocoonAlertDurationMs, 250, 8000, 250))
+            slayer.features.add(cocoon)
+
+            val spawnHud = Feature("Spawn Progress HUD", FishSettings::slayerSpawnHudEnabled)
+            spawnHud.sub.add(SubcategoryHeader("Live spawn-bar %  ·  drag position with Edit HUD"))
+            spawnHud.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerSpawnHudScale, 0.5, 3.0))
+            slayer.features.add(spawnHud)
+
+            val statsHud = Feature("Slayer Stats HUD", FishSettings::slayerStatsHudEnabled)
+            statsHud.sub.add(SubcategoryHeader("Session XP / kills / rates  ·  drag position with Edit HUD"))
+            statsHud.sub.add(ToggleSetting("Show XP", "", FishSettings::slayerStatsShowXp))
+            statsHud.sub.add(ToggleSetting("Show Kills", "", FishSettings::slayerStatsShowKills))
+            statsHud.sub.add(ToggleSetting("Show XP/hr", "", FishSettings::slayerStatsShowXpHr))
+            statsHud.sub.add(ToggleSetting("Show Kills/hr", "", FishSettings::slayerStatsShowKillsHr))
+            statsHud.sub.add(ToggleSetting("Background", "Dark panel behind the stats", FishSettings::slayerStatsBackground))
+            statsHud.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerStatsHudScale, 0.5, 3.0))
+            statsHud.sub.add(ButtonSetting("Reset Session Stats", "Zero the XP / kills / time counters", Runnable { fishmod.features.slayers.SlayerStatsTracker.reset() }))
+            slayer.features.add(statsHud)
+
+            val profit = Feature("Profit Tracker", FishSettings::slayerProfitEnabled)
+            profit.sub.add(SubcategoryHeader("SkyHanni-style: prices real drops for coins/hr  ·  drag with Edit HUD"))
+            profit.sub.add(SubcategoryHeader("With chat open: click the mode line to switch  ·  left-click a row to hide it  ·  right-click the title to reset"))
+            profit.sub.add(DropdownSetting("Display", "Total = all-time (saved); This Session = since this launch", arrayOf("Total", "This Session"),
+                { FishSettings.slayerProfitDisplayMode },
+                { v -> FishSettings.slayerProfitDisplayMode = v }))
+            profit.sub.add(SliderIntSetting("Drop Rows", "Max item rows shown (highest value first); the rest fold into one row", FishSettings::slayerProfitLines, 3, 30, 1))
+            profit.sub.add(SliderIntSetting("Hide Below (coins)", "Rows worth less than this fold into the \"N more items\" row (0 = show all)", FishSettings::slayerProfitMinValue, 0, 1_000_000, 10_000))
+            profit.sub.add(ToggleSetting("Count Mob Kill Coins", "Count small purse gains while grinding as a \"Mob Kill Coins\" drop row + profit", FishSettings::slayerProfitCountKillCoins))
+            profit.sub.add(ToggleSetting("Always Show Hidden Rows", "Keep hidden rows on screen (dark + struck) even when chat is closed", FishSettings::slayerProfitShowHidden))
+            profit.sub.add(SliderIntSetting("Idle Pause (s)", "No drop/kill this long → pause & rewind the clock by this much", FishSettings::slayerProfitIdleSeconds, 15, 600, 15))
+            profit.sub.add(ToggleSetting("Background", "Dark panel behind the tracker", FishSettings::slayerProfitBackground))
+            profit.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerProfitHudScale, 0.5, 3.0))
+            profit.sub.add(ButtonSetting("Reset This Mode", "Clear drops / bosses / time for the current Display mode, every slayer", Runnable { fishmod.features.slayers.SlayerProfitTracker.reset() }))
+            slayer.features.add(profit)
+
+            val timer = Feature("Boss Timer", FishSettings::slayerTimerEnabled)
+            timer.sub.add(SubcategoryHeader("Spawn-to-kill time + PB  ·  drag position with Edit HUD"))
+            timer.sub.add(DropdownSetting("Start Mode", "When the clock starts", arrayOf("Spawned", "Fully Spawned"),
+                { FishSettings.slayerTimerStartMode },
+                { v -> FishSettings.slayerTimerStartMode = v }))
+            timer.sub.add(ToggleSetting("Show Current Timer", "", FishSettings::slayerTimerShowCurrent))
+            timer.sub.add(ToggleSetting("Show PB", "", FishSettings::slayerTimerShowPb))
+            timer.sub.add(ToggleSetting("Show New PB", "", FishSettings::slayerTimerShowNewPb))
+            timer.sub.add(ToggleSetting("Show Cycle", "Full kill-to-kill time (fight + loot + walk + refill) + a live 'since kill' counter", FishSettings::slayerTimerShowCycle))
+            timer.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerTimerHudScale, 0.5, 3.0))
+            slayer.features.add(timer)
+
+            val phases = Feature("Boss Phases", FishSettings::slayerPhaseEnabled)
+            phases.sub.add(SubcategoryHeader("SkyHanni-style attack/phase cues on the boss — all 6 slayers"))
+            phases.sub.add(SubcategoryHeader("Voidgloom laser/hits/beacon · Inferno shield+dagger/fire pillar/pits · Bloodfiend twinclaws/steak/mania · Rev BOOM · Sven PUPS · Tara hatchlings"))
+            phases.sub.add(ToggleSetting("World Text", "Draw the cue as text above the boss", FishSettings::slayerPhaseWorldText))
+            phases.sub.add(ToggleSetting("Title Warnings", "Big title for BOOM / PUPS / HATCHLINGS / FIRE PITS / TWINCLAWS / STEAK / BEACON", FishSettings::slayerPhaseTitles))
+            phases.sub.add(ToggleSetting("Health Phase Split", "Show the 1/3 · 2/3 phase fraction (Voidgloom / Inferno)", FishSettings::slayerPhaseHealthSplit))
+            slayer.features.add(phases)
+        }
+
         columns.add(general)
         columns.add(invStorage)
         columns.add(party)
@@ -1335,6 +1521,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         columns.add(solvers)
         columns.add(floor7)
         columns.add(hud)
+        columns.add(slayer)
         columns.add(visuals)
         columns.add(cosmetics)
     }
@@ -1420,6 +1607,131 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             if (matches || searchText.isEmpty()) out.add(c)
         }
         return out
+    }
+
+    // --- Cascading curtain animation -----------------------------------------------------------
+
+    // "Menu Animations" off → zero out all cascade timing so the screen just appears / closes.
+    private fun fmDropMs(): Int = if (FishSettings.fmAnimations) FishSettings.fmDropDurationMs else 0
+    private fun fmStagMs(): Int = if (FishSettings.fmAnimations) FishSettings.fmStaggerDelayMs else 0
+
+    /** Total wall-clock time the exit animation needs, given the current column count/settings. */
+    private fun exitTotalDurationMs(): Long {
+        val n = visibleColumns().size
+        return fmDropMs().toLong() + fmStagMs().toLong() * Math.max(0, n - 1)
+    }
+
+    /** Starts the exit (closing) animation instead of closing immediately. Safe to call more than
+     *  once — a second ESC/click during the animation is a no-op. */
+    private fun requestClose() {
+        if (closing) return
+        closing = true
+        closeStartTime = System.currentTimeMillis()
+    }
+
+    /** 0f (not started) .. ~1f at rest, with a brief >1 overshoot for the elastic landing feel. */
+    private fun openEase(index: Int): Float {
+        if (!FishSettings.fmAnimations) return 1f
+        val delay = index.toLong() * fmStagMs()
+        val elapsed = System.currentTimeMillis() - screenOpenTime - delay
+        if (elapsed <= 0L) return 0f
+        val dur = fmDropMs().toFloat()
+        val t = if (dur <= 0f) 1f else Mth.clamp(elapsed / dur, 0f, 1f)
+        return Easing.easeOutBack(t)
+    }
+
+    /** 0f (not started) .. 1f (fully off-screen), eased. Column order is reversed vs. open: the
+     *  last (rightmost) visible column leads the exit wave. */
+    private fun closeEase(index: Int): Float {
+        if (!FishSettings.fmAnimations) return 1f
+        val n = visibleColumns().size
+        val order = n - 1 - index
+        val delay = order.toLong() * fmStagMs()
+        val elapsed = System.currentTimeMillis() - closeStartTime - delay
+        if (elapsed <= 0L) return 0f
+        val dur = fmDropMs().toFloat()
+        val t = if (dur <= 0f) 1f else Mth.clamp(elapsed / dur, 0f, 1f)
+        return Easing.easeInOutCubic(t)
+    }
+
+    private fun isColumnOpening(index: Int): Boolean {
+        if (!FishSettings.fmAnimations) return false
+        val delay = index.toLong() * fmStagMs()
+        val elapsed = System.currentTimeMillis() - screenOpenTime - delay
+        return elapsed < fmDropMs()
+    }
+
+    private fun isColumnClosing(index: Int): Boolean {
+        if (!closing || !FishSettings.fmAnimations) return false
+        val n = visibleColumns().size
+        val order = n - 1 - index
+        val delay = order.toLong() * fmStagMs()
+        val elapsed = System.currentTimeMillis() - closeStartTime - delay
+        return elapsed < fmDropMs()
+    }
+
+    /** True while any visible column is still mid drop-in or exit animation — used to suppress
+     *  mouse interaction so hit-testing (which doesn't account for the visual offset) never fires
+     *  on the wrong spot. */
+    private fun anyColumnAnimating(): Boolean {
+        val n = visibleColumns().size
+        for (i in 0 until n) {
+            if (isColumnOpening(i) || isColumnClosing(i)) return true
+        }
+        return false
+    }
+
+    /** Pixel offset (added to a column's header Y) for the drop-in/exit animation. [restTop] is
+     *  where the column sits once idle (used as the open animation's travel distance from y=0, the
+     *  top of the viewport). */
+    private fun columnYOffset(index: Int, restTop: Int): Float {
+        if (closing) {
+            val ease = closeEase(index)
+            if (ease <= 0f) return 0f
+            val dist = (bottom() - top()).toFloat()
+            return if (FishSettings.fmExitStyle == "Reverse Curtain") -dist * ease else dist * ease
+        }
+        val ease = openEase(index)
+        return -restTop.toFloat() * (1f - ease)
+    }
+
+    /** Resolves the active column-card background colour: a preset swatch or the custom picker
+     *  colour, with [FishSettings.fmBgAlpha] applied as the alpha channel. Only affects this
+     *  screen's cards — [ScreenTheme.CARD_BG] itself (shared by other screens) is untouched. */
+    private fun currentCardBg(): Int {
+        val rgb = when (FishSettings.fmBgPreset) {
+            "Deep Blue" -> 0x0F1E3D
+            "Crimson" -> 0x3D0F14
+            "Violet" -> 0x2A0F3D
+            "Custom" -> FishSettings.fmBgCustomColor and 0xFFFFFF
+            else -> 0x14181D // Dark Glass - today's default look
+        }
+        val alpha = Mth.clamp(Math.round(FishSettings.fmBgAlpha * 2.55f), 0, 255)
+        return (alpha shl 24) or rgb
+    }
+
+    /** Brightens each RGB channel of [rgb] by [amount] (0-255), clamped, keeping its alpha. Mirrors
+     *  how today's fixed hover colour (0xFF3AD8D1) relates to the base accent (0xFF24B6B0). */
+    private fun brighten(rgb: Int, amount: Int): Int {
+        val a = (rgb ushr 24) and 0xFF
+        val r = Mth.clamp(((rgb ushr 16) and 0xFF) + amount, 0, 255)
+        val g = Mth.clamp(((rgb ushr 8) and 0xFF) + amount, 0, 255)
+        val b = Mth.clamp((rgb and 0xFF) + amount, 0, 255)
+        return (a shl 24) or (r shl 16) or (g shl 8) or b
+    }
+
+    /** Recomputes this screen's local [ACCENT]/[ACCENT_HOVER] from [FishSettings.fmButtonColor] and
+     *  [FishSettings.fmButtonAlpha]. Only affects this screen's own accent — [ScreenTheme.ACCENT]
+     *  itself (shared by other screens) is untouched. Mirrors [currentCardBg]; call once per frame. */
+    private fun refreshButtonTheme() {
+        val rgb = FishSettings.fmButtonColor and 0xFFFFFF
+        val alpha = Mth.clamp(Math.round(FishSettings.fmButtonAlpha * 2.55f), 0, 255)
+        ACCENT = (alpha shl 24) or rgb
+        ACCENT_HOVER = brighten(ACCENT, 28)
+
+        val rowRgb = FishSettings.fmRowColor and 0xFFFFFF
+        val rowAlpha = Mth.clamp(Math.round(FishSettings.fmRowAlpha * 2.55f), 0, 255)
+        ROW_ENABLED = (rowAlpha shl 24) or rowRgb
     }
 
     private fun columnWidth(): Int {
@@ -1528,9 +1840,20 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     private var recorderSizeLogged = false
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        refreshButtonTheme()
         if (resetArmed && System.currentTimeMillis() - resetArmedAt > 3000) resetArmed = false
         clampAllScrolls()
         clampHScroll()
+
+        // wall-clock check for the exit ("cascading curtain") animation finishing — driven by ms
+        // timestamps rather than a frame counter since this is an immediate-mode NanoVG renderer
+        if (closing && !closeFinalized && System.currentTimeMillis() - closeStartTime >= exitTotalDurationMs()) {
+            closeFinalized = true
+            Config.manager.save()
+            FishConfig.manager.save()
+            super.onClose()
+            return
+        }
 
         // draw commands replayed later in paintNvgOverlay() after the vanilla GUI flush
         NvgRecorder.clear()
@@ -1659,8 +1982,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val hy = headerTop
         val w = x1 - x0
         NvgRecorder.dropShadow(x0.toFloat(), hy.toFloat(), w.toFloat(), (cardBottom - hy).toFloat(), CARD_RADIUS.toFloat(), 10f, 0x60000000)
-        roundedRect(ctx, x0, hy, w, cardBottom - hy, CARD_RADIUS, CARD_BG)
-        NvgRecorder.fillRectTopRounded(x0.toFloat(), hy.toFloat(), w.toFloat(), HEADER_STRIP_H.toFloat(), CARD_RADIUS.toFloat(), ACCENT)
+        roundedRect(ctx, x0, hy, w, cardBottom - hy, CARD_RADIUS, currentCardBg())
+        NvgRecorder.fillRectTopRounded(x0.toFloat(), hy.toFloat(), w.toFloat(), HEADER_STRIP_H.toFloat(), CARD_RADIUS.toFloat(), ScreenTheme.ACCENT)
         // For a stacked slot the visible content is the active child — its HUDs, not the group's.
         val hudCol = if (c.isGroup()) c.content() else c
         val hudBtn = hudBtnRect(hudCol, x1, hy, showPopOut)
@@ -1719,23 +2042,25 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         for (i in cols.indices) {
             val c = cols[i]
             if (c === dc) continue
-            renderOneColumn(ctx, c, columnX0(i), colW, top, bot, mouseX, mouseY)
+            val yOff = Math.round(columnYOffset(i, top - HEADER_H))
+            renderOneColumn(ctx, c, columnX0(i), colW, top, bot, mouseX, mouseY, yOff)
         }
 
         // Dragged column renders last (on top of its neighbors) and follows the mouse instead of its slot.
+        // (Interaction is suppressed while any column is animating, so this can never be mid-animation.)
         if (dc != null) {
             renderOneColumn(ctx, dc, dragMouseX - dragGrabDX, colW, top, bot, mouseX, mouseY)
         }
     }
 
-    private fun renderOneColumn(ctx: GuiGraphicsExtractor, c: Column, x0: Int, colW: Int, top: Int, bot: Int, mouseX: Int, mouseY: Int) {
+    private fun renderOneColumn(ctx: GuiGraphicsExtractor, c: Column, x0: Int, colW: Int, top: Int, bot: Int, mouseX: Int, mouseY: Int, yOffset: Int = 0) {
         val x1 = x0 + colW
 
         if (c.isGroup()) {
             val dragged = if (dragTabParent === c) dragTabChild else null
             for (seg in stackSegments(c, top - HEADER_H, bot)) {
                 if (seg.col === dragged) continue
-                renderColumnBlock(ctx, seg.col, x0, x1, seg.segTop, seg.segBot, mouseX, mouseY, showPopOut = true)
+                renderColumnBlock(ctx, seg.col, x0, x1, seg.segTop + yOffset, seg.segBot + yOffset, mouseX, mouseY, showPopOut = true)
             }
             // the child dragged around the stack floats at the cursor as a full card, not a bare label, so it reads like any other column mid-drag
             if (dragged != null) {
@@ -1744,7 +2069,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             return
         }
 
-        renderColumnBlock(ctx, c, x0, x1, top - HEADER_H, bot, mouseX, mouseY)
+        renderColumnBlock(ctx, c, x0, x1, top - HEADER_H + yOffset, bot + yOffset, mouseX, mouseY)
     }
 
     /** Renders one column as a normal, fully independent card — header, rows, scrollbar — sized to
@@ -1821,7 +2146,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
         val subH = f.naturalSubHeight()
         NvgRecorder.fillRect(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), subH.toFloat(), SUBROW_BG)
-        NvgRecorder.fillPillBar(x0.toFloat(), top.toFloat(), 2f, subH.toFloat(), ACCENT)
         val leftX = x0 + 14
         val rightX = x1 - 12
         var sy = top + 6
@@ -1845,6 +2169,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     }
 
     override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean {
+        // Suppress all mouse interaction while the cascading curtain is still animating any column
+        // in/out — the animated Y-offset isn't reflected in hit-testing, and this also prevents a
+        // second ESC/"Save & Close" click from re-triggering the exit animation mid-flight.
+        if (anyColumnAnimating()) return true
+
         val mx = vx(click.x())
         val my = vx(click.y())
         val btn = click.button()
@@ -2216,6 +2545,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
+        if (anyColumnAnimating()) return true
+
         // shift+wheel, a trackpad horizontal swipe, or wheeling over the column headers pans sideways
         val shiftDown = InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_LEFT_SHIFT) ||
             InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_RIGHT_SHIFT)
@@ -2250,13 +2581,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                     for (seg in stackSegments(slot, cyTop() - HEADER_H, cyBot())) {
                         if (mouseY < seg.bodyTop || mouseY > seg.segBot) continue
                         val vp = seg.segBot - seg.bodyTop
+                        if (maxScrollFor(seg.col, vp) <= 0) break
                         seg.col.scroll = Mth.clamp((seg.col.scroll - verticalAmount * 18).toInt(), 0, maxScrollFor(seg.col, vp))
                         return true
                     }
-                    return true
+                    break
                 }
                 val colBottom = Math.min(cyTop() + columnContentHeight(slot), cyBot())
                 if (mouseY <= colBottom) {
+                    if (maxScrollFor(slot, colBottom - cyTop()) <= 0) break
                     slot.scroll = Mth.clamp((slot.scroll - verticalAmount * 18).toInt(), 0, maxScrollFor(slot, colBottom - cyTop()))
                     return true
                 }
@@ -2354,10 +2687,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
     override fun isPauseScreen(): Boolean = false
 
+    /** Intercepts every close request (ESC via vanilla's default keyPressed handling, and the
+     *  "Save & Close" pill) to play the exit ("cascading curtain") animation first; the real save
+     *  + super.onClose() happens once that finishes, checked each frame in extractRenderState(). */
     override fun onClose() {
-        Config.manager.save()
-        FishConfig.manager.save()
-        super.onClose()
+        requestClose()
     }
 
     class Column(val name: String, val icon: String) {
@@ -2426,7 +2760,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     }
 
     class SubcategoryHeader(name: String) : Setting(name, "") {
-        private fun w(t: String) = Math.ceil(NvgRecorder.textWidth(t, NVG_BASE_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
+        private fun w(t: String) = Math.ceil(NvgRecorder.textWidth(t, SUBCAT_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
 
         // Decide 1- vs 2-line height against the tightest column width so this never truncates
         // regardless of how wide the column ends up being; render() wraps for real against the
@@ -2438,14 +2772,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             val h = getHeight()
             roundRect(ctx, leftX, sy, rightX, sy + h, 3, 0xFF11131A.toInt())
-            NvgRecorder.fillPillBar((leftX + 1).toFloat(), (sy + 2).toFloat(), 2f, (h - 4).toFloat(), ACCENT)
             val maxW = rightX - leftX - 12
             val lines = wrap(name, maxW)
             if (lines.size <= 1) {
-                st(ctx, tr, lines.getOrElse(0) { name }, leftX + 6, sy + (h - 8) / 2, ACCENT)
+                stBold(ctx, tr, lines.getOrElse(0) { name }, leftX + 6, sy + (h - 8) / 2, ACCENT)
             } else {
-                st(ctx, tr, lines[0], leftX + 6, sy + 4, ACCENT)
-                st(ctx, tr, lines[1], leftX + 6, sy + 13, ACCENT)
+                stBold(ctx, tr, lines[0], leftX + 6, sy + 4, ACCENT)
+                stBold(ctx, tr, lines[1], leftX + 6, sy + 13, ACCENT)
             }
         }
 
@@ -2504,7 +2837,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             return (min + Math.round((v - min).toFloat() / step) * step).coerceIn(min, max)
         }
 
-        override fun getHeight(): Int = TWO_LINE_H
+        override fun getHeight(): Int = SLIDER_ROW_H
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             st(ctx, tr, name, leftX + 2, sy + 2, TEXT_COLOR)
             val slx = leftX + 2
@@ -2526,7 +2859,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     class SliderDoubleSetting(name: String, desc: String, val getter: () -> Double, val setter: (Double) -> Unit, val min: Double, val max: Double) : Setting(name, desc) {
         constructor(name: String, desc: String, prop: KMutableProperty0<Double>, min: Double, max: Double) : this(name, desc, { prop.get() }, { prop.set(it) }, min, max)
 
-        override fun getHeight(): Int = TWO_LINE_H
+        override fun getHeight(): Int = SLIDER_ROW_H
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             st(ctx, tr, name, leftX + 2, sy + 2, TEXT_COLOR)
             val slx = leftX + 2
@@ -3104,13 +3437,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     }
 
     companion object {
-        private val ACCENT = ScreenTheme.ACCENT
-        private val ACCENT_HOVER = ScreenTheme.ACCENT_HOVER
+        private var ACCENT: Int = ScreenTheme.ACCENT
+        private var ACCENT_HOVER: Int = ScreenTheme.ACCENT_HOVER
         private const val DIM_TOP = 0x2E000000
         private const val DIM_BOT = 0x50000000
         private val CARD_BG = ScreenTheme.CARD_BG
         private const val ROW_HOVER = 0x1EFFFFFF
-        private const val ROW_ENABLED = 0x2624B6B0
+        private var ROW_ENABLED: Int = 0x2624B6B0
         private val SUBROW_BG = 0xFF0F1317.toInt()
         private val TRACK_OFF = 0xFF3A3F48.toInt()
         private val TEXT_COLOR = ScreenTheme.TEXT_COLOR
@@ -3146,11 +3479,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         private const val SUBCAT_HEIGHT_2 = 22 // two-line variant, for headers whose text wraps
         // sliders/text-inputs render name + control on two lines (see SliderIntSetting docs), not a right-aligned control on the name row
         private const val TWO_LINE_H = 36
+        // sliders have no control body below the track, so they can stack tighter than text inputs
+        private const val SLIDER_ROW_H = 28
         private const val TWO_LINE_CTRL_Y = 20
 
         /** Roughly matches Minecraft's default font weight; TEXT_SCALE multiplies this. */
         private const val NVG_BASE_TEXT_SIZE = 9.5f
         private const val INPUT_TEXT_SIZE = 7f
+
+        /** SubcategoryHeader text size — a bit larger than body text so it reads as a heading. */
+        private const val SUBCAT_TEXT_SIZE = NVG_BASE_TEXT_SIZE * 1.15f
 
         // shape/text helpers push into NvgRecorder, not `ctx`, so they paint in the deferred paintNvgOverlay() pass; `ctx` is kept only for call-site compat and vanilla widget state
         fun roundedRect(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, color: Int) {
@@ -3189,6 +3527,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             NvgRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * TEXT_SCALE, color)
         }
         fun stw(tr: Font, s: String): Int = Math.ceil(NvgRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
+
+        /** Bold heading text (see [SubcategoryHeader]) — same faux-bold trick as [NvgRecorder.textBold]. */
+        fun stBold(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int) {
+            NvgRecorder.textBold(s, x.toFloat(), y.toFloat(), SUBCAT_TEXT_SIZE * TEXT_SCALE, color)
+        }
+        fun stwBold(tr: Font, s: String): Int = Math.ceil(NvgRecorder.textWidth(s, SUBCAT_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
 
         fun sst(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int, scale: Float) {
             NvgRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * scale, color)

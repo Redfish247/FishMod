@@ -8,15 +8,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 
-/**
- * Holds other players' cosmetic nicks (fetched from the mod proxy) and rewrites their IGN to the
- * styled nick in chat/tab/nametags — the multiplayer counterpart to the local-only [NickState].
- *
- * Sources of names:
- *   1. Periodic tab-list scan via [RemoteSync] (covers everyone on your current server).
- *   2. Chat-driven discovery — any IGN that appears in a chat line is resolved + fetched, so
- *      DMs and party/guild messages from off-server players also get nick-rewritten.
- */
+/** Multiplayer counterpart to local-only [NickState]: rewrites other players' IGN to their styled nick via tab-list scan + chat-driven discovery. */
 object RemoteNicks {
 
     // IGN -> styled nick Text, for players other than the local one.
@@ -72,12 +64,7 @@ object RemoteNicks {
         styledByName.clear()
     }
 
-    /**
-     * Apply the result of a [RemoteSync] poll. `uuidToName` is the full set of on-server
-     * players we queried; `nicks` holds only those with a nick currently set. Players in
-     * `uuidToName` but absent from `nicks` have no (or a just-cleared) nick, so we drop
-     * any stale styled entry for them. Off-server entries discovered via chat are NOT touched.
-     */
+    /** Players in `uuidToName` but absent from `nicks` had their nick cleared, so drop stale entries; off-server chat-discovered entries are untouched. */
     @JvmStatic
     fun acceptNicks(uuidToName: Map<String, String>, nicks: Map<String, String>) {
         if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) {

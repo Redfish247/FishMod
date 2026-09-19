@@ -129,8 +129,16 @@ object FishEstTotal {
         currentSplits?.forEach { it.reset() }
     }
 
+    // Colour-code-free fragment of the Mort run-start line (matches LagTracker's trigger).
+    private const val RUN_START_FRAGMENT = "I found this map when I first entered the dungeon"
+
     private fun parseGameMessage(message: Component): Boolean {
         val string = message.string
+        // Re-arm on a fresh run start even when no ON_LOCATION_CHANGE landed between runs (fast
+        // requeue onto the same instance, a dropped location packet, practice mode). Without this
+        // `runOver` stays true, parsing is dead, and Est. Total freezes on the previous run's
+        // total while the split timer above it has already restarted.
+        if (runOver && string.contains(RUN_START_FRAGMENT)) reset()
         val splits = currentSplits
         if (splits == null || runOver) return false
         for (s in splits) {
@@ -159,6 +167,15 @@ object FishEstTotal {
         currentSplits = null
         floor = null
         runOver = false
+        // Drop the render caches too — otherwise a new run whose first formatted Est./Lag string
+        // happens to equal a cached one keeps the previous run's Component + measured width.
+        cachedEstKey = null
+        cachedEstLabel = null
+        cachedEstTime = null
+        cachedEstTimeWidth = 0
+        cachedLagStr = null
+        cachedLagTime = null
+        cachedLagTimeWidth = 0
     }
 
     /** Mirrors Phase.getVisibleRowCount() against our own LocalSplits so it works even under blade-addons' Phase. */

@@ -10,6 +10,7 @@ import fishmod.utils.dungeon.waypoints.DungeonWaypointStore
 import fishmod.utils.dungeon.waypoints.StoredWaypoint
 import fishmod.utils.dungeon.waypoints.TimerType
 import fishmod.utils.dungeon.waypoints.WaypointType
+import fishmod.utils.config.values.FishSettings
 import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -29,15 +30,18 @@ import org.lwjgl.glfw.GLFW
 import java.util.LinkedHashMap
 
 /**
- * /fm wp — a waypoint editor. Disabled while [Location.inDungeon] is true;
- * outside dungeons, waypoints are keyed by Skyblock island/server+dimension at absolute
- * coordinates (see [globalKey]).
+ * /fm wp — a waypoint editor. Works everywhere, dungeons included. Outside dungeons waypoints are
+ * keyed by Skyblock island/server+dimension at absolute world coordinates; inside a dungeon they're
+ * keyed by room name and stored in that room's canonical frame ([DungeonRoomAnchor]), so they carry
+ * across runs regardless of where the room instance spawned or how it's rotated. Boss rooms and any
+ * spot the map scanner can't resolve fall back to absolute coordinates. See [globalKey].
  */
 object DungeonWaypoints {
 
     private const val PLACE_EPSILON = 0.05
     private const val ROUTE_REACH_RADIUS = 1.75
     private val ROUTE_LINE_RGBA = floatArrayOf(1f, 1f, 1f, 0.6f)
+    private const val ROUTE_LINE_ARGB = 0x99FFFFFF.toInt()
 
     // Applied to the NEXT waypoint placed.
     private var editMode = false
@@ -81,6 +85,12 @@ object DungeonWaypoints {
 
     private var liveWaypoints: MutableList<LiveWaypoint> = ArrayList()
 
+    // Merged-waypoint geometry is comparatively expensive (a 3D occupancy grid per color/fill group) and
+    // only changes when liveWaypoints does, so it's traced once per applyGlobal() call and cached here
+    // rather than every render frame.
+    private var cachedMergedOccluded: List<MergedGroup> = emptyList()
+    private var cachedMergedThrough: List<MergedGroup> = emptyList()
+
     @JvmStatic
     fun init() {
         val category = fishmod.utils.Keybinds.category()
@@ -94,25 +104,12 @@ object DungeonWaypoints {
         )
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc -> onTick(mc) })
+        // Occluded (non-through-wall) waypoints + their route lines go through vanilla Gizmos, which
+        // depth-test against terrain for real. Through-wall waypoints and the edit cursor stay on the
+        // hand-rolled no-depth layers (fills on QUADS, lines on DEBUG_LINES — never mixed).
+        RenderingEvents.GIZMO.register { _ -> renderGizmo() }
         RenderingEvents.NO_DEPTH_FILLED.register { ctx, matrices, vc -> render(ctx, matrices, vc) }
-        // Route lines/cursor box use a dedicated GL_LINES layer, never the box-fill triangle strip.
         RenderingEvents.NO_DEPTH_LINE.register { _, matrices, vc -> renderLines(matrices, vc) }
-    }
-
-    /**
-     * Whether [target] is visible from the player's eyes — everything renders on the no-depth
-     * layer regardless of the per-waypoint flag (the depth-tested layer silently broke room
-     * waypoints), so occlusion is faked with a manual raycast instead.
-     */
-    private fun hasLineOfSight(mc: Minecraft, target: Vec3): Boolean {
-        val p = mc.player ?: return true
-        if (mc.level == null) return true
-        val delta = mc.deltaTracker.getGameTimeDeltaPartialTick(false)
-        val eye = p.getEyePosition(delta)
-        val hit: BlockHitResult? = mc.level!!.clip(
-            ClipContext(eye, target, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p)
-        )
-        return hit == null || hit.type == HitResult.Type.MISS
     }
 
     @JvmStatic
@@ -235,10 +232,6 @@ object DungeonWaypoints {
 
     @JvmStatic
     fun resetCurrentArea() {
-        if (Location.inDungeon()) {
-            Misc.addChatMessage(Component.literal("§cWaypoints aren't available inside dungeons."))
-            return
-        }
         DungeonWaypointStore.clearRoom(globalKey())
         applyGlobal()
         Misc.addChatMessage(Component.literal("§aCleared waypoints for the current area."))
@@ -304,11 +297,19 @@ object DungeonWaypoints {
         )
     }
 
-    /** Waypoints are dungeon-run-specific ground truth we don't have; only usable outside a dungeon. */
-    private fun blocked(): Boolean = Location.inDungeon()
+    private const val ROOM_KEY_PREFIX = "dungeon:room:"
+    private fun isRoomKey(key: String) = key.startsWith(ROOM_KEY_PREFIX)
 
-    /** Keyed by Skyblock island/zone rather than dimension, since Skyblock crams islands into one dimension. */
+    /**
+     * Inside a dungeon, key by room name and store coordinates in the room's canonical frame (see
+     * [DungeonRoomAnchor]) so a waypoint carries across runs. Elsewhere, key by Skyblock island/zone
+     * (or server+dimension) at absolute coordinates.
+     */
     private fun globalKey(): String {
+        if (Location.inDungeon()) {
+            val a = DungeonRoomAnchor.current()
+            if (a != null) return ROOM_KEY_PREFIX + a.name
+        }
         if (Location.inSkyblock()) {
             return "global:skyblock:" + Location.getCurrentLocation().name
         }
@@ -334,16 +335,13 @@ object DungeonWaypoints {
             return
         }
 
-        if (blocked()) {
-            liveWaypoints.clear()
-            lastGlobalDim = null
-            while (placeKey != null && placeKey!!.consumeClick()) { /* drop clicks while unavailable */ }
-            return
-        }
-
         val key = globalKey()
         if (key != lastGlobalDim) {
             lastGlobalDim = key
+            applyGlobal()
+        } else if (isRoomKey(key)) {
+            // The room anchor (rotation/clay) can shift for a tick or two as the map scanner refines
+            // the room, so re-project room-anchored waypoints every tick while inside one.
             applyGlobal()
         }
 
@@ -382,8 +380,16 @@ object DungeonWaypoints {
         }
     }
 
-    /** Raycasts along the player's look vector. */
-    private fun aimPoint(mc: Minecraft): Vec3 {
+    /** Result of an aim raycast: the point to center a waypoint on, and the aimed block's actual shape (null on a miss). */
+    private class AimResult(@JvmField val point: Vec3, @JvmField val blockBox: AABB?)
+
+    /**
+     * Raycasts along the player's look vector. When it hits a block, [AimResult.blockBox] carries that
+     * block's real collision-shape bounds in world space — e.g. a slab reports a half-height box at the
+     * correct top/bottom half — so callers using block-size placement match the block instead of always
+     * assuming a full 1x1x1 cube.
+     */
+    private fun aimPoint(mc: Minecraft): AimResult {
         val p = mc.player!!
         val delta = mc.deltaTracker.getGameTimeDeltaPartialTick(false)
         val eye = p.getEyePosition(delta)
@@ -394,18 +400,20 @@ object DungeonWaypoints {
             ClipContext(eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, p)
         )
         if (hit != null && hit.type != HitResult.Type.MISS) {
-            // Center on Y too (not just X/Z) — old code left Y at the block's bottom, clipping the marker.
             val bp: BlockPos = hit.blockPos
-            return Vec3(bp.x + 0.5, bp.y + 0.5, bp.z + 0.5)
+            val state = mc.level!!.getBlockState(bp)
+            val shape = state.getShape(mc.level!!, bp)
+            val bounds = if (shape.isEmpty) AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0) else shape.bounds()
+            val worldBox = AABB(
+                bp.x + bounds.minX, bp.y + bounds.minY, bp.z + bounds.minZ,
+                bp.x + bounds.maxX, bp.y + bounds.maxY, bp.z + bounds.maxZ
+            )
+            return AimResult(worldBox.center, worldBox)
         }
-        return end
+        return AimResult(end, null)
     }
 
     private fun handlePlace(mc: Minecraft) {
-        if (blocked()) {
-            Misc.addChatMessage(Component.literal("§cWaypoints aren't available inside dungeons."))
-            return
-        }
         handlePlaceGlobal(mc)
     }
 
@@ -417,19 +425,46 @@ object DungeonWaypoints {
     }
 
     private fun handlePlaceGlobal(mc: Minecraft) {
-        val aim = aimPoint(mc)
-        val px = aim.x + offsetX
-        val py = aim.y + offsetY
-        val pz = aim.z + offsetZ
+        val aimResult = aimPoint(mc)
+        val aim = aimResult.point
+        var px = aim.x + offsetX
+        var py = aim.y + offsetY
+        var pz = aim.z + offsetZ
         offsetX = 0.0; offsetY = 0.0; offsetZ = 0.0 // one-shot
 
-        val half = if (useBlockSize) 0.5 else size / 2.0
+        // Block-size placement matches the aimed block's real shape — a slab gets a half-height box at
+        // the correct top/bottom half instead of always a full 1x1x1 cube.
+        val halfX: Double; val halfY: Double; val halfZ: Double
+        if (useBlockSize && aimResult.blockBox != null) {
+            halfX = (aimResult.blockBox.maxX - aimResult.blockBox.minX) / 2.0
+            halfY = (aimResult.blockBox.maxY - aimResult.blockBox.minY) / 2.0
+            halfZ = (aimResult.blockBox.maxZ - aimResult.blockBox.minZ) / 2.0
+        } else {
+            val half = if (useBlockSize) 0.5 else size / 2.0
+            halfX = half; halfY = half; halfZ = half
+        }
+
         val key = globalKey()
+
+        // Inside a resolved room, persist as the block's canonical-frame coords so the waypoint carries
+        // across runs. X/Z are block-granular on purpose: rotating a fractional centre lands a block off
+        // on 90° room rotations. Y isn't touched by room rotation, so its fractional part (e.g. a slab's
+        // half-height centre) is preserved as-is rather than snapped to the full-block centre.
+        if (isRoomKey(key)) {
+            val a = DungeonRoomAnchor.current()
+            if (a != null) {
+                val local = DungeonRoomAnchor.toLocal(
+                    a, BlockPos(Math.floor(px).toInt(), Math.floor(py).toInt(), Math.floor(pz).toInt())
+                )
+                val fracY = py - Math.floor(py)
+                px = local.x + 0.5; py = local.y + fracY; pz = local.z + 0.5
+            }
+        }
 
         if (mc.player!!.isShiftKeyDown) {
             mc.setScreen(DungeonWaypointTitleScreen { title ->
                 val w = StoredWaypoint(
-                    px, py, pz, half, half, half,
+                    px, py, pz, halfX, halfY, halfZ,
                     color, fill, through, title,
                     if (type == WaypointType.NONE) null else type.name,
                     if (timer == TimerType.NONE) null else timer.name
@@ -444,7 +479,7 @@ object DungeonWaypoints {
         val removed = DungeonWaypointStore.removeNear(key, px, py, pz, PLACE_EPSILON)
         if (!removed) {
             val w = StoredWaypoint(
-                px, py, pz, half, half, half,
+                px, py, pz, halfX, halfY, halfZ,
                 color, fill, through, null,
                 if (type == WaypointType.NONE) null else type.name,
                 if (timer == TimerType.NONE) null else timer.name
@@ -456,56 +491,322 @@ object DungeonWaypoints {
     }
 
     private fun applyGlobal() {
+        val key = globalKey()
+        val anchor = if (isRoomKey(key)) DungeonRoomAnchor.current() else null
+        // Room key but the room isn't currently resolvable (doorway, mid-rescan): draw nothing rather
+        // than treat the stored room-local coords as absolute.
+        if (isRoomKey(key) && anchor == null) {
+            liveWaypoints = ArrayList()
+            cachedMergedOccluded = emptyList()
+            cachedMergedThrough = emptyList()
+            return
+        }
+
         val result = ArrayList<LiveWaypoint>()
-        for (w in DungeonWaypointStore.get(globalKey())) {
+        for (w in DungeonWaypointStore.get(key)) {
+            val c = if (anchor != null) {
+                val wb = DungeonRoomAnchor.toWorld(
+                    anchor, BlockPos(Math.floor(w.x).toInt(), Math.floor(w.y).toInt(), Math.floor(w.z).toInt())
+                )
+                // Y isn't touched by room rotation — reapply the stored fractional Y (e.g. a slab's
+                // half-height centre) instead of snapping back to the full-block centre.
+                val fracY = w.y - Math.floor(w.y)
+                Vec3(wb.x + 0.5, wb.y + fracY, wb.z + 0.5)
+            } else Vec3(w.x, w.y, w.z)
             val box = AABB(
-                w.x - w.halfX, w.y - w.halfY, w.z - w.halfZ,
-                w.x + w.halfX, w.y + w.halfY, w.z + w.halfZ
+                c.x - w.halfX, c.y - w.halfY, c.z - w.halfZ,
+                c.x + w.halfX, c.y + w.halfY, c.z + w.halfZ
             )
             result.add(LiveWaypoint(box, w.color, w.filled, w.throughWalls, w.title, w.routeId, w.routeOrder))
         }
         liveWaypoints = result
+        cachedMergedOccluded = buildMergedGroups(throughWalls = false)
+        cachedMergedThrough = buildMergedGroups(throughWalls = true)
     }
 
     /** Called by the waypoint list GUI after it edits/deletes entries, to refresh what's currently rendering. */
     @JvmStatic
     fun refreshLive() {
-        if (blocked()) liveWaypoints.clear() else applyGlobal()
+        applyGlobal()
     }
 
+    private fun reached(w: LiveWaypoint): Boolean =
+        w.routeId != null && routeReached.getOrDefault(w.routeId, emptySet()).contains(w.routeOrder)
+
+    private const val MERGE_EPSILON = 1e-4
+
+    private fun compressAxis(values: List<Double>): List<Double> {
+        val sorted = values.sorted()
+        val result = ArrayList<Double>()
+        for (v in sorted) {
+            if (result.isEmpty() || v - result[result.size - 1] > MERGE_EPSILON) result.add(v)
+        }
+        return result
+    }
+
+    /** Greedy rectangle cover of the `true` cells in a 2D boolean grid — `n1`x`n2` cells, indices exclusive on the high end. */
+    private fun greedyRects(occ: Array<BooleanArray>, n1: Int, n2: Int): List<IntArray> {
+        val used = Array(n1) { BooleanArray(n2) }
+        val result = ArrayList<IntArray>()
+        for (a in 0 until n1) {
+            for (b in 0 until n2) {
+                if (occ[a][b] && !used[a][b]) {
+                    var b2 = b
+                    while (b2 + 1 < n2 && occ[a][b2 + 1] && !used[a][b2 + 1]) b2++
+                    var a2 = a
+                    outer@ while (a2 + 1 < n1) {
+                        for (bb in b..b2) if (!occ[a2 + 1][bb] || used[a2 + 1][bb]) break@outer
+                        a2++
+                    }
+                    for (aa in a..a2) for (bb in b..b2) used[aa][bb] = true
+                    result.add(intArrayOf(a, b, a2 + 1, b2 + 1))
+                }
+            }
+        }
+        return result
+    }
+
+    private class MergedGroup(
+        @JvmField val color: Int,
+        @JvmField val filled: Boolean,
+        @JvmField val quads: List<Array<Vec3>>, // exposed faces of the merged solid, for filled draws
+        @JvmField val edges: List<DoubleArray> // x1,y1,z1,x2,y2,z2 — the solid's silhouette edges, for outline draws
+    )
+
+    /**
+     * Traces the true exterior surface of the union of [boxes] via a coordinate-compressed 3D occupancy
+     * grid: [quads] are the exposed faces (an internal face between two touching boxes is never emitted,
+     * so a straight join has no seam), and [edges] are the silhouette wireframe (an edge is drawn only
+     * where the 4 cells around it aren't all the same — a flat face's rim, or a genuine corner/bend on
+     * any axis, but never a cut line inside a flat run). This is what lets adjacent waypoints merge into
+     * one shape around a turn — including a vertical one — instead of two boxes with an internal seam.
+     */
+    private fun traceSurface(boxes: List<AABB>): Pair<List<Array<Vec3>>, List<DoubleArray>>? {
+        val xs = compressAxis(boxes.flatMap { listOf(it.minX, it.maxX) })
+        val ys = compressAxis(boxes.flatMap { listOf(it.minY, it.maxY) })
+        val zs = compressAxis(boxes.flatMap { listOf(it.minZ, it.maxZ) })
+        val nx = xs.size - 1
+        val ny = ys.size - 1
+        val nz = zs.size - 1
+        if (nx <= 0 || ny <= 0 || nz <= 0) return null
+
+        val occ = Array(nx) { i ->
+            Array(ny) { j ->
+                BooleanArray(nz) { k ->
+                    val cx = (xs[i] + xs[i + 1]) / 2.0
+                    val cy = (ys[j] + ys[j + 1]) / 2.0
+                    val cz = (zs[k] + zs[k + 1]) / 2.0
+                    boxes.any {
+                        cx > it.minX + MERGE_EPSILON && cx < it.maxX - MERGE_EPSILON &&
+                            cy > it.minY + MERGE_EPSILON && cy < it.maxY - MERGE_EPSILON &&
+                            cz > it.minZ + MERGE_EPSILON && cz < it.maxZ - MERGE_EPSILON
+                    }
+                }
+            }
+        }
+        fun occAt(i: Int, j: Int, k: Int) = i in 0 until nx && j in 0 until ny && k in 0 until nz && occ[i][j][k]
+
+        val quads = ArrayList<Array<Vec3>>()
+        // +Y / -Y faces: slice over (X,Z) per Y layer.
+        for (j in 0 until ny) {
+            val top = Array(nx) { i -> BooleanArray(nz) { k -> occ[i][j][k] && !occAt(i, j + 1, k) } }
+            for (r in greedyRects(top, nx, nz)) {
+                val x1 = xs[r[0]]; val z1 = zs[r[1]]; val x2 = xs[r[2]]; val z2 = zs[r[3]]; val y = ys[j + 1]
+                quads.add(arrayOf(Vec3(x1, y, z1), Vec3(x2, y, z1), Vec3(x2, y, z2), Vec3(x1, y, z2)))
+            }
+            val bottom = Array(nx) { i -> BooleanArray(nz) { k -> occ[i][j][k] && !occAt(i, j - 1, k) } }
+            for (r in greedyRects(bottom, nx, nz)) {
+                val x1 = xs[r[0]]; val z1 = zs[r[1]]; val x2 = xs[r[2]]; val z2 = zs[r[3]]; val y = ys[j]
+                quads.add(arrayOf(Vec3(x1, y, z1), Vec3(x1, y, z2), Vec3(x2, y, z2), Vec3(x2, y, z1)))
+            }
+        }
+        // +X / -X faces: slice over (Y,Z) per X layer.
+        for (i in 0 until nx) {
+            val pos = Array(ny) { j -> BooleanArray(nz) { k -> occ[i][j][k] && !occAt(i + 1, j, k) } }
+            for (r in greedyRects(pos, ny, nz)) {
+                val y1 = ys[r[0]]; val z1 = zs[r[1]]; val y2 = ys[r[2]]; val z2 = zs[r[3]]; val x = xs[i + 1]
+                quads.add(arrayOf(Vec3(x, y1, z1), Vec3(x, y1, z2), Vec3(x, y2, z2), Vec3(x, y2, z1)))
+            }
+            val neg = Array(ny) { j -> BooleanArray(nz) { k -> occ[i][j][k] && !occAt(i - 1, j, k) } }
+            for (r in greedyRects(neg, ny, nz)) {
+                val y1 = ys[r[0]]; val z1 = zs[r[1]]; val y2 = ys[r[2]]; val z2 = zs[r[3]]; val x = xs[i]
+                quads.add(arrayOf(Vec3(x, y1, z1), Vec3(x, y2, z1), Vec3(x, y2, z2), Vec3(x, y1, z2)))
+            }
+        }
+        // +Z / -Z faces: slice over (X,Y) per Z layer.
+        for (k in 0 until nz) {
+            val pos = Array(nx) { i -> BooleanArray(ny) { j -> occ[i][j][k] && !occAt(i, j, k + 1) } }
+            for (r in greedyRects(pos, nx, ny)) {
+                val x1 = xs[r[0]]; val y1 = ys[r[1]]; val x2 = xs[r[2]]; val y2 = ys[r[3]]; val z = zs[k + 1]
+                quads.add(arrayOf(Vec3(x1, y1, z), Vec3(x2, y1, z), Vec3(x2, y2, z), Vec3(x1, y2, z)))
+            }
+            val neg = Array(nx) { i -> BooleanArray(ny) { j -> occ[i][j][k] && !occAt(i, j, k - 1) } }
+            for (r in greedyRects(neg, nx, ny)) {
+                val x1 = xs[r[0]]; val y1 = ys[r[1]]; val x2 = xs[r[2]]; val y2 = ys[r[3]]; val z = zs[k]
+                quads.add(arrayOf(Vec3(x1, y1, z), Vec3(x1, y2, z), Vec3(x2, y2, z), Vec3(x2, y1, z)))
+            }
+        }
+
+        // Silhouette edges: standard boundary-tracing parity rule — an edge is on the surface exactly
+        // when an ODD number of the (up to) 4 cells around it are occupied. An even count (0, 2 flat-
+        // matching, or 4) means either nothing here or a flat run continuing straight through with no
+        // real corner, so no edge; odd means a genuine face rim or a bend. (Using "not all 4 equal"
+        // instead — as if a flat run's own two matching sides made it a boundary — drew a seam at every
+        // straight join, which is why nothing merged cleanly on any axis.)
+        val edges = ArrayList<DoubleArray>()
+        for (i in 0..nx) for (j in 0..ny) {
+            var k = 0
+            while (k < nz) {
+                fun boundary(kk: Int) = occAt(i - 1, j - 1, kk) xor occAt(i, j - 1, kk) xor occAt(i - 1, j, kk) xor occAt(i, j, kk)
+                if (boundary(k)) {
+                    var k2 = k
+                    while (k2 + 1 < nz && boundary(k2 + 1)) k2++
+                    edges.add(doubleArrayOf(xs[i], ys[j], zs[k], xs[i], ys[j], zs[k2 + 1]))
+                    k = k2 + 1
+                } else k++
+            }
+        }
+        for (j in 0..ny) for (k in 0..nz) {
+            var i = 0
+            while (i < nx) {
+                fun boundary(ii: Int) = occAt(ii, j - 1, k - 1) xor occAt(ii, j, k - 1) xor occAt(ii, j - 1, k) xor occAt(ii, j, k)
+                if (boundary(i)) {
+                    var i2 = i
+                    while (i2 + 1 < nx && boundary(i2 + 1)) i2++
+                    edges.add(doubleArrayOf(xs[i], ys[j], zs[k], xs[i2 + 1], ys[j], zs[k]))
+                    i = i2 + 1
+                } else i++
+            }
+        }
+        for (i in 0..nx) for (k in 0..nz) {
+            var j = 0
+            while (j < ny) {
+                fun boundary(jj: Int) = occAt(i - 1, jj, k - 1) xor occAt(i, jj, k - 1) xor occAt(i - 1, jj, k) xor occAt(i, jj, k)
+                if (boundary(j)) {
+                    var j2 = j
+                    while (j2 + 1 < ny && boundary(j2 + 1)) j2++
+                    edges.add(doubleArrayOf(xs[i], ys[j], zs[k], xs[i], ys[j2 + 1], zs[k]))
+                    j = j2 + 1
+                } else j++
+            }
+        }
+
+        return Pair(quads, edges)
+    }
+
+    /**
+     * Waypoints without a title or route are plain area markers — placing several side by side, even
+     * around a bend (including a vertical one), is meant to mark one contiguous region rather than a row
+     * of separate boxes. Groups those (matching [throughWalls]) by color/fill and traces each group's true
+     * surface via [traceSurface], so a bend merges into one shape instead of leaving an internal seam at
+     * the join. Titled/routed waypoints (each needs its own box for its label/route position) aren't merged.
+     */
+    private fun buildMergedGroups(throughWalls: Boolean): List<MergedGroup> {
+        val candidates = liveWaypoints.filter { it.throughWalls == throughWalls && it.routeId == null && it.titleComponent == null }
+        val result = ArrayList<MergedGroup>()
+        for ((key, group) in candidates.groupBy { Pair(it.color, it.filled) }) {
+            val (quads, edges) = traceSurface(group.map { it.box }) ?: continue
+            result.add(MergedGroup(key.first, key.second, quads, edges))
+        }
+        return result
+    }
+
+    private fun buildSingles(throughWalls: Boolean): List<LiveWaypoint> =
+        liveWaypoints.filter { it.throughWalls == throughWalls && !reached(it) && (it.routeId != null || it.titleComponent != null) }
+
+    private fun drawMergedFillGizmo(g: MergedGroup) {
+        for (q in g.quads) RenderUtils.gizmoQuad(q, g.color, 0)
+    }
+
+    private fun drawMergedFillThrough(matrices: PoseStack, vc: VertexConsumer, g: MergedGroup) {
+        val rgba = RenderUtils.toFloats(g.color)
+        if (rgba[3] == 0f) return
+        for (q in g.quads) RenderUtils.renderFilledQuad(matrices, vc, q, rgba)
+    }
+
+    private fun drawMergedOutlineGizmo(g: MergedGroup) {
+        if ((g.color ushr 24) == 0) return
+        val hw = lineWidth / 2.0
+        for (e in g.edges) RenderUtils.gizmoThickEdge(Vec3(e[0], e[1], e[2]), Vec3(e[3], e[4], e[5]), hw, g.color)
+    }
+
+    private fun drawMergedOutlineThrough(matrices: PoseStack, vc: VertexConsumer, g: MergedGroup) {
+        val rgba = RenderUtils.toFloats(g.color)
+        if (rgba[3] == 0f) return
+        val hw = lineWidth / 2.0
+        for (e in g.edges) RenderUtils.renderThickEdge(matrices, vc, Vec3(e[0], e[1], e[2]), Vec3(e[3], e[4], e[5]), hw, rgba)
+    }
+
+    /** Occluded pass: non-through-wall waypoints, titles and route lines as vanilla gizmos. */
+    private fun renderGizmo() {
+        if (!FishSettings.dungeonWaypointsEnabled) return
+        for (g in cachedMergedOccluded) {
+            if (g.filled) drawMergedFillGizmo(g) else drawMergedOutlineGizmo(g)
+        }
+        for (w in buildSingles(throughWalls = false)) {
+            if (w.filled) RenderUtils.gizmoBox(w.box, w.color, 0)
+            else RenderUtils.gizmoThickOutline(w.box, w.color, lineWidth)
+        }
+        for (w in liveWaypoints) {
+            if (w.throughWalls || reached(w) || w.titleComponent == null) continue
+            RenderUtils.gizmoText(w.titleComponent, Vec3(w.center.x, w.box.maxY + 0.4, w.center.z), 1.0f, -0x1)
+        }
+        for ((_, value) in groupRoutes()) {
+            var prev: LiveWaypoint? = null
+            for (w in value) {
+                if (reached(w)) continue
+                val p = prev
+                if (p != null && !p.throughWalls && !w.throughWalls) RenderUtils.gizmoLine(p.center, w.center, ROUTE_LINE_ARGB)
+                prev = w
+            }
+        }
+    }
+
+    /** Through-walls pass: through-wall waypoints (+ their titles) and the edit cursor, on the no-depth layers. */
     private fun render(ctx: LevelRenderContext, matrices: PoseStack, vc: VertexConsumer) {
         val mc = Minecraft.getInstance()
-        for (w in liveWaypoints) {
-            if (!w.throughWalls && !hasLineOfSight(mc, w.center)) continue
-            if (w.routeId != null && routeReached.getOrDefault(w.routeId, emptySet()).contains(w.routeOrder)) continue
-            val rgba = RenderUtils.toFloats(w.color)
-            // Outlines are thin filled boxes, not GL_LINES, to keep them on the same triangle-strip
-            // layer as fills — mixing topologies on one layer caused the earlier "bowtie" corruption.
-            if (w.filled) RenderUtils.renderFilled(matrices, vc, w.box, rgba)
-            else RenderUtils.renderThickOutline(matrices, vc, w.box, rgba, lineWidth)
-            if (w.titleComponent != null) {
+        if (FishSettings.dungeonWaypointsEnabled) {
+            for (g in cachedMergedThrough) {
+                if (g.filled) drawMergedFillThrough(matrices, vc, g) else drawMergedOutlineThrough(matrices, vc, g)
+            }
+            for (w in buildSingles(throughWalls = true)) {
+                val rgba = RenderUtils.toFloats(w.color)
+                // Outlines are thin filled boxes, not GL_LINES, to keep them on the same triangle-strip
+                // layer as fills — mixing topologies on one layer caused the earlier "bowtie" corruption.
+                if (w.filled) RenderUtils.renderFilled(matrices, vc, w.box, rgba)
+                else RenderUtils.renderThickOutline(matrices, vc, w.box, rgba, lineWidth)
+            }
+            for (w in liveWaypoints) {
+                if (!w.throughWalls || reached(w) || w.titleComponent == null) continue
                 RenderUtils.renderText(ctx, matrices, w.titleComponent, w.center.x, w.box.maxY + 0.4, w.center.z, 1.0f)
             }
         }
 
         if (editMode) {
             if (mc.player != null && mc.level != null) {
-                val aim = aimPoint(mc)
-                val half = if (useBlockSize) 0.5 else size / 2.0
-                val box = AABB(aim.x - half, aim.y - half, aim.z - half, aim.x + half, aim.y + half, aim.z + half)
+                val aimResult = aimPoint(mc)
+                val aim = aimResult.point
+                val box = if (useBlockSize && aimResult.blockBox != null) {
+                    aimResult.blockBox
+                } else {
+                    val half = if (useBlockSize) 0.5 else size / 2.0
+                    AABB(aim.x - half, aim.y - half, aim.z - half, aim.x + half, aim.y + half, aim.z + half)
+                }
                 RenderUtils.renderThickOutline(matrices, vc, box, floatArrayOf(1f, 1f, 1f, 0.9f), lineWidth)
             }
         }
     }
 
-    /** Route connector lines only — must never share a VertexConsumer with [render]'s triangle-strip layer. */
+    /** Route connector lines for through-wall routes only — gizmo routes are drawn in [renderGizmo]. */
     private fun renderLines(matrices: PoseStack, vc: VertexConsumer) {
+        if (!FishSettings.dungeonWaypointsEnabled) return
         for ((key, value) in groupRoutes()) {
             val reached = routeReached.getOrDefault(key, emptySet())
             var prev: LiveWaypoint? = null
             for (w in value) {
                 if (reached.contains(w.routeOrder)) continue
-                if (prev != null) RenderUtils.renderLine(matrices, vc, prev.center, w.center, ROUTE_LINE_RGBA)
+                val p = prev
+                if (p != null && (p.throughWalls || w.throughWalls)) RenderUtils.renderLine(matrices, vc, p.center, w.center, ROUTE_LINE_RGBA)
                 prev = w
             }
         }

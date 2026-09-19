@@ -155,7 +155,11 @@ class FishHudEditor(
             java.util.Map.entry("Splits", doubleArrayOf(0.0, 0.0, 1.0)),
             java.util.Map.entry("Puzzles", doubleArrayOf(0.0, 0.0, 1.0)),
             java.util.Map.entry("Party Finder List", doubleArrayOf(6.0, 45.0, 1.0)),
-            java.util.Map.entry("Dungeon Map", doubleArrayOf(100.0, 100.0, 1.0))
+            java.util.Map.entry("Dungeon Map", doubleArrayOf(100.0, 100.0, 1.0)),
+            java.util.Map.entry("Slayer Spawn", doubleArrayOf(10.0, 140.0, 1.0)),
+            java.util.Map.entry("Slayer Stats", doubleArrayOf(10.0, 170.0, 1.0)),
+            java.util.Map.entry("Slayer Boss Timer", doubleArrayOf(10.0, 255.0, 1.0)),
+            java.util.Map.entry("Slayer Profit", doubleArrayOf(240.0, 90.0, 1.0))
         )
 
         /** Which movable HUDs belong to each FishModScreen column, for its header "Edit HUD" button. */
@@ -174,6 +178,7 @@ class FishHudEditor(
                 "Pet", "Soulflow", "Desk-Buddy",
             ),
             "Party & Social" to setOf("Party Finder List"),
+            "Slayer" to setOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit"),
         )
 
         /** Non-empty HUD-name set for [columnName], or null if that column has no movable HUDs. */

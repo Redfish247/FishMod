@@ -3,11 +3,13 @@ package fishmod.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import fishmod.features.ActionBarCleaner;
+import fishmod.utils.Keybinds;
 import fishmod.utils.Location;
 import fishmod.utils.config.values.FishSettings;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
@@ -40,6 +42,21 @@ public class GuiMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getAbsorptionAmount()F"))
     private float fishmod$hideAbsorption(Player instance, Operation<Float> original) {
         return fishmod$ab(FishSettings.abHideAbsorption) ? 0f : original.call(instance);
+    }
+
+    // Chat Peek: while held, render chat like the real chat screen does (opaque, no fade) without
+    // actually opening it, so movement/camera input keeps working.
+    @WrapOperation(method = "extractChat",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/components/ChatComponent;extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/gui/Font;IIILnet/minecraft/client/gui/components/ChatComponent$DisplayMode;Z)V"))
+    private void fishmod$chatPeek(ChatComponent chat, GuiGraphicsExtractor extractor, Font font, int tickCount,
+                                   int mouseX, int mouseY, ChatComponent.DisplayMode mode, boolean focused,
+                                   Operation<Void> original) {
+        if (Keybinds.chatPeekActive()) {
+            original.call(chat, extractor, font, tickCount, mouseX, mouseY, ChatComponent.DisplayMode.FOREGROUND, true);
+        } else {
+            original.call(chat, extractor, font, tickCount, mouseX, mouseY, mode, focused);
+        }
     }
 
     @WrapOperation(method = "extractHotbarAndDecorations",
