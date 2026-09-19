@@ -134,13 +134,13 @@ object NwConstants {
 
     // ENCHANTMENT_UPGRADES: enchant -> {upgradeItem, tier}
     @JvmField
-    val ENCHANTMENT_UPGRADE_TIER: MutableMap<String, IntArray> = HashMap()
+    val ENCHANTMENT_UPGRADE_TIER: MutableMap<String, Int> = HashMap()
     @JvmField
     val ENCHANTMENT_UPGRADE_ITEM: MutableMap<String, String> = HashMap()
 
     private fun put(ench: String, item: String, tier: Int) {
         ENCHANTMENT_UPGRADE_ITEM[ench] = item
-        ENCHANTMENT_UPGRADE_TIER[ench] = intArrayOf(tier)
+        ENCHANTMENT_UPGRADE_TIER[ench] = tier
     }
 
     init {
