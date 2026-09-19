@@ -141,11 +141,6 @@ object DungeonWaypoints {
     }
 
     @JvmStatic
-    fun resetSecrets() {
-        Misc.addChatMessage(Component.literal("§7[fm wp] Secret tracking reset (no-op in this version)."))
-    }
-
-    @JvmStatic
     fun setType(name: String) {
         try {
             type = WaypointType.valueOf(name.uppercase())

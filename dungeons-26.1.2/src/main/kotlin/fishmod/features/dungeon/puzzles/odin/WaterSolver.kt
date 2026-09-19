@@ -164,8 +164,7 @@ object WaterSolver {
         DIAMOND(BlockPos(10, 61, 20)),
         EMERALD(BlockPos(10, 61, 15)),
         CLAY(BlockPos(10, 61, 10)),
-        WATER(BlockPos(15, 60, 5)),
-        NONE(BlockPos(0, 0, 0));
+        WATER(BlockPos(15, 60, 5));
 
         val leverPos: BlockPos
             get() = OdinScan.currentRoom?.getRealCoords(relativePosition) ?: BlockPos(0, 0, 0)

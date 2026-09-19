@@ -33,13 +33,11 @@ enum class ORoomShape(val displayName: String) {
     @SerializedName("2x2") S2x2("2x2");
 }
 
+// Real cores/secrets/trappedChests come from the separate map.RoomData/Scan pipeline that's
+// already in use elsewhere — only `type`/`shape` are ever read from this table (by room name).
 data class ORoomData(
     val name: String,
     val type: ORoomType,
-    val cores: List<Int>,
-    val crypts: Int = 0,
-    val secrets: Int = 0,
-    val trappedChests: Int = 0,
     val shape: ORoomShape = ORoomShape.UNKNOWN,
 )
 

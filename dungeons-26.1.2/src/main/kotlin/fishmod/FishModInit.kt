@@ -26,7 +26,6 @@ import fishmod.utils.config.Config
 import fishmod.utils.config.FishConfig
 import fishmod.utils.config.FolderUtility
 import fishmod.utils.data.EntityUtil
-import fishmod.utils.data.FishPartyTracker
 import fishmod.utils.data.PartyUtil
 import fishmod.utils.debug.Debug
 import fishmod.utils.dungeon.Phase
@@ -165,9 +164,6 @@ class FishModInit : ModInitializer {
                                 }
                         )
                 )
-                .then(ClientCommands.literal("resetsecrets").executes {
-                    fishmod.features.dungeon.DungeonWaypoints.resetSecrets(); Constants.SUCCESS
-                })
                 .then(
                     ClientCommands.literal("type")
                         .then(
@@ -404,7 +400,6 @@ class FishModInit : ModInitializer {
         DungeonDeathMessage.init()
         fishmod.features.ExplosiveShot.init()
         fishmod.features.CritTracker.init()
-        FishPartyTracker.init()
         PartyCommandHandler.init()
         SoulflowHud.init()
         PetHud.init()
