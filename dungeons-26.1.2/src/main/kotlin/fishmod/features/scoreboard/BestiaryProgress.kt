@@ -8,12 +8,7 @@ import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import java.io.InputStreamReader
 
-/** Overall Bestiary completion for the Custom Scoreboard's "Bestiary" extra. Hypixel doesn't
- *  expose a ready-made percentage, so this computes it: each mob family has a kill-count bracket
- *  (one of 7 shared threshold curves) capped at that family's max kills, its current tier is how
- *  many thresholds its summed kills clear, and the overall score is (sum of current tiers) /
- *  (sum of max tiers). The family/bracket/cap table is `data/bestiary.json` (208 families,
- *  809 kill keys). */
+/** Hypixel doesn't expose a ready-made percentage, so this computes it as (sum of current tiers)/(sum of max tiers) from `data/bestiary.json`'s per-family kill brackets. */
 object BestiaryProgress {
 
     private class Family(val bracket: Int, val cap: Int, val keys: List<String>)

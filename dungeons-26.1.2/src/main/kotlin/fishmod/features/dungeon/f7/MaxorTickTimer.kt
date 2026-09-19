@@ -1,13 +1,12 @@
 package fishmod.features.dungeon.f7
 
-import config.practical.hud.HUDComponent
+import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.Location
 import fishmod.utils.config.values.Floor7
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.rendering.RenderUtils
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Maxor (P1) tick timer — counts server ticks while in P1. */
 object MaxorTickTimer {
 
     private val timer = TickTimer()

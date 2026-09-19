@@ -981,6 +981,8 @@ public class HypixelApi {
         String trimmed = body == null ? "" : body.trim();
         boolean looksJson = trimmed.startsWith("{") || trimmed.startsWith("[");
         if (code >= 200 && code < 300 && looksJson) return null;
+        if (code == 403 && trimmed.contains("\"blocked\""))
+            return "§cFishMod API access is blocked for you by an admin.";
         if (code == 429 || trimmed.contains("error code: 1015") || trimmed.contains("error code: 1027"))
             return "§cHypixel proxy is rate-limited (429) — try again in a bit.";
         if (code == 502 || code == 503 || code == 504)
@@ -2063,7 +2065,10 @@ public class HypixelApi {
                 try {
                     JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
                     if (!root.get("success").getAsBoolean()) {
-                        mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI error — proxy rejected request.")));
+                        String msg = (root.has("cause") && "blocked".equals(root.get("cause").getAsString()))
+                            ? "§cFishMod API access is blocked for you by an admin."
+                            : "§cAPI error — proxy rejected request.";
+                        mc.schedule(() -> Misc.addChatMessage(Component.literal(msg)));
                         mc.execute(() -> cb.onData(new PowderData()));
                         return;
                     }

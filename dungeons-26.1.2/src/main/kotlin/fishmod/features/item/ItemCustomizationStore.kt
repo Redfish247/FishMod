@@ -33,14 +33,8 @@ object ItemCustomizationStore {
     @JvmStatic fun setDyeColor(uuid: String, argb: Int) { data.dyeColors[uuid] = argb; data.animatedDyes.remove(uuid); save() }
     @JvmStatic fun removeDyeColor(uuid: String) { if (data.dyeColors.remove(uuid) != null) save() }
 
-    /**
-     * Animated dyes are legacy-only: the current [ItemCustomizeScreen] has no writer, so
-     * [setAnimatedDye] has no call site. Entries left in a pre-port config are still read by
-     * [getAnimatedDye] (DyedItemColorMixin) and animated by [AnimatedDyeAnimator] — kept for that.
-     */
+    /** Legacy-only: entries from a pre-port config, read by DyedItemColorMixin and animated by AnimatedDyeAnimator. */
     @JvmStatic fun getAnimatedDye(uuid: String): AnimatedDye? = data.animatedDyes[uuid]
-    @JvmStatic fun setAnimatedDye(uuid: String, dye: AnimatedDye) { data.animatedDyes[uuid] = dye; data.dyeColors.remove(uuid); save() }
-    @JvmStatic fun removeAnimatedDye(uuid: String) { if (data.animatedDyes.remove(uuid) != null) save() }
 
     @JvmStatic fun getArmorTrim(uuid: String): ArmorTrimId? = data.armorTrims[uuid]
     @JvmStatic fun setArmorTrim(uuid: String, trim: ArmorTrimId) { data.armorTrims[uuid] = trim; save() }

@@ -9,11 +9,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import java.util.regex.Pattern
 
-/**
- * Parses the Terminator "Explosive Shot" chat line and shows the per-enemy damage as a title.
- * Only active during the F7 Maxor fight ([Phase.inP1]). The chat damage is the TOTAL across all
- * enemies hit, so it's divided by enemy count for the per-target hit. Never cancels the chat line.
- */
+
 object ExplosiveShot {
 
     // hit N enemy/enemies for D damage  (D may carry thousands commas and a decimal)
@@ -25,6 +21,8 @@ object ExplosiveShot {
     fun init() {
         Events.ON_GAME_MESSAGE.register { text -> onMessage(text) }
     }
+
+
 
     private fun onMessage(text: Component?): Boolean {
         if (text == null) return false
@@ -49,18 +47,27 @@ object ExplosiveShot {
 
         val perEnemy = total / enemies
         val dmg = formatDamage(perEnemy)
-        val title = Component.literal(dmg).withStyle(ChatFormatting.RED)
-        val subtitle = Component.literal(
-            "§7Explosive Shot §8• §f" + enemies + (if (enemies == 1) " enemy" else " enemies")
-        )
 
-        // ON_GAME_MESSAGE fires on the network thread — touch the HUD only on the client thread.
+        // ON_GAME_MESSAGE fires on the network thread — touch the HUD/chat only on the client thread.
         val mc = Minecraft.getInstance()
-        mc.execute {
-            val hud = mc.gui
-            hud.setTimes(0, 25, 8) // snappy: no fade-in, ~1.25s hold, quick fade-out
-            hud.setTitle(title)
-            hud.setSubtitle(subtitle)
+        if (FishSettings.explosiveShotShowTitle) {
+            val title = Component.literal(dmg).withStyle(ChatFormatting.RED)
+            val subtitle = Component.literal(
+                "§7Explosive Shot §8• §f" + enemies + (if (enemies == 1) " enemy" else " enemies")
+            )
+            mc.execute {
+                val hud = mc.gui
+                hud.setTimes(0, 25, 8) // snappy: no fade-in, ~1.25s hold, quick fade-out
+                hud.setTitle(title)
+                hud.setSubtitle(subtitle)
+            }
+        }
+
+        if (FishSettings.explosiveShotChatMessage) {
+            val chatLine = Component.literal(
+                "§7[Explosive Shot] §f$dmg §7dmg per " + (if (enemies == 1) "enemy" else "enemies") + " §8(" + enemies + ")"
+            )
+            mc.execute { mc.player?.sendSystemMessage(chatLine) }
         }
 
         if (FishSettings.explosiveShotAnnounceParty && DungeonClass.isClass(DungeonClass.ARCHER)) {
@@ -69,15 +76,19 @@ object ExplosiveShot {
         return false // keep the original chat line
     }
 
-    /** Shares the same info shown on screen with the party, throttled via the shared [fishmod.utils.ChatQueue]. */
     private fun announceToParty(dmg: String, enemies: Int) {
-        val message = "Explosive Shot: $dmg dmg per enemy(" + enemies + (if (enemies == 1) " enemy)" else " enemies)")
+        val message = "Explosive Shot: $dmg dmg per enemy (" + enemies + (if (enemies == 1) " enemy)" else " enemies)")
         fishmod.utils.ChatQueue.enqueue("pc $message")
     }
 
-    /** Whole numbers print with thousands separators; fractional values keep one decimal. */
     private fun formatDamage(v: Double): String {
-        if (v == Math.floor(v) && !v.isInfinite()) return String.format("%,d", v.toLong())
-        return String.format("%,.1f", v)
+        return when {
+            v >= 1_000_000_000_000.0 -> String.format("%.1fT", v / 1_000_000_000_000.0).replace(".0", "")
+            v >= 1_000_000_000.0     -> String.format("%.1fB", v / 1_000_000_000.0).replace(".0", "")
+            v >= 1_000_000.0         -> String.format("%.1fM", v / 1_000_000.0).replace(".0", "")
+            v >= 1_000.0             -> String.format("%.1fk", v / 1_000.0).replace(".0", "")
+            v == Math.floor(v) && !v.isInfinite() -> String.format("%,d", v.toLong())
+            else                     -> String.format("%,.1f", v)
+        }
     }
 }

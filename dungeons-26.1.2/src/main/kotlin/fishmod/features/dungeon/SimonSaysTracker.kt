@@ -19,13 +19,7 @@ import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.AABB
 import java.util.regex.Pattern
 
-/**
- * Tracks Goldor (F7 P3) Simon Says rounds via block scanning. Player must be inside `DEVICE_BOX`
- * to lock onto `DEVICE_CENTER`, then rounds are counted by demo "flashes" (lit sea-lantern rising
- * edges); 5/5 instead comes from the in-game "completed a device!" message. A break is detected
- * via a fixed obsidian/button-column signal, which resets tracking to 0 until the device goes
- * active again.
- */
+
 object SimonSaysTracker {
 
     private const val SCAN_RADIUS = 3 // lit-cell box around the locked device center (covers the 4x4 lantern grid)
@@ -53,12 +47,14 @@ object SimonSaysTracker {
 
     // Grace window after the "all reset" block pattern first appears before it's treated as a
     // break. A legit 5/5 finish flips the exact same obsidian/button cells as a break does — the
-    // only difference is the "completed a device!" chat message. Under P3 chat load that line
-    // regularly lags 1-2s behind the block update, and if the break commits first it fires a
-    // bogus "Simon Says: FAILED!" that a moment later is contradicted by 5/5. Wait long enough
-    // that completion reliably wins the race; a genuine grief's FAILED notice being ~2.5s late
-    // is harmless. Completion also disarms a pending break outright (see tryComplete()).
-    private const val BREAK_GRACE_MS = 2500L
+    // only difference is the "completed a device!" chat message. Under heavy P3 chat load that
+    // line has been observed lagging 3-5s behind the block update (2.5s wasn't enough — a real
+    // grief still slipped through and announced FAILED before the delayed 5/5 arrived). Wait long
+    // enough that completion reliably wins the race; a genuine break's FAILED notice being a few
+    // seconds late is harmless. Completion also disarms a pending break outright (see
+    // tryComplete()), and if a FAILED already got announced before the late completion lands,
+    // tryComplete() sends a correction (see `falseFailSent`).
+    private const val BREAK_GRACE_MS = 6000L
 
     private var round = 0          // completed-round count shown on the HUD (0..5)
     private var maxLen = 0         // longest demo sequence length seen this run
@@ -76,6 +72,7 @@ object SimonSaysTracker {
     private var breakTicks = 0    // cooldown before an "inactive" reading can count as a break
     private var canBreak = false  // device has been seen active since the last break
     private var broken = false    // device just reset — fully off (no scan/announce) until it restarts
+    private var falseFailSent = false // a FAILED was announced this run; retract it if completion arrives late
     private var breakArmedAtMs = 0L // all-air reset pattern first seen; grace period before treating it as a break
     private var inP3 = false      // HUD only
     private var atDevice = false
@@ -123,12 +120,20 @@ object SimonSaysTracker {
                         round = n
                     } else if (n >= 5) {
                         // A "5/5" seen in chat (ours echoed back, or a teammate's) — lock the
-                        // tracker done. No announce here: re-broadcasting would echo the line to
-                        // party chat from every observer.
+                        // tracker done. No re-announce here (would echo the line back to party
+                        // chat from every observer), but still retract a bogus FAILED and disarm
+                        // any pending break exactly like tryComplete() does.
                         round = 5
                         doneAtMs = System.currentTimeMillis()
+                        if (!completed && falseFailSent) {
+                            Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§a(actually completed — ignore the FAILED above)"))
+                        }
                         completed = true
                         completeLatched = true
+                        breakArmedAtMs = 0L
+                        canBreak = false
+                        broken = false
+                        falseFailSent = false
                     }
                 }
             }
@@ -245,6 +250,13 @@ object SimonSaysTracker {
         lastAnnounced = 5
         doneAtMs = System.currentTimeMillis()
         announceRound(5)
+        // A FAILED already went out this run (the completion message arrived after the grace
+        // window expired) — let chat know it was wrong rather than leaving a stale FAILED as the
+        // last word.
+        if (falseFailSent) {
+            Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§a(actually completed — ignore the FAILED above)"))
+            if (FishSettings.simonSaysPartyChat) fishmod.utils.ChatQueue.enqueue("pc Simon Says: actually completed, ignore the FAILED above")
+        }
         completed = true
         completeLatched = true
         // Disarm any break that was mid-grace: the all-air pattern we were about to call a
@@ -253,6 +265,7 @@ object SimonSaysTracker {
         breakArmedAtMs = 0L
         canBreak = false
         broken = false
+        falseFailSent = false
     }
 
     /** Center-screen title hook (titles are local-only, so a loose match is safe). */
@@ -314,6 +327,17 @@ object SimonSaysTracker {
         // window to arrive and set `completed` before committing to a break.
         val now = System.currentTimeMillis()
         if (breakArmedAtMs == 0L) { breakArmedAtMs = now; return }
+
+        // SimonSaysSolver watches the same button/lantern grid via block-update packets, which
+        // land instantly — far faster than Hypixel's "completed a device!" chat line. If the last
+        // full, correct click sequence landed right around when this reset fired, it's the finish
+        // itself, not a break: skip the FAILED path entirely instead of racing the chat message.
+        val sinceClick = now - fishmod.features.dungeon.f7.SimonSaysSolver.lastRoundCompleteMs
+        if (fishmod.features.dungeon.f7.SimonSaysSolver.lastRoundCompleteMs != 0L && sinceClick in 0..BREAK_GRACE_MS) {
+            tryComplete()
+            return
+        }
+
         if (now - breakArmedAtMs < BREAK_GRACE_MS) return
 
         canBreak = false
@@ -323,6 +347,7 @@ object SimonSaysTracker {
         if (debug) log("device broke — reset + fully off until restart")
 
         if (FishSettings.simonSaysFailEnabled) {
+            falseFailSent = true
             Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§c" + FishSettings.simonSaysFailMessage))
             if (FishSettings.simonSaysPartyChat) fishmod.utils.ChatQueue.enqueue("pc " + FishSettings.simonSaysFailMessage)
         }
@@ -359,6 +384,7 @@ object SimonSaysTracker {
         broken = false
         breakArmedAtMs = 0L
         doneAtMs = 0L
+        falseFailSent = false
         litPrev.clear()
         scanCounter = 0
         deviceCenter = null

@@ -6,10 +6,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import java.util.regex.Pattern
 
-/**
- * Parses the item-customizer "You equipped <Name>!" chat line and flashes the loadout name as an
- * on-screen title, since the chat line alone is easy to miss mid-fight. Never cancels the chat line.
- */
+/** Never cancels the chat line. */
 object LoadoutTitle {
 
     private val PATTERN: Pattern = Pattern.compile("^You equipped (.+)!$")

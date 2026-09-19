@@ -11,26 +11,10 @@ import net.minecraft.world.phys.Vec3
 import kotlin.math.abs
 
 /**
- * World-space highlight for already-seen locked doors.
- *
- * BLOOD (and other non-normal) doors draw as occluded vanilla gizmos ([RenderingEvents.GIZMO]) so a
- * wall or terrain in front hides them. WITHER doors instead draw on [RenderingEvents.NO_DEPTH_FILLED]
- * — through walls — since knowing a Wither door is right there (e.g. behind the wall you're facing)
- * is the whole point of tracking Wither keys. Both only draw while the player stands in one of
- * [Door.rooms] — see [facingRoomTile].
- *
- * By default only the door-frame face toward the player's current room is drawn — a genuine flat
- * quad ([faceQuad]), not the whole 3x3x5 box and not a box collapsed to near-zero thickness on one
- * axis: that was tried first and its own front/back faces, a hair apart, z-fought each other and
- * flickered the highlight frame to frame. [DungeonMapSettings.mapDoorHighlightFullBox] opts every
- * type into the full-box silhouette; WITHER doors always use the full box (outline + translucent
- * fill), coloured [mapDoorOpenableColor] once the Wither Key is held ([openable]) /
- * [DungeonMapSettings.mapWitherHighlightMissingColor] until then.
- *
- * A door is "openable" once the player holds the matching key (a Wither Key for a locked WITHER
- * door, the Blood Key for a locked BLOOD door), via [DungeonState.hasWitherKey]/[DungeonState.hasBloodKey].
- * Openable doors use [DungeonMapSettings.mapDoorOpenableColor]/`Filled`; doors still locked without
- * the key fall back to the door's own per-type 2D-map colour ([MapColors] via [Door]).
+ * World-space highlight for already-seen locked doors. BLOOD doors draw occluded ([RenderingEvents.GIZMO]);
+ * WITHER doors draw through walls ([RenderingEvents.NO_DEPTH_FILLED]) since knowing one is nearby is the point.
+ * By default only the near door-frame face is drawn as a flat quad ([faceQuad]) to avoid z-fighting; a full-box
+ * mode exists ([DungeonMapSettings.mapDoorHighlightFullBox]), always used for WITHER doors.
  */
 object DoorHighlight {
 
@@ -112,13 +96,8 @@ object DoorHighlight {
         return AABB(x - 1.0, Y_MIN, z - 1.0, x + 2.0, Y_MAX, z + 2.0).inflate(0.02)
     }
 
-    /**
-     * The single flat face of [box] nearest [hereTile] — the one the player is actually looking at
-     * from their current room — as its 4 corners, wound consistently around the quad. Orientation
-     * comes from comparing [hereTile]'s world position against the door's other room-tile: whichever
-     * axis (x or z) they differ on is the axis the door frame faces, and the sign of that difference
-     * says which side of the box is the near one.
-     */
+    /** The single flat face of [box] nearest [hereTile], as 4 wound corners; orientation comes from
+     *  comparing [hereTile] against the door's other room-tile to find the facing axis and side. */
     private fun faceQuad(door: Door, hereTile: Room.Tile): Array<Vec3>? {
         val full = box(door)
         val other = door.rooms.firstOrNull { it !== hereTile } ?: return null

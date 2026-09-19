@@ -9,16 +9,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 
-/**
- * "P3 practice" override for F7/M7 boss practice servers (default: `hypixelp3sim.zapto.org`).
- *
- * Those servers copy Hypixel's sidebar, so [Phase.isInFloor7] already works — but they never send
- * the Hypixel Mod API location packet ([fishmod.utils.Location.inDungeon] stays false) and don't
- * relay the `[BOSS]` chat lines that advance [Phase]'s phase counter. While connected to a
- * configured practice IP this forces `inDungeon` / `inSkyblock` true and lets you set the boss phase
- * by hand (`/fmpractice p1..p5`), so the terminal solver, Goldor devices, Wither dragons, etc. all
- * activate.
- */
+/** Practice servers copy Hypixel's sidebar but never send the location packet or `[BOSS]` chat lines, so this forces `inDungeon`/`inSkyblock` true and lets phase be set by hand (`/fmpractice p1..p5`). */
 object PracticeMode {
 
     @Volatile var active = false

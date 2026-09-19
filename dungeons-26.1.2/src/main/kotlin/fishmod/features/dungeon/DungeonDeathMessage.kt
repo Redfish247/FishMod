@@ -7,14 +7,8 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import java.util.regex.Pattern
 
-/**
- * When a player dies in a dungeon, sends a customisable message
- * with their name substituted into the template via {name}.
- * Optionally broadcasts to party chat.
- */
 object DungeonDeathMessage {
 
-    // Captures the player name from Hypixel dungeon death messages
     private val DEATH_PATTERN: Pattern = Pattern.compile(
         "☠ (\\S+) (?:was|were) killed by|☠ (\\S+) (?:died|quit)"
     )

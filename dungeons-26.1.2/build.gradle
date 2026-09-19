@@ -94,8 +94,11 @@ dependencies {
 	// that one is the actual runtime/shipped dependency.
 	compileOnly("net.hypixel:mod-api:${project.hypixel_api_core_version}")
 	include implementation("maven.modrinth:hypixel-mod-api:${project.hypixel_api_version}")
-	// Fork of BladeMasterGabe/practical-config ported to 26.2 (see gradle.properties)
-	include implementation("com.github.Redfish247:practical-config:${project.practical_config}")
+	// Fork of BladeMasterGabe/practical-config ported to 26.2 (see gradle.properties), bundled via
+	// the :practical-config-relocated shim project, which repackages it under
+	// fishmod.shaded.practicalconfig so it can't collide with another mod's own bundled copy of the
+	// same library at the same package (see that project's build.gradle for why).
+	include implementation(project(':practical-config-relocated'))
 
 	// NanoVG (LWJGL binding) — real anti-aliased vector-graphics rendering for FishModScreen.
 	// Not one of Minecraft's own bundled LWJGL modules, so both the core jar and its natives

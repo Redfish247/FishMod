@@ -84,16 +84,19 @@ enum class Location(val name2: String) {
             Events.ON_LOCATION_CHANGE.invoke { locationChangeEvent -> locationChangeEvent.onLocationChange(currentLocation) }
         }
 
+        private fun practiceModeDungeon(location: Location): Boolean =
+            fishmod.utils.dungeon.PracticeMode.active && location == DUNGEON
+
         @JvmStatic
         fun `in`(location: Location): Boolean {
-            if (fishmod.utils.dungeon.PracticeMode.active && location == DUNGEON) return true
+            if (practiceModeDungeon(location)) return true
             if (!inSkyblockFlag) return false
             return currentLocation == location
         }
 
         @JvmStatic
         fun inDungeon(): Boolean {
-            if (fishmod.utils.dungeon.PracticeMode.active) return true
+            if (practiceModeDungeon(DUNGEON)) return true
             if (!inSkyblockFlag) return false
             return currentLocation == DUNGEON
         }

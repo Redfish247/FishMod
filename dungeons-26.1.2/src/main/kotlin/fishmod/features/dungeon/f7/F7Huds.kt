@@ -1,7 +1,7 @@
 package fishmod.features.dungeon.f7
 
-import config.practical.hud.HUDComponent
-import config.practical.manager.ConfigValue
+import fishmod.shaded.practicalconfig.hud.HUDComponent
+import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.config.values.Floor7
 import fishmod.utils.dungeon.Section
 import fishmod.features.dungeon.f7.s4.S4Alerts
@@ -10,11 +10,7 @@ import fishmod.features.dungeon.f7.s4.S4Tracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/**
- * Holds the Floor 7 timer/notification HUD components and renders them explicitly via
- * [renderHud] (condition-suppliers forced `{ false }`), pulling any back on-screen each frame
- * if older-format saved pixel coords made `getScaledX` blow up to an off-screen fraction.
- */
+/** Condition-suppliers below are forced `{ false }`; [renderHud] drives visibility explicitly. */
 object F7Huds {
 
     private const val TICK_W = 60
@@ -137,10 +133,9 @@ object F7Huds {
         BloodSolver.init()
     }
 
-    /** Render all enabled F7 HUDs (called from a HudRenderCallback in FishModInit). */
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor) {
-        // Distinct default targets (only used to pull off-screen elements back; dragged positions are kept).
+        // targetX/Y only pull off-screen elements back; dragged positions are kept.
         renderOne(ctx, tickTimer, BossTickTimer.display(), BossTickTimer::render, 10, 70)
         renderOne(ctx, termStartTimer, TermStartTimer.display(), TermStartTimer::render, 10, 106)
         renderOne(ctx, crystalSpawnTime, CrystalSpawn.display(), CrystalSpawn::render, 10, 118)

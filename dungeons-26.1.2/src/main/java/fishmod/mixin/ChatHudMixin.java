@@ -19,7 +19,7 @@ import net.minecraft.network.chat.MessageSignature;
 public class ChatHudMixin {
 
     private static final String CMD_ALT =
-            "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|crit|fps|tps|ping|ai|allinv|d|mp|collection|kick|warp|w|transfer|pt|ptme|promote|demote|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|help|\\?|e|[fm][1-7]|t[1-5]";
+            "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|crit|fps|tps|ping|ai|allinv|d|mp|collection|kick|k|warp|w|transfer|pt|ptme|promote|pro|demote|dem|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|help|\\?|e|[fm][1-7]|t[1-5]";
 
     // Up to 3 args captured (groups 3/4/5): .crtc needs [name] [class] [level].
     private static final String ARG_TAIL = "(?:\\s+(\\w+)(?:\\s+(\\w+)(?:\\s+(\\w+))?)?)?\\s*$";
@@ -43,6 +43,10 @@ public class ChatHudMixin {
     private void onAddMessage(Component message, MessageSignature signature, GuiMessageSource source, GuiMessageTag tag, CallbackInfo ci) {
         // Fires even when the line below gets hidden by Chat Filter's "Boss Messages" toggle.
         fishmod.features.Ragnarock.checkP5Taunt(message.getString());
+        // Catches party chat regardless of packet type (signed player chat vs. unsigned system
+        // chat) — the network-level ON_GAME_MESSAGE hook only sees unsigned system chat, which
+        // in-dungeon party messages don't always arrive as.
+        fishmod.features.dungeon.AutoRequeue.onChatLine(message.getString());
 
         // Cancel at addMessage() HEAD: packet parsers already ran, and no blank slot is left behind
         if (fishmod.features.ChatFilter.shouldHide(message)

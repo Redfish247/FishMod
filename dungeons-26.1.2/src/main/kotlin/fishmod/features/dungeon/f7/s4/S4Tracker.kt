@@ -15,20 +15,7 @@ import net.minecraft.world.phys.AABB
 import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 
-/**
- * S4 (the 4th and final terminal section before the Core opens) term/leap failure tracker.
- *
- * Hypixel never tells anyone which terminal a teammate is "assigned" to — that's purely a party
- * convention — so this does not attempt to fabricate assignment data. What it correlates instead,
- * per player, is real evidence: terminal/device/lever completion broadcasts during S4
- * ([Events.ON_TERMINAL]), physical presence in the Core's arrival box (the same [CORE_BOX] region),
- * and death messages.
- * Entering Core while the section is still 4 is unambiguous evidence of an early leap; still not
- * having entered Core a configurable delay after Section 5 (Core open) starts is a late leap;
- * entering Core in S5 having never completed anything in S4 is only ever classified
- * [S4Status.POSSIBLE_MISSED] — plenty of players finish a section without personally completing a
- * terminal, so this is a hint for the HUD, not a hard accusation.
- */
+/** S4 term/leap failure tracker: correlates terminal completions, Core-box entry timing, and death messages, since Hypixel never broadcasts terminal assignments. */
 object S4Tracker {
 
     private val CORE_BOX = AABB(53.5, 114.0, 49.5, 55.5, 116.0, 51.5)

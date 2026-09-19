@@ -6,17 +6,9 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
 
 /**
- * What an item is actually worth. Shared by [ItemPriceTooltip] and [AuctionPriceAutofill] so both
- * agree on the number. Three tiers, cheapest-accurate first:
- *
- * 1. [CroesusPrices.dynamicBinPrice] — for items with a dungeon quality roll, the live lowest BIN
- *    among auctions matching this item's exact quality/stars/recomb/enchants. Class-specific
- *    dungeon gear (Skeleton Master armor, Necron's pieces, ...) swings 10-100x across star count
- *    alone, so this is the only tier that isn't wildly off for those.
- * 2. [CroesusPrices.qualityBinPrice] — live lowest BIN at just the quality roll (ignores
- *    stars/enchants), used while tier 1 is still loading (both are async + cached).
- * 3. bulk bazaar/LBin (base) + [ModifierValue] mods, scaled by a rough quality-bracket multiplier —
- *    used before anything live has loaded, or for items with no quality roll at all.
+ * What an item is actually worth, shared by [ItemPriceTooltip] and [AuctionPriceAutofill]. Falls
+ * through three tiers: exact-match live BIN ([CroesusPrices.dynamicBinPrice]), quality-only live BIN
+ * ([CroesusPrices.qualityBinPrice]), then bulk bazaar/LBin scaled by a quality-bracket multiplier.
  */
 object ItemValue {
 
@@ -85,7 +77,7 @@ object ItemValue {
             boost <= 41 -> 1.0
             boost <= 45 -> 1.3
             boost <= 49 -> 1.8
-            else -> 2.5 // 50% - max roll
+            else -> 2.5
         }
     }
 }

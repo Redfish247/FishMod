@@ -3,9 +3,12 @@ package fishmod.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import fishmod.features.ActionBarCleaner;
+import fishmod.features.DarkMode;
 import fishmod.utils.Keybinds;
 import fishmod.utils.Location;
 import fishmod.utils.config.values.FishSettings;
+import fishmod.utils.config.values.Visual;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -64,5 +67,17 @@ public class GuiMixin {
                     target = "Lnet/minecraft/client/gui/contextualbar/ContextualBarRenderer;extractExperienceLevel(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/gui/Font;I)V"))
     private void fishmod$hideXpLevel(GuiGraphicsExtractor extractor, Font font, int level, Operation<Void> original) {
         if (!fishmod$ab(FishSettings.abHideXpBar)) original.call(extractor, font, level);
+    }
+
+    // Dark Mode: drawn before the HUD (world-only tint) unless "Tint HUD" is on, in which case it's
+    // drawn after everything so the hotbar/chat/etc. get tinted too.
+    @Inject(method = "extractRenderState", at = @At("HEAD"))
+    private void fishmod$darkModePre(GuiGraphicsExtractor extractor, DeltaTracker deltaTracker, CallbackInfo ci) {
+        if (!Visual.darkModeTintHud) DarkMode.drawOverlay(extractor);
+    }
+
+    @Inject(method = "extractRenderState", at = @At("TAIL"))
+    private void fishmod$darkModePost(GuiGraphicsExtractor extractor, DeltaTracker deltaTracker, CallbackInfo ci) {
+        if (Visual.darkModeTintHud) DarkMode.drawOverlay(extractor);
     }
 }

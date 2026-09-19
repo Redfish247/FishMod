@@ -7,17 +7,8 @@ import net.minecraft.client.Minecraft
 import java.util.ArrayDeque
 
 /**
- * Single throttled outbound queue for mod-issued party-chat / commands (`pc ...` and friends).
- *
- * Every event-driven auto-announcer (death message, lag, invinc procs, leap, score milestones,
- * warp-kick, ping, explosive shot, ...) routes through here instead of calling
- * `connection.sendCommand` directly. Without this, two announcers firing on the same wipe
- * (death + lag + "score missing") hit Hypixel's chat spam filter and the messages get dropped
- * or you eat a short chat mute.
- *
- * Guarantees: at most one send per [MIN_GAP_MS], identical text suppressed within [DEDUP_MS],
- * queue capped at [MAX_PENDING] (oldest dropped) so a backlog can never "catch up" and dump a
- * wall of stale lines minutes later. Cleared on world change.
+ * Single throttled outbound queue for mod-issued party-chat commands, so multiple auto-announcers
+ * firing on the same event don't hit Hypixel's chat spam filter. Cleared on world change.
  */
 object ChatQueue {
 

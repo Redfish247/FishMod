@@ -3,23 +3,10 @@ package fishmod.features.slayers
 import fishmod.utils.config.values.FishSettings
 
 /**
- * Boss kill timer. Uses [System.nanoTime] (monotonic, ~µs) rather than tick counts so a laggy
- * server doesn't distort the reading.
- *
- * Two start modes ([FishSettings.slayerTimerStartMode]):
- *  - **Spawned**       — clock starts the instant the scoreboard flips to `Slay the boss!`
- *    ([SlayerManager] calls [onBossSpawned]).
- *  - **Fully Spawned** — clock starts when [SlayerBossDetector] first binds the real boss entity
- *    (roughly when its rise animation ends and it becomes attackable), i.e. [onBossEntityBound].
- *
- * Stops on the scoreboard `Boss slain!` line (or the `SLAYER QUEST COMPLETE!` chat if the board
- * skipped it on an instant kill). The result is held for display until the next quest resets it.
- *
- * Full-cycle timer
- * ---------------
- * Separately from the spawn→kill fight timer, [onBossKilled] tracks the wall-clock gap between one
- * boss kill and the next (fight + loot + walk + refill + next fight) — the real grind cadence. It
- * survives same-tier auto-slayer restarts and only clears on [reset] (quest change / world change).
+ * Boss kill timer, using [System.nanoTime] so server lag doesn't distort it. Starts on scoreboard
+ * `Slay the boss!` or, in "Fully Spawned" mode ([FishSettings.slayerTimerStartMode]), once
+ * [SlayerBossDetector] binds the real entity; stops on `Boss slain!`. [onBossKilled] separately tracks
+ * the wall-clock kill-to-kill cycle (the real grind cadence), surviving auto-slayer restarts.
  */
 object SlayerTimer {
 

@@ -1,7 +1,9 @@
 package fishmod.features.dungeon.map
 
 import fishmod.utils.config.values.DungeonMapSettings
+import fishmod.utils.dungeon.DungeonClass
 import net.minecraft.client.Minecraft
+import net.minecraft.client.player.AbstractClientPlayer
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.multiplayer.PlayerInfo
 import net.minecraft.client.renderer.RenderPipelines
@@ -57,8 +59,6 @@ object DungeonPlayers {
                 p.dead = clazz == "DEAD"
                 if (clazz != "DEAD") p.clazz = clazz
 
-                if (p.skin == null) p.skin = info.skin
-
                 p.entity = null
                 val level = mc.level
                 if (level != null) {
@@ -69,6 +69,11 @@ object DungeonPlayers {
                         }
                     }
                 }
+
+                // Prefer the entity's own resolved skin (the exact texture already used to render
+                // their in-world model, guaranteed non-placeholder) over the raw tab-list lookup,
+                // which can lag behind or get stuck on a not-yet-downloaded skin.
+                p.skin = (p.entity as? AbstractClientPlayer)?.skin ?: info.skin
             }
         }
     }
@@ -133,45 +138,84 @@ object DungeonPlayers {
 
         val ownLast = DungeonMapSettings.mapPlayerHeadDrawOwnLast
         if (ownLast) {
-            for (p in list) if (!isSelf(mc, p)) renderHead(g, matrices, mc, p, renderNames)
-            for (p in list) if (isSelf(mc, p)) renderHead(g, matrices, mc, p, renderNames)
+            for (p in list) if (!isSelf(mc, p)) safeRenderHead(g, matrices, mc, p, renderNames)
+            for (p in list) if (isSelf(mc, p)) safeRenderHead(g, matrices, mc, p, renderNames)
         } else {
-            for (p in list) renderHead(g, matrices, mc, p, renderNames)
+            for (p in list) safeRenderHead(g, matrices, mc, p, renderNames)
+        }
+    }
+
+    /** One bad teammate's data (unresolved skin, stale entity ref) must not blank out everyone else's head. */
+    private fun safeRenderHead(g: GuiGraphicsExtractor, matrices: org.joml.Matrix3x2fStack, mc: Minecraft, player: DungeonPlayer, renderNames: Boolean) {
+        try {
+            renderHead(g, matrices, mc, player, renderNames)
+        } catch (t: Throwable) {
         }
     }
 
     private fun isSelf(mc: Minecraft, p: DungeonPlayer): Boolean = mc.player != null && p.entity === mc.player
 
+    /** Simple, fixed class colors for the map head outline — intentionally not the configurable Dungeons.*Color values used elsewhere. */
+    private fun classOutlineColor(cls: DungeonClass): Int = when (cls) {
+        DungeonClass.ARCHER -> 0xFFFF0000.toInt()
+        DungeonClass.BERSERK -> 0xFFFF8000.toInt()
+        DungeonClass.MAGE -> 0xFF0000FF.toInt()
+        DungeonClass.TANK -> 0xFF00FF00.toInt()
+        DungeonClass.HEALER -> 0xFF800080.toInt()
+    }
+
+    /** Tab-list-parsed clazz (see updateRoster) is the reliable source; DungeonClass.getClass's chat-based
+     *  join-message map (see DungeonClass.kt) lags/misses for classes other than whichever joined last cleanly. */
+    private fun resolveClass(player: DungeonPlayer): DungeonClass? =
+        runCatching { DungeonClass.valueOf(player.clazz.uppercase()) }.getOrNull() ?: DungeonClass.getClass(player.name)
+
     private fun renderHead(g: GuiGraphicsExtractor, matrices: org.joml.Matrix3x2fStack, mc: Minecraft, player: DungeonPlayer, renderNames: Boolean) {
         if (player.isDead()) return
         val pos = player.mapRenderPosition()
         matrices.pushMatrix()
-        matrices.translate(pos[0] - 2.0f, pos[1] - 2.0f)
-        if (renderNames) {
-            matrices.pushMatrix()
-            matrices.scale(DungeonMapSettings.mapPlayerNamesScaling)
-            g.centeredText(mc.font, player.name, 0, 8, DungeonMapSettings.mapPlayerNameColor)
+        try {
+            matrices.translate(pos[0] - 2.0f, pos[1] - 2.0f)
+            if (renderNames) {
+                matrices.pushMatrix()
+                try {
+                    matrices.scale(DungeonMapSettings.mapPlayerNamesScaling)
+                    g.centeredText(mc.font, player.name, 0, 8, DungeonMapSettings.mapPlayerNameColor)
+                } finally {
+                    matrices.popMatrix()
+                }
+            }
+
+            matrices.rotate(Math.toRadians(180.0 + player.mapRenderYaw().toDouble()).toFloat())
+            val self = isSelf(mc, player)
+            val bg = if (self) DungeonMapSettings.mapPlayerHeadOwnBackground else DungeonMapSettings.mapPlayerHeadBackground
+            val bgAlpha = (bg ushr 24) and 255
+            val uglyPointer = DungeonMapSettings.mapPlayerUglyPointer
+            if (DungeonMapSettings.mapPlayerHeadBackgroundSize != 0 && bgAlpha != 0 && (!self || !uglyPointer)) {
+                val size = 5 + DungeonMapSettings.mapPlayerHeadBackgroundSize
+                g.fill(-size, -size, size, size, bg)
+            }
+
+            if (self && uglyPointer) {
+                g.blit(RenderPipelines.GUI_TEXTURED, MapTextures.SELF_MARKER, -5, -5, 0.0f, 0.0f, 10, 10, 10, 10, -1)
+            } else if (player.skin != null) {
+                // no PlayerFaceRenderer here; blit the 8x8 face off the skin body (64x64 layout: face at u=8,v=8)
+                g.blit(RenderPipelines.GUI_TEXTURED, player.skin!!.body().texturePath(), -4, -4, 8.0f, 8.0f, 8, 8, 64, 64, -1)
+            }
+
+            if (DungeonMapSettings.mapPlayerHeadClassOutline && !self) {
+                val cls = resolveClass(player)
+                if (cls != null) {
+                    val outlineColor = classOutlineColor(cls)
+                    val s = 5
+                    g.fill(-s, -s, s, -s + 1, outlineColor)
+                    g.fill(-s, s - 1, s, s, outlineColor)
+                    g.fill(-s, -s, -s + 1, s, outlineColor)
+                    g.fill(s - 1, -s, s, s, outlineColor)
+                }
+            }
+        } finally {
             matrices.popMatrix()
         }
-
-        matrices.rotate(Math.toRadians(180.0 + player.mapRenderYaw().toDouble()).toFloat())
-        val self = isSelf(mc, player)
-        val bg = if (self) DungeonMapSettings.mapPlayerHeadOwnBackground else DungeonMapSettings.mapPlayerHeadBackground
-        val bgAlpha = (bg ushr 24) and 255
-        val uglyPointer = DungeonMapSettings.mapPlayerUglyPointer
-        if (DungeonMapSettings.mapPlayerHeadBackgroundSize != 0 && bgAlpha != 0 && (!self || !uglyPointer)) {
-            val size = 5 + DungeonMapSettings.mapPlayerHeadBackgroundSize
-            g.fill(-size, -size, size, size, bg)
-        }
-
-        if (self && uglyPointer) {
-            g.blit(RenderPipelines.GUI_TEXTURED, MapTextures.SELF_MARKER, -5, -5, 0.0f, 0.0f, 10, 10, 10, 10, -1)
-        } else if (player.skin != null) {
-            // no PlayerFaceRenderer here; blit the 8x8 face off the skin body (64x64 layout: face at u=8,v=8)
-            g.blit(RenderPipelines.GUI_TEXTURED, player.skin!!.body().texturePath(), -4, -4, 8.0f, 8.0f, 8, 8, 64, 64, -1)
-        }
-
-        matrices.popMatrix()
     }
 
     private fun find(name: String): DungeonPlayer? = teammates.firstOrNull { it.name == name }

@@ -30,6 +30,8 @@ import java.util.List;
 @Mixin(EntityRenderer.class)
 public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> {
 
+    private static final double NAMETAG_STATS_RANGE_SQ = 10.0 * 10.0;
+
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     public void hideFire(T entity, S state, float tickProgress, CallbackInfo ci) {
 
@@ -69,14 +71,24 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
             state.nameTagAttachment = state.nameTagAttachment.add(0, FishSettings.nickPreviewYOffset, 0);
         }
 
-        // stat lines drawn under the nametag; fishmod$extraNametagLines reads these back
+        // stat lines drawn near the nametag; fishmod$extraNametagLines reads these back
         List<Component> statLines = null;
         if (FishSettings.nametagStatsEnabled && state.nameTag != null && entity instanceof Player pl) {
             boolean self = EntityUtil.isClientPlayer(pl);
-            if (!self || FishSettings.nametagStatsShowSelf) {
+            Minecraft mc = Minecraft.getInstance();
+            boolean inRange = self || mc.player == null || pl.distanceToSqr(mc.player) <= NAMETAG_STATS_RANGE_SQ;
+            if ((!self || FishSettings.nametagStatsShowSelf) && inRange) {
                 String playerName = pl.getName().getString();
                 statLines = fishmod.features.NametagStats.linesFor(playerName);
             }
+        }
+        // in "below" mode the stat block hangs under the nametag instead of floating above it, so raise
+        // the whole nametag (name + stats move together, since both read nameTagAttachment) by one line's
+        // world-space height per stat line — matching the 10-per-line offset used to stack them in
+        // fishmod$extraNametagLines, converted via EntityRenderer.NAMETAG_SCALE (0.025) — so the group
+        // ends up sitting at roughly the same height "above" mode would put the name at.
+        if (statLines != null && !statLines.isEmpty() && !FishSettings.nametagStatsAbove && state.nameTagAttachment != null) {
+            state.nameTagAttachment = state.nameTagAttachment.add(0, statLines.size() * 10 * 0.025, 0);
         }
         ((NametagStatsHolder) state).fishmod$setNametagStats(statLines);
     }
@@ -90,12 +102,13 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
                                           CameraRenderState cameraRenderState, int baseOffset, CallbackInfo ci) {
         List<Component> lines = ((NametagStatsHolder) state).fishmod$getNametagStats();
         if (lines == null || lines.isEmpty()) return;
-        // negative y = up; stack the stat lines above the nametag
-        int y = baseOffset - 10;
+        // negative y = up, positive y = down; stack the stat lines above or below the nametag
+        boolean above = FishSettings.nametagStatsAbove;
+        int y = above ? baseOffset - 10 : baseOffset + 10;
         for (Component line : lines) {
             collector.submitNameTag(poseStack, state.nameTagAttachment, y, line,
                 !state.isDiscrete, state.lightCoords, state.distanceToCameraSq, cameraRenderState);
-            y -= 10;
+            y += above ? -10 : 10;
         }
     }
 

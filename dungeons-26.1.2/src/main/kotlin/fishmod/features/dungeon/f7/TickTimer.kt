@@ -1,6 +1,6 @@
 package fishmod.features.dungeon.f7
 
-import config.practical.hud.HUDComponent
+import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.events.Events
 import net.minecraft.client.gui.GuiGraphicsExtractor
 

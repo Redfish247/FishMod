@@ -5,6 +5,7 @@ import fishmod.features.croesus.CroesusPrices
 import fishmod.features.storage.StorageOverlay
 import fishmod.mixin.accessors.HandledScreenAccessor
 import fishmod.utils.Location
+import fishmod.utils.Misc.abbr
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemUtil
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -16,14 +17,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.item.ItemStack
 
-/**
- * Container Value — a no-background text list of the coin value of every item in the open container
- * (the open storage page, an island chest, or your inventory), coloured by rarity, with a running
- * total. NPC / utility menus (Croesus, Mort, Bazaar, AH, …) are excluded. Values reuse the Item
- * Tooltip path: [CroesusPrices] base + [ModifierValue] modifiers. Drawn from
- * [fishmod.mixin.HandledScreenMixin]'s extractRenderState TAIL; over the Storage Overlay the panel
- * slides right to make room (see [fishmod.features.storage.StorageOverlay.recomputeGeometry]).
- */
+/** Drawn from [fishmod.mixin.HandledScreenMixin]'s extractRenderState TAIL; over the Storage Overlay the panel slides right to make room (see [fishmod.features.storage.StorageOverlay.recomputeGeometry]). */
 object ContainerValue {
 
     private const val MAX_LINES = 32
@@ -157,10 +151,4 @@ object ContainerValue {
 
     private fun trim(s: String): String = if (s.length <= NAME_MAX) s else s.take(NAME_MAX - 1) + "…"
 
-    private fun abbr(v: Double): String = when {
-        v >= 1_000_000_000 -> "%.2fB".format(v / 1_000_000_000)
-        v >= 1_000_000 -> "%.2fM".format(v / 1_000_000)
-        v >= 1_000 -> "%.1fk".format(v / 1_000)
-        else -> "%,d".format(v.toLong())
-    }
 }

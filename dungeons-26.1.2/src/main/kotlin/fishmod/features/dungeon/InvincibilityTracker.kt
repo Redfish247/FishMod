@@ -1,6 +1,7 @@
 package fishmod.features.dungeon
 
 import fishmod.features.FishHudEditor
+import fishmod.features.PetHud
 import fishmod.utils.Location
 import fishmod.utils.config.values.Dungeons
 import fishmod.utils.config.values.FishSettings
@@ -11,17 +12,10 @@ import fishmod.utils.rendering.DrawEvents
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.item.ItemStack
 
-/**
- * Invincibility Timer. Each "saved your life" item has a fixed proc: chat line -> [maxActive] ticks
- * of invulnerability, then [maxCooldown] ticks before it can proc again. Counters tick down on the
- * server tick (20/s).
- *
- * Enable: [Dungeons.displayInvincibilityTimer]. [Dungeons.InvincibilityDuration] shows the numeric
- * "X.Xs" vs a plain dot; [Dungeons.useStatusColorForInvincibility] colours by state (gold active /
- * red cooldown / green ready).
- */
+/** Each "saved your life" item has a fixed proc: chat line -> [maxActive] ticks of invulnerability, then [maxCooldown] before it can proc again; counters tick on the server tick (20/s). */
 object InvincibilityTracker {
 
     enum class Type(
@@ -82,7 +76,6 @@ object InvincibilityTracker {
         }
     }
 
-    /** Which entries appear given their active/cooldown state. */
     private fun visible(t: Type): Boolean {
         if (!t.show()) return false
         return when (FishSettings.invincShowWhen) {
@@ -92,6 +85,18 @@ object InvincibilityTracker {
             else -> t.active > 0 || t.cooldown > 0 // "Any"
         }
     }
+
+    private fun equipped(t: Type): Boolean {
+        return when (t) {
+            Type.PHOENIX -> PetHud.activePetName()?.contains("Phoenix", ignoreCase = true) == true
+            else -> {
+                val helmet = Minecraft.getInstance().player?.getItemBySlot(EquipmentSlot.HEAD) ?: return false
+                ItemUtil.getId(helmet) in t.ids
+            }
+        }
+    }
+
+    private fun labelColor(t: Type): String = if (equipped(t)) "§e" else "§7"
 
     private fun stateColor(t: Type): String {
         if (!Dungeons.useStatusColorForInvincibility) return "§7"
@@ -125,7 +130,7 @@ object InvincibilityTracker {
                     else "●"
                 else -> "✔"
             }
-            ctx.text(mc.font, "§7${t.label} $c$value", 0, i * LINE_H, -1, true)
+            ctx.text(mc.font, "${labelColor(t)}${t.label} $c$value", 0, i * LINE_H, -1, true)
         }
         ctx.pose().popMatrix()
     }
@@ -137,7 +142,6 @@ object InvincibilityTracker {
         if (t.cooldown <= 0) return
         val frac = t.cooldown.toFloat() / t.maxCooldown
         val w = (13 * (1f - frac)).toInt().coerceIn(0, 13)
-        // background then remaining (green->red by fraction), 1px above the slot's bottom edge.
         ctx.fill(x + 2, y + 13, x + 15, y + 15, 0xFF000000.toInt())
         val col = if (frac > 0.5f) 0xFFFF5555.toInt() else 0xFF55FF55.toInt()
         ctx.fill(x + 2, y + 13, x + 2 + w, y + 14, col)

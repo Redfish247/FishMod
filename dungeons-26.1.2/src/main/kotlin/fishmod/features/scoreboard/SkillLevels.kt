@@ -6,13 +6,7 @@ import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 
-/** Per-skill levels for the Custom Scoreboard's "Skills" extra -- not present on Hypixel's actual
- *  sidebar (only the aggregate "Skill Average:" line is), so this polls the same Hypixel API proxy
- *  [fishmod.features.CatacombsOverflowOverlay] uses (`HypixelApi.getLocalMember`, 60s refresh) and
- *  computes levels with the same generic skill XP curve `HypixelApi.skillLevelOverflow` uses for
- *  Farming. Only covers the 8 skills that share that curve (Combat/Mining/Farming/Foraging/Fishing/
- *  Enchanting/Alchemy/Carpentry) -- Taming, Runecrafting and Social Skills have different level
- *  curves/caps and are deliberately left out rather than guessed at. */
+/** Only covers the 8 skills sharing the generic XP curve (Combat/Mining/Farming/Foraging/Fishing/Enchanting/Alchemy/Carpentry); Taming/Runecrafting/Social have different curves and are left out. */
 object SkillLevels {
 
     // Same table as HypixelApi's private skillLevelOverflow() (SkyBlock's shared skill XP curve).

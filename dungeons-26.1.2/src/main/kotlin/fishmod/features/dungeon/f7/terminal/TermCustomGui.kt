@@ -21,7 +21,6 @@ object TermCustomGui {
 
     private fun on() = FishSettings.terminalRenderMode == 1 && TerminalSolver.current != null
 
-    /** True when the vanilla chest for the currently-open screen should be hidden and replaced. */
     @JvmStatic
     fun suppressVanilla(screen: Any?): Boolean {
         if (!on()) return false
@@ -46,7 +45,7 @@ object TermCustomGui {
 
         val sol = t.solution
 
-        // fixed play area per type: [minCol, maxCol, minRow, maxRow]; Hypixel's puzzle region is constant, so the board never resizes or pulls in the border
+        // fixed play area per type: [minCol, maxCol, minRow, maxRow]
         val pa = when (t.type) {
             TerminalType.RUBIX       -> intArrayOf(3, 5, 1, 3)   // 3 x 3
             TerminalType.NUMBERS     -> intArrayOf(1, 7, 1, 2)   // 7 x 2
@@ -65,11 +64,10 @@ object TermCustomGui {
         val oy = screenH / 2 - boardH / 2
 
         val pad = (8 * scale).toInt()
-        // Force a fully opaque panel — the board must not be see-through onto the screen behind it.
+        // force fully opaque — the board must not be see-through onto the screen behind it
         roundFill(ctx, ox - pad, oy - pad, boardW + pad * 2, boardH + pad * 2, round + 3,
             FishSettings.terminalCustomBg or 0xFF000000.toInt())
 
-        // melody isn't a "highlight these slots" board - it's a target-column marker row, a 5-wide note grid, and 4 buttons in column 7
         if (t.type == TerminalType.MELODY) {
             renderMelody(ctx, t, ox, oy, cell, gap, round)
             return
@@ -80,7 +78,6 @@ object TermCustomGui {
 
         for (i in 0 until size) {
             val r = i / cols; val c = i % cols
-            // Only the fixed play-area cells — the pane border and decoration slots are outside it.
             if (c < minC || c > maxC || r < minR || r > maxR) continue
             val cx = ox + (c - minC) * (cell + gap)
             val cy = oy + (r - minR) * (cell + gap)

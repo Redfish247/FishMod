@@ -2,7 +2,7 @@ package fishmod.utils.rendering
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
-import config.practical.hud.HUDComponent
+import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.Constants
 import fishmod.utils.config.values.ExtraOptions
 import fishmod.utils.config.values.Floor7
@@ -101,6 +101,32 @@ object RenderUtils {
     fun gizmoLine(a: Vec3, b: Vec3, argb: Int) {
         // Match renderLineTo: a colour with no alpha byte means "opaque", not "invisible".
         Gizmos.line(a, b, if ((argb ushr 24) == 0) argb or (0xFF shl 24) else argb)
+    }
+
+    /** Two world-space quads, perpendicular to each other, spanning the segment a->b so at least one stays face-on from any viewing angle. */
+    private fun crossQuads(a: Vec3, b: Vec3, halfWidth: Double): Pair<Array<Vec3>, Array<Vec3>>? {
+        val dir = b.subtract(a)
+        if (dir.lengthSqr() < 1.0e-9) return null
+        val d = dir.normalize()
+        val ref = if (kotlin.math.abs(d.y) < 0.99) Vec3(0.0, 1.0, 0.0) else Vec3(1.0, 0.0, 0.0)
+        val right = d.cross(ref).normalize().scale(halfWidth)
+        val up = d.cross(right).normalize().scale(halfWidth)
+        return Pair(
+            arrayOf(a.subtract(right), a.add(right), b.add(right), b.subtract(right)),
+            arrayOf(a.subtract(up), a.add(up), b.add(up), b.subtract(up)),
+        )
+    }
+
+    /**
+     * Occluded route line as two crossed thick quads instead of [gizmoLine]'s vanilla GL line — a raw
+     * GL line's on-screen width depends on the angle it's viewed at and can thin down to nothing.
+     */
+    @JvmStatic
+    fun gizmoThickLine(a: Vec3, b: Vec3, halfWidth: Double, argb: Int) {
+        if ((argb ushr 24) == 0) return
+        val (quad1, quad2) = crossQuads(a, b, halfWidth) ?: return
+        gizmoQuad(quad1, argb, 0)
+        gizmoQuad(quad2, argb, 0)
     }
 
     /** Billboarded world text, occluded by terrain — drains with the gizmo pass, unlike submitText. */
@@ -261,6 +287,18 @@ object RenderUtils {
             consumer, matrixStack.last(), a.x.toFloat(), a.y.toFloat(), a.z.toFloat(), b.x.toFloat(), b.y.toFloat(), b.z.toFloat(),
             rgba[0], rgba[1], rgba[2], rgba[3]
         )
+    }
+
+    /**
+     * Through-walls route line as two crossed thick quads instead of [renderLine]'s raw GL line — same
+     * fix as [gizmoThickLine], for the no-depth pass.
+     */
+    @JvmStatic
+    fun renderThickLine(matrixStack: PoseStack, consumer: VertexConsumer, a: Vec3, b: Vec3, halfWidth: Double, rgba: FloatArray) {
+        if (rgba[3] == 0f) return
+        val (quad1, quad2) = crossQuads(a, b, halfWidth) ?: return
+        renderFilledQuad(matrixStack, consumer, quad1, rgba)
+        renderFilledQuad(matrixStack, consumer, quad2, rgba)
     }
 
     // RenderLayers.LINE_ND is a plain POSITION_COLOR + DEBUG_LINES pipeline — 2 verts per segment, position + colour only, no Normal/LineWidth.

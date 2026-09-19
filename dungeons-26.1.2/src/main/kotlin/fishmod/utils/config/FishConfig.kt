@@ -1,6 +1,6 @@
 package fishmod.utils.config
 
-import config.practical.manager.ConfigManager
+import fishmod.shaded.practicalconfig.manager.ConfigManager
 import fishmod.features.dungeon.FishEstTotal
 import fishmod.features.dungeon.FishPuzzleDisplay
 import fishmod.features.dungeon.f7.F7Huds

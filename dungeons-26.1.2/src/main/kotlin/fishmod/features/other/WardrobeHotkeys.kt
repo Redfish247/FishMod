@@ -54,6 +54,13 @@ object WardrobeHotkeys {
 
     @JvmStatic
     fun mouseClicked(click: MouseButtonEvent, screen: AbstractContainerScreen<*>): Boolean {
+        // Left/right click double as the GUI's own select/equip buttons. If a hotkey (e.g. page
+        // turn) is bound to one of them, only let it fire when there's nothing to actually click —
+        // hovering a real item (an armor set, the wardrobe select icon, etc) always wins.
+        if (click.button() == 0 || click.button() == 1) {
+            val hovered = (screen as fishmod.mixin.accessors.HandledScreenAccessor).`fishmod$getHoveredSlot`()
+            if (hovered != null && !hovered.item.isEmpty) return false
+        }
         return tryActivate(screen) { mapping -> mapping.matchesMouse(click) }
     }
 

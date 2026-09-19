@@ -176,6 +176,11 @@ object Debug {
                         )
                 )
 
+                .then(ClientCommands.literal("estInfo").executes { _ ->
+                    fishmod.features.dungeon.FishEstTotal.printDebugInfo()
+                    Constants.SUCCESS
+                })
+
                 .then(
                     ClientCommands.literal("classes")
                         .executes { _ ->

@@ -15,11 +15,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-/**
- * On-screen "Cleared (time)" / "Secrets done (time)" title when the room you're standing in gets a
- * green / white checkmark, timed from when you entered it. Optionally shows the time value and a
- * personal best per room name (persisted to `config/fishmod/room_timers.json`).
- */
+// Personal bests persisted to config/fishmod/room_timers.json.
 object RoomTimer {
 
     private val FILE: Path = Paths.get("config/fishmod/room_timers.json")

@@ -23,7 +23,7 @@ public class MouseMixin {
     @Unique private double fishmod$beforeX;
     @Unique private double fishmod$beforeY;
 
-    @Inject(method = "onScroll", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;getInventory()Lnet/minecraft/world/entity/player/Inventory;"), cancellable = true)
+    @Inject(method = "onScroll", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;getInventory()Lnet/minecraft/world/entity/player/Inventory;"), cancellable = true, require = 1)
     private void stopScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
         if (ExtraOptions.disableScrollHotbar) {
             ci.cancel();

@@ -1,6 +1,6 @@
 package fishmod.features.dungeon.f7
 
-import config.practical.hud.HUDComponent
+import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.features.CritTracker
 import fishmod.utils.Constants
 import fishmod.utils.Location
@@ -27,8 +27,7 @@ object StormTickTimer {
     private const val CRUSH_TICK = 31 * 20
     private const val COUNTDOWN_DURATION = 5 * 20
 
-    // LB (Last Breath) release window: visible once the Storm clock hits 30s.
-    // Archer releases at 34.35s, Healer at 34.05s; hidden on other classes.
+    // LB release window: Archer releases at 34.35s, Healer at 34.05s; hidden on other classes.
     private const val LB_START_TICK = 30 * 20
     private val LB_ARCHER_END_TICK: Int = Math.round(34.35 * 20).toInt()
     private val LB_HEALER_END_TICK: Int = Math.round(34.05 * 20).toInt()
@@ -108,7 +107,6 @@ object StormTickTimer {
             DungeonClass.isClass(DungeonClass.HEALER) -> LB_HEALER_END_TICK
             else -> return -1
         }
-        // Never pull the cue before the window even opens.
         return max(LB_START_TICK + 1, base - pingTicks())
     }
 

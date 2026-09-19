@@ -2,6 +2,7 @@ package fishmod.features.item
 
 import fishmod.features.croesus.CroesusPrices
 import fishmod.utils.Location
+import fishmod.utils.Misc.abbr
 import fishmod.utils.networth.ItemsDb
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemUtil
@@ -10,12 +11,7 @@ import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 
-/**
- * Adds a value line (Bazaar/BIN blended, via [CroesusPrices]), 3-day-average and current-low-BIN
- * lines, and an optional NPC-sell line to item tooltips in SkyBlock. Prices are lazily refreshed
- * on a TTL while the feature is on. Registered on a dedicated LAST phase so these always render
- * below every other mod's tooltip additions instead of landing in the middle of them.
- */
+/** Registered on a dedicated LAST phase so these always render below every other mod's tooltip additions instead of landing in the middle of them. */
 object ItemPriceTooltip {
 
     private var lastRefresh = 0L
@@ -60,10 +56,4 @@ object ItemPriceTooltip {
         })
     }
 
-    private fun abbr(v: Double): String = when {
-        v >= 1_000_000_000 -> "%.2fB".format(v / 1_000_000_000)
-        v >= 1_000_000 -> "%.2fM".format(v / 1_000_000)
-        v >= 1_000 -> "%.1fk".format(v / 1_000)
-        else -> "%,d".format(v.toLong())
-    }
 }

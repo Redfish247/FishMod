@@ -4,10 +4,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.world.phys.Vec3
 import org.lwjgl.openal.AL10
 
-/**
- * Mono Audio. Pins every OpenAL source straight in front of the listener at its true distance, so
- * panning collapses to a single centred channel while volume falloff still works.
- */
 object MonoAudio {
 
     @JvmStatic

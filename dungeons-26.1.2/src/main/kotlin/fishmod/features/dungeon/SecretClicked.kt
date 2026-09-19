@@ -27,14 +27,7 @@ import net.minecraft.world.phys.Vec3
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
 
-/**
- * Secret Clicked: a box + chime when you trigger a dungeon secret.
- * Three trigger routes, all handled here:
- *  - **interact**: right-click a chest / lever / skull ([UseBlockCallback]).
- *  - **bat kill**: a dungeon secret bat you were next to gets removed ([Bat] + [ClientboundRemoveEntitiesPacket]).
- *  - **item pickup**: you walk over a ground item ([ClientboundTakeItemEntityPacket] for your own player).
- * Bat / item routes are gated by [FishSettings.secretClickedBats] / [FishSettings.secretClickedItems].
- */
+/** A box + chime when you trigger a dungeon secret, via three routes: chest/lever/skull interact, secret-bat kill, or ground-item pickup. */
 object SecretClicked {
 
     /** [blockPos] non-null → recompute the box from live block shape each frame; null → fixed [box]. */

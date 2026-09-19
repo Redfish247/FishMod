@@ -2,15 +2,7 @@ package fishmod.features
 
 import fishmod.utils.config.values.FishSettings
 
-/**
- * Scrollable / scalable item tooltips:
- *  - scroll over a hovered item to move its tooltip up/down
- *  - shift + scroll to move it left/right
- *  - ctrl + scroll to scale it
- *
- * The offset/scale is applied to the pose in [fishmod.mixin.DrawContextMixin] around
- * `GuiGraphicsExtractor.tooltip`; scroll input is fed in from [fishmod.mixin.HandledScreenMixin].
- */
+/** Scroll/shift+scroll/ctrl+scroll over a tooltip moves/scales it; applied to the pose in [fishmod.mixin.DrawContextMixin]. */
 object ScrollableTooltip {
 
     @JvmField var offsetX = 0f
