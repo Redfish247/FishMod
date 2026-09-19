@@ -21,6 +21,11 @@ import java.util.regex.Pattern
 
 object SessionStats {
 
+    // Single background thread for file I/O — keeps save() off the calling (client/tick) thread.
+    private val ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
+        Thread(r, "FishMod-SessionStats-IO").apply { isDaemon = true }
+    }
+
     private val DEATH_PAT = Pattern.compile("☠ \\S+ (?:was|were) killed by|☠ \\S+ (?:died|quit)")
 
     // Mort's intro line — fires the moment the dungeon run actually starts.
@@ -251,18 +256,22 @@ object SessionStats {
 
     @Synchronized
     private fun save() {
-        try {
-            Files.createDirectories(SAVE_FILE.parent)
-            val d = SaveData()
-            d.sessionStartMs = sessionStartMs
-            d.runs = runs
-            d.deaths = deaths
-            d.paused = paused
-            d.pauseStartedMs = pauseStartedMs
-            d.autoPaused = autoPaused
-            d.lastActivityMs = lastActivityMs
-            Files.writeString(SAVE_FILE, GSON.toJson(d))
-        } catch (ignored: IOException) {
+        val d = SaveData()
+        d.sessionStartMs = sessionStartMs
+        d.runs = runs
+        d.deaths = deaths
+        d.paused = paused
+        d.pauseStartedMs = pauseStartedMs
+        d.autoPaused = autoPaused
+        d.lastActivityMs = lastActivityMs
+        val json = GSON.toJson(d)
+        // snapshot under the lock (cheap GSON serialize), write off-thread
+        ioExecutor.execute {
+            try {
+                Files.createDirectories(SAVE_FILE.parent)
+                Files.writeString(SAVE_FILE, json)
+            } catch (ignored: IOException) {
+            }
         }
     }
 

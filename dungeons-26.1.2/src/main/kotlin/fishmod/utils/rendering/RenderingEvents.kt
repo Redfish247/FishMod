@@ -51,13 +51,14 @@ object RenderingEvents {
         ps.popPose()
     }
 
+    // Only ever called with a single handler — a plain parameter avoids the vararg's per-call array allocation.
     private fun drawLayer(
         ctx: LevelRenderContext, ps: PoseStack, buffers: MultiBufferSource.BufferSource,
-        layer: RenderType, vararg handlers: RenderHandler,
+        layer: RenderType, handler: RenderHandler,
     ) {
-        if (handlers.all { it.size() == 0 }) return
+        if (handler.size() == 0) return
         val vc = buffers.getBuffer(layer)
-        for (h in handlers) h.invoke { it.render(ctx, ps, vc) }
+        handler.invoke { it.render(ctx, ps, vc) }
         buffers.endBatch(layer)
     }
 }

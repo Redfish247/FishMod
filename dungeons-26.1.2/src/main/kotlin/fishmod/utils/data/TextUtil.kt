@@ -95,16 +95,17 @@ object TextUtil {
         }
     }
 
-    private fun getFormatChar(color: Int): Char {
+    // Precomputed once instead of a linear scan over ChatFormatting.values() (+ TextColor.fromLegacyFormat) every call.
+    private val FORMAT_CHAR_BY_COLOR: Map<Int, Char> by lazy {
+        val map = HashMap<Int, Char>()
         for (format in ChatFormatting.values()) {
             val tc = TextColor.fromLegacyFormat(format) ?: continue
-            if (tc.value == color) {
-                return format.toString()[1]
-            }
+            map[tc.value] = format.toString()[1]
         }
-
-        return '0'
+        map
     }
+
+    private fun getFormatChar(color: Int): Char = FORMAT_CHAR_BY_COLOR[color] ?: '0'
 
     @JvmStatic
     fun formatTicks(tick: Int): String {

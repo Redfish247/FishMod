@@ -401,15 +401,18 @@ object RenderUtils {
 
     @JvmStatic
     fun formatNumber(num: Float): String {
+        // Locale.ROOT: this is a fixed "1.2K"-style HUD label, not locale-formatted text, and
+        // pinning the locale avoids a per-call default-locale lookup plus a wrong decimal separator
+        // on locales that use ',' instead of '.'.
         return if (Floor7.capitalizeHealthNumbers) {
-            if (num >= 1e9) String.format("%.1fB", num / 1e9f)
-            else if (num >= 1e6) String.format("%.1fM", num / 1e6f)
-            else if (num >= 1e3) String.format("%.1fK", num / 1e3f)
+            if (num >= 1e9) String.format(java.util.Locale.ROOT, "%.1fB", num / 1e9f)
+            else if (num >= 1e6) String.format(java.util.Locale.ROOT, "%.1fM", num / 1e6f)
+            else if (num >= 1e3) String.format(java.util.Locale.ROOT, "%.1fK", num / 1e3f)
             else "$num"
         } else {
-            if (num >= 1e9) String.format("%.1fb", num / 1e9f)
-            else if (num >= 1e6) String.format("%.1fm", num / 1e6f)
-            else if (num >= 1e3) String.format("%.1fk", num / 1e3f)
+            if (num >= 1e9) String.format(java.util.Locale.ROOT, "%.1fb", num / 1e9f)
+            else if (num >= 1e6) String.format(java.util.Locale.ROOT, "%.1fm", num / 1e6f)
+            else if (num >= 1e3) String.format(java.util.Locale.ROOT, "%.1fk", num / 1e3f)
             else "$num"
         }
     }

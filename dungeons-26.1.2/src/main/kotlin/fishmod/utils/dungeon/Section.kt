@@ -53,8 +53,10 @@ object Section {
             false
         }
         Events.ON_PHASE_CHANGE.register {
-            Debug.LOGGER.info("[Section] ON_PHASE_CHANGE phase={} inTerminals={} inGoldorTunnel={} currentSection={}",
-                Phase.getPhase(), Phase.inTerminals(), Phase.inGoldorTunnel(), currentSection)
+            if (Debug.termInfo) {
+                Debug.LOGGER.info("[Section] ON_PHASE_CHANGE phase={} inTerminals={} inGoldorTunnel={} currentSection={}",
+                    Phase.getPhase(), Phase.inTerminals(), Phase.inGoldorTunnel(), currentSection)
+            }
             if (Phase.inP2()) {
                 currentSection = 0
             }
@@ -102,8 +104,10 @@ object Section {
     fun totalFor(section: Int): Int = if (section == 2) 8 else 7
 
     private fun incrementSection() {
-        Debug.LOGGER.info("[Section] incrementSection: {} -> {} (completed={} total={} gate={})",
-            currentSection, currentSection + 1, completed, total, gateBlownUp)
+        if (Debug.termInfo) {
+            Debug.LOGGER.info("[Section] incrementSection: {} -> {} (completed={} total={} gate={})",
+                currentSection, currentSection + 1, completed, total, gateBlownUp)
+        }
         resetSection()
         endSplit(currentSection)
         currentSection++
