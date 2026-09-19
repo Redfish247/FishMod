@@ -479,7 +479,10 @@ public class PartyCommandHandler {
         HypixelApi.getByName(mc, ign, data -> {
             boolean isMaster = floor == null || floor.toLowerCase().startsWith("m");
             int floorNum = 7;
-            if (floor != null) {
+            if (floor != null && floor.equalsIgnoreCase("e")) {
+                floorNum = 0;
+                isMaster = false;
+            } else if (floor != null) {
                 try { floorNum = Integer.parseInt(floor.substring(1)); } catch (Exception ignored) {}
             }
             String[] pbs = isMaster ? data.masterPbs : data.cataPbs;
@@ -517,7 +520,12 @@ public class PartyCommandHandler {
             if (floor != null) {
                 boolean isMaster = floor.toLowerCase().startsWith("m");
                 int floorNum = 7;
-                try { floorNum = Integer.parseInt(floor.substring(1)); } catch (Exception ignored) {}
+                if (floor.equalsIgnoreCase("e")) {
+                    floorNum = 0;
+                    isMaster = false;
+                } else {
+                    try { floorNum = Integer.parseInt(floor.substring(1)); } catch (Exception ignored) {}
+                }
                 long cataRuns   = floorNum < data.cataTimes.length   ? data.cataTimes[floorNum]   : 0;
                 long masterRuns = floorNum < data.masterTimes.length ? data.masterTimes[floorNum] : 0;
                 long col = cataRuns + masterRuns * 2;
