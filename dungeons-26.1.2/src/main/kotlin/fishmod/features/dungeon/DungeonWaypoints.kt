@@ -62,6 +62,7 @@ object DungeonWaypoints {
 
     private var placeKey: KeyMapping? = null
     private var lastGlobalDim: String? = null
+    private var lastRoomAnchor: DungeonRoomAnchor.Anchor? = null
 
     private var recordingRouteId: String? = null
     private var recordingNextOrder = 0
@@ -381,17 +382,24 @@ object DungeonWaypoints {
         if (mc.player == null || mc.level == null) {
             liveWaypoints.clear()
             lastGlobalDim = null
+            lastRoomAnchor = null
             return
         }
 
         val key = globalKey()
         if (key != lastGlobalDim) {
             lastGlobalDim = key
+            lastRoomAnchor = if (isRoomKey(key)) DungeonRoomAnchor.current() else null
             applyGlobal()
         } else if (isRoomKey(key)) {
             // The room anchor (rotation/clay) can shift for a tick or two as the map scanner refines
-            // the room, so re-project room-anchored waypoints every tick while inside one.
-            applyGlobal()
+            // the room, so re-project room-anchored waypoints — but only when it actually changed,
+            // not unconditionally every tick while standing still in an already-resolved room.
+            val anchor = DungeonRoomAnchor.current()
+            if (anchor != lastRoomAnchor) {
+                lastRoomAnchor = anchor
+                applyGlobal()
+            }
         }
 
         advanceRouteProgress(mc)

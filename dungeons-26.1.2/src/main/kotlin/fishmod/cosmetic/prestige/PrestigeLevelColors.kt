@@ -163,7 +163,7 @@ object PrestigeLevelColors {
     private val LEVEL_ANYWHERE = Regex("""\[(\d{1,4})[^\[\]\d]{0,4}]""")
 
     // one-shot diagnostics: log the first few distinct strings per call-site
-    @JvmField var debug = true
+    @JvmField var debug = false
     private val seenByTag = HashMap<String, HashSet<String>>()
 
     @JvmStatic

@@ -131,7 +131,7 @@ object CroesusRewardParser {
             if (result[0] == "false") {
                 // Skip unresolved lines rather than discarding the whole chest's rewards.
                 if (errorOut != null) errorOut[0] = result[1]
-                fishmod.utils.debug.Debug.LOGGER.info("[Loot] unresolved reward line: '{}'", clean)
+                fishmod.utils.debug.Debug.LOGGER.debug("[Loot] unresolved reward line: '{}'", clean)
                 continue
             }
 
@@ -140,7 +140,7 @@ object CroesusRewardParser {
             ri.qty = result[1].toIntOrNull()?.coerceAtLeast(1) ?: 1
             // Fully colour-stripped so rows don't split/mislabel on stray codes.
             ri.displayName = clean
-            fishmod.utils.debug.Debug.LOGGER.info("[Loot] reward '{}' -> id={} qty={}", clean, ri.id, ri.qty)
+            fishmod.utils.debug.Debug.LOGGER.debug("[Loot] reward '{}' -> id={} qty={}", clean, ri.id, ri.qty)
             info.items.add(ri)
         }
         return info

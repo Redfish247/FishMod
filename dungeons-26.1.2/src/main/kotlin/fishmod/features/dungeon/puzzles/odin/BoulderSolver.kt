@@ -17,6 +17,7 @@ object BoulderSolver {
     private var currentPositions = mutableListOf<BoxPosition>()
     private var solved = false
     private var attempts = 0
+    private var tickAcc = 0
 
     private val solutions: Map<String, List<List<Int>>> = try {
         BoulderSolver::class.java.getResourceAsStream("/boulderSolutions.json")!!.use { s ->
@@ -35,7 +36,9 @@ object BoulderSolver {
 
     fun onTick() {
         if (OdinScan.currentRoomName != "Boulder" || solved || currentPositions.isNotEmpty()) return
-        if (attempts++ > 200) return
+        if (++tickAcc < 5) return
+        tickAcc = 0
+        if (attempts++ > 40) return
         OdinScan.currentRoom?.let { scan(it) }
     }
 
@@ -73,5 +76,6 @@ object BoulderSolver {
         currentPositions = mutableListOf()
         solved = false
         attempts = 0
+        tickAcc = 0
     }
 }

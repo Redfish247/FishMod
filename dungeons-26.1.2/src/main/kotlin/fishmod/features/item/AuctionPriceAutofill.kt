@@ -17,13 +17,15 @@ object AuctionPriceAutofill {
     private val GUI_NAMES = setOf("Create BIN Auction", "Create Auction")
 
     private var pendingItem: ItemStack? = null
+    private var lastSeenStack: ItemStack? = null
 
     @JvmStatic
     fun init() {
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, w, h -> onScreenInit(screen, w, h) })
     }
 
-    /** Also primes [ItemValue.estimate]'s price cache early — its two sequential HTTP calls won't finish in the single tick between clicking Price and the sign screen opening. */
+    /** Also primes [ItemValue.estimate]'s price cache early — its two sequential HTTP calls won't finish in the single tick between clicking Price and the sign screen opening.
+     *  Re-copies/re-estimates only when the slot-13 item actually changed, since this runs every frame the screen is open but the item rarely changes mid-screen. */
     @JvmStatic
     fun trackScreen(screen: AbstractContainerScreen<*>) {
         if (!FishSettings.auctionPriceAutofillEnabled || !Location.inSkyblock()) return
@@ -31,6 +33,9 @@ object AuctionPriceAutofill {
         if (title !in GUI_NAMES) return
         val stack = screen.menu.slots.getOrNull(13)?.item ?: return
         if (stack.isEmpty) return
+        val prev = lastSeenStack
+        if (prev != null && ItemStack.isSameItemSameComponents(prev, stack)) return
+        lastSeenStack = stack.copy()
         pendingItem = stack.copy()
         ItemValue.estimate(stack)
     }

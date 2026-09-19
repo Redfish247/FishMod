@@ -119,6 +119,20 @@ public class HypixelApi {
             return t;
         });
 
+    /** Separate pool for networth lookups, which can chain up to 3 sequential blocking HTTP calls
+     *  (remote endpoint -> local profile fetch -> museum value) — kept off API_EXECUTOR so a busy
+     *  party spamming .nw can't starve every other HypixelApi consumer queued on the shared pool. */
+    private static final java.util.concurrent.Executor NETWORTH_EXECUTOR =
+        java.util.concurrent.Executors.newFixedThreadPool(3, r -> {
+            Thread t = new Thread(r, "FishMod-Networth");
+            t.setDaemon(true);
+            return t;
+        });
+
+    /** In-flight dedup keyed by lower-cased IGN — a second concurrent .nw for the same player rides
+     *  the first lookup's result instead of firing its own duplicate chain of HTTP calls. */
+    private static final Map<String, java.util.List<NetworthCallback>> networthInFlight = new ConcurrentHashMap<>();
+
     private static final long CACHE_TTL_MS = 30 * 60 * 1000L; // 30 minutes
     /** lower-cased player name → UUID without dashes. Backed by an on-disk cache (see below). */
     public  static final Map<String, String> uuidByName    = new ConcurrentHashMap<>();
@@ -1123,15 +1137,28 @@ public class HypixelApi {
 
     public static void getNetworth(Minecraft mc, String ign, NetworthCallback cb) {
         NetworthCallback marshaled = (networth, profileName) -> mc.execute(() -> cb.onData(networth, profileName));
+        String key = ign.toLowerCase(java.util.Locale.ROOT);
+        synchronized (networthInFlight) {
+            java.util.List<NetworthCallback> waiters = networthInFlight.get(key);
+            if (waiters != null) {
+                waiters.add(marshaled);
+                return;
+            }
+            networthInFlight.put(key, new java.util.concurrent.CopyOnWriteArrayList<>(java.util.List.of(marshaled)));
+        }
         java.util.concurrent.CompletableFuture.runAsync(() -> {
+            NetworthCallback broadcast = (networth, profileName) -> {
+                java.util.List<NetworthCallback> waiters = networthInFlight.remove(key);
+                if (waiters != null) for (NetworthCallback w : waiters) w.onData(networth, profileName);
+            };
             String uuid = resolveUuidBlocking(ign);
-            if (uuid == null) { marshaled.onData(-1, null); return; }
+            if (uuid == null) { broadcast.onData(-1, null); return; }
             // prefer the proxy's networth endpoint (real library, includes museum); local estimate is the fallback
-            Boolean blocked = getNetworthRemote(uuid, marshaled);
+            Boolean blocked = getNetworthRemote(uuid, broadcast);
             if (blocked == null) return; // delivered (value or NETWORTH_BLOCKED)
-            if (blocked) { marshaled.onData(NETWORTH_BLOCKED, null); return; } // no point falling back — same block applies
-            getNetworthLocal(uuid, marshaled);
-        }, API_EXECUTOR);
+            if (blocked) { broadcast.onData(NETWORTH_BLOCKED, null); return; } // no point falling back — same block applies
+            getNetworthLocal(uuid, broadcast);
+        }, NETWORTH_EXECUTOR);
     }
 
     /**

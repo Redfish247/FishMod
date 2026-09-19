@@ -37,6 +37,11 @@ object WaterSolver {
     private var tickCounter = 0
     private var failed = false
 
+    // Sorted view only depends on `solutions` contents + each lever's click count (`i`), not on
+    // tickCounter, so it's cached and only rebuilt when one of those actually changes.
+    private var solutionListDirty = true
+    private var cachedSolutionList: List<Pair<LeverBlock, Double>> = emptyList()
+
     fun onRoomEnter(room: ORoom?) {
         if (room?.data?.name != "Water Board") reset()
     }
@@ -71,20 +76,25 @@ object WaterSolver {
         waterSolutions[optimized.toString()]?.get(patternIdentifier.toString())?.get(extendedSlots)?.forEach { (key, times) ->
             LeverBlock.fromKey(key)?.let { solutions[it] = times }
         }
+        solutionListDirty = true
     }
 
     fun onRenderWorld() {
         if (patternIdentifier == -1 || solutions.isEmpty() || OdinScan.currentRoomName != "Water Board") return
 
-        val solutionList = solutions
-            .flatMap { (lever, times) -> times.drop(lever.i).map { lever to it } }
-            .sortedWith(
-                compareBy(
-                    { it.second != 0.0 },
-                    { if (it.second == 0.0) it.first.ordinal else Int.MAX_VALUE },
-                    { if (it.second != 0.0) it.second else 0.0 },
-                ),
-            )
+        if (solutionListDirty) {
+            cachedSolutionList = solutions
+                .flatMap { (lever, times) -> times.drop(lever.i).map { lever to it } }
+                .sortedWith(
+                    compareBy(
+                        { it.second != 0.0 },
+                        { if (it.second == 0.0) it.first.ordinal else Int.MAX_VALUE },
+                        { if (it.second != 0.0) it.second else 0.0 },
+                    ),
+                )
+            solutionListDirty = false
+        }
+        val solutionList = cachedSolutionList
 
         solutionList.firstOrNull()?.first?.let { first ->
             val fp = first.leverPos
@@ -119,6 +129,7 @@ object WaterSolver {
         LeverBlock.entries.find { it.leverPos == clicked }?.let {
             if (it == LeverBlock.WATER && openedWaterTicks == -1) openedWaterTicks = tickCounter
             it.i++
+            solutionListDirty = true
         }
     }
 
@@ -129,6 +140,8 @@ object WaterSolver {
         openedWaterTicks = -1
         tickCounter = 0
         failed = false
+        solutionListDirty = true
+        cachedSolutionList = emptyList()
     }
 
     private enum class WoolColor(val relativePosition: BlockPos) {

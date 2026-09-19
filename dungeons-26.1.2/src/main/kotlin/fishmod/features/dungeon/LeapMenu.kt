@@ -113,12 +113,14 @@ object LeapMenu {
         }
         for (i in 0..3) if (result[i] == null && overflow.isNotEmpty()) result[i] = overflow.removeFirst()
         val out = result.map { it ?: EMPTY_TARGET }
-        fishmod.utils.debug.Debug.LOGGER.info(
-            "[LeapMenu] odinSort in={} -> TL={} TR={} BL={} BR={}",
-            players.map { "${it.name}:${it.clazz}" },
-            "${out[0].name}:${out[0].clazz}", "${out[1].name}:${out[1].clazz}",
-            "${out[2].name}:${out[2].clazz}", "${out[3].name}:${out[3].clazz}",
-        )
+        if (fishmod.utils.debug.Debug.termInfo) {
+            fishmod.utils.debug.Debug.LOGGER.info(
+                "[LeapMenu] odinSort in={} -> TL={} TR={} BL={} BR={}",
+                players.map { "${it.name}:${it.clazz}" },
+                "${out[0].name}:${out[0].clazz}", "${out[1].name}:${out[1].clazz}",
+                "${out[2].name}:${out[2].clazz}", "${out[3].name}:${out[3].clazz}",
+            )
+        }
         return out
     }
 

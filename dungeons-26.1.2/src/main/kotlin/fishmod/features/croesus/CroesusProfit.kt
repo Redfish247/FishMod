@@ -27,6 +27,9 @@ object CroesusProfit {
     private var chests: List<Chest> = emptyList()
     private var bestSlots: List<Int> = emptyList()
 
+    private const val SCAN_INTERVAL_MS = 300L
+    private var lastScanMs = 0L
+
     private fun on(screen: AbstractContainerScreen<*>): Boolean =
         FishSettings.croesusProfitEnabled && PREVIEW_TITLE.matches(screen.title.string)
 
@@ -37,7 +40,11 @@ object CroesusProfit {
             return
         }
         CroesusPrices.refreshIfStale()
-        scan(screen)
+        val now = System.currentTimeMillis()
+        if (now - lastScanMs >= SCAN_INTERVAL_MS) {
+            lastScanMs = now
+            scan(screen)
+        }
         if (chests.isEmpty()) return
 
         val acc = screen as HandledScreenAccessor
