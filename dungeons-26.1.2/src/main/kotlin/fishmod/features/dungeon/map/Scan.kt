@@ -72,6 +72,7 @@ object Scan {
                     try {
                         scan(world)
                     } catch (t: Throwable) {
+                        fishmod.utils.debug.Debug.LOGGER.error("[Scan] scan failed", t)
                     }
                 }
             }

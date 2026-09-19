@@ -43,7 +43,8 @@ object UserColorStore {
                 val loaded: Data? = GSON.fromJson(reader, type)
                 if (loaded != null) data = loaded
             }
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            fishmod.utils.debug.Debug.LOGGER.warn("[UserColorStore] load failed: {}", e.toString())
         }
     }
 
@@ -52,7 +53,8 @@ object UserColorStore {
             val file = File(FILE_PATH)
             file.parentFile?.mkdirs()
             FileWriter(file).use { writer -> GSON.toJson(data, writer) }
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            fishmod.utils.debug.Debug.LOGGER.warn("[UserColorStore] save failed: {}", e.toString())
         }
     }
 }

@@ -119,7 +119,8 @@ object RunHistory {
                     val loaded: MutableMap<String, MutableMap<String, MutableList<Double>>>? = GSON.fromJson(reader, type)
                     if (loaded != null) data = loaded
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                fishmod.utils.debug.Debug.LOGGER.warn("[RunHistory] load failed: {}", e.toString())
             }
             // Drop pre-guard garbage times (a never-started split force-ended reads as ~1.9 years) so a
             // poisoned split doesn't fall back to the hardcoded average forever.
@@ -158,7 +159,8 @@ object RunHistory {
                 val file = File(FILE_PATH)
                 file.parentFile?.mkdirs()
                 FileWriter(file).use { writer -> writer.write(json) }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                fishmod.utils.debug.Debug.LOGGER.warn("[RunHistory] save failed: {}", e.toString())
             }
         }
     }

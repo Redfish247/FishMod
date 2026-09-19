@@ -82,7 +82,7 @@ object SoundManager {
         return fromRegistry ?: SoundEvents.NOTE_BLOCK_PLING.value()
     }
 
-    private val lastPlayed = HashMap<String, Long>()
+    private val lastPlayed = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
     /**
      * @param key       debounce bucket; repeat plays of the same key inside [debounceMs] are dropped.

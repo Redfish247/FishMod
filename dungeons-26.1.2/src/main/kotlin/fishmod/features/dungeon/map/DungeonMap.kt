@@ -2,6 +2,7 @@ package fishmod.features.dungeon.map
 
 import fishmod.mixin.accessors.MapItemSavedDataAccessor
 import fishmod.utils.config.values.DungeonMapSettings
+import fishmod.utils.debug.Debug
 import fishmod.utils.events.Events
 import net.minecraft.client.Minecraft
 import net.minecraft.network.protocol.game.ClientboundMapItemDataPacket
@@ -57,6 +58,7 @@ object DungeonMap {
                     try {
                         rescanMapItem(packet)
                     } catch (t: Throwable) {
+                        Debug.LOGGER.error("[DungeonMap] rescanMapItem failed", t)
                     }
                 }
             }

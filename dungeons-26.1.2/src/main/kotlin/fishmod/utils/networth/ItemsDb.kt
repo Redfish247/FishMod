@@ -30,7 +30,7 @@ object ItemsDb {
     @Volatile private var npcSellPrice: Map<String, Double> = emptyMap()
     @Volatile private var loadedAt: Long = 0
     @Volatile private var loadedFromDisk = false
-    @Volatile private var fetching = false
+    private val fetching = java.util.concurrent.atomic.AtomicBoolean(false)
 
     /** Returns the metadata for an item id, or null if unknown / not yet loaded. */
     @JvmStatic
@@ -91,13 +91,18 @@ object ItemsDb {
             loadedFromDisk = true
             try {
                 loadFromDisk()
-            } catch (ignored: Exception) {
+            } catch (e: Exception) {
+                fishmod.utils.debug.Debug.LOGGER.warn("[ItemsDb] loadFromDisk failed: {}", e.toString())
             }
         }
         val stale = items.isEmpty() || (System.currentTimeMillis() - loadedAt) > REFRESH_MS
-        if (stale && !fetching) {
-            fetching = true
-            Thread(ItemsDb::fetch, "FishMod-ItemsDb").start()
+        if (stale && fetching.compareAndSet(false, true)) {
+            try {
+                Thread(ItemsDb::fetch, "FishMod-ItemsDb").apply { isDaemon = true }.start()
+            } catch (e: Throwable) {
+                fetching.set(false)
+                fishmod.utils.debug.Debug.LOGGER.warn("[ItemsDb] failed to start fetch thread: {}", e.toString())
+            }
         }
     }
 
@@ -136,7 +141,7 @@ object ItemsDb {
         } catch (e: Exception) {
             fishmod.utils.debug.Debug.LOGGER.warn("[ItemsDb] fetch: {}", e.toString())
         } finally {
-            fetching = false
+            fetching.set(false)
         }
     }
 
