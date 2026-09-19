@@ -20,7 +20,7 @@ object PartyUtil {
     @JvmStatic
     fun init() {
         INSTANCE.createHandler(ClientboundPartyInfoPacket::class.java) { packet ->
-            Debug.LOGGER.info("Received party info packet")
+            if (Debug.termInfo) Debug.LOGGER.info("Received party info packet")
             memberMap = packet.memberMap
             inParty = packet.isInParty
             leaderUuid = packet.memberMap.entries

@@ -65,7 +65,7 @@ object PartyFinder {
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { kicked.clear(); false }
+        Events.ON_WORLD_CHANGE.register { kicked.clear(); cache.clear(); sbCache.clear(); false }
     }
 
     private fun tryAutoKick(name: String, clazz: String?) {
