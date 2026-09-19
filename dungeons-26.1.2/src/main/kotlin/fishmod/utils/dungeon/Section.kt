@@ -1,7 +1,7 @@
 package fishmod.utils.dungeon
 
-import config.practical.hud.HUDComponent
-import config.practical.manager.ConfigValue
+import fishmod.shaded.practicalconfig.hud.HUDComponent
+import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.Constants
 import fishmod.utils.Location
 import fishmod.utils.Misc
@@ -163,6 +163,23 @@ object Section {
             } catch (e: NumberFormatException) {
                 Debug.LOGGER.error("Failed to parse terminal message, {}", e.message)
                 return false
+            }
+
+            if (completed == 0 && currentCompleted == totalNeeded) {
+                // A fresh section's first tracked message can never legitimately report itself as
+                // already fully done — real progress always starts from a partial count. This is a
+                // duplicate echo of the section we just left (its own final "X/X" line, e.g. from
+                // another party member's client) racing in after incrementSection() already reset us
+                // for the new section. Accepting it here corrupted the new section's completed/total,
+                // which then made the new section's real first message look like backward regression
+                // and fired an early increment straight into the section after it. This only relied on
+                // totalNeeded differing from the old section's before, which missed S3->S4 and
+                // S4->done since both are 7-device sections just like S3.
+                if (Debug.termInfo) {
+                    Misc.addChatMessage(Component.literal(
+                        "§cignoring stale terminal echo: section=$currentSection ($currentCompleted/$totalNeeded)"))
+                }
+                return shouldCancelMessage
             }
 
             if (Debug.termInfo) {

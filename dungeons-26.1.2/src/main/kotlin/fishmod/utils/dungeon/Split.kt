@@ -1,6 +1,6 @@
 package fishmod.utils.dungeon
 
-import config.practical.manager.ConfigValue
+import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.Constants
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor

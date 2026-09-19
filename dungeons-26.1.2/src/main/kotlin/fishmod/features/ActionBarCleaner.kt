@@ -5,22 +5,8 @@ import fishmod.utils.config.values.FishSettings
 import net.minecraft.network.chat.Component
 
 /**
- * Action Bar cleaner: drops unwanted segments out of Hypixel's SkyBlock action bar before
- * [net.minecraft.client.gui.Gui.setOverlayMessage] stores it (hooked in [fishmod.mixin.GuiMixin]).
- *
- * Hypixel's 26.1 stat bar is glyph-free and its colours shift with state (overflow health recolours
- * the health number, etc.), so we classify by POSITION + SHAPE, not colour:
- *   §c7,268/7,268   §a1,270   §b1,448/1,448 §3780   §4145/145
- *      Health        Defence     Mana      Overflow  Vitality
- * Segments split on every colour code (§l/§m/§n/§o/§k fold in). Keyword / distinctly-shaped bits
- * (Skill XP "+X Skill (…)", Mana-use "-N Mana", Bits, Secrets, Ragnarok, "T3!") are matched first
- * and don't take a positional slot; then the plain numbers fall into order:
- *   X/Y  #1 Health  #2 Mana  #3 Vitality
- *   bare #1/#2 before Mana = Defence / True Defence ; bare after Mana = Overflow Mana
- * Legacy glyphs (❤ ❈ ❂ ✎ ʬ) still match too. Anything unrecognised is always kept.
- *
- * The vanilla HUD overlays in the same feature (XP bar, armor row, absorption hearts) are not
- * action-bar text and are handled by [fishmod.mixin.GuiMixin] / [fishmod.mixin.ExperienceBarRendererMixin].
+ * Hypixel's 26.1 stat bar is glyph-free and recolours with state, so segments are classified by
+ * position + shape rather than colour (see [segments] and the keyword regexes below).
  */
 object ActionBarCleaner {
 

@@ -20,6 +20,7 @@ import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
 import net.minecraft.network.chat.Component
 import net.minecraft.world.level.ClipContext
 import net.minecraft.world.phys.AABB
@@ -29,28 +30,27 @@ import net.minecraft.world.phys.Vec3
 import org.lwjgl.glfw.GLFW
 import java.util.LinkedHashMap
 
-/**
- * /fm wp — a waypoint editor. Works everywhere, dungeons included. Outside dungeons waypoints are
- * keyed by Skyblock island/server+dimension at absolute world coordinates; inside a dungeon they're
- * keyed by room name and stored in that room's canonical frame ([DungeonRoomAnchor]), so they carry
- * across runs regardless of where the room instance spawned or how it's rotated. Boss rooms and any
- * spot the map scanner can't resolve fall back to absolute coordinates. See [globalKey].
- */
+/** /fm wp — outside dungeons, keyed by island/server at absolute coords; inside, keyed by room name in the room's canonical frame ([DungeonRoomAnchor]) so they carry across runs. See [globalKey]. */
 object DungeonWaypoints {
 
     private const val PLACE_EPSILON = 0.05
     private const val ROUTE_REACH_RADIUS = 1.75
+    /** A texture pixel — 1/16 of a block, same grid resource-pack textures use. Pixel mode snaps to this. */
+    private const val PIXEL_SIZE = 1.0 / 16.0
     private val ROUTE_LINE_RGBA = floatArrayOf(1f, 1f, 1f, 0.6f)
     private const val ROUTE_LINE_ARGB = 0x99FFFFFF.toInt()
 
-    // Applied to the NEXT waypoint placed.
     private var editMode = false
     private var fill = false
     private var size = 0.5
     private var distance = 20
     private var useBlockSize = true
+    // When on, placement snaps to the exact texture pixel (1/16 block) the crosshair is over on the
+    // aimed block's face, and the marker itself is one pixel (1/16 block) cubed — instead of snapping
+    // to the block's center/full shape.
+    private var pixelMode = false
     private var through = false
-    private var color = 0xFF55FFFF.toInt() // ARGB
+    private var color = 0xFF55FFFF.toInt()
     private var type = WaypointType.NONE
     private var timer = TimerType.NONE
     private var offsetX = 0.0
@@ -68,6 +68,9 @@ object DungeonWaypoints {
 
     /** routeId -> set of routeOrder values already reached on the current run; cleared by endRoute. Session-only. */
     private val routeReached: MutableMap<String, MutableSet<Int>> = HashMap()
+
+    /** routeId -> last routeOrder value recycled when a route completed a lap. See [advanceRouteProgress]. Session-only. */
+    private val routeLoopCursor: MutableMap<String, Int> = HashMap()
 
     private class LiveWaypoint(
         @JvmField val box: AABB,
@@ -96,7 +99,7 @@ object DungeonWaypoints {
         val category = fishmod.utils.Keybinds.category()
         placeKey = KeyMappingHelper.registerKeyMapping(
             KeyMapping(
-                "FishMod: Dungeon Waypoint place/remove",
+                "Dungeon Waypoint Place/Remove",
                 InputConstants.Type.MOUSE,
                 GLFW.GLFW_MOUSE_BUTTON_RIGHT,
                 category
@@ -174,6 +177,27 @@ object DungeonWaypoints {
     }
 
     @JvmStatic
+    fun togglePixelMode() {
+        pixelMode = !pixelMode
+        Misc.addChatMessage(Component.literal("§7[fm wp] Pixel mode: " + (if (pixelMode) "§aon §7(1/16-block precision, snapped to the pixel you're aiming at)" else "§coff")))
+    }
+
+    /** Snaps a world coordinate to the nearest texture-pixel grid line (multiples of 1/16 block). */
+    private fun snapToPixel(v: Double): Double = Math.round(v / PIXEL_SIZE) * PIXEL_SIZE
+
+    /** Centers a world coordinate on the texture-pixel cell it falls in, rather than the nearest grid line. */
+    private fun pixelCellCenter(v: Double): Double = (Math.floor(v / PIXEL_SIZE) + 0.5) * PIXEL_SIZE
+
+    /** The two axes across the hit face snap to their pixel cell's center; the face-normal axis snaps to the grid line to stay flush with the face plane. */
+    private fun snapAimForPixel(exact: Vec3, face: Direction?): Vec3 {
+        val axis = face?.axis
+        val x = if (axis == Direction.Axis.X) snapToPixel(exact.x) else pixelCellCenter(exact.x)
+        val y = if (axis == Direction.Axis.Y) snapToPixel(exact.y) else pixelCellCenter(exact.y)
+        val z = if (axis == Direction.Axis.Z) snapToPixel(exact.z) else pixelCellCenter(exact.z)
+        return Vec3(x, y, z)
+    }
+
+    @JvmStatic
     fun toggleThrough() {
         through = !through
         Misc.addChatMessage(Component.literal("§7[fm wp] Through walls: " + (if (through) "§aon" else "§coff")))
@@ -240,6 +264,28 @@ object DungeonWaypoints {
     @JvmStatic
     fun isEditMode(): Boolean = editMode
 
+    // Plain getters for the GUI (fmscreen) to mirror the /fm wp chat-command state.
+    @JvmStatic fun isFill(): Boolean = fill
+    @JvmStatic fun setFill(v: Boolean) { fill = v }
+    @JvmStatic fun getSize(): Double = size
+    @JvmStatic fun setSizeQuiet(s: Double) { size = s.coerceIn(0.1, 1.0) }
+    @JvmStatic fun getDistance(): Int = distance
+    @JvmStatic fun setDistanceQuiet(d: Int) { distance = maxOf(1, d) }
+    @JvmStatic fun isUseBlockSize(): Boolean = useBlockSize
+    @JvmStatic fun setUseBlockSize(v: Boolean) { useBlockSize = v }
+    @JvmStatic fun isPixelMode(): Boolean = pixelMode
+    @JvmStatic fun setPixelMode(v: Boolean) { pixelMode = v }
+    @JvmStatic fun isThrough(): Boolean = through
+    @JvmStatic fun setThrough(v: Boolean) { through = v }
+    @JvmStatic fun getLineWidth(): Double = lineWidth
+    @JvmStatic fun setLineWidthQuiet(w: Double) { lineWidth = w.coerceIn(0.01, 0.5) }
+    @JvmStatic fun getColorArgb(): Int = color
+    @JvmStatic fun setColorArgb(argb: Int) { color = argb }
+    @JvmStatic fun getType(): WaypointType = type
+    @JvmStatic fun setTypeEnum(v: WaypointType) { type = v }
+    @JvmStatic fun getTimer(): TimerType = timer
+    @JvmStatic fun setTimerEnum(v: TimerType) { timer = v }
+
     /** Toggles route recording; unnamed auto-numbers as "route1", "route2", etc. */
     @JvmStatic
     fun toggleRoute(name: String?) {
@@ -273,9 +319,11 @@ object DungeonWaypoints {
     fun endRoute(name: String?) {
         if (name == null || name.isBlank()) {
             routeReached.clear()
+            routeLoopCursor.clear()
             Misc.addChatMessage(Component.literal("§aAll routes reset — waypoints visible again."))
         } else {
             routeReached.remove(name)
+            routeLoopCursor.remove(name)
             Misc.addChatMessage(Component.literal("§aRoute '$name' reset — waypoints visible again."))
         }
     }
@@ -288,6 +336,7 @@ object DungeonWaypoints {
         }
         val n = DungeonWaypointStore.removeRoute(name)
         routeReached.remove(name)
+        routeLoopCursor.remove(name)
         refreshLive()
         Misc.addChatMessage(
             Component.literal(
@@ -366,7 +415,7 @@ object DungeonWaypoints {
         return routeGroups
     }
 
-    /** Marks the next unreached point of each visible route as reached once the player gets close enough. */
+    /** Routes loop by un-reaching exactly one rotating point at a time (oldest-recycled-first), so the route advances continuously instead of the whole thing popping back in as a batch. */
     private fun advanceRouteProgress(mc: Minecraft) {
         val player = mc.player ?: return
         val playerPos = player.position()
@@ -374,21 +423,37 @@ object DungeonWaypoints {
             val reached = routeReached.getOrPut(key) { HashSet() }
             for (w in value) {
                 if (reached.contains(w.routeOrder)) continue
-                if (playerPos.distanceTo(w.center) < ROUTE_REACH_RADIUS) reached.add(w.routeOrder)
+                if (playerPos.distanceTo(w.center) < ROUTE_REACH_RADIUS) {
+                    reached.add(w.routeOrder)
+                    if (reached.size >= value.size) {
+                        // Recycle the point after the last one recycled, keyed by actual routeOrder
+                        // values (not a raw index) so a route edited since last lap — a waypoint
+                        // deleted/re-added without a full re-record — doesn't desync the cursor.
+                        val orders = value.map { it.routeOrder }
+                        val lastCursor = routeLoopCursor[key]
+                        val lastIdx = if (lastCursor != null) orders.indexOf(lastCursor) else -1
+                        val nextIdx = if (lastIdx == -1) 0 else (lastIdx + 1) % orders.size
+                        val next = orders[nextIdx]
+                        reached.remove(next)
+                        routeLoopCursor[key] = next
+                    }
+                }
                 break // only the next point in sequence counts
             }
         }
     }
 
-    /** Result of an aim raycast: the point to center a waypoint on, and the aimed block's actual shape (null on a miss). */
-    private class AimResult(@JvmField val point: Vec3, @JvmField val blockBox: AABB?)
+    /** Result of an aim raycast; [face]/[exact] let pixel mode place a flat highlight flush on the hit face instead of a floating cube. */
+    private class AimResult(@JvmField val point: Vec3, @JvmField val blockBox: AABB?, @JvmField val exact: Vec3, @JvmField val face: Direction?)
 
-    /**
-     * Raycasts along the player's look vector. When it hits a block, [AimResult.blockBox] carries that
-     * block's real collision-shape bounds in world space — e.g. a slab reports a half-height box at the
-     * correct top/bottom half — so callers using block-size placement match the block instead of always
-     * assuming a full 1x1x1 cube.
-     */
+    /** Offset slightly in front of the eye along the look vector — a segment starting exactly at the eye sits behind the camera's near plane in first person. */
+    private fun playerEyePos(mc: Minecraft): Vec3? {
+        val p = mc.player ?: return null
+        val delta = mc.deltaTracker.getGameTimeDeltaPartialTick(false)
+        return p.getEyePosition(delta).add(p.getViewVector(delta).scale(0.2))
+    }
+
+    /** [AimResult.blockBox] carries the block's real collision-shape bounds (e.g. a slab's half-height box), so callers match the block instead of assuming a full cube. */
     private fun aimPoint(mc: Minecraft): AimResult {
         val p = mc.player!!
         val delta = mc.deltaTracker.getGameTimeDeltaPartialTick(false)
@@ -408,9 +473,24 @@ object DungeonWaypoints {
                 bp.x + bounds.minX, bp.y + bounds.minY, bp.z + bounds.minZ,
                 bp.x + bounds.maxX, bp.y + bounds.maxY, bp.z + bounds.maxZ
             )
-            return AimResult(worldBox.center, worldBox)
+            return AimResult(worldBox.center, worldBox, hit.location, hit.direction)
         }
-        return AimResult(end, null)
+        // No block in range: snap the mid-air ray endpoint to the nearest block's center instead of
+        // leaving it floating at an arbitrary fractional position.
+        val snapped = Vec3(Math.floor(end.x) + 0.5, Math.floor(end.y) + 0.5, Math.floor(end.z) + 0.5)
+        return AimResult(snapped, null, snapped, null)
+    }
+
+    /** Half-extents of a pixel-mode marker: one texture pixel (1/16 block) flat against the hit [face], near-zero thickness along its normal. */
+    private fun pixelHalfExtents(face: Direction?): Triple<Double, Double, Double> {
+        val full = PIXEL_SIZE / 2.0
+        val flat = PIXEL_SIZE / 32.0
+        return when (face?.axis) {
+            Direction.Axis.X -> Triple(flat, full, full)
+            Direction.Axis.Y -> Triple(full, flat, full)
+            Direction.Axis.Z -> Triple(full, full, flat)
+            null -> Triple(full, full, full)
+        }
     }
 
     private fun handlePlace(mc: Minecraft) {
@@ -426,16 +506,20 @@ object DungeonWaypoints {
 
     private fun handlePlaceGlobal(mc: Minecraft) {
         val aimResult = aimPoint(mc)
-        val aim = aimResult.point
+        val aim = if (pixelMode) snapAimForPixel(aimResult.exact, aimResult.face) else aimResult.point
         var px = aim.x + offsetX
         var py = aim.y + offsetY
         var pz = aim.z + offsetZ
-        offsetX = 0.0; offsetY = 0.0; offsetZ = 0.0 // one-shot
+        offsetX = 0.0; offsetY = 0.0; offsetZ = 0.0
 
         // Block-size placement matches the aimed block's real shape — a slab gets a half-height box at
-        // the correct top/bottom half instead of always a full 1x1x1 cube.
+        // the correct top/bottom half instead of always a full 1x1x1 cube. Pixel mode overrides all of
+        // that and places a flat one-texture-pixel highlight flush on the face aimed at.
         val halfX: Double; val halfY: Double; val halfZ: Double
-        if (useBlockSize && aimResult.blockBox != null) {
+        if (pixelMode) {
+            val (hx, hy, hz) = pixelHalfExtents(aimResult.face)
+            halfX = hx; halfY = hy; halfZ = hz
+        } else if (useBlockSize && aimResult.blockBox != null) {
             halfX = (aimResult.blockBox.maxX - aimResult.blockBox.minX) / 2.0
             halfY = (aimResult.blockBox.maxY - aimResult.blockBox.minY) / 2.0
             halfZ = (aimResult.blockBox.maxZ - aimResult.blockBox.minZ) / 2.0
@@ -443,6 +527,11 @@ object DungeonWaypoints {
             val half = if (useBlockSize) 0.5 else size / 2.0
             halfX = half; halfY = half; halfZ = half
         }
+
+        // Pixel mode always renders as a solid flat highlight, regardless of the global fill toggle —
+        // an outline (thick edges) on a near-zero-thickness box would look like a chunky 3D box rather
+        // than a flat marker.
+        val placeFilled = if (pixelMode) true else fill
 
         val key = globalKey()
 
@@ -465,7 +554,7 @@ object DungeonWaypoints {
             mc.setScreen(DungeonWaypointTitleScreen { title ->
                 val w = StoredWaypoint(
                     px, py, pz, halfX, halfY, halfZ,
-                    color, fill, through, title,
+                    color, placeFilled, through, title,
                     if (type == WaypointType.NONE) null else type.name,
                     if (timer == TimerType.NONE) null else timer.name
                 )
@@ -476,11 +565,19 @@ object DungeonWaypoints {
             return
         }
 
-        val removed = DungeonWaypointStore.removeNear(key, px, py, pz, PLACE_EPSILON)
+        // Two pixel-mode markers that are legitimately different pixels — diagonal across a corner,
+        // touching faces of the same or different blocks — can land within PLACE_EPSILON of each other
+        // in all 3 axes (worse yet inside a room, where X/Z also collapse to the block's centre; see
+        // comment above), so a generous remove radius deletes the wrong one. But re-aiming at the exact
+        // same pixel cell is deterministic — pixelCellCenter/snapToPixel give byte-identical output for
+        // any click landing anywhere in that cell — so an essentially-exact match (not a generous one)
+        // still safely detects "you clicked the same pixel again" without ever catching a neighbor.
+        val removeEpsilon = if (pixelMode) 1e-6 else PLACE_EPSILON
+        val removed = DungeonWaypointStore.removeNear(key, px, py, pz, removeEpsilon)
         if (!removed) {
             val w = StoredWaypoint(
                 px, py, pz, halfX, halfY, halfZ,
-                color, fill, through, null,
+                color, placeFilled, through, null,
                 if (type == WaypointType.NONE) null else type.name,
                 if (timer == TimerType.NONE) null else timer.name
             )
@@ -573,14 +670,7 @@ object DungeonWaypoints {
         @JvmField val edges: List<DoubleArray> // x1,y1,z1,x2,y2,z2 — the solid's silhouette edges, for outline draws
     )
 
-    /**
-     * Traces the true exterior surface of the union of [boxes] via a coordinate-compressed 3D occupancy
-     * grid: [quads] are the exposed faces (an internal face between two touching boxes is never emitted,
-     * so a straight join has no seam), and [edges] are the silhouette wireframe (an edge is drawn only
-     * where the 4 cells around it aren't all the same — a flat face's rim, or a genuine corner/bend on
-     * any axis, but never a cut line inside a flat run). This is what lets adjacent waypoints merge into
-     * one shape around a turn — including a vertical one — instead of two boxes with an internal seam.
-     */
+    /** Traces the true exterior surface of the union of [boxes] via a coordinate-compressed occupancy grid, so adjacent waypoints merge into one shape around a turn instead of leaving an internal seam. */
     private fun traceSurface(boxes: List<AABB>): Pair<List<Array<Vec3>>, List<DoubleArray>>? {
         val xs = compressAxis(boxes.flatMap { listOf(it.minX, it.maxX) })
         val ys = compressAxis(boxes.flatMap { listOf(it.minY, it.maxY) })
@@ -612,12 +702,12 @@ object DungeonWaypoints {
             val top = Array(nx) { i -> BooleanArray(nz) { k -> occ[i][j][k] && !occAt(i, j + 1, k) } }
             for (r in greedyRects(top, nx, nz)) {
                 val x1 = xs[r[0]]; val z1 = zs[r[1]]; val x2 = xs[r[2]]; val z2 = zs[r[3]]; val y = ys[j + 1]
-                quads.add(arrayOf(Vec3(x1, y, z1), Vec3(x2, y, z1), Vec3(x2, y, z2), Vec3(x1, y, z2)))
+                quads.add(arrayOf(Vec3(x1, y, z1), Vec3(x1, y, z2), Vec3(x2, y, z2), Vec3(x2, y, z1)))
             }
             val bottom = Array(nx) { i -> BooleanArray(nz) { k -> occ[i][j][k] && !occAt(i, j - 1, k) } }
             for (r in greedyRects(bottom, nx, nz)) {
                 val x1 = xs[r[0]]; val z1 = zs[r[1]]; val x2 = xs[r[2]]; val z2 = zs[r[3]]; val y = ys[j]
-                quads.add(arrayOf(Vec3(x1, y, z1), Vec3(x1, y, z2), Vec3(x2, y, z2), Vec3(x2, y, z1)))
+                quads.add(arrayOf(Vec3(x1, y, z1), Vec3(x2, y, z1), Vec3(x2, y, z2), Vec3(x1, y, z2)))
             }
         }
         // +X / -X faces: slice over (Y,Z) per X layer.
@@ -625,12 +715,12 @@ object DungeonWaypoints {
             val pos = Array(ny) { j -> BooleanArray(nz) { k -> occ[i][j][k] && !occAt(i + 1, j, k) } }
             for (r in greedyRects(pos, ny, nz)) {
                 val y1 = ys[r[0]]; val z1 = zs[r[1]]; val y2 = ys[r[2]]; val z2 = zs[r[3]]; val x = xs[i + 1]
-                quads.add(arrayOf(Vec3(x, y1, z1), Vec3(x, y1, z2), Vec3(x, y2, z2), Vec3(x, y2, z1)))
+                quads.add(arrayOf(Vec3(x, y1, z1), Vec3(x, y2, z1), Vec3(x, y2, z2), Vec3(x, y1, z2)))
             }
             val neg = Array(ny) { j -> BooleanArray(nz) { k -> occ[i][j][k] && !occAt(i - 1, j, k) } }
             for (r in greedyRects(neg, ny, nz)) {
                 val y1 = ys[r[0]]; val z1 = zs[r[1]]; val y2 = ys[r[2]]; val z2 = zs[r[3]]; val x = xs[i]
-                quads.add(arrayOf(Vec3(x, y1, z1), Vec3(x, y2, z1), Vec3(x, y2, z2), Vec3(x, y1, z2)))
+                quads.add(arrayOf(Vec3(x, y1, z1), Vec3(x, y1, z2), Vec3(x, y2, z2), Vec3(x, y2, z1)))
             }
         }
         // +Z / -Z faces: slice over (X,Y) per Z layer.
@@ -694,15 +784,20 @@ object DungeonWaypoints {
         return Pair(quads, edges)
     }
 
-    /**
-     * Waypoints without a title or route are plain area markers — placing several side by side, even
-     * around a bend (including a vertical one), is meant to mark one contiguous region rather than a row
-     * of separate boxes. Groups those (matching [throughWalls]) by color/fill and traces each group's true
-     * surface via [traceSurface], so a bend merges into one shape instead of leaving an internal seam at
-     * the join. Titled/routed waypoints (each needs its own box for its label/route position) aren't merged.
-     */
+    /** Groups untitled/unrouted waypoints by color/fill and traces each group's surface via [traceSurface], so several placed side by side merge into one region instead of separate boxes. */
+    /** Below this, a box dimension means "pixel-mode marker" rather than a real block-sized waypoint. */
+    private const val FLAT_PIXEL_THRESHOLD = 0.01
+
+    /** Pixel markers on faces meeting at an edge point in different directions, so the box-union tracer can't safely merge them — treat each as its own single. */
+    private fun isFlatPixel(box: AABB): Boolean =
+        (box.maxX - box.minX) < FLAT_PIXEL_THRESHOLD ||
+            (box.maxY - box.minY) < FLAT_PIXEL_THRESHOLD ||
+            (box.maxZ - box.minZ) < FLAT_PIXEL_THRESHOLD
+
     private fun buildMergedGroups(throughWalls: Boolean): List<MergedGroup> {
-        val candidates = liveWaypoints.filter { it.throughWalls == throughWalls && it.routeId == null && it.titleComponent == null }
+        val candidates = liveWaypoints.filter {
+            it.throughWalls == throughWalls && it.routeId == null && it.titleComponent == null && !isFlatPixel(it.box)
+        }
         val result = ArrayList<MergedGroup>()
         for ((key, group) in candidates.groupBy { Pair(it.color, it.filled) }) {
             val (quads, edges) = traceSurface(group.map { it.box }) ?: continue
@@ -712,7 +807,10 @@ object DungeonWaypoints {
     }
 
     private fun buildSingles(throughWalls: Boolean): List<LiveWaypoint> =
-        liveWaypoints.filter { it.throughWalls == throughWalls && !reached(it) && (it.routeId != null || it.titleComponent != null) }
+        liveWaypoints.filter {
+            it.throughWalls == throughWalls && !reached(it) &&
+                (it.routeId != null || it.titleComponent != null || isFlatPixel(it.box))
+        }
 
     private fun drawMergedFillGizmo(g: MergedGroup) {
         for (q in g.quads) RenderUtils.gizmoQuad(q, g.color, 0)
@@ -740,6 +838,7 @@ object DungeonWaypoints {
     /** Occluded pass: non-through-wall waypoints, titles and route lines as vanilla gizmos. */
     private fun renderGizmo() {
         if (!FishSettings.dungeonWaypointsEnabled) return
+        val mc = Minecraft.getInstance()
         for (g in cachedMergedOccluded) {
             if (g.filled) drawMergedFillGizmo(g) else drawMergedOutlineGizmo(g)
         }
@@ -751,13 +850,11 @@ object DungeonWaypoints {
             if (w.throughWalls || reached(w) || w.titleComponent == null) continue
             RenderUtils.gizmoText(w.titleComponent, Vec3(w.center.x, w.box.maxY + 0.4, w.center.z), 1.0f, -0x1)
         }
-        for ((_, value) in groupRoutes()) {
-            var prev: LiveWaypoint? = null
-            for (w in value) {
-                if (reached(w)) continue
-                val p = prev
-                if (p != null && !p.throughWalls && !w.throughWalls) RenderUtils.gizmoLine(p.center, w.center, ROUTE_LINE_ARGB)
-                prev = w
+        val eye = playerEyePos(mc)
+        if (eye != null) {
+            for ((_, value) in groupRoutes()) {
+                val next = value.firstOrNull { !reached(it) } ?: continue
+                if (!next.throughWalls) RenderUtils.gizmoThickLine(eye, next.center, lineWidth / 2.0, ROUTE_LINE_ARGB)
             }
         }
     }
@@ -785,30 +882,30 @@ object DungeonWaypoints {
         if (editMode) {
             if (mc.player != null && mc.level != null) {
                 val aimResult = aimPoint(mc)
-                val aim = aimResult.point
-                val box = if (useBlockSize && aimResult.blockBox != null) {
+                val aim = if (pixelMode) snapAimForPixel(aimResult.exact, aimResult.face) else aimResult.point
+                val box = if (pixelMode) {
+                    val (hx, hy, hz) = pixelHalfExtents(aimResult.face)
+                    AABB(aim.x - hx, aim.y - hy, aim.z - hz, aim.x + hx, aim.y + hy, aim.z + hz)
+                } else if (useBlockSize && aimResult.blockBox != null) {
                     aimResult.blockBox
                 } else {
                     val half = if (useBlockSize) 0.5 else size / 2.0
                     AABB(aim.x - half, aim.y - half, aim.z - half, aim.x + half, aim.y + half, aim.z + half)
                 }
-                RenderUtils.renderThickOutline(matrices, vc, box, floatArrayOf(1f, 1f, 1f, 0.9f), lineWidth)
+                if (pixelMode) RenderUtils.renderFilled(matrices, vc, box, floatArrayOf(1f, 1f, 1f, 0.9f))
+                else RenderUtils.renderThickOutline(matrices, vc, box, floatArrayOf(1f, 1f, 1f, 0.9f), lineWidth)
             }
         }
     }
 
-    /** Route connector lines for through-wall routes only — gizmo routes are drawn in [renderGizmo]. */
+    /** Route beam (crosshair -> next waypoint) for through-wall routes only — gizmo routes are drawn in [renderGizmo]. */
     private fun renderLines(matrices: PoseStack, vc: VertexConsumer) {
         if (!FishSettings.dungeonWaypointsEnabled) return
+        val eye = playerEyePos(Minecraft.getInstance()) ?: return
         for ((key, value) in groupRoutes()) {
             val reached = routeReached.getOrDefault(key, emptySet())
-            var prev: LiveWaypoint? = null
-            for (w in value) {
-                if (reached.contains(w.routeOrder)) continue
-                val p = prev
-                if (p != null && (p.throughWalls || w.throughWalls)) RenderUtils.renderLine(matrices, vc, p.center, w.center, ROUTE_LINE_RGBA)
-                prev = w
-            }
+            val next = value.firstOrNull { !reached.contains(it.routeOrder) } ?: continue
+            if (next.throughWalls) RenderUtils.renderThickLine(matrices, vc, eye, next.center, lineWidth / 2.0, ROUTE_LINE_RGBA)
         }
     }
 
@@ -825,12 +922,13 @@ object DungeonWaypoints {
         val mc = Minecraft.getInstance()
         if (mc.font == null) return
 
-        val key = "$fill|$size|$distance|$useBlockSize|$through|$type|$timer|$lineWidth|$recordingRouteId"
+        val key = "$fill|$size|$distance|$useBlockSize|$pixelMode|$through|$type|$timer|$lineWidth|$recordingRouteId"
         if (key != cachedOverlayKey) {
             cachedOverlayKey = key
             val line = Component.literal(
                 "§b[fm wp] §7fill:" + (if (fill) "§ay" else "§cn") + " §7size:§f" + size
                     + " §7dist:§f" + distance + " §7blockSize:" + (if (useBlockSize) "§ay" else "§cn")
+                    + " §7pixel:" + (if (pixelMode) "§ay" else "§cn")
                     + " §7through:" + (if (through) "§ay" else "§cn") + " §7type:§f" + type + " §7timer:§f" + timer
                     + (if (!fill) " §7line:§f$lineWidth" else "")
                     + (if (recordingRouteId != null) " §d🔗route:$recordingRouteId" else "")

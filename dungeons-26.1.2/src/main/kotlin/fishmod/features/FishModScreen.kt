@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants
 import fishmod.utils.Easing
 import fishmod.utils.config.Config
 import fishmod.utils.config.FishConfig
+import fishmod.utils.config.UserColorStore
 import fishmod.utils.config.values.Buttons
 import fishmod.utils.config.values.Dungeons
 import fishmod.cosmetic.NickState
@@ -140,7 +141,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             general.features.add(f)
         }
         run {
-            val f = Feature("Wardrobe Hotkeys", FishSettings::wardrobeHotkeysEnabled)
+            val f = Feature("Wardrobe/Loadout Hotkeys", FishSettings::wardrobeHotkeysEnabled)
             f.sub.add(ToggleSetting("Auto-Close GUI", "", FishSettings::wardrobeHotkeysAutoClose))
             f.sub.add(SubcategoryHeader("Click a slot, then press a key/mouse button (Esc unbinds)"))
             val slots = fishmod.utils.Keybinds.wardrobeSlots
@@ -151,14 +152,20 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                         { fishmod.utils.Keybinds.wardrobeSlots!![idx] }))
                 }
             }
+            f.sub.add(SubcategoryHeader("Pagination"))
+            f.sub.add(KeybindSetting("Next Page", "", { fishmod.utils.Keybinds.wardrobeNextPage }))
+            f.sub.add(KeybindSetting("Previous Page", "", { fishmod.utils.Keybinds.wardrobePrevPage }))
             general.features.add(f)
         }
         run {
             val f = Feature("Slot Binds", FishSettings::slotBindsEnabled)
             f.sub.add(SubcategoryHeader("Hold the bind key + click a hotbar slot then an inv slot to link; shift-left-click to swap"))
             f.sub.add(KeybindSetting("Bind Key (hold)", "Default R", { fishmod.utils.Keybinds.slotBind }))
-            f.sub.add(SubcategoryHeader("Profiles — separate bind sets; type an existing name to switch, a new name to start one"))
-            f.sub.add(InputSetting("Profile", "", FishSettings::slotBindsProfile))
+            f.sub.add(SubcategoryHeader("Profiles — separate bind sets you can switch between"))
+            val slotBindProfiles: Array<String> = fishmod.features.SlotBinds.profileNames().toTypedArray()
+            f.sub.add(DropdownSetting("Profile", "", slotBindProfiles,
+                { if (FishSettings.slotBindsProfile in slotBindProfiles) FishSettings.slotBindsProfile else slotBindProfiles[0] },
+                { v -> FishSettings.slotBindsProfile = v }))
             f.sub.add(ButtonSetting("New Profile", "Fresh empty set", Runnable { fishmod.features.SlotBinds.newProfile() }))
             f.sub.add(ButtonSetting("Delete Profile", "Remove the current set (Default is only cleared)", Runnable { fishmod.features.SlotBinds.deleteActiveProfile() }))
             f.sub.add(KeybindSetting("Cycle Profile Key", "", { fishmod.utils.Keybinds.slotBindCycleProfile }))
@@ -181,7 +188,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 FishSettings::infiniteChatHistoryLimit, 500, 20000, 500).gatedBy { FishSettings.infiniteChatHistory })
             f.sub.add(SubcategoryHeader("Chat Search"))
             f.sub.add(ToggleSetting("Chat Search", "", FishSettings::chatSearch))
-            f.sub.add(SubcategoryHeader("Bind \"FishMod: Toggle Chat Search\" in Options → Controls; press it while chat is open to show the search field")
+            f.sub.add(SubcategoryHeader("Bind \"Toggle Chat Search\" in Options → Controls; press it while chat is open to show the search field")
                 .gatedBy { FishSettings.chatSearch })
             f.sub.add(SubcategoryHeader("Chat Peek"))
             f.sub.add(ToggleSetting("Chat Peek", "Hold the bound key to pull up chat fully opaque and scroll through it, without opening the chat box", FishSettings::chatPeek))
@@ -272,7 +279,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(SliderIntSetting("Scroll Speed", "", FishSettings::storageScrollSpeed, 1, 50))
             f.sub.add(ToggleSetting("Retain Scroll", "Keep scroll offset after closing", FishSettings::storageRetainScroll))
             f.sub.add(ToggleSetting("Hide Non-Matching Pages", "While searching", FishSettings::storageHideNonMatching))
-            f.sub.add(KeybindSetting("Open Viewer", "Standalone cache browser", { fishmod.utils.Keybinds.storageViewer }))
             invStorage.features.add(f)
         }
         invStorage.features.add(Feature("Container Value", FishSettings::containerValueEnabled))
@@ -448,8 +454,33 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
         run {
+            val wp = fishmod.features.dungeon.DungeonWaypoints
             val f = Feature("Waypoints", FishSettings::dungeonWaypointsEnabled)
             f.sub.add(SubcategoryHeader("Master toggle for /fm wp — placed boxes, titles and route lines"))
+            f.sub.add(ToggleSetting("Edit Mode", "Right-click to place/remove a waypoint where you're aiming", { wp.isEditMode() }, { wp.toggleEdit() }))
+            f.sub.add(ToggleSetting("Fill", "Filled box vs outline for the next waypoint placed", { wp.isFill() }, { wp.setFill(it) }))
+            f.sub.add(ToggleSetting("Use Block Size", "Match the aimed block's real shape instead of a fixed cube", { wp.isUseBlockSize() }, { wp.setUseBlockSize(it) }))
+            f.sub.add(ToggleSetting("Pixel Mode", "1/16-block precision, snapped to the exact pixel you're aiming at", { wp.isPixelMode() }, { wp.setPixelMode(it) }))
+            f.sub.add(ToggleSetting("Through Walls", "Render occluded, ignoring terrain in the way", { wp.isThrough() }, { wp.setThrough(it) }))
+            f.sub.add(SliderDoubleSetting("Size", "Box size when Use Block Size is off", { wp.getSize() }, { wp.setSizeQuiet(it) }, 0.1, 1.0))
+            f.sub.add(SliderIntSetting("Placement Distance", "Max raycast range for placement", { wp.getDistance() }, { wp.setDistanceQuiet(it) }, 1, 64))
+            f.sub.add(SliderDoubleSetting("Line Width", "Outline thickness when Fill is off", { wp.getLineWidth() }, { wp.setLineWidthQuiet(it) }, 0.01, 0.5)
+                .gatedBy { !wp.isFill() })
+            f.sub.add(ColorPickerSetting("Color", "", { wp.getColorArgb() }, { wp.setColorArgb(it) }))
+            f.sub.add(DropdownSetting("Type", "Metadata tag for the next waypoint placed",
+                fishmod.utils.dungeon.waypoints.WaypointType.values(),
+                { wp.getType() }, { wp.setTypeEnum(it) }))
+            f.sub.add(DropdownSetting("Timer Tag", "Speedrun-route tag for the next waypoint placed",
+                fishmod.utils.dungeon.waypoints.TimerType.values(),
+                { wp.getTimer() }, { wp.setTimerEnum(it) }))
+            f.sub.add(SubcategoryHeader("Database"))
+            f.sub.add(ButtonSetting("Export to Clipboard", "Copy this world's waypoint database as text", "Copy", Runnable { wp.exportToClipboard() }))
+            f.sub.add(ButtonSetting("Import from Clipboard", "Replace with a previously exported database", "Paste", Runnable { wp.importFromClipboard() }))
+            f.sub.add(ButtonSetting("Clear Current Area", "Delete every waypoint in the room/zone you're in now", "Clear", Runnable { wp.resetCurrentArea() }))
+            f.sub.add(SubcategoryHeader("Routes"))
+            f.sub.add(ButtonSetting("Start/Stop Recording", "Tags each waypoint placed next, in order, as a route",
+                { if (wp.isRecordingRoute()) "Stop" else "Start" }, Runnable { wp.toggleRoute(null) }))
+            f.sub.add(ButtonSetting("Reset All Routes' Progress", "Makes every route's waypoints visible again this run", "Reset", Runnable { wp.endRoute(null) }))
             dungeon.features.add(f)
         }
         run {
@@ -735,8 +766,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("Nametag Stats", FishSettings::nametagStatsEnabled)
-            f.sub.add(SubcategoryHeader("Networth under every player; Cata level + secret avg in the Dungeon Hub"))
+            f.sub.add(SubcategoryHeader("Networth + skill avg everywhere; Cata level + secret avg in the Dungeon Hub"))
             f.sub.add(ToggleSetting("Show Own", "", FishSettings::nametagStatsShowSelf))
+            f.sub.add(DropdownSetting("Position", "", arrayOf("ABOVE", "BELOW"),
+                { if (FishSettings.nametagStatsAbove) "ABOVE" else "BELOW" },
+                { v -> FishSettings.nametagStatsAbove = v == "ABOVE" }))
+            f.sub.add(ToggleSetting("Networth", "", FishSettings::nametagStatsShowNetworth))
+            f.sub.add(ToggleSetting("Catacombs Level", "", FishSettings::nametagStatsShowCataLevel))
+            f.sub.add(ToggleSetting("Secret Average", "", FishSettings::nametagStatsShowSecretAvg))
+            f.sub.add(ToggleSetting("Skill Average", "", FishSettings::nametagStatsShowSkillAvg))
             cosmetics.features.add(f)
         }
         run {
@@ -757,6 +795,34 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 { FishSettings.prestigeColorsAnimStyle },
                 { v -> FishSettings.prestigeColorsAnimStyle = v })
                 .gatedBy { FishSettings.prestigeColorsGradientTiers && FishSettings.prestigeColorsAnimated })
+            cosmetics.features.add(f)
+        }
+        run {
+            val f = Feature("Custom Crosshair", FishSettings::crosshairEnabled)
+            f.sub.add(SubcategoryHeader("Replaces the vanilla crosshair with a built-in preset or a PNG from config/FishMod/crosshairs/"))
+            f.sub.add(DropdownSetting("Type", "", arrayOf("Preset", "Image"),
+                { FishSettings.crosshairMode },
+                { v -> FishSettings.crosshairMode = v }))
+            f.sub.add(DropdownSetting("Preset", "", fishmod.features.CustomCrosshair.PRESETS,
+                { if (FishSettings.crosshairPreset in fishmod.features.CustomCrosshair.PRESETS) FishSettings.crosshairPreset else fishmod.features.CustomCrosshair.PRESETS[0] },
+                { v -> FishSettings.crosshairPreset = v })
+                .gatedBy { FishSettings.crosshairMode == "Preset" })
+            f.sub.add(ButtonSetting("Open Crosshairs Folder", "") {
+                try {
+                    fishmod.features.CrosshairImageLoader.init()
+                    net.minecraft.util.Util.getPlatform().openUri(fishmod.features.CrosshairImageLoader.getImagesPath().toUri())
+                } catch (ignored: Exception) {}
+            }.gatedBy { FishSettings.crosshairMode == "Image" })
+            val crosshairImageNames: Array<String> = run {
+                val names = fishmod.features.CrosshairImageLoader.getImageNames()
+                (if (names.isEmpty()) listOf("No image") else names).toTypedArray()
+            }
+            f.sub.add(DropdownSetting("Image", "", crosshairImageNames,
+                { if (FishSettings.crosshairImageSelection in crosshairImageNames) FishSettings.crosshairImageSelection else crosshairImageNames[0] },
+                { v -> FishSettings.crosshairImageSelection = v })
+                .gatedBy { FishSettings.crosshairMode == "Image" })
+            f.sub.add(ColorPickerSetting("Color", "Tint applied to the crosshair", FishSettings::crosshairColor))
+            f.sub.add(SliderDoubleSetting("Scale", "", FishSettings::crosshairScale, 0.25, 4.0))
             cosmetics.features.add(f)
         }
         run {
@@ -813,11 +879,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting(".worm / .scatha", "", FishSettings::pcWorm))
             f.sub.add(ToggleSetting(".help / .?", "", FishSettings::pcHelp))
             f.sub.add(SubcategoryHeader("Party Actions"))
-            f.sub.add(ToggleSetting(".kick", "", FishSettings::pcActionKick))
+            f.sub.add(ToggleSetting(".kick / .k", "", FishSettings::pcActionKick))
             f.sub.add(ToggleSetting(".warp / .w", "", FishSettings::pcActionWarp))
             f.sub.add(ToggleSetting(".transfer / .pt / .ptme", "", FishSettings::pcActionTransfer))
-            f.sub.add(ToggleSetting(".promote", "", FishSettings::pcActionPromote))
-            f.sub.add(ToggleSetting(".demote", "", FishSettings::pcActionDemote))
+            f.sub.add(ToggleSetting(".promote / .pro", "", FishSettings::pcActionPromote))
+            f.sub.add(ToggleSetting(".demote / .dem", "", FishSettings::pcActionDemote))
             party.features.add(f)
         }
         run {
@@ -825,12 +891,29 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(SubcategoryHeader("Who can trigger .kick / .warp / .transfer / .promote / .demote"))
             f.sub.add(DropdownSetting("Who Can Trigger", "", arrayOf("off", "self", "whitelist", "blacklist", "everyone"),
                 { FishSettings.pcPartyActionsMode }, { v -> FishSettings.pcPartyActionsMode = v }))
-            val paWhitelist = InputSetting("Whitelist", "", FishSettings::pcPartyActionsWhitelist)
-            paWhitelist.hint = "or /fmcmd whitelist add|remove|list"
-            f.sub.add(paWhitelist)
-            val paBlacklist = InputSetting("Blacklist", "", FishSettings::pcPartyActionsBlacklist)
-            paBlacklist.hint = "or /fmcmd blacklist add|remove|list"
-            f.sub.add(paBlacklist)
+            f.sub.add(ButtonSetting("Whitelist", "Edit who may trigger party actions", "Open", Runnable {
+                Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
+                    "Party Action Whitelist", "Who may trigger .kick / .warp / .transfer / .promote / .demote", "+ Add Name",
+                    { FishSettings.pcPartyActionsWhitelist }, { v -> FishSettings.pcPartyActionsWhitelist = v }
+                ))
+            }))
+            f.sub.add(ButtonSetting("Blacklist", "Edit who is always blocked", "Open", Runnable {
+                Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
+                    "Party Action Blacklist", "Always blocked from triggering party actions", "+ Add Name",
+                    { FishSettings.pcPartyActionsBlacklist }, { v -> FishSettings.pcPartyActionsBlacklist = v }
+                ))
+            }))
+            party.features.add(f)
+        }
+        run {
+            val f = Feature("Kick List", { FishSettings.pcKickListEnabled }, { v -> FishSettings.pcKickListEnabled = v })
+            f.sub.add(SubcategoryHeader("Anyone on this list is auto-kicked from your party whenever you're leader"))
+            f.sub.add(ButtonSetting("Manage List", "Add/remove names, or /fm kicklist", "Open", Runnable {
+                Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
+                    "Kick List", "Auto-kicked from your party whenever you're leader", "+ Add Name",
+                    { FishSettings.pcKickList }, { v -> FishSettings.pcKickList = v }
+                ))
+            }))
             party.features.add(f)
         }
         run {
@@ -984,6 +1067,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ColorPickerSetting("Fill Color", "", FishSettings::blockOverlayFillColor))
             f.sub.add(SliderIntSetting("Fill Opacity %", "", FishSettings::blockOverlayOpacity, 0, 100))
             f.sub.add(ColorPickerSetting("Outline Color", "", FishSettings::blockOverlayOutlineColor))
+            f.sub.add(SliderDoubleSetting("Outline Thickness", "", FishSettings::blockOverlayOutlineThickness, 0.01, 0.1))
             f.sub.add(ToggleSetting("Phase (through walls)", "", FishSettings::blockOverlayPhase))
             visuals.features.add(f)
         }
@@ -992,6 +1076,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(SliderIntSetting("Opacity %", "", Visual::itemRarityOpacity, 0, 100))
             f.sub.add(ToggleSetting("Hypixel Colors", "Brighter, accurate per-rarity colours", Visual::itemRarityHypixelColors))
             f.sub.add(ToggleSetting("Circular", "", Visual::circularRarityBackground))
+            visuals.features.add(f)
+        }
+        run {
+            val f = Feature("Dark Mode", Visual::darkModeEnabled)
+            f.sub.add(SliderIntSetting("Opacity %", "", Visual::darkModeOpacity, 1, 80))
+            f.sub.add(ToggleSetting("Tint HUD", "Also darken the hotbar/chat/etc, not just the world", Visual::darkModeTintHud))
             visuals.features.add(f)
         }
         run {
@@ -1073,6 +1163,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("Explosive Shot", FishSettings::explosiveShotEnabled)
+            f.sub.add(ToggleSetting("Show Title", "", FishSettings::explosiveShotShowTitle))
+            f.sub.add(ToggleSetting("Chat Message", "", FishSettings::explosiveShotChatMessage))
             f.sub.add(ToggleSetting("Announce to Party (Archer)", "", FishSettings::explosiveShotAnnounceParty))
             dungeon.features.add(f)
         }
@@ -1299,7 +1391,21 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("Background Image", { fishmod.utils.config.values.DungeonMapSettings.mapImageSelection.isNotEmpty() },
-                { v -> fishmod.utils.config.values.DungeonMapSettings.mapImageSelection = if (v) fishmod.utils.config.values.DungeonMapSettings.mapImageSelection else "" })
+                { v ->
+                    val s = fishmod.utils.config.values.DungeonMapSettings
+                    if (v) {
+                        // restore whatever was picked last time this was switched off, or the first
+                        // real image if none was ever picked
+                        val restore = s.mapImageLastSelection.ifEmpty {
+                            fishmod.features.dungeon.map.MapImageLoader.getImageNames()
+                                .firstOrNull { it != fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE } ?: ""
+                        }
+                        s.mapImageSelection = restore
+                    } else {
+                        if (s.mapImageSelection.isNotEmpty()) s.mapImageLastSelection = s.mapImageSelection
+                        s.mapImageSelection = ""
+                    }
+                })
             f.sub.add(ButtonSetting("Open Images Folder", "") {
                 try {
                     fishmod.features.dungeon.map.MapImageLoader.init()
@@ -1312,7 +1418,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             }
             f.sub.add(DropdownSetting("Image", "", imageNames,
                 { if (fishmod.utils.config.values.DungeonMapSettings.mapImageSelection in imageNames) fishmod.utils.config.values.DungeonMapSettings.mapImageSelection else imageNames[0] },
-                { v -> fishmod.utils.config.values.DungeonMapSettings.mapImageSelection = v }))
+                { v ->
+                    fishmod.utils.config.values.DungeonMapSettings.mapImageSelection = if (v == fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE) "" else v
+                    if (v != fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE) fishmod.utils.config.values.DungeonMapSettings.mapImageLastSelection = v
+                }))
             f.sub.add(SliderIntSetting("Image Alpha", "", fishmod.utils.config.values.DungeonMapSettings::mapImageAlpha, 0, 255))
             dungeonMap.features.add(f)
         }
@@ -1338,6 +1447,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ColorPickerSetting("Own Head Background", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadOwnBackground))
             f.sub.add(SliderIntSetting("Outline Size", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadBackgroundSize, 0, 5))
             f.sub.add(ToggleSetting("Ugly Pointer (Own)", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerUglyPointer))
+            f.sub.add(ToggleSetting("Class Color Outline", "Border the head in the teammate's dungeon class color", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadClassOutline))
             f.sub.add(SliderIntSetting("Player Name Scale %", "",
                 { (fishmod.utils.config.values.DungeonMapSettings.mapPlayerNamesScaling * 100).toInt() },
                 { v -> fishmod.utils.config.values.DungeonMapSettings.mapPlayerNamesScaling = v / 100.0f },
@@ -1391,7 +1501,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeonMap.features.add(f)
         }
         run {
-            val f = Feature("Room Colors", fishmod.utils.config.values.DungeonMapSettings::mapTextCenter)
+            val f = Feature("Room Colors", fishmod.utils.config.values.DungeonMapSettings::mapRoomColorsEnabled)
             f.sub.add(ColorPickerSetting("Unopened", "", fishmod.utils.config.values.DungeonMapSettings::mapUnopenedRoomColor))
             f.sub.add(ColorPickerSetting("Blood", "", fishmod.utils.config.values.DungeonMapSettings::mapBloodRoomColor))
             f.sub.add(ColorPickerSetting("Normal", "", fishmod.utils.config.values.DungeonMapSettings::mapNormalRoomColor))
@@ -1462,6 +1572,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             val spawnHud = Feature("Spawn Progress HUD", FishSettings::slayerSpawnHudEnabled)
             spawnHud.sub.add(SubcategoryHeader("Live spawn-bar %  ·  drag position with Edit HUD"))
             spawnHud.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerSpawnHudScale, 0.5, 3.0))
+            spawnHud.sub.add(SliderIntSetting("Background Opacity %", "0 = no background panel", FishSettings::slayerSpawnOpacity, 0, 100))
             slayer.features.add(spawnHud)
 
             val statsHud = Feature("Slayer Stats HUD", FishSettings::slayerStatsHudEnabled)
@@ -1470,7 +1581,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             statsHud.sub.add(ToggleSetting("Show Kills", "", FishSettings::slayerStatsShowKills))
             statsHud.sub.add(ToggleSetting("Show XP/hr", "", FishSettings::slayerStatsShowXpHr))
             statsHud.sub.add(ToggleSetting("Show Kills/hr", "", FishSettings::slayerStatsShowKillsHr))
-            statsHud.sub.add(ToggleSetting("Background", "Dark panel behind the stats", FishSettings::slayerStatsBackground))
+            statsHud.sub.add(SliderIntSetting("Background Opacity %", "0 = no background panel", FishSettings::slayerStatsOpacity, 0, 100))
             statsHud.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerStatsHudScale, 0.5, 3.0))
             statsHud.sub.add(ButtonSetting("Reset Session Stats", "Zero the XP / kills / time counters", Runnable { fishmod.features.slayers.SlayerStatsTracker.reset() }))
             slayer.features.add(statsHud)
@@ -1486,7 +1597,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             profit.sub.add(ToggleSetting("Count Mob Kill Coins", "Count small purse gains while grinding as a \"Mob Kill Coins\" drop row + profit", FishSettings::slayerProfitCountKillCoins))
             profit.sub.add(ToggleSetting("Always Show Hidden Rows", "Keep hidden rows on screen (dark + struck) even when chat is closed", FishSettings::slayerProfitShowHidden))
             profit.sub.add(SliderIntSetting("Idle Pause (s)", "No drop/kill this long → pause & rewind the clock by this much", FishSettings::slayerProfitIdleSeconds, 15, 600, 15))
-            profit.sub.add(ToggleSetting("Background", "Dark panel behind the tracker", FishSettings::slayerProfitBackground))
+            profit.sub.add(SliderIntSetting("Background Opacity %", "0 = no background panel", FishSettings::slayerProfitOpacity, 0, 100))
             profit.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerProfitHudScale, 0.5, 3.0))
             profit.sub.add(ButtonSetting("Reset This Mode", "Clear drops / bosses / time for the current Display mode, every slayer", Runnable { fishmod.features.slayers.SlayerProfitTracker.reset() }))
             slayer.features.add(profit)
@@ -1501,6 +1612,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             timer.sub.add(ToggleSetting("Show New PB", "", FishSettings::slayerTimerShowNewPb))
             timer.sub.add(ToggleSetting("Show Cycle", "Full kill-to-kill time (fight + loot + walk + refill) + a live 'since kill' counter", FishSettings::slayerTimerShowCycle))
             timer.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerTimerHudScale, 0.5, 3.0))
+            timer.sub.add(SliderIntSetting("Background Opacity %", "0 = no background panel", FishSettings::slayerTimerOpacity, 0, 100))
             slayer.features.add(timer)
 
             val phases = Feature("Boss Phases", FishSettings::slayerPhaseEnabled)
@@ -1969,8 +2081,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             "Drag a column's header to move it",
             "Right-drag a header onto another to merge them",
         )
-        val sc = 0.8f
-        val lh = 9
+        val sc = 1.1f
+        val lh = 12
         var y = bottom() - BOTTOM_RESERVE + (BOTTOM_RESERVE - lines.size * lh) / 2 - 8
         for (line in lines) {
             sst(ctx, this.font, line, right() - MARGIN - sw(this.font, line, sc), y, HINT_COLOR, sc)
@@ -2187,6 +2299,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
         val prevInput = activeInput
         if (prevInput is InputSetting && prevInput.textField != null) prevInput.textField!!.setFocused(false)
+        if (prevInput is ColorPickerSetting) prevInput.hexField?.setFocused(false)
         activeInput = null
 
         val swW = 190
@@ -2335,7 +2448,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                     if (s.hiddenByGate()) continue
                     val sh = s.getHeight()
                     if (my >= ssy && my <= ssy + sh) {
-                        if (s is InputSetting || s is InputIntSetting || s is InputDoubleSetting) {
+                        if (s is InputSetting || s is InputIntSetting || s is InputDoubleSetting || s is ColorPickerSetting) {
                             activeInput = s
                         }
                     }
@@ -2625,6 +2738,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         if (ai is InputSetting && ai.textField != null) { ai.textField!!.keyPressed(input); return true }
         if (ai is InputIntSetting && ai.textField != null) { ai.textField!!.keyPressed(input); return true }
         if (ai is InputDoubleSetting && ai.textField != null) { ai.textField!!.keyPressed(input); return true }
+        if (ai is ColorPickerSetting && ai.hexField != null && ai.hexField!!.isFocused) { ai.hexField!!.keyPressed(input); return true }
         if (searchFocused && searchField != null) { searchField!!.keyPressed(input); return true }
         return super.keyPressed(input)
     }
@@ -2636,6 +2750,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         if (ai is InputIntSetting && ai.textField != null) { ai.textField!!.charTyped(input); return true }
         if (ai is InputDoubleSetting && ai.textField != null) { ai.textField!!.charTyped(input); return true }
+        if (ai is ColorPickerSetting && ai.hexField != null && ai.hexField!!.isFocused) { ai.hexField!!.charTyped(input); return true }
         if (searchFocused && searchField != null) {
             searchField!!.charTyped(input); searchText = searchField!!.value; for (c in columns) c.scroll = 0; return true
         }
@@ -2698,12 +2813,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val features: MutableList<Feature> = ArrayList()
         var scroll = 0
 
-        /** Non-empty when this slot is a vertical stack: [children] all render at once, sharing
-         *  the card and splitting its height evenly, each independently scrollable — saves
-         *  horizontal space by letting several columns share one slot instead of sitting side by
-         *  side. Right-click-drag a whole column onto another to stack them; drag a child's mini
-         *  header to reorder it within the stack or right-drag it out to merge elsewhere/pop back
-         *  to top level. */
+        /** Non-empty when this slot is a vertical stack: [children] share the card, splitting height evenly, each independently scrollable. */
         val children: MutableList<Column> = ArrayList()
         var activeChild: Int = 0
 
@@ -3188,6 +3298,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         private var expanded = false
         private var pillX = 0
         private var pillW = 0
+        private var activeTab = 0 // 0 = Presets, 1 = Your Colors
+        var hexField: EditBox? = null
 
         private fun indexOfCurrent(): Int {
             val cur = getter() or 0xFF000000.toInt()
@@ -3203,8 +3315,36 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             return best
         }
 
+        private fun initHexField(tr: Font) {
+            if (hexField == null) {
+                val tf = EditBox(tr, 0, 0, INPUT_W, INPUT_H, Component.empty())
+                tf.setMaxLength(7)
+                tf.value = ""
+                hexField = tf
+            }
+        }
+
+        private fun parseHex(s: String): Int? {
+            val h = s.trim().removePrefix("#")
+            if (h.length != 6 || h.any { !it.isDigit() && it.lowercaseChar() !in 'a'..'f' }) return null
+            return try { (0xFF shl 24) or (h.toLong(16).toInt() and 0xFFFFFF) } catch (e: NumberFormatException) { null }
+        }
+
+        private fun commitHex() {
+            val tf = hexField ?: return
+            val argb = parseHex(tf.value) ?: return
+            UserColorStore.add(argb)
+            setter(argb)
+            tf.value = ""
+        }
+
+        private fun contentHeight(): Int {
+            return if (activeTab == 0) TAB_BAR_H + PRESET_ARGB.size * OPTION_H
+            else TAB_BAR_H + HEX_ROW_H + Math.max(UserColorStore.all().size, 1) * OPTION_H
+        }
+
         override fun getHeight(): Int {
-            return ITEM_HEIGHT + Math.round(PRESET_ARGB.size * OPTION_H * expandAnim.progress())
+            return ITEM_HEIGHT + Math.round(contentHeight() * expandAnim.progress())
         }
 
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
@@ -3224,16 +3364,60 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             val animating = expandAnim.isAnimating()
             if (expanded || animating) {
                 val oy = sy + ITEM_HEIGHT
-                roundedRect(ctx, leftX + 2, oy, rightX - leftX - 4, PRESET_ARGB.size * OPTION_H, 5, SUBROW_BG)
-                for (i in PRESET_ARGB.indices) {
-                    val rowY = oy + i * OPTION_H
-                    val selected = i == idx
-                    val rowHov = mx >= leftX + 2 && mx <= rightX - 2 && my >= rowY && my <= rowY + OPTION_H
-                    if (rowHov) roundedRect(ctx, leftX + 4, rowY + 1, rightX - leftX - 8, OPTION_H - 2, 4, ROW_HOVER)
-                    disc(ctx, leftX + 12, rowY + OPTION_H / 2, 4, PRESET_ARGB[i])
-                    st(ctx, tr, PRESET_NAMES[i], leftX + 22, rowY + (OPTION_H - 8) / 2,
-                        if (selected) ACCENT_HOVER else (if (rowHov) TEXT_COLOR else SUBTEXT_COLOR))
-                    if (selected) NvgRecorder.fillRect((leftX + 2).toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
+                val innerX0 = leftX + 2
+                val innerX1 = rightX - 2
+                val ch = contentHeight()
+                roundedRect(ctx, innerX0, oy, innerX1 - innerX0, ch, 5, SUBROW_BG)
+
+                val tabW = (innerX1 - innerX0) / 2
+                val tab0Hov = mx >= innerX0 && mx < innerX0 + tabW && my >= oy && my <= oy + TAB_BAR_H
+                val tab1Hov = mx >= innerX0 + tabW && mx <= innerX1 && my >= oy && my <= oy + TAB_BAR_H
+                st(ctx, tr, "Presets", innerX0 + (tabW - stw(tr, "Presets")) / 2, oy + (TAB_BAR_H - 8) / 2,
+                    if (activeTab == 0) ACCENT_HOVER else (if (tab0Hov) TEXT_COLOR else SUBTEXT_COLOR))
+                st(ctx, tr, "Your Colors", innerX0 + tabW + (tabW - stw(tr, "Your Colors")) / 2, oy + (TAB_BAR_H - 8) / 2,
+                    if (activeTab == 1) ACCENT_HOVER else (if (tab1Hov) TEXT_COLOR else SUBTEXT_COLOR))
+                val underlineX = if (activeTab == 0) innerX0 else innerX0 + tabW
+                NvgRecorder.fillRect(underlineX.toFloat(), (oy + TAB_BAR_H - 2).toFloat(), tabW.toFloat(), 2f, ACCENT)
+
+                var cy = oy + TAB_BAR_H
+                if (activeTab == 0) {
+                    for (i in PRESET_ARGB.indices) {
+                        val rowY = cy + i * OPTION_H
+                        val selected = i == idx
+                        val rowHov = mx >= innerX0 && mx <= innerX1 && my >= rowY && my <= rowY + OPTION_H
+                        if (rowHov) roundedRect(ctx, innerX0 + 2, rowY + 1, innerX1 - innerX0 - 4, OPTION_H - 2, 4, ROW_HOVER)
+                        disc(ctx, innerX0 + 10, rowY + OPTION_H / 2, 4, PRESET_ARGB[i])
+                        st(ctx, tr, PRESET_NAMES[i], innerX0 + 20, rowY + (OPTION_H - 8) / 2,
+                            if (selected) ACCENT_HOVER else (if (rowHov) TEXT_COLOR else SUBTEXT_COLOR))
+                        if (selected) NvgRecorder.fillRect(innerX0.toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
+                    }
+                } else {
+                    initHexField(tr)
+                    val fieldW = innerX1 - innerX0 - 4 - ADD_BTN_W - 4
+                    val fieldX = innerX0 + 2
+                    val fieldY = cy + (HEX_ROW_H - INPUT_H) / 2
+                    nvgTextField(hexField!!, fieldX, fieldY, fieldW, INPUT_H)
+                    val addX = fieldX + fieldW + 4
+                    val addHov = mx >= addX && mx <= addX + ADD_BTN_W && my >= fieldY - 2 && my <= fieldY + INPUT_H + 2
+                    roundedRect(ctx, addX, fieldY - 2, ADD_BTN_W, INPUT_H + 4, 3, if (addHov) ACCENT_HOVER else ACCENT)
+                    st(ctx, tr, "Add", addX + (ADD_BTN_W - stw(tr, "Add")) / 2, fieldY + (INPUT_H - 8) / 2, -0x1)
+
+                    cy += HEX_ROW_H
+                    val colors = UserColorStore.all()
+                    if (colors.isEmpty()) {
+                        st(ctx, tr, "No custom colors yet - type a hex code above", innerX0 + 4, cy + (OPTION_H - 8) / 2, SUBTEXT_COLOR)
+                    }
+                    for (i in colors.indices) {
+                        val rowY = cy + i * OPTION_H
+                        val c = colors[i]
+                        val selected = (getter() or 0xFF000000.toInt()) == c
+                        val rowHov = mx >= innerX0 && mx <= innerX1 && my >= rowY && my <= rowY + OPTION_H
+                        if (rowHov) roundedRect(ctx, innerX0 + 2, rowY + 1, innerX1 - innerX0 - 4, OPTION_H - 2, 4, ROW_HOVER)
+                        disc(ctx, innerX0 + 10, rowY + OPTION_H / 2, 4, c)
+                        st(ctx, tr, "#" + Integer.toHexString(c and 0xFFFFFF).padStart(6, '0').uppercase(), innerX0 + 20, rowY + (OPTION_H - 8) / 2,
+                            if (selected) ACCENT_HOVER else (if (rowHov) TEXT_COLOR else SUBTEXT_COLOR))
+                        if (selected) NvgRecorder.fillRect(innerX0.toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
+                    }
                 }
             }
         }
@@ -3249,12 +3433,53 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 }
                 return true
             }
-            if (expanded) {
-                val oy = sy + ITEM_HEIGHT
+            if (!expanded) return false
+
+            val oy = sy + ITEM_HEIGHT
+            val innerX0 = leftX + 2
+            val innerX1 = rightX - 2
+            val tabW = (innerX1 - innerX0) / 2
+
+            if (my >= oy && my <= oy + TAB_BAR_H) {
+                if (mx >= innerX0 && mx < innerX0 + tabW) { activeTab = 0; return true }
+                if (mx >= innerX0 + tabW && mx <= innerX1) { activeTab = 1; return true }
+                return true
+            }
+
+            var cy = oy + TAB_BAR_H
+            if (activeTab == 0) {
                 for (i in PRESET_ARGB.indices) {
-                    val rowY = oy + i * OPTION_H
-                    if (mx >= leftX && mx <= rightX && my >= rowY && my <= rowY + OPTION_H) {
+                    val rowY = cy + i * OPTION_H
+                    if (mx >= innerX0 && mx <= innerX1 && my >= rowY && my <= rowY + OPTION_H) {
                         setter(PRESET_ARGB[i])
+                        expanded = false
+                        expandAnim.setTarget(false)
+                        return true
+                    }
+                }
+            } else {
+                val fieldW = innerX1 - innerX0 - 4 - ADD_BTN_W - 4
+                val fieldX = innerX0 + 2
+                val fieldY = cy + (HEX_ROW_H - INPUT_H) / 2
+                if (mx >= fieldX && mx <= fieldX + fieldW && my >= fieldY && my <= fieldY + INPUT_H) {
+                    hexField?.let { tf ->
+                        tf.setFocused(true)
+                        val len = tf.value.length
+                        tf.cursorPosition = len; tf.setHighlightPos(len)
+                    }
+                    return true
+                }
+                val addX = fieldX + fieldW + 4
+                if (mx >= addX && mx <= addX + ADD_BTN_W && my >= fieldY - 2 && my <= fieldY + INPUT_H + 2) {
+                    commitHex()
+                    return true
+                }
+                cy += HEX_ROW_H
+                val colors = UserColorStore.all()
+                for (i in colors.indices) {
+                    val rowY = cy + i * OPTION_H
+                    if (mx >= innerX0 && mx <= innerX1 && my >= rowY && my <= rowY + OPTION_H) {
+                        setter(colors[i])
                         expanded = false
                         expandAnim.setTarget(false)
                         return true
@@ -3277,6 +3502,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Dark Blue", "Purple", "Pink", "Brown", "Gray",
                 "Dark Gray", "Black"
             )
+            private const val TAB_BAR_H = 18
+            private const val HEX_ROW_H = 22
+            private const val ADD_BTN_W = 32
         }
     }
 
@@ -3300,17 +3528,24 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
     }
 
-    class ButtonSetting(name: String, desc: String, val action: Runnable) : Setting(name, desc) {
+    class ButtonSetting(name: String, desc: String, val label: () -> String, val action: Runnable) : Setting(name, desc) {
+        constructor(name: String, desc: String, label: String, action: Runnable) : this(name, desc, { label }, action)
+        constructor(name: String, desc: String, action: Runnable) : this(name, desc, { "Open" }, action)
+
+        private fun buttonWidth(tr: Font, text: String): Int = stw(tr, text) + 24
+
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
-            val bw = 60
+            val text = label()
+            val bw = buttonWidth(tr, text)
             val bx = rightX - bw - 2
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
             val hov = mx >= bx && mx <= bx + bw && my >= by && my <= by + PILL_H
             roundedRect(ctx, bx, by, bw, PILL_H, PILL_H / 2, if (hov) ACCENT_HOVER else ACCENT)
-            st(ctx, tr, "Open", bx + (bw - stw(tr, "Open")) / 2, by + (PILL_H - 8) / 2 - 1, 0xFF06302F.toInt())
+            st(ctx, tr, text, bx + (bw - stw(tr, text)) / 2, by + (PILL_H - 8) / 2 - 1, -0x1)
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
-            val bw = 60
+            val tr = Minecraft.getInstance().font ?: return false
+            val bw = buttonWidth(tr, label())
             val bx = rightX - bw - 2
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
             if (mx >= bx && mx <= bx + bw && my >= by && my <= by + PILL_H) {

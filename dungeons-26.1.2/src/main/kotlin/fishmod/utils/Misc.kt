@@ -1,6 +1,6 @@
 package fishmod.utils
 
-import config.practical.data.SoundData
+import fishmod.shaded.practicalconfig.data.SoundData
 import fishmod.utils.config.values.ExtraOptions
 import fishmod.utils.debug.Debug
 import net.minecraft.ChatFormatting
@@ -16,6 +16,15 @@ object Misc {
     @JvmField val INSTANCE: Minecraft = Minecraft.getInstance()
     private val ON: Component = Component.literal("ON").withStyle(ChatFormatting.GREEN)
     private val OFF: Component = Component.literal("OFF").withStyle(ChatFormatting.RED)
+
+    /** Compact number: 1,234 / 12.3k / 4.56M / 1.23B. */
+    @JvmStatic
+    fun abbr(v: Double): String = when {
+        v >= 1_000_000_000 -> "%.2fB".format(v / 1_000_000_000)
+        v >= 1_000_000 -> "%.2fM".format(v / 1_000_000)
+        v >= 1_000 -> "%.1fk".format(v / 1_000)
+        else -> "%,d".format(v.toLong())
+    }
 
     @JvmStatic
     fun getPos(entity: Entity, tickProgress: Double): Vec3 {

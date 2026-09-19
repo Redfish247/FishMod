@@ -2,10 +2,7 @@ package fishmod.features.item
 
 import net.minecraft.client.Minecraft
 
-/**
- * Ticks per-item animated dye state and interpolates the current color. Legacy-only: the current
- * item customizer writes no animated dyes; this only drives entries left in a pre-port config.
- */
+/** Legacy-only: the current item customizer writes no animated dyes; this only drives entries left in a pre-port config. */
 object AnimatedDyeAnimator {
 
     private class State(var progress: Float, var onBackCycle: Boolean, var lastColor: Int, var lastFrame: Int)

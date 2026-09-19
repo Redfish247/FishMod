@@ -10,11 +10,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.core.BlockPos
 import net.minecraft.world.level.block.Blocks
 
-/**
- * Spirit Bear state HUD. On F4/M4 (Thorn) the ring of blocks around the arena flips
- * COAL_BLOCK -> SEA_LANTERN per kill; when the last one flips the bear starts spawning (~68t).
- * We poll the ring each server tick rather than reconstructing block-update deltas.
- */
+// Ring of blocks flips COAL_BLOCK -> SEA_LANTERN per kill; last one flipping starts the ~68t spawn timer.
 object SpiritBear {
 
     private const val NAME = "Spirit Bear"

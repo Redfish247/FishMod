@@ -9,17 +9,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.protocol.game.ClientboundEntityEventPacket
 import net.minecraft.world.entity.monster.zombie.Zombie
 
-/**
- * Announces Mimic / Prince / Bat kills to party chat.
- *
- * - Mimic: the mimic is a baby [Zombie]; its death animation is an entity-event packet (id 3), only
- *   on F6/F7 during clear.
- * - Prince / Bat: Hypixel posts "A Prince falls. +1 Bonus Score" / "A Bat has been slain. +1 Bonus
- *   Score" in chat when they die.
- *
- * Each has a toggle; the settings screen also exposes manual "… Killed" buttons and a keybind that
- * fire [mimicKilled]/[princeKilled]/[batKilled] with `manual = true`.
- */
+/** Announces Mimic/Prince/Bat kills to party chat. Mimic is detected via its baby-[Zombie] death-animation entity-event packet; Prince/Bat via Hypixel's own chat lines. */
 object MimicAnnounce {
 
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX

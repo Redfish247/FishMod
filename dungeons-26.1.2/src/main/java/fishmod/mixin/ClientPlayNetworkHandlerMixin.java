@@ -38,6 +38,9 @@ public class ClientPlayNetworkHandlerMixin {
     @Shadow
     private ClientLevel level;
 
+    @org.spongepowered.asm.mixin.Unique
+    private ClientboundSystemChatPacket fishmod$lastBundledSystemChat;
+
     @Inject(method = "applyPlayerInfoUpdate", at = @At(value = "TAIL"))
     private void onPlayerList(ClientboundPlayerInfoUpdatePacket.Action action, ClientboundPlayerInfoUpdatePacket.Entry receivedEntry, PlayerInfo currentEntry, CallbackInfo ci) {
         Events.ON_PLAYER_ENTRY.invoke(playerListEvent -> playerListEvent.onNewPlayerEntry(receivedEntry));
@@ -112,16 +115,15 @@ public class ClientPlayNetworkHandlerMixin {
 
     @WrapOperation(method = "handleBundlePacket", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/Packet;handle(Lnet/minecraft/network/PacketListener;)V"))
     private void apply(Packet<?> packet, PacketListener listener, Operation<Void> original) {
-        if (packet instanceof ClientboundSystemChatPacket(Component content, boolean overlay) && !overlay) {
-            if (Events.ON_GAME_MESSAGE.invoke(gameMessageEvent -> gameMessageEvent.onGameMessage(content))) {
-                return;
+        if (packet instanceof ClientboundSystemChatPacket sysChat) {
+            fishmod$lastBundledSystemChat = sysChat;
+            if (!sysChat.overlay()) {
+                if (Events.ON_GAME_MESSAGE.invoke(gameMessageEvent -> gameMessageEvent.onGameMessage(sysChat.content()))) {
+                    return;
+                }
             }
         }
 
-        // Not a double-fire with ClientConnectionMixin#channelRead0: that one sees the ClientboundBundlePacket
-        // wrapper itself on the netty thread, never these unwrapped sub-packets. This site fires once per
-        // sub-packet, on the main thread, right before it is handed to its real listener — the safe place for
-        // handlers that touch client state. A standalone (non-bundled) packet only ever goes through the other site.
         Events.ON_PACKET.invoke(packetEvent -> packetEvent.onPacket(packet));
         original.call(packet, listener);
     }
@@ -141,6 +143,10 @@ public class ClientPlayNetworkHandlerMixin {
 
     @Inject(method = "handleSystemChat", at = @At("HEAD"), cancellable = true)
     private void onGameMessage(ClientboundSystemChatPacket packet, CallbackInfo ci) {
+        if (packet == fishmod$lastBundledSystemChat) {
+            fishmod$lastBundledSystemChat = null;
+            return;
+        }
         if (!packet.overlay()) {
             if (Events.ON_GAME_MESSAGE.invoke(gameMessageEvent -> gameMessageEvent.onGameMessage(packet.content()))) {
                 ci.cancel();

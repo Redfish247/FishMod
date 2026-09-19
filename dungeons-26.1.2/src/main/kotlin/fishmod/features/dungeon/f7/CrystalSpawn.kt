@@ -1,6 +1,6 @@
 package fishmod.features.dungeon.f7
 
-import config.practical.hud.HUDComponent
+import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.Constants
 import fishmod.utils.Location
 import fishmod.utils.Misc
@@ -15,10 +15,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal
 import java.util.regex.Pattern
 
-/**
- * Maxor crystal spawn countdown + "place crystal" reminder. Crystal-placed detection dismisses
- * the reminder when you place it.
- */
 object CrystalSpawn {
 
     private val RELIC_PICK_UP: Pattern = Pattern.compile("(\\w+) picked up an Energy Crystal!$")

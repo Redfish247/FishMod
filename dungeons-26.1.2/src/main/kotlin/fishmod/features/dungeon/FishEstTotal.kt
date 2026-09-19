@@ -1,14 +1,15 @@
 package fishmod.features.dungeon
 
 import fishmod.utils.Constants
+import fishmod.utils.Misc
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.dungeon.RunHistory
 import fishmod.utils.events.Events
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import config.practical.hud.HUDComponent
-import config.practical.manager.ConfigValue
+import fishmod.shaded.practicalconfig.hud.HUDComponent
+import fishmod.shaded.practicalconfig.manager.ConfigValue
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
@@ -21,8 +22,6 @@ import java.util.regex.Pattern
  * when both mods are present, and touching Split would throw NoSuchMethodError on blade's ctor.
  */
 object FishEstTotal {
-
-    // LocalSplit — never references fishmod.utils.dungeon.Split
 
     private class LocalSplit(
         val name: String,
@@ -71,7 +70,6 @@ object FishEstTotal {
     private val END_PATTERN: Pattern =
         Pattern.compile("^\\s*☠ Defeated (.+) in 0?([\\dhms ]+)\\s*(\\(NEW RECORD!\\))?$")
 
-    // floor → ordered list of LocalSplits
     private val FLOOR_SPLITS: HashMap<String, ArrayList<LocalSplit>> = loadSplits()
 
     private var currentSplits: ArrayList<LocalSplit>? = null
@@ -119,8 +117,6 @@ object FishEstTotal {
         Events.ON_LOCATION_CHANGE.register { _ -> reset(); false }
     }
 
-    // Floor key ("F7"/"M7") now comes from the shared fishmod.features.dungeon.map.DungeonState
-    // (chat + sidebar based) instead of re-parsing the "The Catacombs (" sidebar/team line here.
     private fun detectFloor() {
         if (floor != null) return
         val key = fishmod.features.dungeon.map.DungeonState.currentFloorKey() ?: return
@@ -138,7 +134,13 @@ object FishEstTotal {
         // requeue onto the same instance, a dropped location packet, practice mode). Without this
         // `runOver` stays true, parsing is dead, and Est. Total freezes on the previous run's
         // total while the split timer above it has already restarted.
-        if (runOver && string.contains(RUN_START_FRAGMENT)) reset()
+        if (runOver && string.contains(RUN_START_FRAGMENT)) {
+            reset()
+            // reset() just nulled currentSplits — re-detect immediately so this same message
+            // (the split-start trigger) still reaches the freshly-armed splits below, instead of
+            // being dropped and waiting for the next server tick's detectFloor() to arm too late.
+            detectFloor()
+        }
         val splits = currentSplits
         if (splits == null || runOver) return false
         for (s in splits) {
@@ -151,7 +153,6 @@ object FishEstTotal {
     private fun endRun() {
         runOver = true
         val splits = currentSplits ?: return
-        // Only finalize splits that actually started.
         for (s in splits) {
             if (s.startTime > 0) s.end()
         }
@@ -206,6 +207,33 @@ object FishEstTotal {
     }
 
     @JvmStatic
+    fun printDebugInfo() {
+        val splits = currentSplits
+        Misc.addChatMessage(Component.literal("§e[EstTotal] floor=$floor runOver=$runOver splits=${splits?.size ?: -1}"))
+        if (splits == null) return
+        var base = 0.0
+        var delta = 0.0
+        val splitCount = splits.size - 1
+        for (i in 0 until splitCount) {
+            val s = splits[i]
+            val personal = RunHistory.getPersonalAvg(floor, s.name)
+            val avg = if (personal > 0) personal else s.avg
+            val skip = s.avg < 0
+            var contrib = 0.0
+            if (!skip) {
+                base += avg
+                if (s.ended()) { contrib = s.getRealTime() - avg; delta += contrib }
+                else if (s.started()) { contrib = Math.max(0.0, s.getRealTime() - avg); delta += contrib }
+            }
+            Misc.addChatMessage(Component.literal(
+                "§7  ${s.name}: skip=$skip started=${s.started()} ended=${s.ended()} real=${"%.2f".format(s.getRealTime())} " +
+                    "jsonAvg=${s.avg} personalAvg=$personal usedAvg=${"%.2f".format(avg)} contrib=${"%.2f".format(contrib)}"
+            ))
+        }
+        Misc.addChatMessage(Component.literal("§e[EstTotal] base=${"%.2f".format(base)} delta=${"%.2f".format(delta)} total=${"%.2f".format(Math.max(0.0, base + delta))}"))
+    }
+
+    @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
         val splits = currentSplits ?: return
         val client = Minecraft.getInstance()
@@ -257,7 +285,6 @@ object FishEstTotal {
         drawLagLine(context, client, x, y + Constants.TEXT_HEIGHT)
     }
 
-    /** Running total of seconds lost to lag this run, drawn on the row beneath Est. Total. */
     private fun drawLagLine(context: GuiGraphicsExtractor, client: Minecraft, x: Int, y: Int) {
         val lag = LagTracker.getCurrentLag()
         val lagStr = Constants.DECIMAL_FORMAT.format(lag) + "s"
@@ -309,11 +336,11 @@ object FishEstTotal {
         drawLagLine(ctx, client, x, y + Constants.TEXT_HEIGHT)
     }
 
-    // splits.json loader — FishMod's own jar via FishEstTotal.class
-
     private fun loadSplits(): HashMap<String, ArrayList<LocalSplit>> {
         try {
-            javaClass.getResourceAsStream("/data/splits.json").use { stream ->
+            // Unique filename — see Phase.kt's FLOOR_SPLITS for why "splits.json" itself collides with
+            // blade-addons' own bundled copy of a near-identical file at the same resource path.
+            javaClass.getResourceAsStream("/data/fishmod_splits.json").use { stream ->
                 if (stream == null) return HashMap()
                 InputStreamReader(stream).use { reader ->
                     val root: JsonElement = JsonParser.parseReader(reader)

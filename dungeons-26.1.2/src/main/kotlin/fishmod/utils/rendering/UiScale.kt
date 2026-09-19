@@ -2,17 +2,7 @@ package fishmod.utils.rendering
 
 import net.minecraft.client.Minecraft
 
-/**
- * Extra shrink factor applied to FishMod's custom NanoVG screens (the /fm settings panel and its
- * sibling popups), on top of whatever Minecraft's own GUI scale already does.
- *
- * These screens lay themselves out in fixed logical-pixel amounts. Minecraft's GUI scale controls
- * how many logical pixels fit on screen (higher scale = fewer, larger logical pixels), so a panel
- * sized in constant logical pixels eats a bigger share of the screen as GUI scale climbs — the
- * layout was tuned to look right at scale 1-2 and becomes oversized at scale 3+. [factor] cancels
- * that growth above [REFERENCE_GUI_SCALE], then applies [FLAT_SHRINK] on top so the panel reads
- * smaller everywhere, not just at high scale.
- */
+/** Fixed logical-pixel panels get oversized as GUI scale climbs past 2; [factor] cancels that growth above [REFERENCE_GUI_SCALE] and applies [FLAT_SHRINK] on top. */
 object UiScale {
     private const val REFERENCE_GUI_SCALE = 2.0
     private const val FLAT_SHRINK = 0.77f

@@ -39,10 +39,6 @@ object PartyUtil {
 
     @JvmStatic
     fun sendPacket() {
-        if (INSTANCE == null) {
-            throw IllegalStateException("Instance not set")
-        }
-
         if (System.currentTimeMillis() - grabbedTime < MIN_DELAY) return
         if (INSTANCE.sendPacket(ServerboundPartyInfoPacket())) {
             grabbedTime = System.currentTimeMillis()
@@ -62,5 +58,13 @@ object PartyUtil {
     fun isInParty(): Boolean {
         sendPacket()
         return inParty
+    }
+
+    /** Current party members' UUIDs (leader included), or empty when not in a party. */
+    @JvmStatic
+    fun getMemberUuids(): Set<UUID> {
+        sendPacket()
+        if (!inParty) return emptySet()
+        return memberMap?.keys ?: emptySet()
     }
 }

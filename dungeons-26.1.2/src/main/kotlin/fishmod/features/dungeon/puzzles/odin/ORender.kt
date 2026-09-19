@@ -40,6 +40,9 @@ object ORender {
 
     fun line(a: Vec3, b: Vec3, argb: Int) = RenderUtils.gizmoLine(a, b, argb)
 
+    /** Thick occluded line — use over [line] so it stays visible at grazing view angles. */
+    fun thickLine(a: Vec3, b: Vec3, argb: Int) = RenderUtils.gizmoThickLine(a, b, 0.025, argb)
+
     fun text(str: String, pos: Vec3, scale: Float) =
         RenderUtils.gizmoText(Component.literal(str), pos, scale, -0x1)
 
@@ -51,11 +54,7 @@ object ORender {
         )
     }
 
-    /**
-     * Line from just in front of the camera to [target]. Starting exactly at the camera position
-     * makes the near vertex project to a garbage screen location — offset one block along the look
-     * vector so the line reads as coming from the crosshair.
-     */
+    /** Line from just in front of the camera to [target] — starting exactly at the camera projects to a garbage screen location. */
     fun tracer(target: Vec3, argb: Int) {
         val cam = Minecraft.getInstance().gameRenderer.mainCamera
         val start = cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()))

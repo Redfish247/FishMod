@@ -10,26 +10,9 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 /**
- * Session Slayer statistics: XP gained, boss kills, and the derived per-hour rates.
- *
- * XP tracking
- * -----------
- * Every completed Slayer quest is exactly one boss kill of a known type+tier, and Hypixel's boss
- * Slayer-XP payout per tier is a fixed, long-stable table ([SlayerType.bossXpByTier]). So on each
- * `SLAYER QUEST COMPLETE!` we add that tier's payout — an exact figure, not a scoreboard estimate.
- *
- * Kill tracking
- * -------------
- * Incremented once per `SLAYER QUEST COMPLETE!`. Minibosses never trigger it. The chat line is
- * one-shot so there are no client-side duplicates to guard against.
- *
- * Coins are NOT tracked here — see [SlayerProfitTracker], which prices the actual drops.
- *
- * Active time
- * -----------
- * Wall-clock is only accumulated while [SlayerManager.isActiveSlayer] AND the player has moved/acted
- * within [IDLE_MS]. Per-tick deltas are clamped so a stall/alt-tab can't inflate rates. World /
- * island / quest changes stop the clock; it never counts menu/AFK/hub time.
+ * Session Slayer statistics: XP gained, boss kills, and derived per-hour rates. XP is attributed exactly
+ * from [SlayerType.bossXpByTier] on each `SLAYER QUEST COMPLETE!`; active time only accrues while
+ * [SlayerManager.isActiveSlayer] and the player has moved within [IDLE_MS]. Coins are tracked in [SlayerProfitTracker].
  */
 object SlayerStatsTracker {
 

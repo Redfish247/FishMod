@@ -1,6 +1,6 @@
 package fishmod.utils
 
-import config.practical.data.SoundData
+import fishmod.shaded.practicalconfig.data.SoundData
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.sounds.SoundEvent

@@ -7,19 +7,11 @@ import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import kotlin.math.roundToInt
 
 /**
- * The three movable Slayer HUDs — Spawn Progress, Slayer Stats, Boss Timer.
- *
- * All three follow the mod's standard simple-HUD contract ([fishmod.features.SoulflowHud]): an
- * `object` with a `renderHud(ctx, tick)` that bails early on its toggles/visibility, then draws a
- * scaled, translated block of `ctx.text`. Each is registered with [FishHudEditor] here and gets a
- * `HudElementRegistry` layer + `DEFAULTS`/`COLUMN_HUDS` entry alongside the others, so it's moved
- * and scaled in the exact same editor as every existing HUD.
- *
- * The render methods only read already-computed cached state ([SlayerManager], [SlayerTimer],
- * [SlayerStatsTracker]) — no scoreboard parsing, no entity scans, no allocation beyond the line
- * strings.
+ * The three movable Slayer HUDs — Spawn Progress, Slayer Stats, Boss Timer — following the mod's
+ * standard simple-HUD contract ([fishmod.features.SoulflowHud]) and registered with [FishHudEditor].
  */
 object SlayerHuds {
 
@@ -94,7 +86,7 @@ object SlayerHuds {
             SlayerManager.State.NONE -> return
         }
         drawBlock(ctx, FishSettings.slayerSpawnHudX, FishSettings.slayerSpawnHudY,
-            FishSettings.slayerSpawnHudScale, lines, background = false)
+            FishSettings.slayerSpawnHudScale, lines, opacity = FishSettings.slayerSpawnOpacity)
     }
 
     // ------------------------------------------------------------------ Slayer Stats
@@ -120,7 +112,7 @@ object SlayerHuds {
         if (lines.size == 1) return
 
         drawBlock(ctx, FishSettings.slayerStatsHudX, FishSettings.slayerStatsHudY,
-            FishSettings.slayerStatsHudScale, lines, background = FishSettings.slayerStatsBackground)
+            FishSettings.slayerStatsHudScale, lines, opacity = FishSettings.slayerStatsOpacity)
     }
 
     // ------------------------------------------------------------------ Slayer Profit
@@ -160,7 +152,7 @@ object SlayerHuds {
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())
         ctx.pose().scale(sc, sc)
-        if (FishSettings.slayerProfitBackground) ctx.fill(-3, -2, panelW + 3, lh * rows.size + 1, 0x90000000.toInt())
+        if (FishSettings.slayerProfitOpacity > 0) ctx.fill(-3, -2, panelW + 3, lh * rows.size + 1, bgColor(FishSettings.slayerProfitOpacity))
         for (i in rows.indices) {
             val r = rows[i]
             ctx.text(f, r.label, 0, lh * i, 0xFFFFFFFF.toInt(), true)
@@ -244,14 +236,14 @@ object SlayerHuds {
         if (lines.isEmpty()) return
 
         drawBlock(ctx, FishSettings.slayerTimerHudX, FishSettings.slayerTimerHudY,
-            FishSettings.slayerTimerHudScale, lines, background = false)
+            FishSettings.slayerTimerHudScale, lines, opacity = FishSettings.slayerTimerOpacity)
     }
 
     // ------------------------------------------------------------------ shared draw
 
     private fun drawBlock(
         ctx: GuiGraphicsExtractor, x: Int, y: Int, scale: Double,
-        lines: List<String>, background: Boolean,
+        lines: List<String>, opacity: Int,
     ) {
         val mc = Minecraft.getInstance()
         val lh = Constants.TEXT_HEIGHT + 2
@@ -259,13 +251,19 @@ object SlayerHuds {
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())
         ctx.pose().scale(sc, sc)
-        if (background) {
+        if (opacity > 0) {
             var w = 0
             for (l in lines) w = Math.max(w, mc.font.width(l))
-            ctx.fill(-3, -2, w + 3, lh * lines.size + 1, 0x80000000.toInt())
+            ctx.fill(-3, -2, w + 3, lh * lines.size + 1, bgColor(opacity))
         }
         for (i in lines.indices) ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF.toInt(), true)
         ctx.pose().popMatrix()
+    }
+
+    private fun bgColor(opacityPct: Int): Int {
+        val pct = opacityPct.coerceIn(0, 100)
+        val a = (pct * 2.55).roundToInt()
+        return a shl 24
     }
 
     private fun fmt(v: Double): String = String.format("%,d", v.toLong())

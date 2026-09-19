@@ -9,23 +9,9 @@ import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
 
 /**
- * Resolves the concrete boss entity behind Hypixel's nametag.
- *
- * Like [fishmod.features.dungeon.StarredMobHighlight], the ☠ + health text sits on a separate
- * invisible ArmorStand hovering over the real mob, so detection is: scan armor-stand nametags for
- * the boss name, then take the nearest matching living mob under that stand.
- *
- * Miniboss alerts are NOT handled here — they fire off the `SLAYER MINI-BOSS <name> has spawned!`
- * chat line in [SlayerManager]. This class only binds the main boss entity (for the "Fully Spawned"
- * timer mode) and doubles as a nametag-based backup for the boss-spawn alert.
- *
- * Performance
- * -----------
- *  - The scan runs on a 5-tick cadence, never per frame.
- *  - It only runs at all while [SlayerManager.isActiveSlayer] — i.e. a live quest on the right
- *    island. Outside that it does nothing and drops its caches.
- *  - The boss scan is further limited to states where a boss can exist.
- *  - Once the boss entity is bound it's reused every tick until it dies/unloads (no re-scan).
+ * Resolves the concrete boss entity behind Hypixel's ☠ nametag (a separate invisible ArmorStand over the
+ * real mob), scanning on a 5-tick cadence only while [SlayerManager.isActiveSlayer]. Binds the boss entity
+ * for the "Fully Spawned" timer mode and doubles as a nametag-based backup for the spawn alert.
  */
 object SlayerBossDetector {
 

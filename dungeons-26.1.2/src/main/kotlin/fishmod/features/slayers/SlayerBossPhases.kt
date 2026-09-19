@@ -17,23 +17,10 @@ import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.Vec3
 
 /**
- * Attack / phase indicators on the slayer boss, for all six slayers — the FishMod take on SkyHanni's
- * per-slayer damage-indicator phase text. Detection mirrors SkyHanni: it reads the armour-stand
- * nametags Hypixel floats near the boss, the boss's `vehicle` (mount) for the laser / mania phases,
- * and the boss health fraction for the phase split.
- *
- * | Slayer     | Cues                                                                    |
- * |------------|-------------------------------------------------------------------------|
- * | Revenant   | `BOOM!` (T5 explosion telegraph)                                        |
- * | Tarantula  | `KILL HATCHLINGS` invuln phase, egg-sac timer                           |
- * | Sven       | `PUPS!` (howl / summon telegraph)                                       |
- * | Voidgloom  | hit phase `N/max Hits`, laser countdown, beacon countdown, phase split  |
- * | Inferno    | Hellion shield + which dagger, Fire Pillar timer, Fire Pits, phase split|
- * | Bloodfiend | `TWINCLAWS`, `STEAK!` / HP-till-steak, Mania Circles countdown           |
- *
- * Rendered as billboarded world text just above the boss (`RenderUtils.gizmoText`), plus optional
- * title warnings for the big one-shot cues. The Bloodfiend path is self-contained (it scans The Rift
- * for the `Bloodfiend` NPC itself) since that slayer isn't in [SlayerType].
+ * Attack / phase indicators for all six slayers (FishMod's take on SkyHanni's damage-indicator phase text),
+ * detected from armour-stand nametags, the boss's mount (laser/mania phases), and health fraction. Rendered as
+ * billboarded world text above the boss, plus title warnings for big cues. Bloodfiend is self-contained since
+ * it isn't in [SlayerType].
  */
 object SlayerBossPhases {
 
@@ -74,6 +61,9 @@ object SlayerBossPhases {
     // blaze fire-pits edge trigger
     private var lastHpFrac = 1.0
 
+    // bloodfiend steak title edge trigger (fire once per crossing, not every tick under 20%)
+    private var steakTitleFired = false
+
     // one-shot title cooldowns, keyed by cue
     private val titleAt = HashMap<String, Long>()
 
@@ -95,6 +85,7 @@ object SlayerBossPhases {
         hatchlingsActive = false; hatchlingsAnchor = null
         beaconSeenNanos = 0L; beaconLastSeenMs = 0L
         lastHpFrac = 1.0
+        steakTitleFired = false
         hpBossId = 0; hpMaxSeen = 0.0
         titleAt.clear()
     }
@@ -264,8 +255,10 @@ object SlayerBossPhases {
 
         if (l1.isEmpty() && hp > 0.0 && maxHp > 0.0) {
             val steakAt = maxHp * 0.2
-            if (hp <= steakAt) { l1 = "§c§lSTEAK!"; title("steak", "§c§lSTEAK!", 2_000L) }
-            else if (hp - steakAt < 300.0) l1 = "§cHP till Steak: §f${(hp - steakAt).toInt()}"
+            if (hp <= steakAt) {
+                l1 = "§c§lSTEAK!"
+                if (!steakTitleFired) { steakTitleFired = true; title("steak", "§c§lSTEAK!", 2_000L) }
+            } else if (hp - steakAt < 300.0) l1 = "§cHP till Steak: §f${(hp - steakAt).toInt()}"
         }
 
         if (hp > 0.0 && maxHp > 0.0) l2 = "§7${(hp / maxHp * 100.0).toInt()}%"
@@ -293,7 +286,7 @@ object SlayerBossPhases {
     /** Current HP from the boss's `❤` nametag among [stands]; also updates the running peak
      *  [hpMaxSeen], resetting it when the bound boss id changes. Returns 0 if no `❤` tag is visible. */
     private fun trackHp(bossId: Int, stands: List<String>): Double {
-        if (bossId != hpBossId) { hpBossId = bossId; hpMaxSeen = 0.0; lastHpFrac = 1.0 }
+        if (bossId != hpBossId) { hpBossId = bossId; hpMaxSeen = 0.0; lastHpFrac = 1.0; steakTitleFired = false }
         val cur = stands.firstNotNullOfOrNull { name ->
             NAMETAG_HP.find(name)?.let { m ->
                 val n = m.groupValues[1].replace(",", "").toDoubleOrNull() ?: return@let null

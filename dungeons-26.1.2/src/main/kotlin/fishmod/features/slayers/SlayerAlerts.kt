@@ -5,17 +5,7 @@ import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.Events
 import net.minecraft.network.chat.Component
 
-/**
- * On-screen alerts for Slayer events, drawn through the mod's existing fading-title system
- * ([Misc.forceTitle] with a hold time) so they look and behave exactly like every other FishMod
- * title alert — no new rendering path.
- *
- * De-duplication:
- *  - miniboss alerts are gated per entity id by [SlayerBossDetector] (fires once per add),
- *  - the boss-spawn alert is latched here so a flickering scoreboard can't repeat it within a quest,
- *  - the cocoon alert is only reached on the GRINDING/BOSS_SPAWNED -> COCOONED state edge, so it's
- *    inherently one-per-cocoon; [reset] re-arms it for the next boss.
- */
+/** Drawn through [Misc.forceTitle] like other FishMod alerts. Boss-spawn is latched here so a flickering scoreboard can't repeat it within a quest; [reset] re-arms it for the next boss. */
 object SlayerAlerts {
 
     private var bossSpawnLatched = false

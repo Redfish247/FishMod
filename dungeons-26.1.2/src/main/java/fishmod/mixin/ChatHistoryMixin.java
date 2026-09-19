@@ -12,15 +12,8 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Two chat-buffer tweaks, both keyed off the scrollback:
- * <ul>
- *   <li><b>Infinite Chat History</b> — raises vanilla's hard-coded 100-line cap on the scrollback
- *       buffer ({@code allMessages}), the wrapped display buffer ({@code trimmedMessages}) and the
- *       sent-message history ({@code recentChat}, the up-arrow list) to a configurable limit.</li>
- *   <li><b>Chat Search</b> — while {@link ChatSearch#active} is true, drops any line that doesn't
- *       match the query from the display rebuild (the line stays in {@code allMessages}).</li>
- * </ul>
- * Both off by default.
+ * Two chat-buffer tweaks: raises vanilla's 100-line scrollback/history cap to a configurable limit,
+ * and filters the display rebuild while {@link ChatSearch#active} is true. Both off by default.
  */
 @Mixin(ChatComponent.class)
 public class ChatHistoryMixin {

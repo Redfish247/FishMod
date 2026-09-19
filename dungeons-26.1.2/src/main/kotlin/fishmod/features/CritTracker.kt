@@ -13,15 +13,7 @@ import java.io.FileWriter
 import java.lang.reflect.Type
 import java.util.regex.Pattern
 
-/**
- * Backs the `.crit` / `!crit` command:
- *  - <b>Crit</b>: per-enemy damage of your P1 (Maxor) Explosive Shot hits — latest + running avg.
- *  - <b>Storm Kill</b>: the P2 clock time (seconds) at which Storm dies — latest + running avg.
- *    Fed from [fishmod.features.dungeon.f7.StormTickTimer]; only recorded while you're on Archer.
- *
- * Samples are appended to config/fishmod-crit.json and kept across runs and relogs (rolling
- * window of the last [MAX_SAMPLES]). The average is over every stored sample, not the current run.
- */
+/** Backs `.crit`/`!crit`; samples persist to config/fishmod-crit.json (rolling window of [MAX_SAMPLES]) and the average is over all stored samples, not just this run. */
 object CritTracker {
 
     // Same line ExplosiveShot.kt parses: "Your Explosive Shot hit N enemy/enemies for D damage"

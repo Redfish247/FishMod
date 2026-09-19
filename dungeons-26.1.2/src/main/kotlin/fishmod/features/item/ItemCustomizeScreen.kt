@@ -22,15 +22,7 @@ import org.lwjgl.nanovg.NanoVG
 import kotlin.math.max
 import kotlin.math.min
 
-/**
- * /fm customize — an item customizer. PICK an item (worn armor or inventory slot), then edit its
- * Name, Model, Dye and armor Trim. Backed by [ItemCustomizationStore] (client-only, keyed by the
- * item's Hypixel instance uuid) — the same persistence used by [DyedItemColorMixin]/[ItemTrimMixin]
- * (which also paints the ITEM_MODEL override, merged in alongside TRIM)/[ItemStackMixin].
- *
- * Painted entirely through [NvgRecorder] following [fishmod.features.FishModScreen]'s pattern —
- * widget interaction (EditBox focus, grid/legend/dropdown hit-testing) stays plain Screen code.
- */
+/** Backed by [ItemCustomizationStore] (client-only, keyed by the item's Hypixel instance uuid) — the same persistence used by [DyedItemColorMixin]/[ItemTrimMixin]/[ItemStackMixin]. */
 class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgOverlay {
 
     private companion object {
@@ -52,7 +44,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
         val DANGER = ScreenTheme.DANGER
         val DANGER_HOVER = ScreenTheme.DANGER_HOVER
 
-        // &-code → RGB for the clickable color key
         val CODE_COLORS: Array<IntArray> = arrayOf(
             intArrayOf('0'.code, 0x000000), intArrayOf('1'.code, 0x0000AA), intArrayOf('2'.code, 0x00AA00), intArrayOf('3'.code, 0x00AAAA),
             intArrayOf('4'.code, 0xAA0000), intArrayOf('5'.code, 0xAA00AA), intArrayOf('6'.code, 0xFFAA00), intArrayOf('7'.code, 0xAAAAAA),
@@ -63,7 +54,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
             arrayOf("l", "B"), arrayOf("o", "I"), arrayOf("n", "U"), arrayOf("m", "S"), arrayOf("k", "K"), arrayOf("r", "R")
         )
 
-        // Hypixel SkyBlock dyes (name, RRGGBB); not exhaustive — the hex box covers the rest
         val DYES: Array<Array<String>> = arrayOf(
             arrayOf("Pure White", "FFFFFF"), arrayOf("Pure Black", "000000"), arrayOf("Pure Yellow", "FFF700"), arrayOf("Pure Blue", "0013FF"),
             arrayOf("Aquamarine", "7FFFD4"), arrayOf("Bingo Blue", "002FA7"), arrayOf("Bone", "E3DAC9"), arrayOf("Brick Red", "CB4154"),
@@ -117,7 +107,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
     private val trimMaterials by lazy { ArmorTrimCache.materials() }
     private val trimPatterns by lazy { ArmorTrimCache.patterns() }
 
-    // &-code key hit-boxes, rebuilt each frame, consumed by mouseClicked.
     private val keyRects = ArrayList<IntArray>()
     private val keyCodes = ArrayList<String>()
 
@@ -355,7 +344,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
         NvgRecorder.clear()
         drawChrome(mouseX, mouseY)
         super.extractRenderState(ctx, mouseX, mouseY, delta)
-        // open dropdown lists render last, above everything
         val sel = if (minecraft?.player != null) inv().getItem(selectedIndex) else ItemStack.EMPTY
         if (dyeAllowed(sel)) dyeDropdown.renderOpen(mouseX, mouseY)
         trimMatDropdown.renderOpen(mouseX, mouseY)
@@ -453,7 +441,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
         }
     }
 
-    /** Clickable color/format key. Click a color → inserts its code into the name at the cursor. */
     private fun drawColorKey(mouseX: Int, mouseY: Int) {
         keyRects.clear()
         keyCodes.clear()

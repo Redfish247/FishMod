@@ -2,7 +2,7 @@
   "E": [
     {
       "name": "Blood Open",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Watcher: Congratulations, you made it through the Entrance.",
       "color": 11141120,
       "avg": 30.0
@@ -16,7 +16,7 @@
     },
     {
       "name": "Run Time",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "some dummy string",
       "color": 4279733527,
       "avg": -1.0
@@ -25,7 +25,7 @@
   "F1": [
     {
       "name": "Blood Open",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Watcher: Ah, you've finally arrived.",
       "color": 11141120,
       "avg": 25.0
@@ -46,7 +46,7 @@
     },
     {
       "name": "Boss Entry",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] Bonzo: Gratz for making it this far, but I'm basically unbeatable.",
       "color": 5592575,
       "avg": -1.0
@@ -60,7 +60,7 @@
     },
     {
       "name": "Run Time",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "some dummy string",
       "color": 4279733527,
       "avg": -1.0
@@ -69,7 +69,7 @@
   "M1": [
     {
       "name": "Blood Open",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Watcher: Ah, you've finally arrived.",
       "color": 11141120,
       "avg": 25.0
@@ -90,7 +90,7 @@
     },
     {
       "name": "Boss Entry",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] Bonzo: Gratz for making it this far, but I'm basically unbeatable.",
       "color": 5592575,
       "avg": -1.0
@@ -104,7 +104,7 @@
     },
     {
       "name": "Run Time",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "some dummy string",
       "color": 4279733527,
       "avg": -1.0
@@ -113,7 +113,7 @@
   "F2": [
     {
       "name": "Blood Open",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Watcher: Ah, we meet again...",
       "color": 11141120,
       "avg": 25.0
@@ -134,7 +134,7 @@
     },
     {
       "name": "Boss Entry",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] Scarf: This is where the journey ends for you, Adventurers.",
       "color": 5592575,
       "avg": -1.0
@@ -148,7 +148,7 @@
     },
     {
       "name": "Run Time",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "some dummy string",
       "color": 4279733527,
       "avg": -1.0
@@ -157,7 +157,7 @@
   "M2": [
     {
       "name": "Blood Open",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Watcher: Ah, we meet again...",
       "color": 11141120,
       "avg": 25.0
@@ -178,7 +178,7 @@
     },
     {
       "name": "Boss Entry",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] Scarf: This is where the journey ends for you, Adventurers.",
       "color": 5592575,
       "avg": -1.0
@@ -192,7 +192,7 @@
     },
     {
       "name": "Run Time",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "some dummy string",
       "color": 4279733527,
       "avg": -1.0
@@ -201,7 +201,7 @@
   "F3": [
     {
       "name": "Blood Open",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Watcher: So you made it this far... interesting.",
       "color": 11141120,
       "avg": 25.0
@@ -222,7 +222,7 @@
     },
     {
       "name": "Boss Entry",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Professor: I was burdened with terrible news recently...",
       "color": 5592575,
       "avg": -1.0
@@ -236,7 +236,7 @@
     },
     {
       "name": "Run Time",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "some dummy string",
       "color": 4279733527,
       "avg": -1.0
@@ -245,7 +245,7 @@
   "M3": [
     {
       "name": "Blood Open",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Watcher: So you made it this far... interesting.",
       "color": 11141120,
       "avg": 25.0
@@ -266,7 +266,7 @@
     },
     {
       "name": "Boss Entry",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Professor: I was burdened with terrible news recently...",
       "color": 5592575,
       "avg": -1.0
@@ -280,7 +280,7 @@
     },
     {
       "name": "Run Time",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "some dummy string",
       "color": 4279733527,
       "avg": -1.0
@@ -289,7 +289,7 @@
   "F4": [
     {
       "name": "Blood Open",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Watcher: You've managed to scratch and claw your way here, eh?",
       "color": 11141120,
       "avg": 25.0
@@ -310,7 +310,7 @@
     },
     {
       "name": "Boss Entry",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] Thorn: Welcome Adventurers! I am Thorn, the Spirit! And host of the Vegan Trials!",
       "color": 5592575,
       "avg": -1.0
@@ -324,7 +324,7 @@
     },
     {
       "name": "Run Time",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "some dummy string",
       "color": 4279733527,
       "avg": -1.0
@@ -333,7 +333,7 @@
   "M4": [
     {
       "name": "Blood Open",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Watcher: You've managed to scratch and claw your way here, eh?",
       "color": 11141120,
       "avg": 25.0
@@ -354,7 +354,7 @@
     },
     {
       "name": "Boss Entry",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] Thorn: Welcome Adventurers! I am Thorn, the Spirit! And host of the Vegan Trials!",
       "color": 5592575,
       "avg": -1.0
@@ -368,7 +368,7 @@
     },
     {
       "name": "Run Time",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "some dummy string",
       "color": 4279733527,
       "avg": -1.0
@@ -377,7 +377,7 @@
   "F5": [
     {
       "name": "Blood Open",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Watcher: I'm starting to get tired of seeing you around here...",
       "color": 11141120,
       "avg": 25.0
@@ -398,7 +398,7 @@
     },
     {
       "name": "Boss Entry",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] Livid: Welcome, you've arrived right on time. I am Livid, the Master of Shadows.",
       "color": 5592575,
       "avg": -1.0
@@ -412,7 +412,7 @@
     },
     {
       "name": "Run Time",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "some dummy string",
       "color": 4279733527,
       "avg": -1.0
@@ -421,7 +421,7 @@
   "M5": [
     {
       "name": "Blood Open",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Watcher: I'm starting to get tired of seeing you around here...",
       "color": 11141120,
       "avg": 25.0
@@ -442,7 +442,7 @@
     },
     {
       "name": "Boss Entry",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] Livid: Welcome, you've arrived right on time. I am Livid, the Master of Shadows.",
       "color": 5592575,
       "avg": -1.0
@@ -456,7 +456,7 @@
     },
     {
       "name": "Run Time",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "some dummy string",
       "color": 4279733527,
       "avg": -1.0
@@ -465,7 +465,7 @@
   "F6": [
     {
       "name": "Blood Open",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Watcher: Oh.. hello?",
       "color": 11141120,
       "avg": 30.0
@@ -486,7 +486,7 @@
     },
     {
       "name": "Boss Entry",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] Sadan: So you made it all the way here... Now you wish to defy me? Sadan?!",
       "color": 5592575,
       "avg": -1.0
@@ -514,7 +514,7 @@
     },
     {
       "name": "Run Time",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "some dummy string",
       "color": 4279733527,
       "avg": -1.0
@@ -523,7 +523,7 @@
   "M6": [
     {
       "name": "Blood Open",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Watcher: Oh.. hello?",
       "color": 11141120,
       "avg": 30.0
@@ -544,7 +544,7 @@
     },
     {
       "name": "Boss Entry",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] Sadan: So you made it all the way here... Now you wish to defy me? Sadan?!",
       "color": 5592575,
       "avg": -1.0
@@ -572,7 +572,7 @@
     },
     {
       "name": "Run Time",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "some dummy string",
       "color": 4279733527,
       "avg": -1.0
@@ -581,7 +581,7 @@
   "F7": [
     {
       "name": "Blood Open",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Watcher: Things feel a little more roomy now, eh?",
       "color": 11141120,
       "avg": 30.0
@@ -602,7 +602,7 @@
     },
     {
       "name": "Boss Entry",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] Maxor: WELL! WELL! WELL! LOOK WHO'S HERE!",
       "color": 5592575,
       "avg": -1.0
@@ -644,7 +644,7 @@
     },
     {
       "name": "Run Time",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "some dummy string",
       "color": 4279733527,
       "avg": -1.0
@@ -653,7 +653,7 @@
   "M7": [
     {
       "name": "Blood Open",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] The Watcher: Things feel a little more roomy now, eh?",
       "color": 11141120,
       "avg": 25.7
@@ -674,7 +674,7 @@
     },
     {
       "name": "Boss Entry",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "[BOSS] Maxor: WELL! WELL! WELL! LOOK WHO'S HERE!",
       "color": 5592575,
       "avg": -1.0
@@ -723,7 +723,7 @@
     },
     {
       "name": "Run Time",
-      "start": "§e[NPC] §bMort§f: Here, I found this map when I first entered the dungeon.",
+      "start": "[NPC] Mort: Here, I found this map when I first entered the dungeon.",
       "end": "some dummy string",
       "color": 4279733527,
       "avg": -1.0

@@ -1,6 +1,6 @@
 package fishmod.utils.config
 
-import config.practical.manager.ConfigManager
+import fishmod.shaded.practicalconfig.manager.ConfigManager
 import fishmod.utils.config.values.ExtraOptions
 
 object Config {
