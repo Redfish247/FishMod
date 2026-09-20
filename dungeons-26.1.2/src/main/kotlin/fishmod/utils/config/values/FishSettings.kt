@@ -1,6 +1,6 @@
 package fishmod.utils.config.values
 
-import config.practical.manager.ConfigValue
+import fishmod.shaded.practicalconfig.manager.ConfigValue
 
 /**
  * Settings unique to FishMod — lives only in FishMod's jar so it always

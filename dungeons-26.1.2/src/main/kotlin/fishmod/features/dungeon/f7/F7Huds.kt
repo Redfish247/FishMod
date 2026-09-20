@@ -1,7 +1,7 @@
 package fishmod.features.dungeon.f7
 
-import config.practical.hud.HUDComponent
-import config.practical.manager.ConfigValue
+import fishmod.shaded.practicalconfig.hud.HUDComponent
+import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.config.values.Floor7
 import fishmod.utils.dungeon.Section
 import fishmod.features.dungeon.f7.s4.S4Alerts

@@ -1,6 +1,6 @@
 package fishmod.features.dungeon.f7.s4
 
-import config.practical.hud.HUDComponent
+import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.Constants
 import fishmod.utils.Scheduler
 import fishmod.utils.config.values.Floor7

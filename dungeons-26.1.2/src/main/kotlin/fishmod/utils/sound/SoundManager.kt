@@ -1,6 +1,6 @@
 package fishmod.utils.sound
 
-import config.practical.data.SoundData
+import fishmod.shaded.practicalconfig.data.SoundData
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.core.registries.BuiltInRegistries

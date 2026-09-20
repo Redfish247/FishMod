@@ -1,6 +1,6 @@
 package fishmod.utils
 
-import config.practical.data.SoundData
+import fishmod.shaded.practicalconfig.data.SoundData
 import fishmod.utils.config.values.ExtraOptions
 import fishmod.utils.debug.Debug
 import net.minecraft.ChatFormatting

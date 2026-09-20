@@ -2,7 +2,7 @@ package fishmod.utils.rendering
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
-import config.practical.hud.HUDComponent
+import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.Constants
 import fishmod.utils.config.values.ExtraOptions
 import fishmod.utils.config.values.Floor7
