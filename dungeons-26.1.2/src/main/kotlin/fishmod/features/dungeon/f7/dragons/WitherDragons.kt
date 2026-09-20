@@ -83,7 +83,7 @@ object WitherDragons {
         RenderingEvents.NO_DEPTH_LINE.register { ctx, m, vc ->
             if (!on()) return@register
             renderLines(ctx, m, vc)
-            renderText(ctx, m)   // AFTER_TRANSLUCENT drains the collector too early
+            renderText(ctx, m)
         }
         RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> if (on()) renderFills(m, vc) }
     }

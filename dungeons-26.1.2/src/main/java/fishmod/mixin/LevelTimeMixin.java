@@ -6,7 +6,6 @@ import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-/** Time Changer: override the world clock getters so the celestial cycle is frame-consistent. */
 @Mixin(Level.class)
 public abstract class LevelTimeMixin {
 

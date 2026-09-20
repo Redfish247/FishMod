@@ -4,10 +4,8 @@ import fishmod.features.dungeon.map.DungeonMap
 import fishmod.features.dungeon.map.Room
 import net.minecraft.core.BlockPos
 
-/** Converts world positions to/from a room's canonical frame. Integer math only — rotating a fractional block-centre lands a block off on 90° turns, so callers must floor to [BlockPos] first. */
 object DungeonRoomAnchor {
 
-    /** The room the player is standing in, resolved enough to transform coordinates. Null on doorways, boss, unscanned tiles. */
     data class Anchor(val name: String, val rotation: Room.Rotation, val clay: BlockPos)
 
     @JvmStatic

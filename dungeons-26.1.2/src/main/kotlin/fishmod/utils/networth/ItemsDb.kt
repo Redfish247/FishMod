@@ -13,8 +13,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 
-/** Lazily fetches/caches the Hypixel SkyBlock items resource, refreshed every 12h, persisted to disk so a restart isn't blocked on the network.
- *  Also the single source of truth for display-name -> item-id resolution and NPC sell prices (formerly duplicated in SkyblockItems). */
 object ItemsDb {
 
     private const val ITEMS_URL = "https://api.hypixel.net/v2/resources/skyblock/items"
@@ -24,36 +22,31 @@ object ItemsDb {
     private val HTTP: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(20)).build()
 
-    // Immutable snapshots, swapped atomically via the volatile writes in index(); readers never see a partial map.
     @Volatile private var items: Map<String, JsonObject> = emptyMap()
     @Volatile private var nameToId: Map<String, String> = emptyMap()
     @Volatile private var npcSellPrice: Map<String, Double> = emptyMap()
     @Volatile private var loadedAt: Long = 0
     @Volatile private var loadedFromDisk = false
-    @Volatile private var fetching = false
+    private val fetching = java.util.concurrent.atomic.AtomicBoolean(false)
 
-    /** Returns the metadata for an item id, or null if unknown / not yet loaded. */
     @JvmStatic
     fun get(id: String?): JsonObject? {
         if (id == null) return null
         return items[id]
     }
 
-    /** Kicks off the initial load; equivalent to [ensureLoaded]. Kept as an alias for the old SkyblockItems API. */
     @JvmStatic
     fun initAsync() = ensureLoaded()
 
     @JvmStatic
     fun isLoaded(): Boolean = items.isNotEmpty()
 
-    /** Resolves a cleaned display name (color codes stripped) to an item id. */
     @JvmStatic
     fun idFor(name: String?): String? {
         if (name == null) return null
         return nameToId[name]
     }
 
-    /** Prefix matches rank before substring matches; returns display names, resolve via [idFor]. */
     @JvmStatic
     fun searchNames(query: String?, limit: Int): List<String> {
         if (query == null || query.isBlank()) return listOf()
@@ -84,20 +77,24 @@ object ItemsDb {
     @JvmStatic
     fun npcSellPriceMap(): Map<String, Double> = npcSellPrice
 
-    /** Loads from disk once, and kicks off a background refresh if stale. Never blocks on the network. */
     @JvmStatic
     fun ensureLoaded() {
         if (!loadedFromDisk) {
             loadedFromDisk = true
             try {
                 loadFromDisk()
-            } catch (ignored: Exception) {
+            } catch (e: Exception) {
+                fishmod.utils.debug.Debug.LOGGER.warn("[ItemsDb] loadFromDisk failed: {}", e.toString())
             }
         }
         val stale = items.isEmpty() || (System.currentTimeMillis() - loadedAt) > REFRESH_MS
-        if (stale && !fetching) {
-            fetching = true
-            Thread(ItemsDb::fetch, "FishMod-ItemsDb").start()
+        if (stale && fetching.compareAndSet(false, true)) {
+            try {
+                Thread(ItemsDb::fetch, "FishMod-ItemsDb").apply { isDaemon = true }.start()
+            } catch (e: Throwable) {
+                fetching.set(false)
+                fishmod.utils.debug.Debug.LOGGER.warn("[ItemsDb] failed to start fetch thread: {}", e.toString())
+            }
         }
     }
 
@@ -136,11 +133,10 @@ object ItemsDb {
         } catch (e: Exception) {
             fishmod.utils.debug.Debug.LOGGER.warn("[ItemsDb] fetch: {}", e.toString())
         } finally {
-            fetching = false
+            fetching.set(false)
         }
     }
 
-    /** Indexes the `items` array (from the resource response) by each item's `id`, plus the name->id and NPC sell price lookups. */
     private fun index(root: JsonObject?) {
         if (root == null || !root.has("items") || !root.get("items").isJsonArray) return
         val next = HashMap<String, JsonObject>()
@@ -169,7 +165,6 @@ object ItemsDb {
             nameToId = nextNames
             npcSellPrice = nextNpc
             fishmod.utils.debug.Debug.LOGGER.info("[ItemsDb] indexed {} items ({} names, {} with NPC sell price)", next.size, nextNames.size, nextNpc.size)
-            // Re-apply price mode in case CroesusPrices already loaded the bazaar
             fishmod.features.croesus.CroesusPrices.applyPriceMode()
         }
     }

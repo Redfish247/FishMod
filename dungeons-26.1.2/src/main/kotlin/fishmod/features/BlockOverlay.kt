@@ -11,23 +11,16 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.HitResult
 
-/**
- * Configurable highlight on the block you're looking at.
- * Occluded by default (vanilla Gizmos); through-walls when "Phase" is on (NO_DEPTH pass).
- */
 object BlockOverlay {
 
     @JvmStatic
     fun init() {
         RenderingEvents.GIZMO.register { _ -> if (!FishSettings.blockOverlayPhase) renderGizmo() }
-        // Through-walls: outline is a thin filled box (see RenderUtils.renderThickOutline), so it
-        // must share the QUADS layer with the fill, not the DEBUG_LINES layer.
         RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
             if (FishSettings.blockOverlayPhase) { renderNoDepth(m, vc, fill = true); renderNoDepth(m, vc, fill = false) }
         }
     }
 
-    /** The block the crosshair is on, boxed to its real shape, or null if nothing to draw. */
     private fun targetBox(): AABB? {
         if (!FishSettings.blockOverlayEnabled) return null
         val mc = Minecraft.getInstance()
@@ -48,7 +41,7 @@ object BlockOverlay {
 
     private fun renderGizmo() {
         val box = targetBox() ?: return
-        val mode = FishSettings.blockOverlayMode // 0 outline, 1 fill, 2 filled outline
+        val mode = FishSettings.blockOverlayMode
         if (mode != 0) RenderUtils.gizmoBox(box, fillArgb(), 0)
         if (mode != 1) RenderUtils.gizmoThickOutline(box, FishSettings.blockOverlayOutlineColor, FishSettings.blockOverlayOutlineThickness)
     }

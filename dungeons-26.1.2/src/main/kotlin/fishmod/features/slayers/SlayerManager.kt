@@ -11,31 +11,20 @@ import net.minecraft.world.scores.DisplaySlot
 import net.minecraft.world.scores.PlayerScoreEntry
 import java.util.regex.Pattern
 
-/**
- * Owns Slayer quest state, parsed from Hypixel's "Slayer Quest" sidebar block (category + progress
- * lines) on a 5-tick cadence; quest start/complete/fail and cocoon come from one-shot chat lines instead
- * since those can't bounce like a scoreboard value. Everything else in the package reads off this object.
- */
 object SlayerManager {
 
     enum class State {
-        /** No slayer quest on the board. */
         NONE,
 
-        /** Quest active, gaining combat XP toward the spawn. */
         GRINDING,
 
-        /** Boss is alive and being fought. */
         BOSS_SPAWNED,
 
-        /** Boss is webbed into a cocoon (invulnerable, bursts after ~5s). */
         COCOONED,
 
-        /** Boss has been slain, quest not yet cleared/restarted. */
         BOSS_SLAIN,
     }
 
-    /** Parsed spawn-bar progress. Any field may be null when Hypixel only gives partial info. */
     class SpawnProgress(
         @JvmField val percent: Double?,
         @JvmField val current: Double?,
@@ -43,41 +32,31 @@ object SlayerManager {
         @JvmField val raw: String,
     )
 
-    // ---- chat lines (matched against a color-stripped, trimmed string) ----
     private val QUEST_STARTED = Pattern.compile("SLAYER QUEST STARTED!")
     private val QUEST_COMPLETE = Pattern.compile("SLAYER QUEST COMPLETE!")
     private val QUEST_FAILED = Pattern.compile("SLAYER QUEST FAILED!")
     private val COCOON_CHAT = Pattern.compile("YOU COCOONED YOUR SLAYER BOSS")
-    //  "SLAYER MINI-BOSS Atoned Champion has spawned! (2)"  — the trailing " (N)" is Hypixel's own
-    //  chat-repeat counter; group 1 is the miniboss name.
     private val MINIBOSS_CHAT = Pattern.compile("SLAYER MINI-?BOSS (.+?) has spawned!")
 
-    // progress-line shapes
     private val PCT = Pattern.compile("(\\d{1,3})%")
     private val FRACTION = Pattern.compile("\\(?([\\d,.]+)\\s*/\\s*([\\d,.]+)\\)?")
 
-    // sidebar purse line ("Purse: 1,234,567" / "Piggy: 1,234,567") -> profit tracker spawn cost / mob-kill coins
     private val PURSE = Pattern.compile("(?:Purse|Piggy):\\s*([\\d,]+)")
-
 
     private const val SCAN_INTERVAL_TICKS = 5
     private var scanCounter = 0
 
-    // ---- cached quest state (written on the client thread only) ----
     @JvmStatic @Volatile var type: SlayerType? = null; private set
     @JvmStatic @Volatile var tier: Int = 0; private set
     @JvmStatic @Volatile var state: State = State.NONE; private set
     @JvmStatic @Volatile var progress: SpawnProgress? = null; private set
 
-    /** The bound boss LivingEntity, or null. Set/cleared by [SlayerBossDetector]. */
     @JvmStatic @Volatile var bossEntity: LivingEntity? = null
 
     private var lastCategoryLine = ""
     private var lastProgressLine = ""
     private var cocoonLatchedAt = 0L
 
-    // ON_GAME_MESSAGE fires from two mixin sites (system chat + bundle unwrap), so one Hypixel line
-    // can arrive twice. Swallow a repeat of the same one-shot within this window.
     private const val CHAT_DEDUPE_MS = 3_000L
     private var lastQuestCompleteMs = 0L
     private var lastQuestStartedMs = 0L
@@ -85,16 +64,11 @@ object SlayerManager {
     private var lastMiniBossLine = ""
     private var lastMiniBossMs = 0L
 
-    // Hypixel's sidebar drops lines for a scan or two under load, especially mid-fight. Don't tear
-    // down the quest (which would reset the timer and re-arm every spawn alert) until the "Slayer
-    // Quest" block has been missing for this many consecutive scans.
     private const val QUEST_LOSS_GRACE = 3
     private var questMissScans = 0
 
     @JvmStatic fun hasActiveQuest(): Boolean = type != null
 
-    /** A slayer whose spawn zone is a specific named place within its island; [areas] is matched against the
-     *  scoreboard's own (finer-grained than [Location]) area-name line. `null` means the whole island counts. */
     private data class AreaRule(val island: Location, val areas: Set<String>?)
 
     private val AREA_RULES: Map<SlayerType, List<AreaRule>> = mapOf(
@@ -102,8 +76,6 @@ object SlayerManager {
         SlayerType.SVEN to listOf(AreaRule(Location.THE_PARK, setOf("Howling Cave"))),
         SlayerType.VOIDGLOOM to listOf(AreaRule(Location.THE_END, null)),
         SlayerType.INFERNO to listOf(AreaRule(Location.CRIMSON_ISLE, setOf("Smoldering Tomb"))),
-        // Tarantula is fought on two different islands with two different rules: anywhere on
-        // Spider's Den, or only the Burning Desert zone of Crimson Isle (which also hosts Inferno).
         SlayerType.TARANTULA to listOf(
             AreaRule(Location.SPIDERS_DEN, null),
             AreaRule(Location.CRIMSON_ISLE, setOf("Burning Desert")),
@@ -124,18 +96,15 @@ object SlayerManager {
         return lines.any { line -> names.any { line.contains(it, ignoreCase = true) } }
     }
 
-    /** True when on the right island (and sub-area, if the slayer needs one). Gates HUD visibility only —
-     *  quest/timer/profit tracking keeps running regardless. */
     @JvmStatic
     fun inCorrectArea(): Boolean = correctArea
 
-    /** Actively grinding/fighting: a live "Slayer Quest" block on the board while in SkyBlock. */
     @JvmStatic
     fun isActiveSlayer(): Boolean = hasActiveQuest() && Location.inSkyblock()
 
     @JvmStatic
     fun init() {
-        SlayerPersonalBests // touch = load
+        SlayerPersonalBests
         SlayerStatsTracker.init()
         SlayerProfitTracker.init()
         SlayerTimer.init()
@@ -159,7 +128,6 @@ object SlayerManager {
 
         Events.ON_WORLD_CHANGE.register { fullReset(); false }
         Events.ON_LOCATION_CHANGE.register { _ ->
-            // Keep quest identity (the board repopulates), but drop anything entity-bound.
             bossEntity = null
             cocoonLatchedAt = 0L
             false
@@ -194,8 +162,6 @@ object SlayerManager {
                 else -> {
                     val mb = MINIBOSS_CHAT.matcher(s)
                     if (mb.find()) {
-                        // ON_GAME_MESSAGE double-fires the same line; swallow only the immediate echo
-                        // so two different minibosses close together still both alert.
                         if (s != lastMiniBossLine || now - lastMiniBossMs > 1_000L) {
                             lastMiniBossLine = s
                             lastMiniBossMs = now
@@ -208,8 +174,6 @@ object SlayerManager {
         }
     }
 
-    // ---------------------------------------------------------------- scoreboard
-
     private fun scanScoreboard(mc: Minecraft) {
         val lines = sidebarLines(mc)
 
@@ -220,8 +184,6 @@ object SlayerManager {
         }
         SlayerProfitTracker.observePurse(purse)
 
-        // Cocoon has no distinct progress string (still "Slay the boss!"), so it can't self-clear
-        // from the scoreboard — time it out (cocoon bursts in ~5s, +grace) back to the fight.
         if (state == State.COCOONED && cocoonLatchedAt > 0L &&
             System.currentTimeMillis() - cocoonLatchedAt > 8_000L
         ) {
@@ -234,7 +196,6 @@ object SlayerManager {
         val parsed = if (categoryLine.isEmpty()) null else SlayerType.parseCategory(categoryLine)
 
         if (parsed == null) {
-            // no readable quest this scan — tolerate a couple before tearing down (scoreboard flicker)
             if (type != null && ++questMissScans >= QUEST_LOSS_GRACE) endQuest()
             updateAreaMatch(lines)
             return
@@ -269,13 +230,11 @@ object SlayerManager {
                 if (state != State.BOSS_SLAIN) setState(State.BOSS_SLAIN)
             }
 
-            line.isBlank() -> { /* keep last known */ }
+            line.isBlank() -> {  }
 
             else -> {
                 progress = parseProgress(line)
                 if (state == State.NONE || state == State.BOSS_SLAIN) {
-                    // grind bar is back = a new quest is under way (auto-slayer keeps the same
-                    // category line, so onQuestChange never fires) — re-arm the once-per-boss latches
                     if (state == State.BOSS_SLAIN) rearmForNextBoss()
                     setState(State.GRINDING)
                 }
@@ -283,13 +242,9 @@ object SlayerManager {
         }
     }
 
-    /** Re-arm everything that is "once per boss" so the next boss of a same-tier auto-slayer run
-     *  alerts / times / counts adds again. */
     private fun rearmForNextBoss() {
         bossEntity = null
         cocoonLatchedAt = 0L
-        // NOT SlayerTimer.reset() — keep the last kill time on the HUD through the next grind;
-        // SlayerTimer.onBossSpawned() clears it when the next boss actually appears.
         SlayerAlerts.reset()
     }
 
@@ -320,8 +275,6 @@ object SlayerManager {
         return (body.toDoubleOrNull() ?: 0.0) * mult
     }
 
-    // ---------------------------------------------------------------- transitions
-
     private fun setState(next: State) {
         if (next == state) return
         val prev = state
@@ -344,7 +297,6 @@ object SlayerManager {
     private fun onQuestChange(newType: SlayerType, newTier: Int) {
         type = newType
         tier = newTier
-        // fresh quest: drop all transient boss state, keep session stats running
         progress = null
         bossEntity = null
         cocoonLatchedAt = 0L
@@ -358,21 +310,17 @@ object SlayerManager {
     private fun onBossSlain() {
         val t = type ?: return
         val secs = SlayerTimer.onBossSlain()
-        // stats/XP are attributed on QUEST COMPLETE (below); the timer + PB happen here because the
-        // scoreboard "Boss slain!" is a hair earlier and more precise than the chat block.
         if (secs > 0.0) {
             val isPb = SlayerPersonalBests.record(t, tier, secs)
             SlayerTimer.publishResult(secs, isPb)
         }
-        SlayerTimer.onBossKilled() // full-cycle timer (kill -> kill); internally deduped
+        SlayerTimer.onBossKilled()
     }
 
     private fun onQuestComplete() {
         val t = type ?: return
-        // one completed quest == exactly one boss kill of this type/tier
         SlayerStatsTracker.onBossKill(t, tier)
         SlayerProfitTracker.onBossKill(t)
-        // if the board never showed "Boss slain!" (instant kill) still stop the timer now
         if (state != State.BOSS_SLAIN) {
             val secs = SlayerTimer.onBossSlain()
             if (secs > 0.0) {
@@ -381,7 +329,7 @@ object SlayerManager {
             }
             state = State.BOSS_SLAIN
         }
-        SlayerTimer.onBossKilled() // full-cycle timer; deduped against the onBossSlain() call above
+        SlayerTimer.onBossKilled()
     }
 
     private fun onQuestFailed() {
@@ -392,8 +340,6 @@ object SlayerManager {
         cocoonLatchedAt = 0L
     }
 
-    /** "YOU COCOONED YOUR SLAYER BOSS" — a generic Hypixel line, fired for any slayer type when the
-     *  boss is webbed into a cocoon (~5s invuln, then it bursts). */
     private fun enterCocoon() {
         if (type == null) return
         if (state == State.NONE || state == State.BOSS_SLAIN) return
@@ -415,7 +361,6 @@ object SlayerManager {
         SlayerStatsTracker.onQuestEnded()
     }
 
-    /** Left SkyBlock / lost connection: forget the quest but don't wipe persisted PBs. */
     private fun softReset() {
         type = null
         tier = 0
@@ -435,9 +380,6 @@ object SlayerManager {
         scanCounter = 0
     }
 
-    // ---------------------------------------------------------------- sidebar read
-
-    /** Color-stripped sidebar rows, top-to-bottom (mirrors DungeonState's reader). */
     private fun sidebarLines(mc: Minecraft): List<String> {
         val level = mc.level ?: return emptyList()
         val sb = level.scoreboard

@@ -5,7 +5,6 @@ import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 
-/** Persists the raw cosmetic nick to <gameDir>/CosmeticNameChanger/nick.txt across sessions. */
 object NickData {
 
     private fun file(): Path {
@@ -42,11 +41,6 @@ object NickData {
         }
     }
 
-    /**
-     * When the current nick was last written, or 0 if none is set. Used to tell an admin/sweep
-     * revoke (see nickClearedAt in InstallHeartbeat.kt) apart from a nick the player set afterward —
-     * only a nick that predates the revoke gets cleared locally.
-     */
     @JvmStatic
     fun lastSetAtMs(): Long {
         return try {

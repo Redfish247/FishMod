@@ -11,18 +11,11 @@ import net.minecraft.world.inventory.AbstractContainerMenu
 import net.minecraft.world.item.ItemStack
 import java.util.regex.Pattern
 
-/**
- * Passively populates [LootTrackerStore] from Croesus chest claims via tooltip-reading.
- * All 6 tiers are previewed in the run-selection GUI before the player picks one, so previews
- * are cached by chest name and only logged once the chosen tier's confirmation screen opens
- * (matched by title alone) — otherwise unclaimed tiers would be counted as loot.
- */
 object CroesusLootDetector {
     private val CHEST_SCREEN_PATTERN: Pattern = Pattern.compile("^(Wood|Gold|Diamond|Emerald|Obsidian|Bedrock)(?: Chest)?$")
     private val CHEST_ITEM_PATTERN: Pattern = Pattern.compile("^(Wood|Gold|Diamond|Emerald|Obsidian|Bedrock)$")
     private val RUN_GUI_PATTERN: Pattern = Pattern.compile("^(?:Master )?Catacombs - .+$")
 
-    /** Chest-tier name (e.g. "Wood") -> its parsed preview, cached while the run-selection GUI is open. */
     private val pendingChests = HashMap<String, CroesusRewardParser.ChestInfo>()
 
     private var runGuiOpenPrev = false
@@ -39,7 +32,6 @@ object CroesusLootDetector {
         val title = strip(screen.title.string)
 
         if (RUN_GUI_PATTERN.matcher(title).matches()) {
-            // Hypixel sends slot contents in a follow-up packet, so retry each frame until cached.
             ScreenEvents.afterExtract(screen).register { _, _, _, _, _ -> scanRunGuiPreviews() }
             return
         }

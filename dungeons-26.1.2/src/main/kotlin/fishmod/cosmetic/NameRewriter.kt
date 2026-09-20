@@ -5,7 +5,6 @@ import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
 import java.util.Optional
 
-/** Replaces every occurrence of the real IGN inside a Text with the styled cosmetic name, preserving styling. */
 object NameRewriter {
 
     @JvmStatic
@@ -24,7 +23,6 @@ object NameRewriter {
         val full = sb.toString()
         if (!full.contains(realName)) return original
 
-        // Idempotent: an IGN already wrapped in a full cosmetic block is consumed whole, so re-running is a no-op.
         val cosmetic = replacement.string
         val nameOffInCosmetic = cosmetic.indexOf(realName)
 

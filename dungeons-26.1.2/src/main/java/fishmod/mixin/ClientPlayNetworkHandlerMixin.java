@@ -34,7 +34,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ClientPacketListener.class)
 public class ClientPlayNetworkHandlerMixin {
 
-
     @Shadow
     private ClientLevel level;
 
@@ -73,7 +72,6 @@ public class ClientPlayNetworkHandlerMixin {
 
     @Inject(method = "handleSoundEvent", at = @At(value = "HEAD"), cancellable = true)
     private void onSound(ClientboundSoundPacket packet, CallbackInfo ci) {
-        // handleSoundEvent fires twice — netty thread then main thread; only dispatch on the main pass
         if (!Minecraft.getInstance().isSameThread()) return;
         float volume = packet.getVolume();
         float pitch = packet.getPitch();
@@ -127,7 +125,6 @@ public class ClientPlayNetworkHandlerMixin {
         Events.ON_PACKET.invoke(packetEvent -> packetEvent.onPacket(packet));
         original.call(packet, listener);
     }
-
 
     @Inject(method = "setTitleText", at = @At("HEAD"), cancellable = true)
     private void onTitle(ClientboundSetTitleTextPacket packet, CallbackInfo ci) {

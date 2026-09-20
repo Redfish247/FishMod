@@ -21,7 +21,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** "Action Bar" feature: filter the SkyBlock stat bar + hide a few vanilla HUD overlays. */
 @Mixin(Gui.class)
 public class GuiMixin {
 
@@ -47,8 +46,6 @@ public class GuiMixin {
         return fishmod$ab(FishSettings.abHideAbsorption) ? 0f : original.call(instance);
     }
 
-    // Chat Peek: while held, render chat like the real chat screen does (opaque, no fade) without
-    // actually opening it, so movement/camera input keeps working.
     @WrapOperation(method = "extractChat",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/gui/components/ChatComponent;extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/gui/Font;IIILnet/minecraft/client/gui/components/ChatComponent$DisplayMode;Z)V"))
@@ -69,8 +66,6 @@ public class GuiMixin {
         if (!fishmod$ab(FishSettings.abHideXpBar)) original.call(extractor, font, level);
     }
 
-    // Dark Mode: drawn before the HUD (world-only tint) unless "Tint HUD" is on, in which case it's
-    // drawn after everything so the hotbar/chat/etc. get tinted too.
     @Inject(method = "extractRenderState", at = @At("HEAD"))
     private void fishmod$darkModePre(GuiGraphicsExtractor extractor, DeltaTracker deltaTracker, CallbackInfo ci) {
         if (!Visual.darkModeTintHud) DarkMode.drawOverlay(extractor);

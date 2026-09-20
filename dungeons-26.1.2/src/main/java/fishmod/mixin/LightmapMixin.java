@@ -11,11 +11,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Full Bright — forces the lightmap render state to a flat white. Vanilla clamps
- * {@code options.gamma()} to 1.0, so setting the option can never give a true fullbright;
- * mutating the {@link LightmapRenderState} here does.
- */
 @Mixin(Lightmap.class)
 public abstract class LightmapMixin {
 
@@ -25,7 +20,6 @@ public abstract class LightmapMixin {
     @Inject(method = "render", at = @At("HEAD"))
     private void fishmod$fullBright(LightmapRenderState state, CallbackInfo ci) {
         boolean active = CameraTweaks.fullBrightActive();
-        // Force one rebake only on the enable/disable edge (or an explicit flash), not every frame.
         if (CameraTweaks.flashFullBright || active != fishmod$wasActive) state.needsUpdate = true;
         fishmod$wasActive = active;
         CameraTweaks.flashFullBright = false;

@@ -6,13 +6,6 @@ import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 
-/**
- * Learns which ender-chest / backpack pages you own (and their sizes) from the Hypixel API, so the
- * storage overlay lists every real page even before you've opened it. Item contents are still
- * captured load-based by [StorageCache] as you page through `/storage`.
- *
- * Trigger: the "Load pages" button in the Storage Viewer, or `/storageload`.
- */
 object StorageAutoLoader {
 
     @Volatile private var busy = false

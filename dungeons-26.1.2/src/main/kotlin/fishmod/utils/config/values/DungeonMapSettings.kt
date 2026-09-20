@@ -2,17 +2,12 @@ package fishmod.utils.config.values
 
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 
-/**
- * Settings for the dungeon-map feature. `mapDoorEsp*` fields are intentionally excluded — that's a
- * through-wall ESP feature going to a separate addon.
- */
 object DungeonMapSettings {
 
     @ConfigValue
     @JvmField
     var mapEnabled: Boolean = false
 
-    // forced back to true (mapInsightLegit to false) on every server join — see FishModInit's JOIN listener
     @ConfigValue
     @JvmField
     var mapLegitMode: Boolean = true
@@ -33,8 +28,6 @@ object DungeonMapSettings {
     @JvmField
     var mapImageSelection: String = ""
 
-    // remembers the last picked image across the master toggle being switched off, so switching it
-    // back on restores the same image instead of leaving mapImageSelection empty (see FishModScreen)
     @ConfigValue
     @JvmField
     var mapImageLastSelection: String = ""
@@ -95,17 +88,14 @@ object DungeonMapSettings {
     @JvmField
     var mapInfoShowCrypts: Boolean = true
 
-    /** When true, the Mimic / Prince / Crypts pieces drop off the Info HUD once they're done. */
     @ConfigValue
     @JvmField
     var mapInfoHideCompleted: Boolean = false
 
-    // when true, the secrets line's trailing number is points-missing-for-300, not total secret count
     @ConfigValue
     @JvmField
     var mapInfoShowLeft: Boolean = false
 
-    // auto party-chat nudge 60s into a run: what's still needed (prince/crypts/mimic/secrets) for 300
     @ConfigValue
     @JvmField
     var mapScoreMissingMsg: Boolean = true
@@ -190,7 +180,6 @@ object DungeonMapSettings {
     @JvmField
     var mapUglyQuestionMarks: Boolean = false
 
-    /** Shows the room's known secret count on a second line under its name. */
     @ConfigValue
     @JvmField
     var mapShowRoomSecrets: Boolean = false
@@ -215,7 +204,6 @@ object DungeonMapSettings {
     @JvmField
     var mapPlayerUglyPointer: Boolean = false
 
-    /** Draws a border around each teammate's map head in their dungeon class color (Archer/Berserk/Healer/Mage/Tank). */
     @ConfigValue
     @JvmField
     var mapPlayerHeadClassOutline: Boolean = false
@@ -352,7 +340,6 @@ object DungeonMapSettings {
     @JvmField
     var mapDoorFairyColorFilled: Int = 871633803
 
-    // legit depth-tested door highlight (DoorHighlight.kt): only already-seen doors, occluded by terrain, so no legit-mode gate
     @ConfigValue
     @JvmField
     var mapDoorHighlightEnabled: Boolean = false
@@ -361,23 +348,18 @@ object DungeonMapSettings {
     @JvmField
     var mapDoorHighlightWidth: Float = 3.0f
 
-    // draw every highlighted door through walls; off = only Wither doors pierce terrain
     @ConfigValue
     @JvmField
     var mapDoorHighlightThroughWall: Boolean = false
 
-    // highlight the whole door-frame box, not just the near face (Wither doors are always full-box)
     @ConfigValue
     @JvmField
     var mapDoorHighlightFullBox: Boolean = false
 
-    // Wither-door full-box highlight while you lack the Wither Key; with the key it uses mapDoorOpenableColor.
-    // ARGB; box fill alpha applied separately.
     @ConfigValue
     @JvmField
     var mapWitherHighlightMissingColor: Int = 0xFFFF0000.toInt()
 
-    // HUD position/scale
     @ConfigValue
     @JvmField
     var mapX: Float = 100.0f
@@ -402,7 +384,6 @@ object DungeonMapSettings {
     @JvmField
     var mapInfoScale: Float = 1.0f
 
-    // -1 means "auto-centered" (score title overlay)
     @ConfigValue
     @JvmField
     var mapScoreTitleX: Float = -1.0f

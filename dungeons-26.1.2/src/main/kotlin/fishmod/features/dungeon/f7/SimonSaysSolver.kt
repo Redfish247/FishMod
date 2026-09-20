@@ -23,7 +23,7 @@ import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.phys.AABB
 
-/** F7 P3 Simon Says device solver — 1:1 port of Odin's `SimonSays` module. */
+// F7 P3 Simon Says device solver — 1:1 port of Odin's SimonSays module.
 object SimonSaysSolver {
 
     private val startButton = BlockPos(110, 121, 91)
@@ -45,17 +45,8 @@ object SimonSaysSolver {
 
     private fun inP3(): Boolean = FishSettings.simonSolverEnabled && try { Phase.inP3() } catch (t: Throwable) { false }
 
-    // Click-order bookkeeping (not the gizmo/blocking behavior) runs whenever we're in P3 at all,
-    // regardless of whether the visual solver is toggled on — SimonSaysTracker relies on
-    // `lastRoundCompleteMs` to tell a genuine finish apart from a break, and that needs to work
-    // even for players who only have the Tracker enabled.
     private fun trackingActive(): Boolean = try { Phase.inP3() } catch (t: Throwable) { false }
 
-    // Timestamp of the last time a round's full click sequence was completed correctly (all
-    // buttons in clickInOrder pressed in order). Driven by block-update packets, which land far
-    // faster and more reliably than Hypixel's "completed a device!" chat line — SimonSaysTracker
-    // uses this as a near-instant, non-racy signal that a board reset is a real finish rather than
-    // a break.
     @JvmField var lastRoundCompleteMs: Long = 0L
 
     private fun dbg(msg: String) {
@@ -90,7 +81,6 @@ object SimonSaysSolver {
             false
         }
 
-        // Safety net: Hypixel doesn't always echo the button-POWERED update on click, so also advance clickNeeded from the click itself.
         UseBlockCallback.EVENT.register(UseBlockCallback { _, _, _, hit ->
             val pos = hit.blockPos
             if (!inP3()) return@UseBlockCallback InteractionResult.PASS
@@ -168,7 +158,6 @@ object SimonSaysSolver {
 
             110 ->
                 if (updated.block === Blocks.AIR) {
-                    // AIR here is a transient block-refresh animation, not a real reset.
                 } else if (old === Blocks.STONE_BUTTON && powered(updated)) {
                     clickNeeded = clickInOrder.indexOf(pos.east()) + 1
                     dbg("click ${pos.y}:${pos.z} -> clickNeeded=$clickNeeded")

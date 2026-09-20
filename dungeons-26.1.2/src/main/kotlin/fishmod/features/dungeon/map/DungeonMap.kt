@@ -2,12 +2,12 @@ package fishmod.features.dungeon.map
 
 import fishmod.mixin.accessors.MapItemSavedDataAccessor
 import fishmod.utils.config.values.DungeonMapSettings
+import fishmod.utils.debug.Debug
 import fishmod.utils.events.Events
 import net.minecraft.client.Minecraft
 import net.minecraft.network.protocol.game.ClientboundMapItemDataPacket
 import net.minecraft.world.level.saveddata.maps.MapId
 
-/** Reads the in-game dungeon map item (colors + decorations) and feeds Scan's room/door graph. */
 object DungeonMap {
 
     private var mapId: MapId? = null
@@ -16,7 +16,6 @@ object DungeonMap {
     private var mapSize: MapVec2i? = null
     private var roomSize: Int? = null
 
-    /** Fired once per room state transition detected in a map rescan (see [RoomTimer]). */
     private val stateListeners = ArrayList<(Room.StateUpdated) -> Unit>()
 
     @JvmStatic
@@ -57,6 +56,7 @@ object DungeonMap {
                     try {
                         rescanMapItem(packet)
                     } catch (t: Throwable) {
+                        Debug.LOGGER.error("[DungeonMap] rescanMapItem failed", t)
                     }
                 }
             }
@@ -455,7 +455,6 @@ object DungeonMap {
             door = Door(pos, type, rooms)
             Scan.doors.add(door)
         } else {
-            // self-heal: doors are often created before both room tiles have owners; back-fill any now-known tile each map packet
             for (t in rooms) {
                 if (door.rooms.none { it === t }) {
                     door.rooms.add(t)

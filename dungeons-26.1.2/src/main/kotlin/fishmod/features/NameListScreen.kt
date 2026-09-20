@@ -18,12 +18,6 @@ import org.lwjgl.nanovg.NanoVG
 import kotlin.math.max
 import kotlin.math.min
 
-/**
- * Generic single-column player-name list GUI (add / scroll / remove), used for the Whitelist,
- * Blacklist and Kick List screens. Same row/persist convention as [CommandAliasesScreen] /
- * [CommandKeysScreen], reading/writing a comma-separated [FishSettings] String field via [NameList]
- * instead of a flat-file-backed store.
- */
 class NameListScreen(
     private val screenTitle: String,
     private val subtitle: String,

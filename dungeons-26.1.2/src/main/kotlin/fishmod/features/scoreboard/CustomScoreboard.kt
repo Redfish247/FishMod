@@ -14,17 +14,14 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-/** Buckets the live vanilla scoreboard into [ScoreboardSection]s and redraws via [PlayerTeam.formatNameForTeam] (not hand-glued strings) to sidestep Hypixel's anti-scrape formatting noise. */
 object CustomScoreboard {
 
     private const val LINE_H = 9
     private const val TITLE_H = 11
     private val CONTINUATION = java.util.regex.Pattern.compile("^-\\s")
 
-    /** One row: either a real vanilla line (kept styling) or a blank spacer. */
     private class Line(val component: Component, val blank: Boolean)
 
-    // body cache: buildLines() is regex-heavy, so rebuild only on a content/toggle signature change (250ms backstop); extraLines() stays per-frame
     private const val CACHE_TTL_MS = 250L
     private var sig = 0
     private var sigAt = 0L
@@ -77,8 +74,6 @@ object CustomScoreboard {
         }
     }
 
-    /** Rebuilds [cachedBody] when the scoreboard content or a relevant toggle changed, or the
-     *  250ms backstop elapsed. Returns true when a rebuild happened. */
     private fun refreshBody(mc: Minecraft, sb: net.minecraft.world.scores.Scoreboard, obj: Objective, title: Component): Boolean {
         val now = System.currentTimeMillis()
         val newSig = buildSig(sb, obj, title)
@@ -89,10 +84,6 @@ object CustomScoreboard {
         return true
     }
 
-    /** Cheap fingerprint of everything [buildLines] reads. No sort, no filter chain, no per-entry
-     *  team lookup or string concat -- just a rolling hash over the raw (unsorted, unfiltered) score
-     *  entries' identity/value fields, since its only job is "did anything change", not reproducing
-     *  the final sorted/filtered/formatted output. */
     private fun buildSig(sb: net.minecraft.world.scores.Scoreboard, obj: Objective, title: Component): Int {
         var h = title.string.hashCode()
         h = h * 31 + (if (FishSettings.customScoreboardCompactNumbers) 1 else 0)
@@ -112,7 +103,7 @@ object CustomScoreboard {
         val entries = sb.listPlayerScores(obj)
             .filter { !it.isHidden }
             .sortedWith(compareByDescending<PlayerScoreEntry> { it.value() }.thenBy { it.owner() })
-            .take(20) // Hypixel event boards (e.g. mining/fishing festival) can run past 15 lines
+            .take(20)
 
         val raw = ArrayList<Line>()
         var lastSection: ScoreboardSection? = null
@@ -128,7 +119,6 @@ object CustomScoreboard {
                 continue
             }
 
-            // indented "- ..." sub-lines don't match a header pattern, so they inherit the preceding section (else they'd classify as OTHER)
             val isContinuation = CONTINUATION.matcher(stripped).find() && lastSection != null
             val section = if (isContinuation) lastSection!! else ScoreboardSection.classify(stripped)
             if (!isContinuation) lastSection = section
@@ -146,8 +136,6 @@ object CustomScoreboard {
         return collapseBlanks(raw)
     }
 
-    /** Drop leading/trailing spacer lines and collapse consecutive ones to one, so hidden sections
-     *  don't leave doubled-up gaps but real vanilla grouping gaps are kept. */
     private fun collapseBlanks(lines: List<Line>): List<Line> {
         val out = ArrayList<Line>()
         for (l in lines) {
@@ -160,9 +148,6 @@ object CustomScoreboard {
         return out
     }
 
-    /** Fallback color for a line whose original styling we discarded because its text changed
-     *  (compact numbers rewrites "1,234,567" -> "1.2M", so the original per-character Style no
-     *  longer lines up with the new text). Approximates Hypixel's usual per-section palette. */
     private fun sectionColor(section: ScoreboardSection): net.minecraft.ChatFormatting = when (section) {
         ScoreboardSection.PURSE -> net.minecraft.ChatFormatting.GOLD
         ScoreboardSection.BANK -> net.minecraft.ChatFormatting.GREEN
@@ -172,8 +157,6 @@ object CustomScoreboard {
         else -> net.minecraft.ChatFormatting.WHITE
     }
 
-    /** Synthetic "for funnys" lines appended after the real scoreboard content -- same TPS/ping/FPS
-     *  values Compact Tab shows in its header bar, each independently toggleable. */
     private fun extraLines(mc: Minecraft): List<Line> {
         val out = ArrayList<Line>()
         if (FishSettings.sbSectionTps) {
@@ -208,7 +191,6 @@ object CustomScoreboard {
         return out
     }
 
-    /** Same freshest-first fallback chain as [fishmod.features.CompactTab]'s realPing(). */
     private fun realPing(mc: Minecraft): Int {
         val live = PingTracker.latest()
         if (live > 0) return live

@@ -15,19 +15,12 @@ import net.minecraft.world.inventory.Slot
 import net.minecraft.world.item.ItemStack
 import java.util.function.Predicate
 
-/**
- * Wardrobe/Loadouts quick-swap: FishMod's slot-N hotkey clicks the matching slot in the open
- * Wardrobe or Loadouts GUI. Loadouts uses a fixed, hardcoded slot layout; Wardrobe's "select
- * this set" icon moves per page, so it's found by scanning for Hypixel's wool/dye/barrier icon.
- * The click is deferred one tick — firing synchronously caused visual glitches in Hypixel's GUI.
- */
 object WardrobeHotkeys {
 
     private const val PLAYER_INV_SLOTS = 36
 
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
-    /** Raw slot index for Loadout hotkeys 1-12, in the same row-major order as Keybinds.wardrobeSlots. */
     private val LOADOUT_SLOTS = intArrayOf(14, 15, 16, 23, 24, 25, 32, 33, 34, 41, 42, 43)
 
     private var pendingClick: Runnable? = null
@@ -54,9 +47,6 @@ object WardrobeHotkeys {
 
     @JvmStatic
     fun mouseClicked(click: MouseButtonEvent, screen: AbstractContainerScreen<*>): Boolean {
-        // Left/right click double as the GUI's own select/equip buttons. If a hotkey (e.g. page
-        // turn) is bound to one of them, only let it fire when there's nothing to actually click —
-        // hovering a real item (an armor set, the wardrobe select icon, etc) always wins.
         if (click.button() == 0 || click.button() == 1) {
             val hovered = (screen as fishmod.mixin.accessors.HandledScreenAccessor).`fishmod$getHoveredSlot`()
             if (hovered != null && !hovered.item.isEmpty) return false
@@ -75,7 +65,6 @@ object WardrobeHotkeys {
 
         val handler: AbstractContainerMenu = screen.menu
         val containerSize = handler.slots.size - PLAYER_INV_SLOTS
-        // Must actually be a chest-style GUI, not some other screen sharing a title substring.
         if (containerSize < 27 || containerSize % 9 != 0) return false
 
         if (tryPageTurn(handler, containerSize, screen, Keybinds.wardrobeNextPage, matches, "next page")) return true
@@ -93,9 +82,7 @@ object WardrobeHotkeys {
                 val mc = Minecraft.getInstance()
                 val mcPlayer = mc.player
                 if (mcPlayer == null || mc.gameMode == null) return@Runnable
-                // button 0 = left click.
                 mc.gameMode!!.handleContainerInput(containerId, slotId, 0, ContainerInput.PICKUP, mcPlayer)
-                // screen.onClose(), not closeContainer() — the latter desynced the GUI widget from the menu and flickered
                 if (FishSettings.wardrobeHotkeysAutoClose && mc.screen === screen) {
                     screen.onClose()
                 }
@@ -107,7 +94,6 @@ object WardrobeHotkeys {
         return false
     }
 
-    /** Clicks whichever arrow icon reads "Next Page"/"Previous Page" (Hypixel's own pagination button). */
     private fun tryPageTurn(handler: AbstractContainerMenu, containerSize: Int, screen: AbstractContainerScreen<*>, mapping: KeyMapping?, matches: Predicate<KeyMapping>, label: String): Boolean {
         if (mapping == null || mapping.isUnbound || !matches.test(mapping)) return false
 
@@ -125,7 +111,6 @@ object WardrobeHotkeys {
         return true
     }
 
-    /** Scans the container region for an item whose display name contains `label` (case-insensitive). */
     private fun findByName(handler: AbstractContainerMenu, containerSize: Int, label: String): Slot? {
         for (i in 0 until containerSize) {
             val slot = handler.slots[i]
@@ -146,7 +131,6 @@ object WardrobeHotkeys {
         return if (slotIndex < handler.slots.size) handler.slots[slotIndex] else null
     }
 
-    /** Scans column `column` (of a 9-wide grid) for Hypixel's wool/dye/barrier "select" icon. */
     private fun findSelectSlot(handler: AbstractContainerMenu, containerSize: Int, column: Int): Slot? {
         if (column >= 9) return null
         var i = column

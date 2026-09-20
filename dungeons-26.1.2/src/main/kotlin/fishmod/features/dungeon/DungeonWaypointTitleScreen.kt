@@ -9,9 +9,6 @@ import net.minecraft.network.chat.Component
 import org.lwjgl.glfw.GLFW
 import java.util.function.Consumer
 
-/**
- * Minimal one-field title-entry screen, opened when sneak-right-clicking to place a waypoint.
- */
 class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Screen(Component.literal("Dungeon Waypoint Title")) {
 
     private lateinit var field: EditBox

@@ -4,7 +4,6 @@ import fishmod.features.dungeon.Blessings
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.DungeonClass
 
-// Priority toggle off: fixed Red > Orange > Blue > Purple > Green order; on: factors in blessing power and class.
 object DragonPriority {
 
     private val FIXED = listOf(WitherDragon.RED, WitherDragon.ORANGE, WitherDragon.BLUE, WitherDragon.PURPLE, WitherDragon.GREEN)
@@ -33,7 +32,7 @@ object DragonPriority {
         spawning.sortBy { priorityList.indexOf(it) }
 
         if (totalPower >= FishSettings.witherDragonsEasyPower) {
-            val solo = FishSettings.witherDragonsSoloDebuff // 0 Tank, 1 Healer
+            val solo = FishSettings.witherDragonsSoloDebuff
             val onAll = FishSettings.witherDragonsSoloDebuffAll
             val hasPurple = spawning.any { it == WitherDragon.PURPLE }
             if (solo == 0 && clazz == DungeonClass.TANK && (hasPurple || onAll))

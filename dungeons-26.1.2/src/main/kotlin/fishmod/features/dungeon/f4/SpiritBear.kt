@@ -10,13 +10,12 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.core.BlockPos
 import net.minecraft.world.level.block.Blocks
 
-// Ring of blocks flips COAL_BLOCK -> SEA_LANTERN per kill; last one flipping starts the ~68t spawn timer.
 object SpiritBear {
 
     private const val NAME = "Spirit Bear"
     private val LAST = BlockPos(7, 77, 34)
 
-    private var timer = -1   // -1 = not spawned, 0 = alive, >0 = spawning countdown (ticks)
+    private var timer = -1
     private var kills = 0
     private var lastWasLantern = false
 

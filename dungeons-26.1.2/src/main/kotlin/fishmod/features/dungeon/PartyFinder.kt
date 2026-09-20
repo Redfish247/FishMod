@@ -23,7 +23,6 @@ import net.minecraft.world.item.Items
 import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 
-/** In-menu Party Finder helper: annotates party heads with level/class/PB info fetched via [HypixelApi], and auto-kicks joiners under the configured bar while you're party leader. */
 object PartyFinder {
 
     private val CLASSES = listOf("Archer", "Tank", "Berserk", "Healer", "Mage")
@@ -32,22 +31,16 @@ object PartyFinder {
     private val FLOOR = Pattern.compile("Floor:\\s*(?:Floor\\s+)?(\\w+)")
     private val SELECTED_CLASS = Pattern.compile("Currently Selected:\\s*(\\w+)")
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
-    // Runs after the default phase so other mods' (e.g. SkyHanni's) own "Missing: X" tooltip
-    // line, if any, is already in `lines` by the time we check for a duplicate below.
     private val TOOLTIP_LAST_PHASE = Identifier.fromNamespaceAndPath("fishmod", "party_finder_tooltip_last")
 
-    /** Last "Currently Selected: X" seen in the Catacombs Gate menu — seeds "Auto" my-class. */
     @Volatile private var capturedClass: String? = null
 
-    // "Party Finder > Name joined the dungeon group! (Archer Level 42)"
     private val PF_JOIN = Pattern.compile("^Party Finder > (\\w{1,16}) joined the dungeon group! \\((\\w+) Level \\d+\\)$")
     private val PB_LINE = Regex("^(\\d+):(\\d{2})\\s+(S\\+?)$")
 
     private val cache = ConcurrentHashMap<String, HypixelApi.DungeonData>()
-    /** SkyBlock level per lowercased IGN, cached for the session (–1 = fetch failed). */
     private val sbCache = ConcurrentHashMap<String, Double>()
     private val pending = ConcurrentHashMap.newKeySet<String>()
-    /** lowercased names kicked this lobby — re-kicked on sight until a world change clears it. */
     private val kicked = ConcurrentHashMap.newKeySet<String>()
 
     @JvmStatic
@@ -65,7 +58,7 @@ object PartyFinder {
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { kicked.clear(); false }
+        Events.ON_WORLD_CHANGE.register { kicked.clear(); cache.clear(); sbCache.clear(); false }
     }
 
     private fun tryAutoKick(name: String, clazz: String?) {
@@ -91,8 +84,6 @@ object PartyFinder {
         }
     }
 
-    /** Runs [evaluate], then — only when a per-class SkyBlock-level bar is set — fetches the
-     *  SkyBlock level (once per session) before handing the combined reasons to [finishAutoKick]. */
     private fun evalThenFinish(name: String, key: String, clazz: String?, d: HypixelApi.DungeonData) {
         val base = evaluate(d, clazz)
         val sbMin = clazz?.let { sbReqFor(it) } ?: 0
@@ -139,8 +130,6 @@ object PartyFinder {
         Minecraft.getInstance().execute {
             if (!PartyUtil.amLeader()) { kicked.remove(key); return@execute }
             FishMsg.send("§9AutoKick §7> kicking §e$name§7: §f${reasons.joinToString(", ")}")
-            // Hypixel drops a second command sent in the same tick ("sending commands too fast"),
-            // so announce in party chat now and fire the kick a few ticks later.
             if (FishSettings.pfAutoKickInform) {
                 fishmod.utils.ChatQueue.enqueue("pc AutoKick $name: ${reasons.joinToString(", ")}")
                 Scheduler.scheduleTask({ Misc.executeCommand("party kick $name") }, 6)
@@ -153,7 +142,6 @@ object PartyFinder {
     private fun evaluate(d: HypixelApi.DungeonData, clazz: String? = null): List<String> {
         val reasons = ArrayList<String>()
 
-        // per-class minimum Catacombs level / Magical Power (0 = off; skip when the API had no data)
         clazz?.let { c ->
             val minCata = cataReqFor(c)
             if (minCata > 0 && d.cataLevel in 1 until minCata) reasons.add("$c Cata(${d.cataLevel}/$minCata)")
@@ -208,7 +196,6 @@ object PartyFinder {
         }
     }
 
-    /** The dungeon class to test parties against — explicit config, else live class, else last captured. */
     private fun myClass(): String? {
         val cfg = FishSettings.pfMyClass
         if (cfg in CLASSES) return cfg
@@ -230,7 +217,6 @@ object PartyFinder {
             }
         }
 
-        // Party with a sub-Cata-50 member -> orange (takes precedence over the joinable highlight).
         if (FishSettings.pfHighlightNonCata50 && minLevel != Int.MAX_VALUE && minLevel < 50) {
             ctx.fill(x - 1, y - 1, x + 17, y + 17, 0x60FFAA00)
             return
@@ -334,7 +320,6 @@ object PartyFinder {
         return sb.toString()
     }
 
-    /** Session-cache accessors for [PartyFinderPanel] so the list panel never double-fetches. */
     @JvmStatic
     fun cached(name: String): HypixelApi.DungeonData? = cache[name.lowercase()]
 

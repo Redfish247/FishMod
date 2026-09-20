@@ -53,7 +53,6 @@ public class FishCopyChatMixin extends Screen {
 
         if (string == null) return;
 
-        // MC chat input drops "§" on paste, leaving bare code digits behind
         if (ExtraOptions.removeColorCodes || smart) {
             string = string.replaceAll("§.", "");
         } else if (ExtraOptions.replaceColorChars) {
@@ -67,7 +66,6 @@ public class FishCopyChatMixin extends Screen {
         fishmod.utils.FishMsg.send("§aChat Message Copied");
     }
 
-    /** Strips chat-divider runs (----, ▬▬▬, ═══ …) and collapses whitespace left by joining wraps. */
     @Unique
     private static String cleanCopied(String s) {
         if (s == null) return null;

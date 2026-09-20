@@ -4,20 +4,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Minimal parser for a single line of the IRCv3 wire format that Twitch speaks:
- *
- * <pre>@tag=value;tag2=value2 :nick!user@host COMMAND param1 param2 :trailing text</pre>
- *
- * Only the pieces the bridge needs are extracted.
- */
 public final class IrcMessage {
 
 	public final Map<String, String> tags;
-	public final String nick;      // may be empty
-	public final String command;   // e.g. PRIVMSG, PING, USERNOTICE, RECONNECT
-	public final String param0;    // first non-trailing param (usually "#channel"); may be empty
-	public final String trailing;  // text after " :"; may be empty
+	public final String nick;
+	public final String command;
+	public final String param0;
+	public final String trailing;
 
 	private IrcMessage(Map<String, String> tags, String nick, String command, String param0, String trailing) {
 		this.tags = tags;
@@ -78,7 +71,6 @@ public final class IrcMessage {
 		return map;
 	}
 
-	/** IRCv3 tag value un-escaping (\s -> space, \: -> ;, \\ -> \, \r \n stripped). */
 	private static String unescapeTag(String v) {
 		if (v.indexOf('\\') < 0) return v;
 		StringBuilder sb = new StringBuilder(v.length());
@@ -89,7 +81,7 @@ public final class IrcMessage {
 				switch (n) {
 					case 's' -> sb.append(' ');
 					case ':' -> sb.append(';');
-					case 'r', 'n' -> { /* drop */ }
+					case 'r', 'n' -> {  }
 					case '\\' -> sb.append('\\');
 					default -> sb.append(n);
 				}

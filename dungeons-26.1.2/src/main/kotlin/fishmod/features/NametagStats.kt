@@ -9,7 +9,6 @@ import net.minecraft.network.chat.Component
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
-/** Values come from [HypixelApi] and are cached per IGN; lookups are kicked lazily from the nametag render path and rate-limited so a crowded area doesn't hammer the proxy. */
 object NametagStats {
 
     private const val TTL_MS = 10 * 60 * 1000L
@@ -19,7 +18,7 @@ object NametagStats {
     private val VALID_IGN = Regex("^\\w{1,16}$")
 
     private class Entry {
-        @Volatile var networth: Double = Double.NaN   // NaN = not fetched, <0 = failed
+        @Volatile var networth: Double = Double.NaN
         @Volatile var cataLevel: String? = null
         @Volatile var secretAvg: String? = null
         @Volatile var skillAvg: String? = null
@@ -41,7 +40,6 @@ object NametagStats {
     private fun canKick(now: Long): Boolean =
         inFlight.get() < MAX_INFLIGHT && now - lastKick >= KICK_SPACING_MS
 
-    /** Lines to draw under [name]'s nametag, or null when nothing is ready. Also kicks async fetches. */
     @JvmStatic
     fun linesFor(name: String): List<Component>? {
         if (!FishSettings.nametagStatsEnabled) return null
@@ -66,8 +64,6 @@ object NametagStats {
             }
         }
 
-        // dungeon data carries skill average too, so it's fetched everywhere (not just the hub);
-        // cata level / secret average are still hub-only in the output below.
         val dungStale = e.dungAt == 0L || now - e.dungAt > TTL_MS
         if (dungStale && !e.dungPending && canKick(now)) {
             e.dungPending = true
@@ -85,7 +81,6 @@ object NametagStats {
 
         val out = ArrayList<Component>(2)
 
-        // networth + skill average share a line (both render everywhere, not just the hub)
         val nw = if (FishSettings.nametagStatsShowNetworth && !e.networth.isNaN() && e.networth >= 0) e.networth else null
         val skill = if (FishSettings.nametagStatsShowSkillAvg) e.skillAvg else null
         if (nw != null || skill != null) {

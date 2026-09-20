@@ -6,13 +6,9 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import java.util.ArrayDeque
 
-/**
- * Single throttled outbound queue for mod-issued party-chat commands, so multiple auto-announcers
- * firing on the same event don't hit Hypixel's chat spam filter. Cleared on world change.
- */
 object ChatQueue {
 
-    private const val MIN_GAP_MS = 1100L   // Hypixel's repeat-message cooldown is ~1s
+    private const val MIN_GAP_MS = 1100L
     private const val DEDUP_MS = 3000L
     private const val MAX_PENDING = 5
 
@@ -26,7 +22,6 @@ object ChatQueue {
         Events.ON_WORLD_CHANGE.register { synchronized(pending) { pending.clear() }; false }
     }
 
-    /** Queue a command (no leading slash), e.g. `enqueue("pc 3.20s lost to lag.")`. */
     @JvmStatic
     fun enqueue(command: String) {
         val cmd = command.trim().removePrefix("/").trim()
@@ -48,7 +43,6 @@ object ChatQueue {
         mc.connection!!.sendCommand(cmd)
         lastSentAt = System.currentTimeMillis()
         lastSentText = cmd
-        // keep Hypixel's error-reply suppression window warm
         ChatCommandState.lastPartyCommandAt = lastSentAt
     }
 }
