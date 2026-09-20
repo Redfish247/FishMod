@@ -41,6 +41,10 @@ public class ChatHudMixin {
     @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
             at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Component message, MessageSignature signature, GuiMessageSource source, GuiMessageTag tag, CallbackInfo ci) {
+        // Catches party chat regardless of packet type (signed player chat vs. unsigned system
+        // chat) — the network-level ON_GAME_MESSAGE hook only sees unsigned system chat, which
+        // in-dungeon party messages don't always arrive as.
+        fishmod.features.dungeon.AutoRequeue.onChatLine(message.getString());
         // Fires even when the line below gets hidden by Chat Filter's "Boss Messages" toggle.
         fishmod.features.Ragnarock.checkP5Taunt(message.getString());
 
