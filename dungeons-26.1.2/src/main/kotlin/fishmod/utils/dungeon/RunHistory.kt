@@ -121,7 +121,33 @@ object RunHistory {
                 }
             } catch (_: Exception) {
             }
+            // Drop pre-guard garbage times (a never-started split force-ended reads as ~1.9 years) so a
+            // poisoned split doesn't fall back to the hardcoded average forever.
+            if (pruneInvalid()) save()
         }
+    }
+
+    /** Removes times outside (0, MAX_SPLIT_SECONDS] plus any now-empty split/floor buckets. True if anything changed. */
+    private fun pruneInvalid(): Boolean {
+        var changed = false
+        val floorIt = data.iterator()
+        while (floorIt.hasNext()) {
+            val floorData = floorIt.next().value
+            val splitIt = floorData.iterator()
+            while (splitIt.hasNext()) {
+                val times = splitIt.next().value
+                if (times.removeAll { it <= 0.0 || it > MAX_SPLIT_SECONDS }) changed = true
+                if (times.isEmpty()) {
+                    splitIt.remove()
+                    changed = true
+                }
+            }
+            if (floorData.isEmpty()) {
+                floorIt.remove()
+                changed = true
+            }
+        }
+        return changed
     }
 
     private fun save() {

@@ -10,3 +10,6 @@ run/
 .claude/
 .wrangler/
 .kotlin/
+
+# Obsidian project-brain vault — local knowledge base, never committed
+FishModNew/

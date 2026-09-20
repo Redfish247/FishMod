@@ -38,6 +38,32 @@ object FishSettings {
     /** Comma-separated column names, left-to-right, saved from drag-reordering the /fm screen's tabs. */
     @ConfigValue @JvmField var fmColumnOrder: String = ""
 
+    /** Master switch for the /fm screen's own animations (open/close cascade, section expand, toggle
+     *  slides). Off = everything snaps instantly. */
+    @ConfigValue @JvmField var fmAnimations: Boolean = true
+
+    // /fm screen UI Customization (cascading curtain open/close + column card appearance)
+    /** Which background swatch is active: "Dark Glass" (default), "Deep Blue", "Crimson", "Violet", or "Custom". */
+    @ConfigValue @JvmField var fmBgPreset: String = "Dark Glass"
+    /** Used when fmBgPreset == "Custom". Alpha channel is overridden by fmBgAlpha at render time. */
+    @ConfigValue @JvmField var fmBgCustomColor: Int = 0xFF14181D.toInt()
+    /** Column card background opacity, 0 (invisible) - 100 (solid). */
+    @ConfigValue @JvmField var fmBgAlpha: Int = 100
+    /** Column drop-in/drop-out animation duration in ms, 200 (snappy) - 1200 (dramatic). */
+    @ConfigValue @JvmField var fmDropDurationMs: Int = 450
+    /** Extra delay in ms added per column, left to right, for the cascading wave effect. */
+    @ConfigValue @JvmField var fmStaggerDelayMs: Int = 60
+    /** Exit animation style: "Floor Fall" (drop off the bottom) or "Reverse Curtain" (retract up off the top). */
+    @ConfigValue @JvmField var fmExitStyle: String = "Floor Fall"
+    /** Accent colour — headers, chevrons, hover glow, tooltip borders, and the on-state of toggle switches/rows. */
+    @ConfigValue @JvmField var fmButtonColor: Int = 0xFF24B6B0.toInt()
+    /** Accent opacity, 0 (invisible) - 100 (solid). */
+    @ConfigValue @JvmField var fmButtonAlpha: Int = 100
+    /** Row-tint colour behind an enabled feature row (e.g. "Door Colors" when its master toggle is on). Independent of fmBgAlpha (card background) and fmButtonColor (accent). */
+    @ConfigValue @JvmField var fmRowColor: Int = 0xFF24B6B0.toInt()
+    /** Row-tint opacity, 0 (invisible) - 100 (solid). Matches today’s fixed ~15%. */
+    @ConfigValue @JvmField var fmRowAlpha: Int = 15
+
     // Pet XP gained = skill XP × (1 + taming×0.01) × (1 + beastmaster%/100) × (1 + petItem%/100) × extraMult.
     /** Taming level — adds +1% pet XP per level (max 60 = +60%). */
     @ConfigValue @JvmField var petXpTamingLevel: Int = 0
@@ -117,14 +143,19 @@ object FishSettings {
     // the "X joined the dungeon group! (<Class> Level N)" message.
     @ConfigValue @JvmField var pfAutoKickArcherCata:  Int = 0
     @ConfigValue @JvmField var pfAutoKickArcherSb:    Int = 0
+    @ConfigValue @JvmField var pfAutoKickArcherMp:    Int = 0
     @ConfigValue @JvmField var pfAutoKickBerserkCata: Int = 0
     @ConfigValue @JvmField var pfAutoKickBerserkSb:   Int = 0
+    @ConfigValue @JvmField var pfAutoKickBerserkMp:   Int = 0
     @ConfigValue @JvmField var pfAutoKickHealerCata:  Int = 0
     @ConfigValue @JvmField var pfAutoKickHealerSb:    Int = 0
+    @ConfigValue @JvmField var pfAutoKickHealerMp:    Int = 0
     @ConfigValue @JvmField var pfAutoKickMageCata:    Int = 0
     @ConfigValue @JvmField var pfAutoKickMageSb:      Int = 0
+    @ConfigValue @JvmField var pfAutoKickMageMp:      Int = 0
     @ConfigValue @JvmField var pfAutoKickTankCata:    Int = 0
     @ConfigValue @JvmField var pfAutoKickTankSb:      Int = 0
+    @ConfigValue @JvmField var pfAutoKickTankMp:      Int = 0
     /** Master switch for the whole Chat card (Smart Copy Chat, Compact Chat, Infinite Chat History,
      *  Chat Search, Chat Filter); when off, none of them fire regardless of their own state. */
     @ConfigValue @JvmField var chatFeatureEnabled: Boolean = true
@@ -138,6 +169,9 @@ object FishSettings {
 
     // search field on the chat screen that live-filters the visible scrollback
     @ConfigValue @JvmField var chatSearch: Boolean = false
+
+    // hold a keybind to force the chat HUD fully opaque + scrollable without opening the real chat screen
+    @ConfigValue @JvmField var chatPeek: Boolean = true
 
     // reformat "Guild > BotName: Player » msg" into "Guild > [Bridge] Player: msg" and hide the raw bot line
     @ConfigValue @JvmField var bridgeBotEnabled: Boolean = false
@@ -225,6 +259,21 @@ object FishSettings {
     @ConfigValue @JvmField var nametagStatsEnabled: Boolean = false
     @ConfigValue @JvmField var nametagStatsShowSelf: Boolean = false
 
+    // Prestige Colors: recolour Hypixel's SkyBlock "[level]" badge (nametags + tab) by a level-driven
+    // tier progression — 15 solid tiers to 300, then 20 three-stop gradient tiers to 700.
+    @ConfigValue @JvmField var prestigeColorsEnabled: Boolean = false
+    @ConfigValue @JvmField var prestigeColorsNametags: Boolean = true
+    @ConfigValue @JvmField var prestigeColorsTab: Boolean = true
+    @ConfigValue @JvmField var prestigeColorsChat: Boolean = true
+    @ConfigValue @JvmField var prestigeColorsGradientTiers: Boolean = true
+    @ConfigValue @JvmField var prestigeColorsAnimated: Boolean = true
+    @ConfigValue @JvmField var prestigeColorsAnimSpeed: Double = 1.0
+    // FADE = whole number is one colour cycling the palette; FLOW = band slides across the digits
+    @ConfigValue @JvmField var prestigeColorsAnimStyle: String = "FADE"
+
+    // Master toggle for the /fm wp dungeon waypoint editor's rendering (boxes, titles, route lines).
+    @ConfigValue @JvmField var dungeonWaypointsEnabled: Boolean = true
+
     // M7/F7 lever waypoints: through-walls box on each boss lever; disappears once flipped.
     @ConfigValue @JvmField var enableM7LeverWaypoints: Boolean = false
     @ConfigValue @JvmField var m7LeverWaypointColor: Int = 0xFFFF0086.toInt() // RGB used; alpha ignored
@@ -285,6 +334,30 @@ object FishSettings {
     @ConfigValue @JvmField var simonSaysHudX: Int = 10
     @ConfigValue @JvmField var simonSaysHudY: Int = 360
     @ConfigValue @JvmField var simonSaysHudScale: Double = 1.0
+
+    // Simon Says per-round announce messages (System22 port) — sent to party chat when that round is reached.
+    @ConfigValue @JvmField var simon1Enabled: Boolean = false
+    @ConfigValue @JvmField var simon1Message: String = "Simon Says: 1/5"
+    @ConfigValue @JvmField var simon2Enabled: Boolean = false
+    @ConfigValue @JvmField var simon2Message: String = "Simon Says: 2/5"
+    @ConfigValue @JvmField var simon3Enabled: Boolean = false
+    @ConfigValue @JvmField var simon3Message: String = "Simon Says: 3/5"
+    @ConfigValue @JvmField var simon4Enabled: Boolean = false
+    @ConfigValue @JvmField var simon4Message: String = "Simon Says: 4/5"
+    @ConfigValue @JvmField var simon5Enabled: Boolean = false
+    @ConfigValue @JvmField var simon5Message: String = "Simon Says: 5/5"
+
+    // Simon Says HUD — three independent states (progress / completed / reset), each with its own
+    // enable toggle, text (progress text substitutes "(n)" for the current round), and color.
+    @ConfigValue @JvmField var ssProgressShowProgress: Boolean = true
+    @ConfigValue @JvmField var ssProgressProgressText: String = "SS at (n)/5"
+    @ConfigValue @JvmField var ssProgressProgressColor: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var ssProgressShowCompleted: Boolean = true
+    @ConfigValue @JvmField var ssProgressCompletedText: String = "SS Completed"
+    @ConfigValue @JvmField var ssProgressCompletedColor: Int = 0xFF55FF55.toInt()
+    @ConfigValue @JvmField var ssProgressShowReset: Boolean = true
+    @ConfigValue @JvmField var ssProgressResetText: String = "SS RESET!"
+    @ConfigValue @JvmField var ssProgressResetColor: Int = 0xFFFF5555.toInt()
 
 
     // PB Pace — live delta vs your personal-best splits during a dungeon run.
@@ -427,6 +500,10 @@ object FishSettings {
     @ConfigValue @JvmField var itemTooltipPrices: Boolean = false
     @ConfigValue @JvmField var itemTooltipNpcSell: Boolean = false
 
+    // Auction House "Create BIN/Auction" price sign: prefill with (item value - discount %)
+    @ConfigValue @JvmField var auctionPriceAutofillEnabled: Boolean = false
+    @ConfigValue @JvmField var auctionAutofillPercent: Int = 5   // 0..50, discount off the looked-up value
+
     // scroll = move, shift+scroll = sideways, ctrl+scroll = scale
     @ConfigValue @JvmField var tooltipScrollEnabled: Boolean = false
     @ConfigValue @JvmField var tooltipScrollScale: Int = 100   // percent, 30..150
@@ -530,6 +607,7 @@ object FishSettings {
     @ConfigValue @JvmField var ragnarockTimerHudX: Int = 10
     @ConfigValue @JvmField var ragnarockTimerHudY: Int = 150
     @ConfigValue @JvmField var ragnarockTimerScale: Double = 1.5
+    @ConfigValue @JvmField var p5RagEnabled: Boolean = false          // title "Rag" on Wither King’s pre-fight taunt
 
     // Terracotta Timer (F6)
     @ConfigValue @JvmField var terracottaTimerEnabled: Boolean = false
@@ -774,5 +852,85 @@ object FishSettings {
     @ConfigValue @JvmField var sbSectionCollections: Boolean = false
     @ConfigValue @JvmField var sbSectionElection: Boolean = false
     @ConfigValue @JvmField var sbSectionFireSales: Boolean = false
+
+    // ---------------- Slayer ----------------
+    // No single master toggle — each of the five Slayer features below is its own switch. The
+    // subsystem (scoreboard scan + entity scan) idles unless [slayerAnyEnabled] is true.
+
+    // Mini/Boss Spawn Alert
+    @ConfigValue @JvmField var slayerSpawnAlertEnabled: Boolean = false
+    @ConfigValue @JvmField var slayerMiniBossAlert: Boolean = true
+    @ConfigValue @JvmField var slayerBossAlert: Boolean = true
+    /** Alert on-screen time, ms (shared by mini/boss/cocoon alerts). */
+    @ConfigValue @JvmField var slayerAlertDurationMs: Int = 1500
+
+    // Cocoon Alert
+    @ConfigValue @JvmField var slayerCocoonAlertEnabled: Boolean = false
+    @ConfigValue @JvmField var slayerCocoonAlertDurationMs: Int = 2000
+
+    // Spawn Progress HUD
+    @ConfigValue @JvmField var slayerSpawnHudEnabled: Boolean = false
+    @ConfigValue @JvmField var slayerSpawnHudX: Int = 10
+    @ConfigValue @JvmField var slayerSpawnHudY: Int = 140
+    @ConfigValue @JvmField var slayerSpawnHudScale: Double = 1.0
+
+    // Slayer Stats HUD
+    @ConfigValue @JvmField var slayerStatsHudEnabled: Boolean = false
+    @ConfigValue @JvmField var slayerStatsShowXp: Boolean = true
+    @ConfigValue @JvmField var slayerStatsShowKills: Boolean = true
+    @ConfigValue @JvmField var slayerStatsShowXpHr: Boolean = true
+    @ConfigValue @JvmField var slayerStatsShowKillsHr: Boolean = true
+    @ConfigValue @JvmField var slayerStatsBackground: Boolean = true
+    @ConfigValue @JvmField var slayerStatsHudX: Int = 10
+    @ConfigValue @JvmField var slayerStatsHudY: Int = 170
+    @ConfigValue @JvmField var slayerStatsHudScale: Double = 1.0
+
+    // Boss Timer HUD
+    @ConfigValue @JvmField var slayerTimerEnabled: Boolean = false
+    /** "Spawned" = timer starts when the boss spawns; "Fully Spawned" = starts once it's attackable. */
+    @ConfigValue @JvmField var slayerTimerStartMode: String = "Spawned"
+    @ConfigValue @JvmField var slayerTimerShowCurrent: Boolean = true
+    @ConfigValue @JvmField var slayerTimerShowPb: Boolean = true
+    @ConfigValue @JvmField var slayerTimerShowNewPb: Boolean = true
+    /** Full-cycle line: wall-clock time from one boss kill to the next (fight + loot + walk + refill). */
+    @ConfigValue @JvmField var slayerTimerShowCycle: Boolean = true
+    @ConfigValue @JvmField var slayerTimerHudX: Int = 10
+    @ConfigValue @JvmField var slayerTimerHudY: Int = 255
+    @ConfigValue @JvmField var slayerTimerHudScale: Double = 1.0
+
+    // Profit Tracker (drop value + coins/hr) — SkyHanni-style, prices real drops.
+    // Kept per (slayer type + tier), like SkyHanni. Price source = the shared trackerPriceModeEnum.
+    @ConfigValue @JvmField var slayerProfitEnabled: Boolean = false
+    /** Max drop rows shown on the HUD (highest value first); the rest fold into one "N more items" row. */
+    @ConfigValue @JvmField var slayerProfitLines: Int = 10
+    /** Idle seconds before the tracker pauses AND rewinds its clock by this much (SkyHanni afkTimeout). */
+    @ConfigValue @JvmField var slayerProfitIdleSeconds: Int = 60
+    @ConfigValue @JvmField var slayerProfitBackground: Boolean = true
+    @ConfigValue @JvmField var slayerProfitHudX: Int = 10
+    @ConfigValue @JvmField var slayerProfitHudY: Int = 300
+    @ConfigValue @JvmField var slayerProfitHudScale: Double = 1.0
+    /** Which figures the tracker shows — "Total" (persisted, all-time) or "This Session" (since launch). */
+    @ConfigValue @JvmField var slayerProfitDisplayMode: String = "Total"
+    /** Keep right-click-hidden rows on screen (dark + struck) even when chat is closed. */
+    @ConfigValue @JvmField var slayerProfitShowHidden: Boolean = false
+    /** Drop rows worth less than this many coins fold into the "N more items" row (0 = show all). */
+    @ConfigValue @JvmField var slayerProfitMinValue: Int = 0
+    /** Count "Mob Kill Coins" (small purse gains while grinding) as a drop row + profit. */
+    @ConfigValue @JvmField var slayerProfitCountKillCoins: Boolean = true
+
+    // Boss Phases — SkyHanni-style attack/phase cues on the boss (all 6 slayers)
+    @ConfigValue @JvmField var slayerPhaseEnabled: Boolean = false
+    /** Draw the cue as billboarded world text above the boss. */
+    @ConfigValue @JvmField var slayerPhaseWorldText: Boolean = true
+    /** Big title for the one-shot cues (BOOM / PUPS / HATCHLINGS / FIRE PITS / TWINCLAWS / STEAK / BEACON). */
+    @ConfigValue @JvmField var slayerPhaseTitles: Boolean = true
+    /** Show the health-phase fraction (1/3 · 2/3 …) for Voidgloom / Inferno. */
+    @ConfigValue @JvmField var slayerPhaseHealthSplit: Boolean = true
+
+    /** True when any individual Slayer feature is on — gates the whole Slayer scan/track subsystem. */
+    @JvmStatic
+    fun slayerAnyEnabled(): Boolean =
+        slayerSpawnAlertEnabled || slayerCocoonAlertEnabled || slayerSpawnHudEnabled ||
+            slayerStatsHudEnabled || slayerTimerEnabled || slayerProfitEnabled || slayerPhaseEnabled
 
 }

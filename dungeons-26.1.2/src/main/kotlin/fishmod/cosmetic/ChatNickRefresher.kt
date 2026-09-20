@@ -6,17 +6,7 @@ import net.minecraft.client.gui.components.ChatComponent
 import net.minecraft.client.multiplayer.chat.GuiMessage
 import net.minecraft.network.chat.Component
 
-/**
- * Retroactively re-styles messages already sitting in the chat history when a cosmetic nick becomes
- * known. [fishmod.mixin.CosmeticChatMixin] swaps IGN→nick when a message is first added, so a
- * message that arrives before its sender's nick has loaded gets baked with the plain IGN. Once
- * [RemoteNicks] learns that nick (via the periodic [RemoteSync] poll or a chat-driven
- * lookup) it calls [requestRefresh], which re-runs the swap over the stored [ChatComponent]
- * messages and re-wraps them — so the past line flips from the IGN to the styled nick in place.
- *
- * Re-styling is idempotent ([NameRewriter.replaceName] no-ops on already-decorated text) and
- * uses [RemoteNicks.applyResolvedOnly] so re-scanning history never triggers fresh lookups.
- */
+/** Re-styles chat history in place once a nick resolves after the message was already baked with the plain IGN; idempotent so re-scanning never triggers fresh lookups. */
 object ChatNickRefresher {
     // Coalesces a burst of newly-resolved nicks (e.g. a whole tab-list sync) into one refresh.
     @Volatile

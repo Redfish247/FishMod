@@ -8,14 +8,18 @@ import fishmod.utils.data.ItemUtil
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.minecraft.network.chat.Component
+import net.minecraft.resources.Identifier
 
 /**
- * Adds a value line (Bazaar/BIN blended, via [CroesusPrices]) and an optional NPC-sell line to
- * item tooltips in SkyBlock. Prices are lazily refreshed on a TTL while the feature is on.
+ * Adds a value line (Bazaar/BIN blended, via [CroesusPrices]), 3-day-average and current-low-BIN
+ * lines, and an optional NPC-sell line to item tooltips in SkyBlock. Prices are lazily refreshed
+ * on a TTL while the feature is on. Registered on a dedicated LAST phase so these always render
+ * below every other mod's tooltip additions instead of landing in the middle of them.
  */
 object ItemPriceTooltip {
 
     private var lastRefresh = 0L
+    private val LAST_PHASE = Identifier.fromNamespaceAndPath("fishmod", "item_price_tooltip_last")
 
     @JvmStatic
     fun init() {
@@ -27,20 +31,24 @@ object ItemPriceTooltip {
             CroesusPrices.refreshIfStale()
         }
 
-        ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines ->
+        ItemTooltipCallback.EVENT.addPhaseOrdering(net.fabricmc.fabric.api.event.Event.DEFAULT_PHASE, LAST_PHASE)
+        ItemTooltipCallback.EVENT.register(LAST_PHASE, ItemTooltipCallback { stack, _, _, lines ->
             if (!FishSettings.itemTooltipPrices || !Location.inSkyblock() || stack.isEmpty) return@ItemTooltipCallback
             val id = ItemUtil.getId(stack) ?: return@ItemTooltipCallback
             val count = stack.count
 
-            val base = CroesusPrices.price(id)
-            val mods = ModifierValue.calc(stack)
-            val unit = base + mods
+            val unit = ItemValue.estimate(stack)
             if (unit > 0.0) {
                 val each = "§eValue: §6${abbr(unit)}"
                 val stackPart = if (count > 1) " §7(×$count = §6${abbr(unit * count)}§7)" else ""
                 lines.add(Component.literal("$each$stackPart"))
-                if (mods > 0.0 && base > 0.0) lines.add(Component.literal("§7  base §6${abbr(base)} §7+ modifiers §6${abbr(mods)}"))
             }
+
+            val avg = CroesusPrices.threeDayAvg(id)
+            if (avg > 0.0) lines.add(Component.literal("§e3 Day Avg: §6${abbr(avg)}"))
+
+            val lowBin = CroesusPrices.currentLowBin(id)
+            if (lowBin > 0.0) lines.add(Component.literal("§eCurrent Low BIN: §6${abbr(lowBin)}"))
 
             if (FishSettings.itemTooltipNpcSell) {
                 val npc = ItemsDb.npcSellPriceFor(id)

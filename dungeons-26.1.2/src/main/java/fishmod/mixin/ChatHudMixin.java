@@ -45,6 +45,8 @@ public class ChatHudMixin {
         // chat) — the network-level ON_GAME_MESSAGE hook only sees unsigned system chat, which
         // in-dungeon party messages don't always arrive as.
         fishmod.features.dungeon.AutoRequeue.onChatLine(message.getString());
+        // Fires even when the line below gets hidden by Chat Filter's "Boss Messages" toggle.
+        fishmod.features.Ragnarock.checkP5Taunt(message.getString());
 
         // Cancel at addMessage() HEAD: packet parsers already ran, and no blank slot is left behind
         if (fishmod.features.ChatFilter.shouldHide(message)
