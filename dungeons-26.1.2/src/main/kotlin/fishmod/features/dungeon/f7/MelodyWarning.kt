@@ -16,7 +16,6 @@ import net.minecraft.network.chat.Style
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.regex.Pattern
 
-/** Warns when a teammate has melody active on the pre-4th device. */
 object MelodyWarning {
 
     private val PATTERN: Pattern = Pattern.compile("(\\d+)%")

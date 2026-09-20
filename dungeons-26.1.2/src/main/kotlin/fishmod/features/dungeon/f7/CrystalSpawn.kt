@@ -15,10 +15,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal
 import java.util.regex.Pattern
 
-/**
- * Maxor crystal spawn countdown + "place crystal" reminder. Crystal-placed detection dismisses
- * the reminder when you place it.
- */
 object CrystalSpawn {
 
     private val RELIC_PICK_UP: Pattern = Pattern.compile("(\\w+) picked up an Energy Crystal!$")

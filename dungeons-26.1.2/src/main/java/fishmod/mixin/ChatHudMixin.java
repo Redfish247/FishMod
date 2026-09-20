@@ -19,9 +19,8 @@ import net.minecraft.network.chat.MessageSignature;
 public class ChatHudMixin {
 
     private static final String CMD_ALT =
-            "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|crit|fps|tps|ping|ai|allinv|d|mp|collection|kick|warp|w|transfer|pt|ptme|promote|demote|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|help|\\?|e|[fm][1-7]|t[1-5]";
+            "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|crit|fps|tps|ping|ai|allinv|d|mp|collection|kick|k|warp|w|transfer|pt|ptme|promote|pro|demote|dem|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|help|\\?|e|[fm][1-7]|t[1-5]";
 
-    // Up to 3 args captured (groups 3/4/5): .crtc needs [name] [class] [level].
     private static final String ARG_TAIL = "(?:\\s+(\\w+)(?:\\s+(\\w+)(?:\\s+(\\w+))?)?)?\\s*$";
 
     private static final Pattern PARTY_CMD = Pattern.compile(
@@ -48,7 +47,6 @@ public class ChatHudMixin {
         // Fires even when the line below gets hidden by Chat Filter's "Boss Messages" toggle.
         fishmod.features.Ragnarock.checkP5Taunt(message.getString());
 
-        // Cancel at addMessage() HEAD: packet parsers already ran, and no blank slot is left behind
         if (fishmod.features.ChatFilter.shouldHide(message)
                 || fishmod.features.chat.ChatRuleHandler.shouldHideAtDisplay(message)) {
             fishmod.features.chat.ChatHideState.noteSuppressed();
@@ -57,7 +55,6 @@ public class ChatHudMixin {
         }
         if (fishmod.features.chat.ChatHideState.shouldSwallowBlank(message)) { ci.cancel(); return; }
 
-        // Skip the strip/regex when nothing downstream needs the plain text
         if (!FishSettings.chatParty && !FishSettings.chatGuild && !FishSettings.chatOfficer
                 && !FishSettings.chatPrivate && !FishSettings.chatAll && !FishSettings.pfStatsEnabled
                 && !(FishSettings.chatFeatureEnabled && FishSettings.chatCompact)
@@ -92,7 +89,6 @@ public class ChatHudMixin {
             if (pfm.find()) fishmod.features.dungeon.PartyFinderStats.onWhisper(pfm.group(1));
         }
 
-        // Runs last (after filter/dispatch); cancels + re-adds the message when it collapses
         if (FishSettings.chatFeatureEnabled && FishSettings.chatCompact
                 && fishmod.features.CompactChat.tryCompact(message, (ChatComponent) (Object) this, ci)) return;
     }
@@ -106,7 +102,6 @@ public class ChatHudMixin {
         String rawArg1 = m.group(3);
         String rawArg2 = m.group(4);
         String rawArg3 = m.group(5);
-        // No-arg stats lookups default to the sender (group 1), not the local player
         String responder = (dmPrefix != null) ? dmPrefix + matchedName + " " : channelResponder;
         PartyCommandHandler.onPartyCommand(matchedName, cmd, rawArg1, rawArg2, rawArg3, responder);
         return true;

@@ -24,7 +24,6 @@ public class PlayerListHudMixin {
     private void fishmod$compactTab(GuiGraphicsExtractor context, int scaledWindowWidth, Scoreboard scoreboard,
                                     Objective objective, CallbackInfo ci) {
         if (!FishSettings.compactTabEnabled) return;
-        // Only take over Hypixel lobby tabs using the !A-/!B- column encoding; others ship plain entries
         if (!CompactTab.shouldRender()) return;
         try {
             CompactTab.render(context, scaledWindowWidth,

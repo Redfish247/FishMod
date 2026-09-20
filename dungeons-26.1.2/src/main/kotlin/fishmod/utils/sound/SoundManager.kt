@@ -8,20 +8,11 @@ import net.minecraft.resources.Identifier
 import net.minecraft.sounds.SoundEvent
 import net.minecraft.sounds.SoundEvents
 
-/**
- * Single client-sound entry point. Every feature cue should route through here so it shares one
- * master toggle + volume and one per-key debounce, instead of each feature re-implementing
- * `player.playSound` plus its own ad-hoc spam guard.
- *
- * [play] returns whether the sound was actually emitted (false = muted or debounced), so callers
- * that also flash a title/particle can mirror the debounce for free.
- */
 object SoundManager {
 
     private val enabled: Boolean get() = FishSettings.soundMasterEnabled
     private val masterVol: Float get() = FishSettings.soundMasterVolume.coerceIn(0, 100) / 100f
 
-    // values are mixed SoundEvent / Holder<SoundEvent> (constants aren't consistent), resolved in [preset]
     private val PRESETS: Map<String, Any> = linkedMapOf(
         "Note: Pling" to SoundEvents.NOTE_BLOCK_PLING,
         "Note: Harp" to SoundEvents.NOTE_BLOCK_HARP,
@@ -47,12 +38,10 @@ object SoundManager {
     @JvmStatic
     fun presetNames(): Array<String> = PRESETS.keys.toTypedArray()
 
-    /** Every sound event id in the registry as `namespace:path` strings — for the search picker. */
     val allSoundIds: List<String> by lazy {
         BuiltInRegistries.SOUND_EVENT.keySet().map { it.toString() }.sorted()
     }
 
-    /** Shown in the search picker before you type anything. */
     val shortlist: List<String> = listOf(
         "minecraft:block.note_block.pling", "minecraft:block.note_block.harp",
         "minecraft:block.note_block.bell", "minecraft:block.note_block.bass",
@@ -67,11 +56,6 @@ object SoundManager {
         else -> SoundEvents.NOTE_BLOCK_PLING.value()
     }
 
-    /**
-     * Resolve a stored sound name to a [SoundEvent]. Accepts either a named preset ("Note: Pling")
-     * or a raw registry id ("minecraft:entity.arrow.hit_player" / "entity.arrow.hit_player").
-     * Falls back to Note: Pling.
-     */
     @JvmStatic
     fun preset(name: String?): SoundEvent {
         if (name.isNullOrBlank()) return SoundEvents.NOTE_BLOCK_PLING.value()
@@ -82,12 +66,8 @@ object SoundManager {
         return fromRegistry ?: SoundEvents.NOTE_BLOCK_PLING.value()
     }
 
-    private val lastPlayed = HashMap<String, Long>()
+    private val lastPlayed = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
-    /**
-     * @param key       debounce bucket; repeat plays of the same key inside [debounceMs] are dropped.
-     * @param debounceMs 0 disables debounce (key ignored).
-     */
     @JvmStatic
     @JvmOverloads
     fun play(
@@ -115,7 +95,6 @@ object SoundManager {
     fun play(data: SoundData, key: String? = null, debounceMs: Long = 0L): Boolean =
         play(SoundEvent.createVariableRangeEvent(data.sound), data.volume, data.pitch, key, debounceMs)
 
-    /** Like [play] but the cue is played "in your ear" — no positional panning / distance falloff. */
     @JvmStatic
     @JvmOverloads
     fun play2D(
@@ -138,19 +117,16 @@ object SoundManager {
         return true
     }
 
-    /** High-pitched confirmation blip. */
     @JvmStatic
     @JvmOverloads
     fun ping(key: String? = null, debounceMs: Long = 0L): Boolean =
         play(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 2f, key, debounceMs)
 
-    /** Low attention tone. */
     @JvmStatic
     @JvmOverloads
     fun alert(key: String? = null, debounceMs: Long = 0L): Boolean =
         play(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 0.5f, key, debounceMs)
 
-    /** Drop debounce history — call on world/dungeon change so a cue can fire again immediately. */
     @JvmStatic
     fun reset() = lastPlayed.clear()
 }

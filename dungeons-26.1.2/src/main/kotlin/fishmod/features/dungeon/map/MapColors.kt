@@ -1,33 +1,11 @@
 package fishmod.features.dungeon.map
 
-import com.mojang.blaze3d.platform.InputConstants
 import fishmod.utils.Addons
-import fishmod.utils.Keybinds
 import fishmod.utils.config.values.DungeonMapSettings
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
-import net.minecraft.client.KeyMapping
-import org.lwjgl.glfw.GLFW
 
-/** Shared §/& colour-code stripper for the dungeon-map chat/tab parsers (per-player / per-line / per-tick hot paths). */
 internal val MAP_COLOR_CODES: Regex = Regex("(?i)[&§][0-9a-fk-or]")
 
-/** Color math + "legit mode" gating for the dungeon map feature. */
 object MapColors {
-
-    /** Held to temporarily peek behind legit-mode blur/hiding, regardless of [DungeonMapSettings.mapInsightLegit]. */
-    private var mapInsightKey: KeyMapping? = null
-
-    @JvmStatic
-    fun init() {
-        mapInsightKey = KeyMappingHelper.registerKeyMapping(
-            KeyMapping(
-                "FishMod: Map insight (peek through legit mode)",
-                InputConstants.Type.KEYSYM,
-                GLFW.GLFW_KEY_UNKNOWN,
-                Keybinds.category()
-            )
-        )
-    }
 
     @JvmStatic
     fun darker(argb: Int, mult: Float): Int {
@@ -38,7 +16,6 @@ object MapColors {
         return a shl 24 or (r shl 16) or (g shl 8) or b
     }
 
-    /** Non-legit mode is a FishModAddons-only option; without it, the map is always legit. */
     @JvmStatic
     fun legit(): Boolean {
         if (!Addons.fishModAddonsInstalled) return true
@@ -46,7 +23,7 @@ object MapColors {
     }
 
     @JvmStatic
-    fun peeking(): Boolean = mapInsightKey?.isDown == true
+    fun peeking(): Boolean = false
 
     @JvmStatic
     fun darkenMultiplier(): Float = DungeonMapSettings.mapDarkenMultiplier

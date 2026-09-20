@@ -9,12 +9,6 @@ import net.minecraft.network.chat.Component
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
-/**
- * Draws each player's networth under their nametag, and — while in the Dungeon Hub — their catacombs
- * level and secret average too. Values come from [HypixelApi] (proxy, no key) and are cached per IGN;
- * lookups are kicked lazily from the nametag render path and rate-limited so a crowded hub doesn't
- * hammer the proxy. The actual drawing is done in EntityRendererMixin off the lines returned here.
- */
 object NametagStats {
 
     private const val TTL_MS = 10 * 60 * 1000L
@@ -24,9 +18,10 @@ object NametagStats {
     private val VALID_IGN = Regex("^\\w{1,16}$")
 
     private class Entry {
-        @Volatile var networth: Double = Double.NaN   // NaN = not fetched, <0 = failed
+        @Volatile var networth: Double = Double.NaN
         @Volatile var cataLevel: String? = null
         @Volatile var secretAvg: String? = null
+        @Volatile var skillAvg: String? = null
         @Volatile var nwAt: Long = 0
         @Volatile var dungAt: Long = 0
         @Volatile var nwPending = false
@@ -45,7 +40,6 @@ object NametagStats {
     private fun canKick(now: Long): Boolean =
         inFlight.get() < MAX_INFLIGHT && now - lastKick >= KICK_SPACING_MS
 
-    /** Lines to draw under [name]'s nametag, or null when nothing is ready. Also kicks async fetches. */
     @JvmStatic
     fun linesFor(name: String): List<Component>? {
         if (!FishSettings.nametagStatsEnabled) return null
@@ -70,33 +64,47 @@ object NametagStats {
             }
         }
 
-        if (hub) {
-            val dungStale = e.dungAt == 0L || now - e.dungAt > TTL_MS
-            if (dungStale && !e.dungPending && canKick(now)) {
-                e.dungPending = true
-                lastKick = now
-                inFlight.incrementAndGet()
-                HypixelApi.getByNameSilent(name) { d ->
-                    e.cataLevel = if (d.cataXp > 0) HypixelApi.formatLevel(d.cataXp) else null
-                    e.secretAvg = d.secretAverage
-                    e.dungAt = System.currentTimeMillis()
-                    e.dungPending = false
-                    inFlight.decrementAndGet()
-                }
+        val dungStale = e.dungAt == 0L || now - e.dungAt > TTL_MS
+        if (dungStale && !e.dungPending && canKick(now)) {
+            e.dungPending = true
+            lastKick = now
+            inFlight.incrementAndGet()
+            HypixelApi.getByNameSilent(name) { d ->
+                e.cataLevel = if (d.cataXp > 0) HypixelApi.formatLevel(d.cataXp) else null
+                e.secretAvg = d.secretAverage
+                e.skillAvg = d.skillAverage
+                e.dungAt = System.currentTimeMillis()
+                e.dungPending = false
+                inFlight.decrementAndGet()
             }
         }
 
         val out = ArrayList<Component>(2)
-        if (!e.networth.isNaN() && e.networth >= 0)
-            out.add(Component.literal("§6NW §e" + abbrev(e.networth)))
-        if (hub && (e.cataLevel != null || e.secretAvg != null)) {
+
+        val nw = if (FishSettings.nametagStatsShowNetworth && !e.networth.isNaN() && e.networth >= 0) e.networth else null
+        val skill = if (FishSettings.nametagStatsShowSkillAvg) e.skillAvg else null
+        if (nw != null || skill != null) {
             val sb = StringBuilder()
-            e.cataLevel?.let { sb.append("§bCata §f").append(it) }
-            e.secretAvg?.let {
+            nw?.let { sb.append("§6NW §e").append(abbrev(it)) }
+            skill?.let {
                 if (sb.isNotEmpty()) sb.append("  ")
-                sb.append("§7Secrets §f").append(it)
+                sb.append("§aSkill Avg §f").append(it)
             }
             out.add(Component.literal(sb.toString()))
+        }
+
+        if (hub) {
+            val cata = if (FishSettings.nametagStatsShowCataLevel) e.cataLevel else null
+            val secrets = if (FishSettings.nametagStatsShowSecretAvg) e.secretAvg else null
+            if (cata != null || secrets != null) {
+                val sb = StringBuilder()
+                cata?.let { sb.append("§bCata §f").append(it) }
+                secrets?.let {
+                    if (sb.isNotEmpty()) sb.append("  ")
+                    sb.append("§7Secrets §f").append(it)
+                }
+                out.add(Component.literal(sb.toString()))
+            }
         }
         return out.ifEmpty { null }
     }

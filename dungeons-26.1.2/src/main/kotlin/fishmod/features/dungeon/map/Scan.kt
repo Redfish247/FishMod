@@ -12,7 +12,6 @@ import net.minecraft.world.level.chunk.LevelChunk
 import java.util.Collections
 import java.util.LinkedHashSet
 
-/** World-scan half of the dungeon map feature: identifies rooms via their block "core" hash and infers doors/rotations. */
 object Scan {
 
     @JvmField
@@ -60,7 +59,6 @@ object Scan {
     @JvmStatic
     fun register() {
         ClientChunkEvents.CHUNK_LOAD.register(ClientChunkEvents.Load { _, _ ->
-            // once every tile is identified the world scan is fixed (wither unlocks come via the map packet), so stop re-arming
             if (!loadedAllRooms && DungeonState.isInDungeon()) shouldScan = true
         })
         ClientTickEvents.END_LEVEL_TICK.register(ClientTickEvents.EndLevelTick { world ->
@@ -72,6 +70,7 @@ object Scan {
                     try {
                         scan(world)
                     } catch (t: Throwable) {
+                        fishmod.utils.debug.Debug.LOGGER.error("[Scan] scan failed", t)
                     }
                 }
             }
@@ -215,7 +214,6 @@ object Scan {
             for (z in 0 until 6) {
                 val place = MapVec2i(x, z)
 
-                // don't re-hash a fully-identified tile: a transient bad core read was flipping resolved rooms and resetting puzzle solvers
                 val resolved = roomsList[place.roomListIndex()].owner
                 if (resolved != null && resolved.data != null && resolved.rotation != Room.Rotation.NONE) continue
 
@@ -253,7 +251,6 @@ object Scan {
                     }
                     if (already) continue
 
-                    // cap tiles at the room's shape: a bad far-cell core read hashing to a known name was welding on a stray tile
                     val cap = (found.shape ?: rd.shape)?.tileCount ?: 0
                     if (cap > 0 && found.tiles.size >= cap) continue
                 }
@@ -331,7 +328,6 @@ object Scan {
         val chunk = world.getChunk(pos.x shr 4, pos.z shr 4)
         val top = getTopY(chunk, pos) ?: return
         val height = top
-        // Door.rooms is later mutated in place (room-merge rewiring), so it must be a real ArrayList, not listOf()
         val tiles = arrayListOf(t1, t2)
 
         if (height != 73 && height != 81) {

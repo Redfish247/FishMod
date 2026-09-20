@@ -14,18 +14,8 @@ import net.minecraft.core.BlockPos
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 
-/**
- * Room model for the puzzle solvers. An earlier stand-alone scanner never matched 26.1 reliably
- * (~half the time), which made every box-placing solver misfire.
- *
- * It now rides on FishMod's own dungeon-map scanner ([DungeonMap] / [MapRoom]), which already
- * resolves room identity, rotation and the clay-corner every scan tick and retries until it lands.
- * The [ORoom] we hand the solvers carries that rotation + clayPos verbatim; [ORoom.getRealCoords]
- * is identical to [MapRoom.offset], so solutions land exactly where the map says the room is.
- */
 object OdinScan {
 
-    /** Room table — kept only for `type` / `cores` metadata by room name. */
     private val nameToData: Map<String, ORoomData> = run {
         try {
             OdinScan::class.java.getResourceAsStream("/odin_rooms.json")!!.use { s ->
@@ -69,8 +59,6 @@ object OdinScan {
         }
 
         val map = DungeonMap.roomPlayerIn()?.owner
-        // roomPlayerIn() drops to null on doorways / room edges / unscanned tiles as you move, so
-        // treat null as a transient miss and keep the last room; only switch on a *different* room.
         val mapName = map?.data?.name
         if (map == null || mapName == null || map.rotation == MapRoom.Rotation.NONE) {
             diag("transient miss (map=${map != null} name=$mapName rot=${map?.rotation}) — keeping '${currentRoom?.data?.name}'")
@@ -97,7 +85,6 @@ object OdinScan {
         val data = nameToData[name] ?: ORoomData(
             name = name,
             type = runCatching { ORoomType.valueOf(m.type?.name ?: "") }.getOrDefault(ORoomType.NORMAL),
-            cores = emptyList(),
             shape = m.shape?.let { runCatching { ORoomShape.valueOf(mapShapeName(it)) }.getOrNull() }
                 ?: ORoomShape.UNKNOWN,
         )

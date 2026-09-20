@@ -4,35 +4,41 @@ import fishmod.shaded.practicalconfig.data.SoundData
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.sounds.SoundEvent
-import java.util.concurrent.CopyOnWriteArrayList
+import java.util.ArrayDeque
 
 object Scheduler {
 
     private class Task(val task: Runnable, var delay: Int)
 
-    private val tasks = CopyOnWriteArrayList<Task>()
+    private val tasks = ArrayDeque<Task>()
 
     @JvmStatic
     fun init() {
         ClientTickEvents.START_CLIENT_TICK.register { minecraftClient ->
-            for (i in tasks.size - 1 downTo 0) {
-                val task = tasks[i]
-                task.delay--
-                if (task.delay <= 0) {
-                    minecraftClient.execute(task.task)
-                    tasks.removeAt(i)
+            val due = ArrayList<Task>()
+            synchronized(tasks) {
+                val it = tasks.iterator()
+                while (it.hasNext()) {
+                    val task = it.next()
+                    task.delay--
+                    if (task.delay <= 0) {
+                        due.add(task)
+                        it.remove()
+                    }
                 }
             }
+            for (task in due) minecraftClient.execute(task.task)
         }
     }
 
     @JvmOverloads
     @JvmStatic
     fun scheduleSound(soundEvent: SoundEvent, volume: Float, pitch: Float, delay: Int = 1) {
-        tasks.add(Task(Runnable {
+        val task = Task(Runnable {
             val player = Minecraft.getInstance().player ?: return@Runnable
             player.playSound(soundEvent, volume, pitch)
-        }, delay))
+        }, delay)
+        synchronized(tasks) { tasks.add(task) }
     }
 
     @JvmOverloads
@@ -43,6 +49,6 @@ object Scheduler {
 
     @JvmStatic
     fun scheduleTask(runnable: Runnable, ticks: Int) {
-        tasks.add(Task(runnable, ticks))
+        synchronized(tasks) { tasks.add(Task(runnable, ticks)) }
     }
 }

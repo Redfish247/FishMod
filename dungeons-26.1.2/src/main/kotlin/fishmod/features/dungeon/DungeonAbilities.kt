@@ -6,12 +6,6 @@ import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 
-/**
- * Dungeon Ability Keybinds. Two dedicated keys that reproduce the vanilla drop inputs Hypixel reads
- * to fire a class ability:
- *  - Ult      → tap-drop      (drop one item, like Q)
- *  - Mini Ult → ctrl-drop     (drop the whole stack, like Ctrl+Q)
- */
 object DungeonAbilities {
 
     @JvmStatic

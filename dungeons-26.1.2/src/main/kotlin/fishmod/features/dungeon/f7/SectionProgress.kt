@@ -10,7 +10,6 @@ import fishmod.utils.rendering.RenderUtils
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-/** Terminal-section progress (completed/total), optional prev-objective label. */
 object SectionProgress {
 
     private var completed = 0

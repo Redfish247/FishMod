@@ -24,10 +24,8 @@ import java.util.regex.Pattern
 import kotlin.math.ceil
 import kotlin.math.min
 
-/** Per-item ability cooldown overlay. Detects cooldown start via the Hypixel "ability cooldown" sound (Enderman teleport at pitch 0 / volume 8) and renders a countdown on the held item's slot (hotbar + inventory GUI) until it expires. */
 object CooldownOverlay {
 
-    // item-id -> cooldown duration (ms)
     private val COOLDOWNS: MutableMap<String, Long> = HashMap()
 
     init {
@@ -37,11 +35,11 @@ object CooldownOverlay {
         COOLDOWNS["ASTRAEA"] = 5_000L
         COOLDOWNS["SHADOW_FURY"] = 15_000L
         COOLDOWNS["INFINITE_SUPERBOOM_TNT"] = 20_000L
-        COOLDOWNS["GIANTS_SWORD"] = 30_000L // Giant's Slam
-        COOLDOWNS["ATOMSPLIT_KATANA"] = 4_000L // Soulcry
+        COOLDOWNS["GIANTS_SWORD"] = 30_000L
+        COOLDOWNS["ATOMSPLIT_KATANA"] = 4_000L
         COOLDOWNS["ICE_SPRAY_WAND"] = 5_000L
         COOLDOWNS["FIRE_FREEZE_STAFF"] = 10_000L
-        COOLDOWNS["GYROKINETIC_WAND"] = 30_000L // Gravity Storm
+        COOLDOWNS["GYROKINETIC_WAND"] = 30_000L
         COOLDOWNS["RAGNAROCK_AXE"] = 20_000L
         COOLDOWNS["TACTICAL_INSERTION"] = 20_000L
         COOLDOWNS["ROGUE_SWORD"] = 5_000L
@@ -54,29 +52,25 @@ object CooldownOverlay {
         COOLDOWNS["HOTSPLOT_RADAR"] = 2_000L
     }
 
-    /** itemId -> wall-clock millisecond at which the cooldown ends. */
     private val active: MutableMap<String, Long> = HashMap()
 
     @JvmField
     var debugDumpSound = false
 
-    // Hypixel mana-cost chat line, e.g. "-300 Mana (Wither Impact)".
     private val MANA_LINE: Pattern = Pattern.compile("-\\s*[\\d,]+\\s*Mana\\s*\\(([^)]+)\\)")
 
-    // Hypixel "[Mage] Cooldown Reduction 49% -> 74%" — exact live CDR from the game.
     private val MAGE_CDR_LINE: Pattern = Pattern.compile("\\[Mage\\] Cooldown Reduction \\d+% -> (\\d+)%")
 
     @Volatile
     private var liveMageCdrPercent = -1
 
-    // action-bar mana; a right-click that drops it is a reliable "ability fired" signal
     private val MANA_BAR: Pattern = Pattern.compile("([\\d,]+)\\s*/\\s*[\\d,]+\\s*✎")
 
     @Volatile
     private var lastMana = -1
 
     @Volatile
-    private var pendingId: String? = null // right-clicked ability awaiting mana-drop confirmation
+    private var pendingId: String? = null
 
     @Volatile
     private var pendingAt: Long = 0
@@ -86,12 +80,10 @@ object CooldownOverlay {
 
     @JvmStatic
     fun init() {
-        // primary trigger: cooldown sound (enderman teleport, pitch 0, volume 8); match on sound id — the engine instance is never the SoundEvents constant
         Events.ON_SOUND.register { event, volume, pitch ->
             if (!FishSettings.cooldownOverlayEnabled) {
                 false
             } else {
-                // Hypixel's cooldown cue is a pitch-0 enderman teleport; real endermen teleport at pitch ~1, so near-zero pitch is the tell (volume floor just drops faint ambient ones)
                 if (pitch <= 0.05f && volume >= 3f && event.location == SoundEvents.ENDERMAN_TELEPORT.location) {
                     if (debugDumpSound) {
                         Misc.addChatMessage(Component.literal("§d[fmcd] cooldown sound detected"))
@@ -102,7 +94,6 @@ object CooldownOverlay {
             }
         }
 
-        // Fallback trigger: mana-cost chat line. Some Hypixel abilities suppress the cooldown sound.
         Events.ON_GAME_MESSAGE.register { text ->
             if (!FishSettings.cooldownOverlayEnabled) {
                 false
@@ -130,7 +121,6 @@ object CooldownOverlay {
             }
         }
 
-        // mana tracker: confirms an armed right-click when mana drops below the click-time value; don't raise the baseline here or the first proc is swallowed
         ClientReceiveMessageEvents.GAME.register { msg, overlay ->
             if (!overlay || !FishSettings.cooldownOverlayEnabled) return@register
             val s = HypixelApi.STRIP_COLOR.matcher(msg.string).replaceAll("")
@@ -155,7 +145,6 @@ object CooldownOverlay {
             lastMana = mana
         }
 
-        // right-click arms the pending ability with a fresh mana baseline; the mana tracker starts the cooldown on the drop, so a no-mana click can't start a phantom overlay (start optimistically only when lastMana < 0)
         UseItemCallback.EVENT.register(UseItemCallback { player, world, hand ->
             if (!FishSettings.cooldownOverlayEnabled) return@UseItemCallback InteractionResult.PASS
             if (hand != InteractionHand.MAIN_HAND) return@UseItemCallback InteractionResult.PASS
@@ -218,14 +207,12 @@ object CooldownOverlay {
             }
         }
 
-        // Hyperion cooldown is hardcoded to 5s by Hypixel regardless of CDR.
         finalCdResult = if (id == "HYPERION") {
             baseCd
         } else if (isMage && inDungeon) {
             val classReduction: Double = if (liveMageCdrPercent > 0) {
                 liveMageCdrPercent / 100.0
             } else {
-                // level-based estimate: 25% -> 70% across Mage 1..50
                 val level = if (mageLvl > 0) min(mageLvl, 50) else 50
                 0.25 + (level - 1) * (0.45 / 49.0)
             }
@@ -235,7 +222,6 @@ object CooldownOverlay {
             baseCd
         }
 
-        // Ragnarock Axe needs a 3s buffer outside dungeons, and for non-Mages inside them.
         if (!inDungeon && id == "RAGNAROCK_AXE") {
             finalCdResult += 3000.0
         }
@@ -260,7 +246,6 @@ object CooldownOverlay {
         active[id] = now + finalCd
     }
 
-    /** Hotbar render hook (called from FishModInit HudRenderCallback). */
     @JvmStatic
     fun renderHotbar(ctx: GuiGraphicsExtractor, tickCounter: DeltaTracker) {
         if (!FishSettings.cooldownOverlayEnabled) return
@@ -288,7 +273,6 @@ object CooldownOverlay {
         }
     }
 
-    /** Debug dump for /fmpet command. */
     @JvmStatic
     fun debugState(): String {
         val sb = StringBuilder()
@@ -335,7 +319,6 @@ object CooldownOverlay {
             val mc = Minecraft.getInstance()
             val tx = x + 16 - mc.font.width(text)
             val ty = y + 8 - mc.font.lineHeight / 2 + 1
-            // drawn after the slot's item so the digits stay legible
             ctx.text(mc.font, text, tx, ty, 0xFFFFFFFF.toInt(), true)
         }
     }

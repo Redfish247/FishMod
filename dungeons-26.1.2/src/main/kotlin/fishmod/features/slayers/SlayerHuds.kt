@@ -7,20 +7,8 @@ import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import kotlin.math.roundToInt
 
-/**
- * The three movable Slayer HUDs — Spawn Progress, Slayer Stats, Boss Timer.
- *
- * All three follow the mod's standard simple-HUD contract ([fishmod.features.SoulflowHud]): an
- * `object` with a `renderHud(ctx, tick)` that bails early on its toggles/visibility, then draws a
- * scaled, translated block of `ctx.text`. Each is registered with [FishHudEditor] here and gets a
- * `HudElementRegistry` layer + `DEFAULTS`/`COLUMN_HUDS` entry alongside the others, so it's moved
- * and scaled in the exact same editor as every existing HUD.
- *
- * The render methods only read already-computed cached state ([SlayerManager], [SlayerTimer],
- * [SlayerStatsTracker]) — no scoreboard parsing, no entity scans, no allocation beyond the line
- * strings.
- */
 object SlayerHuds {
 
     const val SPAWN_HUD = "Slayer Spawn"
@@ -64,8 +52,6 @@ object SlayerHuds {
         )
     }
 
-    // ------------------------------------------------------------------ Spawn Progress
-
     @JvmStatic
     fun renderSpawn(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.slayerSpawnHudEnabled) return
@@ -94,17 +80,14 @@ object SlayerHuds {
             SlayerManager.State.NONE -> return
         }
         drawBlock(ctx, FishSettings.slayerSpawnHudX, FishSettings.slayerSpawnHudY,
-            FishSettings.slayerSpawnHudScale, lines, background = false)
+            FishSettings.slayerSpawnHudScale, lines, opacity = FishSettings.slayerSpawnOpacity)
     }
-
-    // ------------------------------------------------------------------ Slayer Stats
 
     @JvmStatic
     fun renderStats(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.slayerStatsHudEnabled) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
-        // only while actually doing slayer, like the Spawn / Timer / Profit HUDs
         if (!SlayerManager.isActiveSlayer() || !SlayerManager.inCorrectArea() || !SlayerStatsTracker.hasData()) return
 
         val lines = ArrayList<String>(7)
@@ -120,12 +103,9 @@ object SlayerHuds {
         if (lines.size == 1) return
 
         drawBlock(ctx, FishSettings.slayerStatsHudX, FishSettings.slayerStatsHudY,
-            FishSettings.slayerStatsHudScale, lines, background = FishSettings.slayerStatsBackground)
+            FishSettings.slayerStatsHudScale, lines, opacity = FishSettings.slayerStatsOpacity)
     }
 
-    // ------------------------------------------------------------------ Slayer Profit
-
-    // last-frame hit regions for the clickable HUD (screen coords). Parallel lists.
     private var profitFrameMs = 0L
     private var profitLeft = 0.0
     private var profitRight = 0.0
@@ -160,7 +140,7 @@ object SlayerHuds {
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())
         ctx.pose().scale(sc, sc)
-        if (FishSettings.slayerProfitBackground) ctx.fill(-3, -2, panelW + 3, lh * rows.size + 1, 0x90000000.toInt())
+        if (FishSettings.slayerProfitOpacity > 0) ctx.fill(-3, -2, panelW + 3, lh * rows.size + 1, bgColor(FishSettings.slayerProfitOpacity))
         for (i in rows.indices) {
             val r = rows[i]
             ctx.text(f, r.label, 0, lh * i, 0xFFFFFFFF.toInt(), true)
@@ -168,7 +148,6 @@ object SlayerHuds {
         }
         ctx.pose().popMatrix()
 
-        // record hit regions for onProfitClick
         profitFrameMs = System.currentTimeMillis()
         profitLeft = x.toDouble()
         profitRight = x + panelW.toDouble() * sc
@@ -180,15 +159,10 @@ object SlayerHuds {
         }
     }
 
-    /**
-     * Route a click over the profit HUD (chat open, GUI-scaled coords). Returns true if consumed.
-     * `mode` line → switch view (either button); `item:` left-click → hide/unhide that drop;
-     * `title` right-click → arm, then confirm, the reset of the shown view.
-     */
     @JvmStatic
     fun onProfitClick(mx: Double, my: Double, button: Int): Boolean {
         if (!FishSettings.slayerProfitEnabled) return false
-        if (System.currentTimeMillis() - profitFrameMs > 500) return false   // not drawn recently
+        if (System.currentTimeMillis() - profitFrameMs > 500) return false
         if (mx < profitLeft || mx > profitRight) return false
         val type = SlayerManager.type ?: return false
         val tier = SlayerManager.tier
@@ -198,7 +172,7 @@ object SlayerHuds {
             when {
                 tag == "mode" -> {
                     SlayerProfitTracker.cycleMode()
-                    fishmod.utils.config.FishConfig.manager.save()   // persist the chosen view
+                    fishmod.utils.config.FishConfig.manager.save()
                     return true
                 }
                 tag == "title" -> if (button == 1) { SlayerProfitTracker.armOrConfirmReset(); return true }
@@ -210,8 +184,6 @@ object SlayerHuds {
         }
         return false
     }
-
-    // ------------------------------------------------------------------ Boss Timer
 
     @JvmStatic
     fun renderTimer(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
@@ -244,14 +216,12 @@ object SlayerHuds {
         if (lines.isEmpty()) return
 
         drawBlock(ctx, FishSettings.slayerTimerHudX, FishSettings.slayerTimerHudY,
-            FishSettings.slayerTimerHudScale, lines, background = false)
+            FishSettings.slayerTimerHudScale, lines, opacity = FishSettings.slayerTimerOpacity)
     }
-
-    // ------------------------------------------------------------------ shared draw
 
     private fun drawBlock(
         ctx: GuiGraphicsExtractor, x: Int, y: Int, scale: Double,
-        lines: List<String>, background: Boolean,
+        lines: List<String>, opacity: Int,
     ) {
         val mc = Minecraft.getInstance()
         val lh = Constants.TEXT_HEIGHT + 2
@@ -259,13 +229,19 @@ object SlayerHuds {
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())
         ctx.pose().scale(sc, sc)
-        if (background) {
+        if (opacity > 0) {
             var w = 0
             for (l in lines) w = Math.max(w, mc.font.width(l))
-            ctx.fill(-3, -2, w + 3, lh * lines.size + 1, 0x80000000.toInt())
+            ctx.fill(-3, -2, w + 3, lh * lines.size + 1, bgColor(opacity))
         }
         for (i in lines.indices) ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF.toInt(), true)
         ctx.pose().popMatrix()
+    }
+
+    private fun bgColor(opacityPct: Int): Int {
+        val pct = opacityPct.coerceIn(0, 100)
+        val a = (pct * 2.55).roundToInt()
+        return a shl 24
     }
 
     private fun fmt(v: Double): String = String.format("%,d", v.toLong())

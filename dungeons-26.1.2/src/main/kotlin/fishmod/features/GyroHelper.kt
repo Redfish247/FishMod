@@ -15,11 +15,6 @@ import net.minecraft.world.phys.Vec3
 import kotlin.math.cos
 import kotlin.math.sin
 
-/**
- * Gyrokinetic Wand landing helper. While holding the wand, raytraces up to 25 blocks and, if it
- * lands on a valid surface, draws a box on the target block +
- * a 10-block-radius "sucking range" ring.
- */
 object GyroHelper {
 
     private const val SEGMENTS = 48

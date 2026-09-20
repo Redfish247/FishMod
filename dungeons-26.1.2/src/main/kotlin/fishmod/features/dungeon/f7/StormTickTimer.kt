@@ -19,7 +19,6 @@ import java.util.regex.Pattern
 import kotlin.math.ceil
 import kotlin.math.max
 
-/** Storm (P2) tick timer + first-death time. */
 object StormTickTimer {
 
     private val PATTERN: Pattern = Pattern.compile("^⚠ Storm is enraged! ⚠$")
@@ -27,8 +26,6 @@ object StormTickTimer {
     private const val CRUSH_TICK = 31 * 20
     private const val COUNTDOWN_DURATION = 5 * 20
 
-    // LB (Last Breath) release window: visible once the Storm clock hits 30s.
-    // Archer releases at 34.35s, Healer at 34.05s; hidden on other classes.
     private const val LB_START_TICK = 30 * 20
     private val LB_ARCHER_END_TICK: Int = Math.round(34.35 * 20).toInt()
     private val LB_HEALER_END_TICK: Int = Math.round(34.05 * 20).toInt()
@@ -56,7 +53,6 @@ object StormTickTimer {
             if (PATTERN.matcher(text.string).find()) {
                 deathTime = timer.tick * Constants.TICK_DURATION
                 deathStartDisplayTime = System.currentTimeMillis()
-                // CritTracker.onStormDeath applies its own Archer-only gate.
                 CritTracker.onStormDeath(deathTime)
                 if (Floor7.enableStormDeathTime) {
                     Misc.addChatMessage(
@@ -98,17 +94,14 @@ object StormTickTimer {
         RenderUtils.drawTimer(component, context, deathTime, Constants.DARK_PURPLE)
     }
 
-    /** Ping compensation in ticks (20 tps): shifts the release cue earlier so the arrow leaves on time. */
     private fun pingTicks(): Int = ceil(max(0, Floor7.lbReleaseTimerPingMs) / 50.0).toInt()
 
-    /** Class-specific LB release tick (ping-compensated), or -1 when the timer shouldn't show for this class. */
     private fun lbEndTick(): Int {
         val base = when {
             DungeonClass.isClass(DungeonClass.ARCHER) -> LB_ARCHER_END_TICK
             DungeonClass.isClass(DungeonClass.HEALER) -> LB_HEALER_END_TICK
             else -> return -1
         }
-        // Never pull the cue before the window even opens.
         return max(LB_START_TICK + 1, base - pingTicks())
     }
 

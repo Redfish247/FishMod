@@ -2,10 +2,6 @@ package fishmod.features.scoreboard
 
 import java.util.regex.Pattern
 
-/** Known Hypixel Skyblock scoreboard line categories. Each has a match pattern (tested against
- *  the color-code-stripped line, with any leading icon glyph trimmed off) and its own on/off
- *  toggle in [fishmod.utils.config.values.FishSettings]. OTHER is the catch-all bucket for
- *  anything that doesn't match a known pattern, so unrecognized lines don't just disappear. */
 enum class ScoreboardSection(val label: String, private val pattern: Pattern?) {
     DATE("Date", Pattern.compile("^(Early |Late )?(Spring|Summer|Autumn|Winter) \\d+(st|nd|rd|th)$")),
     TIME("Time of Day", Pattern.compile("^\\d{1,2}:\\d{2}(am|pm)$", Pattern.CASE_INSENSITIVE)),
@@ -42,9 +38,6 @@ enum class ScoreboardSection(val label: String, private val pattern: Pattern?) {
     fun matches(strippedLine: String): Boolean = pattern != null && pattern.matcher(strippedLine).find()
 
     companion object {
-        /** Leading icon glyphs (private-use font codepoints, bullets, etc.) that precede a lot of
-         *  Hypixel scoreboard lines and would otherwise stop a whole-line pattern like [LOCATION]
-         *  or [GAME_MODE] from matching. */
         private val LEADING_ICON: Pattern = Pattern.compile("^[^\\p{L}\\p{N}]+")
 
         @JvmStatic

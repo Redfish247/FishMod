@@ -21,14 +21,16 @@ import java.util.regex.Pattern
 
 object SessionStats {
 
+    private val ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
+        Thread(r, "FishMod-SessionStats-IO").apply { isDaemon = true }
+    }
+
     private val DEATH_PAT = Pattern.compile("☠ \\S+ (?:was|were) killed by|☠ \\S+ (?:died|quit)")
 
-    // Mort's intro line — fires the moment the dungeon run actually starts.
     private const val MORT_START = "[NPC] Mort: Here, I found this map when I first entered the dungeon."
 
-    private const val IDLE_MS = 5 * 60_000L // pause after 5 min idle in-dungeon
+    private const val IDLE_MS = 5 * 60_000L
 
-    // Auto-pause reason: 0 = none, 1 = location (hub/lobby/pre-Mort), 2 = idle.
     private var autoPauseReason = 0
 
     private var lastX = 0.0
@@ -43,7 +45,6 @@ object SessionStats {
     private val SAVE_FILE: Path = Paths.get("config/fishmod/session_stats.json")
     private val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
 
-    // Reset button hitbox state (set during inventory render, read during click)
     private var btnX = 0
     private var btnY = 0
     private var btnW = 0
@@ -68,7 +69,6 @@ object SessionStats {
         var lastActivityMs: Long = 0
     }
 
-    /** Clears any auto-pause and advances the session start by the paused duration. */
     private fun autoResume() {
         val now = System.currentTimeMillis()
         if (paused && autoPaused) {
@@ -81,7 +81,6 @@ object SessionStats {
         lastActivityMs = now
     }
 
-    /** Player moved / acted in-dungeon: resume only if we were idle-paused (not hub/pre-Mort paused). */
     private fun noteMovement() {
         if (paused && autoPaused && autoPauseReason == 2) autoResume()
         else lastActivityMs = System.currentTimeMillis()
@@ -150,7 +149,7 @@ object SessionStats {
         }
 
         Events.ON_LOCATION_CHANGE.register { _ ->
-            havePos = false // recalibrate movement baseline
+            havePos = false
             false
         }
 
@@ -208,8 +207,6 @@ object SessionStats {
     fun formatDuration(): String {
         if (sessionStartMs < 0) return "—"
         val ref = if (paused && pauseStartedMs > 0) pauseStartedMs else System.currentTimeMillis()
-        // Defensive clamp: if Mort start fires while manually paused, sessionStartMs can be set
-        // newer than pauseStartedMs, producing a transient negative duration. Show 0s instead.
         return formatTime(Math.max(0, ref - sessionStartMs))
     }
 
@@ -240,7 +237,6 @@ object SessionStats {
             pauseStartedMs = d.pauseStartedMs
             autoPaused = d.autoPaused
             lastActivityMs = d.lastActivityMs
-            // Freeze at last real activity so the offline gap since last close isn't counted as session time.
             if (!paused && sessionStartMs > 0) {
                 autoPause(1, if (lastActivityMs > 0) lastActivityMs else sessionStartMs)
             }
@@ -251,22 +247,24 @@ object SessionStats {
 
     @Synchronized
     private fun save() {
-        try {
-            Files.createDirectories(SAVE_FILE.parent)
-            val d = SaveData()
-            d.sessionStartMs = sessionStartMs
-            d.runs = runs
-            d.deaths = deaths
-            d.paused = paused
-            d.pauseStartedMs = pauseStartedMs
-            d.autoPaused = autoPaused
-            d.lastActivityMs = lastActivityMs
-            Files.writeString(SAVE_FILE, GSON.toJson(d))
-        } catch (ignored: IOException) {
+        val d = SaveData()
+        d.sessionStartMs = sessionStartMs
+        d.runs = runs
+        d.deaths = deaths
+        d.paused = paused
+        d.pauseStartedMs = pauseStartedMs
+        d.autoPaused = autoPaused
+        d.lastActivityMs = lastActivityMs
+        val json = GSON.toJson(d)
+        ioExecutor.execute {
+            try {
+                Files.createDirectories(SAVE_FILE.parent)
+                Files.writeString(SAVE_FILE, json)
+            } catch (ignored: IOException) {
+            }
         }
     }
 
-    // Cumulative pace over the whole active, non-paused session.
     private fun runsPerHour(): Double {
         if (runs <= 0 || sessionStartMs <= 0) return 0.0
         val now = if (paused && pauseStartedMs > 0) pauseStartedMs else System.currentTimeMillis()
@@ -323,7 +321,6 @@ object SessionStats {
         ctx.pose().popMatrix()
     }
 
-    /** Rendered on top of any HandledScreen (chest/inventory) with a clickable reset button. */
     @JvmStatic
     fun renderInScreen(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         btnVisible = false
@@ -377,7 +374,6 @@ object SessionStats {
         btnVisible = true
     }
 
-    /** Returns true if click landed on the reset button (consume the click). */
     @JvmStatic
     fun handleScreenClick(mx: Double, my: Double): Boolean {
         if (!btnVisible) return false

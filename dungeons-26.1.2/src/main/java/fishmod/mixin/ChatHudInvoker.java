@@ -29,7 +29,6 @@ public interface ChatHudInvoker {
     @Accessor("allMessages")
     List<GuiMessage> getMessages();
 
-    /** Rebuilds visibleMessages from messages (re-wraps lines); preserves scroll position. */
     @Invoker("refreshTrimmedMessages")
     void invokeRefresh();
 }

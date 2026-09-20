@@ -15,10 +15,6 @@ import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.Vec3
 
-/**
- * "Device Completed!" notification at the pre-4th-device / Simon Says (SS) spots, plus the
- * title-suppression logic for those same spots.
- */
 object DeviceNotifier {
 
     private const val TOTAL_DURATION = 1500L

@@ -23,14 +23,6 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import kotlin.math.abs
 
-/**
- * Arrows / "Sharp Shooter" device solver (F7 P3).
- *
- * Event-driven off block updates in the 3x3 device grid: EMERALD_BLOCK -> BLUE_TERRACOTTA means that
- * block was just hit (added to [markedPositions]); BLUE_TERRACOTTA -> EMERALD_BLOCK means it reset
- * and is now the live [targetPosition]. Optional "Show Aim Positions" runs an adjacent-pair
- * midpoint optimiser to suggest where to stand/aim so one shot covers two blocks.
- */
 object ArrowsDevice {
 
     private val devicePositions = listOf(
@@ -45,7 +37,6 @@ object ArrowsDevice {
     private var targetPosition: BlockPos? = null
     private var isDeviceComplete = false
     private var optimalAimPositions: List<AimPosition> = emptyList()
-    // reconstructs the old->new transition; concurrent (written from the packet thread)
     private val prev = java.util.concurrent.ConcurrentHashMap<Long, Block>()
 
     private data class AimPosition(val position: Vec3, val coveredBlocks: Set<BlockPos>, val distance: Double)
@@ -95,13 +86,11 @@ object ArrowsDevice {
             false
         }
 
-        // Occluded (default) vs through-walls, per arrowsDeviceDepth.
         RenderingEvents.GIZMO.register { _ -> if (!FishSettings.arrowsDeviceDepth) drawGizmo() }
         RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> if (FishSettings.arrowsDeviceDepth) draw(m, vc) }
 
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (!FishSettings.arrowsDeviceShowAim) optimalAimPositions = emptyList()
-            // seed [prev] with every device block's live state so the first transition after P3 isn't dropped
             if (FishSettings.arrowsDeviceEnabled && inP3()) {
                 val level = mc.level ?: return@register
                 for (p in devicePositions) {

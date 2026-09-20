@@ -11,25 +11,18 @@ import fishmod.utils.events.Events
 import fishmod.utils.rendering.DrawEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
+import net.fabricmc.fabric.api.event.Event
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.core.component.DataComponents
 import net.minecraft.network.chat.Component
+import net.minecraft.resources.Identifier
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 
-/**
- * In-menu Party Finder helper.
- *
- *  - draws the red Dungeon-Level-Required number and the missing-class letters on each party head
- *  - green-highlights any party head that's still missing YOUR dungeon class ([myClass])
- *  - rewrites each "Name: Class (lvl)" tooltip line with the player's Cata level / secrets / floor PB,
- *    fetched lazily through [HypixelApi] into a session cache, and appends a "Missing: …" line
- *  - auto-kick: while party leader, kicks a joiner whose S+ PB / secrets miss the configured bar
- */
 object PartyFinder {
 
     private val CLASSES = listOf("Archer", "Tank", "Berserk", "Healer", "Mage")
@@ -38,26 +31,24 @@ object PartyFinder {
     private val FLOOR = Pattern.compile("Floor:\\s*(?:Floor\\s+)?(\\w+)")
     private val SELECTED_CLASS = Pattern.compile("Currently Selected:\\s*(\\w+)")
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
+    private val TOOLTIP_LAST_PHASE = Identifier.fromNamespaceAndPath("fishmod", "party_finder_tooltip_last")
 
-    /** Last "Currently Selected: X" seen in the Catacombs Gate menu — seeds "Auto" my-class. */
     @Volatile private var capturedClass: String? = null
 
-    // "Party Finder > Name joined the dungeon group! (Archer Level 42)"
     private val PF_JOIN = Pattern.compile("^Party Finder > (\\w{1,16}) joined the dungeon group! \\((\\w+) Level \\d+\\)$")
     private val PB_LINE = Regex("^(\\d+):(\\d{2})\\s+(S\\+?)$")
 
     private val cache = ConcurrentHashMap<String, HypixelApi.DungeonData>()
-    /** SkyBlock level per lowercased IGN, cached for the session (–1 = fetch failed). */
     private val sbCache = ConcurrentHashMap<String, Double>()
     private val pending = ConcurrentHashMap.newKeySet<String>()
-    /** lowercased names kicked this lobby — re-kicked on sight until a world change clears it. */
     private val kicked = ConcurrentHashMap.newKeySet<String>()
 
     @JvmStatic
     fun init() {
         DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y -> onSlotBefore(ctx, stack, x, y) }
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y -> onSlot(ctx, stack, x, y) }
-        ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines -> onTooltip(stack, lines) })
+        ItemTooltipCallback.EVENT.addPhaseOrdering(Event.DEFAULT_PHASE, TOOLTIP_LAST_PHASE)
+        ItemTooltipCallback.EVENT.register(TOOLTIP_LAST_PHASE, ItemTooltipCallback { stack, _, _, lines -> onTooltip(stack, lines) })
         ClientTickEvents.END_CLIENT_TICK.register { captureSelectedClass() }
 
         Events.ON_GAME_MESSAGE.register { text ->
@@ -67,7 +58,7 @@ object PartyFinder {
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { kicked.clear(); false }
+        Events.ON_WORLD_CHANGE.register { kicked.clear(); cache.clear(); sbCache.clear(); false }
     }
 
     private fun tryAutoKick(name: String, clazz: String?) {
@@ -93,8 +84,6 @@ object PartyFinder {
         }
     }
 
-    /** Runs [evaluate], then — only when a per-class SkyBlock-level bar is set — fetches the
-     *  SkyBlock level (once per session) before handing the combined reasons to [finishAutoKick]. */
     private fun evalThenFinish(name: String, key: String, clazz: String?, d: HypixelApi.DungeonData) {
         val base = evaluate(d, clazz)
         val sbMin = clazz?.let { sbReqFor(it) } ?: 0
@@ -141,8 +130,6 @@ object PartyFinder {
         Minecraft.getInstance().execute {
             if (!PartyUtil.amLeader()) { kicked.remove(key); return@execute }
             FishMsg.send("§9AutoKick §7> kicking §e$name§7: §f${reasons.joinToString(", ")}")
-            // Hypixel drops a second command sent in the same tick ("sending commands too fast"),
-            // so announce in party chat now and fire the kick a few ticks later.
             if (FishSettings.pfAutoKickInform) {
                 fishmod.utils.ChatQueue.enqueue("pc AutoKick $name: ${reasons.joinToString(", ")}")
                 Scheduler.scheduleTask({ Misc.executeCommand("party kick $name") }, 6)
@@ -155,7 +142,6 @@ object PartyFinder {
     private fun evaluate(d: HypixelApi.DungeonData, clazz: String? = null): List<String> {
         val reasons = ArrayList<String>()
 
-        // per-class minimum Catacombs level / Magical Power (0 = off; skip when the API had no data)
         clazz?.let { c ->
             val minCata = cataReqFor(c)
             if (minCata > 0 && d.cataLevel in 1 until minCata) reasons.add("$c Cata(${d.cataLevel}/$minCata)")
@@ -210,7 +196,6 @@ object PartyFinder {
         }
     }
 
-    /** The dungeon class to test parties against — explicit config, else live class, else last captured. */
     private fun myClass(): String? {
         val cfg = FishSettings.pfMyClass
         if (cfg in CLASSES) return cfg
@@ -232,7 +217,6 @@ object PartyFinder {
             }
         }
 
-        // Party with a sub-Cata-50 member -> orange (takes precedence over the joinable highlight).
         if (FishSettings.pfHighlightNonCata50 && minLevel != Int.MAX_VALUE && minLevel < 50) {
             ctx.fill(x - 1, y - 1, x + 17, y + 17, 0x60FFAA00)
             return
@@ -312,7 +296,7 @@ object PartyFinder {
             lines[i] = Component.literal(" §b$name: §e$cls ${classColor(lvl)}$lvl${statsFor(name, floor, master)}")
         }
 
-        if (FishSettings.pfTooltipMissingList) {
+        if (FishSettings.pfTooltipMissingList && lines.none { COLOR.replace(it.string, "").trimStart().startsWith("Missing:") }) {
             val missing = CLASSES.filter { it !in present }
             if (missing.isNotEmpty()) {
                 val mine = myClass()
@@ -336,7 +320,6 @@ object PartyFinder {
         return sb.toString()
     }
 
-    /** Session-cache accessors for [PartyFinderPanel] so the list panel never double-fetches. */
     @JvmStatic
     fun cached(name: String): HypixelApi.DungeonData? = cache[name.lowercase()]
 

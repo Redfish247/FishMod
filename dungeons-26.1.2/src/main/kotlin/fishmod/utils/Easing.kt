@@ -1,6 +1,5 @@
 package fishmod.utils
 
-/** Cubic ease-in-out timing for smooth open/close animations. */
 object Easing {
 
     @JvmStatic
@@ -8,8 +7,6 @@ object Easing {
         return if (x < 0.5f) 4f * x * x * x else 1f - Math.pow((-2f * x + 2f).toDouble(), 3.0).toFloat() / 2f
     }
 
-    /** Ease-out with a slight overshoot past 1 before settling — used for a landing "rebound" feel
-     *  (e.g. a column dropping in and bouncing a touch below its resting spot before snapping back). */
     @JvmStatic
     fun easeOutBack(x: Float): Float {
         val c1 = 1.70158f
@@ -18,7 +15,6 @@ object Easing {
         return 1f + c3 * d * d * d + c1 * d * d
     }
 
-    /** Tracks a boolean-driven 0..1 progress value, eased over `durationMs`. */
     class Anim(private val durationMs: Long) {
         private var target: Boolean = false
         private var startValue: Float = 0f

@@ -18,13 +18,6 @@ import org.lwjgl.nanovg.NanoVG
 import kotlin.math.max
 import kotlin.math.min
 
-/**
- * /fm chatnotifications (/fm cn) — a dedicated rule-list editor for the chat-notification system
- * (see [ChatRuleStore]/[ChatRuleHandler]). Left pane lists rules (toggle/select/delete), right
- * pane edits the selected rule's filter + outputs. Painted through [NvgRecorder]: fields are kept
- * as bare [EditBox] state, never added as real Screen widgets, since a real widget's render would
- * flush before the NanoVG overlay and be invisible under it.
- */
 class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")), HasNvgOverlay {
 
     private companion object {
@@ -43,11 +36,9 @@ class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")),
         val DANGER = ScreenTheme.DANGER
         val DANGER_HOVER = ScreenTheme.DANGER_HOVER
 
-        // drawEditor() stacks fields with these pitches; mouseClicked() re-derives the same Ys — both must match
-        const val ED_ROW = 24          // labelled-field row pitch
-        const val ED_TOGGLE_ROW = 20   // Regex / Partial / Ignore-Case row
-        const val ED_SECTION_HDR = 14  // "OUTPUTS" header height
-        // editY -> first OUTPUTS field: Name + Filter + Hide-Original + toggles + header
+        const val ED_ROW = 24
+        const val ED_TOGGLE_ROW = 20
+        const val ED_SECTION_HDR = 14
         const val ED_OUTPUTS_DY = ED_ROW * 3 + ED_TOGGLE_ROW + ED_SECTION_HDR
 
         fun inBox(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int): Boolean =

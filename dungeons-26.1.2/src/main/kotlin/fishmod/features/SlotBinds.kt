@@ -20,22 +20,11 @@ import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
 
-/**
- * Slot Binds. Hold [Keybinds.slotBind] and click a hotbar slot then an inventory slot to link them;
- * afterwards shift-left-click either slot to hot-swap the two stacks. Only active in the player's own
- * inventory.
- *
- * Binds are grouped into nameable **profiles** so several bind sets can coexist and be switched
- * between (config screen field, or [Keybinds.slotBindCycleProfile] in-game). The active profile
- * name lives in [FishSettings.slotBindsProfile]; all profiles persist to `slot_binds.txt` as
- * `[Name]`-headed sections (a header-less legacy file loads as the "Default" profile).
- */
 object SlotBinds {
 
     private const val DEFAULT = "Default"
     private val FILE = Paths.get(FolderUtility.CONFIG_PATH + "slot_binds.txt")
 
-    /** profile name -> (inventory-slot index -> hotbar-slot index); slot ids are container-space, hotbar is 36..44. */
     private val profiles = LinkedHashMap<String, LinkedHashMap<Int, Int>>()
     private var previousSlot: Int? = null
     private var loaded = false
@@ -47,7 +36,6 @@ object SlotBinds {
 
     private fun activeName(): String = FishSettings.slotBindsProfile.trim().ifEmpty { DEFAULT }
 
-    /** Bind map for the active profile — created on demand so typing a fresh name starts a new set. */
     private val binds: LinkedHashMap<Int, Int>
         get() {
             ensureLoaded()
@@ -89,7 +77,6 @@ object SlotBinds {
         } catch (ignored: IOException) {}
     }
 
-    /** Ordered profile names (empty sets are hidden unless Default or currently active). */
     @JvmStatic
     fun profileNames(): List<String> {
         ensureLoaded()
@@ -99,7 +86,6 @@ object SlotBinds {
     @JvmStatic
     fun activeProfile(): String { ensureLoaded(); return activeName() }
 
-    /** Adds "Profile N" and switches to it. */
     @JvmStatic
     fun newProfile() {
         ensureLoaded()
@@ -112,7 +98,6 @@ object SlotBinds {
         feedback("§aNew profile §f$name")
     }
 
-    /** Removes the active profile (Default is only cleared, never removed) and falls back to Default. */
     @JvmStatic
     fun deleteActiveProfile() {
         ensureLoaded()
@@ -130,7 +115,6 @@ object SlotBinds {
         feedback("§cDeleted profile §f$name")
     }
 
-    /** Advances [FishSettings.slotBindsProfile] to the next profile in order. */
     @JvmStatic
     fun cycleProfile() {
         ensureLoaded()
@@ -153,7 +137,6 @@ object SlotBinds {
 
     private fun partnerOf(slot: Int): Int? = binds[slot] ?: binds.entries.firstOrNull { it.value == slot }?.key
 
-    /** @return true to swallow the click. */
     @JvmStatic
     fun onMouseClick(click: MouseButtonEvent, screen: AbstractContainerScreen<*>): Boolean {
         if (!FishSettings.slotBindsEnabled || screen !is InventoryScreen) return false
@@ -212,11 +195,6 @@ object SlotBinds {
     private fun feedback(msg: String) =
         fishmod.utils.Misc.addChatMessage(Component.literal("§dSlot Binds §7» §r$msg"))
 
-    /**
-     * Drawn per-slot from [DrawEvents.INVENTORY_SLOT_AFTER] (same reliable pass the rarity
-     * background uses). Coords here are GUI-local — [net.minecraft.world.inventory.Slot.x]/`y` are
-     * in the same space, so no leftPos/topPos offset is needed.
-     */
     private fun drawSlot(ctx: GuiGraphicsExtractor, x: Int, y: Int) {
         if (!FishSettings.slotBindsEnabled || !FishSettings.slotBindsShow) return
         val screen = Minecraft.getInstance().screen as? InventoryScreen ?: return
@@ -235,7 +213,6 @@ object SlotBinds {
 
         val color = FishSettings.slotBindsColor
         if (FishSettings.slotBindsBorder) border(ctx, x, y, color)
-        // draw the connector once per pair, on the higher-index endpoint so it lands on top of the slots it crosses
         if (FishSettings.slotBindsLine && idx > partner) {
             line(ctx, x + 8, y + 8, other.x + 8, other.y + 8, color)
         }
@@ -248,7 +225,6 @@ object SlotBinds {
         ctx.fill(x + 15, y, x + 16, y + 16, color)
     }
 
-    /** 1px diagonal connector as a run of single pixels stepped along the path. */
     private fun line(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
         val dx = x2 - x1
         val dy = y2 - y1

@@ -10,10 +10,6 @@ import net.minecraft.world.level.material.FluidState
 import net.minecraft.world.level.material.Fluids
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable
 
-/**
- * Lava To Water. Swaps the lava fluid model for water at bake-lookup time, optionally with a custom
- * tint, and neutralises the lava fog.
- */
 object LavaToWater {
 
     private var lastEnabled = false

@@ -29,10 +29,6 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import kotlin.math.sqrt
 
-/**
- * M7 Wither Dragons QoL. Spawn timers, skip boxes, health, kill priority, aim-assist and
- * post-kill stats.
- */
 object WitherDragons {
 
     @Volatile var priorityDragon: WitherDragon = WitherDragon.NONE
@@ -87,7 +83,7 @@ object WitherDragons {
         RenderingEvents.NO_DEPTH_LINE.register { ctx, m, vc ->
             if (!on()) return@register
             renderLines(ctx, m, vc)
-            renderText(ctx, m)   // text via the same END_MAIN pass — AFTER_TRANSLUCENT drains the collector too early
+            renderText(ctx, m)
         }
         RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> if (on()) renderFills(m, vc) }
     }
@@ -112,7 +108,6 @@ object WitherDragons {
         }
     }
 
-    /** M7 dragon spawn alert — title (priority colour) + optional sound + party call. */
     fun onDragonsSpawning(spawning: List<WitherDragon>) {
         if (!on()) return
         val prio = priorityDragon
@@ -129,7 +124,6 @@ object WitherDragons {
             fishmod.utils.ChatQueue.enqueue("pc ${prio.name} dragon priority")
     }
 
-    /** Post-kill stats message. */
     fun onDragonDead(d: WitherDragon, atTick: Long) {
         if (!FishSettings.witherDragonsEnabled || !FishSettings.witherDragonsSendStats) return
         val stats = buildList {
@@ -178,7 +172,6 @@ object WitherDragons {
         }
     }
 
-    /** Editor-box X: resolves the "&lt;0 = auto-centre" sentinel to a real pixel so the drag box lands on it. */
     private fun hudX(): Int {
         if (FishSettings.witherDragonsHudX >= 0) return FishSettings.witherDragonsHudX
         val mc = Minecraft.getInstance()
@@ -224,7 +217,6 @@ object WitherDragons {
         return Component.literal(s).withColor(c)
     }
 
-    /** Arrow-lead ballistic solve for the ice-spray aim point. */
     private fun aimPoint(d: WitherDragon): Vec3? {
         val p = Minecraft.getInstance().player ?: return null
         val target = d.spawnPos.add(0.5, 3.5, 0.5)

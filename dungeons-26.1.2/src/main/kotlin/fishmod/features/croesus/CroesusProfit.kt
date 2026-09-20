@@ -9,11 +9,6 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/**
- * Croesus chest profit. On the Croesus chest-preview screen it values every chest's contents
- * (via [CroesusPrices]) minus its coin cost, highlights the two most profitable slots, and lists
- * each chest's profit beside the GUI.
- */
 object CroesusProfit {
 
     private val PREVIEW_TITLE = Regex("^(?:Master )?Catacombs - .*")
@@ -27,6 +22,9 @@ object CroesusProfit {
     private var chests: List<Chest> = emptyList()
     private var bestSlots: List<Int> = emptyList()
 
+    private const val SCAN_INTERVAL_MS = 300L
+    private var lastScanMs = 0L
+
     private fun on(screen: AbstractContainerScreen<*>): Boolean =
         FishSettings.croesusProfitEnabled && PREVIEW_TITLE.matches(screen.title.string)
 
@@ -37,7 +35,11 @@ object CroesusProfit {
             return
         }
         CroesusPrices.refreshIfStale()
-        scan(screen)
+        val now = System.currentTimeMillis()
+        if (now - lastScanMs >= SCAN_INTERVAL_MS) {
+            lastScanMs = now
+            scan(screen)
+        }
         if (chests.isEmpty()) return
 
         val acc = screen as HandledScreenAccessor

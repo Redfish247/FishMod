@@ -18,7 +18,6 @@ enum class DungeonClass {
         private val PATTERN: Pattern = Pattern.compile("^\\[(Archer|Berserk|Healer|Mage|Tank)]")
         private val NAME_CLASS_PATTERN: Pattern = Pattern.compile("^\\[\\d+] (.+) \\((Archer|Berserk|Healer|Mage|Tank) ")
 
-        /** Most reliable signal of the local player's own class — fires at the start of a run. */
         private val STATS_DOUBLED_PATTERN: Pattern =
             Pattern.compile("Your (Archer|Berserk|Healer|Mage|Tank) stats are doubled because you are the only player using this class!")
 
@@ -33,16 +32,12 @@ enum class DungeonClass {
         @JvmStatic
         fun init() {
 
-            // Clear the class map when we actually load a new instance / the run ends — NOT on
-            // every phase change during clear (runJustStarted() stays true the whole clear phase,
-            // so that wiped everyone's class mid-run and only some refilled from the tab list).
             Events.ON_WORLD_CHANGE.register { reset(); false }
             Events.ON_RUN_END.register { reset(); false }
 
             ClientReceiveMessageEvents.GAME.register { message, _ ->
                 val string = message.string
 
-                // Authoritative own-class signals — always win, regardless of run state.
                 val selected = SELECTED_PATTERN.matcher(string)
                 if (selected.find()) {
                     currentClass = parseClass(selected.group(1))
@@ -56,7 +51,6 @@ enum class DungeonClass {
 
                 if (!Phase.runStarted() && currentClass != null) return@register
 
-                // the "[Class]" chat prefix is the SPEAKER's class, not necessarily ours — only a fallback seed
                 val matcher = PATTERN.matcher(string)
                 if (matcher.find() && currentClass == null) {
                     currentClass = parseClass(matcher.group(1))
@@ -70,8 +64,6 @@ enum class DungeonClass {
                 val matcher = NAME_CLASS_PATTERN.matcher(string)
 
                 if (matcher.find()) {
-                    // group(1) is everything between "[lvl] " and " (Class"; it may carry rank tags
-                    // ("[YOUTUBE] Future77"), so the IGN is the last whitespace-separated token.
                     val name = matcher.group(1).trim().substringAfterLast(' ')
                     val className = parseClass(matcher.group(2))
                     if (className == null) return@register false

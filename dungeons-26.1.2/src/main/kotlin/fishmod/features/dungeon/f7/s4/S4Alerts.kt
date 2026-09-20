@@ -15,10 +15,6 @@ enum class S4AlertType(val label: String, val color: Int) {
     DEATH("DIED", Constants.DARK_RED),
 }
 
-/**
- * Big, hard-to-miss on-screen alert + sound for S4 failures. One global cooldown (not per-player) so
- * a cluster of near-simultaneous events (e.g. two people leaping late) can't spam the sound.
- */
 object S4Alerts {
 
     private const val TICK_MS = 50L

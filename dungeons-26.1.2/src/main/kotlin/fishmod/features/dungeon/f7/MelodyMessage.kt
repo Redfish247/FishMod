@@ -7,11 +7,6 @@ import fishmod.features.dungeon.f7.terminal.MelodyHandler
 import fishmod.features.dungeon.f7.terminal.TerminalSolver
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 
-/**
- * Melody Message. Announces the melody terminal to party chat when it opens and, optionally,
- * calls out 25 / 50 / 75 % as the green-clay marker moves down — the same lines
- * [fishmod.features.dungeon.f7.MelodyWarning] already listens for.
- */
 object MelodyMessage {
 
     private var wasOpen = false

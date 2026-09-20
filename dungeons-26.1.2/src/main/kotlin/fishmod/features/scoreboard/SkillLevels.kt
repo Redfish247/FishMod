@@ -6,16 +6,8 @@ import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 
-/** Per-skill levels for the Custom Scoreboard's "Skills" extra -- not present on Hypixel's actual
- *  sidebar (only the aggregate "Skill Average:" line is), so this polls the same Hypixel API proxy
- *  [fishmod.features.CatacombsOverflowOverlay] uses (`HypixelApi.getLocalMember`, 60s refresh) and
- *  computes levels with the same generic skill XP curve `HypixelApi.skillLevelOverflow` uses for
- *  Farming. Only covers the 8 skills that share that curve (Combat/Mining/Farming/Foraging/Fishing/
- *  Enchanting/Alchemy/Carpentry) -- Taming, Runecrafting and Social Skills have different level
- *  curves/caps and are deliberately left out rather than guessed at. */
 object SkillLevels {
 
-    // Same table as HypixelApi's private skillLevelOverflow() (SkyBlock's shared skill XP curve).
     private val SKILL_XP = LongArray(61)
     private const val OVERFLOW_PER_LEVEL = 7_000_000L
 
@@ -92,7 +84,6 @@ object SkillLevels {
         return lvl + (if (need > 0) into.toDouble() / need else 0.0)
     }
 
-    /** One "§7Name: §bXX.X" line per resolved skill, empty until the first API fetch lands. */
     @JvmStatic
     fun lines(): List<String> = levels.map { (name, lvl) -> "§7$name: §b" + String.format("%.1f", lvl) }
 }

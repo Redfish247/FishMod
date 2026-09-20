@@ -8,29 +8,10 @@ import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
 
-/**
- * Resolves the concrete boss entity behind Hypixel's nametag.
- *
- * Like [fishmod.features.dungeon.StarredMobHighlight], the ☠ + health text sits on a separate
- * invisible ArmorStand hovering over the real mob, so detection is: scan armor-stand nametags for
- * the boss name, then take the nearest matching living mob under that stand.
- *
- * Miniboss alerts are NOT handled here — they fire off the `SLAYER MINI-BOSS <name> has spawned!`
- * chat line in [SlayerManager]. This class only binds the main boss entity (for the "Fully Spawned"
- * timer mode) and doubles as a nametag-based backup for the boss-spawn alert.
- *
- * Performance
- * -----------
- *  - The scan runs on a 5-tick cadence, never per frame.
- *  - It only runs at all while [SlayerManager.isActiveSlayer] — i.e. a live quest on the right
- *    island. Outside that it does nothing and drops its caches.
- *  - The boss scan is further limited to states where a boss can exist.
- *  - Once the boss entity is bound it's reused every tick until it dies/unloads (no re-scan).
- */
 object SlayerBossDetector {
 
     private const val SCAN_INTERVAL_TICKS = 5
-    private const val MARK = "☠" // ☠
+    private const val MARK = "☠"
     private var scanCounter = 0
 
     @JvmStatic
@@ -47,7 +28,6 @@ object SlayerBossDetector {
         val level = mc.level ?: return
         val type = SlayerManager.type ?: return
 
-        // keep / drop the already-bound boss without a rescan
         val bound = SlayerManager.bossEntity
         if (bound != null && (!bound.isAlive || bound.isRemoved)) SlayerManager.bossEntity = null
 
@@ -62,10 +42,7 @@ object SlayerBossDetector {
             if (e !is ArmorStand || !e.hasCustomName()) continue
             val name = e.customName?.string ?: continue
 
-            // main boss
             if (name.contains(MARK) && type.bossNames.any { name.contains(it) }) {
-                // fire the spawn alert straight off the nametag too — independent of the scoreboard
-                // progress line, which can lag or flicker (SlayerAlerts latches so it's still once)
                 SlayerAlerts.bossSpawned(type)
                 if (SlayerManager.bossEntity == null) {
                     val mob = nearestMob(level, e, type.mobClass)

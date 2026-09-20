@@ -10,16 +10,6 @@ import net.minecraft.world.inventory.ContainerInput
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/**
- * Party Finder list panel — a scrollable summary of every party listed in the open "Party Finder"
- * chest GUI, drawn beside the vanilla background. Each row shows the host, fill count, floor,
- * missing classes, the listing's note and (optionally) the slowest member PB for that floor.
- * Hovering a row highlights the matching head in the menu (and vice-versa); with "Click Row to
- * Join" on, a left-click on a row clicks that head.
- *
- * Parsing mirrors [PartyFinder]; PB lookups reuse [PartyFinder]'s session cache so nothing is
- * fetched twice.
- */
 object PartyFinderPanel {
 
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
@@ -45,7 +35,6 @@ object PartyFinderPanel {
 
     private var parties: List<Party> = emptyList()
     private var scroll = 0
-    /** [x, y, w, h] of each drawn row, parallel to the visible window. */
     private var rowRects: List<IntArray> = emptyList()
     private var rowFirst = 0
 
@@ -103,8 +92,6 @@ object PartyFinderPanel {
             val leader = LEADER.find(nameStr)?.groupValues?.get(1)
                 ?: nameStr.split(' ').lastOrNull { it.matches(NAME) }
                 ?: names.firstOrNull() ?: "?"
-            // Fallback when the head has no "Members: (x/y)" line: count the distinct
-            // roster, adding the leader only if the lore didn't already list them.
             if (mem == 0) mem = (names + leader).distinctBy { it.lowercase() }.size
             out.add(Party(i, leader, mem, maxMem, floor, master, present, names, note, levelReq))
         }
@@ -166,7 +153,6 @@ object PartyFinderPanel {
         val panelX = FishSettings.pfListX.coerceIn(2, (sw - PANEL_W - 2).coerceAtLeast(2))
         val panelY = FishSettings.pfListY.coerceIn(2, (mc.window.guiScaledHeight - panelH - 2).coerceAtLeast(2))
 
-        // no solid panel — just the header line + a hairline rule over the world
         val tag = if (maxScroll > 0) "  §8${scroll + 1}-${scroll + visible} / ${parties.size}" else ""
         val count = if (all.size != parties.size) "§7(§f${parties.size}§8/${all.size}§7) §6⚑ §8$summary" else "§7(§f${parties.size}§7)"
         ctx.text(font, "§e§lParty Finder $count$tag", panelX, panelY + 2, -1, true)
@@ -184,10 +170,8 @@ object PartyFinderPanel {
             val hot = mouseIn || p.slot == hoveredMenuIdx
             if (hot) hoverParty = scroll + i
 
-            // per-row band so text stays readable over the world; blue tint on hover
             ctx.fill(panelX - PAD, ry - 1, panelX + PANEL_W + PAD, ry + ROW_H - 1,
                 if (hot) 0x484CC2FF else if (i % 2 == 1) 0x28000000 else 0x18000000)
-            // left accent bar marks the hovered row
             if (hot) ctx.fill(panelX - PAD, ry - 1, panelX - PAD + 2, ry + ROW_H - 1, 0xFF4CC2FF.toInt())
 
             val fillCol = when {
@@ -214,7 +198,6 @@ object PartyFinderPanel {
         }
         rowRects = rects
 
-        // mirror the hover onto the head in the menu
         if (hoverParty in parties.indices) {
             val s = screen.menu.slots.getOrNull(parties[hoverParty].slot) ?: return
             val sx = bgX + s.x; val sy = bgY + s.y
@@ -258,7 +241,6 @@ object PartyFinderPanel {
         return -1
     }
 
-    /** @return true to swallow the scroll (cursor was over the panel). */
     @JvmStatic
     fun mouseScrolled(mx: Double, my: Double, vt: Double, screen: AbstractContainerScreen<*>): Boolean {
         if (!active(screen) || parties.isEmpty() || rowRects.isEmpty()) return false
@@ -270,7 +252,6 @@ object PartyFinderPanel {
         return true
     }
 
-    /** @return true to swallow the click. */
     @JvmStatic
     fun mouseClicked(button: Int, mx: Double, my: Double, screen: AbstractContainerScreen<*>): Boolean {
         if (!active(screen) || parties.isEmpty() || rowRects.isEmpty()) return false

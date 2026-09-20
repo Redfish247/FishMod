@@ -22,7 +22,6 @@ object Section {
         override fun toString(): String = label
     }
 
-    // 1:1 with blade-addons' Section.java: four per-gate splits, no synthetic "Total" row.
     private val splits: Array<Split> = arrayOf(
         Split("1st", "", "", 16755200, 0.0),
         Split("2nd", "", "", 16755200, 0.0),
@@ -53,8 +52,10 @@ object Section {
             false
         }
         Events.ON_PHASE_CHANGE.register {
-            Debug.LOGGER.info("[Section] ON_PHASE_CHANGE phase={} inTerminals={} inGoldorTunnel={} currentSection={}",
-                Phase.getPhase(), Phase.inTerminals(), Phase.inGoldorTunnel(), currentSection)
+            if (Debug.termInfo) {
+                Debug.LOGGER.info("[Section] ON_PHASE_CHANGE phase={} inTerminals={} inGoldorTunnel={} currentSection={}",
+                    Phase.getPhase(), Phase.inTerminals(), Phase.inGoldorTunnel(), currentSection)
+            }
             if (Phase.inP2()) {
                 currentSection = 0
             }
@@ -97,20 +98,17 @@ object Section {
         gateBlownUp = false
     }
 
-    /** Devices needed to open the given section's gate — every section is 7 except S2, which is 8. */
     @JvmStatic
     fun totalFor(section: Int): Int = if (section == 2) 8 else 7
 
     private fun incrementSection() {
-        Debug.LOGGER.info("[Section] incrementSection: {} -> {} (completed={} total={} gate={})",
-            currentSection, currentSection + 1, completed, total, gateBlownUp)
+        if (Debug.termInfo) {
+            Debug.LOGGER.info("[Section] incrementSection: {} -> {} (completed={} total={} gate={})",
+                currentSection, currentSection + 1, completed, total, gateBlownUp)
+        }
         resetSection()
         endSplit(currentSection)
         currentSection++
-        // Seed the new section's expected count up front — waiting on its first device message left
-        // `total` at the previous section's count, so a gate blown before that first message came in
-        // (or that message racing the "gate destroyed" line) compared `completed == total` wrong and
-        // mistimed the split.
         total = totalFor(currentSection)
 
         if (Debug.termInfo) {
@@ -165,6 +163,14 @@ object Section {
                 return false
             }
 
+            if (completed == 0 && currentCompleted == totalNeeded) {
+                if (Debug.termInfo) {
+                    Misc.addChatMessage(Component.literal(
+                        "§cignoring stale terminal echo: section=$currentSection ($currentCompleted/$totalNeeded)"))
+                }
+                return shouldCancelMessage
+            }
+
             if (Debug.termInfo) {
                 Misc.addChatMessage(Component.literal("name:$name:objective>$objective:($currentCompleted/$totalNeeded)"))
             }
@@ -172,7 +178,6 @@ object Section {
             Events.ON_TERMINAL.invoke { terminalEvent -> terminalEvent.onComplete(name, action, objective, currentCompleted, totalNeeded) }
 
             if (Floor7.terminalTimeStamps) {
-                // Color lives in the sibling's Style, not the string literal itself.
                 val texts = message.siblings
                 if (texts.isNotEmpty()) {
                     Misc.addChatMessage(
@@ -217,7 +222,6 @@ object Section {
                 }
             }
         } else if (string == "The Core entrance is opening!") {
-            // so "goldor tunnel" can be shown after terms are done
             currentSection = 5
             endAllSections()
             Debug.sendDebugMessage(Component.literal("Core section"))
@@ -259,12 +263,6 @@ object Section {
 
     @JvmStatic
     fun shouldIncrement(recentlyCompleted: Int): Boolean {
-        // The second clause is a fallback for a missed "gate has been destroyed!" line: a low count on
-        // a fresh section reads as "went backward" from the previous section's count. With multiple
-        // players finishing devices in parallel, two of THIS section's own progress messages can also
-        // land out of order (e.g. "3/8" then a race-delayed "2/8") — that's not a new section, and
-        // firing on it jumped straight to the next section (and its gate marker) mid-way through this
-        // one. Only trust "went backward" once this section had actually reached its full count.
         return (recentlyCompleted == total && gateBlownUp) || (recentlyCompleted < completed && completed >= total)
     }
 
@@ -280,8 +278,6 @@ object Section {
         }
     }
 
-    // condition forced false: rendered explicitly via F7Huds.renderHud. Default pos isn't (0,0) because
-    // keepOnScreen treats (0,0) as on-screen and never relocates it, leaving it atop Phase.splitTimer.
     @ConfigValue @JvmField
     var terminalSplits: HUDComponent = HUDComponent(
         10.0, 154.0, SPLIT_LENGTH, 50, 1f, "Term splits", { false }, Section::render, { enableTerminalSplits }

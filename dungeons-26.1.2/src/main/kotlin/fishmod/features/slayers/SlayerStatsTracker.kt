@@ -9,28 +9,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-/**
- * Session Slayer statistics: XP gained, boss kills, and the derived per-hour rates.
- *
- * XP tracking
- * -----------
- * Every completed Slayer quest is exactly one boss kill of a known type+tier, and Hypixel's boss
- * Slayer-XP payout per tier is a fixed, long-stable table ([SlayerType.bossXpByTier]). So on each
- * `SLAYER QUEST COMPLETE!` we add that tier's payout — an exact figure, not a scoreboard estimate.
- *
- * Kill tracking
- * -------------
- * Incremented once per `SLAYER QUEST COMPLETE!`. Minibosses never trigger it. The chat line is
- * one-shot so there are no client-side duplicates to guard against.
- *
- * Coins are NOT tracked here — see [SlayerProfitTracker], which prices the actual drops.
- *
- * Active time
- * -----------
- * Wall-clock is only accumulated while [SlayerManager.isActiveSlayer] AND the player has moved/acted
- * within [IDLE_MS]. Per-tick deltas are clamped so a stall/alt-tab can't inflate rates. World /
- * island / quest changes stop the clock; it never counts menu/AFK/hub time.
- */
 object SlayerStatsTracker {
 
     private const val IDLE_MS = 90_000L
@@ -87,8 +65,6 @@ object SlayerStatsTracker {
         }
     }
 
-    // ---------------------------------------------------------------- hooks from SlayerManager
-
     fun onQuestStarted() { lastActivityMs = System.currentTimeMillis() }
 
     fun onQuestChange(type: SlayerType, tier: Int) {
@@ -105,8 +81,6 @@ object SlayerStatsTracker {
         everStarted = true
         save()
     }
-
-    // ---------------------------------------------------------------- derived
 
     fun activeSeconds(): Double = activeMs / 1000.0
 
@@ -130,7 +104,6 @@ object SlayerStatsTracker {
         save()
     }
 
-    /** Compact number: 1,234 / 12.3K / 4.56M / 1.23B. */
     @JvmStatic
     fun short(v: Double): String {
         val a = Math.abs(v)
@@ -143,8 +116,6 @@ object SlayerStatsTracker {
     }
 
     private fun trim(v: Double): String = String.format("%.2f", v).trimEnd('0').trimEnd('.')
-
-    // ---------------------------------------------------------------- persistence
 
     @Synchronized
     private fun load() {

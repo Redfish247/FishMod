@@ -9,8 +9,6 @@ object BlazeSolver {
 
     private val blazes = mutableListOf<ArmorStand>()
     private var lastBlazeCount = 10
-    // Hypixel injects a custom-font glyph (U+F07C) between the level tag and "Blaze", so match only
-    // the health readout — in a Blaze room the only named mobs are the 10 puzzle blazes.
     private val blazeHealthRegex = Regex("Blaze [\\d,]+/([\\d,]+)❤")
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
@@ -52,7 +50,7 @@ object BlazeSolver {
             ORender.styledBox(aabb, color, style)
             if (FishSettings.blazeLine && index in 1..FishSettings.blazeLineCount) {
                 val prev = blazes[index - 1].boundingBox.inflate(0.5, 1.0, 0.5).move(0.0, -1.0, 0.0).center
-                ORender.line(prev, aabb.center, color)
+                ORender.thickLine(prev, aabb.center, color)
             }
         }
     }
