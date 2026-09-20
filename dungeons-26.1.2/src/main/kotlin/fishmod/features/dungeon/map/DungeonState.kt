@@ -177,15 +177,15 @@ object DungeonState {
     fun floorNumber(): Int = if (chatFloor >= 0) chatFloor else sidebarFloorNumber()
 
     /**
-     * Splits-file floor key ("F1".."F7", "M1".."M7") derived from [floorNumber]/[isMasterMode] —
+     * Splits-file floor key ("E", "F1".."F7", "M1".."M7") derived from [floorNumber]/[isMasterMode] —
      * the single shared source for anything that used to re-derive this from raw chat/sidebar text
-     * (previously duplicated in Phase.kt and FishEstTotal.kt). Null outside a numbered floor
-     * (Entrance or not in a dungeon).
+     * (previously duplicated in Phase.kt and FishEstTotal.kt). Null only when not in a dungeon.
      */
     @JvmStatic
     fun currentFloorKey(): String? {
         val f = floorNumber()
-        if (f <= 0) return null
+        if (f < 0) return null
+        if (f == 0) return "E"
         return (if (isMasterMode()) "M" else "F") + f
     }
 

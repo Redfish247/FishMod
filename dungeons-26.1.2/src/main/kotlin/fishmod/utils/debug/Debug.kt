@@ -44,6 +44,9 @@ object Debug {
     @JvmField
     var roomCores = false
 
+    @JvmField
+    var dragonDebug = false
+
     @JvmStatic
     fun init() {
         ClientCommandRegistrationCallback.EVENT.register(ClientCommandRegistrationCallback { dispatcher, registryAccess ->
@@ -109,6 +112,12 @@ object Debug {
                 .then(ClientCommands.literal("roomCores").executes { _ ->
                     roomCores = !roomCores
                     Misc.addChatMessage(Component.literal("Room core hashes: ").append(Misc.getStatusText(roomCores)))
+                    Constants.SUCCESS
+                })
+
+                .then(ClientCommands.literal("dragonDebug").executes { _ ->
+                    dragonDebug = !dragonDebug
+                    Misc.addChatMessage(Component.literal("Wither dragon debug: ").append(Misc.getStatusText(dragonDebug)))
                     Constants.SUCCESS
                 })
 

@@ -37,6 +37,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
         fishmod.features.storage.StorageOverlay.render(context, mouseX, mouseY, (AbstractContainerScreen<?>) (Object) this);
         fishmod.features.croesus.CroesusProfit.render(context, (AbstractContainerScreen<?>) (Object) this);
         fishmod.features.item.ContainerValue.render(context, (AbstractContainerScreen<?>) (Object) this);
+        fishmod.features.item.AuctionPriceAutofill.trackScreen((AbstractContainerScreen<?>) (Object) this);
         if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) {
             fishmod.features.dungeon.f7.terminal.TermCustomGui.render(context, this.width, this.height);
         }

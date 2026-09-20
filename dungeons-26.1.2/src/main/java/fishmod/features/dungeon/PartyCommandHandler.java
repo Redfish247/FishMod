@@ -743,6 +743,7 @@ public class PartyCommandHandler {
         fishmod.features.croesus.CroesusPrices.refreshIfStale();
         Misc.addChatMessage(Component.literal("§7[FM] Looking up " + ign + "'s networth..."));
         HypixelApi.getNetworth(mc, ign, (nw, prof) -> {
+            if (nw == HypixelApi.NETWORTH_BLOCKED) { sendCmd(mc, responder, "FishMod API access is blocked for you by an admin."); return; }
             if (nw < 0) { sendCmd(mc, responder, ign + "'s Networth: N/A"); return; }
             sendCmd(mc, responder, ign + "'s Networth: " + fmtCoins(nw) + (prof != null ? " (" + prof + ")" : ""));
         });

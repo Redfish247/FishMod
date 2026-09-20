@@ -41,6 +41,9 @@ public class ChatHudMixin {
     @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
             at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Component message, MessageSignature signature, GuiMessageSource source, GuiMessageTag tag, CallbackInfo ci) {
+        // Fires even when the line below gets hidden by Chat Filter's "Boss Messages" toggle.
+        fishmod.features.Ragnarock.checkP5Taunt(message.getString());
+
         // Cancel at addMessage() HEAD: packet parsers already ran, and no blank slot is left behind
         if (fishmod.features.ChatFilter.shouldHide(message)
                 || fishmod.features.chat.ChatRuleHandler.shouldHideAtDisplay(message)) {

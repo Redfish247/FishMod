@@ -1,6 +1,7 @@
 package fishmod.mixin;
 
 import fishmod.features.NoCursorReset;
+import fishmod.utils.Keybinds;
 import fishmod.utils.config.values.ExtraOptions;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
@@ -27,6 +28,17 @@ public class MouseMixin {
         if (ExtraOptions.disableScrollHotbar) {
             ci.cancel();
         }
+    }
+
+    // Chat Peek: while held, redirect the wheel into the chat scrollback instead of the hotbar,
+    // mirroring vanilla ChatScreen's own scroll feel (x7, x1 with Shift held).
+    @Inject(method = "onScroll", at = @At("HEAD"), cancellable = true)
+    private void fishmod$chatPeekScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
+        if (!Keybinds.chatPeekActive()) return;
+        double amount = Math.max(-1.0, Math.min(1.0, vertical));
+        if (!Minecraft.getInstance().hasShiftDown()) amount *= 7.0;
+        Minecraft.getInstance().gui.getChat().scrollChat((int) amount);
+        ci.cancel();
     }
 
     // grabMouse() recentres xpos/ypos when a GUI hands control back; capture the real position first

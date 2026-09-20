@@ -9,11 +9,15 @@ import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
 
 /**
- * Resolves the concrete boss / miniboss entities behind Hypixel's nametags.
+ * Resolves the concrete boss entity behind Hypixel's nametag.
  *
  * Like [fishmod.features.dungeon.StarredMobHighlight], the ☠ + health text sits on a separate
- * invisible ArmorStand hovering over the real mob, so detection is: scan armor-stand nametags for a
- * boss/miniboss name, then take the nearest matching living mob under that stand.
+ * invisible ArmorStand hovering over the real mob, so detection is: scan armor-stand nametags for
+ * the boss name, then take the nearest matching living mob under that stand.
+ *
+ * Miniboss alerts are NOT handled here — they fire off the `SLAYER MINI-BOSS <name> has spawned!`
+ * chat line in [SlayerManager]. This class only binds the main boss entity (for the "Fully Spawned"
+ * timer mode) and doubles as a nametag-based backup for the boss-spawn alert.
  *
  * Performance
  * -----------
@@ -22,16 +26,12 @@ import net.minecraft.world.entity.player.Player
  *    island. Outside that it does nothing and drops its caches.
  *  - The boss scan is further limited to states where a boss can exist.
  *  - Once the boss entity is bound it's reused every tick until it dies/unloads (no re-scan).
- *  - Miniboss alerts are de-duplicated by entity id, so a stand seen for 100 ticks fires once.
  */
 object SlayerBossDetector {
 
     private const val SCAN_INTERVAL_TICKS = 5
     private const val MARK = "☠" // ☠
     private var scanCounter = 0
-
-    // entity ids we've already fired a miniboss alert for this quest
-    private val seenMiniBosses = HashSet<Int>()
 
     @JvmStatic
     fun init() {
@@ -41,7 +41,6 @@ object SlayerBossDetector {
     private fun tick(mc: Minecraft) {
         if (!FishSettings.slayerAnyEnabled() || !SlayerManager.isActiveSlayer()) {
             if (SlayerManager.bossEntity != null) SlayerManager.bossEntity = null
-            if (seenMiniBosses.isNotEmpty()) seenMiniBosses.clear()
             scanCounter = 0
             return
         }
@@ -54,31 +53,17 @@ object SlayerBossDetector {
 
         if (scanCounter++ % SCAN_INTERVAL_TICKS != 0) return
 
-        // prune stale miniboss ids so the set can't grow unbounded across a long quest
-        if (seenMiniBosses.size > 64) {
-            seenMiniBosses.retainAll(level.entitiesForRendering().map { it.id }.toSet())
-        }
-
         val canHaveBoss = SlayerManager.state == SlayerManager.State.BOSS_SPAWNED ||
             SlayerManager.state == SlayerManager.State.COCOONED ||
             SlayerManager.state == SlayerManager.State.GRINDING
+        if (!canHaveBoss) return
 
         for (e in level.entitiesForRendering()) {
             if (e !is ArmorStand || !e.hasCustomName()) continue
             val name = e.customName?.string ?: continue
 
-            // miniboss — key the de-dupe on the health-nametag armour stand's own id, which is
-            // stable for that miniboss's whole life, so the alert fires once at first sight (never
-            // on a later re-scan / near death) and never latches onto a random nearby trash mob.
-            if (FishSettings.slayerSpawnAlertEnabled && FishSettings.slayerMiniBossAlert) {
-                if (SlayerType.miniBossTypeFor(name) == type) {
-                    if (seenMiniBosses.add(e.id)) SlayerAlerts.miniBoss(miniBossLabel(name, type))
-                    continue
-                }
-            }
-
             // main boss
-            if (canHaveBoss && name.contains(MARK) && type.bossNames.any { name.contains(it) }) {
+            if (name.contains(MARK) && type.bossNames.any { name.contains(it) }) {
                 // fire the spawn alert straight off the nametag too — independent of the scoreboard
                 // progress line, which can lag or flicker (SlayerAlerts latches so it's still once)
                 SlayerAlerts.bossSpawned(type)
@@ -93,10 +78,6 @@ object SlayerBossDetector {
         }
     }
 
-    /** Extract the shown miniboss name from a nametag like "Revenant Champion 8k❤". */
-    private fun miniBossLabel(name: String, type: SlayerType): String =
-        type.miniBosses.firstOrNull { name.contains(it) } ?: name
-
     private fun nearestMob(level: ClientLevel, stand: ArmorStand, want: Class<out LivingEntity>?): LivingEntity? {
         val box = stand.boundingBox.inflate(1.5, 4.0, 1.5)
         var best: LivingEntity? = null
@@ -110,8 +91,4 @@ object SlayerBossDetector {
         }
         return best
     }
-
-    /** Called by SlayerManager on a fresh quest so a new boss's adds alert again. */
-    @JvmStatic
-    fun clearSeenMiniBosses() = seenMiniBosses.clear()
 }
