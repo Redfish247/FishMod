@@ -9,7 +9,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Skip the vanilla chest texture while the custom Spirit Leap menu overlay is up. */
 @Mixin(ContainerScreen.class)
 public abstract class ContainerScreenMixin {
 

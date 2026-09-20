@@ -9,10 +9,6 @@ import net.minecraft.network.chat.Component
 import java.util.Locale
 import kotlin.math.roundToInt
 
-/**
- * Boss-bar health number. The mixin wraps the boss-bar name; here we append " - <cur>/<max>❤" for
- * the bosses whose max HP is known. Uses the boss bar's target percent (snappy, not the lerped fill).
- */
 object BossBarFeature {
 
     @JvmStatic

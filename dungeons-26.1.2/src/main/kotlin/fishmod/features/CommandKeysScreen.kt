@@ -17,7 +17,6 @@ import org.lwjgl.nanovg.NanoVG
 import kotlin.math.max
 import kotlin.math.min
 
-/** `keys`/`commands` lists are the source of truth, rows rebuilt from them on every add/remove/scroll/rebind; key capture mirrors [FishModScreen]'s rebind convention. */
 class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverlay {
 
     companion object {
@@ -42,7 +41,6 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
         private const val REMOVE_BTN_W = 20
     }
 
-    /** A clickable pill region drawn+hit-tested by hand instead of a vanilla widget. */
     private class ClickRect(var x: Int, var y: Int, var w: Int, var h: Int, val action: () -> Unit) {
         fun hit(mx: Int, my: Int): Boolean = mx >= x && mx <= x + w && my >= y && my <= y + h
     }
@@ -65,7 +63,6 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
     private var cmdFieldW = 0
     private var removeBtnX = 0
 
-    /** One key-capture pill per row, index-tagged so we know which row it belongs to. */
     private data class KeyRect(val idx: Int, val x: Int, val y: Int, val w: Int, val h: Int) {
         fun hit(mx: Int, my: Int): Boolean = mx >= x && mx <= x + w && my >= y && my <= y + h
     }
@@ -129,7 +126,6 @@ class CommandKeysScreen : Screen(Component.literal("Command Keys")), HasNvgOverl
 
             keyRects.add(KeyRect(idx, listX + TOGGLE_BTN_W + 6, rowTop + 3, KEY_BTN_W, 18))
 
-            // value/cursor state only — not a Screen widget (its extractRenderState would flush before the NanoVG overlay)
             val cmdField = EditBox(this.font, cmdFieldX + 4, rowTop + 3, cmdFieldW - 8, 18, Component.literal("Command"))
             cmdField.setMaxLength(256)
             cmdField.setBordered(false)

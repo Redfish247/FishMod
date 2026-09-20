@@ -18,7 +18,6 @@ import org.lwjgl.glfw.GLFW
 import org.lwjgl.nanovg.NanoVG
 import java.text.DecimalFormat
 
-/** Full-page /fmloot screen; rows are populated by `CroesusLootDetector`, this is just the view. */
 class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverlay {
 
     private var contentX0 = 0
@@ -56,7 +55,7 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
 
     private lateinit var editBox: EditBox
     private var editBoxFiltering = false
-    private var editKind = 0 // 0 none, 1 runs, 2 row
+    private var editKind = 0
     private var editId = ""
     private var editName = ""
 
@@ -87,7 +86,6 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
         NvgRecorder.clear()
         val vw = (this.width / fishmod.utils.rendering.UiScale.factor()).toInt()
         val vh = (this.height / fishmod.utils.rendering.UiScale.factor()).toInt()
-        // recorded in virtual space so replay()'s uniform scale maps it back to full size
         NvgRecorder.fillRectVGradient(0f, 0f, vw.toFloat(), vh.toFloat(), BG_TOP, BG_BOT)
 
         contentX0 = MARGIN

@@ -30,8 +30,6 @@ public class MouseMixin {
         }
     }
 
-    // Chat Peek: while held, redirect the wheel into the chat scrollback instead of the hotbar,
-    // mirroring vanilla ChatScreen's own scroll feel (x7, x1 with Shift held).
     @Inject(method = "onScroll", at = @At("HEAD"), cancellable = true)
     private void fishmod$chatPeekScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
         if (!Keybinds.chatPeekActive()) return;
@@ -41,7 +39,6 @@ public class MouseMixin {
         ci.cancel();
     }
 
-    // grabMouse() recentres xpos/ypos when a GUI hands control back; capture the real position first
     @Inject(method = "grabMouse", at = @At(value = "FIELD",
             target = "Lnet/minecraft/client/MouseHandler;xpos:D", opcode = Opcodes.PUTFIELD, ordinal = 0))
     private void fishmod$captureCursor(CallbackInfo ci) {
@@ -49,7 +46,6 @@ public class MouseMixin {
         this.fishmod$beforeY = this.ypos;
     }
 
-    // @Inject sits right before vanilla warps the OS cursor to centre; swap in the saved position
     @Inject(method = "releaseMouse", at = @At(value = "FIELD",
             target = "Lnet/minecraft/client/MouseHandler;xpos:D", opcode = Opcodes.GETFIELD, ordinal = 0))
     private void fishmod$restoreCursor(CallbackInfo ci) {

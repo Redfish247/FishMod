@@ -19,14 +19,6 @@ import net.minecraft.world.item.Items
 import org.lwjgl.glfw.GLFW
 import kotlin.random.Random
 
-/**
- * `/fmtermsim [type]` — a Hypixel-accurate F7 P3 terminal practice board. Each terminal is built with
- * the real item layout Hypixel uses, backed by a local chest menu, and the live [TerminalSolver] is
- * pointed at it — so the actual solver highlight, click-blocking, tooltip hiding and colour settings
- * all apply exactly as they would in a real run.
- *
- *  keys:  1-6 switch terminal · R re-roll · Esc exit
- */
 class TermSimScreen private constructor(
     private val menu: TermSimMenu,
     private var type: TerminalType,
@@ -39,7 +31,7 @@ class TermSimScreen private constructor(
     private var startLetter = "A"
     private var selColor = "red"
     private var openedAt = 0L
-    private var startedAt = 0L   // set on the first click of a round — that's when the clock starts
+    private var startedAt = 0L
     private var lastMs = 0L
     private var misses = 0
     private var solvedCount = 0
@@ -78,7 +70,6 @@ class TermSimScreen private constructor(
         startedAt = 0L
         misses = 0
 
-        // pick per-type params first so the handler is built before generation (melody's generator calls sync() and needs handler set)
         if (t == TerminalType.STARTS_WITH) startLetter = "ABCDGMNRST"[Random.nextInt(10)].toString()
         if (t == TerminalType.SELECT) selColor = SELECT_COLORS.random()
         handler = when (t) {
@@ -204,7 +195,6 @@ class TermSimScreen private constructor(
         simClick(slot.index, mouseButton)
     }
 
-    /** Apply the Hypixel effect for a click on board slot [idx]. Also called from the Custom GUI path. */
     fun simClick(idx: Int, button: Int) {
         if (idx < 0 || idx >= type.windowSize) return
         if (startedAt == 0L) startedAt = System.currentTimeMillis()
@@ -266,7 +256,6 @@ class TermSimScreen private constructor(
         return super.keyPressed(input)
     }
 
-    // called from HandledScreenMixin
     fun overlay(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
         val t = if (startedAt == 0L) 0.0 else (System.currentTimeMillis() - startedAt) / 1000.0

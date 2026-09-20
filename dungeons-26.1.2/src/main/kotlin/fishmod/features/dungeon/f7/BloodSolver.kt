@@ -30,12 +30,10 @@ import net.minecraft.world.phys.Vec3
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.ceil
 
-/** Blood room helper: Watcher speed alert + blood mob walk predictor. Calibrated constants — do not adjust. */
 object BloodSolver {
 
     private const val OPEN_MESSAGE = "The BLOOD DOOR has been opened!"
     private const val WATCHER_MESSAGE = "[BOSS] The Watcher: Let's see how you can handle this."
-    /** Cap on integrated direction samples — an unbounded sum lets one noisy first tick permanently skew the heading. */
     private const val DIRECTION_SAMPLE_WINDOW = 6
 
     private var dungeonTick = 0
@@ -159,8 +157,6 @@ object BloodSolver {
             while (data.deltaHistory.size > DIRECTION_SAMPLE_WINDOW) data.deltaHistory.removeFirst()
         }
 
-        // -1.0: the first delta is always zero (lastPosition is seeded from the same packet startVec
-        // comes from), so startVec is captured ~1 block behind the mob's true start; trim the overshoot.
         val spawnTime = (if (data.firstSpawn) 16.1 else 11.9) - 1.0
         val total = data.deltaHistory.fold(Vec3.ZERO) { acc, d -> acc.add(d) }
         if (total.lengthSqr() > 0) data.endVector = data.startVec.add(total.normalize().scale(spawnTime))
@@ -176,13 +172,9 @@ object BloodSolver {
             val timeTook = dungeonTick - data.started
             val time = (if (data.firstSpawn) 40 else 0) + 38 - timeTook + 0.8
             val secondsLeft = ((time - 0.8) / 20.0).coerceAtLeast(0.0)
-            // Predicted walk window has elapsed — the endpoint and its countdown are stale, so
-            // stop drawing this entry rather than leaving a frozen box with a "0"/negative timer.
             if (secondsLeft <= 0.0) continue
 
-            // Armor stand's Y anchor sits ~1.5 blocks below the visible skull — offset the box up to match.
             val box = AABB(end.x - 0.5, end.y + 1.5, end.z - 0.5, end.x + 0.5, end.y + 2.5, end.z + 0.5)
-            // Invert the box colour once ping outruns the remaining window — the endpoint is stale.
             var boxColor = Floor7.bloodSolverBoxColor
             if (ping > 0 && ping > time * 50) boxColor = boxColor xor 0x00FFFFFF
 
@@ -206,7 +198,6 @@ object BloodSolver {
         return profile.partialProfile().properties["textures"].firstOrNull()?.value()
     }
 
-    // Base64 skull textures.
     private val WATCHER_SKULLS = setOf(
         "ewogICJ0aW1lc3RhbXAiIDogMTY5NzMwOTQxNzI1NiwKICAicHJvZmlsZUlkIiA6ICJjYjYxY2U5ODc4ZWI0NDljODA5MzliNWYxNTkwMzE1MiIsCiAgInByb2ZpbGVOYW1lIiA6ICJWb2lkZWRUcmFzaDUxODUiLAogICJzaWduYXR1cmVSZXF1aXJlZCIgOiB0cnVlLAogICJ0ZXh0dXJlcyIgOiB7CiAgICAiU0tJTiIgOiB7CiAgICAgICJ1cmwiIDogImh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNTY2MmI2ZmI0YjhiNTg2ZGM0Y2RmODAzYjA0NDRkOWI0MWQyNDVjZGY2NjhkYWIzOGZhNmMwNjRhZmU4ZTQ2MSIsCiAgICAgICJtZXRhZGF0YSIgOiB7CiAgICAgICAgIm1vZGVsIiA6ICJzbGltIgogICAgICB9CiAgICB9CiAgfQp9",
         "ewogICJ0aW1lc3RhbXAiIDogMTcxOTYwNjM1MjMyMiwKICAicHJvZmlsZUlkIiA6ICI3MmY5MTdjNWQyNDU0OTk0YjlmYzQ1YjVhM2YyMjIzMCIsCiAgInByb2ZpbGVOYW1lIiA6ICJUaGF0X0d1eV9Jc19NZSIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS8yNzM5ZDdmNGU2NmE3ZGIyZWE2Y2Q0MTRlNGM0YmE0MWRmN2E5MjQ1NWM5ZmM0MmNhYWIwMTQ2NjVjMzY3YWQ1IiwKICAgICAgIm1ldGFkYXRhIiA6IHsKICAgICAgICAibW9kZWwiIDogInNsaW0iCiAgICAgIH0KICAgIH0KICB9Cn0=",

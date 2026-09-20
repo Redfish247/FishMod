@@ -11,7 +11,6 @@ import java.util.List;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
-/** Swaps the real IGN for the cosmetic name in on-screen text draws (scoreboard, tab list, tooltips, etc.). */
 @Mixin(GuiGraphicsExtractor.class)
 public abstract class CosmeticGuiTextMixin {
 
@@ -59,7 +58,6 @@ public abstract class CosmeticGuiTextMixin {
             if (!real.isEmpty() && out.getString().contains(real))
                 out = NameRewriter.replaceName(out, real, NickState.asComponent());
         }
-        // In a container menu, discover unknown names; on the per-frame HUD use the lookup-free path
         boolean inMenu = fishmod$inMenu();
         out = inMenu
             ? fishmod.cosmetic.RemoteNicks.apply(out)
@@ -67,7 +65,6 @@ public abstract class CosmeticGuiTextMixin {
         return out;
     }
 
-    /** True when a server-driven container GUI (chest menu) is open — where off-server names show up. */
     private static boolean fishmod$inMenu() {
         return net.minecraft.client.Minecraft.getInstance().screen
                 instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;

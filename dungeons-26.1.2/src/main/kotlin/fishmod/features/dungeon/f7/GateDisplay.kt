@@ -14,7 +14,6 @@ import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
 import net.minecraft.world.phys.Vec3
 
-/** Flips the lowest-index gate still showing ✖ rather than trusting [Section]'s current section, since it can increment on the same chat message before our listener runs. */
 object GateDisplay {
 
     private enum class GateState { HIDDEN, DESTROY, DONE }
@@ -29,10 +28,8 @@ object GateDisplay {
 
     private val state = arrayOf(GateState.HIDDEN, GateState.HIDDEN, GateState.HIDDEN)
 
-    // guards the once-per-terminals-entry reset: ON_PHASE_CHANGE fires repeatedly in-phase and would wipe live progress
     private var armed = false
 
-    // practice-mode replay restarts terminals in-phase and this timer jumps back to ~0
     private var lastTermTime = 0.0
 
     @JvmStatic
@@ -75,7 +72,6 @@ object GateDisplay {
             }
             false
         }
-        // END_MAIN pass: submitText's node collector is still live; matrices are already -camera translated
         fishmod.utils.rendering.RenderingEvents.NO_DEPTH_LINE.register { ctx, matrices, _ ->
             if (!Floor7.gateDisplayEnabled || !Location.inDungeon() || !Phase.inTerminals()) return@register
             if (state.all { it == GateState.HIDDEN }) return@register
@@ -88,7 +84,6 @@ object GateDisplay {
         state[index] = GateState.DESTROY
     }
 
-    /** Marks the lowest-index gate still showing ✖ as ✔ — see class doc for why not "the active gate". */
     private fun markDestroyed() {
         for (i in state.indices) {
             if (state[i] == GateState.DESTROY) {

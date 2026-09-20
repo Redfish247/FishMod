@@ -22,10 +22,8 @@ object QuizSolver {
         Debug.LOGGER.error("Quiz answers failed to load", e); emptyMap()
     }
 
-    // Room-local coords of the ⓐ / ⓑ / ⓒ answer levers (Odin's values).
     private val OPTION_LOCALS = arrayOf(BlockPos(20, 70, 6), BlockPos(15, 70, 9), BlockPos(10, 70, 6))
 
-    /** -1 = unknown; else 0/1/2 for ⓐ/ⓑ/ⓒ. Set from chat, works no matter where you are. */
     @Volatile private var correctOption: Int = -1
     private var triviaAnswers: List<String>? = null
 
@@ -51,13 +49,11 @@ object QuizSolver {
         }
     }
 
-    fun onRoomEnter(room: ORoom?) { /* positions are resolved live in onRenderWorld now */ }
+    fun onRoomEnter(room: ORoom?) {  }
 
     fun onRenderWorld() {
         val opt = correctOption
         if (opt < 0) return
-        // Resolve the lever position from whatever room we're in right now, so it draws as soon as
-        // you're standing in the Quiz room even if the question popped before you entered.
         val room = OdinScan.currentRoom ?: return
         if (room.data?.name != "Quiz") return
         val pos = room.getRealCoords(OPTION_LOCALS[opt]).offset(0, -1, 0)

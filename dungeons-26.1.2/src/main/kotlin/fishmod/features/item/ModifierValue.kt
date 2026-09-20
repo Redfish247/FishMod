@@ -5,11 +5,6 @@ import fishmod.utils.networth.NwConstants
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
 
-/**
- * Rough "modifier worth" for the Item Tooltip value line — enchants, potato books, recomb, master
- * stars, gemstones, reforge stone and Art of War, priced through [CroesusPrices]. Not a full
- * networth (no pets/prestige/drill-parts), just the common high-value additions on dungeon gear.
- */
 object ModifierValue {
 
     @JvmStatic
@@ -28,7 +23,6 @@ object ModifierValue {
             }
         }
 
-        // Necron-blade ability scrolls (Wither Shield / Shadow Warp / Implosion / Wither Impact)
         tag.getList("ability_scroll").ifPresent { scrolls ->
             for (i in scrolls.indices) {
                 val s = scrolls.getStringOr(i, "")
@@ -52,7 +46,7 @@ object ModifierValue {
 
         tag.getCompound("gems").ifPresent { gems ->
             for (k in gems.keySet()) {
-                if (k.endsWith("_gem")) continue // slot-unlock marker, not a socketed gem
+                if (k.endsWith("_gem")) continue
                 val tier = gems.getStringOr(k, "")
                 if (tier.isBlank()) continue
                 val type = k.substringBefore("_")
@@ -67,12 +61,6 @@ object ModifierValue {
         return v
     }
 
-    /**
-     * Book price for an enchant at [lvl]. Prefers the exact bazaar/lbin key; otherwise most ultimates
-     * (and many normals) only sell at level 1 and each level doubles the books, so
-     * `<name>_1 × 2^(lvl-1)`. CHIMERA is crafted via the Necron's-handle path, not book-doubled, so it
-     * falls back flat to whatever level is priced.
-     */
     private fun enchPrice(name: String, lvl: Int): Double {
         val exact = CroesusPrices.price("ENCHANTMENT_${name}_$lvl")
         if (exact > 0.0) return exact

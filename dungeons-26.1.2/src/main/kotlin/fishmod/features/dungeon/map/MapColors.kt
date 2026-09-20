@@ -3,10 +3,8 @@ package fishmod.features.dungeon.map
 import fishmod.utils.Addons
 import fishmod.utils.config.values.DungeonMapSettings
 
-/** Shared §/& colour-code stripper for the dungeon-map chat/tab parsers (per-player / per-line / per-tick hot paths). */
 internal val MAP_COLOR_CODES: Regex = Regex("(?i)[&§][0-9a-fk-or]")
 
-/** Color math + "legit mode" gating for the dungeon map feature. */
 object MapColors {
 
     @JvmStatic
@@ -18,14 +16,12 @@ object MapColors {
         return a shl 24 or (r shl 16) or (g shl 8) or b
     }
 
-    /** Non-legit mode is a FishModAddons-only option; without it, the map is always legit. */
     @JvmStatic
     fun legit(): Boolean {
         if (!Addons.fishModAddonsInstalled) return true
         return DungeonMapSettings.mapLegitMode && (!peeking() || DungeonMapSettings.mapInsightLegit)
     }
 
-    /** Map insight (peek through legit mode) was removed; always unpeeked. */
     @JvmStatic
     fun peeking(): Boolean = false
 

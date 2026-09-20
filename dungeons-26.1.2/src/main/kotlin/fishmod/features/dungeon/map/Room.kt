@@ -7,7 +7,6 @@ import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
 
-/** A discovered/inferred dungeon room. */
 class Room(
     var type: Type?,
     var shape: Shape?,

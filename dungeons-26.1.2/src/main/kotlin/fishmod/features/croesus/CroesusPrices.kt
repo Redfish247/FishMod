@@ -19,17 +19,15 @@ object CroesusPrices {
         .build()
 
     private const val TTL_MS = 5 * 60 * 1000L
-    // back off this long on failure instead of retrying every tick
     private const val FAIL_TTL_MS = 15 * 60 * 1000L
 
-    private val bazaar = HashMap<String, Double>()     // active price mode (rebuilt on swap)
-    private val bazaarBuy = HashMap<String, Double>()  // buyPrice  = highest buy order  = instasell
-    private val bazaarSell = HashMap<String, Double>() // sellPrice = lowest  sell offer = instabuy
+    private val bazaar = HashMap<String, Double>()
+    private val bazaarBuy = HashMap<String, Double>()
+    private val bazaarSell = HashMap<String, Double>()
     private val lbin = HashMap<String, Double>()
     private val avgLbin = HashMap<String, Double>()
     private val coflnet = ConcurrentHashMap<String, Double>()
     private val threeDayAvg = ConcurrentHashMap<String, Double>()
-    // "TAG" -> (lowest active BIN, fetched timestamp)
     private val lowBinCache = ConcurrentHashMap<String, Pair<Double, Long>>()
     private val fetching: MutableSet<String> = ConcurrentHashMap.newKeySet()
     private val fetchingLowBin: MutableSet<String> = ConcurrentHashMap.newKeySet()
@@ -39,16 +37,13 @@ object CroesusPrices {
     @Volatile private var lbinFailLogged = false
     @Volatile private var inFlight: CompletableFuture<Void>? = null
 
-    // "TAG:boost" -> (lowest active BIN at that exact quality roll, fetched timestamp)
     private val qualityBin = ConcurrentHashMap<String, Pair<Double, Long>>()
     private val qualityFetching: MutableSet<String> = ConcurrentHashMap.newKeySet()
     private const val QUALITY_TTL_MS = 10 * 60 * 1000L
 
-    // cache key (tag + quality/stars/recomb/enchants) -> (lowest active BIN matching all of it, timestamp)
     private val dynamicBin = ConcurrentHashMap<String, Pair<Double, Long>>()
     private val dynamicFetching: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
-    /** Timestamp to stamp on a failed fetch so the next retry is [FAIL_TTL_MS] out, not [TTL_MS]. */
     private fun failStamp(): Long = System.currentTimeMillis() - TTL_MS + FAIL_TTL_MS
 
     @JvmStatic
@@ -63,7 +58,6 @@ object CroesusPrices {
                     val npc = fishmod.utils.networth.ItemsDb.npcSellPriceFor(key)
                     if (npc > 0) bazaar[key] = npc
                 }
-                // non-bazaar items that still have an NPC price
                 for ((key, value) in fishmod.utils.networth.ItemsDb.npcSellPriceMap()) {
                     if (!bazaar.containsKey(key) && value > 0) bazaar[key] = value
                 }
@@ -73,7 +67,6 @@ object CroesusPrices {
         }
     }
 
-    /** Falls back to an async coflnet lookup (cached for next call) if all bulk sources miss. */
     @JvmStatic
     fun price(id: String?): Double {
         if (id == null || id.isEmpty()) return 0.0
@@ -103,7 +96,6 @@ object CroesusPrices {
         return "miss (bz=${bazaar.size} lbin=${lbin.size} avg=${avgLbin.size} cf=${coflnet.size})"
     }
 
-    /** Hits the live auction list since the bulk bazaar/lbin dump mixes all quality rolls together; returns 0 and kicks off a fetch until cached. */
     @JvmStatic
     fun qualityBinPrice(tag: String, boost: Int): Double {
         val key = "$tag:$boost"
@@ -142,7 +134,6 @@ object CroesusPrices {
             }.exceptionally { qualityFetching.remove(key); null }
     }
 
-    /** Matches exact attributes (stars, recomb, enchants) since [qualityBinPrice] alone still lumps star counts together; falls back to it on a miss. */
     @JvmStatic
     fun dynamicBinPrice(
         tag: String,
@@ -201,9 +192,6 @@ object CroesusPrices {
                 if ((filters == null || filters.entrySet().isEmpty()) && reforge == null) {
                     return@thenCompose CompletableFuture.completedFuture<HttpResponse<String>?>(null)
                 }
-                // Reforge swings price heavily (a desirable one vs. an off-meta one on otherwise
-                // identical gear) but /item/filters never surfaces it as a filter key itself —
-                // Coflnet's auction search still accepts it directly, so it's added by hand.
                 val pairs = ArrayList<Pair<String, String>>()
                 filters?.entrySet()?.forEach { (k, v) -> pairs.add(k to v.asString) }
                 if (reforge != null) pairs.add("Reforge" to reforge)
@@ -251,9 +239,6 @@ object CroesusPrices {
                 try {
                     if (r.statusCode() != 200) return@thenAccept
                     val obj = JsonParser.parseString(r.body()).asJsonObject
-                    // Response: {min, median, mean, max, mode, volume} over Coflnet's rolling
-                    // ~3-day sold-auction window; prefer median, then mode, then min for the
-                    // blended price, and mean separately for the "3 Day Avg" tooltip line.
                     var med: JsonElement? = obj.get("median")
                     if (med == null || med.isJsonNull) med = obj.get("mode")
                     if (med == null || med.isJsonNull) med = obj.get("min")
@@ -274,7 +259,6 @@ object CroesusPrices {
             }.exceptionally { fetching.remove(id); null }
     }
 
-    /** 3-day average sold price (Coflnet's rolling mean). 0 (and kicks off a fetch) until cached. */
     @JvmStatic
     fun threeDayAvg(id: String?): Double {
         if (id == null || id.isEmpty()) return 0.0
@@ -284,7 +268,6 @@ object CroesusPrices {
         return 0.0
     }
 
-    /** Lowest currently-active BIN listing for [id]. 0 (and kicks off a fetch) until cached. */
     @JvmStatic
     fun currentLowBin(id: String?): Double {
         if (id == null || id.isEmpty()) return 0.0
@@ -381,10 +364,6 @@ object CroesusPrices {
             }.exceptionally { t -> Debug.LOGGER.warn("[CroesusPrices] bazaar fetch error: {}", t.message); null }
     }
 
-    /**
-     * Bulk lowest-BIN fetch via Coflnet's NEU-format price dump (moulberry.codes has been dead for
-     * months). Populates both [lbin] and [avgLbin] since Coflnet doesn't expose them separately.
-     */
     private fun fetchLbin(): CompletableFuture<Void> {
         val req = HttpRequest.newBuilder()
             .uri(URI.create("https://sky.coflnet.com/api/prices/neu"))

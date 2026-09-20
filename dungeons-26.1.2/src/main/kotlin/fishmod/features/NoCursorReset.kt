@@ -3,12 +3,6 @@ package fishmod.features
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 
-/**
- * No Cursor Reset: for a short window (ms) around any screen being open, a container screen
- * re-opening keeps the cursor where it was instead of snapping it to centre.
- * [fishmod.mixin.MouseMixin] does the actual capture (grabMouse) / restore (releaseMouse).
- * Window length is [FishSettings.noCursorResetMs]; measured against wall-clock time.
- */
 object NoCursorReset {
 
     private var clock = System.currentTimeMillis()
@@ -27,7 +21,6 @@ object NoCursorReset {
         }
     }
 
-    /** @return true while [fishmod.mixin.MouseMixin] should restore the cursor instead of centring it. */
     @JvmStatic
     fun shouldHook(): Boolean =
         FishSettings.noCursorReset &&

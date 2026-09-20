@@ -7,12 +7,6 @@ import net.minecraft.world.InteractionResult
 import net.minecraft.world.item.ShovelItem
 import net.minecraft.world.level.block.Blocks
 
-/**
- * Render-Optimizer client tweaks (gated behind [Visual.renderOptimizer]):
- *  - stopShovelFlattening: cancel the shovel "make path" interaction on dirt-likes
- * (Hide Nearby Players / Hide Dead Entities live in EntityRendererMixin;
- *  No Swing Animation is handled in ItemInHandRendererMixin.)
- */
 object VisualTweaks {
 
     private val FLATTENABLE = setOf(

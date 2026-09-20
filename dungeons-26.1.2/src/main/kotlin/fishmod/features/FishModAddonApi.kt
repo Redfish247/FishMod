@@ -4,7 +4,6 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
 import java.util.function.Supplier
 
-/** Lets other mods (e.g. FishModAddons) register a Dungeon-column toggle in /fm without depending on FishMod's internal types. */
 object FishModAddonApi {
 
     class ExternalToggle(

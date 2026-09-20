@@ -1,9 +1,5 @@
 package fishmod.utils
 
-/**
- * The 16 vanilla Minecraft chat colors (§0-§f) with their ARGB ints.
- * Used in place of the cosmetic full-RGB color picker for HUD colors.
- */
 object VanillaColors {
 
     @JvmField

@@ -5,11 +5,7 @@ import fishmod.utils.Misc
 import fishmod.utils.data.ItemUtil
 import net.minecraft.client.Minecraft
 
-/**
- * Odin-style "get from sacks" helper — `/fm twap [n]` and friends. Counts how many of an
- * item you already carry, then runs Hypixel's `/gfs <id> <shortfall>` to top you up to [n].
- * Mirrors Odin's `/od twap` (MainCommand.kt -> fillItemFromSack).
- */
+// Odin-style "get from sacks" helper — mirrors Odin's /od twap (MainCommand.kt -> fillItemFromSack).
 object SackFill {
 
     private class Sack(val id: String, val default: Int, val label: String)

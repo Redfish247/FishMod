@@ -9,7 +9,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Sole producer for Events.ON_WORLD_CHANGE: fires when the ClientLevel instance actually changes. */
 @Mixin(Minecraft.class)
 public class MinecraftClientMixin {
 

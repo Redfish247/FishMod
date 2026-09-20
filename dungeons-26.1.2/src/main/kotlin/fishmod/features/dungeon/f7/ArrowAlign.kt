@@ -14,14 +14,12 @@ import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.decoration.ItemFrame
 import net.minecraft.world.item.Items
 
-// P3 room orientation is constant, so the 5x5 frame grid uses fixed world coords with no room transform.
 object ArrowAlign {
 
     private val CORNER = BlockPos(-2, 120, 75)
     private var clicksRemaining: Map<Int, Int> = emptyMap()
     private var tickAcc = 0
 
-    // After a click, trust our own +1 rotation for ~1s so the count reacts before the next poll.
     private var lastRotations: IntArray? = null
     private val recentClick = HashMap<Int, Long>()
 
@@ -51,7 +49,6 @@ object ArrowAlign {
                 index !in clicksRemaining
             ) return@UseEntityCallback InteractionResult.FAIL
 
-            // Guarded by clicksRemaining>0 so a double-click on an aligned frame can't wrap the count to 7.
             recentClick[index] = System.currentTimeMillis()
             if ((clicksRemaining[index] ?: 0) > 0) {
                 lastRotations?.let { it[index] = (it[index] + 1) % 8 }

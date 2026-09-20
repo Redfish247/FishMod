@@ -1,6 +1,5 @@
 package fishmod.features.item
 
-/** SkyBlock item rarities and their background tint colors. */
 enum class ItemRarity(val color: Int) {
     NONE(0x0),
     COMMON(0xffdddddd.toInt()),

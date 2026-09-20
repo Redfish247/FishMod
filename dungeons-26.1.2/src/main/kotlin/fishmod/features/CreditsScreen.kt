@@ -12,7 +12,6 @@ import net.minecraft.util.Util
 import org.lwjgl.nanovg.NanoVG
 import kotlin.math.min
 
-/** Small centered credits panel (matches the FishMod overlay style). */
 class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Credits")), HasNvgOverlay {
 
     companion object {
@@ -64,7 +63,6 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         val mouseX = fishmod.utils.rendering.UiScale.vx(mouseX)
         val mouseY = fishmod.utils.rendering.UiScale.vx(mouseY)
         NvgRecorder.clear()
-        // virtual space so replay()'s uniform scale restores the scrim to full-screen
         ScreenTheme.nRect(0, 0, vw(), vh(), SCRIM)
 
         val lx = px()

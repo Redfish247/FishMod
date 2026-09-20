@@ -2,7 +2,7 @@ package fishmod.utils.rendering
 
 import java.util.function.Consumer
 
-class DrawHandler<T> {
+class SimpleHandler<T> {
 
     private val listeners = ArrayList<T>()
 
@@ -17,4 +17,5 @@ class DrawHandler<T> {
         }
     }
 
+    fun size(): Int = listeners.size
 }

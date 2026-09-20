@@ -16,26 +16,21 @@ import net.minecraft.world.phys.AABB
 
 object M7LeverWaypoints {
 
-    private const val EXPAND = 0.005 // tiny inflate so the box doesn't z-fight the lever
+    private const val EXPAND = 0.005
 
-    // Section -> the two candidate lever positions. The real lever is on one of them.
     private val LEVER_POSITIONS: List<BlockPos> = listOf(
-        BlockPos(106, 124, 113), BlockPos(94, 124, 113), // S1
-        BlockPos(27, 124, 127), BlockPos(23, 132, 138),  // S2
-        BlockPos(14, 122, 55), BlockPos(2, 122, 55),     // S3
-        BlockPos(86, 128, 64), BlockPos(84, 121, 34),    // S4
+        BlockPos(106, 124, 113), BlockPos(94, 124, 113),
+        BlockPos(27, 124, 127), BlockPos(23, 132, 138),
+        BlockPos(14, 122, 55), BlockPos(2, 122, 55),
+        BlockPos(86, 128, 64), BlockPos(84, 121, 34),
     )
 
-    // Latches a position once its lever has been seen flipped, so a chunk unload/reload can't make
-    // the box flash back after you've flicked it.
     private val flicked: MutableSet<BlockPos> = HashSet()
 
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc -> onTick(mc) })
         RenderingEvents.NO_DEPTH_FILLED.register { _, matrices, vc -> render(matrices, vc) }
-        // Levers are flicked by left-clicking (attack) in dungeons; the server owns POWERED and may
-        // not echo the flip to the client, so latch the box off the instant we swing at one.
         AttackBlockCallback.EVENT.register(AttackBlockCallback { _, world, _, pos, _ ->
             if (pos in LEVER_POSITIONS && world.getBlockState(pos).block is LeverBlock) flicked.add(pos.immutable())
             InteractionResult.PASS
@@ -69,7 +64,7 @@ object M7LeverWaypoints {
         val fillA = FishSettings.m7LeverWaypointOpacity.coerceIn(0, 100) / 100f
         val fill = floatArrayOf(r, g, b, fillA)
         val outline = floatArrayOf(r, g, b, 1f)
-        val mode = FishSettings.m7LeverWaypointMode // 0 outline, 1 fill, 2 filled outline
+        val mode = FishSettings.m7LeverWaypointMode
 
         for (p in LEVER_POSITIONS) {
             if (p in flicked) continue
