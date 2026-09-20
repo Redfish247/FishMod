@@ -1,6 +1,6 @@
 package fishmod.utils.config.values
 
-import config.practical.manager.ConfigValue
+import fishmod.shaded.practicalconfig.manager.ConfigValue
 
 /**
  * Settings for the dungeon-map feature. `mapDoorEsp*` fields are intentionally excluded — that's a
