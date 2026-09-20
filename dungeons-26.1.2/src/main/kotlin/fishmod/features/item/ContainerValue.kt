@@ -17,7 +17,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.item.ItemStack
 
-/** Drawn from [fishmod.mixin.HandledScreenMixin]'s extractRenderState TAIL; over the Storage Overlay the panel slides right to make room (see [fishmod.features.storage.StorageOverlay.recomputeGeometry]). */
 object ContainerValue {
 
     private const val MAX_LINES = 32
@@ -40,7 +39,6 @@ object ContainerValue {
     private var widthPx = 0
     private var lastCompute = 0L
     private var lastRefresh = 0L
-    // Built once per recompute() instead of every render() frame — rows only change every RECOMPUTE_MS.
     private var cachedLines: List<Component> = emptyList()
     private var cachedMoreLine: Component? = null
     private var cachedTotalLine: Component? = null
@@ -54,7 +52,6 @@ object ContainerValue {
         }
     }
 
-    /** GUI-scaled px the list occupies — [StorageOverlay] reads this to slide its panel over. */
     @JvmStatic
     fun storageSidebarWidthGuiPx(): Int =
         if (FishSettings.containerValueEnabled && rows.isNotEmpty()) widthPx else 0
@@ -117,7 +114,6 @@ object ContainerValue {
 
         val agg = LinkedHashMap<String, Row>()
         var sum = 0.0
-        // external containers' menus also include the 36 player-inv slots — value those only on the inventory screen
         val skipPlayerInv = screen !is InventoryScreen
         for (slot in screen.menu.slots) {
             if (skipPlayerInv && slot.container is Inventory) continue

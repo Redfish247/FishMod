@@ -9,34 +9,22 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/**
- * Plain data class persisted as {@code config/twitch-bridge.json}.
- *
- * <p>Everything here is read-only Twitch viewing, so there is deliberately no OAuth token /
- * client-id field — the IRC client connects anonymously.</p>
- */
 public class TwitchBridgeConfig {
 
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final Path PATH =
 			FabricLoader.getInstance().getConfigDir().resolve("twitch-bridge.json");
 
-	/** Twitch channel (login name) to follow, e.g. "shroud". Empty = not configured yet. */
 	public String channel = "";
 
-	/** Connect automatically on game start when {@link #channel} is set. */
 	public boolean autoConnect = true;
 
-	/** Text shown before every bridged line in chat. */
 	public String prefix = "[Twitch] ";
 
-	/** Use each chatter's own Twitch name colour; when false, names are light purple. */
 	public boolean useTwitchColors = true;
 
-	/** Prefix every line with a local HH:mm timestamp. */
 	public boolean showTimestamps = false;
 
-	/** Also bridge sub / raid / announcement notices (USERNOTICE), not just normal chat. */
 	public boolean showEvents = true;
 
 	public static TwitchBridgeConfig load() {

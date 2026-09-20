@@ -15,7 +15,6 @@ enum class S4AlertType(val label: String, val color: Int) {
     DEATH("DIED", Constants.DARK_RED),
 }
 
-/** One global cooldown (not per-player) so a cluster of near-simultaneous events can't spam the sound. */
 object S4Alerts {
 
     private const val TICK_MS = 50L

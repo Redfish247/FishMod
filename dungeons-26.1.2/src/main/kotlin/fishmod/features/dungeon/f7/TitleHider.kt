@@ -7,10 +7,6 @@ import fishmod.utils.dungeon.Phase
 import net.minecraft.network.chat.Component
 import java.util.regex.Pattern
 
-/**
- * Hides other players' "activated/completed a terminal/device/lever!" titles during P3 so only
- * your own progress pops a title. Pure function, stateless — no init()/HUD needed.
- */
 object TitleHider {
 
     private val TERMINALS_DONE_PATTERN: Pattern =

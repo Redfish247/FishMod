@@ -15,7 +15,6 @@ import net.minecraft.world.phys.AABB
 import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 
-/** S4 term/leap failure tracker: correlates terminal completions, Core-box entry timing, and death messages, since Hypixel never broadcasts terminal assignments. */
 object S4Tracker {
 
     private val CORE_BOX = AABB(53.5, 114.0, 49.5, 55.5, 116.0, 51.5)

@@ -22,7 +22,6 @@ import org.lwjgl.nanovg.NanoVG
 import kotlin.math.max
 import kotlin.math.min
 
-/** Backed by [ItemCustomizationStore] (client-only, keyed by the item's Hypixel instance uuid) — the same persistence used by [DyedItemColorMixin]/[ItemTrimMixin]/[ItemStackMixin]. */
 class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgOverlay {
 
     private companion object {
@@ -145,7 +144,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
         val trimY = dyeY + 28
         val modelY = trimY + 28
 
-        // value/cursor state only — never added as a Screen widget (would render under the NanoVG overlay)
         nameField = EditBox(this.font, fx, nameY, fw, 18, Component.literal("Name"))
         nameField.setMaxLength(128)
         nameField.setBordered(false)
@@ -275,7 +273,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
         loadFields()
     }
 
-    /** Manually-tracked field focus — the fields are never added to the Screen's widget list. */
     private var focusedField: EditBox? = null
     private fun focusField(f: EditBox?) {
         focusedField?.isFocused = false
@@ -294,16 +291,10 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
         applyName()
     }
 
-    /** Item icons are real 3D-rendered models (immediate GL) — NanoVG can't reproduce them, so the
-     *  panel backdrop + slot grid (the only area actual item icons sit on top of) stays on the
-     *  normal immediate GuiGraphics path via extractBackground, drawn before the icons. Everything
-     *  else (header/labels/legend/dropdowns/fields/buttons) is a NanoVG overlay drawn after, which
-     *  only ever paints thin chrome (borders, text) that doesn't need to cover the item pixels. */
     override fun extractBackground(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         super.extractBackground(ctx, mouseX, mouseY, delta)
         if (minecraft?.player == null) return
 
-        // panel coords are virtual (pre-shrink) space — scale the pose so this immediate-GL path lines up with the NanoVG chrome
         val scale = fishmod.utils.rendering.UiScale.factor()
         ctx.pose().pushMatrix()
         ctx.pose().scale(scale, scale)

@@ -8,22 +8,12 @@ import java.nio.charset.StandardCharsets
 import java.util.regex.Pattern
 import java.util.regex.PatternSyntaxException
 
-/**
- * Pure predicate checked at the chat DISPLAY layer (`ChatHudMixin.addMessage`), not on
- * `ON_GAME_MESSAGE` — that packet event short-circuits, so filtering there would eat trigger lines
- * (e.g. "[BOSS] …") before splits/DungeonScore/Simon Says parsers see them.
- *
- * Combines FishMod's own granular toggles with a bundled "useless messages" spam list
- * (`/chatSpam.json`) and a user regex list.
- */
 object ChatFilter {
 
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
-    // "Friend > <name> joined." / "... left." — the friend-list online/offline notices.
     private val FRIEND_JOIN_LEAVE: Pattern = Pattern.compile("Friend > \\S+ (?:joined|left)\\.")
 
-    /** Bundled spam list, compiled once. */
     private val SPAM_LIST: List<Pattern> by lazy {
         try {
             ChatFilter::class.java.getResourceAsStream("/chatSpam.json")!!.use { s ->
@@ -55,7 +45,6 @@ object ChatFilter {
     fun shouldHide(text: Component?): Boolean {
         if (!FishSettings.chatFeatureEnabled || !FishSettings.chatFilterEnabled || text == null) return false
         val raw = text.string ?: return false
-        // getString() is already free of § codes, but strip any literal ones defensively.
         val s = raw.replace(COLOR, "").trim()
 
         if (s.isEmpty()) {

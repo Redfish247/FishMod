@@ -9,11 +9,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-/**
- * Session Slayer statistics: XP gained, boss kills, and derived per-hour rates. XP is attributed exactly
- * from [SlayerType.bossXpByTier] on each `SLAYER QUEST COMPLETE!`; active time only accrues while
- * [SlayerManager.isActiveSlayer] and the player has moved within [IDLE_MS]. Coins are tracked in [SlayerProfitTracker].
- */
 object SlayerStatsTracker {
 
     private const val IDLE_MS = 90_000L
@@ -70,8 +65,6 @@ object SlayerStatsTracker {
         }
     }
 
-    // ---------------------------------------------------------------- hooks from SlayerManager
-
     fun onQuestStarted() { lastActivityMs = System.currentTimeMillis() }
 
     fun onQuestChange(type: SlayerType, tier: Int) {
@@ -88,8 +81,6 @@ object SlayerStatsTracker {
         everStarted = true
         save()
     }
-
-    // ---------------------------------------------------------------- derived
 
     fun activeSeconds(): Double = activeMs / 1000.0
 
@@ -113,7 +104,6 @@ object SlayerStatsTracker {
         save()
     }
 
-    /** Compact number: 1,234 / 12.3K / 4.56M / 1.23B. */
     @JvmStatic
     fun short(v: Double): String {
         val a = Math.abs(v)
@@ -126,8 +116,6 @@ object SlayerStatsTracker {
     }
 
     private fun trim(v: Double): String = String.format("%.2f", v).trimEnd('0').trimEnd('.')
-
-    // ---------------------------------------------------------------- persistence
 
     @Synchronized
     private fun load() {

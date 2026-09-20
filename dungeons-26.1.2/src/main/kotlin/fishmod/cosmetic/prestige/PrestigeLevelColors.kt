@@ -7,36 +7,29 @@ import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
 import java.util.Optional
 
-/**
- * Re-skins the Hypixel SkyBlock level badge — the leading "[123]" on player nametags and tab-list
- * entries — with a level-driven colour progression: 15 solid tiers (0-300), then 20 three-stop
- * gradient tiers (300-700, optionally animated), holding at the final tier past 700.
- */
 object PrestigeLevelColors {
 
     private const val TIER_WIDTH = 20
     private const val MAX_LEVEL = 700
 
-    // Tuned full-RGB palette — same tier identities as the vanilla §-colours they're named after,
-    // but hand-picked hex so every tier (and every gradient stop) reads richer than the flat 16.
     private const val WHITE = 0xFFFFFF
     private const val GRAY = 0xB9C2CF
     private const val DARK_GRAY = 0x5B6472
     private const val BLACK = 0x17171C
-    private const val AQUA = 0x59C4FF          // "Light Blue"
-    private const val DARK_AQUA = 0x21E6C1     // "Cyan"
+    private const val AQUA = 0x59C4FF
+    private const val DARK_AQUA = 0x21E6C1
     private const val BLUE = 0x4D7CFF
     private const val DARK_BLUE = 0x2740E0
-    private const val GREEN = 0x86FF4D         // "Lime"
+    private const val GREEN = 0x86FF4D
     private const val DARK_GREEN = 0x23B94B
     private const val YELLOW = 0xFFDA2E
     private const val GOLD = 0xFFA92E
-    private const val LIGHT_PURPLE = 0xFF6FC5  // "Pink" (solid tier) / "Light Purple" (gradient stop)
-    private const val DARK_PURPLE = 0xB061F0   // "Purple"
+    private const val LIGHT_PURPLE = 0xFF6FC5
+    private const val DARK_PURPLE = 0xB061F0
     private const val RED = 0xFF4757
     private const val DARK_RED = 0xC31F2C
-    private const val PINK = 0xFFB3D9          // gradient-stop pastel "Pink"
-    private const val MID_GREEN = 0x3FD467     // gradient-stop "Green"
+    private const val PINK = 0xFFB3D9
+    private const val MID_GREEN = 0x3FD467
 
     class Tier(
         @JvmField val index: Int,
@@ -55,7 +48,6 @@ object PrestigeLevelColors {
 
     @JvmField
     val TIERS: Array<Tier> = arrayOf(
-        // --- 15 solid tiers, 0–300 -------------------------------------------------
         solid(0, "White", WHITE),
         solid(1, "Gray", GRAY),
         solid(2, "Light Blue", AQUA),
@@ -71,7 +63,6 @@ object PrestigeLevelColors {
         solid(12, "Dark Red", DARK_RED),
         solid(13, "Dark Gray", DARK_GRAY),
         solid(14, "Black", BLACK),
-        // --- 20 gradient tiers, 300–700 (A → B → C) ------------------------------
         grad(15, "Smooth Dark Gradient", GRAY, DARK_GRAY, BLACK),
         grad(16, "Bright Spring", WHITE, YELLOW, GREEN),
         grad(17, "Cool Oceanside", DARK_GREEN, DARK_AQUA, BLUE),
@@ -121,7 +112,6 @@ object PrestigeLevelColors {
         return x * x * (3f - 2f * x)
     }
 
-    /** Three-stop A→B→C interpolation across a gradient tier, with a smoothstep ease on each half. */
     @JvmStatic
     fun gradientRgb(t: Tier, frac: Float): Int {
         val f = frac.coerceIn(0f, 1f)
@@ -129,9 +119,8 @@ object PrestigeLevelColors {
         else lerp(t.b, t.c, smoothstep((f - 0.5f) / 0.5f))
     }
 
-    /** Seamless looping colour ramp A→B→C→B→A over [p] mod 1, smoothstep on each quarter. */
     fun cyclicGradientRgb(t: Tier, p: Float): Int {
-        val x = p - Math.floor(p.toDouble()).toFloat() // wrap into [0,1), negatives included
+        val x = p - Math.floor(p.toDouble()).toFloat()
         return when {
             x < 0.25f -> lerp(t.a, t.b, smoothstep(x / 0.25f))
             x < 0.50f -> lerp(t.b, t.c, smoothstep((x - 0.25f) / 0.25f))
@@ -143,7 +132,6 @@ object PrestigeLevelColors {
     private val START_NANOS = System.nanoTime()
     private fun animSeconds(): Double = (System.nanoTime() - START_NANOS) / 1_000_000_000.0
 
-    /** Flat representative colour for a level, honouring the "Gradient Tiers" toggle. */
     @JvmStatic
     fun rgb(level: Int): Int {
         val t = tierAt(level)
@@ -152,17 +140,9 @@ object PrestigeLevelColors {
         return gradientRgb(t, localFraction(level))
     }
 
-    // ---------------------------------------------------------------------
-    // Component recolouring — the entry point both mixins call
-    // ---------------------------------------------------------------------
-
-    // "[123]" optionally with an emblem glyph before the closing bracket ("[123✿]").
-    // Anchored form (nametags / tab): only up to a couple of leading spaces before it.
     private val LEVEL_PREFIX = Regex("""^\s{0,2}\[(\d{1,4})[^\[\]\d]{0,4}]""")
-    // Unanchored form (chat): the first such badge anywhere in the line.
     private val LEVEL_ANYWHERE = Regex("""\[(\d{1,4})[^\[\]\d]{0,4}]""")
 
-    // one-shot diagnostics: log the first few distinct strings per call-site
     @JvmField var debug = false
     private val seenByTag = HashMap<String, HashSet<String>>()
 
@@ -175,11 +155,9 @@ object PrestigeLevelColors {
         }
     }
 
-    /** Recolours just the number in a leading "[123]" badge, keeping brackets/rest unchanged. Used for nametags + tab. */
     @JvmStatic
     fun colorizeLevelPrefix(c: Component?): Component? = recolor(c, LEVEL_PREFIX, "prefix")
 
-    /** Chat lines: recolour the number in the first "[123]" badge anywhere in the line. */
     @JvmStatic
     fun colorizeChatLevel(c: Component?): Component? {
         if (!FishSettings.prestigeColorsChat) return c
@@ -194,8 +172,6 @@ object PrestigeLevelColors {
         if (segs.isEmpty()) return c
         val full = buildString { for (s in segs) append(s.text) }
 
-        // Some sources (Hypixel lobby tab) hand us a flat string with literal "§x" codes rather
-        // than styled sub-components. Match against a code-free copy, keeping a map back to `full`.
         val clean = StringBuilder(full.length)
         val mapToFull = IntArray(full.length)
         var i = 0
@@ -215,13 +191,12 @@ object PrestigeLevelColors {
         val numTo = mapToFull[digits.range.last] + 1
 
         val out: MutableComponent = Component.empty()
-        appendRange(out, segs, 0, numFrom)                 // everything up to the number — untouched
-        out.append(styledNumber(level, digits.value, styleAt(segs, numFrom))) // recoloured number only
-        appendRange(out, segs, numTo, full.length)         // emblem + "]" + rest of the line — untouched
+        appendRange(out, segs, 0, numFrom)
+        out.append(styledNumber(level, digits.value, styleAt(segs, numFrom)))
+        appendRange(out, segs, numTo, full.length)
         return out
     }
 
-    /** Style in effect at flattened-text index [idx] (the number's own segment style). */
     private fun styleAt(segs: List<Seg>, idx: Int): Style {
         var pos = 0
         for (s in segs) {
@@ -239,10 +214,7 @@ object PrestigeLevelColors {
         }
         val speed = FishSettings.prestigeColorsAnimSpeed
         val animated = FishSettings.prestigeColorsAnimated && speed > 0.0
-        // phase drifts ~1 full loop every 5s at speed 1
         val phase = if (animated) (animSeconds() * speed / 5.0).toFloat() else 0f
-        // FADE: digits share (near-)one colour that cycles the palette over time — smoothest for a
-        // short badge. FLOW: the A→B→C band is spread across the digits and slides left→right.
         val digitSpan = if (FishSettings.prestigeColorsAnimStyle.equals("FLOW", true)) 0.6f else 0.05f
         val n = text.length
         val root: MutableComponent = Component.empty()
@@ -253,12 +225,10 @@ object PrestigeLevelColors {
             val rgb = if (animated) {
                 cyclicGradientRgb(t, spread * digitSpan - phase)
             } else {
-                gradientRgb(t, spread) // static A→B→C across the number
+                gradientRgb(t, spread)
             }
             if (runRgb == -1) runRgb = rgb
             if (rgb != runRgb) {
-                // Flush the run of digits that shared a colour as one sibling — avoids splitting
-                // the number into more components than its actual colour changes require.
                 root.append(Component.literal(text.substring(runStart, i)).setStyle(baseStyle.withColor(TextColor.fromRgb(runRgb))))
                 runStart = i
                 runRgb = rgb
@@ -270,7 +240,6 @@ object PrestigeLevelColors {
 
     private class Seg(@JvmField val text: String, @JvmField val style: Style)
 
-    /** Append characters [from, to) of the flattened text, each keeping its own segment's style. */
     private fun appendRange(out: MutableComponent, segs: List<Seg>, from: Int, to: Int) {
         if (from >= to) return
         var pos = 0

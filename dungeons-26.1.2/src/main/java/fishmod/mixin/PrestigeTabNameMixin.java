@@ -8,7 +8,6 @@ import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-/** Prestige Colors: recolour the leading [level] badge on tab-list entries. */
 @Mixin(PlayerTabOverlay.class)
 public class PrestigeTabNameMixin {
 

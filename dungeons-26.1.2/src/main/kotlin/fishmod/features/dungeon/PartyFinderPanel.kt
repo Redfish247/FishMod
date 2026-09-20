@@ -10,7 +10,6 @@ import net.minecraft.world.inventory.ContainerInput
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-// Parsing mirrors PartyFinder; PB lookups reuse its session cache so nothing is fetched twice.
 object PartyFinderPanel {
 
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
@@ -36,7 +35,6 @@ object PartyFinderPanel {
 
     private var parties: List<Party> = emptyList()
     private var scroll = 0
-    /** [x, y, w, h] of each drawn row, parallel to the visible window. */
     private var rowRects: List<IntArray> = emptyList()
     private var rowFirst = 0
 
@@ -94,8 +92,6 @@ object PartyFinderPanel {
             val leader = LEADER.find(nameStr)?.groupValues?.get(1)
                 ?: nameStr.split(' ').lastOrNull { it.matches(NAME) }
                 ?: names.firstOrNull() ?: "?"
-            // Fallback when the head has no "Members: (x/y)" line: count the distinct
-            // roster, adding the leader only if the lore didn't already list them.
             if (mem == 0) mem = (names + leader).distinctBy { it.lowercase() }.size
             out.add(Party(i, leader, mem, maxMem, floor, master, present, names, note, levelReq))
         }
@@ -245,7 +241,6 @@ object PartyFinderPanel {
         return -1
     }
 
-    /** @return true to swallow the scroll (cursor was over the panel). */
     @JvmStatic
     fun mouseScrolled(mx: Double, my: Double, vt: Double, screen: AbstractContainerScreen<*>): Boolean {
         if (!active(screen) || parties.isEmpty() || rowRects.isEmpty()) return false
@@ -257,7 +252,6 @@ object PartyFinderPanel {
         return true
     }
 
-    /** @return true to swallow the click. */
     @JvmStatic
     fun mouseClicked(button: Int, mx: Double, my: Double, screen: AbstractContainerScreen<*>): Boolean {
         if (!active(screen) || parties.isEmpty() || rowRects.isEmpty()) return false

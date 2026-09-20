@@ -2,7 +2,6 @@ package fishmod.utils.networth
 
 object NwConstants {
 
-    // APPLICATION_WORTH: fraction of value retained when each modifier is applied
     @JvmField val ENRICHMENT = 0.5
     @JvmField val FARMING_FOR_DUMMIES = 0.5
     @JvmField val OVERCLOCKER_3000 = 0.9
@@ -63,7 +62,6 @@ object NwConstants {
         put("ADVANCED_GARDENING_HOE", hashSetOf("REPLENISH"))
     }
 
-    /** IGNORED_ENCHANTMENTS: enchant name -> level to skip exactly. */
     @JvmField
     val IGNORED_ENCHANTMENTS: MutableMap<String, Int> = HashMap<String, Int>().apply {
         put("SCAVENGER", 5)
@@ -77,14 +75,12 @@ object NwConstants {
     @JvmField
     val IGNORE_SILEX: Set<String> = hashSetOf("PROMISING_SPADE", "PROMISING_AXE")
 
-    // total pet XP required to reach level 100, per rarity
     @JvmField
     val PET_XP_TO_100: Map<String, Double> = mapOf(
         "COMMON" to 5_624_785.0, "UNCOMMON" to 8_644_220.0, "RARE" to 12_626_665.0,
         "EPIC" to 18_608_500.0, "LEGENDARY" to 25_353_230.0, "MYTHIC" to 25_353_230.0,
     )
 
-    // order is load-bearing (drives PET_ITEM_TIER_BOOST)
     @JvmField
     val PET_TIERS: Array<String> = arrayOf(
         "COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC",
@@ -96,7 +92,6 @@ object NwConstants {
         "ENDER_DRAGON", "GOLDEN_DRAGON", "SCATHA", "JADE_DRAGON", "ROSE_DRAGON",
     )
 
-    // pets that go past level 100
     @JvmField
     val PET_SPECIAL_MAX: Map<String, Int> = mapOf(
         "GOLDEN_DRAGON" to 200, "JADE_DRAGON" to 200, "ROSE_DRAGON" to 200,
@@ -132,7 +127,6 @@ object NwConstants {
         "COMBAT", "OFFENSIVE", "DEFENSIVE", "MINING", "UNIVERSAL", "CHISEL"
     )
 
-    // ENCHANTMENT_UPGRADES: enchant -> {upgradeItem, tier}
     @JvmField
     val ENCHANTMENT_UPGRADE_TIER: MutableMap<String, Int> = HashMap()
     @JvmField
@@ -154,7 +148,6 @@ object NwConstants {
         put("VENOMOUS", "FATEFUL_STINGER", 7)
     }
 
-    // MIDAS_SWORDS: id -> {maxBid, type}
     @JvmField
     val MIDAS_SWORDS: MutableMap<String, Array<Any>> = HashMap<String, Array<Any>>().apply {
         put("MIDAS_SWORD", arrayOf(50_000_000L, "MIDAS_SWORD_50M"))
@@ -163,7 +156,6 @@ object NwConstants {
         put("STARRED_MIDAS_STAFF", arrayOf(500_000_000L, "STARRED_MIDAS_STAFF_500M"))
     }
 
-    // REFORGES: reforge modifier -> reforge-stone item id
     @JvmField
     val REFORGES: MutableMap<String, String> = HashMap<String, String>().apply {
         put("stiff", "HARDENED_WOOD")
@@ -247,18 +239,15 @@ object NwConstants {
         put("greater_spook", "BOO_STONE")
     }
 
-    // PRESTIGES: item id -> list of prestige item ids (in order)
     @JvmField
     val PRESTIGES: MutableMap<String, Array<String>> = HashMap()
 
     init {
         val families = arrayOf("CRIMSON", "TERROR", "FERVOR", "HOLLOW", "AURORA")
         val pieces = arrayOf("CHESTPLATE", "HELMET", "LEGGINGS", "BOOTS")
-        // ordered prestige tiers (low -> high)
         val tiers = arrayOf("", "HOT_", "BURNING_", "FIERY_", "INFERNAL_")
         for (fam in families) {
             for (piece in pieces) {
-                // for each tier above base, list lower tiers in descending order
                 for (t in 1 until tiers.size) {
                     val key = tiers[t] + fam + "_" + piece
                     val lowers = ArrayList<String>()

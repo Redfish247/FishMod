@@ -12,14 +12,11 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import net.minecraft.world.item.ItemStack
 
-/** Registered on a dedicated LAST phase so these always render below every other mod's tooltip additions instead of landing in the middle of them. */
 object ItemPriceTooltip {
 
     private var lastRefresh = 0L
     private val LAST_PHASE = Identifier.fromNamespaceAndPath("fishmod", "item_price_tooltip_last")
 
-    // Fires every frame the tooltip is shown; cache the built lines for a short TTL keyed by stack
-    // identity so hovering the same item doesn't re-run price estimation/NBT parsing every frame.
     private const val CACHE_TTL_MS = 1000L
     private var cachedStack: ItemStack? = null
     private var cachedAt = 0L

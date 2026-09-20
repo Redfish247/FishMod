@@ -11,14 +11,12 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import java.util.regex.Pattern
 
-/** Cast is confirmed via the wolf-howl sound packet's magic pitch `1.4920635` + held item, since the modern SoundEvent id Hypixel's 1.8 translation lands on is unreliable. */
 object Ragnarock {
 
     private const val CAST_PITCH = 1.4920635f
-    private const val BUFF_TICKS = 200 // the strength buff lasts 10s
+    private const val BUFF_TICKS = 200
     private val CANCELLED: Pattern =
         Pattern.compile("Ragnarock was cancelled due to (?:being hit|taking damage)!")
-    // Shortened to the distinctive opening clause so trailing punctuation quirks can't break the match.
     private val P5_TAUNT: Pattern =
         Pattern.compile(Pattern.quote("Wither King: I no longer wish to fight"))
 
@@ -27,17 +25,12 @@ object Ragnarock {
     @Volatile private var ticksLeft = 0
     @Volatile private var lastTauntMs = 0L
 
-    /**
-     * Checked from both [Events.ON_GAME_MESSAGE] and [fishmod.mixin.ChatHudMixin] (before its
-     * hide-from-chat cancel) so the "Rag" title still pops even when FishMod's own Chat Filter
-     * "Boss Messages" toggle is hiding the taunt line from the chat display.
-     */
     @JvmStatic
     fun checkP5Taunt(raw: String?) {
         if (!FishSettings.ragnarockEnabled || !FishSettings.p5RagEnabled || raw == null) return
         if (!P5_TAUNT.matcher(raw).find()) return
         val now = System.currentTimeMillis()
-        if (now - lastTauntMs < 2000) return // dedupe: same line reaches us via two hooks
+        if (now - lastTauntMs < 2000) return
         lastTauntMs = now
         Misc.forceTitle(Component.literal("§5Rag"), Component.empty())
     }
@@ -59,7 +52,6 @@ object Ragnarock {
         )
 
         Events.ON_SOUND.register { event, _, pitch ->
-            // require an actual wolf sound — pitch + held-axe alone mis-fired on unrelated sounds near the cooldown, announcing phantom casts
             if (FishSettings.ragnarockEnabled
                 && pitch == CAST_PITCH && "wolf" in event.location.path && Location.inSkyblock() && holdingAxe()
             ) {

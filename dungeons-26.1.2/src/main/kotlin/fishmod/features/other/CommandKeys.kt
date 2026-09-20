@@ -11,14 +11,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-/**
- * User-defined "command keys": press a key to run a slash command. Stored as raw
- * [InputConstants.Key]s rather than `KeyMapping`s so entries can be freely added/rebound at
- * runtime without touching the static KeyMapping registry (populated once at mod init).
- */
 object CommandKeys {
 
-    /** Kept as a plain class (not a data class) so Java callers keep the record-style `.key()`/`.command()` accessors. */
     class Entry(
         private val keyValue: InputConstants.Key,
         private val commandValue: String,
@@ -55,7 +49,6 @@ object CommandKeys {
         return java.util.Collections.unmodifiableList(entries)
     }
 
-    /** Replaces the whole list at once (used by the editor screen after add/remove/rebind). */
     @JvmStatic
     fun replaceAll(newEntries: List<Entry>) {
         ensureLoaded()
@@ -100,7 +93,6 @@ object CommandKeys {
                 val parts = line.split("\t", limit = 3)
                 if (parts.size < 2 || parts[0].isBlank()) continue
                 val key = InputConstants.getKey(parts[0].trim())
-                // New format: key\t<0|1>\tcommand. Old format: key\tcommand (command may itself contain tabs).
                 if (parts.size == 3 && (parts[1] == "0" || parts[1] == "1")) {
                     entries.add(Entry(key, parts[2].trim(), parts[1] == "1"))
                 } else {

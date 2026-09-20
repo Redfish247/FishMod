@@ -7,20 +7,18 @@ import java.util.regex.Pattern
 
 object LagTracker {
 
-    // Colour-code-free substring so chat mods that recolour/reformat the line don't break the trigger.
     private const val RUN_START_FRAGMENT =
         "I found this map when I first entered the dungeon"
 
     private val RUN_END_PATTERN: Pattern =
         Pattern.compile("^\\s*☠ Defeated (.+) in 0?([\\dhms ]+)\\s*(\\(NEW RECORD!\\))?$")
 
-    // Ticks up only once the run actually starts (stays "0s" through the pre-run lobby).
     private val RUN_TIME: Pattern =
         Pattern.compile("^ ?Time(?: Elapsed)?: ((?:\\d+h ?)?(?:\\d+m ?)?\\d+s)$")
     private val HMS: Pattern = Pattern.compile("(\\d+)([hms])")
 
     private var active = false
-    private var ended = false      // run finished this dungeon instance — don't auto-restart until ON_LOCATION_CHANGE
+    private var ended = false
     private var startMs: Long = 0
     private var ticks: Long = 0
 
@@ -78,7 +76,6 @@ object LagTracker {
         }
 
         Events.ON_SERVER_TICK.register {
-            // Fallback start for players with NPC dialogue off.
             if (!active && !ended && scoreboardRunSeconds() > 0) start()
             if (active) ticks++
             false

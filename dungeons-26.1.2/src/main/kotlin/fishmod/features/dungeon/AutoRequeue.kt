@@ -9,16 +9,10 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
-/**
- * When the end-of-run "> EXTRA STATS <" header prints, re-queue the same floor after a short delay
- * via `/joininstance <floor>` (`/instancerequeue` doesn't target the current floor). Guarded by
- * [partyChanged] (breakup/leave latch) and [dtSkip] (per-run "!dt" opt-out).
- */
 object AutoRequeue {
 
     private val NUM_WORDS = arrayOf("one", "two", "three", "four", "five", "six", "seven")
 
-    // 29 spaces then the header — Hypixel's exact end-screen divider line.
     private val EXTRA_STATS: Pattern = Pattern.compile(" {29}> EXTRA STATS <")
     private val BREAKUP: Pattern = Pattern.compile(
         "^(?:You have been kicked from the party|You left the party|The party was disbanded|" +
@@ -29,25 +23,16 @@ object AutoRequeue {
     private val DT_LINE: Pattern = Pattern.compile("^(?:§9)?Party §8> .*: !dt$", Pattern.CASE_INSENSITIVE)
     private val MORT_START = "[NPC] Mort: Here, I found this map when I first entered the dungeon."
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
-    // Hypixel appends invisible characters (NBSP, zero-width space, etc.) to some chat lines to
-    // dodge the vanilla "duplicate message" collapse — strip those before doing exact matches.
     private val INVISIBLE = Regex("[\\u00A0\\u200B\\u200C\\u200D\\uFEFF\\u00AD]")
     private fun clean(s: String) = INVISIBLE.replace(s, " ").trim()
 
     @Volatile private var partyChanged = false
     @Volatile private var dtSkip = false
-    /** Teammate count captured at run start; a shrink by end-of-run means someone left mid-run. */
     @Volatile private var startTeamCount = 0
-    // ON_GAME_MESSAGE fires twice for one Hypixel line (bundled + unbundled packet paths — see
-    // SlayerProfitTracker's identical workaround). A generic "same text within N ms" dedup doesn't
-    // work here because unrelated chat lines interleave between the two firings and clobber it, so
-    // instead latch "already handled" per run: the 2nd EXTRA STATS pass is then a no-op instead of
-    // re-reading dtSkip (already consumed by the 1st pass as false) and requeuing anyway.
     @Volatile private var extraStatsHandled = false
 
     @JvmStatic
     fun init() {
-        // "!dt" from anyone in party chat = skip the requeue after this run (only this run).
         Events.ON_PARTY_MESSAGE.register { _, message ->
             if (clean(message).equals("!dt", ignoreCase = true)) dtSkip = true
             false
@@ -57,9 +42,6 @@ object AutoRequeue {
             val raw = text.string
             val s = COLOR.replace(raw, "")
             when {
-                // Backup for the ON_PARTY_MESSAGE hook (which can miss in-dungeon party chat).
-                // Loose match (contains, not startsWith/endsWith) — trailing junk chars Hypixel
-                // sometimes appends to chat lines broke the old exact-suffix check.
                 DT_LINE.matcher(raw).find() || clean(s).let { it.contains("Party >", ignoreCase = true) && it.contains(": !dt", ignoreCase = true) } -> dtSkip = true
                 s == MORT_START -> { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false }
                 BREAKUP.matcher(s).find() -> partyChanged = true
@@ -67,17 +49,14 @@ object AutoRequeue {
                     if (extraStatsHandled) return@register false
                     extraStatsHandled = true
                     val skip = dtSkip
-                    dtSkip = false   // "!dt" is per-run — consume it here
-                    // Someone left mid-run if the team shrank since the start (or never filled to a party).
+                    dtSkip = false
                     val teamShrank = startTeamCount >= 2 && fishmod.features.dungeon.map.DungeonPlayers.count() < startTeamCount
                     if (Dungeons.enableAutoRequeue && !partyChanged && !skip && !teamShrank) {
                         val delay = FishSettings.autoRequeueDelayMs.coerceIn(0, 15000).toLong()
-                        // Resolve the floor now, while the scoreboard/chat state is still fresh.
                         val cmd = requeueCommand()
                         CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS).execute {
                             Minecraft.getInstance().execute {
                                 val mc = Minecraft.getInstance()
-                                // Re-check everything — "!dt" or a leave can land during the countdown.
                                 if (Dungeons.enableAutoRequeue && !partyChanged && !dtSkip && mc.connection != null) {
                                     mc.connection!!.sendCommand(cmd)
                                 }
@@ -89,7 +68,6 @@ object AutoRequeue {
             false
         }
         Events.ON_WORLD_CHANGE.register { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false; false }
-        // Track the peak roster size during the clear; a smaller team at end-of-run == someone left.
         Events.ON_SERVER_TICK.register {
             if (DungeonState.isInDungeon() && !DungeonState.isInBoss()) {
                 val n = fishmod.features.dungeon.map.DungeonPlayers.count()
@@ -99,12 +77,6 @@ object AutoRequeue {
         }
     }
 
-    /**
-     * Called from [fishmod.mixin.ChatHudMixin] for every displayed chat line, regardless of
-     * whether it arrived as signed player chat or unsigned system chat — the network-level
-     * ON_GAME_MESSAGE hook above only sees the latter, which in-dungeon party chat doesn't
-     * reliably use.
-     */
     @JvmStatic
     fun onChatLine(raw: String) {
         val s = COLOR.replace(raw, "")
@@ -113,7 +85,6 @@ object AutoRequeue {
         }
     }
 
-    /** `joininstance` for the current floor, or `instancerequeue` if the floor can't be read. */
     private fun requeueCommand(): String {
         val floor = DungeonState.floorNumber()
         return when {

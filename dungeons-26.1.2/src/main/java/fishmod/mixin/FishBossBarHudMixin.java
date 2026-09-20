@@ -9,10 +9,6 @@ import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-/**
- * Appends the boss health number to the boss-bar name by wrapping the getName() call inside
- * extractRenderState, so vanilla positions/draws it for us.
- */
 @Mixin(BossHealthOverlay.class)
 public class FishBossBarHudMixin {
 

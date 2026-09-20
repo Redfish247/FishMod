@@ -7,7 +7,6 @@ import java.io.File
 import java.io.FileReader
 import java.io.FileWriter
 
-/** Client-only cosmetic item overrides (dye/trim/name), keyed by Hypixel item instance uuid. Never touches item NBT/DataComponents. */
 object ItemCustomizationStore {
 
     data class Keyframe(val color: Int, val time: Float)
@@ -33,7 +32,6 @@ object ItemCustomizationStore {
     @JvmStatic fun setDyeColor(uuid: String, argb: Int) { data.dyeColors[uuid] = argb; data.animatedDyes.remove(uuid); save() }
     @JvmStatic fun removeDyeColor(uuid: String) { if (data.dyeColors.remove(uuid) != null) save() }
 
-    /** Legacy-only: entries from a pre-port config, read by DyedItemColorMixin and animated by AnimatedDyeAnimator. */
     @JvmStatic fun getAnimatedDye(uuid: String): AnimatedDye? = data.animatedDyes[uuid]
 
     @JvmStatic fun getArmorTrim(uuid: String): ArmorTrimId? = data.armorTrims[uuid]
@@ -44,7 +42,6 @@ object ItemCustomizationStore {
     @JvmStatic fun setItemName(uuid: String, name: String) { data.itemNames[uuid] = name; save() }
     @JvmStatic fun removeItemName(uuid: String) { if (data.itemNames.remove(uuid) != null) save() }
 
-    /** Custom ITEM_MODEL override (e.g. "minecraft:trident") — reskins the item as another item's model. */
     @JvmStatic fun getModelId(uuid: String): String? = data.modelIds[uuid]
     @JvmStatic fun setModelId(uuid: String, id: String) { data.modelIds[uuid] = id; save() }
     @JvmStatic fun removeModelId(uuid: String) { if (data.modelIds.remove(uuid) != null) save() }

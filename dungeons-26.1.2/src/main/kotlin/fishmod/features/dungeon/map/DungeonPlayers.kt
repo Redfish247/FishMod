@@ -70,9 +70,6 @@ object DungeonPlayers {
                     }
                 }
 
-                // Prefer the entity's own resolved skin (the exact texture already used to render
-                // their in-world model, guaranteed non-placeholder) over the raw tab-list lookup,
-                // which can lag behind or get stuck on a not-yet-downloaded skin.
                 p.skin = (p.entity as? AbstractClientPlayer)?.skin ?: info.skin
             }
         }
@@ -154,7 +151,6 @@ object DungeonPlayers {
         }
     }
 
-    /** One bad teammate's data (unresolved skin, stale entity ref) must not blank out everyone else's head. */
     private fun safeRenderHead(g: GuiGraphicsExtractor, matrices: org.joml.Matrix3x2fStack, mc: Minecraft, player: DungeonPlayer, renderNames: Boolean) {
         try {
             renderHead(g, matrices, mc, player, renderNames)
@@ -165,7 +161,6 @@ object DungeonPlayers {
 
     private fun isSelf(mc: Minecraft, p: DungeonPlayer): Boolean = mc.player != null && p.entity === mc.player
 
-    /** Simple, fixed class colors for the map head outline — intentionally not the configurable Dungeons.*Color values used elsewhere. */
     private fun classOutlineColor(cls: DungeonClass): Int = when (cls) {
         DungeonClass.ARCHER -> 0xFFFF0000.toInt()
         DungeonClass.BERSERK -> 0xFFFF8000.toInt()
@@ -174,8 +169,6 @@ object DungeonPlayers {
         DungeonClass.HEALER -> 0xFF800080.toInt()
     }
 
-    /** Tab-list-parsed clazz (see updateRoster) is the reliable source; DungeonClass.getClass's chat-based
-     *  join-message map (see DungeonClass.kt) lags/misses for classes other than whichever joined last cleanly. */
     private fun resolveClass(player: DungeonPlayer): DungeonClass? =
         runCatching { DungeonClass.valueOf(player.clazz.uppercase()) }.getOrNull() ?: DungeonClass.getClass(player.name)
 
@@ -208,7 +201,6 @@ object DungeonPlayers {
             if (self && uglyPointer) {
                 g.blit(RenderPipelines.GUI_TEXTURED, MapTextures.SELF_MARKER, -5, -5, 0.0f, 0.0f, 10, 10, 10, 10, -1)
             } else if (player.skin != null) {
-                // no PlayerFaceRenderer here; blit the 8x8 face off the skin body (64x64 layout: face at u=8,v=8)
                 g.blit(RenderPipelines.GUI_TEXTURED, player.skin!!.body().texturePath(), -4, -4, 8.0f, 8.0f, 8, 8, 64, 64, -1)
             }
 
@@ -230,11 +222,9 @@ object DungeonPlayers {
 
     private fun find(name: String): DungeonPlayer? = teammates.firstOrNull { it.name == name }
 
-    /** Public lookup for the Leap Menu (class / skin / dead state by IGN, case-insensitive). */
     @JvmStatic
     fun get(name: String): DungeonPlayer? = teammates.firstOrNull { it.name.equals(name, ignoreCase = true) }
 
-    /** Number of teammates the dungeon tab list currently shows (self included). */
     @JvmStatic
     fun count(): Int = teammates.size
 

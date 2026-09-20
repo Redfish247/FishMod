@@ -5,7 +5,6 @@ import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.Events
 import net.minecraft.network.chat.Component
 
-/** Drawn through [Misc.forceTitle] like other FishMod alerts. Boss-spawn is latched here so a flickering scoreboard can't repeat it within a quest; [reset] re-arms it for the next boss. */
 object SlayerAlerts {
 
     private var bossSpawnLatched = false
@@ -15,7 +14,6 @@ object SlayerAlerts {
         Events.ON_WORLD_CHANGE.register { reset(); false }
     }
 
-    /** New quest / quest ended — re-arm the latches. */
     @JvmStatic
     fun reset() {
         bossSpawnLatched = false
@@ -26,7 +24,6 @@ object SlayerAlerts {
         if (!FishSettings.slayerSpawnAlertEnabled || !FishSettings.slayerBossAlert) return
         if (bossSpawnLatched) return
         bossSpawnLatched = true
-        // distinct from the miniboss alert: red, "SLAYER BOSS", with the boss name as the subtitle
         titleParts(
             "§c§l☠ SLAYER BOSS ☠",
             "§e${type.bossLabel}",

@@ -9,14 +9,8 @@ import net.minecraft.world.inventory.ContainerInput
 import net.minecraft.world.item.ItemStack
 import kotlin.math.sqrt
 
-/**
- * "Custom GUI" render mode for the terminal solver — replaces the vanilla chest with a big
- * rounded-slot board drawn from [TerminalSolver.current]. Used by both real terminals (via
- * HandledScreenMixin) and [TermSimScreen]. Scale / roundness / gap / background are configurable.
- */
 object TermCustomGui {
 
-    /** idx -> [x, y, w, h] of the last rendered board, for click hit-testing. */
     private val rects = HashMap<Int, IntArray>()
 
     private fun on() = FishSettings.terminalRenderMode == 1 && TerminalSolver.current != null
@@ -45,14 +39,13 @@ object TermCustomGui {
 
         val sol = t.solution
 
-        // fixed play area per type: [minCol, maxCol, minRow, maxRow]
         val pa = when (t.type) {
-            TerminalType.RUBIX       -> intArrayOf(3, 5, 1, 3)   // 3 x 3
-            TerminalType.NUMBERS     -> intArrayOf(1, 7, 1, 2)   // 7 x 2
-            TerminalType.PANES       -> intArrayOf(1, 7, 1, 3)   // 7 x 3
-            TerminalType.STARTS_WITH -> intArrayOf(1, 7, 1, 3)   // 7 x 3
-            TerminalType.SELECT      -> intArrayOf(1, 7, 1, 4)   // 7 x 4
-            TerminalType.MELODY      -> intArrayOf(1, 7, 0, 4)   // 7 x 5 — include row 0 (the magenta target marker above the grid)
+            TerminalType.RUBIX       -> intArrayOf(3, 5, 1, 3)
+            TerminalType.NUMBERS     -> intArrayOf(1, 7, 1, 2)
+            TerminalType.PANES       -> intArrayOf(1, 7, 1, 3)
+            TerminalType.STARTS_WITH -> intArrayOf(1, 7, 1, 3)
+            TerminalType.SELECT      -> intArrayOf(1, 7, 1, 4)
+            TerminalType.MELODY      -> intArrayOf(1, 7, 0, 4)
         }
         val minC = pa[0]; val maxC = pa[1]; val minR = pa[2]; val maxR = pa[3]
         val gridCols = maxC - minC + 1
@@ -64,7 +57,6 @@ object TermCustomGui {
         val oy = screenH / 2 - boardH / 2
 
         val pad = (8 * scale).toInt()
-        // force fully opaque — the board must not be see-through onto the screen behind it
         roundFill(ctx, ox - pad, oy - pad, boardW + pad * 2, boardH + pad * 2, round + 3,
             FishSettings.terminalCustomBg or 0xFF000000.toInt())
 
@@ -85,12 +77,10 @@ object TermCustomGui {
             val realItem = st != null && !st.isEmpty && !isFiller(st)
             val inSol = i in sol
 
-            // filler slots (pane border/background) are never a target and must never be a click target - clicking one on a live terminal makes Hypixel close it
             if (!realItem) continue
             rects[i] = intArrayOf(cx, cy, cell, cell)
 
             if (numbers) {
-                // numbers: never draw the red pane; only the next 3 clicks get a coloured cell, the rest stay a dim digit so they can't be mistaken for targets
                 val ord = sol.indexOf(i)
                 val col = when (ord) {
                     0 -> FishSettings.terminalOrderColor1
@@ -104,7 +94,6 @@ object TermCustomGui {
                 continue
             }
 
-            // slotColor returns 0 for "in the solution list but no longer a real target" (e.g. a Rubix pane over-clicked back to goal); don't paint those
             val solColor = if (inSol) TerminalSolver.slotColor(t, i) else 0
             if (inSol && solColor != 0) {
                 roundFill(ctx, cx, cy, cell, cell, round, solColor)
@@ -112,7 +101,7 @@ object TermCustomGui {
                 roundFill(ctx, cx, cy, cell, cell, round, FishSettings.terminalWrongCover)
                 continue
             } else {
-                roundFill(ctx, cx, cy, cell, cell, round, 0x40101820)  // neutral cell for a non-click item
+                roundFill(ctx, cx, cy, cell, cell, round, 0x40101820)
             }
 
             if (st != null && !st.isEmpty) {
@@ -132,13 +121,6 @@ object TermCustomGui {
         }
     }
 
-    /**
-     * Melody board layout — 5 rows x 7 cols, window index `i` -> `row = i/9`, `col = i%9`,
-     * offset so col 1 is the left edge of the board.
-     *  - row 0: only the columns in the solution, painted [terminalMelodyColor] (the target marker)
-     *  - cols 1-5 / rows 1-4: the note grid — [terminalMelodyPointerColor] if in solution, else a dim cell
-     *  - col 7 / rows 1-4: the four click buttons — same pointer/dim colours, and the only click targets
-     */
     private fun renderMelody(ctx: GuiGraphicsExtractor, t: TerminalHandler, ox: Int, oy: Int, cell: Int, gap: Int, round: Int) {
         val sol = t.solution
         val colum = FishSettings.terminalMelodyColor
@@ -152,7 +134,7 @@ object TermCustomGui {
             if (!draw) continue
             val inSol = i in sol
             val color = when {
-                r == 0 -> if (inSol) colum else continue      // top row: only show target columns
+                r == 0 -> if (inSol) colum else continue
                 else -> if (inSol) pointer else bg
             }
             val cx = ox + (c - 1) * (cell + gap)
@@ -167,7 +149,6 @@ object TermCustomGui {
         ctx.text(mc.font, s, cx + (cell - w) / 2, cy + cell / 2 - 4, -0x1, true)
     }
 
-    /** Centred digit scaled up to fill the cell — used for the Numbers board so counts read clearly. */
     private fun drawBig(ctx: GuiGraphicsExtractor, mc: Minecraft, s: String, cx: Int, cy: Int, cell: Int, color: Int) {
         val sc = (cell / 14f).coerceIn(1f, 2.5f)
         val w = mc.font.width(s) * sc
@@ -190,18 +171,15 @@ object TermCustomGui {
         if (idx < 0) return
         val t = TerminalSolver.current ?: return
         val right = button == 1
-        // "First Click Protection" — ignore clicks in the first N ms after the terminal opens.
         if (screen !is TermSimScreen &&
             System.currentTimeMillis() - t.timeOpened < FishSettings.terminalFirstClickProtMs) return
         if (FishSettings.terminalBlockWrongClicks && !t.canClick(idx, right)) return
         if (screen is TermSimScreen) { screen.simClick(idx, button); return }
         val mc = Minecraft.getInstance()
         val p = mc.player ?: return
-        // "Middle Click GUI": left->middle-click (CLONE) so the item never lands on the cursor; right stays right (rubix reverse)
         val outBtn = if (FishSettings.terminalMiddleClickGui && button == 0) 2 else button
         val mode = if (outBtn == 2) ContainerInput.CLONE else ContainerInput.PICKUP
         mc.gameMode?.handleContainerInput(screen.menu.containerId, idx, outBtn, mode, p)
-        // No optimistic update — TerminalSolver.tickSync recomputes from the real menu slots.
     }
 
     private val FILLER = setOf(
@@ -210,7 +188,6 @@ object TermCustomGui {
     private fun isFiller(st: ItemStack): Boolean =
         BuiltInRegistries.ITEM.getKey(st.item).path in FILLER
 
-    /** Stepped rounded rect (no NVG dependency), same idea as LeapMenu.roundFill. */
     private fun roundFill(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, rad: Int, color: Int) {
         val r = rad.coerceIn(0, minOf(w, h) / 2)
         if (r <= 0) { ctx.fill(x, y, x + w, y + h, color); return }

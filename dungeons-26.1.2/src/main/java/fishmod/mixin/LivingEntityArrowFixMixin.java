@@ -12,7 +12,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Arrow Fix (shortbow pull-back) + Animations swing-speed, both on the local player only. */
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityArrowFixMixin {
 
@@ -28,7 +27,6 @@ public abstract class LivingEntityArrowFixMixin {
         }
     }
 
-    // animIgnoreHaste pins the base swing duration to 6 ticks before the multiplier
     @ModifyReturnValue(method = "getCurrentSwingDuration", at = @At("RETURN"))
     private int fishmod$swingSpeed(int original) {
         if (!FishSettings.animEnabled) return original;

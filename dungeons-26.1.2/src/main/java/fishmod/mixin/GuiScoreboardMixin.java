@@ -20,7 +20,6 @@ public class GuiScoreboardMixin {
     @Inject(method = "extractScoreboardSidebar", at = @At("HEAD"), cancellable = true)
     private void fishmod$customScoreboard(GuiGraphicsExtractor context, DeltaTracker tickCounter, CallbackInfo ci) {
         if (!FishSettings.customScoreboardEnabled) return;
-        // dungeon map HUD already carries score
         if (FishSettings.customScoreboardHideInDungeon && Location.inDungeon()) return;
         try {
             int screenW = Minecraft.getInstance().getWindow().getGuiScaledWidth();

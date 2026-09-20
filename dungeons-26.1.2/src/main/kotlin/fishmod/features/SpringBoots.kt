@@ -16,11 +16,6 @@ import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.phys.AABB
 
-/**
- * Spring Boots charge tracker. The jump charge is read from the note-block sound pitches Hypixel
- * plays while you hold the crouch charge; a firework sound resets it. Shows the charge on a HUD and
- * a box at the predicted landing height.
- */
 object SpringBoots {
 
     private const val NAME = "Spring Boots"
@@ -57,7 +52,6 @@ object SpringBoots {
             { FishSettings.springBootsScale }, { v -> FishSettings.springBootsScale = v }
         )
 
-        // on-ground gate: only the charge plings played while standing count — airborne ones inflate the charge
         Events.ON_SOUND.register { event, _, pitch ->
             if (!FishSettings.springBootsEnabled || !Location.inSkyblock()) return@register false
             val p = Minecraft.getInstance().player ?: return@register false

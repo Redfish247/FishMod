@@ -14,10 +14,8 @@ import net.minecraft.core.BlockPos
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 
-/** Rides on FishMod's own dungeon-map scanner ([DungeonMap]/[MapRoom]) instead of an earlier standalone scanner that only matched 26.1 reliably ~half the time. */
 object OdinScan {
 
-    /** Room table — kept only for `type` / `shape` metadata by room name. */
     private val nameToData: Map<String, ORoomData> = run {
         try {
             OdinScan::class.java.getResourceAsStream("/odin_rooms.json")!!.use { s ->
@@ -61,8 +59,6 @@ object OdinScan {
         }
 
         val map = DungeonMap.roomPlayerIn()?.owner
-        // roomPlayerIn() drops to null on doorways / room edges / unscanned tiles as you move, so
-        // treat null as a transient miss and keep the last room; only switch on a *different* room.
         val mapName = map?.data?.name
         if (map == null || mapName == null || map.rotation == MapRoom.Rotation.NONE) {
             diag("transient miss (map=${map != null} name=$mapName rot=${map?.rotation}) — keeping '${currentRoom?.data?.name}'")

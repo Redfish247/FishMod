@@ -18,7 +18,6 @@ import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.state.BlockState
 
-// A wool block at a fixed position takes the colour of the real Livid; read it to find the right entity.
 object LividSolver {
 
     private val LIVID_START = Regex(

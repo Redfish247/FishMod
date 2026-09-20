@@ -8,11 +8,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import java.util.regex.Pattern
 
-/**
- * Hypixel gates re-entering a dungeon for ~30s after the party enters one. The clock starts on the
- * "<player> entered <floor> Catacombs, Floor <n>!" chat line (not on `/warp`, which was wrong), and
- * the HUD counts it down. Optionally announces to party chat if you get kicked mid-join.
- */
 object WarpCooldown {
 
     private const val NAME = "Warp Cooldown"
@@ -37,7 +32,6 @@ object WarpCooldown {
         Events.ON_GAME_MESSAGE.register { text ->
             val s = COLOR.replace(text.string, "")
             if (ENTERED.matcher(s).find()) {
-                // first "entered" line only — party members' lines trickle in and were each resetting it to full
                 if (remainingMs() <= 0L) enteredAt = System.currentTimeMillis()
             } else if (Dungeons.enableWarpCooldown && FishSettings.warpAnnounceKick && KICKED.matcher(s).matches()) {
                 fishmod.utils.ChatQueue.enqueue("pc ${FishSettings.warpKickText}")

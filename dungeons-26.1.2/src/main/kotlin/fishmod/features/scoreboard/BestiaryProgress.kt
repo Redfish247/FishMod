@@ -8,7 +8,6 @@ import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import java.io.InputStreamReader
 
-/** Hypixel doesn't expose a ready-made percentage, so this computes it as (sum of current tiers)/(sum of max tiers) from `data/bestiary.json`'s per-family kill brackets. */
 object BestiaryProgress {
 
     private class Family(val bracket: Int, val cap: Int, val keys: List<String>)
@@ -38,8 +37,6 @@ object BestiaryProgress {
         }
     }
 
-    /** How many thresholds in this bracket are cleared by `kills`, capped at the family's max tier
-     *  (the family's `cap` truncates the shared 25-entry bracket curve early for easy/common mobs). */
     private fun tierFor(bracket: IntArray, cap: Int, kills: Long): Int {
         var maxTier = 0
         for (t in bracket) if (t <= cap) maxTier++ else break
@@ -94,7 +91,6 @@ object BestiaryProgress {
         }
     }
 
-    /** "§7Bestiary: §d1234§7/§d5678 §7(21.7%)", empty until the first poll lands. */
     @JvmStatic
     fun lines(): List<String> {
         if (maxMilestone <= 0) return emptyList()

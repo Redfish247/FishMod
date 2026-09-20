@@ -18,7 +18,6 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
-/** Loads user-supplied PNGs from config/FishMod/map_images/ as selectable dungeon-map HUD backgrounds, hot-reloaded via a directory watch. */
 object MapImageLoader {
 
     const val NO_IMAGE = "No image"
@@ -54,7 +53,6 @@ object MapImageLoader {
         }
     }
 
-    /** Stops the directory-watch thread. Wired to [ClientLifecycleEvents.CLIENT_STOPPING] in [init]. */
     @JvmStatic
     fun close() {
         started = false

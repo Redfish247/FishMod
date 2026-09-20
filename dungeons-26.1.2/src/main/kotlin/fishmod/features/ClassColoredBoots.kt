@@ -7,7 +7,6 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.item.component.DyedItemColor
 
-/** Recolors the local player's worn boots to match their detected dungeon class. Client-side only — re-applied every tick since server slot updates would otherwise wipe it. Only visible on leather/dyeable boots. */
 object ClassColoredBoots {
 
     private fun colorFor(c: DungeonClass?): Int {

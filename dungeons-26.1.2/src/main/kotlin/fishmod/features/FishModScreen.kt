@@ -31,7 +31,6 @@ import java.util.function.Consumer
 import java.util.function.Supplier
 import kotlin.reflect.KMutableProperty0
 
-/** Multi-column config screen; each column scrolls independently and rows expand inline sub-panels. */
 class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
     private val columns: MutableList<Column> = ArrayList()
@@ -53,11 +52,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     private var dragColumn: Column? = null
     private var dragGrabDX = 0
     private var dragMouseX = 0
-    /** True when the current [dragColumn] drag was started with right-click: on release it merges
-     *  onto whatever header it's dropped over instead of just reordering top-level slots. */
     private var dragColumnMerge = false
 
-    // stack-segment drag state: left-drag reorders siblings live, right-drag restructures on release (merge onto a column / pop to top level / no-op onto own parent)
     private var dragTabParent: Column? = null
     private var dragTabChild: Column? = null
     private var dragTabGrabDY = 0
@@ -65,8 +61,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     private var dragTabMouseY = 0
     private var dragTabRightClick = false
 
-    // Cascading curtain open/close animation. Timestamp-driven (not frame-counted) since this is a
-    // NanoVG immediate-mode renderer and duration/stagger are user-configurable at runtime.
     private val screenOpenTime = System.currentTimeMillis()
     private var closing = false
     private var closeStartTime = 0L
@@ -75,7 +69,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     init {
         buildCategories()
         applySavedColumnOrder()
-        // watchdog: paintNvgOverlay() only runs via GameRendererNvgMixin; if that injection never fires the screen sits blank with no log, so surface it to the player
         fishmod.utils.Scheduler.scheduleTask({
             if (paintCount == 0 && Minecraft.getInstance().screen === this) {
                 fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] paintNvgOverlay was never invoked - the GameRendererNvgMixin hook didn't fire (likely a rendering-mod conflict)")
@@ -177,8 +170,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             general.features.add(f)
         }
         run {
-            // Every generic chat QoL toggle in one card — was 5 separate cards (Smart Copy Chat,
-            // Compact Chat, Infinite Chat History, Chat Search, Chat Filter).
             val f = Feature("Chat", FishSettings::chatFeatureEnabled)
             f.sub.add(ToggleSetting("Smart Copy Chat", "", FishSettings::smartCopyChat))
             f.sub.add(ToggleSetting("Compact Chat", "Collapse identical messages within the last minute into one \"(N)\" line", FishSettings::chatCompact))
@@ -383,7 +374,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Fire Sales", "Public Hypixel API, refreshes every 5min", FishSettings::sbSectionFireSales))
             general.features.add(f)
         }
-        // Dungeon Score lives entirely under the Dungeon Map column now (Info HUD readout + Score Messages alerts)
         dungeonTrackers.features.add(Feature("PB Pace", FishSettings::pbPaceEnabled))
         solvers.features.add(Feature("Puzzle Overlay", FishSettings::showPuzzles))
         run {
@@ -432,8 +422,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             solvers.features.add(f)
         }
         run {
-            // Key Notifier + Room Timer — two small, unrelated on-screen-title alerts, one card.
-            // Master toggle mirrors "either sub-feature on"; flipping it drives both at once.
             val f = Feature("Key & Room Timer",
                 { Dungeons.enableKeyNotifier || FishSettings.roomTimerEnabled },
                 { v -> Dungeons.enableKeyNotifier = v; FishSettings.roomTimerEnabled = v })
@@ -1169,7 +1157,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeon.features.add(f)
         }
 
-        // Floor 7
         run {
             val f = Feature("Tick Timers", Floor7::enableTickTimers)
             f.sub.add(SubcategoryHeader("Maxor"))
@@ -1363,9 +1350,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeon.features.add(Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) }))
         }
 
-        // Dungeon Map
         run {
-            // Legit Mode / Insight Legit toggles live in FishModAddons only; this core mod forces legit mode on every join (see FishModInit)
             val f = Feature("Enable Map", fishmod.utils.config.values.DungeonMapSettings::mapEnabled)
             f.sub.add(ColorPickerSetting("Background Color", "", fishmod.utils.config.values.DungeonMapSettings::mapBackgroundColor))
             f.sub.add(SliderIntSetting("Background Opacity %", "",
@@ -1394,8 +1379,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 { v ->
                     val s = fishmod.utils.config.values.DungeonMapSettings
                     if (v) {
-                        // restore whatever was picked last time this was switched off, or the first
-                        // real image if none was ever picked
                         val restore = s.mapImageLastSelection.ifEmpty {
                             fishmod.features.dungeon.map.MapImageLoader.getImageNames()
                                 .firstOrNull { it != fishmod.features.dungeon.map.MapImageLoader.NO_IMAGE } ?: ""
@@ -1557,7 +1540,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
         val slayer = Column("Slayer", "slider")
         run {
-            // Each Slayer feature is its own toggle in the column — no shared master.
             val spawnAlert = Feature("Mini/Boss Spawn Alert", FishSettings::slayerSpawnAlertEnabled)
             spawnAlert.sub.add(ToggleSetting("Mini-Boss Alerts", "Alert when a slayer miniboss spawns", FishSettings::slayerMiniBossAlert))
             spawnAlert.sub.add(ToggleSetting("Boss Alerts", "Alert when the main slayer boss spawns", FishSettings::slayerBossAlert))
@@ -1638,16 +1620,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         columns.add(cosmetics)
     }
 
-    /** Restores column order AND tab groupings saved from a previous drag. Each slot is either a
-     *  bare name (standalone) or "activeIdx:NameA+NameB+..." (a tab group, first name becomes the
-     *  self-including host — see [Column.children]). Falls back to the default layout if anything
-     *  doesn't resolve cleanly (unknown name, name used twice, etc). */
     private fun applySavedColumnOrder() {
         val saved = FishSettings.fmColumnOrder
         if (saved.isBlank()) return
         val byName = columns.associateBy { it.name }
         val used = HashSet<String>()
-        // validate every name resolves and appears exactly once before mutating, so a stale save can't half-group columns
         data class Slot(val names: List<String>, val activeIdx: Int)
         val slots = ArrayList<Slot>()
         for (slot in saved.split(",")) {
@@ -1688,14 +1665,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
     private fun left(): Int = 0
     private fun top(): Int = 0
-    /** Virtual (pre-shrink) screen bounds: the whole layout below is computed in this space, then
-     *  [paintNvgOverlay] scales the recorded drawing down by [fishmod.utils.rendering.UiScale.factor]
-     *  so it occupies the same fraction of the real screen regardless of Minecraft's GUI scale. */
     private fun right(): Int = (this.width / fishmod.utils.rendering.UiScale.factor()).toInt()
     private fun bottom(): Int = (this.height / fishmod.utils.rendering.UiScale.factor()).toInt()
 
-    /** Converts a real mouse coordinate (as delivered by vanilla input callbacks) into the same
-     *  virtual space [right]/[bottom] use, so hit-testing lines up with the shrunk visuals. */
     private fun vx(real: Number): Int = (real.toDouble() / fishmod.utils.rendering.UiScale.factor()).toInt()
 
     private fun cx0(): Int = left() + MARGIN
@@ -1721,27 +1693,20 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         return out
     }
 
-    // --- Cascading curtain animation -----------------------------------------------------------
-
-    // "Menu Animations" off → zero out all cascade timing so the screen just appears / closes.
     private fun fmDropMs(): Int = if (FishSettings.fmAnimations) FishSettings.fmDropDurationMs else 0
     private fun fmStagMs(): Int = if (FishSettings.fmAnimations) FishSettings.fmStaggerDelayMs else 0
 
-    /** Total wall-clock time the exit animation needs, given the current column count/settings. */
     private fun exitTotalDurationMs(): Long {
         val n = visibleColumns().size
         return fmDropMs().toLong() + fmStagMs().toLong() * Math.max(0, n - 1)
     }
 
-    /** Starts the exit (closing) animation instead of closing immediately. Safe to call more than
-     *  once — a second ESC/click during the animation is a no-op. */
     private fun requestClose() {
         if (closing) return
         closing = true
         closeStartTime = System.currentTimeMillis()
     }
 
-    /** 0f (not started) .. ~1f at rest, with a brief >1 overshoot for the elastic landing feel. */
     private fun openEase(index: Int): Float {
         if (!FishSettings.fmAnimations) return 1f
         val delay = index.toLong() * fmStagMs()
@@ -1752,8 +1717,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         return Easing.easeOutBack(t)
     }
 
-    /** 0f (not started) .. 1f (fully off-screen), eased. Column order is reversed vs. open: the
-     *  last (rightmost) visible column leads the exit wave. */
     private fun closeEase(index: Int): Float {
         if (!FishSettings.fmAnimations) return 1f
         val n = visibleColumns().size
@@ -1782,9 +1745,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         return elapsed < fmDropMs()
     }
 
-    /** True while any visible column is still mid drop-in or exit animation — used to suppress
-     *  mouse interaction so hit-testing (which doesn't account for the visual offset) never fires
-     *  on the wrong spot. */
     private fun anyColumnAnimating(): Boolean {
         val n = visibleColumns().size
         for (i in 0 until n) {
@@ -1793,9 +1753,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         return false
     }
 
-    /** Pixel offset (added to a column's header Y) for the drop-in/exit animation. [restTop] is
-     *  where the column sits once idle (used as the open animation's travel distance from y=0, the
-     *  top of the viewport). */
     private fun columnYOffset(index: Int, restTop: Int): Float {
         if (closing) {
             val ease = closeEase(index)
@@ -1807,23 +1764,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         return -restTop.toFloat() * (1f - ease)
     }
 
-    /** Resolves the active column-card background colour: a preset swatch or the custom picker
-     *  colour, with [FishSettings.fmBgAlpha] applied as the alpha channel. Only affects this
-     *  screen's cards — [ScreenTheme.CARD_BG] itself (shared by other screens) is untouched. */
     private fun currentCardBg(): Int {
         val rgb = when (FishSettings.fmBgPreset) {
             "Deep Blue" -> 0x0F1E3D
             "Crimson" -> 0x3D0F14
             "Violet" -> 0x2A0F3D
             "Custom" -> FishSettings.fmBgCustomColor and 0xFFFFFF
-            else -> 0x14181D // Dark Glass - today's default look
+            else -> 0x14181D
         }
         val alpha = Mth.clamp(Math.round(FishSettings.fmBgAlpha * 2.55f), 0, 255)
         return (alpha shl 24) or rgb
     }
 
-    /** Brightens each RGB channel of [rgb] by [amount] (0-255), clamped, keeping its alpha. Mirrors
-     *  how today's fixed hover colour (0xFF3AD8D1) relates to the base accent (0xFF24B6B0). */
     private fun brighten(rgb: Int, amount: Int): Int {
         val a = (rgb ushr 24) and 0xFF
         val r = Mth.clamp(((rgb ushr 16) and 0xFF) + amount, 0, 255)
@@ -1832,9 +1784,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         return (a shl 24) or (r shl 16) or (g shl 8) or b
     }
 
-    /** Recomputes this screen's local [ACCENT]/[ACCENT_HOVER] from [FishSettings.fmButtonColor] and
-     *  [FishSettings.fmButtonAlpha]. Only affects this screen's own accent — [ScreenTheme.ACCENT]
-     *  itself (shared by other screens) is untouched. Mirrors [currentCardBg]; call once per frame. */
     private fun refreshButtonTheme() {
         val rgb = FishSettings.fmButtonColor and 0xFFFFFF
         val alpha = Mth.clamp(Math.round(FishSettings.fmButtonAlpha * 2.55f), 0, 255)
@@ -1850,7 +1799,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val n = visibleColumns().size
         if (n == 0) return 0
         val avail = (cx1() - cx0()) - (n - 1) * COLUMN_GUTTER
-        // cap the width so a search matching one or two columns keeps them at normal size, not stretched across the screen
         return (avail / n).coerceIn(MIN_COLUMN_W, MAX_COLUMN_W)
     }
 
@@ -1858,7 +1806,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         return cx0() + visibleIndex * (columnWidth() + COLUMN_GUTTER) - Math.round(hScrollAnim).toInt()
     }
 
-    /** Total width needed to lay out every visible column side by side, ignoring the viewport. */
     private fun totalColumnsWidth(): Int {
         val n = visibleColumns().size
         if (n == 0) return 0
@@ -1873,7 +1820,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         if (Math.abs(hScroll - hScrollAnim) < 0.5) hScrollAnim = hScroll.toDouble()
     }
 
-    /** One source of truth for a row's geometry, used by both render and hit-testing. */
     private class RowLayout(
         val feature: Feature,
         val rowTop: Int, val rowBottom: Int,
@@ -1906,8 +1852,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     private fun maxScrollFor(c: Column, viewportH: Int): Int = Math.max(0, columnContentHeight(c) - viewportH)
     private fun clampScroll(c: Column, viewportH: Int) { c.scroll = Mth.clamp(c.scroll, 0, maxScrollFor(c, viewportH)) }
 
-    /** Clamps scroll for every visible column, sizing each stacked child's viewport to its actual
-     *  rendered band (see [stackSegments]) instead of an even split. */
     private fun clampAllScrolls() {
         val full = cyBot() - cyTop()
         for (c in visibleColumns()) {
@@ -1919,17 +1863,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
     }
 
-    /** One child's band within [c]'s vertical stack: [segTop] is where its own header starts,
-     *  [bodyTop] (segTop + HEADER_H) is where its rows/scrolling begin, [segBot] is the band's
-     *  bottom — each child renders as a fully normal, independent column card within its band. */
     private class StackSegment(val col: Column, val segTop: Int, val segBot: Int) {
         val bodyTop: Int get() = segTop + HEADER_H
     }
 
-    /** Packs each child's card directly beneath the previous one (separated by the same
-     *  [COLUMN_GUTTER] gap used between side-by-side columns), sized to its own content — no
-     *  leftover blank band like an even split would leave for a short column. Only the last child
-     *  stretches to fill whatever height remains, so it can still scroll if it's long. */
     private fun stackSegments(c: Column, top: Int, bot: Int): List<StackSegment> {
         val n = c.children.size
         if (n == 0) return emptyList()
@@ -1957,8 +1894,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         clampAllScrolls()
         clampHScroll()
 
-        // wall-clock check for the exit ("cascading curtain") animation finishing — driven by ms
-        // timestamps rather than a frame counter since this is an immediate-mode NanoVG renderer
         if (closing && !closeFinalized && System.currentTimeMillis() - closeStartTime >= exitTotalDurationMs()) {
             closeFinalized = true
             Config.manager.save()
@@ -1967,13 +1902,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             return
         }
 
-        // draw commands replayed later in paintNvgOverlay() after the vanilla GUI flush
         NvgRecorder.clear()
 
         extractBlurredBackground(ctx)
         ctx.fillGradient(0, 0, this.width, this.height, DIM_TOP, DIM_BOT)
 
-        // this class works in the virtual (pre-shrink) coordinate space right()/bottom() use; convert the real mouse position once here
         val vmx = vx(mouseX)
         val vmy = vx(mouseY)
 
@@ -1985,7 +1918,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             renderHint(ctx)
             renderHoverTooltip(ctx)
         } catch (t: Throwable) {
-            // blur/dim are already in the render state here; don't let a widget-layer exception strand the screen blur-only with no diagnostic (log once)
             if (!widgetRenderFailureLogged) {
                 widgetRenderFailureLogged = true
                 fishmod.utils.debug.Debug.LOGGER.error("[FishModScreen] widget rendering failed - screen will show blur only", t)
@@ -2000,7 +1932,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
 
-    /** One source of truth for the 4 top-right pill buttons' geometry, for render and hit-testing. */
     private fun topBarButtonRects(): Array<IntArray> {
         val labels = arrayOf("Edit HUD", "Credits", if (resetArmed) "Confirm?" else "Reset", "Save & Close")
         val bh = 20
@@ -2074,7 +2005,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
     }
 
-    /** Small controls cheat-sheet, bottom-right of the screen. */
     private fun renderHint(ctx: GuiGraphicsExtractor) {
         val lines = arrayOf(
             "Scroll inside a column to see more of it",
@@ -2096,7 +2026,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         NvgRecorder.dropShadow(x0.toFloat(), hy.toFloat(), w.toFloat(), (cardBottom - hy).toFloat(), CARD_RADIUS.toFloat(), 10f, 0x60000000)
         roundedRect(ctx, x0, hy, w, cardBottom - hy, CARD_RADIUS, currentCardBg())
         NvgRecorder.fillRectTopRounded(x0.toFloat(), hy.toFloat(), w.toFloat(), HEADER_STRIP_H.toFloat(), CARD_RADIUS.toFloat(), ScreenTheme.ACCENT)
-        // For a stacked slot the visible content is the active child — its HUDs, not the group's.
         val hudCol = if (c.isGroup()) c.content() else c
         val hudBtn = hudBtnRect(hudCol, x1, hy, showPopOut)
         val titleClip = w - (if (showPopOut) 40 else 20) - (if (hudBtn != null) hudBtn[2] - hudBtn[0] + 6 else 0)
@@ -2112,10 +2041,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
     }
 
-    /**
-     * Header "Edit HUD" button box for a column that owns movable HUDs, else null. When [leftOfPopOut]
-     * the button is shifted left to clear the stacked-child pop-out icon.
-     */
     private fun hudBtnRect(c: Column, x1: Int, headerTop: Int, leftOfPopOut: Boolean = false): IntArray? {
         if (FishHudEditor.columnHuds(c.name) == null) return null
         val bw = sw(this.font, "Edit HUD", 0.85f) + 12
@@ -2125,7 +2050,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         return intArrayOf(bx, by, bx + bw, by + bh)
     }
 
-    /** Bounding box of a stacked column's "pop back out to top level" button, top-right of its header. */
     private fun popOutIconRect(x1: Int, headerTop: Int): IntArray {
         val s = 10
         val px = x1 - s - 8
@@ -2158,8 +2082,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             renderOneColumn(ctx, c, columnX0(i), colW, top, bot, mouseX, mouseY, yOff)
         }
 
-        // Dragged column renders last (on top of its neighbors) and follows the mouse instead of its slot.
-        // (Interaction is suppressed while any column is animating, so this can never be mid-animation.)
         if (dc != null) {
             renderOneColumn(ctx, dc, dragMouseX - dragGrabDX, colW, top, bot, mouseX, mouseY)
         }
@@ -2174,7 +2096,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 if (seg.col === dragged) continue
                 renderColumnBlock(ctx, seg.col, x0, x1, seg.segTop + yOffset, seg.segBot + yOffset, mouseX, mouseY, showPopOut = true)
             }
-            // the child dragged around the stack floats at the cursor as a full card, not a bare label, so it reads like any other column mid-drag
             if (dragged != null) {
                 renderColumnBlock(ctx, dragged, x0, x1, dragTabMouseY - dragTabGrabDY, bot, mouseX, mouseY)
             }
@@ -2184,10 +2105,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         renderColumnBlock(ctx, c, x0, x1, top - HEADER_H + yOffset, bot + yOffset, mouseX, mouseY)
     }
 
-    /** Renders one column as a normal, fully independent card — header, rows, scrollbar — sized to
-     *  its own content and capped to [bandBot]. Used both for standalone top-level columns and for
-     *  each member of a vertical stack, so a stacked column looks exactly like a plain one, just
-     *  placed directly beneath its neighbor instead of beside it. */
     private fun renderColumnBlock(ctx: GuiGraphicsExtractor, c: Column, x0: Int, x1: Int, headerTop: Int, bandBot: Int, mouseX: Int, mouseY: Int, showPopOut: Boolean = false) {
         val bodyTop = headerTop + HEADER_H
         val colBottom = Math.min(bodyTop + columnContentHeight(c), bandBot)
@@ -2240,7 +2157,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
     }
 
-    /** Small floating tooltip drawn last, on top of everything, for the row the mouse is hovering. */
     private fun renderHoverTooltip(ctx: GuiGraphicsExtractor) {
         val desc = hoverDesc ?: return
         val tw = stw(this.font, desc)
@@ -2281,9 +2197,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     }
 
     override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean {
-        // Suppress all mouse interaction while the cascading curtain is still animating any column
-        // in/out — the animated Y-offset isn't reflected in hit-testing, and this also prevents a
-        // second ESC/"Save & Close" click from re-triggering the exit animation mid-flight.
         if (anyColumnAnimating()) return true
 
         val mx = vx(click.x())
@@ -2346,7 +2259,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             }
         }
 
-        // grabbing a column header starts a drag (only when no search filter, so visible order matches the master list 1:1); left-drag reorders, right-drag stacks/pops (see mouseReleased)
         if (searchText.isEmpty() && my >= headerTop && my < cyTop()) {
             val cols = visibleColumns()
             val colW = columnWidth()
@@ -2362,7 +2274,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             }
         }
 
-        // a stacked column's mini segment headers sit in the content band; grabbing one starts the same drag, scoped to reorder/pop within the stack
         if (searchText.isEmpty() && my >= cyTop() && my <= cyBot()) {
             val cols = visibleColumns()
             val colW = columnWidth()
@@ -2414,8 +2325,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         return super.mouseClicked(click, bl)
     }
 
-    /** Removes [child] from [parent]'s stack and reinserts it as a standalone top-level column
-     *  right next to where the stack sits — the "move it to the side" undo for stacking. */
     private fun popOutChild(parent: Column, child: Column) {
         val idx = columns.indexOf(parent)
         parent.children.remove(child)
@@ -2424,12 +2333,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         saveColumnOrder()
     }
 
-    /** Row/sub-panel hit-testing for one column's body, shared by standalone columns and each
-     *  segment of a vertical stack — only the content's origin y ([topY]) differs between them. */
     private fun handleRowClick(col: Column, x0: Int, x1: Int, mx: Int, my: Int, btn: Int, topY: Int): Boolean {
         for (rl in layoutColumn(col, col.scroll, topY)) {
             val f = rl.feature
-            // left-click toggles on/off, right-click expands (either click expands if no master toggle)
             if (my >= rl.rowTop && my <= rl.rowBottom) {
                 if (f.hasMaster()) {
                     if (btn == 1 && f.sub.isNotEmpty()) f.toggleExpanded()
@@ -2466,14 +2372,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                     }
                     ssy += sh
                 }
-                return true // swallow clicks inside the body
+                return true
             }
         }
         return true
     }
 
-    /** Wheel routed to the sub-setting under the cursor (parallels [handleRowClick]); returns true
-     *  only when that setting consumed the scroll, so the column keeps scrolling otherwise. */
     private fun handleRowScroll(col: Column, x0: Int, x1: Int, mx: Int, my: Int, dir: Int, topY: Int): Boolean {
         for (rl in layoutColumn(col, col.scroll, topY)) {
             val f = rl.feature
@@ -2500,7 +2404,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val dc = dragColumn
         if (dc != null) {
             dragMouseX = vx(click.x())
-            // merge-mode (right-drag) leaves slot order alone so the target header stays under the cursor; only left-drag live-snaps
             if (!dragColumnMerge) updateDragReorder(dc)
             return true
         }
@@ -2550,7 +2453,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                     if (tp != null) collapseIfNeeded(tp)
                     insertAtNearestSlot(tc, mx)
                 }
-                // over === tp: dropped back onto its own parent's header — leave it alone.
             }
             dragTabParent = null
             dragTabChild = null
@@ -2561,8 +2463,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         return super.mouseReleased(click)
     }
 
-    /** Live swap-based reorder: whichever slot the dragged column's floating center is nearest
-     *  becomes its new position in the master list, so the other tabs snap out of the way as you drag. */
     private fun updateDragReorder(dc: Column) {
         val cols = visibleColumns()
         val colW = columnWidth()
@@ -2582,11 +2482,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
     }
 
-    /** Same swap-based snap as [updateDragReorder], scoped to one group's vertical stack. */
     private fun updateTabDragReorder(parent: Column, child: Column) {
         val segs = stackSegments(parent, cyTop() - HEADER_H, cyBot())
         if (segs.isEmpty()) return
-        // bands aren't uniform height, so use the dragged child's own natural height to convert its grabbed point into a comparable center
         val draggedH = HEADER_H + columnContentHeight(child)
         val floatCenter = (dragTabMouseY - dragTabGrabDY) + draggedH / 2
         val curIdx = parent.children.indexOf(child)
@@ -2604,7 +2502,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
     }
 
-    /** Top-level column (if any) whose card — header or stacked body — the given point sits over. */
     private fun headerColumnAt(mx: Int, my: Int): Column? {
         if (my < cyTop() - HEADER_H || my > cyBot()) return null
         val cols = visibleColumns()
@@ -2617,19 +2514,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         return null
     }
 
-    /** Folds [incoming] into [target]'s vertical stack, turning a standalone target into a fresh
-     *  self-including group first if needed (see [Column.children]). */
     private fun mergeInto(target: Column, incoming: Column) {
         if (!target.isGroup()) target.children.add(target)
-        // flatten rather than nest: if incoming is itself a stack, fold its members in directly so stacks never nest
         val toAdd = if (incoming.isGroup()) ArrayList(incoming.children) else listOf(incoming)
         incoming.children.clear()
         for (m in toAdd) if (m !in target.children) target.children.add(m)
         target.activeChild = 0
     }
 
-    /** When a group is down to one member, that survivor takes over the slot directly instead of
-     *  staying wrapped in a now-pointless single-tab group. */
     private fun collapseIfNeeded(parent: Column) {
         if (parent.children.size == 1) {
             val survivor = parent.children[0]
@@ -2641,8 +2533,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
     }
 
-    /** Inserts a popped-out tab as a new top-level slot, snapping to whichever slot position is
-     *  closest to the drop's x — the same "nearest slot" rule [updateDragReorder] uses. */
     private fun insertAtNearestSlot(newCol: Column, mx: Int) {
         val cols = visibleColumns()
         if (cols.isEmpty()) { columns.add(newCol); return }
@@ -2660,7 +2550,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
         if (anyColumnAnimating()) return true
 
-        // shift+wheel, a trackpad horizontal swipe, or wheeling over the column headers pans sideways
         val shiftDown = InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_LEFT_SHIFT) ||
             InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_RIGHT_SHIFT)
 
@@ -2669,7 +2558,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val cols = visibleColumns()
         val colW = columnWidth()
         if (horizontalAmount == 0.0 && !shiftDown && mouseY >= cyTop()) {
-            // First give the setting under the cursor a chance to consume the wheel.
             val dir = if (verticalAmount > 0) -1 else 1
             for (i in cols.indices) {
                 val x0 = columnX0(i)
@@ -2709,7 +2597,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             }
         }
 
-        // anywhere else in the panel (headers, gutters, below a short column) pans sideways instead of doing nothing
         val amount = if (horizontalAmount != 0.0) horizontalAmount else verticalAmount
         hScroll = Mth.clamp((hScroll - amount * 24).toInt(), 0, maxHScroll())
         return true
@@ -2762,14 +2649,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     private var paintCount = 0
     private var replaySizeLogged = false
 
-    /** Called by GameRendererNvgMixin right after the vanilla GUI flush each frame, for correct z-ordering. */
     override fun paintNvgOverlay() {
         paintCount++
         nvgGlState.capture()
         try {
             val ctx = fishmod.utils.rendering.NvgContext.get()
 
-            // Must use the real GUI scale factor, not 1.0, or NanoVG's baked font glyphs blur when stretched.
             val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
             if (!replaySizeLogged) {
                 replaySizeLogged = true
@@ -2781,7 +2666,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
             fishmod_glCheck("after paintNvgOverlay")
         } catch (t: Throwable) {
-            // Fail safe instead of crash-looping the render thread; likely a bundled NanoVG native failing to load.
             if (!nvgFailureLogged) {
                 nvgFailureLogged = true
                 fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] paintNvgOverlay failed - settings screen will render without its NanoVG layer from now on", t)
@@ -2791,7 +2675,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
     }
 
-    /** glGetError forces a driver sync, so only drain on the first paint rather than every frame. */
     private fun fishmod_glCheck(where: String) {
         if (paintCount > 1) return
         var err: Int
@@ -2802,9 +2685,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
     override fun isPauseScreen(): Boolean = false
 
-    /** Intercepts every close request (ESC via vanilla's default keyPressed handling, and the
-     *  "Save & Close" pill) to play the exit ("cascading curtain") animation first; the real save
-     *  + super.onClose() happens once that finishes, checked each frame in extractRenderState(). */
     override fun onClose() {
         requestClose()
     }
@@ -2813,7 +2693,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val features: MutableList<Feature> = ArrayList()
         var scroll = 0
 
-        /** Non-empty when this slot is a vertical stack: [children] share the card, splitting height evenly, each independently scrollable. */
         val children: MutableList<Column> = ArrayList()
         var activeChild: Int = 0
 
@@ -2844,22 +2723,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     }
 
     abstract class Setting(var name: String, var description: String) {
-        /** When set and it returns false, this setting is laid out with zero height and not drawn or
-         *  hit-tested — used to hide a field while the toggle that gates it is off. */
         var gate: (() -> Boolean)? = null
         fun hiddenByGate(): Boolean = gate?.let { !it() } ?: false
-        /** Fluent: hide this setting whenever [pred] is false. */
         fun gatedBy(pred: () -> Boolean): Setting { gate = pred; return this }
 
         abstract fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, settingY: Int, mouseX: Int, mouseY: Int, tr: Font)
         open fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, settingY: Int, button: Int): Boolean = false
-        /** Wheel over this setting. [dir] is -1 for wheel-up, +1 for wheel-down. Return true to
-         *  consume the event (otherwise the column scrolls as usual). */
         open fun onScroll(mx: Int, my: Int, leftX: Int, rightX: Int, settingY: Int, dir: Int): Boolean = false
         open fun onDrag(mx: Int, sx: Int, sliderW: Int) {}
         open fun getHeight(): Int = ITEM_HEIGHT
 
-        /** Trim [s] with an ellipsis so it fits within [maxW] px at the sub-panel text size. */
         protected fun fit(s: String, maxW: Int): String {
             fun w(t: String) = Math.ceil(NvgRecorder.textWidth(t, NVG_BASE_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
             if (maxW <= 4 || w(s) <= maxW) return s
@@ -2872,9 +2745,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     class SubcategoryHeader(name: String) : Setting(name, "") {
         private fun w(t: String) = Math.ceil(NvgRecorder.textWidth(t, SUBCAT_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
 
-        // Decide 1- vs 2-line height against the tightest column width so this never truncates
-        // regardless of how wide the column ends up being; render() wraps for real against the
-        // actual width either way, so a wider column just leaves a little breathing room.
         private val twoLine: Boolean = w(name) > (MIN_COLUMN_W - 38)
 
         override fun getHeight(): Int = if (twoLine) SUBCAT_HEIGHT_2 else SUBCAT_HEIGHT
@@ -2892,7 +2762,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             }
         }
 
-        /** Greedy word-wrap into at most 2 lines; a still-too-long 2nd line gets ellipsized. */
         private fun wrap(s: String, maxW: Int): List<String> {
             if (w(s) <= maxW) return listOf(s)
             val words = s.split(" ")
@@ -2932,13 +2801,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             }
             return false
         }
-        // own compact size (not the shared PILL_H) so the toggle reads as a small switch, not a big pill
         companion object { const val W = 26; const val H = 14 }
     }
 
-    /** Slider/text-input settings render on two lines: name on line 1 (full-width, left-aligned,
-     *  no competing control), the actual control on line 2 below it — so a long label never
-     *  visually overlaps a right-aligned control on the same row. See TWO_LINE_H. */
     class SliderIntSetting(name: String, desc: String, val getter: () -> Int, val setter: (Int) -> Unit, val min: Int, val max: Int, val step: Int = 1) : Setting(name, desc) {
         constructor(name: String, desc: String, prop: KMutableProperty0<Int>, min: Int, max: Int, step: Int = 1) : this(name, desc, { prop.get() }, { prop.set(it) }, min, max, step)
 
@@ -2988,7 +2853,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
     }
 
-    /** Click expands an inline option list; right-click quick-cycles to the next value without expanding. */
     class DropdownSetting<T>(name: String, desc: String, val values: Array<T>, val getter: () -> T, val setter: (T) -> Unit) : Setting(name, desc) {
         private val expandAnim = Easing.Anim(200)
         private var expanded = false
@@ -3085,7 +2949,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             val fieldW = rightX - leftX - 4
             val tf = textField!!
             if (!tf.isFocused) {
-                if (tf.value != getter()) tf.value = getter()   // reflect external changes (e.g. a button that rewrites the backing value)
+                if (tf.value != getter()) tf.value = getter()
                 tf.cursorPosition = 0; tf.setHighlightPos(0)
             }
             nvgTextField(tf, ix, iy, fieldW, INPUT_H)
@@ -3108,16 +2972,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
     }
 
-    /**
-     * Type to filter every sound event in the registry; shows the top 10 matches as clickable rows.
-     * Stores the picked id string (resolved back to a SoundEvent by [fishmod.utils.sound.SoundManager.preset]).
-     */
     class SoundSearchSetting(
         name: String,
         desc: String,
         private val valueGetter: () -> String,
         private val valueSetter: (String) -> Unit,
-        // optional: "Test" previews at the feature's configured volume/pitch, not a flat 100%/1.0; volumePct is 0..500 (percent)
         private val volumePct: (() -> Int)? = null,
         private val pitchGetter: (() -> Double)? = null,
     ) : InputSetting(name, desc, { "" }, { }) {
@@ -3162,8 +3021,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             return out
         }
 
-        /** Full (uncapped) candidate list for wheel-browsing — respects a partial query if typed,
-         *  otherwise every known sound id, alphabetically. */
         private fun browseList(): List<String> {
             val q = query.trim().lowercase().replace(' ', '_')
             val all = fishmod.utils.sound.SoundManager.allSoundIds
@@ -3173,7 +3030,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
 
         override fun onScroll(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, dir: Int): Boolean {
-            // Only the label / field strip browses; scrolling over the result list scrolls the column.
             if (my > sy + 24) return false
             val list = browseList()
             if (list.isEmpty()) return false
@@ -3201,7 +3057,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             testRect = intArrayOf(btnX, sy, btnX + btnW, sy + btnH)
             val cur = valueGetter()
             if (cur.isNotBlank()) {
-                // right-align against the Test button but never cross the "name" label; left-ellipsize (the tail is the useful part)
                 val nameEnd = leftX + 2 + stw(tr, name) + 8
                 val avail = btnX - 6 - nameEnd
                 var shown = cur.removePrefix("minecraft:")
@@ -3298,7 +3153,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         private var expanded = false
         private var pillX = 0
         private var pillW = 0
-        private var activeTab = 0 // 0 = Presets, 1 = Your Colors
+        private var activeTab = 0
         var hexField: EditBox? = null
 
         private fun indexOfCurrent(): Int {
@@ -3555,7 +3410,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
     }
 
-    /** Click then press a key/mouse button to bind (Esc unbinds); edits the vanilla KeyMapping directly. */
     class KeybindSetting(name: String, desc: String, val getter: () -> KeyMapping?) : Setting(name, desc) {
         var capturing = false
         private var pillX = 0
@@ -3696,8 +3550,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         private const val CARD_RADIUS = 7
         private const val HEADER_H = 24
         private const val HEADER_STRIP_H = 3
-        private const val MIN_COLUMN_W = 172 // floor so controls don't clip; widened so column tabs read as spacious, not cramped
-        private const val MAX_COLUMN_W = 260 // ceiling so a narrow search result doesn't stretch a column across the whole screen
+        private const val MIN_COLUMN_W = 172
+        private const val MAX_COLUMN_W = 260
 
         private const val ROW_H = 22
         private const val ROW_GAP = 3
@@ -3711,21 +3565,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         private const val INPUT_W = 62
         private const val INPUT_H = 14
         private const val SUBCAT_HEIGHT = 13
-        private const val SUBCAT_HEIGHT_2 = 22 // two-line variant, for headers whose text wraps
-        // sliders/text-inputs render name + control on two lines (see SliderIntSetting docs), not a right-aligned control on the name row
+        private const val SUBCAT_HEIGHT_2 = 22
         private const val TWO_LINE_H = 36
-        // sliders have no control body below the track, so they can stack tighter than text inputs
         private const val SLIDER_ROW_H = 28
         private const val TWO_LINE_CTRL_Y = 20
 
-        /** Roughly matches Minecraft's default font weight; TEXT_SCALE multiplies this. */
         private const val NVG_BASE_TEXT_SIZE = 9.5f
         private const val INPUT_TEXT_SIZE = 7f
 
-        /** SubcategoryHeader text size — a bit larger than body text so it reads as a heading. */
         private const val SUBCAT_TEXT_SIZE = NVG_BASE_TEXT_SIZE * 1.15f
 
-        // shape/text helpers push into NvgRecorder, not `ctx`, so they paint in the deferred paintNvgOverlay() pass; `ctx` is kept only for call-site compat and vanilla widget state
         fun roundedRect(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, color: Int) {
             NvgRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), color)
         }
@@ -3752,8 +3601,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             NvgRecorder.disc(cx.toFloat(), cy.toFloat(), r.toFloat(), color)
         }
 
-        /** Deferred equivalent of `ctx.fill(x1, y1, x2, y2, color)` — glyph icons must go through
-         *  NvgRecorder like everything else on this screen so [UiScale]'s shrink applies to them too. */
         private fun nf(x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
             NvgRecorder.fillRect(x1.toFloat(), y1.toFloat(), (x2 - x1).toFloat(), (y2 - y1).toFloat(), color)
         }
@@ -3763,7 +3610,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         fun stw(tr: Font, s: String): Int = Math.ceil(NvgRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
 
-        /** Bold heading text (see [SubcategoryHeader]) — same faux-bold trick as [NvgRecorder.textBold]. */
         fun stBold(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int) {
             NvgRecorder.textBold(s, x.toFloat(), y.toFloat(), SUBCAT_TEXT_SIZE * TEXT_SCALE, color)
         }
@@ -3778,16 +3624,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             NvgRecorder.chevron(gx.toFloat(), cy.toFloat(), open, color)
         }
 
-        /** A vanilla EditBox.extractRenderState() call would flush before the NanoVG column
-         *  background and be invisible, so this redraws the field entirely via NanoVG instead;
-         *  the EditBox itself is kept only for cursor/selection/IME state, never for drawing. */
         fun nvgTextField(tf: EditBox, x: Int, y: Int, w: Int, h: Int) {
             val focused = tf.isFocused
             NvgRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), 3f, 1f, SUBROW_BG, if (focused) ACCENT else TRACK_OFF)
             nvgTextFieldContent(tf, x, y, w, h)
         }
 
-        /** Text + caret only, no box — for fields whose box (e.g. the search bar's pill ring) is drawn separately. */
         fun nvgTextFieldContent(tf: EditBox, x: Int, y: Int, w: Int, h: Int) {
             val text = tf.value
             val cursor = Math.min(tf.cursorPosition, text.length)
@@ -3957,7 +3799,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             return s
         }
 
-        /** Static so the nested Setting subclasses, which have no outer-instance reference, can call it. */
         fun drawTogglePill(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, on: Boolean, knobProgress: Float, hover: Boolean) {
             val track = if (on) (if (hover) ACCENT_HOVER else ACCENT) else TRACK_OFF
             val ring = if (on) (if (hover) ACCENT_HOVER else ACCENT) else (if (hover) 0xFF565C68.toInt() else 0xFF464C56.toInt())

@@ -9,16 +9,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.boss.wither.WitherBoss
 
-/**
- * Highlights the F7 Wither boss. Colour follows the phase — Maxor / Storm / Goldor / Necron. Box
- * outline around every non-invisible [WitherBoss] (FishMod has no per-entity glow hook, so a
- * bounding-box outline stands in). Off during P5.
- */
 object WitherESP {
 
-    // The boss entity resolves rarely, so the entity scan runs on a tick interval instead of every
-    // render frame (mirrors StarredMobHighlight's SCAN_INTERVAL_TICKS pattern), and the render
-    // callback just reads the cached result.
     private const val SCAN_INTERVAL_TICKS = 5
     private var scanCounter = 0
     private var cachedWithers: List<WitherBoss> = emptyList()

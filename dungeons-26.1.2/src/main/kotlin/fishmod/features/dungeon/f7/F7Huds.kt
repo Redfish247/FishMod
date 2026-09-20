@@ -10,7 +10,6 @@ import fishmod.features.dungeon.f7.s4.S4Tracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Condition-suppliers below are forced `{ false }`; [renderHud] drives visibility explicitly. */
 object F7Huds {
 
     private const val TICK_W = 60
@@ -135,7 +134,6 @@ object F7Huds {
 
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor) {
-        // targetX/Y only pull off-screen elements back; dragged positions are kept.
         renderOne(ctx, tickTimer, BossTickTimer.display(), BossTickTimer::render, 10, 70)
         renderOne(ctx, termStartTimer, TermStartTimer.display(), TermStartTimer::render, 10, 106)
         renderOne(ctx, crystalSpawnTime, CrystalSpawn.display(), CrystalSpawn::render, 10, 118)

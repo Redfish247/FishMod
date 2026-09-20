@@ -12,14 +12,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-/**
- * User-defined command aliases (e.g. "/dh" runs "/warp dh"), registered as real Brigadier
- * commands for normal tab-completion. Brigadier has no clean way to unregister a node, so a
- * removed/renamed alias's old literal lingers until the next join, when it's not re-registered.
- */
 object CommandAliases {
 
-    /** Kept as a plain class (not a data class) so Java callers keep the record-style `.alias()`/`.command()` accessors. */
     class Entry(private val aliasValue: String, private val commandValue: String) {
         fun alias(): String = aliasValue
         fun command(): String = commandValue
@@ -54,7 +48,6 @@ object CommandAliases {
         for (e in entries) registerNode(dispatcher, e)
     }
 
-    /** Re-registers onto the live dispatcher (if any) so edits take effect without reconnecting. */
     @JvmStatic
     fun replaceAll(newEntries: List<Entry>) {
         ensureLoaded()
@@ -68,7 +61,6 @@ object CommandAliases {
     }
 
     private fun registerNode(dispatcher: CommandDispatcher<FabricClientCommandSource>, e: Entry) {
-        // Brigadier literals can't contain a slash, so strip it from the alias.
         var alias = e.alias().trim()
         if (alias.startsWith("/")) alias = alias.substring(1)
         val target = e.command().trim()

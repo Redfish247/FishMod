@@ -11,10 +11,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/**
- * FishMod-exclusive puzzle display — lives only in FishMod's jar so it
- * always loads correctly even when blade-addons is also present.
- */
 object FishPuzzleDisplay {
 
     private val puzzles: MutableList<String> = ArrayList()

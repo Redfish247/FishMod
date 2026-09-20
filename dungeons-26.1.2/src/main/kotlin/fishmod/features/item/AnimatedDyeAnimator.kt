@@ -2,7 +2,6 @@ package fishmod.features.item
 
 import net.minecraft.client.Minecraft
 
-/** Legacy-only: the current item customizer writes no animated dyes; this only drives entries left in a pre-port config. */
 object AnimatedDyeAnimator {
 
     private class State(var progress: Float, var onBackCycle: Boolean, var lastColor: Int, var lastFrame: Int)
@@ -15,7 +14,6 @@ object AnimatedDyeAnimator {
 
     @JvmStatic
     fun colorFor(uuid: String, dye: ItemCustomizationStore.AnimatedDye): Int {
-        // Interpolation below indexes keyframes[k] and keyframes[k+1]; needs at least two.
         if (dye.keyframes.size < 2) {
             val c = dye.keyframes.firstOrNull()?.color ?: 0xFFFFFF
             return (0xFF shl 24) or (c and 0xFFFFFF)

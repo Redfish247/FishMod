@@ -4,23 +4,17 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.multiplayer.PlayerInfo
 
-/** Shared scan of the Hypixel tab list — several features used to each walk `onlinePlayers` and
- *  strip color codes independently; this scans + strips once and publishes the result via [version]. */
 object TabListCache {
 
     private const val SCAN_INTERVAL_TICKS = 5
     private var tickCounter = 0
 
-    /** One tab-list row: the raw entry plus its once-computed color-stripped display string
-     *  (not trimmed — most consumers trim/parse further themselves). */
     class Entry(@JvmField val info: PlayerInfo, @JvmField val stripped: String)
 
-    /** Monotonically increasing; bumps only when a scan finds different content than last time. */
     @JvmStatic
     var version: Int = 0
         private set
 
-    /** Latest scanned entries, in `onlinePlayers` order. Empty when disconnected. */
     @JvmStatic
     var entries: List<Entry> = emptyList()
         private set
@@ -44,9 +38,6 @@ object TabListCache {
         scan(mc)
     }
 
-    /** Force an immediate rescan outside the normal 5-tick cadence — e.g. PetHud's short burst
-     *  window right after an equip/summon, where the extra latency of waiting for the next
-     *  scheduled scan would read a stale pet. Cheap: same scan the tick loop would've done anyway. */
     @JvmStatic
     fun forceScan() {
         val mc = Minecraft.getInstance()

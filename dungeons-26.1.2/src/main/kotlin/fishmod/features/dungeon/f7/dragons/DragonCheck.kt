@@ -88,7 +88,6 @@ object DragonCheck {
         }
     }
 
-    // Keys only off the broadcast arrow.hit_player sound packet, not local/entity-attached cues, to avoid over-counting.
     fun trackArrows(p: ClientboundSoundPacket, tick: Long) {
         if (p.sound.value().location != SoundEvents.ARROW_HIT_PLAYER.location) return
         val d = WitherDragons.priorityDragon

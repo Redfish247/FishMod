@@ -95,7 +95,6 @@ object TextUtil {
         }
     }
 
-    // Precomputed once instead of a linear scan over ChatFormatting.values() (+ TextColor.fromLegacyFormat) every call.
     private val FORMAT_CHAR_BY_COLOR: Map<Int, Char> by lazy {
         val map = HashMap<Int, Char>()
         for (format in ChatFormatting.values()) {

@@ -9,10 +9,6 @@ import java.io.FileWriter
 import java.util.regex.Pattern
 import java.util.regex.PatternSyntaxException
 
-/**
- * One chat-watch rule: filter text (plain substring/exact or regex) plus a set of outputs fired
- * on a match.
- */
 data class ChatRule(
     var name: String = "New Rule",
     var enabled: Boolean = true,
@@ -27,14 +23,9 @@ data class ChatRule(
     var titleDurationMs: Long = 3000L,
     var soundEnabled: Boolean = false
 ) {
-    // regex cache; matches() is a hot path — per rule per line on both the packet and display paths
     @Transient private var patternCache: Pattern? = null
     @Transient private var patternKey: String? = null
 
-    /**
-     * [filter] compiled for regex matching (only meaningful when [regex] is true). Rebuilt when
-     * [filter] or [ignoreCase] changes; null when [filter] isn't valid regex.
-     */
     fun compiledPattern(): Pattern? {
         val key = (if (ignoreCase) "i:" else "s:") + filter
         if (key != patternKey) {
@@ -49,7 +40,6 @@ data class ChatRule(
     }
 }
 
-/** Client-only chat-notification rules, persisted separately from [fishmod.utils.config.values.FishSettings] since it's a list of complex objects, not scalars. */
 object ChatRuleStore {
 
     private const val FILE_PATH = "config/fishmod-chat-rules.json"

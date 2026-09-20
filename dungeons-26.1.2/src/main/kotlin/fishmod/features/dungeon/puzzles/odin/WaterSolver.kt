@@ -13,11 +13,6 @@ import net.minecraft.world.phys.Vec3
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 
-/**
- * Water Board solver. Clay-origin coords via [ORoom.getRealCoords]; solution schema
- * `waterSolutions.json` = { optimized(true/false) -> pattern(0-3) -> extendedSlots(3 digits) ->
- * lever -> [click times, seconds] }.
- */
 object WaterSolver {
 
     private val waterSolutions: Map<String, Map<String, Map<String, Map<String, List<Double>>>>> = try {
@@ -37,8 +32,6 @@ object WaterSolver {
     private var tickCounter = 0
     private var failed = false
 
-    // Sorted view only depends on `solutions` contents + each lever's click count (`i`), not on
-    // tickCounter, so it's cached and only rebuilt when one of those actually changes.
     private var solutionListDirty = true
     private var cachedSolutionList: List<Pair<LeverBlock, Double>> = emptyList()
 

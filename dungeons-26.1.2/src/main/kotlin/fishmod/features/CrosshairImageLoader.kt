@@ -18,7 +18,6 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
-/** Loads user-supplied PNGs from config/FishMod/crosshairs/ as selectable custom-crosshair images, hot-reloaded via a directory watch. */
 object CrosshairImageLoader {
 
     const val NO_IMAGE = "No image"
@@ -54,7 +53,6 @@ object CrosshairImageLoader {
         }
     }
 
-    /** Stops the directory-watch thread. Wired to [ClientLifecycleEvents.CLIENT_STOPPING] in [init]. */
     @JvmStatic
     fun close() {
         started = false
