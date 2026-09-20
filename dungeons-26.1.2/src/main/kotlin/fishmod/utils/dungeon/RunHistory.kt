@@ -9,32 +9,26 @@ import java.io.FileWriter
 import java.lang.reflect.Type
 import java.util.concurrent.Executors
 
-/** Stored in config/fishmod-runs.json as floor -> split name -> list of times. */
 object RunHistory {
 
     private const val MAX_RUNS = 30
 
-    // splits longer than this come from a never-started split being force-ended; reject/filter them
     private const val MAX_SPLIT_SECONDS = 3600.0
     private const val FILE_PATH = "config/fishmod-runs.json"
     private val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
 
-    // Disk writes run here so run-end (☠ Defeated) doesn't stutter on the tick/network thread.
     private val writeExecutor = Executors.newSingleThreadExecutor { r ->
         Thread(r, "fishmod-runhistory-io").apply { isDaemon = true }
     }
 
-    // reads on the render thread, writes on the dungeon-tick/network thread; guards [data] against CME
     private val lock = Any()
 
-    // floor → split name → list of real times (seconds), newest last
     private var data: MutableMap<String, MutableMap<String, MutableList<Double>>> = HashMap()
 
     init {
         load()
     }
 
-    /** Saves raw times without depending on Split, to avoid classloader conflicts with FishEstTotal. */
     @JvmStatic
     fun saveSplitTimes(floor: String?, times: Map<String, Double>?) {
         if (floor == null || times == null || times.isEmpty()) return
@@ -62,7 +56,7 @@ object RunHistory {
 
             for (split in splits) {
                 if (!split.ended()) continue
-                if (split.avg < 0) continue  // skip cumulative/total splits
+                if (split.avg < 0) continue
                 val t = split.getRealTime()
                 if (t <= 0 || t > MAX_SPLIT_SECONDS) continue
 
@@ -119,15 +113,13 @@ object RunHistory {
                     val loaded: MutableMap<String, MutableMap<String, MutableList<Double>>>? = GSON.fromJson(reader, type)
                     if (loaded != null) data = loaded
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                fishmod.utils.debug.Debug.LOGGER.warn("[RunHistory] load failed: {}", e.toString())
             }
-            // Drop pre-guard garbage times (a never-started split force-ended reads as ~1.9 years) so a
-            // poisoned split doesn't fall back to the hardcoded average forever.
             if (pruneInvalid()) save()
         }
     }
 
-    /** Removes times outside (0, MAX_SPLIT_SECONDS] plus any now-empty split/floor buckets. True if anything changed. */
     private fun pruneInvalid(): Boolean {
         var changed = false
         val floorIt = data.iterator()
@@ -151,14 +143,14 @@ object RunHistory {
     }
 
     private fun save() {
-        // snapshot under the lock, write off-thread; single-thread executor keeps writes FIFO
         val json = synchronized(lock) { GSON.toJson(data) }
         writeExecutor.execute {
             try {
                 val file = File(FILE_PATH)
                 file.parentFile?.mkdirs()
                 FileWriter(file).use { writer -> writer.write(json) }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                fishmod.utils.debug.Debug.LOGGER.warn("[RunHistory] save failed: {}", e.toString())
             }
         }
     }

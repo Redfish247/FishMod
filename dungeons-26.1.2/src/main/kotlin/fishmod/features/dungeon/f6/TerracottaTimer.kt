@@ -15,7 +15,6 @@ import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.Vec3
 import java.util.concurrent.CopyOnWriteArrayList
 
-// Match `state.block is FlowerPotBlock`, not just `Blocks.FLOWER_POT` — Hypixel can plant a potted variant.
 object TerracottaTimer {
 
     private data class Terracotta(val pos: BlockPos, var time: Float)

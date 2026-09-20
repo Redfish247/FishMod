@@ -4,11 +4,10 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 
-/** Gate for developer-only debug commands, keyed by UUID. */
 object DevOnly {
 
     private val DEV_UUIDS: Set<String> = setOf(
-        "2abb218fada349bea6d181a2872941e2"  // RedFish2471
+        "2abb218fada349bea6d181a2872941e2"
     )
 
     @JvmStatic

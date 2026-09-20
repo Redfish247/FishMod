@@ -13,14 +13,11 @@ import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.AABB
 
-
 object StarredMobHighlight {
 
     private const val STAR = "✯"
     private const val HEART = "❤"
 
-    // Which mobs are starred rarely changes frame-to-frame, so the entity/AABB scan runs on a
-    // tick interval instead of every rendered frame; the render callback just reads the cache.
     private const val SCAN_INTERVAL_TICKS = 5
     private var scanCounter = 0
     private var cachedStarredMobs: Set<Entity> = emptySet()

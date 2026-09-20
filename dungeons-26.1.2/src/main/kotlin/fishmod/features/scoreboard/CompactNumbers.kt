@@ -3,9 +3,6 @@ package fishmod.features.scoreboard
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-/** Rewrites comma-grouped numbers (Hypixel's "1,234,567" style) into compact form ("1.2M").
- *  Only matches numbers that already carry thousands separators, so times ("12:34"), levels
- *  ("50"), percentages ("35.5%") and roman numerals are never touched. */
 object CompactNumbers {
 
     private val GROUPED_NUMBER: Pattern = Pattern.compile("\\d{1,3}(,\\d{3})+(\\.\\d+)?")

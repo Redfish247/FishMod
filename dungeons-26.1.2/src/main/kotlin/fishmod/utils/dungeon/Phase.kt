@@ -20,10 +20,6 @@ object Phase {
 
     private val DUMMY_SPLIT = Split("test split", "if this is called idk", "if this is called idk", 43690, 0.0)
 
-    // Unique filename (not "splits.json") so this can't resolve to blade-addons' own bundled copy of a
-    // near-identical file at the same path — Fabric's merged classloader searches every mod jar, and
-    // whichever copy resolves first "wins"; blade's lacks an "avg" field, silently zeroing every split's
-    // average (see FishEstTotal's identical fix for the same collision).
     private val FLOOR_SPLITS: HashMap<String, ArrayList<Split>> = JsonUtility.readSplits("/data/fishmod_splits.json")
 
     private const val DUMMY_SIZE = 10
@@ -64,8 +60,6 @@ object Phase {
         Events.ON_GAME_MESSAGE.register(Phase::parseGameMessage)
     }
 
-    // Floor key ("F7"/"M7") now comes from the shared fishmod.features.dungeon.map.DungeonState
-    // (chat + sidebar based) instead of re-parsing the "The Catacombs (" sidebar/team line here.
     private fun detectFloor() {
         if (floor != null) return
         val key = fishmod.features.dungeon.map.DungeonState.currentFloorKey() ?: return
@@ -152,7 +146,6 @@ object Phase {
         }
     }
 
-    /** The effective phase — a [PracticeMode] override on a practice server, else the real tracker. */
     private fun phase(): Int =
         if (PracticeMode.active && PracticeMode.phaseOverride >= 0) PracticeMode.phaseOverride else currentPhase
 
@@ -165,7 +158,6 @@ object Phase {
     @JvmStatic
     fun runStarted(): Boolean = phase() >= 0
 
-    /** Live splits for the current run (empty when no run is active). Read-only use only. */
     @JvmStatic
     fun getCurrentSplits(): List<Split> = currentSplits ?: java.util.List.of()
 
@@ -206,7 +198,6 @@ object Phase {
         return splits[index].getRealTime()
     }
 
-    // condition forced false: rendered explicitly via renderHud to avoid double-drawing via auto-render
     @ConfigValue @JvmField
     var splitTimer: HUDComponent = HUDComponent(0.0, 0.0, SPLIT_LENGTH, 100, 1f, "Splits",
         { false },
@@ -214,7 +205,6 @@ object Phase {
         { enableSplits }
     )
 
-    /** Explicit HUD render for the splits panel (auto-render is disabled above). */
     @JvmStatic
     fun renderHud(ctx: net.minecraft.client.gui.GuiGraphicsExtractor) {
         if (enableSplits && runStarted()) {
@@ -230,7 +220,6 @@ object Phase {
         stack.popMatrix()
     }
 
-    /** Renders split rows + separator. Called by splitTimer HUD (with blade) and renderSplitsHud (standalone). */
     @JvmStatic
     fun renderSplitRows(ctx: net.minecraft.client.gui.GuiGraphicsExtractor, x: Int, y: Int) {
         val textRenderer: Font = Minecraft.getInstance().font
@@ -256,7 +245,6 @@ object Phase {
         }
     }
 
-    /** Returns how many split rows are currently visible (for FishEstTotal snap position). */
     @JvmStatic
     fun getVisibleRowCount(): Int {
         val splits = currentSplits ?: return 0
@@ -271,7 +259,6 @@ object Phase {
         return visible
     }
 
-    /** Direct HUD render for standalone mode (no blade / HUDComponent system). */
     @JvmStatic
     fun renderSplitsHud(ctx: net.minecraft.client.gui.GuiGraphicsExtractor, x: Int, y: Int) {
         if (!enableSplits || !runStarted()) return

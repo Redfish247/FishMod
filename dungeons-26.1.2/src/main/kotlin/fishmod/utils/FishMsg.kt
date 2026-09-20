@@ -3,7 +3,6 @@ package fishmod.utils
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.network.chat.Component
 
-/** Lives in a FishMod-unique class so it isn't shadowed by blade-addons' copy of Misc, which lacks these methods. */
 object FishMsg {
 
     @JvmStatic

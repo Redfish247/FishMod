@@ -5,12 +5,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * "Twitch Bridge" FishMod feature. Owns the single {@link TwitchIrcClient} connection and the
- * shared {@link TwitchBridgeConfig}, driven by the /fm screen toggle and the {@code /twitch ...}
- * commands. Channel/appearance settings live in {@code config/twitch-bridge.json}; the master
- * on/off is {@link FishSettings#twitchBridgeEnabled} (persisted with the rest of FishMod).
- */
 public final class TwitchBridgeClient {
 
 	public static final Logger LOGGER = LoggerFactory.getLogger("twitch-bridge");
@@ -20,7 +14,6 @@ public final class TwitchBridgeClient {
 
 	private TwitchBridgeClient() {}
 
-	/** Called once from {@code FishModInit.onInitialize()}. */
 	public static void init() {
 		config = TwitchBridgeConfig.load();
 		TwitchCommands.register();
@@ -28,11 +21,12 @@ public final class TwitchBridgeClient {
 		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> disconnect());
 
 		if (FishSettings.twitchBridgeEnabled && config.autoConnect && !config.channel.isBlank()) {
-			// delay so the game finishes starting first
-			new Thread(() -> {
+			Thread t = new Thread(() -> {
 				sleep(3000);
 				connect(config.channel);
-			}, "twitch-bridge-autoconnect").start();
+			}, "twitch-bridge-autoconnect");
+			t.setDaemon(true);
+			t.start();
 		}
 	}
 
@@ -40,7 +34,6 @@ public final class TwitchBridgeClient {
 		return config;
 	}
 
-	/** /fm toggle: flip the master switch and connect/disconnect to match. */
 	public static synchronized void setEnabled(boolean on) {
 		FishSettings.twitchBridgeEnabled = on;
 		if (on) {
@@ -54,7 +47,6 @@ public final class TwitchBridgeClient {
 		}
 	}
 
-	/** /fm channel field: store the channel and (re)connect if the feature is on. */
 	public static synchronized void setChannel(String name) {
 		String target = name == null ? "" : name.trim().toLowerCase();
 		if (target.startsWith("#")) target = target.substring(1);

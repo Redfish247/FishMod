@@ -23,8 +23,6 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import kotlin.math.abs
 
-// Event-driven off block updates in the 3x3 grid: EMERALD_BLOCK -> BLUE_TERRACOTTA marks a hit block;
-// BLUE_TERRACOTTA -> EMERALD_BLOCK means it reset and is the new live target.
 object ArrowsDevice {
 
     private val devicePositions = listOf(
@@ -93,7 +91,6 @@ object ArrowsDevice {
 
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (!FishSettings.arrowsDeviceShowAim) optimalAimPositions = emptyList()
-            // Seeds prev so the first block transition after entering P3 isn't dropped.
             if (FishSettings.arrowsDeviceEnabled && inP3()) {
                 val level = mc.level ?: return@register
                 for (p in devicePositions) {

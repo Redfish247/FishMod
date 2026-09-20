@@ -13,24 +13,19 @@ import fishmod.utils.events.Events
 import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 
-/** While you're party leader, auto-kicks any current party member whose name is on [FishSettings.pcKickList]. */
 object KickListManager {
 
-    private const val CHECK_INTERVAL_TICKS = 40 // 2s
+    private const val CHECK_INTERVAL_TICKS = 40
     private var tickCounter = 0
 
     private val JOIN = Pattern.compile("^(?:\\[[^]]+]\\s+)?(\\w{1,16}) joined the party\\.$")
 
-    /** lowercased names kicked this party — re-kicked on sight until they leave/world change clears it. */
     private val kicked = ConcurrentHashMap.newKeySet<String>()
 
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { onTick() }
         Events.ON_WORLD_CHANGE.register { kicked.clear(); false }
-        // Reacts the instant someone joins (rather than waiting for the next sweep), and — unlike the
-        // tab-list lookup below — this is the exact display name Hypixel used, so it works for /nick'd
-        // targets that the local tab list may not resolve back to a real account.
         Events.ON_GAME_MESSAGE.register { text ->
             if (FishSettings.pcKickListEnabled && FishSettings.pcKickList.isNotBlank()) {
                 val stripped = Constants.STRIP_COLOR_REGEX.replace(text.string, "")

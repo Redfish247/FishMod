@@ -7,7 +7,6 @@ import net.minecraft.world.inventory.ChestMenu
 import net.minecraft.world.inventory.MenuType
 import net.minecraft.world.item.ItemStack
 
-/** A local chest menu backing [TermSimScreen] — no server, clicks are handled by the screen. */
 class TermSimMenu(val rows: Int, playerInv: Inventory, @JvmField val box: SimpleContainer) :
     ChestMenu(menuType(rows), 0, playerInv, box, rows) {
 

@@ -9,7 +9,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.protocol.game.ClientboundEntityEventPacket
 import net.minecraft.world.entity.monster.zombie.Zombie
 
-/** Announces Mimic/Prince/Bat kills to party chat. Mimic is detected via its baby-[Zombie] death-animation entity-event packet; Prince/Bat via Hypixel's own chat lines. */
 object MimicAnnounce {
 
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
@@ -29,7 +28,6 @@ object MimicAnnounce {
                 val s = COLOR.replace(text.string, "").trim()
                 if (PRINCE.matches(s)) princeKilled(false)
                 else if (BAT.matches(s)) batKilled(false)
-                // A party member's own mod announcing it — keep our state in sync so we don't double up.
                 else when {
                     s.contains("Mimic Killed", true) || s.contains("Mimic Dead", true) -> mimicSent = true
                     s.contains("Prince Killed", true) -> princeSent = true

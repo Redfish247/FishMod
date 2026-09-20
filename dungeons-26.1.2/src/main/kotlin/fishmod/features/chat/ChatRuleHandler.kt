@@ -10,12 +10,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import net.minecraft.sounds.SoundEvents
 
-/**
- * Watches chat against user-defined [ChatRule]s (see [ChatRuleStore]) and fires each rule's
- * outputs on a match: optionally hide the original line, echo a reply to your own chat, show an
- * action-bar message, show a fading on-screen title, and/or play a sound. Matching supports plain
- * substring/exact or regex, a case-sensitivity toggle, and a partial-vs-full match toggle.
- */
 object ChatRuleHandler {
 
     private class ActiveTitle(val text: String, val untilMs: Long)
@@ -33,8 +27,6 @@ object ChatRuleHandler {
                 if (!matches(rule, raw)) continue
                 fire(rule)
             }
-            // return false: dropping the packet would also skip vanilla chat logging; hiding happens
-            // at the display layer instead (shouldHideAtDisplay / ChatHudMixin)
             false
         }
 
@@ -50,11 +42,6 @@ object ChatRuleHandler {
         )
     }
 
-    /**
-     * DISPLAY-layer predicate (called from ChatHudMixin): true if some enabled rule with
-     * "Hide Original Message" matches this line. Pure — side-effect outputs already fired from the
-     * packet-level handler above, so this only decides whether to draw the line.
-     */
     @JvmStatic
     fun shouldHideAtDisplay(message: Component?): Boolean {
         if (message == null || !ChatRuleStore.isMasterEnabled()) return false

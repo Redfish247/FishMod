@@ -30,7 +30,6 @@ public class DrawContextMixin {
     @Shadow
     private Matrix3x2fStack pose;
 
-    // @Share + @At("RETURN") keep pushMatrix/popMatrix balanced when tooltip() bails early
     @Inject(method = "tooltip", at = @At("HEAD"))
     private void fishmod$tooltipScrollPush(Font font, List<ClientTooltipComponent> lines, int xo, int yo,
                                           ClientTooltipPositioner positioner, Identifier style, CallbackInfo ci,
@@ -55,7 +54,6 @@ public class DrawContextMixin {
         if (shifted.get()) pose.popMatrix();
     }
 
-
     @ModifyVariable(method = "itemCooldown", at=@At("STORE"), ordinal = 0)
     private float noCooldown(float f) {
         return Visual.hideCooldown? 0: f;
@@ -63,7 +61,6 @@ public class DrawContextMixin {
 
     @Inject(method = "item(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;III)V", at=@At("HEAD"))
     private void scaleUp(LivingEntity entity, Level world, ItemStack stack, int x, int y, int seed, CallbackInfo ci) {
-        // gate on entity != null so inventory slots (null entity) don't double-draw the rarity bg
         if (entity != null) {
             fishmod.features.ItemRarityHotbar.drawRarity((GuiGraphicsExtractor) (Object) this, stack, x, y);
         }

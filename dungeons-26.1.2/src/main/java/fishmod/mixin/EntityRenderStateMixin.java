@@ -9,8 +9,6 @@ import org.spongepowered.asm.mixin.Unique;
 
 import java.util.List;
 
-/** Carries a per-player non-uniform render size on the render state (see {@link ScaleHolder}), plus
- *  the resolved networth / cata lines drawn under the nametag (see {@link NametagStatsHolder}). */
 @Mixin(EntityRenderState.class)
 public class EntityRenderStateMixin implements ScaleHolder, NametagStatsHolder {
     @Unique private float fishmod$scaleX = 1.0f;

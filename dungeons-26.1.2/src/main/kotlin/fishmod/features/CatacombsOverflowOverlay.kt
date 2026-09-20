@@ -15,7 +15,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
 import java.util.regex.Pattern
 
-/** Hypixel's Catacombs/class items just show "MAX LEVEL" past 50 with no overflow progress; this draws the real overflow level on top, computed from the player's own dungeons API data. */
 object CatacombsOverflowOverlay {
 
     private val CLASS_KEYS: Map<String, String> = mapOf(
@@ -33,7 +32,6 @@ object CatacombsOverflowOverlay {
     private var fetchInFlight = false
     private const val REFRESH_MS = 60_000L
 
-    /** When true, dumps the name + lore of any Catacombs/class item seen in a menu to chat (throttled). */
     @JvmField
     var debugDumpLines = false
     private val lastDumpAt: MutableMap<String, Long> = HashMap()
@@ -84,7 +82,6 @@ object CatacombsOverflowOverlay {
 
     private fun draw(ctx: GuiGraphicsExtractor, stack: ItemStack?, x: Int, y: Int) {
         if (stack == null || stack.isEmpty) return
-        // Hypixel appends a "✦" (and sometimes trailing punctuation) to maxed item names, same as maxed pets.
         val name = HypixelApi.STRIP_COLOR.matcher(stack.hoverName.string).replaceAll("")
             .replace("✦", "").replace(Regex("[!.]+$"), "").trim()
 
@@ -95,7 +92,6 @@ object CatacombsOverflowOverlay {
         if (debugDumpLines) dumpDebug(stack, name)
 
         val xp = if (isCata) selfCataXp else selfClassXp.getOrDefault(key, -1L)
-        // Only decorate once actually past the level-50 cap — below that Hypixel's own progress display is fine.
         if (xp <= HypixelApi.XP_FOR_50) return
         if (!ItemUtil.containsIgnoreCaseLore(stack, "level")) return
 
@@ -110,7 +106,6 @@ object CatacombsOverflowOverlay {
         ctx.pose().popMatrix()
     }
 
-    /** Throttled chat dump of a matched item's stripped name + lore, for tuning the match/gate regexes. */
     private fun dumpDebug(stack: ItemStack, name: String) {
         val now = System.currentTimeMillis()
         val last = lastDumpAt[name]

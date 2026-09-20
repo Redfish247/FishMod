@@ -5,10 +5,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
 
-/** Parses a raw string containing legacy '&'/'§'-formatting codes (plus "&*" ✪ stars and "&#rrggbb"
- *  hex colors) into a real styled [Component], so custom item names typed with color/format codes
- *  in /fm customize actually render styled wherever the item's hover name is drawn (tooltips,
- *  hotbar, etc), not just as literal text. Mirrors [fishmod.cosmetic.NickState.parse]. */
 object LegacyFormatting {
 
     @JvmStatic
@@ -29,7 +25,6 @@ object LegacyFormatting {
             val c = raw[i]
             if ((c == '&' || c == '§') && i + 1 < raw.length) {
                 val next = raw[i + 1]
-                // "&*" inserts a SkyBlock star (✪) in the color set right before it.
                 if (next == '*') {
                     sb.append('✪')
                     i += 2
@@ -59,8 +54,6 @@ object LegacyFormatting {
         return root
     }
 
-    /** Runs of (text, argb color) for a cheap NanoVG-only preview — bold/italic/underline are
-     *  applied to the real Component via [parse] but ignored here since NanoVG only has one face loaded. */
     @JvmStatic
     fun previewRuns(raw: String): List<Pair<String, Int>> {
         val out = ArrayList<Pair<String, Int>>()
@@ -72,7 +65,6 @@ object LegacyFormatting {
             val c = raw[i]
             if ((c == '&' || c == '§') && i + 1 < raw.length) {
                 val next = raw[i + 1]
-                // plain '*' here: the NanoVG Inter face has no ✪ glyph (the real name via MC's font keeps '✪' — see parse)
                 if (next == '*') { sb.append('*'); i += 2; continue }
                 if (next == '#' && i + 7 < raw.length) {
                     val hex = raw.substring(i + 2, i + 8)

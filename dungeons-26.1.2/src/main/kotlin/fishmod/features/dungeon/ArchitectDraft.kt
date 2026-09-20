@@ -7,10 +7,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import java.util.regex.Pattern
 
-/**
- * Architect's First Draft auto-refill. When *you* fail a dungeon puzzle, pull one Architect's First
- * Draft from your sacks so the next attempt has one ready.
- */
 object ArchitectDraft {
 
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
@@ -27,7 +23,7 @@ object ArchitectDraft {
             val self = Minecraft.getInstance().player?.gameProfile?.name ?: return@register false
             val m1 = PUZZLE_FAIL.matcher(s)
             val m2 = ORUO_WRONG.matcher(s)
-            if ((m1.matches() && m1.group(1) == self) || (m2.matches() && m2.group(1) == self)) pending = 30 // ~1.5s
+            if ((m1.matches() && m1.group(1) == self) || (m2.matches() && m2.group(1) == self)) pending = 30
             false
         }
 

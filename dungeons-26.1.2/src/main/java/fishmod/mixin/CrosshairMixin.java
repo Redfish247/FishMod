@@ -10,7 +10,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** "Custom Crosshair" feature: hide the vanilla crosshair while a custom crosshair image is active. */
 @Mixin(Gui.class)
 public class CrosshairMixin {
 

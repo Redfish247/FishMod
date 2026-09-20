@@ -29,7 +29,6 @@ object DungeonDeathMessage {
 
         val playerName = m.group(1) ?: m.group(2)
 
-        // Hypixel writes "☠ You died/were killed..." for the local player, so match "You" too.
         val mc = Minecraft.getInstance()
         val localName = mc.user.name
         if (playerName.equals("You", ignoreCase = true) || playerName.equals(localName, ignoreCase = true)) return false

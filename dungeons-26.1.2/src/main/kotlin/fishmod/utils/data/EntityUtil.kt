@@ -73,7 +73,6 @@ object EntityUtil {
     private fun checkPlayer(player: Player, networkHandler: ClientPacketListener): Boolean {
         val entry: PlayerInfo? = networkHandler.getPlayerInfo(player.uuid)
 
-        // this is a hack which will fail if someone has a really old bugged ign that includes a space
         if (entry != null) {
             val name = entry.profile.name
             return name.isNotEmpty() && !name.contains(" ")

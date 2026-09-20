@@ -9,18 +9,10 @@ import java.io.FileWriter
 import java.lang.reflect.Type
 import java.util.concurrent.Executors
 
-/**
- * Persistent per-(boss, tier) personal-best kill times, in seconds.
- *
- * Stored in `config/fishmod/slayer_pbs.json` as `"<TYPE>|<tier>" -> seconds` — the same on-disk +
- * off-thread-write pattern as [fishmod.utils.dungeon.RunHistory], so a PB set on a boss kill (which
- * happens on the tick/network thread) never stutters the game. Survives MC/mod restarts and world
- * changes because it's a plain file keyed only by boss identity — never combined across bosses.
- */
 object SlayerPersonalBests {
 
     private const val FILE_PATH = "config/fishmod/slayer_pbs.json"
-    private const val MAX_SECONDS = 1800.0 // reject absurd times from a mis-fired timer
+    private const val MAX_SECONDS = 1800.0
     private val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
 
     private val writeExecutor = Executors.newSingleThreadExecutor { r ->
@@ -28,20 +20,17 @@ object SlayerPersonalBests {
     }
     private val lock = Any()
 
-    // "REVENANT|4" -> best seconds
     private var data: MutableMap<String, Double> = HashMap()
 
     init { load() }
 
     private fun key(type: SlayerType, tier: Int) = "${type.name}|$tier"
 
-    /** Best time for this exact boss+tier, or -1 if none recorded. */
     @JvmStatic
     fun get(type: SlayerType, tier: Int): Double = synchronized(lock) {
         data[key(type, tier)] ?: -1.0
     }
 
-    /** Best time across every tier of this boss, or -1 if none recorded. */
     @JvmStatic
     fun bestForType(type: SlayerType): Double = synchronized(lock) {
         data.entries.asSequence()
@@ -50,10 +39,6 @@ object SlayerPersonalBests {
             .minOrNull() ?: -1.0
     }
 
-    /**
-     * Records [seconds] for this boss+tier. Returns true when it beat (or first-set) the PB.
-     * A slower time is ignored.
-     */
     @JvmStatic
     fun record(type: SlayerType, tier: Int, seconds: Double): Boolean {
         if (seconds <= 0.0 || seconds > MAX_SECONDS) return false

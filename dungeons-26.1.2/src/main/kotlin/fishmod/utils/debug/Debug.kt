@@ -198,7 +198,6 @@ object Debug {
         )
     }
 
-
     @JvmStatic
     fun sendDebugMessage(text: Component) {
         if (sendDebug) {

@@ -13,11 +13,6 @@ import net.minecraft.world.phys.Vec3
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 
-/**
- * Water Board solver. Clay-origin coords via [ORoom.getRealCoords]; solution schema
- * `waterSolutions.json` = { optimized(true/false) -> pattern(0-3) -> extendedSlots(3 digits) ->
- * lever -> [click times, seconds] }.
- */
 object WaterSolver {
 
     private val waterSolutions: Map<String, Map<String, Map<String, Map<String, List<Double>>>>> = try {
@@ -36,6 +31,9 @@ object WaterSolver {
     private var openedWaterTicks = -1
     private var tickCounter = 0
     private var failed = false
+
+    private var solutionListDirty = true
+    private var cachedSolutionList: List<Pair<LeverBlock, Double>> = emptyList()
 
     fun onRoomEnter(room: ORoom?) {
         if (room?.data?.name != "Water Board") reset()
@@ -71,20 +69,25 @@ object WaterSolver {
         waterSolutions[optimized.toString()]?.get(patternIdentifier.toString())?.get(extendedSlots)?.forEach { (key, times) ->
             LeverBlock.fromKey(key)?.let { solutions[it] = times }
         }
+        solutionListDirty = true
     }
 
     fun onRenderWorld() {
         if (patternIdentifier == -1 || solutions.isEmpty() || OdinScan.currentRoomName != "Water Board") return
 
-        val solutionList = solutions
-            .flatMap { (lever, times) -> times.drop(lever.i).map { lever to it } }
-            .sortedWith(
-                compareBy(
-                    { it.second != 0.0 },
-                    { if (it.second == 0.0) it.first.ordinal else Int.MAX_VALUE },
-                    { if (it.second != 0.0) it.second else 0.0 },
-                ),
-            )
+        if (solutionListDirty) {
+            cachedSolutionList = solutions
+                .flatMap { (lever, times) -> times.drop(lever.i).map { lever to it } }
+                .sortedWith(
+                    compareBy(
+                        { it.second != 0.0 },
+                        { if (it.second == 0.0) it.first.ordinal else Int.MAX_VALUE },
+                        { if (it.second != 0.0) it.second else 0.0 },
+                    ),
+                )
+            solutionListDirty = false
+        }
+        val solutionList = cachedSolutionList
 
         solutionList.firstOrNull()?.first?.let { first ->
             val fp = first.leverPos
@@ -119,6 +122,7 @@ object WaterSolver {
         LeverBlock.entries.find { it.leverPos == clicked }?.let {
             if (it == LeverBlock.WATER && openedWaterTicks == -1) openedWaterTicks = tickCounter
             it.i++
+            solutionListDirty = true
         }
     }
 
@@ -129,6 +133,8 @@ object WaterSolver {
         openedWaterTicks = -1
         tickCounter = 0
         failed = false
+        solutionListDirty = true
+        cachedSolutionList = emptyList()
     }
 
     private enum class WoolColor(val relativePosition: BlockPos) {
@@ -151,8 +157,7 @@ object WaterSolver {
         DIAMOND(BlockPos(10, 61, 20)),
         EMERALD(BlockPos(10, 61, 15)),
         CLAY(BlockPos(10, 61, 10)),
-        WATER(BlockPos(15, 60, 5)),
-        NONE(BlockPos(0, 0, 0));
+        WATER(BlockPos(15, 60, 5));
 
         val leverPos: BlockPos
             get() = OdinScan.currentRoom?.getRealCoords(relativePosition) ?: BlockPos(0, 0, 0)

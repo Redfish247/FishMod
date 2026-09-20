@@ -9,7 +9,6 @@ import net.minecraft.world.phys.Vec3
 
 enum class WitherDragonState { SPAWNING, ALIVE, DEAD }
 
-// Coordinates / AABBs / spawn ranges below are calibrated — do not adjust.
 enum class WitherDragon(
     val spawnPos: Vec3,
     val box: AABB,

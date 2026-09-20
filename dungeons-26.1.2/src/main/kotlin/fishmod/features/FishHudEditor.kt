@@ -15,19 +15,11 @@ import java.util.function.DoubleSupplier
 import java.util.function.IntConsumer
 import java.util.function.IntSupplier
 
-/**
- * HUD position/scale editor. Instead of dropping every HUD box on screen at once (they pile up and
- * overlap), the left panel lists the HUDs split into a Left / Right column by which half of the
- * screen they currently sit in; you pick one and only that box is interactive on the canvas, with
- * the rest shown as dim ghosts for context.
- */
 class FishHudEditor(
     private val parent: Screen,
-    /** When non-null, only HUDs whose name is in this set are shown/editable (per-column editing). */
     private val only: Set<String>? = null,
 ) : Screen(Component.literal("Edit HUD")) {
 
-    /** Plain class, not a data class, so Java callers keep record-style accessors like `.name()`. */
     class HudEntry @JvmOverloads constructor(
         private val nameVal: String,
         private val getXVal: IntSupplier,
@@ -98,7 +90,6 @@ class FishHudEditor(
             ENTRIES.add(HudEntry(name, getX, IntConsumer { }, getY, IntConsumer { }, w, h, true))
         }
 
-        /** Uses true pixel space, not `getScaledX()`, so the box stays anchored while scaling. */
         @JvmStatic
         fun register(name: String, component: HUDComponent) {
             ENTRIES.add(
@@ -124,7 +115,6 @@ class FishHudEditor(
             )
         }
 
-        /** Default position/scale per HUD for "Reset positions"; keep in sync with defaults elsewhere. */
         private val DEFAULTS: Map<String, DoubleArray> = java.util.Map.ofEntries(
             java.util.Map.entry("Pet", doubleArrayOf(10.0, 80.0, 1.0)),
             java.util.Map.entry("Session Stats", doubleArrayOf(10.0, 120.0, 1.0)),
@@ -162,7 +152,6 @@ class FishHudEditor(
             java.util.Map.entry("Slayer Profit", doubleArrayOf(240.0, 90.0, 1.0))
         )
 
-        /** Which movable HUDs belong to each FishModScreen column, for its header "Edit HUD" button. */
         private val COLUMN_HUDS: Map<String, Set<String>> = mapOf(
             "Dungeon Trackers" to setOf("Session Stats", "PB Pace"),
             "Dungeons" to setOf("Dungeon Score", "Spirit Bear", "Blessings", "Simon Says", "Puzzles"),
@@ -181,7 +170,6 @@ class FishHudEditor(
             "Slayer" to setOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit"),
         )
 
-        /** Non-empty HUD-name set for [columnName], or null if that column has no movable HUDs. */
         @JvmStatic
         fun columnHuds(columnName: String): Set<String>? = COLUMN_HUDS[columnName]?.takeIf { it.isNotEmpty() }
 
@@ -206,7 +194,6 @@ class FishHudEditor(
     private var dragging: HudEntry? = null
     private var dragOffX = 0
     private var dragOffY = 0
-    /** Last box the mouse touched — target for arrow-key nudge. */
     private var lastTouched: HudEntry? = null
     private var resetArmed = false
 
@@ -215,7 +202,6 @@ class FishHudEditor(
     private fun visibleEntries(): List<HudEntry> =
         ENTRIES.filter { it.isVisible() && (only == null || it.name() in only) }
 
-    /** "Reset positions" — scoped to what this editor shows (all, or one column's HUDs). */
     private fun resetVisible() {
         for (e in visibleEntries()) {
             if (e.locked()) continue

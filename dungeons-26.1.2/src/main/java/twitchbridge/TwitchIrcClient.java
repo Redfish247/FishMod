@@ -11,18 +11,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * Anonymous, read-only Twitch IRC client.
- *
- * <p>Connects to {@code irc.chat.twitch.tv:6697} over TLS as a {@code justinfanNNNN} guest — this
- * is Twitch's supported way to read a channel's chat without any account, token or client id.
- * Runs its own daemon thread with automatic exponential-backoff reconnect while started.</p>
- */
 public final class TwitchIrcClient {
 
 	private static final String HOST = "irc.chat.twitch.tv";
 	private static final int PORT = 6697;
-	private static final int READ_TIMEOUT_MS = 360_000; // Twitch PINGs well within 5 min; else reconnect.
+	private static final int READ_TIMEOUT_MS = 360_000;
 
 	private final TwitchBridgeConfig config;
 	private final String channel;
@@ -66,7 +59,7 @@ public final class TwitchIrcClient {
 		while (started) {
 			try {
 				connectAndListen();
-				attempt = 0; // clean disconnect (e.g. Twitch RECONNECT) — retry immediately
+				attempt = 0;
 			} catch (IOException e) {
 				if (!started) break;
 				attempt++;
@@ -141,7 +134,7 @@ public final class TwitchIrcClient {
 			case "RECONNECT" -> {
 				throw new IOException("server asked to reconnect");
 			}
-			default -> { /* 001/353/366/CAP/etc — ignore */ }
+			default -> {  }
 		}
 	}
 

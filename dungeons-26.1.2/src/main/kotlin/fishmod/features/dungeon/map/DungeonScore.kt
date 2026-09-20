@@ -8,7 +8,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.world.scores.DisplaySlot
 import java.util.regex.Pattern
 
-/** Distinct from fishmod.features.dungeon.DungeonScore (an unrelated existing feature). */
 object DungeonScore {
 
     @JvmStatic var secretsFound = 0
@@ -28,7 +27,6 @@ object DungeonScore {
     private var runStartMs = -1L
     private var alertedMissing = false
 
-    // Tab/sidebar/roster only change on chat or tab updates (~1 Hz). Re-parse every N ticks, not 20 Hz.
     private var parseTickCounter = 0
     private const val PARSE_INTERVAL_TICKS = 10
 
@@ -111,7 +109,6 @@ object DungeonScore {
         if (mc.connection == null) return
         var completedPuzzles = 0
 
-        // Raw scan + color-strip is shared across features via TabListCache; only the parsing below is ours.
         for (entry in TabListCache.entries) {
             val line = entry.stripped
             var m = SECRET_PERCENT.matcher(line)
@@ -252,7 +249,6 @@ object DungeonScore {
         return Math.max(need, 0)
     }
 
-    /** Projected end-of-run score assuming a full clear (100 room score) with current secrets/bonuses. */
     @JvmStatic
     fun projectedFullClearScore(): Int {
         val ts = calculateTotalSecrets()
@@ -262,7 +258,6 @@ object DungeonScore {
         return 60 + secretScore + skill + 100 + calculateBonusScore()
     }
 
-    /** Auto party-chat breakdown of exactly what's missing (prince/crypts/mimic/secrets) for a 300 on full clear. */
     private fun sendMissingScoreMessage(mc: Minecraft) {
         if (mc.connection == null) return
         val projected = projectedFullClearScore()

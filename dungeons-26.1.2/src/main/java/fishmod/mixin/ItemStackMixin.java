@@ -13,7 +13,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Caches the parsed {@link ItemRarity} on each ItemStack so the rarity background skips re-scanning. */
 @Mixin(ItemStack.class)
 public class ItemStackMixin implements ItemRarityHolder {
 

@@ -11,19 +11,18 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.client.gui.screens.inventory.AbstractSignEditScreen
 import net.minecraft.world.item.ItemStack
 
-/** The item is cached from slot 13 every frame the auction menu is open (not just on click) since by the time the sign screen opens, the original container is already gone. */
 object AuctionPriceAutofill {
 
     private val GUI_NAMES = setOf("Create BIN Auction", "Create Auction")
 
     private var pendingItem: ItemStack? = null
+    private var lastSeenStack: ItemStack? = null
 
     @JvmStatic
     fun init() {
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, w, h -> onScreenInit(screen, w, h) })
     }
 
-    /** Also primes [ItemValue.estimate]'s price cache early — its two sequential HTTP calls won't finish in the single tick between clicking Price and the sign screen opening. */
     @JvmStatic
     fun trackScreen(screen: AbstractContainerScreen<*>) {
         if (!FishSettings.auctionPriceAutofillEnabled || !Location.inSkyblock()) return
@@ -31,6 +30,9 @@ object AuctionPriceAutofill {
         if (title !in GUI_NAMES) return
         val stack = screen.menu.slots.getOrNull(13)?.item ?: return
         if (stack.isEmpty) return
+        val prev = lastSeenStack
+        if (prev != null && ItemStack.isSameItemSameComponents(prev, stack)) return
+        lastSeenStack = stack.copy()
         pendingItem = stack.copy()
         ItemValue.estimate(stack)
     }
@@ -41,15 +43,12 @@ object AuctionPriceAutofill {
         val item = pendingItem ?: return
         val sign = (screen as AbstractSignEditScreenAccessor).`fishmod$getSign`() ?: return
         val lines = Array(4) { i -> sign.frontText.getMessage(i, false).string }
-        // Hypixel's auction-price sign always carries this fixed layout on lines 1-3
         if (lines[1] != "^^^^^^^^^^^^^^^" || lines[2] != "Your auction" || lines[3] != "starting bid") return
 
         val value = ItemValue.estimate(item)
         val pct = FishSettings.auctionAutofillPercent.coerceIn(0, 50) / 100.0
         val suggested = if (value > 0.0) Math.floor(value * (1.0 - pct)).toLong() else 0L
 
-        // Assign the field directly (not Minecraft.setScreen) so the sign screen's removed() never
-        // fires — that would immediately send a blank-price sign update ("Couldn't read this number!").
         val mc = Minecraft.getInstance()
         mc.execute {
             val replacement = AuctionPriceScreen(sign, lines, item, suggested)

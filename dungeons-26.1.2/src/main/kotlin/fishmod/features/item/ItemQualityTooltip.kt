@@ -6,11 +6,6 @@ import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.minecraft.core.component.DataComponents
 import net.minecraft.network.chat.Component
 
-/**
- * Appends a "Quality Bonus: +X% (floor)" line to dungeon-item tooltips. Reads
- * `baseStatBoostPercentage` / `dungeon_skill_req` / `item_tier` from the item's `custom_data` —
- * no network dependency.
- */
 object ItemQualityTooltip {
 
     @JvmStatic

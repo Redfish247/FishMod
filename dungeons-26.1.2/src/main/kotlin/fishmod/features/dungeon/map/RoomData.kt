@@ -11,7 +11,6 @@ import java.io.InputStreamReader
 import java.lang.reflect.Type
 import java.nio.charset.StandardCharsets
 
-/** Bundled per-core room metadata loaded from assets/fishmod/map/rooms.json. */
 class RoomData {
     var name: String? = null
         private set
