@@ -46,11 +46,66 @@ public class HypixelApi {
 
     public static final long XP_FOR_50 = CATA_XP_TABLE[50];
 
+    /** Per-level XP cost for SkyBlock skills (index = level, 1-60), community-standard table. */
+    private static final long[] SKILL_XP_PER_LEVEL = {
+        0L,
+        50L, 125L, 200L, 300L, 500L, 750L, 1_000L, 1_500L, 2_000L, 3_500L,
+        5_000L, 7_500L, 10_000L, 15_000L, 20_000L, 30_000L, 50_000L, 75_000L, 100_000L, 200_000L,
+        300_000L, 400_000L, 500_000L, 600_000L, 700_000L, 800_000L, 900_000L, 1_000_000L, 1_100_000L, 1_200_000L,
+        1_300_000L, 1_400_000L, 1_500_000L, 1_600_000L, 1_700_000L, 1_800_000L, 1_900_000L, 2_000_000L, 2_100_000L, 2_200_000L,
+        2_300_000L, 2_400_000L, 2_500_000L, 2_600_000L, 2_750_000L, 2_900_000L, 3_100_000L, 3_400_000L, 3_700_000L, 4_000_000L,
+        4_300_000L, 4_600_000L, 4_900_000L, 5_200_000L, 5_500_000L, 5_800_000L, 6_100_000L, 6_400_000L, 6_700_000L, 7_000_000L
+    };
+
+    /** Cumulative XP required for each skill level (index = level, 0-60). */
+    private static final long[] SKILL_XP_TABLE = new long[SKILL_XP_PER_LEVEL.length];
+    static {
+        long sum = 0;
+        for (int i = 0; i < SKILL_XP_PER_LEVEL.length; i++) {
+            sum += SKILL_XP_PER_LEVEL[i];
+            SKILL_XP_TABLE[i] = sum;
+        }
+    }
+
+    /**
+     * The 10 skills counted in Hypixel's "Skill Average" — only Runecrafting and Social are excluded
+     * as cosmetic/bonus skills.
+     */
+    private static final String[] AVG_SKILLS = {
+        "farming", "mining", "combat", "foraging", "fishing", "enchanting", "alchemy", "taming", "hunting", "carpentry"
+    };
+    private static final Map<String, Integer> SKILL_CAPS = Map.of(
+        "farming", 60, "mining", 60, "combat", 60, "foraging", 57, "fishing", 50,
+        "enchanting", 60, "alchemy", 50, "taming", 60, "hunting", 50, "carpentry", 50
+    );
+
+    /** Fractional skill level (level + progress to next) for [xp], clamped at [cap]. */
+    private static double skillLevelFor(long xp, int cap) {
+        int level = 0;
+        for (int i = Math.min(cap, SKILL_XP_TABLE.length - 1); i >= 0; i--) {
+            if (xp >= SKILL_XP_TABLE[i]) { level = i; break; }
+        }
+        if (level >= cap) return cap;
+        long into = xp - SKILL_XP_TABLE[level];
+        long need = SKILL_XP_PER_LEVEL[level + 1];
+        double progress = need > 0 ? Math.min(1.0, (double) into / need) : 0.0;
+        return level + progress;
+    }
+
     /** Community-standard XP cost per "overflow" level past the level-50 cap (catacombs + class curves). */
     public static final long CATA_OVERFLOW_XP_PER_LEVEL = 200_000_000L;
 
     private static final String PROXY_URL = "https://fishmod.dev";
     private static final String MOD_TOKEN = "fishmod123";
+
+    // Identifies the calling player (as opposed to whatever uuid=<target> a request is looking up)
+    // so the proxy can rate-limit/block a spamming caller on the Hypixel-lookup and networth
+    // endpoints without blocking everyone else from looking that target up. Empty when no player
+    // is loaded yet (e.g. a very early call) — the proxy treats a blank caller as unblockable.
+    private static String callerId() {
+        var mc = Minecraft.getInstance();
+        return (mc.player != null) ? mc.player.getUUID().toString().replace("-", "") : "";
+    }
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(10))
@@ -179,6 +234,8 @@ public class HypixelApi {
                 if (obj.has("totalRuns"))    d.totalRuns    = obj.get("totalRuns").getAsLong();
                 if (obj.has("secretAverage") && !obj.get("secretAverage").isJsonNull())
                     d.secretAverage = obj.get("secretAverage").getAsString();
+                if (obj.has("skillAverage") && !obj.get("skillAverage").isJsonNull())
+                    d.skillAverage = obj.get("skillAverage").getAsString();
                 if (obj.has("cataPbs")) {
                     JsonArray arr = obj.getAsJsonArray("cataPbs");
                     for (int i = 0; i < Math.min(arr.size(), 8); i++)
@@ -236,6 +293,8 @@ public class HypixelApi {
                     obj.addProperty("totalRuns",    d.totalRuns);
                     if (d.secretAverage != null) obj.addProperty("secretAverage", d.secretAverage);
                     else obj.add("secretAverage", JsonNull.INSTANCE);
+                    if (d.skillAverage != null) obj.addProperty("skillAverage", d.skillAverage);
+                    else obj.add("skillAverage", JsonNull.INSTANCE);
                     JsonArray cataPbs = new JsonArray();
                     for (String pb : d.cataPbs)   { if (pb != null) cataPbs.add(pb); else cataPbs.add(JsonNull.INSTANCE); }
                     obj.add("cataPbs", cataPbs);
@@ -273,6 +332,7 @@ public class HypixelApi {
         public long totalSecrets;
         public long totalRuns;
         public String secretAverage; // "9.5", null if no runs
+        public String skillAverage;  // "32.5", null if skills API is off
         public Map<String, Long> classXp = new HashMap<>();
         // Index 0-7: 0=Entrance/E, 1-7=F1-F7 for cata; 1-7=M1-M7 for master. null = no PB.
         public String[] cataPbs    = new String[8];
@@ -356,12 +416,7 @@ public class HypixelApi {
         } catch (Exception e) { return null; }
     }
 
-    /**
-     * Values the farming + hunting toolkits (member.garden_player_data.farming_toolkit /
-     * member.foraging.hunting_toolkit). Each category maps to entries of {@code {type,data}} where
-     * data decodes straight to an ExtraAttributes compound; SkyHelper runs those through the normal
-     * item pipeline, so we wrap each in a synthetic {@code {tag:{ExtraAttributes}}} and reuse itemValueNw.
-     */
+    /** Wraps each toolkit entry's decoded ExtraAttributes in a synthetic {@code {tag:{ExtraAttributes}}} so it can reuse itemValueNw, matching SkyHelper's own pipeline. */
     private static double toolkitsValueNw(JsonObject member, Map<String, Double> prices) {
         double total = 0;
         JsonObject[] kits = new JsonObject[2];
@@ -600,12 +655,7 @@ public class HypixelApi {
     }
 
 
-    /**
-     * Silent Party Finder lookup — requires API key.
-     * Flow: Ashcon (UUID, fast/cached) → Hypixel profiles (stats).
-     * Falls back to Mojang for UUID if Ashcon fails.
-     * Always calls callback so pending is never stuck.
-     */
+    /** Silent Party Finder lookup — requires API key. Always calls callback (even on failure) so a pending lookup is never stuck. */
     public static void getByNameSilent(String ign, DungeonDataCallback callback) {
         // fast path: UUID already cached — skip the name→UUID lookup
         String cachedUuid = getCachedUuid(ign);
@@ -622,7 +672,7 @@ public class HypixelApi {
         try {
             req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuidStr))
-                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
                 .header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10))
                 .GET()
@@ -663,16 +713,7 @@ public class HypixelApi {
         });
     }
 
-    /**
-     * Resolves an IGN to a dash-less UUID, preferring Mojang's authoritative endpoint so name changes
-     * and recycled names resolve to whoever CURRENTLY owns the name. Ashcon / playerdb mirror Mojang
-     * but cache aggressively and can lag real name changes by days — so they're used only as a fallback
-     * for when Mojang itself can't answer (rate-limit / outage), never to override a Mojang answer.
-     *
-     * attempt: 0 = Mojang (authoritative) → 1 = Ashcon → 2 = playerdb. A definitive not-found from
-     * Mojang means "no account currently holds this name" — we stop there instead of asking the stale
-     * mirrors, which would happily hand back a recycled/old owner (the bug this ordering fixes).
-     */
+    /** Prefers Mojang's authoritative endpoint (attempt 0) over Ashcon/playerdb (1, 2), since those mirrors cache aggressively and can hand back a stale recycled-name owner. */
     private static void resolveUuid(String ign, int attempt, java.util.function.Consumer<String> cb) {
         if (attempt == 0) {
             String cached = getCachedUuid(ign);
@@ -810,8 +851,42 @@ public class HypixelApi {
         parseInventoryData(member, result);
 
         result.magicalPower = computeMagicalPower(member);
+        result.skillAverage = computeSkillAverage(member);
 
         return result;
+    }
+
+    /** Checks both the post-2023 nested "player_data.experience" keys and the legacy flat "experience_skill_farming" keys, in case the proxy still serves the old shape. */
+    private static String computeSkillAverage(JsonObject member) {
+        try {
+            JsonObject nested = null;
+            if (member.has("player_data") && member.get("player_data").isJsonObject()) {
+                JsonObject playerData = member.getAsJsonObject("player_data");
+                if (playerData.has("experience") && playerData.get("experience").isJsonObject())
+                    nested = playerData.getAsJsonObject("experience");
+            }
+
+            boolean any = false;
+            double total = 0;
+            for (String skill : AVG_SKILLS) {
+                Double xp = null;
+                if (nested != null) {
+                    String nestedKey = "SKILL_" + skill.toUpperCase(java.util.Locale.ROOT);
+                    if (nested.has(nestedKey) && !nested.get(nestedKey).isJsonNull())
+                        xp = nested.get(nestedKey).getAsDouble();
+                }
+                if (xp == null) {
+                    String flatKey = "experience_skill_" + skill;
+                    if (member.has(flatKey) && !member.get(flatKey).isJsonNull())
+                        xp = member.get(flatKey).getAsDouble();
+                }
+                if (xp == null) continue;
+                any = true;
+                total += skillLevelFor((long) (double) xp, SKILL_CAPS.get(skill));
+            }
+            if (!any) return null;
+            return String.format("%.1f", total / AVG_SKILLS.length);
+        } catch (Exception e) { return null; }
     }
 
     public static int calcCataLevel(long xp) {
@@ -858,7 +933,7 @@ public class HypixelApi {
         try {
             req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuidStr))
-                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
                 .header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10))
                 .GET()
@@ -929,7 +1004,7 @@ public class HypixelApi {
                 String uuid = JsonParser.parseString(ur.body()).getAsJsonObject().get("id").getAsString();
                 HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
-                    .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                    .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                     .timeout(Duration.ofSeconds(10)).GET().build();
                 HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
                     try {
@@ -946,6 +1021,68 @@ public class HypixelApi {
                                         Misc.addChatMessage(Component.literal("§7" + key + " = " + abs.get(key).toString().substring(0, Math.min(60, abs.get(key).toString().length()))));
                                 } else {
                                     Misc.addChatMessage(Component.literal("§cmissing"));
+                                }
+                                Misc.addChatMessage(Component.literal("§b--- End ---"));
+                            });
+                            return;
+                        }
+                    } catch (Exception e) {
+                        mc.schedule(() -> Misc.addChatMessage(Component.literal("§cParse error: " + e.getMessage())));
+                    }
+                });
+            } catch (Exception e) {
+                mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUUID error: " + e.getMessage())));
+            }
+        });
+    }
+
+    /** Dumps top-level member keys containing "skill"/"experience", plus player_data.experience if present — used to find the live skill-XP schema. */
+    public static void dumpSkillKeys(Minecraft mc, String ign) {
+        mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Looking up " + ign + " (skills, raw)...")));
+        HttpRequest uuidReq;
+        try {
+            uuidReq = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.mojang.com/users/profiles/minecraft/" + ign))
+                .timeout(Duration.ofSeconds(10)).GET().build();
+        } catch (Exception e) { return; }
+        HTTP.sendAsync(uuidReq, HttpResponse.BodyHandlers.ofString()).thenAccept(ur -> {
+            try {
+                String uuid = JsonParser.parseString(ur.body()).getAsJsonObject().get("id").getAsString();
+                HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
+                    .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
+                    .timeout(Duration.ofSeconds(10)).GET().build();
+                HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
+                    try {
+                        JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
+                        for (JsonElement profileEl : root.getAsJsonArray("profiles")) {
+                            JsonObject profile = profileEl.getAsJsonObject();
+                            if (!profile.has("selected") || !profile.get("selected").getAsBoolean()) continue;
+                            JsonObject member = profile.getAsJsonObject("members").getAsJsonObject(uuid);
+                            mc.schedule(() -> {
+                                Misc.addChatMessage(Component.literal("§b--- top-level skill/experience keys ---"));
+                                boolean any = false;
+                                for (String key : member.keySet()) {
+                                    String lower = key.toLowerCase(java.util.Locale.ROOT);
+                                    if (lower.contains("skill") || lower.contains("experience")) {
+                                        any = true;
+                                        String val = member.get(key).toString();
+                                        Misc.addChatMessage(Component.literal("§7" + key + " = " + val.substring(0, Math.min(80, val.length()))));
+                                    }
+                                }
+                                if (!any) Misc.addChatMessage(Component.literal("§cnone found"));
+                                Misc.addChatMessage(Component.literal("§b--- player_data.experience ---"));
+                                if (member.has("player_data") && member.get("player_data").isJsonObject()) {
+                                    JsonObject pd = member.getAsJsonObject("player_data");
+                                    if (pd.has("experience") && pd.get("experience").isJsonObject()) {
+                                        JsonObject exp = pd.getAsJsonObject("experience");
+                                        for (String key : exp.keySet())
+                                            Misc.addChatMessage(Component.literal("§7" + key + " = " + exp.get(key).toString()));
+                                    } else {
+                                        Misc.addChatMessage(Component.literal("§cno experience object"));
+                                    }
+                                } else {
+                                    Misc.addChatMessage(Component.literal("§cno player_data"));
                                 }
                                 Misc.addChatMessage(Component.literal("§b--- End ---"));
                             });
@@ -979,39 +1116,51 @@ public class HypixelApi {
      * using the SkyHelper price list. Values liquid + items (base, recomb, enchants, hot-potato,
      * master stars) + pets. An estimate — close to in-game, no extra hosting / SkyCrypt needed.
      */
+    /** Sentinel networth value meaning "the proxy rejected this because YOU are blocked", distinct from -1 (not found / error). */
+    public static final double NETWORTH_BLOCKED = -2.0;
+
     public static void getNetworth(Minecraft mc, String ign, NetworthCallback cb) {
+        NetworthCallback marshaled = (networth, profileName) -> mc.execute(() -> cb.onData(networth, profileName));
         java.util.concurrent.CompletableFuture.runAsync(() -> {
             String uuid = resolveUuidBlocking(ign);
-            if (uuid == null) { cb.onData(-1, null); return; }
+            if (uuid == null) { marshaled.onData(-1, null); return; }
             // prefer the proxy's networth endpoint (real library, includes museum); local estimate is the fallback
-            if (getNetworthRemote(uuid, cb)) return;
-            getNetworthLocal(uuid, cb);
+            Boolean blocked = getNetworthRemote(uuid, marshaled);
+            if (blocked == null) return; // delivered (value or NETWORTH_BLOCKED)
+            if (blocked) { marshaled.onData(NETWORTH_BLOCKED, null); return; } // no point falling back — same block applies
+            getNetworthLocal(uuid, marshaled);
         }, API_EXECUTOR);
     }
 
     /**
      * Asks the proxy for a SkyHelper-Networth figure ({@code /networth?uuid=}). Expected body:
-     * {@code {"success":true,"networth":<number>,"profile":"<cute_name>"}}. Returns true if a
-     * value was delivered to [cb]; false (nothing delivered) so the caller can fall back.
+     * {@code {"success":true,"networth":<number>,"profile":"<cute_name>"}}. Returns null if a value
+     * was delivered to [cb] (done); Boolean.TRUE if the caller is blocked (no point falling back to
+     * the local estimate — it hits the same block); Boolean.FALSE if nothing was delivered so the
+     * caller should fall back.
      */
-    private static boolean getNetworthRemote(String uuid, NetworthCallback cb) {
+    private static Boolean getNetworthRemote(String uuid, NetworthCallback cb) {
         try {
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(PROXY_URL + "/networth?uuid=" + uuid))
-                    .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                    .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                     .timeout(Duration.ofSeconds(15)).GET().build();
             HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
-            if (r.statusCode() != 200) return false;
+            if (r.statusCode() == 403) return Boolean.TRUE;
+            if (r.statusCode() != 200) return Boolean.FALSE;
             JsonObject o = JsonParser.parseString(r.body()).getAsJsonObject();
-            if (!o.has("networth") || o.get("networth").isJsonNull()) return false;
-            if (o.has("success") && !o.get("success").getAsBoolean()) return false;
+            if (o.has("success") && !o.get("success").getAsBoolean()) {
+                if (o.has("cause") && "blocked".equals(o.get("cause").getAsString())) return Boolean.TRUE;
+                return Boolean.FALSE;
+            }
+            if (!o.has("networth") || o.get("networth").isJsonNull()) return Boolean.FALSE;
             double nw = o.get("networth").getAsDouble();
             String pname = o.has("profile") && !o.get("profile").isJsonNull() ? o.get("profile").getAsString() : null;
             cb.onData(nw, pname);
-            return true;
+            return null;
         } catch (Exception e) {
             fishmod.utils.debug.Debug.LOGGER.warn("[Networth] remote endpoint: {}", e.toString());
-            return false;
+            return Boolean.FALSE;
         }
     }
 
@@ -1023,12 +1172,14 @@ public class HypixelApi {
 
                 HttpRequest req = HttpRequest.newBuilder()
                         .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
-                        .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                        .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                         .timeout(Duration.ofSeconds(12)).GET().build();
                 HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
                 JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
                 if (!root.has("success") || !root.get("success").getAsBoolean() || !root.has("profiles")) {
-                    cb.onData(-1, null); return;
+                    boolean blocked = r.statusCode() == 403
+                        || (root.has("cause") && "blocked".equals(root.get("cause").getAsString()));
+                    cb.onData(blocked ? NETWORTH_BLOCKED : -1, null); return;
                 }
                 JsonObject chosen = null;
                 for (JsonElement pe : root.getAsJsonArray("profiles")) {
@@ -1740,12 +1891,7 @@ public class HypixelApi {
         } catch (Exception ignored) { return 0; }
     }
 
-    /**
-     * Values the Galatea/Foraging Attribute Shard system: loose captured shards
-     * ({@code member.shards.owned} → {@code SHARD_<TYPE>}) plus fused attribute stacks
-     * ({@code member.attributes.stacks} → {@code ATTRIBUTE_SHARD_<NAME>}). SkyHelper does not
-     * value this, so this is a market-resale estimate (shard count × current shard price).
-     */
+    /** SkyHelper does not value the Attribute Shard system, so this is our own market-resale estimate (shard count × current shard price). */
     private static double shardsValueNw(JsonObject member, Map<String, Double> prices) {
         double total = 0;
         try {
@@ -1787,7 +1933,7 @@ public class HypixelApi {
         try {
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(PROXY_URL + "/skyblock/museum?profile=" + profileId))
-                    .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                    .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                     .timeout(Duration.ofSeconds(12)).GET().build();
             HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
             JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
@@ -1902,7 +2048,7 @@ public class HypixelApi {
         try {
             req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuidStr))
-                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
                 .header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10))
                 .GET()
@@ -1991,7 +2137,7 @@ public class HypixelApi {
         try {
             req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
-                .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10)).GET().build();
         } catch (Exception e) { cb.onData(-1, -1, null); return; }
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
@@ -2020,8 +2166,12 @@ public class HypixelApi {
 
     /** Result of a /seen heartbeat: the worker's current broadcast config (all fields may be null). */
     public interface SeenCallback {
-        /** @param updateLinks label→url (e.g. "github"/"modrinth"/"discord"), null if the request failed. */
-        void onData(String latestVersion, Map<String, String> updateLinks, String welcomeText, String discordUrl);
+        /**
+         * latestVersion is compare-only (our own numbering scheme); use latestDisplayVersion for any
+         * player-facing text instead. nickClearedAt is epoch-ms of the last admin/sweep nick revoke
+         * for this uuid (0 if none) — see NickState-reconciliation in InstallHeartbeat.kt.
+         */
+        void onData(String latestVersion, String latestDisplayVersion, Map<String, String> updateLinks, String welcomeText, String discordUrl, long nickClearedAt);
     }
 
     /**
@@ -2037,7 +2187,7 @@ public class HypixelApi {
             o.addProperty("modVersion", modVersion == null ? "" : modVersion);
             HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/seen"))
-                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
                 .header("Content-Type", "application/json")
                 .header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10))
@@ -2046,16 +2196,18 @@ public class HypixelApi {
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
                 try {
                     JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
-                    if (!root.has("success") || !root.get("success").getAsBoolean()) { cb.onData(null, null, null, null); return; }
+                    if (!root.has("success") || !root.get("success").getAsBoolean()) { cb.onData(null, null, null, null, null, 0L); return; }
                     String latest = root.has("latestVersion") ? root.get("latestVersion").getAsString() : null;
+                    String latestDisplay = root.has("latestDisplayVersion") ? root.get("latestDisplayVersion").getAsString() : null;
                     Map<String, String> links = root.has("updateLinks") && root.get("updateLinks").isJsonObject()
                         ? parseStringMap(root, "updateLinks") : null;
                     String welcome = root.has("welcomeText") ? root.get("welcomeText").getAsString() : null;
                     String discord = root.has("discordUrl") ? root.get("discordUrl").getAsString() : null;
-                    cb.onData(latest, links, welcome, discord);
-                } catch (Exception ignored) { cb.onData(null, null, null, null); }
-            }).exceptionally(t -> { cb.onData(null, null, null, null); return null; });
-        } catch (Exception e) { cb.onData(null, null, null, null); }
+                    long nickClearedAt = root.has("nickClearedAt") ? root.get("nickClearedAt").getAsLong() : 0L;
+                    cb.onData(latest, latestDisplay, links, welcome, discord, nickClearedAt);
+                } catch (Exception ignored) { cb.onData(null, null, null, null, null, 0L); }
+            }).exceptionally(t -> { cb.onData(null, null, null, null, null, 0L); return null; });
+        } catch (Exception e) { cb.onData(null, null, null, null, null, 0L); }
     }
 
     /** Uploads the local player's cosmetic nick (empty/null clears it) so other mod users can see it. */
@@ -2066,7 +2218,7 @@ public class HypixelApi {
             o.addProperty("nick", nick == null ? "" : nick);
             HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/nick"))
-                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
                 .header("Content-Type", "application/json")
                 .header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10))
@@ -2091,7 +2243,7 @@ public class HypixelApi {
             o.addProperty("dim", dim == null ? "" : dim);
             HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/ping"))
-                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
                 .header("Content-Type", "application/json")
                 .header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10))
@@ -2109,7 +2261,7 @@ public class HypixelApi {
             String q = String.join(",", uuidsNoDashes);
             HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/pings?uuids=" + q + "&since=" + since))
-                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
                 .header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10))
                 .GET().build();
@@ -2149,7 +2301,7 @@ public class HypixelApi {
             o.addProperty("vote", vote);
             HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/rep"))
-                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
                 .header("Content-Type", "application/json")
                 .header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10))
@@ -2177,7 +2329,7 @@ public class HypixelApi {
             String q = String.join(",", uuidsNoDashes);
             HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/rep?uuids=" + q))
-                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
                 .header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10))
                 .GET().build();
@@ -2209,7 +2361,7 @@ public class HypixelApi {
             String q = String.join(",", uuidsNoDashes);
             HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/nicks?uuids=" + q))
-                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
                 .header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10))
                 .GET().build();
@@ -2235,7 +2387,7 @@ public class HypixelApi {
             o.addProperty("scale", x + "," + y + "," + z);
             HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/scale"))
-                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
                 .header("Content-Type", "application/json")
                 .header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10))
@@ -2251,19 +2403,14 @@ public class HypixelApi {
         void onData(long version, Map<String, String> nicks, Map<String, String> items, Map<String, String> scales);
     }
 
-    /**
-     * Combined, version-gated poll. Sends the last-seen {@code version}; the worker returns just the
-     * version (nicks/items null) when nothing has changed, or both maps filtered to {@code uuids}
-     * when it has. Replaces the separate {@link #fetchNicks}/{@link #fetchItems} polls so the mod can
-     * refresh often while reading the full tables server-side only when something actually changed.
-     */
+    /** Version-gated poll replacing separate {@link #fetchNicks}/{@link #fetchItems} calls: the worker returns full maps only when {@code version} shows something changed. */
     public static void fetchSync(java.util.Collection<String> uuidsNoDashes, long version, SyncCallback cb) {
         if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.onData(version, null, null, null); return; }
         try {
             String q = String.join(",", uuidsNoDashes);
             HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/sync?since=" + version + "&uuids=" + q))
-                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
                 .header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10))
                 .GET().build();
@@ -2296,7 +2443,7 @@ public class HypixelApi {
             o.addProperty("items", itemsJson == null ? "" : itemsJson);
             HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/items"))
-                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
                 .header("Content-Type", "application/json")
                 .header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10))
@@ -2314,7 +2461,7 @@ public class HypixelApi {
             String q = String.join(",", uuidsNoDashes);
             HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/items?uuids=" + q))
-                .header("X-FishMod-Token", MOD_TOKEN)
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
                 .header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10))
                 .GET().build();
@@ -2366,7 +2513,7 @@ public class HypixelApi {
         try {
             req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
-                .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10)).GET().build();
         } catch (Exception e) {
             finishLocalMemberFetch(null, false);
@@ -2411,7 +2558,7 @@ public class HypixelApi {
                 if (uuid == null) { cb.onData(-1, -1, null); return; }
                 HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
-                    .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                    .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                     .timeout(Duration.ofSeconds(12)).GET().build();
                 HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
                 double bank = -1, purse = -1; String corpses = null;
@@ -2474,7 +2621,7 @@ public class HypixelApi {
         try {
             req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
-                .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10)).GET().build();
         } catch (Exception e) { return; }
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
@@ -2613,7 +2760,7 @@ public class HypixelApi {
         try {
             req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
-                .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10)).GET().build();
         } catch (Exception e) { cb.onData(new PetInfo()); return; }
 
@@ -2737,7 +2884,7 @@ public class HypixelApi {
             try {
                 HttpRequest pr = HttpRequest.newBuilder()
                     .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
-                    .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                    .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                     .timeout(Duration.ofSeconds(12)).GET().build();
                 JsonObject root = JsonParser.parseString(HTTP.send(pr, HttpResponse.BodyHandlers.ofString()).body()).getAsJsonObject();
                 String profileId = null;
@@ -2749,7 +2896,7 @@ public class HypixelApi {
                 if (profileId == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cno profile"))); return; }
                 HttpRequest gr = HttpRequest.newBuilder()
                     .uri(URI.create(PROXY_URL + "/skyblock/garden?profile=" + profileId))
-                    .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                    .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                     .timeout(Duration.ofSeconds(12)).GET().build();
                 String body = HTTP.send(gr, HttpResponse.BodyHandlers.ofString()).body();
                 JsonObject g = JsonParser.parseString(body).getAsJsonObject();
@@ -2843,7 +2990,7 @@ public class HypixelApi {
             try {
                 HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
-                    .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                    .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                     .timeout(Duration.ofSeconds(12)).GET().build();
                 JsonObject root = JsonParser.parseString(HTTP.send(req, HttpResponse.BodyHandlers.ofString()).body()).getAsJsonObject();
                 JsonObject chosen = null;
@@ -2872,14 +3019,15 @@ public class HypixelApi {
     }
 
     /** Crystal Nucleus runs completed (searches the profile member for the "nucleus" run field). */
-    public static void getNucleusRuns(Minecraft mc, String ign, IntCallback cb) {
+    public static void getNucleusRuns(Minecraft mc, String ign, IntCallback rawCb) {
+        IntCallback cb = v -> mc.execute(() -> rawCb.onData(v));
         CompletableFuture.runAsync(() -> {
             String uuid = resolveUuidBlocking(ign);
             if (uuid == null) { cb.onData(-1); return; }
             try {
                 HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
-                    .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                    .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                     .timeout(Duration.ofSeconds(12)).GET().build();
                 JsonObject root = JsonParser.parseString(HTTP.send(req, HttpResponse.BodyHandlers.ofString()).body()).getAsJsonObject();
                 int runs = -1;
@@ -2906,14 +3054,15 @@ public class HypixelApi {
     public interface ProfileStatsCallback { void onData(double sbLevel, double farmingLevel); }
 
     /** Fetches the player's SkyBlock level (leveling.experience / 100) and Farming skill level. */
-    public static void getProfileStats(Minecraft mc, String ign, ProfileStatsCallback cb) {
+    public static void getProfileStats(Minecraft mc, String ign, ProfileStatsCallback rawCb) {
+        ProfileStatsCallback cb = (sb, farm) -> mc.execute(() -> rawCb.onData(sb, farm));
         CompletableFuture.runAsync(() -> {
             String uuid = resolveUuidBlocking(ign);
             if (uuid == null) { cb.onData(-1, -1); return; }
             try {
                 HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
-                    .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                    .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                     .timeout(Duration.ofSeconds(12)).GET().build();
                 HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
                 JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
@@ -2977,20 +3126,16 @@ public class HypixelApi {
 
     public interface WormStatsCallback { void onData(WormStats data); }
 
-    /**
-     * Fetches the player's Worm + Scatha bestiary kills from member.bestiary.kills and computes the
-     * Worm bestiary tier. Keys are matched as worm_<n> / scatha_<n> so the Crystal Hollows Worm is
-     * not confused with other "worm" families (water_worm, pest_worm, flaming_worm, …) and the lookup
-     * survives a future bracket-number change.
-     */
-    public static void getWormStats(Minecraft mc, String ign, WormStatsCallback cb) {
+    /** Keys are matched as worm_&lt;n&gt;/scatha_&lt;n&gt; so the Crystal Hollows Worm isn't confused with other "worm" families (water_worm, pest_worm, …). */
+    public static void getWormStats(Minecraft mc, String ign, WormStatsCallback rawCb) {
+        WormStatsCallback cb = data -> mc.execute(() -> rawCb.onData(data));
         CompletableFuture.runAsync(() -> {
             String uuid = resolveUuidBlocking(ign);
             if (uuid == null) { cb.onData(new WormStats()); return; }
             try {
                 HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
-                    .header("X-FishMod-Token", MOD_TOKEN).header("User-Agent", "Mozilla/5.0")
+                    .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                     .timeout(Duration.ofSeconds(12)).GET().build();
                 HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
                 JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();

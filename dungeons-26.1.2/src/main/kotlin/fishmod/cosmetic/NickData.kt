@@ -41,4 +41,19 @@ object NickData {
         } catch (ignored: IOException) {
         }
     }
+
+    /**
+     * When the current nick was last written, or 0 if none is set. Used to tell an admin/sweep
+     * revoke (see nickClearedAt in InstallHeartbeat.kt) apart from a nick the player set afterward —
+     * only a nick that predates the revoke gets cleared locally.
+     */
+    @JvmStatic
+    fun lastSetAtMs(): Long {
+        return try {
+            val f = file()
+            if (Files.exists(f)) Files.getLastModifiedTime(f).toMillis() else 0L
+        } catch (ignored: IOException) {
+            0L
+        }
+    }
 }

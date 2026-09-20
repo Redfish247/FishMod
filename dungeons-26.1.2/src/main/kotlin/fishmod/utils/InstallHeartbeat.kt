@@ -1,5 +1,7 @@
 package fishmod.utils
 
+import fishmod.cosmetic.NickData
+import fishmod.cosmetic.NickState
 import fishmod.utils.config.FishConfig
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
@@ -53,14 +55,20 @@ object InstallHeartbeat {
         val name = player.gameProfile.name() ?: return
         lastReportedAt = now
 
-        HypixelApi.reportSeen(uuid, name, modVersion) { latestVersion, updateLinks, welcomeText, discordUrl ->
+        HypixelApi.reportSeen(uuid, name, modVersion) { latestVersion, latestDisplayVersion, updateLinks, welcomeText, discordUrl, nickClearedAt ->
             mc.execute {
+                reconcileNickRevoke(nickClearedAt)
                 if (!FishSettings.hasSeenWelcomeMessage) {
                     sendWelcomeBox(welcomeText, discordUrl)
                     FishSettings.hasSeenWelcomeMessage = true
                     FishConfig.manager.save()
                 } else if (isOutdated(modVersion, latestVersion) && updateLinks != null) {
-                    if (!updateNoticeShown) { sendUpdateBox(latestVersion!!, updateLinks); updateNoticeShown = true }
+                    // isOutdated compares modVersion's own numbering scheme (latestVersion) — but
+                    // show the player Modrinth's version string (latestDisplayVersion), since
+                    // that's what actually appears on the page they'd go download from. The two
+                    // are unrelated numbering schemes (see LATEST_DISPLAY_VERSION in worker.js).
+                    val shown = latestDisplayVersion ?: latestVersion!!
+                    if (!updateNoticeShown) { sendUpdateBox(shown, updateLinks); updateNoticeShown = true }
                 } else if (latestVersion.isNullOrBlank() && !updateNoticeShown) {
                     // Worker set no broadcast version -> check Modrinth directly.
                     UpdateChecker.latestVersion { modrinthVersion ->
@@ -75,6 +83,22 @@ object InstallHeartbeat {
                 }
             }
         }
+    }
+
+    /**
+     * An admin (or the stale-nick sweep) can revoke a nick server-side, but that alone only clears
+     * the copy other players see — the owner's own client still has it configured locally and would
+     * just re-upload it on the very next join (see RemoteNicks.uploadOwn), silently undoing the
+     * revoke. If our current nick predates the revoke, drop it locally too so it actually sticks and
+     * disappears in-game for the owner as well, not just for everyone else.
+     */
+    private fun reconcileNickRevoke(nickClearedAt: Long) {
+        if (nickClearedAt <= 0 || !NickState.isActive()) return
+        if (NickData.lastSetAtMs() >= nickClearedAt) return // set again after the revoke — leave it
+        NickState.reset()
+        Misc.addChatMessage(
+            Component.literal("Your FishMod custom name was removed by an admin.").withStyle(ChatFormatting.RED)
+        )
     }
 
     private fun border(): Component =

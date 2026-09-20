@@ -12,6 +12,11 @@ object NickState {
     @Volatile
     private var nick: String? = null
 
+    private val HEX_COLOR_CODE = Regex("&#[0-9a-fA-F]{6}")
+    private val FORMAT_CODE = Regex("[&§][0-9a-fxA-FX]")
+    private val LEGACY_FORMAT_CODE = Regex("[&§][klmnorKLMNOR]")
+    private val HEX_INLINE = Regex("[0-9a-fA-F]{6}")
+
     @JvmStatic
     fun set(name: String?) {
         // Single chokepoint: censor banned words before anything is stored/shown/uploaded (filter understands color codes).
@@ -38,9 +43,8 @@ object NickState {
         val custom = fishmod.utils.config.values.FishSettings.nickCustomName
         val base = if (custom != null && custom.isNotEmpty()) custom else realName()
         // Strip only color codes; keep format codes so GradientNick can re-emit them per letter.
-        val stripped = base.replace(Regex("&#[0-9a-fA-F]{6}"), "").replace(Regex("[&§][0-9a-fxA-FX]"), "")
-        // Empty-visible check (strip format codes too, just for this test).
-        val visibleOnly = stripped.replace(Regex("[&§][klmnorKLMNOR]"), "")
+        val stripped = base.replace(HEX_COLOR_CODE, "").replace(FORMAT_CODE, "")
+        val visibleOnly = stripped.replace(LEGACY_FORMAT_CODE, "")
         if (visibleOnly.isEmpty()) {
             reset()
             return
@@ -116,7 +120,7 @@ object NickState {
                 }
                 if (next == '#' && i + 7 < input.length) {
                     val hex = input.substring(i + 2, i + 8)
-                    if (hex.matches(Regex("[0-9a-fA-F]{6}"))) {
+                    if (hex.matches(HEX_INLINE)) {
                         if (buf.isNotEmpty()) {
                             root.append(Component.literal(buf.toString()).setStyle(style))
                             buf.setLength(0)
