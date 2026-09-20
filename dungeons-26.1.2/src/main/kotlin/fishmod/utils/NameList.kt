@@ -1,6 +1,5 @@
 package fishmod.utils
 
-/** Case-insensitive, comma-separated player-name list (used for party-action whitelists/blacklists). */
 object NameList {
 
     @JvmStatic

@@ -13,7 +13,6 @@ import net.minecraft.world.item.equipment.trim.ArmorTrim;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-/** Merges the former separate TRIM and ITEM_MODEL intercepts into one, since every {@code get()} call on ANY component pays this mixin's cost and the two branches don't depend on each other. */
 @Mixin(DataComponentHolder.class)
 public interface ItemTrimMixin {
 

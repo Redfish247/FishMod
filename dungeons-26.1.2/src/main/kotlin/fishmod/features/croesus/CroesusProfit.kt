@@ -9,11 +9,6 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/**
- * Croesus chest profit. On the Croesus chest-preview screen it values every chest's contents
- * (via [CroesusPrices]) minus its coin cost, highlights the two most profitable slots, and lists
- * each chest's profit beside the GUI.
- */
 object CroesusProfit {
 
     private val PREVIEW_TITLE = Regex("^(?:Master )?Catacombs - .*")

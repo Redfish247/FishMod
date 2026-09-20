@@ -10,9 +10,6 @@ object Scheduler {
 
     private class Task(val task: Runnable, var delay: Int)
 
-    // ArrayDeque instead of CopyOnWriteArrayList — the tick loop mutates this every tick
-    // (per-index removal), and CopyOnWriteArrayList.removeAt copies the whole backing array
-    // on every single removal. Guarded by a lock, matching ChatQueue's pattern.
     private val tasks = ArrayDeque<Task>()
 
     @JvmStatic

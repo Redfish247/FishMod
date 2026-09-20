@@ -6,7 +6,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import java.util.regex.Pattern
 
-/** Never cancels the chat line. */
 object LoadoutTitle {
 
     private val PATTERN: Pattern = Pattern.compile("^You equipped (.+)!$")
@@ -26,7 +25,6 @@ object LoadoutTitle {
         val title = Component.literal(m.group(1))
         val subtitle = Component.literal("§7Loadout equipped")
 
-        // ON_GAME_MESSAGE fires on the network thread — touch the HUD only on the client thread.
         val mc = Minecraft.getInstance()
         mc.execute {
             val hud = mc.gui
@@ -34,6 +32,6 @@ object LoadoutTitle {
             hud.setTitle(title)
             hud.setSubtitle(subtitle)
         }
-        return false // keep the original chat line
+        return false
     }
 }

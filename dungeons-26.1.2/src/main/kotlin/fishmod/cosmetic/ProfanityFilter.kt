@@ -1,9 +1,7 @@
 package fishmod.cosmetic
 
-/** Censors banned words in cosmetic text while preserving Minecraft color codes; robust to leetspeak/separator/padding evasions. */
 object ProfanityFilter {
 
-    /** Canonical de-leeted base forms (see [collapse]); short words that collide with normal names (e.g. "ass") are excluded. */
     private val RAW_WORDS = arrayOf(
         "hitler", "nazi",
         "fuck", "fuk", "fuq", "motherfucker", "fucker",
@@ -21,7 +19,6 @@ object ProfanityFilter {
         "pussy",
     )
 
-    /** Collapsed/normalized banned words (built once). */
     private val WORDS: Array<String>
 
     init {
@@ -38,7 +35,6 @@ object ProfanityFilter {
         WORDS = ws.toTypedArray()
     }
 
-    /** True if the visible text of `raw` contains any banned word. */
     @JvmStatic
     fun isProfane(raw: String?): Boolean {
         if (raw == null || raw.isEmpty()) return false
@@ -48,10 +44,6 @@ object ProfanityFilter {
         return false
     }
 
-    /**
-     * Returns `raw` with every banned word's visible characters replaced by `*`,
-     * leaving all color/format codes intact. Idempotent — re-running on the result is a no-op.
-     */
     @JvmStatic
     fun censor(raw: String?): String? {
         if (raw == null || raw.isEmpty()) return raw
@@ -96,11 +88,10 @@ object ProfanityFilter {
 
     private class Compact {
         lateinit var text: String
-        lateinit var runStartVis: IntArray // compact index -> first visible-char index of its run
-        lateinit var runEndVis: IntArray   // compact index -> last visible-char index of its run
+        lateinit var runStartVis: IntArray
+        lateinit var runEndVis: IntArray
     }
 
-    /** Splits a formatted string into code tokens + visible characters. */
     private fun visible(raw: String): Visible {
         val v = Visible()
         var i = 0
@@ -127,7 +118,6 @@ object ProfanityFilter {
         return v
     }
 
-    /** Builds the normalized, run-collapsed compact string with run-visible index maps. */
     private fun compact(v: Visible): Compact {
         val sb = StringBuilder(v.chars.size)
         val start = IntArray(v.chars.size)
@@ -135,9 +125,9 @@ object ProfanityFilter {
         var len = 0
         for (i in v.chars.indices) {
             val nc = normalize(v.chars[i])
-            if (nc.code == 0) continue // separator — ignored, but spans still bridge over it
+            if (nc.code == 0) continue
             if (len > 0 && sb[len - 1] == nc) {
-                end[len - 1] = i // extend current run to include this padded duplicate
+                end[len - 1] = i
             } else {
                 sb.append(nc)
                 start[len] = i
@@ -154,7 +144,6 @@ object ProfanityFilter {
         return c
     }
 
-    /** Lowercases + maps leetspeak to a base letter; returns 0 for non-alphanumeric separators. */
     private fun normalize(ch: Char): Char {
         val c = ch.lowercaseChar()
         return when (c) {
@@ -168,13 +157,12 @@ object ProfanityFilter {
             '9' -> 'g'
             else -> {
                 if (c in 'a'..'z') c
-                else if (c in '0'..'9') c // unmapped digit — kept, harmless
+                else if (c in '0'..'9') c
                 else 0.toChar()
             }
         }
     }
 
-    /** Removes consecutive duplicate characters ("shiiit" -> "shit"). */
     private fun collapse(s: String): String {
         if (s.isEmpty()) return s
         val b = StringBuilder(s.length)

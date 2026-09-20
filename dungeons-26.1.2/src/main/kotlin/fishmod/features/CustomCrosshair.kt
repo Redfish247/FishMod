@@ -6,8 +6,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.resources.Identifier
 
-/** Draws either a built-in preset shape or a user-supplied crosshair image (config/FishMod/crosshairs/)
- *  centered on screen, in place of the vanilla crosshair. */
 object CustomCrosshair {
 
     val PRESETS = arrayOf("Dot", "Cross", "Plus", "Square")
@@ -17,8 +15,6 @@ object CustomCrosshair {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "custom_crosshair")) { g, _ ->
             val mc = Minecraft.getInstance()
             if (active(mc)) {
-                // matches vanilla Gui.extractCrosshair's own centering: (guiWidth/Height - size) / 2
-                // off g.guiWidth()/guiHeight(), not the window's guiScaledWidth/Height
                 val cx = g.guiWidth() / 2
                 val cy = g.guiHeight() / 2
                 if (FishSettings.crosshairMode == "Preset") {
@@ -39,7 +35,6 @@ object CustomCrosshair {
         }
     }
 
-    /** Whether the vanilla crosshair should be replaced (a preset, or an actual image, is selected). */
     @JvmStatic
     fun active(mc: Minecraft): Boolean {
         if (!FishSettings.crosshairEnabled || mc.options.hideGui) return false

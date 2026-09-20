@@ -3,7 +3,6 @@ package fishmod.utils
 import java.util.Stack
 import java.util.regex.Pattern
 
-/** Expression parser for the searchbar, based on Shunting Yard and RPN. */
 object MathParser {
 
     private val NUMBER_PATTERN: Pattern = Pattern.compile("^(?<num>-?\\d+)(?<decimal>\\.\\d+)?(?<unit>[bBmMkK])?")
@@ -39,7 +38,6 @@ object MathParser {
         }
     }
 
-    /** Supports b/m/k magnitude suffixes and negative/decimal numbers; throws NumberFormatException if invalid. */
     private fun tokenToNum(token: String): Double {
         val matcher = NUMBER_PATTERN.matcher(token)
         if (!matcher.find()) {

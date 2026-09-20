@@ -16,18 +16,13 @@ import net.minecraft.network.chat.Component
 import java.io.InputStreamReader
 import java.util.regex.Pattern
 
-/**
- * FishMod-exclusive Est. Total row for the split timer. Uses its own inner LocalSplit class
- * (never fishmod.utils.dungeon.Split) since blade-addons' Phase/Split load instead of FishMod's
- * when both mods are present, and touching Split would throw NoSuchMethodError on blade's ctor.
- */
 object FishEstTotal {
 
     private class LocalSplit(
         val name: String,
         val startMsg: String,
         val endMsg: String,
-        val avg: Double // -1 = cumulative/skip
+        val avg: Double
     ) {
         private var startedFlag = false
         private var endedFlag = false
@@ -59,7 +54,6 @@ object FishEstTotal {
         fun ended(): Boolean = endedFlag
 
         fun getRealTime(): Double {
-            // Guard against force-ending a never-started split: (now - 0)/1000 would read as ~55 years.
             if (startTime == 0L) return 0.0
             if (endedFlag) return (endTime - startTime) / 1000.0
             if (startedFlag) return (System.currentTimeMillis() - startTime) / 1000.0
@@ -76,8 +70,6 @@ object FishEstTotal {
     private var floor: String? = null
     private var runOver = false
 
-    // Est. Total / Lag Lost text changes at DECIMAL_FORMAT resolution (0.01s), far less often than every
-    // render frame — cache the built Components and measured width, keyed on the text that actually varies.
     private var cachedEstKey: String? = null
     private var cachedEstLabel: Component? = null
     private var cachedEstTime: Component? = null
@@ -125,20 +117,12 @@ object FishEstTotal {
         currentSplits?.forEach { it.reset() }
     }
 
-    // Colour-code-free fragment of the Mort run-start line (matches LagTracker's trigger).
     private const val RUN_START_FRAGMENT = "I found this map when I first entered the dungeon"
 
     private fun parseGameMessage(message: Component): Boolean {
         val string = message.string
-        // Re-arm on a fresh run start even when no ON_LOCATION_CHANGE landed between runs (fast
-        // requeue onto the same instance, a dropped location packet, practice mode). Without this
-        // `runOver` stays true, parsing is dead, and Est. Total freezes on the previous run's
-        // total while the split timer above it has already restarted.
         if (runOver && string.contains(RUN_START_FRAGMENT)) {
             reset()
-            // reset() just nulled currentSplits — re-detect immediately so this same message
-            // (the split-start trigger) still reaches the freshly-armed splits below, instead of
-            // being dropped and waiting for the next server tick's detectFloor() to arm too late.
             detectFloor()
         }
         val splits = currentSplits
@@ -168,8 +152,6 @@ object FishEstTotal {
         currentSplits = null
         floor = null
         runOver = false
-        // Drop the render caches too — otherwise a new run whose first formatted Est./Lag string
-        // happens to equal a cached one keeps the previous run's Component + measured width.
         cachedEstKey = null
         cachedEstLabel = null
         cachedEstTime = null
@@ -179,7 +161,6 @@ object FishEstTotal {
         cachedLagTimeWidth = 0
     }
 
-    /** Mirrors Phase.getVisibleRowCount() against our own LocalSplits so it works even under blade-addons' Phase. */
     private fun computeVisibleRowCount(): Int {
         val splits = currentSplits ?: return 0
         var onlyActivated = true
@@ -187,7 +168,7 @@ object FishEstTotal {
         try { onlyActivated = Phase.onlyShowActivatedSplits } catch (ignored: Throwable) {}
         try { includeTotal = Phase.includeTotalTime } catch (ignored: Throwable) {}
         var count = splits.size
-        if (!includeTotal) count-- // last row is the cumulative "total" split
+        if (!includeTotal) count--
         if (!onlyActivated) return Math.max(0, count)
         var visible = 0
         for (i in 0 until count) {
@@ -238,7 +219,6 @@ object FishEstTotal {
         val splits = currentSplits ?: return
         val client = Minecraft.getInstance()
 
-        // Auto-snap below Phase.splitTimer using our own row count (blade-addons' Phase lacks getVisibleRowCount()).
         val x: Int
         val y: Int
         try {
@@ -252,7 +232,6 @@ object FishEstTotal {
     }
 
     private fun renderAt(context: GuiGraphicsExtractor, client: Minecraft, splits: ArrayList<LocalSplit>, x: Int, y: Int) {
-        // Base = sum of averages; delta = actual-vs-avg overage so the estimate updates live.
         val splitCount = splits.size - 1
         var base = 0.0
         var delta = 0.0
@@ -269,7 +248,6 @@ object FishEstTotal {
             else if (s.started()) delta += Math.max(0.0, s.getRealTime() - avg)
         }
 
-        // Lag is already reflected in `delta` via wall-clock time — do not subtract it separately.
         val totalSeconds = Math.max(0.0, base + delta)
 
         val estColor = if (personalCount > 0 && fallbackCount == 0) 0xFF00AACC.toInt()
@@ -323,7 +301,6 @@ object FishEstTotal {
             else if (s.started()) delta += Math.max(0.0, s.getRealTime() - avg)
         }
 
-        // Lag is already reflected in `delta` via wall-clock time — do not subtract it separately.
         val totalSeconds = Math.max(0.0, base + delta)
         val estColor = if (personalCount > 0 && fallbackCount == 0) 0xFF00AACC.toInt()
         else if (personalCount > 0) 0xFFFFAA00.toInt() else 0xFF888888.toInt()
@@ -338,8 +315,6 @@ object FishEstTotal {
 
     private fun loadSplits(): HashMap<String, ArrayList<LocalSplit>> {
         try {
-            // Unique filename — see Phase.kt's FLOOR_SPLITS for why "splits.json" itself collides with
-            // blade-addons' own bundled copy of a near-identical file at the same resource path.
             javaClass.getResourceAsStream("/data/fishmod_splits.json").use { stream ->
                 if (stream == null) return HashMap()
                 InputStreamReader(stream).use { reader ->

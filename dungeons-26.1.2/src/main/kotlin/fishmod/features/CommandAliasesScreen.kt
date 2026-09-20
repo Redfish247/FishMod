@@ -17,7 +17,6 @@ import org.lwjgl.nanovg.NanoVG
 import kotlin.math.max
 import kotlin.math.min
 
-/** Same convention as [CommandKeysScreen]: `aliases`/`commands` are the source of truth, rows rebuilt from them on every add/remove/scroll. */
 class CommandAliasesScreen : Screen(Component.literal("Command Aliases")), HasNvgOverlay {
 
     companion object {
@@ -41,7 +40,6 @@ class CommandAliasesScreen : Screen(Component.literal("Command Aliases")), HasNv
         private const val REMOVE_BTN_W = 20
     }
 
-    /** A clickable pill region drawn+hit-tested by hand instead of a vanilla widget. */
     private class ClickRect(var x: Int, var y: Int, var w: Int, var h: Int, val action: () -> Unit) {
         fun hit(mx: Int, my: Int): Boolean = mx >= x && mx <= x + w && my >= y && my <= y + h
     }
@@ -70,7 +68,6 @@ class CommandAliasesScreen : Screen(Component.literal("Command Aliases")), HasNv
     private var addBtn: ClickRect? = null
     private var doneBtn: ClickRect? = null
 
-    /** row index of the focused field, -1 = none; col 0 = alias, 1 = command. */
     private var focusedRow = -1
     private var focusedCol = 0
 
@@ -113,7 +110,6 @@ class CommandAliasesScreen : Screen(Component.literal("Command Aliases")), HasNv
             if (rowTop + ROW_H < listY || rowTop > listY + listH) continue
             val idx = i
 
-            // value/cursor state only — not a Screen widget (its extractRenderState would flush before the NanoVG overlay)
             val aliasField = EditBox(this.font, listX + 3, rowTop + 3, ALIAS_FIELD_W - 6, 18, Component.literal("Alias"))
             aliasField.setMaxLength(32)
             aliasField.setBordered(false)

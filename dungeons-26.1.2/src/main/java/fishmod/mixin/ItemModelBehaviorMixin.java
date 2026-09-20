@@ -12,11 +12,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * Makes a FishMod-customized item BEHAVE like the item it borrows its model from (e.g. a Terminator
- * bow given a crossbow model gets the crossbow's hold/draw pose), not just look like it. Purely
- * client-side/cosmetic — item use itself stays server-authoritative.
- */
 @Mixin(ItemStack.class)
 public abstract class ItemModelBehaviorMixin {
 
@@ -27,7 +22,6 @@ public abstract class ItemModelBehaviorMixin {
         if (modelId == null) return;
 
         Item modelItem = BuiltInRegistries.ITEM.getValue(modelId);
-        // Skip non-items and self-model swaps; the guard also stops the call below from recursing
         if (modelItem == null || modelItem == Items.AIR || modelItem == self.getItem()) return;
 
         cir.setReturnValue(modelItem.getDefaultInstance().getUseAnimation());

@@ -8,7 +8,6 @@ object Visual {
 
     @ConfigValue @JvmField var hideStuckArrows: Boolean = false
 
-    /** Master gate for the Render Optimizer group (hide players/dead entities, no-swing, shovel). */
     @ConfigValue @JvmField var renderOptimizer: Boolean = false
 
     @ConfigValue @JvmField var hideDeadEntities: Boolean = false
@@ -25,14 +24,11 @@ object Visual {
     @ConfigValue @JvmField var roHideTentacleHead: Boolean = false
     @ConfigValue @JvmField var roHideFireOverlay: Boolean = false
 
-    /** Hide other players within [hidePlayerRange] blocks (declutter crowded hubs / boss fights). */
     @ConfigValue @JvmField var hidePlayersInRange: Boolean = false
     @ConfigValue @JvmField var hidePlayerRange: Double = 3.0
 
     @ConfigValue @JvmField var itemRarityBackground: Boolean = false
-    /** Background tint opacity, 0-100%. */
     @ConfigValue @JvmField var itemRarityOpacity: Int = 35
-    /** Use Hypixel's per-rarity colours instead of blade-addons' darker palette. */
     @ConfigValue @JvmField var itemRarityHypixelColors: Boolean = true
 
     @ConfigValue @JvmField var hideStatusOverLay: Boolean = false
@@ -40,7 +36,6 @@ object Visual {
     @ConfigValue @JvmField var disableGlowing: Boolean = false
 
     @ConfigValue @JvmField var drawStarCount: Boolean = false
-
 
     @ConfigValue @JvmField var compactHoppityMsgs: Boolean = false
 
@@ -58,16 +53,13 @@ object Visual {
 
     @ConfigValue @JvmField var stopPearlSwing: Boolean = false
 
-    /** Suppress the first-person hand swing animation (optionally only while holding a Terminator). */
     @ConfigValue @JvmField var noSwingAnimation: Boolean = false
     @ConfigValue @JvmField var noSwingTerminatorOnly: Boolean = false
 
     @ConfigValue @JvmField var circularRarityBackground: Boolean = false
 
-    /** Noamm's Dark Mode: a flat black tint over the screen, adjustable strength. */
     @ConfigValue @JvmField var darkModeEnabled: Boolean = false
     @ConfigValue @JvmField var darkModeOpacity: Int = 25
-    /** Also tint HUD elements (hotbar, chat, etc.), not just the world behind them. */
     @ConfigValue @JvmField var darkModeTintHud: Boolean = false
 
 }

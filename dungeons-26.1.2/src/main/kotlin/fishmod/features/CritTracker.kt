@@ -13,10 +13,8 @@ import java.io.FileWriter
 import java.lang.reflect.Type
 import java.util.regex.Pattern
 
-/** Backs `.crit`/`!crit`; samples persist to config/fishmod-crit.json (rolling window of [MAX_SAMPLES]) and the average is over all stored samples, not just this run. */
 object CritTracker {
 
-    // Same line ExplosiveShot.kt parses: "Your Explosive Shot hit N enemy/enemies for D damage"
     private val PATTERN: Pattern = Pattern.compile(
         "Your Explosive Shot hit (\\d+) (?:enemy|enemies) for ([\\d,]+(?:\\.\\d+)?) damage"
     )
@@ -56,10 +54,9 @@ object CritTracker {
         if (enemies <= 0) return false
 
         add(data.crit, total / enemies)
-        return false // keep the original chat line
+        return false
     }
 
-    /** Storm's P2 death time in seconds, pushed by StormTickTimer. Archer-only. */
     @JvmStatic
     fun onStormDeath(seconds: Double) {
         if (seconds <= 0.0 || !DungeonClass.isClass(DungeonClass.ARCHER)) return
@@ -75,7 +72,6 @@ object CritTracker {
     private fun last(list: List<Double>): Double = if (list.isEmpty()) 0.0 else list[list.size - 1]
     private fun avg(list: List<Double>): Double = if (list.isEmpty()) 0.0 else list.sum() / list.size
 
-    /** Whole numbers print with thousands separators; fractional values keep one decimal. */
     private fun formatDamage(v: Double): String {
         if (v <= 0.0) return "N/A"
         if (v == Math.floor(v) && !v.isInfinite()) return String.format("%,d", v.toLong())

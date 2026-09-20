@@ -6,11 +6,8 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.resources.Identifier
 
-/** Secondary HUD line(s): secrets/score/deaths/mimic/prince/crypts readout, optionally anchored under [MapHud]. */
 object MapInfoHud {
 
-    // Underlying DungeonScore fields only update every PARSE_INTERVAL_TICKS ticks, but this HUD is
-    // rendered every frame — cache the width measurement and only remeasure when the lines actually change.
     private var cachedL1: String = ""
     private var cachedL2: String = ""
     private var cachedBlockW: Int = 0

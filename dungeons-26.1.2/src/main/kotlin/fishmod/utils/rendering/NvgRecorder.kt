@@ -4,8 +4,6 @@ import org.lwjgl.nanovg.NVGColor
 import org.lwjgl.nanovg.NVGPaint
 import org.lwjgl.nanovg.NanoVG
 
-/** Records draw commands from FishModScreen.render() and replays them against NanoVG later in the frame, since render() only builds a deferred descriptor, not immediate GL.
- *  Commands are packed into flat primitive buffers (op code + floats + ints [+ string for text ops]) instead of allocating a Runnable closure per draw call, since a busy panel can issue 50-200+ draw calls/frame. */
 object NvgRecorder {
 
     private const val OP_FILL_ROUNDED_RECT = 0
@@ -33,12 +31,10 @@ object NvgRecorder {
 
     private val colorA = NVGColor.create()
     private val colorB = NVGColor.create()
-    // Shared native paint struct, reused across dropShadow/gradient replays instead of calloc/free per frame.
     private val paintBuf = NVGPaint.calloc()
 
     @JvmStatic
     fun clear() {
-        // drop string refs so cleared screens don't pin old text in memory between frames
         if (count > 0) java.util.Arrays.fill(strings, 0, count, null)
         count = 0
     }
@@ -231,20 +227,16 @@ object NvgRecorder {
         fillRoundedRect(x, y, w, h, 0f, color)
     }
 
-    /** Rect rounded only on its top two corners (radius [rTop]), square on the bottom — for a strip
-     *  meant to sit flush against a card's own rounded top without poking past its corners. */
     @JvmStatic
     fun fillRectTopRounded(x: Float, y: Float, w: Float, h: Float, rTop: Float, color: Int) {
         push(OP_FILL_RECT_TOP_ROUNDED, x, y, w, h, rTop, i0 = color)
     }
 
-    /** Small pill (fully rounded ends) — softer than [fillRect] for thin accent ticks/bars. */
     @JvmStatic
     fun fillPillBar(x: Float, y: Float, w: Float, h: Float, color: Int) {
         fillRoundedRect(x, y, w, h, Math.min(w, h) / 2f, color)
     }
 
-    /** Hollow ring stroked in `ringColor` around a rect filled with `fillColor`. */
     @JvmStatic
     fun roundedRectRing(x: Float, y: Float, w: Float, h: Float, r: Float, strokeW: Float, fillColor: Int, ringColor: Int) {
         push(OP_ROUNDED_RECT_RING, x, y, w, h, r, strokeW, i0 = fillColor, i1 = ringColor)
@@ -255,34 +247,27 @@ object NvgRecorder {
         push(OP_DISC, cx, cy, r, i0 = color)
     }
 
-    /** Soft drop shadow behind a rounded rect — draw before the rect itself so the opaque
-     *  rect covers the shadow's center, leaving only the soft edge visible around it. */
     @JvmStatic
     fun dropShadow(x: Float, y: Float, w: Float, h: Float, r: Float, spread: Float, shadowColor: Int) {
         push(OP_DROP_SHADOW, x, y, w, h, r, spread, i0 = shadowColor)
     }
 
-    /** Vertical linear-gradient fill over a rect (optionally rounded), top color to bottom color. */
     @JvmStatic
     @JvmOverloads
     fun fillRectVGradient(x: Float, y: Float, w: Float, h: Float, topColor: Int, botColor: Int, r: Float = 0f) {
         push(OP_FILL_RECT_VGRADIENT, x, y, w, h, r, i0 = topColor, i1 = botColor)
     }
 
-    /** Horizontal linear-gradient fill over a rect, left color to right color. */
     @JvmStatic
     fun fillRectHGradient(x: Float, y: Float, w: Float, h: Float, leftColor: Int, rightColor: Int) {
         push(OP_FILL_RECT_HGRADIENT, x, y, w, h, i0 = leftColor, i1 = rightColor)
     }
 
-    /** Small filled triangle: pointing down when `open`, right when closed. */
     @JvmStatic
     fun chevron(gx: Float, cy: Float, open: Boolean, color: Int) {
         push(OP_CHEVRON, gx, cy, i0 = if (open) 1 else 0, i1 = color)
     }
 
-    /** Small "detach" glyph (↗ with a short shaft) used to pop a stacked column back out to its
-     *  own top-level slot; drawn in a [size]x[size] box anchored at (x, y). */
     @JvmStatic
     fun popOutIcon(x: Float, y: Float, size: Float, color: Int) {
         push(OP_POP_OUT_ICON, x, y, size, i0 = color)
@@ -293,15 +278,11 @@ object NvgRecorder {
         push(OP_TEXT, x, y, size, i0 = color, s = s)
     }
 
-    /** Faux-bold: only "Inter-Regular" is bundled (no bold weight), so this fakes the heavier
-     *  stroke by drawing the glyphs twice with a sub-pixel horizontal offset. */
     @JvmStatic
     fun textBold(s: String, x: Float, y: Float, size: Float, color: Int) {
         push(OP_TEXT_BOLD, x, y, size, i0 = color, s = s)
     }
 
-    /** Text width at a given size, for layout/centering/truncation — must be measured with
-     *  NanoVG's own font metrics since it draws with a different font than Minecraft's Font. */
     @JvmStatic
     fun textWidth(s: String, size: Float): Float {
         val ctx = NvgContext.get()

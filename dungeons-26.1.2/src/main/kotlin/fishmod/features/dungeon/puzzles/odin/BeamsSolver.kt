@@ -12,9 +12,6 @@ import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.ConcurrentHashMap
 
-/**
- * Creeper Beams solver. Re-scans every 10 ticks from [onTick] (pairs whose lantern is gone drop out).
- */
 object BeamsSolver {
 
     private val lanternPairs: List<List<Int>> = try {
@@ -26,7 +23,6 @@ object BeamsSolver {
         Debug.LOGGER.error("Creeper beams solutions failed to load", e); emptyList()
     }
 
-    // key lantern -> (partner lantern, colour)
     private val current = ConcurrentHashMap<BlockPos, Pair<BlockPos, Int>>()
     private var tickAcc = 0
 

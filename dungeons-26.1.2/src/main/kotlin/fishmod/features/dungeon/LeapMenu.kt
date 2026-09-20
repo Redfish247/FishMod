@@ -25,8 +25,6 @@ object LeapMenu {
 
     private var cache: List<Target> = emptyList()
 
-    // Ported from Odin's DungeonUtils.getDungeonTeammates. Class is kept sticky per player because
-    // the boss tab-list format drops the "(Class L)" suffix.
     private val TABLIST_RX = Regex("^\\[(\\d+)] (?:\\[\\w+] )*(\\w+) .*?\\((\\w+)(?: (\\w+))*\\)$")
     private val teammateClasses = HashMap<String, DungeonClass>()
     private var lastLevel: Any? = null
@@ -39,7 +37,7 @@ object LeapMenu {
             val line = COLOR.replace(info.tabListDisplayName?.string ?: continue, "")
             val m = TABLIST_RX.find(line) ?: continue
             val name = m.groupValues[2]
-            if (teammateClasses.containsKey(name)) continue          // sticky — never overwrite a resolved class
+            if (teammateClasses.containsKey(name)) continue
             val cls = runCatching { DungeonClass.valueOf(m.groupValues[3].uppercase()) }.getOrNull() ?: continue
             teammateClasses[name] = cls
         }
@@ -54,7 +52,6 @@ object LeapMenu {
     @JvmStatic
     fun isActive(screen: AbstractContainerScreen<*>): Boolean = isLeapMenu(screen)
 
-    // Map view relies on live room positions, which stop updating in the boss — drop to the 2x2 grid there.
     private fun mapView(): Boolean =
         FishSettings.leapMenuMap && !DungeonState.isInBoss() &&
             (!FishSettings.leapMenuMapAfterBR || DungeonState.bloodOpened)
@@ -88,7 +85,6 @@ object LeapMenu {
         }
     }
 
-    // Quadrants: 0 TL, 1 TR, 2 BL, 3 BR. Tank and Mage both default to BR; priority below resolves it.
     private fun homeQuadrant(c: DungeonClass?): Int = when (c) {
         DungeonClass.ARCHER -> 0
         DungeonClass.BERSERK -> 1
@@ -105,6 +101,7 @@ object LeapMenu {
     }
     private val EMPTY_TARGET = Target(-1, "", null, true)
 
+    // Ported from Odin's DungeonUtils.getDungeonTeammates.
     private fun odinSort(players: List<Target>): List<Target> {
         val result = arrayOfNulls<Target>(4)
         val overflow = ArrayDeque<Target>()
@@ -220,7 +217,6 @@ object LeapMenu {
 
         val rects = cellRects(mc)
         val hov = hovered(mc, mouseX, mouseY)
-        // Highlight the whole hovered quadrant so it's clear the entire area is clickable.
         if (hov < cache.size) {
             val w = mc.window.guiScaledWidth; val h = mc.window.guiScaledHeight
             val qx = (hov % 2) * (w / 2); val qy = (hov / 2) * (h / 2)
@@ -259,7 +255,6 @@ object LeapMenu {
         }
     }
 
-    /** Filled rect with circular-ish rounded corners of radius [rad]. */
     private fun roundFill(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, rad: Int, c: Int) {
         if (rad <= 0) { ctx.fill(x, y, x + w, y + h, c); return }
         ctx.fill(x + rad, y, x + w - rad, y + h, c)
@@ -272,17 +267,16 @@ object LeapMenu {
         }
     }
 
-    /** @return true to swallow. */
     @JvmStatic
     fun mouseClicked(button: Int, mx: Double, my: Double, screen: AbstractContainerScreen<*>): Boolean {
         if (!isLeapMenu(screen)) return false
         if (FishSettings.leapMenuLeftClickOnly && button != 0) return true
         if (mapView()) {
             nearestMarker(mx.toInt(), my.toInt())?.let { leap(it.target, screen) }
-            return true // eat every click over the full-screen overlay
+            return true
         }
         val i = hovered(Minecraft.getInstance(), mx.toInt(), my.toInt())
-        if (i < 0 || i >= cache.size) return true // over the backdrop, not a cell — still eat it
+        if (i < 0 || i >= cache.size) return true
         leap(cache[i], screen)
         return true
     }

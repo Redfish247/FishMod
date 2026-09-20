@@ -30,7 +30,6 @@ object LeapAnnounce {
                     Misc.forceTitle(Component.literal(msg), Component.empty())
                 }
                 if (FishSettings.leapMessagesParty) {
-                    // Party chat can't carry formatting codes — strip only real colour codes so a lone "&" survives.
                     val plain = fill(
                         FishSettings.leapMessagesText.replace(Regex("[&§][0-9A-FK-ORa-fk-or]"), "")
                     ).trim()

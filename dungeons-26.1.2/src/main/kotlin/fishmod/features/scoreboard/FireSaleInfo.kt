@@ -13,11 +13,10 @@ import java.net.http.HttpResponse
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
-// Active Fire Sales for the Custom Scoreboard; parses common field-name candidates defensively, shows item name only.
 object FireSaleInfo {
 
     private val HTTP: HttpClient = HttpClient.newHttpClient()
-    private const val REFRESH_MS = 300_000L // 5 minutes -- sales are short-lived
+    private const val REFRESH_MS = 300_000L
 
     private var saleLines: List<String> = emptyList()
     private var lastFetchAt = 0L

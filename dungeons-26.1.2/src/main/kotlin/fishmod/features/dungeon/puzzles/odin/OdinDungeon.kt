@@ -3,12 +3,6 @@ package fishmod.features.dungeon.puzzles.odin
 import com.google.gson.annotations.SerializedName
 import net.minecraft.core.BlockPos
 
-/**
- * Self-contained dungeon room model, deliberately parallel to FishMod's own `map.Room` /
- * `map.Scan` — the puzzle solvers run entirely off THIS model so the map/door/secret features
- * are untouched.
- */
-
 data class OVec2(val x: Int, val z: Int)
 
 enum class ORotations(val x: Int, val z: Int) {
@@ -33,8 +27,6 @@ enum class ORoomShape(val displayName: String) {
     @SerializedName("2x2") S2x2("2x2");
 }
 
-// Real cores/secrets/trappedChests come from the separate map.RoomData/Scan pipeline that's
-// already in use elsewhere — only `type`/`shape` are ever read from this table (by room name).
 data class ORoomData(
     val name: String,
     val type: ORoomType,
@@ -52,15 +44,12 @@ data class ORoom(
     var clayPos: BlockPos = BlockPos(0, 0, 0),
     val roomComponents: MutableSet<ORoomComponent>,
 ) {
-    /** Room-local (north-up, clay-origin) BlockPos -> world BlockPos. */
     fun getRealCoords(pos: BlockPos): BlockPos =
         rotateAroundNorth(pos, rotation).offset(clayPos.x, 0, clayPos.z)
 
-    /** The main tile's world centre (matches OdinScan components). */
     val centerPos: BlockPos
         get() = roomComponents.firstOrNull()?.let { BlockPos(it.x, 0, it.z) } ?: BlockPos.ZERO
 
-    /** Rotation in degrees; the clay-corner index [OdinScan.updateRotation] finds. */
     val rotationDeg: Int
         get() = when (rotation) {
             ORotations.SOUTH -> 0
@@ -70,7 +59,6 @@ data class ORoom(
             else -> 0
         }
 
-    /** World BlockPos -> room-local. */
     fun getRelativeCoords(pos: BlockPos): BlockPos =
         rotateToNorth(pos.subtract(BlockPos(clayPos.x, 0, clayPos.z)), rotation)
 

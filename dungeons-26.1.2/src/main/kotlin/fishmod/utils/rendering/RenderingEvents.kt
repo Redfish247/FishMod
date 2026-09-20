@@ -7,14 +7,8 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.rendertype.RenderType
 
-/**
- * World-overlay dispatch: [GIZMO] emits vanilla gizmos (occluded by terrain) from
- * [LevelRenderEvents.BEFORE_GIZMOS]; [NO_DEPTH_FILLED]/[NO_DEPTH_LINE] draw through walls in one
- * [LevelRenderEvents.END_MAIN] pass.
- */
 object RenderingEvents {
 
-    /** Emit vanilla gizmos here (via [RenderUtils.gizmoBox] / [RenderUtils.gizmoQuad] / etc.). */
     @JvmField var GIZMO = SimpleHandler<GizmoEvent>()
 
     @JvmField var NO_DEPTH_FILLED = SimpleHandler<RenderingEvent>()
@@ -51,7 +45,6 @@ object RenderingEvents {
         ps.popPose()
     }
 
-    // Only ever called with a single handler — a plain parameter avoids the vararg's per-call array allocation.
     private fun drawLayer(
         ctx: LevelRenderContext, ps: PoseStack, buffers: MultiBufferSource.BufferSource,
         layer: RenderType, handler: SimpleHandler<RenderingEvent>,

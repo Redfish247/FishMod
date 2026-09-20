@@ -1,6 +1,5 @@
 package fishmod.utils
 
-/** Computes RTT from the vanilla ping/pong packets so it's accurate on proxied servers like Hypixel, unlike a TCP-edge probe. */
 object PingTracker {
 
     @Volatile
@@ -10,10 +9,10 @@ object PingTracker {
 
     @JvmStatic
     fun pushRtt(rttMs: Long) {
-        if (rttMs < 0 || rttMs > 5_000) return // implausible — ignore
+        if (rttMs < 0 || rttMs > 5_000) return
         val rtt = rttMs.toInt()
         val prev = latestMs
-        latestMs = if (prev > 0) (rtt + prev) / 2 else rtt // light EMA so it doesn't jitter
+        latestMs = if (prev > 0) (rtt + prev) / 2 else rtt
         updatedAt = System.currentTimeMillis()
     }
 

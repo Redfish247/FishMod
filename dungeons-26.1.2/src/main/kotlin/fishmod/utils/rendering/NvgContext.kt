@@ -6,7 +6,6 @@ import org.lwjgl.system.MemoryUtil
 import java.io.IOException
 import java.nio.ByteBuffer
 
-/** Owns FishModScreen's single NanoVG context, created lazily on first use since GL-context timing at mod init isn't guaranteed. Lives for the process lifetime. */
 object NvgContext {
 
     const val FONT_NAME: String = "inter"
@@ -38,7 +37,6 @@ object NvgContext {
                 val bytes = input.readAllBytes()
                 val buffer: ByteBuffer = MemoryUtil.memAlloc(bytes.size)
                 buffer.put(bytes).flip()
-                // freeData=true: NanoVG/stb takes ownership of `buffer` and frees it itself later.
                 val font = NanoVG.nvgCreateFontMem(ctx, FONT_NAME, buffer, true)
                 if (font == -1) throw IllegalStateException("NanoVG failed to load bundled font")
                 fishmod.utils.debug.Debug.LOGGER.info("[NanoVG] font '{}' loaded OK, handle={}, bytes={}", FONT_NAME, font, bytes.size)

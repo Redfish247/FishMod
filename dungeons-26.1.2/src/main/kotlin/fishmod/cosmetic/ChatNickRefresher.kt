@@ -6,13 +6,10 @@ import net.minecraft.client.gui.components.ChatComponent
 import net.minecraft.client.multiplayer.chat.GuiMessage
 import net.minecraft.network.chat.Component
 
-/** Re-styles chat history in place once a nick resolves after the message was already baked with the plain IGN; idempotent so re-scanning never triggers fresh lookups. */
 object ChatNickRefresher {
-    // Coalesces a burst of newly-resolved nicks (e.g. a whole tab-list sync) into one refresh.
     @Volatile
     private var scheduled = false
 
-    /** Request a retroactive chat re-style. Thread-safe; the actual work runs on the client thread. */
     @JvmStatic
     fun requestRefresh() {
         if (scheduled) return
@@ -44,7 +41,6 @@ object ChatNickRefresher {
         if (changed) invoker.invokeRefresh()
     }
 
-    /** Mirrors CosmeticChatMixin's swap but without firing new lookups (own nick + known remote nicks). */
     private fun swapKnown(text: Component): Component {
         var out: Component = text
         if (NickState.isActive()) {

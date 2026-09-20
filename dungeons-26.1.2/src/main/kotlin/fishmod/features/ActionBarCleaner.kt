@@ -4,10 +4,6 @@ import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.network.chat.Component
 
-/**
- * Hypixel's 26.1 stat bar is glyph-free and recolours with state, so segments are classified by
- * position + shape rather than colour (see [segments] and the keyword regexes below).
- */
 object ActionBarCleaner {
 
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
@@ -15,13 +11,13 @@ object ActionBarCleaner {
     private val PAIR    = Regex("[\\d,]+/[\\d,]+")
     private val BARE    = Regex("[\\d,]+")
 
-    private val MANA_USE = Regex("^-[\\d,]+ Mana\\b")                    // -40 Mana (Ability)
-    private val SKILL_XP = Regex("^\\+[\\d,.]+ [A-Za-z ]+ \\(.+\\)$")    // +144.5 Combat (1,089,440,920/0)
-    private val ARROW    = Regex("^[\\d,]+x .+? Arrows?\\b", RegexOption.IGNORE_CASE) // 31x Armorshred Arrow
+    private val MANA_USE = Regex("^-[\\d,]+ Mana\\b")
+    private val SKILL_XP = Regex("^\\+[\\d,.]+ [A-Za-z ]+ \\(.+\\)$")
+    private val ARROW    = Regex("^[\\d,]+x .+? Arrows?\\b", RegexOption.IGNORE_CASE)
     private val BITS     = Regex("\\+?[\\d,]+ Bits\\b", RegexOption.IGNORE_CASE)
     private val SECRETS  = Regex("Secrets?\\b", RegexOption.IGNORE_CASE)
-    private val RAG_AXE  = Regex("ragnar", RegexOption.IGNORE_CASE)      // "RAGNAROK 4s" — best-effort
-    private val LASER    = Regex("^T\\d+!?$|laser", RegexOption.IGNORE_CASE) // "T3!" F7 terminal / laser
+    private val RAG_AXE  = Regex("ragnar", RegexOption.IGNORE_CASE)
+    private val LASER    = Regex("^T\\d+!?$|laser", RegexOption.IGNORE_CASE)
     private val VITALITY = Regex("Vitality", RegexOption.IGNORE_CASE)
 
     private fun isColorCode(c: Char): Boolean {
@@ -29,7 +25,6 @@ object ActionBarCleaner {
         return l in '0'..'9' || l in 'a'..'f' || l == 'r'
     }
 
-    /** Split on colour codes; §l/§m/§n/§o/§k fold into the current segment (keep the active colour). */
     private fun segments(raw: String): List<String> {
         val out = ArrayList<String>()
         val sb = StringBuilder()
@@ -53,14 +48,13 @@ object ActionBarCleaner {
     fun filter(message: Component): Component {
         if (!FishSettings.actionBarEnabled || !Location.inSkyblock()) return message
         val raw = message.string
-        // Only touch the SkyBlock stat bar — leaves jukebox / other overlay messages alone.
         if ('/' !in raw && "Mana" !in raw && '❤' !in raw) return message
 
         val segs = segments(raw)
         if (segs.size < 2) return message
 
-        var pairSeen = 0   // running X/Y count  (1 Health, 2 Mana, 3 Vitality)
-        var defSeen = 0    // bare numbers before Mana  (1 Defence, 2 True Defence)
+        var pairSeen = 0
+        var defSeen = 0
         var changed = false
         val kept = StringBuilder()
 

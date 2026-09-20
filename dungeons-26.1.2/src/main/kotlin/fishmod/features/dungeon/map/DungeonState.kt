@@ -5,7 +5,6 @@ import net.minecraft.world.level.Level
 import net.minecraft.world.scores.DisplaySlot
 import java.util.regex.Pattern
 
-/** Dungeon lifecycle + floor tracking. */
 object DungeonState {
 
     private val SIDEBAR_FLOOR = Pattern.compile("The Catacombs \\(([FM])(\\d)\\)")
@@ -139,8 +138,6 @@ object DungeonState {
         inDungeonCacheLevel = null
     }
 
-    // isInDungeon() is polled per-frame/per-tick; the tab/sidebar scan only changes on a world swap or
-    // tab update, so cache on level identity + a ~1s TTL.
     private var inDungeonCacheLevel: Level? = null
     private var inDungeonCacheStamp = 0L
     private var inDungeonCacheValue = false
@@ -176,11 +173,6 @@ object DungeonState {
     @JvmStatic
     fun floorNumber(): Int = if (chatFloor >= 0) chatFloor else sidebarFloorNumber()
 
-    /**
-     * Splits-file floor key ("E", "F1".."F7", "M1".."M7") derived from [floorNumber]/[isMasterMode] —
-     * the single shared source for anything that used to re-derive this from raw chat/sidebar text
-     * (previously duplicated in Phase.kt and FishEstTotal.kt). Null only when not in a dungeon.
-     */
     @JvmStatic
     fun currentFloorKey(): String? {
         val f = floorNumber()

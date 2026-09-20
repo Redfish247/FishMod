@@ -3,12 +3,6 @@ package fishmod.features
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import fishmod.utils.rendering.NvgRecorder
 
-/**
- * Shared smooth/anti-aliased drawing primitives + color palette for FishMod's custom GUI screens
- * (rounded rects, pills, ring outlines, scaled text). Originally lived only in [FishModScreen]'s
- * companion object; extracted here so [CommandAliasesScreen], [CommandKeysScreen], and any future
- * screen can match its smooth look without duplicating the drawing code.
- */
 object ScreenTheme {
     val ACCENT = 0xFF24B6B0.toInt()
     val ACCENT_HOVER = 0xFF3AD8D1.toInt()
@@ -20,17 +14,12 @@ object ScreenTheme {
 
     const val TEXT_SCALE = 0.75f
 
-    /** Blends `color`'s alpha channel by `coverage` (0..1), keeping RGB unchanged. */
     private fun withCoverage(color: Int, coverage: Double): Int {
         val a = ((color ushr 24) and 0xFF)
         val newA = Math.round(a * coverage.coerceIn(0.0, 1.0)).toInt().coerceIn(0, 255)
         return (newA shl 24) or (color and 0x00FFFFFF)
     }
 
-    /**
-     * Rounded rect with a single-pixel anti-aliased fringe on each corner (fractional circle
-     * coverage blended into the boundary pixel) instead of a hard-edged pixel-stairstep corner.
-     */
     fun roundedRect(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, color: Int) {
         if (w <= 0 || h <= 0) return
         val rr = Math.max(0, Math.min(r, Math.min(w, h) / 2))
@@ -46,12 +35,10 @@ object ScreenTheme {
             val inset = rr - dxFloor
             val topY = y + i
             val botY = y + h - 1 - i
-            // solid interior of the corner
             ctx.fill(x + inset, topY, x + rr, topY + 1, color)
             ctx.fill(x + w - rr, topY, x + w - inset, topY + 1, color)
             ctx.fill(x + inset, botY, x + rr, botY + 1, color)
             ctx.fill(x + w - rr, botY, x + w - inset, botY + 1, color)
-            // one partially-covered fringe pixel, softening the stairstep edge
             if (inset > 0) {
                 val aa = withCoverage(color, coverage)
                 ctx.fill(x + inset - 1, topY, x + inset, topY + 1, aa)
@@ -74,17 +61,11 @@ object ScreenTheme {
 
     private const val NVG_BASE_TEXT_SIZE = 9.5f
 
-    /** NanoVG (vector-font) text — for any new screen; avoids the blur from scaling down
-     *  Minecraft's bitmap font. Must be replayed later via a NanoVG overlay pass
-     *  (see [HasNvgOverlay]), never drawn immediately. */
     fun nst(s: String, x: Int, y: Int, color: Int, scale: Float = TEXT_SCALE) {
         NvgRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * scale, color)
     }
     fun nstw(s: String, scale: Float = TEXT_SCALE): Int =
         Math.ceil(NvgRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * scale).toDouble()).toInt()
-
-    // deferred NanoVG shape helpers — use these (not the immediate ctx.fill helpers above) on any
-    // HasNvgOverlay screen; ctx.fill can't run from extractRenderState on an NvgRecorder-backed screen
 
     fun nRoundedRect(x: Int, y: Int, w: Int, h: Int, r: Int, color: Int) {
         NvgRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), color)
@@ -108,10 +89,6 @@ object ScreenTheme {
         nRoundedRect(x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), fill)
     }
 
-    /** A vanilla EditBox.extractRenderState() call would flush immediately and be invisible behind
-     *  the NanoVG overlay drawn after it, so this redraws the field's box + text + caret entirely
-     *  via NanoVG instead; the EditBox itself must be kept only as data/cursor state (never added
-     *  to the Screen's widget list — drive keyPressed/charTyped/mouseClicked to it by hand). */
     fun nTextField(field: net.minecraft.client.gui.components.EditBox, focused: Boolean, x: Int, y: Int, w: Int, h: Int, textSize: Float = 7f) {
         nRoundedRectRing(x, y, w, h, 3, 1, FIELD_BG_DEFAULT, if (focused) ACCENT else FIELD_BORDER_DEFAULT)
         nTextFieldContent(field, focused, x, y, w, h, textSize)

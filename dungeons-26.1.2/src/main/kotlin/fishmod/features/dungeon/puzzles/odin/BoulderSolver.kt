@@ -10,7 +10,6 @@ import net.minecraft.world.phys.AABB
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 
-/** Boulder solver — with a tick retry, since the grid blocks can still be loading. */
 object BoulderSolver {
 
     private data class BoxPosition(val signBox: AABB, val click: BlockPos)

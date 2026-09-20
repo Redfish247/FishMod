@@ -9,7 +9,6 @@ import net.minecraft.world.phys.Vec3
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 
-/** Ice Fill solver — with a tick retry until every floor resolves. */
 object IceFillSolver {
 
     private class Pt { @JvmField var x = 0; @JvmField var y = 0; @JvmField var z = 0; fun pos() = BlockPos(x, y, z) }

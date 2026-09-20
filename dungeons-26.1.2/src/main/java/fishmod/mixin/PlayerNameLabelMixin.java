@@ -10,9 +10,6 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-/** Force the local player's own nametag to render (vanilla skips it as the camera entity), so you can
- *  see your own nick above your head with the [level] prefix + emblem. Only flips the local player's
- *  result to true — other players are untouched. */
 @Mixin(AvatarRenderer.class)
 public class PlayerNameLabelMixin {
 

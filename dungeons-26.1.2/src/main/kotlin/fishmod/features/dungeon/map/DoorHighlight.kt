@@ -10,28 +10,18 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import kotlin.math.abs
 
-/**
- * World-space highlight for already-seen locked doors. BLOOD doors draw occluded ([RenderingEvents.GIZMO]);
- * WITHER doors draw through walls ([RenderingEvents.NO_DEPTH_FILLED]) since knowing one is nearby is the point.
- * By default only the near door-frame face is drawn as a flat quad ([faceQuad]) to avoid z-fighting; a full-box
- * mode exists ([DungeonMapSettings.mapDoorHighlightFullBox]), always used for WITHER doors.
- */
 object DoorHighlight {
 
-    // door frame is 3x3x5; Y_MAX-Y_MIN must be 5 to cover the full frame height, not 4
     private const val Y_MIN = 69.0
     private const val Y_MAX = 74.0
 
     @JvmStatic
     fun init() {
-        // never mix fill and line topologies on one VertexConsumer - line verts as quads render as bowtie garbage
         RenderingEvents.GIZMO.register { _ -> renderGizmo() }
         RenderingEvents.NO_DEPTH_FILLED.register { _, matrices, vc -> render(matrices, vc, depthTested = false, fill = true) }
         RenderingEvents.NO_DEPTH_LINE.register { _, matrices, vc -> render(matrices, vc, depthTested = false, fill = false) }
     }
 
-    /** WITHER doors always pierce walls (knowing one is behind you is the point); the config toggle
-     *  opts every other highlighted door into the same through-wall treatment. */
     private fun throughWall(type: Door.Type): Boolean =
         type == Door.Type.WITHER || DungeonMapSettings.mapDoorHighlightThroughWall
 
@@ -39,7 +29,6 @@ object DoorHighlight {
         return DungeonMapSettings.mapDoorHighlightEnabled && DungeonState.isInDungeon()
     }
 
-    /** The door's own room-tile on the player's side, or null if the player isn't in either of [Door.rooms]. */
     private fun facingRoomTile(door: Door): Room.Tile? {
         val player = Minecraft.getInstance().player ?: return null
         val idx = MapVec2i(player.blockX, player.blockZ).index()
@@ -47,7 +36,6 @@ object DoorHighlight {
         return door.rooms.firstOrNull { it.owner === here }
     }
 
-    /** "openable" test: locked + the matching key already claimed. */
     private fun openable(door: Door): Boolean {
         return when (door.type) {
             Door.Type.BLOOD -> DungeonState.hasBloodKey()
@@ -66,13 +54,10 @@ object DoorHighlight {
         }
     }
 
-    /** ~50% opacity (0x80/255) for a locked door's flat fill — mapDoorOpenableColorFilled's own alpha (~20%) read as basically invisible. */
     private const val LOCKED_FILL_ALPHA = 0x80
 
-    /** ~31% opacity for the WITHER full-box fill — visible without hiding the room behind the frame. */
     private const val WITHER_FILL_ALPHA = 0x50
 
-    /** WITHER box outline colour: shared openable green once the Wither Key is held, red until then. */
     private fun witherLine(door: Door): Int =
         if (openable(door)) DungeonMapSettings.mapDoorOpenableColor
         else DungeonMapSettings.mapWitherHighlightMissingColor
@@ -84,20 +69,16 @@ object DoorHighlight {
         val s = DungeonMapSettings
         return if (openable(door)) s.mapDoorOpenableColorFilled
         else {
-            // no per-type "Filled" colour, so reuse the line colour's RGB at a fixed visible alpha
             (LOCKED_FILL_ALPHA shl 24) or (lineColor(door) and 0x00FFFFFF)
         }
     }
 
-    // inflate(0.02) pushes faces just in front of the door blocks so they win the z-fight from the room side
     private fun box(door: Door): AABB {
         val x = door.pos.x.toDouble()
         val z = door.pos.z.toDouble()
         return AABB(x - 1.0, Y_MIN, z - 1.0, x + 2.0, Y_MAX, z + 2.0).inflate(0.02)
     }
 
-    /** The single flat face of [box] nearest [hereTile], as 4 wound corners; orientation comes from
-     *  comparing [hereTile] against the door's other room-tile to find the facing axis and side. */
     private fun faceQuad(door: Door, hereTile: Room.Tile): Array<Vec3>? {
         val full = box(door)
         val other = door.rooms.firstOrNull { it !== hereTile } ?: return null
@@ -122,13 +103,12 @@ object DoorHighlight {
         }
     }
 
-    /** Occluded pass: every highlighted door that should NOT pierce walls, via vanilla Gizmos. */
     private fun renderGizmo() {
         if (!active()) return
         val fullBox = DungeonMapSettings.mapDoorHighlightFullBox
         for (door in ArrayList(Scan.doors)) {
             if (door.type == Door.Type.NORMAL || !door.locked || !door.seen) continue
-            if (throughWall(door.type)) continue   // through-wall doors draw on the NO_DEPTH pass
+            if (throughWall(door.type)) continue
             val hereTile = facingRoomTile(door) ?: continue
             if (fullBox) {
                 RenderUtils.gizmoBox(box(door), fillColor(door), lineColor(door))
@@ -144,12 +124,10 @@ object DoorHighlight {
         val fullBox = DungeonMapSettings.mapDoorHighlightFullBox
         for (door in ArrayList(Scan.doors)) {
             if (door.type == Door.Type.NORMAL || !door.locked || !door.seen) continue
-            // each door renders on exactly one layer: no-depth pass if it pierces walls, depth-tested otherwise
             if (throughWall(door.type) == depthTested) continue
             val hereTile = facingRoomTile(door) ?: continue
 
             val isWither = door.type == Door.Type.WITHER
-            // Wither doors are always the full 3x3x5 frame box, coloured by Wither Key pickup state.
             val fillC = RenderUtils.toFloats(if (isWither) witherFill(door) else fillColor(door))
             val lineC = RenderUtils.toFloats(if (isWither) witherLine(door) else lineColor(door))
             if (fullBox || isWither) {

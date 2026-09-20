@@ -15,7 +15,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.entity.EquipmentSlot
 import net.minecraft.world.item.ItemStack
 
-/** Each "saved your life" item has a fixed proc: chat line -> [maxActive] ticks of invulnerability, then [maxCooldown] before it can proc again; counters tick on the server tick (20/s). */
 object InvincibilityTracker {
 
     enum class Type(
@@ -82,7 +81,7 @@ object InvincibilityTracker {
             "Always" -> true
             "Active" -> t.active > 0
             "Cooldown" -> t.cooldown > 0
-            else -> t.active > 0 || t.cooldown > 0 // "Any"
+            else -> t.active > 0 || t.cooldown > 0
         }
     }
 
