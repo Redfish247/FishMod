@@ -9,6 +9,11 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
+/**
+ * When the end-of-run "> EXTRA STATS <" header prints, re-queue the same floor after a short delay
+ * via `/joininstance <floor>` (`/instancerequeue` doesn't target the current floor). Guarded by
+ * [partyChanged] (breakup/leave latch) and [dtSkip] (per-run "!dt" opt-out).
+ */
 object AutoRequeue {
 
     private val NUM_WORDS = arrayOf("one", "two", "three", "four", "five", "six", "seven")
@@ -23,6 +28,8 @@ object AutoRequeue {
     private val DT_LINE: Pattern = Pattern.compile("^(?:§9)?Party §8> .*: !dt$", Pattern.CASE_INSENSITIVE)
     private val MORT_START = "[NPC] Mort: Here, I found this map when I first entered the dungeon."
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
+    // Hypixel appends invisible characters (NBSP, zero-width space, etc.) to some chat lines to
+    // dodge the vanilla "duplicate message" collapse — strip those before doing exact matches.
     private val INVISIBLE = Regex("[\\u00A0\\u200B\\u200C\\u200D\\uFEFF\\u00AD]")
     private fun clean(s: String) = INVISIBLE.replace(s, " ").trim()
 
@@ -30,6 +37,13 @@ object AutoRequeue {
     @Volatile private var dtSkip = false
     @Volatile private var startTeamCount = 0
     @Volatile private var extraStatsHandled = false
+
+    // ON_GAME_MESSAGE fires twice for one Hypixel line (bundled + unbundled packet paths — see
+    // SlayerProfitTracker's identical workaround). Without this, EXTRA STATS processed the "!dt"
+    // consume-and-check logic twice: the 1st pass correctly skipped and cleared dtSkip, then the
+    // 2nd pass saw a clean flag and queued anyway.
+    @Volatile private var lastLine = ""
+    @Volatile private var lastLineMs = 0L
 
     @JvmStatic
     fun init() {
@@ -41,7 +55,14 @@ object AutoRequeue {
         Events.ON_GAME_MESSAGE.register { text ->
             val raw = text.string
             val s = COLOR.replace(raw, "")
+            val now = System.currentTimeMillis()
+            if (s == lastLine && now - lastLineMs < 1_500L) return@register false
+            lastLine = s
+            lastLineMs = now
             when {
+                // Backup for the ON_PARTY_MESSAGE hook (which can miss in-dungeon party chat).
+                // Loose match (contains, not startsWith/endsWith) — trailing junk chars Hypixel
+                // sometimes appends to chat lines broke the old exact-suffix check.
                 DT_LINE.matcher(raw).find() || clean(s).let { it.contains("Party >", ignoreCase = true) && it.contains(": !dt", ignoreCase = true) } -> dtSkip = true
                 s == MORT_START -> { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false }
                 BREAKUP.matcher(s).find() -> partyChanged = true
@@ -77,6 +98,12 @@ object AutoRequeue {
         }
     }
 
+    /**
+     * Called from [fishmod.mixin.ChatHudMixin] for every displayed chat line, regardless of
+     * whether it arrived as signed player chat or unsigned system chat — the network-level
+     * ON_GAME_MESSAGE hook above only sees the latter, which in-dungeon party chat doesn't
+     * reliably use.
+     */
     @JvmStatic
     fun onChatLine(raw: String) {
         val s = COLOR.replace(raw, "")
@@ -85,6 +112,7 @@ object AutoRequeue {
         }
     }
 
+    /** `joininstance` for the current floor, or `instancerequeue` if the floor can't be read. */
     private fun requeueCommand(): String {
         val floor = DungeonState.floorNumber()
         return when {
