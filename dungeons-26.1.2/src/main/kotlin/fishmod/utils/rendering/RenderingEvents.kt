@@ -7,18 +7,12 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.rendertype.RenderType
 
-/**
- * World-overlay dispatch: [GIZMO] emits vanilla gizmos (occluded by terrain) from
- * [LevelRenderEvents.BEFORE_GIZMOS]; [NO_DEPTH_FILLED]/[NO_DEPTH_LINE] draw through walls in one
- * [LevelRenderEvents.END_MAIN] pass.
- */
 object RenderingEvents {
 
-    /** Emit vanilla gizmos here (via [RenderUtils.gizmoBox] / [RenderUtils.gizmoQuad] / etc.). */
-    @JvmField var GIZMO = GizmoHandler()
+    @JvmField var GIZMO = SimpleHandler<GizmoEvent>()
 
-    @JvmField var NO_DEPTH_FILLED = RenderHandler()
-    @JvmField var NO_DEPTH_LINE = RenderHandler()
+    @JvmField var NO_DEPTH_FILLED = SimpleHandler<RenderingEvent>()
+    @JvmField var NO_DEPTH_LINE = SimpleHandler<RenderingEvent>()
 
     @Volatile private var registered = false
 
@@ -53,11 +47,11 @@ object RenderingEvents {
 
     private fun drawLayer(
         ctx: LevelRenderContext, ps: PoseStack, buffers: MultiBufferSource.BufferSource,
-        layer: RenderType, vararg handlers: RenderHandler,
+        layer: RenderType, handler: SimpleHandler<RenderingEvent>,
     ) {
-        if (handlers.all { it.size() == 0 }) return
+        if (handler.size() == 0) return
         val vc = buffers.getBuffer(layer)
-        for (h in handlers) h.invoke { it.render(ctx, ps, vc) }
+        handler.invoke { it.render(ctx, ps, vc) }
         buffers.endBatch(layer)
     }
 }

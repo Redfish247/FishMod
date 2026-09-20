@@ -17,7 +17,6 @@ object Misc {
     private val ON: Component = Component.literal("ON").withStyle(ChatFormatting.GREEN)
     private val OFF: Component = Component.literal("OFF").withStyle(ChatFormatting.RED)
 
-    /** Compact number: 1,234 / 12.3k / 4.56M / 1.23B. */
     @JvmStatic
     fun abbr(v: Double): String = when {
         v >= 1_000_000_000 -> "%.2fB".format(v / 1_000_000_000)
@@ -74,7 +73,6 @@ object Misc {
         }
     }
 
-    /** Like [forceTitle] but holds the title on screen for [stayMs] (fade in/out fixed). */
     @JvmStatic
     fun forceTitle(title: Component, subtitle: Component, stayMs: Int) {
         forceMainThread {
@@ -91,7 +89,6 @@ object Misc {
     @JvmStatic
     fun executeCommand(string: String) {
         val networkHandler = INSTANCE.connection ?: return
-        // sendCommand() expects no leading slash
         val trimmed = string.trim()
         val command = if (trimmed.startsWith("/")) trimmed.substring(1) else trimmed
         forceMainThread { networkHandler.sendCommand(command) }
@@ -104,13 +101,11 @@ object Misc {
             if (volume <= 1f) {
                 player.playSound(soundEvent, volume, pitch)
             } else {
-                // MC clamps sound gain to 1.0; volume > 1 via playSound() only widens falloff. LoudSoundInstance lets the mixins exceed 1.0.
                 INSTANCE.soundManager.play(fishmod.utils.sound.LoudSoundInstance(soundEvent, volume, pitch))
             }
         }
     }
 
-    /** Play a cue "in your ear" — no positional panning or distance falloff, any volume incl. >100%. */
     @JvmStatic
     fun sendSound2D(soundEvent: SoundEvent, volume: Float, pitch: Float) {
         if (INSTANCE.player == null) return

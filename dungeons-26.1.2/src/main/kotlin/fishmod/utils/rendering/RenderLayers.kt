@@ -14,11 +14,6 @@ import net.minecraft.client.renderer.rendertype.RenderSetup
 import net.minecraft.client.renderer.rendertype.RenderType
 import net.minecraft.resources.Identifier
 
-/**
- * World-overlay render layers ([FILL_ND], [LINE_ND]): plain `core/position_color` pipelines drawn
- * straight onto the main target with `ALWAYS_PASS` depth (paint-on-top, through walls), replacing
- * the old deferred `submitCustomGeometry` path. Occluded highlights go through vanilla Gizmos instead.
- */
 object RenderLayers {
 
     private fun pipeline(name: String, mode: VertexFormat.Mode): RenderPipeline =

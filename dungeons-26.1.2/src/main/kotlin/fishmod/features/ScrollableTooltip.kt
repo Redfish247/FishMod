@@ -2,12 +2,11 @@ package fishmod.features
 
 import fishmod.utils.config.values.FishSettings
 
-/** Scroll/shift+scroll/ctrl+scroll over a tooltip moves/scales it; applied to the pose in [fishmod.mixin.DrawContextMixin]. */
 object ScrollableTooltip {
 
     @JvmField var offsetX = 0f
     @JvmField var offsetY = 0f
-    @JvmField var scaleOverride = 0f          // tenths added onto the base scale
+    @JvmField var scaleOverride = 0f
 
     private var lastSlot = Int.MIN_VALUE
 
@@ -24,17 +23,11 @@ object ScrollableTooltip {
         offsetX = 0f; offsetY = 0f; scaleOverride = 0f
     }
 
-    /**
-     * Drop the offset/scale as soon as the hovered slot changes (or you stop hovering), so a
-     * tooltip nudged off one item doesn't render displaced over the next item / empty space.
-     * Called every screen frame from [fishmod.mixin.HandledScreenMixin].
-     */
     @JvmStatic
     fun trackHoveredSlot(slot: Int) {
         if (slot != lastSlot) { resetScroll(); lastSlot = slot }
     }
 
-    /** @param slot hovered slot index (< 0 = none). @return true if the scroll was consumed. */
     @JvmStatic
     fun onScroll(vertical: Double, slot: Int, shift: Boolean, ctrl: Boolean): Boolean {
         if (!isEnabled() || slot < 0) return false

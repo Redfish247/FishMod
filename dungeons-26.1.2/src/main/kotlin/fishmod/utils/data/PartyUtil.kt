@@ -20,7 +20,7 @@ object PartyUtil {
     @JvmStatic
     fun init() {
         INSTANCE.createHandler(ClientboundPartyInfoPacket::class.java) { packet ->
-            Debug.LOGGER.info("Received party info packet")
+            if (Debug.termInfo) Debug.LOGGER.info("Received party info packet")
             memberMap = packet.memberMap
             inParty = packet.isInParty
             leaderUuid = packet.memberMap.entries
@@ -28,7 +28,6 @@ object PartyUtil {
         }
     }
 
-    /** True only when we're in a party and hold the LEADER role. */
     @JvmStatic
     fun amLeader(): Boolean {
         sendPacket()
@@ -60,7 +59,6 @@ object PartyUtil {
         return inParty
     }
 
-    /** Current party members' UUIDs (leader included), or empty when not in a party. */
     @JvmStatic
     fun getMemberUuids(): Set<UUID> {
         sendPacket()

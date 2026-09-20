@@ -15,11 +15,13 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-// Personal bests persisted to config/fishmod/room_timers.json.
 object RoomTimer {
 
     private val FILE: Path = Paths.get("config/fishmod/room_timers.json")
     private val GSON = GsonBuilder().setPrettyPrinting().create()
+    private val ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
+        Thread(r, "FishMod-RoomTimer-IO").apply { isDaemon = true }
+    }
 
     private class Pb {
         @JvmField var clear: Long = Long.MAX_VALUE
@@ -58,7 +60,6 @@ object RoomTimer {
             val took = System.currentTimeMillis() - enterMs
             val secrets = here.data?.secrets ?: 0
 
-            // Green check = every secret found; white check = room fully cleared.
             if (!toldSecrets && u.neu == Room.State.GREEN && secrets > 0) {
                 toldSecrets = true
                 if (FishSettings.roomTimerSecrets) announce("§bSecrets done", took, name, isSecrets = true)
@@ -109,11 +110,14 @@ object RoomTimer {
     }
 
     private fun save() {
-        try {
-            Files.createDirectories(FILE.parent)
-            Files.writeString(FILE, GSON.toJson(pbs))
-        } catch (e: Exception) {
-            Debug.LOGGER.warn("[RoomTimer] save failed: {}", e.toString())
+        val json = GSON.toJson(pbs)
+        ioExecutor.execute {
+            try {
+                Files.createDirectories(FILE.parent)
+                Files.writeString(FILE, json)
+            } catch (e: Exception) {
+                Debug.LOGGER.warn("[RoomTimer] save failed: {}", e.toString())
+            }
         }
     }
 }

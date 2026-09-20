@@ -9,10 +9,8 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import java.util.regex.Pattern
 
-
 object ExplosiveShot {
 
-    // hit N enemy/enemies for D damage  (D may carry thousands commas and a decimal)
     private val PATTERN: Pattern = Pattern.compile(
         "Your Explosive Shot hit (\\d+) (?:enemy|enemies) for ([\\d,]+(?:\\.\\d+)?) damage"
     )
@@ -22,13 +20,10 @@ object ExplosiveShot {
         Events.ON_GAME_MESSAGE.register { text -> onMessage(text) }
     }
 
-
-
     private fun onMessage(text: Component?): Boolean {
         if (text == null) return false
         val s = text.string ?: return false
 
-        // Phase.inP1() rather than matching the boss taunt text — a hand-typed copy drifted out of sync and broke this gate
         if (!FishSettings.explosiveShotEnabled || !Phase.inP1()) return false
         if (s.indexOf("Explosive Shot") < 0) return false
 
@@ -48,7 +43,6 @@ object ExplosiveShot {
         val perEnemy = total / enemies
         val dmg = formatDamage(perEnemy)
 
-        // ON_GAME_MESSAGE fires on the network thread — touch the HUD/chat only on the client thread.
         val mc = Minecraft.getInstance()
         if (FishSettings.explosiveShotShowTitle) {
             val title = Component.literal(dmg).withStyle(ChatFormatting.RED)
@@ -57,7 +51,7 @@ object ExplosiveShot {
             )
             mc.execute {
                 val hud = mc.gui
-                hud.setTimes(0, 25, 8) // snappy: no fade-in, ~1.25s hold, quick fade-out
+                hud.setTimes(0, 25, 8)
                 hud.setTitle(title)
                 hud.setSubtitle(subtitle)
             }
@@ -73,7 +67,7 @@ object ExplosiveShot {
         if (FishSettings.explosiveShotAnnounceParty && DungeonClass.isClass(DungeonClass.ARCHER)) {
             announceToParty(dmg, enemies)
         }
-        return false // keep the original chat line
+        return false
     }
 
     private fun announceToParty(dmg: String, enemies: Int) {

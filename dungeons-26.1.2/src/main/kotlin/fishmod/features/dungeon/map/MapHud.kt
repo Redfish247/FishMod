@@ -8,7 +8,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.resources.Identifier
 
-/** Draws the dungeon room-grid map HUD: background, rooms, doors, room names/state icons, and teammate heads. */
 object MapHud {
 
     @JvmStatic
@@ -31,7 +30,6 @@ object MapHud {
         renderAt(g, mc, DungeonMapSettings.mapX, DungeonMapSettings.mapY, DungeonMapSettings.mapScale, true)
     }
 
-    /** Public so the Leap menu's map view can place the map at its own position/scale. */
     @JvmStatic
     fun renderAt(g: GuiGraphicsExtractor, mc: Minecraft, x: Float, y: Float, scale: Float, edit: Boolean) {
         val pose = g.pose()

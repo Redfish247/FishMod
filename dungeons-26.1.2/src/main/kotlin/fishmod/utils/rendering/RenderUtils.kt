@@ -33,19 +33,12 @@ object RenderUtils {
         return floatArrayOf(r, g, b, a)
     }
 
-    // gizmo* helpers: absolute world-space coords; ONLY legal from a RenderingEvents.GIZMO handler (BEFORE_GIZMOS); alpha 0 skipped
-
-    /** Fill + outline of [box] as two vanilla cuboid gizmos, occluded by terrain. */
     @JvmStatic
     fun gizmoBox(box: AABB, fillArgb: Int, strokeArgb: Int) {
         if ((fillArgb ushr 24) != 0) Gizmos.cuboid(box, GizmoStyle.fill(fillArgb))
         if ((strokeArgb ushr 24) != 0) Gizmos.cuboid(box, GizmoStyle.stroke(strokeArgb))
     }
 
-    /**
-     * Occluded box outline whose edge thickness is a real block size — 12 thin filled cuboid gizmos,
-     * since `GizmoStyle.stroke` is a fixed vanilla line width. Mirrors [renderThickOutline].
-     */
     @JvmStatic
     fun gizmoThickOutline(box: AABB, argb: Int, lineWidth: Double) {
         if ((argb ushr 24) == 0) return
@@ -69,13 +62,11 @@ object RenderUtils {
         gizmoThickEdge(x1, y1, z2, x1, y2, z2, hw, argb)
     }
 
-    /** Public single-edge entry point for [gizmoThickEdge], e.g. drawing a merged-waypoint outline's boundary edges one segment at a time. */
     @JvmStatic
     fun gizmoThickEdge(a: Vec3, b: Vec3, halfWidth: Double, argb: Int) {
         gizmoThickEdge(a.x, a.y, a.z, b.x, b.y, b.z, halfWidth, argb)
     }
 
-    /** One axis-aligned edge of [gizmoThickOutline], expanded to `halfWidth` on the two axes it doesn't run along. */
     private fun gizmoThickEdge(
         ax: Double, ay: Double, az: Double, bx: Double, by: Double, bz: Double,
         halfWidth: Double, argb: Int
@@ -89,21 +80,17 @@ object RenderUtils {
         Gizmos.cuboid(AABB(minX, minY, minZ, maxX, maxY, maxZ), GizmoStyle.fill(argb))
     }
 
-    /** A single flat quad from its 4 corners (order around the quad), for door-frame faces. */
     @JvmStatic
     fun gizmoQuad(corners: Array<Vec3>, fillArgb: Int, strokeArgb: Int) {
         if (corners.size < 4) return
         Gizmos.rect(corners[0], corners[1], corners[2], corners[3], GizmoStyle.strokeAndFill(strokeArgb, 2f, fillArgb))
     }
 
-    /** Straight world-space segment (route connectors, beam paths), occluded by terrain. */
     @JvmStatic
     fun gizmoLine(a: Vec3, b: Vec3, argb: Int) {
-        // Match renderLineTo: a colour with no alpha byte means "opaque", not "invisible".
         Gizmos.line(a, b, if ((argb ushr 24) == 0) argb or (0xFF shl 24) else argb)
     }
 
-    /** Two world-space quads, perpendicular to each other, spanning the segment a->b so at least one stays face-on from any viewing angle. */
     private fun crossQuads(a: Vec3, b: Vec3, halfWidth: Double): Pair<Array<Vec3>, Array<Vec3>>? {
         val dir = b.subtract(a)
         if (dir.lengthSqr() < 1.0e-9) return null
@@ -117,10 +104,6 @@ object RenderUtils {
         )
     }
 
-    /**
-     * Occluded route line as two crossed thick quads instead of [gizmoLine]'s vanilla GL line — a raw
-     * GL line's on-screen width depends on the angle it's viewed at and can thin down to nothing.
-     */
     @JvmStatic
     fun gizmoThickLine(a: Vec3, b: Vec3, halfWidth: Double, argb: Int) {
         if ((argb ushr 24) == 0) return
@@ -129,7 +112,6 @@ object RenderUtils {
         gizmoQuad(quad2, argb, 0)
     }
 
-    /** Billboarded world text, occluded by terrain — drains with the gizmo pass, unlike submitText. */
     @JvmStatic
     fun gizmoText(text: Component, pos: Vec3, scale: Float, argb: Int) {
         Gizmos.billboardText(text.string, pos, TextGizmo.Style.forColorAndCentered(argb).withScale(scale))
@@ -182,12 +164,6 @@ object RenderUtils {
         drawFilledBox(matrixStack, consumer, box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, rgba[0], rgba[1], rgba[2], rgba[3])
     }
 
-    /**
-     * Fills a single flat quad (e.g. one face of a door frame) rather than a whole box. Deliberately
-     * NOT a box collapsed to near-zero thickness on one axis — that leaves its own front/back faces
-     * only a hair apart, which z-fight against each other and flicker frame to frame. `corners` must
-     * be exactly 4 points in order around the quad (matches DEBUG_FILLED_BOX's QUADS vertex mode).
-     */
     @JvmStatic
     fun renderFilledQuad(matrixStack: PoseStack, consumer: VertexConsumer, corners: Array<Vec3>, rgba: FloatArray) {
         if (rgba[3] == 0f) return
@@ -197,7 +173,6 @@ object RenderUtils {
         }
     }
 
-    /** Border of the 4 edges around [corners], for pairing with [renderFilledQuad]. */
     @JvmStatic
     fun renderQuadOutline(matrixStack: PoseStack, consumer: VertexConsumer, corners: Array<Vec3>, rgba: FloatArray) {
         if (rgba[3] == 0f) return
@@ -209,7 +184,6 @@ object RenderUtils {
         }
     }
 
-    /** Emits the 12 box edges directly since ShapeRenderer (the old VoxelShape outline helper) was removed in 26.2. */
     @JvmStatic
     fun renderOutline(matrixStack: PoseStack, consumer: VertexConsumer, box: AABB, rgba: FloatArray) {
         if (rgba[3] == 0f) return
@@ -234,7 +208,6 @@ object RenderUtils {
         edge(consumer, pose, x1, y1, z2, x1, y2, z2, r, g, b, a)
     }
 
-    /** Like [renderOutline], but edges are thin filled boxes so thickness is a real block size, not unreliable GPU line-width state. Must be submitted on the same layer as [renderFilled] (see [RenderingEvents.NO_DEPTH_FILLED]). */
     @JvmStatic
     fun renderThickOutline(matrixStack: PoseStack, consumer: VertexConsumer, box: AABB, rgba: FloatArray, lineWidth: Double) {
         if (rgba[3] == 0f) return
@@ -258,13 +231,11 @@ object RenderUtils {
         thickEdge(matrixStack, consumer, x1, y1, z2, x1, y2, z2, hw, rgba)
     }
 
-    /** Public single-edge entry point for [thickEdge], e.g. drawing a merged-waypoint outline's boundary edges one segment at a time. */
     @JvmStatic
     fun renderThickEdge(matrixStack: PoseStack, consumer: VertexConsumer, a: Vec3, b: Vec3, halfWidth: Double, rgba: FloatArray) {
         thickEdge(matrixStack, consumer, a.x, a.y, a.z, b.x, b.y, b.z, halfWidth, rgba)
     }
 
-    /** One axis-aligned edge of [renderThickOutline], expanded to `halfWidth` on the two axes it doesn't run along. */
     private fun thickEdge(
         matrixStack: PoseStack, consumer: VertexConsumer,
         ax: Double, ay: Double, az: Double, bx: Double, by: Double, bz: Double,
@@ -279,7 +250,6 @@ object RenderUtils {
         drawFilledBox(matrixStack, consumer, minX, minY, minZ, maxX, maxY, maxZ, rgba[0], rgba[1], rgba[2], rgba[3])
     }
 
-    /** Draws a single straight line segment between two absolute world points, e.g. to connect route waypoints. */
     @JvmStatic
     fun renderLine(matrixStack: PoseStack, consumer: VertexConsumer, a: Vec3, b: Vec3, rgba: FloatArray) {
         if (rgba[3] == 0f) return
@@ -289,10 +259,6 @@ object RenderUtils {
         )
     }
 
-    /**
-     * Through-walls route line as two crossed thick quads instead of [renderLine]'s raw GL line — same
-     * fix as [gizmoThickLine], for the no-depth pass.
-     */
     @JvmStatic
     fun renderThickLine(matrixStack: PoseStack, consumer: VertexConsumer, a: Vec3, b: Vec3, halfWidth: Double, rgba: FloatArray) {
         if (rgba[3] == 0f) return
@@ -301,7 +267,6 @@ object RenderUtils {
         renderFilledQuad(matrixStack, consumer, quad2, rgba)
     }
 
-    // RenderLayers.LINE_ND is a plain POSITION_COLOR + DEBUG_LINES pipeline — 2 verts per segment, position + colour only, no Normal/LineWidth.
     private fun edge(
         consumer: VertexConsumer, pose: PoseStack.Pose,
         x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float,
@@ -317,7 +282,6 @@ object RenderUtils {
         val textRenderer = client.font
         client.player ?: return
 
-        // submitText() drains after the view matrix is gone, so rotate (worldPos-camera) into view space ourselves and cancel the upstream -camera translate
         val cam = client.gameRenderer.mainCamera.position()
         val viewPos = Vector3f(
             (x - cam.x).toFloat(), (y - cam.y).toFloat(), (z - cam.z).toFloat(),
@@ -362,7 +326,6 @@ object RenderUtils {
         renderLineTo(context, matrices, consumer, pos.x, pos.y, pos.z, color)
     }
 
-    /** 6 independent quads, not a triangle strip: DEBUG_FILLED_BOX's snippet uses VertexFormat.Mode.QUADS, and feeding it strip-shaped (shared-vertex) data previously produced corrupted bowtie/zigzag shapes. */
     private fun drawFilledBox(
         matrices: PoseStack, consumer: VertexConsumer,
         x1: Double, y1: Double, z1: Double,
@@ -402,14 +365,14 @@ object RenderUtils {
     @JvmStatic
     fun formatNumber(num: Float): String {
         return if (Floor7.capitalizeHealthNumbers) {
-            if (num >= 1e9) String.format("%.1fB", num / 1e9f)
-            else if (num >= 1e6) String.format("%.1fM", num / 1e6f)
-            else if (num >= 1e3) String.format("%.1fK", num / 1e3f)
+            if (num >= 1e9) String.format(java.util.Locale.ROOT, "%.1fB", num / 1e9f)
+            else if (num >= 1e6) String.format(java.util.Locale.ROOT, "%.1fM", num / 1e6f)
+            else if (num >= 1e3) String.format(java.util.Locale.ROOT, "%.1fK", num / 1e3f)
             else "$num"
         } else {
-            if (num >= 1e9) String.format("%.1fb", num / 1e9f)
-            else if (num >= 1e6) String.format("%.1fm", num / 1e6f)
-            else if (num >= 1e3) String.format("%.1fk", num / 1e3f)
+            if (num >= 1e9) String.format(java.util.Locale.ROOT, "%.1fb", num / 1e9f)
+            else if (num >= 1e6) String.format(java.util.Locale.ROOT, "%.1fm", num / 1e6f)
+            else if (num >= 1e3) String.format(java.util.Locale.ROOT, "%.1fk", num / 1e3f)
             else "$num"
         }
     }

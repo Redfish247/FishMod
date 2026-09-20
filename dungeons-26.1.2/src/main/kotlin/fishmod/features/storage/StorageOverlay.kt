@@ -18,15 +18,11 @@ import net.minecraft.world.item.ItemStack
 import org.lwjgl.glfw.GLFW
 import java.util.TreeMap
 
-/**
- * Storage overlay — replaces the vanilla `/storage` screen with a scrollable multi-page grid.
- * Page contents come from [StorageCache] (captured as you page through `/storage`).
- */
 object StorageOverlay {
 
-    private const val SLOT_SIZE = 17           // 17 not 16 — 1px border
+    private const val SLOT_SIZE = 17
     private const val PADDING = 10
-    private const val HEADER_H = 16           // band under the panel top for the title + search field
+    private const val HEADER_H = 16
     private const val PAGE_WIDTH = SLOT_SIZE * 9 + 4
     private const val ACTIVE_PAGE_BORDER_THICKNESS = 2
     private const val SCROLL_BAR_WIDTH = 8
@@ -72,12 +68,9 @@ object StorageOverlay {
         return t == "Storage" || StoragePage.fromTitle(t) != null
     }
 
-    /** True while the overlay covers this screen — used by the mixin to suppress vanilla slot draw. */
     @JvmStatic
     fun isActive(screen: AbstractContainerScreen<*>): Boolean = on(screen)
 
-    /** Panel top-left in real (GUI-scaled) screen space — for anchoring sibling overlays like
-     *  [fishmod.features.item.ContainerValue]. Only meaningful right after [render] this frame. */
     @JvmStatic
     fun panelLeftScreenX(): Int = (mx0 * scale).toInt()
 
@@ -132,7 +125,6 @@ object StorageOverlay {
         innerW = PAGE_WIDTH * pageWidthCount + (pageWidthCount - 1) * PADDING
         overviewW = innerW + 3 * PADDING + SCROLL_BAR_WIDTH
         mx0 = vw / 2 - overviewW / 2
-        // leave a margin at top and bottom so the panel + player inv never touch the screen edge
         val avail = vh - PLAYER_HEIGHT - 12
         overviewH = minOf(avail, FishSettings.storageMaxHeight.coerceIn(80, 900)).coerceAtLeast(80)
         innerH = overviewH - PADDING * 2 - HEADER_H
@@ -140,7 +132,6 @@ object StorageOverlay {
         playerX0 = vw / 2 - PLAYER_WIDTH / 2
         playerY0 = my0 + overviewH + 2
 
-        // shift right so the panel clears Container Value's left-gutter list (no-op when that's off)
         val sidebar = (fishmod.features.item.ContainerValue.storageSidebarWidthGuiPx() / scale).toInt()
         if (sidebar > 0) {
             val shift = (sidebar + 8 - mx0).coerceAtLeast(0)
@@ -178,7 +169,6 @@ object StorageOverlay {
         val smx = (mouseX / s).toInt()
         val smy = (mouseY / s).toInt()
 
-        // frost + dim; vanilla slots are suppressed by the mixin so the game shows around the panel
         runCatching { ctx.blurBeforeThisStratum() }
         runCatching { ctx.nextStratum() }
         rect(ctx, 0, 0, vw + 2, vh + 2, 0x66_0A0A12)
@@ -203,7 +193,7 @@ object StorageOverlay {
 
         ctx.pose().popMatrix()
 
-        if (hoveredOverlayItem !== prevHovered) { /* tooltip-scroll reset hook — no-op here */ }
+        if (hoveredOverlayItem !== prevHovered) {  }
     }
 
     private fun drawHeader(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
@@ -395,7 +385,6 @@ object StorageOverlay {
         }
     }
 
-    /** The overlay covers the vanilla screen, so it has to draw the cursor-carried stack itself. */
     private fun drawCarriedItem(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         val carried = screenMenu()?.carried ?: return
         if (carried.isEmpty) return
@@ -532,7 +521,7 @@ object StorageOverlay {
         }
 
         playerSlotAt(rx.toInt(), ry.toInt())?.let { dispatchSlotClick(it, button, modifiers) }
-        return true   // overlay owns all mouse input while it's up — never let vanilla see the click
+        return true
     }
 
     @JvmStatic
@@ -550,7 +539,7 @@ object StorageOverlay {
             return true
         }
         knobGrabbed = false
-        return true   // swallow the release so vanilla doesn't treat it as a drop
+        return true
     }
 
     @JvmStatic

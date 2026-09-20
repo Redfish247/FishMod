@@ -19,11 +19,6 @@ import java.nio.file.Paths
 import java.util.Collections
 import java.util.TreeMap
 
-/**
- * Captures each SkyBlock storage page's contents as you page through `/storage` and persists them
- * per-account. Also learns which pages you actually own by scanning the "Storage" overview, so the
- * overlay can hide backpack slots you haven't bought.
- */
 object StorageCache {
 
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
@@ -36,7 +31,6 @@ object StorageCache {
 
     @Volatile private var pages: TreeMap<Int, NBTInventory> = TreeMap()
     @Volatile private var known: MutableSet<Int> = sortedSetOf()
-    /** pageIndex -> expected content rows, learned from the API layout fetch (in-memory only). */
     private val expectedRows = HashMap<Int, Int>()
     private var loadedFor: String? = null
     private var dirty = false
@@ -46,7 +40,6 @@ object StorageCache {
     @JvmStatic fun knownPages(): Set<Int> = Collections.unmodifiableSet(known)
     @JvmStatic fun expectedRows(idx: Int): Int? = expectedRows[idx]
 
-    /** Register which pages exist (+ their row counts) from the API layout fetch, without items. */
     @JvmStatic
     fun registerLayout(rows: Map<Int, Int>) {
         ensureLoaded()
@@ -58,14 +51,12 @@ object StorageCache {
         if (changed) { dirty = true; forceSave() }
     }
 
-    /** Load this player's on-disk cache if it isn't loaded yet (for callers outside [tick]). */
     @JvmStatic
     fun ensureLoaded() {
         val id = uuid() ?: return
         if (id != loadedFor) { load(id); loadedFor = id }
     }
 
-    /** Persist the cache right now (used by [StorageAutoLoader] after a bulk API load). */
     @JvmStatic
     fun forceSave() {
         if (loadedFor == null) loadedFor = uuid()
@@ -79,7 +70,6 @@ object StorageCache {
 
     private fun uuid(): String? = Minecraft.getInstance().player?.gameProfile?.id?.toString()
 
-    /** Store a page's contents right now (called every frame by the overlay for the open page). */
     @JvmStatic
     fun put(idx: Int, stacks: List<ItemStack>) {
         if (stacks.isEmpty() || stacks.all { it.isEmpty }) return
@@ -103,16 +93,15 @@ object StorageCache {
         if (now - lastSnapshot < 100) return
         lastSnapshot = now
 
-        val menu = screen.menu as? ChestMenu ?: return   // storage pages are always chest menus
+        val menu = screen.menu as? ChestMenu ?: return
         val rows = menu.rowCount
-        if (rows < 2) return                              // row 0 is the nav row; need >= 1 content row
+        if (rows < 2) return
         val items = menu.slots.subList(9, rows * 9).map { it.item.copy() }
         pages[page.index] = NBTInventory(items)
         known.add(page.index)
         dirty = true
     }
 
-    /** Reads the overview to learn which ender-chest / backpack pages exist. */
     private fun scanOverview(screen: AbstractContainerScreen<*>) {
         val menu = screen.menu
         val size = menu.slots.size - 36

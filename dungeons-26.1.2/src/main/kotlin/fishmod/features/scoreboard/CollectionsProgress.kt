@@ -8,11 +8,6 @@ import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import java.io.InputStreamReader
 
-/** "N/90 collections maxed" for the Custom Scoreboard's "Collections" extra. `member.collection`
- *  is a flat map keyed by the same legacy item IDs ("INK_SACK:3", "RAW_FISH:3", etc.) that
- *  Hypixel's `/v2/resources/skyblock/collections` uses, so `data/collections_max.json` (90 items
- *  across Farming/Mining/Combat/Foraging/Fishing/Rift) just needs a direct key lookup, no ID
- *  translation. */
 object CollectionsProgress {
 
     private val MAX_TIER = HashMap<String, Long>()
@@ -72,7 +67,6 @@ object CollectionsProgress {
         }
     }
 
-    /** "§7Collections: §b42§7/§b90 §7maxed", empty until the first poll lands. */
     @JvmStatic
     fun lines(): List<String> {
         if (total <= 0) return emptyList()

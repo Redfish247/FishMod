@@ -88,24 +88,18 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
         if ((Object) this instanceof fishmod.features.dungeon.f7.terminal.TermSimScreen ts) ts.overlay(context);
     }
 
-    // Custom GUI mode: hide vanilla slots; TermCustomGui draws on top instead
     @Inject(method = "extractSlots", at = @At("HEAD"), cancellable = true)
     private void fishmod$customTermHideSlots(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
         if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) { ci.cancel(); return; }
-        // Storage overlay covers the screen — don't render vanilla slots behind it
         if (fishmod.features.storage.StorageOverlay.isActive((AbstractContainerScreen<?>) (Object) this)) { ci.cancel(); return; }
         if (fishmod.features.dungeon.LeapMenu.isActive((AbstractContainerScreen<?>) (Object) this)) ci.cancel();
     }
 
-    // Leap menu draws its own title — drop Hypixel's labels
     @Inject(method = "extractLabels", at = @At("HEAD"), cancellable = true)
     private void fishmod$hideLeapMenuLabels(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
         if (fishmod.features.dungeon.LeapMenu.isActive((AbstractContainerScreen<?>) (Object) this)) ci.cancel();
     }
 
-    // Custom GUI mode hides the vanilla slots but hoveredSlot is still tracked underneath them,
-    // so the vanilla item tooltip (incl. our appended lines, e.g. ItemQualityTooltip) would still
-    // pop up over the custom board. Suppress it the same way extractSlots is suppressed above.
     @Inject(method = "extractTooltip", at = @At("HEAD"), cancellable = true)
     private void fishmod$hideTooltipInCustomTermGui(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
         if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) ci.cancel();

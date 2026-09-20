@@ -8,7 +8,6 @@ import fishmod.utils.config.values.FishSettings;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 
-/** Registers the {@code /twitch} client command tree. */
 public final class TwitchCommands {
 
 	private TwitchCommands() {}

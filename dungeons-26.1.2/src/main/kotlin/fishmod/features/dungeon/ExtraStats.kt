@@ -9,11 +9,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.components.ChatComponent
 import net.minecraft.network.chat.Component
 
-/**
- * Extra Stats. Swallows Hypixel's `> EXTRA STATS <` block and reprints a tidy summary with PB
- * markers. Team secret/crypt counts aren't reprinted (no reliable client source); everything else
- * is parsed straight from the same chat lines.
- */
 object ExtraStats {
 
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
@@ -47,10 +42,9 @@ object ExtraStats {
     private var kills = "0"; private var killsPB = false
     private var deaths = 0
     private var secrets = 0
-    private var requested = false   // sent /showextrastats this run
-    private var printed = false     // already reprinted the summary this run
+    private var requested = false
+    private var printed = false
 
-    /** Parse state only — the run-guard flags ([requested]/[printed]) live until the next world change. */
     private fun reset() {
         floorTitle = ""; defeated = null; timePB = false; time = ""
         score = 0; scoreLetter = ""; scorePB = false
@@ -72,9 +66,6 @@ object ExtraStats {
             if (!FishSettings.extraStatsEnabled || !Location.inDungeon()) return@register false
             val s = text.string.replace(COLOR, "")
 
-            // Modern Hypixel doesn't auto-print the stat lines under the header — you have to ask.
-            // Fire /showextrastats once, then parse + hide the reply the same as before. Without
-            // this the reprint never triggers -> "nothing shows at all".
             if (HEADER.containsMatchIn(s)) {
                 if (!requested) { requested = true; Misc.executeCommand("showextrastats") }
                 return@register true
@@ -102,7 +93,6 @@ object ExtraStats {
 
     private fun pbNumber(flag: Boolean) = if (flag) "§d§l(NEW PB!)" else ""
 
-    /** Strikethrough divider spanning the full chat width. */
     private fun chatBreak(): String {
         val mc = Minecraft.getInstance()
         val chatWidth = ChatComponent.getWidth(mc.options.chatWidth().get())
@@ -110,7 +100,6 @@ object ExtraStats {
         return "§9§m" + "-".repeat(chatWidth / dashW)
     }
 
-    /** Pads [text] with leading spaces so it renders centered in the chat box. */
     private fun centered(text: String): String {
         val stripped = text.replace(COLOR, "")
         if (stripped.isEmpty()) return text

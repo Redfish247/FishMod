@@ -11,7 +11,6 @@ import net.minecraft.world.item.component.DyedItemColor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-/** Paints locally-stored dye/animated-dye overrides onto leather armor color. */
 @Mixin(DyedItemColor.class)
 public class DyedItemColorMixin {
 

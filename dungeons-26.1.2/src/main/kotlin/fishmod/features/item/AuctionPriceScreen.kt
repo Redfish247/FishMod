@@ -19,7 +19,6 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.entity.SignBlockEntity
 import org.lwjgl.glfw.GLFW
 
-/** Stands in for Hypixel's sign-edit GUI on the auction price line, prefilled by [AuctionPriceAutofill]. */
 class AuctionPriceScreen(
     private val sign: SignBlockEntity,
     private val originalLines: Array<String>,
@@ -118,11 +117,6 @@ class AuctionPriceScreen(
 
     private fun FishSettingsPercent(): Int = fishmod.utils.config.values.FishSettings.auctionAutofillPercent
 
-    /**
-     * Accepts plain digits, comma-grouped digits, or digits with a trailing k/m shorthand
-     * (e.g. "5m" -> 5,000,000), and returns the comma-formatted result — or null if invalid,
-     * so the caller can revert to the last valid value.
-     */
     private fun parsePriceInput(s: String): String? {
         val digits = s.replace(",", "")
         if (digits.isEmpty()) return ""

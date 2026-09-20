@@ -5,7 +5,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.util.ARGB
 
-/** Noamm's Dark Mode: flat black overlay over the screen, drawn from [fishmod.mixin.GuiMixin]. */
 object DarkMode {
 
     @JvmStatic

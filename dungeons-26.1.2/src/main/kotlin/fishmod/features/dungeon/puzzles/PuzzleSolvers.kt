@@ -22,12 +22,6 @@ import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
 
-/**
- * Dispatcher for the puzzle solvers: owns the event wiring and forwards to the individual solver
- * objects in [fishmod.features.dungeon.puzzles.odin].
- *
- * TicTacToe keeps its own solver in [TicTacToeSolver].
- */
 object PuzzleSolvers {
 
     private val weirdosRegex = Regex("\\[NPC] (.+): (.+).?")
@@ -96,9 +90,6 @@ object PuzzleSolvers {
         })
 
         Events.ON_GAME_MESSAGE.register { text ->
-            // Quiz/Weirdos are chat-driven and self-validating; don't gate on isInPuzzle, or the
-            // first Oruo question (which fires the instant you step in, before the room resolves)
-            // gets dropped.
             if (!enabled || !Location.inDungeon()) return@register false
             val msg = COLOR.replace(text.string, "")
             if (FishSettings.weirdosSolver) weirdosRegex.find(msg)?.let {
@@ -122,7 +113,6 @@ object PuzzleSolvers {
         }
     }
 
-    /** Solvers call this on completion (currently just a chat line). */
     @JvmStatic
     fun onPuzzleComplete(puzzleName: String) {
         fishmod.utils.Misc.addChatMessage(

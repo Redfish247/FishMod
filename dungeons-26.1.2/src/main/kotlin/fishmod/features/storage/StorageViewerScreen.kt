@@ -16,7 +16,6 @@ private const val GAP = 12
 private const val MARGIN = 18
 private const val HEADER = 26
 
-// translucent palette so the blurred game shows through
 private const val BASE_TINT = 0x22_0A0A12
 private const val PANEL_BG = 0x40_1B2130
 private const val GLASS_TOP = 0x26_FFFFFF
@@ -30,7 +29,6 @@ private const val GRID_LINE = 0x22_8FA0C0
 private const val HOVER = 0x33_FFFFFF
 private const val KNOB = 0x55_C8D2E6
 
-/** Read-only viewer for everything [StorageCache] has captured, in a frosted-glass panel. */
 class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
 
     private var scroll = 0

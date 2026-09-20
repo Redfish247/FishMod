@@ -12,10 +12,6 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.Base64
 
-/**
- * A cached storage page's items, (de)serialised through vanilla [ItemStack.OPTIONAL_CODEC] then
- * gzipped + Base64 for compact on-disk storage.
- */
 data class NBTInventory(val stacks: List<ItemStack>) {
 
     val rows get() = (stacks.size + 8) / 9

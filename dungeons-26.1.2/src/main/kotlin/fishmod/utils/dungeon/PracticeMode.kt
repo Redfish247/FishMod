@@ -9,13 +9,11 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 
-/** Practice servers copy Hypixel's sidebar but never send the location packet or `[BOSS]` chat lines, so this forces `inDungeon`/`inSkyblock` true and lets phase be set by hand (`/fmpractice p1..p5`). */
 object PracticeMode {
 
     @Volatile var active = false
         private set
 
-    /** -1 = follow the real [Phase] tracker; else a forced `Phase.currentPhase` value. */
     @Volatile var phaseOverride = -1
 
     @JvmStatic
@@ -35,11 +33,7 @@ object PracticeMode {
         val was = active
         active = addr.isNotEmpty() && ips().any { addr == it || addr.contains(it) }
         if (active && !was) {
-            if (phaseOverride < 0) phaseOverride = 6 // P3 sim: default to the terminals phase
-            // This sim never sends the real Hypixel location packet, so ON_LOCATION_CHANGE — the
-            // event every per-run feature (Section/Goldor splits included) resets on — would otherwise
-            // never fire here. Without it, state from the previous practice attempt (e.g. Section's
-            // currentSection) just keeps accumulating across reconnects instead of starting fresh.
+            if (phaseOverride < 0) phaseOverride = 6
             Events.ON_LOCATION_CHANGE.invoke { it.onLocationChange(Location.DUNGEON) }
             msg("§aPractice mode ON §7— phase §f${label(phaseOverride)}§7. §8/fmpractice for options")
         } else if (!active && was) {
@@ -52,7 +46,6 @@ object PracticeMode {
         else -> "auto"
     }
 
-    /** `/fmpractice [status|here|off|p1|p2|p3|p3g|p4|p5]` */
     @JvmStatic
     fun command(arg: String?) {
         when (arg?.lowercase()?.trim()) {

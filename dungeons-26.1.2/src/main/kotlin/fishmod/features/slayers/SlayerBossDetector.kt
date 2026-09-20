@@ -8,15 +8,10 @@ import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
 
-/**
- * Resolves the concrete boss entity behind Hypixel's ☠ nametag (a separate invisible ArmorStand over the
- * real mob), scanning on a 5-tick cadence only while [SlayerManager.isActiveSlayer]. Binds the boss entity
- * for the "Fully Spawned" timer mode and doubles as a nametag-based backup for the spawn alert.
- */
 object SlayerBossDetector {
 
     private const val SCAN_INTERVAL_TICKS = 5
-    private const val MARK = "☠" // ☠
+    private const val MARK = "☠"
     private var scanCounter = 0
 
     @JvmStatic
@@ -33,7 +28,6 @@ object SlayerBossDetector {
         val level = mc.level ?: return
         val type = SlayerManager.type ?: return
 
-        // keep / drop the already-bound boss without a rescan
         val bound = SlayerManager.bossEntity
         if (bound != null && (!bound.isAlive || bound.isRemoved)) SlayerManager.bossEntity = null
 
@@ -48,10 +42,7 @@ object SlayerBossDetector {
             if (e !is ArmorStand || !e.hasCustomName()) continue
             val name = e.customName?.string ?: continue
 
-            // main boss
             if (name.contains(MARK) && type.bossNames.any { name.contains(it) }) {
-                // fire the spawn alert straight off the nametag too — independent of the scoreboard
-                // progress line, which can lag or flicker (SlayerAlerts latches so it's still once)
                 SlayerAlerts.bossSpawned(type)
                 if (SlayerManager.bossEntity == null) {
                     val mob = nearestMob(level, e, type.mobClass)

@@ -26,7 +26,6 @@ object Floor7 {
     @JvmField
     var enableStormDeathTime: Boolean = false
 
-    // LB release window — countdown from 30s to 34.35s on the Storm (P2) clock
     @ConfigValue
     @JvmField
     var enableLbReleaseTimer: Boolean = false
@@ -35,7 +34,6 @@ object Floor7 {
     @JvmField
     var lbReleaseTimerColor: Int = 0xffff5555.toInt()
 
-    // ping (ms) to fire the release cue early so the shot leaves the bow on time; 0 = no shift
     @ConfigValue
     @JvmField
     var lbReleaseTimerPingMs: Int = 0
@@ -128,7 +126,6 @@ object Floor7 {
     @JvmField
     var sectionChangeSound: SoundData = SoundData(SoundEvents.NOTE_BLOCK_PLING.value(), 0f, 1f)
 
-    // master gate for the Tick Timers group; when off nothing in it renders regardless of child toggles
     @ConfigValue
     @JvmField
     var enableTickTimers: Boolean = true
@@ -181,7 +178,6 @@ object Floor7 {
     @JvmField
     var s4DeathAlert: Boolean = true
 
-    // Time after Section 5 (Core open) starts before someone still outside Core is flagged "late".
     @ConfigValue
     @JvmField
     var s4LateLeapThresholdTicks: Int = 100
@@ -198,7 +194,6 @@ object Floor7 {
     @JvmField
     var s4AlertSound: SoundData = SoundData(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 0.5f)
 
-    // Gate Display: world-space X/check over each Goldor gate (S1-S3)
     @ConfigValue
     @JvmField
     var gateDisplayEnabled: Boolean = false
@@ -207,7 +202,6 @@ object Floor7 {
     @JvmField
     var gateDisplayScale: Float = 6f
 
-    // Blood Solver: Watcher speed alert + blood-mob move predictor
     @ConfigValue
     @JvmField
     var bloodSolverEnabled: Boolean = false

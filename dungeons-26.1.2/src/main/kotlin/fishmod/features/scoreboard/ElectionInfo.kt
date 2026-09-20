@@ -12,11 +12,10 @@ import java.net.http.HttpResponse
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
-// Current SkyBlock mayor for the Custom Scoreboard's "Election" extra; polls Hypixel's public resources endpoint hourly.
 object ElectionInfo {
 
     private val HTTP: HttpClient = HttpClient.newHttpClient()
-    private const val REFRESH_MS = 3_600_000L // 1 hour
+    private const val REFRESH_MS = 3_600_000L
 
     private var mayorLine: String? = null
     private var lastFetchAt = 0L

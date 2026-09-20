@@ -8,8 +8,6 @@ import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.max
 
-/** Bakes anti-aliased crosshair preset shapes (Dot/Cross/Plus/Square) into small textures, supersampled
- *  and rendered at their exact final pixel size so they blit 1:1 with no GPU scaling artifacts. */
 object CrosshairPresetTextures {
 
     private const val SUPERSAMPLE = 4
@@ -17,7 +15,6 @@ object CrosshairPresetTextures {
     private data class Key(val style: String, val scaleKey: Int)
     private val cache = HashMap<Key, Pair<Identifier, Int>>()
 
-    /** Returns (textureId, halfExtent) — the texture is (halfExtent*2+1) square, centered on its own middle pixel. */
     @JvmStatic
     fun getTexture(style: String, scaleRaw: Double): Pair<Identifier, Int> {
         val scale = scaleRaw.coerceIn(0.1, 8.0)
@@ -33,7 +30,7 @@ object CrosshairPresetTextures {
             "Dot" -> ceil(radius).toInt() + 1
             "Plus" -> ceil(armLen).toInt() + 1
             "Square" -> ceil(armLen + thickness / 2).toInt() + 1
-            else -> ceil(gap + armLen).toInt() + 1 // "Cross"
+            else -> ceil(gap + armLen).toInt() + 1
         }
         val size = halfExtent * 2 + 1
 
@@ -69,7 +66,7 @@ object CrosshairPresetTextures {
             "Dot" -> x * x + y * y <= radius * radius
             "Plus" -> (ax <= halfT && ay <= armLen) || (ay <= halfT && ax <= armLen)
             "Square" -> abs(armLen - max(ax, ay)) <= halfT
-            else -> (ax <= halfT && ay in gap..(gap + armLen)) || (ay <= halfT && ax in gap..(gap + armLen)) // "Cross"
+            else -> (ax <= halfT && ay in gap..(gap + armLen)) || (ay <= halfT && ax in gap..(gap + armLen))
         }
     }
 }

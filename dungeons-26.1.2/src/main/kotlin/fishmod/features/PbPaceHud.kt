@@ -10,7 +10,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.ChatScreen
 
-/** Racing-style ghost: compares live split times to your personal best and shows a running delta. */
 object PbPaceHud {
 
     @JvmStatic
@@ -36,7 +35,7 @@ object PbPaceHud {
         var lastHasPb = false
 
         for (s in splits) {
-            if (!s.ended() || s.avg < 0) continue // skip unfinished + cumulative/total rows
+            if (!s.ended() || s.avg < 0) continue
             last = s
             val pb = RunHistory.getPersonalBest(floor, s.name)
             if (pb > 0) {
