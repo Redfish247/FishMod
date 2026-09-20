@@ -20,32 +20,23 @@ import net.minecraft.world.phys.EntityHitResult
 import net.minecraft.world.phys.Vec3
 import java.util.concurrent.ConcurrentHashMap
 
-/**
- * Fire Freeze Staff timer: renders a countdown over each mob caught in the freeze.
- *
- * The staff's freeze is a self-centred AoE burst — everything within ~5 blocks of the caster the
- * moment it goes off. So detection is simply: on a staff right-click, snapshot the nearby mobs (plus
- * whatever the crosshair is directly on) and keep re-checking for a beat as the cloud lingers.
- */
 object FireFreezeTimer {
 
     private const val WAIT_MS = 5000L
     private const val FREEZE_MS = 10000L
     private const val TOTAL_MS = WAIT_MS + FREEZE_MS
-    private const val RADIUS = 5.0           // freeze burst reach around the caster
-    private const val AIM_RANGE = 6.0        // a mob you're looking straight at, slightly past the burst
-    private const val MIN_DIST = 1.6         // closer than this = the pet on your face, not a target
-    private const val CATCH_WINDOW_MS = 2500L // keep scanning briefly after the cast — the cloud lingers
-    private const val DRAW_DIST = 28.0       // don't clutter the screen with timers for far-off mobs
+    private const val RADIUS = 5.0
+    private const val AIM_RANGE = 6.0
+    private const val MIN_DIST = 1.6
+    private const val CATCH_WINDOW_MS = 2500L
+    private const val DRAW_DIST = 28.0
 
-    /** entityId -> wall-clock ms the staff was used (cast start). */
     private val frozen: MutableMap<Int, Long> = ConcurrentHashMap()
 
     @Volatile private var castAt = 0L
 
     @JvmStatic
     fun init() {
-        // Any right-click route with the staff in hand — air, block, or entity.
         UseItemCallback.EVENT.register(UseItemCallback { player, _, hand ->
             if (isFireFreezeUse(player, hand)) arm()
             InteractionResult.PASS
@@ -75,7 +66,6 @@ object FireFreezeTimer {
 
     private fun arm() {
         castAt = System.currentTimeMillis()
-        // A cast aimed straight at a mob freezes it even if it's a hair outside the burst.
         (Minecraft.getInstance().hitResult as? EntityHitResult)?.entity?.let {
             val me = Minecraft.getInstance().player
             if (isFreezable(it) && me != null && it.distanceTo(me) in MIN_DIST..AIM_RANGE) {
@@ -85,11 +75,6 @@ object FireFreezeTimer {
         scanFrozen()
     }
 
-    /**
-     * Hostile, AI-driven mobs only. `Monster` drops nametag armour-stands / players; `!isNoAi` drops
-     * the player's pet (Hypixel spawns pets — including a Blaze pet — with AI off, and they sit right
-     * on the camera, which is what made the timer look "stuck to the screen").
-     */
     private fun isFreezable(e: Entity): Boolean =
         e is Monster && e.isAlive && !e.isInvisible && !e.isNoAi && !e.isPassenger
 
@@ -106,7 +91,6 @@ object FireFreezeTimer {
     }
 
     private fun registerRender() {
-        // world text renders in the END_MAIN pass; pose is pre-translated by -camera, so no manual push/translate
         RenderingEvents.NO_DEPTH_LINE.register { ctx, matrices, _ ->
             if (!FishSettings.fireFreezeTimerEnabled || frozen.isEmpty()) return@register
             val mc = Minecraft.getInstance()
@@ -118,7 +102,6 @@ object FireFreezeTimer {
                 val en = it.next()
                 val elapsed = now - en.value
                 val e: Entity? = mc.level?.getEntity(en.key)
-                // Drop finished timers, dead/despawned mobs, and anything absurdly far (mistag guard).
                 if (elapsed >= TOTAL_MS || e == null || !e.isAlive || e.distanceTo(me) > 40.0) {
                     it.remove()
                     continue
@@ -126,7 +109,6 @@ object FireFreezeTimer {
 
                 val p = EntityUtil.getLerpedPos(e)
                 val head = Vec3(p.x, p.y + e.bbHeight + 0.55, p.z)
-                // only draw mobs in front of the camera — one you've walked past shouldn't smear a number across the screen corner
                 val toMob = head.subtract(me.eyePosition)
                 if (toMob.length() > DRAW_DIST || toMob.dot(me.lookAngle) <= 0.0) continue
 

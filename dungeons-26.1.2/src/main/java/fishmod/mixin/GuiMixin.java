@@ -3,9 +3,12 @@ package fishmod.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import fishmod.features.ActionBarCleaner;
+import fishmod.features.DarkMode;
 import fishmod.utils.Keybinds;
 import fishmod.utils.Location;
 import fishmod.utils.config.values.FishSettings;
+import fishmod.utils.config.values.Visual;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -18,7 +21,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** "Action Bar" feature: filter the SkyBlock stat bar + hide a few vanilla HUD overlays. */
 @Mixin(Gui.class)
 public class GuiMixin {
 
@@ -44,8 +46,6 @@ public class GuiMixin {
         return fishmod$ab(FishSettings.abHideAbsorption) ? 0f : original.call(instance);
     }
 
-    // Chat Peek: while held, render chat like the real chat screen does (opaque, no fade) without
-    // actually opening it, so movement/camera input keeps working.
     @WrapOperation(method = "extractChat",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/gui/components/ChatComponent;extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/gui/Font;IIILnet/minecraft/client/gui/components/ChatComponent$DisplayMode;Z)V"))
@@ -64,5 +64,15 @@ public class GuiMixin {
                     target = "Lnet/minecraft/client/gui/contextualbar/ContextualBarRenderer;extractExperienceLevel(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/gui/Font;I)V"))
     private void fishmod$hideXpLevel(GuiGraphicsExtractor extractor, Font font, int level, Operation<Void> original) {
         if (!fishmod$ab(FishSettings.abHideXpBar)) original.call(extractor, font, level);
+    }
+
+    @Inject(method = "extractRenderState", at = @At("HEAD"))
+    private void fishmod$darkModePre(GuiGraphicsExtractor extractor, DeltaTracker deltaTracker, CallbackInfo ci) {
+        if (!Visual.darkModeTintHud) DarkMode.drawOverlay(extractor);
+    }
+
+    @Inject(method = "extractRenderState", at = @At("TAIL"))
+    private void fishmod$darkModePost(GuiGraphicsExtractor extractor, DeltaTracker deltaTracker, CallbackInfo ci) {
+        if (Visual.darkModeTintHud) DarkMode.drawOverlay(extractor);
     }
 }

@@ -8,11 +8,6 @@ import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.resources.Identifier
 import java.util.function.Supplier
 
-/**
- * Clickable command buttons drawn over the survival inventory's empty space, numbered by
- * registration order. Coordinates are relative to the inventory background's top-left;
- * `InventoryScreenMixin` translates the matrix/mouse offsets before calling [renderAll]/[parseClicks].
- */
 class InventoryButton(private val x: Int, private val y: Int, private val command: Supplier<String?>) {
 
     private val index: Int

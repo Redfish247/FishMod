@@ -30,6 +30,8 @@ import java.util.List;
 @Mixin(EntityRenderer.class)
 public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> {
 
+    private static final double NAMETAG_STATS_RANGE_SQ = 10.0 * 10.0;
+
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     public void hideFire(T entity, S state, float tickProgress, CallbackInfo ci) {
 
@@ -45,7 +47,6 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
             }
         }
 
-        // stash render size for PlayerEntityRendererScaleMixin.scale(); raise the nametag when scaled taller (pivot at feet)
         if (entity instanceof Player sized) {
             float[] sc = fishmod.cosmetic.PlayerSize.scaleFor(sized);
             ((fishmod.cosmetic.ScaleHolder) state).fishmod$setScale(sc[0], sc[1], sc[2]);
@@ -62,26 +63,28 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
             }
         }
 
-        // nametag Y offset only (text size is fixed by ImmediatelyFast)
         if (entity instanceof Player p && EntityUtil.isClientPlayer(p)
                 && FishSettings.nickPreviewEnabled && FishSettings.nickPreviewYOffset != 0.0
                 && state.nameTagAttachment != null) {
             state.nameTagAttachment = state.nameTagAttachment.add(0, FishSettings.nickPreviewYOffset, 0);
         }
 
-        // stat lines drawn under the nametag; fishmod$extraNametagLines reads these back
         List<Component> statLines = null;
         if (FishSettings.nametagStatsEnabled && state.nameTag != null && entity instanceof Player pl) {
             boolean self = EntityUtil.isClientPlayer(pl);
-            if (!self || FishSettings.nametagStatsShowSelf) {
+            Minecraft mc = Minecraft.getInstance();
+            boolean inRange = self || mc.player == null || pl.distanceToSqr(mc.player) <= NAMETAG_STATS_RANGE_SQ;
+            if ((!self || FishSettings.nametagStatsShowSelf) && inRange) {
                 String playerName = pl.getName().getString();
                 statLines = fishmod.features.NametagStats.linesFor(playerName);
             }
         }
+        if (statLines != null && !statLines.isEmpty() && !FishSettings.nametagStatsAbove && state.nameTagAttachment != null) {
+            state.nameTagAttachment = state.nameTagAttachment.add(0, statLines.size() * 10 * 0.025, 0);
+        }
         ((NametagStatsHolder) state).fishmod$setNametagStats(statLines);
     }
 
-    // AvatarRenderer overrides the 4-arg submitNameDisplay without super, so target the inherited 5-arg variant
     @Inject(
         method = "submitNameDisplay(Lnet/minecraft/client/renderer/entity/state/EntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/level/CameraRenderState;I)V",
         at = @At("TAIL")
@@ -90,16 +93,15 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
                                           CameraRenderState cameraRenderState, int baseOffset, CallbackInfo ci) {
         List<Component> lines = ((NametagStatsHolder) state).fishmod$getNametagStats();
         if (lines == null || lines.isEmpty()) return;
-        // negative y = up; stack the stat lines above the nametag
-        int y = baseOffset - 10;
+        boolean above = FishSettings.nametagStatsAbove;
+        int y = above ? baseOffset - 10 : baseOffset + 10;
         for (Component line : lines) {
             collector.submitNameTag(poseStack, state.nameTagAttachment, y, line,
                 !state.isDiscrete, state.lightCoords, state.distanceToCameraSq, cameraRenderState);
-            y -= 10;
+            y += above ? -10 : 10;
         }
     }
 
-    // shouldRender is cancellable, so returning false drops the entity from the render pass
     @Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true)
     private void fishmod$cullEntities(T entity, Frustum frustum, double camX, double camY, double camZ,
                                      CallbackInfoReturnable<Boolean> cir) {
@@ -121,7 +123,6 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
             return;
         }
 
-        // hide mobs in their death animation, and optionally the nametag armor stand riding a dying mob
         if (fishmod.features.RenderOptimizer.hideDeathAnimation()) {
             if (entity instanceof net.minecraft.world.entity.decoration.ArmorStand) {
                 if (fishmod.features.RenderOptimizer.hideDyingArmorStands()

@@ -3,7 +3,6 @@ package fishmod.utils.config.values
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.features.other.InventoryButton
 
-/** The seven [InventoryButton]s sit in the empty corners of the survival inventory GUI; a button only renders when its command is non-empty. */
 object Buttons {
 
     @ConfigValue
@@ -38,8 +37,6 @@ object Buttons {
     @JvmField
     var command7: String = ""
 
-    // 1-3 down the left of the player model, 4-5 top-right, 6-7 bottom-right.
-    // Constructed on class-load so they self-register with InventoryButton.
     @JvmField
     val button1: InventoryButton = InventoryButton(77, 5) { command1 }
     @JvmField
@@ -55,7 +52,6 @@ object Buttons {
     @JvmField
     val button7: InventoryButton = InventoryButton(151, 61) { command7 }
 
-    /** No-op. Call sites touch this only to force class-load so [button1]..[button7] self-register. */
     @JvmStatic
     fun init() { }
 }

@@ -8,7 +8,6 @@ import fishmod.utils.dungeon.Phase
 import fishmod.utils.rendering.RenderUtils
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-/** Goldor / terminals tick timer (3-tick cycle, optional tick-up). */
 object GoldorTickTimer {
 
     private val timer = TickTimer()

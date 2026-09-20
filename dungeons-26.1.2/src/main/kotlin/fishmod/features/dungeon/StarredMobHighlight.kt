@@ -13,20 +13,11 @@ import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.AABB
 
-/**
- * Outlines dungeon mobs marked as "starred" elites. Hypixel doesn't put the ✯ on the mob's own
- * nametag — it's on a separate invisible armor stand riding/hovering above the mob that also
- * shows its health (e.g. "Zombie Knight ✯300,000/300,000❤"). So detection works by scanning
- * armor-stand nametags for the star + heart markers, then picking the nearest non-armor-stand
- * living entity underneath as the actual mob to outline.
- */
 object StarredMobHighlight {
 
     private const val STAR = "✯"
     private const val HEART = "❤"
 
-    // Which mobs are starred rarely changes frame-to-frame, so the entity/AABB scan runs on a
-    // tick interval instead of every rendered frame; the render callback just reads the cache.
     private const val SCAN_INTERVAL_TICKS = 5
     private var scanCounter = 0
     private var cachedStarredMobs: Set<Entity> = emptySet()

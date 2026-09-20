@@ -25,7 +25,6 @@ public class SoundEngineMixin {
 
     @Shadow @Final private ChannelAccess channelAccess;
 
-    // play(SoundInstance) is the single chokepoint every sound funnels through
     @Inject(
         method = "play(Lnet/minecraft/client/resources/sounds/SoundInstance;)Lnet/minecraft/client/sounds/SoundEngine$PlayResult;",
         at = @At("HEAD"), cancellable = true)
@@ -35,7 +34,6 @@ public class SoundEngineMixin {
         }
     }
 
-    // MC clamps volume to [0,1] before channel gain; ChannelMixin lifts AL_MAX_GAIN so the boost past 1.0 survives
     @WrapOperation(
         method = "play(Lnet/minecraft/client/resources/sounds/SoundInstance;)Lnet/minecraft/client/sounds/SoundEngine$PlayResult;",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/client/sounds/SoundEngine;calculateVolume(FLnet/minecraft/sounds/SoundSource;)F"))

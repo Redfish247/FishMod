@@ -19,30 +19,17 @@ import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.AABB
 import java.util.regex.Pattern
 
-/**
- * Tracks Goldor (F7 P3) Simon Says rounds via block scanning. Player must be inside `DEVICE_BOX`
- * to lock onto `DEVICE_CENTER`, then rounds are counted by demo "flashes" (lit sea-lantern rising
- * edges); 5/5 instead comes from the in-game "completed a device!" message. A break is detected
- * via a fixed obsidian/button-column signal, which resets tracking to 0 until the device goes
- * active again.
- */
 object SimonSaysTracker {
 
-    private const val SCAN_RADIUS = 3 // lit-cell box around the locked device center (covers the 4x4 lantern grid)
+    private const val SCAN_RADIUS = 3
     private const val BURST_GAP_MS = 550L
 
-    // Fixed detection box around the Goldor SS device, from measured corner coords, extended
-    // upward a few blocks so the whole player (standing or jumping) counts as "at the device".
     private val DEVICE_BOX = AABB(
         106.65, 120.0, 92.70,
         110.70, 126.0, 95.30
     )
     private val DEVICE_CENTER = BlockPos(108, 120, 94)
 
-    // Break/restart detection: a fixed obsidian
-    // column behind the device and the button column in front of it. Any obsidian cell not
-    // being obsidian = the device is "active" (mid demo/attempt). Once that settles for
-    // BREAK_COOLDOWN_TICKS and every button cell reads air, the device has reset — a break.
     private const val DEV_BUTTONS_X = 110
     private const val DEV_OBSIDIAN_X = 111
     private const val DEV_Y_MIN = 120
@@ -51,49 +38,36 @@ object SimonSaysTracker {
     private const val DEV_Z_MAX = 95
     private const val BREAK_COOLDOWN_TICKS = 12
 
-    // Grace window after the "all reset" block pattern first appears before it's treated as a
-    // break. A legit 5/5 finish flips the exact same obsidian/button cells as a break does — the
-    // only difference is the "completed a device!" chat message. Under P3 chat load that line
-    // regularly lags 1-2s behind the block update, and if the break commits first it fires a
-    // bogus "Simon Says: FAILED!" that a moment later is contradicted by 5/5. Wait long enough
-    // that completion reliably wins the race; a genuine grief's FAILED notice being ~2.5s late
-    // is harmless. Completion also disarms a pending break outright (see tryComplete()).
-    private const val BREAK_GRACE_MS = 2500L
+    private const val BREAK_GRACE_MS = 6000L
 
-    private var round = 0          // completed-round count shown on the HUD (0..5)
-    private var maxLen = 0         // longest demo sequence length seen this run
-    private var lastAnnounced = 0  // highest count already sent (dedupe)
-    private var burstFlashes = 0   // rising-edge flashes in the current demo
+    private var round = 0
+    private var maxLen = 0
+    private var lastAnnounced = 0
+    private var burstFlashes = 0
     private var lastFlashMs = 0L
-    private var lastAtDeviceMs = 0L // last tick the player was at the device
+    private var lastAtDeviceMs = 0L
     private var primed = false
-    private var completed = false // SS done this run — ignore everything until next run
-    // Authoritative completion lock. Once the current device instance has been completed, no later
-    // scan / break-grace / party-chat message may re-open scanning, emit "FAILED", or lower the
-    // round. Cleared only by reset() (ON_LOCATION_CHANGE = genuine new dungeon/puzzle instance).
+    private var completed = false
     private var completeLatched = false
-    private var armed = false     // Goldor's intro line seen — scanning starts here
-    private var breakTicks = 0    // cooldown before an "inactive" reading can count as a break
-    private var canBreak = false  // device has been seen active since the last break
-    private var broken = false    // device just reset — fully off (no scan/announce) until it restarts
-    private var breakArmedAtMs = 0L // all-air reset pattern first seen; grace period before treating it as a break
-    private var inP3 = false      // HUD only
+    private var armed = false
+    private var breakTicks = 0
+    private var canBreak = false
+    private var broken = false
+    private var falseFailSent = false
+    private var breakArmedAtMs = 0L
+    private var inP3 = false
     private var atDevice = false
     private var deviceCenter: BlockPos? = null
-    private var doneAtMs = 0L // when 5/5 fired — HUD unrenders 2s later
+    private var doneAtMs = 0L
     private val litPrev = HashSet<Long>()
-    private val scanBuf = HashSet<Long>() // reused scratch set for scanLitCells — avoids a per-tick allocation
+    private val scanBuf = HashSet<Long>()
     private var scanCounter = 0
-    private const val SCAN_INTERVAL_TICKS = 2 // throttle the 7^3 block scan; 100ms max added latency is well under BURST_GAP_MS
+    private const val SCAN_INTERVAL_TICKS = 2
 
-    // Reads "Simon Says: N/5" out of party chat so the HUD also registers when SOMEONE ELSE
-    // does SS (we can't block-scan their device — but their mod announces to party chat).
     private val SS_CHAT: Pattern = Pattern.compile("Simon Says: (\\d)/5")
 
-    // Goldor's intro line — arms scanning so we don't watch the device box before P3 starts.
     private const val GOLDOR_INTRO = "who dares trespass into my domain"
 
-    // debug: log every block transition in a cube around the player (/ssdbg)
     @JvmField
     var debug = false
     private const val DBG_R = 6
@@ -103,7 +77,6 @@ object SimonSaysTracker {
     fun init() {
         fishmod.utils.events.Events.ON_LOCATION_CHANGE.register { reset(); false }
 
-        // "<you> completed a device! (x/7) (time | time)" → our SS finish (5/5).
         fishmod.utils.events.Events.ON_GAME_MESSAGE.register { message ->
             if (!FishSettings.simonSaysEnabled) return@register false
             val s = message.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
@@ -113,8 +86,6 @@ object SimonSaysTracker {
                 if (debug) log("armed (Goldor intro seen)")
             }
 
-            // A locked completion outranks any later party-chat "Simon Says: N/5" (a teammate's
-            // stale/duplicate announce must not drag a finished 5/5 back down).
             if (!completeLatched) {
                 val ss = SS_CHAT.matcher(s)
                 if (ss.find()) {
@@ -122,21 +93,23 @@ object SimonSaysTracker {
                     if (n in 1..4) {
                         round = n
                     } else if (n >= 5) {
-                        // A "5/5" seen in chat (ours echoed back, or a teammate's) — lock the
-                        // tracker done. No announce here: re-broadcasting would echo the line to
-                        // party chat from every observer.
                         round = 5
                         doneAtMs = System.currentTimeMillis()
+                        if (!completed && falseFailSent) {
+                            Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§a(actually completed — ignore the FAILED above)"))
+                        }
                         completed = true
                         completeLatched = true
+                        breakArmedAtMs = 0L
+                        canBreak = false
+                        broken = false
+                        falseFailSent = false
                     }
                 }
             }
 
             if (debug && s.contains("device")) log("msg: \"$s\"")
             if (!s.contains("completed a device")) return@register false
-            // Must be OUR completion (teammates' device completions also broadcast). Match the name
-            // loosely (anywhere in the line) so color-code spacing can't break it.
             val mc = Minecraft.getInstance()
             val self = mc.player?.gameProfile?.name()
             val mine = (self == null) || s.contains(self)
@@ -176,7 +149,6 @@ object SimonSaysTracker {
 
         val now = System.currentTimeMillis()
 
-        // Anyone (not just us — a teammate may be the one doing SS) standing at the fixed device box?
         atDevice = false
         for (p: Player in client.level!!.players()) {
             if (p.boundingBox.intersects(DEVICE_BOX)) { atDevice = true; break }
@@ -194,12 +166,8 @@ object SimonSaysTracker {
             if (debug) log("locked device center " + deviceCenter!!.toShortString())
         }
 
-        // Skip this tick's scan entirely on an unloaded chunk — a stale/empty read would look
-        // like every lantern just went dark, corrupting the demo-length count.
         if (!client.level!!.hasChunk(deviceCenter!!.x shr 4, deviceCenter!!.z shr 4)) return
 
-        // Throttle the block scan itself — skipped ticks just keep last tick's lit set (litPrev)
-        // and burst state untouched, so state stays consistent between scans.
         scanCounter++
         if (scanCounter < SCAN_INTERVAL_TICKS) return
         scanCounter = 0
@@ -208,7 +176,6 @@ object SimonSaysTracker {
         scanLitCells(client.level!!, deviceCenter!!, scanBuf)
         val cur = scanBuf
 
-        // Prime on the first scan so the always-lit decorative frame lanterns aren't miscounted.
         if (!primed) { litPrev.clear(); litPrev.addAll(cur); primed = true; return }
 
         var newlyLit = 0
@@ -217,9 +184,8 @@ object SimonSaysTracker {
         litPrev.addAll(cur)
 
         if (newlyLit > 0) {
-            // A gap before this light = a NEW demo just started. Announce here, on the FIRST light.
             if (now - lastFlashMs > BURST_GAP_MS) {
-                if (burstFlashes > maxLen) maxLen = burstFlashes // finalize previous demo
+                if (burstFlashes > maxLen) maxLen = burstFlashes
                 burstFlashes = 0
                 val done = minOf(5, maxLen)
                 if (done in 1..4 && done > lastAnnounced) {
@@ -234,10 +200,6 @@ object SimonSaysTracker {
         }
     }
 
-    /**
-     * 5/5 finish, triggered by the in-game "<you> completed a device!" message (the reliable
-     * signal — block detection of rounds can miss). Fires once per run; the run reset clears it.
-     */
     private fun tryComplete() {
         if (debug) log("tryComplete called (completed=$completed)")
         if (completed) return
@@ -245,17 +207,18 @@ object SimonSaysTracker {
         lastAnnounced = 5
         doneAtMs = System.currentTimeMillis()
         announceRound(5)
+        if (falseFailSent) {
+            Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§a(actually completed — ignore the FAILED above)"))
+            if (FishSettings.simonSaysPartyChat) fishmod.utils.ChatQueue.enqueue("pc Simon Says: actually completed, ignore the FAILED above")
+        }
         completed = true
         completeLatched = true
-        // Disarm any break that was mid-grace: the all-air pattern we were about to call a
-        // FAILED is actually this finish. Also clears `broken` so a race can't leave the tracker
-        // wedged "off" after a completed run.
         breakArmedAtMs = 0L
         canBreak = false
         broken = false
+        falseFailSent = false
     }
 
-    /** Center-screen title hook (titles are local-only, so a loose match is safe). */
     @JvmStatic
     fun onTitle(title: String?) {
         if (!FishSettings.simonSaysEnabled || title == null) return
@@ -269,13 +232,8 @@ object SimonSaysTracker {
         if (FishSettings.simonSaysPartyChat) fishmod.utils.ChatQueue.enqueue("pc Simon Says: $label")
     }
 
-    /** Obsidian cell missing = active; once that holds for `BREAK_COOLDOWN_TICKS` and buttons are all air, it's a break. */
     private fun tickBreakState(world: Level) {
-        // A locked completion is final — never re-interpret the board as a break afterwards.
-        // (tick() already returns before this on `completed`; this is the explicit invariant.)
         if (completeLatched) { breakArmedAtMs = 0L; return }
-        // Don't trust block reads from a chunk that isn't actually loaded — under lag/chunk churn
-        // an unloaded chunk can read back as air, which looks identical to a break.
         if (!world.hasChunk(DEV_OBSIDIAN_X shr 4, DEV_Z_MIN shr 4)) { breakArmedAtMs = 0L; return }
 
         breakTicks--
@@ -309,11 +267,15 @@ object SimonSaysTracker {
             }
         if (!allAir) { breakArmedAtMs = 0L; return }
 
-        // All-air reset pattern seen — could be a break, or it could be the exact same block
-        // flip a legit 5/5 finish causes. Give the "completed a device!" chat message a grace
-        // window to arrive and set `completed` before committing to a break.
         val now = System.currentTimeMillis()
         if (breakArmedAtMs == 0L) { breakArmedAtMs = now; return }
+
+        val sinceClick = now - fishmod.features.dungeon.f7.SimonSaysSolver.lastRoundCompleteMs
+        if (fishmod.features.dungeon.f7.SimonSaysSolver.lastRoundCompleteMs != 0L && sinceClick in 0..BREAK_GRACE_MS) {
+            tryComplete()
+            return
+        }
+
         if (now - breakArmedAtMs < BREAK_GRACE_MS) return
 
         canBreak = false
@@ -323,12 +285,12 @@ object SimonSaysTracker {
         if (debug) log("device broke — reset + fully off until restart")
 
         if (FishSettings.simonSaysFailEnabled) {
+            falseFailSent = true
             Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§c" + FishSettings.simonSaysFailMessage))
             if (FishSettings.simonSaysPartyChat) fishmod.utils.ChatQueue.enqueue("pc " + FishSettings.simonSaysFailMessage)
         }
     }
 
-    /** Fills `litOut` with lit sea-lantern positions in the box around the locked device center. */
     private fun scanLitCells(world: Level, center: BlockPos, litOut: HashSet<Long>) {
         val cx = center.x; val cy = center.y; val cz = center.z
         val m = BlockPos.MutableBlockPos()
@@ -340,7 +302,6 @@ object SimonSaysTracker {
                 }
     }
 
-    /** Phase.inP3() but never throws; treat errors as false. */
     private fun safeInP3(): Boolean {
         return try { Phase.inP3() } catch (t: Throwable) { false }
     }
@@ -359,6 +320,7 @@ object SimonSaysTracker {
         broken = false
         breakArmedAtMs = 0L
         doneAtMs = 0L
+        falseFailSent = false
         litPrev.clear()
         scanCounter = 0
         deviceCenter = null
@@ -371,11 +333,9 @@ object SimonSaysTracker {
     fun renderHud(ctx: GuiGraphicsExtractor, tc: DeltaTracker) {
         if (!FishSettings.simonSaysEnabled || !FishSettings.simonSaysHudEnabled) return
         if (round <= 0) return
-        // Auto-hide 2 seconds after completion.
         if (round >= 5 && doneAtMs > 0 && System.currentTimeMillis() - doneAtMs > 2000) return
         val mc = Minecraft.getInstance()
         val player = mc.player ?: return
-        // Don't render when standing right at the device (~3 blocks) — you can see it yourself.
         val dc = deviceCenter
         if (dc != null && player.blockPosition().distSqr(dc) <= 12) return
 
@@ -397,7 +357,6 @@ object SimonSaysTracker {
         Misc.addChatMessage(Component.literal("§e[SS] $line"))
     }
 
-    /** /ssdbg: logs every block transition in a cube around the player — for locating the device. */
     private fun debugTick(client: Minecraft) {
         if (!debug || client.player == null || client.level == null) { dbgPrev.clear(); return }
         val world = client.level!!

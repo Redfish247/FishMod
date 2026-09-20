@@ -16,12 +16,6 @@ import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.phys.AABB
 import kotlin.math.abs
 
-/**
- * Tac Timer. Tactical Insertion re-teleports you to where you cast it after 3s; Hypixel plays a
- * flint-and-steel sound at a fixed pitch (0.74603176) on cast.
- * We start a 60-tick countdown on that sound while holding the item, with an optional start
- * waypoint.
- */
 object TacTimer {
 
     private const val NAME = "Tac Timer"

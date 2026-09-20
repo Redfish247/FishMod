@@ -19,11 +19,6 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.block.entity.SignBlockEntity
 import org.lwjgl.glfw.GLFW
 
-/**
- * Stands in for Hypixel's sign-edit GUI on the auction price line: a single field prefilled by
- * [AuctionPriceAutofill], plus Confirm. Closing the screen (Confirm, Enter, or Escape) always
- * sends the sign update — mirrors vanilla sign-edit behaviour of committing on close.
- */
 class AuctionPriceScreen(
     private val sign: SignBlockEntity,
     private val originalLines: Array<String>,
@@ -61,15 +56,23 @@ class AuctionPriceScreen(
         val fieldX = panelX + 12
         val fieldY = panelY + 46
         priceField = EditBox(this.font, fieldX, fieldY, fieldW, 18, Component.literal("Price"))
-        priceField.setMaxLength(12)
+        priceField.setMaxLength(16)
         var filtering = false
+        var lastValid = ""
         priceField.setResponder { s ->
-            if (filtering || s.isEmpty() || s.matches(Regex("\\d{1,12}"))) return@setResponder
+            if (filtering) return@setResponder
             filtering = true
-            priceField.setValue(s.replace(Regex("[^\\d]"), ""))
+            val formatted = parsePriceInput(s)
+            if (formatted == null) {
+                priceField.setValue(lastValid)
+            } else {
+                lastValid = formatted
+                if (formatted != s) priceField.setValue(formatted)
+            }
             filtering = false
         }
-        priceField.value = if (suggested > 0) suggested.toString() else ""
+        priceField.value = if (suggested > 0) formatWithCommas(suggested.toString()) else ""
+        lastValid = priceField.value
         priceField.moveCursorToEnd(false)
         priceField.isFocused = true
 
@@ -114,6 +117,29 @@ class AuctionPriceScreen(
 
     private fun FishSettingsPercent(): Int = fishmod.utils.config.values.FishSettings.auctionAutofillPercent
 
+    private fun parsePriceInput(s: String): String? {
+        val digits = s.replace(",", "")
+        if (digits.isEmpty()) return ""
+        val mult = when (digits.last().lowercaseChar()) {
+            'k' -> 1_000L
+            'm' -> 1_000_000L
+            else -> null
+        }
+        val numPart = if (mult != null) digits.dropLast(1) else digits
+        if (numPart.isEmpty() || !numPart.all(Char::isDigit) || numPart.length > 12) return null
+        val value = numPart.toLong() * (mult ?: 1L)
+        return formatWithCommas(value.toString())
+    }
+
+    private fun formatWithCommas(numStr: String): String {
+        val sb = StringBuilder()
+        for ((i, c) in numStr.reversed().withIndex()) {
+            if (i > 0 && i % 3 == 0) sb.append(',')
+            sb.append(c)
+        }
+        return sb.reverse().toString()
+    }
+
     private fun centered(s: String, cx: Int, y: Int, color: Int = ScreenTheme.TEXT_COLOR, scale: Float = ScreenTheme.TEXT_SCALE) {
         ScreenTheme.nst(s, cx - ScreenTheme.nstw(s, scale) / 2, y, color, scale)
     }
@@ -144,7 +170,7 @@ class AuctionPriceScreen(
     }
 
     override fun onClose() {
-        val value = priceField.value.trim()
+        val value = priceField.value.trim().replace(",", "")
         Minecraft.getInstance().connection?.send(
             ServerboundSignUpdatePacket(sign.blockPos, true, value, originalLines[1], originalLines[2], originalLines[3])
         )

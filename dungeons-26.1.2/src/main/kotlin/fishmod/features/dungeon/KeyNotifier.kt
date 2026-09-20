@@ -9,10 +9,6 @@ import fishmod.utils.sound.SoundManager
 import net.minecraft.network.chat.Component
 import java.util.regex.Pattern
 
-/**
- * A title + cue when a Wither or Blood key is obtained, so the person routing doesn't have to watch
- * chat. Purely reads chat — key *state* is still owned by [fishmod.features.dungeon.map.DungeonState].
- */
 object KeyNotifier {
 
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX

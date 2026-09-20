@@ -7,17 +7,10 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 
-/**
- * Thin shims mapping puzzle-solver draw calls onto FishMod's occluded-gizmo helpers. The `depth`
- * flag is ignored — every gizmo is terrain-occluded.
- *
- * `style`: 0 = Filled, 1 = Outline, 2 = Filled + Outline.
- */
 object ORender {
 
     private fun outline(argb: Int) = 0xFF000000.toInt() or (argb and 0xFFFFFF)
 
-    /** FishSettings' style string -> style index (0 Filled / 1 Outline / 2 both). */
     fun style(): Int = when (FishSettings.puzzleSolverStyle) {
         "Filled" -> 0
         "Outline" -> 1
@@ -40,10 +33,11 @@ object ORender {
 
     fun line(a: Vec3, b: Vec3, argb: Int) = RenderUtils.gizmoLine(a, b, argb)
 
+    fun thickLine(a: Vec3, b: Vec3, argb: Int) = RenderUtils.gizmoThickLine(a, b, 0.025, argb)
+
     fun text(str: String, pos: Vec3, scale: Float) =
         RenderUtils.gizmoText(Component.literal(str), pos, scale, -0x1)
 
-    /** Pseudo beacon beam: a thin tall column from [base] upward. */
     fun beaconBeam(base: Vec3, argb: Int) {
         val a = 0x40 shl 24 or (argb and 0xFFFFFF)
         RenderUtils.gizmoBox(
@@ -51,11 +45,6 @@ object ORender {
         )
     }
 
-    /**
-     * Line from just in front of the camera to [target]. Starting exactly at the camera position
-     * makes the near vertex project to a garbage screen location — offset one block along the look
-     * vector so the line reads as coming from the crosshair.
-     */
     fun tracer(target: Vec3, argb: Int) {
         val cam = Minecraft.getInstance().gameRenderer.mainCamera
         val start = cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()))

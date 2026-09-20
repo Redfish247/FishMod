@@ -4,10 +4,6 @@ import fishmod.features.dungeon.Blessings
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.DungeonClass
 
-/**
- * Which spawning dragon to kill first. With the priority toggle off this is just the fixed
- * Red > Orange > Blue > Purple > Green order; on, it factors in blessing power and your class.
- */
 object DragonPriority {
 
     private val FIXED = listOf(WitherDragon.RED, WitherDragon.ORANGE, WitherDragon.BLUE, WitherDragon.PURPLE, WitherDragon.GREEN)
@@ -36,7 +32,7 @@ object DragonPriority {
         spawning.sortBy { priorityList.indexOf(it) }
 
         if (totalPower >= FishSettings.witherDragonsEasyPower) {
-            val solo = FishSettings.witherDragonsSoloDebuff // 0 Tank, 1 Healer
+            val solo = FishSettings.witherDragonsSoloDebuff
             val onAll = FishSettings.witherDragonsSoloDebuffAll
             val hasPurple = spawning.any { it == WitherDragon.PURPLE }
             if (solo == 0 && clazz == DungeonClass.TANK && (hasPurple || onAll))

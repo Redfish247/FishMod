@@ -7,7 +7,6 @@ import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
 
-/** Holds the client-side cosmetic display name and turns the raw "&"-coded string into a styled Text. */
 object NickState {
     @Volatile
     private var nick: String? = null
@@ -19,7 +18,6 @@ object NickState {
 
     @JvmStatic
     fun set(name: String?) {
-        // Single chokepoint: censor banned words before anything is stored/shown/uploaded (filter understands color codes).
         var n = name
         if (n != null && n.isNotEmpty()) n = ProfanityFilter.censor(n)
         nick = if (n != null && n.isNotEmpty()) n else null
@@ -27,22 +25,16 @@ object NickState {
         RemoteNicks.uploadOwn()
     }
 
-    /** Recolors the player's real username with a gradient over the given RGB stops. */
     @JvmStatic
     fun setGradient(stops: Array<IntArray>) {
         val raw = GradientNick.build(realName(), stops)
         set(raw)
     }
 
-    /**
-     * Applies the configured nick: takes the custom name (if set) or the real IGN as the base text,
-     * strips any existing color codes, then re-colors it in the chosen mode (Solid or Gradient).
-     */
     @JvmStatic
     fun applyFromSettings() {
         val custom = fishmod.utils.config.values.FishSettings.nickCustomName
         val base = if (custom != null && custom.isNotEmpty()) custom else realName()
-        // Strip only color codes; keep format codes so GradientNick can re-emit them per letter.
         val stripped = base.replace(HEX_COLOR_CODE, "").replace(FORMAT_CODE, "")
         val visibleOnly = stripped.replace(LEGACY_FORMAT_CODE, "")
         if (visibleOnly.isEmpty()) {
@@ -85,7 +77,6 @@ object NickState {
     @JvmStatic
     fun getRaw(): String? = nick
 
-    /** The player's real in-game username, used as the search target when swapping. */
     @JvmStatic
     fun realName(): String {
         val mc = Minecraft.getInstance()
@@ -99,7 +90,6 @@ object NickState {
     @JvmStatic
     fun asComponent(): Component = parse(nick)
 
-    /** Parses a string with &-codes (and &#rrggbb hex codes) into a styled Text. */
     @JvmStatic
     fun parse(input: String?): Component {
         val root: MutableComponent = Component.empty()
@@ -112,7 +102,6 @@ object NickState {
             val c = input[i]
             if ((c == '&' || c == '§') && i + 1 < input.length) {
                 val next = input[i + 1]
-                // "&*" inserts a SkyBlock star (✪) in the current color, e.g. "&6&*" = gold star.
                 if (next == '*') {
                     buf.append('✪')
                     i += 2

@@ -13,15 +13,10 @@ import java.net.http.HttpResponse
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
-/** Active Fire Sales for the Custom Scoreboard's "Fire Sales" extra. `/skyblock/firesales` is a
- *  public Hypixel endpoint (confirmed live, no API key) called directly, same as [ElectionInfo].
- *  Hypixel doesn't publicly document the "sales" entry field names, so parsing tries the common
- *  candidates defensively and only shows an item name -- never a guessed price/time -- since a
- *  silently-empty section is a safer failure mode here than a made-up number. */
 object FireSaleInfo {
 
     private val HTTP: HttpClient = HttpClient.newHttpClient()
-    private const val REFRESH_MS = 300_000L // 5 minutes -- sales are short-lived
+    private const val REFRESH_MS = 300_000L
 
     private var saleLines: List<String> = emptyList()
     private var lastFetchAt = 0L
@@ -48,8 +43,9 @@ object FireSaleInfo {
                     .uri(URI.create("https://api.hypixel.net/v2/skyblock/firesales"))
                     .header("User-Agent", "Mozilla/5.0")
                     .timeout(Duration.ofSeconds(10)).GET().build()
-                val body = HTTP.send(req, HttpResponse.BodyHandlers.ofString()).body()
-                val root = JsonParser.parseString(body).asJsonObject
+                val resp = HTTP.send(req, HttpResponse.BodyHandlers.ofString())
+                if (resp.statusCode() != 200) { mc.execute { fetchInFlight = false }; return@runAsync }
+                val root = JsonParser.parseString(resp.body()).asJsonObject
                 val sales = root.getAsJsonArray("sales") ?: com.google.gson.JsonArray()
                 val lines = ArrayList<String>()
                 for (el in sales) {

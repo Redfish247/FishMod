@@ -23,13 +23,11 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
         super(handler, recipeBook, inventory, title);
     }
 
-    // Unconditionally suppresses the vanilla "Crafting" label; no config gate
     @Inject(method = "extractLabels", at = @At("HEAD"), cancellable = true)
     protected void drawForeground(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
         ci.cancel();
     }
 
-    // Inventory command buttons: render at the inventory's top-left origin
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void fishmod$renderInventoryButtons(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         if (!Buttons.enableInventoryButtons) return;
@@ -40,7 +38,6 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
         stack.popMatrix();
     }
 
-    // @Override not @Inject: InventoryScreen doesn't declare mouseClicked, so an inject can't remap
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         if (Buttons.enableInventoryButtons) {

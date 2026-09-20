@@ -22,13 +22,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * Chat Search: an opt-in search field on the open chat screen that live-filters the visible
- * scrollback via {@link ChatSearch}. The field is hidden until the user presses the rebindable
- * "FishMod: Toggle Chat Search" key (unbound by default) — it used to be added unconditionally,
- * which let a stray Up land in it instead of driving vanilla's sent-message history. Up / Down
- * always fall through to {@link ChatScreen#moveInHistory(int)} now, even while the field is focused.
- */
 @Mixin(ChatScreen.class)
 public abstract class ChatSearchMixin extends Screen {
 
@@ -36,7 +29,6 @@ public abstract class ChatSearchMixin extends Screen {
     @Shadow public abstract void moveInHistory(int direction);
 
     @Unique private EditBox fishmod$searchBox;
-    // Default true: shown whenever the Chat Search setting is on
     @Unique private static boolean fishmod$searchShown = true;
 
     protected ChatSearchMixin(Component title) {
@@ -51,7 +43,7 @@ public abstract class ChatSearchMixin extends Screen {
     @Unique
     private void fishmod$buildSearchBox() {
         int h = 12;
-        int y = this.height - 38; // one line above the vanilla input + the "Chat: All" strip
+        int y = this.height - 38;
 
         ChatComponent chat = Minecraft.getInstance().gui.getChat();
         ChatHudInvoker acc = (ChatHudInvoker) chat;
@@ -67,12 +59,9 @@ public abstract class ChatSearchMixin extends Screen {
         fishmod$searchBox.setResponder(ChatSearch::onQueryChanged);
         this.addRenderableWidget(fishmod$searchBox);
 
-        // Allow focus to move between the two fields, but leave it on the chat input — the search
-        // box shouldn't grab it on chat open (that swallowed typing and the Up-arrow history key).
         if (this.input != null) this.input.setCanLoseFocus(true);
     }
 
-    /** Focus the search field (called when the user clicks it or presses the toggle key). */
     @Unique
     private void fishmod$focusSearchBox() {
         if (fishmod$searchBox == null) return;
@@ -109,9 +98,6 @@ public abstract class ChatSearchMixin extends Screen {
             return;
         }
 
-        // While the search box exists it's a second focusable widget, so vanilla would grab Up/Down
-        // for focus-cycling before ChatScreen runs its history handler. Do the history move here and
-        // consume the key so focus never leaves the chat input.
         if ((key == GLFW.GLFW_KEY_UP || key == GLFW.GLFW_KEY_DOWN) && fishmod$searchBox != null) {
             if (this.getFocused() == fishmod$searchBox) fishmod$searchBox.setFocused(false);
             if (this.input != null) { this.setFocused(this.input); this.input.setFocused(true); }

@@ -10,7 +10,6 @@ import net.minecraft.resources.Identifier
 import net.minecraft.sounds.SoundEvent
 import net.minecraft.sounds.SoundEvents
 
-/** Score-milestone chat/title messages. Rendered via renderHud, registered externally like sibling HUDs. */
 object ScoreMessages {
 
     private const val FADE_MS = 200L
@@ -80,7 +79,6 @@ object ScoreMessages {
 
     private fun sendClientMessage(raw: String?, time: String, updatePb: Boolean) {
         val key = floorKey()
-        // PB tracking not in this module yet — best stays null
         val best: String? = null
         var msg = (raw ?: "").replace("<time>", time).replace('&', '§')
         val hover = if (best != null) "§bPersonal Best: §a$best" else "§7No PB yet"

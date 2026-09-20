@@ -2,25 +2,6 @@ package fishmod.features.slayers
 
 import fishmod.utils.config.values.FishSettings
 
-/**
- * Boss kill timer. Uses [System.nanoTime] (monotonic, ~µs) rather than tick counts so a laggy
- * server doesn't distort the reading.
- *
- * Two start modes ([FishSettings.slayerTimerStartMode]):
- *  - **Spawned**       — clock starts the instant the scoreboard flips to `Slay the boss!`
- *    ([SlayerManager] calls [onBossSpawned]).
- *  - **Fully Spawned** — clock starts when [SlayerBossDetector] first binds the real boss entity
- *    (roughly when its rise animation ends and it becomes attackable), i.e. [onBossEntityBound].
- *
- * Stops on the scoreboard `Boss slain!` line (or the `SLAYER QUEST COMPLETE!` chat if the board
- * skipped it on an instant kill). The result is held for display until the next quest resets it.
- *
- * Full-cycle timer
- * ---------------
- * Separately from the spawn→kill fight timer, [onBossKilled] tracks the wall-clock gap between one
- * boss kill and the next (fight + loot + walk + refill + next fight) — the real grind cadence. It
- * survives same-tier auto-slayer restarts and only clears on [reset] (quest change / world change).
- */
 object SlayerTimer {
 
     private var startNanos = 0L
@@ -29,12 +10,11 @@ object SlayerTimer {
     private var lastResultSeconds = -1.0
     private var lastWasPb = false
 
-    // full-cycle (kill -> kill) timer
     private var lastKillNanos = 0L
     private var lastCycleSeconds = -1.0
     private var lastKilledCallMs = 0L
 
-    @JvmStatic fun init() { /* state only; SlayerManager drives all transitions */ }
+    @JvmStatic fun init() {  }
 
     private fun fullSpawnMode() = FishSettings.slayerTimerStartMode.equals("Fully Spawned", ignoreCase = true)
 
@@ -48,7 +28,6 @@ object SlayerTimer {
     @JvmStatic fun lastWasPb(): Boolean = lastWasPb
     @JvmStatic fun hasResult(): Boolean = lastResultSeconds >= 0.0
 
-    /** Scoreboard flipped to "Slay the boss!". */
     @JvmStatic
     fun onBossSpawned() {
         lastResultSeconds = -1.0
@@ -62,7 +41,6 @@ object SlayerTimer {
         }
     }
 
-    /** Detector bound the boss entity — only meaningful in "Fully Spawned" mode. */
     @JvmStatic
     fun onBossEntityBound() {
         if (pendingFullSpawn && startNanos == 0L) {
@@ -71,7 +49,6 @@ object SlayerTimer {
         }
     }
 
-    /** Boss died. Returns elapsed seconds, or -1 if the timer wasn't running. */
     @JvmStatic
     fun onBossSlain(): Double {
         if (startNanos == 0L) return -1.0
@@ -87,10 +64,6 @@ object SlayerTimer {
         lastWasPb = wasPb
     }
 
-    // ---------------------------------------------------------------- full-cycle timer
-
-    /** A boss just died. May be called from both the scoreboard and the chat path for one kill —
-     *  a 3s guard collapses that to a single cycle tick. */
     @JvmStatic
     fun onBossKilled() {
         val now = System.nanoTime()
@@ -101,10 +74,8 @@ object SlayerTimer {
         lastKillNanos = now
     }
 
-    /** Duration of the last completed kill→kill cycle, or -1 if fewer than two kills recorded. */
     @JvmStatic fun lastCycleSeconds(): Double = lastCycleSeconds
 
-    /** Live time since the last kill (0 if none yet) — the current cycle in progress. */
     @JvmStatic
     fun cycleElapsedSeconds(): Double =
         if (lastKillNanos == 0L) 0.0 else (System.nanoTime() - lastKillNanos) / 1_000_000_000.0

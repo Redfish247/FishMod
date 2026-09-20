@@ -16,25 +16,7 @@ import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.Vec3
 
-/**
- * Attack / phase indicators on the slayer boss, for all six slayers — the FishMod take on SkyHanni's
- * per-slayer damage-indicator phase text. Detection mirrors SkyHanni: it reads the armour-stand
- * nametags Hypixel floats near the boss, the boss's `vehicle` (mount) for the laser / mania phases,
- * and the boss health fraction for the phase split.
- *
- * | Slayer     | Cues                                                                    |
- * |------------|-------------------------------------------------------------------------|
- * | Revenant   | `BOOM!` (T5 explosion telegraph)                                        |
- * | Tarantula  | `KILL HATCHLINGS` invuln phase, egg-sac timer                           |
- * | Sven       | `PUPS!` (howl / summon telegraph)                                       |
- * | Voidgloom  | hit phase `N/max Hits`, laser countdown, beacon countdown, phase split  |
- * | Inferno    | Hellion shield + which dagger, Fire Pillar timer, Fire Pits, phase split|
- * | Bloodfiend | `TWINCLAWS`, `STEAK!` / HP-till-steak, Mania Circles countdown           |
- *
- * Rendered as billboarded world text just above the boss (`RenderUtils.gizmoText`), plus optional
- * title warnings for the big one-shot cues. The Bloodfiend path is self-contained (it scans The Rift
- * for the `Bloodfiend` NPC itself) since that slayer isn't in [SlayerType].
- */
+// FishMod's take on SkyHanni's damage-indicator phase text and invuln-latch behaviour.
 object SlayerBossPhases {
 
     private const val LASER_SECONDS = 8.2
@@ -46,11 +28,9 @@ object SlayerBossPhases {
     private val FIRE_PILLAR = Regex("([\\d.]+)s\\b.*?hits?", RegexOption.IGNORE_CASE)
     private val EGG_SAC = Regex("^\\d+s \\d+/\\d+$")
     private val TWINCLAWS = Regex("TWINCLAWS.*?([\\d.]+)s", RegexOption.IGNORE_CASE)
-    // "Voidgloom Seraph 4.2M❤" / "Bloodfiend 1,234❤" — Hypixel's boss health nametag (current HP only)
     private val NAMETAG_HP = Regex("([\\d,.]+)\\s*([kKmMbB])?\\s*❤")
     private const val HATCHLINGS_LINE = "You need to kill the Broodfather's hatchlings before it can be damaged again!"
 
-    // computed each client tick, read by the GIZMO render pass
     @Volatile private var show = false
     @Volatile private var line1 = ""
     @Volatile private var line2 = ""
@@ -58,23 +38,19 @@ object SlayerBossPhases {
     @Volatile private var ay = 0.0
     @Volatile private var az = 0.0
 
-    // tarantula invuln latch
     private var hatchlingsActive = false
     private var hatchlingsAnchor: Vec3? = null
 
-    // voidgloom beacon sighting
     private var beaconSeenNanos = 0L
     private var beaconLastSeenMs = 0L
 
-    // boss health, parsed from the ❤ nametag (the entity attribute is capped for Hypixel bosses).
-    // max is the running peak since this boss id was first seen.
     private var hpBossId = 0
     private var hpMaxSeen = 0.0
 
-    // blaze fire-pits edge trigger
     private var lastHpFrac = 1.0
 
-    // one-shot title cooldowns, keyed by cue
+    private var steakTitleFired = false
+
     private val titleAt = HashMap<String, Long>()
 
     @JvmStatic fun enabled(): Boolean = FishSettings.slayerPhaseEnabled
@@ -95,6 +71,7 @@ object SlayerBossPhases {
         hatchlingsActive = false; hatchlingsAnchor = null
         beaconSeenNanos = 0L; beaconLastSeenMs = 0L
         lastHpFrac = 1.0
+        steakTitleFired = false
         hpBossId = 0; hpMaxSeen = 0.0
         titleAt.clear()
     }
@@ -145,13 +122,11 @@ object SlayerBossPhases {
         }
     }
 
-    // ---------------------------------------------------------------- the five combat slayers
-
     private fun computeCombat(type: SlayerType, boss: LivingEntity, tier: Int): Pair<String, String> {
         val mc = Minecraft.getInstance()
         val stands = nearbyStandNames(boss, 2.0, 4.0)
-        val hp = trackHp(boss.id, stands)          // current HP from the ❤ nametag, 0 if unknown
-        val maxHp = hpMaxSeen                       // running peak
+        val hp = trackHp(boss.id, stands)
+        val maxHp = hpMaxSeen
         var l1 = ""
         var l2 = ""
 
@@ -166,7 +141,6 @@ object SlayerBossPhases {
 
             SlayerType.TARANTULA -> {
                 if (hatchlingsActive) {
-                    // SkyHanni clears the invuln latch once the boss starts moving again
                     val a = hatchlingsAnchor
                     if (a != null && boss.position().distanceTo(a) > 0.35) {
                         hatchlingsActive = false; hatchlingsAnchor = null
@@ -179,7 +153,6 @@ object SlayerBossPhases {
             }
 
             SlayerType.VOIDGLOOM -> {
-                // laser (boss mounted on a stand): 8.2s minus the mount's age
                 val v = boss.vehicle
                 if (v != null) {
                     val remain = LASER_SECONDS - v.tickCount * 0.05
@@ -213,7 +186,6 @@ object SlayerBossPhases {
                     }
                 }
 
-                // Fire Pits: T3/T4 health crossing 33% downward
                 if (maxHp > 0.0 && hp > 0.0 && tier >= 3) {
                     val frac = hp / maxHp
                     if (lastHpFrac > 0.33 && frac <= 0.33) title("firepits", "§cFIRE PITS!")
@@ -231,8 +203,6 @@ object SlayerBossPhases {
         SPIRIT("Spirit", "§f", "Twilight"),
         CRYSTAL("Crystal", "§b", "Twilight"),
     }
-
-    // ---------------------------------------------------------------- Bloodfiend (Rift / vampire)
 
     private fun findBloodfiend(mc: Minecraft): LivingEntity? {
         val self = mc.player ?: return null
@@ -264,17 +234,16 @@ object SlayerBossPhases {
 
         if (l1.isEmpty() && hp > 0.0 && maxHp > 0.0) {
             val steakAt = maxHp * 0.2
-            if (hp <= steakAt) { l1 = "§c§lSTEAK!"; title("steak", "§c§lSTEAK!", 2_000L) }
-            else if (hp - steakAt < 300.0) l1 = "§cHP till Steak: §f${(hp - steakAt).toInt()}"
+            if (hp <= steakAt) {
+                l1 = "§c§lSTEAK!"
+                if (!steakTitleFired) { steakTitleFired = true; title("steak", "§c§lSTEAK!", 2_000L) }
+            } else if (hp - steakAt < 300.0) l1 = "§cHP till Steak: §f${(hp - steakAt).toInt()}"
         }
 
         if (hp > 0.0 && maxHp > 0.0) l2 = "§7${(hp / maxHp * 100.0).toInt()}%"
         return l1 to l2
     }
 
-    // ---------------------------------------------------------------- helpers
-
-    /** Stripped, trimmed custom names of armour stands in a box around [e]. */
     private fun nearbyStandNames(e: LivingEntity, radius: Double, up: Double): List<String> {
         val level = Minecraft.getInstance().level ?: return emptyList()
         val box = e.boundingBox.inflate(radius, up, radius)
@@ -282,7 +251,6 @@ object SlayerBossPhases {
             .mapNotNull { it.customName?.string?.replace(Constants.STRIP_COLOR_REGEX, "")?.trim() }
     }
 
-    /** "1/3".."3/3" — 1 is the first (full-health) phase, [steps] is the last. */
     private fun healthSplit(hp: Double, maxHp: Double, steps: Int): String {
         if (!FishSettings.slayerPhaseHealthSplit || hp <= 0.0 || maxHp <= 0.0 || steps <= 1) return ""
         val step = maxHp / steps
@@ -290,10 +258,8 @@ object SlayerBossPhases {
         return "§7Phase §e$phase/$steps"
     }
 
-    /** Current HP from the boss's `❤` nametag among [stands]; also updates the running peak
-     *  [hpMaxSeen], resetting it when the bound boss id changes. Returns 0 if no `❤` tag is visible. */
     private fun trackHp(bossId: Int, stands: List<String>): Double {
-        if (bossId != hpBossId) { hpBossId = bossId; hpMaxSeen = 0.0; lastHpFrac = 1.0 }
+        if (bossId != hpBossId) { hpBossId = bossId; hpMaxSeen = 0.0; lastHpFrac = 1.0; steakTitleFired = false }
         val cur = stands.firstNotNullOfOrNull { name ->
             NAMETAG_HP.find(name)?.let { m ->
                 val n = m.groupValues[1].replace(",", "").toDoubleOrNull() ?: return@let null
@@ -332,8 +298,6 @@ object SlayerBossPhases {
     }
 
     private fun fmt(v: Double): String = String.format("%.1f", v)
-
-    // ---------------------------------------------------------------- render
 
     private fun render() {
         if (!show || !enabled() || !FishSettings.slayerPhaseWorldText) return

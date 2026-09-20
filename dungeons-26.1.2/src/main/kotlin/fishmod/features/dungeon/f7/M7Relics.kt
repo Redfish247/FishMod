@@ -17,13 +17,6 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import java.util.regex.Pattern
 
-/**
- * M7 Relics — drives `Floor7.enableRelicStartTimer` / `relicSpawnTicks` / `renderRelicHighlight`.
- *
- * - Spawn Timer: countdown of [Floor7.relicSpawnTicks] ticks after Necron's "All this, for nothing..."
- *   (P5 start), shown on a small HUD.
- * - Relic Box: while holding a Corrupted <colour> Relic, box + tracer its cauldron in P5.
- */
 object M7Relics {
 
     private enum class Relic(val itemName: String, val cauldron: Vec3, val argb: Int) {

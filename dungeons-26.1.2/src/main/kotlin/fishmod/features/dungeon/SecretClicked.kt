@@ -27,33 +27,21 @@ import net.minecraft.world.phys.Vec3
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
 
-/**
- * Secret Clicked: a box + chime when you trigger a dungeon secret.
- * Three trigger routes, all handled here:
- *  - **interact**: right-click a chest / lever / skull ([UseBlockCallback]).
- *  - **bat kill**: a dungeon secret bat you were next to gets removed ([Bat] + [ClientboundRemoveEntitiesPacket]).
- *  - **item pickup**: you walk over a ground item ([ClientboundTakeItemEntityPacket] for your own player).
- * Bat / item routes are gated by [FishSettings.secretClickedBats] / [FishSettings.secretClickedItems].
- */
 object SecretClicked {
 
-    /** [blockPos] non-null → recompute the box from live block shape each frame; null → fixed [box]. */
     private class Secret(val box: AABB, val blockPos: BlockPos?, @JvmField var locked: Boolean = false)
 
-    private const val BAT_RANGE = 6.0    // you can't kill a secret bat from further than melee reach
-    private const val ITEM_RANGE = 4.0   // slack over the ~1-block vanilla pickup radius
+    private const val BAT_RANGE = 6.0
+    private const val ITEM_RANGE = 4.0
 
     private val clicked = CopyOnWriteArrayList<Secret>()
     private var lastChime = 0L
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
-    // entityId -> last seen world position, refreshed each client tick (main thread).
     private val batPos = HashMap<Int, Vec3>()
-    private val itemPos = HashMap<Int, Vec3>()   // non-arrow ground items only
-    // bats we've actually damaged (hurtTime/deathTime seen ticking); only engaged bats chime
+    private val itemPos = HashMap<Int, Vec3>()
     private val batEngaged = HashSet<Int>()
 
-    // Filled from ON_PACKET (netty thread), drained on the next client tick.
     private val pickedItemIds = ConcurrentLinkedQueue<Int>()
     private val removedIds = ConcurrentLinkedQueue<Int>()
     @Volatile private var selfId = -1
@@ -102,7 +90,6 @@ object SecretClicked {
         }
         val eye = player.eyePosition
 
-        // 1. item pickups by us: a stationary ground item we walked over is a secret (coins/drops stay airborne, skipped)
         while (true) {
             val id = pickedItemIds.poll() ?: break
             if (!FishSettings.secretClickedItems) continue
@@ -112,7 +99,6 @@ object SecretClicked {
             if (pos.distanceToSqr(eye) <= ITEM_RANGE * ITEM_RANGE) addLooseSecret(pos)
         }
 
-        // 2. Bat kills — a bat we damaged and were standing next to that just got removed.
         while (true) {
             val id = removedIds.poll() ?: break
             if (!FishSettings.secretClickedBats) continue
@@ -121,7 +107,6 @@ object SecretClicked {
             if (engaged && pos.distanceToSqr(eye) <= BAT_RANGE * BAT_RANGE) addLooseSecret(pos)
         }
 
-        // 3. Refresh position tracking for anything still in range.
         batPos.clear(); itemPos.clear()
         val scan = player.boundingBox.inflate(BAT_RANGE + 2.0)
         for (e in level.getEntities(player, scan)) {
@@ -135,7 +120,6 @@ object SecretClicked {
         }
     }
 
-    /** A secret item lies still on the floor; a coin/drop is airborne, moving, and pickup-delayed. */
     private fun ItemEntity.isFloorSecret(): Boolean {
         if (item.item == Items.ARROW || hasPickUpDelay() || age < 10) return false
         val d = deltaMovement
@@ -151,7 +135,6 @@ object SecretClicked {
         Scheduler.scheduleTask({ clicked.removeFirstOrNull() }, FishSettings.secretClickedTimeToStay.coerceIn(1, 20) * 20)
     }
 
-    /** (box, fillArgb, strokeArgb) for every secret currently showing. */
     private fun boxes(): List<Triple<AABB, Int, Int>> {
         if (!active() || !FishSettings.secretClickedBoxes || clicked.isEmpty()) return emptyList()
         val level = net.minecraft.client.Minecraft.getInstance().level
@@ -205,7 +188,6 @@ object SecretClicked {
         )
     }
 
-    // box the block's real shape, not a full cube; never mix fill/line topologies on one VertexConsumer
     private fun render(matrices: PoseStack, vc: VertexConsumer, fill: Boolean) {
         for ((box, fillArgb, strokeArgb) in boxes()) {
             if (fill) {

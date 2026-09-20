@@ -7,7 +7,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-/** Optional S4 state table: name, S4 contributions, and current status per tracked player. */
 object S4DebugHud {
 
     @JvmStatic

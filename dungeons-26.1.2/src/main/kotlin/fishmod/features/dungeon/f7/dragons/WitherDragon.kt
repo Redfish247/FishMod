@@ -9,9 +9,6 @@ import net.minecraft.world.phys.Vec3
 
 enum class WitherDragonState { SPAWNING, ALIVE, DEAD }
 
-/**
- * The five M7 Wither dragons. Coordinates / AABBs / spawn ranges are calibrated — do not adjust.
- */
 enum class WitherDragon(
     val spawnPos: Vec3,
     val box: AABB,

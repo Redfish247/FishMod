@@ -10,12 +10,10 @@ import net.minecraft.network.chat.TextColor;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
-/** Builds coloured chat lines and pushes them onto the Minecraft chat HUD on the render thread. */
 public final class ChatOutput {
 
 	private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm");
 
-	/** Fallback palette (classic Twitch default name colours) when a chatter has no colour set. */
 	private static final int[] PALETTE = {
 			0xFF0000, 0x0000FF, 0x008000, 0xB22222, 0xFF7F50, 0x9ACD32, 0xFF4500,
 			0x2E8B57, 0xDAA520, 0xD2691E, 0x5F9EA0, 0x1E90FF, 0xFF69B4, 0x8A2BE2, 0x00FF7F
@@ -23,7 +21,6 @@ public final class ChatOutput {
 
 	private ChatOutput() {}
 
-	/** A normal chat message: {@code [Twitch] Name: message} */
 	public static void chat(TwitchBridgeConfig cfg, String name, String colorHex, String message, boolean action) {
 		int rgb = resolveColor(cfg, name, colorHex);
 		MutableComponent line = base(cfg);
@@ -38,12 +35,10 @@ public final class ChatOutput {
 		push(line);
 	}
 
-	/** A Twitch event notice (sub, raid, announcement, …). */
 	public static void event(TwitchBridgeConfig cfg, String text) {
 		push(base(cfg).append(Component.literal(text).withStyle(ChatFormatting.LIGHT_PURPLE)));
 	}
 
-	/** A status/info line from the bridge itself. */
 	public static void info(TwitchBridgeConfig cfg, String text) {
 		push(base(cfg).append(Component.literal(text).withStyle(ChatFormatting.YELLOW)));
 	}
@@ -64,7 +59,7 @@ public final class ChatOutput {
 			return Integer.parseInt(colorHex.substring(1), 16);
 		}
 		if (!cfg.useTwitchColors) {
-			return 0xD69BF5; // light purple
+			return 0xD69BF5;
 		}
 		int idx = Math.floorMod(name.toLowerCase().hashCode(), PALETTE.length);
 		return PALETTE[idx];

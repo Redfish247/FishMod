@@ -6,7 +6,6 @@ import net.minecraft.world.phys.Vec3
 import kotlin.math.cos
 import kotlin.math.sin
 
-/** Vec helpers the puzzle solvers need (`isXZInterceptable` + friends). */
 object OVecUtil {
 
     fun isXZInterceptable(box: AABB, range: Double, pos: Vec3, yaw: Float, pitch: Float): Boolean {

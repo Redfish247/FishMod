@@ -30,23 +30,10 @@ import net.minecraft.world.phys.Vec3
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.ceil
 
-/**
- * Blood room helper.
- *
- *  - **Watcher speed alert**: on "[BOSS] The Watcher: Let's see how you can handle this." the time
- *    since the blood door opened classifies the Watcher as fast / normal / slow (title + sound,
- *    optional party message), and a "Kill Mobs" title is scheduled for the predicted move tick.
- *  - **Blood mob predictor**: each blood mob (skull-tagged armor stand near the Watcher) has its
- *    travel direction integrated from its per-tick movement, and a box + line + countdown is drawn
- *    at the spot it will walk to so you can pre-aim. Constants (16.1 / 11.9 tick walk, 40 / 38 tick
- *    windows, the move-tick table) are calibrated — do not adjust.
- */
 object BloodSolver {
 
     private const val OPEN_MESSAGE = "The BLOOD DOOR has been opened!"
     private const val WATCHER_MESSAGE = "[BOSS] The Watcher: Let's see how you can handle this."
-    /** Recent move-packet samples kept for the direction estimate — old ones are dropped so a
-     *  noisy spawn-time tick doesn't permanently bias the projected endpoint. */
     private const val DIRECTION_SAMPLE_WINDOW = 6
 
     private var dungeonTick = 0
@@ -118,7 +105,6 @@ object BloodSolver {
         bloodMobs.clear()
     }
 
-    /** "[BOSS] The Watcher: Let's see how you can handle this." — first wave is about to move. */
     private fun onWatcherSpawn() {
         firstSpawns = false
         if (bloodOpenTick < 0) return
@@ -147,12 +133,6 @@ object BloodSolver {
         }
     }
 
-    /**
-     * Integrate each blood mob's travel direction from its per-move-entity packet (many
-     * samples/tick → a stable direction), then project the walk endpoint spawnTime blocks along it
-     * from the first-seen position. Fires pre-apply, so `stand.position()` + the packet delta is
-     * the mob's new position.
-     */
     private fun onMobMove(packet: ClientboundMoveEntityPacket) {
         if (!Floor7.bloodSolverEnabled || Phase.inBoss()) return
         if (packet.xa.toInt() == 0 && packet.ya.toInt() == 0 && packet.za.toInt() == 0) return
@@ -172,20 +152,12 @@ object BloodSolver {
 
         val delta = pos.subtract(data.lastPosition)
         data.lastPosition = pos
-        // Blood mobs walk a flat floor; the Y component of a move packet is armor-stand bob. Feeding
-        // it into the direction sum tilts the projection off-axis and, via the 3D normalize below,
-        // eats into the horizontal reach — that's the ~0.3-0.5 block miss. Integrate in XZ only, so
-        // the projected endpoint keeps the mob's exact floor height (startVec.y).
-        val flat = Vec3(delta.x, 0.0, delta.z)
-        if (flat.lengthSqr() > 0) {
-            data.deltaHistory.addLast(flat)
-            // Sum-since-spawn telescopes to (current - start), so old code never actually averaged
-            // anything — one noisy first tick (spawn jitter/hesitation) permanently skewed the
-            // direction. A capped window means the direction reflects recent, consistent movement.
+        if (delta.lengthSqr() > 0) {
+            data.deltaHistory.addLast(delta)
             while (data.deltaHistory.size > DIRECTION_SAMPLE_WINDOW) data.deltaHistory.removeFirst()
         }
 
-        val spawnTime = if (data.firstSpawn) 16.1 else 11.9
+        val spawnTime = (if (data.firstSpawn) 16.1 else 11.9) - 1.0
         val total = data.deltaHistory.fold(Vec3.ZERO) { acc, d -> acc.add(d) }
         if (total.lengthSqr() > 0) data.endVector = data.startVec.add(total.normalize().scale(spawnTime))
     }
@@ -200,14 +172,9 @@ object BloodSolver {
             val timeTook = dungeonTick - data.started
             val time = (if (data.firstSpawn) 40 else 0) + 38 - timeTook + 0.8
             val secondsLeft = ((time - 0.8) / 20.0).coerceAtLeast(0.0)
-            // Predicted walk window has elapsed — the endpoint and its countdown are stale, so
-            // stop drawing this entry rather than leaving a frozen box with a "0"/negative timer.
             if (secondsLeft <= 0.0) continue
 
-            // `end.y` is the mob's floor height (see onMobMove); sit a 1x2x1 mob-sized box on it
-            // at the predicted spot instead of the old cube that floated 1.5-2.5 blocks up.
-            val box = AABB(end.x - 0.5, end.y, end.z - 0.5, end.x + 0.5, end.y + 2.0, end.z + 0.5)
-            // Invert the box colour once ping outruns the remaining window — the endpoint is stale.
+            val box = AABB(end.x - 0.5, end.y + 1.5, end.z - 0.5, end.x + 0.5, end.y + 2.5, end.z + 0.5)
             var boxColor = Floor7.bloodSolverBoxColor
             if (ping > 0 && ping > time * 50) boxColor = boxColor xor 0x00FFFFFF
 
@@ -231,7 +198,6 @@ object BloodSolver {
         return profile.partialProfile().properties["textures"].firstOrNull()?.value()
     }
 
-    // Base64 skull textures.
     private val WATCHER_SKULLS = setOf(
         "ewogICJ0aW1lc3RhbXAiIDogMTY5NzMwOTQxNzI1NiwKICAicHJvZmlsZUlkIiA6ICJjYjYxY2U5ODc4ZWI0NDljODA5MzliNWYxNTkwMzE1MiIsCiAgInByb2ZpbGVOYW1lIiA6ICJWb2lkZWRUcmFzaDUxODUiLAogICJzaWduYXR1cmVSZXF1aXJlZCIgOiB0cnVlLAogICJ0ZXh0dXJlcyIgOiB7CiAgICAiU0tJTiIgOiB7CiAgICAgICJ1cmwiIDogImh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNTY2MmI2ZmI0YjhiNTg2ZGM0Y2RmODAzYjA0NDRkOWI0MWQyNDVjZGY2NjhkYWIzOGZhNmMwNjRhZmU4ZTQ2MSIsCiAgICAgICJtZXRhZGF0YSIgOiB7CiAgICAgICAgIm1vZGVsIiA6ICJzbGltIgogICAgICB9CiAgICB9CiAgfQp9",
         "ewogICJ0aW1lc3RhbXAiIDogMTcxOTYwNjM1MjMyMiwKICAicHJvZmlsZUlkIiA6ICI3MmY5MTdjNWQyNDU0OTk0YjlmYzQ1YjVhM2YyMjIzMCIsCiAgInByb2ZpbGVOYW1lIiA6ICJUaGF0X0d1eV9Jc19NZSIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS8yNzM5ZDdmNGU2NmE3ZGIyZWE2Y2Q0MTRlNGM0YmE0MWRmN2E5MjQ1NWM5ZmM0MmNhYWIwMTQ2NjVjMzY3YWQ1IiwKICAgICAgIm1ldGFkYXRhIiA6IHsKICAgICAgICAibW9kZWwiIDogInNsaW0iCiAgICAgIH0KICAgIH0KICB9Cn0=",

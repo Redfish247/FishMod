@@ -6,11 +6,6 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
-/**
- * Arrow Fix. Shortbows shoot instantly, but the client still plays the bow pull-back animation and
- * eats the right-click; clearing the active use item every tick while a shortbow is drawn removes
- * that. Per-id lore cache.
- */
 object ArrowFix {
 
     private val shortbows = HashSet<String>()

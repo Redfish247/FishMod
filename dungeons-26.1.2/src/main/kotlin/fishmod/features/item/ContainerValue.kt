@@ -5,6 +5,7 @@ import fishmod.features.croesus.CroesusPrices
 import fishmod.features.storage.StorageOverlay
 import fishmod.mixin.accessors.HandledScreenAccessor
 import fishmod.utils.Location
+import fishmod.utils.Misc.abbr
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemUtil
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -16,14 +17,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.item.ItemStack
 
-/**
- * Container Value — a no-background text list of the coin value of every item in the open container
- * (the open storage page, an island chest, or your inventory), coloured by rarity, with a running
- * total. NPC / utility menus (Croesus, Mort, Bazaar, AH, …) are excluded. Values reuse the Item
- * Tooltip path: [CroesusPrices] base + [ModifierValue] modifiers. Drawn from
- * [fishmod.mixin.HandledScreenMixin]'s extractRenderState TAIL; over the Storage Overlay the panel
- * slides right to make room (see [fishmod.features.storage.StorageOverlay.recomputeGeometry]).
- */
 object ContainerValue {
 
     private const val MAX_LINES = 32
@@ -46,6 +39,9 @@ object ContainerValue {
     private var widthPx = 0
     private var lastCompute = 0L
     private var lastRefresh = 0L
+    private var cachedLines: List<Component> = emptyList()
+    private var cachedMoreLine: Component? = null
+    private var cachedTotalLine: Component? = null
 
     @JvmStatic
     fun init() {
@@ -56,7 +52,6 @@ object ContainerValue {
         }
     }
 
-    /** GUI-scaled px the list occupies — [StorageOverlay] reads this to slide its panel over. */
     @JvmStatic
     fun storageSidebarWidthGuiPx(): Int =
         if (FishSettings.containerValueEnabled && rows.isNotEmpty()) widthPx else 0
@@ -76,20 +71,14 @@ object ContainerValue {
 
         var cy = y
         line(ctx, font, x, cy, Component.literal("Container Value").withStyle { it.withColor(YELLOW) }); cy += font.lineHeight + 1
-        for (r in shown) {
-            val label = if (r.count > 1) "${r.count}x ${trim(r.name)}" else trim(r.name)
-            val rgb = if (r.color != 0) r.color and 0xFFFFFF else GREY
-            val c = Component.literal(label).withStyle { it.withColor(rgb) }
-                .append(Component.literal("  ").withStyle { it.withColor(GREY) })
-                .append(Component.literal(abbr(r.value)).withStyle { it.withColor(GOLD) })
+        for (c in cachedLines) {
             line(ctx, font, x, cy, c); cy += font.lineHeight + 1
         }
-        if (rows.size > shown.size) {
-            line(ctx, font, x, cy, Component.literal("… +${rows.size - shown.size} more").withStyle { it.withColor(DIM) })
+        cachedMoreLine?.let {
+            line(ctx, font, x, cy, it)
             cy += font.lineHeight + 1
         }
-        line(ctx, font, x, cy, Component.literal("Total: ").withStyle { it.withColor(YELLOW) }
-            .append(Component.literal(abbr(total)).withStyle { it.withColor(GOLD) }))
+        cachedTotalLine?.let { line(ctx, font, x, cy, it) }
     }
 
     private fun line(ctx: GuiGraphicsExtractor, font: net.minecraft.client.gui.Font, x: Int, y: Int, c: Component) =
@@ -125,7 +114,6 @@ object ContainerValue {
 
         val agg = LinkedHashMap<String, Row>()
         var sum = 0.0
-        // external containers' menus also include the 36 player-inv slots — value those only on the inventory screen
         val skipPlayerInv = screen !is InventoryScreen
         for (slot in screen.menu.slots) {
             if (skipPlayerInv && slot.container is Inventory) continue
@@ -148,19 +136,27 @@ object ContainerValue {
 
         val font = Minecraft.getInstance().font
         var maxw = font.width("Container Value")
-        for (r in list.take(MAX_LINES)) {
+        val shown = list.take(MAX_LINES)
+        val lines = ArrayList<Component>(shown.size)
+        for (r in shown) {
             val label = if (r.count > 1) "${r.count}x ${trim(r.name)}" else trim(r.name)
             maxw = maxOf(maxw, font.width("$label  ${abbr(r.value)}"))
+            val rgb = if (r.color != 0) r.color and 0xFFFFFF else GREY
+            lines.add(
+                Component.literal(label).withStyle { it.withColor(rgb) }
+                    .append(Component.literal("  ").withStyle { it.withColor(GREY) })
+                    .append(Component.literal(abbr(r.value)).withStyle { it.withColor(GOLD) }),
+            )
         }
+        cachedLines = lines
+        cachedMoreLine = if (list.size > shown.size)
+            Component.literal("… +${list.size - shown.size} more").withStyle { it.withColor(DIM) }
+        else null
+        cachedTotalLine = Component.literal("Total: ").withStyle { it.withColor(YELLOW) }
+            .append(Component.literal(abbr(sum)).withStyle { it.withColor(GOLD) })
         widthPx = maxOf(maxw, font.width("Total: ${abbr(total)}"))
     }
 
     private fun trim(s: String): String = if (s.length <= NAME_MAX) s else s.take(NAME_MAX - 1) + "…"
 
-    private fun abbr(v: Double): String = when {
-        v >= 1_000_000_000 -> "%.2fB".format(v / 1_000_000_000)
-        v >= 1_000_000 -> "%.2fM".format(v / 1_000_000)
-        v >= 1_000 -> "%.1fk".format(v / 1_000)
-        else -> "%,d".format(v.toLong())
-    }
 }

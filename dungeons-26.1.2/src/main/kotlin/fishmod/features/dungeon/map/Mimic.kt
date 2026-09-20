@@ -42,6 +42,7 @@ object Mimic {
                     }
                 }
             } catch (t: Throwable) {
+                fishmod.utils.debug.Debug.LOGGER.error("[Mimic] tick failed", t)
             }
         })
     }

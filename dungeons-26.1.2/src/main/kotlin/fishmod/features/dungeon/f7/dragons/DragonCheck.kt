@@ -16,7 +16,6 @@ import net.minecraft.world.phys.Vec3
 import net.minecraft.world.scores.DisplaySlot
 import net.minecraft.world.scores.PlayerTeam
 
-/** Packet decoders for the M7 dragons. */
 object DragonCheck {
 
     private val HEALTH_TOKEN = Regex("\\d+(?:\\.\\d+)?[bBmMkK]")
@@ -89,11 +88,6 @@ object DragonCheck {
         }
     }
 
-    /**
-     * Arrow-drag counter. Keys only off the broadcast `ClientboundSoundPacket` for
-     * `arrow.hit_player`, never the client's local hit cue or entity-attached sounds, so a drag
-     * isn't over-counted.
-     */
     fun trackArrows(p: ClientboundSoundPacket, tick: Long) {
         if (p.sound.value().location != SoundEvents.ARROW_HIT_PLAYER.location) return
         val d = WitherDragons.priorityDragon
@@ -101,7 +95,6 @@ object DragonCheck {
         if (tick - d.spawnedTick <= d.skipKillTime) d.arrowsHit++
     }
 
-    /** Scoreboard fallback: is this dragon still listed with non-zero health on the sidebar? */
     fun isAliveOnScoreboard(d: WitherDragon): Boolean {
         val sb = Minecraft.getInstance().level?.scoreboard ?: return true
         val obj = sb.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return true

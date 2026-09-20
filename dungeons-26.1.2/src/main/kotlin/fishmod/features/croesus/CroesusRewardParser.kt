@@ -4,10 +4,6 @@ import fishmod.utils.HypixelApi
 import fishmod.utils.networth.ItemsDb
 import java.util.regex.Pattern
 
-/**
- * Parses a Croesus reward-chest tooltip into item ids/quantities/display names, one [RewardItem]
- * per reward line up to the "Cost" line.
- */
 object CroesusRewardParser {
     private val ITALIC_PREFIX = Regex("^§5§o")
 
@@ -88,7 +84,6 @@ object CroesusRewardParser {
         return if (!m.matches()) null else arrayOf("ESSENCE_" + m.group(1).uppercase(), m.group(2))
     }
 
-    /** Returns {id, qty}, or {"false", errorMessage} when the line couldn't be resolved. */
     @JvmStatic
     fun parseLine(line: String): Array<String> {
         val book = tryParseBook(line)
@@ -105,7 +100,6 @@ object CroesusRewardParser {
         return arrayOf("false", "Could not find item ID for line \"$clean\"")
     }
 
-    /** Returns null if no "Cost" line was found (e.g. container still loading). */
     @JvmStatic
     fun parseRewards(fullTooltip: List<String>, errorOut: Array<String?>?): ChestInfo? {
         var costIdx = -1
@@ -129,18 +123,16 @@ object CroesusRewardParser {
 
             val result = parseLine(line)
             if (result[0] == "false") {
-                // Skip unresolved lines rather than discarding the whole chest's rewards.
                 if (errorOut != null) errorOut[0] = result[1]
-                fishmod.utils.debug.Debug.LOGGER.info("[Loot] unresolved reward line: '{}'", clean)
+                fishmod.utils.debug.Debug.LOGGER.debug("[Loot] unresolved reward line: '{}'", clean)
                 continue
             }
 
             val ri = RewardItem()
             ri.id = result[0]
             ri.qty = result[1].toIntOrNull()?.coerceAtLeast(1) ?: 1
-            // Fully colour-stripped so rows don't split/mislabel on stray codes.
             ri.displayName = clean
-            fishmod.utils.debug.Debug.LOGGER.info("[Loot] reward '{}' -> id={} qty={}", clean, ri.id, ri.qty)
+            fishmod.utils.debug.Debug.LOGGER.debug("[Loot] reward '{}' -> id={} qty={}", clean, ri.id, ri.qty)
             info.items.add(ri)
         }
         return info

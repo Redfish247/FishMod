@@ -15,7 +15,7 @@ object MayorApi {
 
     private const val URL = "https://api.hypixel.net/v2/resources/skyblock/election"
     private const val CACHE_MS = 10 * 60 * 1000L
-    private const val FAIL_CACHE_MS = 60 * 1000L // retry a minute after a failed fetch, not 10
+    private const val FAIL_CACHE_MS = 60 * 1000L
     private val HTTP: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(5))
         .build()
@@ -29,7 +29,6 @@ object MayorApi {
     @Volatile
     private var fetching = false
 
-    /** Stamp on a failed fetch so the next retry is [FAIL_CACHE_MS] out, not [CACHE_MS]. */
     private fun failStamp(): Long = System.currentTimeMillis() - CACHE_MS + FAIL_CACHE_MS
 
     @JvmStatic
@@ -43,7 +42,6 @@ object MayorApi {
         return aatroxSlayerBonus
     }
 
-    /** True if Paul is mayor (or minister with EZPZ perk), giving +10 dungeon score. */
     @JvmStatic
     fun isPaulDungeonBonusActive(): Boolean {
         if (System.currentTimeMillis() - lastFetch > CACHE_MS) refresh()
@@ -108,7 +106,6 @@ object MayorApi {
         val root = JsonParser.parseString(body).asJsonObject
         if (!root.has("mayor")) return false
         val mayor = root.getAsJsonObject("mayor")
-        // +10 dungeon score needs the active EZPZ perk, not just Paul being mayor (perks rotate each election)
         if ("paul".equals(mayor.get("key")?.asString, ignoreCase = true) && hasEzpz(mayor.getAsJsonArray("perks"))) {
             return true
         }

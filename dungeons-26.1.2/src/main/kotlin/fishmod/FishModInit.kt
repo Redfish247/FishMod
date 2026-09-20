@@ -26,7 +26,6 @@ import fishmod.utils.config.Config
 import fishmod.utils.config.FishConfig
 import fishmod.utils.config.FolderUtility
 import fishmod.utils.data.EntityUtil
-import fishmod.utils.data.FishPartyTracker
 import fishmod.utils.data.PartyUtil
 import fishmod.utils.debug.Debug
 import fishmod.utils.dungeon.Phase
@@ -67,12 +66,10 @@ import java.util.regex.Pattern
 class FishModInit : ModInitializer {
 
     companion object {
-        /** Runs a party-command lookup locally and prints the result in your own chat (no party message). */
         @JvmStatic
         private fun runLocalLookup(cmd: String, arg1: String?, arg2: String?): Int =
             runLocalLookup(cmd, arg1, arg2, null)
 
-        /** Three-arg variant (e.g. /crtc [name] [class] [level]). */
         @JvmStatic
         private fun runLocalLookup(cmd: String, arg1: String?, arg2: String?, arg3: String?): Int {
             val mc = Minecraft.getInstance()
@@ -83,7 +80,6 @@ class FishModInit : ModInitializer {
             return Constants.SUCCESS
         }
 
-        /** Prints a party-action whitelist/blacklist to your own chat, e.g. from /fmcmd whitelist. */
         @JvmStatic
         private fun printNameList(label: String, csv: String) {
             val names = fishmod.utils.NameList.toList(csv)
@@ -97,14 +93,13 @@ class FishModInit : ModInitializer {
 
         private val HELP_CMD_TOKEN: Pattern = Pattern.compile("[/.][a-zA-Z][a-zA-Z0-9]*")
 
-        /** Lines naming exactly one command become click-to-suggest; multi-command/header lines print plain. */
         @JvmStatic
         private fun helpLine(text: String) {
             val m: Matcher = HELP_CMD_TOKEN.matcher(text)
             var cmd: String? = null
             if (m.find()) {
                 cmd = m.group()
-                if (m.find()) cmd = null // more than one command on the line → leave it plain
+                if (m.find()) cmd = null
             }
             if (cmd == null) {
                 Misc.addChatMessage(Component.literal(text))
@@ -120,7 +115,7 @@ class FishModInit : ModInitializer {
             Misc.addChatMessage(t)
         }
 
-        /** Builds an Odin-style `/fm <alias> [n]` get-from-sacks subcommand — see [fishmod.features.other.SackFill]. */
+        // Builds an Odin-style /fm <alias> [n] get-from-sacks subcommand.
         @JvmStatic
         private fun sackSubcommand(alias: String): com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> =
             ClientCommands.literal(alias)
@@ -130,7 +125,6 @@ class FishModInit : ModInitializer {
                 })
                 .executes { fishmod.features.other.SackFill.fill(alias, null); Constants.SUCCESS }
 
-        /** Builds the /fm wp (and /fm waypoint, /fm waypoints) subtree — waypoint editor, see [fishmod.features.dungeon.DungeonWaypoints]. */
         @JvmStatic
         private fun waypointSubcommand(name: String): com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> {
             val tree = ClientCommands.literal(name)
@@ -165,9 +159,6 @@ class FishModInit : ModInitializer {
                                 }
                         )
                 )
-                .then(ClientCommands.literal("resetsecrets").executes {
-                    fishmod.features.dungeon.DungeonWaypoints.resetSecrets(); Constants.SUCCESS
-                })
                 .then(
                     ClientCommands.literal("type")
                         .then(
@@ -198,6 +189,9 @@ class FishModInit : ModInitializer {
                 )
                 .then(ClientCommands.literal("useblocksize").executes {
                     fishmod.features.dungeon.DungeonWaypoints.toggleUseBlockSize(); Constants.SUCCESS
+                })
+                .then(ClientCommands.literal("pixel").executes {
+                    fishmod.features.dungeon.DungeonWaypoints.togglePixelMode(); Constants.SUCCESS
                 })
                 .then(
                     ClientCommands.literal("offset")
@@ -312,7 +306,6 @@ class FishModInit : ModInitializer {
                 })
         }
 
-        /** Prints a formatted reference of FishMod's commands and their argument formats to the player's chat. */
         @JvmStatic
         private fun printCommandHelp() {
             val line: Consumer<String> = Consumer { helpLine(it) }
@@ -360,7 +353,7 @@ class FishModInit : ModInitializer {
             line.accept("")
             line.accept("§3§lParty Actions")
             line.accept("§e/pk §f<player> §7— kick  §8·§7  §e/pw §7— warp  §8·§7  §e/pt §f<player> §7— transfer  §8·§7  §e/pp §f<player> §7— promote  §8·§7  §e/pd §f<player> §7— demote")
-            line.accept("§7In party chat: §f.ai §7(allinvite), §f.d §7(disband), §f.kick/.warp(.w)/.transfer(.pt/.ptme)/.promote/.demote")
+            line.accept("§7In party chat: §f.ai §7(allinvite), §f.d §7(disband), §f.kick(.k)/.warp(.w)/.transfer(.pt/.ptme)/.promote(.pro)/.demote(.dem)")
             line.accept("§7Control who else can trigger them: §f/fm §8> §7Party §8> §7Party Commands, and §f/fmcmd whitelist|blacklist add|remove|list")
 
             line.accept("")
@@ -401,7 +394,6 @@ class FishModInit : ModInitializer {
         DungeonDeathMessage.init()
         fishmod.features.ExplosiveShot.init()
         fishmod.features.CritTracker.init()
-        FishPartyTracker.init()
         PartyCommandHandler.init()
         SoulflowHud.init()
         PetHud.init()
@@ -466,6 +458,8 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.f7.MelodyMessage.init()
         fishmod.features.dungeon.PartyFinderStats.init()
         fishmod.features.dungeon.PartyFinder.init()
+        fishmod.features.dungeon.KickListManager.init()
+        fishmod.features.dungeon.PartyMemberTracker.init()
         fishmod.features.dungeon.PartyFinderPanel.init()
         fishmod.features.dungeon.f7.WitherESP.init()
         fishmod.features.dungeon.f7.M7Relics.init()
@@ -476,7 +470,6 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.DungeonWaypoints.init()
         fishmod.features.dungeon.StarredMobHighlight.init()
         fishmod.features.slayers.SlayerManager.init()
-        // F7 boss timers; registered here for the Edit-HUD dragger.
         fishmod.features.dungeon.f7.F7Huds.init()
         fishmod.utils.config.values.Buttons.init()
         FishHudEditor.register("Tick Timer", fishmod.features.dungeon.f7.F7Huds.tickTimer)
@@ -494,7 +487,6 @@ class FishModInit : ModInitializer {
         FishHudEditor.register("S4 Alert", fishmod.features.dungeon.f7.F7Huds.s4Alert)
         FishHudEditor.register("S4 Debug", fishmod.features.dungeon.f7.F7Huds.s4DebugHud)
         FishHudEditor.register("Goldor Splits", fishmod.utils.dungeon.Section.terminalSplits)
-        // Own-class detection; boots feature depends on it.
         fishmod.utils.dungeon.DungeonClass.init()
         fishmod.features.ClassColoredBoots.init()
         fishmod.features.dungeon.DupeClassDetector.init()
@@ -514,7 +506,6 @@ class FishModInit : ModInitializer {
         )
         FishHudEditor.register("Puzzles", FishPuzzleDisplay.puzzleHud)
 
-        // Always register /fm and /fmdbg regardless of whether blade is loaded
         ClientCommandRegistrationCallback.EVENT.register(ClientCommandRegistrationCallback { dispatcher, _ ->
             fishmod.features.other.CommandAliases.registerAll(dispatcher)
             dispatcher.register(
@@ -534,6 +525,36 @@ class FishModInit : ModInitializer {
                     .then(ClientCommands.literal("aliases").executes {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().setScreen(fishmod.features.CommandAliasesScreen())
+                        }
+                        Constants.SUCCESS
+                    })
+                    .then(ClientCommands.literal("whitelist").executes {
+                        Minecraft.getInstance().schedule {
+                            Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
+                                "Party Action Whitelist", "Who may trigger .kick / .warp / .transfer / .promote / .demote", "+ Add Name",
+                                { fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist },
+                                { v -> fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist = v }
+                            ))
+                        }
+                        Constants.SUCCESS
+                    })
+                    .then(ClientCommands.literal("blacklist").executes {
+                        Minecraft.getInstance().schedule {
+                            Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
+                                "Party Action Blacklist", "Always blocked from triggering party actions", "+ Add Name",
+                                { fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist },
+                                { v -> fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist = v }
+                            ))
+                        }
+                        Constants.SUCCESS
+                    })
+                    .then(ClientCommands.literal("kicklist").executes {
+                        Minecraft.getInstance().schedule {
+                            Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
+                                "Kick List", "Auto-kicked from your party whenever you're leader", "+ Add Name",
+                                { fishmod.utils.config.values.FishSettings.pcKickList },
+                                { v -> fishmod.utils.config.values.FishSettings.pcKickList = v }
+                            ))
                         }
                         Constants.SUCCESS
                     })
@@ -968,6 +989,26 @@ class FishModInit : ModInitializer {
                                 fishmod.utils.HypixelApi.dumpMemberKeys(mc, ign)
                                 return@executes Constants.SUCCESS
                             }
+                            if (parts[0] == "sklraw") {
+                                val ign = if (parts.size > 1) parts[1] else mc.player?.name?.string
+                                if (ign == null) {
+                                    mc.schedule { Misc.addChatMessage(Component.literal("§cUsage: /fmdbg sklraw <ign>")) }
+                                    return@executes Constants.SUCCESS
+                                }
+                                fishmod.utils.HypixelApi.dumpSkillKeys(mc, ign)
+                                return@executes Constants.SUCCESS
+                            }
+                            if (parts[0] == "skl") {
+                                val ign = if (parts.size > 1) parts[1] else mc.player?.name?.string
+                                if (ign == null) {
+                                    mc.schedule { Misc.addChatMessage(Component.literal("§cUsage: /fmdbg skl <ign>")) }
+                                    return@executes Constants.SUCCESS
+                                }
+                                fishmod.utils.HypixelApi.getByName(mc, ign) { data ->
+                                    mc.schedule { Misc.addChatMessage(Component.literal("§b$ign skillAverage=§f" + data.skillAverage)) }
+                                }
+                                return@executes Constants.SUCCESS
+                            }
                             if (parts[0] == "col") {
                                 val ign = if (parts.size > 1) parts[1] else mc.player?.name?.string
                                 if (ign == null) {
@@ -1039,7 +1080,6 @@ class FishModInit : ModInitializer {
                 b.buildFuture()
             }
 
-            // /fmcmd whitelist|blacklist — manages the name lists the "Who Can Trigger" dropdown reads.
             dispatcher.register(
                 ClientCommands.literal("fmcmd")
                     .then(
@@ -1104,6 +1144,37 @@ class FishModInit : ModInitializer {
                                 )
                             )
                     )
+                    .then(
+                        ClientCommands.literal("kicklist")
+                            .executes { printNameList("Kick List", fishmod.utils.config.values.FishSettings.pcKickList); Constants.SUCCESS }
+                            .then(ClientCommands.literal("list").executes { printNameList("Kick List", fishmod.utils.config.values.FishSettings.pcKickList); Constants.SUCCESS })
+                            .then(
+                                ClientCommands.literal("add").then(
+                                    ClientCommands.argument("name", StringArgumentType.word()).suggests(playerSuggest)
+                                        .executes { ctx ->
+                                            val name = StringArgumentType.getString(ctx, "name")
+                                            fishmod.utils.config.values.FishSettings.pcKickList =
+                                                fishmod.utils.NameList.add(fishmod.utils.config.values.FishSettings.pcKickList, name) ?: ""
+                                            fishmod.utils.config.FishConfig.manager.save()
+                                            Misc.addChatMessage(Component.literal("§7[FM] Added §f$name §7to the kick list."))
+                                            Constants.SUCCESS
+                                        }
+                                )
+                            )
+                            .then(
+                                ClientCommands.literal("remove").then(
+                                    ClientCommands.argument("name", StringArgumentType.word())
+                                        .executes { ctx ->
+                                            val name = StringArgumentType.getString(ctx, "name")
+                                            fishmod.utils.config.values.FishSettings.pcKickList =
+                                                fishmod.utils.NameList.remove(fishmod.utils.config.values.FishSettings.pcKickList, name) ?: ""
+                                            fishmod.utils.config.FishConfig.manager.save()
+                                            Misc.addChatMessage(Component.literal("§7[FM] Removed §f$name §7from the kick list."))
+                                            Constants.SUCCESS
+                                        }
+                                )
+                            )
+                    )
             )
 
             for (name in arrayOf(
@@ -1120,7 +1191,6 @@ class FishModInit : ModInitializer {
                         )
                 )
             }
-            // no "collection" here - Hypixel owns /collection; the party-chat ".collection" still works via the chat handler
             for (name in arrayOf("pb", "runs")) {
                 dispatcher.register(
                     ClientCommands.literal(name)
@@ -1147,7 +1217,6 @@ class FishModInit : ModInitializer {
                             )
                     )
             )
-            // /crtc [name] [class] [level]; PartyCommandHandler treats a leading class arg as "self".
             val classSuggest = SuggestionProvider<FabricClientCommandSource> { _, b ->
                 val rem = b.remaining.lowercase()
                 for (cl in arrayOf("healer", "mage", "berserk", "archer", "tank"))
@@ -1185,7 +1254,6 @@ class FishModInit : ModInitializer {
                             .executes { c ->
                                 val dest = StringArgumentType.getString(c, "dest")
                                 val mc = Minecraft.getInstance()
-                                // send the packet directly, bypassing Fabric's dispatcher, or it re-matches our /warp literal and recurses, blowing the stack
                                 if (mc.player != null && mc.player!!.connection != null)
                                     mc.player!!.connection.send(ServerboundChatCommandPacket("warp $dest"))
                                 Constants.SUCCESS
@@ -1194,13 +1262,11 @@ class FishModInit : ModInitializer {
             )
         })
 
-        // force legit-mode map settings back to safe defaults every server join (only FishModAddons turns them off; it re-applies after this)
         ClientPlayConnectionEvents.JOIN.register(ClientPlayConnectionEvents.Join { _, _, _ ->
             fishmod.utils.config.values.DungeonMapSettings.mapLegitMode = true
             fishmod.utils.config.values.DungeonMapSettings.mapInsightLegit = false
         })
 
-        // both mods register /cata and Brigadier honours whichever executes() registered last, so re-register ours every server join to win
         ClientPlayConnectionEvents.JOIN.register(ClientPlayConnectionEvents.Join { _, _, _ ->
             val d: CommandDispatcher<FabricClientCommandSource>? = ClientCommands.getActiveDispatcher()
             if (d == null) return@Join
@@ -1219,9 +1285,7 @@ class FishModInit : ModInitializer {
 
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "soulflow_hud")) { ctx, tickCounter -> SoulflowHud.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "pet_hud")) { ctx, tickCounter -> PetHud.renderHud(ctx, tickCounter) }
-        // Rarity background is drawn behind items via DrawContextMixin + INVENTORY_SLOT_BEFORE, not HudRenderCallback (which would draw over items).
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "cooldown_overlay_hotbar")) { ctx, tickCounter -> CooldownOverlay.renderHotbar(ctx, tickCounter) }
-        // Rendered manually here, not via practical-config's auto-render (unreliable); Phase forces its condition-suppliers false so this is the single render path.
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "phase_splits")) { ctx, _ -> Phase.renderHud(ctx) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "f7_huds")) { ctx, _ -> fishmod.features.dungeon.f7.F7Huds.renderHud(ctx) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_waypoints_overlay")) { ctx, _ -> fishmod.features.dungeon.DungeonWaypoints.renderOverlay(ctx) }
@@ -1253,13 +1317,14 @@ class FishModInit : ModInitializer {
             { fishmod.features.PbPaceHud.isVisible() }
         )
 
-        fishmod.features.dungeon.map.MapColors.init()
         fishmod.features.dungeon.map.DungeonMap.init()
         fishmod.features.dungeon.map.Scan.register()
         fishmod.features.dungeon.map.Mimic.register()
         fishmod.features.dungeon.map.MapHud.register()
         fishmod.features.dungeon.map.MapInfoHud.register()
         fishmod.features.dungeon.map.MapImageLoader.init()
+        fishmod.features.CrosshairImageLoader.init()
+        fishmod.features.CustomCrosshair.register()
         fishmod.features.dungeon.map.DungeonScore.register()
         fishmod.features.dungeon.map.DoorHighlight.init()
         fishmod.utils.events.Events.ON_GAME_MESSAGE.register { message ->
@@ -1275,7 +1340,6 @@ class FishModInit : ModInitializer {
             java.util.function.IntConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapX = v.toFloat() },
             java.util.function.IntSupplier { fishmod.utils.config.values.DungeonMapSettings.mapY.toInt() },
             java.util.function.IntConsumer { v -> fishmod.utils.config.values.DungeonMapSettings.mapY = v.toFloat() },
-            // match MapHud's actual render size; a hardcoded box here made the editor preview bigger than the real map
             fishmod.features.dungeon.map.MapHud.baseWidth(net.minecraft.client.Minecraft.getInstance()),
             fishmod.features.dungeon.map.MapHud.baseHeight(net.minecraft.client.Minecraft.getInstance()),
             java.util.function.DoubleSupplier { fishmod.utils.config.values.DungeonMapSettings.mapScale.toDouble() },
@@ -1300,7 +1364,7 @@ class FishModInit : ModInitializer {
                 SessionStats.renderInScreen(ctx, mx, my)
             })
             ScreenMouseEvents.allowMouseClick(screen).register(ScreenMouseEvents.AllowMouseClick { _, click ->
-                if (click.button() != 0) return@AllowMouseClick true // only left click resets
+                if (click.button() != 0) return@AllowMouseClick true
                 val mx = click.x()
                 val my = click.y()
                 if (SessionStats.handleScreenClick(mx, my)) return@AllowMouseClick false
@@ -1308,8 +1372,6 @@ class FishModInit : ModInitializer {
             })
         })
 
-        // Slayer Profit tracker is clickable while chat is open (it keeps rendering over the chat
-        // screen). Left/right click on its rows switches view / hides a drop / arms the reset.
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is net.minecraft.client.gui.screens.ChatScreen) return@AfterInit
             ScreenMouseEvents.allowMouseClick(screen).register(ScreenMouseEvents.AllowMouseClick { _, click ->

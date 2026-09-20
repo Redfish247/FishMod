@@ -12,15 +12,11 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.client.renderer.RenderPipelines
+import net.minecraft.network.chat.Component
 import net.minecraft.world.inventory.ContainerInput
 import net.minecraft.world.item.Items
 import org.lwjgl.glfw.GLFW
 
-/**
- * Custom Spirit Leap menu. Replaces Hypixel's
- * "Spirit Leap" / "Teleport to Player" chest GUI with a 2×2 grid of class-coloured cells; click a
- * quadrant or press 1-4 to leap. Uses [DungeonPlayers] for class / skin / dead state.
- */
 object LeapMenu {
 
     private val NAME_RX = Regex("(?:\\[.+?] )?(\\w{1,16})")
@@ -29,10 +25,6 @@ object LeapMenu {
 
     private var cache: List<Target> = emptyList()
 
-    // 1:1 with Odin's DungeonUtils.getDungeonTeammates: scan the entire tab list for
-    // "[184] Name [rank] (Class Level)" and keep each class sticky for the dungeon
-    // instance. The boss tab-list format drops the "(Class L)" suffix, so without the
-    // stickiness every teammate falls back to "?" once Necron starts.
     private val TABLIST_RX = Regex("^\\[(\\d+)] (?:\\[\\w+] )*(\\w+) .*?\\((\\w+)(?: (\\w+))*\\)$")
     private val teammateClasses = HashMap<String, DungeonClass>()
     private var lastLevel: Any? = null
@@ -45,7 +37,7 @@ object LeapMenu {
             val line = COLOR.replace(info.tabListDisplayName?.string ?: continue, "")
             val m = TABLIST_RX.find(line) ?: continue
             val name = m.groupValues[2]
-            if (teammateClasses.containsKey(name)) continue          // sticky — never overwrite a resolved class
+            if (teammateClasses.containsKey(name)) continue
             val cls = runCatching { DungeonClass.valueOf(m.groupValues[3].uppercase()) }.getOrNull() ?: continue
             teammateClasses[name] = cls
         }
@@ -57,17 +49,13 @@ object LeapMenu {
         return t == "Spirit Leap" || t == "Teleport to Player"
     }
 
-    /** For [fishmod.mixin.HandledScreenMixin] — hide Hypixel's own slots while the overlay is up. */
     @JvmStatic
     fun isActive(screen: AbstractContainerScreen<*>): Boolean = isLeapMenu(screen)
 
-    /** Map view (click a head on the dungeon map to leap) — optionally gated on the blood door. */
-    /** Map view relies on live room positions, which stop updating in the boss — drop to the 2×2 grid there. */
     private fun mapView(): Boolean =
         FishSettings.leapMenuMap && !DungeonState.isInBoss() &&
             (!FishSettings.leapMenuMapAfterBR || DungeonState.bloodOpened)
 
-    /** True when the leap overlay is the currently-open screen — for HUD elements that should hide behind it. */
     @JvmStatic
     fun isOverlayOpen(): Boolean {
         val s = Minecraft.getInstance().screen
@@ -84,7 +72,6 @@ object LeapMenu {
             if (stack.isEmpty || !stack.`is`(Items.PLAYER_HEAD)) continue
             val name = NAME_RX.find(stack.hoverName.string.replace(COLOR, ""))?.groupValues?.get(1) ?: continue
             val dp = DungeonPlayers.get(name)
-            // Odin's sticky tab-list class first, then the map roster, then the packet map.
             val clazz = teammateClasses[name] ?: dpClass(dp) ?: DungeonClass.getClass(name)
             out.add(Target(i, name, clazz, dp?.isDead() == true))
         }
@@ -98,8 +85,6 @@ object LeapMenu {
         }
     }
 
-    // DungeonClass -> home quadrant. Quadrants: 0 TL, 1 TR, 2 BL, 3 BR.
-    // Tank always takes bottom-right; when you're the Mage, Mage floats into whichever slot is free.
     private fun homeQuadrant(c: DungeonClass?): Int = when (c) {
         DungeonClass.ARCHER -> 0
         DungeonClass.BERSERK -> 1
@@ -108,7 +93,6 @@ object LeapMenu {
         DungeonClass.MAGE -> 3
         else -> -1
     }
-    // Lower first. Tank beats Mage for the shared BR corner.
     private fun classPriority(c: DungeonClass?): Int = when (c) {
         DungeonClass.BERSERK -> 0
         DungeonClass.TANK -> 1
@@ -117,11 +101,7 @@ object LeapMenu {
     }
     private val EMPTY_TARGET = Target(-1, "", null, true)
 
-    /**
-     * Place each player (in class-priority order) into their class's default quadrant; on a collision
-     * queue them, then fill the remaining quadrants from the queue in slot order. Empty quadrants
-     * become a dead placeholder so the 2×2 layout is stable.
-     */
+    // Ported from Odin's DungeonUtils.getDungeonTeammates.
     private fun odinSort(players: List<Target>): List<Target> {
         val result = arrayOfNulls<Target>(4)
         val overflow = ArrayDeque<Target>()
@@ -131,12 +111,14 @@ object LeapMenu {
         }
         for (i in 0..3) if (result[i] == null && overflow.isNotEmpty()) result[i] = overflow.removeFirst()
         val out = result.map { it ?: EMPTY_TARGET }
-        fishmod.utils.debug.Debug.LOGGER.info(
-            "[LeapMenu] odinSort in={} -> TL={} TR={} BL={} BR={}",
-            players.map { "${it.name}:${it.clazz}" },
-            "${out[0].name}:${out[0].clazz}", "${out[1].name}:${out[1].clazz}",
-            "${out[2].name}:${out[2].clazz}", "${out[3].name}:${out[3].clazz}",
-        )
+        if (fishmod.utils.debug.Debug.termInfo) {
+            fishmod.utils.debug.Debug.LOGGER.info(
+                "[LeapMenu] odinSort in={} -> TL={} TR={} BL={} BR={}",
+                players.map { "${it.name}:${it.clazz}" },
+                "${out[0].name}:${out[0].clazz}", "${out[1].name}:${out[1].clazz}",
+                "${out[2].name}:${out[2].clazz}", "${out[3].name}:${out[3].clazz}",
+            )
+        }
         return out
     }
 
@@ -145,7 +127,6 @@ object LeapMenu {
 
     private fun scale(): Float = (FishSettings.leapMenuScale.coerceIn(40, 220) / 100f)
 
-    // One card centred in each screen quadrant (TL=0, TR=1, BL=2, BR=3).
     private fun cellRects(mc: Minecraft): Array<IntArray> {
         val w = mc.window.guiScaledWidth
         val h = mc.window.guiScaledHeight
@@ -162,7 +143,6 @@ object LeapMenu {
         )
     }
 
-    /** Whole-screen quadrant under the cursor — click anywhere in it, not just on the card. */
     private fun hovered(mc: Minecraft, mx: Int, my: Int): Int {
         val col = if (mx < mc.window.guiScaledWidth / 2) 0 else 1
         val row = if (my < mc.window.guiScaledHeight / 2) 0 else 1
@@ -184,7 +164,7 @@ object LeapMenu {
 
         if (!DungeonState.isInDungeon() || Scan.rooms.isEmpty()) {
             markers = emptyList()
-            ctx.centeredText(mc.font, net.minecraft.network.chat.Component.literal("§7Map not ready"), w / 2, h / 2, -1)
+            ctx.centeredText(mc.font, Component.literal("§7Map not ready"), w / 2, h / 2, -1)
             return
         }
 
@@ -214,11 +194,11 @@ object LeapMenu {
             ctx.fill(m.x + r - 1, m.y - r, m.x + r, m.y + r, col)
             if (m === hov) {
                 val cls = m.target.clazz?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "?"
-                ctx.centeredText(mc.font, net.minecraft.network.chat.Component.literal("§f${m.target.name} §7$cls"),
+                ctx.centeredText(mc.font, Component.literal("§f${m.target.name} §7$cls"),
                     m.x, m.y - r - 11, -1)
             }
         }
-        ctx.centeredText(mc.font, net.minecraft.network.chat.Component.literal("§7Click a teammate to leap"), w / 2, h - 16, -1)
+        ctx.centeredText(mc.font, Component.literal("§7Click a teammate to leap"), w / 2, h - 16, -1)
     }
 
     @JvmStatic
@@ -230,14 +210,13 @@ object LeapMenu {
         ctx.fill(0, 0, mc.window.guiScaledWidth, mc.window.guiScaledHeight, 0xC0000000.toInt())
 
         if (cache.isEmpty()) {
-            ctx.centeredText(mc.font, net.minecraft.network.chat.Component.literal("§4No players found"),
+            ctx.centeredText(mc.font, Component.literal("§4No players found"),
                 mc.window.guiScaledWidth / 2, mc.window.guiScaledHeight / 2, -1)
             return
         }
 
         val rects = cellRects(mc)
         val hov = hovered(mc, mouseX, mouseY)
-        // Highlight the whole hovered quadrant so it's clear the entire area is clickable.
         if (hov < cache.size) {
             val w = mc.window.guiScaledWidth; val h = mc.window.guiScaledHeight
             val qx = (hov % 2) * (w / 2); val qy = (hov / 2) * (h / 2)
@@ -276,7 +255,6 @@ object LeapMenu {
         }
     }
 
-    /** Filled rect with circular-ish rounded corners of radius [rad]. */
     private fun roundFill(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, rad: Int, c: Int) {
         if (rad <= 0) { ctx.fill(x, y, x + w, y + h, c); return }
         ctx.fill(x + rad, y, x + w - rad, y + h, c)
@@ -289,17 +267,16 @@ object LeapMenu {
         }
     }
 
-    /** @return true to swallow. */
     @JvmStatic
     fun mouseClicked(button: Int, mx: Double, my: Double, screen: AbstractContainerScreen<*>): Boolean {
         if (!isLeapMenu(screen)) return false
         if (FishSettings.leapMenuLeftClickOnly && button != 0) return true
         if (mapView()) {
             nearestMarker(mx.toInt(), my.toInt())?.let { leap(it.target, screen) }
-            return true // eat every click over the full-screen overlay
+            return true
         }
         val i = hovered(Minecraft.getInstance(), mx.toInt(), my.toInt())
-        if (i < 0 || i >= cache.size) return true // over the backdrop, not a cell — still eat it
+        if (i < 0 || i >= cache.size) return true
         leap(cache[i], screen)
         return true
     }

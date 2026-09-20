@@ -18,7 +18,6 @@ object AutoRequeue {
 
     private val NUM_WORDS = arrayOf("one", "two", "three", "four", "five", "six", "seven")
 
-    // 29 spaces then the header — Hypixel's exact end-screen divider line.
     private val EXTRA_STATS: Pattern = Pattern.compile(" {29}> EXTRA STATS <")
     private val BREAKUP: Pattern = Pattern.compile(
         "^(?:You have been kicked from the party|You left the party|The party was disbanded|" +
@@ -36,8 +35,8 @@ object AutoRequeue {
 
     @Volatile private var partyChanged = false
     @Volatile private var dtSkip = false
-    /** Teammate count captured at run start; a shrink by end-of-run means someone left mid-run. */
     @Volatile private var startTeamCount = 0
+    @Volatile private var extraStatsHandled = false
 
     // ON_GAME_MESSAGE fires twice for one Hypixel line (bundled + unbundled packet paths — see
     // SlayerProfitTracker's identical workaround). Without this, EXTRA STATS processed the "!dt"
@@ -48,7 +47,6 @@ object AutoRequeue {
 
     @JvmStatic
     fun init() {
-        // "!dt" from anyone in party chat = skip the requeue after this run (only this run).
         Events.ON_PARTY_MESSAGE.register { _, message ->
             if (clean(message).equals("!dt", ignoreCase = true)) dtSkip = true
             false
@@ -66,21 +64,20 @@ object AutoRequeue {
                 // Loose match (contains, not startsWith/endsWith) — trailing junk chars Hypixel
                 // sometimes appends to chat lines broke the old exact-suffix check.
                 DT_LINE.matcher(raw).find() || clean(s).let { it.contains("Party >", ignoreCase = true) && it.contains(": !dt", ignoreCase = true) } -> dtSkip = true
-                s == MORT_START -> { partyChanged = false; dtSkip = false; startTeamCount = 0 }
+                s == MORT_START -> { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false }
                 BREAKUP.matcher(s).find() -> partyChanged = true
                 EXTRA_STATS.matcher(s).find() -> {
+                    if (extraStatsHandled) return@register false
+                    extraStatsHandled = true
                     val skip = dtSkip
-                    dtSkip = false   // "!dt" is per-run — consume it here
-                    // Someone left mid-run if the team shrank since the start (or never filled to a party).
+                    dtSkip = false
                     val teamShrank = startTeamCount >= 2 && fishmod.features.dungeon.map.DungeonPlayers.count() < startTeamCount
                     if (Dungeons.enableAutoRequeue && !partyChanged && !skip && !teamShrank) {
                         val delay = FishSettings.autoRequeueDelayMs.coerceIn(0, 15000).toLong()
-                        // Resolve the floor now, while the scoreboard/chat state is still fresh.
                         val cmd = requeueCommand()
                         CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS).execute {
                             Minecraft.getInstance().execute {
                                 val mc = Minecraft.getInstance()
-                                // Re-check everything — "!dt" or a leave can land during the countdown.
                                 if (Dungeons.enableAutoRequeue && !partyChanged && !dtSkip && mc.connection != null) {
                                     mc.connection!!.sendCommand(cmd)
                                 }
@@ -91,8 +88,7 @@ object AutoRequeue {
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { partyChanged = false; dtSkip = false; startTeamCount = 0; false }
-        // Track the peak roster size during the clear; a smaller team at end-of-run == someone left.
+        Events.ON_WORLD_CHANGE.register { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false; false }
         Events.ON_SERVER_TICK.register {
             if (DungeonState.isInDungeon() && !DungeonState.isInBoss()) {
                 val n = fishmod.features.dungeon.map.DungeonPlayers.count()

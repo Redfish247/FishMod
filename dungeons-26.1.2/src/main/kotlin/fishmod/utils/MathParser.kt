@@ -3,7 +3,6 @@ package fishmod.utils
 import java.util.Stack
 import java.util.regex.Pattern
 
-/** Expression parser for the searchbar, based on Shunting Yard and RPN. */
 object MathParser {
 
     private val NUMBER_PATTERN: Pattern = Pattern.compile("^(?<num>-?\\d+)(?<decimal>\\.\\d+)?(?<unit>[bBmMkK])?")
@@ -32,14 +31,13 @@ object MathParser {
 
         val rpnTokens = toRPN(tokens) ?: return Double.NaN
 
-        try {
-            return parseRPN(rpnTokens)
-        } catch (e: IllegalArgumentException) {
-            return Double.NaN
+        return try {
+            parseRPN(rpnTokens)
+        } catch (e: RuntimeException) {
+            Double.NaN
         }
     }
 
-    /** Supports b/m/k magnitude suffixes and negative/decimal numbers; throws NumberFormatException if invalid. */
     private fun tokenToNum(token: String): Double {
         val matcher = NUMBER_PATTERN.matcher(token)
         if (!matcher.find()) {
@@ -157,9 +155,9 @@ object MathParser {
             stack.push(token)
             return true
         } else if (token == ")") {
+            if (stack.isEmpty()) return false
             var top = stack.peek()
             while (top != "(") {
-                if (stack.isEmpty()) return false
                 output.add(stack.pop())
                 if (stack.isEmpty()) return false
                 top = stack.peek()
@@ -196,7 +194,6 @@ object MathParser {
         val output = ArrayList<String>()
         var copiedString = string.replace(" ", "")
 
-        // tracks previous token type to disambiguate binary vs unary subtraction
         var wasPrevNum = false
 
         while (copiedString.isNotEmpty()) {

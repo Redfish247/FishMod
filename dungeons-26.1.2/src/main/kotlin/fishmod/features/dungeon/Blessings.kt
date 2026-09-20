@@ -10,10 +10,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 
-/**
- * Dungeon Blessing display. Blessing levels are read from the tab-list **footer** — Hypixel writes
- * the active blessings there as "Blessing of Power IX" etc. Roman numeral -> int via [romanToInt].
- */
 object Blessings {
 
     enum class Type(

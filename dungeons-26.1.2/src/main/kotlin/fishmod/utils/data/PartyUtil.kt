@@ -20,7 +20,7 @@ object PartyUtil {
     @JvmStatic
     fun init() {
         INSTANCE.createHandler(ClientboundPartyInfoPacket::class.java) { packet ->
-            Debug.LOGGER.info("Received party info packet")
+            if (Debug.termInfo) Debug.LOGGER.info("Received party info packet")
             memberMap = packet.memberMap
             inParty = packet.isInParty
             leaderUuid = packet.memberMap.entries
@@ -28,7 +28,6 @@ object PartyUtil {
         }
     }
 
-    /** True only when we're in a party and hold the LEADER role. */
     @JvmStatic
     fun amLeader(): Boolean {
         sendPacket()
@@ -39,10 +38,6 @@ object PartyUtil {
 
     @JvmStatic
     fun sendPacket() {
-        if (INSTANCE == null) {
-            throw IllegalStateException("Instance not set")
-        }
-
         if (System.currentTimeMillis() - grabbedTime < MIN_DELAY) return
         if (INSTANCE.sendPacket(ServerboundPartyInfoPacket())) {
             grabbedTime = System.currentTimeMillis()
@@ -62,5 +57,12 @@ object PartyUtil {
     fun isInParty(): Boolean {
         sendPacket()
         return inParty
+    }
+
+    @JvmStatic
+    fun getMemberUuids(): Set<UUID> {
+        sendPacket()
+        if (!inParty) return emptySet()
+        return memberMap?.keys ?: emptySet()
     }
 }

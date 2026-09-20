@@ -19,7 +19,7 @@ object TPMazeSolver {
     private var best: BlockPos? = null
 
     fun onRoomEnter(room: ORoom?) {
-        if (room?.data?.name == "Teleport Maze")
+        if (room?.data?.name == "Teleport Maze" && tpPads.isEmpty())
             tpPads = endPortalFrameLocations.map { room.getRealCoords(it) }
     }
 
@@ -81,6 +81,7 @@ object TPMazeSolver {
     }
 
     fun reset() {
+        tpPads = listOf()
         correctPortals = listOf()
         visited.clear()
         best = null

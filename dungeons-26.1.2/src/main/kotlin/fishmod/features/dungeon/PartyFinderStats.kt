@@ -7,12 +7,6 @@ import fishmod.utils.events.Events
 import net.minecraft.client.Minecraft
 import java.util.regex.Pattern
 
-/**
- * Party Finder join-request helper: while [FishSettings.pfStatsEnabled] is on, a local-only lookup
- * of a player's MP/PB/Cata/Gear is printed to your own chat so you can vet them. Triggers on both a
- * received whisper (someone asking to join) and the "Party Finder > X joined the dungeon group!"
- * line. Nothing is ever sent back.
- */
 object PartyFinderStats {
 
     private val lastLookupAt: MutableMap<String, Long> = HashMap()
@@ -20,7 +14,6 @@ object PartyFinderStats {
 
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
-    // Trigger: "Party Finder > Name joined the dungeon group! (Archer Level 42)"
     private val PF_JOIN: Pattern =
         Pattern.compile("^Party Finder > (\\w{1,16}) joined the dungeon group! \\((\\w+) Level (\\d+)\\)$")
 
@@ -34,18 +27,14 @@ object PartyFinderStats {
         }
     }
 
-    // Hypixel prints "From stash: <item>" for every item you pull with /pickupstash — that matches
-    // the generic "From X: …" whisper pattern, so guard against it (and any other reserved sender).
     private val NON_PLAYER_SENDERS = setOf("stash")
 
-    /** Whisper path (kept for direct "From X:" join requests). */
     @JvmStatic
     fun onWhisper(sender: String?) {
         if (sender != null && sender.lowercase() in NON_PLAYER_SENDERS) return
         lookup(sender, joinLine = false)
     }
 
-    /** On-demand `/pfs [name]` — no dungeon-hub gate, no cooldown. */
     @JvmStatic
     fun command(name: String?) {
         val target = name?.takeIf { it.isNotBlank() } ?: Minecraft.getInstance().player?.name?.string ?: return

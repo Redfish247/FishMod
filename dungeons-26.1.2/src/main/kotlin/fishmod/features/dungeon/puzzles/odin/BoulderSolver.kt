@@ -10,13 +10,13 @@ import net.minecraft.world.phys.AABB
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 
-/** Boulder solver — with a tick retry, since the grid blocks can still be loading. */
 object BoulderSolver {
 
-    private data class BoxPosition(val render: AABB, val click: BlockPos)
+    private data class BoxPosition(val signBox: AABB, val click: BlockPos)
     private var currentPositions = mutableListOf<BoxPosition>()
     private var solved = false
     private var attempts = 0
+    private var tickAcc = 0
 
     private val solutions: Map<String, List<List<Int>>> = try {
         BoulderSolver::class.java.getResourceAsStream("/boulderSolutions.json")!!.use { s ->
@@ -35,7 +35,9 @@ object BoulderSolver {
 
     fun onTick() {
         if (OdinScan.currentRoomName != "Boulder" || solved || currentPositions.isNotEmpty()) return
-        if (attempts++ > 200) return
+        if (++tickAcc < 5) return
+        tickAcc = 0
+        if (attempts++ > 40) return
         OdinScan.currentRoom?.let { scan(it) }
     }
 
@@ -49,7 +51,8 @@ object BoulderSolver {
         }
         val sol = solutions[str] ?: return
         currentPositions = sol.map {
-            BoxPosition(AABB(room.getRealCoords(BlockPos(it[0], 65, it[1]))), room.getRealCoords(BlockPos(it[2], 65, it[3])))
+            val click = room.getRealCoords(BlockPos(it[2], 65, it[3]))
+            BoxPosition(AABB(click), click)
         }.toMutableList()
     }
 
@@ -57,8 +60,10 @@ object BoulderSolver {
         if (OdinScan.currentRoomName != "Boulder" || currentPositions.isEmpty()) return
         val style = ORender.style()
         val color = FishSettings.boulderColor
-        if (FishSettings.boulderShowAll) currentPositions.forEach { ORender.styledBox(it.render, color, style) }
-        else currentPositions.firstOrNull()?.let { ORender.styledBox(it.render, color, style) }
+        val toRender = if (FishSettings.boulderShowAll) currentPositions else listOfNotNull(currentPositions.firstOrNull())
+        toRender.forEach {
+            ORender.styledBox(it.signBox, color, style)
+        }
     }
 
     fun playerInteract(clicked: BlockPos) {
@@ -70,5 +75,6 @@ object BoulderSolver {
         currentPositions = mutableListOf()
         solved = false
         attempts = 0
+        tickAcc = 0
     }
 }

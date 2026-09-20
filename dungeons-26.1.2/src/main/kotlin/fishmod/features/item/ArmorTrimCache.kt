@@ -7,7 +7,6 @@ import net.minecraft.world.item.equipment.trim.ArmorTrim
 import net.minecraft.world.item.equipment.trim.TrimMaterial
 import net.minecraft.world.item.equipment.trim.TrimPattern
 
-/** Resolves an [ItemCustomizationStore.ArmorTrimId] to a real [ArmorTrim] via the client registries. */
 object ArmorTrimCache {
 
     @JvmStatic
