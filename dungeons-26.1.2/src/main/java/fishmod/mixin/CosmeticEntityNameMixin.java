@@ -30,6 +30,9 @@ public abstract class CosmeticEntityNameMixin {
             if (FishSettings.prestigeColorsEnabled && FishSettings.prestigeColorsNametags) {
                 out = PrestigeLevelColors.colorizeLevelPrefix(out);
             }
+            if (FishSettings.badgesEnabled && FishSettings.badgesOnNametags) {
+                out = fishmod.cosmetic.badge.BadgeRenderer.insertKnown(out, entity.getUUID().toString().replace("-", ""));
+            }
         }
         return out;
     }
