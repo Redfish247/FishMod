@@ -8,7 +8,7 @@ import net.minecraft.resources.Identifier
 
 object CustomCrosshair {
 
-    val PRESETS = arrayOf("Dot", "Cross", "Plus", "Square")
+    val PRESETS = arrayOf("Dot", "Cross", "Plus", "Square", "Circle Dot", "Target", "Brackets", "Corners", "X")
 
     @JvmStatic
     fun register() {
@@ -38,6 +38,8 @@ object CustomCrosshair {
     @JvmStatic
     fun active(mc: Minecraft): Boolean {
         if (!FishSettings.crosshairEnabled || mc.options.hideGui) return false
+        if (!mc.options.cameraType.isFirstPerson) return false
+        if (FishSettings.crosshairHideInF3 && mc.debugOverlay != null && mc.debugOverlay.showDebugScreen()) return false
         if (FishSettings.crosshairMode == "Preset") return true
         val sel = FishSettings.crosshairImageSelection
         return sel.isNotEmpty() && sel != CrosshairImageLoader.NO_IMAGE && CrosshairImageLoader.getImageId(sel) != null
