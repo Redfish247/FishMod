@@ -322,10 +322,14 @@ object CompactTab {
             var r = 0
             while (r < entries.size && r < rows) {
                 val e = entries[r]
-                val dn = fishmod.cosmetic.prestige.PrestigeLevelColors.colorizeLevelPrefix(e.tabListDisplayName)
+                var dn = fishmod.cosmetic.prestige.PrestigeLevelColors.colorizeLevelPrefix(e.tabListDisplayName)
                 if (dn == null) {
                     r++
                     continue
+                }
+                if (fishmod.utils.config.values.FishSettings.badgesEnabled && fishmod.utils.config.values.FishSettings.badgesOnTab
+                        && e.profile != null && e.profile.id != null) {
+                    dn = fishmod.cosmetic.badge.BadgeRenderer.insertKnown(dn, e.profile.id.toString().replace("-", "")) ?: dn
                 }
                 val ry = cy + r * lh
                 var tx = colX
