@@ -139,6 +139,7 @@ object FishSettings {
     @ConfigValue @JvmField var compactTabOpacity: Int = 70
     @ConfigValue @JvmField var compactTabStatBarEnabled: Boolean = true
     @ConfigValue @JvmField var compactTabStatBarPosition: String = "TOP"
+    @ConfigValue @JvmField var compactTabSortMode: String = "Rank (Default)"
 
     @ConfigValue @JvmField var partyCommandsEnabled: Boolean = true
     @ConfigValue @JvmField var pcAllinvite: Boolean = false
