@@ -384,6 +384,7 @@ class FishModInit : ModInitializer {
         fishmod.cosmetic.PlayerSize.init()
         fishmod.features.NametagStats.init()
         fishmod.cosmetic.RemoteSync.init()
+        fishmod.cosmetic.badge.BadgeRegistry.init()
         fishmod.utils.InstallHeartbeat.init()
         fishmod.utils.TabListCache.register()
 
