@@ -1,6 +1,5 @@
 package fishmod.mixin;
 
-import fishmod.cosmetic.NickState;
 import fishmod.utils.config.values.FishSettings;
 import fishmod.utils.data.EntityUtil;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
@@ -17,7 +16,7 @@ public class PlayerNameLabelMixin {
     private boolean fishmod$showOwnLabel(boolean original, Avatar entity, double dist) {
         if (original) return true;
         if (entity instanceof Player p && EntityUtil.isClientPlayer(p)
-                && FishSettings.nickPreviewEnabled && NickState.isActive()) {
+                && FishSettings.nickPreviewEnabled) {
             return true;
         }
         return original;
