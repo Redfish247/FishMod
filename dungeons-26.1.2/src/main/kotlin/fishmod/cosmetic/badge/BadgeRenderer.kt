@@ -15,10 +15,10 @@ import java.util.Optional
  *  bracket that call produces. */
 object BadgeRenderer {
 
-    // Anchored at the very start — nametag/tab render exactly one player's name per call, so the
-    // level bracket (if present) is always the first thing in the component.
-    private val LEVEL_PREFIX = Regex("""^\s{0,2}\[(\d{1,4})[^\[\]\d]{0,4}]""")
-    // First occurrence anywhere — chat lines carry arbitrary leading text (channel/guild/party tags).
+    // First occurrence anywhere — used for nametag/tab AND chat. Tab rows carry Hypixel's rank tag
+    // (e.g. "[VIP+]") before the level bracket, so anchoring at position 0 (as PrestigeLevelColors'
+    // own nametag-only prefix regex does) misses it there; nametags have no rank tag, so matching
+    // "anywhere" finds the same first bracket for them too.
     private val LEVEL_ANYWHERE = Regex("""\[(\d{1,4})[^\[\]\d]{0,4}]""")
     private val NAME_AFTER = Regex("""^\s*([A-Za-z0-9_]{1,16})""")
 
@@ -62,12 +62,12 @@ object BadgeRenderer {
         }
     }
 
-    private fun badgesComponent(defs: List<BadgeDef>): MutableComponent {
+    private fun badgesComponent(defs: List<BadgeDef>, leadingSpace: Boolean): MutableComponent {
         val out: MutableComponent = Component.empty()
+        if (leadingSpace) out.append(Component.literal(" "))
         for (d in defs) {
             out.append(Component.literal(d.symbol).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(d.colorRgb))))
         }
-        out.append(Component.literal(" "))
         return out
     }
 
@@ -79,8 +79,9 @@ object BadgeRenderer {
         return out
     }
 
-    /** Nametag/tab: exactly one known uuid. Badges go right after a level-prefix anchored at the
-     *  very start of the component, or at the very start if there's no level prefix at all. */
+    /** Nametag/tab: exactly one known uuid. Badges go right after the first level bracket found
+     *  anywhere in the component (tab rows have Hypixel's rank tag before it), or at the very
+     *  start if there's no level bracket at all. */
     @JvmStatic
     fun insertKnown(component: Component?, uuidNoDashes: String?): Component? {
         if (component == null || uuidNoDashes == null) return component
@@ -89,9 +90,9 @@ object BadgeRenderer {
         val segs = segments(component)
         if (segs.isEmpty()) return component
         val (cleanStr, mapToFull, fullLen) = cleanFor(segs)
-        val m = LEVEL_PREFIX.find(cleanStr)
+        val m = LEVEL_ANYWHERE.find(cleanStr)
         val insertAt = if (m != null) mapToFull[m.range.last] + 1 else 0
-        return spliceAtFullOffset(segs, fullLen, insertAt, badgesComponent(defs))
+        return spliceAtFullOffset(segs, fullLen, insertAt, badgesComponent(defs, leadingSpace = m != null))
     }
 
     /** Chat: no uuid known up front — anchor on the first [level] bracket in the line (the same
@@ -114,6 +115,6 @@ object BadgeRenderer {
         if (defs.isEmpty()) return component
         val nameStartClean = afterBracketClean + nameMatch.range.first
         val insertAt = mapToFull[nameStartClean]
-        return spliceAtFullOffset(segs, fullLen, insertAt, badgesComponent(defs))
+        return spliceAtFullOffset(segs, fullLen, insertAt, badgesComponent(defs, leadingSpace = false))
     }
 }

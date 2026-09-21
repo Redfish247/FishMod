@@ -229,6 +229,9 @@ object FishSettings {
     @ConfigValue @JvmField var crosshairPreset: String = "Cross"
     @ConfigValue @JvmField var crosshairColor: Int = 0xFFFFFFFF.toInt()
     @ConfigValue @JvmField var crosshairScale: Double = 1.0
+    @ConfigValue @JvmField var crosshairHideInF3: Boolean = true
+
+    @ConfigValue @JvmField var disableFrontFacingCamera: Boolean = false
 
     @ConfigValue @JvmField var dungeonWaypointsEnabled: Boolean = true
 

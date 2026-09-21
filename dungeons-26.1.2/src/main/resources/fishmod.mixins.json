@@ -57,6 +57,7 @@
     "KeyboardMixin",
     "LightmapMixin",
     "MinecraftClientMixin",
+    "PerspectiveToggleMixin",
     "MouseMixin",
     "ChannelMixin",
     "SoundEngineMixin",

@@ -2294,10 +2294,16 @@ public class HypixelApi {
                             String color = o.has("color") ? o.get("color").getAsString() : "#FFFFFF";
                             int rgb;
                             try { rgb = Integer.parseInt(color.replace("#", ""), 16); } catch (Exception e) { rgb = 0xFFFFFF; }
+                            String symbol = o.has("symbol") ? o.get("symbol").getAsString() : "";
+                            // Strip variation selectors (U+FE00-FE0F) and the zero-width joiner
+                            // (U+200D): Minecraft's font has no glyph for them and instead of
+                            // rendering invisibly, draws a visible fallback box (e.g. "VS16")
+                            // stacked on top of the preceding character.
+                            symbol = symbol.replaceAll("[\\uFE00-\\uFE0F\\u200D]", "");
                             out.add(new fishmod.cosmetic.badge.BadgeDef(
                                 o.get("id").getAsString(),
                                 o.has("name") ? o.get("name").getAsString() : o.get("id").getAsString(),
-                                o.has("symbol") ? o.get("symbol").getAsString() : "",
+                                symbol,
                                 rgb,
                                 o.has("order") ? o.get("order").getAsInt() : 0
                             ));
