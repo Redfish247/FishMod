@@ -790,6 +790,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             cosmetics.features.add(f)
         }
         run {
+            val f = Feature("Badges", FishSettings::badgesEnabled)
+            f.sub.add(SubcategoryHeader("Small icons beside a player's name, after the [level] badge — granted only by Eli, never self-assignable"))
+            f.sub.add(ToggleSetting("On Nametags", "", FishSettings::badgesOnNametags))
+            f.sub.add(ToggleSetting("In Tab List", "", FishSettings::badgesOnTab))
+            f.sub.add(ToggleSetting("In Chat", "", FishSettings::badgesInChat))
+            cosmetics.features.add(f)
+        }
+        run {
             val f = Feature("Custom Crosshair", FishSettings::crosshairEnabled)
             f.sub.add(SubcategoryHeader("Replaces the vanilla crosshair with a built-in preset or a PNG from config/FishMod/crosshairs/"))
             f.sub.add(DropdownSetting("Type", "", arrayOf("Preset", "Image"),

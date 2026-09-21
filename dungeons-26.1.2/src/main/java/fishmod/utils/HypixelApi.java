@@ -2250,11 +2250,11 @@ public class HypixelApi {
     }
 
     public interface SyncCallback {
-        void onData(long version, Map<String, String> nicks, Map<String, String> items, Map<String, String> scales);
+        void onData(long version, Map<String, String> nicks, Map<String, String> items, Map<String, String> scales, Map<String, String> badges);
     }
 
     public static void fetchSync(java.util.Collection<String> uuidsNoDashes, long version, SyncCallback cb) {
-        if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.onData(version, null, null, null); return; }
+        if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.onData(version, null, null, null, null); return; }
         try {
             String q = String.join(",", uuidsNoDashes);
             HttpRequest req = HttpRequest.newBuilder()
@@ -2266,13 +2266,47 @@ public class HypixelApi {
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
                 try {
                     JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
-                    if (!root.has("success") || !root.get("success").getAsBoolean()) { cb.onData(version, null, null, null); return; }
+                    if (!root.has("success") || !root.get("success").getAsBoolean()) { cb.onData(version, null, null, null, null); return; }
                     long ver = root.has("version") ? root.get("version").getAsLong() : version;
-                    if (!root.has("changed") || !root.get("changed").getAsBoolean()) { cb.onData(ver, null, null, null); return; }
-                    cb.onData(ver, parseStringMap(root, "nicks"), parseStringMap(root, "items"), parseStringMap(root, "scales"));
-                } catch (Exception ignored) { cb.onData(version, null, null, null); }
-            }).exceptionally(t -> { cb.onData(version, null, null, null); return null; });
-        } catch (Exception e) { cb.onData(version, null, null, null); }
+                    if (!root.has("changed") || !root.get("changed").getAsBoolean()) { cb.onData(ver, null, null, null, null); return; }
+                    cb.onData(ver, parseStringMap(root, "nicks"), parseStringMap(root, "items"), parseStringMap(root, "scales"), parseStringMap(root, "badges"));
+                } catch (Exception ignored) { cb.onData(version, null, null, null, null); }
+            }).exceptionally(t -> { cb.onData(version, null, null, null, null); return null; });
+        } catch (Exception e) { cb.onData(version, null, null, null, null); }
+    }
+
+    // ── Badge catalog (read-only; grants/revokes happen only via the local admin dashboard) ──
+    public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fishmod.cosmetic.badge.BadgeDef>> cb) {
+        try {
+            HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(PROXY_URL + "/badge-defs"))
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
+                .header("User-Agent", "Mozilla/5.0")
+                .timeout(Duration.ofSeconds(10))
+                .GET().build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
+                java.util.List<fishmod.cosmetic.badge.BadgeDef> out = new java.util.ArrayList<>();
+                try {
+                    JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
+                    if (root.has("success") && root.get("success").getAsBoolean() && root.has("badges")) {
+                        for (var el : root.getAsJsonArray("badges")) {
+                            JsonObject o = el.getAsJsonObject();
+                            String color = o.has("color") ? o.get("color").getAsString() : "#FFFFFF";
+                            int rgb;
+                            try { rgb = Integer.parseInt(color.replace("#", ""), 16); } catch (Exception e) { rgb = 0xFFFFFF; }
+                            out.add(new fishmod.cosmetic.badge.BadgeDef(
+                                o.get("id").getAsString(),
+                                o.has("name") ? o.get("name").getAsString() : o.get("id").getAsString(),
+                                o.has("symbol") ? o.get("symbol").getAsString() : "",
+                                rgb,
+                                o.has("order") ? o.get("order").getAsInt() : 0
+                            ));
+                        }
+                    }
+                } catch (Exception ignored) {}
+                cb.accept(out);
+            }).exceptionally(t -> { cb.accept(java.util.List.of()); return null; });
+        } catch (Exception e) { cb.accept(java.util.List.of()); }
     }
 
     private static Map<String, String> parseStringMap(JsonObject root, String key) {
