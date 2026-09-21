@@ -214,6 +214,14 @@ object FishSettings {
     @ConfigValue @JvmField var prestigeColorsAnimSpeed: Double = 1.0
     @ConfigValue @JvmField var prestigeColorsAnimStyle: String = "FADE"
 
+    // Badges: server-authoritative (grant/revoke/enable/order all come from the backend, via the
+    // local admin dashboard — see BadgeManager/BadgeRegistry). These toggles only control whether
+    // the client bothers rendering them, never which badges exist or who has them.
+    @ConfigValue @JvmField var badgesEnabled: Boolean = true
+    @ConfigValue @JvmField var badgesOnNametags: Boolean = true
+    @ConfigValue @JvmField var badgesOnTab: Boolean = true
+    @ConfigValue @JvmField var badgesInChat: Boolean = true
+
     @ConfigValue @JvmField var crosshairEnabled: Boolean = false
     @ConfigValue @JvmField var crosshairMode: String = "Preset"
     @ConfigValue @JvmField var crosshairImageSelection: String = "No image"
