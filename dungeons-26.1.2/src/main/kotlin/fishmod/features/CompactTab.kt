@@ -102,17 +102,37 @@ object CompactTab {
         }
     }
 
-    private fun sortComparator(mode: String): Comparator<TabListCache.Entry>? = when (mode) {
-        "SB Level" -> compareByDescending { sortLevelOf(it.stripped) }
-        "Name (Abc)" -> compareBy<TabListCache.Entry> { nameOf(it.info).lowercase() }
-            .thenByDescending { sortLevelOf(it.stripped) }
-        "Ironman/Bingo" -> compareBy<TabListCache.Entry> { if (sortIsIronmanBingo(it.info.tabListDisplayName?.string ?: "")) 0 else 1 }
-            .thenByDescending { sortLevelOf(it.stripped) }
-        "Party/Friends/Guild" -> compareBy<TabListCache.Entry> { sortSocialTierOf(it.info.tabListDisplayName?.string ?: "") }
-            .thenByDescending { sortLevelOf(it.stripped) }
-        "Random" -> null
-        else -> compareBy<TabListCache.Entry> { sortRankTierOf(it.stripped) } // "Rank (Default)" and unknown values
-            .thenByDescending { sortLevelOf(it.stripped) }
+    // Applies only to the real player-list column (col 0); every other
+    // column is a fixed informational panel and must keep its server-given
+    // row order regardless of the chosen sort mode. Row 0 of the players
+    // column is a fixed header (e.g. "Players (19)"), not a sortable
+    // player — it stays pinned in place and drawColumns never gives it a
+    // face/ping bar.
+    private fun sortPlayersColumn(entries: List<PlayerInfo>): List<PlayerInfo> {
+        if (entries.size <= 1) return entries
+        val header = entries[0]
+        val rest = entries.subList(1, entries.size)
+        val mode = FishSettings.compactTabSortMode
+        val sortedRest = if (mode == "Random") rest.shuffled() else {
+            fun stripped(e: PlayerInfo) = BLANK_COLOR.matcher(e.tabListDisplayName?.string ?: "").replaceAll("")
+            fun raw(e: PlayerInfo) = e.tabListDisplayName?.string ?: ""
+            val cmp: Comparator<PlayerInfo> = when (mode) {
+                "SB Level" -> compareByDescending { sortLevelOf(stripped(it)) }
+                "Name (Abc)" -> compareBy<PlayerInfo> { nameOf(it).lowercase() }
+                    .thenByDescending { sortLevelOf(stripped(it)) }
+                "Ironman/Bingo" -> compareBy<PlayerInfo> { if (sortIsIronmanBingo(raw(it))) 0 else 1 }
+                    .thenByDescending { sortLevelOf(stripped(it)) }
+                "Party/Friends/Guild" -> compareBy<PlayerInfo> { sortSocialTierOf(raw(it)) }
+                    .thenByDescending { sortLevelOf(stripped(it)) }
+                else -> compareBy<PlayerInfo> { sortRankTierOf(stripped(it)) } // "Rank (Default)" and unknown values
+                    .thenByDescending { sortLevelOf(stripped(it)) }
+            }
+            rest.sortedWith(cmp)
+        }
+        val out = ArrayList<PlayerInfo>(entries.size)
+        out.add(header)
+        out.addAll(sortedRest)
+        return out
     }
 
     private var shouldRenderVersion = -1
@@ -261,11 +281,9 @@ object CompactTab {
 
     private fun buildModel(mc: Minecraft, tabHeader: String?, tabFooter: String?): Model? {
         val tr = mc.font
-        val sortedEntries = ArrayList(TabListCache.entries)
-        val cmp = sortComparator(FishSettings.compactTabSortMode)
-        if (cmp != null) sortedEntries.sortWith(cmp) else sortedEntries.shuffle()
-        val all = ArrayList<PlayerInfo>(sortedEntries.size)
-        for (e in sortedEntries) all.add(e.info)
+        val all = ArrayList<PlayerInfo>(TabListCache.entries.size)
+        for (e in TabListCache.entries) all.add(e.info)
+        all.sortWith(Comparator { a, b -> nameOf(a).compareTo(nameOf(b), ignoreCase = true) })
         val grouped = LinkedHashMap<String, MutableList<PlayerInfo>>()
         for (e in all) {
             val m = COL_KEY.matcher(nameOf(e))
@@ -288,9 +306,10 @@ object CompactTab {
                 first = false
                 continue
             }
-            val trimmed = ArrayList(col.subList(0, last + 1))
             val playersCol = first
             first = false
+            val trimmed = if (playersCol) sortPlayersColumn(col.subList(0, last + 1))
+                          else ArrayList(col.subList(0, last + 1))
             var maxW = 0
             for (e in trimmed) {
                 val dn = e.tabListDisplayName
