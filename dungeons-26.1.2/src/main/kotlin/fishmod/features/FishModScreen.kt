@@ -323,6 +323,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(DropdownSetting("Stat Bar Position", "", arrayOf("TOP", "BOTTOM", "LEFT", "RIGHT"),
                 { FishSettings.compactTabStatBarPosition },
                 { v -> FishSettings.compactTabStatBarPosition = v }).gatedBy { FishSettings.compactTabStatBarEnabled })
+            f.sub.add(DropdownSetting("Tab Sort", "", arrayOf(
+                "Rank (Default)", "SB Level", "Name (Abc)", "Ironman/Bingo", "Party/Friends/Guild", "Random"),
+                { FishSettings.compactTabSortMode },
+                { v -> FishSettings.compactTabSortMode = v }))
             general.features.add(f)
         }
         run {
