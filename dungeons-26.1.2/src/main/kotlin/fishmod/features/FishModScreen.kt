@@ -208,6 +208,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         general.features.add(Feature("Arrow Fix (shortbow pullback)", FishSettings::arrowFixEnabled))
         general.features.add(Feature("Mono Audio", FishSettings::monoAudioEnabled))
         general.features.add(Feature("Sword Blocking", FishSettings::swordBlockingEnabled))
+        general.features.add(Feature("Disable Front-Facing Camera", FishSettings::disableFrontFacingCamera))
         run {
             val f = Feature("Ragnarock", FishSettings::ragnarockEnabled)
             f.sub.add(ToggleSetting("Cast Alert", "Title when you start casting", FishSettings::ragnarockCastAlert))
@@ -811,6 +812,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 .gatedBy { FishSettings.crosshairMode == "Image" })
             f.sub.add(ColorPickerSetting("Color", "Tint applied to the crosshair", FishSettings::crosshairColor))
             f.sub.add(SliderDoubleSetting("Scale", "", FishSettings::crosshairScale, 0.25, 4.0))
+            f.sub.add(ToggleSetting("Hide in F3", "", FishSettings::crosshairHideInF3))
             cosmetics.features.add(f)
         }
         run {
