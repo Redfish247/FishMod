@@ -30,12 +30,40 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         private const val DISCORD = "discord.gg/3mSuQUB8kk"
         private const val DISCORD_URL = "https://discord.gg/3mSuQUB8kk"
 
-        private data class Credit(val name: String, val role: String, val badgeColor: Int)
+        private data class Credit(
+            val name: String,
+            val role: String,
+            val badgeColor: Int,
+            val details: List<String> = emptyList(),
+        )
 
         private val CREDITS = listOf(
             Credit("RedFish", "creator - everything else", 0xFF24B6B0.toInt()),
             Credit("BladeMasterGabe", "splits & dungeon features", 0xFFE0A63A.toInt()),
             Credit("22yrs", "shared the dungeon map and blessed the port", 0xFF7A8CE0.toInt()),
+            Credit(
+                "Odin (odtheking)", "puzzle solvers, terminals & QoL ports", 0xFFB05FE0.toInt(),
+                details = listOf(
+                    "Puzzle solvers: Blaze, Boulder, TP Maze, Weirdos,",
+                    "Water Board, Ice Fill, Beams, Quiz/Oruo",
+                    "F7 terminal, arrow align & simon says solvers",
+                    "Etherwarp helper, extra stats, blessing display",
+                    "Invincibility timer, render optimizer",
+                    "AutoRequeue trigger, /dwp waypoint editor",
+                ),
+            ),
+            Credit(
+                "NoammAddons", "storage overlay, party finder & QoL ports", 0xFF5FD1E0.toInt(),
+                details = listOf(
+                    "Storage overlay, party finder auto-kick",
+                    "+ in-menu head overlay/tooltip stats",
+                    "Chat filter, leap menu, item price tooltip",
+                    "Lava to water, ice fill, gyro helper",
+                    "Wither ESP, M7 relics, block overlay",
+                    "Camera tweaks, time changer, arrow hit sound",
+                    "Wither dragons (floor7), scrollable item tooltip",
+                ),
+            ),
         )
     }
 
@@ -48,6 +76,9 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
     private var linkW = 0
     private var linkH = 0
 
+    private val expanded = BooleanArray(CREDITS.size)
+    private var rowRects = List(CREDITS.size) { intArrayOf(0, 0, 0, 0) }
+
     override fun isPauseScreen(): Boolean = false
     override fun extractBackground(ctx: GuiGraphicsExtractor, mx: Int, my: Int, d: Float) {}
     override fun extractTransparentBackground(ctx: GuiGraphicsExtractor) {}
@@ -55,7 +86,24 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
     private fun vw(): Int = (this.width / fishmod.utils.rendering.UiScale.factor()).toInt()
     private fun vh(): Int = (this.height / fishmod.utils.rendering.UiScale.factor()).toInt()
     private fun pw(): Int = min(340, vw() - 20)
-    private fun ph(): Int = min(356, vh() - 20)
+
+    private val ROW_BASE_H = 46
+    private val ROW_GAP = 9
+
+    private fun rowHeight(i: Int): Int {
+        val c = CREDITS[i]
+        if (c.details.isEmpty() || !expanded[i]) return ROW_BASE_H
+        return ROW_BASE_H + c.details.size * 13 + 10
+    }
+
+    private fun totalRowsHeight(): Int {
+        var total = 0
+        for (i in CREDITS.indices) total += rowHeight(i)
+        total += ROW_GAP * (CREDITS.size - 1)
+        return total
+    }
+
+    private fun ph(): Int = min(158 + totalRowsHeight(), vh() - 20)
     private fun px(): Int = (vw() - pw()) / 2
     private fun py(): Int = (vh() - ph()) / 2
 
@@ -80,15 +128,18 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         centeredNst("FishMod Credits", cx, ty + 20, TEXT, 0.9f)
         ScreenTheme.nRect(lx + 24, ty + 40, rx - lx - 48, 1, BORDER)
 
-        val rowH = 46
-        val rowGap = 9
         val rowX = lx + 18
         val rowW = rx - lx - 36
         var y = ty + 52
-        for (c in CREDITS) {
-            drawCreditRow(rowX, y, rowW, rowH, c.name, c.role, c.badgeColor)
-            y += rowH + rowGap
+        val rects = ArrayList<IntArray>(CREDITS.size)
+        for (i in CREDITS.indices) {
+            val c = CREDITS[i]
+            val h = rowHeight(i)
+            drawCreditRow(rowX, y, rowW, h, c, expanded[i])
+            rects.add(intArrayOf(rowX, y, rowW, h))
+            y += h + ROW_GAP
         }
+        rowRects = rects
 
         backW = 92
         backH = 26
@@ -114,19 +165,33 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         ScreenTheme.nst(s, cx - ScreenTheme.nstw(s, scale) / 2, y, color, scale)
     }
 
-    private fun drawCreditRow(x: Int, y: Int, w: Int, h: Int, name: String, role: String, badgeColor: Int) {
+    private fun drawCreditRow(x: Int, y: Int, w: Int, h: Int, c: Credit, isExpanded: Boolean) {
         NvgRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), 6f, ROW_BG)
         ScreenTheme.nRoundedRectRing(x, y, w, h, 6, 1, 0, ROW_BORDER)
 
         val badgeR = 12
         val badgeCx = x + 20
-        val badgeCy = y + h / 2
-        NvgRecorder.disc(badgeCx.toFloat(), badgeCy.toFloat(), badgeR.toFloat(), badgeColor)
-        centeredNst(name.take(1).uppercase(), badgeCx, badgeCy - 5, 0xFF06121A.toInt(), 0.8f)
+        val badgeCy = y + ROW_BASE_H / 2
+        NvgRecorder.disc(badgeCx.toFloat(), badgeCy.toFloat(), badgeR.toFloat(), c.badgeColor)
+        centeredNst(c.name.take(1).uppercase(), badgeCx, badgeCy - 5, 0xFF06121A.toInt(), 0.8f)
 
         val textX = x + 42
-        ScreenTheme.nst(name, textX, y + 8, TEXT, 0.85f)
-        ScreenTheme.nst(role, textX, y + 25, SUBTEXT, 0.62f)
+        ScreenTheme.nst(c.name, textX, y + 8, TEXT, 0.85f)
+        ScreenTheme.nst(c.role, textX, y + 25, SUBTEXT, 0.62f)
+
+        if (c.details.isNotEmpty()) {
+            val chevron = if (isExpanded) "v" else ">"
+            ScreenTheme.nst(chevron, x + w - 18, y + 8, if (isExpanded) ACCENT_HOVER else SUBTEXT, 0.75f)
+        }
+
+        if (c.details.isNotEmpty() && isExpanded) {
+            ScreenTheme.nRect(textX, y + ROW_BASE_H - 6, w - 42 - 16, 1, ROW_BORDER)
+            var dy = y + ROW_BASE_H + 4
+            for (line in c.details) {
+                ScreenTheme.nst(line, textX, dy, SUBTEXT, 0.58f)
+                dy += 13
+            }
+        }
     }
 
     private fun inside(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int): Boolean {
@@ -146,6 +211,14 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
             } catch (ignored: Throwable) {
             }
             return true
+        }
+        for (i in CREDITS.indices) {
+            if (CREDITS[i].details.isEmpty()) continue
+            val r = rowRects[i]
+            if (inside(mx, my, r[0], r[1], r[2], r[3])) {
+                expanded[i] = !expanded[i]
+                return true
+            }
         }
         return super.mouseClicked(click, bl)
     }
