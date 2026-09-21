@@ -66,13 +66,17 @@ object RemoteSync {
     private fun refresh() {
         val nicksOn = FishSettings.remoteNicksEnabled
         val sizeOn = FishSettings.playerSizeShared
+        val badgesOn = FishSettings.badgesEnabled
         if (!nicksOn) RemoteNicks.clearAll()
         if (!sizeOn) RemoteScales.clearAll()
-        if (!nicksOn && !sizeOn) return
+        if (!badgesOn) fishmod.cosmetic.badge.BadgeManager.clearAll()
+        if (!nicksOn && !sizeOn && !badgesOn) return
 
         val mc = Minecraft.getInstance()
         if (mc.connection == null || mc.player == null) return
         val selfUuid = mc.player!!.getUUID().toString().replace("-", "")
+        val selfName = mc.player!!.gameProfile.name()
+        if (selfName != null && selfName.isNotEmpty()) fishmod.cosmetic.badge.BadgeManager.registerName(selfName, selfUuid)
         val uuidToName = HashMap<String, String>()
         for (entry in mc.connection!!.onlinePlayers) {
             val gp = entry.profile ?: continue
@@ -80,24 +84,31 @@ object RemoteSync {
             val name = gp.name()
             if (name == null || name.isEmpty()) continue
             val u = gp.id().toString().replace("-", "")
+            fishmod.cosmetic.badge.BadgeManager.registerName(name, u)
             if (u == selfUuid) continue
             uuidToName[u] = name
         }
-        if (uuidToName.isEmpty()) return
+        if (uuidToName.isEmpty() && !badgesOn) return
 
         val newPlayers = !lastUuids.containsAll(uuidToName.keys)
         val since = if (newPlayers) -1L else version
         val keys: Set<String> = HashSet(uuidToName.keys)
+        // Badges aren't locally known even for the local player (unlike nicks/scale, which the
+        // client renders from its own config) — self must be queried too, but only for badges;
+        // nick/scale acceptance below still keys off `keys` (others only), unchanged.
+        val queryKeys: Set<String> = if (badgesOn) (keys + selfUuid) else keys
+        if (queryKeys.isEmpty()) return
 
-        HypixelApi.fetchSync(uuidToName.keys, since) { ver, nicks, _, scales ->
+        HypixelApi.fetchSync(queryKeys, since) { ver, nicks, _, scales, badges ->
             mc.execute {
                 version = ver
                 lastUuids = keys
                 lastTabSize = tabSize()
-                val changed = nicks != null || scales != null
+                val changed = nicks != null || scales != null || badges != null
                 interval = if (changed) BASE_TICKS else minOf(interval + STEP_TICKS, MAX_TICKS)
                 if (nicks != null && FishSettings.remoteNicksEnabled) RemoteNicks.acceptNicks(uuidToName, nicks)
                 if (scales != null && FishSettings.playerSizeShared) RemoteScales.acceptScales(keys, scales)
+                if (badges != null && FishSettings.badgesEnabled) fishmod.cosmetic.badge.BadgeManager.acceptBadges(queryKeys, badges)
             }
         }
     }

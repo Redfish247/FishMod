@@ -31,6 +31,10 @@ public abstract class CosmeticChatMixin {
                 && fishmod.utils.config.values.FishSettings.prestigeColorsChat) {
             out = fishmod.cosmetic.prestige.PrestigeLevelColors.colorizeChatLevel(out);
         }
+        if (fishmod.utils.config.values.FishSettings.badgesEnabled
+                && fishmod.utils.config.values.FishSettings.badgesInChat) {
+            out = fishmod.cosmetic.badge.BadgeRenderer.insertForChat(out);
+        }
         return out;
     }
 }
