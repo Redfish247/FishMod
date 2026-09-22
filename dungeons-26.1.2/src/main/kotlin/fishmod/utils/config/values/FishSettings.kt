@@ -689,6 +689,7 @@ object FishSettings {
     @ConfigValue @JvmField var pbMessagesGoldor: Boolean = true
     @ConfigValue @JvmField var pbMessagesTerminals: Boolean = true
     @ConfigValue @JvmField var pbMessagesRelics: Boolean = true
+    @ConfigValue @JvmField var splitPbColors: Boolean = true
 
     @ConfigValue @JvmField var mimicAnnounceEnabled: Boolean = false
     @ConfigValue @JvmField var mimicMsgEnabled: Boolean = true

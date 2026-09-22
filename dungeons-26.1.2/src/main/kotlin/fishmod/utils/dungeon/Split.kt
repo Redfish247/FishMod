@@ -2,6 +2,7 @@ package fishmod.utils.dungeon
 
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.Constants
+import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
@@ -25,6 +26,8 @@ class Split(
         const val GREEN: Int = 5635925
         const val GRAY: Int = 11184810
         const val DARK_GRAY: Int = 5592405
+        const val PB_COLOR: Int = 0xFF55FF
+        const val AVG_COLOR: Int = 0xFFAA00
 
         @ConfigValue
         @JvmField
@@ -67,6 +70,9 @@ class Split(
     private var started: Boolean = false
     private var ended: Boolean = false
 
+    // Set when the split ends: PB_COLOR / AVG_COLOR, 0 = normal.
+    @JvmField var paceColor: Int = 0
+
     fun parseMessage(string: String) {
         if (!started) {
             if (startString == string) {
@@ -86,6 +92,7 @@ class Split(
     }
 
     fun reset() {
+        paceColor = 0
         tick = 0
         ended = false
         started = false
@@ -99,6 +106,7 @@ class Split(
     }
 
     fun start() {
+        paceColor = 0
         startTime = System.currentTimeMillis()
         started = true
         ended = false
@@ -139,7 +147,7 @@ class Split(
             serverTimeColor = serverTimeColorOngoing
             parenthesesColor = parenthesesColorOngoing
         } else {
-            realTimeColor = realTimeColorComplete
+            realTimeColor = if (paceColor != 0 && FishSettings.splitPbColors) paceColor else realTimeColorComplete
             serverTimeColor = serverTimeColorComplete
             parenthesesColor = parenthesesColorComplete
         }

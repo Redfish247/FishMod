@@ -140,7 +140,19 @@ object Phase {
     private fun splitPb(split: Split): PbMessages.Result? {
         if (PracticeMode.active) return null
         val f = floor ?: return null
-        return PbMessages.submit("split:$f:${split.name}", split.getRealTime())
+        val t = split.getRealTime()
+        val avg = RunHistory.getPersonalAvg(f, split.name)
+        val r = PbMessages.submit("split:$f:${split.name}", t) ?: return null
+        split.paceColor = paceColor(r, avg)
+        return r
+    }
+
+    // Pink = beat an existing PB, orange = faster than your average.
+    @JvmStatic
+    fun paceColor(r: PbMessages.Result, avg: Double): Int = when {
+        r.isPb && r.previous != null -> Split.PB_COLOR
+        avg > 0 && r.seconds < avg -> Split.AVG_COLOR
+        else -> 0
     }
 
     private fun showSplitPb(): Boolean = FishSettings.pbMessagesEnabled && FishSettings.pbMessagesSplits
@@ -151,8 +163,8 @@ object Phase {
         for (split in splits) {
             val wasRunning = split.started()
             split.end()
-            val line = split.createNameText().append(split.createTimeText())
             val pb = if (wasRunning) splitPb(split) else null
+            val line = split.createNameText().append(split.createTimeText())
             if (pb != null && showSplitPb() && (pb.isPb || !FishSettings.pbMessagesOnlyPb)) line.append(PbMessages.tag(pb))
             Misc.addChatMessage(line)
         }
