@@ -683,6 +683,13 @@ object FishSettings {
     @ConfigValue @JvmField var roomTimerShowTime: Boolean = true
     @ConfigValue @JvmField var roomTimerPb: Boolean = true
 
+    @ConfigValue @JvmField var pbMessagesEnabled: Boolean = false
+    @ConfigValue @JvmField var pbMessagesOnlyPb: Boolean = true
+    @ConfigValue @JvmField var pbMessagesSplits: Boolean = true
+    @ConfigValue @JvmField var pbMessagesGoldor: Boolean = true
+    @ConfigValue @JvmField var pbMessagesTerminals: Boolean = true
+    @ConfigValue @JvmField var pbMessagesRelics: Boolean = true
+
     @ConfigValue @JvmField var mimicAnnounceEnabled: Boolean = false
     @ConfigValue @JvmField var mimicMsgEnabled: Boolean = true
     @ConfigValue @JvmField var mimicMsgText: String = "Mimic Killed!"

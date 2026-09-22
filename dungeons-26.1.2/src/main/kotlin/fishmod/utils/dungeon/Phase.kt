@@ -2,10 +2,12 @@ package fishmod.utils.dungeon
 
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.shaded.practicalconfig.manager.ConfigValue
+import fishmod.features.dungeon.PbMessages
 import fishmod.utils.Constants
 import fishmod.utils.JsonUtility
 import fishmod.utils.Misc
 import fishmod.utils.Scheduler
+import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.Events
 import fishmod.utils.events.interfaces.PhaseEvent
 import fishmod.utils.events.interfaces.RunEndEvent
@@ -92,8 +94,13 @@ object Phase {
             currentSplit.parseMessage(string)
 
             if (currentSplit.ended()) {
+                val pb = splitPb(currentSplit)
                 if (sendSplitInChat) {
-                    Misc.addChatMessage(currentSplit.createNameText().append(currentSplit.createTimeText()))
+                    val line = currentSplit.createNameText().append(currentSplit.createTimeText())
+                    if (pb != null && showSplitPb()) line.append(PbMessages.tag(pb))
+                    Misc.addChatMessage(line)
+                } else if (pb != null && showSplitPb() && (pb.isPb || !FishSettings.pbMessagesOnlyPb)) {
+                    Misc.addChatMessage(currentSplit.createNameText().append(currentSplit.createTimeText()).append(PbMessages.tag(pb)))
                 }
 
                 currentPhase = i + 1
@@ -130,12 +137,24 @@ object Phase {
     @JvmStatic
     fun getFloor(): String? = floor
 
+    private fun splitPb(split: Split): PbMessages.Result? {
+        if (PracticeMode.active) return null
+        val f = floor ?: return null
+        return PbMessages.submit("split:$f:${split.name}", split.getRealTime())
+    }
+
+    private fun showSplitPb(): Boolean = FishSettings.pbMessagesEnabled && FishSettings.pbMessagesSplits
+
     private fun printSplits() {
         Misc.addChatMessage(Component.literal("§aSplits: "))
         val splits = currentSplits ?: return
         for (split in splits) {
+            val wasRunning = split.started()
             split.end()
-            Misc.addChatMessage(split.createNameText().append(split.createTimeText()))
+            val line = split.createNameText().append(split.createTimeText())
+            val pb = if (wasRunning) splitPb(split) else null
+            if (pb != null && showSplitPb() && (pb.isPb || !FishSettings.pbMessagesOnlyPb)) line.append(PbMessages.tag(pb))
+            Misc.addChatMessage(line)
         }
         RunHistory.saveSplits(floor, splits)
         if (splits.isNotEmpty()) {

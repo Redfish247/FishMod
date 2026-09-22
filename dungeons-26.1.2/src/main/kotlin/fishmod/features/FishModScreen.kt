@@ -639,6 +639,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeon.features.add(f)
         }
         run {
+            val f = Feature("PB Messages", FishSettings::pbMessagesEnabled)
+            f.sub.add(ToggleSetting("Only On PB", "Off = also print slower times with the gap to your PB", FishSettings::pbMessagesOnlyPb))
+            f.sub.add(ToggleSetting("Splits", "Run splits (Blood Open, Maxor, Terminals, Run Time…)", FishSettings::pbMessagesSplits))
+            f.sub.add(ToggleSetting("Goldor Sections", "S1–S4 terminal sections", FishSettings::pbMessagesGoldor))
+            f.sub.add(ToggleSetting("Terminals", "Your open-to-solve time per terminal type", FishSettings::pbMessagesTerminals))
+            f.sub.add(ToggleSetting("Relics", "P5 start to your relic placed (M7)", FishSettings::pbMessagesRelics))
+            dungeon.features.add(f)
+        }
+        run {
             val f = Feature("Session Stats", FishSettings::sessionStatsEnabled)
             f.sub.add(ToggleSetting("In Dungeon", "", FishSettings::sessionStatsInDungeon))
             f.sub.add(ToggleSetting("In D Hub", "", FishSettings::sessionStatsInDungeonHub))
@@ -3770,6 +3779,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Death Message" -> "Announce deaths with a template"
                 "Send Lag to Party" -> "Warn the party when your game lags"
                 "Splits" -> "Phase split timers for runs"
+                "PB Messages" -> "Chat PB alerts for splits, Goldor sections, terminals and relics"
                 "Session Stats" -> "Per-session run statistics HUD"
                 "Loot Tracker" -> "Manual drop & profit tracker (D Hub inv)"
                 "Simon Says" -> "F7 Goldor device solver"
