@@ -133,8 +133,9 @@ object Section {
         split.end()
         if (!wasRunning || PracticeMode.active) return
         val floor = Phase.getFloor() ?: return
-        PbMessages.announce(FishSettings.pbMessagesGoldor, "goldor:$floor:S${index + 1}",
-            Component.literal("§6Goldor S${index + 1}"), split.getRealTime())
+        val r = PbMessages.announce(FishSettings.pbMessagesGoldor, "goldor:$floor:S${index + 1}",
+            Component.literal("§6Goldor S${index + 1}"), split.getRealTime()) ?: return
+        split.paceColor = Phase.paceColor(r, -1.0)
     }
 
     private fun startSplit(section: Int) {

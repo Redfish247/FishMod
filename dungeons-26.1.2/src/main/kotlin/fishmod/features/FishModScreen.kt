@@ -636,6 +636,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(DropdownSetting("Tick Timer", "",
                 Split.TimerType.values(), { Split.timerType }, { v -> Split.timerType = v }))
             f.sub.add(ToggleSetting("Activated Only", "", Phase::onlyShowActivatedSplits))
+            f.sub.add(ToggleSetting("PB Colors", "Finished split time: pink = new PB, orange = faster than your average", FishSettings::splitPbColors))
             dungeon.features.add(f)
         }
         run {
@@ -1214,6 +1215,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("Goldor Splits", Section::enableTerminalSplits)
+            f.sub.add(ToggleSetting("PB Colors", "Pink section time on a new PB", FishSettings::splitPbColors))
             f.sub.add(DropdownSetting("Show During", "",
                 Section.DisplayTerminalSplitsWhen.values(),
                 { Section.displayTerminalSplitsWhen },

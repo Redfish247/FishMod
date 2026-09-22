@@ -56,11 +56,12 @@ object PbMessages {
 
     // Records the time and prints "<label> <time> (PB!)" unless it's a non-PB and only-PB is on.
     @JvmStatic
-    fun announce(enabled: Boolean, key: String, label: Component, seconds: Double) {
-        val r = submit(key, seconds) ?: return
-        if (!FishSettings.pbMessagesEnabled || !enabled) return
-        if (!r.isPb && FishSettings.pbMessagesOnlyPb) return
+    fun announce(enabled: Boolean, key: String, label: Component, seconds: Double): Result? {
+        val r = submit(key, seconds) ?: return null
+        if (!FishSettings.pbMessagesEnabled || !enabled) return r
+        if (!r.isPb && FishSettings.pbMessagesOnlyPb) return r
         Misc.addChatMessage(Component.empty().append(label).append(Component.literal(" §e${fmt(seconds)}")).append(tag(r)))
+        return r
     }
 
     @JvmStatic
