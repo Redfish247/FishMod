@@ -597,6 +597,11 @@ object FishSettings {
     @ConfigValue @JvmField var slotBindsColor: Int = 0xFFFF55FF.toInt()
     @ConfigValue @JvmField var slotBindsProfile: String = "Default"
 
+    @ConfigValue @JvmField var inventorySearchEnabled: Boolean = false
+    @ConfigValue @JvmField var inventorySearchAlwaysShow: Boolean = false
+    @ConfigValue @JvmField var inventorySearchHighlight: Boolean = true
+    @ConfigValue @JvmField var inventorySearchHighlightColor: Int = 0xFF55FF55.toInt()
+
     @ConfigValue @JvmField var cameraTweaksEnabled: Boolean = false
     @ConfigValue @JvmField var cameraFullBright: Boolean = false
     @ConfigValue @JvmField var cameraNoBlindness: Boolean = false

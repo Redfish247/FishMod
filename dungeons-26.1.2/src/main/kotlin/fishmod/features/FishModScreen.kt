@@ -170,6 +170,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             general.features.add(f)
         }
         run {
+            val f = Feature("Inventory Search", FishSettings::inventorySearchEnabled)
+            f.sub.add(SubcategoryHeader("Ctrl+F in any container to search names + lore; non-matches are dimmed. Math works too (e.g. 64*9)"))
+            f.sub.add(ToggleSetting("Always Show Bar", "Show the bar without pressing Ctrl+F", FishSettings::inventorySearchAlwaysShow))
+            f.sub.add(ToggleSetting("Outline Matches", "", FishSettings::inventorySearchHighlight))
+            f.sub.add(ColorPickerSetting("Outline Colour", "", FishSettings::inventorySearchHighlightColor).gatedBy { FishSettings.inventorySearchHighlight })
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Chat", FishSettings::chatFeatureEnabled)
             f.sub.add(ToggleSetting("Smart Copy Chat", "", FishSettings::smartCopyChat))
             f.sub.add(ToggleSetting("Compact Chat", "Collapse identical messages within the last minute into one \"(N)\" line", FishSettings::chatCompact))
