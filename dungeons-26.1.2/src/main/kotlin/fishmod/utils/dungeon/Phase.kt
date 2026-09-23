@@ -68,11 +68,7 @@ object Phase {
         floor = key
 
         currentSplits = FLOOR_SPLITS[floor]
-        currentSplits?.forEach {
-            it.reset()
-            it.pbRef = seedPb(key, it.name) ?: -1.0
-            it.avgRef = RunHistory.getPersonalAvg(key, it.name)
-        }
+        currentSplits?.forEach { it.reset() }
         if (floor!!.contains("7")) inFloor7 = true
     }
 
