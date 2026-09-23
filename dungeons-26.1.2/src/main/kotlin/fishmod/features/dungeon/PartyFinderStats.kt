@@ -69,8 +69,9 @@ object PartyFinderStats {
                 )
             else "N/A"
             val verb = if (joinLine) "joined" else "wants to join"
+            val cls = data.selectedClass?.let { " (${it.replaceFirstChar(Char::uppercase)})" } ?: ""
             FishMsg.send(
-                "$sender $verb — MP: $mp | M7 PB: $pb | Cata: $cata$secrets | Gear: $gear"
+                "$sender$cls $verb — MP: $mp | M7 PB: $pb | Cata: $cata$secrets | Gear: $gear"
             )
         }
     }

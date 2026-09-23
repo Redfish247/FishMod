@@ -110,6 +110,7 @@ object CompactTab {
     // face/ping bar.
     private fun sortPlayersColumn(entries: List<PlayerInfo>): List<PlayerInfo> {
         if (entries.size <= 1) return entries
+        if (fishmod.features.dungeon.map.DungeonState.isInDungeon()) return entries
         val header = entries[0]
         val rest = entries.subList(1, entries.size)
         val mode = FishSettings.compactTabSortMode

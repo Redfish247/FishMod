@@ -24,11 +24,11 @@ import java.util.regex.Pattern
 object M7Relics {
 
     private enum class Relic(val itemName: String, val cauldron: Vec3, val argb: Int, val code: String) {
-        RED("Corrupted Red Relic", Vec3(51.5, 7.0, 42.5), 0xC0FF0000.toInt(), "§c"),
-        ORANGE("Corrupted Orange Relic", Vec3(57.5, 7.0, 42.5), 0xC0FF7200.toInt(), "§6"),
-        GREEN("Corrupted Green Relic", Vec3(49.5, 7.0, 44.5), 0xC000FF00.toInt(), "§a"),
-        BLUE("Corrupted Blue Relic", Vec3(59.5, 7.0, 44.5), 0xC0008AFF.toInt(), "§b"),
-        PURPLE("Corrupted Purple Relic", Vec3(54.5, 7.0, 41.5), 0xC081006F.toInt(), "§5");
+        RED("Corrupted Red Relic", Vec3(51.5, 7.5, 42.5), 0xC0FF0000.toInt(), "§c"),
+        ORANGE("Corrupted Orange Relic", Vec3(57.5, 7.5, 42.5), 0xC0FF7200.toInt(), "§6"),
+        GREEN("Corrupted Green Relic", Vec3(49.5, 7.5, 44.5), 0xC000FF00.toInt(), "§a"),
+        BLUE("Corrupted Blue Relic", Vec3(59.5, 7.5, 44.5), 0xC0008AFF.toInt(), "§b"),
+        PURPLE("Corrupted Purple Relic", Vec3(54.5, 7.5, 41.5), 0xC081006F.toInt(), "§5");
     }
 
     private const val NAME = "Relic Spawn Timer"
@@ -103,7 +103,7 @@ object M7Relics {
         val c = relic.cauldron
         val box = AABB(c.x - 0.5, c.y - 0.5, c.z - 0.5, c.x + 0.5, c.y + 0.5, c.z + 0.5)
         RenderUtils.renderFilled(matrices, vc, box, RenderUtils.toFloats((0x66 shl 24) or (relic.argb and 0xFFFFFF)))
-        RenderUtils.renderOutline(matrices, vc, box, RenderUtils.toFloats(relic.argb))
+        RenderUtils.renderThickOutline(matrices, vc, box, RenderUtils.toFloats(relic.argb), 0.02)
     }
 
     @JvmStatic
