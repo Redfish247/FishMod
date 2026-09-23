@@ -3,7 +3,7 @@ package fishmod.features.other
 import com.mojang.blaze3d.platform.Window
 import fishmod.mixin.accessors.KeyBindingAccessor
 import fishmod.utils.MathParser
-import fishmod.utils.config.values.ExtraOptions
+import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemUtil
 import fishmod.utils.rendering.DrawEvents
 import fishmod.utils.rendering.RenderUtils
@@ -31,25 +31,32 @@ object SearchBar {
     @JvmStatic
     fun init() {
         DrawEvents.INVENTORY_SLOT_AFTER.register { context, item, x, y ->
-            if (shouldDisplay() && searchTerm.isNotEmpty() && ExtraOptions.toggleableSearchBar && parsedValue.isNaN()) {
-                if (!matches(item)) {
-                    context.fill(x, y, x + 16, y + 16, 0xaa111111.toInt())
-                }
+            if (!FishSettings.inventorySearchEnabled || !shouldDisplay() || searchTerm.isEmpty() || !parsedValue.isNaN()) return@register
+            if (!matches(item)) {
+                context.fill(x, y, x + 16, y + 16, 0xaa111111.toInt())
+            } else if (FishSettings.inventorySearchHighlight) {
+                val c = FishSettings.inventorySearchHighlightColor
+                context.fill(x, y, x + 16, y + 1, c)
+                context.fill(x, y + 15, x + 16, y + 16, c)
+                context.fill(x, y + 1, x + 1, y + 15, c)
+                context.fill(x + 15, y + 1, x + 16, y + 15, c)
             }
         }
     }
 
     private fun matches(item: ItemStack): Boolean {
         val name = item.hoverName.string.lowercase()
-        if (name == "air") return false
+        if (item.isEmpty || name == "air") return false
 
         return name.contains(searchTerm) || ItemUtil.containsIgnoreCaseLore(item, searchTerm)
     }
 
     @JvmStatic
     fun render(context: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, deltaTicks: Float) {
-        if (!exists() || !shouldDisplay() || !ExtraOptions.toggleableSearchBar) return
+        if (!FishSettings.inventorySearchEnabled || !exists() || !shouldDisplay()) return
         val bar = searchBar!!
+        // re-centre every frame so a window resize doesn't strand the bar
+        bar.x = (Minecraft.getInstance().window.guiScaledWidth - SEARCH_WIDTH) / 2
         bar.extractRenderState(context, mouseX, mouseY, deltaTicks)
 
         if (!parsedValue.isNaN()) {
@@ -64,13 +71,18 @@ object SearchBar {
 
     @JvmStatic
     fun keyPressed(input: KeyEvent): Boolean {
-        if (!exists() || !ExtraOptions.toggleableSearchBar) return false
+        if (!FishSettings.inventorySearchEnabled || !exists()) return false
         val bar = searchBar!!
 
         val ctrlIsPressed = (input.modifiers() and GLFW.GLFW_MOD_CONTROL) != 0
 
         if (ctrlIsPressed && input.key() == GLFW.GLFW_KEY_F) {
-            shouldDisplayVal = !shouldDisplayVal
+            if (FishSettings.inventorySearchAlwaysShow) {
+                bar.isFocused = !bar.isFocused
+            } else {
+                shouldDisplayVal = !shouldDisplayVal
+                bar.isFocused = shouldDisplayVal
+            }
             return true
         } else if (shouldDisplay() && bar.isFocused) {
             try {
@@ -93,18 +105,18 @@ object SearchBar {
 
     @JvmStatic
     fun CharTyped(input: CharacterEvent) {
-        if (!exists() || !searchBar!!.isFocused || !shouldDisplay() || !ExtraOptions.toggleableSearchBar) return
+        if (!FishSettings.inventorySearchEnabled || !exists() || !searchBar!!.isFocused || !shouldDisplay()) return
         searchBar!!.charTyped(input)
     }
 
     @JvmStatic
     fun onMouseClick(click: MouseButtonEvent) {
-        if (!exists() || !shouldDisplay() || !ExtraOptions.toggleableSearchBar) return
+        if (!FishSettings.inventorySearchEnabled || !exists() || !shouldDisplay()) return
         searchBar!!.isFocused = inBounds(click.x(), click.y())
     }
 
     @JvmStatic
-    fun shouldDisplay(): Boolean = shouldDisplayVal
+    fun shouldDisplay(): Boolean = shouldDisplayVal || FishSettings.inventorySearchAlwaysShow
 
     private fun exists(): Boolean {
         if (searchBar != null) return true
