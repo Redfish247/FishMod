@@ -25,6 +25,7 @@ object DungeonBreaker {
     private var charges = -1
     private var maxCharges = -1
     private var scanTick = 0
+    private var loggedLore = false
 
     // Blocks hit with the breaker, waiting to see them turn to air.
     private val pending = HashMap<BlockPos, Int>()
@@ -83,6 +84,7 @@ object DungeonBreaker {
         !stack.isEmpty && ItemUtil.getId(stack) == ITEM_ID
 
     private fun playBreakSound() {
+        fishmod.utils.debug.Debug.LOGGER.info("[DungeonBreaker] break sound")
         SoundManager.play2D(
             SoundManager.preset(FishSettings.dungeonBreakerSoundName),
             FishSettings.dungeonBreakerSoundVolume.coerceIn(0, 500) / 100f,
@@ -98,10 +100,17 @@ object DungeonBreaker {
             val stack = inv.getItem(i)
             if (!isBreaker(stack)) continue
             val lore = stack.get(DataComponents.LORE)?.lines() ?: continue
+            if (!loggedLore) {
+                loggedLore = true
+                fishmod.utils.debug.Debug.LOGGER.info("[DungeonBreaker] lore: " + lore.joinToString(" | ") { it.string })
+            }
             for (line in lore) {
                 val m = CHARGES.find(line.string) ?: continue
-                charges = m.groupValues[1].toInt()
-                maxCharges = m.groupValues[2].toInt()
+                val c = m.groupValues[1].toInt()
+                val mx = m.groupValues[2].toInt()
+                if (c != charges || mx != maxCharges) fishmod.utils.debug.Debug.LOGGER.info("[DungeonBreaker] charges $c/$mx")
+                charges = c
+                maxCharges = mx
                 return
             }
         }
