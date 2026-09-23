@@ -1,5 +1,6 @@
 {
   "required": true,
+  "plugin": "fishmod.mixin.FishModMixinPlugin",
   "package": "fishmod.mixin",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
@@ -30,6 +31,7 @@
     "ChatHudMixin",
     "ChatPeekMixin",
     "ChatHistoryMixin",
+    "ChatHistoryLimitMixin",
     "ChatSearchMixin",
     "FishCopyChatMixin",
     "CosmeticChatMixin",
