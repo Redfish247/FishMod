@@ -72,6 +72,19 @@ class Split(
 
     // Set when the split ends: PB_COLOR / AVG_COLOR, 0 = normal.
     @JvmField var paceColor: Int = 0
+    // PB / average to race while running (seconds, <= 0 = none).
+    @JvmField var pbRef: Double = -1.0
+    @JvmField var avgRef: Double = -1.0
+
+    private fun liveColor(): Int {
+        if (!FishSettings.splitPbColors || !started || ended) return 0
+        val t = getRealTime()
+        return when {
+            pbRef > 0 && t < pbRef -> PB_COLOR
+            avgRef > 0 && t < avgRef -> AVG_COLOR
+            else -> 0
+        }
+    }
 
     fun parseMessage(string: String) {
         if (!started) {
@@ -143,7 +156,7 @@ class Split(
             serverTimeColor = serverTimeColorInactive
             parenthesesColor = parenthesesColorInactive
         } else if (!ended) {
-            realTimeColor = realTimeColorOngoing
+            realTimeColor = liveColor().takeIf { it != 0 } ?: realTimeColorOngoing
             serverTimeColor = serverTimeColorOngoing
             parenthesesColor = parenthesesColorOngoing
         } else {

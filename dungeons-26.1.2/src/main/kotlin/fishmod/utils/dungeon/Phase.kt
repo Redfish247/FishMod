@@ -68,7 +68,11 @@ object Phase {
         floor = key
 
         currentSplits = FLOOR_SPLITS[floor]
-        currentSplits?.forEach { it.reset() }
+        currentSplits?.forEach {
+            it.reset()
+            it.pbRef = seedPb(key, it.name) ?: -1.0
+            it.avgRef = RunHistory.getPersonalAvg(key, it.name)
+        }
         if (floor!!.contains("7")) inFloor7 = true
     }
 
@@ -142,9 +146,20 @@ object Phase {
         val f = floor ?: return null
         val t = split.getRealTime()
         val avg = RunHistory.getPersonalAvg(f, split.name)
+        seedPb(f, split.name)
         val r = PbMessages.submit("split:$f:${split.name}", t) ?: return null
         split.paceColor = paceColor(r, avg)
         return r
+    }
+
+    // Falls back to the best of the last-30 run history so PBs work before the first new record.
+    private fun seedPb(f: String, name: String): Double? {
+        val key = "split:$f:$name"
+        PbMessages.get(key)?.let { return it }
+        val hist = RunHistory.getPersonalBest(f, name)
+        if (hist <= 0) return null
+        PbMessages.submit(key, hist)
+        return hist
     }
 
     // Pink = beat an existing PB, orange = faster than your average.

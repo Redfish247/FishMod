@@ -68,6 +68,9 @@ object Section {
                 }
                 currentSection = 1
                 total = totalFor(1)
+                Phase.getFloor()?.let { f ->
+                    for (i in splits.indices) splits[i].pbRef = PbMessages.get("goldor:$f:S${i + 1}") ?: -1.0
+                }
                 splits[0].start()
             } else if (Phase.inGoldorTunnel()) {
                 if (Debug.termInfo) {
