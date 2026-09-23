@@ -225,6 +225,8 @@ public class HypixelApi {
                     d.secretAverage = obj.get("secretAverage").getAsString();
                 if (obj.has("skillAverage") && !obj.get("skillAverage").isJsonNull())
                     d.skillAverage = obj.get("skillAverage").getAsString();
+                if (obj.has("selectedClass") && !obj.get("selectedClass").isJsonNull())
+                    d.selectedClass = obj.get("selectedClass").getAsString();
                 if (obj.has("cataPbs")) {
                     JsonArray arr = obj.getAsJsonArray("cataPbs");
                     for (int i = 0; i < Math.min(arr.size(), 8); i++)
@@ -284,6 +286,7 @@ public class HypixelApi {
                     else obj.add("secretAverage", JsonNull.INSTANCE);
                     if (d.skillAverage != null) obj.addProperty("skillAverage", d.skillAverage);
                     else obj.add("skillAverage", JsonNull.INSTANCE);
+                    if (d.selectedClass != null) obj.addProperty("selectedClass", d.selectedClass);
                     JsonArray cataPbs = new JsonArray();
                     for (String pb : d.cataPbs)   { if (pb != null) cataPbs.add(pb); else cataPbs.add(JsonNull.INSTANCE); }
                     obj.add("cataPbs", cataPbs);
@@ -322,6 +325,7 @@ public class HypixelApi {
         public long totalRuns;
         public String secretAverage;
         public String skillAverage;
+        public String selectedClass;
         public Map<String, Long> classXp = new HashMap<>();
         public String[] cataPbs    = new String[8];
         public String[] masterPbs  = new String[8];
@@ -746,6 +750,8 @@ public class HypixelApi {
         DungeonData result = new DungeonData();
         if (!member.has("dungeons")) return result;
         JsonObject dungeons = member.getAsJsonObject("dungeons");
+        if (dungeons.has("selected_dungeon_class") && !dungeons.get("selected_dungeon_class").isJsonNull())
+            result.selectedClass = dungeons.get("selected_dungeon_class").getAsString();
 
         if (dungeons.has("dungeon_types")) {
             JsonObject types = dungeons.getAsJsonObject("dungeon_types");
