@@ -445,6 +445,19 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Personal Bests", "Track & show the fastest clear / secrets per room", FishSettings::roomTimerPb).gatedBy { FishSettings.roomTimerEnabled })
             dungeon.features.add(f)
         }
+        run {
+            val f = Feature("Dungeon Breaker", FishSettings::dungeonBreakerEnabled)
+            f.sub.add(ToggleSetting("Charges HUD", "Odin-style Dungeonbreaker charges display", FishSettings::dungeonBreakerHudEnabled))
+            f.sub.add(ToggleSetting("Dungeons Only", "Only show / play inside dungeons", FishSettings::dungeonBreakerDungeonOnly))
+            f.sub.add(SubcategoryHeader("Break Sound"))
+            f.sub.add(ToggleSetting("Break Sound", "Play a sound when a block you hit with the Dungeonbreaker breaks", FishSettings::dungeonBreakerSoundEnabled))
+            f.sub.add(SoundSearchSetting("Sound", "Type to search every game sound",
+                { FishSettings.dungeonBreakerSoundName }, { v -> FishSettings.dungeonBreakerSoundName = v },
+                { FishSettings.dungeonBreakerSoundVolume }, { FishSettings.dungeonBreakerSoundPitch }).gatedBy { FishSettings.dungeonBreakerSoundEnabled })
+            f.sub.add(SliderIntSetting("Volume %", "Above 100 = louder (stacked plays)", FishSettings::dungeonBreakerSoundVolume, 0, 500, 10).gatedBy { FishSettings.dungeonBreakerSoundEnabled })
+            f.sub.add(SliderDoubleSetting("Pitch", "", FishSettings::dungeonBreakerSoundPitch, 0.0, 2.0).gatedBy { FishSettings.dungeonBreakerSoundEnabled })
+            dungeon.features.add(f)
+        }
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
         run {
             val wp = fishmod.features.dungeon.DungeonWaypoints
