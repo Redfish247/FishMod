@@ -358,6 +358,7 @@ object FishSettings {
     @ConfigValue @JvmField var tttPredictionColor: Int = 0x99FFAA00.toInt()
     @ConfigValue @JvmField var boulderSolver: Boolean = true
     @ConfigValue @JvmField var boulderShowAll: Boolean = true
+    @ConfigValue @JvmField var boulderThroughWalls: Boolean = true
     @ConfigValue @JvmField var boulderColor: Int = 0x9955FF55.toInt()
     @ConfigValue @JvmField var iceFillSolver: Boolean = true
     @ConfigValue @JvmField var iceFillOptimized: Boolean = false
