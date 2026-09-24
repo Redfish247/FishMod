@@ -605,6 +605,32 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeon.features.add(f)
         }
         run {
+            val f = Feature("Route Recorder", FishSettings::routeRecorderEnabled)
+            f.sub.add(LabelSetting("/fm route record · stop · play", "skip · back · undo · clear · save/load <name> · list"))
+            f.sub.add(ToggleSetting("Through Walls", "", FishSettings::routeThroughWalls))
+            f.sub.add(DropdownSetting("Box Style", "", arrayOf("Filled", "Outline", "Filled Outline"),
+                { FishSettings.routeBoxStyle }, { v -> FishSettings.routeBoxStyle = v }))
+            f.sub.add(SliderIntSetting("Fill Opacity %", "", FishSettings::routeFillOpacity, 0, 100, 5).gatedBy { FishSettings.routeBoxStyle != "Outline" })
+            f.sub.add(SliderIntSetting("Outline Opacity %", "", FishSettings::routeOutlineOpacity, 0, 100, 5).gatedBy { FishSettings.routeBoxStyle != "Filled" })
+            f.sub.add(SliderDoubleSetting("Outline Width", "", FishSettings::routeOutlineWidth, 0.5, 10.0).gatedBy { FishSettings.routeBoxStyle != "Filled" })
+            f.sub.add(ToggleSetting("Highlight Next Step", "Brighter box on the step you're on", FishSettings::routeHighlightCurrent))
+            f.sub.add(ToggleSetting("Route Lines", "Line from each step to the next", FishSettings::routeShowLines))
+            f.sub.add(SliderDoubleSetting("Line Width", "", FishSettings::routeLineWidth, 0.5, 10.0).gatedBy { FishSettings.routeShowLines })
+            f.sub.add(SliderIntSetting("Line Opacity %", "", FishSettings::routeLineOpacity, 0, 100, 5).gatedBy { FishSettings.routeShowLines })
+            f.sub.add(ToggleSetting("Line To Next Step", "Tracer from you while playing", FishSettings::routeLineToNext))
+            f.sub.add(ToggleSetting("Labels", "", FishSettings::routeShowLabels))
+            f.sub.add(SliderDoubleSetting("Label Scale", "", FishSettings::routeLabelScale, 0.5, 3.0).gatedBy { FishSettings.routeShowLabels })
+            f.sub.add(ColorPickerSetting("Etherwarp", "", FishSettings::routeColorEtherwarp))
+            f.sub.add(ColorPickerSetting("Ender Pearl", "", FishSettings::routeColorPearl))
+            f.sub.add(ColorPickerSetting("Dungeonbreaker", "", FishSettings::routeColorBreak))
+            f.sub.add(ColorPickerSetting("Superboom", "", FishSettings::routeColorSuperboom))
+            f.sub.add(ColorPickerSetting("Chest", "", FishSettings::routeColorChest))
+            f.sub.add(ColorPickerSetting("Lever / Skull", "", FishSettings::routeColorSecret))
+            f.sub.add(ColorPickerSetting("Item Pickup", "", FishSettings::routeColorItem))
+            f.sub.add(ColorPickerSetting("Bat", "", FishSettings::routeColorBat))
+            dungeon.features.add(f)
+        }
+        run {
             val f = Feature("Secret Clicked", FishSettings::secretClickedEnabled)
             f.sub.add(ToggleSetting("Boxes", "", FishSettings::secretClickedBoxes))
             f.sub.add(ToggleSetting("Bat Secrets", "Count a killed secret bat you were next to", FishSettings::secretClickedBats))

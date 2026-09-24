@@ -11,6 +11,8 @@ import fishmod.features.dungeon.map.Room
 import fishmod.features.dungeon.map.Scan
 import fishmod.utils.FishMsg
 import fishmod.utils.Location
+import fishmod.utils.config.values.FishSettings
+import fishmod.utils.data.EntityUtil
 import fishmod.utils.data.ItemUtil
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
@@ -44,15 +46,15 @@ import java.util.concurrent.ConcurrentLinkedQueue
 // Temporary dev tool: records dungeon actions as an ordered route, then replays it.
 object RouteRecorder {
 
-    enum class Type(val label: String, val argb: Int, val tolerance: Double) {
-        ETHERWARP("Etherwarp", 0xFFB45CFF.toInt(), 2.5),
-        PEARL("Pearl", 0xFF20C0A0.toInt(), 3.0),
-        BREAK("Break", 0xFFFF5555.toInt(), 1.5),
-        SUPERBOOM("Superboom", 0xFFFF2020.toInt(), 3.0),
-        CHEST("Chest", 0xFFFFAA00.toInt(), 1.5),
-        SECRET("Secret", 0xFF55FF55.toInt(), 1.5),
-        ITEM("Item", 0xFF55FFFF.toInt(), 3.0),
-        BAT("Bat", 0xFFFF55FF.toInt(), 5.0),
+    enum class Type(val label: String, val tolerance: Double) {
+        ETHERWARP("Etherwarp", 2.5),
+        PEARL("Pearl", 3.0),
+        BREAK("Break", 1.5),
+        SUPERBOOM("Superboom", 3.0),
+        CHEST("Chest", 1.5),
+        SECRET("Secret", 1.5),
+        ITEM("Item", 3.0),
+        BAT("Bat", 5.0),
     }
 
     class Step(
@@ -154,9 +156,8 @@ object RouteRecorder {
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc -> onTick(mc) })
 
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> render(m, vc, fill = true) }
-        RenderingEvents.NO_DEPTH_LINE.register { ctx, m, vc -> render(m, vc, fill = false); lineToNext(ctx, m, vc) }
-        RenderingEvents.GIZMO.register { _ -> labels() }
+        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> if (FishSettings.routeThroughWalls) renderNoDepth(m, vc) }
+        RenderingEvents.GIZMO.register { _ -> if (!FishSettings.routeThroughWalls) renderGizmo(); labels() }
     }
 
     private fun isBoom(stack: net.minecraft.world.item.ItemStack) = ItemUtil.getId(stack) in BOOM_ITEMS
@@ -168,7 +169,7 @@ object RouteRecorder {
         action(Type.SUPERBOOM, pos)
     }
 
-    private fun tracking() = mode != Mode.IDLE && Location.inDungeon()
+    private fun tracking() = FishSettings.routeRecorderEnabled && mode != Mode.IDLE && Location.inDungeon()
 
     private fun onTick(mc: Minecraft) {
         tick++
@@ -302,7 +303,7 @@ object RouteRecorder {
     // ---- rendering ----
 
     private fun visible(): List<Pair<Int, BlockPos>> {
-        if (mode == Mode.IDLE && steps.isEmpty()) return emptyList()
+        if (!FishSettings.routeRecorderEnabled || steps.isEmpty()) return emptyList()
         if (!Location.inDungeon()) return emptyList()
         val from = if (mode == Mode.PLAYING) progress else 0
         val out = ArrayList<Pair<Int, BlockPos>>()
@@ -312,42 +313,74 @@ object RouteRecorder {
 
     private fun box(p: BlockPos) = AABB(p).inflate(0.002)
 
-    private fun render(m: PoseStack, vc: VertexConsumer, fill: Boolean) {
+    private fun color(t: Type): Int = when (t) {
+        Type.ETHERWARP -> FishSettings.routeColorEtherwarp
+        Type.PEARL -> FishSettings.routeColorPearl
+        Type.BREAK -> FishSettings.routeColorBreak
+        Type.SUPERBOOM -> FishSettings.routeColorSuperboom
+        Type.CHEST -> FishSettings.routeColorChest
+        Type.SECRET -> FishSettings.routeColorSecret
+        Type.ITEM -> FishSettings.routeColorItem
+        Type.BAT -> FishSettings.routeColorBat
+    }
+
+    private fun withAlpha(argb: Int, pct: Int) = ((pct.coerceIn(0, 100) * 255 / 100) shl 24) or (argb and 0xFFFFFF)
+
+    private inline fun draw(box: (AABB, Int, Int) -> Unit, line: (Vec3, Vec3, Double, Int) -> Unit) {
         val vis = visible()
         if (vis.isEmpty()) return
+        val style = FishSettings.routeBoxStyle
+        val fillPct = if (style != "Outline") FishSettings.routeFillOpacity else 0
+        val strokePct = if (style != "Filled") FishSettings.routeOutlineOpacity else 0
+        val hw = FishSettings.routeLineWidth * 0.01
         var prev: Vec3? = null
         for ((i, p) in vis) {
             val s = steps[i]
-            val rgba = RenderUtils.toFloats(s.type.argb)
-            val current = mode == Mode.PLAYING && i == progress
-            if (fill) {
-                RenderUtils.renderFilled(m, vc, box(p), floatArrayOf(rgba[0], rgba[1], rgba[2], if (current) 0.55f else 0.3f))
-                val c = Vec3.atCenterOf(p)
-                prev?.let { RenderUtils.renderThickLine(m, vc, it, c, 0.04, floatArrayOf(rgba[0], rgba[1], rgba[2], 0.85f)) }
-                prev = c
-                if (s.type == Type.PEARL) {
-                    resolve(s.room, s.landLocal, s.landWorld)?.let { land ->
-                        RenderUtils.renderThickLine(m, vc, c, Vec3.atCenterOf(land), 0.02, floatArrayOf(rgba[0], rgba[1], rgba[2], 0.5f))
-                        RenderUtils.renderFilled(m, vc, AABB(land).deflate(0.3), floatArrayOf(rgba[0], rgba[1], rgba[2], 0.4f))
-                    }
+            val c = color(s.type)
+            val current = FishSettings.routeHighlightCurrent && mode == Mode.PLAYING && i == progress
+            box(box(p), withAlpha(c, if (current) fillPct + 25 else fillPct), withAlpha(c, if (current) 100 else strokePct))
+            val center = Vec3.atCenterOf(p)
+            if (FishSettings.routeShowLines) {
+                prev?.let { line(it, center, hw, withAlpha(c, FishSettings.routeLineOpacity)) }
+                if (s.type == Type.PEARL) resolve(s.room, s.landLocal, s.landWorld)?.let { land ->
+                    line(center, Vec3.atCenterOf(land), hw / 2, withAlpha(c, FishSettings.routeLineOpacity * 6 / 10))
+                    box(AABB(land).deflate(0.3), withAlpha(c, maxOf(fillPct, 30)), 0)
                 }
-            } else {
-                RenderUtils.renderOutline(m, vc, box(p), floatArrayOf(rgba[0], rgba[1], rgba[2], 1f))
+            }
+            prev = center
+        }
+        if (FishSettings.routeLineToNext && mode == Mode.PLAYING) {
+            val (i, p) = vis.first()
+            val player = Minecraft.getInstance().player
+            if (i == progress && player != null) {
+                val eye = EntityUtil.getLerpedPos(player).add(0.0, player.eyeHeight.toDouble(), 0.0).add(player.lookAngle.scale(1.0))
+                line(eye, Vec3.atCenterOf(p), hw / 2, withAlpha(color(steps[i].type), FishSettings.routeLineOpacity))
             }
         }
     }
 
-    private fun lineToNext(ctx: net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext, m: PoseStack, vc: VertexConsumer) {
-        if (mode != Mode.PLAYING) return
-        val (i, p) = visible().firstOrNull() ?: return
-        if (i != progress) return
-        RenderUtils.renderLineTo(ctx, m, vc, Vec3.atCenterOf(p), steps[i].type.argb)
+    private fun renderNoDepth(m: PoseStack, vc: VertexConsumer) {
+        val ow = FishSettings.routeOutlineWidth * 0.01
+        draw({ b, fill, stroke ->
+            if ((fill ushr 24) != 0) RenderUtils.renderFilled(m, vc, b, RenderUtils.toFloats(fill))
+            if ((stroke ushr 24) != 0) RenderUtils.renderThickOutline(m, vc, b, RenderUtils.toFloats(stroke), ow)
+        }, { a, b, hw, argb -> RenderUtils.renderThickLine(m, vc, a, b, hw, RenderUtils.toFloats(argb)) })
+    }
+
+    private fun renderGizmo() {
+        val ow = FishSettings.routeOutlineWidth * 0.01
+        draw({ b, fill, stroke ->
+            RenderUtils.gizmoBox(b, fill, 0)
+            RenderUtils.gizmoThickOutline(b, stroke, ow)
+        }, { a, b, hw, argb -> RenderUtils.gizmoThickLine(a, b, hw, argb) })
     }
 
     private fun labels() {
+        if (!FishSettings.routeShowLabels) return
+        val scale = FishSettings.routeLabelScale.toFloat()
         for ((i, p) in visible()) {
             val s = steps[i]
-            RenderUtils.gizmoText(Component.literal("${i + 1}. ${s.type.label}"), Vec3(p.x + 0.5, p.y + 1.4, p.z + 0.5), 1.0f, s.type.argb)
+            RenderUtils.gizmoText(Component.literal("${i + 1}. ${s.type.label}"), Vec3(p.x + 0.5, p.y + 1.4, p.z + 0.5), scale, withAlpha(color(s.type), 100))
         }
     }
 
