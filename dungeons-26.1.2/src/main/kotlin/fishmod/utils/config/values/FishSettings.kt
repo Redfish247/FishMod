@@ -49,6 +49,7 @@ object FishSettings {
 
     @ConfigValue @JvmField var petHudEnabled: Boolean = false
     @ConfigValue @JvmField var petHudShowLevel: Boolean = false
+    @ConfigValue @JvmField var petHudIcon: Boolean = false
     @ConfigValue @JvmField var petHudShowRarity: Boolean = true
     @ConfigValue @JvmField var petHudFadeIdle: Boolean = false
     @ConfigValue @JvmField var petHudFadeMs: Int = 5000
