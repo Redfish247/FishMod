@@ -706,6 +706,9 @@ object FishSettings {
     @ConfigValue @JvmField var pbMessagesTerminals: Boolean = true
     @ConfigValue @JvmField var pbMessagesRelics: Boolean = true
     @ConfigValue @JvmField var splitPbColors: Boolean = true
+    @ConfigValue @JvmField var splitPbColor: Int = 0xFFFF55FF.toInt()
+    @ConfigValue @JvmField var splitAvgColor: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var splitNameColors: String = ""
 
     @ConfigValue @JvmField var mimicAnnounceEnabled: Boolean = false
     @ConfigValue @JvmField var mimicMsgEnabled: Boolean = true
@@ -827,6 +830,9 @@ object FishSettings {
     @ConfigValue @JvmField var slayerProfitCountKillCoins: Boolean = true
 
     @ConfigValue @JvmField var miningProfitEnabled: Boolean = false
+    @ConfigValue @JvmField var miningProfitHudX: Int = 10
+    @ConfigValue @JvmField var miningProfitHudY: Int = 100
+    @ConfigValue @JvmField var miningProfitHudScale: Double = 1.0
 
     @ConfigValue @JvmField var slayerPhaseEnabled: Boolean = false
     @ConfigValue @JvmField var slayerPhaseWorldText: Boolean = true

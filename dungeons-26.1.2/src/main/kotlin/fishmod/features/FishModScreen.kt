@@ -659,6 +659,19 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 Split.TimerType.values(), { Split.timerType }, { v -> Split.timerType = v }))
             f.sub.add(ToggleSetting("Activated Only", "", Phase::onlyShowActivatedSplits))
             f.sub.add(ToggleSetting("PB Colors", "Finished split time: pink = new PB, orange = faster than your average", FishSettings::splitPbColors))
+            f.sub.add(SubcategoryHeader("Time Colors"))
+            f.sub.add(ColorPickerSetting("New PB", "", FishSettings::splitPbColor).gatedBy { FishSettings.splitPbColors })
+            f.sub.add(ColorPickerSetting("Faster Than Avg", "", FishSettings::splitAvgColor).gatedBy { FishSettings.splitPbColors })
+            f.sub.add(ColorPickerSetting("Not Started", "", Split.Companion::realTimeColorInactive))
+            f.sub.add(ColorPickerSetting("Running", "", Split.Companion::realTimeColorOngoing))
+            f.sub.add(ColorPickerSetting("Finished", "", Split.Companion::realTimeColorComplete))
+            f.sub.add(ColorPickerSetting("Tick Time", "The time in brackets", { Split.serverTimeColorComplete },
+                { v -> Split.serverTimeColorInactive = v; Split.serverTimeColorOngoing = v; Split.serverTimeColorComplete = v }))
+            f.sub.add(SubcategoryHeader("Split Name Colors"))
+            for (s in Phase.distinctSplits()) {
+                f.sub.add(ColorPickerSetting(s.name, "", { s.nameColor() }, { v -> Split.setNameColor(s.name, v) }))
+            }
+            f.sub.add(ButtonSetting("Reset Names", "Back to the default split name colors", { "Reset" }, Runnable { Split.resetNameColors() }))
             dungeon.features.add(f)
         }
         run {
@@ -1241,6 +1254,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         run {
             val f = Feature("Goldor Splits", Section::enableTerminalSplits)
             f.sub.add(ToggleSetting("PB Colors", "Pink section time on a new PB", FishSettings::splitPbColors))
+            f.sub.add(ColorPickerSetting("New PB", "", FishSettings::splitPbColor).gatedBy { FishSettings.splitPbColors })
+            Section.sectionSplits().forEachIndexed { i, s ->
+                f.sub.add(ColorPickerSetting("S${i + 1} Name", "", { s.nameColor() }, { v -> Split.setNameColor(s.name, v) }))
+            }
             f.sub.add(DropdownSetting("Show During", "",
                 Section.DisplayTerminalSplitsWhen.values(),
                 { Section.displayTerminalSplitsWhen },
@@ -1685,12 +1702,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 slot.substring(colon + 1).split("+") to (slot.substring(0, colon).toIntOrNull() ?: 0)
             else
                 listOf(slot) to 0
-            for (n in names) {
-                if (byName[n] == null || !used.add(n)) return
-            }
-            slots.add(Slot(names, activeIdx))
+            // skip tabs that no longer exist instead of throwing the whole layout away
+            val known = names.filter { byName[it] != null && used.add(it) }
+            if (known.isNotEmpty()) slots.add(Slot(known, activeIdx))
         }
-        if (used.size != columns.size) return
+        // tabs added since the layout was saved go on the end
+        for (c in columns) if (used.add(c.name)) slots.add(Slot(listOf(c.name), 0))
 
         val reordered = ArrayList<Column>(columns.size)
         for (slot in slots) {

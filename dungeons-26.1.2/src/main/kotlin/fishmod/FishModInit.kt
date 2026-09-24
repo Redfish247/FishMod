@@ -1288,6 +1288,7 @@ class FishModInit : ModInitializer {
         })
 
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "soulflow_hud")) { ctx, tickCounter -> SoulflowHud.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "mining_profit_hud")) { ctx, t -> fishmod.features.mining.MiningProfitTracker.renderHud(ctx, t) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_breaker_hud")) { ctx, tickCounter -> fishmod.features.dungeon.DungeonBreaker.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "pet_hud")) { ctx, tickCounter -> PetHud.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "cooldown_overlay_hotbar")) { ctx, tickCounter -> CooldownOverlay.renderHotbar(ctx, tickCounter) }

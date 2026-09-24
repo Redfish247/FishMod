@@ -137,6 +137,17 @@ object Phase {
     @JvmStatic
     fun getFloor(): String? = floor
 
+    private val FLOOR_ORDER = listOf("E", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "M1", "M2", "M3", "M4", "M5", "M6", "M7")
+
+    // One entry per distinct split name (first floor's split as the default colour), Run Time last.
+    @JvmStatic
+    fun distinctSplits(): List<Split> {
+        val seen = LinkedHashMap<String, Split>()
+        for (f in FLOOR_ORDER + FLOOR_SPLITS.keys) FLOOR_SPLITS[f]?.forEach { seen.putIfAbsent(it.name, it) }
+        val run = seen.remove("Run Time")
+        return seen.values.toList() + listOfNotNull(run)
+    }
+
     private fun splitPb(split: Split): PbMessages.Result? {
         if (PracticeMode.active) return null
         val f = floor ?: return null
