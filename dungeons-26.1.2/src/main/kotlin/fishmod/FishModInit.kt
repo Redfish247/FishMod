@@ -453,6 +453,7 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.KeyNotifier.init()
         fishmod.features.dungeon.AutoRequeue.init()
         fishmod.features.dungeon.Blessings.init()
+        fishmod.features.PetSwapTitle.init()
         fishmod.features.dungeon.InvincibilityTracker.init()
         fishmod.features.dungeon.SecretClicked.init()
         fishmod.features.dungeon.RouteRecorder.init()
