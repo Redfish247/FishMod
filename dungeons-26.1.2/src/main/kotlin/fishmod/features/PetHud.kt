@@ -422,9 +422,10 @@ object PetHud {
             pendingXp = 0.0
         }
 
+        val icon = if (FishSettings.petHudIcon) PetIcons.icon(petName) else null
         val text = StringBuilder()
         if (FishSettings.petHudShowLevel && petLevel >= 0) text.append("§7[Lvl ").append(petLevel).append("] ")
-        text.append(nameColorCode()).append(petName)
+        if (icon == null) text.append(nameColorCode()).append(petName)
 
         val maxLvl = if ("Golden Dragon".equals(petName, ignoreCase = true)) 200 else 100
         val maxed = petLevel >= maxLvl || petMaxed
@@ -443,7 +444,12 @@ object PetHud {
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.petHudX.toFloat(), FishSettings.petHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, text.toString(), 0, 0, -1, true)
+        if (icon != null) {
+            ctx.item(icon, 0, -4)
+            ctx.text(mc.font, text.toString().trimStart(), 18, 0, -1, true)
+        } else {
+            ctx.text(mc.font, text.toString(), 0, 0, -1, true)
+        }
         ctx.pose().popMatrix()
     }
 
