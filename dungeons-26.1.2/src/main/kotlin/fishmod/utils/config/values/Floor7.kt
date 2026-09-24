@@ -40,6 +40,18 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
+    var enablePyTimer: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var pyTimerColor: Int = 0xffff55ff.toInt()
+
+    @ConfigValue
+    @JvmField
+    var pyTimerPingMs: Int = 0
+
+    @ConfigValue
+    @JvmField
     var enableGoldorTickTimer: Boolean = false
 
     @ConfigValue

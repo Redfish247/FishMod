@@ -46,6 +46,13 @@ object F7Huds {
 
     @JvmField
     @ConfigValue
+    var pyTimer: HUDComponent = HUDComponent(
+        10.0, 116.0, TICK_W, 10, 1f, "Py Tick Timer",
+        { false }, StormTickTimer::renderPyTimer, { Floor7.enableTickTimers && Floor7.enablePyTimer }
+    )
+
+    @JvmField
+    @ConfigValue
     var lbReleaseTimer: HUDComponent = HUDComponent(
         10.0, 104.0, TICK_W, 10, 1f, "LB Release Timer",
         { false }, StormTickTimer::renderLbReleaseTimer, { Floor7.enableTickTimers && Floor7.enableLbReleaseTimer }
@@ -141,6 +148,7 @@ object F7Huds {
         renderOne(ctx, sectionProgress, SectionProgress.display(), SectionProgress::render, 10, 142)
         renderOne(ctx, Section.terminalSplits, Section.display(), Section::render, 10, 154)
         renderOne(ctx, lbReleaseTimer, StormTickTimer.displayLbReleaseTimer(), StormTickTimer::renderLbReleaseTimer, 10, 166)
+        renderOne(ctx, pyTimer, StormTickTimer.displayPyTimer(), StormTickTimer::renderPyTimer, 10, 178)
         renderOne(ctx, crystalReminder, CrystalSpawn.displayNotification(), CrystalSpawn::renderNotification, 10, 40)
         renderOne(ctx, stormCrush, PillarExplode.display(), PillarExplode::render, 10, 28)
         renderOne(ctx, currentSection, CurrentSection.display(), CurrentSection::render, 10, 202)
