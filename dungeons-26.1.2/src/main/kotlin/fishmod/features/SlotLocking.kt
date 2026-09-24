@@ -115,7 +115,8 @@ object SlotLocking {
         val slot = screen.menu.slots.firstOrNull { it.x == x && it.y == y && it.container is Inventory } ?: return
         if (!isLocked(slot)) return
         val c = FishSettings.slotLockingColor
-        ctx.fill(x, y, x + 16, y + 16, (c and 0x00FFFFFF) or 0x40000000)
+        val alpha = (FishSettings.slotLockingOpacity.coerceIn(0, 100) * 255 / 100) shl 24
+        if (alpha != 0) ctx.fill(x, y, x + 16, y + 16, (c and 0x00FFFFFF) or alpha)
         ctx.fill(x, y, x + 16, y + 1, c)
         ctx.fill(x, y + 15, x + 16, y + 16, c)
         ctx.fill(x, y, x + 1, y + 16, c)
