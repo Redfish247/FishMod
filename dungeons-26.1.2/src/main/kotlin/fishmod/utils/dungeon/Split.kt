@@ -2,6 +2,7 @@ package fishmod.utils.dungeon
 
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.Constants
+import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
@@ -25,6 +26,8 @@ class Split(
         const val GREEN: Int = 5635925
         const val GRAY: Int = 11184810
         const val DARK_GRAY: Int = 5592405
+        const val PB_COLOR: Int = 0xFF55FF
+        const val AVG_COLOR: Int = 0xFFAA00
 
         @ConfigValue
         @JvmField
@@ -59,13 +62,47 @@ class Split(
         @ConfigValue
         @JvmField
         var timerType: TimerType = TimerType.TICK_TIME
+
+        private var cachedRaw: String? = null
+        private var cachedNameColors: Map<String, Int> = emptyMap()
+
+        // Per-split name colour overrides, stored as "Name=aarrggbb;Name2=...".
+        @JvmStatic
+        fun nameColors(): Map<String, Int> {
+            val raw = FishSettings.splitNameColors
+            if (raw != cachedRaw) {
+                cachedRaw = raw
+                cachedNameColors = raw.split(';').mapNotNull { e ->
+                    val i = e.lastIndexOf('=')
+                    if (i <= 0) null else e.substring(i + 1).toLongOrNull(16)?.let { e.substring(0, i) to it.toInt() }
+                }.toMap()
+            }
+            return cachedNameColors
+        }
+
+        @JvmStatic
+        fun setNameColor(name: String, color: Int) {
+            val m = nameColors().toMutableMap()
+            m[name] = color
+            FishSettings.splitNameColors = m.entries.joinToString(";") { "${it.key}=${Integer.toHexString(it.value)}" }
+        }
+
+        @JvmStatic
+        fun resetNameColors() {
+            FishSettings.splitNameColors = ""
+        }
     }
+
+    fun nameColor(): Int = nameColors()[name] ?: color
 
     private var tick: Int = 0
     private var startTime: Long = 0
     private var endTime: Long = 0
     private var started: Boolean = false
     private var ended: Boolean = false
+
+    // Set when the split ends: PB_COLOR / AVG_COLOR, 0 = normal.
+    @JvmField var paceColor: Int = 0
 
     fun parseMessage(string: String) {
         if (!started) {
@@ -86,6 +123,7 @@ class Split(
     }
 
     fun reset() {
+        paceColor = 0
         tick = 0
         ended = false
         started = false
@@ -99,6 +137,7 @@ class Split(
     }
 
     fun start() {
+        paceColor = 0
         startTime = System.currentTimeMillis()
         started = true
         ended = false
@@ -121,7 +160,7 @@ class Split(
         }
     }
 
-    fun createNameText(): MutableComponent = Component.literal("$name ").withColor(color)
+    fun createNameText(): MutableComponent = Component.literal("$name ").withColor(nameColor() and 0xFFFFFF)
 
     fun getTimeDiffrence(): Double = getRealTime() - getTickTime()
 
@@ -139,7 +178,12 @@ class Split(
             serverTimeColor = serverTimeColorOngoing
             parenthesesColor = parenthesesColorOngoing
         } else {
-            realTimeColor = realTimeColorComplete
+            val pace = when (paceColor) {
+                PB_COLOR -> FishSettings.splitPbColor
+                AVG_COLOR -> FishSettings.splitAvgColor
+                else -> 0
+            }
+            realTimeColor = if (pace != 0 && FishSettings.splitPbColors) pace else realTimeColorComplete
             serverTimeColor = serverTimeColorComplete
             parenthesesColor = parenthesesColorComplete
         }
@@ -159,11 +203,11 @@ class Split(
         }
 
         val realTimeString = (if (realTime >= 60) (realTime / 60).toInt().toString() + "m " else "") + Constants.DECIMAL_FORMAT.format(realTime % 60) + "s"
-        return Component.literal(realTimeString).withColor(realTimeColor)
+        return Component.literal(realTimeString).withColor(realTimeColor and 0xFFFFFF)
             .append(
-                Component.literal(" (").withColor(parenthesesColor)
-                    .append(Component.literal(serverTime).withColor(serverTimeColor))
-                    .append(Component.literal(")").withColor(parenthesesColor))
+                Component.literal(" (").withColor(parenthesesColor and 0xFFFFFF)
+                    .append(Component.literal(serverTime).withColor(serverTimeColor and 0xFFFFFF))
+                    .append(Component.literal(")").withColor(parenthesesColor and 0xFFFFFF))
             )
     }
 
