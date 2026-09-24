@@ -31,6 +31,7 @@ public class GuiMixin {
     @ModifyVariable(method = "setOverlayMessage(Lnet/minecraft/network/chat/Component;Z)V",
             at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private Component fishmod$cleanActionBar(Component message) {
+        fishmod.features.dungeon.map.RoomSecrets.onActionBar(message);
         return ActionBarCleaner.filter(message);
     }
 
