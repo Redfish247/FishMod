@@ -25,4 +25,14 @@ object FishModAddonApi {
     fun registerDungeonToggle(name: String, description: String, get: Supplier<Boolean>, set: Consumer<Boolean>) {
         dungeonToggles.add(ExternalToggle(name, description, get, set))
     }
+
+    // Toggles for /fm's "Cheats" column. The column only exists when something registers here,
+    // so a FishMod install without the addon never shows it.
+    @JvmField
+    val cheatToggles: MutableList<ExternalToggle> = CopyOnWriteArrayList()
+
+    @JvmStatic
+    fun registerCheatToggle(name: String, description: String, get: Supplier<Boolean>, set: Consumer<Boolean>) {
+        cheatToggles.add(ExternalToggle(name, description, get, set))
+    }
 }

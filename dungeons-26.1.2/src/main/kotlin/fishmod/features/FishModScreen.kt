@@ -1416,6 +1416,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         for (et in FishModAddonApi.dungeonToggles) {
             dungeon.features.add(Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) }))
         }
+        val cheats = Column("Cheats", "star")
+        for (et in FishModAddonApi.cheatToggles) {
+            cheats.features.add(Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) }))
+        }
 
         run {
             val f = Feature("Enable Map", fishmod.utils.config.values.DungeonMapSettings::mapEnabled)
@@ -1686,6 +1690,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         columns.add(visuals)
         columns.add(cosmetics)
         columns.add(mining)
+        if (cheats.features.isNotEmpty()) columns.add(cheats)
     }
 
     private fun applySavedColumnOrder() {
@@ -3856,7 +3861,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
 
         private fun descForExternal(name: String): String {
-            for (et in FishModAddonApi.dungeonToggles) {
+            for (et in FishModAddonApi.dungeonToggles + FishModAddonApi.cheatToggles) {
                 if (et.name() == name) return et.description()
             }
             return ""
