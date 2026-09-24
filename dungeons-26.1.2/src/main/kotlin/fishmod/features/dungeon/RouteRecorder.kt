@@ -7,6 +7,7 @@ import com.mojang.brigadier.Command
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.blaze3d.vertex.VertexConsumer
+import fishmod.features.dungeon.map.DungeonMap
 import fishmod.features.dungeon.map.Room
 import fishmod.features.dungeon.map.Scan
 import fishmod.utils.FishMsg
@@ -77,6 +78,9 @@ object RouteRecorder {
     private var mode = Mode.IDLE
     private var progress = 0
     private var liveWorld = false
+    private var dirty = false
+    private var enteredRoute = false
+    private var outsideTicks = 0
 
     private var lastPos: Vec3? = null
     private var tick = 0L
@@ -177,10 +181,25 @@ object RouteRecorder {
         action(Type.SUPERBOOM, pos)
     }
 
+    // unload a shown/playing route once you've been in its room and then walk out
+    private fun checkRoomLeave() {
+        if (mode == Mode.RECORDING || steps.isEmpty() || !Location.inDungeon()) { outsideTicks = 0; return }
+        val here = DungeonMap.roomPlayerIn()?.owner?.data?.name ?: return
+        val rooms = steps.mapNotNullTo(HashSet()) { it.room }
+        if (rooms.isEmpty()) return
+        if (here in rooms) { enteredRoute = true; outsideTicks = 0; return }
+        if (!enteredRoute || ++outsideTicks < 10) return
+        val name = steps.firstNotNullOf { it.room }
+        if (dirty) save(name)
+        steps.clear(); progress = 0; mode = Mode.IDLE; enteredRoute = false; outsideTicks = 0
+        msg("§eLeft §f$name§e, route unloaded.")
+    }
+
     private fun tracking() = FishSettings.routeRecorderEnabled && mode != Mode.IDLE && Location.inDungeon()
 
     private fun onTick(mc: Minecraft) {
         tick++
+        checkRoomLeave()
         val player = mc.player
         val level = mc.level
         selfId = player?.id ?: -1
@@ -264,6 +283,7 @@ object RouteRecorder {
         val anchor = DungeonRoomAnchor.current()
         val step = Step(type, anchor?.name, anchor?.let { arr(DungeonRoomAnchor.toLocal(it, pos)) }, arr(pos))
         steps.add(step)
+        dirty = true
         liveWorld = true
         msg("§a+ §f#${steps.size} §7${type.label}" + (anchor?.let { " §8(${it.name})" } ?: " §8(no room anchor)"))
         return step
@@ -425,7 +445,7 @@ object RouteRecorder {
 
     @JvmStatic
     fun record() {
-        steps.clear(); progress = 0; pendingPearl = null; pendingBreaks.clear()
+        steps.clear(); progress = 0; pendingPearl = null; pendingBreaks.clear(); enteredRoute = false
         mode = Mode.RECORDING
         msg("§aRecording. §7Etherwarps, pearls, superbooms, dungeonbreaker, chests, secrets, items and bats are logged. §f/fm route stop §7when done.")
     }
@@ -439,7 +459,7 @@ object RouteRecorder {
     @JvmStatic
     fun play() {
         if (steps.isEmpty()) { msg("§cNo route loaded."); return }
-        progress = 0; mode = Mode.PLAYING
+        progress = 0; mode = Mode.PLAYING; enteredRoute = false
         msg("§aPlaying ${steps.size} steps. §7Completed steps disappear as you do them.")
     }
 
@@ -454,12 +474,13 @@ object RouteRecorder {
     fun undo() {
         val s = steps.removeLastOrNull() ?: run { msg("§cNothing to undo."); return }
         progress = progress.coerceAtMost(steps.size)
+        dirty = true
         msg("§eRemoved #${steps.size + 1} ${s.type.label}")
     }
 
     @JvmStatic
     fun clear() {
-        steps.clear(); progress = 0; mode = Mode.IDLE
+        steps.clear(); progress = 0; mode = Mode.IDLE; dirty = false
         msg("§eCleared.")
     }
 
@@ -470,6 +491,7 @@ object RouteRecorder {
             Files.createDirectories(dir)
             val f = dir.resolve(clean(name) + ".json")
             Files.writeString(f, gson.toJson(steps))
+            dirty = false
             msg("§aSaved ${steps.size} steps → §f${f.fileName}")
         } catch (t: Throwable) { msg("§cSave failed: ${t.message}") }
     }
@@ -480,7 +502,7 @@ object RouteRecorder {
             val f = dir.resolve(clean(name) + ".json")
             if (!Files.exists(f)) { msg("§cNo route named ${clean(name)}"); return }
             val list: List<Step> = gson.fromJson(Files.readString(f), object : TypeToken<List<Step>>() {}.type)
-            steps.clear(); steps.addAll(list); progress = 0; mode = Mode.IDLE; liveWorld = false
+            steps.clear(); steps.addAll(list); progress = 0; mode = Mode.IDLE; liveWorld = false; dirty = false; enteredRoute = false
             msg("§aLoaded ${steps.size} steps. §f/fm route play §7to follow.")
         } catch (t: Throwable) { msg("§cLoad failed: ${t.message}") }
     }
