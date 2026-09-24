@@ -608,7 +608,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             val f = Feature("Route Recorder", FishSettings::routeRecorderEnabled)
             f.sub.add(LabelSetting("/fm route record · stop · play", "skip · back · undo · clear · save/load <name> · list"))
             f.sub.add(ToggleSetting("Auto Load Per Room", "Saved route plays when you enter its room", FishSettings::routeAutoLoad))
-            f.sub.add(ToggleSetting("Through Walls", "", FishSettings::routeThroughWalls))
+            f.sub.add(ToggleSetting("Waypoints Through Walls", "Etherwarp, pearl, break, superboom", FishSettings::routeThroughWalls))
+            f.sub.add(ToggleSetting("Secrets Through Walls", "Chest, lever/skull, item, bat", FishSettings::routeSecretsThroughWalls))
             f.sub.add(DropdownSetting("Box Style", "", arrayOf("Filled", "Outline", "Filled Outline"),
                 { FishSettings.routeBoxStyle }, { v -> FishSettings.routeBoxStyle = v }))
             f.sub.add(SliderIntSetting("Fill Opacity %", "", FishSettings::routeFillOpacity, 0, 100, 5).gatedBy { FishSettings.routeBoxStyle != "Outline" })

@@ -82,6 +82,7 @@ object RouteRecorder {
     private var enteredRoute = false
     private var outsideTicks = 0
     private var lastAutoRoom: String? = null
+    private val doneRooms = HashSet<String>()
 
     private var lastPos: Vec3? = null
     private var tick = 0L
@@ -161,14 +162,15 @@ object RouteRecorder {
             lastPos = null; pendingPearl = null; pendingBreaks.clear()
             batPos.clear(); batEngaged.clear(); itemPos.clear(); pickedItemIds.clear(); removedIds.clear()
             anchorCache = emptyMap()
+            doneRooms.clear(); lastAutoRoom = null
             if (mode == Mode.RECORDING) { mode = Mode.IDLE; msg("§eRecording stopped (world changed). §7${steps.size} steps kept.") }
             false
         }
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc -> onTick(mc) })
 
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> if (FishSettings.routeThroughWalls) renderNoDepth(m, vc) }
-        RenderingEvents.GIZMO.register { _ -> if (!FishSettings.routeThroughWalls) renderGizmo(); labels() }
+        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> renderNoDepth(m, vc) }
+        RenderingEvents.GIZMO.register { _ -> renderGizmo(); labels() }
     }
 
     private fun isBoom(stack: net.minecraft.world.item.ItemStack) = ItemUtil.getId(stack) in BOOM_ITEMS
@@ -208,6 +210,8 @@ object RouteRecorder {
         val here = currentRoom() ?: return
         if (here == lastAutoRoom) return
         lastAutoRoom = here
+        // finished route or green-checked (all secrets) room: don't load again this run
+        if (here in doneRooms || DungeonMap.roomPlayerIn()?.owner?.state == Room.State.GREEN) return
         if (!Files.exists(dir.resolve(clean(here) + ".json"))) return
         if (load(here, quiet = true)) {
             progress = 0; mode = Mode.PLAYING; enteredRoute = true
@@ -325,6 +329,7 @@ object RouteRecorder {
             val w = resolve(s) ?: continue
             if (Vec3.atCenterOf(w).distanceTo(at) > type.tolerance) continue
             progress = i + 1
+            if (progress >= steps.size) routeRoom()?.let { doneRooms.add(it) }
             msg(if (progress >= steps.size) "§aRoute complete!" else "§7Done #${i + 1} ${type.label} §8→ §fnext #${progress + 1} ${steps[progress].type.label}")
             return
         }
@@ -383,7 +388,12 @@ object RouteRecorder {
 
     private fun withAlpha(argb: Int, pct: Int) = ((pct.coerceIn(0, 100) * 255 / 100) shl 24) or (argb and 0xFFFFFF)
 
-    private inline fun draw(box: (AABB, Int, Int) -> Unit, line: (Vec3, Vec3, Double, Int) -> Unit) {
+    private fun isSecret(t: Type) = t == Type.CHEST || t == Type.SECRET || t == Type.ITEM || t == Type.BAT
+
+    private fun throughWalls(t: Type) = if (isSecret(t)) FishSettings.routeSecretsThroughWalls else FishSettings.routeThroughWalls
+
+    // each step (and the line leading into it) renders in the pass matching its through-walls setting
+    private inline fun draw(noDepth: Boolean, box: (AABB, Int, Int) -> Unit, line: (Vec3, Vec3, Double, Int) -> Unit) {
         val vis = visible()
         if (vis.isEmpty()) return
         val style = FishSettings.routeBoxStyle
@@ -394,9 +404,10 @@ object RouteRecorder {
         for ((i, p) in vis) {
             val s = steps[i]
             val c = color(s.type)
+            val center = Vec3.atCenterOf(p)
+            if (throughWalls(s.type) != noDepth) { prev = center; continue }
             val current = FishSettings.routeHighlightCurrent && mode == Mode.PLAYING && i == progress
             box(box(p), withAlpha(c, if (current) fillPct + 25 else fillPct), withAlpha(c, if (current) 100 else strokePct))
-            val center = Vec3.atCenterOf(p)
             if (FishSettings.routeShowLines) {
                 prev?.let { line(it, center, hw, withAlpha(c, FishSettings.routeLineOpacity)) }
                 if (s.type == Type.PEARL) resolve(s.room, s.landLocal, s.landWorld)?.let { land ->
@@ -409,7 +420,7 @@ object RouteRecorder {
         if (FishSettings.routeLineToNext && mode == Mode.PLAYING) {
             val (i, p) = vis.first()
             val player = Minecraft.getInstance().player
-            if (i == progress && player != null) {
+            if (i == progress && player != null && throughWalls(steps[i].type) == noDepth) {
                 val eye = EntityUtil.getLerpedPos(player).add(0.0, player.eyeHeight.toDouble(), 0.0).add(player.lookAngle.scale(1.0))
                 line(eye, Vec3.atCenterOf(p), hw / 2, withAlpha(color(steps[i].type), FishSettings.routeLineOpacity))
             }
@@ -418,7 +429,7 @@ object RouteRecorder {
 
     private fun renderNoDepth(m: PoseStack, vc: VertexConsumer) {
         val ow = FishSettings.routeOutlineWidth * 0.01
-        draw({ b, fill, stroke ->
+        draw(true, { b, fill, stroke ->
             if ((fill ushr 24) != 0) RenderUtils.renderFilled(m, vc, b, RenderUtils.toFloats(fill))
             if ((stroke ushr 24) != 0) RenderUtils.renderThickOutline(m, vc, b, RenderUtils.toFloats(stroke), ow)
         }, { a, b, hw, argb -> RenderUtils.renderThickLine(m, vc, a, b, hw, RenderUtils.toFloats(argb)) })
@@ -426,7 +437,7 @@ object RouteRecorder {
 
     private fun renderGizmo() {
         val ow = FishSettings.routeOutlineWidth * 0.01
-        draw({ b, fill, stroke ->
+        draw(false, { b, fill, stroke ->
             RenderUtils.gizmoBox(b, fill, 0)
             RenderUtils.gizmoThickOutline(b, stroke, ow)
         }, { a, b, hw, argb -> RenderUtils.gizmoThickLine(a, b, hw, argb) })
@@ -490,6 +501,7 @@ object RouteRecorder {
     fun skip(n: Int) {
         if (mode != Mode.PLAYING) { msg("§cNot playing."); return }
         progress = (progress + n).coerceIn(0, steps.size)
+        if (progress >= steps.size) routeRoom()?.let { doneRooms.add(it) }
         msg("§7Now at step §f${progress + 1}§7/${steps.size}")
     }
 

@@ -725,6 +725,7 @@ object FishSettings {
     @ConfigValue @JvmField var routeRecorderEnabled: Boolean = true
     @ConfigValue @JvmField var routeAutoLoad: Boolean = true
     @ConfigValue @JvmField var routeThroughWalls: Boolean = true
+    @ConfigValue @JvmField var routeSecretsThroughWalls: Boolean = true
     @ConfigValue @JvmField var routeBoxStyle: String = "Filled Outline"
     @ConfigValue @JvmField var routeFillOpacity: Int = 30
     @ConfigValue @JvmField var routeOutlineOpacity: Int = 100
