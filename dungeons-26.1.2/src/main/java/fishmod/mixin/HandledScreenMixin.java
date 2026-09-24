@@ -122,6 +122,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
         if (SearchBar.keyPressed(input)) { cir.setReturnValue(true); return; }
         if (fishmod.features.storage.StorageOverlay.keyPressed(input.key(), (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
         if (fishmod.features.dungeon.LeapMenu.keyPressed(input.key(), (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+        if (fishmod.features.other.PetKeybinds.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
         if (WardrobeHotkeys.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
     }
 
@@ -168,6 +169,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
             return;
         }
 
+        if (fishmod.features.other.PetKeybinds.mouseClicked(click, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
         if (WardrobeHotkeys.mouseClicked(click, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
 
         SearchBar.onMouseClick(click);
