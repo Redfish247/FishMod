@@ -33,6 +33,13 @@ object RenderUtils {
         return floatArrayOf(r, g, b, a)
     }
 
+    // Tracer start from the real camera (follows the smooth crouch height, unlike player.eyeHeight).
+    @JvmStatic
+    fun cameraLineStart(ahead: Double): Vec3 {
+        val cam = Minecraft.getInstance().gameRenderer.mainCamera
+        return cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()).scale(ahead))
+    }
+
     @JvmStatic
     fun gizmoBox(box: AABB, fillArgb: Int, strokeArgb: Int) {
         if ((fillArgb ushr 24) != 0) Gizmos.cuboid(box, GizmoStyle.fill(fillArgb))

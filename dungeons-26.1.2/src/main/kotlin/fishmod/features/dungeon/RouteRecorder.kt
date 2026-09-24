@@ -421,7 +421,7 @@ object RouteRecorder {
             val (i, p) = vis.first()
             val player = Minecraft.getInstance().player
             if (i == progress && player != null && throughWalls(steps[i].type) == noDepth) {
-                val eye = EntityUtil.getLerpedPos(player).add(0.0, player.eyeHeight.toDouble(), 0.0).add(player.lookAngle.scale(1.0))
+                val eye = RenderUtils.cameraLineStart(1.0)
                 line(eye, Vec3.atCenterOf(p), hw / 2, withAlpha(color(steps[i].type), FishSettings.routeLineOpacity))
             }
         }

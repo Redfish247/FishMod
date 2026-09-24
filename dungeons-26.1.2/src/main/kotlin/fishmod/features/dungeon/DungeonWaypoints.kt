@@ -414,9 +414,8 @@ object DungeonWaypoints {
     private class AimResult(@JvmField val point: Vec3, @JvmField val blockBox: AABB?, @JvmField val exact: Vec3, @JvmField val face: Direction?)
 
     private fun playerEyePos(mc: Minecraft): Vec3? {
-        val p = mc.player ?: return null
-        val delta = mc.deltaTracker.getGameTimeDeltaPartialTick(false)
-        return p.getEyePosition(delta).add(p.getViewVector(delta).scale(0.2))
+        if (mc.player == null) return null
+        return RenderUtils.cameraLineStart(0.2)
     }
 
     private fun aimPoint(mc: Minecraft): AimResult {
