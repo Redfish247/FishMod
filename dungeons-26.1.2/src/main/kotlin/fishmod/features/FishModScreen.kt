@@ -429,6 +429,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Boulder Solver", "", FishSettings::boulderSolver))
             f.sub.add(ToggleSetting("Show All Clicks", "", FishSettings::boulderShowAll).gatedBy { FishSettings.boulderSolver })
             f.sub.add(ColorPickerSetting("Boulder Color", "", FishSettings::boulderColor).gatedBy { FishSettings.boulderSolver })
+            f.sub.add(ToggleSetting("Boulder Through Walls", "See the click blocks through the boulders while in the room", FishSettings::boulderThroughWalls).gatedBy { FishSettings.boulderSolver })
             f.sub.add(SubcategoryHeader("Ice Fill"))
             f.sub.add(ToggleSetting("Ice Fill Solver", "", FishSettings::iceFillSolver))
             f.sub.add(ToggleSetting("Optimized Patterns", "Use the harder/faster fill routes", FishSettings::iceFillOptimized).gatedBy { FishSettings.iceFillSolver })
