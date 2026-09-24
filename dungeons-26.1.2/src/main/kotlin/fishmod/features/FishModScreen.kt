@@ -91,6 +91,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val hud = Column("HUD & Overlays", "bell")
         val visuals = Column("Visuals & Rendering", "eye")
         val cosmetics = Column("Cosmetics", "hanger")
+        val mining = Column("Mining", "pickaxe")
 
         run {
             val f = Feature("UI Customization", null, null)
@@ -167,6 +168,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Slot Border", "Outline each bound slot", FishSettings::slotBindsBorder).gatedBy { FishSettings.slotBindsShow })
             f.sub.add(ToggleSetting("Hover Only", "Only show a link when hovering one of its slots", FishSettings::slotBindsHoverOnly).gatedBy { FishSettings.slotBindsShow })
             f.sub.add(ColorPickerSetting("Colour", "", FishSettings::slotBindsColor).gatedBy { FishSettings.slotBindsShow })
+            general.features.add(f)
+        }
+        run {
+            val f = Feature("Inventory Search", FishSettings::inventorySearchEnabled)
+            f.sub.add(SubcategoryHeader("Ctrl+F in any container to search names + lore; non-matches are dimmed. Math works too (e.g. 64*9)"))
+            f.sub.add(ToggleSetting("Always Show Bar", "Show the bar without pressing Ctrl+F", FishSettings::inventorySearchAlwaysShow))
+            f.sub.add(ToggleSetting("Outline Matches", "", FishSettings::inventorySearchHighlight))
+            f.sub.add(ColorPickerSetting("Outline Colour", "", FishSettings::inventorySearchHighlightColor).gatedBy { FishSettings.inventorySearchHighlight })
             general.features.add(f)
         }
         run {
@@ -445,6 +454,19 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Personal Bests", "Track & show the fastest clear / secrets per room", FishSettings::roomTimerPb).gatedBy { FishSettings.roomTimerEnabled })
             dungeon.features.add(f)
         }
+        run {
+            val f = Feature("Dungeon Breaker", FishSettings::dungeonBreakerEnabled)
+            f.sub.add(ToggleSetting("Charges HUD", "Odin-style Dungeonbreaker charges display", FishSettings::dungeonBreakerHudEnabled))
+            f.sub.add(ToggleSetting("Dungeons Only", "Only show / play inside dungeons", FishSettings::dungeonBreakerDungeonOnly))
+            f.sub.add(SubcategoryHeader("Break Sound"))
+            f.sub.add(ToggleSetting("Break Sound", "Play a sound when a block you hit with the Dungeonbreaker breaks", FishSettings::dungeonBreakerSoundEnabled))
+            f.sub.add(SoundSearchSetting("Sound", "Type to search every game sound",
+                { FishSettings.dungeonBreakerSoundName }, { v -> FishSettings.dungeonBreakerSoundName = v },
+                { FishSettings.dungeonBreakerSoundVolume }, { FishSettings.dungeonBreakerSoundPitch }).gatedBy { FishSettings.dungeonBreakerSoundEnabled })
+            f.sub.add(SliderIntSetting("Volume %", "Above 100 = louder (stacked plays)", FishSettings::dungeonBreakerSoundVolume, 0, 500, 10).gatedBy { FishSettings.dungeonBreakerSoundEnabled })
+            f.sub.add(SliderDoubleSetting("Pitch", "", FishSettings::dungeonBreakerSoundPitch, 0.0, 2.0).gatedBy { FishSettings.dungeonBreakerSoundEnabled })
+            dungeon.features.add(f)
+        }
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
         run {
             val wp = fishmod.features.dungeon.DungeonWaypoints
@@ -583,6 +605,34 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeon.features.add(f)
         }
         run {
+            val f = Feature("Route Recorder", FishSettings::routeRecorderEnabled)
+            f.sub.add(LabelSetting("/fm route record · stop · play", "skip · back · undo · clear · save/load <name> · list"))
+            f.sub.add(ToggleSetting("Auto Load Per Room", "Saved route plays when you enter its room", FishSettings::routeAutoLoad))
+            f.sub.add(ToggleSetting("Waypoints Through Walls", "Etherwarp, pearl, break, superboom", FishSettings::routeThroughWalls))
+            f.sub.add(ToggleSetting("Secrets Through Walls", "Chest, lever/skull, item, bat", FishSettings::routeSecretsThroughWalls))
+            f.sub.add(DropdownSetting("Box Style", "", arrayOf("Filled", "Outline", "Filled Outline"),
+                { FishSettings.routeBoxStyle }, { v -> FishSettings.routeBoxStyle = v }))
+            f.sub.add(SliderIntSetting("Fill Opacity %", "", FishSettings::routeFillOpacity, 0, 100, 5).gatedBy { FishSettings.routeBoxStyle != "Outline" })
+            f.sub.add(SliderIntSetting("Outline Opacity %", "", FishSettings::routeOutlineOpacity, 0, 100, 5).gatedBy { FishSettings.routeBoxStyle != "Filled" })
+            f.sub.add(SliderDoubleSetting("Outline Width", "", FishSettings::routeOutlineWidth, 0.5, 10.0).gatedBy { FishSettings.routeBoxStyle != "Filled" })
+            f.sub.add(ToggleSetting("Highlight Next Step", "Brighter box on the step you're on", FishSettings::routeHighlightCurrent))
+            f.sub.add(ToggleSetting("Route Lines", "Line from each step to the next", FishSettings::routeShowLines))
+            f.sub.add(SliderDoubleSetting("Line Width", "", FishSettings::routeLineWidth, 0.5, 10.0).gatedBy { FishSettings.routeShowLines })
+            f.sub.add(SliderIntSetting("Line Opacity %", "", FishSettings::routeLineOpacity, 0, 100, 5).gatedBy { FishSettings.routeShowLines })
+            f.sub.add(ToggleSetting("Line To Next Step", "Tracer from you while playing", FishSettings::routeLineToNext))
+            f.sub.add(ToggleSetting("Labels", "", FishSettings::routeShowLabels))
+            f.sub.add(SliderDoubleSetting("Label Scale", "", FishSettings::routeLabelScale, 0.5, 3.0).gatedBy { FishSettings.routeShowLabels })
+            f.sub.add(ColorPickerSetting("Etherwarp", "", FishSettings::routeColorEtherwarp))
+            f.sub.add(ColorPickerSetting("Ender Pearl", "", FishSettings::routeColorPearl))
+            f.sub.add(ColorPickerSetting("Dungeonbreaker", "", FishSettings::routeColorBreak))
+            f.sub.add(ColorPickerSetting("Superboom", "", FishSettings::routeColorSuperboom))
+            f.sub.add(ColorPickerSetting("Chest", "", FishSettings::routeColorChest))
+            f.sub.add(ColorPickerSetting("Lever / Skull", "", FishSettings::routeColorSecret))
+            f.sub.add(ColorPickerSetting("Item Pickup", "", FishSettings::routeColorItem))
+            f.sub.add(ColorPickerSetting("Bat", "", FishSettings::routeColorBat))
+            dungeon.features.add(f)
+        }
+        run {
             val f = Feature("Secret Clicked", FishSettings::secretClickedEnabled)
             f.sub.add(ToggleSetting("Boxes", "", FishSettings::secretClickedBoxes))
             f.sub.add(ToggleSetting("Bat Secrets", "Count a killed secret bat you were next to", FishSettings::secretClickedBats))
@@ -636,6 +686,29 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(DropdownSetting("Tick Timer", "",
                 Split.TimerType.values(), { Split.timerType }, { v -> Split.timerType = v }))
             f.sub.add(ToggleSetting("Activated Only", "", Phase::onlyShowActivatedSplits))
+            f.sub.add(ToggleSetting("PB Colors", "Finished split time: pink = new PB, orange = faster than your average", FishSettings::splitPbColors))
+            f.sub.add(SubcategoryHeader("Time Colors"))
+            f.sub.add(ColorPickerSetting("New PB", "", FishSettings::splitPbColor).gatedBy { FishSettings.splitPbColors })
+            f.sub.add(ColorPickerSetting("Faster Than Avg", "", FishSettings::splitAvgColor).gatedBy { FishSettings.splitPbColors })
+            f.sub.add(ColorPickerSetting("Not Started", "", Split.Companion::realTimeColorInactive))
+            f.sub.add(ColorPickerSetting("Running", "", Split.Companion::realTimeColorOngoing))
+            f.sub.add(ColorPickerSetting("Finished", "", Split.Companion::realTimeColorComplete))
+            f.sub.add(ColorPickerSetting("Tick Time", "The time in brackets", { Split.serverTimeColorComplete },
+                { v -> Split.serverTimeColorInactive = v; Split.serverTimeColorOngoing = v; Split.serverTimeColorComplete = v }))
+            f.sub.add(SubcategoryHeader("Split Name Colors"))
+            for (s in Phase.distinctSplits()) {
+                f.sub.add(ColorPickerSetting(s.name, "", { s.nameColor() }, { v -> Split.setNameColor(s.name, v) }))
+            }
+            f.sub.add(ButtonSetting("Reset Names", "Back to the default split name colors", { "Reset" }, Runnable { Split.resetNameColors() }))
+            dungeon.features.add(f)
+        }
+        run {
+            val f = Feature("PB Messages", FishSettings::pbMessagesEnabled)
+            f.sub.add(ToggleSetting("Only On PB", "Off = also print slower times with the gap to your PB", FishSettings::pbMessagesOnlyPb))
+            f.sub.add(ToggleSetting("Splits", "Run splits (Blood Open, Maxor, Terminals, Run Time…)", FishSettings::pbMessagesSplits))
+            f.sub.add(ToggleSetting("Goldor Sections", "S1–S4 terminal sections", FishSettings::pbMessagesGoldor))
+            f.sub.add(ToggleSetting("Terminals", "Your open-to-solve time per terminal type", FishSettings::pbMessagesTerminals))
+            f.sub.add(ToggleSetting("Relics", "P5 start to your relic placed (M7)", FishSettings::pbMessagesRelics))
             dungeon.features.add(f)
         }
         run {
@@ -1043,6 +1116,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Missing Warn", "", FishSettings::soulflowMissingNotifier))
             hud.features.add(f)
         }
+
+        mining.features.add(Feature("Mining Profit Tracker", FishSettings::miningProfitEnabled))
+
         hud.features.add(Feature("Fire Freeze Timer", FishSettings::fireFreezeTimerEnabled))
         hud.features.add(Feature("Loadout Title", FishSettings::loadoutTitleEnabled))
         run {
@@ -1205,6 +1281,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("Goldor Splits", Section::enableTerminalSplits)
+            f.sub.add(ToggleSetting("PB Colors", "Pink section time on a new PB", FishSettings::splitPbColors))
+            f.sub.add(ColorPickerSetting("New PB", "", FishSettings::splitPbColor).gatedBy { FishSettings.splitPbColors })
+            Section.sectionSplits().forEachIndexed { i, s ->
+                f.sub.add(ColorPickerSetting("S${i + 1} Name", "", { s.nameColor() }, { v -> Split.setNameColor(s.name, v) }))
+            }
             f.sub.add(DropdownSetting("Show During", "",
                 Section.DisplayTerminalSplitsWhen.values(),
                 { Section.displayTerminalSplitsWhen },
@@ -1362,6 +1443,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
         for (et in FishModAddonApi.dungeonToggles) {
             dungeon.features.add(Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) }))
+        }
+        val cheats = Column("Cheats", "star")
+        for (et in FishModAddonApi.cheatToggles) {
+            cheats.features.add(Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) }))
         }
 
         run {
@@ -1632,6 +1717,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         columns.add(slayer)
         columns.add(visuals)
         columns.add(cosmetics)
+        columns.add(mining)
+        if (cheats.features.isNotEmpty()) columns.add(cheats)
     }
 
     private fun applySavedColumnOrder() {
@@ -1648,12 +1735,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 slot.substring(colon + 1).split("+") to (slot.substring(0, colon).toIntOrNull() ?: 0)
             else
                 listOf(slot) to 0
-            for (n in names) {
-                if (byName[n] == null || !used.add(n)) return
-            }
-            slots.add(Slot(names, activeIdx))
+            // skip tabs that no longer exist instead of throwing the whole layout away
+            val known = names.filter { byName[it] != null && used.add(it) }
+            if (known.isNotEmpty()) slots.add(Slot(known, activeIdx))
         }
-        if (used.size != columns.size) return
+        // tabs added since the layout was saved go on the end
+        for (c in columns) if (used.add(c.name)) slots.add(Slot(listOf(c.name), 0))
 
         val reordered = ArrayList<Column>(columns.size)
         for (slot in slots) {
@@ -3770,6 +3857,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Death Message" -> "Announce deaths with a template"
                 "Send Lag to Party" -> "Warn the party when your game lags"
                 "Splits" -> "Phase split timers for runs"
+                "PB Messages" -> "Chat PB alerts for splits, Goldor sections, terminals and relics"
                 "Session Stats" -> "Per-session run statistics HUD"
                 "Loot Tracker" -> "Manual drop & profit tracker (D Hub inv)"
                 "Simon Says" -> "F7 Goldor device solver"
@@ -3801,7 +3889,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
 
         private fun descForExternal(name: String): String {
-            for (et in FishModAddonApi.dungeonToggles) {
+            for (et in FishModAddonApi.dungeonToggles + FishModAddonApi.cheatToggles) {
                 if (et.name() == name) return et.description()
             }
             return ""
