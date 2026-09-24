@@ -1103,6 +1103,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             hud.features.add(f)
         }
         run {
+            val f = Feature("Pet Swap Title", FishSettings::petSwapTitleEnabled)
+            f.sub.add(SubcategoryHeader("Big title when your pet changes (autopet or summon)"))
+            f.sub.add(InputSetting("Format", "{pet} = the pet's name", FishSettings::petSwapTitleFormat))
+            f.sub.add(ToggleSetting("Rarity Color", "Use the pet's rarity colour", FishSettings::petSwapTitleRarityColor))
+            f.sub.add(ColorPickerSetting("Color", "When Rarity Color is off", FishSettings::petSwapTitleColor).gatedBy { !FishSettings.petSwapTitleRarityColor })
+            f.sub.add(SliderIntSetting("Duration (ms)", "", FishSettings::petSwapTitleMs, 500, 5000, 250))
+            hud.features.add(f)
+        }
+        run {
             val f = Feature("Pet HUD", FishSettings::petHudEnabled)
             f.sub.add(ToggleSetting("Show Level", "", FishSettings::petHudShowLevel))
             f.sub.add(ToggleSetting("Show Rarity", "Colour the pet name by its rarity", FishSettings::petHudShowRarity))
