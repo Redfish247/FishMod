@@ -375,6 +375,17 @@ object FishSettings {
     @ConfigValue @JvmField var arrowHitSoundVolume: Int = 100
     @ConfigValue @JvmField var arrowHitSoundPitch: Double = 1.4
 
+    @ConfigValue @JvmField var dungeonBreakerEnabled: Boolean = false
+    @ConfigValue @JvmField var dungeonBreakerHudEnabled: Boolean = true
+    @ConfigValue @JvmField var dungeonBreakerHudX: Int = 10
+    @ConfigValue @JvmField var dungeonBreakerHudY: Int = 80
+    @ConfigValue @JvmField var dungeonBreakerHudScale: Double = 1.0
+    @ConfigValue @JvmField var dungeonBreakerDungeonOnly: Boolean = true
+    @ConfigValue @JvmField var dungeonBreakerSoundEnabled: Boolean = false
+    @ConfigValue @JvmField var dungeonBreakerSoundName: String = "Note: Harp"
+    @ConfigValue @JvmField var dungeonBreakerSoundVolume: Int = 100
+    @ConfigValue @JvmField var dungeonBreakerSoundPitch: Double = 1.6
+
     @ConfigValue @JvmField var noCursorReset: Boolean = false
     @ConfigValue @JvmField var noCursorResetMs: Int = 150
     @ConfigValue @JvmField var arrowFixEnabled: Boolean = false

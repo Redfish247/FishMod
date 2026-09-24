@@ -421,6 +421,7 @@ class FishModInit : ModInitializer {
         fishmod.features.WarpCooldown.init()
         fishmod.features.TimeChanger.init()
         fishmod.features.ArrowHitSound.init()
+        fishmod.features.dungeon.DungeonBreaker.init()
         fishmod.features.BlockOverlay.init()
         fishmod.features.CameraTweaks.init()
         fishmod.features.GyroHelper.init()
@@ -1287,6 +1288,7 @@ class FishModInit : ModInitializer {
         })
 
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "soulflow_hud")) { ctx, tickCounter -> SoulflowHud.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_breaker_hud")) { ctx, tickCounter -> fishmod.features.dungeon.DungeonBreaker.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "pet_hud")) { ctx, tickCounter -> PetHud.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "cooldown_overlay_hotbar")) { ctx, tickCounter -> CooldownOverlay.renderHotbar(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "phase_splits")) { ctx, _ -> Phase.renderHud(ctx) }
