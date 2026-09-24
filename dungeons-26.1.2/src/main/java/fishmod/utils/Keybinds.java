@@ -31,6 +31,8 @@ public class Keybinds {
 
     public static KeyMapping slotBind;
 
+    public static KeyMapping slotLock;
+
     public static KeyMapping slotBindCycleProfile;
 
     public static KeyMapping dungeonAbility;
@@ -112,6 +114,13 @@ public class Keybinds {
                 GLFW.GLFW_KEY_R,
                 category));
         TRACKED.put("slot_bind", slotBind);
+
+        slotLock = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "Lock Slot (in inventory)",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_L,
+                category));
+        TRACKED.put("slot_lock", slotLock);
 
         slotBindCycleProfile = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Slot Bind - Cycle Profile",
