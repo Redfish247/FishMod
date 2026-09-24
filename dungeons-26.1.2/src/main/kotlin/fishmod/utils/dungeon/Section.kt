@@ -242,6 +242,9 @@ object Section {
     }
 
     @JvmStatic
+    fun sectionSplits(): List<Split> = splits.toList()
+
+    @JvmStatic
     fun getSection(): Int = currentSection
 
     @JvmStatic

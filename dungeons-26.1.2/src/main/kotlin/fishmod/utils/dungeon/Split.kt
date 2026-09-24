@@ -62,7 +62,38 @@ class Split(
         @ConfigValue
         @JvmField
         var timerType: TimerType = TimerType.TICK_TIME
+
+        private var cachedRaw: String? = null
+        private var cachedNameColors: Map<String, Int> = emptyMap()
+
+        // Per-split name colour overrides, stored as "Name=aarrggbb;Name2=...".
+        @JvmStatic
+        fun nameColors(): Map<String, Int> {
+            val raw = FishSettings.splitNameColors
+            if (raw != cachedRaw) {
+                cachedRaw = raw
+                cachedNameColors = raw.split(';').mapNotNull { e ->
+                    val i = e.lastIndexOf('=')
+                    if (i <= 0) null else e.substring(i + 1).toLongOrNull(16)?.let { e.substring(0, i) to it.toInt() }
+                }.toMap()
+            }
+            return cachedNameColors
+        }
+
+        @JvmStatic
+        fun setNameColor(name: String, color: Int) {
+            val m = nameColors().toMutableMap()
+            m[name] = color
+            FishSettings.splitNameColors = m.entries.joinToString(";") { "${it.key}=${Integer.toHexString(it.value)}" }
+        }
+
+        @JvmStatic
+        fun resetNameColors() {
+            FishSettings.splitNameColors = ""
+        }
     }
+
+    fun nameColor(): Int = nameColors()[name] ?: color
 
     private var tick: Int = 0
     private var startTime: Long = 0
@@ -129,7 +160,7 @@ class Split(
         }
     }
 
-    fun createNameText(): MutableComponent = Component.literal("$name ").withColor(color)
+    fun createNameText(): MutableComponent = Component.literal("$name ").withColor(nameColor() and 0xFFFFFF)
 
     fun getTimeDiffrence(): Double = getRealTime() - getTickTime()
 
@@ -147,7 +178,12 @@ class Split(
             serverTimeColor = serverTimeColorOngoing
             parenthesesColor = parenthesesColorOngoing
         } else {
-            realTimeColor = if (paceColor != 0 && FishSettings.splitPbColors) paceColor else realTimeColorComplete
+            val pace = when (paceColor) {
+                PB_COLOR -> FishSettings.splitPbColor
+                AVG_COLOR -> FishSettings.splitAvgColor
+                else -> 0
+            }
+            realTimeColor = if (pace != 0 && FishSettings.splitPbColors) pace else realTimeColorComplete
             serverTimeColor = serverTimeColorComplete
             parenthesesColor = parenthesesColorComplete
         }
@@ -167,11 +203,11 @@ class Split(
         }
 
         val realTimeString = (if (realTime >= 60) (realTime / 60).toInt().toString() + "m " else "") + Constants.DECIMAL_FORMAT.format(realTime % 60) + "s"
-        return Component.literal(realTimeString).withColor(realTimeColor)
+        return Component.literal(realTimeString).withColor(realTimeColor and 0xFFFFFF)
             .append(
-                Component.literal(" (").withColor(parenthesesColor)
-                    .append(Component.literal(serverTime).withColor(serverTimeColor))
-                    .append(Component.literal(")").withColor(parenthesesColor))
+                Component.literal(" (").withColor(parenthesesColor and 0xFFFFFF)
+                    .append(Component.literal(serverTime).withColor(serverTimeColor and 0xFFFFFF))
+                    .append(Component.literal(")").withColor(parenthesesColor and 0xFFFFFF))
             )
     }
 
