@@ -722,6 +722,28 @@ object FishSettings {
 
     @ConfigValue @JvmField var autoRequeueDelayMs: Int = 2000
 
+    @ConfigValue @JvmField var routeRecorderEnabled: Boolean = true
+    @ConfigValue @JvmField var routeThroughWalls: Boolean = true
+    @ConfigValue @JvmField var routeBoxStyle: String = "Filled Outline"
+    @ConfigValue @JvmField var routeFillOpacity: Int = 30
+    @ConfigValue @JvmField var routeOutlineOpacity: Int = 100
+    @ConfigValue @JvmField var routeOutlineWidth: Double = 2.0
+    @ConfigValue @JvmField var routeHighlightCurrent: Boolean = true
+    @ConfigValue @JvmField var routeShowLines: Boolean = true
+    @ConfigValue @JvmField var routeLineWidth: Double = 4.0
+    @ConfigValue @JvmField var routeLineOpacity: Int = 85
+    @ConfigValue @JvmField var routeLineToNext: Boolean = true
+    @ConfigValue @JvmField var routeShowLabels: Boolean = true
+    @ConfigValue @JvmField var routeLabelScale: Double = 1.0
+    @ConfigValue @JvmField var routeColorEtherwarp: Int = 0xFFB45CFF.toInt()
+    @ConfigValue @JvmField var routeColorPearl: Int = 0xFF20C0A0.toInt()
+    @ConfigValue @JvmField var routeColorBreak: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var routeColorSuperboom: Int = 0xFFFF2020.toInt()
+    @ConfigValue @JvmField var routeColorChest: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var routeColorSecret: Int = 0xFF55FF55.toInt()
+    @ConfigValue @JvmField var routeColorItem: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var routeColorBat: Int = 0xFFFF55FF.toInt()
+
     @ConfigValue @JvmField var secretClickedEnabled: Boolean = false
     @ConfigValue @JvmField var secretClickedBoxes: Boolean = true
     @ConfigValue @JvmField var secretClickedBats: Boolean = true
