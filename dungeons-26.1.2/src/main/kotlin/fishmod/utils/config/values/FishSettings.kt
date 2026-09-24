@@ -802,10 +802,13 @@ object FishSettings {
     @ConfigValue @JvmField var slayerProfitMinValue: Int = 0
     @ConfigValue @JvmField var slayerProfitCountKillCoins: Boolean = true
 
+    @ConfigValue @JvmField var miningProfitEnabled: Boolean = false
+
     @ConfigValue @JvmField var slayerPhaseEnabled: Boolean = false
     @ConfigValue @JvmField var slayerPhaseWorldText: Boolean = true
     @ConfigValue @JvmField var slayerPhaseTitles: Boolean = true
     @ConfigValue @JvmField var slayerPhaseHealthSplit: Boolean = true
+
 
     @JvmStatic
     fun slayerAnyEnabled(): Boolean =

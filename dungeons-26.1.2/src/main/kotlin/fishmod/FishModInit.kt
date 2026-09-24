@@ -397,6 +397,7 @@ class FishModInit : ModInitializer {
         fishmod.features.CritTracker.init()
         PartyCommandHandler.init()
         SoulflowHud.init()
+        fishmod.features.mining.MiningProfitTracker.init()
         PetHud.init()
         CooldownOverlay.init()
         fishmod.features.croesus.CroesusLootDetector.init()
