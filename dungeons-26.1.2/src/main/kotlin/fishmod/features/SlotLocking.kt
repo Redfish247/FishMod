@@ -18,13 +18,14 @@ import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
 
-// Locks player-inventory slots (0-8 hotbar, 9-35 main) against clicks, swaps and drops.
+// Locks player-inventory slots (0-8 hotbar, 9-35 main) against being dropped.
 object SlotLocking {
 
     private val FILE = Paths.get(FolderUtility.CONFIG_PATH + "slot_locks.txt")
     private val locked = HashSet<Int>()
     private var loaded = false
     private var lastWarnAt = 0L
+    private var carriedFromLocked = false
 
     @JvmStatic
     fun init() {
@@ -57,14 +58,21 @@ object SlotLocking {
         return invIndex(slot)?.let { it in locked } == true
     }
 
-    /** True = cancel this click. */
+    /** True = cancel this click. Only drops are blocked; moving/swapping locked items is allowed. */
     @JvmStatic
-    fun onSlotClicked(slot: Slot?, button: Int, input: ContainerInput): Boolean {
+    fun onSlotClicked(slot: Slot?, slotId: Int, input: ContainerInput): Boolean {
         if (!FishSettings.slotLockingEnabled) return false
         ensureLoaded()
-        val blocked = isLocked(slot) || (input == ContainerInput.SWAP && button in 0..8 && button in locked)
-        if (blocked) warn()
-        return blocked
+        val carried = Minecraft.getInstance().player?.containerMenu?.carried?.isEmpty == false
+        // Clicking outside the window drops whatever is on the cursor.
+        val blocked = when {
+            input == ContainerInput.THROW -> isLocked(slot)
+            slotId == -999 && carried -> carriedFromLocked
+            else -> false
+        }
+        if (blocked) { warn(); return true }
+        if (input == ContainerInput.PICKUP && slot != null) carriedFromLocked = !carried && isLocked(slot) && slot.hasItem()
+        return false
     }
 
     /** True = cancel the in-world drop. */

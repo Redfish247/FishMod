@@ -119,7 +119,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
 
     @Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)
     private void fishmod$slotLock(Slot slot, int slotId, int button, net.minecraft.world.inventory.ContainerInput input, CallbackInfo ci) {
-        if (fishmod.features.SlotLocking.onSlotClicked(slot, button, input)) ci.cancel();
+        if (fishmod.features.SlotLocking.onSlotClicked(slot, slotId, input)) ci.cancel();
     }
 
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)

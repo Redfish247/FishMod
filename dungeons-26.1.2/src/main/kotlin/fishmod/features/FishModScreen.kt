@@ -172,7 +172,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("Slot Locking", FishSettings::slotLockingEnabled)
-            f.sub.add(SubcategoryHeader("Hover an inventory slot and press the key to lock/unlock it. Locked slots can't be clicked, swapped or dropped"))
+            f.sub.add(SubcategoryHeader("Hover an inventory slot and press the key to lock/unlock it. Locked slots can't be dropped (Q, Ctrl+Q or clicking outside the window)"))
             f.sub.add(KeybindSetting("Lock Key", "Default L", { fishmod.utils.Keybinds.slotLock }))
             f.sub.add(ColorPickerSetting("Colour", "", FishSettings::slotLockingColor))
             general.features.add(f)
