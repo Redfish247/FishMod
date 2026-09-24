@@ -375,6 +375,17 @@ object FishSettings {
     @ConfigValue @JvmField var arrowHitSoundVolume: Int = 100
     @ConfigValue @JvmField var arrowHitSoundPitch: Double = 1.4
 
+    @ConfigValue @JvmField var dungeonBreakerEnabled: Boolean = false
+    @ConfigValue @JvmField var dungeonBreakerHudEnabled: Boolean = true
+    @ConfigValue @JvmField var dungeonBreakerHudX: Int = 10
+    @ConfigValue @JvmField var dungeonBreakerHudY: Int = 80
+    @ConfigValue @JvmField var dungeonBreakerHudScale: Double = 1.0
+    @ConfigValue @JvmField var dungeonBreakerDungeonOnly: Boolean = true
+    @ConfigValue @JvmField var dungeonBreakerSoundEnabled: Boolean = false
+    @ConfigValue @JvmField var dungeonBreakerSoundName: String = "Note: Harp"
+    @ConfigValue @JvmField var dungeonBreakerSoundVolume: Int = 100
+    @ConfigValue @JvmField var dungeonBreakerSoundPitch: Double = 1.6
+
     @ConfigValue @JvmField var noCursorReset: Boolean = false
     @ConfigValue @JvmField var noCursorResetMs: Int = 150
     @ConfigValue @JvmField var arrowFixEnabled: Boolean = false
@@ -597,6 +608,11 @@ object FishSettings {
     @ConfigValue @JvmField var slotBindsColor: Int = 0xFFFF55FF.toInt()
     @ConfigValue @JvmField var slotBindsProfile: String = "Default"
 
+    @ConfigValue @JvmField var inventorySearchEnabled: Boolean = false
+    @ConfigValue @JvmField var inventorySearchAlwaysShow: Boolean = false
+    @ConfigValue @JvmField var inventorySearchHighlight: Boolean = true
+    @ConfigValue @JvmField var inventorySearchHighlightColor: Int = 0xFF55FF55.toInt()
+
     @ConfigValue @JvmField var cameraTweaksEnabled: Boolean = false
     @ConfigValue @JvmField var cameraFullBright: Boolean = false
     @ConfigValue @JvmField var cameraNoBlindness: Boolean = false
@@ -683,6 +699,17 @@ object FishSettings {
     @ConfigValue @JvmField var roomTimerShowTime: Boolean = true
     @ConfigValue @JvmField var roomTimerPb: Boolean = true
 
+    @ConfigValue @JvmField var pbMessagesEnabled: Boolean = false
+    @ConfigValue @JvmField var pbMessagesOnlyPb: Boolean = true
+    @ConfigValue @JvmField var pbMessagesSplits: Boolean = true
+    @ConfigValue @JvmField var pbMessagesGoldor: Boolean = true
+    @ConfigValue @JvmField var pbMessagesTerminals: Boolean = true
+    @ConfigValue @JvmField var pbMessagesRelics: Boolean = true
+    @ConfigValue @JvmField var splitPbColors: Boolean = true
+    @ConfigValue @JvmField var splitPbColor: Int = 0xFFFF55FF.toInt()
+    @ConfigValue @JvmField var splitAvgColor: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var splitNameColors: String = ""
+
     @ConfigValue @JvmField var mimicAnnounceEnabled: Boolean = false
     @ConfigValue @JvmField var mimicMsgEnabled: Boolean = true
     @ConfigValue @JvmField var mimicMsgText: String = "Mimic Killed!"
@@ -694,6 +721,30 @@ object FishSettings {
     @ConfigValue @JvmField var autoSprintDungeonOnly: Boolean = false
 
     @ConfigValue @JvmField var autoRequeueDelayMs: Int = 2000
+
+    @ConfigValue @JvmField var routeRecorderEnabled: Boolean = true
+    @ConfigValue @JvmField var routeAutoLoad: Boolean = true
+    @ConfigValue @JvmField var routeThroughWalls: Boolean = true
+    @ConfigValue @JvmField var routeSecretsThroughWalls: Boolean = true
+    @ConfigValue @JvmField var routeBoxStyle: String = "Filled Outline"
+    @ConfigValue @JvmField var routeFillOpacity: Int = 30
+    @ConfigValue @JvmField var routeOutlineOpacity: Int = 100
+    @ConfigValue @JvmField var routeOutlineWidth: Double = 2.0
+    @ConfigValue @JvmField var routeHighlightCurrent: Boolean = true
+    @ConfigValue @JvmField var routeShowLines: Boolean = true
+    @ConfigValue @JvmField var routeLineWidth: Double = 4.0
+    @ConfigValue @JvmField var routeLineOpacity: Int = 85
+    @ConfigValue @JvmField var routeLineToNext: Boolean = true
+    @ConfigValue @JvmField var routeShowLabels: Boolean = true
+    @ConfigValue @JvmField var routeLabelScale: Double = 1.0
+    @ConfigValue @JvmField var routeColorEtherwarp: Int = 0xFFB45CFF.toInt()
+    @ConfigValue @JvmField var routeColorPearl: Int = 0xFF20C0A0.toInt()
+    @ConfigValue @JvmField var routeColorBreak: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var routeColorSuperboom: Int = 0xFFFF2020.toInt()
+    @ConfigValue @JvmField var routeColorChest: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var routeColorSecret: Int = 0xFF55FF55.toInt()
+    @ConfigValue @JvmField var routeColorItem: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var routeColorBat: Int = 0xFFFF55FF.toInt()
 
     @ConfigValue @JvmField var secretClickedEnabled: Boolean = false
     @ConfigValue @JvmField var secretClickedBoxes: Boolean = true
@@ -802,10 +853,16 @@ object FishSettings {
     @ConfigValue @JvmField var slayerProfitMinValue: Int = 0
     @ConfigValue @JvmField var slayerProfitCountKillCoins: Boolean = true
 
+    @ConfigValue @JvmField var miningProfitEnabled: Boolean = false
+    @ConfigValue @JvmField var miningProfitHudX: Int = 10
+    @ConfigValue @JvmField var miningProfitHudY: Int = 100
+    @ConfigValue @JvmField var miningProfitHudScale: Double = 1.0
+
     @ConfigValue @JvmField var slayerPhaseEnabled: Boolean = false
     @ConfigValue @JvmField var slayerPhaseWorldText: Boolean = true
     @ConfigValue @JvmField var slayerPhaseTitles: Boolean = true
     @ConfigValue @JvmField var slayerPhaseHealthSplit: Boolean = true
+
 
     @JvmStatic
     fun slayerAnyEnabled(): Boolean =

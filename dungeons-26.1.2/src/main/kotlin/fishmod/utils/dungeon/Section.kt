@@ -5,6 +5,8 @@ import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.Constants
 import fishmod.utils.Location
 import fishmod.utils.Misc
+import fishmod.features.dungeon.PbMessages
+import fishmod.utils.config.values.FishSettings
 import fishmod.utils.config.values.Floor7
 import fishmod.utils.debug.Debug
 import fishmod.utils.events.Events
@@ -122,7 +124,18 @@ object Section {
     private fun endSplit(section: Int) {
         val index = section - 1
         if (index < 0 || index >= splits.size) return
-        splits[index].end()
+        finish(index)
+    }
+
+    private fun finish(index: Int) {
+        val split = splits[index]
+        val wasRunning = split.started()
+        split.end()
+        if (!wasRunning || PracticeMode.active) return
+        val floor = Phase.getFloor() ?: return
+        val r = PbMessages.announce(FishSettings.pbMessagesGoldor, "goldor:$floor:S${index + 1}",
+            Component.literal("§6Goldor S${index + 1}"), split.getRealTime()) ?: return
+        split.paceColor = Phase.paceColor(r, -1.0)
     }
 
     private fun startSplit(section: Int) {
@@ -132,9 +145,7 @@ object Section {
     }
 
     private fun endAllSections() {
-        for (split in splits) {
-            split.end()
-        }
+        for (i in splits.indices) finish(i)
         if (Debug.termInfo) {
             Misc.addChatMessage(Component.literal("ending all sections"))
         }
@@ -229,6 +240,9 @@ object Section {
 
         return shouldCancelMessage
     }
+
+    @JvmStatic
+    fun sectionSplits(): List<Split> = splits.toList()
 
     @JvmStatic
     fun getSection(): Int = currentSection

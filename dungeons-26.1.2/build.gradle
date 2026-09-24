@@ -266,6 +266,34 @@ tasks.register('announceDiscord') {
 
 tasks.named('modrinth').configure { finalizedBy 'announceDiscord' }
 
+// Build, then swap the new jar into each local client's mods folder; skips any client that's running.
+tasks.register('deployJar') {
+	group = 'fishmod'
+	description = 'Build and copy the jar into the Skyblock 1.21.8 + FishTest mods folders'
+	dependsOn tasks.build
+	def jarFile = tasks.jar.archiveFile
+	def appData = System.getenv('APPDATA')
+	doLast {
+		def jar = jarFile.get().asFile
+		def targets = [
+			'Skyblock 1.21.8': new File(appData, 'ModrinthApp/profiles/Skyblock 1.21.8/mods'),
+			'FishTest'       : new File(appData, 'PrismLauncher/instances/FishTest/minecraft/mods'),
+		]
+		def running = ['powershell', '-NoProfile', '-Command',
+			"Get-CimInstance Win32_Process | Where-Object Name -like 'java*' | ForEach-Object CommandLine"].execute().text
+		targets.each { name, dir ->
+			if (!dir.isDirectory()) { logger.lifecycle("deployJar: skip ${name} (no mods folder)"); return }
+			if (running.contains(name)) { logger.warn("deployJar: SKIPPED ${name} - that client is open, close it and rerun"); return }
+			dir.listFiles().findAll { it.name ==~ /FishModDungeons-.*\.jar/ && it.name != jar.name }.each { old ->
+				if (old.delete()) logger.lifecycle("deployJar: removed ${old.name} from ${name}")
+				else logger.warn("deployJar: couldn't remove ${old.name} from ${name}")
+			}
+			java.nio.file.Files.copy(jar.toPath(), new File(dir, jar.name).toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+			logger.lifecycle("deployJar: ${jar.name} -> ${name}")
+		}
+	}
+}
+
 // configure the maven publication
 publishing {
 	publications {
