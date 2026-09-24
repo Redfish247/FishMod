@@ -137,6 +137,9 @@ object Phase {
     @JvmStatic
     fun getFloor(): String? = floor
 
+    @JvmStatic
+    fun splitFloors(): List<String> = FLOOR_ORDER.filter { FLOOR_SPLITS.containsKey(it) }
+
     private val FLOOR_ORDER = listOf("E", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "M1", "M2", "M3", "M4", "M5", "M6", "M7")
 
     // One entry per distinct split name (first floor's split as the default colour), Run Time last.
@@ -163,6 +166,7 @@ object Phase {
     private fun seedPb(f: String, name: String): Double? {
         val key = "split:$f:$name"
         PbMessages.get(key)?.let { return it }
+        if (PbMessages.get(PbMessages.noSeedKey(f)) != null) return null
         val hist = RunHistory.getPersonalBest(f, name)
         if (hist <= 0) return null
         PbMessages.submit(key, hist)

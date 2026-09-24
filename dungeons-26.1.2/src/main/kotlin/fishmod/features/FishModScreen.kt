@@ -700,6 +700,28 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 f.sub.add(ColorPickerSetting(s.name, "", { s.nameColor() }, { v -> Split.setNameColor(s.name, v) }))
             }
             f.sub.add(ButtonSetting("Reset Names", "Back to the default split name colors", { "Reset" }, Runnable { Split.resetNameColors() }))
+            f.sub.add(SubcategoryHeader("Reset Data — click twice to confirm"))
+            val resetFloors = arrayOf("All") + Phase.splitFloors().toTypedArray()
+            f.sub.add(DropdownSetting("Floor", "", resetFloors, { FishSettings.splitResetFloor.takeIf { it in resetFloors } ?: "All" }, { v -> FishSettings.splitResetFloor = v }))
+            fun floorArg(): String? = FishSettings.splitResetFloor.takeIf { it != "All" && it in resetFloors }
+            var pbArmedAt = 0L
+            f.sub.add(ButtonSetting("Reset Split PBs", "Forget your best time for every split", {
+                if (System.currentTimeMillis() - pbArmedAt < 3000) "Confirm?" else "Reset"
+            }, Runnable {
+                if (System.currentTimeMillis() - pbArmedAt > 3000) { pbArmedAt = System.currentTimeMillis(); return@Runnable }
+                pbArmedAt = 0L
+                val n = fishmod.features.dungeon.PbMessages.resetSplits(floorArg(), Phase.splitFloors())
+                fishmod.utils.Misc.addChatMessage(Component.literal("§aCleared §f$n§a split PBs (${FishSettings.splitResetFloor})."))
+            }))
+            var avgArmedAt = 0L
+            f.sub.add(ButtonSetting("Clear Split Averages", "Wipe the last-30-runs history used for averages and Est. Total", {
+                if (System.currentTimeMillis() - avgArmedAt < 3000) "Confirm?" else "Clear"
+            }, Runnable {
+                if (System.currentTimeMillis() - avgArmedAt > 3000) { avgArmedAt = System.currentTimeMillis(); return@Runnable }
+                avgArmedAt = 0L
+                val n = fishmod.utils.dungeon.RunHistory.clear(floorArg())
+                fishmod.utils.Misc.addChatMessage(Component.literal("§aCleared averages for §f$n§a splits (${FishSettings.splitResetFloor})."))
+            }))
             dungeon.features.add(f)
         }
         run {
