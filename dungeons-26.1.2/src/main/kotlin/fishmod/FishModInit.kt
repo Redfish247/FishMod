@@ -572,6 +572,12 @@ class FishModInit : ModInitializer {
                         Constants.SUCCESS
                     })
                     .then(waypointSubcommand("wp"))
+                    .then(ClientCommands.literal("pm")
+                        .executes { fishmod.features.dungeon.DungeonWaypoints.togglePmEdit(); Constants.SUCCESS }
+                        .then(ClientCommands.literal("message")
+                            .then(ClientCommands.argument("text", StringArgumentType.greedyString()).executes { ctx ->
+                                fishmod.features.dungeon.DungeonWaypoints.setPmMessage(StringArgumentType.getString(ctx, "text")); Constants.SUCCESS
+                            })))
                     .then(waypointSubcommand("waypoint"))
                     .then(waypointSubcommand("waypoints"))
                     .then(fishmod.features.dungeon.RouteRecorder.command())
