@@ -97,11 +97,11 @@ public class Keybinds {
         petKeybinds = new KeyMapping[fishmod.features.other.PetKeybinds.COUNT];
         for (int i = 0; i < petKeybinds.length; i++) {
             petKeybinds[i] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-                    "Pet Keybind " + (i + 1),
+                    "Pet: " + fishmod.features.other.PetKeybinds.PETS[i],
                     InputConstants.Type.KEYSYM,
                     GLFW.GLFW_KEY_UNKNOWN,
                     category));
-            TRACKED.put("pet_keybind_" + i, petKeybinds[i]);
+            TRACKED.put("pet_key_" + fishmod.features.other.PetKeybinds.PETS[i].toLowerCase().replace(' ', '_'), petKeybinds[i]);
         }
 
         wardrobeNextPage = KeyMappingHelper.registerKeyMapping(new KeyMapping(
