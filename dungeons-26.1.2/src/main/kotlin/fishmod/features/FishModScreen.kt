@@ -602,6 +602,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Spirit Mask", "", FishSettings::invincShowSpirit))
             f.sub.add(ToggleSetting("Bonzo Mask", "", FishSettings::invincShowBonzo))
             f.sub.add(ToggleSetting("Phoenix Pet", "", FishSettings::invincShowPhoenix))
+            f.sub.add(ToggleSetting("Show Icons", "Item icon instead of the name (learned once you've had the mask on you / opened /pets)", FishSettings::invincIcons))
             dungeon.features.add(f)
         }
         run {
