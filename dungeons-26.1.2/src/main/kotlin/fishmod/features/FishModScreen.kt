@@ -469,6 +469,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
         run {
+            val f = Feature("Ice Spray Timer", FishSettings::iceSprayTimerEnabled)
+            f.sub.add(SubcategoryHeader("After your Ice Spray, one countdown above each group of frozen mobs"))
+            f.sub.add(SliderDoubleSetting("Freeze Time (s)", "", FishSettings::iceSprayDuration, 1.0, 10.0))
+            f.sub.add(ColorPickerSetting("Color", "", FishSettings::iceSprayColor))
+            f.sub.add(SliderDoubleSetting("Text Size", "", FishSettings::iceSprayScale, 0.5, 4.0))
+            dungeon.features.add(f)
+        }
+        run {
             val wp = fishmod.features.dungeon.DungeonWaypoints
             val f = Feature("Waypoints", FishSettings::dungeonWaypointsEnabled)
             f.sub.add(SubcategoryHeader("Master toggle for /fm wp — placed boxes, titles and route lines"))
