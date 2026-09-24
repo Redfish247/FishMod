@@ -3305,8 +3305,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             st(ctx, tr, name, leftX, sy + (ITEM_HEIGHT - 8) / 2, TEXT_COLOR)
-            val idx = indexOfCurrent()
-            val label = PRESET_NAMES[idx]
+            val cur = getter() or 0xFF000000.toInt()
+            val idx = PRESET_ARGB.indexOf(cur)
+            val label = if (idx >= 0) PRESET_NAMES[idx] else "#" + Integer.toHexString(cur and 0xFFFFFF).padStart(6, '0').uppercase()
             val textW = stw(tr, label)
             val swatchD = 8
             pillW = textW + swatchD + 26
