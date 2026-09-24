@@ -148,6 +148,32 @@ object Phase {
         return seen.values.toList() + listOfNotNull(run)
     }
 
+    // /pbsplits: sum of your best time for each non-overlapping split (no Boss Entry / Run Time).
+    @JvmStatic
+    fun pbSplitsCommand(arg: String?) {
+        val f = arg?.uppercase() ?: floor?.takeIf { FLOOR_SPLITS.containsKey(it) } ?: "M7"
+        val splits = FLOOR_SPLITS[f]
+        if (splits == null) {
+            Misc.addChatMessage(Component.literal("§cNo splits for §f$f§c. Try one of: ${FLOOR_ORDER.filter { FLOOR_SPLITS.containsKey(it) }.joinToString(", ")}"))
+            return
+        }
+        Misc.addChatMessage(Component.literal("§d§l$f PB Splits"))
+        var total = 0.0
+        var missing = 0
+        for (s in splits) {
+            if (s.avg < 0) continue
+            val pb = seedPb(f, s.name)
+            val line = s.createNameText()
+            if (pb == null) { missing++; line.append(Component.literal("§7—")) }
+            else { total += pb; line.append(Component.literal("§e${PbMessages.fmt(pb)}")) }
+            Misc.addChatMessage(line)
+        }
+        val sum = Component.literal("§aSum of best: §e§l${PbMessages.fmt(total)}")
+        if (missing > 0) sum.append(Component.literal(" §7($missing split${if (missing == 1) "" else "s"} with no PB yet)"))
+        PbMessages.get("split:$f:Run Time")?.let { sum.append(Component.literal(" §8| §7Run PB §f${PbMessages.fmt(it)}")) }
+        Misc.addChatMessage(sum)
+    }
+
     private fun splitPb(split: Split): PbMessages.Result? {
         if (PracticeMode.active) return null
         val f = floor ?: return null
