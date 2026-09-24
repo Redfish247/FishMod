@@ -453,6 +453,7 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.KeyNotifier.init()
         fishmod.features.dungeon.AutoRequeue.init()
         fishmod.features.dungeon.Blessings.init()
+        fishmod.features.dungeon.SecretOverlay.init()
         fishmod.features.dungeon.InvincibilityTracker.init()
         fishmod.features.dungeon.SecretClicked.init()
         fishmod.features.dungeon.RouteRecorder.init()
@@ -1300,6 +1301,7 @@ class FishModInit : ModInitializer {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "session_stats")) { ctx, tickCounter -> SessionStats.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "warp_cooldown")) { ctx, tickCounter -> fishmod.features.WarpCooldown.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "blessings")) { ctx, tickCounter -> fishmod.features.dungeon.Blessings.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "secret_overlay")) { ctx, tickCounter -> fishmod.features.dungeon.SecretOverlay.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "invincibility")) { ctx, tickCounter -> fishmod.features.dungeon.InvincibilityTracker.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "relic_timer")) { ctx, tickCounter -> fishmod.features.dungeon.f7.M7Relics.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "spring_boots")) { ctx, tickCounter -> fishmod.features.SpringBoots.renderHud(ctx, tickCounter) }
