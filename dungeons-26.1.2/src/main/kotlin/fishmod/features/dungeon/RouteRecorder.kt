@@ -81,6 +81,7 @@ object RouteRecorder {
     private var dirty = false
     private var enteredRoute = false
     private var outsideTicks = 0
+    private var lastAutoRoom: String? = null
 
     private var lastPos: Vec3? = null
     private var tick = 0L
@@ -181,18 +182,37 @@ object RouteRecorder {
         action(Type.SUPERBOOM, pos)
     }
 
-    // unload a shown/playing route once you've been in its room and then walk out
+    private fun currentRoom(): String? = DungeonMap.roomPlayerIn()?.owner?.data?.name
+
+    private fun routeRoom(): String? = steps.firstNotNullOfOrNull { it.room }
+
+    // leaving the route's room saves (if changed) and unloads it, even mid-route or mid-recording
     private fun checkRoomLeave() {
-        if (mode == Mode.RECORDING || steps.isEmpty() || !Location.inDungeon()) { outsideTicks = 0; return }
-        val here = DungeonMap.roomPlayerIn()?.owner?.data?.name ?: return
+        if (steps.isEmpty() || !Location.inDungeon()) { outsideTicks = 0; return }
+        val here = currentRoom() ?: return
         val rooms = steps.mapNotNullTo(HashSet()) { it.room }
         if (rooms.isEmpty()) return
         if (here in rooms) { enteredRoute = true; outsideTicks = 0; return }
         if (!enteredRoute || ++outsideTicks < 10) return
-        val name = steps.firstNotNullOf { it.room }
+        val name = routeRoom()!!
         if (dirty) save(name)
         steps.clear(); progress = 0; mode = Mode.IDLE; enteredRoute = false; outsideTicks = 0
+        lastAutoRoom = null
         msg("§eLeft §f$name§e, route unloaded.")
+    }
+
+    // entering a room with a saved route loads and plays it
+    private fun autoLoad() {
+        if (!FishSettings.routeRecorderEnabled || !FishSettings.routeAutoLoad) return
+        if (mode != Mode.IDLE || steps.isNotEmpty() || !Location.inDungeon()) return
+        val here = currentRoom() ?: return
+        if (here == lastAutoRoom) return
+        lastAutoRoom = here
+        if (!Files.exists(dir.resolve(clean(here) + ".json"))) return
+        if (load(here, quiet = true)) {
+            progress = 0; mode = Mode.PLAYING; enteredRoute = true
+            msg("§aLoaded §f$here §a(${steps.size} steps).")
+        }
     }
 
     private fun tracking() = FishSettings.routeRecorderEnabled && mode != Mode.IDLE && Location.inDungeon()
@@ -200,6 +220,7 @@ object RouteRecorder {
     private fun onTick(mc: Minecraft) {
         tick++
         checkRoomLeave()
+        autoLoad()
         val player = mc.player
         val level = mc.level
         selfId = player?.id ?: -1
@@ -453,7 +474,9 @@ object RouteRecorder {
     @JvmStatic
     fun stop() {
         mode = Mode.IDLE
-        msg("§eStopped. §7${steps.size} steps. §f/fm route play §7to follow it, §f/fm route save <name> §7to keep it.")
+        val room = routeRoom()
+        if (room != null && steps.isNotEmpty()) save(room)
+        msg("§eStopped. §7${steps.size} steps" + (if (room != null) ", saved to §f$room§7. It loads whenever you enter that room." else ". §f/fm route save <name> §7to keep it."))
     }
 
     @JvmStatic
@@ -497,14 +520,17 @@ object RouteRecorder {
     }
 
     @JvmStatic
-    fun load(name: String) {
+    fun load(name: String) { load(name, quiet = false) }
+
+    private fun load(name: String, quiet: Boolean): Boolean {
         try {
             val f = dir.resolve(clean(name) + ".json")
-            if (!Files.exists(f)) { msg("§cNo route named ${clean(name)}"); return }
+            if (!Files.exists(f)) { msg("§cNo route named ${clean(name)}"); return false }
             val list: List<Step> = gson.fromJson(Files.readString(f), object : TypeToken<List<Step>>() {}.type)
             steps.clear(); steps.addAll(list); progress = 0; mode = Mode.IDLE; liveWorld = false; dirty = false; enteredRoute = false
-            msg("§aLoaded ${steps.size} steps. §f/fm route play §7to follow.")
-        } catch (t: Throwable) { msg("§cLoad failed: ${t.message}") }
+            if (!quiet) msg("§aLoaded ${steps.size} steps. §f/fm route play §7to follow.")
+            return true
+        } catch (t: Throwable) { msg("§cLoad failed: ${t.message}"); return false }
     }
 
     @JvmStatic

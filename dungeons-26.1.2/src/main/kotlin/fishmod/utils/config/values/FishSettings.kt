@@ -723,6 +723,7 @@ object FishSettings {
     @ConfigValue @JvmField var autoRequeueDelayMs: Int = 2000
 
     @ConfigValue @JvmField var routeRecorderEnabled: Boolean = true
+    @ConfigValue @JvmField var routeAutoLoad: Boolean = true
     @ConfigValue @JvmField var routeThroughWalls: Boolean = true
     @ConfigValue @JvmField var routeBoxStyle: String = "Filled Outline"
     @ConfigValue @JvmField var routeFillOpacity: Int = 30
