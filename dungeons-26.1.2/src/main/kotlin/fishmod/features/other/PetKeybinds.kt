@@ -24,7 +24,9 @@ object PetKeybinds {
     private const val TIMEOUT_MS = 4000L
 
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
-    private val LEVEL = Regex("^\\[Lvl\\s*(\\d+)]\\s*")
+    private val LEVEL = Regex("\\[Lvl\\s*(\\d+)]\\s*")
+    // "Pets" or "(1/3) Pets"
+    private val PETS_TITLE = Regex("^(\\(\\d+/\\d+\\)\\s*)?Pets.*")
 
     private var target: String? = null
     private var targetStartedAt = 0L
@@ -121,8 +123,8 @@ object PetKeybinds {
     private fun petName(stack: ItemStack): String? {
         if (stack.isEmpty) return null
         val raw = stack.hoverName.string.replace(COLOR, "").trim()
-        if (!LEVEL.containsMatchIn(raw)) return null
-        return raw.replace(LEVEL, "").trim()
+        val m = LEVEL.find(raw) ?: return null
+        return raw.substring(m.range.last + 1).trim()
     }
 
     private fun petLevel(stack: ItemStack): Int {
@@ -131,7 +133,7 @@ object PetKeybinds {
     }
 
     private fun isPetsMenu(screen: AbstractContainerScreen<*>): Boolean =
-        screen.title.string.replace(COLOR, "").trim().startsWith("Pets")
+        PETS_TITLE.matches(screen.title.string.replace(COLOR, "").trim())
 
     private fun click(mc: Minecraft, containerId: Int, slotId: Int) {
         val player = mc.player ?: return
