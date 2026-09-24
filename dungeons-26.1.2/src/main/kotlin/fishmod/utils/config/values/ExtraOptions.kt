@@ -21,6 +21,4 @@ object ExtraOptions {
     @ConfigValue @JvmField var copyLineOnly: Boolean = false
 
     @ConfigValue @JvmField var timerPrefixColor: Int = Constants.DARK_PURPLE
-
-    @ConfigValue @JvmField var toggleableSearchBar: Boolean = false
 }

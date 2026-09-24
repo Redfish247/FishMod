@@ -19,16 +19,6 @@ public class ChatHistoryMixin {
                 ? Math.max(vanilla, FishSettings.infiniteChatHistoryLimit) : vanilla;
     }
 
-    @ModifyConstant(method = "addMessageToQueue", constant = @Constant(intValue = 100))
-    private int fishmod$expandScrollback(int cap) {
-        return fishmod$limit(cap);
-    }
-
-    @ModifyConstant(method = "addMessageToDisplayQueue", constant = @Constant(intValue = 100))
-    private int fishmod$expandTrimmed(int cap) {
-        return fishmod$limit(cap);
-    }
-
     @ModifyConstant(method = "addRecentChat", constant = @Constant(intValue = 100))
     private int fishmod$expandRecentChat(int cap) {
         return fishmod$limit(cap);

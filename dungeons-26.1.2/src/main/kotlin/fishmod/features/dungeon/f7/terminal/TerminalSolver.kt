@@ -56,7 +56,29 @@ object TerminalSolver {
             }
         }
         debug("build $type '${name.take(24)}'")
+        current?.let { if (!simActive) { lastType = it.type; lastOpenedMs = it.timeOpened } }
         return current
+    }
+
+    @Volatile private var lastType: TerminalType? = null
+    @Volatile private var lastOpenedMs = 0L
+
+    private fun termName(t: TerminalType) = when (t) {
+        TerminalType.PANES -> "Panes"
+        TerminalType.RUBIX -> "Rubix"
+        TerminalType.NUMBERS -> "Numbers"
+        TerminalType.STARTS_WITH -> "Starts With"
+        TerminalType.SELECT -> "Select All"
+        TerminalType.MELODY -> "Melody"
+    }
+
+    private fun onOwnTerminalDone() {
+        val type = lastType ?: return
+        lastType = null
+        val secs = (System.currentTimeMillis() - lastOpenedMs) / 1000.0
+        if (secs > 60.0 || fishmod.utils.dungeon.PracticeMode.active) return
+        fishmod.features.dungeon.PbMessages.announce(FishSettings.pbMessagesTerminals, "term:${type.name}",
+            Component.literal("§b${termName(type)} Terminal"), secs)
     }
 
     private val STARTS_WITH_LETTER = Pattern.compile("What starts with: '?(\\w+)'?")
@@ -81,6 +103,7 @@ object TerminalSolver {
             val m = ACTIVATED.matcher(COLOR.replace(text.string, ""))
             if (m.find() && m.group(1) == Minecraft.getInstance().player?.gameProfile?.name) {
                 if (FishSettings.terminalSolverSound) SoundManager.ping("termSolved", 0)
+                onOwnTerminalDone()
             }
             false
         }

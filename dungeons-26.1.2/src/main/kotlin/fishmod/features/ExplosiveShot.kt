@@ -24,7 +24,7 @@ object ExplosiveShot {
         if (text == null) return false
         val s = text.string ?: return false
 
-        if (!FishSettings.explosiveShotEnabled || !Phase.inP1()) return false
+        if (!FishSettings.explosiveShotEnabled) return false
         if (s.indexOf("Explosive Shot") < 0) return false
 
         val m = PATTERN.matcher(s)
@@ -44,6 +44,16 @@ object ExplosiveShot {
         val dmg = formatDamage(perEnemy)
 
         val mc = Minecraft.getInstance()
+        // chat line shows on every Explosive Shot; title + party announce stay P1-only
+        if (FishSettings.explosiveShotChatMessage) {
+            val chatLine = Component.literal(
+                "§7[Explosive Shot] §f$dmg §7dmg per " + (if (enemies == 1) "enemy" else "enemies") + " §8(" + enemies + ")"
+            )
+            mc.execute { mc.player?.sendSystemMessage(chatLine) }
+        }
+
+        if (!Phase.inP1()) return false
+
         if (FishSettings.explosiveShotShowTitle) {
             val title = Component.literal(dmg).withStyle(ChatFormatting.RED)
             val subtitle = Component.literal(
@@ -55,13 +65,6 @@ object ExplosiveShot {
                 hud.setTitle(title)
                 hud.setSubtitle(subtitle)
             }
-        }
-
-        if (FishSettings.explosiveShotChatMessage) {
-            val chatLine = Component.literal(
-                "§7[Explosive Shot] §f$dmg §7dmg per " + (if (enemies == 1) "enemy" else "enemies") + " §8(" + enemies + ")"
-            )
-            mc.execute { mc.player?.sendSystemMessage(chatLine) }
         }
 
         if (FishSettings.explosiveShotAnnounceParty && DungeonClass.isClass(DungeonClass.ARCHER)) {

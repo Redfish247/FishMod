@@ -431,6 +431,7 @@ class FishModInit : ModInitializer {
         fishmod.features.RenderOptimizer.init()
         fishmod.features.NoCursorReset.init()
         fishmod.features.SlotBinds.init()
+        fishmod.features.other.SearchBar.init()
         fishmod.features.BridgeBot.init()
         twitchbridge.TwitchBridgeClient.init()
         fishmod.features.LavaToWater.init()

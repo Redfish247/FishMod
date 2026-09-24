@@ -2,10 +2,12 @@ package fishmod.utils.dungeon
 
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.shaded.practicalconfig.manager.ConfigValue
+import fishmod.features.dungeon.PbMessages
 import fishmod.utils.Constants
 import fishmod.utils.JsonUtility
 import fishmod.utils.Misc
 import fishmod.utils.Scheduler
+import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.Events
 import fishmod.utils.events.interfaces.PhaseEvent
 import fishmod.utils.events.interfaces.RunEndEvent
@@ -92,8 +94,13 @@ object Phase {
             currentSplit.parseMessage(string)
 
             if (currentSplit.ended()) {
+                val pb = splitPb(currentSplit)
                 if (sendSplitInChat) {
-                    Misc.addChatMessage(currentSplit.createNameText().append(currentSplit.createTimeText()))
+                    val line = currentSplit.createNameText().append(currentSplit.createTimeText())
+                    if (pb != null && showSplitPb()) line.append(PbMessages.tag(pb))
+                    Misc.addChatMessage(line)
+                } else if (pb != null && showSplitPb() && (pb.isPb || !FishSettings.pbMessagesOnlyPb)) {
+                    Misc.addChatMessage(currentSplit.createNameText().append(currentSplit.createTimeText()).append(PbMessages.tag(pb)))
                 }
 
                 currentPhase = i + 1
@@ -130,12 +137,47 @@ object Phase {
     @JvmStatic
     fun getFloor(): String? = floor
 
+    private fun splitPb(split: Split): PbMessages.Result? {
+        if (PracticeMode.active) return null
+        val f = floor ?: return null
+        val t = split.getRealTime()
+        val avg = RunHistory.getPersonalAvg(f, split.name)
+        seedPb(f, split.name)
+        val r = PbMessages.submit("split:$f:${split.name}", t) ?: return null
+        split.paceColor = paceColor(r, avg)
+        return r
+    }
+
+    // Falls back to the best of the last-30 run history so PBs work before the first new record.
+    private fun seedPb(f: String, name: String): Double? {
+        val key = "split:$f:$name"
+        PbMessages.get(key)?.let { return it }
+        val hist = RunHistory.getPersonalBest(f, name)
+        if (hist <= 0) return null
+        PbMessages.submit(key, hist)
+        return hist
+    }
+
+    // Pink = beat an existing PB, orange = faster than your average.
+    @JvmStatic
+    fun paceColor(r: PbMessages.Result, avg: Double): Int = when {
+        r.isPb && r.previous != null -> Split.PB_COLOR
+        avg > 0 && r.seconds < avg -> Split.AVG_COLOR
+        else -> 0
+    }
+
+    private fun showSplitPb(): Boolean = FishSettings.pbMessagesEnabled && FishSettings.pbMessagesSplits
+
     private fun printSplits() {
         Misc.addChatMessage(Component.literal("§aSplits: "))
         val splits = currentSplits ?: return
         for (split in splits) {
+            val wasRunning = split.started()
             split.end()
-            Misc.addChatMessage(split.createNameText().append(split.createTimeText()))
+            val pb = if (wasRunning) splitPb(split) else null
+            val line = split.createNameText().append(split.createTimeText())
+            if (pb != null && showSplitPb() && (pb.isPb || !FishSettings.pbMessagesOnlyPb)) line.append(PbMessages.tag(pb))
+            Misc.addChatMessage(line)
         }
         RunHistory.saveSplits(floor, splits)
         if (splits.isNotEmpty()) {

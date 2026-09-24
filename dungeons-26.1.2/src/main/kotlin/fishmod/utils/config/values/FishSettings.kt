@@ -597,6 +597,11 @@ object FishSettings {
     @ConfigValue @JvmField var slotBindsColor: Int = 0xFFFF55FF.toInt()
     @ConfigValue @JvmField var slotBindsProfile: String = "Default"
 
+    @ConfigValue @JvmField var inventorySearchEnabled: Boolean = false
+    @ConfigValue @JvmField var inventorySearchAlwaysShow: Boolean = false
+    @ConfigValue @JvmField var inventorySearchHighlight: Boolean = true
+    @ConfigValue @JvmField var inventorySearchHighlightColor: Int = 0xFF55FF55.toInt()
+
     @ConfigValue @JvmField var cameraTweaksEnabled: Boolean = false
     @ConfigValue @JvmField var cameraFullBright: Boolean = false
     @ConfigValue @JvmField var cameraNoBlindness: Boolean = false
@@ -682,6 +687,14 @@ object FishSettings {
     @ConfigValue @JvmField var roomTimerSecrets: Boolean = true
     @ConfigValue @JvmField var roomTimerShowTime: Boolean = true
     @ConfigValue @JvmField var roomTimerPb: Boolean = true
+
+    @ConfigValue @JvmField var pbMessagesEnabled: Boolean = false
+    @ConfigValue @JvmField var pbMessagesOnlyPb: Boolean = true
+    @ConfigValue @JvmField var pbMessagesSplits: Boolean = true
+    @ConfigValue @JvmField var pbMessagesGoldor: Boolean = true
+    @ConfigValue @JvmField var pbMessagesTerminals: Boolean = true
+    @ConfigValue @JvmField var pbMessagesRelics: Boolean = true
+    @ConfigValue @JvmField var splitPbColors: Boolean = true
 
     @ConfigValue @JvmField var mimicAnnounceEnabled: Boolean = false
     @ConfigValue @JvmField var mimicMsgEnabled: Boolean = true
