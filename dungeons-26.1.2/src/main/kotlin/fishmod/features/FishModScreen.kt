@@ -176,6 +176,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(KeybindSetting("Lock Key", "Default L", { fishmod.utils.Keybinds.slotLock }))
             f.sub.add(ColorPickerSetting("Colour", "", FishSettings::slotLockingColor))
             f.sub.add(SliderIntSetting("Tint Opacity", "How strongly locked slots are filled (%)", FishSettings::slotLockingOpacity, 0, 100, 5))
+            f.sub.add(ToggleSetting("Outline", "Border around locked slots", FishSettings::slotLockingOutline))
             general.features.add(f)
         }
         run {
