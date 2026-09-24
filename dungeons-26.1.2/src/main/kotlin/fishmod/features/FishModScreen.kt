@@ -408,6 +408,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(SubcategoryHeader("Quiz"))
             f.sub.add(ToggleSetting("Quiz Solver", "", FishSettings::quizSolver))
             f.sub.add(ColorPickerSetting("Quiz Color", "", FishSettings::quizColor).gatedBy { FishSettings.quizSolver })
+            f.sub.add(ToggleSetting("Quiz Timer HUD", "11s to the first question, then 5s after each answer (move in HUD editor)", FishSettings::quizHudEnabled))
             f.sub.add(SubcategoryHeader("Water Board"))
             f.sub.add(ToggleSetting("Water Solver", "", FishSettings::waterSolver))
             f.sub.add(ColorPickerSetting("Next Lever", "", FishSettings::waterFirstColor).gatedBy { FishSettings.waterSolver })
