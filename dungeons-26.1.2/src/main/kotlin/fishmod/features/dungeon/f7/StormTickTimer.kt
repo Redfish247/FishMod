@@ -30,6 +30,9 @@ object StormTickTimer {
     private val LB_ARCHER_END_TICK: Int = Math.round(34.35 * 20).toInt()
     private val LB_HEALER_END_TICK: Int = Math.round(34.05 * 20).toInt()
 
+    // Py: count down 5s to the crusher window (31.5s into P2), pulled earlier by ping.
+    private val PY_TICK: Int = Math.round(31.5 * 20).toInt()
+
     private val timer = TickTimer()
     private var deathTime = 0.0
     private var deathStartDisplayTime = 0L
@@ -40,6 +43,10 @@ object StormTickTimer {
             shouldCount = { Location.inDungeon() && Phase.inP2() && !Phase.stormDead() },
             resetOn = { Location.inDungeon() },
             onTick = { t ->
+                if (Floor7.enablePyTimer && t == pyEndTick()) {
+                    Misc.forceTitle(Component.literal("STAND ON CRUSHER!").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD), Component.empty())
+                    Scheduler.scheduleSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1.5f)
+                }
                 val lbEnd = lbEndTick()
                 if (Floor7.enableLbReleaseTimer && lbEnd > 0 && t == lbEnd) {
                     Misc.forceTitle(Component.literal("RELEASE NOW!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD), Component.empty())
@@ -95,6 +102,20 @@ object StormTickTimer {
     }
 
     private fun pingTicks(): Int = ceil(max(0, Floor7.lbReleaseTimerPingMs) / 50.0).toInt()
+
+    private fun pyEndTick(): Int = max(COUNTDOWN_DURATION + 1, PY_TICK - ceil(max(0, Floor7.pyTimerPingMs) / 50.0).toInt())
+
+    @JvmStatic
+    fun displayPyTimer(): Boolean {
+        val end = pyEndTick()
+        return Floor7.enableTickTimers && Floor7.enablePyTimer && Location.inDungeon() && Phase.inP2() && !Phase.stormDead()
+                && timer.tick >= end - COUNTDOWN_DURATION && timer.tick <= end
+    }
+
+    @JvmStatic
+    fun renderPyTimer(component: HUDComponent, context: GuiGraphicsExtractor) {
+        RenderUtils.drawTimer(component, context, (pyEndTick() - timer.tick) * Constants.TICK_DURATION, Floor7.pyTimerColor)
+    }
 
     private fun lbEndTick(): Int {
         val base = when {
