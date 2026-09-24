@@ -735,6 +735,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             val f = Feature("Simon Says", FishSettings::simonSaysEnabled)
             f.sub.add(ToggleSetting("Show HUD", "", FishSettings::simonSaysHudEnabled))
             f.sub.add(ToggleSetting("To Party", "", FishSettings::simonSaysPartyChat))
+            f.sub.add(ToggleSetting("SS Skip Compatibility", "Count a skipped first round correctly", FishSettings::simonSaysSkipCompat))
             f.sub.add(ToggleSetting("Fail Msg", "", FishSettings::simonSaysFailEnabled))
             f.sub.add(InputSetting("Fail Text", "", FishSettings::simonSaysFailMessage).gatedBy { FishSettings.simonSaysFailEnabled })
 
