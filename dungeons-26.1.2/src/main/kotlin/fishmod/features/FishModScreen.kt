@@ -1411,6 +1411,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             floor7.features.add(f)
         }
         run {
+            val f = Feature("Relic Times", Floor7::relicTimesEnabled)
+            f.sub.add(SubcategoryHeader("Once all 5 relics are placed, lists each one's place time (from P5 start) and who placed it"))
+            f.sub.add(ToggleSetting("Send To Party Chat", "Off = only you see it", Floor7::relicTimesParty))
+            floor7.features.add(f)
+        }
+        run {
             val f = Feature("Wither Dragons", FishSettings::witherDragonsEnabled)
             f.sub.add(ToggleSetting("Spawn Timer (World)", "In-world countdown on each dragon's hitbox", FishSettings::witherDragonsTimerWorld))
             f.sub.add(ToggleSetting("Spawn Timer (HUD)", "On-screen countdown for the priority dragon — movable in the HUD editor", FishSettings::witherDragonsTimerHud))

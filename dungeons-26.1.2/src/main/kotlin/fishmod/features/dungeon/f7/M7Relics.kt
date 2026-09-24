@@ -39,6 +39,8 @@ object M7Relics {
     private val PICKUP = Pattern.compile("^(\\w{3,16}) picked the Corrupted (\\w{3,6}) Relic!$")
     private var p5StartMs = 0L
     private var myRelic: Relic? = null
+    private val pickers = HashMap<Relic, String>()
+    private val placed = LinkedHashMap<Relic, Double>()
 
     @JvmStatic
     fun init() {
@@ -55,17 +57,21 @@ object M7Relics {
             if (P5_START.matcher(msg).find()) {
                 p5StartMs = System.currentTimeMillis()
                 myRelic = null
+                pickers.clear(); placed.clear()
                 if (Floor7.enableRelicStartTimer)
                     spawnEndMs = System.currentTimeMillis() + Floor7.relicSpawnTicks.coerceIn(1, 200) * 50L
             } else if (p5StartMs != 0L) {
                 val m = PICKUP.matcher(msg)
-                if (m.find() && m.group(1) == Minecraft.getInstance().player?.gameProfile?.name)
-                    myRelic = Relic.entries.firstOrNull { it.itemName == "Corrupted ${m.group(2)} Relic" }
+                if (m.find()) {
+                    val relic = Relic.entries.firstOrNull { it.itemName == "Corrupted ${m.group(2)} Relic" }
+                    if (relic != null) pickers[relic] = m.group(1)
+                    if (m.group(1) == Minecraft.getInstance().player?.gameProfile?.name) myRelic = relic
+                }
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { spawnEndMs = 0L; p5StartMs = 0L; myRelic = null; false }
-        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { checkPlaced() }
+        Events.ON_WORLD_CHANGE.register { spawnEndMs = 0L; p5StartMs = 0L; myRelic = null; pickers.clear(); placed.clear(); false }
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { checkPlaced(); checkAllPlaced() }
 
         RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> renderBox(m, vc) }
     }
@@ -88,6 +94,31 @@ object M7Relics {
             PbMessages.announce(FishSettings.pbMessagesRelics, "relic:${relic.name}",
                 Component.literal("${relic.code}$color Relic §aplaced in"), secs)
             return
+        }
+    }
+
+    // Records every relic's place time; once all 5 are in, prints/sends one line per relic.
+    private fun checkAllPlaced() {
+        if (!Floor7.relicTimesEnabled || p5StartMs == 0L || placed.size == Relic.entries.size) return
+        val level = Minecraft.getInstance().level ?: return
+        if (Phase.getFloor() != "M7") return
+        val now = System.currentTimeMillis()
+        for (e in level.entitiesForRendering()) {
+            if (e !is ArmorStand) continue
+            if (!e.getItemBySlot(EquipmentSlot.HEAD).hoverName.string.contains("Relic")) continue
+            for (relic in Relic.entries) {
+                if (relic in placed) continue
+                val dx = e.x - (relic.cauldron.x + 0.5); val dz = e.z - (relic.cauldron.z + 0.5)
+                if (dx * dx + dz * dz < 1.5 * 1.5) placed[relic] = (now - p5StartMs) / 1000.0
+            }
+        }
+        if (placed.size < Relic.entries.size) return
+        for ((relic, secs) in placed) {
+            val color = relic.name.lowercase().replaceFirstChar { it.uppercase() }
+            val who = pickers[relic] ?: "?"
+            val time = PbMessages.fmt(secs)
+            if (Floor7.relicTimesParty) fishmod.utils.ChatQueue.enqueue("pc $color Relic: $time ($who)")
+            else fishmod.utils.Misc.addChatMessage(Component.literal("${relic.code}$color Relic§7: §e$time §7($who)"))
         }
     }
 
