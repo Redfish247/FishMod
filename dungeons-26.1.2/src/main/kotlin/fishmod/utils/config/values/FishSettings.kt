@@ -658,6 +658,11 @@ object FishSettings {
     @ConfigValue @JvmField var warpCooldownScale: Double = 1.0
 
     @ConfigValue @JvmField var blessingDisplayEnabled: Boolean = false
+
+    @ConfigValue @JvmField var quizHudEnabled: Boolean = false
+    @ConfigValue @JvmField var quizHudX: Int = 10
+    @ConfigValue @JvmField var quizHudY: Int = 200
+    @ConfigValue @JvmField var quizHudScale: Double = 1.5
     @ConfigValue @JvmField var blessingPower: Boolean = true
     @ConfigValue @JvmField var blessingPowerColor: Int = 0xFFAA0000.toInt()
     @ConfigValue @JvmField var blessingTime: Boolean = true
