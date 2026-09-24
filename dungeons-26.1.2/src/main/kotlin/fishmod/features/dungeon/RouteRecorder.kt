@@ -400,22 +400,24 @@ object RouteRecorder {
         val fillPct = if (style != "Outline") FishSettings.routeFillOpacity else 0
         val strokePct = if (style != "Filled") FishSettings.routeOutlineOpacity else 0
         val hw = FishSettings.routeLineWidth * 0.01
+        val g = groups()
         var prev: Vec3? = null
+        var prevGroup = -1
         for ((i, p) in vis) {
             val s = steps[i]
             val c = color(s.type)
             val center = Vec3.atCenterOf(p)
-            if (throughWalls(s.type) != noDepth) { prev = center; continue }
+            if (throughWalls(s.type) != noDepth) { prev = center; prevGroup = g[i]; continue }
             val current = FishSettings.routeHighlightCurrent && mode == Mode.PLAYING && i == progress
             box(box(p), withAlpha(c, if (current) fillPct + 25 else fillPct), withAlpha(c, if (current) 100 else strokePct))
             if (FishSettings.routeShowLines) {
-                prev?.let { line(it, center, hw, withAlpha(c, FishSettings.routeLineOpacity)) }
+                if (g[i] != prevGroup) prev?.let { line(it, center, hw, withAlpha(c, FishSettings.routeLineOpacity)) }
                 if (s.type == Type.PEARL) resolve(s.room, s.landLocal, s.landWorld)?.let { land ->
                     line(center, Vec3.atCenterOf(land), hw / 2, withAlpha(c, FishSettings.routeLineOpacity * 6 / 10))
                     box(AABB(land).deflate(0.3), withAlpha(c, maxOf(fillPct, 30)), 0)
                 }
             }
-            prev = center
+            prev = center; prevGroup = g[i]
         }
         if (FishSettings.routeLineToNext && mode == Mode.PLAYING) {
             val (i, p) = vis.first()
@@ -443,12 +445,32 @@ object RouteRecorder {
         }, { a, b, hw, argb -> RenderUtils.gizmoThickLine(a, b, hw, argb) })
     }
 
+    // consecutive same-type steps on touching blocks (e.g. a row of breaks) share one number
+    private fun groups(): IntArray {
+        val g = IntArray(steps.size)
+        for (i in 1 until steps.size) g[i] = if (sameGroup(steps[i - 1], steps[i])) g[i - 1] else g[i - 1] + 1
+        return g
+    }
+
+    private fun sameGroup(a: Step, b: Step): Boolean {
+        if (a.type != b.type || a.room != b.room) return false
+        val pa = a.local ?: a.world
+        val pb = b.local ?: b.world
+        if ((a.local == null) != (b.local == null)) return false
+        return maxOf(kotlin.math.abs(pa[0] - pb[0]), kotlin.math.abs(pa[1] - pb[1]), kotlin.math.abs(pa[2] - pb[2])) <= 1
+    }
+
+    // label sits on the first not-yet-done block of each group
     private fun labels() {
         if (!FishSettings.routeShowLabels) return
         val scale = FishSettings.routeLabelScale.toFloat()
+        val g = groups()
+        var lastGroup = -1
         for ((i, p) in visible()) {
+            if (g[i] == lastGroup) continue
+            lastGroup = g[i]
             val s = steps[i]
-            RenderUtils.gizmoText(Component.literal("${i + 1}. ${s.type.label}"), Vec3(p.x + 0.5, p.y + 1.4, p.z + 0.5), scale, withAlpha(color(s.type), 100))
+            RenderUtils.gizmoText(Component.literal("${g[i] + 1}. ${s.type.label}"), Vec3(p.x + 0.5, p.y + 1.4, p.z + 0.5), scale, withAlpha(color(s.type), 100))
         }
     }
 
