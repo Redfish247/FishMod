@@ -25,6 +25,7 @@ class Room(
     var isKnown1x1: Boolean = false
     var specialTile: Boolean = false
     var rushRoom: Boolean = false
+    var secretsFound: Int = 0
     var mimic: Boolean = false
         private set
 
@@ -201,7 +202,10 @@ class Room(
                 matrices.pushMatrix()
                 matrices.translate(placement.x + 8.0f, placement.z + splitName.size * (fontHeight / textFactor) + defaultHeight)
                 matrices.scale(DungeonMapSettings.mapTextScaling)
-                context.centeredText(mc.font, "§e${data!!.secrets}§7s", 0, 0, -1)
+                val total = data!!.secrets
+                val found = if (state == State.GREEN) total else secretsFound.coerceAtMost(total)
+                val col = if (found >= total) "§a" else if (found > 0) "§e" else "§7"
+                context.centeredText(mc.font, "$col$found§7/§f$total", 0, 0, -1)
                 matrices.popMatrix()
             }
         } else {
