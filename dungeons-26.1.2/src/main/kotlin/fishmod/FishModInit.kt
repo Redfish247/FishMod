@@ -409,6 +409,7 @@ class FishModInit : ModInitializer {
         fishmod.features.scoreboard.FireSaleInfo.init()
         fishmod.features.other.CommandKeys.init()
         fishmod.features.other.WardrobeHotkeys.init()
+        fishmod.features.other.PetKeybinds.init()
         ItemRarityHotbar.init()
         fishmod.features.item.ItemQualityTooltip.init()
         fishmod.features.item.ItemPriceTooltip.init()

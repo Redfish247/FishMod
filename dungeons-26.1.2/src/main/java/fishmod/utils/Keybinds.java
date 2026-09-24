@@ -26,6 +26,8 @@ public class Keybinds {
 
     public static KeyMapping[] wardrobeSlots;
 
+    public static KeyMapping[] petKeybinds;
+
     public static KeyMapping wardrobeNextPage;
     public static KeyMapping wardrobePrevPage;
 
@@ -90,6 +92,16 @@ public class Keybinds {
                     GLFW.GLFW_KEY_UNKNOWN,
                     category));
             TRACKED.put("wardrobe_slot_" + i, wardrobeSlots[i]);
+        }
+
+        petKeybinds = new KeyMapping[fishmod.features.other.PetKeybinds.COUNT];
+        for (int i = 0; i < petKeybinds.length; i++) {
+            petKeybinds[i] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                    "Pet Keybind " + (i + 1),
+                    InputConstants.Type.KEYSYM,
+                    GLFW.GLFW_KEY_UNKNOWN,
+                    category));
+            TRACKED.put("pet_keybind_" + i, petKeybinds[i]);
         }
 
         wardrobeNextPage = KeyMappingHelper.registerKeyMapping(new KeyMapping(
