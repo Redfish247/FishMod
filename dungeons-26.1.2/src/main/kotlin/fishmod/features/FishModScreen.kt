@@ -155,7 +155,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             val f = Feature("Pet Keybinds", FishSettings::petKeybindsEnabled)
             f.sub.add(ToggleSetting("Auto-Close GUI", "", FishSettings::petKeybindsAutoClose))
             f.sub.add(ToggleSetting("Don't Despawn Active Pet", "Pressing the key for your current pet does nothing", FishSettings::petKeybindsNoDespawn))
-            f.sub.add(SubcategoryHeader("Press a key to summon that pet from anywhere"))
+            f.sub.add(SubcategoryHeader("Open /pets yourself, then press a key to select that pet"))
             for (i in 0 until fishmod.features.other.PetKeybinds.COUNT) {
                 val idx = i
                 f.sub.add(KeybindSetting(fishmod.features.other.PetKeybinds.PETS[idx], "", { fishmod.utils.Keybinds.petKeybinds?.getOrNull(idx) }))
