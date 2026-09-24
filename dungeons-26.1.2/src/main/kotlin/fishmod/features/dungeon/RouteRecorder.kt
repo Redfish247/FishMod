@@ -48,6 +48,7 @@ object RouteRecorder {
         ETHERWARP("Etherwarp", 0xFFB45CFF.toInt(), 2.5),
         PEARL("Pearl", 0xFF20C0A0.toInt(), 3.0),
         BREAK("Break", 0xFFFF5555.toInt(), 1.5),
+        SUPERBOOM("Superboom", 0xFFFF2020.toInt(), 3.0),
         CHEST("Chest", 0xFFFFAA00.toInt(), 1.5),
         SECRET("Secret", 0xFF55FF55.toInt(), 1.5),
         ITEM("Item", 0xFF55FFFF.toInt(), 3.0),
@@ -92,13 +93,17 @@ object RouteRecorder {
     private var anchorTick = -100L
 
     private val ETHER_ITEMS = setOf("ASPECT_OF_THE_VOID", "ASPECT_OF_THE_END", "ETHERWARP_CONDUIT")
+    private val BOOM_ITEMS = setOf("SUPERBOOM_TNT", "INFINITE_SUPERBOOM_TNT")
+    private var lastBoomTick = -100L
     private val gson = GsonBuilder().setPrettyPrinting().create()
     private val dir get() = FabricLoader.getInstance().configDir.resolve("FishMod").resolve("routes")
 
     @JvmStatic
     fun init() {
         UseBlockCallback.EVENT.register(UseBlockCallback { _, level, hand, hit ->
-            if (hand == InteractionHand.MAIN_HAND && tracking()) {
+            if (hand == InteractionHand.MAIN_HAND && tracking() && Minecraft.getInstance().player?.let { isBoom(it.mainHandItem) } == true) {
+                boom(hit.blockPos.immutable())
+            } else if (hand == InteractionHand.MAIN_HAND && tracking()) {
                 val block = level.getBlockState(hit.blockPos).block
                 val type = when (block) {
                     is ChestBlock -> Type.CHEST
@@ -111,7 +116,11 @@ object RouteRecorder {
         })
 
         UseItemCallback.EVENT.register(UseItemCallback { player, _, hand ->
-            if (hand == InteractionHand.MAIN_HAND && tracking() && player.mainHandItem.item == Items.ENDER_PEARL) {
+            if (hand == InteractionHand.MAIN_HAND && tracking() && isBoom(player.mainHandItem)) {
+                val hit = Minecraft.getInstance().hitResult as? net.minecraft.world.phys.BlockHitResult
+                boom(hit?.takeIf { it.type == net.minecraft.world.phys.HitResult.Type.BLOCK }?.blockPos
+                    ?: BlockPos.containing(player.eyePosition.add(player.lookAngle.scale(3.0))))
+            } else if (hand == InteractionHand.MAIN_HAND && tracking() && player.mainHandItem.item == Items.ENDER_PEARL) {
                 val step = action(Type.PEARL, player.blockPosition())
                 if (step != null) { pendingPearl = step; pearlTick = tick }
             }
@@ -148,6 +157,15 @@ object RouteRecorder {
         RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> render(m, vc, fill = true) }
         RenderingEvents.NO_DEPTH_LINE.register { ctx, m, vc -> render(m, vc, fill = false); lineToNext(ctx, m, vc) }
         RenderingEvents.GIZMO.register { _ -> labels() }
+    }
+
+    private fun isBoom(stack: net.minecraft.world.item.ItemStack) = ItemUtil.getId(stack) in BOOM_ITEMS
+
+    // use-on-block and use-item can both fire for one click
+    private fun boom(pos: BlockPos) {
+        if (tick - lastBoomTick < 5) return
+        lastBoomTick = tick
+        action(Type.SUPERBOOM, pos)
     }
 
     private fun tracking() = mode != Mode.IDLE && Location.inDungeon()
@@ -360,7 +378,7 @@ object RouteRecorder {
     fun record() {
         steps.clear(); progress = 0; pendingPearl = null; pendingBreaks.clear()
         mode = Mode.RECORDING
-        msg("§aRecording. §7Etherwarps, pearls, dungeonbreaker, chests, secrets, items and bats are logged. §f/fm route stop §7when done.")
+        msg("§aRecording. §7Etherwarps, pearls, superbooms, dungeonbreaker, chests, secrets, items and bats are logged. §f/fm route stop §7when done.")
     }
 
     @JvmStatic
