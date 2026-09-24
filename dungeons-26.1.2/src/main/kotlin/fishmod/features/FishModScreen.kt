@@ -171,6 +171,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             general.features.add(f)
         }
         run {
+            val f = Feature("Inventory Search", FishSettings::inventorySearchEnabled)
+            f.sub.add(SubcategoryHeader("Ctrl+F in any container to search names + lore; non-matches are dimmed. Math works too (e.g. 64*9)"))
+            f.sub.add(ToggleSetting("Always Show Bar", "Show the bar without pressing Ctrl+F", FishSettings::inventorySearchAlwaysShow))
+            f.sub.add(ToggleSetting("Outline Matches", "", FishSettings::inventorySearchHighlight))
+            f.sub.add(ColorPickerSetting("Outline Colour", "", FishSettings::inventorySearchHighlightColor).gatedBy { FishSettings.inventorySearchHighlight })
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Chat", FishSettings::chatFeatureEnabled)
             f.sub.add(ToggleSetting("Smart Copy Chat", "", FishSettings::smartCopyChat))
             f.sub.add(ToggleSetting("Compact Chat", "Collapse identical messages within the last minute into one \"(N)\" line", FishSettings::chatCompact))
@@ -637,6 +645,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(DropdownSetting("Tick Timer", "",
                 Split.TimerType.values(), { Split.timerType }, { v -> Split.timerType = v }))
             f.sub.add(ToggleSetting("Activated Only", "", Phase::onlyShowActivatedSplits))
+            f.sub.add(ToggleSetting("PB Colors", "Finished split time: pink = new PB, orange = faster than your average", FishSettings::splitPbColors))
+            dungeon.features.add(f)
+        }
+        run {
+            val f = Feature("PB Messages", FishSettings::pbMessagesEnabled)
+            f.sub.add(ToggleSetting("Only On PB", "Off = also print slower times with the gap to your PB", FishSettings::pbMessagesOnlyPb))
+            f.sub.add(ToggleSetting("Splits", "Run splits (Blood Open, Maxor, Terminals, Run Time…)", FishSettings::pbMessagesSplits))
+            f.sub.add(ToggleSetting("Goldor Sections", "S1–S4 terminal sections", FishSettings::pbMessagesGoldor))
+            f.sub.add(ToggleSetting("Terminals", "Your open-to-solve time per terminal type", FishSettings::pbMessagesTerminals))
+            f.sub.add(ToggleSetting("Relics", "P5 start to your relic placed (M7)", FishSettings::pbMessagesRelics))
             dungeon.features.add(f)
         }
         run {
@@ -1209,6 +1227,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("Goldor Splits", Section::enableTerminalSplits)
+            f.sub.add(ToggleSetting("PB Colors", "Pink section time on a new PB", FishSettings::splitPbColors))
             f.sub.add(DropdownSetting("Show During", "",
                 Section.DisplayTerminalSplitsWhen.values(),
                 { Section.displayTerminalSplitsWhen },
@@ -3775,6 +3794,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Death Message" -> "Announce deaths with a template"
                 "Send Lag to Party" -> "Warn the party when your game lags"
                 "Splits" -> "Phase split timers for runs"
+                "PB Messages" -> "Chat PB alerts for splits, Goldor sections, terminals and relics"
                 "Session Stats" -> "Per-session run statistics HUD"
                 "Loot Tracker" -> "Manual drop & profit tracker (D Hub inv)"
                 "Simon Says" -> "F7 Goldor device solver"
