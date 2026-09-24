@@ -610,6 +610,7 @@ object FishSettings {
 
     @ConfigValue @JvmField var slotLockingEnabled: Boolean = false
     @ConfigValue @JvmField var slotLockingColor: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var slotLockingOpacity: Int = 25
 
     @ConfigValue @JvmField var inventorySearchEnabled: Boolean = false
     @ConfigValue @JvmField var inventorySearchAlwaysShow: Boolean = false
