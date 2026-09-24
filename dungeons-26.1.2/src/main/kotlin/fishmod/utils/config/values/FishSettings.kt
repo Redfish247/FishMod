@@ -658,6 +658,11 @@ object FishSettings {
     @ConfigValue @JvmField var warpCooldownScale: Double = 1.0
 
     @ConfigValue @JvmField var blessingDisplayEnabled: Boolean = false
+
+    @ConfigValue @JvmField var iceSprayTimerEnabled: Boolean = false
+    @ConfigValue @JvmField var iceSprayDuration: Double = 5.0
+    @ConfigValue @JvmField var iceSprayColor: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var iceSprayScale: Double = 1.5
     @ConfigValue @JvmField var blessingPower: Boolean = true
     @ConfigValue @JvmField var blessingPowerColor: Int = 0xFFAA0000.toInt()
     @ConfigValue @JvmField var blessingTime: Boolean = true
