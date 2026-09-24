@@ -34,6 +34,7 @@ object InvincibilityTracker {
 
         @JvmField var active = 0
         @JvmField var cooldown = 0
+        @JvmField var icon: ItemStack? = null
 
         fun proc() { active = maxActive; cooldown = maxCooldown }
         fun tick() { if (cooldown > 0) cooldown--; if (active > 0) active-- }
@@ -42,6 +43,7 @@ object InvincibilityTracker {
 
     private const val NAME = "Invincibility Timer"
     private const val LINE_H = 10
+    private const val ICON_LINE_H = 18
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     @JvmStatic
@@ -66,12 +68,69 @@ object InvincibilityTracker {
             }
             false
         }
-        Events.ON_SERVER_TICK.register { Type.entries.forEach { it.tick() }; false }
+        Events.ON_SERVER_TICK.register { Type.entries.forEach { it.tick() }; learnIcons(); false }
         Events.ON_WORLD_CHANGE.register { Type.entries.forEach { it.reset() }; false }
 
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             if (!Dungeons.displayInvincibilityTimer || !FishSettings.invincShowCooldown) return@register
             drawSlotBar(ctx, stack, x, y)
+        }
+    }
+
+    // Icons are learned from the player's own items (mask heads, Phoenix in the pets menu) and saved.
+    private var iconTick = 0
+
+    private fun storedTexture(t: Type): String = when (t) {
+        Type.SPIRIT -> FishSettings.invincIconSpirit
+        Type.BONZO -> FishSettings.invincIconBonzo
+        Type.PHOENIX -> FishSettings.invincIconPhoenix
+    }
+
+    private fun storeTexture(t: Type, tex: String) {
+        if (storedTexture(t) == tex) return
+        when (t) {
+            Type.SPIRIT -> FishSettings.invincIconSpirit = tex
+            Type.BONZO -> FishSettings.invincIconBonzo = tex
+            Type.PHOENIX -> FishSettings.invincIconPhoenix = tex
+        }
+        t.icon = null
+        runCatching { fishmod.utils.config.FishConfig.manager.save() }
+    }
+
+    private fun texture(stack: ItemStack): String? =
+        stack.get(net.minecraft.core.component.DataComponents.PROFILE)?.partialProfile()?.properties()?.get("textures")?.firstOrNull()?.value()
+
+    private fun icon(t: Type): ItemStack? {
+        t.icon?.let { return it }
+        val tex = storedTexture(t).ifEmpty { return null }
+        val props = com.google.common.collect.ImmutableMultimap.of("textures", com.mojang.authlib.properties.Property("textures", tex))
+        val profile = com.mojang.authlib.GameProfile(java.util.UUID(0L, t.ordinal.toLong()), "fmicon", com.mojang.authlib.properties.PropertyMap(props))
+        return ItemStack(net.minecraft.world.item.Items.PLAYER_HEAD).also {
+            it.set(net.minecraft.core.component.DataComponents.PROFILE, net.minecraft.world.item.component.ResolvableProfile.createResolved(profile))
+            t.icon = it
+        }
+    }
+
+    private fun learnIcons() {
+        if (!FishSettings.invincIcons || ++iconTick < 20) return
+        iconTick = 0
+        val mc = Minecraft.getInstance()
+        val player = mc.player ?: return
+        val inv = player.inventory
+        val stacks = (0 until inv.containerSize).map { inv.getItem(it) } + player.getItemBySlot(EquipmentSlot.HEAD)
+        for (st in stacks) {
+            if (st.isEmpty) continue
+            val id = ItemUtil.getId(st) ?: continue
+            val t = Type.entries.firstOrNull { id in it.ids } ?: continue
+            texture(st)?.let { storeTexture(t, it) }
+        }
+        val screen = mc.screen as? net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*> ?: return
+        if (!COLOR.replace(screen.title.string, "").contains("Pets")) return
+        for (slot in screen.menu.slots) {
+            val st = slot.item
+            if (st.isEmpty || !st.hoverName.string.contains("Phoenix")) continue
+            texture(st)?.let { storeTexture(Type.PHOENIX, it) }
+            break
         }
     }
 
@@ -120,7 +179,8 @@ object InvincibilityTracker {
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.invincHudX.toFloat(), FishSettings.invincHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        shown.forEachIndexed { i, t ->
+        var y = 0
+        for (t in shown) {
             val c = stateColor(t)
             val value = when {
                 t.active > 0 || t.cooldown > 0 ->
@@ -129,7 +189,15 @@ object InvincibilityTracker {
                     else "●"
                 else -> "✔"
             }
-            ctx.text(mc.font, "${labelColor(t)}${t.label} $c$value", 0, i * LINE_H, -1, true)
+            val ic = if (FishSettings.invincIcons) icon(t) else null
+            if (ic != null) {
+                ctx.item(ic, 0, y)
+                ctx.text(mc.font, "$c$value", 18, y + 4, -1, true)
+                y += ICON_LINE_H
+            } else {
+                ctx.text(mc.font, "${labelColor(t)}${t.label} $c$value", 0, y, -1, true)
+                y += LINE_H
+            }
         }
         ctx.pose().popMatrix()
     }
