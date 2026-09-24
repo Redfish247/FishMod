@@ -1405,6 +1405,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             floor7.features.add(f)
         }
         run {
+            val f = Feature("Storm Over Alert", FishSettings::stormOverEnabled)
+            f.sub.add(SubcategoryHeader("Title once Storm has used both lightning procs — move it in the HUD editor"))
+            f.sub.add(InputSetting("Text", "", FishSettings::stormOverText))
+            f.sub.add(ColorPickerSetting("Color", "", FishSettings::stormOverColor))
+            f.sub.add(ToggleSetting("Sound", "", FishSettings::stormOverSound))
+            f.sub.add(SliderIntSetting("Duration (ms)", "", FishSettings::stormOverDurationMs, 500, 6000, 250))
+            floor7.features.add(f)
+        }
+        run {
             val f = Feature("M7 Relics", Floor7::enableRelicStartTimer)
             f.sub.add(SliderIntSetting("Spawn Ticks", "Ticks after Necron's P5 line", Floor7::relicSpawnTicks, 1, 200))
             f.sub.add(ToggleSetting("Cauldron Box", "Box + tracer the cauldron for the relic you hold", Floor7::renderRelicHighlight))
