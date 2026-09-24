@@ -29,6 +29,7 @@ import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket
 import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket
+import net.minecraft.network.protocol.game.ClientboundSoundPacket
 import net.minecraft.network.protocol.game.ClientboundTakeItemEntityPacket
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
@@ -97,6 +98,8 @@ object RouteRecorder {
     private val ETHER_ITEMS = setOf("ASPECT_OF_THE_VOID", "ASPECT_OF_THE_END", "ETHERWARP_CONDUIT")
     private val BOOM_ITEMS = setOf("SUPERBOOM_TNT", "INFINITE_SUPERBOOM_TNT")
     private var lastBoomTick = -100L
+    private var boomHeldTick = -1000L
+    private val boomSounds = ConcurrentLinkedQueue<Pair<String, Vec3>>()
     private val gson = GsonBuilder().setPrettyPrinting().create()
     private val dir get() = FabricLoader.getInstance().configDir.resolve("FishMod").resolve("routes")
 
@@ -104,7 +107,7 @@ object RouteRecorder {
     fun init() {
         UseBlockCallback.EVENT.register(UseBlockCallback { _, level, hand, hit ->
             if (hand == InteractionHand.MAIN_HAND && tracking() && Minecraft.getInstance().player?.let { isBoom(it.mainHandItem) } == true) {
-                boom(hit.blockPos.immutable())
+                boom(hit.blockPos.immutable(), "use-block")
             } else if (hand == InteractionHand.MAIN_HAND && tracking()) {
                 val block = level.getBlockState(hit.blockPos).block
                 val type = when (block) {
@@ -121,7 +124,7 @@ object RouteRecorder {
             if (hand == InteractionHand.MAIN_HAND && tracking() && isBoom(player.mainHandItem)) {
                 val hit = Minecraft.getInstance().hitResult as? net.minecraft.world.phys.BlockHitResult
                 boom(hit?.takeIf { it.type == net.minecraft.world.phys.HitResult.Type.BLOCK }?.blockPos
-                    ?: BlockPos.containing(player.eyePosition.add(player.lookAngle.scale(3.0))))
+                    ?: BlockPos.containing(player.eyePosition.add(player.lookAngle.scale(3.0))), "use-item")
             } else if (hand == InteractionHand.MAIN_HAND && tracking() && player.mainHandItem.item == Items.ENDER_PEARL) {
                 val step = action(Type.PEARL, player.blockPosition())
                 if (step != null) { pendingPearl = step; pearlTick = tick }
@@ -130,7 +133,9 @@ object RouteRecorder {
         })
 
         AttackBlockCallback.EVENT.register(AttackBlockCallback { player, _, hand, pos, _ ->
-            if (hand == InteractionHand.MAIN_HAND && tracking() && ItemUtil.getId(player.mainHandItem) == "DUNGEONBREAKER") {
+            if (hand == InteractionHand.MAIN_HAND && tracking() && isBoom(player.mainHandItem)) {
+                boom(pos.immutable(), "attack")
+            } else if (hand == InteractionHand.MAIN_HAND && tracking() && ItemUtil.getId(player.mainHandItem) == "DUNGEONBREAKER") {
                 pendingBreaks[pos.immutable()] = tick
             }
             InteractionResult.PASS
@@ -141,6 +146,7 @@ object RouteRecorder {
                 is ClientboundTakeItemEntityPacket -> if (packet.playerId == selfId) pickedItemIds.add(packet.itemId)
                 is ClientboundRemoveEntitiesPacket -> packet.entityIds.forEach { removedIds.add(it) }
                 is ClientboundPlayerPositionPacket -> teleported = true
+                is ClientboundSoundPacket -> boomSounds.add(packet.sound.value().location.path to Vec3(packet.x, packet.y, packet.z))
             }
             false
         }
@@ -163,8 +169,10 @@ object RouteRecorder {
     private fun isBoom(stack: net.minecraft.world.item.ItemStack) = ItemUtil.getId(stack) in BOOM_ITEMS
 
     // use-on-block and use-item can both fire for one click
-    private fun boom(pos: BlockPos) {
-        if (tick - lastBoomTick < 5) return
+    // clicks and the explosion itself can all report one superboom
+    private fun boom(pos: BlockPos, via: String) {
+        fishmod.utils.debug.Debug.LOGGER.info("[Route] superboom via $via at $pos")
+        if (tick - lastBoomTick < 20) return
         lastBoomTick = tick
         action(Type.SUPERBOOM, pos)
     }
@@ -177,7 +185,7 @@ object RouteRecorder {
         val level = mc.level
         selfId = player?.id ?: -1
         if (player == null || level == null || !tracking()) {
-            pickedItemIds.clear(); removedIds.clear(); teleported = false; lastPos = player?.position()
+            pickedItemIds.clear(); removedIds.clear(); boomSounds.clear(); teleported = false; lastPos = player?.position()
             return
         }
         val pos = player.position()
@@ -197,6 +205,14 @@ object RouteRecorder {
             }
         }
         if (pendingPearl != null && tick - pearlTick > 80) pendingPearl = null
+
+        if (isBoom(player.mainHandItem)) boomHeldTick = tick
+        while (true) {
+            val (name, at) = boomSounds.poll() ?: break
+            if (tick - boomHeldTick > 40 || at.distanceToSqr(pos) > 100.0) continue
+            fishmod.utils.debug.Debug.LOGGER.info("[Route] sound near superboom: $name")
+            if ("explode" in name || "explosion" in name) boom(BlockPos.containing(at), "sound:$name")
+        }
 
         val iter = pendingBreaks.entries.iterator()
         while (iter.hasNext()) {
