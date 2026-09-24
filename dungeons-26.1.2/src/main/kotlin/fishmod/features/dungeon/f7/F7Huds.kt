@@ -46,6 +46,13 @@ object F7Huds {
 
     @JvmField
     @ConfigValue
+    var necronLbTimer: HUDComponent = HUDComponent(
+        10.0, 128.0, TICK_W, 10, 1f, "Necron LB Timer",
+        { false }, NecronLbTimer::render, { Floor7.enableTickTimers && Floor7.enableNecronLbTimer }
+    )
+
+    @JvmField
+    @ConfigValue
     var lbReleaseTimer: HUDComponent = HUDComponent(
         10.0, 104.0, TICK_W, 10, 1f, "LB Release Timer",
         { false }, StormTickTimer::renderLbReleaseTimer, { Floor7.enableTickTimers && Floor7.enableLbReleaseTimer }
@@ -119,6 +126,7 @@ object F7Huds {
         MaxorTickTimer.init()
         CrystalSpawn.init()
         StormTickTimer.init()
+        NecronLbTimer.init()
         PillarExplode.init()
         GoldorTickTimer.init()
         TermStartTimer.init()
@@ -141,6 +149,7 @@ object F7Huds {
         renderOne(ctx, sectionProgress, SectionProgress.display(), SectionProgress::render, 10, 142)
         renderOne(ctx, Section.terminalSplits, Section.display(), Section::render, 10, 154)
         renderOne(ctx, lbReleaseTimer, StormTickTimer.displayLbReleaseTimer(), StormTickTimer::renderLbReleaseTimer, 10, 166)
+        renderOne(ctx, necronLbTimer, NecronLbTimer.display(), NecronLbTimer::render, 10, 190)
         renderOne(ctx, crystalReminder, CrystalSpawn.displayNotification(), CrystalSpawn::renderNotification, 10, 40)
         renderOne(ctx, stormCrush, PillarExplode.display(), PillarExplode::render, 10, 28)
         renderOne(ctx, currentSection, CurrentSection.display(), CurrentSection::render, 10, 202)
