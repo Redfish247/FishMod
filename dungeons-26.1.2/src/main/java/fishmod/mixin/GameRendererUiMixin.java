@@ -2,6 +2,9 @@ package fishmod.mixin;
 
 import fishmod.features.HasUiOverlay;
 import fishmod.features.item.AnimatedDyeAnimator;
+import fishmod.features.storage.StorageOverlay;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
@@ -23,8 +26,11 @@ public class GameRendererUiMixin {
     )
     private void fishmod$paintUiOverlay(DeltaTracker deltaTracker, boolean tick, CallbackInfo ci) {
         AnimatedDyeAnimator.tickFrame();
-        if (Minecraft.getInstance().screen instanceof HasUiOverlay screen) {
+        Screen current = Minecraft.getInstance().screen;
+        if (current instanceof HasUiOverlay screen) {
             screen.paintUiOverlay();
+        } else if (current instanceof AbstractContainerScreen<?> container && StorageOverlay.isActive(container)) {
+            StorageOverlay.paintUiOverlay();
         }
     }
 }

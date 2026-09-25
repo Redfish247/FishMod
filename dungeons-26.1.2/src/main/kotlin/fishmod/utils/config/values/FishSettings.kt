@@ -41,6 +41,16 @@ object FishSettings {
     @ConfigValue @JvmField var fmButtonAlpha: Int = 100
     @ConfigValue @JvmField var fmRowColor: Int = 0xFF24B6B0.toInt()
     @ConfigValue @JvmField var fmRowAlpha: Int = 15
+    @ConfigValue @JvmField var guiSettings: Boolean = false
+    @ConfigValue @JvmField var guiScaleMain: Int = 100
+    @ConfigValue @JvmField var guiScaleChatCommands: Int = 100
+    @ConfigValue @JvmField var guiScalePartyLoot: Int = 100
+    @ConfigValue @JvmField var guiScaleHudEditor: Int = 100
+    @ConfigValue @JvmField var guiScaleItemCustomize: Int = 100
+    @ConfigValue @JvmField var guiScaleStorage: Int = 100
+    @ConfigValue @JvmField var guiScaleAuction: Int = 100
+    @ConfigValue @JvmField var guiScaleWaypoint: Int = 100
+    @ConfigValue @JvmField var guiScaleCredits: Int = 100
 
     @ConfigValue @JvmField var petXpTamingLevel: Int = 0
     @ConfigValue @JvmField var petXpBeastmasterBonus: Int = 0

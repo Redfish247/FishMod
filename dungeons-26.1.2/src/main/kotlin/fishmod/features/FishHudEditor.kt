@@ -5,6 +5,7 @@ import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.config.FishConfig
 import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.rendering.UiRenderer
+import fishmod.utils.rendering.UiScale
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.EditBox
@@ -324,7 +325,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         private const val BTN_H = 18
         private const val BTN_GAP = 6
 
-        private const val SIDE_W = 160
+        private const val SIDE_W_MIN = 110
+        private const val SIDE_W_MAX = 200
         private const val SIDE_ROW = 12
         private const val SIDE_TOP = 58
         private const val SEARCH_Y = 20
@@ -394,6 +396,35 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     private var resetArmed = false
     private var sideOpen = false
     private var sideScroll = 0
+
+    // Chrome is painted at the per-screen user scale; chrome space = raw gui / k.
+    private var k = 1f
+    private fun refreshK() { k = UiScale.userScale(this) }
+    private fun toC(raw: Number) = (raw.toDouble() / k).toInt()
+    private fun cW() = (this.width / k).toInt()
+    private fun cH() = (this.height / k).toInt()
+
+    private var sideWFor = -1
+    private var sideWCache = SIDE_W_MIN
+
+    // Sidebar sized to its widest row, re-measured when the registered HUD list changes.
+    private val sideW: Int
+        get() {
+            if (sideWFor == ENTRIES.size) return sideWCache
+            val offW = UiRecorder.textWidth("off", 5.5f) + 6f
+            val pickW = UiRecorder.textWidth("pick all", 5.5f)
+            var w = 8f + UiRecorder.textWidth("Pick HUDs to move", 7.5f) + 1f
+            w = Math.max(w, 8f + UiRecorder.textWidth("Click a category to pick it all", 6f))
+            w = Math.max(w, 8f + UiRecorder.textWidth("Shift-click to add more", 6f))
+            for (a in listOf("Show all matches", "Hide all")) w = Math.max(w, 8f + UiRecorder.textWidth(a, 6.5f))
+            for (g in GROUPS.map { it.first } + listOf("Other", "No HUDs match")) {
+                w = Math.max(w, 8f + UiRecorder.textWidth(g.uppercase(), 6f) + 1f + 6f + pickW)
+            }
+            for (e in listed()) w = Math.max(w, 12f + UiRecorder.textWidth(e.name(), 6.5f) + 4f + offW)
+            sideWCache = Math.max(SIDE_W_MIN, Math.min(SIDE_W_MAX, Math.ceil(w + 10.0).toInt()))
+            sideWFor = ENTRIES.size
+            return sideWCache
+        }
 
     private val search = EditBox(Minecraft.getInstance().font, 0, 0, 0, 0, Component.empty()).apply { setMaxLength(32) }
     private var searchFocused = false
@@ -573,26 +604,30 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     // ---- layout helpers ------------------------------------------------------------------------
 
-    private fun doneX() = this.width / 2 - BTN_W - BTN_GAP / 2
-    private fun resetX() = this.width / 2 + BTN_GAP / 2
-    private fun btnY() = this.height - 28
+    // Chrome layout below is in chrome space (see cW/cH).
+    private fun doneX() = cW() / 2 - BTN_W - BTN_GAP / 2
+    private fun resetX() = cW() / 2 + BTN_GAP / 2
+    private fun btnY() = cH() - 28
 
     private fun inRect(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int) = mx in x..(x + w) && my in y..(y + h)
 
     // Centred, but lifted above the controls card when they would overlap.
     private fun handleY(): Int {
         val rows = if (showControls) CONTROLS.size else 1
-        val cardTop = this.height - 6 - (10 + rows * 10 - 2)
-        return Math.min((this.height - HANDLE_H) / 2, cardTop - HANDLE_H - 6)
+        val cardTop = cH() - 6 - (10 + rows * 10 - 2)
+        return Math.min((cH() - HANDLE_H) / 2, cardTop - HANDLE_H - 6)
     }
 
-    private fun sideMaxScroll(): Int = Math.max(0, sidebarRows().size * SIDE_ROW - (this.height - SIDE_TOP - 6))
+    private fun sideMaxScroll(): Int = Math.max(0, sidebarRows().size * SIDE_ROW - (cH() - SIDE_TOP - 6))
 
+    // mx/my in chrome space.
     private fun updateSide(mx: Int, my: Int) {
         if (dragging != null || resizing != null) { sideOpen = false; return }
         if (searchFocused) { sideOpen = true; return }
-        sideOpen = if (sideOpen) mx <= SIDE_W else mx <= HANDLE_W && my in handleY()..(handleY() + HANDLE_H)
+        sideOpen = if (sideOpen) mx <= sideW else mx <= HANDLE_W && my in handleY()..(handleY() + HANDLE_H)
     }
+
+    private fun onSearch(mx: Int, my: Int) = mx in 6..(sideW - 7) && my in SEARCH_Y..(SEARCH_Y + SEARCH_H)
 
     private fun rowAt(my: Int): Row? {
         if (my < SIDE_TOP) return null
@@ -657,7 +692,10 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     // HUD examples stay vanilla-drawn; the editor chrome is recorded for the overlay, which paints on top.
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
-        updateSide(mouseX, mouseY)
+        refreshK()
+        val cmx = toC(mouseX)
+        val cmy = toC(mouseY)
+        updateSide(cmx, cmy)
         UiRecorder.clear()
         ctx.fill(0, 0, this.width, this.height, 0x60000000)
 
@@ -681,13 +719,15 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                     outline(ctx, x - 1, y - 1, w + 2, h + 2, 0xFFFFFFFF.toInt())
                     val tag = e.name() + " " + Math.round(e.scale() * 100) + "%"
                     val ts = 6.5f
-                    val ty = if (y >= 13) y - 12f else y + h + 2f
-                    UiRecorder.fillRoundedRect(x - 1f, ty, UiRecorder.textWidth(tag, ts) + 7f, 10f, 3f, ACCENT)
-                    UiRecorder.textBold(tag, x + 2.5f, ty + (10f - ts) / 2f, ts, ON_ACCENT)
+                    // Tag and grip are recorded at raw/k so they land on the HUD after the chrome scale.
+                    val ty = if (y - 2 - 10f * k >= 1f) (y - 2) / k - 10f else (y + h + 2) / k
+                    val tx = (x - 1) / k
+                    UiRecorder.fillRoundedRect(tx, ty, UiRecorder.textWidth(tag, ts) + 7f, 10f, 3f, ACCENT)
+                    UiRecorder.textBold(tag, tx + 3.5f, ty + (10f - ts) / 2f, ts, ON_ACCENT)
                     if (e.setScale() != null && !e.locked()) {
                         UiRecorder.roundedRectRing(
-                            (x + w - GRIP).toFloat(), (y + h - GRIP).toFloat(), GRIP * 2f, GRIP * 2f,
-                            2f, 1f, ACCENT_HOVER, 0xFF0B1417.toInt()
+                            (x + w - GRIP) / k, (y + h - GRIP) / k, GRIP * 2f / k, GRIP * 2f / k,
+                            2f / k, 1f / k, ACCENT_HOVER, 0xFF0B1417.toInt()
                         )
                     }
                 }
@@ -701,8 +741,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         drawReadout(sel)
         if (!sideOpen) drawControls()
-        drawButtons(mouseX, mouseY)
-        renderSidebar(mouseX, mouseY)
+        drawButtons(cmx, cmy)
+        renderSidebar(cmx, cmy)
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
@@ -714,7 +754,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         val lw = UiRecorder.textWidth(lead, ts) + if (sel != null) 0.4f else 0f
         val pw = lw + UiRecorder.textWidth(rest, ts) + 18f
         val ph = 13f
-        val px = (this.width - pw) / 2f
+        val px = (cW() - pw) / 2f
         val py = 6f
         UiRecorder.roundedRectRing(px, py, pw, ph, ph / 2f, 1f, PILL_BG, PILL_BORDER)
         val ty = py + (ph - ts) / 2f
@@ -737,7 +777,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         val cw = pad * 2 + capCol + 5f + rows.maxOf { UiRecorder.textWidth(it.second, ts) }
         val ch = pad * 2 + rows.size * rowH - 2f
         val cx = 6f
-        val cy = this.height - 6f - ch
+        val cy = cH() - 6f - ch
         UiRecorder.roundedRectRing(cx, cy, cw, ch, 5f, 1f, PILL_BG, PILL_BORDER)
         var y = cy + pad
         for ((k, t) in rows) {
@@ -774,7 +814,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         }
     }
 
-    private fun rowBg(y: Float, color: Int) = UiRecorder.fillRoundedRect(3f, y + 0.5f, SIDE_W - 8f, SIDE_ROW - 1f, 3f, color)
+    private fun rowBg(y: Float, color: Int) = UiRecorder.fillRoundedRect(3f, y + 0.5f, sideW - 8f, SIDE_ROW - 1f, 3f, color)
 
     private fun renderSidebar(mouseX: Int, mouseY: Int) {
         if (!sideOpen) {
@@ -785,13 +825,13 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             return
         }
         sideScroll = Math.max(0, Math.min(sideMaxScroll(), sideScroll))
-        val sh = this.height.toFloat()
-        UiRecorder.dropShadow(-10f, 4f, SIDE_W + 10f, sh - 8f, 8f, 18f, 0x73000000)
-        UiRecorder.roundedRectRing(-10f, 4f, SIDE_W + 10f, sh - 8f, 8f, 1f, SIDE_BG, ACCENT)
+        val sh = cH().toFloat()
+        UiRecorder.dropShadow(-10f, 4f, sideW + 10f, sh - 8f, 8f, 18f, 0x73000000)
+        UiRecorder.roundedRectRing(-10f, 4f, sideW + 10f, sh - 8f, 8f, 1f, SIDE_BG, ACCENT)
         UiRecorder.textBold("Pick HUDs to move", 8f, 9f, 7.5f, TEXT)
 
-        val sw = SIDE_W - 13
-        val sHov = mouseX in 6..(6 + sw) && mouseY in SEARCH_Y..(SEARCH_Y + SEARCH_H)
+        val sw = sideW - 13
+        val sHov = onSearch(mouseX, mouseY)
         val border = if (searchFocused) ACCENT else if (sHov) 0xFF5A606A.toInt() else CAP_BORDER
         UiRecorder.roundedRectRing(6f, SEARCH_Y.toFloat(), sw.toFloat(), SEARCH_H.toFloat(), 4f, 1f, 0xFF0B0F12.toInt(), border)
         if (search.value.isEmpty() && !searchFocused) {
@@ -802,11 +842,11 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         UiRecorder.text("Click a category to pick it all", 8f, SEARCH_Y + SEARCH_H + 5f, 6f, FAINT)
         UiRecorder.text("Shift-click to add more", 8f, SEARCH_Y + SEARCH_H + 13f, 6f, FAINT)
 
-        UiRecorder.pushScissor(0f, SIDE_TOP.toFloat(), SIDE_W - 1f, sh - SIDE_TOP - 5f)
-        val hovRow = if (mouseX < SIDE_W) rowAt(mouseY) else null
+        UiRecorder.pushScissor(0f, SIDE_TOP.toFloat(), sideW - 1f, sh - SIDE_TOP - 5f)
+        val hovRow = if (mouseX < sideW) rowAt(mouseY) else null
         var y = SIDE_TOP - sideScroll
         for (row in sidebarRows()) {
-            if (y + SIDE_ROW >= SIDE_TOP && y < this.height) {
+            if (y + SIDE_ROW >= SIDE_TOP && y < cH()) {
                 val yf = y.toFloat()
                 val ty = yf + (SIDE_ROW - 6.5f) / 2f
                 val hov = row === hovRow
@@ -816,7 +856,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                         if (clickable && hov) {
                             rowBg(yf, ROW_HOV)
                             val tag = "pick all"
-                            UiRecorder.text(tag, SIDE_W - 9f - UiRecorder.textWidth(tag, 5.5f), yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, SUBTEXT)
+                            UiRecorder.text(tag, sideW - 9f - UiRecorder.textWidth(tag, 5.5f), yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, SUBTEXT)
                         }
                         val all = clickable && row.items.all { it.name() in picked }
                         val c = if (!clickable) 0xFF555B63.toInt() else if (all) ACCENT_HOVER else ACCENT
@@ -833,10 +873,10 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                         if (on) UiRecorder.fillRoundedRect(4f, yf + 2.5f, 2f, SIDE_ROW - 5f, 1f, ACCENT)
                         val off = !row.e.isVisible()
                         val col = if (off) 0xFF666B72.toInt() else if (on) TEXT else LABEL
-                        UiRecorder.text(ellipsize(row.e.name(), SIDE_W - 46f, 6.5f), 12f, ty, 6.5f, col)
+                        val tw = UiRecorder.textWidth("off", 5.5f)
+                        val ox = sideW - 10f - tw - 6f
+                        UiRecorder.text(ellipsize(row.e.name(), ox - 4f - 12f, 6.5f), 12f, ty, 6.5f, col)
                         if (off) {
-                            val tw = UiRecorder.textWidth("off", 5.5f)
-                            val ox = SIDE_W - 10f - tw - 6f
                             UiRecorder.fillRoundedRect(ox, yf + 2.5f, tw + 6f, SIDE_ROW - 5f, 2.5f, OFF_BG)
                             UiRecorder.text("off", ox + 3f, yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, SUBTEXT)
                         }
@@ -848,21 +888,24 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         UiRecorder.popScissor()
     }
 
-    // Scale 1 so the chrome shares the editor's gui coords and hit-testing stays exact.
+    // Chrome only is scaled by the user's GUI size; HUD previews stay vanilla in raw gui coords.
     override fun paintUiOverlay() {
-        UiRenderer.paint(this.width, this.height, 1f)
+        UiRenderer.paint(this.width, this.height, k)
     }
 
     // ---- input ---------------------------------------------------------------------------------
 
     override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean {
+        refreshK()
         val mx = click.x().toInt()
         val my = click.y().toInt()
+        val cmx = toC(click.x())
+        val cmy = toC(click.y())
 
-        if (sideOpen && mx <= SIDE_W) {
-            if (mx in 6..(SIDE_W - 7) && my in SEARCH_Y..(SEARCH_Y + SEARCH_H)) { focusSearch(true); return true }
+        if (sideOpen && cmx <= sideW) {
+            if (onSearch(cmx, cmy)) { focusSearch(true); return true }
             focusSearch(false)
-            when (val row = rowAt(my)) {
+            when (val row = rowAt(cmy)) {
                 is Row.Action -> row.run()
                 is Row.Header -> pickGroup(row.items, shiftDown())
                 is Row.Hud -> {
@@ -879,8 +922,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         if (searchFocused) { focusSearch(false); return true }
 
         val by = btnY()
-        if (inRect(mx, my, doneX(), by, BTN_W, BTN_H)) { this.onClose(); return true }
-        if (inRect(mx, my, resetX(), by, BTN_W, BTN_H)) {
+        if (inRect(cmx, cmy, doneX(), by, BTN_W, BTN_H)) { this.onClose(); return true }
+        if (inRect(cmx, cmy, resetX(), by, BTN_W, BTN_H)) {
             if (resetArmed) { edit { shown().forEach { resetEntry(it) } }; resetArmed = false } else resetArmed = true
             return true
         }
@@ -947,7 +990,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
-        if (sideOpen && mouseX <= SIDE_W) {
+        refreshK()
+        if (sideOpen && mouseX / k <= sideW) {
             sideScroll = Math.max(0, Math.min(sideMaxScroll(), sideScroll - (vertical * SIDE_ROW * 2).toInt()))
             return true
         }
