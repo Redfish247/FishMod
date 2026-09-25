@@ -40,6 +40,18 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
+    var enablePyTimer: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var pyTimerColor: Int = 0xffff55ff.toInt()
+
+    @ConfigValue
+    @JvmField
+    var pyTimerPingMs: Int = 0
+
+    @ConfigValue
+    @JvmField
     var enableGoldorTickTimer: Boolean = false
 
     @ConfigValue
@@ -61,6 +73,14 @@ object Floor7 {
     @ConfigValue
     @JvmField
     var renderRelicHighlight: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var relicTimesEnabled: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var relicTimesParty: Boolean = false
 
     @ConfigValue
     @JvmField
@@ -148,51 +168,11 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
-    var s4TrackerEnabled: Boolean = false
+    var playersLeapedEnabled: Boolean = false
 
     @ConfigValue
     @JvmField
-    var s4DebugHudEnabled: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var s4AlertsEnabled: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var s4AlertSoundEnabled: Boolean = true
-
-    @ConfigValue
-    @JvmField
-    var s4EarlyLeapAlert: Boolean = true
-
-    @ConfigValue
-    @JvmField
-    var s4LateLeapAlert: Boolean = true
-
-    @ConfigValue
-    @JvmField
-    var s4MissedTermAlert: Boolean = true
-
-    @ConfigValue
-    @JvmField
-    var s4DeathAlert: Boolean = true
-
-    @ConfigValue
-    @JvmField
-    var s4LateLeapThresholdTicks: Int = 100
-
-    @ConfigValue
-    @JvmField
-    var s4AlertDurationTicks: Int = 60
-
-    @ConfigValue
-    @JvmField
-    var s4AlertCooldownTicks: Int = 40
-
-    @ConfigValue
-    @JvmField
-    var s4AlertSound: SoundData = SoundData(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 0.5f)
+    var playersLeapedAnyClass: Boolean = false
 
     @ConfigValue
     @JvmField
