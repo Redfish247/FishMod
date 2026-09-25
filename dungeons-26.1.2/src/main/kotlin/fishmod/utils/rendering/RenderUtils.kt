@@ -1,5 +1,6 @@
 package fishmod.utils.rendering
 
+import com.mojang.blaze3d.vertex.ByteBufferBuilder
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.shaded.practicalconfig.hud.HUDComponent
@@ -11,18 +12,19 @@ import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.gizmos.Gizmos
 import net.minecraft.gizmos.GizmoStyle
 import net.minecraft.gizmos.TextGizmo
 import net.minecraft.network.chat.Component
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
-import org.joml.Quaternionf
 import org.joml.Vector3f
 
 object RenderUtils {
 
     private const val TEXT_SCALE = 0.025f
+    private val textBuffers: MultiBufferSource.BufferSource = MultiBufferSource.immediate(ByteBufferBuilder(1536))
 
     @JvmStatic
     fun toFloats(argb: Int): FloatArray {
@@ -292,18 +294,15 @@ object RenderUtils {
         val textRenderer = client.font
         client.player ?: return
 
-        val cam = client.gameRenderer.mainCamera.position()
-        val viewPos = Vector3f(
-            (x - cam.x).toFloat(), (y - cam.y).toFloat(), (z - cam.z).toFloat(),
-        )
-        Quaternionf(context.levelState().cameraRenderState.orientation).conjugate().transform(viewPos)
-
+        // Draw immediately (same view matrix as the boxes); submitText() drained a frame late and made text swim
         matrices.pushPose()
-        matrices.translate(viewPos.x + cam.x, viewPos.y + cam.y, viewPos.z + cam.z)
+        matrices.translate(x, y, z)
+        matrices.mulPose(context.levelState().cameraRenderState.orientation)
         matrices.scale(TEXT_SCALE * scale, -TEXT_SCALE * scale, TEXT_SCALE * scale)
 
         val halfWidth = textRenderer.width(text) / 2f
-        context.submitNodeCollector().submitText(matrices, -halfWidth, 0f, text.visualOrderText, true, Font.DisplayMode.SEE_THROUGH, 15728880, -0x1, 0, 0)
+        textRenderer.drawInBatch(text, -halfWidth, 0f, -0x1, true, matrices.last().pose(), textBuffers, Font.DisplayMode.SEE_THROUGH, 0, 15728880)
+        textBuffers.endBatch()
         matrices.popPose()
     }
 

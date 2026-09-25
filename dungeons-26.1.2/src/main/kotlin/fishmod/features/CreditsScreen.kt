@@ -1,34 +1,35 @@
 package fishmod.features
 
-import fishmod.utils.rendering.NvgContext
-import fishmod.utils.rendering.NvgGlStateGuard
-import fishmod.utils.rendering.NvgRecorder
+import fishmod.utils.rendering.UiRecorder
+import fishmod.utils.rendering.UiScale
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.util.Util
-import org.lwjgl.nanovg.NanoVG
+import kotlin.math.max
 import kotlin.math.min
 
-class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Credits")), HasNvgOverlay {
+class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Credits")), HasUiOverlay {
 
     companion object {
-        private const val ACCENT = 0xFF24B6B0.toInt()
-        private const val ACCENT_HOVER = 0xFF3AD8D1.toInt()
         private const val BG_TOP = 0xFF11181F.toInt()
         private const val BG_BOT = 0xFF070B0F.toInt()
         private const val BORDER = 0xFF262F3A.toInt()
-        private const val ROW_BG = 0xFF141B22.toInt()
-        private const val ROW_BORDER = 0xFF232D38.toInt()
-        private const val TEXT = 0xFFEDF1F5.toInt()
-        private const val SUBTEXT = 0xFF8A96A3.toInt()
+        private const val CARD_BG = 0xFF141B22.toInt()
+        private const val CARD_BORDER = 0xFF232D38.toInt()
+        private const val BTN_BG = 0xFF182029.toInt()
+        private const val BTN_BG_HOVER = 0xFF1F2A35.toInt()
         private const val SCRIM = 0xB3000000.toInt()
-        private const val DISCORD_BLURPLE = 0xFF5865F2.toInt()
-        private const val DISCORD_BLURPLE_HOVER = 0xFF7289FF.toInt()
+        private const val ON_ACCENT = 0xFF052A29.toInt()
         private const val DISCORD = "discord.gg/3mSuQUB8kk"
         private const val DISCORD_URL = "https://discord.gg/3mSuQUB8kk"
+
+        private const val NAME_SIZE = 8f
+        private const val ROLE_SIZE = 6.2f
+        private const val BULLET_SIZE = 6f
+        private const val LINE_H = 9
 
         private data class Credit(
             val name: String,
@@ -37,15 +38,15 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
             val details: List<String> = emptyList(),
         )
 
+        private val CREATOR = Credit("RedFish", "Creator. Everything else.", 0xFF24B6B0.toInt())
+
         private val CREDITS = listOf(
-            Credit("RedFish", "creator - everything else", 0xFF24B6B0.toInt()),
             Credit("BladeMasterGabe", "splits & dungeon features", 0xFFE0A63A.toInt()),
             Credit("22yrs", "shared the dungeon map and blessed the port", 0xFF7A8CE0.toInt()),
             Credit(
                 "Odin (odtheking)", "puzzle solvers, terminals & QoL ports", 0xFFB05FE0.toInt(),
                 details = listOf(
-                    "Puzzle solvers: Blaze, Boulder, TP Maze, Weirdos,",
-                    "Water Board, Ice Fill, Beams, Quiz/Oruo",
+                    "Puzzle solvers: Blaze, Boulder, TP Maze, Weirdos, Water Board, Ice Fill, Beams, Quiz/Oruo",
                     "F7 terminal, arrow align & simon says solvers",
                     "Etherwarp helper, extra stats, blessing display",
                     "Invincibility timer, render optimizer",
@@ -55,11 +56,10 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
             Credit(
                 "NoammAddons", "storage overlay, party finder & QoL ports", 0xFF5FD1E0.toInt(),
                 details = listOf(
-                    "Storage overlay, party finder auto-kick",
-                    "+ in-menu head overlay/tooltip stats",
+                    "Storage overlay, party finder auto-kick + in-menu head overlay/tooltip stats",
                     "Chat filter, leap menu, item price tooltip",
                     "Lava to water, ice fill, gyro helper",
-                    "Wither ESP, M7 relics, block overlay",
+                    "Wither Highlight, M7 relics, block overlay",
                     "Camera tweaks, time changer, arrow hit sound",
                     "Wither dragons (floor7), scrollable item tooltip",
                 ),
@@ -69,156 +69,240 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
 
     private var backX = 0
     private var backY = 0
-    private var backW = 0
-    private var backH = 0
+    private val backW = 56
+    private val backH = 18
+    private var copyX = 0
+    private var copyY = 0
+    private val copyW = 40
+    private val copyH = 16
     private var linkX = 0
     private var linkY = 0
     private var linkW = 0
     private var linkH = 0
-
-    private val expanded = BooleanArray(CREDITS.size)
-    private var rowRects = List(CREDITS.size) { intArrayOf(0, 0, 0, 0) }
+    private var bodyY = 0
+    private var bodyH = 0
+    private var scroll = 0
+    private var contentH = 0
+    private var copiedAt = 0L
 
     override fun isPauseScreen(): Boolean = false
     override fun extractBackground(ctx: GuiGraphicsExtractor, mx: Int, my: Int, d: Float) {}
     override fun extractTransparentBackground(ctx: GuiGraphicsExtractor) {}
 
-    private fun vw(): Int = (this.width / fishmod.utils.rendering.UiScale.factor()).toInt()
-    private fun vh(): Int = (this.height / fishmod.utils.rendering.UiScale.factor()).toInt()
-    private fun pw(): Int = min(340, vw() - 20)
+    private fun vw(): Int = (this.width / UiScale.factor()).toInt()
+    private fun vh(): Int = (this.height / UiScale.factor()).toInt()
+    private fun pw(): Int = min(440, vw() - 20)
 
-    private val ROW_BASE_H = 46
-    private val ROW_GAP = 9
+    private val PAD = 14
+    private val GAP = 8
+    private val HEADER_H = 40
+    private val CREATOR_H = 44
 
-    private fun rowHeight(i: Int): Int {
-        val c = CREDITS[i]
-        if (c.details.isEmpty() || !expanded[i]) return ROW_BASE_H
-        return ROW_BASE_H + c.details.size * 13 + 10
+    private fun colW(): Int = (pw() - PAD * 2 - GAP) / 2
+
+    private fun wrap(s: String, maxW: Float, size: Float): List<String> {
+        val out = ArrayList<String>()
+        var line = ""
+        for (word in s.split(' ')) {
+            val next = if (line.isEmpty()) word else "$line $word"
+            if (line.isNotEmpty() && UiRecorder.textWidth(next, size) > maxW) {
+                out.add(line)
+                line = word
+            } else line = next
+        }
+        if (line.isNotEmpty()) out.add(line)
+        return out
     }
 
-    private fun totalRowsHeight(): Int {
+    private fun textX(cardX: Int): Int = cardX + 10 + 22 + 8
+    private fun roleLines(c: Credit, cardW: Int): List<String> = wrap(c.role, (cardW - 48).toFloat(), ROLE_SIZE)
+    private fun headH(c: Credit, cardW: Int): Int = max(22, 10 + roleLines(c, cardW).size * LINE_H)
+    private fun bulletLines(c: Credit, cardW: Int): List<List<String>> =
+        c.details.map { wrap(it, (cardW - 20 - 8).toFloat(), BULLET_SIZE) }
+
+    private fun cardHeight(c: Credit, cardW: Int): Int {
+        var h = 10 + headH(c, cardW) + 10
+        val bullets = bulletLines(c, cardW)
+        if (bullets.isNotEmpty()) h += 8 + bullets.sumOf { it.size } * LINE_H
+        return h
+    }
+
+    private fun gridHeight(): Int {
+        val cw = colW()
         var total = 0
-        for (i in CREDITS.indices) total += rowHeight(i)
-        total += ROW_GAP * (CREDITS.size - 1)
-        return total
+        var i = 0
+        while (i < CREDITS.size) {
+            val a = cardHeight(CREDITS[i], cw)
+            val b = if (i + 1 < CREDITS.size) cardHeight(CREDITS[i + 1], cw) else 0
+            total += max(a, b) + GAP
+            i += 2
+        }
+        return total - GAP
     }
 
-    private fun ph(): Int = min(158 + totalRowsHeight(), vh() - 20)
+    private fun ph(): Int = min(HEADER_H + PAD + CREATOR_H + GAP + gridHeight() + PAD, vh() - 20)
     private fun px(): Int = (vw() - pw()) / 2
     private fun py(): Int = (vh() - ph()) / 2
+    private fun maxScroll(): Int = max(0, contentH - bodyH)
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
-        val mouseX = fishmod.utils.rendering.UiScale.vx(mouseX)
-        val mouseY = fishmod.utils.rendering.UiScale.vx(mouseY)
-        NvgRecorder.clear()
+        val mouseX = UiScale.vx(mouseX)
+        val mouseY = UiScale.vx(mouseY)
+        UiRecorder.clear()
         ScreenTheme.nRect(0, 0, vw(), vh(), SCRIM)
 
         val lx = px()
         val ty = py()
-        val rx = lx + pw()
-        val by = ty + ph()
-        val cx = (lx + rx) / 2
-        val panelR = 10
+        val w = pw()
+        val h = ph()
+        val r = 10
 
-        NvgRecorder.dropShadow(lx.toFloat(), ty.toFloat(), (rx - lx).toFloat(), (by - ty).toFloat(), panelR.toFloat(), 16f, 0x70000000)
-        NvgRecorder.fillRectVGradient(lx.toFloat(), ty.toFloat(), (rx - lx).toFloat(), (by - ty).toFloat(), BG_TOP, BG_BOT, panelR.toFloat())
-        ScreenTheme.nRoundedRectRing(lx, ty, rx - lx, by - ty, panelR, 1, 0, BORDER)
-        NvgRecorder.fillRect((lx + panelR).toFloat(), ty.toFloat(), (rx - lx - 2 * panelR).toFloat(), 3f, ACCENT)
+        UiRecorder.dropShadow(lx.toFloat(), ty.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), 16f, 0x70000000)
+        UiRecorder.fillRectVGradient(lx.toFloat(), ty.toFloat(), w.toFloat(), h.toFloat(), BG_TOP, BG_BOT, r.toFloat())
+        ScreenTheme.nRoundedRectRing(lx, ty, w, h, r, 1, 0, BORDER)
 
-        centeredNst("FishMod Credits", cx, ty + 20, TEXT, 0.9f)
-        ScreenTheme.nRect(lx + 24, ty + 40, rx - lx - 48, 1, BORDER)
-
-        val rowX = lx + 18
-        val rowW = rx - lx - 36
-        var y = ty + 52
-        val rects = ArrayList<IntArray>(CREDITS.size)
-        for (i in CREDITS.indices) {
-            val c = CREDITS[i]
-            val h = rowHeight(i)
-            drawCreditRow(rowX, y, rowW, h, c, expanded[i])
-            rects.add(intArrayOf(rowX, y, rowW, h))
-            y += h + ROW_GAP
-        }
-        rowRects = rects
-
-        backW = 92
-        backH = 26
-        backX = cx - backW / 2
-        backY = by - 20 - backH
+        UiRecorder.textBold("Credits", (lx + PAD).toFloat(), (ty + 14).toFloat(), 10f, ScreenTheme.TEXT_COLOR)
+        backX = lx + w - PAD - backW
+        backY = ty + (HEADER_H - backH) / 2
         val backHov = inside(mouseX, mouseY, backX, backY, backW, backH)
-        ScreenTheme.nRoundedRect(backX, backY, backW, backH, 5, if (backHov) ACCENT_HOVER else ACCENT)
-        centeredNst("Back", cx, backY + (backH - 10) / 2, 0xFF052A29.toInt(), 0.85f)
+        ScreenTheme.nRoundedRect(backX, backY, backW, backH, backH / 2, if (backHov) ScreenTheme.ACCENT_HOVER else ScreenTheme.ACCENT)
+        centered("Back", backX + backW / 2, backY, backH, ON_ACCENT, 7.5f)
+        ScreenTheme.nRect(lx + PAD, ty + HEADER_H, w - PAD * 2, 1, BORDER)
 
-        linkH = 24
-        linkW = ScreenTheme.nstw(DISCORD, 0.7f) + 28
-        linkX = cx - linkW / 2
-        linkY = backY - 12 - linkH
-        val linkHov = inside(mouseX, mouseY, linkX, linkY, linkW, linkH)
-        NvgRecorder.fillRoundedRect(linkX.toFloat(), linkY.toFloat(), linkW.toFloat(), linkH.toFloat(), linkH / 2f, if (linkHov) 0xFF1B2733.toInt() else 0xFF131B22.toInt())
-        ScreenTheme.nRoundedRectRing(linkX, linkY, linkW, linkH, linkH / 2, 1, 0, if (linkHov) DISCORD_BLURPLE_HOVER else DISCORD_BLURPLE)
-        centeredNst(DISCORD, cx, linkY + (linkH - 10) / 2, if (linkHov) DISCORD_BLURPLE_HOVER else DISCORD_BLURPLE, 0.7f)
+        bodyY = ty + HEADER_H + 1
+        bodyH = ty + h - 1 - bodyY
+        contentH = PAD + CREATOR_H + GAP + gridHeight() + PAD
+        scroll = scroll.coerceIn(0, maxScroll())
+
+        UiRecorder.pushScissor(lx.toFloat(), bodyY.toFloat(), w.toFloat(), bodyH.toFloat())
+        val cx0 = lx + PAD
+        val innerW = w - PAD * 2
+        var y = bodyY + PAD - scroll
+        drawCreator(cx0, y, innerW, mouseX, mouseY)
+        y += CREATOR_H + GAP
+
+        val cw = colW()
+        var i = 0
+        while (i < CREDITS.size) {
+            val a = CREDITS[i]
+            val b = CREDITS.getOrNull(i + 1)
+            val rowH = max(cardHeight(a, cw), b?.let { cardHeight(it, cw) } ?: 0)
+            drawCard(cx0, y, cw, rowH, a)
+            if (b != null) drawCard(cx0 + cw + GAP, y, cw, rowH, b)
+            y += rowH + GAP
+            i += 2
+        }
+        UiRecorder.popScissor()
+
+        if (maxScroll() > 0) {
+            val trackH = bodyH - 8
+            val thumbH = max(16, trackH * bodyH / contentH)
+            val thumbY = bodyY + 4 + (trackH - thumbH) * scroll / maxScroll()
+            ScreenTheme.nRoundedRect(lx + w - 6, thumbY, 3, thumbH, 1, 0x60FFFFFF)
+        }
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
 
-    private fun centeredNst(s: String, cx: Int, y: Int, color: Int, scale: Float = ScreenTheme.TEXT_SCALE) {
-        ScreenTheme.nst(s, cx - ScreenTheme.nstw(s, scale) / 2, y, color, scale)
+    private fun drawCreator(x: Int, y: Int, w: Int, mx: Int, my: Int) {
+        UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), CREATOR_H.toFloat(), 8f, CARD_BG)
+        UiRecorder.fillRectHGradient((x + 8).toFloat(), (y + 1).toFloat(), w * 0.7f, (CREATOR_H - 2).toFloat(), 0x3024B6B0, 0x0024B6B0)
+        ScreenTheme.nRoundedRectRing(x, y, w, CREATOR_H, 8, 1, 0, 0x5924B6B0)
+
+        val hs = 28
+        val hx = x + 10
+        val hy = y + (CREATOR_H - hs) / 2
+        headBadge(hx, hy, hs, CREATOR)
+        val tx = hx + hs + 10
+        UiRecorder.textBold(CREATOR.name, tx.toFloat(), (y + 11).toFloat(), 9f, ScreenTheme.TEXT_COLOR)
+        UiRecorder.text(CREATOR.role, tx.toFloat(), (y + 24).toFloat(), 6.5f, ScreenTheme.SUBTEXT_COLOR)
+
+        copyX = x + w - 10 - copyW
+        copyY = y + (CREATOR_H - copyH) / 2
+        val copied = System.currentTimeMillis() - copiedAt < 1500
+        val cHov = inside(mx, my, copyX, copyY, copyW, copyH) && visible(copyY, copyH)
+        ScreenTheme.nRoundedRectRing(copyX, copyY, copyW, copyH, copyH / 2, 1, if (cHov) BTN_BG_HOVER else BTN_BG, if (copied) ScreenTheme.ACCENT else BORDER)
+        centered(if (copied) "Copied" else "Copy", copyX + copyW / 2, copyY, copyH, if (copied) ScreenTheme.ACCENT else ScreenTheme.TEXT_COLOR, 6.5f)
+
+        val ls = 6.5f
+        linkW = UiRecorder.textWidth(DISCORD, ls).toInt()
+        linkH = copyH
+        linkX = copyX - 8 - linkW
+        linkY = copyY
+        val lHov = inside(mx, my, linkX, linkY, linkW, linkH) && visible(linkY, linkH)
+        val lColor = if (lHov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR
+        UiRecorder.text(DISCORD, linkX.toFloat(), linkY + (linkH - ls) / 2f, ls, lColor)
+        if (lHov) ScreenTheme.nRect(linkX, linkY + linkH - 2, linkW, 1, lColor)
     }
 
-    private fun drawCreditRow(x: Int, y: Int, w: Int, h: Int, c: Credit, isExpanded: Boolean) {
-        NvgRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), 6f, ROW_BG)
-        ScreenTheme.nRoundedRectRing(x, y, w, h, 6, 1, 0, ROW_BORDER)
+    private fun drawCard(x: Int, y: Int, w: Int, h: Int, c: Credit) {
+        UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), 8f, CARD_BG)
+        ScreenTheme.nRoundedRectRing(x, y, w, h, 8, 1, 0, CARD_BORDER)
 
-        val badgeR = 12
-        val badgeCx = x + 20
-        val badgeCy = y + ROW_BASE_H / 2
-        NvgRecorder.disc(badgeCx.toFloat(), badgeCy.toFloat(), badgeR.toFloat(), c.badgeColor)
-        centeredNst(c.name.take(1).uppercase(), badgeCx, badgeCy - 5, 0xFF06121A.toInt(), 0.8f)
-
-        val textX = x + 42
-        ScreenTheme.nst(c.name, textX, y + 8, TEXT, 0.85f)
-        ScreenTheme.nst(c.role, textX, y + 25, SUBTEXT, 0.62f)
-
-        if (c.details.isNotEmpty()) {
-            val chevron = if (isExpanded) "v" else ">"
-            ScreenTheme.nst(chevron, x + w - 18, y + 8, if (isExpanded) ACCENT_HOVER else SUBTEXT, 0.75f)
+        headBadge(x + 10, y + 10, 22, c)
+        val tx = textX(x)
+        UiRecorder.textBold(c.name, tx.toFloat(), (y + 10).toFloat(), NAME_SIZE, ScreenTheme.TEXT_COLOR)
+        var ly = y + 20
+        for (line in roleLines(c, w)) {
+            UiRecorder.text(line, tx.toFloat(), ly.toFloat(), ROLE_SIZE, ScreenTheme.SUBTEXT_COLOR)
+            ly += LINE_H
         }
 
-        if (c.details.isNotEmpty() && isExpanded) {
-            ScreenTheme.nRect(textX, y + ROW_BASE_H - 6, w - 42 - 16, 1, ROW_BORDER)
-            var dy = y + ROW_BASE_H + 4
-            for (line in c.details) {
-                ScreenTheme.nst(line, textX, dy, SUBTEXT, 0.58f)
-                dy += 13
+        val bullets = bulletLines(c, w)
+        if (bullets.isEmpty()) return
+        var by = y + 20 + headH(c, w)
+        ScreenTheme.nRect(x + 10, by - 5, w - 20, 1, CARD_BORDER)
+        for (lines in bullets) {
+            UiRecorder.disc((x + 13).toFloat(), by + BULLET_SIZE / 2f + 0.5f, 1.3f, ScreenTheme.SUBTEXT_COLOR)
+            for (line in lines) {
+                UiRecorder.text(line, (x + 20).toFloat(), by.toFloat(), BULLET_SIZE, ScreenTheme.SUBTEXT_COLOR)
+                by += LINE_H
             }
         }
     }
 
-    private fun inside(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int): Boolean {
-        return mx >= x && mx <= x + w && my >= y && my <= y + h
+    // Head-style rounded square with the contributor's initial.
+    private fun headBadge(x: Int, y: Int, s: Int, c: Credit) {
+        ScreenTheme.nRoundedRect(x, y, s, s, max(4, s / 5), c.badgeColor)
+        val init = c.name.take(1).uppercase()
+        val size = s * 0.45f
+        val iw = UiRecorder.textWidth(init, size)
+        UiRecorder.textBold(init, x + s / 2f - iw / 2f, y + (s - size) / 2f, size, 0xFFFFFFFF.toInt())
+    }
+
+    private fun centered(s: String, cx: Int, y: Int, h: Int, color: Int, size: Float) {
+        UiRecorder.text(s, cx - UiRecorder.textWidth(s, size) / 2f, y + (h - size) / 2f, size, color)
+    }
+
+    private fun visible(y: Int, h: Int): Boolean = y >= bodyY && y + h <= bodyY + bodyH
+
+    private fun inside(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int): Boolean =
+        mx >= x && mx <= x + w && my >= y && my <= y + h
+
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
+        scroll = (scroll - (verticalAmount * 20).toInt()).coerceIn(0, maxScroll())
+        return true
     }
 
     override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean {
-        val mx = fishmod.utils.rendering.UiScale.vx(click.x())
-        val my = fishmod.utils.rendering.UiScale.vx(click.y())
+        val mx = UiScale.vx(click.x())
+        val my = UiScale.vx(click.y())
         if (inside(mx, my, backX, backY, backW, backH)) {
             onClose()
             return true
         }
-        if (inside(mx, my, linkX, linkY, linkW, linkH)) {
+        if (inside(mx, my, copyX, copyY, copyW, copyH) && visible(copyY, copyH)) {
+            Minecraft.getInstance().keyboardHandler.clipboard = DISCORD_URL
+            copiedAt = System.currentTimeMillis()
+            return true
+        }
+        // Clicking the invite text itself opens it, as the old link pill did.
+        if (inside(mx, my, linkX, linkY, linkW, linkH) && visible(linkY, linkH)) {
             try {
                 Util.getPlatform().openUri(DISCORD_URL)
             } catch (ignored: Throwable) {
             }
             return true
-        }
-        for (i in CREDITS.indices) {
-            if (CREDITS[i].details.isEmpty()) continue
-            val r = rowRects[i]
-            if (inside(mx, my, r[0], r[1], r[2], r[3])) {
-                expanded[i] = !expanded[i]
-                return true
-            }
         }
         return super.mouseClicked(click, bl)
     }
@@ -227,24 +311,7 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         Minecraft.getInstance().setScreen(parent)
     }
 
-    private val nvgGlState = NvgGlStateGuard()
-    private var nvgFailureLogged = false
-
-    override fun paintNvgOverlay() {
-        nvgGlState.capture()
-        try {
-            val ctx = NvgContext.get()
-            val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
-            NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
-            NvgRecorder.replay(fishmod.utils.rendering.UiScale.factor())
-            NanoVG.nvgEndFrame(ctx)
-        } catch (t: Throwable) {
-            if (!nvgFailureLogged) {
-                nvgFailureLogged = true
-                fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] CreditsScreen paintNvgOverlay failed", t)
-            }
-        } finally {
-            nvgGlState.restore()
-        }
+    override fun paintUiOverlay() {
+        fishmod.utils.rendering.UiRenderer.paint(this.width, this.height, fishmod.utils.rendering.UiScale.factor())
     }
 }

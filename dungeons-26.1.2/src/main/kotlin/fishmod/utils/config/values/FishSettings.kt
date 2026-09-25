@@ -41,6 +41,16 @@ object FishSettings {
     @ConfigValue @JvmField var fmButtonAlpha: Int = 100
     @ConfigValue @JvmField var fmRowColor: Int = 0xFF24B6B0.toInt()
     @ConfigValue @JvmField var fmRowAlpha: Int = 15
+    @ConfigValue @JvmField var guiSettings: Boolean = false
+    @ConfigValue @JvmField var guiScaleMain: Int = 100
+    @ConfigValue @JvmField var guiScaleChatCommands: Int = 100
+    @ConfigValue @JvmField var guiScalePartyLoot: Int = 100
+    @ConfigValue @JvmField var guiScaleHudEditor: Int = 100
+    @ConfigValue @JvmField var guiScaleItemCustomize: Int = 100
+    @ConfigValue @JvmField var guiScaleStorage: Int = 100
+    @ConfigValue @JvmField var guiScaleAuction: Int = 100
+    @ConfigValue @JvmField var guiScaleWaypoint: Int = 100
+    @ConfigValue @JvmField var guiScaleCredits: Int = 100
 
     @ConfigValue @JvmField var petXpTamingLevel: Int = 0
     @ConfigValue @JvmField var petXpBeastmasterBonus: Int = 0
@@ -688,7 +698,6 @@ object FishSettings {
     @ConfigValue @JvmField var secretOverlayY: Int = 180
     @ConfigValue @JvmField var secretOverlayScale: Double = 1.5
     @ConfigValue @JvmField var iceSprayTimerEnabled: Boolean = false
-    @ConfigValue @JvmField var iceSprayDuration: Double = 5.0
     @ConfigValue @JvmField var iceSprayColor: Int = 0xFF55FFFF.toInt()
     @ConfigValue @JvmField var iceSprayScale: Double = 1.5
     @ConfigValue @JvmField var playerHighlightEnabled: Boolean = false
@@ -837,6 +846,8 @@ object FishSettings {
     @ConfigValue @JvmField var customScoreboardHideInDungeon: Boolean = false
     @ConfigValue @JvmField var customScoreboardOpacity: Int = 30
     @ConfigValue @JvmField var customScoreboardHudY: Int = 2
+    // Right edge in GUI px; -1 = pinned to the screen's right edge.
+    @ConfigValue @JvmField var customScoreboardHudX: Int = -1
     @ConfigValue @JvmField var sbSectionDate: Boolean = true
     @ConfigValue @JvmField var sbSectionTime: Boolean = true
     @ConfigValue @JvmField var sbSectionLocation: Boolean = true

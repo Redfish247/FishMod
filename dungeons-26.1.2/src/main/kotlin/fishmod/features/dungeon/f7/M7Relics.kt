@@ -32,6 +32,7 @@ object M7Relics {
     }
 
     private const val NAME = "Relic Spawn Timer"
+    private const val SPAWN_TICKS = 42
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val P5_START = Pattern.compile("\\[BOSS] Necron: All this, for nothing\\.\\.\\.")
 
@@ -59,7 +60,7 @@ object M7Relics {
                 myRelic = null
                 pickers.clear(); placed.clear()
                 if (Floor7.enableRelicStartTimer)
-                    spawnEndMs = System.currentTimeMillis() + Floor7.relicSpawnTicks.coerceIn(1, 200) * 50L
+                    spawnEndMs = System.currentTimeMillis() + SPAWN_TICKS * 50L
             } else if (p5StartMs != 0L) {
                 val m = PICKUP.matcher(msg)
                 if (m.find()) {

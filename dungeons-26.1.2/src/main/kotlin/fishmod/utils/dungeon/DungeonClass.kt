@@ -17,7 +17,6 @@ enum class DungeonClass {
     companion object {
         private val PATTERN: Pattern = Pattern.compile("^\\[(Archer|Berserk|Healer|Mage|Tank)]")
         private val NAME_CLASS_PATTERN: Pattern = Pattern.compile("^\\[\\d+] (?:\\[[^\\]]+] )*(\\w{1,16})\\b.*?\\((Archer|Berserk|Healer|Mage|Tank) ")
-
         private val STATS_DOUBLED_PATTERN: Pattern =
             Pattern.compile("Your (Archer|Berserk|Healer|Mage|Tank) stats are doubled because you are the only player using this class!")
 

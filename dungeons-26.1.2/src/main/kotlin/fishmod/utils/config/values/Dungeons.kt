@@ -24,6 +24,8 @@ object Dungeons {
 
     @ConfigValue @JvmField var useClassColors: Boolean = false
 
+    @ConfigValue @JvmField var classColoredGlow: Boolean = false
+
     @ConfigValue @JvmField var archerColor: Int = 0xffffaa00.toInt()
 
     @ConfigValue @JvmField var berserkColor: Int = 0xffaa0000.toInt()

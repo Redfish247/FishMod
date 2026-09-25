@@ -25,13 +25,13 @@ import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.util.Mth
-import fishmod.utils.rendering.NvgRecorder
+import fishmod.utils.rendering.UiRecorder
 import org.lwjgl.glfw.GLFW
 import java.util.function.Consumer
 import java.util.function.Supplier
 import kotlin.reflect.KMutableProperty0
 
-class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
+class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private val columns: MutableList<Column> = ArrayList()
     private var searchText = ""
@@ -71,7 +71,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         applySavedColumnOrder()
         fishmod.utils.Scheduler.scheduleTask({
             if (paintCount == 0 && Minecraft.getInstance().screen === this) {
-                fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] paintNvgOverlay was never invoked - the GameRendererNvgMixin hook didn't fire (likely a rendering-mod conflict)")
+                fishmod.utils.debug.Debug.LOGGER.error("[UiRenderer] paintUiOverlay was never invoked - the GameRendererUiMixin hook didn't fire (likely a rendering-mod conflict)")
                 fishmod.utils.Misc.addChatMessage(Component.literal(
                     "§c[FishMod] The /fm screen failed to render (a rendering mod may be conflicting). Please report this to the mod author."
                 ))
@@ -114,6 +114,19 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(DropdownSetting("Exit Style", "How columns animate on close", arrayOf("Floor Fall", "Reverse Curtain"),
                 { FishSettings.fmExitStyle },
                 { v -> FishSettings.fmExitStyle = v }).gatedBy { FishSettings.fmAnimations })
+            general.features.add(f)
+        }
+        run {
+            val f = Feature("GUI Settings", FishSettings::guiSettings)
+            f.sub.add(SliderIntSetting("Main GUI Scale %", "100% = default size", FishSettings::guiScaleMain, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Chat & Commands Scale %", "100% = default size", FishSettings::guiScaleChatCommands, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Party & Loot Scale %", "100% = default size", FishSettings::guiScalePartyLoot, 50, 150, 5))
+            f.sub.add(SliderIntSetting("HUD Editor Scale %", "100% = default size", FishSettings::guiScaleHudEditor, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Item Customize Scale %", "100% = default size", FishSettings::guiScaleItemCustomize, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Storage Viewer Scale %", "100% = default size", FishSettings::guiScaleStorage, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Auction Price Scale %", "100% = default size", FishSettings::guiScaleAuction, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Waypoint Title Scale %", "100% = default size", FishSettings::guiScaleWaypoint, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Credits Scale %", "100% = default size", FishSettings::guiScaleCredits, 50, 150, 5))
             general.features.add(f)
         }
         run {
@@ -493,7 +506,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         run {
             val f = Feature("Ice Spray Timer", FishSettings::iceSprayTimerEnabled)
             f.sub.add(SubcategoryHeader("After your Ice Spray, one countdown above each group of frozen mobs"))
-            f.sub.add(SliderDoubleSetting("Freeze Time (s)", "", FishSettings::iceSprayDuration, 1.0, 10.0))
             f.sub.add(ColorPickerSetting("Color", "", FishSettings::iceSprayColor))
             f.sub.add(SliderDoubleSetting("Text Size", "", FishSettings::iceSprayScale, 0.5, 4.0))
             dungeon.features.add(f)
@@ -877,6 +889,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeon.features.add(f)
         }
         run {
+            val f = Feature("Class Colored Glow", Dungeons::classColoredGlow)
+            f.sub.add(ColorPickerSetting("Archer", "", Dungeons::archerColor))
+            f.sub.add(ColorPickerSetting("Berserk", "", Dungeons::berserkColor))
+            f.sub.add(ColorPickerSetting("Healer", "", Dungeons::healerColor))
+            f.sub.add(ColorPickerSetting("Mage", "", Dungeons::mageColor))
+            f.sub.add(ColorPickerSetting("Tank", "", Dungeons::tankColor))
+            dungeon.features.add(f)
+        }
+        run {
             val f = Feature("Dupe Class Detector", Dungeons::detectDuplicateClass)
             f.sub.add(ToggleSetting("Ignore Mage", "", Dungeons::ignoreDupeMage))
             f.sub.add(ToggleSetting("To Party", "", Dungeons::dupeClassPartyChat))
@@ -1062,16 +1083,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(DropdownSetting("Who Can Trigger", "", arrayOf("off", "self", "whitelist", "blacklist", "everyone"),
                 { FishSettings.pcPartyActionsMode }, { v -> FishSettings.pcPartyActionsMode = v }))
             f.sub.add(ButtonSetting("Whitelist", "Edit who may trigger party actions", "Open", Runnable {
-                Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
-                    "Party Action Whitelist", "Who may trigger .kick / .warp / .transfer / .promote / .demote", "+ Add Name",
-                    { FishSettings.pcPartyActionsWhitelist }, { v -> FishSettings.pcPartyActionsWhitelist = v }
-                ))
+                Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.WHITELIST, Minecraft.getInstance().screen))
             }))
             f.sub.add(ButtonSetting("Blacklist", "Edit who is always blocked", "Open", Runnable {
-                Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
-                    "Party Action Blacklist", "Always blocked from triggering party actions", "+ Add Name",
-                    { FishSettings.pcPartyActionsBlacklist }, { v -> FishSettings.pcPartyActionsBlacklist = v }
-                ))
+                Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.BLACKLIST, Minecraft.getInstance().screen))
             }))
             party.features.add(f)
         }
@@ -1079,10 +1094,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             val f = Feature("Kick List", { FishSettings.pcKickListEnabled }, { v -> FishSettings.pcKickListEnabled = v })
             f.sub.add(SubcategoryHeader("Anyone on this list is auto-kicked from your party whenever you're leader"))
             f.sub.add(ButtonSetting("Manage List", "Add/remove names, or /fm kicklist", "Open", Runnable {
-                Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
-                    "Kick List", "Auto-kicked from your party whenever you're leader", "+ Add Name",
-                    { FishSettings.pcKickList }, { v -> FishSettings.pcKickList = v }
-                ))
+                Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.KICK, Minecraft.getInstance().screen))
             }))
             party.features.add(f)
         }
@@ -1377,6 +1389,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ColorPickerSetting("Py Timer Color", "", Floor7::pyTimerColor).gatedBy { Floor7.enablePyTimer })
             f.sub.add(SliderIntSetting("Py Ping (ms)", "Ends the countdown this much earlier so high ping doesn't make you late", Floor7::pyTimerPingMs, 0, 500).gatedBy { Floor7.enablePyTimer })
             f.sub.add(ToggleSetting("Storm Crushed Noti", "", Floor7::notifyStormCrush))
+            f.sub.add(SubcategoryHeader("Necron"))
+            f.sub.add(ToggleSetting("Necron LB Timer", "Counts down to the LB shot 8s into Necron's phase, then says SHOOT LB", Floor7::enableNecronLbTimer))
+            f.sub.add(SliderIntSetting("Necron LB Ping (ms)", "Ends it this much earlier to offset latency", Floor7::necronLbPingMs, 0, 500).gatedBy { Floor7.enableNecronLbTimer })
+            f.sub.add(ColorPickerSetting("Necron LB Color", "", Floor7::necronLbColor).gatedBy { Floor7.enableNecronLbTimer })
             f.sub.add(SubcategoryHeader("Goldor"))
             f.sub.add(ToggleSetting("Goldor", "", Floor7::enableGoldorTickTimer))
             f.sub.add(ToggleSetting("In 3s Increments", "", Floor7::inDeathTicks).gatedBy { Floor7.enableGoldorTickTimer })
@@ -1503,7 +1519,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             solvers.features.add(f)
         }
         run {
-            val f = Feature("Wither ESP", FishSettings::witherEspEnabled)
+            val f = Feature("Wither Highlight", FishSettings::witherEspEnabled)
             f.sub.add(ColorPickerSetting("Maxor", "", FishSettings::witherEspMaxorColor))
             f.sub.add(ColorPickerSetting("Storm", "", FishSettings::witherEspStormColor))
             f.sub.add(ColorPickerSetting("Goldor", "", FishSettings::witherEspGoldorColor))
@@ -1521,7 +1537,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("M7 Relics", Floor7::enableRelicStartTimer)
-            f.sub.add(SliderIntSetting("Spawn Ticks", "Ticks after Necron's P5 line", Floor7::relicSpawnTicks, 1, 200))
             f.sub.add(ToggleSetting("Cauldron Box", "Box + tracer the cauldron for the relic you hold", Floor7::renderRelicHighlight))
             floor7.features.add(f)
         }
@@ -1701,6 +1716,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 fishmod.utils.config.values.DungeonMapSettings::mapDoorHighlightFullBox))
             f.sub.add(ColorPickerSetting("Wither: No Key", "Wither-door box until the Wither Key is picked up (turns green once held)",
                 fishmod.utils.config.values.DungeonMapSettings::mapWitherHighlightMissingColor))
+            f.sub.add(ToggleSetting("Outline Only", "Outline every door in one colour, no fill or key colours",
+                fishmod.utils.config.values.DungeonMapSettings::mapDoorOutlineOnly))
+            f.sub.add(ColorPickerSetting("Outline Color", "Colour used by Outline Only",
+                fishmod.utils.config.values.DungeonMapSettings::mapDoorOutlineColor))
             dungeonMap.features.add(f)
         }
         run {
@@ -2124,7 +2143,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             return
         }
 
-        NvgRecorder.clear()
+        UiRecorder.clear()
 
         extractBlurredBackground(ctx)
         ctx.fillGradient(0, 0, this.width, this.height, DIM_TOP, DIM_BOT)
@@ -2148,7 +2167,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
         if (!recorderSizeLogged) {
             recorderSizeLogged = true
-            fishmod.utils.debug.Debug.LOGGER.info("[NanoVG] extractRenderState queued {} draw commands", NvgRecorder.size())
+            fishmod.utils.debug.Debug.LOGGER.info("[UiRenderer] extractRenderState queued {} draw commands", UiRecorder.size())
         }
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
@@ -2208,7 +2227,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val gx = bx + 16
         val gy = by + bh / 2 - 1
         disc(ctx, gx, gy, 3, SUBTEXT_COLOR)
-        NvgRecorder.fillRect((gx + 2).toFloat(), (gy + 2).toFloat(), 4f, 1f, SUBTEXT_COLOR)
+        UiRecorder.fillRect((gx + 2).toFloat(), (gy + 2).toFloat(), 4f, 1f, SUBTEXT_COLOR)
 
         var field = searchField
         if (field == null) {
@@ -2245,31 +2264,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     private fun renderColumnCard(ctx: GuiGraphicsExtractor, c: Column, x0: Int, x1: Int, headerTop: Int, cardBottom: Int, mouseX: Int, mouseY: Int, showPopOut: Boolean = false) {
         val hy = headerTop
         val w = x1 - x0
-        NvgRecorder.dropShadow(x0.toFloat(), hy.toFloat(), w.toFloat(), (cardBottom - hy).toFloat(), CARD_RADIUS.toFloat(), 10f, 0x60000000)
+        UiRecorder.dropShadow(x0.toFloat(), hy.toFloat(), w.toFloat(), (cardBottom - hy).toFloat(), CARD_RADIUS.toFloat(), 10f, 0x60000000)
         roundedRect(ctx, x0, hy, w, cardBottom - hy, CARD_RADIUS, currentCardBg())
-        NvgRecorder.fillRectTopRounded(x0.toFloat(), hy.toFloat(), w.toFloat(), HEADER_STRIP_H.toFloat(), CARD_RADIUS.toFloat(), ScreenTheme.ACCENT)
-        val hudCol = if (c.isGroup()) c.content() else c
-        val hudBtn = hudBtnRect(hudCol, x1, hy, showPopOut)
-        val titleClip = w - (if (showPopOut) 40 else 20) - (if (hudBtn != null) hudBtn[2] - hudBtn[0] + 6 else 0)
+        UiRecorder.fillRectTopRounded(x0.toFloat(), hy.toFloat(), w.toFloat(), HEADER_STRIP_H.toFloat(), CARD_RADIUS.toFloat(), ScreenTheme.ACCENT)
+        val titleClip = w - (if (showPopOut) 40 else 20)
         sst(ctx, this.font, ellipsize(c.name, titleClip), x0 + 10, hy + HEADER_STRIP_H + 6, TEXT_COLOR, 1f)
-        if (hudBtn != null) {
-            val hov = mouseX in hudBtn[0]..hudBtn[2] && mouseY in hudBtn[1]..hudBtn[3]
-            drawPillButton(ctx, hudBtn[0], hudBtn[1], hudBtn[2] - hudBtn[0], hudBtn[3] - hudBtn[1], "Edit HUD", false, ACCENT, hov)
-        }
         if (showPopOut) {
             val r = popOutIconRect(x1, hy)
             val hov = mouseX in r[0]..r[2] && mouseY in r[1]..r[3]
-            NvgRecorder.popOutIcon(r[0].toFloat(), r[1].toFloat(), (r[2] - r[0]).toFloat(), if (hov) ACCENT else SUBTEXT_COLOR)
+            UiRecorder.popOutIcon(r[0].toFloat(), r[1].toFloat(), (r[2] - r[0]).toFloat(), if (hov) ACCENT else SUBTEXT_COLOR)
         }
-    }
-
-    private fun hudBtnRect(c: Column, x1: Int, headerTop: Int, leftOfPopOut: Boolean = false): IntArray? {
-        if (FishHudEditor.columnHuds(c.name) == null) return null
-        val bw = sw(this.font, "Edit HUD", 0.85f) + 12
-        val bh = HEADER_H - HEADER_STRIP_H - 4
-        val bx = x1 - (if (leftOfPopOut) 26 else 8) - bw
-        val by = headerTop + HEADER_STRIP_H + 2
-        return intArrayOf(bx, by, bx + bw, by + bh)
     }
 
     private fun popOutIconRect(x1: Int, headerTop: Int): IntArray {
@@ -2286,8 +2290,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val trackX = x1 - 3
         val barH = Math.max(20, (vp.toLong() * vp / columnContentHeight(c)).toInt())
         val barY = top + ((vp - barH).toLong() * c.scroll / ms).toInt()
-        NvgRecorder.fillRect(trackX.toFloat(), top.toFloat(), 2f, (bot - top).toFloat(), 0xFF141A20.toInt())
-        NvgRecorder.fillRect(trackX.toFloat(), barY.toFloat(), 2f, barH.toFloat(), ACCENT)
+        UiRecorder.fillRect(trackX.toFloat(), top.toFloat(), 2f, (bot - top).toFloat(), 0xFF141A20.toInt())
+        UiRecorder.fillRect(trackX.toFloat(), barY.toFloat(), 2f, barH.toFloat(), ACCENT)
     }
 
     private fun renderContent(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
@@ -2333,7 +2337,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
         renderColumnCard(ctx, c, x0, x1, headerTop, colBottom, mouseX, mouseY, showPopOut)
 
-        NvgRecorder.pushScissor(x0.toFloat(), bodyTop.toFloat(), (x1 - x0).toFloat(), (colBottom - bodyTop).toFloat())
+        UiRecorder.pushScissor(x0.toFloat(), bodyTop.toFloat(), (x1 - x0).toFloat(), (colBottom - bodyTop).toFloat())
         for (rl in layoutColumn(c, c.scroll, bodyTop)) {
             if (rl.rowBottom > bodyTop && rl.rowTop < colBottom) renderRow(ctx, rl.feature, x0, x1, rl.rowTop, mouseX, mouseY)
             val animH = rl.subBottom - rl.subTop
@@ -2341,7 +2345,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 renderSubPanel(ctx, rl.feature, x0, x1, rl.subTop, animH, mouseX, mouseY)
             }
         }
-        NvgRecorder.popScissor()
+        UiRecorder.popScissor()
 
         renderColumnScrollbar(ctx, c, x0, x1, bodyTop, colBottom)
     }
@@ -2358,9 +2362,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         val inView = mouseY >= cyTop() && mouseY <= cyBot()
         val hover = inView && mouseX >= x0 && mouseX <= x1 && mouseY >= top && mouseY <= top + ROW_H
 
-        if (on) NvgRecorder.fillRect((x0 + 2).toFloat(), top.toFloat(), (x1 - x0 - 4).toFloat(), ROW_H.toFloat(), ROW_ENABLED)
-        if (hover) NvgRecorder.fillRect((x0 + 2).toFloat(), top.toFloat(), (x1 - x0 - 4).toFloat(), ROW_H.toFloat(), ROW_HOVER)
-        if (on) NvgRecorder.fillPillBar((x0 + 2).toFloat(), (top + 3).toFloat(), 2f, (ROW_H - 6).toFloat(), ACCENT)
+        if (on) UiRecorder.fillRect((x0 + 2).toFloat(), top.toFloat(), (x1 - x0 - 4).toFloat(), ROW_H.toFloat(), ROW_ENABLED)
+        if (hover) UiRecorder.fillRect((x0 + 2).toFloat(), top.toFloat(), (x1 - x0 - 4).toFloat(), ROW_H.toFloat(), ROW_HOVER)
+        if (on) UiRecorder.fillPillBar((x0 + 2).toFloat(), (top + 3).toFloat(), 2f, (ROW_H - 6).toFloat(), ACCENT)
 
         var label = f.name
         val maxTextW = x1 - x0 - 20
@@ -2368,7 +2372,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             while (label.length > 1 && stw(this.font, "$label…") > maxTextW) label = label.substring(0, label.length - 1)
             label = "$label…"
         }
-        NvgRecorder.text(label, (x0 + 10).toFloat(), (top + (ROW_H - 8) / 2).toFloat(), NVG_BASE_TEXT_SIZE, if (on) TEXT_COLOR else SUBTEXT_COLOR)
+        UiRecorder.text(label, (x0 + 10).toFloat(), (top + (ROW_H - 8) / 2).toFloat(), NVG_BASE_TEXT_SIZE, if (on) TEXT_COLOR else SUBTEXT_COLOR)
         if (hover) {
             val d = descFor(f.name)
             if (d.isNotEmpty()) { hoverDesc = d; hoverDescX = x1 + 8; hoverDescY = top }
@@ -2392,10 +2396,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
 
     private fun renderSubPanel(ctx: GuiGraphicsExtractor, f: Feature, x0: Int, x1: Int, top: Int, animatedH: Int, mouseX: Int, mouseY: Int) {
         val animating = f.expandAnim.isAnimating()
-        if (animating) NvgRecorder.pushScissor(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), animatedH.toFloat())
+        if (animating) UiRecorder.pushScissor(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), animatedH.toFloat())
 
         val subH = f.naturalSubHeight()
-        NvgRecorder.fillRect(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), subH.toFloat(), SUBROW_BG)
+        UiRecorder.fillRect(x0.toFloat(), top.toFloat(), (x1 - x0).toFloat(), subH.toFloat(), SUBROW_BG)
         val leftX = x0 + 14
         val rightX = x1 - 12
         var sy = top + 6
@@ -2411,7 +2415,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             sy += sh
         }
 
-        if (animating) NvgRecorder.popScissor()
+        if (animating) UiRecorder.popScissor()
     }
 
     private fun hovBtn(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int): Boolean {
@@ -2456,30 +2460,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         if (hovBtn(mx, my, rects[3][0], rects[3][1], rects[3][2], rects[3][3])) { onClose(); return true }
 
         val headerTop = cyTop() - HEADER_H
-        run {
-            val cols = visibleColumns()
-            val colW = columnWidth()
-            for (ci in cols.indices) {
-                val slot = cols[ci]
-                val x1 = columnX0(ci) + colW
-                if (slot.isGroup()) {
-                    for (seg in stackSegments(slot, cyTop() - HEADER_H, cyBot())) {
-                        val hc = seg.col
-                        val r = hudBtnRect(hc, x1, seg.segTop, leftOfPopOut = true) ?: continue
-                        if (mx in r[0]..r[2] && my in r[1]..r[3]) {
-                            Minecraft.getInstance().setScreen(FishHudEditor(this, FishHudEditor.columnHuds(hc.name)))
-                            return true
-                        }
-                    }
-                } else if (my >= headerTop && my < cyTop()) {
-                    val r = hudBtnRect(slot, x1, headerTop) ?: continue
-                    if (mx in r[0]..r[2] && my in r[1]..r[3]) {
-                        Minecraft.getInstance().setScreen(FishHudEditor(this, FishHudEditor.columnHuds(slot.name)))
-                        return true
-                    }
-                }
-            }
-        }
 
         if (searchText.isEmpty() && my >= headerTop && my < cyTop()) {
             val cols = visibleColumns()
@@ -2587,7 +2567,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                     if (s is SliderIntSetting || s is SliderDoubleSetting) {
                         val slx = leftX + 2
                         val slw = rightX - leftX - 4
-                        val sly = ssy + TWO_LINE_CTRL_Y
+                        val sly = ssy + SLIDER_CTRL_Y
                         if (mx >= slx && mx <= slx + slw && my >= sly - 4 && my <= sly + SLIDER_H + 4) {
                             activeSlider = s; activeSliderX = slx; activeSliderW = slw; s.onDrag(mx, slx, slw); return true
                         }
@@ -2866,43 +2846,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         return super.charTyped(input)
     }
 
-    private val nvgGlState = fishmod.utils.rendering.NvgGlStateGuard()
-    private var nvgFailureLogged = false
-    private var paintCount = 0
-    private var replaySizeLogged = false
+        private var paintCount = 0
 
-    override fun paintNvgOverlay() {
+    override fun paintUiOverlay() {
         paintCount++
-        nvgGlState.capture()
-        try {
-            val ctx = fishmod.utils.rendering.NvgContext.get()
-
-            val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
-            if (!replaySizeLogged) {
-                replaySizeLogged = true
-                fishmod.utils.debug.Debug.LOGGER.info("[NanoVG] paintNvgOverlay replaying {} draw commands", fishmod.utils.rendering.NvgRecorder.size())
-            }
-            org.lwjgl.nanovg.NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
-            fishmod.utils.rendering.NvgRecorder.replay(fishmod.utils.rendering.UiScale.factor())
-            org.lwjgl.nanovg.NanoVG.nvgEndFrame(ctx)
-
-            fishmod_glCheck("after paintNvgOverlay")
-        } catch (t: Throwable) {
-            if (!nvgFailureLogged) {
-                nvgFailureLogged = true
-                fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] paintNvgOverlay failed - settings screen will render without its NanoVG layer from now on", t)
-            }
-        } finally {
-            nvgGlState.restore()
-        }
-    }
-
-    private fun fishmod_glCheck(where: String) {
-        if (paintCount > 1) return
-        var err: Int
-        while (org.lwjgl.opengl.GL11.glGetError().also { err = it } != org.lwjgl.opengl.GL11.GL_NO_ERROR) {
-            fishmod.utils.debug.Debug.LOGGER.warn("[NanoVG] GL error 0x{} at {}", Integer.toHexString(err), where)
-        }
+        fishmod.utils.rendering.UiRenderer.paint(this.width, this.height, fishmod.utils.rendering.UiScale.factor())
     }
 
     override fun isPauseScreen(): Boolean = false
@@ -2956,7 +2904,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         open fun getHeight(): Int = ITEM_HEIGHT
 
         protected fun fit(s: String, maxW: Int): String {
-            fun w(t: String) = Math.ceil(NvgRecorder.textWidth(t, NVG_BASE_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
+            fun w(t: String) = Math.ceil(UiRecorder.textWidth(t, NVG_BASE_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
             if (maxW <= 4 || w(s) <= maxW) return s
             var t = s
             while (t.length > 1 && w("$t…") > maxW) t = t.dropLast(1)
@@ -2965,7 +2913,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
     }
 
     class SubcategoryHeader(name: String) : Setting(name, "") {
-        private fun w(t: String) = Math.ceil(NvgRecorder.textWidth(t, SUBCAT_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
+        private fun w(t: String) = Math.ceil(UiRecorder.textWidth(t, SUBCAT_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
 
         private val twoLine: Boolean = w(name) > (MIN_COLUMN_W - 38)
 
@@ -3039,13 +2987,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             st(ctx, tr, name, leftX + 2, sy + 2, TEXT_COLOR)
             val slx = leftX + 2
             val slw = rightX - leftX - 4
-            val sly = sy + TWO_LINE_CTRL_Y
+            val sly = sy + SLIDER_CTRL_Y
             val pct = (getter() - min).toFloat() / (max - min)
             pill(ctx, slx, sly, slx + slw, sly + SLIDER_H, SLIDER_BG)
             val fillW = (slw * pct).toInt()
             if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
             val v = getter().toString()
-            st(ctx, tr, v, slx + slw - stw(tr, v), sly - 9, SUBTEXT_COLOR)
+            st(ctx, tr, v, slx + slw - stw(tr, v), sy + 2, SUBTEXT_COLOR)
         }
         override fun onDrag(mx: Int, sx: Int, sliderW: Int) {
             val pct = Mth.clamp((mx - sx).toFloat() / sliderW, 0f, 1f)
@@ -3061,13 +3009,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             st(ctx, tr, name, leftX + 2, sy + 2, TEXT_COLOR)
             val slx = leftX + 2
             val slw = rightX - leftX - 4
-            val sly = sy + TWO_LINE_CTRL_Y
+            val sly = sy + SLIDER_CTRL_Y
             val pct = ((getter() - min) / (max - min)).toFloat()
             pill(ctx, slx, sly, slx + slw, sly + SLIDER_H, SLIDER_BG)
             val fillW = (slw * pct).toInt()
             if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
             val v = String.format("%.1f", getter())
-            st(ctx, tr, v, slx + slw - stw(tr, v), sly - 9, SUBTEXT_COLOR)
+            st(ctx, tr, v, slx + slw - stw(tr, v), sy + 2, SUBTEXT_COLOR)
         }
         override fun onDrag(mx: Int, sx: Int, sliderW: Int) {
             val pct = Mth.clamp((mx - sx).toFloat() / sliderW, 0f, 1f)
@@ -3105,7 +3053,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             if (expanded || animating) {
                 val animH = Math.round(values.size * OPTION_H * expandAnim.progress())
                 val oy = sy + ITEM_HEIGHT
-                if (animating) NvgRecorder.pushScissor(leftX.toFloat(), oy.toFloat(), (rightX - leftX).toFloat(), animH.toFloat())
+                if (animating) UiRecorder.pushScissor(leftX.toFloat(), oy.toFloat(), (rightX - leftX).toFloat(), animH.toFloat())
                 roundedRect(ctx, leftX + 2, oy, rightX - leftX - 4, values.size * OPTION_H, 5, SUBROW_BG)
                 val curIdx = indexOfCurrent()
                 for (i in values.indices) {
@@ -3115,9 +3063,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                     if (rowHov) roundedRect(ctx, leftX + 4, rowY + 1, rightX - leftX - 8, OPTION_H - 2, 4, ROW_HOVER)
                     st(ctx, tr, values[i].toString(), leftX + 10, rowY + (OPTION_H - 8) / 2,
                         if (selected) ACCENT_HOVER else (if (rowHov) TEXT_COLOR else SUBTEXT_COLOR))
-                    if (selected) NvgRecorder.fillRect((leftX + 2).toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
+                    if (selected) UiRecorder.fillRect((leftX + 2).toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
                 }
-                if (animating) NvgRecorder.popScissor()
+                if (animating) UiRecorder.popScissor()
             }
         }
 
@@ -3455,7 +3403,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 st(ctx, tr, "Your Colors", innerX0 + tabW + (tabW - stw(tr, "Your Colors")) / 2, oy + (TAB_BAR_H - 8) / 2,
                     if (activeTab == 1) ACCENT_HOVER else (if (tab1Hov) TEXT_COLOR else SUBTEXT_COLOR))
                 val underlineX = if (activeTab == 0) innerX0 else innerX0 + tabW
-                NvgRecorder.fillRect(underlineX.toFloat(), (oy + TAB_BAR_H - 2).toFloat(), tabW.toFloat(), 2f, ACCENT)
+                UiRecorder.fillRect(underlineX.toFloat(), (oy + TAB_BAR_H - 2).toFloat(), tabW.toFloat(), 2f, ACCENT)
 
                 var cy = oy + TAB_BAR_H
                 if (activeTab == 0) {
@@ -3467,7 +3415,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                         disc(ctx, innerX0 + 10, rowY + OPTION_H / 2, 4, PRESET_ARGB[i])
                         st(ctx, tr, PRESET_NAMES[i], innerX0 + 20, rowY + (OPTION_H - 8) / 2,
                             if (selected) ACCENT_HOVER else (if (rowHov) TEXT_COLOR else SUBTEXT_COLOR))
-                        if (selected) NvgRecorder.fillRect(innerX0.toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
+                        if (selected) UiRecorder.fillRect(innerX0.toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
                     }
                 } else {
                     initHexField(tr)
@@ -3494,7 +3442,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                         disc(ctx, innerX0 + 10, rowY + OPTION_H / 2, 4, c)
                         st(ctx, tr, "#" + Integer.toHexString(c and 0xFFFFFF).padStart(6, '0').uppercase(), innerX0 + 20, rowY + (OPTION_H - 8) / 2,
                             if (selected) ACCENT_HOVER else (if (rowHov) TEXT_COLOR else SUBTEXT_COLOR))
-                        if (selected) NvgRecorder.fillRect(innerX0.toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
+                        if (selected) UiRecorder.fillRect(innerX0.toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
                     }
                 }
             }
@@ -3790,7 +3738,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         private const val SUBCAT_HEIGHT = 13
         private const val SUBCAT_HEIGHT_2 = 22
         private const val TWO_LINE_H = 36
-        private const val SLIDER_ROW_H = 28
+        private const val SLIDER_ROW_H = 24
+        // Bar sits right under its label; the gap goes below the bar.
+        private const val SLIDER_CTRL_Y = 13
         private const val TWO_LINE_CTRL_Y = 20
 
         private const val NVG_BASE_TEXT_SIZE = 9.5f
@@ -3799,7 +3749,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         private const val SUBCAT_TEXT_SIZE = NVG_BASE_TEXT_SIZE * 1.15f
 
         fun roundedRect(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, color: Int) {
-            NvgRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), color)
+            UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), color)
         }
 
         fun roundRect(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, r: Int, color: Int) {
@@ -3807,7 +3757,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
 
         fun roundedRectRing(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, r: Int, strokeW: Int, fillColor: Int, ringColor: Int) {
-            NvgRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), strokeW.toFloat(), fillColor, ringColor)
+            UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), strokeW.toFloat(), fillColor, ringColor)
         }
 
         fun pill(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
@@ -3821,51 +3771,51 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
 
         fun disc(ctx: GuiGraphicsExtractor, cx: Int, cy: Int, r: Int, color: Int) {
-            NvgRecorder.disc(cx.toFloat(), cy.toFloat(), r.toFloat(), color)
+            UiRecorder.disc(cx.toFloat(), cy.toFloat(), r.toFloat(), color)
         }
 
         private fun nf(x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
-            NvgRecorder.fillRect(x1.toFloat(), y1.toFloat(), (x2 - x1).toFloat(), (y2 - y1).toFloat(), color)
+            UiRecorder.fillRect(x1.toFloat(), y1.toFloat(), (x2 - x1).toFloat(), (y2 - y1).toFloat(), color)
         }
 
         fun st(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int) {
-            NvgRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * TEXT_SCALE, color)
+            UiRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * TEXT_SCALE, color)
         }
-        fun stw(tr: Font, s: String): Int = Math.ceil(NvgRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
+        fun stw(tr: Font, s: String): Int = Math.ceil(UiRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
 
         fun stBold(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int) {
-            NvgRecorder.textBold(s, x.toFloat(), y.toFloat(), SUBCAT_TEXT_SIZE * TEXT_SCALE, color)
+            UiRecorder.textBold(s, x.toFloat(), y.toFloat(), SUBCAT_TEXT_SIZE * TEXT_SCALE, color)
         }
-        fun stwBold(tr: Font, s: String): Int = Math.ceil(NvgRecorder.textWidth(s, SUBCAT_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
+        fun stwBold(tr: Font, s: String): Int = Math.ceil(UiRecorder.textWidth(s, SUBCAT_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
 
         fun sst(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int, scale: Float) {
-            NvgRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * scale, color)
+            UiRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * scale, color)
         }
-        fun sw(tr: Font, s: String, scale: Float): Int = Math.ceil(NvgRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * scale).toDouble()).toInt()
+        fun sw(tr: Font, s: String, scale: Float): Int = Math.ceil(UiRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * scale).toDouble()).toInt()
 
         fun drawChevron(ctx: GuiGraphicsExtractor, gx: Int, cy: Int, open: Boolean, color: Int) {
-            NvgRecorder.chevron(gx.toFloat(), cy.toFloat(), open, color)
+            UiRecorder.chevron(gx.toFloat(), cy.toFloat(), open, color)
         }
 
         fun nvgTextField(tf: EditBox, x: Int, y: Int, w: Int, h: Int) {
             val focused = tf.isFocused
-            NvgRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), 3f, 1f, SUBROW_BG, if (focused) ACCENT else TRACK_OFF)
+            UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), 3f, 1f, SUBROW_BG, if (focused) ACCENT else TRACK_OFF)
             nvgTextFieldContent(tf, x, y, w, h)
         }
 
         fun nvgTextFieldContent(tf: EditBox, x: Int, y: Int, w: Int, h: Int) {
             val text = tf.value
             val cursor = Math.min(tf.cursorPosition, text.length)
-            val cursorX = NvgRecorder.textWidth(text.substring(0, cursor), INPUT_TEXT_SIZE)
+            val cursorX = UiRecorder.textWidth(text.substring(0, cursor), INPUT_TEXT_SIZE)
             val pad = 3f
             val visibleW = w - pad * 2f
             val scroll = Math.max(0f, cursorX - visibleW)
-            NvgRecorder.pushScissor((x + 1).toFloat(), (y + 1).toFloat(), (w - 2).toFloat(), (h - 2).toFloat())
-            NvgRecorder.text(text, x + pad - scroll, y + (h - INPUT_TEXT_SIZE) / 2f, INPUT_TEXT_SIZE, TEXT_COLOR)
+            UiRecorder.pushScissor((x + 1).toFloat(), (y + 1).toFloat(), (w - 2).toFloat(), (h - 2).toFloat())
+            UiRecorder.text(text, x + pad - scroll, y + (h - INPUT_TEXT_SIZE) / 2f, INPUT_TEXT_SIZE, TEXT_COLOR)
             if (tf.isFocused && (System.currentTimeMillis() / 500) % 2 == 0L) {
-                NvgRecorder.fillRect(x + pad + cursorX - scroll, (y + 2).toFloat(), 1f, (h - 4).toFloat(), TEXT_COLOR)
+                UiRecorder.fillRect(x + pad + cursorX - scroll, (y + 2).toFloat(), 1f, (h - 4).toFloat(), TEXT_COLOR)
             }
-            NvgRecorder.popScissor()
+            UiRecorder.popScissor()
         }
 
         private fun drawGlyph(ctx: GuiGraphicsExtractor, t: String, cx: Int, cy: Int, c: Int, bg: Int) {
@@ -3948,6 +3898,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             return when (name) {
                 "Chat" -> "Smart Copy, Compact Chat, Infinite History, Search, Filter"
                 "Mod Prefix" -> "Tag FishMod's chat output with a prefix"
+                "GUI Settings" -> "Size of each FishMod screen"
                 "Inventory Buttons" -> "Clickable command buttons in your inventory"
                 "Smart Copy Chat" -> "Right-click a chat line to copy it"
                 "Compact Tab" -> "Cleaner custom tab player list"
@@ -3972,7 +3923,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Item Rarity Background" -> "Rarity-tinted sprite behind every item"
                 "Item Quality Tooltip" -> "Dungeon-item stat boost % + floor in the tooltip"
                 "Gyro Helper" -> "Gyrokinetic Wand landing box + sucking-range ring"
-                "Wither ESP" -> "Outline the F7 wither boss by phase"
+                "Wither Highlight" -> "Outline the F7 wither boss by phase"
                 "M7 Relics" -> "P5 relic spawn timer + cauldron box"
                 "Auto Requeue" -> "Re-queue the same floor when a run ends (leader only)"
                 "Warp Cooldown" -> "Countdown until you can /warp again"

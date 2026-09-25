@@ -2,13 +2,14 @@ package fishmod.features.storage
 
 import fishmod.features.ScreenTheme
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.rendering.UiRecorder
+import fishmod.utils.rendering.UiRenderer
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.core.component.DataComponents
-import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.inventory.AbstractContainerMenu
 import net.minecraft.world.inventory.ChestMenu
@@ -18,23 +19,39 @@ import net.minecraft.world.item.ItemStack
 import org.lwjgl.glfw.GLFW
 import java.util.TreeMap
 
+// Vanilla layer: square fills, slot grids, items. UI overlay: rounded frames, text, tooltip.
+// Rounded corners = opaque ring in the fill colour over a vanilla rect inset from the edge, so no seam shows.
 object StorageOverlay {
 
     private const val SLOT_SIZE = 17
     private const val PADDING = 10
     private const val HEADER_H = 16
     private const val PAGE_WIDTH = SLOT_SIZE * 9 + 4
+    private const val CARD_W = PAGE_WIDTH + 1
+    private const val GRID_TOP = 14
+    private const val PAGE_GAP = 4
     private const val ACTIVE_PAGE_BORDER_THICKNESS = 2
     private const val SCROLL_BAR_WIDTH = 8
     private const val SCROLL_BAR_HEIGHT = 16
     private const val PLAYER_WIDTH = SLOT_SIZE * 9 + 6
     private const val PLAYER_HEIGHT = SLOT_SIZE * 4 + 18
 
+    private const val PANEL_R = 8f
+    private const val PANEL_BAND = 6f
+    private const val CARD_R = 3f
+    private const val PLAYER_R = 5f
+    private const val TITLE_SIZE = 8f
+    private const val TEXT_SIZE = 7.5f
+
     private const val MENU_BG = 0xFF18181B.toInt()
     private const val MENU_BORDER = 0xFF3C3C41.toInt()
+    private const val CARD_BG = 0xFF222227.toInt()
+    private const val CARD_BORDER = 0xFF303036.toInt()
+    private const val CARD_BORDER_HOVER = 0xFF4A4A52.toInt()
     private const val SLOT_BG = 0xC8323237.toInt()
     private const val SLOT_CELL_BG = 0xFF1E1E22.toInt()
     private const val SLOT_CELL_BORDER = 0xFF37373C.toInt()
+    private const val FIELD_BG = 0xFF121215.toInt()
     private const val SCROLL_BG = 0xB41E1E23.toInt()
     private const val SCROLL_KNOB = 0xFF787882.toInt()
     private const val HOVER_WHITE = 0x32FFFFFF
@@ -47,6 +64,8 @@ object StorageOverlay {
     private var pageWidthCount = 3
     private var knobGrabbed = false
     private var hoveredOverlayItem: ItemStack? = null
+    private var tooltipStack: ItemStack? = null
+    private var pendingPaint = false
 
     private var dragType = 0
     private var dragStartSlot: Slot? = null
@@ -76,6 +95,16 @@ object StorageOverlay {
 
     @JvmStatic
     fun panelTopScreenY(): Int = (my0 * scale).toInt()
+
+    // Called from GameRendererUiMixin after vanilla's GUI pass; replays this frame's recording once.
+    @JvmStatic
+    fun paintUiOverlay() {
+        if (!pendingPaint) return
+        pendingPaint = false
+        val w = mc.window
+        UiRenderer.paint(w.guiScaledWidth, w.guiScaledHeight, scale)
+        UiRecorder.clear()
+    }
 
     private fun activePage(screen: AbstractContainerScreen<*>): StoragePage? =
         StoragePage.fromTitle(screen.title.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, ""))
@@ -158,10 +187,12 @@ object StorageOverlay {
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
         if (!on(screen)) return
+        UiRecorder.clear()
+        pendingPaint = false
         recomputeGeometry()
         dragPreview = computeDragPreview()
-        val prevHovered = hoveredOverlayItem
         hoveredOverlayItem = null
+        tooltipStack = null
 
         val s = scale
         ctx.pose().pushMatrix()
@@ -180,34 +211,56 @@ object StorageOverlay {
         val data = visibleData(active, chestSlots)
         if (shouldFilterPages) updateLayoutHeight(data)
 
-        rect(ctx, mx0, my0, overviewW, overviewH, MENU_BG)
-        border(ctx, mx0, my0, overviewW, overviewH, MENU_BORDER, 1)
+        rect(ctx, mx0 + 3, my0 + 3, overviewW - 6, overviewH - 6, MENU_BG)
+        UiRecorder.roundedRectRing(mx0.toFloat(), my0.toFloat(), overviewW.toFloat(), overviewH.toFloat(), PANEL_R, PANEL_BAND, 0, MENU_BG)
+        UiRecorder.roundedRectRing(mx0.toFloat(), my0.toFloat(), overviewW.toFloat(), overviewH.toFloat(), PANEL_R, 1f, 0, MENU_BORDER)
 
-        drawHeader(ctx, smx, smy)
-        drawPages(ctx, data, smx, smy, active, chestSlots, mouseX, mouseY)
-        drawScrollBar(ctx)
-        drawPlayerInventory(ctx, smx, smy, mouseX, mouseY)
+        drawHeader()
+        drawPages(ctx, data, smx, smy, active, chestSlots)
+        drawScrollBar()
+        drawPlayerInventory(ctx, smx, smy)
         drawPagesDecorations(ctx, data, active, chestSlots)
         drawPlayerInventoryDecorations(ctx)
         drawCarriedItem(ctx, smx, smy)
 
         ctx.pose().popMatrix()
 
-        if (hoveredOverlayItem !== prevHovered) {  }
+        // replaces the vanilla tooltip, which would sit under the overlay text
+        tooltipStack?.let {
+            val lines = runCatching { Screen.getTooltipFromItem(mc, it) }.getOrNull()
+            if (!lines.isNullOrEmpty()) ScreenTheme.nItemTooltip(lines, smx, smy, vw, vh, 1f / s)
+        }
+        pendingPaint = true
     }
 
-    private fun drawHeader(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
-        ctx.text(font, "§fStorage  §7${allData().size} pages", mx0 + PADDING, my0 + 4, -1, false)
-        val fw = 130; val fh = 12
-        val fx = mx0 + overviewW - fw - PADDING; val fy = my0 + 2
-        rect(ctx, fx, fy, fw, fh, 0x500A0C14)
-        border(ctx, fx, fy, fw, fh, if (searchFocused) ACCENT else SLOT_CELL_BORDER, 1)
-        val shown = if (search.isEmpty()) "§8search…" else "§f$search${if (searchFocused && (System.currentTimeMillis() / 500) % 2 == 0L) "_" else ""}"
-        ctx.text(font, shown, fx + 3, fy + 2, -1, false)
+    private fun drawHeader() {
+        val tx = (mx0 + PADDING).toFloat()
+        val ty = my0 + 9f
+        UiRecorder.textBold("Storage", tx, ty, TITLE_SIZE, ScreenTheme.TEXT_COLOR)
+        val lw = UiRecorder.textWidth("Storage", TITLE_SIZE) + 6f
+        UiRecorder.text("${allData().size} pages", tx + lw, ty + 0.5f, TEXT_SIZE, ScreenTheme.SUBTEXT_COLOR)
+
+        val fw = 130; val fh = 13
+        val fx = mx0 + overviewW - fw - PADDING; val fy = my0 + 7
+        UiRecorder.roundedRectRing(fx.toFloat(), fy.toFloat(), fw.toFloat(), fh.toFloat(), 4f, 1f, FIELD_BG, if (searchFocused) ACCENT else SLOT_CELL_BORDER)
+        val size = 7f
+        val pad = 4f
+        val textY = fy + (fh - size) / 2f
+        val tw = UiRecorder.textWidth(search, size)
+        val shift = (tw - (fw - pad * 2 - 2)).coerceAtLeast(0f)
+        UiRecorder.pushScissor(fx + 1f, fy + 1f, fw - 2f, fh - 2f)
+        if (search.isEmpty()) UiRecorder.text("Search…", fx + pad, textY, size, ScreenTheme.SUBTEXT_COLOR)
+        else UiRecorder.text(search, fx + pad - shift, textY, size, ScreenTheme.TEXT_COLOR)
+        if (searchFocused && (System.currentTimeMillis() / 500) % 2 == 0L) {
+            UiRecorder.fillRect(fx + pad + tw - shift + 0.5f, fy + 3f, 1f, fh - 6f, ScreenTheme.TEXT_COLOR)
+        }
+        UiRecorder.popScissor()
         searchFieldRect = intArrayOf(fx, fy, fw, fh)
     }
 
     private var searchFieldRect = IntArray(4)
+
+    private fun cardHeight(inv: NBTInventory?): Int = inv?.let { it.rows * SLOT_SIZE + GRID_TOP + 3 } ?: 18
 
     private inline fun layoutedForEach(
         data: TreeMap<StoragePage, NBTInventory?>,
@@ -217,8 +270,8 @@ object StorageOverlay {
         var xOffset = 0
         var maxHeight = 0
         for ((page, inv) in data.entries) {
-            val h = inv?.let { it.rows * SLOT_SIZE + 6 + font.lineHeight } ?: 18
-            maxHeight = maxOf(maxHeight, h)
+            val h = cardHeight(inv)
+            maxHeight = maxOf(maxHeight, h + PAGE_GAP)
             val rectX = mx0 + PADDING + (PAGE_WIDTH + PADDING) * xOffset
             val rectY = yOffset + scrollPanelY
             func(rectX, rectY, PAGE_WIDTH, h, page, inv)
@@ -230,21 +283,24 @@ object StorageOverlay {
 
     private fun updateLayoutHeight(data: TreeMap<StoragePage, NBTInventory?>) {
         lastRenderedInnerHeight = data.entries.chunked(pageWidthCount)
-            .sumOf { row -> row.maxOf { (_, inv) -> inv?.let { it.rows * SLOT_SIZE + 6 + font.lineHeight } ?: 18 } }
+            .sumOf { row -> row.maxOf { (_, inv) -> cardHeight(inv) + PAGE_GAP } }
         scroll = scroll.coerceIn(0f, maxScroll)
     }
 
     private fun drawPages(
         ctx: GuiGraphicsExtractor, data: TreeMap<StoragePage, NBTInventory?>,
-        mouseX: Int, mouseY: Int, excluding: StoragePage?, slots: List<Slot>?, origMx: Int, origMy: Int,
+        mouseX: Int, mouseY: Int, excluding: StoragePage?, slots: List<Slot>?,
     ) {
-        scissor(ctx, scrollPanelX, scrollPanelY, scrollPanelW + ACTIVE_PAGE_BORDER_THICKNESS, scrollPanelH)
+        val clipW = scrollPanelW + ACTIVE_PAGE_BORDER_THICKNESS
+        scissor(ctx, scrollPanelX, scrollPanelY, clipW, scrollPanelH)
+        UiRecorder.pushScissor(scrollPanelX.toFloat(), scrollPanelY.toFloat(), clipW.toFloat(), scrollPanelH.toFloat())
         val viewTop = scrollPanelY
         val viewBot = scrollPanelY + scrollPanelH
         layoutedForEach(data) { x, y, _, ph, page, inv ->
             if (y + ph < viewTop || y > viewBot) return@layoutedForEach
-            drawPage(ctx, x, y, page, inv, if (excluding == page) slots else null, mouseX, mouseY, origMx, origMy)
+            drawPage(ctx, x, y, page, inv, if (excluding == page) slots else null, mouseX, mouseY)
         }
+        UiRecorder.popScissor()
         ctx.disableScissor()
     }
 
@@ -258,7 +314,7 @@ object StorageOverlay {
             if (y + ph < viewTop || y > viewBot) return@layoutedForEach
             val rows = inv?.rows ?: (if (excluding == page) (slots?.size?.div(9)?.coerceIn(1, 5) ?: 3) else 0)
             if (rows == 0 && inv == null) return@layoutedForEach
-            val slotsY = y + 5 + font.lineHeight
+            val slotsY = y + GRID_TOP
             val invStacks = inv?.stacks
             val count = invStacks?.size ?: (if (excluding == page) slots?.size ?: (rows * 9) else 0)
             for (i in 0 until count) {
@@ -275,21 +331,32 @@ object StorageOverlay {
 
     private fun drawPage(
         ctx: GuiGraphicsExtractor, x: Int, y: Int, page: StoragePage, inv: NBTInventory?, slots: List<Slot>?,
-        mouseX: Int, mouseY: Int, origMx: Int, origMy: Int,
-    ): Int {
+        mouseX: Int, mouseY: Int,
+    ) {
+        val inView = inRect(mouseX, mouseY, scrollPanelX, scrollPanelY, scrollPanelW, scrollPanelH)
         if (inv == null && slots == null) {
-            rect(ctx, x, y, PAGE_WIDTH, 18, SLOT_BG)
-            border(ctx, x, y, PAGE_WIDTH, 18, MENU_BORDER, 1)
-            ctx.text(font, "${page.name} - Click to load", x + 4, y + 5, TEXT_DIM, false)
-            return 18
+            val hot = inView && inRect(mouseX, mouseY, x, y, CARD_W, 18)
+            UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), CARD_W.toFloat(), 18f, CARD_R, 1f, SLOT_BG, if (hot) CARD_BORDER_HOVER else MENU_BORDER)
+            val ty = y + (18 - TEXT_SIZE) / 2f
+            UiRecorder.text(page.name, x + 5f, ty, TEXT_SIZE, ScreenTheme.TEXT_COLOR)
+            val nw = UiRecorder.textWidth(page.name, TEXT_SIZE)
+            UiRecorder.text("·  Click to load", x + 5f + nw + 4f, ty, TEXT_SIZE, TEXT_DIM)
+            return
         }
         val rows = inv?.rows ?: (slots?.size?.div(9)?.coerceIn(1, 5) ?: 3)
         val isActive = slots != null
-        val slotsY = y + 5 + font.lineHeight
-        val pageHeight = rows * SLOT_SIZE + 8 + font.lineHeight
+        val slotsY = y + GRID_TOP
+        val cardH = rows * SLOT_SIZE + GRID_TOP + 3
+        val hot = inView && inRect(mouseX, mouseY, x, y, CARD_W, cardH)
 
-        if (isActive) border(ctx, x, y, PAGE_WIDTH + 1, pageHeight, ACCENT, ACTIVE_PAGE_BORDER_THICKNESS)
-        ctx.text(font, Component.literal(page.name), x + 6, y + 3, if (isActive) ACCENT else -1, true)
+        // vanilla body under the items; the overlay ring rounds its corners in the same colour
+        rect(ctx, x + 1, y + 1, CARD_W - 2, cardH - 2, CARD_BG)
+        UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), CARD_W.toFloat(), cardH.toFloat(), CARD_R, 2f, 0, CARD_BG)
+        val edge = if (isActive) ACCENT else if (hot) CARD_BORDER_HOVER else CARD_BORDER
+        UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), CARD_W.toFloat(), cardH.toFloat(), CARD_R, if (isActive) 1.5f else 1f, 0, edge)
+        val titleY = y + 2 + (GRID_TOP - 2 - TITLE_SIZE) / 2f
+        if (isActive) UiRecorder.textBold(page.name, x + 5f, titleY, TITLE_SIZE, ACCENT)
+        else UiRecorder.text(page.name, x + 5f, titleY, TITLE_SIZE, ScreenTheme.TEXT_COLOR)
 
         drawSlotGrid(ctx, x + 2, slotsY, rows)
 
@@ -303,20 +370,18 @@ object StorageOverlay {
             val menuSlot = if (slots != null && i < slots.size) slots[i] else null
             val display = menuSlot?.item ?: invStacks?.getOrNull(i) ?: continue
             val renderStack = menuSlot?.let { dragPreview?.stacks?.get(it.index) } ?: display
-            val hot = inRect(mouseX, mouseY, sx - 1, sy - 1, 18, 18) &&
-                inRect(mouseX, mouseY, scrollPanelX, scrollPanelY, scrollPanelW, scrollPanelH)
+            val slotHot = inView && inRect(mouseX, mouseY, sx - 1, sy - 1, 18, 18)
             if (!renderStack.isEmpty) {
                 if (isSearching && matches(renderStack)) rect(ctx, sx, sy, 16, 16, SEARCH_MATCH)
                 ctx.item(renderStack, sx, sy)
-                if (hot && hovered == null && !display.isEmpty) hovered = display
+                if (slotHot && hovered == null && !display.isEmpty) hovered = display
             }
-            if (hot) rect(ctx, sx, sy, 16, 16, HOVER_WHITE)
+            if (slotHot) rect(ctx, sx, sy, 16, 16, HOVER_WHITE)
         }
         if (hovered != null) {
             if (isActive) hoveredOverlayItem = hovered
-            ctx.setTooltipForNextFrame(font, hovered, origMx, origMy)
+            tooltipStack = hovered
         }
-        return pageHeight + 6
     }
 
     private fun drawSlotGrid(ctx: GuiGraphicsExtractor, x: Int, y: Int, rows: Int) {
@@ -327,12 +392,14 @@ object StorageOverlay {
         for (r in 0..rows) ctx.fill(x, y + r * SLOT_SIZE, x + w, y + r * SLOT_SIZE + 1, SLOT_CELL_BORDER)
     }
 
-    private fun drawScrollBar(ctx: GuiGraphicsExtractor) {
-        rect(ctx, scrollBarX, scrollBarY, SCROLL_BAR_WIDTH, scrollBarH, SCROLL_BG)
+    private fun drawScrollBar() {
+        val tx = scrollBarX + 2f
+        val tw = SCROLL_BAR_WIDTH - 4f
+        UiRecorder.fillPillBar(tx, scrollBarY.toFloat(), tw, scrollBarH.toFloat(), SCROLL_BG)
         val ms = maxScroll
         val pct = if (ms > 0) scroll / ms else 0f
         val knobY = scrollBarY + (pct * (scrollBarH - SCROLL_BAR_HEIGHT)).toInt()
-        rect(ctx, scrollBarX, knobY, SCROLL_BAR_WIDTH, SCROLL_BAR_HEIGHT, SCROLL_KNOB)
+        UiRecorder.fillPillBar(tx, knobY.toFloat(), tw, SCROLL_BAR_HEIGHT.toFloat(), if (knobGrabbed) ScreenTheme.TEXT_COLOR else SCROLL_KNOB)
     }
 
     private fun playerSlotPos(index: Int): Pair<Int, Int> {
@@ -351,11 +418,16 @@ object StorageOverlay {
         return null
     }
 
-    private fun drawPlayerInventory(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, origMx: Int, origMy: Int) {
+    private fun drawPlayerInventory(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         val items = mc.player?.inventory?.nonEquipmentItems ?: return
         val (invX, invY) = playerSlotPos(9)
         val (hotX, hotY) = playerSlotPos(0)
-        drawSlotGrid(ctx, invX - 1, invY - 1, 3)
+        val gx = invX - 1; val gy = invY - 1
+        val gw = 9 * SLOT_SIZE + 1; val gh = hotY + SLOT_SIZE - gy
+        rect(ctx, gx - 2, gy - 2, gw + 4, gh + 4, CARD_BG)
+        UiRecorder.roundedRectRing(gx - 4f, gy - 4f, gw + 8f, gh + 8f, PLAYER_R, 4f, 0, CARD_BG)
+        UiRecorder.roundedRectRing(gx - 4f, gy - 4f, gw + 8f, gh + 8f, PLAYER_R, 1f, 0, MENU_BORDER)
+        drawSlotGrid(ctx, gx, gy, 3)
         drawSlotGrid(ctx, hotX - 1, hotY - 1, 1)
         var hovered: ItemStack? = null
         for (i in 0 until 36) {
@@ -372,7 +444,7 @@ object StorageOverlay {
         }
         if (hovered != null) {
             hoveredOverlayItem = hovered
-            ctx.setTooltipForNextFrame(font, hovered, origMx, origMy)
+            tooltipStack = hovered
         }
     }
 
@@ -589,23 +661,16 @@ object StorageOverlay {
         dragSlots.clear()
         dragPreview = null
         hoveredOverlayItem = null
+        tooltipStack = null
+        pendingPaint = false
     }
 
     private fun rect(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, color: Int) =
         ctx.fill(x, y, x + w, y + h, color)
 
-    private fun border(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, color: Int, t: Int) {
-        ctx.fill(x, y, x + w, y + t, color)
-        ctx.fill(x, y + h - t, x + w, y + h, color)
-        ctx.fill(x, y, x + t, y + h, color)
-        ctx.fill(x + w - t, y, x + w, y + h, color)
-    }
-
+    // enableScissor already maps through the pose (which carries the scale), so pass virtual coords
     private fun scissor(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int) {
-        val s = scale
-        runCatching {
-            ctx.enableScissor((x * s).toInt(), (y * s).toInt(), ((x + w) * s).toInt(), ((y + h) * s).toInt())
-        }
+        runCatching { ctx.enableScissor(x, y, x + w, y + h) }
     }
 
     private fun inRect(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int) = mx >= x && mx < x + w && my >= y && my < y + h
