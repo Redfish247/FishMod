@@ -161,7 +161,7 @@ class FishHudEditor(
                 "Tick Timer", "Wither Dragon Timer", "Crystal Spawn Time", "Crystal Reminder",
                 "Storm Death Time", "LB Release Timer", "Py Tick Timer", "Storm Crushed", "Term Start Timer",
                 "Section Progress", "Goldor Splits", "Splits", "Current Section", "Device Completed",
-                "Melody Warning", "Section Completion", "Players Leaped", "Relic Spawn Timer",
+                "Melody Warning", "Section Completion", "Storm Over Alert", "Players Leaped", "Relic Spawn Timer",
             ),
             "HUD & Overlays" to setOf(
                 "Pet", "Soulflow", "Desk-Buddy",
