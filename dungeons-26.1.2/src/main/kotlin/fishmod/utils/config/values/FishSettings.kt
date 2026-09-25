@@ -679,6 +679,10 @@ object FishSettings {
 
     @ConfigValue @JvmField var blessingDisplayEnabled: Boolean = false
 
+    @ConfigValue @JvmField var iceSprayTimerEnabled: Boolean = false
+    @ConfigValue @JvmField var iceSprayDuration: Double = 5.0
+    @ConfigValue @JvmField var iceSprayColor: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var iceSprayScale: Double = 1.5
     @ConfigValue @JvmField var playerHighlightEnabled: Boolean = false
     @ConfigValue @JvmField var playerHighlightRange: Int = 50
     @ConfigValue @JvmField var stormOverEnabled: Boolean = false
