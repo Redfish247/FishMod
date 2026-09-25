@@ -679,6 +679,10 @@ object FishSettings {
 
     @ConfigValue @JvmField var blessingDisplayEnabled: Boolean = false
 
+    @ConfigValue @JvmField var secretOverlayEnabled: Boolean = false
+    @ConfigValue @JvmField var secretOverlayX: Int = 10
+    @ConfigValue @JvmField var secretOverlayY: Int = 180
+    @ConfigValue @JvmField var secretOverlayScale: Double = 1.5
     @ConfigValue @JvmField var iceSprayTimerEnabled: Boolean = false
     @ConfigValue @JvmField var iceSprayDuration: Double = 5.0
     @ConfigValue @JvmField var iceSprayColor: Int = 0xFF55FFFF.toInt()
