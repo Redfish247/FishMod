@@ -59,7 +59,7 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
                     "+ in-menu head overlay/tooltip stats",
                     "Chat filter, leap menu, item price tooltip",
                     "Lava to water, ice fill, gyro helper",
-                    "Wither ESP, M7 relics, block overlay",
+                    "Wither Highlight, M7 relics, block overlay",
                     "Camera tweaks, time changer, arrow hit sound",
                     "Wither dragons (floor7), scrollable item tooltip",
                 ),
