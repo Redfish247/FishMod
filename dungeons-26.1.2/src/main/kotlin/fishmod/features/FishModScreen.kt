@@ -428,6 +428,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(SubcategoryHeader("Quiz"))
             f.sub.add(ToggleSetting("Quiz Solver", "", FishSettings::quizSolver))
             f.sub.add(ColorPickerSetting("Quiz Color", "", FishSettings::quizColor).gatedBy { FishSettings.quizSolver })
+            f.sub.add(ToggleSetting("Quiz Timer HUD", "11s to the first question, then 5s after each answer (move in HUD editor)", FishSettings::quizHudEnabled))
             f.sub.add(SubcategoryHeader("Water Board"))
             f.sub.add(ToggleSetting("Water Solver", "", FishSettings::waterSolver))
             f.sub.add(ColorPickerSetting("Next Lever", "", FishSettings::waterFirstColor).gatedBy { FishSettings.waterSolver })
@@ -489,6 +490,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeon.features.add(f)
         }
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
+        run {
+            val f = Feature("Ice Spray Timer", FishSettings::iceSprayTimerEnabled)
+            f.sub.add(SubcategoryHeader("After your Ice Spray, one countdown above each group of frozen mobs"))
+            f.sub.add(SliderDoubleSetting("Freeze Time (s)", "", FishSettings::iceSprayDuration, 1.0, 10.0))
+            f.sub.add(ColorPickerSetting("Color", "", FishSettings::iceSprayColor))
+            f.sub.add(SliderDoubleSetting("Text Size", "", FishSettings::iceSprayScale, 0.5, 4.0))
+            dungeon.features.add(f)
+        }
         run {
             val f = Feature("Player Highlight", FishSettings::playerHighlightEnabled)
             f.sub.add(SubcategoryHeader("Outlines teammates in their class colour, through walls"))
@@ -619,6 +628,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(KeybindSetting("Mini Ult (ctrl+drop)", "", { fishmod.utils.Keybinds.dungeonAbilityMini }))
             dungeon.features.add(f)
         }
+        dungeon.features.add(Feature("Secret Overlay", FishSettings::secretOverlayEnabled).also {
+            it.sub.add(SubcategoryHeader("Secrets found in your current room on screen - move it in the HUD editor"))
+        })
         run {
             val f = Feature("Blessing Display", FishSettings::blessingDisplayEnabled)
             f.sub.add(ToggleSetting("Power", "", FishSettings::blessingPower))
@@ -646,6 +658,21 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Bonzo Mask", "", FishSettings::invincShowBonzo))
             f.sub.add(ToggleSetting("Phoenix Pet", "", FishSettings::invincShowPhoenix))
             f.sub.add(ToggleSetting("Show Icons", "Item icon instead of the name (learned once you've had the mask on you / opened /pets)", FishSettings::invincIcons))
+            f.sub.add(SubcategoryHeader("Proc Title"))
+            f.sub.add(ToggleSetting("On-Screen Title", "Big title when a mask / Phoenix procs", FishSettings::invincProcTitle))
+            f.sub.add(SliderIntSetting("Title Duration (ms)", "", FishSettings::invincProcTitleMs, 500, 6000, 250).gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(InputSetting("Spirit Message", "", FishSettings::invincProcSpiritText).gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(ColorPickerSetting("Spirit Color", "", FishSettings::invincProcSpiritColor).gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(InputSetting("Bonzo Message", "", FishSettings::invincProcBonzoText).gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(ColorPickerSetting("Bonzo Color", "", FishSettings::invincProcBonzoColor).gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(InputSetting("Phoenix Message", "", FishSettings::invincProcPhoenixText).gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(ColorPickerSetting("Phoenix Color", "", FishSettings::invincProcPhoenixColor).gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(ToggleSetting("Proc Sound", "", FishSettings::invincProcSound).gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(SoundSearchSetting("Sound", "Type to search every game sound",
+                { FishSettings.invincProcSoundName }, { v -> FishSettings.invincProcSoundName = v },
+                { FishSettings.invincProcVolume }, { FishSettings.invincProcPitch }).gatedBy { FishSettings.invincProcTitle && FishSettings.invincProcSound })
+            f.sub.add(SliderIntSetting("Volume %", "", FishSettings::invincProcVolume, 0, 500, 10).gatedBy { FishSettings.invincProcTitle && FishSettings.invincProcSound })
+            f.sub.add(SliderDoubleSetting("Pitch", "", FishSettings::invincProcPitch, 0.0, 2.0).gatedBy { FishSettings.invincProcTitle && FishSettings.invincProcSound })
             dungeon.features.add(f)
         }
         run {
@@ -1180,8 +1207,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             hud.features.add(f)
         }
         run {
+            val f = Feature("Pet Swap Title", FishSettings::petSwapTitleEnabled)
+            f.sub.add(SubcategoryHeader("Big title when your pet changes (autopet or summon)"))
+            f.sub.add(InputSetting("Format", "{pet} = the pet's name", FishSettings::petSwapTitleFormat))
+            f.sub.add(ToggleSetting("Rarity Color", "Use the pet's rarity colour", FishSettings::petSwapTitleRarityColor))
+            f.sub.add(ColorPickerSetting("Color", "When Rarity Color is off", FishSettings::petSwapTitleColor).gatedBy { !FishSettings.petSwapTitleRarityColor })
+            f.sub.add(SliderIntSetting("Duration (ms)", "", FishSettings::petSwapTitleMs, 500, 5000, 250))
+            hud.features.add(f)
+        }
+        run {
             val f = Feature("Pet HUD", FishSettings::petHudEnabled)
             f.sub.add(ToggleSetting("Show Level", "", FishSettings::petHudShowLevel))
+            f.sub.add(ToggleSetting("Show Icon", "Pet head instead of its name (learned when you open /pets)", FishSettings::petHudIcon))
             f.sub.add(ToggleSetting("Show Rarity", "Colour the pet name by its rarity", FishSettings::petHudShowRarity))
             f.sub.add(ToggleSetting("Fade Idle", "", FishSettings::petHudFadeIdle))
             f.sub.add(SliderIntSetting("Fade ms", "", FishSettings::petHudFadeMs, 1000, 30000).gatedBy { FishSettings.petHudFadeIdle })
