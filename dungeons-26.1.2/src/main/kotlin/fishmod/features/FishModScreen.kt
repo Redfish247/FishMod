@@ -627,6 +627,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(KeybindSetting("Mini Ult (ctrl+drop)", "", { fishmod.utils.Keybinds.dungeonAbilityMini }))
             dungeon.features.add(f)
         }
+        dungeon.features.add(Feature("Secret Overlay", FishSettings::secretOverlayEnabled).also {
+            it.sub.add(SubcategoryHeader("Secrets found in your current room on screen - move it in the HUD editor"))
+        })
         run {
             val f = Feature("Blessing Display", FishSettings::blessingDisplayEnabled)
             f.sub.add(ToggleSetting("Power", "", FishSettings::blessingPower))
