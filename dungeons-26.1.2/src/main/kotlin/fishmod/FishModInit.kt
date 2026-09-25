@@ -454,6 +454,7 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.KeyNotifier.init()
         fishmod.features.dungeon.AutoRequeue.init()
         fishmod.features.dungeon.Blessings.init()
+        fishmod.features.PetIcons.init()
         fishmod.features.dungeon.f7.StormOverAlert.init()
         fishmod.features.PerformanceHud.init()
         fishmod.features.dungeon.InvincibilityTracker.init()
