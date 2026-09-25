@@ -84,6 +84,17 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         }
 
         @JvmStatic
+        fun register(
+            name: String,
+            getX: IntSupplier, setX: IntConsumer,
+            getY: IntSupplier, setY: IntConsumer,
+            w: Int, h: Int,
+            visible: BooleanSupplier
+        ) {
+            ENTRIES.add(HudEntry(name, getX, setX, getY, setY, w, h, false, null, null, visible))
+        }
+
+        @JvmStatic
         fun registerLocked(name: String, getX: IntSupplier, getY: IntSupplier, w: Int, h: Int) {
             ENTRIES.add(HudEntry(name, getX, IntConsumer { }, getY, IntConsumer { }, w, h, true))
         }
@@ -108,7 +119,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                     component.width, component.height,
                     false,
                     DoubleSupplier { component.scale.toDouble() },
-                    DoubleConsumer { v -> component.scale = v.toFloat() }
+                    DoubleConsumer { v -> component.scale = v.toFloat() },
+                    BooleanSupplier { component.editable() }
                 )
             )
         }
@@ -116,12 +128,10 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         private val DEFAULTS: Map<String, DoubleArray> = java.util.Map.ofEntries(
             java.util.Map.entry("Pet", doubleArrayOf(10.0, 80.0, 1.0)),
             java.util.Map.entry("Session Stats", doubleArrayOf(10.0, 120.0, 1.0)),
-            java.util.Map.entry("Dungeon Score", doubleArrayOf(10.0, 200.0, 1.0)),
             java.util.Map.entry("Simon Says", doubleArrayOf(10.0, 360.0, 1.0)),
             java.util.Map.entry("Soulflow", doubleArrayOf(10.0, 60.0, 1.0)),
             java.util.Map.entry("Spirit Bear", doubleArrayOf(10.0, 165.0, 1.5)),
             java.util.Map.entry("Blessings", doubleArrayOf(10.0, 100.0, 1.0)),
-            java.util.Map.entry("Desk-Buddy", doubleArrayOf(10.0, 440.0, 1.5)),
             java.util.Map.entry("PB Pace", doubleArrayOf(10.0, 300.0, 1.0)),
             java.util.Map.entry("Tick Timer", doubleArrayOf(10.0, 80.0, 1.0)),
             java.util.Map.entry("Wither Dragon Timer", doubleArrayOf(-1.0, 100.0, 2.0)),
@@ -156,7 +166,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 "Splits", "Session Stats", "PB Pace", "Blessings", "Puzzles", "Simon Says",
                 "Spirit Bear", "Invincibility Timer", "Dungeon Breaker",
             ),
-            "Dungeon Map" to listOf("Dungeon Map", "Dungeon Map Info"),
+            "Dungeon Map" to listOf("Dungeon Map", "Dungeon Map Info", "Dungeon Score Title"),
             "Floor 7" to listOf(
                 "Tick Timer", "Wither Dragon Timer", "Crystal Spawn Time", "Crystal Reminder",
                 "Storm Death Time", "LB Release Timer", "Storm Crushed", "Term Start Timer",
@@ -164,7 +174,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 "Melody Warning", "Section Completion", "S4 Alert", "S4 Debug", "Relic Spawn Timer",
             ),
             "HUD & Overlays" to listOf(
-                "Pet", "Soulflow", "Chat Notifications", "Warp Cooldown", "Tac Timer", "Rag Timer", "Spring Boots",
+                "Custom Scoreboard", "Pet", "Soulflow", "Chat Notifications", "Warp Cooldown", "Tac Timer", "Rag Timer", "Spring Boots",
             ),
             "Party & Social" to listOf("Party Finder List"),
             "Slayer" to listOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit"),
@@ -178,6 +188,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             val lineH: Int = 10,
             val right: List<String>? = null,
             val width: Int? = null,
+            val bg: Int = 0,
         )
 
         private fun s(vararg lines: String, lineH: Int = 10) = Sample(lines.toList(), lineH = lineH)
@@ -246,6 +257,19 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Wither Dragon Timer" to s("§53450ms"),
             "Chat Notifications" to c("§e⚑ Wither Key Picked Up!", lineH = 11),
             "Soulflow" to s("§3Soulflow: §f12,345"),
+            "Dungeon Score Title" to c("§aOn pace for 300 §7(12m 34s)"),
+            "Custom Scoreboard" to Sample(
+                listOf("§e§lSKYBLOCK") + List(13) { "" },
+                center = true,
+                lineH = 9,
+                right = listOf(
+                    "", "§707/14/26 §8m12AB", "", "Late Summer 5th", "§7☀ 2:40pm", "§7⏣ §bVillage",
+                    "", "Purse: §61,234,567", "Bits: §b1,024", "", "§7TPS: §a19.98", "§7Ping: §a42ms", "",
+                    "§ewww.hypixel.net",
+                ),
+                width = SCOREBOARD_W,
+                bg = 0x4C000000,
+            ),
             "Tac Timer" to s("§5Tac: §a2.4"),
             "Rag Timer" to s("§5Rag: §a8.5s"),
             "Spring Boots" to s("§aCharge: §f67%"),
@@ -270,6 +294,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             ), lineH = 12),
         )
 
+        const val SCOREBOARD_W = 118
+        const val SCORE_TITLE_W = 200
+
         @JvmStatic
         fun isOpen(): Boolean = Minecraft.getInstance().screen is FishHudEditor
 
@@ -284,7 +311,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         private const val BTN_H = 18
         private const val BTN_GAP = 6
 
-        private const val SIDE_W = 150
+        private const val SIDE_W = 160
         private const val SIDE_ROW = 12
         private const val SIDE_TOP = 26
         private const val HANDLE_W = 10
@@ -354,7 +381,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     // ---- entries -------------------------------------------------------------------------------
 
-    private fun available(): List<HudEntry> = ENTRIES.filter { it.isVisible() }
+    private fun available(): List<HudEntry> = ENTRIES
 
     // Movable HUDs in sidebar order.
     private fun listed(): List<HudEntry> {
@@ -540,6 +567,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         pose.scale(sc, sc)
         if (s != null) {
             val bw = baseW(e)
+            if (s.bg != 0) ctx.fill(0, 0, bw, baseH(e), s.bg)
             s.lines.forEachIndexed { i, line ->
                 val lx = if (s.center) (bw - this.font.width(line)) / 2 else 0
                 ctx.text(this.font, line, lx, i * s.lineH, 0xFFFFFFFF.toInt(), true)
@@ -658,8 +686,11 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                         if (on) ctx.fill(0, y, SIDE_W - 1, y + SIDE_ROW, ROW_PICKED)
                         if (row === hovRow) ctx.fill(0, y, SIDE_W - 1, y + SIDE_ROW, ROW_HOV)
                         if (on) ctx.fill(0, y, 2, y + SIDE_ROW, ACCENT)
-                        val name = if (this.font.width(row.e.name()) > SIDE_W - 22) this.font.plainSubstrByWidth(row.e.name(), SIDE_W - 28) + "…" else row.e.name()
-                        ctx.text(this.font, name, 12, y + 2, if (on) 0xFFFFFFFF.toInt() else 0xFFAAAAAA.toInt(), false)
+                        val name = if (this.font.width(row.e.name()) > SIDE_W - 40) this.font.plainSubstrByWidth(row.e.name(), SIDE_W - 46) + "…" else row.e.name()
+                        val off = !row.e.isVisible()
+                        val col = if (off) 0xFF666666.toInt() else if (on) 0xFFFFFFFF.toInt() else 0xFFAAAAAA.toInt()
+                        ctx.text(this.font, name, 12, y + 2, col, false)
+                        if (off) ctx.text(this.font, "§8off", SIDE_W - 22, y + 2, 0xFFFFFFFF.toInt(), false)
                     }
                 }
             }

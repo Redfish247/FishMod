@@ -768,6 +768,8 @@ object FishSettings {
     @ConfigValue @JvmField var customScoreboardHideInDungeon: Boolean = false
     @ConfigValue @JvmField var customScoreboardOpacity: Int = 30
     @ConfigValue @JvmField var customScoreboardHudY: Int = 2
+    // Right edge in GUI px; -1 = pinned to the screen's right edge.
+    @ConfigValue @JvmField var customScoreboardHudX: Int = -1
     @ConfigValue @JvmField var sbSectionDate: Boolean = true
     @ConfigValue @JvmField var sbSectionTime: Boolean = true
     @ConfigValue @JvmField var sbSectionLocation: Boolean = true
