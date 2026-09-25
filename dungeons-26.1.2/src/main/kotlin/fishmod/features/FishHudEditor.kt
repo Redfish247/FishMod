@@ -5,7 +5,9 @@ import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.config.FishConfig
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.input.CharacterEvent
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
@@ -320,7 +322,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         private const val SIDE_W = 160
         private const val SIDE_ROW = 12
-        private const val SIDE_TOP = 26
+        private const val SIDE_TOP = 58
+        private const val SEARCH_Y = 20
+        private const val SEARCH_H = 14
         private const val HANDLE_W = 10
         private const val HANDLE_H = 44
 
@@ -359,7 +363,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     private data class Pos(val x: Int, val y: Int, val scale: Double)
 
     private sealed class Row {
-        class Header(val text: String) : Row()
+        class Header(val text: String, val items: List<HudEntry>) : Row()
         class Action(val text: String, val run: () -> Unit) : Row()
         class Hud(val e: HudEntry) : Row()
     }
@@ -375,6 +379,14 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     private var resetArmed = false
     private var sideOpen = false
     private var sideScroll = 0
+
+    private val search = EditBox(Minecraft.getInstance().font, 0, 0, 0, 0, Component.empty()).apply { setMaxLength(32) }
+    private var searchFocused = false
+
+    private fun focusSearch(on: Boolean) {
+        searchFocused = on
+        search.isFocused = on
+    }
 
     private val undoStack = ArrayDeque<List<Pos>>()
     private val redoStack = ArrayDeque<List<Pos>>()
@@ -405,24 +417,47 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         else e.name() in picked
     }
 
+    // A search matching a category name keeps that whole category; otherwise HUDs are matched by name.
     private fun sidebarRows(): List<Row> {
-        val rows = ArrayList<Row>()
-        rows += Row.Action("Show all") { picked.clear(); listed().forEach { picked += it.name() } }
-        rows += Row.Action("Hide all") { picked.clear(); selected = null }
+        val q = search.value.trim().lowercase()
+        val body = ArrayList<Row>()
         val avail = listed()
         val grouped = HashSet<HudEntry>()
+        fun addGroup(g: String, items: List<HudEntry>) {
+            val hit = if (q.isEmpty() || g.lowercase().contains(q)) items else items.filter { it.name().lowercase().contains(q) }
+            if (hit.isEmpty()) return
+            body += Row.Header(g, hit)
+            hit.forEach { body += Row.Hud(it) }
+        }
         for ((g, names) in GROUPS) {
             val items = names.mapNotNull { n -> avail.firstOrNull { it.name() == n && it !in grouped } }
-            if (items.isEmpty()) continue
-            rows += Row.Header(g)
-            items.forEach { grouped += it; rows += Row.Hud(it) }
+            grouped += items
+            addGroup(g, items)
         }
-        val rest = avail.filter { it !in grouped }
-        if (rest.isNotEmpty()) {
-            rows += Row.Header("Other")
-            rest.forEach { rows += Row.Hud(it) }
+        addGroup("Other", avail.filter { it !in grouped })
+
+        val matches = body.filterIsInstance<Row.Hud>().map { it.e }
+        val rows = ArrayList<Row>()
+        if (matches.isNotEmpty()) {
+            rows += Row.Action(if (q.isEmpty()) "Show all" else "Show all matches") {
+                picked.clear(); matches.forEach { picked += it.name() }
+            }
         }
-        return rows
+        rows += Row.Action("Hide all") { picked.clear(); selected = null }
+        if (matches.isEmpty()) rows += Row.Header("No HUDs match", emptyList())
+        return rows + body
+    }
+
+    private fun pickGroup(items: List<HudEntry>, add: Boolean) {
+        if (items.isEmpty()) return
+        if (!add) picked.clear()
+        items.forEach { picked += it.name() }
+        selected = items.first()
+    }
+
+    private fun shiftDown(): Boolean {
+        val w = Minecraft.getInstance().window
+        return InputConstants.isKeyDown(w, GLFW.GLFW_KEY_LEFT_SHIFT) || InputConstants.isKeyDown(w, GLFW.GLFW_KEY_RIGHT_SHIFT)
     }
 
     private fun sample(e: HudEntry): Sample? = SAMPLES[e.name()]
@@ -535,6 +570,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private fun updateSide(mx: Int, my: Int) {
         if (dragging != null || resizing != null) { sideOpen = false; return }
+        if (searchFocused) { sideOpen = true; return }
         sideOpen = if (sideOpen) mx <= SIDE_W else mx <= HANDLE_W && my in handleY()..(handleY() + HANDLE_H)
     }
 
@@ -675,7 +711,24 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         ctx.fill(0, 0, SIDE_W, this.height, SIDE_BG)
         ctx.fill(SIDE_W - 1, 0, SIDE_W, this.height, ACCENT)
         ctx.text(this.font, "Pick HUDs to move", 8, 8, 0xFFFFFFFF.toInt(), true)
-        ctx.text(this.font, "§8Shift-click to add more", 8, SIDE_TOP - 9, 0xFFFFFFFF.toInt(), false)
+
+        val sx1 = SIDE_W - 7
+        val sHov = mouseX in 6..sx1 && mouseY in SEARCH_Y..(SEARCH_Y + SEARCH_H)
+        ctx.fill(6, SEARCH_Y, sx1, SEARCH_Y + SEARCH_H, 0xFF0B0F12.toInt())
+        outline(ctx, 6, SEARCH_Y, sx1 - 6, SEARCH_H, if (searchFocused) ACCENT else if (sHov) 0xFF5A606A.toInt() else 0xFF3A3F48.toInt())
+        val tx = 10
+        val ty = SEARCH_Y + (SEARCH_H - 8) / 2
+        if (search.value.isEmpty() && !searchFocused) {
+            ctx.text(this.font, "§8Search HUDs…", tx, ty, 0xFFFFFFFF.toInt(), false)
+        } else {
+            val shown = this.font.plainSubstrByWidth(search.value, sx1 - tx - 8, true)
+            ctx.text(this.font, shown, tx, ty, 0xFFFFFFFF.toInt(), false)
+            if (searchFocused && (System.currentTimeMillis() / 500) % 2 == 0L) {
+                ctx.text(this.font, "_", tx + this.font.width(shown), ty, 0xFFFFFFFF.toInt(), false)
+            }
+        }
+        ctx.text(this.font, "§8Click a category to pick it all", 8, SEARCH_Y + SEARCH_H + 4, 0xFFFFFFFF.toInt(), false)
+        ctx.text(this.font, "§8Shift-click to add more", 8, SEARCH_Y + SEARCH_H + 13, 0xFFFFFFFF.toInt(), false)
 
         ctx.enableScissor(0, SIDE_TOP, SIDE_W - 1, this.height)
         val hovRow = if (mouseX < SIDE_W) rowAt(mouseY) else null
@@ -683,7 +736,17 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         for (row in sidebarRows()) {
             if (y + SIDE_ROW >= SIDE_TOP && y < this.height) {
                 when (row) {
-                    is Row.Header -> ctx.text(this.font, "§3" + row.text.uppercase(), 8, y + 3, 0xFFFFFFFF.toInt(), false)
+                    is Row.Header -> {
+                        val clickable = row.items.isNotEmpty()
+                        if (clickable && row === hovRow) {
+                            ctx.fill(0, y, SIDE_W - 1, y + SIDE_ROW, ROW_HOV)
+                            val tag = "§7pick all"
+                            ctx.text(this.font, tag, SIDE_W - 8 - this.font.width(tag), y + 3, 0xFFFFFFFF.toInt(), false)
+                        }
+                        val all = clickable && row.items.all { it.name() in picked }
+                        val c = if (!clickable) "§8" else if (all) "§b" else "§3"
+                        ctx.text(this.font, c + row.text.uppercase(), 8, y + 3, 0xFFFFFFFF.toInt(), false)
+                    }
                     is Row.Action -> {
                         if (row === hovRow) ctx.fill(0, y, SIDE_W - 1, y + SIDE_ROW, ROW_HOV)
                         ctx.text(this.font, "§7" + row.text, 8, y + 2, 0xFFFFFFFF.toInt(), false)
@@ -713,12 +776,13 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         val my = click.y().toInt()
 
         if (sideOpen && mx <= SIDE_W) {
+            if (mx in 6..(SIDE_W - 7) && my in SEARCH_Y..(SEARCH_Y + SEARCH_H)) { focusSearch(true); return true }
+            focusSearch(false)
             when (val row = rowAt(my)) {
                 is Row.Action -> row.run()
+                is Row.Header -> pickGroup(row.items, shiftDown())
                 is Row.Hud -> {
-                    val shift = InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_LEFT_SHIFT) ||
-                        InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_RIGHT_SHIFT)
-                    if (shift) {
+                    if (shiftDown()) {
                         if (!picked.remove(row.e.name())) { picked += row.e.name(); selected = row.e }
                         else if (selected === row.e) selected = null
                     } else pickOnly(row.e)
@@ -727,6 +791,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             }
             return true
         }
+
+        if (searchFocused) { focusSearch(false); return true }
 
         val by = btnY()
         if (inRect(mx, my, doneX(), by, BTN_W, BTN_H)) { this.onClose(); return true }
@@ -821,6 +887,27 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         val mods = input.modifiers()
         val ctrl = mods and (GLFW.GLFW_MOD_CONTROL or GLFW.GLFW_MOD_SUPER) != 0
         val shift = mods and GLFW.GLFW_MOD_SHIFT != 0
+        val key = input.key()
+
+        if (searchFocused) {
+            when (key) {
+                GLFW.GLFW_KEY_ESCAPE -> { if (search.value.isNotEmpty()) search.value = "" else focusSearch(false); return true }
+                GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> {
+                    sidebarRows().firstNotNullOfOrNull { (it as? Row.Hud)?.e }?.let { pickOnly(it) }
+                    focusSearch(false)
+                    return true
+                }
+            }
+            search.keyPressed(input)
+            sideScroll = 0
+            return true
+        }
+        // With the sidebar open, typing starts a search instead of firing hotkeys.
+        if (sideOpen && !ctrl && (key in GLFW.GLFW_KEY_A..GLFW.GLFW_KEY_Z || key in GLFW.GLFW_KEY_0..GLFW.GLFW_KEY_9)) {
+            focusSearch(true)
+            return true
+        }
+
         when (input.key()) {
             GLFW.GLFW_KEY_ESCAPE -> { cancel(); return true }
             GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> { this.onClose(); return true }
@@ -861,6 +948,13 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         if (all.isEmpty()) return
         val i = all.indexOfFirst { it.name() in picked }
         pickOnly(all[if (i < 0) 0 else Math.floorMod(i + dir, all.size)])
+    }
+
+    override fun charTyped(input: CharacterEvent): Boolean {
+        if (!searchFocused) return super.charTyped(input)
+        search.charTyped(input)
+        sideScroll = 0
+        return true
     }
 
     private fun undo() {
