@@ -131,6 +131,7 @@ class FishHudEditor(
             java.util.Map.entry("Crystal Reminder", doubleArrayOf(0.0, 0.0, 1.0)),
             java.util.Map.entry("Storm Death Time", doubleArrayOf(10.0, 92.0, 1.0)),
             java.util.Map.entry("LB Release Timer", doubleArrayOf(10.0, 104.0, 1.0)),
+            java.util.Map.entry("Py Tick Timer", doubleArrayOf(10.0, 116.0, 1.0)),
             java.util.Map.entry("Storm Crushed", doubleArrayOf(0.0, 0.0, 1.0)),
             java.util.Map.entry("Term Start Timer", doubleArrayOf(10.0, 104.0, 1.0)),
             java.util.Map.entry("Section Progress", doubleArrayOf(10.0, 116.0, 1.0)),
@@ -158,7 +159,7 @@ class FishHudEditor(
             "Dungeon Map" to setOf("Dungeon Map", "Dungeon Score"),
             "Floor 7" to setOf(
                 "Tick Timer", "Wither Dragon Timer", "Crystal Spawn Time", "Crystal Reminder",
-                "Storm Death Time", "LB Release Timer", "Storm Crushed", "Term Start Timer",
+                "Storm Death Time", "LB Release Timer", "Py Tick Timer", "Storm Crushed", "Term Start Timer",
                 "Section Progress", "Goldor Splits", "Splits", "Current Section", "Device Completed",
                 "Melody Warning", "Section Completion", "Players Leaped", "Relic Spawn Timer",
             ),
