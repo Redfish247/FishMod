@@ -29,6 +29,9 @@ class StoredWaypoint() {
     /** Order of this waypoint within its route, when [routeId] is non-null. */
     @JvmField var routeOrder: Int = 0
 
+    /** Positional message: sent to party chat when you step onto this block; null for normal waypoints. */
+    @JvmField var message: String? = null
+
     constructor(
         x: Double, y: Double, z: Double,
         halfX: Double, halfY: Double, halfZ: Double,
