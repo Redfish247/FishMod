@@ -44,10 +44,6 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
-    var necronLbTargetSeconds: Double = 8.0
-
-    @ConfigValue
-    @JvmField
     var necronLbPingMs: Int = 0
 
     @ConfigValue

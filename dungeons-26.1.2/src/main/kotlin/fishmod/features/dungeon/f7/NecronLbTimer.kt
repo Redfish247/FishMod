@@ -19,6 +19,7 @@ import kotlin.math.max
 object NecronLbTimer {
 
     private const val NECRON_PHASE = 8
+    private const val SHOOT_TICK = 8 * 20
     private val timer = TickTimer()
 
     @JvmStatic
@@ -36,7 +37,7 @@ object NecronLbTimer {
     }
 
     private fun endTick(): Int =
-        max(1, Math.round(Floor7.necronLbTargetSeconds * 20).toInt() - ceil(max(0, Floor7.necronLbPingMs) / 50.0).toInt())
+        max(1, SHOOT_TICK - ceil(max(0, Floor7.necronLbPingMs) / 50.0).toInt())
 
     @JvmStatic
     fun display(): Boolean = Floor7.enableTickTimers && Floor7.enableNecronLbTimer && Location.inDungeon() &&
