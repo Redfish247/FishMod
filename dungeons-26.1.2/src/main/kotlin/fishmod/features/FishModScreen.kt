@@ -1102,6 +1102,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         hud.features.add(Feature("Catacombs Overflow Levels", FishSettings::catacombsOverflowEnabled))
         run {
+            val f = Feature("Performance HUD", FishSettings::perfHudEnabled)
+            f.sub.add(SubcategoryHeader("Move/scale it in the HUD editor"))
+            f.sub.add(ToggleSetting("FPS", "", FishSettings::perfHudFps))
+            f.sub.add(ToggleSetting("TPS", "Server ticks per second", FishSettings::perfHudTps))
+            f.sub.add(ToggleSetting("Ping", "", FishSettings::perfHudPing))
+            f.sub.add(ToggleSetting("Single Line", "Show all values side by side", FishSettings::perfHudHorizontal))
+            hud.features.add(f)
+        }
+        run {
             val f = Feature("Action Bar", FishSettings::actionBarEnabled)
             f.sub.add(SubcategoryHeader("Hide segments of Hypixel's SkyBlock action bar"))
             f.sub.add(ToggleSetting("Health", "", FishSettings::abHideHealth))
