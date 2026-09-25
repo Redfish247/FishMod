@@ -493,7 +493,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         run {
             val f = Feature("Ice Spray Timer", FishSettings::iceSprayTimerEnabled)
             f.sub.add(SubcategoryHeader("After your Ice Spray, one countdown above each group of frozen mobs"))
-            f.sub.add(SliderDoubleSetting("Freeze Time (s)", "", FishSettings::iceSprayDuration, 1.0, 10.0))
             f.sub.add(ColorPickerSetting("Color", "", FishSettings::iceSprayColor))
             f.sub.add(SliderDoubleSetting("Text Size", "", FishSettings::iceSprayScale, 0.5, 4.0))
             dungeon.features.add(f)
@@ -1516,7 +1515,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             solvers.features.add(f)
         }
         run {
-            val f = Feature("Wither ESP", FishSettings::witherEspEnabled)
+            val f = Feature("Wither Highlight", FishSettings::witherEspEnabled)
             f.sub.add(ColorPickerSetting("Maxor", "", FishSettings::witherEspMaxorColor))
             f.sub.add(ColorPickerSetting("Storm", "", FishSettings::witherEspStormColor))
             f.sub.add(ColorPickerSetting("Goldor", "", FishSettings::witherEspGoldorColor))
@@ -1534,7 +1533,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("M7 Relics", Floor7::enableRelicStartTimer)
-            f.sub.add(SliderIntSetting("Spawn Ticks", "Ticks after Necron's P5 line", Floor7::relicSpawnTicks, 1, 200))
             f.sub.add(ToggleSetting("Cauldron Box", "Box + tracer the cauldron for the relic you hold", Floor7::renderRelicHighlight))
             floor7.features.add(f)
         }
@@ -3950,7 +3948,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 "Item Rarity Background" -> "Rarity-tinted sprite behind every item"
                 "Item Quality Tooltip" -> "Dungeon-item stat boost % + floor in the tooltip"
                 "Gyro Helper" -> "Gyrokinetic Wand landing box + sucking-range ring"
-                "Wither ESP" -> "Outline the F7 wither boss by phase"
+                "Wither Highlight" -> "Outline the F7 wither boss by phase"
                 "M7 Relics" -> "P5 relic spawn timer + cauldron box"
                 "Auto Requeue" -> "Re-queue the same floor when a run ends (leader only)"
                 "Warp Cooldown" -> "Countdown until you can /warp again"
