@@ -34,9 +34,12 @@ object RenderUtils {
     }
 
     @JvmStatic
-    fun gizmoBox(box: AABB, fillArgb: Int, strokeArgb: Int) {
-        if ((fillArgb ushr 24) != 0) Gizmos.cuboid(box, GizmoStyle.fill(fillArgb))
-        if ((strokeArgb ushr 24) != 0) Gizmos.cuboid(box, GizmoStyle.stroke(strokeArgb))
+    fun gizmoBox(box: AABB, fillArgb: Int, strokeArgb: Int) = gizmoBox(box, fillArgb, strokeArgb, false)
+
+    @JvmStatic
+    fun gizmoBox(box: AABB, fillArgb: Int, strokeArgb: Int, throughWalls: Boolean) {
+        if ((fillArgb ushr 24) != 0) Gizmos.cuboid(box, GizmoStyle.fill(fillArgb)).also { if (throughWalls) it.setAlwaysOnTop() }
+        if ((strokeArgb ushr 24) != 0) Gizmos.cuboid(box, GizmoStyle.stroke(strokeArgb)).also { if (throughWalls) it.setAlwaysOnTop() }
     }
 
     @JvmStatic
