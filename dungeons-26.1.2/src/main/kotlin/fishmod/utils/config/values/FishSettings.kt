@@ -702,6 +702,10 @@ object FishSettings {
     @ConfigValue @JvmField var invincShowSpirit: Boolean = true
     @ConfigValue @JvmField var invincShowBonzo: Boolean = true
     @ConfigValue @JvmField var invincShowPhoenix: Boolean = true
+    @ConfigValue @JvmField var invincIcons: Boolean = false
+    @ConfigValue @JvmField var invincIconSpirit: String = ""
+    @ConfigValue @JvmField var invincIconBonzo: String = ""
+    @ConfigValue @JvmField var invincIconPhoenix: String = ""
     @ConfigValue @JvmField var invincHudX: Int = 10
     @ConfigValue @JvmField var invincHudY: Int = 140
     @ConfigValue @JvmField var invincScale: Double = 1.0
