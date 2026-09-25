@@ -41,6 +41,22 @@ object PbMessages {
     @JvmStatic
     fun get(key: String): Double? = synchronized(pbs) { ensureLoaded(); pbs[key] }
 
+    // Marker that stops Phase from re-seeding split PBs out of run history after a reset.
+    @JvmStatic
+    fun noSeedKey(floor: String): String = "meta:noseed:$floor"
+
+    /** Clears split PBs for one floor (or all when null); returns how many were removed. */
+    @JvmStatic
+    fun resetSplits(floor: String?, floors: Collection<String>): Int = synchronized(pbs) {
+        ensureLoaded()
+        val prefix = if (floor == null) "split:" else "split:$floor:"
+        val n = pbs.keys.count { it.startsWith(prefix) }
+        pbs.keys.removeIf { it.startsWith(prefix) }
+        for (f in if (floor == null) floors else listOf(floor)) pbs[noSeedKey(f)] = 1.0
+        save()
+        n
+    }
+
     // " (PB!)" / " (+1.23s)" suffix with the old best on hover.
     @JvmStatic
     fun tag(r: Result): MutableComponent {
