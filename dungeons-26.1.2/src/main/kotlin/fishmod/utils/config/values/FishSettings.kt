@@ -679,6 +679,10 @@ object FishSettings {
 
     @ConfigValue @JvmField var blessingDisplayEnabled: Boolean = false
 
+    @ConfigValue @JvmField var quizHudEnabled: Boolean = false
+    @ConfigValue @JvmField var quizHudX: Int = 10
+    @ConfigValue @JvmField var quizHudY: Int = 200
+    @ConfigValue @JvmField var quizHudScale: Double = 1.5
     @ConfigValue @JvmField var secretOverlayEnabled: Boolean = false
     @ConfigValue @JvmField var secretOverlayX: Int = 10
     @ConfigValue @JvmField var secretOverlayY: Int = 180
