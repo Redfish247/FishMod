@@ -13,12 +13,10 @@ import fishmod.utils.sound.SoundManager
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.core.BlockPos
-import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket
+import net.minecraft.network.protocol.game.ClientboundSoundPacket
 import net.minecraft.network.protocol.game.ClientboundTakeItemEntityPacket
 import net.minecraft.world.InteractionResult
-import net.minecraft.world.entity.ambient.Bat
 import net.minecraft.world.entity.item.ItemEntity
-import net.minecraft.world.item.Items
 import net.minecraft.world.level.block.AbstractSkullBlock
 import net.minecraft.world.level.block.ChestBlock
 import net.minecraft.world.level.block.LeverBlock
@@ -31,19 +29,18 @@ object SecretClicked {
 
     private class Secret(val box: AABB, val blockPos: BlockPos?, @JvmField var locked: Boolean = false)
 
-    private const val BAT_RANGE = 6.0
-    private const val ITEM_RANGE = 4.0
+    private const val BAT_RANGE = 10.0
+    private const val ITEM_RANGE = 6.0
 
     private val clicked = CopyOnWriteArrayList<Secret>()
     private var lastChime = 0L
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
-    private val batPos = HashMap<Int, Vec3>()
     private val itemPos = HashMap<Int, Vec3>()
-    private val batEngaged = HashSet<Int>()
+    private var lastBat = 0L
 
     private val pickedItemIds = ConcurrentLinkedQueue<Int>()
-    private val removedIds = ConcurrentLinkedQueue<Int>()
+    private val batSounds = ConcurrentLinkedQueue<Vec3>()
     @Volatile private var selfId = -1
 
     @JvmStatic
@@ -56,7 +53,7 @@ object SecretClicked {
         Events.ON_PACKET.register { packet ->
             when (packet) {
                 is ClientboundTakeItemEntityPacket -> if (packet.playerId == selfId) pickedItemIds.add(packet.itemId)
-                is ClientboundRemoveEntitiesPacket -> packet.entityIds.forEach { removedIds.add(it) }
+                is ClientboundSoundPacket -> SecretDrops.batSound(packet)?.let { batSounds.add(it) }
             }
             false
         }
@@ -70,8 +67,8 @@ object SecretClicked {
             false
         }
         Events.ON_WORLD_CHANGE.register {
-            clicked.clear(); batPos.clear(); itemPos.clear(); batEngaged.clear()
-            pickedItemIds.clear(); removedIds.clear()
+            clicked.clear(); itemPos.clear()
+            pickedItemIds.clear(); batSounds.clear()
             false
         }
 
@@ -85,7 +82,7 @@ object SecretClicked {
         selfId = player?.id ?: -1
         val level = mc.level
         if (player == null || level == null || !active()) {
-            pickedItemIds.clear(); removedIds.clear()
+            pickedItemIds.clear(); batSounds.clear()
             return
         }
         val eye = player.eyePosition
@@ -94,36 +91,25 @@ object SecretClicked {
             val id = pickedItemIds.poll() ?: break
             if (!FishSettings.secretClickedItems) continue
             val pos = itemPos[id]
-                ?: (level.getEntity(id) as? ItemEntity)?.takeIf { it.isFloorSecret() }?.position()
+                ?: (level.getEntity(id) as? ItemEntity)?.takeIf { SecretDrops.isSecretItem(it) }?.position()
                 ?: continue
             if (pos.distanceToSqr(eye) <= ITEM_RANGE * ITEM_RANGE) addLooseSecret(pos)
         }
 
         while (true) {
-            val id = removedIds.poll() ?: break
+            val pos = batSounds.poll() ?: break
             if (!FishSettings.secretClickedBats) continue
-            val engaged = batEngaged.remove(id)
-            val pos = batPos[id] ?: continue
-            if (engaged && pos.distanceToSqr(eye) <= BAT_RANGE * BAT_RANGE) addLooseSecret(pos)
+            // hurt + death both fire for one kill
+            val now = System.currentTimeMillis()
+            if (now - lastBat < 500 || pos.distanceToSqr(eye) > BAT_RANGE * BAT_RANGE) continue
+            lastBat = now
+            addLooseSecret(pos)
         }
 
-        batPos.clear(); itemPos.clear()
-        val scan = player.boundingBox.inflate(BAT_RANGE + 2.0)
-        for (e in level.getEntities(player, scan)) {
-            when (e) {
-                is Bat -> {
-                    batPos[e.id] = e.position()
-                    if (e.hurtTime > 0 || e.deathTime > 0) batEngaged.add(e.id)
-                }
-                is ItemEntity -> if (e.isFloorSecret()) itemPos[e.id] = e.position()
-            }
+        itemPos.clear()
+        for (e in level.getEntitiesOfClass(ItemEntity::class.java, player.boundingBox.inflate(ITEM_RANGE + 2.0))) {
+            if (SecretDrops.isSecretItem(e)) itemPos[e.id] = e.position()
         }
-    }
-
-    private fun ItemEntity.isFloorSecret(): Boolean {
-        if (item.item == Items.ARROW || hasPickUpDelay() || age < 10) return false
-        val d = deltaMovement
-        return onGround() && d.horizontalDistanceSqr() < 0.003 && kotlin.math.abs(d.y) < 0.05
     }
 
     private fun addLooseSecret(pos: Vec3) {
@@ -165,8 +151,11 @@ object SecretClicked {
     private fun onInteract(pos: BlockPos) {
         if (!active()) return
         val mc = net.minecraft.client.Minecraft.getInstance()
-        val block = mc.level?.getBlockState(pos)?.block ?: return
-        if (block !is ChestBlock && block !is LeverBlock && block !is AbstractSkullBlock) return
+        val level = mc.level ?: return
+        val block = level.getBlockState(pos).block
+        val secret = block is ChestBlock || block is LeverBlock ||
+            (block is AbstractSkullBlock && SecretDrops.isSecretSkull(level, pos))
+        if (!secret) return
         chime()
         if (!FishSettings.secretClickedBoxes || clicked.any { it.blockPos == pos }) return
         val box = AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0).move(pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble())
