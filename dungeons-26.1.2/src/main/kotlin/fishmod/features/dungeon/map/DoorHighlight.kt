@@ -34,6 +34,12 @@ object DoorHighlight {
         return b === net.minecraft.world.level.block.Blocks.COAL_BLOCK || b === net.minecraft.world.level.block.Blocks.RED_TERRACOTTA
     }
 
+    // Fairy doors come from the world scan, so draw both as soon as they load instead of waiting for map discovery.
+    private fun isFairyDoor(door: Door): Boolean =
+        door.rooms.any { val o = it.owner; o != null && (o.type == Room.Type.FAIRY || o.data?.name == "Fairy") }
+
+    private fun visible(door: Door): Boolean = door.seen || isFairyDoor(door)
+
     private fun active(): Boolean {
         return DungeonMapSettings.mapDoorHighlightEnabled && DungeonState.isInDungeon()
     }
@@ -112,14 +118,26 @@ object DoorHighlight {
         }
     }
 
+    private fun outlineOnly(): Boolean = DungeonMapSettings.mapDoorOutlineOnly
+
+    // Outline-only: every known door, open or not, one colour, no fill.
+    private fun outlineDoors(): List<Door> = ArrayList(Scan.doors).filter { visible(it) }
+
     private fun renderGizmo() {
         if (!active()) return
+        if (outlineOnly()) {
+            if (DungeonMapSettings.mapDoorHighlightThroughWall) return
+            for (door in outlineDoors()) RenderUtils.gizmoBox(box(door), 0, DungeonMapSettings.mapDoorOutlineColor)
+            return
+        }
         val fullBox = DungeonMapSettings.mapDoorHighlightFullBox
         for (door in ArrayList(Scan.doors)) {
-            if (door.type == Door.Type.NORMAL || !door.seen || !closed(door)) continue
+            if (door.type == Door.Type.NORMAL || !visible(door) || !closed(door)) continue
             if (throughWall(door.type)) continue
-            val hereTile = facingRoomTile(door) ?: continue
-            if (fullBox) {
+            val fairy = isFairyDoor(door)
+            val hereTile = facingRoomTile(door)
+            if (hereTile == null && !fairy) continue
+            if (fullBox || fairy || hereTile == null) {
                 RenderUtils.gizmoBox(box(door), fillColor(door), lineColor(door))
             } else {
                 val quad = faceQuad(door, hereTile) ?: continue
@@ -130,16 +148,24 @@ object DoorHighlight {
 
     private fun render(matrices: PoseStack, vc: VertexConsumer, depthTested: Boolean, fill: Boolean) {
         if (!active()) return
+        if (outlineOnly()) {
+            if (fill || !DungeonMapSettings.mapDoorHighlightThroughWall) return
+            val lineC = RenderUtils.toFloats(DungeonMapSettings.mapDoorOutlineColor)
+            for (door in outlineDoors()) RenderUtils.renderOutline(matrices, vc, box(door), lineC)
+            return
+        }
         val fullBox = DungeonMapSettings.mapDoorHighlightFullBox
         for (door in ArrayList(Scan.doors)) {
-            if (door.type == Door.Type.NORMAL || !door.seen || !closed(door)) continue
+            if (door.type == Door.Type.NORMAL || !visible(door) || !closed(door)) continue
             if (throughWall(door.type) == depthTested) continue
-            val hereTile = facingRoomTile(door) ?: continue
+            val fairy = isFairyDoor(door)
+            val hereTile = facingRoomTile(door)
+            if (hereTile == null && !fairy) continue
 
             val isWither = door.type == Door.Type.WITHER
             val fillC = RenderUtils.toFloats(if (isWither) witherFill(door) else fillColor(door))
             val lineC = RenderUtils.toFloats(if (isWither) witherLine(door) else lineColor(door))
-            if (fullBox || isWither) {
+            if (fullBox || isWither || fairy || hereTile == null) {
                 val box = box(door)
                 if (fill) RenderUtils.renderFilled(matrices, vc, box, fillC)
                 else RenderUtils.renderOutline(matrices, vc, box, lineC)

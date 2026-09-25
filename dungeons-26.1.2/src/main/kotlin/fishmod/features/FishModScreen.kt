@@ -1701,6 +1701,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
                 fishmod.utils.config.values.DungeonMapSettings::mapDoorHighlightFullBox))
             f.sub.add(ColorPickerSetting("Wither: No Key", "Wither-door box until the Wither Key is picked up (turns green once held)",
                 fishmod.utils.config.values.DungeonMapSettings::mapWitherHighlightMissingColor))
+            f.sub.add(ToggleSetting("Outline Only", "Outline every door in one colour, no fill or key colours",
+                fishmod.utils.config.values.DungeonMapSettings::mapDoorOutlineOnly))
+            f.sub.add(ColorPickerSetting("Outline Color", "Colour used by Outline Only",
+                fishmod.utils.config.values.DungeonMapSettings::mapDoorOutlineColor))
             dungeonMap.features.add(f)
         }
         run {

@@ -362,6 +362,14 @@ object DungeonMapSettings {
 
     @ConfigValue
     @JvmField
+    var mapDoorOutlineOnly: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var mapDoorOutlineColor: Int = 0xFF00E5FF.toInt()
+
+    @ConfigValue
+    @JvmField
     var mapX: Float = 100.0f
 
     @ConfigValue
