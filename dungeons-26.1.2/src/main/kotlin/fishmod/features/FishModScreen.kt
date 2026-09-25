@@ -2252,28 +2252,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         NvgRecorder.dropShadow(x0.toFloat(), hy.toFloat(), w.toFloat(), (cardBottom - hy).toFloat(), CARD_RADIUS.toFloat(), 10f, 0x60000000)
         roundedRect(ctx, x0, hy, w, cardBottom - hy, CARD_RADIUS, currentCardBg())
         NvgRecorder.fillRectTopRounded(x0.toFloat(), hy.toFloat(), w.toFloat(), HEADER_STRIP_H.toFloat(), CARD_RADIUS.toFloat(), ScreenTheme.ACCENT)
-        val hudCol = if (c.isGroup()) c.content() else c
-        val hudBtn = hudBtnRect(hudCol, x1, hy, showPopOut)
-        val titleClip = w - (if (showPopOut) 40 else 20) - (if (hudBtn != null) hudBtn[2] - hudBtn[0] + 6 else 0)
+        val titleClip = w - (if (showPopOut) 40 else 20)
         sst(ctx, this.font, ellipsize(c.name, titleClip), x0 + 10, hy + HEADER_STRIP_H + 6, TEXT_COLOR, 1f)
-        if (hudBtn != null) {
-            val hov = mouseX in hudBtn[0]..hudBtn[2] && mouseY in hudBtn[1]..hudBtn[3]
-            drawPillButton(ctx, hudBtn[0], hudBtn[1], hudBtn[2] - hudBtn[0], hudBtn[3] - hudBtn[1], "Edit HUD", false, ACCENT, hov)
-        }
         if (showPopOut) {
             val r = popOutIconRect(x1, hy)
             val hov = mouseX in r[0]..r[2] && mouseY in r[1]..r[3]
             NvgRecorder.popOutIcon(r[0].toFloat(), r[1].toFloat(), (r[2] - r[0]).toFloat(), if (hov) ACCENT else SUBTEXT_COLOR)
         }
-    }
-
-    private fun hudBtnRect(c: Column, x1: Int, headerTop: Int, leftOfPopOut: Boolean = false): IntArray? {
-        if (FishHudEditor.columnHuds(c.name) == null) return null
-        val bw = sw(this.font, "Edit HUD", 0.85f) + 12
-        val bh = HEADER_H - HEADER_STRIP_H - 4
-        val bx = x1 - (if (leftOfPopOut) 26 else 8) - bw
-        val by = headerTop + HEADER_STRIP_H + 2
-        return intArrayOf(bx, by, bx + bw, by + bh)
     }
 
     private fun popOutIconRect(x1: Int, headerTop: Int): IntArray {
@@ -2460,30 +2445,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         if (hovBtn(mx, my, rects[3][0], rects[3][1], rects[3][2], rects[3][3])) { onClose(); return true }
 
         val headerTop = cyTop() - HEADER_H
-        run {
-            val cols = visibleColumns()
-            val colW = columnWidth()
-            for (ci in cols.indices) {
-                val slot = cols[ci]
-                val x1 = columnX0(ci) + colW
-                if (slot.isGroup()) {
-                    for (seg in stackSegments(slot, cyTop() - HEADER_H, cyBot())) {
-                        val hc = seg.col
-                        val r = hudBtnRect(hc, x1, seg.segTop, leftOfPopOut = true) ?: continue
-                        if (mx in r[0]..r[2] && my in r[1]..r[3]) {
-                            Minecraft.getInstance().setScreen(FishHudEditor(this, FishHudEditor.columnHuds(hc.name)))
-                            return true
-                        }
-                    }
-                } else if (my >= headerTop && my < cyTop()) {
-                    val r = hudBtnRect(slot, x1, headerTop) ?: continue
-                    if (mx in r[0]..r[2] && my in r[1]..r[3]) {
-                        Minecraft.getInstance().setScreen(FishHudEditor(this, FishHudEditor.columnHuds(slot.name)))
-                        return true
-                    }
-                }
-            }
-        }
 
         if (searchText.isEmpty() && my >= headerTop && my < cyTop()) {
             val cols = visibleColumns()
