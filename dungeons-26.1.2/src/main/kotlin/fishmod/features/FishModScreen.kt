@@ -877,6 +877,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeon.features.add(f)
         }
         run {
+            val f = Feature("Player Highlight",Dungeons::classColoredGlow)
+            f.sub.add(ColorPickerSetting("Archer", "", Dungeons::archerColor))
+            f.sub.add(ColorPickerSetting("Berserk", "", Dungeons::berserkColor))
+            f.sub.add(ColorPickerSetting("Healer", "", Dungeons::healerColor))
+            f.sub.add(ColorPickerSetting("Mage", "", Dungeons::mageColor))
+            f.sub.add(ColorPickerSetting("Tank", "", Dungeons::tankColor))
+            dungeon.features.add(f)
+        }
+        run {
             val f = Feature("Dupe Class Detector", Dungeons::detectDuplicateClass)
             f.sub.add(ToggleSetting("Ignore Mage", "", Dungeons::ignoreDupeMage))
             f.sub.add(ToggleSetting("To Party", "", Dungeons::dupeClassPartyChat))

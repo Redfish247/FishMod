@@ -159,6 +159,9 @@ object DungeonPlayers {
         }
     }
 
+    @JvmStatic
+    fun classOf(name: String): DungeonClass? = find(name)?.let { resolveClass(it) }
+
     private fun isSelf(mc: Minecraft, p: DungeonPlayer): Boolean = mc.player != null && p.entity === mc.player
 
     private fun classOutlineColor(cls: DungeonClass): Int = when (cls) {
