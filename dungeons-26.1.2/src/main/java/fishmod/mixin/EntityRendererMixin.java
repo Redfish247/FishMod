@@ -55,6 +55,11 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
             }
         }
 
+        if (entity instanceof RemotePlayer teammate) {
+            int outline = fishmod.features.dungeon.PlayerHighlight.outlineColor(teammate);
+            if (outline != EntityRenderState.NO_OUTLINE) state.outlineColor = outline;
+        }
+
         if (Visual.hideEntityFire) {
             state.displayFireAnimation = false;
         } else if (entity instanceof Player player && Visual.hideFireInf5) {

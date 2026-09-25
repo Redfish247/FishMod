@@ -62,7 +62,7 @@ object BoulderSolver {
         val color = FishSettings.boulderColor
         val toRender = if (FishSettings.boulderShowAll) currentPositions else listOfNotNull(currentPositions.firstOrNull())
         toRender.forEach {
-            ORender.styledBox(it.signBox, color, style)
+            ORender.styledBox(it.signBox, color, style, FishSettings.boulderThroughWalls)
         }
     }
 
