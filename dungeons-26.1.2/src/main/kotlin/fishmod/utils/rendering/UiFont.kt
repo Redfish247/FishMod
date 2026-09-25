@@ -24,6 +24,17 @@ object UiFont {
     private var failed = false
     private var ascent = 0
 
+    // System fonts for codepoints Inter lacks (e.g. Hypixel's admin prefix glyph U+12DE)
+    private class Fallback(val info: STBTTFontinfo, val data: ByteBuffer, val unitRatio: Float)
+    private val FALLBACK_PATHS = listOf(
+        "C:/Windows/Fonts/segoeui.ttf", "C:/Windows/Fonts/seguisym.ttf", "C:/Windows/Fonts/ebrima.ttf",
+        "C:/Windows/Fonts/Nirmala.ttf", "C:/Windows/Fonts/arial.ttf",
+        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf", "/Library/Fonts/Arial Unicode.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/TTF/DejaVuSans.ttf",
+    )
+    private val fallbacks: List<Fallback> by lazy { loadFallbacks() }
+    private val fontFor = HashMap<Int, Int>()
+
     private val glyphs = HashMap<Long, Glyph>()
     private val atlas = ByteArray(ATLAS * ATLAS)
     private var penX = GAP
@@ -75,14 +86,44 @@ object UiFont {
     }
 
     private val kernCache = HashMap<Long, Int>()
-    fun kern(a: Int, b: Int): Int = kernCache.getOrPut((a.toLong() shl 32) or b.toLong()) { STBTruetype.stbtt_GetCodepointKernAdvance(info, a, b) }
+    fun kern(a: Int, b: Int): Int = kernCache.getOrPut((a.toLong() shl 32) or b.toLong()) {
+        if (fontIndex(a) != 0 || fontIndex(b) != 0) 0 else STBTruetype.stbtt_GetCodepointKernAdvance(info, a, b)
+    }
+
+    // 0 = Inter, n = fallbacks[n - 1]; Inter's .notdef box if nothing has it
+    private fun fontIndex(cp: Int): Int = fontFor.getOrPut(cp) {
+        if (STBTruetype.stbtt_FindGlyphIndex(info, cp) != 0) return@getOrPut 0
+        val i = fallbacks.indexOfFirst { STBTruetype.stbtt_FindGlyphIndex(it.info, cp) != 0 }
+        if (i < 0) 0 else i + 1
+    }
+
+    private fun loadFallbacks(): List<Fallback> {
+        val out = ArrayList<Fallback>()
+        val interScale = STBTruetype.stbtt_ScaleForPixelHeight(info, 1f)
+        for (path in FALLBACK_PATHS) {
+            try {
+                val f = java.io.File(path)
+                if (!f.isFile) continue
+                val bytes = f.readBytes()
+                val buf = MemoryUtil.memAlloc(bytes.size).put(bytes).flip()
+                val fi = STBTTFontinfo.malloc()
+                if (!STBTruetype.stbtt_InitFont(fi, buf)) { fi.free(); MemoryUtil.memFree(buf); continue }
+                out.add(Fallback(fi, buf, STBTruetype.stbtt_ScaleForPixelHeight(fi, 1f) / interScale))
+            } catch (t: Throwable) {
+                fishmod.utils.debug.Debug.LOGGER.warn("[UiFont] fallback font $path failed: $t")
+            }
+        }
+        return out
+    }
 
     private val advCache = HashMap<Int, Int>()
     fun advanceUnits(cp: Int): Int = advCache.getOrPut(cp) {
+        val fi = fontIndex(cp)
+        val fb = if (fi == 0) null else fallbacks[fi - 1]
         MemoryStack.stackPush().use { st ->
             val adv = st.mallocInt(1); val lsb = st.mallocInt(1)
-            STBTruetype.stbtt_GetCodepointHMetrics(info, cp, adv, lsb)
-            adv[0]
+            STBTruetype.stbtt_GetCodepointHMetrics(fb?.info ?: info, cp, adv, lsb)
+            if (fb == null) adv[0] else Math.round(adv[0] * fb.unitRatio)
         }
     }
 
@@ -98,6 +139,8 @@ object UiFont {
     }
 
     private fun bake(cp: Int, devSize: Float): Glyph {
+        val fi = fontIndex(cp)
+        val info = if (fi == 0) info else fallbacks[fi - 1].info
         val sc = STBTruetype.stbtt_ScaleForPixelHeight(info, devSize)
         MemoryStack.stackPush().use { st ->
             val x0 = st.mallocInt(1); val y0 = st.mallocInt(1); val x1 = st.mallocInt(1); val y1 = st.mallocInt(1)
