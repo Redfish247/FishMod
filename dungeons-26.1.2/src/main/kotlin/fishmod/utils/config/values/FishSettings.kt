@@ -732,6 +732,7 @@ object FishSettings {
     @ConfigValue @JvmField var pbMessagesGoldor: Boolean = true
     @ConfigValue @JvmField var pbMessagesTerminals: Boolean = true
     @ConfigValue @JvmField var pbMessagesRelics: Boolean = true
+    @ConfigValue @JvmField var splitResetFloor: String = "All"
     @ConfigValue @JvmField var pbMessagesStormKill: Boolean = true
     @ConfigValue @JvmField var splitPbColors: Boolean = true
     @ConfigValue @JvmField var splitPbColor: Int = 0xFFFF55FF.toInt()
