@@ -520,6 +520,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeon.features.add(f)
         }
         run {
+            val wp = fishmod.features.dungeon.DungeonWaypoints
+            val f = Feature("Positional Messages", FishSettings::posMsgEnabled)
+            f.sub.add(SubcategoryHeader("/fm pm to edit: right-click blocks to add/remove, shift+right-click to set the message. Stepping on them sends it to party chat"))
+            f.sub.add(ToggleSetting("Edit Mode", "Right-click to place/remove a message block", { wp.isPmEditMode() }, { wp.togglePmEdit() }))
+            f.sub.add(InputSetting("Message", "Sent for the next blocks you place", { wp.getPmMessage() }, { wp.setPmMessageQuiet(it) }))
+            f.sub.add(ToggleSetting("Show Blocks", "Draw message blocks outside edit mode", FishSettings::posMsgShowBlocks))
+            f.sub.add(ColorPickerSetting("Color", "For newly placed blocks", FishSettings::posMsgColor))
+            dungeon.features.add(f)
+        }
+        run {
             val f = Feature("Leap", FishSettings::leapMenuEnabled)
             f.sub.add(SubcategoryHeader("Menu (custom 2x2 Spirit Leap GUI, click a cell or press 1-4)"))
             f.sub.add(ToggleSetting("Map View", "Show the dungeon map instead — click a teammate's head to leap (1-4 still work)", FishSettings::leapMenuMap))
