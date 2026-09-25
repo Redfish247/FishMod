@@ -876,7 +876,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Player Highlight",Dungeons::classColoredGlow)
+            val f = Feature("Class Colored Glow", Dungeons::classColoredGlow)
             f.sub.add(ColorPickerSetting("Archer", "", Dungeons::archerColor))
             f.sub.add(ColorPickerSetting("Berserk", "", Dungeons::berserkColor))
             f.sub.add(ColorPickerSetting("Healer", "", Dungeons::healerColor))
