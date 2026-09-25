@@ -95,7 +95,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val hud = Column("HUD & Overlays", "bell")
         val visuals = Column("Visuals & Rendering", "eye")
         val cosmetics = Column("Cosmetics", "hanger")
-        val mining = Column("Mining", "pickaxe")
 
         run {
             val f = Feature("UI Customization", null, null)
@@ -1249,8 +1248,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             hud.features.add(f)
         }
 
-        mining.features.add(Feature("Mining Profit Tracker", FishSettings::miningProfitEnabled))
-
         hud.features.add(Feature("Fire Freeze Timer", FishSettings::fireFreezeTimerEnabled))
         hud.features.add(Feature("Loadout Title", FishSettings::loadoutTitleEnabled))
         run {
@@ -1869,7 +1866,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(slayer)
         columns.add(visuals)
         columns.add(cosmetics)
-        columns.add(mining)
         if (cheats.features.isNotEmpty()) columns.add(cheats)
     }
 
