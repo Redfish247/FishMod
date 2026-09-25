@@ -290,7 +290,7 @@ class FishModInit : ModInitializer {
             return ClientCommands.literal(name)
                 .executes {
                     Minecraft.getInstance().schedule {
-                        Minecraft.getInstance().setScreen(fishmod.features.chat.ChatNotificationsScreen())
+                        Minecraft.getInstance().setScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.NOTIFICATIONS))
                     }
                     Constants.SUCCESS
                 }
@@ -526,7 +526,7 @@ class FishModInit : ModInitializer {
                 ClientCommands.literal("fm")
                     .then(ClientCommands.literal("commandkeys").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.CommandKeysScreen())
+                            Minecraft.getInstance().setScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.KEYS))
                         }
                         Constants.SUCCESS
                     })
@@ -538,37 +538,25 @@ class FishModInit : ModInitializer {
                     })
                     .then(ClientCommands.literal("aliases").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.CommandAliasesScreen())
+                            Minecraft.getInstance().setScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.ALIASES))
                         }
                         Constants.SUCCESS
                     })
                     .then(ClientCommands.literal("whitelist").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
-                                "Party Action Whitelist", "Who may trigger .kick / .warp / .transfer / .promote / .demote", "+ Add Name",
-                                { fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist },
-                                { v -> fishmod.utils.config.values.FishSettings.pcPartyActionsWhitelist = v }
-                            ))
+                            Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.WHITELIST))
                         }
                         Constants.SUCCESS
                     })
                     .then(ClientCommands.literal("blacklist").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
-                                "Party Action Blacklist", "Always blocked from triggering party actions", "+ Add Name",
-                                { fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist },
-                                { v -> fishmod.utils.config.values.FishSettings.pcPartyActionsBlacklist = v }
-                            ))
+                            Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.BLACKLIST))
                         }
                         Constants.SUCCESS
                     })
                     .then(ClientCommands.literal("kicklist").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
-                                "Kick List", "Auto-kicked from your party whenever you're leader", "+ Add Name",
-                                { fishmod.utils.config.values.FishSettings.pcKickList },
-                                { v -> fishmod.utils.config.values.FishSettings.pcKickList = v }
-                            ))
+                            Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.KICK))
                         }
                         Constants.SUCCESS
                     })
@@ -621,7 +609,7 @@ class FishModInit : ModInitializer {
                 ClientCommands.literal("fmloot")
                     .executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.croesus.LootTrackerScreen())
+                            Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.LOOT))
                         }
                         Constants.SUCCESS
                     }

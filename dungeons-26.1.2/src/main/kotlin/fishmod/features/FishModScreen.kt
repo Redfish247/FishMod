@@ -1070,16 +1070,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(DropdownSetting("Who Can Trigger", "", arrayOf("off", "self", "whitelist", "blacklist", "everyone"),
                 { FishSettings.pcPartyActionsMode }, { v -> FishSettings.pcPartyActionsMode = v }))
             f.sub.add(ButtonSetting("Whitelist", "Edit who may trigger party actions", "Open", Runnable {
-                Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
-                    "Party Action Whitelist", "Who may trigger .kick / .warp / .transfer / .promote / .demote", "+ Add Name",
-                    { FishSettings.pcPartyActionsWhitelist }, { v -> FishSettings.pcPartyActionsWhitelist = v }
-                ))
+                Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.WHITELIST, Minecraft.getInstance().screen))
             }))
             f.sub.add(ButtonSetting("Blacklist", "Edit who is always blocked", "Open", Runnable {
-                Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
-                    "Party Action Blacklist", "Always blocked from triggering party actions", "+ Add Name",
-                    { FishSettings.pcPartyActionsBlacklist }, { v -> FishSettings.pcPartyActionsBlacklist = v }
-                ))
+                Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.BLACKLIST, Minecraft.getInstance().screen))
             }))
             party.features.add(f)
         }
@@ -1087,10 +1081,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("Kick List", { FishSettings.pcKickListEnabled }, { v -> FishSettings.pcKickListEnabled = v })
             f.sub.add(SubcategoryHeader("Anyone on this list is auto-kicked from your party whenever you're leader"))
             f.sub.add(ButtonSetting("Manage List", "Add/remove names, or /fm kicklist", "Open", Runnable {
-                Minecraft.getInstance().setScreen(fishmod.features.NameListScreen(
-                    "Kick List", "Auto-kicked from your party whenever you're leader", "+ Add Name",
-                    { FishSettings.pcKickList }, { v -> FishSettings.pcKickList = v }
-                ))
+                Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.KICK, Minecraft.getInstance().screen))
             }))
             party.features.add(f)
         }

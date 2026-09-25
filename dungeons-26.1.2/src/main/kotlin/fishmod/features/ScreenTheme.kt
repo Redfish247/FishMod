@@ -100,7 +100,8 @@ object ScreenTheme {
         val cursorX = UiRecorder.textWidth(text.substring(0, cursor), textSize)
         val pad = 3f
         val visibleW = w - pad * 2f
-        val scroll = Math.max(0f, cursorX - visibleW)
+        // Unfocused fields show the start of the text, not wherever the cursor was left.
+        val scroll = if (focused) Math.max(0f, cursorX - visibleW) else 0f
         UiRecorder.pushScissor((x + 1).toFloat(), (y + 1).toFloat(), (w - 2).toFloat(), (h - 2).toFloat())
         UiRecorder.text(text, x + pad - scroll, y + (h - textSize) / 2f, textSize, TEXT_COLOR)
         if (focused && (System.currentTimeMillis() / 500) % 2 == 0L) {
