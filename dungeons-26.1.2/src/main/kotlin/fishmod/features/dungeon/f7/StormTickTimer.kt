@@ -28,7 +28,7 @@ object StormTickTimer {
 
     private const val LB_START_TICK = 30 * 20
     private val LB_ARCHER_END_TICK: Int = Math.round(34.35 * 20).toInt()
-    private val LB_HEALER_END_TICK: Int = Math.round(34.05 * 20).toInt()
+    private val LB_HEALER_END_TICK: Int = Math.round(34.10 * 20).toInt()
 
     private val timer = TickTimer()
     private var deathTime = 0.0
