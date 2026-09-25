@@ -36,12 +36,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private val columns: MutableList<Column> = ArrayList()
     private var searchText = ""
 
-    // visibleFeatures()/visibleColumns() are called many times per frame (layout, scroll, hit-testing);
-    // columns/features are only built once (buildCategories(), in init), so the filtered result only
-    // ever needs to change when searchText changes — cache it instead of re-filtering every call.
+    // per-column search filter cache; columns themselves can be reordered/merged so aren't cached
     private var visibleCacheSearch: String? = null
     private val visibleFeaturesCache = HashMap<Column, List<Feature>>()
-    private var visibleColumnsCache: List<Column>? = null
     private var searchFocused = false
     private var activeSlider: Setting? = null
     private var activeSliderX = 0
@@ -1931,13 +1928,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun cyTop(): Int = top() + TOP_BAR_H + MARGIN + HEADER_H
     private fun cyBot(): Int = bottom() - BOTTOM_RESERVE
 
-    /** Clears the visibleFeatures()/visibleColumns() cache when searchText has changed since it was built. */
     private fun refreshVisibleCacheIfStale() {
         val f = searchText.lowercase()
         if (f == visibleCacheSearch) return
         visibleCacheSearch = f
         visibleFeaturesCache.clear()
-        visibleColumnsCache = null
     }
 
     private fun visibleFeatures(c: Column): List<Feature> {
@@ -1954,13 +1949,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun visibleColumns(): List<Column> {
         refreshVisibleCacheIfStale()
-        visibleColumnsCache?.let { return it }
         val out = ArrayList<Column>()
         for (c in columns) {
             val matches = if (c.isGroup()) c.children.any { visibleFeatures(it).isNotEmpty() } else visibleFeatures(c).isNotEmpty()
             if (matches || visibleCacheSearch!!.isEmpty()) out.add(c)
         }
-        visibleColumnsCache = out
         return out
     }
 
@@ -3570,8 +3563,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     ) : ColorPickerSetting(name, desc, getter, setter) {
         val shownName: String = name
 
-        /** Keeps [name] in sync with visibility regardless of which override runs first this frame —
-         *  getHeight()/render()/onClick() each call this instead of relying on call order. */
+        // order-independent name/visibility sync
         private fun syncName() { this.name = if (visible()) shownName else "" }
 
         override fun getHeight(): Int {
