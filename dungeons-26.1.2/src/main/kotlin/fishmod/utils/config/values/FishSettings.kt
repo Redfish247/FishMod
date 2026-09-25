@@ -288,6 +288,7 @@ object FishSettings {
     @ConfigValue @JvmField var simonSaysEnabled: Boolean = false
     @ConfigValue @JvmField var simonSaysHudEnabled: Boolean = false
     @ConfigValue @JvmField var simonSaysPartyChat: Boolean = false
+    @ConfigValue @JvmField var simonSaysSkipCompat: Boolean = true
     @ConfigValue @JvmField var simonSaysFailEnabled: Boolean = false
     @ConfigValue @JvmField var simonSaysFailMessage: String = "Simon Says: FAILED!"
     @ConfigValue @JvmField var simonSaysHudX: Int = 10
