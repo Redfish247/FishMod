@@ -20,6 +20,8 @@ object DragonPriority {
     private fun sortPriority(spawning: MutableList<WitherDragon>): WitherDragon {
         val totalPower = Blessings.Type.POWER.current + (if (Blessings.Type.TIME.current > 0) 2.5 else 0.0)
         val clazz = DungeonClass.currentClass
+            ?: DungeonClass.getClass(net.minecraft.client.Minecraft.getInstance().player)
+            ?: return spawning.sortedBy { FIXED.indexOf(it) }.first()
 
         val order = listOf(WitherDragon.ORANGE, WitherDragon.GREEN, WitherDragon.RED, WitherDragon.BLUE, WitherDragon.PURPLE)
         val priorityList = when {
@@ -35,9 +37,10 @@ object DragonPriority {
             val solo = FishSettings.witherDragonsSoloDebuff
             val onAll = FishSettings.witherDragonsSoloDebuffAll
             val hasPurple = spawning.any { it == WitherDragon.PURPLE }
-            if (solo == 0 && clazz == DungeonClass.TANK && (hasPurple || onAll))
+            // The class that ISN'T the purple soloer flips over to the bers side.
+            if (solo == 1 && clazz == DungeonClass.TANK && (hasPurple || onAll))
                 spawning.sortByDescending { priorityList.indexOf(it) }
-            else if (solo == 1 && clazz == DungeonClass.HEALER && (hasPurple || onAll))
+            else if (solo == 0 && clazz == DungeonClass.HEALER && (hasPurple || onAll))
                 spawning.sortByDescending { priorityList.indexOf(it) }
         }
 

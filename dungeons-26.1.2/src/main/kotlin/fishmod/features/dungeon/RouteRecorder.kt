@@ -29,12 +29,10 @@ import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket
-import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket
 import net.minecraft.network.protocol.game.ClientboundSoundPacket
 import net.minecraft.network.protocol.game.ClientboundTakeItemEntityPacket
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
-import net.minecraft.world.entity.ambient.Bat
 import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.item.Items
 import net.minecraft.world.level.block.AbstractSkullBlock
@@ -70,8 +68,8 @@ object RouteRecorder {
 
     private enum class Mode { IDLE, RECORDING, PLAYING }
 
-    private const val BAT_RANGE = 6.0
-    private const val ITEM_RANGE = 4.0
+    private const val BAT_RANGE = 10.0
+    private const val ITEM_RANGE = 6.0
     private const val LOOKAHEAD = 4
 
     private val steps = ArrayList<Step>()
@@ -90,11 +88,10 @@ object RouteRecorder {
     private var pearlTick = 0L
     private val pendingBreaks = HashMap<BlockPos, Long>()
 
-    private val batPos = HashMap<Int, Vec3>()
-    private val batEngaged = HashSet<Int>()
+    private val batSounds = ConcurrentLinkedQueue<Vec3>()
+    private var lastBat = 0L
     private val itemPos = HashMap<Int, Vec3>()
     private val pickedItemIds = ConcurrentLinkedQueue<Int>()
-    private val removedIds = ConcurrentLinkedQueue<Int>()
     @Volatile private var selfId = -1
     @Volatile private var teleported = false
 
@@ -118,7 +115,8 @@ object RouteRecorder {
                 val block = level.getBlockState(hit.blockPos).block
                 val type = when (block) {
                     is ChestBlock -> Type.CHEST
-                    is LeverBlock, is AbstractSkullBlock -> Type.SECRET
+                    is LeverBlock -> Type.SECRET
+                    is AbstractSkullBlock -> if (SecretDrops.isSecretSkull(level, hit.blockPos)) Type.SECRET else null
                     else -> null
                 }
                 if (type != null) action(type, hit.blockPos.immutable())
@@ -150,9 +148,11 @@ object RouteRecorder {
         Events.ON_PACKET.register { packet ->
             when (packet) {
                 is ClientboundTakeItemEntityPacket -> if (packet.playerId == selfId) pickedItemIds.add(packet.itemId)
-                is ClientboundRemoveEntitiesPacket -> packet.entityIds.forEach { removedIds.add(it) }
                 is ClientboundPlayerPositionPacket -> teleported = true
-                is ClientboundSoundPacket -> boomSounds.add(packet.sound.value().location.path to Vec3(packet.x, packet.y, packet.z))
+                is ClientboundSoundPacket -> {
+                    SecretDrops.batSound(packet)?.let { batSounds.add(it) }
+                    boomSounds.add(packet.sound.value().location.path to Vec3(packet.x, packet.y, packet.z))
+                }
             }
             false
         }
@@ -160,7 +160,7 @@ object RouteRecorder {
         Events.ON_WORLD_CHANGE.register {
             liveWorld = false
             lastPos = null; pendingPearl = null; pendingBreaks.clear()
-            batPos.clear(); batEngaged.clear(); itemPos.clear(); pickedItemIds.clear(); removedIds.clear()
+            batSounds.clear(); itemPos.clear(); pickedItemIds.clear()
             anchorCache = emptyMap()
             doneRooms.clear(); lastAutoRoom = null
             if (mode == Mode.RECORDING) mode = Mode.IDLE
@@ -225,7 +225,7 @@ object RouteRecorder {
         val level = mc.level
         selfId = player?.id ?: -1
         if (player == null || level == null || !tracking()) {
-            pickedItemIds.clear(); removedIds.clear(); boomSounds.clear(); teleported = false; lastPos = player?.position()
+            pickedItemIds.clear(); batSounds.clear(); boomSounds.clear(); teleported = false; lastPos = player?.position()
             return
         }
         val pos = player.position()
@@ -264,31 +264,20 @@ object RouteRecorder {
         val eye = player.eyePosition
         while (true) {
             val id = pickedItemIds.poll() ?: break
-            val p = itemPos[id] ?: (level.getEntity(id) as? ItemEntity)?.takeIf { e -> e.isFloorSecret() }?.position() ?: continue
+            val p = itemPos[id] ?: (level.getEntity(id) as? ItemEntity)?.takeIf { e -> SecretDrops.isSecretItem(e) }?.position() ?: continue
             if (p.distanceToSqr(eye) <= ITEM_RANGE * ITEM_RANGE) action(Type.ITEM, BlockPos.containing(p))
         }
         while (true) {
-            val id = removedIds.poll() ?: break
-            val engaged = batEngaged.remove(id)
-            val p = batPos[id] ?: continue
-            if (engaged && p.distanceToSqr(eye) <= BAT_RANGE * BAT_RANGE) action(Type.BAT, BlockPos.containing(p))
+            val p = batSounds.poll() ?: break
+            val now = System.currentTimeMillis()
+            if (now - lastBat < 500 || p.distanceToSqr(eye) > BAT_RANGE * BAT_RANGE) continue
+            lastBat = now
+            action(Type.BAT, BlockPos.containing(p))
         }
-        batPos.clear(); itemPos.clear()
-        for (e in level.getEntities(player, player.boundingBox.inflate(BAT_RANGE + 2.0))) {
-            when (e) {
-                is Bat -> {
-                    batPos[e.id] = e.position()
-                    if (e.hurtTime > 0 || e.deathTime > 0) batEngaged.add(e.id)
-                }
-                is ItemEntity -> if (e.isFloorSecret()) itemPos[e.id] = e.position()
-            }
+        itemPos.clear()
+        for (e in level.getEntitiesOfClass(ItemEntity::class.java, player.boundingBox.inflate(ITEM_RANGE + 2.0))) {
+            if (SecretDrops.isSecretItem(e)) itemPos[e.id] = e.position()
         }
-    }
-
-    private fun ItemEntity.isFloorSecret(): Boolean {
-        if (item.item == Items.ARROW || hasPickUpDelay() || age < 10) return false
-        val d = deltaMovement
-        return onGround() && d.horizontalDistanceSqr() < 0.003 && kotlin.math.abs(d.y) < 0.05
     }
 
     private fun action(type: Type, pos: BlockPos): Step? = when (mode) {
