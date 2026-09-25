@@ -667,6 +667,15 @@ object FishSettings {
     @ConfigValue @JvmField var warpCooldownScale: Double = 1.0
 
     @ConfigValue @JvmField var blessingDisplayEnabled: Boolean = false
+
+    @ConfigValue @JvmField var perfHudEnabled: Boolean = false
+    @ConfigValue @JvmField var perfHudFps: Boolean = true
+    @ConfigValue @JvmField var perfHudTps: Boolean = true
+    @ConfigValue @JvmField var perfHudPing: Boolean = true
+    @ConfigValue @JvmField var perfHudHorizontal: Boolean = false
+    @ConfigValue @JvmField var perfHudX: Int = 10
+    @ConfigValue @JvmField var perfHudY: Int = 60
+    @ConfigValue @JvmField var perfHudScale: Double = 1.0
     @ConfigValue @JvmField var blessingPower: Boolean = true
     @ConfigValue @JvmField var blessingPowerColor: Int = 0xFFAA0000.toInt()
     @ConfigValue @JvmField var blessingTime: Boolean = true
