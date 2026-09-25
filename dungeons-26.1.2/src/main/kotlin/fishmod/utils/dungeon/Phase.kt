@@ -121,10 +121,20 @@ object Phase {
         if (inP2()) {
             if (string == "[BOSS] Storm: I should have known that I stood no chance.") {
                 stormDead = true
+                announceStormKill(splits)
             }
         }
 
         return false
+    }
+
+    // P2 start ("Pathetic Maxor") to Storm's death line.
+    private fun announceStormKill(splits: List<Split>) {
+        if (PracticeMode.active) return
+        val f = floor ?: return
+        val secs = splits.firstOrNull { it.name == "Storm" }?.getRealTime() ?: return
+        PbMessages.announce(FishSettings.pbMessagesStormKill, "stormkill:$f",
+            Component.literal("§3Storm Kill§a in"), secs)
     }
 
     private fun endRun() {
