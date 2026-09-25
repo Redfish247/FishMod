@@ -1,5 +1,6 @@
 package fishmod.mixin;
 
+import fishmod.features.dungeon.map.DungeonPlayers;
 import fishmod.utils.Location;
 import fishmod.utils.config.values.Dungeons;
 import fishmod.utils.config.values.Visual;
@@ -27,6 +28,7 @@ public class EntityMixin {
         if (!Dungeons.classColoredGlow || !((Object) this instanceof Player player)) return;
         if (!Location.inDungeon()) return;
         DungeonClass cls = DungeonClass.getClass(player);
+        if (cls == null) cls = DungeonPlayers.classOf(player.getName().getString());
         if (cls != null) cir.setReturnValue(DungeonClass.getColor(cls) & 0xFFFFFF);
     }
 }
