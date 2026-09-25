@@ -17,10 +17,10 @@ object ORender {
         else -> 2
     }
 
-    fun styledBox(box: AABB, argb: Int, style: Int) {
+    fun styledBox(box: AABB, argb: Int, style: Int, throughWalls: Boolean = false) {
         val fill = if (style == 0 || style == 2) argb else 0
         val stroke = if (style == 1 || style == 2) outline(argb) else 0
-        RenderUtils.gizmoBox(box, fill, stroke)
+        RenderUtils.gizmoBox(box, fill, stroke, throughWalls)
     }
 
     fun filledBox(box: AABB, argb: Int) = RenderUtils.gizmoBox(box, argb, 0)

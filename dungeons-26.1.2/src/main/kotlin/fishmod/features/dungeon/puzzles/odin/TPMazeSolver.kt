@@ -23,18 +23,19 @@ object TPMazeSolver {
             tpPads = endPortalFrameLocations.map { room.getRealCoords(it) }
     }
 
-    fun tpPacket(packet: ClientboundPlayerPositionPacket) {
+    private fun padNear(x: Double, z: Double): BlockPos? =
+        tpPads.firstOrNull { abs(it.x + 0.5 - x) <= 1.5 && abs(it.z + 0.5 - z) <= 1.5 }
+
+    fun tpPacket(packet: ClientboundPlayerPositionPacket, from: Vec3?) {
         val change = packet.change
         val pos = change.position
         if (OdinScan.currentRoomName != "Teleport Maze" || pos.x % 0.5 != 0.0 || pos.y != 69.5 ||
             pos.z % 0.5 != 0.0 || tpPads.isEmpty()) return
 
-        val mc = Minecraft.getInstance()
         val posAABB = AABB.unitCubeFromLowerCorner(pos).inflate(1.0, 0.0, 1.0)
-        visited.addAll(tpPads.filter {
-            posAABB.intersects(AABB(it)) ||
-                mc.player?.boundingBox?.inflate(1.0, 0.0, 1.0)?.intersects(AABB(it)) == true
-        })
+        // Both the pad you stepped on and the one you landed on are used up.
+        from?.let { padNear(it.x, it.z) }?.let { visited.add(it) }
+        visited.addAll(tpPads.filter { posAABB.intersects(AABB(it)) })
         getCorrectPortals(pos, change.yRot, change.xRot)
 
         val currentPad = tpPads.firstOrNull { posAABB.intersects(AABB(it)) } ?: return
