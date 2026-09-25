@@ -163,7 +163,7 @@ object RouteRecorder {
             batPos.clear(); batEngaged.clear(); itemPos.clear(); pickedItemIds.clear(); removedIds.clear()
             anchorCache = emptyMap()
             doneRooms.clear(); lastAutoRoom = null
-            if (mode == Mode.RECORDING) { mode = Mode.IDLE; msg("§eRecording stopped (world changed). §7${steps.size} steps kept.") }
+            if (mode == Mode.RECORDING) mode = Mode.IDLE
             false
         }
 
@@ -200,7 +200,6 @@ object RouteRecorder {
         if (dirty) save(name)
         steps.clear(); progress = 0; mode = Mode.IDLE; enteredRoute = false; outsideTicks = 0
         lastAutoRoom = null
-        msg("§eLeft §f$name§e, route unloaded.")
     }
 
     // entering a room with a saved route loads and plays it
@@ -213,10 +212,7 @@ object RouteRecorder {
         // finished route or green-checked (all secrets) room: don't load again this run
         if (here in doneRooms || DungeonMap.roomPlayerIn()?.owner?.state == Room.State.GREEN) return
         if (!Files.exists(dir.resolve(clean(here) + ".json"))) return
-        if (load(here, quiet = true)) {
-            progress = 0; mode = Mode.PLAYING; enteredRoute = true
-            msg("§aLoaded §f$here §a(${steps.size} steps).")
-        }
+        if (load(here, quiet = true)) { progress = 0; mode = Mode.PLAYING; enteredRoute = true }
     }
 
     private fun tracking() = FishSettings.routeRecorderEnabled && mode != Mode.IDLE && Location.inDungeon()
@@ -310,7 +306,6 @@ object RouteRecorder {
         steps.add(step)
         dirty = true
         liveWorld = true
-        msg("§a+ §f#${steps.size} §7${type.label}" + (anchor?.let { " §8(${it.name})" } ?: " §8(no room anchor)"))
         return step
     }
 
@@ -330,7 +325,6 @@ object RouteRecorder {
             if (Vec3.atCenterOf(w).distanceTo(at) > type.tolerance) continue
             progress = i + 1
             if (progress >= steps.size) routeRoom()?.let { doneRooms.add(it) }
-            msg(if (progress >= steps.size) "§aRoute complete!" else "§7Done #${i + 1} ${type.label} §8→ §fnext #${progress + 1} ${steps[progress].type.label}")
             return
         }
     }
