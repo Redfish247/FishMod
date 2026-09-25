@@ -18,6 +18,9 @@ object WarpCooldown {
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     @Volatile private var enteredAt = 0L
+    // "X entered ... Catacombs" arrives before the warp; the countdown starts once we land in the instance.
+    @Volatile private var armedAt = 0L
+    private const val ARM_TIMEOUT_MS = 10_000L
 
     @JvmStatic
     fun init() {
@@ -32,16 +35,21 @@ object WarpCooldown {
         Events.ON_GAME_MESSAGE.register { text ->
             val s = COLOR.replace(text.string, "")
             if (ENTERED.matcher(s).find()) {
-                if (remainingMs() <= 0L) enteredAt = System.currentTimeMillis()
+                if (remainingMs() <= 0L) armedAt = System.currentTimeMillis()
             } else if (Dungeons.enableWarpCooldown && FishSettings.warpAnnounceKick && KICKED.matcher(s).matches()) {
                 fishmod.utils.ChatQueue.enqueue("pc ${FishSettings.warpKickText}")
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { enteredAt = 0L; false }
+        Events.ON_WORLD_CHANGE.register {
+            if (armedAt != 0L) { enteredAt = System.currentTimeMillis(); armedAt = 0L }
+            false
+        }
     }
 
     private fun remainingMs(): Long {
+        // No warp seen after the entered line: start from then instead of never.
+        if (armedAt != 0L && System.currentTimeMillis() - armedAt > ARM_TIMEOUT_MS) { enteredAt = armedAt + ARM_TIMEOUT_MS; armedAt = 0L }
         if (enteredAt == 0L) return 0
         val total = FishSettings.warpCooldownSeconds.coerceIn(1, 120) * 1000L
         return (total - (System.currentTimeMillis() - enteredAt)).coerceAtLeast(0)
