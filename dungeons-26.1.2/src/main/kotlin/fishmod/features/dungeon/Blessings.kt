@@ -49,9 +49,13 @@ object Blessings {
         )
 
         Events.ON_SERVER_TICK.register { poll(); false }
-        Events.ON_WORLD_CHANGE.register { Type.entries.forEach { it.current = 0 }; false }
+        Events.ON_WORLD_CHANGE.register { clear(); false }
+        Events.ON_LOCATION_CHANGE.register { _ -> clear(); false }
     }
 
+    private fun clear() = Type.entries.forEach { it.current = 0 }
+
+    // The footer is the source of truth: anything not listed in it right now isn't active.
     private fun poll() {
         if (!FishSettings.blessingDisplayEnabled || !Location.inDungeon()) return
         if (++tickAcc < 20) return
@@ -60,8 +64,7 @@ object Blessings {
         val footer = overlay.`fishmod$getFooter`()?.string ?: return
         val plain = COLOR.replace(footer, "")
         for (t in Type.entries) {
-            val m = t.regex.find(plain) ?: continue
-            t.current = romanToInt(m.groupValues[1])
+            t.current = t.regex.find(plain)?.let { romanToInt(it.groupValues[1]) } ?: 0
         }
     }
 
