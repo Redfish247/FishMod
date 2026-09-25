@@ -1484,7 +1484,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         run {
             val f = Feature("M7 Relics", Floor7::enableRelicStartTimer)
-            f.sub.add(SliderIntSetting("Spawn Ticks", "Ticks after Necron's P5 line", Floor7::relicSpawnTicks, 1, 200))
             f.sub.add(ToggleSetting("Cauldron Box", "Box + tracer the cauldron for the relic you hold", Floor7::renderRelicHighlight))
             floor7.features.add(f)
         }
