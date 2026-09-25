@@ -157,7 +157,7 @@ object BloodSolver {
             while (data.deltaHistory.size > DIRECTION_SAMPLE_WINDOW) data.deltaHistory.removeFirst()
         }
 
-        val spawnTime = (if (data.firstSpawn) 16.1 else 11.9) - 1.0
+        val spawnTime = (if (data.firstSpawn) 16.1 else 11.9) - 0.75
         val total = data.deltaHistory.fold(Vec3.ZERO) { acc, d -> acc.add(d) }
         if (total.lengthSqr() > 0) data.endVector = data.startVec.add(total.normalize().scale(spawnTime))
     }
