@@ -17,6 +17,7 @@
     "requireAnnotations": true
   },
   "client": [
+    "LocalPlayerMixin",
     "FishBossBarHudMixin",
     "accessors.BossBarHudAccessor",
     "accessors.LerpingBossEventAccessor",

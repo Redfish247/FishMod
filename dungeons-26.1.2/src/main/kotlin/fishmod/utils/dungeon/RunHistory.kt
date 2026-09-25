@@ -97,6 +97,17 @@ object RunHistory {
         }
     }
 
+    /** Drops stored split times (the averages) for one floor, or all when null; returns splits cleared. */
+    @JvmStatic
+    fun clear(floor: String?): Int {
+        val n = synchronized(lock) {
+            if (floor == null) data.values.sumOf { it.size }.also { data.clear() }
+            else data.remove(floor)?.size ?: 0
+        }
+        save()
+        return n
+    }
+
     @JvmStatic
     fun runCount(floor: String?, splitName: String?): Int = synchronized(lock) {
         val floorData = data[floor] ?: return@synchronized 0
