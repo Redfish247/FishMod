@@ -48,7 +48,13 @@ object FishSettings {
     @ConfigValue @JvmField var petXpBoosterCookie: Boolean = false
 
     @ConfigValue @JvmField var petHudEnabled: Boolean = false
+    @ConfigValue @JvmField var petSwapTitleEnabled: Boolean = false
+    @ConfigValue @JvmField var petSwapTitleFormat: String = "{pet}"
+    @ConfigValue @JvmField var petSwapTitleRarityColor: Boolean = true
+    @ConfigValue @JvmField var petSwapTitleColor: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var petSwapTitleMs: Int = 1500
     @ConfigValue @JvmField var petHudShowLevel: Boolean = false
+    @ConfigValue @JvmField var petHudIcon: Boolean = false
     @ConfigValue @JvmField var petHudShowRarity: Boolean = true
     @ConfigValue @JvmField var petHudFadeIdle: Boolean = false
     @ConfigValue @JvmField var petHudFadeMs: Int = 5000
@@ -234,6 +240,9 @@ object FishSettings {
     @ConfigValue @JvmField var disableFrontFacingCamera: Boolean = false
 
     @ConfigValue @JvmField var dungeonWaypointsEnabled: Boolean = true
+    @ConfigValue @JvmField var posMsgEnabled: Boolean = false
+    @ConfigValue @JvmField var posMsgShowBlocks: Boolean = true
+    @ConfigValue @JvmField var posMsgColor: Int = 0x66FFAA00
 
     @ConfigValue @JvmField var enableM7LeverWaypoints: Boolean = false
     @ConfigValue @JvmField var m7LeverWaypointColor: Int = 0xFFFF0086.toInt()
@@ -285,6 +294,7 @@ object FishSettings {
     @ConfigValue @JvmField var simonSaysEnabled: Boolean = false
     @ConfigValue @JvmField var simonSaysHudEnabled: Boolean = false
     @ConfigValue @JvmField var simonSaysPartyChat: Boolean = false
+    @ConfigValue @JvmField var simonSaysSkipCompat: Boolean = true
     @ConfigValue @JvmField var simonSaysFailEnabled: Boolean = false
     @ConfigValue @JvmField var simonSaysFailMessage: String = "Simon Says: FAILED!"
     @ConfigValue @JvmField var simonSaysHudX: Int = 10
@@ -322,6 +332,10 @@ object FishSettings {
     @ConfigValue @JvmField var wardrobeHotkeysEnabled: Boolean = false
     @ConfigValue @JvmField var wardrobeHotkeysAutoClose: Boolean = true
 
+    @ConfigValue @JvmField var petKeybindsEnabled: Boolean = false
+    @ConfigValue @JvmField var petKeybindsAutoClose: Boolean = true
+    @ConfigValue @JvmField var petKeybindsNoDespawn: Boolean = true
+
     @ConfigValue @JvmField var loadoutTitleEnabled: Boolean = false
 
     @ConfigValue @JvmField var autoSprintEnabled: Boolean = false
@@ -358,6 +372,7 @@ object FishSettings {
     @ConfigValue @JvmField var tttPredictionColor: Int = 0x99FFAA00.toInt()
     @ConfigValue @JvmField var boulderSolver: Boolean = true
     @ConfigValue @JvmField var boulderShowAll: Boolean = true
+    @ConfigValue @JvmField var boulderThroughWalls: Boolean = true
     @ConfigValue @JvmField var boulderColor: Int = 0x9955FF55.toInt()
     @ConfigValue @JvmField var iceFillSolver: Boolean = true
     @ConfigValue @JvmField var iceFillOptimized: Boolean = false
@@ -608,6 +623,11 @@ object FishSettings {
     @ConfigValue @JvmField var slotBindsColor: Int = 0xFFFF55FF.toInt()
     @ConfigValue @JvmField var slotBindsProfile: String = "Default"
 
+    @ConfigValue @JvmField var slotLockingEnabled: Boolean = false
+    @ConfigValue @JvmField var slotLockingColor: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var slotLockingOpacity: Int = 25
+    @ConfigValue @JvmField var slotLockingOutline: Boolean = true
+
     @ConfigValue @JvmField var inventorySearchEnabled: Boolean = false
     @ConfigValue @JvmField var inventorySearchAlwaysShow: Boolean = false
     @ConfigValue @JvmField var inventorySearchHighlight: Boolean = true
@@ -663,6 +683,24 @@ object FishSettings {
     @ConfigValue @JvmField var iceSprayDuration: Double = 5.0
     @ConfigValue @JvmField var iceSprayColor: Int = 0xFF55FFFF.toInt()
     @ConfigValue @JvmField var iceSprayScale: Double = 1.5
+    @ConfigValue @JvmField var playerHighlightEnabled: Boolean = false
+    @ConfigValue @JvmField var playerHighlightRange: Int = 50
+    @ConfigValue @JvmField var stormOverEnabled: Boolean = false
+    @ConfigValue @JvmField var stormOverText: String = "Storm Over!"
+    @ConfigValue @JvmField var stormOverColor: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var stormOverSound: Boolean = true
+    @ConfigValue @JvmField var stormOverDurationMs: Int = 2500
+    @ConfigValue @JvmField var stormOverHudX: Int = 200
+    @ConfigValue @JvmField var stormOverHudY: Int = 100
+    @ConfigValue @JvmField var stormOverScale: Double = 2.5
+    @ConfigValue @JvmField var perfHudEnabled: Boolean = false
+    @ConfigValue @JvmField var perfHudFps: Boolean = true
+    @ConfigValue @JvmField var perfHudTps: Boolean = true
+    @ConfigValue @JvmField var perfHudPing: Boolean = true
+    @ConfigValue @JvmField var perfHudHorizontal: Boolean = false
+    @ConfigValue @JvmField var perfHudX: Int = 10
+    @ConfigValue @JvmField var perfHudY: Int = 60
+    @ConfigValue @JvmField var perfHudScale: Double = 1.0
     @ConfigValue @JvmField var blessingPower: Boolean = true
     @ConfigValue @JvmField var blessingPowerColor: Int = 0xFFAA0000.toInt()
     @ConfigValue @JvmField var blessingTime: Boolean = true
@@ -684,6 +722,22 @@ object FishSettings {
     @ConfigValue @JvmField var invincShowSpirit: Boolean = true
     @ConfigValue @JvmField var invincShowBonzo: Boolean = true
     @ConfigValue @JvmField var invincShowPhoenix: Boolean = true
+    @ConfigValue @JvmField var invincProcTitle: Boolean = false
+    @ConfigValue @JvmField var invincProcTitleMs: Int = 2000
+    @ConfigValue @JvmField var invincProcSpiritText: String = "Spirit Mask Procced!"
+    @ConfigValue @JvmField var invincProcSpiritColor: Int = 0xFFFFFFFF.toInt()
+    @ConfigValue @JvmField var invincProcBonzoText: String = "Bonzo Mask Procced!"
+    @ConfigValue @JvmField var invincProcBonzoColor: Int = 0xFF5555FF.toInt()
+    @ConfigValue @JvmField var invincProcPhoenixText: String = "Phoenix Procced!"
+    @ConfigValue @JvmField var invincProcPhoenixColor: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var invincProcSound: Boolean = true
+    @ConfigValue @JvmField var invincProcSoundName: String = "Blaze Hit"
+    @ConfigValue @JvmField var invincProcVolume: Int = 100
+    @ConfigValue @JvmField var invincProcPitch: Double = 1.0
+    @ConfigValue @JvmField var invincIcons: Boolean = false
+    @ConfigValue @JvmField var invincIconSpirit: String = ""
+    @ConfigValue @JvmField var invincIconBonzo: String = ""
+    @ConfigValue @JvmField var invincIconPhoenix: String = ""
     @ConfigValue @JvmField var invincHudX: Int = 10
     @ConfigValue @JvmField var invincHudY: Int = 140
     @ConfigValue @JvmField var invincScale: Double = 1.0
@@ -710,6 +764,8 @@ object FishSettings {
     @ConfigValue @JvmField var pbMessagesGoldor: Boolean = true
     @ConfigValue @JvmField var pbMessagesTerminals: Boolean = true
     @ConfigValue @JvmField var pbMessagesRelics: Boolean = true
+    @ConfigValue @JvmField var splitResetFloor: String = "All"
+    @ConfigValue @JvmField var pbMessagesStormKill: Boolean = true
     @ConfigValue @JvmField var splitPbColors: Boolean = true
     @ConfigValue @JvmField var splitPbColor: Int = 0xFFFF55FF.toInt()
     @ConfigValue @JvmField var splitAvgColor: Int = 0xFFFFAA00.toInt()

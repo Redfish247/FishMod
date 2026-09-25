@@ -25,6 +25,15 @@ object DoorHighlight {
     private fun throughWall(type: Door.Type): Boolean =
         type == Door.Type.WITHER || DungeonMapSettings.mapDoorHighlightThroughWall
 
+    // The map marks fairy-coloured doors as unlocked and misses opened ones, so trust the world blocks when loaded.
+    private fun closed(door: Door): Boolean {
+        val level = Minecraft.getInstance().level ?: return door.locked
+        val bp = net.minecraft.core.BlockPos(door.pos.x, 69, door.pos.z)
+        if (!level.isLoaded(bp)) return door.locked
+        val b = level.getBlockState(bp).block
+        return b === net.minecraft.world.level.block.Blocks.COAL_BLOCK || b === net.minecraft.world.level.block.Blocks.RED_TERRACOTTA
+    }
+
     private fun active(): Boolean {
         return DungeonMapSettings.mapDoorHighlightEnabled && DungeonState.isInDungeon()
     }
@@ -107,7 +116,7 @@ object DoorHighlight {
         if (!active()) return
         val fullBox = DungeonMapSettings.mapDoorHighlightFullBox
         for (door in ArrayList(Scan.doors)) {
-            if (door.type == Door.Type.NORMAL || !door.locked || !door.seen) continue
+            if (door.type == Door.Type.NORMAL || !door.seen || !closed(door)) continue
             if (throughWall(door.type)) continue
             val hereTile = facingRoomTile(door) ?: continue
             if (fullBox) {
@@ -123,7 +132,7 @@ object DoorHighlight {
         if (!active()) return
         val fullBox = DungeonMapSettings.mapDoorHighlightFullBox
         for (door in ArrayList(Scan.doors)) {
-            if (door.type == Door.Type.NORMAL || !door.locked || !door.seen) continue
+            if (door.type == Door.Type.NORMAL || !door.seen || !closed(door)) continue
             if (throughWall(door.type) == depthTested) continue
             val hereTile = facingRoomTile(door) ?: continue
 
