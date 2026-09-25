@@ -610,10 +610,10 @@ public class PartyCommandHandler {
     }
 
     private static void sendDprofit(Minecraft mc, String responder) {
-        double total = fishmod.features.croesus.LootTrackerScreen.totalValueForChat();
-        int runs = fishmod.features.croesus.LootTrackerScreen.runsForChat();
+        double total = fishmod.features.PartyLootScreen.totalValueForChat();
+        int runs = fishmod.features.PartyLootScreen.runsForChat();
         double avg = total / Math.max(1, runs);
-        String pr = fishmod.features.croesus.LootTrackerScreen.fmtCoinsPublic(avg);
+        String pr = fishmod.features.PartyLootScreen.fmtCoinsPublic(avg);
         sendCmd(mc, responder, "Profit Per Run: " + pr + " (" + runs + " runs)");
     }
 

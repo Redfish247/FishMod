@@ -3,6 +3,8 @@ package fishmod.features
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.utils.config.FishConfig
+import fishmod.utils.rendering.UiRecorder
+import fishmod.utils.rendering.UiRenderer
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.EditBox
@@ -18,7 +20,7 @@ import java.util.function.DoubleSupplier
 import java.util.function.IntConsumer
 import java.util.function.IntSupplier
 
-class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit HUD")) {
+class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit HUD")), HasUiOverlay {
 
     class HudEntry @JvmOverloads constructor(
         private val nameVal: String,
@@ -330,28 +332,39 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         private const val HANDLE_W = 10
         private const val HANDLE_H = 44
 
-        private val ACCENT = 0xFF00AACC.toInt()
-        private val ACCENT_HOVER = 0xFF00CCEE.toInt()
+        private val ACCENT = ScreenTheme.ACCENT
+        private val ACCENT_HOVER = ScreenTheme.ACCENT_HOVER
+        private val TEXT = ScreenTheme.TEXT_COLOR
+        private val SUBTEXT = ScreenTheme.SUBTEXT_COLOR
+        private val ON_ACCENT = 0xFF06302F.toInt()
         private val GUIDE = 0xFFFF4FB0.toInt()
         private val GRID_LINE = 0x14FFFFFF
-        private val SIDE_BG = 0xE8101418.toInt()
-        private val ROW_HOV = 0x22FFFFFF
-        private val ROW_PICKED = 0x3300AACC
+        private val SIDE_BG = 0xFF101418.toInt()
+        private val ROW_HOV = 0x1AFFFFFF
+        private val ROW_PICKED = 0x2624B6B0
+        private val HOVER_OUTLINE = 0xB33AD8D1.toInt()
+        private val PILL_BG = 0xE00E1115.toInt()
+        private val PILL_BORDER = 0xFF2B333C.toInt()
+        private val PILL_TEXT = 0xFFCFD6DD.toInt()
+        private val LABEL = 0xFFAEB8C2.toInt()
+        private val FAINT = 0xFF5A636D.toInt()
+        private val CAP_BG = 0xFF1B2027.toInt()
+        private val CAP_BORDER = 0xFF3A3F48.toInt()
+        private val OFF_BG = 0xFF262B33.toInt()
 
         private val CONTROLS = listOf(
-            "Hover Left Edge to Pick HUDs",
-            "Drag to Move",
-            "Scroll or Drag Corner to Resize",
-            "Tab to Swap Selected HUD",
-            "Arrows for Precision Move (Shift = 10px)",
-            "Ctrl+H to Center Horizontally",
-            "Ctrl+V to Center Vertically",
-            "Hold Alt to Disable Snapping",
-            "R to Reset Selected HUD",
-            "G to Toggle Grid",
-            "Ctrl+Z / Ctrl+Y to Undo / Redo",
-            "Enter to Save, Esc to Cancel",
-            "F1 to Hide Controls",
+            "Hover left edge" to "Pick HUDs",
+            "Drag" to "Move",
+            "Scroll / corner" to "Resize",
+            "Tab" to "Swap selected",
+            "←↑→↓" to "Nudge (Shift 10px)",
+            "Ctrl+H / V" to "Center",
+            "Alt" to "No snapping",
+            "R" to "Reset selected",
+            "G" to "Grid",
+            "Ctrl+Z / Y" to "Undo / redo",
+            "Enter / Esc" to "Save / cancel",
+            "F1" to "Hide controls",
         )
 
         private val FOLLOWS = Regex("\\(follows (.+)\\)")
@@ -566,7 +579,12 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private fun inRect(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int) = mx in x..(x + w) && my in y..(y + h)
 
-    private fun handleY() = (this.height - HANDLE_H) / 2
+    // Centred, but lifted above the controls card when they would overlap.
+    private fun handleY(): Int {
+        val rows = if (showControls) CONTROLS.size else 1
+        val cardTop = this.height - 6 - (10 + rows * 10 - 2)
+        return Math.min((this.height - HANDLE_H) / 2, cardTop - HANDLE_H - 6)
+    }
 
     private fun sideMaxScroll(): Int = Math.max(0, sidebarRows().size * SIDE_ROW - (this.height - SIDE_TOP - 6))
 
@@ -626,8 +644,21 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         pose.popMatrix()
     }
 
+    private fun ellipsize(s: String, maxW: Float, size: Float): String {
+        if (UiRecorder.textWidth(s, size) <= maxW) return s
+        var t = s
+        while (t.isNotEmpty() && UiRecorder.textWidth(t + "…", size) > maxW) t = t.dropLast(1)
+        return t + "…"
+    }
+
+    private fun centerText(s: String, cx: Float, y: Float, size: Float, color: Int) {
+        UiRecorder.textBold(s, cx - UiRecorder.textWidth(s, size) / 2f, y, size, color)
+    }
+
+    // HUD examples stay vanilla-drawn; the editor chrome is recorded for the overlay, which paints on top.
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         updateSide(mouseX, mouseY)
+        UiRecorder.clear()
         ctx.fill(0, 0, this.width, this.height, 0x60000000)
 
         if (showGrid) {
@@ -638,13 +669,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         }
 
         val sel = selected
-        val header = when {
-            sel != null -> "§b${sel.name()} §7· §f${Math.round(sel.scale() * 100)}% §7· §fx ${sel.getX().asInt}, y ${sel.getY().asInt}"
-            picked.isEmpty() -> "§7Hover the left edge to pick a HUD to move"
-            else -> "§7Click a HUD to select it"
-        }
-        ctx.centeredText(this.font, header, this.width / 2, 10, 0xFFFFFFFF.toInt())
-
         val hover = if (dragging == null && resizing == null && !sideOpen) boxUnder(mouseX, mouseY) else null
         for (e in shown()) {
             val x = e.getX().asInt
@@ -656,119 +680,177 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 e === sel -> {
                     outline(ctx, x - 1, y - 1, w + 2, h + 2, 0xFFFFFFFF.toInt())
                     val tag = e.name() + " " + Math.round(e.scale() * 100) + "%"
-                    val tw = this.font.width(tag)
-                    val ty = if (y >= 13) y - 12 else y + h + 2
-                    ctx.fill(x - 1, ty, x + tw + 3, ty + 11, ACCENT)
-                    ctx.text(this.font, tag, x + 1, ty + 2, 0xFF0B1417.toInt(), false)
+                    val ts = 6.5f
+                    val ty = if (y >= 13) y - 12f else y + h + 2f
+                    UiRecorder.fillRoundedRect(x - 1f, ty, UiRecorder.textWidth(tag, ts) + 7f, 10f, 3f, ACCENT)
+                    UiRecorder.textBold(tag, x + 2.5f, ty + (10f - ts) / 2f, ts, ON_ACCENT)
                     if (e.setScale() != null && !e.locked()) {
-                        ctx.fill(x + w - GRIP - 1, y + h - GRIP - 1, x + w + GRIP, y + h + GRIP, 0xFF0B1417.toInt())
-                        ctx.fill(x + w - GRIP, y + h - GRIP, x + w + GRIP - 1, y + h + GRIP - 1, ACCENT_HOVER)
+                        UiRecorder.roundedRectRing(
+                            (x + w - GRIP).toFloat(), (y + h - GRIP).toFloat(), GRIP * 2f, GRIP * 2f,
+                            2f, 1f, ACCENT_HOVER, 0xFF0B1417.toInt()
+                        )
                     }
                 }
                 e.locked() -> outline(ctx, x - 1, y - 1, w + 2, h + 2, 0x55888888)
-                e === hover -> outline(ctx, x - 1, y - 1, w + 2, h + 2, 0xAA00CCEE.toInt())
+                e === hover -> outline(ctx, x - 1, y - 1, w + 2, h + 2, HOVER_OUTLINE)
             }
         }
 
         guideX?.let { ctx.fill(it, 0, it + 1, this.height, GUIDE) }
         guideY?.let { ctx.fill(0, it, this.width, it + 1, GUIDE) }
 
-        if (showControls) {
-            var ly = this.height - 6 - CONTROLS.size * 10
-            for (line in CONTROLS) {
-                ctx.text(this.font, line, 6, ly, 0xFFFFFFFF.toInt(), true)
-                ly += 10
-            }
-        } else {
-            ctx.text(this.font, "F1 to Show Controls", 6, this.height - 16, 0xFFAAAAAA.toInt(), true)
-        }
-
-        val by = btnY()
-        val dHov = inRect(mouseX, mouseY, doneX(), by, BTN_W, BTN_H)
-        ctx.fill(doneX(), by, doneX() + BTN_W, by + BTN_H, if (dHov) ACCENT_HOVER else ACCENT)
-        ctx.centeredText(this.font, "Done", doneX() + BTN_W / 2, by + (BTN_H - 8) / 2, 0xFFFFFFFF.toInt())
-
-        val rHov = inRect(mouseX, mouseY, resetX(), by, BTN_W, BTN_H)
-        val rFill = if (resetArmed) 0xFFAA3333.toInt() else if (rHov) 0xFF553333.toInt() else 0xFF442222.toInt()
-        ctx.fill(resetX(), by, resetX() + BTN_W, by + BTN_H, rFill)
-        ctx.centeredText(
-            this.font, if (resetArmed) "§fSure?" else "Reset shown",
-            resetX() + BTN_W / 2, by + (BTN_H - 8) / 2, 0xFFFFCCCC.toInt()
-        )
-
-        renderSidebar(ctx, mouseX, mouseY)
+        drawReadout(sel)
+        if (!sideOpen) drawControls()
+        drawButtons(mouseX, mouseY)
+        renderSidebar(mouseX, mouseY)
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
 
-    private fun renderSidebar(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
+    private fun drawReadout(sel: HudEntry?) {
+        val ts = 6.5f
+        val lead = sel?.name() ?: if (picked.isEmpty()) "Hover the left edge to pick a HUD to move" else "Click a HUD to select it"
+        val rest = if (sel != null) "  ·  ${Math.round(sel.scale() * 100)}%  ·  x ${sel.getX().asInt}, y ${sel.getY().asInt}" else ""
+        val lw = UiRecorder.textWidth(lead, ts) + if (sel != null) 0.4f else 0f
+        val pw = lw + UiRecorder.textWidth(rest, ts) + 18f
+        val ph = 13f
+        val px = (this.width - pw) / 2f
+        val py = 6f
+        UiRecorder.roundedRectRing(px, py, pw, ph, ph / 2f, 1f, PILL_BG, PILL_BORDER)
+        val ty = py + (ph - ts) / 2f
+        if (sel != null) {
+            UiRecorder.textBold(lead, px + 9f, ty, ts, ACCENT_HOVER)
+            UiRecorder.text(rest, px + 9f + lw, ty, ts, PILL_TEXT)
+        } else {
+            UiRecorder.text(lead, px + 9f, ty, ts, PILL_TEXT)
+        }
+    }
+
+    private fun drawControls() {
+        val rows = if (showControls) CONTROLS else listOf("F1" to "Show controls")
+        val ts = 6f
+        val ks = 5.5f
+        val rowH = 10f
+        val capH = rowH - 2f
+        val pad = 5f
+        val capCol = rows.maxOf { UiRecorder.textWidth(it.first, ks) } + 6f
+        val cw = pad * 2 + capCol + 5f + rows.maxOf { UiRecorder.textWidth(it.second, ts) }
+        val ch = pad * 2 + rows.size * rowH - 2f
+        val cx = 6f
+        val cy = this.height - 6f - ch
+        UiRecorder.roundedRectRing(cx, cy, cw, ch, 5f, 1f, PILL_BG, PILL_BORDER)
+        var y = cy + pad
+        for ((k, t) in rows) {
+            UiRecorder.roundedRectRing(cx + pad, y, UiRecorder.textWidth(k, ks) + 6f, capH, 2f, 1f, CAP_BG, CAP_BORDER)
+            UiRecorder.text(k, cx + pad + 3f, y + (capH - ks) / 2f, ks, TEXT)
+            UiRecorder.text(t, cx + pad + capCol + 5f, y + (capH - ts) / 2f, ts, LABEL)
+            y += rowH
+        }
+    }
+
+    private fun drawButtons(mouseX: Int, mouseY: Int) {
+        val ts = 7f
+        val by = btnY().toFloat()
+        val bw = BTN_W.toFloat()
+        val bh = BTN_H.toFloat()
+        val ty = by + (bh - ts) / 2f
+
+        val dx = doneX().toFloat()
+        val dHov = inRect(mouseX, mouseY, doneX(), btnY(), BTN_W, BTN_H)
+        UiRecorder.fillPillBar(dx, by, bw, bh, if (dHov) ACCENT_HOVER else ACCENT)
+        centerText("Done", dx + bw / 2f, ty, ts, ON_ACCENT)
+
+        val rx = resetX().toFloat()
+        val rHov = inRect(mouseX, mouseY, resetX(), btnY(), BTN_W, BTN_H)
+        if (resetArmed) {
+            UiRecorder.fillPillBar(rx, by, bw, bh, if (rHov) ScreenTheme.DANGER_HOVER else ScreenTheme.DANGER)
+            centerText("Sure?", rx + bw / 2f, ty, ts, 0xFF2A0B0B.toInt())
+        } else {
+            UiRecorder.roundedRectRing(
+                rx, by, bw, bh, bh / 2f, 1f, if (rHov) 0xF2231A1D.toInt() else 0xE614181D.toInt(),
+                if (rHov) ScreenTheme.DANGER_HOVER else 0x80E05A5A.toInt()
+            )
+            centerText("Reset shown", rx + bw / 2f, ty, ts, if (rHov) ScreenTheme.DANGER_HOVER else ScreenTheme.DANGER)
+        }
+    }
+
+    private fun rowBg(y: Float, color: Int) = UiRecorder.fillRoundedRect(3f, y + 0.5f, SIDE_W - 8f, SIDE_ROW - 1f, 3f, color)
+
+    private fun renderSidebar(mouseX: Int, mouseY: Int) {
         if (!sideOpen) {
-            val hy = handleY()
-            ctx.fill(0, hy, HANDLE_W, hy + HANDLE_H, SIDE_BG)
-            ctx.fill(HANDLE_W - 1, hy, HANDLE_W, hy + HANDLE_H, ACCENT)
-            ctx.text(this.font, "›", 3, hy + HANDLE_H / 2 - 4, 0xFFFFFFFF.toInt(), false)
+            val hy = handleY().toFloat()
+            UiRecorder.dropShadow(-6f, hy, HANDLE_W + 6f, HANDLE_H.toFloat(), 5f, 6f, 0x50000000)
+            UiRecorder.roundedRectRing(-6f, hy, HANDLE_W + 6f, HANDLE_H.toFloat(), 5f, 1f, SIDE_BG, ACCENT)
+            UiRecorder.chevron(2.5f, hy + HANDLE_H / 2f, false, ACCENT_HOVER)
             return
         }
         sideScroll = Math.max(0, Math.min(sideMaxScroll(), sideScroll))
-        ctx.fill(0, 0, SIDE_W, this.height, SIDE_BG)
-        ctx.fill(SIDE_W - 1, 0, SIDE_W, this.height, ACCENT)
-        ctx.text(this.font, "Pick HUDs to move", 8, 8, 0xFFFFFFFF.toInt(), true)
+        val sh = this.height.toFloat()
+        UiRecorder.dropShadow(-10f, 4f, SIDE_W + 10f, sh - 8f, 8f, 18f, 0x73000000)
+        UiRecorder.roundedRectRing(-10f, 4f, SIDE_W + 10f, sh - 8f, 8f, 1f, SIDE_BG, ACCENT)
+        UiRecorder.textBold("Pick HUDs to move", 8f, 9f, 7.5f, TEXT)
 
-        val sx1 = SIDE_W - 7
-        val sHov = mouseX in 6..sx1 && mouseY in SEARCH_Y..(SEARCH_Y + SEARCH_H)
-        ctx.fill(6, SEARCH_Y, sx1, SEARCH_Y + SEARCH_H, 0xFF0B0F12.toInt())
-        outline(ctx, 6, SEARCH_Y, sx1 - 6, SEARCH_H, if (searchFocused) ACCENT else if (sHov) 0xFF5A606A.toInt() else 0xFF3A3F48.toInt())
-        val tx = 10
-        val ty = SEARCH_Y + (SEARCH_H - 8) / 2
+        val sw = SIDE_W - 13
+        val sHov = mouseX in 6..(6 + sw) && mouseY in SEARCH_Y..(SEARCH_Y + SEARCH_H)
+        val border = if (searchFocused) ACCENT else if (sHov) 0xFF5A606A.toInt() else CAP_BORDER
+        UiRecorder.roundedRectRing(6f, SEARCH_Y.toFloat(), sw.toFloat(), SEARCH_H.toFloat(), 4f, 1f, 0xFF0B0F12.toInt(), border)
         if (search.value.isEmpty() && !searchFocused) {
-            ctx.text(this.font, "§8Search HUDs…", tx, ty, 0xFFFFFFFF.toInt(), false)
+            UiRecorder.text("Search HUDs…", 9f, SEARCH_Y + (SEARCH_H - 6.5f) / 2f, 6.5f, FAINT)
         } else {
-            val shown = this.font.plainSubstrByWidth(search.value, sx1 - tx - 8, true)
-            ctx.text(this.font, shown, tx, ty, 0xFFFFFFFF.toInt(), false)
-            if (searchFocused && (System.currentTimeMillis() / 500) % 2 == 0L) {
-                ctx.text(this.font, "_", tx + this.font.width(shown), ty, 0xFFFFFFFF.toInt(), false)
-            }
+            ScreenTheme.nTextFieldContent(search, searchFocused, 6, SEARCH_Y, sw, SEARCH_H, 6.5f)
         }
-        ctx.text(this.font, "§8Click a category to pick it all", 8, SEARCH_Y + SEARCH_H + 4, 0xFFFFFFFF.toInt(), false)
-        ctx.text(this.font, "§8Shift-click to add more", 8, SEARCH_Y + SEARCH_H + 13, 0xFFFFFFFF.toInt(), false)
+        UiRecorder.text("Click a category to pick it all", 8f, SEARCH_Y + SEARCH_H + 5f, 6f, FAINT)
+        UiRecorder.text("Shift-click to add more", 8f, SEARCH_Y + SEARCH_H + 13f, 6f, FAINT)
 
-        ctx.enableScissor(0, SIDE_TOP, SIDE_W - 1, this.height)
+        UiRecorder.pushScissor(0f, SIDE_TOP.toFloat(), SIDE_W - 1f, sh - SIDE_TOP - 5f)
         val hovRow = if (mouseX < SIDE_W) rowAt(mouseY) else null
-        var y = SIDE_TOP - sideScroll + 2
+        var y = SIDE_TOP - sideScroll
         for (row in sidebarRows()) {
             if (y + SIDE_ROW >= SIDE_TOP && y < this.height) {
+                val yf = y.toFloat()
+                val ty = yf + (SIDE_ROW - 6.5f) / 2f
+                val hov = row === hovRow
                 when (row) {
                     is Row.Header -> {
                         val clickable = row.items.isNotEmpty()
-                        if (clickable && row === hovRow) {
-                            ctx.fill(0, y, SIDE_W - 1, y + SIDE_ROW, ROW_HOV)
-                            val tag = "§7pick all"
-                            ctx.text(this.font, tag, SIDE_W - 8 - this.font.width(tag), y + 3, 0xFFFFFFFF.toInt(), false)
+                        if (clickable && hov) {
+                            rowBg(yf, ROW_HOV)
+                            val tag = "pick all"
+                            UiRecorder.text(tag, SIDE_W - 9f - UiRecorder.textWidth(tag, 5.5f), yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, SUBTEXT)
                         }
                         val all = clickable && row.items.all { it.name() in picked }
-                        val c = if (!clickable) "§8" else if (all) "§b" else "§3"
-                        ctx.text(this.font, c + row.text.uppercase(), 8, y + 3, 0xFFFFFFFF.toInt(), false)
+                        val c = if (!clickable) 0xFF555B63.toInt() else if (all) ACCENT_HOVER else ACCENT
+                        UiRecorder.textBold(row.text.uppercase(), 8f, yf + (SIDE_ROW - 6f) / 2f, 6f, c)
                     }
                     is Row.Action -> {
-                        if (row === hovRow) ctx.fill(0, y, SIDE_W - 1, y + SIDE_ROW, ROW_HOV)
-                        ctx.text(this.font, "§7" + row.text, 8, y + 2, 0xFFFFFFFF.toInt(), false)
+                        if (hov) rowBg(yf, ROW_HOV)
+                        UiRecorder.text(row.text, 8f, ty, 6.5f, if (hov) TEXT else SUBTEXT)
                     }
                     is Row.Hud -> {
                         val on = row.e.name() in picked
-                        if (on) ctx.fill(0, y, SIDE_W - 1, y + SIDE_ROW, ROW_PICKED)
-                        if (row === hovRow) ctx.fill(0, y, SIDE_W - 1, y + SIDE_ROW, ROW_HOV)
-                        if (on) ctx.fill(0, y, 2, y + SIDE_ROW, ACCENT)
-                        val name = if (this.font.width(row.e.name()) > SIDE_W - 40) this.font.plainSubstrByWidth(row.e.name(), SIDE_W - 46) + "…" else row.e.name()
+                        if (on) rowBg(yf, ROW_PICKED)
+                        if (hov) rowBg(yf, ROW_HOV)
+                        if (on) UiRecorder.fillRoundedRect(4f, yf + 2.5f, 2f, SIDE_ROW - 5f, 1f, ACCENT)
                         val off = !row.e.isVisible()
-                        val col = if (off) 0xFF666666.toInt() else if (on) 0xFFFFFFFF.toInt() else 0xFFAAAAAA.toInt()
-                        ctx.text(this.font, name, 12, y + 2, col, false)
-                        if (off) ctx.text(this.font, "§8off", SIDE_W - 22, y + 2, 0xFFFFFFFF.toInt(), false)
+                        val col = if (off) 0xFF666B72.toInt() else if (on) TEXT else LABEL
+                        UiRecorder.text(ellipsize(row.e.name(), SIDE_W - 46f, 6.5f), 12f, ty, 6.5f, col)
+                        if (off) {
+                            val tw = UiRecorder.textWidth("off", 5.5f)
+                            val ox = SIDE_W - 10f - tw - 6f
+                            UiRecorder.fillRoundedRect(ox, yf + 2.5f, tw + 6f, SIDE_ROW - 5f, 2.5f, OFF_BG)
+                            UiRecorder.text("off", ox + 3f, yf + (SIDE_ROW - 5.5f) / 2f, 5.5f, SUBTEXT)
+                        }
                     }
                 }
             }
             y += SIDE_ROW
         }
-        ctx.disableScissor()
+        UiRecorder.popScissor()
+    }
+
+    // Scale 1 so the chrome shares the editor's gui coords and hit-testing stays exact.
+    override fun paintUiOverlay() {
+        UiRenderer.paint(this.width, this.height, 1f)
     }
 
     // ---- input ---------------------------------------------------------------------------------
