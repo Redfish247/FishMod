@@ -33,6 +33,7 @@ object Phase {
 
     private var inFloor7 = false
     private var stormDead = false
+    private var stormKillAnnounced = false
     private var runOver = false
 
     @ConfigValue @JvmField var enableSplits: Boolean = false
@@ -78,6 +79,7 @@ object Phase {
         currentPhase = -1
         inFloor7 = false
         stormDead = false
+        stormKillAnnounced = false
         runOver = false
     }
 
@@ -119,16 +121,20 @@ object Phase {
         }
 
         if (inP2()) {
+            // Enraged fires once per crush; only the first counts as the kill.
+            if (string == "⚠ Storm is enraged! ⚠" && !stormKillAnnounced) {
+                stormKillAnnounced = true
+                announceStormKill(splits)
+            }
             if (string == "[BOSS] Storm: I should have known that I stood no chance.") {
                 stormDead = true
-                announceStormKill(splits)
             }
         }
 
         return false
     }
 
-    // P2 start ("Pathetic Maxor") to Storm's death line.
+    // P2 start ("Pathetic Maxor") to Storm's first crush.
     private fun announceStormKill(splits: List<Split>) {
         if (PracticeMode.active) return
         val f = floor ?: return

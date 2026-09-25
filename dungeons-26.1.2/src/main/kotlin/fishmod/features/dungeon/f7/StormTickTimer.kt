@@ -60,7 +60,8 @@ object StormTickTimer {
         )
         Events.ON_GAME_MESSAGE.register { text ->
             if (!Location.inDungeon() || !Phase.inP2()) return@register false
-            if (PATTERN.matcher(text.string).find()) {
+            // Enraged fires once per crush; only the first is the kill.
+            if (deathTime == 0.0 && PATTERN.matcher(text.string).find()) {
                 deathTime = timer.tick * Constants.TICK_DURATION
                 deathStartDisplayTime = System.currentTimeMillis()
                 CritTracker.onStormDeath(deathTime)
