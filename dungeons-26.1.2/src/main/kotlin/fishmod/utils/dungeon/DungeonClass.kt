@@ -16,7 +16,7 @@ enum class DungeonClass {
 
     companion object {
         private val PATTERN: Pattern = Pattern.compile("^\\[(Archer|Berserk|Healer|Mage|Tank)]")
-        private val NAME_CLASS_PATTERN: Pattern = Pattern.compile("^\\[\\d+] (.+) \\((Archer|Berserk|Healer|Mage|Tank) ")
+        private val NAME_CLASS_PATTERN: Pattern = Pattern.compile("^\\[\\d+] (?:\\[[^\\]]+] )*(\\w{1,16})\\b.*?\\((Archer|Berserk|Healer|Mage|Tank) ")
 
         private val STATS_DOUBLED_PATTERN: Pattern =
             Pattern.compile("Your (Archer|Berserk|Healer|Mage|Tank) stats are doubled because you are the only player using this class!")
@@ -60,11 +60,11 @@ enum class DungeonClass {
             Events.ON_PLAYER_ENTRY.register { receivedEntry ->
                 if (receivedEntry == null) return@register false
                 val text = receivedEntry.displayName() ?: return@register false
-                val string = text.string
+                val string = fishmod.utils.Constants.STRIP_COLOR_REGEX.replace(text.string, "").trim()
                 val matcher = NAME_CLASS_PATTERN.matcher(string)
 
                 if (matcher.find()) {
-                    val name = matcher.group(1).trim().substringAfterLast(' ')
+                    val name = matcher.group(1)
                     val className = parseClass(matcher.group(2))
                     if (className == null) return@register false
 
