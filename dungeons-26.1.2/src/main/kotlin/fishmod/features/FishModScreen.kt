@@ -2567,7 +2567,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                     if (s is SliderIntSetting || s is SliderDoubleSetting) {
                         val slx = leftX + 2
                         val slw = rightX - leftX - 4
-                        val sly = ssy + TWO_LINE_CTRL_Y
+                        val sly = ssy + SLIDER_CTRL_Y
                         if (mx >= slx && mx <= slx + slw && my >= sly - 4 && my <= sly + SLIDER_H + 4) {
                             activeSlider = s; activeSliderX = slx; activeSliderW = slw; s.onDrag(mx, slx, slw); return true
                         }
@@ -2987,13 +2987,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             st(ctx, tr, name, leftX + 2, sy + 2, TEXT_COLOR)
             val slx = leftX + 2
             val slw = rightX - leftX - 4
-            val sly = sy + TWO_LINE_CTRL_Y
+            val sly = sy + SLIDER_CTRL_Y
             val pct = (getter() - min).toFloat() / (max - min)
             pill(ctx, slx, sly, slx + slw, sly + SLIDER_H, SLIDER_BG)
             val fillW = (slw * pct).toInt()
             if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
             val v = getter().toString()
-            st(ctx, tr, v, slx + slw - stw(tr, v), sly - 9, SUBTEXT_COLOR)
+            st(ctx, tr, v, slx + slw - stw(tr, v), sy + 2, SUBTEXT_COLOR)
         }
         override fun onDrag(mx: Int, sx: Int, sliderW: Int) {
             val pct = Mth.clamp((mx - sx).toFloat() / sliderW, 0f, 1f)
@@ -3009,13 +3009,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             st(ctx, tr, name, leftX + 2, sy + 2, TEXT_COLOR)
             val slx = leftX + 2
             val slw = rightX - leftX - 4
-            val sly = sy + TWO_LINE_CTRL_Y
+            val sly = sy + SLIDER_CTRL_Y
             val pct = ((getter() - min) / (max - min)).toFloat()
             pill(ctx, slx, sly, slx + slw, sly + SLIDER_H, SLIDER_BG)
             val fillW = (slw * pct).toInt()
             if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
             val v = String.format("%.1f", getter())
-            st(ctx, tr, v, slx + slw - stw(tr, v), sly - 9, SUBTEXT_COLOR)
+            st(ctx, tr, v, slx + slw - stw(tr, v), sy + 2, SUBTEXT_COLOR)
         }
         override fun onDrag(mx: Int, sx: Int, sliderW: Int) {
             val pct = Mth.clamp((mx - sx).toFloat() / sliderW, 0f, 1f)
@@ -3738,7 +3738,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val SUBCAT_HEIGHT = 13
         private const val SUBCAT_HEIGHT_2 = 22
         private const val TWO_LINE_H = 36
-        private const val SLIDER_ROW_H = 28
+        private const val SLIDER_ROW_H = 24
+        // Bar sits right under its label; the gap goes below the bar.
+        private const val SLIDER_CTRL_Y = 13
         private const val TWO_LINE_CTRL_Y = 20
 
         private const val NVG_BASE_TEXT_SIZE = 9.5f
