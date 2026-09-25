@@ -4,9 +4,6 @@ import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.config.values.Floor7
 import fishmod.utils.dungeon.Section
-import fishmod.features.dungeon.f7.s4.S4Alerts
-import fishmod.features.dungeon.f7.s4.S4DebugHud
-import fishmod.features.dungeon.f7.s4.S4Tracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
@@ -42,6 +39,13 @@ object F7Huds {
     var stormDeathTime: HUDComponent = HUDComponent(
         10.0, 92.0, 40, 10, 1f, "Storm Death Time",
         { false }, StormTickTimer::renderDeathTime, { Floor7.enableTickTimers && Floor7.enableStormDeathTime }
+    )
+
+    @JvmField
+    @ConfigValue
+    var pyTimer: HUDComponent = HUDComponent(
+        10.0, 116.0, TICK_W, 10, 1f, "Py Tick Timer",
+        { false }, StormTickTimer::renderPyTimer, { Floor7.enableTickTimers && Floor7.enablePyTimer }
     )
 
     @JvmField
@@ -102,16 +106,9 @@ object F7Huds {
 
     @JvmField
     @ConfigValue
-    var s4Alert: HUDComponent = HUDComponent(
-        0.0, 0.0, 160, 12, 1.5f, "S4 Alert",
-        { false }, S4Alerts::render, { Floor7.s4AlertsEnabled }
-    )
-
-    @JvmField
-    @ConfigValue
-    var s4DebugHud: HUDComponent = HUDComponent(
-        10.0, 220.0, 120, 60, 1f, "S4 Debug",
-        { false }, S4DebugHud::render, { Floor7.s4DebugHudEnabled }
+    var playersLeaped: HUDComponent = HUDComponent(
+        0.0, 0.0, 110, 10, 1f, "Players Leaped",
+        { false }, PlayersLeaped::render, { Floor7.playersLeapedEnabled }
     )
 
     @JvmStatic
@@ -127,8 +124,8 @@ object F7Huds {
         DeviceNotifier.init()
         MelodyWarning.init()
         SectionCompletion.init()
-        S4Tracker.init()
         GateDisplay.init()
+        PlayersLeaped.init()
         BloodSolver.init()
     }
 
@@ -141,14 +138,14 @@ object F7Huds {
         renderOne(ctx, sectionProgress, SectionProgress.display(), SectionProgress::render, 10, 142)
         renderOne(ctx, Section.terminalSplits, Section.display(), Section::render, 10, 154)
         renderOne(ctx, lbReleaseTimer, StormTickTimer.displayLbReleaseTimer(), StormTickTimer::renderLbReleaseTimer, 10, 166)
+        renderOne(ctx, pyTimer, StormTickTimer.displayPyTimer(), StormTickTimer::renderPyTimer, 10, 178)
         renderOne(ctx, crystalReminder, CrystalSpawn.displayNotification(), CrystalSpawn::renderNotification, 10, 40)
         renderOne(ctx, stormCrush, PillarExplode.display(), PillarExplode::render, 10, 28)
         renderOne(ctx, currentSection, CurrentSection.display(), CurrentSection::render, 10, 202)
         renderOne(ctx, deviceNotifier, DeviceNotifier.display(), DeviceNotifier::render, 10, 52)
         renderOne(ctx, melodyWarning, MelodyWarning.display(), MelodyWarning::render, 10, 64)
         renderOne(ctx, sectionCompletion, SectionCompletion.display(), SectionCompletion::render, 10, 16)
-        renderOne(ctx, s4Alert, S4Alerts.display(), S4Alerts::render, 0, 90)
-        renderOne(ctx, s4DebugHud, S4DebugHud.display(), S4DebugHud::render, 10, 220)
+        renderOne(ctx, playersLeaped, PlayersLeaped.display(), PlayersLeaped::render, 10, 90)
     }
 
     private fun renderOne(

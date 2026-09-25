@@ -432,6 +432,7 @@ class FishModInit : ModInitializer {
         fishmod.features.RenderOptimizer.init()
         fishmod.features.NoCursorReset.init()
         fishmod.features.SlotBinds.init()
+        fishmod.features.SlotLocking.init()
         fishmod.features.other.SearchBar.init()
         fishmod.features.BridgeBot.init()
         twitchbridge.TwitchBridgeClient.init()
@@ -453,6 +454,13 @@ class FishModInit : ModInitializer {
         fishmod.features.dungeon.KeyNotifier.init()
         fishmod.features.dungeon.AutoRequeue.init()
         fishmod.features.dungeon.Blessings.init()
+        fishmod.features.dungeon.QuizHud.init()
+        fishmod.features.dungeon.SecretOverlay.init()
+        fishmod.features.dungeon.IceSprayTimer.init()
+        fishmod.features.PetSwapTitle.init()
+        fishmod.features.PetIcons.init()
+        fishmod.features.dungeon.f7.StormOverAlert.init()
+        fishmod.features.PerformanceHud.init()
         fishmod.features.dungeon.InvincibilityTracker.init()
         fishmod.features.dungeon.SecretClicked.init()
         fishmod.features.dungeon.RouteRecorder.init()
@@ -482,6 +490,7 @@ class FishModInit : ModInitializer {
         FishHudEditor.register("Crystal Reminder", fishmod.features.dungeon.f7.F7Huds.crystalReminder)
         FishHudEditor.register("Storm Death Time", fishmod.features.dungeon.f7.F7Huds.stormDeathTime)
         FishHudEditor.register("LB Release Timer", fishmod.features.dungeon.f7.F7Huds.lbReleaseTimer)
+        FishHudEditor.register("Py Tick Timer", fishmod.features.dungeon.f7.F7Huds.pyTimer)
         FishHudEditor.register("Storm Crushed", fishmod.features.dungeon.f7.F7Huds.stormCrush)
         FishHudEditor.register("Term Start Timer", fishmod.features.dungeon.f7.F7Huds.termStartTimer)
         FishHudEditor.register("Section Progress", fishmod.features.dungeon.f7.F7Huds.sectionProgress)
@@ -489,8 +498,7 @@ class FishModInit : ModInitializer {
         FishHudEditor.register("Device Completed", fishmod.features.dungeon.f7.F7Huds.deviceNotifier)
         FishHudEditor.register("Melody Warning", fishmod.features.dungeon.f7.F7Huds.melodyWarning)
         FishHudEditor.register("Section Completion", fishmod.features.dungeon.f7.F7Huds.sectionCompletion)
-        FishHudEditor.register("S4 Alert", fishmod.features.dungeon.f7.F7Huds.s4Alert)
-        FishHudEditor.register("S4 Debug", fishmod.features.dungeon.f7.F7Huds.s4DebugHud)
+        FishHudEditor.register("Players Leaped", fishmod.features.dungeon.f7.F7Huds.playersLeaped)
         FishHudEditor.register("Goldor Splits", fishmod.utils.dungeon.Section.terminalSplits)
         fishmod.utils.dungeon.DungeonClass.init()
         fishmod.features.ClassColoredBoots.init()
@@ -572,6 +580,12 @@ class FishModInit : ModInitializer {
                         Constants.SUCCESS
                     })
                     .then(waypointSubcommand("wp"))
+                    .then(ClientCommands.literal("pm")
+                        .executes { fishmod.features.dungeon.DungeonWaypoints.togglePmEdit(); Constants.SUCCESS }
+                        .then(ClientCommands.literal("message")
+                            .then(ClientCommands.argument("text", StringArgumentType.greedyString()).executes { ctx ->
+                                fishmod.features.dungeon.DungeonWaypoints.setPmMessage(StringArgumentType.getString(ctx, "text")); Constants.SUCCESS
+                            })))
                     .then(waypointSubcommand("waypoint"))
                     .then(waypointSubcommand("waypoints"))
                     .then(fishmod.features.dungeon.RouteRecorder.command())
@@ -588,6 +602,17 @@ class FishModInit : ModInitializer {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().setScreen(fishmod.features.FishModScreen())
                         }
+                        Constants.SUCCESS
+                    }
+            )
+            dispatcher.register(
+                ClientCommands.literal("pbsplits")
+                    .then(ClientCommands.argument("floor", StringArgumentType.word()).executes { ctx ->
+                        fishmod.utils.dungeon.Phase.pbSplitsCommand(StringArgumentType.getString(ctx, "floor"))
+                        Constants.SUCCESS
+                    })
+                    .executes {
+                        fishmod.utils.dungeon.Phase.pbSplitsCommand(null)
                         Constants.SUCCESS
                     }
             )
@@ -1300,6 +1325,10 @@ class FishModInit : ModInitializer {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "session_stats")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) SessionStats.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "warp_cooldown")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.WarpCooldown.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "blessings")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.Blessings.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "quiz_hud")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.QuizHud.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "secret_overlay")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.SecretOverlay.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "storm_over")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.StormOverAlert.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "performance")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.PerformanceHud.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "invincibility")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.InvincibilityTracker.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "relic_timer")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.M7Relics.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "spring_boots")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.SpringBoots.renderHud(ctx, tickCounter) }

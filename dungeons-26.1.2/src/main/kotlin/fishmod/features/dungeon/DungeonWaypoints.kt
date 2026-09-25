@@ -39,6 +39,9 @@ object DungeonWaypoints {
     private const val ROUTE_LINE_ARGB = 0x99FFFFFF.toInt()
 
     private var editMode = false
+    private var pmEditMode = false
+    private var pmMessage: String? = null
+    private var pmStanding: Set<String> = emptySet()
     private var fill = false
     private var size = 0.5
     private var distance = 20
@@ -72,7 +75,8 @@ object DungeonWaypoints {
         @JvmField val throughWalls: Boolean,
         @JvmField val title: String?,
         @JvmField val routeId: String?,
-        @JvmField val routeOrder: Int
+        @JvmField val routeOrder: Int,
+        @JvmField val message: String? = null
     ) {
         @JvmField val center: Vec3 = box.center
         @JvmField val titleComponent: Component? = if (title != null && title.isNotBlank()) Component.literal(title) else null
@@ -82,6 +86,7 @@ object DungeonWaypoints {
 
     private var cachedMergedOccluded: List<MergedGroup> = emptyList()
     private var cachedMergedThrough: List<MergedGroup> = emptyList()
+    private var cachedMergedPm: List<MergedGroup> = emptyList()
 
     @JvmStatic
     fun init() {
@@ -102,8 +107,27 @@ object DungeonWaypoints {
     }
 
     @JvmStatic
+    fun togglePmEdit() {
+        pmEditMode = !pmEditMode
+        if (pmEditMode) editMode = false
+        Misc.addChatMessage(Component.literal("Positional Message editing " + (if (pmEditMode) "§aenabled" else "§cdisabled") + "§r!"
+            + (if (pmEditMode) " §7Message: §f" + (pmMessage ?: "§cnone - /fm pm message <text>") else "")))
+    }
+
+    @JvmStatic
+    fun setPmMessage(text: String) {
+        pmMessage = text.trim().ifEmpty { null }
+        Misc.addChatMessage(Component.literal("§7[fm pm] Message: §f" + (pmMessage ?: "§cnone")))
+    }
+
+    @JvmStatic fun isPmEditMode(): Boolean = pmEditMode
+    @JvmStatic fun getPmMessage(): String = pmMessage ?: ""
+    @JvmStatic fun setPmMessageQuiet(text: String) { pmMessage = text.trim().ifEmpty { null } }
+
+    @JvmStatic
     fun toggleEdit() {
         editMode = !editMode
+        if (editMode) pmEditMode = false
         Misc.addChatMessage(Component.literal("Dungeon Waypoint editing " + (if (editMode) "§aenabled" else "§cdisabled") + "§r!"))
     }
 
@@ -368,12 +392,58 @@ object DungeonWaypoints {
         }
 
         advanceRouteProgress(mc)
+        checkPositionalMessages(mc)
 
         var fired = false
         while (placeKey != null && placeKey!!.consumeClick()) fired = true
-        if (fired && editMode && mc.screen == null) {
-            handlePlace(mc)
+        if (fired && mc.screen == null) {
+            if (editMode) handlePlace(mc)
+            else if (pmEditMode) handlePlacePm(mc)
         }
+    }
+
+    // Standing on top of a message block (connected blocks with the same message count as one area) sends it once.
+    private fun checkPositionalMessages(mc: Minecraft) {
+        if (!FishSettings.posMsgEnabled || pmEditMode) { pmStanding = emptySet(); return }
+        val pos = mc.player?.position() ?: return
+        val now = HashSet<String>()
+        for (w in liveWaypoints) {
+            val msg = w.message ?: continue
+            val b = w.box
+            if (pos.x >= b.minX && pos.x <= b.maxX && pos.z >= b.minZ && pos.z <= b.maxZ &&
+                pos.y >= b.maxY - 0.1 && pos.y <= b.maxY + 0.6) now.add(msg)
+        }
+        for (msg in now) if (msg !in pmStanding) fishmod.utils.ChatQueue.enqueue("pc " + msg)
+        pmStanding = now
+    }
+
+    private fun handlePlacePm(mc: Minecraft) {
+        if (mc.player!!.isShiftKeyDown || pmMessage == null) {
+            mc.setScreen(DungeonWaypointTitleScreen { text ->
+                if (text != null) { pmMessage = text; placePm(mc) }
+            })
+            return
+        }
+        placePm(mc)
+    }
+
+    // Always a full block; right-click an existing block to remove it.
+    private fun placePm(mc: Minecraft) {
+        val aim = aimPoint(mc)
+        val bb = aim.blockBox ?: return
+        var px = bb.center.x; var py = bb.center.y; var pz = bb.center.z
+        val key = globalKey()
+        if (isRoomKey(key)) {
+            val a = DungeonRoomAnchor.current() ?: return
+            val local = DungeonRoomAnchor.toLocal(a, BlockPos(Math.floor(px).toInt(), Math.floor(py).toInt(), Math.floor(pz).toInt()))
+            px = local.x + 0.5; py = local.y + 0.5; pz = local.z + 0.5
+        }
+        if (!DungeonWaypointStore.removeNear(key, px, py, pz, PLACE_EPSILON)) {
+            val w = StoredWaypoint(px, py, pz, 0.5, 0.5, 0.5, FishSettings.posMsgColor, true, false, null, null, null)
+            w.message = pmMessage
+            DungeonWaypointStore.add(key, w)
+        }
+        applyGlobal()
     }
 
     private fun groupRoutes(): Map<String, List<LiveWaypoint>> {
@@ -414,9 +484,8 @@ object DungeonWaypoints {
     private class AimResult(@JvmField val point: Vec3, @JvmField val blockBox: AABB?, @JvmField val exact: Vec3, @JvmField val face: Direction?)
 
     private fun playerEyePos(mc: Minecraft): Vec3? {
-        val p = mc.player ?: return null
-        val delta = mc.deltaTracker.getGameTimeDeltaPartialTick(false)
-        return p.getEyePosition(delta).add(p.getViewVector(delta).scale(0.2))
+        if (mc.player == null) return null
+        return RenderUtils.cameraLineStart(0.2)
     }
 
     private fun aimPoint(mc: Minecraft): AimResult {
@@ -538,6 +607,7 @@ object DungeonWaypoints {
             liveWaypoints = ArrayList()
             cachedMergedOccluded = emptyList()
             cachedMergedThrough = emptyList()
+            cachedMergedPm = emptyList()
             return
         }
 
@@ -554,11 +624,12 @@ object DungeonWaypoints {
                 c.x - w.halfX, c.y - w.halfY, c.z - w.halfZ,
                 c.x + w.halfX, c.y + w.halfY, c.z + w.halfZ
             )
-            result.add(LiveWaypoint(box, w.color, w.filled, w.throughWalls, w.title, w.routeId, w.routeOrder))
+            result.add(LiveWaypoint(box, w.color, w.filled, w.throughWalls, w.title, w.routeId, w.routeOrder, w.message))
         }
         liveWaypoints = result
         cachedMergedOccluded = buildMergedGroups(throughWalls = false)
         cachedMergedThrough = buildMergedGroups(throughWalls = true)
+        cachedMergedPm = buildPmGroups()
     }
 
     @JvmStatic
@@ -721,7 +792,7 @@ object DungeonWaypoints {
 
     private fun buildMergedGroups(throughWalls: Boolean): List<MergedGroup> {
         val candidates = liveWaypoints.filter {
-            it.throughWalls == throughWalls && it.routeId == null && it.titleComponent == null && !isFlatPixel(it.box)
+            it.message == null && it.throughWalls == throughWalls && it.routeId == null && it.titleComponent == null && !isFlatPixel(it.box)
         }
         val result = ArrayList<MergedGroup>()
         for ((key, group) in candidates.groupBy { Pair(it.color, it.filled) }) {
@@ -731,9 +802,18 @@ object DungeonWaypoints {
         return result
     }
 
+    private fun buildPmGroups(): List<MergedGroup> {
+        val result = ArrayList<MergedGroup>()
+        for ((key, group) in liveWaypoints.filter { it.message != null }.groupBy { Pair(it.color, it.message) }) {
+            val (quads, edges) = traceSurface(group.map { it.box }) ?: continue
+            result.add(MergedGroup(key.first, true, quads, edges))
+        }
+        return result
+    }
+
     private fun buildSingles(throughWalls: Boolean): List<LiveWaypoint> =
         liveWaypoints.filter {
-            it.throughWalls == throughWalls && !reached(it) &&
+            it.message == null && it.throughWalls == throughWalls && !reached(it) &&
                 (it.routeId != null || it.titleComponent != null || isFlatPixel(it.box))
         }
 
@@ -761,6 +841,9 @@ object DungeonWaypoints {
     }
 
     private fun renderGizmo() {
+        if (FishSettings.posMsgEnabled && (FishSettings.posMsgShowBlocks || pmEditMode)) {
+            for (g in cachedMergedPm) { drawMergedFillGizmo(g); drawMergedOutlineGizmo(g) }
+        }
         if (!FishSettings.dungeonWaypointsEnabled) return
         val mc = Minecraft.getInstance()
         for (g in cachedMergedOccluded) {
@@ -771,7 +854,7 @@ object DungeonWaypoints {
             else RenderUtils.gizmoThickOutline(w.box, w.color, lineWidth)
         }
         for (w in liveWaypoints) {
-            if (w.throughWalls || reached(w) || w.titleComponent == null) continue
+            if (w.message != null || w.throughWalls || reached(w) || w.titleComponent == null) continue
             RenderUtils.gizmoText(w.titleComponent, Vec3(w.center.x, w.box.maxY + 0.4, w.center.z), 1.0f, -0x1)
         }
         val eye = playerEyePos(mc)
@@ -795,11 +878,14 @@ object DungeonWaypoints {
                 else RenderUtils.renderThickOutline(matrices, vc, w.box, rgba, lineWidth)
             }
             for (w in liveWaypoints) {
-                if (!w.throughWalls || reached(w) || w.titleComponent == null) continue
+                if (w.message != null || !w.throughWalls || reached(w) || w.titleComponent == null) continue
                 RenderUtils.renderText(ctx, matrices, w.titleComponent, w.center.x, w.box.maxY + 0.4, w.center.z, 1.0f)
             }
         }
 
+        if (pmEditMode && mc.player != null && mc.level != null) {
+            aimPoint(mc).blockBox?.let { RenderUtils.renderThickOutline(matrices, vc, it, floatArrayOf(1f, 0.67f, 0f, 0.9f), lineWidth) }
+        }
         if (editMode) {
             if (mc.player != null && mc.level != null) {
                 val aimResult = aimPoint(mc)
@@ -835,9 +921,14 @@ object DungeonWaypoints {
 
     @JvmStatic
     fun renderOverlay(ctx: GuiGraphicsExtractor) {
-        if (!editMode) return
         val mc = Minecraft.getInstance()
         if (mc.font == null) return
+        if (pmEditMode) {
+            val line = "§6[fm pm] §7message: §f" + (pmMessage ?: "§cnone") + " §8(shift+right-click to change)"
+            ctx.text(mc.font, line, ctx.guiWidth() / 2 - mc.font.width(line) / 2, ctx.guiHeight() / 2 + 30, -1, true)
+            return
+        }
+        if (!editMode) return
 
         val key = "$fill|$size|$distance|$useBlockSize|$pixelMode|$through|$type|$timer|$lineWidth|$recordingRouteId"
         if (key != cachedOverlayKey) {

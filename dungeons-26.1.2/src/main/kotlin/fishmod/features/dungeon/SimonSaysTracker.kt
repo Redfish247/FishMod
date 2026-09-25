@@ -62,6 +62,10 @@ object SimonSaysTracker {
     private val litPrev = HashSet<Long>()
     private val scanBuf = HashSet<Long>()
     private var scanCounter = 0
+    private var seqLen = 0
+    private var skipOver = false
+    private var buttonsUp: Boolean? = null
+    private val BUTTON_CHECK = BlockPos(110, 120, 93)
     private const val SCAN_INTERVAL_TICKS = 2
 
     private val SS_CHAT: Pattern = Pattern.compile("Simon Says: (\\d)/5")
@@ -143,7 +147,7 @@ object SimonSaysTracker {
 
         tickBreakState(client.level!!)
         if (broken) {
-            atDevice = false; deviceCenter = null; primed = false; burstFlashes = 0; litPrev.clear()
+            atDevice = false; deviceCenter = null; primed = false; burstFlashes = 0; litPrev.clear(); seqLen = 0; buttonsUp = null
             return
         }
 
@@ -162,42 +166,41 @@ object SimonSaysTracker {
 
         if (deviceCenter == null) {
             deviceCenter = DEVICE_CENTER
-            primed = false; burstFlashes = 0; litPrev.clear()
+            primed = false; seqLen = 0; skipOver = false; litPrev.clear(); buttonsUp = null
             if (debug) log("locked device center " + deviceCenter!!.toShortString())
         }
 
-        if (!client.level!!.hasChunk(deviceCenter!!.x shr 4, deviceCenter!!.z shr 4)) return
+        val world = client.level!!
+        if (!world.hasChunk(DEV_OBSIDIAN_X shr 4, DEV_Z_MIN shr 4)) return
 
-        scanCounter++
-        if (scanCounter < SCAN_INTERVAL_TICKS) return
-        scanCounter = 0
-
+        // NoammAddons approach: count lanterns lighting on the 4x4 grid, lock the stage in when the buttons come back.
         scanBuf.clear()
-        scanLitCells(client.level!!, deviceCenter!!, scanBuf)
-        val cur = scanBuf
-
-        if (!primed) { litPrev.clear(); litPrev.addAll(cur); primed = true; return }
-
-        var newlyLit = 0
-        for (p in cur) if (!litPrev.contains(p)) newlyLit++
-        litPrev.clear()
-        litPrev.addAll(cur)
-
-        if (newlyLit > 0) {
-            if (now - lastFlashMs > BURST_GAP_MS) {
-                if (burstFlashes > maxLen) maxLen = burstFlashes
-                burstFlashes = 0
-                val done = minOf(5, maxLen)
-                if (done in 1..4 && done > lastAnnounced) {
-                    lastAnnounced = done
-                    round = done
-                    announceRound(done)
-                }
-            }
-            burstFlashes += newlyLit
-            lastFlashMs = now
-            if (debug) log("flash +$newlyLit burst=$burstFlashes maxLen=$maxLen")
+        val m = BlockPos.MutableBlockPos()
+        for (y in DEV_Y_MIN..DEV_Y_MAX) for (z in DEV_Z_MIN..DEV_Z_MAX) {
+            m.set(DEV_OBSIDIAN_X, y, z)
+            if (world.getBlockState(m).block == Blocks.SEA_LANTERN) scanBuf.add(m.asLong())
         }
+        if (!primed) { litPrev.clear(); litPrev.addAll(scanBuf); primed = true }
+        else {
+            for (p in scanBuf) if (!litPrev.contains(p)) {
+                seqLen = (seqLen + 1).coerceAtMost(5)
+                if (FishSettings.simonSaysSkipCompat && seqLen == 2 && !skipOver) seqLen--
+                if (debug) log("flash seqLen=$seqLen")
+            }
+            litPrev.clear(); litPrev.addAll(scanBuf)
+        }
+
+        val btn = world.getBlockState(BUTTON_CHECK).block
+        val up = btn == Blocks.STONE_BUTTON
+        if (btn == Blocks.AIR) seqLen = 0
+        if (up && buttonsUp == false) {
+            skipOver = true
+            if (seqLen > 0 && seqLen > round && seqLen < 5) {
+                round = seqLen
+                if (round > lastAnnounced) { lastAnnounced = round; announceRound(round) }
+            }
+        }
+        buttonsUp = up
     }
 
     private fun tryComplete() {
@@ -324,6 +327,7 @@ object SimonSaysTracker {
         litPrev.clear()
         scanCounter = 0
         deviceCenter = null
+        seqLen = 0; skipOver = false; buttonsUp = null
     }
 
     @JvmStatic
