@@ -1,7 +1,11 @@
 package fishmod.features.storage
 
+import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.rendering.UiRecorder
+import fishmod.utils.rendering.UiRenderer
+import fishmod.utils.rendering.UiScale
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.EditBox
@@ -20,9 +24,12 @@ private const val GAP = 10
 private const val MARGIN = 14
 private const val TOP_BAR = 30
 private const val CARD_HEAD = 16
+private const val PANEL_R = 8
+private const val CARD_R = 4
 
 private const val BASE_TINT = 0x22_0A0A12
-private val PANEL_BG = 0xE00E1016.toInt()
+// opaque so vanilla fills and overlay pieces meet without a seam
+private val PANEL_BG = 0xFF0E1016.toInt()
 private val PANEL_BORDER = 0xFF2A2D38.toInt()
 private val CARD_BG = ScreenTheme.CARD_BG
 private val CARD_BORDER = 0xFF252932.toInt()
@@ -34,7 +41,7 @@ private val GOLD_SOFT = 0x40_F2C14E
 private val DIM = 0xC00E1016.toInt()
 private val KNOB = 0x55_C8D2E6
 
-class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
+class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOverlay {
 
     private var scroll = 0
     private var contentHeight = 0
@@ -42,6 +49,16 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
     private var loadAllRect = IntArray(4)
     private lateinit var search: EditBox
     private var lastQuery = ""
+    private var k = 1f
+    private var vw = 0
+    private var vh = 0
+
+    // per-screen "GUI Settings" size; layout runs in a (width / k, height / k) virtual space
+    private fun updateScale() {
+        k = UiScale.userScale(this)
+        vw = (width / k).toInt()
+        vh = (height / k).toInt()
+    }
 
     override fun extractBackground(ctx: GuiGraphicsExtractor, mx: Int, my: Int, d: Float) {}
     override fun extractTransparentBackground(ctx: GuiGraphicsExtractor) {}
@@ -61,11 +78,22 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
     private fun matches(stack: ItemStack, q: String): Boolean =
         !stack.isEmpty && stack.hoverName.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").lowercase().contains(q)
 
-    override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+    override fun paintUiOverlay() {
+        UiRenderer.paint(width, height, k)
+    }
+
+    // Vanilla layer holds only square fills under items; every rounded edge and all text go to the overlay.
+    override fun extractRenderState(ctx: GuiGraphicsExtractor, rawMouseX: Int, rawMouseY: Int, delta: Float) {
         titleRects.clear()
+        UiRecorder.clear()
+        updateScale()
+        val mouseX = (rawMouseX / k).toInt()
+        val mouseY = (rawMouseY / k).toInt()
         runCatching { ctx.blurBeforeThisStratum() }
         runCatching { ctx.nextStratum() }
-        ctx.fill(0, 0, width, height, BASE_TINT)
+        ctx.pose().pushMatrix()
+        ctx.pose().scale(k, k)
+        ctx.fill(0, 0, vw + 1, vh + 1, BASE_TINT)
 
         val q = query()
         if (q != lastQuery) { lastQuery = q; scroll = 0 }
@@ -75,13 +103,13 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
 
         val panelX = MARGIN
         val panelY = MARGIN
-        val panelX2 = width - MARGIN
-        val panelY2 = height - MARGIN
-        ScreenTheme.panel(ctx, panelX, panelY, panelX2, panelY2, 8, PANEL_BG, PANEL_BORDER)
+        val panelX2 = vw - MARGIN
+        val panelY2 = vh - MARGIN
+        drawPanel(ctx, panelX, panelY, panelX2, panelY2)
 
-        drawSearch(ctx, panelX + 10, panelY + 7)
-        drawLoadButton(ctx, panelX2 - 10, panelY + 7, mouseX, mouseY)
-        ctx.fill(panelX + 1, panelY + TOP_BAR, panelX2 - 1, panelY + TOP_BAR + 1, PANEL_BORDER)
+        drawSearch(panelX + 10, panelY + 7)
+        drawLoadButton(panelX2 - 10, panelY + 7, mouseX, mouseY)
+        ScreenTheme.nRect(panelX + 1, panelY + TOP_BAR, panelX2 - panelX - 2, 1, PANEL_BORDER)
 
         val viewTop = panelY + TOP_BAR + 1
         val viewBot = panelY2 - 6
@@ -92,6 +120,7 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
         val topBase = viewTop + 8 - scroll
 
         runCatching { ctx.enableScissor(panelX + 2, viewTop, panelX2 - 2, viewBot) }
+        UiRecorder.pushScissor((panelX + 2).toFloat(), viewTop.toFloat(), (panelX2 - panelX - 4).toFloat(), (viewBot - viewTop).toFloat())
         val dims = ArrayList<IntArray>()
         var hovered: ItemStack? = null
         var x = gridLeft
@@ -111,6 +140,7 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
             if (col >= cols) { col = 0; x = gridLeft; y += rowMaxH + GAP; rowMaxH = 0 } else x += cellW + GAP
         }
         contentHeight = (y + rowMaxH) - topBase + 16
+        UiRecorder.popScissor()
         runCatching { ctx.disableScissor() }
 
         // dims go in a later stratum so they sit over the item icons
@@ -126,49 +156,66 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
             val trackH = viewBot - viewTop
             val knobH = max(20, trackH * trackH / (trackH + maxScroll))
             val knobY = viewTop + (trackH - knobH) * scroll / maxScroll
-            ctx.fill(panelX2 - 6, knobY, panelX2 - 3, knobY + knobH, KNOB)
+            UiRecorder.fillRoundedRect((panelX2 - 6).toFloat(), knobY.toFloat(), 3f, knobH.toFloat(), 1.5f, KNOB)
         }
 
         if (data.isEmpty()) {
-            ctx.text(font, "§7Open §f/storage§7 and page through your ender chests / backpacks — they'll show up here.",
-                panelX + 16, viewTop + 16, -1)
+            ScreenTheme.nLegacyText("§7Open §f/storage§7 and page through your ender chests / backpacks — they'll show up here.",
+                panelX + 16, viewTop + 16, ScreenTheme.SUBTEXT_COLOR, 7.5f)
         }
 
-        if (hovered != null) ctx.setTooltipForNextFrame(font, hovered, mouseX, mouseY)
+        ctx.pose().popMatrix()
+
+        // our own tooltip, recorded last so it sits above all overlay content
+        val mc = minecraft
+        val hs = hovered
+        if (hs != null && mc != null) {
+            val lines = runCatching { Screen.getTooltipFromItem(mc, hs) }.getOrNull()
+            if (lines != null) ScreenTheme.nItemTooltip(lines, mouseX, mouseY, vw, vh)
+        }
     }
 
-    private fun drawSearch(ctx: GuiGraphicsExtractor, x: Int, y: Int) {
+    // vanilla cross-shaped fill + overlay corner pieces overlapping it by a pixel, then a smooth border
+    private fun drawPanel(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int) {
+        val r = PANEL_R
+        ctx.fill(x1 + r, y1, x2 - r, y2, PANEL_BG)
+        ctx.fill(x1, y1 + r, x1 + r, y2 - r, PANEL_BG)
+        ctx.fill(x2 - r, y1 + r, x2, y2 - r, PANEL_BG)
+        val s = (r * 2).toFloat()
+        val rf = r.toFloat()
+        cornerPiece(x1, y1, r + 1, r + 1, x1.toFloat(), y1.toFloat(), s, s, rf, 0f, 0f, 0f, PANEL_BG)
+        cornerPiece(x2 - r - 1, y1, r + 1, r + 1, x2 - s, y1.toFloat(), s, s, 0f, rf, 0f, 0f, PANEL_BG)
+        cornerPiece(x2 - r - 1, y2 - r - 1, r + 1, r + 1, x2 - s, y2 - s, s, s, 0f, 0f, rf, 0f, PANEL_BG)
+        cornerPiece(x1, y2 - r - 1, r + 1, r + 1, x1.toFloat(), y2 - s, s, s, 0f, 0f, 0f, rf, PANEL_BG)
+        ScreenTheme.nRoundedRectRing(x1, y1, x2 - x1, y2 - y1, r, 1, 0, PANEL_BORDER)
+    }
+
+    // draws a rounded shape clipped to a small box (a shape's radius is capped at half its size)
+    private fun cornerPiece(cx: Int, cy: Int, cw: Int, ch: Int, sx: Float, sy: Float, sw: Float, sh: Float,
+                            tl: Float, tr: Float, br: Float, bl: Float, color: Int) {
+        UiRecorder.pushScissor(cx.toFloat(), cy.toFloat(), cw.toFloat(), ch.toFloat())
+        UiRecorder.fillRoundedRectCorners(sx, sy, sw, sh, tl, tr, br, bl, color)
+        UiRecorder.popScissor()
+    }
+
+    private fun drawSearch(x: Int, y: Int) {
         val w = 180; val h = 16
-        ScreenTheme.roundedRectRing(ctx, x, y, w, h, 4, 1, FIELD_BG, if (search.value.isEmpty()) FIELD_BORDER else ScreenTheme.ACCENT)
-        val text = search.value
-        val tx = x + 5; val ty = y + 4
-        ctx.enableScissor(x + 2, y, x + w - 2, y + h)
-        if (text.isEmpty()) {
-            ctx.text(font, "Search items…", tx, ty, ScreenTheme.SUBTEXT_COLOR, false)
-        } else {
-            val cur = search.cursorPosition.coerceIn(0, text.length)
-            val curX = font.width(text.substring(0, cur))
-            val off = max(0, curX - (w - 12))
-            ctx.text(font, text, tx - off, ty, ScreenTheme.TEXT_COLOR, false)
-            if ((System.currentTimeMillis() / 500) % 2 == 0L) ctx.fill(tx - off + curX, ty - 1, tx - off + curX + 1, ty + 9, ScreenTheme.TEXT_COLOR)
-        }
-        ctx.disableScissor()
+        ScreenTheme.nRoundedRectRing(x, y, w, h, 4, 1, FIELD_BG, if (search.value.isEmpty()) FIELD_BORDER else ScreenTheme.ACCENT)
+        ScreenTheme.nTextFieldContent(search, true, x + 2, y, w - 4, h, 7.5f)
+        if (search.value.isEmpty()) UiRecorder.text("Search items…", (x + 7).toFloat(), y + (h - 7.5f) / 2f, 7.5f, ScreenTheme.SUBTEXT_COLOR)
     }
 
-    private fun drawLoadButton(ctx: GuiGraphicsExtractor, right: Int, y: Int, mouseX: Int, mouseY: Int) {
+    private fun drawLoadButton(right: Int, y: Int, mouseX: Int, mouseY: Int) {
         val running = StorageAutoLoader.running()
         val label = if (running) "● Loading… click to stop" else "Load all pages"
-        val w = font.width(label) + 16
+        val w = ScreenTheme.nstw(label, 0.75f) + 16
         val h = 16
         val bx = right - w
         val hover = mouseX in bx..(bx + w) && mouseY in y..(y + h)
-        if (running) {
-            ScreenTheme.roundedRectRing(ctx, bx, y, w, h, h / 2, 1, FIELD_BG, if (hover) 0xFFFFD98A.toInt() else GOLD)
-            ctx.text(font, label, bx + 8, y + 4, GOLD, false)
-        } else {
-            ScreenTheme.roundedRectRing(ctx, bx, y, w, h, h / 2, 1, FIELD_BG, if (hover) ScreenTheme.ACCENT_HOVER else ScreenTheme.ACCENT)
-            ctx.text(font, label, bx + 8, y + 4, if (hover) ScreenTheme.ACCENT_HOVER else ScreenTheme.TEXT_COLOR, false)
-        }
+        val ring = if (running) (if (hover) 0xFFFFD98A.toInt() else GOLD) else if (hover) ScreenTheme.ACCENT_HOVER else ScreenTheme.ACCENT
+        val ink = if (running) GOLD else if (hover) ScreenTheme.ACCENT_HOVER else ScreenTheme.TEXT_COLOR
+        ScreenTheme.nRoundedRectRing(bx, y, w, h, h / 2, 1, FIELD_BG, ring)
+        ScreenTheme.nst(label, bx + 8, y + 4, ink, 0.75f)
         loadAllRect = intArrayOf(bx, y, w, h)
     }
 
@@ -182,19 +229,31 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
         val filled = inv.stacks.count { !it.isEmpty }
         val hits = if (q.isEmpty()) 0 else inv.stacks.count { matches(it, q) }
         val lit = q.isNotEmpty() && hits > 0
-        ScreenTheme.panel(ctx, x - 2, y - 2, x + cardW - 2, y + cardH, 5, CARD_BG, if (lit) GOLD else CARD_BORDER)
+
+        // card outline and slot block (sx1..sx2, sy1..sy2 hold items)
+        val cx1 = x - 2; val cy1 = y - 2; val cx2 = cx1 + cardW; val cy2 = y + cardH
+        val sx1 = x + 2; val sy1 = y + CARD_HEAD; val sx2 = sx1 + 9 * SLOT; val sy2 = sy1 + rows * SLOT
+
+        // vanilla: square opaque block under the slots, 1px wider so overlay strips overlap it
+        ctx.fill(sx1 - 1, sy1 - 1, sx2 + 1, sy2 + 1, CARD_BG)
+
+        // overlay frame around the slot block: head, sides, rounded bottom, border
+        val r = CARD_R.toFloat()
+        UiRecorder.fillRoundedRectCorners(cx1.toFloat(), cy1.toFloat(), cardW.toFloat(), (sy1 - cy1).toFloat(), r, r, 0f, 0f, CARD_BG)
+        ScreenTheme.nRect(cx1, sy1 - 1, sx1 - cx1, sy2 - sy1 + 2, CARD_BG)
+        ScreenTheme.nRect(sx2, sy1 - 1, cx2 - sx2, sy2 - sy1 + 2, CARD_BG)
+        cornerPiece(cx1, sy2, cardW, cy2 - sy2, cx1.toFloat(), cy2 - 3 * r, cardW.toFloat(), 3 * r, 0f, 0f, r, r, CARD_BG)
+        ScreenTheme.nRoundedRectRing(cx1, cy1, cardW, cy2 - cy1, CARD_R, 1, 0, if (lit) GOLD else CARD_BORDER)
 
         val titleHover = mouseInView && mouseX in x..(x + cardW) && mouseY in y..(y + CARD_HEAD)
-        ctx.text(font, page.name, x + 2, y + 3, if (titleHover) ScreenTheme.ACCENT_HOVER else ScreenTheme.TEXT_COLOR, false)
+        ScreenTheme.nst(page.name, x + 3, y + 3, if (titleHover) ScreenTheme.ACCENT_HOVER else ScreenTheme.TEXT_COLOR, 0.8f)
         val info = if (q.isNotEmpty()) "$hits match" + (if (hits == 1) "" else "es") else "$filled items"
-        ctx.text(font, info, x + cardW - 6 - font.width(info), y + 3, if (lit) GOLD else ScreenTheme.SUBTEXT_COLOR, false)
+        ScreenTheme.nst(info, x + cardW - 7 - ScreenTheme.nstw(info, 0.7f), y + 4, if (lit) GOLD else ScreenTheme.SUBTEXT_COLOR, 0.7f)
 
-        val gx = x + 2
-        val gy = y + CARD_HEAD
         var hovered: ItemStack? = null
         for (i in 0 until rows * 9) {
-            val cx = gx + (i % 9) * SLOT
-            val cy = gy + (i / 9) * SLOT
+            val cx = sx1 + (i % 9) * SLOT
+            val cy = sy1 + (i / 9) * SLOT
             val stack = inv.stacks.getOrNull(i) ?: ItemStack.EMPTY
             val hit = q.isNotEmpty() && matches(stack, q)
             if (hit) {
@@ -216,15 +275,17 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")) {
         return hovered
     }
 
-    private fun maxScroll() = (contentHeight - (height - 2 * MARGIN - TOP_BAR - 7)).coerceAtLeast(0)
+    private fun maxScroll() = (contentHeight - (vh - 2 * MARGIN - TOP_BAR - 7)).coerceAtLeast(0)
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
-        scroll = (scroll - (verticalAmount * 30).toInt()).coerceIn(0, maxScroll())
+        updateScale()
+        scroll = (scroll - (verticalAmount * 30 / k).toInt()).coerceIn(0, maxScroll())
         return true
     }
 
     override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
-        val mx = click.x().toInt(); val my = click.y().toInt()
+        updateScale()
+        val mx = (click.x() / k).toInt(); val my = (click.y() / k).toInt()
         loadAllRect.let { r ->
             if (mx in r[0]..(r[0] + r[2]) && my in r[1]..(r[1] + r[3])) {
                 if (StorageAutoLoader.running()) StorageAutoLoader.stop()

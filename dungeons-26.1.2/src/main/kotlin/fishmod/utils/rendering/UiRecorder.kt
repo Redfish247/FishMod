@@ -17,8 +17,9 @@ object UiRecorder {
     private const val OP_TEXT_BOLD = 10
     private const val OP_PUSH_SCISSOR = 11
     private const val OP_POP_SCISSOR = 12
+    private const val OP_FILL_ROUNDED_CORNERS = 13
 
-    private const val FLOATS_PER_CMD = 6
+    private const val FLOATS_PER_CMD = 8
     private const val INTS_PER_CMD = 2
 
     private var ops = ByteArray(256)
@@ -47,7 +48,7 @@ object UiRecorder {
 
     private fun push(
         op: Int,
-        f0: Float = 0f, f1: Float = 0f, f2: Float = 0f, f3: Float = 0f, f4: Float = 0f, f5: Float = 0f,
+        f0: Float = 0f, f1: Float = 0f, f2: Float = 0f, f3: Float = 0f, f4: Float = 0f, f5: Float = 0f, f6: Float = 0f, f7: Float = 0f,
         i0: Int = 0, i1: Int = 0,
         s: String? = null,
     ) {
@@ -55,7 +56,7 @@ object UiRecorder {
         val idx = count
         ops[idx] = op.toByte()
         val fb = idx * FLOATS_PER_CMD
-        floats[fb] = f0; floats[fb + 1] = f1; floats[fb + 2] = f2; floats[fb + 3] = f3; floats[fb + 4] = f4; floats[fb + 5] = f5
+        floats[fb] = f0; floats[fb + 1] = f1; floats[fb + 2] = f2; floats[fb + 3] = f3; floats[fb + 4] = f4; floats[fb + 5] = f5; floats[fb + 6] = f6; floats[fb + 7] = f7
         val ib = idx * INTS_PER_CMD
         ints[ib] = i0; ints[ib + 1] = i1
         strings[idx] = s
@@ -98,16 +99,24 @@ object UiRecorder {
             OP_TEXT_BOLD -> {
                 val s = strings[idx] ?: ""
                 UiRenderer.text(s, x, y, w, ints[ib])
-                UiRenderer.text(s, x + 0.4f * k, y, w, ints[ib])
+                // Exactly one device pixel; a fractional offset snaps unevenly per glyph and ghosts.
+                UiRenderer.text(s, x + UiRenderer.devicePixel(), y, w, ints[ib])
             }
             OP_PUSH_SCISSOR -> UiRenderer.pushScissor(x, y, w, h)
             OP_POP_SCISSOR -> UiRenderer.popScissor()
+            OP_FILL_ROUNDED_CORNERS -> UiRenderer.shape(x, y, w, h, f4, f5, floats[fb + 6] * k, floats[fb + 7] * k, ints[ib])
         }
     }
 
     @JvmStatic
     fun fillRoundedRect(x: Float, y: Float, w: Float, h: Float, r: Float, color: Int) {
         push(OP_FILL_ROUNDED_RECT, x, y, w, h, r, i0 = color)
+    }
+
+    // per-corner radii: top-left, top-right, bottom-right, bottom-left
+    @JvmStatic
+    fun fillRoundedRectCorners(x: Float, y: Float, w: Float, h: Float, tl: Float, tr: Float, br: Float, bl: Float, color: Int) {
+        push(OP_FILL_ROUNDED_CORNERS, x, y, w, h, tl, tr, br, bl, i0 = color)
     }
 
     @JvmStatic

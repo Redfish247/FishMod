@@ -110,6 +110,89 @@ object ScreenTheme {
         UiRecorder.popScissor()
     }
 
+    private class Run(val text: String, val color: Int, val bold: Boolean)
+
+    // splits on legacy § codes, starting from the given colour/bold
+    private fun legacyRuns(s: String, baseColor: Int, baseBold: Boolean, out: MutableList<Run>) {
+        var color = baseColor
+        var bold = baseBold
+        val sb = StringBuilder()
+        var i = 0
+        while (i < s.length) {
+            val c = s[i]
+            if (c == '§' && i + 1 < s.length) {
+                val fmt = net.minecraft.ChatFormatting.getByCode(s[i + 1].lowercaseChar())
+                if (fmt != null) {
+                    if (sb.isNotEmpty()) { out.add(Run(sb.toString(), color, bold)); sb.setLength(0) }
+                    val fc = fmt.color
+                    when {
+                        fmt == net.minecraft.ChatFormatting.RESET -> { color = baseColor; bold = false }
+                        fmt == net.minecraft.ChatFormatting.BOLD -> bold = true
+                        fc != null -> { color = (0xFF shl 24) or fc; bold = false }
+                    }
+                    i += 2
+                    continue
+                }
+            }
+            sb.append(c)
+            i++
+        }
+        if (sb.isNotEmpty()) out.add(Run(sb.toString(), color, bold))
+    }
+
+    private fun componentRuns(c: net.minecraft.network.chat.Component, defaultColor: Int): List<Run> {
+        val out = ArrayList<Run>()
+        c.visit(net.minecraft.network.chat.FormattedText.StyledContentConsumer<Unit> { style, text ->
+            if (text.isNotEmpty()) {
+                val col = style.color?.let { (0xFF shl 24) or it.value } ?: defaultColor
+                legacyRuns(text, col, style.isBold, out)
+            }
+            java.util.Optional.empty()
+        }, net.minecraft.network.chat.Style.EMPTY)
+        return out
+    }
+
+    // Draws legacy/§-coloured text in the overlay (e.g. "§7Open §f/storage").
+    fun nLegacyText(s: String, x: Int, y: Int, baseColor: Int, size: Float = 7.5f) {
+        val out = ArrayList<Run>()
+        legacyRuns(s, baseColor, false, out)
+        var px = x.toFloat()
+        for (r in out) {
+            if (r.bold) UiRecorder.textBold(r.text, px, y.toFloat(), size, r.color) else UiRecorder.text(r.text, px, y.toFloat(), size, r.color)
+            px += UiRecorder.textWidth(r.text, size)
+        }
+    }
+
+    // Item-style tooltip card with coloured lines, drawn in the overlay; coords in the recorder's space, k scales its size.
+    fun nItemTooltip(lines: List<net.minecraft.network.chat.Component>, mx: Int, my: Int, screenW: Int, screenH: Int, k: Float = 1f) {
+        if (lines.isEmpty()) return
+        val runs = lines.mapIndexed { i, c -> componentRuns(c, if (i == 0) 0xFFFFFFFF.toInt() else 0xFFAAAAAA.toInt()) }
+        val rawH = runs.size * 10f + (if (runs.size > 1) 2f else 0f) + 12f - 2f
+        // shrink long lore so the card always fits on screen
+        val u = k * Math.min(1f, (screenH - 8f) / (rawH * k)).coerceAtLeast(0.3f)
+        val size = 7.5f * u
+        val lineH = 10f * u
+        val pad = 6f * u
+        val textW = runs.maxOf { rs -> rs.fold(0f) { a, r -> a + UiRecorder.textWidth(r.text, size) } }
+        val w = textW + pad * 2
+        val h = rawH * u
+        var tx = mx + 12f * u
+        if (tx + w > screenW - 4) tx = mx - 12f * u - w
+        tx = tx.coerceAtLeast(4f)
+        val ty = (my - 12f * u).coerceAtMost(screenH - h - 4f).coerceAtLeast(4f)
+        UiRecorder.dropShadow(tx, ty, w, h, 5f * u, 6f * u, 0x66000000)
+        UiRecorder.roundedRectRing(tx, ty, w, h, 5f * u, 1f * k, 0xFF101318.toInt(), FIELD_BORDER_DEFAULT)
+        var ly = ty + pad
+        for ((i, rs) in runs.withIndex()) {
+            var px = tx + pad
+            for (r in rs) {
+                if (r.bold) UiRecorder.textBold(r.text, px, ly, size, r.color) else UiRecorder.text(r.text, px, ly, size, r.color)
+                px += UiRecorder.textWidth(r.text, size)
+            }
+            ly += lineH + if (i == 0) 2f * u else 0f
+        }
+    }
+
     private val FIELD_BG_DEFAULT = 0xFF1A1E26.toInt()
     private val FIELD_BORDER_DEFAULT = 0xFF2E333D.toInt()
 }

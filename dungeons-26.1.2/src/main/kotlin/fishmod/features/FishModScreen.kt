@@ -117,6 +117,19 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         run {
+            val f = Feature("GUI Settings", FishSettings::guiSettings)
+            f.sub.add(SliderIntSetting("Main GUI Scale %", "100% = default size", FishSettings::guiScaleMain, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Chat & Commands Scale %", "100% = default size", FishSettings::guiScaleChatCommands, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Party & Loot Scale %", "100% = default size", FishSettings::guiScalePartyLoot, 50, 150, 5))
+            f.sub.add(SliderIntSetting("HUD Editor Scale %", "100% = default size", FishSettings::guiScaleHudEditor, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Item Customize Scale %", "100% = default size", FishSettings::guiScaleItemCustomize, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Storage Viewer Scale %", "100% = default size", FishSettings::guiScaleStorage, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Auction Price Scale %", "100% = default size", FishSettings::guiScaleAuction, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Waypoint Title Scale %", "100% = default size", FishSettings::guiScaleWaypoint, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Credits Scale %", "100% = default size", FishSettings::guiScaleCredits, 50, 150, 5))
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Mod Prefix", FishSettings::modPrefixEnabled)
             f.sub.add(InputSetting("Prefix", "",
                 { FishSettings.modPrefix },
@@ -3883,6 +3896,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             return when (name) {
                 "Chat" -> "Smart Copy, Compact Chat, Infinite History, Search, Filter"
                 "Mod Prefix" -> "Tag FishMod's chat output with a prefix"
+                "GUI Settings" -> "Size of each FishMod screen"
                 "Inventory Buttons" -> "Clickable command buttons in your inventory"
                 "Smart Copy Chat" -> "Right-click a chat line to copy it"
                 "Compact Tab" -> "Cleaner custom tab player list"
