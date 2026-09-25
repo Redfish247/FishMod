@@ -1182,6 +1182,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         run {
             val f = Feature("Pet HUD", FishSettings::petHudEnabled)
             f.sub.add(ToggleSetting("Show Level", "", FishSettings::petHudShowLevel))
+            f.sub.add(ToggleSetting("Show Icon", "Pet head instead of its name (learned when you open /pets)", FishSettings::petHudIcon))
             f.sub.add(ToggleSetting("Show Rarity", "Colour the pet name by its rarity", FishSettings::petHudShowRarity))
             f.sub.add(ToggleSetting("Fade Idle", "", FishSettings::petHudFadeIdle))
             f.sub.add(SliderIntSetting("Fade ms", "", FishSettings::petHudFadeMs, 1000, 30000).gatedBy { FishSettings.petHudFadeIdle })
