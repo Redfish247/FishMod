@@ -152,6 +152,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             general.features.add(f)
         }
         run {
+            val f = Feature("Pet Keybinds", FishSettings::petKeybindsEnabled)
+            f.sub.add(ToggleSetting("Auto-Close GUI", "", FishSettings::petKeybindsAutoClose))
+            f.sub.add(ToggleSetting("Don't Despawn Active Pet", "Pressing the key for your current pet does nothing", FishSettings::petKeybindsNoDespawn))
+            f.sub.add(SubcategoryHeader("Open /pets yourself, then press a key to select that pet"))
+            for (i in 0 until fishmod.features.other.PetKeybinds.COUNT) {
+                val idx = i
+                f.sub.add(KeybindSetting(fishmod.features.other.PetKeybinds.PETS[idx], "", { fishmod.utils.Keybinds.petKeybinds?.getOrNull(idx) }))
+            }
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Slot Binds", FishSettings::slotBindsEnabled)
             f.sub.add(SubcategoryHeader("Hold the bind key + click a hotbar slot then an inv slot to link; shift-left-click to swap"))
             f.sub.add(KeybindSetting("Bind Key (hold)", "Default R", { fishmod.utils.Keybinds.slotBind }))

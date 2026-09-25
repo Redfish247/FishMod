@@ -322,6 +322,10 @@ object FishSettings {
     @ConfigValue @JvmField var wardrobeHotkeysEnabled: Boolean = false
     @ConfigValue @JvmField var wardrobeHotkeysAutoClose: Boolean = true
 
+    @ConfigValue @JvmField var petKeybindsEnabled: Boolean = false
+    @ConfigValue @JvmField var petKeybindsAutoClose: Boolean = true
+    @ConfigValue @JvmField var petKeybindsNoDespawn: Boolean = true
+
     @ConfigValue @JvmField var loadoutTitleEnabled: Boolean = false
 
     @ConfigValue @JvmField var autoSprintEnabled: Boolean = false
