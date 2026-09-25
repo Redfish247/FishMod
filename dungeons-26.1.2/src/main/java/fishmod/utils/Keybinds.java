@@ -26,10 +26,14 @@ public class Keybinds {
 
     public static KeyMapping[] wardrobeSlots;
 
+    public static KeyMapping[] petKeybinds;
+
     public static KeyMapping wardrobeNextPage;
     public static KeyMapping wardrobePrevPage;
 
     public static KeyMapping slotBind;
+
+    public static KeyMapping slotLock;
 
     public static KeyMapping slotBindCycleProfile;
 
@@ -92,6 +96,16 @@ public class Keybinds {
             TRACKED.put("wardrobe_slot_" + i, wardrobeSlots[i]);
         }
 
+        petKeybinds = new KeyMapping[fishmod.features.other.PetKeybinds.COUNT];
+        for (int i = 0; i < petKeybinds.length; i++) {
+            petKeybinds[i] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                    "Pet: " + fishmod.features.other.PetKeybinds.PETS[i],
+                    InputConstants.Type.KEYSYM,
+                    GLFW.GLFW_KEY_UNKNOWN,
+                    category));
+            TRACKED.put("pet_key_" + fishmod.features.other.PetKeybinds.PETS[i].toLowerCase().replace(' ', '_'), petKeybinds[i]);
+        }
+
         wardrobeNextPage = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Wardrobe Next Page",
                 InputConstants.Type.KEYSYM,
@@ -112,6 +126,13 @@ public class Keybinds {
                 GLFW.GLFW_KEY_R,
                 category));
         TRACKED.put("slot_bind", slotBind);
+
+        slotLock = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "Lock Slot (in inventory)",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_L,
+                category));
+        TRACKED.put("slot_lock", slotLock);
 
         slotBindCycleProfile = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Slot Bind - Cycle Profile",
