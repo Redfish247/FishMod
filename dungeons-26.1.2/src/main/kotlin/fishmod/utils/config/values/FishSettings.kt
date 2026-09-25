@@ -673,6 +673,8 @@ object FishSettings {
 
     @ConfigValue @JvmField var blessingDisplayEnabled: Boolean = false
 
+    @ConfigValue @JvmField var playerHighlightEnabled: Boolean = false
+    @ConfigValue @JvmField var playerHighlightRange: Int = 50
     @ConfigValue @JvmField var stormOverEnabled: Boolean = false
     @ConfigValue @JvmField var stormOverText: String = "Storm Over!"
     @ConfigValue @JvmField var stormOverColor: Int = 0xFF55FFFF.toInt()
