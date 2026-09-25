@@ -1340,7 +1340,41 @@ class FishModInit : ModInitializer {
             fishmod.features.dungeon.map.DungeonScore.onChatMessage(message.string)
             false
         }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map_score_messages")) { ctx, tickCounter -> fishmod.features.dungeon.map.ScoreMessages.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map_score_messages")) { ctx, tickCounter -> if (!FishHudEditor.isOpen()) fishmod.features.dungeon.map.ScoreMessages.renderHud(ctx, tickCounter) }
+
+        // Score title stores its centre X (-1 = auto centre); the editor works in left edges.
+        FishHudEditor.register(
+            "Dungeon Score Title",
+            {
+                val mc = net.minecraft.client.Minecraft.getInstance()
+                Math.round(fishmod.features.dungeon.map.ScoreMessages.resolvedX(mc) - FishHudEditor.SCORE_TITLE_W / 2f * fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleScale)
+            },
+            { v -> fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleX = v + FishHudEditor.SCORE_TITLE_W / 2f * fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleScale },
+            { Math.round(fishmod.features.dungeon.map.ScoreMessages.resolvedY(net.minecraft.client.Minecraft.getInstance())) },
+            { v -> fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleY = v.toFloat() },
+            FishHudEditor.SCORE_TITLE_W, 9,
+            { fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleScale.toDouble() },
+            { v -> fishmod.utils.config.values.DungeonMapSettings.mapScoreTitleScale = v.toFloat() },
+            { fishmod.utils.config.values.DungeonMapSettings.mapScoreMessages }
+        )
+
+        // Scoreboard stores its right edge (-1 = screen edge); the editor works in left edges.
+        FishHudEditor.register(
+            "Custom Scoreboard",
+            {
+                val sw = net.minecraft.client.Minecraft.getInstance().window.guiScaledWidth
+                val right = if (fishmod.utils.config.values.FishSettings.customScoreboardHudX < 0) sw - 3 else Math.min(fishmod.utils.config.values.FishSettings.customScoreboardHudX, sw - 3)
+                right - FishHudEditor.SCOREBOARD_W
+            },
+            { v ->
+                val sw = net.minecraft.client.Minecraft.getInstance().window.guiScaledWidth
+                val right = v + FishHudEditor.SCOREBOARD_W
+                fishmod.utils.config.values.FishSettings.customScoreboardHudX = if (right >= sw - 5) -1 else right
+            },
+            { fishmod.utils.config.values.FishSettings.customScoreboardHudY }, { v -> fishmod.utils.config.values.FishSettings.customScoreboardHudY = v },
+            FishHudEditor.SCOREBOARD_W, 130,
+            { fishmod.utils.config.values.FishSettings.customScoreboardEnabled }
+        )
 
         FishHudEditor.register(
             "Dungeon Map",
