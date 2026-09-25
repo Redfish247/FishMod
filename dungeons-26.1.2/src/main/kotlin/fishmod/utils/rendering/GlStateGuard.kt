@@ -9,7 +9,8 @@ import org.lwjgl.opengl.GL20
 import org.lwjgl.opengl.GL30
 import org.lwjgl.opengl.GL33
 
-class NvgGlStateGuard {
+// Saves and restores the GL state our raw-GL UI pass touches, so vanilla rendering is unaffected.
+class GlStateGuard {
 
     private var vao = 0
     private var program = 0
@@ -42,7 +43,7 @@ class NvgGlStateGuard {
             frameBuffer = GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING)
             if (!frameBufferLogged) {
                 frameBufferLogged = true
-                fishmod.utils.debug.Debug.LOGGER.info("[NanoVG] framebuffer bound at paint time: {}", frameBuffer)
+                fishmod.utils.debug.Debug.LOGGER.info("[UiRenderer] framebuffer bound at paint time: {}", frameBuffer)
             }
 
             vao = GL11.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING)
@@ -58,7 +59,7 @@ class NvgGlStateGuard {
                     GL33.glBindSampler(0, 0)
                 } catch (t: Throwable) {
                     samplerObjectsSupported = false
-                    fishmod.utils.debug.Debug.LOGGER.warn("[NanoVG] GL33 sampler objects unsupported - skipping sampler unbind", t)
+                    fishmod.utils.debug.Debug.LOGGER.warn("[UiRenderer] GL33 sampler objects unsupported - skipping sampler unbind", t)
                 }
             }
 
@@ -83,7 +84,7 @@ class NvgGlStateGuard {
             unpackAlignment = GL11.glGetInteger(GL11.GL_UNPACK_ALIGNMENT)
             GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 1)
         } catch (t: Throwable) {
-            fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] NvgGlStateGuard.capture() failed", t)
+            fishmod.utils.debug.Debug.LOGGER.error("[UiRenderer] GlStateGuard.capture() failed", t)
         }
     }
 
@@ -116,7 +117,7 @@ class NvgGlStateGuard {
 
             GL13.glActiveTexture(activeTexture)
         } catch (t: Throwable) {
-            fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] NvgGlStateGuard.restore() failed", t)
+            fishmod.utils.debug.Debug.LOGGER.error("[UiRenderer] GlStateGuard.restore() failed", t)
         }
     }
 

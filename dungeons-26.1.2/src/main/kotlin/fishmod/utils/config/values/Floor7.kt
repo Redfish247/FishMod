@@ -52,6 +52,18 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
+    var enableNecronLbTimer: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var necronLbPingMs: Int = 0
+
+    @ConfigValue
+    @JvmField
+    var necronLbColor: Int = 0xffff5555.toInt()
+
+    @ConfigValue
+    @JvmField
     var enableGoldorTickTimer: Boolean = false
 
     @ConfigValue
@@ -65,10 +77,6 @@ object Floor7 {
     @ConfigValue
     @JvmField
     var enableRelicStartTimer: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var relicSpawnTicks: Int = 42
 
     @ConfigValue
     @JvmField

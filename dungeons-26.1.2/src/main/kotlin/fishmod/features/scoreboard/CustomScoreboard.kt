@@ -37,6 +37,7 @@ object CustomScoreboard {
 
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, screenW: Int) {
+        if (fishmod.features.FishHudEditor.isOpen()) return
         val mc = Minecraft.getInstance()
         val level = mc.level ?: return
         val sb = level.scoreboard
@@ -59,7 +60,7 @@ object CustomScoreboard {
         for (l in extra) width = max(width, tr.width(l.component))
         width += 6
 
-        val x2 = screenW - 3
+        val x2 = if (fishmod.utils.config.values.FishSettings.customScoreboardHudX < 0) screenW - 3 else min(fishmod.utils.config.values.FishSettings.customScoreboardHudX, screenW - 3)
         val x1 = x2 - width
         val y0 = FishSettings.customScoreboardHudY
         val totalH = TITLE_H + lines.size * LINE_H + 2

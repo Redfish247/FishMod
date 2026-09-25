@@ -1,7 +1,10 @@
 package fishmod.mixin;
 
-import fishmod.features.HasNvgOverlay;
+import fishmod.features.HasUiOverlay;
 import fishmod.features.item.AnimatedDyeAnimator;
+import fishmod.features.storage.StorageOverlay;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
@@ -11,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GameRenderer.class)
-public class GameRendererNvgMixin {
+public class GameRendererUiMixin {
 
     @Inject(
         method = "render(Lnet/minecraft/client/DeltaTracker;Z)V",
@@ -21,10 +24,13 @@ public class GameRendererNvgMixin {
             shift = At.Shift.AFTER
         )
     )
-    private void fishmod$paintNvgOverlay(DeltaTracker deltaTracker, boolean tick, CallbackInfo ci) {
+    private void fishmod$paintUiOverlay(DeltaTracker deltaTracker, boolean tick, CallbackInfo ci) {
         AnimatedDyeAnimator.tickFrame();
-        if (Minecraft.getInstance().screen instanceof HasNvgOverlay screen) {
-            screen.paintNvgOverlay();
+        Screen current = Minecraft.getInstance().screen;
+        if (current instanceof HasUiOverlay screen) {
+            screen.paintUiOverlay();
+        } else if (current instanceof AbstractContainerScreen<?> container && StorageOverlay.isActive(container)) {
+            StorageOverlay.paintUiOverlay();
         }
     }
 }

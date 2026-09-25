@@ -30,7 +30,7 @@ object ChatRuleHandler {
             false
         }
 
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "chat_notifications")) { ctx, tc -> renderHud(ctx, tc) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "chat_notifications")) { ctx, tc -> if (!fishmod.features.FishHudEditor.isOpen()) renderHud(ctx, tc) }
 
         FishHudEditor.register(
             "Chat Notifications",

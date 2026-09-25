@@ -21,6 +21,7 @@ object IceSprayTimer {
     private const val RANGE = 8.0
     private const val CONE_COS = 0.64 // ~50 degrees
     private const val GROUP_RADIUS = 4.0
+    private const val FREEZE_MS = 5000L
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     private val frozen = HashMap<LivingEntity, Long>()
@@ -49,7 +50,7 @@ object IceSprayTimer {
         val level = mc.level ?: return
         val eye = player.eyePosition
         val look = player.lookAngle
-        val until = now + (FishSettings.iceSprayDuration * 1000).toLong()
+        val until = now + FREEZE_MS
         for (e in level.entitiesForRendering()) {
             if (e !is LivingEntity || e is Player || e is ArmorStand || !e.isAlive) continue
             val to = e.boundingBox.center.subtract(eye)
