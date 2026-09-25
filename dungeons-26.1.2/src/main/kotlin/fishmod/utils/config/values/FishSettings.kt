@@ -234,6 +234,9 @@ object FishSettings {
     @ConfigValue @JvmField var disableFrontFacingCamera: Boolean = false
 
     @ConfigValue @JvmField var dungeonWaypointsEnabled: Boolean = true
+    @ConfigValue @JvmField var posMsgEnabled: Boolean = false
+    @ConfigValue @JvmField var posMsgShowBlocks: Boolean = true
+    @ConfigValue @JvmField var posMsgColor: Int = 0x66FFAA00
 
     @ConfigValue @JvmField var enableM7LeverWaypoints: Boolean = false
     @ConfigValue @JvmField var m7LeverWaypointColor: Int = 0xFFFF0086.toInt()
