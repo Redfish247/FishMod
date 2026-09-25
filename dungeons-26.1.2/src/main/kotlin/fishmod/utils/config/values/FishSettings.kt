@@ -48,7 +48,13 @@ object FishSettings {
     @ConfigValue @JvmField var petXpBoosterCookie: Boolean = false
 
     @ConfigValue @JvmField var petHudEnabled: Boolean = false
+    @ConfigValue @JvmField var petSwapTitleEnabled: Boolean = false
+    @ConfigValue @JvmField var petSwapTitleFormat: String = "{pet}"
+    @ConfigValue @JvmField var petSwapTitleRarityColor: Boolean = true
+    @ConfigValue @JvmField var petSwapTitleColor: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var petSwapTitleMs: Int = 1500
     @ConfigValue @JvmField var petHudShowLevel: Boolean = false
+    @ConfigValue @JvmField var petHudIcon: Boolean = false
     @ConfigValue @JvmField var petHudShowRarity: Boolean = true
     @ConfigValue @JvmField var petHudFadeIdle: Boolean = false
     @ConfigValue @JvmField var petHudFadeMs: Int = 5000
@@ -673,6 +679,18 @@ object FishSettings {
 
     @ConfigValue @JvmField var blessingDisplayEnabled: Boolean = false
 
+    @ConfigValue @JvmField var quizHudEnabled: Boolean = false
+    @ConfigValue @JvmField var quizHudX: Int = 10
+    @ConfigValue @JvmField var quizHudY: Int = 200
+    @ConfigValue @JvmField var quizHudScale: Double = 1.5
+    @ConfigValue @JvmField var secretOverlayEnabled: Boolean = false
+    @ConfigValue @JvmField var secretOverlayX: Int = 10
+    @ConfigValue @JvmField var secretOverlayY: Int = 180
+    @ConfigValue @JvmField var secretOverlayScale: Double = 1.5
+    @ConfigValue @JvmField var iceSprayTimerEnabled: Boolean = false
+    @ConfigValue @JvmField var iceSprayDuration: Double = 5.0
+    @ConfigValue @JvmField var iceSprayColor: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var iceSprayScale: Double = 1.5
     @ConfigValue @JvmField var playerHighlightEnabled: Boolean = false
     @ConfigValue @JvmField var playerHighlightRange: Int = 50
     @ConfigValue @JvmField var stormOverEnabled: Boolean = false
@@ -712,6 +730,18 @@ object FishSettings {
     @ConfigValue @JvmField var invincShowSpirit: Boolean = true
     @ConfigValue @JvmField var invincShowBonzo: Boolean = true
     @ConfigValue @JvmField var invincShowPhoenix: Boolean = true
+    @ConfigValue @JvmField var invincProcTitle: Boolean = false
+    @ConfigValue @JvmField var invincProcTitleMs: Int = 2000
+    @ConfigValue @JvmField var invincProcSpiritText: String = "Spirit Mask Procced!"
+    @ConfigValue @JvmField var invincProcSpiritColor: Int = 0xFFFFFFFF.toInt()
+    @ConfigValue @JvmField var invincProcBonzoText: String = "Bonzo Mask Procced!"
+    @ConfigValue @JvmField var invincProcBonzoColor: Int = 0xFF5555FF.toInt()
+    @ConfigValue @JvmField var invincProcPhoenixText: String = "Phoenix Procced!"
+    @ConfigValue @JvmField var invincProcPhoenixColor: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var invincProcSound: Boolean = true
+    @ConfigValue @JvmField var invincProcSoundName: String = "Blaze Hit"
+    @ConfigValue @JvmField var invincProcVolume: Int = 100
+    @ConfigValue @JvmField var invincProcPitch: Double = 1.0
     @ConfigValue @JvmField var invincIcons: Boolean = false
     @ConfigValue @JvmField var invincIconSpirit: String = ""
     @ConfigValue @JvmField var invincIconBonzo: String = ""
