@@ -1,10 +1,8 @@
 package fishmod.features.chat
 
-import fishmod.features.HasNvgOverlay
+import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
-import fishmod.utils.rendering.NvgContext
-import fishmod.utils.rendering.NvgGlStateGuard
-import fishmod.utils.rendering.NvgRecorder
+import fishmod.utils.rendering.UiRecorder
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.EditBox
@@ -14,11 +12,10 @@ import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import org.lwjgl.glfw.GLFW
-import org.lwjgl.nanovg.NanoVG
 import kotlin.math.max
 import kotlin.math.min
 
-class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")), HasNvgOverlay {
+class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")), HasUiOverlay {
 
     private companion object {
         val BG_PANEL = 0xF20E1016.toInt()
@@ -164,7 +161,7 @@ class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")),
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         val mouseX = fishmod.utils.rendering.UiScale.vx(mouseX)
         val mouseY = fishmod.utils.rendering.UiScale.vx(mouseY)
-        NvgRecorder.clear()
+        UiRecorder.clear()
         drawChrome(mouseX, mouseY)
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
@@ -205,7 +202,7 @@ class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")),
 
     private fun drawList(mouseX: Int, mouseY: Int) {
         ScreenTheme.nRoundedRectRing(listX, listY, listW, listH, 4, 1, ROW_BG, FIELD_BORDER)
-        NvgRecorder.pushScissor(listX.toFloat(), listY.toFloat(), listW.toFloat(), listH.toFloat())
+        UiRecorder.pushScissor(listX.toFloat(), listY.toFloat(), listW.toFloat(), listH.toFloat())
 
         val rules = ChatRuleStore.rules()
         val visible = listH / rowH
@@ -231,7 +228,7 @@ class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")),
             val label = clip(rule.name.ifBlank { "(unnamed)" }, listW - 26)
             ScreenTheme.nst(label, ckX + ckSize + 6, ry + 6, nameCol, 0.62f)
         }
-        NvgRecorder.popScissor()
+        UiRecorder.popScissor()
 
         if (rules.isEmpty()) {
             ScreenTheme.nst("no rules yet", listX + 8, listY + 8, TEXT_HINT, 0.6f)
@@ -404,24 +401,7 @@ class ChatNotificationsScreen : Screen(Component.literal("Chat Notifications")),
 
     override fun isPauseScreen(): Boolean = false
 
-    private val nvgGlState = NvgGlStateGuard()
-    private var nvgFailureLogged = false
-
-    override fun paintNvgOverlay() {
-        nvgGlState.capture()
-        try {
-            val ctx = NvgContext.get()
-            val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
-            NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
-            NvgRecorder.replay(fishmod.utils.rendering.UiScale.factor())
-            NanoVG.nvgEndFrame(ctx)
-        } catch (t: Throwable) {
-            if (!nvgFailureLogged) {
-                nvgFailureLogged = true
-                fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] ChatNotificationsScreen paintNvgOverlay failed", t)
-            }
-        } finally {
-            nvgGlState.restore()
-        }
+    override fun paintUiOverlay() {
+        fishmod.utils.rendering.UiRenderer.paint(this.width, this.height, fishmod.utils.rendering.UiScale.factor())
     }
 }

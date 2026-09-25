@@ -2,9 +2,7 @@ package fishmod.features
 
 import fishmod.utils.NameList
 import fishmod.utils.config.FishConfig
-import fishmod.utils.rendering.NvgContext
-import fishmod.utils.rendering.NvgGlStateGuard
-import fishmod.utils.rendering.NvgRecorder
+import fishmod.utils.rendering.UiRecorder
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.EditBox
@@ -14,7 +12,6 @@ import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import org.lwjgl.glfw.GLFW
-import org.lwjgl.nanovg.NanoVG
 import kotlin.math.max
 import kotlin.math.min
 
@@ -24,7 +21,7 @@ class NameListScreen(
     private val addLabel: String,
     private val getCsv: () -> String,
     private val setCsv: (String) -> Unit
-) : Screen(Component.literal(screenTitle)), HasNvgOverlay {
+) : Screen(Component.literal(screenTitle)), HasUiOverlay {
 
     companion object {
         private val ACCENT = ScreenTheme.ACCENT
@@ -136,7 +133,7 @@ class NameListScreen(
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         val mouseX = fishmod.utils.rendering.UiScale.vx(mouseX)
         val mouseY = fishmod.utils.rendering.UiScale.vx(mouseY)
-        NvgRecorder.clear()
+        UiRecorder.clear()
         ScreenTheme.nPanel(panelX, panelY, panelX + panelW, panelY + panelH, 8, BG_PANEL, BORDER)
         ScreenTheme.nRect(panelX, panelY, panelW, 22, BG_SECTION)
         ScreenTheme.nRect(panelX, panelY + 22, panelW, 1, ACCENT)
@@ -218,24 +215,7 @@ class NameListScreen(
         return true
     }
 
-    private val nvgGlState = NvgGlStateGuard()
-    private var nvgFailureLogged = false
-
-    override fun paintNvgOverlay() {
-        nvgGlState.capture()
-        try {
-            val ctx = NvgContext.get()
-            val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
-            NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
-            NvgRecorder.replay(fishmod.utils.rendering.UiScale.factor())
-            NanoVG.nvgEndFrame(ctx)
-        } catch (t: Throwable) {
-            if (!nvgFailureLogged) {
-                nvgFailureLogged = true
-                fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] NameListScreen paintNvgOverlay failed", t)
-            }
-        } finally {
-            nvgGlState.restore()
-        }
+    override fun paintUiOverlay() {
+        fishmod.utils.rendering.UiRenderer.paint(this.width, this.height, fishmod.utils.rendering.UiScale.factor())
     }
 }

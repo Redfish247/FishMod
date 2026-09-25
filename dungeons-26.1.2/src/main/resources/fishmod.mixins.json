@@ -45,7 +45,7 @@
     "CrosshairMixin",
     "ExperienceBarRendererMixin",
     "DyedItemColorMixin",
-    "GameRendererNvgMixin",
+    "GameRendererUiMixin",
     "GuiScoreboardMixin",
     "ItemTrimMixin",
     "EntityRendererMixin",

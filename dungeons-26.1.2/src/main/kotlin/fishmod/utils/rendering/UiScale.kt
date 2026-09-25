@@ -17,7 +17,7 @@ object UiScale {
 
     private fun isSiblingScreen(): Boolean {
         val s = Minecraft.getInstance().screen ?: return false
-        return s is fishmod.features.HasNvgOverlay && s !is fishmod.features.FishModScreen
+        return s is fishmod.features.HasUiOverlay && s !is fishmod.features.FishModScreen
     }
 
     fun vx(real: Number): Int = (real.toDouble() / factor()).toInt()

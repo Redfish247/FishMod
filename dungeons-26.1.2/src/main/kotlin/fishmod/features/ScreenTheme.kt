@@ -1,7 +1,7 @@
 package fishmod.features
 
 import net.minecraft.client.gui.GuiGraphicsExtractor
-import fishmod.utils.rendering.NvgRecorder
+import fishmod.utils.rendering.UiRecorder
 
 object ScreenTheme {
     val ACCENT = 0xFF24B6B0.toInt()
@@ -62,21 +62,21 @@ object ScreenTheme {
     private const val NVG_BASE_TEXT_SIZE = 9.5f
 
     fun nst(s: String, x: Int, y: Int, color: Int, scale: Float = TEXT_SCALE) {
-        NvgRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * scale, color)
+        UiRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * scale, color)
     }
     fun nstw(s: String, scale: Float = TEXT_SCALE): Int =
-        Math.ceil(NvgRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * scale).toDouble()).toInt()
+        Math.ceil(UiRecorder.textWidth(s, NVG_BASE_TEXT_SIZE * scale).toDouble()).toInt()
 
     fun nRoundedRect(x: Int, y: Int, w: Int, h: Int, r: Int, color: Int) {
-        NvgRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), color)
+        UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), color)
     }
 
     fun nRect(x: Int, y: Int, w: Int, h: Int, color: Int) {
-        NvgRecorder.fillRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), color)
+        UiRecorder.fillRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), color)
     }
 
     fun nRoundedRectRing(x: Int, y: Int, w: Int, h: Int, r: Int, strokeW: Int, fillColor: Int, ringColor: Int) {
-        NvgRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), strokeW.toFloat(), fillColor, ringColor)
+        UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), strokeW.toFloat(), fillColor, ringColor)
     }
 
     fun nPill(x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
@@ -97,16 +97,16 @@ object ScreenTheme {
     fun nTextFieldContent(field: net.minecraft.client.gui.components.EditBox, focused: Boolean, x: Int, y: Int, w: Int, h: Int, textSize: Float = 7f) {
         val text = field.value
         val cursor = field.cursorPosition.coerceIn(0, text.length)
-        val cursorX = NvgRecorder.textWidth(text.substring(0, cursor), textSize)
+        val cursorX = UiRecorder.textWidth(text.substring(0, cursor), textSize)
         val pad = 3f
         val visibleW = w - pad * 2f
         val scroll = Math.max(0f, cursorX - visibleW)
-        NvgRecorder.pushScissor((x + 1).toFloat(), (y + 1).toFloat(), (w - 2).toFloat(), (h - 2).toFloat())
-        NvgRecorder.text(text, x + pad - scroll, y + (h - textSize) / 2f, textSize, TEXT_COLOR)
+        UiRecorder.pushScissor((x + 1).toFloat(), (y + 1).toFloat(), (w - 2).toFloat(), (h - 2).toFloat())
+        UiRecorder.text(text, x + pad - scroll, y + (h - textSize) / 2f, textSize, TEXT_COLOR)
         if (focused && (System.currentTimeMillis() / 500) % 2 == 0L) {
-            NvgRecorder.fillRect(x + pad + cursorX - scroll, (y + 2).toFloat(), 1f, (h - 4).toFloat(), TEXT_COLOR)
+            UiRecorder.fillRect(x + pad + cursorX - scroll, (y + 2).toFloat(), 1f, (h - 4).toFloat(), TEXT_COLOR)
         }
-        NvgRecorder.popScissor()
+        UiRecorder.popScissor()
     }
 
     private val FIELD_BG_DEFAULT = 0xFF1A1E26.toInt()
