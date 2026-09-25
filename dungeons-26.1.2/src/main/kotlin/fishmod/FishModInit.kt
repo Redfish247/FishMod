@@ -593,6 +593,17 @@ class FishModInit : ModInitializer {
                     }
             )
             dispatcher.register(
+                ClientCommands.literal("pbsplits")
+                    .then(ClientCommands.argument("floor", StringArgumentType.word()).executes { ctx ->
+                        fishmod.utils.dungeon.Phase.pbSplitsCommand(StringArgumentType.getString(ctx, "floor"))
+                        Constants.SUCCESS
+                    })
+                    .executes {
+                        fishmod.utils.dungeon.Phase.pbSplitsCommand(null)
+                        Constants.SUCCESS
+                    }
+            )
+            dispatcher.register(
                 ClientCommands.literal("fmloot")
                     .executes {
                         Minecraft.getInstance().schedule {
