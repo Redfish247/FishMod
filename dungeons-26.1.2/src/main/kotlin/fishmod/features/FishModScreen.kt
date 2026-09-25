@@ -471,7 +471,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         run {
             val f = Feature("Ice Spray Timer", FishSettings::iceSprayTimerEnabled)
             f.sub.add(SubcategoryHeader("After your Ice Spray, one countdown above each group of frozen mobs"))
-            f.sub.add(SliderDoubleSetting("Freeze Time (s)", "", FishSettings::iceSprayDuration, 1.0, 10.0))
             f.sub.add(ColorPickerSetting("Color", "", FishSettings::iceSprayColor))
             f.sub.add(SliderDoubleSetting("Text Size", "", FishSettings::iceSprayScale, 0.5, 4.0))
             dungeon.features.add(f)
