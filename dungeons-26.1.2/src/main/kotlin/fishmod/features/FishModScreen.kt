@@ -490,6 +490,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
         }
         dungeon.features.add(Feature("Boss Health Numbers", Dungeons::bossHealthNumbers))
         run {
+            val f = Feature("Player Highlight", FishSettings::playerHighlightEnabled)
+            f.sub.add(SubcategoryHeader("Outlines teammates in their class colour, through walls"))
+            f.sub.add(SliderIntSetting("Range (blocks)", "", FishSettings::playerHighlightRange, 5, 150, 5))
+            f.sub.add(SubcategoryHeader("Class Colours (shared with the rest of the mod)"))
+            f.sub.add(ColorPickerSetting("Archer", "", Dungeons::archerColor))
+            f.sub.add(ColorPickerSetting("Berserk", "", Dungeons::berserkColor))
+            f.sub.add(ColorPickerSetting("Healer", "", Dungeons::healerColor))
+            f.sub.add(ColorPickerSetting("Mage", "", Dungeons::mageColor))
+            f.sub.add(ColorPickerSetting("Tank", "", Dungeons::tankColor))
+            dungeon.features.add(f)
+        }
+        run {
             val wp = fishmod.features.dungeon.DungeonWaypoints
             val f = Feature("Waypoints", FishSettings::dungeonWaypointsEnabled)
             f.sub.add(SubcategoryHeader("Master toggle for /fm wp — placed boxes, titles and route lines"))
