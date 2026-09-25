@@ -18,6 +18,8 @@ enum class DungeonClass {
         private val PATTERN: Pattern = Pattern.compile("^\\[(Archer|Berserk|Healer|Mage|Tank)]")
         private val NAME_CLASS_PATTERN: Pattern = Pattern.compile("^\\[\\d+] (.+) \\((Archer|Berserk|Healer|Mage|Tank) ")
 
+        private val NAME_TOKEN: Pattern = Pattern.compile("^(?:\\[[^]]*] )*(\\w{1,16})")
+
         private val STATS_DOUBLED_PATTERN: Pattern =
             Pattern.compile("Your (Archer|Berserk|Healer|Mage|Tank) stats are doubled because you are the only player using this class!")
 
@@ -64,7 +66,9 @@ enum class DungeonClass {
                 val matcher = NAME_CLASS_PATTERN.matcher(string)
 
                 if (matcher.find()) {
-                    val name = matcher.group(1).trim().substringAfterLast(' ')
+                    // Skip [RANK] prefixes and trailing emblems (e.g. "[MVP+] Name ⚒").
+                    val name = NAME_TOKEN.matcher(matcher.group(1)).takeIf { it.find() }?.group(1)
+                        ?: return@register false
                     val className = parseClass(matcher.group(2))
                     if (className == null) return@register false
 
