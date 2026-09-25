@@ -729,6 +729,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Goldor Sections", "S1–S4 terminal sections", FishSettings::pbMessagesGoldor))
             f.sub.add(ToggleSetting("Terminals", "Your open-to-solve time per terminal type", FishSettings::pbMessagesTerminals))
             f.sub.add(ToggleSetting("Relics", "P5 start to your relic placed (M7)", FishSettings::pbMessagesRelics))
+            f.sub.add(ToggleSetting("Storm Kill", "P2 start to Storm's death (F7/M7)", FishSettings::pbMessagesStormKill))
             dungeon.features.add(f)
         }
         run {
