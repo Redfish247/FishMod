@@ -64,6 +64,14 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
+    var relicTimesEnabled: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var relicTimesParty: Boolean = false
+
+    @ConfigValue
+    @JvmField
     var notifyPre4Completion: Boolean = false
 
     @ConfigValue
