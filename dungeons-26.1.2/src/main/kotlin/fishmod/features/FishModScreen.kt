@@ -1343,20 +1343,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             floor7.features.add(f)
         }
         run {
-            val f = Feature("S4 Term/Leap Tracker", Floor7::s4TrackerEnabled)
-            f.sub.add(ToggleSetting("Debug HUD", "", Floor7::s4DebugHudEnabled))
-            f.sub.add(ToggleSetting("Alerts", "", Floor7::s4AlertsEnabled))
-            f.sub.add(ToggleSetting("Alert Sound", "", Floor7::s4AlertSoundEnabled).gatedBy { Floor7.s4AlertsEnabled })
-            f.sub.add(ToggleSetting("Early Leap Alert", "", Floor7::s4EarlyLeapAlert).gatedBy { Floor7.s4AlertsEnabled })
-            f.sub.add(ToggleSetting("Late Leap Alert", "", Floor7::s4LateLeapAlert).gatedBy { Floor7.s4AlertsEnabled })
-            f.sub.add(ToggleSetting("Missed Term Alert", "", Floor7::s4MissedTermAlert).gatedBy { Floor7.s4AlertsEnabled })
-            f.sub.add(ToggleSetting("Death Alert", "", Floor7::s4DeathAlert).gatedBy { Floor7.s4AlertsEnabled })
-            f.sub.add(SliderIntSetting("Late Leap Threshold (ticks)", "",
-                { Floor7.s4LateLeapThresholdTicks }, { v -> Floor7.s4LateLeapThresholdTicks = v }, 20, 400).gatedBy { Floor7.s4AlertsEnabled && Floor7.s4LateLeapAlert })
-            f.sub.add(SliderIntSetting("Alert Duration (ticks)", "",
-                { Floor7.s4AlertDurationTicks }, { v -> Floor7.s4AlertDurationTicks = v }, 20, 200).gatedBy { Floor7.s4AlertsEnabled })
-            f.sub.add(SliderIntSetting("Alert Cooldown (ticks)", "",
-                { Floor7.s4AlertCooldownTicks }, { v -> Floor7.s4AlertCooldownTicks = v }, 10, 200).gatedBy { Floor7.s4AlertsEnabled })
+            val f = Feature("Players Leaped", Floor7::playersLeapedEnabled)
+            f.sub.add(SubcategoryHeader("Stand in your leap spot to see how many teammates are there: Mage HEE2 ?/4, Bers S1 ?/1, Healer EE3 ?/3, Mage Core ?/4, Healer Dragons ?/4"))
+            f.sub.add(ToggleSetting("Any Class", "Show at every spot regardless of your class (for testing)", Floor7::playersLeapedAnyClass))
             floor7.features.add(f)
         }
         run {

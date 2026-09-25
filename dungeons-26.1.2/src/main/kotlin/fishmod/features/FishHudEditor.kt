@@ -138,8 +138,7 @@ class FishHudEditor(
             java.util.Map.entry("Device Completed", doubleArrayOf(0.0, 0.0, 1.0)),
             java.util.Map.entry("Melody Warning", doubleArrayOf(0.0, 0.0, 1.0)),
             java.util.Map.entry("Section Completion", doubleArrayOf(0.0, 0.0, 1.0)),
-            java.util.Map.entry("S4 Alert", doubleArrayOf(0.0, 0.0, 1.5)),
-            java.util.Map.entry("S4 Debug", doubleArrayOf(10.0, 220.0, 1.0)),
+            java.util.Map.entry("Players Leaped", doubleArrayOf(10.0, 90.0, 1.0)),
             java.util.Map.entry("Relic Spawn Timer", doubleArrayOf(10.0, 180.0, 1.0)),
             java.util.Map.entry("Goldor Splits", doubleArrayOf(10.0, 128.0, 1.0)),
             java.util.Map.entry("Splits", doubleArrayOf(0.0, 0.0, 1.0)),
@@ -161,7 +160,7 @@ class FishHudEditor(
                 "Tick Timer", "Wither Dragon Timer", "Crystal Spawn Time", "Crystal Reminder",
                 "Storm Death Time", "LB Release Timer", "Storm Crushed", "Term Start Timer",
                 "Section Progress", "Goldor Splits", "Splits", "Current Section", "Device Completed",
-                "Melody Warning", "Section Completion", "S4 Alert", "S4 Debug", "Relic Spawn Timer",
+                "Melody Warning", "Section Completion", "Players Leaped", "Relic Spawn Timer",
             ),
             "HUD & Overlays" to setOf(
                 "Pet", "Soulflow", "Desk-Buddy",
