@@ -52,6 +52,18 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
+    var enableNecronLbTimer: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var necronLbPingMs: Int = 0
+
+    @ConfigValue
+    @JvmField
+    var necronLbColor: Int = 0xffff5555.toInt()
+
+    @ConfigValue
+    @JvmField
     var enableGoldorTickTimer: Boolean = false
 
     @ConfigValue

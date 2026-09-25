@@ -142,6 +142,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             java.util.Map.entry("Storm Death Time", doubleArrayOf(10.0, 92.0, 1.0)),
             java.util.Map.entry("LB Release Timer", doubleArrayOf(10.0, 104.0, 1.0)),
             java.util.Map.entry("Py Tick Timer", doubleArrayOf(10.0, 116.0, 1.0)),
+            java.util.Map.entry("Necron LB Timer", doubleArrayOf(10.0, 128.0, 1.0)),
             java.util.Map.entry("Storm Crushed", doubleArrayOf(0.0, 0.0, 1.0)),
             java.util.Map.entry("Term Start Timer", doubleArrayOf(10.0, 104.0, 1.0)),
             java.util.Map.entry("Section Progress", doubleArrayOf(10.0, 116.0, 1.0)),
@@ -171,7 +172,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Dungeon Map" to listOf("Dungeon Map", "Dungeon Map Info", "Dungeon Score Title"),
             "Floor 7" to listOf(
                 "Tick Timer", "Wither Dragon Timer", "Crystal Spawn Time", "Crystal Reminder",
-                "Storm Death Time", "LB Release Timer", "Py Tick Timer", "Storm Crushed", "Term Start Timer",
+                "Storm Death Time", "LB Release Timer", "Py Tick Timer", "Necron LB Timer", "Storm Crushed", "Term Start Timer",
                 "Section Progress", "Goldor Splits", "Current Section", "Device Completed",
                 "Melody Warning", "Section Completion", "Storm Over Alert", "Players Leaped",
                 "S4 Alert", "S4 Debug", "Relic Spawn Timer",
@@ -265,6 +266,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Performance" to s("§7FPS: §a144", "§7TPS: §a19.9", "§7Ping: §a42ms"),
             "Storm Over Alert" to s("§dStorm Over!"),
             "Py Tick Timer" to c("§d12.35"),
+            "Necron LB Timer" to c("§c3.20"),
             "Players Leaped" to s("§5Leaped (HEE2): §e2/4"),
             "Dungeon Score Title" to c("§aOn pace for 300 §7(12m 34s)"),
             "Custom Scoreboard" to Sample(

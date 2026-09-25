@@ -491,6 +491,7 @@ class FishModInit : ModInitializer {
         FishHudEditor.register("Storm Death Time", fishmod.features.dungeon.f7.F7Huds.stormDeathTime)
         FishHudEditor.register("LB Release Timer", fishmod.features.dungeon.f7.F7Huds.lbReleaseTimer)
         FishHudEditor.register("Py Tick Timer", fishmod.features.dungeon.f7.F7Huds.pyTimer)
+        FishHudEditor.register("Necron LB Timer", fishmod.features.dungeon.f7.F7Huds.necronLbTimer)
         FishHudEditor.register("Storm Crushed", fishmod.features.dungeon.f7.F7Huds.stormCrush)
         FishHudEditor.register("Term Start Timer", fishmod.features.dungeon.f7.F7Huds.termStartTimer)
         FishHudEditor.register("Section Progress", fishmod.features.dungeon.f7.F7Huds.sectionProgress)
