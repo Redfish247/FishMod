@@ -8,17 +8,11 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.sounds.SoundEvents
 
-// Movable title once Storm has used both of his lightning procs.
+// Movable title at 28.5s on the Storm tick timer.
 object StormOverAlert {
 
     private const val NAME = "Storm Over Alert"
-    private val PROC_LINES = setOf(
-        "[BOSS] Storm: ENERGY HEED MY CALL!",
-        "[BOSS] Storm: THUNDER LET ME BE YOUR CATALYST!",
-    )
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
-    private var procs = 0
     private var shownAt = 0L
 
     @JvmStatic
@@ -30,20 +24,15 @@ object StormOverAlert {
             120, 14,
             { FishSettings.stormOverScale }, { v -> FishSettings.stormOverScale = v }
         )
+        Events.ON_WORLD_CHANGE.register { shownAt = 0L; false }
+    }
 
-        Events.ON_GAME_MESSAGE.register { text ->
-            if (!FishSettings.stormOverEnabled) return@register false
-            val s = COLOR.replace(text.string, "").trim()
-            if (s in PROC_LINES && ++procs == 2) {
-                shownAt = System.currentTimeMillis()
-                if (FishSettings.stormOverSound)
-                    Minecraft.getInstance().player?.playSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1.5f)
-            } else if (s == "[BOSS] Storm: I should have known that I stood no chance.") {
-                procs = 0
-            }
-            false
-        }
-        Events.ON_WORLD_CHANGE.register { procs = 0; shownAt = 0L; false }
+    @JvmStatic
+    fun trigger() {
+        if (!FishSettings.stormOverEnabled) return
+        shownAt = System.currentTimeMillis()
+        if (FishSettings.stormOverSound)
+            Minecraft.getInstance().player?.playSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1.5f)
     }
 
     @JvmStatic
