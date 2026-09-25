@@ -61,6 +61,7 @@ object InvincibilityTracker {
                 val s = COLOR.replace(text.string, "").trim()
                 Type.entries.firstOrNull { it.regex.matches(s) }?.let { t ->
                     t.proc()
+                    procTitle(t)
                     if (FishSettings.invincAnnounce) {
                         fishmod.utils.ChatQueue.enqueue("pc ${t.label} Procced!")
                     }
@@ -75,6 +76,26 @@ object InvincibilityTracker {
             if (!Dungeons.displayInvincibilityTimer || !FishSettings.invincShowCooldown) return@register
             drawSlotBar(ctx, stack, x, y)
         }
+    }
+
+    // On-screen title + sound when a mask/pet procs.
+    private fun procTitle(t: Type) {
+        if (!FishSettings.invincProcTitle) return
+        val (text, color) = when (t) {
+            Type.SPIRIT -> FishSettings.invincProcSpiritText to FishSettings.invincProcSpiritColor
+            Type.BONZO -> FishSettings.invincProcBonzoText to FishSettings.invincProcBonzoColor
+            Type.PHOENIX -> FishSettings.invincProcPhoenixText to FishSettings.invincProcPhoenixColor
+        }
+        fishmod.utils.Misc.forceTitle(
+            net.minecraft.network.chat.Component.literal(text.ifBlank { "${t.label} Procced!" }).withColor(color and 0xFFFFFF),
+            net.minecraft.network.chat.Component.empty(), FishSettings.invincProcTitleMs
+        )
+        if (FishSettings.invincProcSound) fishmod.utils.sound.SoundManager.play(
+            fishmod.utils.sound.SoundManager.preset(FishSettings.invincProcSoundName),
+            FishSettings.invincProcVolume.coerceIn(0, 500) / 100f,
+            FishSettings.invincProcPitch.toFloat().coerceIn(0f, 2f),
+            "invincProc", 0
+        )
     }
 
     // Icons are learned from the player's own items (mask heads, Phoenix in the pets menu) and saved.

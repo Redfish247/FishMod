@@ -646,6 +646,21 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             f.sub.add(ToggleSetting("Bonzo Mask", "", FishSettings::invincShowBonzo))
             f.sub.add(ToggleSetting("Phoenix Pet", "", FishSettings::invincShowPhoenix))
             f.sub.add(ToggleSetting("Show Icons", "Item icon instead of the name (learned once you've had the mask on you / opened /pets)", FishSettings::invincIcons))
+            f.sub.add(SubcategoryHeader("Proc Title"))
+            f.sub.add(ToggleSetting("On-Screen Title", "Big title when a mask / Phoenix procs", FishSettings::invincProcTitle))
+            f.sub.add(SliderIntSetting("Title Duration (ms)", "", FishSettings::invincProcTitleMs, 500, 6000, 250).gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(InputSetting("Spirit Message", "", FishSettings::invincProcSpiritText).gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(ColorPickerSetting("Spirit Color", "", FishSettings::invincProcSpiritColor).gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(InputSetting("Bonzo Message", "", FishSettings::invincProcBonzoText).gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(ColorPickerSetting("Bonzo Color", "", FishSettings::invincProcBonzoColor).gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(InputSetting("Phoenix Message", "", FishSettings::invincProcPhoenixText).gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(ColorPickerSetting("Phoenix Color", "", FishSettings::invincProcPhoenixColor).gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(ToggleSetting("Proc Sound", "", FishSettings::invincProcSound).gatedBy { FishSettings.invincProcTitle })
+            f.sub.add(SoundSearchSetting("Sound", "Type to search every game sound",
+                { FishSettings.invincProcSoundName }, { v -> FishSettings.invincProcSoundName = v },
+                { FishSettings.invincProcVolume }, { FishSettings.invincProcPitch }).gatedBy { FishSettings.invincProcTitle && FishSettings.invincProcSound })
+            f.sub.add(SliderIntSetting("Volume %", "", FishSettings::invincProcVolume, 0, 500, 10).gatedBy { FishSettings.invincProcTitle && FishSettings.invincProcSound })
+            f.sub.add(SliderDoubleSetting("Pitch", "", FishSettings::invincProcPitch, 0.0, 2.0).gatedBy { FishSettings.invincProcTitle && FishSettings.invincProcSound })
             dungeon.features.add(f)
         }
         run {
