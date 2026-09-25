@@ -151,8 +151,11 @@ object SecretClicked {
     private fun onInteract(pos: BlockPos) {
         if (!active()) return
         val mc = net.minecraft.client.Minecraft.getInstance()
-        val block = mc.level?.getBlockState(pos)?.block ?: return
-        if (block !is ChestBlock && block !is LeverBlock && block !is AbstractSkullBlock) return
+        val level = mc.level ?: return
+        val block = level.getBlockState(pos).block
+        val secret = block is ChestBlock || block is LeverBlock ||
+            (block is AbstractSkullBlock && SecretDrops.isSecretSkull(level, pos))
+        if (!secret) return
         chime()
         if (!FishSettings.secretClickedBoxes || clicked.any { it.blockPos == pos }) return
         val box = AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0).move(pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble())

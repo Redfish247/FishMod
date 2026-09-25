@@ -115,7 +115,8 @@ object RouteRecorder {
                 val block = level.getBlockState(hit.blockPos).block
                 val type = when (block) {
                     is ChestBlock -> Type.CHEST
-                    is LeverBlock, is AbstractSkullBlock -> Type.SECRET
+                    is LeverBlock -> Type.SECRET
+                    is AbstractSkullBlock -> if (SecretDrops.isSecretSkull(level, hit.blockPos)) Type.SECRET else null
                     else -> null
                 }
                 if (type != null) action(type, hit.blockPos.immutable())
