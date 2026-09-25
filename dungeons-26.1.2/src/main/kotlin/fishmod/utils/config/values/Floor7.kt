@@ -68,10 +68,6 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
-    var relicSpawnTicks: Int = 42
-
-    @ConfigValue
-    @JvmField
     var renderRelicHighlight: Boolean = false
 
     @ConfigValue
