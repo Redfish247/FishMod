@@ -33,6 +33,8 @@ object StormTickTimer {
     // Py: count down 5s to the crusher window (31.5s into P2), pulled earlier by ping.
     private val PY_TICK: Int = Math.round(31.5 * 20).toInt()
 
+    private val STORM_OVER_TICK: Int = Math.round(28.5 * 20).toInt()
+
     private val timer = TickTimer()
     private var deathTime = 0.0
     private var deathStartDisplayTime = 0L
@@ -43,6 +45,7 @@ object StormTickTimer {
             shouldCount = { Location.inDungeon() && Phase.inP2() && !Phase.stormDead() },
             resetOn = { Location.inDungeon() },
             onTick = { t ->
+                if (t == STORM_OVER_TICK) StormOverAlert.trigger()
                 if (Floor7.enablePyTimer && t == pyEndTick()) {
                     Misc.forceTitle(Component.literal("STAND ON CRUSHER!").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD), Component.empty())
                     Scheduler.scheduleSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1.5f)
