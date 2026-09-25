@@ -1289,31 +1289,31 @@ class FishModInit : ModInitializer {
             }
         })
 
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "soulflow_hud")) { ctx, tickCounter -> SoulflowHud.renderHud(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "mining_profit_hud")) { ctx, t -> fishmod.features.mining.MiningProfitTracker.renderHud(ctx, t) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_breaker_hud")) { ctx, tickCounter -> fishmod.features.dungeon.DungeonBreaker.renderHud(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "pet_hud")) { ctx, tickCounter -> PetHud.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "soulflow_hud")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) SoulflowHud.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "mining_profit_hud")) { ctx, t -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.mining.MiningProfitTracker.renderHud(ctx, t) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_breaker_hud")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.DungeonBreaker.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "pet_hud")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) PetHud.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "cooldown_overlay_hotbar")) { ctx, tickCounter -> CooldownOverlay.renderHotbar(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "phase_splits")) { ctx, _ -> Phase.renderHud(ctx) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "f7_huds")) { ctx, _ -> fishmod.features.dungeon.f7.F7Huds.renderHud(ctx) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "phase_splits")) { ctx, _ -> if (!fishmod.features.FishHudEditor.isOpen()) Phase.renderHud(ctx) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "f7_huds")) { ctx, _ -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.F7Huds.renderHud(ctx) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_waypoints_overlay")) { ctx, _ -> fishmod.features.dungeon.DungeonWaypoints.renderOverlay(ctx) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "session_stats")) { ctx, tickCounter -> SessionStats.renderHud(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "warp_cooldown")) { ctx, tickCounter -> fishmod.features.WarpCooldown.renderHud(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "blessings")) { ctx, tickCounter -> fishmod.features.dungeon.Blessings.renderHud(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "invincibility")) { ctx, tickCounter -> fishmod.features.dungeon.InvincibilityTracker.renderHud(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "relic_timer")) { ctx, tickCounter -> fishmod.features.dungeon.f7.M7Relics.renderHud(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "spring_boots")) { ctx, tickCounter -> fishmod.features.SpringBoots.renderHud(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "tac_timer")) { ctx, tickCounter -> fishmod.features.TacTimer.renderHud(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "rag_timer")) { ctx, tickCounter -> fishmod.features.Ragnarock.renderHud(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "spirit_bear")) { ctx, tickCounter -> fishmod.features.dungeon.f4.SpiritBear.renderHud(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "wither_dragons")) { ctx, tickCounter -> fishmod.features.dungeon.f7.dragons.WitherDragons.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "session_stats")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) SessionStats.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "warp_cooldown")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.WarpCooldown.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "blessings")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.Blessings.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "invincibility")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.InvincibilityTracker.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "relic_timer")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.M7Relics.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "spring_boots")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.SpringBoots.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "tac_timer")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.TacTimer.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "rag_timer")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.Ragnarock.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "spirit_bear")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f4.SpiritBear.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "wither_dragons")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.dragons.WitherDragons.renderHud(ctx, tickCounter) }
         fishmod.utils.networth.ItemsDb.initAsync()
 
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "pb_pace_hud")) { ctx, tickCounter -> fishmod.features.PbPaceHud.renderHud(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_spawn_hud")) { ctx, tickCounter -> fishmod.features.slayers.SlayerHuds.renderSpawn(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_stats_hud")) { ctx, tickCounter -> fishmod.features.slayers.SlayerHuds.renderStats(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_timer_hud")) { ctx, tickCounter -> fishmod.features.slayers.SlayerHuds.renderTimer(ctx, tickCounter) }
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_profit_hud")) { ctx, tickCounter -> fishmod.features.slayers.SlayerHuds.renderProfit(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "pb_pace_hud")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.PbPaceHud.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_spawn_hud")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderSpawn(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_stats_hud")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderStats(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_timer_hud")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderTimer(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_profit_hud")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderProfit(ctx, tickCounter) }
         FishHudEditor.register(
             "PB Pace",
             { fishmod.utils.config.values.FishSettings.pbPaceHudX },

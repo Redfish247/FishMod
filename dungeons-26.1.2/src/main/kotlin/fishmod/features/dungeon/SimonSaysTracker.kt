@@ -119,7 +119,7 @@ object SimonSaysTracker {
         }
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { debugTick(it); tick(it) })
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "simon_says_tracker")) { ctx, tc -> renderHud(ctx, tc) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "simon_says_tracker")) { ctx, tc -> if (!fishmod.features.FishHudEditor.isOpen()) renderHud(ctx, tc) }
 
         FishHudEditor.register(
             "Simon Says",
