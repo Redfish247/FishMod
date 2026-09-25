@@ -673,6 +673,14 @@ object FishSettings {
 
     @ConfigValue @JvmField var blessingDisplayEnabled: Boolean = false
 
+    @ConfigValue @JvmField var stormOverEnabled: Boolean = false
+    @ConfigValue @JvmField var stormOverText: String = "Storm Over!"
+    @ConfigValue @JvmField var stormOverColor: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var stormOverSound: Boolean = true
+    @ConfigValue @JvmField var stormOverDurationMs: Int = 2500
+    @ConfigValue @JvmField var stormOverHudX: Int = 200
+    @ConfigValue @JvmField var stormOverHudY: Int = 100
+    @ConfigValue @JvmField var stormOverScale: Double = 2.5
     @ConfigValue @JvmField var perfHudEnabled: Boolean = false
     @ConfigValue @JvmField var perfHudFps: Boolean = true
     @ConfigValue @JvmField var perfHudTps: Boolean = true
