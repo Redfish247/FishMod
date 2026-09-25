@@ -182,6 +182,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasNvgOverlay {
             general.features.add(f)
         }
         run {
+            val f = Feature("Slot Locking", FishSettings::slotLockingEnabled)
+            f.sub.add(SubcategoryHeader("Hover an inventory slot and press the key to lock/unlock it. Locked slots can't be dropped (Q, Ctrl+Q or clicking outside the window)"))
+            f.sub.add(KeybindSetting("Lock Key", "Default L", { fishmod.utils.Keybinds.slotLock }))
+            f.sub.add(ColorPickerSetting("Colour", "", FishSettings::slotLockingColor))
+            f.sub.add(SliderIntSetting("Tint Opacity", "How strongly locked slots are filled (%)", FishSettings::slotLockingOpacity, 0, 100, 5))
+            f.sub.add(ToggleSetting("Outline", "Border around locked slots", FishSettings::slotLockingOutline))
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Inventory Search", FishSettings::inventorySearchEnabled)
             f.sub.add(SubcategoryHeader("Ctrl+F in any container to search names + lore; non-matches are dimmed. Math works too (e.g. 64*9)"))
             f.sub.add(ToggleSetting("Always Show Bar", "Show the bar without pressing Ctrl+F", FishSettings::inventorySearchAlwaysShow))
