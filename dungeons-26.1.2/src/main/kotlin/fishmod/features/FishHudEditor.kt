@@ -185,7 +185,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             ),
             "Party & Social" to listOf("Party Finder List"),
             "Slayer" to listOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit"),
-            "Mining" to listOf("Mining Profit"),
         )
 
         // right = optional value column drawn right-aligned at `width` (or the widest row).
@@ -288,10 +287,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Rag Timer" to s("§5Rag: §a8.5s"),
             "Spring Boots" to s("§aCharge: §f67%"),
             "Pet" to s("§6Ender Dragon §a+1.2k §7(845.3k/1.9M 44.5%)"),
-            "Mining Profit" to s(
-                "§b§lMining Profit", "§71284x §fFine Jade Gemstone §6385.2k", "§72450x §fEnchanted Mithril §6310.5k",
-                "§7Total: §6695.7k", "§7Per hour: §61.39m", "§7Time: §f30m",
-            ),
             "Slayer Spawn" to s("§5§lRevenant Horror V", "§7Spawn: §f1,850 §7/ §f2,400 §8(77%)", lineH = 12),
             "Slayer Stats" to s("§5§lSLAYER STATS", "§7XP: §f12.5K", "§7Kills: §f84", "§7XP/hr: §e45.2K", "§7Kills/hr: §e31", lineH = 12),
             "Slayer Boss Timer" to s("§6Boss: §f12.84s", "§7PB: §f9.51s", "§a§lNEW PB!", "§7Cycle: §f52.3s", "§7Since kill: §f18.4s", lineH = 12),
