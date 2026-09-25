@@ -1,12 +1,10 @@
 package fishmod.features.item
 
-import fishmod.features.HasNvgOverlay
+import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
 import fishmod.utils.data.ItemUtil
 import fishmod.utils.data.LegacyFormatting
-import fishmod.utils.rendering.NvgContext
-import fishmod.utils.rendering.NvgGlStateGuard
-import fishmod.utils.rendering.NvgRecorder
+import fishmod.utils.rendering.UiRecorder
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.EditBox
@@ -18,11 +16,10 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.item.ItemStack
 import org.lwjgl.glfw.GLFW
-import org.lwjgl.nanovg.NanoVG
 import kotlin.math.max
 import kotlin.math.min
 
-class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgOverlay {
+class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOverlay {
 
     private companion object {
         const val CELL = 22
@@ -332,7 +329,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         val mouseX = fishmod.utils.rendering.UiScale.vx(mouseX)
         val mouseY = fishmod.utils.rendering.UiScale.vx(mouseY)
-        NvgRecorder.clear()
+        UiRecorder.clear()
         drawChrome(mouseX, mouseY)
         super.extractRenderState(ctx, mouseX, mouseY, delta)
         val sel = if (minecraft?.player != null) inv().getItem(selectedIndex) else ItemStack.EMPTY
@@ -570,25 +567,8 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasNvgO
 
     override fun isPauseScreen(): Boolean = false
 
-    private val nvgGlState = NvgGlStateGuard()
-    private var nvgFailureLogged = false
-
-    override fun paintNvgOverlay() {
-        nvgGlState.capture()
-        try {
-            val ctx = NvgContext.get()
-            val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
-            NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
-            NvgRecorder.replay(fishmod.utils.rendering.UiScale.factor())
-            NanoVG.nvgEndFrame(ctx)
-        } catch (t: Throwable) {
-            if (!nvgFailureLogged) {
-                nvgFailureLogged = true
-                fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] ItemCustomizeScreen paintNvgOverlay failed", t)
-            }
-        } finally {
-            nvgGlState.restore()
-        }
+    override fun paintUiOverlay() {
+        fishmod.utils.rendering.UiRenderer.paint(this.width, this.height, fishmod.utils.rendering.UiScale.factor())
     }
 
     private inner class Dropdown(val placeholder: String, val x: Int, val y: Int, val w: Int) {

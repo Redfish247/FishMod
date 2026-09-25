@@ -1,6 +1,6 @@
 package fishmod.mixin;
 
-import fishmod.features.HasNvgOverlay;
+import fishmod.features.HasUiOverlay;
 import fishmod.features.item.AnimatedDyeAnimator;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GameRenderer.class)
-public class GameRendererNvgMixin {
+public class GameRendererUiMixin {
 
     @Inject(
         method = "render(Lnet/minecraft/client/DeltaTracker;Z)V",
@@ -21,10 +21,10 @@ public class GameRendererNvgMixin {
             shift = At.Shift.AFTER
         )
     )
-    private void fishmod$paintNvgOverlay(DeltaTracker deltaTracker, boolean tick, CallbackInfo ci) {
+    private void fishmod$paintUiOverlay(DeltaTracker deltaTracker, boolean tick, CallbackInfo ci) {
         AnimatedDyeAnimator.tickFrame();
-        if (Minecraft.getInstance().screen instanceof HasNvgOverlay screen) {
-            screen.paintNvgOverlay();
+        if (Minecraft.getInstance().screen instanceof HasUiOverlay screen) {
+            screen.paintUiOverlay();
         }
     }
 }

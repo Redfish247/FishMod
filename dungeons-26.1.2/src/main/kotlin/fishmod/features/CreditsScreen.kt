@@ -1,18 +1,15 @@
 package fishmod.features
 
-import fishmod.utils.rendering.NvgContext
-import fishmod.utils.rendering.NvgGlStateGuard
-import fishmod.utils.rendering.NvgRecorder
+import fishmod.utils.rendering.UiRecorder
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.util.Util
-import org.lwjgl.nanovg.NanoVG
 import kotlin.math.min
 
-class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Credits")), HasNvgOverlay {
+class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Credits")), HasUiOverlay {
 
     companion object {
         private const val ACCENT = 0xFF24B6B0.toInt()
@@ -110,7 +107,7 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         val mouseX = fishmod.utils.rendering.UiScale.vx(mouseX)
         val mouseY = fishmod.utils.rendering.UiScale.vx(mouseY)
-        NvgRecorder.clear()
+        UiRecorder.clear()
         ScreenTheme.nRect(0, 0, vw(), vh(), SCRIM)
 
         val lx = px()
@@ -120,10 +117,10 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         val cx = (lx + rx) / 2
         val panelR = 10
 
-        NvgRecorder.dropShadow(lx.toFloat(), ty.toFloat(), (rx - lx).toFloat(), (by - ty).toFloat(), panelR.toFloat(), 16f, 0x70000000)
-        NvgRecorder.fillRectVGradient(lx.toFloat(), ty.toFloat(), (rx - lx).toFloat(), (by - ty).toFloat(), BG_TOP, BG_BOT, panelR.toFloat())
+        UiRecorder.dropShadow(lx.toFloat(), ty.toFloat(), (rx - lx).toFloat(), (by - ty).toFloat(), panelR.toFloat(), 16f, 0x70000000)
+        UiRecorder.fillRectVGradient(lx.toFloat(), ty.toFloat(), (rx - lx).toFloat(), (by - ty).toFloat(), BG_TOP, BG_BOT, panelR.toFloat())
         ScreenTheme.nRoundedRectRing(lx, ty, rx - lx, by - ty, panelR, 1, 0, BORDER)
-        NvgRecorder.fillRect((lx + panelR).toFloat(), ty.toFloat(), (rx - lx - 2 * panelR).toFloat(), 3f, ACCENT)
+        UiRecorder.fillRect((lx + panelR).toFloat(), ty.toFloat(), (rx - lx - 2 * panelR).toFloat(), 3f, ACCENT)
 
         centeredNst("FishMod Credits", cx, ty + 20, TEXT, 0.9f)
         ScreenTheme.nRect(lx + 24, ty + 40, rx - lx - 48, 1, BORDER)
@@ -154,7 +151,7 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         linkX = cx - linkW / 2
         linkY = backY - 12 - linkH
         val linkHov = inside(mouseX, mouseY, linkX, linkY, linkW, linkH)
-        NvgRecorder.fillRoundedRect(linkX.toFloat(), linkY.toFloat(), linkW.toFloat(), linkH.toFloat(), linkH / 2f, if (linkHov) 0xFF1B2733.toInt() else 0xFF131B22.toInt())
+        UiRecorder.fillRoundedRect(linkX.toFloat(), linkY.toFloat(), linkW.toFloat(), linkH.toFloat(), linkH / 2f, if (linkHov) 0xFF1B2733.toInt() else 0xFF131B22.toInt())
         ScreenTheme.nRoundedRectRing(linkX, linkY, linkW, linkH, linkH / 2, 1, 0, if (linkHov) DISCORD_BLURPLE_HOVER else DISCORD_BLURPLE)
         centeredNst(DISCORD, cx, linkY + (linkH - 10) / 2, if (linkHov) DISCORD_BLURPLE_HOVER else DISCORD_BLURPLE, 0.7f)
 
@@ -166,13 +163,13 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
     }
 
     private fun drawCreditRow(x: Int, y: Int, w: Int, h: Int, c: Credit, isExpanded: Boolean) {
-        NvgRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), 6f, ROW_BG)
+        UiRecorder.fillRoundedRect(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), 6f, ROW_BG)
         ScreenTheme.nRoundedRectRing(x, y, w, h, 6, 1, 0, ROW_BORDER)
 
         val badgeR = 12
         val badgeCx = x + 20
         val badgeCy = y + ROW_BASE_H / 2
-        NvgRecorder.disc(badgeCx.toFloat(), badgeCy.toFloat(), badgeR.toFloat(), c.badgeColor)
+        UiRecorder.disc(badgeCx.toFloat(), badgeCy.toFloat(), badgeR.toFloat(), c.badgeColor)
         centeredNst(c.name.take(1).uppercase(), badgeCx, badgeCy - 5, 0xFF06121A.toInt(), 0.8f)
 
         val textX = x + 42
@@ -227,24 +224,7 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         Minecraft.getInstance().setScreen(parent)
     }
 
-    private val nvgGlState = NvgGlStateGuard()
-    private var nvgFailureLogged = false
-
-    override fun paintNvgOverlay() {
-        nvgGlState.capture()
-        try {
-            val ctx = NvgContext.get()
-            val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
-            NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
-            NvgRecorder.replay(fishmod.utils.rendering.UiScale.factor())
-            NanoVG.nvgEndFrame(ctx)
-        } catch (t: Throwable) {
-            if (!nvgFailureLogged) {
-                nvgFailureLogged = true
-                fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] CreditsScreen paintNvgOverlay failed", t)
-            }
-        } finally {
-            nvgGlState.restore()
-        }
+    override fun paintUiOverlay() {
+        fishmod.utils.rendering.UiRenderer.paint(this.width, this.height, fishmod.utils.rendering.UiScale.factor())
     }
 }

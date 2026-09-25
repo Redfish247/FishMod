@@ -1,10 +1,8 @@
 package fishmod.features.item
 
-import fishmod.features.HasNvgOverlay
+import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
-import fishmod.utils.rendering.NvgContext
-import fishmod.utils.rendering.NvgGlStateGuard
-import fishmod.utils.rendering.NvgRecorder
+import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.rendering.UiScale
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -24,7 +22,7 @@ class AuctionPriceScreen(
     private val originalLines: Array<String>,
     private val item: ItemStack,
     private val suggested: Long
-) : Screen(Component.literal("Auction Price")), HasNvgOverlay {
+) : Screen(Component.literal("Auction Price")), HasUiOverlay {
 
     private companion object {
         private const val SCRIM = 0xB3000000.toInt()
@@ -97,7 +95,7 @@ class AuctionPriceScreen(
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         val mouseX = UiScale.vx(mouseX)
         val mouseY = UiScale.vx(mouseY)
-        NvgRecorder.clear()
+        UiRecorder.clear()
         ScreenTheme.nRect(0, 0, vw(), vh(), SCRIM)
         ScreenTheme.nPanel(panelX, panelY, panelX + panelW, panelY + panelH, 8, BG, BORDER)
 
@@ -177,24 +175,7 @@ class AuctionPriceScreen(
         Minecraft.getInstance().setScreen(null)
     }
 
-    private val nvgGlState = NvgGlStateGuard()
-    private var nvgFailureLogged = false
-
-    override fun paintNvgOverlay() {
-        nvgGlState.capture()
-        try {
-            val ctx = NvgContext.get()
-            val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
-            org.lwjgl.nanovg.NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
-            NvgRecorder.replay(UiScale.factor())
-            org.lwjgl.nanovg.NanoVG.nvgEndFrame(ctx)
-        } catch (t: Throwable) {
-            if (!nvgFailureLogged) {
-                nvgFailureLogged = true
-                fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] AuctionPriceScreen paintNvgOverlay failed", t)
-            }
-        } finally {
-            nvgGlState.restore()
-        }
+    override fun paintUiOverlay() {
+        fishmod.utils.rendering.UiRenderer.paint(this.width, this.height, fishmod.utils.rendering.UiScale.factor())
     }
 }

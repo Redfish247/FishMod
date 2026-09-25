@@ -1,10 +1,8 @@
 package fishmod.features.croesus
 
-import fishmod.features.HasNvgOverlay
+import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
-import fishmod.utils.rendering.NvgContext
-import fishmod.utils.rendering.NvgGlStateGuard
-import fishmod.utils.rendering.NvgRecorder
+import fishmod.utils.rendering.UiRecorder
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.EditBox
@@ -15,10 +13,9 @@ import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.util.Mth
 import org.lwjgl.glfw.GLFW
-import org.lwjgl.nanovg.NanoVG
 import java.text.DecimalFormat
 
-class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverlay {
+class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasUiOverlay {
 
     private var contentX0 = 0
     private var contentX1 = 0
@@ -83,10 +80,10 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         curMx = fishmod.utils.rendering.UiScale.vx(mouseX); curMy = fishmod.utils.rendering.UiScale.vx(mouseY)
-        NvgRecorder.clear()
+        UiRecorder.clear()
         val vw = (this.width / fishmod.utils.rendering.UiScale.factor()).toInt()
         val vh = (this.height / fishmod.utils.rendering.UiScale.factor()).toInt()
-        NvgRecorder.fillRectVGradient(0f, 0f, vw.toFloat(), vh.toFloat(), BG_TOP, BG_BOT)
+        UiRecorder.fillRectVGradient(0f, 0f, vw.toFloat(), vh.toFloat(), BG_TOP, BG_BOT)
 
         contentX0 = MARGIN
         contentX1 = vw - MARGIN
@@ -202,7 +199,7 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
     private fun renderList(rows: List<LootTrackerStore.Row>) {
         val x0 = listX0
         val x1 = listX1
-        NvgRecorder.pushScissor(x0.toFloat(), listTop.toFloat(), (x1 - x0).toFloat(), listH.toFloat())
+        UiRecorder.pushScissor(x0.toFloat(), listTop.toFloat(), (x1 - x0).toFloat(), listH.toFloat())
 
         val searching = searchField.value.trim().isNotEmpty()
 
@@ -262,7 +259,7 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
             }
         }
 
-        NvgRecorder.popScissor()
+        UiRecorder.popScissor()
     }
 
     private fun renderFooter(allRows: List<LootTrackerStore.Row>, shownRows: List<LootTrackerStore.Row>) {
@@ -415,25 +412,8 @@ class LootTrackerScreen : Screen(Component.literal("Loot Tracker")), HasNvgOverl
 
     override fun isPauseScreen(): Boolean = false
 
-    private val nvgGlState = NvgGlStateGuard()
-    private var nvgFailureLogged = false
-
-    override fun paintNvgOverlay() {
-        nvgGlState.capture()
-        try {
-            val ctx = NvgContext.get()
-            val pixelRatio = Minecraft.getInstance().window.guiScale.toFloat()
-            NanoVG.nvgBeginFrame(ctx, this.width.toFloat(), this.height.toFloat(), pixelRatio)
-            NvgRecorder.replay(fishmod.utils.rendering.UiScale.factor())
-            NanoVG.nvgEndFrame(ctx)
-        } catch (t: Throwable) {
-            if (!nvgFailureLogged) {
-                nvgFailureLogged = true
-                fishmod.utils.debug.Debug.LOGGER.error("[NanoVG] LootTrackerScreen paintNvgOverlay failed", t)
-            }
-        } finally {
-            nvgGlState.restore()
-        }
+    override fun paintUiOverlay() {
+        fishmod.utils.rendering.UiRenderer.paint(this.width, this.height, fishmod.utils.rendering.UiScale.factor())
     }
 
     companion object {
