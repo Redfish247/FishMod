@@ -34,11 +34,23 @@ object DoorHighlight {
         return b === net.minecraft.world.level.block.Blocks.COAL_BLOCK || b === net.minecraft.world.level.block.Blocks.RED_TERRACOTTA
     }
 
-    // Fairy doors come from the world scan, so draw both as soon as they load instead of waiting for map discovery.
-    private fun isFairyDoor(door: Door): Boolean =
-        door.rooms.any { val o = it.owner; o != null && (o.type == Room.Type.FAIRY || o.data?.name == "Fairy") }
+    private fun isFairyRoom(r: Room?): Boolean = r != null && (r.type == Room.Type.FAIRY || r.data?.name == "Fairy")
 
-    private fun visible(door: Door): Boolean = door.seen || isFairyDoor(door)
+    private fun fairyRoom(door: Door): Room? = door.rooms.firstNotNullOfOrNull { it.owner?.takeIf(::isFairyRoom) }
+
+    private fun isFairyDoor(door: Door): Boolean = fairyRoom(door) != null
+
+    // Open once either fairy door's coal block is gone (instant) or the map marks the room entered.
+    private fun fairyOpen(room: Room): Boolean {
+        if (room.state != Room.State.UNDISCOVERED && room.state != Room.State.UNOPENED) return true
+        return ArrayList(Scan.doors).any { d -> d.type == Door.Type.WITHER && fairyRoom(d) === room && !closed(d) }
+    }
+
+    // Fairy doors stay hidden until the fairy room opens, then both draw regardless of map discovery.
+    private fun visible(door: Door): Boolean {
+        val fairy = fairyRoom(door) ?: return door.seen
+        return fairyOpen(fairy)
+    }
 
     private fun active(): Boolean {
         return DungeonMapSettings.mapDoorHighlightEnabled && DungeonState.isInDungeon()
