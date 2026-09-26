@@ -27,33 +27,16 @@ object AutoRequeue {
     private val INVISIBLE = Regex("[\\u00A0\\u200B\\u200C\\u200D\\uFEFF\\u00AD]")
     private fun clean(s: String) = INVISIBLE.replace(s, " ").trim()
 
-    @Volatile private var partyChanged = false
-    @Volatile private var dtSkip = false
-    @Volatile private var startTeamCount = 0
-    @Volatile private var extraStatsHandled = false
-
-    @Volatile private var lastLine = ""
-    @Volatile private var lastLineMs = 0L
+    private var partyChanged = false
+    private var dtSkip = false
+    private var startTeamCount = 0
+    private var extraStatsHandled = false
 
     @JvmStatic
     fun init() {
-        Events.ON_PARTY_MESSAGE.register { _, message ->
-            if (clean(message).equals("!dt", ignoreCase = true)) dtSkip = true
-            false
-        }
-
         Events.ON_GAME_MESSAGE.register { text ->
-            val raw = text.string
-            val s = COLOR.replace(raw, "")
-            val now = System.currentTimeMillis()
-            if (s == lastLine && now - lastLineMs < 1_500L) return@register false
-            lastLine = s
-            lastLineMs = now
+            val s = COLOR.replace(text.string, "")
             when {
-                // Backup for the ON_PARTY_MESSAGE hook (which can miss in-dungeon party chat).
-                // Loose match (contains, not startsWith/endsWith) — trailing junk chars Hypixel
-                // sometimes appends to chat lines broke the old exact-suffix check.
-                DT_LINE.matcher(raw).find() || clean(s).let { it.contains("Party >", ignoreCase = true) && it.contains(": !dt", ignoreCase = true) } -> dtSkip = true
                 s == MORT_START -> { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false }
                 BREAKUP.matcher(s).find() -> partyChanged = true
                 EXTRA_STATS.matcher(s).find() -> {

@@ -53,13 +53,11 @@ object LividSolver {
         }
 
         Events.ON_PACKET.register { packet ->
+            if (!active()) return@register false
             when (packet) {
-                is ClientboundBlockUpdatePacket ->
-                    Minecraft.getInstance().execute { onBlock(packet.pos, packet.blockState) }
-                is ClientboundSectionBlocksUpdatePacket ->
-                    Minecraft.getInstance().execute { packet.runUpdates(::onBlock) }
-                is ClientboundSetEntityDataPacket ->
-                    Minecraft.getInstance().execute { bindEntity(packet.id) }
+                is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
+                is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::onBlock)
+                is ClientboundSetEntityDataPacket -> bindEntity(packet.id)
             }
             false
         }

@@ -89,14 +89,13 @@ object TerminalSolver {
     @JvmStatic
     fun init() {
         Events.ON_PACKET.register { packet ->
-            if (packet is ClientboundOpenScreenPacket) onOpen(packet)
+            when (packet) {
+                is ClientboundOpenScreenPacket -> onOpen(packet)
+                is net.minecraft.network.protocol.game.ClientboundContainerClosePacket -> if (!simActive) onScreenClosed()
+            }
             false
         }
         Events.ON_WORLD_CHANGE.register { reset(); false }
-        Events.ON_PACKET.register { packet ->
-            if (packet is net.minecraft.network.protocol.game.ClientboundContainerClosePacket && !simActive) onScreenClosed()
-            false
-        }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { tickSync() }
 
         Events.ON_GAME_MESSAGE.register { text ->

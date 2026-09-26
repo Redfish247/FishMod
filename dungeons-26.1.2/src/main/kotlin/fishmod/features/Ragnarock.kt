@@ -22,8 +22,8 @@ object Ragnarock {
 
     private const val NAME = "Rag Timer"
 
-    @Volatile private var ticksLeft = 0
-    @Volatile private var lastTauntMs = 0L
+    private var ticksLeft = 0
+    private var lastTauntMs = 0L
 
     @JvmStatic
     fun checkP5Taunt(raw: String?) {
@@ -69,7 +69,6 @@ object Ragnarock {
                 if (FishSettings.ragnarockCancelAlert) Misc.forceTitle(Component.literal("§cRagnarock Cancelled"), Component.empty())
                 ticksLeft = 0
             }
-            checkP5Taunt(text.string)
             false
         }
 

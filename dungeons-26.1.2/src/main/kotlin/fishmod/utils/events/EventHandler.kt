@@ -15,11 +15,10 @@ class EventHandler<T> {
 
     fun invoke(action: Predicate<T>): Boolean {
         if (listeners.isEmpty()) return false
+        var cancelled = false
         for (listener in listeners) {
-            if (action.test(listener)) {
-                return true
-            }
+            if (action.test(listener)) cancelled = true
         }
-        return false
+        return cancelled
     }
 }
