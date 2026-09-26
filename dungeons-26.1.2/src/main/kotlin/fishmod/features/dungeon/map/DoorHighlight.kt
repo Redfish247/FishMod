@@ -40,12 +40,23 @@ object DoorHighlight {
 
     private fun isFairyDoor(door: Door): Boolean = fairyRoom(door) != null
 
-    // Fairy door: a normal door while you're in a room it connects to (e.g. Waterfall); gone once you've entered the fairy room through it
-    private fun visible(door: Door): Boolean {
-        val fairy = fairyRoom(door) ?: return door.seen
+    private fun opened(r: Room): Boolean = r.state != Room.State.UNDISCOVERED && r.state != Room.State.UNOPENED
+
+    // Fairy entrance is walk-through; it stays a key door until anyone opens the fairy room or you walk in
+    private fun fairyEntrance(door: Door): Boolean {
+        val fairy = fairyRoom(door) ?: return false
+        return !opened(fairy) && door !in passed
+    }
+
+    // Plain doors (and the fairy entrance): only while you're in a room they connect to; entrance hides once you're inside the fairy room
+    private fun inRoomVisible(door: Door): Boolean {
         val here = facingRoomTile(door)?.owner ?: return false
+        val fairy = fairyRoom(door) ?: return true
         return here !== fairy || closed(door)
     }
+
+    // Next key door: once anyone opens the one before it, the highlight moves on to the closed door beyond
+    private fun keyVisible(door: Door): Boolean = if (fairyEntrance(door)) inRoomVisible(door) else door.seen
 
     private fun active(): Boolean {
         return DungeonMapSettings.mapDoorHighlightEnabled && DungeonState.isInDungeon()
@@ -78,12 +89,9 @@ object DoorHighlight {
         }
     }
 
-    // Wither/blood door stays highlighted until you've walked through it, even after it's opened
-    private fun keyLive(door: Door): Boolean = door.type != Door.Type.NORMAL && (closed(door) || door !in passed)
+    private fun keyLive(door: Door): Boolean = door.type != Door.Type.NORMAL && (fairyEntrance(door) || closed(door))
 
     private fun openable(door: Door): Boolean {
-        // Fairy doors are walk-through, so their colour follows the key, not the blocks
-        if (!closed(door) && !isFairyDoor(door)) return true
         return when (door.type) {
             Door.Type.BLOOD -> DungeonState.hasBloodKey()
             Door.Type.WITHER -> DungeonState.hasWitherKey()
@@ -152,9 +160,9 @@ object DoorHighlight {
 
     private fun outlineOnly(): Boolean = DungeonMapSettings.mapDoorOutlineOnly
 
-    // Outline-only: doors of the room you're in (plus open fairy doors), one colour, no fill.
+    // Outline-only: plain doors of the room you're in, plus the next key door(s) wherever they are
     private fun outlineDoors(): List<Door> =
-        ArrayList(Scan.doors).filter { visible(it) && (facingRoomTile(it) != null || isFairyDoor(it)) }
+        ArrayList(Scan.doors).filter { if (keyLive(it)) keyVisible(it) else inRoomVisible(it) }
 
     private fun keyDoor(door: Door): Boolean = keyLive(door)
 
@@ -181,11 +189,10 @@ object DoorHighlight {
         }
         val fullBox = DungeonMapSettings.mapDoorHighlightFullBox
         for (door in ArrayList(Scan.doors)) {
-            if (!keyLive(door) || !visible(door)) continue
+            if (!keyLive(door) || !keyVisible(door)) continue
             if (throughWall(door.type)) continue
             val fairy = isFairyDoor(door)
             val hereTile = facingRoomTile(door)
-            if (hereTile == null && !fairy) continue
             if (fullBox || fairy || hereTile == null) {
                 RenderUtils.gizmoBox(box(door), fillColor(door), lineColor(door))
             } else {
@@ -212,11 +219,10 @@ object DoorHighlight {
         }
         val fullBox = DungeonMapSettings.mapDoorHighlightFullBox
         for (door in ArrayList(Scan.doors)) {
-            if (!keyLive(door) || !visible(door)) continue
+            if (!keyLive(door) || !keyVisible(door)) continue
             if (throughWall(door.type) == depthTested) continue
             val fairy = isFairyDoor(door)
             val hereTile = facingRoomTile(door)
-            if (hereTile == null && !fairy) continue
 
             val isWither = door.type == Door.Type.WITHER
             val fillC = RenderUtils.toFloats(if (isWither) witherFill(door) else fillColor(door))
