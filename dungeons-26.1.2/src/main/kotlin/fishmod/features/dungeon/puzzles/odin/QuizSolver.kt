@@ -26,6 +26,7 @@ object QuizSolver {
 
     @Volatile private var correctOption: Int = -1
     private var triviaAnswers: List<String>? = null
+    private var quizRoom: ORoom? = null
 
     fun onMessage(msg: String) {
         if (msg.startsWith("[STATUE] Oruo the Omniscient: ") && msg.endsWith("correctly!")) {
@@ -40,6 +41,7 @@ object QuizSolver {
         val t = msg.trim()
         if ((t.startsWith("ⓐ") || t.startsWith("ⓑ") || t.startsWith("ⓒ")) && triviaAnswers?.any { msg.endsWith(it) } == true) {
             correctOption = when (t[0]) { 'ⓐ' -> 0; 'ⓑ' -> 1; 'ⓒ' -> 2; else -> -1 }
+            Debug.LOGGER.info("[Quiz] answer option={} line={}", correctOption, t)
         }
 
         triviaAnswers = when {
@@ -54,8 +56,7 @@ object QuizSolver {
     fun onRenderWorld() {
         val opt = correctOption
         if (opt < 0) return
-        val room = OdinScan.currentRoom ?: return
-        if (room.data?.name != "Quiz") return
+        val room = quizRoom ?: OdinScan.findRoom("Quiz")?.also { quizRoom = it } ?: return
         val pos = room.getRealCoords(OPTION_LOCALS[opt]).offset(0, -1, 0)
         val color = FishSettings.quizColor
         ORender.filledBox(AABB(pos), color)
@@ -65,5 +66,6 @@ object QuizSolver {
     fun reset() {
         correctOption = -1
         triviaAnswers = null
+        quizRoom = null
     }
 }
