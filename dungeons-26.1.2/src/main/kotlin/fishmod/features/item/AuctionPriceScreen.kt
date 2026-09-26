@@ -140,7 +140,7 @@ class AuctionPriceScreen(
         if (suggested > 0) {
             val sHov = inside(mouseX, mouseY, sugX, sugY, sugW, sugH)
             card(sugX, sugY, sugW, sugH, sHov)
-            cardText("Suggested (-${FishSettingsPercent()}%)", fmtShort(suggested), sugX, sugY, sugW, GOLD)
+            cardText("Suggested (-${autofillPercent()}%)", fmtShort(suggested), sugX, sugY, sugW, GOLD)
             val youX = sugX + sugW + 6
             card(youX, sugY, sugW, sugH, false)
             val youColor = when {
@@ -198,7 +198,7 @@ class AuctionPriceScreen(
         return "$t..."
     }
 
-    private fun FishSettingsPercent(): Int = fishmod.utils.config.values.FishSettings.auctionAutofillPercent
+    private fun autofillPercent(): Int = fishmod.utils.config.values.FishSettings.auctionAutofillPercent
 
     // Accepts 42.5m / 800k / 1.2b / 12,500,000; null when unparseable.
     private fun parsePrice(s: String): Long? {

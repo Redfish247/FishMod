@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(ChatComponent.class)
 public class ChatHistoryLimitMixin {
 
-    private static int fishmod$historyLimit(int vanilla) {
+    @org.spongepowered.asm.mixin.Unique private static int fishmod$historyLimit(int vanilla) {
         return (FishSettings.chatFeatureEnabled && FishSettings.infiniteChatHistory)
                 ? Math.max(vanilla, FishSettings.infiniteChatHistoryLimit) : vanilla;
     }

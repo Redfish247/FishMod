@@ -265,7 +265,7 @@ object Phase {
         }
         RunHistory.saveSplits(floor, splits)
         if (splits.isNotEmpty()) {
-            val time = splits.last().getTimeDiffrence()
+            val time = splits.last().getTimeDifference()
             val formattedTime = Constants.DECIMAL_FORMAT.format(time)
             val timeLost = Component.literal("§aApproximately §e" + formattedTime + "s §alost to lag.")
             Misc.addChatMessage(timeLost)

@@ -162,7 +162,7 @@ class Split(
 
     fun createNameText(): MutableComponent = Component.literal("$name ").withColor(nameColor() and 0xFFFFFF)
 
-    fun getTimeDiffrence(): Double = getRealTime() - getTickTime()
+    fun getTimeDifference(): Double = getRealTime() - getTickTime()
 
     fun createTimeText(): MutableComponent {
         val realTimeColor: Int

@@ -117,7 +117,7 @@ public final class TwitchIrcClient {
 				String color = msg.tags.get("color");
 				String text = msg.trailing;
 				boolean action = false;
-				if (text.startsWith("ACTION ") && text.endsWith("")) {
+				if (text.startsWith("\u0001ACTION ") && text.endsWith("\u0001")) {
 					text = text.substring(8, text.length() - 1);
 					action = true;
 				}

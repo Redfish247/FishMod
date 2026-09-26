@@ -26,14 +26,14 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
         super(title);
     }
 
-    private static boolean fishmod$loggedSearchBar = false;
-    private static boolean fishmod$loggedLeapMenu = false;
-    private static boolean fishmod$loggedPartyFinder = false;
-    private static boolean fishmod$loggedStorageOverlay = false;
-    private static boolean fishmod$loggedCroesusProfit = false;
-    private static boolean fishmod$loggedContainerValue = false;
-    private static boolean fishmod$loggedAuctionPriceAutofill = false;
-    private static boolean fishmod$loggedTermCustomGui = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedSearchBar = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedLeapMenu = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedPartyFinder = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedStorageOverlay = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedCroesusProfit = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedContainerValue = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedAuctionPriceAutofill = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedTermCustomGui = false;
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {

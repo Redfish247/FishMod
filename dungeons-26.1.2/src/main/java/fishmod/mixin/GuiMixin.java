@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Gui.class)
 public class GuiMixin {
 
-    private static boolean fishmod$ab(boolean toggle) {
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$ab(boolean toggle) {
         return FishSettings.actionBarEnabled && toggle && Location.inSkyblock();
     }
 

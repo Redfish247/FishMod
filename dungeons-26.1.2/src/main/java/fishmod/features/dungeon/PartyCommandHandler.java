@@ -51,10 +51,14 @@ public class PartyCommandHandler {
 
     }
 
+    private static final java.util.regex.Pattern FLOOR_RE = java.util.regex.Pattern.compile("[fm][1-7]");
+    private static final java.util.regex.Pattern KUUDRA_RE = java.util.regex.Pattern.compile("t[1-5]");
+    private static final java.util.regex.Pattern DIGITS_RE = java.util.regex.Pattern.compile("\\d+");
+
     private static boolean isFloor(String s) {
         if (s == null) return false;
         String l = s.toLowerCase();
-        return l.equals("e") || l.matches("[fm][1-7]");
+        return l.equals("e") || FLOOR_RE.matcher(l).matches();
     }
 
     public static final String LOCAL = "";
@@ -74,7 +78,7 @@ public class PartyCommandHandler {
             case "rtca"      -> { if (FishSettings.pcRtca && respond(cmd, typer, isLocal))    runRtcaForPlayer(mc, ign, responder);             }
             case "rtc"       -> { if (FishSettings.pcRtc  && respond(cmd, typer, isLocal)) {
                 String rtcIgn; String levelArg;
-                if (rawArg1 != null && rawArg1.matches("\\d+")) { rtcIgn = typer; levelArg = rawArg1; }
+                if (rawArg1 != null && DIGITS_RE.matcher(rawArg1).matches()) { rtcIgn = typer; levelArg = rawArg1; }
                 else { rtcIgn = rawArg1 != null ? rawArg1 : typer; levelArg = rawArg2; }
                 runRtcForPlayer(mc, rtcIgn, levelArg, responder);
             } }
@@ -140,8 +144,8 @@ public class PartyCommandHandler {
             case "promote", "pro"         -> { if (FishSettings.pcActionPromote  && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p promote " + resolvePartyTarget(mc, rawArg1));  }
             case "demote", "dem"          -> { if (FishSettings.pcActionDemote   && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p demote " + resolvePartyTarget(mc, rawArg1));   }
             default -> {
-                if ((cmd.matches("[fm][1-7]") || cmd.equals("e")) && FishSettings.pcJoinFloor && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) handleJoinInstance(cmd, mc, responder);
-                else if (cmd.matches("t[1-5]") && FishSettings.pcJoinFloor && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) handleKuudra(cmd, mc, responder);
+                if ((FLOOR_RE.matcher(cmd).matches() || cmd.equals("e")) && FishSettings.pcJoinFloor && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) handleJoinInstance(cmd, mc, responder);
+                else if (KUUDRA_RE.matcher(cmd).matches() && FishSettings.pcJoinFloor && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) handleKuudra(cmd, mc, responder);
             }
         }
     }
@@ -179,7 +183,7 @@ public class PartyCommandHandler {
             case "transfer", "pt", "ptme" -> FishSettings.pcActionTransfer;
             case "promote", "pro" -> FishSettings.pcActionPromote;
             case "demote", "dem" -> FishSettings.pcActionDemote;
-            default -> isFloor(cmd) || cmd.matches("t[1-5]") ? FishSettings.pcJoinFloor : false;
+            default -> isFloor(cmd) || KUUDRA_RE.matcher(cmd).matches() ? FishSettings.pcJoinFloor : false;
         };
     }
 
@@ -337,7 +341,7 @@ public class PartyCommandHandler {
                     if (floor.equals("e")) {
                         count = data.cataTimes[0];
                         label = "E";
-                    } else if (floor.matches("[fm][1-7]")) {
+                    } else if (FLOOR_RE.matcher(floor).matches()) {
                         char type = floor.charAt(0);
                         int num   = floor.charAt(1) - '0';
                         long[] times = (type == 'm') ? data.masterTimes : data.cataTimes;
@@ -683,17 +687,8 @@ public class PartyCommandHandler {
     }
 
     private static void sendTps(Minecraft mc, String responder) {
-        int filled = Math.min(tickIdx, TICK_TIMES.length);
-        if (filled == 0) {
-            sendCmd(mc, responder, "TPS: N/A");
-            return;
-        }
-        long sum = 0;
-        for (int i = 0; i < filled; i++) sum += TICK_TIMES[i];
-        double avgMs = (double) sum / filled;
-        double tps = Math.min(20.0, 1000.0 / avgMs);
-        String formatted = String.format("%.1f", tps);
-        sendCmd(mc, responder, "TPS: " + formatted);
+        double tps = currentTps();
+        sendCmd(mc, responder, tps < 0 ? "TPS: N/A" : "TPS: " + String.format("%.1f", tps));
     }
 
     private static void sendPing(Minecraft mc, String responder) {
