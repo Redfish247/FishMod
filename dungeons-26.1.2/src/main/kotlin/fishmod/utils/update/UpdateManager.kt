@@ -3,14 +3,19 @@ package fishmod.utils.update
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import fishmod.utils.FishMsg
 import fishmod.utils.Location
+import fishmod.utils.Misc
 import fishmod.utils.debug.Debug
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.fabricmc.loader.api.metadata.ModOrigin
+import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.Component
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -285,6 +290,40 @@ object UpdateManager {
                 downloadState = DownloadState.FAILED
             }
         }
+    }
+
+    // Util.openUri swallows failures, so launch the same OS handler ourselves and report if it didn't work.
+    fun openInBrowser(url: String) {
+        Thread({
+            val ok = try {
+                val os = System.getProperty("os.name").lowercase(Locale.ROOT)
+                val cmd = when {
+                    os.contains("win") -> listOf("rundll32", "url.dll,FileProtocolHandler", url)
+                    os.contains("mac") -> listOf("open", url)
+                    else -> listOf("xdg-open", url)
+                }
+                val proc = ProcessBuilder(cmd).redirectErrorStream(true).start()
+                proc.outputStream.close()
+                !proc.waitFor(5, java.util.concurrent.TimeUnit.SECONDS) || proc.exitValue() == 0
+            } catch (t: Throwable) {
+                Debug.LOGGER.warn("[FishMod updater] could not open {}: {}", url, t.toString())
+                false
+            }
+            if (!ok) Minecraft.getInstance().execute { reportOpenFailure(url) }
+        }, "FishMod-OpenUrl").apply { isDaemon = true }.start()
+    }
+
+    private fun reportOpenFailure(url: String) {
+        val mc = Minecraft.getInstance()
+        runCatching { mc.keyboardHandler.clipboard = url }
+        val link = Component.literal(url.removePrefix("https://")).withStyle { st ->
+            runCatching { st.withColor(ChatFormatting.AQUA).withUnderlined(true).withClickEvent(ClickEvent.OpenUrl(URI.create(url))) }
+                .getOrDefault(st.withColor(ChatFormatting.AQUA))
+        }
+        Misc.addChatMessage(
+            Component.literal(FishMsg.prefix()).append(Component.literal("Couldn't open your browser. ").withStyle(ChatFormatting.RED))
+                .append(link).append(Component.literal(" (link copied to clipboard)").withStyle(ChatFormatting.GRAY))
+        )
     }
 
     private fun verifyJar(file: Path, release: Release) {
