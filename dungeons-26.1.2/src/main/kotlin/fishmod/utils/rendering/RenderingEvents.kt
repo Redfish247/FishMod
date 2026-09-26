@@ -26,6 +26,7 @@ object RenderingEvents {
 
     private fun gizmos(ctx: LevelRenderContext) {
         if (Minecraft.getInstance().level == null) return
+        RenderUtils.clearDeferredFills()
         GIZMO.invoke { it.emit(ctx) }
     }
 
@@ -39,6 +40,10 @@ object RenderingEvents {
         ps.pushPose()
         ps.translate(-cam.x, -cam.y, -cam.z)
 
+        if (RenderUtils.hasDeferredFills()) {
+            RenderUtils.flushDeferredFills(ps, buffers.getBuffer(RenderLayers.FILL))
+            buffers.endBatch(RenderLayers.FILL)
+        }
         drawLayer(ctx, ps, buffers, RenderLayers.FILL_ND, NO_DEPTH_FILLED)
         drawLayer(ctx, ps, buffers, RenderLayers.LINE_ND, NO_DEPTH_LINE)
 
