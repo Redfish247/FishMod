@@ -459,6 +459,7 @@ class FishModInit : ClientModInitializer {
         fishmod.features.dungeon.IceSprayTimer.init()
         fishmod.features.PetSwapTitle.init()
         fishmod.features.PetIcons.init()
+        fishmod.features.croesus.LootIcons.init()
         fishmod.features.dungeon.f7.StormOverAlert.init()
         fishmod.features.dungeon.f7.VenoStackCount.init()
         fishmod.features.PerformanceHud.init()
