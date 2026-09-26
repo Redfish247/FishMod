@@ -34,11 +34,27 @@ object DoorHighlight {
         return b === net.minecraft.world.level.block.Blocks.COAL_BLOCK || b === net.minecraft.world.level.block.Blocks.RED_TERRACOTTA
     }
 
-    // Fairy doors come from the world scan, so draw both as soon as they load instead of waiting for map discovery.
-    private fun isFairyDoor(door: Door): Boolean =
-        door.rooms.any { val o = it.owner; o != null && (o.type == Room.Type.FAIRY || o.data?.name == "Fairy") }
+    private fun isFairyRoom(r: Room?): Boolean = r != null && (r.type == Room.Type.FAIRY || r.data?.name == "Fairy")
 
-    private fun visible(door: Door): Boolean = door.seen || isFairyDoor(door)
+    private fun fairyRoom(door: Door): Room? = door.rooms.firstNotNullOfOrNull { it.owner?.takeIf(::isFairyRoom) }
+
+    private fun isFairyDoor(door: Door): Boolean = fairyRoom(door) != null
+
+    private fun opened(r: Room): Boolean = r.state != Room.State.UNDISCOVERED && r.state != Room.State.UNOPENED
+
+    // Only a loaded, cleared door block counts; the map's fairy state and locked flag show up too early
+    private fun physicallyOpen(door: Door): Boolean {
+        val level = Minecraft.getInstance().level ?: return false
+        val bp = net.minecraft.core.BlockPos(door.pos.x, 69, door.pos.z)
+        return level.isLoaded(bp) && !closed(door)
+    }
+
+    // Fairy door: hidden until the non-fairy room beside it is open, or you've gone through the other fairy door
+    private fun visible(door: Door): Boolean {
+        val fairy = fairyRoom(door) ?: return door.seen
+        if (door.rooms.any { t -> val o = t.owner; o != null && !isFairyRoom(o) && opened(o) }) return true
+        return ArrayList(Scan.doors).any { d -> d !== door && fairyRoom(d) === fairy && physicallyOpen(d) }
+    }
 
     private fun active(): Boolean {
         return DungeonMapSettings.mapDoorHighlightEnabled && DungeonState.isInDungeon()
