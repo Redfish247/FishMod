@@ -7,7 +7,10 @@
 	"authors": [
 		"Redfish2471"
 	],
-	"contact": {},
+	"contact": {
+		"homepage": "https://modrinth.com/mod/${modrinthSlug}",
+		"sources": "https://github.com/${githubRepo}"
+	},
 	"license": "CC0-1.0",
 	"icon": "assets/fishmod/icon.png",
 	"environment": "*",
@@ -22,6 +25,11 @@
 	"mixins": [
 		"fishmod.mixins.json"
 	],
+	"custom": {
+		"fishmod:updater": {
+			"github": "${githubRepo}"
+		}
+	},
 	"depends": {
 		"fabricloader": ">=0.19.3",
 		"minecraft": "~26.1.2",
