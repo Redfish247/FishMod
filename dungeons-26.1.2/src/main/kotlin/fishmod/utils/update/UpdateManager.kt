@@ -99,7 +99,11 @@ object UpdateManager {
         synchronized(lock) {
             val staged = state.stagedFile?.let(Path::of)
             if (staged != null && Files.isRegularFile(staged) && isNewer(state.stagedVersion)) downloadState = DownloadState.STAGED
-            else if (state.stagedFile != null) { state.stagedVersion = null; state.stagedFile = null; save() }
+            else if (state.stagedFile != null) {
+                // Installed (or superseded): drop the staged copy; the previous jar's .bak stays until the next install.
+                staged?.let { runCatching { Files.deleteIfExists(it) } }
+                state.stagedVersion = null; state.stagedFile = null; save()
+            }
         }
         checkAsync(false)
 
