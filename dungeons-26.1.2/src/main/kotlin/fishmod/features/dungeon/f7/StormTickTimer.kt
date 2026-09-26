@@ -65,6 +65,7 @@ object StormTickTimer {
                 deathTime = timer.tick * Constants.TICK_DURATION
                 deathStartDisplayTime = System.currentTimeMillis()
                 CritTracker.onStormDeath(deathTime)
+                Phase.onStormKill(deathTime)
                 if (Floor7.enableStormDeathTime) {
                     Misc.addChatMessage(
                         Component.literal(
