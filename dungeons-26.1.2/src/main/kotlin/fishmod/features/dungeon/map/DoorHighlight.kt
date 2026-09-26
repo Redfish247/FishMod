@@ -42,19 +42,21 @@ object DoorHighlight {
 
     private fun opened(r: Room): Boolean = r.state != Room.State.UNDISCOVERED && r.state != Room.State.UNOPENED
 
-    // Only a loaded, cleared door block counts; the map's fairy state and locked flag show up too early
-    private fun physicallyOpen(door: Door): Boolean {
-        val level = Minecraft.getInstance().level ?: return false
-        val bp = net.minecraft.core.BlockPos(door.pos.x, 69, door.pos.z)
-        return level.isLoaded(bp) && !closed(door)
+    // Fairy entrance is walk-through; it stays a key door until anyone opens the fairy room or you walk in
+    private fun fairyEntrance(door: Door): Boolean {
+        val fairy = fairyRoom(door) ?: return false
+        return !opened(fairy) && door !in passed
     }
 
-    // Fairy door: hidden until the non-fairy room beside it is open, or you've gone through the other fairy door
-    private fun visible(door: Door): Boolean {
-        val fairy = fairyRoom(door) ?: return door.seen
-        if (door.rooms.any { t -> val o = t.owner; o != null && !isFairyRoom(o) && opened(o) }) return true
-        return ArrayList(Scan.doors).any { d -> d !== door && fairyRoom(d) === fairy && physicallyOpen(d) }
+    // Plain doors (and the fairy entrance): only while you're in a room they connect to; entrance hides once you're inside the fairy room
+    private fun inRoomVisible(door: Door): Boolean {
+        val here = facingRoomTile(door)?.owner ?: return false
+        val fairy = fairyRoom(door) ?: return true
+        return here !== fairy || closed(door)
     }
+
+    // Next key door: once anyone opens the one before it, the highlight moves on to the closed door beyond
+    private fun keyVisible(door: Door): Boolean = if (fairyEntrance(door)) inRoomVisible(door) else door.seen
 
     private fun active(): Boolean {
         return DungeonMapSettings.mapDoorHighlightEnabled && DungeonState.isInDungeon()
@@ -66,6 +68,28 @@ object DoorHighlight {
         val here = Scan.roomsList.getOrNull(idx)?.owner ?: return null
         return door.rooms.firstOrNull { it.owner === here }
     }
+
+    private val passed: MutableSet<Door> = java.util.Collections.newSetFromMap(java.util.WeakHashMap())
+    private var lastRoom: Room? = null
+
+    private fun currentRoom(): Room? {
+        val player = Minecraft.getInstance().player ?: return null
+        return Scan.roomsList.getOrNull(MapVec2i(player.blockX, player.blockZ).index())?.owner
+    }
+
+    // Walking from one side of an open key door to the other marks it passed, handing the highlight to the next one
+    private fun updatePassed() {
+        val here = currentRoom() ?: return
+        val prev = lastRoom
+        lastRoom = here
+        if (prev == null || prev === here) return
+        for (d in ArrayList(Scan.doors)) {
+            if (d.type == Door.Type.NORMAL || closed(d)) continue
+            if (d.rooms.any { it.owner === prev } && d.rooms.any { it.owner === here }) passed.add(d)
+        }
+    }
+
+    private fun keyLive(door: Door): Boolean = door.type != Door.Type.NORMAL && (fairyEntrance(door) || closed(door))
 
     private fun openable(door: Door): Boolean {
         return when (door.type) {
@@ -136,23 +160,39 @@ object DoorHighlight {
 
     private fun outlineOnly(): Boolean = DungeonMapSettings.mapDoorOutlineOnly
 
-    // Outline-only: every known door, open or not, one colour, no fill.
-    private fun outlineDoors(): List<Door> = ArrayList(Scan.doors).filter { visible(it) }
+    // Outline-only: plain doors of the room you're in, plus the next key door(s) wherever they are
+    private fun outlineDoors(): List<Door> =
+        ArrayList(Scan.doors).filter { if (keyLive(it)) keyVisible(it) else inRoomVisible(it) }
+
+    private fun keyDoor(door: Door): Boolean = keyLive(door)
+
+    private fun outlineThroughWall(door: Door): Boolean =
+        if (keyDoor(door)) throughWall(door.type) else DungeonMapSettings.mapDoorHighlightThroughWall
+
+    private fun keyFill(door: Door): Int = if (door.type == Door.Type.WITHER) witherFill(door) else fillColor(door)
+
+    private fun keyLine(door: Door): Int = if (door.type == Door.Type.WITHER) witherLine(door) else lineColor(door)
 
     private fun renderGizmo() {
-        if (!active()) return
+        if (!active()) {
+            lastRoom = null
+            return
+        }
+        updatePassed()
         if (outlineOnly()) {
-            if (DungeonMapSettings.mapDoorHighlightThroughWall) return
-            for (door in outlineDoors()) RenderUtils.gizmoBox(box(door), 0, DungeonMapSettings.mapDoorOutlineColor)
+            for (door in outlineDoors()) {
+                if (outlineThroughWall(door)) continue
+                if (keyDoor(door)) RenderUtils.gizmoBox(box(door), keyFill(door), keyLine(door))
+                else RenderUtils.gizmoBox(box(door), 0, DungeonMapSettings.mapDoorOutlineColor)
+            }
             return
         }
         val fullBox = DungeonMapSettings.mapDoorHighlightFullBox
         for (door in ArrayList(Scan.doors)) {
-            if (door.type == Door.Type.NORMAL || !visible(door) || !closed(door)) continue
+            if (!keyLive(door) || !keyVisible(door)) continue
             if (throughWall(door.type)) continue
             val fairy = isFairyDoor(door)
             val hereTile = facingRoomTile(door)
-            if (hereTile == null && !fairy) continue
             if (fullBox || fairy || hereTile == null) {
                 RenderUtils.gizmoBox(box(door), fillColor(door), lineColor(door))
             } else {
@@ -165,18 +205,24 @@ object DoorHighlight {
     private fun render(matrices: PoseStack, vc: VertexConsumer, depthTested: Boolean, fill: Boolean) {
         if (!active()) return
         if (outlineOnly()) {
-            if (fill || !DungeonMapSettings.mapDoorHighlightThroughWall) return
-            val lineC = RenderUtils.toFloats(DungeonMapSettings.mapDoorOutlineColor)
-            for (door in outlineDoors()) RenderUtils.renderOutline(matrices, vc, box(door), lineC)
+            for (door in outlineDoors()) {
+                if (outlineThroughWall(door) == depthTested) continue
+                val key = keyDoor(door)
+                if (fill) {
+                    if (key) RenderUtils.renderFilled(matrices, vc, box(door), RenderUtils.toFloats(keyFill(door)))
+                } else {
+                    val c = if (key) keyLine(door) else DungeonMapSettings.mapDoorOutlineColor
+                    RenderUtils.renderOutline(matrices, vc, box(door), RenderUtils.toFloats(c))
+                }
+            }
             return
         }
         val fullBox = DungeonMapSettings.mapDoorHighlightFullBox
         for (door in ArrayList(Scan.doors)) {
-            if (door.type == Door.Type.NORMAL || !visible(door) || !closed(door)) continue
+            if (!keyLive(door) || !keyVisible(door)) continue
             if (throughWall(door.type) == depthTested) continue
             val fairy = isFairyDoor(door)
             val hereTile = facingRoomTile(door)
-            if (hereTile == null && !fairy) continue
 
             val isWither = door.type == Door.Type.WITHER
             val fillC = RenderUtils.toFloats(if (isWither) witherFill(door) else fillColor(door))

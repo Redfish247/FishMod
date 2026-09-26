@@ -593,8 +593,8 @@ class FishModInit : ModInitializer {
                         Constants.SUCCESS
                     }
             )
-            dispatcher.register(
-                ClientCommands.literal("pbsplits")
+            for (cmd in arrayOf("pbsplits", "splitspb")) dispatcher.register(
+                ClientCommands.literal(cmd)
                     .then(ClientCommands.argument("floor", StringArgumentType.word()).executes { ctx ->
                         fishmod.utils.dungeon.Phase.pbSplitsCommand(StringArgumentType.getString(ctx, "floor"))
                         Constants.SUCCESS
