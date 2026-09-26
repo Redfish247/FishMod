@@ -74,6 +74,15 @@ object OdinScan {
         setRoom(built)
     }
 
+    // Looks a room up on the whole map, not just the one the player is standing in.
+    fun findRoom(name: String): ORoom? {
+        val m = synchronized(fishmod.features.dungeon.map.Scan.rooms) {
+            fishmod.features.dungeon.map.Scan.rooms.firstOrNull { it.data?.name == name }
+        } ?: return null
+        if (m.rotation == MapRoom.Rotation.NONE || m.clayPos == null) return null
+        return build(m)
+    }
+
     private fun setRoom(room: ORoom?) {
         currentRoom = room
         if (room == null) lastKey = null
