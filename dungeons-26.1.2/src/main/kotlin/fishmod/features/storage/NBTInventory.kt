@@ -12,7 +12,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.Base64
 
-data class NBTInventory(val stacks: List<ItemStack>) {
+class NBTInventory(val stacks: List<ItemStack>) {
 
     val rows get() = (stacks.size + 8) / 9
 

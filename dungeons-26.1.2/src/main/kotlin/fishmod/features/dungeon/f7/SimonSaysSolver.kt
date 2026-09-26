@@ -156,8 +156,7 @@ object SimonSaysSolver {
                 }
 
             110 ->
-                if (updated.block === Blocks.AIR) {
-                } else if (old === Blocks.STONE_BUTTON && powered(updated)) {
+                if (updated.block !== Blocks.AIR && old === Blocks.STONE_BUTTON && powered(updated)) {
                     clickNeeded = clickInOrder.indexOf(pos.east()) + 1
                     dbg("click ${pos.y}:${pos.z} -> clickNeeded=$clickNeeded")
                     if (clickNeeded >= clickInOrder.size) {

@@ -7,11 +7,15 @@ import java.nio.file.Path
 
 object NickData {
 
+    private val dirReady = java.util.concurrent.atomic.AtomicBoolean(false)
+
     private fun file(): Path {
         val dir = Minecraft.getInstance().gameDirectory.toPath().resolve("CosmeticNameChanger")
-        try {
-            Files.createDirectories(dir)
-        } catch (ignored: IOException) {
+        if (dirReady.compareAndSet(false, true)) {
+            try {
+                Files.createDirectories(dir)
+            } catch (ignored: IOException) {
+            }
         }
         return dir.resolve("nick.txt")
     }

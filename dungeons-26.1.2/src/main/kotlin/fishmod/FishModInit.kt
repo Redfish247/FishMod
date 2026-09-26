@@ -372,13 +372,14 @@ class FishModInit : ClientModInitializer {
             try {
                 init()
             } catch (t: Throwable) {
-                println("[FishMod] init failed for $name: $t")
+                fishmod.utils.debug.Debug.LOGGER.error("[FishMod] init failed for {}", name, t)
             }
         }
     }
 
     override fun onInitializeClient() {
         FishConfig.manager.load()
+        safeInit("Config") { Config.manager.load() }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register { FishConfig.manager.save() }
         fishmod.utils.IoExecutor.init()
 
@@ -687,32 +688,24 @@ class FishModInit : ClientModInitializer {
                         Misc.addChatMessage(Component.literal("§b[fmnicktest] §7re-uploaded own nick."))
                         fishmod.cosmetic.RemoteNicks.forceRefresh()
                         Misc.addChatMessage(Component.literal("§b[fmnicktest] §7triggered RemoteNicks.refresh()…"))
-                        mc.schedule {
-                            Thread({
-                                try {
-                                    Thread.sleep(1200)
-                                } catch (ignored: InterruptedException) {
+                        Scheduler.scheduleTask({
+                            val cache = fishmod.cosmetic.RemoteNicks.snapshot()
+                            Misc.addChatMessage(Component.literal("§b[fmnicktest] §7styledByName cache: §f" + cache.size + " §7entries"))
+                            var count = 0
+                            for (e in cache.entries) {
+                                val line: MutableComponent = Component.literal("§7  " + e.key + " §8→ ").copy()
+                                line.append(e.value)
+                                Misc.addChatMessage(line)
+                                if (++count > 10) {
+                                    Misc.addChatMessage(Component.literal("§8  (…more)")); break
                                 }
-                                mc.schedule {
-                                    val cache = fishmod.cosmetic.RemoteNicks.snapshot()
-                                    Misc.addChatMessage(Component.literal("§b[fmnicktest] §7styledByName cache: §f" + cache.size + " §7entries"))
-                                    var count = 0
-                                    for (e in cache.entries) {
-                                        val line: MutableComponent = Component.literal("§7  " + e.key + " §8→ ").copy()
-                                        line.append(e.value)
-                                        Misc.addChatMessage(line)
-                                        if (++count > 10) {
-                                            Misc.addChatMessage(Component.literal("§8  (…more)")); break
-                                        }
-                                    }
-                                    if (cache.isEmpty()) {
-                                        Misc.addChatMessage(Component.literal("§c[fmnicktest] cache is empty — chat rewrite has nothing to apply. Check See Others toggle."))
-                                    } else {
-                                        Misc.addChatMessage(Component.literal("§a[fmnicktest] cache populated. If chat still shows IGNs, the mixin path isn't covering Hypixel's chat handler — paste a chat screenshot."))
-                                    }
-                                }
-                            }, "fmnicktest-dump").start()
-                        }
+                            }
+                            if (cache.isEmpty()) {
+                                Misc.addChatMessage(Component.literal("§c[fmnicktest] cache is empty — chat rewrite has nothing to apply. Check See Others toggle."))
+                            } else {
+                                Misc.addChatMessage(Component.literal("§a[fmnicktest] cache populated. If chat still shows IGNs, the mixin path isn't covering Hypixel's chat handler — paste a chat screenshot."))
+                            }
+                        }, 24)
                         Constants.SUCCESS
                     }
             )
@@ -1391,13 +1384,6 @@ class FishModInit : ClientModInitializer {
             ScreenEvents.afterExtract(screen).register(ScreenEvents.AfterExtract { _, ctx, mx, my, _ ->
                 SessionStats.renderInScreen(ctx, mx, my)
             })
-            ScreenMouseEvents.allowMouseClick(screen).register(ScreenMouseEvents.AllowMouseClick { _, click ->
-                if (click.button() != 0) return@AllowMouseClick true
-                val mx = click.x()
-                val my = click.y()
-                if (SessionStats.handleScreenClick(mx, my)) return@AllowMouseClick false
-                true
-            })
         })
 
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
@@ -1410,7 +1396,6 @@ class FishModInit : ClientModInitializer {
         })
 
         safeInit("FolderUtility") { FolderUtility.init() }
-        safeInit("Config") { Config.manager.load() }
         safeInit("Keybinds") { Keybinds.init() }
         safeInit("CustomEvents") { CustomEvents.init() }
         safeInit("Debug") { Debug.init() }

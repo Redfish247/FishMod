@@ -112,7 +112,7 @@ object SearchBar {
     }
 
     @JvmStatic
-    fun CharTyped(input: CharacterEvent) {
+    fun charTyped(input: CharacterEvent) {
         if (!FishSettings.inventorySearchEnabled || !exists() || !searchBar!!.isFocused || !shouldDisplay()) return
         searchBar!!.charTyped(input)
     }

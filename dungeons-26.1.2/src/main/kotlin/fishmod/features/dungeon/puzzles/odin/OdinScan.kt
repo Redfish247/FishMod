@@ -18,7 +18,7 @@ object OdinScan {
 
     private val nameToData: Map<String, ORoomData> = run {
         try {
-            OdinScan::class.java.getResourceAsStream("/odin_rooms.json")!!.use { s ->
+            OdinScan::class.java.getResourceAsStream("/assets/fishmod/map/rooms.json")!!.use { s ->
                 val list: Set<ORoomData> = Gson().fromJson(
                     InputStreamReader(s, StandardCharsets.UTF_8),
                     object : TypeToken<Set<ORoomData>>() {}.type,
@@ -26,7 +26,7 @@ object OdinScan {
                 list.associateBy { it.name }
             }
         } catch (e: Exception) {
-            Debug.LOGGER.error("Odin rooms.json failed to load", e); emptyMap()
+            Debug.LOGGER.error("rooms.json failed to load for OdinScan", e); emptyMap()
         }
     }
 
