@@ -32,6 +32,7 @@ object ItemCustomizationStore {
     @JvmStatic fun removeDyeColor(uuid: String) { if (data.dyeColors.remove(uuid) != null) save() }
 
     @JvmStatic fun getAnimatedDye(uuid: String): AnimatedDye? = data.animatedDyes[uuid]
+    @JvmStatic fun removeAnimatedDye(uuid: String) { if (data.animatedDyes.remove(uuid) != null) save() }
 
     @JvmStatic fun getArmorTrim(uuid: String): ArmorTrimId? = data.armorTrims[uuid]
     @JvmStatic fun setArmorTrim(uuid: String, trim: ArmorTrimId) { data.armorTrims[uuid] = trim; save() }

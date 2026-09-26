@@ -2,7 +2,10 @@ package fishmod.features
 
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.shaded.practicalconfig.hud.HUDComponent
+import fishmod.features.chat.ChatRuleStore
 import fishmod.utils.config.FishConfig
+import fishmod.utils.config.values.DungeonMapSettings
+import fishmod.utils.config.values.FishSettings
 import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.rendering.UiRenderer
 import fishmod.utils.rendering.UiScale
@@ -145,6 +148,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             java.util.Map.entry("Py Tick Timer", doubleArrayOf(10.0, 116.0, 1.0)),
             java.util.Map.entry("Necron LB Timer", doubleArrayOf(10.0, 128.0, 1.0)),
             java.util.Map.entry("Storm Crushed", doubleArrayOf(0.0, 0.0, 1.0)),
+            java.util.Map.entry("Pillar Explosion Timer", doubleArrayOf(10.0, 140.0, 1.0)),
             java.util.Map.entry("Term Start Timer", doubleArrayOf(10.0, 104.0, 1.0)),
             java.util.Map.entry("Section Progress", doubleArrayOf(10.0, 116.0, 1.0)),
             java.util.Map.entry("Current Section", doubleArrayOf(10.0, 190.0, 1.0)),
@@ -164,6 +168,23 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             java.util.Map.entry("Slayer Profit", doubleArrayOf(240.0, 90.0, 1.0))
         )
 
+        private val RESETTERS: Map<String, Runnable> = mapOf(
+            "Invincibility Timer" to Runnable { FishSettings.invincHudX = 10; FishSettings.invincHudY = 140; FishSettings.invincScale = 1.0 },
+            "Dungeon Breaker" to Runnable { FishSettings.dungeonBreakerHudX = 10; FishSettings.dungeonBreakerHudY = 80; FishSettings.dungeonBreakerHudScale = 1.0 },
+            "Secret Overlay" to Runnable { FishSettings.secretOverlayX = 10; FishSettings.secretOverlayY = 180; FishSettings.secretOverlayScale = 1.5 },
+            "Quiz Timer" to Runnable { FishSettings.quizHudX = 10; FishSettings.quizHudY = 200; FishSettings.quizHudScale = 1.5 },
+            "Dungeon Map Info" to Runnable { DungeonMapSettings.mapInfoX = 100f; DungeonMapSettings.mapInfoY = 100f; DungeonMapSettings.mapInfoScale = 1f },
+            "Dungeon Score Title" to Runnable { DungeonMapSettings.mapScoreTitleX = -1f; DungeonMapSettings.mapScoreTitleY = -1f; DungeonMapSettings.mapScoreTitleScale = 1.5f },
+            "Storm Over Alert" to Runnable { FishSettings.stormOverHudX = 200; FishSettings.stormOverHudY = 100; FishSettings.stormOverScale = 2.5 },
+            "Custom Scoreboard" to Runnable { FishSettings.customScoreboardHudX = -1; FishSettings.customScoreboardHudY = 2 },
+            "Performance" to Runnable { FishSettings.perfHudX = 10; FishSettings.perfHudY = 60; FishSettings.perfHudScale = 1.0 },
+            "Chat Notifications" to Runnable { ChatRuleStore.setHudX(10); ChatRuleStore.setHudY(400); ChatRuleStore.setHudScale(1.0) },
+            "Warp Cooldown" to Runnable { FishSettings.warpCooldownHudX = 10; FishSettings.warpCooldownHudY = 160; FishSettings.warpCooldownScale = 1.0 },
+            "Tac Timer" to Runnable { FishSettings.tacTimerHudX = 10; FishSettings.tacTimerHudY = 180; FishSettings.tacTimerScale = 1.0 },
+            "Rag Timer" to Runnable { FishSettings.ragnarockTimerHudX = 10; FishSettings.ragnarockTimerHudY = 150; FishSettings.ragnarockTimerScale = 1.5 },
+            "Spring Boots" to Runnable { FishSettings.springBootsHudX = 10; FishSettings.springBootsHudY = 200; FishSettings.springBootsScale = 1.0 },
+        )
+
         // Sidebar groups, in display order. HUDs not listed land in "Other".
         private val GROUPS: List<Pair<String, List<String>>> = listOf(
             "Dungeons" to listOf(
@@ -173,7 +194,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Dungeon Map" to listOf("Dungeon Map", "Dungeon Map Info", "Dungeon Score Title"),
             "Floor 7" to listOf(
                 "Tick Timer", "Wither Dragon Timer", "Crystal Spawn Time", "Crystal Reminder",
-                "Storm Death Time", "LB Release Timer", "Py Tick Timer", "Necron LB Timer", "Storm Crushed", "Term Start Timer",
+                "Storm Death Time", "LB Release Timer", "Py Tick Timer", "Necron LB Timer", "Storm Crushed", "Pillar Explosion Timer", "Term Start Timer",
                 "Section Progress", "Goldor Splits", "Current Section", "Device Completed",
                 "Melody Warning", "Section Completion", "Storm Over Alert", "Players Leaped",
                 "Relic Spawn Timer",
@@ -208,6 +229,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Storm Death Time" to c("§538.45"),
             "LB Release Timer" to c("§c2.35"),
             "Storm Crushed" to c("§6||| §bStorm crushed! §6|||"),
+            "Pillar Explosion Timer" to c("§c0.85"),
             "Term Start Timer" to c("§e3.45"),
             "Section Progress" to c("§a(§c3§a/7)"),
             "Current Section" to s("§5Section: §f 2"),
@@ -546,6 +568,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private fun resetEntry(e: HudEntry) {
         if (e.locked()) return
+        RESETTERS[e.name()]?.let { it.run(); return }
         val d = DEFAULTS[e.name()] ?: return
         e.setScale()?.accept(d[2])
         e.setX().accept(d[0].toInt())

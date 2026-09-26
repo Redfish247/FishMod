@@ -231,5 +231,6 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
         fishmod.features.storage.StorageOverlay.onClosed();
         fishmod.features.ScrollableTooltip.resetScroll();
         fishmod.features.dungeon.f7.terminal.TerminalSolver.onScreenClosed();
+        fishmod.features.SlotBinds.onClose();
     }
 }

@@ -294,6 +294,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         ItemCustomizationStore.removeModelId(id)
         ItemCustomizationStore.removeDyeColor(id)
         ItemCustomizationStore.removeArmorTrim(id)
+        ItemCustomizationStore.removeAnimatedDye(id)
         loadFields()
     }
 

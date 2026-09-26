@@ -330,7 +330,11 @@ object PetHud {
         petName = null
         petRarity = ItemRarity.NONE
         petLevel = -1
+        petOverflowLevel = -1
+        petMaxed = false
+        pendingXp = 0.0
         xpCurrent = -1.0
+        xpNext = -1.0
         lastChatPetName = null
         lastChatPetChangeAt = 0
     }

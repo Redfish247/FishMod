@@ -1,7 +1,6 @@
 package fishmod.features.dungeon.f7
 
 import fishmod.shaded.practicalconfig.hud.HUDComponent
-import fishmod.utils.Misc
 import fishmod.utils.config.values.Floor7
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
@@ -16,7 +15,6 @@ object SectionCompletion {
     @JvmStatic
     fun init() {
         Events.ON_SECTION_CHANGE.register {
-            Misc.sendSound(Floor7.sectionChangeSound)
             prevTime = System.currentTimeMillis()
             false
         }

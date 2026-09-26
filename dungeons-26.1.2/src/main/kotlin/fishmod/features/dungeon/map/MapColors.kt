@@ -26,15 +26,24 @@ object MapColors {
     fun darkenMultiplier(): Float = DungeonMapSettings.mapDarkenMultiplier
 
     @JvmStatic
-    fun roomColor(type: Room.Type): Int = when (type) {
-        Room.Type.BLOOD -> DungeonMapSettings.mapBloodRoomColor
-        Room.Type.NORMAL -> DungeonMapSettings.mapNormalRoomColor
-        Room.Type.PUZZLE -> DungeonMapSettings.mapPuzzleRoomColor
-        Room.Type.CHAMPION -> DungeonMapSettings.mapChampionRoomColor
-        Room.Type.TRAP -> DungeonMapSettings.mapTrapRoomColor
-        Room.Type.ENTRANCE -> DungeonMapSettings.mapEntranceRoomColor
-        Room.Type.FAIRY -> DungeonMapSettings.mapFairyRoomColor
-        Room.Type.RARE -> DungeonMapSettings.mapRareRoomColor
-        else -> DungeonMapSettings.mapUnopenedRoomColor
+    fun roomColor(type: Room.Type): Int {
+        val custom = DungeonMapSettings.mapRoomColorsEnabled
+        return when (type) {
+            Room.Type.BLOOD -> bloodColor()
+            Room.Type.NORMAL -> if (custom) DungeonMapSettings.mapNormalRoomColor else -9749999
+            Room.Type.PUZZLE -> if (custom) DungeonMapSettings.mapPuzzleRoomColor else -9109371
+            Room.Type.CHAMPION -> if (custom) DungeonMapSettings.mapChampionRoomColor else -73984
+            Room.Type.TRAP -> if (custom) DungeonMapSettings.mapTrapRoomColor else -2588877
+            Room.Type.ENTRANCE -> if (custom) DungeonMapSettings.mapEntranceRoomColor else -15432448
+            Room.Type.FAIRY -> if (custom) DungeonMapSettings.mapFairyRoomColor else -781429
+            Room.Type.RARE -> if (custom) DungeonMapSettings.mapRareRoomColor else -13479
+            else -> unopenedColor()
+        }
     }
+
+    @JvmStatic
+    fun unopenedColor(): Int = if (DungeonMapSettings.mapRoomColorsEnabled) DungeonMapSettings.mapUnopenedRoomColor else -14803426
+
+    @JvmStatic
+    fun bloodColor(): Int = if (DungeonMapSettings.mapRoomColorsEnabled) DungeonMapSettings.mapBloodRoomColor else -65536
 }

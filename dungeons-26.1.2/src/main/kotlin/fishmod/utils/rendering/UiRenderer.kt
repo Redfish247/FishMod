@@ -29,6 +29,7 @@ object UiRenderer {
     private var uAtlas = -1
     private var failed = false
     private var failLogged = false
+    private var consecutiveFailures = 0
 
     private var buf: FloatBuffer = MemoryUtil.memAllocFloat(FLOATS * 6 * 512)
     private var verts = 0
@@ -170,8 +171,9 @@ void main(){
             verts = 0
             UiRecorder.replay(scale)
             flush()
+            consecutiveFailures = 0
         } catch (t: Throwable) {
-            failed = true
+            if (++consecutiveFailures >= 3) failed = true
             if (!failLogged) {
                 failLogged = true
                 fishmod.utils.debug.Debug.LOGGER.error("[UiRenderer] paint failed - FishMod screens will render without their UI layer", t)

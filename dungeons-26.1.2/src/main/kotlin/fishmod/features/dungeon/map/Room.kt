@@ -73,11 +73,11 @@ class Room(
                 for (d in doors) if (d.seen) seen++
                 if (seen == 1) return SpecialColumn.roomColorGuess(this)
             }
-            return if (type == Type.BLOOD) intArrayOf(MapColors.darker(s.mapBloodRoomColor, dm)) else intArrayOf(s.mapUnopenedRoomColor)
+            return if (type == Type.BLOOD) intArrayOf(MapColors.darker(MapColors.bloodColor(), dm)) else intArrayOf(MapColors.unopenedColor())
         } else {
             val base: Int
             if (!mimic || !(s.mapRoomAdditionsEnabled && s.mapRoomAdditionsMimic) || legit) {
-                if (type == Type.UNKNOWN) return intArrayOf(s.mapUnopenedRoomColor)
+                if (type == Type.UNKNOWN) return intArrayOf(MapColors.unopenedColor())
                 base = MapColors.roomColor(type!!)
             } else {
                 base = s.mapMimicRoomColor

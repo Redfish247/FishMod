@@ -574,7 +574,7 @@ public class PartyCommandHandler {
             long xpPerRun = Math.max(1, FishSettings.rtcCataXpPerRun);
             String result;
             if (xpNeeded <= 0) {
-                result = "Done ✔ :java:";
+                result = "Done ✔";
             } else {
                 long runs;
                 if (FishSettings.rtcaIncludeDailyBonus) {

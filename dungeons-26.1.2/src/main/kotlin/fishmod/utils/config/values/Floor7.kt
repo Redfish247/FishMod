@@ -1,8 +1,6 @@
 package fishmod.utils.config.values
 
-import fishmod.shaded.practicalconfig.data.SoundData
 import fishmod.shaded.practicalconfig.manager.ConfigValue
-import net.minecraft.sounds.SoundEvents
 
 object Floor7 {
 
@@ -149,10 +147,6 @@ object Floor7 {
     @ConfigValue
     @JvmField
     var sectionCompletionNotification: Boolean = false
-
-    @ConfigValue
-    @JvmField
-    var sectionChangeSound: SoundData = SoundData(SoundEvents.NOTE_BLOCK_PLING.value(), 0f, 1f)
 
     @ConfigValue
     @JvmField
