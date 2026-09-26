@@ -271,7 +271,8 @@ void main(){
     }
 
     // Glyphs are baked at device-pixel size and placed on whole device pixels, as fontstash did.
-    fun text(s: String, x: Float, y: Float, size: Float, color: Int) {
+    // Bold = each glyph stamped twice one device pixel apart, with that pixel added to its advance so neighbours don't touch.
+    fun text(s: String, x: Float, y: Float, size: Float, color: Int, bold: Boolean = false) {
         if (s.isEmpty() || size <= 0f) return
         val pr = pixelRatio
         val dev = size * pr
@@ -290,8 +291,13 @@ void main(){
                 val gx = (Math.round(pen) + g.xoff) / pr
                 val gy = (baseline + g.yoff) / pr
                 quad(gx, gy, gx + g.w / pr, gy + g.h / pr, 0f, 0f, 0f, 0f, ZERO, color, color, MODE_TEXT, 0f, 0f, 0f, g.u0, g.v0, g.u1, g.v1)
+                if (bold) {
+                    val bx = gx + 1f / pr
+                    quad(bx, gy, bx + g.w / pr, gy + g.h / pr, 0f, 0f, 0f, 0f, ZERO, color, color, MODE_TEXT, 0f, 0f, 0f, g.u0, g.v0, g.u1, g.v1)
+                }
             }
             pen += UiFont.advanceUnits(cp) * sc
+            if (bold) pen += 1f
         }
     }
 
