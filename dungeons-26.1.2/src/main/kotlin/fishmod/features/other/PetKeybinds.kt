@@ -76,7 +76,7 @@ object PetKeybinds {
     }
 
     private fun isPetsMenu(screen: AbstractContainerScreen<*>): Boolean =
-        PETS_TITLE.matches(screen.title.string.replace(COLOR, "").trim())
+        PETS_TITLE.matches(fishmod.utils.ScreenTitle.plain(screen).trim())
 
     private fun click(mc: Minecraft, containerId: Int, slotId: Int) {
         val player = mc.player ?: return

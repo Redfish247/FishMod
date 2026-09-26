@@ -14,8 +14,9 @@ object BadgeManager {
     }
 
     @JvmStatic
-    fun registerName(name: String, uuidNoDashes: String) {
-        nameToUuid[name] = uuidNoDashes
+    fun replaceNames(names: Map<String, String>) {
+        nameToUuid.keys.retainAll(names.keys)
+        nameToUuid.putAll(names)
     }
 
     @JvmStatic

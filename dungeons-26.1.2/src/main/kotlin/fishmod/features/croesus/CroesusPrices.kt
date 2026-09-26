@@ -14,9 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 object CroesusPrices {
 
-    private val HTTP: HttpClient = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(10))
-        .build()
+    private val HTTP: HttpClient = fishmod.utils.Http.CLIENT
 
     private const val TTL_MS = 5 * 60 * 1000L
     private const val FAIL_TTL_MS = 15 * 60 * 1000L
@@ -42,6 +40,13 @@ object CroesusPrices {
 
     private val dynamicBin = ConcurrentHashMap<String, Pair<Double, Long>>()
     private val dynamicFetching: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
+    private fun trim(cache: MutableMap<String, Pair<Double, Long>>) {
+        if (cache.size < 2048) return
+        val now = System.currentTimeMillis()
+        cache.values.removeIf { now - it.second > QUALITY_TTL_MS }
+        if (cache.size >= 2048) cache.clear()
+    }
 
     private fun failStamp(): Long = System.currentTimeMillis() - TTL_MS + FAIL_TTL_MS
 
@@ -133,6 +138,7 @@ object CroesusPrices {
                 } catch (ex: Exception) {
                     Debug.LOGGER.warn("[CroesusPrices] qualityBin {} error: {}", key, ex.message)
                 }
+                trim(qualityBin)
                 qualityBin[key] = result to System.currentTimeMillis()
                 if (result > 0.0) Debug.LOGGER.debug("[CroesusPrices] qualityBin {} = {}", key, result)
             }.exceptionally { qualityFetching.remove(key); qualityBin[key] = 0.0 to System.currentTimeMillis(); null }
@@ -226,6 +232,7 @@ object CroesusPrices {
                         Debug.LOGGER.warn("[CroesusPrices] dynamicBin {} parse error: {}", cacheKey, ex.message)
                     }
                 }
+                trim(dynamicBin)
                 dynamicBin[cacheKey] = result to System.currentTimeMillis()
                 if (result > 0.0) Debug.LOGGER.debug("[CroesusPrices] dynamicBin {} = {}", cacheKey, result)
             }
@@ -319,6 +326,7 @@ object CroesusPrices {
                 } catch (ex: Exception) {
                     Debug.LOGGER.warn("[CroesusPrices] lowBin {} error: {}", id, ex.message)
                 }
+                trim(lowBinCache)
                 lowBinCache[id] = result to System.currentTimeMillis()
                 if (result > 0.0) Debug.LOGGER.debug("[CroesusPrices] lowBin {} = {}", id, result)
             }.exceptionally { fetchingLowBin.remove(id); lowBinCache[id] = 0.0 to System.currentTimeMillis(); null }

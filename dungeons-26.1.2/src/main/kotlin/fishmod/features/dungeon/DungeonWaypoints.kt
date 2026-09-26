@@ -84,6 +84,11 @@ object DungeonWaypoints {
     private var recordingNextOrder = 0
 
     private val routeReached: MutableMap<String, MutableSet<Int>> = HashMap()
+    private var progressVersion = 0
+    private var cachedRoutes: Map<String, List<LiveWaypoint>> = emptyMap()
+    private var singlesVersion = -1
+    private var cachedSinglesOccluded: List<LiveWaypoint> = emptyList()
+    private var cachedSinglesThrough: List<LiveWaypoint> = emptyList()
 
     private val routeLoopCursor: MutableMap<String, Int> = HashMap()
 
@@ -337,10 +342,12 @@ object DungeonWaypoints {
         if (name == null || name.isBlank()) {
             routeReached.clear()
             routeLoopCursor.clear()
+            progressVersion++
             Misc.addChatMessage(Component.literal("§aAll routes reset — waypoints visible again."))
         } else {
             routeReached.remove(name)
             routeLoopCursor.remove(name)
+            progressVersion++
             Misc.addChatMessage(Component.literal("§aRoute '$name' reset — waypoints visible again."))
         }
     }
@@ -354,6 +361,7 @@ object DungeonWaypoints {
         val n = DungeonWaypointStore.removeRoute(name)
         routeReached.remove(name)
         routeLoopCursor.remove(name)
+        progressVersion++
         refreshLive()
         Misc.addChatMessage(
             Component.literal(
@@ -366,11 +374,10 @@ object DungeonWaypoints {
     private const val ROOM_KEY_PREFIX = "dungeon:room:"
     private fun isRoomKey(key: String) = key.startsWith(ROOM_KEY_PREFIX)
 
-    private fun globalKey(): String {
-        if (Location.inDungeon()) {
-            val a = DungeonRoomAnchor.current()
-            if (a != null) return ROOM_KEY_PREFIX + a.name
-        }
+    private fun globalKey(): String = globalKey(if (Location.inDungeon()) DungeonRoomAnchor.current() else null)
+
+    private fun globalKey(anchor: DungeonRoomAnchor.Anchor?): String {
+        if (anchor != null) return ROOM_KEY_PREFIX + anchor.name
         if (Location.inSkyblock()) {
             return "global:skyblock:" + Location.getCurrentLocation().name
         }
@@ -394,17 +401,15 @@ object DungeonWaypoints {
             return
         }
 
-        val key = globalKey()
+        val anchor = if (Location.inDungeon()) DungeonRoomAnchor.current() else null
+        val key = globalKey(anchor)
         if (key != lastGlobalDim) {
             lastGlobalDim = key
-            lastRoomAnchor = if (isRoomKey(key)) DungeonRoomAnchor.current() else null
+            lastRoomAnchor = if (isRoomKey(key)) anchor else null
             applyGlobal()
-        } else if (isRoomKey(key)) {
-            val anchor = DungeonRoomAnchor.current()
-            if (anchor != lastRoomAnchor) {
-                lastRoomAnchor = anchor
-                applyGlobal()
-            }
+        } else if (isRoomKey(key) && anchor != lastRoomAnchor) {
+            lastRoomAnchor = anchor
+            applyGlobal()
         }
 
         advanceRouteProgress(mc)
@@ -460,7 +465,9 @@ object DungeonWaypoints {
         applyGlobal()
     }
 
-    private fun groupRoutes(): Map<String, List<LiveWaypoint>> {
+    private fun groupRoutes(): Map<String, List<LiveWaypoint>> = cachedRoutes
+
+    private fun computeRoutes(): Map<String, List<LiveWaypoint>> {
         val routeGroups = LinkedHashMap<String, MutableList<LiveWaypoint>>()
         for (w in liveWaypoints) {
             if (w.routeId != null) routeGroups.getOrPut(w.routeId) { ArrayList() }.add(w)
@@ -480,6 +487,7 @@ object DungeonWaypoints {
                 if (reached.contains(w.routeOrder)) continue
                 if (playerPos.distanceTo(w.center) < ROUTE_REACH_RADIUS) {
                     reached.add(w.routeOrder)
+                    progressVersion++
                     if (reached.size >= value.size) {
                         val orders = value.map { it.routeOrder }
                         val lastCursor = routeLoopCursor[key]
@@ -619,6 +627,8 @@ object DungeonWaypoints {
         val anchor = if (isRoomKey(key)) DungeonRoomAnchor.current() else null
         if (isRoomKey(key) && anchor == null) {
             liveWaypoints = ArrayList()
+            cachedRoutes = emptyMap()
+            progressVersion++
             cachedMergedOccluded = emptyList()
             cachedMergedThrough = emptyList()
             cachedMergedPm = emptyList()
@@ -641,6 +651,8 @@ object DungeonWaypoints {
             result.add(LiveWaypoint(box, w.color, w.filled, w.throughWalls, w.title, w.routeId, w.routeOrder, w.message))
         }
         liveWaypoints = result
+        cachedRoutes = computeRoutes()
+        progressVersion++
         cachedMergedOccluded = buildMergedGroups(throughWalls = false)
         cachedMergedThrough = buildMergedGroups(throughWalls = true)
         cachedMergedPm = buildPmGroups()
@@ -847,7 +859,16 @@ object DungeonWaypoints {
         return result
     }
 
-    private fun buildSingles(throughWalls: Boolean): List<LiveWaypoint> =
+    private fun buildSingles(throughWalls: Boolean): List<LiveWaypoint> {
+        if (singlesVersion != progressVersion) {
+            singlesVersion = progressVersion
+            cachedSinglesOccluded = computeSingles(false)
+            cachedSinglesThrough = computeSingles(true)
+        }
+        return if (throughWalls) cachedSinglesThrough else cachedSinglesOccluded
+    }
+
+    private fun computeSingles(throughWalls: Boolean): List<LiveWaypoint> =
         liveWaypoints.filter {
             it.message == null && it.throughWalls == throughWalls && !reached(it) &&
                 (it.routeId != null || it.titleComponent != null || isFlatPixel(it.box))
@@ -866,7 +887,7 @@ object DungeonWaypoints {
     private fun drawMergedOutlineGizmo(g: MergedGroup) {
         if ((g.color ushr 24) == 0) return
         val hw = lineWidth / 2.0
-        for (e in g.edges) RenderUtils.gizmoThickEdge(Vec3(e[0], e[1], e[2]), Vec3(e[3], e[4], e[5]), hw, g.color)
+        for (e in g.edges) RenderUtils.gizmoThickEdge(e[0], e[1], e[2], e[3], e[4], e[5], hw, g.color)
     }
 
     private fun drawMergedOutlineThrough(matrices: PoseStack, vc: VertexConsumer, g: MergedGroup) {
@@ -951,7 +972,8 @@ object DungeonWaypoints {
         }
     }
 
-    private var cachedOverlayKey: String? = null
+    private var cachedOverlayKey = 0
+    private var cachedOverlayValid = false
     private var cachedOverlayLine: Component? = null
     private var cachedOverlayWidth: Int = 0
 
@@ -966,8 +988,18 @@ object DungeonWaypoints {
         }
         if (!editMode) return
 
-        val key = "$fill|$size|$distance|$useBlockSize|$pixelMode|$through|$type|$timer|$lineWidth|$recordingRouteId"
-        if (key != cachedOverlayKey) {
+        var key = fill.hashCode()
+        key = key * 31 + size.hashCode()
+        key = key * 31 + distance
+        key = key * 31 + useBlockSize.hashCode()
+        key = key * 31 + pixelMode.hashCode()
+        key = key * 31 + through.hashCode()
+        key = key * 31 + type.ordinal
+        key = key * 31 + timer.ordinal
+        key = key * 31 + lineWidth.hashCode()
+        key = key * 31 + (recordingRouteId?.hashCode() ?: 0)
+        if (!cachedOverlayValid || key != cachedOverlayKey) {
+            cachedOverlayValid = true
             cachedOverlayKey = key
             val line = Component.literal(
                 "§b[fm wp] §7fill:" + (if (fill) "§ay" else "§cn") + " §7size:§f" + size

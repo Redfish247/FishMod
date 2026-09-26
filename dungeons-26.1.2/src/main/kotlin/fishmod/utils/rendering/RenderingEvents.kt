@@ -58,5 +58,6 @@ object RenderingEvents {
         val vc = buffers.getBuffer(layer)
         handler.invoke { it.render(ctx, ps, vc) }
         buffers.endBatch(layer)
+        RenderUtils.flushText()
     }
 }

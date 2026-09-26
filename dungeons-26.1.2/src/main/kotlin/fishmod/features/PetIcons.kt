@@ -51,7 +51,7 @@ object PetIcons {
 
     private fun learn(mc: Minecraft) {
         val screen = mc.screen as? AbstractContainerScreen<*> ?: return
-        if (!PETS_TITLE.matches(COLOR.replace(screen.title.string, "").trim())) return
+        if (!PETS_TITLE.matches(fishmod.utils.ScreenTitle.plain(screen).trim())) return
         var changed = false
         for (slot in screen.menu.slots) {
             val st = slot.item

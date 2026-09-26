@@ -19,8 +19,7 @@ object ItemsDb {
     private const val REFRESH_MS = 12L * 60 * 60 * 1000L
     private val COLOR = Regex("§.")
 
-    private val HTTP: HttpClient = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(20)).build()
+    private val HTTP: HttpClient = fishmod.utils.Http.CLIENT
 
     @Volatile private var items: Map<String, JsonObject> = emptyMap()
     @Volatile private var nameToId: Map<String, String> = emptyMap()

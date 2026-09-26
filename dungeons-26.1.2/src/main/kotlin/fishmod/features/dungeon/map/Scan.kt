@@ -6,6 +6,7 @@ import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.chunk.LevelChunk
 import java.util.Collections
@@ -149,10 +150,21 @@ object Scan {
         allSecrets = total
     }
 
+    private val scanPos = BlockPos.MutableBlockPos()
+    private val coreChars = java.util.IdentityHashMap<Block, Char>()
+
+    private fun coreChar(block: Block): Char = coreChars.getOrPut(block) {
+        val path = BuiltInRegistries.BLOCK.getKey(block).path
+        if (path.isEmpty()) '\u0000' else path[0].lowercaseChar()
+    }
+
+    private fun blockAt(chunk: LevelChunk, pos: MapVec2i, y: Int): Block =
+        chunk.getBlockState(scanPos.set(pos.x and 15, y, pos.z and 15)).block
+
     private fun getTopY(chunk: LevelChunk, pos: MapVec2i): Int? {
         var height = 0
         for (y in 160 downTo 11) {
-            val block = chunk.getBlockState(BlockPos(pos.x and 15, y, pos.z and 15)).block
+            val block = blockAt(chunk, pos, y)
             if (block === Blocks.VOID_AIR) return null
             if (block !== Blocks.AIR) {
                 height = y
@@ -164,24 +176,23 @@ object Scan {
 
     private fun getBottomY(chunk: LevelChunk, pos: MapVec2i): Int? {
         for (y in 0..160) {
-            val block = chunk.getBlockState(BlockPos(pos.x and 15, y, pos.z and 15)).block
+            val block = blockAt(chunk, pos, y)
             if (block !== Blocks.VOID_AIR && block !== Blocks.AIR) return y
         }
         return null
     }
 
     private fun calculateCore(chunk: LevelChunk, pos: MapVec2i): IntArray? {
-        val sb = StringBuilder(150)
         val top = getTopY(chunk, pos) ?: return null
         val scanHeight = top.coerceIn(11, 140)
-        sb.append(140 - scanHeight)
+        var h = 0
+        for (c in (140 - scanHeight).toString()) h = 31 * h + c.code
         var bedrock = 0
 
         for (y in scanHeight downTo 12) {
-            val block = chunk.getBlockState(BlockPos(pos.x and 15, y, pos.z and 15)).block
+            val block = blockAt(chunk, pos, y)
             if (bedrock >= 2 && block === Blocks.AIR) {
-                val n = y - 11
-                sb.append("a".repeat(maxOf(n, 0)))
+                repeat(maxOf(y - 11, 0)) { h = 31 * h + 'a'.code }
             }
 
             if (block === Blocks.BEDROCK) {
@@ -198,11 +209,11 @@ object Scan {
                 if (black) continue
             }
 
-            val path = BuiltInRegistries.BLOCK.getKey(block).path
-            if (path.isNotEmpty()) sb.append(path[0].lowercaseChar())
+            val c = coreChar(block)
+            if (c != '\u0000') h = 31 * h + c.code
         }
 
-        return intArrayOf(sb.toString().hashCode(), top)
+        return intArrayOf(h, top)
     }
 
     private fun scanRooms(world: ClientLevel) {
