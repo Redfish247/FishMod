@@ -158,6 +158,21 @@ object TerminalSolver {
         val idx = slot.index
         val inSol = idx in term.solution
 
+        if (term is MelodyHandler) {
+            // Highlight the whole target column (rows 1-4) instead of the magenta pane on the top row.
+            val r = idx / 9
+            val inCol = r in 1..4 && idx % 9 == term.targetCol
+            if (!before) {
+                if (!inSol && !inCol && FishSettings.terminalHideWrong && idx < term.type.windowSize)
+                    ctx.fill(x, y, x + 16, y + 16, FishSettings.terminalWrongCover)
+                return
+            }
+            if (r < 1 || r > 4) return
+            if (inSol) ctx.fill(x, y, x + 16, y + 16, FishSettings.terminalMelodyPointerColor)
+            else if (inCol) ctx.fill(x, y, x + 16, y + 16, FishSettings.terminalMelodyColor)
+            return
+        }
+
         if (!inSol) {
             if (!before && FishSettings.terminalHideWrong && idx < term.type.windowSize
                 && term.type != TerminalType.NUMBERS
