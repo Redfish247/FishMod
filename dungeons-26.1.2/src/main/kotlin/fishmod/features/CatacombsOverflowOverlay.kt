@@ -76,7 +76,8 @@ object CatacombsOverflowOverlay {
                     }
                 }
             }
-        } catch (ignored: Exception) {
+        } catch (ex: Exception) {
+            fishmod.utils.debug.Debug.LOGGER.warn("[CatacombsOverflowOverlay] failed to parse member JSON: {}", ex.message)
         }
     }
 

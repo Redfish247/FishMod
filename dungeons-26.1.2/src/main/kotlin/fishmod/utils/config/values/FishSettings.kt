@@ -933,11 +933,6 @@ object FishSettings {
     @ConfigValue @JvmField var slayerProfitMinValue: Int = 0
     @ConfigValue @JvmField var slayerProfitCountKillCoins: Boolean = true
 
-    @ConfigValue @JvmField var miningProfitEnabled: Boolean = false
-    @ConfigValue @JvmField var miningProfitHudX: Int = 10
-    @ConfigValue @JvmField var miningProfitHudY: Int = 100
-    @ConfigValue @JvmField var miningProfitHudScale: Double = 1.0
-
     @ConfigValue @JvmField var slayerPhaseEnabled: Boolean = false
     @ConfigValue @JvmField var slayerPhaseWorldText: Boolean = true
     @ConfigValue @JvmField var slayerPhaseTitles: Boolean = true

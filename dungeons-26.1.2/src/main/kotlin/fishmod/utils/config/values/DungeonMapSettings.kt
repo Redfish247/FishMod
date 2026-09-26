@@ -186,6 +186,10 @@ object DungeonMapSettings {
 
     @ConfigValue
     @JvmField
+    var mapPlayerHeadsEnabled: Boolean = true
+
+    @ConfigValue
+    @JvmField
     var mapPlayerHeadBackground: Int = -1308622848
 
     @ConfigValue
@@ -215,6 +219,10 @@ object DungeonMapSettings {
     @ConfigValue
     @JvmField
     var mapPlayerNameColor: Int = -12171706
+
+    @ConfigValue
+    @JvmField
+    var mapRoomAdditionsEnabled: Boolean = true
 
     @ConfigValue
     @JvmField

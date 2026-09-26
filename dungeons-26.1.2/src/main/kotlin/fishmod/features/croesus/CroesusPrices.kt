@@ -28,6 +28,7 @@ object CroesusPrices {
     private val avgLbin = HashMap<String, Double>()
     private val coflnet = ConcurrentHashMap<String, Double>()
     private val threeDayAvg = ConcurrentHashMap<String, Double>()
+    private val coflnetAttempted = ConcurrentHashMap<String, Long>()
     private val lowBinCache = ConcurrentHashMap<String, Pair<Double, Long>>()
     private val fetching: MutableSet<String> = ConcurrentHashMap.newKeySet()
     private val fetchingLowBin: MutableSet<String> = ConcurrentHashMap.newKeySet()
@@ -78,7 +79,7 @@ object CroesusPrices {
         if (a != null && a > 0) return a
         val c = coflnet[id]
         if (c != null && c > 0) return c
-        fetchCoflnetItem(id)
+        fetchCoflnetItemThrottled(id)
         return 0.0
     }
 
@@ -116,22 +117,24 @@ object CroesusPrices {
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
             .thenAccept { r ->
                 qualityFetching.remove(key)
+                // cache misses too so they are not refetched every frame
+                var result = 0.0
                 try {
-                    if (r.statusCode() != 200) return@thenAccept
-                    val arr = JsonParser.parseString(r.body()).asJsonArray
-                    var min = Double.MAX_VALUE
-                    for (el in arr) {
-                        val bid = el.asJsonObject.get("startingBid")
-                        if (bid != null && !bid.isJsonNull && bid.asDouble < min) min = bid.asDouble
-                    }
-                    if (min < Double.MAX_VALUE) {
-                        qualityBin[key] = min to System.currentTimeMillis()
-                        Debug.LOGGER.info("[CroesusPrices] qualityBin {} = {}", key, min)
+                    if (r.statusCode() == 200) {
+                        val arr = JsonParser.parseString(r.body()).asJsonArray
+                        var min = Double.MAX_VALUE
+                        for (el in arr) {
+                            val bid = el.asJsonObject.get("startingBid")
+                            if (bid != null && !bid.isJsonNull && bid.asDouble < min) min = bid.asDouble
+                        }
+                        if (min < Double.MAX_VALUE) result = min
                     }
                 } catch (ex: Exception) {
                     Debug.LOGGER.warn("[CroesusPrices] qualityBin {} error: {}", key, ex.message)
                 }
-            }.exceptionally { qualityFetching.remove(key); null }
+                qualityBin[key] = result to System.currentTimeMillis()
+                if (result > 0.0) Debug.LOGGER.info("[CroesusPrices] qualityBin {} = {}", key, result)
+            }.exceptionally { qualityFetching.remove(key); qualityBin[key] = 0.0 to System.currentTimeMillis(); null }
     }
 
     @JvmStatic
@@ -206,24 +209,27 @@ object CroesusPrices {
             }
             .thenAccept { r ->
                 dynamicFetching.remove(cacheKey)
-                if (r == null) return@thenAccept
-                try {
-                    if (r.statusCode() != 200) return@thenAccept
-                    val arr = JsonParser.parseString(r.body()).asJsonArray
-                    var min = Double.MAX_VALUE
-                    for (el in arr) {
-                        val bid = el.asJsonObject.get("startingBid")
-                        if (bid != null && !bid.isJsonNull && bid.asDouble < min) min = bid.asDouble
+                // cache misses too so they are not refetched every frame
+                var result = 0.0
+                if (r != null) {
+                    try {
+                        if (r.statusCode() == 200) {
+                            val arr = JsonParser.parseString(r.body()).asJsonArray
+                            var min = Double.MAX_VALUE
+                            for (el in arr) {
+                                val bid = el.asJsonObject.get("startingBid")
+                                if (bid != null && !bid.isJsonNull && bid.asDouble < min) min = bid.asDouble
+                            }
+                            if (min < Double.MAX_VALUE) result = min
+                        }
+                    } catch (ex: Exception) {
+                        Debug.LOGGER.warn("[CroesusPrices] dynamicBin {} parse error: {}", cacheKey, ex.message)
                     }
-                    if (min < Double.MAX_VALUE) {
-                        dynamicBin[cacheKey] = min to System.currentTimeMillis()
-                        Debug.LOGGER.info("[CroesusPrices] dynamicBin {} = {}", cacheKey, min)
-                    }
-                } catch (ex: Exception) {
-                    Debug.LOGGER.warn("[CroesusPrices] dynamicBin {} parse error: {}", cacheKey, ex.message)
                 }
+                dynamicBin[cacheKey] = result to System.currentTimeMillis()
+                if (result > 0.0) Debug.LOGGER.info("[CroesusPrices] dynamicBin {} = {}", cacheKey, result)
             }
-            .exceptionally { dynamicFetching.remove(cacheKey); null }
+            .exceptionally { dynamicFetching.remove(cacheKey); dynamicBin[cacheKey] = 0.0 to System.currentTimeMillis(); null }
     }
 
     private fun fetchCoflnetItem(id: String) {
@@ -256,7 +262,9 @@ object CroesusPrices {
                 } catch (ex: Exception) {
                     Debug.LOGGER.warn("[CroesusPrices] coflnet {} error: {}", id, ex.message)
                 }
-            }.exceptionally { fetching.remove(id); null }
+                // stamp hit or miss so misses aren't refetched every frame
+                coflnetAttempted[id] = System.currentTimeMillis()
+            }.exceptionally { fetching.remove(id); coflnetAttempted[id] = System.currentTimeMillis(); null }
     }
 
     @JvmStatic
@@ -264,8 +272,14 @@ object CroesusPrices {
         if (id == null || id.isEmpty()) return 0.0
         val v = threeDayAvg[id]
         if (v != null && v > 0) return v
-        fetchCoflnetItem(id)
+        fetchCoflnetItemThrottled(id)
         return 0.0
+    }
+
+    private fun fetchCoflnetItemThrottled(id: String) {
+        val attempted = coflnetAttempted[id]
+        if (attempted != null && System.currentTimeMillis() - attempted < QUALITY_TTL_MS) return
+        fetchCoflnetItem(id)
     }
 
     @JvmStatic
@@ -288,26 +302,28 @@ object CroesusPrices {
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
             .thenAccept { r ->
                 fetchingLowBin.remove(id)
+                // cache misses too so they are not refetched every frame
+                var result = 0.0
                 try {
-                    if (r.statusCode() != 200) return@thenAccept
-                    val arr = JsonParser.parseString(r.body()).asJsonArray
-                    var min = Double.MAX_VALUE
-                    for (el in arr) {
-                        val obj = el.asJsonObject
-                        val bid = obj.get("startingBid") ?: continue
-                        if (bid.isJsonNull) continue
-                        val count = obj.get("count")?.takeIf { !it.isJsonNull }?.asInt ?: 1
-                        val unit = bid.asDouble / count.coerceAtLeast(1)
-                        if (unit < min) min = unit
-                    }
-                    if (min < Double.MAX_VALUE) {
-                        lowBinCache[id] = min to System.currentTimeMillis()
-                        Debug.LOGGER.info("[CroesusPrices] lowBin {} = {}", id, min)
+                    if (r.statusCode() == 200) {
+                        val arr = JsonParser.parseString(r.body()).asJsonArray
+                        var min = Double.MAX_VALUE
+                        for (el in arr) {
+                            val obj = el.asJsonObject
+                            val bid = obj.get("startingBid") ?: continue
+                            if (bid.isJsonNull) continue
+                            val count = obj.get("count")?.takeIf { !it.isJsonNull }?.asInt ?: 1
+                            val unit = bid.asDouble / count.coerceAtLeast(1)
+                            if (unit < min) min = unit
+                        }
+                        if (min < Double.MAX_VALUE) result = min
                     }
                 } catch (ex: Exception) {
                     Debug.LOGGER.warn("[CroesusPrices] lowBin {} error: {}", id, ex.message)
                 }
-            }.exceptionally { fetchingLowBin.remove(id); null }
+                lowBinCache[id] = result to System.currentTimeMillis()
+                if (result > 0.0) Debug.LOGGER.info("[CroesusPrices] lowBin {} = {}", id, result)
+            }.exceptionally { fetchingLowBin.remove(id); lowBinCache[id] = 0.0 to System.currentTimeMillis(); null }
     }
 
     @JvmStatic

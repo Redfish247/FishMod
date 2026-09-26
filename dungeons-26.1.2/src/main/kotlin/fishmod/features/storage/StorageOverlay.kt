@@ -127,8 +127,8 @@ object StorageOverlay {
         return lore.lines().any { it.string.lowercase().contains(q) }
     }
 
-    private fun visibleData(activePage: StoragePage?, activeSlots: List<Slot>?): TreeMap<StoragePage, NBTInventory?> {
-        val data = allData()
+    private fun visibleData(activePage: StoragePage?, activeSlots: List<Slot>?, all: TreeMap<StoragePage, NBTInventory?> = allData()): TreeMap<StoragePage, NBTInventory?> {
+        val data = all
         if (!shouldFilterPages) return data
         return TreeMap<StoragePage, NBTInventory?>().apply {
             for ((page, inv) in data) {
@@ -208,14 +208,15 @@ object StorageOverlay {
         val chestEnd = rowCountOf(menu) * 9
         val chestSlots = if (chestEnd > 9) menu.slots.subList(9, chestEnd) else emptyList()
         val active = activePage(screen)
-        val data = visibleData(active, chestSlots)
+        val all = allData()
+        val data = visibleData(active, chestSlots, all)
         if (shouldFilterPages) updateLayoutHeight(data)
 
         rect(ctx, mx0 + 3, my0 + 3, overviewW - 6, overviewH - 6, MENU_BG)
         UiRecorder.roundedRectRing(mx0.toFloat(), my0.toFloat(), overviewW.toFloat(), overviewH.toFloat(), PANEL_R, PANEL_BAND, 0, MENU_BG)
         UiRecorder.roundedRectRing(mx0.toFloat(), my0.toFloat(), overviewW.toFloat(), overviewH.toFloat(), PANEL_R, 1f, 0, MENU_BORDER)
 
-        drawHeader()
+        drawHeader(all.size)
         drawPages(ctx, data, smx, smy, active, chestSlots)
         drawScrollBar()
         drawPlayerInventory(ctx, smx, smy)
@@ -233,12 +234,12 @@ object StorageOverlay {
         pendingPaint = true
     }
 
-    private fun drawHeader() {
+    private fun drawHeader(pageCount: Int) {
         val tx = (mx0 + PADDING).toFloat()
         val ty = my0 + 9f
         UiRecorder.textBold("Storage", tx, ty, TITLE_SIZE, ScreenTheme.TEXT_COLOR)
         val lw = UiRecorder.textWidth("Storage", TITLE_SIZE) + 6f
-        UiRecorder.text("${allData().size} pages", tx + lw, ty + 0.5f, TEXT_SIZE, ScreenTheme.SUBTEXT_COLOR)
+        UiRecorder.text("$pageCount pages", tx + lw, ty + 0.5f, TEXT_SIZE, ScreenTheme.SUBTEXT_COLOR)
 
         val fw = 130; val fh = 13
         val fx = mx0 + overviewW - fw - PADDING; val fy = my0 + 7
