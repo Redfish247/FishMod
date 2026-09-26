@@ -3,8 +3,6 @@ package fishmod.features.dungeon.puzzles.odin
 import com.google.gson.annotations.SerializedName
 import net.minecraft.core.BlockPos
 
-data class OVec2(val x: Int, val z: Int)
-
 enum class ORotations(val x: Int, val z: Int) {
     NORTH(15, 15),
     SOUTH(-15, -15),
@@ -33,10 +31,7 @@ data class ORoomData(
     val shape: ORoomShape = ORoomShape.UNKNOWN,
 )
 
-data class ORoomComponent(val x: Int, val z: Int, val core: Int = 0) {
-    val vec2 = OVec2(x, z)
-    val blockPos: BlockPos = BlockPos(x, 70, z)
-}
+data class ORoomComponent(val x: Int, val z: Int, val core: Int = 0)
 
 data class ORoom(
     var rotation: ORotations = ORotations.NONE,

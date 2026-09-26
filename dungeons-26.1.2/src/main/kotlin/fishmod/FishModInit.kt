@@ -421,8 +421,6 @@ class FishModInit : ClientModInitializer {
         fishmod.features.LoadoutTitle.init()
         fishmod.features.AutoSprint.init()
         fishmod.features.WarpCooldown.init()
-        fishmod.features.TimeChanger.init()
-        fishmod.features.ArrowHitSound.init()
         fishmod.features.dungeon.DungeonBreaker.init()
         fishmod.features.BlockOverlay.init()
         fishmod.features.CameraTweaks.init()

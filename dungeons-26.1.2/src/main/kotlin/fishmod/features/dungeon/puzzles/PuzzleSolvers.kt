@@ -41,7 +41,6 @@ object PuzzleSolvers {
             IceFillSolver.onRoomEnter(room, FishSettings.iceFillOptimized)
             TPMazeSolver.onRoomEnter(room)
             BeamsSolver.onRoomEnter(room)
-            QuizSolver.onRoomEnter(room)
             WaterSolver.onRoomEnter(room)
         }
 

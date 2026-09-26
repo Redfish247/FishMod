@@ -1,6 +1,5 @@
 package fishmod.mixin;
 
-import fishmod.utils.Misc;
 import fishmod.utils.config.values.ExtraOptions;
 import fishmod.utils.data.TextUtil;
 import org.lwjgl.glfw.GLFW;
@@ -34,7 +33,6 @@ public class FishCopyChatMixin extends Screen {
 
         Minecraft mc = Minecraft.getInstance();
         ChatHudInvoker hudInvoker = (ChatHudInvoker) mc.gui.getChat();
-        if (hudInvoker == null) return;
 
         double x = toChatLineX(hudInvoker, click.x());
         double y = toChatLineY(hudInvoker, click.y(), mc);

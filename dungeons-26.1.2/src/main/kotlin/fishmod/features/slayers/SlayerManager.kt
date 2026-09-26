@@ -107,7 +107,6 @@ object SlayerManager {
         SlayerPersonalBests
         SlayerStatsTracker.init()
         SlayerProfitTracker.init()
-        SlayerTimer.init()
         SlayerAlerts.init()
         SlayerBossDetector.init()
         SlayerBossPhases.init()

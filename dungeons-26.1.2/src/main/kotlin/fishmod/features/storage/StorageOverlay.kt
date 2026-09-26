@@ -65,7 +65,6 @@ object StorageOverlay {
     private var lastRenderedInnerHeight = 0
     private var pageWidthCount = 3
     private var knobGrabbed = false
-    private var hoveredOverlayItem: ItemStack? = null
     private var tooltipStack: ItemStack? = null
     private var pendingPaint = false
 
@@ -209,7 +208,6 @@ object StorageOverlay {
         pendingPaint = false
         recomputeGeometry()
         dragPreview = computeDragPreview()
-        hoveredOverlayItem = null
         tooltipStack = null
 
         val s = scale
@@ -400,7 +398,6 @@ object StorageOverlay {
             if (slotHot) rect(ctx, sx, sy, 16, 16, HOVER_WHITE)
         }
         if (hovered != null) {
-            if (isActive) hoveredOverlayItem = hovered
             tooltipStack = hovered
         }
     }
@@ -464,7 +461,6 @@ object StorageOverlay {
             if (hot) rect(ctx, sx, sy, 16, 16, HOVER_WHITE)
         }
         if (hovered != null) {
-            hoveredOverlayItem = hovered
             tooltipStack = hovered
         }
     }
@@ -700,7 +696,6 @@ object StorageOverlay {
         dragStartSlot = null
         dragSlots.clear()
         dragPreview = null
-        hoveredOverlayItem = null
         tooltipStack = null
         pendingPaint = false
     }

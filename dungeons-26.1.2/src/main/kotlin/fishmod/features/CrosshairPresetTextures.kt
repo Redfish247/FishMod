@@ -19,7 +19,6 @@ import kotlin.math.sin
  *  clamped to a crisp ~1px transition — a real anti-aliased curve, not a broad soft fade. */
 object CrosshairPresetTextures {
 
-    private val OUTLINED_STYLES = emptySet<String>()
     private val SDF_STYLES = setOf("Dot", "Circle Dot", "Target")
 
     private data class Key(val style: String, val scaleKey: Int)
@@ -39,7 +38,6 @@ object CrosshairPresetTextures {
         cache[key]?.let { return it }
 
         val p = Params(scale)
-        val outlineWidth = if (style in OUTLINED_STYLES) Math.round(scale).toInt().coerceAtLeast(1) else 0
         val baseHalfExtent = when (style) {
             "Dot" -> ceil(p.dotRadius).toInt()
             "Plus" -> ceil(p.armLen).toInt()
@@ -50,7 +48,7 @@ object CrosshairPresetTextures {
             "Brackets", "Corners" -> ceil(p.bracketSize + p.thickness / 2).toInt()
             else -> ceil(p.armLen).toInt() + 1 // "X"
         }
-        val halfExtent = baseHalfExtent + outlineWidth + 2
+        val halfExtent = baseHalfExtent + 2
         val size = halfExtent * 2 + 1
 
         val img = NativeImage(NativeImage.Format.RGBA, size, size, true)
@@ -60,31 +58,15 @@ object CrosshairPresetTextures {
                     val x = (px - halfExtent).toDouble()
                     val y = (py - halfExtent).toDouble()
                     val dist = signedDistance(style, x, y, p)
-                    val alpha: Int
-                    val gray: Int
-                    if (outlineWidth > 0) {
-                        // fill fades white->black right at the true edge; alpha fades opaque->transparent at the outline's outer edge
-                        gray = ((0.5 - dist).coerceIn(0.0, 1.0) * 255).toInt().coerceIn(0, 255)
-                        alpha = ((0.5 - (dist - outlineWidth)).coerceIn(0.0, 1.0) * 255).toInt().coerceIn(0, 255)
-                    } else {
-                        // no outline: stay pure white, only alpha fades at the true edge
-                        gray = 255
-                        alpha = ((0.5 - dist).coerceIn(0.0, 1.0) * 255).toInt().coerceIn(0, 255)
-                    }
-                    img.setPixelABGR(px, py, (alpha shl 24) or (gray shl 16) or (gray shl 8) or gray)
+                    val alpha = ((0.5 - dist).coerceIn(0.0, 1.0) * 255).toInt().coerceIn(0, 255)
+                    img.setPixelABGR(px, py, (alpha shl 24) or 0xFFFFFF)
                 }
             }
         } else {
             val fill = Array(size) { py -> BooleanArray(size) { px -> insideFill(style, px - halfExtent, py - halfExtent, p) } }
             for (py in 0 until size) {
                 for (px in 0 until size) {
-                    if (fill[py][px]) {
-                        img.setPixelABGR(px, py, (0xFF shl 24) or 0xFFFFFF) // opaque white, tinted at blit time
-                    } else if (outlineWidth > 0 && isOutline(fill, px, py, size, outlineWidth)) {
-                        img.setPixelABGR(px, py, (0xFF shl 24)) // opaque black, stays black regardless of tint
-                    } else {
-                        img.setPixelABGR(px, py, 0) // transparent
-                    }
+                    img.setPixelABGR(px, py, if (fill[py][px]) (0xFF shl 24) or 0xFFFFFF else 0)
                 }
             }
         }
@@ -95,20 +77,6 @@ object CrosshairPresetTextures {
         val result = id to halfExtent
         cache[key] = result
         return result
-    }
-
-    private fun isOutline(fill: Array<BooleanArray>, px: Int, py: Int, size: Int, width: Int): Boolean {
-        for (dy in -width..width) {
-            val ny = py + dy
-            if (ny < 0 || ny >= size) continue
-            for (dx in -width..width) {
-                val nx = px + dx
-                if (nx < 0 || nx >= size) continue
-                if (dx * dx + dy * dy > width * width) continue
-                if (fill[ny][nx]) return true
-            }
-        }
-        return false
     }
 
     private class Params(scale: Double) {

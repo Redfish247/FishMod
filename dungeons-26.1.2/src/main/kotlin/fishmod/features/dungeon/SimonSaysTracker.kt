@@ -3,7 +3,6 @@ package fishmod.features.dungeon
 import fishmod.features.FishHudEditor
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.dungeon.Phase
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.minecraft.client.DeltaTracker
@@ -21,8 +20,6 @@ import java.util.regex.Pattern
 
 object SimonSaysTracker {
 
-    private const val SCAN_RADIUS = 3
-    private const val BURST_GAP_MS = 550L
 
     private val DEVICE_BOX = AABB(
         106.65, 120.0, 92.70,
@@ -41,11 +38,8 @@ object SimonSaysTracker {
     private const val BREAK_GRACE_MS = 6000L
 
     private var round = 0
-    private var maxLen = 0
+    private var resetAtMs = 0L
     private var lastAnnounced = 0
-    private var burstFlashes = 0
-    private var lastFlashMs = 0L
-    private var lastAtDeviceMs = 0L
     private var primed = false
     private var completed = false
     private var completeLatched = false
@@ -55,18 +49,15 @@ object SimonSaysTracker {
     private var broken = false
     private var falseFailSent = false
     private var breakArmedAtMs = 0L
-    private var inP3 = false
     private var atDevice = false
     private var deviceCenter: BlockPos? = null
     private var doneAtMs = 0L
     private val litPrev = HashSet<Long>()
     private val scanBuf = HashSet<Long>()
-    private var scanCounter = 0
     private var seqLen = 0
     private var skipOver = false
     private var buttonsUp: Boolean? = null
     private val BUTTON_CHECK = BlockPos(110, 120, 93)
-    private const val SCAN_INTERVAL_TICKS = 2
 
     private val SS_CHAT: Pattern = Pattern.compile("Simon Says: (\\d)/5")
 
@@ -137,9 +128,8 @@ object SimonSaysTracker {
 
     private fun tick(client: Minecraft) {
         if (!FishSettings.simonSaysEnabled || client.player == null || client.level == null) {
-            inP3 = false; atDevice = false; deviceCenter = null; reset(); return
+            atDevice = false; deviceCenter = null; reset(); return
         }
-        inP3 = safeInP3()
 
         if (completed) { atDevice = false; return }
 
@@ -147,20 +137,17 @@ object SimonSaysTracker {
 
         tickBreakState(client.level!!)
         if (broken) {
-            atDevice = false; deviceCenter = null; primed = false; burstFlashes = 0; litPrev.clear(); seqLen = 0; buttonsUp = null
+            atDevice = false; deviceCenter = null; primed = false; litPrev.clear(); seqLen = 0; buttonsUp = null
             return
         }
-
-        val now = System.currentTimeMillis()
 
         atDevice = false
         for (p: Player in client.level!!.players()) {
             if (p.boundingBox.intersects(DEVICE_BOX)) { atDevice = true; break }
         }
-        if (atDevice) lastAtDeviceMs = now
 
         if (!atDevice) {
-            deviceCenter = null; primed = false; burstFlashes = 0; litPrev.clear()
+            deviceCenter = null; primed = false; litPrev.clear()
             return
         }
 
@@ -232,7 +219,17 @@ object SimonSaysTracker {
     private fun announceRound(r: Int) {
         val label = "$r/5" + (if (r >= 5) " (done)" else "")
         Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§bSimon Says: §a" + label))
-        if (FishSettings.simonSaysPartyChat) fishmod.utils.ChatQueue.enqueue("pc Simon Says: $label")
+        val (custom, text) = when (r) {
+            1 -> FishSettings.simon1Enabled to FishSettings.simon1Message
+            2 -> FishSettings.simon2Enabled to FishSettings.simon2Message
+            3 -> FishSettings.simon3Enabled to FishSettings.simon3Message
+            4 -> FishSettings.simon4Enabled to FishSettings.simon4Message
+            else -> FishSettings.simon5Enabled to FishSettings.simon5Message
+        }
+        when {
+            custom && text.isNotBlank() -> fishmod.utils.ChatQueue.enqueue("pc $text")
+            FishSettings.simonSaysPartyChat -> fishmod.utils.ChatQueue.enqueue("pc Simon Says: $label")
+        }
     }
 
     private fun tickBreakState(world: Level) {
@@ -284,7 +281,8 @@ object SimonSaysTracker {
         canBreak = false
         broken = true
         breakArmedAtMs = 0L
-        round = 0; maxLen = 0; lastAnnounced = 0; burstFlashes = 0
+        round = 0; lastAnnounced = 0
+        resetAtMs = now
         if (debug) log("device broke — reset + fully off until restart")
 
         if (FishSettings.simonSaysFailEnabled) {
@@ -294,26 +292,9 @@ object SimonSaysTracker {
         }
     }
 
-    private fun scanLitCells(world: Level, center: BlockPos, litOut: HashSet<Long>) {
-        val cx = center.x; val cy = center.y; val cz = center.z
-        val m = BlockPos.MutableBlockPos()
-        for (dx in -SCAN_RADIUS..SCAN_RADIUS)
-            for (dy in -SCAN_RADIUS..SCAN_RADIUS)
-                for (dz in -SCAN_RADIUS..SCAN_RADIUS) {
-                    m.set(cx + dx, cy + dy, cz + dz)
-                    if (world.getBlockState(m).block == Blocks.SEA_LANTERN) litOut.add(m.asLong())
-                }
-    }
-
-    private fun safeInP3(): Boolean {
-        return try { Phase.inP3() } catch (t: Throwable) { false }
-    }
-
     private fun reset() {
         round = 0
-        maxLen = 0
         lastAnnounced = 0
-        burstFlashes = 0
         primed = false
         completed = false
         completeLatched = false
@@ -325,28 +306,34 @@ object SimonSaysTracker {
         doneAtMs = 0L
         falseFailSent = false
         litPrev.clear()
-        scanCounter = 0
         deviceCenter = null
         seqLen = 0; skipOver = false; buttonsUp = null
     }
 
     @JvmStatic
-    fun getStage(): Int = round
-
-    @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tc: DeltaTracker) {
         if (!FishSettings.simonSaysEnabled || !FishSettings.simonSaysHudEnabled) return
-        if (round <= 0) return
-        if (round >= 5 && doneAtMs > 0 && System.currentTimeMillis() - doneAtMs > 2000) return
+        val now = System.currentTimeMillis()
+        val showReset = round <= 0 && FishSettings.ssProgressShowReset && resetAtMs > 0 && now - resetAtMs < 3000
+        if (round <= 0 && !showReset) return
+        if (round >= 5 && doneAtMs > 0 && now - doneAtMs > 2000) return
         val mc = Minecraft.getInstance()
         val player = mc.player ?: return
         val dc = deviceCenter
         if (dc != null && player.blockPosition().distSqr(dc) <= 12) return
 
-        val label = if (round == 0)
-            "§bSimon Says: §7—"
-        else
-            "§bSimon Says: §a$round§7/5" + (if (round >= 5) " §7(done)" else "")
+        val (text, color) = when {
+            showReset -> FishSettings.ssProgressResetText to FishSettings.ssProgressResetColor
+            round >= 5 -> {
+                if (!FishSettings.ssProgressShowCompleted) return
+                FishSettings.ssProgressCompletedText to FishSettings.ssProgressCompletedColor
+            }
+            else -> {
+                if (!FishSettings.ssProgressShowProgress) return
+                FishSettings.ssProgressProgressText.replace("(n)", round.toString()) to FishSettings.ssProgressProgressColor
+            }
+        }
+        val label = Component.literal(text).withColor(color and 0xFFFFFF)
 
         val sc = FishSettings.simonSaysHudScale.toFloat()
         ctx.pose().pushMatrix()

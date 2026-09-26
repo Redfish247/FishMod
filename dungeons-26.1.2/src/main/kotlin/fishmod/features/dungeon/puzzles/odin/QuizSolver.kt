@@ -51,8 +51,6 @@ object QuizSolver {
         }
     }
 
-    fun onRoomEnter(room: ORoom?) {  }
-
     fun onRenderWorld() {
         val opt = correctOption
         if (opt < 0) return

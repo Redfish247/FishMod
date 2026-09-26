@@ -33,7 +33,7 @@ object SectionProgress {
             }
             false
         }
-        Events.ON_TERMINAL.register { formattedName, action, objective, current, total ->
+        Events.ON_TERMINAL.register { _, _, objective, current, total ->
             completed = current
             sectionTotal = total
             prevObjective = TextUtil.capitaliseFirst(objective)
@@ -49,7 +49,7 @@ object SectionProgress {
             updateProgressFormat()
             false
         }
-        Events.ON_LOCATION_CHANGE.register { newLocation ->
+        Events.ON_LOCATION_CHANGE.register { _ ->
             completed = 0
             sectionTotal = 7
             false
