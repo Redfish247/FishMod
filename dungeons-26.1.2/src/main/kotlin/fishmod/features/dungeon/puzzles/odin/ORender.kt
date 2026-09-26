@@ -35,6 +35,8 @@ object ORender {
 
     fun thickLine(a: Vec3, b: Vec3, argb: Int) = RenderUtils.gizmoThickLine(a, b, 0.025, argb)
 
+    fun wideLine(a: Vec3, b: Vec3, argb: Int, width: Float) = RenderUtils.gizmoLine(a, b, argb, width)
+
     fun text(str: String, pos: Vec3, scale: Float) =
         RenderUtils.gizmoText(Component.literal(str), pos, scale, -0x1)
 

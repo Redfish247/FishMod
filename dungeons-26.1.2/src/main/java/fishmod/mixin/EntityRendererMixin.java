@@ -110,6 +110,10 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
     @Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true)
     private void fishmod$cullEntities(T entity, Frustum frustum, double camX, double camY, double camZ,
                                      CallbackInfoReturnable<Boolean> cir) {
+        if (fishmod.features.dungeon.puzzles.odin.BlazeSolver.INSTANCE.shouldHideMob(entity)) {
+            cir.setReturnValue(false);
+            return;
+        }
         if (!Visual.renderOptimizer) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || entity == mc.player) return;

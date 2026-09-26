@@ -361,7 +361,9 @@ object FishSettings {
     @ConfigValue @JvmField var blazeSolver: Boolean = true
     @ConfigValue @JvmField var blazeFirstColor: Int = 0xC055FF55.toInt()
     @ConfigValue @JvmField var blazeSecondColor: Int = 0xC0FFAA00.toInt()
-    @ConfigValue @JvmField var blazeOtherColor: Int = 0x66FFFFFF
+    @ConfigValue @JvmField var blazeThirdColor: Int = 0xC0FF5555.toInt()
+    @ConfigValue @JvmField var blazeThirdEnabled: Boolean = true
+    @ConfigValue @JvmField var blazeHideMobs: Boolean = false
     @ConfigValue @JvmField var blazeLine: Boolean = true
     @ConfigValue @JvmField var blazeLineCount: Int = 1
     @ConfigValue @JvmField var quizSolver: Boolean = true

@@ -3,7 +3,9 @@ package fishmod.features.dungeon.puzzles.odin
 import fishmod.features.dungeon.puzzles.PuzzleSolvers
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.Minecraft
+import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.decoration.ArmorStand
+import net.minecraft.world.entity.monster.Blaze
 
 object BlazeSolver {
 
@@ -40,19 +42,28 @@ object BlazeSolver {
         blazes.removeAll { level?.getEntity(it.id) == null }
         if (blazes.isEmpty()) return
         val style = ORender.style()
-        blazes.forEachIndexed { index, entity ->
+        val shown = if (FishSettings.blazeThirdEnabled) 3 else 2
+        val pt = Minecraft.getInstance().deltaTracker.getGameTimeDeltaPartialTick(false)
+        val boxes = blazes.take(shown).map { e ->
+            e.boundingBox.inflate(0.5, 1.0, 0.5).move(0.0, -1.0, 0.0).move(e.getPosition(pt).subtract(e.position()))
+        }
+        boxes.forEachIndexed { index, aabb ->
             val color = when (index) {
                 0 -> FishSettings.blazeFirstColor
                 1 -> FishSettings.blazeSecondColor
-                else -> FishSettings.blazeOtherColor
+                else -> FishSettings.blazeThirdColor
             }
-            val aabb = entity.boundingBox.inflate(0.5, 1.0, 0.5).move(0.0, -1.0, 0.0)
             ORender.styledBox(aabb, color, style)
             if (FishSettings.blazeLine && index in 1..FishSettings.blazeLineCount) {
-                val prev = blazes[index - 1].boundingBox.inflate(0.5, 1.0, 0.5).move(0.0, -1.0, 0.0).center
-                ORender.thickLine(prev, aabb.center, color)
+                ORender.wideLine(boxes[index - 1].center, aabb.center, color or (0xFF shl 24), 3f)
             }
         }
+    }
+
+    fun shouldHideMob(entity: Entity): Boolean {
+        if (!FishSettings.blazeSolver || !FishSettings.blazeHideMobs || entity !is Blaze) return false
+        val name = OdinScan.currentRoomName
+        return name == "Lower Blaze" || name == "Higher Blaze"
     }
 
     fun reset() {
