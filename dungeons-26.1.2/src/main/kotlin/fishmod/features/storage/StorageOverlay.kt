@@ -83,10 +83,23 @@ object StorageOverlay {
     private val font get() = mc.font
     private val scale get() = FishSettings.storageOverlayScale.coerceIn(0.5, 2.0).toFloat()
 
+    private var titleFor: net.minecraft.network.chat.Component? = null
+    private var titleIsStorage = false
+    private var titlePage: StoragePage? = null
+
+    private fun classify(screen: AbstractContainerScreen<*>) {
+        val title = screen.title
+        if (title === titleFor) return
+        titleFor = title
+        val t = title.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
+        titlePage = StoragePage.fromTitle(t)
+        titleIsStorage = t == "Storage" || titlePage != null
+    }
+
     private fun on(screen: AbstractContainerScreen<*>): Boolean {
         if (!FishSettings.storageOverlayEnabled) return false
-        val t = screen.title.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
-        return t == "Storage" || StoragePage.fromTitle(t) != null
+        classify(screen)
+        return titleIsStorage
     }
 
     @JvmStatic
@@ -108,8 +121,10 @@ object StorageOverlay {
         UiRecorder.clear()
     }
 
-    private fun activePage(screen: AbstractContainerScreen<*>): StoragePage? =
-        StoragePage.fromTitle(screen.title.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, ""))
+    private fun activePage(screen: AbstractContainerScreen<*>): StoragePage? {
+        classify(screen)
+        return titlePage
+    }
 
     private fun allData(): TreeMap<StoragePage, NBTInventory?> {
         val out = TreeMap<StoragePage, NBTInventory?>()
@@ -121,12 +136,16 @@ object StorageOverlay {
     private val isSearching get() = search.isNotBlank()
     private val shouldFilterPages get() = FishSettings.storageHideNonMatching && isSearching
 
+    private val searchText = java.util.WeakHashMap<ItemStack, String>()
+
     private fun matches(s: ItemStack): Boolean {
         if (s.isEmpty) return false
-        val q = search.lowercase()
-        if (s.hoverName.string.lowercase().contains(q)) return true
-        val lore = s.get(DataComponents.LORE) ?: return false
-        return lore.lines().any { it.string.lowercase().contains(q) }
+        val text = searchText.getOrPut(s) {
+            val sb = StringBuilder(s.hoverName.string.lowercase())
+            s.get(DataComponents.LORE)?.lines()?.forEach { sb.append('\n').append(it.string.lowercase()) }
+            sb.toString()
+        }
+        return text.contains(search.lowercase())
     }
 
     private fun visibleData(activePage: StoragePage?, activeSlots: List<Slot>?, all: TreeMap<StoragePage, NBTInventory?> = allData()): TreeMap<StoragePage, NBTInventory?> {

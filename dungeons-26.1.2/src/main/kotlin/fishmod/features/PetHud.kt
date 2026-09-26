@@ -16,6 +16,8 @@ import net.minecraft.world.inventory.AbstractContainerMenu
 import net.minecraft.world.item.ItemStack
 import java.util.regex.Pattern
 
+private val TRAILING_PUNCT_RE = Regex("[!.]+$")
+
 object PetHud {
 
     private val TAB_NAME_LINE: Pattern = Pattern.compile("\\[Lvl\\s*(\\d+)\\]\\s+(.+)")
@@ -335,7 +337,7 @@ object PetHud {
 
     private fun cleanPetName(s: String?): String? {
         if (s == null) return null
-        return s.replace("✦", "").replace(Regex("[!.]+$"), "").trim()
+        return s.replace("✦", "").replace(TRAILING_PUNCT_RE, "").trim()
     }
 
     private val RARITY_BY_CODE: Map<Char, ItemRarity> = mapOf(

@@ -20,6 +20,12 @@ import java.text.DecimalFormat
 import kotlin.math.max
 import kotlin.math.min
 
+private val NON_WORD_RE = Regex("[^A-Za-z0-9 ]")
+
+private val NON_DIGIT_RE = Regex("[^\\d]")
+
+private val DIGITS_RE = Regex("\\d{1,9}")
+
 class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = null) :
     Screen(Component.literal("Party & Loot")), HasUiOverlay {
 
@@ -73,9 +79,9 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         editBox = EditBox(this.font, 0, 0, 40, 16, Component.literal(""))
         editBox.setMaxLength(9)
         editBox.setResponder { s ->
-            if (editBoxFiltering || s.isEmpty() || s.matches(Regex("\\d{1,9}"))) return@setResponder
+            if (editBoxFiltering || s.isEmpty() || s.matches(DIGITS_RE)) return@setResponder
             editBoxFiltering = true
-            editBox.setValue(s.replace(Regex("[^\\d]"), ""))
+            editBox.setValue(s.replace(NON_DIGIT_RE, ""))
             editBoxFiltering = false
         }
 
@@ -736,7 +742,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         }
 
         private fun abbrev(name: String): String {
-            val words = name.replace(Regex("[^A-Za-z0-9 ]"), "").split(' ').filter { it.isNotEmpty() }
+            val words = name.replace(NON_WORD_RE, "").split(' ').filter { it.isNotEmpty() }
             if (words.isEmpty()) return "?"
             if (words.size == 1) return words[0].take(2).uppercase()
             return (words[0].take(1) + words[1].take(1)).uppercase()

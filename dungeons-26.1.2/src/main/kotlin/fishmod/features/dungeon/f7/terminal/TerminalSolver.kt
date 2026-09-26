@@ -154,7 +154,7 @@ object TerminalSolver {
         if (term.type == TerminalType.MELODY && FishSettings.terminalStopMelody) return
         val mc = Minecraft.getInstance()
         val screen = mc.screen as? AbstractContainerScreen<*> ?: return
-        val slot = screen.menu.slots.firstOrNull { it.x == x && it.y == y } ?: return
+        val slot = DrawEvents.currentSlot ?: screen.menu.slots.firstOrNull { it.x == x && it.y == y } ?: return
         if (slot.container is Inventory) return
         val idx = slot.index
         val inSol = idx in term.solution

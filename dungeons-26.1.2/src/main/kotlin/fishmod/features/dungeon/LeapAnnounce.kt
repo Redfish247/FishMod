@@ -9,6 +9,8 @@ import fishmod.utils.sound.SoundManager
 import net.minecraft.network.chat.Component
 import java.util.regex.Pattern
 
+private val FORMAT_CODE_RE = Regex("[&§][0-9A-FK-ORa-fk-or]")
+
 object LeapAnnounce {
 
     private val TARGET: Pattern = Pattern.compile("You have teleported to (.+?)!")
@@ -31,7 +33,7 @@ object LeapAnnounce {
                 }
                 if (FishSettings.leapMessagesParty) {
                     val plain = fill(
-                        FishSettings.leapMessagesText.replace(Regex("[&§][0-9A-FK-ORa-fk-or]"), "")
+                        FishSettings.leapMessagesText.replace(FORMAT_CODE_RE, "")
                     ).trim()
                     if (plain.isNotEmpty()) {
                         fishmod.utils.ChatQueue.enqueue("pc $plain")

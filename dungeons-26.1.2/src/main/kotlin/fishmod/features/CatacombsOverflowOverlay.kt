@@ -15,6 +15,8 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
 import java.util.regex.Pattern
 
+private val TRAILING_PUNCT_RE = Regex("[!.]+$")
+
 object CatacombsOverflowOverlay {
 
     private val CLASS_KEYS: Map<String, String> = mapOf(
@@ -84,7 +86,7 @@ object CatacombsOverflowOverlay {
     private fun draw(ctx: GuiGraphicsExtractor, stack: ItemStack?, x: Int, y: Int) {
         if (stack == null || stack.isEmpty) return
         val name = HypixelApi.STRIP_COLOR.matcher(stack.hoverName.string).replaceAll("")
-            .replace("✦", "").replace(Regex("[!.]+$"), "").trim()
+            .replace("✦", "").replace(TRAILING_PUNCT_RE, "").trim()
 
         val isCata = name.equals("Catacombs", ignoreCase = true)
         val key = if (isCata) null else CLASS_KEYS[name.lowercase()]

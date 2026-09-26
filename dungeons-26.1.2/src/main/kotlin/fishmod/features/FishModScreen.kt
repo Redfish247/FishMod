@@ -31,6 +31,10 @@ import java.util.function.Consumer
 import java.util.function.Supplier
 import kotlin.reflect.KMutableProperty0
 
+private val FORMAT_CODE_RE = Regex("[&§][0-9a-fk-orxA-FK-ORX]")
+
+private val HEX_CODE_RE = Regex("&#[0-9a-fA-F]{6}")
+
 class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private val columns: MutableList<Column> = ArrayList()
@@ -3334,7 +3338,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         companion object {
             fun visibleLen(s: String?): Int {
                 if (s == null) return 0
-                return s.replace(Regex("&#[0-9a-fA-F]{6}"), "").replace(Regex("[&§][0-9a-fk-orxA-FK-ORX]"), "").length
+                return s.replace(HEX_CODE_RE, "").replace(FORMAT_CODE_RE, "").length
             }
             private fun capWrapper(inner: (String) -> Unit, max: Int): (String) -> Unit {
                 return { v ->
