@@ -95,6 +95,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
         if (!canInstall) { openPage(); return }
         when (UpdateManager.downloadState) {
             DS.IDLE, DS.FAILED -> UpdateManager.download(release)
+            DS.STAGED -> Minecraft.getInstance().stop()
             else -> {}
         }
     }
@@ -130,8 +131,8 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
         UiRecorder.fillRect((x + pad + 11).toFloat(), (y + 17).toFloat(), 2f, 11f, fade(ScreenTheme.ACCENT, p))
         UiRecorder.chevron((x + pad + 8).toFloat(), (y + 27).toFloat(), true, fade(ScreenTheme.ACCENT, p))
         val tx = (x + pad + 32).toFloat()
-        UiRecorder.textBold("FishMod ", tx, (y + 13).toFloat(), 9f, fade(ScreenTheme.TEXT_COLOR, p))
-        UiRecorder.textBold("Update", tx + UiRecorder.textWidth("FishMod ", 9f), (y + 13).toFloat(), 9f, fade(ScreenTheme.ACCENT, p))
+        UiRecorder.textBold("FishMod", tx, (y + 13).toFloat(), 9f, fade(ScreenTheme.TEXT_COLOR, p))
+        UiRecorder.textBold("Update", tx + UiRecorder.textWidthBold("FishMod", 9f) + UiRecorder.textWidth(" ", 9f) + 1f, (y + 13).toFloat(), 9f, fade(ScreenTheme.ACCENT, p))
         UiRecorder.text("v${UpdateManager.currentVersion}  →  v${release.version}", tx, (y + 26).toFloat(), 6.5f, fade(ScreenTheme.SUBTEXT_COLOR, p))
         if (targetUrl != null) {
             val label = if (UpdateManager.modrinthUrl != null) "Modrinth" else "GitHub"
@@ -201,8 +202,8 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
                 centered("Downloading ${(UpdateManager.downloadProgress * 100).toInt()}%", updateX + updateW / 2, by, fade(ScreenTheme.TEXT_COLOR, p))
             }
             state == DS.STAGED -> {
-                ScreenTheme.nRoundedRectRing(updateX, by, updateW, btnH, btnH / 2, 1, fade(CARD, p), fade(SUCCESS, p))
-                centered("Restart to apply", updateX + updateW / 2, by, fade(SUCCESS, p))
+                ScreenTheme.nRoundedRectRing(updateX, by, updateW, btnH, btnH / 2, 1, fade(if (hov) CARD_HOVER else CARD, p), fade(SUCCESS, p))
+                centered(if (hov) "Close game" else "Restart to apply", updateX + updateW / 2, by, fade(SUCCESS, p))
             }
             state == DS.FAILED -> {
                 ScreenTheme.nRoundedRect(updateX, by, updateW, btnH, btnH / 2, fade(if (hov) ScreenTheme.DANGER_HOVER else ScreenTheme.DANGER, p))
@@ -219,7 +220,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
 
     private fun centered(s: String, cx: Int, y: Int, color: Int) {
         val size = 7.5f
-        UiRecorder.textBold(s, cx - UiRecorder.textWidth(s, size) / 2f, y + (btnH - size) / 2f, size, color)
+        UiRecorder.textBold(s, cx - UiRecorder.textWidthBold(s, size) / 2f, y + (btnH - size) / 2f, size, color)
     }
 
     private fun fade(color: Int, p: Float): Int {
@@ -258,7 +259,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
             var cur = StringBuilder()
             for (word in text.split(' ')) {
                 val trial = if (cur.isEmpty()) word else "$cur $word"
-                if (cur.isNotEmpty() && UiRecorder.textWidth(trial, size) > maxW) {
+                if (cur.isNotEmpty() && (if (heading) UiRecorder.textWidthBold(trial, size) else UiRecorder.textWidth(trial, size)) > maxW) {
                     out.add((if (heading) "\u0001" else "") + cur)
                     cur = StringBuilder(indent).append(word)
                 } else {

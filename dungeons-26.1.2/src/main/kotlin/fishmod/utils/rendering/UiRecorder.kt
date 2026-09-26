@@ -181,6 +181,13 @@ object UiRecorder {
     @JvmStatic
     fun textWidth(s: String, size: Float): Float = UiFont.width(s, size)
 
+    // Bold stamps each glyph one device pixel wider than textWidth measures.
+    @JvmStatic
+    fun textWidthBold(s: String, size: Float): Float {
+        val devPerVirtual = net.minecraft.client.Minecraft.getInstance().window.guiScale * UiScale.factor()
+        return UiFont.width(s, size) + s.codePointCount(0, s.length) / devPerVirtual
+    }
+
     @JvmStatic
     fun pushScissor(x: Float, y: Float, w: Float, h: Float) {
         push(OP_PUSH_SCISSOR, x, y, w, h)
