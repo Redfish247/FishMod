@@ -57,15 +57,7 @@ public class PartyCommandHandler {
         return l.equals("e") || l.matches("[fm][1-7]");
     }
 
-    public static void onPartyCommand(String typer, String cmd, String rawArg1, String rawArg2) {
-        onPartyCommand(typer, cmd, rawArg1, rawArg2, null, "pc ");
-    }
-
     public static final String LOCAL = "";
-
-    public static void onPartyCommand(String typer, String cmd, String rawArg1, String rawArg2, String responder) {
-        onPartyCommand(typer, cmd, rawArg1, rawArg2, null, responder);
-    }
 
     public static void onPartyCommand(String typer, String cmd, String rawArg1, String rawArg2, String rawArg3, String responder) {
         if (!FishSettings.partyCommandsEnabled) return;
@@ -313,129 +305,6 @@ public class PartyCommandHandler {
                     ChatCommandState.lastPartyCommandAt = System.currentTimeMillis();
                 }
             }));
-    }
-
-    public static boolean handleCommand(String fullCmd) {
-        if (!FishSettings.partyCommandsEnabled) return false;
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.getConnection() == null) return false;
-        final String responder = "pc ";
-
-        String[] parts = fullCmd.split("\\s+", 2);
-        String cmd = parts[0];
-        String arg = parts.length > 1 ? parts[1] : null;
-        String localName = mc.player != null ? mc.player.getName().getString() : null;
-        String target = arg != null ? arg : localName;
-
-        switch (cmd) {
-            case "help": case "?":
-                if (!FishSettings.pcHelp) return false;
-                sendCmd(mc, responder, buildHelp());
-                return true;
-            case "ai": case "allinv":
-                if (!FishSettings.pcAllinvite || target == null) return false;
-                sendRawCommand(mc, "p settings allinvite");
-                return true;
-            case "pb": {
-                if (!FishSettings.pcPb) return false;
-                String[] pbParts = fullCmd.split("\\s+", 3);
-                String pbArg1 = pbParts.length > 1 ? pbParts[1] : null;
-                String pbArg2 = pbParts.length > 2 ? pbParts[2] : null;
-                String pbIgn, pbFloor;
-                if (isFloor(pbArg1)) { pbIgn = localName; pbFloor = pbArg1; }
-                else { pbIgn = pbArg1 != null ? pbArg1 : localName; pbFloor = pbArg2; }
-                if (pbIgn == null) return false;
-                runPbForPlayer(mc, pbIgn, pbFloor, responder);
-                return true;
-            }
-            case "mp":
-                if (!FishSettings.pcMp || target == null) return false;
-                runMpForPlayer(mc, target, responder);
-                return true;
-            case "collection": {
-                if (!FishSettings.pcCollection || localName == null) return false;
-                String[] cp = fullCmd.split("\\s+", 3);
-                String colArg1 = cp.length > 1 ? cp[1] : null;
-                String colArg2 = cp.length > 2 ? cp[2] : null;
-                String colIgn, colFloor;
-                if (isFloor(colArg1)) { colIgn = localName; colFloor = colArg1; }
-                else { colIgn = colArg1 != null ? colArg1 : localName; colFloor = colArg2; }
-                runCollectionForPlayer(mc, colIgn, colFloor, responder);
-                return true;
-            }
-            case "secrets": case "sa":
-                if (!FishSettings.pcSecrets || target == null) return false;
-                runStatsForPlayer(mc, target, cmd, null, responder);
-                return true;
-            case "runs": {
-                String[] rp = fullCmd.split("\\s+", 3);
-                String runTarget = rp.length > 1 ? rp[1] : localName;
-                String floorArg  = rp.length > 2 ? rp[2] : null;
-                if (!FishSettings.pcRuns || runTarget == null) return false;
-                runStatsForPlayer(mc, runTarget, cmd, floorArg, responder);
-                return true;
-            }
-            case "totalruns":
-                if (!FishSettings.pcRuns || target == null) return false;
-                runTotalRunsForPlayer(mc, target, responder);
-                return true;
-            case "cata":
-                if (!FishSettings.pcCata || target == null) return false;
-                runCataForPlayer(mc, target, responder);
-                return true;
-            case "rtca":
-                if (!FishSettings.pcRtca || target == null) return false;
-                runRtcaForPlayer(mc, target, responder);
-                return true;
-            case "fps":
-                if (!FishSettings.pcFps || target == null) return false;
-                sendFps(mc, responder);
-                return true;
-            case "tps":
-                if (!FishSettings.pcTps || target == null) return false;
-                sendTps(mc, responder);
-                return true;
-            case "ping":
-                if (!FishSettings.pcPing || target == null) return false;
-                sendPing(mc, responder);
-                return true;
-            case "d":
-                if (!FishSettings.pcDisband || target == null) return false;
-                sendRawCommand(mc, "p disband");
-                return true;
-            case "bank":
-                if (!FishSettings.pcBank || target == null) return false;
-                sendBank(mc, target, responder);
-                return true;
-            case "powder":
-                if (!FishSettings.pcPowder || target == null) return false;
-                sendPowder(mc, target, responder);
-                return true;
-            case "corpse": case "corpses":
-                if (!FishSettings.pcCorpse || target == null) return false;
-                sendCorpse(mc, target, responder);
-                return true;
-            case "nw": case "networth":
-                if (!FishSettings.pcNw || target == null) return false;
-                sendNetworth(mc, target, responder);
-                return true;
-            case "worm": case "scatha":
-                if (!FishSettings.pcWorm || target == null) return false;
-                sendWorm(mc, target, responder);
-                return true;
-        }
-
-        if (cmd.equals("e") || cmd.matches("[fm][1-7]")) {
-            if (!FishSettings.pcJoinFloor) return false;
-            handleJoinInstance(cmd, mc, responder);
-            return true;
-        }
-        if (cmd.matches("t[1-5]")) {
-            if (!FishSettings.pcJoinFloor) return false;
-            handleKuudra(cmd, mc, responder);
-            return true;
-        }
-        return false;
     }
 
     private static void runRtcaForPlayer(Minecraft mc, String ign, String responder) {
