@@ -40,16 +40,20 @@ object DoorHighlight {
 
     private fun isFairyDoor(door: Door): Boolean = fairyRoom(door) != null
 
-    // Open once either fairy door's coal block is gone (instant) or the map marks the room entered.
-    private fun fairyOpen(room: Room): Boolean {
-        if (room.state != Room.State.UNDISCOVERED && room.state != Room.State.UNOPENED) return true
-        return ArrayList(Scan.doors).any { d -> d.type == Door.Type.WITHER && fairyRoom(d) === room && !closed(d) }
+    private fun opened(r: Room): Boolean = r.state != Room.State.UNDISCOVERED && r.state != Room.State.UNOPENED
+
+    // Only a loaded, cleared door block counts; the map's fairy state and locked flag show up too early
+    private fun physicallyOpen(door: Door): Boolean {
+        val level = Minecraft.getInstance().level ?: return false
+        val bp = net.minecraft.core.BlockPos(door.pos.x, 69, door.pos.z)
+        return level.isLoaded(bp) && !closed(door)
     }
 
-    // Fairy doors stay hidden until the fairy room opens, then both draw regardless of map discovery.
+    // Fairy door: hidden until the non-fairy room beside it is open, or you've gone through the other fairy door
     private fun visible(door: Door): Boolean {
         val fairy = fairyRoom(door) ?: return door.seen
-        return fairyOpen(fairy)
+        if (door.rooms.any { t -> val o = t.owner; o != null && !isFairyRoom(o) && opened(o) }) return true
+        return ArrayList(Scan.doors).any { d -> d !== door && fairyRoom(d) === fairy && physicallyOpen(d) }
     }
 
     private fun active(): Boolean {
