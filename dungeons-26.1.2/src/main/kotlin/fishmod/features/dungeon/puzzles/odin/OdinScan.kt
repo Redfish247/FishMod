@@ -38,7 +38,9 @@ object OdinScan {
     private val enterListeners = mutableListOf<(ORoom?) -> Unit>()
     fun onRoomEnter(cb: (ORoom?) -> Unit) { enterListeners.add(cb) }
 
-    private var lastKey: String? = null
+    private var lastName: String? = null
+    private var lastRotation: MapRoom.Rotation? = null
+    private var lastClay: net.minecraft.core.BlockPos? = null
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc -> tick(mc) }
@@ -61,14 +63,15 @@ object OdinScan {
         val map = DungeonMap.roomPlayerIn()?.owner
         val mapName = map?.data?.name
         if (map == null || mapName == null || map.rotation == MapRoom.Rotation.NONE) {
-            diag("transient miss (map=${map != null} name=$mapName rot=${map?.rotation}) — keeping '${currentRoom?.data?.name}'")
+            if (Debug.LOGGER.isDebugEnabled) diag("transient miss (map=${map != null} name=$mapName rot=${map?.rotation}) — keeping '${currentRoom?.data?.name}'")
             return
         }
 
         val clay = map.clayPos
-        val key = "$mapName|${map.rotation.name}|${clay?.x},${clay?.z}"
-        if (key == lastKey) return
-        lastKey = key
+        if (mapName == lastName && map.rotation == lastRotation && clay == lastClay) return
+        lastName = mapName
+        lastRotation = map.rotation
+        lastClay = clay
         val built = build(map)
         diag("room='${built.data.name}' type=${built.data.type} rot=${built.rotation} clay=${clay?.x},${clay?.z}")
         setRoom(built)
@@ -84,7 +87,7 @@ object OdinScan {
 
     private fun setRoom(room: ORoom?) {
         currentRoom = room
-        if (room == null) lastKey = null
+        if (room == null) { lastName = null; lastRotation = null; lastClay = null }
         for (l in enterListeners) runCatching { l(room) }
     }
 

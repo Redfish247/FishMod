@@ -62,7 +62,7 @@ object WarpCooldown {
         if (mc.player == null || mc.options.hideGui) return
 
         val label = net.minecraft.network.chat.Component.literal("§eWarp: ")
-            .append(net.minecraft.network.chat.Component.literal(String.format("%.1fs", rem / 1000.0))
+            .append(net.minecraft.network.chat.Component.literal(fishmod.utils.Fmt.f1(rem / 1000.0) + "s")
                 .withColor(FishSettings.warpCooldownColor and 0xFFFFFF))
         val sc = FishSettings.warpCooldownScale.toFloat()
         ctx.pose().pushMatrix()

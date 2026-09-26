@@ -15,7 +15,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.inventory.ContainerInput
-import net.minecraft.world.item.ItemStack
 import java.util.regex.Pattern
 
 object TerminalSolver {
@@ -209,7 +208,7 @@ object TerminalSolver {
 
     private fun tickSync() {
         if (simActive) return
-        if (!FishSettings.terminalSolverEnabled) return
+        if (!FishSettings.terminalSolverEnabled || !fishmod.utils.Location.inDungeon()) return
         val screen = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return
         val term = ensureHandler(screen.title.string) ?: return
 

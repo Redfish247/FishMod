@@ -1946,6 +1946,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     private fun visibleColumns(): List<Column> {
+        if (frameCaching) frameVisibleColumns?.let { return it }
+        return computeVisibleColumns().also { if (frameCaching) frameVisibleColumns = it }
+    }
+
+    private fun computeVisibleColumns(): List<Column> {
         refreshVisibleCacheIfStale()
         val out = ArrayList<Column>()
         for (c in columns) {
@@ -2095,6 +2100,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     )
 
     private fun layoutColumn(c: Column, scrollOffset: Int, topY: Int = cyTop()): List<RowLayout> {
+        if (!frameCaching) return computeLayout(c, scrollOffset, topY)
+        return frameLayouts.getOrPut(Triple(c, scrollOffset, topY)) { computeLayout(c, scrollOffset, topY) }
+    }
+
+    private fun computeLayout(c: Column, scrollOffset: Int, topY: Int): List<RowLayout> {
         val out = ArrayList<RowLayout>()
         var y = topY - scrollOffset
         for (f in visibleFeatures(c)) {
@@ -2156,7 +2166,22 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var widgetRenderFailureLogged = false
     private var recorderSizeLogged = false
 
+    private var frameCaching = false
+    private var frameVisibleColumns: List<Column>? = null
+    private val frameLayouts = HashMap<Triple<Column, Int, Int>, List<RowLayout>>()
+
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        frameVisibleColumns = null
+        frameLayouts.clear()
+        frameCaching = true
+        try {
+            extractRenderStateCached(ctx, mouseX, mouseY, delta)
+        } finally {
+            frameCaching = false
+        }
+    }
+
+    private fun extractRenderStateCached(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         refreshButtonTheme()
         if (resetArmed && System.currentTimeMillis() - resetArmedAt > 3000) resetArmed = false
         clampAllScrolls()
@@ -2379,9 +2404,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun ellipsize(text: String, maxW: Int, scale: Float = 1f): String {
         if (sw(this.font, text, scale) <= maxW) return text
-        var label = text
-        while (label.length > 1 && sw(this.font, "$label…", scale) > maxW) label = label.substring(0, label.length - 1)
-        return "$label…"
+        val n = fishmod.utils.rendering.TextFit.prefixLength(text, "…", maxW.toFloat(), 1) { sw(this.font, it, scale).toFloat() }
+        return text.substring(0, n) + "…"
     }
 
     private fun renderRow(ctx: GuiGraphicsExtractor, f: Feature, x0: Int, x1: Int, top: Int, mouseX: Int, mouseY: Int) {
@@ -2934,9 +2958,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         protected fun fit(s: String, maxW: Int): String {
             fun w(t: String) = Math.ceil(UiRecorder.textWidth(t, NVG_BASE_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
             if (maxW <= 4 || w(s) <= maxW) return s
-            var t = s
-            while (t.length > 1 && w("$t…") > maxW) t = t.dropLast(1)
-            return "$t…"
+            val n = fishmod.utils.rendering.TextFit.prefixLength(s, "…", maxW.toFloat(), 1) { w(it).toFloat() }
+            return s.substring(0, n) + "…"
         }
     }
 

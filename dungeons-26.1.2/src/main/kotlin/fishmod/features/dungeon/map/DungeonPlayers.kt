@@ -9,7 +9,6 @@ import net.minecraft.client.multiplayer.PlayerInfo
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.world.entity.player.PlayerSkin
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.nbt.NbtUtils
 import net.minecraft.world.entity.player.Player
 import fishmod.features.item.fishmodCustomDataTag
 import net.minecraft.world.item.ItemStack
@@ -41,7 +40,9 @@ object DungeonPlayers {
     fun updateRoster(mc: Minecraft) {
         val conn = mc.connection ?: return
         val ordered = ArrayList(conn.onlinePlayers)
-        ordered.sortWith(playerInfoOrder())
+        val teams = HashMap<PlayerInfo, String>(ordered.size * 2)
+        for (info in ordered) teams[info] = teamName(info)
+        ordered.sortWith(playerInfoOrder(teams))
 
         for (info in ordered) {
             val disp = info.tabListDisplayName ?: continue
@@ -77,9 +78,9 @@ object DungeonPlayers {
 
     private fun stripColors(s: String): String = s.replace(MAP_COLOR_CODES, "")
 
-    private fun playerInfoOrder(): Comparator<PlayerInfo> =
+    private fun playerInfoOrder(teams: Map<PlayerInfo, String>): Comparator<PlayerInfo> =
         compareBy<PlayerInfo> { if (isSpectator(it)) 1 else 0 }
-            .thenBy(String.CASE_INSENSITIVE_ORDER) { teamName(it) }
+            .thenBy(String.CASE_INSENSITIVE_ORDER) { teams[it] ?: "" }
             .thenBy(String.CASE_INSENSITIVE_ORDER) { it.profile.name }
 
     private fun isSpectator(info: PlayerInfo?): Boolean = info != null && info.gameMode == GameType.SPECTATOR

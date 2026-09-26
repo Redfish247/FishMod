@@ -63,9 +63,7 @@ object CroesusLootDetector {
     private fun logPending(chestName: String) {
         val info = pendingChests.remove(chestName) ?: return
 
-        for (ri in info.items) {
-            LootTrackerStore.addOrIncrement(ri.displayName, ri.id, ri.qty)
-        }
+        LootTrackerStore.addAll(info.items.map { Triple(it.displayName, it.id, it.qty) })
         if (!loggedThisVisit) {
             loggedThisVisit = true
             LootTrackerStore.setRuns(LootTrackerStore.runs() + 1)

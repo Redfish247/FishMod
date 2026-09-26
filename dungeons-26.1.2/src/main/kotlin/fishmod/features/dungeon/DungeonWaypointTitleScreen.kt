@@ -147,9 +147,8 @@ class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Scr
 
     private fun fit(s: String, maxW: Int, size: Float): String {
         if (UiRecorder.textWidth(s, size) <= maxW) return s
-        var t = s
-        while (t.isNotEmpty() && UiRecorder.textWidth("$t...", size) > maxW) t = t.dropLast(1)
-        return "$t..."
+        val n = fishmod.utils.rendering.TextFit.prefixLength(s, "...", maxW.toFloat(), 0) { UiRecorder.textWidth(it, size) }
+        return s.substring(0, n) + "..."
     }
 
     override fun paintUiOverlay() {

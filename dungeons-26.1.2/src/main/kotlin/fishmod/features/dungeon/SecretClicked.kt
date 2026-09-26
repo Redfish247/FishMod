@@ -124,7 +124,21 @@ object SecretClicked {
         clicked.add(Secret(box, null))
     }
 
+    private var cachedBoxes: List<Triple<AABB, Int, Int>> = emptyList()
+    private var cachedBoxesAt = 0L
+    private var cachedBoxesCount = -1
+
     private fun boxes(): List<Triple<AABB, Int, Int>> {
+        val now = System.currentTimeMillis()
+        if (clicked.size == cachedBoxesCount && now - cachedBoxesAt < 20L) return cachedBoxes
+        return computeBoxes().also {
+            cachedBoxes = it
+            cachedBoxesAt = now
+            cachedBoxesCount = clicked.size
+        }
+    }
+
+    private fun computeBoxes(): List<Triple<AABB, Int, Int>> {
         if (!active() || !FishSettings.secretClickedBoxes || clicked.isEmpty()) return emptyList()
         val level = net.minecraft.client.Minecraft.getInstance().level
         val style = FishSettings.secretClickedStyle

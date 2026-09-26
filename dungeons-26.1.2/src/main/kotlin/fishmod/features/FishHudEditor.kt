@@ -464,8 +464,22 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         else e.name() in picked
     }
 
+    private var cachedRows: List<Row> = emptyList()
+    private var cachedRowsQuery: String? = null
+    private var cachedRowsAt = 0L
+
     private fun sidebarRows(): List<Row> {
         val q = search.value.trim().lowercase()
+        val now = System.currentTimeMillis()
+        if (q == cachedRowsQuery && now - cachedRowsAt < 100L) return cachedRows
+        return buildSidebarRows(q).also {
+            cachedRows = it
+            cachedRowsQuery = q
+            cachedRowsAt = now
+        }
+    }
+
+    private fun buildSidebarRows(q: String): List<Row> {
         val body = ArrayList<Row>()
         val avail = listed()
         val grouped = HashSet<HudEntry>()
@@ -672,9 +686,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private fun ellipsize(s: String, maxW: Float, size: Float): String {
         if (UiRecorder.textWidth(s, size) <= maxW) return s
-        var t = s
-        while (t.isNotEmpty() && UiRecorder.textWidth(t + "…", size) > maxW) t = t.dropLast(1)
-        return t + "…"
+        val n = fishmod.utils.rendering.TextFit.prefixLength(s, "…", maxW, 0) { UiRecorder.textWidth(it, size) }
+        return s.substring(0, n) + "…"
     }
 
     private fun centerText(s: String, cx: Float, y: Float, size: Float, color: Int) {

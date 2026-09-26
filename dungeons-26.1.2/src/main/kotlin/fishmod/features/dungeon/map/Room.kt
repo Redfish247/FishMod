@@ -168,6 +168,9 @@ class Room(
         }
     }
 
+    private var splitNameFor: String? = null
+    private var splitNameCache: List<String> = emptyList()
+
     fun renderName(context: GuiGraphicsExtractor, textFactor: Float) {
         val mc = Minecraft.getInstance()
         val matrices = context.pose()
@@ -176,7 +179,12 @@ class Room(
         val showName = (!legit || (state != State.UNDISCOVERED && state != State.UNOPENED)) && type != Type.FAIRY && data != null && data!!.name != null
 
         if (showName) {
-            val splitName = data!!.name!!.split(" ")
+            val name = data!!.name!!
+            if (name != splitNameFor) {
+                splitNameFor = name
+                splitNameCache = name.split(" ")
+            }
+            val splitName = splitNameCache
             val showSecrets = DungeonMapSettings.mapShowRoomSecrets && data!!.secrets > 0
             val lineCount = splitName.size + (if (showSecrets) 1 else 0)
             val defaultHeight = 8.0f - fontHeight / (2.0f * textFactor) - ((lineCount - 1) / 2.0f * (fontHeight / textFactor)).toInt()

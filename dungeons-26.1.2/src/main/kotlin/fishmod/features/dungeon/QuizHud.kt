@@ -49,7 +49,7 @@ object QuizHud {
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.quizHudX.toFloat(), FishSettings.quizHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, String.format("§dQuiz §7(§f%d/3§7): §b%.1fs", stage, ticksLeft / 20.0), 0, 0, -1, true)
+        ctx.text(mc.font, "§dQuiz §7(§f$stage/3§7): §b" + fishmod.utils.Fmt.f1(ticksLeft / 20.0) + "s", 0, 0, -1, true)
         ctx.pose().popMatrix()
     }
 }

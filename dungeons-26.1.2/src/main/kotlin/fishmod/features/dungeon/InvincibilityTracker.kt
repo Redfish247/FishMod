@@ -207,7 +207,7 @@ object InvincibilityTracker {
             val value = when {
                 t.active > 0 || t.cooldown > 0 ->
                     if (Dungeons.InvincibilityDuration)
-                        String.format("%.1fs", (if (t.active > 0) t.active else t.cooldown) / 20f)
+                        fishmod.utils.Fmt.f1((if (t.active > 0) t.active else t.cooldown) / 20.0) + "s"
                     else "●"
                 else -> "✔"
             }
