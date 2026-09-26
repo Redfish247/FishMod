@@ -29,14 +29,6 @@ object SlayerPersonalBests {
     }
 
     @JvmStatic
-    fun bestForType(type: SlayerType): Double = synchronized(lock) {
-        data.entries.asSequence()
-            .filter { it.key.substringBefore('|') == type.name }
-            .map { it.value }
-            .minOrNull() ?: -1.0
-    }
-
-    @JvmStatic
     fun record(type: SlayerType, tier: Int, seconds: Double): Boolean {
         if (seconds <= 0.0 || seconds > MAX_SECONDS) return false
         synchronized(lock) {

@@ -82,8 +82,6 @@ object SlayerStatsTracker {
         save()
     }
 
-    fun activeSeconds(): Double = activeMs / 1000.0
-
     private fun perHour(total: Double): Double {
         if (activeMs < 5_000L || total <= 0.0) return 0.0
         return total * 3_600_000.0 / activeMs

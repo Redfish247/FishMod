@@ -26,13 +26,6 @@ object LootTrackerStore {
 
     @JvmStatic
     @Synchronized
-    fun get(): Data {
-        ensureLoaded()
-        return data!!
-    }
-
-    @JvmStatic
-    @Synchronized
     fun runs(): Int {
         ensureLoaded()
         return data!!.runs

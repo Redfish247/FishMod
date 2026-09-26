@@ -27,8 +27,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.util.Mth
 import fishmod.utils.rendering.UiRecorder
 import org.lwjgl.glfw.GLFW
-import java.util.function.Consumer
-import java.util.function.Supplier
 import kotlin.reflect.KMutableProperty0
 
 private val FORMAT_CODE_RE = Regex("[&§][0-9a-fk-orxA-FK-ORX]")
@@ -88,17 +86,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     private fun buildCategories() {
-        val general = Column("General", "gear")
-        val invStorage = Column("Inventory & Storage", "cube")
-        val party = Column("Party & Social", "people")
-        val dungeon = Column("Dungeons", "arch")
-        val dungeonTrackers = Column("Dungeon Trackers", "coin")
-        val dungeonMap = Column("Dungeon Map", "map")
-        val solvers = Column("Dungeon Solvers", "slider")
-        val floor7 = Column("Floor 7", "clock")
-        val hud = Column("HUD & Overlays", "bell")
-        val visuals = Column("Visuals & Rendering", "eye")
-        val cosmetics = Column("Cosmetics", "hanger")
+        val general = Column("General")
+        val invStorage = Column("Inventory & Storage")
+        val party = Column("Party & Social")
+        val dungeon = Column("Dungeons")
+        val dungeonTrackers = Column("Dungeon Trackers")
+        val dungeonMap = Column("Dungeon Map")
+        val solvers = Column("Dungeon Solvers")
+        val floor7 = Column("Floor 7")
+        val hud = Column("HUD & Overlays")
+        val visuals = Column("Visuals & Rendering")
+        val cosmetics = Column("Cosmetics")
 
         run {
             val f = Feature("UI Customization", null, null)
@@ -1595,7 +1593,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         for (et in FishModAddonApi.dungeonToggles) {
             dungeon.features.add(Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) }))
         }
-        val cheats = Column("Cheats", "star")
+        val cheats = Column("Cheats")
         for (et in FishModAddonApi.cheatToggles) {
             cheats.features.add(Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) }))
         }
@@ -1792,7 +1790,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeonMap.features.add(f)
         }
 
-        val slayer = Column("Slayer", "slider")
+        val slayer = Column("Slayer")
         run {
             val spawnAlert = Feature("Mini/Boss Spawn Alert", FishSettings::slayerSpawnAlertEnabled)
             spawnAlert.sub.add(ToggleSetting("Mini-Boss Alerts", "Alert when a slayer miniboss spawns", FishSettings::slayerMiniBossAlert))
@@ -2893,7 +2891,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         requestClose()
     }
 
-    class Column(val name: String, val icon: String) {
+    class Column(val name: String) {
         val features: MutableList<Feature> = ArrayList()
         var scroll = 0
 
@@ -2901,7 +2899,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         var activeChild: Int = 0
 
         fun isGroup(): Boolean = children.isNotEmpty()
-        fun content(): Column = if (isGroup()) children[activeChild.coerceIn(0, children.size - 1)] else this
     }
 
     class Feature(val name: String, val get: (() -> Boolean)?, val set: ((Boolean) -> Unit)?) {
@@ -3741,7 +3738,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private var ACCENT_HOVER: Int = ScreenTheme.ACCENT_HOVER
         private const val DIM_TOP = 0x2E000000
         private const val DIM_BOT = 0x50000000
-        private val CARD_BG = ScreenTheme.CARD_BG
         private const val ROW_HOVER = 0x1EFFFFFF
         private var ROW_ENABLED: Int = 0x2624B6B0
         private var ROW_BUTTON: Int = 0xFF1E2227.toInt()
@@ -3807,11 +3803,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             roundedRect(ctx, x1, y1, x2 - x1, h, h / 2, color)
         }
 
-        fun panel(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, r: Int, fill: Int, border: Int) {
-            roundedRect(ctx, x1, y1, x2 - x1, y2 - y1, r, border)
-            roundedRect(ctx, x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), fill)
-        }
-
         fun disc(ctx: GuiGraphicsExtractor, cx: Int, cy: Int, r: Int, color: Int) {
             UiRecorder.disc(cx.toFloat(), cy.toFloat(), r.toFloat(), color)
         }
@@ -3828,7 +3819,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         fun stBold(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int) {
             UiRecorder.textBold(s, x.toFloat(), y.toFloat(), SUBCAT_TEXT_SIZE * TEXT_SCALE, color)
         }
-        fun stwBold(tr: Font, s: String): Int = Math.ceil(UiRecorder.textWidth(s, SUBCAT_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
 
         fun sst(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int, scale: Float) {
             UiRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * scale, color)
@@ -3858,82 +3848,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 UiRecorder.fillRect(x + pad + cursorX - scroll, (y + 2).toFloat(), 1f, (h - 4).toFloat(), TEXT_COLOR)
             }
             UiRecorder.popScissor()
-        }
-
-        private fun drawGlyph(ctx: GuiGraphicsExtractor, t: String, cx: Int, cy: Int, c: Int, bg: Int) {
-            when (t) {
-                "gear" -> {
-                    disc(ctx, cx, cy, 5, c)
-                    nf(cx - 1, cy - 7, cx + 1, cy + 7, c); nf(cx - 7, cy - 1, cx + 7, cy + 1, c)
-                    nf(cx - 5, cy - 5, cx - 3, cy - 3, c); nf(cx + 3, cy - 5, cx + 5, cy - 3, c)
-                    nf(cx - 5, cy + 3, cx - 3, cy + 5, c); nf(cx + 3, cy + 3, cx + 5, cy + 5, c)
-                    disc(ctx, cx, cy, 2, bg)
-                }
-                "arch" -> {
-                    nf(cx - 6, cy - 6, cx - 3, cy + 7, c); nf(cx + 3, cy - 6, cx + 6, cy + 7, c)
-                    nf(cx - 6, cy - 6, cx + 6, cy - 3, c)
-                }
-                "hanger" -> {
-                    nf(cx - 7, cy + 2, cx + 7, cy + 4, c)
-                    nf(cx - 1, cy - 5, cx + 1, cy + 3, c)
-                    nf(cx - 1, cy - 6, cx + 3, cy - 4, c)
-                }
-                "people" -> {
-                    disc(ctx, cx - 4, cy - 3, 3, c); disc(ctx, cx + 4, cy - 3, 3, c)
-                    nf(cx - 7, cy + 2, cx + 7, cy + 6, c)
-                }
-                "eye" -> {
-                    nf(cx - 7, cy - 1, cx + 7, cy + 1, c); nf(cx - 5, cy - 3, cx + 5, cy + 3, c)
-                    disc(ctx, cx, cy, 2, bg); disc(ctx, cx, cy, 1, c)
-                }
-                "text" -> {
-                    nf(cx - 5, cy - 5, cx + 5, cy - 3, c); nf(cx - 1, cy - 5, cx + 1, cy + 6, c)
-                }
-                "chat" -> {
-                    nf(cx - 7, cy - 5, cx + 7, cy + 2, c); nf(cx - 5, cy + 2, cx - 1, cy + 6, c)
-                    nf(cx - 4, cy - 2, cx + 4, cy - 1, bg); nf(cx - 4, cy, cx + 2, cy + 1, bg)
-                }
-                "star" -> {
-                    nf(cx - 1, cy - 7, cx + 1, cy + 7, c); nf(cx - 7, cy - 1, cx + 7, cy + 1, c)
-                    nf(cx - 4, cy - 4, cx - 2, cy - 2, c); nf(cx + 2, cy - 4, cx + 4, cy - 2, c)
-                    nf(cx - 4, cy + 2, cx - 2, cy + 4, c); nf(cx + 2, cy + 2, cx + 4, cy + 4, c)
-                }
-                "cube" -> {
-                    nf(cx - 6, cy - 6, cx + 6, cy - 4, c); nf(cx - 6, cy + 4, cx + 6, cy + 6, c)
-                    nf(cx - 6, cy - 6, cx - 4, cy + 6, c); nf(cx + 4, cy - 6, cx + 6, cy + 6, c)
-                }
-                "clock" -> {
-                    disc(ctx, cx, cy, 6, c); disc(ctx, cx, cy, 4, bg)
-                    nf(cx - 1, cy - 4, cx + 1, cy + 1, c); nf(cx - 1, cy - 1, cx + 4, cy + 1, c)
-                }
-                "coin" -> {
-                    disc(ctx, cx, cy, 6, c); disc(ctx, cx, cy, 3, bg); disc(ctx, cx, cy, 1, c)
-                }
-                "palette" -> {
-                    disc(ctx, cx, cy, 6, c)
-                    nf(cx - 3, cy - 3, cx - 1, cy - 1, bg); nf(cx + 1, cy - 3, cx + 3, cy - 1, bg)
-                    nf(cx - 1, cy + 1, cx + 1, cy + 3, bg)
-                }
-                "tag" -> {
-                    nf(cx - 6, cy - 4, cx + 2, cy + 4, c); nf(cx + 2, cy - 3, cx + 4, cy + 3, c)
-                    nf(cx + 4, cy - 1, cx + 6, cy + 1, c); disc(ctx, cx - 3, cy, 1, bg)
-                }
-                "slider" -> {
-                    nf(cx - 7, cy - 1, cx + 7, cy + 1, c); nf(cx, cy - 4, cx + 4, cy + 4, c)
-                }
-                "bell" -> {
-                    nf(cx - 4, cy - 3, cx + 4, cy + 3, c); nf(cx - 5, cy + 3, cx + 5, cy + 4, c)
-                    nf(cx - 1, cy - 6, cx + 1, cy - 4, c); nf(cx - 1, cy + 4, cx + 1, cy + 6, c)
-                }
-                "map" -> {
-                    nf(cx - 6, cy - 5, cx + 6, cy + 5, c); nf(cx - 1, cy - 5, cx + 1, cy + 5, bg)
-                    nf(cx - 6, cy - 1, cx + 6, cy + 1, bg)
-                }
-                else -> {
-                    nf(cx - 5, cy - 5, cx + 5, cy - 3, c); nf(cx - 5, cy + 3, cx + 5, cy + 5, c)
-                    nf(cx - 5, cy - 5, cx - 3, cy + 5, c); nf(cx + 3, cy - 5, cx + 5, cy + 5, c)
-                }
-            }
         }
 
         private fun descFor(name: String): String {

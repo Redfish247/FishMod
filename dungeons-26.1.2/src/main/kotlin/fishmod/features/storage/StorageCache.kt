@@ -70,14 +70,6 @@ object StorageCache {
 
     private fun uuid(): String? = Minecraft.getInstance().player?.gameProfile?.id?.toString()
 
-    @JvmStatic
-    fun put(idx: Int, stacks: List<ItemStack>) {
-        if (stacks.isEmpty() || stacks.all { it.isEmpty }) return
-        pages[idx] = NBTInventory(stacks.map { it.copy() })
-        known.add(idx)
-        dirty = true
-    }
-
     private fun tick(mc: Minecraft) {
         if (!FishSettings.storageOverlayEnabled) return
         val id = uuid() ?: return

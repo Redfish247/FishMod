@@ -110,11 +110,6 @@ object ScoreMessages {
         fadeStartMs = displayUntilMs - Math.min(FADE_MS, DURATION_MS)
     }
 
-    @JvmStatic
-    fun renderForEdit(g: GuiGraphicsExtractor, mc: Minecraft) {
-        renderAt(g, mc, resolvedX(mc), resolvedY(mc), DungeonMapSettings.mapScoreTitleScale, previewText(), 1.0f)
-    }
-
     private fun previewText(): String {
         var raw = DungeonMapSettings.mapScore300TitleText
         if (raw.isBlank()) raw = "300 Score"
@@ -130,9 +125,6 @@ object ScoreMessages {
         g.text(mc.font, text, -width / 2, 0, argb, true)
         g.pose().popMatrix()
     }
-
-    @JvmStatic
-    fun previewWidth(mc: Minecraft): Int = mc.font.width(previewText())
 
     @JvmStatic
     fun resolvedX(mc: Minecraft): Float {

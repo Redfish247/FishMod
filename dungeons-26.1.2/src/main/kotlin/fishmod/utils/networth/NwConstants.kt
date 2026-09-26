@@ -31,11 +31,9 @@ object NwConstants {
     @JvmField val DRILL_PART = 1.0
     @JvmField val ETHERWARP = 1.0
     @JvmField val MASTER_STAR = 1.0
-    @JvmField val GEMSTONE = 1.0
     @JvmField val HOT_POTATO_BOOK = 1.0
     @JvmField val NECRON_BLADE_SCROLL = 1.0
     @JvmField val POLARVOID_BOOK = 1.0
-    @JvmField val PRESTIGE_ITEM = 1.0
     @JvmField val REFORGE = 1.0
     @JvmField val PET_CANDY = 0.65
     @JvmField val SOULBOUND_PET_SKINS = 0.8
@@ -120,11 +118,6 @@ object NwConstants {
         "TALISMAN_ENRICHMENT_DEFENSE", "TALISMAN_ENRICHMENT_HEALTH", "TALISMAN_ENRICHMENT_INTELLIGENCE",
         "TALISMAN_ENRICHMENT_MAGIC_FIND", "TALISMAN_ENRICHMENT_WALK_SPEED", "TALISMAN_ENRICHMENT_STRENGTH",
         "TALISMAN_ENRICHMENT_ATTACK_SPEED", "TALISMAN_ENRICHMENT_FEROCITY", "TALISMAN_ENRICHMENT_SEA_CREATURE_CHANCE"
-    )
-
-    @JvmField
-    val GEMSTONE_SLOT_TYPES: Set<String> = hashSetOf(
-        "COMBAT", "OFFENSIVE", "DEFENSIVE", "MINING", "UNIVERSAL", "CHISEL"
     )
 
     @JvmField

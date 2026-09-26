@@ -17,11 +17,4 @@ public class StatusEffectsDisplayMixin {
             ci.cancel();
         }
     }
-
-    @Inject(method = "drawStatusEffectTooltip", at=@At("HEAD"), cancellable = true, require = 0)
-    public void drawToolTip(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
-        if (Visual.hideStatusOverLay) {
-            ci.cancel();
-        }
-    }
 }

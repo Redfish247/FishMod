@@ -13,7 +13,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
-import net.minecraft.network.protocol.game.ClientboundSetPlayerTeamPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSoundEntityPacket;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
@@ -21,7 +20,6 @@ import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.scores.PlayerTeam;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -60,14 +58,6 @@ public class ClientPlayNetworkHandlerMixin {
     private void fishmod$onEntitySpawned(net.minecraft.network.protocol.game.ClientboundAddEntityPacket packet, CallbackInfo ci, @Local Entity entity) {
         if (entity == null) return;
         Events.ON_ENTITY_SPAWNED.invoke(e -> e.onEntity(entity, this.level));
-    }
-
-    @Inject(method = "handleSetPlayerTeamPacket", at = @At(value = "TAIL"))
-    private void onTeam(ClientboundSetPlayerTeamPacket packet, CallbackInfo ci, @Local PlayerTeam team) {
-        if (team == null) return;
-        String teamStr = fishmod.utils.HypixelApi.STRIP_COLOR.matcher(
-                team.getPlayerPrefix().getString() + team.getPlayerSuffix().getString()).replaceAll("");
-        Events.ON_TEAM.invoke(scoreBoardEvent -> scoreBoardEvent.onTeam(teamStr));
     }
 
     @Inject(method = "handleSoundEvent", at = @At(value = "HEAD"), cancellable = true)

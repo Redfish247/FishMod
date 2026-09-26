@@ -106,9 +106,6 @@ object StorageOverlay {
     fun isActive(screen: AbstractContainerScreen<*>): Boolean = on(screen)
 
     @JvmStatic
-    fun panelLeftScreenX(): Int = (mx0 * scale).toInt()
-
-    @JvmStatic
     fun panelTopScreenY(): Int = (my0 * scale).toInt()
 
     // Called from GameRendererUiMixin after vanilla's GUI pass; replays this frame's recording once.

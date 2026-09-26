@@ -24,14 +24,13 @@ import fishmod.utils.Scheduler
 import fishmod.utils.config.Config
 import fishmod.utils.config.FishConfig
 import fishmod.utils.config.FolderUtility
-import fishmod.utils.data.EntityUtil
 import fishmod.utils.data.PartyUtil
 import fishmod.utils.debug.Debug
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.dungeon.Section
 import fishmod.utils.events.CustomEvents
 import fishmod.utils.rendering.RenderingEvents
-import net.fabricmc.api.ModInitializer
+import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
@@ -61,7 +60,7 @@ import java.util.function.Consumer
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-class FishModInit : ModInitializer {
+class FishModInit : ClientModInitializer {
 
     companion object {
         @JvmStatic
@@ -378,7 +377,7 @@ class FishModInit : ModInitializer {
         }
     }
 
-    override fun onInitialize() {
+    override fun onInitializeClient() {
         FishConfig.manager.load()
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register { FishConfig.manager.save() }
         fishmod.utils.IoExecutor.init()
@@ -1421,7 +1420,6 @@ class FishModInit : ModInitializer {
         safeInit("PracticeMode") { fishmod.utils.dungeon.PracticeMode.init() }
         safeInit("Section") { Section.init() }
         safeInit("PartyUtil") { PartyUtil.init() }
-        safeInit("EntityUtil") { EntityUtil.init() }
         safeInit("RenderingEvents") { RenderingEvents.init() }
         safeInit("Scheduler") { Scheduler.init() }
         safeInit("ChatQueue") { fishmod.utils.ChatQueue.init() }

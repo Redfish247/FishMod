@@ -12,8 +12,6 @@ object DungeonState {
 
     private var chatFloor = -1
     private var inBoss = false
-    private var seenDungeonStart = false
-    private var dungeonEnded = false
 
     private val BOSS_ENTRY = arrayOf(
         "[BOSS] Bonzo: Alright, maybe I'm just weak after all..",
@@ -23,24 +21,6 @@ object DungeonState {
         "[BOSS] Livid: Welcome, you've arrived right on time. I am Livid, the Master of Shadows.",
         "[BOSS] Sadan: So you made it all the way here... Now you wish to defy me? Sadan?!",
         "[BOSS] Maxor: WELL! WELL! WELL! LOOK WHO'S HERE!"
-    )
-    private const val DUNGEON_START = "[NPC] Mort: Here, I found this map when I first entered the dungeon."
-    private val DUNGEON_END = setOf(
-        "                        The Catacombs - Entrance",
-        "                         The Catacombs - Floor I",
-        "                         The Catacombs - Floor II",
-        "                        The Catacombs - Floor III",
-        "                        The Catacombs - Floor IV",
-        "                         The Catacombs - Floor V",
-        "                        The Catacombs - Floor VI",
-        "                        The Catacombs - Floor VII",
-        "                 Master Mode The Catacombs - Floor I",
-        "                Master Mode The Catacombs - Floor II",
-        "                Master Mode The Catacombs - Floor III",
-        "                Master Mode The Catacombs - Floor IV",
-        "                 Master Mode The Catacombs - Floor V",
-        "                Master Mode The Catacombs - Floor VI",
-        "                Master Mode The Catacombs - Floor VII"
     )
 
     private val WITHER_KEY_CLAIM = Pattern.compile("(?:\\[[A-Za-z+]+] )?([A-Za-z0-9_]+) has obtained Wither Key!")
@@ -55,12 +35,6 @@ object DungeonState {
 
     @JvmStatic
     fun isInBoss() = inBoss
-
-    @JvmStatic
-    fun seenDungeonStart() = seenDungeonStart
-
-    @JvmStatic
-    fun dungeonEnded() = dungeonEnded
 
     @JvmStatic
     fun hasWitherKey() = witherKeys > 0
@@ -83,12 +57,6 @@ object DungeonState {
                 inBoss = true
                 return
             }
-        }
-
-        if (msg in DUNGEON_END) {
-            dungeonEnded = true
-        } else if (msg == DUNGEON_START) {
-            seenDungeonStart = true
         }
 
         val s = stripColors(msg)
@@ -129,8 +97,6 @@ object DungeonState {
     @JvmStatic
     fun reset() {
         inBoss = false
-        seenDungeonStart = false
-        dungeonEnded = false
         chatFloor = -1
         witherKeys = 0
         bloodKey = false

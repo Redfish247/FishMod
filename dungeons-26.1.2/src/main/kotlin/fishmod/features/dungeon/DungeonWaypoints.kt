@@ -3,7 +3,6 @@ package fishmod.features.dungeon
 import com.mojang.blaze3d.platform.InputConstants
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
-import fishmod.utils.Constants
 import fishmod.utils.Location
 import fishmod.utils.Misc
 import fishmod.utils.dungeon.waypoints.DungeonWaypointStore
@@ -386,9 +385,6 @@ object DungeonWaypoints {
         val dimId = if (mc.level != null) mc.level!!.dimension().identifier().toString() else "unknown"
         return "global:$server:$dimId"
     }
-
-    @JvmStatic
-    fun currentGlobalKeyForGui(): String = globalKey()
 
     private fun onTick(mc: Minecraft) {
         if (mc.player == null || mc.level == null) {

@@ -301,8 +301,6 @@ void main(){
         }
     }
 
-    fun devicePixel(): Float = 1f / pixelRatio
-
     fun pushScissor(x: Float, y: Float, w: Float, h: Float) {
         var x0 = x; var y0 = y; var x1 = x + w; var y1 = y + h
         scissors.lastOrNull()?.let { p ->

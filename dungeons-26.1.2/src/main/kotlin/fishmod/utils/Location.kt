@@ -110,7 +110,5 @@ enum class Location(val name2: String) {
         @JvmStatic
         fun inSkyblock(): Boolean = inSkyblockFlag || fishmod.utils.dungeon.PracticeMode.active
 
-        @JvmStatic
-        fun hasReceivedLocation(): Boolean = detectedNewLocation
     }
 }

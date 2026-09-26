@@ -84,9 +84,6 @@ object SlotBinds {
     }
 
     @JvmStatic
-    fun activeProfile(): String { ensureLoaded(); return activeName() }
-
-    @JvmStatic
     fun newProfile() {
         ensureLoaded()
         var n = 1
