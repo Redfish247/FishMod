@@ -27,7 +27,6 @@ object DungeonBreaker {
     private var scanTick = 0
     private var loggedLore = false
 
-    // Blocks hit with the breaker, waiting to see them turn to air.
     private val pending = HashMap<BlockPos, Int>()
 
     @JvmStatic

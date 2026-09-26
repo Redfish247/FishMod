@@ -66,7 +66,6 @@ class Split(
         private var cachedRaw: String? = null
         private var cachedNameColors: Map<String, Int> = emptyMap()
 
-        // Per-split name colour overrides, stored as "Name=aarrggbb;Name2=...".
         @JvmStatic
         fun nameColors(): Map<String, Int> {
             val raw = FishSettings.splitNameColors
@@ -101,7 +100,6 @@ class Split(
     private var started: Boolean = false
     private var ended: Boolean = false
 
-    // Set when the split ends: PB_COLOR / AVG_COLOR, 0 = normal.
     @JvmField var paceColor: Int = 0
 
     fun parseMessage(string: String) {

@@ -18,7 +18,6 @@ object WarpCooldown {
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     @Volatile private var enteredAt = 0L
-    // "X entered ... Catacombs" arrives before the warp; the countdown starts once we land in the instance.
     @Volatile private var armedAt = 0L
     private const val ARM_TIMEOUT_MS = 10_000L
 
@@ -48,7 +47,6 @@ object WarpCooldown {
     }
 
     private fun remainingMs(): Long {
-        // No warp seen after the entered line: start from then instead of never.
         if (armedAt != 0L && System.currentTimeMillis() - armedAt > ARM_TIMEOUT_MS) { enteredAt = armedAt + ARM_TIMEOUT_MS; armedAt = 0L }
         if (enteredAt == 0L) return 0
         val total = FishSettings.warpCooldownSeconds.coerceIn(1, 120) * 1000L

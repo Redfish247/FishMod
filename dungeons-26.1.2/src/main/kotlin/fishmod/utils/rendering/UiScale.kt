@@ -16,7 +16,6 @@ object UiScale {
         return (if (isSiblingScreen()) base * SIBLING_ENLARGE else base) * userScale()
     }
 
-    // "GUI Settings" per-screen size (UI Customization card); 1.0 when the toggle is off.
     @JvmStatic
     fun userScale(screen: net.minecraft.client.gui.screens.Screen? = Minecraft.getInstance().screen): Float {
         if (!FishSettings.guiSettings || screen == null) return 1f

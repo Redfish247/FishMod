@@ -52,7 +52,6 @@ object PartyUtil {
         }
     }
 
-    // Bypasses the 60s throttle; cached state can be a minute stale after a join
     @JvmStatic
     fun forceRefresh() {
         grabbedTime = 0

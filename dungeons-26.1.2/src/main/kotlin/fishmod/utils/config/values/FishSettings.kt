@@ -241,9 +241,6 @@ object FishSettings {
     @ConfigValue @JvmField var prestigeColorsAnimSpeed: Double = 1.0
     @ConfigValue @JvmField var prestigeColorsAnimStyle: String = "FADE"
 
-    // Badges: server-authoritative (grant/revoke/enable/order all come from the backend, via the
-    // local admin dashboard — see BadgeManager/BadgeRegistry). These toggles only control whether
-    // the client bothers rendering them, never which badges exist or who has them.
     @ConfigValue @JvmField var badgesEnabled: Boolean = true
     @ConfigValue @JvmField var badgesOnNametags: Boolean = true
     @ConfigValue @JvmField var badgesOnTab: Boolean = true
@@ -856,7 +853,6 @@ object FishSettings {
     @ConfigValue @JvmField var customScoreboardHideInDungeon: Boolean = false
     @ConfigValue @JvmField var customScoreboardOpacity: Int = 30
     @ConfigValue @JvmField var customScoreboardHudY: Int = 2
-    // Right edge in GUI px; -1 = pinned to the screen's right edge.
     @ConfigValue @JvmField var customScoreboardHudX: Int = -1
     @ConfigValue @JvmField var sbSectionDate: Boolean = true
     @ConfigValue @JvmField var sbSectionTime: Boolean = true

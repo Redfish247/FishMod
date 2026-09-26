@@ -35,14 +35,12 @@ object RenderUtils {
         return floatArrayOf(r, g, b, a)
     }
 
-    // Tracer start from the real camera (follows the smooth crouch height, unlike player.eyeHeight).
     @JvmStatic
     fun cameraLineStart(ahead: Double): Vec3 {
         val cam = Minecraft.getInstance().gameRenderer.mainCamera
         return cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()).scale(ahead))
     }
 
-    // Vanilla gizmo fills draw before translucent terrain, so water behind them shows through
     private val deferredFills = ArrayList<Pair<AABB, Int>>()
 
     @JvmStatic
@@ -320,7 +318,6 @@ object RenderUtils {
         val textRenderer = client.font
         client.player ?: return
 
-        // Draw immediately (same view matrix as the boxes); submitText() drained a frame late and made text swim
         matrices.pushPose()
         matrices.translate(x, y, z)
         matrices.mulPose(context.levelState().cameraRenderState.orientation)

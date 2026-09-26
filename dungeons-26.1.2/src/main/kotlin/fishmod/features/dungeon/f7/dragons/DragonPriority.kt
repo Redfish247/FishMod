@@ -37,7 +37,6 @@ object DragonPriority {
             val solo = FishSettings.witherDragonsSoloDebuff
             val onAll = FishSettings.witherDragonsSoloDebuffAll
             val hasPurple = spawning.any { it == WitherDragon.PURPLE }
-            // The class that ISN'T the purple soloer flips over to the bers side.
             if (solo == 1 && clazz == DungeonClass.TANK && (hasPurple || onAll))
                 spawning.sortByDescending { priorityList.indexOf(it) }
             else if (solo == 0 && clazz == DungeonClass.HEALER && (hasPurple || onAll))

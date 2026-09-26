@@ -72,7 +72,6 @@ object PuzzleSolvers {
 
         Events.ON_PACKET.register { packet ->
             if (enabled && isInPuzzle && FishSettings.tpMazeSolver && packet is ClientboundPlayerPositionPacket) {
-                // Read where we were before the teleport is applied; by the time execute() runs we've already moved.
                 val from = Minecraft.getInstance().player?.position()
                 Minecraft.getInstance().execute { TPMazeSolver.tpPacket(packet, from) }
             }

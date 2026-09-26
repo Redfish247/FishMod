@@ -261,7 +261,6 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         }
     }
 
-    // Head-style rounded square with the contributor's initial.
     private fun headBadge(x: Int, y: Int, s: Int, c: Credit) {
         ScreenTheme.nRoundedRect(x, y, s, s, max(4, s / 5), c.badgeColor)
         val init = c.name.take(1).uppercase()
@@ -296,7 +295,6 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
             copiedAt = System.currentTimeMillis()
             return true
         }
-        // Clicking the invite text itself opens it, as the old link pill did.
         if (inside(mx, my, linkX, linkY, linkW, linkH) && visible(linkY, linkH)) {
             try {
                 Util.getPlatform().openUri(DISCORD_URL)

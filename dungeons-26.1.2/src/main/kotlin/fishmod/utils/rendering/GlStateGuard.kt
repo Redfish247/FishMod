@@ -9,7 +9,6 @@ import org.lwjgl.opengl.GL20
 import org.lwjgl.opengl.GL30
 import org.lwjgl.opengl.GL33
 
-// Saves and restores the GL state our raw-GL UI pass touches, so vanilla rendering is unaffected.
 class GlStateGuard {
 
     private var vao = 0

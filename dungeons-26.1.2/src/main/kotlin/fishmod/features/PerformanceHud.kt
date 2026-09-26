@@ -7,7 +7,6 @@ import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-// Movable FPS / TPS / ping readout.
 object PerformanceHud {
 
     private const val NAME = "Performance"

@@ -103,7 +103,6 @@ class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Scr
         ScreenTheme.nPanel(x, y, x + panelW, y + panelH, 10, BG, BORDER)
         UiRecorder.fillRect((x + 10).toFloat(), y.toFloat(), (panelW - 20).toFloat(), 2f, ScreenTheme.ACCENT)
 
-        // Header: pin glyph, title, hint.
         ScreenTheme.nRoundedRect(x + pad, y + 12, 24, 24, 6, 0x2424B6B0)
         UiRecorder.disc((x + pad + 12).toFloat(), (y + 22).toFloat(), 4.5f, ScreenTheme.ACCENT)
         UiRecorder.fillRect((x + pad + 11).toFloat(), (y + 25).toFloat(), 2f, 6f, ScreenTheme.ACCENT)
@@ -118,7 +117,6 @@ class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Scr
             UiRecorder.text("Waypoint title (optional)", (field.x + 3).toFloat(), field.y + 5.5f, 7f, 0xFF5A6470.toInt())
         }
 
-        // Live preview of the floating label, in the colour new waypoints are placed with.
         val py = y + 86
         val ph = 50
         ScreenTheme.nRoundedRect(x + pad, py, innerW, ph, 6, PREVIEW_BG)

@@ -21,8 +21,6 @@ import net.minecraft.world.item.ItemStack
 import org.lwjgl.glfw.GLFW
 import java.util.TreeMap
 
-// Vanilla layer: square fills, slot grids, items. UI overlay: rounded frames, text, tooltip.
-// Rounded corners = opaque ring in the fill colour over a vanilla rect inset from the edge, so no seam shows.
 object StorageOverlay {
 
     private const val SLOT_SIZE = 17
@@ -107,7 +105,6 @@ object StorageOverlay {
     @JvmStatic
     fun panelTopScreenY(): Int = (my0 * scale).toInt()
 
-    // Called from GameRendererUiMixin after vanilla's GUI pass; replays this frame's recording once.
     @JvmStatic
     fun paintUiOverlay() {
         if (!pendingPaint) return
@@ -244,7 +241,6 @@ object StorageOverlay {
 
         ctx.pose().popMatrix()
 
-        // replaces the vanilla tooltip, which would sit under the overlay text
         tooltipStack?.let {
             val lines = runCatching { Screen.getTooltipFromItem(mc, it) }.getOrNull()
             if (!lines.isNullOrEmpty()) ScreenTheme.nItemTooltip(lines, smx, smy, vw, vh, 1f / s)
@@ -368,7 +364,6 @@ object StorageOverlay {
         val cardH = rows * SLOT_SIZE + GRID_TOP + 3
         val hot = inView && inRect(mouseX, mouseY, x, y, CARD_W, cardH)
 
-        // vanilla body under the items; the overlay ring rounds its corners in the same colour
         rect(ctx, x + 1, y + 1, CARD_W - 2, cardH - 2, CARD_BG)
         UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), CARD_W.toFloat(), cardH.toFloat(), CARD_R, 2f, 0, CARD_BG)
         val edge = if (isActive) ACCENT else if (hot) CARD_BORDER_HOVER else CARD_BORDER
@@ -703,7 +698,6 @@ object StorageOverlay {
     private fun rect(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, color: Int) =
         ctx.fill(x, y, x + w, y + h, color)
 
-    // enableScissor already maps through the pose (which carries the scale), so pass virtual coords
     private fun scissor(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int) {
         runCatching { ctx.enableScissor(x, y, x + w, y + h) }
     }

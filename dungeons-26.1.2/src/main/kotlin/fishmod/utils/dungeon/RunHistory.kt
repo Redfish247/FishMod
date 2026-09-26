@@ -94,7 +94,6 @@ object RunHistory {
         }
     }
 
-    /** Drops stored split times (the averages) for one floor, or all when null; returns splits cleared. */
     @JvmStatic
     fun clear(floor: String?): Int {
         val n = synchronized(lock) {

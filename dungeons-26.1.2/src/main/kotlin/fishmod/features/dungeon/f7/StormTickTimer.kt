@@ -30,7 +30,6 @@ object StormTickTimer {
     private val LB_ARCHER_END_TICK: Int = Math.round(34.40 * 20).toInt()
     private val LB_HEALER_END_TICK: Int = Math.round(34.10 * 20).toInt()
 
-    // Py: count down 5s to the crusher window (31.5s into P2), pulled earlier by ping.
     private val PY_TICK: Int = Math.round(31.5 * 20).toInt()
 
     private val STORM_OVER_TICK: Int = Math.round(28.5 * 20).toInt()
@@ -60,7 +59,6 @@ object StormTickTimer {
         )
         Events.ON_GAME_MESSAGE.register { text ->
             if (!Location.inDungeon() || !Phase.inP2()) return@register false
-            // Enraged fires once per crush; only the first is the kill.
             if (deathTime == 0.0 && PATTERN.matcher(text.string).find()) {
                 deathTime = timer.tick * Constants.TICK_DURATION
                 deathStartDisplayTime = System.currentTimeMillis()

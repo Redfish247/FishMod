@@ -12,7 +12,6 @@ import java.util.Base64
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
-/** GSON-backed store of user-placed dungeon waypoints, keyed by rotation-normalized RoomSignature; stored in config/fishmod-dungeon-waypoints.json. */
 object DungeonWaypointStore {
 
     private const val FILE_PATH = "config/fishmod-dungeon-waypoints.json"
@@ -33,7 +32,6 @@ object DungeonWaypointStore {
         save()
     }
 
-    /** Removes the waypoint whose stored position is within `epsilon` of (x,y,z). Returns true if one was removed. */
     @JvmStatic
     fun removeNear(roomKey: String, x: Double, y: Double, z: Double, epsilon: Double): Boolean {
         val list = data[roomKey] ?: return false
@@ -49,7 +47,6 @@ object DungeonWaypointStore {
         if (data.remove(roomKey) != null) save()
     }
 
-    /** Removes every waypoint tagged with [routeId] across all rooms. Returns how many were removed. */
     @JvmStatic
     fun removeRoute(routeId: String): Int {
         var removed = 0
@@ -84,7 +81,6 @@ object DungeonWaypointStore {
         }
     }
 
-    /** Decodes base64(gzip(json)) and replaces the whole DB. Returns true on success. */
     @JvmStatic
     fun importBase64(base64: String?): Boolean {
         if (base64 == null || base64.isBlank()) return false

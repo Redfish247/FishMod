@@ -50,7 +50,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         val DANGER_HOVER = ScreenTheme.DANGER_HOVER
         val WARN = 0xFFF2C14E.toInt()
 
-        // vanilla inventory look
         val MC_BG = 0xFF171A22.toInt()
         val MC_EDGE = 0xFF2A2D38.toInt()
         val MC_SLOT = 0xFF1E2129.toInt()
@@ -123,7 +122,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
     private fun mainCount(): Int = min(36, inv().containerSize)
     private fun selected(): ItemStack = inv().getItem(selectedIndex)
 
-    // layout (virtual coords)
     private val lx get() = panelX + 14
     private val rx get() = panelX + LEFT_W + 30
     private val rw get() = PANEL_W - LEFT_W - 44
@@ -327,7 +325,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         loadFields()
     }
 
-    // Vanilla layer: panel, inventory slots and item icons (the UiRecorder overlay paints above this).
     override fun extractBackground(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         super.extractBackground(ctx, mouseX, mouseY, delta)
         if (!ready || minecraft?.player == null) return
@@ -411,7 +408,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         }
     }
 
-    // null when trims can be edited, otherwise the reason they can't
     private fun trimUsable(sel: ItemStack): String? = when {
         uuidOf(sel) == null -> "This item has no Hypixel item id, so it can't be customised."
         trimMaterials.isEmpty() || trimPatterns.isEmpty() -> "Trim registries load once you are in a world."
@@ -423,14 +419,12 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         val sel = selected()
         val id = uuidOf(sel)
 
-        // header
         ScreenTheme.nRoundedRect(panelX + 12, panelY + 8, 16, 16, 4, 0x3324B6B0)
         ScreenTheme.nst("Aa", panelX + 14, panelY + 12, ACCENT, 0.62f)
         ScreenTheme.nst("Item Customize", panelX + 34, panelY + 7, TEXT_PRIM, 0.85f)
         ScreenTheme.nst("Client-side only · only you see it", panelX + 34, panelY + 19, TEXT_HINT, 0.58f)
         drawTabs(mouseX, mouseY)
 
-        // pick item
         ScreenTheme.nst("PICK ITEM", lx, pickY, ACCENT, 0.65f)
         val hov = slotAt(mouseX, mouseY)
         val hint = if (hov >= 0 && !inv().getItem(hov).isEmpty) clip(inv().getItem(hov).hoverName.string, LEFT_W - 50, 0.55f)
@@ -446,7 +440,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         }
         for (i in 0 until mainCount()) if (hasCustom(inv().getItem(i))) marker(invSlotX(i), invSlotY(i))
 
-        // preview (item icon itself is drawn in the vanilla layer)
         val px = lx + 52
         val custom = if (id != null) ItemCustomizationStore.getItemName(id) else null
         if (sel.isEmpty) {
@@ -470,7 +463,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
             ScreenTheme.nst(sub, px, pvY + 30, if (tags.isEmpty()) TEXT_HINT else ACCENT, 0.55f)
         }
 
-        // right column
         ScreenTheme.nst("Editing", rx, pickY, TEXT_HINT, 0.6f)
         ScreenTheme.nst(clip(if (sel.isEmpty) "Nothing" else sel.hoverName.string, rw - 40, 0.7f), rx + 34, pickY - 1, TEXT_PRIM, 0.7f)
         if (!sel.isEmpty && id == null) ScreenTheme.nst("No Hypixel item id, so this item can't be customised.", rx, pickY + 11, WARN, 0.55f)
@@ -483,7 +475,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
             Tab.TRIM -> drawTrimTab(mouseX, mouseY)
         }
 
-        // footer
         if (id != null) drawButton(resetRect(), "Reset item", mouseX, mouseY, DANGER, filled = false)
         val applied = System.currentTimeMillis() - appliedAt < 900
         drawButton(applyRect(), if (applied) "Applied" else "Apply", mouseX, mouseY, ACCENT, filled = false)

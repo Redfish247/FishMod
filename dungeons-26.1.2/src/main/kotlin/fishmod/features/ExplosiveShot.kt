@@ -44,7 +44,6 @@ object ExplosiveShot {
         val dmg = formatDamage(perEnemy)
 
         val mc = Minecraft.getInstance()
-        // chat line shows on every Explosive Shot; title + party announce stay P1-only
         if (FishSettings.explosiveShotChatMessage) {
             val chatLine = Component.literal(
                 "§7[Explosive Shot] §f$dmg §7dmg per " + (if (enemies == 1) "enemy" else "enemies") + " §8(" + enemies + ")"

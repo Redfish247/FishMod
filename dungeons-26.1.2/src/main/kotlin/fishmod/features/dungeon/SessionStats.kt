@@ -265,7 +265,6 @@ object SessionStats {
         return "${s}s"
     }
 
-    // short TTL cache; rebuilt every frame otherwise
     private const val LINES_CACHE_TTL_MS = 200L
     private var linesCacheAt = 0L
     private var linesCache: Array<String> = arrayOf("", "", "", "")

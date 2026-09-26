@@ -418,7 +418,6 @@ object DungeonWaypoints {
         }
     }
 
-    // Standing on top of a message block (connected blocks with the same message count as one area) sends it once.
     private fun checkPositionalMessages(mc: Minecraft) {
         if (!FishSettings.posMsgEnabled || pmEditMode) { pmStanding = emptySet(); return }
         val pos = mc.player?.position() ?: return
@@ -443,7 +442,6 @@ object DungeonWaypoints {
         placePm(mc)
     }
 
-    // Always a full block; right-click an existing block to remove it.
     private fun placePm(mc: Minecraft) {
         val aim = aimPoint(mc)
         val bb = aim.blockBox ?: return

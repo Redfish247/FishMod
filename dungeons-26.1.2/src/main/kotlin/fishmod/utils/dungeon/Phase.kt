@@ -132,7 +132,6 @@ object Phase {
         return false
     }
 
-    // P2 start to Storm's first crush, in server ticks (same clock as "Storm died at").
     @JvmStatic
     fun onStormKill(secs: Double) {
         if (stormKillAnnounced) return
@@ -158,7 +157,6 @@ object Phase {
 
     private val FLOOR_ORDER = listOf("E", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "M1", "M2", "M3", "M4", "M5", "M6", "M7")
 
-    // One entry per distinct split name (first floor's split as the default colour), Run Time last.
     @JvmStatic
     fun distinctSplits(): List<Split> {
         val seen = LinkedHashMap<String, Split>()
@@ -167,7 +165,6 @@ object Phase {
         return seen.values.toList() + listOfNotNull(run)
     }
 
-    // /pbsplits: sum of your best time for each non-overlapping split (no Boss Entry / Run Time).
     @JvmStatic
     fun pbSplitsCommand(arg: String?) {
         val f = arg?.uppercase() ?: floor?.takeIf { FLOOR_SPLITS.containsKey(it) } ?: "M7"
@@ -213,7 +210,6 @@ object Phase {
         return r
     }
 
-    // Separate all-time best for server-tick time (lag-free), no history seed.
     private fun tickPb(split: Split): PbMessages.Result? {
         if (PracticeMode.active) return null
         val f = floor ?: return null
@@ -230,7 +226,6 @@ object Phase {
         return line
     }
 
-    // Falls back to the best of the last-30 run history so PBs work before the first new record.
     private fun seedPb(f: String, name: String): Double? {
         val key = "split:$f:$name"
         PbMessages.get(key)?.let { return it }
@@ -241,7 +236,6 @@ object Phase {
         return hist
     }
 
-    // Pink = beat an existing PB, orange = faster than your average.
     @JvmStatic
     fun paceColor(r: PbMessages.Result, avg: Double): Int = when {
         r.isPb && r.previous != null -> Split.PB_COLOR

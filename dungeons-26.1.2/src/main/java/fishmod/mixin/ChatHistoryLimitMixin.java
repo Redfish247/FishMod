@@ -6,7 +6,6 @@ import net.minecraft.client.gui.components.ChatComponent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-// ModifyExpressionValue leaves the 100 constant in place so other mods' @ModifyConstant on it still find their target.
 @Mixin(ChatComponent.class)
 public class ChatHistoryLimitMixin {
 

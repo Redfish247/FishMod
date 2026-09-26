@@ -34,7 +34,6 @@ object RenderLayers {
     private fun renderType(name: String, p: RenderPipeline): RenderType =
         RenderType.create(name, RenderSetup.builder(p).setOutputTarget(OutputTarget.MAIN_TARGET).createRenderSetup())
 
-    // Depth-tested fill drawn after translucent terrain so water behind a box can't paint over it
     @JvmField val FILL: RenderType = renderType("fishmod:esp_fill", pipeline("pipeline/esp_fill", VertexFormat.Mode.QUADS, CompareOp.LESS_THAN_OR_EQUAL))
     @JvmField val FILL_ND: RenderType = renderType("fishmod:esp_fill_nd", pipeline("pipeline/esp_fill_nd", VertexFormat.Mode.QUADS))
     @JvmField val LINE_ND: RenderType = renderType("fishmod:esp_line_nd", pipeline("pipeline/esp_line_nd", VertexFormat.Mode.DEBUG_LINES))
