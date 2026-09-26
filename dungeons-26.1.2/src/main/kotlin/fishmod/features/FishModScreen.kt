@@ -108,8 +108,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ColorPickerSetting("Accent Color", "", FishSettings::fmButtonColor))
             f.sub.add(SliderIntSetting("Accent Opacity %", "0% invisible - 100% solid", FishSettings::fmButtonAlpha, 0, 100))
             f.sub.add(SubcategoryHeader("Buttons"))
-            f.sub.add(ColorPickerSetting("Button Color", "Tint behind an enabled row, e.g. Door Colors", FishSettings::fmRowColor))
-            f.sub.add(SliderIntSetting("Button Opacity %", "0% invisible - 100% solid", FishSettings::fmRowAlpha, 0, 100))
+            f.sub.add(SliderIntSetting("Button Opacity %", "Feature row fill, separate from the background", FishSettings::fmRowBgAlpha, 0, 100))
+            f.sub.add(ColorPickerSetting("Enabled Tint Color", "Tint on an enabled row, e.g. Door Colors", FishSettings::fmRowColor))
+            f.sub.add(SliderIntSetting("Enabled Tint %", "0% invisible - 100% solid", FishSettings::fmRowAlpha, 0, 100))
             f.sub.add(SubcategoryHeader("Cascade Animation"))
             f.sub.add(ToggleSetting("Menu Animations", "Off = the menu just appears; no cascade / expand / toggle slides", FishSettings::fmAnimations))
             f.sub.add(SliderIntSetting("Drop Duration (ms)", "200 snappy - 1200 dramatic", FishSettings::fmDropDurationMs, 200, 1200, 25).gatedBy { FishSettings.fmAnimations })
@@ -2027,15 +2028,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     private fun currentCardBg(): Int {
-        val rgb = when (FishSettings.fmBgPreset) {
+        val alpha = Mth.clamp(Math.round(FishSettings.fmBgAlpha * 2.55f), 0, 255)
+        return (alpha shl 24) or cardBgRgb()
+    }
+
+    private fun cardBgRgb(): Int {
+        return when (FishSettings.fmBgPreset) {
             "Deep Blue" -> 0x0F1E3D
             "Crimson" -> 0x3D0F14
             "Violet" -> 0x2A0F3D
             "Custom" -> FishSettings.fmBgCustomColor and 0xFFFFFF
             else -> 0x14181D
         }
-        val alpha = Mth.clamp(Math.round(FishSettings.fmBgAlpha * 2.55f), 0, 255)
-        return (alpha shl 24) or rgb
     }
 
     private fun brighten(rgb: Int, amount: Int): Int {
@@ -2052,8 +2056,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         ACCENT = (alpha shl 24) or rgb
         ACCENT_HOVER = brighten(ACCENT, 28)
 
+        val btnAlpha = Mth.clamp(Math.round(FishSettings.fmRowBgAlpha * 2.55f), 0, 255)
+        ROW_BUTTON = (btnAlpha shl 24) or (brighten(cardBgRgb(), 10) and 0xFFFFFF)
+
+        // tint fades with the button so 0% button opacity hides the whole row fill
         val rowRgb = FishSettings.fmRowColor and 0xFFFFFF
-        val rowAlpha = Mth.clamp(Math.round(FishSettings.fmRowAlpha * 2.55f), 0, 255)
+        val rowAlpha = Mth.clamp(Math.round(FishSettings.fmRowAlpha * FishSettings.fmRowBgAlpha * 0.0255f), 0, 255)
         ROW_ENABLED = (rowAlpha shl 24) or rowRgb
     }
 
@@ -2383,8 +2391,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val inView = mouseY >= cyTop() && mouseY <= cyBot()
         val hover = inView && mouseX >= x0 && mouseX <= x1 && mouseY >= top && mouseY <= top + ROW_H
 
-        if (on) UiRecorder.fillRect((x0 + 2).toFloat(), top.toFloat(), (x1 - x0 - 4).toFloat(), ROW_H.toFloat(), ROW_ENABLED)
-        if (hover) UiRecorder.fillRect((x0 + 2).toFloat(), top.toFloat(), (x1 - x0 - 4).toFloat(), ROW_H.toFloat(), ROW_HOVER)
+        val bx = (x0 + 2).toFloat(); val bw = (x1 - x0 - 4).toFloat()
+        if ((ROW_BUTTON ushr 24) != 0) UiRecorder.fillRoundedRect(bx, top.toFloat(), bw, ROW_H.toFloat(), ROW_RADIUS, ROW_BUTTON)
+        if (on) UiRecorder.fillRoundedRect(bx, top.toFloat(), bw, ROW_H.toFloat(), ROW_RADIUS, ROW_ENABLED)
+        if (hover) UiRecorder.fillRoundedRect(bx, top.toFloat(), bw, ROW_H.toFloat(), ROW_RADIUS, ROW_HOVER)
         if (on) UiRecorder.fillPillBar((x0 + 2).toFloat(), (top + 3).toFloat(), 2f, (ROW_H - 6).toFloat(), ACCENT)
 
         var label = f.name
@@ -3731,6 +3741,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private val CARD_BG = ScreenTheme.CARD_BG
         private const val ROW_HOVER = 0x1EFFFFFF
         private var ROW_ENABLED: Int = 0x2624B6B0
+        private var ROW_BUTTON: Int = 0xFF1E2227.toInt()
+        private const val ROW_RADIUS = 3f
         private val SUBROW_BG = 0xFF0F1317.toInt()
         private val TRACK_OFF = 0xFF3A3F48.toInt()
         private val TEXT_COLOR = ScreenTheme.TEXT_COLOR
