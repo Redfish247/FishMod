@@ -126,10 +126,17 @@ public class ClientPlayNetworkHandlerMixin {
         if (text != null) {
             fishmod.features.dungeon.SimonSaysTracker.onTitle(text.getString());
 
-            if (fishmod.features.dungeon.f7.TitleHider.shouldHideTitle(text) || fishmod.features.dungeon.f7.DeviceNotifier.disableTitles(text)) {
+            if (fishmod.features.dungeon.f7.TitleHider.shouldHideTitle(text) || fishmod.features.dungeon.f7.DeviceNotifier.disableTitles(text)
+                    || fishmod.features.dungeon.f7.StormOverAlert.shouldHideServerCountdown(text)) {
                 ci.cancel();
             }
         }
+    }
+
+    @Inject(method = "setSubtitleText", at = @At("HEAD"), cancellable = true)
+    private void fishmod$onSubtitle(net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket packet, CallbackInfo ci) {
+        if (!Minecraft.getInstance().isSameThread()) return;
+        if (packet.text() != null && fishmod.features.dungeon.f7.StormOverAlert.shouldHideServerCountdown(packet.text())) ci.cancel();
     }
 
     @Inject(method = "handleSystemChat", at = @At("HEAD"), cancellable = true)
