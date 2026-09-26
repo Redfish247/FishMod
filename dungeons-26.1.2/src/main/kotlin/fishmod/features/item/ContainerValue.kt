@@ -119,8 +119,8 @@ object ContainerValue {
             if (skipPlayerInv && slot.container is Inventory) continue
             val stack: ItemStack = slot.item
             if (stack.isEmpty) continue
-            val id = ItemUtil.getId(stack) ?: continue
-            val unit = CroesusPrices.price(id) + ModifierValue.calc(stack)
+            if (ItemUtil.getId(stack) == null) continue
+            val unit = ItemValue.estimate(stack)
             if (unit <= 0.0) continue
             val v = unit * stack.count
             sum += v

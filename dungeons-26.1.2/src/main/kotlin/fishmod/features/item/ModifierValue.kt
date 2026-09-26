@@ -2,14 +2,13 @@ package fishmod.features.item
 
 import fishmod.features.croesus.CroesusPrices
 import fishmod.utils.networth.NwConstants
-import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
 
 object ModifierValue {
 
     @JvmStatic
     fun calc(stack: ItemStack): Double {
-        val tag = stack.get(DataComponents.CUSTOM_DATA)?.copyTag() ?: return 0.0
+        val tag = stack.fishmodCustomDataTag() ?: return 0.0
         var v = 0.0
 
         tag.getCompound("enchantments").ifPresent { ench ->

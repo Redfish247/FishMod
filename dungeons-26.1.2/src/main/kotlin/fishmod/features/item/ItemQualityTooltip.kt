@@ -3,7 +3,6 @@ package fishmod.features.item
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
-import net.minecraft.core.component.DataComponents
 import net.minecraft.network.chat.Component
 
 object ItemQualityTooltip {
@@ -12,7 +11,7 @@ object ItemQualityTooltip {
     fun init() {
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines ->
             if (!FishSettings.itemQualityTooltip || !Location.inSkyblock()) return@ItemTooltipCallback
-            val tag = stack.get(DataComponents.CUSTOM_DATA)?.copyTag() ?: return@ItemTooltipCallback
+            val tag = stack.fishmodCustomDataTag() ?: return@ItemTooltipCallback
             val boost = tag.getInt("baseStatBoostPercentage").orElse(0)
             if (boost <= 0) return@ItemTooltipCallback
             val req = tag.getString("dungeon_skill_req").orElse("")
