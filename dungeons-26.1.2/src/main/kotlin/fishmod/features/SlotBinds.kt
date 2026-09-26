@@ -203,17 +203,20 @@ object SlotBinds {
         val slots = screen.menu.slots
         val self = slots.firstOrNull { it.x == x && it.y == y } ?: return
         val idx = self.index
-        val partner = partnerOf(idx) ?: return
-        val other = slots.getOrNull(partner) ?: slots.firstOrNull { it.index == partner } ?: return
+        // Lines are drawn from the inventory side so a hotbar slot with several binds gets one line per bind.
+        val invPartner = binds[idx]
+        val partners = if (invPartner != null) listOf(invPartner) else binds.entries.filter { it.value == idx }.map { it.key }
+        if (partners.isEmpty()) return
 
         if (FishSettings.slotBindsHoverOnly) {
             val hov = (screen as HandledScreenAccessor).`fishmod$getHoveredSlot`()?.index
-            if (hov != idx && hov != partner) return
+            if (hov != idx && hov !in partners) return
         }
 
         val color = FishSettings.slotBindsColor
         if (FishSettings.slotBindsBorder) border(ctx, x, y, color)
-        if (FishSettings.slotBindsLine && idx > partner) {
+        if (FishSettings.slotBindsLine && invPartner != null) {
+            val other = slots.getOrNull(invPartner) ?: slots.firstOrNull { it.index == invPartner } ?: return
             line(ctx, x + 8, y + 8, other.x + 8, other.y + 8, color)
         }
     }
