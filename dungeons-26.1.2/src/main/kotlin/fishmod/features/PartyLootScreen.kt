@@ -1,6 +1,7 @@
 package fishmod.features
 
 import fishmod.features.croesus.CroesusPrices
+import fishmod.features.croesus.LootIcons
 import fishmod.features.croesus.LootTrackerStore
 import fishmod.utils.NameList
 import fishmod.utils.config.FishConfig
@@ -99,14 +100,19 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
 
         val vw = (this.width / UiScale.factor()).toInt()
         val vh = (this.height / UiScale.factor()).toInt()
-        UiRecorder.fillRect(0f, 0f, vw.toFloat(), vh.toFloat(), 0x99000000.toInt())
+        val sc = UiScale.factor()
+        ctx.pose().pushMatrix()
+        ctx.pose().scale(sc, sc)
+        ctx.fill(0, 0, vw + 1, vh + 1, 0x99000000.toInt())
 
         val winW = min(640, vw - 32)
         val winH = min(400, vh - 32)
         val winX = (vw - winW) / 2
         val winY = (vh - winH) / 2
-        UiRecorder.dropShadow(winX.toFloat(), winY.toFloat(), winW.toFloat(), winH.toFloat(), 12f, 16f, 0x70000000)
-        UiRecorder.roundedRectRing(winX.toFloat(), winY.toFloat(), winW.toFloat(), winH.toFloat(), 12f, 1f, PANEL, LINE)
+        // panel is drawn in the vanilla layer so item icons render on top of it
+        for (i in 8 downTo 2 step 2) ScreenTheme.roundedRect(ctx, winX - i, winY - i + 4, winW + i * 2, winH + i * 2, 12 + i, 0x12000000)
+        ScreenTheme.roundedRect(ctx, winX, winY, winW, winH, 12, PANEL)
+        UiRecorder.roundedRectRing(winX.toFloat(), winY.toFloat(), winW.toFloat(), winH.toFloat(), 12f, 1f, 0, LINE)
 
         val hdrH = renderHeader(winX, winY, winW)
         UiRecorder.fillRect(winX.toFloat(), (winY + hdrH).toFloat(), winW.toFloat(), 1f, LINE)
@@ -118,7 +124,8 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         val by = winY + hdrH + 12
         val bw = winW - 28
         val bh = footY - 10 - by
-        if (tab == Tab.LOOT) renderLoot(bx, by, bw, bh) else renderNames(bx, by, bw, bh)
+        if (tab == Tab.LOOT) renderLoot(ctx, bx, by, bw, bh) else renderNames(bx, by, bw, bh)
+        ctx.pose().popMatrix()
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
@@ -212,7 +219,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         namesScroll = 0
     }
 
-    private fun renderLoot(x: Int, y: Int, w: Int, h: Int) {
+    private fun renderLoot(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int) {
         val runs = LootTrackerStore.runs()
         val q = searchField.value.trim().lowercase()
         val now = System.currentTimeMillis()
@@ -281,7 +288,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         }
 
         lootListX = x; lootListY = sy + sh + 8; lootListW = w; lootListH = y + h - lootListY
-        renderDropList(rows, allRows.isEmpty(), total, drops)
+        renderDropList(ctx, rows, allRows.isEmpty(), total, drops)
     }
 
     private fun tile(x: Int, y: Int, w: Int, h: Int, label: String, value: String, color: Int, side: String?, hov: Boolean, small: Boolean = false) {
@@ -293,7 +300,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         UiRecorder.textBold(clip(value, w - 20, size), (x + 10).toFloat(), vy, size, color)
     }
 
-    private fun renderDropList(rows: List<LootTrackerStore.Row>, none: Boolean, total: Double, drops: Int) {
+    private fun renderDropList(ctx: GuiGraphicsExtractor, rows: List<LootTrackerStore.Row>, none: Boolean, total: Double, drops: Int) {
         val x0 = lootListX
         val top = lootListY
         val lw = lootListW
@@ -306,6 +313,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         val maxScroll = max(0, rows.size * DROP_H - lh)
         lootScroll = lootScroll.coerceIn(0, maxScroll)
         UiRecorder.pushScissor(x0.toFloat(), top.toFloat(), lw.toFloat(), lh.toFloat())
+        runCatching { ctx.enableScissor(x0, top, x0 + lw, top + lh) }
         val valW = 70
         val cntW = 44
         val rowW = if (maxScroll > 0) lw - 6 else lw
@@ -315,12 +323,19 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
             if (ry + DROP_H < top || ry > top + lh) continue
             val visible = ry >= top - 1 && ry + DROP_H <= top + lh + 1
             if (over(x0, ry, rowW, DROP_H - 2) && curMy in top..(top + lh)) {
-                UiRecorder.fillRoundedRect(x0.toFloat(), ry.toFloat(), rowW.toFloat(), (DROP_H - 2).toFloat(), 6f, RAISE)
+                ScreenTheme.roundedRect(ctx, x0, ry, rowW, DROP_H - 2, 6, RAISE)
             }
             val iy = ry + (DROP_H - 2 - 20) / 2
-            UiRecorder.roundedRectRing((x0 + 6).toFloat(), iy.toFloat(), 20f, 20f, 5f, 1f, iconColor(r.id.ifEmpty { r.name }), 0x1FFFFFFF)
-            val ab = abbrev(r.name)
-            UiRecorder.textBold(ab, x0 + 16 - tw(ab, S_XS) / 2f, iy + (20 - S_XS) / 2f, S_XS, 0xFFFFFFFF.toInt())
+            val icon = LootIcons.icon(r.id)
+            if (icon != null) {
+                ScreenTheme.roundedRect(ctx, x0 + 6, iy, 20, 20, 5, LINE)
+                UiRecorder.roundedRectRing((x0 + 6).toFloat(), iy.toFloat(), 20f, 20f, 5f, 1f, 0, 0x1FFFFFFF)
+                ctx.item(icon, x0 + 8, iy + 2)
+            } else {
+                UiRecorder.roundedRectRing((x0 + 6).toFloat(), iy.toFloat(), 20f, 20f, 5f, 1f, iconColor(r.id.ifEmpty { r.name }), 0x1FFFFFFF)
+                val ab = abbrev(r.name)
+                UiRecorder.textBold(ab, x0 + 16 - tw(ab, S_XS) / 2f, iy + (20 - S_XS) / 2f, S_XS, 0xFFFFFFFF.toInt())
+            }
 
             val v = rowValue(r)
             val nameX = x0 + 34
@@ -345,6 +360,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
             val vs = if (v > 0) fmtCoins(v) else "-"
             UiRecorder.text(vs, (valX + valW - tw(vs, S_MD)).toFloat(), ry + (DROP_H - 2 - S_MD) / 2f, S_MD, if (v > 0) GOLD else DIM)
         }
+        runCatching { ctx.disableScissor() }
         UiRecorder.popScissor()
         if (maxScroll > 0) {
             val barH = max(12, lh * lh / (rows.size * DROP_H))
