@@ -42,12 +42,33 @@ object RenderUtils {
         return cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()).scale(ahead))
     }
 
+    // Vanilla gizmo fills draw before translucent terrain, so water behind them shows through
+    private val deferredFills = ArrayList<Pair<AABB, Int>>()
+
+    @JvmStatic
+    fun clearDeferredFills() = deferredFills.clear()
+
+    @JvmStatic
+    fun hasDeferredFills() = deferredFills.isNotEmpty()
+
+    @JvmStatic
+    fun flushDeferredFills(matrices: PoseStack, consumer: VertexConsumer) {
+        for ((b, argb) in deferredFills) {
+            val (r, g, bl, a) = toFloats(argb)
+            drawFilledBox(matrices, consumer, b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ, r, g, bl, a)
+        }
+        deferredFills.clear()
+    }
+
     @JvmStatic
     fun gizmoBox(box: AABB, fillArgb: Int, strokeArgb: Int) = gizmoBox(box, fillArgb, strokeArgb, false)
 
     @JvmStatic
     fun gizmoBox(box: AABB, fillArgb: Int, strokeArgb: Int, throughWalls: Boolean) {
-        if ((fillArgb ushr 24) != 0) Gizmos.cuboid(box, GizmoStyle.fill(fillArgb)).also { if (throughWalls) it.setAlwaysOnTop() }
+        if ((fillArgb ushr 24) != 0) {
+            if (throughWalls) Gizmos.cuboid(box, GizmoStyle.fill(fillArgb)).setAlwaysOnTop()
+            else deferredFills.add(box to fillArgb)
+        }
         if ((strokeArgb ushr 24) != 0) Gizmos.cuboid(box, GizmoStyle.stroke(strokeArgb)).also { if (throughWalls) it.setAlwaysOnTop() }
     }
 
