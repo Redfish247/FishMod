@@ -25,8 +25,6 @@ object InstallHeartbeat {
     private var lastReportedAt = 0L
     private const val REPORT_COOLDOWN_MS = 2 * 60 * 1000L
 
-    private var updateNoticeShown = false
-
     @JvmStatic
     fun init() {
         ClientPlayConnectionEvents.JOIN.register { _, _, _ -> report() }
@@ -41,26 +39,13 @@ object InstallHeartbeat {
         val name = player.gameProfile.name() ?: return
         lastReportedAt = now
 
-        HypixelApi.reportSeen(uuid, name, modVersion) { latestVersion, latestDisplayVersion, updateLinks, welcomeText, discordUrl, nickClearedAt ->
+        HypixelApi.reportSeen(uuid, name, modVersion) { _, _, _, welcomeText, discordUrl, nickClearedAt ->
             mc.execute {
                 reconcileNickRevoke(nickClearedAt)
                 if (!FishSettings.hasSeenWelcomeMessage) {
                     sendWelcomeBox(welcomeText, discordUrl)
                     FishSettings.hasSeenWelcomeMessage = true
                     FishConfig.manager.save()
-                } else if (isOutdated(modVersion, latestVersion) && updateLinks != null) {
-                    val shown = latestDisplayVersion ?: latestVersion!!
-                    if (!updateNoticeShown) { sendUpdateBox(shown, updateLinks); updateNoticeShown = true }
-                } else if (latestVersion.isNullOrBlank() && !updateNoticeShown) {
-                    UpdateChecker.latestVersion { modrinthVersion ->
-                        mc.execute {
-                            if (!updateNoticeShown && isOutdated(modVersion, modrinthVersion)) {
-                                val links = discordUrl?.let { UpdateChecker.links + ("discord" to it) } ?: UpdateChecker.links
-                                sendUpdateBox(modrinthVersion!!, links)
-                                updateNoticeShown = true
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -77,19 +62,6 @@ object InstallHeartbeat {
 
     private fun border(): Component =
         Component.literal(" ".repeat(BORDER_WIDTH)).withStyle(ChatFormatting.AQUA, ChatFormatting.STRIKETHROUGH)
-
-    private fun sendUpdateBox(version: String, links: Map<String, String>) {
-        Misc.addChatMessage(border())
-        Misc.addChatMessage(
-            Component.literal("FishMod update available: ").withStyle(ChatFormatting.AQUA)
-                .append(Component.literal(version).withStyle(ChatFormatting.WHITE, ChatFormatting.BOLD))
-        )
-        Misc.addChatMessage(Component.literal(""))
-        links["github"]?.let { Misc.addChatMessage(linkLine("GitHub link", it)) }
-        links["modrinth"]?.let { Misc.addChatMessage(linkLine("Modrinth Link", it)) }
-        links["discord"]?.let { Misc.addChatMessage(linkLine("Discord link", it)) }
-        Misc.addChatMessage(border())
-    }
 
     private fun sendWelcomeBox(text: String?, discordUrl: String?) {
         Misc.addChatMessage(border())
@@ -112,17 +84,4 @@ object InstallHeartbeat {
                 style.withColor(ChatFormatting.BLUE)
             }
         }
-
-    private fun isOutdated(local: String?, remote: String?): Boolean {
-        if (local.isNullOrBlank() || remote.isNullOrBlank()) return false
-        val localParts = local.substringBefore('-').split('.').mapNotNull { it.toIntOrNull() }
-        val remoteParts = remote.substringBefore('-').split('.').mapNotNull { it.toIntOrNull() }
-        if (localParts.isEmpty() || remoteParts.isEmpty()) return false
-        for (i in 0 until maxOf(localParts.size, remoteParts.size)) {
-            val l = localParts.getOrElse(i) { 0 }
-            val r = remoteParts.getOrElse(i) { 0 }
-            if (l != r) return l < r
-        }
-        return false
-    }
 }
