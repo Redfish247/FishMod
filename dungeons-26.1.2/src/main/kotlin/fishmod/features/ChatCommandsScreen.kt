@@ -22,7 +22,6 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 
-// Chat Notifications, Command Aliases and Command Keys in one tabbed window.
 class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
     Screen(Component.literal("Chat & Commands")), HasUiOverlay {
 
@@ -83,7 +82,6 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
     private var focused: EditBox? = null
     private val sinks = IdentityHashMap<EditBox, (String) -> Unit>()
 
-    // Notifications
     private var selected: ChatRule? = null
     private var listScroll = 0
     private var edScroll = 0
@@ -100,7 +98,6 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
     private lateinit var actionBarField: EditBox
     private lateinit var chatField: EditBox
 
-    // Aliases + keys
     private val aliasRows = ArrayList<AliasRow>()
     private val keyRows = ArrayList<KeyRow>()
     private var rowsScroll = 0
@@ -173,8 +170,6 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
         rowsScroll = 0
     }
 
-    // ---------- render ----------
-
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         mx = UiScale.vx(mouseX)
         my = UiScale.vx(mouseY)
@@ -207,7 +202,6 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
         text(g, px + 12 + (24 - tw(g, 9f)) / 2f, py + 17f, 9f, ACCENT)
         UiRecorder.textBold("Chat & Commands", px + 44f, py + 11f, 10f, TEXT)
 
-        // header tabs with live counts
         val tabs = Tab.values()
         val counts = tabs.map { countText(it) }
         val widths = tabs.indices.map { i -> (tw(tabs[i].label, 8f) + 6 + tw(counts[i], 6.5f) + 8 + 16).toInt() }
@@ -238,8 +232,6 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
         text("Saved when you press Done", px + 14f, fy + 13f, 7f, DIM)
         button("Done", px + pw - 14 - 72, fy + 6, 72, 20, primary = true) { onClose() }
     }
-
-    // ---------- notifications ----------
 
     private fun drawNotifications() {
         val lx = bx
@@ -398,7 +390,6 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
         }
     }
 
-    // text outputs fire when non-blank; a card can also be open while still empty
     private fun isOn(r: ChatRule, o: Out): Boolean =
         if (o == Out.SOUND) r.soundEnabled
         else textOf(r, o).isNotBlank() || openOuts[r]?.contains(o) == true
@@ -450,8 +441,6 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
         }
     }
 
-    // ---------- aliases ----------
-
     private fun aliasKey(s: String) = s.trim().removePrefix("/")
 
     private fun drawAliases() {
@@ -500,8 +489,6 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
         ScreenTheme.nRoundedRectRing(bx, y, bw, 20, 5, 1, CARD_BG, BORDER)
         text("New or edited aliases work right away. Removing or renaming one fully clears after you rejoin.", bx + 8f, y + 6f, 7f, SUB)
     }
-
-    // ---------- keys ----------
 
     private fun drawKeys() {
         text("Press a key in-game to run a command. Click a key box, then press a key or click the box with a mouse button. Esc unbinds.",
@@ -581,8 +568,6 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
         }
     }
 
-    // ---------- widgets ----------
-
     private fun text(s: String, x: Float, y: Float, size: Float, color: Int) = UiRecorder.text(s, x, y, size, color)
     private fun tw(s: String, size: Float): Float = UiRecorder.textWidth(s, size)
     private fun label(s: String, x: Int, y: Int) = text(s, x.toFloat(), y.toFloat(), 7f, SUB)
@@ -629,7 +614,6 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
         hit(x, y, w, h) { setFocus(f) }
     }
 
-    // "/" drawn into the field unless the value already has one
     private fun slashField(f: EditBox, x: Int, y: Int, w: Int, h: Int, placeholder: String, ring: Int? = null) {
         val foc = focused === f
         ScreenTheme.nRoundedRectRing(x, y, w, h, 4, 1, FIELD_BG, ring ?: if (foc) ACCENT else FIELD_BORDER)
@@ -701,8 +685,6 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
         text(s, x + (w - tw(s, 9f)) / 2f, y + (h - 9f) / 2f, 9f, if (hov) DANGER_HOVER else SUB)
         hit(x, y, w, h, action)
     }
-
-    // ---------- input ----------
 
     override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
         val x = UiScale.vx(click.x())

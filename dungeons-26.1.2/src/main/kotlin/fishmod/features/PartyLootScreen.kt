@@ -40,7 +40,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
     private var curMx = 0
     private var curMy = 0
 
-    // loot
     private lateinit var searchField: EditBox
     private lateinit var editBox: EditBox
     private var editBoxFiltering = false
@@ -59,7 +58,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
     private var lootListW = 0
     private var lootListH = 0
 
-    // name lists
     private lateinit var nameField: EditBox
     private var errorMsg = ""
     private var modeOpen = false
@@ -124,8 +122,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
-
-    // ---------- chrome ----------
 
     private fun renderHeader(x: Int, y: Int, w: Int): Int {
         val gx = x + 14
@@ -197,8 +193,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         namesScroll = 0
     }
 
-    // ---------- loot ----------
-
     private fun renderLoot(x: Int, y: Int, w: Int, h: Int) {
         val allRows = LootTrackerStore.rows().toList()
         val runs = LootTrackerStore.runs()
@@ -219,7 +213,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         val ty = y + 16
         val tileH = 40
         val tileW = (w - 3 * 8) / 4
-        // runs tile doubles as the runs editor
         val runsHov = editKind != 1 && over(x, ty, tileW, tileH)
         tile(x, ty, tileW, tileH, "RUNS", if (editKind == 1) "" else runs.toString(), ScreenTheme.TEXT_COLOR, null, runsHov)
         if (editKind == 1) placeEditBox(x + 10, ty + 18, tileW - 20, 16)
@@ -231,7 +224,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         tx += tileW + 8
         tile(tx, ty, tileW, tileH, "BEST DROP", best?.name ?: "—", ScreenTheme.TEXT_COLOR, null, false, small = true)
 
-        // search row
         val sy = ty + tileH + 10
         val sh = 20
         val sw = min(220, w / 2)
@@ -262,7 +254,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
             else { clearArmed = true; clearArmedAt = System.currentTimeMillis() }
         }
 
-        // drop list
         lootListX = x; lootListY = sy + sh + 8; lootListW = w; lootListH = y + h - lootListY
         renderDropList(rows, allRows.isEmpty(), total, drops)
     }
@@ -373,8 +364,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         return if (editId.isNotEmpty()) editId == r.id else editName.equals(r.name, ignoreCase = true)
     }
 
-    // ---------- name lists ----------
-
     private fun renderNames(x: Int, y: Int, w: Int, h: Int) {
         val list = names(tab)
         val other = otherOf(tab)
@@ -426,7 +415,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
             cy += 20
         }
 
-        // add row
         val ih = 20
         val addW = 50
         val iw = w - addW - 8
@@ -442,7 +430,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         if (errorMsg.isNotEmpty()) UiRecorder.text(clip(errorMsg, w, S_XS), x.toFloat(), cy.toFloat(), S_XS, ScreenTheme.DANGER)
         cy += 12
 
-        // chips
         namesBoxX = x; namesBoxY = cy; namesBoxW = w; namesBoxH = y + h - cy
         UiRecorder.roundedRectRing(x.toFloat(), cy.toFloat(), w.toFloat(), namesBoxH.toFloat(), 8f, 1f, PANEL2, LINE)
         if (list.isEmpty()) {
@@ -463,7 +450,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         val innerW = namesBoxW - pad * 2
         val btnW = 14
         val nBtns = if (other != null) 2 else 1
-        // lay out first, then draw, so scroll can clamp
         val pos = ArrayList<IntArray>()
         var cx = 0
         var cy = 0
@@ -601,8 +587,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         runCatching { FishConfig.manager.save() }
     }
 
-    // ---------- shared widgets ----------
-
     private fun primaryButton(x: Int, y: Int, w: Int, h: Int, label: String, action: () -> Unit) {
         val hov = over(x, y, w, h)
         UiRecorder.fillPillBar(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), if (hov) ScreenTheme.ACCENT_HOVER else ACCENT)
@@ -618,8 +602,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         if (modeOpen && tab != Tab.LOOT) return false
         return curMx >= x && curMx <= x + w && curMy >= y && curMy <= y + h
     }
-
-    // ---------- input ----------
 
     override fun mouseClicked(click: MouseButtonEvent, doubled: Boolean): Boolean {
         val mx = UiScale.vx(click.x())
@@ -748,7 +730,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
             return (words[0].take(1) + words[1].take(1)).uppercase()
         }
 
-        // hsl(hue, 45%, 45%) like the mockup avatars
         private fun hsl(hue: Int, s: Float, l: Float): Int {
             val c = (1 - Math.abs(2 * l - 1)) * s
             val hp = (hue % 360) / 60f
@@ -779,7 +760,6 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
             return NUM.format(v)
         }
 
-        // used by .dprofit in PartyCommandHandler
         @JvmStatic
         fun totalValueForChat(): Double {
             var sum = 0.0

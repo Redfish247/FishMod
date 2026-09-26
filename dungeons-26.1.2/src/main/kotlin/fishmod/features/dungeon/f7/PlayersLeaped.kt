@@ -10,7 +10,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.phys.AABB
 
-// While you (the right class) stand in a leap spot, counts teammates that have leaped into it.
 object PlayersLeaped {
 
     private class Zone(val label: String, val cls: DungeonClass, val expected: Int, val box: AABB)
@@ -27,7 +26,6 @@ object PlayersLeaped {
     )
 
     private const val DONE_SHOW_MS = 2000L
-    // Spot label -> when it filled up; a full spot shows "All Players Leaped" briefly, then stays hidden for the run.
     private val filledAt = HashMap<String, Long>()
 
     @JvmStatic

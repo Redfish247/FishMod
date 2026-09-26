@@ -7,7 +7,6 @@ import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-// On-screen "Secrets: X/Y" for the room you're in, from Hypixel's action bar.
 object SecretOverlay {
 
     private const val NAME = "Secret Overlay"

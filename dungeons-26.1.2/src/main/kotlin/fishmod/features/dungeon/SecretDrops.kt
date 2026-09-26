@@ -32,7 +32,6 @@ object SecretDrops {
         return skull.ownerProfile?.partialProfile()?.id()?.toString() in SECRET_SKULLS
     }
 
-    /** Position of a secret bat's hurt/death sound, or null if this packet isn't one. */
     @JvmStatic
     fun batSound(p: ClientboundSoundPacket): Vec3? {
         val path = p.sound.value().location.path

@@ -38,7 +38,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private val columns: MutableList<Column> = ArrayList()
     private var searchText = ""
 
-    // per-column search filter cache; columns themselves can be reordered/merged so aren't cached
     private var visibleCacheSearch: String? = null
     private val visibleFeaturesCache = HashMap<Column, List<Feature>>()
     private var searchFocused = false
@@ -1888,11 +1887,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 slot.substring(colon + 1).split("+") to (slot.substring(0, colon).toIntOrNull() ?: 0)
             else
                 listOf(slot) to 0
-            // skip tabs that no longer exist instead of throwing the whole layout away
             val known = names.filter { byName[it] != null && used.add(it) }
             if (known.isNotEmpty()) slots.add(Slot(known, activeIdx))
         }
-        // tabs added since the layout was saved go on the end
         for (c in columns) if (used.add(c.name)) slots.add(Slot(listOf(c.name), 0))
 
         val reordered = ArrayList<Column>(columns.size)
@@ -2061,7 +2058,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val btnAlpha = Mth.clamp(Math.round(FishSettings.fmRowBgAlpha * 2.55f), 0, 255)
         ROW_BUTTON = (btnAlpha shl 24) or (brighten(cardBgRgb(), 10) and 0xFFFFFF)
 
-        // tint fades with the button so 0% button opacity hides the whole row fill
         val rowRgb = FishSettings.fmRowColor and 0xFFFFFF
         val rowAlpha = Mth.clamp(Math.round(FishSettings.fmRowAlpha * FishSettings.fmRowBgAlpha * 0.0255f), 0, 255)
         ROW_ENABLED = (rowAlpha shl 24) or rowRgb
@@ -3572,7 +3568,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     ) : ColorPickerSetting(name, desc, getter, setter) {
         val shownName: String = name
 
-        // order-independent name/visibility sync
         private fun syncName() { this.name = if (visible()) shownName else "" }
 
         override fun getHeight(): Int {
@@ -3778,7 +3773,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val SUBCAT_HEIGHT_2 = 22
         private const val TWO_LINE_H = 36
         private const val SLIDER_ROW_H = 24
-        // Bar sits right under its label; the gap goes below the bar.
         private const val SLIDER_CTRL_Y = 13
         private const val TWO_LINE_CTRL_Y = 20
 

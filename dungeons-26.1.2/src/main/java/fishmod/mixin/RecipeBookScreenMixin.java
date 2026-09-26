@@ -18,7 +18,6 @@ public class RecipeBookScreenMixin {
         }
     }
 
-    // recipe-book screens (player inv, crafting, furnace) skip AbstractContainerScreen.extractRenderState
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void fishmod$renderSearchBar(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
         SearchBar.render(context, mouseX, mouseY, deltaTicks);

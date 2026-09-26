@@ -12,7 +12,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-// All-time bests (seconds, lower is better) for splits / Goldor sections / terminals / relics.
 object PbMessages {
 
     private val FILE: Path = Paths.get("config/fishmod/personal_bests.json")
@@ -39,11 +38,9 @@ object PbMessages {
     @JvmStatic
     fun get(key: String): Double? = synchronized(pbs) { ensureLoaded(); pbs[key] }
 
-    // Marker that stops Phase from re-seeding split PBs out of run history after a reset.
     @JvmStatic
     fun noSeedKey(floor: String): String = "meta:noseed:$floor"
 
-    /** Clears split PBs for one floor (or all when null); returns how many were removed. */
     @JvmStatic
     fun resetSplits(floor: String?, floors: Collection<String>): Int = synchronized(pbs) {
         ensureLoaded()
@@ -56,7 +53,6 @@ object PbMessages {
         n
     }
 
-    // " (PB!)" / " (+1.23s)" suffix with the old best on hover.
     @JvmStatic
     fun tag(r: Result): MutableComponent {
         val prev = r.previous
@@ -69,7 +65,6 @@ object PbMessages {
         return Component.literal(text).withStyle { it.withHoverEvent(HoverEvent.ShowText(Component.literal(hover))) }
     }
 
-    // " (Tick PB!)" / " (tick PB 12.34s)" suffix for server-tick split times.
     @JvmStatic
     fun tickTag(r: Result): MutableComponent {
         val prev = r.previous
@@ -82,7 +77,6 @@ object PbMessages {
         return Component.literal(text).withStyle { it.withHoverEvent(HoverEvent.ShowText(Component.literal(hover))) }
     }
 
-    // Records the time and prints "<label> <time> (PB!)" unless it's a non-PB and only-PB is on.
     @JvmStatic
     fun announce(enabled: Boolean, key: String, label: Component, seconds: Double): Result? {
         val r = submit(key, seconds) ?: return null

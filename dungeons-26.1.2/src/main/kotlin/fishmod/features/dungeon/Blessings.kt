@@ -54,7 +54,6 @@ object Blessings {
 
     private fun clear() = Type.entries.forEach { it.current = 0 }
 
-    // The footer is the source of truth: anything not listed in it right now isn't active.
     private fun poll() {
         if (!FishSettings.blessingDisplayEnabled || !Location.inDungeon()) return
         if (++tickAcc < 20) return

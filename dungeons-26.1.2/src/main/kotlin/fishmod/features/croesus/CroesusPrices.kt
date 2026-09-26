@@ -119,7 +119,6 @@ object CroesusPrices {
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
             .thenAccept { r ->
                 qualityFetching.remove(key)
-                // cache misses too so they are not refetched every frame
                 var result = 0.0
                 try {
                     if (r.statusCode() == 200) {
@@ -211,7 +210,6 @@ object CroesusPrices {
             }
             .thenAccept { r ->
                 dynamicFetching.remove(cacheKey)
-                // cache misses too so they are not refetched every frame
                 var result = 0.0
                 if (r != null) {
                     try {
@@ -264,7 +262,6 @@ object CroesusPrices {
                 } catch (ex: Exception) {
                     Debug.LOGGER.warn("[CroesusPrices] coflnet {} error: {}", id, ex.message)
                 }
-                // stamp hit or miss so misses aren't refetched every frame
                 coflnetAttempted[id] = System.currentTimeMillis()
             }.exceptionally { fetching.remove(id); coflnetAttempted[id] = System.currentTimeMillis(); null }
     }
@@ -304,7 +301,6 @@ object CroesusPrices {
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
             .thenAccept { r ->
                 fetchingLowBin.remove(id)
-                // cache misses too so they are not refetched every frame
                 var result = 0.0
                 try {
                     if (r.statusCode() == 200) {

@@ -104,7 +104,6 @@ object SecretClicked {
         while (true) {
             val pos = batSounds.poll() ?: break
             if (!FishSettings.secretClickedBats) continue
-            // hurt + death both fire for one kill
             val now = System.currentTimeMillis()
             if (now - lastBat < 500 || pos.distanceToSqr(eye) > BAT_RANGE * BAT_RANGE) continue
             lastBat = now

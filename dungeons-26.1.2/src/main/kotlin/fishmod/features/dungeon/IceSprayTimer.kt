@@ -15,11 +15,10 @@ import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.Vec3
 
-// After you cast Ice Spray, shows one "unfrozen in" timer above each group of mobs caught in the cone.
 object IceSprayTimer {
 
     private const val RANGE = 8.0
-    private const val CONE_COS = 0.64 // ~50 degrees
+    private const val CONE_COS = 0.64
     private const val GROUP_RADIUS = 4.0
     private const val FREEZE_MS = 5000L
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
@@ -65,7 +64,6 @@ object IceSprayTimer {
         if (!FishSettings.iceSprayTimerEnabled || frozen.isEmpty()) return
         val now = System.currentTimeMillis()
         frozen.entries.removeIf { (e, until) -> until <= now || !e.isAlive || e.isRemoved }
-        // Greedy grouping: each mob joins the first group whose anchor is within GROUP_RADIUS.
         val groups = ArrayList<MutableList<Pair<LivingEntity, Long>>>()
         for ((e, until) in frozen) {
             val g = groups.firstOrNull { it[0].first.distanceTo(e) <= GROUP_RADIUS }

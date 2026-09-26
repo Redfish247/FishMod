@@ -58,7 +58,6 @@ object Scan {
         })
         ClientTickEvents.END_LEVEL_TICK.register(ClientTickEvents.EndLevelTick { world ->
             val now = System.currentTimeMillis()
-            // chunks load before the sidebar says Catacombs, so poll until every room resolves (pre-start too)
             if (!shouldScan && !loadedAllRooms && now - lastScanMs >= IDLE_SCAN_INTERVAL_MS && DungeonState.isInDungeon() && !DungeonState.isInBoss()) shouldScan = true
             if (shouldScan) {
                 if (now - lastScanMs >= MIN_SCAN_INTERVAL_MS) {

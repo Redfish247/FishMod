@@ -1321,7 +1321,6 @@ class FishModInit : ClientModInitializer {
         }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map_score_messages")) { ctx, tickCounter -> if (!FishHudEditor.isOpen()) fishmod.features.dungeon.map.ScoreMessages.renderHud(ctx, tickCounter) }
 
-        // Score title stores its centre X (-1 = auto centre); the editor works in left edges.
         FishHudEditor.register(
             "Dungeon Score Title",
             {
@@ -1337,7 +1336,6 @@ class FishModInit : ClientModInitializer {
             { fishmod.utils.config.values.DungeonMapSettings.mapScoreMessages }
         )
 
-        // Scoreboard stores its right edge (-1 = screen edge); the editor works in left edges.
         FishHudEditor.register(
             "Custom Scoreboard",
             {

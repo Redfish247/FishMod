@@ -10,8 +10,6 @@ import org.lwjgl.system.MemoryStack
 import org.lwjgl.system.MemoryUtil
 import java.nio.ByteBuffer
 
-// Inter via stb_truetype (bundled with Minecraft). Like fontstash, glyphs are rasterised at the exact
-// device-pixel size they are drawn at, so small UI text stays sharp. Size = ascent - descent in px.
 object UiFont {
     const val ATLAS = 1024
     private const val GAP = 2
@@ -24,7 +22,6 @@ object UiFont {
     private var failed = false
     private var ascent = 0
 
-    // System fonts for codepoints Inter lacks (e.g. Hypixel's admin prefix glyph U+12DE)
     private class Fallback(val info: STBTTFontinfo, val data: ByteBuffer, val unitRatio: Float)
     private val FALLBACK_PATHS = listOf(
         "C:/Windows/Fonts/segoeui.ttf", "C:/Windows/Fonts/seguisym.ttf", "C:/Windows/Fonts/ebrima.ttf",
@@ -66,7 +63,6 @@ object UiFont {
 
     fun scaleFor(size: Float): Float = if (ensureLoaded()) STBTruetype.stbtt_ScaleForPixelHeight(info, size) else 0f
 
-    // Top-aligned text: baseline sits one ascender below y.
     fun ascender(size: Float): Float = ascent * scaleFor(size)
 
     fun width(s: String, size: Float): Float {
@@ -90,7 +86,6 @@ object UiFont {
         if (fontIndex(a) != 0 || fontIndex(b) != 0) 0 else STBTruetype.stbtt_GetCodepointKernAdvance(info, a, b)
     }
 
-    // 0 = Inter, n = fallbacks[n - 1]; Inter's .notdef box if nothing has it
     private fun fontIndex(cp: Int): Int = fontFor.getOrPut(cp) {
         if (STBTruetype.stbtt_FindGlyphIndex(info, cp) != 0) return@getOrPut 0
         val i = fallbacks.indexOfFirst { STBTruetype.stbtt_FindGlyphIndex(it.info, cp) != 0 }
@@ -127,7 +122,6 @@ object UiFont {
         }
     }
 
-    // Glyph bitmap for a device-pixel font size (quantised to 1/4 px). Metrics are in device pixels.
     fun glyph(cp: Int, devSize: Float): Glyph? {
         if (!ensureLoaded()) return null
         val q = Math.round(devSize * 4f)
@@ -149,7 +143,6 @@ object UiFont {
             if (gw <= 0 || gh <= 0) return Glyph(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
             if (penX + gw + GAP >= ATLAS) { penX = GAP; penY += rowH + GAP; rowH = 0 }
             if (penY + gh + GAP >= ATLAS) {
-                // Atlas full: start over (only after thousands of glyph/size combos).
                 glyphs.clear(); java.util.Arrays.fill(atlas, 0); penX = GAP; penY = GAP; rowH = 0
             }
             val tmp = MemoryUtil.memAlloc(gw * gh)
@@ -167,7 +160,6 @@ object UiFont {
         }
     }
 
-    // Render thread only. Returns the GL texture id with any newly baked glyphs uploaded.
     fun texture(): Int {
         if (texture == 0) {
             texture = GL11.glGenTextures()
@@ -179,7 +171,6 @@ object UiFont {
             dirty = true
         } else GL11.glBindTexture(GL11.GL_TEXTURE_2D, texture)
         if (dirty) {
-            // Minecraft leaves unpack state (PBO, row length, skips) set from its own uploads; clear it for ours.
             val pbo = GL11.glGetInteger(GL21.GL_PIXEL_UNPACK_BUFFER_BINDING)
             val rowLen = GL11.glGetInteger(GL11.GL_UNPACK_ROW_LENGTH)
             val skipRows = GL11.glGetInteger(GL11.GL_UNPACK_SKIP_ROWS)

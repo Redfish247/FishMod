@@ -15,7 +15,6 @@ import net.minecraft.sounds.SoundEvents
 import kotlin.math.ceil
 import kotlin.math.max
 
-// Necron phase: count down to the LB shot (default 8.00s into the phase), minus ping.
 object NecronLbTimer {
 
     private const val NECRON_PHASE = 8

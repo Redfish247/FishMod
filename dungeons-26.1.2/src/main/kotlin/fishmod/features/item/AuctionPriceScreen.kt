@@ -94,7 +94,6 @@ class AuctionPriceScreen(
         cancelX = confirmX - 6 - cancelW
     }
 
-    // Panel + icon box drawn vanilla so the item stack sits on top of them (the overlay paints last).
     override fun extractBackground(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         if (minecraft?.player == null) return
         val scale = UiScale.factor()
@@ -200,7 +199,6 @@ class AuctionPriceScreen(
 
     private fun autofillPercent(): Int = fishmod.utils.config.values.FishSettings.auctionAutofillPercent
 
-    // Accepts 42.5m / 800k / 1.2b / 12,500,000; null when unparseable.
     private fun parsePrice(s: String): Long? {
         val t = s.replace(",", "").replace(" ", "").lowercase()
         if (t.isEmpty()) return null
@@ -270,7 +268,6 @@ class AuctionPriceScreen(
         return true
     }
 
-    // Writes the parsed price to line 1 of the sign (blank if unparseable), like before.
     override fun onClose() {
         val value = parsePrice(priceField.value)?.toString() ?: ""
         Minecraft.getInstance().connection?.send(
@@ -279,7 +276,6 @@ class AuctionPriceScreen(
         Minecraft.getInstance().setScreen(null)
     }
 
-    // Sends the sign back untouched, same as closing the vanilla sign editor without typing.
     private fun cancel() {
         Minecraft.getInstance().connection?.send(
             ServerboundSignUpdatePacket(sign.blockPos, true, originalLines[0], originalLines[1], originalLines[2], originalLines[3])

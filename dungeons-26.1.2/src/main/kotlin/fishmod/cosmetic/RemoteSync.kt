@@ -93,9 +93,6 @@ object RemoteSync {
         val newPlayers = !lastUuids.containsAll(uuidToName.keys)
         val since = if (newPlayers) -1L else version
         val keys: Set<String> = HashSet(uuidToName.keys)
-        // Badges aren't locally known even for the local player (unlike nicks/scale, which the
-        // client renders from its own config) — self must be queried too, but only for badges;
-        // nick/scale acceptance below still keys off `keys` (others only), unchanged.
         val queryKeys: Set<String> = if (badgesOn) (keys + selfUuid) else keys
         if (queryKeys.isEmpty()) return
 

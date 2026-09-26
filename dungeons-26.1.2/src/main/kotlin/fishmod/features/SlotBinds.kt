@@ -200,7 +200,6 @@ object SlotBinds {
         val slots = screen.menu.slots
         val self = DrawEvents.currentSlot ?: slots.firstOrNull { it.x == x && it.y == y } ?: return
         val idx = self.index
-        // Lines are drawn from the inventory side so a hotbar slot with several binds gets one line per bind.
         val invPartner = binds[idx]
         val partners = if (invPartner != null) listOf(invPartner) else binds.entries.filter { it.value == idx }.map { it.key }
         if (partners.isEmpty()) return

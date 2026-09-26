@@ -43,14 +43,9 @@ object CompactTab {
     private val COL_KEY: Pattern = Pattern.compile("^!([A-Za-z])")
     private val SERVER_ID: Pattern = Pattern.compile("\\b((?:mini|mega|m)\\d+[A-Za-z]{1,3})\\b")
 
-    // --- Tab Sort ---------------------------------------------------------
-    // Purely text-based (no Hypixel API calls): everything is read off the
-    // already-rendered tab-list display name string.
-
     private val SORT_LEVEL_TAG = Regex("""\[(\d{1,4})[^\[\]\d]{0,4}]""")
     private val SORT_RANK_TAG = Regex("""\[([A-Za-z+]{2,10})]""")
 
-    // Highest to lowest. GM and MOD share a tier.
     private val RANK_TIER_GROUPS: List<Set<String>> = listOf(
         setOf("OWNER"),
         setOf("ADMIN"),
@@ -63,13 +58,8 @@ object CompactTab {
         setOf("VIP"),
     )
 
-    // Best-effort glyph set for Ironman/Bingo tags Hypixel appends near the
-    // player's name. Codepoints unverified without live game data — tune
-    // this constant after testing in-game; an empty match just means every
-    // player falls through to "unflagged", so it never breaks the sort.
-    private val IRONMAN_BINGO_MARKERS = Regex("[☘♻☢⚘🌱]") // ☘ ♻ ☢ ⚚ 🌱
+    private val IRONMAN_BINGO_MARKERS = Regex("[☘♻☢⚘🌱]")
 
-    // Hypixel's usual tab-list relationship colors: gold = party, aqua = friend, dark green = guild.
     private val SOCIAL_COLOR_CODE = Regex("§([0-9a-fk-or])", RegexOption.IGNORE_CASE)
     private val BRACKET_TAG = Regex("""\[[^\[\]]*]""")
 
@@ -88,25 +78,16 @@ object CompactTab {
     private fun sortIsIronmanBingo(raw: String): Boolean = IRONMAN_BINGO_MARKERS.containsMatchIn(raw)
 
     private fun sortSocialTierOf(raw: String): Int {
-        // Strip bracket contents (rank/level tags) but keep the color codes
-        // around them, so the last remaining color code is the one that was
-        // applied to the actual username text.
         val withoutTags = BRACKET_TAG.replace(raw, "")
         val code = SOCIAL_COLOR_CODE.findAll(withoutTags).lastOrNull()?.groupValues?.get(1)?.lowercase()
         return when (code) {
-            "6" -> 0 // party - gold
-            "b" -> 1 // friends - aqua
-            "2" -> 2 // guild - dark green
-            else -> 3 // everyone else
+            "6" -> 0
+            "b" -> 1
+            "2" -> 2
+            else -> 3
         }
     }
 
-    // Applies only to the real player-list column (col 0); every other
-    // column is a fixed informational panel and must keep its server-given
-    // row order regardless of the chosen sort mode. Row 0 of the players
-    // column is a fixed header (e.g. "Players (19)"), not a sortable
-    // player — it stays pinned in place and drawColumns never gives it a
-    // face/ping bar.
     private val shuffleSeed = java.util.concurrent.ThreadLocalRandom.current().nextInt()
 
     private fun sortPlayersColumn(entries: List<PlayerInfo>): List<PlayerInfo> {
@@ -126,7 +107,7 @@ object CompactTab {
                     .thenByDescending { sortLevelOf(stripped(it)) }
                 "Party/Friends/Guild" -> compareBy<PlayerInfo> { sortSocialTierOf(raw(it)) }
                     .thenByDescending { sortLevelOf(stripped(it)) }
-                else -> compareBy<PlayerInfo> { sortRankTierOf(stripped(it)) } // "Rank (Default)" and unknown values
+                else -> compareBy<PlayerInfo> { sortRankTierOf(stripped(it)) }
                     .thenByDescending { sortLevelOf(stripped(it)) }
             }
             rest.sortedWith(cmp)

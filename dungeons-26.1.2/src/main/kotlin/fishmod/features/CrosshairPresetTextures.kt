@@ -12,11 +12,6 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 
-/** Bakes crosshair preset shapes into small textures, all pure white (tinted at blit time) with no outline.
- *  Straight-edged shapes (Plus/Square/Cross/Brackets/Corners/X) are pixel-perfect axis-aligned lines that
- *  don't need smoothing. The genuinely curved shapes (Dot, and the ring/dot in Target and Circle Dot) use
- *  a signed-distance-field: each pixel's alpha comes from its exact distance to the true circular boundary,
- *  clamped to a crisp ~1px transition — a real anti-aliased curve, not a broad soft fade. */
 object CrosshairPresetTextures {
 
     private val SDF_STYLES = setOf("Dot", "Circle Dot", "Target")
@@ -30,7 +25,6 @@ object CrosshairPresetTextures {
         }
     }
 
-    /** Returns (textureId, halfExtent) — the texture is (halfExtent*2+1) square, centered on its own middle pixel. */
     @JvmStatic
     fun getTexture(style: String, scaleRaw: Double): Pair<Identifier, Int> {
         val scale = scaleRaw.coerceIn(0.1, 8.0)
@@ -46,7 +40,7 @@ object CrosshairPresetTextures {
             "Circle Dot" -> ceil(p.ringRadius + p.armLen + p.thickness / 2).toInt()
             "Target" -> ceil(p.ringRadius + p.thickness / 2).toInt()
             "Brackets", "Corners" -> ceil(p.bracketSize + p.thickness / 2).toInt()
-            else -> ceil(p.armLen).toInt() + 1 // "X"
+            else -> ceil(p.armLen).toInt() + 1
         }
         val halfExtent = baseHalfExtent + 2
         val size = halfExtent * 2 + 1
@@ -89,8 +83,6 @@ object CrosshairPresetTextures {
         val bracketArm: Double = (4 * scale).coerceAtLeast(2.0)
     }
 
-    // ---- signed-distance-field shapes (Dot, Target, Circle Dot): negative inside, 0 on the true edge ----
-
     private fun sdCircle(x: Double, y: Double, r: Double): Double = hypot(x, y) - r
 
     private fun sdRing(x: Double, y: Double, r: Double, halfThick: Double): Double = abs(hypot(x, y) - r) - halfThick
@@ -106,7 +98,7 @@ object CrosshairPresetTextures {
         return when (style) {
             "Dot" -> sdCircle(x, y, p.dotRadius)
             "Target" -> min(sdRing(x, y, p.ringRadius, half), sdCircle(x, y, p.dotRadius))
-            else -> { // "Circle Dot": ring + center dot + a horizontal bar poking out either side
+            else -> {
                 val armCenter = p.ringRadius + p.armLen / 2
                 min(
                     min(sdRing(x, y, p.ringRadius, half), sdCircle(x, y, p.dotRadius)),
@@ -115,8 +107,6 @@ object CrosshairPresetTextures {
             }
         }
     }
-
-    // ---- hard-edged shapes (Plus/Square/Cross/Brackets/Corners/X): pure boolean, no AA needed ----
 
     private fun insideFill(style: String, x: Int, y: Int, p: Params): Boolean {
         val ax = abs(x).toDouble()
@@ -135,7 +125,7 @@ object CrosshairPresetTextures {
                     cornerHit
                 }
             }
-            else -> { // "X": a Plus rotated 45 degrees
+            else -> {
                 val c = cos(Math.PI / 4)
                 val s = sin(Math.PI / 4)
                 val rx = abs(x * c - y * s)

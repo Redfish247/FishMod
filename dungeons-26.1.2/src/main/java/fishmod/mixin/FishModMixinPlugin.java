@@ -8,7 +8,6 @@ import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
-// Drops mixins that hard-conflict with other mods (mixin simple name -> conflicting mod id).
 public class FishModMixinPlugin implements IMixinConfigPlugin {
     private static final Map<String, String> CONFLICTS = Map.of(
             "ChatHistoryLimitMixin", "skysoft"

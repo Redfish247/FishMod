@@ -98,7 +98,6 @@ object M7Relics {
         }
     }
 
-    // Records every relic's place time; once all 5 are in, prints/sends one line per relic.
     private fun checkAllPlaced() {
         if (!Floor7.relicTimesEnabled || p5StartMs == 0L || placed.size == Relic.entries.size) return
         val level = Minecraft.getInstance().level ?: return

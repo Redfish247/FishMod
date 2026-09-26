@@ -3,8 +3,6 @@ package fishmod.cosmetic.badge
 import fishmod.utils.HypixelApi
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 
-/** The only place that knows what a badge id renders as (symbol/color/order). Catalog is fetched
- *  from the backend (`/badge-defs`), not hardcoded — new badges appear without a mod update. */
 object BadgeRegistry {
 
     @Volatile

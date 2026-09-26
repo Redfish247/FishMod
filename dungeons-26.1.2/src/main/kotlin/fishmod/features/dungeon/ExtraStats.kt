@@ -74,7 +74,6 @@ object ExtraStats {
                 return@register true
             }
 
-            // stat lines only appear inside the HEADER block
             if (!inBlock) return@register false
 
             TITLE.find(s)?.let { m ->

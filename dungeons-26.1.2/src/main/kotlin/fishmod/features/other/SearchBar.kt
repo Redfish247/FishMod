@@ -63,7 +63,6 @@ object SearchBar {
     fun render(context: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, deltaTicks: Float) {
         if (!FishSettings.inventorySearchEnabled || !exists() || !shouldDisplay()) return
         val bar = searchBar!!
-        // re-centre every frame so a window resize doesn't strand the bar
         bar.x = (Minecraft.getInstance().window.guiScaledWidth - SEARCH_WIDTH) / 2
         bar.extractRenderState(context, mouseX, mouseY, deltaTicks)
 

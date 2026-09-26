@@ -3,7 +3,6 @@ package fishmod.features.dungeon.map
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 
-// Tracks found secrets per map room from the "X/Y Secrets" action bar segment.
 object RoomSecrets {
     private val SECRETS = Regex("(\\d+)/(\\d+) Secrets")
 

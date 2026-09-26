@@ -10,15 +10,11 @@ import org.lwjgl.opengl.GL30
 import org.lwjgl.system.MemoryUtil
 import java.nio.FloatBuffer
 
-// FishMod's own GPU UI renderer (replaces NanoVG). Every shape is a quad; the fragment shader
-// evaluates a rounded-box SDF for anti-aliased fills, rings, gradients and soft shadows, and
-// samples a glyph coverage atlas for text. Coordinates are GUI-scaled pixels, like NanoVG's frame.
 object UiRenderer {
     private const val MODE_SHAPE = 0f
     private const val MODE_TEXT = 1f
     private const val MODE_SOLID = 2f
 
-    // pos2 local2 half2 rad4 colA4 colB4 params4(mode, stroke, feather, grad) uv2
     private const val FLOATS = 24
     private const val STRIDE = FLOATS * 4
 
@@ -141,7 +137,6 @@ void main(){
         }
     }
 
-    // Replays the recorded UI for the current screen. Called from the GameRenderer hook.
     @JvmStatic
     fun paint(screenW: Int, screenH: Int, scale: Float) {
         if (failed) return
@@ -213,7 +208,6 @@ void main(){
     private val ZERO = FloatArray(4)
     private val radTmp = FloatArray(4)
 
-    // A quad over [qx0,qy0]-[qx1,qy1]; local coords are relative to (cx, cy).
     private fun quad(qx0: Float, qy0: Float, qx1: Float, qy1: Float, cx: Float, cy: Float, hx: Float, hy: Float, r: FloatArray,
                      a: Int, b: Int, mode: Float, stroke: Float, feather: Float, grad: Float,
                      u0: Float = 0f, v0: Float = 0f, u1: Float = 0f, v1: Float = 0f) {
@@ -226,8 +220,6 @@ void main(){
         vert(qx0, qy1, qx0 - cx, qy1 - cy, hx, hy, r, a, b, mode, stroke, feather, grad, u0, v1)
     }
 
-    // ---- primitives used by UiRecorder.replay (already in scaled GUI coordinates) ----
-
     fun shape(x: Float, y: Float, w: Float, h: Float, tl: Float, tr: Float, br: Float, bl: Float, colA: Int, colB: Int = colA, stroke: Float = 0f, grad: Float = 0f) {
         if (w <= 0f || h <= 0f) return
         radTmp[0] = tl; radTmp[1] = tr; radTmp[2] = br; radTmp[3] = bl
@@ -236,7 +228,6 @@ void main(){
     }
 
     fun shadow(x: Float, y: Float, w: Float, h: Float, r: Float, feather: Float, color: Int) {
-        // Matches nvgBoxGradient(x, y + f/2, w, h, r + f/2, f) filled over the rect grown by f.
         val rr = r + feather * 0.5f
         radTmp[0] = rr; radTmp[1] = rr; radTmp[2] = rr; radTmp[3] = rr
         quad(x - feather, y - feather, x + w + feather, y + h + feather,
@@ -250,7 +241,6 @@ void main(){
         vert(x2, y2, 0f, 0f, 0f, 0f, ZERO, color, color, MODE_SOLID, 0f, 0f, 0f, 0f, 0f)
     }
 
-    // Line segment as a rounded capsule, so it stays anti-aliased at any angle.
     fun line(x0: Float, y0: Float, x1: Float, y1: Float, width: Float, color: Int) {
         val dx = x1 - x0; val dy = y1 - y0
         val len = Math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
@@ -258,7 +248,6 @@ void main(){
         val ux = dx / len; val uy = dy / len
         val hw = width / 2f
         val pad = hw + 1f
-        // corners of an oriented quad; local coords are in the segment's own frame
         val cx = (x0 + x1) / 2; val cy = (y0 + y1) / 2
         val hl = len / 2 + hw
         radTmp[0] = hw; radTmp[1] = hw; radTmp[2] = hw; radTmp[3] = hw
@@ -272,8 +261,6 @@ void main(){
         v(-se, -pad); v(se, -pad); v(se, pad); v(-se, -pad); v(se, pad); v(-se, pad)
     }
 
-    // Glyphs are baked at device-pixel size and placed on whole device pixels, as fontstash did.
-    // Bold = each glyph stamped twice one device pixel apart, with that pixel added to its advance so neighbours don't touch.
     fun text(s: String, x: Float, y: Float, size: Float, color: Int, bold: Boolean = false) {
         if (s.isEmpty() || size <= 0f) return
         val pr = pixelRatio

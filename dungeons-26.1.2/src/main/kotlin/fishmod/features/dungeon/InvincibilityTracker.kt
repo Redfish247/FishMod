@@ -78,7 +78,6 @@ object InvincibilityTracker {
         }
     }
 
-    // On-screen title + sound when a mask/pet procs.
     private fun procTitle(t: Type) {
         if (!FishSettings.invincProcTitle) return
         val (text, color) = when (t) {
@@ -98,7 +97,6 @@ object InvincibilityTracker {
         )
     }
 
-    // Icons are learned from the player's own items (mask heads, Phoenix in the pets menu) and saved.
     private var iconTick = 0
 
     private fun storedTexture(t: Type): String = when (t) {

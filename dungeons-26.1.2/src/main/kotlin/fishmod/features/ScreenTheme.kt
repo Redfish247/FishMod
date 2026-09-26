@@ -95,7 +95,6 @@ object ScreenTheme {
         val cursorX = UiRecorder.textWidth(text.substring(0, cursor), textSize)
         val pad = 3f
         val visibleW = w - pad * 2f
-        // Unfocused fields show the start of the text, not wherever the cursor was left.
         val scroll = if (focused) Math.max(0f, cursorX - visibleW) else 0f
         UiRecorder.pushScissor((x + 1).toFloat(), (y + 1).toFloat(), (w - 2).toFloat(), (h - 2).toFloat())
         UiRecorder.text(text, x + pad - scroll, y + (h - textSize) / 2f, textSize, TEXT_COLOR)
@@ -107,7 +106,6 @@ object ScreenTheme {
 
     private class Run(val text: String, val color: Int, val bold: Boolean)
 
-    // splits on legacy § codes, starting from the given colour/bold
     private fun legacyRuns(s: String, baseColor: Int, baseBold: Boolean, out: MutableList<Run>) {
         var color = baseColor
         var bold = baseBold
@@ -147,7 +145,6 @@ object ScreenTheme {
         return out
     }
 
-    // Draws legacy/§-coloured text in the overlay (e.g. "§7Open §f/storage").
     fun nLegacyText(s: String, x: Int, y: Int, baseColor: Int, size: Float = 7.5f) {
         val out = ArrayList<Run>()
         legacyRuns(s, baseColor, false, out)
@@ -158,12 +155,10 @@ object ScreenTheme {
         }
     }
 
-    // Item-style tooltip card with coloured lines, drawn in the overlay; coords in the recorder's space, k scales its size.
     fun nItemTooltip(lines: List<net.minecraft.network.chat.Component>, mx: Int, my: Int, screenW: Int, screenH: Int, k: Float = 1f) {
         if (lines.isEmpty()) return
         val runs = lines.mapIndexed { i, c -> componentRuns(c, if (i == 0) 0xFFFFFFFF.toInt() else 0xFFAAAAAA.toInt()) }
         val rawH = runs.size * 10f + (if (runs.size > 1) 2f else 0f) + 12f - 2f
-        // shrink long lore so the card always fits on screen
         val u = k * Math.min(1f, (screenH - 8f) / (rawH * k)).coerceAtLeast(0.3f)
         val size = 7.5f * u
         val lineH = 10f * u

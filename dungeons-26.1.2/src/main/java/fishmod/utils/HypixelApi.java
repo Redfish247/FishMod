@@ -1974,7 +1974,6 @@ public class HypixelApi {
         } catch (Exception e) { cb.onData(version, null, null, null, null); }
     }
 
-    // ── Badge catalog (read-only; grants/revokes happen only via the local admin dashboard) ──
     public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fishmod.cosmetic.badge.BadgeDef>> cb) {
         try {
             HttpRequest req = HttpRequest.newBuilder()
@@ -1994,10 +1993,6 @@ public class HypixelApi {
                             int rgb;
                             try { rgb = Integer.parseInt(color.replace("#", ""), 16); } catch (Exception e) { rgb = 0xFFFFFF; }
                             String symbol = o.has("symbol") ? o.get("symbol").getAsString() : "";
-                            // Strip variation selectors (U+FE00-FE0F) and the zero-width joiner
-                            // (U+200D): Minecraft's font has no glyph for them and instead of
-                            // rendering invisibly, draws a visible fallback box (e.g. "VS16")
-                            // stacked on top of the preceding character.
                             symbol = symbol.replaceAll("[\\uFE00-\\uFE0F\\u200D]", "");
                             out.add(new fishmod.cosmetic.badge.BadgeDef(
                                 o.get("id").getAsString(),

@@ -7,7 +7,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
 import java.util.Optional
 
-// On-screen title when your pet changes (autopet, summon).
 object PetSwapTitle {
 
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
@@ -24,7 +23,6 @@ object PetSwapTitle {
         }
     }
 
-    // Colour Hypixel used for the pet name in the chat line (= its rarity).
     private fun rarityColor(msg: Component, name: String): Int? {
         val first = name.split(' ').first()
         var color: Int? = null
@@ -32,7 +30,6 @@ object PetSwapTitle {
             if (text.contains(first)) { color = style.color?.value; Optional.of(Unit) } else Optional.empty()
         }, Style.EMPTY)
         if (color != null) return color
-        // Legacy §-coded message: last colour code before the name.
         val raw = msg.string
         val idx = raw.indexOf(first)
         if (idx < 2) return null
