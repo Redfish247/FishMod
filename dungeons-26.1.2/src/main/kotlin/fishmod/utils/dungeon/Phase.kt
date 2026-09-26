@@ -121,11 +121,6 @@ object Phase {
         }
 
         if (inP2()) {
-            // Enraged fires once per crush; only the first counts as the kill.
-            if (string == "⚠ Storm is enraged! ⚠" && !stormKillAnnounced) {
-                stormKillAnnounced = true
-                announceStormKill(splits)
-            }
             if (string == "[BOSS] Storm: I should have known that I stood no chance.") {
                 stormDead = true
             }
@@ -134,11 +129,13 @@ object Phase {
         return false
     }
 
-    // P2 start ("Pathetic Maxor") to Storm's first crush.
-    private fun announceStormKill(splits: List<Split>) {
+    // P2 start to Storm's first crush, in server ticks (same clock as "Storm died at").
+    @JvmStatic
+    fun onStormKill(secs: Double) {
+        if (stormKillAnnounced) return
+        stormKillAnnounced = true
         if (PracticeMode.active) return
         val f = floor ?: return
-        val secs = splits.firstOrNull { it.name == "Storm" }?.getRealTime() ?: return
         PbMessages.announce(FishSettings.pbMessagesStormKill, "stormkill:$f",
             Component.literal("§3Storm Kill§a in"), secs)
     }
