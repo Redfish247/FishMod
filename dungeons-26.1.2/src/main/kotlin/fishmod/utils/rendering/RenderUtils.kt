@@ -66,6 +66,42 @@ object RenderUtils {
         clearDeferredFills()
     }
 
+    // Quad geometry sent while the LINE_ND layer is active is rerouted to FILL_ND; a lines buffer would pair its vertices into garbage edges.
+    @JvmStatic
+    var quadsToFillLayer = false
+
+    private val redirectedQuads = it.unimi.dsi.fastutil.floats.FloatArrayList()
+    private val tmpPos = Vector3f()
+
+    private fun interface QuadSink {
+        fun v(pose: PoseStack.Pose, x: Float, y: Float, z: Float, r: Float, g: Float, b: Float, a: Float)
+    }
+
+    private val redirectSink = QuadSink { pose, x, y, z, r, g, b, a ->
+        pose.pose().transformPosition(x, y, z, tmpPos)
+        redirectedQuads.add(tmpPos.x); redirectedQuads.add(tmpPos.y); redirectedQuads.add(tmpPos.z)
+        redirectedQuads.add(r); redirectedQuads.add(g); redirectedQuads.add(b); redirectedQuads.add(a)
+    }
+
+    private fun quadSink(consumer: VertexConsumer): QuadSink =
+        if (quadsToFillLayer) redirectSink
+        else QuadSink { pose, x, y, z, r, g, b, a -> consumer.addVertex(pose, x, y, z).setColor(r, g, b, a) }
+
+    @JvmStatic
+    fun hasRedirectedQuads() = !redirectedQuads.isEmpty
+
+    @JvmStatic
+    fun flushRedirectedQuads(consumer: VertexConsumer) {
+        val f = redirectedQuads
+        var i = 0
+        while (i + 7 <= f.size) {
+            consumer.addVertex(f.getFloat(i), f.getFloat(i + 1), f.getFloat(i + 2))
+                .setColor(f.getFloat(i + 3), f.getFloat(i + 4), f.getFloat(i + 5), f.getFloat(i + 6))
+            i += 7
+        }
+        f.clear()
+    }
+
     @JvmStatic
     fun gizmoBox(box: AABB, fillArgb: Int, strokeArgb: Int) = gizmoBox(box, fillArgb, strokeArgb, false)
 
@@ -213,9 +249,8 @@ object RenderUtils {
     fun renderFilledQuad(matrixStack: PoseStack, consumer: VertexConsumer, corners: Array<Vec3>, rgba: FloatArray) {
         if (rgba[3] == 0f) return
         val pose = matrixStack.last()
-        for (c in corners) {
-            consumer.addVertex(pose, c.x.toFloat(), c.y.toFloat(), c.z.toFloat()).setColor(rgba[0], rgba[1], rgba[2], rgba[3])
-        }
+        val sink = quadSink(consumer)
+        for (c in corners) sink.v(pose, c.x.toFloat(), c.y.toFloat(), c.z.toFloat(), rgba[0], rgba[1], rgba[2], rgba[3])
     }
 
     @JvmStatic
@@ -376,33 +411,34 @@ object RenderUtils {
         r: Float, g: Float, b: Float, a: Float
     ) {
         val entry = matrices.last()
+        val c = quadSink(consumer)
         val ax1 = x1.toFloat(); val ay1 = y1.toFloat(); val az1 = z1.toFloat()
         val ax2 = x2.toFloat(); val ay2 = y2.toFloat(); val az2 = z2.toFloat()
 
-        consumer.addVertex(entry, ax1, ay1, az1).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax2, ay1, az1).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax2, ay1, az2).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax1, ay1, az2).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax1, ay2, az1).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax2, ay2, az1).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax2, ay2, az2).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax1, ay2, az2).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax1, ay1, az1).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax2, ay1, az1).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax2, ay2, az1).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax1, ay2, az1).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax1, ay1, az2).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax2, ay1, az2).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax2, ay2, az2).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax1, ay2, az2).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax1, ay1, az1).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax1, ay2, az1).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax1, ay2, az2).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax1, ay1, az2).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax2, ay1, az1).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax2, ay2, az1).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax2, ay2, az2).setColor(r, g, b, a)
-        consumer.addVertex(entry, ax2, ay1, az2).setColor(r, g, b, a)
+        c.v(entry, ax1, ay1, az1, r, g, b, a)
+        c.v(entry, ax2, ay1, az1, r, g, b, a)
+        c.v(entry, ax2, ay1, az2, r, g, b, a)
+        c.v(entry, ax1, ay1, az2, r, g, b, a)
+        c.v(entry, ax1, ay2, az1, r, g, b, a)
+        c.v(entry, ax2, ay2, az1, r, g, b, a)
+        c.v(entry, ax2, ay2, az2, r, g, b, a)
+        c.v(entry, ax1, ay2, az2, r, g, b, a)
+        c.v(entry, ax1, ay1, az1, r, g, b, a)
+        c.v(entry, ax2, ay1, az1, r, g, b, a)
+        c.v(entry, ax2, ay2, az1, r, g, b, a)
+        c.v(entry, ax1, ay2, az1, r, g, b, a)
+        c.v(entry, ax1, ay1, az2, r, g, b, a)
+        c.v(entry, ax2, ay1, az2, r, g, b, a)
+        c.v(entry, ax2, ay2, az2, r, g, b, a)
+        c.v(entry, ax1, ay2, az2, r, g, b, a)
+        c.v(entry, ax1, ay1, az1, r, g, b, a)
+        c.v(entry, ax1, ay2, az1, r, g, b, a)
+        c.v(entry, ax1, ay2, az2, r, g, b, a)
+        c.v(entry, ax1, ay1, az2, r, g, b, a)
+        c.v(entry, ax2, ay1, az1, r, g, b, a)
+        c.v(entry, ax2, ay2, az1, r, g, b, a)
+        c.v(entry, ax2, ay2, az2, r, g, b, a)
+        c.v(entry, ax2, ay1, az2, r, g, b, a)
     }
 
     @JvmStatic
