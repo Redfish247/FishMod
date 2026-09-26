@@ -106,9 +106,12 @@ public class ClientPlayNetworkHandlerMixin {
         }
     }
 
-    @Inject(method = "handleParticleEvent", at = @At("HEAD"))
+    @Inject(method = "handleParticleEvent", at = @At("HEAD"), cancellable = true)
     private void onParticle(ClientboundLevelParticlesPacket packet, CallbackInfo ci) {
-        Events.ON_PARTICLE.invoke(particleEvent -> particleEvent.onParticle(packet));
+        if (!Minecraft.getInstance().isSameThread()) return;
+        if (Events.ON_PARTICLE.invoke(particleEvent -> particleEvent.onParticle(packet))) {
+            ci.cancel();
+        }
     }
 
     @WrapOperation(method = "handleBundlePacket", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/Packet;handle(Lnet/minecraft/network/PacketListener;)V"))
@@ -128,6 +131,7 @@ public class ClientPlayNetworkHandlerMixin {
 
     @Inject(method = "setTitleText", at = @At("HEAD"), cancellable = true)
     private void onTitle(ClientboundSetTitleTextPacket packet, CallbackInfo ci) {
+        if (!Minecraft.getInstance().isSameThread()) return;
         Component text = packet.text();
         if (text != null) {
             fishmod.features.dungeon.SimonSaysTracker.onTitle(text.getString());
@@ -140,6 +144,7 @@ public class ClientPlayNetworkHandlerMixin {
 
     @Inject(method = "handleSystemChat", at = @At("HEAD"), cancellable = true)
     private void onGameMessage(ClientboundSystemChatPacket packet, CallbackInfo ci) {
+        if (!Minecraft.getInstance().isSameThread()) return;
         if (packet == fishmod$lastBundledSystemChat) {
             fishmod$lastBundledSystemChat = null;
             return;

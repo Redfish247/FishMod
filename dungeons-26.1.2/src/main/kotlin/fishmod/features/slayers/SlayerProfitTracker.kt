@@ -59,8 +59,6 @@ object SlayerProfitTracker {
     private var lastQuestStartMs = 0L
     private var resetArmedAt = 0L
 
-    private var lastLine = ""
-    private var lastLineMs = 0L
 
     private fun idleMs(): Long = FishSettings.slayerProfitIdleSeconds.coerceIn(10, 3600) * 1000L
     private fun sessionMode(): Boolean = FishSettings.slayerProfitDisplayMode.equals("This Session", true)
@@ -171,11 +169,6 @@ object SlayerProfitTracker {
 
     private fun onChat(s: String) {
         val k = curKey() ?: return
-
-        val now = System.currentTimeMillis()
-        if (s == lastLine && now - lastLineMs < 1_500L) return
-        lastLine = s
-        lastLineMs = now
 
         val bank = AUTO_SLAYER_BANK.matcher(s)
         if (bank.find()) {
