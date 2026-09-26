@@ -13,6 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSoundEntityPacket;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
@@ -136,7 +137,9 @@ public class ClientPlayNetworkHandlerMixin {
     @Inject(method = "setSubtitleText", at = @At("HEAD"), cancellable = true)
     private void fishmod$onSubtitle(net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket packet, CallbackInfo ci) {
         if (!Minecraft.getInstance().isSameThread()) return;
-        if (packet.text() != null && fishmod.features.dungeon.f7.StormOverAlert.shouldHideServerCountdown(packet.text())) ci.cancel();
+        Component text = packet.text();
+        if (text != null && (fishmod.features.dungeon.f7.StormOverAlert.shouldHideServerCountdown(text)
+                || fishmod.features.dungeon.f7.TitleHider.shouldHideTitle(text))) ci.cancel();
     }
 
     @Inject(method = "handleSystemChat", at = @At("HEAD"), cancellable = true)
