@@ -26,7 +26,6 @@ public abstract class CosmeticEntityNameMixin {
         }
         out = fishmod.cosmetic.RemoteNicks.applyResolvedOnly(out);
         if (entity instanceof Player) {
-            PrestigeLevelColors.dbg("NAMETAG", out.getString());
             if (FishSettings.prestigeColorsEnabled && FishSettings.prestigeColorsNametags) {
                 out = PrestigeLevelColors.colorizeLevelPrefix(out);
             }

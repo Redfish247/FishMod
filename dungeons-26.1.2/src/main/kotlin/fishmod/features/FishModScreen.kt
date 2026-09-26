@@ -35,6 +35,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private val columns: MutableList<Column> = ArrayList()
     private var searchText = ""
+
+    // per-column search filter cache; columns themselves can be reordered/merged so aren't cached
+    private var visibleCacheSearch: String? = null
+    private val visibleFeaturesCache = HashMap<Column, List<Feature>>()
     private var searchFocused = false
     private var activeSlider: Setting? = null
     private var activeSliderX = 0
@@ -91,7 +95,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val hud = Column("HUD & Overlays", "bell")
         val visuals = Column("Visuals & Rendering", "eye")
         val cosmetics = Column("Cosmetics", "hanger")
-        val mining = Column("Mining", "pickaxe")
 
         run {
             val f = Feature("UI Customization", null, null)
@@ -573,9 +576,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Tint Dead Players", "", FishSettings::leapMenuTintDead))
             f.sub.add(ToggleSetting("Show Name", "", FishSettings::leapMenuShowName))
             f.sub.add(ToggleSetting("Show Class", "", FishSettings::leapMenuShowClass))
-            f.sub.add(DropdownSetting("Sort By", "", arrayOf("Class Order", "Name A-Z", "Odin Sorting"),
-                { arrayOf("Class Order", "Name A-Z", "Odin Sorting")[FishSettings.leapMenuSort] },
-                { v -> FishSettings.leapMenuSort = arrayOf("Class Order", "Name A-Z", "Odin Sorting").indexOf(v).coerceAtLeast(0) }))
+            val sortByOptions = arrayOf("Class Order", "Name A-Z", "Odin Sorting")
+            f.sub.add(DropdownSetting("Sort By", "", sortByOptions,
+                { sortByOptions[FishSettings.leapMenuSort] },
+                { v -> FishSettings.leapMenuSort = sortByOptions.indexOf(v).coerceAtLeast(0) }))
             f.sub.add(InputSetting("Class Order", "Comma-separated: MAGE,BERSERK,ARCHER,HEALER,TANK",
                 { FishSettings.leapMenuClassOrder }, { v -> FishSettings.leapMenuClassOrder = v }).gatedBy { FishSettings.leapMenuSort == 0 })
             f.sub.add(SubcategoryHeader("Message"))
@@ -876,9 +880,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         dungeon.features.add(Feature("Class Colored Boots", FishSettings::classColoredBootsEnabled))
         run {
             val f = Feature("M7 Lever Waypoints", FishSettings::enableM7LeverWaypoints)
-            f.sub.add(DropdownSetting("Style", "", arrayOf("Outline", "Fill", "Filled Outline"),
-                { arrayOf("Outline", "Fill", "Filled Outline")[FishSettings.m7LeverWaypointMode] },
-                { v -> FishSettings.m7LeverWaypointMode = arrayOf("Outline", "Fill", "Filled Outline").indexOf(v).coerceAtLeast(0) }))
+            val leverStyleOptions = arrayOf("Outline", "Fill", "Filled Outline")
+            f.sub.add(DropdownSetting("Style", "", leverStyleOptions,
+                { leverStyleOptions[FishSettings.m7LeverWaypointMode] },
+                { v -> FishSettings.m7LeverWaypointMode = leverStyleOptions.indexOf(v).coerceAtLeast(0) }))
             f.sub.add(ColorPickerSetting("Color", "", FishSettings::m7LeverWaypointColor))
             f.sub.add(SliderIntSetting("Fill Opacity %", "", FishSettings::m7LeverWaypointOpacity, 0, 100))
             floor7.features.add(f)
@@ -1243,8 +1248,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             hud.features.add(f)
         }
 
-        mining.features.add(Feature("Mining Profit Tracker", FishSettings::miningProfitEnabled))
-
         hud.features.add(Feature("Fire Freeze Timer", FishSettings::fireFreezeTimerEnabled))
         hud.features.add(Feature("Loadout Title", FishSettings::loadoutTitleEnabled))
         run {
@@ -1265,9 +1268,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Block Overlay", FishSettings::blockOverlayEnabled)
-            f.sub.add(DropdownSetting("Mode", "", arrayOf("Outline", "Fill", "Filled Outline"),
-                { arrayOf("Outline", "Fill", "Filled Outline")[FishSettings.blockOverlayMode] },
-                { v -> FishSettings.blockOverlayMode = arrayOf("Outline", "Fill", "Filled Outline").indexOf(v).coerceAtLeast(0) }))
+            val blockOverlayModeOptions = arrayOf("Outline", "Fill", "Filled Outline")
+            f.sub.add(DropdownSetting("Mode", "", blockOverlayModeOptions,
+                { blockOverlayModeOptions[FishSettings.blockOverlayMode] },
+                { v -> FishSettings.blockOverlayMode = blockOverlayModeOptions.indexOf(v).coerceAtLeast(0) }))
             f.sub.add(ColorPickerSetting("Fill Color", "", FishSettings::blockOverlayFillColor))
             f.sub.add(SliderIntSetting("Fill Opacity %", "", FishSettings::blockOverlayOpacity, 0, 100))
             f.sub.add(ColorPickerSetting("Outline Color", "", FishSettings::blockOverlayOutlineColor))
@@ -1452,10 +1456,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Terminal Solver", FishSettings::terminalSolverEnabled)
+            val terminalRenderModeOptions = arrayOf("Overlay", "Custom GUI")
             f.sub.add(DropdownSetting("Render Mode", "Custom GUI replaces the chest with a big rounded board",
-                arrayOf("Overlay", "Custom GUI"),
-                { arrayOf("Overlay", "Custom GUI")[FishSettings.terminalRenderMode] },
-                { v -> FishSettings.terminalRenderMode = arrayOf("Overlay", "Custom GUI").indexOf(v).coerceAtLeast(0) }))
+                terminalRenderModeOptions,
+                { terminalRenderModeOptions[FishSettings.terminalRenderMode] },
+                { v -> FishSettings.terminalRenderMode = terminalRenderModeOptions.indexOf(v).coerceAtLeast(0) }))
             f.sub.add(SliderDoubleSetting("Custom Scale", "", FishSettings::terminalCustomScale, 0.5, 3.0).gatedBy { FishSettings.terminalRenderMode == 1 })
             f.sub.add(SliderIntSetting("Custom Roundness", "", FishSettings::terminalCustomRoundness, 0, 15).gatedBy { FishSettings.terminalRenderMode == 1 })
             f.sub.add(SliderIntSetting("Custom Gap", "", FishSettings::terminalCustomGap, 0, 15).gatedBy { FishSettings.terminalRenderMode == 1 })
@@ -1550,9 +1555,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("Wither Dragons", FishSettings::witherDragonsEnabled)
             f.sub.add(ToggleSetting("Spawn Timer (World)", "In-world countdown on each dragon's hitbox", FishSettings::witherDragonsTimerWorld))
             f.sub.add(ToggleSetting("Spawn Timer (HUD)", "On-screen countdown for the priority dragon — movable in the HUD editor", FishSettings::witherDragonsTimerHud))
-            f.sub.add(DropdownSetting("Timer Style", "", arrayOf("Milliseconds", "Seconds", "Ticks"),
-                { arrayOf("Milliseconds", "Seconds", "Ticks")[FishSettings.witherDragonsTimerStyle] },
-                { v -> FishSettings.witherDragonsTimerStyle = arrayOf("Milliseconds", "Seconds", "Ticks").indexOf(v).coerceAtLeast(0) })
+            val timerStyleOptions = arrayOf("Milliseconds", "Seconds", "Ticks")
+            f.sub.add(DropdownSetting("Timer Style", "", timerStyleOptions,
+                { timerStyleOptions[FishSettings.witherDragonsTimerStyle] },
+                { v -> FishSettings.witherDragonsTimerStyle = timerStyleOptions.indexOf(v).coerceAtLeast(0) })
                 .gatedBy { FishSettings.witherDragonsTimerWorld || FishSettings.witherDragonsTimerHud })
             f.sub.add(ToggleSetting("Spawn Alert (Title)", "Title with the priority dragon's colour when a wave starts spawning (NoammAddons)", FishSettings::witherDragonsSpawnAlert))
             f.sub.add(ToggleSetting("Spawn Alert Sound", "", FishSettings::witherDragonsSpawnSound).gatedBy { FishSettings.witherDragonsSpawnAlert })
@@ -1569,9 +1575,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Custom Priority", "Factor in blessing power + your class", FishSettings::witherDragonsPriority))
             f.sub.add(SliderDoubleSetting("Normal Power", "", FishSettings::witherDragonsNormalPower, 0.0, 32.0).gatedBy { FishSettings.witherDragonsPriority })
             f.sub.add(SliderDoubleSetting("Easy Power", "", FishSettings::witherDragonsEasyPower, 0.0, 32.0).gatedBy { FishSettings.witherDragonsPriority })
-            f.sub.add(DropdownSetting("Purple Solo Debuff", "", arrayOf("Tank", "Healer"),
-                { arrayOf("Tank", "Healer")[FishSettings.witherDragonsSoloDebuff] },
-                { v -> FishSettings.witherDragonsSoloDebuff = arrayOf("Tank", "Healer").indexOf(v).coerceAtLeast(0) })
+            val soloDebuffOptions = arrayOf("Tank", "Healer")
+            f.sub.add(DropdownSetting("Purple Solo Debuff", "", soloDebuffOptions,
+                { soloDebuffOptions[FishSettings.witherDragonsSoloDebuff] },
+                { v -> FishSettings.witherDragonsSoloDebuff = soloDebuffOptions.indexOf(v).coerceAtLeast(0) })
                 .gatedBy { FishSettings.witherDragonsPriority })
             f.sub.add(ToggleSetting("Solo Debuff on All Splits", "", FishSettings::witherDragonsSoloDebuffAll).gatedBy { FishSettings.witherDragonsPriority })
             floor7.features.add(f)
@@ -1660,12 +1667,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeonMap.features.add(f)
         }
         run {
-            val f = Feature("Player Heads", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadDrawOwnLast)
+            val f = Feature("Player Heads", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadsEnabled)
             f.sub.add(ColorPickerSetting("Head Background", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadBackground))
             f.sub.add(ColorPickerSetting("Own Head Background", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadOwnBackground))
             f.sub.add(SliderIntSetting("Outline Size", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadBackgroundSize, 0, 5))
             f.sub.add(ToggleSetting("Ugly Pointer (Own)", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerUglyPointer))
             f.sub.add(ToggleSetting("Class Color Outline", "Border the head in the teammate's dungeon class color", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadClassOutline))
+            f.sub.add(ToggleSetting("Draw Own Head Last", "Own head renders on top instead of z-ordered with the rest", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadDrawOwnLast))
             f.sub.add(SliderIntSetting("Player Name Scale %", "",
                 { (fishmod.utils.config.values.DungeonMapSettings.mapPlayerNamesScaling * 100).toInt() },
                 { v -> fishmod.utils.config.values.DungeonMapSettings.mapPlayerNamesScaling = v / 100.0f },
@@ -1674,7 +1682,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeonMap.features.add(f)
         }
         run {
-            val f = Feature("Room Additions", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsPrince)
+            val f = Feature("Room Additions", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsEnabled)
+            f.sub.add(ToggleSetting("Prince Crown Icon", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsPrince))
             f.sub.add(ToggleSetting("Mimic Reveal", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsMimic))
             f.sub.add(ToggleSetting("Mimic on Insight", "", fishmod.utils.config.values.DungeonMapSettings::mapMimicOnInsight)
                 .gatedBy { fishmod.utils.config.values.DungeonMapSettings.mapRoomAdditionsMimic })
@@ -1857,7 +1866,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(slayer)
         columns.add(visuals)
         columns.add(cosmetics)
-        columns.add(mining)
         if (cheats.features.isNotEmpty()) columns.add(cheats)
     }
 
@@ -1916,20 +1924,31 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun cyTop(): Int = top() + TOP_BAR_H + MARGIN + HEADER_H
     private fun cyBot(): Int = bottom() - BOTTOM_RESERVE
 
-    private fun visibleFeatures(c: Column): List<Feature> {
+    private fun refreshVisibleCacheIfStale() {
         val f = searchText.lowercase()
-        val out = ArrayList<Feature>()
-        for (ft in c.features) {
-            if (f.isEmpty() || ft.name.lowercase().contains(f)) out.add(ft)
+        if (f == visibleCacheSearch) return
+        visibleCacheSearch = f
+        visibleFeaturesCache.clear()
+    }
+
+    private fun visibleFeatures(c: Column): List<Feature> {
+        refreshVisibleCacheIfStale()
+        return visibleFeaturesCache.getOrPut(c) {
+            val f = visibleCacheSearch!!
+            val out = ArrayList<Feature>()
+            for (ft in c.features) {
+                if (f.isEmpty() || ft.name.lowercase().contains(f)) out.add(ft)
+            }
+            out
         }
-        return out
     }
 
     private fun visibleColumns(): List<Column> {
+        refreshVisibleCacheIfStale()
         val out = ArrayList<Column>()
         for (c in columns) {
             val matches = if (c.isGroup()) c.children.any { visibleFeatures(it).isNotEmpty() } else visibleFeatures(c).isNotEmpty()
-            if (matches || searchText.isEmpty()) out.add(c)
+            if (matches || visibleCacheSearch!!.isEmpty()) out.add(c)
         }
         return out
     }
@@ -3539,16 +3558,22 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         getter: () -> Int, setter: (Int) -> Unit
     ) : ColorPickerSetting(name, desc, getter, setter) {
         val shownName: String = name
+
+        // order-independent name/visibility sync
+        private fun syncName() { this.name = if (visible()) shownName else "" }
+
         override fun getHeight(): Int {
-            if (!visible()) { this.name = ""; return 0 }
-            this.name = shownName
+            syncName()
+            if (!visible()) return 0
             return super.getHeight()
         }
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
+            syncName()
             if (!visible()) return
             super.render(ctx, leftX, rightX, sy, mx, my, tr)
         }
         override fun onClick(mx: Int, my: Int, leftX: Int, rightX: Int, sy: Int, btn: Int): Boolean {
+            syncName()
             if (!visible()) return false
             return super.onClick(mx, my, leftX, rightX, sy, btn)
         }

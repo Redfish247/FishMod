@@ -44,6 +44,7 @@ object Scan {
     private var shouldScan = false
     private var lastScanMs = 0L
     private const val MIN_SCAN_INTERVAL_MS = 250L
+    private const val IDLE_SCAN_INTERVAL_MS = 1000L
     private val BLACKLISTED = arrayOf(Blocks.CHEST, Blocks.TRAPPED_CHEST)
 
     @JvmStatic
@@ -62,8 +63,10 @@ object Scan {
             if (!loadedAllRooms && DungeonState.isInDungeon()) shouldScan = true
         })
         ClientTickEvents.END_LEVEL_TICK.register(ClientTickEvents.EndLevelTick { world ->
+            val now = System.currentTimeMillis()
+            // chunks load before the sidebar says Catacombs, so poll until every room resolves (pre-start too)
+            if (!shouldScan && !loadedAllRooms && now - lastScanMs >= IDLE_SCAN_INTERVAL_MS && DungeonState.isInDungeon() && !DungeonState.isInBoss()) shouldScan = true
             if (shouldScan) {
-                val now = System.currentTimeMillis()
                 if (now - lastScanMs >= MIN_SCAN_INTERVAL_MS) {
                     shouldScan = false
                     lastScanMs = now

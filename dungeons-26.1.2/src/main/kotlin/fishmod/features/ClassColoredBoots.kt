@@ -9,6 +9,8 @@ import net.minecraft.world.item.component.DyedItemColor
 
 object ClassColoredBoots {
 
+    private var loggedError = false
+
     private fun colorFor(c: DungeonClass?): Int {
         if (c == null) return -1
         return when (c) {
@@ -30,7 +32,8 @@ object ClassColoredBoots {
                 val boots = mc.player!!.getItemBySlot(EquipmentSlot.FEET)
                 if (boots == null || boots.isEmpty) return@register
                 boots.set(DataComponents.DYED_COLOR, DyedItemColor(rgb and 0xFFFFFF))
-            } catch (ignored: Exception) {
+            } catch (ex: Exception) {
+                if (!loggedError) { loggedError = true; fishmod.utils.debug.Debug.LOGGER.warn("[ClassColoredBoots] failed to dye boots: {}", ex.message) }
             }
         }
     }

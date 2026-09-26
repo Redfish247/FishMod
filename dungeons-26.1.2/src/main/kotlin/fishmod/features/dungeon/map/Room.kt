@@ -77,7 +77,7 @@ class Room(
             return if (type == Type.BLOOD) intArrayOf(MapColors.darker(s.mapBloodRoomColor, dm)) else intArrayOf(s.mapUnopenedRoomColor)
         } else {
             val base: Int
-            if (!mimic || (!s.mapRoomAdditionsMimic || legit) && !mimicPeek) {
+            if (!mimic || (!(s.mapRoomAdditionsEnabled && s.mapRoomAdditionsMimic) || legit) && !mimicPeek) {
                 if (type == Type.UNKNOWN) return intArrayOf(s.mapUnopenedRoomColor)
                 base = MapColors.roomColor(type!!)
             } else {
@@ -158,7 +158,7 @@ class Room(
                     context.fill(topLeft.x, topLeft.z, bottomRight.x + 16, bottomRight.z + 16, rgb)
                 }
 
-                if (DungeonMapSettings.mapRoomAdditionsPrince && data != null && data!!.prince && !DungeonScore.princeKilled) {
+                if (DungeonMapSettings.mapRoomAdditionsEnabled && DungeonMapSettings.mapRoomAdditionsPrince && data != null && data!!.prince && !DungeonScore.princeKilled) {
                     matrices.pushMatrix()
                     matrices.translate(bottomRight.x + 9.0f, bottomRight.z + 10.0f)
                     matrices.scale(0.7f)
