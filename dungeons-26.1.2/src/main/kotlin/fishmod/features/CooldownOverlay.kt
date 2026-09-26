@@ -168,7 +168,7 @@ object CooldownOverlay {
         })
 
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
-            if (!FishSettings.cooldownOverlayEnabled) return@register
+            if (!FishSettings.cooldownOverlayEnabled || !FishSettings.cooldownInInventory) return@register
             drawOverlay(ctx, stack, x, y)
         }
     }
@@ -312,10 +312,12 @@ object CooldownOverlay {
         val inFocusWindow = remaining < 3_000L
         if (FishSettings.cooldownOnlyUnder3s && !inFocusWindow) return
 
-        val secs = remaining / 1000.0
-        val text = if (secs >= 10) ceil(secs).toInt().toString() else String.format("%.1f", secs)
+        val shade = (16 * remaining / total).toInt().coerceIn(1, 16)
+        ctx.fill(x, y + 16 - shade, x + 16, y + 16, 0x80FFFFFF.toInt())
 
         if (FishSettings.cooldownShowText) {
+            val secs = remaining / 1000.0
+            val text = if (secs >= 10) ceil(secs).toInt().toString() else String.format("%.1f", secs)
             val mc = Minecraft.getInstance()
             val tx = x + 16 - mc.font.width(text)
             val ty = y + 8 - mc.font.lineHeight / 2 + 1

@@ -30,12 +30,14 @@ import java.util.List;
 @Mixin(EntityRenderer.class)
 public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> {
 
+    @org.spongepowered.asm.mixin.Unique
     private static final double NAMETAG_STATS_RANGE_SQ = 10.0 * 10.0;
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
-    public void hideFire(T entity, S state, float tickProgress, CallbackInfo ci) {
+    public void fishmod$adjustNameTag(T entity, S state, float tickProgress, CallbackInfo ci) {
 
-        if (Dungeons.hideBlazeNameTag && state.nameTag != null) {
+        if (Dungeons.hideBlazeNameTag && state.nameTag != null && Location.inDungeon()
+                && !(entity instanceof net.minecraft.world.entity.player.Player)) {
             String nameTagText = state.nameTag.getString();
             if (nameTagText.contains("Blaze")) {
                 state.nameTag = null;

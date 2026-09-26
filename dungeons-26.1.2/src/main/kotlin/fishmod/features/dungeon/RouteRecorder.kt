@@ -13,7 +13,6 @@ import fishmod.features.dungeon.map.Scan
 import fishmod.utils.FishMsg
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.EntityUtil
 import fishmod.utils.data.ItemUtil
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
@@ -542,12 +541,15 @@ object RouteRecorder {
     private fun load(name: String, quiet: Boolean): Boolean {
         try {
             val f = dir.resolve(clean(name) + ".json")
-            if (!Files.exists(f)) { msg("§cNo route named ${clean(name)}"); return false }
+            if (!Files.exists(f)) { if (!quiet) msg("§cNo route named ${clean(name)}"); return false }
             val list: List<Step> = gson.fromJson(Files.readString(f), object : TypeToken<List<Step>>() {}.type)
             steps.clear(); steps.addAll(list); progress = 0; mode = Mode.IDLE; liveWorld = false; dirty = false; enteredRoute = false
             if (!quiet) msg("§aLoaded ${steps.size} steps. §f/fm route play §7to follow.")
             return true
-        } catch (t: Throwable) { msg("§cLoad failed: ${t.message}"); return false }
+        } catch (t: Throwable) {
+            if (quiet) fishmod.utils.debug.Debug.LOGGER.warn("[Route] load of {} failed", name, t) else msg("§cLoad failed: ${t.message}")
+            return false
+        }
     }
 
     @JvmStatic

@@ -173,6 +173,13 @@ object DoorHighlight {
 
     private fun keyLine(door: Door): Int = if (door.type == Door.Type.WITHER) witherLine(door) else lineColor(door)
 
+    private fun doorWidth(): Double = DungeonMapSettings.mapDoorHighlightWidth.toDouble().coerceIn(1.0, 10.0) / 100.0
+
+    private fun doorBox(box: net.minecraft.world.phys.AABB, fill: Int, line: Int) {
+        RenderUtils.gizmoBox(box, fill, 0)
+        RenderUtils.gizmoThickOutline(box, line, doorWidth())
+    }
+
     private fun renderGizmo() {
         if (!active()) {
             lastRoom = null
@@ -182,8 +189,8 @@ object DoorHighlight {
         if (outlineOnly()) {
             for (door in outlineDoors()) {
                 if (outlineThroughWall(door)) continue
-                if (keyDoor(door)) RenderUtils.gizmoBox(box(door), keyFill(door), keyLine(door))
-                else RenderUtils.gizmoBox(box(door), 0, DungeonMapSettings.mapDoorOutlineColor)
+                if (keyDoor(door)) doorBox(box(door), keyFill(door), keyLine(door))
+                else doorBox(box(door), 0, DungeonMapSettings.mapDoorOutlineColor)
             }
             return
         }
@@ -194,7 +201,7 @@ object DoorHighlight {
             val fairy = isFairyDoor(door)
             val hereTile = facingRoomTile(door)
             if (fullBox || fairy || hereTile == null) {
-                RenderUtils.gizmoBox(box(door), fillColor(door), lineColor(door))
+                doorBox(box(door), fillColor(door), lineColor(door))
             } else {
                 val quad = faceQuad(door, hereTile) ?: continue
                 RenderUtils.gizmoQuad(quad, fillColor(door), lineColor(door))
@@ -212,7 +219,7 @@ object DoorHighlight {
                     if (key) RenderUtils.renderFilled(matrices, vc, box(door), RenderUtils.toFloats(keyFill(door)))
                 } else {
                     val c = if (key) keyLine(door) else DungeonMapSettings.mapDoorOutlineColor
-                    RenderUtils.renderOutline(matrices, vc, box(door), RenderUtils.toFloats(c))
+                    RenderUtils.renderThickOutline(matrices, vc, box(door), RenderUtils.toFloats(c), doorWidth())
                 }
             }
             return
@@ -230,7 +237,7 @@ object DoorHighlight {
             if (fullBox || isWither || fairy || hereTile == null) {
                 val box = box(door)
                 if (fill) RenderUtils.renderFilled(matrices, vc, box, fillC)
-                else RenderUtils.renderOutline(matrices, vc, box, lineC)
+                else RenderUtils.renderThickOutline(matrices, vc, box, lineC, doorWidth())
             } else {
                 val quad = faceQuad(door, hereTile) ?: continue
                 if (fill) RenderUtils.renderFilledQuad(matrices, vc, quad, fillC)

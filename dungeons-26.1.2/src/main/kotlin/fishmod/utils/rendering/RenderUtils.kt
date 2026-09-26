@@ -403,12 +403,15 @@ object RenderUtils {
             if (num >= 1e9) String.format(java.util.Locale.ROOT, "%.1fB", num / 1e9f)
             else if (num >= 1e6) String.format(java.util.Locale.ROOT, "%.1fM", num / 1e6f)
             else if (num >= 1e3) String.format(java.util.Locale.ROOT, "%.1fK", num / 1e3f)
-            else "$num"
+            else wholeOrDecimal(num)
         } else {
             if (num >= 1e9) String.format(java.util.Locale.ROOT, "%.1fb", num / 1e9f)
             else if (num >= 1e6) String.format(java.util.Locale.ROOT, "%.1fm", num / 1e6f)
             else if (num >= 1e3) String.format(java.util.Locale.ROOT, "%.1fk", num / 1e3f)
-            else "$num"
+            else wholeOrDecimal(num)
         }
     }
+
+    private fun wholeOrDecimal(num: Float): String =
+        if (num == Math.floor(num.toDouble()).toFloat()) num.toLong().toString() else "$num"
 }

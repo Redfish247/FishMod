@@ -9,7 +9,6 @@ import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.PlayerFaceExtractor
 import net.minecraft.client.multiplayer.PlayerInfo
-import net.minecraft.network.chat.Component
 import net.minecraft.world.scores.DisplaySlot
 import java.util.regex.Pattern
 import kotlin.math.max
@@ -108,13 +107,15 @@ object CompactTab {
     // column is a fixed header (e.g. "Players (19)"), not a sortable
     // player — it stays pinned in place and drawColumns never gives it a
     // face/ping bar.
+    private val shuffleSeed = java.util.concurrent.ThreadLocalRandom.current().nextInt()
+
     private fun sortPlayersColumn(entries: List<PlayerInfo>): List<PlayerInfo> {
         if (entries.size <= 1) return entries
         if (fishmod.features.dungeon.map.DungeonState.isInDungeon()) return entries
         val header = entries[0]
         val rest = entries.subList(1, entries.size)
         val mode = FishSettings.compactTabSortMode
-        val sortedRest = if (mode == "Random") rest.shuffled() else {
+        val sortedRest = if (mode == "Random") rest.sortedBy { (it.profile.id.hashCode() xor shuffleSeed).toLong() } else {
             fun stripped(e: PlayerInfo) = BLANK_COLOR.matcher(e.tabListDisplayName?.string ?: "").replaceAll("")
             fun raw(e: PlayerInfo) = e.tabListDisplayName?.string ?: ""
             val cmp: Comparator<PlayerInfo> = when (mode) {

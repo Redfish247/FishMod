@@ -18,12 +18,14 @@ public final class TwitchCommands {
 				.then(ClientCommands.literal("connect")
 					.executes(ctx -> {
 						FishSettings.twitchBridgeEnabled = true;
+						fishmod.utils.config.FishConfig.manager.save();
 						TwitchBridgeClient.connect(null);
 						return 1;
 					})
 					.then(ClientCommands.argument("channel", StringArgumentType.word())
 						.executes(ctx -> {
 							FishSettings.twitchBridgeEnabled = true;
+							fishmod.utils.config.FishConfig.manager.save();
 							TwitchBridgeClient.connect(StringArgumentType.getString(ctx, "channel"));
 							return 1;
 						})))
@@ -37,6 +39,7 @@ public final class TwitchCommands {
 					.then(ClientCommands.argument("name", StringArgumentType.word())
 						.executes(ctx -> {
 							FishSettings.twitchBridgeEnabled = true;
+							fishmod.utils.config.FishConfig.manager.save();
 							TwitchBridgeClient.setChannel(StringArgumentType.getString(ctx, "name"));
 							return 1;
 						})))

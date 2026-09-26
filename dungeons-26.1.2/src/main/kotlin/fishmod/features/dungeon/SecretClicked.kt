@@ -3,7 +3,6 @@ package fishmod.features.dungeon
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.Location
-import fishmod.utils.Scheduler
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.events.Events
@@ -27,7 +26,9 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 object SecretClicked {
 
-    private class Secret(val box: AABB, val blockPos: BlockPos?, @JvmField var locked: Boolean = false)
+    private class Secret(val box: AABB, val blockPos: BlockPos?, @JvmField var locked: Boolean = false) {
+        val expiresAt = System.currentTimeMillis() + FishSettings.secretClickedTimeToStay.coerceIn(1, 20) * 1000L
+    }
 
     private const val BAT_RANGE = 10.0
     private const val ITEM_RANGE = 6.0
@@ -78,6 +79,10 @@ object SecretClicked {
     }
 
     private fun onTick(mc: net.minecraft.client.Minecraft) {
+        if (clicked.isNotEmpty()) {
+            val now = System.currentTimeMillis()
+            clicked.removeIf { it.expiresAt <= now }
+        }
         val player = mc.player
         selfId = player?.id ?: -1
         val level = mc.level
@@ -118,7 +123,6 @@ object SecretClicked {
         if (clicked.any { it.blockPos == null && it.box.center.distanceToSqr(pos) < 0.25 }) return
         val box = AABB.ofSize(pos, 0.9, 0.9, 0.9)
         clicked.add(Secret(box, null))
-        Scheduler.scheduleTask({ clicked.removeFirstOrNull() }, FishSettings.secretClickedTimeToStay.coerceIn(1, 20) * 20)
     }
 
     private fun boxes(): List<Triple<AABB, Int, Int>> {
@@ -140,8 +144,14 @@ object SecretClicked {
         }
     }
 
+    private fun lineWidth(): Double = FishSettings.secretClickedLineWidth.coerceIn(0.5, 10.0) / 100.0
+
     private fun renderGizmo() {
-        for ((box, fill, stroke) in boxes()) RenderUtils.gizmoBox(box, fill, stroke)
+        val width = lineWidth()
+        for ((box, fill, stroke) in boxes()) {
+            RenderUtils.gizmoBox(box, fill, 0)
+            RenderUtils.gizmoThickOutline(box, stroke, width)
+        }
     }
 
     private fun active(): Boolean =
@@ -160,7 +170,6 @@ object SecretClicked {
         if (!FishSettings.secretClickedBoxes || clicked.any { it.blockPos == pos }) return
         val box = AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0).move(pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble())
         clicked.add(Secret(box, pos.immutable()))
-        Scheduler.scheduleTask({ clicked.removeFirstOrNull() }, FishSettings.secretClickedTimeToStay.coerceIn(1, 20) * 20)
     }
 
     private fun chime() {
@@ -182,7 +191,7 @@ object SecretClicked {
             if (fill) {
                 if ((fillArgb ushr 24) != 0) RenderUtils.renderFilled(matrices, vc, box, RenderUtils.toFloats(fillArgb))
             } else {
-                if ((strokeArgb ushr 24) != 0) RenderUtils.renderOutline(matrices, vc, box, RenderUtils.toFloats(strokeArgb))
+                if ((strokeArgb ushr 24) != 0) RenderUtils.renderThickOutline(matrices, vc, box, RenderUtils.toFloats(strokeArgb), lineWidth())
             }
         }
     }
