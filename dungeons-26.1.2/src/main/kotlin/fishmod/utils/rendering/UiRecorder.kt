@@ -98,9 +98,7 @@ object UiRecorder {
             OP_TEXT -> UiRenderer.text(strings[idx] ?: "", x, y, w, ints[ib])
             OP_TEXT_BOLD -> {
                 val s = strings[idx] ?: ""
-                UiRenderer.text(s, x, y, w, ints[ib])
-                // Exactly one device pixel; a fractional offset snaps unevenly per glyph and ghosts.
-                UiRenderer.text(s, x + UiRenderer.devicePixel(), y, w, ints[ib])
+                UiRenderer.text(s, x, y, w, ints[ib], bold = true)
             }
             OP_PUSH_SCISSOR -> UiRenderer.pushScissor(x, y, w, h)
             OP_POP_SCISSOR -> UiRenderer.popScissor()
