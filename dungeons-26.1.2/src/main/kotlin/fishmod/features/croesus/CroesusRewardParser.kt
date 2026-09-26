@@ -5,7 +5,6 @@ import fishmod.utils.networth.ItemsDb
 import java.util.regex.Pattern
 
 object CroesusRewardParser {
-    private val ITALIC_PREFIX = Regex("^§5§o")
 
     private val ULTIMATE_ENCHANTS: Set<String> = setOf(
         "Bank", "Bobbin Time", "Chimera", "Combo", "Duplex", "Fatal Tempo", "Flash",
@@ -15,7 +14,6 @@ object CroesusRewardParser {
     private val ITEM_REPLACEMENTS: MutableMap<String, String> = HashMap()
     private val BOOK_PATTERN: Pattern = Pattern.compile("Enchanted Book \\((?:§.)*([\\w' ]+?) ((?:[IVX]+|\\d+))(?:§.)*\\)")
     private val ESSENCE_PATTERN: Pattern = Pattern.compile("^(\\w+) Essence x(\\d+)$")
-    private val ROMAN_VALUES: MutableMap<Char, Int> = HashMap()
 
     init {
         ITEM_REPLACEMENTS["Shiny Wither Boots"] = "WITHER_BOOTS"
@@ -31,31 +29,6 @@ object CroesusRewardParser {
         ITEM_REPLACEMENTS["Scarf Shard"] = "SHARD_SCARF"
         ITEM_REPLACEMENTS["Necron Dye"] = "DYE_NECRON"
         ITEM_REPLACEMENTS["Livid Dye"] = "DYE_LIVID"
-        ROMAN_VALUES['I'] = 1
-        ROMAN_VALUES['V'] = 5
-        ROMAN_VALUES['X'] = 10
-        ROMAN_VALUES['L'] = 50
-        ROMAN_VALUES['C'] = 100
-        ROMAN_VALUES['D'] = 500
-        ROMAN_VALUES['M'] = 1000
-    }
-
-    @JvmStatic
-    fun decodeRoman(s: String): Int {
-        var sum = 0
-        var i = 0
-        while (i < s.length) {
-            val curr = ROMAN_VALUES.getOrDefault(s[i], 0)
-            val next = if (i < s.length - 1) ROMAN_VALUES.getOrDefault(s[i + 1], 0) else 0
-            if (curr < next) {
-                sum += next - curr
-                i++
-            } else {
-                sum += curr
-            }
-            i++
-        }
-        return sum
     }
 
     private fun strip(s: String): String = HypixelApi.STRIP_COLOR.matcher(s).replaceAll("")
@@ -70,7 +43,7 @@ object CroesusRewardParser {
         val tier: Int = try {
             tierStr.toInt()
         } catch (e: NumberFormatException) {
-            decodeRoman(tierStr)
+            fishmod.utils.data.Roman.toInt(tierStr)
         }
 
         val enchantPart = bookName.uppercase().replace(" ", "_").replace("'", "")

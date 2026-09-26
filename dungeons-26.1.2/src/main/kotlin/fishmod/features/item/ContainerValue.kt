@@ -87,7 +87,7 @@ object ContainerValue {
     private fun eligible(screen: AbstractContainerScreen<*>): Boolean {
         if (StorageOverlay.isActive(screen)) return true
         if (screen is InventoryScreen) return true
-        val t = CODE.replace(screen.title.string, "").trim()
+        val t = fishmod.utils.ScreenTitle.plain(screen).trim()
         return t in PLAIN_CHEST || STORAGE_TITLE.containsMatchIn(t)
     }
 

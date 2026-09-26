@@ -168,7 +168,7 @@ object CooldownOverlay {
         })
 
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
-            if (!FishSettings.cooldownOverlayEnabled) return@register
+            if (!FishSettings.cooldownOverlayEnabled || !FishSettings.cooldownInInventory) return@register
             drawOverlay(ctx, stack, x, y)
         }
     }
@@ -199,7 +199,7 @@ object CooldownOverlay {
                     isMage = true
                     try {
                         val roman = line.split("Mage ")[1].split(")")[0].trim()
-                        mageLvl = decodeRoman(roman)
+                        mageLvl = fishmod.utils.data.Roman.toInt(roman)
                     } catch (e: Exception) {
                         mageLvl = ScoreboardUtil.getCurrentClassLevel()
                     }
@@ -312,31 +312,16 @@ object CooldownOverlay {
         val inFocusWindow = remaining < 3_000L
         if (FishSettings.cooldownOnlyUnder3s && !inFocusWindow) return
 
-        val secs = remaining / 1000.0
-        val text = if (secs >= 10) ceil(secs).toInt().toString() else String.format("%.1f", secs)
+        val shade = (16 * remaining / total).toInt().coerceIn(1, 16)
+        ctx.fill(x, y + 16 - shade, x + 16, y + 16, 0x80FFFFFF.toInt())
 
         if (FishSettings.cooldownShowText) {
+            val secs = remaining / 1000.0
+            val text = if (secs >= 10) ceil(secs).toInt().toString() else String.format("%.1f", secs)
             val mc = Minecraft.getInstance()
             val tx = x + 16 - mc.font.width(text)
             val ty = y + 8 - mc.font.lineHeight / 2 + 1
             ctx.text(mc.font, text, tx, ty, 0xFFFFFFFF.toInt(), true)
-        }
-    }
-
-    private fun decodeRoman(roman: String?): Int {
-        if (roman == null) return 0
-        val r = roman.uppercase()
-        if (r.equals("L", ignoreCase = true)) return 50
-        if (r.equals("XLIX", ignoreCase = true)) return 49
-        if (r.equals("XLVIII", ignoreCase = true)) return 48
-        if (r.equals("XLVII", ignoreCase = true)) return 47
-        if (r.equals("XLVI", ignoreCase = true)) return 46
-        if (r.equals("XLV", ignoreCase = true)) return 45
-
-        return try {
-            r.replace(Regex("[^0-9]"), "").toInt()
-        } catch (e: Exception) {
-            0
         }
     }
 }

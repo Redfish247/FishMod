@@ -18,7 +18,7 @@ public class PlayerListHudMixin {
     @Shadow private Component header;
     @Shadow private Component footer;
 
-    private static boolean fishmod$loggedRenderError = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedRenderError = false;
 
     @Inject(method = "extractRenderState", at = @At("HEAD"), cancellable = true)
     private void fishmod$compactTab(GuiGraphicsExtractor context, int scaledWindowWidth, Scoreboard scoreboard,

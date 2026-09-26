@@ -18,8 +18,7 @@ object GradientNick {
             if ((c == '&' || c == '§') && i + 1 < name.length) {
                 val next = name[i + 1]
                 if (next == '#' && i + 7 < name.length && name.substring(i + 2, i + 8).matches(HEX6)) {
-                    i += 7
-                    i++
+                    i += 8
                     continue
                 }
                 val low = next.lowercaseChar()
@@ -46,8 +45,7 @@ object GradientNick {
             if ((c == '&' || c == '§') && i + 1 < name.length) {
                 val next = name[i + 1]
                 if (next == '#' && i + 7 < name.length && name.substring(i + 2, i + 8).matches(HEX6)) {
-                    i += 7
-                    i++
+                    i += 8
                     continue
                 }
                 val low = next.lowercaseChar()

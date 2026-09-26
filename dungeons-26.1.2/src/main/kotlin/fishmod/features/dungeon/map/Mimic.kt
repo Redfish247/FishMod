@@ -9,6 +9,8 @@ import net.minecraft.world.level.block.entity.TrappedChestBlockEntity
 
 object Mimic {
 
+    private var scanTick = 0
+
     @JvmStatic
     fun register() {
         ClientTickEvents.END_LEVEL_TICK.register(ClientTickEvents.EndLevelTick { level ->
@@ -19,7 +21,9 @@ object Mimic {
                 val floor = DungeonState.floorNumber()
                 if (floor != 6 && floor != 7) return@EndLevelTick
                 if (DungeonScore.mimicKilled) return@EndLevelTick
-                if (Scan.chest != null) return@EndLevelTick
+                if (Scan.chest != null || DungeonState.isInBoss()) return@EndLevelTick
+                if (++scanTick < 10) return@EndLevelTick
+                scanTick = 0
 
                 val mc = Minecraft.getInstance()
                 if (mc.level == null) return@EndLevelTick

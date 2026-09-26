@@ -13,9 +13,9 @@
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/fishmod/icon.png",
-	"environment": "*",
+	"environment": "client",
 	"entrypoints": {
-		"main": [
+		"client": [
 			"fishmod.FishModInit"
 		],
 		"modmenu": [
@@ -35,7 +35,9 @@
 		"minecraft": "~26.1.2",
 		"java": ">=25",
 		"fabric-api": "*",
-		"hypixel-mod-api": "*",
+		"hypixel-mod-api": "*"
+	},
+	"recommends": {
 		"immediatelyfast": "*"
 	}
 }

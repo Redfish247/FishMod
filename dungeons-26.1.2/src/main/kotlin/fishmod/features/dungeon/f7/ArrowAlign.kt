@@ -24,7 +24,8 @@ object ArrowAlign {
     private val recentClick = HashMap<Int, Long>()
 
     private fun inP3(): Boolean =
-        Phase.inP3() || (Minecraft.getInstance().player?.let { it.y in 100.0..156.0 } == true)
+        Phase.inP3() || (fishmod.utils.Location.inDungeon() && fishmod.features.dungeon.map.DungeonState.floorNumber() == 7 &&
+            Minecraft.getInstance().player?.let { it.y in 100.0..156.0 } == true)
 
     @JvmStatic
     fun init() {

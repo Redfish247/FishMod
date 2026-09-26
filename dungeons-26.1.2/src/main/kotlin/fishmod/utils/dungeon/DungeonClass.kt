@@ -141,12 +141,6 @@ enum class DungeonClass {
         @JvmStatic
         fun isClass(dungeonClass: DungeonClass?): Boolean = currentClass == dungeonClass
 
-        @JvmStatic
-        fun isArchTeam(): Boolean = currentClass == ARCHER || currentClass == TANK
-
-        @JvmStatic
-        fun isBersTeam(): Boolean = currentClass == BERSERK || currentClass == MAGE
-
         private fun reset() {
             currentClass = null
             nameClassMap.clear()

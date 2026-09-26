@@ -18,7 +18,6 @@ import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
 
-// Locks player-inventory slots (0-8 hotbar, 9-35 main) against being dropped.
 object SlotLocking {
 
     private val FILE = Paths.get(FolderUtility.CONFIG_PATH + "slot_locks.txt")
@@ -58,13 +57,11 @@ object SlotLocking {
         return invIndex(slot)?.let { it in locked } == true
     }
 
-    /** True = cancel this click. Only drops are blocked; moving/swapping locked items is allowed. */
     @JvmStatic
     fun onSlotClicked(slot: Slot?, slotId: Int, input: ContainerInput): Boolean {
         if (!FishSettings.slotLockingEnabled) return false
         ensureLoaded()
         val carried = Minecraft.getInstance().player?.containerMenu?.carried?.isEmpty == false
-        // Clicking outside the window drops whatever is on the cursor.
         val blocked = when {
             input == ContainerInput.THROW -> isLocked(slot)
             slotId == -999 && carried -> carriedFromLocked
@@ -75,7 +72,6 @@ object SlotLocking {
         return false
     }
 
-    /** True = cancel the in-world drop. */
     @JvmStatic
     fun onDrop(): Boolean {
         if (!FishSettings.slotLockingEnabled) return false
@@ -112,7 +108,8 @@ object SlotLocking {
         ensureLoaded()
         if (locked.isEmpty()) return
         val screen = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return
-        val slot = screen.menu.slots.firstOrNull { it.x == x && it.y == y && it.container is Inventory } ?: return
+        val slot = DrawEvents.currentSlot?.takeIf { it.container is Inventory }
+            ?: screen.menu.slots.firstOrNull { it.x == x && it.y == y && it.container is Inventory } ?: return
         if (!isLocked(slot)) return
         val c = FishSettings.slotLockingColor
         val alpha = (FishSettings.slotLockingOpacity.coerceIn(0, 100) * 255 / 100) shl 24

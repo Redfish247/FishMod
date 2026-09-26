@@ -38,12 +38,12 @@ object MapImageLoader {
         try {
             Files.createDirectories(IMAGES_PATH)
             Files.list(IMAGES_PATH).use { stream ->
-                stream.filter { it.toString().lowercase(Locale.ROOT).endsWith(".png") }.forEach { loadImage(it) }
+                stream.filter { it.toString().lowercase(Locale.ROOT).endsWith(".png") }.forEach { loadImage(it, quiet = true) }
             }
 
             val ws = IMAGES_PATH.fileSystem.newWatchService()
             watchService = ws
-            IMAGES_PATH.register(ws, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE)
+            IMAGES_PATH.register(ws, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE)
             val t = Thread(::watchLoop, "FishMod-MapImageLoader")
             t.isDaemon = true
             t.start()
@@ -82,7 +82,7 @@ object MapImageLoader {
                     val base = nameWithoutExt(name.fileName.toString())
 
                     try {
-                        if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
+                        if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE || event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
                             Thread.sleep(200L)
                             if (Files.exists(file, LinkOption.NOFOLLOW_LINKS) && file.toString().lowercase(Locale.ROOT).endsWith(".png")) {
                                 loadImage(file)
@@ -98,7 +98,7 @@ object MapImageLoader {
         }
     }
 
-    private fun loadImage(path: Path) {
+    private fun loadImage(path: Path, quiet: Boolean = false) {
         val fileName = nameWithoutExt(path.fileName.toString())
         if (!path.toString().lowercase(Locale.ROOT).endsWith(".png")) return
 
@@ -121,7 +121,7 @@ object MapImageLoader {
                         } catch (e: Exception) {
                         }
                     }
-                    Misc.addChatMessage(Component.literal("§a[Map] Loaded image: §f$fileName §7(${w}x$h)"))
+                    if (!quiet) Misc.addChatMessage(Component.literal("§a[Map] Loaded image: §f$fileName §7(${w}x$h)"))
                 }
             }
         } catch (e: Exception) {

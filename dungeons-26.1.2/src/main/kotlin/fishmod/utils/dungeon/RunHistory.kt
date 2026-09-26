@@ -7,7 +7,6 @@ import java.io.File
 import java.io.FileReader
 import java.io.FileWriter
 import java.lang.reflect.Type
-import java.util.concurrent.Executors
 
 object RunHistory {
 
@@ -17,9 +16,7 @@ object RunHistory {
     private const val FILE_PATH = "config/fishmod-runs.json"
     private val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
 
-    private val writeExecutor = Executors.newSingleThreadExecutor { r ->
-        Thread(r, "fishmod-runhistory-io").apply { isDaemon = true }
-    }
+    private val writeExecutor = fishmod.utils.IoExecutor
 
     private val lock = Any()
 
@@ -70,34 +67,24 @@ object RunHistory {
         }
     }
 
-    @JvmStatic
-    fun getPersonalAvg(floor: String?, splitName: String?): Double {
-        if (floor == null || splitName == null) return -1.0
+    private val statsCache = HashMap<String, DoubleArray>()
+
+    private fun stats(floor: String?, splitName: String?): DoubleArray? {
+        if (floor == null || splitName == null) return null
         synchronized(lock) {
-            val floorData = data[floor] ?: return -1.0
-            val times = floorData[splitName]
-            if (times == null || times.isEmpty()) return -1.0
-            return times.asSequence()
-                .filter { it > 0 && it <= MAX_SPLIT_SECONDS }
-                .average()
-                .let { if (it.isNaN()) -1.0 else it }
+            return statsCache.getOrPut(floor + "\u0000" + splitName) {
+                val valid = data[floor]?.get(splitName)?.filter { it > 0 && it <= MAX_SPLIT_SECONDS }
+                if (valid.isNullOrEmpty()) doubleArrayOf(-1.0, -1.0) else doubleArrayOf(valid.average(), valid.min())
+            }
         }
     }
 
     @JvmStatic
-    fun getPersonalBest(floor: String?, splitName: String?): Double {
-        if (floor == null || splitName == null) return -1.0
-        synchronized(lock) {
-            val floorData = data[floor] ?: return -1.0
-            val times = floorData[splitName]
-            if (times == null || times.isEmpty()) return -1.0
-            return times.asSequence()
-                .filter { it > 0 && it <= MAX_SPLIT_SECONDS }
-                .minOrNull() ?: -1.0
-        }
-    }
+    fun getPersonalAvg(floor: String?, splitName: String?): Double = stats(floor, splitName)?.get(0) ?: -1.0
 
-    /** Drops stored split times (the averages) for one floor, or all when null; returns splits cleared. */
+    @JvmStatic
+    fun getPersonalBest(floor: String?, splitName: String?): Double = stats(floor, splitName)?.get(1) ?: -1.0
+
     @JvmStatic
     fun clear(floor: String?): Int {
         val n = synchronized(lock) {
@@ -106,12 +93,6 @@ object RunHistory {
         }
         save()
         return n
-    }
-
-    @JvmStatic
-    fun runCount(floor: String?, splitName: String?): Int = synchronized(lock) {
-        val floorData = data[floor] ?: return@synchronized 0
-        floorData[splitName]?.size ?: 0
     }
 
     private fun load() {
@@ -154,7 +135,7 @@ object RunHistory {
     }
 
     private fun save() {
-        val json = synchronized(lock) { GSON.toJson(data) }
+        val json = synchronized(lock) { statsCache.clear(); GSON.toJson(data) }
         writeExecutor.execute {
             try {
                 val file = File(FILE_PATH)

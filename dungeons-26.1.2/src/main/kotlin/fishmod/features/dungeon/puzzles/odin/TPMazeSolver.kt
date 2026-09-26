@@ -33,7 +33,6 @@ object TPMazeSolver {
             pos.z % 0.5 != 0.0 || tpPads.isEmpty()) return
 
         val posAABB = AABB.unitCubeFromLowerCorner(pos).inflate(1.0, 0.0, 1.0)
-        // Both the pad you stepped on and the one you landed on are used up.
         from?.let { padNear(it.x, it.z) }?.let { visited.add(it) }
         visited.addAll(tpPads.filter { posAABB.intersects(AABB(it)) })
         getCorrectPortals(pos, change.yRot, change.xRot)

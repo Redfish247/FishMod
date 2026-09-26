@@ -28,7 +28,6 @@ private const val PANEL_R = 8
 private const val CARD_R = 4
 
 private const val BASE_TINT = 0x22_0A0A12
-// opaque so vanilla fills and overlay pieces meet without a seam
 private val PANEL_BG = 0xFF0E1016.toInt()
 private val PANEL_BORDER = 0xFF2A2D38.toInt()
 private val CARD_BG = ScreenTheme.CARD_BG
@@ -53,7 +52,6 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
     private var vw = 0
     private var vh = 0
 
-    // per-screen "GUI Settings" size; layout runs in a (width / k, height / k) virtual space
     private fun updateScale() {
         k = UiScale.userScale(this)
         vw = (width / k).toInt()
@@ -75,14 +73,17 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
 
     private fun query(): String = search.value.trim().lowercase()
 
+    private val searchNames = java.util.WeakHashMap<ItemStack, String>()
+
     private fun matches(stack: ItemStack, q: String): Boolean =
-        !stack.isEmpty && stack.hoverName.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").lowercase().contains(q)
+        !stack.isEmpty && searchNames.getOrPut(stack) {
+            stack.hoverName.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").lowercase()
+        }.contains(q)
 
     override fun paintUiOverlay() {
         UiRenderer.paint(width, height, k)
     }
 
-    // Vanilla layer holds only square fills under items; every rounded edge and all text go to the overlay.
     override fun extractRenderState(ctx: GuiGraphicsExtractor, rawMouseX: Int, rawMouseY: Int, delta: Float) {
         titleRects.clear()
         UiRecorder.clear()
@@ -98,7 +99,11 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         val q = query()
         if (q != lastQuery) { lastQuery = q; scroll = 0 }
 
-        val data = StorageCache.view()
+        val cached = StorageCache.view()
+        val data = java.util.TreeMap<Int, NBTInventory>(cached)
+        for (idx in StorageCache.knownPages()) {
+            if (idx !in data) data[idx] = NBTInventory(List((StorageCache.expectedRows(idx) ?: 1) * 9) { ItemStack.EMPTY })
+        }
         val cellW = 9 * SLOT + 8
 
         val panelX = MARGIN
@@ -134,7 +139,9 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
                 val h = drawPage(ctx, x, y, idx, inv, rows, q, mouseX, mouseY, mouseY in viewTop..viewBot, dims)
                 if (h != null) hovered = h
             }
-            titleRects.add(intArrayOf(x, y, cellW, CARD_HEAD, idx))
+            val titleTop = max(y, viewTop)
+            val titleBot = min(y + CARD_HEAD, viewBot)
+            if (titleTop < titleBot) titleRects.add(intArrayOf(x, titleTop, cellW, titleBot - titleTop, idx))
             rowMaxH = max(rowMaxH, cardH)
             col++
             if (col >= cols) { col = 0; x = gridLeft; y += rowMaxH + GAP; rowMaxH = 0 } else x += cellW + GAP
@@ -143,7 +150,6 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         UiRecorder.popScissor()
         runCatching { ctx.disableScissor() }
 
-        // dims go in a later stratum so they sit over the item icons
         if (dims.isNotEmpty()) {
             runCatching { ctx.nextStratum() }
             runCatching { ctx.enableScissor(panelX + 2, viewTop, panelX2 - 2, viewBot) }
@@ -166,7 +172,6 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
 
         ctx.pose().popMatrix()
 
-        // our own tooltip, recorded last so it sits above all overlay content
         val mc = minecraft
         val hs = hovered
         if (hs != null && mc != null) {
@@ -175,7 +180,6 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         }
     }
 
-    // vanilla cross-shaped fill + overlay corner pieces overlapping it by a pixel, then a smooth border
     private fun drawPanel(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int) {
         val r = PANEL_R
         ctx.fill(x1 + r, y1, x2 - r, y2, PANEL_BG)
@@ -190,7 +194,6 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         ScreenTheme.nRoundedRectRing(x1, y1, x2 - x1, y2 - y1, r, 1, 0, PANEL_BORDER)
     }
 
-    // draws a rounded shape clipped to a small box (a shape's radius is capped at half its size)
     private fun cornerPiece(cx: Int, cy: Int, cw: Int, ch: Int, sx: Float, sy: Float, sw: Float, sh: Float,
                             tl: Float, tr: Float, br: Float, bl: Float, color: Int) {
         UiRecorder.pushScissor(cx.toFloat(), cy.toFloat(), cw.toFloat(), ch.toFloat())
@@ -207,7 +210,7 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
 
     private fun drawLoadButton(right: Int, y: Int, mouseX: Int, mouseY: Int) {
         val running = StorageAutoLoader.running()
-        val label = if (running) "● Loading… click to stop" else "Load all pages"
+        val label = if (running) "● Fetching… click to stop" else "Fetch page list"
         val w = ScreenTheme.nstw(label, 0.75f) + 16
         val h = 16
         val bx = right - w
@@ -230,14 +233,11 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         val hits = if (q.isEmpty()) 0 else inv.stacks.count { matches(it, q) }
         val lit = q.isNotEmpty() && hits > 0
 
-        // card outline and slot block (sx1..sx2, sy1..sy2 hold items)
         val cx1 = x - 2; val cy1 = y - 2; val cx2 = cx1 + cardW; val cy2 = y + cardH
         val sx1 = x + 2; val sy1 = y + CARD_HEAD; val sx2 = sx1 + 9 * SLOT; val sy2 = sy1 + rows * SLOT
 
-        // vanilla: square opaque block under the slots, 1px wider so overlay strips overlap it
         ctx.fill(sx1 - 1, sy1 - 1, sx2 + 1, sy2 + 1, CARD_BG)
 
-        // overlay frame around the slot block: head, sides, rounded bottom, border
         val r = CARD_R.toFloat()
         UiRecorder.fillRoundedRectCorners(cx1.toFloat(), cy1.toFloat(), cardW.toFloat(), (sy1 - cy1).toFloat(), r, r, 0f, 0f, CARD_BG)
         ScreenTheme.nRect(cx1, sy1 - 1, sx1 - cx1, sy2 - sy1 + 2, CARD_BG)
@@ -289,7 +289,7 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         loadAllRect.let { r ->
             if (mx in r[0]..(r[0] + r[2]) && my in r[1]..(r[1] + r[3])) {
                 if (StorageAutoLoader.running()) StorageAutoLoader.stop()
-                else { StorageAutoLoader.start(); onClose() }
+                else StorageAutoLoader.start()
                 return true
             }
         }

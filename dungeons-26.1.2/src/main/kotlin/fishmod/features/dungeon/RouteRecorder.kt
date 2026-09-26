@@ -13,7 +13,6 @@ import fishmod.features.dungeon.map.Scan
 import fishmod.utils.FishMsg
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
-import fishmod.utils.data.EntityUtil
 import fishmod.utils.data.ItemUtil
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
@@ -43,7 +42,6 @@ import net.minecraft.world.phys.Vec3
 import java.nio.file.Files
 import java.util.concurrent.ConcurrentLinkedQueue
 
-// Temporary dev tool: records dungeon actions as an ordered route, then replays it.
 object RouteRecorder {
 
     enum class Type(val label: String, val tolerance: Double) {
@@ -146,6 +144,7 @@ object RouteRecorder {
         })
 
         Events.ON_PACKET.register { packet ->
+            if (!FishSettings.routeRecorderEnabled || !Location.inDungeon()) return@register false
             when (packet) {
                 is ClientboundTakeItemEntityPacket -> if (packet.playerId == selfId) pickedItemIds.add(packet.itemId)
                 is ClientboundPlayerPositionPacket -> teleported = true
@@ -175,10 +174,8 @@ object RouteRecorder {
 
     private fun isBoom(stack: net.minecraft.world.item.ItemStack) = ItemUtil.getId(stack) in BOOM_ITEMS
 
-    // use-on-block and use-item can both fire for one click
-    // clicks and the explosion itself can all report one superboom
     private fun boom(pos: BlockPos, via: String) {
-        fishmod.utils.debug.Debug.LOGGER.info("[Route] superboom via $via at $pos")
+        fishmod.utils.debug.Debug.LOGGER.debug("[Route] superboom via $via at $pos")
         if (tick - lastBoomTick < 20) return
         lastBoomTick = tick
         action(Type.SUPERBOOM, pos)
@@ -188,7 +185,6 @@ object RouteRecorder {
 
     private fun routeRoom(): String? = steps.firstNotNullOfOrNull { it.room }
 
-    // leaving the route's room saves (if changed) and unloads it, even mid-route or mid-recording
     private fun checkRoomLeave() {
         if (steps.isEmpty() || !Location.inDungeon()) { outsideTicks = 0; return }
         val here = currentRoom() ?: return
@@ -202,14 +198,12 @@ object RouteRecorder {
         lastAutoRoom = null
     }
 
-    // entering a room with a saved route loads and plays it
     private fun autoLoad() {
         if (!FishSettings.routeRecorderEnabled || !FishSettings.routeAutoLoad) return
         if (mode != Mode.IDLE || steps.isNotEmpty() || !Location.inDungeon()) return
         val here = currentRoom() ?: return
         if (here == lastAutoRoom) return
         lastAutoRoom = here
-        // finished route or green-checked (all secrets) room: don't load again this run
         if (here in doneRooms || DungeonMap.roomPlayerIn()?.owner?.state == Room.State.GREEN) return
         if (!Files.exists(dir.resolve(clean(here) + ".json"))) return
         if (load(here, quiet = true)) { progress = 0; mode = Mode.PLAYING; enteredRoute = true }
@@ -232,7 +226,6 @@ object RouteRecorder {
         val prev = lastPos
         lastPos = pos
 
-        // server teleport = etherwarp (sneaking + ether item) or pearl landing
         val tp = teleported
         teleported = false
         if (tp && prev != null && prev.distanceToSqr(pos) > 2.25) {
@@ -250,7 +243,7 @@ object RouteRecorder {
         while (true) {
             val (name, at) = boomSounds.poll() ?: break
             if (tick - boomHeldTick > 40 || at.distanceToSqr(pos) > 100.0) continue
-            fishmod.utils.debug.Debug.LOGGER.info("[Route] sound near superboom: $name")
+            fishmod.utils.debug.Debug.LOGGER.debug("[Route] sound near superboom: $name")
             if ("explode" in name || "explosion" in name) boom(BlockPos.containing(at), "sound:$name")
         }
 
@@ -318,8 +311,6 @@ object RouteRecorder {
         }
     }
 
-    // ---- positions ----
-
     private fun arr(p: BlockPos) = intArrayOf(p.x, p.y, p.z)
     private fun bp(a: IntArray) = BlockPos(a[0], a[1], a[2])
 
@@ -344,8 +335,6 @@ object RouteRecorder {
         if (room != null && local != null) anchors()[room]?.let { return DungeonRoomAnchor.toWorld(it, bp(local)) }
         return if (liveWorld && world != null) bp(world) else null
     }
-
-    // ---- rendering ----
 
     private fun visible(): List<Pair<Int, BlockPos>> {
         if (!FishSettings.routeRecorderEnabled || steps.isEmpty()) return emptyList()
@@ -375,7 +364,6 @@ object RouteRecorder {
 
     private fun throughWalls(t: Type) = if (isSecret(t)) FishSettings.routeSecretsThroughWalls else FishSettings.routeThroughWalls
 
-    // each step (and the line leading into it) renders in the pass matching its through-walls setting
     private inline fun draw(noDepth: Boolean, box: (AABB, Int, Int) -> Unit, line: (Vec3, Vec3, Double, Int) -> Unit) {
         val vis = visible()
         if (vis.isEmpty()) return
@@ -428,7 +416,6 @@ object RouteRecorder {
         }, { a, b, hw, argb -> RenderUtils.gizmoThickLine(a, b, hw, argb) })
     }
 
-    // consecutive same-type steps on touching blocks (e.g. a row of breaks) share one number
     private fun groups(): IntArray {
         val g = IntArray(steps.size)
         for (i in 1 until steps.size) g[i] = if (sameGroup(steps[i - 1], steps[i])) g[i - 1] else g[i - 1] + 1
@@ -443,7 +430,6 @@ object RouteRecorder {
         return maxOf(kotlin.math.abs(pa[0] - pb[0]), kotlin.math.abs(pa[1] - pb[1]), kotlin.math.abs(pa[2] - pb[2])) <= 1
     }
 
-    // label sits on the first not-yet-done block of each group
     private fun labels() {
         if (!FishSettings.routeShowLabels) return
         val scale = FishSettings.routeLabelScale.toFloat()
@@ -456,8 +442,6 @@ object RouteRecorder {
             RenderUtils.gizmoText(Component.literal("${g[i] + 1}. ${s.type.label}"), Vec3(p.x + 0.5, p.y + 1.4, p.z + 0.5), scale, withAlpha(color(s.type), 100))
         }
     }
-
-    // ---- commands ----
 
     @JvmStatic
     fun command(): LiteralArgumentBuilder<FabricClientCommandSource> {
@@ -542,12 +526,15 @@ object RouteRecorder {
     private fun load(name: String, quiet: Boolean): Boolean {
         try {
             val f = dir.resolve(clean(name) + ".json")
-            if (!Files.exists(f)) { msg("§cNo route named ${clean(name)}"); return false }
+            if (!Files.exists(f)) { if (!quiet) msg("§cNo route named ${clean(name)}"); return false }
             val list: List<Step> = gson.fromJson(Files.readString(f), object : TypeToken<List<Step>>() {}.type)
             steps.clear(); steps.addAll(list); progress = 0; mode = Mode.IDLE; liveWorld = false; dirty = false; enteredRoute = false
             if (!quiet) msg("§aLoaded ${steps.size} steps. §f/fm route play §7to follow.")
             return true
-        } catch (t: Throwable) { msg("§cLoad failed: ${t.message}"); return false }
+        } catch (t: Throwable) {
+            if (quiet) fishmod.utils.debug.Debug.LOGGER.warn("[Route] load of {} failed", name, t) else msg("§cLoad failed: ${t.message}")
+            return false
+        }
     }
 
     @JvmStatic

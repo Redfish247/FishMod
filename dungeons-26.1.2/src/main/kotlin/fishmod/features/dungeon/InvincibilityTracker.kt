@@ -78,7 +78,6 @@ object InvincibilityTracker {
         }
     }
 
-    // On-screen title + sound when a mask/pet procs.
     private fun procTitle(t: Type) {
         if (!FishSettings.invincProcTitle) return
         val (text, color) = when (t) {
@@ -98,7 +97,6 @@ object InvincibilityTracker {
         )
     }
 
-    // Icons are learned from the player's own items (mask heads, Phoenix in the pets menu) and saved.
     private var iconTick = 0
 
     private fun storedTexture(t: Type): String = when (t) {
@@ -136,6 +134,9 @@ object InvincibilityTracker {
         if (!FishSettings.invincIcons || ++iconTick < 20) return
         iconTick = 0
         val mc = Minecraft.getInstance()
+        val allKnown = Type.entries.all { storedTexture(it).isNotEmpty() }
+        if (allKnown && mc.screen !is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>) return
+        if (!fishmod.utils.Location.inSkyblock()) return
         val player = mc.player ?: return
         val inv = player.inventory
         val stacks = (0 until inv.containerSize).map { inv.getItem(it) } + player.getItemBySlot(EquipmentSlot.HEAD)
@@ -146,7 +147,7 @@ object InvincibilityTracker {
             texture(st)?.let { storeTexture(t, it) }
         }
         val screen = mc.screen as? net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*> ?: return
-        if (!COLOR.replace(screen.title.string, "").contains("Pets")) return
+        if (!fishmod.utils.ScreenTitle.plain(screen).contains("Pets")) return
         for (slot in screen.menu.slots) {
             val st = slot.item
             if (st.isEmpty || !st.hoverName.string.contains("Phoenix")) continue
@@ -206,7 +207,7 @@ object InvincibilityTracker {
             val value = when {
                 t.active > 0 || t.cooldown > 0 ->
                     if (Dungeons.InvincibilityDuration)
-                        String.format("%.1fs", (if (t.active > 0) t.active else t.cooldown) / 20f)
+                        fishmod.utils.Fmt.f1((if (t.active > 0) t.active else t.cooldown) / 20.0) + "s"
                     else "●"
                 else -> "✔"
             }

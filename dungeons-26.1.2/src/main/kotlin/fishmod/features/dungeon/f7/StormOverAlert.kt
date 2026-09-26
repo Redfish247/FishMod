@@ -8,7 +8,6 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.sounds.SoundEvents
 
-// Movable title at 28.5s on the Storm tick timer.
 object StormOverAlert {
 
     private const val NAME = "Storm Over Alert"

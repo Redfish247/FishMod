@@ -14,7 +14,7 @@ object MelodyMessage {
 
     @JvmStatic
     fun init() {
-        ClientTickEvents.END_CLIENT_TICK.register { mc -> tick() }
+        ClientTickEvents.END_CLIENT_TICK.register { tick() }
         Events.ON_WORLD_CHANGE.register { reset(); false }
     }
 

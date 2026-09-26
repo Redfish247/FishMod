@@ -18,4 +18,6 @@ class SimpleHandler<T> {
     }
 
     fun size(): Int = listeners.size
+
+    fun isEmpty(): Boolean = listeners.isEmpty()
 }

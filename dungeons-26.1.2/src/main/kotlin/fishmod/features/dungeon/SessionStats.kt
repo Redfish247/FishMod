@@ -21,9 +21,7 @@ import java.util.regex.Pattern
 
 object SessionStats {
 
-    private val ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
-        Thread(r, "FishMod-SessionStats-IO").apply { isDaemon = true }
-    }
+    private val ioExecutor = fishmod.utils.IoExecutor
 
     private val DEATH_PAT = Pattern.compile("☠ \\S+ (?:was|were) killed by|☠ \\S+ (?:died|quit)")
 
@@ -144,8 +142,12 @@ object SessionStats {
 
         Events.ON_WORLD_CHANGE.register {
             havePos = false
-            if (FishSettings.sessionStatsResetOnRelog) reset() else autoPause(1, System.currentTimeMillis())
+            autoPause(1, System.currentTimeMillis())
             false
+        }
+
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
+            if (FishSettings.sessionStatsResetOnRelog) reset()
         }
 
         Events.ON_LOCATION_CHANGE.register { _ ->
@@ -189,25 +191,6 @@ object SessionStats {
             }
             false
         }
-    }
-
-    @JvmStatic
-    fun getRuns(): Int = runs
-
-    @JvmStatic
-    fun getDeaths(): Int = deaths
-
-    @JvmStatic
-    fun getRunsPerHour(): Double = runsPerHour()
-
-    @JvmStatic
-    fun getSessionStartMs(): Long = sessionStartMs
-
-    @JvmStatic
-    fun formatDuration(): String {
-        if (sessionStartMs < 0) return "—"
-        val ref = if (paused && pauseStartedMs > 0) pauseStartedMs else System.currentTimeMillis()
-        return formatTime(Math.max(0, ref - sessionStartMs))
     }
 
     @JvmStatic
@@ -282,7 +265,6 @@ object SessionStats {
         return "${s}s"
     }
 
-    // short TTL cache; rebuilt every frame otherwise
     private const val LINES_CACHE_TTL_MS = 200L
     private var linesCacheAt = 0L
     private var linesCache: Array<String> = arrayOf("", "", "", "")

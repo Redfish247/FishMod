@@ -7,12 +7,6 @@ object ScoreboardUtil {
     private class ClassInfo(val className: String, val level: Int)
 
     @JvmStatic
-    fun getCurrentClass(): String? {
-        val info = getClassInfo()
-        return info?.className
-    }
-
-    @JvmStatic
     fun getCurrentClassLevel(): Int {
         val info = getClassInfo()
         return info?.level ?: 0
@@ -42,7 +36,7 @@ object ScoreboardUtil {
             val className = parts[0]
             val roman = parts[1]
 
-            val level = romanToInt(roman)
+            val level = Roman.toInt(roman)
 
             return ClassInfo(className, level)
         }
@@ -50,29 +44,4 @@ object ScoreboardUtil {
         return null
     }
 
-    private fun romanToInt(roman: String): Int {
-        var sum = 0
-        var prev = 0
-
-        for (i in roman.length - 1 downTo 0) {
-            val value = romanValue(roman[i])
-            if (value < prev) sum -= value else sum += value
-            prev = value
-        }
-
-        return sum
-    }
-
-    private fun romanValue(c: Char): Int {
-        return when (c) {
-            'I' -> 1
-            'V' -> 5
-            'X' -> 10
-            'L' -> 50
-            'C' -> 100
-            'D' -> 500
-            'M' -> 1000
-            else -> 0
-        }
-    }
 }

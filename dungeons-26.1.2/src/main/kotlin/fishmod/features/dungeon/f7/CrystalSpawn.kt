@@ -51,7 +51,7 @@ object CrystalSpawn {
             if (pickedUp) tickSincePicked++
             false
         }
-        Events.ON_LOCATION_CHANGE.register { newLocation ->
+        Events.ON_LOCATION_CHANGE.register { _ ->
             tick = 0
             tickSincePicked = 0
             pickedUp = false

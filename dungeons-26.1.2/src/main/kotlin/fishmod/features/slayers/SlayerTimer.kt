@@ -14,8 +14,6 @@ object SlayerTimer {
     private var lastCycleSeconds = -1.0
     private var lastKilledCallMs = 0L
 
-    @JvmStatic fun init() {  }
-
     private fun fullSpawnMode() = FishSettings.slayerTimerStartMode.equals("Fully Spawned", ignoreCase = true)
 
     @JvmStatic fun running(): Boolean = startNanos != 0L

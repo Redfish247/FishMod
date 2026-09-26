@@ -71,22 +71,33 @@ object EtherwarpHelper {
         val dir: Vec3 = p.getViewVector(1f).normalize()
         val max = FishSettings.etherwarpRange.coerceIn(1, 61).toDouble()
 
-        var last: BlockPos? = null
-        var d = 0.0
-        while (d <= max) {
-            val pt = start.add(dir.scale(d))
-            val bp = BlockPos.containing(pt.x, pt.y, pt.z)
-            if (bp != last) {
-                last = bp
-                val state = level.getBlockState(bp)
-                if (!state.isAir && !state.getCollisionShape(level, bp).isEmpty) {
-                    target = bp.immutable()
-                    valid = level.getBlockState(bp.above()).getCollisionShape(level, bp.above()).isEmpty &&
-                        level.getBlockState(bp.above(2)).getCollisionShape(level, bp.above(2)).isEmpty
-                    return
-                }
+        var x = Math.floor(start.x).toInt()
+        var y = Math.floor(start.y).toInt()
+        var z = Math.floor(start.z).toInt()
+        val stepX = if (dir.x > 0) 1 else -1
+        val stepY = if (dir.y > 0) 1 else -1
+        val stepZ = if (dir.z > 0) 1 else -1
+        val deltaX = if (dir.x == 0.0) Double.MAX_VALUE else Math.abs(1.0 / dir.x)
+        val deltaY = if (dir.y == 0.0) Double.MAX_VALUE else Math.abs(1.0 / dir.y)
+        val deltaZ = if (dir.z == 0.0) Double.MAX_VALUE else Math.abs(1.0 / dir.z)
+        var tMaxX = if (dir.x == 0.0) Double.MAX_VALUE else (if (stepX > 0) x + 1 - start.x else start.x - x) * deltaX
+        var tMaxY = if (dir.y == 0.0) Double.MAX_VALUE else (if (stepY > 0) y + 1 - start.y else start.y - y) * deltaY
+        var tMaxZ = if (dir.z == 0.0) Double.MAX_VALUE else (if (stepZ > 0) z + 1 - start.z else start.z - z) * deltaZ
+        val pos = BlockPos.MutableBlockPos()
+        var t = 0.0
+        while (t <= max) {
+            pos.set(x, y, z)
+            val state = level.getBlockState(pos)
+            if (!state.isAir && !state.getCollisionShape(level, pos).isEmpty) {
+                val bp = pos.immutable()
+                target = bp
+                valid = level.getBlockState(bp.above()).getCollisionShape(level, bp.above()).isEmpty &&
+                    level.getBlockState(bp.above(2)).getCollisionShape(level, bp.above(2)).isEmpty
+                return
             }
-            d += 0.20
+            if (tMaxX < tMaxY && tMaxX < tMaxZ) { x += stepX; t = tMaxX; tMaxX += deltaX }
+            else if (tMaxY < tMaxZ) { y += stepY; t = tMaxY; tMaxY += deltaY }
+            else { z += stepZ; t = tMaxZ; tMaxZ += deltaZ }
         }
     }
 

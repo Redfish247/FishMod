@@ -11,14 +11,13 @@ object DungeonAbilities {
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
-            if (!FishSettings.dungeonAbilitiesEnabled || !Location.inDungeon()) return@EndTick
-
             var ult = false
             while (Keybinds.dungeonAbility.consumeClick()) ult = true
-            if (ult) drop(mc, fullStack = false)
-
             var mini = false
             while (Keybinds.dungeonAbilityMini.consumeClick()) mini = true
+            if (!FishSettings.dungeonAbilitiesEnabled || !Location.inDungeon()) return@EndTick
+
+            if (ult) drop(mc, fullStack = false)
             if (mini) drop(mc, fullStack = true)
         })
     }

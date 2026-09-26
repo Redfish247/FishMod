@@ -14,10 +14,6 @@ object DungeonMapSettings {
 
     @ConfigValue
     @JvmField
-    var mapInsightLegit: Boolean = false
-
-    @ConfigValue
-    @JvmField
     var mapBackgroundColor: Int = 1174405120
 
     @ConfigValue
@@ -234,10 +230,6 @@ object DungeonMapSettings {
 
     @ConfigValue
     @JvmField
-    var mapMimicOnInsight: Boolean = true
-
-    @ConfigValue
-    @JvmField
     var mapDoorThickness: Float = 9.0f
 
     @ConfigValue
@@ -339,14 +331,6 @@ object DungeonMapSettings {
     @ConfigValue
     @JvmField
     var mapDoorOpenableColorFilled: Int = 855703296
-
-    @ConfigValue
-    @JvmField
-    var mapDoorFairyColor: Int = -781429
-
-    @ConfigValue
-    @JvmField
-    var mapDoorFairyColorFilled: Int = 871633803
 
     @ConfigValue
     @JvmField

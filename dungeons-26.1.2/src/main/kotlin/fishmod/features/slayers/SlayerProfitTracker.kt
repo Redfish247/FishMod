@@ -13,7 +13,6 @@ import fishmod.utils.networth.ItemsDb
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import java.io.File
 import java.lang.reflect.Type
-import java.util.concurrent.Executors
 import java.util.regex.Pattern
 
 // Slayer drop-value / coins-per-hour tracker, a close port of SkyHanni's "<Boss> Profit Tracker".
@@ -33,9 +32,7 @@ object SlayerProfitTracker {
     private val SACK_PICKUP = Pattern.compile("^\\+\\s*([\\d,]+)\\s+([A-Za-z'’. ]+?)(?:\\s*\\(.*\\))?$")
     private val AUTO_SLAYER_BANK = Pattern.compile("Took ([\\d,.]+[kmb]?) coins from your bank for auto-slayer")
 
-    private val writeExecutor = Executors.newSingleThreadExecutor { r ->
-        Thread(r, "fishmod-slayer-profit-io").apply { isDaemon = true }
-    }
+    private val writeExecutor = fishmod.utils.IoExecutor
     private val lock = Any()
 
     private class Data {
@@ -59,8 +56,6 @@ object SlayerProfitTracker {
     private var lastQuestStartMs = 0L
     private var resetArmedAt = 0L
 
-    private var lastLine = ""
-    private var lastLineMs = 0L
 
     private fun idleMs(): Long = FishSettings.slayerProfitIdleSeconds.coerceIn(10, 3600) * 1000L
     private fun sessionMode(): Boolean = FishSettings.slayerProfitDisplayMode.equals("This Session", true)
@@ -88,7 +83,9 @@ object SlayerProfitTracker {
         load()
         ItemsDb.initAsync()
         CroesusPrices.refreshIfStale()
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { tick() })
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { tick(); flushSave(false) })
+        Events.ON_WORLD_CHANGE.register { flushSave(true); false }
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register { flushSave(true) }
         Events.ON_GAME_MESSAGE.register { text ->
             if (enabled()) onChat(text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim())
             false
@@ -171,11 +168,6 @@ object SlayerProfitTracker {
 
     private fun onChat(s: String) {
         val k = curKey() ?: return
-
-        val now = System.currentTimeMillis()
-        if (s == lastLine && now - lastLineMs < 1_500L) return
-        lastLine = s
-        lastLineMs = now
 
         val bank = AUTO_SLAYER_BANK.matcher(s)
         if (bank.find()) {
@@ -298,16 +290,20 @@ object SlayerProfitTracker {
     fun activeMs(type: SlayerType, tier: Int): Long = view(key(type, tier))?.activeMs ?: 0L
     fun isPaused(): Boolean = idlePaused
 
-    fun profit(type: SlayerType, tier: Int): Double {
+    fun profit(type: SlayerType, tier: Int): Double = profit(type, tier, rows(type, tier))
+
+    private fun profit(type: SlayerType, tier: Int, rows: List<Row>): Double {
         val k = key(type, tier)
-        val gained = rows(type, tier).filter { !isHiddenKey(k, it.name) }.sumOf { it.value }
+        val gained = rows.filter { !isHiddenKey(k, it.name) }.sumOf { it.value }
         return gained - spawnCost(type, tier).toDouble()
     }
 
-    fun profitPerHour(type: SlayerType, tier: Int): Double {
+    fun profitPerHour(type: SlayerType, tier: Int): Double = profitPerHour(type, tier, profit(type, tier))
+
+    private fun profitPerHour(type: SlayerType, tier: Int, profit: Double): Double {
         val ms = activeMs(type, tier)
         if (ms < 5_000L) return 0.0
-        return profit(type, tier) * 3_600_000.0 / ms
+        return profit * 3_600_000.0 / ms
     }
 
     fun hasData(type: SlayerType, tier: Int): Boolean {
@@ -320,9 +316,27 @@ object SlayerProfitTracker {
     private fun sh(v: Double): String = SlayerStatsTracker.short(v)
     private fun sep(v: Long): String = String.format("%,d", v)
 
+    private var displayCache: List<DisplayRow>? = null
+    private var displayCacheKey: String? = null
+    private var displayCacheAt = 0L
+
     fun display(type: SlayerType, tier: Int, interactive: Boolean): List<DisplayRow> {
+        if (interactive) return buildDisplay(type, tier, true)
+        val now = System.currentTimeMillis()
+        val k = key(type, tier)
+        val cached = displayCache
+        if (cached != null && displayCacheKey == k && now - displayCacheAt < 1000L) return cached
+        return buildDisplay(type, tier, false).also {
+            displayCache = it
+            displayCacheKey = k
+            displayCacheAt = now
+        }
+    }
+
+    private fun buildDisplay(type: SlayerType, tier: Int, interactive: Boolean): List<DisplayRow> {
         val k = key(type, tier)
         val out = ArrayList<DisplayRow>(24)
+        val allRows = rows(type, tier)
 
         val cat = "${type.displayName} $tier"
         out.add(
@@ -337,7 +351,7 @@ object SlayerProfitTracker {
         var visibleShown = 0
         var collapsedValue = 0.0
         var collapsedCount = 0
-        for (r in rows(type, tier)) {
+        for (r in allRows) {
             val hiddenRow = isHiddenKey(k, r.name)
             if (hiddenRow && !revealHidden) continue
             if (!hiddenRow && (visibleShown >= cap || (minVal > 0 && r.value < minVal && !r.coins))) {
@@ -363,12 +377,12 @@ object SlayerProfitTracker {
         out.add(DisplayRow(" §7Slayer Spawn Costs:", "§c-${sh(spawnCost(type, tier).toDouble())}", "cost"))
         out.add(DisplayRow("§7Bosses killed:", "§e${sep(bosses(type, tier).toLong())}", "bosses"))
 
-        val p = profit(type, tier)
+        val p = profit(type, tier, allRows)
         val pc = if (p < 0) "§c" else "§6"
         val coinWord = if (Math.abs(p.toLong()) == 1L) "coin" else "coins"
         out.add(DisplayRow("§e${modeLabel()} Profit:", "$pc${sep(p.toLong())} $coinWord", "profit"))
 
-        val pph = profitPerHour(type, tier)
+        val pph = profitPerHour(type, tier, p)
         out.add(DisplayRow("§eProfit/h:", if (pph == 0.0) "§8—" else "${if (pph < 0) "§c" else "§6"}${sh(pph)}", "rate"))
 
         if (interactive) {
@@ -398,12 +412,30 @@ object SlayerProfitTracker {
                     val t: Type = object : TypeToken<MutableMap<String, Data>>() {}.type
                     total = GSON.fromJson(root, t) ?: HashMap()
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                fishmod.utils.SafeFiles.quarantine(file, e)
             }
         }
     }
 
+    private var saveDirty = false
+    private var lastSaveMs = 0L
+
     private fun save() {
+        saveDirty = true
+        displayCache = null
+    }
+
+    private fun flushSave(force: Boolean) {
+        if (!saveDirty) return
+        val now = System.currentTimeMillis()
+        if (!force && now - lastSaveMs < 30_000L) return
+        saveDirty = false
+        lastSaveMs = now
+        saveNow()
+    }
+
+    private fun saveNow() {
         val json = synchronized(lock) {
             val p = Persisted()
             p.total = total
@@ -413,12 +445,7 @@ object SlayerProfitTracker {
             GSON.toJson(p)
         }
         writeExecutor.execute {
-            try {
-                val file = File(FILE_PATH)
-                file.parentFile?.mkdirs()
-                file.writeText(json)
-            } catch (_: Exception) {
-            }
+            fishmod.utils.SafeFiles.writeAtomic(File(FILE_PATH), json)
         }
     }
 }

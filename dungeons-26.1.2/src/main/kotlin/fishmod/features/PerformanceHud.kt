@@ -7,7 +7,6 @@ import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
-// Movable FPS / TPS / ping readout.
 object PerformanceHud {
 
     private const val NAME = "Performance"
@@ -34,7 +33,7 @@ object PerformanceHud {
         }
         if (FishSettings.perfHudTps) {
             val tps = PartyCommandHandler.currentTps()
-            val v = if (tps < 0) "§c—" else (when { tps < 15 -> "§c"; tps < 19.5 -> "§e"; else -> "§a" }) + String.format("%.1f", tps)
+            val v = if (tps < 0) "§c—" else (when { tps < 15 -> "§c"; tps < 19.5 -> "§e"; else -> "§a" }) + fishmod.utils.Fmt.f1(tps)
             out.add("${label}TPS: $v")
         }
         if (FishSettings.perfHudPing) {

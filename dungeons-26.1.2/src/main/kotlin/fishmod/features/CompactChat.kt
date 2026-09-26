@@ -29,19 +29,45 @@ object CompactChat {
         val messages = acc.messages
         if (messages == null || messages.isEmpty()) return false
 
+        if (keys.size > 512) keys.clear()
         for (i in messages.indices) {
             val line = messages[i]
             if (nowTick - line.addedTime() > WINDOW_TICKS) break
-            if (incoming != stripKey(line.content().string)) continue
+            if (incoming != keyOf(line)) continue
 
             val next = extractCount(line.content().string) + 1
+            val removedLines = removeDisplayedLines(acc, i, messages.size)
             messages.removeAt(i)
-            acc.invokeRefresh()
+            if (!removedLines) acc.invokeRefresh()
             ci.cancel()
             hud.addClientSystemMessage(withCount(message, next))
             return true
         }
         return false
+    }
+
+    private val keys = HashMap<Int, Pair<GuiMessage, String>>()
+
+    private fun keyOf(line: GuiMessage): String {
+        val id = System.identityHashCode(line)
+        keys[id]?.let { if (it.first === line) return it.second }
+        return stripKey(line.content().string).also { keys[id] = line to it }
+    }
+
+    private fun removeDisplayedLines(acc: ChatHudInvoker, index: Int, messageCount: Int): Boolean {
+        val lines = acc.visibleMessages ?: return false
+        var groups = 0
+        var start = -1
+        var end = lines.size
+        for (j in lines.indices) {
+            if (!lines[j].endOfEntry()) continue
+            if (groups == index) start = j
+            else if (groups == index + 1) end = j
+            groups++
+        }
+        if (start < 0 || groups != messageCount) return false
+        lines.subList(start, end).clear()
+        return true
     }
 
     private fun stripKey(s: String): String {

@@ -21,7 +21,7 @@ object TermStartTimer {
             if (Location.inDungeon() && Phase.inP2() && Phase.stormDead()) tick--
             false
         }
-        Events.ON_LOCATION_CHANGE.register { newLocation ->
+        Events.ON_LOCATION_CHANGE.register { _ ->
             tick = TOTAL_TICKS
             false
         }

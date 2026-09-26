@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Gui.class)
 public class GuiScoreboardMixin {
 
-    private static boolean fishmod$loggedRenderError = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedRenderError = false;
 
     @Inject(method = "extractScoreboardSidebar", at = @At("HEAD"), cancellable = true)
     private void fishmod$customScoreboard(GuiGraphicsExtractor context, DeltaTracker tickCounter, CallbackInfo ci) {

@@ -14,5 +14,3 @@ run/
 # Obsidian project-brain vault — local knowledge base, never committed
 FishModNew/
 
-# per-build version bump churn, not meaningful history
-*/gradle.properties

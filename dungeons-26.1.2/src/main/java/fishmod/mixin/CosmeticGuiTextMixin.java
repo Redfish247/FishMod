@@ -58,16 +58,7 @@ public abstract class CosmeticGuiTextMixin {
             if (!real.isEmpty() && out.getString().contains(real))
                 out = NameRewriter.replaceName(out, real, NickState.asComponent());
         }
-        boolean inMenu = fishmod$inMenu();
-        out = inMenu
-            ? fishmod.cosmetic.RemoteNicks.apply(out)
-            : fishmod.cosmetic.RemoteNicks.applyResolvedOnly(out);
-        return out;
-    }
-
-    private static boolean fishmod$inMenu() {
-        return net.minecraft.client.Minecraft.getInstance().screen
-                instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+        return fishmod.cosmetic.RemoteNicks.applyResolvedOnly(out);
     }
 
     private static List<Component> fishmod$swapList(List<Component> lines) {

@@ -26,13 +26,6 @@ object LootTrackerStore {
 
     @JvmStatic
     @Synchronized
-    fun get(): Data {
-        ensureLoaded()
-        return data!!
-    }
-
-    @JvmStatic
-    @Synchronized
     fun runs(): Int {
         ensureLoaded()
         return data!!.runs
@@ -56,6 +49,19 @@ object LootTrackerStore {
     @JvmStatic
     @Synchronized
     fun addOrIncrement(name: String?, id: String?, delta: Int) {
+        increment(name, id, delta)
+        save()
+    }
+
+    @JvmStatic
+    @Synchronized
+    fun addAll(items: List<Triple<String?, String?, Int>>) {
+        if (items.isEmpty()) return
+        for ((name, id, delta) in items) increment(name, id, delta)
+        save()
+    }
+
+    private fun increment(name: String?, id: String?, delta: Int) {
         ensureLoaded()
         var found: Row? = null
         for (r in data!!.rows) {
@@ -71,7 +77,6 @@ object LootTrackerStore {
         }
         found.count += delta
         if (found.count <= 0) data!!.rows.remove(found)
-        save()
     }
 
     @JvmStatic
@@ -122,10 +127,7 @@ object LootTrackerStore {
     }
 
     private fun save() {
-        try {
-            Files.createDirectories(FILE.parent)
-            Files.writeString(FILE, GSON.toJson(data))
-        } catch (ignored: java.io.IOException) {
-        }
+        val json = GSON.toJson(data)
+        fishmod.utils.IoExecutor.execute { fishmod.utils.SafeFiles.writeAtomic(FILE, json) }
     }
 }

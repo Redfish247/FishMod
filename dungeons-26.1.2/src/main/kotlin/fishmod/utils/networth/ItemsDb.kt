@@ -19,8 +19,7 @@ object ItemsDb {
     private const val REFRESH_MS = 12L * 60 * 60 * 1000L
     private val COLOR = Regex("§.")
 
-    private val HTTP: HttpClient = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(20)).build()
+    private val HTTP: HttpClient = fishmod.utils.Http.CLIENT
 
     @Volatile private var items: Map<String, JsonObject> = emptyMap()
     @Volatile private var nameToId: Map<String, String> = emptyMap()
@@ -48,27 +47,6 @@ object ItemsDb {
     }
 
     @JvmStatic
-    fun searchNames(query: String?, limit: Int): List<String> {
-        if (query == null || query.isBlank()) return listOf()
-        val q = query.lowercase()
-        val prefix = ArrayList<String>()
-        val contains = ArrayList<String>()
-        for (name in nameToId.keys) {
-            val ln = name.lowercase()
-            if (ln.startsWith(q)) prefix.add(name)
-            else if (ln.contains(q)) contains.add(name)
-        }
-        prefix.sortWith(String.CASE_INSENSITIVE_ORDER)
-        contains.sortWith(String.CASE_INSENSITIVE_ORDER)
-        val out = ArrayList<String>(prefix)
-        for (c in contains) {
-            if (out.size >= limit) break
-            out.add(c)
-        }
-        return if (out.size > limit) ArrayList(out.subList(0, limit)) else out
-    }
-
-    @JvmStatic
     fun npcSellPriceFor(id: String?): Double {
         if (id == null) return 0.0
         return npcSellPrice[id] ?: 0.0
@@ -77,24 +55,33 @@ object ItemsDb {
     @JvmStatic
     fun npcSellPriceMap(): Map<String, Double> = npcSellPrice
 
+    private fun stale(): Boolean = items.isEmpty() || (System.currentTimeMillis() - loadedAt) > REFRESH_MS
+
     @JvmStatic
     fun ensureLoaded() {
-        if (!loadedFromDisk) {
-            loadedFromDisk = true
+        if ((!loadedFromDisk || stale()) && fetching.compareAndSet(false, true)) {
             try {
-                loadFromDisk()
-            } catch (e: Exception) {
-                fishmod.utils.debug.Debug.LOGGER.warn("[ItemsDb] loadFromDisk failed: {}", e.toString())
-            }
-        }
-        val stale = items.isEmpty() || (System.currentTimeMillis() - loadedAt) > REFRESH_MS
-        if (stale && fetching.compareAndSet(false, true)) {
-            try {
-                Thread(ItemsDb::fetch, "FishMod-ItemsDb").apply { isDaemon = true }.start()
+                Thread(ItemsDb::loadAndRefresh, "FishMod-ItemsDb").apply { isDaemon = true }.start()
             } catch (e: Throwable) {
                 fetching.set(false)
                 fishmod.utils.debug.Debug.LOGGER.warn("[ItemsDb] failed to start fetch thread: {}", e.toString())
             }
+        }
+    }
+
+    private fun loadAndRefresh() {
+        try {
+            if (!loadedFromDisk) {
+                loadedFromDisk = true
+                try {
+                    loadFromDisk()
+                } catch (e: Exception) {
+                    fishmod.utils.debug.Debug.LOGGER.warn("[ItemsDb] loadFromDisk failed: {}", e.toString())
+                }
+            }
+            if (stale()) fetch()
+        } finally {
+            fetching.set(false)
         }
     }
 
@@ -132,8 +119,6 @@ object ItemsDb {
             }
         } catch (e: Exception) {
             fishmod.utils.debug.Debug.LOGGER.warn("[ItemsDb] fetch: {}", e.toString())
-        } finally {
-            fetching.set(false)
         }
     }
 

@@ -27,7 +27,6 @@ object DungeonBreaker {
     private var scanTick = 0
     private var loggedLore = false
 
-    // Blocks hit with the breaker, waiting to see them turn to air.
     private val pending = HashMap<BlockPos, Int>()
 
     @JvmStatic
@@ -70,7 +69,7 @@ object DungeonBreaker {
                     }
                 }
             }
-            if (!FishSettings.dungeonBreakerEnabled || !FishSettings.dungeonBreakerHudEnabled) return@register
+            if (!FishSettings.dungeonBreakerEnabled || !FishSettings.dungeonBreakerHudEnabled || !activeHere()) return@register
             if (++scanTick < 5) return@register
             scanTick = 0
             scanCharges()
@@ -84,7 +83,7 @@ object DungeonBreaker {
         !stack.isEmpty && ItemUtil.getId(stack) == ITEM_ID
 
     private fun playBreakSound() {
-        fishmod.utils.debug.Debug.LOGGER.info("[DungeonBreaker] break sound")
+        fishmod.utils.debug.Debug.LOGGER.debug("[DungeonBreaker] break sound")
         SoundManager.play2D(
             SoundManager.preset(FishSettings.dungeonBreakerSoundName),
             FishSettings.dungeonBreakerSoundVolume.coerceIn(0, 500) / 100f,
@@ -102,13 +101,13 @@ object DungeonBreaker {
             val lore = stack.get(DataComponents.LORE)?.lines() ?: continue
             if (!loggedLore) {
                 loggedLore = true
-                fishmod.utils.debug.Debug.LOGGER.info("[DungeonBreaker] lore: " + lore.joinToString(" | ") { it.string })
+                fishmod.utils.debug.Debug.LOGGER.debug("[DungeonBreaker] lore: " + lore.joinToString(" | ") { it.string })
             }
             for (line in lore) {
                 val m = CHARGES.find(line.string) ?: continue
                 val c = m.groupValues[1].toInt()
                 val mx = m.groupValues[2].toInt()
-                if (c != charges || mx != maxCharges) fishmod.utils.debug.Debug.LOGGER.info("[DungeonBreaker] charges $c/$mx")
+                if (c != charges || mx != maxCharges) fishmod.utils.debug.Debug.LOGGER.debug("[DungeonBreaker] charges $c/$mx")
                 charges = c
                 maxCharges = mx
                 return
@@ -122,11 +121,10 @@ object DungeonBreaker {
         if (!FishSettings.dungeonBreakerEnabled || !FishSettings.dungeonBreakerHudEnabled) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.level == null) return
-        val preview = mc.screen is FishHudEditor
-        if (!preview && (charges < 0 || !activeHere())) return
+        if (charges < 0 || !activeHere()) return
 
-        val cur = if (preview) 17 else charges
-        val max = if (preview) 20 else maxCharges
+        val cur = charges
+        val max = maxCharges
         val col = when {
             cur <= 0 -> "§c"
             cur * 4 <= max -> "§6"

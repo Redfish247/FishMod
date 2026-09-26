@@ -89,9 +89,9 @@ object SoulflowHud {
         val warn = FishSettings.soulflowWarningThreshold > 0 && soulflow < FishSettings.soulflowWarningThreshold
 
         val label = if (warn) {
-            "§3Soulflow: " + String.format("%,d", soulflow) + " ⚠"
+            "§3Soulflow: " + fishmod.utils.Fmt.grouped(soulflow.toLong()) + " ⚠"
         } else {
-            "§3Soulflow: §f" + String.format("%,d", soulflow)
+            "§3Soulflow: §f" + fishmod.utils.Fmt.grouped(soulflow.toLong())
         }
 
         val sc = FishSettings.soulflowHudScale.toFloat()

@@ -5,7 +5,6 @@ import fishmod.features.item.ItemCustomizationStore;
 import fishmod.features.item.ItemRarity;
 import fishmod.features.item.ItemRarityHolder;
 import fishmod.utils.data.ItemUtil;
-import fishmod.utils.data.LegacyFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -22,8 +21,8 @@ public class ItemStackMixin implements ItemRarityHolder, ItemCustomDataHolder {
     private void fishmod$customItemName(CallbackInfoReturnable<Component> cir) {
         String uuid = ItemUtil.getUuid((ItemStack) (Object) this);
         if (uuid == null) return;
-        String name = ItemCustomizationStore.getItemName(uuid);
-        if (name != null) cir.setReturnValue(LegacyFormatting.parse(name).setStyle(cir.getReturnValue().getStyle()));
+        net.minecraft.network.chat.MutableComponent name = ItemCustomizationStore.parsedItemName(uuid);
+        if (name != null) cir.setReturnValue(name.setStyle(cir.getReturnValue().getStyle()));
     }
 
     @Unique
@@ -42,19 +41,19 @@ public class ItemStackMixin implements ItemRarityHolder, ItemCustomDataHolder {
     public boolean fishmod$hasScanned() { return fishmod$itemRarity != null; }
 
     @Unique
-    private CompoundTag fishmod$cachedCustomData = null;
+    private Object fishmod$customDataSource = null;
     @Unique
-    private boolean fishmod$scannedCustomData = false;
+    private CompoundTag fishmod$cachedCustomData = null;
+
+    @Override
+    public Object fishmod$getCustomDataSource() { return fishmod$customDataSource; }
 
     @Override
     public CompoundTag fishmod$getCachedCustomData() { return fishmod$cachedCustomData; }
 
     @Override
-    public void fishmod$setCachedCustomData(CompoundTag tag) {
+    public void fishmod$setCachedCustomData(Object source, CompoundTag tag) {
+        fishmod$customDataSource = source;
         fishmod$cachedCustomData = tag;
-        fishmod$scannedCustomData = true;
     }
-
-    @Override
-    public boolean fishmod$hasScannedCustomData() { return fishmod$scannedCustomData; }
 }

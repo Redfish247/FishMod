@@ -26,12 +26,6 @@ object NickState {
     }
 
     @JvmStatic
-    fun setGradient(stops: Array<IntArray>) {
-        val raw = GradientNick.build(realName(), stops)
-        set(raw)
-    }
-
-    @JvmStatic
     fun applyFromSettings() {
         val custom = fishmod.utils.config.values.FishSettings.nickCustomName
         val base = if (custom != null && custom.isNotEmpty()) custom else realName()
@@ -87,8 +81,20 @@ object NickState {
         return ""
     }
 
+    private class Parsed(val raw: String?, val component: Component)
+
+    @Volatile
+    private var parsed = Parsed(null, Component.empty())
+
     @JvmStatic
-    fun asComponent(): Component = parse(nick)
+    fun asComponent(): Component {
+        val n = nick
+        val p = parsed
+        if (p.raw == n) return p.component
+        val component = parse(n)
+        parsed = Parsed(n, component)
+        return component
+    }
 
     @JvmStatic
     fun parse(input: String?): Component {

@@ -44,10 +44,26 @@ object ActionBarCleaner {
         return out
     }
 
+    private var lastRaw: String? = null
+    private var lastIn: Component? = null
+    private var lastOut: Component? = null
+    private var lastAt = 0L
+
     @JvmStatic
     fun filter(message: Component): Component {
         if (!FishSettings.actionBarEnabled || !Location.inSkyblock()) return message
         val raw = message.string
+        val now = System.currentTimeMillis()
+        if (raw == lastRaw && now - lastAt < 1000L) lastOut?.let { out -> return if (lastIn === lastOut) message else out }
+        val out = filterUncached(message, raw)
+        lastRaw = raw
+        lastIn = message
+        lastOut = out
+        lastAt = now
+        return out
+    }
+
+    private fun filterUncached(message: Component, raw: String): Component {
         if ('/' !in raw && "Mana" !in raw && '❤' !in raw) return message
 
         val segs = segments(raw)

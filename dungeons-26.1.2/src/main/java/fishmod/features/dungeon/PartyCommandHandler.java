@@ -51,21 +51,17 @@ public class PartyCommandHandler {
 
     }
 
+    private static final java.util.regex.Pattern FLOOR_RE = java.util.regex.Pattern.compile("[fm][1-7]");
+    private static final java.util.regex.Pattern KUUDRA_RE = java.util.regex.Pattern.compile("t[1-5]");
+    private static final java.util.regex.Pattern DIGITS_RE = java.util.regex.Pattern.compile("\\d+");
+
     private static boolean isFloor(String s) {
         if (s == null) return false;
         String l = s.toLowerCase();
-        return l.equals("e") || l.matches("[fm][1-7]");
-    }
-
-    public static void onPartyCommand(String typer, String cmd, String rawArg1, String rawArg2) {
-        onPartyCommand(typer, cmd, rawArg1, rawArg2, null, "pc ");
+        return l.equals("e") || FLOOR_RE.matcher(l).matches();
     }
 
     public static final String LOCAL = "";
-
-    public static void onPartyCommand(String typer, String cmd, String rawArg1, String rawArg2, String responder) {
-        onPartyCommand(typer, cmd, rawArg1, rawArg2, null, responder);
-    }
 
     public static void onPartyCommand(String typer, String cmd, String rawArg1, String rawArg2, String rawArg3, String responder) {
         if (!FishSettings.partyCommandsEnabled) return;
@@ -82,7 +78,7 @@ public class PartyCommandHandler {
             case "rtca"      -> { if (FishSettings.pcRtca && respond(cmd, typer, isLocal))    runRtcaForPlayer(mc, ign, responder);             }
             case "rtc"       -> { if (FishSettings.pcRtc  && respond(cmd, typer, isLocal)) {
                 String rtcIgn; String levelArg;
-                if (rawArg1 != null && rawArg1.matches("\\d+")) { rtcIgn = typer; levelArg = rawArg1; }
+                if (rawArg1 != null && DIGITS_RE.matcher(rawArg1).matches()) { rtcIgn = typer; levelArg = rawArg1; }
                 else { rtcIgn = rawArg1 != null ? rawArg1 : typer; levelArg = rawArg2; }
                 runRtcForPlayer(mc, rtcIgn, levelArg, responder);
             } }
@@ -148,10 +144,47 @@ public class PartyCommandHandler {
             case "promote", "pro"         -> { if (FishSettings.pcActionPromote  && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p promote " + resolvePartyTarget(mc, rawArg1));  }
             case "demote", "dem"          -> { if (FishSettings.pcActionDemote   && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p demote " + resolvePartyTarget(mc, rawArg1));   }
             default -> {
-                if ((cmd.matches("[fm][1-7]") || cmd.equals("e")) && FishSettings.pcJoinFloor && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) handleJoinInstance(cmd, mc, responder);
-                else if (cmd.matches("t[1-5]") && FishSettings.pcJoinFloor && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) handleKuudra(cmd, mc, responder);
+                if ((FLOOR_RE.matcher(cmd).matches() || cmd.equals("e")) && FishSettings.pcJoinFloor && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) handleJoinInstance(cmd, mc, responder);
+                else if (KUUDRA_RE.matcher(cmd).matches() && FishSettings.pcJoinFloor && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) handleKuudra(cmd, mc, responder);
             }
         }
+    }
+
+    public static boolean localEnabled(String cmd) {
+        if (!FishSettings.partyCommandsEnabled) return false;
+        return switch (cmd) {
+            case "help", "?" -> FishSettings.pcHelp;
+            case "rtca" -> FishSettings.pcRtca;
+            case "rtc" -> FishSettings.pcRtc;
+            case "crtc" -> FishSettings.pcCrtc;
+            case "cata" -> FishSettings.pcCata;
+            case "pb" -> FishSettings.pcPb;
+            case "mp" -> FishSettings.pcMp;
+            case "collection" -> FishSettings.pcCollection;
+            case "secrets", "sa" -> FishSettings.pcSecrets;
+            case "runs", "totalruns" -> FishSettings.pcRuns;
+            case "dprofit" -> FishSettings.pcDprofit;
+            case "crit" -> FishSettings.pcCrit;
+            case "corpse", "corpses" -> FishSettings.pcCorpse;
+            case "bank" -> FishSettings.pcBank;
+            case "powder" -> FishSettings.pcPowder;
+            case "nw", "networth" -> FishSettings.pcNw;
+            case "level", "sblvl" -> FishSettings.pcLevel;
+            case "farming" -> FishSettings.pcFarming;
+            case "nuc", "nucleus" -> FishSettings.pcNuc;
+            case "worm", "scatha" -> FishSettings.pcWorm;
+            case "fps" -> FishSettings.pcFps;
+            case "tps" -> FishSettings.pcTps;
+            case "ping" -> FishSettings.pcPing;
+            case "ai", "allinv" -> FishSettings.pcAllinvite;
+            case "d" -> FishSettings.pcDisband;
+            case "kick", "k" -> FishSettings.pcActionKick;
+            case "warp", "w" -> FishSettings.pcActionWarp;
+            case "transfer", "pt", "ptme" -> FishSettings.pcActionTransfer;
+            case "promote", "pro" -> FishSettings.pcActionPromote;
+            case "demote", "dem" -> FishSettings.pcActionDemote;
+            default -> isFloor(cmd) || KUUDRA_RE.matcher(cmd).matches() ? FishSettings.pcJoinFloor : false;
+        };
     }
 
     private static final java.util.Map<String, Long> RECENT_RESPONSES = new java.util.concurrent.ConcurrentHashMap<>();
@@ -278,129 +311,6 @@ public class PartyCommandHandler {
             }));
     }
 
-    public static boolean handleCommand(String fullCmd) {
-        if (!FishSettings.partyCommandsEnabled) return false;
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.getConnection() == null) return false;
-        final String responder = "pc ";
-
-        String[] parts = fullCmd.split("\\s+", 2);
-        String cmd = parts[0];
-        String arg = parts.length > 1 ? parts[1] : null;
-        String localName = mc.player != null ? mc.player.getName().getString() : null;
-        String target = arg != null ? arg : localName;
-
-        switch (cmd) {
-            case "help": case "?":
-                if (!FishSettings.pcHelp) return false;
-                sendCmd(mc, responder, buildHelp());
-                return true;
-            case "ai": case "allinv":
-                if (!FishSettings.pcAllinvite || target == null) return false;
-                sendRawCommand(mc, "p settings allinvite");
-                return true;
-            case "pb": {
-                if (!FishSettings.pcPb) return false;
-                String[] pbParts = fullCmd.split("\\s+", 3);
-                String pbArg1 = pbParts.length > 1 ? pbParts[1] : null;
-                String pbArg2 = pbParts.length > 2 ? pbParts[2] : null;
-                String pbIgn, pbFloor;
-                if (isFloor(pbArg1)) { pbIgn = localName; pbFloor = pbArg1; }
-                else { pbIgn = pbArg1 != null ? pbArg1 : localName; pbFloor = pbArg2; }
-                if (pbIgn == null) return false;
-                runPbForPlayer(mc, pbIgn, pbFloor, responder);
-                return true;
-            }
-            case "mp":
-                if (!FishSettings.pcMp || target == null) return false;
-                runMpForPlayer(mc, target, responder);
-                return true;
-            case "collection": {
-                if (!FishSettings.pcCollection || localName == null) return false;
-                String[] cp = fullCmd.split("\\s+", 3);
-                String colArg1 = cp.length > 1 ? cp[1] : null;
-                String colArg2 = cp.length > 2 ? cp[2] : null;
-                String colIgn, colFloor;
-                if (isFloor(colArg1)) { colIgn = localName; colFloor = colArg1; }
-                else { colIgn = colArg1 != null ? colArg1 : localName; colFloor = colArg2; }
-                runCollectionForPlayer(mc, colIgn, colFloor, responder);
-                return true;
-            }
-            case "secrets": case "sa":
-                if (!FishSettings.pcSecrets || target == null) return false;
-                runStatsForPlayer(mc, target, cmd, null, responder);
-                return true;
-            case "runs": {
-                String[] rp = fullCmd.split("\\s+", 3);
-                String runTarget = rp.length > 1 ? rp[1] : localName;
-                String floorArg  = rp.length > 2 ? rp[2] : null;
-                if (!FishSettings.pcRuns || runTarget == null) return false;
-                runStatsForPlayer(mc, runTarget, cmd, floorArg, responder);
-                return true;
-            }
-            case "totalruns":
-                if (!FishSettings.pcRuns || target == null) return false;
-                runTotalRunsForPlayer(mc, target, responder);
-                return true;
-            case "cata":
-                if (!FishSettings.pcCata || target == null) return false;
-                runCataForPlayer(mc, target, responder);
-                return true;
-            case "rtca":
-                if (!FishSettings.pcRtca || target == null) return false;
-                runRtcaForPlayer(mc, target, responder);
-                return true;
-            case "fps":
-                if (!FishSettings.pcFps || target == null) return false;
-                sendFps(mc, responder);
-                return true;
-            case "tps":
-                if (!FishSettings.pcTps || target == null) return false;
-                sendTps(mc, responder);
-                return true;
-            case "ping":
-                if (!FishSettings.pcPing || target == null) return false;
-                sendPing(mc, responder);
-                return true;
-            case "d":
-                if (!FishSettings.pcDisband || target == null) return false;
-                sendRawCommand(mc, "p disband");
-                return true;
-            case "bank":
-                if (!FishSettings.pcBank || target == null) return false;
-                sendBank(mc, target, responder);
-                return true;
-            case "powder":
-                if (!FishSettings.pcPowder || target == null) return false;
-                sendPowder(mc, target, responder);
-                return true;
-            case "corpse": case "corpses":
-                if (!FishSettings.pcCorpse || target == null) return false;
-                sendCorpse(mc, target, responder);
-                return true;
-            case "nw": case "networth":
-                if (!FishSettings.pcNw || target == null) return false;
-                sendNetworth(mc, target, responder);
-                return true;
-            case "worm": case "scatha":
-                if (!FishSettings.pcWorm || target == null) return false;
-                sendWorm(mc, target, responder);
-                return true;
-        }
-
-        if (cmd.equals("e") || cmd.matches("[fm][1-7]")) {
-            if (!FishSettings.pcJoinFloor) return false;
-            handleJoinInstance(cmd, mc, responder);
-            return true;
-        }
-        if (cmd.matches("t[1-5]")) {
-            if (!FishSettings.pcJoinFloor) return false;
-            handleKuudra(cmd, mc, responder);
-            return true;
-        }
-        return false;
-    }
-
     private static void runRtcaForPlayer(Minecraft mc, String ign, String responder) {
         HypixelApi.getByName(mc, ign, data -> buildAndSendRtca(mc, data, ign, responder));
     }
@@ -431,7 +341,7 @@ public class PartyCommandHandler {
                     if (floor.equals("e")) {
                         count = data.cataTimes[0];
                         label = "E";
-                    } else if (floor.matches("[fm][1-7]")) {
+                    } else if (FLOOR_RE.matcher(floor).matches()) {
                         char type = floor.charAt(0);
                         int num   = floor.charAt(1) - '0';
                         long[] times = (type == 'm') ? data.masterTimes : data.cataTimes;
@@ -502,6 +412,7 @@ public class PartyCommandHandler {
                     isMaster = false;
                 } else {
                     try { floorNum = Integer.parseInt(floor.substring(1)); } catch (Exception ignored) {}
+                    if (floorNum < 0) floorNum = 7;
                 }
                 long cataRuns   = floorNum < data.cataTimes.length   ? data.cataTimes[floorNum]   : 0;
                 long masterRuns = floorNum < data.masterTimes.length ? data.masterTimes[floorNum] : 0;
@@ -536,7 +447,7 @@ public class PartyCommandHandler {
             long xpPerRun = Math.max(1, FishSettings.rtcCataXpPerRun);
             String result;
             if (xpNeeded <= 0) {
-                result = "Done ✔ :java:";
+                result = "Done ✔";
             } else {
                 long runs;
                 if (FishSettings.rtcaIncludeDailyBonus) {
@@ -776,17 +687,8 @@ public class PartyCommandHandler {
     }
 
     private static void sendTps(Minecraft mc, String responder) {
-        int filled = Math.min(tickIdx, TICK_TIMES.length);
-        if (filled == 0) {
-            sendCmd(mc, responder, "TPS: N/A");
-            return;
-        }
-        long sum = 0;
-        for (int i = 0; i < filled; i++) sum += TICK_TIMES[i];
-        double avgMs = (double) sum / filled;
-        double tps = Math.min(20.0, 1000.0 / avgMs);
-        String formatted = String.format("%.1f", tps);
-        sendCmd(mc, responder, "TPS: " + formatted);
+        double tps = currentTps();
+        sendCmd(mc, responder, tps < 0 ? "TPS: N/A" : "TPS: " + String.format("%.1f", tps));
     }
 
     private static void sendPing(Minecraft mc, String responder) {

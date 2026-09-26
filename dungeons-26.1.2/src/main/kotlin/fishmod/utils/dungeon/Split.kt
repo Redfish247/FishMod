@@ -66,7 +66,6 @@ class Split(
         private var cachedRaw: String? = null
         private var cachedNameColors: Map<String, Int> = emptyMap()
 
-        // Per-split name colour overrides, stored as "Name=aarrggbb;Name2=...".
         @JvmStatic
         fun nameColors(): Map<String, Int> {
             val raw = FishSettings.splitNameColors
@@ -101,7 +100,6 @@ class Split(
     private var started: Boolean = false
     private var ended: Boolean = false
 
-    // Set when the split ends: PB_COLOR / AVG_COLOR, 0 = normal.
     @JvmField var paceColor: Int = 0
 
     fun parseMessage(string: String) {
@@ -127,6 +125,7 @@ class Split(
         tick = 0
         ended = false
         started = false
+        cachedAt = 0L
     }
 
     fun end() {
@@ -134,6 +133,7 @@ class Split(
         endTime = System.currentTimeMillis()
         started = false
         ended = true
+        cachedAt = 0L
     }
 
     fun start() {
@@ -141,6 +141,7 @@ class Split(
         startTime = System.currentTimeMillis()
         started = true
         ended = false
+        cachedAt = 0L
     }
 
     fun started(): Boolean = started
@@ -162,7 +163,7 @@ class Split(
 
     fun createNameText(): MutableComponent = Component.literal("$name ").withColor(nameColor() and 0xFFFFFF)
 
-    fun getTimeDiffrence(): Double = getRealTime() - getTickTime()
+    fun getTimeDifference(): Double = getRealTime() - getTickTime()
 
     fun createTimeText(): MutableComponent {
         val realTimeColor: Int
@@ -211,12 +212,25 @@ class Split(
             )
     }
 
-    fun drawSplit(context: GuiGraphicsExtractor, textRenderer: Font, x: Int, y: Int, maxWidth: Int) {
-        val nameText = createNameText()
-        val timerText = createTimeText()
+    private var cachedName: Component? = null
+    private var cachedTimer: Component? = null
+    private var cachedTimerWidth = 0
+    private var cachedAt = 0L
 
-        val timerWidth = textRenderer.width(timerText)
+    fun drawSplit(context: GuiGraphicsExtractor, textRenderer: Font, x: Int, y: Int, maxWidth: Int) {
+        val now = System.currentTimeMillis()
+        val refreshMs = if (started && !ended) 50L else 500L
+        var nameText = cachedName
+        var timerText = cachedTimer
+        if (nameText == null || timerText == null || now - cachedAt >= refreshMs) {
+            nameText = createNameText()
+            timerText = createTimeText()
+            cachedName = nameText
+            cachedTimer = timerText
+            cachedTimerWidth = textRenderer.width(timerText)
+            cachedAt = now
+        }
         context.text(textRenderer, nameText, x, y, -0x1, true)
-        context.text(textRenderer, timerText, x + maxWidth - timerWidth, y, -0x1, true)
+        context.text(textRenderer, timerText, x + maxWidth - cachedTimerWidth, y, -0x1, true)
     }
 }

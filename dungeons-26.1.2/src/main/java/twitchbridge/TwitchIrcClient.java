@@ -58,8 +58,11 @@ public final class TwitchIrcClient {
 		int attempt = 0;
 		while (started) {
 			try {
+				long startedAt = System.currentTimeMillis();
 				connectAndListen();
-				attempt = 0;
+				if (!started) break;
+				attempt = System.currentTimeMillis() - startedAt > 60_000L ? 0 : attempt + 1;
+				sleep(Math.min(30_000L, 2_000L * (1L << Math.min(attempt, 4))));
 			} catch (IOException e) {
 				if (!started) break;
 				attempt++;
@@ -114,7 +117,7 @@ public final class TwitchIrcClient {
 				String color = msg.tags.get("color");
 				String text = msg.trailing;
 				boolean action = false;
-				if (text.startsWith("ACTION ") && text.endsWith("")) {
+				if (text.startsWith("\u0001ACTION ") && text.endsWith("\u0001")) {
 					text = text.substring(8, text.length() - 1);
 					action = true;
 				}

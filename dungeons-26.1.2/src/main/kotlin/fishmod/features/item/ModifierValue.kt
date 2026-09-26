@@ -25,22 +25,22 @@ object ModifierValue {
         tag.getList("ability_scroll").ifPresent { scrolls ->
             for (i in scrolls.indices) {
                 val s = scrolls.getStringOr(i, "")
-                if (s.isNotBlank()) v += CroesusPrices.price(s) * NwConstants.NECRON_BLADE_SCROLL
+                if (s.isNotBlank()) v += CroesusPrices.cachedPrice(s) * NwConstants.NECRON_BLADE_SCROLL
             }
         }
 
         val hpb = tag.getIntOr("hot_potato_count", 0)
         if (hpb > 0) {
-            v += CroesusPrices.price("HOT_POTATO_BOOK") * minOf(hpb, 10)
-            if (hpb > 10) v += CroesusPrices.price("FUMING_POTATO_BOOK") * (hpb - 10) * NwConstants.FUMING_POTATO_BOOK
+            v += CroesusPrices.cachedPrice("HOT_POTATO_BOOK") * minOf(hpb, 10)
+            if (hpb > 10) v += CroesusPrices.cachedPrice("FUMING_POTATO_BOOK") * (hpb - 10) * NwConstants.FUMING_POTATO_BOOK
         }
 
-        if (tag.getIntOr("rarity_upgrades", 0) >= 1) v += CroesusPrices.price("RECOMBOBULATOR_3000") * NwConstants.RECOMBOBULATOR
+        if (tag.getIntOr("rarity_upgrades", 0) >= 1) v += CroesusPrices.cachedPrice("RECOMBOBULATOR_3000") * NwConstants.RECOMBOBULATOR
 
         val stars = maxOf(tag.getIntOr("upgrade_level", 0), tag.getIntOr("dungeon_item_level", 0))
         for (i in 6..stars) {
             val idx = i - 6
-            if (idx < NwConstants.MASTER_STARS.size) v += CroesusPrices.price(NwConstants.MASTER_STARS[idx])
+            if (idx < NwConstants.MASTER_STARS.size) v += CroesusPrices.cachedPrice(NwConstants.MASTER_STARS[idx])
         }
 
         tag.getCompound("gems").ifPresent { gems ->
@@ -49,22 +49,22 @@ object ModifierValue {
                 val tier = gems.getStringOr(k, "")
                 if (tier.isBlank()) continue
                 val type = k.substringBefore("_")
-                v += CroesusPrices.price("${tier}_${type}_GEM")
+                v += CroesusPrices.cachedPrice("${tier}_${type}_GEM")
             }
         }
 
-        NwConstants.REFORGES[tag.getStringOr("modifier", "")]?.let { v += CroesusPrices.price(it) }
+        NwConstants.REFORGES[tag.getStringOr("modifier", "")]?.let { v += CroesusPrices.cachedPrice(it) }
 
-        if (tag.getIntOr("art_of_war_count", 0) > 0) v += CroesusPrices.price("THE_ART_OF_WAR") * NwConstants.ART_OF_WAR
+        if (tag.getIntOr("art_of_war_count", 0) > 0) v += CroesusPrices.cachedPrice("THE_ART_OF_WAR") * NwConstants.ART_OF_WAR
 
         return v
     }
 
     private fun enchPrice(name: String, lvl: Int): Double {
-        val exact = CroesusPrices.price("ENCHANTMENT_${name}_$lvl")
+        val exact = CroesusPrices.cachedPrice("ENCHANTMENT_${name}_$lvl")
         if (exact > 0.0) return exact
         for (l in lvl - 1 downTo 1) {
-            val p = CroesusPrices.price("ENCHANTMENT_${name}_$l")
+            val p = CroesusPrices.cachedPrice("ENCHANTMENT_${name}_$l")
             if (p > 0.0) return if (name == "CHIMERA") p else p * (1 shl (lvl - l))
         }
         return 0.0

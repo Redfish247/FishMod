@@ -3,7 +3,6 @@ package fishmod.utils;
 import fishmod.utils.config.values.FishSettings;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.fabricmc.loader.api.FabricLoader;
@@ -26,7 +25,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -94,9 +92,7 @@ public class HypixelApi {
         return (mc.player != null) ? mc.player.getUUID().toString().replace("-", "") : "";
     }
 
-    private static final HttpClient RAW_HTTP = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(10))
-        .build();
+    private static final HttpClient RAW_HTTP = fishmod.utils.Http.CLIENT;
 
     private static final CachingHttp HTTP = new CachingHttp();
 
@@ -168,9 +164,7 @@ public class HypixelApi {
 
     private static final Map<String, java.util.List<NetworthCallback>> networthInFlight = new ConcurrentHashMap<>();
 
-    private static final long CACHE_TTL_MS = 30 * 60 * 1000L;
     public  static final Map<String, String> uuidByName    = new ConcurrentHashMap<>();
-    public  static final Map<String, Long>   dataTimestamp = new ConcurrentHashMap<>();
 
     private static final long UUID_CACHE_TTL_MS = 24 * 60 * 60 * 1000L;
     private static final Map<String, Long> uuidCachedAt = new ConcurrentHashMap<>();
@@ -256,123 +250,8 @@ public class HypixelApi {
         } catch (Exception ignored) {}
     }
 
-    public static void loadPfCache(Map<String, DungeonData> liveCache) {
-        try {
-            var file = FabricLoader.getInstance().getConfigDir().resolve("fishmod_pf_cache.json");
-            if (!Files.exists(file)) return;
-            JsonObject root    = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
-            JsonObject entries = root.getAsJsonObject("entries");
-            long now = System.currentTimeMillis();
-            for (Map.Entry<String, JsonElement> e : entries.entrySet()) {
-                String     name = e.getKey();
-                JsonObject obj  = e.getValue().getAsJsonObject();
-                long ts = obj.get("timestamp").getAsLong();
-                if (now - ts > CACHE_TTL_MS) continue;
-                if (obj.has("uuid")) uuidByName.put(name, obj.get("uuid").getAsString());
-                dataTimestamp.put(name, ts);
-                DungeonData d = new DungeonData();
-                if (obj.has("cataXp"))       d.cataXp       = obj.get("cataXp").getAsLong();
-                if (obj.has("cataLevel"))    d.cataLevel    = obj.get("cataLevel").getAsInt();
-                if (obj.has("totalSecrets")) d.totalSecrets = obj.get("totalSecrets").getAsLong();
-                if (obj.has("totalRuns"))    d.totalRuns    = obj.get("totalRuns").getAsLong();
-                if (obj.has("secretAverage") && !obj.get("secretAverage").isJsonNull())
-                    d.secretAverage = obj.get("secretAverage").getAsString();
-                if (obj.has("skillAverage") && !obj.get("skillAverage").isJsonNull())
-                    d.skillAverage = obj.get("skillAverage").getAsString();
-                if (obj.has("selectedClass") && !obj.get("selectedClass").isJsonNull())
-                    d.selectedClass = obj.get("selectedClass").getAsString();
-                if (obj.has("cataPbs")) {
-                    JsonArray arr = obj.getAsJsonArray("cataPbs");
-                    for (int i = 0; i < Math.min(arr.size(), 8); i++)
-                        d.cataPbs[i] = arr.get(i).isJsonNull() ? null : arr.get(i).getAsString();
-                }
-                if (obj.has("masterPbs")) {
-                    JsonArray arr = obj.getAsJsonArray("masterPbs");
-                    for (int i = 0; i < Math.min(arr.size(), 8); i++)
-                        d.masterPbs[i] = arr.get(i).isJsonNull() ? null : arr.get(i).getAsString();
-                }
-                if (obj.has("cataTimes")) {
-                    JsonArray arr = obj.getAsJsonArray("cataTimes");
-                    for (int i = 0; i < Math.min(arr.size(), 8); i++)
-                        d.cataTimes[i] = arr.get(i).getAsLong();
-                }
-                if (obj.has("masterTimes")) {
-                    JsonArray arr = obj.getAsJsonArray("masterTimes");
-                    for (int i = 0; i < Math.min(arr.size(), 8); i++)
-                        d.masterTimes[i] = arr.get(i).getAsLong();
-                }
-                if (obj.has("ragnarockChimera")) d.ragnarockChimera = obj.get("ragnarockChimera").getAsInt();
-                if (obj.has("magicalPower"))    d.magicalPower     = obj.get("magicalPower").getAsInt();
-                if (obj.has("termUltimate") && !obj.get("termUltimate").isJsonNull()) d.termUltimate = obj.get("termUltimate").getAsString();
-                if (obj.has("armorStars")) {
-                    JsonArray a = obj.getAsJsonArray("armorStars");
-                    if (a.size() == 4) d.armorStars = new int[]{a.get(0).getAsInt(), a.get(1).getAsInt(), a.get(2).getAsInt(), a.get(3).getAsInt()};
-                }
-                if (obj.has("equipStars")) {
-                    JsonArray a = obj.getAsJsonArray("equipStars");
-                    if (a.size() == 4) d.equipStars = new int[]{a.get(0).getAsInt(), a.get(1).getAsInt(), a.get(2).getAsInt(), a.get(3).getAsInt()};
-                }
-                liveCache.put(name, d);
-            }
-        } catch (Exception ignored) {}
-    }
-
-    public static void savePfCacheAsync(Map<String, DungeonData> liveCache) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                var file = FabricLoader.getInstance().getConfigDir().resolve("fishmod_pf_cache.json");
-                JsonObject root    = new JsonObject();
-                JsonObject entries = new JsonObject();
-                for (Map.Entry<String, DungeonData> e : liveCache.entrySet()) {
-                    String     name = e.getKey();
-                    DungeonData d   = e.getValue();
-                    Long ts = dataTimestamp.get(name);
-                    if (ts == null) continue;
-                    JsonObject obj = new JsonObject();
-                    String uuid = uuidByName.get(name);
-                    if (uuid != null) obj.addProperty("uuid", uuid);
-                    obj.addProperty("timestamp",    ts);
-                    obj.addProperty("cataXp",       d.cataXp);
-                    obj.addProperty("cataLevel",    d.cataLevel);
-                    obj.addProperty("totalSecrets", d.totalSecrets);
-                    obj.addProperty("totalRuns",    d.totalRuns);
-                    if (d.secretAverage != null) obj.addProperty("secretAverage", d.secretAverage);
-                    else obj.add("secretAverage", JsonNull.INSTANCE);
-                    if (d.skillAverage != null) obj.addProperty("skillAverage", d.skillAverage);
-                    else obj.add("skillAverage", JsonNull.INSTANCE);
-                    if (d.selectedClass != null) obj.addProperty("selectedClass", d.selectedClass);
-                    JsonArray cataPbs = new JsonArray();
-                    for (String pb : d.cataPbs)   { if (pb != null) cataPbs.add(pb); else cataPbs.add(JsonNull.INSTANCE); }
-                    obj.add("cataPbs", cataPbs);
-                    JsonArray masterPbs = new JsonArray();
-                    for (String pb : d.masterPbs) { if (pb != null) masterPbs.add(pb); else masterPbs.add(JsonNull.INSTANCE); }
-                    obj.add("masterPbs", masterPbs);
-                    JsonArray cataTimes = new JsonArray();
-                    for (long t : d.cataTimes)   cataTimes.add(t);
-                    obj.add("cataTimes", cataTimes);
-                    JsonArray masterTimes = new JsonArray();
-                    for (long t : d.masterTimes) masterTimes.add(t);
-                    obj.add("masterTimes", masterTimes);
-                    obj.addProperty("ragnarockChimera", d.ragnarockChimera);
-                    obj.addProperty("magicalPower",     d.magicalPower);
-                    if (d.termUltimate != null) obj.addProperty("termUltimate", d.termUltimate);
-                    else obj.add("termUltimate", JsonNull.INSTANCE);
-                    if (d.armorStars != null) {
-                        JsonArray a = new JsonArray(); for (int s : d.armorStars) a.add(s); obj.add("armorStars", a);
-                    }
-                    if (d.equipStars != null) {
-                        JsonArray a = new JsonArray(); for (int s : d.equipStars) a.add(s); obj.add("equipStars", a);
-                    }
-                    entries.add(name, obj);
-                }
-                root.addProperty("version", 1);
-                root.add("entries", entries);
-                Files.writeString(file, root.toString());
-            } catch (Exception ignored) {}
-        }, API_EXECUTOR);
-    }
-
     public static class DungeonData {
+        public boolean failed;
         public long cataXp;
         public int  cataLevel;
         public long totalSecrets;
@@ -686,11 +565,17 @@ public class HypixelApi {
         void onData(DungeonData data);
     }
 
+    private static DungeonData failedData() {
+        DungeonData d = new DungeonData();
+        d.failed = true;
+        return d;
+    }
+
     public static void getByNameSilent(String ign, DungeonDataCallback callback) {
         String cachedUuid = getCachedUuid(ign);
         if (cachedUuid != null) { fetchProfilesSilent(cachedUuid, callback); return; }
         resolveUuid(ign, 0, uuid -> {
-            if (uuid == null) { callback.onData(new DungeonData()); return; }
+            if (uuid == null) { callback.onData(failedData()); return; }
             fetchProfilesSilent(uuid, callback);
         });
     }
@@ -705,13 +590,13 @@ public class HypixelApi {
                 .timeout(Duration.ofSeconds(10))
                 .GET()
                 .build();
-        } catch (Exception e) { callback.onData(new DungeonData()); return; }
+        } catch (Exception e) { callback.onData(failedData()); return; }
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
             .thenAccept(resp -> {
-                if (friendlyProxyError(resp) != null) { callback.onData(new DungeonData()); return; }
+                if (friendlyProxyError(resp) != null) { callback.onData(failedData()); return; }
                 try {
                     JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
-                    if (!root.get("success").getAsBoolean()) { callback.onData(new DungeonData()); return; }
+                    if (!root.get("success").getAsBoolean()) { callback.onData(failedData()); return; }
                     for (JsonElement profileEl : root.getAsJsonArray("profiles")) {
                         JsonObject profile = profileEl.getAsJsonObject();
                         if (!profile.has("selected") || !profile.get("selected").getAsBoolean()) continue;
@@ -722,14 +607,16 @@ public class HypixelApi {
                         callback.onData(parseDungeonData(uuidStr, member));
                         return;
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    callback.onData(failedData());
+                    return;
+                }
                 callback.onData(new DungeonData());
             })
-            .exceptionally(e -> { callback.onData(new DungeonData()); return null; });
+            .exceptionally(e -> { callback.onData(failedData()); return null; });
     }
 
     public static void getByName(Minecraft mc, String ign, DungeonDataCallback callback) {
-        if (!checkKey(mc)) return;
         mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Looking up " + ign + "...")));
         resolveUuid(ign, 0, uuid -> {
             if (uuid == null) {
@@ -790,14 +677,6 @@ public class HypixelApi {
             }
             return (uuid != null && !uuid.isEmpty()) ? uuid.replace("-", "") : null;
         } catch (Exception e) { return null; }
-    }
-
-    public static void getPlayerDungeonData(Minecraft mc, DungeonDataCallback callback) {
-        if (!checkKey(mc)) return;
-        if (mc.player == null) return;
-        String uuid = mc.player.getUUID().toString().replace("-", "");
-        mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Fetching Hypixel data...")));
-        fetchProfiles(mc, uuid, callback);
     }
 
     private static DungeonData parseDungeonData(String uuidStr, JsonObject member) {
@@ -942,10 +821,6 @@ public class HypixelApi {
             if (key.startsWith("floor_"))   return Integer.parseInt(key.substring(6));
         } catch (NumberFormatException ignored) {}
         return -1;
-    }
-
-    private static boolean checkKey(Minecraft mc) {
-        return true;
     }
 
     private static void fetchProfiles(Minecraft mc, String uuidStr, DungeonDataCallback callback) {
@@ -1243,7 +1118,7 @@ public class HypixelApi {
                     }
                 }
                 total = liquid + invVal + storageVal + bagsVal + wardrobeVal + equipLoadoutVal;
-                fishmod.utils.debug.Debug.LOGGER.info(
+                fishmod.utils.debug.Debug.LOGGER.debug(
                         "[Networth] buckets: liquid={} inv(NW_STORAGES)={} storage/backpacks={} bag_contents={} wardrobe={} equipLoadout={}",
                         liquid, invVal, storageVal, bagsVal, wardrobeVal, equipLoadoutVal);
                 double liquidAndItems = total;
@@ -1254,7 +1129,7 @@ public class HypixelApi {
                 double museum = chosen.has("profile_id")
                         ? museumValueNw(uuid, chosen.get("profile_id").getAsString(), prices) : 0;
                 total = liquidAndItems + pets + sacks + essence + toolkits + museum;
-                fishmod.utils.debug.Debug.LOGGER.info(
+                fishmod.utils.debug.Debug.LOGGER.debug(
                         "[Networth] {} total={} (liquid+items={} pets={} sacks={} essence={} toolkits={} museum={})",
                         pname, total, liquidAndItems, pets, sacks, essence, toolkits, museum);
 
@@ -1827,38 +1702,6 @@ public class HypixelApi {
         } catch (Exception ignored) { return 0; }
     }
 
-    private static double shardsValueNw(JsonObject member, Map<String, Double> prices) {
-        double total = 0;
-        try {
-            JsonObject shards = member.has("shards") && member.get("shards").isJsonObject()
-                    ? member.getAsJsonObject("shards") : null;
-            if (shards != null && shards.has("owned") && shards.get("owned").isJsonArray()) {
-                for (JsonElement e : shards.getAsJsonArray("owned")) {
-                    try {
-                        JsonObject o = e.getAsJsonObject();
-                        String type = o.has("type") ? o.get("type").getAsString() : null;
-                        double amt = o.has("amount_owned") ? o.get("amount_owned").getAsDouble() : 0;
-                        if (type != null && amt > 0) total += price(prices, "SHARD_" + type.toUpperCase()) * amt;
-                    } catch (Exception ignored) {}
-                }
-            }
-        } catch (Exception ignored) {}
-        try {
-            JsonObject attrs = member.has("attributes") && member.get("attributes").isJsonObject()
-                    ? member.getAsJsonObject("attributes") : null;
-            if (attrs != null && attrs.has("stacks") && attrs.get("stacks").isJsonObject()) {
-                JsonObject stacks = attrs.getAsJsonObject("stacks");
-                for (Map.Entry<String, JsonElement> e : stacks.entrySet()) {
-                    try {
-                        double cnt = e.getValue().getAsDouble();
-                        if (cnt > 0) total += price(prices, "ATTRIBUTE_SHARD_" + e.getKey().toUpperCase()) * cnt;
-                    } catch (Exception ignored) {}
-                }
-            }
-        } catch (Exception ignored) {}
-        return total;
-    }
-
     private static double museumValueNw(String uuid, String profileId, Map<String, Double> prices) {
         try {
             HttpRequest req = HttpRequest.newBuilder()
@@ -1868,7 +1711,7 @@ public class HypixelApi {
             HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
             JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
             if (!root.has("members") || !root.getAsJsonObject("members").has(uuid)) {
-                fishmod.utils.debug.Debug.LOGGER.info("[Networth] museum: http={} no members/uuid (body {}b)",
+                fishmod.utils.debug.Debug.LOGGER.debug("[Networth] museum: http={} no members/uuid (body {}b)",
                         r.statusCode(), r.body().length());
                 return 0;
             }
@@ -1899,7 +1742,7 @@ public class HypixelApi {
                     } catch (Exception ignored) {}
                 }
             }
-            fishmod.utils.debug.Debug.LOGGER.info("[Networth] museum: {} slots, {} items decoded, value {}",
+            fishmod.utils.debug.Debug.LOGGER.debug("[Networth] museum: {} slots, {} items decoded, value {}",
                     slots, decoded, total);
             return total;
         } catch (Exception e) {
@@ -1957,7 +1800,6 @@ public class HypixelApi {
     public interface PowderCallback { void onData(PowderData data); }
 
     public static void getPowderByName(Minecraft mc, String ign, PowderCallback cb) {
-        if (!checkKey(mc)) return;
         mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Looking up " + ign + "'s powder...")));
         resolveUuid(ign, 0, uuid -> {
             if (uuid == null) {
@@ -2062,40 +1904,6 @@ public class HypixelApi {
         return (long) obj.get(key).getAsDouble();
     }
 
-    public static void getEconomy(Minecraft mc, EconomyCallback cb) {
-        if (mc.player == null) { cb.onData(-1, -1, null); return; }
-        String uuid = mc.player.getUUID().toString().replace("-", "");
-        HttpRequest req;
-        try {
-            req = HttpRequest.newBuilder()
-                .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
-                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
-                .timeout(Duration.ofSeconds(10)).GET().build();
-        } catch (Exception e) { cb.onData(-1, -1, null); return; }
-        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
-            double bank = -1, purse = -1; String corpses = null;
-            try {
-                JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
-                for (JsonElement pe : root.getAsJsonArray("profiles")) {
-                    JsonObject profile = pe.getAsJsonObject();
-                    if (!profile.has("selected") || !profile.get("selected").getAsBoolean()) continue;
-                    if (profile.has("banking") && profile.getAsJsonObject("banking").has("balance"))
-                        bank = profile.getAsJsonObject("banking").get("balance").getAsDouble();
-                    JsonObject member = profile.getAsJsonObject("members").getAsJsonObject(uuid);
-                    if (member.has("currencies") && member.getAsJsonObject("currencies").has("coin_purse"))
-                        purse = member.getAsJsonObject("currencies").get("coin_purse").getAsDouble();
-                    else if (member.has("coin_purse")) purse = member.get("coin_purse").getAsDouble();
-                    if (member.has("glacite_player_data")) {
-                        JsonElement cl = member.getAsJsonObject("glacite_player_data").get("corpses_looted");
-                        corpses = formatCorpses(cl);
-                    }
-                    break;
-                }
-            } catch (Exception ignored) {}
-            cb.onData(bank, purse, corpses);
-        }).exceptionally(t -> { cb.onData(-1, -1, null); return null; });
-    }
-
     public interface SeenCallback {
         void onData(String latestVersion, String latestDisplayVersion, Map<String, String> updateLinks, String welcomeText, String discordUrl, long nickClearedAt);
     }
@@ -2146,125 +1954,6 @@ public class HypixelApi {
                 .build();
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString());
         } catch (Exception ignored) {}
-    }
-
-    public record PingData(String uuid, String name, double x, double y, double z, String dim, long ts) {}
-
-    public static void uploadPing(String uuidNoDashes, String name, double x, double y, double z, String dim) {
-        try {
-            JsonObject o = new JsonObject();
-            o.addProperty("uuid", uuidNoDashes);
-            o.addProperty("name", name == null ? "" : name);
-            o.addProperty("x", x);
-            o.addProperty("y", y);
-            o.addProperty("z", z);
-            o.addProperty("dim", dim == null ? "" : dim);
-            HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(PROXY_URL + "/ping"))
-                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
-                .header("Content-Type", "application/json")
-                .header("User-Agent", "Mozilla/5.0")
-                .timeout(Duration.ofSeconds(10))
-                .POST(HttpRequest.BodyPublishers.ofString(o.toString()))
-                .build();
-            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString());
-        } catch (Exception ignored) {}
-    }
-
-    public static void fetchPings(java.util.Collection<String> uuidsNoDashes, long since,
-                                  java.util.function.Consumer<java.util.List<PingData>> cb) {
-        if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.accept(java.util.List.of()); return; }
-        try {
-            String q = String.join(",", uuidsNoDashes);
-            HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(PROXY_URL + "/pings?uuids=" + q + "&since=" + since))
-                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
-                .header("User-Agent", "Mozilla/5.0")
-                .timeout(Duration.ofSeconds(10))
-                .GET().build();
-            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
-                java.util.List<PingData> out = new java.util.ArrayList<>();
-                try {
-                    JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
-                    if (root.has("pings") && root.get("pings").isJsonObject()) {
-                        for (var e : root.getAsJsonObject("pings").entrySet()) {
-                            if (e.getValue() == null || !e.getValue().isJsonObject()) continue;
-                            JsonObject pr = e.getValue().getAsJsonObject();
-                            out.add(new PingData(
-                                e.getKey(),
-                                pr.has("name") ? pr.get("name").getAsString() : "",
-                                pr.get("x").getAsDouble(), pr.get("y").getAsDouble(), pr.get("z").getAsDouble(),
-                                pr.has("dim") ? pr.get("dim").getAsString() : "",
-                                pr.has("ts") ? pr.get("ts").getAsLong() : 0L));
-                        }
-                    }
-                } catch (Exception ignored) {}
-                cb.accept(out);
-            }).exceptionally(t -> { cb.accept(java.util.List.of()); return null; });
-        } catch (Exception e) { cb.accept(java.util.List.of()); }
-    }
-
-    public record RepData(String name, int up, int down) {}
-
-    public static void voteRep(String voterUuid, String targetUuid, String targetName, String vote,
-                               java.util.function.BiConsumer<Integer, Integer> cb) {
-        try {
-            JsonObject o = new JsonObject();
-            o.addProperty("voter", voterUuid);
-            o.addProperty("target", targetUuid);
-            o.addProperty("name", targetName == null ? "" : targetName);
-            o.addProperty("vote", vote);
-            HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(PROXY_URL + "/rep"))
-                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
-                .header("Content-Type", "application/json")
-                .header("User-Agent", "Mozilla/5.0")
-                .timeout(Duration.ofSeconds(10))
-                .POST(HttpRequest.BodyPublishers.ofString(o.toString()))
-                .build();
-            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
-                int up = -1, down = -1;
-                try {
-                    JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
-                    if (root.has("success") && root.get("success").getAsBoolean()) {
-                        up = root.has("up") ? root.get("up").getAsInt() : 0;
-                        down = root.has("down") ? root.get("down").getAsInt() : 0;
-                    }
-                } catch (Exception ignored) {}
-                if (cb != null) cb.accept(up, down);
-            }).exceptionally(t -> { if (cb != null) cb.accept(-1, -1); return null; });
-        } catch (Exception e) { if (cb != null) cb.accept(-1, -1); }
-    }
-
-    public static void fetchReps(java.util.Collection<String> uuidsNoDashes,
-                                 java.util.function.Consumer<Map<String, RepData>> cb) {
-        if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.accept(java.util.Map.of()); return; }
-        try {
-            String q = String.join(",", uuidsNoDashes);
-            HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(PROXY_URL + "/rep?uuids=" + q))
-                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
-                .header("User-Agent", "Mozilla/5.0")
-                .timeout(Duration.ofSeconds(10))
-                .GET().build();
-            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
-                Map<String, RepData> out = new HashMap<>();
-                try {
-                    JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
-                    if (root.has("reps") && root.get("reps").isJsonObject()) {
-                        for (var e : root.getAsJsonObject("reps").entrySet()) {
-                            if (e.getValue() == null || !e.getValue().isJsonObject()) continue;
-                            JsonObject rr = e.getValue().getAsJsonObject();
-                            out.put(e.getKey(), new RepData(
-                                rr.has("name") ? rr.get("name").getAsString() : "",
-                                rr.has("up") ? rr.get("up").getAsInt() : 0,
-                                rr.has("down") ? rr.get("down").getAsInt() : 0));
-                        }
-                    }
-                } catch (Exception ignored) {}
-                cb.accept(out);
-            }).exceptionally(t -> { cb.accept(java.util.Map.of()); return null; });
-        } catch (Exception e) { cb.accept(java.util.Map.of()); }
     }
 
     public static void fetchNicks(java.util.Collection<String> uuidsNoDashes,
@@ -2335,7 +2024,6 @@ public class HypixelApi {
         } catch (Exception e) { cb.onData(version, null, null, null, null); }
     }
 
-    // ── Badge catalog (read-only; grants/revokes happen only via the local admin dashboard) ──
     public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fishmod.cosmetic.badge.BadgeDef>> cb) {
         try {
             HttpRequest req = HttpRequest.newBuilder()
@@ -2355,10 +2043,6 @@ public class HypixelApi {
                             int rgb;
                             try { rgb = Integer.parseInt(color.replace("#", ""), 16); } catch (Exception e) { rgb = 0xFFFFFF; }
                             String symbol = o.has("symbol") ? o.get("symbol").getAsString() : "";
-                            // Strip variation selectors (U+FE00-FE0F) and the zero-width joiner
-                            // (U+200D): Minecraft's font has no glyph for them and instead of
-                            // rendering invisibly, draws a visible fallback box (e.g. "VS16")
-                            // stacked on top of the preceding character.
                             symbol = symbol.replaceAll("[\\uFE00-\\uFE0F\\u200D]", "");
                             out.add(new fishmod.cosmetic.badge.BadgeDef(
                                 o.get("id").getAsString(),
@@ -2382,48 +2066,6 @@ public class HypixelApi {
                 if (e.getValue() != null && !e.getValue().isJsonNull())
                     out.put(e.getKey(), e.getValue().getAsString());
         return out;
-    }
-
-    public static void uploadItems(String uuidNoDashes, String itemsJson) {
-        try {
-            JsonObject o = new JsonObject();
-            o.addProperty("uuid", uuidNoDashes);
-            o.addProperty("items", itemsJson == null ? "" : itemsJson);
-            HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(PROXY_URL + "/items"))
-                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
-                .header("Content-Type", "application/json")
-                .header("User-Agent", "Mozilla/5.0")
-                .timeout(Duration.ofSeconds(10))
-                .POST(HttpRequest.BodyPublishers.ofString(o.toString()))
-                .build();
-            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString());
-        } catch (Exception ignored) {}
-    }
-
-    public static void fetchItems(java.util.Collection<String> uuidsNoDashes,
-                                  java.util.function.Consumer<Map<String, String>> cb) {
-        if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.accept(java.util.Map.of()); return; }
-        try {
-            String q = String.join(",", uuidsNoDashes);
-            HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(PROXY_URL + "/items?uuids=" + q))
-                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
-                .header("User-Agent", "Mozilla/5.0")
-                .timeout(Duration.ofSeconds(10))
-                .GET().build();
-            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
-                Map<String, String> out = new HashMap<>();
-                try {
-                    JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
-                    if (root.has("items") && root.get("items").isJsonObject())
-                        for (var e : root.getAsJsonObject("items").entrySet())
-                            if (e.getValue() != null && !e.getValue().isJsonNull())
-                                out.put(e.getKey(), e.getValue().getAsString());
-                } catch (Exception ignored) {}
-                cb.accept(out);
-            }).exceptionally(t -> { cb.accept(java.util.Map.of()); return null; });
-        } catch (Exception e) { cb.accept(java.util.Map.of()); }
     }
 
     private static volatile JsonObject localMemberCache = null;
@@ -3061,30 +2703,32 @@ public class HypixelApi {
                 cb.onLayout(null, "No profile data — is the inventory API enabled on your profile?");
                 return;
             }
-            try {
-                JsonObject inv = member.getAsJsonObject("inventory");
-                Map<Integer, Integer> rows = new HashMap<>();
+            CompletableFuture.runAsync(() -> {
+                try {
+                    JsonObject inv = member.getAsJsonObject("inventory");
+                    Map<Integer, Integer> rows = new HashMap<>();
 
-                int ecCount = slotListSize(inv.has("ender_chest_contents") ? inv.getAsJsonObject("ender_chest_contents") : null);
-                for (int p = 0; p * 45 < ecCount && p < 9; p++) {
-                    int pageItems = Math.min(ecCount, (p + 1) * 45) - p * 45;
-                    rows.put(p, Math.max(1, Math.min(5, (pageItems + 8) / 9)));
-                }
-
-                if (inv.has("backpack_contents") && inv.get("backpack_contents").isJsonObject()) {
-                    for (Map.Entry<String, JsonElement> e : inv.getAsJsonObject("backpack_contents").entrySet()) {
-                        int slot;
-                        try { slot = Integer.parseInt(e.getKey()); } catch (NumberFormatException ex) { continue; }
-                        if (slot < 0 || slot > 17 || !e.getValue().isJsonObject()) continue;
-                        int size = slotListSize(e.getValue().getAsJsonObject());
-                        if (size > 0) rows.put(slot + 9, Math.max(1, Math.min(6, (size + 8) / 9)));
+                    int ecCount = slotListSize(inv.has("ender_chest_contents") ? inv.getAsJsonObject("ender_chest_contents") : null);
+                    for (int p = 0; p * 45 < ecCount && p < 9; p++) {
+                        int pageItems = Math.min(ecCount, (p + 1) * 45) - p * 45;
+                        rows.put(p, Math.max(1, Math.min(5, (pageItems + 8) / 9)));
                     }
-                }
 
-                cb.onLayout(rows, rows.isEmpty() ? "No storage pages found on this profile." : null);
-            } catch (Exception ex) {
-                cb.onLayout(null, "parse error: " + ex.getMessage());
-            }
+                    if (inv.has("backpack_contents") && inv.get("backpack_contents").isJsonObject()) {
+                        for (Map.Entry<String, JsonElement> e : inv.getAsJsonObject("backpack_contents").entrySet()) {
+                            int slot;
+                            try { slot = Integer.parseInt(e.getKey()); } catch (NumberFormatException ex) { continue; }
+                            if (slot < 0 || slot > 17 || !e.getValue().isJsonObject()) continue;
+                            int size = slotListSize(e.getValue().getAsJsonObject());
+                            if (size > 0) rows.put(slot + 9, Math.max(1, Math.min(6, (size + 8) / 9)));
+                        }
+                    }
+
+                    cb.onLayout(rows, rows.isEmpty() ? "No storage pages found on this profile." : null);
+                } catch (Exception ex) {
+                    cb.onLayout(null, "parse error: " + ex.getMessage());
+                }
+            });
         });
     }
 

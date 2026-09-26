@@ -18,16 +18,11 @@ object MapHud {
             val mc = Minecraft.getInstance()
             if (!fishmod.features.FishHudEditor.isOpen() && DungeonMapSettings.mapEnabled && !mc.options.hideGui && !mc.options.keyPlayerList.isDown && DungeonState.isInDungeon() &&
                 !fishmod.features.dungeon.LeapMenu.isOverlayOpen() &&
-                (!DungeonState.isInBoss() || MapColors.peeking())
+                !DungeonState.isInBoss()
             ) {
                 renderAt(g, mc, DungeonMapSettings.mapX, DungeonMapSettings.mapY, DungeonMapSettings.mapScale, false)
             }
         }
-    }
-
-    @JvmStatic
-    fun renderForEdit(g: GuiGraphicsExtractor, mc: Minecraft) {
-        renderAt(g, mc, DungeonMapSettings.mapX, DungeonMapSettings.mapY, DungeonMapSettings.mapScale, true)
     }
 
     @JvmStatic

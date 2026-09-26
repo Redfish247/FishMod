@@ -18,6 +18,7 @@ object AnimatedDyeAnimator {
             val c = dye.keyframes.firstOrNull()?.color ?: 0xFFFFFF
             return (0xFF shl 24) or (c and 0xFFFFFF)
         }
+        if (states.size > 256) states.clear()
         val state = states.getOrPut(uuid) {
             var progress = 0f
             var onBackCycle = false

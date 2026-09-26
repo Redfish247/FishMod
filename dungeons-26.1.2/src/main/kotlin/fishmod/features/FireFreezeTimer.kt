@@ -115,11 +115,11 @@ object FireFreezeTimer {
                 val t: Component
                 if (elapsed < WAIT_MS) {
                     val secs = (WAIT_MS - elapsed) / 1000.0
-                    t = Component.literal("§e⌛ " + String.format("%.1fs", secs))
+                    t = Component.literal("§e⌛ " + fishmod.utils.Fmt.f1(secs.toDouble()) + "s")
                 } else {
                     val secs = (TOTAL_MS - elapsed) / 1000.0
                     val color = if (secs <= 2.0) "§c" else if (secs <= 5.0) "§b" else "§3"
-                    t = Component.literal(color + "❄ " + String.format("%.1fs", secs))
+                    t = Component.literal(color + "❄ " + fishmod.utils.Fmt.f1(secs.toDouble()) + "s")
                 }
                 RenderUtils.renderText(ctx, matrices, t, head.x, head.y, head.z, 1.35f)
             }

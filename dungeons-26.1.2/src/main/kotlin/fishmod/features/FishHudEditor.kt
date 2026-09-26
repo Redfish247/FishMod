@@ -2,7 +2,10 @@ package fishmod.features
 
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.shaded.practicalconfig.hud.HUDComponent
+import fishmod.features.chat.ChatRuleStore
 import fishmod.utils.config.FishConfig
+import fishmod.utils.config.values.DungeonMapSettings
+import fishmod.utils.config.values.FishSettings
 import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.rendering.UiRenderer
 import fishmod.utils.rendering.UiScale
@@ -44,9 +47,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         fun w(): Int = wVal
         fun h(): Int = hVal
         fun locked(): Boolean = lockedVal
-        fun getScale(): DoubleSupplier? = getScaleVal
         fun setScale(): DoubleConsumer? = setScaleVal
-        fun visible(): BooleanSupplier? = visibleVal
 
         fun scale(): Double = if (getScaleVal != null) getScaleVal.asDouble else 1.0
         fun isVisible(): Boolean = visibleVal == null || visibleVal.asBoolean
@@ -147,6 +148,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             java.util.Map.entry("Py Tick Timer", doubleArrayOf(10.0, 116.0, 1.0)),
             java.util.Map.entry("Necron LB Timer", doubleArrayOf(10.0, 128.0, 1.0)),
             java.util.Map.entry("Storm Crushed", doubleArrayOf(0.0, 0.0, 1.0)),
+            java.util.Map.entry("Pillar Explosion Timer", doubleArrayOf(10.0, 140.0, 1.0)),
             java.util.Map.entry("Term Start Timer", doubleArrayOf(10.0, 104.0, 1.0)),
             java.util.Map.entry("Section Progress", doubleArrayOf(10.0, 116.0, 1.0)),
             java.util.Map.entry("Current Section", doubleArrayOf(10.0, 190.0, 1.0)),
@@ -166,7 +168,23 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             java.util.Map.entry("Slayer Profit", doubleArrayOf(240.0, 90.0, 1.0))
         )
 
-        // Sidebar groups, in display order. HUDs not listed land in "Other".
+        private val RESETTERS: Map<String, Runnable> = mapOf(
+            "Invincibility Timer" to Runnable { FishSettings.invincHudX = 10; FishSettings.invincHudY = 140; FishSettings.invincScale = 1.0 },
+            "Dungeon Breaker" to Runnable { FishSettings.dungeonBreakerHudX = 10; FishSettings.dungeonBreakerHudY = 80; FishSettings.dungeonBreakerHudScale = 1.0 },
+            "Secret Overlay" to Runnable { FishSettings.secretOverlayX = 10; FishSettings.secretOverlayY = 180; FishSettings.secretOverlayScale = 1.5 },
+            "Quiz Timer" to Runnable { FishSettings.quizHudX = 10; FishSettings.quizHudY = 200; FishSettings.quizHudScale = 1.5 },
+            "Dungeon Map Info" to Runnable { DungeonMapSettings.mapInfoX = 100f; DungeonMapSettings.mapInfoY = 100f; DungeonMapSettings.mapInfoScale = 1f },
+            "Dungeon Score Title" to Runnable { DungeonMapSettings.mapScoreTitleX = -1f; DungeonMapSettings.mapScoreTitleY = -1f; DungeonMapSettings.mapScoreTitleScale = 1.5f },
+            "Storm Over Alert" to Runnable { FishSettings.stormOverHudX = 200; FishSettings.stormOverHudY = 100; FishSettings.stormOverScale = 2.5 },
+            "Custom Scoreboard" to Runnable { FishSettings.customScoreboardHudX = -1; FishSettings.customScoreboardHudY = 2 },
+            "Performance" to Runnable { FishSettings.perfHudX = 10; FishSettings.perfHudY = 60; FishSettings.perfHudScale = 1.0 },
+            "Chat Notifications" to Runnable { ChatRuleStore.setHudX(10); ChatRuleStore.setHudY(400); ChatRuleStore.setHudScale(1.0) },
+            "Warp Cooldown" to Runnable { FishSettings.warpCooldownHudX = 10; FishSettings.warpCooldownHudY = 160; FishSettings.warpCooldownScale = 1.0 },
+            "Tac Timer" to Runnable { FishSettings.tacTimerHudX = 10; FishSettings.tacTimerHudY = 180; FishSettings.tacTimerScale = 1.0 },
+            "Rag Timer" to Runnable { FishSettings.ragnarockTimerHudX = 10; FishSettings.ragnarockTimerHudY = 150; FishSettings.ragnarockTimerScale = 1.5 },
+            "Spring Boots" to Runnable { FishSettings.springBootsHudX = 10; FishSettings.springBootsHudY = 200; FishSettings.springBootsScale = 1.0 },
+        )
+
         private val GROUPS: List<Pair<String, List<String>>> = listOf(
             "Dungeons" to listOf(
                 "Splits", "Session Stats", "PB Pace", "Blessings", "Puzzles", "Simon Says",
@@ -175,10 +193,10 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Dungeon Map" to listOf("Dungeon Map", "Dungeon Map Info", "Dungeon Score Title"),
             "Floor 7" to listOf(
                 "Tick Timer", "Wither Dragon Timer", "Crystal Spawn Time", "Crystal Reminder",
-                "Storm Death Time", "LB Release Timer", "Py Tick Timer", "Necron LB Timer", "Storm Crushed", "Term Start Timer",
+                "Storm Death Time", "LB Release Timer", "Py Tick Timer", "Necron LB Timer", "Storm Crushed", "Pillar Explosion Timer", "Term Start Timer",
                 "Section Progress", "Goldor Splits", "Current Section", "Device Completed",
                 "Melody Warning", "Section Completion", "Storm Over Alert", "Players Leaped",
-                "S4 Alert", "S4 Debug", "Relic Spawn Timer",
+                "Relic Spawn Timer",
             ),
             "HUD & Overlays" to listOf(
                 "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Notifications", "Warp Cooldown", "Tac Timer", "Rag Timer", "Spring Boots",
@@ -187,7 +205,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Slayer" to listOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit"),
         )
 
-        // right = optional value column drawn right-aligned at `width` (or the widest row).
         private class Sample(
             val lines: List<String>,
             val center: Boolean = false,
@@ -202,7 +219,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         private fun cols(rows: List<Pair<String, String>>, width: Int? = null, lineH: Int = 10) =
             Sample(rows.map { it.first }, lineH = lineH, right = rows.map { it.second }, width = width)
 
-        // Example content drawn in the editor in place of a box, so you see what you're placing.
         private val SAMPLES: Map<String, Sample> = mapOf(
             "Tick Timer" to c("§f12.35"),
             "Crystal Spawn Time" to c("§d1.20"),
@@ -210,17 +226,13 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Storm Death Time" to c("§538.45"),
             "LB Release Timer" to c("§c2.35"),
             "Storm Crushed" to c("§6||| §bStorm crushed! §6|||"),
+            "Pillar Explosion Timer" to c("§c0.85"),
             "Term Start Timer" to c("§e3.45"),
             "Section Progress" to c("§a(§c3§a/7)"),
             "Current Section" to s("§5Section: §f 2"),
             "Device Completed" to c("§aDevice Completed!"),
             "Melody Warning" to c("§5§lHEALER §r§dhas melody! 2/4"),
             "Section Completion" to c("§aSection completed!"),
-            "S4 Alert" to c("§c⚠ Steve LEAPED EARLY"),
-            "S4 Debug" to s(
-                "§6S4 Tracker", "§fAlex: §6⚠ early§f (1)", "§fBob: §7...§f (0)",
-                "§fJoe: §c☠ dead§f (1)", "§fSteve: §a✓ core§f (2)",
-            ),
             "Goldor Splits" to cols(listOf(
                 "§61st " to "§a12.34s§8 (§712.05s§8)",
                 "§62nd " to "§a13.10s§8 (§712.80s§8)",
@@ -366,7 +378,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         private val FOLLOWS = Regex("\\(follows (.+)\\)")
 
-        // Session-sticky so reopening the editor keeps the user's choices.
         private var showControls = true
         private var showGrid = false
         private val picked = LinkedHashSet<String>()
@@ -392,7 +403,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     private var sideOpen = false
     private var sideScroll = 0
 
-    // Chrome is painted at the per-screen user scale; chrome space = raw gui / k.
     private var k = 1f
     private fun refreshK() { k = UiScale.userScale(this) }
     private fun toC(raw: Number) = (raw.toDouble() / k).toInt()
@@ -402,7 +412,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     private var sideWFor = -1
     private var sideWCache = SIDE_W_MIN
 
-    // Sidebar sized to its widest row, re-measured when the registered HUD list changes.
     private val sideW: Int
         get() {
             if (sideWFor == ENTRIES.size) return sideWCache
@@ -439,11 +448,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     override fun isPauseScreen(): Boolean = false
 
-    // ---- entries -------------------------------------------------------------------------------
-
     private fun available(): List<HudEntry> = ENTRIES
 
-    // Movable HUDs in sidebar order.
     private fun listed(): List<HudEntry> {
         val avail = available().filter { !it.locked() }
         val seen = HashSet<HudEntry>()
@@ -458,9 +464,22 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         else e.name() in picked
     }
 
-    // A search matching a category name keeps that whole category; otherwise HUDs are matched by name.
+    private var cachedRows: List<Row> = emptyList()
+    private var cachedRowsQuery: String? = null
+    private var cachedRowsAt = 0L
+
     private fun sidebarRows(): List<Row> {
         val q = search.value.trim().lowercase()
+        val now = System.currentTimeMillis()
+        if (q == cachedRowsQuery && now - cachedRowsAt < 100L) return cachedRows
+        return buildSidebarRows(q).also {
+            cachedRows = it
+            cachedRowsQuery = q
+            cachedRowsAt = now
+        }
+    }
+
+    private fun buildSidebarRows(q: String): List<Row> {
         val body = ArrayList<Row>()
         val avail = listed()
         val grouped = HashSet<HudEntry>()
@@ -503,7 +522,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private fun sample(e: HudEntry): Sample? = SAMPLES[e.name()]
 
-    // Unscaled box size: measured from the example when there is one, else the registered size.
     private fun baseW(e: HudEntry): Int {
         val s = sample(e) ?: return e.w()
         s.width?.let { return it }
@@ -553,6 +571,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private fun resetEntry(e: HudEntry) {
         if (e.locked()) return
+        RESETTERS[e.name()]?.let { it.run(); return }
         val d = DEFAULTS[e.name()] ?: return
         e.setScale()?.accept(d[2])
         e.setX().accept(d[0].toInt())
@@ -570,7 +589,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         return InputConstants.isKeyDown(w, GLFW.GLFW_KEY_LEFT_ALT) || InputConstants.isKeyDown(w, GLFW.GLFW_KEY_RIGHT_ALT)
     }
 
-    // Snaps the box's near edge, centre or far edge to screen edges/margins/centre and other shown HUDs.
     private fun snap(e: HudEntry, x: Int, y: Int): Pair<Int, Int> {
         val xs = mutableListOf(0, MARGIN, this.width / 2, this.width - MARGIN, this.width)
         val ys = mutableListOf(0, MARGIN, this.height / 2, this.height - MARGIN, this.height)
@@ -597,16 +615,12 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         return Pair(nx, ny)
     }
 
-    // ---- layout helpers ------------------------------------------------------------------------
-
-    // Chrome layout below is in chrome space (see cW/cH).
     private fun doneX() = cW() / 2 - BTN_W - BTN_GAP / 2
     private fun resetX() = cW() / 2 + BTN_GAP / 2
     private fun btnY() = cH() - 28
 
     private fun inRect(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int) = mx in x..(x + w) && my in y..(y + h)
 
-    // Centred, but lifted above the controls card when they would overlap.
     private fun handleY(): Int {
         val rows = if (showControls) CONTROLS.size else 1
         val cardTop = cH() - 6 - (10 + rows * 10 - 2)
@@ -615,7 +629,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private fun sideMaxScroll(): Int = Math.max(0, sidebarRows().size * SIDE_ROW - (cH() - SIDE_TOP - 6))
 
-    // mx/my in chrome space.
     private fun updateSide(mx: Int, my: Int) {
         if (dragging != null || resizing != null) { sideOpen = false; return }
         if (searchFocused) { sideOpen = true; return }
@@ -642,8 +655,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         mx in x..(x + sw(e)) && my in y..(y + sh(e))
     }
 
-    // ---- rendering -----------------------------------------------------------------------------
-
     private fun outline(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, c: Int) {
         ctx.fill(x, y, x + w, y + 1, c)
         ctx.fill(x, y + h - 1, x + w, y + h, c)
@@ -667,7 +678,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 s.right?.getOrNull(i)?.let { r -> ctx.text(this.font, r, bw - this.font.width(r), i * s.lineH, 0xFFFFFFFF.toInt(), true) }
             }
         } else {
-            // No example (e.g. the map): faint placeholder of the registered size.
             ctx.fill(0, 0, e.w(), e.h(), 0x40000000)
             ctx.centeredText(this.font, "§7" + e.name(), e.w() / 2, (e.h() - 8) / 2, 0xFFFFFFFF.toInt())
         }
@@ -676,16 +686,14 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private fun ellipsize(s: String, maxW: Float, size: Float): String {
         if (UiRecorder.textWidth(s, size) <= maxW) return s
-        var t = s
-        while (t.isNotEmpty() && UiRecorder.textWidth(t + "…", size) > maxW) t = t.dropLast(1)
-        return t + "…"
+        val n = fishmod.utils.rendering.TextFit.prefixLength(s, "…", maxW, 0) { UiRecorder.textWidth(it, size) }
+        return s.substring(0, n) + "…"
     }
 
     private fun centerText(s: String, cx: Float, y: Float, size: Float, color: Int) {
         UiRecorder.textBold(s, cx - UiRecorder.textWidth(s, size) / 2f, y, size, color)
     }
 
-    // HUD examples stay vanilla-drawn; the editor chrome is recorded for the overlay, which paints on top.
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         refreshK()
         val cmx = toC(mouseX)
@@ -714,7 +722,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                     outline(ctx, x - 1, y - 1, w + 2, h + 2, 0xFFFFFFFF.toInt())
                     val tag = e.name() + " " + Math.round(e.scale() * 100) + "%"
                     val ts = 6.5f
-                    // Tag and grip are recorded at raw/k so they land on the HUD after the chrome scale.
                     val ty = if (y - 2 - 10f * k >= 1f) (y - 2) / k - 10f else (y + h + 2) / k
                     val tx = (x - 1) / k
                     UiRecorder.fillRoundedRect(tx, ty, UiRecorder.textWidth(tag, ts) + 7f, 10f, 3f, ACCENT)
@@ -883,12 +890,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         UiRecorder.popScissor()
     }
 
-    // Chrome only is scaled by the user's GUI size; HUD previews stay vanilla in raw gui coords.
     override fun paintUiOverlay() {
         UiRenderer.paint(this.width, this.height, k)
     }
-
-    // ---- input ---------------------------------------------------------------------------------
 
     override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean {
         refreshK()
@@ -952,7 +956,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             val fit = Math.min((this.width - x).toDouble() / baseW(e), (this.height - y).toDouble() / baseH(e))
             val s = Math.round((mx - x).toDouble() / baseW(e) * 20.0) / 20.0
             e.setScale()?.accept(Math.max(MIN_SCALE, Math.min(Math.min(MAX_SCALE, fit), s)))
-            // HUDComponent positions are stored scaled, so pin the top-left after a scale change.
             e.setX().accept(x)
             e.setY().accept(y)
             return true
@@ -1025,7 +1028,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             sideScroll = 0
             return true
         }
-        // With the sidebar open, typing starts a search instead of firing hotkeys.
         if (sideOpen && !ctrl && (key in GLFW.GLFW_KEY_A..GLFW.GLFW_KEY_Z || key in GLFW.GLFW_KEY_0..GLFW.GLFW_KEY_9)) {
             focusSearch(true)
             return true
@@ -1059,7 +1061,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         return super.keyPressed(input)
     }
 
-    // With several HUDs picked, Tab cycles between them; with one or none it swaps to the next HUD in the list.
     private fun swap(dir: Int) {
         val movable = shown().filter { !it.locked() }
         if (movable.size > 1) {
@@ -1095,11 +1096,13 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     private fun cancel() {
         restore(opened)
         FishConfig.manager.save()
+        fishmod.features.chat.ChatRuleStore.save()
         Minecraft.getInstance().setScreen(parent)
     }
 
     override fun onClose() {
         FishConfig.manager.save()
+        fishmod.features.chat.ChatRuleStore.save()
         Minecraft.getInstance().setScreen(parent)
     }
 }

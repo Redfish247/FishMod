@@ -11,17 +11,25 @@ import kotlin.math.roundToInt
 
 object BossBarFeature {
 
+    private var lastName: Component? = null
+    private var lastPercent = Float.NaN
+    private var lastOut: Component? = null
+
     @JvmStatic
     fun appendHealth(instance: LerpingBossEvent, name: Component): Component {
         if (!Dungeons.bossHealthNumbers || !Location.inDungeon()) return name
-        val maxHealth = getMaxHealth(name) ?: return name
-
         val percent = (instance as LerpingBossEventAccessor).targetPercent
+        if (name === lastName && percent == lastPercent) lastOut?.let { return it }
+        val maxHealth = getMaxHealth(name) ?: return name
         val currentHealth = (percent * maxHealth).roundToInt().toFloat()
 
-        return name.copy().append(
+        val out = name.copy().append(
             Component.literal(" §r§8- §a${formatHealth(currentHealth)}§7/§a${formatHealth(maxHealth)}§c❤")
         )
+        lastName = name
+        lastPercent = percent
+        lastOut = out
+        return out
     }
 
     private fun getMaxHealth(nameComponent: Component): Float? {

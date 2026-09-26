@@ -10,13 +10,12 @@ import fishmod.utils.rendering.RenderingEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.world.phys.Vec3
-import java.util.concurrent.CopyOnWriteArrayList
 
 object MageBeam {
 
-    private class Beam(val points: CopyOnWriteArrayList<Vec3> = CopyOnWriteArrayList(), var lastTick: Int = 0)
+    private class Beam(val points: MutableList<Vec3> = ArrayList(), var lastTick: Int = 0)
 
-    private val beams = CopyOnWriteArrayList<Beam>()
+    private val beams = ArrayList<Beam>()
     private var tick = 0
 
     @JvmStatic
@@ -34,7 +33,7 @@ object MageBeam {
             if (recent != null && tick - recent.lastTick < 2 && inLine(recent.points, p)) {
                 recent.points.add(p); recent.lastTick = tick
             } else {
-                beams.add(Beam(CopyOnWriteArrayList<Vec3>().apply { add(p) }, tick))
+                beams.add(Beam(arrayListOf(p), tick))
             }
             FishSettings.mageBeamHideParticles
         }

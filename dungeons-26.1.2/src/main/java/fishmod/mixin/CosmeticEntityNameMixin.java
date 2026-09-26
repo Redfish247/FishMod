@@ -18,6 +18,14 @@ public abstract class CosmeticEntityNameMixin {
     @ModifyReturnValue(method = "getNameTag(Lnet/minecraft/world/entity/Entity;)Lnet/minecraft/network/chat/Component;", at = @At("RETURN"))
     private Component fishmod$cosmeticNameTag(Component original, Entity entity) {
         if (original == null) return original;
+        boolean player = entity instanceof Player;
+        boolean prestige = player && FishSettings.prestigeColorsEnabled && FishSettings.prestigeColorsNametags;
+        boolean badges = player && FishSettings.badgesEnabled && FishSettings.badgesOnNametags;
+        if (!NickState.isActive() && fishmod.cosmetic.RemoteNicks.isEmpty() && !prestige && !badges) return original;
+        return fishmod.cosmetic.NameDecorCache.NAMETAG.get(entity.getUUID(), original, () -> fishmod$decorate(original, entity, prestige, badges));
+    }
+
+    private static Component fishmod$decorate(Component original, Entity entity, boolean prestige, boolean badges) {
         Component out = original;
         if (NickState.isActive()) {
             String real = NickState.realName();
@@ -25,14 +33,8 @@ public abstract class CosmeticEntityNameMixin {
                 out = NameRewriter.replaceName(out, real, NickState.asComponent());
         }
         out = fishmod.cosmetic.RemoteNicks.applyResolvedOnly(out);
-        if (entity instanceof Player) {
-            if (FishSettings.prestigeColorsEnabled && FishSettings.prestigeColorsNametags) {
-                out = PrestigeLevelColors.colorizeLevelPrefix(out);
-            }
-            if (FishSettings.badgesEnabled && FishSettings.badgesOnNametags) {
-                out = fishmod.cosmetic.badge.BadgeRenderer.insertKnown(out, entity.getUUID().toString().replace("-", ""));
-            }
-        }
+        if (prestige) out = PrestigeLevelColors.colorizeLevelPrefix(out);
+        if (badges) out = fishmod.cosmetic.badge.BadgeRenderer.insertKnown(out, entity.getUUID().toString().replace("-", ""));
         return out;
     }
 }

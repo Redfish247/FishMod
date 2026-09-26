@@ -50,7 +50,7 @@ object SimonSaysSolver {
     @JvmField var lastRoundCompleteMs: Long = 0L
 
     private fun dbg(msg: String) {
-        if (Debug.ssDebug) Minecraft.getInstance().execute { Misc.addChatMessage(Component.literal("§7[SS] §f$msg")) }
+        if (Debug.ssDebug) Misc.addChatMessage(Component.literal("§7[SS] §f$msg"))
     }
 
     private fun powered(state: BlockState): Boolean =
@@ -77,7 +77,7 @@ object SimonSaysSolver {
         }
 
         Events.ON_SERVER_TICK.register {
-            Minecraft.getInstance().execute { tick() }
+            tick()
             false
         }
 
@@ -117,8 +117,7 @@ object SimonSaysSolver {
     }
 
     private fun queueBlock(pos: BlockPos, state: BlockState) {
-        val p = pos.immutable()
-        Minecraft.getInstance().execute { onBlock(p, state) }
+        onBlock(pos.immutable(), state)
     }
 
     private fun tick() {
@@ -157,8 +156,7 @@ object SimonSaysSolver {
                 }
 
             110 ->
-                if (updated.block === Blocks.AIR) {
-                } else if (old === Blocks.STONE_BUTTON && powered(updated)) {
+                if (updated.block !== Blocks.AIR && old === Blocks.STONE_BUTTON && powered(updated)) {
                     clickNeeded = clickInOrder.indexOf(pos.east()) + 1
                     dbg("click ${pos.y}:${pos.z} -> clickNeeded=$clickNeeded")
                     if (clickNeeded >= clickInOrder.size) {

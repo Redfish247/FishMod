@@ -27,8 +27,6 @@ public class ChatHudMixin {
             "^Party > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")" + ARG_TAIL);
     private static final Pattern GUILD_CMD = Pattern.compile(
             "^(?:Guild|G) > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")" + ARG_TAIL);
-    private static final Pattern OFFICER_CMD = Pattern.compile(
-            "^(?:Officer|O) > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")" + ARG_TAIL);
     private static final Pattern MSG_CMD = Pattern.compile(
             "^From (?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")" + ARG_TAIL);
     private static final Pattern TO_CMD = Pattern.compile(
@@ -40,12 +38,9 @@ public class ChatHudMixin {
     @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
             at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Component message, MessageSignature signature, GuiMessageSource source, GuiMessageTag tag, CallbackInfo ci) {
-        // Catches party chat regardless of packet type (signed player chat vs. unsigned system
-        // chat) — the network-level ON_GAME_MESSAGE hook only sees unsigned system chat, which
-        // in-dungeon party messages don't always arrive as.
-        fishmod.features.dungeon.AutoRequeue.onChatLine(message.getString());
-        // Fires even when the line below gets hidden by Chat Filter's "Boss Messages" toggle.
-        fishmod.features.Ragnarock.checkP5Taunt(message.getString());
+        String messageText = message.getString();
+        fishmod.features.dungeon.AutoRequeue.onChatLine(messageText);
+        fishmod.features.Ragnarock.checkP5Taunt(messageText);
 
         if (fishmod.features.ChatFilter.shouldHide(message)
                 || fishmod.features.chat.ChatRuleHandler.shouldHideAtDisplay(message)) {
@@ -55,14 +50,14 @@ public class ChatHudMixin {
         }
         if (fishmod.features.chat.ChatHideState.shouldSwallowBlank(message)) { ci.cancel(); return; }
 
-        if (!FishSettings.chatParty && !FishSettings.chatGuild && !FishSettings.chatOfficer
+        if (!FishSettings.chatParty && !FishSettings.chatGuild
                 && !FishSettings.chatPrivate && !FishSettings.chatAll && !FishSettings.pfStatsEnabled
                 && !(FishSettings.chatFeatureEnabled && FishSettings.chatCompact)
                 && System.currentTimeMillis() - fishmod.features.dungeon.ChatCommandState.lastPartyCommandAt >= 6000) {
             return;
         }
 
-        String plain = fishmod.utils.HypixelApi.STRIP_COLOR.matcher(message.getString()).replaceAll("");
+        String plain = fishmod.utils.HypixelApi.STRIP_COLOR.matcher(messageText).replaceAll("");
 
         if (System.currentTimeMillis() - fishmod.features.dungeon.ChatCommandState.lastPartyCommandAt < 6000) {
             if (plain.startsWith("Unknown party command")
@@ -75,7 +70,6 @@ public class ChatHudMixin {
 
         if (FishSettings.chatParty && tryDispatch(PARTY_CMD, plain, "pc ", null)) return;
         if (FishSettings.chatGuild && tryDispatch(GUILD_CMD, plain, "gc ", null)) return;
-        if (FishSettings.chatOfficer && tryDispatch(OFFICER_CMD, plain, "oc ", null)) return;
         if (FishSettings.chatPrivate) {
             if (tryDispatch(MSG_CMD, plain, null, "msg ")) return;
             if (tryDispatch(TO_CMD, plain, null, "msg ")) return;
