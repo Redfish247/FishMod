@@ -7,7 +7,6 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileReader
-import java.io.FileWriter
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import java.util.zip.GZIPInputStream
@@ -134,18 +133,12 @@ object DungeonWaypointStore {
                 val loaded: MutableMap<String, MutableList<StoredWaypoint>>? = GSON.fromJson(reader, type)
                 if (loaded != null) data = loaded
             }
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            fishmod.utils.SafeFiles.quarantine(file, e)
         }
     }
 
     private fun save() {
-        try {
-            val file = File(FILE_PATH)
-            file.parentFile?.mkdirs()
-            FileWriter(file).use { writer ->
-                GSON.toJson(data, writer)
-            }
-        } catch (ignored: Exception) {
-        }
+        fishmod.utils.SafeFiles.writeAtomic(File(FILE_PATH), GSON.toJson(data))
     }
 }

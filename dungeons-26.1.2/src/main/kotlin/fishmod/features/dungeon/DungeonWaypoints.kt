@@ -42,20 +42,40 @@ object DungeonWaypoints {
     private var pmEditMode = false
     private var pmMessage: String? = null
     private var pmStanding: Set<String> = emptySet()
-    private var fill = false
-    private var size = 0.5
-    private var distance = 20
-    private var useBlockSize = true
-    private var pixelMode = false
-    private var through = false
-    private var color = 0xFF55FFFF.toInt()
-    private var type = WaypointType.NONE
-    private var timer = TimerType.NONE
+    private var fill: Boolean
+        get() = FishSettings.wpEditFill
+        set(v) { FishSettings.wpEditFill = v }
+    private var size: Double
+        get() = FishSettings.wpEditSize
+        set(v) { FishSettings.wpEditSize = v }
+    private var distance: Int
+        get() = FishSettings.wpEditDistance
+        set(v) { FishSettings.wpEditDistance = v }
+    private var useBlockSize: Boolean
+        get() = FishSettings.wpEditUseBlockSize
+        set(v) { FishSettings.wpEditUseBlockSize = v }
+    private var pixelMode: Boolean
+        get() = FishSettings.wpEditPixelMode
+        set(v) { FishSettings.wpEditPixelMode = v }
+    private var through: Boolean
+        get() = FishSettings.wpEditThrough
+        set(v) { FishSettings.wpEditThrough = v }
+    private var color: Int
+        get() = FishSettings.wpEditColor
+        set(v) { FishSettings.wpEditColor = v }
+    private var type: WaypointType
+        get() = WaypointType.entries.firstOrNull { it.name == FishSettings.wpEditType } ?: WaypointType.NONE
+        set(v) { FishSettings.wpEditType = v.name }
+    private var timer: TimerType
+        get() = TimerType.entries.firstOrNull { it.name == FishSettings.wpEditTimer } ?: TimerType.NONE
+        set(v) { FishSettings.wpEditTimer = v.name }
     private var offsetX = 0.0
     private var offsetY = 0.0
     private var offsetZ = 0.0
 
-    private var lineWidth = 0.05
+    private var lineWidth: Double
+        get() = FishSettings.wpEditLineWidth
+        set(v) { FishSettings.wpEditLineWidth = v }
 
     private var placeKey: KeyMapping? = null
     private var lastGlobalDim: String? = null

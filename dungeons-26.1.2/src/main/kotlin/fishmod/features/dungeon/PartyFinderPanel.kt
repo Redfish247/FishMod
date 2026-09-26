@@ -217,6 +217,7 @@ object PartyFinderPanel {
         for (n in (listOf(p.leader) + p.memberNames).distinct()) {
             val d = PartyFinder.cached(n)
             if (d == null) { pending = true; PartyFinder.prefetch(n); continue }
+            if (d.failed) continue
             val arr = if (p.master) d.masterPbs else d.cataPbs
             val m = arr.getOrNull(p.floor)?.trim()?.let { PB_LINE.find(it) }
             val sec = if (m == null) Int.MAX_VALUE else m.groupValues[1].toInt() * 60 + m.groupValues[2].toInt()

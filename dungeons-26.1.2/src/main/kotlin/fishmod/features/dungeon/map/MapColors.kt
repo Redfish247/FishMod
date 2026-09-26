@@ -19,11 +19,8 @@ object MapColors {
     @JvmStatic
     fun legit(): Boolean {
         if (!Addons.fishModAddonsInstalled) return true
-        return DungeonMapSettings.mapLegitMode && (!peeking() || DungeonMapSettings.mapInsightLegit)
+        return DungeonMapSettings.mapLegitMode
     }
-
-    @JvmStatic
-    fun peeking(): Boolean = false
 
     @JvmStatic
     fun darkenMultiplier(): Float = DungeonMapSettings.mapDarkenMultiplier

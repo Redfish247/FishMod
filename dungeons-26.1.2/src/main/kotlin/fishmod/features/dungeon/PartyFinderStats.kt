@@ -56,6 +56,10 @@ object PartyFinderStats {
 
     private fun printStats(sender: String, joinLine: Boolean) {
         HypixelApi.getByNameSilent(sender) { data ->
+            if (data.failed) {
+                FishMsg.send("§cCouldn't look up $sender's stats")
+                return@getByNameSilent
+            }
             val mp = if (data.magicalPower >= 0) data.magicalPower.toString() else "N/A"
             val pb = if (data.masterPbs != null && data.masterPbs.size > 7 && data.masterPbs[7] != null)
                 data.masterPbs[7] else "N/A"

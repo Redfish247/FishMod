@@ -14,10 +14,6 @@ object DungeonMapSettings {
 
     @ConfigValue
     @JvmField
-    var mapInsightLegit: Boolean = false
-
-    @ConfigValue
-    @JvmField
     var mapBackgroundColor: Int = 1174405120
 
     @ConfigValue
@@ -231,10 +227,6 @@ object DungeonMapSettings {
     @ConfigValue
     @JvmField
     var mapRoomAdditionsMimic: Boolean = true
-
-    @ConfigValue
-    @JvmField
-    var mapMimicOnInsight: Boolean = true
 
     @ConfigValue
     @JvmField

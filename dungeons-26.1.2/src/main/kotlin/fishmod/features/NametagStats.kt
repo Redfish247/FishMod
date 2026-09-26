@@ -70,6 +70,11 @@ object NametagStats {
             lastKick = now
             inFlight.incrementAndGet()
             HypixelApi.getByNameSilent(name) { d ->
+                if (d.failed) {
+                    e.dungPending = false
+                    inFlight.decrementAndGet()
+                    return@getByNameSilent
+                }
                 e.cataLevel = if (d.cataXp > 0) HypixelApi.formatLevel(d.cataXp) else null
                 e.secretAvg = d.secretAverage
                 e.skillAvg = d.skillAverage

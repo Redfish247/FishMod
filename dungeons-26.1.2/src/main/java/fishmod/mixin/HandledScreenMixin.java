@@ -126,7 +126,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     private void keyPressed(KeyEvent input, CallbackInfoReturnable<Boolean> cir) {
         if (SearchBar.keyPressed(input)) { cir.setReturnValue(true); return; }
         if (fishmod.features.SlotLocking.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
-        if (fishmod.features.storage.StorageOverlay.keyPressed(input.key(), (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+        if (fishmod.features.storage.StorageOverlay.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
         if (fishmod.features.dungeon.LeapMenu.keyPressed(input.key(), (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
         if (fishmod.features.other.PetKeybinds.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
         if (WardrobeHotkeys.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }

@@ -144,8 +144,12 @@ object SessionStats {
 
         Events.ON_WORLD_CHANGE.register {
             havePos = false
-            if (FishSettings.sessionStatsResetOnRelog) reset() else autoPause(1, System.currentTimeMillis())
+            autoPause(1, System.currentTimeMillis())
             false
+        }
+
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
+            if (FishSettings.sessionStatsResetOnRelog) reset()
         }
 
         Events.ON_LOCATION_CHANGE.register { _ ->

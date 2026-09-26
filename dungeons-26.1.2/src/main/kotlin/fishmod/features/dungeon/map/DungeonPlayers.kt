@@ -235,7 +235,6 @@ object DungeonPlayers {
     @JvmStatic
     fun shouldRenderNames(mc: Minecraft): Boolean {
         if (mc.player == null) return false
-        if (MapColors.peeking()) return true
         if (isHoldingLeap(mc)) return true
         val screen = mc.screen
         if (screen != null) {

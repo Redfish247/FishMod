@@ -8,6 +8,8 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.client.input.CharacterEvent
+import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.entity.player.Inventory
@@ -199,6 +201,8 @@ object StorageOverlay {
         ctx.pose().scale(s, s)
         val smx = (mouseX / s).toInt()
         val smy = (mouseY / s).toInt()
+        lastMouseX = mouseX / s.toDouble()
+        lastMouseY = mouseY / s.toDouble()
 
         runCatching { ctx.blurBeforeThisStratum() }
         runCatching { ctx.nextStratum() }
@@ -640,16 +644,35 @@ object StorageOverlay {
         return true
     }
 
+    private var lastMouseX = 0.0
+    private var lastMouseY = 0.0
+
     @JvmStatic
-    fun keyPressed(key: Int, screen: AbstractContainerScreen<*>): Boolean {
-        if (!on(screen) || !searchFocused) return false
-        when (key) {
-            GLFW.GLFW_KEY_ESCAPE -> { searchFocused = false; return true }
-            GLFW.GLFW_KEY_BACKSPACE -> { if (search.isNotEmpty()) search = search.dropLast(1); return true }
-            GLFW.GLFW_KEY_SPACE -> { search += ' '; return true }
-            in GLFW.GLFW_KEY_A..GLFW.GLFW_KEY_Z -> { search += ('a' + (key - GLFW.GLFW_KEY_A)); return true }
-            in GLFW.GLFW_KEY_0..GLFW.GLFW_KEY_9 -> { search += ('0' + (key - GLFW.GLFW_KEY_0)); return true }
+    fun keyPressed(input: KeyEvent, screen: AbstractContainerScreen<*>): Boolean {
+        if (!on(screen)) return false
+        if (searchFocused) {
+            when (input.key()) {
+                GLFW.GLFW_KEY_ESCAPE -> searchFocused = false
+                GLFW.GLFW_KEY_BACKSPACE -> if (search.isNotEmpty()) search = search.dropLast(1)
+            }
+            return true
         }
+        val options = mc.options
+        val hotbar = options.keyHotbarSlots.indexOfFirst { it.matches(input) }
+        val drop = options.keyDrop.matches(input)
+        if (hotbar < 0 && !drop) return false
+        val slot = resolveSlotUnder(lastMouseX, lastMouseY, activePage(screen)) ?: return true
+        if (hotbar >= 0) dispatchSlotClick(slot, hotbar, 0, ContainerInput.SWAP)
+        else dispatchSlotClick(slot, if (input.modifiers() and GLFW.GLFW_MOD_CONTROL != 0) 1 else 0, 0, ContainerInput.THROW)
+        return true
+    }
+
+    @JvmStatic
+    fun charTyped(input: CharacterEvent, screen: AbstractContainerScreen<*>): Boolean {
+        if (!on(screen) || !searchFocused) return false
+        val cp = input.codepoint()
+        if (Character.isISOControl(cp)) return true
+        search += String(Character.toChars(cp))
         return true
     }
 

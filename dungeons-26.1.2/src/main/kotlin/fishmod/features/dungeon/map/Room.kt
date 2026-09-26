@@ -66,9 +66,8 @@ class Room(
         val legit = MapColors.legit()
         val dm = MapColors.darkenMultiplier()
         val s = DungeonMapSettings
-        val mimicPeek = mimic && s.mapMimicOnInsight && MapColors.peeking() && !s.mapInsightLegit
 
-        if (legit && state == State.UNOPENED && !mimicPeek) {
+        if (legit && state == State.UNOPENED) {
             if (isKnown1x1) {
                 var seen = 0
                 for (d in doors) if (d.seen) seen++
@@ -77,7 +76,7 @@ class Room(
             return if (type == Type.BLOOD) intArrayOf(MapColors.darker(s.mapBloodRoomColor, dm)) else intArrayOf(s.mapUnopenedRoomColor)
         } else {
             val base: Int
-            if (!mimic || (!(s.mapRoomAdditionsEnabled && s.mapRoomAdditionsMimic) || legit) && !mimicPeek) {
+            if (!mimic || !(s.mapRoomAdditionsEnabled && s.mapRoomAdditionsMimic) || legit) {
                 if (type == Type.UNKNOWN) return intArrayOf(s.mapUnopenedRoomColor)
                 base = MapColors.roomColor(type!!)
             } else {

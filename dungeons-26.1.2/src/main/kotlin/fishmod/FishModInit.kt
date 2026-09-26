@@ -1,6 +1,5 @@
 package fishmod
 
-import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.DoubleArgumentType
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -50,7 +49,6 @@ import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.MutableComponent
-import net.minecraft.network.protocol.game.ServerboundChatCommandPacket
 import net.minecraft.resources.Identifier
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
@@ -74,6 +72,10 @@ class FishModInit : ModInitializer {
         private fun runLocalLookup(cmd: String, arg1: String?, arg2: String?, arg3: String?): Int {
             val mc = Minecraft.getInstance()
             val self = mc.player?.gameProfile?.name ?: return Constants.SUCCESS
+            if (!fishmod.features.dungeon.PartyCommandHandler.localEnabled(cmd)) {
+                mc.connection?.sendCommand(listOfNotNull(cmd, arg1, arg2, arg3).joinToString(" "))
+                return Constants.SUCCESS
+            }
             fishmod.features.dungeon.PartyCommandHandler.onPartyCommand(
                 self, cmd, arg1, arg2, arg3, fishmod.features.dungeon.PartyCommandHandler.LOCAL
             )
@@ -378,6 +380,7 @@ class FishModInit : ModInitializer {
 
     override fun onInitialize() {
         FishConfig.manager.load()
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register { FishConfig.manager.save() }
 
         fishmod.cosmetic.NickData.load()
         fishmod.cosmetic.RemoteNicks.init()
@@ -437,7 +440,6 @@ class FishModInit : ModInitializer {
         twitchbridge.TwitchBridgeClient.init()
         fishmod.features.LavaToWater.init()
         fishmod.features.storage.StorageCache.init()
-        fishmod.features.storage.StorageAutoLoader.init()
         fishmod.features.dungeon.ExtraStats.init()
         fishmod.features.EtherwarpHelper.init()
         fishmod.features.dungeon.DungeonAbilities.init()
@@ -1265,41 +1267,10 @@ class FishModInit : ModInitializer {
             )) {
                 dispatcher.register(ClientCommands.literal(name).executes { c -> runLocalLookup(name, null, null) })
             }
-            dispatcher.register(
-                ClientCommands.literal("warp")
-                    .executes { runLocalLookup("warp", null, null) }
-                    .then(
-                        ClientCommands.argument("dest", StringArgumentType.greedyString())
-                            .executes { c ->
-                                val dest = StringArgumentType.getString(c, "dest")
-                                val mc = Minecraft.getInstance()
-                                if (mc.player != null && mc.player!!.connection != null)
-                                    mc.player!!.connection.send(ServerboundChatCommandPacket("warp $dest"))
-                                Constants.SUCCESS
-                            }
-                    )
-            )
         })
 
         ClientPlayConnectionEvents.JOIN.register(ClientPlayConnectionEvents.Join { _, _, _ ->
             fishmod.utils.config.values.DungeonMapSettings.mapLegitMode = true
-            fishmod.utils.config.values.DungeonMapSettings.mapInsightLegit = false
-        })
-
-        ClientPlayConnectionEvents.JOIN.register(ClientPlayConnectionEvents.Join { _, _, _ ->
-            val d: CommandDispatcher<FabricClientCommandSource>? = ClientCommands.getActiveDispatcher()
-            if (d == null) return@Join
-            try {
-                d.register(
-                    ClientCommands.literal("cata")
-                        .executes { c -> runLocalLookup("cata", null, null) }
-                        .then(
-                            ClientCommands.argument("player", StringArgumentType.word())
-                                .executes { c -> runLocalLookup("cata", StringArgumentType.getString(c, "player"), null) }
-                        )
-                )
-            } catch (ignored: Exception) {
-            }
         })
 
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "soulflow_hud")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) SoulflowHud.renderHud(ctx, tickCounter) }

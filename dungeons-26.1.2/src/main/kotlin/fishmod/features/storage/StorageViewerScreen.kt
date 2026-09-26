@@ -98,7 +98,11 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         val q = query()
         if (q != lastQuery) { lastQuery = q; scroll = 0 }
 
-        val data = StorageCache.view()
+        val cached = StorageCache.view()
+        val data = java.util.TreeMap<Int, NBTInventory>(cached)
+        for (idx in StorageCache.knownPages()) {
+            if (idx !in data) data[idx] = NBTInventory(List((StorageCache.expectedRows(idx) ?: 1) * 9) { ItemStack.EMPTY })
+        }
         val cellW = 9 * SLOT + 8
 
         val panelX = MARGIN
@@ -209,7 +213,7 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
 
     private fun drawLoadButton(right: Int, y: Int, mouseX: Int, mouseY: Int) {
         val running = StorageAutoLoader.running()
-        val label = if (running) "● Loading… click to stop" else "Load all pages"
+        val label = if (running) "● Fetching… click to stop" else "Fetch page list"
         val w = ScreenTheme.nstw(label, 0.75f) + 16
         val h = 16
         val bx = right - w
@@ -291,7 +295,7 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         loadAllRect.let { r ->
             if (mx in r[0]..(r[0] + r[2]) && my in r[1]..(r[1] + r[3])) {
                 if (StorageAutoLoader.running()) StorageAutoLoader.stop()
-                else { StorageAutoLoader.start(); onClose() }
+                else StorageAutoLoader.start()
                 return true
             }
         }
