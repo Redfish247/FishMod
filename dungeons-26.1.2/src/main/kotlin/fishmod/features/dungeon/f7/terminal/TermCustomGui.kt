@@ -90,7 +90,7 @@ object TermCustomGui {
                 }
                 if (col != 0) roundFill(ctx, cx, cy, cell, cell, round, col)
                 val n = st?.count ?: 0
-                if (n > 0) drawBig(ctx, mc, n.toString(), cx, cy, cell, if (ord in 0..2) -0x1 else -0x777778)
+                if (n > 0 && i in sol) drawBig(ctx, mc, n.toString(), cx, cy, cell, if (ord in 0..2) -0x1 else -0x777778)
                 continue
             }
 

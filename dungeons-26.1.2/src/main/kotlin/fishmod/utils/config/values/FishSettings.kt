@@ -717,6 +717,12 @@ object FishSettings {
     @ConfigValue @JvmField var stormOverHudX: Int = 200
     @ConfigValue @JvmField var stormOverHudY: Int = 100
     @ConfigValue @JvmField var stormOverScale: Double = 2.5
+    @ConfigValue @JvmField var stormOverCountdown: Boolean = true
+    @ConfigValue @JvmField var stormOverHideServerCountdown: Boolean = true
+    @ConfigValue @JvmField var venoStackEnabled: Boolean = true
+    @ConfigValue @JvmField var venoStackHudX: Int = 200
+    @ConfigValue @JvmField var venoStackHudY: Int = 140
+    @ConfigValue @JvmField var venoStackScale: Double = 1.5
     @ConfigValue @JvmField var perfHudEnabled: Boolean = false
     @ConfigValue @JvmField var perfHudFps: Boolean = true
     @ConfigValue @JvmField var perfHudTps: Boolean = true
