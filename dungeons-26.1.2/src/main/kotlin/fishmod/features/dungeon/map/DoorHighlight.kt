@@ -82,7 +82,8 @@ object DoorHighlight {
     private fun keyLive(door: Door): Boolean = door.type != Door.Type.NORMAL && (closed(door) || door !in passed)
 
     private fun openable(door: Door): Boolean {
-        if (!closed(door)) return true
+        // Fairy doors are walk-through, so their colour follows the key, not the blocks
+        if (!closed(door) && !isFairyDoor(door)) return true
         return when (door.type) {
             Door.Type.BLOOD -> DungeonState.hasBloodKey()
             Door.Type.WITHER -> DungeonState.hasWitherKey()
