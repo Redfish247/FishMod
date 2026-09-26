@@ -74,6 +74,7 @@ object DungeonScore {
 
     @JvmStatic
     fun reset() {
+        parsedTabVersion = -1
         secretsFound = 0
         secretsPercent = 0.0f
         crypts = 0
@@ -105,8 +106,12 @@ object DungeonScore {
 
     private fun stripColors(s: String): String = s.replace(MAP_COLOR_CODES, "")
 
+    private var parsedTabVersion = -1
+
     private fun parseTab(mc: Minecraft) {
         if (mc.connection == null) return
+        if (TabListCache.version == parsedTabVersion) return
+        parsedTabVersion = TabListCache.version
         var completedPuzzles = 0
 
         for (entry in TabListCache.entries) {

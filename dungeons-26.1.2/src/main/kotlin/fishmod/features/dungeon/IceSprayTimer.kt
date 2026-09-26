@@ -74,7 +74,7 @@ object IceSprayTimer {
             val z = g.sumOf { it.first.z } / g.size
             val y = g.maxOf { it.first.boundingBox.maxY } + 0.6
             val secs = (g.minOf { it.second } - now) / 1000.0
-            RenderUtils.gizmoText(Component.literal(String.format("%.1fs", secs)), Vec3(x, y, z),
+            RenderUtils.gizmoText(Component.literal(fishmod.utils.Fmt.f1(secs.toDouble()) + "s"), Vec3(x, y, z),
                 FishSettings.iceSprayScale.toFloat(), FishSettings.iceSprayColor or 0xFF000000.toInt())
         }
     }

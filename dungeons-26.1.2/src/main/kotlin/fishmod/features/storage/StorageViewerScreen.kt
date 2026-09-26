@@ -73,8 +73,12 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
 
     private fun query(): String = search.value.trim().lowercase()
 
+    private val searchNames = java.util.WeakHashMap<ItemStack, String>()
+
     private fun matches(stack: ItemStack, q: String): Boolean =
-        !stack.isEmpty && stack.hoverName.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").lowercase().contains(q)
+        !stack.isEmpty && searchNames.getOrPut(stack) {
+            stack.hoverName.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").lowercase()
+        }.contains(q)
 
     override fun paintUiOverlay() {
         UiRenderer.paint(width, height, k)

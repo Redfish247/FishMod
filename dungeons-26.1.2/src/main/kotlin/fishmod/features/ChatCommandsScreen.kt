@@ -574,9 +574,8 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
 
     private fun clipText(s: String, maxW: Int, size: Float): String {
         if (tw(s, size) <= maxW) return s
-        var out = s
-        while (out.length > 1 && tw("$out…", size) > maxW) out = out.substring(0, out.length - 1)
-        return "$out…"
+        val n = fishmod.utils.rendering.TextFit.prefixLength(s, "…", maxW.toFloat(), 1) { tw(it, size).toFloat() }
+        return s.substring(0, n) + "…"
     }
 
     private fun inside(x: Int, y: Int, w: Int, h: Int): Boolean {

@@ -68,10 +68,9 @@ object DragonCheck {
                 modMessage("&7dragonUpdate ${d.name} resolved entity=${d.entity != null}")
             }
         }
-        val ids = p.packedItems().map { it.id() }
         val hp = p.packedItems().firstOrNull { it.id() == HEALTH_DATA_ID }?.value as? Float
         if (fishmod.utils.debug.Debug.dragonDebug) {
-            modMessage("&7dragonUpdate ${d.name} ids=$ids hp=${hp ?: "none"}")
+            modMessage("&7dragonUpdate ${d.name} ids=${p.packedItems().map { it.id() }} hp=${hp ?: "none"}")
         }
         if (hp == null) return
         d.health = hp

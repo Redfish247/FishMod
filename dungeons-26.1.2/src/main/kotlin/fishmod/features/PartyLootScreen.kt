@@ -176,8 +176,27 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
 
     private fun tabCount(t: Tab): String = when (t) {
         Tab.LOOT -> LootTrackerStore.runs().toString() + " runs"
-        else -> names(t).size.toString()
+        else -> nameCount(t).toString()
     }
+
+    private val nameCounts = HashMap<Tab, Pair<String, Int>>()
+
+    private fun nameCount(t: Tab): Int {
+        val csv = when (t) {
+            Tab.KICK -> FishSettings.pcKickList
+            Tab.WHITELIST -> FishSettings.pcPartyActionsWhitelist
+            Tab.BLACKLIST -> FishSettings.pcPartyActionsBlacklist
+            Tab.LOOT -> ""
+        }
+        val cached = nameCounts[t]
+        if (cached != null && cached.first == csv) return cached.second
+        return NameList.toList(csv).size.also { nameCounts[t] = csv to it }
+    }
+
+    private var lootRowsQuery: String? = null
+    private var lootRowsAt = 0L
+    private var lootRowsAll: List<LootTrackerStore.Row> = emptyList()
+    private var lootRowsSorted: List<LootTrackerStore.Row> = emptyList()
 
     private fun switchTab(t: Tab) {
         if (t == tab) return
@@ -194,11 +213,18 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
     }
 
     private fun renderLoot(x: Int, y: Int, w: Int, h: Int) {
-        val allRows = LootTrackerStore.rows().toList()
         val runs = LootTrackerStore.runs()
         val q = searchField.value.trim().lowercase()
-        val rows = (if (q.isEmpty()) allRows else allRows.filter { it.name.lowercase().contains(q) })
-            .sortedByDescending { rowValue(it) }
+        val now = System.currentTimeMillis()
+        if (q != lootRowsQuery || now - lootRowsAt >= 500L) {
+            lootRowsQuery = q
+            lootRowsAt = now
+            lootRowsAll = LootTrackerStore.rows().toList()
+            lootRowsSorted = (if (q.isEmpty()) lootRowsAll else lootRowsAll.filter { it.name.lowercase().contains(q) })
+                .sortedByDescending { rowValue(it) }
+        }
+        val allRows = lootRowsAll
+        val rows = lootRowsSorted
 
         UiRecorder.text("Auto-tracked from Croesus chests.", x.toFloat(), y.toFloat(), S_SM, ScreenTheme.SUBTEXT_COLOR)
         val hint = "Click Runs or a count to edit it"
@@ -250,7 +276,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
             UiRecorder.textBold(clearLabel, (cx + 12).toFloat(), sy + (sh - S_SM) / 2f, S_SM, ScreenTheme.DANGER)
         }
         hit(cx, sy, cw, sh) {
-            if (clearArmed) { cancelEdit(); LootTrackerStore.clear(); clearArmed = false }
+            if (clearArmed) { cancelEdit(); LootTrackerStore.clear(); lootRowsQuery = null; clearArmed = false }
             else { clearArmed = true; clearArmedAt = System.currentTimeMillis() }
         }
 
@@ -349,6 +375,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
             val n = if (t.isEmpty()) 0 else t.toInt()
             if (editKind == 1) LootTrackerStore.setRuns(n)
             else if (editKind == 2) LootTrackerStore.setCount(editName, editId, n)
+            lootRowsQuery = null
         } catch (ignored: NumberFormatException) {
         }
         cancelEdit()
@@ -711,9 +738,8 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
 
         private fun clip(s: String, maxW: Int, size: Float): String {
             if (tw(s, size) <= maxW) return s
-            var out = s
-            while (out.length > 1 && tw("$out…", size) > maxW) out = out.substring(0, out.length - 1)
-            return "$out…"
+            val n = fishmod.utils.rendering.TextFit.prefixLength(s, "…", maxW.toFloat(), 1) { tw(it, size).toFloat() }
+            return s.substring(0, n) + "…"
         }
 
         private fun withAlpha(c: Int, a: Int): Int = (a shl 24) or (c and 0x00FFFFFF)

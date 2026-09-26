@@ -29,7 +29,7 @@ object FishPuzzleDisplay {
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
-            if (!FishSettings.showPuzzles || client.player == null || bossReached) return@EndTick
+            if (!FishSettings.showPuzzles || client.player == null || bossReached || !fishmod.utils.Location.inDungeon()) return@EndTick
             tickCounter++
             if (tickCounter < 25) return@EndTick
             tickCounter = 0

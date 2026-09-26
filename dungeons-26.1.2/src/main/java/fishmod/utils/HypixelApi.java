@@ -2649,30 +2649,32 @@ public class HypixelApi {
                 cb.onLayout(null, "No profile data — is the inventory API enabled on your profile?");
                 return;
             }
-            try {
-                JsonObject inv = member.getAsJsonObject("inventory");
-                Map<Integer, Integer> rows = new HashMap<>();
+            CompletableFuture.runAsync(() -> {
+                try {
+                    JsonObject inv = member.getAsJsonObject("inventory");
+                    Map<Integer, Integer> rows = new HashMap<>();
 
-                int ecCount = slotListSize(inv.has("ender_chest_contents") ? inv.getAsJsonObject("ender_chest_contents") : null);
-                for (int p = 0; p * 45 < ecCount && p < 9; p++) {
-                    int pageItems = Math.min(ecCount, (p + 1) * 45) - p * 45;
-                    rows.put(p, Math.max(1, Math.min(5, (pageItems + 8) / 9)));
-                }
-
-                if (inv.has("backpack_contents") && inv.get("backpack_contents").isJsonObject()) {
-                    for (Map.Entry<String, JsonElement> e : inv.getAsJsonObject("backpack_contents").entrySet()) {
-                        int slot;
-                        try { slot = Integer.parseInt(e.getKey()); } catch (NumberFormatException ex) { continue; }
-                        if (slot < 0 || slot > 17 || !e.getValue().isJsonObject()) continue;
-                        int size = slotListSize(e.getValue().getAsJsonObject());
-                        if (size > 0) rows.put(slot + 9, Math.max(1, Math.min(6, (size + 8) / 9)));
+                    int ecCount = slotListSize(inv.has("ender_chest_contents") ? inv.getAsJsonObject("ender_chest_contents") : null);
+                    for (int p = 0; p * 45 < ecCount && p < 9; p++) {
+                        int pageItems = Math.min(ecCount, (p + 1) * 45) - p * 45;
+                        rows.put(p, Math.max(1, Math.min(5, (pageItems + 8) / 9)));
                     }
-                }
 
-                cb.onLayout(rows, rows.isEmpty() ? "No storage pages found on this profile." : null);
-            } catch (Exception ex) {
-                cb.onLayout(null, "parse error: " + ex.getMessage());
-            }
+                    if (inv.has("backpack_contents") && inv.get("backpack_contents").isJsonObject()) {
+                        for (Map.Entry<String, JsonElement> e : inv.getAsJsonObject("backpack_contents").entrySet()) {
+                            int slot;
+                            try { slot = Integer.parseInt(e.getKey()); } catch (NumberFormatException ex) { continue; }
+                            if (slot < 0 || slot > 17 || !e.getValue().isJsonObject()) continue;
+                            int size = slotListSize(e.getValue().getAsJsonObject());
+                            if (size > 0) rows.put(slot + 9, Math.max(1, Math.min(6, (size + 8) / 9)));
+                        }
+                    }
+
+                    cb.onLayout(rows, rows.isEmpty() ? "No storage pages found on this profile." : null);
+                } catch (Exception ex) {
+                    cb.onLayout(null, "parse error: " + ex.getMessage());
+                }
+            });
         });
     }
 

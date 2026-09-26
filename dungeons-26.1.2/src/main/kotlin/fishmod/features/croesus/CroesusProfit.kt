@@ -25,8 +25,18 @@ object CroesusProfit {
     private const val SCAN_INTERVAL_MS = 300L
     private var lastScanMs = 0L
 
-    private fun on(screen: AbstractContainerScreen<*>): Boolean =
-        FishSettings.croesusProfitEnabled && PREVIEW_TITLE.matches(screen.title.string)
+    private var lastTitle: net.minecraft.network.chat.Component? = null
+    private var lastTitleMatch = false
+
+    private fun on(screen: AbstractContainerScreen<*>): Boolean {
+        if (!FishSettings.croesusProfitEnabled) return false
+        val title = screen.title
+        if (title !== lastTitle) {
+            lastTitle = title
+            lastTitleMatch = PREVIEW_TITLE.matches(title.string)
+        }
+        return lastTitleMatch
+    }
 
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, screen: AbstractContainerScreen<*>) {
@@ -53,7 +63,7 @@ object CroesusProfit {
         val font = Minecraft.getInstance().font
         val lx = acc.bgX - 150
         var ly = acc.bgY + 4
-        for (c in chests.sortedByDescending { it.profit }) {
+        for (c in chests) {
             val pc = if (c.profit >= 0) "§a" else "§c"
             ctx.text(font, "§e${c.name}§7: $pc${fmt(c.profit)}", lx, ly, -1, true)
             ly += font.lineHeight + 1
@@ -68,18 +78,20 @@ object CroesusProfit {
             val stack = menu.slots[i].item
             if (stack.isEmpty || !stack.`is`(Items.PLAYER_HEAD)) continue
             val tooltip = tooltip(stack)
-            if (tooltip.none { COLOR.replace(it, "").contains("Contents") }) continue
+            val plain = tooltip.map { COLOR.replace(it, "") }
+            if (plain.none { it.contains("Contents") }) continue
 
-            val cost = tooltip.firstNotNullOfOrNull {
-                COST.find(COLOR.replace(it, ""))?.groupValues?.get(1)?.replace(",", "")?.toDoubleOrNull()
+            val cost = plain.firstNotNullOfOrNull {
+                COST.find(it)?.groupValues?.get(1)?.replace(",", "")?.toDoubleOrNull()
             } ?: 0.0
             val info = CroesusRewardParser.parseRewards(tooltip, null) ?: continue
             var value = 0.0
             for (ri in info.items) value += CroesusPrices.price(ri.id) * ri.qty.coerceAtLeast(1)
             out.add(Chest(i, COLOR.replace(stack.hoverName.string, "").trim(), value, cost))
         }
+        out.sortByDescending { it.profit }
         chests = out
-        bestSlots = out.filter { it.profit > 0 }.sortedByDescending { it.profit }.take(2).map { it.slot }
+        bestSlots = out.asSequence().filter { it.profit > 0 }.take(2).map { it.slot }.toList()
     }
 
     private fun tooltip(stack: ItemStack): MutableList<String> {
