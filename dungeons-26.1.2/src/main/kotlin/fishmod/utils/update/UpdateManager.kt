@@ -67,6 +67,7 @@ object UpdateManager {
     private val updaterMeta = container?.metadata?.getCustomValue("fishmod:updater")?.asObject
     private val githubRepo: String? = updaterMeta?.get("github")?.asString?.takeIf { it.contains('/') }
     val modrinthUrl: String? = container?.metadata?.contact?.get("homepage")?.orElse(null)
+        ?.takeIf { it.startsWith("https://modrinth.com/") }?.trimEnd('/')?.plus("/versions")
 
     private val gameDir: Path = FabricLoader.getInstance().gameDir
     private val stateFile: Path = FabricLoader.getInstance().configDir.resolve("fishmod").resolve("updater.json")

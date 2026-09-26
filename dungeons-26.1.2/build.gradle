@@ -122,7 +122,7 @@ dependencies {
 
 processResources {
 	inputs.property "version", project.version
-	inputs.property "modrinthProject", project.findProperty('modrinth_project_id') ?: '7dRE7dga'
+	inputs.property "modrinthSlug", project.findProperty('modrinth_slug') ?: 'fishmod'
 	inputs.property "githubRepo", project.findProperty('github_repo') ?: 'Redfish247/FishModDungeons'
 
 	filesMatching("fabric.mod.json") {
