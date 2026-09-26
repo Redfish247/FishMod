@@ -119,7 +119,6 @@ object SoundManager {
     fun ping(key: String? = null, debounceMs: Long = 0L): Boolean =
         play(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 2f, key, debounceMs)
 
-        play(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 0.5f, key, debounceMs)
 
     @JvmStatic
     fun reset() = lastPlayed.clear()

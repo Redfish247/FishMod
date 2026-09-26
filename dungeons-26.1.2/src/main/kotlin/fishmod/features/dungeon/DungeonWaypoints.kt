@@ -41,30 +41,38 @@ object DungeonWaypoints {
     private var pmEditMode = false
     private var pmMessage: String? = null
     private var pmStanding: Set<String> = emptySet()
+    @get:JvmName("wp_fill") @set:JvmName("wp_set_fill")
     private var fill: Boolean
         get() = FishSettings.wpEditFill
         set(v) { FishSettings.wpEditFill = v }
+    @get:JvmName("wp_size") @set:JvmName("wp_set_size")
     private var size: Double
         get() = FishSettings.wpEditSize
         set(v) { FishSettings.wpEditSize = v }
+    @get:JvmName("wp_distance") @set:JvmName("wp_set_distance")
     private var distance: Int
         get() = FishSettings.wpEditDistance
         set(v) { FishSettings.wpEditDistance = v }
+    @get:JvmName("wp_useBlockSize") @set:JvmName("wp_set_useBlockSize")
     private var useBlockSize: Boolean
         get() = FishSettings.wpEditUseBlockSize
         set(v) { FishSettings.wpEditUseBlockSize = v }
+    @get:JvmName("wp_pixelMode") @set:JvmName("wp_set_pixelMode")
     private var pixelMode: Boolean
         get() = FishSettings.wpEditPixelMode
         set(v) { FishSettings.wpEditPixelMode = v }
+    @get:JvmName("wp_through") @set:JvmName("wp_set_through")
     private var through: Boolean
         get() = FishSettings.wpEditThrough
         set(v) { FishSettings.wpEditThrough = v }
     private var color: Int
         get() = FishSettings.wpEditColor
         set(v) { FishSettings.wpEditColor = v }
+    @get:JvmName("wp_type") @set:JvmName("wp_set_type")
     private var type: WaypointType
         get() = WaypointType.entries.firstOrNull { it.name == FishSettings.wpEditType } ?: WaypointType.NONE
         set(v) { FishSettings.wpEditType = v.name }
+    @get:JvmName("wp_timer") @set:JvmName("wp_set_timer")
     private var timer: TimerType
         get() = TimerType.entries.firstOrNull { it.name == FishSettings.wpEditTimer } ?: TimerType.NONE
         set(v) { FishSettings.wpEditTimer = v.name }
@@ -72,6 +80,7 @@ object DungeonWaypoints {
     private var offsetY = 0.0
     private var offsetZ = 0.0
 
+    @get:JvmName("wp_lineWidth") @set:JvmName("wp_set_lineWidth")
     private var lineWidth: Double
         get() = FishSettings.wpEditLineWidth
         set(v) { FishSettings.wpEditLineWidth = v }
