@@ -30,7 +30,6 @@ object UpdateManager {
     private const val MOD_ID = "fishmod-dungeons"
     private const val CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000L
     private const val FAILURE_BACKOFF_MS = 30 * 60 * 1000L
-    private const val POPUP_COOLDOWN_MS = 60 * 60 * 1000L
     private const val JOIN_SETTLE_TICKS = 100
     private const val MAX_JAR_BYTES = 64L * 1024 * 1024
 
@@ -53,6 +52,7 @@ object UpdateManager {
         var etag: String? = null
         var release: Release? = null
         var lastShownAt = 0L
+        var shownVersion: String? = null
         var dismissedVersion: String? = null
         var stagedVersion: String? = null
         var stagedFile: String? = null
@@ -95,6 +95,7 @@ object UpdateManager {
         if (githubRepo == null) return
         load()
         synchronized(lock) {
+            if (state.shownVersion == null && state.lastShownAt > 0) state.shownVersion = state.release?.version
             val staged = state.stagedFile?.let(Path::of)
             if (staged != null && Files.isRegularFile(staged) && isNewer(state.stagedVersion)) downloadState = DownloadState.STAGED
             else if (state.stagedFile != null) { state.stagedVersion = null; state.stagedFile = null; save() }
@@ -123,10 +124,11 @@ object UpdateManager {
         if (++ticksSinceJoin < JOIN_SETTLE_TICKS || ticksSinceJoin % 20 != 0) return
         if (Location.inDungeon() || Location.`in`(Location.KUUDRA)) return
         val release = pendingRelease() ?: return
-        val now = System.currentTimeMillis()
+        // Once per release version, never on a timer.
         synchronized(lock) {
-            if (now - state.lastShownAt < POPUP_COOLDOWN_MS) return
-            state.lastShownAt = now
+            if (state.shownVersion == release.version) return
+            state.shownVersion = release.version
+            state.lastShownAt = System.currentTimeMillis()
             save()
         }
         mc.setScreen(UpdateScreen(release))
