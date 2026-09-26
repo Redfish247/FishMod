@@ -116,6 +116,11 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
         DrawEvents.currentSlot = null;
     }
 
+    @com.llamalad7.mixinextras.injector.WrapWithCondition(method = "extractSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;itemDecorations(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;IILjava/lang/String;)V"))
+    private boolean fishmod$hideClickedNumbers(GuiGraphicsExtractor context, net.minecraft.client.gui.Font font, ItemStack stack, int x, int y, String text, GuiGraphicsExtractor ctx, Slot slot, int mouseX, int mouseY) {
+        return !fishmod.features.dungeon.f7.terminal.TerminalSolver.hideSlotCount(slot);
+    }
+
     @Inject(method = "extractSlot", at = @At(value = "TAIL"))
     public void drawAfter(GuiGraphicsExtractor context, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
         if (DrawEvents.INVENTORY_SLOT_AFTER.isEmpty()) return;
