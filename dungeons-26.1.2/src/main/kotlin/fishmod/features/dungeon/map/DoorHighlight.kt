@@ -136,14 +136,28 @@ object DoorHighlight {
 
     private fun outlineOnly(): Boolean = DungeonMapSettings.mapDoorOutlineOnly
 
-    // Outline-only: every known door, open or not, one colour, no fill.
-    private fun outlineDoors(): List<Door> = ArrayList(Scan.doors).filter { visible(it) }
+    // Outline-only: doors of the room you're in (plus open fairy doors), one colour, no fill.
+    private fun outlineDoors(): List<Door> =
+        ArrayList(Scan.doors).filter { visible(it) && (facingRoomTile(it) != null || isFairyDoor(it)) }
+
+    // Closed wither/blood doors keep their key colours in outline mode.
+    private fun keyDoor(door: Door): Boolean = door.type != Door.Type.NORMAL && closed(door)
+
+    private fun outlineThroughWall(door: Door): Boolean =
+        if (keyDoor(door)) throughWall(door.type) else DungeonMapSettings.mapDoorHighlightThroughWall
+
+    private fun keyFill(door: Door): Int = if (door.type == Door.Type.WITHER) witherFill(door) else fillColor(door)
+
+    private fun keyLine(door: Door): Int = if (door.type == Door.Type.WITHER) witherLine(door) else lineColor(door)
 
     private fun renderGizmo() {
         if (!active()) return
         if (outlineOnly()) {
-            if (DungeonMapSettings.mapDoorHighlightThroughWall) return
-            for (door in outlineDoors()) RenderUtils.gizmoBox(box(door), 0, DungeonMapSettings.mapDoorOutlineColor)
+            for (door in outlineDoors()) {
+                if (outlineThroughWall(door)) continue
+                if (keyDoor(door)) RenderUtils.gizmoBox(box(door), keyFill(door), keyLine(door))
+                else RenderUtils.gizmoBox(box(door), 0, DungeonMapSettings.mapDoorOutlineColor)
+            }
             return
         }
         val fullBox = DungeonMapSettings.mapDoorHighlightFullBox
@@ -165,9 +179,16 @@ object DoorHighlight {
     private fun render(matrices: PoseStack, vc: VertexConsumer, depthTested: Boolean, fill: Boolean) {
         if (!active()) return
         if (outlineOnly()) {
-            if (fill || !DungeonMapSettings.mapDoorHighlightThroughWall) return
-            val lineC = RenderUtils.toFloats(DungeonMapSettings.mapDoorOutlineColor)
-            for (door in outlineDoors()) RenderUtils.renderOutline(matrices, vc, box(door), lineC)
+            for (door in outlineDoors()) {
+                if (outlineThroughWall(door) == depthTested) continue
+                val key = keyDoor(door)
+                if (fill) {
+                    if (key) RenderUtils.renderFilled(matrices, vc, box(door), RenderUtils.toFloats(keyFill(door)))
+                } else {
+                    val c = if (key) keyLine(door) else DungeonMapSettings.mapDoorOutlineColor
+                    RenderUtils.renderOutline(matrices, vc, box(door), RenderUtils.toFloats(c))
+                }
+            }
             return
         }
         val fullBox = DungeonMapSettings.mapDoorHighlightFullBox
