@@ -12,7 +12,6 @@ import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
-import net.minecraft.util.Util
 import org.lwjgl.glfw.GLFW
 import fishmod.utils.update.UpdateManager.DownloadState as DS
 
@@ -102,7 +101,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
 
     private fun openPage() {
         val url = targetUrl ?: return
-        try { Util.getPlatform().openUri(url) } catch (ignored: Throwable) {}
+        UpdateManager.openInBrowser(url)
     }
 
     override fun extractTransparentBackground(ctx: GuiGraphicsExtractor) {}
