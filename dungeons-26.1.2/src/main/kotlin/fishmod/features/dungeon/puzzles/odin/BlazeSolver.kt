@@ -8,7 +8,8 @@ import net.minecraft.world.entity.decoration.ArmorStand
 object BlazeSolver {
 
     private val blazes = mutableListOf<ArmorStand>()
-    private var lastBlazeCount = 10
+    private var seenBlazes = false
+    private var completed = false
     private val blazeHealthRegex = Regex("Blaze [\\d,]+/([\\d,]+)❤")
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
@@ -25,20 +26,19 @@ object BlazeSolver {
             blazes.add(entity)
         }
         if (name == "Lower Blaze") blazes.sortByDescending { hpMap[it] } else blazes.sortBy { hpMap[it] }
+        if (blazes.isNotEmpty()) seenBlazes = true
+        else if (seenBlazes && !completed) {
+            completed = true
+            PuzzleSolvers.onPuzzleComplete(name)
+        }
     }
 
     fun onRenderWorld() {
         val name = OdinScan.currentRoomName
         if (name != "Lower Blaze" && name != "Higher Blaze") return
-        if (blazes.isEmpty()) return
         val level = Minecraft.getInstance().level
         blazes.removeAll { level?.getEntity(it.id) == null }
-        if (blazes.isEmpty() && lastBlazeCount == 1) {
-            PuzzleSolvers.onPuzzleComplete(name)
-            lastBlazeCount = 0
-            return
-        }
-        lastBlazeCount = blazes.size
+        if (blazes.isEmpty()) return
         val style = ORender.style()
         blazes.forEachIndexed { index, entity ->
             val color = when (index) {
@@ -56,7 +56,8 @@ object BlazeSolver {
     }
 
     fun reset() {
-        lastBlazeCount = 10
+        seenBlazes = false
+        completed = false
         blazes.clear()
     }
 }
