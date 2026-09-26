@@ -502,6 +502,7 @@ public class PartyCommandHandler {
                     isMaster = false;
                 } else {
                     try { floorNum = Integer.parseInt(floor.substring(1)); } catch (Exception ignored) {}
+                    if (floorNum < 0) floorNum = 7;
                 }
                 long cataRuns   = floorNum < data.cataTimes.length   ? data.cataTimes[floorNum]   : 0;
                 long masterRuns = floorNum < data.masterTimes.length ? data.masterTimes[floorNum] : 0;

@@ -581,7 +581,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Show Class", "", FishSettings::leapMenuShowClass))
             val sortByOptions = arrayOf("Class Order", "Name A-Z", "Odin Sorting")
             f.sub.add(DropdownSetting("Sort By", "", sortByOptions,
-                { sortByOptions[FishSettings.leapMenuSort] },
+                { sortByOptions.getOrElse(FishSettings.leapMenuSort) { sortByOptions[0] } },
                 { v -> FishSettings.leapMenuSort = sortByOptions.indexOf(v).coerceAtLeast(0) }))
             f.sub.add(InputSetting("Class Order", "Comma-separated: MAGE,BERSERK,ARCHER,HEALER,TANK",
                 { FishSettings.leapMenuClassOrder }, { v -> FishSettings.leapMenuClassOrder = v }).gatedBy { FishSettings.leapMenuSort == 0 })
@@ -885,7 +885,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("M7 Lever Waypoints", FishSettings::enableM7LeverWaypoints)
             val leverStyleOptions = arrayOf("Outline", "Fill", "Filled Outline")
             f.sub.add(DropdownSetting("Style", "", leverStyleOptions,
-                { leverStyleOptions[FishSettings.m7LeverWaypointMode] },
+                { leverStyleOptions.getOrElse(FishSettings.m7LeverWaypointMode) { leverStyleOptions[0] } },
                 { v -> FishSettings.m7LeverWaypointMode = leverStyleOptions.indexOf(v).coerceAtLeast(0) }))
             f.sub.add(ColorPickerSetting("Color", "", FishSettings::m7LeverWaypointColor))
             f.sub.add(SliderIntSetting("Fill Opacity %", "", FishSettings::m7LeverWaypointOpacity, 0, 100))
@@ -1273,7 +1273,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("Block Overlay", FishSettings::blockOverlayEnabled)
             val blockOverlayModeOptions = arrayOf("Outline", "Fill", "Filled Outline")
             f.sub.add(DropdownSetting("Mode", "", blockOverlayModeOptions,
-                { blockOverlayModeOptions[FishSettings.blockOverlayMode] },
+                { blockOverlayModeOptions.getOrElse(FishSettings.blockOverlayMode) { blockOverlayModeOptions[0] } },
                 { v -> FishSettings.blockOverlayMode = blockOverlayModeOptions.indexOf(v).coerceAtLeast(0) }))
             f.sub.add(ColorPickerSetting("Fill Color", "", FishSettings::blockOverlayFillColor))
             f.sub.add(SliderIntSetting("Fill Opacity %", "", FishSettings::blockOverlayOpacity, 0, 100))
@@ -1462,7 +1462,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val terminalRenderModeOptions = arrayOf("Overlay", "Custom GUI")
             f.sub.add(DropdownSetting("Render Mode", "Custom GUI replaces the chest with a big rounded board",
                 terminalRenderModeOptions,
-                { terminalRenderModeOptions[FishSettings.terminalRenderMode] },
+                { terminalRenderModeOptions.getOrElse(FishSettings.terminalRenderMode) { terminalRenderModeOptions[0] } },
                 { v -> FishSettings.terminalRenderMode = terminalRenderModeOptions.indexOf(v).coerceAtLeast(0) }))
             f.sub.add(SliderDoubleSetting("Custom Scale", "", FishSettings::terminalCustomScale, 0.5, 3.0).gatedBy { FishSettings.terminalRenderMode == 1 })
             f.sub.add(SliderIntSetting("Custom Roundness", "", FishSettings::terminalCustomRoundness, 0, 15).gatedBy { FishSettings.terminalRenderMode == 1 })
@@ -1560,7 +1560,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Spawn Timer (HUD)", "On-screen countdown for the priority dragon — movable in the HUD editor", FishSettings::witherDragonsTimerHud))
             val timerStyleOptions = arrayOf("Milliseconds", "Seconds", "Ticks")
             f.sub.add(DropdownSetting("Timer Style", "", timerStyleOptions,
-                { timerStyleOptions[FishSettings.witherDragonsTimerStyle] },
+                { timerStyleOptions.getOrElse(FishSettings.witherDragonsTimerStyle) { timerStyleOptions[0] } },
                 { v -> FishSettings.witherDragonsTimerStyle = timerStyleOptions.indexOf(v).coerceAtLeast(0) })
                 .gatedBy { FishSettings.witherDragonsTimerWorld || FishSettings.witherDragonsTimerHud })
             f.sub.add(ToggleSetting("Spawn Alert (Title)", "Title with the priority dragon's colour when a wave starts spawning (NoammAddons)", FishSettings::witherDragonsSpawnAlert))
@@ -1580,7 +1580,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderDoubleSetting("Easy Power", "", FishSettings::witherDragonsEasyPower, 0.0, 32.0).gatedBy { FishSettings.witherDragonsPriority })
             val soloDebuffOptions = arrayOf("Tank", "Healer")
             f.sub.add(DropdownSetting("Purple Solo Debuff", "", soloDebuffOptions,
-                { soloDebuffOptions[FishSettings.witherDragonsSoloDebuff] },
+                { soloDebuffOptions.getOrElse(FishSettings.witherDragonsSoloDebuff) { soloDebuffOptions[0] } },
                 { v -> FishSettings.witherDragonsSoloDebuff = soloDebuffOptions.indexOf(v).coerceAtLeast(0) })
                 .gatedBy { FishSettings.witherDragonsPriority })
             f.sub.add(ToggleSetting("Solo Debuff on All Splits", "", FishSettings::witherDragonsSoloDebuffAll).gatedBy { FishSettings.witherDragonsPriority })

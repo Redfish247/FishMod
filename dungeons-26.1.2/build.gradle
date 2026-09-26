@@ -14,9 +14,6 @@ base {
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(25)
-    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-    // if it is present.
-    // If you remove this line, sources will not be generated.
     withSourcesJar()
 }
 
@@ -26,7 +23,6 @@ loom {
         vmArg("-Dmixin.debug.export=true")
         vmArg("-Ddevauth.enabled=true")
         vmArg("-Ddevauth.account=main")
-        // Only valid on JetBrains Runtime (IntelliJ); Adoptium/Hotspot rejects it
         if (System.getProperty("java.vendor.version")?.contains("JBR") ||
                 System.getProperty("java.vm.vendor")?.contains("JetBrains")) {
             vmArg("-XX:+AllowEnhancedClassRedefinition")
@@ -38,32 +34,15 @@ loom {
     }
 }
 
-
-
 repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
-    maven  {url = "https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1" }
-
-	repositories {
-		mavenCentral()
-		maven { url 'https://jitpack.io' }
-	}
-
+	maven { url = "https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1" }
+	mavenCentral()
+	maven { url 'https://jitpack.io' }
 	maven {
 		name = "Terraformers"
 		url = "https://maven.terraformersmc.com/"
 	}
-
-	repositories {
-		maven { url = 'https://repo.hypixel.net/repository/Hypixel/' }
-	}
-
-	// Modrinth maven — used as a fallback for mods (MCEF, Hypixel Mod API) when the
-	// developer-local jars under C:/Users/Eli/... aren't available (e.g. CI).
+	maven { url = 'https://repo.hypixel.net/repository/Hypixel/' }
 	maven {
 		name = "Modrinth"
 		url = "https://api.modrinth.com/maven"
@@ -72,26 +51,14 @@ repositories {
 }
 
 dependencies {
-	// Shared version-agnostic dungeon-map/room logic (see :common). Loom's `include` mechanism is
-	// for jar-in-jar mod dependencies, not plain local projects, so :common's compiled classes are
-	// merged into this module's own jar directly by the `jar { from(...) }` block below instead.
 	implementation project(':common')
 
-	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	implementation("com.terraformersmc:modmenu:${project.modmenu_version}")
-	// Dungeon map feature (this module + :common) is written in Kotlin — bundles kotlin-stdlib as a
-	// nested jar-in-jar, same as any other Kotlin Fabric mod (Odin, NoammAddons, etc).
 	implementation "net.fabricmc:fabric-language-kotlin:${project.fabric_kotlin_version}"
-	// Hypixel Mod API needs two coordinates: Hypixel's own maven (repo.hypixel.net) publishes the
-	// core net.hypixel.modapi.* classes but no fabric.mod.json, so it's compile-only here. Modrinth's
-	// build carries proper Fabric metadata but only bundles the core classes as a nested
-	// META-INF/jars/ jar (a runtime-only Fabric Loader mechanism Gradle can't see at compile time) —
-	// that one is the actual runtime/shipped dependency.
 	compileOnly("net.hypixel:mod-api:${project.hypixel_api_core_version}")
 	include implementation("maven.modrinth:hypixel-mod-api:${project.hypixel_api_version}")
 	// Fork of BladeMasterGabe/practical-config ported to 26.2 (see gradle.properties), bundled via
@@ -100,24 +67,7 @@ dependencies {
 	// same library at the same package (see that project's build.gradle for why).
 	include implementation(project(':practical-config-relocated'))
 
-    runtimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
-    runtimeOnly("org.apache.httpcomponents:httpclient:4.5.14")
-
-    // Hypixel Mod API's runtime jar is already pulled from Modrinth above (include implementation),
-    // which ships a proper fabric.mod.json — no local-jar workaround needed anymore. (The old
-    // workaround pointed at a stale 1.21-era local jar that actively conflicted with the real 26.2
-    // dependency once both ended up on the runtime classpath together.)
-
-    // MCEF — compile-only (users install at runtime from Modrinth). Use the local jar when
-    // present; otherwise pull from Modrinth's maven so CI can compile WikiScreen. No 26.1.2 launcher
-    // profile exists on this machine yet, so this currently always falls through to the Modrinth
-    // maven coordinate below — update this path once a 26.1.2 dev profile is set up locally.
-    def mcefLocal = file('C:/Users/Eli/AppData/Roaming/ModrinthApp/profiles/Skyblock 1.21.8/mods/mcef_fabric_2.2.0_MC_1.21.11.jar')
-    if (mcefLocal.exists()) {
-        compileOnly files(mcefLocal)
-    } else {
-        compileOnly("maven.modrinth:mcef-keksuccino:2.2.0-26.1.1-fabric")
-    }
+	runtimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
 }
 
 processResources {
@@ -136,16 +86,6 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
 	compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25
 }
 
-java {
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
-	withSourcesJar()
-
-	sourceCompatibility = JavaVersion.VERSION_25
-	targetCompatibility = JavaVersion.VERSION_25
-}
-
 jar {
 	inputs.property "archivesName", project.base.archivesName
 
@@ -153,16 +93,9 @@ jar {
 		rename { "${it}_${inputs.properties.archivesName}"}
 	}
 
-	// Merge :common's compiled classes/resources straight into this module's jar before Loom
-	// remaps it — :common has zero net.minecraft references, so nothing there needs remapping.
 	from(project(':common').sourceSets.main.output)
 }
 
-// Modrinth publishing — run with: ./gradlew modrinth
-//   Requires a token, sourced from (first found wins): env MODRINTH_TOKEN, then gradle property
-//   modrinth_token (put it in ~/.gradle/gradle.properties — NOT this repo's gradle.properties,
-//   which is tracked). Also requires MODRINTH_PROJECT_ID (or override project.modrinth_project_id
-//   in gradle.properties). Optional: CHANGELOG (defaults to "Release ${mod_version}")
 modrinth {
 	token       = providers.environmentVariable('MODRINTH_TOKEN')
 			.orElse(providers.gradleProperty('modrinth_token'))
@@ -176,22 +109,13 @@ modrinth {
 	loaders       = ['fabric']
 	changelog     = providers.environmentVariable('CHANGELOG')
 			.orElse("Release ${project.mod_version}")
-	syncBodyFrom  = providers.fileContents(layout.projectDirectory.file('README.md'))
-			.asText.orElse('')
 	dependencies {
 		required.project 'fabric-api'
-		required.project 'mcef'              // Keksuccino's MCEF fork
-		required.project 'hypixel-mod-api'   // Hypixel Mod API
+		required.project 'hypixel-mod-api'
 	}
 }
 tasks.modrinth.dependsOn tasks.build
 
-// Auto-announce a Modrinth release in Discord right after a successful `./gradlew modrinth`.
-//   Webhook source (first found wins): env DISCORD_WEBHOOK, then gradle property discord_webhook
-//   (put it in ~/.gradle/gradle.properties — NOT this repo's gradle.properties, which is tracked).
-//   Skips with a warning (never fails the publish) if no webhook is configured, and is itself
-//   skipped if the modrinth upload failed. Uses the JDK HttpClient with a real User-Agent so
-//   Discord/Cloudflare doesn't reject it (the default UA gets a 403 error code 1010).
 def discordWebhook = providers.environmentVariable('DISCORD_WEBHOOK')
 		.orElse(providers.gradleProperty('discord_webhook'))
 
@@ -255,24 +179,36 @@ tasks.register('announceDiscord') {
 
 tasks.named('modrinth').configure { finalizedBy 'announceDiscord' }
 
-// Build, then swap the new jar into each local client's mods folder; skips any client that's running.
 tasks.register('deployJar') {
 	group = 'fishmod'
-	description = 'Build and copy the jar into the Skyblock 1.21.8 + FishTest mods folders'
+	description = 'Build and copy the jar into local client mods folders (deploy_targets / deploy_profile properties)'
 	dependsOn tasks.build
 	def jarFile = tasks.jar.archiveFile
+	def targetSpec = (project.findProperty('deploy_targets') ?: '').toString()
+	def isWindows = System.getProperty('os.name').toLowerCase().contains('win')
 	def appData = System.getenv('APPDATA')
 	doLast {
 		def jar = jarFile.get().asFile
-		def targets = [
-			'Skyblock 1.21.8': new File(appData, 'ModrinthApp/profiles/Skyblock 1.21.8/mods'),
-			'FishTest'       : new File(appData, 'PrismLauncher/instances/FishTest/minecraft/mods'),
-		]
-		def running = ['powershell', '-NoProfile', '-Command',
-			"Get-CimInstance Win32_Process | Where-Object Name -like 'java*' | ForEach-Object CommandLine"].execute().text
-		targets.each { name, dir ->
-			if (!dir.isDirectory()) { logger.lifecycle("deployJar: skip ${name} (no mods folder)"); return }
-			if (running.contains(name)) { logger.warn("deployJar: SKIPPED ${name} - that client is open, close it and rerun"); return }
+		def targets = targetSpec.split(';').findAll { it.trim() }.collect { new File(it.trim()) }
+		if (targets.isEmpty() && appData != null) {
+			targets = [
+				new File(appData, "ModrinthApp/profiles/${project.findProperty('deploy_profile') ?: 'Skyblock 1.21.8'}/mods"),
+				new File(appData, 'PrismLauncher/instances/FishTest/minecraft/mods'),
+			]
+		}
+		if (targets.isEmpty()) {
+			logger.warn("deployJar: set deploy_targets (';'-separated mods folders) in ~/.gradle/gradle.properties")
+			return
+		}
+		def running = isWindows
+			? ['powershell', '-NoProfile', '-Command',
+				"Get-CimInstance Win32_Process | Where-Object Name -like 'java*' | ForEach-Object CommandLine"].execute().text
+			: ['ps', '-eo', 'args'].execute().text
+		targets.each { dir ->
+			def gameDir = dir.parentFile
+			def name = gameDir?.name == 'minecraft' ? gameDir.parentFile?.name : gameDir?.name
+			if (!dir.isDirectory()) { logger.lifecycle("deployJar: skip ${dir} (no mods folder)"); return }
+			if (name && running.contains(name)) { logger.warn("deployJar: SKIPPED ${name} - that client is open, close it and rerun"); return }
 			dir.listFiles().findAll { it.name ==~ /FishModDungeons-.*\.jar/ && it.name != jar.name }.each { old ->
 				if (old.delete()) logger.lifecycle("deployJar: removed ${old.name} from ${name}")
 				else logger.warn("deployJar: couldn't remove ${old.name} from ${name}")
@@ -283,7 +219,6 @@ tasks.register('deployJar') {
 	}
 }
 
-// configure the maven publication
 publishing {
 	publications {
 		create("mavenJava", MavenPublication) {
@@ -291,13 +226,4 @@ publishing {
 			from components.java
 		}
 	}
-
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-	repositories {
-		// Add repositories to publish to here.
-		// Notice: This block does NOT have the same function as the block in the top level.
-		// The repositories here will be used for publishing your artifact, not for
-		// retrieving dependencies.
-	}
 }
-

@@ -49,8 +49,9 @@ object Phase {
     fun init() {
         Events.ON_SERVER_TICK.register {
             if (floor == null) detectFloor()
-            if (currentSplits == null || runOver) return@register false
-            for (split in currentSplits!!) {
+            val splits = currentSplits
+            if (splits == null || runOver) return@register false
+            for (split in splits) {
                 split.tick()
             }
             false

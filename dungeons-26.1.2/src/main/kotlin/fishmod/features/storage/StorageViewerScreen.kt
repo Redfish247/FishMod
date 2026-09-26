@@ -134,7 +134,9 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
                 val h = drawPage(ctx, x, y, idx, inv, rows, q, mouseX, mouseY, mouseY in viewTop..viewBot, dims)
                 if (h != null) hovered = h
             }
-            titleRects.add(intArrayOf(x, y, cellW, CARD_HEAD, idx))
+            val titleTop = max(y, viewTop)
+            val titleBot = min(y + CARD_HEAD, viewBot)
+            if (titleTop < titleBot) titleRects.add(intArrayOf(x, titleTop, cellW, titleBot - titleTop, idx))
             rowMaxH = max(rowMaxH, cardH)
             col++
             if (col >= cols) { col = 0; x = gridLeft; y += rowMaxH + GAP; rowMaxH = 0 } else x += cellW + GAP
