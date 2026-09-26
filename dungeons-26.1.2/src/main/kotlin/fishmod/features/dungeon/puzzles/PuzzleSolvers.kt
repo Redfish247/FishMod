@@ -96,6 +96,7 @@ object PuzzleSolvers {
                 WeirdosSolver.onNPCMessage(it.groupValues[1], it.groupValues[2])
             }
             if (FishSettings.quizSolver) QuizSolver.onMessage(msg)
+            if (msg.contains("killed a Blaze in the wrong order")) BlazeSolver.onFail()
             false
         }
 

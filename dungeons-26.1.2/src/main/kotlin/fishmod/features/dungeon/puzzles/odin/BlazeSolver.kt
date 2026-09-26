@@ -12,6 +12,7 @@ object BlazeSolver {
     private val blazes = mutableListOf<ArmorStand>()
     private var seenBlazes = false
     private var completed = false
+    private var emptyScans = 0
     private val blazeHealthRegex = Regex("Blaze [\\d,]+/([\\d,]+)❤")
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
@@ -28,8 +29,11 @@ object BlazeSolver {
             blazes.add(entity)
         }
         if (name == "Lower Blaze") blazes.sortByDescending { hpMap[it] } else blazes.sortBy { hpMap[it] }
-        if (blazes.isNotEmpty()) seenBlazes = true
-        else if (seenBlazes && !completed) {
+        if (blazes.isNotEmpty()) {
+            seenBlazes = true
+            completed = false
+            emptyScans = 0
+        } else if (seenBlazes && !completed && ++emptyScans >= 2) {
             completed = true
             PuzzleSolvers.onPuzzleComplete(name)
         }
@@ -66,9 +70,15 @@ object BlazeSolver {
         return name == "Lower Blaze" || name == "Higher Blaze"
     }
 
+    fun onFail() {
+        seenBlazes = false
+        emptyScans = 0
+    }
+
     fun reset() {
         seenBlazes = false
         completed = false
+        emptyScans = 0
         blazes.clear()
     }
 }
