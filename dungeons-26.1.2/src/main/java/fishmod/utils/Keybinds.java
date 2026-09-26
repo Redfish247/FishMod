@@ -220,9 +220,14 @@ public class Keybinds {
         } catch (IOException ignored) {}
     }
 
+    private static int syncTick = 0;
+
     public static void checkInputs(Minecraft client) {
 
-        syncKeybindBackup();
+        if (++syncTick >= 40) {
+            syncTick = 0;
+            syncKeybindBackup();
+        }
 
         if (openConfig.consumeClick()) {
             client.setScreen(new fishmod.features.FishModScreen());

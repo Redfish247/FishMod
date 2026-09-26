@@ -5,7 +5,6 @@ import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import java.io.File
 import java.io.FileReader
-import java.io.FileWriter
 
 object ItemCustomizationStore {
 
@@ -64,16 +63,13 @@ object ItemCustomizationStore {
                 val loaded: Data? = GSON.fromJson(reader, type)
                 if (loaded != null) data = loaded
             }
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            fishmod.utils.SafeFiles.quarantine(file, e)
         }
     }
 
     private fun save() {
-        try {
-            val file = File(FILE_PATH)
-            file.parentFile?.mkdirs()
-            FileWriter(file).use { writer -> GSON.toJson(data, writer) }
-        } catch (ignored: Exception) {
-        }
+        val json = GSON.toJson(data)
+        fishmod.utils.IoExecutor.execute { fishmod.utils.SafeFiles.writeAtomic(File(FILE_PATH), json) }
     }
 }

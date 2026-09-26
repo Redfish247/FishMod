@@ -41,9 +41,10 @@ public class ChatHudMixin {
         // Catches party chat regardless of packet type (signed player chat vs. unsigned system
         // chat) — the network-level ON_GAME_MESSAGE hook only sees unsigned system chat, which
         // in-dungeon party messages don't always arrive as.
-        fishmod.features.dungeon.AutoRequeue.onChatLine(message.getString());
+        String messageText = message.getString();
+        fishmod.features.dungeon.AutoRequeue.onChatLine(messageText);
         // Fires even when the line below gets hidden by Chat Filter's "Boss Messages" toggle.
-        fishmod.features.Ragnarock.checkP5Taunt(message.getString());
+        fishmod.features.Ragnarock.checkP5Taunt(messageText);
 
         if (fishmod.features.ChatFilter.shouldHide(message)
                 || fishmod.features.chat.ChatRuleHandler.shouldHideAtDisplay(message)) {
@@ -60,7 +61,7 @@ public class ChatHudMixin {
             return;
         }
 
-        String plain = fishmod.utils.HypixelApi.STRIP_COLOR.matcher(message.getString()).replaceAll("");
+        String plain = fishmod.utils.HypixelApi.STRIP_COLOR.matcher(messageText).replaceAll("");
 
         if (System.currentTimeMillis() - fishmod.features.dungeon.ChatCommandState.lastPartyCommandAt < 6000) {
             if (plain.startsWith("Unknown party command")
