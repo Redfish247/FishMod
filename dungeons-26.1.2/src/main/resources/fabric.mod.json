@@ -8,7 +8,7 @@
 		"Redfish2471"
 	],
 	"contact": {
-		"homepage": "https://modrinth.com/mod/${modrinthProject}",
+		"homepage": "https://modrinth.com/mod/${modrinthSlug}",
 		"sources": "https://github.com/${githubRepo}"
 	},
 	"license": "CC0-1.0",
