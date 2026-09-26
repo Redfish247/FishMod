@@ -140,7 +140,7 @@ public class PartyCommandHandler {
             case "fps"    -> { if (FishSettings.pcFps    && isMe) sendFps(mc, responder);  }
             case "tps"    -> { if (FishSettings.pcTps    && isMe) sendTps(mc, responder);  }
             case "ping"   -> { if (FishSettings.pcPing   && isMe) sendPing(mc, responder); }
-            case "ai", "allinv" -> { if (FishSettings.pcAllinvite && isMe) sendRawCommand(mc, "p settings allinvite"); }
+            case "ai", "allinv" -> { if (FishSettings.pcAllinvite && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && respond(cmd, "*", isLocal)) sendRawCommand(mc, "p settings allinvite"); }
             case "d"            -> { if (FishSettings.pcDisband   && isMe) sendRawCommand(mc, "p disband");             }
             case "kick", "k"              -> { if (FishSettings.pcActionKick     && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p kick " + resolvePartyTarget(mc, rawArg1));    }
             case "warp", "w"              -> { if (FishSettings.pcActionWarp     && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe))                    sendRawCommand(mc, "p warp");                }
