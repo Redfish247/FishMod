@@ -304,7 +304,13 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
     }
 
     private var focusedField: EditBox? = null
+    override fun removed() {
+        if (focusedField === modelField) applyModel()
+        super.removed()
+    }
+
     private fun focusField(f: EditBox?) {
+        if (focusedField === modelField && f !== modelField) applyModel()
         focusedField?.isFocused = false
         focusedField = f
         focusedField?.isFocused = true
@@ -322,8 +328,8 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
     }
 
     private fun select(idx: Int) {
-        selectedIndex = idx
         focusField(null)
+        selectedIndex = idx
         loadFields()
     }
 
@@ -742,7 +748,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
             f.keyPressed(input)
             if (f === dyeField) applyDye()
             if (f === nameField) applyName()
-            if (f === modelField) applyModel()
             return true
         }
         if (input.key() == GLFW.GLFW_KEY_ESCAPE) { onClose(); return true }
@@ -755,7 +760,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
             f.charTyped(input)
             if (f === dyeField) applyDye()
             if (f === nameField) applyName()
-            if (f === modelField) applyModel()
             return true
         }
         return super.charTyped(input)

@@ -20,6 +20,7 @@ object TabListCache {
         private set
 
     private var lastSig = 0
+    private var lastIdentity = 0
 
     @JvmStatic
     fun register() {
@@ -47,11 +48,17 @@ object TabListCache {
 
     private fun scan(mc: Minecraft) {
         val online = mc.connection!!.onlinePlayers
+        var identity = online.size
+        for (info in online) {
+            identity = identity * 31 + System.identityHashCode(info)
+            identity = identity * 31 + System.identityHashCode(info.tabListDisplayName)
+        }
+        if (identity == lastIdentity && entries.size == online.size) return
+        lastIdentity = identity
         var sig = online.size
         val built = ArrayList<Entry>(online.size)
         for (info in online) {
-            val dn = info.tabListDisplayName
-            val raw = dn?.string ?: ""
+            val raw = info.tabListDisplayName?.string ?: ""
             sig = sig * 31 + raw.hashCode()
             val stripped = if (raw.isEmpty()) "" else Constants.STRIP_COLOR_REGEX.replace(raw, "")
             built.add(Entry(info, stripped))

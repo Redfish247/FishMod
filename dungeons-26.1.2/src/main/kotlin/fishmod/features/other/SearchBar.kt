@@ -44,11 +44,19 @@ object SearchBar {
         }
     }
 
-    private fun matches(item: ItemStack): Boolean {
-        val name = item.hoverName.string.lowercase()
-        if (item.isEmpty || name == "air") return false
+    private val matchCache = java.util.WeakHashMap<ItemStack, Boolean>()
+    private var matchCacheTerm = ""
 
-        return name.contains(searchTerm) || ItemUtil.containsIgnoreCaseLore(item, searchTerm)
+    private fun matches(item: ItemStack): Boolean {
+        if (item.isEmpty) return false
+        if (matchCacheTerm != searchTerm) {
+            matchCacheTerm = searchTerm
+            matchCache.clear()
+        }
+        return matchCache.getOrPut(item) {
+            val name = item.hoverName.string
+            name != "Air" && (name.contains(searchTerm, ignoreCase = true) || ItemUtil.containsIgnoreCaseLore(item, searchTerm))
+        }
     }
 
     @JvmStatic

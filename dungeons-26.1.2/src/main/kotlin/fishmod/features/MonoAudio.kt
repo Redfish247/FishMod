@@ -12,6 +12,6 @@ object MonoAudio {
 
     @JvmStatic
     fun applyCenteredPosition(source: Int, distance: Double) {
-        AL10.alSourcefv(source, AL10.AL_POSITION, floatArrayOf(0f, 0f, -distance.toFloat()))
+        AL10.alSource3f(source, AL10.AL_POSITION, 0f, 0f, -distance.toFloat())
     }
 }
