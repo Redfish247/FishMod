@@ -103,6 +103,11 @@ object RenderUtils {
         Gizmos.line(a, b, if ((argb ushr 24) == 0) argb or (0xFF shl 24) else argb)
     }
 
+    @JvmStatic
+    fun gizmoLine(a: Vec3, b: Vec3, argb: Int, width: Float) {
+        Gizmos.line(a, b, if ((argb ushr 24) == 0) argb or (0xFF shl 24) else argb, width)
+    }
+
     private fun crossQuads(a: Vec3, b: Vec3, halfWidth: Double): Pair<Array<Vec3>, Array<Vec3>>? {
         val dir = b.subtract(a)
         if (dir.lengthSqr() < 1.0e-9) return null
