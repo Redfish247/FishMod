@@ -48,7 +48,7 @@ object OdinScan {
     @Volatile private var lastDiag = 0L
     private fun diag(msg: String) {
         val now = System.currentTimeMillis()
-        if (now - lastDiag > 3000) { lastDiag = now; Debug.LOGGER.info("[OdinScan] {}", msg) }
+        if (now - lastDiag > 3000) { lastDiag = now; Debug.LOGGER.debug("[OdinScan] {}", msg) }
     }
 
     private fun tick(mc: Minecraft) {

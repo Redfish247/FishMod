@@ -135,7 +135,7 @@ object CroesusPrices {
                     Debug.LOGGER.warn("[CroesusPrices] qualityBin {} error: {}", key, ex.message)
                 }
                 qualityBin[key] = result to System.currentTimeMillis()
-                if (result > 0.0) Debug.LOGGER.info("[CroesusPrices] qualityBin {} = {}", key, result)
+                if (result > 0.0) Debug.LOGGER.debug("[CroesusPrices] qualityBin {} = {}", key, result)
             }.exceptionally { qualityFetching.remove(key); qualityBin[key] = 0.0 to System.currentTimeMillis(); null }
     }
 
@@ -229,7 +229,7 @@ object CroesusPrices {
                     }
                 }
                 dynamicBin[cacheKey] = result to System.currentTimeMillis()
-                if (result > 0.0) Debug.LOGGER.info("[CroesusPrices] dynamicBin {} = {}", cacheKey, result)
+                if (result > 0.0) Debug.LOGGER.debug("[CroesusPrices] dynamicBin {} = {}", cacheKey, result)
             }
             .exceptionally { dynamicFetching.remove(cacheKey); dynamicBin[cacheKey] = 0.0 to System.currentTimeMillis(); null }
     }
@@ -254,7 +254,7 @@ object CroesusPrices {
                         val p = med.asDouble
                         if (p > 0) {
                             coflnet[id] = p
-                            Debug.LOGGER.info("[CroesusPrices] coflnet {} = {}", id, p)
+                            Debug.LOGGER.debug("[CroesusPrices] coflnet {} = {}", id, p)
                         }
                     }
                     val mean = obj.get("mean")
@@ -324,7 +324,7 @@ object CroesusPrices {
                     Debug.LOGGER.warn("[CroesusPrices] lowBin {} error: {}", id, ex.message)
                 }
                 lowBinCache[id] = result to System.currentTimeMillis()
-                if (result > 0.0) Debug.LOGGER.info("[CroesusPrices] lowBin {} = {}", id, result)
+                if (result > 0.0) Debug.LOGGER.debug("[CroesusPrices] lowBin {} = {}", id, result)
             }.exceptionally { fetchingLowBin.remove(id); lowBinCache[id] = 0.0 to System.currentTimeMillis(); null }
     }
 
@@ -377,7 +377,7 @@ object CroesusPrices {
                     bazaarSell = sell
                     applyPriceMode()
                     lastBazaar = System.currentTimeMillis()
-                    Debug.LOGGER.info("[CroesusPrices] bazaar loaded {} entries", bazaar.size)
+                    Debug.LOGGER.debug("[CroesusPrices] bazaar loaded {} entries", bazaar.size)
                 } catch (ex: Exception) {
                     Debug.LOGGER.warn("[CroesusPrices] bazaar parse error: {}", ex.message)
                 }
@@ -408,7 +408,7 @@ object CroesusPrices {
                     val now = System.currentTimeMillis()
                     lastLbin = now
                     lbinFailLogged = false
-                    Debug.LOGGER.info("[CroesusPrices] coflnet lbin loaded {} entries", next.size)
+                    Debug.LOGGER.debug("[CroesusPrices] coflnet lbin loaded {} entries", next.size)
                 } catch (ex: Exception) {
                     if (!lbinFailLogged) { Debug.LOGGER.warn("[CroesusPrices] lbin parse error: {}", ex.message); lbinFailLogged = true }
                     lastLbin = failStamp()

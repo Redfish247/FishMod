@@ -31,7 +31,8 @@ object ClassColoredBoots {
             try {
                 val boots = mc.player!!.getItemBySlot(EquipmentSlot.FEET)
                 if (boots == null || boots.isEmpty) return@register
-                boots.set(DataComponents.DYED_COLOR, DyedItemColor(rgb and 0xFFFFFF))
+                val color = rgb and 0xFFFFFF
+                if (boots.get(DataComponents.DYED_COLOR)?.rgb() != color) boots.set(DataComponents.DYED_COLOR, DyedItemColor(color))
             } catch (ex: Exception) {
                 if (!loggedError) { loggedError = true; fishmod.utils.debug.Debug.LOGGER.warn("[ClassColoredBoots] failed to dye boots: {}", ex.message) }
             }

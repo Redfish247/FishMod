@@ -381,6 +381,7 @@ class FishModInit : ModInitializer {
     override fun onInitialize() {
         FishConfig.manager.load()
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register { FishConfig.manager.save() }
+        fishmod.utils.IoExecutor.init()
 
         fishmod.cosmetic.NickData.load()
         fishmod.cosmetic.RemoteNicks.init()

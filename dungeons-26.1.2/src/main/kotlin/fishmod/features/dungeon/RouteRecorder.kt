@@ -178,7 +178,7 @@ object RouteRecorder {
     // use-on-block and use-item can both fire for one click
     // clicks and the explosion itself can all report one superboom
     private fun boom(pos: BlockPos, via: String) {
-        fishmod.utils.debug.Debug.LOGGER.info("[Route] superboom via $via at $pos")
+        fishmod.utils.debug.Debug.LOGGER.debug("[Route] superboom via $via at $pos")
         if (tick - lastBoomTick < 20) return
         lastBoomTick = tick
         action(Type.SUPERBOOM, pos)
@@ -250,7 +250,7 @@ object RouteRecorder {
         while (true) {
             val (name, at) = boomSounds.poll() ?: break
             if (tick - boomHeldTick > 40 || at.distanceToSqr(pos) > 100.0) continue
-            fishmod.utils.debug.Debug.LOGGER.info("[Route] sound near superboom: $name")
+            fishmod.utils.debug.Debug.LOGGER.debug("[Route] sound near superboom: $name")
             if ("explode" in name || "explosion" in name) boom(BlockPos.containing(at), "sound:$name")
         }
 

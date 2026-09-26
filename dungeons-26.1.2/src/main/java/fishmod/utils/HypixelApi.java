@@ -1199,7 +1199,7 @@ public class HypixelApi {
                     }
                 }
                 total = liquid + invVal + storageVal + bagsVal + wardrobeVal + equipLoadoutVal;
-                fishmod.utils.debug.Debug.LOGGER.info(
+                fishmod.utils.debug.Debug.LOGGER.debug(
                         "[Networth] buckets: liquid={} inv(NW_STORAGES)={} storage/backpacks={} bag_contents={} wardrobe={} equipLoadout={}",
                         liquid, invVal, storageVal, bagsVal, wardrobeVal, equipLoadoutVal);
                 double liquidAndItems = total;
@@ -1210,7 +1210,7 @@ public class HypixelApi {
                 double museum = chosen.has("profile_id")
                         ? museumValueNw(uuid, chosen.get("profile_id").getAsString(), prices) : 0;
                 total = liquidAndItems + pets + sacks + essence + toolkits + museum;
-                fishmod.utils.debug.Debug.LOGGER.info(
+                fishmod.utils.debug.Debug.LOGGER.debug(
                         "[Networth] {} total={} (liquid+items={} pets={} sacks={} essence={} toolkits={} museum={})",
                         pname, total, liquidAndItems, pets, sacks, essence, toolkits, museum);
 
@@ -1824,7 +1824,7 @@ public class HypixelApi {
             HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
             JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
             if (!root.has("members") || !root.getAsJsonObject("members").has(uuid)) {
-                fishmod.utils.debug.Debug.LOGGER.info("[Networth] museum: http={} no members/uuid (body {}b)",
+                fishmod.utils.debug.Debug.LOGGER.debug("[Networth] museum: http={} no members/uuid (body {}b)",
                         r.statusCode(), r.body().length());
                 return 0;
             }
@@ -1855,7 +1855,7 @@ public class HypixelApi {
                     } catch (Exception ignored) {}
                 }
             }
-            fishmod.utils.debug.Debug.LOGGER.info("[Networth] museum: {} slots, {} items decoded, value {}",
+            fishmod.utils.debug.Debug.LOGGER.debug("[Networth] museum: {} slots, {} items decoded, value {}",
                     slots, decoded, total);
             return total;
         } catch (Exception e) {

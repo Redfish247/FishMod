@@ -21,9 +21,7 @@ import java.util.regex.Pattern
 
 object SessionStats {
 
-    private val ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
-        Thread(r, "FishMod-SessionStats-IO").apply { isDaemon = true }
-    }
+    private val ioExecutor = fishmod.utils.IoExecutor
 
     private val DEATH_PAT = Pattern.compile("☠ \\S+ (?:was|were) killed by|☠ \\S+ (?:died|quit)")
 

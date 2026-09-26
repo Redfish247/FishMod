@@ -70,6 +70,7 @@ object SpringBoots {
         }
 
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
+            if (!FishSettings.springBootsEnabled) return@register
             val p = mc.player ?: return@register
             if (!p.isCrouching || !wearingSpringBoots() || !Location.inSkyblock()) reset()
         }
