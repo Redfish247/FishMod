@@ -28,7 +28,8 @@ import java.util.zip.ZipFile
 object UpdateManager {
 
     private const val MOD_ID = "fishmod-dungeons"
-    private const val CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000L
+    // Cheap: repeat checks send the ETag and a 304 is free against the rate limit.
+    private const val CHECK_INTERVAL_MS = 10 * 60 * 1000L
     private const val FAILURE_BACKOFF_MS = 30 * 60 * 1000L
     private const val JOIN_SETTLE_TICKS = 100
     private const val MAX_JAR_BYTES = 64L * 1024 * 1024
