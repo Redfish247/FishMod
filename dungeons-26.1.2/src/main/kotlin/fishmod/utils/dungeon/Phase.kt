@@ -14,6 +14,7 @@ import fishmod.utils.events.interfaces.RunEndEvent
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
 import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
 import java.util.regex.Pattern
 
 object Phase {
@@ -97,12 +98,13 @@ object Phase {
 
             if (currentSplit.ended()) {
                 val pb = splitPb(currentSplit)
+                val tick = tickPb(currentSplit)
                 if (sendSplitInChat) {
                     val line = currentSplit.createNameText().append(currentSplit.createTimeText())
-                    if (pb != null && showSplitPb()) line.append(PbMessages.tag(pb))
+                    if (showSplitPb()) appendPbTags(line, pb, tick, false)
                     Misc.addChatMessage(line)
-                } else if (pb != null && showSplitPb() && (pb.isPb || !FishSettings.pbMessagesOnlyPb)) {
-                    Misc.addChatMessage(currentSplit.createNameText().append(currentSplit.createTimeText()).append(PbMessages.tag(pb)))
+                } else if (showSplitPb() && anyPbToShow(pb, tick)) {
+                    Misc.addChatMessage(appendPbTags(currentSplit.createNameText().append(currentSplit.createTimeText()), pb, tick, true))
                 }
 
                 currentPhase = i + 1
@@ -173,21 +175,30 @@ object Phase {
             Misc.addChatMessage(Component.literal("§cNo splits for §f$f§c. Try one of: ${FLOOR_ORDER.filter { FLOOR_SPLITS.containsKey(it) }.joinToString(", ")}"))
             return
         }
-        Misc.addChatMessage(Component.literal("§d§l$f PB Splits"))
+        Misc.addChatMessage(Component.literal("§d§l$f PB Splits §8(§ereal §8/ §3tick§8)"))
         var total = 0.0
+        var tickTotal = 0.0
         var missing = 0
+        var tickMissing = 0
         for (s in splits) {
             if (s.avg < 0) continue
             val pb = seedPb(f, s.name)
+            val tick = PbMessages.get("splittick:$f:${s.name}")
             val line = s.createNameText()
             if (pb == null) { missing++; line.append(Component.literal("§7—")) }
             else { total += pb; line.append(Component.literal("§e${PbMessages.fmt(pb)}")) }
+            if (tick == null) { tickMissing++; line.append(Component.literal(" §8(§7—§8)")) }
+            else { tickTotal += tick; line.append(Component.literal(" §8(§3${PbMessages.fmt(tick)}§8)")) }
             Misc.addChatMessage(line)
         }
         val sum = Component.literal("§aSum of best: §e§l${PbMessages.fmt(total)}")
         if (missing > 0) sum.append(Component.literal(" §7($missing split${if (missing == 1) "" else "s"} with no PB yet)"))
         PbMessages.get("split:$f:Run Time")?.let { sum.append(Component.literal(" §8| §7Run PB §f${PbMessages.fmt(it)}")) }
         Misc.addChatMessage(sum)
+        val tickSum = Component.literal("§aSum of tick best: §3§l${PbMessages.fmt(tickTotal)}")
+        if (tickMissing > 0) tickSum.append(Component.literal(" §7($tickMissing split${if (tickMissing == 1) "" else "s"} with no tick PB yet)"))
+        PbMessages.get("splittick:$f:Run Time")?.let { tickSum.append(Component.literal(" §8| §7Run tick PB §f${PbMessages.fmt(it)}")) }
+        Misc.addChatMessage(tickSum)
     }
 
     private fun splitPb(split: Split): PbMessages.Result? {
@@ -199,6 +210,23 @@ object Phase {
         val r = PbMessages.submit("split:$f:${split.name}", t) ?: return null
         split.paceColor = paceColor(r, avg)
         return r
+    }
+
+    // Separate all-time best for server-tick time (lag-free), no history seed.
+    private fun tickPb(split: Split): PbMessages.Result? {
+        if (PracticeMode.active) return null
+        val f = floor ?: return null
+        return PbMessages.submit("splittick:$f:${split.name}", split.getTickTime())
+    }
+
+    private fun anyPbToShow(pb: PbMessages.Result?, tick: PbMessages.Result?): Boolean =
+        pb?.isPb == true || tick?.isPb == true || (!FishSettings.pbMessagesOnlyPb && (pb != null || tick != null))
+
+    private fun appendPbTags(line: MutableComponent, pb: PbMessages.Result?, tick: PbMessages.Result?, respectOnlyPb: Boolean): MutableComponent {
+        val onlyPb = respectOnlyPb && FishSettings.pbMessagesOnlyPb
+        if (pb != null && (pb.isPb || !onlyPb)) line.append(PbMessages.tag(pb))
+        if (tick != null && (tick.isPb || !onlyPb)) line.append(PbMessages.tickTag(tick))
+        return line
     }
 
     // Falls back to the best of the last-30 run history so PBs work before the first new record.
@@ -229,8 +257,9 @@ object Phase {
             val wasRunning = split.started()
             split.end()
             val pb = if (wasRunning) splitPb(split) else null
+            val tick = if (wasRunning) tickPb(split) else null
             val line = split.createNameText().append(split.createTimeText())
-            if (pb != null && showSplitPb() && (pb.isPb || !FishSettings.pbMessagesOnlyPb)) line.append(PbMessages.tag(pb))
+            if (showSplitPb()) appendPbTags(line, pb, tick, true)
             Misc.addChatMessage(line)
         }
         RunHistory.saveSplits(floor, splits)
