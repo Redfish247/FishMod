@@ -1,6 +1,12 @@
 package fishmod.features.croesus
 
+import com.google.gson.GsonBuilder
+import com.google.gson.reflect.TypeToken
+import fishmod.features.storage.NBTInventory
+import fishmod.utils.data.ItemUtil
 import fishmod.utils.networth.ItemsDb
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.minecraft.client.Minecraft
 import net.minecraft.core.component.DataComponents
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.Identifier
@@ -11,10 +17,55 @@ import net.minecraft.world.item.Items
 import net.minecraft.world.item.component.DyedItemColor
 import net.minecraft.world.item.component.ResolvableProfile
 
-// SkyBlock id -> display ItemStack, built from the Hypixel items DB (material + skull skin)
+// SkyBlock id -> display ItemStack: learned from real items seen in menus (keeps resource-pack models), else built from the items DB
 object LootIcons {
 
+    private val FILE = java.io.File("config/fishmod/loot_icons.json")
+    private val GSON = GsonBuilder().setPrettyPrinting().create()
+
     private val cache = HashMap<String, ItemStack?>()
+    private var learned: MutableMap<String, String> = HashMap()
+    private val learnedStacks = HashMap<String, ItemStack?>()
+    private var tick = 0
+
+    init { load() }
+
+    @JvmStatic
+    fun init() {
+        ClientTickEvents.END_CLIENT_TICK.register { mc -> if (++tick >= 10) { tick = 0; learn(mc) } }
+    }
+
+    private fun learn(mc: Minecraft) {
+        val player = mc.player ?: return
+        val rows = LootTrackerStore.rows()
+        if (rows.isEmpty()) return
+        val wanted = HashSet<String>()
+        for (r in rows) if (r.id.isNotEmpty()) wanted.add(r.id)
+        var changed = false
+        for (slot in player.containerMenu.slots) {
+            val st = slot.item
+            if (st.isEmpty) continue
+            val id = ItemUtil.getId(st) ?: continue
+            if (id !in wanted) continue
+            val copy = st.copyWithCount(1)
+            copy.remove(DataComponents.LORE)
+            val enc = runCatching { NBTInventory(listOf(copy)).encode() }.getOrNull() ?: continue
+            if (learned[id] == enc) continue
+            learned[id] = enc
+            learnedStacks[id] = copy
+            changed = true
+        }
+        if (changed) save()
+    }
+
+    private fun learnedIcon(id: String): ItemStack? {
+        if (learnedStacks.containsKey(id)) return learnedStacks[id]
+        val enc = learned[id] ?: return null
+        if (Minecraft.getInstance().connection == null && Minecraft.getInstance().level == null) return null
+        val st = NBTInventory.decode(enc)?.stacks?.firstOrNull()?.takeIf { !it.isEmpty }
+        learnedStacks[id] = st
+        return st
+    }
 
     private val LEGACY = mapOf(
         "SKULL_ITEM" to "player_head", "WOOD_SWORD" to "wooden_sword", "WOOD_AXE" to "wooden_axe",
@@ -67,6 +118,7 @@ object LootIcons {
     @JvmStatic
     fun icon(id: String?): ItemStack? {
         if (id.isNullOrEmpty()) return null
+        learnedIcon(id)?.let { return it }
         if (id.startsWith("ENCHANTMENT_")) return cache.getOrPut(id) { ItemStack(Items.ENCHANTED_BOOK) }
         cache[id]?.let { return it }
         if (!ItemsDb.isLoaded()) { ItemsDb.ensureLoaded(); return null }
@@ -98,5 +150,24 @@ object LootIcons {
             else LEGACY[material] ?: material.lowercase()
         val key = Identifier.tryParse("minecraft:$path") ?: return null
         return BuiltInRegistries.ITEM.getOptional(key).orElse(null)?.takeIf { it != Items.AIR }
+    }
+
+    private fun load() {
+        if (!FILE.exists()) return
+        try {
+            val type = object : TypeToken<MutableMap<String, String>>() {}.type
+            FILE.reader().use { r -> GSON.fromJson<MutableMap<String, String>>(r, type)?.let { learned = it } }
+        } catch (e: Exception) {
+            fishmod.utils.debug.Debug.LOGGER.warn("[LootIcons] load failed: {}", e.toString())
+        }
+    }
+
+    private fun save() {
+        try {
+            FILE.parentFile?.mkdirs()
+            FILE.writer().use { w -> GSON.toJson(learned, w) }
+        } catch (e: Exception) {
+            fishmod.utils.debug.Debug.LOGGER.warn("[LootIcons] save failed: {}", e.toString())
+        }
     }
 }
