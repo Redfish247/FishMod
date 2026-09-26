@@ -41,17 +41,4 @@ object OverflowPetLevels {
         return maxOf(1, i)
     }
 
-    @JvmStatic
-    fun calcLeftOverXp(totalXp: Double, rarity: Rarity): Double {
-        var exp = totalXp
-        var i = 0
-        while (exp > 0) {
-            val xp = getXpForLevel(i, rarity)
-            if (exp > xp) exp -= xp
-            else return exp
-            i++
-            if (i > 1000) break
-        }
-        return -1.0
-    }
 }

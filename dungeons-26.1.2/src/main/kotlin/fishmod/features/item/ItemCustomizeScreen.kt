@@ -89,12 +89,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         const val SWATCH = 16
         const val SWATCH_GAP = 4
 
-        fun dyeIndex(rgbIn: Int): Int {
-            val rgb = rgbIn and 0xFFFFFF
-            for (i in DYE_RGB.indices) if ((DYE_RGB[i] and 0xFFFFFF) == rgb) return i
-            return -1
-        }
-
         fun cap(s: String): String = if (s.isEmpty()) s else s[0].uppercaseChar() + s.substring(1)
 
         fun inBox(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int): Boolean =

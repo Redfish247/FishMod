@@ -36,15 +36,6 @@ object ProfanityFilter {
     }
 
     @JvmStatic
-    fun isProfane(raw: String?): Boolean {
-        if (raw == null || raw.isEmpty()) return false
-        val v = visible(raw)
-        val c = compact(v)
-        for (w in WORDS) if (c.text.contains(w)) return true
-        return false
-    }
-
-    @JvmStatic
     fun censor(raw: String?): String? {
         if (raw == null || raw.isEmpty()) return raw
         val v = visible(raw)

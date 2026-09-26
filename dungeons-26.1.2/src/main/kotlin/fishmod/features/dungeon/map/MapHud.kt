@@ -26,11 +26,6 @@ object MapHud {
     }
 
     @JvmStatic
-    fun renderForEdit(g: GuiGraphicsExtractor, mc: Minecraft) {
-        renderAt(g, mc, DungeonMapSettings.mapX, DungeonMapSettings.mapY, DungeonMapSettings.mapScale, true)
-    }
-
-    @JvmStatic
     fun renderAt(g: GuiGraphicsExtractor, mc: Minecraft, x: Float, y: Float, scale: Float, edit: Boolean) {
         val pose = g.pose()
         pose.pushMatrix()

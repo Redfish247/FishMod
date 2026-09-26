@@ -385,11 +385,4 @@ object Phase {
         return visible
     }
 
-    @JvmStatic
-    fun renderSplitsHud(ctx: net.minecraft.client.gui.GuiGraphicsExtractor, x: Int, y: Int) {
-        if (!enableSplits || !runStarted()) return
-        val mc = Minecraft.getInstance()
-        if (mc.player == null) return
-        renderSplitRows(ctx, x, y)
-    }
 }

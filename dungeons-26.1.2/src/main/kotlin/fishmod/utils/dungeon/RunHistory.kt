@@ -105,12 +105,6 @@ object RunHistory {
         return n
     }
 
-    @JvmStatic
-    fun runCount(floor: String?, splitName: String?): Int = synchronized(lock) {
-        val floorData = data[floor] ?: return@synchronized 0
-        floorData[splitName]?.size ?: 0
-    }
-
     private fun load() {
         synchronized(lock) {
             val file = File(FILE_PATH)

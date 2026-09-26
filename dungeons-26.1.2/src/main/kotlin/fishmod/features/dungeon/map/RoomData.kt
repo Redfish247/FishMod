@@ -3,7 +3,6 @@ package fishmod.features.dungeon.map
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializer
-import fishmod.Bladeaddons
 import fishmod.utils.debug.Debug
 import com.google.gson.reflect.TypeToken
 import net.minecraft.core.BlockPos
@@ -75,7 +74,7 @@ class RoomData {
         @JvmStatic
         fun loadRoomData() {
             try {
-                val stream = Bladeaddons::class.java.getResourceAsStream(ROOMS_JSON_PATH) ?: return
+                val stream = RoomData::class.java.getResourceAsStream(ROOMS_JSON_PATH) ?: return
 
                 val listType: Type = object : TypeToken<List<RoomData>>() {}.type
                 val built = HashMap<Int, RoomData>()

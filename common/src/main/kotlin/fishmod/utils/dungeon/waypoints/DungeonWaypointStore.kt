@@ -70,21 +70,6 @@ object DungeonWaypointStore {
         save()
     }
 
-    /** 90-degree rotation of a room-tile-relative point around its tile center. steps in [0,3], applied CCW to match `RoomSignature`'s (x,z) -> (z,-x). */
-    @JvmStatic
-    fun rotate90(x: Double, z: Double, steps: Int): DoubleArray {
-        var rx = x
-        var rz = z
-        val n = ((steps % 4) + 4) % 4
-        for (i in 0 until n) {
-            val nx = rz
-            val nz = -rx
-            rx = nx
-            rz = nz
-        }
-        return doubleArrayOf(rx, rz)
-    }
-
     @JvmStatic
     fun exportBase64(): String? {
         return try {

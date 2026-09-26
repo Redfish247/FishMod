@@ -66,23 +66,8 @@ enum class SlayerType(
         fun parseCategory(line: String): Pair<SlayerType, Int>? {
             val t = entries.firstOrNull { line.startsWith(it.displayName) } ?: return null
             val tierStr = line.removePrefix(t.displayName).trim()
-            val tier = romanToInt(tierStr).takeIf { it in 1..5 } ?: return null
+            val tier = fishmod.utils.data.Roman.toInt(tierStr).takeIf { it in 1..5 } ?: return null
             return t to tier
-        }
-
-        private fun romanToInt(roman: String): Int {
-            if (roman.isEmpty()) return 0
-            var sum = 0
-            var prev = 0
-            for (i in roman.indices.reversed()) {
-                val v = when (roman[i]) {
-                    'I' -> 1; 'V' -> 5; 'X' -> 10; 'L' -> 50; 'C' -> 100; 'D' -> 500; 'M' -> 1000
-                    else -> return 0
-                }
-                if (v < prev) sum -= v else sum += v
-                prev = v
-            }
-            return sum
         }
     }
 }

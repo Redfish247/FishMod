@@ -60,19 +60,6 @@ object PartyUtil {
     }
 
     @JvmStatic
-    fun getPlayerCount(): Int {
-        sendPacket()
-        if (!inParty) return 0
-        return memberMap?.size ?: 0
-    }
-
-    @JvmStatic
-    fun isInParty(): Boolean {
-        sendPacket()
-        return inParty
-    }
-
-    @JvmStatic
     fun getMemberUuids(): Set<UUID> {
         sendPacket()
         if (!inParty) return emptySet()

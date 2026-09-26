@@ -35,7 +35,6 @@ object Blessings {
     private const val NAME = "Blessings"
     private const val LINE_H = 10
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
-    private val ROMAN = mapOf('I' to 1, 'V' to 5, 'X' to 10, 'L' to 50, 'C' to 100, 'D' to 500, 'M' to 1000)
     private var tickAcc = 0
 
     @JvmStatic
@@ -64,20 +63,8 @@ object Blessings {
         val footer = overlay.`fishmod$getFooter`()?.string ?: return
         val plain = COLOR.replace(footer, "")
         for (t in Type.entries) {
-            t.current = t.regex.find(plain)?.let { romanToInt(it.groupValues[1]) } ?: 0
+            t.current = t.regex.find(plain)?.let { fishmod.utils.data.Roman.toInt(it.groupValues[1]) } ?: 0
         }
-    }
-
-    private fun romanToInt(s: String): Int {
-        if (s.isEmpty()) return 0
-        if (s.all { it.isDigit() }) return s.toInt()
-        var result = 0
-        for (i in 0 until s.length - 1) {
-            val cur = ROMAN[s[i]] ?: 0
-            val next = ROMAN[s[i + 1]] ?: 0
-            result += if (cur < next) -cur else cur
-        }
-        return result + (ROMAN[s.last()] ?: 0)
     }
 
     @JvmStatic

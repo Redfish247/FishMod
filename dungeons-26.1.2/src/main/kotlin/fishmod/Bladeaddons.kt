@@ -1,3 +1,0 @@
-package fishmod
-
-class Bladeaddons

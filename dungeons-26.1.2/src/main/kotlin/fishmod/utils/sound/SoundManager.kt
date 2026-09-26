@@ -35,9 +35,6 @@ object SoundManager {
         "Totem" to SoundEvents.TOTEM_USE,
     )
 
-    @JvmStatic
-    fun presetNames(): Array<String> = PRESETS.keys.toTypedArray()
-
     val allSoundIds: List<String> by lazy {
         BuiltInRegistries.SOUND_EVENT.keySet().map { it.toString() }.sorted()
     }
@@ -122,9 +119,6 @@ object SoundManager {
     fun ping(key: String? = null, debounceMs: Long = 0L): Boolean =
         play(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 2f, key, debounceMs)
 
-    @JvmStatic
-    @JvmOverloads
-    fun alert(key: String? = null, debounceMs: Long = 0L): Boolean =
         play(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 0.5f, key, debounceMs)
 
     @JvmStatic

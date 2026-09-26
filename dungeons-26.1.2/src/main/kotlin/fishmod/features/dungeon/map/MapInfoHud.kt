@@ -32,11 +32,6 @@ object MapInfoHud {
         }
     }
 
-    @JvmStatic
-    fun renderForEdit(g: GuiGraphicsExtractor, mc: Minecraft) {
-        render(g, mc, true)
-    }
-
     private fun render(g: GuiGraphicsExtractor, mc: Minecraft, edit: Boolean) {
         val example = edit && Scan.rooms.isEmpty()
         val l1 = line1(example)
@@ -157,16 +152,4 @@ object MapInfoHud {
         return if (noWords()) "$cc$cr§7/§a5" else "§fCrypts: $cc$cr"
     }
 
-    @JvmStatic
-    fun baseWidth(mc: Minecraft): Int {
-        val example = Scan.rooms.isEmpty()
-        return maxOf(mc.font.width(line1(example)), mc.font.width(line2(example)))
-    }
-
-    @JvmStatic
-    fun baseHeight(mc: Minecraft): Int {
-        val example = Scan.rooms.isEmpty()
-        val twoLines = line1(example).isNotEmpty() && line2(example).isNotEmpty()
-        return if (twoLines) mc.font.lineHeight * 2 + 1 else mc.font.lineHeight
-    }
 }

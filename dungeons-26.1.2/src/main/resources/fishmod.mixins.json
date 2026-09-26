@@ -3,13 +3,7 @@
   "plugin": "fishmod.mixin.FishModMixinPlugin",
   "package": "fishmod.mixin",
   "compatibilityLevel": "JAVA_25",
-  "mixins": [
-    "ChunkMixin",
-    "ClientConnectionMixin",
-    "EntityMixin",
-    "ItemStackMixin",
-    "PlayerInventoryMixin"
-  ],
+  "mixins": [],
   "injectors": {
     "defaultRequire": 1
   },
@@ -17,6 +11,9 @@
     "requireAnnotations": true
   },
   "client": [
+    "ClientConnectionMixin",
+    "EntityMixin",
+    "ItemStackMixin",
     "LocalPlayerMixin",
     "FishBossBarHudMixin",
     "accessors.BossBarHudAccessor",

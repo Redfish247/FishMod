@@ -194,25 +194,6 @@ object SessionStats {
     }
 
     @JvmStatic
-    fun getRuns(): Int = runs
-
-    @JvmStatic
-    fun getDeaths(): Int = deaths
-
-    @JvmStatic
-    fun getRunsPerHour(): Double = runsPerHour()
-
-    @JvmStatic
-    fun getSessionStartMs(): Long = sessionStartMs
-
-    @JvmStatic
-    fun formatDuration(): String {
-        if (sessionStartMs < 0) return "—"
-        val ref = if (paused && pauseStartedMs > 0) pauseStartedMs else System.currentTimeMillis()
-        return formatTime(Math.max(0, ref - sessionStartMs))
-    }
-
-    @JvmStatic
     fun reset() {
         sessionStartMs = -1
         runs = 0
