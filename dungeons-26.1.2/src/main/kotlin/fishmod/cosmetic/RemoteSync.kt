@@ -9,7 +9,7 @@ import net.minecraft.client.Minecraft
 object RemoteSync {
 
     private const val BASE_TICKS = 20 * 5
-    private const val MAX_TICKS = 20 * 10
+    private const val MAX_TICKS = 20 * 30
     private const val STEP_TICKS = 20 * 5
 
     private var tick = 0
@@ -18,6 +18,9 @@ object RemoteSync {
     private var version: Long = -1
     private var lastUuids: Set<String> = setOf()
     private var lastTabSize = 0
+    private val dashlessIds = HashMap<java.util.UUID, String>()
+
+    private fun dashless(id: java.util.UUID): String = dashlessIds.getOrPut(id) { id.toString().replace("-", "") }
 
     @JvmStatic
     fun init() {
@@ -48,6 +51,7 @@ object RemoteSync {
         version = -1
         lastUuids = setOf()
         lastTabSize = 0
+        dashlessIds.clear()
     }
 
     private fun tabSize(): Int {
@@ -74,20 +78,23 @@ object RemoteSync {
 
         val mc = Minecraft.getInstance()
         if (mc.connection == null || mc.player == null) return
-        val selfUuid = mc.player!!.getUUID().toString().replace("-", "")
+        val selfUuid = dashless(mc.player!!.getUUID())
         val selfName = mc.player!!.gameProfile.name()
-        if (selfName != null && selfName.isNotEmpty()) fishmod.cosmetic.badge.BadgeManager.registerName(selfName, selfUuid)
+        val names = HashMap<String, String>()
+        if (selfName != null && selfName.isNotEmpty()) names[selfName] = selfUuid
         val uuidToName = HashMap<String, String>()
         for (entry in mc.connection!!.onlinePlayers) {
             val gp = entry.profile ?: continue
             if (gp.id() == null) continue
             val name = gp.name()
             if (name == null || name.isEmpty()) continue
-            val u = gp.id().toString().replace("-", "")
-            fishmod.cosmetic.badge.BadgeManager.registerName(name, u)
+            val u = dashless(gp.id())
+            names[name] = u
             if (u == selfUuid) continue
             uuidToName[u] = name
         }
+        fishmod.cosmetic.badge.BadgeManager.replaceNames(names)
+        if (dashlessIds.size > 1024) dashlessIds.clear()
         if (uuidToName.isEmpty() && !badgesOn) return
 
         val newPlayers = !lastUuids.containsAll(uuidToName.keys)

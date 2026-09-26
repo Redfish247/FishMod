@@ -11,11 +11,10 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
-import java.util.concurrent.CompletableFuture
 
 object FireSaleInfo {
 
-    private val HTTP: HttpClient = HttpClient.newHttpClient()
+    private val HTTP: HttpClient = fishmod.utils.Http.CLIENT
     private const val REFRESH_MS = 300_000L
 
     private var saleLines: List<String> = emptyList()
@@ -37,14 +36,13 @@ object FireSaleInfo {
     }
 
     private fun fetch(mc: Minecraft) {
-        CompletableFuture.runAsync {
+        val req = HttpRequest.newBuilder()
+            .uri(URI.create("https://api.hypixel.net/v2/skyblock/firesales"))
+            .header("User-Agent", "Mozilla/5.0")
+            .timeout(Duration.ofSeconds(10)).GET().build()
+        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept { resp ->
             try {
-                val req = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.hypixel.net/v2/skyblock/firesales"))
-                    .header("User-Agent", "Mozilla/5.0")
-                    .timeout(Duration.ofSeconds(10)).GET().build()
-                val resp = HTTP.send(req, HttpResponse.BodyHandlers.ofString())
-                if (resp.statusCode() != 200) { mc.execute { fetchInFlight = false }; return@runAsync }
+                if (resp.statusCode() != 200) { mc.execute { fetchInFlight = false }; return@thenAccept }
                 val root = JsonParser.parseString(resp.body()).asJsonObject
                 val sales = root.getAsJsonArray("sales") ?: com.google.gson.JsonArray()
                 val lines = ArrayList<String>()
@@ -56,7 +54,7 @@ object FireSaleInfo {
             } catch (ignored: Exception) {
                 mc.execute { fetchInFlight = false }
             }
-        }
+        }.exceptionally { mc.execute { fetchInFlight = false }; null }
     }
 
     private fun itemName(sale: JsonObject): String? {

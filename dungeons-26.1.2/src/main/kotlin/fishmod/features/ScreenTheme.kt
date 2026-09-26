@@ -155,15 +155,29 @@ object ScreenTheme {
         }
     }
 
+    private var tooltipLines: List<net.minecraft.network.chat.Component>? = null
+    private var tooltipRuns: List<List<Run>> = emptyList()
+    private var tooltipWidthSize = -1f
+    private var tooltipTextW = 0f
+
     fun nItemTooltip(lines: List<net.minecraft.network.chat.Component>, mx: Int, my: Int, screenW: Int, screenH: Int, k: Float = 1f) {
         if (lines.isEmpty()) return
-        val runs = lines.mapIndexed { i, c -> componentRuns(c, if (i == 0) 0xFFFFFFFF.toInt() else 0xFFAAAAAA.toInt()) }
+        if (lines != tooltipLines) {
+            tooltipLines = lines
+            tooltipRuns = lines.mapIndexed { i, c -> componentRuns(c, if (i == 0) 0xFFFFFFFF.toInt() else 0xFFAAAAAA.toInt()) }
+            tooltipWidthSize = -1f
+        }
+        val runs = tooltipRuns
         val rawH = runs.size * 10f + (if (runs.size > 1) 2f else 0f) + 12f - 2f
         val u = k * Math.min(1f, (screenH - 8f) / (rawH * k)).coerceAtLeast(0.3f)
         val size = 7.5f * u
         val lineH = 10f * u
         val pad = 6f * u
-        val textW = runs.maxOf { rs -> rs.fold(0f) { a, r -> a + UiRecorder.textWidth(r.text, size) } }
+        if (size != tooltipWidthSize) {
+            tooltipWidthSize = size
+            tooltipTextW = runs.maxOf { rs -> rs.fold(0f) { a, r -> a + UiRecorder.textWidth(r.text, size) } }
+        }
+        val textW = tooltipTextW
         val w = textW + pad * 2
         val h = rawH * u
         var tx = mx + 12f * u

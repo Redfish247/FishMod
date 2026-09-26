@@ -76,7 +76,7 @@ object StorageCache {
         if (id != loadedFor) { load(id); loadedFor = id }
 
         val screen = mc.screen as? AbstractContainerScreen<*> ?: run { flush(); return }
-        val plainTitle = screen.title.string.replace(COLOR, "")
+        val plainTitle = fishmod.utils.ScreenTitle.plain(screen)
 
         if (plainTitle == "Storage") { scanOverview(screen); return }
         val page = StoragePage.fromTitle(plainTitle) ?: run { flush(); return }

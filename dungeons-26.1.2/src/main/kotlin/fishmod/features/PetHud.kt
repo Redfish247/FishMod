@@ -276,7 +276,7 @@ object PetHud {
         if (System.currentTimeMillis() - lastTabUpdate < 2000) return
 
         if (current !is ContainerScreen) return
-        val title = HypixelApi.STRIP_COLOR.matcher(current.title.string).replaceAll("").trim()
+        val title = fishmod.utils.ScreenTitle.plain(current).trim()
         if (!title.startsWith("Pets")) return
 
         val handler: AbstractContainerMenu = current.menu

@@ -3,7 +3,6 @@ package fishmod.utils;
 import fishmod.utils.config.values.FishSettings;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.fabricmc.loader.api.FabricLoader;
@@ -26,7 +25,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -94,9 +92,7 @@ public class HypixelApi {
         return (mc.player != null) ? mc.player.getUUID().toString().replace("-", "") : "";
     }
 
-    private static final HttpClient HTTP = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(10))
-        .build();
+    private static final HttpClient HTTP = fishmod.utils.Http.CLIENT;
 
     private static final java.util.concurrent.Executor API_EXECUTOR =
         java.util.concurrent.Executors.newFixedThreadPool(4, r -> {

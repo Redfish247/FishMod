@@ -50,6 +50,7 @@ object PartyFinderStats {
         val now = System.currentTimeMillis()
         val last = lastLookupAt[sender.lowercase()]
         if (last != null && now - last < COOLDOWN_MS) return
+        if (lastLookupAt.size > 256) lastLookupAt.values.removeIf { now - it >= COOLDOWN_MS }
         lastLookupAt[sender.lowercase()] = now
         printStats(sender, joinLine)
     }

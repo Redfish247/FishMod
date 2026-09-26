@@ -12,7 +12,7 @@ object UpdateChecker {
 
     private const val PROJECT_ID = "7dRE7dga"
     private const val MC_VERSION = "26.1.2"
-    private val HTTP: HttpClient = HttpClient.newHttpClient()
+    private val HTTP: HttpClient = fishmod.utils.Http.CLIENT
 
     val links: Map<String, String> = mapOf(
         "modrinth" to "https://modrinth.com/mod/$PROJECT_ID/versions",

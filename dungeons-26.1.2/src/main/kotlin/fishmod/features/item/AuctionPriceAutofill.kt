@@ -1,7 +1,6 @@
 package fishmod.features.item
 
 import fishmod.mixin.accessors.AbstractSignEditScreenAccessor
-import fishmod.utils.Constants
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
@@ -26,7 +25,7 @@ object AuctionPriceAutofill {
     @JvmStatic
     fun trackScreen(screen: AbstractContainerScreen<*>) {
         if (!FishSettings.auctionPriceAutofillEnabled || !Location.inSkyblock()) return
-        val title = screen.title.string.replace(Constants.STRIP_COLOR_REGEX, "")
+        val title = fishmod.utils.ScreenTitle.plain(screen)
         if (title !in GUI_NAMES) return
         val stack = screen.menu.slots.getOrNull(13)?.item ?: return
         if (stack.isEmpty) return

@@ -41,21 +41,29 @@ object RenderUtils {
         return cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()).scale(ahead))
     }
 
-    private val deferredFills = ArrayList<Pair<AABB, Int>>()
+    private val deferredFills = ArrayList<AABB>()
+    private val deferredFillColors = it.unimi.dsi.fastutil.ints.IntArrayList()
 
     @JvmStatic
-    fun clearDeferredFills() = deferredFills.clear()
+    fun clearDeferredFills() {
+        deferredFills.clear()
+        deferredFillColors.clear()
+    }
 
     @JvmStatic
     fun hasDeferredFills() = deferredFills.isNotEmpty()
 
     @JvmStatic
     fun flushDeferredFills(matrices: PoseStack, consumer: VertexConsumer) {
-        for ((b, argb) in deferredFills) {
-            val (r, g, bl, a) = toFloats(argb)
-            drawFilledBox(matrices, consumer, b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ, r, g, bl, a)
+        for (i in deferredFills.indices) {
+            val b = deferredFills[i]
+            val argb = deferredFillColors.getInt(i)
+            drawFilledBox(
+                matrices, consumer, b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ,
+                ((argb shr 16) and 0xFF) / 255f, ((argb shr 8) and 0xFF) / 255f, (argb and 0xFF) / 255f, ((argb shr 24) and 0xFF) / 255f
+            )
         }
-        deferredFills.clear()
+        clearDeferredFills()
     }
 
     @JvmStatic
@@ -65,7 +73,7 @@ object RenderUtils {
     fun gizmoBox(box: AABB, fillArgb: Int, strokeArgb: Int, throughWalls: Boolean) {
         if ((fillArgb ushr 24) != 0) {
             if (throughWalls) Gizmos.cuboid(box, GizmoStyle.fill(fillArgb)).setAlwaysOnTop()
-            else deferredFills.add(box to fillArgb)
+            else { deferredFills.add(box); deferredFillColors.add(fillArgb) }
         }
         if ((strokeArgb ushr 24) != 0) Gizmos.cuboid(box, GizmoStyle.stroke(strokeArgb)).also { if (throughWalls) it.setAlwaysOnTop() }
     }
@@ -98,7 +106,8 @@ object RenderUtils {
         gizmoThickEdge(a.x, a.y, a.z, b.x, b.y, b.z, halfWidth, argb)
     }
 
-    private fun gizmoThickEdge(
+    @JvmStatic
+    fun gizmoThickEdge(
         ax: Double, ay: Double, az: Double, bx: Double, by: Double, bz: Double,
         halfWidth: Double, argb: Int
     ) {
@@ -325,9 +334,11 @@ object RenderUtils {
 
         val halfWidth = textRenderer.width(text) / 2f
         textRenderer.drawInBatch(text, -halfWidth, 0f, -0x1, true, matrices.last().pose(), textBuffers, Font.DisplayMode.SEE_THROUGH, 0, 15728880)
-        textBuffers.endBatch()
         matrices.popPose()
     }
+
+    @JvmStatic
+    fun flushText() = textBuffers.endBatch()
 
     @JvmStatic
     fun renderText(context: LevelRenderContext, matrices: PoseStack, text: Component, pos: Vec3, scale: Float) {

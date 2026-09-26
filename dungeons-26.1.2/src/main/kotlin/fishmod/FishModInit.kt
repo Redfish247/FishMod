@@ -408,7 +408,6 @@ class FishModInit : ClientModInitializer {
         fishmod.features.scoreboard.SkillLevels.init()
         fishmod.features.scoreboard.BestiaryProgress.init()
         fishmod.features.scoreboard.CollectionsProgress.init()
-        fishmod.features.scoreboard.ElectionInfo.init()
         fishmod.features.scoreboard.FireSaleInfo.init()
         fishmod.features.other.CommandKeys.init()
         fishmod.features.other.WardrobeHotkeys.init()
