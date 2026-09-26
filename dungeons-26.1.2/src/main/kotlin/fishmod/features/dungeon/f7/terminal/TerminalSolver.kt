@@ -186,6 +186,14 @@ object TerminalSolver {
         }
     }
 
+    @JvmStatic
+    fun hideSlotCount(slot: net.minecraft.world.inventory.Slot): Boolean {
+        if (!FishSettings.terminalSolverEnabled && !simActive) return false
+        val term = current ?: return false
+        if (term.type != TerminalType.NUMBERS || slot.container is Inventory) return false
+        return slot.index < term.type.windowSize && slot.item.`is`(net.minecraft.world.item.Items.LIME_STAINED_GLASS_PANE)
+    }
+
     fun slotColor(term: TerminalHandler, idx: Int): Int = when (term.type) {
         TerminalType.NUMBERS -> when (term.solution.indexOf(idx)) {
             0 -> FishSettings.terminalOrderColor1

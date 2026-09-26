@@ -460,6 +460,7 @@ class FishModInit : ClientModInitializer {
         fishmod.features.PetSwapTitle.init()
         fishmod.features.PetIcons.init()
         fishmod.features.dungeon.f7.StormOverAlert.init()
+        fishmod.features.dungeon.f7.VenoStackCount.init()
         fishmod.features.PerformanceHud.init()
         fishmod.features.dungeon.InvincibilityTracker.init()
         fishmod.features.dungeon.SecretClicked.init()
@@ -1278,6 +1279,7 @@ class FishModInit : ClientModInitializer {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "quiz_hud")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.QuizHud.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "secret_overlay")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.SecretOverlay.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "storm_over")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.StormOverAlert.renderHud(ctx, tickCounter) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "veno_stacks")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.VenoStackCount.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "performance")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.PerformanceHud.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "invincibility")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.InvincibilityTracker.renderHud(ctx, tickCounter) }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "relic_timer")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.M7Relics.renderHud(ctx, tickCounter) }

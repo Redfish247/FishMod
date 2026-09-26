@@ -1540,11 +1540,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Storm Over Alert", FishSettings::stormOverEnabled)
-            f.sub.add(SubcategoryHeader("Title once Storm has used both lightning procs — move it in the HUD editor"))
+            f.sub.add(SubcategoryHeader("5s countdown + title at 28.75s once Storm has used both lightning procs — move it in the HUD editor"))
             f.sub.add(InputSetting("Text", "", FishSettings::stormOverText))
             f.sub.add(ColorPickerSetting("Color", "", FishSettings::stormOverColor))
             f.sub.add(ToggleSetting("Sound", "", FishSettings::stormOverSound))
+            f.sub.add(ToggleSetting("5s Countdown", "Counts down the last 5s before Storm is over", FishSettings::stormOverCountdown))
+            f.sub.add(ToggleSetting("Hide Server Countdown", "Hides the 5-4-3-2-1 titles Hypixel sends during Storm", FishSettings::stormOverHideServerCountdown))
             f.sub.add(SliderIntSetting("Duration (ms)", "", FishSettings::stormOverDurationMs, 500, 6000, 250))
+            floor7.features.add(f)
+        }
+        run {
+            val f = Feature("Veno Stack Count", FishSettings::venoStackEnabled)
+            f.sub.add(SubcategoryHeader("Counts your Mage beam hits on Storm while holding a Venomous weapon (x/40) with a 5s refresh timer — move it in the HUD editor"))
             floor7.features.add(f)
         }
         run {
