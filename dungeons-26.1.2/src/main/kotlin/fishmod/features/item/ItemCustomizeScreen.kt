@@ -51,13 +51,13 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         val WARN = 0xFFF2C14E.toInt()
 
         // vanilla inventory look
-        val MC_BG = 0xFFC6C6C6.toInt()
-        val MC_LIGHT = 0xFFFFFFFF.toInt()
-        val MC_DARK = 0xFF555555.toInt()
-        val MC_SLOT = 0xFF8B8B8B.toInt()
-        val MC_SLOT_HOVER = 0xFFA8A8A8.toInt()
-        val MC_SLOT_EDGE = 0xFF373737.toInt()
-        val MC_TAG = 0xFF404040.toInt()
+        val MC_BG = 0xFF171A22.toInt()
+        val MC_LIGHT = 0xFF2A2D38.toInt()
+        val MC_DARK = 0xFF2A2D38.toInt()
+        val MC_SLOT = 0xFF1E2129.toInt()
+        val MC_SLOT_HOVER = 0xFF2C303B.toInt()
+        val MC_SLOT_EDGE = 0xFF2E333D.toInt()
+        val MC_TAG = ScreenTheme.SUBTEXT_COLOR
 
         val ARMOR_SLOTS = intArrayOf(39, 38, 37, 36)
         val ARMOR_TAGS = arrayOf("H", "C", "L", "B")
@@ -388,7 +388,6 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
 
     private fun slotBg(ctx: GuiGraphicsExtractor, x: Int, y: Int, hover: Boolean) {
         ctx.fill(x, y, x + CELL, y + CELL, MC_SLOT_EDGE)
-        ctx.fill(x + 1, y + 1, x + CELL, y + CELL, MC_LIGHT)
         ctx.fill(x + 1, y + 1, x + CELL - 1, y + CELL - 1, if (hover) MC_SLOT_HOVER else MC_SLOT)
     }
 
