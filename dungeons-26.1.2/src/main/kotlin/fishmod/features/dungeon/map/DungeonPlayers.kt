@@ -7,11 +7,11 @@ import net.minecraft.client.player.AbstractClientPlayer
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.multiplayer.PlayerInfo
 import net.minecraft.client.renderer.RenderPipelines
-import net.minecraft.core.component.DataComponents
 import net.minecraft.world.entity.player.PlayerSkin
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.NbtUtils
 import net.minecraft.world.entity.player.Player
+import fishmod.features.item.fishmodCustomDataTag
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.GameType
 import net.minecraft.world.level.saveddata.maps.MapDecoration
@@ -246,8 +246,7 @@ object DungeonPlayers {
 
     private fun isHoldingLeap(mc: Minecraft): Boolean {
         val stack: ItemStack = mc.player!!.mainHandItem
-        val cd = stack.get(DataComponents.CUSTOM_DATA) ?: return false
-        val tag: CompoundTag = cd.copyTag()
+        val tag: CompoundTag = stack.fishmodCustomDataTag() ?: return false
         var id = tag.getString("id").orElse(null)
         if (id == null) {
             id = tag.getCompound("ExtraAttributes").flatMap { it.getString("id") }.orElse("")

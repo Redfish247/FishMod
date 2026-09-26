@@ -14,15 +14,16 @@ public class PrestigeTabNameMixin {
 
     @ModifyReturnValue(method = "getNameForDisplay", at = @At("RETURN"))
     private Component fishmod$prestigeTabName(Component original, PlayerInfo playerInfo) {
-        if (original == null) return original;
-        Component out = original;
-        if (FishSettings.prestigeColorsEnabled && FishSettings.prestigeColorsTab) {
-            out = PrestigeLevelColors.colorizeLevelPrefix(out);
-        }
-        if (FishSettings.badgesEnabled && FishSettings.badgesOnTab
-                && playerInfo != null && playerInfo.getProfile() != null && playerInfo.getProfile().id() != null) {
-            out = fishmod.cosmetic.badge.BadgeRenderer.insertKnown(out, playerInfo.getProfile().id().toString().replace("-", ""));
-        }
-        return out;
+        if (original == null || playerInfo == null || playerInfo.getProfile() == null || playerInfo.getProfile().id() == null) return original;
+        boolean prestige = FishSettings.prestigeColorsEnabled && FishSettings.prestigeColorsTab;
+        boolean badges = FishSettings.badgesEnabled && FishSettings.badgesOnTab;
+        if (!prestige && !badges) return original;
+        java.util.UUID id = playerInfo.getProfile().id();
+        return fishmod.cosmetic.NameDecorCache.TAB.get(id, original, () -> {
+            Component out = original;
+            if (prestige) out = PrestigeLevelColors.colorizeLevelPrefix(out);
+            if (badges) out = fishmod.cosmetic.badge.BadgeRenderer.insertKnown(out, id.toString().replace("-", ""));
+            return out;
+        });
     }
 }

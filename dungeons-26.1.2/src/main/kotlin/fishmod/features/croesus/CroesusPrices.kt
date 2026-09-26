@@ -69,13 +69,21 @@ object CroesusPrices {
     @JvmStatic
     fun price(id: String?): Double {
         if (id == null || id.isEmpty()) return 0.0
+        val known = cachedPrice(id)
+        if (known > 0) return known
+        fetchCoflnetItemThrottled(id)
+        return 0.0
+    }
+
+    @JvmStatic
+    fun cachedPrice(id: String?): Double {
+        if (id == null || id.isEmpty()) return 0.0
         val b = bazaar[id]
         if (b != null && b > 0) return b
         val l = lbin[id]
         if (l != null && l > 0) return l
         val c = coflnet[id]
         if (c != null && c > 0) return c
-        fetchCoflnetItemThrottled(id)
         return 0.0
     }
 

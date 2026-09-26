@@ -4,11 +4,11 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.world.item.ItemStack
 
-// per-stack cached copy of CUSTOM_DATA
 fun ItemStack.fishmodCustomDataTag(): CompoundTag? {
+    val data = get(DataComponents.CUSTOM_DATA) ?: return null
     val holder = this as ItemCustomDataHolder
-    if (!holder.`fishmod$hasScannedCustomData`()) {
-        holder.`fishmod$setCachedCustomData`(get(DataComponents.CUSTOM_DATA)?.copyTag())
+    if (holder.`fishmod$getCustomDataSource`() !== data) {
+        holder.`fishmod$setCachedCustomData`(data, data.copyTag())
     }
     return holder.`fishmod$getCachedCustomData`()
 }
