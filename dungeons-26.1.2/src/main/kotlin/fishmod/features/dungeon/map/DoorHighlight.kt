@@ -40,10 +40,11 @@ object DoorHighlight {
 
     private fun isFairyDoor(door: Door): Boolean = fairyRoom(door) != null
 
-    // Fairy door: only while you're standing in a room it connects to (e.g. Waterfall), not just nearby
+    // Fairy door: a normal door while you're in a room it connects to (e.g. Waterfall); gone once you've entered the fairy room through it
     private fun visible(door: Door): Boolean {
-        fairyRoom(door) ?: return door.seen
-        return facingRoomTile(door) != null
+        val fairy = fairyRoom(door) ?: return door.seen
+        val here = facingRoomTile(door)?.owner ?: return false
+        return here !== fairy || closed(door)
     }
 
     private fun active(): Boolean {
