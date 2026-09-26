@@ -52,7 +52,6 @@ object UpdateManager {
         var etag: String? = null
         var release: Release? = null
         var lastShownAt = 0L
-        var shownVersion: String? = null
         var dismissedVersion: String? = null
         var stagedVersion: String? = null
         var stagedFile: String? = null
@@ -86,6 +85,7 @@ object UpdateManager {
     @Volatile var downloadError: String? = null; private set
 
     private var onHypixel = false
+    private var shownThisLogin = false
     private var ticksSinceJoin = 0
 
     private val userAgent = "FishModDungeons/$currentVersion (+https://github.com/${githubRepo ?: "Redfish247/FishModDungeons"})"
@@ -95,7 +95,6 @@ object UpdateManager {
         if (githubRepo == null) return
         load()
         synchronized(lock) {
-            if (state.shownVersion == null && state.lastShownAt > 0) state.shownVersion = state.release?.version
             val staged = state.stagedFile?.let(Path::of)
             if (staged != null && Files.isRegularFile(staged) && isNewer(state.stagedVersion)) downloadState = DownloadState.STAGED
             else if (state.stagedFile != null) { state.stagedVersion = null; state.stagedFile = null; save() }
@@ -103,8 +102,10 @@ object UpdateManager {
         checkAsync(false)
 
         ClientPlayConnectionEvents.JOIN.register { _, _, mc ->
+            val wasOnHypixel = onHypixel
             onHypixel = isHypixel(mc)
             ticksSinceJoin = 0
+            if (onHypixel && !wasOnHypixel) shownThisLogin = false
             if (onHypixel) checkAsync(false)
         }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> onHypixel = false }
@@ -120,17 +121,13 @@ object UpdateManager {
     }
 
     private fun tick(mc: Minecraft) {
-        if (!onHypixel || mc.player == null || mc.screen != null) return
+        if (!onHypixel || shownThisLogin || mc.player == null || mc.screen != null) return
         if (++ticksSinceJoin < JOIN_SETTLE_TICKS || ticksSinceJoin % 20 != 0) return
         if (Location.inDungeon() || Location.`in`(Location.KUUDRA)) return
         val release = pendingRelease() ?: return
-        // Once per release version, never on a timer.
-        synchronized(lock) {
-            if (state.shownVersion == release.version) return
-            state.shownVersion = release.version
-            state.lastShownAt = System.currentTimeMillis()
-            save()
-        }
+        // Once per Hypixel login, never again while connected.
+        shownThisLogin = true
+        synchronized(lock) { state.lastShownAt = System.currentTimeMillis(); save() }
         mc.setScreen(UpdateScreen(release))
     }
 
