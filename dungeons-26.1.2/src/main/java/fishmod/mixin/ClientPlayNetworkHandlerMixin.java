@@ -132,6 +132,12 @@ public class ClientPlayNetworkHandlerMixin {
         }
     }
 
+    @Inject(method = "setSubtitleText", at = @At("HEAD"), cancellable = true)
+    private void fishmod$onSubtitle(net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket packet, CallbackInfo ci) {
+        if (!Minecraft.getInstance().isSameThread()) return;
+        if (packet.text() != null && fishmod.features.dungeon.f7.TitleHider.shouldHideTitle(packet.text())) ci.cancel();
+    }
+
     @Inject(method = "handleSystemChat", at = @At("HEAD"), cancellable = true)
     private void onGameMessage(ClientboundSystemChatPacket packet, CallbackInfo ci) {
         if (!Minecraft.getInstance().isSameThread()) return;

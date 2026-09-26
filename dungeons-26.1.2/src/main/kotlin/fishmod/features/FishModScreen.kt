@@ -1422,6 +1422,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Prev Objective", "", Floor7::sectionPrevObjective))
             floor7.features.add(f)
         }
+        floor7.features.add(Feature("Hide Terminal Titles", Floor7::hideTerminalTitles))
         run {
             val f = Feature("Goldor Splits", Section::enableTerminalSplits)
             f.sub.add(ToggleSetting("PB Colors", "Pink section time on a new PB", FishSettings::splitPbColors))
