@@ -2,7 +2,6 @@ package fishmod.utils
 
 import fishmod.shaded.practicalconfig.data.SoundData
 import fishmod.utils.config.values.ExtraOptions
-import fishmod.utils.debug.Debug
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.client.player.LocalPlayer
@@ -45,14 +44,7 @@ object Misc {
 
     @JvmStatic
     fun addChatMessage(text: Component) {
-        try {
-            val instance = INSTANCE ?: return
-            val gameHud = instance.gui
-            val hud = gameHud.chat
-            forceMainThread { hud.addClientSystemMessage(Component.literal(ExtraOptions.textPrefix).append(text)) }
-        } catch (ignored: IndexOutOfBoundsException) {
-            Debug.LOGGER.error("Chat message failed to get added")
-        }
+        forceMainThread { INSTANCE.gui.chat.addClientSystemMessage(Component.literal(ExtraOptions.textPrefix).append(text)) }
     }
 
     @JvmStatic

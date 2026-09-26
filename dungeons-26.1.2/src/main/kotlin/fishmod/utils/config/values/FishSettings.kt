@@ -89,7 +89,6 @@ object FishSettings {
 
     @ConfigValue @JvmField var chatParty: Boolean = false
     @ConfigValue @JvmField var chatGuild: Boolean = false
-    @ConfigValue @JvmField var chatOfficer: Boolean = false
     @ConfigValue @JvmField var chatPrivate: Boolean = false
     @ConfigValue @JvmField var chatAll: Boolean = false
     @ConfigValue @JvmField var pfStatsEnabled: Boolean = false
@@ -173,7 +172,6 @@ object FishSettings {
     @ConfigValue @JvmField var pcPowder: Boolean = false
     @ConfigValue @JvmField var pcLevel: Boolean = false
     @ConfigValue @JvmField var pcFarming: Boolean = false
-    @ConfigValue @JvmField var pcVisitor: Boolean = false
     @ConfigValue @JvmField var pcNuc: Boolean = false
     @ConfigValue @JvmField var pcWorm: Boolean = false
 
@@ -185,6 +183,17 @@ object FishSettings {
     @ConfigValue @JvmField var remoteNicksEnabled: Boolean = false
 
     @ConfigValue @JvmField var playerSizeEnabled: Boolean = false
+    @ConfigValue @JvmField var wpEditFill: Boolean = false
+    @ConfigValue @JvmField var wpEditSize: Double = 0.5
+    @ConfigValue @JvmField var wpEditDistance: Int = 20
+    @ConfigValue @JvmField var wpEditUseBlockSize: Boolean = true
+    @ConfigValue @JvmField var wpEditPixelMode: Boolean = false
+    @ConfigValue @JvmField var wpEditThrough: Boolean = false
+    @ConfigValue @JvmField var wpEditColor: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var wpEditType: String = "NONE"
+    @ConfigValue @JvmField var wpEditTimer: String = "NONE"
+    @ConfigValue @JvmField var wpEditLineWidth: Double = 0.05
+
     @ConfigValue @JvmField var playerSizeScaleX: Double = 1.0
     @ConfigValue @JvmField var playerSizeScaleY: Double = 1.0
     @ConfigValue @JvmField var playerSizeScaleZ: Double = 1.0
@@ -232,9 +241,6 @@ object FishSettings {
     @ConfigValue @JvmField var prestigeColorsAnimSpeed: Double = 1.0
     @ConfigValue @JvmField var prestigeColorsAnimStyle: String = "FADE"
 
-    // Badges: server-authoritative (grant/revoke/enable/order all come from the backend, via the
-    // local admin dashboard — see BadgeManager/BadgeRegistry). These toggles only control whether
-    // the client bothers rendering them, never which badges exist or who has them.
     @ConfigValue @JvmField var badgesEnabled: Boolean = true
     @ConfigValue @JvmField var badgesOnNametags: Boolean = true
     @ConfigValue @JvmField var badgesOnTab: Boolean = true
@@ -299,8 +305,6 @@ object FishSettings {
     @ConfigValue @JvmField var pcKickList: String = ""
 
     @ConfigValue @JvmField var lootTrackerEnabled: Boolean = false
-    @ConfigValue @JvmField var lootTrackerX: Int = -1
-    @ConfigValue @JvmField var lootTrackerY: Int = -1
 
     @ConfigValue @JvmField var simonSaysEnabled: Boolean = false
     @ConfigValue @JvmField var simonSaysHudEnabled: Boolean = false
@@ -849,7 +853,6 @@ object FishSettings {
     @ConfigValue @JvmField var customScoreboardHideInDungeon: Boolean = false
     @ConfigValue @JvmField var customScoreboardOpacity: Int = 30
     @ConfigValue @JvmField var customScoreboardHudY: Int = 2
-    // Right edge in GUI px; -1 = pinned to the screen's right edge.
     @ConfigValue @JvmField var customScoreboardHudX: Int = -1
     @ConfigValue @JvmField var sbSectionDate: Boolean = true
     @ConfigValue @JvmField var sbSectionTime: Boolean = true
@@ -940,7 +943,6 @@ object FishSettings {
     @ConfigValue @JvmField var slayerPhaseWorldText: Boolean = true
     @ConfigValue @JvmField var slayerPhaseTitles: Boolean = true
     @ConfigValue @JvmField var slayerPhaseHealthSplit: Boolean = true
-
 
     @JvmStatic
     fun slayerAnyEnabled(): Boolean =

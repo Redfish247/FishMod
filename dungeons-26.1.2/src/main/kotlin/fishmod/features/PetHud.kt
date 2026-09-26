@@ -16,6 +16,8 @@ import net.minecraft.world.inventory.AbstractContainerMenu
 import net.minecraft.world.item.ItemStack
 import java.util.regex.Pattern
 
+private val TRAILING_PUNCT_RE = Regex("[!.]+$")
+
 object PetHud {
 
     private val TAB_NAME_LINE: Pattern = Pattern.compile("\\[Lvl\\s*(\\d+)\\]\\s+(.+)")
@@ -274,7 +276,7 @@ object PetHud {
         if (System.currentTimeMillis() - lastTabUpdate < 2000) return
 
         if (current !is ContainerScreen) return
-        val title = HypixelApi.STRIP_COLOR.matcher(current.title.string).replaceAll("").trim()
+        val title = fishmod.utils.ScreenTitle.plain(current).trim()
         if (!title.startsWith("Pets")) return
 
         val handler: AbstractContainerMenu = current.menu
@@ -328,14 +330,18 @@ object PetHud {
         petName = null
         petRarity = ItemRarity.NONE
         petLevel = -1
+        petOverflowLevel = -1
+        petMaxed = false
+        pendingXp = 0.0
         xpCurrent = -1.0
+        xpNext = -1.0
         lastChatPetName = null
         lastChatPetChangeAt = 0
     }
 
     private fun cleanPetName(s: String?): String? {
         if (s == null) return null
-        return s.replace("✦", "").replace(Regex("[!.]+$"), "").trim()
+        return s.replace("✦", "").replace(TRAILING_PUNCT_RE, "").trim()
     }
 
     private val RARITY_BY_CODE: Map<Char, ItemRarity> = mapOf(

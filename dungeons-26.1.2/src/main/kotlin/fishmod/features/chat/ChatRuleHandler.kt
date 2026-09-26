@@ -55,16 +55,15 @@ object ChatRuleHandler {
 
     @JvmStatic
     fun matches(rule: ChatRule, raw: String): Boolean {
-        val testStr = if (rule.ignoreCase) raw.lowercase() else raw
-        val testFilter = if (rule.ignoreCase) rule.filter.lowercase() else rule.filter
-        if (testFilter.isBlank()) return false
+        val filter = rule.filter
+        if (filter.isBlank()) return false
 
         return if (rule.regex) {
             val pattern = rule.compiledPattern() ?: return false
-            val m = pattern.matcher(testStr)
+            val m = pattern.matcher(raw)
             if (rule.partialMatch) m.find() else m.matches()
         } else {
-            if (rule.partialMatch) testStr.contains(testFilter) else testStr == testFilter
+            if (rule.partialMatch) raw.contains(filter, rule.ignoreCase) else raw.equals(filter, rule.ignoreCase)
         }
     }
 

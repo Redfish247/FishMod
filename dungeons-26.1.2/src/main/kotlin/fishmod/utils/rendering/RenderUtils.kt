@@ -35,29 +35,35 @@ object RenderUtils {
         return floatArrayOf(r, g, b, a)
     }
 
-    // Tracer start from the real camera (follows the smooth crouch height, unlike player.eyeHeight).
     @JvmStatic
     fun cameraLineStart(ahead: Double): Vec3 {
         val cam = Minecraft.getInstance().gameRenderer.mainCamera
         return cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()).scale(ahead))
     }
 
-    // Vanilla gizmo fills draw before translucent terrain, so water behind them shows through
-    private val deferredFills = ArrayList<Pair<AABB, Int>>()
+    private val deferredFills = ArrayList<AABB>()
+    private val deferredFillColors = it.unimi.dsi.fastutil.ints.IntArrayList()
 
     @JvmStatic
-    fun clearDeferredFills() = deferredFills.clear()
+    fun clearDeferredFills() {
+        deferredFills.clear()
+        deferredFillColors.clear()
+    }
 
     @JvmStatic
     fun hasDeferredFills() = deferredFills.isNotEmpty()
 
     @JvmStatic
     fun flushDeferredFills(matrices: PoseStack, consumer: VertexConsumer) {
-        for ((b, argb) in deferredFills) {
-            val (r, g, bl, a) = toFloats(argb)
-            drawFilledBox(matrices, consumer, b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ, r, g, bl, a)
+        for (i in deferredFills.indices) {
+            val b = deferredFills[i]
+            val argb = deferredFillColors.getInt(i)
+            drawFilledBox(
+                matrices, consumer, b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ,
+                ((argb shr 16) and 0xFF) / 255f, ((argb shr 8) and 0xFF) / 255f, (argb and 0xFF) / 255f, ((argb shr 24) and 0xFF) / 255f
+            )
         }
-        deferredFills.clear()
+        clearDeferredFills()
     }
 
     @JvmStatic
@@ -67,7 +73,7 @@ object RenderUtils {
     fun gizmoBox(box: AABB, fillArgb: Int, strokeArgb: Int, throughWalls: Boolean) {
         if ((fillArgb ushr 24) != 0) {
             if (throughWalls) Gizmos.cuboid(box, GizmoStyle.fill(fillArgb)).setAlwaysOnTop()
-            else deferredFills.add(box to fillArgb)
+            else { deferredFills.add(box); deferredFillColors.add(fillArgb) }
         }
         if ((strokeArgb ushr 24) != 0) Gizmos.cuboid(box, GizmoStyle.stroke(strokeArgb)).also { if (throughWalls) it.setAlwaysOnTop() }
     }
@@ -100,7 +106,8 @@ object RenderUtils {
         gizmoThickEdge(a.x, a.y, a.z, b.x, b.y, b.z, halfWidth, argb)
     }
 
-    private fun gizmoThickEdge(
+    @JvmStatic
+    fun gizmoThickEdge(
         ax: Double, ay: Double, az: Double, bx: Double, by: Double, bz: Double,
         halfWidth: Double, argb: Int
     ) {
@@ -320,7 +327,6 @@ object RenderUtils {
         val textRenderer = client.font
         client.player ?: return
 
-        // Draw immediately (same view matrix as the boxes); submitText() drained a frame late and made text swim
         matrices.pushPose()
         matrices.translate(x, y, z)
         matrices.mulPose(context.levelState().cameraRenderState.orientation)
@@ -328,9 +334,11 @@ object RenderUtils {
 
         val halfWidth = textRenderer.width(text) / 2f
         textRenderer.drawInBatch(text, -halfWidth, 0f, -0x1, true, matrices.last().pose(), textBuffers, Font.DisplayMode.SEE_THROUGH, 0, 15728880)
-        textBuffers.endBatch()
         matrices.popPose()
     }
+
+    @JvmStatic
+    fun flushText() = textBuffers.endBatch()
 
     @JvmStatic
     fun renderText(context: LevelRenderContext, matrices: PoseStack, text: Component, pos: Vec3, scale: Float) {
@@ -403,12 +411,15 @@ object RenderUtils {
             if (num >= 1e9) String.format(java.util.Locale.ROOT, "%.1fB", num / 1e9f)
             else if (num >= 1e6) String.format(java.util.Locale.ROOT, "%.1fM", num / 1e6f)
             else if (num >= 1e3) String.format(java.util.Locale.ROOT, "%.1fK", num / 1e3f)
-            else "$num"
+            else wholeOrDecimal(num)
         } else {
             if (num >= 1e9) String.format(java.util.Locale.ROOT, "%.1fb", num / 1e9f)
             else if (num >= 1e6) String.format(java.util.Locale.ROOT, "%.1fm", num / 1e6f)
             else if (num >= 1e3) String.format(java.util.Locale.ROOT, "%.1fk", num / 1e3f)
-            else "$num"
+            else wholeOrDecimal(num)
         }
     }
+
+    private fun wholeOrDecimal(num: Float): String =
+        if (num == Math.floor(num.toDouble()).toFloat()) num.toLong().toString() else "$num"
 }

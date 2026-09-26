@@ -36,7 +36,7 @@ public interface ItemTrimMixin {
                 if (uuid != null) {
                     String modelId = ItemCustomizationStore.getModelId(uuid);
                     if (modelId != null) {
-                        Identifier id = Identifier.tryParse(modelId);
+                        Identifier id = ArmorTrimCache.modelId(modelId);
                         if (id != null) return (T) id;
                     }
                 }

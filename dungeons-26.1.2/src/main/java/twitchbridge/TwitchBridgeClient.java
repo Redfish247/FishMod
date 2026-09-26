@@ -36,6 +36,7 @@ public final class TwitchBridgeClient {
 
 	public static synchronized void setEnabled(boolean on) {
 		FishSettings.twitchBridgeEnabled = on;
+		fishmod.utils.config.FishConfig.manager.save();
 		if (on) {
 			if (config.channel.isBlank()) {
 				ChatOutput.info(config, "enabled — set a channel with /twitch channel <name>");

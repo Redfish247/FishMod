@@ -8,6 +8,8 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.client.input.CharacterEvent
+import net.minecraft.client.input.KeyEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.entity.player.Inventory
@@ -19,8 +21,6 @@ import net.minecraft.world.item.ItemStack
 import org.lwjgl.glfw.GLFW
 import java.util.TreeMap
 
-// Vanilla layer: square fills, slot grids, items. UI overlay: rounded frames, text, tooltip.
-// Rounded corners = opaque ring in the fill colour over a vanilla rect inset from the edge, so no seam shows.
 object StorageOverlay {
 
     private const val SLOT_SIZE = 17
@@ -63,7 +63,6 @@ object StorageOverlay {
     private var lastRenderedInnerHeight = 0
     private var pageWidthCount = 3
     private var knobGrabbed = false
-    private var hoveredOverlayItem: ItemStack? = null
     private var tooltipStack: ItemStack? = null
     private var pendingPaint = false
 
@@ -81,22 +80,31 @@ object StorageOverlay {
     private val font get() = mc.font
     private val scale get() = FishSettings.storageOverlayScale.coerceIn(0.5, 2.0).toFloat()
 
+    private var titleFor: net.minecraft.network.chat.Component? = null
+    private var titleIsStorage = false
+    private var titlePage: StoragePage? = null
+
+    private fun classify(screen: AbstractContainerScreen<*>) {
+        val title = screen.title
+        if (title === titleFor) return
+        titleFor = title
+        val t = title.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
+        titlePage = StoragePage.fromTitle(t)
+        titleIsStorage = t == "Storage" || titlePage != null
+    }
+
     private fun on(screen: AbstractContainerScreen<*>): Boolean {
         if (!FishSettings.storageOverlayEnabled) return false
-        val t = screen.title.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
-        return t == "Storage" || StoragePage.fromTitle(t) != null
+        classify(screen)
+        return titleIsStorage
     }
 
     @JvmStatic
     fun isActive(screen: AbstractContainerScreen<*>): Boolean = on(screen)
 
     @JvmStatic
-    fun panelLeftScreenX(): Int = (mx0 * scale).toInt()
-
-    @JvmStatic
     fun panelTopScreenY(): Int = (my0 * scale).toInt()
 
-    // Called from GameRendererUiMixin after vanilla's GUI pass; replays this frame's recording once.
     @JvmStatic
     fun paintUiOverlay() {
         if (!pendingPaint) return
@@ -106,8 +114,10 @@ object StorageOverlay {
         UiRecorder.clear()
     }
 
-    private fun activePage(screen: AbstractContainerScreen<*>): StoragePage? =
-        StoragePage.fromTitle(screen.title.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, ""))
+    private fun activePage(screen: AbstractContainerScreen<*>): StoragePage? {
+        classify(screen)
+        return titlePage
+    }
 
     private fun allData(): TreeMap<StoragePage, NBTInventory?> {
         val out = TreeMap<StoragePage, NBTInventory?>()
@@ -119,12 +129,16 @@ object StorageOverlay {
     private val isSearching get() = search.isNotBlank()
     private val shouldFilterPages get() = FishSettings.storageHideNonMatching && isSearching
 
+    private val searchText = java.util.WeakHashMap<ItemStack, String>()
+
     private fun matches(s: ItemStack): Boolean {
         if (s.isEmpty) return false
-        val q = search.lowercase()
-        if (s.hoverName.string.lowercase().contains(q)) return true
-        val lore = s.get(DataComponents.LORE) ?: return false
-        return lore.lines().any { it.string.lowercase().contains(q) }
+        val text = searchText.getOrPut(s) {
+            val sb = StringBuilder(s.hoverName.string.lowercase())
+            s.get(DataComponents.LORE)?.lines()?.forEach { sb.append('\n').append(it.string.lowercase()) }
+            sb.toString()
+        }
+        return text.contains(search.lowercase())
     }
 
     private fun visibleData(activePage: StoragePage?, activeSlots: List<Slot>?, all: TreeMap<StoragePage, NBTInventory?> = allData()): TreeMap<StoragePage, NBTInventory?> {
@@ -191,7 +205,6 @@ object StorageOverlay {
         pendingPaint = false
         recomputeGeometry()
         dragPreview = computeDragPreview()
-        hoveredOverlayItem = null
         tooltipStack = null
 
         val s = scale
@@ -199,6 +212,8 @@ object StorageOverlay {
         ctx.pose().scale(s, s)
         val smx = (mouseX / s).toInt()
         val smy = (mouseY / s).toInt()
+        lastMouseX = mouseX / s.toDouble()
+        lastMouseY = mouseY / s.toDouble()
 
         runCatching { ctx.blurBeforeThisStratum() }
         runCatching { ctx.nextStratum() }
@@ -226,7 +241,6 @@ object StorageOverlay {
 
         ctx.pose().popMatrix()
 
-        // replaces the vanilla tooltip, which would sit under the overlay text
         tooltipStack?.let {
             val lines = runCatching { Screen.getTooltipFromItem(mc, it) }.getOrNull()
             if (!lines.isNullOrEmpty()) ScreenTheme.nItemTooltip(lines, smx, smy, vw, vh, 1f / s)
@@ -350,7 +364,6 @@ object StorageOverlay {
         val cardH = rows * SLOT_SIZE + GRID_TOP + 3
         val hot = inView && inRect(mouseX, mouseY, x, y, CARD_W, cardH)
 
-        // vanilla body under the items; the overlay ring rounds its corners in the same colour
         rect(ctx, x + 1, y + 1, CARD_W - 2, cardH - 2, CARD_BG)
         UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), CARD_W.toFloat(), cardH.toFloat(), CARD_R, 2f, 0, CARD_BG)
         val edge = if (isActive) ACCENT else if (hot) CARD_BORDER_HOVER else CARD_BORDER
@@ -380,7 +393,6 @@ object StorageOverlay {
             if (slotHot) rect(ctx, sx, sy, 16, 16, HOVER_WHITE)
         }
         if (hovered != null) {
-            if (isActive) hoveredOverlayItem = hovered
             tooltipStack = hovered
         }
     }
@@ -444,7 +456,6 @@ object StorageOverlay {
             if (hot) rect(ctx, sx, sy, 16, 16, HOVER_WHITE)
         }
         if (hovered != null) {
-            hoveredOverlayItem = hovered
             tooltipStack = hovered
         }
     }
@@ -640,16 +651,35 @@ object StorageOverlay {
         return true
     }
 
+    private var lastMouseX = 0.0
+    private var lastMouseY = 0.0
+
     @JvmStatic
-    fun keyPressed(key: Int, screen: AbstractContainerScreen<*>): Boolean {
-        if (!on(screen) || !searchFocused) return false
-        when (key) {
-            GLFW.GLFW_KEY_ESCAPE -> { searchFocused = false; return true }
-            GLFW.GLFW_KEY_BACKSPACE -> { if (search.isNotEmpty()) search = search.dropLast(1); return true }
-            GLFW.GLFW_KEY_SPACE -> { search += ' '; return true }
-            in GLFW.GLFW_KEY_A..GLFW.GLFW_KEY_Z -> { search += ('a' + (key - GLFW.GLFW_KEY_A)); return true }
-            in GLFW.GLFW_KEY_0..GLFW.GLFW_KEY_9 -> { search += ('0' + (key - GLFW.GLFW_KEY_0)); return true }
+    fun keyPressed(input: KeyEvent, screen: AbstractContainerScreen<*>): Boolean {
+        if (!on(screen)) return false
+        if (searchFocused) {
+            when (input.key()) {
+                GLFW.GLFW_KEY_ESCAPE -> searchFocused = false
+                GLFW.GLFW_KEY_BACKSPACE -> if (search.isNotEmpty()) search = search.dropLast(1)
+            }
+            return true
         }
+        val options = mc.options
+        val hotbar = options.keyHotbarSlots.indexOfFirst { it.matches(input) }
+        val drop = options.keyDrop.matches(input)
+        if (hotbar < 0 && !drop) return false
+        val slot = resolveSlotUnder(lastMouseX, lastMouseY, activePage(screen)) ?: return true
+        if (hotbar >= 0) dispatchSlotClick(slot, hotbar, 0, ContainerInput.SWAP)
+        else dispatchSlotClick(slot, if (input.modifiers() and GLFW.GLFW_MOD_CONTROL != 0) 1 else 0, 0, ContainerInput.THROW)
+        return true
+    }
+
+    @JvmStatic
+    fun charTyped(input: CharacterEvent, screen: AbstractContainerScreen<*>): Boolean {
+        if (!on(screen) || !searchFocused) return false
+        val cp = input.codepoint()
+        if (Character.isISOControl(cp)) return true
+        search += String(Character.toChars(cp))
         return true
     }
 
@@ -661,7 +691,6 @@ object StorageOverlay {
         dragStartSlot = null
         dragSlots.clear()
         dragPreview = null
-        hoveredOverlayItem = null
         tooltipStack = null
         pendingPaint = false
     }
@@ -669,7 +698,6 @@ object StorageOverlay {
     private fun rect(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int, color: Int) =
         ctx.fill(x, y, x + w, y + h, color)
 
-    // enableScissor already maps through the pose (which carries the scale), so pass virtual coords
     private fun scissor(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int) {
         runCatching { ctx.enableScissor(x, y, x + w, y + h) }
     }

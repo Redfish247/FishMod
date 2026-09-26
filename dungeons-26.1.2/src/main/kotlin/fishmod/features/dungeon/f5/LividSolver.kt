@@ -20,8 +20,6 @@ import net.minecraft.world.level.block.state.BlockState
 
 object LividSolver {
 
-    private val LIVID_START = Regex(
-        "^\\[BOSS] Livid: Welcome, you've arrived right on time\\. I am Livid, the Master of Shadows\\.$")
     private val WOOL_POS = BlockPos(5, 108, 43)
 
     private enum class Livid(val entityName: String, val colorCode: Char, val wool: Block) {
@@ -39,40 +37,25 @@ object LividSolver {
     }
 
     private var current = Livid.HOCKEY
-    private var invulnTime = 0
 
     private fun active(): Boolean =
         FishSettings.lividSolverEnabled && DungeonState.isInBoss() && DungeonState.floorNumber() == 5
 
     @JvmStatic
     fun init() {
-        Events.ON_GAME_MESSAGE.register { text ->
-            if (DungeonState.floorNumber() == 5 && LIVID_START.matches(text.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")))
-                invulnTime = 390
-            false
-        }
-
         Events.ON_PACKET.register { packet ->
+            if (!active()) return@register false
             when (packet) {
-                is ClientboundBlockUpdatePacket ->
-                    Minecraft.getInstance().execute { onBlock(packet.pos, packet.blockState) }
-                is ClientboundSectionBlocksUpdatePacket ->
-                    Minecraft.getInstance().execute { packet.runUpdates(::onBlock) }
-                is ClientboundSetEntityDataPacket ->
-                    Minecraft.getInstance().execute { bindEntity(packet.id) }
+                is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
+                is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::onBlock)
+                is ClientboundSetEntityDataPacket -> bindEntity(packet.id)
             }
-            false
-        }
-
-        Events.ON_SERVER_TICK.register {
-            if (active() && invulnTime > 0) invulnTime--
             false
         }
 
         Events.ON_WORLD_CHANGE.register {
             current = Livid.HOCKEY
             Livid.entries.forEach { it.entity = null }
-            invulnTime = 0
             false
         }
 

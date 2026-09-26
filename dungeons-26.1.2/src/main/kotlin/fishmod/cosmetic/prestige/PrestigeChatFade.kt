@@ -39,7 +39,7 @@ object PrestigeChatFade {
             if (age > ANIMATE_TICKS) break
 
             val recolored = PrestigeLevelColors.colorizeChatLevel(line.content()) ?: continue
-            if (recolored !== line.content()) {
+            if (recolored != line.content()) {
                 messages[i] = GuiMessage(line.addedTime(), recolored, line.signature(), line.source(), line.tag())
                 changed = true
             }

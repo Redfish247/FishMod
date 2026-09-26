@@ -28,6 +28,9 @@ public abstract class SkullBlockEntityRendererMixin {
         return null;
     }
 
+    @org.spongepowered.asm.mixin.Unique
+    private static final java.util.UUID fishmod$ESSENCE_ID = java.util.UUID.fromString("e0f3e929-869e-3dca-9504-54c666ee6f23");
+
     @Inject(method = "resolveSkullRenderType", at = @At("HEAD"), cancellable = true)
     private void renderEssence(SkullBlock.Type skullType, SkullBlockEntity blockEntity, CallbackInfoReturnable<RenderType> cir) {
         if (!Visual.fixWitherEssence || skullType != SkullBlock.Types.PLAYER) return;
@@ -37,7 +40,7 @@ public abstract class SkullBlockEntityRendererMixin {
 
         GameProfile profile = profileComponent.partialProfile();
 
-        if (profile.id() != null && profile.id().toString().equals("e0f3e929-869e-3dca-9504-54c666ee6f23")) {
+        if (fishmod$ESSENCE_ID.equals(profile.id())) {
             cir.setReturnValue(getSkullRenderType(SkullBlock.Types.PLAYER, ESSENCE_TEXTURE));
         }
     }

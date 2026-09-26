@@ -159,8 +159,18 @@ object WaterSolver {
         CLAY(BlockPos(10, 61, 10)),
         WATER(BlockPos(15, 60, 5));
 
+        private var leverPosFor: Any? = null
+        private var cachedLeverPos: BlockPos = BlockPos(0, 0, 0)
+
         val leverPos: BlockPos
-            get() = OdinScan.currentRoom?.getRealCoords(relativePosition) ?: BlockPos(0, 0, 0)
+            get() {
+                val room = OdinScan.currentRoom
+                if (room !== leverPosFor) {
+                    leverPosFor = room
+                    cachedLeverPos = room?.getRealCoords(relativePosition) ?: BlockPos(0, 0, 0)
+                }
+                return cachedLeverPos
+            }
 
         companion object {
             fun fromKey(key: String) = when (key) {

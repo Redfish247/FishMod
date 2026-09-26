@@ -13,7 +13,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
-import net.minecraft.network.protocol.game.ClientboundSetPlayerTeamPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSoundEntityPacket;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
@@ -21,7 +20,6 @@ import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.scores.PlayerTeam;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -62,14 +60,6 @@ public class ClientPlayNetworkHandlerMixin {
         Events.ON_ENTITY_SPAWNED.invoke(e -> e.onEntity(entity, this.level));
     }
 
-    @Inject(method = "handleSetPlayerTeamPacket", at = @At(value = "TAIL"))
-    private void onTeam(ClientboundSetPlayerTeamPacket packet, CallbackInfo ci, @Local PlayerTeam team) {
-        if (team == null) return;
-        String teamStr = fishmod.utils.HypixelApi.STRIP_COLOR.matcher(
-                team.getPlayerPrefix().getString() + team.getPlayerSuffix().getString()).replaceAll("");
-        Events.ON_TEAM.invoke(scoreBoardEvent -> scoreBoardEvent.onTeam(teamStr));
-    }
-
     @Inject(method = "handleSoundEvent", at = @At(value = "HEAD"), cancellable = true)
     private void onSound(ClientboundSoundPacket packet, CallbackInfo ci) {
         if (!Minecraft.getInstance().isSameThread()) return;
@@ -106,9 +96,12 @@ public class ClientPlayNetworkHandlerMixin {
         }
     }
 
-    @Inject(method = "handleParticleEvent", at = @At("HEAD"))
+    @Inject(method = "handleParticleEvent", at = @At("HEAD"), cancellable = true)
     private void onParticle(ClientboundLevelParticlesPacket packet, CallbackInfo ci) {
-        Events.ON_PARTICLE.invoke(particleEvent -> particleEvent.onParticle(packet));
+        if (!Minecraft.getInstance().isSameThread()) return;
+        if (Events.ON_PARTICLE.invoke(particleEvent -> particleEvent.onParticle(packet))) {
+            ci.cancel();
+        }
     }
 
     @WrapOperation(method = "handleBundlePacket", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/Packet;handle(Lnet/minecraft/network/PacketListener;)V"))
@@ -128,6 +121,7 @@ public class ClientPlayNetworkHandlerMixin {
 
     @Inject(method = "setTitleText", at = @At("HEAD"), cancellable = true)
     private void onTitle(ClientboundSetTitleTextPacket packet, CallbackInfo ci) {
+        if (!Minecraft.getInstance().isSameThread()) return;
         Component text = packet.text();
         if (text != null) {
             fishmod.features.dungeon.SimonSaysTracker.onTitle(text.getString());
@@ -140,6 +134,7 @@ public class ClientPlayNetworkHandlerMixin {
 
     @Inject(method = "handleSystemChat", at = @At("HEAD"), cancellable = true)
     private void onGameMessage(ClientboundSystemChatPacket packet, CallbackInfo ci) {
+        if (!Minecraft.getInstance().isSameThread()) return;
         if (packet == fishmod$lastBundledSystemChat) {
             fishmod$lastBundledSystemChat = null;
             return;

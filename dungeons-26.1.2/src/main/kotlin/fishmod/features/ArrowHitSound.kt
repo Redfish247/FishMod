@@ -8,10 +8,6 @@ import net.minecraft.sounds.SoundEvents
 object ArrowHitSound {
 
     @JvmStatic
-    fun init() {
-    }
-
-    @JvmStatic
     fun onLocalSound(instance: SoundInstance): Boolean {
         if (!FishSettings.arrowHitSoundEnabled) return false
         if (instance.identifier != SoundEvents.ARROW_HIT_PLAYER.location) return false

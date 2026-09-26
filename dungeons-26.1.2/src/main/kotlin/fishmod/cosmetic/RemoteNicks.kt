@@ -78,6 +78,7 @@ object RemoteNicks {
         if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) return
         val m = IGN_PAT.matcher(text)
         val now = System.currentTimeMillis()
+        if (negativeCache.size > 1024) negativeCache.values.removeIf { it <= now }
         var triggered = 0
         val seenThisLine = HashSet<String>()
         while (m.find() && triggered < 4) {
@@ -133,17 +134,7 @@ object RemoteNicks {
         if (text == null) return text
         if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled) return text
         ensureKnownFromChat(text.string)
-        if (styledByName.isEmpty()) return text
-        var s = text.string
-        var out = text
-        for ((k, v) in styledByName) {
-            if (s.contains(k)) {
-                val replaced = NameRewriter.replaceName(out, k, v) ?: continue
-                out = replaced
-                s = replaced.string
-            }
-        }
-        return out
+        return applyResolvedOnly(text)
     }
 
     @JvmStatic

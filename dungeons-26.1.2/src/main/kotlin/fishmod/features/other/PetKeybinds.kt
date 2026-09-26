@@ -14,7 +14,6 @@ import net.minecraft.world.inventory.ContainerInput
 import net.minecraft.world.item.ItemStack
 import java.util.function.Predicate
 
-// While you have the Pets menu open, a key clicks that specific pet on the current page (one press = one click).
 object PetKeybinds {
 
     @JvmField val PETS = arrayOf("Golden Dragon", "Black Cat", "Ender Dragon")
@@ -23,7 +22,6 @@ object PetKeybinds {
 
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val LEVEL = Regex("""\[Lvl\s*(\d+)]\s*""")
-    // "Pets" or "(1/3) Pets"
     private val PETS_TITLE = Regex("""^(\(\d+/\d+\)\s*)?Pets.*""")
 
     @JvmStatic
@@ -50,7 +48,6 @@ object PetKeybinds {
         val size = menu.slots.size - PLAYER_INV_SLOTS
         if (size <= 0) return
 
-        // Highest-level copy wins if you own more than one.
         val slot = (0 until size).map { menu.slots[it] }
             .filter { petName(it.item)?.contains(t, true) == true }
             .maxByOrNull { petLevel(it.item) }
@@ -79,7 +76,7 @@ object PetKeybinds {
     }
 
     private fun isPetsMenu(screen: AbstractContainerScreen<*>): Boolean =
-        PETS_TITLE.matches(screen.title.string.replace(COLOR, "").trim())
+        PETS_TITLE.matches(fishmod.utils.ScreenTitle.plain(screen).trim())
 
     private fun click(mc: Minecraft, containerId: Int, slotId: Int) {
         val player = mc.player ?: return

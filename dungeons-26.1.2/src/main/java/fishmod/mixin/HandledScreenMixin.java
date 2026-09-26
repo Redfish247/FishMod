@@ -26,14 +26,14 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
         super(title);
     }
 
-    private static boolean fishmod$loggedSearchBar = false;
-    private static boolean fishmod$loggedLeapMenu = false;
-    private static boolean fishmod$loggedPartyFinder = false;
-    private static boolean fishmod$loggedStorageOverlay = false;
-    private static boolean fishmod$loggedCroesusProfit = false;
-    private static boolean fishmod$loggedContainerValue = false;
-    private static boolean fishmod$loggedAuctionPriceAutofill = false;
-    private static boolean fishmod$loggedTermCustomGui = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedSearchBar = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedLeapMenu = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedPartyFinder = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedStorageOverlay = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedCroesusProfit = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedContainerValue = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedAuctionPriceAutofill = false;
+    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedTermCustomGui = false;
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
@@ -107,14 +107,20 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
 
     @Inject(method = "extractSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;item(Lnet/minecraft/world/item/ItemStack;III)V"))
     public void drawBackground(GuiGraphicsExtractor context, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
+        if (DrawEvents.INVENTORY_SLOT_BEFORE.isEmpty()) return;
         ItemStack stack = slot.getItem();
+        DrawEvents.currentSlot = slot;
         DrawEvents.INVENTORY_SLOT_BEFORE.invoke(event -> event.draw(context, stack, slot.x, slot.y));
+        DrawEvents.currentSlot = null;
     }
 
     @Inject(method = "extractSlot", at = @At(value = "TAIL"))
     public void drawAfter(GuiGraphicsExtractor context, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
+        if (DrawEvents.INVENTORY_SLOT_AFTER.isEmpty()) return;
         ItemStack stack = slot.getItem();
+        DrawEvents.currentSlot = slot;
         DrawEvents.INVENTORY_SLOT_AFTER.invoke(event -> event.draw(context, stack, slot.x, slot.y));
+        DrawEvents.currentSlot = null;
     }
 
     @Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)
@@ -126,7 +132,7 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
     private void keyPressed(KeyEvent input, CallbackInfoReturnable<Boolean> cir) {
         if (SearchBar.keyPressed(input)) { cir.setReturnValue(true); return; }
         if (fishmod.features.SlotLocking.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
-        if (fishmod.features.storage.StorageOverlay.keyPressed(input.key(), (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+        if (fishmod.features.storage.StorageOverlay.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
         if (fishmod.features.dungeon.LeapMenu.keyPressed(input.key(), (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
         if (fishmod.features.other.PetKeybinds.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
         if (WardrobeHotkeys.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
@@ -225,5 +231,6 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
         fishmod.features.storage.StorageOverlay.onClosed();
         fishmod.features.ScrollableTooltip.resetScroll();
         fishmod.features.dungeon.f7.terminal.TerminalSolver.onScreenClosed();
+        fishmod.features.SlotBinds.onClose();
     }
 }

@@ -8,29 +8,18 @@ group = project.maven_group
 
 java {
 	toolchain.languageVersion = JavaLanguageVersion.of(21)
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
 }
 
-// common's compiled classes are merged directly into both dungeons-* module jars (one targets
-// Java 21, the other Java 25) — compiling Kotlin for JVM 21 keeps the bytecode loadable by both.
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
 	compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
 }
 
 repositories {
 	mavenCentral()
-	maven { url 'https://jitpack.io' }
 }
 
 dependencies {
-	// Minecraft's own game jar always bundles Gson at runtime (both mapping sets), so this is
-	// compile-only here — the two dungeons-* modules never need to bundle a second copy.
 	compileOnly 'com.google.code.gson:gson:2.10.1'
-	// Only the @ConfigValue annotation shape is needed at compile time — each dungeons-* module
-	// brings its own actual practical-config version at runtime (they differ per MC version).
-	compileOnly 'com.github.BladeMasterGabe:practical-config:1.4.3'
-	// kotlin-stdlib is supplied at runtime by each dungeons-* module's own fabric-language-kotlin
-	// dependency — compile-only here so it isn't bundled twice.
+	compileOnly 'org.slf4j:slf4j-api:2.0.17'
 	compileOnly "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_version}"
 }

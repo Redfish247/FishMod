@@ -23,7 +23,6 @@ object PillarExplode {
             if (!Floor7.notifyStormCrush && !Floor7.timePillarExplosion) return@register false
             if (!Location.inDungeon() || !Phase.inP2()) return@register false
             val string = text.string
-            if (string == null) return@register false
             if (string == "[BOSS] Storm: Oof" || string == "[BOSS] Storm: Ouch, that hurt!") {
                 tick = TOTAL_TICKS
                 Scheduler.scheduleSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1f)

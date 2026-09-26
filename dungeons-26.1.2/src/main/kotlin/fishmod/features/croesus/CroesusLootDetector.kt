@@ -29,7 +29,7 @@ object CroesusLootDetector {
     @JvmStatic
     fun onScreenInit(screen: Screen?) {
         if (screen == null || !FishSettings.lootTrackerEnabled) return
-        val title = strip(screen.title.string)
+        val title = fishmod.utils.ScreenTitle.plain(screen)
 
         if (RUN_GUI_PATTERN.matcher(title).matches()) {
             ScreenEvents.afterExtract(screen).register { _, _, _, _, _ -> scanRunGuiPreviews() }
@@ -63,9 +63,7 @@ object CroesusLootDetector {
     private fun logPending(chestName: String) {
         val info = pendingChests.remove(chestName) ?: return
 
-        for (ri in info.items) {
-            LootTrackerStore.addOrIncrement(ri.displayName, ri.id, ri.qty)
-        }
+        LootTrackerStore.addAll(info.items.map { Triple(it.displayName, it.id, it.qty) })
         if (!loggedThisVisit) {
             loggedThisVisit = true
             LootTrackerStore.setRuns(LootTrackerStore.runs() + 1)
@@ -73,7 +71,7 @@ object CroesusLootDetector {
     }
 
     private fun onTick(mc: Minecraft) {
-        val title = if (mc.screen == null) "" else strip(mc.screen!!.title.string)
+        val title = if (mc.screen == null) "" else fishmod.utils.ScreenTitle.plain(mc.screen!!)
         val runGuiOpenNow = RUN_GUI_PATTERN.matcher(title).matches()
         if (runGuiOpenNow && !runGuiOpenPrev) {
             pendingChests.clear()

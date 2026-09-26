@@ -7,7 +7,6 @@ import java.io.File
 import java.io.FileReader
 import java.io.FileWriter
 import java.lang.reflect.Type
-import java.util.concurrent.Executors
 
 object SlayerPersonalBests {
 
@@ -15,9 +14,7 @@ object SlayerPersonalBests {
     private const val MAX_SECONDS = 1800.0
     private val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
 
-    private val writeExecutor = Executors.newSingleThreadExecutor { r ->
-        Thread(r, "fishmod-slayer-pb-io").apply { isDaemon = true }
-    }
+    private val writeExecutor = fishmod.utils.IoExecutor
     private val lock = Any()
 
     private var data: MutableMap<String, Double> = HashMap()
@@ -29,14 +26,6 @@ object SlayerPersonalBests {
     @JvmStatic
     fun get(type: SlayerType, tier: Int): Double = synchronized(lock) {
         data[key(type, tier)] ?: -1.0
-    }
-
-    @JvmStatic
-    fun bestForType(type: SlayerType): Double = synchronized(lock) {
-        data.entries.asSequence()
-            .filter { it.key.substringBefore('|') == type.name }
-            .map { it.value }
-            .minOrNull() ?: -1.0
     }
 
     @JvmStatic

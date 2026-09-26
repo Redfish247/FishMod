@@ -1,6 +1,5 @@
 package fishmod.utils.data
 
-import fishmod.utils.Constants
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
@@ -105,11 +104,6 @@ object TextUtil {
     }
 
     private fun getFormatChar(color: Int): Char = FORMAT_CHAR_BY_COLOR[color] ?: '0'
-
-    @JvmStatic
-    fun formatTicks(tick: Int): String {
-        return Constants.DECIMAL_FORMAT.format(tick * Constants.TICK_DURATION)
-    }
 
     @JvmStatic
     fun capitaliseFirst(message: String): String {

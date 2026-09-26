@@ -71,6 +71,13 @@ object F7Huds {
 
     @JvmField
     @ConfigValue
+    var pillarExplosion: HUDComponent = HUDComponent(
+        10.0, 140.0, TICK_W, 10, 1f, "Pillar Explosion Timer",
+        { false }, PillarExplode::renderTimer, { Floor7.timePillarExplosion }
+    )
+
+    @JvmField
+    @ConfigValue
     var termStartTimer: HUDComponent = HUDComponent(
         10.0, 104.0, TICK_W, 10, 1f, "Term Start Timer",
         { false }, TermStartTimer::render, { Floor7.enableTickTimers && Floor7.enableTermStartTimer }
@@ -150,6 +157,7 @@ object F7Huds {
         renderOne(ctx, necronLbTimer, NecronLbTimer.display(), NecronLbTimer::render, 10, 190)
         renderOne(ctx, crystalReminder, CrystalSpawn.displayNotification(), CrystalSpawn::renderNotification, 10, 40)
         renderOne(ctx, stormCrush, PillarExplode.display(), PillarExplode::render, 10, 28)
+        renderOne(ctx, pillarExplosion, PillarExplode.displayTimer(), PillarExplode::renderTimer, 10, 214)
         renderOne(ctx, currentSection, CurrentSection.display(), CurrentSection::render, 10, 202)
         renderOne(ctx, deviceNotifier, DeviceNotifier.display(), DeviceNotifier::render, 10, 52)
         renderOne(ctx, melodyWarning, MelodyWarning.display(), MelodyWarning::render, 10, 64)

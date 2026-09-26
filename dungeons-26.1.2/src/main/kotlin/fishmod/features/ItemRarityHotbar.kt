@@ -60,12 +60,14 @@ object ItemRarityHotbar {
         '5' to ItemRarity.EPIC, '6' to ItemRarity.LEGENDARY, 'd' to ItemRarity.MYTHIC, 'b' to ItemRarity.DIVINE,
     )
 
+    private val RARITY_BY_NAME: Map<String, ItemRarity> = ItemRarity.entries.associateBy { it.name }
+
     @JvmStatic
     fun getRarity(stack: ItemStack): ItemRarity {
         stack.get(DataComponents.LORE)?.lines()?.let { lines ->
             for (i in lines.indices.reversed()) {
                 for (word in lines[i].string.split(" ")) {
-                    try { return ItemRarity.valueOf(word) } catch (ignored: IllegalArgumentException) {}
+                    RARITY_BY_NAME[word]?.let { return it }
                 }
             }
         }

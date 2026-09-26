@@ -22,7 +22,6 @@ public class EntityMixin {
         }
     }
 
-    // Glow outline colour = getTeamColor(); swap Hypixel's teammate colour for class colour.
     @Inject(method = "getTeamColor", at = @At("HEAD"), cancellable = true)
     public void fishmod$classGlowColor(CallbackInfoReturnable<Integer> cir) {
         if (!Dungeons.classColoredGlow || !((Object) this instanceof Player player)) return;

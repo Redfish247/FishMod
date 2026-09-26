@@ -13,7 +13,7 @@ import java.nio.file.Paths
 
 object CommandKeys {
 
-    class Entry(
+    data class Entry(
         private val keyValue: InputConstants.Key,
         private val commandValue: String,
         private val enabledValue: Boolean = true,
@@ -21,16 +21,6 @@ object CommandKeys {
         fun key(): InputConstants.Key = keyValue
         fun command(): String = commandValue
         fun enabled(): Boolean = enabledValue
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is Entry) return false
-            return keyValue == other.keyValue && commandValue == other.commandValue && enabledValue == other.enabledValue
-        }
-
-        override fun hashCode(): Int = 31 * (31 * keyValue.hashCode() + commandValue.hashCode()) + enabledValue.hashCode()
-
-        override fun toString(): String = "Entry[key=$keyValue, command=$commandValue, enabled=$enabledValue]"
     }
 
     private val FILE: Path = Paths.get(FolderUtility.CONFIG_PATH + "command_keys.txt")

@@ -251,12 +251,6 @@ object Section {
     fun isGateBlownUp(): Boolean = gateBlownUp
 
     @JvmStatic
-    fun inSection(section: Int): Boolean {
-        if (section == 0 && (Phase.inP2() || Phase.inP3())) return true
-        return currentSection == section && Phase.inP3()
-    }
-
-    @JvmStatic
     fun getSectionTime(): Double {
         val index = currentSection - 1
         if (index < 0 || index >= splits.size) return -1.0

@@ -95,7 +95,6 @@ object SlayerBossPhases {
             show = false; line1 = ""; line2 = ""; return
         }
 
-        // throttle the entity scans below, not the cheap checks above
         if (scanCounter++ % SCAN_INTERVAL_TICKS != 0) return
 
         show = false

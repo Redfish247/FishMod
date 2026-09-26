@@ -7,13 +7,11 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileReader
-import java.io.FileWriter
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
-/** GSON-backed store of user-placed dungeon waypoints, keyed by rotation-normalized RoomSignature; stored in config/fishmod-dungeon-waypoints.json. */
 object DungeonWaypointStore {
 
     private const val FILE_PATH = "config/fishmod-dungeon-waypoints.json"
@@ -34,7 +32,6 @@ object DungeonWaypointStore {
         save()
     }
 
-    /** Removes the waypoint whose stored position is within `epsilon` of (x,y,z). Returns true if one was removed. */
     @JvmStatic
     fun removeNear(roomKey: String, x: Double, y: Double, z: Double, epsilon: Double): Boolean {
         val list = data[roomKey] ?: return false
@@ -50,7 +47,6 @@ object DungeonWaypointStore {
         if (data.remove(roomKey) != null) save()
     }
 
-    /** Removes every waypoint tagged with [routeId] across all rooms. Returns how many were removed. */
     @JvmStatic
     fun removeRoute(routeId: String): Int {
         var removed = 0
@@ -71,21 +67,6 @@ object DungeonWaypointStore {
         save()
     }
 
-    /** 90-degree rotation of a room-tile-relative point around its tile center. steps in [0,3], applied CCW to match `RoomSignature`'s (x,z) -> (z,-x). */
-    @JvmStatic
-    fun rotate90(x: Double, z: Double, steps: Int): DoubleArray {
-        var rx = x
-        var rz = z
-        val n = ((steps % 4) + 4) % 4
-        for (i in 0 until n) {
-            val nx = rz
-            val nz = -rx
-            rx = nx
-            rz = nz
-        }
-        return doubleArrayOf(rx, rz)
-    }
-
     @JvmStatic
     fun exportBase64(): String? {
         return try {
@@ -100,7 +81,6 @@ object DungeonWaypointStore {
         }
     }
 
-    /** Decodes base64(gzip(json)) and replaces the whole DB. Returns true on success. */
     @JvmStatic
     fun importBase64(base64: String?): Boolean {
         if (base64 == null || base64.isBlank()) return false
@@ -134,18 +114,12 @@ object DungeonWaypointStore {
                 val loaded: MutableMap<String, MutableList<StoredWaypoint>>? = GSON.fromJson(reader, type)
                 if (loaded != null) data = loaded
             }
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            fishmod.utils.SafeFiles.quarantine(file, e)
         }
     }
 
     private fun save() {
-        try {
-            val file = File(FILE_PATH)
-            file.parentFile?.mkdirs()
-            FileWriter(file).use { writer ->
-                GSON.toJson(data, writer)
-            }
-        } catch (ignored: Exception) {
-        }
+        fishmod.utils.SafeFiles.writeAtomic(File(FILE_PATH), GSON.toJson(data))
     }
 }

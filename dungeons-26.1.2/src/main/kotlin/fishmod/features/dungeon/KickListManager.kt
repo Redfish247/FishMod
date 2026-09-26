@@ -23,9 +23,7 @@ object KickListManager {
     private val JOIN = Pattern.compile("^(?:\\[[^]]+]\\s+)?(\\w{1,16}) joined the party\\.$")
     private val PF_JOIN = Pattern.compile("^Party Finder > (\\w{1,16}) joined the dungeon group!")
 
-    // name -> last kick time; short cooldown so a rejoin gets kicked again
     private val lastKick = ConcurrentHashMap<String, Long>()
-    // name -> time we asked for fresh party info, waiting on the leader check
     private val pending = ConcurrentHashMap<String, Long>()
 
     @JvmStatic
@@ -50,7 +48,6 @@ object KickListManager {
         if (PartyUtil.amLeader()) {
             kick(name)
         } else {
-            // Cached party info may predate the PF group forming; re-check once fresh
             pending[name] = System.currentTimeMillis()
             PartyUtil.forceRefresh()
         }
@@ -64,7 +61,6 @@ object KickListManager {
         lastKick[key] = now
         FishMsg.send("§9Kick List §7> kicking §e$name")
         Scheduler.scheduleTask({ Misc.executeCommand("party kick $name") }, 2)
-        // Drop the kicked player from cached members so the poll doesn't re-kick them
         Scheduler.scheduleTask({ PartyUtil.forceRefresh() }, 20)
     }
 

@@ -50,12 +50,17 @@ object PartyFinderStats {
         val now = System.currentTimeMillis()
         val last = lastLookupAt[sender.lowercase()]
         if (last != null && now - last < COOLDOWN_MS) return
+        if (lastLookupAt.size > 256) lastLookupAt.values.removeIf { now - it >= COOLDOWN_MS }
         lastLookupAt[sender.lowercase()] = now
         printStats(sender, joinLine)
     }
 
     private fun printStats(sender: String, joinLine: Boolean) {
         HypixelApi.getByNameSilent(sender) { data ->
+            if (data.failed) {
+                FishMsg.send("§cCouldn't look up $sender's stats")
+                return@getByNameSilent
+            }
             val mp = if (data.magicalPower >= 0) data.magicalPower.toString() else "N/A"
             val pb = if (data.masterPbs != null && data.masterPbs.size > 7 && data.masterPbs[7] != null)
                 data.masterPbs[7] else "N/A"

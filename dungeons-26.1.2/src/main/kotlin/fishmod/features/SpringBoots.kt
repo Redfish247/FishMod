@@ -70,6 +70,7 @@ object SpringBoots {
         }
 
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
+            if (!FishSettings.springBootsEnabled) return@register
             val p = mc.player ?: return@register
             if (!p.isCrouching || !wearingSpringBoots() || !Location.inSkyblock()) reset()
         }
@@ -91,8 +92,8 @@ object SpringBoots {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
         val pct = currentHeight / HEIGHTS.last() * 100f
-        val label = if (FishSettings.springBootsShowBlocks) "§aSpring: §f${String.format("%.1f", currentHeight)}"
-        else "§aCharge: §f${String.format("%.0f", pct)}%"
+        val label = if (FishSettings.springBootsShowBlocks) "§aSpring: §f${fishmod.utils.Fmt.f1(currentHeight.toDouble())}"
+        else "§aCharge: §f${fishmod.utils.Fmt.f0(pct.toDouble())}%"
         val sc = FishSettings.springBootsScale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.springBootsHudX.toFloat(), FishSettings.springBootsHudY.toFloat())

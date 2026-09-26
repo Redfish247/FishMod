@@ -1,6 +1,5 @@
 package fishmod
 
-import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.DoubleArgumentType
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -25,14 +24,13 @@ import fishmod.utils.Scheduler
 import fishmod.utils.config.Config
 import fishmod.utils.config.FishConfig
 import fishmod.utils.config.FolderUtility
-import fishmod.utils.data.EntityUtil
 import fishmod.utils.data.PartyUtil
 import fishmod.utils.debug.Debug
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.dungeon.Section
 import fishmod.utils.events.CustomEvents
 import fishmod.utils.rendering.RenderingEvents
-import net.fabricmc.api.ModInitializer
+import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
@@ -50,7 +48,6 @@ import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.MutableComponent
-import net.minecraft.network.protocol.game.ServerboundChatCommandPacket
 import net.minecraft.resources.Identifier
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
@@ -63,7 +60,7 @@ import java.util.function.Consumer
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-class FishModInit : ModInitializer {
+class FishModInit : ClientModInitializer {
 
     companion object {
         @JvmStatic
@@ -74,6 +71,10 @@ class FishModInit : ModInitializer {
         private fun runLocalLookup(cmd: String, arg1: String?, arg2: String?, arg3: String?): Int {
             val mc = Minecraft.getInstance()
             val self = mc.player?.gameProfile?.name ?: return Constants.SUCCESS
+            if (!fishmod.features.dungeon.PartyCommandHandler.localEnabled(cmd)) {
+                mc.connection?.sendCommand(listOfNotNull(cmd, arg1, arg2, arg3).joinToString(" "))
+                return Constants.SUCCESS
+            }
             fishmod.features.dungeon.PartyCommandHandler.onPartyCommand(
                 self, cmd, arg1, arg2, arg3, fishmod.features.dungeon.PartyCommandHandler.LOCAL
             )
@@ -371,13 +372,16 @@ class FishModInit : ModInitializer {
             try {
                 init()
             } catch (t: Throwable) {
-                println("[FishMod] init failed for $name: $t")
+                fishmod.utils.debug.Debug.LOGGER.error("[FishMod] init failed for {}", name, t)
             }
         }
     }
 
-    override fun onInitialize() {
+    override fun onInitializeClient() {
         FishConfig.manager.load()
+        safeInit("Config") { Config.manager.load() }
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register { FishConfig.manager.save() }
+        fishmod.utils.IoExecutor.init()
 
         fishmod.cosmetic.NickData.load()
         fishmod.cosmetic.RemoteNicks.init()
@@ -405,7 +409,6 @@ class FishModInit : ModInitializer {
         fishmod.features.scoreboard.SkillLevels.init()
         fishmod.features.scoreboard.BestiaryProgress.init()
         fishmod.features.scoreboard.CollectionsProgress.init()
-        fishmod.features.scoreboard.ElectionInfo.init()
         fishmod.features.scoreboard.FireSaleInfo.init()
         fishmod.features.other.CommandKeys.init()
         fishmod.features.other.WardrobeHotkeys.init()
@@ -419,8 +422,6 @@ class FishModInit : ModInitializer {
         fishmod.features.LoadoutTitle.init()
         fishmod.features.AutoSprint.init()
         fishmod.features.WarpCooldown.init()
-        fishmod.features.TimeChanger.init()
-        fishmod.features.ArrowHitSound.init()
         fishmod.features.dungeon.DungeonBreaker.init()
         fishmod.features.BlockOverlay.init()
         fishmod.features.CameraTweaks.init()
@@ -438,7 +439,6 @@ class FishModInit : ModInitializer {
         twitchbridge.TwitchBridgeClient.init()
         fishmod.features.LavaToWater.init()
         fishmod.features.storage.StorageCache.init()
-        fishmod.features.storage.StorageAutoLoader.init()
         fishmod.features.dungeon.ExtraStats.init()
         fishmod.features.EtherwarpHelper.init()
         fishmod.features.dungeon.DungeonAbilities.init()
@@ -493,6 +493,7 @@ class FishModInit : ModInitializer {
         FishHudEditor.register("Py Tick Timer", fishmod.features.dungeon.f7.F7Huds.pyTimer)
         FishHudEditor.register("Necron LB Timer", fishmod.features.dungeon.f7.F7Huds.necronLbTimer)
         FishHudEditor.register("Storm Crushed", fishmod.features.dungeon.f7.F7Huds.stormCrush)
+        FishHudEditor.register("Pillar Explosion Timer", fishmod.features.dungeon.f7.F7Huds.pillarExplosion)
         FishHudEditor.register("Term Start Timer", fishmod.features.dungeon.f7.F7Huds.termStartTimer)
         FishHudEditor.register("Section Progress", fishmod.features.dungeon.f7.F7Huds.sectionProgress)
         FishHudEditor.register("Current Section", fishmod.features.dungeon.f7.F7Huds.currentSection)
@@ -687,32 +688,24 @@ class FishModInit : ModInitializer {
                         Misc.addChatMessage(Component.literal("§b[fmnicktest] §7re-uploaded own nick."))
                         fishmod.cosmetic.RemoteNicks.forceRefresh()
                         Misc.addChatMessage(Component.literal("§b[fmnicktest] §7triggered RemoteNicks.refresh()…"))
-                        mc.schedule {
-                            Thread({
-                                try {
-                                    Thread.sleep(1200)
-                                } catch (ignored: InterruptedException) {
+                        Scheduler.scheduleTask({
+                            val cache = fishmod.cosmetic.RemoteNicks.snapshot()
+                            Misc.addChatMessage(Component.literal("§b[fmnicktest] §7styledByName cache: §f" + cache.size + " §7entries"))
+                            var count = 0
+                            for (e in cache.entries) {
+                                val line: MutableComponent = Component.literal("§7  " + e.key + " §8→ ").copy()
+                                line.append(e.value)
+                                Misc.addChatMessage(line)
+                                if (++count > 10) {
+                                    Misc.addChatMessage(Component.literal("§8  (…more)")); break
                                 }
-                                mc.schedule {
-                                    val cache = fishmod.cosmetic.RemoteNicks.snapshot()
-                                    Misc.addChatMessage(Component.literal("§b[fmnicktest] §7styledByName cache: §f" + cache.size + " §7entries"))
-                                    var count = 0
-                                    for (e in cache.entries) {
-                                        val line: MutableComponent = Component.literal("§7  " + e.key + " §8→ ").copy()
-                                        line.append(e.value)
-                                        Misc.addChatMessage(line)
-                                        if (++count > 10) {
-                                            Misc.addChatMessage(Component.literal("§8  (…more)")); break
-                                        }
-                                    }
-                                    if (cache.isEmpty()) {
-                                        Misc.addChatMessage(Component.literal("§c[fmnicktest] cache is empty — chat rewrite has nothing to apply. Check See Others toggle."))
-                                    } else {
-                                        Misc.addChatMessage(Component.literal("§a[fmnicktest] cache populated. If chat still shows IGNs, the mixin path isn't covering Hypixel's chat handler — paste a chat screenshot."))
-                                    }
-                                }
-                            }, "fmnicktest-dump").start()
-                        }
+                            }
+                            if (cache.isEmpty()) {
+                                Misc.addChatMessage(Component.literal("§c[fmnicktest] cache is empty — chat rewrite has nothing to apply. Check See Others toggle."))
+                            } else {
+                                Misc.addChatMessage(Component.literal("§a[fmnicktest] cache populated. If chat still shows IGNs, the mixin path isn't covering Hypixel's chat handler — paste a chat screenshot."))
+                            }
+                        }, 24)
                         Constants.SUCCESS
                     }
             )
@@ -1266,41 +1259,10 @@ class FishModInit : ModInitializer {
             )) {
                 dispatcher.register(ClientCommands.literal(name).executes { c -> runLocalLookup(name, null, null) })
             }
-            dispatcher.register(
-                ClientCommands.literal("warp")
-                    .executes { runLocalLookup("warp", null, null) }
-                    .then(
-                        ClientCommands.argument("dest", StringArgumentType.greedyString())
-                            .executes { c ->
-                                val dest = StringArgumentType.getString(c, "dest")
-                                val mc = Minecraft.getInstance()
-                                if (mc.player != null && mc.player!!.connection != null)
-                                    mc.player!!.connection.send(ServerboundChatCommandPacket("warp $dest"))
-                                Constants.SUCCESS
-                            }
-                    )
-            )
         })
 
         ClientPlayConnectionEvents.JOIN.register(ClientPlayConnectionEvents.Join { _, _, _ ->
             fishmod.utils.config.values.DungeonMapSettings.mapLegitMode = true
-            fishmod.utils.config.values.DungeonMapSettings.mapInsightLegit = false
-        })
-
-        ClientPlayConnectionEvents.JOIN.register(ClientPlayConnectionEvents.Join { _, _, _ ->
-            val d: CommandDispatcher<FabricClientCommandSource>? = ClientCommands.getActiveDispatcher()
-            if (d == null) return@Join
-            try {
-                d.register(
-                    ClientCommands.literal("cata")
-                        .executes { c -> runLocalLookup("cata", null, null) }
-                        .then(
-                            ClientCommands.argument("player", StringArgumentType.word())
-                                .executes { c -> runLocalLookup("cata", StringArgumentType.getString(c, "player"), null) }
-                        )
-                )
-            } catch (ignored: Exception) {
-            }
         })
 
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "soulflow_hud")) { ctx, tickCounter -> if (!fishmod.features.FishHudEditor.isOpen()) SoulflowHud.renderHud(ctx, tickCounter) }
@@ -1359,7 +1321,6 @@ class FishModInit : ModInitializer {
         }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map_score_messages")) { ctx, tickCounter -> if (!FishHudEditor.isOpen()) fishmod.features.dungeon.map.ScoreMessages.renderHud(ctx, tickCounter) }
 
-        // Score title stores its centre X (-1 = auto centre); the editor works in left edges.
         FishHudEditor.register(
             "Dungeon Score Title",
             {
@@ -1375,7 +1336,6 @@ class FishModInit : ModInitializer {
             { fishmod.utils.config.values.DungeonMapSettings.mapScoreMessages }
         )
 
-        // Scoreboard stores its right edge (-1 = screen edge); the editor works in left edges.
         FishHudEditor.register(
             "Custom Scoreboard",
             {
@@ -1422,13 +1382,6 @@ class FishModInit : ModInitializer {
             ScreenEvents.afterExtract(screen).register(ScreenEvents.AfterExtract { _, ctx, mx, my, _ ->
                 SessionStats.renderInScreen(ctx, mx, my)
             })
-            ScreenMouseEvents.allowMouseClick(screen).register(ScreenMouseEvents.AllowMouseClick { _, click ->
-                if (click.button() != 0) return@AllowMouseClick true
-                val mx = click.x()
-                val my = click.y()
-                if (SessionStats.handleScreenClick(mx, my)) return@AllowMouseClick false
-                true
-            })
         })
 
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
@@ -1441,7 +1394,6 @@ class FishModInit : ModInitializer {
         })
 
         safeInit("FolderUtility") { FolderUtility.init() }
-        safeInit("Config") { Config.manager.load() }
         safeInit("Keybinds") { Keybinds.init() }
         safeInit("CustomEvents") { CustomEvents.init() }
         safeInit("Debug") { Debug.init() }
@@ -1450,7 +1402,6 @@ class FishModInit : ModInitializer {
         safeInit("PracticeMode") { fishmod.utils.dungeon.PracticeMode.init() }
         safeInit("Section") { Section.init() }
         safeInit("PartyUtil") { PartyUtil.init() }
-        safeInit("EntityUtil") { EntityUtil.init() }
         safeInit("RenderingEvents") { RenderingEvents.init() }
         safeInit("Scheduler") { Scheduler.init() }
         safeInit("ChatQueue") { fishmod.utils.ChatQueue.init() }

@@ -66,19 +66,18 @@ class Room(
         val legit = MapColors.legit()
         val dm = MapColors.darkenMultiplier()
         val s = DungeonMapSettings
-        val mimicPeek = mimic && s.mapMimicOnInsight && MapColors.peeking() && !s.mapInsightLegit
 
-        if (legit && state == State.UNOPENED && !mimicPeek) {
+        if (legit && state == State.UNOPENED) {
             if (isKnown1x1) {
                 var seen = 0
                 for (d in doors) if (d.seen) seen++
                 if (seen == 1) return SpecialColumn.roomColorGuess(this)
             }
-            return if (type == Type.BLOOD) intArrayOf(MapColors.darker(s.mapBloodRoomColor, dm)) else intArrayOf(s.mapUnopenedRoomColor)
+            return if (type == Type.BLOOD) intArrayOf(MapColors.darker(MapColors.bloodColor(), dm)) else intArrayOf(MapColors.unopenedColor())
         } else {
             val base: Int
-            if (!mimic || (!(s.mapRoomAdditionsEnabled && s.mapRoomAdditionsMimic) || legit) && !mimicPeek) {
-                if (type == Type.UNKNOWN) return intArrayOf(s.mapUnopenedRoomColor)
+            if (!mimic || !(s.mapRoomAdditionsEnabled && s.mapRoomAdditionsMimic) || legit) {
+                if (type == Type.UNKNOWN) return intArrayOf(MapColors.unopenedColor())
                 base = MapColors.roomColor(type!!)
             } else {
                 base = s.mapMimicRoomColor
@@ -169,6 +168,9 @@ class Room(
         }
     }
 
+    private var splitNameFor: String? = null
+    private var splitNameCache: List<String> = emptyList()
+
     fun renderName(context: GuiGraphicsExtractor, textFactor: Float) {
         val mc = Minecraft.getInstance()
         val matrices = context.pose()
@@ -177,7 +179,12 @@ class Room(
         val showName = (!legit || (state != State.UNDISCOVERED && state != State.UNOPENED)) && type != Type.FAIRY && data != null && data!!.name != null
 
         if (showName) {
-            val splitName = data!!.name!!.split(" ")
+            val name = data!!.name!!
+            if (name != splitNameFor) {
+                splitNameFor = name
+                splitNameCache = name.split(" ")
+            }
+            val splitName = splitNameCache
             val showSecrets = DungeonMapSettings.mapShowRoomSecrets && data!!.secrets > 0
             val lineCount = splitName.size + (if (showSecrets) 1 else 0)
             val defaultHeight = 8.0f - fontHeight / (2.0f * textFactor) - ((lineCount - 1) / 2.0f * (fontHeight / textFactor)).toInt()

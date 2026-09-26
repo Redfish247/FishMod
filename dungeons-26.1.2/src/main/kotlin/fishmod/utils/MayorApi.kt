@@ -9,21 +9,18 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
-import java.util.concurrent.CompletableFuture
 
 object MayorApi {
 
     private const val URL = "https://api.hypixel.net/v2/resources/skyblock/election"
     private const val CACHE_MS = 10 * 60 * 1000L
     private const val FAIL_CACHE_MS = 60 * 1000L
-    private val HTTP: HttpClient = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(5))
-        .build()
+    private val HTTP: HttpClient = fishmod.utils.Http.CLIENT
 
     @Volatile
-    private var aatroxSlayerBonus = false
-    @Volatile
     private var paulDungeonBonus = false
+    @Volatile
+    private var mayorLine: String? = null
     @Volatile
     private var lastFetch = 0L
     @Volatile
@@ -37,73 +34,55 @@ object MayorApi {
     }
 
     @JvmStatic
-    fun isAatroxSlayerBonusActive(): Boolean {
-        if (System.currentTimeMillis() - lastFetch > CACHE_MS) refresh()
-        return aatroxSlayerBonus
-    }
-
-    @JvmStatic
     fun isPaulDungeonBonusActive(): Boolean {
         if (System.currentTimeMillis() - lastFetch > CACHE_MS) refresh()
         return paulDungeonBonus
     }
 
     @JvmStatic
+    fun mayorLine(): String? {
+        if (System.currentTimeMillis() - lastFetch > CACHE_MS) refresh()
+        return mayorLine
+    }
+
+    @JvmStatic
     fun refresh() {
         if (fetching) return
         fetching = true
-        CompletableFuture.supplyAsync {
+        val req = HttpRequest.newBuilder()
+            .uri(URI.create(URL))
+            .header("User-Agent", "Mozilla/5.0")
+            .GET()
+            .timeout(Duration.ofSeconds(8))
+            .build()
+        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept { resp ->
             try {
-                val req = HttpRequest.newBuilder()
-                    .uri(URI.create(URL))
-                    .GET()
-                    .timeout(Duration.ofSeconds(8))
-                    .build()
-                HTTP.send(req, HttpResponse.BodyHandlers.ofString()).body()
+                val root = JsonParser.parseString(resp.body()).asJsonObject
+                paulDungeonBonus = parsePaul(root)
+                mayorLine = parseMayorLine(root)
+                lastFetch = System.currentTimeMillis()
             } catch (e: Exception) {
-                Debug.LOGGER.warn("MayorApi: fetch failed - {}", e.message)
-                null
-            }
-        }.thenAccept { body ->
-            try {
-                if (body == null) {
-                    lastFetch = failStamp()
-                    return@thenAccept
-                }
-                try {
-                    aatroxSlayerBonus = parseAatrox(body)
-                    paulDungeonBonus = parsePaul(body)
-                    lastFetch = System.currentTimeMillis()
-                } catch (e: Exception) {
-                    Debug.LOGGER.warn("MayorApi: parse failed - {}", e.message)
-                    lastFetch = failStamp()
-                }
+                Debug.LOGGER.warn("MayorApi: parse failed - {}", e.message)
+                lastFetch = failStamp()
             } finally {
                 fetching = false
             }
-        }.exceptionally { fetching = false; null }
-    }
-
-    private fun parseAatrox(body: String): Boolean {
-        val root = JsonParser.parseString(body).asJsonObject
-        if (!root.has("mayor")) return false
-        val mayor = root.getAsJsonObject("mayor")
-        if ("aatrox".equals(mayor.get("key").asString, ignoreCase = true)) return true
-        if (mayor.has("minister")) {
-            val minister = mayor.getAsJsonObject("minister")
-            if ("aatrox".equals(minister.get("key").asString, ignoreCase = true)) {
-                if (minister.has("perk")) {
-                    val perkName = minister.getAsJsonObject("perk")
-                        .get("name").asString.lowercase()
-                    return perkName.contains("slayer")
-                }
-            }
+        }.exceptionally { e ->
+            Debug.LOGGER.warn("MayorApi: fetch failed - {}", e.message)
+            lastFetch = failStamp()
+            fetching = false
+            null
         }
-        return false
     }
 
-    private fun parsePaul(body: String): Boolean {
-        val root = JsonParser.parseString(body).asJsonObject
+    private fun parseMayorLine(root: JsonObject): String? {
+        val mayor = root.getAsJsonObject("mayor") ?: return null
+        val name = mayor.get("name")?.asString ?: return null
+        val perk = mayor.getAsJsonArray("perks")?.firstOrNull()?.asJsonObject?.get("name")?.asString
+        return if (perk != null) "§7Mayor: §e$name §7($perk)" else "§7Mayor: §e$name"
+    }
+
+    private fun parsePaul(root: JsonObject): Boolean {
         if (!root.has("mayor")) return false
         val mayor = root.getAsJsonObject("mayor")
         if ("paul".equals(mayor.get("key")?.asString, ignoreCase = true) && hasEzpz(mayor.getAsJsonArray("perks"))) {

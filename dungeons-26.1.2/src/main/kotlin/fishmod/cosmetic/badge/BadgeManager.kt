@@ -3,10 +3,6 @@ package fishmod.cosmetic.badge
 import com.google.gson.JsonParser
 import java.util.concurrent.ConcurrentHashMap
 
-/** Per-player badge grants, as learned from the backend's `/sync` poll (see RemoteSync.kt) —
- *  never locally editable. `byUuid` is the authoritative source `BadgeRenderer` reads from;
- *  `nameToUuid` is a lightweight side cache (populated the same place RemoteSync already builds
- *  its online-player uuid/name pairs) used only to resolve chat lines, which don't carry a uuid. */
 object BadgeManager {
 
     private val byUuid: MutableMap<String, List<String>> = ConcurrentHashMap()
@@ -18,8 +14,9 @@ object BadgeManager {
     }
 
     @JvmStatic
-    fun registerName(name: String, uuidNoDashes: String) {
-        nameToUuid[name] = uuidNoDashes
+    fun replaceNames(names: Map<String, String>) {
+        nameToUuid.keys.retainAll(names.keys)
+        nameToUuid.putAll(names)
     }
 
     @JvmStatic

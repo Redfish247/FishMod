@@ -49,7 +49,7 @@ object PartyFinderPanel {
     }
 
     private fun active(screen: AbstractContainerScreen<*>): Boolean =
-        FishSettings.pfListPanel && COLOR.replace(screen.title.string, "") == "Party Finder"
+        FishSettings.pfListPanel && fishmod.utils.ScreenTitle.plain(screen) == "Party Finder"
 
     private fun strip(s: String) = COLOR.replace(s, "")
 
@@ -121,8 +121,14 @@ object PartyFinderPanel {
 
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
-        if (!active(screen)) { parties = emptyList(); rowRects = emptyList(); return }
-        val all = collect(screen)
+        if (!active(screen)) { parties = emptyList(); rowRects = emptyList(); cacheScreen = null; return }
+        val now = System.currentTimeMillis()
+        if (screen !== cacheScreen || now - cacheAt >= 200L) {
+            cachedAll = collect(screen)
+            cacheScreen = screen
+            cacheAt = now
+        }
+        val all = cachedAll
         parties = all.filter(::passesFilter)
 
         val mc = Minecraft.getInstance()
@@ -217,6 +223,7 @@ object PartyFinderPanel {
         for (n in (listOf(p.leader) + p.memberNames).distinct()) {
             val d = PartyFinder.cached(n)
             if (d == null) { pending = true; PartyFinder.prefetch(n); continue }
+            if (d.failed) continue
             val arr = if (p.master) d.masterPbs else d.cataPbs
             val m = arr.getOrNull(p.floor)?.trim()?.let { PB_LINE.find(it) }
             val sec = if (m == null) Int.MAX_VALUE else m.groupValues[1].toInt() * 60 + m.groupValues[2].toInt()
@@ -227,11 +234,19 @@ object PartyFinderPanel {
         return "§7wPB §f$worstName §7$t${if (pending) " §8…" else ""}"
     }
 
+    private var cachedAll: List<Party> = emptyList()
+    private var cacheScreen: AbstractContainerScreen<*>? = null
+    private var cacheAt = 0L
+
     private fun clip(font: net.minecraft.client.gui.Font, s: String, maxW: Int): String {
         if (font.width(s) <= maxW) return s
-        var t = s
-        while (t.isNotEmpty() && font.width("$t..") > maxW) t = t.dropLast(1)
-        return t.trimEnd('§') + ".."
+        var lo = 0
+        var hi = s.length
+        while (lo < hi) {
+            val mid = (lo + hi + 1) / 2
+            if (font.width(s.substring(0, mid) + "..") <= maxW) lo = mid else hi = mid - 1
+        }
+        return s.substring(0, lo).trimEnd('§') + ".."
     }
 
     private fun rowUnder(mx: Double, my: Double): Int {

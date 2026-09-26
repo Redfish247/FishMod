@@ -100,7 +100,16 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
 
     private fun colW(): Int = (pw() - PAD * 2 - GAP) / 2
 
+    private val wrapCache = HashMap<String, List<String>>()
+
     private fun wrap(s: String, maxW: Float, size: Float): List<String> {
+        val key = "$maxW|$size|$s"
+        wrapCache[key]?.let { return it }
+        if (wrapCache.size > 512) wrapCache.clear()
+        return wrapUncached(s, maxW, size).also { wrapCache[key] = it }
+    }
+
+    private fun wrapUncached(s: String, maxW: Float, size: Float): List<String> {
         val out = ArrayList<String>()
         var line = ""
         for (word in s.split(' ')) {
@@ -261,7 +270,6 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         }
     }
 
-    // Head-style rounded square with the contributor's initial.
     private fun headBadge(x: Int, y: Int, s: Int, c: Credit) {
         ScreenTheme.nRoundedRect(x, y, s, s, max(4, s / 5), c.badgeColor)
         val init = c.name.take(1).uppercase()
@@ -296,7 +304,6 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
             copiedAt = System.currentTimeMillis()
             return true
         }
-        // Clicking the invite text itself opens it, as the old link pill did.
         if (inside(mx, my, linkX, linkY, linkW, linkH) && visible(linkY, linkH)) {
             try {
                 Util.getPlatform().openUri(DISCORD_URL)

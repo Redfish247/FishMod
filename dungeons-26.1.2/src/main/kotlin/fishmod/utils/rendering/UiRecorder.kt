@@ -1,7 +1,5 @@
 package fishmod.utils.rendering
 
-
-// Records FishMod UI draw commands during extractRenderState; UiRenderer replays them on the GPU.
 object UiRecorder {
 
     private const val OP_FILL_ROUNDED_RECT = 0
@@ -63,7 +61,6 @@ object UiRecorder {
         count++
     }
 
-    // Called by UiRenderer.paint with GL state prepared; scale shrinks the whole layout like nvgScale did.
     @JvmStatic
     fun replay(scale: Float) {
         for (idx in 0 until count) exec(idx, scale)
@@ -79,7 +76,6 @@ object UiRecorder {
             OP_FILL_ROUNDED_RECT -> UiRenderer.shape(x, y, w, h, f4, f4, f4, f4, ints[ib])
             OP_FILL_RECT_TOP_ROUNDED -> UiRenderer.shape(x, y, w, h, f4, f4, 0f, 0f, ints[ib])
             OP_ROUNDED_RECT_RING -> UiRenderer.shape(x, y, w, h, f4, f4, f4, f4, ints[ib], ints[ib + 1], stroke = f5)
-            // disc: (cx, cy, r) stored in the x/y/w slots
             OP_DISC -> UiRenderer.shape(x - w, y - w, w * 2, w * 2, w, w, w, w, ints[ib])
             OP_DROP_SHADOW -> UiRenderer.shadow(x, y, w, h, f4, f5, ints[ib])
             OP_FILL_RECT_VGRADIENT -> UiRenderer.shape(x, y, w, h, f4, f4, f4, f4, ints[ib], ints[ib + 1], grad = 1f)
@@ -111,7 +107,6 @@ object UiRecorder {
         push(OP_FILL_ROUNDED_RECT, x, y, w, h, r, i0 = color)
     }
 
-    // per-corner radii: top-left, top-right, bottom-right, bottom-left
     @JvmStatic
     fun fillRoundedRectCorners(x: Float, y: Float, w: Float, h: Float, tl: Float, tr: Float, br: Float, bl: Float, color: Int) {
         push(OP_FILL_ROUNDED_CORNERS, x, y, w, h, tl, tr, br, bl, i0 = color)

@@ -14,19 +14,9 @@ import java.nio.file.Paths
 
 object CommandAliases {
 
-    class Entry(private val aliasValue: String, private val commandValue: String) {
+    data class Entry(private val aliasValue: String, private val commandValue: String) {
         fun alias(): String = aliasValue
         fun command(): String = commandValue
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is Entry) return false
-            return aliasValue == other.aliasValue && commandValue == other.commandValue
-        }
-
-        override fun hashCode(): Int = 31 * aliasValue.hashCode() + commandValue.hashCode()
-
-        override fun toString(): String = "Entry[alias=$aliasValue, command=$commandValue]"
     }
 
     private val FILE: Path = Paths.get(FolderUtility.CONFIG_PATH + "command_aliases.txt")

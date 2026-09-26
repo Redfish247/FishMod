@@ -24,6 +24,8 @@ object LeapMenu {
     private data class Target(val slot: Int, val name: String, val clazz: DungeonClass?, val dead: Boolean)
 
     private var cache: List<Target> = emptyList()
+    private var cacheScreen: AbstractContainerScreen<*>? = null
+    private var cacheAt = 0L
 
     private val TABLIST_RX = Regex("^\\[(\\d+)] (?:\\[\\w+] )*(\\w+) .*?\\((\\w+)(?: (\\w+))*\\)$")
     private val teammateClasses = HashMap<String, DungeonClass>()
@@ -111,7 +113,7 @@ object LeapMenu {
         }
         for (i in 0..3) if (result[i] == null && overflow.isNotEmpty()) result[i] = overflow.removeFirst()
         val out = result.map { it ?: EMPTY_TARGET }
-        if (fishmod.utils.debug.Debug.termInfo) {
+        if (fishmod.utils.debug.Debug.leapDebug) {
             fishmod.utils.debug.Debug.LOGGER.info(
                 "[LeapMenu] odinSort in={} -> TL={} TR={} BL={} BR={}",
                 players.map { "${it.name}:${it.clazz}" },
@@ -204,7 +206,12 @@ object LeapMenu {
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
         if (!isLeapMenu(screen)) return
-        cache = collect(screen)
+        val now = System.currentTimeMillis()
+        if (screen !== cacheScreen || now - cacheAt >= 200L) {
+            cache = collect(screen)
+            cacheScreen = screen
+            cacheAt = now
+        }
         val mc = Minecraft.getInstance()
         if (mapView()) { renderMapView(ctx, mouseX, mouseY, mc); return }
         ctx.fill(0, 0, mc.window.guiScaledWidth, mc.window.guiScaledHeight, 0xC0000000.toInt())

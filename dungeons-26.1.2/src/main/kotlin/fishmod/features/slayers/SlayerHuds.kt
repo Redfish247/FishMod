@@ -195,23 +195,23 @@ object SlayerHuds {
         val lines = ArrayList<String>(4)
         if (SlayerTimer.running()) {
             if (FishSettings.slayerTimerShowCurrent)
-                lines.add("§6Boss: §f${String.format("%.2fs", SlayerTimer.elapsedSeconds())}")
+                lines.add("§6Boss: §f${fishmod.utils.Fmt.f2(SlayerTimer.elapsedSeconds())}s")
         } else if (SlayerTimer.hasResult()) {
-            lines.add("§6Boss: §f${String.format("%.2fs", SlayerTimer.lastResultSeconds())}")
+            lines.add("§6Boss: §f${fishmod.utils.Fmt.f2(SlayerTimer.lastResultSeconds())}s")
             val type = SlayerManager.type
             if (FishSettings.slayerTimerShowPb && type != null) {
                 val pb = SlayerPersonalBests.get(type, SlayerManager.tier)
-                lines.add("§7PB: §f" + if (pb > 0) String.format("%.2fs", pb) else "—")
+                lines.add("§7PB: §f" + if (pb > 0) fishmod.utils.Fmt.f2(pb) + "s" else "—")
             }
             if (FishSettings.slayerTimerShowNewPb && SlayerTimer.lastWasPb())
                 lines.add("§a§lNEW PB!")
         }
         if (FishSettings.slayerTimerShowCycle) {
             if (SlayerTimer.lastCycleSeconds() >= 0.0)
-                lines.add("§7Cycle: §f${String.format("%.1fs", SlayerTimer.lastCycleSeconds())}")
+                lines.add("§7Cycle: §f${fishmod.utils.Fmt.f1(SlayerTimer.lastCycleSeconds())}s")
             val since = SlayerTimer.cycleElapsedSeconds()
             if (SlayerTimer.hasCycle() && since in 0.0..1800.0)
-                lines.add("§7Since kill: §f${String.format("%.1fs", since)}")
+                lines.add("§7Since kill: §f${fishmod.utils.Fmt.f1(since)}s")
         }
         if (lines.isEmpty()) return
 
@@ -244,9 +244,9 @@ object SlayerHuds {
         return a shl 24
     }
 
-    private fun fmt(v: Double): String = String.format("%,d", v.toLong())
+    private fun fmt(v: Double): String = fishmod.utils.Fmt.grouped(v.toLong())
     private fun rate(v: Double): String = if (v <= 0.0) "§8—" else SlayerStatsTracker.short(v)
-    private fun rateInt(v: Double): String = if (v <= 0.0) "§8—" else String.format("%,d", v.toLong())
+    private fun rateInt(v: Double): String = if (v <= 0.0) "§8—" else fishmod.utils.Fmt.grouped(v.toLong())
 
     private fun roman(n: Int): String = when (n) {
         1 -> "I"; 2 -> "II"; 3 -> "III"; 4 -> "IV"; 5 -> "V"; else -> n.toString()

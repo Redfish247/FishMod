@@ -70,21 +70,13 @@ object StorageCache {
 
     private fun uuid(): String? = Minecraft.getInstance().player?.gameProfile?.id?.toString()
 
-    @JvmStatic
-    fun put(idx: Int, stacks: List<ItemStack>) {
-        if (stacks.isEmpty() || stacks.all { it.isEmpty }) return
-        pages[idx] = NBTInventory(stacks.map { it.copy() })
-        known.add(idx)
-        dirty = true
-    }
-
     private fun tick(mc: Minecraft) {
         if (!FishSettings.storageOverlayEnabled) return
         val id = uuid() ?: return
         if (id != loadedFor) { load(id); loadedFor = id }
 
         val screen = mc.screen as? AbstractContainerScreen<*> ?: run { flush(); return }
-        val plainTitle = screen.title.string.replace(COLOR, "")
+        val plainTitle = fishmod.utils.ScreenTitle.plain(screen)
 
         if (plainTitle == "Storage") { scanOverview(screen); return }
         val page = StoragePage.fromTitle(plainTitle) ?: run { flush(); return }
@@ -96,8 +88,12 @@ object StorageCache {
         val menu = screen.menu as? ChestMenu ?: return
         val rows = menu.rowCount
         if (rows < 2) return
-        val items = menu.slots.subList(9, rows * 9).map { it.item.copy() }
-        pages[page.index] = NBTInventory(items)
+        val slots = menu.slots.subList(9, rows * 9)
+        val prev = pages[page.index]
+        if (prev != null && prev.stacks.size == slots.size &&
+            slots.indices.all { ItemStack.matches(slots[it].item, prev.stacks[it]) }
+        ) return
+        pages[page.index] = NBTInventory(slots.map { it.item.copy() })
         known.add(page.index)
         dirty = true
     }
@@ -130,7 +126,10 @@ object StorageCache {
                 NBTInventory.decode(root.getString("${i}_inv").orElse(""))?.let { pages[i] = it; known.add(i) }
             }
             root.getString("known").orElse("").split(',').mapNotNull { it.trim().toIntOrNull() }.forEach { known.add(it) }
-        } catch (ignored: IOException) {}
+        } catch (e: Exception) {
+            pages = TreeMap(); known = sortedSetOf()
+            fishmod.utils.SafeFiles.quarantine(file, e)
+        }
     }
 
     private fun save() {
@@ -143,6 +142,8 @@ object StorageCache {
             val tmp = dir.resolve("$id.nbt.tmp")
             NbtIo.writeCompressed(root, tmp)
             Files.move(tmp, dir.resolve("$id.nbt"), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
-        } catch (ignored: IOException) {}
+        } catch (e: IOException) {
+            fishmod.utils.debug.Debug.LOGGER.error("Failed to save storage cache", e)
+        }
     }
 }

@@ -18,7 +18,7 @@ object OdinScan {
 
     private val nameToData: Map<String, ORoomData> = run {
         try {
-            OdinScan::class.java.getResourceAsStream("/odin_rooms.json")!!.use { s ->
+            OdinScan::class.java.getResourceAsStream("/assets/fishmod/map/rooms.json")!!.use { s ->
                 val list: Set<ORoomData> = Gson().fromJson(
                     InputStreamReader(s, StandardCharsets.UTF_8),
                     object : TypeToken<Set<ORoomData>>() {}.type,
@@ -26,7 +26,7 @@ object OdinScan {
                 list.associateBy { it.name }
             }
         } catch (e: Exception) {
-            Debug.LOGGER.error("Odin rooms.json failed to load", e); emptyMap()
+            Debug.LOGGER.error("rooms.json failed to load for OdinScan", e); emptyMap()
         }
     }
 
@@ -38,7 +38,9 @@ object OdinScan {
     private val enterListeners = mutableListOf<(ORoom?) -> Unit>()
     fun onRoomEnter(cb: (ORoom?) -> Unit) { enterListeners.add(cb) }
 
-    private var lastKey: String? = null
+    private var lastName: String? = null
+    private var lastRotation: MapRoom.Rotation? = null
+    private var lastClay: net.minecraft.core.BlockPos? = null
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc -> tick(mc) }
@@ -48,7 +50,7 @@ object OdinScan {
     @Volatile private var lastDiag = 0L
     private fun diag(msg: String) {
         val now = System.currentTimeMillis()
-        if (now - lastDiag > 3000) { lastDiag = now; Debug.LOGGER.info("[OdinScan] {}", msg) }
+        if (now - lastDiag > 3000) { lastDiag = now; Debug.LOGGER.debug("[OdinScan] {}", msg) }
     }
 
     private fun tick(mc: Minecraft) {
@@ -61,20 +63,20 @@ object OdinScan {
         val map = DungeonMap.roomPlayerIn()?.owner
         val mapName = map?.data?.name
         if (map == null || mapName == null || map.rotation == MapRoom.Rotation.NONE) {
-            diag("transient miss (map=${map != null} name=$mapName rot=${map?.rotation}) — keeping '${currentRoom?.data?.name}'")
+            if (Debug.LOGGER.isDebugEnabled) diag("transient miss (map=${map != null} name=$mapName rot=${map?.rotation}) — keeping '${currentRoom?.data?.name}'")
             return
         }
 
         val clay = map.clayPos
-        val key = "$mapName|${map.rotation.name}|${clay?.x},${clay?.z}"
-        if (key == lastKey) return
-        lastKey = key
+        if (mapName == lastName && map.rotation == lastRotation && clay == lastClay) return
+        lastName = mapName
+        lastRotation = map.rotation
+        lastClay = clay
         val built = build(map)
         diag("room='${built.data.name}' type=${built.data.type} rot=${built.rotation} clay=${clay?.x},${clay?.z}")
         setRoom(built)
     }
 
-    // Looks a room up on the whole map, not just the one the player is standing in.
     fun findRoom(name: String): ORoom? {
         val m = synchronized(fishmod.features.dungeon.map.Scan.rooms) {
             fishmod.features.dungeon.map.Scan.rooms.firstOrNull { it.data?.name == name }
@@ -85,7 +87,7 @@ object OdinScan {
 
     private fun setRoom(room: ORoom?) {
         currentRoom = room
-        if (room == null) lastKey = null
+        if (room == null) { lastName = null; lastRotation = null; lastClay = null }
         for (l in enterListeners) runCatching { l(room) }
     }
 

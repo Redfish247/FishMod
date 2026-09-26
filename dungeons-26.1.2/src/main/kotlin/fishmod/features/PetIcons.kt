@@ -11,7 +11,8 @@ import net.minecraft.world.item.Items
 import net.minecraft.world.item.component.ResolvableProfile
 import java.io.File
 
-// Pet head icons, learned from the /pets menu (pet name -> skin texture) and saved to disk.
+private val BRACKET_RE = Regex("""\[[^]]*]""")
+
 object PetIcons {
 
     private const val FILE_PATH = "config/fishmod-pet-icons.json"
@@ -31,10 +32,9 @@ object PetIcons {
         ClientTickEvents.END_CLIENT_TICK.register { mc -> if (++tick >= 10) { tick = 0; learn(mc) } }
     }
 
-    // "[275✦] Golden Dragon" / "★ Ender Dragon" -> "golden dragon"
     @JvmStatic
     fun key(name: String): String =
-        name.replace(Regex("""\[[^]]*]"""), "").replace("✦", "").replace("★", "").trim().lowercase()
+        name.replace(BRACKET_RE, "").replace("✦", "").replace("★", "").trim().lowercase()
 
     @JvmStatic
     fun icon(petName: String?): ItemStack? {
@@ -51,7 +51,7 @@ object PetIcons {
 
     private fun learn(mc: Minecraft) {
         val screen = mc.screen as? AbstractContainerScreen<*> ?: return
-        if (!PETS_TITLE.matches(COLOR.replace(screen.title.string, "").trim())) return
+        if (!PETS_TITLE.matches(fishmod.utils.ScreenTitle.plain(screen).trim())) return
         var changed = false
         for (slot in screen.menu.slots) {
             val st = slot.item

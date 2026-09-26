@@ -12,8 +12,6 @@ object DungeonState {
 
     private var chatFloor = -1
     private var inBoss = false
-    private var seenDungeonStart = false
-    private var dungeonEnded = false
 
     private val BOSS_ENTRY = arrayOf(
         "[BOSS] Bonzo: Alright, maybe I'm just weak after all..",
@@ -23,24 +21,6 @@ object DungeonState {
         "[BOSS] Livid: Welcome, you've arrived right on time. I am Livid, the Master of Shadows.",
         "[BOSS] Sadan: So you made it all the way here... Now you wish to defy me? Sadan?!",
         "[BOSS] Maxor: WELL! WELL! WELL! LOOK WHO'S HERE!"
-    )
-    private const val DUNGEON_START = "[NPC] Mort: Here, I found this map when I first entered the dungeon."
-    private val DUNGEON_END = setOf(
-        "                        The Catacombs - Entrance",
-        "                         The Catacombs - Floor I",
-        "                         The Catacombs - Floor II",
-        "                        The Catacombs - Floor III",
-        "                        The Catacombs - Floor IV",
-        "                         The Catacombs - Floor V",
-        "                        The Catacombs - Floor VI",
-        "                        The Catacombs - Floor VII",
-        "                 Master Mode The Catacombs - Floor I",
-        "                Master Mode The Catacombs - Floor II",
-        "                Master Mode The Catacombs - Floor III",
-        "                Master Mode The Catacombs - Floor IV",
-        "                 Master Mode The Catacombs - Floor V",
-        "                Master Mode The Catacombs - Floor VI",
-        "                Master Mode The Catacombs - Floor VII"
     )
 
     private val WITHER_KEY_CLAIM = Pattern.compile("(?:\\[[A-Za-z+]+] )?([A-Za-z0-9_]+) has obtained Wither Key!")
@@ -55,12 +35,6 @@ object DungeonState {
 
     @JvmStatic
     fun isInBoss() = inBoss
-
-    @JvmStatic
-    fun seenDungeonStart() = seenDungeonStart
-
-    @JvmStatic
-    fun dungeonEnded() = dungeonEnded
 
     @JvmStatic
     fun hasWitherKey() = witherKeys > 0
@@ -83,12 +57,6 @@ object DungeonState {
                 inBoss = true
                 return
             }
-        }
-
-        if (msg in DUNGEON_END) {
-            dungeonEnded = true
-        } else if (msg == DUNGEON_START) {
-            seenDungeonStart = true
         }
 
         val s = stripColors(msg)
@@ -129,8 +97,6 @@ object DungeonState {
     @JvmStatic
     fun reset() {
         inBoss = false
-        seenDungeonStart = false
-        dungeonEnded = false
         chatFloor = -1
         witherKeys = 0
         bloodKey = false
@@ -181,48 +147,44 @@ object DungeonState {
         return (if (isMasterMode()) "M" else "F") + f
     }
 
-    private fun sidebarFloorNumber(): Int {
-        try {
-            val level = Minecraft.getInstance().level ?: return -1
-            val sb = level.scoreboard
-            val sidebar = sb.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return -1
-            for (entry in sb.listPlayerScores(sidebar)) {
-                val owner = entry.owner()
-                val team = sb.getPlayersTeam(owner)
-                val raw = if (team != null) team.playerPrefix.string + team.playerSuffix.string else owner
-                val line = stripColors(raw)
-                val m = SIDEBAR_FLOOR.matcher(line)
-                if (m.find()) {
-                    val f = m.group(2)
-                    if (f == "E") return 0
-                    return try {
-                        f.toInt()
-                    } catch (e: NumberFormatException) {
-                        1
-                    }
-                }
+    private var sidebarLevel: Any? = null
+    private var sidebarAt = 0L
+    private var sidebarFloor = -1
+    private var sidebarMaster = false
+
+    private fun refreshSidebar() {
+        val level = Minecraft.getInstance().level
+        val now = System.currentTimeMillis()
+        if (level === sidebarLevel && now - sidebarAt < 1000L) return
+        sidebarLevel = level
+        sidebarAt = now
+        sidebarFloor = -1
+        sidebarMaster = false
+        if (level == null) return
+        val sb = level.scoreboard
+        val sidebar = sb.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return
+        for (entry in sb.listPlayerScores(sidebar)) {
+            val owner = entry.owner()
+            val team = sb.getPlayersTeam(owner)
+            val raw = if (team != null) team.playerPrefix.string + team.playerSuffix.string else owner
+            val m = SIDEBAR_FLOOR.matcher(stripColors(raw))
+            if (m.find()) {
+                val f = m.group(2)
+                sidebarFloor = if (f == "E") 0 else f.toIntOrNull() ?: 1
+                sidebarMaster = team != null && m.group(1) == "M"
+                return
             }
-            return -1
-        } catch (e: Exception) {
-            return -1
         }
+    }
+
+    private fun sidebarFloorNumber(): Int {
+        refreshSidebar()
+        return sidebarFloor
     }
 
     @JvmStatic
     fun isMasterMode(): Boolean {
-        try {
-            val level = Minecraft.getInstance().level ?: return false
-            val sb = level.scoreboard
-            val sidebar = sb.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return false
-            for (entry in sb.listPlayerScores(sidebar)) {
-                val team = sb.getPlayersTeam(entry.owner()) ?: continue
-                val line = stripColors(team.playerPrefix.string + team.playerSuffix.string)
-                val m = SIDEBAR_FLOOR.matcher(line)
-                if (m.find()) return m.group(1) == "M"
-            }
-            return false
-        } catch (e: Exception) {
-            return false
-        }
+        refreshSidebar()
+        return sidebarMaster
     }
 }

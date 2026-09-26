@@ -28,6 +28,9 @@ object CustomScoreboard {
     private var cachedBody: List<Line> = emptyList()
     private var cachedBodyWidth = 0
     private var cachedTitleWidth = 0
+    private var cachedExtra: List<Line> = emptyList()
+    private var cachedExtraWidth = 0
+    private var extraAt = 0L
 
     private fun bgColor(): Int {
         val pct = max(0, min(100, FishSettings.customScoreboardOpacity))
@@ -52,13 +55,19 @@ object CustomScoreboard {
             cachedTitleWidth = tr.width(title)
         }
 
-        val extra = extraLines(mc)
+        val now = System.currentTimeMillis()
+        if (now - extraAt >= CACHE_TTL_MS) {
+            extraAt = now
+            cachedExtra = extraLines(mc)
+            var w = 0
+            for (l in cachedExtra) w = max(w, tr.width(l.component))
+            cachedExtraWidth = w
+        }
+        val extra = cachedExtra
         if (cachedBody.isEmpty() && extra.isEmpty() && title.string.isBlank()) return
         val lines = cachedBody + extra
 
-        var width = max(cachedTitleWidth, cachedBodyWidth)
-        for (l in extra) width = max(width, tr.width(l.component))
-        width += 6
+        val width = max(max(cachedTitleWidth, cachedBodyWidth), cachedExtraWidth) + 6
 
         val x2 = if (fishmod.utils.config.values.FishSettings.customScoreboardHudX < 0) screenW - 3 else min(fishmod.utils.config.values.FishSettings.customScoreboardHudX, screenW - 3)
         val x1 = x2 - width
@@ -77,8 +86,9 @@ object CustomScoreboard {
 
     private fun refreshBody(mc: Minecraft, sb: net.minecraft.world.scores.Scoreboard, obj: Objective, title: Component): Boolean {
         val now = System.currentTimeMillis()
+        if (now - sigAt < CACHE_TTL_MS && cachedBody.isNotEmpty()) return false
         val newSig = buildSig(sb, obj, title)
-        if (newSig == sig && now - sigAt < CACHE_TTL_MS) return false
+        if (newSig == sig && cachedBody.isNotEmpty()) { sigAt = now; return false }
         sig = newSig
         sigAt = now
         cachedBody = buildLines(mc, obj)

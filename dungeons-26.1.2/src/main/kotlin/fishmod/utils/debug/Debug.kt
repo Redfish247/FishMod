@@ -47,6 +47,9 @@ object Debug {
     @JvmField
     var dragonDebug = false
 
+    @JvmField
+    var leapDebug = false
+
     @JvmStatic
     fun init() {
         ClientCommandRegistrationCallback.EVENT.register(ClientCommandRegistrationCallback { dispatcher, registryAccess ->
@@ -118,6 +121,12 @@ object Debug {
                 .then(ClientCommands.literal("dragonDebug").executes { _ ->
                     dragonDebug = !dragonDebug
                     Misc.addChatMessage(Component.literal("Wither dragon debug: ").append(Misc.getStatusText(dragonDebug)))
+                    Constants.SUCCESS
+                })
+
+                .then(ClientCommands.literal("leapSort").executes { _ ->
+                    leapDebug = !leapDebug
+                    Misc.addChatMessage(Component.literal("Leap sort debug: ").append(Misc.getStatusText(leapDebug)))
                     Constants.SUCCESS
                 })
 

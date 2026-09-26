@@ -2,10 +2,8 @@ package fishmod.utils
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonParser
-import fishmod.Bladeaddons
 import fishmod.utils.debug.Debug
 import fishmod.utils.dungeon.Split
-import java.io.IOException
 import java.io.InputStreamReader
 
 object JsonUtility {
@@ -13,15 +11,15 @@ object JsonUtility {
     @JvmStatic
     fun readSplits(path: String): HashMap<String, ArrayList<Split>> {
         try {
-            Bladeaddons::class.java.getResourceAsStream(path).use { stream ->
+            JsonUtility::class.java.getResourceAsStream(path).use { stream ->
                 if (stream == null) return HashMap()
                 InputStreamReader(stream).use { reader ->
                     val element = JsonParser.parseReader(reader)
                     return parseSplits(element)
                 }
             }
-        } catch (e: IOException) {
-            Debug.LOGGER.error("Failed to parse a split")
+        } catch (e: Exception) {
+            Debug.LOGGER.error("Failed to parse splits from $path", e)
         }
 
         return HashMap()

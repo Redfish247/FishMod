@@ -25,15 +25,11 @@ object ORender {
 
     fun filledBox(box: AABB, argb: Int) = RenderUtils.gizmoBox(box, argb, 0)
 
-    fun outlinedBox(box: AABB, argb: Int) = RenderUtils.gizmoBox(box, 0, outline(argb))
-
     fun line(points: List<Vec3>, argb: Int) {
         for (i in 1 until points.size) RenderUtils.gizmoLine(points[i - 1], points[i], argb)
     }
 
     fun line(a: Vec3, b: Vec3, argb: Int) = RenderUtils.gizmoLine(a, b, argb)
-
-    fun thickLine(a: Vec3, b: Vec3, argb: Int) = RenderUtils.gizmoThickLine(a, b, 0.025, argb)
 
     fun wideLine(a: Vec3, b: Vec3, argb: Int, width: Float) = RenderUtils.gizmoLine(a, b, argb, width)
 
@@ -53,8 +49,4 @@ object ORender {
         RenderUtils.gizmoLine(start, target, argb)
     }
 
-    fun withAlpha(argb: Int, alpha: Float): Int {
-        val a = (alpha.coerceIn(0f, 1f) * 255f).toInt() and 0xFF
-        return (a shl 24) or (argb and 0xFFFFFF)
-    }
 }

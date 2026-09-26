@@ -276,43 +276,6 @@ object FishEstTotal {
         context.text(client.font, cachedLagTime!!, x + Phase.SPLIT_LENGTH - cachedLagTimeWidth, y, 0xFFFFFFFF.toInt(), true)
     }
 
-    @JvmStatic
-    fun renderStandalone(ctx: GuiGraphicsExtractor, baseX: Int, baseY: Int) {
-        if (!display()) return
-        val client = Minecraft.getInstance()
-        if (client.player == null) return
-
-        val splits = currentSplits ?: return
-        val x = baseX
-        val y = baseY + Constants.TEXT_HEIGHT * computeVisibleRowCount() + 4
-
-        val splitCount = splits.size - 1
-        var base = 0.0
-        var delta = 0.0
-        var personalCount = 0
-        var fallbackCount = 0
-        for (i in 0 until splitCount) {
-            val s = splits[i]
-            if (s.avg < 0) continue
-            val personal = RunHistory.getPersonalAvg(floor, s.name)
-            val avg = if (personal > 0) personal else s.avg
-            if (personal > 0) { base += personal; personalCount++ } else { base += s.avg; fallbackCount++ }
-            if (s.ended()) delta += s.getRealTime() - avg
-            else if (s.started()) delta += Math.max(0.0, s.getRealTime() - avg)
-        }
-
-        val totalSeconds = Math.max(0.0, base + delta)
-        val estColor = if (personalCount > 0 && fallbackCount == 0) 0xFF00AACC.toInt()
-        else if (personalCount > 0) 0xFFFFAA00.toInt() else 0xFF888888.toInt()
-        val estTimeStr = (if (totalSeconds >= 60) (totalSeconds / 60).toInt().toString() + "m " else "") +
-            Constants.DECIMAL_FORMAT.format(totalSeconds % 60) + "s"
-        val (estLabel, estTime, timeWidth) = estComponents(client, estColor, estTimeStr)
-        ctx.text(client.font, estLabel, x, y, 0xFFFFFFFF.toInt(), true)
-        ctx.text(client.font, estTime, x + Phase.SPLIT_LENGTH - timeWidth, y, 0xFFFFFFFF.toInt(), true)
-
-        drawLagLine(ctx, client, x, y + Constants.TEXT_HEIGHT)
-    }
-
     private fun loadSplits(): HashMap<String, ArrayList<LocalSplit>> {
         try {
             javaClass.getResourceAsStream("/data/fishmod_splits.json").use { stream ->

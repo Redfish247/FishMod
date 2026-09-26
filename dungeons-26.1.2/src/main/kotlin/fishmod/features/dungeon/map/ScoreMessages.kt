@@ -60,30 +60,19 @@ object ScoreMessages {
             sent270 = true
             if (DungeonMapSettings.mapScore270MessageEnabled) sendPartyChat(mc, chatText(DungeonMapSettings.mapScore270Message, time))
             if (DungeonMapSettings.mapScore270Title) showTitle(titleText(DungeonMapSettings.mapScore270TitleText, time))
-            if (DungeonMapSettings.mapScore270ClientEnabled) sendClientMessage(DungeonMapSettings.mapScore270ClientMessage, time, false)
+            if (DungeonMapSettings.mapScore270ClientEnabled) sendClientMessage(DungeonMapSettings.mapScore270ClientMessage, time)
         }
 
         if (score >= 300 && !sent300) {
             sent300 = true
             if (DungeonMapSettings.mapScore300MessageEnabled) sendPartyChat(mc, chatText(DungeonMapSettings.mapScore300Message, time))
             if (DungeonMapSettings.mapScore300Title) showTitle(titleText(DungeonMapSettings.mapScore300TitleText, time))
-            if (DungeonMapSettings.mapScore300ClientEnabled) sendClientMessage(DungeonMapSettings.mapScore300ClientMessage, time, true)
+            if (DungeonMapSettings.mapScore300ClientEnabled) sendClientMessage(DungeonMapSettings.mapScore300ClientMessage, time)
         }
     }
 
-    private fun floorKey(): String? {
-        val f = DungeonState.floorNumber()
-        if (f < 0) return null
-        return (if (DungeonState.isMasterMode()) "M" else "F") + f
-    }
-
-    private fun sendClientMessage(raw: String?, time: String, updatePb: Boolean) {
-        val key = floorKey()
-        val best: String? = null
-        var msg = (raw ?: "").replace("<time>", time).replace('&', '§')
-        val hover = if (best != null) "§bPersonal Best: §a$best" else "§7No PB yet"
-        Misc.addChatMessage(net.minecraft.network.chat.Component.literal(msg)
-            .withStyle { it.withHoverEvent(net.minecraft.network.chat.HoverEvent.ShowText(net.minecraft.network.chat.Component.literal(hover))) })
+    private fun sendClientMessage(raw: String?, time: String) {
+        Misc.addChatMessage(net.minecraft.network.chat.Component.literal((raw ?: "").replace("<time>", time).replace('&', '§')))
     }
 
     private fun chatText(raw: String?, time: String): String {
@@ -110,11 +99,6 @@ object ScoreMessages {
         fadeStartMs = displayUntilMs - Math.min(FADE_MS, DURATION_MS)
     }
 
-    @JvmStatic
-    fun renderForEdit(g: GuiGraphicsExtractor, mc: Minecraft) {
-        renderAt(g, mc, resolvedX(mc), resolvedY(mc), DungeonMapSettings.mapScoreTitleScale, previewText(), 1.0f)
-    }
-
     private fun previewText(): String {
         var raw = DungeonMapSettings.mapScore300TitleText
         if (raw.isBlank()) raw = "300 Score"
@@ -130,9 +114,6 @@ object ScoreMessages {
         g.text(mc.font, text, -width / 2, 0, argb, true)
         g.pose().popMatrix()
     }
-
-    @JvmStatic
-    fun previewWidth(mc: Minecraft): Int = mc.font.width(previewText())
 
     @JvmStatic
     fun resolvedX(mc: Minecraft): Float {

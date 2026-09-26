@@ -79,11 +79,6 @@ object ScreenTheme {
         UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), h.toFloat(), r.toFloat(), strokeW.toFloat(), fillColor, ringColor)
     }
 
-    fun nPill(x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
-        val h = y2 - y1
-        nRoundedRect(x1, y1, x2 - x1, h, h / 2, color)
-    }
-
     fun nPanel(x1: Int, y1: Int, x2: Int, y2: Int, r: Int, fill: Int, border: Int) {
         nRoundedRect(x1, y1, x2 - x1, y2 - y1, r, border)
         nRoundedRect(x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), fill)
@@ -100,7 +95,6 @@ object ScreenTheme {
         val cursorX = UiRecorder.textWidth(text.substring(0, cursor), textSize)
         val pad = 3f
         val visibleW = w - pad * 2f
-        // Unfocused fields show the start of the text, not wherever the cursor was left.
         val scroll = if (focused) Math.max(0f, cursorX - visibleW) else 0f
         UiRecorder.pushScissor((x + 1).toFloat(), (y + 1).toFloat(), (w - 2).toFloat(), (h - 2).toFloat())
         UiRecorder.text(text, x + pad - scroll, y + (h - textSize) / 2f, textSize, TEXT_COLOR)
@@ -112,7 +106,6 @@ object ScreenTheme {
 
     private class Run(val text: String, val color: Int, val bold: Boolean)
 
-    // splits on legacy § codes, starting from the given colour/bold
     private fun legacyRuns(s: String, baseColor: Int, baseBold: Boolean, out: MutableList<Run>) {
         var color = baseColor
         var bold = baseBold
@@ -152,7 +145,6 @@ object ScreenTheme {
         return out
     }
 
-    // Draws legacy/§-coloured text in the overlay (e.g. "§7Open §f/storage").
     fun nLegacyText(s: String, x: Int, y: Int, baseColor: Int, size: Float = 7.5f) {
         val out = ArrayList<Run>()
         legacyRuns(s, baseColor, false, out)
@@ -163,17 +155,29 @@ object ScreenTheme {
         }
     }
 
-    // Item-style tooltip card with coloured lines, drawn in the overlay; coords in the recorder's space, k scales its size.
+    private var tooltipLines: List<net.minecraft.network.chat.Component>? = null
+    private var tooltipRuns: List<List<Run>> = emptyList()
+    private var tooltipWidthSize = -1f
+    private var tooltipTextW = 0f
+
     fun nItemTooltip(lines: List<net.minecraft.network.chat.Component>, mx: Int, my: Int, screenW: Int, screenH: Int, k: Float = 1f) {
         if (lines.isEmpty()) return
-        val runs = lines.mapIndexed { i, c -> componentRuns(c, if (i == 0) 0xFFFFFFFF.toInt() else 0xFFAAAAAA.toInt()) }
+        if (lines != tooltipLines) {
+            tooltipLines = lines
+            tooltipRuns = lines.mapIndexed { i, c -> componentRuns(c, if (i == 0) 0xFFFFFFFF.toInt() else 0xFFAAAAAA.toInt()) }
+            tooltipWidthSize = -1f
+        }
+        val runs = tooltipRuns
         val rawH = runs.size * 10f + (if (runs.size > 1) 2f else 0f) + 12f - 2f
-        // shrink long lore so the card always fits on screen
         val u = k * Math.min(1f, (screenH - 8f) / (rawH * k)).coerceAtLeast(0.3f)
         val size = 7.5f * u
         val lineH = 10f * u
         val pad = 6f * u
-        val textW = runs.maxOf { rs -> rs.fold(0f) { a, r -> a + UiRecorder.textWidth(r.text, size) } }
+        if (size != tooltipWidthSize) {
+            tooltipWidthSize = size
+            tooltipTextW = runs.maxOf { rs -> rs.fold(0f) { a, r -> a + UiRecorder.textWidth(r.text, size) } }
+        }
+        val textW = tooltipTextW
         val w = textW + pad * 2
         val h = rawH * u
         var tx = mx + 12f * u

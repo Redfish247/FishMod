@@ -44,18 +44,25 @@ object SearchBar {
         }
     }
 
-    private fun matches(item: ItemStack): Boolean {
-        val name = item.hoverName.string.lowercase()
-        if (item.isEmpty || name == "air") return false
+    private val matchCache = java.util.WeakHashMap<ItemStack, Boolean>()
+    private var matchCacheTerm = ""
 
-        return name.contains(searchTerm) || ItemUtil.containsIgnoreCaseLore(item, searchTerm)
+    private fun matches(item: ItemStack): Boolean {
+        if (item.isEmpty) return false
+        if (matchCacheTerm != searchTerm) {
+            matchCacheTerm = searchTerm
+            matchCache.clear()
+        }
+        return matchCache.getOrPut(item) {
+            val name = item.hoverName.string
+            name != "Air" && (name.contains(searchTerm, ignoreCase = true) || ItemUtil.containsIgnoreCaseLore(item, searchTerm))
+        }
     }
 
     @JvmStatic
     fun render(context: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, deltaTicks: Float) {
         if (!FishSettings.inventorySearchEnabled || !exists() || !shouldDisplay()) return
         val bar = searchBar!!
-        // re-centre every frame so a window resize doesn't strand the bar
         bar.x = (Minecraft.getInstance().window.guiScaledWidth - SEARCH_WIDTH) / 2
         bar.extractRenderState(context, mouseX, mouseY, deltaTicks)
 
@@ -104,7 +111,7 @@ object SearchBar {
     }
 
     @JvmStatic
-    fun CharTyped(input: CharacterEvent) {
+    fun charTyped(input: CharacterEvent) {
         if (!FishSettings.inventorySearchEnabled || !exists() || !searchBar!!.isFocused || !shouldDisplay()) return
         searchBar!!.charTyped(input)
     }

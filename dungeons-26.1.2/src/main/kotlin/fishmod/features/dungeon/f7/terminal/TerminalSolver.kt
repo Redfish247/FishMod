@@ -15,7 +15,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.inventory.ContainerInput
-import net.minecraft.world.item.ItemStack
 import java.util.regex.Pattern
 
 object TerminalSolver {
@@ -89,14 +88,13 @@ object TerminalSolver {
     @JvmStatic
     fun init() {
         Events.ON_PACKET.register { packet ->
-            if (packet is ClientboundOpenScreenPacket) onOpen(packet)
+            when (packet) {
+                is ClientboundOpenScreenPacket -> onOpen(packet)
+                is net.minecraft.network.protocol.game.ClientboundContainerClosePacket -> if (!simActive) onScreenClosed()
+            }
             false
         }
         Events.ON_WORLD_CHANGE.register { reset(); false }
-        Events.ON_PACKET.register { packet ->
-            if (packet is net.minecraft.network.protocol.game.ClientboundContainerClosePacket && !simActive) onScreenClosed()
-            false
-        }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { tickSync() }
 
         Events.ON_GAME_MESSAGE.register { text ->
@@ -155,7 +153,7 @@ object TerminalSolver {
         if (term.type == TerminalType.MELODY && FishSettings.terminalStopMelody) return
         val mc = Minecraft.getInstance()
         val screen = mc.screen as? AbstractContainerScreen<*> ?: return
-        val slot = screen.menu.slots.firstOrNull { it.x == x && it.y == y } ?: return
+        val slot = DrawEvents.currentSlot ?: screen.menu.slots.firstOrNull { it.x == x && it.y == y } ?: return
         if (slot.container is Inventory) return
         val idx = slot.index
         val inSol = idx in term.solution
@@ -210,7 +208,7 @@ object TerminalSolver {
 
     private fun tickSync() {
         if (simActive) return
-        if (!FishSettings.terminalSolverEnabled) return
+        if (!FishSettings.terminalSolverEnabled || !fishmod.utils.Location.inDungeon()) return
         val screen = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return
         val term = ensureHandler(screen.title.string) ?: return
 

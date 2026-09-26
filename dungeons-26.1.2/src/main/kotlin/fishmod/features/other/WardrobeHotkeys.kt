@@ -58,7 +58,7 @@ object WardrobeHotkeys {
         if (!FishSettings.wardrobeHotkeysEnabled) return false
         val slots = Keybinds.wardrobeSlots ?: return false
 
-        val title = screen.title.string.replace(COLOR, "").trim()
+        val title = fishmod.utils.ScreenTitle.plain(screen).trim()
         val isWardrobe = title.contains("Armor Sets") || title == "Wardrobe"
         val isLoadout = title.contains("Loadouts")
         if (!isWardrobe && !isLoadout) return false

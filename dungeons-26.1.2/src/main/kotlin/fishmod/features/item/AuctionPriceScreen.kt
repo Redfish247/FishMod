@@ -19,6 +19,8 @@ import org.lwjgl.glfw.GLFW
 import java.math.BigDecimal
 import java.math.RoundingMode
 
+private val PRICE_NUMBER_RE = Regex("\\d+(\\.\\d+)?|\\.\\d+")
+
 class AuctionPriceScreen(
     private val sign: SignBlockEntity,
     private val originalLines: Array<String>,
@@ -92,7 +94,6 @@ class AuctionPriceScreen(
         cancelX = confirmX - 6 - cancelW
     }
 
-    // Panel + icon box drawn vanilla so the item stack sits on top of them (the overlay paints last).
     override fun extractBackground(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         if (minecraft?.player == null) return
         val scale = UiScale.factor()
@@ -138,7 +139,7 @@ class AuctionPriceScreen(
         if (suggested > 0) {
             val sHov = inside(mouseX, mouseY, sugX, sugY, sugW, sugH)
             card(sugX, sugY, sugW, sugH, sHov)
-            cardText("Suggested (-${FishSettingsPercent()}%)", fmtShort(suggested), sugX, sugY, sugW, GOLD)
+            cardText("Suggested (-${autofillPercent()}%)", fmtShort(suggested), sugX, sugY, sugW, GOLD)
             val youX = sugX + sugW + 6
             card(youX, sugY, sugW, sugH, false)
             val youColor = when {
@@ -196,9 +197,8 @@ class AuctionPriceScreen(
         return "$t..."
     }
 
-    private fun FishSettingsPercent(): Int = fishmod.utils.config.values.FishSettings.auctionAutofillPercent
+    private fun autofillPercent(): Int = fishmod.utils.config.values.FishSettings.auctionAutofillPercent
 
-    // Accepts 42.5m / 800k / 1.2b / 12,500,000; null when unparseable.
     private fun parsePrice(s: String): Long? {
         val t = s.replace(",", "").replace(" ", "").lowercase()
         if (t.isEmpty()) return null
@@ -209,7 +209,7 @@ class AuctionPriceScreen(
             else -> 1L
         }
         val num = if (mult != 1L) t.dropLast(1) else t
-        if (!num.matches(Regex("\\d+(\\.\\d+)?|\\.\\d+"))) return null
+        if (!num.matches(PRICE_NUMBER_RE)) return null
         val value = BigDecimal(num).multiply(BigDecimal.valueOf(mult)).setScale(0, RoundingMode.DOWN)
         if (value.signum() <= 0 || value > MAX_PRICE) return null
         return value.toLong()
@@ -256,7 +256,7 @@ class AuctionPriceScreen(
             return true
         }
         if (key == GLFW.GLFW_KEY_ESCAPE) {
-            onClose()
+            cancel()
             return true
         }
         priceField.keyPressed(input)
@@ -268,7 +268,6 @@ class AuctionPriceScreen(
         return true
     }
 
-    // Writes the parsed price to line 1 of the sign (blank if unparseable), like before.
     override fun onClose() {
         val value = parsePrice(priceField.value)?.toString() ?: ""
         Minecraft.getInstance().connection?.send(
@@ -277,7 +276,6 @@ class AuctionPriceScreen(
         Minecraft.getInstance().setScreen(null)
     }
 
-    // Sends the sign back untouched, same as closing the vanilla sign editor without typing.
     private fun cancel() {
         Minecraft.getInstance().connection?.send(
             ServerboundSignUpdatePacket(sign.blockPos, true, originalLines[0], originalLines[1], originalLines[2], originalLines[3])

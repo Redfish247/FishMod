@@ -5,7 +5,6 @@ import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import java.io.File
 import java.io.FileReader
-import java.io.FileWriter
 
 object ItemCustomizationStore {
 
@@ -33,12 +32,22 @@ object ItemCustomizationStore {
     @JvmStatic fun removeDyeColor(uuid: String) { if (data.dyeColors.remove(uuid) != null) save() }
 
     @JvmStatic fun getAnimatedDye(uuid: String): AnimatedDye? = data.animatedDyes[uuid]
+    @JvmStatic fun removeAnimatedDye(uuid: String) { if (data.animatedDyes.remove(uuid) != null) save() }
 
     @JvmStatic fun getArmorTrim(uuid: String): ArmorTrimId? = data.armorTrims[uuid]
     @JvmStatic fun setArmorTrim(uuid: String, trim: ArmorTrimId) { data.armorTrims[uuid] = trim; save() }
     @JvmStatic fun removeArmorTrim(uuid: String) { if (data.armorTrims.remove(uuid) != null) save() }
 
     @JvmStatic fun getItemName(uuid: String): String? = data.itemNames[uuid]
+
+    private val parsedNames = HashMap<String, net.minecraft.network.chat.MutableComponent>()
+
+    @JvmStatic
+    fun parsedItemName(uuid: String): net.minecraft.network.chat.MutableComponent? {
+        val name = data.itemNames[uuid] ?: return null
+        if (parsedNames.size > 256) parsedNames.clear()
+        return parsedNames.getOrPut(name) { fishmod.utils.data.LegacyFormatting.parse(name) }.copy()
+    }
     @JvmStatic fun setItemName(uuid: String, name: String) { data.itemNames[uuid] = name; save() }
     @JvmStatic fun removeItemName(uuid: String) { if (data.itemNames.remove(uuid) != null) save() }
 
@@ -55,16 +64,13 @@ object ItemCustomizationStore {
                 val loaded: Data? = GSON.fromJson(reader, type)
                 if (loaded != null) data = loaded
             }
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            fishmod.utils.SafeFiles.quarantine(file, e)
         }
     }
 
     private fun save() {
-        try {
-            val file = File(FILE_PATH)
-            file.parentFile?.mkdirs()
-            FileWriter(file).use { writer -> GSON.toJson(data, writer) }
-        } catch (ignored: Exception) {
-        }
+        val json = GSON.toJson(data)
+        fishmod.utils.IoExecutor.execute { fishmod.utils.SafeFiles.writeAtomic(File(FILE_PATH), json) }
     }
 }

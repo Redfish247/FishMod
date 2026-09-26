@@ -82,8 +82,6 @@ object SlayerStatsTracker {
         save()
     }
 
-    fun activeSeconds(): Double = activeMs / 1000.0
-
     private fun perHour(total: Double): Double {
         if (activeMs < 5_000L || total <= 0.0) return 0.0
         return total * 3_600_000.0 / activeMs
@@ -132,15 +130,12 @@ object SlayerStatsTracker {
 
     @Synchronized
     private fun save() {
-        try {
-            Files.createDirectories(SAVE_FILE.parent)
-            val d = SaveData()
-            d.xpGained = xpGained
-            d.kills = kills
-            d.activeMs = activeMs
-            d.everStarted = everStarted
-            Files.writeString(SAVE_FILE, GSON.toJson(d))
-        } catch (_: Exception) {
-        }
+        val d = SaveData()
+        d.xpGained = xpGained
+        d.kills = kills
+        d.activeMs = activeMs
+        d.everStarted = everStarted
+        val json = GSON.toJson(d)
+        fishmod.utils.IoExecutor.execute { fishmod.utils.SafeFiles.writeAtomic(SAVE_FILE, json) }
     }
 }

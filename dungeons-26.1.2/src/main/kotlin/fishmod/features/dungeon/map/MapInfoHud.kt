@@ -22,19 +22,14 @@ object MapInfoHud {
                 val mc = Minecraft.getInstance()
                 if (!mc.options.hideGui && DungeonState.isInDungeon()) {
                     val allowed = if (DungeonMapSettings.mapInfoMapTied) {
-                        DungeonMapSettings.mapEnabled && (!DungeonState.isInBoss() || MapColors.peeking())
+                        DungeonMapSettings.mapEnabled && !DungeonState.isInBoss()
                     } else {
-                        !(DungeonState.isInBoss() && DungeonMapSettings.mapScoreStandaloneHideInBoss && !MapColors.peeking())
+                        !(DungeonState.isInBoss() && DungeonMapSettings.mapScoreStandaloneHideInBoss)
                     }
                     if (allowed) render(g, mc, false)
                 }
             }
         }
-    }
-
-    @JvmStatic
-    fun renderForEdit(g: GuiGraphicsExtractor, mc: Minecraft) {
-        render(g, mc, true)
     }
 
     private fun render(g: GuiGraphicsExtractor, mc: Minecraft, edit: Boolean) {
@@ -157,16 +152,4 @@ object MapInfoHud {
         return if (noWords()) "$cc$cr§7/§a5" else "§fCrypts: $cc$cr"
     }
 
-    @JvmStatic
-    fun baseWidth(mc: Minecraft): Int {
-        val example = Scan.rooms.isEmpty()
-        return maxOf(mc.font.width(line1(example)), mc.font.width(line2(example)))
-    }
-
-    @JvmStatic
-    fun baseHeight(mc: Minecraft): Int {
-        val example = Scan.rooms.isEmpty()
-        val twoLines = line1(example).isNotEmpty() && line2(example).isNotEmpty()
-        return if (twoLines) mc.font.lineHeight * 2 + 1 else mc.font.lineHeight
-    }
 }

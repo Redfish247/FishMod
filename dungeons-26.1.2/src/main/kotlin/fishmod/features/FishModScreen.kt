@@ -27,16 +27,17 @@ import net.minecraft.network.chat.Component
 import net.minecraft.util.Mth
 import fishmod.utils.rendering.UiRecorder
 import org.lwjgl.glfw.GLFW
-import java.util.function.Consumer
-import java.util.function.Supplier
 import kotlin.reflect.KMutableProperty0
+
+private val FORMAT_CODE_RE = Regex("[&§][0-9a-fk-orxA-FK-ORX]")
+
+private val HEX_CODE_RE = Regex("&#[0-9a-fA-F]{6}")
 
 class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private val columns: MutableList<Column> = ArrayList()
     private var searchText = ""
 
-    // per-column search filter cache; columns themselves can be reordered/merged so aren't cached
     private var visibleCacheSearch: String? = null
     private val visibleFeaturesCache = HashMap<Column, List<Feature>>()
     private var searchFocused = false
@@ -84,17 +85,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     private fun buildCategories() {
-        val general = Column("General", "gear")
-        val invStorage = Column("Inventory & Storage", "cube")
-        val party = Column("Party & Social", "people")
-        val dungeon = Column("Dungeons", "arch")
-        val dungeonTrackers = Column("Dungeon Trackers", "coin")
-        val dungeonMap = Column("Dungeon Map", "map")
-        val solvers = Column("Dungeon Solvers", "slider")
-        val floor7 = Column("Floor 7", "clock")
-        val hud = Column("HUD & Overlays", "bell")
-        val visuals = Column("Visuals & Rendering", "eye")
-        val cosmetics = Column("Cosmetics", "hanger")
+        val general = Column("General")
+        val invStorage = Column("Inventory & Storage")
+        val party = Column("Party & Social")
+        val dungeon = Column("Dungeons")
+        val dungeonTrackers = Column("Dungeon Trackers")
+        val dungeonMap = Column("Dungeon Map")
+        val solvers = Column("Dungeon Solvers")
+        val floor7 = Column("Floor 7")
+        val hud = Column("HUD & Overlays")
+        val visuals = Column("Visuals & Rendering")
+        val cosmetics = Column("Cosmetics")
 
         run {
             val f = Feature("UI Customization", null, null)
@@ -581,7 +582,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Show Class", "", FishSettings::leapMenuShowClass))
             val sortByOptions = arrayOf("Class Order", "Name A-Z", "Odin Sorting")
             f.sub.add(DropdownSetting("Sort By", "", sortByOptions,
-                { sortByOptions[FishSettings.leapMenuSort] },
+                { sortByOptions.getOrElse(FishSettings.leapMenuSort) { sortByOptions[0] } },
                 { v -> FishSettings.leapMenuSort = sortByOptions.indexOf(v).coerceAtLeast(0) }))
             f.sub.add(InputSetting("Class Order", "Comma-separated: MAGE,BERSERK,ARCHER,HEALER,TANK",
                 { FishSettings.leapMenuClassOrder }, { v -> FishSettings.leapMenuClassOrder = v }).gatedBy { FishSettings.leapMenuSort == 0 })
@@ -695,7 +696,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Route Recorder", FishSettings::routeRecorderEnabled)
+            val f = Feature("Dungeon Routes", FishSettings::routeRecorderEnabled)
             f.sub.add(LabelSetting("/fm route record · stop · play", "skip · back · undo · clear · save/load <name> · list"))
             f.sub.add(ToggleSetting("Auto Load Per Room", "Saved route plays when you enter its room", FishSettings::routeAutoLoad))
             f.sub.add(ToggleSetting("Waypoints Through Walls", "Etherwarp, pearl, break, superboom", FishSettings::routeThroughWalls))
@@ -885,7 +886,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("M7 Lever Waypoints", FishSettings::enableM7LeverWaypoints)
             val leverStyleOptions = arrayOf("Outline", "Fill", "Filled Outline")
             f.sub.add(DropdownSetting("Style", "", leverStyleOptions,
-                { leverStyleOptions[FishSettings.m7LeverWaypointMode] },
+                { leverStyleOptions.getOrElse(FishSettings.m7LeverWaypointMode) { leverStyleOptions[0] } },
                 { v -> FishSettings.m7LeverWaypointMode = leverStyleOptions.indexOf(v).coerceAtLeast(0) }))
             f.sub.add(ColorPickerSetting("Color", "", FishSettings::m7LeverWaypointColor))
             f.sub.add(SliderIntSetting("Fill Opacity %", "", FishSettings::m7LeverWaypointOpacity, 0, 100))
@@ -1273,7 +1274,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("Block Overlay", FishSettings::blockOverlayEnabled)
             val blockOverlayModeOptions = arrayOf("Outline", "Fill", "Filled Outline")
             f.sub.add(DropdownSetting("Mode", "", blockOverlayModeOptions,
-                { blockOverlayModeOptions[FishSettings.blockOverlayMode] },
+                { blockOverlayModeOptions.getOrElse(FishSettings.blockOverlayMode) { blockOverlayModeOptions[0] } },
                 { v -> FishSettings.blockOverlayMode = blockOverlayModeOptions.indexOf(v).coerceAtLeast(0) }))
             f.sub.add(ColorPickerSetting("Fill Color", "", FishSettings::blockOverlayFillColor))
             f.sub.add(SliderIntSetting("Fill Opacity %", "", FishSettings::blockOverlayOpacity, 0, 100))
@@ -1333,6 +1334,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Hide Soul Weaver", "The soul weaver helmet worn by some mobs", Visual::roHideSoulWeaver))
             f.sub.add(ToggleSetting("Hide Tentacle Head", "The tentacle head worn by some mobs", Visual::roHideTentacleHead))
             f.sub.add(ToggleSetting("Hide Fire Overlay", "The first-person fire overlay", Visual::roHideFireOverlay))
+            f.sub.add(ToggleSetting("Hide Inventory Labels", "The \"Crafting\" text in your inventory", Visual::roHideInventoryLabels))
             visuals.features.add(f)
         }
         run {
@@ -1396,6 +1398,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ColorPickerSetting("Py Timer Color", "", Floor7::pyTimerColor).gatedBy { Floor7.enablePyTimer })
             f.sub.add(SliderIntSetting("Py Ping (ms)", "Ends the countdown this much earlier so high ping doesn't make you late", Floor7::pyTimerPingMs, 0, 500).gatedBy { Floor7.enablePyTimer })
             f.sub.add(ToggleSetting("Storm Crushed Noti", "", Floor7::notifyStormCrush))
+            f.sub.add(ToggleSetting("Pillar Explosion Timer", "Counts down the second before the crushed pillar explodes", Floor7::timePillarExplosion))
             f.sub.add(SubcategoryHeader("Necron"))
             f.sub.add(ToggleSetting("Necron LB Timer", "Counts down to the LB shot 8s into Necron's phase, then says SHOOT LB", Floor7::enableNecronLbTimer))
             f.sub.add(SliderIntSetting("Necron LB Ping (ms)", "Ends it this much earlier to offset latency", Floor7::necronLbPingMs, 0, 500).gatedBy { Floor7.enableNecronLbTimer })
@@ -1462,7 +1465,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val terminalRenderModeOptions = arrayOf("Overlay", "Custom GUI")
             f.sub.add(DropdownSetting("Render Mode", "Custom GUI replaces the chest with a big rounded board",
                 terminalRenderModeOptions,
-                { terminalRenderModeOptions[FishSettings.terminalRenderMode] },
+                { terminalRenderModeOptions.getOrElse(FishSettings.terminalRenderMode) { terminalRenderModeOptions[0] } },
                 { v -> FishSettings.terminalRenderMode = terminalRenderModeOptions.indexOf(v).coerceAtLeast(0) }))
             f.sub.add(SliderDoubleSetting("Custom Scale", "", FishSettings::terminalCustomScale, 0.5, 3.0).gatedBy { FishSettings.terminalRenderMode == 1 })
             f.sub.add(SliderIntSetting("Custom Roundness", "", FishSettings::terminalCustomRoundness, 0, 15).gatedBy { FishSettings.terminalRenderMode == 1 })
@@ -1560,7 +1563,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Spawn Timer (HUD)", "On-screen countdown for the priority dragon — movable in the HUD editor", FishSettings::witherDragonsTimerHud))
             val timerStyleOptions = arrayOf("Milliseconds", "Seconds", "Ticks")
             f.sub.add(DropdownSetting("Timer Style", "", timerStyleOptions,
-                { timerStyleOptions[FishSettings.witherDragonsTimerStyle] },
+                { timerStyleOptions.getOrElse(FishSettings.witherDragonsTimerStyle) { timerStyleOptions[0] } },
                 { v -> FishSettings.witherDragonsTimerStyle = timerStyleOptions.indexOf(v).coerceAtLeast(0) })
                 .gatedBy { FishSettings.witherDragonsTimerWorld || FishSettings.witherDragonsTimerHud })
             f.sub.add(ToggleSetting("Spawn Alert (Title)", "Title with the priority dragon's colour when a wave starts spawning (NoammAddons)", FishSettings::witherDragonsSpawnAlert))
@@ -1580,7 +1583,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderDoubleSetting("Easy Power", "", FishSettings::witherDragonsEasyPower, 0.0, 32.0).gatedBy { FishSettings.witherDragonsPriority })
             val soloDebuffOptions = arrayOf("Tank", "Healer")
             f.sub.add(DropdownSetting("Purple Solo Debuff", "", soloDebuffOptions,
-                { soloDebuffOptions[FishSettings.witherDragonsSoloDebuff] },
+                { soloDebuffOptions.getOrElse(FishSettings.witherDragonsSoloDebuff) { soloDebuffOptions[0] } },
                 { v -> FishSettings.witherDragonsSoloDebuff = soloDebuffOptions.indexOf(v).coerceAtLeast(0) })
                 .gatedBy { FishSettings.witherDragonsPriority })
             f.sub.add(ToggleSetting("Solo Debuff on All Splits", "", FishSettings::witherDragonsSoloDebuffAll).gatedBy { FishSettings.witherDragonsPriority })
@@ -1590,7 +1593,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         for (et in FishModAddonApi.dungeonToggles) {
             dungeon.features.add(Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) }))
         }
-        val cheats = Column("Cheats", "star")
+        val cheats = Column("Cheats")
         for (et in FishModAddonApi.cheatToggles) {
             cheats.features.add(Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) }))
         }
@@ -1688,8 +1691,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("Room Additions", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsEnabled)
             f.sub.add(ToggleSetting("Prince Crown Icon", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsPrince))
             f.sub.add(ToggleSetting("Mimic Reveal", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsMimic))
-            f.sub.add(ToggleSetting("Mimic on Insight", "", fishmod.utils.config.values.DungeonMapSettings::mapMimicOnInsight)
-                .gatedBy { fishmod.utils.config.values.DungeonMapSettings.mapRoomAdditionsMimic })
             f.sub.add(ColorPickerSetting("Mimic Room Color", "", fishmod.utils.config.values.DungeonMapSettings::mapMimicRoomColor)
                 .gatedBy { fishmod.utils.config.values.DungeonMapSettings.mapRoomAdditionsMimic })
             f.sub.add(SliderIntSetting("Darken Multiplier %", "",
@@ -1789,7 +1790,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeonMap.features.add(f)
         }
 
-        val slayer = Column("Slayer", "slider")
+        val slayer = Column("Slayer")
         run {
             val spawnAlert = Feature("Mini/Boss Spawn Alert", FishSettings::slayerSpawnAlertEnabled)
             spawnAlert.sub.add(ToggleSetting("Mini-Boss Alerts", "Alert when a slayer miniboss spawns", FishSettings::slayerMiniBossAlert))
@@ -1886,11 +1887,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 slot.substring(colon + 1).split("+") to (slot.substring(0, colon).toIntOrNull() ?: 0)
             else
                 listOf(slot) to 0
-            // skip tabs that no longer exist instead of throwing the whole layout away
             val known = names.filter { byName[it] != null && used.add(it) }
             if (known.isNotEmpty()) slots.add(Slot(known, activeIdx))
         }
-        // tabs added since the layout was saved go on the end
         for (c in columns) if (used.add(c.name)) slots.add(Slot(listOf(c.name), 0))
 
         val reordered = ArrayList<Column>(columns.size)
@@ -1947,6 +1946,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     private fun visibleColumns(): List<Column> {
+        if (frameCaching) frameVisibleColumns?.let { return it }
+        return computeVisibleColumns().also { if (frameCaching) frameVisibleColumns = it }
+    }
+
+    private fun computeVisibleColumns(): List<Column> {
         refreshVisibleCacheIfStale()
         val out = ArrayList<Column>()
         for (c in columns) {
@@ -2059,7 +2063,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val btnAlpha = Mth.clamp(Math.round(FishSettings.fmRowBgAlpha * 2.55f), 0, 255)
         ROW_BUTTON = (btnAlpha shl 24) or (brighten(cardBgRgb(), 10) and 0xFFFFFF)
 
-        // tint fades with the button so 0% button opacity hides the whole row fill
         val rowRgb = FishSettings.fmRowColor and 0xFFFFFF
         val rowAlpha = Mth.clamp(Math.round(FishSettings.fmRowAlpha * FishSettings.fmRowBgAlpha * 0.0255f), 0, 255)
         ROW_ENABLED = (rowAlpha shl 24) or rowRgb
@@ -2097,6 +2100,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     )
 
     private fun layoutColumn(c: Column, scrollOffset: Int, topY: Int = cyTop()): List<RowLayout> {
+        if (!frameCaching) return computeLayout(c, scrollOffset, topY)
+        return frameLayouts.getOrPut(Triple(c, scrollOffset, topY)) { computeLayout(c, scrollOffset, topY) }
+    }
+
+    private fun computeLayout(c: Column, scrollOffset: Int, topY: Int): List<RowLayout> {
         val out = ArrayList<RowLayout>()
         var y = topY - scrollOffset
         for (f in visibleFeatures(c)) {
@@ -2158,7 +2166,22 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var widgetRenderFailureLogged = false
     private var recorderSizeLogged = false
 
+    private var frameCaching = false
+    private var frameVisibleColumns: List<Column>? = null
+    private val frameLayouts = HashMap<Triple<Column, Int, Int>, List<RowLayout>>()
+
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        frameVisibleColumns = null
+        frameLayouts.clear()
+        frameCaching = true
+        try {
+            extractRenderStateCached(ctx, mouseX, mouseY, delta)
+        } finally {
+            frameCaching = false
+        }
+    }
+
+    private fun extractRenderStateCached(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         refreshButtonTheme()
         if (resetArmed && System.currentTimeMillis() - resetArmedAt > 3000) resetArmed = false
         clampAllScrolls()
@@ -2196,7 +2219,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         if (!recorderSizeLogged) {
             recorderSizeLogged = true
-            fishmod.utils.debug.Debug.LOGGER.info("[UiRenderer] extractRenderState queued {} draw commands", UiRecorder.size())
+            fishmod.utils.debug.Debug.LOGGER.debug("[UiRenderer] extractRenderState queued {} draw commands", UiRecorder.size())
         }
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
@@ -2381,9 +2404,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun ellipsize(text: String, maxW: Int, scale: Float = 1f): String {
         if (sw(this.font, text, scale) <= maxW) return text
-        var label = text
-        while (label.length > 1 && sw(this.font, "$label…", scale) > maxW) label = label.substring(0, label.length - 1)
-        return "$label…"
+        val n = fishmod.utils.rendering.TextFit.prefixLength(text, "…", maxW.toFloat(), 1) { sw(this.font, it, scale).toFloat() }
+        return text.substring(0, n) + "…"
     }
 
     private fun renderRow(ctx: GuiGraphicsExtractor, f: Feature, x0: Int, x1: Int, top: Int, mouseX: Int, mouseY: Int) {
@@ -2890,7 +2912,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         requestClose()
     }
 
-    class Column(val name: String, val icon: String) {
+    class Column(val name: String) {
         val features: MutableList<Feature> = ArrayList()
         var scroll = 0
 
@@ -2898,7 +2920,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         var activeChild: Int = 0
 
         fun isGroup(): Boolean = children.isNotEmpty()
-        fun content(): Column = if (isGroup()) children[activeChild.coerceIn(0, children.size - 1)] else this
     }
 
     class Feature(val name: String, val get: (() -> Boolean)?, val set: ((Boolean) -> Unit)?) {
@@ -2937,9 +2958,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         protected fun fit(s: String, maxW: Int): String {
             fun w(t: String) = Math.ceil(UiRecorder.textWidth(t, NVG_BASE_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
             if (maxW <= 4 || w(s) <= maxW) return s
-            var t = s
-            while (t.length > 1 && w("$t…") > maxW) t = t.dropLast(1)
-            return "$t…"
+            val n = fishmod.utils.rendering.TextFit.prefixLength(s, "…", maxW.toFloat(), 1) { w(it).toFloat() }
+            return s.substring(0, n) + "…"
         }
     }
 
@@ -3335,7 +3355,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         companion object {
             fun visibleLen(s: String?): Int {
                 if (s == null) return 0
-                return s.replace(Regex("&#[0-9a-fA-F]{6}"), "").replace(Regex("[&§][0-9a-fk-orxA-FK-ORX]"), "").length
+                return s.replace(HEX_CODE_RE, "").replace(FORMAT_CODE_RE, "").length
             }
             private fun capWrapper(inner: (String) -> Unit, max: Int): (String) -> Unit {
                 return { v ->
@@ -3571,7 +3591,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     ) : ColorPickerSetting(name, desc, getter, setter) {
         val shownName: String = name
 
-        // order-independent name/visibility sync
         private fun syncName() { this.name = if (visible()) shownName else "" }
 
         override fun getHeight(): Int {
@@ -3738,7 +3757,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private var ACCENT_HOVER: Int = ScreenTheme.ACCENT_HOVER
         private const val DIM_TOP = 0x2E000000
         private const val DIM_BOT = 0x50000000
-        private val CARD_BG = ScreenTheme.CARD_BG
         private const val ROW_HOVER = 0x1EFFFFFF
         private var ROW_ENABLED: Int = 0x2624B6B0
         private var ROW_BUTTON: Int = 0xFF1E2227.toInt()
@@ -3778,7 +3796,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val SUBCAT_HEIGHT_2 = 22
         private const val TWO_LINE_H = 36
         private const val SLIDER_ROW_H = 24
-        // Bar sits right under its label; the gap goes below the bar.
         private const val SLIDER_CTRL_Y = 13
         private const val TWO_LINE_CTRL_Y = 20
 
@@ -3804,11 +3821,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             roundedRect(ctx, x1, y1, x2 - x1, h, h / 2, color)
         }
 
-        fun panel(ctx: GuiGraphicsExtractor, x1: Int, y1: Int, x2: Int, y2: Int, r: Int, fill: Int, border: Int) {
-            roundedRect(ctx, x1, y1, x2 - x1, y2 - y1, r, border)
-            roundedRect(ctx, x1 + 1, y1 + 1, x2 - x1 - 2, y2 - y1 - 2, Math.max(0, r - 1), fill)
-        }
-
         fun disc(ctx: GuiGraphicsExtractor, cx: Int, cy: Int, r: Int, color: Int) {
             UiRecorder.disc(cx.toFloat(), cy.toFloat(), r.toFloat(), color)
         }
@@ -3825,7 +3837,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         fun stBold(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int) {
             UiRecorder.textBold(s, x.toFloat(), y.toFloat(), SUBCAT_TEXT_SIZE * TEXT_SCALE, color)
         }
-        fun stwBold(tr: Font, s: String): Int = Math.ceil(UiRecorder.textWidth(s, SUBCAT_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
 
         fun sst(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int, scale: Float) {
             UiRecorder.text(s, x.toFloat(), y.toFloat(), NVG_BASE_TEXT_SIZE * scale, color)
@@ -3857,82 +3868,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             UiRecorder.popScissor()
         }
 
-        private fun drawGlyph(ctx: GuiGraphicsExtractor, t: String, cx: Int, cy: Int, c: Int, bg: Int) {
-            when (t) {
-                "gear" -> {
-                    disc(ctx, cx, cy, 5, c)
-                    nf(cx - 1, cy - 7, cx + 1, cy + 7, c); nf(cx - 7, cy - 1, cx + 7, cy + 1, c)
-                    nf(cx - 5, cy - 5, cx - 3, cy - 3, c); nf(cx + 3, cy - 5, cx + 5, cy - 3, c)
-                    nf(cx - 5, cy + 3, cx - 3, cy + 5, c); nf(cx + 3, cy + 3, cx + 5, cy + 5, c)
-                    disc(ctx, cx, cy, 2, bg)
-                }
-                "arch" -> {
-                    nf(cx - 6, cy - 6, cx - 3, cy + 7, c); nf(cx + 3, cy - 6, cx + 6, cy + 7, c)
-                    nf(cx - 6, cy - 6, cx + 6, cy - 3, c)
-                }
-                "hanger" -> {
-                    nf(cx - 7, cy + 2, cx + 7, cy + 4, c)
-                    nf(cx - 1, cy - 5, cx + 1, cy + 3, c)
-                    nf(cx - 1, cy - 6, cx + 3, cy - 4, c)
-                }
-                "people" -> {
-                    disc(ctx, cx - 4, cy - 3, 3, c); disc(ctx, cx + 4, cy - 3, 3, c)
-                    nf(cx - 7, cy + 2, cx + 7, cy + 6, c)
-                }
-                "eye" -> {
-                    nf(cx - 7, cy - 1, cx + 7, cy + 1, c); nf(cx - 5, cy - 3, cx + 5, cy + 3, c)
-                    disc(ctx, cx, cy, 2, bg); disc(ctx, cx, cy, 1, c)
-                }
-                "text" -> {
-                    nf(cx - 5, cy - 5, cx + 5, cy - 3, c); nf(cx - 1, cy - 5, cx + 1, cy + 6, c)
-                }
-                "chat" -> {
-                    nf(cx - 7, cy - 5, cx + 7, cy + 2, c); nf(cx - 5, cy + 2, cx - 1, cy + 6, c)
-                    nf(cx - 4, cy - 2, cx + 4, cy - 1, bg); nf(cx - 4, cy, cx + 2, cy + 1, bg)
-                }
-                "star" -> {
-                    nf(cx - 1, cy - 7, cx + 1, cy + 7, c); nf(cx - 7, cy - 1, cx + 7, cy + 1, c)
-                    nf(cx - 4, cy - 4, cx - 2, cy - 2, c); nf(cx + 2, cy - 4, cx + 4, cy - 2, c)
-                    nf(cx - 4, cy + 2, cx - 2, cy + 4, c); nf(cx + 2, cy + 2, cx + 4, cy + 4, c)
-                }
-                "cube" -> {
-                    nf(cx - 6, cy - 6, cx + 6, cy - 4, c); nf(cx - 6, cy + 4, cx + 6, cy + 6, c)
-                    nf(cx - 6, cy - 6, cx - 4, cy + 6, c); nf(cx + 4, cy - 6, cx + 6, cy + 6, c)
-                }
-                "clock" -> {
-                    disc(ctx, cx, cy, 6, c); disc(ctx, cx, cy, 4, bg)
-                    nf(cx - 1, cy - 4, cx + 1, cy + 1, c); nf(cx - 1, cy - 1, cx + 4, cy + 1, c)
-                }
-                "coin" -> {
-                    disc(ctx, cx, cy, 6, c); disc(ctx, cx, cy, 3, bg); disc(ctx, cx, cy, 1, c)
-                }
-                "palette" -> {
-                    disc(ctx, cx, cy, 6, c)
-                    nf(cx - 3, cy - 3, cx - 1, cy - 1, bg); nf(cx + 1, cy - 3, cx + 3, cy - 1, bg)
-                    nf(cx - 1, cy + 1, cx + 1, cy + 3, bg)
-                }
-                "tag" -> {
-                    nf(cx - 6, cy - 4, cx + 2, cy + 4, c); nf(cx + 2, cy - 3, cx + 4, cy + 3, c)
-                    nf(cx + 4, cy - 1, cx + 6, cy + 1, c); disc(ctx, cx - 3, cy, 1, bg)
-                }
-                "slider" -> {
-                    nf(cx - 7, cy - 1, cx + 7, cy + 1, c); nf(cx, cy - 4, cx + 4, cy + 4, c)
-                }
-                "bell" -> {
-                    nf(cx - 4, cy - 3, cx + 4, cy + 3, c); nf(cx - 5, cy + 3, cx + 5, cy + 4, c)
-                    nf(cx - 1, cy - 6, cx + 1, cy - 4, c); nf(cx - 1, cy + 4, cx + 1, cy + 6, c)
-                }
-                "map" -> {
-                    nf(cx - 6, cy - 5, cx + 6, cy + 5, c); nf(cx - 1, cy - 5, cx + 1, cy + 5, bg)
-                    nf(cx - 6, cy - 1, cx + 6, cy + 1, bg)
-                }
-                else -> {
-                    nf(cx - 5, cy - 5, cx + 5, cy - 3, c); nf(cx - 5, cy + 3, cx + 5, cy + 5, c)
-                    nf(cx - 5, cy - 5, cx - 3, cy + 5, c); nf(cx + 3, cy - 5, cx + 5, cy + 5, c)
-                }
-            }
-        }
-
         private fun descFor(name: String): String {
             return when (name) {
                 "Chat" -> "Smart Copy, Compact Chat, Infinite History, Search, Filter"
@@ -3943,12 +3878,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Compact Tab" -> "Cleaner custom tab player list"
                 "Chat Filter" -> "Hide selected chat spam + NoammAddons' list + custom regex"
                 "Explosive Shot" -> "Title with per-enemy damage"
-                "Dungeon Score" -> "Live S+ score tracker overlay"
                 "Puzzle Overlay" -> "Show solved puzzle names"
                 "Auto Sprint" -> "Keep sprinting while holding forward"
                 "Sound Manager" -> "Master toggle & volume for FishMod cues"
-                "Leap Messages" -> "Title with the Spirit-Leap target"
-                "Key Notifier" -> "Title + cue on Wither/Blood key pickup"
                 "Boss Health Numbers" -> "Numeric HP on the M7 boss bar"
                 "Blessing Display" -> "Active dungeon blessings from the tab footer"
                 "Invincibility Timer" -> "Spirit / Bonzo / Phoenix proc + cooldown timers"
@@ -3960,7 +3892,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Simon Says Solver" -> "F7 P3 Goldor device — boxes the buttons to press, in order"
                 "Melody Message" -> "Party-announce the F7 melody terminal + its progress"
                 "Item Rarity Background" -> "Rarity-tinted sprite behind every item"
-                "Item Quality Tooltip" -> "Dungeon-item stat boost % + floor in the tooltip"
                 "Gyro Helper" -> "Gyrokinetic Wand landing box + sucking-range ring"
                 "Wither Highlight" -> "Outline the F7 wither boss by phase"
                 "M7 Relics" -> "P5 relic spawn timer + cauldron box"
@@ -3980,13 +3911,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Crystal Spawn" -> "Crystal spawn countdown + reminder"
                 "Section Progress" -> "Terminal section completed/total"
                 "Goldor Splits" -> "S1-S4 terminal split timers + total time"
-                "S4 Term/Leap Tracker" -> "Flags early/late Core leaps and terminals that look unfinished during S4"
                 "Name Color" -> "Recolor your username gradient"
                 "Nametag" -> "Show your own above-head nametag"
                 "Player Size" -> "Resize your model (render only)"
                 "Party Commands" -> "Dot-commands usable in party chat"
                 "Chat Channels" -> "Where dot-commands are allowed"
-                "Rarity Background" -> "Rarity-colored backing on all slots"
                 "Cooldown Overlay" -> "Ability cooldowns on item slots"
                 "Pet HUD" -> "Show your active pet & level"
                 "Soulflow HUD" -> "Track your soulflow count"
