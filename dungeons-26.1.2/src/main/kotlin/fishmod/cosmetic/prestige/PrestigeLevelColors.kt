@@ -143,28 +143,16 @@ object PrestigeLevelColors {
     private val LEVEL_PREFIX = Regex("""^\s{0,2}\[(\d{1,4})[^\[\]\d]{0,4}]""")
     private val LEVEL_ANYWHERE = Regex("""\[(\d{1,4})[^\[\]\d]{0,4}]""")
 
-    @JvmField var debug = false
-    private val seenByTag = HashMap<String, HashSet<String>>()
-
     @JvmStatic
-    fun dbg(tag: String, raw: String?) {
-        if (!debug || raw == null) return
-        val set = seenByTag.getOrPut(tag) { HashSet() }
-        if (set.size < 10 && set.add(raw)) {
-            fishmod.utils.debug.Debug.LOGGER.info("[PrestigeDBG] $tag raw=\"$raw\"")
-        }
-    }
-
-    @JvmStatic
-    fun colorizeLevelPrefix(c: Component?): Component? = recolor(c, LEVEL_PREFIX, "prefix")
+    fun colorizeLevelPrefix(c: Component?): Component? = recolor(c, LEVEL_PREFIX)
 
     @JvmStatic
     fun colorizeChatLevel(c: Component?): Component? {
         if (!FishSettings.prestigeColorsChat) return c
-        return recolor(c, LEVEL_ANYWHERE, "chat")
+        return recolor(c, LEVEL_ANYWHERE)
     }
 
-    private fun recolor(c: Component?, pattern: Regex, tag: String): Component? {
+    private fun recolor(c: Component?, pattern: Regex): Component? {
         if (c == null || !FishSettings.prestigeColorsEnabled) return c
 
         val segs = ArrayList<Seg>()
@@ -183,7 +171,6 @@ object PrestigeLevelColors {
         val cleanStr = clean.toString()
 
         val m = pattern.find(cleanStr)
-        if (debug) dbg(tag, full)
         if (m == null) return c
         val digits = m.groups[1] ?: return c
         val level = digits.value.toIntOrNull() ?: return c

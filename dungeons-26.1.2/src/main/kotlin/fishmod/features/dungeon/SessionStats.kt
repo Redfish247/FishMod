@@ -282,18 +282,27 @@ object SessionStats {
         return "${s}s"
     }
 
+    // short TTL cache; rebuilt every frame otherwise
+    private const val LINES_CACHE_TTL_MS = 200L
+    private var linesCacheAt = 0L
+    private var linesCache: Array<String> = arrayOf("", "", "", "")
+
     private fun buildLines(): Array<String> {
+        val now = System.currentTimeMillis()
+        if (now - linesCacheAt < LINES_CACHE_TTL_MS) return linesCache
+        linesCacheAt = now
         val rhr = runsPerHour()
-        val ref = if (paused && pauseStartedMs > 0) pauseStartedMs else System.currentTimeMillis()
+        val ref = if (paused && pauseStartedMs > 0) pauseStartedMs else now
         val timeStr = if (sessionStartMs > 0)
             formatTime(Math.max(0, ref - sessionStartMs))
         else "—"
-        return arrayOf(
+        linesCache = arrayOf(
             "§7Runs: §a" + runs + (if (paused) " §e§l(PAUSED)" else ""),
             "§7Deaths: §c" + deaths,
             "§7R/hr: §e" + (if (rhr == 0.0) "§8—" else String.format("%.1f", rhr)),
             "§7Time: §f" + timeStr
         )
+        return linesCache
     }
 
     @JvmStatic

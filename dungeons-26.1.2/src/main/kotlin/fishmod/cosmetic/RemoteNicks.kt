@@ -138,8 +138,9 @@ object RemoteNicks {
         var out = text
         for ((k, v) in styledByName) {
             if (s.contains(k)) {
-                out = NameRewriter.replaceName(out, k, v)
-                s = out!!.string
+                val replaced = NameRewriter.replaceName(out, k, v) ?: continue
+                out = replaced
+                s = replaced.string
             }
         }
         return out
@@ -153,8 +154,9 @@ object RemoteNicks {
         var out = text
         for ((k, v) in styledByName) {
             if (s.contains(k)) {
-                out = NameRewriter.replaceName(out, k, v)
-                s = out!!.string
+                val replaced = NameRewriter.replaceName(out, k, v) ?: continue
+                out = replaced
+                s = replaced.string
             }
         }
         return out
