@@ -168,6 +168,8 @@ class RubixHandler : TerminalHandler(TerminalType.RUBIX) {
 class MelodyHandler : TerminalHandler(TerminalType.MELODY) {
     @Volatile var greenClayRow: Int = -1
         private set
+    @Volatile var targetCol: Int = -1
+        private set
 
     override fun handleSlotUpdate(slot: Int): Boolean {
         solution.clear()
@@ -175,6 +177,7 @@ class MelodyHandler : TerminalHandler(TerminalType.MELODY) {
         val magentaPane = items.indexOfFirst { it?.`is`(MAGENTA_PANE) == true }.takeIf { it != -1 } ?: return true
         val greenClay = items.indexOfLast { it?.`is`(LIME_TERRACOTTA) == true }.takeIf { it != -1 } ?: return true
         greenClayRow = greenClay / 9
+        targetCol = magentaPane % 9
         solution.addAll(items.mapIndexedNotNull { i, it ->
             when {
                 i == greenPane || it?.`is`(MAGENTA_PANE) == true -> i
