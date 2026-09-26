@@ -334,14 +334,6 @@ object DungeonMapSettings {
 
     @ConfigValue
     @JvmField
-    var mapDoorFairyColor: Int = -781429
-
-    @ConfigValue
-    @JvmField
-    var mapDoorFairyColorFilled: Int = 871633803
-
-    @ConfigValue
-    @JvmField
     var mapDoorHighlightEnabled: Boolean = false
 
     @ConfigValue

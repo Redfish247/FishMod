@@ -36,10 +36,6 @@ object Visual {
 
     @ConfigValue @JvmField var disableGlowing: Boolean = false
 
-    @ConfigValue @JvmField var drawStarCount: Boolean = false
-
-    @ConfigValue @JvmField var compactHoppityMsgs: Boolean = false
-
     @ConfigValue @JvmField var hideCooldown: Boolean = false
 
     @ConfigValue @JvmField var hideEntityFire: Boolean = false
@@ -48,11 +44,7 @@ object Visual {
 
     @ConfigValue @JvmField var fixWitherEssence: Boolean = false
 
-    @ConfigValue @JvmField var oldFishingRod: Boolean = false
-
     @ConfigValue @JvmField var stopShovelFlattening: Boolean = false
-
-    @ConfigValue @JvmField var stopPearlSwing: Boolean = false
 
     @ConfigValue @JvmField var noSwingAnimation: Boolean = false
     @ConfigValue @JvmField var noSwingTerminatorOnly: Boolean = false

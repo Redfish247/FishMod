@@ -62,8 +62,7 @@ object PlayersLeaped {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
-        // No active spot = HUD editor preview.
-        val zone = activeZone() ?: return RenderUtils.drawPrefixedText(component, context, "Leaped (HEE2)", "§e2/4")
+        val zone = activeZone() ?: return
         val n = leapedCount(zone)
         if (n >= zone.expected) filledAt.putIfAbsent(zone.label, System.currentTimeMillis())
         if (zone.label in filledAt) {

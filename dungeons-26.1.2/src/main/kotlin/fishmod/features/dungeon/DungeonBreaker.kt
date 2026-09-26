@@ -122,11 +122,10 @@ object DungeonBreaker {
         if (!FishSettings.dungeonBreakerEnabled || !FishSettings.dungeonBreakerHudEnabled) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.level == null) return
-        val preview = mc.screen is FishHudEditor
-        if (!preview && (charges < 0 || !activeHere())) return
+        if (charges < 0 || !activeHere()) return
 
-        val cur = if (preview) 17 else charges
-        val max = if (preview) 20 else maxCharges
+        val cur = charges
+        val max = maxCharges
         val col = when {
             cur <= 0 -> "§c"
             cur * 4 <= max -> "§6"

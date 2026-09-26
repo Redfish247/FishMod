@@ -172,7 +172,6 @@ object FishSettings {
     @ConfigValue @JvmField var pcPowder: Boolean = false
     @ConfigValue @JvmField var pcLevel: Boolean = false
     @ConfigValue @JvmField var pcFarming: Boolean = false
-    @ConfigValue @JvmField var pcVisitor: Boolean = false
     @ConfigValue @JvmField var pcNuc: Boolean = false
     @ConfigValue @JvmField var pcWorm: Boolean = false
 
@@ -309,8 +308,6 @@ object FishSettings {
     @ConfigValue @JvmField var pcKickList: String = ""
 
     @ConfigValue @JvmField var lootTrackerEnabled: Boolean = false
-    @ConfigValue @JvmField var lootTrackerX: Int = -1
-    @ConfigValue @JvmField var lootTrackerY: Int = -1
 
     @ConfigValue @JvmField var simonSaysEnabled: Boolean = false
     @ConfigValue @JvmField var simonSaysHudEnabled: Boolean = false
@@ -950,7 +947,6 @@ object FishSettings {
     @ConfigValue @JvmField var slayerPhaseWorldText: Boolean = true
     @ConfigValue @JvmField var slayerPhaseTitles: Boolean = true
     @ConfigValue @JvmField var slayerPhaseHealthSplit: Boolean = true
-
 
     @JvmStatic
     fun slayerAnyEnabled(): Boolean =

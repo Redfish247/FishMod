@@ -13,9 +13,6 @@ object TimeChanger {
     fun modes(): Array<String> = MODES.toTypedArray()
 
     @JvmStatic
-    fun init() {  }
-
-    @JvmStatic
     fun active(): Boolean = FishSettings.timeChangerEnabled
 
     @JvmStatic

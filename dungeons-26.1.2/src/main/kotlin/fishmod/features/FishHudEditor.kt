@@ -44,9 +44,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         fun w(): Int = wVal
         fun h(): Int = hVal
         fun locked(): Boolean = lockedVal
-        fun getScale(): DoubleSupplier? = getScaleVal
         fun setScale(): DoubleConsumer? = setScaleVal
-        fun visible(): BooleanSupplier? = visibleVal
 
         fun scale(): Double = if (getScaleVal != null) getScaleVal.asDouble else 1.0
         fun isVisible(): Boolean = visibleVal == null || visibleVal.asBoolean
@@ -178,7 +176,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 "Storm Death Time", "LB Release Timer", "Py Tick Timer", "Necron LB Timer", "Storm Crushed", "Term Start Timer",
                 "Section Progress", "Goldor Splits", "Current Section", "Device Completed",
                 "Melody Warning", "Section Completion", "Storm Over Alert", "Players Leaped",
-                "S4 Alert", "S4 Debug", "Relic Spawn Timer",
+                "Relic Spawn Timer",
             ),
             "HUD & Overlays" to listOf(
                 "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Notifications", "Warp Cooldown", "Tac Timer", "Rag Timer", "Spring Boots",
@@ -216,11 +214,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Device Completed" to c("§aDevice Completed!"),
             "Melody Warning" to c("§5§lHEALER §r§dhas melody! 2/4"),
             "Section Completion" to c("§aSection completed!"),
-            "S4 Alert" to c("§c⚠ Steve LEAPED EARLY"),
-            "S4 Debug" to s(
-                "§6S4 Tracker", "§fAlex: §6⚠ early§f (1)", "§fBob: §7...§f (0)",
-                "§fJoe: §c☠ dead§f (1)", "§fSteve: §a✓ core§f (2)",
-            ),
             "Goldor Splits" to cols(listOf(
                 "§61st " to "§a12.34s§8 (§712.05s§8)",
                 "§62nd " to "§a13.10s§8 (§712.80s§8)",

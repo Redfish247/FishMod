@@ -67,7 +67,6 @@ public final class ChatOutput {
 
 	private static void push(Component component) {
 		Minecraft mc = Minecraft.getInstance();
-		if (mc == null) return;
 		mc.execute(() -> {
 			if (mc.gui != null) {
 				mc.gui.getChat().addClientSystemMessage(component);
