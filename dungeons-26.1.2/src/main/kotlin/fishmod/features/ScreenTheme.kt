@@ -160,7 +160,15 @@ object ScreenTheme {
     private var tooltipWidthSize = -1f
     private var tooltipTextW = 0f
 
-    fun nItemTooltip(lines: List<net.minecraft.network.chat.Component>, mx: Int, my: Int, screenW: Int, screenH: Int, k: Float = 1f) {
+    // Bold stamps each glyph one device pixel wider; paintScale is the scale the recorder is replayed at.
+    private fun runWidth(r: Run, size: Float, paintScale: Float): Float {
+        val w = UiRecorder.textWidth(r.text, size)
+        if (!r.bold) return w
+        val devPerVirtual = net.minecraft.client.Minecraft.getInstance().window.guiScale * paintScale
+        return w + r.text.codePointCount(0, r.text.length) / devPerVirtual.toFloat()
+    }
+
+    fun nItemTooltip(lines: List<net.minecraft.network.chat.Component>, mx: Int, my: Int, screenW: Int, screenH: Int, k: Float = 1f, paintScale: Float = 1f) {
         if (lines.isEmpty()) return
         if (lines != tooltipLines) {
             tooltipLines = lines
@@ -175,7 +183,7 @@ object ScreenTheme {
         val pad = 6f * u
         if (size != tooltipWidthSize) {
             tooltipWidthSize = size
-            tooltipTextW = runs.maxOf { rs -> rs.fold(0f) { a, r -> a + UiRecorder.textWidth(r.text, size) } }
+            tooltipTextW = runs.maxOf { rs -> rs.fold(0f) { a, r -> a + runWidth(r, size, paintScale) } }
         }
         val textW = tooltipTextW
         val w = textW + pad * 2
@@ -191,7 +199,7 @@ object ScreenTheme {
             var px = tx + pad
             for (r in rs) {
                 if (r.bold) UiRecorder.textBold(r.text, px, ly, size, r.color) else UiRecorder.text(r.text, px, ly, size, r.color)
-                px += UiRecorder.textWidth(r.text, size)
+                px += runWidth(r, size, paintScale)
             }
             ly += lineH + if (i == 0) 2f * u else 0f
         }
