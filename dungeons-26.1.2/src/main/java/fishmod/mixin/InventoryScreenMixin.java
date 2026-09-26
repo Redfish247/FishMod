@@ -24,8 +24,8 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
     }
 
     @Inject(method = "extractLabels", at = @At("HEAD"), cancellable = true)
-    protected void drawForeground(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
-        ci.cancel();
+    protected void fishmod$hideLabels(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
+        if (fishmod.utils.config.values.Visual.renderOptimizer && fishmod.utils.config.values.Visual.roHideInventoryLabels) ci.cancel();
     }
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))

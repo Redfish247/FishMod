@@ -5,7 +5,6 @@ import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import java.io.File
 import java.io.FileReader
-import java.io.FileWriter
 import java.util.regex.Pattern
 import java.util.regex.PatternSyntaxException
 
@@ -31,7 +30,8 @@ data class ChatRule(
         if (key != patternKey) {
             patternKey = key
             patternCache = try {
-                Pattern.compile(if (ignoreCase) filter.lowercase() else filter)
+                if (ignoreCase) Pattern.compile(filter, Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE)
+                else Pattern.compile(filter)
             } catch (e: PatternSyntaxException) {
                 null
             }
@@ -61,18 +61,18 @@ object ChatRuleStore {
     @JvmStatic fun setMasterEnabled(v: Boolean) { data.masterEnabled = v; save() }
 
     @JvmStatic fun hudX(): Int = data.hudX
-    @JvmStatic fun setHudX(v: Int) { data.hudX = v; save() }
+    @JvmStatic fun setHudX(v: Int) { data.hudX = v }
     @JvmStatic fun hudY(): Int = data.hudY
-    @JvmStatic fun setHudY(v: Int) { data.hudY = v; save() }
+    @JvmStatic fun setHudY(v: Int) { data.hudY = v }
     @JvmStatic fun hudScale(): Double = data.hudScale
-    @JvmStatic fun setHudScale(v: Double) { data.hudScale = v; save() }
+    @JvmStatic fun setHudScale(v: Double) { data.hudScale = v }
 
     @JvmStatic fun rules(): MutableList<ChatRule> = data.rules
 
     @JvmStatic
     fun addRule(after: ChatRule? = null): ChatRule {
         val rule = ChatRule()
-        val idx = if (after != null) data.rules.indexOf(after) + 1 else data.rules.size
+        val idx = if (after != null) data.rules.indexOfFirst { it === after } + 1 else data.rules.size
         data.rules.add(idx, rule)
         save()
         return rule
@@ -80,18 +80,13 @@ object ChatRuleStore {
 
     @JvmStatic
     fun removeRule(rule: ChatRule) {
-        data.rules.remove(rule)
+        data.rules.removeIf { it === rule }
         save()
     }
 
     @JvmStatic
     fun save() {
-        try {
-            val file = File(FILE_PATH)
-            file.parentFile?.mkdirs()
-            FileWriter(file).use { writer -> GSON.toJson(data, writer) }
-        } catch (ignored: Exception) {
-        }
+        fishmod.utils.SafeFiles.writeAtomic(File(FILE_PATH), GSON.toJson(data))
     }
 
     private fun load() {
@@ -103,7 +98,8 @@ object ChatRuleStore {
                 val loaded: Data? = GSON.fromJson(reader, type)
                 if (loaded != null) data = loaded
             }
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            fishmod.utils.SafeFiles.quarantine(file, e)
         }
     }
 }

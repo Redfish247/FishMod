@@ -154,6 +154,43 @@ public class PartyCommandHandler {
         }
     }
 
+    public static boolean localEnabled(String cmd) {
+        if (!FishSettings.partyCommandsEnabled) return false;
+        return switch (cmd) {
+            case "help", "?" -> FishSettings.pcHelp;
+            case "rtca" -> FishSettings.pcRtca;
+            case "rtc" -> FishSettings.pcRtc;
+            case "crtc" -> FishSettings.pcCrtc;
+            case "cata" -> FishSettings.pcCata;
+            case "pb" -> FishSettings.pcPb;
+            case "mp" -> FishSettings.pcMp;
+            case "collection" -> FishSettings.pcCollection;
+            case "secrets", "sa" -> FishSettings.pcSecrets;
+            case "runs", "totalruns" -> FishSettings.pcRuns;
+            case "dprofit" -> FishSettings.pcDprofit;
+            case "crit" -> FishSettings.pcCrit;
+            case "corpse", "corpses" -> FishSettings.pcCorpse;
+            case "bank" -> FishSettings.pcBank;
+            case "powder" -> FishSettings.pcPowder;
+            case "nw", "networth" -> FishSettings.pcNw;
+            case "level", "sblvl" -> FishSettings.pcLevel;
+            case "farming" -> FishSettings.pcFarming;
+            case "nuc", "nucleus" -> FishSettings.pcNuc;
+            case "worm", "scatha" -> FishSettings.pcWorm;
+            case "fps" -> FishSettings.pcFps;
+            case "tps" -> FishSettings.pcTps;
+            case "ping" -> FishSettings.pcPing;
+            case "ai", "allinv" -> FishSettings.pcAllinvite;
+            case "d" -> FishSettings.pcDisband;
+            case "kick", "k" -> FishSettings.pcActionKick;
+            case "warp", "w" -> FishSettings.pcActionWarp;
+            case "transfer", "pt", "ptme" -> FishSettings.pcActionTransfer;
+            case "promote", "pro" -> FishSettings.pcActionPromote;
+            case "demote", "dem" -> FishSettings.pcActionDemote;
+            default -> isFloor(cmd) || cmd.matches("t[1-5]") ? FishSettings.pcJoinFloor : false;
+        };
+    }
+
     private static final java.util.Map<String, Long> RECENT_RESPONSES = new java.util.concurrent.ConcurrentHashMap<>();
     private static final long RESPONSE_DEDUP_MS = 5000;
     private static boolean respond(String cmd, String typer, boolean isLocal) {

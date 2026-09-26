@@ -256,7 +256,7 @@ class AuctionPriceScreen(
             return true
         }
         if (key == GLFW.GLFW_KEY_ESCAPE) {
-            onClose()
+            cancel()
             return true
         }
         priceField.keyPressed(input)

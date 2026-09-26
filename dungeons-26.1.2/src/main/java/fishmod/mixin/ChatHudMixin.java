@@ -27,8 +27,6 @@ public class ChatHudMixin {
             "^Party > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")" + ARG_TAIL);
     private static final Pattern GUILD_CMD = Pattern.compile(
             "^(?:Guild|G) > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")" + ARG_TAIL);
-    private static final Pattern OFFICER_CMD = Pattern.compile(
-            "^(?:Officer|O) > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")" + ARG_TAIL);
     private static final Pattern MSG_CMD = Pattern.compile(
             "^From (?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")" + ARG_TAIL);
     private static final Pattern TO_CMD = Pattern.compile(
@@ -55,7 +53,7 @@ public class ChatHudMixin {
         }
         if (fishmod.features.chat.ChatHideState.shouldSwallowBlank(message)) { ci.cancel(); return; }
 
-        if (!FishSettings.chatParty && !FishSettings.chatGuild && !FishSettings.chatOfficer
+        if (!FishSettings.chatParty && !FishSettings.chatGuild
                 && !FishSettings.chatPrivate && !FishSettings.chatAll && !FishSettings.pfStatsEnabled
                 && !(FishSettings.chatFeatureEnabled && FishSettings.chatCompact)
                 && System.currentTimeMillis() - fishmod.features.dungeon.ChatCommandState.lastPartyCommandAt >= 6000) {
@@ -75,7 +73,6 @@ public class ChatHudMixin {
 
         if (FishSettings.chatParty && tryDispatch(PARTY_CMD, plain, "pc ", null)) return;
         if (FishSettings.chatGuild && tryDispatch(GUILD_CMD, plain, "gc ", null)) return;
-        if (FishSettings.chatOfficer && tryDispatch(OFFICER_CMD, plain, "oc ", null)) return;
         if (FishSettings.chatPrivate) {
             if (tryDispatch(MSG_CMD, plain, null, "msg ")) return;
             if (tryDispatch(TO_CMD, plain, null, "msg ")) return;

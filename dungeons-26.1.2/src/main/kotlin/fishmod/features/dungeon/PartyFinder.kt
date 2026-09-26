@@ -77,9 +77,13 @@ object PartyFinder {
         }
 
         val cached = cache[key]
-        if (cached != null) { evalThenFinish(name, key, clazz, cached); return }
+        if (cached != null && !cached.failed) { evalThenFinish(name, key, clazz, cached); return }
         HypixelApi.getByNameSilent(name) { d ->
             cache[key] = d
+            if (d.failed) {
+                mc.execute { FishMsg.send("§9AutoKick §7> couldn't look up §e$name§7, not kicking") }
+                return@getByNameSilent
+            }
             evalThenFinish(name, key, clazz, d)
         }
     }
@@ -309,6 +313,7 @@ object PartyFinder {
     private fun statsFor(name: String, floor: Int, master: Boolean): String {
         val key = name.lowercase()
         val d = cache[key] ?: run { request(name); return " §7(…)" }
+        if (d.failed) return " §c(lookup failed)"
         val sb = StringBuilder(" §b(§6${d.cataLevel}§b)")
         if (FishSettings.pfShowSecrets && d.secretAverage != null) {
             sb.append(" §8[§a${d.totalSecrets}§8/§b${d.secretAverage}§8]")

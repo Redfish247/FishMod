@@ -391,7 +391,8 @@ object SlayerProfitTracker {
                     val t: Type = object : TypeToken<MutableMap<String, Data>>() {}.type
                     total = GSON.fromJson(root, t) ?: HashMap()
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                fishmod.utils.SafeFiles.quarantine(file, e)
             }
         }
     }
@@ -406,12 +407,7 @@ object SlayerProfitTracker {
             GSON.toJson(p)
         }
         writeExecutor.execute {
-            try {
-                val file = File(FILE_PATH)
-                file.parentFile?.mkdirs()
-                file.writeText(json)
-            } catch (_: Exception) {
-            }
+            fishmod.utils.SafeFiles.writeAtomic(File(FILE_PATH), json)
         }
     }
 }

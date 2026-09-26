@@ -319,6 +319,7 @@ public class HypixelApi {
     }
 
     public static class DungeonData {
+        public boolean failed;
         public long cataXp;
         public int  cataLevel;
         public long totalSecrets;
@@ -632,11 +633,17 @@ public class HypixelApi {
         void onData(DungeonData data);
     }
 
+    private static DungeonData failedData() {
+        DungeonData d = new DungeonData();
+        d.failed = true;
+        return d;
+    }
+
     public static void getByNameSilent(String ign, DungeonDataCallback callback) {
         String cachedUuid = getCachedUuid(ign);
         if (cachedUuid != null) { fetchProfilesSilent(cachedUuid, callback); return; }
         resolveUuid(ign, 0, uuid -> {
-            if (uuid == null) { callback.onData(new DungeonData()); return; }
+            if (uuid == null) { callback.onData(failedData()); return; }
             fetchProfilesSilent(uuid, callback);
         });
     }
@@ -651,13 +658,13 @@ public class HypixelApi {
                 .timeout(Duration.ofSeconds(10))
                 .GET()
                 .build();
-        } catch (Exception e) { callback.onData(new DungeonData()); return; }
+        } catch (Exception e) { callback.onData(failedData()); return; }
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
             .thenAccept(resp -> {
-                if (friendlyProxyError(resp) != null) { callback.onData(new DungeonData()); return; }
+                if (friendlyProxyError(resp) != null) { callback.onData(failedData()); return; }
                 try {
                     JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
-                    if (!root.get("success").getAsBoolean()) { callback.onData(new DungeonData()); return; }
+                    if (!root.get("success").getAsBoolean()) { callback.onData(failedData()); return; }
                     for (JsonElement profileEl : root.getAsJsonArray("profiles")) {
                         JsonObject profile = profileEl.getAsJsonObject();
                         if (!profile.has("selected") || !profile.get("selected").getAsBoolean()) continue;
@@ -668,10 +675,13 @@ public class HypixelApi {
                         callback.onData(parseDungeonData(uuidStr, member));
                         return;
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    callback.onData(failedData());
+                    return;
+                }
                 callback.onData(new DungeonData());
             })
-            .exceptionally(e -> { callback.onData(new DungeonData()); return null; });
+            .exceptionally(e -> { callback.onData(failedData()); return null; });
     }
 
     public static void getByName(Minecraft mc, String ign, DungeonDataCallback callback) {

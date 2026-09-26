@@ -43,7 +43,6 @@ import net.minecraft.world.phys.Vec3
 import java.nio.file.Files
 import java.util.concurrent.ConcurrentLinkedQueue
 
-// Temporary dev tool: records dungeon actions as an ordered route, then replays it.
 object RouteRecorder {
 
     enum class Type(val label: String, val tolerance: Double) {

@@ -695,7 +695,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeon.features.add(f)
         }
         run {
-            val f = Feature("Route Recorder", FishSettings::routeRecorderEnabled)
+            val f = Feature("Dungeon Routes", FishSettings::routeRecorderEnabled)
             f.sub.add(LabelSetting("/fm route record · stop · play", "skip · back · undo · clear · save/load <name> · list"))
             f.sub.add(ToggleSetting("Auto Load Per Room", "Saved route plays when you enter its room", FishSettings::routeAutoLoad))
             f.sub.add(ToggleSetting("Waypoints Through Walls", "Etherwarp, pearl, break, superboom", FishSettings::routeThroughWalls))
@@ -1333,6 +1333,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Hide Soul Weaver", "The soul weaver helmet worn by some mobs", Visual::roHideSoulWeaver))
             f.sub.add(ToggleSetting("Hide Tentacle Head", "The tentacle head worn by some mobs", Visual::roHideTentacleHead))
             f.sub.add(ToggleSetting("Hide Fire Overlay", "The first-person fire overlay", Visual::roHideFireOverlay))
+            f.sub.add(ToggleSetting("Hide Inventory Labels", "The \"Crafting\" text in your inventory", Visual::roHideInventoryLabels))
             visuals.features.add(f)
         }
         run {
@@ -1688,8 +1689,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("Room Additions", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsEnabled)
             f.sub.add(ToggleSetting("Prince Crown Icon", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsPrince))
             f.sub.add(ToggleSetting("Mimic Reveal", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsMimic))
-            f.sub.add(ToggleSetting("Mimic on Insight", "", fishmod.utils.config.values.DungeonMapSettings::mapMimicOnInsight)
-                .gatedBy { fishmod.utils.config.values.DungeonMapSettings.mapRoomAdditionsMimic })
             f.sub.add(ColorPickerSetting("Mimic Room Color", "", fishmod.utils.config.values.DungeonMapSettings::mapMimicRoomColor)
                 .gatedBy { fishmod.utils.config.values.DungeonMapSettings.mapRoomAdditionsMimic })
             f.sub.add(SliderIntSetting("Darken Multiplier %", "",

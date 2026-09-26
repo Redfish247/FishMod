@@ -89,7 +89,6 @@ object FishSettings {
 
     @ConfigValue @JvmField var chatParty: Boolean = false
     @ConfigValue @JvmField var chatGuild: Boolean = false
-    @ConfigValue @JvmField var chatOfficer: Boolean = false
     @ConfigValue @JvmField var chatPrivate: Boolean = false
     @ConfigValue @JvmField var chatAll: Boolean = false
     @ConfigValue @JvmField var pfStatsEnabled: Boolean = false
@@ -185,6 +184,17 @@ object FishSettings {
     @ConfigValue @JvmField var remoteNicksEnabled: Boolean = false
 
     @ConfigValue @JvmField var playerSizeEnabled: Boolean = false
+    @ConfigValue @JvmField var wpEditFill: Boolean = false
+    @ConfigValue @JvmField var wpEditSize: Double = 0.5
+    @ConfigValue @JvmField var wpEditDistance: Int = 20
+    @ConfigValue @JvmField var wpEditUseBlockSize: Boolean = true
+    @ConfigValue @JvmField var wpEditPixelMode: Boolean = false
+    @ConfigValue @JvmField var wpEditThrough: Boolean = false
+    @ConfigValue @JvmField var wpEditColor: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var wpEditType: String = "NONE"
+    @ConfigValue @JvmField var wpEditTimer: String = "NONE"
+    @ConfigValue @JvmField var wpEditLineWidth: Double = 0.05
+
     @ConfigValue @JvmField var playerSizeScaleX: Double = 1.0
     @ConfigValue @JvmField var playerSizeScaleY: Double = 1.0
     @ConfigValue @JvmField var playerSizeScaleZ: Double = 1.0

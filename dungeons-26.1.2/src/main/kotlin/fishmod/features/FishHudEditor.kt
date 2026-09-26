@@ -1095,11 +1095,13 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     private fun cancel() {
         restore(opened)
         FishConfig.manager.save()
+        fishmod.features.chat.ChatRuleStore.save()
         Minecraft.getInstance().setScreen(parent)
     }
 
     override fun onClose() {
         FishConfig.manager.save()
+        fishmod.features.chat.ChatRuleStore.save()
         Minecraft.getInstance().setScreen(parent)
     }
 }

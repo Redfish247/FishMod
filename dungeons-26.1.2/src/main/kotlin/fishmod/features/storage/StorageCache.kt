@@ -130,7 +130,10 @@ object StorageCache {
                 NBTInventory.decode(root.getString("${i}_inv").orElse(""))?.let { pages[i] = it; known.add(i) }
             }
             root.getString("known").orElse("").split(',').mapNotNull { it.trim().toIntOrNull() }.forEach { known.add(it) }
-        } catch (ignored: IOException) {}
+        } catch (e: Exception) {
+            pages = TreeMap(); known = sortedSetOf()
+            fishmod.utils.SafeFiles.quarantine(file, e)
+        }
     }
 
     private fun save() {
@@ -143,6 +146,8 @@ object StorageCache {
             val tmp = dir.resolve("$id.nbt.tmp")
             NbtIo.writeCompressed(root, tmp)
             Files.move(tmp, dir.resolve("$id.nbt"), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
-        } catch (ignored: IOException) {}
+        } catch (e: IOException) {
+            fishmod.utils.debug.Debug.LOGGER.error("Failed to save storage cache", e)
+        }
     }
 }

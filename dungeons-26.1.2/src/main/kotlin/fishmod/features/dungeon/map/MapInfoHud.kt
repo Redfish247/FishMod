@@ -22,9 +22,9 @@ object MapInfoHud {
                 val mc = Minecraft.getInstance()
                 if (!mc.options.hideGui && DungeonState.isInDungeon()) {
                     val allowed = if (DungeonMapSettings.mapInfoMapTied) {
-                        DungeonMapSettings.mapEnabled && (!DungeonState.isInBoss() || MapColors.peeking())
+                        DungeonMapSettings.mapEnabled && !DungeonState.isInBoss()
                     } else {
-                        !(DungeonState.isInBoss() && DungeonMapSettings.mapScoreStandaloneHideInBoss && !MapColors.peeking())
+                        !(DungeonState.isInBoss() && DungeonMapSettings.mapScoreStandaloneHideInBoss)
                     }
                     if (allowed) render(g, mc, false)
                 }
