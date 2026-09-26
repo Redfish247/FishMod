@@ -41,6 +41,7 @@ object FishSettings {
     @ConfigValue @JvmField var fmButtonAlpha: Int = 100
     @ConfigValue @JvmField var fmRowColor: Int = 0xFF24B6B0.toInt()
     @ConfigValue @JvmField var fmRowAlpha: Int = 15
+    @ConfigValue @JvmField var fmRowBgAlpha: Int = 100
     @ConfigValue @JvmField var guiSettings: Boolean = false
     @ConfigValue @JvmField var guiScaleMain: Int = 100
     @ConfigValue @JvmField var guiScaleChatCommands: Int = 100
