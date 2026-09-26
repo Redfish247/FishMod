@@ -2199,7 +2199,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         if (!recorderSizeLogged) {
             recorderSizeLogged = true
-            fishmod.utils.debug.Debug.LOGGER.info("[UiRenderer] extractRenderState queued {} draw commands", UiRecorder.size())
+            fishmod.utils.debug.Debug.LOGGER.debug("[UiRenderer] extractRenderState queued {} draw commands", UiRecorder.size())
         }
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)

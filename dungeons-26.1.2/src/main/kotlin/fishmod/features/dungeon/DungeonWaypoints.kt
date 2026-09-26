@@ -816,10 +816,32 @@ object DungeonWaypoints {
         }
         val result = ArrayList<MergedGroup>()
         for ((key, group) in candidates.groupBy { Pair(it.color, it.filled) }) {
-            val (quads, edges) = traceSurface(group.map { it.box }) ?: continue
-            result.add(MergedGroup(key.first, key.second, quads, edges))
+            val quads = ArrayList<Array<Vec3>>()
+            val edges = ArrayList<DoubleArray>()
+            for (cluster in touchingClusters(group.map { it.box })) {
+                val (q, e) = traceSurface(cluster) ?: continue
+                quads.addAll(q)
+                edges.addAll(e)
+            }
+            if (quads.isNotEmpty() || edges.isNotEmpty()) result.add(MergedGroup(key.first, key.second, quads, edges))
         }
         return result
+    }
+
+    private fun touchingClusters(boxes: List<AABB>): List<List<AABB>> {
+        val parent = IntArray(boxes.size) { it }
+        fun find(i: Int): Int {
+            var r = i
+            while (parent[r] != r) r = parent[r]
+            var c = i
+            while (parent[c] != r) { val n = parent[c]; parent[c] = r; c = n }
+            return r
+        }
+        val grown = boxes.map { it.inflate(1.0E-4) }
+        for (i in boxes.indices) for (j in i + 1 until boxes.size) {
+            if (grown[i].intersects(grown[j])) parent[find(i)] = find(j)
+        }
+        return boxes.indices.groupBy { find(it) }.values.map { idx -> idx.map { boxes[it] } }
     }
 
     private fun buildPmGroups(): List<MergedGroup> {

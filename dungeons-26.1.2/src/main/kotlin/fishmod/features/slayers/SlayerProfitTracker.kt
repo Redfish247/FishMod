@@ -13,7 +13,6 @@ import fishmod.utils.networth.ItemsDb
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import java.io.File
 import java.lang.reflect.Type
-import java.util.concurrent.Executors
 import java.util.regex.Pattern
 
 // Slayer drop-value / coins-per-hour tracker, a close port of SkyHanni's "<Boss> Profit Tracker".
@@ -33,9 +32,7 @@ object SlayerProfitTracker {
     private val SACK_PICKUP = Pattern.compile("^\\+\\s*([\\d,]+)\\s+([A-Za-z'’. ]+?)(?:\\s*\\(.*\\))?$")
     private val AUTO_SLAYER_BANK = Pattern.compile("Took ([\\d,.]+[kmb]?) coins from your bank for auto-slayer")
 
-    private val writeExecutor = Executors.newSingleThreadExecutor { r ->
-        Thread(r, "fishmod-slayer-profit-io").apply { isDaemon = true }
-    }
+    private val writeExecutor = fishmod.utils.IoExecutor
     private val lock = Any()
 
     private class Data {
@@ -86,7 +83,9 @@ object SlayerProfitTracker {
         load()
         ItemsDb.initAsync()
         CroesusPrices.refreshIfStale()
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { tick() })
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { tick(); flushSave(false) })
+        Events.ON_WORLD_CHANGE.register { flushSave(true); false }
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register { flushSave(true) }
         Events.ON_GAME_MESSAGE.register { text ->
             if (enabled()) onChat(text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim())
             false
@@ -419,7 +418,24 @@ object SlayerProfitTracker {
         }
     }
 
+    private var saveDirty = false
+    private var lastSaveMs = 0L
+
     private fun save() {
+        saveDirty = true
+        displayCache = null
+    }
+
+    private fun flushSave(force: Boolean) {
+        if (!saveDirty) return
+        val now = System.currentTimeMillis()
+        if (!force && now - lastSaveMs < 30_000L) return
+        saveDirty = false
+        lastSaveMs = now
+        saveNow()
+    }
+
+    private fun saveNow() {
         val json = synchronized(lock) {
             val p = Persisted()
             p.total = total

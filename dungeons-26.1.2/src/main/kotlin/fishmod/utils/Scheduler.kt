@@ -17,6 +17,7 @@ object Scheduler {
         ClientTickEvents.START_CLIENT_TICK.register { minecraftClient ->
             val due = ArrayList<Task>()
             synchronized(tasks) {
+                if (tasks.isEmpty()) return@register
                 val it = tasks.iterator()
                 while (it.hasNext()) {
                     val task = it.next()

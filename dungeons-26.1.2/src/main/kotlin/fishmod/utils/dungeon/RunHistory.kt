@@ -7,7 +7,6 @@ import java.io.File
 import java.io.FileReader
 import java.io.FileWriter
 import java.lang.reflect.Type
-import java.util.concurrent.Executors
 
 object RunHistory {
 
@@ -17,9 +16,7 @@ object RunHistory {
     private const val FILE_PATH = "config/fishmod-runs.json"
     private val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
 
-    private val writeExecutor = Executors.newSingleThreadExecutor { r ->
-        Thread(r, "fishmod-runhistory-io").apply { isDaemon = true }
-    }
+    private val writeExecutor = fishmod.utils.IoExecutor
 
     private val lock = Any()
 

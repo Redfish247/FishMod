@@ -17,9 +17,7 @@ object PbMessages {
 
     private val FILE: Path = Paths.get("config/fishmod/personal_bests.json")
     private val GSON = GsonBuilder().setPrettyPrinting().create()
-    private val ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
-        Thread(r, "FishMod-PB-IO").apply { isDaemon = true }
-    }
+    private val ioExecutor = fishmod.utils.IoExecutor
 
     private val pbs = HashMap<String, Double>()
     private var loaded = false

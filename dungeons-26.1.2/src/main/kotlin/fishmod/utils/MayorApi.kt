@@ -21,8 +21,6 @@ object MayorApi {
         .build()
 
     @Volatile
-    private var aatroxSlayerBonus = false
-    @Volatile
     private var paulDungeonBonus = false
     @Volatile
     private var lastFetch = 0L
@@ -34,12 +32,6 @@ object MayorApi {
     @JvmStatic
     fun init() {
         ClientPlayConnectionEvents.JOIN.register { _, _, _ -> refresh() }
-    }
-
-    @JvmStatic
-    fun isAatroxSlayerBonusActive(): Boolean {
-        if (System.currentTimeMillis() - lastFetch > CACHE_MS) refresh()
-        return aatroxSlayerBonus
     }
 
     @JvmStatic
@@ -71,7 +63,6 @@ object MayorApi {
                     return@thenAccept
                 }
                 try {
-                    aatroxSlayerBonus = parseAatrox(body)
                     paulDungeonBonus = parsePaul(body)
                     lastFetch = System.currentTimeMillis()
                 } catch (e: Exception) {
@@ -82,24 +73,6 @@ object MayorApi {
                 fetching = false
             }
         }.exceptionally { fetching = false; null }
-    }
-
-    private fun parseAatrox(body: String): Boolean {
-        val root = JsonParser.parseString(body).asJsonObject
-        if (!root.has("mayor")) return false
-        val mayor = root.getAsJsonObject("mayor")
-        if ("aatrox".equals(mayor.get("key").asString, ignoreCase = true)) return true
-        if (mayor.has("minister")) {
-            val minister = mayor.getAsJsonObject("minister")
-            if ("aatrox".equals(minister.get("key").asString, ignoreCase = true)) {
-                if (minister.has("perk")) {
-                    val perkName = minister.getAsJsonObject("perk")
-                        .get("name").asString.lowercase()
-                    return perkName.contains("slayer")
-                }
-            }
-        }
-        return false
     }
 
     private fun parsePaul(body: String): Boolean {

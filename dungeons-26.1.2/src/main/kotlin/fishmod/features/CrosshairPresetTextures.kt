@@ -23,7 +23,13 @@ object CrosshairPresetTextures {
     private val SDF_STYLES = setOf("Dot", "Circle Dot", "Target")
 
     private data class Key(val style: String, val scaleKey: Int)
-    private val cache = HashMap<Key, Pair<Identifier, Int>>()
+    private val cache = object : LinkedHashMap<Key, Pair<Identifier, Int>>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Key, Pair<Identifier, Int>>): Boolean {
+            if (size <= 16) return false
+            Minecraft.getInstance().textureManager.release(eldest.value.first)
+            return true
+        }
+    }
 
     /** Returns (textureId, halfExtent) — the texture is (halfExtent*2+1) square, centered on its own middle pixel. */
     @JvmStatic
