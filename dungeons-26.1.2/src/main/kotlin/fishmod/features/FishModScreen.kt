@@ -1423,6 +1423,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             floor7.features.add(f)
         }
         run {
+            val f = Feature("Hide Terminal Titles", Floor7::hideTerminalTitles)
+            f.sub.add(SubcategoryHeader("Hides Hypixel titles and subtitles during P3 (terminal/device/gate spam). Death and revive titles still show."))
+            floor7.features.add(f)
+        }
+        run {
             val f = Feature("Goldor Splits", Section::enableTerminalSplits)
             f.sub.add(ToggleSetting("PB Colors", "Pink section time on a new PB", FishSettings::splitPbColors))
             f.sub.add(ColorPickerSetting("New PB", "", FishSettings::splitPbColor).gatedBy { FishSettings.splitPbColors })
