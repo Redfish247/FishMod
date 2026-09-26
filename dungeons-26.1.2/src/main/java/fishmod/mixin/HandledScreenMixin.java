@@ -102,7 +102,9 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
 
     @Inject(method = "extractTooltip", at = @At("HEAD"), cancellable = true)
     private void fishmod$hideTooltipInCustomTermGui(GuiGraphicsExtractor context, int mouseX, int mouseY, CallbackInfo ci) {
-        if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) ci.cancel();
+        if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) { ci.cancel(); return; }
+        // Hidden vanilla slots still resolve hoveredSlot; the overlay paints over that tooltip and draws its own on top.
+        if (fishmod.features.storage.StorageOverlay.isActive((AbstractContainerScreen<?>) (Object) this)) ci.cancel();
     }
 
     @Inject(method = "extractSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;item(Lnet/minecraft/world/item/ItemStack;III)V"))
