@@ -16,40 +16,76 @@ import java.util.regex.Pattern
 object KickListManager {
 
     private const val CHECK_INTERVAL_TICKS = 40
+    private const val KICK_COOLDOWN_MS = 5_000L
+    private const val PENDING_TIMEOUT_MS = 5_000L
     private var tickCounter = 0
 
     private val JOIN = Pattern.compile("^(?:\\[[^]]+]\\s+)?(\\w{1,16}) joined the party\\.$")
+    private val PF_JOIN = Pattern.compile("^Party Finder > (\\w{1,16}) joined the dungeon group!")
 
-    private val kicked = ConcurrentHashMap.newKeySet<String>()
+    // name -> last kick time; short cooldown so a rejoin gets kicked again
+    private val lastKick = ConcurrentHashMap<String, Long>()
+    // name -> time we asked for fresh party info, waiting on the leader check
+    private val pending = ConcurrentHashMap<String, Long>()
 
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { onTick() }
-        Events.ON_WORLD_CHANGE.register { kicked.clear(); false }
+        Events.ON_WORLD_CHANGE.register { lastKick.clear(); pending.clear(); false }
         Events.ON_GAME_MESSAGE.register { text ->
             if (FishSettings.pcKickListEnabled && FishSettings.pcKickList.isNotBlank()) {
                 val stripped = Constants.STRIP_COLOR_REGEX.replace(text.string, "")
-                JOIN.matcher(stripped).let { if (it.find()) tryKick(it.group(1)) }
+                val m = PF_JOIN.matcher(stripped).takeIf { it.find() }
+                    ?: JOIN.matcher(stripped).takeIf { it.find() }
+                m?.let { onJoin(it.group(1)) }
             }
             false
         }
     }
 
-    private fun tryKick(name: String) {
-        val mc = Minecraft.getInstance()
-        val self = mc.player?.name?.string ?: return
+    private fun onJoin(name: String) {
+        val self = Minecraft.getInstance().player?.name?.string ?: return
         if (name.equals(self, ignoreCase = true)) return
         if (!NameList.contains(FishSettings.pcKickList, name)) return
-        if (!PartyUtil.amLeader()) return
+        if (PartyUtil.amLeader()) {
+            kick(name)
+        } else {
+            // Cached party info may predate the PF group forming; re-check once fresh
+            pending[name] = System.currentTimeMillis()
+            PartyUtil.forceRefresh()
+        }
+    }
+
+    private fun kick(name: String) {
+        val now = System.currentTimeMillis()
         val key = name.lowercase()
-        if (!kicked.add(key)) return
+        val prev = lastKick[key]
+        if (prev != null && now - prev < KICK_COOLDOWN_MS) return
+        lastKick[key] = now
         FishMsg.send("§9Kick List §7> kicking §e$name")
         Scheduler.scheduleTask({ Misc.executeCommand("party kick $name") }, 2)
+        // Drop the kicked player from cached members so the poll doesn't re-kick them
+        Scheduler.scheduleTask({ PartyUtil.forceRefresh() }, 20)
     }
 
     private fun onTick() {
         if (!FishSettings.pcKickListEnabled) return
         if (FishSettings.pcKickList.isBlank()) return
+
+        if (pending.isNotEmpty()) {
+            val now = System.currentTimeMillis()
+            val it = pending.entries.iterator()
+            while (it.hasNext()) {
+                val (name, requested) = it.next()
+                if (PartyUtil.lastReceived >= requested) {
+                    it.remove()
+                    if (PartyUtil.amLeader()) kick(name)
+                } else if (now - requested > PENDING_TIMEOUT_MS) {
+                    it.remove()
+                }
+            }
+        }
+
         if (++tickCounter < CHECK_INTERVAL_TICKS) return
         tickCounter = 0
 
@@ -62,11 +98,7 @@ object KickListManager {
             val name = connection.getPlayerInfo(uuid)?.profile?.name ?: continue
             if (name.equals(self, ignoreCase = true)) continue
             if (!NameList.contains(FishSettings.pcKickList, name)) continue
-
-            val key = name.lowercase()
-            if (!kicked.add(key)) continue
-            FishMsg.send("§9Kick List §7> kicking §e$name")
-            Scheduler.scheduleTask({ Misc.executeCommand("party kick $name") }, 2)
+            kick(name)
         }
     }
 }

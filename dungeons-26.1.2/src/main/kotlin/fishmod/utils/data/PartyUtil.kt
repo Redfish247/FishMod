@@ -18,9 +18,15 @@ object PartyUtil {
     private var leaderUuid: UUID? = null
 
     @JvmStatic
+    @Volatile
+    var lastReceived: Long = 0
+        private set
+
+    @JvmStatic
     fun init() {
         INSTANCE.createHandler(ClientboundPartyInfoPacket::class.java) { packet ->
             if (Debug.termInfo) Debug.LOGGER.info("Received party info packet")
+            lastReceived = System.currentTimeMillis()
             memberMap = packet.memberMap
             inParty = packet.isInParty
             leaderUuid = packet.memberMap.entries
@@ -44,6 +50,13 @@ object PartyUtil {
         } else {
             Debug.LOGGER.warn("Server bound party info packet lost")
         }
+    }
+
+    // Bypasses the 60s throttle; cached state can be a minute stale after a join
+    @JvmStatic
+    fun forceRefresh() {
+        grabbedTime = 0
+        sendPacket()
     }
 
     @JvmStatic
