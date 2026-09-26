@@ -11,10 +11,11 @@ import java.util.concurrent.atomic.AtomicInteger
 
 object NametagStats {
 
-    private const val TTL_MS = 10 * 60 * 1000L
-    private const val RETRY_MS = 60 * 1000L
+    private const val TTL_MS = 30 * 60 * 1000L
+    private const val RETRY_MS = 10 * 60 * 1000L
     private const val MAX_INFLIGHT = 3
-    private const val KICK_SPACING_MS = 200L
+    private const val KICK_SPACING_MS = 1000L
+    private const val MAX_ENTRIES = 300
     private val VALID_IGN = Regex("^\\w{1,16}$")
 
     private class Entry {
@@ -34,7 +35,8 @@ object NametagStats {
 
     @JvmStatic
     fun init() {
-        Events.ON_WORLD_CHANGE.register { cache.clear(); false }
+        // Keep entries across lobby swaps (TTL expires them); just cap size.
+        Events.ON_WORLD_CHANGE.register { if (cache.size > MAX_ENTRIES) cache.clear(); false }
     }
 
     private fun canKick(now: Long): Boolean =
