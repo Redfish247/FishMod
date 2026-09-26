@@ -176,7 +176,7 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         val hs = hovered
         if (hs != null && mc != null) {
             val lines = runCatching { Screen.getTooltipFromItem(mc, hs) }.getOrNull()
-            if (lines != null) ScreenTheme.nItemTooltip(lines, mouseX, mouseY, vw, vh)
+            if (lines != null) ScreenTheme.nItemTooltip(lines, mouseX, mouseY, vw, vh, paintScale = k)
         }
     }
 

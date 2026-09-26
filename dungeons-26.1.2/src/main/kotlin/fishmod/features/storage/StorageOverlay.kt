@@ -243,7 +243,7 @@ object StorageOverlay {
 
         tooltipStack?.let {
             val lines = runCatching { Screen.getTooltipFromItem(mc, it) }.getOrNull()
-            if (!lines.isNullOrEmpty()) ScreenTheme.nItemTooltip(lines, smx, smy, vw, vh, 1f / s)
+            if (!lines.isNullOrEmpty()) ScreenTheme.nItemTooltip(lines, smx, smy, vw, vh, 1f / s, s)
         }
         pendingPaint = true
     }
