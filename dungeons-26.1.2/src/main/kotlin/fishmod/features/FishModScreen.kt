@@ -1496,6 +1496,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ColorPickerSetting("Rubix -1", "", FishSettings::terminalRubixNeg1))
             f.sub.add(ColorPickerSetting("Rubix -2", "", FishSettings::terminalRubixNeg2))
             f.sub.add(ColorPickerSetting("Melody", "", FishSettings::terminalMelodyPointerColor))
+            f.sub.add(ColorPickerSetting("Melody Column", "Bar showing the column to click on", FishSettings::terminalMelodyColor))
             f.sub.add(ColorPickerSetting("Wrong-Item Cover", "", FishSettings::terminalWrongCover))
             solvers.features.add(f)
         }

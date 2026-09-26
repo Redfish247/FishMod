@@ -45,7 +45,7 @@ object TermCustomGui {
             TerminalType.PANES       -> intArrayOf(1, 7, 1, 3)
             TerminalType.STARTS_WITH -> intArrayOf(1, 7, 1, 3)
             TerminalType.SELECT      -> intArrayOf(1, 7, 1, 4)
-            TerminalType.MELODY      -> intArrayOf(1, 7, 0, 4)
+            TerminalType.MELODY      -> intArrayOf(1, 7, 1, 4)
         }
         val minC = pa[0]; val maxC = pa[1]; val minR = pa[2]; val maxR = pa[3]
         val gridCols = maxC - minC + 1
@@ -126,21 +126,24 @@ object TermCustomGui {
         val colum = FishSettings.terminalMelodyColor
         val pointer = FishSettings.terminalMelodyPointerColor
         val bg = 0x66404040
+        // Target column: one tall bar over rows 1-4 instead of the magenta pane on the top row.
+        val target = (t as? MelodyHandler)?.targetCol ?: -1
+        if (target in 1..5) {
+            val cx = ox + (target - 1) * (cell + gap)
+            roundFill(ctx, cx, oy, cell, 4 * cell + 3 * gap, round, colum)
+        }
         for (i in 0 until t.type.windowSize) {
             val r = i / 9
             val c = i % 9
-            if (r > 4 || c < 1 || c > 7) continue
-            val draw = r == 0 || (c == 7 && r in 1..4) || c in 1..5
-            if (!draw) continue
+            if (r < 1 || r > 4 || c < 1 || c > 7) continue
+            if (c == 6) continue
             val inSol = i in sol
-            val color = when {
-                r == 0 -> if (inSol) colum else continue
-                else -> if (inSol) pointer else bg
-            }
+            if (!inSol && c == target) continue
+            val color = if (inSol) pointer else bg
             val cx = ox + (c - 1) * (cell + gap)
-            val cy = oy + r * (cell + gap)
+            val cy = oy + (r - 1) * (cell + gap)
             roundFill(ctx, cx, cy, cell, cell, round, color)
-            if (c == 7 && r in 1..4) rects[i] = intArrayOf(cx, cy, cell, cell)
+            if (c == 7) rects[i] = intArrayOf(cx, cy, cell, cell)
         }
     }
 
