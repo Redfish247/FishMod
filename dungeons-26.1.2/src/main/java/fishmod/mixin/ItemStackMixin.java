@@ -42,19 +42,19 @@ public class ItemStackMixin implements ItemRarityHolder, ItemCustomDataHolder {
     public boolean fishmod$hasScanned() { return fishmod$itemRarity != null; }
 
     @Unique
-    private CompoundTag fishmod$cachedCustomData = null;
+    private Object fishmod$customDataSource = null;
     @Unique
-    private boolean fishmod$scannedCustomData = false;
+    private CompoundTag fishmod$cachedCustomData = null;
+
+    @Override
+    public Object fishmod$getCustomDataSource() { return fishmod$customDataSource; }
 
     @Override
     public CompoundTag fishmod$getCachedCustomData() { return fishmod$cachedCustomData; }
 
     @Override
-    public void fishmod$setCachedCustomData(CompoundTag tag) {
+    public void fishmod$setCachedCustomData(Object source, CompoundTag tag) {
+        fishmod$customDataSource = source;
         fishmod$cachedCustomData = tag;
-        fishmod$scannedCustomData = true;
     }
-
-    @Override
-    public boolean fishmod$hasScannedCustomData() { return fishmod$scannedCustomData; }
 }

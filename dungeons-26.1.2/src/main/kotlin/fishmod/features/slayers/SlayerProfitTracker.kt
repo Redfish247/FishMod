@@ -291,16 +291,20 @@ object SlayerProfitTracker {
     fun activeMs(type: SlayerType, tier: Int): Long = view(key(type, tier))?.activeMs ?: 0L
     fun isPaused(): Boolean = idlePaused
 
-    fun profit(type: SlayerType, tier: Int): Double {
+    fun profit(type: SlayerType, tier: Int): Double = profit(type, tier, rows(type, tier))
+
+    private fun profit(type: SlayerType, tier: Int, rows: List<Row>): Double {
         val k = key(type, tier)
-        val gained = rows(type, tier).filter { !isHiddenKey(k, it.name) }.sumOf { it.value }
+        val gained = rows.filter { !isHiddenKey(k, it.name) }.sumOf { it.value }
         return gained - spawnCost(type, tier).toDouble()
     }
 
-    fun profitPerHour(type: SlayerType, tier: Int): Double {
+    fun profitPerHour(type: SlayerType, tier: Int): Double = profitPerHour(type, tier, profit(type, tier))
+
+    private fun profitPerHour(type: SlayerType, tier: Int, profit: Double): Double {
         val ms = activeMs(type, tier)
         if (ms < 5_000L) return 0.0
-        return profit(type, tier) * 3_600_000.0 / ms
+        return profit * 3_600_000.0 / ms
     }
 
     fun hasData(type: SlayerType, tier: Int): Boolean {
@@ -313,9 +317,27 @@ object SlayerProfitTracker {
     private fun sh(v: Double): String = SlayerStatsTracker.short(v)
     private fun sep(v: Long): String = String.format("%,d", v)
 
+    private var displayCache: List<DisplayRow>? = null
+    private var displayCacheKey: String? = null
+    private var displayCacheAt = 0L
+
     fun display(type: SlayerType, tier: Int, interactive: Boolean): List<DisplayRow> {
+        if (interactive) return buildDisplay(type, tier, true)
+        val now = System.currentTimeMillis()
+        val k = key(type, tier)
+        val cached = displayCache
+        if (cached != null && displayCacheKey == k && now - displayCacheAt < 1000L) return cached
+        return buildDisplay(type, tier, false).also {
+            displayCache = it
+            displayCacheKey = k
+            displayCacheAt = now
+        }
+    }
+
+    private fun buildDisplay(type: SlayerType, tier: Int, interactive: Boolean): List<DisplayRow> {
         val k = key(type, tier)
         val out = ArrayList<DisplayRow>(24)
+        val allRows = rows(type, tier)
 
         val cat = "${type.displayName} $tier"
         out.add(
@@ -330,7 +352,7 @@ object SlayerProfitTracker {
         var visibleShown = 0
         var collapsedValue = 0.0
         var collapsedCount = 0
-        for (r in rows(type, tier)) {
+        for (r in allRows) {
             val hiddenRow = isHiddenKey(k, r.name)
             if (hiddenRow && !revealHidden) continue
             if (!hiddenRow && (visibleShown >= cap || (minVal > 0 && r.value < minVal && !r.coins))) {
@@ -356,12 +378,12 @@ object SlayerProfitTracker {
         out.add(DisplayRow(" §7Slayer Spawn Costs:", "§c-${sh(spawnCost(type, tier).toDouble())}", "cost"))
         out.add(DisplayRow("§7Bosses killed:", "§e${sep(bosses(type, tier).toLong())}", "bosses"))
 
-        val p = profit(type, tier)
+        val p = profit(type, tier, allRows)
         val pc = if (p < 0) "§c" else "§6"
         val coinWord = if (Math.abs(p.toLong()) == 1L) "coin" else "coins"
         out.add(DisplayRow("§e${modeLabel()} Profit:", "$pc${sep(p.toLong())} $coinWord", "profit"))
 
-        val pph = profitPerHour(type, tier)
+        val pph = profitPerHour(type, tier, p)
         out.add(DisplayRow("§eProfit/h:", if (pph == 0.0) "§8—" else "${if (pph < 0) "§c" else "§6"}${sh(pph)}", "rate"))
 
         if (interactive) {

@@ -26,6 +26,10 @@ object NametagStats {
         @Volatile var dungAt: Long = 0
         @Volatile var nwPending = false
         @Volatile var dungPending = false
+        @Volatile var version = 0
+        var builtVersion = -1
+        var builtKey = -1
+        var lines: List<Component>? = null
     }
 
     private val cache = ConcurrentHashMap<String, Entry>()
@@ -49,9 +53,13 @@ object NametagStats {
         val hub = Location.inDungeonHub()
         val e = cache.computeIfAbsent(name.lowercase()) { Entry() }
         val now = System.currentTimeMillis()
+        val showNw = FishSettings.nametagStatsShowNetworth
+        val showSkill = FishSettings.nametagStatsShowSkillAvg
+        val showCata = hub && FishSettings.nametagStatsShowCataLevel
+        val showSecrets = hub && FishSettings.nametagStatsShowSecretAvg
 
-        val nwStale = e.nwAt == 0L ||
-            now - e.nwAt > (if (e.networth.isNaN() || e.networth < 0) RETRY_MS else TTL_MS)
+        val nwStale = showNw && (e.nwAt == 0L ||
+            now - e.nwAt > (if (e.networth.isNaN() || e.networth < 0) RETRY_MS else TTL_MS))
         if (nwStale && !e.nwPending && canKick(now)) {
             e.nwPending = true
             lastKick = now
@@ -60,11 +68,13 @@ object NametagStats {
                 e.networth = nw
                 e.nwAt = System.currentTimeMillis()
                 e.nwPending = false
+                e.version++
                 inFlight.decrementAndGet()
             }
         }
 
-        val dungStale = e.dungAt == 0L || now - e.dungAt > TTL_MS
+        val needDung = showSkill || showCata || showSecrets
+        val dungStale = needDung && (e.dungAt == 0L || now - e.dungAt > TTL_MS)
         if (dungStale && !e.dungPending && canKick(now)) {
             e.dungPending = true
             lastKick = now
@@ -80,14 +90,18 @@ object NametagStats {
                 e.skillAvg = d.skillAverage
                 e.dungAt = System.currentTimeMillis()
                 e.dungPending = false
+                e.version++
                 inFlight.decrementAndGet()
             }
         }
 
+        val key = (if (showNw) 1 else 0) or (if (showSkill) 2 else 0) or (if (showCata) 4 else 0) or (if (showSecrets) 8 else 0)
+        val version = e.version
+        if (e.builtVersion == version && e.builtKey == key) return e.lines
         val out = ArrayList<Component>(2)
 
-        val nw = if (FishSettings.nametagStatsShowNetworth && !e.networth.isNaN() && e.networth >= 0) e.networth else null
-        val skill = if (FishSettings.nametagStatsShowSkillAvg) e.skillAvg else null
+        val nw = if (showNw && !e.networth.isNaN() && e.networth >= 0) e.networth else null
+        val skill = if (showSkill) e.skillAvg else null
         if (nw != null || skill != null) {
             val sb = StringBuilder()
             nw?.let { sb.append("§6NW §e").append(abbrev(it)) }
@@ -98,9 +112,9 @@ object NametagStats {
             out.add(Component.literal(sb.toString()))
         }
 
-        if (hub) {
-            val cata = if (FishSettings.nametagStatsShowCataLevel) e.cataLevel else null
-            val secrets = if (FishSettings.nametagStatsShowSecretAvg) e.secretAvg else null
+        run {
+            val cata = if (showCata) e.cataLevel else null
+            val secrets = if (showSecrets) e.secretAvg else null
             if (cata != null || secrets != null) {
                 val sb = StringBuilder()
                 cata?.let { sb.append("§bCata §f").append(it) }
@@ -111,7 +125,11 @@ object NametagStats {
                 out.add(Component.literal(sb.toString()))
             }
         }
-        return out.ifEmpty { null }
+        val lines = out.ifEmpty { null }
+        e.lines = lines
+        e.builtVersion = version
+        e.builtKey = key
+        return lines
     }
 
     private fun abbrev(v: Double): String = when {
