@@ -50,8 +50,9 @@ object PbMessages {
     fun resetSplits(floor: String?, floors: Collection<String>): Int = synchronized(pbs) {
         ensureLoaded()
         val prefix = if (floor == null) "split:" else "split:$floor:"
+        val tickPrefix = "splittick:" + prefix.removePrefix("split:")
         val n = pbs.keys.count { it.startsWith(prefix) }
-        pbs.keys.removeIf { it.startsWith(prefix) }
+        pbs.keys.removeIf { it.startsWith(prefix) || it.startsWith(tickPrefix) }
         for (f in if (floor == null) floors else listOf(floor)) pbs[noSeedKey(f)] = 1.0
         save()
         n
@@ -66,6 +67,19 @@ object PbMessages {
             r.isPb && prev == null -> " §d§l(PB!)"
             r.isPb -> " §d§l(PB!) §8(§a-${fmt(prev!! - r.seconds)}§8)"
             else -> " §8(§c+${fmt(r.seconds - prev!!)} §8| PB §7${fmt(prev)}§8)"
+        }
+        return Component.literal(text).withStyle { it.withHoverEvent(HoverEvent.ShowText(Component.literal(hover))) }
+    }
+
+    // " (Tick PB!)" / " (tick PB 12.34s)" suffix for server-tick split times.
+    @JvmStatic
+    fun tickTag(r: Result): MutableComponent {
+        val prev = r.previous
+        val hover = "§7Tick time: §3${fmt(r.seconds)}\n" + if (prev == null) "§7No previous tick best" else "§7Previous tick best: §a${fmt(prev)}"
+        val text = when {
+            r.isPb && prev == null -> " §3§l(Tick PB!)"
+            r.isPb -> " §3§l(Tick PB!) §8(§a-${fmt(prev!! - r.seconds)}§8)"
+            else -> " §8(tick PB §7${fmt(prev!!)}§8)"
         }
         return Component.literal(text).withStyle { it.withHoverEvent(HoverEvent.ShowText(Component.literal(hover))) }
     }
