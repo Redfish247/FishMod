@@ -144,8 +144,9 @@ void main(){
         try {
             init()
             val win = Minecraft.getInstance().window
-            viewW = screenW.toFloat(); viewH = screenH.toFloat()
             pixelRatio = win.guiScale.toFloat()
+            // Map from the real framebuffer, not the rounded-up GUI size, or odd window sizes stretch text off the pixel grid.
+            viewW = win.width / pixelRatio; viewH = win.height / pixelRatio
             fbH = win.height
             GL11.glViewport(0, 0, win.width, win.height)
             GL20.glUseProgram(program)
