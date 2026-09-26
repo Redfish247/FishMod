@@ -45,7 +45,16 @@ object RenderingEvents {
             buffers.endBatch(RenderLayers.FILL)
         }
         drawLayer(ctx, ps, buffers, RenderLayers.FILL_ND, NO_DEPTH_FILLED)
-        drawLayer(ctx, ps, buffers, RenderLayers.LINE_ND, NO_DEPTH_LINE)
+        RenderUtils.quadsToFillLayer = true
+        try {
+            drawLayer(ctx, ps, buffers, RenderLayers.LINE_ND, NO_DEPTH_LINE)
+        } finally {
+            RenderUtils.quadsToFillLayer = false
+        }
+        if (RenderUtils.hasRedirectedQuads()) {
+            RenderUtils.flushRedirectedQuads(buffers.getBuffer(RenderLayers.FILL_ND))
+            buffers.endBatch(RenderLayers.FILL_ND)
+        }
 
         ps.popPose()
     }

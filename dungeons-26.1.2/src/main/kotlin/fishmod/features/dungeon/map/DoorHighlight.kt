@@ -13,7 +13,7 @@ import kotlin.math.abs
 object DoorHighlight {
 
     private const val Y_MIN = 69.0
-    private const val Y_MAX = 74.0
+    private const val Y_MAX = 73.0
 
     @JvmStatic
     fun init() {
