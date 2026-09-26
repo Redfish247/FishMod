@@ -39,6 +39,15 @@ object ItemCustomizationStore {
     @JvmStatic fun removeArmorTrim(uuid: String) { if (data.armorTrims.remove(uuid) != null) save() }
 
     @JvmStatic fun getItemName(uuid: String): String? = data.itemNames[uuid]
+
+    private val parsedNames = HashMap<String, net.minecraft.network.chat.MutableComponent>()
+
+    @JvmStatic
+    fun parsedItemName(uuid: String): net.minecraft.network.chat.MutableComponent? {
+        val name = data.itemNames[uuid] ?: return null
+        if (parsedNames.size > 256) parsedNames.clear()
+        return parsedNames.getOrPut(name) { fishmod.utils.data.LegacyFormatting.parse(name) }.copy()
+    }
     @JvmStatic fun setItemName(uuid: String, name: String) { data.itemNames[uuid] = name; save() }
     @JvmStatic fun removeItemName(uuid: String) { if (data.itemNames.remove(uuid) != null) save() }
 

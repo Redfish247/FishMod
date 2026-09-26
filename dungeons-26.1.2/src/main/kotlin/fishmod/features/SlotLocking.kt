@@ -112,7 +112,8 @@ object SlotLocking {
         ensureLoaded()
         if (locked.isEmpty()) return
         val screen = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return
-        val slot = screen.menu.slots.firstOrNull { it.x == x && it.y == y && it.container is Inventory } ?: return
+        val slot = DrawEvents.currentSlot?.takeIf { it.container is Inventory }
+            ?: screen.menu.slots.firstOrNull { it.x == x && it.y == y && it.container is Inventory } ?: return
         if (!isLocked(slot)) return
         val c = FishSettings.slotLockingColor
         val alpha = (FishSettings.slotLockingOpacity.coerceIn(0, 100) * 255 / 100) shl 24

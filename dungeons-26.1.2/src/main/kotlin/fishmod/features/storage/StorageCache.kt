@@ -96,8 +96,12 @@ object StorageCache {
         val menu = screen.menu as? ChestMenu ?: return
         val rows = menu.rowCount
         if (rows < 2) return
-        val items = menu.slots.subList(9, rows * 9).map { it.item.copy() }
-        pages[page.index] = NBTInventory(items)
+        val slots = menu.slots.subList(9, rows * 9)
+        val prev = pages[page.index]
+        if (prev != null && prev.stacks.size == slots.size &&
+            slots.indices.all { ItemStack.matches(slots[it].item, prev.stacks[it]) }
+        ) return
+        pages[page.index] = NBTInventory(slots.map { it.item.copy() })
         known.add(page.index)
         dirty = true
     }

@@ -9,6 +9,8 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.protocol.game.ClientboundEntityEventPacket
 import net.minecraft.world.entity.monster.zombie.Zombie
 
+private val FORMAT_CODE_RE = Regex("[&§][0-9A-FK-ORa-fk-or]")
+
 object MimicAnnounce {
 
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
@@ -75,7 +77,7 @@ object MimicAnnounce {
     }
 
     private fun send(raw: String) {
-        val msg = raw.replace(Regex("[&§][0-9A-FK-ORa-fk-or]"), "").trim()
+        val msg = raw.replace(FORMAT_CODE_RE, "").trim()
         if (msg.isNotEmpty()) ChatQueue.enqueue("pc $msg")
     }
 }

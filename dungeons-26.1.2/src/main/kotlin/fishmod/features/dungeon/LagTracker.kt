@@ -36,6 +36,8 @@ object LagTracker {
         return maxOf(0.0, wallSec - tickSec)
     }
 
+    private var probeTick = 0
+
     private fun scoreboardRunSeconds(): Int {
         for (entry in TabListCache.entries) {
             val m = RUN_TIME.matcher(entry.stripped.trim())
@@ -76,7 +78,10 @@ object LagTracker {
         }
 
         Events.ON_SERVER_TICK.register {
-            if (!active && !ended && scoreboardRunSeconds() > 0) start()
+            if (!active && !ended && ++probeTick >= 20) {
+                probeTick = 0
+                if (fishmod.utils.Location.inDungeon() && scoreboardRunSeconds() > 0) start()
+            }
             if (active) ticks++
             false
         }

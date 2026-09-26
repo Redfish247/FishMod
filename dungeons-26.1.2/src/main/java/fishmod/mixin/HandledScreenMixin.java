@@ -107,14 +107,20 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
 
     @Inject(method = "extractSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;item(Lnet/minecraft/world/item/ItemStack;III)V"))
     public void drawBackground(GuiGraphicsExtractor context, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
+        if (DrawEvents.INVENTORY_SLOT_BEFORE.isEmpty()) return;
         ItemStack stack = slot.getItem();
+        DrawEvents.currentSlot = slot;
         DrawEvents.INVENTORY_SLOT_BEFORE.invoke(event -> event.draw(context, stack, slot.x, slot.y));
+        DrawEvents.currentSlot = null;
     }
 
     @Inject(method = "extractSlot", at = @At(value = "TAIL"))
     public void drawAfter(GuiGraphicsExtractor context, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
+        if (DrawEvents.INVENTORY_SLOT_AFTER.isEmpty()) return;
         ItemStack stack = slot.getItem();
+        DrawEvents.currentSlot = slot;
         DrawEvents.INVENTORY_SLOT_AFTER.invoke(event -> event.draw(context, stack, slot.x, slot.y));
+        DrawEvents.currentSlot = null;
     }
 
     @Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)

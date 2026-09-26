@@ -11,6 +11,8 @@ import net.minecraft.world.item.Items
 import net.minecraft.world.item.component.ResolvableProfile
 import java.io.File
 
+private val BRACKET_RE = Regex("""\[[^]]*]""")
+
 // Pet head icons, learned from the /pets menu (pet name -> skin texture) and saved to disk.
 object PetIcons {
 
@@ -34,7 +36,7 @@ object PetIcons {
     // "[275✦] Golden Dragon" / "★ Ender Dragon" -> "golden dragon"
     @JvmStatic
     fun key(name: String): String =
-        name.replace(Regex("""\[[^]]*]"""), "").replace("✦", "").replace("★", "").trim().lowercase()
+        name.replace(BRACKET_RE, "").replace("✦", "").replace("★", "").trim().lowercase()
 
     @JvmStatic
     fun icon(petName: String?): ItemStack? {

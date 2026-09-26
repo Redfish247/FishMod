@@ -19,6 +19,8 @@ import org.lwjgl.glfw.GLFW
 import java.math.BigDecimal
 import java.math.RoundingMode
 
+private val PRICE_NUMBER_RE = Regex("\\d+(\\.\\d+)?|\\.\\d+")
+
 class AuctionPriceScreen(
     private val sign: SignBlockEntity,
     private val originalLines: Array<String>,
@@ -209,7 +211,7 @@ class AuctionPriceScreen(
             else -> 1L
         }
         val num = if (mult != 1L) t.dropLast(1) else t
-        if (!num.matches(Regex("\\d+(\\.\\d+)?|\\.\\d+"))) return null
+        if (!num.matches(PRICE_NUMBER_RE)) return null
         val value = BigDecimal(num).multiply(BigDecimal.valueOf(mult)).setScale(0, RoundingMode.DOWN)
         if (value.signum() <= 0 || value > MAX_PRICE) return null
         return value.toLong()

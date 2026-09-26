@@ -145,6 +145,7 @@ object RouteRecorder {
         })
 
         Events.ON_PACKET.register { packet ->
+            if (!FishSettings.routeRecorderEnabled || !Location.inDungeon()) return@register false
             when (packet) {
                 is ClientboundTakeItemEntityPacket -> if (packet.playerId == selfId) pickedItemIds.add(packet.itemId)
                 is ClientboundPlayerPositionPacket -> teleported = true

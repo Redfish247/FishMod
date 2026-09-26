@@ -201,7 +201,7 @@ object SlotBinds {
         ensureLoaded()
         if (binds.isEmpty()) return
         val slots = screen.menu.slots
-        val self = slots.firstOrNull { it.x == x && it.y == y } ?: return
+        val self = DrawEvents.currentSlot ?: slots.firstOrNull { it.x == x && it.y == y } ?: return
         val idx = self.index
         // Lines are drawn from the inventory side so a hotbar slot with several binds gets one line per bind.
         val invPartner = binds[idx]
@@ -233,10 +233,28 @@ object SlotBinds {
         val dy = y2 - y1
         val steps = maxOf(kotlin.math.abs(dx), kotlin.math.abs(dy))
         if (steps == 0) return
-        for (i in 0..steps) {
+        var runX = x1
+        var runY = y1
+        var runLen = 1
+        val horizontal = kotlin.math.abs(dx) >= kotlin.math.abs(dy)
+        for (i in 1..steps) {
             val x = x1 + dx * i / steps
             val y = y1 + dy * i / steps
-            ctx.fill(x, y, x + 1, y + 1, color)
+            val extends = if (horizontal) y == runY else x == runX
+            if (extends) { runLen++; continue }
+            fillRun(ctx, runX, runY, runLen, horizontal, dx, dy, color)
+            runX = x; runY = y; runLen = 1
+        }
+        fillRun(ctx, runX, runY, runLen, horizontal, dx, dy, color)
+    }
+
+    private fun fillRun(ctx: GuiGraphicsExtractor, x: Int, y: Int, len: Int, horizontal: Boolean, dx: Int, dy: Int, color: Int) {
+        if (horizontal) {
+            val x0 = if (dx >= 0) x else x - len + 1
+            ctx.fill(x0, y, x0 + len, y + 1, color)
+        } else {
+            val y0 = if (dy >= 0) y else y - len + 1
+            ctx.fill(x, y0, x + 1, y0 + len, color)
         }
     }
 }

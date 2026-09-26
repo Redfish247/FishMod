@@ -5,7 +5,6 @@ import fishmod.features.item.ItemCustomizationStore;
 import fishmod.features.item.ItemRarity;
 import fishmod.features.item.ItemRarityHolder;
 import fishmod.utils.data.ItemUtil;
-import fishmod.utils.data.LegacyFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -22,8 +21,8 @@ public class ItemStackMixin implements ItemRarityHolder, ItemCustomDataHolder {
     private void fishmod$customItemName(CallbackInfoReturnable<Component> cir) {
         String uuid = ItemUtil.getUuid((ItemStack) (Object) this);
         if (uuid == null) return;
-        String name = ItemCustomizationStore.getItemName(uuid);
-        if (name != null) cir.setReturnValue(LegacyFormatting.parse(name).setStyle(cir.getReturnValue().getStyle()));
+        net.minecraft.network.chat.MutableComponent name = ItemCustomizationStore.parsedItemName(uuid);
+        if (name != null) cir.setReturnValue(name.setStyle(cir.getReturnValue().getStyle()));
     }
 
     @Unique
