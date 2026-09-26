@@ -94,9 +94,63 @@ public class HypixelApi {
         return (mc.player != null) ? mc.player.getUUID().toString().replace("-", "") : "";
     }
 
-    private static final HttpClient HTTP = HttpClient.newBuilder()
+    private static final HttpClient RAW_HTTP = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(10))
         .build();
+
+    private static final CachingHttp HTTP = new CachingHttp();
+
+    // Profile/networth GETs are shared + cached client-side so every feature asking about the same player reuses one proxy call.
+    private static final class CachingHttp {
+        private static final long OK_TTL_MS = 5 * 60 * 1000L;
+        private static final long FAIL_TTL_MS = 60 * 1000L;
+        private static final int MAX_ENTRIES = 16;
+
+        private record Cached(HttpResponse<String> resp, long at) {}
+
+        private final Map<String, Cached> cache = Collections.synchronizedMap(
+            new java.util.LinkedHashMap<String, Cached>(32, 0.75f, true) {
+                @Override protected boolean removeEldestEntry(Map.Entry<String, Cached> e) { return size() > MAX_ENTRIES; }
+            });
+        private final Map<String, CompletableFuture<HttpResponse<String>>> inFlight = new ConcurrentHashMap<>();
+
+        private static boolean cacheable(HttpRequest req) {
+            if (!"GET".equals(req.method())) return false;
+            String u = req.uri().toString();
+            return u.startsWith(PROXY_URL + "/skyblock/") || u.startsWith(PROXY_URL + "/networth");
+        }
+
+        CompletableFuture<HttpResponse<String>> sendAsync(HttpRequest req, HttpResponse.BodyHandler<String> handler) {
+            if (!cacheable(req)) return RAW_HTTP.sendAsync(req, handler);
+            String key = req.uri().toString();
+            Cached c = cache.get(key);
+            if (c != null) {
+                boolean ok = c.resp.statusCode() >= 200 && c.resp.statusCode() < 300;
+                if (System.currentTimeMillis() - c.at < (ok ? OK_TTL_MS : FAIL_TTL_MS)) return CompletableFuture.completedFuture(c.resp);
+                cache.remove(key);
+            }
+            CompletableFuture<HttpResponse<String>> f = new CompletableFuture<>();
+            CompletableFuture<HttpResponse<String>> existing = inFlight.putIfAbsent(key, f);
+            if (existing != null) return existing;
+            RAW_HTTP.sendAsync(req, handler).whenComplete((r, t) -> {
+                if (r != null) cache.put(key, new Cached(r, System.currentTimeMillis()));
+                inFlight.remove(key, f);
+                if (t != null) f.completeExceptionally(t); else f.complete(r);
+            });
+            return f;
+        }
+
+        HttpResponse<String> send(HttpRequest req, HttpResponse.BodyHandler<String> handler) throws java.io.IOException, InterruptedException {
+            if (!cacheable(req)) return RAW_HTTP.send(req, handler);
+            try {
+                return sendAsync(req, handler).get();
+            } catch (java.util.concurrent.ExecutionException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof java.io.IOException io) throw io;
+                throw new java.io.IOException(cause);
+            }
+        }
+    }
 
     private static final java.util.concurrent.Executor API_EXECUTOR =
         java.util.concurrent.Executors.newFixedThreadPool(4, r -> {
