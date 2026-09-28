@@ -98,8 +98,9 @@ public abstract class ChatSearchMixin extends Screen {
             return;
         }
 
-        if ((key == GLFW.GLFW_KEY_UP || key == GLFW.GLFW_KEY_DOWN) && fishmod$searchBox != null && this.getFocused() == fishmod$searchBox) {
-            fishmod$searchBox.setFocused(false);
+        // Must catch arrows from the chat input too, or vanilla arrow-nav jumps focus into the search box.
+        if ((key == GLFW.GLFW_KEY_UP || key == GLFW.GLFW_KEY_DOWN) && fishmod$searchBox != null) {
+            if (this.getFocused() == fishmod$searchBox) fishmod$searchBox.setFocused(false);
             if (this.input != null) { this.setFocused(this.input); this.input.setFocused(true); }
             this.moveInHistory(key == GLFW.GLFW_KEY_UP ? -1 : 1);
             cir.setReturnValue(true);
