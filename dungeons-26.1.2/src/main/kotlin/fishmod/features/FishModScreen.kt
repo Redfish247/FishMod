@@ -375,6 +375,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Rank (Default)", "SB Level", "Name (Abc)", "Ironman/Bingo", "Party/Friends/Guild", "Random"),
                 { FishSettings.compactTabSortMode },
                 { v -> FishSettings.compactTabSortMode = v }))
+            f.sub.add(DropdownSetting("Bottom Line", "Stats = cookie / god pot / effects from the tab footer", arrayOf("Hypixel", "Stats", "Custom", "Off"),
+                { FishSettings.compactTabFooterMode },
+                { v -> FishSettings.compactTabFooterMode = v }))
+            f.sub.add(InputSetting("Bottom Line Text", "& colours; {cookie} {godpot} {effects}",
+                FishSettings::compactTabFooterText).gatedBy { FishSettings.compactTabFooterMode == "Custom" })
             general.features.add(f)
         }
         run {
