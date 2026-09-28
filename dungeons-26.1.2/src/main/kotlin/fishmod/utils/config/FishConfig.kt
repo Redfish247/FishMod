@@ -29,7 +29,8 @@ object FishConfig {
             Visual::class.java,
             Buttons::class.java,
             F7Huds::class.java,
-            DungeonMapSettings::class.java
+            DungeonMapSettings::class.java,
+            fishmod.features.diana.DianaSettings::class.java
         )
     )
 }
