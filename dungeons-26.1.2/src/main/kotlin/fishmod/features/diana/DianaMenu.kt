@@ -23,7 +23,7 @@ object DianaMenu {
     fun column(): Column {
         val col = Column("Diana")
 
-        val guess = Feature("Burrow Guessing", null, null)
+        val guess = Feature("Burrow Guessing", S::dianaGuessing)
         guess.sub.add(ToggleSetting("Spade Guess", "Guess the burrow from the spade's lava trail", S::dianaSpadeGuess))
         guess.sub.add(ToggleSetting("Arrow Guess", "Guess from the dust arrow shown after digging a burrow", S::dianaArrowGuess))
         guess.sub.add(ToggleSetting("Close Burrow Detection", "Mark Start/Mob/Treasure burrows from their particles", S::dianaBurrowDetection))
@@ -37,7 +37,7 @@ object DianaMenu {
         guess.sub.add(ButtonSetting("Clear Waypoints", "Also /fm diana clear", "Clear") { DianaWaypoints.clearAll() })
         col.features.add(guess)
 
-        val warp = Feature("Diana Warp", null, null)
+        val warp = Feature("Diana Warp", S::dianaWarp)
         warp.sub.add(KeybindSetting("Guess Warp Key", "Warp to the hub warp closest to your guess", { DianaWarp.guessKey }))
         warp.sub.add(KeybindSetting("Rare Mob Warp Key", "Warp to the warp closest to the newest rare mob", { DianaWarp.rareMobKey }))
         warp.sub.add(SubcategoryHeader("Unlocked Warps"))
@@ -56,7 +56,7 @@ object DianaMenu {
         warp.sub.add(ToggleSetting("Warp Title As Subtitle", "Smaller subtitle instead", S::dianaWarpTitleSubtitle).gatedBy { S.dianaWarpTitle })
         col.features.add(warp)
 
-        val rare = Feature("Rare Mobs", null, null)
+        val rare = Feature("Rare Mobs", S::dianaRareMobs)
         rare.sub.add(ToggleSetting("Scan World", "Waypoint rare mobs you can see", S::dianaScanRareMobs))
         rare.sub.add(ToggleSetting("Share To Party", "Send coords of rare mobs you dig", S::dianaShareRareMob))
         rare.sub.add(ToggleSetting("Receive From Party", "Waypoint coords others send (FishMod/SBO/SkyHanni)", S::dianaReceiveRareMob))
@@ -81,7 +81,7 @@ object DianaMenu {
         col.features.add(Feature("Mythos Mob HP", S::dianaMythosHp))
         col.features.add(Feature("No Shuriken Overlay", S::dianaNoShuriken))
 
-        val tracker = Feature("Diana Tracker", null, null)
+        val tracker = Feature("Diana Tracker", S::dianaTracker)
         tracker.sub.add(DropdownSetting("Loot Tracker", "", TRACKER_MODES, { S.dianaLootTracker }, { v -> S.dianaLootTracker = v }))
         tracker.sub.add(DropdownSetting("Mob Tracker", "", TRACKER_MODES, { S.dianaMobTracker }, { v -> S.dianaMobTracker = v }))
         tracker.sub.add(ToggleSetting("Stats Tracker", "Mobs since Inquisitor, Inquisitors since Chimera, ...", S::dianaStatsTracker))
@@ -94,7 +94,7 @@ object DianaMenu {
         tracker.sub.add(ButtonSetting("Reset Session", "Also /fm diana resetsession", "Reset") { DianaTracker.resetSession() })
         col.features.add(tracker)
 
-        val ann = Feature("Diana Announcers", null, null)
+        val ann = Feature("Diana Announcers", S::dianaAnnouncers)
         ann.sub.add(ToggleSetting("Rare Drop Chat", "Chat line with MF, count and price", S::dianaRareDropChat))
         ann.sub.add(ToggleSetting("Hilt Drop Message", "Hypixel sends none for Hilt of Revelations", S::dianaHiltMessage))
         ann.sub.add(ToggleSetting("Loot Screen Title", "Title for Chimera/Stick/Relic...", S::dianaLootScreen))

@@ -27,11 +27,11 @@ object BurrowDetector {
 
     fun init() {
         Events.ON_PARTICLE.register { p ->
-            if (Diana.inHub() && DianaSettings.dianaBurrowDetection) onParticle(p)
+            if (Diana.inHub() && DianaSettings.dianaGuessing && DianaSettings.dianaBurrowDetection) onParticle(p)
             false
         }
         Events.ON_GAME_MESSAGE.register { text ->
-            if (Diana.inHub()) onChat(text.string.replace(Regex("§."), ""))
+            if (Diana.inHub() && DianaSettings.dianaGuessing) onChat(text.string.replace(Regex("§."), ""))
             false
         }
     }

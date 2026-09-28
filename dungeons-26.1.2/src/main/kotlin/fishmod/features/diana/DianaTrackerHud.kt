@@ -65,7 +65,7 @@ object DianaTrackerHud {
     ) {
         FishHudEditor.register(name, gx, sx, gy, sy, w, h, gs, ss, on)
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", id)) { ctx, _ ->
-            if (!FishHudEditor.isOpen() && on() && Diana.active()) draw(ctx, cached(id, lines), gx(), gy(), gs())
+            if (!FishHudEditor.isOpen() && DianaSettings.dianaTracker && on() && Diana.active()) draw(ctx, cached(id, lines), gx(), gy(), gs())
         }
     }
 

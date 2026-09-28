@@ -149,11 +149,21 @@ object DianaTracker {
         }
         Events.ON_GAME_MESSAGE.register { text ->
             if (!Diana.inHub()) return@register false
-            onChat(text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim())
+            val s = text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim()
+            if (DianaSettings.dianaTracker) onChat(s) else hideOnly(s)
         }
         RareMobs.deathListeners.add(::onRareMobDeath)
         RareMobs.sinceProvider = ::since
         DianaTrackerHud.init()
+    }
+
+    // Message hider still works with the tracker off
+    private fun hideOnly(s: String): Boolean {
+        if (DianaMessageHider.shouldHide(s)) return true
+        if (!DianaSettings.dianaMessageHider || s.contains(": ")) return false
+        if (BURROW.containsMatchIn(s)) return true
+        val name = DUG_MOB.find(s)?.groupValues?.get(1) ?: return false
+        return PREFIXES.fold(name) { n, p -> n.removePrefix(p) } in MOBS
     }
 
     // Returns true to hide the line
@@ -284,7 +294,7 @@ object DianaTracker {
             data.stats.since[sk] = 0
         }
         if (d.loud) announce(d, mf, ls, took)
-        else if (fromInventory && DianaSettings.dianaHiltMessage) FishMsg.send("§lRARE DROP! §r${d.color}${d.name}§e #${event.item(d.key)}${priceSuffix(d.key)}")
+        else if (fromInventory && DianaSettings.dianaAnnouncers && DianaSettings.dianaHiltMessage) FishMsg.send("§lRARE DROP! §r${d.color}${d.name}§e #${event.item(d.key)}${priceSuffix(d.key)}")
     }
 
     private fun priceSuffix(k: String): String {
@@ -293,6 +303,7 @@ object DianaTracker {
     }
 
     private fun announce(d: Drop, mf: Int, ls: Boolean, took: Int) {
+        if (!DianaSettings.dianaAnnouncers) return
         val lsN = event.item(d.key + "_LS")
         val count = event.item(d.key) + lsN
         val countS = if (!d.ls) " #$count" else if (ls) " Total #$count LS #$lsN" else " #$count"
@@ -418,7 +429,7 @@ object DianaTracker {
             checkYear()
             if (Diana.active()) CroesusPrices.refreshIfStale()
         }
-        if (tickN % 10 == 0) mc.player?.let { scanHilts(it) }
+        if (tickN % 10 == 0 && DianaSettings.dianaTracker) mc.player?.let { scanHilts(it) }
         flushSave(false)
     }
 

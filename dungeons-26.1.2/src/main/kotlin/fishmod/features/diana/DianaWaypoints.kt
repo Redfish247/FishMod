@@ -92,7 +92,7 @@ object DianaWaypoints {
     fun newestRareMob(): Waypoint? = list.filter { it.type == WpType.RARE }.maxByOrNull { it.created }
 
     fun targets(): List<Waypoint> =
-        list.filter { !it.hidden() && (it.type == WpType.BURROW || it.type == WpType.ARROW || it.type == WpType.GUESS) }
+        if (!DianaSettings.dianaGuessing) emptyList() else list.filter { !it.hidden() && (it.type == WpType.BURROW || it.type == WpType.ARROW || it.type == WpType.GUESS) }
 
     fun closestTarget(from: Vec3): Waypoint? = targets().minByOrNull { it.distTo(from) }
 
@@ -175,6 +175,8 @@ object DianaWaypoints {
 
         for (w in list) {
             if (w.hidden()) continue
+            if (!DianaSettings.dianaGuessing && w.type != WpType.RARE && w.type != WpType.WORLD) continue
+            if (!DianaSettings.dianaRareMobs && (w.type == WpType.RARE || w.type == WpType.WORLD)) continue
             if (w.type == WpType.SUB && !DianaSettings.dianaSubGuesses) continue
             val d = w.distTo(eye)
             val a = opacity(d)
@@ -201,16 +203,16 @@ object DianaWaypoints {
             }
         }
 
-        val rare = newestRareMob()
+        val rare = if (DianaSettings.dianaRareMobs) newestRareMob() else null
         if (DianaSettings.dianaRareMobLine && rare != null && rare.distTo(eye) >= 8) {
             RenderUtils.gizmoLine(lineStart(), rare.center, withAlpha(DianaSettings.dianaColorRareMob, 1f), width)
         } else if (DianaSettings.dianaGuessLine && rare == null) {
             closestTarget(eye)?.let { RenderUtils.gizmoLine(lineStart(), it.center, withAlpha(baseColor(it, closest), 1f), width) }
         }
 
-        if (DianaSettings.dianaOrderLines) renderOrder(eye, width)
+        if (DianaSettings.dianaGuessing && DianaSettings.dianaOrderLines) renderOrder(eye, width)
 
-        if (DianaSettings.dianaSubGuesses) ArrowGuess.renderChains { a, b ->
+        if (DianaSettings.dianaGuessing && DianaSettings.dianaSubGuesses) ArrowGuess.renderChains { a, b ->
             RenderUtils.gizmoLine(a, b, withAlpha(DianaSettings.dianaColorSubGuess, 0.6f), (width / 1.6f).coerceAtLeast(1f))
         }
     }
