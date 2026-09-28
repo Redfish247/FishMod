@@ -174,14 +174,13 @@ object RareMobs {
                 lines.add(dist to Component.literal("§6King Minos §7- §5${kingHits.groupValues[1]} Hits"))
                 continue
             }
-            val hp = parseHp(plain)
-            lines.add(dist to comp)
+            val hp = parseHp(plain) ?: continue
             val rare = RareMob.fromName(plain)
-
-            if (hp != null && hp <= 0.0) {
+            if (hp <= 0.0) {
                 if (defeated.add(e.id)) onDeath(plain, e.position(), dist, rare)
                 continue
             }
+            lines.add(dist to comp)
             if (rare == null) continue
             rareStands.add(e.position())
             if (!plain.contains('✯') && dist < shurikenDist) shurikenDist = dist

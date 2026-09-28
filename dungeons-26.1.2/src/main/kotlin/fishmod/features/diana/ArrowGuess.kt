@@ -148,10 +148,13 @@ object ArrowGuess {
         val best = cands.values.minWithOrNull(compareBy<Cand> { it.score }.thenBy { it.dist }) ?: return fail()
         val picked = cands.values.filter { abs(it.score - best.score) <= 1e-6 && it.dist.toInt() in band }.map { it.pos }
         if (picked.isEmpty()) return fail()
-        if (entries.any { it.cands.drop(it.idx) == picked }) return
         DianaTest.log("arrow: candidates $picked")
-        val e = Entry(picked)
-        entries.add(e)
+        addGuess(picked)
+    }
+
+    internal fun addGuess(picked: List<BlockPos>) {
+        if (picked.isEmpty() || entries.any { it.cands.drop(it.idx) == picked }) return
+        entries.add(Entry(picked))
         DianaWaypoints.add(Waypoint(picked[0], WpType.ARROW, "Guess"))
         picked.drop(1).forEach { DianaWaypoints.add(Waypoint(it, WpType.SUB, "")) }
     }

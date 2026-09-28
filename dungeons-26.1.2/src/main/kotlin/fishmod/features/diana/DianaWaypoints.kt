@@ -187,9 +187,10 @@ object DianaWaypoints {
             }
             val text = if (w.type == WpType.SUB) (if (DianaSettings.dianaSubGuessText) "Possible" else "") else label(w, d)
             if (text.isNotEmpty()) {
-                val scale = (DianaSettings.dianaTextScale * (0.35 + d / 40.0).coerceAtMost(4.0)).toFloat()
+                // Grows with distance so labels stay roughly the same size on screen
+                val scale = (DianaSettings.dianaTextScale * maxOf(1.2, d * 0.12)).toFloat()
                 val textColor = withAlpha(0xFFFFFF, DianaSettings.dianaTextOpacity / 100f)
-                val pos = Vec3(w.pos.x + 0.5, w.pos.y + 1.5 + d / 40.0, w.pos.z + 0.5)
+                val pos = Vec3(w.pos.x + 0.5, w.pos.y + 1.5 + d / 25.0, w.pos.z + 0.5)
                 val col = colorCode(w, closest)
                 if (DianaSettings.dianaTextShadow) {
                     val off = shadowOffset(pos, eye, scale)
