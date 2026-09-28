@@ -164,7 +164,8 @@ object CompactTab {
         for (w in colWidths) contentW += w
         contentW += gap * (columns.size - 1)
         val bodyH = rows * lh + 6
-        val footH = 12
+        val footer = footerText(mdl)
+        val footH = if (footer == null) 2 else 12
         val topPad = 8
         val tabW = contentW + pad * 2
         val tabH = topPad + bodyH + footH
@@ -176,7 +177,7 @@ object CompactTab {
             val y0 = 4
             roundRect(ctx, x0, y0, x0 + w, y0 + tabH, bgPanel())
             drawColumns(ctx, tr, columns, colWidths, x0 + pad, y0 + topPad, rows, gap, lh)
-            ctx.centeredText(tr, mdl.footer, x0 + w / 2, y0 + tabH - footH + 2, GOLD)
+            if (footer != null) ctx.centeredText(tr, footer, x0 + w / 2, y0 + tabH - footH + 2, GOLD)
             return
         }
 
@@ -197,7 +198,7 @@ object CompactTab {
 
             roundRect(ctx, tabX0, y0, tabX0 + tabW, y0 + tabH, bgPanel())
             drawColumns(ctx, tr, columns, colWidths, tabX0 + pad, y0 + topPad, rows, gap, lh)
-            ctx.centeredText(tr, mdl.footer, tabX0 + tabW / 2, y0 + tabH - footH + 2, GOLD)
+            if (footer != null) ctx.centeredText(tr, footer, tabX0 + tabW / 2, y0 + tabH - footH + 2, GOLD)
 
             roundRect(ctx, statX0, y0, statX0 + statW, y0 + statH, bgPanel())
             val cellH = statH / labels.size
@@ -221,7 +222,7 @@ object CompactTab {
 
             roundRect(ctx, x0, tabY0, x0 + w, tabY0 + tabH, bgPanel())
             drawColumns(ctx, tr, columns, colWidths, x0 + pad, tabY0 + topPad, rows, gap, lh)
-            ctx.centeredText(tr, mdl.footer, x0 + w / 2, tabY0 + tabH - footH + 2, GOLD)
+            if (footer != null) ctx.centeredText(tr, footer, x0 + w / 2, tabY0 + tabH - footH + 2, GOLD)
 
             roundRect(ctx, x0, statY0, x0 + w, statY0 + statBarH, bgPanel())
             val cellW = w / labels.size
@@ -241,7 +242,10 @@ object CompactTab {
         val rows: Int,
         val server: String,
         val footer: String,
+        val stats: FooterStats,
     )
+
+    private class FooterStats(val cookie: String, val godPot: String, val effects: String)
 
     private const val MODEL_TTL_MS = 1000L
     private var modelVersion = -1
@@ -307,7 +311,7 @@ object CompactTab {
         if (columns.isEmpty()) return null
         rows = min(rows, 22)
 
-        return Model(columns, colWidths, rows, findServer(mc, tabFooter, tabHeader), footerLine(tabFooter))
+        return Model(columns, colWidths, rows, findServer(mc, tabFooter, tabHeader), footerLine(tabFooter), parseStats(tabFooter))
     }
 
     private fun drawColumns(
@@ -416,6 +420,49 @@ object CompactTab {
         }
         val m = SERVER_ID.matcher(hay)
         return if (m.find()) m.group(1) else "—"
+    }
+
+    const val STATS_TEMPLATE = "&dCookie &f{cookie} &8| &cGod Pot &f{godpot} &8| &aEffects &f{effects}"
+
+    private fun footerText(mdl: Model): String? = when (FishSettings.compactTabFooterMode) {
+        "Off" -> null
+        "Stats" -> fillStats(STATS_TEMPLATE, mdl.stats)
+        "Custom" -> fillStats(FishSettings.compactTabFooterText, mdl.stats).ifBlank { null }
+        else -> mdl.footer
+    }
+
+    private fun fillStats(template: String, st: FooterStats): String = template
+        .replace("{cookie}", st.cookie, ignoreCase = true)
+        .replace("{godpot}", st.godPot, ignoreCase = true)
+        .replace("{effects}", st.effects, ignoreCase = true)
+        .replace('&', '§')
+
+    private val EFFECT_COUNT = Regex("""You have (\d+) active effects?""", RegexOption.IGNORE_CASE)
+    private val GOD_POT = Regex("""God Potion(?:.*?active!|:)?\s*(.*)$""", RegexOption.IGNORE_CASE)
+    private val TIME_UNIT = Regex("""(\d+)\s*(Days?|Hours?|Minutes?|Seconds?|[dhms])\b""", RegexOption.IGNORE_CASE)
+
+    private fun parseStats(footer: String?): FooterStats {
+        val raw = (footer ?: "").split("\n") + TabListCache.entries.mapNotNull { it.info.tabListDisplayName?.string }
+        val lines = raw.map { it.replace(Regex("§."), "").trim() }.filter { it.isNotEmpty() }
+        var cookie = "—"
+        var godPot = "None"
+        var effects = "—"
+        for ((i, line) in lines.withIndex()) {
+            if (line.contains("Cookie Buff", ignoreCase = true)) {
+                val inline = line.substringAfter(":", "").trim()
+                val v = inline.ifEmpty { lines.getOrNull(i + 1) ?: "" }
+                cookie = if (v.contains("Not active", ignoreCase = true) || v.isEmpty()) "None" else shortTime(v)
+            }
+            GOD_POT.find(line)?.let { godPot = shortTime(it.groupValues[1].ifBlank { lines.getOrNull(i + 1) ?: "" }) }
+            EFFECT_COUNT.find(line)?.let { effects = it.groupValues[1] }
+            if (line.contains("No effects active", ignoreCase = true)) effects = "0"
+        }
+        return FooterStats(cookie, godPot, effects)
+    }
+
+    private fun shortTime(s: String): String {
+        val parts = TIME_UNIT.findAll(s).take(2).map { it.groupValues[1] + it.groupValues[2][0].lowercaseChar() }.toList()
+        return if (parts.isEmpty()) s.take(24) else parts.joinToString(" ")
     }
 
     private fun footerLine(footer: String?): String {
