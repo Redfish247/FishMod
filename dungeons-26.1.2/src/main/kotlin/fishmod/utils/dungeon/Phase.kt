@@ -3,6 +3,7 @@ package fishmod.utils.dungeon
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.features.dungeon.PbMessages
+import fishmod.mixin.accessors.BossBarHudAccessor
 import fishmod.utils.Constants
 import fishmod.utils.JsonUtility
 import fishmod.utils.Misc
@@ -76,18 +77,28 @@ object Phase {
         if (floor!!.contains("7")) inFloor7 = true
     }
 
-    // Alpha doesn't send Necron's death line; dropping to the P5 floor stands in for it
+    // Alpha doesn't send Necron's death line; his boss bar emptying or vanishing stands in for it
     private fun checkP5Fallback() {
-        if (!inFloor7 || currentPhase != 8) return
-        if (currentSplits?.getOrNull(9)?.name != "Dragons") return
-        val y = Minecraft.getInstance().player?.y ?: return
-        if (y < P5_Y) Events.ON_GAME_MESSAGE.invoke { it.onGameMessage(Component.literal(P5_START)) }
+        if (!awaitingNecronDeath()) return
+        val bars = (Minecraft.getInstance().gui.bossOverlay as BossBarHudAccessor).bossBars.values
+        val necron = bars.firstOrNull { it.name.string.contains("Necron") }
+        if (necron != null && necron.progress > 0f) { necronBarSeen = true; return }
+        if (necronBarSeen) fireP5Start(if (necron == null) "necron bar gone" else "necron bar empty")
+    }
+
+    private fun awaitingNecronDeath() = inFloor7 && currentPhase == 8 && currentSplits?.getOrNull(9)?.name == "Dragons"
+
+    private fun fireP5Start(reason: String) {
+        fishmod.utils.debug.Debug.LOGGER.info("[Phase] P5 fallback: $reason")
+        Events.ON_GAME_MESSAGE.invoke { it.onGameMessage(Component.literal(P5_START)) }
     }
 
     private const val P5_START = "[BOSS] Necron: All this, for nothing..."
-    private const val P5_Y = 45.0
+    private const val WK_FIRST_LINE = "[BOSS] Wither King: You... again?"
+    private var necronBarSeen = false
 
     private fun reset() {
+        necronBarSeen = false
         currentSplits = null
         floor = null
         currentPhase = -1
@@ -102,6 +113,7 @@ object Phase {
         val string = message.string
         val splits = currentSplits ?: return false
         if (runOver) return false
+        if (string == WK_FIRST_LINE && awaitingNecronDeath()) fireP5Start("wither king spoke")
 
         for (i in splits.indices) {
             val currentSplit = splits[i]
