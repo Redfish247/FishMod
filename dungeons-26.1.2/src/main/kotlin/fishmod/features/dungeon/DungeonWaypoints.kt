@@ -676,6 +676,8 @@ object DungeonWaypoints {
         w.routeId != null && routeReached.getOrDefault(w.routeId, emptySet()).contains(w.routeOrder)
 
     private const val MERGE_EPSILON = 1e-4
+    // push fills off block faces so they don't z-fight
+    private const val FACE_OFFSET = 0.002
 
     private fun compressAxis(values: List<Double>): List<Double> {
         val sorted = values.sorted()
@@ -743,36 +745,36 @@ object DungeonWaypoints {
         for (j in 0 until ny) {
             val top = Array(nx) { i -> BooleanArray(nz) { k -> occ[i][j][k] && !occAt(i, j + 1, k) } }
             for (r in greedyRects(top, nx, nz)) {
-                val x1 = xs[r[0]]; val z1 = zs[r[1]]; val x2 = xs[r[2]]; val z2 = zs[r[3]]; val y = ys[j + 1]
+                val x1 = xs[r[0]]; val z1 = zs[r[1]]; val x2 = xs[r[2]]; val z2 = zs[r[3]]; val y = ys[j + 1] + FACE_OFFSET
                 quads.add(arrayOf(Vec3(x1, y, z1), Vec3(x1, y, z2), Vec3(x2, y, z2), Vec3(x2, y, z1)))
             }
             val bottom = Array(nx) { i -> BooleanArray(nz) { k -> occ[i][j][k] && !occAt(i, j - 1, k) } }
             for (r in greedyRects(bottom, nx, nz)) {
-                val x1 = xs[r[0]]; val z1 = zs[r[1]]; val x2 = xs[r[2]]; val z2 = zs[r[3]]; val y = ys[j]
+                val x1 = xs[r[0]]; val z1 = zs[r[1]]; val x2 = xs[r[2]]; val z2 = zs[r[3]]; val y = ys[j] - FACE_OFFSET
                 quads.add(arrayOf(Vec3(x1, y, z1), Vec3(x2, y, z1), Vec3(x2, y, z2), Vec3(x1, y, z2)))
             }
         }
         for (i in 0 until nx) {
             val pos = Array(ny) { j -> BooleanArray(nz) { k -> occ[i][j][k] && !occAt(i + 1, j, k) } }
             for (r in greedyRects(pos, ny, nz)) {
-                val y1 = ys[r[0]]; val z1 = zs[r[1]]; val y2 = ys[r[2]]; val z2 = zs[r[3]]; val x = xs[i + 1]
+                val y1 = ys[r[0]]; val z1 = zs[r[1]]; val y2 = ys[r[2]]; val z2 = zs[r[3]]; val x = xs[i + 1] + FACE_OFFSET
                 quads.add(arrayOf(Vec3(x, y1, z1), Vec3(x, y2, z1), Vec3(x, y2, z2), Vec3(x, y1, z2)))
             }
             val neg = Array(ny) { j -> BooleanArray(nz) { k -> occ[i][j][k] && !occAt(i - 1, j, k) } }
             for (r in greedyRects(neg, ny, nz)) {
-                val y1 = ys[r[0]]; val z1 = zs[r[1]]; val y2 = ys[r[2]]; val z2 = zs[r[3]]; val x = xs[i]
+                val y1 = ys[r[0]]; val z1 = zs[r[1]]; val y2 = ys[r[2]]; val z2 = zs[r[3]]; val x = xs[i] - FACE_OFFSET
                 quads.add(arrayOf(Vec3(x, y1, z1), Vec3(x, y1, z2), Vec3(x, y2, z2), Vec3(x, y2, z1)))
             }
         }
         for (k in 0 until nz) {
             val pos = Array(nx) { i -> BooleanArray(ny) { j -> occ[i][j][k] && !occAt(i, j, k + 1) } }
             for (r in greedyRects(pos, nx, ny)) {
-                val x1 = xs[r[0]]; val y1 = ys[r[1]]; val x2 = xs[r[2]]; val y2 = ys[r[3]]; val z = zs[k + 1]
+                val x1 = xs[r[0]]; val y1 = ys[r[1]]; val x2 = xs[r[2]]; val y2 = ys[r[3]]; val z = zs[k + 1] + FACE_OFFSET
                 quads.add(arrayOf(Vec3(x1, y1, z), Vec3(x2, y1, z), Vec3(x2, y2, z), Vec3(x1, y2, z)))
             }
             val neg = Array(nx) { i -> BooleanArray(ny) { j -> occ[i][j][k] && !occAt(i, j, k - 1) } }
             for (r in greedyRects(neg, nx, ny)) {
-                val x1 = xs[r[0]]; val y1 = ys[r[1]]; val x2 = xs[r[2]]; val y2 = ys[r[3]]; val z = zs[k]
+                val x1 = xs[r[0]]; val y1 = ys[r[1]]; val x2 = xs[r[2]]; val y2 = ys[r[3]]; val z = zs[k] - FACE_OFFSET
                 quads.add(arrayOf(Vec3(x1, y1, z), Vec3(x1, y2, z), Vec3(x2, y2, z), Vec3(x2, y1, z)))
             }
         }
@@ -916,7 +918,7 @@ object DungeonWaypoints {
             if (g.filled) drawMergedFillGizmo(g) else drawMergedOutlineGizmo(g)
         }
         for (w in buildSingles(throughWalls = false)) {
-            if (w.filled) RenderUtils.gizmoBox(w.box, w.color, 0)
+            if (w.filled) RenderUtils.gizmoBox(w.box.inflate(FACE_OFFSET), w.color, 0)
             else RenderUtils.gizmoThickOutline(w.box, w.color, lineWidth)
         }
         for (w in liveWaypoints) {
@@ -940,7 +942,7 @@ object DungeonWaypoints {
             }
             for (w in buildSingles(throughWalls = true)) {
                 val rgba = RenderUtils.toFloats(w.color)
-                if (w.filled) RenderUtils.renderFilled(matrices, vc, w.box, rgba)
+                if (w.filled) RenderUtils.renderFilled(matrices, vc, w.box.inflate(FACE_OFFSET), rgba)
                 else RenderUtils.renderThickOutline(matrices, vc, w.box, rgba, lineWidth)
             }
             for (w in liveWaypoints) {
