@@ -6,6 +6,7 @@ import fishmod.utils.config.values.ExtraOptions;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import org.lwjgl.glfw.GLFW;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -46,12 +47,13 @@ public class MouseMixin {
         this.fishmod$beforeY = this.ypos;
     }
 
-    @Inject(method = "releaseMouse", at = @At(value = "FIELD",
-            target = "Lnet/minecraft/client/MouseHandler;xpos:D", opcode = Opcodes.GETFIELD, ordinal = 0))
+    // Runs after GLFW re-enables the cursor; enabling it on Windows warps back to centre, so set pos after.
+    @Inject(method = "releaseMouse", at = @At("TAIL"))
     private void fishmod$restoreCursor(CallbackInfo ci) {
         if (NoCursorReset.shouldHook() && Minecraft.getInstance().screen instanceof AbstractContainerScreen) {
             this.xpos = this.fishmod$beforeX;
             this.ypos = this.fishmod$beforeY;
+            GLFW.glfwSetCursorPos(Minecraft.getInstance().getWindow().handle(), this.xpos, this.ypos);
         }
     }
 }
