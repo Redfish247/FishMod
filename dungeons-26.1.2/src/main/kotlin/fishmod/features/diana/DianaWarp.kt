@@ -55,7 +55,7 @@ object DianaWarp {
         lastTitle = w?.name
     }
 
-    private fun warp(rareMob: Boolean) {
+    internal fun warp(rareMob: Boolean) {
         if (!Diana.active()) return
         val now = System.currentTimeMillis()
         if (now - lastWarpMs < 500) return

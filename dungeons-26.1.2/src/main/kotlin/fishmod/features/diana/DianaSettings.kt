@@ -100,18 +100,18 @@ object DianaSettings {
     @ConfigValue @JvmField var dianaLineWidth: Int = 3
 
     // HUD positions
-    @ConfigValue @JvmField var dianaLootHudX: Int = 10
-    @ConfigValue @JvmField var dianaLootHudY: Int = 80
-    @ConfigValue @JvmField var dianaLootHudScale: Double = 1.0
-    @ConfigValue @JvmField var dianaMobHudX: Int = 10
-    @ConfigValue @JvmField var dianaMobHudY: Int = 200
-    @ConfigValue @JvmField var dianaMobHudScale: Double = 1.0
-    @ConfigValue @JvmField var dianaStatsHudX: Int = 160
-    @ConfigValue @JvmField var dianaStatsHudY: Int = 80
-    @ConfigValue @JvmField var dianaStatsHudScale: Double = 1.0
-    @ConfigValue @JvmField var dianaMfHudX: Int = 160
-    @ConfigValue @JvmField var dianaMfHudY: Int = 160
-    @ConfigValue @JvmField var dianaMfHudScale: Double = 1.0
+    @ConfigValue @JvmField var dianaLootPosX: Int = 5
+    @ConfigValue @JvmField var dianaLootPosY: Int = 60
+    @ConfigValue @JvmField var dianaLootPosScale: Double = 1.0
+    @ConfigValue @JvmField var dianaMobPosX: Int = 5
+    @ConfigValue @JvmField var dianaMobPosY: Int = 150
+    @ConfigValue @JvmField var dianaMobPosScale: Double = 1.0
+    @ConfigValue @JvmField var dianaStatsPosX: Int = 150
+    @ConfigValue @JvmField var dianaStatsPosY: Int = 60
+    @ConfigValue @JvmField var dianaStatsPosScale: Double = 1.0
+    @ConfigValue @JvmField var dianaMfPosX: Int = 150
+    @ConfigValue @JvmField var dianaMfPosY: Int = 200
+    @ConfigValue @JvmField var dianaMfPosScale: Double = 1.0
     @ConfigValue @JvmField var dianaHpHudX: Int = 300
     @ConfigValue @JvmField var dianaHpHudY: Int = 40
     @ConfigValue @JvmField var dianaHpHudScale: Double = 1.0
