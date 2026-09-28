@@ -156,7 +156,7 @@ object RareMobs {
 
         for (e in level.entitiesForRendering()) {
             if (e === player) continue
-            if (newGlow != null && DianaSettings.dianaHighlightRareMobs && e is LivingEntity && e !is ArmorStand
+            if (newGlow != null && DianaSettings.dianaRareMobs && DianaSettings.dianaHighlightRareMobs && e is LivingEntity && e !is ArmorStand
                 && !(e is Player && e.uuid.version() == 4) && e.isAlive && !e.isInvisible) {
                 val r = RareMob.fromName(e.name.string)
                 if (r != null && player.hasLineOfSight(e)) newGlow[e.id] = r.glowColor or 0xFF000000.toInt()
@@ -184,14 +184,14 @@ object RareMobs {
             if (rare == null) continue
             rareStands.add(e.position())
             if (!plain.contains('✯') && dist < shurikenDist) shurikenDist = dist
-            if (DianaSettings.dianaScanRareMobs && e is ArmorStand) scanStand(e, rare)
+            if (DianaSettings.dianaRareMobs && DianaSettings.dianaScanRareMobs && e is ArmorStand) scanStand(e, rare)
         }
 
         defeated.retainAll(alive)
         hpLines = lines.sortedBy { it.first }.take(6).map { it.second }
         noShuriken = shurikenDist != Double.MAX_VALUE
         if (newGlow != null) { glow.clear(); glow.putAll(newGlow) }
-        pruneStale(eye, rareStands)
+        if (DianaSettings.dianaRareMobs) pruneStale(eye, rareStands)
     }
 
     private fun onDeath(name: String, pos: Vec3, dist: Double, rare: RareMob?) {
@@ -234,6 +234,7 @@ object RareMobs {
     // ---- chat ----
 
     private fun onChat(msg: String) {
+        if (!DianaSettings.dianaRareMobs) return
         if (!Diana.inHub()) return
         val s = strip(msg)
 
@@ -330,7 +331,7 @@ object RareMobs {
 
     @JvmStatic
     fun glowColor(e: Entity): Int {
-        if (glow.isEmpty() || !DianaSettings.dianaHighlightRareMobs) return EntityRenderState.NO_OUTLINE
+        if (glow.isEmpty() || !DianaSettings.dianaRareMobs || !DianaSettings.dianaHighlightRareMobs) return EntityRenderState.NO_OUTLINE
         return glow[e.id] ?: EntityRenderState.NO_OUTLINE
     }
 

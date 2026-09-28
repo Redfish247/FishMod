@@ -37,11 +37,12 @@ object DianaWarp {
     }
 
     private fun tick() {
-        while (guessKey.consumeClick()) warp(false)
-        while (rareMobKey.consumeClick()) warp(true)
+        while (guessKey.consumeClick()) if (DianaSettings.dianaWarp) warp(false)
+        while (rareMobKey.consumeClick()) if (DianaSettings.dianaWarp) warp(true)
+        if (!DianaSettings.dianaWarp) { if (lastTitle != null) { DianaWaypoints.list.forEach { it.warpHint = null }; lastTitle = null }; return }
         if (!Diana.active()) return
         val me = Diana.player()?.position() ?: return
-        val rare = DianaWaypoints.newestRareMob()
+        val rare = if (DianaSettings.dianaRareMobs) DianaWaypoints.newestRareMob() else null
         val target = rare ?: DianaWaypoints.closestTarget(me)
         DianaWaypoints.list.forEach { it.warpHint = null }
         val w = target?.let { finalWarp(it.center, me, fixed = rare != null) }
