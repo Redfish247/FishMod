@@ -9,10 +9,13 @@ import net.minecraft.world.level.Level;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner;
+import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.resources.Identifier;
 import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalBooleanRef;
 import org.joml.Matrix3x2fStack;
+import org.joml.Vector2i;
+import org.joml.Vector2ic;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -29,6 +32,19 @@ public class DrawContextMixin {
     @Final
     @Shadow
     private Matrix3x2fStack pose;
+
+    // Vanilla sits 12px off the cursor; pull it 6px closer on whichever side it lands.
+    private static final int FISHMOD$TOOLTIP_PULL = 6;
+    private static final ClientTooltipPositioner FISHMOD$CLOSER = (sw, sh, x, y, w, h) -> {
+        Vector2ic p = DefaultTooltipPositioner.INSTANCE.positionTooltip(sw, sh, x, y, w, h);
+        int nx = p.x() > x ? p.x() - FISHMOD$TOOLTIP_PULL : Math.max(4, p.x() + FISHMOD$TOOLTIP_PULL);
+        return new Vector2i(nx, p.y());
+    };
+
+    @ModifyVariable(method = "tooltip", at = @At("HEAD"), argsOnly = true)
+    private ClientTooltipPositioner fishmod$tooltipCloser(ClientTooltipPositioner positioner) {
+        return positioner == DefaultTooltipPositioner.INSTANCE ? FISHMOD$CLOSER : positioner;
+    }
 
     @Inject(method = "tooltip", at = @At("HEAD"))
     private void fishmod$tooltipScrollPush(Font font, List<ClientTooltipComponent> lines, int xo, int yo,
