@@ -50,7 +50,7 @@ public abstract class ChatSearchMixin extends Screen {
         int x = 4;
         int w = Math.max(40, (int) (acc.invokeWidth() * acc.invokeChatScale()));
 
-        fishmod$searchBox = new EditBox(this.font, x, y, w, h,
+        fishmod$searchBox = new fishmod.features.chat.ChatSearchBox(this.font, x, y, w, h,
                 Component.translatable("fishmod.chatSearch"));
         fishmod$searchBox.setMaxLength(128);
         fishmod$searchBox.setBordered(false);
