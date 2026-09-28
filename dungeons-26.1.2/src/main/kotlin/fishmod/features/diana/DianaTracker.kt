@@ -243,15 +243,15 @@ object DianaTracker {
         val st = data.stats
         val took = st.since["MOBS_$k"] ?: 0
         lastSpawn[k] = System.currentTimeMillis() to took
+        val last = st.lastAt[k]
         if (DianaSettings.dianaStatsMessage) {
-            val last = st.lastAt[k]
             FishMsg.send(
                 if (last != null) "§eTook §c$took §eMobs and §c${fmtTime(data.total.timeMs - last)} §eto get $label!"
                 else "§eTook §c$took §eMobs to get $label!"
             )
         }
         st.lastAt[k] = data.total.timeMs
-        b2b("MOBS_$k", took, name)
+        if (last != null) b2b("MOBS_$k", took, name)
         st.since["MOBS_$k"] = 0
     }
 
@@ -275,11 +275,12 @@ object DianaTracker {
         val ls = d.ls && lsRecent()
         val sk = if (ls) d.key + "_LS" else d.key
         val took = data.stats.since[sk] ?: 0
+        val hadBefore = (data.total.items[sk]?.toLong() ?: 0L) > 0
         track(sk, 1)
         if (!ls && mf > 0 && mf > (data.stats.highestMf[d.key] ?: 0)) data.stats.highestMf[d.key] = mf
         if (d.source != null) {
             if (DianaSettings.dianaStatsMessage) FishMsg.send("§eTook §c$took §e${d.plural} to ${if (ls) "lootshare" else "get"} ${d.name}!")
-            b2b(sk, took, (if (ls) "Lootshare " else "") + d.name)
+            if (hadBefore) b2b(sk, took, (if (ls) "Lootshare " else "") + d.name)
             data.stats.since[sk] = 0
         }
         if (d.loud) announce(d, mf, ls, took)

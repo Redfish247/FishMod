@@ -45,13 +45,15 @@ object SpadeGuess {
     private fun onPoint(v: Vec3) {
         val now = System.currentTimeMillis()
         lastLavaMs = now
-        if (now - lastUseMs > 3000) return
+        if (now - lastUseMs > 3000) return DianaTest.log("spade: point ignored, no recent use")
         if (points.isNotEmpty()) {
             val d = points.last().distanceTo(v)
             if (d <= 0 || d > 3) return
         }
         points.add(v)
-        guess()?.let { place(it) }
+        val g = guess()
+        DianaTest.log("spade: ${points.size} pts guess=$g")
+        g?.let { place(it) }
     }
 
     private fun place(v: Vec3) {

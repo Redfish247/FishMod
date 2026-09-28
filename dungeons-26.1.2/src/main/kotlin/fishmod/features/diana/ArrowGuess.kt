@@ -70,14 +70,14 @@ object ArrowGuess {
     private fun detect() {
         if (dust.size < SHAFT) return
         val pts = dust.toList()
-        val line = findShaft(pts) ?: return
+        val line = findShaft(pts) ?: return DianaTest.log("arrow: no shaft in ${pts.size} pts")
         val c1 = line[1]; val c2 = line[line.size - 2]
         val n1 = pts.count { it !in line && it.distanceTo(c1) <= TOL }
         val n2 = pts.count { it !in line && it.distanceTo(c2) <= TOL }
         val (base, tip) = when {
             n1 == 4 && n2 == 2 -> line.last() to line.first()
             n1 == 2 && n2 == 4 -> line.first() to line.last()
-            else -> return
+            else -> return DianaTest.log("arrow: barb counts $n1/$n2")
         }
         val origin = base.add(0.0, -1.5, 0.0)
         val dir = tip.add(0.0, -1.5, 0.0).subtract(origin).normalize()
@@ -87,6 +87,7 @@ object ArrowGuess {
         if (seenRays.containsKey(key)) return
         seenRays[key] = now
         dust.clear()
+        DianaTest.log("arrow: ray $origin -> $dir band $range")
         solve(origin, dir, range ?: return)
     }
 
@@ -148,13 +149,14 @@ object ArrowGuess {
         val picked = cands.values.filter { abs(it.score - best.score) <= 1e-6 && it.dist.toInt() in band }.map { it.pos }
         if (picked.isEmpty()) return fail()
         if (entries.any { it.cands.drop(it.idx) == picked }) return
+        DianaTest.log("arrow: candidates $picked")
         val e = Entry(picked)
         entries.add(e)
         DianaWaypoints.add(Waypoint(picked[0], WpType.ARROW, "Guess"))
         picked.drop(1).forEach { DianaWaypoints.add(Waypoint(it, WpType.SUB, "")) }
     }
 
-    private fun fail() {}
+    private fun fail() { DianaTest.log("arrow: no candidate") }
 
     private fun exitPoint(o: Vec3, d: Vec3): Vec3? {
         val min = doubleArrayOf(DianaWaypoints.MIN_X.toDouble(), DianaWaypoints.MIN_Y.toDouble(), DianaWaypoints.MIN_Z.toDouble())
