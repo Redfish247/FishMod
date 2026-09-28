@@ -21,6 +21,7 @@ object TicTacToeSolver {
     private val prefirePredictions = CopyOnWriteArrayList<BlockPos>()
     private var tickAcc = 0
     private var lastBoardKey: String? = null
+    private var lastDiag: String? = null
 
     fun reset() {
         bestMoves.clear()
@@ -28,6 +29,7 @@ object TicTacToeSolver {
         prefirePredictions.clear()
         tickAcc = 0
         lastBoardKey = null
+        lastDiag = null
         bestMovesCache.clear()
     }
 
@@ -62,6 +64,12 @@ object TicTacToeSolver {
         val box = AABB(center.x - 9.0, 65.0, center.z - 9.0, center.x + 9.0, 73.0, center.z + 9.0)
         val frames = level.getEntitiesOfClass(ItemFrame::class.java, box)
             .filter { it.item.item is MapItem && it.item.has(DataComponents.MAP_ID) }
+
+        val diag = "room=${OdinScan.currentRoom?.rotationDeg} center=$center frames=${frames.size} " + frames.joinToString(" ") { f ->
+            val px = f.item.get(DataComponents.MAP_ID)?.let { level.getMapData(it) }?.colors?.get(8256)?.toInt()?.and(0xFF)
+            "[${f.blockPosition().toShortString()} ${f.direction} px=$px]"
+        }
+        if (diag != lastDiag) { lastDiag = diag; fishmod.utils.debug.Debug.LOGGER.info("[TTT] $diag") }
 
         if (frames.size == 8) { reset(); return }
         if (frames.size % 2 == 0) return
