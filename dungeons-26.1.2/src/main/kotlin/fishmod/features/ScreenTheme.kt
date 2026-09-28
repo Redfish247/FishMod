@@ -188,8 +188,8 @@ object ScreenTheme {
         val textW = tooltipTextW
         val w = textW + pad * 2
         val h = rawH * u
-        var tx = mx + 12f * u
-        if (tx + w > screenW - 4) tx = mx - 12f * u - w
+        var tx = mx + 4f * u
+        if (tx + w > screenW - 4) tx = mx - 4f * u - w
         tx = tx.coerceAtLeast(4f)
         val ty = (my - 12f * u).coerceAtMost(screenH - h - 4f).coerceAtLeast(4f)
         UiRecorder.dropShadow(tx, ty, w, h, 5f * u, 6f * u, 0x66000000)
