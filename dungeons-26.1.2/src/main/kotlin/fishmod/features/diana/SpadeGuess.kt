@@ -23,7 +23,7 @@ object SpadeGuess {
 
     fun init() {
         Events.ON_PARTICLE.register { p ->
-            if (DianaSettings.dianaSpadeGuess && Diana.inHub() && p.particle.type === ParticleTypes.DRIPPING_LAVA &&
+            if (DianaSettings.dianaGuessing && DianaSettings.dianaSpadeGuess && Diana.inHub() && p.particle.type === ParticleTypes.DRIPPING_LAVA &&
                 p.count == 2 && (abs(p.maxSpeed + 0.5f) < 1e-4f || testTrail(p))
             ) onPoint(Vec3(p.x, p.y, p.z))
             false

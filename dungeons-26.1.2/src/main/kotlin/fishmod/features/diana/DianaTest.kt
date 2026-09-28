@@ -28,6 +28,8 @@ object DianaTest {
                 s == "[fmtest] dump" -> dump()
                 s == "[fmtest] clear" -> DianaWaypoints.clearAll()
                 s == "[fmtest] enableall" -> enableAll()
+                s == "[fmtest] mastersoff" -> with(DianaSettings) { dianaGuessing = false; dianaWarp = false; dianaRareMobs = false; dianaTracker = false; dianaAnnouncers = false }
+                s == "[fmtest] masterson" -> with(DianaSettings) { dianaGuessing = true; dianaWarp = true; dianaRareMobs = true; dianaTracker = true; dianaAnnouncers = true }
                 s == "[fmtest] pastevents" -> DianaTracker.openPastEvents()
                 s == "[fmtest] warp" -> DianaWarp.warp(false)
                 s.startsWith("[fmtest] subguess ") -> s.removePrefix("[fmtest] subguess ").trim().split(" ").map { it.toInt() }.chunked(3)

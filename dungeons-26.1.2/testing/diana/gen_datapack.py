@@ -189,7 +189,13 @@ at(860, marker("clear"), "tp @a -20 74 -30 0 20", marker("subguess -20 70 -10 -2
 at(870, marker("dump"), marker("shot 12_subguesses"))
 at(880, "tp @a -20 71 -14 0 20")
 at(930, marker("dump"), marker("shot 13_subguess_advanced"))
-at(960, tell("§a[test] scenario done"))
+# main toggles off: nothing should register, track or announce
+at(970, marker("clear"), marker("mastersoff"), "tp @a 2 73 -14 0 25")
+at(975, burrow_particles("start", 5, 5), burrow_particles("mob", -6, 8), tell("§9Party §8> §b[MVP§c+§b] Tester§f: x: 150, y: 71, z: -150 | Minos Inquisitor"),
+   tell("§6§lRARE DROP! §6Daedalus Stick §b(+§b250% §b✯ Magic Find§b)"), tell("§eFollow the arrows to find the §6treasure§e!"))
+at(990, marker("dump"), marker("shot 14_masters_off"))
+at(1000, marker("masterson"))
+at(1010, tell("§a[test] scenario done"))
 
 # schedule chain
 w("start", setup + [f"schedule function fmtest:s{i} {t + 200}t append" for i, (t, _) in enumerate(steps)])

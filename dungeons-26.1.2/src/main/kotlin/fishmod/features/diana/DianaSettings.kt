@@ -4,6 +4,13 @@ import fishmod.shaded.practicalconfig.manager.ConfigValue
 
 object DianaSettings {
 
+    // Main toggles
+    @ConfigValue @JvmField var dianaGuessing: Boolean = true
+    @ConfigValue @JvmField var dianaWarp: Boolean = true
+    @ConfigValue @JvmField var dianaRareMobs: Boolean = true
+    @ConfigValue @JvmField var dianaTracker: Boolean = true
+    @ConfigValue @JvmField var dianaAnnouncers: Boolean = true
+
     // Guessing / burrows
     @ConfigValue @JvmField var dianaSpadeGuess: Boolean = true
     @ConfigValue @JvmField var dianaArrowGuess: Boolean = true
