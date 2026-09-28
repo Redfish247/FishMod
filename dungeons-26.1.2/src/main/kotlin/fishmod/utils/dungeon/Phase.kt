@@ -54,6 +54,7 @@ object Phase {
             for (split in splits) {
                 split.tick()
             }
+            checkP5Fallback()
             false
         }
 
@@ -74,6 +75,17 @@ object Phase {
         currentSplits?.forEach { it.reset() }
         if (floor!!.contains("7")) inFloor7 = true
     }
+
+    // Alpha doesn't send Necron's death line; dropping to the P5 floor stands in for it
+    private fun checkP5Fallback() {
+        if (!inFloor7 || currentPhase != 8) return
+        if (currentSplits?.getOrNull(9)?.name != "Dragons") return
+        val y = Minecraft.getInstance().player?.y ?: return
+        if (y < P5_Y) Events.ON_GAME_MESSAGE.invoke { it.onGameMessage(Component.literal(P5_START)) }
+    }
+
+    private const val P5_START = "[BOSS] Necron: All this, for nothing..."
+    private const val P5_Y = 45.0
 
     private fun reset() {
         currentSplits = null
