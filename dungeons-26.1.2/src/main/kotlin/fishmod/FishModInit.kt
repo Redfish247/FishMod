@@ -72,7 +72,8 @@ class FishModInit : ClientModInitializer {
             val mc = Minecraft.getInstance()
             val self = mc.player?.gameProfile?.name ?: return Constants.SUCCESS
             if (!fishmod.features.dungeon.PartyCommandHandler.localEnabled(cmd)) {
-                mc.connection?.sendCommand(listOfNotNull(cmd, arg1, arg2, arg3).joinToString(" "))
+                // raw packet: sendCommand() would re-enter our own client command and recurse forever
+                mc.connection?.send(net.minecraft.network.protocol.game.ServerboundChatCommandPacket(listOfNotNull(cmd, arg1, arg2, arg3).joinToString(" ")))
                 return Constants.SUCCESS
             }
             fishmod.features.dungeon.PartyCommandHandler.onPartyCommand(
