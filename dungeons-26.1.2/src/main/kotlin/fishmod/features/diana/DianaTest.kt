@@ -29,6 +29,10 @@ object DianaTest {
                 s == "[fmtest] clear" -> DianaWaypoints.clearAll()
                 s == "[fmtest] enableall" -> enableAll()
                 s == "[fmtest] pastevents" -> DianaTracker.openPastEvents()
+                s == "[fmtest] warp" -> DianaWarp.warp(false)
+                s.startsWith("[fmtest] subguess ") -> s.removePrefix("[fmtest] subguess ").trim().split(" ").map { it.toInt() }.chunked(3)
+                    .map { BlockPos(it[0], it[1], it[2]) }.let { ArrowGuess.addGuess(it) }
+                s == "[fmtest] openmenu" -> net.minecraft.client.Minecraft.getInstance().let { mc -> mc.schedule { mc.setScreen(fishmod.features.FishModScreen()) } }
                 s == "[fmtest] closescreen" -> net.minecraft.client.Minecraft.getInstance().setScreen(null)
                 s.startsWith("[fmtest] shot ") -> shot(s.removePrefix("[fmtest] shot ").trim())
                 else -> CLICK.matchEntire(s)?.let { m ->

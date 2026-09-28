@@ -37,24 +37,24 @@ object DianaTrackerHud {
 
     fun init() {
         reg("Diana Loot Tracker", "diana_loot", 170, 250,
-            { DianaSettings.dianaLootHudX }, { DianaSettings.dianaLootHudX = it },
-            { DianaSettings.dianaLootHudY }, { DianaSettings.dianaLootHudY = it },
-            { DianaSettings.dianaLootHudScale }, { DianaSettings.dianaLootHudScale = it },
+            { DianaSettings.dianaLootPosX }, { DianaSettings.dianaLootPosX = it },
+            { DianaSettings.dianaLootPosY }, { DianaSettings.dianaLootPosY = it },
+            { DianaSettings.dianaLootPosScale }, { DianaSettings.dianaLootPosScale = it },
             { DianaSettings.dianaLootTracker != "Off" }, ::lootLines)
         reg("Diana Mob Tracker", "diana_mobs", 160, 150,
-            { DianaSettings.dianaMobHudX }, { DianaSettings.dianaMobHudX = it },
-            { DianaSettings.dianaMobHudY }, { DianaSettings.dianaMobHudY = it },
-            { DianaSettings.dianaMobHudScale }, { DianaSettings.dianaMobHudScale = it },
+            { DianaSettings.dianaMobPosX }, { DianaSettings.dianaMobPosX = it },
+            { DianaSettings.dianaMobPosY }, { DianaSettings.dianaMobPosY = it },
+            { DianaSettings.dianaMobPosScale }, { DianaSettings.dianaMobPosScale = it },
             { DianaSettings.dianaMobTracker != "Off" }, ::mobLines)
         reg("Diana Stats", "diana_stats", 140, 135,
-            { DianaSettings.dianaStatsHudX }, { DianaSettings.dianaStatsHudX = it },
-            { DianaSettings.dianaStatsHudY }, { DianaSettings.dianaStatsHudY = it },
-            { DianaSettings.dianaStatsHudScale }, { DianaSettings.dianaStatsHudScale = it },
+            { DianaSettings.dianaStatsPosX }, { DianaSettings.dianaStatsPosX = it },
+            { DianaSettings.dianaStatsPosY }, { DianaSettings.dianaStatsPosY = it },
+            { DianaSettings.dianaStatsPosScale }, { DianaSettings.dianaStatsPosScale = it },
             { DianaSettings.dianaStatsTracker }, ::statLines)
         reg("Diana Magic Find", "diana_mf", 130, 80,
-            { DianaSettings.dianaMfHudX }, { DianaSettings.dianaMfHudX = it },
-            { DianaSettings.dianaMfHudY }, { DianaSettings.dianaMfHudY = it },
-            { DianaSettings.dianaMfHudScale }, { DianaSettings.dianaMfHudScale = it },
+            { DianaSettings.dianaMfPosX }, { DianaSettings.dianaMfPosX = it },
+            { DianaSettings.dianaMfPosY }, { DianaSettings.dianaMfPosY = it },
+            { DianaSettings.dianaMfPosScale }, { DianaSettings.dianaMfPosScale = it },
             { DianaSettings.dianaMfTracker }, ::mfLines)
     }
 

@@ -84,6 +84,17 @@ object BurrowDetector {
     }
 
     private fun onChat(s: String) {
+        if (s.contains("Griffin")) DianaTest.log("burrow chat: '$s'")
+        // The chain-finished line also ends in (4/4), so it has to be checked before the dig pattern
+        if (CHAIN_DONE.matches(s)) {
+            prune(); chains.pollFirst()
+            refresh(death = false, expected = 2, type = null)
+            val me = Diana.player()?.position()
+            DianaTest.log("chain end: title=${DianaSettings.dianaChainEndTitle} near=${me?.let { p -> DianaWaypoints.targets().count { it.distTo(p) <= 90 } }}")
+            if (DianaSettings.dianaChainEndTitle && me != null && DianaWaypoints.targets().none { it.distTo(me) <= 90 })
+                Misc.forceTitle(Component.literal("§eUse Spade!"), Component.empty(), 2000)
+            return
+        }
         DUG.matchEntire(s)?.let { m ->
             val cur = m.groupValues[3].toIntOrNull() ?: 0
             val max = m.groupValues[4].toIntOrNull() ?: 0
@@ -92,14 +103,6 @@ object BurrowDetector {
             if (cur == 1) chains.addLast(expiry) else if (chains.isNotEmpty()) { chains.pollFirst(); chains.addLast(expiry) }
             if (cur != max) ArrowGuess.onBurrowDug()
             refresh(death = false, expected = 2, type = null)
-            return
-        }
-        if (CHAIN_DONE.matches(s)) {
-            prune(); chains.pollFirst()
-            refresh(death = false, expected = 2, type = null)
-            val me = Diana.player()?.position()
-            if (DianaSettings.dianaChainEndTitle && me != null && DianaWaypoints.targets().none { it.distTo(me) <= 90 })
-                Misc.forceTitle(Component.literal("§eUse Spade!"), Component.empty(), 2000)
             return
         }
         if (FIRST_DIG.matches(s) && !s.contains("Griffin Burrow")) {
