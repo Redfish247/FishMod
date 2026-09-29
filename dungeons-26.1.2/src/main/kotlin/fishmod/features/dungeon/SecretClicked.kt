@@ -68,7 +68,7 @@ object SecretClicked {
             false
         }
         Events.ON_WORLD_CHANGE.register {
-            clicked.clear(); itemPos.clear()
+            clicked.clear(); itemPos.clear(); pendingSkull = null
             pickedItemIds.clear(); batSounds.clear()
             false
         }
@@ -178,7 +178,27 @@ object SecretClicked {
         val block = level.getBlockState(pos).block
         val secret = block is ChestBlock || block is LeverBlock ||
             (block is AbstractSkullBlock && SecretDrops.isSecretSkull(level, pos))
-        if (!secret) return
+        if (!secret) {
+            // Unknown skull owner id: confirm via the action-bar secret count instead
+            if (block is AbstractSkullBlock) { pendingSkull = pos.immutable(); pendingSkullAt = System.currentTimeMillis() }
+            return
+        }
+        markClicked(pos)
+    }
+
+    private var pendingSkull: BlockPos? = null
+    private var pendingSkullAt = 0L
+
+    @JvmStatic
+    fun onSecretCount(found: Int, prevFound: Int, prevFresh: Boolean) {
+        val pos = pendingSkull ?: return
+        if (System.currentTimeMillis() - pendingSkullAt > 1500) { pendingSkull = null; return }
+        if (!prevFresh || found <= prevFound) return
+        pendingSkull = null
+        net.minecraft.client.Minecraft.getInstance().execute { if (active()) markClicked(pos) }
+    }
+
+    private fun markClicked(pos: BlockPos) {
         chime()
         if (!FishSettings.secretClickedBoxes || clicked.any { it.blockPos == pos }) return
         val box = AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0).move(pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble())

@@ -374,7 +374,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "R" to "Reset selected",
             "G" to "Grid",
             "Ctrl+Z / Y" to "Undo / redo",
-            "Enter / Esc" to "Save / cancel",
+            "Enter / Esc" to "Save & close",
             "F1" to "Hide controls",
         )
 
@@ -442,7 +442,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     private val undoStack = ArrayDeque<List<Pos>>()
     private val redoStack = ArrayDeque<List<Pos>>()
-    private val opened: List<Pos> = snapshot()
 
     init {
         picked.retainAll(ENTRIES.map { it.name() }.toSet())
@@ -522,7 +521,17 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         return InputConstants.isKeyDown(w, GLFW.GLFW_KEY_LEFT_SHIFT) || InputConstants.isKeyDown(w, GLFW.GLFW_KEY_RIGHT_SHIFT)
     }
 
-    private fun sample(e: HudEntry): Sample? = SAMPLES[e.name()]
+    private fun sample(e: HudEntry): Sample? =
+        if (e.name() == "Performance") perfSample() else SAMPLES[e.name()]
+
+    private fun perfSample(): Sample {
+        val ls = listOfNotNull(
+            "§7FPS: §a144".takeIf { FishSettings.perfHudFps },
+            "§7TPS: §a19.9".takeIf { FishSettings.perfHudTps },
+            "§7Ping: §a42ms".takeIf { FishSettings.perfHudPing },
+        ).ifEmpty { listOf("§7FPS: §a144") }
+        return if (FishSettings.perfHudHorizontal) Sample(listOf(ls.joinToString("  "))) else Sample(ls)
+    }
 
     private fun baseW(e: HudEntry): Int {
         val s = sample(e) ?: return e.w()
@@ -1036,8 +1045,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         }
 
         when (input.key()) {
-            GLFW.GLFW_KEY_ESCAPE -> { cancel(); return true }
-            GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> { this.onClose(); return true }
+            GLFW.GLFW_KEY_ESCAPE, GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> { this.onClose(); return true }
             GLFW.GLFW_KEY_F1 -> { showControls = !showControls; return true }
             GLFW.GLFW_KEY_G -> if (!ctrl) { showGrid = !showGrid; return true }
             GLFW.GLFW_KEY_Z -> if (ctrl) { if (shift) redo() else undo(); return true }
@@ -1093,13 +1101,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         val s = redoStack.removeLastOrNull() ?: return
         undoStack.addLast(snapshot())
         restore(s)
-    }
-
-    private fun cancel() {
-        restore(opened)
-        FishConfig.manager.save()
-        fishmod.features.chat.ChatRuleStore.save()
-        Minecraft.getInstance().setScreen(parent)
     }
 
     override fun onClose() {
