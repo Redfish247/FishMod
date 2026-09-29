@@ -4,6 +4,7 @@ import fishmod.utils.Location
 import fishmod.utils.config.values.Visual
 import fishmod.utils.events.Events
 import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.components.LerpingBossEvent
 import net.minecraft.core.component.DataComponents
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket
@@ -69,4 +70,10 @@ object RenderOptimizer {
     @JvmStatic fun shouldDisableFireOverlay(): Boolean = Visual.renderOptimizer && Visual.roHideFireOverlay
     @JvmStatic fun hideDeathAnimation(): Boolean = Visual.renderOptimizer && Visual.roHideDeathAnimation
     @JvmStatic fun hideDyingArmorStands(): Boolean = Visual.renderOptimizer && Visual.roHideDyingArmorStands
+
+    @JvmStatic
+    fun filterBossBars(bars: Collection<LerpingBossEvent>): Collection<LerpingBossEvent> {
+        if (!Visual.renderOptimizer || !Visual.roHideObjective) return bars
+        return bars.filterNot { it.name.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trimStart().startsWith("Objective:") }
+    }
 }
