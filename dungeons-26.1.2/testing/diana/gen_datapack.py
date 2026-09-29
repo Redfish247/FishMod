@@ -195,7 +195,20 @@ at(975, burrow_particles("start", 5, 5), burrow_particles("mob", -6, 8), tell("�
    tell("§6§lRARE DROP! §6Daedalus Stick §b(+§b250% §b✯ Magic Find§b)"), tell("§eFollow the arrows to find the §6treasure§e!"))
 at(990, marker("dump"), marker("shot 14_masters_off"))
 at(1000, marker("masterson"))
-at(1010, tell("§a[test] scenario done"))
+# crown of avarice: worn maxed crown + purse gains during Diana
+CROWN = 'item replace entity @a armor.head with minecraft:player_head[custom_data={id:"CROWN_OF_AVARICE",uuid:"' + str(__import__("uuid").uuid4()) + '",collected_coins:1000000000L},custom_name="Renowned Crown of Avarice",lore=["Coins Consumed: 1,000,000,000","  +1.15x Damage","  +25 Magic Find"]]'
+def purse(v): return f'team modify fmpurse prefix "Purse: {v:,}"'
+at(1020, "scoreboard objectives add fmsb dummy \"SKYBLOCK\"", "scoreboard objectives setdisplay sidebar fmsb", "team add fmpurse", purse(1000000),
+   "team join fmpurse fakepurse", "scoreboard players set fakepurse fmsb 1", CROWN, marker("crowndump"))
+at(1040, tell("§6§lWow! §eYou dug out §6100,000 coins§e!"), purse(1100000))
+at(1060, marker("crowndump"))
+at(1070, purse(900000))
+at(1080, purse(950000), marker("crowndump"))
+at(1100, "item replace entity @a armor.head with minecraft:diamond_helmet", tell("§6§lWow! §eYou dug out §6100,000 coins§e!"), purse(1050000))
+at(1120, CROWN, marker("crownset 5800000000"))
+at(1125, marker("crowndump"))
+at(1130, "scoreboard objectives remove fmsb", "team remove fmpurse")
+at(1140, tell("§a[test] scenario done"))
 
 # schedule chain
 w("start", setup + [f"schedule function fmtest:s{i} {t + 200}t append" for i, (t, _) in enumerate(steps)])

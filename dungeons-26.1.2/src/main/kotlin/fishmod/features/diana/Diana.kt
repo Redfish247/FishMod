@@ -90,6 +90,7 @@ object Diana {
         RareMobs.init()
         DianaTracker.init()
         SphinxSolver.init()
+        CrownOfAvarice.init()
         if (testMode) DianaTest.init()
     }
 
