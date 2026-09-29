@@ -29,6 +29,7 @@ object SecretOverlay {
 
     @JvmStatic
     fun onSecrets(f: Int, t: Int) {
+        SecretClicked.onSecretCount(f, found, System.currentTimeMillis() - seenAt <= STALE_MS)
         found = f; total = t; seenAt = System.currentTimeMillis()
     }
 
