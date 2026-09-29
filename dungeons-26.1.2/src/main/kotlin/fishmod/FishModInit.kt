@@ -1409,5 +1409,6 @@ class FishModInit : ClientModInitializer {
         safeInit("Scheduler") { Scheduler.init() }
         safeInit("ChatQueue") { fishmod.utils.ChatQueue.init() }
         safeInit("PrestigeChatFade") { fishmod.cosmetic.prestige.PrestigeChatFade.init() }
+        safeInit("NametagCullingCompat") { fishmod.cosmetic.NametagCullingCompat.init() }
     }
 }
