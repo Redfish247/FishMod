@@ -24,6 +24,7 @@ object Visual {
     @ConfigValue @JvmField var roHideTentacleHead: Boolean = false
     @ConfigValue @JvmField var roHideFireOverlay: Boolean = false
     @ConfigValue @JvmField var roHideInventoryLabels: Boolean = true
+    @ConfigValue @JvmField var roHideObjective: Boolean = false
 
     @ConfigValue @JvmField var hidePlayersInRange: Boolean = false
     @ConfigValue @JvmField var hidePlayerRange: Double = 3.0
