@@ -38,7 +38,7 @@ object ChatNickRefresher {
                 changed = true
             }
         }
-        if (changed) invoker.invokeRefresh()
+        if (changed) fishmod.utils.ChatRefresh.refreshKeepScroll(invoker)
     }
 
     private fun swapKnown(text: Component): Component {
