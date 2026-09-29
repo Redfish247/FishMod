@@ -584,6 +584,7 @@ class FishModInit : ClientModInitializer {
                     .then(waypointSubcommand("waypoints"))
                     .then(fishmod.features.dungeon.RouteRecorder.command())
                     .then(fishmod.features.diana.Diana.command())
+                    .then(fishmod.features.diana.CrownOfAvarice.command())
                     .then(chatNotificationsSubcommand("chatnotifications"))
                     .then(chatNotificationsSubcommand("cn"))
                     .then(sackSubcommand("ep"))
