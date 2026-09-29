@@ -148,6 +148,7 @@ void main(){
             // Map from the real framebuffer, not the rounded-up GUI size, or odd window sizes stretch text off the pixel grid.
             viewW = win.width / pixelRatio; viewH = win.height / pixelRatio
             fbH = win.height
+            bindMainTarget()
             GL11.glViewport(0, 0, win.width, win.height)
             GL20.glUseProgram(program)
             GL20.glUniform2f(uView, viewW, viewH)
@@ -177,6 +178,21 @@ void main(){
         } finally {
             guard.restore()
         }
+    }
+
+    private var targetFbo = 0
+    private var targetTex = -1
+
+    // Whatever FBO is left bound here is luck (ImmediatelyFast leaves the main one; vanilla often leaves 0, which blitToScreen then overwrites).
+    private fun bindMainTarget() {
+        val tex = (Minecraft.getInstance().mainRenderTarget.colorTexture as? com.mojang.blaze3d.opengl.GlTexture)?.glId() ?: return
+        if (tex != targetTex || targetFbo == 0) {
+            if (targetFbo == 0) targetFbo = GL30.glGenFramebuffers()
+            GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, targetFbo)
+            GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, tex, 0)
+            targetTex = tex
+        }
+        GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, targetFbo)
     }
 
     private fun flush() {
