@@ -38,7 +38,7 @@ object CompactChat {
             val next = extractCount(line.content().string) + 1
             val removedLines = removeDisplayedLines(acc, i, messages.size)
             messages.removeAt(i)
-            if (!removedLines) acc.invokeRefresh()
+            if (!removedLines) fishmod.utils.ChatRefresh.refreshKeepScroll(acc)
             ci.cancel()
             hud.addClientSystemMessage(withCount(message, next))
             return true
