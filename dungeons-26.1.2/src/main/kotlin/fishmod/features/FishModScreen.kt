@@ -135,6 +135,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         run {
+            val f = Feature("Debug Reports", FishSettings::debugReports)
+            f.sub.add(ToggleSetting("Chat Notice", "Short chat line with a copy button when something breaks (max once a minute)", FishSettings::debugChatNotices))
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Mod Prefix", FishSettings::modPrefixEnabled)
             f.sub.add(InputSetting("Prefix", "",
                 { FishSettings.modPrefix },
