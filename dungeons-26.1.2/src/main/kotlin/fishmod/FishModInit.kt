@@ -363,6 +363,7 @@ class FishModInit : ClientModInitializer {
             line.accept("§e/fm commandkeys §7— bind keys/mouse buttons to run slash commands")
             line.accept("§e/fm aliases §7— make short commands (e.g. §f/dh§7) run longer ones (e.g. §f/warp dh§7)")
             line.accept("§e/nick §8<name>|reset")
+            line.accept("§e/fm debug §8[clear] §7— copy a problem report to send Eli")
             line.accept("§e/fm commandhelp §7— this list  §8·§7  party chat: §f.help §7lists enabled party commands")
             line.accept("§b§m                                                                          ")
         }
@@ -372,7 +373,7 @@ class FishModInit : ClientModInitializer {
             try {
                 init()
             } catch (t: Throwable) {
-                fishmod.utils.debug.Debug.LOGGER.error("[FishMod] init failed for {}", name, t)
+                fishmod.utils.debug.FishDiag.fail("Init.$name", "init failed", t)
             }
         }
     }
@@ -571,6 +572,25 @@ class FishModInit : ClientModInitializer {
                         printCommandHelp()
                         Constants.SUCCESS
                     })
+                    .then(ClientCommands.literal("debug")
+                        .executes {
+                            val mc = Minecraft.getInstance()
+                            val n = fishmod.utils.debug.FishDiag.count()
+                            if (n == 0) {
+                                fishmod.utils.Misc.addChatMessage(Component.literal("§a[FishMod] No problems recorded this session."))
+                            } else {
+                                mc.execute { mc.keyboardHandler.clipboard = fishmod.utils.debug.FishDiag.buildReport() }
+                                fishmod.utils.Misc.addChatMessage(Component.literal("§e[FishMod] Debug report copied ($n issue codes). Paste it to Eli on Discord."))
+                                fishmod.utils.debug.FishDiag.summaryLines(5).forEach { fishmod.utils.Misc.addChatMessage(Component.literal("§7  $it")) }
+                                fishmod.utils.Misc.addChatMessage(Component.literal("§8  Full log: ${fishmod.utils.debug.FishDiag.logPath()}"))
+                            }
+                            Constants.SUCCESS
+                        }
+                        .then(ClientCommands.literal("clear").executes {
+                            fishmod.utils.debug.FishDiag.clear()
+                            fishmod.utils.Misc.addChatMessage(Component.literal("§a[FishMod] Debug codes cleared."))
+                            Constants.SUCCESS
+                        }))
                     .then(waypointSubcommand("wp"))
                     .then(ClientCommands.literal("pm")
                         .executes { fishmod.features.dungeon.DungeonWaypoints.togglePmEdit(); Constants.SUCCESS }
