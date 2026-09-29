@@ -32,6 +32,8 @@ object DianaTest {
                 s == "[fmtest] masterson" -> with(DianaSettings) { dianaGuessing = true; dianaWarp = true; dianaRareMobs = true; dianaTracker = true; dianaAnnouncers = true }
                 s == "[fmtest] pastevents" -> DianaTracker.openPastEvents()
                 s == "[fmtest] warp" -> DianaWarp.warp(false)
+                s == "[fmtest] crowndump" -> crownDump()
+                s.startsWith("[fmtest] crownset ") -> CrownOfAvarice.wornCrown()?.let { CrownOfAvarice.set(it, s.substringAfterLast(' ').toLong()) }
                 s.startsWith("[fmtest] subguess ") -> s.removePrefix("[fmtest] subguess ").trim().split(" ").map { it.toInt() }.chunked(3)
                     .map { BlockPos(it[0], it[1], it[2]) }.let { ArrowGuess.addGuess(it) }
                 s == "[fmtest] openmenu" -> net.minecraft.client.Minecraft.getInstance().let { mc -> mc.schedule { mc.setScreen(fishmod.features.FishModScreen()) } }
@@ -64,6 +66,14 @@ object DianaTest {
             dianaMsgChimera = "&dCUSTOM CHIM {mf}% #{amount} ({percentage})"
         }
         LOG.info("all optional Diana features enabled")
+    }
+
+    private fun crownDump() {
+        val mc = net.minecraft.client.Minecraft.getInstance()
+        val c = CrownOfAvarice.wornCrown() ?: return LOG.info("crown: none worn")
+        LOG.info("crown total={}", CrownOfAvarice.total(c))
+        c.getTooltipLines(net.minecraft.world.item.Item.TooltipContext.of(mc.level!!), mc.player, net.minecraft.world.item.TooltipFlag.NORMAL)
+            .forEach { LOG.info("crown tooltip: {}", it.string) }
     }
 
     fun dump() {

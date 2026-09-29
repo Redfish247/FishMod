@@ -110,6 +110,7 @@ object DianaMenu {
         col.features.add(Feature("Diana Party Commands", S::dianaPartyCommands))
         col.features.add(Feature("Diana Message Hider", S::dianaMessageHider))
         col.features.add(Feature("Sphinx Solver", S::dianaSphinxSolver))
+        col.features.add(Feature("Crown of Avarice Counter", S::dianaCrownCounter))
 
         val style = Feature("Diana Waypoint Style", null, null)
         style.sub.add(SubcategoryHeader("Colors"))
@@ -152,6 +153,7 @@ object DianaMenu {
         "Diana Party Commands" -> "!chim !inq !relic !stick !since !burrow !mob"
         "Diana Message Hider" -> "Hide spammy Diana chat"
         "Sphinx Solver" -> "Click anywhere in chat to answer the Sphinx"
+        "Crown of Avarice Counter" -> "Keep counting coins past 1B (/fm crown set <amount>)"
         "Diana Waypoint Style" -> "Colors, opacity and text for Diana waypoints"
         else -> null
     }

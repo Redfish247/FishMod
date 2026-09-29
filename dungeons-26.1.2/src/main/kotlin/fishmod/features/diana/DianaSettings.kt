@@ -66,6 +66,7 @@ object DianaSettings {
     @ConfigValue @JvmField var dianaAfkTimeout: Int = 30
     @ConfigValue @JvmField var dianaPriceMode: String = "Sell Offer"
     @ConfigValue @JvmField var dianaStatsMessage: Boolean = true
+    @ConfigValue @JvmField var dianaCrownCounter: Boolean = true
 
     // Announcers
     @ConfigValue @JvmField var dianaRareDropChat: Boolean = true
