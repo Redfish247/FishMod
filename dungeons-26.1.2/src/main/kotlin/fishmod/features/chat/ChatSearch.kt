@@ -38,6 +38,7 @@ object ChatSearch {
 
     private fun refresh() {
         val chat = Minecraft.getInstance().gui?.chat ?: return
+        chat.resetChatScroll()
         (chat as ChatHudInvoker).invokeRefresh()
     }
 

@@ -23,6 +23,15 @@ public interface ChatHudInvoker {
     @Accessor("chatScrollbarPos")
     int getScrolledLines();
 
+    @Accessor("chatScrollbarPos")
+    void setScrolledLines(int pos);
+
+    @Accessor("newMessageSinceScroll")
+    boolean getNewMessageSinceScroll();
+
+    @Accessor("newMessageSinceScroll")
+    void setNewMessageSinceScroll(boolean value);
+
     @Accessor("trimmedMessages")
     List<GuiMessage.Line> getVisibleMessages();
 
