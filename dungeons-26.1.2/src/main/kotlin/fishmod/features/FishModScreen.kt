@@ -1340,6 +1340,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Hide Tentacle Head", "The tentacle head worn by some mobs", Visual::roHideTentacleHead))
             f.sub.add(ToggleSetting("Hide Fire Overlay", "The first-person fire overlay", Visual::roHideFireOverlay))
             f.sub.add(ToggleSetting("Hide Inventory Labels", "The \"Crafting\" text in your inventory", Visual::roHideInventoryLabels))
+            f.sub.add(ToggleSetting("Hide Objective", "The \"Objective:\" boss bar (e.g. Rift races)", Visual::roHideObjective))
             visuals.features.add(f)
         }
         run {
