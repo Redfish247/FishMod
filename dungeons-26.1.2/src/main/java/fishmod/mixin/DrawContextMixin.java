@@ -72,7 +72,7 @@ public class DrawContextMixin {
 
     @ModifyVariable(method = "itemCooldown", at=@At("STORE"), ordinal = 0)
     private float noCooldown(float f) {
-        return Visual.hideCooldown? 0: f;
+        return fishmod.features.CooldownOverlay.shouldHideVanillaCooldown() ? 0 : f;
     }
 
     @Inject(method = "item(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;III)V", at=@At("HEAD"))
