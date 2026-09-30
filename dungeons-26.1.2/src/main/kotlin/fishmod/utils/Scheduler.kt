@@ -1,6 +1,7 @@
 package fishmod.utils
 
 import fishmod.shaded.practicalconfig.data.SoundData
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.sounds.SoundEvent
@@ -28,7 +29,13 @@ object Scheduler {
                     }
                 }
             }
-            for (task in due) minecraftClient.execute(task.task)
+            for (task in due) minecraftClient.execute {
+                try {
+                    task.task.run()
+                } catch (e: Exception) {
+                    FishDiag.fail("Scheduler.1", "scheduled task threw", e)
+                }
+            }
         }
     }
 
@@ -50,6 +57,7 @@ object Scheduler {
 
     @JvmStatic
     fun scheduleTask(runnable: Runnable, ticks: Int) {
+        FishDiag.check(ticks >= 0, "Scheduler.2") { "task scheduled with negative delay $ticks" }
         synchronized(tasks) { tasks.add(Task(runnable, ticks)) }
     }
 }

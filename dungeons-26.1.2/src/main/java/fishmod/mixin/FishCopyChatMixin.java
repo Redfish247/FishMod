@@ -31,37 +31,45 @@ public class FishCopyChatMixin extends Screen {
                 && fishmod.utils.config.values.FishSettings.smartCopyChat;
         if ((!ExtraOptions.copyChat && !smart) || click.button() != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
 
-        Minecraft mc = Minecraft.getInstance();
-        ChatHudInvoker hudInvoker = (ChatHudInvoker) mc.gui.getChat();
+        try {
+            Minecraft mc = Minecraft.getInstance();
+            ChatHudInvoker hudInvoker = (ChatHudInvoker) mc.gui.getChat();
 
-        double x = toChatLineX(hudInvoker, click.x());
-        double y = toChatLineY(hudInvoker, click.y(), mc);
+            double x = toChatLineX(hudInvoker, click.x());
+            double y = toChatLineY(hudInvoker, click.y(), mc);
 
-        String string;
-        if (ExtraOptions.copyLineOnly && !smart) {
-            int index = getMessageLineIndex(hudInvoker, mc, x, y);
-            List<GuiMessage.Line> visibleMessages = hudInvoker.getVisibleMessages();
-            if (visibleMessages == null || index < 0 || index >= visibleMessages.size()) return;
+            String string;
+            if (ExtraOptions.copyLineOnly && !smart) {
+                int index = getMessageLineIndex(hudInvoker, mc, x, y);
+                List<GuiMessage.Line> visibleMessages = hudInvoker.getVisibleMessages();
+                if (visibleMessages == null) {
+                    fishmod.utils.debug.FishDiag.fail("FishCopyChatMixin.2", "chat visible messages list is null");
+                    return;
+                }
+                if (index < 0 || index >= visibleMessages.size()) return;
 
-            GuiMessage.Line msg = visibleMessages.get(index);
-            string = TextUtil.orderedTextToString(msg.content());
-        } else {
-            string = copyChat(hudInvoker, mc, x, y);
+                GuiMessage.Line msg = visibleMessages.get(index);
+                string = TextUtil.orderedTextToString(msg.content());
+            } else {
+                string = copyChat(hudInvoker, mc, x, y);
+            }
+
+            if (string == null) return;
+
+            if (ExtraOptions.removeColorCodes || smart) {
+                string = string.replaceAll("§.", "");
+            } else if (ExtraOptions.replaceColorChars) {
+                string = string.replaceAll("§", "&");
+            }
+
+            string = cleanCopied(string);
+            if (string == null || string.isEmpty()) return;
+
+            mc.keyboardHandler.setClipboard(string);
+            fishmod.utils.FishMsg.send("§aChat Message Copied");
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("FishCopyChatMixin.1", "chat copy failed button=" + click.button(), t);
         }
-
-        if (string == null) return;
-
-        if (ExtraOptions.removeColorCodes || smart) {
-            string = string.replaceAll("§.", "");
-        } else if (ExtraOptions.replaceColorChars) {
-            string = string.replaceAll("§", "&");
-        }
-
-        string = cleanCopied(string);
-        if (string == null || string.isEmpty()) return;
-
-        mc.keyboardHandler.setClipboard(string);
-        fishmod.utils.FishMsg.send("§aChat Message Copied");
     }
 
     @Unique

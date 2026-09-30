@@ -3,6 +3,7 @@ package fishmod.utils.dungeon
 import fishmod.utils.Misc
 import fishmod.utils.config.values.Dungeons
 import fishmod.utils.data.EntityUtil
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.minecraft.network.chat.Component
@@ -35,24 +36,10 @@ enum class DungeonClass {
             Events.ON_RUN_END.register { reset(); false }
 
             ClientReceiveMessageEvents.GAME.register { message, _ ->
-                val string = message.string
-
-                val selected = SELECTED_PATTERN.matcher(string)
-                if (selected.find()) {
-                    currentClass = parseClass(selected.group(1))
-                    return@register
-                }
-                val doubled = STATS_DOUBLED_PATTERN.matcher(string)
-                if (doubled.find()) {
-                    currentClass = parseClass(doubled.group(1))
-                    return@register
-                }
-
-                if (!Phase.runStarted() && currentClass != null) return@register
-
-                val matcher = PATTERN.matcher(string)
-                if (matcher.find() && currentClass == null) {
-                    currentClass = parseClass(matcher.group(1))
+                try {
+                    onGameMessage(message)
+                } catch (t: Throwable) {
+                    FishDiag.fail("DungeonClass.1", "class detection chat handler", t)
                 }
             }
 
@@ -72,6 +59,7 @@ enum class DungeonClass {
                     }
 
                     nameClassMap[name] = className
+                    FishDiag.check(nameClassMap.size <= 5, "DungeonClass.2") { "more than 5 classed players in tab: ${nameClassMap.keys}" }
                     return@register false
                 }
 
@@ -79,10 +67,33 @@ enum class DungeonClass {
             }
         }
 
+        private fun onGameMessage(message: Component) {
+                val string = message.string
+
+                val selected = SELECTED_PATTERN.matcher(string)
+                if (selected.find()) {
+                    currentClass = parseClass(selected.group(1))
+                    return
+                }
+                val doubled = STATS_DOUBLED_PATTERN.matcher(string)
+                if (doubled.find()) {
+                    currentClass = parseClass(doubled.group(1))
+                    return
+                }
+
+                if (!Phase.runStarted() && currentClass != null) return
+
+                val matcher = PATTERN.matcher(string)
+                if (matcher.find() && currentClass == null) {
+                    currentClass = parseClass(matcher.group(1))
+                }
+        }
+
         private fun parseClass(name: String): DungeonClass? {
             return try {
                 valueOf(name.uppercase())
             } catch (e: IllegalArgumentException) {
+                FishDiag.fail("DungeonClass.3", "unknown dungeon class name '$name'", e)
                 null
             }
         }

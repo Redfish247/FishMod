@@ -2,6 +2,7 @@ package fishmod.features.storage
 
 import fishmod.utils.config.FolderUtility
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -45,6 +46,7 @@ object StorageCache {
         ensureLoaded()
         var changed = false
         for ((idx, r) in rows) {
+            FishDiag.check(idx in 0 until 27 && r > 0, "StorageCache.7") { "odd storage layout entry idx=$idx rows=$r" }
             expectedRows[idx] = r
             if (known.add(idx)) changed = true
         }
@@ -65,7 +67,13 @@ object StorageCache {
 
     @JvmStatic
     fun init() {
-        ClientTickEvents.END_CLIENT_TICK.register { mc -> tick(mc) }
+        ClientTickEvents.END_CLIENT_TICK.register { mc ->
+            try {
+                tick(mc)
+            } catch (e: Exception) {
+                FishDiag.fail("StorageCache.1", "storage cache tick failed (${pages.size} pages)", e)
+            }
+        }
     }
 
     private fun uuid(): String? = Minecraft.getInstance().player?.gameProfile?.id?.toString()
@@ -80,6 +88,7 @@ object StorageCache {
 
         if (plainTitle == "Storage") { scanOverview(screen); return }
         val page = StoragePage.fromTitle(plainTitle) ?: run { flush(); return }
+        if (!FishDiag.check(page.index in 0 until 27, "StorageCache.6") { "storage page index ${page.index} out of range from '$plainTitle'" }) return
 
         val now = System.currentTimeMillis()
         if (now - lastSnapshot < 100) return
@@ -123,10 +132,16 @@ object StorageCache {
             val root = NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap())
             for (i in 0 until 27) {
                 if (!root.contains("${i}_inv")) continue
-                NBTInventory.decode(root.getString("${i}_inv").orElse(""))?.let { pages[i] = it; known.add(i) }
+                val inv = NBTInventory.decode(root.getString("${i}_inv").orElse(""))
+                FishDiag.notNull(inv, "StorageCache.4") { "stored page $i failed to decode" }
+                inv?.let { pages[i] = it; known.add(i) }
             }
-            root.getString("known").orElse("").split(',').mapNotNull { it.trim().toIntOrNull() }.forEach { known.add(it) }
+            root.getString("known").orElse("").split(',').mapNotNull { part ->
+                val t = part.trim()
+                if (t.isEmpty()) null else FishDiag.notNull(t.toIntOrNull(), "StorageCache.5") { "bad known-page entry '$t'" }
+            }.forEach { known.add(it) }
         } catch (e: Exception) {
+            FishDiag.fail("StorageCache.2", "failed to load storage cache $file, quarantining", e)
             pages = TreeMap(); known = sortedSetOf()
             fishmod.utils.SafeFiles.quarantine(file, e)
         }
@@ -142,7 +157,8 @@ object StorageCache {
             val tmp = dir.resolve("$id.nbt.tmp")
             NbtIo.writeCompressed(root, tmp)
             Files.move(tmp, dir.resolve("$id.nbt"), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
-        } catch (e: IOException) {
+        } catch (e: Exception) {
+            FishDiag.fail("StorageCache.3", "failed to save storage cache (${pages.size} pages)", e)
             fishmod.utils.debug.Debug.LOGGER.error("Failed to save storage cache", e)
         }
     }

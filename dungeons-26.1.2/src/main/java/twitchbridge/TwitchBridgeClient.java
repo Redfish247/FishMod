@@ -16,6 +16,9 @@ public final class TwitchBridgeClient {
 
 	public static void init() {
 		config = TwitchBridgeConfig.load();
+		if (config == null) {
+			fishmod.utils.debug.FishDiag.fail("TwitchBridgeClient.3", "twitch bridge config load returned null");
+		}
 		TwitchCommands.register();
 
 		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> disconnect());
@@ -23,7 +26,11 @@ public final class TwitchBridgeClient {
 		if (FishSettings.twitchBridgeEnabled && config.autoConnect && !config.channel.isBlank()) {
 			Thread t = new Thread(() -> {
 				sleep(3000);
-				connect(config.channel);
+				try {
+					connect(config.channel);
+				} catch (Throwable e) {
+					fishmod.utils.debug.FishDiag.fail("TwitchBridgeClient.1", "twitch auto-connect failed channel=" + config.channel, e);
+				}
 			}, "twitch-bridge-autoconnect");
 			t.setDaemon(true);
 			t.start();
@@ -81,7 +88,12 @@ public final class TwitchBridgeClient {
 		config.save();
 
 		client = new TwitchIrcClient(config, target);
-		client.start();
+		try {
+			client.start();
+		} catch (RuntimeException e) {
+			fishmod.utils.debug.FishDiag.fail("TwitchBridgeClient.2", "twitch client start failed channel=" + target, e);
+			throw e;
+		}
 	}
 
 	public static synchronized void disconnect() {

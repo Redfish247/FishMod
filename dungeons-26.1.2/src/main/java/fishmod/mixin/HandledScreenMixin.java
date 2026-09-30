@@ -37,45 +37,56 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
-        Slot fishmod$hs = ((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot();
-        fishmod.features.ScrollableTooltip.trackHoveredSlot(
-                fishmod$hs != null && !fishmod$hs.getItem().isEmpty() ? fishmod$hs.index : -1);
+        try {
+            Slot fishmod$hs = ((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot();
+            fishmod.features.ScrollableTooltip.trackHoveredSlot(
+                    fishmod$hs != null && !fishmod$hs.getItem().isEmpty() ? fishmod$hs.index : -1);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.9", "hovered slot tracking failed", t);
+        }
 
         AbstractContainerScreen<?> self = (AbstractContainerScreen<?>) (Object) this;
 
         try {
             SearchBar.render(context, mouseX, mouseY, deltaTicks);
         } catch (Exception e) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.1", "SearchBar.render failed screen=" + self.getClass().getSimpleName(), e);
             if (!fishmod$loggedSearchBar) { fishmod$loggedSearchBar = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] SearchBar.render failed; suppressed (logged once)", e); }
         }
         try {
             fishmod.features.dungeon.LeapMenu.render(context, mouseX, mouseY, self);
         } catch (Exception e) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.2", "LeapMenu.render failed screen=" + self.getClass().getSimpleName(), e);
             if (!fishmod$loggedLeapMenu) { fishmod$loggedLeapMenu = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] LeapMenu.render failed; suppressed (logged once)", e); }
         }
         try {
             fishmod.features.dungeon.PartyFinderPanel.render(context, mouseX, mouseY, self);
         } catch (Exception e) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.3", "PartyFinderPanel.render failed screen=" + self.getClass().getSimpleName(), e);
             if (!fishmod$loggedPartyFinder) { fishmod$loggedPartyFinder = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] PartyFinderPanel.render failed; suppressed (logged once)", e); }
         }
         try {
             fishmod.features.storage.StorageOverlay.render(context, mouseX, mouseY, self);
         } catch (Exception e) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.4", "StorageOverlay.render failed screen=" + self.getClass().getSimpleName(), e);
             if (!fishmod$loggedStorageOverlay) { fishmod$loggedStorageOverlay = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] StorageOverlay.render failed; suppressed (logged once)", e); }
         }
         try {
             fishmod.features.croesus.CroesusProfit.render(context, self);
         } catch (Exception e) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.5", "CroesusProfit.render failed screen=" + self.getClass().getSimpleName(), e);
             if (!fishmod$loggedCroesusProfit) { fishmod$loggedCroesusProfit = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] CroesusProfit.render failed; suppressed (logged once)", e); }
         }
         try {
             fishmod.features.item.ContainerValue.render(context, self);
         } catch (Exception e) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.6", "ContainerValue.render failed screen=" + self.getClass().getSimpleName(), e);
             if (!fishmod$loggedContainerValue) { fishmod$loggedContainerValue = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] ContainerValue.render failed; suppressed (logged once)", e); }
         }
         try {
             fishmod.features.item.AuctionPriceAutofill.trackScreen(self);
         } catch (Exception e) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.7", "AuctionPriceAutofill.trackScreen failed screen=" + self.getClass().getSimpleName(), e);
             if (!fishmod$loggedAuctionPriceAutofill) { fishmod$loggedAuctionPriceAutofill = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] AuctionPriceAutofill.trackScreen failed; suppressed (logged once)", e); }
         }
         try {
@@ -83,9 +94,14 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
                 fishmod.features.dungeon.f7.terminal.TermCustomGui.render(context, this.width, this.height);
             }
         } catch (Exception e) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.8", "TermCustomGui.render failed screen=" + self.getClass().getSimpleName(), e);
             if (!fishmod$loggedTermCustomGui) { fishmod$loggedTermCustomGui = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] TermCustomGui.render failed; suppressed (logged once)", e); }
         }
-        if ((Object) this instanceof fishmod.features.dungeon.f7.terminal.TermSimScreen ts) ts.overlay(context);
+        try {
+            if ((Object) this instanceof fishmod.features.dungeon.f7.terminal.TermSimScreen ts) ts.overlay(context);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.10", "term sim overlay failed", t);
+        }
     }
 
     @Inject(method = "extractSlots", at = @At("HEAD"), cancellable = true)
@@ -112,13 +128,22 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
         if (DrawEvents.INVENTORY_SLOT_BEFORE.isEmpty()) return;
         ItemStack stack = slot.getItem();
         DrawEvents.currentSlot = slot;
-        DrawEvents.INVENTORY_SLOT_BEFORE.invoke(event -> event.draw(context, stack, slot.x, slot.y));
+        try {
+            DrawEvents.INVENTORY_SLOT_BEFORE.invoke(event -> event.draw(context, stack, slot.x, slot.y));
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.11", "slot before-draw event failed slot=" + slot.index, t);
+        }
         DrawEvents.currentSlot = null;
     }
 
     @com.llamalad7.mixinextras.injector.WrapWithCondition(method = "extractSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;itemDecorations(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;IILjava/lang/String;)V"))
     private boolean fishmod$hideClickedNumbers(GuiGraphicsExtractor context, net.minecraft.client.gui.Font font, ItemStack stack, int x, int y, String text, GuiGraphicsExtractor ctx, Slot slot, int mouseX, int mouseY) {
-        return !fishmod.features.dungeon.f7.terminal.TerminalSolver.hideSlotCount(slot);
+        try {
+            return !fishmod.features.dungeon.f7.terminal.TerminalSolver.hideSlotCount(slot);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.18", "terminal slot count hide check failed", t);
+            return true;
+        }
     }
 
     @Inject(method = "extractSlot", at = @At(value = "TAIL"))
@@ -126,96 +151,116 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
         if (DrawEvents.INVENTORY_SLOT_AFTER.isEmpty()) return;
         ItemStack stack = slot.getItem();
         DrawEvents.currentSlot = slot;
-        DrawEvents.INVENTORY_SLOT_AFTER.invoke(event -> event.draw(context, stack, slot.x, slot.y));
+        try {
+            DrawEvents.INVENTORY_SLOT_AFTER.invoke(event -> event.draw(context, stack, slot.x, slot.y));
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.12", "slot after-draw event failed slot=" + slot.index, t);
+        }
         DrawEvents.currentSlot = null;
     }
 
     @Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)
     private void fishmod$slotLock(Slot slot, int slotId, int button, net.minecraft.world.inventory.ContainerInput input, CallbackInfo ci) {
-        if (fishmod.features.SlotLocking.onSlotClicked(slot, slotId, input)) ci.cancel();
+        try {
+            if (fishmod.features.SlotLocking.onSlotClicked(slot, slotId, input)) ci.cancel();
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.13", "slot lock click check failed slotId=" + slotId, t);
+        }
     }
 
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void keyPressed(KeyEvent input, CallbackInfoReturnable<Boolean> cir) {
-        if (SearchBar.keyPressed(input)) { cir.setReturnValue(true); return; }
-        if (fishmod.features.SlotLocking.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
-        if (fishmod.features.storage.StorageOverlay.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
-        if (fishmod.features.dungeon.LeapMenu.keyPressed(input.key(), (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
-        if (fishmod.features.other.PetKeybinds.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
-        if (WardrobeHotkeys.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+        try {
+            if (SearchBar.keyPressed(input)) { cir.setReturnValue(true); return; }
+            if (fishmod.features.SlotLocking.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+            if (fishmod.features.storage.StorageOverlay.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+            if (fishmod.features.dungeon.LeapMenu.keyPressed(input.key(), (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+            if (fishmod.features.other.PetKeybinds.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+            if (WardrobeHotkeys.keyPressed(input, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.14", "container keyPressed hooks failed key=" + input.key(), t);
+        }
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void onMouseClick(MouseButtonEvent click, boolean doubled, CallbackInfoReturnable<Boolean> cir) {
-        double cx = click.x(), cy = click.y();
+        try {
+            double cx = click.x(), cy = click.y();
 
-        if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) {
-            int idx = fishmod.features.dungeon.f7.terminal.TermCustomGui.slotAt((int) cx, (int) cy);
-            fishmod.features.dungeon.f7.terminal.TermCustomGui.handleClick(
-                    (AbstractContainerScreen<?>) (Object) this, idx, click.button());
-            cir.setReturnValue(true);
-            return;
+            if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) {
+                int idx = fishmod.features.dungeon.f7.terminal.TermCustomGui.slotAt((int) cx, (int) cy);
+                fishmod.features.dungeon.f7.terminal.TermCustomGui.handleClick(
+                        (AbstractContainerScreen<?>) (Object) this, idx, click.button());
+                cir.setReturnValue(true);
+                return;
+            }
+
+            if (fishmod.features.dungeon.f7.terminal.TerminalSolver.onMouseClick(
+                    click.button(), (AbstractContainerScreen<?>) (Object) this)) {
+                cir.setReturnValue(true);
+                return;
+            }
+
+            if (fishmod.features.storage.StorageOverlay.onOverlayClick(click, doubled, (AbstractContainerScreen<?>) (Object) this)) {
+                cir.setReturnValue(true);
+                return;
+            }
+
+            if (fishmod.features.SlotBinds.onMouseClick(click, (AbstractContainerScreen<?>) (Object) this)) {
+                cir.setReturnValue(true);
+                return;
+            }
+
+            if (fishmod.features.dungeon.LeapMenu.mouseClicked(click.button(), cx, cy, (AbstractContainerScreen<?>) (Object) this)) {
+                cir.setReturnValue(true);
+                return;
+            }
+
+            if (fishmod.features.dungeon.PartyFinderPanel.mouseClicked(click.button(), cx, cy, (AbstractContainerScreen<?>) (Object) this)) {
+                cir.setReturnValue(true);
+                return;
+            }
+
+            if (SessionStats.handleScreenClick(cx, cy)) {
+                cir.setReturnValue(true);
+                return;
+            }
+
+            if (fishmod.features.other.PetKeybinds.mouseClicked(click, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+            if (WardrobeHotkeys.mouseClicked(click, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
+
+            SearchBar.onMouseClick(click);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.15", "container mouseClicked hooks failed button=" + click.button(), t);
         }
-
-        if (fishmod.features.dungeon.f7.terminal.TerminalSolver.onMouseClick(
-                click.button(), (AbstractContainerScreen<?>) (Object) this)) {
-            cir.setReturnValue(true);
-            return;
-        }
-
-        if (fishmod.features.storage.StorageOverlay.onOverlayClick(click, doubled, (AbstractContainerScreen<?>) (Object) this)) {
-            cir.setReturnValue(true);
-            return;
-        }
-
-        if (fishmod.features.SlotBinds.onMouseClick(click, (AbstractContainerScreen<?>) (Object) this)) {
-            cir.setReturnValue(true);
-            return;
-        }
-
-        if (fishmod.features.dungeon.LeapMenu.mouseClicked(click.button(), cx, cy, (AbstractContainerScreen<?>) (Object) this)) {
-            cir.setReturnValue(true);
-            return;
-        }
-
-        if (fishmod.features.dungeon.PartyFinderPanel.mouseClicked(click.button(), cx, cy, (AbstractContainerScreen<?>) (Object) this)) {
-            cir.setReturnValue(true);
-            return;
-        }
-
-        if (SessionStats.handleScreenClick(cx, cy)) {
-            cir.setReturnValue(true);
-            return;
-        }
-
-        if (fishmod.features.other.PetKeybinds.mouseClicked(click, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
-        if (WardrobeHotkeys.mouseClicked(click, (AbstractContainerScreen<?>) (Object) this)) { cir.setReturnValue(true); return; }
-
-        SearchBar.onMouseClick(click);
     }
 
     @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
     private void fishmod$storageScroll(double mx, double my, double hz, double vt, CallbackInfoReturnable<Boolean> cir) {
-        if (fishmod.features.storage.StorageOverlay.mouseScrolled(vt, (AbstractContainerScreen<?>) (Object) this)) {
-            cir.setReturnValue(true);
-            return;
-        }
-        if (fishmod.features.dungeon.PartyFinderPanel.mouseScrolled(mx, my, vt, (AbstractContainerScreen<?>) (Object) this)) {
-            cir.setReturnValue(true);
-            return;
-        }
-        if (fishmod.features.ScrollableTooltip.isEnabled()) {
-            Slot hs = ((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot();
-            if (hs != null && !hs.getItem().isEmpty()) {
-                long win = net.minecraft.client.Minecraft.getInstance().getWindow().handle();
-                boolean shift = org.lwjgl.glfw.GLFW.glfwGetKey(win, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS
-                        || org.lwjgl.glfw.GLFW.glfwGetKey(win, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
-                boolean ctrl = org.lwjgl.glfw.GLFW.glfwGetKey(win, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL) == org.lwjgl.glfw.GLFW.GLFW_PRESS
-                        || org.lwjgl.glfw.GLFW.glfwGetKey(win, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_CONTROL) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
-                if (fishmod.features.ScrollableTooltip.onScroll(vt, hs.index, shift, ctrl)) {
-                    cir.setReturnValue(true);
+        try {
+            if (fishmod.features.storage.StorageOverlay.mouseScrolled(vt, (AbstractContainerScreen<?>) (Object) this)) {
+                cir.setReturnValue(true);
+                return;
+            }
+            if (fishmod.features.dungeon.PartyFinderPanel.mouseScrolled(mx, my, vt, (AbstractContainerScreen<?>) (Object) this)) {
+                cir.setReturnValue(true);
+                return;
+            }
+            if (fishmod.features.ScrollableTooltip.isEnabled()) {
+                Slot hs = ((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot();
+                if (hs != null && !hs.getItem().isEmpty()) {
+                    long win = net.minecraft.client.Minecraft.getInstance().getWindow().handle();
+                    boolean shift = org.lwjgl.glfw.GLFW.glfwGetKey(win, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS
+                            || org.lwjgl.glfw.GLFW.glfwGetKey(win, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+                    boolean ctrl = org.lwjgl.glfw.GLFW.glfwGetKey(win, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL) == org.lwjgl.glfw.GLFW.GLFW_PRESS
+                            || org.lwjgl.glfw.GLFW.glfwGetKey(win, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_CONTROL) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+                    if (fishmod.features.ScrollableTooltip.onScroll(vt, hs.index, shift, ctrl)) {
+                        cir.setReturnValue(true);
+                    }
                 }
             }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.16", "container mouseScrolled hooks failed", t);
         }
     }
 
@@ -235,9 +280,13 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
 
     @Inject(method = "removed", at = @At("HEAD"))
     private void fishmod$storageClosed(CallbackInfo ci) {
-        fishmod.features.storage.StorageOverlay.onClosed();
-        fishmod.features.ScrollableTooltip.resetScroll();
-        fishmod.features.dungeon.f7.terminal.TerminalSolver.onScreenClosed();
-        fishmod.features.SlotBinds.onClose();
+        try {
+            fishmod.features.storage.StorageOverlay.onClosed();
+            fishmod.features.ScrollableTooltip.resetScroll();
+            fishmod.features.dungeon.f7.terminal.TerminalSolver.onScreenClosed();
+            fishmod.features.SlotBinds.onClose();
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.17", "container close hooks failed", t);
+        }
     }
 }

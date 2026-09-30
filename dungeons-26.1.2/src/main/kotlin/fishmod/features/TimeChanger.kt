@@ -1,6 +1,7 @@
 package fishmod.features
 
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import java.time.LocalTime
 
 object TimeChanger {
@@ -20,6 +21,7 @@ object TimeChanger {
         val mode = FishSettings.timeChangerMode
         if (mode == REAL_TIME_MODE) return realTimeTicks()
         val idx = MODES.indexOf(mode)
+        if (idx < 0) FishDiag.fail("TimeChanger.1", "unknown time changer mode '$mode'")
         return VALUES.getOrElse(idx) { realTimeTicks() }
     }
 

@@ -1,5 +1,6 @@
 package fishmod.features.scoreboard
 
+import fishmod.utils.debug.FishDiag
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import fishmod.utils.HypixelApi
@@ -17,13 +18,16 @@ object CollectionsProgress {
         if (loaded) return
         loaded = true
         try {
-            javaClass.getResourceAsStream("/data/collections_max.json")?.use { stream ->
+            val res = javaClass.getResourceAsStream("/data/collections_max.json")
+            FishDiag.notNull(res, "CollectionsProgress.2") { "bundled /data/collections_max.json missing" }
+            res?.use { stream ->
                 InputStreamReader(stream).use { reader ->
                     val root = JsonParser.parseReader(reader).asJsonObject
                     for ((k, v) in root.entrySet()) MAX_TIER[k] = v.asLong
                 }
             }
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            FishDiag.fail("CollectionsProgress.1", "failed to parse bundled collections_max.json", e)
         }
     }
 
@@ -45,7 +49,7 @@ object CollectionsProgress {
             fetchInFlight = true
             HypixelApi.getLocalMember(client) { member ->
                 fetchInFlight = false
-                apply(member)
+                FishDiag.guard("CollectionsProgress.4", "collections apply threw") { apply(member) }
             }
         }
     }
@@ -63,7 +67,8 @@ object CollectionsProgress {
             }
             maxed = maxedCount
             total = MAX_TIER.size
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            FishDiag.fail("CollectionsProgress.3", "failed to compute maxed collections from API member", e)
         }
     }
 

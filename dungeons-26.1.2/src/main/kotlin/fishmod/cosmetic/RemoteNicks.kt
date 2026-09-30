@@ -1,5 +1,6 @@
 package fishmod.cosmetic
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.HypixelApi
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.minecraft.client.Minecraft
@@ -21,7 +22,7 @@ object RemoteNicks {
 
     @JvmStatic
     fun init() {
-        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> uploadOwn() }
+        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> FishDiag.guard("RemoteNicks.1", "nick upload on join failed") { uploadOwn() } }
     }
 
     @JvmStatic
@@ -61,7 +62,8 @@ object RemoteNicks {
         for ((uuid, name) in uuidToName) {
             val raw = nicks[uuid]
             if (raw != null && raw.isNotEmpty()) {
-                val prev = styledByName.put(name, NickState.parse(ProfanityFilter.censor(raw)))
+                val styled = FishDiag.guard("RemoteNicks.2", "remote nick parse failed for $name") { NickState.parse(ProfanityFilter.censor(raw)) } ?: continue
+                val prev = styledByName.put(name, styled)
                 negativeCache.remove(name)
                 if (prev == null) newlyResolved = true
             } else {
@@ -115,7 +117,8 @@ object RemoteNicks {
             inFlight.remove(name)
             val raw = nicks[uuid]
             if (raw != null && raw.isNotEmpty()) {
-                val prev = styledByName.put(name, NickState.parse(ProfanityFilter.censor(raw)))
+                val styled = FishDiag.guard("RemoteNicks.3", "remote nick parse failed for $name") { NickState.parse(ProfanityFilter.censor(raw)) } ?: return@fetchNicks
+                val prev = styledByName.put(name, styled)
                 negativeCache.remove(name)
                 if (prev == null) ChatNickRefresher.requestRefresh()
             } else {

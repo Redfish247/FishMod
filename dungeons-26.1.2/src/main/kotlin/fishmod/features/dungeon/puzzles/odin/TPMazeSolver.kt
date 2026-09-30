@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.puzzles.odin
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
@@ -42,7 +43,7 @@ object TPMazeSolver {
         if (index in 28..29) { best = null; return }
 
         val groupStart = index / 4 * 4
-        if (groupStart + 4 > tpPads.size) return
+        if (groupStart + 4 > tpPads.size) { FishDiag.fail("TPMazeSolver.1", "tp pad group out of range index=$index pads=${tpPads.size}"); return }
         val candidates = tpPads.slice(groupStart until groupStart + 4).filter { it != currentPad && it !in visited }
 
         best = candidates.firstOrNull { it in correctPortals }

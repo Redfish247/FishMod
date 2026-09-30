@@ -4,6 +4,7 @@ import fishmod.features.FishHudEditor
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemUtil
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.sound.SoundManager
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback
@@ -40,10 +41,14 @@ object DungeonBreaker {
         )
 
         AttackBlockCallback.EVENT.register(AttackBlockCallback { player, level, hand, pos, _ ->
-            if (level.isClientSide && FishSettings.dungeonBreakerEnabled && FishSettings.dungeonBreakerSoundEnabled && activeHere() &&
-                isBreaker(player.getItemInHand(hand)) && !level.getBlockState(pos).isAir
-            ) {
-                pending[pos.immutable()] = BREAK_WINDOW_TICKS
+            try {
+                if (level.isClientSide && FishSettings.dungeonBreakerEnabled && FishSettings.dungeonBreakerSoundEnabled && activeHere() &&
+                    isBreaker(player.getItemInHand(hand)) && !level.getBlockState(pos).isAir
+                ) {
+                    pending[pos.immutable()] = BREAK_WINDOW_TICKS
+                }
+            } catch (e: Exception) {
+                FishDiag.fail("DungeonBreaker.1", "dungeonbreaker attack hook failed at $pos", e)
             }
             InteractionResult.PASS
         })
@@ -55,6 +60,7 @@ object DungeonBreaker {
                 charges = -1; maxCharges = -1; pending.clear()
                 return@register
             }
+            if (pending.size > 256) FishDiag.fail("DungeonBreaker.2", "dungeonbreaker pending map leaking: ${pending.size} entries")
             if (pending.isNotEmpty()) {
                 val it = pending.entries.iterator()
                 while (it.hasNext()) {
@@ -72,7 +78,7 @@ object DungeonBreaker {
             if (!FishSettings.dungeonBreakerEnabled || !FishSettings.dungeonBreakerHudEnabled || !activeHere()) return@register
             if (++scanTick < 5) return@register
             scanTick = 0
-            scanCharges()
+            FishDiag.guard("DungeonBreaker.3", "dungeonbreaker charge scan failed") { scanCharges() }
         }
     }
 
@@ -84,12 +90,12 @@ object DungeonBreaker {
 
     private fun playBreakSound() {
         fishmod.utils.debug.Debug.LOGGER.debug("[DungeonBreaker] break sound")
-        SoundManager.play2D(
+        FishDiag.guard("DungeonBreaker.4", "dungeonbreaker sound '${FishSettings.dungeonBreakerSoundName}' failed") { SoundManager.play2D(
             SoundManager.preset(FishSettings.dungeonBreakerSoundName),
             FishSettings.dungeonBreakerSoundVolume.coerceIn(0, 500) / 100f,
             FishSettings.dungeonBreakerSoundPitch.toFloat().coerceIn(0f, 2f),
             "dungeonBreaker", 30,
-        )
+        ) }
     }
 
     private fun scanCharges() {
@@ -104,9 +110,14 @@ object DungeonBreaker {
                 fishmod.utils.debug.Debug.LOGGER.debug("[DungeonBreaker] lore: " + lore.joinToString(" | ") { it.string })
             }
             for (line in lore) {
-                val m = CHARGES.find(line.string) ?: continue
-                val c = m.groupValues[1].toInt()
-                val mx = m.groupValues[2].toInt()
+                val m = CHARGES.find(line.string)
+                if (m == null) {
+                    if (line.string.contains("Charges:")) FishDiag.fail("DungeonBreaker.5", "charges lore line unparsed: '${line.string}'")
+                    continue
+                }
+                val c = m.groupValues[1].toIntOrNull() ?: run { FishDiag.fail("DungeonBreaker.6", "charges not an int: '${m.value}'"); continue }
+                val mx = m.groupValues[2].toIntOrNull() ?: run { FishDiag.fail("DungeonBreaker.7", "max charges not an int: '${m.value}'"); continue }
+                FishDiag.check(mx > 0 && c <= mx, "DungeonBreaker.8") { "implausible charges $c/$mx" }
                 if (c != charges || mx != maxCharges) fishmod.utils.debug.Debug.LOGGER.debug("[DungeonBreaker] charges $c/$mx")
                 charges = c
                 maxCharges = mx
@@ -134,9 +145,14 @@ object DungeonBreaker {
 
         val sc = FishSettings.dungeonBreakerHudScale.toFloat()
         ctx.pose().pushMatrix()
-        ctx.pose().translate(FishSettings.dungeonBreakerHudX.toFloat(), FishSettings.dungeonBreakerHudY.toFloat())
-        ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, label, 0, 0, -1, true)
-        ctx.pose().popMatrix()
+        try {
+            ctx.pose().translate(FishSettings.dungeonBreakerHudX.toFloat(), FishSettings.dungeonBreakerHudY.toFloat())
+            ctx.pose().scale(sc, sc)
+            ctx.text(mc.font, label, 0, 0, -1, true)
+        } catch (e: Exception) {
+            FishDiag.fail("DungeonBreaker.9", "dungeonbreaker hud render failed", e)
+        } finally {
+            ctx.pose().popMatrix()
+        }
     }
 }

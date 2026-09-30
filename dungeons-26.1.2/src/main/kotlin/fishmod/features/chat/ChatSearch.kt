@@ -2,6 +2,7 @@ package fishmod.features.chat
 
 import fishmod.mixin.ChatHudInvoker
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 
@@ -38,8 +39,10 @@ object ChatSearch {
 
     private fun refresh() {
         val chat = Minecraft.getInstance().gui?.chat ?: return
-        chat.resetChatScroll()
-        (chat as ChatHudInvoker).invokeRefresh()
+        FishDiag.guard("ChatSearch.1", "chat search refresh failed (query='$query')") {
+            chat.resetChatScroll()
+            (chat as ChatHudInvoker).invokeRefresh()
+        }
     }
 
     private val COLOR_CODE = fishmod.utils.Constants.STRIP_COLOR_REGEX

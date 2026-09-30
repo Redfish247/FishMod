@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.Location
@@ -40,7 +41,7 @@ object EtherwarpHelper {
             if (!Location.inSkyblock()) return@register
             val p = mc.player ?: return@register
             if (!p.isShiftKeyDown || !holdingEtherItem()) return@register
-            raycast(mc)
+            try { raycast(mc) } catch (t: Throwable) { FishDiag.fail("EtherwarpHelper.1", "etherwarp raycast failed", t) }
         }
 
         Events.ON_SOUND.register { event, volume, pitch ->
@@ -55,13 +56,19 @@ object EtherwarpHelper {
             lastCue = now
             val vol = FishSettings.etherwarpSoundVolume.coerceIn(0, 500) / 100f
             val pit = FishSettings.etherwarpSoundPitch.toFloat().coerceIn(0.5f, 2f)
-            fishmod.utils.Misc.sendSound(SoundManager.preset(FishSettings.etherwarpSoundName), vol, pit)
+            try { fishmod.utils.Misc.sendSound(SoundManager.preset(FishSettings.etherwarpSoundName), vol, pit) } catch (t: Throwable) { FishDiag.fail("EtherwarpHelper.2", "etherwarp sound '${FishSettings.etherwarpSoundName}' failed", t) }
             true
         }
 
-        RenderingEvents.GIZMO.register { _ -> if (!FishSettings.etherwarpDepth) renderGizmo() }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> if (FishSettings.etherwarpDepth) render(m, vc, fill = true) }
-        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc -> if (FishSettings.etherwarpDepth) render(m, vc, fill = false) }
+        RenderingEvents.GIZMO.register { _ ->
+            if (!FishSettings.etherwarpDepth) try { renderGizmo() } catch (t: Throwable) { FishDiag.fail("EtherwarpHelper.3", "etherwarp gizmo render failed at $target", t) }
+        }
+        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
+            if (FishSettings.etherwarpDepth) try { render(m, vc, fill = true) } catch (t: Throwable) { FishDiag.fail("EtherwarpHelper.4", "etherwarp fill render failed at $target", t) }
+        }
+        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc ->
+            if (FishSettings.etherwarpDepth) try { render(m, vc, fill = false) } catch (t: Throwable) { FishDiag.fail("EtherwarpHelper.5", "etherwarp outline render failed at $target", t) }
+        }
     }
 
     private fun raycast(mc: Minecraft) {

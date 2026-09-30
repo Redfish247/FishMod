@@ -65,6 +65,7 @@ public final class TwitchIrcClient {
 				sleep(Math.min(30_000L, 2_000L * (1L << Math.min(attempt, 4))));
 			} catch (IOException e) {
 				if (!started) break;
+				fishmod.utils.debug.FishDiag.fail("TwitchIrcClient.1", "IRC connection to #" + channel + " dropped (attempt " + (attempt + 1) + ")", e);
 				attempt++;
 				long delay = Math.min(30_000L, 2_000L * (1L << Math.min(attempt - 1, 4)));
 				ChatOutput.info(config, "disconnected from #" + channel + " (" + e.getMessage()
@@ -72,6 +73,9 @@ public final class TwitchIrcClient {
 				sleep(delay);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
+				break;
+			} catch (RuntimeException e) {
+				fishmod.utils.debug.FishDiag.fail("TwitchIrcClient.2", "IRC loop for #" + channel + " crashed", e);
 				break;
 			}
 		}
@@ -110,7 +114,17 @@ public final class TwitchIrcClient {
 			return;
 		}
 
-		IrcMessage msg = IrcMessage.parse(raw);
+		IrcMessage msg;
+		try {
+			msg = IrcMessage.parse(raw);
+		} catch (RuntimeException e) {
+			fishmod.utils.debug.FishDiag.fail("TwitchIrcClient.3", "IRC line parse failed: " + (raw.length() > 120 ? raw.substring(0, 120) : raw), e);
+			return;
+		}
+		if (msg.command.isEmpty()) {
+			fishmod.utils.debug.FishDiag.fail("TwitchIrcClient.4", "IRC line parsed to no command: " + (raw.length() > 120 ? raw.substring(0, 120) : raw));
+			return;
+		}
 		switch (msg.command) {
 			case "PRIVMSG" -> {
 				String name = msg.tag("display-name", msg.nick);
@@ -153,7 +167,8 @@ public final class TwitchIrcClient {
 		if (s != null) {
 			try {
 				s.close();
-			} catch (IOException ignored) {
+			} catch (IOException e) {
+				fishmod.utils.debug.FishDiag.fail("TwitchIrcClient.5", "IRC socket close failed", e);
 			}
 		}
 	}

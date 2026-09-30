@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.map
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.MayorApi
 import fishmod.utils.TabListCache
 import fishmod.utils.config.values.DungeonMapSettings
@@ -43,7 +44,9 @@ object DungeonScore {
 
     @JvmStatic
     fun register() {
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc -> tick(mc) })
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
+            try { tick(mc) } catch (e: Exception) { FishDiag.fail("DungeonScore.1", "dungeon score tick failed score=$score secrets=$secretsFound/$secretsPercent% rooms=$completedRooms", e) }
+        })
     }
 
     private fun tick(mc: Minecraft) {
@@ -121,6 +124,7 @@ object DungeonScore {
                 try {
                     secretsPercent = m.group(1).toFloat()
                 } catch (e: Exception) {
+                    FishDiag.fail("DungeonScore.2", "secret percent not numeric: '${m.group(1)}'", e)
                 }
             } else {
                 m = SECRET_COUNT.matcher(line)
@@ -164,12 +168,14 @@ object DungeonScore {
             val m = CLEARED.matcher(line)
             if (m.find()) percentCleared = parseInt(m.group(1), percentCleared)
         }
+        FishDiag.check(percentCleared in 0..100, "DungeonScore.4") { "cleared percent out of range: $percentCleared" }
     }
 
     private fun parseInt(s: String, fallback: Int): Int {
         return try {
             s.toInt()
         } catch (e: Exception) {
+            FishDiag.fail("DungeonScore.3", "score tab value not numeric: '$s'", e)
             fallback
         }
     }

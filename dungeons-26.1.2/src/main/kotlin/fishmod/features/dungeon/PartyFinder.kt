@@ -6,6 +6,7 @@ import fishmod.utils.Misc
 import fishmod.utils.Scheduler
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.PartyUtil
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.dungeon.DungeonClass
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.DrawEvents
@@ -53,8 +54,14 @@ object PartyFinder {
 
         Events.ON_GAME_MESSAGE.register { text ->
             if (FishSettings.pfAutoKick) {
-                val m = PF_JOIN.matcher(COLOR.replace(text.string, ""))
-                if (m.find()) tryAutoKick(m.group(1), m.group(2))
+                try {
+                    val plain = COLOR.replace(text.string, "")
+                    val m = PF_JOIN.matcher(plain)
+                    if (m.find()) tryAutoKick(m.group(1), m.group(2))
+                    else if (plain.startsWith("Party Finder > ") && plain.contains("joined the dungeon group")) FishDiag.fail("PartyFinder.1", "PF join line didn't match: '$plain'")
+                } catch (e: Exception) {
+                    FishDiag.fail("PartyFinder.2", "auto-kick chat handler threw", e)
+                }
             }
             false
         }
@@ -81,6 +88,7 @@ object PartyFinder {
         HypixelApi.getByNameSilent(name) { d ->
             cache[key] = d
             if (d.failed) {
+                FishDiag.fail("PartyFinder.3", "auto-kick API lookup failed for $name")
                 mc.execute { FishMsg.send("§9AutoKick §7> couldn't look up §e$name§7, not kicking") }
                 return@getByNameSilent
             }
@@ -108,7 +116,7 @@ object PartyFinder {
         "healer"  -> FishSettings.pfAutoKickHealerCata
         "mage"    -> FishSettings.pfAutoKickMageCata
         "tank"    -> FishSettings.pfAutoKickTankCata
-        else -> 0
+        else -> { FishDiag.fail("PartyFinder.4", "unknown class for cata req: '$clazz'"); 0 }
     }
 
     private fun sbReqFor(clazz: String): Int = when (clazz.lowercase()) {
@@ -117,7 +125,7 @@ object PartyFinder {
         "healer"  -> FishSettings.pfAutoKickHealerSb
         "mage"    -> FishSettings.pfAutoKickMageSb
         "tank"    -> FishSettings.pfAutoKickTankSb
-        else -> 0
+        else -> { FishDiag.fail("PartyFinder.5", "unknown class for sb req: '$clazz'"); 0 }
     }
 
     private fun mpReqFor(clazz: String): Int = when (clazz.lowercase()) {
@@ -126,7 +134,7 @@ object PartyFinder {
         "healer"  -> FishSettings.pfAutoKickHealerMp
         "mage"    -> FishSettings.pfAutoKickMageMp
         "tank"    -> FishSettings.pfAutoKickTankMp
-        else -> 0
+        else -> { FishDiag.fail("PartyFinder.6", "unknown class for mp req: '$clazz'"); 0 }
     }
 
     private fun finishAutoKick(name: String, key: String, reasons: List<String>) {
@@ -158,7 +166,9 @@ object PartyFinder {
         val maxSec = FishSettings.pfAutoKickMaxSeconds
         val prefix = if (master) "M" else "F"
 
-        val pb = PB_LINE.find((if (master) d.masterPbs else d.cataPbs).getOrNull(floor)?.trim() ?: "")
+        val pbRaw = (if (master) d.masterPbs else d.cataPbs).getOrNull(floor)?.trim() ?: ""
+        val pb = PB_LINE.find(pbRaw)
+        FishDiag.check(pb != null || pbRaw.isEmpty() || pbRaw == "N/A" || !pbRaw.contains(':'), "PartyFinder.7") { "PB string didn't parse: '$pbRaw' floor=$prefix$floor" }
         when {
             pb == null || pb.groupValues[3] != "S+" ->
                 reasons.add("$prefix$floor PB(no S+/${fmt(maxSec)})")
@@ -198,6 +208,7 @@ object PartyFinder {
                 if (m.find()) {
                     val c = m.group(1).lowercase().replaceFirstChar { it.uppercase() }
                     if (c in CLASSES) { capturedClass = c; return }
+                    FishDiag.fail("PartyFinder.8", "Catacombs Gate selected class unknown: '$c'")
                 }
             }
         }
@@ -212,6 +223,10 @@ object PartyFinder {
 
     private fun onSlotBefore(ctx: GuiGraphicsExtractor, stack: ItemStack, x: Int, y: Int) {
         if (!inPartyFinder()) return
+        try { onSlotBeforeInner(ctx, stack, x, y) } catch (e: Exception) { FishDiag.fail("PartyFinder.9", "PF slot highlight threw", e) }
+    }
+
+    private fun onSlotBeforeInner(ctx: GuiGraphicsExtractor, stack: ItemStack, x: Int, y: Int) {
         if (stack.isEmpty || !stack.`is`(Items.PLAYER_HEAD)) return
 
         val present = HashSet<String>()
@@ -220,7 +235,7 @@ object PartyFinder {
             val m = MEMBER.matcher(line)
             if (m.matches()) {
                 present.add(m.group(2))
-                m.group(3).toIntOrNull()?.let { if (it < minLevel) minLevel = it }
+                FishDiag.notNull(m.group(3).toIntOrNull(), "PartyFinder.10") { "member level not numeric: '$line'" }?.let { if (it < minLevel) minLevel = it }
             }
         }
 
@@ -237,6 +252,10 @@ object PartyFinder {
 
     private fun onSlot(ctx: GuiGraphicsExtractor, stack: ItemStack, x: Int, y: Int) {
         if (!inPartyFinder() || stack.isEmpty || !stack.`is`(Items.PLAYER_HEAD)) return
+        try { onSlotInner(ctx, stack, x, y) } catch (e: Exception) { FishDiag.fail("PartyFinder.11", "PF slot overlay threw", e) }
+    }
+
+    private fun onSlotInner(ctx: GuiGraphicsExtractor, stack: ItemStack, x: Int, y: Int) {
         if (!FishSettings.pfShowLevelReq && !FishSettings.pfShowMissingClasses) return
 
         var levelReq = 0
@@ -244,7 +263,7 @@ object PartyFinder {
         for (line in lore(stack)) {
             if (FishSettings.pfShowLevelReq) {
                 val m = LEVEL_REQ.matcher(line)
-                if (m.find()) levelReq = m.group(1).toIntOrNull() ?: levelReq
+                if (m.find()) levelReq = FishDiag.notNull(m.group(1).toIntOrNull(), "PartyFinder.12") { "level req not numeric: '$line'" } ?: levelReq
             }
             if (FishSettings.pfShowMissingClasses) {
                 val m = MEMBER.matcher(line)
@@ -281,6 +300,10 @@ object PartyFinder {
 
     private fun onTooltip(stack: ItemStack, lines: MutableList<Component>) {
         if (!inPartyFinder() || !FishSettings.pfTooltipStats || stack.isEmpty || !stack.`is`(Items.PLAYER_HEAD)) return
+        try { onTooltipInner(lines) } catch (e: Exception) { FishDiag.fail("PartyFinder.13", "PF tooltip stats threw (lines=${lines.size})", e) }
+    }
+
+    private fun onTooltipInner(lines: MutableList<Component>) {
 
         var floor = 0
         var master = false
@@ -298,7 +321,7 @@ object PartyFinder {
             if (!m.matches()) continue
             val name = m.group(1)
             val cls = m.group(2)
-            val lvl = m.group(3).toIntOrNull() ?: 0
+            val lvl = FishDiag.notNull(m.group(3).toIntOrNull(), "PartyFinder.14") { "tooltip member level not numeric: '$p'" } ?: 0
             present.add(cls)
             lines[i] = Component.literal(" §b$name: §e$cls ${classColor(lvl)}$lvl${statsFor(name, floor, master)}")
         }
@@ -339,6 +362,7 @@ object PartyFinder {
         if (cache.containsKey(key) || !pending.add(key)) return
         if (pending.size > 6) { pending.remove(key); return }
         HypixelApi.getByNameSilent(name) { data ->
+            if (data.failed) FishDiag.fail("PartyFinder.15", "PF stats lookup failed for $name")
             cache[key] = data
             pending.remove(key)
         }
@@ -346,7 +370,8 @@ object PartyFinder {
 
     private fun parseFloor(s: String): Int = s.toIntOrNull() ?: when (s.uppercase()) {
         "I" -> 1; "II" -> 2; "III" -> 3; "IV" -> 4; "V" -> 5; "VI" -> 6; "VII" -> 7
-        else -> 0
+        "ENTRANCE" -> 0
+        else -> { FishDiag.fail("PartyFinder.16", "unknown PF floor token '$s'"); 0 }
     }
 
     private fun classColor(level: Int): String = when {

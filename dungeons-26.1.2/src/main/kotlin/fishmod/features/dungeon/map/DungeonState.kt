@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.map
 
+import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 import net.minecraft.world.level.Level
 import net.minecraft.world.scores.DisplaySlot
@@ -50,6 +51,7 @@ object DungeonState {
         if (fm.find()) {
             val f = parseRomanFloor(fm.group(1))
             if (f >= 0) chatFloor = f
+            else FishDiag.fail("DungeonState.1", "couldn't parse floor from entered message: '${fm.group(1)}'")
         }
 
         for (b in BOSS_ENTRY) {
@@ -89,6 +91,7 @@ object DungeonState {
             else -> try {
                 s.toInt()
             } catch (e: Exception) {
+                FishDiag.fail("DungeonState.2", "unknown floor numeral '$s'", e)
                 -1
             }
         }
@@ -131,6 +134,7 @@ object DungeonState {
                 if (stripColors(display).contains("Dungeon: Catacombs")) return true
             }
         } catch (e: Exception) {
+            FishDiag.fail("DungeonState.3", "tab list dungeon check failed", e)
         }
 
         return sidebarFloorNumber() >= 0
@@ -170,7 +174,7 @@ object DungeonState {
             val m = SIDEBAR_FLOOR.matcher(stripColors(raw))
             if (m.find()) {
                 val f = m.group(2)
-                sidebarFloor = if (f == "E") 0 else f.toIntOrNull() ?: 1
+                sidebarFloor = if (f == "E") 0 else FishDiag.notNull(f.toIntOrNull(), "DungeonState.4") { "sidebar floor not numeric: '$f'" } ?: 1
                 sidebarMaster = team != null && m.group(1) == "M"
                 return
             }

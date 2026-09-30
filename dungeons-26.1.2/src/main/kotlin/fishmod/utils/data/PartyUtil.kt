@@ -1,6 +1,7 @@
 package fishmod.utils.data
 
 import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDiag
 import net.hypixel.modapi.HypixelModAPI
 import net.hypixel.modapi.packet.impl.clientbound.ClientboundPartyInfoPacket
 import net.hypixel.modapi.packet.impl.serverbound.ServerboundPartyInfoPacket
@@ -25,12 +26,18 @@ object PartyUtil {
     @JvmStatic
     fun init() {
         INSTANCE.createHandler(ClientboundPartyInfoPacket::class.java) { packet ->
-            if (Debug.termInfo) Debug.LOGGER.info("Received party info packet")
-            lastReceived = System.currentTimeMillis()
-            memberMap = packet.memberMap
-            inParty = packet.isInParty
-            leaderUuid = packet.memberMap.entries
-                .firstOrNull { it.value.role == ClientboundPartyInfoPacket.PartyRole.LEADER }?.key
+            try {
+                if (Debug.termInfo) Debug.LOGGER.info("Received party info packet")
+                lastReceived = System.currentTimeMillis()
+                memberMap = packet.memberMap
+                inParty = packet.isInParty
+                leaderUuid = packet.memberMap.entries
+                    .firstOrNull { it.value.role == ClientboundPartyInfoPacket.PartyRole.LEADER }?.key
+                if (inParty && leaderUuid == null) FishDiag.fail("PartyUtil.1", "party info packet has no leader among ${packet.memberMap.size} members")
+                if (inParty && packet.memberMap.isEmpty()) FishDiag.fail("PartyUtil.2", "party info packet says in party but member map is empty")
+            } catch (t: Throwable) {
+                FishDiag.fail("PartyUtil.3", "handle party info packet", t)
+            }
         }
     }
 
@@ -49,6 +56,7 @@ object PartyUtil {
             grabbedTime = System.currentTimeMillis()
         } else {
             Debug.LOGGER.warn("Server bound party info packet lost")
+            FishDiag.fail("PartyUtil.4", "Hypixel Mod API refused party info request (not registered / not on Hypixel?)")
         }
     }
 

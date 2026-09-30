@@ -10,11 +10,14 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.sounds.SoundEvents
+import fishmod.utils.debug.FishDiag
 
 object StormOverAlert {
 
     private const val NAME = "Storm Over Alert"
     private const val COUNTDOWN_TICKS = 5 * 20
+    private const val HUD_W = 120
+    private const val HUD_H = 14
     private val SERVER_COUNTDOWN = Regex("^[1-5]$")
 
     private var shownAt = 0L
@@ -27,7 +30,7 @@ object StormOverAlert {
             NAME,
             { FishSettings.stormOverHudX }, { v -> FishSettings.stormOverHudX = v },
             { FishSettings.stormOverHudY }, { v -> FishSettings.stormOverHudY = v },
-            120, 14,
+            HUD_W, HUD_H,
             { FishSettings.stormOverScale }, { v -> FishSettings.stormOverScale = v }
         )
         Events.ON_WORLD_CHANGE.register { shownAt = 0L; ticksLeft = -1; false }
@@ -46,7 +49,7 @@ object StormOverAlert {
         if (!FishSettings.stormOverEnabled) return
         shownAt = System.currentTimeMillis()
         if (FishSettings.stormOverSound)
-            Minecraft.getInstance().player?.playSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1.5f)
+            FishDiag.guard("StormOverAlert.1", "storm over sound failed") { Minecraft.getInstance().player?.playSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1.5f) }
     }
 
     @JvmStatic
@@ -59,6 +62,10 @@ object StormOverAlert {
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.stormOverEnabled) return
+        try { renderHudInner(ctx) } catch (e: Exception) { FishDiag.fail("StormOverAlert.3", "storm over HUD render threw", e) }
+    }
+
+    private fun renderHudInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
         val text = when {
@@ -72,7 +79,8 @@ object StormOverAlert {
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.stormOverHudX.toFloat(), FishSettings.stormOverHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, text, 0, 0, FishSettings.stormOverColor or 0xFF000000.toInt(), true)
+        ctx.text(mc.font, text, (HUD_W - mc.font.width(text)) / 2, (HUD_H - mc.font.lineHeight) / 2 + 1,
+            FishSettings.stormOverColor or 0xFF000000.toInt(), true)
         ctx.pose().popMatrix()
     }
 }

@@ -1,5 +1,6 @@
 package fishmod.cosmetic.prestige
 
+import fishmod.utils.debug.FishDiag
 import fishmod.mixin.ChatHudInvoker
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -19,7 +20,7 @@ object PrestigeChatFade {
                 || !FishSettings.prestigeColorsAnimated) return@register
             if (++tickCounter < REFRESH_INTERVAL_TICKS) return@register
             tickCounter = 0
-            tick()
+            try { tick() } catch (t: Throwable) { FishDiag.fail("PrestigeChatFade.1", "chat prestige fade tick failed", t) }
         }
     }
 

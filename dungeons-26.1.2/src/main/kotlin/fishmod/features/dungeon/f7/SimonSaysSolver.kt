@@ -22,6 +22,7 @@ import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.phys.AABB
+import fishmod.utils.debug.FishDiag
 
 // F7 P3 Simon Says device solver — 1:1 port of Odin's SimonSays module.
 object SimonSaysSolver {
@@ -43,9 +44,9 @@ object SimonSaysSolver {
         lastLanternTick = -1
     }
 
-    private fun inP3(): Boolean = FishSettings.simonSolverEnabled && try { Phase.inP3() } catch (t: Throwable) { false }
+    private fun inP3(): Boolean = FishSettings.simonSolverEnabled && try { Phase.inP3() } catch (t: Throwable) { FishDiag.fail("SimonSaysSolver.1", "Phase.inP3 threw", t); false }
 
-    private fun trackingActive(): Boolean = try { Phase.inP3() } catch (t: Throwable) { false }
+    private fun trackingActive(): Boolean = try { Phase.inP3() } catch (t: Throwable) { FishDiag.fail("SimonSaysSolver.2", "Phase.inP3 threw (tracking)", t); false }
 
     @JvmField var lastRoundCompleteMs: Long = 0L
 
@@ -69,15 +70,17 @@ object SimonSaysSolver {
         }
 
         Events.ON_PACKET.register { packet ->
-            when (packet) {
-                is ClientboundBlockUpdatePacket -> queueBlock(packet.pos, packet.blockState)
-                is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::queueBlock)
-            }
+            try {
+                when (packet) {
+                    is ClientboundBlockUpdatePacket -> queueBlock(packet.pos, packet.blockState)
+                    is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::queueBlock)
+                }
+            } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.3", "SS solver packet handler threw (order=${clickInOrder.size} needed=$clickNeeded)", e) }
             false
         }
 
         Events.ON_SERVER_TICK.register {
-            tick()
+            try { tick() } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.4", "SS solver tick threw", e) }
             false
         }
 
@@ -99,21 +102,29 @@ object SimonSaysSolver {
                 lantern != clickInOrder.getOrNull(clickNeeded)
             ) return@UseBlockCallback InteractionResult.FAIL
 
-            val idx = clickInOrder.indexOf(lantern)
-            if (idx >= 0) {
-                clickNeeded = idx + 1
-                dbg("click ${pos.y}:${pos.z} -> clickNeeded=$clickNeeded")
-                if (clickNeeded >= clickInOrder.size) {
-                    lastRoundCompleteMs = System.currentTimeMillis()
-                    resetSolution(); firstPhase = false
+            try {
+                val idx = clickInOrder.indexOf(lantern)
+                if (idx >= 0) {
+                    clickNeeded = idx + 1
+                    dbg("click ${pos.y}:${pos.z} -> clickNeeded=$clickNeeded")
+                    if (clickNeeded >= clickInOrder.size) {
+                        lastRoundCompleteMs = System.currentTimeMillis()
+                        resetSolution(); firstPhase = false
+                    }
                 }
-            }
+            } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.5", "SS solver click handler threw at $pos", e) }
             InteractionResult.PASS
         })
 
-        RenderingEvents.GIZMO.register { _ -> if (!FishSettings.simonSolverDepth) renderGizmo() }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> if (FishSettings.simonSolverDepth) render(m, vc, fill = true) }
-        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc -> if (FishSettings.simonSolverDepth) render(m, vc, fill = false) }
+        RenderingEvents.GIZMO.register { _ ->
+            if (!FishSettings.simonSolverDepth) try { renderGizmo() } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.6", "SS solver gizmo render threw", e) }
+        }
+        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
+            if (FishSettings.simonSolverDepth) try { render(m, vc, fill = true) } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.7", "SS solver fill render threw", e) }
+        }
+        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc ->
+            if (FishSettings.simonSolverDepth) try { render(m, vc, fill = false) } catch (e: Exception) { FishDiag.fail("SimonSaysSolver.8", "SS solver line render threw", e) }
+        }
     }
 
     private fun queueBlock(pos: BlockPos, state: BlockState) {
@@ -146,6 +157,7 @@ object SimonSaysSolver {
             111 ->
                 if (updated.block === Blocks.OBSIDIAN && old === Blocks.SEA_LANTERN && pos !in clickInOrder) {
                     clickInOrder.add(pos.immutable())
+                    FishDiag.check(clickInOrder.size <= 5, "SimonSaysSolver.9") { "SS solution grew to ${clickInOrder.size} lanterns (firstPhase=$firstPhase)" }
                     lastLanternTick = 0
                     dbg("lantern ${pos.y}:${pos.z} added (${clickInOrder.size})")
                     if (!firstPhase) return

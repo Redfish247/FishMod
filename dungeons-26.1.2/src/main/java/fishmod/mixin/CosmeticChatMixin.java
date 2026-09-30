@@ -15,7 +15,12 @@ public abstract class CosmeticChatMixin {
         method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
         at = @At("HEAD"), argsOnly = true)
     private Component fishmod$cosmeticAddMessage(Component msg) {
-        return fishmod$swap(msg);
+        try {
+            return fishmod$swap(msg);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("CosmeticChatMixin.1", "chat cosmetic rewrite failed", t);
+            return msg;
+        }
     }
 
     private static Component fishmod$swap(Component msg) {

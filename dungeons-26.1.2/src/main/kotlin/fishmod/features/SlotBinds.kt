@@ -6,6 +6,7 @@ import fishmod.mixin.accessors.KeyBindingAccessor
 import fishmod.utils.Keybinds
 import fishmod.utils.config.FolderUtility
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.rendering.DrawEvents
 import fishmod.utils.rendering.drawevents.SlotEvent
 import net.minecraft.client.Minecraft
@@ -58,12 +59,16 @@ object SlotBinds {
                     continue
                 }
                 val p = line.split("\t", limit = 2)
-                if (p.size != 2) continue
-                val a = p[0].trim().toIntOrNull() ?: continue
-                val b = p[1].trim().toIntOrNull() ?: continue
+                if (p.size != 2) { FishDiag.fail("SlotBinds.1", "malformed slot bind line: '$line'"); continue }
+                val a = p[0].trim().toIntOrNull() ?: run { FishDiag.fail("SlotBinds.2", "slot bind key not int: '$line'"); null } ?: continue
+                val b = p[1].trim().toIntOrNull() ?: run { FishDiag.fail("SlotBinds.3", "slot bind value not int: '$line'"); null } ?: continue
                 current[a] = b
             }
-        } catch (ignored: IOException) {}
+        } catch (e: IOException) {
+            FishDiag.fail("SlotBinds.4", "slot binds load failed", e)
+        } catch (e: Exception) {
+            FishDiag.fail("SlotBinds.5", "slot binds parse failed", e)
+        }
     }
 
     private fun save() {
@@ -74,7 +79,9 @@ object SlotBinds {
                 "[$name]\n" + map.entries.joinToString("\n") { "${it.key}\t${it.value}" }
             }
             Files.writeString(FILE, text)
-        } catch (ignored: IOException) {}
+        } catch (e: IOException) {
+            FishDiag.fail("SlotBinds.6", "slot binds save failed (${profiles.size} profiles)", e)
+        }
     }
 
     @JvmStatic
@@ -117,6 +124,7 @@ object SlotBinds {
         ensureLoaded()
         val names = profileNames()
         if (names.size < 2) { feedback("§7Only one profile"); return }
+        if (activeName() !in names) FishDiag.fail("SlotBinds.7", "active slot bind profile '${activeName()}' missing from $names")
         val next = names[(names.indexOf(activeName()) + 1).mod(names.size)]
         FishSettings.slotBindsProfile = next
         feedback("§aProfile → §f$next §7(${profiles[next]?.size ?: 0} binds)")
@@ -176,6 +184,8 @@ object SlotBinds {
         val player = mc.player ?: return false
         val hotbarIndex = if (slotId in 36..44) slotId - 36 else partner - 36
         val invSlot = if (slotId in 36..44) partner else slotId
+        if (!FishDiag.check(hotbarIndex in 0..8, "SlotBinds.8") { "slot bind swap bad hotbar index $hotbarIndex (slot=$slotId partner=$partner)" }) return false
+        if (!FishDiag.check(invSlot in 0 until player.containerMenu.slots.size, "SlotBinds.9") { "slot bind swap inv slot $invSlot out of range (${player.containerMenu.slots.size})" }) return false
         mc.gameMode?.handleContainerInput(player.containerMenu.containerId, invSlot, hotbarIndex, ContainerInput.SWAP, player)
         return true
     }
@@ -210,10 +220,15 @@ object SlotBinds {
         }
 
         val color = FishSettings.slotBindsColor
-        if (FishSettings.slotBindsBorder) border(ctx, x, y, color)
-        if (FishSettings.slotBindsLine && invPartner != null) {
-            val other = slots.getOrNull(invPartner) ?: slots.firstOrNull { it.index == invPartner } ?: return
-            line(ctx, x + 8, y + 8, other.x + 8, other.y + 8, color)
+        try {
+            if (FishSettings.slotBindsBorder) border(ctx, x, y, color)
+            if (FishSettings.slotBindsLine && invPartner != null) {
+                val other = slots.getOrNull(invPartner) ?: slots.firstOrNull { it.index == invPartner }
+                if (other == null) { FishDiag.fail("SlotBinds.10", "bound partner slot $invPartner not in menu (${slots.size} slots)"); return }
+                line(ctx, x + 8, y + 8, other.x + 8, other.y + 8, color)
+            }
+        } catch (e: Exception) {
+            FishDiag.fail("SlotBinds.11", "slot bind draw failed (slot=$idx)", e)
         }
     }
 

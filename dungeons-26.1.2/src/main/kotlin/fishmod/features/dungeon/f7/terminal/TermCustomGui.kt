@@ -8,6 +8,7 @@ import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.world.inventory.ContainerInput
 import net.minecraft.world.item.ItemStack
 import kotlin.math.sqrt
+import fishmod.utils.debug.FishDiag
 
 object TermCustomGui {
 
@@ -28,6 +29,10 @@ object TermCustomGui {
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, screenW: Int, screenH: Int) {
         val t = TerminalSolver.current ?: return
+        try { renderInner(ctx, screenW, screenH, t) } catch (e: Exception) { FishDiag.fail("TermCustomGui.1", "custom terminal GUI render threw (${t.type})", e) }
+    }
+
+    private fun renderInner(ctx: GuiGraphicsExtractor, screenW: Int, screenH: Int, t: TerminalHandler) {
         rects.clear()
         val mc = Minecraft.getInstance()
         val size = t.type.windowSize
@@ -82,6 +87,7 @@ object TermCustomGui {
 
             if (numbers) {
                 val ord = sol.indexOf(i)
+                if (ord >= 0) FishDiag.check((st?.count ?: 0) > 0, "TermCustomGui.4") { "numbers solution slot $i has empty stack" }
                 val col = when (ord) {
                     0 -> FishSettings.terminalOrderColor1
                     1 -> FishSettings.terminalOrderColor2
@@ -173,6 +179,7 @@ object TermCustomGui {
     fun handleClick(screen: AbstractContainerScreen<*>, idx: Int, button: Int) {
         if (idx < 0) return
         val t = TerminalSolver.current ?: return
+        FishDiag.check(idx < screen.menu.slots.size, "TermCustomGui.3") { "custom GUI click idx $idx >= slots ${screen.menu.slots.size} (${t.type})" }
         val right = button == 1
         if (screen !is TermSimScreen &&
             System.currentTimeMillis() - t.timeOpened < FishSettings.terminalFirstClickProtMs) return

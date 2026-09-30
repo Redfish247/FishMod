@@ -2,6 +2,7 @@ package fishmod.features.chat
 
 import fishmod.features.FishHudEditor
 import fishmod.utils.Misc
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
@@ -24,8 +25,12 @@ object ChatRuleHandler {
             val raw = message.string.replace(COLOR, "")
             for (rule in ChatRuleStore.rules()) {
                 if (!rule.enabled || rule.filter.isBlank()) continue
-                if (!matches(rule, raw)) continue
-                fire(rule)
+                try {
+                    if (!matches(rule, raw)) continue
+                    fire(rule)
+                } catch (e: Exception) {
+                    FishDiag.fail("ChatRuleHandler.1", "chat rule '${rule.filter}' failed", e)
+                }
             }
             false
         }
@@ -59,7 +64,7 @@ object ChatRuleHandler {
         if (filter.isBlank()) return false
 
         return if (rule.regex) {
-            val pattern = rule.compiledPattern() ?: return false
+            val pattern = rule.compiledPattern() ?: run { FishDiag.fail("ChatRuleHandler.2", "chat rule regex does not compile: '$filter'"); return false }
             val m = pattern.matcher(raw)
             if (rule.partialMatch) m.find() else m.matches()
         } else {
@@ -94,14 +99,19 @@ object ChatRuleHandler {
         val mc = Minecraft.getInstance()
         val sc = ChatRuleStore.hudScale().toFloat()
         ctx.pose().pushMatrix()
-        ctx.pose().translate(ChatRuleStore.hudX().toFloat(), ChatRuleStore.hudY().toFloat())
-        ctx.pose().scale(sc, sc)
-        val hudWidth = 220
-        for ((i, t) in activeTitles.withIndex()) {
-            val line = "§e⚑ ${t.text}"
-            val x = (hudWidth - mc.font.width(line)) / 2
-            ctx.text(mc.font, line, x, i * 11, -1, true)
+        try {
+            ctx.pose().translate(ChatRuleStore.hudX().toFloat(), ChatRuleStore.hudY().toFloat())
+            ctx.pose().scale(sc, sc)
+            val hudWidth = 220
+            for ((i, t) in activeTitles.withIndex()) {
+                val line = "§e⚑ ${t.text}"
+                val x = (hudWidth - mc.font.width(line)) / 2
+                ctx.text(mc.font, line, x, i * 11, -1, true)
+            }
+        } catch (e: Exception) {
+            FishDiag.fail("ChatRuleHandler.3", "chat notification hud render failed (${activeTitles.size} titles)", e)
+        } finally {
+            ctx.pose().popMatrix()
         }
-        ctx.pose().popMatrix()
     }
 }

@@ -17,6 +17,7 @@ import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.state.BlockState
+import fishmod.utils.debug.FishDiag
 
 object LividSolver {
 
@@ -45,11 +46,13 @@ object LividSolver {
     fun init() {
         Events.ON_PACKET.register { packet ->
             if (!active()) return@register false
-            when (packet) {
-                is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
-                is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::onBlock)
-                is ClientboundSetEntityDataPacket -> bindEntity(packet.id)
-            }
+            try {
+                when (packet) {
+                    is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
+                    is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::onBlock)
+                    is ClientboundSetEntityDataPacket -> bindEntity(packet.id)
+                }
+            } catch (e: Exception) { FishDiag.fail("LividSolver.1", "livid packet handler threw on ${packet.javaClass.simpleName}", e) }
             false
         }
 
@@ -62,13 +65,17 @@ object LividSolver {
         RenderingEvents.GIZMO.register { _ ->
             if (!active()) return@register
             if (Minecraft.getInstance().player?.getEffect(MobEffects.BLINDNESS) != null) return@register
-            current.entity?.let { RenderUtils.gizmoBox(it.boundingBox, 0, FishSettings.lividSolverColor) }
+            try { current.entity?.let { RenderUtils.gizmoBox(it.boundingBox, 0, FishSettings.lividSolverColor) } }
+            catch (e: Exception) { FishDiag.fail("LividSolver.2", "livid box render threw (${current.entityName})", e) }
         }
     }
 
     private fun onBlock(pos: BlockPos, state: BlockState) {
         if (!active() || pos != WOOL_POS) return
-        val hit = Livid.entries.find { it.wool == state.block } ?: return
+        val hit = Livid.entries.find { it.wool == state.block } ?: run {
+            if (!state.isAir) FishDiag.fail("LividSolver.3", "unknown block at livid wool pos: ${state.block}")
+            return
+        }
         if (hit != current) {
             current = hit
             Misc.addChatMessage(Component.literal("§b[Livid] §7real Livid: §${hit.colorCode}${hit.entityName}"))

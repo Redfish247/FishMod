@@ -1,5 +1,6 @@
 package fishmod.features.other
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.Keybinds
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -36,7 +37,11 @@ object WardrobeHotkeys {
                 return@register
             }
             pendingClick = null
-            click.run()
+            try {
+                click.run()
+            } catch (e: Exception) {
+                FishDiag.fail("WardrobeHotkeys.1", "pending wardrobe click failed", e)
+            }
         }
     }
 
@@ -82,6 +87,7 @@ object WardrobeHotkeys {
                 val mc = Minecraft.getInstance()
                 val mcPlayer = mc.player
                 if (mcPlayer == null || mc.gameMode == null) return@Runnable
+                FishDiag.check(slotId in 0 until handler.slots.size, "WardrobeHotkeys.4") { "wardrobe slot $slotId outside menu of ${handler.slots.size}" }
                 mc.gameMode!!.handleContainerInput(containerId, slotId, 0, ContainerInput.PICKUP, mcPlayer)
                 if (FishSettings.wardrobeHotkeysAutoClose && mc.screen === screen) {
                     screen.onClose()
@@ -128,6 +134,7 @@ object WardrobeHotkeys {
         }
         if (hotkeyIndex >= LOADOUT_SLOTS.size) return null
         val slotIndex = LOADOUT_SLOTS[hotkeyIndex]
+        FishDiag.check(slotIndex < handler.slots.size, "WardrobeHotkeys.3") { "loadout slot $slotIndex out of range (${handler.slots.size} slots)" }
         return if (slotIndex < handler.slots.size) handler.slots[slotIndex] else null
     }
 
@@ -154,6 +161,7 @@ object WardrobeHotkeys {
         return try {
             BuiltInRegistries.ITEM.getKey(stack.item).toString()
         } catch (e: Exception) {
+            FishDiag.fail("WardrobeHotkeys.2", "registry key lookup failed for ${stack.item}", e)
             null
         }
     }

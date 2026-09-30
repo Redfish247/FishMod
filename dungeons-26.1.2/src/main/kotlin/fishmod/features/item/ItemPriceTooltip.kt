@@ -6,6 +6,7 @@ import fishmod.utils.Misc.abbr
 import fishmod.utils.networth.ItemsDb
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemUtil
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.minecraft.network.chat.Component
@@ -29,7 +30,11 @@ object ItemPriceTooltip {
             val now = System.currentTimeMillis()
             if (now - lastRefresh < 60_000L) return@register
             lastRefresh = now
-            CroesusPrices.refreshIfStale()
+            try {
+                CroesusPrices.refreshIfStale()
+            } catch (e: Exception) {
+                FishDiag.fail("ItemPriceTooltip.1", "CroesusPrices.refreshIfStale threw", e)
+            }
         }
 
         ItemTooltipCallback.EVENT.addPhaseOrdering(net.fabricmc.fabric.api.event.Event.DEFAULT_PHASE, LAST_PHASE)
@@ -42,35 +47,44 @@ object ItemPriceTooltip {
                 return@ItemTooltipCallback
             }
 
-            val id = ItemUtil.getId(stack) ?: return@ItemTooltipCallback
-            val count = stack.count
-            val built = ArrayList<Component>(4)
+            try {
+                val id = ItemUtil.getId(stack) ?: return@ItemTooltipCallback
+                val count = stack.count
+                val built = ArrayList<Component>(4)
 
-            val unit = ItemValue.estimate(stack)
-            if (unit > 0.0) {
-                val each = "§eValue: §6${abbr(unit)}"
-                val stackPart = if (count > 1) " §7(×$count = §6${abbr(unit * count)}§7)" else ""
-                built.add(Component.literal("$each$stackPart"))
-            }
-
-            val avg = CroesusPrices.threeDayAvg(id)
-            if (avg > 0.0) built.add(Component.literal("§e3 Day Avg: §6${abbr(avg)}"))
-
-            val lowBin = CroesusPrices.currentLowBin(id)
-            if (lowBin > 0.0) built.add(Component.literal("§eCurrent Low BIN: §6${abbr(lowBin)}"))
-
-            if (FishSettings.itemTooltipNpcSell) {
-                val npc = ItemsDb.npcSellPriceFor(id)
-                if (npc > 0.0) {
-                    val total = if (count > 1) npc * count else npc
-                    built.add(Component.literal("§eNPC Sell: §6${abbr(total)}"))
+                val unit = ItemValue.estimate(stack)
+                FishDiag.check(!unit.isNaN() && !unit.isInfinite(), "ItemPriceTooltip.3") { "ItemValue.estimate returned $unit for $id" }
+                FishDiag.check(count > 0, "ItemPriceTooltip.7") { "non-empty stack $id has count $count" }
+                if (unit > 0.0) {
+                    val each = "§eValue: §6${abbr(unit)}"
+                    val stackPart = if (count > 1) " §7(×$count = §6${abbr(unit * count)}§7)" else ""
+                    built.add(Component.literal("$each$stackPart"))
                 }
-            }
 
-            cachedStack = stack
-            cachedAt = now
-            cachedLines = built
-            lines.addAll(built)
+                val avg = CroesusPrices.threeDayAvg(id)
+                FishDiag.check(!avg.isNaN(), "ItemPriceTooltip.4") { "threeDayAvg NaN for $id" }
+                if (avg > 0.0) built.add(Component.literal("§e3 Day Avg: §6${abbr(avg)}"))
+
+                val lowBin = CroesusPrices.currentLowBin(id)
+                FishDiag.check(!lowBin.isNaN(), "ItemPriceTooltip.5") { "currentLowBin NaN for $id" }
+                if (lowBin > 0.0) built.add(Component.literal("§eCurrent Low BIN: §6${abbr(lowBin)}"))
+
+                if (FishSettings.itemTooltipNpcSell) {
+                    val npc = ItemsDb.npcSellPriceFor(id)
+                    FishDiag.check(!npc.isNaN(), "ItemPriceTooltip.6") { "npcSellPriceFor NaN for $id" }
+                    if (npc > 0.0) {
+                        val total = if (count > 1) npc * count else npc
+                        built.add(Component.literal("§eNPC Sell: §6${abbr(total)}"))
+                    }
+                }
+
+                cachedStack = stack
+                cachedAt = now
+                cachedLines = built
+                lines.addAll(built)
+            } catch (e: Exception) {
+                FishDiag.fail("ItemPriceTooltip.2", "price tooltip build failed for ${stack.hoverName.string}", e)
+            }
         })
     }
 

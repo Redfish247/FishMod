@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.network.chat.Component
@@ -18,9 +19,10 @@ object ChatFilter {
         try {
             ChatFilter::class.java.getResourceAsStream("/chatSpam.json")!!.use { s ->
                 Gson().fromJson(InputStreamReader(s, StandardCharsets.UTF_8), Array<String>::class.java)
-                    .mapNotNull { runCatching { Pattern.compile(it) }.getOrNull() }
+                    .mapNotNull { p -> runCatching { Pattern.compile(p) }.onFailure { FishDiag.fail("ChatFilter.1", "bad bundled spam regex '$p'", it) }.getOrNull() }
             }
         } catch (e: Exception) {
+            FishDiag.fail("ChatFilter.2", "chatSpam.json load failed", e)
             emptyList()
         }
     }

@@ -1,5 +1,6 @@
 package fishmod.utils.rendering
 
+import fishmod.utils.debug.FishDiag
 import java.util.function.Consumer
 
 class SimpleHandler<T> {
@@ -13,7 +14,11 @@ class SimpleHandler<T> {
     fun invoke(action: Consumer<T>) {
         if (listeners.isEmpty()) return
         for (listener in listeners) {
-            action.accept(listener)
+            try {
+                action.accept(listener)
+            } catch (t: Throwable) {
+                FishDiag.fail("SimpleHandler.1", "render listener ${listener?.javaClass?.name} threw", t)
+            }
         }
     }
 
