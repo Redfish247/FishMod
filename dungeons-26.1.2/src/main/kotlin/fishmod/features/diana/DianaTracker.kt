@@ -105,6 +105,17 @@ object DianaTracker {
     )
     private val NO_PRICE = setOf("TOTAL_BURROWS", "COINS")
 
+    // Stackable mob drops with no chat line: counted from inventory pickups and the [Sacks] hover (as SBO does)
+    private val STACK_DROPS = setOf("ENCHANTED_GOLD", "ENCHANTED_ANCIENT_CLAW", "ANCIENT_CLAW")
+    private val SACK_NAMES = mapOf(
+        "Enchanted Gold" to "ENCHANTED_GOLD", "Enchanted Ancient Claw" to "ENCHANTED_ANCIENT_CLAW", "Ancient Claw" to "ANCIENT_CLAW",
+    )
+    private val SACK_LINE = Regex("""\+([\d,]+) ([^(\n]+)""")
+    private const val PICKUP_WINDOW_MS = 3_000L
+    private const val SACK_WINDOW_MS = 30_000L
+    private val invCounts = HashMap<String, Int>()
+    private var invBaseline = false
+
     private val BURROW = Regex("^You .*?Griffin [Bb]urrow")
     private val DUG_MOB = Regex("You dug (?:out )?(?:an? )?(.+?)!$")
     private val COINS = Regex("^Wow! You dug out ([\\d,]+) coins!")
@@ -149,11 +160,13 @@ object DianaTracker {
         ClientLifecycleEvents.CLIENT_STOPPING.register { flushSave(true) }
         Events.ON_WORLD_CHANGE.register {
             flushSave(true); lastActivityMs = 0L; sinceActivityMs = 0L; afk = true; hiltBaseline = false; seenHilts.clear()
+            invBaseline = false
             false
         }
         Events.ON_GAME_MESSAGE.register { text ->
             if (!Diana.inHub()) return@register false
             val s = text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim()
+            if (DianaSettings.dianaTracker && s.startsWith("[Sacks]")) onSacks(text)
             if (DianaSettings.dianaTracker) onChat(s) else hideOnly(s)
         }
         RareMobs.deathListeners.add(::onRareMobDeath)
@@ -474,7 +487,43 @@ object DianaTracker {
             if (Diana.active()) CroesusPrices.refreshIfStale()
         }
         if (tickN % 10 == 0 && DianaSettings.dianaTracker) mc.player?.let { scanHilts(it) }
+        if (tickN % 5 == 0 && DianaSettings.dianaTracker) mc.player?.let { scanStackDrops(mc, it) }
         flushSave(false)
+    }
+
+    private fun mobDiedWithin(ms: Long) = System.currentTimeMillis() - RareMobs.lastDianaMobDeathMs <= ms
+
+    // Claws / enchanted gold picked up right after a Diana mob dies; menus reset the baseline so moving items isn't counted
+    private fun scanStackDrops(mc: Minecraft, p: net.minecraft.world.entity.player.Player) {
+        val cur = HashMap<String, Int>()
+        for (st in p.inventory.nonEquipmentItems) {
+            val id = ItemUtil.getId(st) ?: continue
+            if (id in STACK_DROPS) cur[id] = (cur[id] ?: 0) + st.count
+        }
+        val menu = mc.screen is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>
+        if (invBaseline && !menu && Diana.inHub() && mobDiedWithin(PICKUP_WINDOW_MS)) {
+            for ((id, n) in cur) {
+                val gained = n - (invCounts[id] ?: 0)
+                if (gained > 0) track(id, gained.toLong())
+            }
+        }
+        invCounts.clear(); invCounts.putAll(cur); invBaseline = true
+    }
+
+    // "[Sacks] +N items" lists what went straight to sacks in its hover text
+    private fun onSacks(text: Component) {
+        if (!mobDiedWithin(SACK_WINDOW_MS)) return
+        val hovers = ArrayList<String>()
+        fun walk(c: Component) {
+            (c.style.hoverEvent as? net.minecraft.network.chat.HoverEvent.ShowText)?.let { hovers += it.value().string }
+            c.siblings.forEach(::walk)
+        }
+        walk(text)
+        for (h in hovers) for (m in SACK_LINE.findAll(h.replace(Constants.STRIP_COLOR_REGEX, ""))) {
+            val name = m.groupValues[2].replace("Ingot", "").trim()
+            val id = SACK_NAMES[name] ?: continue
+            m.groupValues[1].replace(",", "").toLongOrNull()?.let { track(id, it) }
+        }
     }
 
     // Hypixel sends no chat line for hilts, so watch for a fresh one in the inventory
