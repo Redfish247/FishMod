@@ -3,6 +3,9 @@ package fishmod.features.diana
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.blaze3d.vertex.VertexConsumer
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
@@ -44,28 +47,24 @@ object DianaWaypoints {
 
     val list = CopyOnWriteArrayList<Waypoint>()
 
-    // Queued during the gizmo pass, drawn as constant-width ribbons later in the frame
-    private class Line(val a: Vec3, val b: Vec3, val argb: Int, val px: Float)
-    private val lines = ArrayList<Line>()
-    private fun line(a: Vec3, b: Vec3, argb: Int, px: Float) { lines += Line(a, b, argb, px) }
-
-    // Labels drawn as see-through font text (like SBO) instead of depth-tested gizmo text
-    private class Label(val text: Component, val pos: Vec3, val px: Float, val argb: Int)
-    private val labels = ArrayList<Label>()
     private val removedAt = HashMap<BlockPos, Long>()
+
+    // Per-frame draw targets, only valid inside render()
+    private lateinit var rCtx: LevelRenderContext
+    private lateinit var rPs: PoseStack
+    private lateinit var rVc: VertexConsumer
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         Events.ON_WORLD_CHANGE.register { clearAll(); false }
-        RenderingEvents.GIZMO.register { _ -> render() }
+        // Boxes, lines and labels all go through our own see-through pass, no vanilla gizmos
         RenderingEvents.NO_DEPTH_FILLED.register { ctx, ps, vc ->
-            for (l in lines) RenderUtils.screenLine(ps, vc, l.a, l.b, l.argb, l.px)
-            lines.clear()
-            val shadow = DianaSettings.dianaTextShadow
-            for (l in labels) RenderUtils.renderSeeThroughText(ctx, ps, l.text, l.pos, l.px, l.argb, shadow)
-            labels.clear()
+            rCtx = ctx; rPs = ps; rVc = vc
+            render()
         }
     }
+
+    private fun line(a: Vec3, b: Vec3, argb: Int, px: Float) = RenderUtils.screenLine(rPs, rVc, a, b, argb, px)
 
     fun inHubBounds(p: BlockPos) =
         p.x > MIN_X && p.x <= MAX_X && p.y > MIN_Y && p.y <= MAX_Y && p.z > MIN_Z && p.z <= MAX_Z
@@ -83,6 +82,20 @@ object DianaWaypoints {
         val valid = ok && level.getBlockState(p.above()).isAir
         if (!valid && !st.isAir) invalid.add(p.immutable())
         return valid
+    }
+
+    // Nearest grass-with-air-above around p (same column first, then a 3x3); null if the chunk isn't loaded or none found
+    fun snapToGround(p: BlockPos): BlockPos? {
+        val level = Minecraft.getInstance().level ?: return null
+        if (!level.hasChunk(p.x shr 4, p.z shr 4)) return null
+        for (r in 0..1) for (dx in -r..r) for (dz in -r..r) {
+            if (r == 1 && dx == 0 && dz == 0) continue
+            for (dy in 6 downTo -12) {
+                val q = BlockPos(p.x + dx, p.y + dy, p.z + dz)
+                if (inHubBounds(q) && level.getBlockState(q).`is`(Blocks.GRASS_BLOCK) && level.getBlockState(q.above()).isAir) return q
+            }
+        }
+        return null
     }
 
     fun at(p: BlockPos, vararg types: WpType): Waypoint? = list.firstOrNull { it.pos == p && it.type in types }
@@ -130,7 +143,11 @@ object DianaWaypoints {
         for (g in list.filter { it.type == WpType.GUESS }) {
             val better = list.firstOrNull { (it.type == WpType.BURROW || it.type == WpType.ARROW) && it.center.distanceTo(g.center) <= 32 }
             if (better != null) { better.carryFrom(g); list.remove(g); continue }
-            if (!isValidBlock(g.pos)) list.remove(g)
+            if (isValidBlock(g.pos)) continue
+            val snapped = snapToGround(g.pos) ?: continue
+            if (snapped == g.pos || at(snapped, WpType.GUESS) != null) continue
+            list.remove(g)
+            add(Waypoint(snapped, WpType.GUESS, g.label).also { it.carryFrom(g) })
         }
         // Arrow on a known burrow merges into it
         for (a in list.filter { it.type == WpType.ARROW || it.type == WpType.SUB }) {
@@ -189,7 +206,6 @@ object DianaWaypoints {
     }
 
     private fun render() {
-        lines.clear(); labels.clear()
         if (list.isEmpty() || !visible()) return
         val eye = eye() ?: return
         val closest = list.filter { it.type == WpType.GUESS || it.type == WpType.ARROW }.minByOrNull { it.distTo(eye) }
@@ -205,10 +221,10 @@ object DianaWaypoints {
             val rgb = baseColor(w, closest)
             // Past render distance, draw a shrunken copy closer along the same ray so it isn't far-clipped
             val (c, k) = RenderUtils.pullIn(w.center, eye)
-            RenderUtils.gizmoBox(AABB.ofSize(c, k, k, k), withAlpha(rgb, a), 0, true)
+            RenderUtils.fillBox(rPs, rVc, AABB.ofSize(c, k, k, k), withAlpha(rgb, a))
             if (DianaSettings.dianaBeaconBeam && w.type != WpType.SUB && d > DianaSettings.dianaBeaconDistance) {
                 val bb = c.add(0.0, k * 100.5, 0.0)
-                RenderUtils.gizmoBox(AABB.ofSize(bb, k * 0.4, k * 200, k * 0.4), withAlpha(rgb, a * 0.45f), 0, true)
+                RenderUtils.fillBox(rPs, rVc, AABB.ofSize(bb, k * 0.4, k * 200, k * 0.4), withAlpha(rgb, a * 0.45f))
             }
             val text = if (w.type == WpType.SUB) (if (DianaSettings.dianaSubGuessText) "Possible" else "") else label(w, d)
             if (text.isNotEmpty()) {
@@ -217,7 +233,7 @@ object DianaWaypoints {
                 val (pos, pk) = RenderUtils.pullIn(Vec3(w.pos.x + 0.5, w.pos.y + 1.5 + d / 25.0, w.pos.z + 0.5), eye)
                 val px = (DianaSettings.dianaTextScale * maxOf(0.075, d * 0.0075) * pk).toFloat()
                 val textColor = withAlpha(0xFFFFFF, DianaSettings.dianaTextOpacity / 100f)
-                labels += Label(Component.literal(colorCode(w, closest) + text), pos, px, textColor)
+                RenderUtils.renderSeeThroughText(rCtx, rPs, Component.literal(colorCode(w, closest) + text), pos, px, textColor, DianaSettings.dianaTextShadow)
             }
         }
 

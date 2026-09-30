@@ -92,8 +92,8 @@ object ArrowGuess {
         val n1 = pts.count { it != c1 && it.distanceTo(c1) <= TOL }
         val n2 = pts.count { it != c2 && it.distanceTo(c2) <= TOL }
         val (base, tip) = when {
-            n1 == 4 && n2 == 2 -> line.last() to line.first()
-            n1 == 2 && n2 == 4 -> line.first() to line.last()
+            n1 > n2 -> line.last() to line.first()
+            n2 > n1 -> line.first() to line.last()
             else -> return DianaTest.log("arrow: barb counts $n1/$n2")
         }
         val origin = base.add(0.0, -1.5, 0.0)
@@ -166,8 +166,18 @@ object ArrowGuess {
             val fromOrigin = p.distanceTo(origin)
             cands[bp] = Cand(bp, toRay * 500_000 / fromOrigin.coerceAtLeast(EPS), fromOrigin)
         }
-        val best = cands.values.minWithOrNull(compareBy<Cand> { it.score }.thenBy { it.dist }) ?: return fail()
-        val picked = cands.values.filter { abs(it.score - best.score) <= 1e-6 && it.dist.toInt() in band }.map { it.pos }
+        val order = compareBy<Cand> { it.score }.thenBy { it.dist }
+        val inBand = cands.values.filter { it.dist.toInt() in band }
+        val pool = inBand.ifEmpty { cands.values.toList() }
+        val best = pool.minWithOrNull(order)
+        val picked = if (best != null) pool.filter { abs(it.score - best.score) <= 1e-6 }.map { it.pos }
+        else {
+            // Nothing valid on the ray: still show a best guess mid-band, snapped to ground when loaded
+            val t = ((band.first + minOf(band.last, steps)) / 2.0).coerceAtLeast(1.0)
+            val v = origin.add(dir.scale(t))
+            val raw = BlockPos(floor(v.x).toInt(), floor(v.y).toInt(), floor(v.z).toInt())
+            listOf(DianaWaypoints.snapToGround(raw) ?: raw)
+        }
         if (picked.isEmpty()) return fail()
         DianaTest.log("arrow: candidates $picked")
         addGuess(picked)
@@ -206,10 +216,11 @@ object ArrowGuess {
             val wrongHere = Diana.heldSpadeFor(1000) && DianaWaypoints.at(cur, WpType.BURROW) == null &&
                 Vec3(cur.x + 0.5, cur.y + 0.5, cur.z + 0.5).distanceToSqr(me) <= 1024
             if (!DianaWaypoints.isValidBlock(cur) || wrongHere) {
+                // Out of candidates: leave the last one up as a best guess
+                if (e.idx + 1 >= e.cands.size) continue
                 DianaWaypoints.removeAt(cur, WpType.ARROW)
                 e.idx++
-                val next = e.current
-                if (next == null) { it.remove(); continue }
+                val next = e.current ?: continue
                 DianaWaypoints.removeAt(next, WpType.SUB)
                 DianaWaypoints.add(Waypoint(next, WpType.ARROW, "Guess"))
             }
