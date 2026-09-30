@@ -73,6 +73,10 @@ object CroesusPrices {
         if (bazaarBuy.isNotEmpty()) FishDiag.check(bazaar.isNotEmpty(), "CroesusPrices.22") { "price mode $mode produced empty price map" }
     }
 
+    // Raw bazaar quick_status price: sell offer = buyPrice, insta-sell = sellPrice
+    @JvmStatic
+    fun bazaarPrice(id: String, sellOffer: Boolean): Double? = (if (sellOffer) bazaarBuy else bazaarSell)[id]
+
     @JvmStatic
     fun price(id: String?): Double {
         if (id == null || id.isEmpty()) return 0.0
