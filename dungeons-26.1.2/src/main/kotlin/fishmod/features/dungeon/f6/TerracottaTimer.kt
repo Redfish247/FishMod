@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.FlowerPotBlock
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.Vec3
 import java.util.concurrent.CopyOnWriteArrayList
+import fishmod.utils.debug.FishDiag
 
 object TerracottaTimer {
 
@@ -28,10 +29,12 @@ object TerracottaTimer {
     fun init() {
         Events.ON_PACKET.register { packet ->
             if (!active()) return@register false
-            when (packet) {
-                is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
-                is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::onBlock)
-            }
+            try {
+                when (packet) {
+                    is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
+                    is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::onBlock)
+                }
+            } catch (e: Exception) { FishDiag.fail("TerracottaTimer.1", "terracotta packet handler threw", e) }
             false
         }
 
@@ -44,12 +47,14 @@ object TerracottaTimer {
 
         RenderingEvents.GIZMO.register { _ ->
             if (!active() || spawning.isEmpty()) return@register
-            for (t in spawning) {
-                RenderUtils.gizmoText(
-                    Component.literal("§${color(t.time)}%.1fs".format(t.time)),
-                    Vec3(t.pos.x + 0.5, t.pos.y + 1.5, t.pos.z + 0.5), 1f, -0x1,
-                )
-            }
+            try {
+                for (t in spawning) {
+                    RenderUtils.gizmoText(
+                        Component.literal("§${color(t.time)}%.1fs".format(t.time)),
+                        Vec3(t.pos.x + 0.5, t.pos.y + 1.5, t.pos.z + 0.5), 1f, -0x1,
+                    )
+                }
+            } catch (e: Exception) { FishDiag.fail("TerracottaTimer.2", "terracotta render threw (n=${spawning.size})", e) }
         }
     }
 
@@ -58,6 +63,7 @@ object TerracottaTimer {
         if (state.block !is FlowerPotBlock) return
         if (spawning.any { it.pos == pos }) return
         spawning.add(Terracotta(pos.immutable(), if (DungeonState.isMasterMode()) 12f else 15f))
+        FishDiag.check(spawning.size <= 40, "TerracottaTimer.3") { "terracotta list grew to ${spawning.size}" }
     }
 
     private fun color(time: Float): Char = when {

@@ -1,5 +1,6 @@
 package fishmod.features.item
 
+import fishmod.utils.debug.FishDiag
 import fishmod.features.ItemRarityHotbar
 import fishmod.features.croesus.CroesusPrices
 import fishmod.features.storage.StorageOverlay
@@ -48,7 +49,10 @@ object ContainerValue {
         ClientTickEvents.END_CLIENT_TICK.register {
             if (!FishSettings.containerValueEnabled || !Location.inSkyblock()) return@register
             val now = System.currentTimeMillis()
-            if (now - lastRefresh > 60_000L) { lastRefresh = now; CroesusPrices.refreshIfStale() }
+            if (now - lastRefresh > 60_000L) {
+                lastRefresh = now
+                FishDiag.guard("ContainerValue.1", "price refresh for container value failed") { CroesusPrices.refreshIfStale() }
+            }
         }
     }
 
@@ -61,7 +65,10 @@ object ContainerValue {
         if (!FishSettings.containerValueEnabled || !Location.inSkyblock() || !eligible(screen)) return
         val font = Minecraft.getInstance().font
 
-        recompute(screen)
+        try { recompute(screen) } catch (e: Exception) {
+            FishDiag.fail("ContainerValue.2", "container value recompute failed on '${fishmod.utils.ScreenTitle.plain(screen)}' slots=${screen.menu.slots.size}", e)
+            return
+        }
         if (rows.isEmpty()) return
 
         val shown = rows.take(MAX_LINES)
@@ -121,6 +128,7 @@ object ContainerValue {
             if (stack.isEmpty) continue
             if (ItemUtil.getId(stack) == null) continue
             val unit = ItemValue.estimate(stack)
+            if (!FishDiag.check(!unit.isNaN() && !unit.isInfinite(), "ContainerValue.3") { "item value not finite for ${stack.hoverName.string}: $unit" }) continue
             if (unit <= 0.0) continue
             val v = unit * stack.count
             sum += v

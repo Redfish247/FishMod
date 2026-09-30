@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.puzzles.odin
 
+import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import fishmod.features.dungeon.map.DungeonMap
@@ -26,7 +27,9 @@ object OdinScan {
                 list.associateBy { it.name }
             }
         } catch (e: Exception) {
-            Debug.LOGGER.error("rooms.json failed to load for OdinScan", e); emptyMap()
+            Debug.LOGGER.error("rooms.json failed to load for OdinScan", e)
+            FishDiag.fail("OdinScan.1", "rooms.json failed to load for puzzle room lookup", e)
+            emptyMap()
         }
     }
 
@@ -43,7 +46,9 @@ object OdinScan {
     private var lastClay: net.minecraft.core.BlockPos? = null
 
     fun init() {
-        ClientTickEvents.END_CLIENT_TICK.register { mc -> tick(mc) }
+        ClientTickEvents.END_CLIENT_TICK.register { mc ->
+            try { tick(mc) } catch (e: Exception) { FishDiag.fail("OdinScan.7", "puzzle room tracking tick failed current='${currentRoom?.data?.name}'", e) }
+        }
         Events.ON_WORLD_CHANGE.register { setRoom(null); false }
     }
 
@@ -88,15 +93,18 @@ object OdinScan {
     private fun setRoom(room: ORoom?) {
         currentRoom = room
         if (room == null) { lastName = null; lastRotation = null; lastClay = null }
-        for (l in enterListeners) runCatching { l(room) }
+        for (l in enterListeners) runCatching { l(room) }.onFailure { FishDiag.fail("OdinScan.2", "room enter listener failed room='${room?.data?.name}'", it) }
     }
 
     private fun build(m: MapRoom): ORoom {
         val name = m.data?.name ?: "Unknown"
+        if (nameToData.isNotEmpty() && m.data?.name != null) FishDiag.check(nameToData.containsKey(name), "OdinScan.3") { "no puzzle room data for map room '$name'" }
         val data = nameToData[name] ?: ORoomData(
             name = name,
-            type = runCatching { ORoomType.valueOf(m.type?.name ?: "") }.getOrDefault(ORoomType.NORMAL),
-            shape = m.shape?.let { runCatching { ORoomShape.valueOf(mapShapeName(it)) }.getOrNull() }
+            type = runCatching { ORoomType.valueOf(m.type?.name ?: "") }.onFailure {
+                if (m.type != null && m.type != MapRoom.Type.UNKNOWN) FishDiag.fail("OdinScan.4", "map room type ${m.type} has no puzzle equivalent", it)
+            }.getOrDefault(ORoomType.NORMAL),
+            shape = m.shape?.let { runCatching { ORoomShape.valueOf(mapShapeName(it)) }.onFailure { e -> FishDiag.fail("OdinScan.5", "map room shape $it has no puzzle equivalent", e) }.getOrNull() }
                 ?: ORoomShape.UNKNOWN,
         )
         val comps = (if (m.tiles.isEmpty()) listOf(BlockPos(0, 0, 0))
@@ -104,7 +112,7 @@ object OdinScan {
             .mapTo(mutableSetOf()) { ORoomComponent(it.x, it.z) }
 
         return ORoom(
-            rotation = runCatching { ORotations.valueOf(m.rotation.name) }.getOrDefault(ORotations.NONE),
+            rotation = runCatching { ORotations.valueOf(m.rotation.name) }.onFailure { FishDiag.fail("OdinScan.6", "map rotation ${m.rotation} has no puzzle equivalent", it) }.getOrDefault(ORotations.NONE),
             data = data,
             clayPos = m.clayPos ?: BlockPos(0, 0, 0),
             roomComponents = comps,

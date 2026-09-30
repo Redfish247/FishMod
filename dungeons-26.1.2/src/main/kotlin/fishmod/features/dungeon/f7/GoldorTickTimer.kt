@@ -7,6 +7,7 @@ import fishmod.utils.config.values.Floor7
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.rendering.RenderUtils
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import fishmod.utils.debug.FishDiag
 
 object GoldorTickTimer {
 
@@ -32,6 +33,7 @@ object GoldorTickTimer {
         if (Floor7.inDeathTicks && !Floor7.makeGoldorTickUp) mod = 3.0 - mod
         if (Floor7.inDeathTicks) num = mod
         val color = if (mod < 1) Constants.GREEN else if (mod < 2) Constants.GOLD else Constants.RED
-        RenderUtils.drawTimer(component, context, num, color)
+        FishDiag.check(timer.tick >= 0, "GoldorTickTimer.1") { "goldor tick timer negative: ${timer.tick}" }
+        FishDiag.guard("GoldorTickTimer.2", "goldor tick timer render threw") { RenderUtils.drawTimer(component, context, num, color) }
     }
 }

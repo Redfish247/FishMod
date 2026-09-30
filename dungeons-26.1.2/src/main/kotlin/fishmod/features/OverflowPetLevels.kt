@@ -1,5 +1,7 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
+
 object OverflowPetLevels {
 
     enum class Rarity(@JvmField val offset: Int) {
@@ -19,6 +21,10 @@ object OverflowPetLevels {
     @JvmStatic
     fun getXpForLevel(level: Int, rarity: Rarity): Int {
         val offset = rarity.offset + level
+        if (offset < 0) {
+            FishDiag.fail("OverflowPetLevels.1", "negative xp offset level=$level rarity=$rarity")
+            return LIST_OF_XP[0]
+        }
         return if (offset < LIST_OF_XP.size) LIST_OF_XP[offset] else 1886700
     }
 
@@ -36,7 +42,10 @@ object OverflowPetLevels {
         while (exp > 0) {
             exp -= getXpForLevel(i, rarity)
             i++
-            if (i > 1000) break
+            if (i > 1000) {
+                FishDiag.fail("OverflowPetLevels.2", "calcLevel runaway totalXp=$totalXp rarity=$rarity")
+                break
+            }
         }
         return maxOf(1, i)
     }

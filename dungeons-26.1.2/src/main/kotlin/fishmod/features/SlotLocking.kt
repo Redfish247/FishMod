@@ -4,6 +4,7 @@ import fishmod.mixin.accessors.HandledScreenAccessor
 import fishmod.utils.Keybinds
 import fishmod.utils.config.FolderUtility
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.rendering.DrawEvents
 import fishmod.utils.rendering.drawevents.SlotEvent
 import net.minecraft.client.Minecraft
@@ -36,15 +37,21 @@ object SlotLocking {
         loaded = true
         if (!Files.exists(FILE)) return
         try {
-            Files.readAllLines(FILE).mapNotNullTo(locked) { it.trim().toIntOrNull() }
-        } catch (ignored: IOException) {}
+            Files.readAllLines(FILE).mapNotNullTo(locked) { l ->
+                l.trim().toIntOrNull().also { if (it == null && l.isNotBlank()) FishDiag.fail("SlotLocking.1", "slot lock line not int: '$l'") }
+            }
+        } catch (e: IOException) {
+            FishDiag.fail("SlotLocking.2", "slot locks load failed", e)
+        }
     }
 
     private fun save() {
         try {
             Files.createDirectories(FILE.parent)
             Files.writeString(FILE, locked.sorted().joinToString("\n"))
-        } catch (ignored: IOException) {}
+        } catch (e: IOException) {
+            FishDiag.fail("SlotLocking.3", "slot locks save failed (${locked.size} locks)", e)
+        }
     }
 
     private fun invIndex(slot: Slot?): Int? {
@@ -77,6 +84,7 @@ object SlotLocking {
         if (!FishSettings.slotLockingEnabled) return false
         ensureLoaded()
         val player = Minecraft.getInstance().player ?: return false
+        FishDiag.check(player.inventory.selectedSlot in 0..8, "SlotLocking.4") { "selected hotbar slot out of range: ${player.inventory.selectedSlot}" }
         val blocked = player.inventory.selectedSlot in locked
         if (blocked) warn()
         return blocked

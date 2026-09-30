@@ -17,9 +17,13 @@ public class KeyboardMixin {
 
     @Inject(method = "charTyped", at= @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/Screen;charTyped(Lnet/minecraft/client/input/CharacterEvent;)Z"))
     private void onChar(long window, CharacterEvent input, CallbackInfo ci, @Local Screen screen) {
-        if (screen instanceof AbstractContainerScreen<?> container) {
-            if (fishmod.features.storage.StorageOverlay.charTyped(input, container)) return;
-            if (FishSettings.inventorySearchEnabled) SearchBar.charTyped(input);
+        try {
+            if (screen instanceof AbstractContainerScreen<?> container) {
+                if (fishmod.features.storage.StorageOverlay.charTyped(input, container)) return;
+                if (FishSettings.inventorySearchEnabled) SearchBar.charTyped(input);
+            }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("KeyboardMixin.1", "container charTyped hooks failed", t);
         }
     }
 

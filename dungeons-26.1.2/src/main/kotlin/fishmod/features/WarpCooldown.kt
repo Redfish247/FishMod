@@ -2,6 +2,7 @@ package fishmod.features
 
 import fishmod.utils.config.values.Dungeons
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
@@ -32,11 +33,15 @@ object WarpCooldown {
         )
 
         Events.ON_GAME_MESSAGE.register { text ->
-            val s = COLOR.replace(text.string, "")
-            if (Dungeons.enableWarpCooldown && ENTERED.matcher(s).find()) {
-                if (remainingMs() <= 0L) armedAt = System.currentTimeMillis()
-            } else if (Dungeons.enableWarpCooldown && FishSettings.warpAnnounceKick && KICKED.matcher(s).matches()) {
-                fishmod.utils.ChatQueue.enqueue("pc ${FishSettings.warpKickText}")
+            try {
+                val s = COLOR.replace(text.string, "")
+                if (Dungeons.enableWarpCooldown && ENTERED.matcher(s).find()) {
+                    if (remainingMs() <= 0L) armedAt = System.currentTimeMillis()
+                } else if (Dungeons.enableWarpCooldown && FishSettings.warpAnnounceKick && KICKED.matcher(s).matches()) {
+                    fishmod.utils.ChatQueue.enqueue("pc ${FishSettings.warpKickText}")
+                }
+            } catch (e: Exception) {
+                FishDiag.fail("WarpCooldown.1", "warp cooldown chat handling failed", e)
             }
             false
         }
@@ -50,7 +55,9 @@ object WarpCooldown {
         if (armedAt != 0L && System.currentTimeMillis() - armedAt > ARM_TIMEOUT_MS) { enteredAt = armedAt + ARM_TIMEOUT_MS; armedAt = 0L }
         if (enteredAt == 0L) return 0
         val total = FishSettings.warpCooldownSeconds.coerceIn(1, 120) * 1000L
-        return (total - (System.currentTimeMillis() - enteredAt)).coerceAtLeast(0)
+        val rem = total - (System.currentTimeMillis() - enteredAt)
+        FishDiag.check(rem <= total, "WarpCooldown.2") { "warp cooldown enteredAt in the future: rem=$rem total=$total" }
+        return rem.coerceAtLeast(0)
     }
 
     @JvmStatic
@@ -66,9 +73,14 @@ object WarpCooldown {
                 .withColor(FishSettings.warpCooldownColor and 0xFFFFFF))
         val sc = FishSettings.warpCooldownScale.toFloat()
         ctx.pose().pushMatrix()
-        ctx.pose().translate(FishSettings.warpCooldownHudX.toFloat(), FishSettings.warpCooldownHudY.toFloat())
-        ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, label, 0, 0, -1, true)
-        ctx.pose().popMatrix()
+        try {
+            ctx.pose().translate(FishSettings.warpCooldownHudX.toFloat(), FishSettings.warpCooldownHudY.toFloat())
+            ctx.pose().scale(sc, sc)
+            ctx.text(mc.font, label, 0, 0, -1, true)
+        } catch (e: Exception) {
+            FishDiag.fail("WarpCooldown.3", "warp cooldown hud render failed", e)
+        } finally {
+            ctx.pose().popMatrix()
+        }
     }
 }

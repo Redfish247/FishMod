@@ -1,5 +1,6 @@
 package fishmod.features.other
 
+import fishmod.utils.debug.FishDiag
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import fishmod.utils.Constants
@@ -56,6 +57,7 @@ object CommandAliases {
         val target = e.command().trim()
         if (alias.isBlank() || target.isBlank()) return
 
+        try {
         dispatcher.register(
             ClientCommands.literal(alias)
                 .executes { _ -> Misc.executeCommand(target); Constants.SUCCESS }
@@ -67,6 +69,9 @@ object CommandAliases {
                         }
                 )
         )
+        } catch (ex: Exception) {
+            FishDiag.fail("CommandAliases.3", "failed to register alias '$alias' -> '$target'", ex)
+        }
     }
 
     private fun ensureLoaded() {
@@ -79,9 +84,11 @@ object CommandAliases {
         try {
             for (line in Files.readAllLines(FILE)) {
                 val parts = line.split("\t", limit = 2)
+                if (line.isNotBlank()) FishDiag.check(parts.size == 2, "CommandAliases.4") { "malformed alias line (no tab): '$line'" }
                 if (parts.size == 2 && parts[0].isNotBlank()) entries.add(Entry(parts[0].trim(), parts[1].trim()))
             }
-        } catch (ignored: IOException) {
+        } catch (e: IOException) {
+            FishDiag.fail("CommandAliases.1", "failed to read $FILE", e)
         }
     }
 
@@ -91,7 +98,8 @@ object CommandAliases {
             val sb = StringBuilder()
             for (e in entries) sb.append(e.alias()).append('\t').append(e.command()).append('\n')
             Files.writeString(FILE, sb.toString())
-        } catch (ignored: IOException) {
+        } catch (e: IOException) {
+            FishDiag.fail("CommandAliases.2", "failed to write $FILE (${entries.size} entries)", e)
         }
     }
 }

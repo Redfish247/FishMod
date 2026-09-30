@@ -29,8 +29,12 @@ public class SoundEngineMixin {
         method = "play(Lnet/minecraft/client/resources/sounds/SoundInstance;)Lnet/minecraft/client/sounds/SoundEngine$PlayResult;",
         at = @At("HEAD"), cancellable = true)
     private void fishmod$arrowHitCue(SoundInstance instance, CallbackInfoReturnable<SoundEngine.PlayResult> cir) {
-        if (fishmod.features.ArrowHitSound.onLocalSound(instance)) {
-            cir.setReturnValue(SoundEngine.PlayResult.NOT_STARTED);
+        try {
+            if (fishmod.features.ArrowHitSound.onLocalSound(instance)) {
+                cir.setReturnValue(SoundEngine.PlayResult.NOT_STARTED);
+            }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("SoundEngineMixin.1", "arrow hit sound hook failed", t);
         }
     }
 
@@ -51,8 +55,12 @@ public class SoundEngineMixin {
     @Inject(method = "updateSource", at = @At("TAIL"))
     private void fishmod$refreshMonoChannels(Camera camera, CallbackInfo ci) {
         if (!FishSettings.monoAudioEnabled) return;
-        channelAccess.executeOnChannels(stream ->
-            stream.forEach(channel -> ((IMonoAudioChannel) channel).fishmod$refreshPosition())
-        );
+        try {
+            channelAccess.executeOnChannels(stream ->
+                stream.forEach(channel -> ((IMonoAudioChannel) channel).fishmod$refreshPosition())
+            );
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("SoundEngineMixin.2", "mono channel refresh dispatch failed", t);
+        }
     }
 }

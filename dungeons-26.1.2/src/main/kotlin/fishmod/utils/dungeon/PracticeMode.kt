@@ -4,6 +4,7 @@ import fishmod.utils.Location
 import fishmod.utils.Misc
 import fishmod.utils.config.FishConfig
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.minecraft.client.Minecraft
@@ -18,7 +19,9 @@ object PracticeMode {
 
     @JvmStatic
     fun init() {
-        ClientPlayConnectionEvents.JOIN.register(ClientPlayConnectionEvents.Join { _, _, mc -> refresh(mc) })
+        ClientPlayConnectionEvents.JOIN.register(ClientPlayConnectionEvents.Join { _, _, mc ->
+            try { refresh(mc) } catch (t: Throwable) { FishDiag.fail("PracticeMode.1", "practice mode refresh on join", t) }
+        })
         ClientPlayConnectionEvents.DISCONNECT.register(ClientPlayConnectionEvents.Disconnect { _, _ ->
             active = false
             phaseOverride = -1
@@ -34,7 +37,7 @@ object PracticeMode {
         active = addr.isNotEmpty() && ips().any { addr == it || addr.contains(it) }
         if (active && !was) {
             if (phaseOverride < 0) phaseOverride = 6
-            Events.ON_LOCATION_CHANGE.invoke { it.onLocationChange(Location.DUNGEON) }
+            FishDiag.guard("PracticeMode.2", "fire practice location change") { Events.ON_LOCATION_CHANGE.invoke { it.onLocationChange(Location.DUNGEON) } }
             msg("§aPractice mode ON §7— phase §f${label(phaseOverride)}§7. §8/fmpractice for options")
         } else if (!active && was) {
             phaseOverride = -1
@@ -68,7 +71,7 @@ object PracticeMode {
         val cur = FishSettings.practiceServerIps.split(',').map { it.trim() }.filter { it.isNotEmpty() }
         if (cur.any { it.equals(ip, ignoreCase = true) }) { msg("§e$ip is already in the list"); return }
         FishSettings.practiceServerIps = (cur + ip).joinToString(",")
-        runCatching { FishConfig.manager.save() }
+        runCatching { FishConfig.manager.save() }.onFailure { FishDiag.fail("PracticeMode.3", "save config after adding practice ip", it) }
         msg("§aadded §f$ip §7to the practice IP list")
         refresh(Minecraft.getInstance())
     }

@@ -1,5 +1,6 @@
 package fishmod.cosmetic
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
 import java.util.concurrent.ConcurrentHashMap
 
@@ -43,6 +44,7 @@ object RemoteScales {
                 y = parts[1].trim().toFloat()
                 z = parts[2].trim().toFloat()
             } else {
+                FishDiag.fail("RemoteScales.1", "scale has ${parts.size} parts: '$raw'")
                 return null
             }
             x = clamp(x)
@@ -52,6 +54,7 @@ object RemoteScales {
             if (x == 1.0f && y == 1.0f && z == 1.0f) return null
             return floatArrayOf(x, y, z)
         } catch (e: NumberFormatException) {
+            FishDiag.fail("RemoteScales.2", "non-numeric scale '$raw'", e)
             return null
         }
     }

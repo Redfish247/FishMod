@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
@@ -44,7 +45,11 @@ object LavaToWater {
 
     @JvmStatic
     fun refresh() {
-        Minecraft.getInstance().levelRenderer?.allChanged()
+        try {
+            Minecraft.getInstance().levelRenderer?.allChanged()
+        } catch (t: Throwable) {
+            FishDiag.fail("LavaToWater.1", "levelRenderer.allChanged failed", t)
+        }
     }
 
     @JvmStatic
@@ -63,10 +68,16 @@ object LavaToWater {
             cir.setReturnValue(cached.model)
             return
         }
-        val model = FluidModel(
-            water.layer(), water.stillMaterial(), water.flowingMaterial(), water.overlayMaterial(),
-            BlockTintSources.constant(rgb, rgb)
-        )
+        val model = try {
+            FluidModel(
+                water.layer(), water.stillMaterial(), water.flowingMaterial(), water.overlayMaterial(),
+                BlockTintSources.constant(rgb, rgb)
+            )
+        } catch (t: Throwable) {
+            FishDiag.fail("LavaToWater.2", "tinted FluidModel build failed rgb=${Integer.toHexString(rgb)}", t)
+            cir.setReturnValue(water)
+            return
+        }
         tinted = Tinted(water, rgb, model)
         cir.setReturnValue(model)
     }

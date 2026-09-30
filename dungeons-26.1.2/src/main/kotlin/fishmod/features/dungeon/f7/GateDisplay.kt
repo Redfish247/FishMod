@@ -13,6 +13,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
 import net.minecraft.world.phys.Vec3
+import fishmod.utils.debug.FishDiag
 
 object GateDisplay {
 
@@ -53,6 +54,7 @@ object GateDisplay {
         }
         Events.ON_SECTION_CHANGE.register {
             val s = Section.getSection()
+            FishDiag.check(s in 1..5, "GateDisplay.1") { "section change to out-of-range section $s" }
             if (s == 2 || s == 3) show(s - 1)
             false
         }
@@ -75,12 +77,12 @@ object GateDisplay {
         fishmod.utils.rendering.RenderingEvents.NO_DEPTH_LINE.register { ctx, matrices, _ ->
             if (!Floor7.gateDisplayEnabled || !Location.inDungeon() || !Phase.inTerminals()) return@register
             if (state.all { it == GateState.HIDDEN }) return@register
-            render(ctx, matrices)
+            try { render(ctx, matrices) } catch (e: Exception) { FishDiag.fail("GateDisplay.2", "gate display render threw (state=${state.toList()})", e) }
         }
     }
 
     private fun show(index: Int) {
-        if (index !in GATE_POS.indices) return
+        if (index !in GATE_POS.indices) { FishDiag.fail("GateDisplay.4", "show() gate index out of range: $index"); return }
         state[index] = GateState.DESTROY
     }
 

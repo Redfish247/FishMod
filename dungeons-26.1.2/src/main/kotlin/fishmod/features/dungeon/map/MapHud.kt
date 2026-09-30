@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.map
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.DungeonMapSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLevelEvents
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
@@ -20,7 +21,11 @@ object MapHud {
                 !fishmod.features.dungeon.LeapMenu.isOverlayOpen() &&
                 !DungeonState.isInBoss()
             ) {
-                renderAt(g, mc, DungeonMapSettings.mapX, DungeonMapSettings.mapY, DungeonMapSettings.mapScale, false)
+                try {
+                    renderAt(g, mc, DungeonMapSettings.mapX, DungeonMapSettings.mapY, DungeonMapSettings.mapScale, false)
+                } catch (e: Exception) {
+                    FishDiag.fail("MapHud.1", "dungeon map HUD render failed rooms=${Scan.rooms.size} doors=${Scan.doors.size} size=${DungeonMap.getMapSize()}", e)
+                }
             }
         }
     }
@@ -62,17 +67,17 @@ object MapHud {
             val legit = MapColors.legit()
 
             for (room in ArrayList(Scan.rooms)) {
-                room.render(g)
+                try { room.render(g) } catch (e: Exception) { FishDiag.fail("MapHud.2", "room render failed '${room.data?.name}' type=${room.type} shape=${room.shape} tiles=${room.tiles.size}", e) }
             }
 
             for (door in ArrayList(Scan.doors)) {
-                if (!legit || door.seen) door.render(g)
+                try { if (!legit || door.seen) door.render(g) } catch (e: Exception) { FishDiag.fail("MapHud.3", "door render failed at ${door.pos} type=${door.type}", e) }
             }
 
             pose.pushMatrix()
             for (room in ArrayList(Scan.rooms)) {
                 if (room.type != Room.Type.ENTRANCE && room.type != Room.Type.BLOOD) {
-                    room.renderName(g, textFactor)
+                    try { room.renderName(g, textFactor) } catch (e: Exception) { FishDiag.fail("MapHud.4", "room name render failed '${room.data?.name}' state=${room.state}", e) }
                 }
             }
             pose.popMatrix()

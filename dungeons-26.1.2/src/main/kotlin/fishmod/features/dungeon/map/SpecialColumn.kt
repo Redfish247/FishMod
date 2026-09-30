@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.map
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.DungeonMapSettings
 
 object SpecialColumn {
@@ -65,6 +66,7 @@ object SpecialColumn {
         if (discovered1x1s == puzzleCount() + 2) {
             discoveredFullSpecialColumn = ms.z
         } else if (column != -1) {
+            FishDiag.check(column in 1..ms.x, "SpecialColumn.1") { "special column $column outside map width ${ms.x}" }
             var discovered = ms.z
             for (z in 0 until ms.z) {
                 val tile = Scan.roomsList[MapVec2i(column - 1, z).roomListIndex()]

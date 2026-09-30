@@ -1,5 +1,6 @@
 package fishmod.cosmetic.badge
 
+import fishmod.utils.debug.FishDiag
 import com.google.gson.JsonParser
 import java.util.concurrent.ConcurrentHashMap
 
@@ -36,6 +37,7 @@ object BadgeManager {
                 for (el in arr) ids.add(el.asString)
                 byUuid[u] = ids
             } catch (e: Exception) {
+                FishDiag.fail("BadgeManager.1", "bad badge json for $u: ${json.take(80)}", e)
                 byUuid.remove(u)
             }
         }

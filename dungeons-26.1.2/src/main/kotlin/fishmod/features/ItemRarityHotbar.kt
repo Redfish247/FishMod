@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.features.item.ItemRarity
 import fishmod.features.item.ItemRarityHolder
 import fishmod.utils.config.values.Visual
@@ -39,12 +40,20 @@ object ItemRarityHotbar {
     fun drawRarity(ctx: GuiGraphicsExtractor, stack: ItemStack?, x: Int, y: Int) {
         if (!Visual.itemRarityBackground || stack == null || stack.isEmpty) return
 
-        val holder = stack as ItemRarityHolder
-        if (!holder.`fishmod$hasScanned`()) holder.`fishmod$setItemRarity`(getRarity(stack))
-        if (!holder.`fishmod$hasItemRarity`()) return
+        val holder = stack as? ItemRarityHolder
+        if (holder == null) {
+            FishDiag.fail("ItemRarityHotbar.1", "ItemStack missing ItemRarityHolder mixin: ${stack.javaClass.name}")
+            return
+        }
+        try {
+            if (!holder.`fishmod$hasScanned`()) holder.`fishmod$setItemRarity`(getRarity(stack))
+            if (!holder.`fishmod$hasItemRarity`()) return
 
-        val sprite = if (Visual.circularRarityBackground) CIRCLE else SQUARE
-        ctx.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, 16, 16, getTintColor(holder.`fishmod$getItemRarity`()))
+            val sprite = if (Visual.circularRarityBackground) CIRCLE else SQUARE
+            ctx.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, 16, 16, getTintColor(holder.`fishmod$getItemRarity`()))
+        } catch (t: Throwable) {
+            FishDiag.fail("ItemRarityHotbar.2", "rarity background draw failed at $x,$y", t)
+        }
     }
 
     private fun getTintColor(rarity: ItemRarity): Int {

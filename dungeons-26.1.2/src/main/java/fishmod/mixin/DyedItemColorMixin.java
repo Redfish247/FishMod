@@ -16,15 +16,18 @@ public class DyedItemColorMixin {
 
     @ModifyReturnValue(method = "getOrDefault", at = @At("RETURN"))
     private static int fishmod$customDyeColor(int originalColor, @Local(name = "itemStack") ItemStack stack) {
-        String uuid = ItemUtil.getUuid(stack);
-        if (uuid == null) return originalColor;
+        try {
+            String uuid = ItemUtil.getUuid(stack);
+            if (uuid == null) return originalColor;
 
-        ItemCustomizationStore.AnimatedDye animated = ItemCustomizationStore.getAnimatedDye(uuid);
-        if (animated != null) return ARGB.opaque(AnimatedDyeAnimator.colorFor(uuid, animated));
+            ItemCustomizationStore.AnimatedDye animated = ItemCustomizationStore.getAnimatedDye(uuid);
+            if (animated != null) return ARGB.opaque(AnimatedDyeAnimator.colorFor(uuid, animated));
 
-        Integer solid = ItemCustomizationStore.getDyeColor(uuid);
-        if (solid != null) return ARGB.opaque(solid);
-
+            Integer solid = ItemCustomizationStore.getDyeColor(uuid);
+            if (solid != null) return ARGB.opaque(solid);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("DyedItemColorMixin.1", "custom dye color lookup failed", t);
+        }
         return originalColor;
     }
 }

@@ -1,5 +1,6 @@
 package fishmod.features.item
 
+import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 
 object AnimatedDyeAnimator {
@@ -13,12 +14,20 @@ object AnimatedDyeAnimator {
     fun tickFrame() { frames++ }
 
     @JvmStatic
-    fun colorFor(uuid: String, dye: ItemCustomizationStore.AnimatedDye): Int {
+    fun colorFor(uuid: String, dye: ItemCustomizationStore.AnimatedDye): Int = try {
+        colorForInner(uuid, dye)
+    } catch (e: Exception) {
+        FishDiag.fail("AnimatedDyeAnimator.1", "animated dye colour failed keyframes=${dye.keyframes.size} duration=${dye.duration}", e)
+        -1
+    }
+
+    private fun colorForInner(uuid: String, dye: ItemCustomizationStore.AnimatedDye): Int {
         if (dye.keyframes.size < 2) {
             val c = dye.keyframes.firstOrNull()?.color ?: 0xFFFFFF
             return (0xFF shl 24) or (c and 0xFFFFFF)
         }
         if (states.size > 256) states.clear()
+        FishDiag.check(dye.duration > 0f, "AnimatedDyeAnimator.2") { "animated dye for $uuid has non-positive duration ${dye.duration}" }
         val state = states.getOrPut(uuid) {
             var progress = 0f
             var onBackCycle = false

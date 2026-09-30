@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.map
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.DungeonMapSettings
 import fishmod.utils.dungeon.DungeonClass
 import net.minecraft.client.Minecraft
@@ -38,6 +39,10 @@ object DungeonPlayers {
 
     @JvmStatic
     fun updateRoster(mc: Minecraft) {
+        try { updateRosterInner(mc) } catch (e: Exception) { FishDiag.fail("DungeonPlayers.1", "dungeon roster update failed teammates=${teammates.size}", e) }
+    }
+
+    private fun updateRosterInner(mc: Minecraft) {
         val conn = mc.connection ?: return
         val ordered = ArrayList(conn.onlinePlayers)
         val teams = HashMap<PlayerInfo, String>(ordered.size * 2)
@@ -92,6 +97,10 @@ object DungeonPlayers {
 
     @JvmStatic
     fun updateDecorations(decorations: Map<String, MapDecoration>?) {
+        try { updateDecorationsInner(decorations) } catch (e: Exception) { FishDiag.fail("DungeonPlayers.4", "map decoration update failed count=${decorations?.size}", e) }
+    }
+
+    private fun updateDecorationsInner(decorations: Map<String, MapDecoration>?) {
         if (decorations.isNullOrEmpty()) return
         val rs = DungeonMap.getRoomSize() ?: return
         val center = DungeonMap.getMapCenter() ?: return
@@ -158,6 +167,7 @@ object DungeonPlayers {
             renderHead(g, matrices, mc, player, renderNames)
         } catch (t: Throwable) {
             diagRenderHead(t)
+            FishDiag.fail("DungeonPlayers.2", "map head render failed for ${player.name} class=${player.clazz}", t)
         }
     }
 
@@ -175,7 +185,9 @@ object DungeonPlayers {
     }
 
     private fun resolveClass(player: DungeonPlayer): DungeonClass? =
-        runCatching { DungeonClass.valueOf(player.clazz.uppercase()) }.getOrNull() ?: DungeonClass.getClass(player.name)
+        runCatching { DungeonClass.valueOf(player.clazz.uppercase()) }.onFailure {
+            if (player.clazz != "Unknown" && player.clazz != "EMPTY") FishDiag.fail("DungeonPlayers.3", "unknown dungeon class '${player.clazz}' for ${player.name}", it)
+        }.getOrNull() ?: DungeonClass.getClass(player.name)
 
     private fun renderHead(g: GuiGraphicsExtractor, matrices: org.joml.Matrix3x2fStack, mc: Minecraft, player: DungeonPlayer, renderNames: Boolean) {
         if (player.isDead()) return

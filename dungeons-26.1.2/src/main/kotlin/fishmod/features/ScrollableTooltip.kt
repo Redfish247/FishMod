@@ -1,6 +1,7 @@
 package fishmod.features
 
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 
 object ScrollableTooltip {
 
@@ -33,6 +34,7 @@ object ScrollableTooltip {
         if (!isEnabled() || slot < 0) return false
         if (slot != lastSlot) { resetScroll(); lastSlot = slot }
 
+        if (!FishDiag.check(vertical.isFinite(), "ScrollableTooltip.1") { "non-finite scroll delta $vertical" }) return false
         val speed = FishSettings.tooltipScrollSpeed.coerceIn(1, 10)
         val amt = (vertical * speed).toFloat()
         when {

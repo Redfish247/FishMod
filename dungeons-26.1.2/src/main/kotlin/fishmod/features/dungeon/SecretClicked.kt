@@ -23,6 +23,7 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
+import fishmod.utils.debug.FishDiag
 
 object SecretClicked {
 
@@ -47,19 +48,25 @@ object SecretClicked {
     @JvmStatic
     fun init() {
         UseBlockCallback.EVENT.register(UseBlockCallback { _, _, hand, hit ->
-            if (hand == net.minecraft.world.InteractionHand.MAIN_HAND) onInteract(hit.blockPos)
+            if (hand == net.minecraft.world.InteractionHand.MAIN_HAND) {
+                try { onInteract(hit.blockPos) } catch (e: Exception) { FishDiag.fail("SecretClicked.1", "secret click handler threw at ${hit.blockPos}", e) }
+            }
             InteractionResult.PASS
         })
 
         Events.ON_PACKET.register { packet ->
-            when (packet) {
-                is ClientboundTakeItemEntityPacket -> if (packet.playerId == selfId) pickedItemIds.add(packet.itemId)
-                is ClientboundSoundPacket -> SecretDrops.batSound(packet)?.let { batSounds.add(it) }
-            }
+            try {
+                when (packet) {
+                    is ClientboundTakeItemEntityPacket -> if (packet.playerId == selfId) pickedItemIds.add(packet.itemId)
+                    is ClientboundSoundPacket -> SecretDrops.batSound(packet)?.let { batSounds.add(it) }
+                }
+            } catch (e: Exception) { FishDiag.fail("SecretClicked.2", "secret packet handler threw on ${packet.javaClass.simpleName}", e) }
             false
         }
 
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc -> onTick(mc) })
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
+            try { onTick(mc) } catch (e: Exception) { FishDiag.fail("SecretClicked.3", "secret clicked tick threw (clicked=${clicked.size})", e) }
+        })
 
         Events.ON_GAME_MESSAGE.register { text ->
             if (COLOR.replace(text.string, "").trim() == "That chest is locked!") {
@@ -73,9 +80,15 @@ object SecretClicked {
             false
         }
 
-        RenderingEvents.GIZMO.register { _ -> if (!FishSettings.secretClickedDepthCheck) renderGizmo() }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> if (FishSettings.secretClickedDepthCheck) render(m, vc, fill = true) }
-        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc -> if (FishSettings.secretClickedDepthCheck) render(m, vc, fill = false) }
+        RenderingEvents.GIZMO.register { _ ->
+            if (!FishSettings.secretClickedDepthCheck) try { renderGizmo() } catch (e: Exception) { FishDiag.fail("SecretClicked.4", "secret clicked gizmo render threw", e) }
+        }
+        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
+            if (FishSettings.secretClickedDepthCheck) try { render(m, vc, fill = true) } catch (e: Exception) { FishDiag.fail("SecretClicked.5", "secret clicked fill render threw", e) }
+        }
+        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc ->
+            if (FishSettings.secretClickedDepthCheck) try { render(m, vc, fill = false) } catch (e: Exception) { FishDiag.fail("SecretClicked.6", "secret clicked line render threw", e) }
+        }
     }
 
     private fun onTick(mc: net.minecraft.client.Minecraft) {
@@ -195,7 +208,9 @@ object SecretClicked {
         if (System.currentTimeMillis() - pendingSkullAt > 1500) { pendingSkull = null; return }
         if (!prevFresh || found <= prevFound) return
         pendingSkull = null
-        net.minecraft.client.Minecraft.getInstance().execute { if (active()) markClicked(pos) }
+        net.minecraft.client.Minecraft.getInstance().execute {
+            try { if (active()) markClicked(pos) } catch (e: Exception) { FishDiag.fail("SecretClicked.7", "deferred skull mark threw at $pos", e) }
+        }
     }
 
     private fun markClicked(pos: BlockPos) {
@@ -211,12 +226,12 @@ object SecretClicked {
         val now = System.currentTimeMillis()
         if (now - lastChime <= 10) return
         lastChime = now
-        SoundManager.play(
+        FishDiag.guard("SecretClicked.8", "secret chime play failed (${FishSettings.secretClickedSoundName})") { SoundManager.play(
             SoundManager.preset(FishSettings.secretClickedSoundName),
             FishSettings.secretClickedVolume.coerceIn(0, 500) / 100f,
             FishSettings.secretClickedPitch.toFloat().coerceIn(0f, 2f),
             "secretChime", 0
-        )
+        ) }
     }
 
     private fun render(matrices: PoseStack, vc: VertexConsumer, fill: Boolean) {

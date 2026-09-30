@@ -26,8 +26,12 @@ public class EntityMixin {
     public void fishmod$classGlowColor(CallbackInfoReturnable<Integer> cir) {
         if (!Dungeons.classColoredGlow || !((Object) this instanceof Player player)) return;
         if (!Location.inDungeon()) return;
-        DungeonClass cls = DungeonClass.getClass(player);
-        if (cls == null) cls = DungeonPlayers.classOf(player.getName().getString());
-        if (cls != null) cir.setReturnValue(DungeonClass.getColor(cls) & 0xFFFFFF);
+        try {
+            DungeonClass cls = DungeonClass.getClass(player);
+            if (cls == null) cls = DungeonPlayers.classOf(player.getName().getString());
+            if (cls != null) cir.setReturnValue(DungeonClass.getColor(cls) & 0xFFFFFF);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("EntityMixin.1", "class glow color lookup failed", t);
+        }
     }
 }

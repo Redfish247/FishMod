@@ -4,6 +4,7 @@ import fishmod.utils.Constants
 import fishmod.utils.Location
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
@@ -61,13 +62,31 @@ object SlayerBossPhases {
 
     @JvmStatic
     fun init() {
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { tick() })
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick {
+            try {
+                tick()
+            } catch (e: Exception) {
+                FishDiag.fail("SlayerBossPhases.1", "boss phase tick failed (type=${SlayerManager.type}, tier=${SlayerManager.tier})", e)
+            }
+        })
         Events.ON_GAME_MESSAGE.register { text ->
-            if (enabled()) onChat(text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim())
+            if (enabled()) {
+                try {
+                    onChat(text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim())
+                } catch (e: Exception) {
+                    FishDiag.fail("SlayerBossPhases.2", "boss phase chat handler failed", e)
+                }
+            }
             false
         }
         Events.ON_WORLD_CHANGE.register { hardReset(); false }
-        RenderingEvents.GIZMO.register { _ -> render() }
+        RenderingEvents.GIZMO.register { _ ->
+            try {
+                render()
+            } catch (e: Exception) {
+                FishDiag.fail("SlayerBossPhases.3", "boss phase render failed ('$line1' / '$line2')", e)
+            }
+        }
     }
 
     private fun hardReset() {
@@ -166,7 +185,11 @@ object SlayerBossPhases {
                     if (remain > -1.0) l1 = "§bLASER §f${fmt(remain)}s"
                 }
                 if (l1.isEmpty()) {
-                    val hits = stands.firstNotNullOfOrNull { HITS.find(it)?.groupValues?.get(1)?.toIntOrNull() }
+                    val hits = stands.firstNotNullOfOrNull { st ->
+                        HITS.find(st)?.groupValues?.get(1)?.let { h ->
+                            FishDiag.notNull(h.toIntOrNull(), "SlayerBossPhases.5") { "voidgloom hits not numeric: '$st'" }
+                        }
+                    }
                     if (hits != null) {
                         val max = when (tier) { 1 -> 15; 2 -> 30; 3 -> 60; else -> 100 }
                         l1 = "§d$hits§7/§d$max §7Hits"
@@ -269,7 +292,7 @@ object SlayerBossPhases {
         if (bossId != hpBossId) { hpBossId = bossId; hpMaxSeen = 0.0; lastHpFrac = 1.0; steakTitleFired = false }
         val cur = stands.firstNotNullOfOrNull { name ->
             NAMETAG_HP.find(name)?.let { m ->
-                val n = m.groupValues[1].replace(",", "").toDoubleOrNull() ?: return@let null
+                val n = FishDiag.notNull(m.groupValues[1].replace(",", "").toDoubleOrNull(), "SlayerBossPhases.4") { "boss nametag hp not numeric: '$name'" } ?: return@let null
                 n * when (m.groupValues[2].lowercase()) { "k" -> 1_000.0; "m" -> 1_000_000.0; "b" -> 1_000_000_000.0; else -> 1.0 }
             }
         } ?: 0.0

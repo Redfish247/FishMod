@@ -53,6 +53,9 @@ public final class IrcMessage {
 		String[] parts = rest.isEmpty() ? new String[0] : rest.split(" ");
 		String command = parts.length > 0 ? parts[0] : "";
 		String param0 = parts.length > 1 ? parts[1] : "";
+		if (command.isEmpty() && !line.isBlank()) {
+			fishmod.utils.debug.FishDiag.fail("IrcMessage.1", "irc line parsed without a command: " + line);
+		}
 
 		return new IrcMessage(tags, nick, command.toUpperCase(), param0, trailing);
 	}

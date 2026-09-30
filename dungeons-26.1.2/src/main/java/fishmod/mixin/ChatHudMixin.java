@@ -19,7 +19,7 @@ import net.minecraft.network.chat.MessageSignature;
 public class ChatHudMixin {
 
     private static final String CMD_ALT =
-            "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|crit|fps|tps|ping|ai|allinv|d|mp|collection|kick|k|warp|w|transfer|pt|ptme|promote|pro|demote|dem|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|help|\\?|e|[fm][1-7]|t[1-5]";
+            "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|crit|fps|tps|ping|ai|allinv|d|mp|collection|kick|k|warp|w|transfer|pt|ptme|promote|pro|demote|dem|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|chim|chimera|chimls|inq|inqs|inquis|king|manti|sphinx|core|stinger|wool|food|relic|relics|stick|sticks|hilt|since|burrow|burrows|mob|mobs|profit|playtime|mf|diana|help|\\?|e|[fm][1-7]|t[1-5]";
 
     private static final String ARG_TAIL = "(?:\\s+(\\w+)(?:\\s+(\\w+)(?:\\s+(\\w+))?)?)?\\s*$";
 
@@ -38,53 +38,57 @@ public class ChatHudMixin {
     @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
             at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Component message, MessageSignature signature, GuiMessageSource source, GuiMessageTag tag, CallbackInfo ci) {
-        String messageText = message.getString();
-        fishmod.features.dungeon.AutoRequeue.onChatLine(messageText);
-        fishmod.features.Ragnarock.checkP5Taunt(messageText);
+        try {
+            String messageText = message.getString();
+            fishmod.features.dungeon.AutoRequeue.onChatLine(messageText);
+            fishmod.features.Ragnarock.checkP5Taunt(messageText);
 
-        if (fishmod.features.ChatFilter.shouldHide(message)
-                || fishmod.features.chat.ChatRuleHandler.shouldHideAtDisplay(message)) {
-            fishmod.features.chat.ChatHideState.noteSuppressed();
-            ci.cancel();
-            return;
-        }
-        if (fishmod.features.chat.ChatHideState.shouldSwallowBlank(message)) { ci.cancel(); return; }
-
-        if (!FishSettings.chatParty && !FishSettings.chatGuild
-                && !FishSettings.chatPrivate && !FishSettings.chatAll && !FishSettings.pfStatsEnabled
-                && !(FishSettings.chatFeatureEnabled && FishSettings.chatCompact)
-                && System.currentTimeMillis() - fishmod.features.dungeon.ChatCommandState.lastPartyCommandAt >= 6000) {
-            return;
-        }
-
-        String plain = fishmod.utils.HypixelApi.STRIP_COLOR.matcher(messageText).replaceAll("");
-
-        if (System.currentTimeMillis() - fishmod.features.dungeon.ChatCommandState.lastPartyCommandAt < 6000) {
-            if (plain.startsWith("Unknown party command")
-                    || plain.startsWith("You are sending commands too fast")
-                    || plain.startsWith("You cannot use party commands here")) {
+            if (fishmod.features.ChatFilter.shouldHide(message)
+                    || fishmod.features.chat.ChatRuleHandler.shouldHideAtDisplay(message)) {
+                fishmod.features.chat.ChatHideState.noteSuppressed();
                 ci.cancel();
                 return;
             }
-        }
+            if (fishmod.features.chat.ChatHideState.shouldSwallowBlank(message)) { ci.cancel(); return; }
 
-        if (FishSettings.chatParty && tryDispatch(PARTY_CMD, plain, "pc ", null)) return;
-        if (FishSettings.chatGuild && tryDispatch(GUILD_CMD, plain, "gc ", null)) return;
-        if (FishSettings.chatPrivate) {
-            if (tryDispatch(MSG_CMD, plain, null, "msg ")) return;
-            if (tryDispatch(TO_CMD, plain, null, "msg ")) return;
-        }
-        if (FishSettings.chatAll) {
-            if (tryDispatch(ALL_CMD, plain, "ac ", null)) return;
-        }
+            if (!FishSettings.chatParty && !FishSettings.chatGuild
+                    && !FishSettings.chatPrivate && !FishSettings.chatAll && !FishSettings.pfStatsEnabled
+                    && !(FishSettings.chatFeatureEnabled && FishSettings.chatCompact)
+                    && System.currentTimeMillis() - fishmod.features.dungeon.ChatCommandState.lastPartyCommandAt >= 6000) {
+                return;
+            }
 
-        if (FishSettings.pfStatsEnabled) {
-            Matcher pfm = FROM_MSG.matcher(plain);
-            if (pfm.find()) fishmod.features.dungeon.PartyFinderStats.onWhisper(pfm.group(1));
-        }
+            String plain = fishmod.utils.HypixelApi.STRIP_COLOR.matcher(messageText).replaceAll("");
 
-        if (FishSettings.chatFeatureEnabled && FishSettings.chatCompact
-                && fishmod.features.CompactChat.tryCompact(message, (ChatComponent) (Object) this, ci)) return;
+            if (System.currentTimeMillis() - fishmod.features.dungeon.ChatCommandState.lastPartyCommandAt < 6000) {
+                if (plain.startsWith("Unknown party command")
+                        || plain.startsWith("You are sending commands too fast")
+                        || plain.startsWith("You cannot use party commands here")) {
+                    ci.cancel();
+                    return;
+                }
+            }
+
+            if (FishSettings.chatParty && tryDispatch(PARTY_CMD, plain, "pc ", null)) return;
+            if (FishSettings.chatGuild && tryDispatch(GUILD_CMD, plain, "gc ", null)) return;
+            if (FishSettings.chatPrivate) {
+                if (tryDispatch(MSG_CMD, plain, null, "msg ")) return;
+                if (tryDispatch(TO_CMD, plain, null, "msg ")) return;
+            }
+            if (FishSettings.chatAll) {
+                if (tryDispatch(ALL_CMD, plain, "ac ", null)) return;
+            }
+
+            if (FishSettings.pfStatsEnabled) {
+                Matcher pfm = FROM_MSG.matcher(plain);
+                if (pfm.find()) fishmod.features.dungeon.PartyFinderStats.onWhisper(pfm.group(1));
+            }
+
+            if (FishSettings.chatFeatureEnabled && FishSettings.chatCompact
+                    && fishmod.features.CompactChat.tryCompact(message, (ChatComponent) (Object) this, ci)) return;
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("ChatHudMixin.1", "chat addMessage hook failed", t);
+        }
     }
 
     private static boolean tryDispatch(Pattern p, String plain, String channelResponder, String dmPrefix) {
@@ -97,6 +101,9 @@ public class ChatHudMixin {
         String rawArg2 = m.group(4);
         String rawArg3 = m.group(5);
         String responder = (dmPrefix != null) ? dmPrefix + matchedName + " " : channelResponder;
+        if (matchedName == null || cmd == null) {
+            fishmod.utils.debug.FishDiag.fail("ChatHudMixin.2", "party cmd regex matched without name/cmd: " + plain);
+        }
         PartyCommandHandler.onPartyCommand(matchedName, cmd, rawArg1, rawArg2, rawArg3, responder);
         return true;
     }

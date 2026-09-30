@@ -1,5 +1,6 @@
 package fishmod.cosmetic
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.HypixelApi
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -26,7 +27,7 @@ object RemoteSync {
     fun init() {
         ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
             reset()
-            refresh()
+            FishDiag.guard("RemoteSync.1", "cosmetic sync on join failed") { refresh() }
         }
         ClientTickEvents.END_CLIENT_TICK.register { client ->
             val size = tabSize()
@@ -41,7 +42,7 @@ object RemoteSync {
             tick++
             if (tick < interval) return@register
             tick = 0
-            refresh()
+            FishDiag.guard("RemoteSync.2", "cosmetic sync tick failed") { refresh() }
         }
     }
 
@@ -110,9 +111,13 @@ object RemoteSync {
                 lastTabSize = tabSize()
                 val changed = nicks != null || scales != null || badges != null
                 interval = if (changed) BASE_TICKS else minOf(interval + STEP_TICKS, MAX_TICKS)
-                if (nicks != null && FishSettings.remoteNicksEnabled) RemoteNicks.acceptNicks(uuidToName, nicks)
-                if (scales != null && FishSettings.playerSizeShared) RemoteScales.acceptScales(keys, scales)
-                if (badges != null && FishSettings.badgesEnabled) fishmod.cosmetic.badge.BadgeManager.acceptBadges(queryKeys, badges)
+                try {
+                    if (nicks != null && FishSettings.remoteNicksEnabled) RemoteNicks.acceptNicks(uuidToName, nicks)
+                    if (scales != null && FishSettings.playerSizeShared) RemoteScales.acceptScales(keys, scales)
+                    if (badges != null && FishSettings.badgesEnabled) fishmod.cosmetic.badge.BadgeManager.acceptBadges(queryKeys, badges)
+                } catch (t: Throwable) {
+                    FishDiag.fail("RemoteSync.3", "applying synced cosmetics failed (${keys.size} players)", t)
+                }
             }
         }
     }

@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.features.dungeon.PartyCommandHandler
 import fishmod.utils.PingTracker
 import fishmod.utils.TabListCache
@@ -134,6 +135,14 @@ object CompactTab {
 
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, screenW: Int, tabHeader: String?, tabFooter: String?) {
+        try {
+            renderInner(ctx, screenW, tabHeader, tabFooter)
+        } catch (t: Throwable) {
+            FishDiag.fail("CompactTab.1", "compact tab render failed (${TabListCache.entries.size} entries)", t)
+        }
+    }
+
+    private fun renderInner(ctx: GuiGraphicsExtractor, screenW: Int, tabHeader: String?, tabFooter: String?) {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.connection == null) return
         val tr = mc.font
@@ -342,7 +351,8 @@ object CompactTab {
                 if (playersCol && r > 0) {
                     try {
                         PlayerFaceExtractor.extractRenderState(ctx, e.skin, colX, ry - 1, 8)
-                    } catch (ignored: Exception) {
+                    } catch (ex: Exception) {
+                        FishDiag.fail("CompactTab.2", "player face draw failed for ${nameOf(e)}", ex)
                     }
                     tx = colX + 10
                 }
@@ -384,6 +394,7 @@ object CompactTab {
         return try {
             if (e.profile != null && e.profile.name != null) e.profile.name else ""
         } catch (ex: Exception) {
+            FishDiag.fail("CompactTab.3", "tab entry profile name read failed", ex)
             ""
         }
     }
@@ -394,12 +405,14 @@ object CompactTab {
         try {
             val self = mc.connection?.getPlayerInfo(mc.player!!.uuid)
             if (self != null && self.latency > 0) return self.latency
-        } catch (ignored: Exception) {
+        } catch (ex: Exception) {
+            FishDiag.fail("CompactTab.4", "own tab latency lookup failed", ex)
         }
         try {
             val si = mc.currentServer
             if (si != null && si.ping > 0) return si.ping.toInt()
-        } catch (ignored: Exception) {
+        } catch (ex: Exception) {
+            FishDiag.fail("CompactTab.5", "server ping lookup failed", ex)
         }
         return -1
     }
@@ -416,7 +429,8 @@ object CompactTab {
                     hay += " " + raw.replace(Regex("§."), "")
                 }
             }
-        } catch (ignored: Exception) {
+        } catch (ex: Exception) {
+            FishDiag.fail("CompactTab.6", "sidebar read for server id failed", ex)
         }
         val m = SERVER_ID.matcher(hay)
         return if (m.find()) m.group(1) else "—"

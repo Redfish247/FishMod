@@ -12,6 +12,7 @@ import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.AABB
+import fishmod.utils.debug.FishDiag
 
 object StarredMobHighlight {
 
@@ -24,8 +25,12 @@ object StarredMobHighlight {
 
     @JvmStatic
     fun init() {
-        RenderingEvents.GIZMO.register { _ -> render() }
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { tick() })
+        RenderingEvents.GIZMO.register { _ ->
+            try { render() } catch (e: Exception) { FishDiag.fail("StarredMobHighlight.1", "starred mob render threw (mobs=${cachedStarredMobs.size})", e) }
+        }
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick {
+            try { tick() } catch (e: Exception) { FishDiag.fail("StarredMobHighlight.2", "starred mob scan threw", e) }
+        })
     }
 
     private fun active(): Boolean {
@@ -61,6 +66,7 @@ object StarredMobHighlight {
             val mob = findNearestMob(level, entity)
             if (mob != null) mobs.add(mob)
         }
+        FishDiag.check(mobs.size < 200, "StarredMobHighlight.3") { "implausible starred mob count ${mobs.size}" }
         return mobs
     }
 

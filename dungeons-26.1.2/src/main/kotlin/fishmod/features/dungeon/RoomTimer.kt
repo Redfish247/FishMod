@@ -14,6 +14,7 @@ import net.minecraft.network.chat.Component
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import fishmod.utils.debug.FishDiag
 
 object RoomTimer {
 
@@ -40,7 +41,7 @@ object RoomTimer {
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick {
             if (!FishSettings.roomTimerEnabled || !DungeonState.isInDungeon() || DungeonState.isInBoss()) return@EndTick
-            val name = DungeonMap.roomPlayerIn()?.owner?.data?.name ?: return@EndTick
+            val name = try { DungeonMap.roomPlayerIn()?.owner?.data?.name } catch (e: Exception) { FishDiag.fail("RoomTimer.2", "room lookup threw", e); null } ?: return@EndTick
             if (name != room) {
                 room = name
                 enterMs = System.currentTimeMillis()
@@ -56,6 +57,7 @@ object RoomTimer {
             val name = here.data?.name ?: return@onRoomStateChange
             if (name != room) return@onRoomStateChange
             val took = System.currentTimeMillis() - enterMs
+            if (!FishDiag.check(took >= 0, "RoomTimer.1") { "negative room time $took for $name" }) return@onRoomStateChange
             val secrets = here.data?.secrets ?: 0
 
             if (!toldSecrets && u.neu == Room.State.GREEN && secrets > 0) {
@@ -70,6 +72,10 @@ object RoomTimer {
     }
 
     private fun announce(label: String, tookMs: Long, roomName: String, isSecrets: Boolean) {
+        try { announceInner(label, tookMs, roomName, isSecrets) } catch (e: Exception) { FishDiag.fail("RoomTimer.5", "room timer announce threw for $roomName", e) }
+    }
+
+    private fun announceInner(label: String, tookMs: Long, roomName: String, isSecrets: Boolean) {
         ensureLoaded()
         val p = pbs.getOrPut(roomName) { Pb() }
         val prev = if (isSecrets) p.secrets else p.clear
@@ -103,6 +109,7 @@ object RoomTimer {
                 GSON.fromJson<HashMap<String, Pb>>(Files.readString(FILE), t)?.let { pbs.putAll(it) }
             }
         } catch (e: Exception) {
+            FishDiag.fail("RoomTimer.3", "loading room_timers.json failed", e)
             Debug.LOGGER.warn("[RoomTimer] load failed: {}", e.toString())
         }
     }
@@ -114,6 +121,7 @@ object RoomTimer {
                 Files.createDirectories(FILE.parent)
                 Files.writeString(FILE, json)
             } catch (e: Exception) {
+                FishDiag.fail("RoomTimer.4", "saving room_timers.json failed", e)
                 Debug.LOGGER.warn("[RoomTimer] save failed: {}", e.toString())
             }
         }

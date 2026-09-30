@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.mixin.ChatHudInvoker
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
@@ -25,7 +26,7 @@ object CompactChat {
         if (mc.gui == null) return false
         val nowTick = mc.gui.guiTicks
 
-        val acc = hud as ChatHudInvoker
+        val acc = hud as? ChatHudInvoker ?: run { FishDiag.fail("CompactChat.1", "ChatHudInvoker mixin not applied"); return false }
         val messages = acc.messages
         if (messages == null || messages.isEmpty()) return false
 
@@ -79,7 +80,7 @@ object CompactChat {
 
     private fun extractCount(s: String): Int {
         val m = COUNT_SUFFIX.matcher(s.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, ""))
-        return if (m.find()) m.group(1).toInt() else 1
+        return if (m.find()) FishDiag.notNull(m.group(1).toIntOrNull(), "CompactChat.2") { "compact count '${m.group(1)}' overflowed" } ?: 1 else 1
     }
 
     private fun withCount(message: Component, n: Int): Component {

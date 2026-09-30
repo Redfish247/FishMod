@@ -7,6 +7,7 @@ import fishmod.utils.events.Events
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import fishmod.utils.debug.FishDiag
 
 // Quiz countdown (NoammAddons timings): 11s to the first question, 5s after each answer, until all 3 are done.
 object QuizHud {
@@ -30,9 +31,18 @@ object QuizHud {
             val s = COLOR.replace(text.string, "")
             when {
                 s.contains("I am Oruo the Omniscient. I have lived many lives.") -> { stage = 1; ticksLeft = 220 }
-                s.contains("2 questions left... Then you will have proven your worth to me!") -> { stage = 2; ticksLeft = 100 }
-                s.contains("One more question!") -> { stage = 3; ticksLeft = 100 }
-                s.startsWith("[STATUE] Oruo the Omniscient: ") && s.contains("answered the final question") -> { stage = 0; ticksLeft = 0 }
+                s.contains("2 questions left... Then you will have proven your worth to me!") -> {
+                    FishDiag.check(stage == 1 || stage == 0, "QuizHud.3") { "quiz stage 2 arrived from stage $stage" }
+                    stage = 2; ticksLeft = 100
+                }
+                s.contains("One more question!") -> {
+                    FishDiag.check(stage == 2 || stage == 0, "QuizHud.2") { "quiz stage 3 arrived from stage $stage" }
+                    stage = 3; ticksLeft = 100
+                }
+                s.startsWith("[STATUE] Oruo the Omniscient: ") && s.contains("answered the final question") -> {
+                    FishDiag.check(stage == 3 || stage == 0, "QuizHud.1") { "quiz finished while at stage $stage" }
+                    stage = 0; ticksLeft = 0
+                }
             }
             false
         }

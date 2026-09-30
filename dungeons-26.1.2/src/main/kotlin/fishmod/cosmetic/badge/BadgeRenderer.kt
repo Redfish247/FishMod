@@ -1,5 +1,6 @@
 package fishmod.cosmetic.badge
 
+import fishmod.utils.debug.FishDiag
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
@@ -75,7 +76,7 @@ object BadgeRenderer {
         val (cleanStr, mapToFull, fullLen) = cleanFor(segs)
         val m = LEVEL_ANYWHERE.find(cleanStr)
         val insertAt = if (m != null) mapToFull[m.range.last] + 1 else 0
-        return spliceAtFullOffset(segs, fullLen, insertAt, badgesComponent(defs, leadingSpace = m != null))
+        return FishDiag.guard("BadgeRenderer.1", "nametag badge splice failed at $insertAt/$fullLen") { spliceAtFullOffset(segs, fullLen, insertAt, badgesComponent(defs, leadingSpace = m != null)) } ?: component
     }
 
     @JvmStatic
@@ -93,7 +94,11 @@ object BadgeRenderer {
         val defs = BadgeManager.badgesFor(uuid)
         if (defs.isEmpty()) return component
         val nameStartClean = afterBracketClean + nameMatch.range.first
+        if (nameStartClean >= cleanStr.length) {
+            FishDiag.fail("BadgeRenderer.2", "chat badge name offset $nameStartClean out of range ${cleanStr.length}")
+            return component
+        }
         val insertAt = mapToFull[nameStartClean]
-        return spliceAtFullOffset(segs, fullLen, insertAt, badgesComponent(defs, leadingSpace = false))
+        return FishDiag.guard("BadgeRenderer.3", "chat badge splice failed at $insertAt/$fullLen") { spliceAtFullOffset(segs, fullLen, insertAt, badgesComponent(defs, leadingSpace = false)) } ?: component
     }
 }

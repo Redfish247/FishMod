@@ -9,6 +9,7 @@ import fishmod.utils.rendering.RenderUtils
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.phys.AABB
+import fishmod.utils.debug.FishDiag
 
 object PlayersLeaped {
 
@@ -50,6 +51,7 @@ object PlayersLeaped {
         val level = mc.level ?: return 0
         val me = mc.player ?: return 0
         val team = DungeonClass.getAll().keys
+        if (team.isEmpty()) FishDiag.fail("PlayersLeaped.1", "no dungeon teammates known while in F7 boss zone ${zone.label}")
         return level.players().count { p ->
             p !== me && p.isAlive && p.gameProfile.name in team && zone.box.contains(p.position())
         }
@@ -60,8 +62,13 @@ object PlayersLeaped {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
+        try { renderInner(component, context) } catch (e: Exception) { FishDiag.fail("PlayersLeaped.2", "players leaped render threw", e) }
+    }
+
+    private fun renderInner(component: HUDComponent, context: GuiGraphicsExtractor) {
         val zone = activeZone() ?: return
         val n = leapedCount(zone)
+        FishDiag.check(n <= 4, "PlayersLeaped.3") { "leaped count $n > 4 in ${zone.label}" }
         if (n >= zone.expected) filledAt.putIfAbsent(zone.label, System.currentTimeMillis())
         if (zone.label in filledAt) {
             val font = net.minecraft.client.Minecraft.getInstance().font

@@ -19,6 +19,10 @@ public class MinecraftClientMixin {
     private void fishmod$onWorldChange(ClientLevel level, CallbackInfo ci) {
         if (level == fishmod$lastLevel) return;
         fishmod$lastLevel = level;
-        Events.ON_WORLD_CHANGE.invoke(it -> it.onWorldSwap());
+        try {
+            Events.ON_WORLD_CHANGE.invoke(it -> it.onWorldSwap());
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("MinecraftClientMixin.1", "world change event failed", t);
+        }
     }
 }

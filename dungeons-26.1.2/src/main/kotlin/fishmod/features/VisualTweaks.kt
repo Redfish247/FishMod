@@ -1,6 +1,7 @@
 package fishmod.features
 
 import fishmod.utils.config.values.Visual
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.client.Minecraft
 import net.minecraft.world.InteractionResult
@@ -17,12 +18,16 @@ object VisualTweaks {
     @JvmStatic
     fun init() {
         UseBlockCallback.EVENT.register(UseBlockCallback { player, level, hand, hit ->
-            if (Visual.renderOptimizer && Visual.stopShovelFlattening
-                && player === Minecraft.getInstance().player
-                && player.getItemInHand(hand).item is ShovelItem
-                && level.getBlockState(hit.blockPos).block in FLATTENABLE
-            ) {
-                return@UseBlockCallback InteractionResult.FAIL
+            try {
+                if (Visual.renderOptimizer && Visual.stopShovelFlattening
+                    && player === Minecraft.getInstance().player
+                    && player.getItemInHand(hand).item is ShovelItem
+                    && level.getBlockState(hit.blockPos).block in FLATTENABLE
+                ) {
+                    return@UseBlockCallback InteractionResult.FAIL
+                }
+            } catch (e: Exception) {
+                FishDiag.fail("VisualTweaks.1", "shovel flatten check failed at ${hit.blockPos}", e)
             }
             InteractionResult.PASS
         })
