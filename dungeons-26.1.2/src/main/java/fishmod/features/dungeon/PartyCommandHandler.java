@@ -144,6 +144,12 @@ public class PartyCommandHandler {
                 case "transfer", "pt", "ptme" -> { if (FishSettings.pcActionTransfer && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe))                    sendRawCommand(mc, "p transfer " + resolvePartyTarget(mc, ign));     }
                 case "promote", "pro"         -> { if (FishSettings.pcActionPromote  && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p promote " + resolvePartyTarget(mc, rawArg1));  }
                 case "demote", "dem"          -> { if (FishSettings.pcActionDemote   && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p demote " + resolvePartyTarget(mc, rawArg1));   }
+                case "chim", "chimera", "chimls", "inq", "inqs", "inquis", "king", "manti", "sphinx", "core", "stinger", "wool", "food", "relic", "relics", "stick", "sticks", "hilt", "since", "burrow", "burrows", "mob", "mobs", "profit", "playtime", "mf", "diana" -> {
+                    if (fishmod.features.diana.DianaSettings.dianaPartyCommands && respond(cmd, typer, isLocal)) {
+                        String r = fishmod.features.diana.DianaTracker.partyReply(cmd, rawArg1);
+                        if (r != null) sendCmd(mc, responder, r);
+                    }
+                }
                 default -> {
                     if ((FLOOR_RE.matcher(cmd).matches() || cmd.equals("e")) && FishSettings.pcJoinFloor && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) handleJoinInstance(cmd, mc, responder);
                     else if (KUUDRA_RE.matcher(cmd).matches() && FishSettings.pcJoinFloor && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) handleKuudra(cmd, mc, responder);
@@ -187,6 +193,7 @@ public class PartyCommandHandler {
             case "transfer", "pt", "ptme" -> FishSettings.pcActionTransfer;
             case "promote", "pro" -> FishSettings.pcActionPromote;
             case "demote", "dem" -> FishSettings.pcActionDemote;
+            case "chim", "chimera", "chimls", "inq", "inqs", "inquis", "king", "manti", "sphinx", "core", "stinger", "wool", "food", "relic", "relics", "stick", "sticks", "hilt", "since", "burrow", "burrows", "mob", "mobs", "profit", "playtime", "mf", "diana" -> fishmod.features.diana.DianaSettings.dianaPartyCommands;
             default -> isFloor(cmd) || KUUDRA_RE.matcher(cmd).matches() ? FishSettings.pcJoinFloor : false;
         };
     }
@@ -298,6 +305,7 @@ public class PartyCommandHandler {
         if (FishSettings.pcActionPromote)  cmds.add("promote/pro");
         if (FishSettings.pcActionDemote)   cmds.add("demote/dem");
         if (FishSettings.pcDisband)    cmds.add("d");
+        if (fishmod.features.diana.DianaSettings.dianaPartyCommands) cmds.add("diana");
         return "FishMod cmds: ." + String.join(" .", cmds);
     }
 
