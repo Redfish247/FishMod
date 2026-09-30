@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.math.abs
 import kotlin.math.sqrt
 
 enum class WpType { BURROW, GUESS, ARROW, SUB, RARE, WORLD }
@@ -84,16 +85,22 @@ object DianaWaypoints {
         return valid
     }
 
-    // Nearest grass-with-air-above around p (same column first, then a 3x3); null if the chunk isn't loaded or none found
+    // Grass-with-air-above nearest p in height, searching the whole hub Y range of p's column, then rings out to 2;
+    // null if the chunk isn't loaded or there's no grass nearby
     fun snapToGround(p: BlockPos): BlockPos? {
         val level = Minecraft.getInstance().level ?: return null
         if (!level.hasChunk(p.x shr 4, p.z shr 4)) return null
-        for (r in 0..1) for (dx in -r..r) for (dz in -r..r) {
-            if (r == 1 && dx == 0 && dz == 0) continue
-            for (dy in 6 downTo -12) {
-                val q = BlockPos(p.x + dx, p.y + dy, p.z + dz)
-                if (inHubBounds(q) && level.getBlockState(q).`is`(Blocks.GRASS_BLOCK) && level.getBlockState(q.above()).isAir) return q
+        for (r in 0..2) {
+            var best: BlockPos? = null
+            for (dx in -r..r) for (dz in -r..r) {
+                if (maxOf(abs(dx), abs(dz)) != r) continue
+                for (y in MAX_Y downTo MIN_Y + 1) {
+                    val q = BlockPos(p.x + dx, y, p.z + dz)
+                    if (!inHubBounds(q) || !level.getBlockState(q).`is`(Blocks.GRASS_BLOCK) || !level.getBlockState(q.above()).isAir) continue
+                    if (best == null || abs(q.y - p.y) < abs(best.y - p.y)) best = q
+                }
             }
+            if (best != null) return best
         }
         return null
     }
@@ -231,7 +238,7 @@ object DianaWaypoints {
                 // World size per font pixel grows with distance so labels stay the same size on screen;
                 // past render distance the label is pulled in along the same ray (SBO does the same)
                 val (pos, pk) = RenderUtils.pullIn(Vec3(w.pos.x + 0.5, w.pos.y + 1.5 + d / 25.0, w.pos.z + 0.5), eye)
-                val px = (DianaSettings.dianaTextScale * maxOf(0.075, d * 0.0075) * pk).toFloat()
+                val px = (DianaSettings.dianaTextScale * maxOf(0.035, d * 0.0035) * pk).toFloat()
                 val textColor = withAlpha(0xFFFFFF, DianaSettings.dianaTextOpacity / 100f)
                 RenderUtils.renderSeeThroughText(rCtx, rPs, Component.literal(colorCode(w, closest) + text), pos, px, textColor, DianaSettings.dianaTextShadow)
             }

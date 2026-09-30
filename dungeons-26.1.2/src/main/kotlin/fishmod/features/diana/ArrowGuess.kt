@@ -17,7 +17,7 @@ object ArrowGuess {
     private const val TOL = 0.12
     private const val EPS = 1e-6
 
-    private class Entry(val cands: List<BlockPos>) {
+    private class Entry(val cands: MutableList<BlockPos>) {
         var idx = 0
         val current get() = cands.getOrNull(idx)
     }
@@ -185,7 +185,7 @@ object ArrowGuess {
 
     internal fun addGuess(picked: List<BlockPos>) {
         if (picked.isEmpty() || entries.any { it.cands.drop(it.idx) == picked }) return
-        entries.add(Entry(picked))
+        entries.add(Entry(picked.toMutableList()))
         DianaWaypoints.add(Waypoint(picked[0], WpType.ARROW, "Guess"))
         picked.drop(1).forEach { DianaWaypoints.add(Waypoint(it, WpType.SUB, "")) }
     }
@@ -216,8 +216,16 @@ object ArrowGuess {
             val wrongHere = Diana.heldSpadeFor(1000) && DianaWaypoints.at(cur, WpType.BURROW) == null &&
                 Vec3(cur.x + 0.5, cur.y + 0.5, cur.z + 0.5).distanceToSqr(me) <= 1024
             if (!DianaWaypoints.isValidBlock(cur) || wrongHere) {
-                // Out of candidates: leave the last one up as a best guess
-                if (e.idx + 1 >= e.cands.size) continue
+                // Out of candidates: keep the last one up as a best guess, moved onto the ground once its chunk is loaded
+                if (e.idx + 1 >= e.cands.size) {
+                    if (wrongHere) continue
+                    val g = DianaWaypoints.snapToGround(cur) ?: continue
+                    if (g == cur) continue
+                    DianaWaypoints.removeAt(cur, WpType.ARROW)
+                    e.cands[e.idx] = g
+                    DianaWaypoints.add(Waypoint(g, WpType.ARROW, "Guess"))
+                    continue
+                }
                 DianaWaypoints.removeAt(cur, WpType.ARROW)
                 e.idx++
                 val next = e.current ?: continue
