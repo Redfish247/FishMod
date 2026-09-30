@@ -45,6 +45,8 @@ object DianaWaypoints {
     // Hub play area, same bounds Hypixel spawns burrows in
     const val MIN_X = -283; const val MIN_Y = 60; const val MIN_Z = -208
     const val MAX_X = 175; const val MAX_Y = 105; const val MAX_Z = 205
+    private const val VISIT_RADIUS = 5.0
+    private const val SNAP_RADIUS = 6
 
     val list = CopyOnWriteArrayList<Waypoint>()
 
@@ -85,12 +87,15 @@ object DianaWaypoints {
         return valid
     }
 
-    // Grass-with-air-above nearest p in height, searching the whole hub Y range of p's column, then rings out to 2;
-    // null if the chunk isn't loaded or there's no grass nearby
+    fun chunkLoaded(p: BlockPos): Boolean =
+        Minecraft.getInstance().level?.hasChunk(p.x shr 4, p.z shr 4) == true
+
+    // Grass-with-air-above nearest p in height, searching the whole hub Y range of p's column, then rings out to 6;
+    // null if the chunk isn't loaded or there's no grass nearby (village, paths...)
     fun snapToGround(p: BlockPos): BlockPos? {
         val level = Minecraft.getInstance().level ?: return null
         if (!level.hasChunk(p.x shr 4, p.z shr 4)) return null
-        for (r in 0..2) {
+        for (r in 0..SNAP_RADIUS) {
             var best: BlockPos? = null
             for (dx in -r..r) for (dz in -r..r) {
                 if (maxOf(abs(dx), abs(dz)) != r) continue
@@ -146,12 +151,21 @@ object DianaWaypoints {
         val now = System.currentTimeMillis()
         removedAt.entries.removeIf { now - it.value > 1000 }
         list.removeIf { now > it.expiresAt || (it.type != WpType.WORLD && it.type != WpType.RARE && !inHubBounds(it.pos)) }
+        // Walking up to a guess clears it; a real burrow there shows up from its own particles
+        Diana.player()?.position()?.let { me ->
+            for (g in list.filter { (it.type == WpType.GUESS || it.type == WpType.ARROW || it.type == WpType.SUB) && it.distTo(me) <= VISIT_RADIUS }) {
+                list.remove(g)
+                markRemoved(g.pos)
+                ArrowGuess.onVisited(g.pos)
+            }
+        }
         // Spade guesses lose to any burrow/arrow within 32 blocks, which inherits their dig state
         for (g in list.filter { it.type == WpType.GUESS }) {
             val better = list.firstOrNull { (it.type == WpType.BURROW || it.type == WpType.ARROW) && it.center.distanceTo(g.center) <= 32 }
             if (better != null) { better.carryFrom(g); list.remove(g); continue }
             if (isValidBlock(g.pos)) continue
-            val snapped = snapToGround(g.pos) ?: continue
+            // Loaded and no grass anywhere near: a burrow can't be here, drop it
+            val snapped = snapToGround(g.pos) ?: run { if (chunkLoaded(g.pos)) list.remove(g); null } ?: continue
             if (snapped == g.pos || at(snapped, WpType.GUESS) != null) continue
             list.remove(g)
             add(Waypoint(snapped, WpType.GUESS, g.label).also { it.carryFrom(g) })

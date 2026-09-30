@@ -70,6 +70,20 @@ object ArrowGuess {
 
     fun onBurrowDug() { dust.clear() }
 
+    // Player walked up to pos with no burrow there: skip to the next candidate, or drop the guess if none left
+    fun onVisited(pos: BlockPos) {
+        val it = entries.iterator()
+        while (it.hasNext()) {
+            val e = it.next()
+            if (e.current != pos) { if (pos in e.cands) e.cands.remove(pos); continue }
+            e.idx++
+            val next = e.current
+            if (next == null) { it.remove(); continue }
+            DianaWaypoints.removeAt(next, WpType.SUB)
+            DianaWaypoints.add(Waypoint(next, WpType.ARROW, "Guess"))
+        }
+    }
+
     // A real burrow at pos supersedes any arrow guess landing there
     fun onBurrowAt(pos: BlockPos) {
         val it = entries.iterator()
@@ -176,7 +190,9 @@ object ArrowGuess {
             val t = ((band.first + minOf(band.last, steps)) / 2.0).coerceAtLeast(1.0)
             val v = origin.add(dir.scale(t))
             val raw = BlockPos(floor(v.x).toInt(), floor(v.y).toInt(), floor(v.z).toInt())
-            listOf(DianaWaypoints.snapToGround(raw) ?: raw)
+            val g = DianaWaypoints.snapToGround(raw)
+            if (g == null && DianaWaypoints.chunkLoaded(raw)) return fail()
+            listOf(g ?: raw)
         }
         if (picked.isEmpty()) return fail()
         DianaTest.log("arrow: candidates $picked")
@@ -219,7 +235,12 @@ object ArrowGuess {
                 // Out of candidates: keep the last one up as a best guess, moved onto the ground once its chunk is loaded
                 if (e.idx + 1 >= e.cands.size) {
                     if (wrongHere) continue
-                    val g = DianaWaypoints.snapToGround(cur) ?: continue
+                    val g = DianaWaypoints.snapToGround(cur)
+                    if (g == null) {
+                        // Loaded with no grass nearby (village etc.): not a real spot, drop it
+                        if (DianaWaypoints.chunkLoaded(cur)) { DianaWaypoints.removeAt(cur, WpType.ARROW); it.remove() }
+                        continue
+                    }
                     if (g == cur) continue
                     DianaWaypoints.removeAt(cur, WpType.ARROW)
                     e.cands[e.idx] = g
