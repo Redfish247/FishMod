@@ -71,6 +71,10 @@ object CroesusPrices {
         }
     }
 
+    // Raw bazaar quick_status price: sell offer = buyPrice, insta-sell = sellPrice
+    @JvmStatic
+    fun bazaarPrice(id: String, sellOffer: Boolean): Double? = (if (sellOffer) bazaarBuy else bazaarSell)[id]
+
     @JvmStatic
     fun price(id: String?): Double {
         if (id == null || id.isEmpty()) return 0.0

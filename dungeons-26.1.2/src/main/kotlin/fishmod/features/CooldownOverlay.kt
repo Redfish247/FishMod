@@ -274,6 +274,10 @@ object CooldownOverlay {
     }
 
     @JvmStatic
+    fun shouldHideVanillaCooldown(): Boolean =
+        FishSettings.cooldownOverlayEnabled && fishmod.utils.config.values.Visual.hideCooldown && Location.inSkyblock()
+
+    @JvmStatic
     fun debugState(): String {
         val sb = StringBuilder()
         sb.append("cooldownOverlayEnabled=").append(FishSettings.cooldownOverlayEnabled).append(" | active=")

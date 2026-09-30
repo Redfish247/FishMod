@@ -72,7 +72,8 @@ class FishModInit : ClientModInitializer {
             val mc = Minecraft.getInstance()
             val self = mc.player?.gameProfile?.name ?: return Constants.SUCCESS
             if (!fishmod.features.dungeon.PartyCommandHandler.localEnabled(cmd)) {
-                mc.connection?.sendCommand(listOfNotNull(cmd, arg1, arg2, arg3).joinToString(" "))
+                // raw packet: sendCommand() would re-enter our own client command and recurse forever
+                mc.connection?.send(net.minecraft.network.protocol.game.ServerboundChatCommandPacket(listOfNotNull(cmd, arg1, arg2, arg3).joinToString(" ")))
                 return Constants.SUCCESS
             }
             fishmod.features.dungeon.PartyCommandHandler.onPartyCommand(
@@ -485,6 +486,7 @@ class FishModInit : ClientModInitializer {
         fishmod.features.dungeon.DungeonWaypoints.init()
         fishmod.features.dungeon.StarredMobHighlight.init()
         fishmod.features.slayers.SlayerManager.init()
+        fishmod.features.diana.Diana.init()
         fishmod.features.dungeon.f7.F7Huds.init()
         fishmod.utils.config.values.Buttons.init()
         FishHudEditor.register("Tick Timer", fishmod.features.dungeon.f7.F7Huds.tickTimer)
@@ -581,6 +583,8 @@ class FishModInit : ClientModInitializer {
                     .then(waypointSubcommand("waypoint"))
                     .then(waypointSubcommand("waypoints"))
                     .then(fishmod.features.dungeon.RouteRecorder.command())
+                    .then(fishmod.features.diana.Diana.command())
+                    .then(fishmod.features.diana.CrownOfAvarice.command())
                     .then(chatNotificationsSubcommand("chatnotifications"))
                     .then(chatNotificationsSubcommand("cn"))
                     .then(sackSubcommand("ep"))
