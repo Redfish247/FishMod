@@ -67,6 +67,7 @@ object FishSettings {
     @ConfigValue @JvmField var petSwapTitleColor: Int = 0xFFFFAA00.toInt()
     @ConfigValue @JvmField var petSwapTitleMs: Int = 1500
     @ConfigValue @JvmField var petHudShowLevel: Boolean = false
+    @ConfigValue @JvmField var petNametagHideLevel: Boolean = true
     @ConfigValue @JvmField var petHudIcon: Boolean = false
     @ConfigValue @JvmField var petHudShowRarity: Boolean = true
     @ConfigValue @JvmField var petHudFadeIdle: Boolean = false
