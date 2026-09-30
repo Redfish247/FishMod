@@ -142,7 +142,8 @@ object PrestigeLevelColors {
     }
 
     private val LEVEL_PREFIX = Regex("""^\s{0,2}\[(\d{1,4})[^\[\]\d]{0,4}]""")
-    private val LEVEL_ANYWHERE = Regex("""\[(\d{1,4})[^\[\]\d]{0,4}]""")
+    // Only the sender's level at the start of a line (after an optional channel tag), never pet levels mid-message
+    private val LEVEL_ANYWHERE = Regex("""^\s{0,2}(?:(?:Party|Guild|Co-op|Officer) > )?\[(\d{1,4})[^\[\]\d]{0,4}]""")
 
     @JvmStatic
     fun colorizeLevelPrefix(c: Component?): Component? = recolor(c, LEVEL_PREFIX)
