@@ -51,6 +51,28 @@ object NameRewriter {
         return out
     }
 
+    // Drops the first `count` visible chars, keeping § codes and styles so the rest stays coloured
+    @JvmStatic
+    fun dropVisiblePrefix(original: Component, count: Int): Component {
+        val out: MutableComponent = Component.empty()
+        var left = count
+        original.visit({ style, text ->
+            val sb = StringBuilder()
+            var i = 0
+            while (i < text.length) {
+                val c = text[i]
+                if (c == '§' && i + 1 < text.length) {
+                    sb.append(c).append(text[i + 1]); i += 2; continue
+                }
+                if (left > 0) left-- else sb.append(c)
+                i++
+            }
+            if (sb.isNotEmpty()) out.append(Component.literal(sb.toString()).setStyle(style))
+            Optional.empty<Any>()
+        }, Style.EMPTY)
+        return out
+    }
+
     private fun appendRange(out: MutableComponent, segs: List<Segment>, from: Int, to: Int) {
         if (from >= to) return
         var pos = 0

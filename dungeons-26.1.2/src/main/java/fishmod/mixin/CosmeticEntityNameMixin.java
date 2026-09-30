@@ -6,7 +6,9 @@ import fishmod.cosmetic.prestige.PrestigeLevelColors;
 import fishmod.utils.config.values.FishSettings;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import org.spongepowered.asm.mixin.Mixin;
@@ -14,10 +16,19 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(EntityRenderer.class)
 public abstract class CosmeticEntityNameMixin {
+    // Pet tags have no ❤; mob tags ("[Lv5] Zombie 100/100❤") never match
+    @org.spongepowered.asm.mixin.Unique
+    private static final java.util.regex.Pattern fishmod$PET_LEVEL = java.util.regex.Pattern.compile("^\\s*\\[(?:Lvl? ?)?\\d+]\\s*(?=[^❤]+$)");
 
     @ModifyReturnValue(method = "getNameTag(Lnet/minecraft/world/entity/Entity;)Lnet/minecraft/network/chat/Component;", at = @At("RETURN"))
     private Component fishmod$cosmeticNameTag(Component original, Entity entity) {
         if (original == null) return original;
+        if (FishSettings.petNametagHideLevel && entity instanceof ArmorStand) {
+            String plain = ChatFormatting.stripFormatting(original.getString());
+            java.util.regex.Matcher m = fishmod$PET_LEVEL.matcher(plain);
+            if (m.find()) return NameRewriter.dropVisiblePrefix(original, m.end());
+            return original;
+        }
         boolean player = entity instanceof Player;
         boolean prestige = player && FishSettings.prestigeColorsEnabled && FishSettings.prestigeColorsNametags;
         boolean badges = player && FishSettings.badgesEnabled && FishSettings.badgesOnNametags;
