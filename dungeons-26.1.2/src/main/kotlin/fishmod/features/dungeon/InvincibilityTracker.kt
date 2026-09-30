@@ -6,6 +6,7 @@ import fishmod.utils.Location
 import fishmod.utils.config.values.Dungeons
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemUtil
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.DrawEvents
@@ -59,9 +60,11 @@ object InvincibilityTracker {
         Events.ON_GAME_MESSAGE.register { text ->
             if (Dungeons.displayInvincibilityTimer) {
                 val s = COLOR.replace(text.string, "").trim()
-                Type.entries.firstOrNull { it.regex.matches(s) }?.let { t ->
+                val hit = Type.entries.firstOrNull { it.regex.matches(s) }
+                if (hit == null && (s.endsWith("saved your life!") || s.endsWith("saved you from certain death!"))) FishDiag.fail("InvincibilityTracker.1", "unrecognised invincibility proc line: '$s'")
+                hit?.let { t ->
                     t.proc()
-                    procTitle(t)
+                    FishDiag.guard("InvincibilityTracker.2", "invincibility proc title/sound failed for ${t.label}") { procTitle(t) }
                     if (FishSettings.invincAnnounce) {
                         fishmod.utils.ChatQueue.enqueue("pc ${t.label} Procced!")
                     }
@@ -69,12 +72,12 @@ object InvincibilityTracker {
             }
             false
         }
-        Events.ON_SERVER_TICK.register { Type.entries.forEach { it.tick() }; learnIcons(); false }
+        Events.ON_SERVER_TICK.register { Type.entries.forEach { it.tick() }; FishDiag.guard("InvincibilityTracker.3", "invincibility icon learning failed") { learnIcons() }; false }
         Events.ON_WORLD_CHANGE.register { Type.entries.forEach { it.reset() }; false }
 
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             if (!Dungeons.displayInvincibilityTimer || !FishSettings.invincShowCooldown) return@register
-            drawSlotBar(ctx, stack, x, y)
+            try { drawSlotBar(ctx, stack, x, y) } catch (e: Exception) { FishDiag.fail("InvincibilityTracker.4", "invincibility slot bar draw failed", e) }
         }
     }
 
@@ -113,7 +116,7 @@ object InvincibilityTracker {
             Type.PHOENIX -> FishSettings.invincIconPhoenix = tex
         }
         t.icon = null
-        runCatching { fishmod.utils.config.FishConfig.manager.save() }
+        runCatching { fishmod.utils.config.FishConfig.manager.save() }.onFailure { FishDiag.fail("InvincibilityTracker.5", "config save after learning ${t.label} icon failed", it) }
     }
 
     private fun texture(stack: ItemStack): String? =
@@ -122,6 +125,10 @@ object InvincibilityTracker {
     private fun icon(t: Type): ItemStack? {
         t.icon?.let { return it }
         val tex = storedTexture(t).ifEmpty { return null }
+        return FishDiag.guard("InvincibilityTracker.6", "invincibility icon build failed for ${t.label}") { buildIcon(t, tex) }
+    }
+
+    private fun buildIcon(t: Type, tex: String): ItemStack {
         val props = com.google.common.collect.ImmutableMultimap.of("textures", com.mojang.authlib.properties.Property("textures", tex))
         val profile = com.mojang.authlib.GameProfile(java.util.UUID(0L, t.ordinal.toLong()), "fmicon", com.mojang.authlib.properties.PropertyMap(props))
         return ItemStack(net.minecraft.world.item.Items.PLAYER_HEAD).also {
@@ -199,6 +206,7 @@ object InvincibilityTracker {
 
         val sc = FishSettings.invincScale.toFloat()
         ctx.pose().pushMatrix()
+        try {
         ctx.pose().translate(FishSettings.invincHudX.toFloat(), FishSettings.invincHudY.toFloat())
         ctx.pose().scale(sc, sc)
         var y = 0
@@ -221,7 +229,11 @@ object InvincibilityTracker {
                 y += LINE_H
             }
         }
-        ctx.pose().popMatrix()
+        } catch (e: Exception) {
+            FishDiag.fail("InvincibilityTracker.7", "invincibility hud render failed", e)
+        } finally {
+            ctx.pose().popMatrix()
+        }
     }
 
     private fun drawSlotBar(ctx: GuiGraphicsExtractor, stack: ItemStack?, x: Int, y: Int) {
@@ -229,6 +241,7 @@ object InvincibilityTracker {
         val id = ItemUtil.getId(stack) ?: return
         val t = Type.entries.firstOrNull { id in it.ids } ?: return
         if (t.cooldown <= 0) return
+        if (!FishDiag.check(t.cooldown <= t.maxCooldown, "InvincibilityTracker.8") { "${t.label} cooldown ${t.cooldown} exceeds max ${t.maxCooldown}" }) return
         val frac = t.cooldown.toFloat() / t.maxCooldown
         val w = (13 * (1f - frac)).toInt().coerceIn(0, 13)
         ctx.fill(x + 2, y + 13, x + 15, y + 15, 0xFF000000.toInt())

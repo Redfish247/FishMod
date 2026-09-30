@@ -7,6 +7,7 @@ import java.io.File
 import java.io.FileReader
 import java.util.regex.Pattern
 import java.util.regex.PatternSyntaxException
+import fishmod.utils.debug.FishDiag
 
 data class ChatRule(
     var name: String = "New Rule",
@@ -72,6 +73,7 @@ object ChatRuleStore {
     @JvmStatic
     fun addRule(after: ChatRule? = null): ChatRule {
         val rule = ChatRule()
+        if (after != null && data.rules.none { it === after }) FishDiag.fail("ChatRuleStore.3", "addRule anchor '${after.name}' not in rule list (${data.rules.size} rules)")
         val idx = if (after != null) data.rules.indexOfFirst { it === after } + 1 else data.rules.size
         data.rules.add(idx, rule)
         save()
@@ -86,7 +88,7 @@ object ChatRuleStore {
 
     @JvmStatic
     fun save() {
-        fishmod.utils.SafeFiles.writeAtomic(File(FILE_PATH), GSON.toJson(data))
+        FishDiag.guard("ChatRuleStore.1", "chat rules save failed") { fishmod.utils.SafeFiles.writeAtomic(File(FILE_PATH), GSON.toJson(data)) }
     }
 
     private fun load() {
@@ -99,6 +101,7 @@ object ChatRuleStore {
                 if (loaded != null) data = loaded
             }
         } catch (e: Exception) {
+            FishDiag.fail("ChatRuleStore.2", "chat rules load failed, file quarantined", e)
             fishmod.utils.SafeFiles.quarantine(file, e)
         }
     }

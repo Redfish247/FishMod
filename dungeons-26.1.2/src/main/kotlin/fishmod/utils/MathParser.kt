@@ -1,6 +1,7 @@
 package fishmod.utils
 
 import java.util.Stack
+import fishmod.utils.debug.FishDiag
 import java.util.regex.Pattern
 
 object MathParser {
@@ -93,7 +94,10 @@ object MathParser {
             "*" -> stack.push(left * right)
             "/" -> stack.push(left / right)
             "^" -> stack.push(Math.pow(left, right))
-            else -> throw IllegalArgumentException("Invalid operator")
+            else -> {
+                FishDiag.fail("MathParser.1", "operator token '$token' reached RPN evaluation")
+                throw IllegalArgumentException("Invalid operator")
+            }
         }
     }
 

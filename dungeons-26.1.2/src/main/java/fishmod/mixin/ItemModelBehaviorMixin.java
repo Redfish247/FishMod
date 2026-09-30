@@ -21,12 +21,16 @@ public abstract class ItemModelBehaviorMixin {
     @Inject(method = "getUseAnimation", at = @At("HEAD"), cancellable = true)
     private void fishmod$useModelItemUseAction(CallbackInfoReturnable<ItemUseAnimation> cir) {
         ItemStack self = (ItemStack) (Object) this;
-        Identifier modelId = self.get(DataComponents.ITEM_MODEL);
-        if (modelId == null) return;
+        try {
+            Identifier modelId = self.get(DataComponents.ITEM_MODEL);
+            if (modelId == null) return;
 
-        Item modelItem = BuiltInRegistries.ITEM.getValue(modelId);
-        if (modelItem == null || modelItem == Items.AIR || modelItem == self.getItem()) return;
+            Item modelItem = BuiltInRegistries.ITEM.getValue(modelId);
+            if (modelItem == null || modelItem == Items.AIR || modelItem == self.getItem()) return;
 
-        cir.setReturnValue(fishmod$useAnimations.computeIfAbsent(modelItem, item -> item.getDefaultInstance().getUseAnimation()));
+            cir.setReturnValue(fishmod$useAnimations.computeIfAbsent(modelItem, item -> item.getDefaultInstance().getUseAnimation()));
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("ItemModelBehaviorMixin.1", "model use-animation lookup failed item=" + self.getItem(), t);
+        }
     }
 }

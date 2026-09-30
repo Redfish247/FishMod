@@ -52,13 +52,18 @@ public abstract class CosmeticGuiTextMixin {
     private static Component fishmod$swap(Component text) {
         if (text == null) return text;
         if (!NickState.isActive() && fishmod.cosmetic.RemoteNicks.isEmpty()) return text;
-        Component out = text;
-        if (NickState.isActive()) {
-            String real = NickState.realName();
-            if (!real.isEmpty() && out.getString().contains(real))
-                out = NameRewriter.replaceName(out, real, NickState.asComponent());
+        try {
+            Component out = text;
+            if (NickState.isActive()) {
+                String real = NickState.realName();
+                if (!real.isEmpty() && out.getString().contains(real))
+                    out = NameRewriter.replaceName(out, real, NickState.asComponent());
+            }
+            return fishmod.cosmetic.RemoteNicks.applyResolvedOnly(out);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("CosmeticGuiTextMixin.1", "gui text nick swap failed", t);
+            return text;
         }
-        return fishmod.cosmetic.RemoteNicks.applyResolvedOnly(out);
     }
 
     private static List<Component> fishmod$swapList(List<Component> lines) {

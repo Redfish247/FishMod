@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.HypixelApi
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
@@ -66,11 +67,18 @@ object NametagStats {
             e.nwPending = true
             lastKick = now
             inFlight.incrementAndGet()
-            HypixelApi.getNetworth(Minecraft.getInstance(), name) { nw, _ ->
-                e.networth = nw
-                e.nwAt = System.currentTimeMillis()
+            try {
+                HypixelApi.getNetworth(Minecraft.getInstance(), name) { nw, _ ->
+                    e.networth = nw
+                    e.nwAt = System.currentTimeMillis()
+                    e.nwPending = false
+                    e.version++
+                    val left = inFlight.decrementAndGet()
+                    FishDiag.check(left >= 0, "NametagStats.1") { "inFlight underflow after networth for $name: $left" }
+                }
+            } catch (t: Throwable) {
+                FishDiag.fail("NametagStats.2", "networth request failed to start for $name", t)
                 e.nwPending = false
-                e.version++
                 inFlight.decrementAndGet()
             }
         }
@@ -81,18 +89,29 @@ object NametagStats {
             e.dungPending = true
             lastKick = now
             inFlight.incrementAndGet()
-            HypixelApi.getByNameSilent(name) { d ->
-                if (d.failed) {
+            try {
+                HypixelApi.getByNameSilent(name) { d ->
+                    if (d.failed) {
+                        e.dungPending = false
+                        inFlight.decrementAndGet()
+                        return@getByNameSilent
+                    }
+                    try {
+                        e.cataLevel = if (d.cataXp > 0) HypixelApi.formatLevel(d.cataXp) else null
+                        e.secretAvg = d.secretAverage
+                        e.skillAvg = d.skillAverage
+                    } catch (t: Throwable) {
+                        FishDiag.fail("NametagStats.3", "dungeon stats apply failed for $name cataXp=${d.cataXp}", t)
+                    }
+                    e.dungAt = System.currentTimeMillis()
                     e.dungPending = false
-                    inFlight.decrementAndGet()
-                    return@getByNameSilent
+                    e.version++
+                    val left = inFlight.decrementAndGet()
+                    FishDiag.check(left >= 0, "NametagStats.4") { "inFlight underflow after dungeon stats for $name: $left" }
                 }
-                e.cataLevel = if (d.cataXp > 0) HypixelApi.formatLevel(d.cataXp) else null
-                e.secretAvg = d.secretAverage
-                e.skillAvg = d.skillAverage
-                e.dungAt = System.currentTimeMillis()
+            } catch (t: Throwable) {
+                FishDiag.fail("NametagStats.5", "dungeon stats request failed to start for $name", t)
                 e.dungPending = false
-                e.version++
                 inFlight.decrementAndGet()
             }
         }

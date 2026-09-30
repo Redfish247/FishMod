@@ -2,6 +2,7 @@ package fishmod.features.croesus
 
 import fishmod.utils.HypixelApi
 import fishmod.utils.networth.ItemsDb
+import fishmod.utils.debug.FishDiag
 import java.util.regex.Pattern
 
 object CroesusRewardParser {
@@ -45,6 +46,8 @@ object CroesusRewardParser {
         } catch (e: NumberFormatException) {
             fishmod.utils.data.Roman.toInt(tierStr)
         }
+        if (!FishDiag.check(tier > 0, "CroesusRewardParser.1") { "book tier unparsed: '$tierStr' in '$line'" }) return null
+        if (!FishDiag.check(bookName.isNotEmpty(), "CroesusRewardParser.2") { "book name empty in '$line'" }) return null
 
         val enchantPart = bookName.uppercase().replace(" ", "_").replace("'", "")
         var sbId = "ENCHANTMENT_" + (if (isUltimate) "ULTIMATE_" else "") + enchantPart + "_" + tier
@@ -89,6 +92,7 @@ object CroesusRewardParser {
 
         val info = ChestInfo()
         val lootEnd = costIdx - 1
+        if (lootEnd > fullTooltip.size) FishDiag.fail("CroesusRewardParser.5", "loot end $lootEnd beyond tooltip size ${fullTooltip.size}")
         for (ix in 2 until lootEnd) {
             val line = fullTooltip[ix]
             val clean = strip(line).trim()
@@ -98,12 +102,13 @@ object CroesusRewardParser {
             if (result[0] == "false") {
                 if (errorOut != null) errorOut[0] = result[1]
                 fishmod.utils.debug.Debug.LOGGER.debug("[Loot] unresolved reward line: '{}'", clean)
+                FishDiag.fail("CroesusRewardParser.3", "unresolved croesus reward line: '$clean'")
                 continue
             }
 
             val ri = RewardItem()
             ri.id = result[0]
-            ri.qty = result[1].toIntOrNull()?.coerceAtLeast(1) ?: 1
+            ri.qty = FishDiag.notNull(result[1].toIntOrNull(), "CroesusRewardParser.4") { "reward qty not int: '${result[1]}' for ${result[0]}" }?.coerceAtLeast(1) ?: 1
             ri.displayName = clean
             fishmod.utils.debug.Debug.LOGGER.debug("[Loot] reward '{}' -> id={} qty={}", clean, ri.id, ri.qty)
             info.items.add(ri)

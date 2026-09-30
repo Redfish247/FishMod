@@ -214,12 +214,12 @@ public class HypixelApi {
                         if (uuid == null || uuid.isEmpty()) continue;
                         uuidByName.put(e.getKey(), uuid);
                         uuidCachedAt.put(e.getKey(), ts);
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.1", "ensureUuidCacheLoaded failed", ignored);}
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.2", "ensureUuidCacheLoaded failed", ignored);}
         try { Runtime.getRuntime().addShutdownHook(new Thread(HypixelApi::saveUuidCacheNow, "fishmod-uuid-cache-flush")); }
-        catch (Exception ignored) {}
+        catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.3", "ensureUuidCacheLoaded failed", ignored);}
         uuidCacheLoaded = true;
     }
 
@@ -247,7 +247,7 @@ public class HypixelApi {
             root.addProperty("version", 1);
             root.add("entries", entries);
             Files.writeString(file, root.toString());
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.4", "saveUuidCacheNow failed", ignored);}
     }
 
     public static class DungeonData {
@@ -312,7 +312,7 @@ public class HypixelApi {
                     getStarCount(equipSlots.size() > 3 ? equipSlots.get(3) : null)
                 };
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.5", "parseInventoryData failed", ignored);}
     }
 
     private static List<CompoundTag> parseSlots(JsonObject inventory, String key) {
@@ -321,7 +321,7 @@ public class HypixelApi {
             JsonObject slot = inventory.getAsJsonObject(key);
             if (!slot.has("data")) return Collections.emptyList();
             return decodeItemData(slot.get("data").getAsString());
-        } catch (Exception e) {
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.6", "parseSlots failed", e);
             return Collections.emptyList();
         }
     }
@@ -331,7 +331,7 @@ public class HypixelApi {
             if (b64 == null || b64.isEmpty()) return null;
             byte[] bytes = java.util.Base64.getDecoder().decode(b64);
             return NbtIo.readCompressed(new ByteArrayInputStream(bytes), NbtAccounter.unlimitedHeap());
-        } catch (Exception e) { return null; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.7", "decodeRawCompound failed", e); return null; }
     }
 
     private static double toolkitsValueNw(JsonObject member, Map<String, Double> prices) {
@@ -340,14 +340,14 @@ public class HypixelApi {
         try {
             if (member.has("garden_player_data") && member.getAsJsonObject("garden_player_data").has("farming_toolkit"))
                 kits[0] = member.getAsJsonObject("garden_player_data").getAsJsonObject("farming_toolkit");
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.8", "toolkitsValueNw failed", ignored);}
         try {
             if (member.has("foraging") && member.getAsJsonObject("foraging").has("hunting_toolkit"))
                 kits[1] = member.getAsJsonObject("foraging").getAsJsonObject("hunting_toolkit");
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.9", "toolkitsValueNw failed", ignored);}
         for (JsonObject kit : kits) {
             if (kit == null) continue;
-            try { if (kit.has("IS_UNLOCKED") && !kit.get("IS_UNLOCKED").getAsBoolean()) continue; } catch (Exception ignored) {}
+            try { if (kit.has("IS_UNLOCKED") && !kit.get("IS_UNLOCKED").getAsBoolean()) continue; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.10", "toolkitsValueNw failed", ignored);}
             for (Map.Entry<String, JsonElement> cat : kit.entrySet()) {
                 String k = cat.getKey();
                 if (k.equals("IS_UNLOCKED") || k.equals("IN_USE") || !cat.getValue().isJsonArray()) continue;
@@ -362,7 +362,7 @@ public class HypixelApi {
                         CompoundTag item = new CompoundTag();
                         item.put("tag", tag);
                         total += itemValueNw(item, prices);
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.11", "toolkitsValueNw failed", ignored);}
                 }
             }
         }
@@ -382,7 +382,7 @@ public class HypixelApi {
                 out.add(c != null && !c.isEmpty() ? c : null);
             }
             return out;
-        } catch (Exception e) {
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.12", "decodeItemData failed", e);
             return Collections.emptyList();
         }
     }
@@ -393,7 +393,7 @@ public class HypixelApi {
             Tag el = item.get("tag");
             if (el == null) return null;
             return el.asCompound().orElse(null);
-        } catch (Exception e) { return null; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.13", "getTag failed", e); return null; }
     }
 
     private static CompoundTag getExtras(CompoundTag item) {
@@ -403,7 +403,7 @@ public class HypixelApi {
             Tag el = tag.get("ExtraAttributes");
             if (el == null) return null;
             return el.asCompound().orElse(null);
-        } catch (Exception e) { return null; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.14", "getExtras failed", e); return null; }
     }
 
     private static String getItemId(CompoundTag item) {
@@ -413,11 +413,11 @@ public class HypixelApi {
             Tag el = extras.get("id");
             if (el == null) return null;
             return el.asString().orElse(null);
-        } catch (Exception e) { return null; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.15", "getItemId failed", e); return null; }
     }
 
     private static boolean isSoulboundItem(CompoundTag item, CompoundTag ex) {
-        try { if (ex != null && ex.contains("donated_museum")) return true; } catch (Exception ignored) {}
+        try { if (ex != null && ex.contains("donated_museum")) return true; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.16", "isSoulboundItem failed", ignored);}
         try {
             CompoundTag tag = getTag(item);
             CompoundTag disp = tag != null ? compound(tag, "display") : null;
@@ -426,7 +426,7 @@ public class HypixelApi {
                 String s = lore.getString(i).orElse("");
                 if (s.contains("Co-op Soulbound") || s.contains("§8Soulbound")) return true;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.17", "isSoulboundItem failed", ignored);}
         return false;
     }
 
@@ -439,7 +439,7 @@ public class HypixelApi {
             CompoundTag enchants = encEl.asCompound().orElse(null);
             if (enchants == null) return -1;
             return enchants.getIntOr(enchantName, -1);
-        } catch (Exception e) { return -1; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.18", "getEnchantLevel failed", e); return -1; }
     }
 
     private static String getUltimateEnchant(CompoundTag item) {
@@ -472,7 +472,7 @@ public class HypixelApi {
                 Matcher m = ULTIMATE_PAT.matcher(line);
                 if (m.find()) return m.group(1).trim() + " " + m.group(2);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.19", "getUltimateEnchant failed", ignored);}
         return null;
     }
 
@@ -482,7 +482,7 @@ public class HypixelApi {
             try {
                 int lvl = extras.getIntOr("dungeon_item_level", -1);
                 if (lvl >= 0) return lvl;
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.20", "getStarCount failed", ignored);}
         }
         try {
             CompoundTag tag = getTag(item);
@@ -495,7 +495,7 @@ public class HypixelApi {
             if (nameEl == null) return 0;
             String name = STRIP_COLOR.matcher(nameEl.asString().orElse("")).replaceAll("");
             return (int) name.chars().filter(c -> c == '\u272A').count();
-        } catch (Exception e) { return 0; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.21", "getStarCount failed", e); return 0; }
     }
 
     private static int computeMagicalPower(JsonObject member) {
@@ -507,7 +507,7 @@ public class HypixelApi {
                 if (abs.has("magical_power"))
                     return (int) abs.get("magical_power").getAsDouble();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.22", "computeMagicalPower failed", ignored);}
 
         try {
             if (!member.has("accessory_bag_storage")) return -1;
@@ -537,7 +537,7 @@ public class HypixelApi {
                 }
             }
             return total;
-        } catch (Exception e) { return -1; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.23", "computeMagicalPower failed", e); return -1; }
     }
 
     private static int mpForRarity(String rarityLine) {
@@ -590,7 +590,7 @@ public class HypixelApi {
                 .timeout(Duration.ofSeconds(10))
                 .GET()
                 .build();
-        } catch (Exception e) { callback.onData(failedData()); return; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.24", "fetchProfilesSilent failed", e); callback.onData(failedData()); return; }
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
             .thenAccept(resp -> {
                 if (friendlyProxyError(resp) != null) { callback.onData(failedData()); return; }
@@ -607,13 +607,13 @@ public class HypixelApi {
                         callback.onData(parseDungeonData(uuidStr, member));
                         return;
                     }
-                } catch (Exception e) {
+                } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.25", "fetchProfilesSilent failed", e);
                     callback.onData(failedData());
                     return;
                 }
                 callback.onData(new DungeonData());
             })
-            .exceptionally(e -> { callback.onData(failedData()); return null; });
+            .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.26", "fetchProfilesSilent request future failed", e); callback.onData(failedData()); return null; });
     }
 
     public static void getByName(Minecraft mc, String ign, DungeonDataCallback callback) {
@@ -647,7 +647,7 @@ public class HypixelApi {
                     .header("User-Agent", "FishMod/1.0")
                     .GET()
                     .build();
-        } catch (Exception e) { resolveUuid(ign, next, cb); return; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.27", "resolveUuid failed", e); resolveUuid(ign, next, cb); return; }
 
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                 .thenAccept(resp -> {
@@ -658,7 +658,7 @@ public class HypixelApi {
                     if (attempt == 0 && !transientErr) { cb.accept(null); return; }
                     resolveUuid(ign, next, cb);
                 })
-                .exceptionally(e -> { resolveUuid(ign, next, cb); return null; });
+                .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.28", "resolveUuid request future failed", e); resolveUuid(ign, next, cb); return null; });
     }
 
     public static void resolveUuidAsync(String ign, java.util.function.Consumer<String> cb) {
@@ -676,7 +676,7 @@ public class HypixelApi {
                 if (player.has("id")) uuid = player.get("id").getAsString();
             }
             return (uuid != null && !uuid.isEmpty()) ? uuid.replace("-", "") : null;
-        } catch (Exception e) { return null; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.29", "parseUuid failed", e); return null; }
     }
 
     private static DungeonData parseDungeonData(String uuidStr, JsonObject member) {
@@ -786,7 +786,7 @@ public class HypixelApi {
             }
             if (!any) return null;
             return String.format("%.1f", total / AVG_SKILLS.length);
-        } catch (Exception e) { return null; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.30", "computeSkillAverage failed", e); return null; }
     }
 
     public static int calcCataLevel(long xp) {
@@ -819,7 +819,7 @@ public class HypixelApi {
         try {
             if (key.matches("\\d+"))        return Integer.parseInt(key);
             if (key.startsWith("floor_"))   return Integer.parseInt(key.substring(6));
-        } catch (NumberFormatException ignored) {}
+        } catch (NumberFormatException ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.31", "parseFloorKey failed", ignored);}
         return -1;
     }
 
@@ -833,7 +833,7 @@ public class HypixelApi {
                 .timeout(Duration.ofSeconds(10))
                 .GET()
                 .build();
-        } catch (Exception e) { return; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.32", "fetchProfiles failed", e); return; }
 
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
             .thenAccept(resp -> {
@@ -859,11 +859,11 @@ public class HypixelApi {
                         return;
                     }
                     mc.schedule(() -> Misc.addChatMessage(Component.literal("§cNo active Skyblock profile found.")));
-                } catch (Exception e) {
+                } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.33", "fetchProfiles failed", e);
                     mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI parse error: " + e.getMessage())));
                 }
             })
-            .exceptionally(e -> { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI request failed."))); return null; });
+            .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.34", "fetchProfiles request future failed", e); mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI request failed."))); return null; });
     }
 
     private static String friendlyProxyError(HttpResponse<String> resp) {
@@ -890,7 +890,7 @@ public class HypixelApi {
             uuidReq = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.mojang.com/users/profiles/minecraft/" + ign))
                 .timeout(Duration.ofSeconds(10)).GET().build();
-        } catch (Exception e) { return; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.35", "dumpMemberKeys failed", e); return; }
         HTTP.sendAsync(uuidReq, HttpResponse.BodyHandlers.ofString()).thenAccept(ur -> {
             try {
                 String uuid = JsonParser.parseString(ur.body()).getAsJsonObject().get("id").getAsString();
@@ -918,11 +918,11 @@ public class HypixelApi {
                             });
                             return;
                         }
-                    } catch (Exception e) {
+                    } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.36", "dumpMemberKeys failed", e);
                         mc.schedule(() -> Misc.addChatMessage(Component.literal("§cParse error: " + e.getMessage())));
                     }
                 });
-            } catch (Exception e) {
+            } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.37", "dumpMemberKeys failed", e);
                 mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUUID error: " + e.getMessage())));
             }
         });
@@ -935,7 +935,7 @@ public class HypixelApi {
             uuidReq = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.mojang.com/users/profiles/minecraft/" + ign))
                 .timeout(Duration.ofSeconds(10)).GET().build();
-        } catch (Exception e) { return; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.38", "dumpSkillKeys failed", e); return; }
         HTTP.sendAsync(uuidReq, HttpResponse.BodyHandlers.ofString()).thenAccept(ur -> {
             try {
                 String uuid = JsonParser.parseString(ur.body()).getAsJsonObject().get("id").getAsString();
@@ -979,11 +979,11 @@ public class HypixelApi {
                             });
                             return;
                         }
-                    } catch (Exception e) {
+                    } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.39", "dumpSkillKeys failed", e);
                         mc.schedule(() -> Misc.addChatMessage(Component.literal("§cParse error: " + e.getMessage())));
                     }
                 });
-            } catch (Exception e) {
+            } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.40", "dumpSkillKeys failed", e);
                 mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUUID error: " + e.getMessage())));
             }
         });
@@ -1047,7 +1047,7 @@ public class HypixelApi {
             String pname = o.has("profile") && !o.get("profile").isJsonNull() ? o.get("profile").getAsString() : null;
             cb.onData(nw, pname);
             return null;
-        } catch (Exception e) {
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.41", "getNetworthRemote failed", e);
             fishmod.utils.debug.Debug.LOGGER.warn("[Networth] remote endpoint: {}", e.toString());
             return Boolean.FALSE;
         }
@@ -1134,7 +1134,7 @@ public class HypixelApi {
                         pname, total, liquidAndItems, pets, sacks, essence, toolkits, museum);
 
                 cb.onData(total, pname);
-            } catch (Exception ex) {
+            } catch (Exception ex) { fishmod.utils.debug.FishDiag.fail("HypixelApi.42", "getNetworthLocal failed", ex);
                 fishmod.utils.debug.Debug.LOGGER.warn("[Networth] error: {}", ex.toString());
                 cb.onData(-1, null);
             }
@@ -1157,7 +1157,7 @@ public class HypixelApi {
                     try { fetched.put(e.getKey(), e.getValue().getAsDouble()); } catch (Exception ignored) {}
                 }
             }
-        } catch (Exception e) { fishmod.utils.debug.Debug.LOGGER.warn("[Networth] prices fetch: {}", e.getMessage()); }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.43", "nwPrices failed", e); fishmod.utils.debug.Debug.LOGGER.warn("[Networth] prices fetch: {}", e.getMessage()); }
         if (fetched == null || fetched.isEmpty()) {
             nwPricesFailAt = System.currentTimeMillis();
             return NW_PRICES;
@@ -1191,11 +1191,11 @@ public class HypixelApi {
         if (id == null) return 0;
 
         int count = 1;
-        try { count = item.getIntOr("Count", 1); if (count <= 0) count = 1; } catch (Exception ignored) {}
+        try { count = item.getIntOr("Count", 1); if (count <= 0) count = 1; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.44", "itemValueNw failed id=" + id, ignored);}
 
         com.google.gson.JsonObject meta = fishmod.utils.networth.ItemsDb.get(id);
         String category = "";
-        try { if (meta != null && meta.has("category")) category = meta.get("category").getAsString(); } catch (Exception ignored) {}
+        try { if (meta != null && meta.has("category")) category = meta.get("category").getAsString(); } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.45", "itemValueNw failed id=" + id, ignored);}
 
         String priceId = id;
         try {
@@ -1218,7 +1218,7 @@ public class HypixelApi {
             if (ex.getIntOr("is_shiny", 0) > 0 && price(prices, id + "_SHINY") > 0) priceId = id + "_SHINY";
             if (id.startsWith("STARRED_") && price(prices, id) == 0 && price(prices, id.replace("STARRED_", "")) > 0)
                 priceId = id.replace("STARRED_", "");
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.46", "itemValueNw failed id=" + id, ignored);}
 
         double base = price(prices, priceId) * count;
         double v = base;
@@ -1236,7 +1236,7 @@ public class HypixelApi {
                     v += (newBase - base);
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.47", "itemValueNw failed id=" + id, ignored);}
 
         try {
             boolean isRecomb = ex.getIntOr("rarity_upgrades", 0) > 0 && ex.getIntOr("item_tier", -1) < 0
@@ -1252,7 +1252,7 @@ public class HypixelApi {
                     v += price(prices, "RECOMBOBULATOR_3000") * w;
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.48", "itemValueNw failed id=" + id, ignored);}
 
         try {
             int hpc = ex.getIntOr("hot_potato_count", 0);
@@ -1260,7 +1260,7 @@ public class HypixelApi {
                 v += price(prices, "HOT_POTATO_BOOK") * Math.min(hpc, 10) * fishmod.utils.networth.NwConstants.HOT_POTATO_BOOK;
                 if (hpc > 10) v += price(prices, "FUMING_POTATO_BOOK") * (hpc - 10) * fishmod.utils.networth.NwConstants.FUMING_POTATO_BOOK;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.49", "itemValueNw failed id=" + id, ignored);}
 
         try {
             CompoundTag enc = compound(ex, "enchantments");
@@ -1279,9 +1279,9 @@ public class HypixelApi {
                     v += enchantmentsValueNw(id, enc, prices);
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.50", "itemValueNw failed id=" + id, ignored);}
 
-        try { v += gemsValueNw(id, ex, meta, prices); } catch (Exception ignored) {}
+        try { v += gemsValueNw(id, ex, meta, prices); } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.51", "itemValueNw failed id=" + id, ignored);}
 
         try {
             int up = upgradeLevel(ex);
@@ -1292,14 +1292,14 @@ public class HypixelApi {
                         v += price(prices, fishmod.utils.networth.NwConstants.MASTER_STARS[s]) * fishmod.utils.networth.NwConstants.MASTER_STAR;
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.52", "itemValueNw failed id=" + id, ignored);}
 
         try {
             int up = upgradeLevel(ex);
             if (meta != null && meta.has("upgrade_costs") && up > 0) {
                 v += starCostsNw(meta.getAsJsonArray("upgrade_costs"), up, prices, false);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.53", "itemValueNw failed id=" + id, ignored);}
 
         try {
             String[] chain = fishmod.utils.networth.NwConstants.PRESTIGES.get(id);
@@ -1314,7 +1314,7 @@ public class HypixelApi {
                     if (price(prices, pItem) > 0) { v += price(prices, pItem); break; }
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.54", "itemValueNw failed id=" + id, ignored);}
 
         try {
             String modifier = ex.getStringOr("modifier", "");
@@ -1322,22 +1322,22 @@ public class HypixelApi {
                 String stone = fishmod.utils.networth.NwConstants.REFORGES.get(modifier);
                 if (stone != null) v += price(prices, stone) * fishmod.utils.networth.NwConstants.REFORGE;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.55", "itemValueNw failed id=" + id, ignored);}
 
-        try { int c = ex.getIntOr("art_of_war_count", 0); if (c > 0) v += price(prices, "THE_ART_OF_WAR") * c * fishmod.utils.networth.NwConstants.ART_OF_WAR; } catch (Exception ignored) {}
-        try { int c = ex.getIntOr("artOfPeaceApplied", 0); if (c > 0) v += price(prices, "THE_ART_OF_PEACE") * c * fishmod.utils.networth.NwConstants.ART_OF_PEACE; } catch (Exception ignored) {}
+        try { int c = ex.getIntOr("art_of_war_count", 0); if (c > 0) v += price(prices, "THE_ART_OF_WAR") * c * fishmod.utils.networth.NwConstants.ART_OF_WAR; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.56", "itemValueNw failed id=" + id, ignored);}
+        try { int c = ex.getIntOr("artOfPeaceApplied", 0); if (c > 0) v += price(prices, "THE_ART_OF_PEACE") * c * fishmod.utils.networth.NwConstants.ART_OF_PEACE; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.57", "itemValueNw failed id=" + id, ignored);}
         try {
             ListTag scrolls = ex.getList("ability_scroll").orElse(null);
             if (scrolls != null) for (int i = 0; i < scrolls.size(); i++)
                 v += price(prices, scrolls.getString(i).orElse("").toUpperCase()) * fishmod.utils.networth.NwConstants.NECRON_BLADE_SCROLL;
-        } catch (Exception ignored) {}
-        try { String ps = ex.getStringOr("power_ability_scroll", ""); if (!ps.isEmpty()) v += price(prices, ps) * fishmod.utils.networth.NwConstants.GEMSTONE_POWER_SCROLL; } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.58", "itemValueNw failed id=" + id, ignored);}
+        try { String ps = ex.getStringOr("power_ability_scroll", ""); if (!ps.isEmpty()) v += price(prices, ps) * fishmod.utils.networth.NwConstants.GEMSTONE_POWER_SCROLL; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.59", "itemValueNw failed id=" + id, ignored);}
         try {
             for (String part : new String[]{"drill_part_upgrade_module","drill_part_fuel_tank","drill_part_engine"}) {
                 String pid = ex.getStringOr(part, "");
                 if (!pid.isEmpty()) v += price(prices, pid.toUpperCase()) * fishmod.utils.networth.NwConstants.DRILL_PART;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.60", "itemValueNw failed id=" + id, ignored);}
         try {
             for (String part : new String[]{"line","hook","sinker"}) {
                 CompoundTag pc = compound(ex, part);
@@ -1346,18 +1346,18 @@ public class HypixelApi {
                     if (!pp.isEmpty()) v += price(prices, pp.toUpperCase()) * fishmod.utils.networth.NwConstants.ROD_PART;
                 }
             }
-        } catch (Exception ignored) {}
-        try { if (ex.getIntOr("ethermerge", 0) > 0) v += price(prices, "ETHERWARP_CONDUIT") * fishmod.utils.networth.NwConstants.ETHERWARP; } catch (Exception ignored) {}
-        try { int tt = ex.getIntOr("tuned_transmission", 0); if (tt > 0) v += price(prices, "TRANSMISSION_TUNER") * tt * fishmod.utils.networth.NwConstants.TUNED_TRANSMISSION; } catch (Exception ignored) {}
-        try { int c = ex.getIntOr("wood_singularity_count", 0); if (c > 0) v += price(prices, "WOOD_SINGULARITY") * c * fishmod.utils.networth.NwConstants.WOOD_SINGULARITY; } catch (Exception ignored) {}
-        try { int c = ex.getIntOr("jalapeno_count", 0); if (c > 0) v += price(prices, "JALAPENO_BOOK") * c * fishmod.utils.networth.NwConstants.JALAPENO_BOOK; } catch (Exception ignored) {}
-        try { int c = ex.getIntOr("mana_disintegrator_count", 0); if (c > 0) v += price(prices, "MANA_DISINTEGRATOR") * c * fishmod.utils.networth.NwConstants.MANA_DISINTEGRATOR; } catch (Exception ignored) {}
-        try { int c = ex.getIntOr("farming_for_dummies_count", 0); if (c > 0) v += price(prices, "FARMING_FOR_DUMMIES") * c * fishmod.utils.networth.NwConstants.FARMING_FOR_DUMMIES; } catch (Exception ignored) {}
-        try { int c = ex.getIntOr("levelable_overclocks", 0); if (c > 0) v += price(prices, "OVERCLOCKER_3000") * c * fishmod.utils.networth.NwConstants.OVERCLOCKER_3000; } catch (Exception ignored) {}
-        try { int c = ex.getIntOr("polarvoid", 0); if (c > 0) v += price(prices, "POLARVOID_BOOK") * c * fishmod.utils.networth.NwConstants.POLARVOID_BOOK; } catch (Exception ignored) {}
-        try { int c = ex.getIntOr("sack_pss", 0); if (c > 0) v += price(prices, "POCKET_SACK_IN_A_SACK") * c * fishmod.utils.networth.NwConstants.POCKET_SACK_IN_A_SACK; } catch (Exception ignored) {}
-        try { int c = ex.getIntOr("divan_powder_coating", 0); if (c > 0) v += price(prices, "DIVAN_POWDER_COATING") * fishmod.utils.networth.NwConstants.DIVAN_POWDER_COATING; } catch (Exception ignored) {}
-        try { String dye = ex.getStringOr("dye_item", ""); if (!dye.isEmpty()) v += price(prices, dye.toUpperCase()) * fishmod.utils.networth.NwConstants.DYE; } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.61", "itemValueNw failed id=" + id, ignored);}
+        try { if (ex.getIntOr("ethermerge", 0) > 0) v += price(prices, "ETHERWARP_CONDUIT") * fishmod.utils.networth.NwConstants.ETHERWARP; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.62", "itemValueNw failed id=" + id, ignored);}
+        try { int tt = ex.getIntOr("tuned_transmission", 0); if (tt > 0) v += price(prices, "TRANSMISSION_TUNER") * tt * fishmod.utils.networth.NwConstants.TUNED_TRANSMISSION; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.63", "itemValueNw failed id=" + id, ignored);}
+        try { int c = ex.getIntOr("wood_singularity_count", 0); if (c > 0) v += price(prices, "WOOD_SINGULARITY") * c * fishmod.utils.networth.NwConstants.WOOD_SINGULARITY; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.64", "itemValueNw failed id=" + id, ignored);}
+        try { int c = ex.getIntOr("jalapeno_count", 0); if (c > 0) v += price(prices, "JALAPENO_BOOK") * c * fishmod.utils.networth.NwConstants.JALAPENO_BOOK; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.65", "itemValueNw failed id=" + id, ignored);}
+        try { int c = ex.getIntOr("mana_disintegrator_count", 0); if (c > 0) v += price(prices, "MANA_DISINTEGRATOR") * c * fishmod.utils.networth.NwConstants.MANA_DISINTEGRATOR; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.66", "itemValueNw failed id=" + id, ignored);}
+        try { int c = ex.getIntOr("farming_for_dummies_count", 0); if (c > 0) v += price(prices, "FARMING_FOR_DUMMIES") * c * fishmod.utils.networth.NwConstants.FARMING_FOR_DUMMIES; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.67", "itemValueNw failed id=" + id, ignored);}
+        try { int c = ex.getIntOr("levelable_overclocks", 0); if (c > 0) v += price(prices, "OVERCLOCKER_3000") * c * fishmod.utils.networth.NwConstants.OVERCLOCKER_3000; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.68", "itemValueNw failed id=" + id, ignored);}
+        try { int c = ex.getIntOr("polarvoid", 0); if (c > 0) v += price(prices, "POLARVOID_BOOK") * c * fishmod.utils.networth.NwConstants.POLARVOID_BOOK; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.69", "itemValueNw failed id=" + id, ignored);}
+        try { int c = ex.getIntOr("sack_pss", 0); if (c > 0) v += price(prices, "POCKET_SACK_IN_A_SACK") * c * fishmod.utils.networth.NwConstants.POCKET_SACK_IN_A_SACK; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.70", "itemValueNw failed id=" + id, ignored);}
+        try { int c = ex.getIntOr("divan_powder_coating", 0); if (c > 0) v += price(prices, "DIVAN_POWDER_COATING") * fishmod.utils.networth.NwConstants.DIVAN_POWDER_COATING; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.71", "itemValueNw failed id=" + id, ignored);}
+        try { String dye = ex.getStringOr("dye_item", ""); if (!dye.isEmpty()) v += price(prices, dye.toUpperCase()) * fishmod.utils.networth.NwConstants.DYE; } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.72", "itemValueNw failed id=" + id, ignored);}
         try {
             String skin = ex.getStringOr("skin", "");
             if (!skin.isEmpty() && !priceId.contains(skin) && isSoulboundItem(item, ex)) {
@@ -1365,7 +1365,7 @@ public class HypixelApi {
                 if (sp == 0) sp = price(prices, skin.toUpperCase());
                 v += sp * fishmod.utils.networth.NwConstants.SOULBOUND_SKINS;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.73", "itemValueNw failed id=" + id, ignored);}
         try {
             if ("PULSE_RING".equals(id)) {
                 long tc = ex.getLongOr("thunder_charge", 0L);
@@ -1374,7 +1374,7 @@ public class HypixelApi {
                     v += price(prices, "THUNDER_IN_A_BOTTLE") * up * fishmod.utils.networth.NwConstants.THUNDER_IN_A_BOTTLE;
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.74", "itemValueNw failed id=" + id, ignored);}
         try {
             CompoundTag runes = compound(ex, "runes");
             if (runes != null && !id.startsWith("RUNE")) for (String rn : runes.keySet()) {
@@ -1382,7 +1382,7 @@ public class HypixelApi {
                 v += price(prices, runeId.toUpperCase()) * fishmod.utils.networth.NwConstants.RUNES;
                 break;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.75", "itemValueNw failed id=" + id, ignored);}
         try {
             String enr = ex.getStringOr("talisman_enrichment", "");
             if (!enr.isEmpty()) {
@@ -1393,7 +1393,7 @@ public class HypixelApi {
                 }
                 if (cheapest != Double.POSITIVE_INFINITY) v += cheapest * fishmod.utils.networth.NwConstants.ENRICHMENT;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.76", "itemValueNw failed id=" + id, ignored);}
         try {
             CompoundTag bt = compound(ex, "booster_tiers");
             if (bt != null && !bt.keySet().isEmpty()) {
@@ -1414,18 +1414,18 @@ public class HypixelApi {
                     if (!b.isEmpty()) v += price(prices, b.toUpperCase() + "_BOOSTER") * fishmod.utils.networth.NwConstants.BOOSTER;
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.77", "itemValueNw failed id=" + id, ignored);}
         try {
             ListTag years = ex.getList("new_year_cake_bag_years").orElse(null);
             if (years != null) for (int i = 0; i < years.size(); i++)
                 v += price(prices, "NEW_YEAR_CAKE_" + years.getInt(i).orElse(0));
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.78", "itemValueNw failed id=" + id, ignored);}
         try {
             if (ex.contains("price") && ex.contains("auction") && ex.contains("bid")) {
                 double pricePaid = ex.getDoubleOr("price", 0) * fishmod.utils.networth.NwConstants.SHENS_AUCTION_PRICE;
                 if (pricePaid > base) v += (pricePaid - base);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.79", "itemValueNw failed id=" + id, ignored);}
         try {
             Object[] midas = fishmod.utils.networth.NwConstants.MIDAS_SWORDS.get(id);
             if (midas != null) {
@@ -1436,13 +1436,13 @@ public class HypixelApi {
                 if (winning + additional >= maxBid && price(prices, type) > 0)
                     v += (price(prices, type) - base);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.80", "itemValueNw failed id=" + id, ignored);}
         try {
             if ("PICKONIMBUS".equals(id)) {
                 int dur = ex.getIntOr("pickonimbus_durability", 5000);
                 if (dur < 5000) v += base * ((dur / 5000.0) - 1);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.81", "itemValueNw failed id=" + id, ignored);}
 
         return v;
     }
@@ -1452,7 +1452,7 @@ public class HypixelApi {
             Tag el = parent.get(key);
             if (el == null) return null;
             return el.asCompound().orElse(null);
-        } catch (Exception e) { return null; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.82", "compound failed", e); return null; }
     }
 
     private static int upgradeLevel(CompoundTag ex) {
@@ -1467,7 +1467,7 @@ public class HypixelApi {
             String s = el.asString().orElse(null);
             if (s != null) return s;
             return String.valueOf(ex.getIntOr(key, 0));
-        } catch (Exception e) { return "0"; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.83", "strOrInt failed", e); return "0"; }
     }
     private static int digits(String s) {
         StringBuilder b = new StringBuilder();
@@ -1498,7 +1498,7 @@ public class HypixelApi {
                 String iid = up.get("item_id").getAsString();
                 return amount * price(prices, iid);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.84", "starCostOne failed", ignored);}
         return 0;
     }
 
@@ -1527,7 +1527,7 @@ public class HypixelApi {
                         ? fishmod.utils.networth.NwConstants.ENCHANTMENTS_WORTH.get(name)
                         : fishmod.utils.networth.NwConstants.ENCHANTMENTS;
                 v += price(prices, "ENCHANTMENT_" + name + "_" + value) * mult;
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.85", "enchantmentsValueNw failed", ignored);}
         }
         return v;
     }
@@ -1574,7 +1574,7 @@ public class HypixelApi {
                     }
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.86", "gemsValueNw failed", ignored);}
         for (String slot : gems.keySet()) {
             if (slot.equals("unlocked_slots") || slot.endsWith("_gem")) continue;
             String tier = gems.getStringOr(slot, "");
@@ -1655,11 +1655,11 @@ public class HypixelApi {
                         reduceValue = Math.min(reduceValue, maxReduction);
                         extra -= reduceValue;
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.87", "petsValueNw failed", ignored);}
 
                 total += base + extra;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.88", "petsValueNw failed", ignored);}
         return total;
     }
 
@@ -1699,7 +1699,7 @@ public class HypixelApi {
                 if (amt > 0) total += price(prices, "ESSENCE_" + e.getKey().toUpperCase()) * amt;
             }
             return total;
-        } catch (Exception ignored) { return 0; }
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.89", "essenceValueNw failed", ignored); return 0; }
     }
 
     private static double museumValueNw(String uuid, String profileId, Map<String, Double> prices) {
@@ -1728,7 +1728,7 @@ public class HypixelApi {
                         slots++;
                         for (CompoundTag it : decodeItemData(slot.getAsJsonObject("items").get("data").getAsString()))
                             if (it != null) { decoded++; total += itemValueNw(it, prices); }
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.90", "museumValueNw failed", ignored);}
                 }
             }
             if (m.has("special") && m.get("special").isJsonArray()) {
@@ -1739,13 +1739,13 @@ public class HypixelApi {
                         slots++;
                         for (CompoundTag it : decodeItemData(so.getAsJsonObject("items").get("data").getAsString()))
                             if (it != null) { decoded++; total += itemValueNw(it, prices); }
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.91", "museumValueNw failed", ignored);}
                 }
             }
             fishmod.utils.debug.Debug.LOGGER.debug("[Networth] museum: {} slots, {} items decoded, value {}",
                     slots, decoded, total);
             return total;
-        } catch (Exception e) {
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.92", "museumValueNw failed", e);
             fishmod.utils.debug.Debug.LOGGER.warn("[Networth] museum fetch: {}", e.toString());
             return 0;
         }
@@ -1753,7 +1753,7 @@ public class HypixelApi {
 
     private static fishmod.features.OverflowPetLevels.Rarity petRarity(String tier) {
         try { return fishmod.features.OverflowPetLevels.Rarity.valueOf(tier); }
-        catch (Exception e) { return fishmod.features.OverflowPetLevels.Rarity.LEGENDARY; }
+        catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.93", "petRarity failed", e); return fishmod.features.OverflowPetLevels.Rarity.LEGENDARY; }
     }
 
     private static String resolveUuidBlocking(String ign) {
@@ -1771,7 +1771,7 @@ public class HypixelApi {
             }
             boolean transientErr = code == 429 || code == 408 || code >= 500;
             if (!transientErr) return null;
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.94", "resolveUuidBlocking failed", ignored);}
         try {
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create("https://api.ashcon.app/mojang/v2/user/" + ign))
@@ -1781,7 +1781,7 @@ public class HypixelApi {
                 String uuid = parseUuid(r.body());
                 if (uuid != null) { putUuid(ign, uuid); return uuid; }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.95", "resolveUuidBlocking failed", ignored);}
         return null;
     }
 
@@ -1821,7 +1821,7 @@ public class HypixelApi {
                 .timeout(Duration.ofSeconds(10))
                 .GET()
                 .build();
-        } catch (Exception e) {
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.96", "fetchPowder failed", e);
             mc.execute(() -> cb.onData(new PowderData()));
             return;
         }
@@ -1840,13 +1840,13 @@ public class HypixelApi {
                     }
                     JsonObject member = findSelectedMember(root, uuidStr);
                     if (member != null) result = parsePowder(member);
-                } catch (Exception e) {
+                } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.97", "fetchPowder failed", e);
                     mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI parse error: " + e.getMessage())));
                 }
                 PowderData finalResult = result;
                 mc.execute(() -> cb.onData(finalResult));
             })
-            .exceptionally(e -> {
+            .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.98", "fetchPowder request future failed", e);
                 mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI request failed.")));
                 mc.execute(() -> cb.onData(new PowderData()));
                 return null;
@@ -1934,9 +1934,9 @@ public class HypixelApi {
                     String discord = root.has("discordUrl") ? root.get("discordUrl").getAsString() : null;
                     long nickClearedAt = root.has("nickClearedAt") ? root.get("nickClearedAt").getAsLong() : 0L;
                     cb.onData(latest, latestDisplay, links, welcome, discord, nickClearedAt);
-                } catch (Exception ignored) { cb.onData(null, null, null, null, null, 0L); }
-            }).exceptionally(t -> { cb.onData(null, null, null, null, null, 0L); return null; });
-        } catch (Exception e) { cb.onData(null, null, null, null, null, 0L); }
+                } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.99", "reportSeen failed", ignored); cb.onData(null, null, null, null, null, 0L); }
+            }).exceptionally(t -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.100", "reportSeen request future failed", t); cb.onData(null, null, null, null, null, 0L); return null; });
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.101", "reportSeen failed", e); cb.onData(null, null, null, null, null, 0L); }
     }
 
     public static void uploadNick(String uuidNoDashes, String nick) {
@@ -1953,7 +1953,7 @@ public class HypixelApi {
                 .POST(HttpRequest.BodyPublishers.ofString(o.toString()))
                 .build();
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString());
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.102", "uploadNick failed", ignored);}
     }
 
     public static void fetchNicks(java.util.Collection<String> uuidsNoDashes,
@@ -1975,10 +1975,10 @@ public class HypixelApi {
                         for (var e : root.getAsJsonObject("nicks").entrySet())
                             if (e.getValue() != null && !e.getValue().isJsonNull())
                                 out.put(e.getKey(), e.getValue().getAsString());
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.103", "fetchNicks failed", ignored);}
                 cb.accept(out);
-            }).exceptionally(t -> { cb.accept(java.util.Map.of()); return null; });
-        } catch (Exception e) { cb.accept(java.util.Map.of()); }
+            }).exceptionally(t -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.104", "fetchNicks request future failed", t); cb.accept(java.util.Map.of()); return null; });
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.105", "fetchNicks failed", e); cb.accept(java.util.Map.of()); }
     }
 
     public static void uploadScale(String uuidNoDashes, float x, float y, float z) {
@@ -1995,7 +1995,7 @@ public class HypixelApi {
                 .POST(HttpRequest.BodyPublishers.ofString(o.toString()))
                 .build();
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString());
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.106", "uploadScale failed", ignored);}
     }
 
     public interface SyncCallback {
@@ -2019,9 +2019,9 @@ public class HypixelApi {
                     long ver = root.has("version") ? root.get("version").getAsLong() : version;
                     if (!root.has("changed") || !root.get("changed").getAsBoolean()) { cb.onData(ver, null, null, null, null); return; }
                     cb.onData(ver, parseStringMap(root, "nicks"), parseStringMap(root, "items"), parseStringMap(root, "scales"), parseStringMap(root, "badges"));
-                } catch (Exception ignored) { cb.onData(version, null, null, null, null); }
-            }).exceptionally(t -> { cb.onData(version, null, null, null, null); return null; });
-        } catch (Exception e) { cb.onData(version, null, null, null, null); }
+                } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.107", "fetchSync failed", ignored); cb.onData(version, null, null, null, null); }
+            }).exceptionally(t -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.108", "fetchSync request future failed", t); cb.onData(version, null, null, null, null); return null; });
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.109", "fetchSync failed", e); cb.onData(version, null, null, null, null); }
     }
 
     public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fishmod.cosmetic.badge.BadgeDef>> cb) {
@@ -2041,7 +2041,7 @@ public class HypixelApi {
                             JsonObject o = el.getAsJsonObject();
                             String color = o.has("color") ? o.get("color").getAsString() : "#FFFFFF";
                             int rgb;
-                            try { rgb = Integer.parseInt(color.replace("#", ""), 16); } catch (Exception e) { rgb = 0xFFFFFF; }
+                            try { rgb = Integer.parseInt(color.replace("#", ""), 16); } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.110", "fetchBadgeDefs failed", e); rgb = 0xFFFFFF; }
                             String symbol = o.has("symbol") ? o.get("symbol").getAsString() : "";
                             symbol = symbol.replaceAll("[\\uFE00-\\uFE0F\\u200D]", "");
                             out.add(new fishmod.cosmetic.badge.BadgeDef(
@@ -2053,10 +2053,10 @@ public class HypixelApi {
                             ));
                         }
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.111", "fetchBadgeDefs failed", ignored);}
                 cb.accept(out);
-            }).exceptionally(t -> { cb.accept(java.util.List.of()); return null; });
-        } catch (Exception e) { cb.accept(java.util.List.of()); }
+            }).exceptionally(t -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.112", "fetchBadgeDefs request future failed", t); cb.accept(java.util.List.of()); return null; });
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.113", "fetchBadgeDefs failed", e); cb.accept(java.util.List.of()); }
     }
 
     private static Map<String, String> parseStringMap(JsonObject root, String key) {
@@ -2097,7 +2097,7 @@ public class HypixelApi {
                 .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
                 .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10)).GET().build();
-        } catch (Exception e) {
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.114", "getLocalMember failed", e);
             finishLocalMemberFetch(null, false);
             cb.accept(null);
             return;
@@ -2108,10 +2108,10 @@ public class HypixelApi {
                 JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
                 if (root.has("success") && root.get("success").getAsBoolean())
                     member = findSelectedMember(root, uuid);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.115", "getLocalMember failed", ignored);}
             JsonObject fm = member;
             mc.execute(() -> { cb.accept(fm); finishLocalMemberFetch(fm, true); });
-        }).exceptionally(t -> { mc.execute(() -> { cb.accept(null); finishLocalMemberFetch(null, false); }); return null; });
+        }).exceptionally(t -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.116", "getLocalMember request future failed", t); mc.execute(() -> { cb.accept(null); finishLocalMemberFetch(null, false); }); return null; });
     }
 
     private static void finishLocalMemberFetch(JsonObject result, boolean success) {
@@ -2157,7 +2157,7 @@ public class HypixelApi {
                     }
                 }
                 cb.onData(bank, purse, corpses);
-            } catch (Exception ex) {
+            } catch (Exception ex) { fishmod.utils.debug.FishDiag.fail("HypixelApi.117", "getEconomyByName failed", ex);
                 fishmod.utils.debug.Debug.LOGGER.warn("[Economy] error: {}", ex.toString());
                 cb.onData(-1, -1, null);
             }
@@ -2183,7 +2183,7 @@ public class HypixelApi {
                 return sb.toString();
             }
             return el.getAsString();
-        } catch (Exception e) { return "0"; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.118", "formatCorpses failed", e); return "0"; }
     }
 
     public static void dumpEconomy(Minecraft mc) {
@@ -2196,7 +2196,7 @@ public class HypixelApi {
                 .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
                 .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10)).GET().build();
-        } catch (Exception e) { return; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.119", "dumpEconomy failed", e); return; }
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
             try {
                 JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
@@ -2227,7 +2227,7 @@ public class HypixelApi {
                     });
                     return;
                 }
-            } catch (Exception e) {
+            } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.120", "dumpEconomy failed", e);
                 mc.schedule(() -> Misc.addChatMessage(Component.literal("§cdump error: " + e.getMessage())));
             }
         });
@@ -2322,7 +2322,7 @@ public class HypixelApi {
                 .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
                 .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
                 .timeout(Duration.ofSeconds(10)).GET().build();
-        } catch (Exception e) { cb.onData(new PetInfo()); return; }
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.121", "getActivePet failed", e); cb.onData(new PetInfo()); return; }
 
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
             PetInfo info = new PetInfo();
@@ -2367,9 +2367,9 @@ public class HypixelApi {
                         break;
                     }
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.122", "getActivePet failed", ignored);}
             mc.execute(() -> cb.onData(info));
-        }).exceptionally(t -> { mc.execute(() -> cb.onData(new PetInfo())); return null; });
+        }).exceptionally(t -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.123", "getActivePet request future failed", t); mc.execute(() -> cb.onData(new PetInfo())); return null; });
     }
 
     private static void applyPetMultipliers(JsonObject profile, JsonObject member) {
@@ -2401,7 +2401,7 @@ public class HypixelApi {
                 else if (mp.has("cookie_buff_active")) cookie = mp.get("cookie_buff_active").getAsBoolean();
             }
             FishSettings.petXpBoosterCookie = cookie;
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.124", "applyPetMultipliers failed", ignored);}
     }
 
     private static int detectBeastmaster(JsonObject member) {
@@ -2427,7 +2427,7 @@ public class HypixelApi {
                     if (id.endsWith(e.getKey()) && e.getValue() > best) best = e.getValue();
             }
             return best;
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.125", "detectBeastmaster failed", ignored);}
         return 0;
     }
 
@@ -2462,7 +2462,7 @@ public class HypixelApi {
                             Misc.addChatMessage(Component.literal("§7" + k + ": §f" + garden.get(k)));
                     }
                 });
-            } catch (Exception ex) {
+            } catch (Exception ex) { fishmod.utils.debug.FishDiag.fail("HypixelApi.126", "dumpGarden failed", ex);
                 mc.schedule(() -> Misc.addChatMessage(Component.literal("§cgarden err: " + ex)));
             }
         }, API_EXECUTOR);
@@ -2551,7 +2551,7 @@ public class HypixelApi {
                     Misc.addChatMessage(Component.literal("§b--- crystal keys ---"));
                     cry.forEach((k, v) -> Misc.addChatMessage(Component.literal("§7" + k + ": §f" + v)));
                 });
-            } catch (Exception ex) {
+            } catch (Exception ex) { fishmod.utils.debug.FishDiag.fail("HypixelApi.127", "dumpNucleus failed", ex);
                 mc.schedule(() -> Misc.addChatMessage(Component.literal("§cnuc dump err: " + ex)));
             }
         }, API_EXECUTOR);
@@ -2577,7 +2577,7 @@ public class HypixelApi {
                     }
                 }
                 cb.onData(runs);
-            } catch (Exception ex) {
+            } catch (Exception ex) { fishmod.utils.debug.FishDiag.fail("HypixelApi.128", "getNucleusRuns failed", ex);
                 fishmod.utils.debug.Debug.LOGGER.warn("[Nucleus] error: {}", ex.toString());
                 cb.onData(-1);
             }
@@ -2613,7 +2613,7 @@ public class HypixelApi {
                     }
                 }
                 cb.onData(sb, farm);
-            } catch (Exception ex) {
+            } catch (Exception ex) { fishmod.utils.debug.FishDiag.fail("HypixelApi.129", "getProfileStats failed", ex);
                 fishmod.utils.debug.Debug.LOGGER.warn("[ProfileStats] error: {}", ex.toString());
                 cb.onData(-1, -1);
             }
@@ -2686,7 +2686,7 @@ public class HypixelApi {
                 WormStats s = computeWormStats(worm, scatha);
                 s.found = found;
                 cb.onData(s);
-            } catch (Exception ex) {
+            } catch (Exception ex) { fishmod.utils.debug.FishDiag.fail("HypixelApi.130", "getWormStats failed", ex);
                 fishmod.utils.debug.Debug.LOGGER.warn("[WormStats] error: {}", ex.toString());
                 cb.onData(new WormStats());
             }
@@ -2725,7 +2725,7 @@ public class HypixelApi {
                     }
 
                     cb.onLayout(rows, rows.isEmpty() ? "No storage pages found on this profile." : null);
-                } catch (Exception ex) {
+                } catch (Exception ex) { fishmod.utils.debug.FishDiag.fail("HypixelApi.131", "getStorageLayout failed", ex);
                     cb.onLayout(null, "parse error: " + ex.getMessage());
                 }
             });
@@ -2741,7 +2741,7 @@ public class HypixelApi {
             CompoundTag root = NbtIo.readCompressed(new ByteArrayInputStream(bytes), NbtAccounter.unlimitedHeap());
             ListTag items = root.getList("i").orElse(null);
             return items == null ? 0 : items.size();
-        } catch (Exception e) {
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.132", "slotListSize failed", e);
             return 0;
         }
     }

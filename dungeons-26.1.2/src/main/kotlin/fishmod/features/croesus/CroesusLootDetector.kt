@@ -18,9 +18,8 @@ object CroesusLootDetector {
 
     private val pendingChests = HashMap<String, CroesusRewardParser.ChestInfo>()
 
-    private val loggedChests = HashSet<String>()
+    private var runGuiOpenPrev = false
     private var loggedThisVisit = false
-    private var awayTicks = 0
 
     @JvmStatic
     fun init() {
@@ -54,7 +53,7 @@ object CroesusLootDetector {
             if (stack.isEmpty) continue
             val name = strip(stack.hoverName.string)
             if (!CHEST_ITEM_PATTERN.matcher(name).matches()) continue
-            if (pendingChests.containsKey(name) || name in loggedChests) continue
+            if (pendingChests.containsKey(name)) continue
 
             val info = CroesusRewardParser.parseRewards(getTooltip(stack), arrayOf<String?>(null))
             if (info != null) pendingChests[name] = info
@@ -63,7 +62,6 @@ object CroesusLootDetector {
 
     private fun logPending(chestName: String) {
         val info = pendingChests.remove(chestName) ?: return
-        loggedChests.add(chestName)
 
         LootTrackerStore.addAll(info.items.map { Triple(it.displayName, it.id, it.qty) })
         if (!loggedThisVisit) {
@@ -74,15 +72,12 @@ object CroesusLootDetector {
 
     private fun onTick(mc: Minecraft) {
         val title = if (mc.screen == null) "" else fishmod.utils.ScreenTitle.plain(mc.screen!!)
-        // Run GUI <-> chest hops are one visit; only reset once we've been elsewhere for a second
-        val inVisit = RUN_GUI_PATTERN.matcher(title).matches() || CHEST_SCREEN_PATTERN.matcher(title).matches()
-        if (inVisit) {
-            awayTicks = 0
-        } else if (awayTicks < 20 && ++awayTicks == 20) {
+        val runGuiOpenNow = RUN_GUI_PATTERN.matcher(title).matches()
+        if (runGuiOpenNow && !runGuiOpenPrev) {
             pendingChests.clear()
-            loggedChests.clear()
             loggedThisVisit = false
         }
+        runGuiOpenPrev = runGuiOpenNow
     }
 
     private fun strip(s: String): String = HypixelApi.STRIP_COLOR.matcher(s).replaceAll("")

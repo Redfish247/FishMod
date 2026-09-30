@@ -43,12 +43,21 @@ object DianaWaypoints {
     const val MAX_X = 175; const val MAX_Y = 105; const val MAX_Z = 205
 
     val list = CopyOnWriteArrayList<Waypoint>()
+
+    // Queued during the gizmo pass, drawn as constant-width ribbons later in the frame
+    private class Line(val a: Vec3, val b: Vec3, val argb: Int, val px: Float)
+    private val lines = ArrayList<Line>()
+    private fun line(a: Vec3, b: Vec3, argb: Int, px: Float) { lines += Line(a, b, argb, px) }
     private val removedAt = HashMap<BlockPos, Long>()
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         Events.ON_WORLD_CHANGE.register { clearAll(); false }
         RenderingEvents.GIZMO.register { _ -> render() }
+        RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
+            for (l in lines) RenderUtils.screenLine(ps, vc, l.a, l.b, l.argb, l.px)
+            lines.clear()
+        }
     }
 
     fun inHubBounds(p: BlockPos) =
@@ -168,6 +177,7 @@ object DianaWaypoints {
     }
 
     private fun render() {
+        lines.clear()
         if (list.isEmpty() || !visible()) return
         val eye = eye() ?: return
         val closest = list.filter { it.type == WpType.GUESS || it.type == WpType.ARROW }.minByOrNull { it.distTo(eye) }
@@ -181,39 +191,42 @@ object DianaWaypoints {
             val d = w.distTo(eye)
             val a = opacity(d)
             val rgb = baseColor(w, closest)
-            val box = AABB(w.pos.x.toDouble(), w.pos.y.toDouble(), w.pos.z.toDouble(), w.pos.x + 1.0, w.pos.y + 1.0, w.pos.z + 1.0)
-            RenderUtils.gizmoBox(box, withAlpha(rgb, a), 0, true)
+            // Past render distance, draw a shrunken copy closer along the same ray so it isn't far-clipped
+            val (c, k) = RenderUtils.pullIn(w.center, eye)
+            RenderUtils.gizmoBox(AABB.ofSize(c, k, k, k), withAlpha(rgb, a), 0, true)
             if (DianaSettings.dianaBeaconBeam && w.type != WpType.SUB && d > DianaSettings.dianaBeaconDistance) {
-                val beam = AABB(w.pos.x + 0.3, w.pos.y + 1.0, w.pos.z + 0.3, w.pos.x + 0.7, w.pos.y + 200.0, w.pos.z + 0.7)
-                RenderUtils.gizmoBox(beam, withAlpha(rgb, a * 0.45f), 0, true)
+                val bb = c.add(0.0, k * 100.5, 0.0)
+                RenderUtils.gizmoBox(AABB.ofSize(bb, k * 0.4, k * 200, k * 0.4), withAlpha(rgb, a * 0.45f), 0, true)
             }
             val text = if (w.type == WpType.SUB) (if (DianaSettings.dianaSubGuessText) "Possible" else "") else label(w, d)
             if (text.isNotEmpty()) {
                 // Grows with distance so labels stay roughly the same size on screen
-                val scale = (DianaSettings.dianaTextScale * maxOf(1.2, d * 0.12)).toFloat()
+                val baseScale = (DianaSettings.dianaTextScale * maxOf(1.2, d * 0.12)).toFloat()
                 val textColor = withAlpha(0xFFFFFF, DianaSettings.dianaTextOpacity / 100f)
-                val pos = Vec3(w.pos.x + 0.5, w.pos.y + 1.5 + d / 25.0, w.pos.z + 0.5)
+                val (pos, pk) = RenderUtils.pullIn(Vec3(w.pos.x + 0.5, w.pos.y + 1.5 + d / 25.0, w.pos.z + 0.5), eye)
+                val scale = baseScale * pk.toFloat()
                 val col = colorCode(w, closest)
                 if (DianaSettings.dianaTextShadow) {
                     val off = shadowOffset(pos, eye, scale)
                     val shadowA = (DianaSettings.dianaTextOpacity / 100f) * 0.8f
-                    RenderUtils.gizmoText(Component.literal(text.replace(Regex("§."), "")), pos.add(off), scale, withAlpha(0x202020, shadowA))
+                    RenderUtils.gizmoText(Component.literal(text.replace(Regex("§."), "")), pos.add(off), scale, withAlpha(0x202020, shadowA), true)
                 }
-                RenderUtils.gizmoText(Component.literal(col + text), pos, scale, textColor)
+                RenderUtils.gizmoText(Component.literal(col + text), pos, scale, textColor, true)
             }
         }
 
         val rare = if (DianaSettings.dianaRareMobs) newestRareMob() else null
+        // Rare-mob line takes over; otherwise always fall back to the guess line so it never blinks out
         if (DianaSettings.dianaRareMobLine && rare != null && rare.distTo(eye) >= 8) {
-            RenderUtils.gizmoLine(lineStart(), rare.center, withAlpha(DianaSettings.dianaColorRareMob, 1f), width)
-        } else if (DianaSettings.dianaGuessLine && rare == null) {
-            closestTarget(eye)?.let { RenderUtils.gizmoLine(lineStart(), it.center, withAlpha(baseColor(it, closest), 1f), width) }
+            line(lineStart(), rare.center, withAlpha(DianaSettings.dianaColorRareMob, 1f), width)
+        } else if (DianaSettings.dianaGuessLine) {
+            closestTarget(eye)?.let { line(lineStart(), it.center, withAlpha(baseColor(it, closest), 1f), width) }
         }
 
         if (DianaSettings.dianaGuessing && DianaSettings.dianaOrderLines) renderOrder(eye, width)
 
         if (DianaSettings.dianaGuessing && DianaSettings.dianaSubGuesses) ArrowGuess.renderChains { a, b ->
-            RenderUtils.gizmoLine(a, b, withAlpha(DianaSettings.dianaColorSubGuess, 0.6f), (width / 1.6f).coerceAtLeast(1f))
+            line(a, b, withAlpha(DianaSettings.dianaColorSubGuess, 0.6f), (width / 1.6f).coerceAtLeast(1f))
         }
     }
 
@@ -244,7 +257,7 @@ object DianaWaypoints {
             val next = left.minByOrNull { it.center.distanceTo(from) }!!
             if (i > 0 && next.distTo(eye) > 50) break
             val to = next.center
-            RenderUtils.gizmoLine(if (i == 0) lineStart() else from, to, color, (width / 1.6f).coerceIn(1f, 20f))
+            line(if (i == 0) lineStart() else from, to, color, (width / 1.6f).coerceIn(1f, 20f))
             left.remove(next); from = to; i++
         }
     }

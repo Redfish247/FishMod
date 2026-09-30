@@ -3,6 +3,7 @@ package fishmod.features
 import fishmod.utils.Location
 import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
@@ -43,7 +44,7 @@ object SoulflowHud {
             tickCount++
             if (tickCount < 10) return@register
             tickCount = 0
-            scanTabList()
+            FishDiag.guard("SoulflowHud.2", "soulflow tab scan failed") { scanTabList() }
         }
     }
 
@@ -55,7 +56,8 @@ object SoulflowHud {
                 val numStr = m.group(1).replace(",", "")
                 soulflow = try {
                     numStr.toInt()
-                } catch (ignored: NumberFormatException) {
+                } catch (e: NumberFormatException) {
+                    FishDiag.fail("SoulflowHud.1", "soulflow not an int: '$numStr'", e)
                     -1
                 }
                 missCount = 0
@@ -96,9 +98,14 @@ object SoulflowHud {
 
         val sc = FishSettings.soulflowHudScale.toFloat()
         ctx.pose().pushMatrix()
-        ctx.pose().translate(FishSettings.soulflowHudX.toFloat(), FishSettings.soulflowHudY.toFloat())
-        ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, label, 0, 0, -1, true)
-        ctx.pose().popMatrix()
+        try {
+            ctx.pose().translate(FishSettings.soulflowHudX.toFloat(), FishSettings.soulflowHudY.toFloat())
+            ctx.pose().scale(sc, sc)
+            ctx.text(mc.font, label, 0, 0, -1, true)
+        } catch (e: Exception) {
+            FishDiag.fail("SoulflowHud.3", "soulflow hud render failed", e)
+        } finally {
+            ctx.pose().popMatrix()
+        }
     }
 }

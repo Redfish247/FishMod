@@ -58,6 +58,9 @@ public final class ChatOutput {
 		if (cfg.useTwitchColors && colorHex != null && colorHex.matches("#[0-9a-fA-F]{6}")) {
 			return Integer.parseInt(colorHex.substring(1), 16);
 		}
+		if (cfg.useTwitchColors && colorHex != null && !colorHex.isEmpty()) {
+			fishmod.utils.debug.FishDiag.fail("ChatOutput.2", "unexpected twitch color tag: " + colorHex);
+		}
 		if (!cfg.useTwitchColors) {
 			return 0xD69BF5;
 		}
@@ -68,8 +71,12 @@ public final class ChatOutput {
 	private static void push(Component component) {
 		Minecraft mc = Minecraft.getInstance();
 		mc.execute(() -> {
-			if (mc.gui != null) {
-				mc.gui.getChat().addClientSystemMessage(component);
+			try {
+				if (mc.gui != null) {
+					mc.gui.getChat().addClientSystemMessage(component);
+				}
+			} catch (Throwable t) {
+				fishmod.utils.debug.FishDiag.fail("ChatOutput.1", "adding twitch chat line failed", t);
 			}
 		});
 	}

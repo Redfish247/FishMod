@@ -4,6 +4,7 @@ import fishmod.utils.Constants
 import fishmod.utils.events.Events
 import java.util.LinkedHashMap
 import java.util.regex.Pattern
+import fishmod.utils.debug.FishDiag
 
 object PartyMemberTracker {
 
@@ -25,15 +26,21 @@ object PartyMemberTracker {
     @JvmStatic
     fun init() {
         Events.ON_GAME_MESSAGE.register { text ->
-            val stripped = Constants.STRIP_COLOR_REGEX.replace(text.string, "")
+            try { onChat(text.string) } catch (e: Exception) { FishDiag.fail("PartyMemberTracker.1", "party member chat parse threw", e) }
+            false
+        }
+    }
+
+    private fun onChat(raw: String) {
+        run {
+            val stripped = Constants.STRIP_COLOR_REGEX.replace(raw, "")
             JOIN.matcher(stripped).let { if (it.find()) remember(it.group(1)) }
             INVITE.matcher(stripped).let { if (it.find()) remember(it.group(1)) }
             CHAT.matcher(stripped).let { if (it.find()) remember(it.group(1)) }
             FINDER.matcher(stripped).let { if (it.find()) remember(it.group(1)) }
-            LIST.matcher(stripped).let { if (it.find()) { val m = LIST_NAME.matcher(it.group(1)); while (m.find()) remember(m.group(1)) } }
+            LIST.matcher(stripped).let { if (it.find()) { val m = LIST_NAME.matcher(it.group(1)); var n = 0; while (m.find()) { remember(m.group(1)); n++ }; FishDiag.check(n > 0, "PartyMemberTracker.2") { "party list line had no names: '$stripped'" } } }
             LEFT.matcher(stripped).let { if (it.find()) forget(it.group(1)) }
             if (RESET.matcher(stripped).find()) clear()
-            false
         }
     }
 

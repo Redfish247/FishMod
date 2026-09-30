@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.NativeImage
 import fishmod.utils.Misc
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
@@ -50,6 +51,7 @@ object CrosshairImageLoader {
 
             ClientLifecycleEvents.CLIENT_STOPPING.register { close() }
         } catch (e: Exception) {
+            FishDiag.fail("CrosshairImageLoader.1", "crosshair folder setup/watch failed at $IMAGES_PATH", e)
         }
     }
 
@@ -59,6 +61,7 @@ object CrosshairImageLoader {
         try {
             watchService?.close()
         } catch (e: Exception) {
+            FishDiag.fail("CrosshairImageLoader.2", "crosshair watch service close failed", e)
         }
         watchService = null
     }
@@ -91,6 +94,7 @@ object CrosshairImageLoader {
                             unloadImage(base)
                         }
                     } catch (e: Exception) {
+                        FishDiag.fail("CrosshairImageLoader.3", "crosshair file event ${event.kind().name()} for $name failed", e)
                     }
                 }
                 key.reset()
@@ -112,19 +116,25 @@ object CrosshairImageLoader {
                 val id = Identifier.fromNamespaceAndPath("fishmod", "crosshair_$safe${suffix}f")
 
                 Minecraft.getInstance().execute {
-                    val tex = DynamicTexture({ id.toString() }, img)
-                    Minecraft.getInstance().textureManager.register(id, tex)
-                    val prev = LOADED.put(fileName, ImageData(id, tex, w, h))
-                    if (prev != null) {
-                        try {
-                            Minecraft.getInstance().textureManager.release(prev.id)
-                        } catch (e: Exception) {
+                    try {
+                        val tex = DynamicTexture({ id.toString() }, img)
+                        Minecraft.getInstance().textureManager.register(id, tex)
+                        val prev = LOADED.put(fileName, ImageData(id, tex, w, h))
+                        if (prev != null) {
+                            try {
+                                Minecraft.getInstance().textureManager.release(prev.id)
+                            } catch (e: Exception) {
+                                FishDiag.fail("CrosshairImageLoader.4", "releasing old crosshair texture ${prev.id} failed", e)
+                            }
                         }
+                        if (!quiet) Misc.addChatMessage(Component.literal("§a[Crosshair] Loaded image: §f$fileName §7(${w}x$h)"))
+                    } catch (t: Throwable) {
+                        FishDiag.fail("CrosshairImageLoader.5", "registering crosshair texture '$fileName' (${w}x$h) failed", t)
                     }
-                    if (!quiet) Misc.addChatMessage(Component.literal("§a[Crosshair] Loaded image: §f$fileName §7(${w}x$h)"))
                 }
             }
         } catch (e: Exception) {
+            FishDiag.fail("CrosshairImageLoader.6", "crosshair image '$fileName' load failed", e)
             Misc.addChatMessage(Component.literal("§c[Crosshair] Failed to load image '$fileName': ${e.message}"))
         }
     }
@@ -135,6 +145,7 @@ object CrosshairImageLoader {
             try {
                 Minecraft.getInstance().textureManager.release(data.id)
             } catch (e: Exception) {
+                FishDiag.fail("CrosshairImageLoader.7", "releasing crosshair texture ${data.id} failed", e)
             }
         }
     }

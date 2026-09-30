@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.Constants
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.Phase
@@ -19,6 +20,14 @@ object PbPaceHud {
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.pbPaceEnabled) return
+        try {
+            renderInner(ctx)
+        } catch (t: Throwable) {
+            FishDiag.fail("PbPaceHud.1", "PB pace HUD render failed floor=${Phase.getFloor()}", t)
+        }
+    }
+
+    private fun renderInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
         if (mc.player == null) return
         if (mc.screen != null && mc.screen !is ChatScreen) return

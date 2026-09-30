@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.map
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.DungeonMapSettings
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -78,6 +79,7 @@ class Room(
             val base: Int
             if (!mimic || !(s.mapRoomAdditionsEnabled && s.mapRoomAdditionsMimic) || legit) {
                 if (type == Type.UNKNOWN) return intArrayOf(MapColors.unopenedColor())
+                FishDiag.notNull(type, "Room.1") { "room '${data?.name}' has null type while rendering colour state=$state" }
                 base = MapColors.roomColor(type!!)
             } else {
                 base = s.mapMimicRoomColor
@@ -110,6 +112,7 @@ class Room(
                             context.fill(0, 10, 16, 16, c[1])
                             context.fill(5, 5, 11, 11, c[2])
                         }
+                        else -> FishDiag.fail("Room.2", "unexpected room colour array size ${c.size} for '${data?.name}'")
                     }
                     matrices.popMatrix()
                 }
@@ -249,11 +252,13 @@ class Room(
         tiles.add(tile)
         places.add(pos.add(185, 185).divide(32))
         val place = MapVec2i((pos.x + 185) / 32, (pos.z + 185) / 32)
+        FishDiag.check(place.roomListIndex() in Scan.roomsList.indices, "Room.6") { "room tile $pos maps outside grid place=$place room='${data?.name}'" }
         Scan.roomsList[place.roomListIndex()] = tile
         return tile
     }
 
     fun topLeftTilePlacement(): MapVec2i {
+        FishDiag.check(tiles.isNotEmpty(), "Room.3") { "topLeftTilePlacement on room '${data?.name}' with no tiles" }
         var best = tiles[0]
         var bestKey = best.pos.x * 1000 + best.pos.z
         for (t in tiles) {
@@ -288,6 +293,7 @@ class Room(
                 var maxX = Int.MIN_VALUE
                 var minZ = Int.MAX_VALUE
                 var maxZ = Int.MIN_VALUE
+                FishDiag.check(tiles.isNotEmpty(), "Room.4") { "textPlacement on rotated room '${data?.name}' with no tiles" }
 
                 for (t in tiles) {
                     val p = t.placement
@@ -306,6 +312,7 @@ class Room(
 
     fun offset(blockPos: BlockPos): BlockPos? {
         val clay = clayPos ?: return null
+        FishDiag.check(rotation != Rotation.NONE, "Room.5") { "room '${data?.name}' has clay $clay but rotation unresolved" }
         val rotated = rotateAroundNorth(blockPos, rotation)
         return rotated.offset(clay.x, 0, clay.z)
     }

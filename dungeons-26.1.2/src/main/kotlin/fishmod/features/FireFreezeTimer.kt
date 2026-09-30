@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.EntityUtil
 import fishmod.utils.data.ItemUtil
@@ -38,20 +39,22 @@ object FireFreezeTimer {
     @JvmStatic
     fun init() {
         UseItemCallback.EVENT.register(UseItemCallback { player, _, hand ->
-            if (isFireFreezeUse(player, hand)) arm()
+            FishDiag.guard("FireFreezeTimer.1", "use-item arm failed") { if (isFireFreezeUse(player, hand)) arm() }
             InteractionResult.PASS
         })
         UseBlockCallback.EVENT.register(UseBlockCallback { player, _, hand, _ ->
-            if (isFireFreezeUse(player, hand)) arm()
+            FishDiag.guard("FireFreezeTimer.2", "use-block arm failed") { if (isFireFreezeUse(player, hand)) arm() }
             InteractionResult.PASS
         })
         UseEntityCallback.EVENT.register(UseEntityCallback { player, _, hand, _, _ ->
-            if (isFireFreezeUse(player, hand)) arm()
+            FishDiag.guard("FireFreezeTimer.3", "use-entity arm failed") { if (isFireFreezeUse(player, hand)) arm() }
             InteractionResult.PASS
         })
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick {
-            if (castAt != 0L && System.currentTimeMillis() - castAt <= CATCH_WINDOW_MS) scanFrozen()
+            if (castAt != 0L && System.currentTimeMillis() - castAt <= CATCH_WINDOW_MS) {
+                try { scanFrozen() } catch (t: Throwable) { FishDiag.fail("FireFreezeTimer.4", "tick scan failed frozen=${frozen.size}", t) }
+            }
         })
 
         registerRender()
@@ -95,6 +98,7 @@ object FireFreezeTimer {
             if (!FishSettings.fireFreezeTimerEnabled || frozen.isEmpty()) return@register
             val mc = Minecraft.getInstance()
             val me = mc.player ?: return@register
+            try {
 
             val now = System.currentTimeMillis()
             val it = frozen.entries.iterator()
@@ -122,6 +126,9 @@ object FireFreezeTimer {
                     t = Component.literal(color + "❄ " + fishmod.utils.Fmt.f1(secs.toDouble()) + "s")
                 }
                 RenderUtils.renderText(ctx, matrices, t, head.x, head.y, head.z, 1.35f)
+            }
+            } catch (t: Throwable) {
+                FishDiag.fail("FireFreezeTimer.5", "render failed frozen=${frozen.size}", t)
             }
         }
     }

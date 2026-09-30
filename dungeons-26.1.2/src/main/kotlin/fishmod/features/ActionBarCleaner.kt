@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.network.chat.Component
@@ -55,7 +56,7 @@ object ActionBarCleaner {
         val raw = message.string
         val now = System.currentTimeMillis()
         if (raw == lastRaw && now - lastAt < 1000L) lastOut?.let { out -> return if (lastIn === lastOut) message else out }
-        val out = filterUncached(message, raw)
+        val out = FishDiag.guard("ActionBarCleaner.1", "action bar filter failed for '${raw.take(100)}'") { filterUncached(message, raw) } ?: message
         lastRaw = raw
         lastIn = message
         lastOut = out

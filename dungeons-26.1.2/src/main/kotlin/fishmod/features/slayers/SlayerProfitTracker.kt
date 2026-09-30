@@ -8,6 +8,7 @@ import com.google.gson.reflect.TypeToken
 import fishmod.features.croesus.CroesusPrices
 import fishmod.utils.Constants
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import fishmod.utils.networth.ItemsDb
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -83,11 +84,23 @@ object SlayerProfitTracker {
         load()
         ItemsDb.initAsync()
         CroesusPrices.refreshIfStale()
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { tick(); flushSave(false) })
-        Events.ON_WORLD_CHANGE.register { flushSave(true); false }
-        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register { flushSave(true) }
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick {
+            try {
+                tick(); flushSave(false)
+            } catch (e: Exception) {
+                FishDiag.fail("SlayerProfitTracker.3", "slayer profit tick failed (key=${curKey()})", e)
+            }
+        })
+        Events.ON_WORLD_CHANGE.register { FishDiag.guard("SlayerProfitTracker.10", "flush on world change failed") { flushSave(true) }; false }
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register { FishDiag.guard("SlayerProfitTracker.11", "flush on client stop failed") { flushSave(true) } }
         Events.ON_GAME_MESSAGE.register { text ->
-            if (enabled()) onChat(text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim())
+            if (enabled()) {
+                try {
+                    onChat(text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim())
+                } catch (e: Exception) {
+                    FishDiag.fail("SlayerProfitTracker.4", "slayer profit chat handler failed", e)
+                }
+            }
             false
         }
     }
@@ -185,13 +198,15 @@ object SlayerProfitTracker {
         val drop = DROP_LINE.matcher(s)
         if (drop.find()) {
             val count = drop.group(1)?.replace(",", "")?.toLongOrNull() ?: 1L
+            FishDiag.check(drop.group(1) == null || drop.group(1).replace(",", "").toLongOrNull() != null, "SlayerProfitTracker.5") { "drop count not numeric in '$s'" }
             val name = LEADING_GLYPHS.replace(drop.group(2).trim(), "").trim()
+            FishDiag.check(name.isNotEmpty(), "SlayerProfitTracker.6") { "drop line parsed to empty item name: '$s'" }
             addDrop(k, name, count)
             return
         }
         val sack = SACK_PICKUP.matcher(s)
         if (sack.matches()) {
-            val n = sack.group(1).replace(",", "").toLongOrNull() ?: return
+            val n = FishDiag.notNull(sack.group(1).replace(",", "").toLongOrNull(), "SlayerProfitTracker.7") { "sack pickup count not numeric: '$s'" } ?: return
             val name = sack.group(2).trim()
             if (name.endsWith("Coins") || ItemsDb.idFor(name) != null) addDrop(k, name, n)
         }
@@ -206,7 +221,7 @@ object SlayerProfitTracker {
             else -> 1.0
         }
         val body = if (mult == 1.0) t else t.dropLast(1)
-        return ((body.toDoubleOrNull() ?: 0.0) * mult).toLong()
+        return ((FishDiag.notNull(body.toDoubleOrNull(), "SlayerProfitTracker.8") { "auto-slayer bank amount not numeric: '$s'" } ?: 0.0) * mult).toLong()
     }
 
     private fun addDrop(k: String, name: String, count: Long) {
@@ -275,6 +290,7 @@ object SlayerProfitTracker {
         for ((name, count) in snap) {
             val id = if (name.endsWith("Coins")) null else ItemsDb.idFor(name)
             val unit = if (id != null) CroesusPrices.price(id) else 0.0
+            if (unit.isNaN()) FishDiag.fail("SlayerProfitTracker.12", "price NaN for slayer drop $name ($id)")
             out.add(Row(name, count, unit * count, id != null && unit > 0))
         }
         if (countKillCoins()) {
@@ -413,6 +429,7 @@ object SlayerProfitTracker {
                     total = GSON.fromJson(root, t) ?: HashMap()
                 }
             } catch (e: Exception) {
+                FishDiag.fail("SlayerProfitTracker.1", "failed to load $FILE_PATH, quarantining", e)
                 fishmod.utils.SafeFiles.quarantine(file, e)
             }
         }
@@ -436,16 +453,23 @@ object SlayerProfitTracker {
     }
 
     private fun saveNow() {
-        val json = synchronized(lock) {
+        val json = try { synchronized(lock) {
             val p = Persisted()
             p.total = total
             val h = HashMap<String, MutableList<String>>()
             hidden.forEach { (kk, v) -> h[kk] = ArrayList(v) }
             p.hidden = h
             GSON.toJson(p)
+        } } catch (e: Exception) {
+            FishDiag.fail("SlayerProfitTracker.9", "failed to serialise slayer profit data (${total.size} keys)", e)
+            return
         }
         writeExecutor.execute {
-            fishmod.utils.SafeFiles.writeAtomic(File(FILE_PATH), json)
+            try {
+                fishmod.utils.SafeFiles.writeAtomic(File(FILE_PATH), json)
+            } catch (e: Exception) {
+                FishDiag.fail("SlayerProfitTracker.2", "failed to write $FILE_PATH", e)
+            }
         }
     }
 }

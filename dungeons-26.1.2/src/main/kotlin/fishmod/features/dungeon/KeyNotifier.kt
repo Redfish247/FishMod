@@ -4,6 +4,7 @@ import fishmod.utils.Location
 import fishmod.utils.Misc
 import fishmod.utils.config.values.Dungeons
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import fishmod.utils.sound.SoundManager
 import net.minecraft.network.chat.Component
@@ -20,11 +21,17 @@ object KeyNotifier {
         Events.ON_GAME_MESSAGE.register { text ->
             if (!Dungeons.enableKeyNotifier || !Location.inDungeon()) return@register false
             val s = text.string.replace(COLOR, "").trim()
-            when {
-                s == "A Wither Key was picked up!" || WITHER.matcher(s).matches() ->
-                    notify("§8§lWITHER KEY", "§8Wither key picked up", 0.7f, "witherKey")
-                s == "A Blood Key was picked up!" || BLOOD.matcher(s).matches() ->
-                    notify("§c§lBLOOD KEY", "§cBlood key picked up", 1.2f, "bloodKey")
+            try {
+                when {
+                    s == "A Wither Key was picked up!" || WITHER.matcher(s).matches() ->
+                        notify("§8§lWITHER KEY", "§8Wither key picked up", 0.7f, "witherKey")
+                    s == "A Blood Key was picked up!" || BLOOD.matcher(s).matches() ->
+                        notify("§c§lBLOOD KEY", "§cBlood key picked up", 1.2f, "bloodKey")
+                    s.endsWith("has obtained Wither Key!") || s.endsWith("has obtained Blood Key!") ->
+                        FishDiag.fail("KeyNotifier.1", "key pickup line did not match pattern: '$s'")
+                }
+            } catch (e: Exception) {
+                FishDiag.fail("KeyNotifier.2", "key notification failed", e)
             }
             false
         }

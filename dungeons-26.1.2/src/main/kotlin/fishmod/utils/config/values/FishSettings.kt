@@ -43,6 +43,8 @@ object FishSettings {
     @ConfigValue @JvmField var fmRowAlpha: Int = 15
     @ConfigValue @JvmField var fmRowBgAlpha: Int = 100
     @ConfigValue @JvmField var guiSettings: Boolean = false
+    @ConfigValue @JvmField var debugReports: Boolean = true
+    @ConfigValue @JvmField var debugChatNotices: Boolean = true
     @ConfigValue @JvmField var guiScaleMain: Int = 100
     @ConfigValue @JvmField var guiScaleChatCommands: Int = 100
     @ConfigValue @JvmField var guiScalePartyLoot: Int = 100

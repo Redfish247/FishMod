@@ -1,5 +1,7 @@
 package fishmod.utils.update
 
+import fishmod.utils.debug.FishDiag
+
 // SemVer 2.0 ordering; a trailing "-<mc version>" / "-dungeons" build tag is not treated as a prerelease.
 class SemVer private constructor(
     private val core: IntArray,
@@ -39,9 +41,9 @@ class SemVer private constructor(
             if (!mcVersion.isNullOrBlank()) s = s.removeSuffix("-$mcVersion")
             val m = CORE.matchEntire(s) ?: return null
             val core = intArrayOf(
-                m.groupValues[1].toIntOrNull() ?: return null,
-                m.groupValues[2].toIntOrNull() ?: 0,
-                m.groupValues[3].toIntOrNull() ?: 0,
+                FishDiag.notNull(m.groupValues[1].toIntOrNull(), "SemVer.1") { "major version overflows int in '$raw'" } ?: return null,
+                m.groupValues[2].toIntOrNull() ?: (if (m.groupValues[2].isNotEmpty()) { FishDiag.fail("SemVer.2", "minor version overflows int in '$raw'"); 0 } else 0),
+                m.groupValues[3].toIntOrNull() ?: (if (m.groupValues[3].isNotEmpty()) { FishDiag.fail("SemVer.3", "patch version overflows int in '$raw'"); 0 } else 0),
             )
             val pre = m.groupValues[4].takeIf { it.isNotEmpty() }?.split('.') ?: emptyList()
             return SemVer(core, pre)

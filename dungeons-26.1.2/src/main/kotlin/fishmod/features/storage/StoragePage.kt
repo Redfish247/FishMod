@@ -1,6 +1,7 @@
 package fishmod.features.storage
 
 import net.minecraft.client.Minecraft
+import fishmod.utils.debug.FishDiag
 
 data class StoragePage(val index: Int) : Comparable<StoragePage> {
     val isEnderChest get() = index < 9
@@ -8,7 +9,7 @@ data class StoragePage(val index: Int) : Comparable<StoragePage> {
 
     fun open() {
         val cmd = if (isEnderChest) "enderchest ${index + 1}" else "backpack ${index - 9 + 1}"
-        Minecraft.getInstance().connection?.sendCommand(cmd)
+        FishDiag.notNull(Minecraft.getInstance().connection, "StoragePage.1") { "no connection to open $name" }?.sendCommand(cmd)
     }
 
     override fun compareTo(other: StoragePage) = index - other.index

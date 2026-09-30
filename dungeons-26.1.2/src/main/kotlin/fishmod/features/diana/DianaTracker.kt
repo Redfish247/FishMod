@@ -59,6 +59,7 @@ object DianaTracker {
         var total = Tracker()
         var past: MutableList<PastEvent> = ArrayList()
         var stats = Stats()
+        var hiddenLines: MutableSet<String> = HashSet()
     }
 
     class Drop(
@@ -126,6 +127,8 @@ object DianaTracker {
     private val lastSpawn = HashMap<String, Pair<Long, Int>>()
     private val recentDrop = HashMap<String, Long>()
     private var lastActivityMs = 0L
+    private var sinceActivityMs = 0L
+    private var afk = true
     private var lastTickMs = 0L
     private var tickN = 0
     private var dirty = false
@@ -144,7 +147,7 @@ object DianaTracker {
         ClientTickEvents.END_CLIENT_TICK.register { tick(it) }
         ClientLifecycleEvents.CLIENT_STOPPING.register { flushSave(true) }
         Events.ON_WORLD_CHANGE.register {
-            flushSave(true); lastActivityMs = 0L; hiltBaseline = false; seenHilts.clear()
+            flushSave(true); lastActivityMs = 0L; sinceActivityMs = 0L; afk = true; hiltBaseline = false; seenHilts.clear()
             false
         }
         Events.ON_GAME_MESSAGE.register { text ->
@@ -348,6 +351,8 @@ object DianaTracker {
             m[k] = (m[k] ?: 0L) + n
         }
         lastActivityMs = System.currentTimeMillis()
+        sinceActivityMs = 0L
+        if (afk) { afk = false; version++ }
         changed()
     }
 
@@ -363,6 +368,15 @@ object DianaTracker {
             else (data.stats.since["MOBS_$k"] ?: 0) + 1
         val tot = event.mob("TOTAL_MOBS")
         return n to (if (tot > 0) event.mob(k) * 100.0 / tot else 0.0)
+    }
+
+    fun paused() = afk
+
+    fun isHidden(id: String) = id in data.hiddenLines
+
+    fun toggleHidden(id: String) {
+        if (!data.hiddenLines.remove(id)) data.hiddenLines.add(id)
+        changed()
     }
 
     fun sinceCount(k: String): Int = data.stats.since[k] ?: 0
@@ -419,11 +433,20 @@ object DianaTracker {
         val prev = lastTickMs
         lastTickMs = now
         tickN++
-        if (prev > 0 && lastActivityMs > 0 && now - lastActivityMs <= afkMs()) {
-            val d = (now - prev).coerceIn(0, 2000)
-            data.event.timeMs += d; data.session.timeMs += d; data.total.timeMs += d
+        if (prev > 0 && lastActivityMs > 0 && !afk) {
+            if (now - lastActivityMs <= afkMs()) {
+                val d = (now - prev).coerceIn(0, 2000)
+                sinceActivityMs += d
+                data.event.timeMs += d; data.session.timeMs += d; data.total.timeMs += d
+                if (tickN % 20 == 0) version++
+            } else {
+                // Went AFK: pause and take back the idle time counted since the last dig
+                for (t in listOf(data.event, data.session, data.total)) t.timeMs = (t.timeMs - sinceActivityMs).coerceAtLeast(0)
+                sinceActivityMs = 0L
+                afk = true
+                version++
+            }
             dirty = true
-            if (tickN % 20 == 0) version++
         }
         if (tickN % 1200 == 0) {
             checkYear()

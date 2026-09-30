@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import com.google.gson.JsonObject
 import fishmod.utils.HypixelApi
 import fishmod.utils.Location
@@ -48,12 +49,17 @@ object CatacombsOverflowOverlay {
             if (fetchInFlight || now - lastFetchAt < REFRESH_MS) return@register
             lastFetchAt = now
             fetchInFlight = true
-            HypixelApi.getLocalMember(client) { member -> applySelfMember(member) }
+            try {
+                HypixelApi.getLocalMember(client) { member -> applySelfMember(member) }
+            } catch (t: Throwable) {
+                fetchInFlight = false
+                FishDiag.fail("CatacombsOverflowOverlay.1", "local member fetch threw", t)
+            }
         }
 
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             if (!FishSettings.catacombsOverflowEnabled) return@register
-            draw(ctx, stack, x, y)
+            try { draw(ctx, stack, x, y) } catch (t: Throwable) { FishDiag.fail("CatacombsOverflowOverlay.2", "cata overflow slot draw failed", t) }
         }
     }
 
@@ -80,6 +86,7 @@ object CatacombsOverflowOverlay {
             }
         } catch (ex: Exception) {
             fishmod.utils.debug.Debug.LOGGER.warn("[CatacombsOverflowOverlay] failed to parse member JSON: {}", ex.message)
+            FishDiag.fail("CatacombsOverflowOverlay.3", "member dungeons JSON parse failed", ex)
         }
     }
 

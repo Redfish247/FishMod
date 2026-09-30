@@ -14,6 +14,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal
 import java.util.regex.Pattern
+import fishmod.utils.debug.FishDiag
 
 object CrystalSpawn {
 
@@ -41,14 +42,17 @@ object CrystalSpawn {
                 return@register false
             }
             val matcher = RELIC_PICK_UP.matcher(string)
-            if (matcher.find() && EntityUtil.isClientPlayer(matcher.group(1))) {
-                pickedUp = true
+            if (matcher.find()) {
+                if (EntityUtil.isClientPlayer(matcher.group(1))) pickedUp = true
+            } else if (string.contains("picked up an Energy Crystal")) {
+                FishDiag.fail("CrystalSpawn.1", "crystal pickup line didn't match: '$string'")
             }
             false
         }
         Events.ON_SERVER_TICK.register {
             tick = maxOf(tick - 1, 0)
             if (pickedUp) tickSincePicked++
+            if (tickSincePicked == 20 * 600) FishDiag.fail("CrystalSpawn.4", "crystal pickup never cleared after 10 minutes")
             false
         }
         Events.ON_LOCATION_CHANGE.register { _ ->
@@ -80,7 +84,7 @@ object CrystalSpawn {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
-        RenderUtils.drawTimer(component, context, tick, Constants.LIGHT_PURPLE)
+        FishDiag.guard("CrystalSpawn.2", "crystal spawn timer render threw") { RenderUtils.drawTimer(component, context, tick, Constants.LIGHT_PURPLE) }
     }
 
     @JvmStatic
@@ -91,6 +95,6 @@ object CrystalSpawn {
 
     @JvmStatic
     fun renderNotification(component: HUDComponent, context: GuiGraphicsExtractor) {
-        RenderUtils.drawCenteredText(context, component, Component.literal("§bPlace Crystal!"))
+        FishDiag.guard("CrystalSpawn.3", "crystal reminder render threw") { RenderUtils.drawCenteredText(context, component, Component.literal("§bPlace Crystal!")) }
     }
 }

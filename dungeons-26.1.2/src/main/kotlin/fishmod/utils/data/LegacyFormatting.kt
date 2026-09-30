@@ -1,5 +1,7 @@
 package fishmod.utils.data
 
+import fishmod.utils.debug.FishDiag
+
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
@@ -34,7 +36,11 @@ object LegacyFormatting {
                     val hex = raw.substring(i + 2, i + 8)
                     if (hex.matches(Regex("[0-9a-fA-F]{6}"))) {
                         flush()
-                        style = Style.EMPTY.withColor(net.minecraft.network.chat.TextColor.parseColor("#$hex").getOrThrow())
+                        try {
+                            style = Style.EMPTY.withColor(net.minecraft.network.chat.TextColor.parseColor("#$hex").getOrThrow())
+                        } catch (t: Throwable) {
+                            FishDiag.fail("LegacyFormatting.1", "parse hex colour #$hex", t)
+                        }
                         i += 8
                         continue
                     }

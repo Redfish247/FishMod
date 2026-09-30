@@ -1,6 +1,7 @@
 package fishmod.features.storage
 
 import net.minecraft.client.Minecraft
+import fishmod.utils.debug.FishDiag
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.NbtAccounter
@@ -21,7 +22,9 @@ class NBTInventory(val stacks: List<ItemStack>) {
         val list = ListTag()
         for (s in stacks) {
             if (s.isEmpty) { list.add(CompoundTag()); continue }
-            val t: Tag = ItemStack.OPTIONAL_CODEC.encodeStart(ops, s).result().orElse(CompoundTag())
+            val res = ItemStack.OPTIONAL_CODEC.encodeStart(ops, s)
+            res.error().ifPresent { err -> FishDiag.fail("NBTInventory.1", "failed to encode ${s.hoverName.string}: ${err.message()}") }
+            val t: Tag = res.result().orElse(CompoundTag())
             list.add(t)
         }
         val root = CompoundTag().apply { put("i", list) }
@@ -41,11 +44,13 @@ class NBTInventory(val stacks: List<ItemStack>) {
                 for (i in list.indices) {
                     val tag = list.getCompoundOrEmpty(i)
                     if (tag.isEmpty) { items.add(ItemStack.EMPTY); continue }
-                    items.add(ItemStack.OPTIONAL_CODEC.parse(ops, tag).result().orElse(ItemStack.EMPTY))
+                    val parsed = ItemStack.OPTIONAL_CODEC.parse(ops, tag)
+                    parsed.error().ifPresent { err -> FishDiag.fail("NBTInventory.2", "failed to decode stored item $i: ${err.message()}") }
+                    items.add(parsed.result().orElse(ItemStack.EMPTY))
                 }
                 NBTInventory(items)
             }
-        }.getOrNull()
+        }.onFailure { FishDiag.fail("NBTInventory.3", "failed to decode storage page (${encoded.length} chars)", it) }.getOrNull()
 
         private fun registryOps() =
             (Minecraft.getInstance().connection?.registryAccess()

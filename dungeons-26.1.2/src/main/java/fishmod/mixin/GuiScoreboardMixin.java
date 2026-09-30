@@ -25,6 +25,7 @@ public class GuiScoreboardMixin {
             int screenW = Minecraft.getInstance().getWindow().getGuiScaledWidth();
             CustomScoreboard.render(context, screenW);
         } catch (Exception e) {
+            fishmod.utils.debug.FishDiag.fail("GuiScoreboardMixin.1", "custom scoreboard render failed", e);
             if (!fishmod$loggedRenderError) {
                 fishmod$loggedRenderError = true;
                 fishmod.utils.debug.Debug.LOGGER.error("[FishMod] CustomScoreboard.render failed; sidebar suppressed (logged once)", e);

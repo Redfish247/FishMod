@@ -1,5 +1,6 @@
 package fishmod.features.scoreboard
 
+import fishmod.utils.debug.FishDiag
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -13,6 +14,7 @@ object CompactNumbers {
         val sb = StringBuffer()
         while (m.find()) {
             val value = m.group().replace(",", "").toDoubleOrNull()
+            FishDiag.check(value != null, "CompactNumbers.1") { "grouped number did not parse: '${m.group()}'" }
             val replacement = if (value != null) Matcher.quoteReplacement(compact(value)) else m.group()
             m.appendReplacement(sb, replacement)
         }

@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.DungeonClass
 import fishmod.utils.dungeon.Phase
@@ -28,7 +29,10 @@ object ExplosiveShot {
         if (s.indexOf("Explosive Shot") < 0) return false
 
         val m = PATTERN.matcher(s)
-        if (!m.find()) return false
+        if (!m.find()) {
+            FishDiag.check(s.indexOf("Your Explosive Shot hit") < 0, "ExplosiveShot.1") { "explosive shot line didn't parse: '${s.take(120)}'" }
+            return false
+        }
 
         val enemies: Int
         val total: Double
@@ -36,6 +40,7 @@ object ExplosiveShot {
             enemies = m.group(1).toInt()
             total = m.group(2).replace(",", "").toDouble()
         } catch (e: NumberFormatException) {
+            FishDiag.fail("ExplosiveShot.2", "explosive shot numbers unparsable: '${s.take(120)}'", e)
             return false
         }
         if (enemies <= 0) return false
