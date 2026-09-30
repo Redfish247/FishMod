@@ -6,6 +6,7 @@ import fishmod.utils.config.values.Floor7
 import fishmod.utils.dungeon.Section
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import fishmod.utils.debug.FishDiag
 
 object F7Huds {
 
@@ -174,7 +175,7 @@ object F7Huds {
         val stack = ctx.pose()
         stack.pushMatrix()
         stack.scale(c.scale, c.scale)
-        render.render(c, ctx)
+        try { render.render(c, ctx) } catch (e: Exception) { FishDiag.fail("F7Huds.1", "F7 HUD render threw (target $targetX,$targetY)", e) }
         stack.popMatrix()
     }
 
@@ -183,6 +184,7 @@ object F7Huds {
         if (client == null || client.window == null) return
         val screenWidth = client.window.guiScaledWidth
         val screenHeight = client.window.guiScaledHeight
+        FishDiag.check(component.scale > 0f, "F7Huds.2") { "HUD at target $targetX,$targetY has non-positive scale ${component.scale}" }
         val x = component.scaledX
         val y = component.scaledY
         if (x >= 0 && x <= screenWidth - component.width && y >= 0 && y <= screenHeight - component.height) return

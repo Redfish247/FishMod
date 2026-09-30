@@ -3,6 +3,7 @@ package fishmod.utils.update
 import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
 import fishmod.utils.Easing
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.rendering.UiRenderer
 import fishmod.utils.rendering.UiScale
@@ -60,7 +61,9 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
         updateX = panelX + panelW - pad - updateW
         laterX = updateX - 6 - laterW
         skipX = panelX + pad
-        if (lines.isEmpty()) lines = wrap(changelog(release.body), panelW - pad * 2 - 16)
+        if (lines.isEmpty()) lines = FishDiag.guard("UpdateScreen.1", "format changelog for v${release.version}") { wrap(changelog(release.body), panelW - pad * 2 - 16) }
+            ?: listOf(release.name.ifBlank { "A new version of FishMod is available." })
+        if (logH <= 0) FishDiag.fail("UpdateScreen.2", "update screen changelog area has no height (screen ${width}x$height, panelH=$panelH)")
         scroll = scroll.coerceIn(0f, maxScroll())
     }
 
@@ -101,7 +104,11 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
 
     private fun openPage() {
         val url = targetUrl ?: return
-        UpdateManager.openInBrowser(url)
+        try {
+            UpdateManager.openInBrowser(url)
+        } catch (t: Throwable) {
+            FishDiag.fail("UpdateScreen.3", "open release page", t)
+        }
     }
 
     override fun extractTransparentBackground(ctx: GuiGraphicsExtractor) {}
@@ -111,6 +118,15 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
         val my = UiScale.vx(mouseY)
         val p = open.progress()
         UiRecorder.clear()
+        try {
+            drawScreen(mx, my, p)
+        } catch (t: Throwable) {
+            FishDiag.fail("UpdateScreen.4", "draw update screen", t)
+        }
+        super.extractRenderState(ctx, mouseX, mouseY, delta)
+    }
+
+    private fun drawScreen(mx: Int, my: Int, p: Float) {
         val vw = this.width / UiScale.factor()
         val vh = this.height / UiScale.factor()
         UiRecorder.fillRect(0f, 0f, vw, vh, fade(SCRIM, p))
@@ -183,8 +199,6 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
         centered("Later", laterX + laterW / 2, by, fade(if (lHov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR, p))
 
         drawUpdateButton(inside(mx, my, updateX, btnY, updateW, btnH), by, p)
-
-        super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
 
     private fun drawUpdateButton(hov: Boolean, by: Int, p: Float) {
@@ -195,6 +209,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
                 centered("Open page", updateX + updateW / 2, by, fade(ON_ACCENT, p))
             }
             state == DS.DOWNLOADING -> {
+                if (UpdateManager.downloadProgress.isNaN()) FishDiag.fail("UpdateScreen.5", "download progress is NaN")
                 ScreenTheme.nRoundedRectRing(updateX, by, updateW, btnH, btnH / 2, 1, fade(CARD, p), fade(ScreenTheme.ACCENT, p))
                 val fillW = ((updateW - 2) * UpdateManager.downloadProgress).toInt()
                 if (fillW > btnH / 2) ScreenTheme.nRoundedRect(updateX + 1, by + 1, fillW, btnH - 2, (btnH - 2) / 2, fade(0x5524B6B0, p))

@@ -1,5 +1,6 @@
 package fishmod.features.scoreboard
 
+import fishmod.utils.debug.FishDiag
 import fishmod.features.dungeon.PartyCommandHandler
 import fishmod.utils.PingTracker
 import fishmod.utils.config.values.FishSettings
@@ -40,6 +41,14 @@ object CustomScoreboard {
 
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, screenW: Int) {
+        try {
+            renderInner(ctx, screenW)
+        } catch (e: Exception) {
+            FishDiag.fail("CustomScoreboard.1", "custom scoreboard render failed (${cachedBody.size} cached lines)", e)
+        }
+    }
+
+    private fun renderInner(ctx: GuiGraphicsExtractor, screenW: Int) {
         if (fishmod.features.FishHudEditor.isOpen()) return
         val mc = Minecraft.getInstance()
         val level = mc.level ?: return
@@ -208,12 +217,14 @@ object CustomScoreboard {
         try {
             val self = mc.connection?.getPlayerInfo(mc.player!!.uuid)
             if (self != null && self.latency > 0) return self.latency
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            FishDiag.fail("CustomScoreboard.2", "failed to read own tab latency", e)
         }
         try {
             val si = mc.currentServer
             if (si != null && si.ping > 0) return si.ping.toInt()
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            FishDiag.fail("CustomScoreboard.3", "failed to read server ping", e)
         }
         return -1
     }

@@ -6,6 +6,7 @@ import fishmod.utils.config.values.Floor7
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.rendering.RenderUtils
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import fishmod.utils.debug.FishDiag
 
 object MaxorTickTimer {
 
@@ -23,6 +24,6 @@ object MaxorTickTimer {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
-        RenderUtils.drawTimer(component, context, timer.tick, 0xffffffff.toInt())
+        FishDiag.guard("MaxorTickTimer.1", "maxor tick timer render threw") { RenderUtils.drawTimer(component, context, timer.tick, 0xffffffff.toInt()) }
     }
 }

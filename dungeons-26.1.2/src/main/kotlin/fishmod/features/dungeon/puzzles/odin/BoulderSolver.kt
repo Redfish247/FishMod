@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.puzzles.odin
 
+import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import fishmod.utils.config.values.FishSettings
@@ -24,7 +25,9 @@ object BoulderSolver {
                 object : TypeToken<Map<String, List<List<Int>>>>() {}.type)
         }
     } catch (e: Exception) {
-        Debug.LOGGER.error("Boulder solutions failed to load", e); emptyMap()
+        Debug.LOGGER.error("Boulder solutions failed to load", e)
+        FishDiag.fail("BoulderSolver.1", "boulderSolutions.json failed to load", e)
+        emptyMap()
     }
 
     fun onRoomEnter(room: ORoom?) {
@@ -50,7 +53,9 @@ object BoulderSolver {
             }
         }
         val sol = solutions[str] ?: return
-        currentPositions = sol.map {
+        currentPositions = sol.filter {
+            FishDiag.check(it.size >= 4, "BoulderSolver.2") { "boulder solution step has ${it.size} values for layout $str" }
+        }.map {
             val click = room.getRealCoords(BlockPos(it[2], 65, it[3]))
             BoxPosition(AABB(click), click)
         }.toMutableList()

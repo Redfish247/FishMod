@@ -3,6 +3,7 @@ package fishmod.features.dungeon
 import fishmod.features.dungeon.map.DungeonState
 import fishmod.utils.config.values.Dungeons
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import net.minecraft.client.Minecraft
 import java.util.concurrent.CompletableFuture
@@ -48,11 +49,12 @@ object AutoRequeue {
                     if (Dungeons.enableAutoRequeue && !partyChanged && !skip && !teamShrank) {
                         val delay = FishSettings.autoRequeueDelayMs.coerceIn(0, 15000).toLong()
                         val cmd = requeueCommand()
+                        FishDiag.check(startTeamCount > 0, "AutoRequeue.2") { "extra stats seen but team count never recorded (players=${fishmod.features.dungeon.map.DungeonPlayers.count()})" }
                         CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS).execute {
                             Minecraft.getInstance().execute {
                                 val mc = Minecraft.getInstance()
                                 if (Dungeons.enableAutoRequeue && !partyChanged && !dtSkip && mc.connection != null) {
-                                    mc.connection!!.sendCommand(cmd)
+                                    FishDiag.guard("AutoRequeue.1", "requeue command '$cmd' failed") { mc.connection!!.sendCommand(cmd) }
                                 }
                             }
                         }
@@ -86,7 +88,10 @@ object AutoRequeue {
             floor in 1..7 -> "joininstance " +
                 (if (DungeonState.isMasterMode()) "master_" else "") +
                 "catacombs_floor_" + NUM_WORDS[floor - 1]
-            else -> "instancerequeue"
+            else -> {
+                FishDiag.fail("AutoRequeue.3", "unknown floor $floor for requeue, falling back to instancerequeue")
+                "instancerequeue"
+            }
         }
     }
 }

@@ -41,6 +41,7 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import java.nio.file.Files
 import java.util.concurrent.ConcurrentLinkedQueue
+import fishmod.utils.debug.FishDiag
 
 object RouteRecorder {
 
@@ -107,6 +108,7 @@ object RouteRecorder {
     @JvmStatic
     fun init() {
         UseBlockCallback.EVENT.register(UseBlockCallback { _, level, hand, hit ->
+            try {
             if (hand == InteractionHand.MAIN_HAND && tracking() && Minecraft.getInstance().player?.let { isBoom(it.mainHandItem) } == true) {
                 boom(hit.blockPos.immutable(), "use-block")
             } else if (hand == InteractionHand.MAIN_HAND && tracking()) {
@@ -119,10 +121,12 @@ object RouteRecorder {
                 }
                 if (type != null) action(type, hit.blockPos.immutable())
             }
+            } catch (e: Exception) { FishDiag.fail("RouteRecorder.1", "route use-block handler threw at ${hit.blockPos}", e) }
             InteractionResult.PASS
         })
 
         UseItemCallback.EVENT.register(UseItemCallback { player, _, hand ->
+            try {
             if (hand == InteractionHand.MAIN_HAND && tracking() && isBoom(player.mainHandItem)) {
                 val hit = Minecraft.getInstance().hitResult as? net.minecraft.world.phys.BlockHitResult
                 boom(hit?.takeIf { it.type == net.minecraft.world.phys.HitResult.Type.BLOCK }?.blockPos
@@ -131,6 +135,7 @@ object RouteRecorder {
                 val step = action(Type.PEARL, player.blockPosition())
                 if (step != null) { pendingPearl = step; pearlTick = tick }
             }
+            } catch (e: Exception) { FishDiag.fail("RouteRecorder.2", "route use-item handler threw", e) }
             InteractionResult.PASS
         })
 
@@ -145,14 +150,16 @@ object RouteRecorder {
 
         Events.ON_PACKET.register { packet ->
             if (!FishSettings.routeRecorderEnabled || !Location.inDungeon()) return@register false
-            when (packet) {
-                is ClientboundTakeItemEntityPacket -> if (packet.playerId == selfId) pickedItemIds.add(packet.itemId)
-                is ClientboundPlayerPositionPacket -> teleported = true
-                is ClientboundSoundPacket -> {
-                    SecretDrops.batSound(packet)?.let { batSounds.add(it) }
-                    boomSounds.add(packet.sound.value().location.path to Vec3(packet.x, packet.y, packet.z))
+            try {
+                when (packet) {
+                    is ClientboundTakeItemEntityPacket -> if (packet.playerId == selfId) pickedItemIds.add(packet.itemId)
+                    is ClientboundPlayerPositionPacket -> teleported = true
+                    is ClientboundSoundPacket -> {
+                        SecretDrops.batSound(packet)?.let { batSounds.add(it) }
+                        boomSounds.add(packet.sound.value().location.path to Vec3(packet.x, packet.y, packet.z))
+                    }
                 }
-            }
+            } catch (e: Exception) { FishDiag.fail("RouteRecorder.3", "route packet handler threw on ${packet.javaClass.simpleName}", e) }
             false
         }
 
@@ -166,10 +173,16 @@ object RouteRecorder {
             false
         }
 
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc -> onTick(mc) })
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
+            try { onTick(mc) } catch (e: Exception) { FishDiag.fail("RouteRecorder.4", "route tick threw (mode=$mode steps=${steps.size} progress=$progress)", e) }
+        })
 
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> renderNoDepth(m, vc) }
-        RenderingEvents.GIZMO.register { _ -> renderGizmo(); labels() }
+        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
+            try { renderNoDepth(m, vc) } catch (e: Exception) { FishDiag.fail("RouteRecorder.5", "route no-depth render threw (steps=${steps.size})", e) }
+        }
+        RenderingEvents.GIZMO.register { _ ->
+            try { renderGizmo(); labels() } catch (e: Exception) { FishDiag.fail("RouteRecorder.6", "route gizmo render threw (steps=${steps.size})", e) }
+        }
     }
 
     private fun isBoom(stack: net.minecraft.world.item.ItemStack) = ItemUtil.getId(stack) in BOOM_ITEMS
@@ -192,7 +205,7 @@ object RouteRecorder {
         if (rooms.isEmpty()) return
         if (here in rooms) { enteredRoute = true; outsideTicks = 0; return }
         if (!enteredRoute || ++outsideTicks < 10) return
-        val name = routeRoom()!!
+        val name = routeRoom() ?: run { FishDiag.fail("RouteRecorder.7", "route has rooms but routeRoom() null"); return }
         if (dirty) save(name)
         steps.clear(); progress = 0; mode = Mode.IDLE; enteredRoute = false; outsideTicks = 0
         lastAutoRoom = null
@@ -206,7 +219,10 @@ object RouteRecorder {
         lastAutoRoom = here
         if (here in doneRooms || DungeonMap.roomPlayerIn()?.owner?.state == Room.State.GREEN) return
         if (!Files.exists(dir.resolve(clean(here) + ".json"))) return
-        if (load(here, quiet = true)) { progress = 0; mode = Mode.PLAYING; enteredRoute = true }
+        if (load(here, quiet = true)) {
+            FishDiag.check(steps.isNotEmpty(), "RouteRecorder.8") { "auto-loaded route for $here has no steps" }
+            progress = 0; mode = Mode.PLAYING; enteredRoute = true
+        }
     }
 
     private fun tracking() = FishSettings.routeRecorderEnabled && mode != Mode.IDLE && Location.inDungeon()
@@ -298,6 +314,7 @@ object RouteRecorder {
     }
 
     private fun complete(type: Type, pos: BlockPos) {
+        FishDiag.check(progress in 0..steps.size, "RouteRecorder.14") { "progress $progress out of range (steps=${steps.size})" }
         val at = Vec3.atCenterOf(pos)
         val end = minOf(steps.size, progress + LOOKAHEAD)
         for (i in progress until end) {
@@ -517,7 +534,7 @@ object RouteRecorder {
             Files.writeString(f, gson.toJson(steps))
             dirty = false
             msg("§aSaved ${steps.size} steps → §f${f.fileName}")
-        } catch (t: Throwable) { msg("§cSave failed: ${t.message}") }
+        } catch (t: Throwable) { FishDiag.fail("RouteRecorder.9", "route save failed for '$name'", t); msg("§cSave failed: ${t.message}") }
     }
 
     @JvmStatic
@@ -527,11 +544,14 @@ object RouteRecorder {
         try {
             val f = dir.resolve(clean(name) + ".json")
             if (!Files.exists(f)) { if (!quiet) msg("§cNo route named ${clean(name)}"); return false }
-            val list: List<Step> = gson.fromJson(Files.readString(f), object : TypeToken<List<Step>>() {}.type)
+            val list: List<Step>? = gson.fromJson(Files.readString(f), object : TypeToken<List<Step>>() {}.type)
+            if (list == null) { FishDiag.fail("RouteRecorder.10", "route file ${f.fileName} parsed to null"); if (!quiet) msg("§cLoad failed: empty file"); return false }
+            FishDiag.check(list.all { (it.world as IntArray?)?.size == 3 && (it.local?.size ?: 3) == 3 }, "RouteRecorder.11") { "route ${f.fileName} has malformed coords" }
             steps.clear(); steps.addAll(list); progress = 0; mode = Mode.IDLE; liveWorld = false; dirty = false; enteredRoute = false
             if (!quiet) msg("§aLoaded ${steps.size} steps. §f/fm route play §7to follow.")
             return true
         } catch (t: Throwable) {
+            FishDiag.fail("RouteRecorder.12", "route load failed for '$name'", t)
             if (quiet) fishmod.utils.debug.Debug.LOGGER.warn("[Route] load of {} failed", name, t) else msg("§cLoad failed: ${t.message}")
             return false
         }
@@ -542,7 +562,7 @@ object RouteRecorder {
         val names = try {
             if (!Files.isDirectory(dir)) emptyList()
             else Files.list(dir).use { s -> s.map { it.fileName.toString() }.filter { it.endsWith(".json") }.map { it.removeSuffix(".json") }.toList() }
-        } catch (_: Throwable) { emptyList() }
+        } catch (t: Throwable) { FishDiag.fail("RouteRecorder.13", "listing route dir failed", t); emptyList() }
         msg(if (names.isEmpty()) "§7No saved routes." else "§7Routes: §f" + names.joinToString(", "))
     }
 

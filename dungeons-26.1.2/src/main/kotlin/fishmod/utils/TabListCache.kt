@@ -2,6 +2,7 @@ package fishmod.utils
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
+import fishmod.utils.debug.FishDiag
 import net.minecraft.client.multiplayer.PlayerInfo
 
 object TabListCache {
@@ -24,7 +25,13 @@ object TabListCache {
 
     @JvmStatic
     fun register() {
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc -> tick(mc) })
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
+            try {
+                tick(mc)
+            } catch (e: Exception) {
+                FishDiag.fail("TabListCache.1", "tab list scan failed (${entries.size} cached)", e)
+            }
+        })
     }
 
     private fun tick(mc: Minecraft) {

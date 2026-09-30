@@ -1,5 +1,6 @@
 package fishmod.utils
 
+import fishmod.utils.debug.FishDiag
 object Fmt {
     private val oneDecimal = HashMap<Long, String>()
     private val twoDecimals = HashMap<Long, String>()
@@ -14,18 +15,21 @@ object Fmt {
 
     @JvmStatic
     fun f1(v: Double): String {
+        FishDiag.check(!v.isNaN(), "Fmt.1") { "f1 called with NaN" }
         val k = Math.round(v * 10)
         return cached(oneDecimal, k) { String.format("%.1f", k / 10.0) }
     }
 
     @JvmStatic
     fun f2(v: Double): String {
+        FishDiag.check(!v.isNaN(), "Fmt.2") { "f2 called with NaN" }
         val k = Math.round(v * 100)
         return cached(twoDecimals, k) { String.format("%.2f", k / 100.0) }
     }
 
     @JvmStatic
     fun f0(v: Double): String {
+        FishDiag.check(!v.isNaN(), "Fmt.3") { "f0 called with NaN" }
         val k = Math.round(v)
         return cached(noDecimals, k) { String.format("%.0f", k.toDouble()) }
     }

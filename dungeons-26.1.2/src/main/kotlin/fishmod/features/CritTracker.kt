@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
@@ -40,7 +41,10 @@ object CritTracker {
         if (!Phase.inP1()) return false
 
         val m = PATTERN.matcher(s)
-        if (!m.find()) return false
+        if (!m.find()) {
+            FishDiag.check(s.indexOf("Your Explosive Shot hit") < 0, "CritTracker.1") { "explosive shot line didn't parse: '${s.take(120)}'" }
+            return false
+        }
 
         val enemies: Int
         val total: Double
@@ -48,6 +52,7 @@ object CritTracker {
             enemies = m.group(1).toInt()
             total = m.group(2).replace(",", "").toDouble()
         } catch (e: NumberFormatException) {
+            FishDiag.fail("CritTracker.2", "explosive shot numbers unparsable: '${s.take(120)}'", e)
             return false
         }
         if (enemies <= 0) return false
@@ -94,7 +99,8 @@ object CritTracker {
                 val loaded: Store? = GSON.fromJson(reader, type)
                 if (loaded != null) data = loaded
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            FishDiag.fail("CritTracker.3", "fishmod-crit.json load failed", e)
         }
     }
 

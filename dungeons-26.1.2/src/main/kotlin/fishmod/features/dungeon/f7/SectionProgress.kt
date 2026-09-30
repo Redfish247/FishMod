@@ -9,6 +9,7 @@ import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
+import fishmod.utils.debug.FishDiag
 
 object SectionProgress {
 
@@ -34,6 +35,7 @@ object SectionProgress {
             false
         }
         Events.ON_TERMINAL.register { _, _, objective, current, total ->
+            FishDiag.check(total > 0 && current in 0..total, "SectionProgress.1") { "bad terminal progress $current/$total ($objective)" }
             completed = current
             sectionTotal = total
             prevObjective = TextUtil.capitaliseFirst(objective)
@@ -62,7 +64,8 @@ object SectionProgress {
             "Device" -> "§d"
             "Terminal" -> "§b"
             "Break Gate" -> "§5§l"
-            else -> ""
+            "" -> ""
+            else -> { FishDiag.fail("SectionProgress.2", "unknown objective '$prevObjective'"); "" }
         }
     }
 
@@ -73,7 +76,12 @@ object SectionProgress {
         else "§c"
     }
 
-    private fun getTotal(): Int = Section.totalFor(Section.getSection())
+    private fun getTotal(): Int {
+        val s = Section.getSection()
+        val t = Section.totalFor(s)
+        FishDiag.check(t > 0, "SectionProgress.3") { "no terminal total for section $s" }
+        return t
+    }
 
     private fun getProgressText(): Component {
         if (Floor7.sectionColorProgress) {
@@ -89,6 +97,10 @@ object SectionProgress {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
+        try { renderInner(component, context) } catch (e: Exception) { FishDiag.fail("SectionProgress.4", "section progress render threw", e) }
+    }
+
+    private fun renderInner(component: HUDComponent, context: GuiGraphicsExtractor) {
         if (Floor7.sectionPrevObjective) {
             RenderUtils.drawCenteredText(
                 context, component,

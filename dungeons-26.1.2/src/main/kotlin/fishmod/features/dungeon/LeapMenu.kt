@@ -8,6 +8,7 @@ import fishmod.utils.Location
 import fishmod.utils.config.values.DungeonMapSettings
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.DungeonClass
+import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -40,7 +41,10 @@ object LeapMenu {
             val m = TABLIST_RX.find(line) ?: continue
             val name = m.groupValues[2]
             if (teammateClasses.containsKey(name)) continue
-            val cls = runCatching { DungeonClass.valueOf(m.groupValues[3].uppercase()) }.getOrNull() ?: continue
+            val raw = m.groupValues[3].uppercase()
+            val cls = runCatching { DungeonClass.valueOf(raw) }
+                .onFailure { if (raw != "DEAD" && raw != "EMPTY") FishDiag.fail("LeapMenu.1", "unknown class '$raw' in tab line '$line'", it) }
+                .getOrNull() ?: continue
             teammateClasses[name] = cls
         }
     }
@@ -68,11 +72,13 @@ object LeapMenu {
         refreshTeammateClasses()
         val menu = screen.menu
         val containerSize = menu.slots.size - 36
+        if (!FishDiag.check(containerSize > 0, "LeapMenu.3") { "leap menu has only ${menu.slots.size} slots" }) return emptyList()
         val out = ArrayList<Target>(4)
         for (i in 0 until containerSize) {
             val stack = menu.slots[i].item
             if (stack.isEmpty || !stack.`is`(Items.PLAYER_HEAD)) continue
-            val name = NAME_RX.find(stack.hoverName.string.replace(COLOR, ""))?.groupValues?.get(1) ?: continue
+            val name = NAME_RX.find(stack.hoverName.string.replace(COLOR, ""))?.groupValues?.get(1)
+                ?: run { FishDiag.fail("LeapMenu.4", "leap head name unparsed: '${stack.hoverName.string}'"); null } ?: continue
             val dp = DungeonPlayers.get(name)
             val clazz = teammateClasses[name] ?: dpClass(dp) ?: DungeonClass.getClass(name)
             out.add(Target(i, name, clazz, dp?.isDead() == true))
@@ -112,6 +118,7 @@ object LeapMenu {
             if (q in 0..3 && result[q] == null) result[q] = p else overflow.addLast(p)
         }
         for (i in 0..3) if (result[i] == null && overflow.isNotEmpty()) result[i] = overflow.removeFirst()
+        FishDiag.check(overflow.isEmpty(), "LeapMenu.5") { "odin sort dropped ${overflow.size} leap targets (${players.size} players)" }
         val out = result.map { it ?: EMPTY_TARGET }
         if (fishmod.utils.debug.Debug.leapDebug) {
             fishmod.utils.debug.Debug.LOGGER.info(
@@ -125,7 +132,11 @@ object LeapMenu {
     }
 
     private fun dpClass(dp: DungeonPlayers.DungeonPlayer?): DungeonClass? =
-        dp?.clazz?.let { c -> runCatching { DungeonClass.valueOf(c.uppercase()) }.getOrNull() }
+        dp?.clazz?.let { c ->
+            runCatching { DungeonClass.valueOf(c.uppercase()) }
+                .onFailure { if (c.uppercase() != "DEAD" && c.uppercase() != "EMPTY") FishDiag.fail("LeapMenu.2", "unknown map player class '$c'", it) }
+                .getOrNull()
+        }
 
     private fun scale(): Float = (FishSettings.leapMenuScale.coerceIn(40, 220) / 100f)
 
@@ -175,7 +186,7 @@ object LeapMenu {
         val s = Math.min((w * 0.72f) / baseW, (h * 0.82f) / baseH).coerceAtLeast(1f)
         val ox = (w - baseW * s) / 2f
         val oy = (h - baseH * s) / 2f
-        MapHud.renderAt(ctx, mc, ox, oy, s, false)
+        FishDiag.guard("LeapMenu.6", "leap map view map render failed") { MapHud.renderAt(ctx, mc, ox, oy, s, false) }
 
         val bg = DungeonMapSettings.mapBackgroundSize
         val out = ArrayList<MapMarker>(4)
@@ -208,12 +219,15 @@ object LeapMenu {
         if (!isLeapMenu(screen)) return
         val now = System.currentTimeMillis()
         if (screen !== cacheScreen || now - cacheAt >= 200L) {
-            cache = collect(screen)
+            cache = FishDiag.guard("LeapMenu.7", "leap target collection failed") { collect(screen) } ?: emptyList()
             cacheScreen = screen
             cacheAt = now
         }
         val mc = Minecraft.getInstance()
-        if (mapView()) { renderMapView(ctx, mouseX, mouseY, mc); return }
+        if (mapView()) {
+            try { renderMapView(ctx, mouseX, mouseY, mc) } catch (e: Exception) { FishDiag.fail("LeapMenu.8", "leap map view render failed (${cache.size} targets)", e) }
+            return
+        }
         ctx.fill(0, 0, mc.window.guiScaledWidth, mc.window.guiScaledHeight, 0xC0000000.toInt())
 
         if (cache.isEmpty()) {
@@ -230,6 +244,8 @@ object LeapMenu {
             ctx.fill(qx, qy, qx + w / 2, qy + h / 2, 0x18FFFFFF)
         }
         val rad = (6 * scale()).toInt().coerceIn(3, 12)
+        if (!FishDiag.check(cache.size <= rects.size, "LeapMenu.9") { "more leap targets (${cache.size}) than cells" }) return
+        try {
         cache.forEachIndexed { i, t ->
             val r = rects[i]
             val classCol = DungeonClass.getColor(t.clazz) and 0xFFFFFF
@@ -259,6 +275,9 @@ object LeapMenu {
                 showName -> ctx.text(mc.font, "§f${t.name}", tx, r[1] + r[3] / 2 - 4, -1)
                 showClass -> ctx.text(mc.font, status, tx, r[1] + r[3] / 2 - 4, -1)
             }
+        }
+        } catch (e: Exception) {
+            FishDiag.fail("LeapMenu.10", "leap menu cell render failed (${cache.size} targets)", e)
         }
     }
 
@@ -307,6 +326,7 @@ object LeapMenu {
         if (t.dead) return
         val mc = Minecraft.getInstance()
         val p = mc.player ?: return
+        if (!FishDiag.check(t.slot in 0 until screen.menu.slots.size, "LeapMenu.11") { "leap target ${t.name} slot ${t.slot} out of range" }) return
         mc.gameMode?.handleContainerInput(screen.menu.containerId, t.slot, 0, ContainerInput.PICKUP, p)
         if (mc.screen === screen) screen.onClose()
     }

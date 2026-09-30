@@ -1,5 +1,6 @@
 package fishmod.features.item
 
+import fishmod.utils.debug.FishDiag
 import fishmod.mixin.accessors.AbstractSignEditScreenAccessor
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
@@ -27,7 +28,7 @@ object AuctionPriceAutofill {
         if (!FishSettings.auctionPriceAutofillEnabled || !Location.inSkyblock()) return
         val title = fishmod.utils.ScreenTitle.plain(screen)
         if (title !in GUI_NAMES) return
-        val stack = screen.menu.slots.getOrNull(13)?.item ?: return
+        val stack = FishDiag.notNull(screen.menu.slots.getOrNull(13)?.item, "AuctionPriceAutofill.1") { "'$title' screen has no slot 13 (slots=${screen.menu.slots.size})" } ?: return
         if (stack.isEmpty) return
         val prev = lastSeenStack
         if (prev != null && ItemStack.isSameItemSameComponents(prev, stack)) return
@@ -40,7 +41,7 @@ object AuctionPriceAutofill {
         if (!FishSettings.auctionPriceAutofillEnabled || !Location.inSkyblock()) return
         if (screen !is AbstractSignEditScreen) return
         val item = pendingItem ?: return
-        val sign = (screen as AbstractSignEditScreenAccessor).`fishmod$getSign`() ?: return
+        val sign = FishDiag.notNull((screen as AbstractSignEditScreenAccessor).`fishmod$getSign`(), "AuctionPriceAutofill.2") { "sign edit screen has no sign entity" } ?: return
         val lines = Array(4) { i -> sign.frontText.getMessage(i, false).string }
         if (lines[1] != "^^^^^^^^^^^^^^^" || lines[2] != "Your auction" || lines[3] != "starting bid") return
 
@@ -50,9 +51,13 @@ object AuctionPriceAutofill {
 
         val mc = Minecraft.getInstance()
         mc.execute {
-            val replacement = AuctionPriceScreen(sign, lines, item, suggested)
-            mc.screen = replacement
-            replacement.init(width, height)
+            try {
+                val replacement = AuctionPriceScreen(sign, lines, item, suggested)
+                mc.screen = replacement
+                replacement.init(width, height)
+            } catch (e: Exception) {
+                FishDiag.fail("AuctionPriceAutofill.3", "opening auction price screen failed suggested=$suggested", e)
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.utils.Easing
 import fishmod.utils.config.Config
@@ -72,16 +73,25 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var closeFinalized = false
 
     init {
-        buildCategories()
-        applySavedColumnOrder()
+        try { buildCategories() } catch (t: Throwable) { FishDiag.fail("FishModScreen.2", "buildCategories failed after ${columns.size} columns", t) }
+        try { applySavedColumnOrder() } catch (t: Throwable) { FishDiag.fail("FishModScreen.3", "applySavedColumnOrder failed for '${FishSettings.fmColumnOrder}'", t) }
         fishmod.utils.Scheduler.scheduleTask({
             if (paintCount == 0 && Minecraft.getInstance().screen === this) {
+                FishDiag.fail("FishModScreen.1", "paintUiOverlay never invoked 40 ticks after open (GameRendererUiMixin hook did not fire)")
                 fishmod.utils.debug.Debug.LOGGER.error("[UiRenderer] paintUiOverlay was never invoked - the GameRendererUiMixin hook didn't fire (likely a rendering-mod conflict)")
                 fishmod.utils.Misc.addChatMessage(Component.literal(
                     "§c[FishMod] The /fm screen failed to render (a rendering mod may be conflicting). Please report this to the mod author."
                 ))
             }
         }, 40)
+    }
+
+    private fun saveTwitchConfig() {
+        try {
+            twitchbridge.TwitchBridgeClient.config().save()
+        } catch (t: Throwable) {
+            FishDiag.fail("FishModScreen.11", "Twitch Bridge config save failed", t)
+        }
     }
 
     private fun buildCategories() {
@@ -344,19 +354,19 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { v -> twitchbridge.TwitchBridgeClient.setChannel(v) }))
             f.sub.add(InputSetting("Line Prefix", "Text before every bridged line",
                 { twitchbridge.TwitchBridgeClient.config().prefix },
-                { v -> twitchbridge.TwitchBridgeClient.config().prefix = v; twitchbridge.TwitchBridgeClient.config().save() }))
+                { v -> twitchbridge.TwitchBridgeClient.config().prefix = v; saveTwitchConfig() }))
             f.sub.add(ToggleSetting("Twitch Name Colors", "Use each chatter's own name colour",
                 { twitchbridge.TwitchBridgeClient.config().useTwitchColors },
-                { v -> twitchbridge.TwitchBridgeClient.config().useTwitchColors = v; twitchbridge.TwitchBridgeClient.config().save() }))
+                { v -> twitchbridge.TwitchBridgeClient.config().useTwitchColors = v; saveTwitchConfig() }))
             f.sub.add(ToggleSetting("Timestamps", "Prefix each line with local HH:mm",
                 { twitchbridge.TwitchBridgeClient.config().showTimestamps },
-                { v -> twitchbridge.TwitchBridgeClient.config().showTimestamps = v; twitchbridge.TwitchBridgeClient.config().save() }))
+                { v -> twitchbridge.TwitchBridgeClient.config().showTimestamps = v; saveTwitchConfig() }))
             f.sub.add(ToggleSetting("Sub / Raid Notices", "Also show sub/raid/announcement events",
                 { twitchbridge.TwitchBridgeClient.config().showEvents },
-                { v -> twitchbridge.TwitchBridgeClient.config().showEvents = v; twitchbridge.TwitchBridgeClient.config().save() }))
+                { v -> twitchbridge.TwitchBridgeClient.config().showEvents = v; saveTwitchConfig() }))
             f.sub.add(ToggleSetting("Auto-Connect on Launch", "Reconnect automatically each game start",
                 { twitchbridge.TwitchBridgeClient.config().autoConnect },
-                { v -> twitchbridge.TwitchBridgeClient.config().autoConnect = v; twitchbridge.TwitchBridgeClient.config().save() }))
+                { v -> twitchbridge.TwitchBridgeClient.config().autoConnect = v; saveTwitchConfig() }))
             general.features.add(f)
         }
         run {
@@ -1020,7 +1030,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 try {
                     fishmod.features.CrosshairImageLoader.init()
                     net.minecraft.util.Util.getPlatform().openUri(fishmod.features.CrosshairImageLoader.getImagesPath().toUri())
-                } catch (ignored: Exception) {}
+                } catch (e: Exception) {
+                    FishDiag.fail("FishModScreen.4", "open crosshairs folder failed", e)
+                }
             }.gatedBy { FishSettings.crosshairMode == "Image" })
             val crosshairImageNames: Array<String> = run {
                 val names = fishmod.features.CrosshairImageLoader.getImageNames()
@@ -1665,7 +1677,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 try {
                     fishmod.features.dungeon.map.MapImageLoader.init()
                     net.minecraft.util.Util.getPlatform().openUri(fishmod.features.dungeon.map.MapImageLoader.getImagesPath().toUri())
-                } catch (ignored: Exception) {}
+                } catch (e: Exception) {
+                    FishDiag.fail("FishModScreen.5", "open map images folder failed", e)
+                }
             })
             val imageNames: Array<String> = run {
                 val names = fishmod.features.dungeon.map.MapImageLoader.getImageNames()
@@ -1908,7 +1922,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             if (slot.isBlank()) continue
             val colon = slot.indexOf(':')
             val (names, activeIdx) = if (colon > 0 && slot.substring(0, colon).all { it.isDigit() })
-                slot.substring(colon + 1).split("+") to (slot.substring(0, colon).toIntOrNull() ?: 0)
+                slot.substring(colon + 1).split("+") to (FishDiag.notNull(slot.substring(0, colon).toIntOrNull(), "FishModScreen.6") { "saved column slot index not an int: '$slot'" } ?: 0)
             else
                 listOf(slot) to 0
             val known = names.filter { byName[it] != null && used.add(it) }
@@ -2200,6 +2214,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         frameCaching = true
         try {
             extractRenderStateCached(ctx, mouseX, mouseY, delta)
+        } catch (t: Throwable) {
+            FishDiag.fail("FishModScreen.7", "FishModScreen render failed closing=$closing columns=${columns.size}", t)
         } finally {
             frameCaching = false
         }
@@ -2213,8 +2229,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         if (closing && !closeFinalized && System.currentTimeMillis() - closeStartTime >= exitTotalDurationMs()) {
             closeFinalized = true
-            Config.manager.save()
-            FishConfig.manager.save()
+            try { Config.manager.save() } catch (t: Throwable) { FishDiag.fail("FishModScreen.8", "Config save on /fm close failed", t) }
+            try { FishConfig.manager.save() } catch (t: Throwable) { FishDiag.fail("FishModScreen.9", "FishConfig save on /fm close failed", t) }
             super.onClose()
             return
         }
@@ -2235,6 +2251,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             renderHint(ctx)
             renderHoverTooltip(ctx)
         } catch (t: Throwable) {
+            FishDiag.fail("FishModScreen.10", "widget rendering failed search='$searchText' hScroll=$hScroll", t)
             if (!widgetRenderFailureLogged) {
                 widgetRenderFailureLogged = true
                 fishmod.utils.debug.Debug.LOGGER.error("[FishModScreen] widget rendering failed - screen will show blur only", t)
@@ -2381,7 +2398,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val c = cols[i]
             if (c === dc) continue
             val yOff = Math.round(columnYOffset(i, top - HEADER_H))
-            renderOneColumn(ctx, c, columnX0(i), colW, top, bot, mouseX, mouseY, yOff)
+            try {
+                renderOneColumn(ctx, c, columnX0(i), colW, top, bot, mouseX, mouseY, yOff)
+            } catch (t: Throwable) {
+                FishDiag.fail("FishModScreen.23", "column '${c.name}' render failed group=${c.isGroup()}", t)
+            }
         }
 
         if (dc != null) {
@@ -2415,7 +2436,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         UiRecorder.pushScissor(x0.toFloat(), bodyTop.toFloat(), (x1 - x0).toFloat(), (colBottom - bodyTop).toFloat())
         for (rl in layoutColumn(c, c.scroll, bodyTop)) {
-            if (rl.rowBottom > bodyTop && rl.rowTop < colBottom) renderRow(ctx, rl.feature, x0, x1, rl.rowTop, mouseX, mouseY)
+            if (rl.rowBottom > bodyTop && rl.rowTop < colBottom) {
+                try {
+                    renderRow(ctx, rl.feature, x0, x1, rl.rowTop, mouseX, mouseY)
+                } catch (t: Throwable) {
+                    FishDiag.fail("FishModScreen.21", "row '${rl.feature.name}' in '${c.name}' render failed", t)
+                }
+            }
             val animH = rl.subBottom - rl.subTop
             if (animH > 0 && rl.subBottom > bodyTop && rl.subTop < colBottom) {
                 renderSubPanel(ctx, rl.feature, x0, x1, rl.subTop, animH, mouseX, mouseY)
@@ -2488,7 +2515,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 val labelH = if (s is DropdownSetting<*>) ITEM_HEIGHT else sh
                 st(ctx, this.font, s.name, leftX + 2, sy + (labelH - 8) / 2, TEXT_COLOR)
             }
-            s.render(ctx, leftX, rightX, sy, mouseX, mouseY, this.font)
+            try {
+                s.render(ctx, leftX, rightX, sy, mouseX, mouseY, this.font)
+            } catch (t: Throwable) {
+                FishDiag.fail("FishModScreen.22", "setting '${s.name}' (${s.javaClass.simpleName}) in '${f.name}' render failed", t)
+            }
             sy += sh
         }
 
@@ -2499,7 +2530,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         return mx >= x && mx <= x + w && my >= y && my <= y + h
     }
 
-    override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean {
+    override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean =
+        try {
+            clickInner(click, bl)
+        } catch (t: Throwable) {
+            FishDiag.fail("FishModScreen.12", "click failed at ${click.x()},${click.y()} button=${click.button()} search='$searchText'", t)
+            true
+        }
+
+    private fun clickInner(click: MouseButtonEvent, bl: Boolean): Boolean {
         if (anyColumnAnimating()) return true
 
         val mx = vx(click.x())
@@ -2606,6 +2645,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun popOutChild(parent: Column, child: Column) {
         val idx = columns.indexOf(parent)
+        FishDiag.check(idx >= 0, "FishModScreen.24") { "pop-out parent '${parent.name}' not in columns" }
         parent.children.remove(child)
         collapseIfNeeded(parent)
         columns.add(if (idx >= 0) idx + 1 else columns.size, child)
@@ -2618,7 +2658,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             if (my >= rl.rowTop && my <= rl.rowBottom) {
                 if (f.hasMaster()) {
                     if (btn == 1 && f.sub.isNotEmpty()) f.toggleExpanded()
-                    else f.set!!(!f.get!!())
+                    else try { f.set!!(!f.get!!()) } catch (t: Throwable) { FishDiag.fail("FishModScreen.13", "toggle '${f.name}' failed", t) }
                 } else if (f.sub.isNotEmpty()) {
                     f.toggleExpanded()
                 }
@@ -2637,7 +2677,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                             activeInput = s
                         }
                     }
-                    if (s.onClick(mx, my, leftX, rightX, ssy, btn)) {
+                    val clicked = try {
+                        s.onClick(mx, my, leftX, rightX, ssy, btn)
+                    } catch (t: Throwable) {
+                        FishDiag.fail("FishModScreen.14", "setting '${s.name}' (${s.javaClass.simpleName}) in '${f.name}' click failed", t)
+                        true
+                    }
+                    if (clicked) {
                         if (s is KeybindSetting && s.capturing) capturingKeybind = s
                         return true
                     }
@@ -2677,7 +2723,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         return false
     }
 
-    override fun mouseDragged(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
+    override fun mouseDragged(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean =
+        try {
+            dragInner(click, deltaX, deltaY)
+        } catch (t: Throwable) {
+            FishDiag.fail("FishModScreen.15", "drag failed slider=${activeSlider?.name} column=${dragColumn?.name} tab=${dragTabChild?.name}", t)
+            true
+        }
+
+    private fun dragInner(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
         val slider = activeSlider
         if (slider != null) { slider.onDrag(vx(click.x()), activeSliderX, activeSliderW); return true }
         val dc = dragColumn
@@ -2699,7 +2753,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         return super.mouseDragged(click, deltaX, deltaY)
     }
 
-    override fun mouseReleased(click: MouseButtonEvent): Boolean {
+    override fun mouseReleased(click: MouseButtonEvent): Boolean =
+        try {
+            releaseInner(click)
+        } catch (t: Throwable) {
+            FishDiag.fail("FishModScreen.16", "release failed column=${dragColumn?.name} tab=${dragTabChild?.name} merge=$dragColumnMerge", t)
+            dragColumn = null; dragTabParent = null; dragTabChild = null
+            true
+        }
+
+    private fun releaseInner(click: MouseButtonEvent): Boolean {
         activeSlider = null
 
         val dc = dragColumn
@@ -2747,7 +2810,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val colW = columnWidth()
         val floatCenter = (dragMouseX - dragGrabDX) + colW / 2
         val curIdx = columns.indexOf(dc)
-        if (curIdx < 0) return
+        if (!FishDiag.check(curIdx >= 0, "FishModScreen.25") { "dragged column '${dc.name}' not in columns" }) return
         var targetIdx = curIdx
         var bestDist = Int.MAX_VALUE
         for (ci in cols.indices) {
@@ -2767,7 +2830,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val draggedH = HEADER_H + columnContentHeight(child)
         val floatCenter = (dragTabMouseY - dragTabGrabDY) + draggedH / 2
         val curIdx = parent.children.indexOf(child)
-        if (curIdx < 0) return
+        if (!FishDiag.check(curIdx >= 0, "FishModScreen.26") { "dragged tab '${child.name}' not in group '${parent.name}'" }) return
         var targetIdx = curIdx
         var bestDist = Int.MAX_VALUE
         for (i in segs.indices) {
@@ -2806,6 +2869,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val survivor = parent.children[0]
             parent.children.clear()
             val idx = columns.indexOf(parent)
+            FishDiag.check(idx >= 0, "FishModScreen.27") { "collapsing group '${parent.name}' not in columns" }
             if (idx >= 0) columns[idx] = survivor
         } else if (parent.activeChild >= parent.children.size) {
             parent.activeChild = 0
@@ -2826,7 +2890,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(bestIdx, newCol)
     }
 
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean =
+        try {
+            scrollInner(mouseX, mouseY, horizontalAmount, verticalAmount)
+        } catch (t: Throwable) {
+            FishDiag.fail("FishModScreen.17", "scroll failed at $mouseX,$mouseY", t)
+            true
+        }
+
+    private fun scrollInner(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
         if (anyColumnAnimating()) return true
 
         val shiftDown = InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_LEFT_SHIFT) ||
@@ -2885,12 +2957,25 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         for (c in columns) {
             val targets = if (c.isGroup()) c.children else listOf(c)
             for (t in targets) for (f in t.features) {
-                if (f.hasMaster() && f.get!!()) f.set!!(false)
+                try {
+                    if (f.hasMaster() && f.get!!()) f.set!!(false)
+                } catch (e: Throwable) {
+                    FishDiag.fail("FishModScreen.28", "reset '${f.name}' in '${t.name}' failed", e)
+                }
             }
         }
     }
 
-    override fun keyPressed(input: KeyEvent): Boolean {
+    override fun keyPressed(input: KeyEvent): Boolean =
+        try {
+            keyInner(input)
+        } catch (t: Throwable) {
+            FishDiag.fail("FishModScreen.18", "key ${input.key()} failed capturing=${capturingKeybind?.name} input=${activeInput?.name}", t)
+            capturingKeybind = null
+            true
+        }
+
+    private fun keyInner(input: KeyEvent): Boolean {
         val cap = capturingKeybind
         if (cap != null) {
             cap.applyKey(
@@ -2909,7 +2994,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         return super.keyPressed(input)
     }
 
-    override fun charTyped(input: CharacterEvent): Boolean {
+    override fun charTyped(input: CharacterEvent): Boolean =
+        try {
+            charInner(input)
+        } catch (t: Throwable) {
+            FishDiag.fail("FishModScreen.19", "char input failed for setting '${activeInput?.name}'", t)
+            true
+        }
+
+    private fun charInner(input: CharacterEvent): Boolean {
         val ai = activeInput
         if (ai is InputSetting && ai.textField != null) {
             ai.textField!!.charTyped(input); ai.setter(ai.textField!!.value); return true
@@ -2927,7 +3020,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     override fun paintUiOverlay() {
         paintCount++
-        fishmod.utils.rendering.UiRenderer.paint(this.width, this.height, fishmod.utils.rendering.UiScale.factor())
+        try {
+            fishmod.utils.rendering.UiRenderer.paint(this.width, this.height, fishmod.utils.rendering.UiScale.factor())
+        } catch (t: Throwable) {
+            FishDiag.fail("FishModScreen.20", "UI overlay paint failed ${this.width}x${this.height} frame=$paintCount", t)
+        }
     }
 
     override fun isPauseScreen(): Boolean = false
@@ -3052,6 +3149,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     class SliderIntSetting(name: String, desc: String, val getter: () -> Int, val setter: (Int) -> Unit, val min: Int, val max: Int, val step: Int = 1) : Setting(name, desc) {
         constructor(name: String, desc: String, prop: KMutableProperty0<Int>, min: Int, max: Int, step: Int = 1) : this(name, desc, { prop.get() }, { prop.set(it) }, min, max, step)
 
+        init {
+            FishDiag.check(max > min, "FishModScreen.31") { "int slider '$name' has empty range $min..$max" }
+        }
+
         private fun snap(v: Int): Int {
             if (step <= 1) return v.coerceIn(min, max)
             return (min + Math.round((v - min).toFloat() / step) * step).coerceIn(min, max)
@@ -3079,6 +3180,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     class SliderDoubleSetting(name: String, desc: String, val getter: () -> Double, val setter: (Double) -> Unit, val min: Double, val max: Double) : Setting(name, desc) {
         constructor(name: String, desc: String, prop: KMutableProperty0<Double>, min: Double, max: Double) : this(name, desc, { prop.get() }, { prop.set(it) }, min, max)
 
+        init {
+            FishDiag.check(max > min, "FishModScreen.32") { "double slider '$name' has empty range $min..$max" }
+        }
+
         override fun getHeight(): Int = SLIDER_ROW_H
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             st(ctx, tr, name, leftX + 2, sy + 2, TEXT_COLOR)
@@ -3104,9 +3209,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private var pillX = 0
         private var pillW = 0
 
+        init {
+            FishDiag.check(values.isNotEmpty(), "FishModScreen.30") { "dropdown '$name' has no options" }
+        }
+
         private fun indexOfCurrent(): Int {
             val cur = getter()
             for (i in values.indices) if (values[i] === cur || values[i] == cur) return i
+            FishDiag.fail("FishModScreen.29", "dropdown '$name' value '$cur' not in options")
             return 0
         }
 
@@ -3235,7 +3345,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private fun preview() {
             val vol = (volumePct?.invoke() ?: 100).coerceIn(0, 500) / 100f
             val pit = (pitchGetter?.invoke() ?: 1.0).toFloat().coerceIn(0f, 2f)
-            fishmod.utils.Misc.sendSound(fishmod.utils.sound.SoundManager.preset(valueGetter()), vol, pit)
+            try {
+                fishmod.utils.Misc.sendSound(fishmod.utils.sound.SoundManager.preset(valueGetter()), vol, pit)
+            } catch (t: Throwable) {
+                FishDiag.fail("FishModScreen.34", "sound preview failed for '${valueGetter()}'", t)
+            }
         }
 
         override fun initField(tr: Font) {
@@ -3427,7 +3541,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private fun parseHex(s: String): Int? {
             val h = s.trim().removePrefix("#")
             if (h.length != 6 || h.any { !it.isDigit() && it.lowercaseChar() !in 'a'..'f' }) return null
-            return try { (0xFF shl 24) or (h.toLong(16).toInt() and 0xFFFFFF) } catch (e: NumberFormatException) { null }
+            return try { (0xFF shl 24) or (h.toLong(16).toInt() and 0xFFFFFF) } catch (e: NumberFormatException) { FishDiag.fail("FishModScreen.33", "validated hex '$h' failed to parse", e); null }
         }
 
         private fun commitHex() {
@@ -3692,7 +3806,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val kb = getter() ?: return
             kb.setKey(key)
             KeyMapping.resetMapping()
-            Minecraft.getInstance().options.save()
+            try { Minecraft.getInstance().options.save() } catch (t: Throwable) { FishDiag.fail("FishModScreen.35", "options save after binding '$name' failed", t) }
             capturing = false
         }
     }

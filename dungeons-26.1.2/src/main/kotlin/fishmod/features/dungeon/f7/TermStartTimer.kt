@@ -9,6 +9,7 @@ import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
+import fishmod.utils.debug.FishDiag
 
 object TermStartTimer {
 
@@ -18,7 +19,10 @@ object TermStartTimer {
     @JvmStatic
     fun init() {
         Events.ON_SERVER_TICK.register {
-            if (Location.inDungeon() && Phase.inP2() && Phase.stormDead()) tick--
+            if (Location.inDungeon() && Phase.inP2() && Phase.stormDead()) {
+                tick--
+                if (tick == -200) FishDiag.fail("TermStartTimer.1", "term start timer 10s overdue, P3 never detected")
+            }
             false
         }
         Events.ON_LOCATION_CHANGE.register { _ ->
@@ -35,6 +39,6 @@ object TermStartTimer {
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
         val num = tick * Constants.TICK_DURATION
-        RenderUtils.drawCenteredText(context, component, Component.literal(Constants.DECIMAL_FORMAT.format(num)), Constants.YELLOW)
+        FishDiag.guard("TermStartTimer.2", "term start timer render threw") { RenderUtils.drawCenteredText(context, component, Component.literal(Constants.DECIMAL_FORMAT.format(num)), Constants.YELLOW) }
     }
 }

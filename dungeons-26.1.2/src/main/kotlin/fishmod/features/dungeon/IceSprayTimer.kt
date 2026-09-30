@@ -1,6 +1,7 @@
 package fishmod.features.dungeon
 
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.data.ItemUtil
 import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
@@ -29,14 +30,20 @@ object IceSprayTimer {
     @JvmStatic
     fun init() {
         ClientReceiveMessageEvents.GAME.register { msg, overlay ->
-            if (overlay && FishSettings.iceSprayTimerEnabled && COLOR.replace(msg.string, "").contains("Mana (Ice Spray)")) cast()
+            if (overlay && FishSettings.iceSprayTimerEnabled && COLOR.replace(msg.string, "").contains("Mana (Ice Spray)")) FishDiag.guard("IceSprayTimer.1", "ice spray cast (action bar) failed") { cast() }
         }
         UseItemCallback.EVENT.register(UseItemCallback { player, _, hand ->
-            if (FishSettings.iceSprayTimerEnabled && hand == InteractionHand.MAIN_HAND &&
-                ItemUtil.getId(player.getItemInHand(hand)) == "ICE_SPRAY_WAND") cast()
+            try {
+                if (FishSettings.iceSprayTimerEnabled && hand == InteractionHand.MAIN_HAND &&
+                    ItemUtil.getId(player.getItemInHand(hand)) == "ICE_SPRAY_WAND") cast()
+            } catch (e: Exception) {
+                FishDiag.fail("IceSprayTimer.2", "ice spray cast (use item) failed", e)
+            }
             InteractionResult.PASS
         })
-        RenderingEvents.GIZMO.register { _ -> render() }
+        RenderingEvents.GIZMO.register { _ ->
+            try { render() } catch (e: Exception) { FishDiag.fail("IceSprayTimer.3", "ice spray render failed (${frozen.size} frozen)", e) }
+        }
         fishmod.utils.events.Events.ON_WORLD_CHANGE.register { frozen.clear(); false }
     }
 
@@ -65,6 +72,7 @@ object IceSprayTimer {
         val now = System.currentTimeMillis()
         frozen.entries.removeIf { (e, until) -> until <= now || !e.isAlive || e.isRemoved }
         val groups = ArrayList<MutableList<Pair<LivingEntity, Long>>>()
+        if (frozen.size > 512) FishDiag.fail("IceSprayTimer.4", "frozen entity map leaking: ${frozen.size}")
         for ((e, until) in frozen) {
             val g = groups.firstOrNull { it[0].first.distanceTo(e) <= GROUP_RADIUS }
             if (g != null) g.add(e to until) else groups.add(mutableListOf(e to until))

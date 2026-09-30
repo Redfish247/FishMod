@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.map
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.Misc
 import fishmod.utils.config.values.DungeonMapSettings
 import net.minecraft.client.DeltaTracker
@@ -49,7 +50,11 @@ object ScoreMessages {
             return
         }
         val alpha = if (now >= fadeStartMs) Math.max(0.0f, 1.0f - (now - fadeStartMs).toFloat() / FADE_MS) else 1.0f
-        renderAt(ctx, mc, resolvedX(mc), resolvedY(mc), DungeonMapSettings.mapScoreTitleScale, text, alpha)
+        try {
+            renderAt(ctx, mc, resolvedX(mc), resolvedY(mc), DungeonMapSettings.mapScoreTitleScale, text, alpha)
+        } catch (e: Exception) {
+            FishDiag.fail("ScoreMessages.1", "score title render failed text='$text'", e)
+        }
     }
 
     @JvmStatic
@@ -138,9 +143,13 @@ object ScoreMessages {
 
     private fun resolveSound(id: String?): SoundEvent? {
         return try {
-            val loc = Identifier.tryParse(id ?: return null) ?: return null
-            BuiltInRegistries.SOUND_EVENT.getOptional(loc).orElse(null)
+            val loc = Identifier.tryParse(id ?: return null) ?: run {
+                FishDiag.fail("ScoreMessages.2", "score title sound id not a valid identifier: '$id'")
+                return null
+            }
+            FishDiag.notNull(BuiltInRegistries.SOUND_EVENT.getOptional(loc).orElse(null), "ScoreMessages.3") { "score title sound not in registry: $loc" }
         } catch (t: Throwable) {
+            FishDiag.fail("ScoreMessages.4", "resolving score title sound '$id' failed", t)
             null
         }
     }

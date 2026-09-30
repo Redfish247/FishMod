@@ -180,7 +180,10 @@ public class Keybinds {
             boolean changed = false;
             for (String line : Files.readAllLines(KEYBIND_BACKUP_FILE)) {
                 String[] parts = line.split("\t", 2);
-                if (parts.length != 2) continue;
+                if (parts.length != 2) {
+                    if (!line.isBlank()) fishmod.utils.debug.FishDiag.fail("Keybinds.1", "malformed keybind backup line: " + line);
+                    continue;
+                }
                 String id = parts[0].trim();
                 String keyName = parts[1].trim();
                 lastKnown.put(id, keyName);
@@ -197,7 +200,9 @@ public class Keybinds {
                 Options options = Minecraft.getInstance().options;
                 if (options != null) options.save();
             }
-        } catch (IOException ignored) {}
+        } catch (IOException e) {
+            fishmod.utils.debug.FishDiag.fail("Keybinds.2", "reading keybind backup failed", e);
+        }
     }
 
     private static void syncKeybindBackup() {
@@ -217,31 +222,37 @@ public class Keybinds {
                 sb.append(e.getKey()).append('\t').append(e.getValue().saveString()).append('\n');
             }
             Files.writeString(KEYBIND_BACKUP_FILE, sb.toString());
-        } catch (IOException ignored) {}
+        } catch (IOException e) {
+            fishmod.utils.debug.FishDiag.fail("Keybinds.3", "writing keybind backup failed", e);
+        }
     }
 
     private static int syncTick = 0;
 
     public static void checkInputs(Minecraft client) {
 
-        if (++syncTick >= 40) {
-            syncTick = 0;
-            syncKeybindBackup();
-        }
+        try {
+            if (++syncTick >= 40) {
+                syncTick = 0;
+                syncKeybindBackup();
+            }
 
-        if (openConfig.consumeClick()) {
-            client.setScreen(new fishmod.features.FishModScreen());
-        }
+            if (openConfig.consumeClick()) {
+                client.setScreen(new fishmod.features.FishModScreen());
+            }
 
-        while (slotBindCycleProfile.consumeClick()) {
-            fishmod.features.SlotBinds.cycleProfile();
-        }
+            while (slotBindCycleProfile.consumeClick()) {
+                fishmod.features.SlotBinds.cycleProfile();
+            }
 
-        if (trades.consumeClick()) {
-            Misc.executeCommand("trades");
-        }
-        if (potions.consumeClick()) {
-            Misc.executeCommand("potionbag");
+            if (trades.consumeClick()) {
+                Misc.executeCommand("trades");
+            }
+            if (potions.consumeClick()) {
+                Misc.executeCommand("potionbag");
+            }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("Keybinds.4", "keybind input tick failed", t);
         }
     }
 }

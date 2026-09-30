@@ -2,6 +2,7 @@ package fishmod.features.croesus
 
 import fishmod.utils.HypixelApi
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.minecraft.client.Minecraft
@@ -32,7 +33,9 @@ object CroesusLootDetector {
         val title = fishmod.utils.ScreenTitle.plain(screen)
 
         if (RUN_GUI_PATTERN.matcher(title).matches()) {
-            ScreenEvents.afterExtract(screen).register { _, _, _, _, _ -> scanRunGuiPreviews() }
+            ScreenEvents.afterExtract(screen).register { _, _, _, _, _ ->
+                try { scanRunGuiPreviews() } catch (e: Exception) { FishDiag.fail("CroesusLootDetector.1", "run gui chest preview scan failed ($title)", e) }
+            }
             return
         }
 
@@ -55,13 +58,16 @@ object CroesusLootDetector {
             if (!CHEST_ITEM_PATTERN.matcher(name).matches()) continue
             if (pendingChests.containsKey(name)) continue
 
-            val info = CroesusRewardParser.parseRewards(getTooltip(stack), arrayOf<String?>(null))
+            val err = arrayOf<String?>(null)
+            val info = CroesusRewardParser.parseRewards(getTooltip(stack), err)
             if (info != null) pendingChests[name] = info
+            else FishDiag.fail("CroesusLootDetector.2", "could not parse $name chest preview: ${err[0]}")
         }
     }
 
     private fun logPending(chestName: String) {
         val info = pendingChests.remove(chestName) ?: return
+        if (info.items.isEmpty()) FishDiag.fail("CroesusLootDetector.3", "$chestName chest logged with no parsed items")
 
         LootTrackerStore.addAll(info.items.map { Triple(it.displayName, it.id, it.qty) })
         if (!loggedThisVisit) {
@@ -71,7 +77,7 @@ object CroesusLootDetector {
     }
 
     private fun onTick(mc: Minecraft) {
-        val title = if (mc.screen == null) "" else fishmod.utils.ScreenTitle.plain(mc.screen!!)
+        val title = if (mc.screen == null) "" else (FishDiag.guard("CroesusLootDetector.4", "screen title read failed") { fishmod.utils.ScreenTitle.plain(mc.screen!!) } ?: "")
         val runGuiOpenNow = RUN_GUI_PATTERN.matcher(title).matches()
         if (runGuiOpenNow && !runGuiOpenPrev) {
             pendingChests.clear()

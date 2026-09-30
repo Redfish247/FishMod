@@ -1,5 +1,6 @@
 package fishmod.features.item
 
+import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
@@ -63,14 +64,18 @@ object ItemCustomizationStore {
                 val type = object : TypeToken<Data>() {}.type
                 val loaded: Data? = GSON.fromJson(reader, type)
                 if (loaded != null) data = loaded
+                else FishDiag.fail("ItemCustomizationStore.1", "item customization file parsed to null: $FILE_PATH")
             }
         } catch (e: Exception) {
+            FishDiag.fail("ItemCustomizationStore.2", "failed to load item customization file $FILE_PATH", e)
             fishmod.utils.SafeFiles.quarantine(file, e)
         }
     }
 
     private fun save() {
-        val json = GSON.toJson(data)
-        fishmod.utils.IoExecutor.execute { fishmod.utils.SafeFiles.writeAtomic(File(FILE_PATH), json) }
+        val json = FishDiag.guard("ItemCustomizationStore.3", "serialising item customization data failed") { GSON.toJson(data) } ?: return
+        fishmod.utils.IoExecutor.execute {
+            try { fishmod.utils.SafeFiles.writeAtomic(File(FILE_PATH), json) } catch (e: Exception) { FishDiag.fail("ItemCustomizationStore.4", "writing item customization file failed", e) }
+        }
     }
 }

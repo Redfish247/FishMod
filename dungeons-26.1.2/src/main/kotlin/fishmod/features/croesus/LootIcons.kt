@@ -4,6 +4,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import fishmod.features.storage.NBTInventory
 import fishmod.utils.data.ItemUtil
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.networth.ItemsDb
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
@@ -32,7 +33,7 @@ object LootIcons {
 
     @JvmStatic
     fun init() {
-        ClientTickEvents.END_CLIENT_TICK.register { mc -> if (++tick >= 10) { tick = 0; learn(mc) } }
+        ClientTickEvents.END_CLIENT_TICK.register { mc -> if (++tick >= 10) { tick = 0; FishDiag.guard("LootIcons.1", "loot icon learn failed") { learn(mc) } } }
     }
 
     private fun learn(mc: Minecraft) {
@@ -49,7 +50,7 @@ object LootIcons {
             if (id !in wanted) continue
             val copy = st.copyWithCount(1)
             copy.remove(DataComponents.LORE)
-            val enc = runCatching { NBTInventory(listOf(copy)).encode() }.getOrNull() ?: continue
+            val enc = runCatching { NBTInventory(listOf(copy)).encode() }.onFailure { FishDiag.fail("LootIcons.2", "loot icon encode failed for $id", it) }.getOrNull() ?: continue
             if (learned[id] == enc) continue
             learned[id] = enc
             learnedStacks[id] = copy
@@ -62,7 +63,10 @@ object LootIcons {
         if (learnedStacks.containsKey(id)) return learnedStacks[id]
         val enc = learned[id] ?: return null
         if (Minecraft.getInstance().connection == null && Minecraft.getInstance().level == null) return null
-        val st = NBTInventory.decode(enc)?.stacks?.firstOrNull()?.takeIf { !it.isEmpty }
+        val st = FishDiag.notNull(
+            FishDiag.guard("LootIcons.3", "loot icon decode threw for $id") { NBTInventory.decode(enc) }?.stacks?.firstOrNull()?.takeIf { !it.isEmpty },
+            "LootIcons.4"
+        ) { "learned loot icon for $id decoded to nothing" }
         learnedStacks[id] = st
         return st
     }
@@ -122,19 +126,19 @@ object LootIcons {
         if (id.startsWith("ENCHANTMENT_")) return cache.getOrPut(id) { ItemStack(Items.ENCHANTED_BOOK) }
         cache[id]?.let { return it }
         if (!ItemsDb.isLoaded()) { ItemsDb.ensureLoaded(); return null }
-        val built = runCatching { build(id) }.getOrNull()
+        val built = runCatching { build(id) }.onFailure { FishDiag.fail("LootIcons.5", "loot icon build failed for $id", it) }.getOrNull()
         cache[id] = built
         return built
     }
 
     private fun build(id: String): ItemStack? {
         val o = ItemsDb.get(id) ?: return null
-        val material = o.get("material")?.takeIf { it.isJsonPrimitive }?.asString ?: return null
+        val material = o.get("material")?.takeIf { it.isJsonPrimitive }?.asString ?: run { FishDiag.fail("LootIcons.6", "items db entry $id has no material"); return null }
         val dur = o.get("durability")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0
-        val item = itemFor(material, dur) ?: return null
+        val item = itemFor(material, dur) ?: run { FishDiag.fail("LootIcons.7", "no vanilla item for material '$material' (id=$id dur=$dur)"); return null }
         val stack = ItemStack(item)
         if (item == Items.PLAYER_HEAD) {
-            val skin = o.getAsJsonObject("skin")?.get("value")?.asString ?: return null
+            val skin = o.getAsJsonObject("skin")?.get("value")?.asString ?: run { FishDiag.fail("LootIcons.8", "player head $id has no skin value"); return null }
             val props = com.google.common.collect.ImmutableMultimap.of("textures", com.mojang.authlib.properties.Property("textures", skin))
             val profile = com.mojang.authlib.GameProfile(java.util.UUID.nameUUIDFromBytes(id.toByteArray()), "fmloot", com.mojang.authlib.properties.PropertyMap(props))
             stack.set(DataComponents.PROFILE, ResolvableProfile.createResolved(profile))
@@ -159,6 +163,7 @@ object LootIcons {
             FILE.reader().use { r -> GSON.fromJson<MutableMap<String, String>>(r, type)?.let { learned = it } }
         } catch (e: Exception) {
             fishmod.utils.debug.Debug.LOGGER.warn("[LootIcons] load failed: {}", e.toString())
+            FishDiag.fail("LootIcons.9", "loot icons load failed", e)
         }
     }
 
@@ -168,6 +173,7 @@ object LootIcons {
             FILE.writer().use { w -> GSON.toJson(learned, w) }
         } catch (e: Exception) {
             fishmod.utils.debug.Debug.LOGGER.warn("[LootIcons] save failed: {}", e.toString())
+            FishDiag.fail("LootIcons.10", "loot icons save failed (${learned.size} entries)", e)
         }
     }
 }

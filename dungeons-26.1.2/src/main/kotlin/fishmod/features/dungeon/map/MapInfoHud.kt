@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.map
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.DungeonMapSettings
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.minecraft.client.Minecraft
@@ -26,7 +27,9 @@ object MapInfoHud {
                     } else {
                         !(DungeonState.isInBoss() && DungeonMapSettings.mapScoreStandaloneHideInBoss)
                     }
-                    if (allowed) render(g, mc, false)
+                    if (allowed) {
+                        try { render(g, mc, false) } catch (e: Exception) { FishDiag.fail("MapInfoHud.1", "map info HUD render failed score=${DungeonScore.score} secrets=${DungeonScore.secretsFound}", e) }
+                    }
                 }
             }
         }

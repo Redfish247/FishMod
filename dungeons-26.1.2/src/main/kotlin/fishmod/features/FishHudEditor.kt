@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.features.chat.ChatRuleStore
@@ -56,6 +57,11 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     companion object {
         private val ENTRIES: MutableList<HudEntry> = ArrayList()
 
+        private fun addEntry(e: HudEntry) {
+            if (ENTRIES.any { it.name() == e.name() }) FishDiag.fail("FishHudEditor.1", "HUD '${e.name()}' registered twice (entries=${ENTRIES.size})")
+            ENTRIES.add(e)
+        }
+
         @JvmStatic
         fun register(
             name: String,
@@ -63,7 +69,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             getY: IntSupplier, setY: IntConsumer,
             w: Int, h: Int
         ) {
-            ENTRIES.add(HudEntry(name, getX, setX, getY, setY, w, h))
+            addEntry(HudEntry(name, getX, setX, getY, setY, w, h))
         }
 
         @JvmStatic
@@ -74,7 +80,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             w: Int, h: Int,
             getScale: DoubleSupplier, setScale: DoubleConsumer
         ) {
-            ENTRIES.add(HudEntry(name, getX, setX, getY, setY, w, h, false, getScale, setScale, null))
+            addEntry(HudEntry(name, getX, setX, getY, setY, w, h, false, getScale, setScale, null))
         }
 
         @JvmStatic
@@ -86,7 +92,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             getScale: DoubleSupplier, setScale: DoubleConsumer,
             visible: BooleanSupplier
         ) {
-            ENTRIES.add(HudEntry(name, getX, setX, getY, setY, w, h, false, getScale, setScale, visible))
+            addEntry(HudEntry(name, getX, setX, getY, setY, w, h, false, getScale, setScale, visible))
         }
 
         @JvmStatic
@@ -97,17 +103,17 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             w: Int, h: Int,
             visible: BooleanSupplier
         ) {
-            ENTRIES.add(HudEntry(name, getX, setX, getY, setY, w, h, false, null, null, visible))
+            addEntry(HudEntry(name, getX, setX, getY, setY, w, h, false, null, null, visible))
         }
 
         @JvmStatic
         fun registerLocked(name: String, getX: IntSupplier, getY: IntSupplier, w: Int, h: Int) {
-            ENTRIES.add(HudEntry(name, getX, IntConsumer { }, getY, IntConsumer { }, w, h, true))
+            addEntry(HudEntry(name, getX, IntConsumer { }, getY, IntConsumer { }, w, h, true))
         }
 
         @JvmStatic
         fun register(name: String, component: HUDComponent) {
-            ENTRIES.add(
+            addEntry(
                 HudEntry(
                     name,
                     IntSupplier { Math.round(component.scaledX * component.scale) },
@@ -553,6 +559,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     private fun snapshot(): List<Pos> = ENTRIES.map { Pos(it.getX().asInt, it.getY().asInt, it.scale()) }
 
     private fun restore(s: List<Pos>) {
+        FishDiag.check(s.size == ENTRIES.size, "FishHudEditor.2") { "undo snapshot size ${s.size} != entries ${ENTRIES.size}" }
         ENTRIES.forEachIndexed { i, e ->
             val p = s.getOrNull(i) ?: return@forEachIndexed
             if (e.locked()) return@forEachIndexed
@@ -706,6 +713,14 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     }
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        try {
+            renderEditor(ctx, mouseX, mouseY, delta)
+        } catch (t: Throwable) {
+            FishDiag.fail("FishHudEditor.3", "HUD editor render failed selected=${selected?.name()} shown=${picked.size}", t)
+        }
+    }
+
+    private fun renderEditor(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         refreshK()
         val cmx = toC(mouseX)
         val cmy = toC(mouseY)
@@ -902,10 +917,22 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     }
 
     override fun paintUiOverlay() {
-        UiRenderer.paint(this.width, this.height, k)
+        try {
+            UiRenderer.paint(this.width, this.height, k)
+        } catch (t: Throwable) {
+            FishDiag.fail("FishHudEditor.4", "HUD editor UI overlay paint failed ${this.width}x${this.height} k=$k", t)
+        }
     }
 
-    override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean {
+    override fun mouseClicked(click: MouseButtonEvent, bl: Boolean): Boolean =
+        try {
+            clickInner(click, bl)
+        } catch (t: Throwable) {
+            FishDiag.fail("FishHudEditor.5", "HUD editor click failed at ${click.x()},${click.y()} button=${click.button()}", t)
+            true
+        }
+
+    private fun clickInner(click: MouseButtonEvent, bl: Boolean): Boolean {
         refreshK()
         val mx = click.x().toInt()
         val my = click.y().toInt()
@@ -958,7 +985,15 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         return true
     }
 
-    override fun mouseDragged(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
+    override fun mouseDragged(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean =
+        try {
+            dragInner(click, deltaX, deltaY)
+        } catch (t: Throwable) {
+            FishDiag.fail("FishHudEditor.6", "HUD editor drag failed dragging=${dragging?.name()} resizing=${resizing?.name()}", t)
+            true
+        }
+
+    private fun dragInner(click: MouseButtonEvent, deltaX: Double, deltaY: Double): Boolean {
         val mx = click.x().toInt()
         val my = click.y().toInt()
         resizing?.let { e ->
@@ -998,7 +1033,15 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         return super.mouseReleased(click)
     }
 
-    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
+    override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean =
+        try {
+            scrollInner(mouseX, mouseY, horizontal, vertical)
+        } catch (t: Throwable) {
+            FishDiag.fail("FishHudEditor.7", "HUD editor scroll failed at $mouseX,$mouseY", t)
+            true
+        }
+
+    private fun scrollInner(mouseX: Double, mouseY: Double, horizontal: Double, vertical: Double): Boolean {
         refreshK()
         if (sideOpen && mouseX / k <= sideW) {
             sideScroll = Math.max(0, Math.min(sideMaxScroll(), sideScroll - (vertical * SIDE_ROW * 2).toInt()))
@@ -1020,7 +1063,15 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         return true
     }
 
-    override fun keyPressed(input: KeyEvent): Boolean {
+    override fun keyPressed(input: KeyEvent): Boolean =
+        try {
+            keyInner(input)
+        } catch (t: Throwable) {
+            FishDiag.fail("FishHudEditor.8", "HUD editor key ${input.key()} failed selected=${selected?.name()}", t)
+            true
+        }
+
+    private fun keyInner(input: KeyEvent): Boolean {
         val mods = input.modifiers()
         val ctrl = mods and (GLFW.GLFW_MOD_CONTROL or GLFW.GLFW_MOD_SUPER) != 0
         val shift = mods and GLFW.GLFW_MOD_SHIFT != 0
@@ -1104,8 +1155,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     }
 
     override fun onClose() {
-        FishConfig.manager.save()
-        fishmod.features.chat.ChatRuleStore.save()
+        try { FishConfig.manager.save() } catch (t: Throwable) { FishDiag.fail("FishHudEditor.9", "config save on HUD editor close failed", t) }
+        try { fishmod.features.chat.ChatRuleStore.save() } catch (t: Throwable) { FishDiag.fail("FishHudEditor.10", "chat rule save on HUD editor close failed", t) }
         Minecraft.getInstance().setScreen(parent)
     }
 }

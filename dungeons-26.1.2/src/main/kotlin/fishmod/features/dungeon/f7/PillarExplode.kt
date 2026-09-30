@@ -11,6 +11,7 @@ import fishmod.utils.rendering.RenderUtils
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.sounds.SoundEvents
+import fishmod.utils.debug.FishDiag
 
 object PillarExplode {
 
@@ -25,7 +26,7 @@ object PillarExplode {
             val string = text.string
             if (string == "[BOSS] Storm: Oof" || string == "[BOSS] Storm: Ouch, that hurt!") {
                 tick = TOTAL_TICKS
-                Scheduler.scheduleSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1f)
+                FishDiag.guard("PillarExplode.1", "storm crush sound failed") { Scheduler.scheduleSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1f) }
             }
             false
         }
@@ -40,7 +41,7 @@ object PillarExplode {
 
     @JvmStatic
     fun renderTimer(component: HUDComponent, context: GuiGraphicsExtractor) {
-        RenderUtils.drawTimer(component, context, tick, if (tick < 6) Constants.GREEN else Constants.RED)
+        FishDiag.guard("PillarExplode.2", "pillar explosion timer render threw") { RenderUtils.drawTimer(component, context, tick, if (tick < 6) Constants.GREEN else Constants.RED) }
     }
 
     @JvmStatic
@@ -48,6 +49,6 @@ object PillarExplode {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
-        RenderUtils.drawCenteredText(context, component, Component.literal("§6||| §bStorm crushed! §6|||"))
+        FishDiag.guard("PillarExplode.3", "storm crushed render threw") { RenderUtils.drawCenteredText(context, component, Component.literal("§6||| §bStorm crushed! §6|||")) }
     }
 }

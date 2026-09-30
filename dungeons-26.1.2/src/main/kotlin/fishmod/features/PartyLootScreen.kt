@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.features.croesus.CroesusPrices
 import fishmod.features.croesus.LootIcons
 import fishmod.features.croesus.LootTrackerStore
@@ -69,7 +70,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
     private var namesBoxH = 0
 
     override fun init() {
-        CroesusPrices.refreshIfStale()
+        try { CroesusPrices.refreshIfStale() } catch (t: Throwable) { FishDiag.fail("PartyLootScreen.9", "Croesus price refresh failed", t) }
         searchField = EditBox(this.font, 0, 0, 100, 16, Component.literal(""))
         searchField.setMaxLength(64)
         searchField.setBordered(false)
@@ -93,6 +94,14 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
     override fun extractTransparentBackground(ctx: GuiGraphicsExtractor) {}
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        try {
+            renderScreen(ctx, mouseX, mouseY, delta)
+        } catch (t: Throwable) {
+            FishDiag.fail("PartyLootScreen.6", "party/loot screen render failed tab=$tab", t)
+        }
+    }
+
+    private fun renderScreen(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
         curMx = UiScale.vx(mouseX); curMy = UiScale.vx(mouseY)
         UiRecorder.clear()
         hits.clear()
@@ -239,7 +248,11 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
 
         var total = 0.0
         var drops = 0
-        for (r in allRows) { total += rowValue(r); drops += r.count }
+        for (r in allRows) {
+            FishDiag.check(r.count >= 0, "PartyLootScreen.11") { "negative loot count ${r.count} for ${r.id}/${r.name}" }
+            total += rowValue(r); drops += r.count
+        }
+        FishDiag.check(runs >= 0, "PartyLootScreen.12") { "negative Croesus run count $runs" }
         val best = allRows.filter { it.id.isNotEmpty() && CroesusPrices.price(it.id) > 0 }
             .maxByOrNull { CroesusPrices.price(it.id) }
 
@@ -313,7 +326,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         val maxScroll = max(0, rows.size * DROP_H - lh)
         lootScroll = lootScroll.coerceIn(0, maxScroll)
         UiRecorder.pushScissor(x0.toFloat(), top.toFloat(), lw.toFloat(), lh.toFloat())
-        runCatching { ctx.enableScissor(x0, top, x0 + lw, top + lh) }
+        runCatching { ctx.enableScissor(x0, top, x0 + lw, top + lh) }.onFailure { FishDiag.fail("PartyLootScreen.1", "enableScissor failed $x0,$top ${lw}x$lh", it) }
         val valW = 70
         val cntW = 44
         val rowW = if (maxScroll > 0) lw - 6 else lw
@@ -360,7 +373,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
             val vs = if (v > 0) fmtCoins(v) else "-"
             UiRecorder.text(vs, (valX + valW - tw(vs, S_MD)).toFloat(), ry + (DROP_H - 2 - S_MD) / 2f, S_MD, if (v > 0) GOLD else DIM)
         }
-        runCatching { ctx.disableScissor() }
+        runCatching { ctx.disableScissor() }.onFailure { FishDiag.fail("PartyLootScreen.2", "disableScissor failed", it) }
         UiRecorder.popScissor()
         if (maxScroll > 0) {
             val barH = max(12, lh * lh / (rows.size * DROP_H))
@@ -392,7 +405,10 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
             if (editKind == 1) LootTrackerStore.setRuns(n)
             else if (editKind == 2) LootTrackerStore.setCount(editName, editId, n)
             lootRowsQuery = null
-        } catch (ignored: NumberFormatException) {
+        } catch (e: NumberFormatException) {
+            FishDiag.fail("PartyLootScreen.3", "digit-filtered edit box not numeric: '$t' kind=$editKind", e)
+        } catch (e: Throwable) {
+            FishDiag.fail("PartyLootScreen.4", "loot edit commit failed kind=$editKind id=$editId name=$editName value=$t", e)
         }
         cancelEdit()
     }
@@ -627,7 +643,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
     }
 
     private fun saveConfig() {
-        runCatching { FishConfig.manager.save() }
+        runCatching { FishConfig.manager.save() }.onFailure { FishDiag.fail("PartyLootScreen.5", "config save failed on tab $tab", it) }
     }
 
     private fun primaryButton(x: Int, y: Int, w: Int, h: Int, label: String, action: () -> Unit) {
@@ -657,7 +673,10 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         }
         searchField.isFocused = false
         nameField.isFocused = false
-        if (h != null) { h.action(); return true }
+        if (h != null) {
+            try { h.action() } catch (t: Throwable) { FishDiag.fail("PartyLootScreen.7", "click action failed tab=$tab at $mx,$my", t) }
+            return true
+        }
         return super.mouseClicked(click, doubled)
     }
 
@@ -697,7 +716,10 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         }
         if (nameField.isFocused) {
             if (key == GLFW.GLFW_KEY_ESCAPE) { nameField.isFocused = false; return true }
-            if (enter) { addName(); return true }
+            if (enter) {
+                try { addName() } catch (t: Throwable) { FishDiag.fail("PartyLootScreen.8", "add name failed tab=$tab", t) }
+                return true
+            }
             val before = nameField.value
             nameField.keyPressed(input)
             if (nameField.value != before) errorMsg = ""
@@ -715,14 +737,18 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
     }
 
     override fun onClose() {
-        commitEdit()
+        try { commitEdit() } catch (t: Throwable) { FishDiag.fail("PartyLootScreen.13", "commit edit on close failed", t) }
         Minecraft.getInstance().setScreen(parent)
     }
 
     override fun isPauseScreen(): Boolean = false
 
     override fun paintUiOverlay() {
-        fishmod.utils.rendering.UiRenderer.paint(this.width, this.height, UiScale.factor())
+        try {
+            fishmod.utils.rendering.UiRenderer.paint(this.width, this.height, UiScale.factor())
+        } catch (t: Throwable) {
+            FishDiag.fail("PartyLootScreen.10", "party/loot UI overlay paint failed tab=$tab", t)
+        }
     }
 
     companion object {

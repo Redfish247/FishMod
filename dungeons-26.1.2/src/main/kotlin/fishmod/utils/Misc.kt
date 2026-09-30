@@ -2,6 +2,7 @@ package fishmod.utils
 
 import fishmod.shaded.practicalconfig.data.SoundData
 import fishmod.utils.config.values.ExtraOptions
+import fishmod.utils.debug.FishDiag
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.client.player.LocalPlayer
@@ -18,6 +19,7 @@ object Misc {
 
     @JvmStatic
     fun abbr(v: Double): String = when {
+        v.isNaN() -> { FishDiag.fail("Misc.2", "abbr called with NaN"); "%,d".format(0L) }
         v >= 1_000_000_000 -> "%.2fB".format(v / 1_000_000_000)
         v >= 1_000_000 -> "%.2fM".format(v / 1_000_000)
         v >= 1_000 -> "%.1fk".format(v / 1_000)
@@ -113,10 +115,17 @@ object Misc {
 
     @JvmStatic
     fun forceMainThread(runnable: Runnable) {
+        val safe = Runnable {
+            try {
+                runnable.run()
+            } catch (e: Exception) {
+                FishDiag.fail("Misc.1", "main-thread task threw", e)
+            }
+        }
         if (INSTANCE.isSameThread) {
-            runnable.run()
+            safe.run()
         } else {
-            INSTANCE.executeIfPossible(runnable)
+            INSTANCE.executeIfPossible(safe)
         }
     }
 }

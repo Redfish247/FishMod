@@ -1,6 +1,7 @@
 package fishmod.features.croesus
 
 import com.google.gson.GsonBuilder
+import fishmod.utils.debug.FishDiag
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -69,7 +70,7 @@ object LootTrackerStore {
             if (match) { found = r; break }
         }
         if (found == null) {
-            if (delta <= 0) return
+            if (delta <= 0) { FishDiag.fail("LootTrackerStore.4", "decrement of untracked loot '$name' ($id) by $delta"); return }
             found = Row()
             found.name = name ?: ""
             found.id = id ?: ""
@@ -122,12 +123,13 @@ object LootTrackerStore {
                 data = read
                 if (read.rows == null) read.rows = ArrayList()
             }
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            FishDiag.fail("LootTrackerStore.1", "loot tracker load failed, starting empty", e)
         }
     }
 
     private fun save() {
-        val json = GSON.toJson(data)
-        fishmod.utils.IoExecutor.execute { fishmod.utils.SafeFiles.writeAtomic(FILE, json) }
+        val json = FishDiag.guard("LootTrackerStore.2", "loot tracker serialize failed") { GSON.toJson(data) } ?: return
+        fishmod.utils.IoExecutor.execute { FishDiag.guard("LootTrackerStore.3", "loot tracker write failed") { fishmod.utils.SafeFiles.writeAtomic(FILE, json) } }
     }
 }

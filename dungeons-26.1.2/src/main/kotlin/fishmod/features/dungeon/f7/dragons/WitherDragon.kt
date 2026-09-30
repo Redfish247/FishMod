@@ -6,6 +6,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
+import fishmod.utils.debug.FishDiag
 
 enum class WitherDragonState { SPAWNING, ALIVE, DEAD }
 
@@ -38,6 +39,7 @@ enum class WitherDragon(
     @Volatile var offScoreboardTicks: Int = 0
 
     fun setAlive(id: Int, tick: Long) {
+        FishDiag.check(this != NONE, "WitherDragon.2") { "setAlive called on NONE dragon (id=$id)" }
         state = WitherDragonState.ALIVE
         timeToSpawn = 100
         entityId = id
@@ -49,6 +51,7 @@ enum class WitherDragon(
 
     fun setDead(silent: Boolean, tick: Long) {
         if (state == WitherDragonState.DEAD) return
+        if (!silent) FishDiag.check(tick >= spawnedTick, "WitherDragon.1") { "$name died before spawn (tick=$tick spawned=$spawnedTick)" }
         state = WitherDragonState.DEAD
         timeToSpawn = 100
         entityId = null

@@ -7,6 +7,7 @@ import fishmod.utils.rendering.RenderUtils
 import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
+import fishmod.utils.debug.FishDiag
 
 object SectionCompletion {
 
@@ -15,7 +16,8 @@ object SectionCompletion {
     @JvmStatic
     fun init() {
         Events.ON_SECTION_CHANGE.register {
-            prevTime = System.currentTimeMillis()
+            val now = System.currentTimeMillis()
+            prevTime = now
             false
         }
     }
@@ -27,6 +29,6 @@ object SectionCompletion {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
-        RenderUtils.drawCenteredText(context, component, Component.literal("Section completed!").withStyle(ChatFormatting.GREEN))
+        FishDiag.guard("SectionCompletion.2", "section completed render threw") { RenderUtils.drawCenteredText(context, component, Component.literal("Section completed!").withStyle(ChatFormatting.GREEN)) }
     }
 }

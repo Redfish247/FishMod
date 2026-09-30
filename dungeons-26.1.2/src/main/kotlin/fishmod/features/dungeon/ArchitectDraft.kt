@@ -2,6 +2,7 @@ package fishmod.features.dungeon
 
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
@@ -23,7 +24,11 @@ object ArchitectDraft {
             val self = Minecraft.getInstance().player?.gameProfile?.name ?: return@register false
             val m1 = PUZZLE_FAIL.matcher(s)
             val m2 = ORUO_WRONG.matcher(s)
-            if ((m1.matches() && m1.group(1) == self) || (m2.matches() && m2.group(1) == self)) pending = 30
+            val ok1 = m1.matches()
+            val ok2 = m2.matches()
+            if (!ok1 && s.startsWith("PUZZLE FAIL! ")) FishDiag.fail("ArchitectDraft.1", "puzzle fail line did not parse: '$s'")
+            if (!ok2 && s.startsWith("[STATUE] Oruo the Omniscient: ") && s.contains("wrong answer")) FishDiag.fail("ArchitectDraft.2", "oruo wrong-answer line did not parse: '$s'")
+            if ((ok1 && m1.group(1) == self) || (ok2 && m2.group(1) == self)) pending = 30
             false
         }
 
@@ -31,7 +36,7 @@ object ArchitectDraft {
 
         ClientTickEvents.END_CLIENT_TICK.register {
             if (pending < 0) return@register
-            if (pending == 0) Minecraft.getInstance().connection?.sendCommand("gfs ARCHITECT_FIRST_DRAFT 1")
+            if (pending == 0) FishDiag.guard("ArchitectDraft.3", "architect draft gfs command failed") { Minecraft.getInstance().connection?.sendCommand("gfs ARCHITECT_FIRST_DRAFT 1") }
             pending--
         }
     }

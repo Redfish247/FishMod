@@ -36,60 +36,64 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     public void fishmod$adjustNameTag(T entity, S state, float tickProgress, CallbackInfo ci) {
 
-        if (Dungeons.hideBlazeNameTag && state.nameTag != null && Location.inDungeon()
-                && !(entity instanceof net.minecraft.world.entity.player.Player)) {
-            String nameTagText = state.nameTag.getString();
-            if (nameTagText.contains("Blaze")) {
-                state.nameTag = null;
+        try {
+            if (Dungeons.hideBlazeNameTag && state.nameTag != null && Location.inDungeon()
+                    && !(entity instanceof net.minecraft.world.entity.player.Player)) {
+                String nameTagText = state.nameTag.getString();
+                if (nameTagText.contains("Blaze")) {
+                    state.nameTag = null;
+                }
             }
-        }
-        if (entity instanceof RemotePlayer player && Dungeons.renderClassName && Location.inDungeon()) {
-            if (DungeonClass.isTeammate(player)) {
-                state.nameTag = null;
+            if (entity instanceof RemotePlayer player && Dungeons.renderClassName && Location.inDungeon()) {
+                if (DungeonClass.isTeammate(player)) {
+                    state.nameTag = null;
+                }
             }
-        }
 
-        if (entity instanceof Player sized) {
-            float[] sc = fishmod.cosmetic.PlayerSize.scaleFor(sized);
-            ((fishmod.cosmetic.ScaleHolder) state).fishmod$setScale(sc[0], sc[1], sc[2]);
-            if (sc[1] != 1.0f && state.nameTagAttachment != null) {
-                state.nameTagAttachment = state.nameTagAttachment.add(0, sized.getBbHeight() * (sc[1] - 1.0), 0);
+            if (entity instanceof Player sized) {
+                float[] sc = fishmod.cosmetic.PlayerSize.scaleFor(sized);
+                ((fishmod.cosmetic.ScaleHolder) state).fishmod$setScale(sc[0], sc[1], sc[2]);
+                if (sc[1] != 1.0f && state.nameTagAttachment != null) {
+                    state.nameTagAttachment = state.nameTagAttachment.add(0, sized.getBbHeight() * (sc[1] - 1.0), 0);
+                }
             }
-        }
 
-        if (entity instanceof RemotePlayer teammate) {
-            int outline = fishmod.features.dungeon.PlayerHighlight.outlineColor(teammate);
-            if (outline != EntityRenderState.NO_OUTLINE) state.outlineColor = outline;
-        }
+            if (entity instanceof RemotePlayer teammate) {
+                int outline = fishmod.features.dungeon.PlayerHighlight.outlineColor(teammate);
+                if (outline != EntityRenderState.NO_OUTLINE) state.outlineColor = outline;
+            }
 
-        if (Visual.hideEntityFire) {
-            state.displayFireAnimation = false;
-        } else if (entity instanceof Player player && Visual.hideFireInf5) {
-            if (EntityUtil.isClientPlayer(player)) {
+            if (Visual.hideEntityFire) {
                 state.displayFireAnimation = false;
+            } else if (entity instanceof Player player && Visual.hideFireInf5) {
+                if (EntityUtil.isClientPlayer(player)) {
+                    state.displayFireAnimation = false;
+                }
             }
-        }
 
-        if (entity instanceof Player p && EntityUtil.isClientPlayer(p)
-                && FishSettings.nickPreviewEnabled && FishSettings.nickPreviewYOffset != 0.0
-                && state.nameTagAttachment != null) {
-            state.nameTagAttachment = state.nameTagAttachment.add(0, FishSettings.nickPreviewYOffset, 0);
-        }
-
-        List<Component> statLines = null;
-        if (FishSettings.nametagStatsEnabled && state.nameTag != null && entity instanceof Player pl) {
-            boolean self = EntityUtil.isClientPlayer(pl);
-            Minecraft mc = Minecraft.getInstance();
-            boolean inRange = self || mc.player == null || pl.distanceToSqr(mc.player) <= NAMETAG_STATS_RANGE_SQ;
-            if ((!self || FishSettings.nametagStatsShowSelf) && inRange) {
-                String playerName = pl.getName().getString();
-                statLines = fishmod.features.NametagStats.linesFor(playerName);
+            if (entity instanceof Player p && EntityUtil.isClientPlayer(p)
+                    && FishSettings.nickPreviewEnabled && FishSettings.nickPreviewYOffset != 0.0
+                    && state.nameTagAttachment != null) {
+                state.nameTagAttachment = state.nameTagAttachment.add(0, FishSettings.nickPreviewYOffset, 0);
             }
+
+            List<Component> statLines = null;
+            if (FishSettings.nametagStatsEnabled && state.nameTag != null && entity instanceof Player pl) {
+                boolean self = EntityUtil.isClientPlayer(pl);
+                Minecraft mc = Minecraft.getInstance();
+                boolean inRange = self || mc.player == null || pl.distanceToSqr(mc.player) <= NAMETAG_STATS_RANGE_SQ;
+                if ((!self || FishSettings.nametagStatsShowSelf) && inRange) {
+                    String playerName = pl.getName().getString();
+                    statLines = fishmod.features.NametagStats.linesFor(playerName);
+                }
+            }
+            if (statLines != null && !statLines.isEmpty() && !FishSettings.nametagStatsAbove && state.nameTagAttachment != null) {
+                state.nameTagAttachment = state.nameTagAttachment.add(0, statLines.size() * 10 * 0.025, 0);
+            }
+            ((NametagStatsHolder) state).fishmod$setNametagStats(statLines);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("EntityRendererMixin.1", "nametag render-state adjust failed entity=" + entity.getType(), t);
         }
-        if (statLines != null && !statLines.isEmpty() && !FishSettings.nametagStatsAbove && state.nameTagAttachment != null) {
-            state.nameTagAttachment = state.nameTagAttachment.add(0, statLines.size() * 10 * 0.025, 0);
-        }
-        ((NametagStatsHolder) state).fishmod$setNametagStats(statLines);
     }
 
     @Inject(
@@ -102,47 +106,55 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
         if (lines == null || lines.isEmpty()) return;
         boolean above = FishSettings.nametagStatsAbove;
         int y = above ? baseOffset - 10 : baseOffset + 10;
-        for (Component line : lines) {
-            collector.submitNameTag(poseStack, state.nameTagAttachment, y, line,
-                !state.isDiscrete, state.lightCoords, state.distanceToCameraSq, cameraRenderState);
-            y += above ? -10 : 10;
+        try {
+            for (Component line : lines) {
+                collector.submitNameTag(poseStack, state.nameTagAttachment, y, line,
+                    !state.isDiscrete, state.lightCoords, state.distanceToCameraSq, cameraRenderState);
+                y += above ? -10 : 10;
+            }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("EntityRendererMixin.2", "extra nametag lines submit failed lines=" + lines.size(), t);
         }
     }
 
     @Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true)
     private void fishmod$cullEntities(T entity, Frustum frustum, double camX, double camY, double camZ,
                                      CallbackInfoReturnable<Boolean> cir) {
-        if (fishmod.features.dungeon.puzzles.odin.BlazeSolver.INSTANCE.shouldHideMob(entity)) {
-            cir.setReturnValue(false);
-            return;
-        }
-        if (!Visual.renderOptimizer) return;
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || entity == mc.player) return;
-
-        if (Visual.hidePlayersInRange && entity instanceof Player) {
-            double r = Visual.hidePlayerRange;
-            if (r > 0 && entity.distanceToSqr(mc.player) <= r * r) {
+        try {
+            if (fishmod.features.dungeon.puzzles.odin.BlazeSolver.INSTANCE.shouldHideMob(entity)) {
                 cir.setReturnValue(false);
                 return;
             }
-        }
+            if (!Visual.renderOptimizer) return;
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player == null || entity == mc.player) return;
 
-        if (Visual.hideDeadEntities && entity instanceof LivingEntity le
-                && (le.isDeadOrDying() || le.getHealth() <= 0f)) {
-            cir.setReturnValue(false);
-            return;
-        }
+            if (Visual.hidePlayersInRange && entity instanceof Player) {
+                double r = Visual.hidePlayerRange;
+                if (r > 0 && entity.distanceToSqr(mc.player) <= r * r) {
+                    cir.setReturnValue(false);
+                    return;
+                }
+            }
 
-        if (fishmod.features.RenderOptimizer.hideDeathAnimation()) {
-            if (entity instanceof net.minecraft.world.entity.decoration.ArmorStand) {
-                if (fishmod.features.RenderOptimizer.hideDyingArmorStands()
-                        && entity.getVehicle() instanceof LivingEntity mount && mount.deathTime > 0) {
+            if (Visual.hideDeadEntities && entity instanceof LivingEntity le
+                    && (le.isDeadOrDying() || le.getHealth() <= 0f)) {
+                cir.setReturnValue(false);
+                return;
+            }
+
+            if (fishmod.features.RenderOptimizer.hideDeathAnimation()) {
+                if (entity instanceof net.minecraft.world.entity.decoration.ArmorStand) {
+                    if (fishmod.features.RenderOptimizer.hideDyingArmorStands()
+                            && entity.getVehicle() instanceof LivingEntity mount && mount.deathTime > 0) {
+                        cir.setReturnValue(false);
+                    }
+                } else if (entity instanceof LivingEntity dying && dying.deathTime > 0) {
                     cir.setReturnValue(false);
                 }
-            } else if (entity instanceof LivingEntity dying && dying.deathTime > 0) {
-                cir.setReturnValue(false);
             }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("EntityRendererMixin.3", "entity cull check failed entity=" + entity.getType(), t);
         }
     }
 }

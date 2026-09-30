@@ -2,6 +2,7 @@ package fishmod.features.item
 
 import fishmod.features.croesus.CroesusPrices
 import fishmod.utils.networth.NwConstants
+import fishmod.utils.debug.FishDiag
 import net.minecraft.world.item.ItemStack
 
 object ModifierValue {
@@ -15,6 +16,7 @@ object ModifierValue {
             for (k in ench.keySet()) {
                 val name = k.uppercase()
                 val lvl = ench.getIntOr(k, 0)
+                FishDiag.check(lvl in 0..20, "ModifierValue.4") { "enchant $name level out of range: $lvl" }
                 if (lvl <= 0) continue
                 if (NwConstants.IGNORED_ENCHANTMENTS[name] == lvl) continue
                 if (name in NwConstants.STACKING_ENCHANTMENTS) continue
@@ -30,6 +32,7 @@ object ModifierValue {
         }
 
         val hpb = tag.getIntOr("hot_potato_count", 0)
+        FishDiag.check(hpb in 0..15, "ModifierValue.1") { "hot_potato_count out of range: $hpb" }
         if (hpb > 0) {
             v += CroesusPrices.cachedPrice("HOT_POTATO_BOOK") * minOf(hpb, 10)
             if (hpb > 10) v += CroesusPrices.cachedPrice("FUMING_POTATO_BOOK") * (hpb - 10) * NwConstants.FUMING_POTATO_BOOK
@@ -38,6 +41,7 @@ object ModifierValue {
         if (tag.getIntOr("rarity_upgrades", 0) >= 1) v += CroesusPrices.cachedPrice("RECOMBOBULATOR_3000") * NwConstants.RECOMBOBULATOR
 
         val stars = maxOf(tag.getIntOr("upgrade_level", 0), tag.getIntOr("dungeon_item_level", 0))
+        FishDiag.check(stars <= 5 + NwConstants.MASTER_STARS.size, "ModifierValue.2") { "star count $stars exceeds master star table ${NwConstants.MASTER_STARS.size}" }
         for (i in 6..stars) {
             val idx = i - 6
             if (idx < NwConstants.MASTER_STARS.size) v += CroesusPrices.cachedPrice(NwConstants.MASTER_STARS[idx])
@@ -57,6 +61,7 @@ object ModifierValue {
 
         if (tag.getIntOr("art_of_war_count", 0) > 0) v += CroesusPrices.cachedPrice("THE_ART_OF_WAR") * NwConstants.ART_OF_WAR
 
+        FishDiag.check(!v.isNaN(), "ModifierValue.3") { "modifier sum NaN" }
         return v
     }
 

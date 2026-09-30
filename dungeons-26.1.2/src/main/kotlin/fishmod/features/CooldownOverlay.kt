@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.HypixelApi
 import fishmod.utils.Location
 import fishmod.utils.Misc
@@ -106,7 +107,8 @@ object CooldownOverlay {
                 if (cdrM.find()) {
                     try {
                         liveMageCdrPercent = cdrM.group(1).toInt()
-                    } catch (ignored: NumberFormatException) {
+                    } catch (e: NumberFormatException) {
+                        FishDiag.fail("CooldownOverlay.2", "mage CDR percent unparsable: '${cdrM.group(1)}'", e)
                     }
                     return@register false
                 }
@@ -130,6 +132,7 @@ object CooldownOverlay {
             try {
                 mana = m.group(1).replace(",", "").toInt()
             } catch (e: NumberFormatException) {
+                FishDiag.fail("CooldownOverlay.3", "mana bar value unparsable: '${m.group(1)}'", e)
                 return@register
             }
             val pid = pendingId
@@ -169,11 +172,19 @@ object CooldownOverlay {
 
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             if (!FishSettings.cooldownOverlayEnabled || !FishSettings.cooldownInInventory) return@register
-            drawOverlay(ctx, stack, x, y)
+            try { drawOverlay(ctx, stack, x, y) } catch (t: Throwable) { FishDiag.fail("CooldownOverlay.4", "inventory cooldown overlay draw failed", t) }
         }
     }
 
     private fun onAbilityFired() {
+        try {
+            onAbilityFiredInner()
+        } catch (t: Throwable) {
+            FishDiag.fail("CooldownOverlay.1", "ability cooldown start failed (pending=$pendingId)", t)
+        }
+    }
+
+    private fun onAbilityFiredInner() {
         val mc = Minecraft.getInstance()
         val p = mc.player
         if (p == null || mc.connection == null) return
@@ -201,6 +212,7 @@ object CooldownOverlay {
                         val roman = line.split("Mage ")[1].split(")")[0].trim()
                         mageLvl = fishmod.utils.data.Roman.toInt(roman)
                     } catch (e: Exception) {
+                        FishDiag.fail("CooldownOverlay.5", "mage level not parsed from tab line '${line.take(80)}'", e)
                         mageLvl = ScoreboardUtil.getCurrentClassLevel()
                     }
                 }

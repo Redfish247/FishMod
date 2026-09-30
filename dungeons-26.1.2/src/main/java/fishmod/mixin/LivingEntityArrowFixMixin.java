@@ -21,9 +21,13 @@ public abstract class LivingEntityArrowFixMixin {
     @Inject(method = "tick", at = @At("HEAD"))
     private void fishmod$arrowFix(CallbackInfo ci) {
         if ((Object) this != Minecraft.getInstance().player) return;
-        if (ArrowFix.isShortbow(useItem)) {
-            useItem = ItemStack.EMPTY;
-            useItemRemaining = 0;
+        try {
+            if (ArrowFix.isShortbow(useItem)) {
+                useItem = ItemStack.EMPTY;
+                useItemRemaining = 0;
+            }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("LivingEntityArrowFixMixin.1", "shortbow arrow fix failed", t);
         }
     }
 

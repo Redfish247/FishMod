@@ -8,6 +8,7 @@ import fishmod.utils.JsonUtility
 import fishmod.utils.Misc
 import fishmod.utils.Scheduler
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import fishmod.utils.events.interfaces.PhaseEvent
 import fishmod.utils.events.interfaces.RunEndEvent
@@ -71,6 +72,7 @@ object Phase {
         floor = key
 
         currentSplits = FLOOR_SPLITS[floor]
+        FishDiag.check(currentSplits != null, "Phase.1") { "no split definitions for floor key '$key' (have ${FLOOR_SPLITS.keys})" }
         currentSplits?.forEach { it.reset() }
         if (floor!!.contains("7")) inFloor7 = true
     }
@@ -95,11 +97,16 @@ object Phase {
             val currentSplit = splits[i]
             if (currentSplit.ended()) continue
 
-            currentSplit.parseMessage(string)
+            try {
+                currentSplit.parseMessage(string)
+            } catch (t: Throwable) {
+                FishDiag.fail("Phase.2", "split '${currentSplit.name}' parseMessage", t)
+                continue
+            }
 
             if (currentSplit.ended()) {
-                val pb = splitPb(currentSplit)
-                val tick = tickPb(currentSplit)
+                val pb = FishDiag.guard("Phase.3", "split PB for ${currentSplit.name}") { splitPb(currentSplit) }
+                val tick = FishDiag.guard("Phase.4", "tick PB for ${currentSplit.name}") { tickPb(currentSplit) }
                 if (sendSplitInChat) {
                     val line = currentSplit.createNameText().append(currentSplit.createTimeText())
                     if (showSplitPb()) appendPbTags(line, pb, tick, false)
@@ -108,13 +115,14 @@ object Phase {
                     Misc.addChatMessage(appendPbTags(currentSplit.createNameText().append(currentSplit.createTimeText()), pb, tick, true))
                 }
 
+                FishDiag.check(i + 1 >= currentPhase, "Phase.5") { "phase went backwards $currentPhase -> ${i + 1} floor=$floor split=${currentSplit.name}" }
                 currentPhase = i + 1
-                Events.ON_PHASE_CHANGE.invoke(PhaseEvent::onPhaseChange)
+                FishDiag.guard("Phase.6", "ON_PHASE_CHANGE listeners") { Events.ON_PHASE_CHANGE.invoke(PhaseEvent::onPhaseChange) }
             }
 
             if (currentSplit.started() && currentPhase == -1) {
                 currentPhase = i
-                Events.ON_PHASE_CHANGE.invoke(PhaseEvent::onPhaseChange)
+                FishDiag.guard("Phase.7", "ON_PHASE_CHANGE listeners (run start)") { Events.ON_PHASE_CHANGE.invoke(PhaseEvent::onPhaseChange) }
             }
         }
 
@@ -138,15 +146,21 @@ object Phase {
         stormKillAnnounced = true
         if (PracticeMode.active) return
         val f = floor ?: return
-        PbMessages.announce(FishSettings.pbMessagesStormKill, "stormkill:$f",
-            Component.literal("§3Storm Kill§a in"), secs)
+        FishDiag.check(!secs.isNaN() && secs > 0, "Phase.8") { "storm kill with bad time $secs" }
+        FishDiag.guard("Phase.9", "announce storm kill PB") {
+            PbMessages.announce(FishSettings.pbMessagesStormKill, "stormkill:$f",
+                Component.literal("§3Storm Kill§a in"), secs)
+        }
     }
 
     private fun endRun() {
         runOver = true
         currentPhase = currentSplits?.size ?: 0
-        Scheduler.scheduleTask(Runnable { printSplits() }, 2)
-        Events.ON_RUN_END.invoke(RunEndEvent::onRunEnd)
+        FishDiag.check(currentSplits != null, "Phase.10") { "run end message with no splits loaded floor=$floor" }
+        Scheduler.scheduleTask(Runnable {
+            try { printSplits() } catch (t: Throwable) { FishDiag.fail("Phase.11", "print end-of-run splits floor=$floor", t) }
+        }, 2)
+        FishDiag.guard("Phase.12", "ON_RUN_END listeners") { Events.ON_RUN_END.invoke(RunEndEvent::onRunEnd) }
     }
 
     @JvmStatic
@@ -205,6 +219,7 @@ object Phase {
         val t = split.getRealTime()
         val avg = RunHistory.getPersonalAvg(f, split.name)
         seedPb(f, split.name)
+        FishDiag.check(!t.isNaN() && t >= 0, "Phase.13") { "split ${split.name} ended with bad time $t floor=$f" }
         val r = PbMessages.submit("split:$f:${split.name}", t) ?: return null
         split.paceColor = paceColor(r, avg)
         return r
@@ -213,7 +228,9 @@ object Phase {
     private fun tickPb(split: Split): PbMessages.Result? {
         if (PracticeMode.active) return null
         val f = floor ?: return null
-        return PbMessages.submit("splittick:$f:${split.name}", split.getTickTime())
+        val t = split.getTickTime()
+        FishDiag.check(!t.isNaN() && t >= 0, "Phase.14") { "split ${split.name} bad tick time $t floor=$f" }
+        return PbMessages.submit("splittick:$f:${split.name}", t)
     }
 
     private fun anyPbToShow(pb: PbMessages.Result?, tick: PbMessages.Result?): Boolean =
@@ -257,7 +274,7 @@ object Phase {
             if (showSplitPb()) appendPbTags(line, pb, tick, true)
             Misc.addChatMessage(line)
         }
-        RunHistory.saveSplits(floor, splits)
+        FishDiag.guard("Phase.15", "save run history floor=$floor") { RunHistory.saveSplits(floor, splits) }
         if (splits.isNotEmpty()) {
             val time = splits.last().getTimeDifference()
             val formattedTime = Constants.DECIMAL_FORMAT.format(time)
@@ -328,7 +345,11 @@ object Phase {
     @JvmStatic
     fun renderHud(ctx: net.minecraft.client.gui.GuiGraphicsExtractor) {
         if (enableSplits && runStarted()) {
-            renderScaled(ctx, splitTimer) { renderSplitRows(ctx, splitTimer.scaledX, splitTimer.scaledY) }
+            try {
+                renderScaled(ctx, splitTimer) { renderSplitRows(ctx, splitTimer.scaledX, splitTimer.scaledY) }
+            } catch (t: Throwable) {
+                FishDiag.fail("Phase.16", "render splits HUD", t)
+            }
         }
     }
 

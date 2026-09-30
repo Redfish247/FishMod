@@ -1,6 +1,7 @@
 package fishmod.utils.rendering
 
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 
 object UiScale {
@@ -11,6 +12,7 @@ object UiScale {
 
     fun factor(): Float {
         val guiScale = Minecraft.getInstance().window.guiScale
+        if (guiScale <= 0) FishDiag.fail("UiScale.1", "window guiScale is $guiScale, UI scale will be infinite")
         val compensation = (REFERENCE_GUI_SCALE / guiScale).coerceAtMost(1.0)
         val base = (compensation * FLAT_SHRINK).toFloat()
         return (if (isSiblingScreen()) base * SIBLING_ENLARGE else base) * userScale()

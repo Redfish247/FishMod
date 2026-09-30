@@ -2,6 +2,7 @@ package fishmod.features.dungeon
 
 import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import java.util.regex.Pattern
 
@@ -45,7 +46,7 @@ object LagTracker {
             var total = 0
             val h = HMS.matcher(m.group(1))
             while (h.find()) {
-                val n = h.group(1).toIntOrNull() ?: 0
+                val n = FishDiag.notNull(h.group(1).toIntOrNull(), "LagTracker.1") { "run time component not int: '${m.group(1)}'" } ?: 0
                 total += when (h.group(2)) { "h" -> n * 3600; "m" -> n * 60; else -> n }
             }
             return total
@@ -65,6 +66,7 @@ object LagTracker {
                 val wallSec = (System.currentTimeMillis() - startMs) / 1000.0
                 val tickSec = ticks * 0.05
                 val lag = wallSec - tickSec
+                FishDiag.check(lag > -2.0, "LagTracker.2") { "negative lag ${"%.2f".format(lag)}s (wall=$wallSec ticks=$ticks)" }
                 active = false
                 ended = true
 
@@ -80,7 +82,7 @@ object LagTracker {
         Events.ON_SERVER_TICK.register {
             if (!active && !ended && ++probeTick >= 20) {
                 probeTick = 0
-                if (fishmod.utils.Location.inDungeon() && scoreboardRunSeconds() > 0) start()
+                if (fishmod.utils.Location.inDungeon() && (FishDiag.guard("LagTracker.3", "run time tab scan failed") { scoreboardRunSeconds() } ?: -1) > 0) start()
             }
             if (active) ticks++
             false

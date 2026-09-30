@@ -22,7 +22,12 @@ public abstract class CosmeticEntityNameMixin {
         boolean prestige = player && FishSettings.prestigeColorsEnabled && FishSettings.prestigeColorsNametags;
         boolean badges = player && FishSettings.badgesEnabled && FishSettings.badgesOnNametags;
         if (!NickState.isActive() && fishmod.cosmetic.RemoteNicks.isEmpty() && !prestige && !badges) return original;
-        return fishmod.cosmetic.NameDecorCache.NAMETAG.get(entity.getUUID(), original, () -> fishmod$decorate(original, entity, prestige, badges));
+        try {
+            return fishmod.cosmetic.NameDecorCache.NAMETAG.get(entity.getUUID(), original, () -> fishmod$decorate(original, entity, prestige, badges));
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("CosmeticEntityNameMixin.1", "nametag decorate failed entity=" + entity.getType(), t);
+            return original;
+        }
     }
 
     private static Component fishmod$decorate(Component original, Entity entity, boolean prestige, boolean badges) {
