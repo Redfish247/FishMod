@@ -1269,6 +1269,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             hud.features.add(f)
         }
         run {
+            val f = Feature("Hide Pet Nametag Level", FishSettings::petNametagHideLevel)
+            f.sub.add(SubcategoryHeader("Drops the [283] level off pet nametags (skins show overflow levels)"))
+            hud.features.add(f)
+        }
+        run {
             val f = Feature("Soulflow HUD", FishSettings::soulflowHudEnabled)
             f.sub.add(InputIntSetting("Warning", "", FishSettings::soulflowWarningThreshold))
             f.sub.add(ToggleSetting("Missing Warn", "", FishSettings::soulflowMissingNotifier))
