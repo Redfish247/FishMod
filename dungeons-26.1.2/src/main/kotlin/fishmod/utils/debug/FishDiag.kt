@@ -125,7 +125,7 @@ object FishDiag {
         val msg = Component.literal("§8[FishMod] §7Something didn't work right (§e$code§7). ")
             .append(Component.literal("§b§n[Copy report]").withStyle { s ->
                 s.withClickEvent(ClickEvent.RunCommand("/fm debug"))
-                    .withHoverEvent(HoverEvent.ShowText(Component.literal("Copies a debug report to send to Eli")))
+                    .withHoverEvent(HoverEvent.ShowText(Component.literal("Copies a debug report to send to RedFish2471")))
             })
         fishmod.utils.Misc.addChatMessage(msg)
     }

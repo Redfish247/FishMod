@@ -297,7 +297,7 @@ object DianaTracker {
             data.stats.since[sk] = 0
         }
         if (d.loud) announce(d, mf, ls, took)
-        else if (fromInventory && DianaSettings.dianaAnnouncers && DianaSettings.dianaHiltMessage) FishMsg.send("§lRARE DROP! §r${d.color}${d.name}§e #${event.item(d.key)}${priceSuffix(d.key)}")
+        else if (fromInventory && DianaSettings.dianaAnnouncers && DianaSettings.dianaHiltMessage) FishMsg.send("§6§lRARE DROP! §r${d.color}${d.name}§e #${event.item(d.key)}${priceSuffix(d.key)}")
     }
 
     private fun priceSuffix(k: String): String {
