@@ -22,12 +22,17 @@ object ArrowGuess {
         val current get() = cands.getOrNull(idx)
     }
 
-    private val dust = LinkedHashSet<Vec3>()
+    private const val DUST_TTL_MS = 2000L
+    private const val DUST_CAP = 120
+
+    // point -> when first seen; Hypixel resends the same arrow every few ticks
+    private val dust = LinkedHashMap<Vec3, Long>()
+    private var pending = false
     private var range: IntRange? = null
     private val entries = ArrayList<Entry>()
     private val seenRays = HashMap<Pair<Vec3, Vec3>, Long>()
 
-    fun reset() { dust.clear(); entries.clear(); seenRays.clear(); range = null }
+    fun reset() { dust.clear(); entries.clear(); seenRays.clear(); range = null; pending = false }
 
     fun init() {
         Events.ON_PARTICLE.register { p ->
@@ -38,11 +43,22 @@ object ArrowGuess {
             val last = Diana.lastClickedWaypoint
             if (last != null && v.distanceTo(Vec3(last.x + 0.5, last.y + 0.5, last.z + 0.5)) > 7) return@register false
             range = r
-            dust.add(v)
-            detect()
+            // Only a genuinely new point is worth another shape search
+            if (dust.putIfAbsent(v, System.currentTimeMillis()) == null) pending = true
             false
         }
-        ClientTickEvents.END_CLIENT_TICK.register { if (entries.isNotEmpty() && Diana.inHub()) advance() }
+        ClientTickEvents.END_CLIENT_TICK.register {
+            if (!Diana.inHub()) return@register
+            // At most one search per tick, however many particles arrived
+            if (pending) {
+                pending = false
+                val now = System.currentTimeMillis()
+                dust.entries.removeIf { now - it.value > DUST_TTL_MS }
+                if (dust.size > DUST_CAP) dust.keys.take(dust.size - DUST_CAP).forEach { dust.remove(it) }
+                detect()
+            }
+            if (entries.isNotEmpty()) advance()
+        }
     }
 
     private fun bandFor(x: Double, y: Double, z: Double): IntRange? = when {
@@ -69,11 +85,12 @@ object ArrowGuess {
 
     private fun detect() {
         if (dust.size < SHAFT) return
-        val pts = dust.toList()
+        val pts = dust.keys.toList()
         val line = findShaft(pts) ?: return DianaTest.log("arrow: no shaft in ${pts.size} pts")
+        val onLine = line.toHashSet()
         val c1 = line[1]; val c2 = line[line.size - 2]
-        val n1 = pts.count { it !in line && it.distanceTo(c1) <= TOL }
-        val n2 = pts.count { it !in line && it.distanceTo(c2) <= TOL }
+        val n1 = pts.count { it !in onLine && it.distanceTo(c1) <= TOL }
+        val n2 = pts.count { it !in onLine && it.distanceTo(c2) <= TOL }
         val (base, tip) = when {
             n1 == 4 && n2 == 2 -> line.last() to line.first()
             n1 == 2 && n2 == 4 -> line.first() to line.last()
@@ -84,9 +101,9 @@ object ArrowGuess {
         val now = System.currentTimeMillis()
         seenRays.entries.removeIf { now - it.value > 18_000 }
         val key = origin to dir
+        dust.clear()
         if (seenRays.containsKey(key)) return
         seenRays[key] = now
-        dust.clear()
         DianaTest.log("arrow: ray $origin -> $dir band $range")
         solve(origin, dir, range ?: return)
     }
@@ -94,13 +111,17 @@ object ArrowGuess {
     private fun findShaft(pts: List<Vec3>): List<Vec3>? {
         var best: List<Vec3>? = null
         var bestScore = Double.MAX_VALUE
+        // Neighbours within TOL, computed once instead of rescanning every point at every step
+        val near = HashMap<Vec3, List<Vec3>>(pts.size * 2)
+        for (p in pts) near[p] = pts.filter { it !== p && it.distanceTo(p) <= TOL }
         for (start in pts) {
+            if (near[start].isNullOrEmpty()) continue
             val line = arrayListOf(start)
             val used = hashSetOf(start)
             while (line.size < SHAFT) {
                 val last = line.last()
                 val a = line[0]; val b = if (line.size > 1) line[1] else line[0]
-                val next = pts.filter { it !in used && it.distanceTo(last) <= TOL && collinear(a, b, it) }
+                val next = near[last]!!.filter { it !in used && collinear(a, b, it) }
                     .minByOrNull { it.distanceTo(last) } ?: break
                 line.add(next); used.add(next)
             }

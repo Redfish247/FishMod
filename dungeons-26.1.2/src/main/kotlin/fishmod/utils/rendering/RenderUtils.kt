@@ -417,6 +417,18 @@ object RenderUtils {
         matrices.popPose()
     }
 
+    // See-through billboard text; `pxSize` = world units per font pixel. Flushed by the NO_DEPTH_* passes
+    @JvmStatic
+    fun renderSeeThroughText(context: LevelRenderContext, matrices: PoseStack, text: Component, pos: Vec3, pxSize: Float, argb: Int, shadow: Boolean) {
+        val font = Minecraft.getInstance().font
+        matrices.pushPose()
+        matrices.translate(pos.x, pos.y, pos.z)
+        matrices.mulPose(context.levelState().cameraRenderState.orientation)
+        matrices.scale(pxSize, -pxSize, pxSize)
+        font.drawInBatch(text, -font.width(text) / 2f, 0f, argb, shadow, matrices.last().pose(), textBuffers, Font.DisplayMode.SEE_THROUGH, 0, 15728880)
+        matrices.popPose()
+    }
+
     @JvmStatic
     fun flushText() = textBuffers.endBatch()
 
