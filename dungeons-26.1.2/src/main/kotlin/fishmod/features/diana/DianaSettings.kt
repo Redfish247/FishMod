@@ -41,6 +41,14 @@ object DianaSettings {
     @ConfigValue @JvmField var dianaScanRareMobs: Boolean = true
     @ConfigValue @JvmField var dianaShareRareMob: Boolean = true
     @ConfigValue @JvmField var dianaReceiveRareMob: Boolean = true
+    @ConfigValue @JvmField var dianaShareInq: Boolean = true
+    @ConfigValue @JvmField var dianaShareKing: Boolean = true
+    @ConfigValue @JvmField var dianaShareManti: Boolean = true
+    @ConfigValue @JvmField var dianaShareSphinx: Boolean = true
+    @ConfigValue @JvmField var dianaReceiveInq: Boolean = true
+    @ConfigValue @JvmField var dianaReceiveKing: Boolean = true
+    @ConfigValue @JvmField var dianaReceiveManti: Boolean = true
+    @ConfigValue @JvmField var dianaReceiveSphinx: Boolean = true
     @ConfigValue @JvmField var dianaHighlightRareMobs: Boolean = false
     @ConfigValue @JvmField var dianaRareMobLine: Boolean = true
     @ConfigValue @JvmField var dianaCocoonTitle: Boolean = true
