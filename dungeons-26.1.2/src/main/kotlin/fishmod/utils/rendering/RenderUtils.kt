@@ -168,8 +168,11 @@ object RenderUtils {
     }
 
     @JvmStatic
-    fun gizmoLine(a: Vec3, b: Vec3, argb: Int, width: Float) {
-        Gizmos.line(a, b, if ((argb ushr 24) == 0) argb or (0xFF shl 24) else argb, width)
+    fun gizmoLine(a: Vec3, b: Vec3, argb: Int, width: Float) = gizmoLine(a, b, argb, width, false)
+
+    @JvmStatic
+    fun gizmoLine(a: Vec3, b: Vec3, argb: Int, width: Float, throughWalls: Boolean) {
+        Gizmos.line(a, b, if ((argb ushr 24) == 0) argb or (0xFF shl 24) else argb, width).also { if (throughWalls) it.setAlwaysOnTop() }
     }
 
     private fun crossQuads(a: Vec3, b: Vec3, halfWidth: Double): Pair<Array<Vec3>, Array<Vec3>>? {
@@ -194,8 +197,12 @@ object RenderUtils {
     }
 
     @JvmStatic
-    fun gizmoText(text: Component, pos: Vec3, scale: Float, argb: Int) {
+    fun gizmoText(text: Component, pos: Vec3, scale: Float, argb: Int) = gizmoText(text, pos, scale, argb, false)
+
+    @JvmStatic
+    fun gizmoText(text: Component, pos: Vec3, scale: Float, argb: Int, throughWalls: Boolean) {
         Gizmos.billboardText(text.string, pos, TextGizmo.Style.forColorAndCentered(argb).withScale(scale))
+            .also { if (throughWalls) it.setAlwaysOnTop() }
     }
 
     @JvmStatic
