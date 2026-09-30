@@ -5,6 +5,7 @@ import fishmod.features.ScreenTheme
 import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.rendering.UiRenderer
 import fishmod.utils.rendering.UiScale
+import fishmod.utils.debug.FishDiag
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
@@ -61,7 +62,10 @@ class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Scr
     private fun submit() {
         val text = field.value
         onClose()
-        onSubmit?.accept(if (text == null || text.isBlank()) null else text)
+        if (onSubmit == null) FishDiag.fail("DungeonWaypointTitleScreen.1", "waypoint title screen opened without a submit callback")
+        FishDiag.guard("DungeonWaypointTitleScreen.2", "waypoint title submit callback failed") {
+            onSubmit?.accept(if (text == null || text.isBlank()) null else text)
+        }
     }
 
     private fun inside(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int) = mx >= x && mx <= x + w && my >= y && my <= y + h
@@ -89,6 +93,15 @@ class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Scr
     }
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
+        try {
+            renderPanel(mouseX, mouseY)
+        } catch (e: Exception) {
+            FishDiag.fail("DungeonWaypointTitleScreen.3", "waypoint title screen render failed", e)
+        }
+        super.extractRenderState(ctx, mouseX, mouseY, delta)
+    }
+
+    private fun renderPanel(mouseX: Int, mouseY: Int) {
         val mx = UiScale.vx(mouseX)
         val my = UiScale.vx(mouseY)
         UiRecorder.clear()
@@ -136,8 +149,6 @@ class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Scr
         val aHov = inside(mx, my, addX, btnY, addW, btnH)
         ScreenTheme.nRoundedRect(addX, btnY, addW, btnH, btnH / 2, if (aHov) ScreenTheme.ACCENT_HOVER else ScreenTheme.ACCENT)
         centered("Add waypoint", addX + addW / 2, btnY, ON_ACCENT)
-
-        super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
 
     private fun centered(s: String, cx: Int, y: Int, color: Int) {
@@ -148,6 +159,7 @@ class DungeonWaypointTitleScreen(private val onSubmit: Consumer<String?>?) : Scr
     private fun fit(s: String, maxW: Int, size: Float): String {
         if (UiRecorder.textWidth(s, size) <= maxW) return s
         val n = fishmod.utils.rendering.TextFit.prefixLength(s, "...", maxW.toFloat(), 0) { UiRecorder.textWidth(it, size) }
+        if (!FishDiag.check(n in 0..s.length, "DungeonWaypointTitleScreen.4") { "text fit prefix $n out of range for length ${s.length}" }) return s
         return s.substring(0, n) + "..."
     }
 

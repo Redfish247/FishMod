@@ -9,6 +9,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.core.BlockPos
 import net.minecraft.world.level.block.Blocks
+import fishmod.utils.debug.FishDiag
 
 object SpiritBear {
 
@@ -40,15 +41,17 @@ object SpiritBear {
             if (timer > 0) timer--
             if (!active()) return@register false
             val level = Minecraft.getInstance().level ?: return@register false
-
+            try {
             var lanterns = 0
             for (p in ring()) if (level.getBlockState(p).block == Blocks.SEA_LANTERN) lanterns++
+            FishDiag.check(lanterns <= maxKills(), "SpiritBear.2") { "lantern count $lanterns > max ${maxKills()} (mm=${mm()})" }
             kills = lanterns.coerceAtMost(maxKills())
 
             val lastLantern = level.getBlockState(LAST).block == Blocks.SEA_LANTERN
             if (lastLantern && !lastWasLantern) timer = 68
             else if (!lastLantern && lastWasLantern) timer = -1
             lastWasLantern = lastLantern
+            } catch (e: Exception) { FishDiag.fail("SpiritBear.1", "spirit bear tick threw (kills=$kills timer=$timer)", e) }
             false
         }
 
@@ -60,6 +63,10 @@ object SpiritBear {
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!active()) return
+        try { renderHudInner(ctx) } catch (e: Exception) { FishDiag.fail("SpiritBear.3", "spirit bear HUD render threw", e) }
+    }
+
+    private fun renderHudInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
         val body = when {

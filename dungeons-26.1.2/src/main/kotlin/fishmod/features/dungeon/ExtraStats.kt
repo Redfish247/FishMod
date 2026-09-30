@@ -2,6 +2,7 @@ package fishmod.features.dungeon
 
 import fishmod.utils.Location
 import fishmod.utils.Misc
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.DungeonClass
 import fishmod.utils.events.Events
@@ -76,21 +77,28 @@ object ExtraStats {
 
             if (!inBlock) return@register false
 
+            try {
             TITLE.find(s)?.let { m ->
                 floorTitle = (if (m.groupValues[1].isNotEmpty()) "§cMaster Mode" else "§cThe Catacombs") + " §r- §e" + m.groupValues[2]
             }
             DEFEATED.find(s)?.let { m -> defeated = m.groupValues[1]; time = m.groupValues[2].trim(); timePB = m.groupValues[3].isNotEmpty() }
-            SCORE.find(s)?.let { m -> score = m.groupValues[1].toIntOrNull() ?: 0; scoreLetter = m.groupValues[2]; scorePB = m.groupValues[3].isNotEmpty() }
+            val scoreMatch = SCORE.find(s)
+            scoreMatch?.let { m -> score = FishDiag.notNull(m.groupValues[1].toIntOrNull(), "ExtraStats.1") { "team score not int: '$s'" } ?: 0; scoreLetter = m.groupValues[2]; scorePB = m.groupValues[3].isNotEmpty() }
+            if (scoreMatch == null && s.trimStart().startsWith("Team Score:")) FishDiag.fail("ExtraStats.2", "team score line unparsed: '$s'")
+            if (s.trimStart().startsWith("☠ Defeated") && !DEFEATED.containsMatchIn(s)) FishDiag.fail("ExtraStats.3", "defeated line unparsed: '$s'")
             XP.find(s)?.let { m -> xpLines.add("§3" + m.groupValues[1].replace("Experience", "EXP").replace("Catacombs", "Cata")) }
             BITS.find(s)?.let { m -> bits = m.groupValues[1] }
             DAMAGE.find(s)?.let { m -> damage = m.groupValues[1]; damagePB = m.groupValues[2].isNotEmpty() }
             HEAL.find(s)?.let { m -> heal = m.groupValues[1]; healPB = m.groupValues[2].isNotEmpty() }
             KILLS.find(s)?.let { m -> kills = m.groupValues[1]; killsPB = m.groupValues[2].isNotEmpty() }
-            DEATHS.find(s)?.let { m -> deaths = m.groupValues[1].toIntOrNull() ?: 0 }
+            DEATHS.find(s)?.let { m -> deaths = FishDiag.notNull(m.groupValues[1].toIntOrNull(), "ExtraStats.4") { "deaths not int: '$s'" } ?: 0 }
             SECRETS.find(s)?.let { m ->
-                secrets = m.groupValues[1].toIntOrNull() ?: 0
-                if (!printed) { printed = true; print() }
+                secrets = FishDiag.notNull(m.groupValues[1].toIntOrNull(), "ExtraStats.5") { "secrets not int: '$s'" } ?: 0
+                if (!printed) { printed = true; FishDiag.guard("ExtraStats.6", "extra stats print failed") { print() } }
                 inBlock = false
+            }
+            } catch (e: Exception) {
+                FishDiag.fail("ExtraStats.7", "extra stats line parse failed: '$s'", e)
             }
 
             cancelIfInDungeon.any { it.containsMatchIn(s) } || FAIL.containsMatchIn(s)
@@ -118,6 +126,7 @@ object ExtraStats {
     }
 
     private fun print() {
+        FishDiag.check(scoreLetter.isNotEmpty(), "ExtraStats.8") { "extra stats printed without a score line (score=$score time='$time')" }
         val defeatedText =
             if (defeated == null) "§c§lFAILED §a- §e$time"
             else "§aDefeated §c$defeated §ain §e$time${if (timePB) " §d§l(NEW RECORD!)" else ""}"

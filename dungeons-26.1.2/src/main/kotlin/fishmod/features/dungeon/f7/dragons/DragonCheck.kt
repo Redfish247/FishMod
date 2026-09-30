@@ -15,6 +15,7 @@ import net.minecraft.world.item.Items
 import net.minecraft.world.phys.Vec3
 import net.minecraft.world.scores.DisplaySlot
 import net.minecraft.world.scores.PlayerTeam
+import fishmod.utils.debug.FishDiag
 
 object DragonCheck {
 
@@ -39,6 +40,7 @@ object DragonCheck {
                 anyNew = true
             }
         }
+        if (!anyNew && WitherDragon.real.none { p.x in it.xRange && p.z in it.zRange }) FishDiag.fail("DragonCheck.1", "dragon spawn particle at unknown spot ${p.x},${p.z}")
         if (spawning.isNotEmpty()) {
             WitherDragons.priorityDragon = DragonPriority.findPriority(spawning)
             if (anyNew) WitherDragons.onDragonsSpawning(spawning)
@@ -58,6 +60,7 @@ object DragonCheck {
         if (inBox != null) { inBox.setAlive(p.id, tick); return }
         WitherDragon.real.firstOrNull { it.state == WitherDragonState.ALIVE && it.entity == null && it.entityId == p.id }
             ?.let { it.entityId = p.id }
+            ?: FishDiag.fail("DragonCheck.2", "ender dragon ${p.id} spawned at $v with no spawning dragon matching (states=${WitherDragon.real.map { it.state }})")
     }
 
     fun dragonUpdate(p: ClientboundSetEntityDataPacket, tick: Long) {
@@ -68,7 +71,9 @@ object DragonCheck {
                 modMessage("&7dragonUpdate ${d.name} resolved entity=${d.entity != null}")
             }
         }
-        val hp = p.packedItems().firstOrNull { it.id() == HEALTH_DATA_ID }?.value as? Float
+        val hpRaw = p.packedItems().firstOrNull { it.id() == HEALTH_DATA_ID }?.value
+        val hp = hpRaw as? Float
+        if (hpRaw != null && hp == null) FishDiag.fail("DragonCheck.3", "dragon health data id $HEALTH_DATA_ID is ${hpRaw.javaClass.simpleName}, not Float")
         if (fishmod.utils.debug.Debug.dragonDebug) {
             modMessage("&7dragonUpdate ${d.name} ids=${p.packedItems().map { it.id() }} hp=${hp ?: "none"}")
         }
@@ -84,6 +89,7 @@ object DragonCheck {
             val e = d.entity ?: continue
             if (d.sprayedTick != null || d.state != WitherDragonState.ALIVE || stand.distanceTo(e) > 8.0) continue
             d.sprayedTick = tick - d.spawnedTick
+            FishDiag.check(tick >= d.spawnedTick, "DragonCheck.4") { "${d.name} sprayed before it spawned (tick=$tick spawned=${d.spawnedTick})" }
         }
     }
 
@@ -94,7 +100,11 @@ object DragonCheck {
         if (tick - d.spawnedTick <= d.skipKillTime) d.arrowsHit++
     }
 
-    fun isAliveOnScoreboard(d: WitherDragon): Boolean {
+    fun isAliveOnScoreboard(d: WitherDragon): Boolean = try { isAliveOnScoreboardInner(d) } catch (e: Exception) {
+        FishDiag.fail("DragonCheck.5", "scoreboard dragon check threw for ${d.name}", e); true
+    }
+
+    private fun isAliveOnScoreboardInner(d: WitherDragon): Boolean {
         val sb = Minecraft.getInstance().level?.scoreboard ?: return true
         val obj = sb.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return true
         for (score in sb.listPlayerScores(obj)) {

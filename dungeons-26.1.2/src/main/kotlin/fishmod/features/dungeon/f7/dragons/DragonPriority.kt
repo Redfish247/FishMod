@@ -3,6 +3,7 @@ package fishmod.features.dungeon.f7.dragons
 import fishmod.features.dungeon.Blessings
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.DungeonClass
+import fishmod.utils.debug.FishDiag
 
 object DragonPriority {
 
@@ -10,6 +11,7 @@ object DragonPriority {
 
     fun findPriority(spawning: MutableList<WitherDragon>): WitherDragon {
         if (spawning.isEmpty()) return WitherDragon.NONE
+        FishDiag.check(WitherDragon.NONE !in spawning, "DragonPriority.1") { "NONE dragon in spawning list $spawning" }
         if (!FishSettings.witherDragonsPriority) {
             spawning.sortBy { FIXED.indexOf(it) }
             return spawning.first()
@@ -21,7 +23,10 @@ object DragonPriority {
         val totalPower = Blessings.Type.POWER.current + (if (Blessings.Type.TIME.current > 0) 2.5 else 0.0)
         val clazz = DungeonClass.currentClass
             ?: DungeonClass.getClass(net.minecraft.client.Minecraft.getInstance().player)
-            ?: return spawning.sortedBy { FIXED.indexOf(it) }.first()
+            ?: run {
+                FishDiag.fail("DragonPriority.2", "own dungeon class unknown during dragon priority")
+                return spawning.sortedBy { FIXED.indexOf(it) }.first()
+            }
 
         val order = listOf(WitherDragon.ORANGE, WitherDragon.GREEN, WitherDragon.RED, WitherDragon.BLUE, WitherDragon.PURPLE)
         val priorityList = when {
@@ -32,6 +37,7 @@ object DragonPriority {
         }
 
         spawning.sortBy { priorityList.indexOf(it) }
+        FishDiag.check(totalPower >= 0, "DragonPriority.3") { "negative blessing power $totalPower" }
 
         if (totalPower >= FishSettings.witherDragonsEasyPower) {
             val solo = FishSettings.witherDragonsSoloDebuff

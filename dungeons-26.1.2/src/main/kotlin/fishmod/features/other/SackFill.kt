@@ -1,5 +1,6 @@
 package fishmod.features.other
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.FishMsg
 import fishmod.utils.Misc
 import fishmod.utils.data.ItemUtil
@@ -24,7 +25,7 @@ object SackFill {
 
     @JvmStatic
     fun fill(alias: String, amount: Int?) {
-        val sack = SACKS[alias] ?: return
+        val sack = FishDiag.notNull(SACKS[alias], "SackFill.1") { "unknown sack alias '$alias'" } ?: return
         val target = (amount ?: sack.default).coerceIn(1, 9999)
         val player = Minecraft.getInstance().player ?: return
 
@@ -39,6 +40,7 @@ object SackFill {
             FishMsg.send("§7Already have §a$have§7 ${sack.label} §8(target $target)")
             return
         }
+        FishDiag.check(have >= 0, "SackFill.2") { "negative item count $have for ${sack.id}" }
         Misc.executeCommand("gfs ${sack.id} ${target - have}")
     }
 }

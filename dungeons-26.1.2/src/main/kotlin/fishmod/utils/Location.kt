@@ -1,6 +1,7 @@
 package fishmod.utils
 
 import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import net.hypixel.data.type.ServerType
 import net.hypixel.modapi.HypixelModAPI
@@ -45,13 +46,17 @@ enum class Location(val name2: String) {
         fun init() {
             val instance = HypixelModAPI.getInstance()
             instance.createHandler(ClientboundLocationPacket::class.java) { packet ->
-                packet.map.ifPresent { locationName ->
-                    if (packet.serverType.isPresent) {
-                        val serverType: ServerType = packet.serverType.get()
-                        inSkyblockFlag = serverType.name == "SkyBlock"
-                    }
+                try {
+                    packet.map.ifPresent { locationName ->
+                        if (packet.serverType.isPresent) {
+                            val serverType: ServerType = packet.serverType.get()
+                            inSkyblockFlag = serverType.name == "SkyBlock"
+                        }
 
-                    changeLocation(getLocation(locationName))
+                        changeLocation(getLocation(locationName))
+                    }
+                } catch (e: Exception) {
+                    FishDiag.fail("Location.2", "location packet handling failed ($packet)", e)
                 }
             }
 
@@ -68,7 +73,8 @@ enum class Location(val name2: String) {
             var location: Location
             try {
                 location = valueOf(locationName.uppercase().replace(" ", "_").replace("'", ""))
-            } catch (ignored: IllegalArgumentException) {
+            } catch (e: IllegalArgumentException) {
+                if (inSkyblockFlag) FishDiag.fail("Location.1", "unknown SkyBlock location name '$locationName'")
                 location = UNKNOWN
             }
             return location
@@ -81,7 +87,11 @@ enum class Location(val name2: String) {
             lastChanged = System.currentTimeMillis()
             Debug.sendDebugMessage(Component.literal("Location: $currentLocation"))
 
-            Events.ON_LOCATION_CHANGE.invoke { locationChangeEvent -> locationChangeEvent.onLocationChange(currentLocation) }
+            try {
+                Events.ON_LOCATION_CHANGE.invoke { locationChangeEvent -> locationChangeEvent.onLocationChange(currentLocation) }
+            } catch (e: Exception) {
+                FishDiag.fail("Location.3", "location change listener threw for ${location.name2}", e)
+            }
         }
 
         private fun practiceModeDungeon(location: Location): Boolean =

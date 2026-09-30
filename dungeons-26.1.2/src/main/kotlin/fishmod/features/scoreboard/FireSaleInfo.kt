@@ -1,5 +1,6 @@
 package fishmod.features.scoreboard
 
+import fishmod.utils.debug.FishDiag
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import fishmod.utils.Location
@@ -42,19 +43,26 @@ object FireSaleInfo {
             .timeout(Duration.ofSeconds(10)).GET().build()
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept { resp ->
             try {
-                if (resp.statusCode() != 200) { mc.execute { fetchInFlight = false }; return@thenAccept }
+                if (resp.statusCode() != 200) {
+                    FishDiag.fail("FireSaleInfo.1", "firesales API returned HTTP ${resp.statusCode()}")
+                    mc.execute { fetchInFlight = false }; return@thenAccept
+                }
                 val root = JsonParser.parseString(resp.body()).asJsonObject
                 val sales = root.getAsJsonArray("sales") ?: com.google.gson.JsonArray()
                 val lines = ArrayList<String>()
                 for (el in sales) {
-                    val name = itemName(el.asJsonObject) ?: continue
+                    val name = FishDiag.notNull(itemName(el.asJsonObject), "FireSaleInfo.4") { "fire sale entry has no item id: $el" } ?: continue
                     lines.add("§7Fire Sale: §6${prettify(name)}")
                 }
                 mc.execute { saleLines = lines; fetchInFlight = false }
-            } catch (ignored: Exception) {
+            } catch (e: Exception) {
+                FishDiag.fail("FireSaleInfo.2", "failed to parse firesales response", e)
                 mc.execute { fetchInFlight = false }
             }
-        }.exceptionally { mc.execute { fetchInFlight = false }; null }
+        }.exceptionally { t ->
+            FishDiag.fail("FireSaleInfo.3", "firesales request failed", t)
+            mc.execute { fetchInFlight = false }; null
+        }
     }
 
     private fun itemName(sale: JsonObject): String? {

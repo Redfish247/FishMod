@@ -3,6 +3,7 @@ package fishmod.utils.dungeon
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
+import fishmod.utils.debug.FishDiag
 import java.io.File
 import java.io.FileReader
 import java.io.FileWriter
@@ -33,6 +34,7 @@ object RunHistory {
             val floorData = data.getOrPut(floor) { HashMap() }
             var anyRecorded = false
             for ((key, t) in times) {
+                if (t.isNaN() || t > MAX_SPLIT_SECONDS) FishDiag.fail("RunHistory.1", "rejected split time $floor/$key=$t")
                 if (t <= 0 || t > MAX_SPLIT_SECONDS) continue
                 val list = floorData.getOrPut(key) { ArrayList() }
                 list.add(t)
@@ -55,6 +57,7 @@ object RunHistory {
                 if (!split.ended()) continue
                 if (split.avg < 0) continue
                 val t = split.getRealTime()
+                if (t.isNaN() || t > MAX_SPLIT_SECONDS) FishDiag.fail("RunHistory.2", "ended split with bad time $floor/${split.name}=$t")
                 if (t <= 0 || t > MAX_SPLIT_SECONDS) continue
 
                 val times = floorData.getOrPut(split.name) { ArrayList() }
@@ -103,12 +106,13 @@ object RunHistory {
                 FileReader(file).use { reader ->
                     val type: Type = object : TypeToken<MutableMap<String, MutableMap<String, MutableList<Double>>>>() {}.type
                     val loaded: MutableMap<String, MutableMap<String, MutableList<Double>>>? = GSON.fromJson(reader, type)
-                    if (loaded != null) data = loaded
+                    if (FishDiag.check(loaded != null, "RunHistory.3") { "fishmod-runs.json parsed to null (${file.length()} bytes)" }) data = loaded!!
                 }
             } catch (e: Exception) {
                 fishmod.utils.debug.Debug.LOGGER.warn("[RunHistory] load failed: {}", e.toString())
+                FishDiag.fail("RunHistory.4", "load $FILE_PATH", e)
             }
-            if (pruneInvalid()) save()
+            if (FishDiag.guard("RunHistory.5", "prune invalid run history") { pruneInvalid() } == true) save()
         }
     }
 
@@ -143,6 +147,7 @@ object RunHistory {
                 FileWriter(file).use { writer -> writer.write(json) }
             } catch (e: Exception) {
                 fishmod.utils.debug.Debug.LOGGER.warn("[RunHistory] save failed: {}", e.toString())
+                FishDiag.fail("RunHistory.6", "save $FILE_PATH", e)
             }
         }
     }

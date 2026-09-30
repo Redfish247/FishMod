@@ -1,5 +1,6 @@
 package fishmod.cosmetic
 
+import fishmod.utils.debug.FishDiag
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -35,7 +36,8 @@ object NickState {
             reset()
             return
         }
-        val stops: Array<IntArray> = when (fishmod.utils.config.values.FishSettings.nickColorMode.uppercase()) {
+        val mode = fishmod.utils.config.values.FishSettings.nickColorMode.uppercase()
+        val stops: Array<IntArray> = when (mode) {
             "SOLID" -> arrayOf(GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorStart))
             "GRADIENT3" -> arrayOf(
                 GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorStart),
@@ -43,12 +45,15 @@ object NickState {
                 GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorEnd)
             )
             "RAINBOW" -> GradientNick.rainbow()
-            else -> arrayOf(
-                GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorStart),
-                GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorEnd)
-            )
+            else -> {
+                FishDiag.check(mode == "GRADIENT", "NickState.1") { "unknown nickColorMode '$mode'" }
+                arrayOf(
+                    GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorStart),
+                    GradientNick.rgb(fishmod.utils.config.values.FishSettings.nickColorEnd)
+                )
+            }
         }
-        set(GradientNick.build(stripped, stops))
+        set(FishDiag.guard("NickState.2", "gradient nick build failed for '$stripped' mode=$mode") { GradientNick.build(stripped, stops) } ?: stripped)
     }
 
     @JvmStatic
@@ -91,7 +96,7 @@ object NickState {
         val n = nick
         val p = parsed
         if (p.raw == n) return p.component
-        val component = parse(n)
+        val component = FishDiag.guard("NickState.3", "nick parse failed for '$n'") { parse(n) } ?: Component.literal(n ?: "")
         parsed = Parsed(n, component)
         return component
     }

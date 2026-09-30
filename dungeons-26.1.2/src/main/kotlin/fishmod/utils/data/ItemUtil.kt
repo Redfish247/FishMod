@@ -1,6 +1,7 @@
 package fishmod.utils.data
 
 import fishmod.features.item.fishmodCustomDataTag
+import fishmod.utils.debug.FishDiag
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
 
@@ -9,13 +10,19 @@ object ItemUtil {
     @JvmStatic
     fun getId(item: ItemStack): String? {
         val compound = item.fishmodCustomDataTag() ?: return null
-        return if (compound.contains("id")) compound.getStringOr("id", "") else null
+        if (!compound.contains("id")) return null
+        val id = compound.getStringOr("id", "")
+        if (id.isEmpty()) FishDiag.fail("ItemUtil.1", "item custom data has 'id' but it isn't a non-empty string: ${compound.get("id")}")
+        return id
     }
 
     @JvmStatic
     fun getUuid(item: ItemStack): String? {
         val compound = item.fishmodCustomDataTag() ?: return null
-        return if (compound.contains("uuid")) compound.getStringOr("uuid", "") else null
+        if (!compound.contains("uuid")) return null
+        val uuid = compound.getStringOr("uuid", "")
+        if (uuid.isEmpty()) FishDiag.fail("ItemUtil.2", "item custom data has 'uuid' but it isn't a non-empty string: ${compound.get("uuid")}")
+        return uuid
     }
 
     @JvmStatic

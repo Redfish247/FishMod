@@ -19,10 +19,14 @@ public class ItemStackMixin implements ItemRarityHolder, ItemCustomDataHolder {
 
     @Inject(method = "getHoverName", at = @At("RETURN"), cancellable = true)
     private void fishmod$customItemName(CallbackInfoReturnable<Component> cir) {
-        String uuid = ItemUtil.getUuid((ItemStack) (Object) this);
-        if (uuid == null) return;
-        net.minecraft.network.chat.MutableComponent name = ItemCustomizationStore.parsedItemName(uuid);
-        if (name != null) cir.setReturnValue(name.setStyle(cir.getReturnValue().getStyle()));
+        try {
+            String uuid = ItemUtil.getUuid((ItemStack) (Object) this);
+            if (uuid == null) return;
+            net.minecraft.network.chat.MutableComponent name = ItemCustomizationStore.parsedItemName(uuid);
+            if (name != null) cir.setReturnValue(name.setStyle(cir.getReturnValue().getStyle()));
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("ItemStackMixin.1", "custom item name lookup failed", t);
+        }
     }
 
     @Unique

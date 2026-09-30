@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.config.values.FishSettings
@@ -21,7 +22,9 @@ object GyroHelper {
 
     @JvmStatic
     fun init() {
-        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc -> render(m, vc) }
+        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc ->
+            try { render(m, vc) } catch (t: Throwable) { FishDiag.fail("GyroHelper.1", "gyro ring render failed", t) }
+        }
     }
 
     private fun render(matrices: PoseStack, vc: VertexConsumer) {

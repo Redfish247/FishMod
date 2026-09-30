@@ -2,6 +2,7 @@ package fishmod.features
 
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -29,7 +30,7 @@ object PetIcons {
 
     @JvmStatic
     fun init() {
-        ClientTickEvents.END_CLIENT_TICK.register { mc -> if (++tick >= 10) { tick = 0; learn(mc) } }
+        ClientTickEvents.END_CLIENT_TICK.register { mc -> if (++tick >= 10) { tick = 0; FishDiag.guard("PetIcons.1", "pet icon learn failed") { learn(mc) } } }
     }
 
     @JvmStatic
@@ -41,6 +42,10 @@ object PetIcons {
         val k = key(petName ?: return null)
         stacks[k]?.let { return it }
         val tex = textures[k] ?: return null
+        return FishDiag.guard("PetIcons.2", "pet icon build failed for '$k'") { buildIcon(k, tex) }
+    }
+
+    private fun buildIcon(k: String, tex: String): ItemStack {
         val props = com.google.common.collect.ImmutableMultimap.of("textures", com.mojang.authlib.properties.Property("textures", tex))
         val profile = com.mojang.authlib.GameProfile(java.util.UUID.nameUUIDFromBytes(k.toByteArray()), "fmpet", com.mojang.authlib.properties.PropertyMap(props))
         return ItemStack(Items.PLAYER_HEAD).also {
@@ -74,6 +79,7 @@ object PetIcons {
             f.reader().use { r -> GSON.fromJson<MutableMap<String, String>>(r, type)?.let { textures = it } }
         } catch (e: Exception) {
             fishmod.utils.debug.Debug.LOGGER.warn("[PetIcons] load failed: {}", e.toString())
+            FishDiag.fail("PetIcons.3", "pet icons load failed", e)
         }
     }
 
@@ -84,6 +90,7 @@ object PetIcons {
             f.writer().use { w -> GSON.toJson(textures, w) }
         } catch (e: Exception) {
             fishmod.utils.debug.Debug.LOGGER.warn("[PetIcons] save failed: {}", e.toString())
+            FishDiag.fail("PetIcons.4", "pet icons save failed (${textures.size} entries)", e)
         }
     }
 }

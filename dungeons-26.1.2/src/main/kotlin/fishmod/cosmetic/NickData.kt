@@ -1,5 +1,6 @@
 package fishmod.cosmetic
 
+import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 import java.io.IOException
 import java.nio.file.Files
@@ -14,7 +15,8 @@ object NickData {
         if (dirReady.compareAndSet(false, true)) {
             try {
                 Files.createDirectories(dir)
-            } catch (ignored: IOException) {
+            } catch (e: IOException) {
+                FishDiag.fail("NickData.1", "could not create CosmeticNameChanger dir", e)
             }
         }
         return dir.resolve("nick.txt")
@@ -28,7 +30,8 @@ object NickData {
                 val raw = Files.readString(f).trim()
                 if (raw.isNotEmpty()) NickState.applyFromDisk(raw)
             }
-        } catch (ignored: IOException) {
+        } catch (e: IOException) {
+            FishDiag.fail("NickData.2", "nick.txt read failed", e)
         }
     }
 
@@ -41,7 +44,8 @@ object NickData {
             } else {
                 Files.deleteIfExists(f)
             }
-        } catch (ignored: IOException) {
+        } catch (e: IOException) {
+            FishDiag.fail("NickData.3", "nick.txt write failed", e)
         }
     }
 
@@ -50,7 +54,8 @@ object NickData {
         return try {
             val f = file()
             if (Files.exists(f)) Files.getLastModifiedTime(f).toMillis() else 0L
-        } catch (ignored: IOException) {
+        } catch (e: IOException) {
+            FishDiag.fail("NickData.4", "nick.txt mtime read failed", e)
             0L
         }
     }

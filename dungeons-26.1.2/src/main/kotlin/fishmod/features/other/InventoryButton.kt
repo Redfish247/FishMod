@@ -1,5 +1,6 @@
 package fishmod.features.other
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.Misc
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
@@ -31,9 +32,13 @@ class InventoryButton(private val x: Int, private val y: Int, private val comman
     }
 
     fun onClick() {
-        val str = command.get()
-        if (str.isNullOrEmpty()) return
-        Misc.executeCommand(str)
+        try {
+            val str = command.get()
+            if (str.isNullOrEmpty()) return
+            Misc.executeCommand(str)
+        } catch (e: Exception) {
+            FishDiag.fail("InventoryButton.1", "inventory button $index click failed", e)
+        }
     }
 
     fun inBounds(mouseX: Double, mouseY: Double): Boolean {
@@ -57,7 +62,11 @@ class InventoryButton(private val x: Int, private val y: Int, private val comman
         @JvmStatic
         fun renderAll(context: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, deltaTicks: Float) {
             for (button in BUTTONS) {
-                button.render(context, mouseX, mouseY, deltaTicks)
+                try {
+                    button.render(context, mouseX, mouseY, deltaTicks)
+                } catch (e: Exception) {
+                    FishDiag.fail("InventoryButton.2", "inventory button ${button.index} render failed", e)
+                }
             }
         }
     }

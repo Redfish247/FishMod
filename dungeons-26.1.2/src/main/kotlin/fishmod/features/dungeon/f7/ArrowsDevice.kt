@@ -22,6 +22,7 @@ import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import kotlin.math.abs
+import fishmod.utils.debug.FishDiag
 
 object ArrowsDevice {
 
@@ -50,7 +51,7 @@ object ArrowsDevice {
     }
 
     private fun inP3(): Boolean =
-        (try { Phase.inP3() } catch (t: Throwable) { false }) ||
+        (try { Phase.inP3() } catch (t: Throwable) { FishDiag.fail("ArrowsDevice.1", "Phase.inP3 threw", t); false }) ||
             (Location.inDungeon() && Minecraft.getInstance().player?.let { it.y in 100.0..156.0 } == true)
 
     private val isPlayerInRoom: Boolean
@@ -65,11 +66,13 @@ object ArrowsDevice {
     @JvmStatic
     fun init() {
         Events.ON_PACKET.register { packet ->
-            when (packet) {
-                is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
-                is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::onBlock)
-                is ClientboundSetEntityDataPacket -> onEntityData(packet)
-            }
+            try {
+                when (packet) {
+                    is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
+                    is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::onBlock)
+                    is ClientboundSetEntityDataPacket -> onEntityData(packet)
+                }
+            } catch (e: Exception) { FishDiag.fail("ArrowsDevice.2", "arrows device packet handler threw on ${packet.javaClass.simpleName}", e) }
             false
         }
 
@@ -79,13 +82,19 @@ object ArrowsDevice {
 
         Events.ON_GAME_MESSAGE.register { text ->
             if (!FishSettings.arrowsDeviceEnabled || !inP3() || !isPlayerInRoom || isDeviceComplete) return@register false
-            val name = deviceCompleteRegex.find(text.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, ""))?.groupValues?.get(1)
+            val plain = text.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
+            val name = deviceCompleteRegex.find(plain)?.groupValues?.get(1)
+            if (name == null && plain.contains(" completed a device! (")) FishDiag.fail("ArrowsDevice.3", "device-complete line didn't match: '$plain'")
             if (name == Minecraft.getInstance().player?.gameProfile?.name) onComplete("Chat")
             false
         }
 
-        RenderingEvents.GIZMO.register { _ -> if (!FishSettings.arrowsDeviceDepth) drawGizmo() }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> if (FishSettings.arrowsDeviceDepth) draw(m, vc) }
+        RenderingEvents.GIZMO.register { _ ->
+            if (!FishSettings.arrowsDeviceDepth) try { drawGizmo() } catch (e: Exception) { FishDiag.fail("ArrowsDevice.4", "arrows device gizmo render threw", e) }
+        }
+        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
+            if (FishSettings.arrowsDeviceDepth) try { draw(m, vc) } catch (e: Exception) { FishDiag.fail("ArrowsDevice.5", "arrows device fill render threw", e) }
+        }
 
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (!FishSettings.arrowsDeviceShowAim) optimalAimPositions = emptyList()
@@ -106,6 +115,7 @@ object ArrowsDevice {
         }
         val old = prev.put(pos.asLong(), state.block)
 
+        FishDiag.check(markedPositions.size <= devicePositions.size, "ArrowsDevice.7") { "marked ${markedPositions.size} > ${devicePositions.size} targets" }
         if (old == Blocks.EMERALD_BLOCK && state.`is`(Blocks.BLUE_TERRACOTTA)) {
             markedPositions.add(pos.immutable())
             if (targetPosition == pos) targetPosition = null
@@ -175,7 +185,10 @@ object ArrowsDevice {
         val greenAim = adjacentPairs
             .filter { (b1, b2) -> target == b1 || target == b2 }
             .mapNotNull { (b1, b2) -> createAim(b1, b2) }
-            .maxByOrNull { it.coveredBlocks.size } ?: return emptyList()
+            .maxByOrNull { it.coveredBlocks.size } ?: run {
+                FishDiag.fail("ArrowsDevice.6", "no aim pair covers target $target (marked=${markedPositions.size})")
+                return emptyList()
+            }
 
         val remaining = adjacentPairs
             .filterNot { (b1, b2) -> target == b1 || target == b2 }

@@ -1,5 +1,6 @@
 package fishmod.features.other
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.Keybinds
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
@@ -39,7 +40,12 @@ object PetKeybinds {
         val binds = Keybinds.petKeybinds ?: return false
         val i = binds.indexOfFirst { !it.isUnbound && matches.test(it) }
         if (i < 0) return false
-        select(Minecraft.getInstance(), screen, PETS[i])
+        if (!FishDiag.check(i < PETS.size, "PetKeybinds.1") { "pet keybind index $i but only ${PETS.size} pets" }) return false
+        try {
+            select(Minecraft.getInstance(), screen, PETS[i])
+        } catch (e: Exception) {
+            FishDiag.fail("PetKeybinds.2", "pet select failed for ${PETS[i]}", e)
+        }
         return true
     }
 
@@ -72,7 +78,8 @@ object PetKeybinds {
 
     private fun petLevel(stack: ItemStack): Int {
         val raw = stack.hoverName.string.replace(COLOR, "").trim()
-        return LEVEL.find(raw)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        val lvl = LEVEL.find(raw)?.groupValues?.get(1) ?: return 0
+        return FishDiag.notNull(lvl.toIntOrNull(), "PetKeybinds.3") { "pet level not numeric: '$lvl' in '$raw'" } ?: 0
     }
 
     private fun isPetsMenu(screen: AbstractContainerScreen<*>): Boolean =
@@ -80,7 +87,8 @@ object PetKeybinds {
 
     private fun click(mc: Minecraft, containerId: Int, slotId: Int) {
         val player = mc.player ?: return
-        mc.gameMode?.handleContainerInput(containerId, slotId, 0, ContainerInput.PICKUP, player)
+        FishDiag.notNull(mc.gameMode, "PetKeybinds.4") { "gameMode null while player present, slot $slotId" }
+            ?.handleContainerInput(containerId, slotId, 0, ContainerInput.PICKUP, player)
     }
 
     private fun msg(s: String) = Misc.addChatMessage(Component.literal(s))

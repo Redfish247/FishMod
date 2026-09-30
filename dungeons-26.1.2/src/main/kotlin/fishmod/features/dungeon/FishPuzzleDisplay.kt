@@ -3,6 +3,7 @@ package fishmod.features.dungeon
 import fishmod.utils.Constants
 import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.events.Events
 import fishmod.shaded.practicalconfig.hud.HUDComponent
@@ -38,7 +39,7 @@ object FishPuzzleDisplay {
                 puzzles.clear()
                 return@EndTick
             }
-            updatePuzzles(client)
+            try { updatePuzzles(client) } catch (e: Exception) { FishDiag.fail("FishPuzzleDisplay.1", "puzzle tab scan failed", e) }
         })
         Events.ON_LOCATION_CHANGE.register { _ ->
             bossReached = false
@@ -64,6 +65,7 @@ object FishPuzzleDisplay {
         }
 
         if (puzzleHeader != null) {
+            FishDiag.check(puzzleHeader.contains('('), "FishPuzzleDisplay.2") { "puzzle header has no count: '$puzzleHeader'" }
             puzzles.add(0, puzzleHeader)
         }
     }
@@ -80,6 +82,7 @@ object FishPuzzleDisplay {
         val x = component.scaledX
         val y = component.scaledY
 
+        try {
         for (i in puzzles.indices) {
             val puzzle = puzzles[i]
             val color = when {
@@ -89,6 +92,9 @@ object FishPuzzleDisplay {
                 else -> Constants.RED
             }
             context.text(client.font, puzzle, x, y + i * Constants.TEXT_HEIGHT, color, true)
+        }
+        } catch (e: Exception) {
+            FishDiag.fail("FishPuzzleDisplay.3", "puzzle hud render failed (${puzzles.size} lines)", e)
         }
     }
 }

@@ -2,6 +2,7 @@ package fishmod.features.slayers
 
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import net.minecraft.network.chat.Component
 
@@ -44,10 +45,14 @@ object SlayerAlerts {
     }
 
     private fun titleParts(main: String, sub: String, durationMs: Int) {
-        Misc.forceTitle(
-            Component.literal(main),
-            if (sub.isEmpty()) Component.empty() else Component.literal(sub),
-            durationMs.coerceIn(250, 10_000),
-        )
+        try {
+            Misc.forceTitle(
+                Component.literal(main),
+                if (sub.isEmpty()) Component.empty() else Component.literal(sub),
+                durationMs.coerceIn(250, 10_000),
+            )
+        } catch (e: Exception) {
+            FishDiag.fail("SlayerAlerts.1", "failed to show slayer title '$main'", e)
+        }
     }
 }

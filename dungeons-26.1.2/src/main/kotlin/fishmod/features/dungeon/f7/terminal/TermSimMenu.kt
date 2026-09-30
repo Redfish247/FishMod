@@ -6,6 +6,7 @@ import net.minecraft.world.entity.player.Player
 import net.minecraft.world.inventory.ChestMenu
 import net.minecraft.world.inventory.MenuType
 import net.minecraft.world.item.ItemStack
+import fishmod.utils.debug.FishDiag
 
 class TermSimMenu(val rows: Int, playerInv: Inventory, @JvmField val box: SimpleContainer) :
     ChestMenu(menuType(rows), 0, playerInv, box, rows) {
@@ -20,7 +21,8 @@ class TermSimMenu(val rows: Int, playerInv: Inventory, @JvmField val box: Simple
             3 -> MenuType.GENERIC_9x3
             4 -> MenuType.GENERIC_9x4
             5 -> MenuType.GENERIC_9x5
-            else -> MenuType.GENERIC_9x6
+            6 -> MenuType.GENERIC_9x6
+            else -> { FishDiag.fail("TermSimMenu.1", "unsupported sim menu rows $rows"); MenuType.GENERIC_9x6 }
         }
     }
 }

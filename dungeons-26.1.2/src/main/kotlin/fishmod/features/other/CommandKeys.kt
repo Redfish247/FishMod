@@ -1,5 +1,6 @@
 package fishmod.features.other
 
+import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.utils.Misc
 import fishmod.utils.config.FolderUtility
@@ -30,7 +31,13 @@ object CommandKeys {
 
     @JvmStatic
     fun init() {
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc -> tick(mc) })
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
+            try {
+                tick(mc)
+            } catch (e: Exception) {
+                FishDiag.fail("CommandKeys.4", "command key tick failed (${entries.size} entries)", e)
+            }
+        })
     }
 
     @JvmStatic
@@ -83,13 +90,15 @@ object CommandKeys {
                 val parts = line.split("\t", limit = 3)
                 if (parts.size < 2 || parts[0].isBlank()) continue
                 val key = InputConstants.getKey(parts[0].trim())
+                FishDiag.check(key != InputConstants.UNKNOWN, "CommandKeys.3") { "unknown key name '${parts[0]}' in command_keys.txt" }
                 if (parts.size == 3 && (parts[1] == "0" || parts[1] == "1")) {
                     entries.add(Entry(key, parts[2].trim(), parts[1] == "1"))
                 } else {
                     entries.add(Entry(key, line.substringAfter('\t').trim()))
                 }
             }
-        } catch (ignored: IOException) {
+        } catch (e: Exception) {
+            FishDiag.fail("CommandKeys.1", "failed to read $FILE", e)
         }
     }
 
@@ -99,7 +108,8 @@ object CommandKeys {
             val sb = StringBuilder()
             for (e in entries) sb.append(e.key().name).append('\t').append(if (e.enabled()) '1' else '0').append('\t').append(e.command()).append('\n')
             Files.writeString(FILE, sb.toString())
-        } catch (ignored: IOException) {
+        } catch (e: IOException) {
+            FishDiag.fail("CommandKeys.2", "failed to write $FILE (${entries.size} entries)", e)
         }
     }
 }

@@ -3,6 +3,7 @@ package fishmod.features.dungeon
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
@@ -29,10 +30,18 @@ object M7LeverWaypoints {
 
     @JvmStatic
     fun init() {
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc -> onTick(mc) })
-        RenderingEvents.NO_DEPTH_FILLED.register { _, matrices, vc -> render(matrices, vc) }
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
+            try { onTick(mc) } catch (e: Exception) { FishDiag.fail("M7LeverWaypoints.1", "m7 lever tick failed (${flicked.size} flicked)", e) }
+        })
+        RenderingEvents.NO_DEPTH_FILLED.register { _, matrices, vc ->
+            try { render(matrices, vc) } catch (e: Exception) { FishDiag.fail("M7LeverWaypoints.2", "m7 lever render failed", e) }
+        }
         AttackBlockCallback.EVENT.register(AttackBlockCallback { _, world, _, pos, _ ->
-            if (pos in LEVER_POSITIONS && world.getBlockState(pos).block is LeverBlock) flicked.add(pos.immutable())
+            try {
+                if (pos in LEVER_POSITIONS && world.getBlockState(pos).block is LeverBlock) flicked.add(pos.immutable())
+            } catch (e: Exception) {
+                FishDiag.fail("M7LeverWaypoints.3", "m7 lever attack hook failed at $pos", e)
+            }
             InteractionResult.PASS
         })
     }
@@ -65,6 +74,7 @@ object M7LeverWaypoints {
         val fill = floatArrayOf(r, g, b, fillA)
         val outline = floatArrayOf(r, g, b, 1f)
         val mode = FishSettings.m7LeverWaypointMode
+        if (mode !in 0..2) FishDiag.fail("M7LeverWaypoints.4", "unknown m7 lever waypoint mode $mode")
 
         for (p in LEVER_POSITIONS) {
             if (p in flicked) continue

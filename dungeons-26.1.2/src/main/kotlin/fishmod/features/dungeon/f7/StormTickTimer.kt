@@ -18,6 +18,7 @@ import net.minecraft.sounds.SoundEvents
 import java.util.regex.Pattern
 import kotlin.math.ceil
 import kotlin.math.max
+import fishmod.utils.debug.FishDiag
 
 object StormTickTimer {
 
@@ -44,6 +45,7 @@ object StormTickTimer {
             shouldCount = { Location.inDungeon() && Phase.inP2() && !Phase.stormDead() },
             resetOn = { Location.inDungeon() },
             onTick = { t ->
+                try {
                 StormOverAlert.onTick(t, STORM_OVER_TICK)
                 if (Floor7.enablePyTimer && t == pyEndTick()) {
                     Misc.forceTitle(Component.literal("STAND ON CRUSHER!").withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.BOLD), Component.empty())
@@ -54,16 +56,21 @@ object StormTickTimer {
                     Misc.forceTitle(Component.literal("RELEASE NOW!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD), Component.empty())
                     Scheduler.scheduleSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1f)
                 }
+                } catch (e: Exception) { FishDiag.fail("StormTickTimer.1", "storm tick alerts threw at tick $t", e) }
             },
             onReset = { deathTime = 0.0; deathStartDisplayTime = 0 }
         )
         Events.ON_GAME_MESSAGE.register { text ->
             if (!Location.inDungeon() || !Phase.inP2()) return@register false
+            if (deathTime == 0.0 && text.string.startsWith("⚠ Storm is enraged") && !PATTERN.matcher(text.string).find()) FishDiag.fail("StormTickTimer.2", "storm enraged line format changed: '${text.string}'")
             if (deathTime == 0.0 && PATTERN.matcher(text.string).find()) {
+                FishDiag.check(timer.tick > 0, "StormTickTimer.3") { "storm died but P2 tick timer never counted" }
                 deathTime = timer.tick * Constants.TICK_DURATION
                 deathStartDisplayTime = System.currentTimeMillis()
-                CritTracker.onStormDeath(deathTime)
-                Phase.onStormKill(deathTime)
+                FishDiag.guard("StormTickTimer.4", "storm death listeners threw") {
+                    CritTracker.onStormDeath(deathTime)
+                    Phase.onStormKill(deathTime)
+                }
                 if (Floor7.enableStormDeathTime) {
                     Misc.addChatMessage(
                         Component.literal(
@@ -90,7 +97,7 @@ object StormTickTimer {
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
         var num = timer.tick * Constants.TICK_DURATION
         if (Floor7.tickDownStormTickTimer) num = CRUSH_TICK * Constants.TICK_DURATION - num
-        RenderUtils.drawTimer(component, context, num, Floor7.stormTickTimerColor)
+        FishDiag.guard("StormTickTimer.5", "storm tick timer render threw") { RenderUtils.drawTimer(component, context, num, Floor7.stormTickTimerColor) }
     }
 
     @JvmStatic
@@ -101,7 +108,7 @@ object StormTickTimer {
 
     @JvmStatic
     fun renderDeathTime(component: HUDComponent, context: GuiGraphicsExtractor) {
-        RenderUtils.drawTimer(component, context, deathTime, Constants.DARK_PURPLE)
+        FishDiag.guard("StormTickTimer.6", "storm death time render threw") { RenderUtils.drawTimer(component, context, deathTime, Constants.DARK_PURPLE) }
     }
 
     private fun pingTicks(): Int = ceil(max(0, Floor7.lbReleaseTimerPingMs) / 50.0).toInt()
@@ -117,7 +124,7 @@ object StormTickTimer {
 
     @JvmStatic
     fun renderPyTimer(component: HUDComponent, context: GuiGraphicsExtractor) {
-        RenderUtils.drawTimer(component, context, (pyEndTick() - timer.tick) * Constants.TICK_DURATION, Floor7.pyTimerColor)
+        FishDiag.guard("StormTickTimer.7", "py timer render threw") { RenderUtils.drawTimer(component, context, (pyEndTick() - timer.tick) * Constants.TICK_DURATION, Floor7.pyTimerColor) }
     }
 
     private fun lbEndTick(): Int {
@@ -139,6 +146,7 @@ object StormTickTimer {
     @JvmStatic
     fun renderLbReleaseTimer(component: HUDComponent, context: GuiGraphicsExtractor) {
         val remaining = (lbEndTick() - timer.tick) * Constants.TICK_DURATION
-        RenderUtils.drawTimer(component, context, remaining, Floor7.lbReleaseTimerColor)
+        FishDiag.check(remaining >= 0, "StormTickTimer.8") { "LB release timer negative: $remaining" }
+        FishDiag.guard("StormTickTimer.9", "LB release timer render threw") { RenderUtils.drawTimer(component, context, remaining, Floor7.lbReleaseTimerColor) }
     }
 }

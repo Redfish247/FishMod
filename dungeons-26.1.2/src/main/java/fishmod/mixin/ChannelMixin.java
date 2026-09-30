@@ -48,7 +48,11 @@ public class ChannelMixin implements IMonoAudioChannel {
     @Override
     public void fishmod$refreshPosition() {
         if (!FishSettings.monoAudioEnabled) return;
-        double d = fishmod$relative ? fishmod$lastPos.length() : MonoAudio.distanceToListener(fishmod$lastPos);
-        MonoAudio.applyCenteredPosition(source, d);
+        try {
+            double d = fishmod$relative ? fishmod$lastPos.length() : MonoAudio.distanceToListener(fishmod$lastPos);
+            MonoAudio.applyCenteredPosition(source, d);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("ChannelMixin.1", "mono audio reposition failed source=" + source, t);
+        }
     }
 }

@@ -3,6 +3,7 @@ package fishmod.features.storage
 import fishmod.utils.HypixelApi
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 
@@ -31,11 +32,17 @@ object StorageAutoLoader {
             mc.execute {
                 if (gen != generation) return@execute
                 try {
-                    if (rows == null) { msg("§c[Storage] ${error ?: "request failed"}"); return@execute }
+                    if (rows == null) {
+                        FishDiag.fail("StorageAutoLoader.1", "storage layout request failed: ${error ?: "no error message"}")
+                        msg("§c[Storage] ${error ?: "request failed"}"); return@execute
+                    }
+                    FishDiag.check(rows.isNotEmpty(), "StorageAutoLoader.3") { "storage layout API returned no pages" }
                     StorageCache.registerLayout(rows)
                     val ec = rows.keys.count { it < 9 }
                     val bp = rows.keys.count { it >= 9 }
                     msg("§a[Storage] Found $ec ender chest page(s) + $bp backpack(s) — open each to load its items.")
+                } catch (e: Exception) {
+                    FishDiag.fail("StorageAutoLoader.2", "failed to register storage layout (${rows?.size} rows)", e)
                 } finally {
                     busy = false
                 }

@@ -1,5 +1,6 @@
 package fishmod.cosmetic.prestige
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
@@ -141,7 +142,8 @@ object PrestigeLevelColors {
     }
 
     private val LEVEL_PREFIX = Regex("""^\s{0,2}\[(\d{1,4})[^\[\]\d]{0,4}]""")
-    private val LEVEL_ANYWHERE = Regex("""\[(\d{1,4})[^\[\]\d]{0,4}]""")
+    // Only the sender's level at the start of a line (after an optional channel tag), never pet levels mid-message
+    private val LEVEL_ANYWHERE = Regex("""^\s{0,2}(?:(?:Party|Guild|Co-op|Officer) > )?\[(\d{1,4})[^\[\]\d]{0,4}]""")
 
     @JvmStatic
     fun colorizeLevelPrefix(c: Component?): Component? = recolor(c, LEVEL_PREFIX)
@@ -173,15 +175,17 @@ object PrestigeLevelColors {
         val m = pattern.find(cleanStr)
         if (m == null) return c
         val digits = m.groups[1] ?: return c
-        val level = digits.value.toIntOrNull() ?: return c
+        val level = FishDiag.notNull(digits.value.toIntOrNull(), "PrestigeLevelColors.1") { "level '${digits.value}' not numeric" } ?: return c
         val numFrom = mapToFull[digits.range.first]
         val numTo = mapToFull[digits.range.last] + 1
 
-        val out: MutableComponent = Component.empty()
-        appendRange(out, segs, 0, numFrom)
-        out.append(styledNumber(level, digits.value, styleAt(segs, numFrom)))
-        appendRange(out, segs, numTo, full.length)
-        return out
+        return FishDiag.guard("PrestigeLevelColors.2", "level recolor failed for [$level] at $numFrom..$numTo/${full.length}") {
+            val out: MutableComponent = Component.empty()
+            appendRange(out, segs, 0, numFrom)
+            out.append(styledNumber(level, digits.value, styleAt(segs, numFrom)))
+            appendRange(out, segs, numTo, full.length)
+            out
+        } ?: c
     }
 
     private fun styleAt(segs: List<Seg>, idx: Int): Style {

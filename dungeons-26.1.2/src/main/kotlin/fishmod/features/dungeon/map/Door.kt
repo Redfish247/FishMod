@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.map
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.DungeonMapSettings
 import net.minecraft.client.gui.GuiGraphicsExtractor
 
@@ -102,7 +103,7 @@ class Door(val pos: MapVec2i, type: Type, val rooms: MutableList<Room.Tile>) {
                             Room.Type.RARE -> s.mapRareDoorColor
                             Room.Type.TRAP -> s.mapTrapDoorColor
                             Room.Type.NORMAL, Room.Type.UNKNOWN -> s.mapNormalDoorColor
-                            else -> s.mapNormalDoorColor
+                            else -> { FishDiag.fail("Door.1", "unhandled room type $t2 for door colour at $pos"); s.mapNormalDoorColor }
                         }
                     }
                 }

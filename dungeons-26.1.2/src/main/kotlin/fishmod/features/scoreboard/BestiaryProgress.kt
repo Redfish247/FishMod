@@ -1,5 +1,6 @@
 package fishmod.features.scoreboard
 
+import fishmod.utils.debug.FishDiag
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import fishmod.utils.HypixelApi
@@ -20,7 +21,9 @@ object BestiaryProgress {
         if (loaded) return
         loaded = true
         try {
-            javaClass.getResourceAsStream("/data/bestiary.json")?.use { stream ->
+            val res = javaClass.getResourceAsStream("/data/bestiary.json")
+            FishDiag.notNull(res, "BestiaryProgress.2") { "bundled /data/bestiary.json missing" }
+            res?.use { stream ->
                 InputStreamReader(stream).use { reader ->
                     val root = JsonParser.parseReader(reader).asJsonObject
                     for ((k, v) in root.getAsJsonObject("brackets").entrySet()) {
@@ -33,8 +36,10 @@ object BestiaryProgress {
                     }
                 }
             }
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            FishDiag.fail("BestiaryProgress.1", "failed to parse bundled bestiary.json", e)
         }
+        FishDiag.check(FAMILIES.isEmpty() || BRACKETS.isNotEmpty(), "BestiaryProgress.3") { "bestiary.json has ${FAMILIES.size} families but no brackets" }
     }
 
     private fun tierFor(bracket: IntArray, cap: Int, kills: Long): Int {
@@ -63,7 +68,7 @@ object BestiaryProgress {
             fetchInFlight = true
             HypixelApi.getLocalMember(client) { member ->
                 fetchInFlight = false
-                apply(member)
+                FishDiag.guard("BestiaryProgress.6", "bestiary apply threw") { apply(member) }
             }
         }
     }
@@ -77,7 +82,7 @@ object BestiaryProgress {
             var ms = 0
             var maxMs = 0
             for (fam in FAMILIES) {
-                val bracket = BRACKETS[fam.bracket] ?: continue
+                val bracket = FishDiag.notNull(BRACKETS[fam.bracket], "BestiaryProgress.4") { "bestiary family references unknown bracket ${fam.bracket}" } ?: continue
                 var total = 0L
                 for (key in fam.keys) if (kills.has(key)) total += kills.get(key).asLong
                 var maxTier = 0
@@ -87,7 +92,8 @@ object BestiaryProgress {
             }
             milestone = ms
             maxMilestone = maxMs
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            FishDiag.fail("BestiaryProgress.5", "failed to compute bestiary milestones from API member", e)
         }
     }
 

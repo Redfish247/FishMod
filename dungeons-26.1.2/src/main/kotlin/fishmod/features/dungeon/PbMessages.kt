@@ -11,6 +11,7 @@ import net.minecraft.network.chat.MutableComponent
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import fishmod.utils.debug.FishDiag
 
 object PbMessages {
 
@@ -25,7 +26,10 @@ object PbMessages {
 
     @JvmStatic
     fun submit(key: String, seconds: Double): Result? {
-        if (seconds <= 0.0 || seconds > 3600.0) return null
+        if (seconds <= 0.0 || seconds > 3600.0) {
+            if (seconds < 0.0 || seconds.isNaN()) FishDiag.fail("PbMessages.1", "negative/NaN time submitted for $key: $seconds")
+            return null
+        }
         synchronized(pbs) {
             ensureLoaded()
             val prev = pbs[key]
@@ -60,6 +64,7 @@ object PbMessages {
         val text = when {
             r.isPb && prev == null -> " §d§l(PB!)"
             r.isPb -> " §d§l(PB!) §8(§a-${fmt(prev!! - r.seconds)}§8)"
+            prev == null -> { FishDiag.fail("PbMessages.4", "non-PB result with no previous time"); "" }
             else -> " §8(§c+${fmt(r.seconds - prev!!)} §8| PB §7${fmt(prev)}§8)"
         }
         return Component.literal(text).withStyle { it.withHoverEvent(HoverEvent.ShowText(Component.literal(hover))) }
@@ -72,6 +77,7 @@ object PbMessages {
         val text = when {
             r.isPb && prev == null -> " §3§l(Tick PB!)"
             r.isPb -> " §3§l(Tick PB!) §8(§a-${fmt(prev!! - r.seconds)}§8)"
+            prev == null -> { FishDiag.fail("PbMessages.5", "non-PB tick result with no previous time"); "" }
             else -> " §8(tick PB §7${fmt(prev!!)}§8)"
         }
         return Component.literal(text).withStyle { it.withHoverEvent(HoverEvent.ShowText(Component.literal(hover))) }
@@ -99,6 +105,7 @@ object PbMessages {
                 GSON.fromJson<HashMap<String, Double>>(Files.readString(FILE), t)?.let { pbs.putAll(it) }
             }
         } catch (e: Exception) {
+            FishDiag.fail("PbMessages.2", "loading personal_bests.json failed", e)
             Debug.LOGGER.warn("[PbMessages] load failed: {}", e.toString())
         }
     }
@@ -110,6 +117,7 @@ object PbMessages {
                 Files.createDirectories(FILE.parent)
                 Files.writeString(FILE, json)
             } catch (e: Exception) {
+                FishDiag.fail("PbMessages.3", "saving personal_bests.json failed", e)
                 Debug.LOGGER.warn("[PbMessages] save failed: {}", e.toString())
             }
         }

@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.features.dungeon.PartyCommandHandler
 import fishmod.utils.PingTracker
 import fishmod.utils.config.values.FishSettings
@@ -54,6 +55,14 @@ object PerformanceHud {
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.perfHudEnabled) return
+        try {
+            renderInner(ctx)
+        } catch (t: Throwable) {
+            FishDiag.fail("PerformanceHud.1", "performance HUD render failed", t)
+        }
+    }
+
+    private fun renderInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
         val ls = lines(mc)

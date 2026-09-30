@@ -6,6 +6,7 @@ import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.Events
 import net.minecraft.client.Minecraft
 import java.util.regex.Pattern
+import fishmod.utils.debug.FishDiag
 
 object PartyFinderStats {
 
@@ -21,8 +22,14 @@ object PartyFinderStats {
     fun init() {
         Events.ON_GAME_MESSAGE.register { text ->
             if (!FishSettings.pfStatsEnabled) return@register false
-            val m = PF_JOIN.matcher(text.string.replace(COLOR, ""))
-            if (m.find()) lookup(m.group(1), joinLine = true)
+            try {
+                val plain = text.string.replace(COLOR, "")
+                val m = PF_JOIN.matcher(plain)
+                if (m.find()) lookup(m.group(1), joinLine = true)
+                else if (plain.startsWith("Party Finder > ") && plain.contains("joined the dungeon group")) FishDiag.fail("PartyFinderStats.1", "PF join line didn't match: '$plain'")
+            } catch (e: Exception) {
+                FishDiag.fail("PartyFinderStats.2", "PF stats chat handler threw", e)
+            }
             false
         }
     }
@@ -57,9 +64,16 @@ object PartyFinderStats {
 
     private fun printStats(sender: String, joinLine: Boolean) {
         HypixelApi.getByNameSilent(sender) { data ->
+            try { printStatsInner(sender, joinLine, data) } catch (e: Exception) { FishDiag.fail("PartyFinderStats.5", "PF stats print threw for $sender", e) }
+        }
+    }
+
+    private fun printStatsInner(sender: String, joinLine: Boolean, data: HypixelApi.DungeonData) {
+        run {
             if (data.failed) {
+                FishDiag.fail("PartyFinderStats.3", "PF stats API lookup failed for $sender")
                 FishMsg.send("§cCouldn't look up $sender's stats")
-                return@getByNameSilent
+                return
             }
             val mp = if (data.magicalPower >= 0) data.magicalPower.toString() else "N/A"
             val pb = if (data.masterPbs != null && data.masterPbs.size > 7 && data.masterPbs[7] != null)
@@ -67,7 +81,8 @@ object PartyFinderStats {
             val cata = HypixelApi.formatLevel(data.cataXp)
             val secrets = if (data.secretAverage != null) " | Sec avg: ${data.secretAverage}" else ""
             val armorStars = data.armorStars
-            val gear = if (armorStars != null)
+            FishDiag.check(armorStars == null || armorStars.size >= 4, "PartyFinderStats.4") { "armorStars size ${armorStars?.size} < 4 for $sender" }
+            val gear = if (armorStars != null && armorStars.size >= 4)
                 String.format(
                     "H%d C%d L%d B%d", armorStars[0], armorStars[1],
                     armorStars[2], armorStars[3]
