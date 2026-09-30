@@ -444,6 +444,18 @@ object RenderUtils {
         matrices.popPose()
     }
 
+    // See-through billboard text; `pxSize` = world units per font pixel. Flushed by the NO_DEPTH_* passes
+    @JvmStatic
+    fun renderSeeThroughText(context: LevelRenderContext, matrices: PoseStack, text: Component, pos: Vec3, pxSize: Float, argb: Int, shadow: Boolean) {
+        val font = Minecraft.getInstance().font
+        matrices.pushPose()
+        matrices.translate(pos.x, pos.y, pos.z)
+        matrices.mulPose(context.levelState().cameraRenderState.orientation)
+        matrices.scale(pxSize, -pxSize, pxSize)
+        font.drawInBatch(text, -font.width(text) / 2f, 0f, argb, shadow, matrices.last().pose(), textBuffers, Font.DisplayMode.SEE_THROUGH, 0, 15728880)
+        matrices.popPose()
+    }
+
     @JvmStatic
     fun flushText() = textBuffers.endBatch()
 
@@ -475,6 +487,12 @@ object RenderUtils {
     @JvmStatic
     fun renderLineTo(context: LevelRenderContext, matrices: PoseStack, consumer: VertexConsumer, pos: Vec3, color: Int) {
         renderLineTo(context, matrices, consumer, pos.x, pos.y, pos.z, color)
+    }
+
+    @JvmStatic
+    fun fillBox(matrices: PoseStack, consumer: VertexConsumer, b: AABB, argb: Int) {
+        val c = toFloats(argb)
+        drawFilledBox(matrices, consumer, b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ, c[0], c[1], c[2], c[3])
     }
 
     private fun drawFilledBox(

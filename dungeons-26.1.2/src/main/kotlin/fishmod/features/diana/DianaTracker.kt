@@ -328,11 +328,24 @@ object DianaTracker {
         }
     }
 
-    private fun custom(d: Drop, mf: Int, ls: Boolean, count: Long, price: Double, took: Int): String? {
-        val tpl = d.template().takeIf { it.isNotBlank() } ?: return null
-        val src = d.source?.let { event.mob(it) } ?: 0L
-        val pct = if (src > 0) event.item(d.key) * 100.0 / src else 0.0
-        var out = tpl.replace("{mf}", if (mf > 0) "$mf" else "")
+    // Drops whose message can be edited in the Diana Messages popup; blank setting = default template
+    val EDITABLE = listOf("CHIMERA", "MANTI_CORE", "FATEFUL_STINGER", "BRAIN_FOOD", "SHIMMERING_WOOL")
+
+    fun drop(key: String): Drop = DROP_BY_KEY.getValue(key)
+
+    fun defaultMsg(d: Drop): String =
+        "&6&lRARE DROP! &r${d.color.replace('§', '&')}${d.name} &b(+{mf}% ✯ Magic Find) &d{lstext} &e#{amount} &6(+{price} coins)"
+
+    private val MF_PART = Regex("\\s*\\(\\+\\{mf\\}%? ✯ Magic Find\\)")
+    private val PRICE_PART = Regex("\\s*\\(\\+\\{price\\} coins\\)")
+    private val SPACES = Regex(" {2,}")
+
+    // Fills a drop template; empty MF / price brackets are dropped so the line stays clean
+    fun fillTemplate(tpl: String, mf: Int, ls: Boolean, count: Long, pct: Double, price: Double, took: Int): String {
+        var t = tpl
+        if (mf <= 0) t = t.replace(MF_PART, "")
+        if (price <= 0) t = t.replace(PRICE_PART, "")
+        var out = t.replace("{mf}", if (mf > 0) "$mf" else "")
             .replace("{amount}", count.toString())
             .replace("{percentage}", "%.2f%%".format(pct))
             .replace("{price}", short(price))
@@ -340,7 +353,14 @@ object DianaTracker {
             .replace("{lstext}", if (ls) "(LS)" else "")
             .replace('&', '§')
         if (mf <= 0) out = out.replace(Regex("\\s*\\(\\+%? ✯ Magic Find\\)"), "")
-        return out
+        return out.replace(SPACES, " ").trim()
+    }
+
+    private fun custom(d: Drop, mf: Int, ls: Boolean, count: Long, price: Double, took: Int): String? {
+        val tpl = d.template().ifBlank { if (d.key in EDITABLE) defaultMsg(d) else "" }.takeIf { it.isNotBlank() } ?: return null
+        val src = d.source?.let { event.mob(it) } ?: 0L
+        val pct = if (src > 0) event.item(d.key) * 100.0 / src else 0.0
+        return fillTemplate(tpl, mf, ls, count, pct, price, took)
     }
 
     private fun track(k: String, n: Long) {
