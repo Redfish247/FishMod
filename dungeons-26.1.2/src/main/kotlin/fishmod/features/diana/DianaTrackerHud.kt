@@ -20,7 +20,8 @@ object DianaTrackerHud {
         "MYTHOS_FRAGMENT" to "§6Mythos Fragment", "WASHED_UP_SOUVENIR" to "§6Washed-up Souvenir", "CRETAN_URN" to "§2Cretan Urn",
         "DWARF_TURTLE_SHELMET" to "§2Dwarf Turtle Shelmet", "CROCHET_TIGER_PLUSHIE" to "§2Crochet Tiger Plushie",
         "ANTIQUE_REMEDIES" to "§2Antique Remedies", "CRETAN_BULL_SHARD" to "§2Cretan Bull Shard", "HARPY_SHARD" to "§2Harpy Shard",
-        "HILT_OF_REVELATIONS" to "§9Hilt of Revelations",
+        "HILT_OF_REVELATIONS" to "§9Hilt of Revelations", "ENCHANTED_GOLD" to "§9Enchanted Gold",
+        "ENCHANTED_ANCIENT_CLAW" to "§9Enchanted Ancient Claw", "ANCIENT_CLAW" to "§9Ancient Claw",
     )
     private val MOB_COLOR = mapOf(
         "KING_MINOS" to "§c", "MANTICORE" to "§c", "MINOS_INQUISITOR" to "§d", "SPHINX" to "§5",
@@ -185,11 +186,10 @@ object DianaTrackerHud {
 
         val burrows = t.item("TOTAL_BURROWS").toDouble()
         val profit = DianaTracker.profit(t)
-        val coins = DianaTracker.short(t.item("COINS").toDouble())
-        out += Row("loot:COINS", "§6Coins §f${DianaTracker.short(t.item("COINS").toDouble())}")
-        out += Row("loot:BURROWS", "§7Burrows §f${"%,d".format(burrows.toLong())} §8(${"%.0f".format(DianaTracker.perHour(burrows, t))}/h)")
+        out += Row("loot:COINS", "§6Coins §6${DianaTracker.short(t.item("COINS").toDouble())}")
+        out += Row("loot:BURROWS", "§7Burrows §f${"%,d".format(burrows.toLong())} §7(${"%.1f".format(DianaTracker.perHour(burrows, t))}/h)")
         out += Row("loot:PLAYTIME", "§7Playtime §f${DianaTracker.fmtTime(t.timeMs)}" + if (DianaTracker.paused()) " §c[Paused]" else "")
-        out += Row("loot:PROFIT", "§eProfit §6${DianaTracker.short(profit)} §8(${DianaTracker.short(DianaTracker.perHour(profit, t))}/h)")
+        out += Row("loot:PROFIT", "§eProfit §6${DianaTracker.short(profit)} §7(${DianaTracker.short(DianaTracker.perHour(profit, t))}/h)")
         return out
     }
 
