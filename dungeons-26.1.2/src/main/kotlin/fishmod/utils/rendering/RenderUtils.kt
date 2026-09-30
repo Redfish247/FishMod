@@ -175,6 +175,44 @@ object RenderUtils {
         Gizmos.line(a, b, if ((argb ushr 24) == 0) argb or (0xFF shl 24) else argb, width).also { if (throughWalls) it.setAlwaysOnTop() }
     }
 
+    // Furthest distance that is always inside the far clip plane
+    @JvmStatic
+    fun safeViewDistance(): Double = maxOf(32.0, Minecraft.getInstance().options.getEffectiveRenderDistance() * 16 * 0.8)
+
+    // Pulls a far point toward the camera along the same ray; returns the point and the size factor to keep it looking the same
+    @JvmStatic
+    fun pullIn(p: Vec3, cam: Vec3): Pair<Vec3, Double> {
+        val d = p.distanceTo(cam)
+        val max = safeViewDistance()
+        if (d <= max) return p to 1.0
+        val k = max / d
+        return cam.add(p.subtract(cam).scale(k)) to k
+    }
+
+    // Camera-facing ribbon, width scaled by distance so it stays `px` pixels wide at any angle; for FILL_ND
+    @JvmStatic
+    fun screenLine(ps: PoseStack, vc: VertexConsumer, a0: Vec3, b0: Vec3, argb: Int, px: Float) {
+        val mc = Minecraft.getInstance()
+        val cam = mc.gameRenderer.mainCamera.position()
+        val a = pullIn(a0, cam).first; val b = pullIn(b0, cam).first
+        val dir = b.subtract(a)
+        if (dir.lengthSqr() < 1.0e-9) return
+        val perPx = 2.0 * kotlin.math.tan(Math.toRadians(mc.options.fov().get().toDouble()) / 2) / mc.window.height.coerceAtLeast(1)
+        fun side(p: Vec3): Vec3 {
+            val toCam = p.subtract(cam)
+            var s = dir.cross(toCam)
+            if (s.lengthSqr() < 1.0e-12) s = dir.cross(Vec3(0.0, 1.0, 0.0))
+            if (s.lengthSqr() < 1.0e-12) s = Vec3(1.0, 0.0, 0.0)
+            return s.normalize().scale(toCam.length() * perPx * px / 2)
+        }
+        val sa = side(a); val sb = side(b)
+        val c = toFloats(argb)
+        val pose = ps.last()
+        for (v in arrayOf(a.subtract(sa), a.add(sa), b.add(sb), b.subtract(sb))) {
+            vc.addVertex(pose, v.x.toFloat(), v.y.toFloat(), v.z.toFloat()).setColor(c[0], c[1], c[2], c[3])
+        }
+    }
+
     private fun crossQuads(a: Vec3, b: Vec3, halfWidth: Double): Pair<Array<Vec3>, Array<Vec3>>? {
         val dir = b.subtract(a)
         if (dir.lengthSqr() < 1.0e-9) return null

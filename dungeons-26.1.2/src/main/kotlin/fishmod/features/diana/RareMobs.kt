@@ -28,6 +28,16 @@ enum class RareMob(val display: String, val short: String, val code: String, pri
     SPHINX("Sphinx", "Sphinx", "§9", { DianaSettings.dianaGlowSphinx });
 
     val glowColor: Int get() = glow()
+
+    fun share(): Boolean = when (this) {
+        INQ -> DianaSettings.dianaShareInq; KING -> DianaSettings.dianaShareKing
+        MANTI -> DianaSettings.dianaShareManti; SPHINX -> DianaSettings.dianaShareSphinx
+    }
+
+    fun receive(): Boolean = when (this) {
+        INQ -> DianaSettings.dianaReceiveInq; KING -> DianaSettings.dianaReceiveKing
+        MANTI -> DianaSettings.dianaReceiveManti; SPHINX -> DianaSettings.dianaReceiveSphinx
+    }
     val label: String get() = code + short
 
     fun spawnText(): String = when (this) {
@@ -264,7 +274,7 @@ object RareMobs {
     private fun onOwnSpawn(rare: RareMob) {
         val p = Minecraft.getInstance().player ?: return
         notify(rare, "")
-        if (DianaSettings.dianaShareRareMob) {
+        if (DianaSettings.dianaShareRareMob && rare.share()) {
             ChatQueue.enqueue("pc x: ${p.x.roundToInt()}, y: ${p.y.roundToInt() - 1}, z: ${p.z.roundToInt()} | ${rare.display}")
         }
         val text = rare.spawnText()
@@ -291,7 +301,7 @@ object RareMobs {
         val self = sender == Minecraft.getInstance().player?.name?.string
         val rare = RareMob.fromAlias(trailing)
         if (rare != null) {
-            if (!DianaSettings.dianaReceiveRareMob) return
+            if (!DianaSettings.dianaReceiveRareMob || !rare.receive()) return
             if (DianaWaypoints.rareMobNear(Vec3.atCenterOf(pos), 10.0)) return
             DianaWaypoints.addRareMob(pos, "${rare.label} §7($sender)", 45_000)
             if (!self) notify(rare, sender)
@@ -311,8 +321,10 @@ object RareMobs {
     }
 
     private fun playSound() {
-        val vol = DianaSettings.dianaRareMobVolume / 100f
-        if (vol > 0f) SoundManager.play(SoundManager.preset(DianaSettings.dianaRareMobSound), vol)
+        // MC caps one sound at 100%, so stack copies to go louder
+        var vol = DianaSettings.dianaRareMobVolume.coerceIn(0, 500) / 100f
+        val snd = SoundManager.preset(DianaSettings.dianaRareMobSound)
+        while (vol > 0.01f) { SoundManager.play(snd, minOf(vol, 1f)); vol -= 1f }
     }
 
     private fun title(t: String, sub: String) {
