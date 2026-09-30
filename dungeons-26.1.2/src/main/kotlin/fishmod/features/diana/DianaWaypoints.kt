@@ -48,15 +48,22 @@ object DianaWaypoints {
     private class Line(val a: Vec3, val b: Vec3, val argb: Int, val px: Float)
     private val lines = ArrayList<Line>()
     private fun line(a: Vec3, b: Vec3, argb: Int, px: Float) { lines += Line(a, b, argb, px) }
+
+    // Labels drawn as see-through font text (like SBO) instead of depth-tested gizmo text
+    private class Label(val text: Component, val pos: Vec3, val px: Float, val argb: Int)
+    private val labels = ArrayList<Label>()
     private val removedAt = HashMap<BlockPos, Long>()
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         Events.ON_WORLD_CHANGE.register { clearAll(); false }
         RenderingEvents.GIZMO.register { _ -> render() }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
+        RenderingEvents.NO_DEPTH_FILLED.register { ctx, ps, vc ->
             for (l in lines) RenderUtils.screenLine(ps, vc, l.a, l.b, l.argb, l.px)
             lines.clear()
+            val shadow = DianaSettings.dianaTextShadow
+            for (l in labels) RenderUtils.renderSeeThroughText(ctx, ps, l.text, l.pos, l.px, l.argb, shadow)
+            labels.clear()
         }
     }
 
@@ -64,13 +71,18 @@ object DianaWaypoints {
         p.x > MIN_X && p.x <= MAX_X && p.y > MIN_Y && p.y <= MAX_Y && p.z > MIN_Z && p.z <= MAX_Z
 
     // Burrows sit on grass with air above; an unloaded chunk is optimistically valid
+    // Once seen invalid in a loaded chunk it stays invalid, so guesses don't flip as chunks load/unload (SBO does the same)
+    private val invalid = HashSet<BlockPos>()
+
     fun isValidBlock(p: BlockPos): Boolean {
-        if (!inHubBounds(p)) return false
+        if (!inHubBounds(p) || p in invalid) return false
         val level = Minecraft.getInstance().level ?: return true
         if (!level.hasChunk(p.x shr 4, p.z shr 4)) return true
         val st = level.getBlockState(p)
         val ok = st.`is`(Blocks.GRASS_BLOCK) || (st.isAir && Diana.clickedRecently(p))
-        return ok && level.getBlockState(p.above()).isAir
+        val valid = ok && level.getBlockState(p.above()).isAir
+        if (!valid && !st.isAir) invalid.add(p.immutable())
+        return valid
     }
 
     fun at(p: BlockPos, vararg types: WpType): Waypoint? = list.firstOrNull { it.pos == p && it.type in types }
@@ -106,7 +118,7 @@ object DianaWaypoints {
     fun closestTarget(from: Vec3): Waypoint? = targets().minByOrNull { it.distTo(from) }
 
     fun clearAll() {
-        list.clear(); removedAt.clear()
+        list.clear(); removedAt.clear(); invalid.clear()
         ArrowGuess.reset(); SpadeGuess.reset(); BurrowDetector.reset()
     }
 
@@ -177,7 +189,7 @@ object DianaWaypoints {
     }
 
     private fun render() {
-        lines.clear()
+        lines.clear(); labels.clear()
         if (list.isEmpty() || !visible()) return
         val eye = eye() ?: return
         val closest = list.filter { it.type == WpType.GUESS || it.type == WpType.ARROW }.minByOrNull { it.distTo(eye) }
@@ -200,18 +212,12 @@ object DianaWaypoints {
             }
             val text = if (w.type == WpType.SUB) (if (DianaSettings.dianaSubGuessText) "Possible" else "") else label(w, d)
             if (text.isNotEmpty()) {
-                // Grows with distance so labels stay roughly the same size on screen
-                val baseScale = (DianaSettings.dianaTextScale * maxOf(1.2, d * 0.12)).toFloat()
-                val textColor = withAlpha(0xFFFFFF, DianaSettings.dianaTextOpacity / 100f)
+                // World size per font pixel grows with distance so labels stay the same size on screen;
+                // past render distance the label is pulled in along the same ray (SBO does the same)
                 val (pos, pk) = RenderUtils.pullIn(Vec3(w.pos.x + 0.5, w.pos.y + 1.5 + d / 25.0, w.pos.z + 0.5), eye)
-                val scale = baseScale * pk.toFloat()
-                val col = colorCode(w, closest)
-                if (DianaSettings.dianaTextShadow) {
-                    val off = shadowOffset(pos, eye, scale)
-                    val shadowA = (DianaSettings.dianaTextOpacity / 100f) * 0.8f
-                    RenderUtils.gizmoText(Component.literal(text.replace(Regex("§."), "")), pos.add(off), scale, withAlpha(0x202020, shadowA), true)
-                }
-                RenderUtils.gizmoText(Component.literal(col + text), pos, scale, textColor, true)
+                val px = (DianaSettings.dianaTextScale * maxOf(0.075, d * 0.0075) * pk).toFloat()
+                val textColor = withAlpha(0xFFFFFF, DianaSettings.dianaTextOpacity / 100f)
+                labels += Label(Component.literal(colorCode(w, closest) + text), pos, px, textColor)
             }
         }
 
@@ -228,15 +234,6 @@ object DianaWaypoints {
         if (DianaSettings.dianaGuessing && DianaSettings.dianaSubGuesses) ArrowGuess.renderChains { a, b ->
             line(a, b, withAlpha(DianaSettings.dianaColorSubGuess, 0.6f), (width / 1.6f).coerceAtLeast(1f))
         }
-    }
-
-    // Down-right in screen space and slightly behind, so the dark copy reads as a drop shadow
-    private fun shadowOffset(pos: Vec3, eye: Vec3, scale: Float): Vec3 {
-        val fwd = pos.subtract(eye).normalize()
-        val right = fwd.cross(Vec3(0.0, 1.0, 0.0)).normalize()
-        val up = right.cross(fwd).normalize()
-        val px = scale * 0.025
-        return right.scale(px).subtract(up.scale(px)).add(fwd.scale(0.05))
     }
 
     private fun colorCode(w: Waypoint, closest: Waypoint?): String = when (w.type) {
