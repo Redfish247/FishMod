@@ -29,6 +29,7 @@ class Waypoint(val pos: BlockPos, var type: WpType, var label: String) {
     var expiresAt = created + 1_800_000L
     var hiddenUntil = 0L
     var warpHint: String? = null
+    var spadeNearSince = 0L
 
     val center: Vec3 get() = Vec3(pos.x + 0.5, pos.y + 0.5, pos.z + 0.5)
     fun hidden() = System.currentTimeMillis() < hiddenUntil
@@ -46,6 +47,19 @@ object DianaWaypoints {
     const val MIN_X = -283; const val MIN_Y = 60; const val MIN_Z = -208
     const val MAX_X = 175; const val MAX_Y = 105; const val MAX_Z = 205
     private const val SNAP_RADIUS = 6
+    private const val SPADE_CHECK_RANGE_SQ = 32.0 * 32.0
+    private const val SPADE_CHECK_MS = 1000L
+
+    // Spade held within 32 blocks and no burrow showed up for a full second: the guess is wrong
+    fun spadeDisproved(w: Waypoint): Boolean {
+        val me = Diana.player()?.position()
+        val checking = me != null && Diana.holdingSpade && at(w.pos, WpType.BURROW) == null &&
+            w.center.distanceToSqr(me) <= SPADE_CHECK_RANGE_SQ
+        if (!checking) { w.spadeNearSince = 0L; return false }
+        val now = System.currentTimeMillis()
+        if (w.spadeNearSince == 0L) w.spadeNearSince = now
+        return now - w.spadeNearSince >= SPADE_CHECK_MS
+    }
 
     val list = CopyOnWriteArrayList<Waypoint>()
 
@@ -154,6 +168,7 @@ object DianaWaypoints {
         for (g in list.filter { it.type == WpType.GUESS }) {
             val better = list.firstOrNull { (it.type == WpType.BURROW || it.type == WpType.ARROW) && it.center.distanceTo(g.center) <= 32 }
             if (better != null) { better.carryFrom(g); list.remove(g); continue }
+            if (spadeDisproved(g)) { list.remove(g); markRemoved(g.pos); continue }
             if (isValidBlock(g.pos) || !chunkLoaded(g.pos)) continue
             list.remove(g)
         }
