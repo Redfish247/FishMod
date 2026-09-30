@@ -87,7 +87,7 @@ object DianaMenu {
         tracker.sub.add(ToggleSetting("Stats Tracker", "Mobs since Inquisitor, Inquisitors since Chimera, ...", S::dianaStatsTracker))
         tracker.sub.add(ToggleSetting("Magic Find Tracker", "Highest MF you've dropped each rare with", S::dianaMfTracker))
         tracker.sub.add(ToggleSetting("Hide Unobtained", "Hide lines still at 0", S::dianaHideUnobtained))
-        tracker.sub.add(SliderIntSetting("AFK Timeout (s)", "Pause the timer after this long idle", S::dianaAfkTimeout, 15, 900, 5))
+        tracker.sub.add(SliderIntSetting("AFK Timeout (s)", "Pause playtime after this long idle and take the idle time back", S::dianaAfkTimeout, 15, 900, 5))
         tracker.sub.add(DropdownSetting("Bazaar Price", "", arrayOf("Sell Offer", "Insta Sell"), { S.dianaPriceMode }, { v -> S.dianaPriceMode = v }))
         tracker.sub.add(ToggleSetting("Stats Message", "\"Took 120 Mobs to get an Inquis!\"", S::dianaStatsMessage))
         tracker.sub.add(ButtonSetting("Past Events", "Also /fm diana pastevents", "Open") { DianaTracker.openPastEvents() })

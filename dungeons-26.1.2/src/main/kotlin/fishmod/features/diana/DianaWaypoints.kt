@@ -197,23 +197,24 @@ object DianaWaypoints {
                 if (DianaSettings.dianaTextShadow) {
                     val off = shadowOffset(pos, eye, scale)
                     val shadowA = (DianaSettings.dianaTextOpacity / 100f) * 0.8f
-                    RenderUtils.gizmoText(Component.literal(text.replace(Regex("§."), "")), pos.add(off), scale, withAlpha(0x202020, shadowA))
+                    RenderUtils.gizmoText(Component.literal(text.replace(Regex("§."), "")), pos.add(off), scale, withAlpha(0x202020, shadowA), true)
                 }
-                RenderUtils.gizmoText(Component.literal(col + text), pos, scale, textColor)
+                RenderUtils.gizmoText(Component.literal(col + text), pos, scale, textColor, true)
             }
         }
 
         val rare = if (DianaSettings.dianaRareMobs) newestRareMob() else null
+        // Rare-mob line takes over; otherwise always fall back to the guess line so it never blinks out
         if (DianaSettings.dianaRareMobLine && rare != null && rare.distTo(eye) >= 8) {
-            RenderUtils.gizmoLine(lineStart(), rare.center, withAlpha(DianaSettings.dianaColorRareMob, 1f), width)
-        } else if (DianaSettings.dianaGuessLine && rare == null) {
-            closestTarget(eye)?.let { RenderUtils.gizmoLine(lineStart(), it.center, withAlpha(baseColor(it, closest), 1f), width) }
+            RenderUtils.gizmoLine(lineStart(), rare.center, withAlpha(DianaSettings.dianaColorRareMob, 1f), width, true)
+        } else if (DianaSettings.dianaGuessLine) {
+            closestTarget(eye)?.let { RenderUtils.gizmoLine(lineStart(), it.center, withAlpha(baseColor(it, closest), 1f), width, true) }
         }
 
         if (DianaSettings.dianaGuessing && DianaSettings.dianaOrderLines) renderOrder(eye, width)
 
         if (DianaSettings.dianaGuessing && DianaSettings.dianaSubGuesses) ArrowGuess.renderChains { a, b ->
-            RenderUtils.gizmoLine(a, b, withAlpha(DianaSettings.dianaColorSubGuess, 0.6f), (width / 1.6f).coerceAtLeast(1f))
+            RenderUtils.gizmoLine(a, b, withAlpha(DianaSettings.dianaColorSubGuess, 0.6f), (width / 1.6f).coerceAtLeast(1f), true)
         }
     }
 
@@ -244,7 +245,7 @@ object DianaWaypoints {
             val next = left.minByOrNull { it.center.distanceTo(from) }!!
             if (i > 0 && next.distTo(eye) > 50) break
             val to = next.center
-            RenderUtils.gizmoLine(if (i == 0) lineStart() else from, to, color, (width / 1.6f).coerceIn(1f, 20f))
+            RenderUtils.gizmoLine(if (i == 0) lineStart() else from, to, color, (width / 1.6f).coerceIn(1f, 20f), true)
             left.remove(next); from = to; i++
         }
     }
