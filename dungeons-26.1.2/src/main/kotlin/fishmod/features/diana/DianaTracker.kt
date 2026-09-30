@@ -110,7 +110,8 @@ object DianaTracker {
     private val COINS = Regex("^Wow! You dug out ([\\d,]+) coins!")
     private val TREASURE = Regex("^RARE DROP! You dug out an? (.+?)!$")
     private val RARE_DROP = Regex("^RARE DROP! (.+)$")
-    private val MF = Regex("\\(\\+(\\d+)%? ✯ Magic Find\\)")
+    // Only the number is reliable; star glyph and spacing vary (SBO matches the same way)
+    private val MF = Regex("\\(\\+([\\d,]+)[^)]*Magic Find")
     private val CHARM = Regex("^CHARM! You charmed .+? and received (\\d+) (.+?) Shards?!")
     private val LS_SHARD = Regex("^LOOT SHARE You received (\\d+) (.+?) Shards? for assisting")
 
@@ -195,7 +196,7 @@ object DianaTracker {
         RARE_DROP.find(s)?.let { m ->
             if (dup) return false
             val body = m.groupValues[1]
-            val mf = MF.find(body)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+            val mf = MF.find(body)?.groupValues?.get(1)?.replace(",", "")?.toIntOrNull() ?: 0
             val d = DROPS.firstOrNull { body.contains(it.name, true) }
             if (d != null && (d.key != "CHIMERA" || body.contains("Enchanted Book"))) onDrop(d, mf)
             return false
@@ -311,7 +312,7 @@ object DianaTracker {
         val count = event.item(d.key) + lsN
         val countS = if (!d.ls) " #$count" else if (ls) " Total #$count LS #$lsN" else " #$count"
         val price = priceOf(d.key)
-        val mfS = if (mf > 0) " (+$mf% ✯ Magic Find)" else ""
+        val mfS = if (mf > 0) " (+$mf ✯ Magic Find)" else ""
         val lsS = if (ls) " (LS)" else ""
         val custom = custom(d, mf, ls, count, price, took)
         if (DianaSettings.dianaRareDropChat) {
@@ -334,7 +335,7 @@ object DianaTracker {
     fun drop(key: String): Drop = DROP_BY_KEY.getValue(key)
 
     fun defaultMsg(d: Drop): String =
-        "&6&lRARE DROP! &r${d.color.replace('§', '&')}${d.name} &b(+{mf}% ✯ Magic Find) &d{lstext} &e#{amount} &6(+{price} coins)"
+        "&6&lRARE DROP! &r${d.color.replace('§', '&')}${d.name} &b(+{mf} ✯ Magic Find) &d{lstext} &e#{amount} &6(+{price} coins)"
 
     private val MF_PART = Regex("\\s*\\(\\+\\{mf\\}%? ✯ Magic Find\\)")
     private val PRICE_PART = Regex("\\s*\\(\\+\\{price\\} coins\\)")
