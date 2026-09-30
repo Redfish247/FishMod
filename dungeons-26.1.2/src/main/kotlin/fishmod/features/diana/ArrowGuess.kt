@@ -100,10 +100,10 @@ object ArrowGuess {
         val dir = tip.add(0.0, -1.5, 0.0).subtract(origin).normalize()
         val now = System.currentTimeMillis()
         seenRays.entries.removeIf { now - it.value > 18_000 }
-        val key = origin to dir
         dust.clear()
-        if (seenRays.containsKey(key)) return
-        seenRays[key] = now
+        // Resends of the same arrow give a slightly different ray each time; treat near-identical rays as one
+        if (seenRays.keys.any { (o, d) -> o.distanceTo(origin) <= 1.0 && d.dot(dir) >= 0.999 }) return
+        seenRays[origin to dir] = now
         DianaTest.log("arrow: ray $origin -> $dir band $range")
         solve(origin, dir, range ?: return)
     }
