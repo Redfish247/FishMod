@@ -353,6 +353,7 @@ object DianaTracker {
     private val MF_PART = Regex("\\s*\\(\\+\\{mf\\}%? ✯ Magic Find\\)")
     private val PRICE_PART = Regex("\\s*\\(\\+\\{price\\} coins\\)")
     private val SPACES = Regex(" {2,}")
+    private val SPACE_CODES_SPACE = Regex(""" +((?:§.)+) +""")
 
     // Fills a drop template; empty MF / price brackets are dropped so the line stays clean
     fun fillTemplate(tpl: String, mf: Int, ls: Boolean, count: Long, pct: Double, price: Double, took: Int): String {
@@ -367,6 +368,9 @@ object DianaTracker {
             .replace("{lstext}", if (ls) "(LS)" else "")
             .replace('&', '§')
         if (mf <= 0) out = out.replace(Regex("\\s*\\(\\+%? ✯ Magic Find\\)"), "")
+        // An empty slot like {lstext} leaves "§d " between two spaces; fold those into one space
+        var prev: String
+        do { prev = out; out = out.replace(SPACE_CODES_SPACE, " $1") } while (out != prev)
         return out.replace(SPACES, " ").trim()
     }
 
