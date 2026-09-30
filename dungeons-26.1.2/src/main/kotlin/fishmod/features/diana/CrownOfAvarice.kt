@@ -32,25 +32,32 @@ object CrownOfAvarice {
     private const val CAP = 1_000_000_000L
     // A maxed crown gives 2x coins instead of 5x, so each purse gain is scaled up by 2.5
     private const val SCALE = 2.5
-    private const val ACTIVE_WINDOW_MS = 15_000L
+    // Only purse gains right after a Diana coin source count (mob kill or dug coins)
+    private const val COIN_WINDOW_MS = 3_000L
     private const val MAX_GAIN = 10_000_000L
 
     private val PATH = Paths.get("config/fishmod/crown_of_avarice.json")
     private val GSON = GsonBuilder().setPrettyPrinting().create()
     private val PURSE = Regex("""(?:Purse|Piggy):\s*([\d,]+)""")
-    private val DIANA_LINE = Regex("""Griffin [Bb]urrow|You (?:just )?dug out|Mythological""")
+    private val DUG_COINS = Regex("""^Wow! You dug out [\d,]+ coins!""")
+    // Coins from selling, trading or the bank are not crown coins
+    private val NOT_CROWN = Regex("""^(?:You sold |\[Bazaar]|\[Auction]|\[NPC]|Sold |You collected |You claimed |Withdrew |Withdrawing |Deposited |Trade completed|You have withdrawn|Claimed )""")
     private val NUM = NumberFormat.getIntegerInstance(Locale.US)
 
     private var totals: MutableMap<String, Long> = HashMap()
     private var lastPurse = -1L
-    private var lastDianaMs = 0L
+    private var lastDugCoinsMs = 0L
+    private var lastNonCrownMs = 0L
     private var tick = 0
 
     fun init() {
         load()
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 10 == 0) onTick(it) }
         Events.ON_GAME_MESSAGE.register { text ->
-            if (Diana.inHub() && DIANA_LINE.containsMatchIn(text.string.replace(Constants.STRIP_COLOR_REGEX, ""))) lastDianaMs = System.currentTimeMillis()
+            val s = text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim()
+            val now = System.currentTimeMillis()
+            if (NOT_CROWN.containsMatchIn(s)) lastNonCrownMs = now
+            else if (Diana.inHub() && DUG_COINS.containsMatchIn(s)) lastDugCoinsMs = now
             false
         }
         Events.ON_WORLD_CHANGE.register { lastPurse = -1L; false }
@@ -78,8 +85,11 @@ object CrownOfAvarice {
         val u = uuidOf(helmet) ?: return
         // Below 1B Hypixel still counts it on the item itself
         if (itemCoins(helmet) < CAP && (totals[u] ?: 0L) < CAP) return
-        val recent = System.currentTimeMillis() - maxOf(lastDianaMs, RareMobs.lastDianaMobDeathMs) < ACTIVE_WINDOW_MS
-        if (!Diana.active() || !recent || gain > MAX_GAIN) return
+        val now = System.currentTimeMillis()
+        val fromDiana = now - maxOf(lastDugCoinsMs, RareMobs.lastDianaMobDeathMs) <= COIN_WINDOW_MS
+        val menuOpen = mc.screen != null && mc.screen !is net.minecraft.client.gui.screens.ChatScreen
+        val selling = menuOpen || now - lastNonCrownMs <= COIN_WINDOW_MS
+        if (!Diana.active() || !fromDiana || selling || gain > MAX_GAIN) return
         totals[u] = maxOf(totals[u] ?: 0L, itemCoins(helmet)) + (gain * SCALE).toLong()
         save()
     }
