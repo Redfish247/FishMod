@@ -17,17 +17,22 @@ object ArrowGuess {
     private const val TOL = 0.12
     private const val EPS = 1e-6
 
-    private class Entry(val cands: List<BlockPos>) {
+    private class Entry(val cands: MutableList<BlockPos>) {
         var idx = 0
         val current get() = cands.getOrNull(idx)
     }
 
-    private val dust = LinkedHashSet<Vec3>()
+    private const val DUST_TTL_MS = 2000L
+    private const val DUST_CAP = 120
+
+    // point -> when first seen; Hypixel resends the same arrow every few ticks
+    private val dust = LinkedHashMap<Vec3, Long>()
+    private var pending = false
     private var range: IntRange? = null
     private val entries = ArrayList<Entry>()
     private val seenRays = HashMap<Pair<Vec3, Vec3>, Long>()
 
-    fun reset() { dust.clear(); entries.clear(); seenRays.clear(); range = null }
+    fun reset() { dust.clear(); entries.clear(); seenRays.clear(); range = null; pending = false }
 
     fun init() {
         Events.ON_PARTICLE.register { p ->
@@ -38,11 +43,22 @@ object ArrowGuess {
             val last = Diana.lastClickedWaypoint
             if (last != null && v.distanceTo(Vec3(last.x + 0.5, last.y + 0.5, last.z + 0.5)) > 7) return@register false
             range = r
-            dust.add(v)
-            detect()
+            // Only a genuinely new point is worth another shape search
+            if (dust.putIfAbsent(v, System.currentTimeMillis()) == null) pending = true
             false
         }
-        ClientTickEvents.END_CLIENT_TICK.register { if (entries.isNotEmpty() && Diana.inHub()) advance() }
+        ClientTickEvents.END_CLIENT_TICK.register {
+            if (!Diana.inHub()) return@register
+            // At most one search per tick, however many particles arrived
+            if (pending) {
+                pending = false
+                val now = System.currentTimeMillis()
+                dust.entries.removeIf { now - it.value > DUST_TTL_MS }
+                if (dust.size > DUST_CAP) dust.keys.take(dust.size - DUST_CAP).forEach { dust.remove(it) }
+                detect()
+            }
+            if (entries.isNotEmpty()) advance()
+        }
     }
 
     private fun bandFor(x: Double, y: Double, z: Double): IntRange? = when {
@@ -53,6 +69,20 @@ object ArrowGuess {
     }
 
     fun onBurrowDug() { dust.clear() }
+
+    // Player walked up to pos with no burrow there: skip to the next candidate, or drop the guess if none left
+    fun onVisited(pos: BlockPos) {
+        val it = entries.iterator()
+        while (it.hasNext()) {
+            val e = it.next()
+            if (e.current != pos) { if (pos in e.cands) e.cands.remove(pos); continue }
+            e.idx++
+            val next = e.current
+            if (next == null) { it.remove(); continue }
+            DianaWaypoints.removeAt(next, WpType.SUB)
+            DianaWaypoints.add(Waypoint(next, WpType.ARROW, "Guess"))
+        }
+    }
 
     // A real burrow at pos supersedes any arrow guess landing there
     fun onBurrowAt(pos: BlockPos) {
@@ -69,14 +99,15 @@ object ArrowGuess {
 
     private fun detect() {
         if (dust.size < SHAFT) return
-        val pts = dust.toList()
+        val pts = dust.keys.toList()
         val line = findShaft(pts) ?: return DianaTest.log("arrow: no shaft in ${pts.size} pts")
+        // Neighbours include the shaft's own points: base end has 2 (shaft only), tip end 4 (shaft + barbs)
         val c1 = line[1]; val c2 = line[line.size - 2]
-        val n1 = pts.count { it !in line && it.distanceTo(c1) <= TOL }
-        val n2 = pts.count { it !in line && it.distanceTo(c2) <= TOL }
+        val n1 = pts.count { it != c1 && it.distanceTo(c1) <= TOL }
+        val n2 = pts.count { it != c2 && it.distanceTo(c2) <= TOL }
         val (base, tip) = when {
-            n1 == 4 && n2 == 2 -> line.last() to line.first()
-            n1 == 2 && n2 == 4 -> line.first() to line.last()
+            n1 > n2 -> line.last() to line.first()
+            n2 > n1 -> line.first() to line.last()
             else -> return DianaTest.log("arrow: barb counts $n1/$n2")
         }
         val origin = base.add(0.0, -1.5, 0.0)
@@ -84,9 +115,9 @@ object ArrowGuess {
         val now = System.currentTimeMillis()
         seenRays.entries.removeIf { now - it.value > 18_000 }
         val key = origin to dir
+        dust.clear()
         if (seenRays.containsKey(key)) return
         seenRays[key] = now
-        dust.clear()
         DianaTest.log("arrow: ray $origin -> $dir band $range")
         solve(origin, dir, range ?: return)
     }
@@ -94,13 +125,17 @@ object ArrowGuess {
     private fun findShaft(pts: List<Vec3>): List<Vec3>? {
         var best: List<Vec3>? = null
         var bestScore = Double.MAX_VALUE
+        // Neighbours within TOL, computed once instead of rescanning every point at every step
+        val near = HashMap<Vec3, List<Vec3>>(pts.size * 2)
+        for (p in pts) near[p] = pts.filter { it !== p && it.distanceTo(p) <= TOL }
         for (start in pts) {
+            if (near[start].isNullOrEmpty()) continue
             val line = arrayListOf(start)
             val used = hashSetOf(start)
             while (line.size < SHAFT) {
                 val last = line.last()
                 val a = line[0]; val b = if (line.size > 1) line[1] else line[0]
-                val next = pts.filter { it !in used && it.distanceTo(last) <= TOL && collinear(a, b, it) }
+                val next = near[last]!!.filter { it !in used && collinear(a, b, it) }
                     .minByOrNull { it.distanceTo(last) } ?: break
                 line.add(next); used.add(next)
             }
@@ -145,8 +180,20 @@ object ArrowGuess {
             val fromOrigin = p.distanceTo(origin)
             cands[bp] = Cand(bp, toRay * 500_000 / fromOrigin.coerceAtLeast(EPS), fromOrigin)
         }
-        val best = cands.values.minWithOrNull(compareBy<Cand> { it.score }.thenBy { it.dist }) ?: return fail()
-        val picked = cands.values.filter { abs(it.score - best.score) <= 1e-6 && it.dist.toInt() in band }.map { it.pos }
+        val order = compareBy<Cand> { it.score }.thenBy { it.dist }
+        val inBand = cands.values.filter { it.dist.toInt() in band }
+        val pool = inBand.ifEmpty { cands.values.toList() }
+        val best = pool.minWithOrNull(order)
+        val picked = if (best != null) pool.filter { abs(it.score - best.score) <= 1e-6 }.map { it.pos }
+        else {
+            // Nothing valid on the ray: still show a best guess mid-band, snapped to ground when loaded
+            val t = ((band.first + minOf(band.last, steps)) / 2.0).coerceAtLeast(1.0)
+            val v = origin.add(dir.scale(t))
+            val raw = BlockPos(floor(v.x).toInt(), floor(v.y).toInt(), floor(v.z).toInt())
+            val g = DianaWaypoints.snapToGround(raw)
+            if (g == null && DianaWaypoints.chunkLoaded(raw)) return fail()
+            listOf(g ?: raw)
+        }
         if (picked.isEmpty()) return fail()
         DianaTest.log("arrow: candidates $picked")
         addGuess(picked)
@@ -154,7 +201,7 @@ object ArrowGuess {
 
     internal fun addGuess(picked: List<BlockPos>) {
         if (picked.isEmpty() || entries.any { it.cands.drop(it.idx) == picked }) return
-        entries.add(Entry(picked))
+        entries.add(Entry(picked.toMutableList()))
         DianaWaypoints.add(Waypoint(picked[0], WpType.ARROW, "Guess"))
         picked.drop(1).forEach { DianaWaypoints.add(Waypoint(it, WpType.SUB, "")) }
     }
@@ -185,10 +232,24 @@ object ArrowGuess {
             val wrongHere = Diana.heldSpadeFor(1000) && DianaWaypoints.at(cur, WpType.BURROW) == null &&
                 Vec3(cur.x + 0.5, cur.y + 0.5, cur.z + 0.5).distanceToSqr(me) <= 1024
             if (!DianaWaypoints.isValidBlock(cur) || wrongHere) {
+                // Out of candidates: keep the last one up as a best guess, moved onto the ground once its chunk is loaded
+                if (e.idx + 1 >= e.cands.size) {
+                    if (wrongHere) continue
+                    val g = DianaWaypoints.snapToGround(cur)
+                    if (g == null) {
+                        // Loaded with no grass nearby (village etc.): not a real spot, drop it
+                        if (DianaWaypoints.chunkLoaded(cur)) { DianaWaypoints.removeAt(cur, WpType.ARROW); it.remove() }
+                        continue
+                    }
+                    if (g == cur) continue
+                    DianaWaypoints.removeAt(cur, WpType.ARROW)
+                    e.cands[e.idx] = g
+                    DianaWaypoints.add(Waypoint(g, WpType.ARROW, "Guess"))
+                    continue
+                }
                 DianaWaypoints.removeAt(cur, WpType.ARROW)
                 e.idx++
-                val next = e.current
-                if (next == null) { it.remove(); continue }
+                val next = e.current ?: continue
                 DianaWaypoints.removeAt(next, WpType.SUB)
                 DianaWaypoints.add(Waypoint(next, WpType.ARROW, "Guess"))
             }

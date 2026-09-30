@@ -3,6 +3,9 @@ package fishmod.features.diana
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
+import com.mojang.blaze3d.vertex.PoseStack
+import com.mojang.blaze3d.vertex.VertexConsumer
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
@@ -11,6 +14,7 @@ import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.math.abs
 import kotlin.math.sqrt
 
 enum class WpType { BURROW, GUESS, ARROW, SUB, RARE, WORLD }
@@ -41,36 +45,69 @@ object DianaWaypoints {
     // Hub play area, same bounds Hypixel spawns burrows in
     const val MIN_X = -283; const val MIN_Y = 60; const val MIN_Z = -208
     const val MAX_X = 175; const val MAX_Y = 105; const val MAX_Z = 205
+    private const val VISIT_RADIUS = 5.0
+    private const val SNAP_RADIUS = 6
 
     val list = CopyOnWriteArrayList<Waypoint>()
 
-    // Queued during the gizmo pass, drawn as constant-width ribbons later in the frame
-    private class Line(val a: Vec3, val b: Vec3, val argb: Int, val px: Float)
-    private val lines = ArrayList<Line>()
-    private fun line(a: Vec3, b: Vec3, argb: Int, px: Float) { lines += Line(a, b, argb, px) }
     private val removedAt = HashMap<BlockPos, Long>()
+
+    // Per-frame draw targets, only valid inside render()
+    private lateinit var rCtx: LevelRenderContext
+    private lateinit var rPs: PoseStack
+    private lateinit var rVc: VertexConsumer
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         Events.ON_WORLD_CHANGE.register { clearAll(); false }
-        RenderingEvents.GIZMO.register { _ -> render() }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
-            for (l in lines) RenderUtils.screenLine(ps, vc, l.a, l.b, l.argb, l.px)
-            lines.clear()
+        // Boxes, lines and labels all go through our own see-through pass, no vanilla gizmos
+        RenderingEvents.NO_DEPTH_FILLED.register { ctx, ps, vc ->
+            rCtx = ctx; rPs = ps; rVc = vc
+            render()
         }
     }
+
+    private fun line(a: Vec3, b: Vec3, argb: Int, px: Float) = RenderUtils.screenLine(rPs, rVc, a, b, argb, px)
 
     fun inHubBounds(p: BlockPos) =
         p.x > MIN_X && p.x <= MAX_X && p.y > MIN_Y && p.y <= MAX_Y && p.z > MIN_Z && p.z <= MAX_Z
 
     // Burrows sit on grass with air above; an unloaded chunk is optimistically valid
+    // Once seen invalid in a loaded chunk it stays invalid, so guesses don't flip as chunks load/unload (SBO does the same)
+    private val invalid = HashSet<BlockPos>()
+
     fun isValidBlock(p: BlockPos): Boolean {
-        if (!inHubBounds(p)) return false
+        if (!inHubBounds(p) || p in invalid) return false
         val level = Minecraft.getInstance().level ?: return true
         if (!level.hasChunk(p.x shr 4, p.z shr 4)) return true
         val st = level.getBlockState(p)
         val ok = st.`is`(Blocks.GRASS_BLOCK) || (st.isAir && Diana.clickedRecently(p))
-        return ok && level.getBlockState(p.above()).isAir
+        val valid = ok && level.getBlockState(p.above()).isAir
+        if (!valid && !st.isAir) invalid.add(p.immutable())
+        return valid
+    }
+
+    fun chunkLoaded(p: BlockPos): Boolean =
+        Minecraft.getInstance().level?.hasChunk(p.x shr 4, p.z shr 4) == true
+
+    // Grass-with-air-above nearest p in height, searching the whole hub Y range of p's column, then rings out to 6;
+    // null if the chunk isn't loaded or there's no grass nearby (village, paths...)
+    fun snapToGround(p: BlockPos): BlockPos? {
+        val level = Minecraft.getInstance().level ?: return null
+        if (!level.hasChunk(p.x shr 4, p.z shr 4)) return null
+        for (r in 0..SNAP_RADIUS) {
+            var best: BlockPos? = null
+            for (dx in -r..r) for (dz in -r..r) {
+                if (maxOf(abs(dx), abs(dz)) != r) continue
+                for (y in MAX_Y downTo MIN_Y + 1) {
+                    val q = BlockPos(p.x + dx, y, p.z + dz)
+                    if (!inHubBounds(q) || !level.getBlockState(q).`is`(Blocks.GRASS_BLOCK) || !level.getBlockState(q.above()).isAir) continue
+                    if (best == null || abs(q.y - p.y) < abs(best.y - p.y)) best = q
+                }
+            }
+            if (best != null) return best
+        }
+        return null
     }
 
     fun at(p: BlockPos, vararg types: WpType): Waypoint? = list.firstOrNull { it.pos == p && it.type in types }
@@ -106,7 +143,7 @@ object DianaWaypoints {
     fun closestTarget(from: Vec3): Waypoint? = targets().minByOrNull { it.distTo(from) }
 
     fun clearAll() {
-        list.clear(); removedAt.clear()
+        list.clear(); removedAt.clear(); invalid.clear()
         ArrowGuess.reset(); SpadeGuess.reset(); BurrowDetector.reset()
     }
 
@@ -114,11 +151,24 @@ object DianaWaypoints {
         val now = System.currentTimeMillis()
         removedAt.entries.removeIf { now - it.value > 1000 }
         list.removeIf { now > it.expiresAt || (it.type != WpType.WORLD && it.type != WpType.RARE && !inHubBounds(it.pos)) }
+        // Walking up to a guess clears it; a real burrow there shows up from its own particles
+        Diana.player()?.position()?.let { me ->
+            for (g in list.filter { (it.type == WpType.GUESS || it.type == WpType.ARROW || it.type == WpType.SUB) && it.distTo(me) <= VISIT_RADIUS }) {
+                list.remove(g)
+                markRemoved(g.pos)
+                ArrowGuess.onVisited(g.pos)
+            }
+        }
         // Spade guesses lose to any burrow/arrow within 32 blocks, which inherits their dig state
         for (g in list.filter { it.type == WpType.GUESS }) {
             val better = list.firstOrNull { (it.type == WpType.BURROW || it.type == WpType.ARROW) && it.center.distanceTo(g.center) <= 32 }
             if (better != null) { better.carryFrom(g); list.remove(g); continue }
-            if (!isValidBlock(g.pos)) list.remove(g)
+            if (isValidBlock(g.pos)) continue
+            // Loaded and no grass anywhere near: a burrow can't be here, drop it
+            val snapped = snapToGround(g.pos) ?: run { if (chunkLoaded(g.pos)) list.remove(g); null } ?: continue
+            if (snapped == g.pos || at(snapped, WpType.GUESS) != null) continue
+            list.remove(g)
+            add(Waypoint(snapped, WpType.GUESS, g.label).also { it.carryFrom(g) })
         }
         // Arrow on a known burrow merges into it
         for (a in list.filter { it.type == WpType.ARROW || it.type == WpType.SUB }) {
@@ -177,7 +227,6 @@ object DianaWaypoints {
     }
 
     private fun render() {
-        lines.clear()
         if (list.isEmpty() || !visible()) return
         val eye = eye() ?: return
         val closest = list.filter { it.type == WpType.GUESS || it.type == WpType.ARROW }.minByOrNull { it.distTo(eye) }
@@ -193,25 +242,19 @@ object DianaWaypoints {
             val rgb = baseColor(w, closest)
             // Past render distance, draw a shrunken copy closer along the same ray so it isn't far-clipped
             val (c, k) = RenderUtils.pullIn(w.center, eye)
-            RenderUtils.gizmoBox(AABB.ofSize(c, k, k, k), withAlpha(rgb, a), 0, true)
+            RenderUtils.fillBox(rPs, rVc, AABB.ofSize(c, k, k, k), withAlpha(rgb, a))
             if (DianaSettings.dianaBeaconBeam && w.type != WpType.SUB && d > DianaSettings.dianaBeaconDistance) {
                 val bb = c.add(0.0, k * 100.5, 0.0)
-                RenderUtils.gizmoBox(AABB.ofSize(bb, k * 0.4, k * 200, k * 0.4), withAlpha(rgb, a * 0.45f), 0, true)
+                RenderUtils.fillBox(rPs, rVc, AABB.ofSize(bb, k * 0.4, k * 200, k * 0.4), withAlpha(rgb, a * 0.45f))
             }
             val text = if (w.type == WpType.SUB) (if (DianaSettings.dianaSubGuessText) "Possible" else "") else label(w, d)
             if (text.isNotEmpty()) {
-                // Grows with distance so labels stay roughly the same size on screen
-                val baseScale = (DianaSettings.dianaTextScale * maxOf(1.2, d * 0.12)).toFloat()
-                val textColor = withAlpha(0xFFFFFF, DianaSettings.dianaTextOpacity / 100f)
+                // World size per font pixel grows with distance so labels stay the same size on screen;
+                // past render distance the label is pulled in along the same ray (SBO does the same)
                 val (pos, pk) = RenderUtils.pullIn(Vec3(w.pos.x + 0.5, w.pos.y + 1.5 + d / 25.0, w.pos.z + 0.5), eye)
-                val scale = baseScale * pk.toFloat()
-                val col = colorCode(w, closest)
-                if (DianaSettings.dianaTextShadow) {
-                    val off = shadowOffset(pos, eye, scale)
-                    val shadowA = (DianaSettings.dianaTextOpacity / 100f) * 0.8f
-                    RenderUtils.gizmoText(Component.literal(text.replace(Regex("§."), "")), pos.add(off), scale, withAlpha(0x202020, shadowA), true)
-                }
-                RenderUtils.gizmoText(Component.literal(col + text), pos, scale, textColor, true)
+                val px = (DianaSettings.dianaTextScale * maxOf(0.035, d * 0.0035) * pk).toFloat()
+                val textColor = withAlpha(0xFFFFFF, DianaSettings.dianaTextOpacity / 100f)
+                RenderUtils.renderSeeThroughText(rCtx, rPs, Component.literal(colorCode(w, closest) + text), pos, px, textColor, DianaSettings.dianaTextShadow)
             }
         }
 
@@ -228,15 +271,6 @@ object DianaWaypoints {
         if (DianaSettings.dianaGuessing && DianaSettings.dianaSubGuesses) ArrowGuess.renderChains { a, b ->
             line(a, b, withAlpha(DianaSettings.dianaColorSubGuess, 0.6f), (width / 1.6f).coerceAtLeast(1f))
         }
-    }
-
-    // Down-right in screen space and slightly behind, so the dark copy reads as a drop shadow
-    private fun shadowOffset(pos: Vec3, eye: Vec3, scale: Float): Vec3 {
-        val fwd = pos.subtract(eye).normalize()
-        val right = fwd.cross(Vec3(0.0, 1.0, 0.0)).normalize()
-        val up = right.cross(fwd).normalize()
-        val px = scale * 0.025
-        return right.scale(px).subtract(up.scale(px)).add(fwd.scale(0.05))
     }
 
     private fun colorCode(w: Waypoint, closest: Waypoint?): String = when (w.type) {
