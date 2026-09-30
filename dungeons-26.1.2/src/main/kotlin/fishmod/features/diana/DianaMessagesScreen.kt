@@ -231,9 +231,10 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
         fun flush() {
             if (seg.isEmpty()) return
             val t = seg.toString()
-            if (x - x0 + tw(t, size) > maxW) { seg.clear(); return }
+            val w = if (bold) UiRecorder.textWidthBold(t, size) else tw(t, size)
+            if (x - x0 + w > maxW) { seg.clear(); return }
             if (bold) UiRecorder.textBold(t, x, y, size, color) else text(t, x, y, size, color)
-            x += tw(t, size) + (if (bold) 1f else 0f)
+            x += w
             seg.clear()
         }
         var i = 0
