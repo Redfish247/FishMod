@@ -2,6 +2,7 @@ package fishmod.features.croesus
 
 import fishmod.mixin.accessors.HandledScreenAccessor
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
@@ -48,9 +49,10 @@ object CroesusProfit {
         val now = System.currentTimeMillis()
         if (now - lastScanMs >= SCAN_INTERVAL_MS) {
             lastScanMs = now
-            scan(screen)
+            try { scan(screen) } catch (e: Exception) { FishDiag.fail("CroesusProfit.1", "croesus profit scan failed (${screen.title.string})", e) }
         }
         if (chests.isEmpty()) return
+        try {
 
         val acc = screen as HandledScreenAccessor
         for ((rank, slotIdx) in bestSlots.withIndex()) {
@@ -68,6 +70,9 @@ object CroesusProfit {
             ctx.text(font, "§e${c.name}§7: $pc${fmt(c.profit)}", lx, ly, -1, true)
             ly += font.lineHeight + 1
         }
+        } catch (e: Exception) {
+            FishDiag.fail("CroesusProfit.2", "croesus profit render failed (${chests.size} chests)", e)
+        }
     }
 
     private fun scan(screen: AbstractContainerScreen<*>) {
@@ -84,7 +89,8 @@ object CroesusProfit {
             val cost = plain.firstNotNullOfOrNull {
                 COST.find(it)?.groupValues?.get(1)?.replace(",", "")?.toDoubleOrNull()
             } ?: 0.0
-            val info = CroesusRewardParser.parseRewards(tooltip, null) ?: continue
+            val err = arrayOf<String?>(null)
+            val info = CroesusRewardParser.parseRewards(tooltip, err) ?: run { FishDiag.fail("CroesusProfit.3", "chest preview in slot $i unparsed: ${err[0]}"); null } ?: continue
             var value = 0.0
             for (ri in info.items) value += CroesusPrices.price(ri.id) * ri.qty.coerceAtLeast(1)
             out.add(Chest(i, COLOR.replace(stack.hoverName.string, "").trim(), value, cost))

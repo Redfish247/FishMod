@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.map
 
+import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.config.values.DungeonMapSettings
@@ -17,9 +18,15 @@ object DoorHighlight {
 
     @JvmStatic
     fun init() {
-        RenderingEvents.GIZMO.register { _ -> renderGizmo() }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, matrices, vc -> render(matrices, vc, depthTested = false, fill = true) }
-        RenderingEvents.NO_DEPTH_LINE.register { _, matrices, vc -> render(matrices, vc, depthTested = false, fill = false) }
+        RenderingEvents.GIZMO.register { _ ->
+            try { renderGizmo() } catch (e: Exception) { FishDiag.fail("DoorHighlight.1", "door highlight gizmo render failed doors=${Scan.doors.size}", e) }
+        }
+        RenderingEvents.NO_DEPTH_FILLED.register { _, matrices, vc ->
+            try { render(matrices, vc, depthTested = false, fill = true) } catch (e: Exception) { FishDiag.fail("DoorHighlight.2", "door highlight fill render failed doors=${Scan.doors.size}", e) }
+        }
+        RenderingEvents.NO_DEPTH_LINE.register { _, matrices, vc ->
+            try { render(matrices, vc, depthTested = false, fill = false) } catch (e: Exception) { FishDiag.fail("DoorHighlight.3", "door highlight line render failed doors=${Scan.doors.size}", e) }
+        }
     }
 
     private fun throughWall(type: Door.Type): Boolean =

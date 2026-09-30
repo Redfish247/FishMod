@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.Location
 import fishmod.utils.Misc
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.dungeon.waypoints.DungeonWaypointStore
 import fishmod.utils.dungeon.waypoints.StoredWaypoint
 import fishmod.utils.dungeon.waypoints.TimerType
@@ -133,10 +134,18 @@ object DungeonWaypoints {
             )
         )
 
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc -> onTick(mc) })
-        RenderingEvents.GIZMO.register { _ -> renderGizmo() }
-        RenderingEvents.NO_DEPTH_FILLED.register { ctx, matrices, vc -> render(ctx, matrices, vc) }
-        RenderingEvents.NO_DEPTH_LINE.register { _, matrices, vc -> renderLines(matrices, vc) }
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
+            try { onTick(mc) } catch (e: Exception) { FishDiag.fail("DungeonWaypoints.1", "waypoint tick failed (key=$lastGlobalDim, ${liveWaypoints.size} live)", e) }
+        })
+        RenderingEvents.GIZMO.register { _ ->
+            try { renderGizmo() } catch (e: Exception) { FishDiag.fail("DungeonWaypoints.2", "waypoint gizmo render failed (${liveWaypoints.size} live)", e) }
+        }
+        RenderingEvents.NO_DEPTH_FILLED.register { ctx, matrices, vc ->
+            try { render(ctx, matrices, vc) } catch (e: Exception) { FishDiag.fail("DungeonWaypoints.3", "waypoint through-wall render failed (${liveWaypoints.size} live)", e) }
+        }
+        RenderingEvents.NO_DEPTH_LINE.register { _, matrices, vc ->
+            try { renderLines(matrices, vc) } catch (e: Exception) { FishDiag.fail("DungeonWaypoints.4", "waypoint route line render failed", e) }
+        }
     }
 
     @JvmStatic
@@ -267,6 +276,7 @@ object DungeonWaypoints {
     fun exportToClipboard() {
         val b64 = DungeonWaypointStore.exportBase64()
         if (b64 == null) {
+            FishDiag.fail("DungeonWaypoints.5", "waypoint export returned null (${DungeonWaypointStore.allData().size} areas)")
             Misc.addChatMessage(Component.literal("§cExport failed."))
             return
         }
@@ -396,6 +406,7 @@ object DungeonWaypoints {
             val si = mc.currentServer
             if (si != null && si.ip != null) si.ip else "singleplayer"
         } catch (e: Exception) {
+            FishDiag.fail("DungeonWaypoints.6", "current server lookup failed for waypoint key", e)
             "singleplayer"
         }
         val dimId = if (mc.level != null) mc.level!!.dimension().identifier().toString() else "unknown"
@@ -427,8 +438,12 @@ object DungeonWaypoints {
         var fired = false
         while (placeKey != null && placeKey!!.consumeClick()) fired = true
         if (fired && mc.screen == null) {
-            if (editMode) handlePlace(mc)
-            else if (pmEditMode) handlePlacePm(mc)
+            try {
+                if (editMode) handlePlace(mc)
+                else if (pmEditMode) handlePlacePm(mc)
+            } catch (e: Exception) {
+                FishDiag.fail("DungeonWaypoints.16", "waypoint place failed (edit=$editMode pm=$pmEditMode key=$lastGlobalDim)", e)
+            }
         }
     }
 
@@ -481,8 +496,9 @@ object DungeonWaypoints {
         for (w in liveWaypoints) {
             if (w.routeId != null) routeGroups.getOrPut(w.routeId) { ArrayList() }.add(w)
         }
-        for (group in routeGroups.values) {
+        for ((id, group) in routeGroups) {
             group.sortBy { it.routeOrder }
+            FishDiag.check(group.distinctBy { it.routeOrder }.size == group.size, "DungeonWaypoints.13") { "route $id has duplicate orders: ${group.map { it.routeOrder }}" }
         }
         return routeGroups
     }
@@ -598,20 +614,26 @@ object DungeonWaypoints {
                 )
                 val fracY = py - Math.floor(py)
                 px = local.x + 0.5; py = local.y + fracY; pz = local.z + 0.5
+            } else {
+                FishDiag.fail("DungeonWaypoints.7", "room key $key but no room anchor, waypoint stored in world coords")
             }
         }
 
         if (mc.player!!.isShiftKeyDown) {
             mc.setScreen(DungeonWaypointTitleScreen { title ->
-                val w = StoredWaypoint(
-                    px, py, pz, halfX, halfY, halfZ,
-                    color, placeFilled, through, title,
-                    if (type == WaypointType.NONE) null else type.name,
-                    if (timer == TimerType.NONE) null else timer.name
-                )
-                tagRoute(w)
-                DungeonWaypointStore.add(key, w)
-                applyGlobal()
+                try {
+                    val w = StoredWaypoint(
+                        px, py, pz, halfX, halfY, halfZ,
+                        color, placeFilled, through, title,
+                        if (type == WaypointType.NONE) null else type.name,
+                        if (timer == TimerType.NONE) null else timer.name
+                    )
+                    tagRoute(w)
+                    DungeonWaypointStore.add(key, w)
+                    applyGlobal()
+                } catch (e: Exception) {
+                    FishDiag.fail("DungeonWaypoints.8", "titled waypoint add failed in $key", e)
+                }
             })
             return
         }
@@ -646,6 +668,7 @@ object DungeonWaypoints {
 
         val result = ArrayList<LiveWaypoint>()
         for (w in DungeonWaypointStore.get(key)) {
+            if (!FishDiag.check(w.x.isFinite() && w.y.isFinite() && w.z.isFinite(), "DungeonWaypoints.9") { "non-finite stored waypoint in $key: ${w.x},${w.y},${w.z}" }) continue
             val c = if (anchor != null) {
                 val wb = DungeonRoomAnchor.toWorld(
                     anchor, BlockPos(Math.floor(w.x).toInt(), Math.floor(w.y).toInt(), Math.floor(w.z).toInt())
@@ -662,9 +685,9 @@ object DungeonWaypoints {
         liveWaypoints = result
         cachedRoutes = computeRoutes()
         progressVersion++
-        cachedMergedOccluded = buildMergedGroups(throughWalls = false)
-        cachedMergedThrough = buildMergedGroups(throughWalls = true)
-        cachedMergedPm = buildPmGroups()
+        cachedMergedOccluded = FishDiag.guard("DungeonWaypoints.10", "occluded waypoint merge failed in $key") { buildMergedGroups(throughWalls = false) } ?: emptyList()
+        cachedMergedThrough = FishDiag.guard("DungeonWaypoints.11", "through-wall waypoint merge failed in $key") { buildMergedGroups(throughWalls = true) } ?: emptyList()
+        cachedMergedPm = FishDiag.guard("DungeonWaypoints.12", "positional message merge failed in $key") { buildPmGroups() } ?: emptyList()
     }
 
     @JvmStatic
@@ -864,7 +887,7 @@ object DungeonWaypoints {
     private fun buildPmGroups(): List<MergedGroup> {
         val result = ArrayList<MergedGroup>()
         for ((key, group) in liveWaypoints.filter { it.message != null }.groupBy { Pair(it.color, it.message) }) {
-            val (quads, edges) = traceSurface(group.map { it.box }) ?: continue
+            val (quads, edges) = traceSurface(group.map { it.box }) ?: run { FishDiag.fail("DungeonWaypoints.14", "positional message group '${key.second}' traced to nothing (${group.size} boxes)"); null } ?: continue
             result.add(MergedGroup(key.first, true, quads, edges))
         }
         return result
@@ -992,6 +1015,14 @@ object DungeonWaypoints {
     fun renderOverlay(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
         if (mc.font == null) return
+        try {
+            renderOverlayInner(ctx, mc)
+        } catch (e: Exception) {
+            FishDiag.fail("DungeonWaypoints.15", "waypoint edit overlay render failed", e)
+        }
+    }
+
+    private fun renderOverlayInner(ctx: GuiGraphicsExtractor, mc: Minecraft) {
         if (pmEditMode) {
             val line = "§6[fm pm] §7message: §f" + (pmMessage ?: "§cnone") + " §8(shift+right-click to change)"
             ctx.text(mc.font, line, ctx.guiWidth() / 2 - mc.font.width(line) / 2, ctx.guiHeight() / 2 + 30, -1, true)

@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.puzzles
 
+import fishmod.utils.debug.FishDiag
 import fishmod.features.dungeon.puzzles.odin.OdinScan
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.Phase
@@ -96,6 +97,7 @@ object TicTacToeSolver {
             }
 
             val col = (72 - frame.y.toInt()).takeIf { it in 0..2 } ?: continue
+            if (!FishDiag.check(mapData.colors.size > 8256, "TicTacToeSolver.1") { "ttt map colours too small: ${mapData.colors.size}" }) continue
             val byte = mapData.colors[8256].toInt() and 0xFF
             val idx = col * 3 + row
             if (byte == 114) board[idx] = 'X' else if (byte == 33) board[idx] = 'O'
@@ -148,7 +150,7 @@ object TicTacToeSolver {
             90 -> arrayOf(bx + 0.5 - hw, bx + 0.5 + hw, bz, bz + th)
             180 -> arrayOf(bx + 1.0 - th, bx + 1.0, bz + 0.5 - hw, bz + 0.5 + hw)
             270 -> arrayOf(bx + 0.5 - hw, bx + 0.5 + hw, bz + 1.0 - th, bz + 1.0)
-            else -> return
+            else -> { FishDiag.fail("TicTacToeSolver.2", "tic tac toe room rotation not a right angle: $rot"); return }
         }
         RenderUtils.gizmoBox(AABB(minX, minY, minZ, maxX, maxY, maxZ), argb, 0)
     }

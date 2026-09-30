@@ -6,6 +6,7 @@ import fishmod.utils.Location
 import fishmod.utils.TabListCache
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemUtil
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
@@ -107,6 +108,7 @@ object PetHud {
 
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register { msg, overlay ->
             if (overlay || !FishSettings.petHudEnabled) return@register
+            try {
             val s = HypixelApi.STRIP_COLOR.matcher(msg.string).replaceAll("").trim()
 
             val a = AUTOPET_PAT.matcher(s)
@@ -142,6 +144,9 @@ object PetHud {
                 lastApiFetchAt = 0
                 if (debugDumpPetLines) fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal("§d[pet] loadout equip → re-sync"))
             }
+            } catch (e: Exception) {
+                FishDiag.fail("PetHud.1", "pet chat parse failed", e)
+            }
         }
 
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register { msg, overlay ->
@@ -162,7 +167,9 @@ object PetHud {
                     pendingXp += gain
                     lastXpAt = System.currentTimeMillis()
                     if (xpCurrent >= 0 && xpNext > 0) xpCurrent = minOf(xpCurrent + gain, xpNext)
-                } catch (ignored: NumberFormatException) {}
+                } catch (e: NumberFormatException) {
+                    FishDiag.fail("PetHud.2", "skill xp not numeric: '${m.group(1)}'", e)
+                }
             }
         }
 
@@ -172,6 +179,7 @@ object PetHud {
                 reset()
                 return@register
             }
+            try {
 
             val nowMs = System.currentTimeMillis()
             if (!apiFetchInFlight && nowMs - lastApiFetchAt >= API_REFRESH_MS) {
@@ -194,6 +202,9 @@ object PetHud {
             if (tickCount >= 5) {
                 tickCount = 0
                 scanTabList()
+            }
+            } catch (e: Exception) {
+                FishDiag.fail("PetHud.3", "pet hud tick failed (pet=$petName)", e)
             }
         }
     }
@@ -249,6 +260,7 @@ object PetHud {
     private fun applyApiPet(info: HypixelApi.PetInfo?) {
         apiFetchInFlight = false
         if (info == null || !info.ok) return
+        if (info.tier != null && rarityFromTier(info.tier) == ItemRarity.NONE) FishDiag.fail("PetHud.5", "unknown pet tier '${info.tier}' for ${info.name}")
 
         val withinTrustWindow = System.currentTimeMillis() - lastChatPetChangeAt < CHAT_TRUST_WINDOW_MS
         if (withinTrustWindow && lastChatPetName != null && !lastChatPetName.equals(info.name, ignoreCase = true)) {
@@ -290,6 +302,8 @@ object PetHud {
                 petLevel = safeInt(m.group(1), petLevel)
                 petName = m.group(2).trim()
                 rarityBeforeName(stack.hoverName.string, petName).let { if (it != ItemRarity.NONE) petRarity = it }
+            } else {
+                FishDiag.fail("PetHud.6", "active pet item name unparsed: '$displayName'")
             }
             scanProgressFromLore(stack)
             return
@@ -303,13 +317,15 @@ object PetHud {
             val s = HypixelApi.STRIP_COLOR.matcher(lines[i].string).replaceAll("").trim()
             val pm = PROGRESS_PAT.matcher(s)
             if (!pm.find()) continue
-            try { xpPct = pm.group(1).toFloat() } catch (ignored: NumberFormatException) {}
+            try { xpPct = pm.group(1).toFloat() } catch (e: NumberFormatException) { FishDiag.fail("PetHud.7", "pet progress % not numeric: '$s'", e) }
             if (i + 1 < lines.size) {
                 val s2 = HypixelApi.STRIP_COLOR.matcher(lines[i + 1].string).replaceAll("").trim()
                 val xm = PROGRESS_XP_PAT.matcher(s2)
                 if (xm.find()) {
                     xpCurrent = parseAbbrev(xm.group(1))
                     xpNext = parseAbbrev(xm.group(2))
+                } else {
+                    FishDiag.fail("PetHud.8", "pet xp line after progress unparsed: '$s2'")
                 }
             }
             return
@@ -323,7 +339,7 @@ object PetHud {
         if (s.endsWith("K")) { mult = 1_000.0; s = s.substring(0, s.length - 1) }
         else if (s.endsWith("M")) { mult = 1_000_000.0; s = s.substring(0, s.length - 1) }
         else if (s.endsWith("B")) { mult = 1_000_000_000.0; s = s.substring(0, s.length - 1) }
-        return try { s.toDouble() * mult } catch (e: NumberFormatException) { -1.0 }
+        return try { s.toDouble() * mult } catch (e: NumberFormatException) { FishDiag.fail("PetHud.9", "abbrev number unparsed: '$sIn'", e); -1.0 }
     }
 
     private fun reset() {
@@ -396,7 +412,7 @@ object PetHud {
         if (FishSettings.petHudShowRarity && petRarity != ItemRarity.NONE) rarityCode(petRarity) else "§6"
 
     private fun safeInt(s: String?, fallback: Int): Int {
-        return try { s!!.toInt() } catch (e: NumberFormatException) { fallback } catch (e: NullPointerException) { fallback }
+        return try { s!!.toInt() } catch (e: NumberFormatException) { FishDiag.fail("PetHud.10", "pet level not an int: '$s'", e); fallback } catch (e: NullPointerException) { FishDiag.fail("PetHud.11", "pet level group missing", e); fallback }
     }
 
     @JvmStatic
@@ -448,15 +464,20 @@ object PetHud {
 
         val sc = FishSettings.petHudScale.toFloat()
         ctx.pose().pushMatrix()
-        ctx.pose().translate(FishSettings.petHudX.toFloat(), FishSettings.petHudY.toFloat())
-        ctx.pose().scale(sc, sc)
-        if (icon != null) {
-            ctx.item(icon, 0, -4)
-            ctx.text(mc.font, text.toString().trimStart(), 18, 0, -1, true)
-        } else {
-            ctx.text(mc.font, text.toString(), 0, 0, -1, true)
+        try {
+            ctx.pose().translate(FishSettings.petHudX.toFloat(), FishSettings.petHudY.toFloat())
+            ctx.pose().scale(sc, sc)
+            if (icon != null) {
+                ctx.item(icon, 0, -4)
+                ctx.text(mc.font, text.toString().trimStart(), 18, 0, -1, true)
+            } else {
+                ctx.text(mc.font, text.toString(), 0, 0, -1, true)
+            }
+        } catch (e: Exception) {
+            FishDiag.fail("PetHud.4", "pet hud render failed (pet=$petName)", e)
+        } finally {
+            ctx.pose().popMatrix()
         }
-        ctx.pose().popMatrix()
     }
 
     private fun formatXp(v: Double): String {

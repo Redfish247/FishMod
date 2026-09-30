@@ -20,6 +20,7 @@ import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import java.util.regex.Pattern
+import fishmod.utils.debug.FishDiag
 
 object M7Relics {
 
@@ -63,8 +64,11 @@ object M7Relics {
                     spawnEndMs = System.currentTimeMillis() + SPAWN_TICKS * 50L
             } else if (p5StartMs != 0L) {
                 val m = PICKUP.matcher(msg)
-                if (m.find()) {
+                if (!m.find()) {
+                    if (msg.contains(" picked the Corrupted ")) FishDiag.fail("M7Relics.1", "relic pickup line didn't match: '$msg'")
+                } else {
                     val relic = Relic.entries.firstOrNull { it.itemName == "Corrupted ${m.group(2)} Relic" }
+                    if (relic == null) FishDiag.fail("M7Relics.2", "unknown relic colour '${m.group(2)}'")
                     if (relic != null) pickers[relic] = m.group(1)
                     if (m.group(1) == Minecraft.getInstance().player?.gameProfile?.name) myRelic = relic
                 }
@@ -72,9 +76,13 @@ object M7Relics {
             false
         }
         Events.ON_WORLD_CHANGE.register { spawnEndMs = 0L; p5StartMs = 0L; myRelic = null; pickers.clear(); placed.clear(); false }
-        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { checkPlaced(); checkAllPlaced() }
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register {
+            try { checkPlaced(); checkAllPlaced() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
+        }
 
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> renderBox(m, vc) }
+        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
+            try { renderBox(m, vc) } catch (e: Exception) { FishDiag.fail("M7Relics.4", "relic cauldron render threw", e) }
+        }
     }
 
     // Relic armor stand sitting on its cauldron = placed (NoammAddons M7Relics).
@@ -91,6 +99,7 @@ object M7Relics {
             if (dx * dx + dz * dz >= 1.5 * 1.5) continue
             myRelic = null
             val secs = (System.currentTimeMillis() - p5StartMs) / 1000.0
+            FishDiag.check(p5StartMs != 0L && secs >= 0, "M7Relics.5") { "relic placed with bad P5 start (start=$p5StartMs secs=$secs)" }
             val color = relic.name.lowercase().replaceFirstChar { it.uppercase() }
             PbMessages.announce(FishSettings.pbMessagesRelics, "relic:${relic.name}",
                 Component.literal("${relic.code}$color Relic §aplaced in"), secs)
@@ -115,7 +124,7 @@ object M7Relics {
         if (placed.size < Relic.entries.size) return
         for ((relic, secs) in placed) {
             val color = relic.name.lowercase().replaceFirstChar { it.uppercase() }
-            val who = pickers[relic] ?: "?"
+            val who = pickers[relic] ?: run { FishDiag.fail("M7Relics.6", "no picker recorded for ${relic.name} relic"); "?" }
             val time = PbMessages.fmt(secs)
             if (Floor7.relicTimesParty) fishmod.utils.ChatQueue.enqueue("pc $color Relic: $time ($who)")
             else fishmod.utils.Misc.addChatMessage(Component.literal("${relic.code}$color Relic§7: §e$time §7($who)"))
@@ -141,6 +150,7 @@ object M7Relics {
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!Floor7.enableRelicStartTimer) return
         val left = spawnEndMs - System.currentTimeMillis()
+        FishDiag.check(left <= SPAWN_TICKS * 50L + 1000L, "M7Relics.7") { "relic spawn timer too far in future: ${left}ms" }
         if (left <= 0L) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return

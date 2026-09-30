@@ -31,8 +31,13 @@ public class GuiMixin {
     @ModifyVariable(method = "setOverlayMessage(Lnet/minecraft/network/chat/Component;Z)V",
             at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private Component fishmod$cleanActionBar(Component message) {
-        fishmod.features.dungeon.map.RoomSecrets.onActionBar(message);
-        return ActionBarCleaner.filter(message);
+        try {
+            fishmod.features.dungeon.map.RoomSecrets.onActionBar(message);
+            return ActionBarCleaner.filter(message);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("GuiMixin.1", "action bar hook failed", t);
+            return message;
+        }
     }
 
     @Inject(method = "extractArmor", at = @At("HEAD"), cancellable = true)
@@ -69,11 +74,19 @@ public class GuiMixin {
 
     @Inject(method = "extractRenderState", at = @At("HEAD"))
     private void fishmod$darkModePre(GuiGraphicsExtractor extractor, DeltaTracker deltaTracker, CallbackInfo ci) {
-        if (!Visual.darkModeTintHud) DarkMode.drawOverlay(extractor);
+        try {
+            if (!Visual.darkModeTintHud) DarkMode.drawOverlay(extractor);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("GuiMixin.2", "dark mode overlay (pre) failed", t);
+        }
     }
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void fishmod$darkModePost(GuiGraphicsExtractor extractor, DeltaTracker deltaTracker, CallbackInfo ci) {
-        if (Visual.darkModeTintHud) DarkMode.drawOverlay(extractor);
+        try {
+            if (Visual.darkModeTintHud) DarkMode.drawOverlay(extractor);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("GuiMixin.3", "dark mode overlay (post) failed", t);
+        }
     }
 }

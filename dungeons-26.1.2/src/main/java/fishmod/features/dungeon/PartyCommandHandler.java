@@ -73,86 +73,90 @@ public class PartyCommandHandler {
 
         String ign = rawArg1 != null ? rawArg1 : typer;
 
-        switch (cmd) {
-            case "help", "?" -> { if (FishSettings.pcHelp && respond(cmd, typer, isLocal)) sendCmd(mc, responder, buildHelp()); }
-            case "rtca"      -> { if (FishSettings.pcRtca && respond(cmd, typer, isLocal))    runRtcaForPlayer(mc, ign, responder);             }
-            case "rtc"       -> { if (FishSettings.pcRtc  && respond(cmd, typer, isLocal)) {
-                String rtcIgn; String levelArg;
-                if (rawArg1 != null && DIGITS_RE.matcher(rawArg1).matches()) { rtcIgn = typer; levelArg = rawArg1; }
-                else { rtcIgn = rawArg1 != null ? rawArg1 : typer; levelArg = rawArg2; }
-                runRtcForPlayer(mc, rtcIgn, levelArg, responder);
-            } }
-            case "crtc"      -> { if (FishSettings.pcCrtc && respond(cmd, typer, isLocal)) {
-                String cIgn, cClass, cLevel;
-                if (resolveClass(rawArg1) != null) { cIgn = typer; cClass = rawArg1; cLevel = rawArg2; }
-                else { cIgn = rawArg1 != null ? rawArg1 : typer; cClass = rawArg2; cLevel = rawArg3; }
-                runCrtcForPlayer(mc, cIgn, cClass, cLevel, responder);
-            } }
-            case "cata"      -> { if (FishSettings.pcCata && respond(cmd, typer, isLocal))    runCataForPlayer(mc, ign, responder);             }
-            case "pb" -> {
-                if (!FishSettings.pcPb || !respond(cmd, typer, isLocal)) break;
-                String pbIgn, pbFloor;
-                if (isFloor(rawArg1)) {
-                    pbIgn   = typer;
-                    pbFloor = rawArg1;
-                } else {
-                    pbIgn   = rawArg1 != null ? rawArg1 : typer;
-                    pbFloor = rawArg2;
+        try {
+            switch (cmd) {
+                case "help", "?" -> { if (FishSettings.pcHelp && respond(cmd, typer, isLocal)) sendCmd(mc, responder, buildHelp()); }
+                case "rtca"      -> { if (FishSettings.pcRtca && respond(cmd, typer, isLocal))    runRtcaForPlayer(mc, ign, responder);             }
+                case "rtc"       -> { if (FishSettings.pcRtc  && respond(cmd, typer, isLocal)) {
+                    String rtcIgn; String levelArg;
+                    if (rawArg1 != null && DIGITS_RE.matcher(rawArg1).matches()) { rtcIgn = typer; levelArg = rawArg1; }
+                    else { rtcIgn = rawArg1 != null ? rawArg1 : typer; levelArg = rawArg2; }
+                    runRtcForPlayer(mc, rtcIgn, levelArg, responder);
+                } }
+                case "crtc"      -> { if (FishSettings.pcCrtc && respond(cmd, typer, isLocal)) {
+                    String cIgn, cClass, cLevel;
+                    if (resolveClass(rawArg1) != null) { cIgn = typer; cClass = rawArg1; cLevel = rawArg2; }
+                    else { cIgn = rawArg1 != null ? rawArg1 : typer; cClass = rawArg2; cLevel = rawArg3; }
+                    runCrtcForPlayer(mc, cIgn, cClass, cLevel, responder);
+                } }
+                case "cata"      -> { if (FishSettings.pcCata && respond(cmd, typer, isLocal))    runCataForPlayer(mc, ign, responder);             }
+                case "pb" -> {
+                    if (!FishSettings.pcPb || !respond(cmd, typer, isLocal)) break;
+                    String pbIgn, pbFloor;
+                    if (isFloor(rawArg1)) {
+                        pbIgn   = typer;
+                        pbFloor = rawArg1;
+                    } else {
+                        pbIgn   = rawArg1 != null ? rawArg1 : typer;
+                        pbFloor = rawArg2;
+                    }
+                    runPbForPlayer(mc, pbIgn, pbFloor, responder);
                 }
-                runPbForPlayer(mc, pbIgn, pbFloor, responder);
-            }
-            case "mp" -> { if (FishSettings.pcMp && respond(cmd, typer, isLocal)) runMpForPlayer(mc, rawArg1 != null ? rawArg1 : typer, responder); }
-            case "collection" -> {
-                if (!FishSettings.pcCollection || !respond(cmd, typer, isLocal)) break;
-                String colIgn, colFloor;
-                if (isFloor(rawArg1)) { colIgn = typer;                             colFloor = rawArg1; }
-                else                  { colIgn = rawArg1 != null ? rawArg1 : typer; colFloor = rawArg2; }
-                runCollectionForPlayer(mc, colIgn, colFloor, responder);
-            }
-            case "secrets", "sa" -> { if (FishSettings.pcSecrets && respond(cmd, typer, isLocal)) runStatsForPlayer(mc, ign, cmd, null, responder); }
-            case "runs" -> {
-                if (!FishSettings.pcRuns || !respond(cmd, typer, isLocal)) break;
-                String runsIgn, floor;
-                if (isFloor(rawArg1)) {
-                    runsIgn = typer;
-                    floor   = rawArg1;
-                } else {
-                    runsIgn = rawArg1 != null ? rawArg1 : typer;
-                    floor   = rawArg2;
+                case "mp" -> { if (FishSettings.pcMp && respond(cmd, typer, isLocal)) runMpForPlayer(mc, rawArg1 != null ? rawArg1 : typer, responder); }
+                case "collection" -> {
+                    if (!FishSettings.pcCollection || !respond(cmd, typer, isLocal)) break;
+                    String colIgn, colFloor;
+                    if (isFloor(rawArg1)) { colIgn = typer;                             colFloor = rawArg1; }
+                    else                  { colIgn = rawArg1 != null ? rawArg1 : typer; colFloor = rawArg2; }
+                    runCollectionForPlayer(mc, colIgn, colFloor, responder);
                 }
-                runStatsForPlayer(mc, runsIgn, cmd, floor, responder);
-            }
-            case "totalruns" -> { if (FishSettings.pcRuns && respond(cmd, typer, isLocal))    runTotalRunsForPlayer(mc, ign, responder);        }
-            case "dprofit"   -> { if (FishSettings.pcDprofit && isMe) sendDprofit(mc, responder);              }
-            case "crit"      -> { if (FishSettings.pcCrit    && isMe) sendCmd(mc, responder, fishmod.features.CritTracker.buildMessage()); }
-            case "corpse", "corpses" -> { if (FishSettings.pcCorpse && respond(cmd, typer, isLocal)) sendCorpse(mc, ign, responder);  }
-            case "bank" -> { if (FishSettings.pcBank && respond(cmd, typer, isLocal)) sendBank(mc, ign, responder); }
-            case "powder" -> { if (FishSettings.pcPowder && respond(cmd, typer, isLocal)) sendPowder(mc, ign, responder); }
-            case "nw", "networth" -> { if (FishSettings.pcNw && respond(cmd, typer, isLocal)) sendNetworth(mc, ign, responder); }
-            case "level", "sblvl" -> { if (FishSettings.pcLevel && respond(cmd, typer, isLocal)) sendSkyblockLevel(mc, ign, responder); }
-            case "farming" -> { if (FishSettings.pcFarming && respond(cmd, typer, isLocal)) sendFarming(mc, ign, responder); }
-            case "nuc", "nucleus" -> { if (FishSettings.pcNuc && respond(cmd, typer, isLocal)) sendNucleus(mc, ign, responder); }
-            case "worm", "scatha" -> { if (FishSettings.pcWorm && respond(cmd, typer, isLocal)) sendWorm(mc, ign, responder); }
-            case "fps"    -> { if (FishSettings.pcFps    && isMe) sendFps(mc, responder);  }
-            case "tps"    -> { if (FishSettings.pcTps    && isMe) sendTps(mc, responder);  }
-            case "ping"   -> { if (FishSettings.pcPing   && isMe) sendPing(mc, responder); }
-            case "ai", "allinv" -> { if (FishSettings.pcAllinvite && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && respond(cmd, "*", isLocal)) sendRawCommand(mc, "p settings allinvite"); }
-            case "d"            -> { if (FishSettings.pcDisband   && isMe) sendRawCommand(mc, "p disband");             }
-            case "kick", "k"              -> { if (FishSettings.pcActionKick     && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p kick " + resolvePartyTarget(mc, rawArg1));    }
-            case "warp", "w"              -> { if (FishSettings.pcActionWarp     && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe))                    sendRawCommand(mc, "p warp");                }
-            case "transfer", "pt", "ptme" -> { if (FishSettings.pcActionTransfer && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe))                    sendRawCommand(mc, "p transfer " + resolvePartyTarget(mc, ign));     }
-            case "promote", "pro"         -> { if (FishSettings.pcActionPromote  && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p promote " + resolvePartyTarget(mc, rawArg1));  }
-            case "demote", "dem"          -> { if (FishSettings.pcActionDemote   && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p demote " + resolvePartyTarget(mc, rawArg1));   }
-            case "chim", "chimera", "chimls", "inq", "inqs", "inquis", "king", "manti", "sphinx", "core", "stinger", "wool", "food", "relic", "relics", "stick", "sticks", "hilt", "since", "burrow", "burrows", "mob", "mobs", "profit", "playtime", "mf", "diana" -> {
-                if (fishmod.features.diana.DianaSettings.dianaPartyCommands && respond(cmd, typer, isLocal)) {
-                    String r = fishmod.features.diana.DianaTracker.partyReply(cmd, rawArg1);
-                    if (r != null) sendCmd(mc, responder, r);
+                case "secrets", "sa" -> { if (FishSettings.pcSecrets && respond(cmd, typer, isLocal)) runStatsForPlayer(mc, ign, cmd, null, responder); }
+                case "runs" -> {
+                    if (!FishSettings.pcRuns || !respond(cmd, typer, isLocal)) break;
+                    String runsIgn, floor;
+                    if (isFloor(rawArg1)) {
+                        runsIgn = typer;
+                        floor   = rawArg1;
+                    } else {
+                        runsIgn = rawArg1 != null ? rawArg1 : typer;
+                        floor   = rawArg2;
+                    }
+                    runStatsForPlayer(mc, runsIgn, cmd, floor, responder);
+                }
+                case "totalruns" -> { if (FishSettings.pcRuns && respond(cmd, typer, isLocal))    runTotalRunsForPlayer(mc, ign, responder);        }
+                case "dprofit"   -> { if (FishSettings.pcDprofit && isMe) sendDprofit(mc, responder);              }
+                case "crit"      -> { if (FishSettings.pcCrit    && isMe) sendCmd(mc, responder, fishmod.features.CritTracker.buildMessage()); }
+                case "corpse", "corpses" -> { if (FishSettings.pcCorpse && respond(cmd, typer, isLocal)) sendCorpse(mc, ign, responder);  }
+                case "bank" -> { if (FishSettings.pcBank && respond(cmd, typer, isLocal)) sendBank(mc, ign, responder); }
+                case "powder" -> { if (FishSettings.pcPowder && respond(cmd, typer, isLocal)) sendPowder(mc, ign, responder); }
+                case "nw", "networth" -> { if (FishSettings.pcNw && respond(cmd, typer, isLocal)) sendNetworth(mc, ign, responder); }
+                case "level", "sblvl" -> { if (FishSettings.pcLevel && respond(cmd, typer, isLocal)) sendSkyblockLevel(mc, ign, responder); }
+                case "farming" -> { if (FishSettings.pcFarming && respond(cmd, typer, isLocal)) sendFarming(mc, ign, responder); }
+                case "nuc", "nucleus" -> { if (FishSettings.pcNuc && respond(cmd, typer, isLocal)) sendNucleus(mc, ign, responder); }
+                case "worm", "scatha" -> { if (FishSettings.pcWorm && respond(cmd, typer, isLocal)) sendWorm(mc, ign, responder); }
+                case "fps"    -> { if (FishSettings.pcFps    && isMe) sendFps(mc, responder);  }
+                case "tps"    -> { if (FishSettings.pcTps    && isMe) sendTps(mc, responder);  }
+                case "ping"   -> { if (FishSettings.pcPing   && isMe) sendPing(mc, responder); }
+                case "ai", "allinv" -> { if (FishSettings.pcAllinvite && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && respond(cmd, "*", isLocal)) sendRawCommand(mc, "p settings allinvite"); }
+                case "d"            -> { if (FishSettings.pcDisband   && isMe) sendRawCommand(mc, "p disband");             }
+                case "kick", "k"              -> { if (FishSettings.pcActionKick     && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p kick " + resolvePartyTarget(mc, rawArg1));    }
+                case "warp", "w"              -> { if (FishSettings.pcActionWarp     && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe))                    sendRawCommand(mc, "p warp");                }
+                case "transfer", "pt", "ptme" -> { if (FishSettings.pcActionTransfer && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe))                    sendRawCommand(mc, "p transfer " + resolvePartyTarget(mc, ign));     }
+                case "promote", "pro"         -> { if (FishSettings.pcActionPromote  && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p promote " + resolvePartyTarget(mc, rawArg1));  }
+                case "demote", "dem"          -> { if (FishSettings.pcActionDemote   && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe) && rawArg1 != null) sendRawCommand(mc, "p demote " + resolvePartyTarget(mc, rawArg1));   }
+                case "chim", "chimera", "chimls", "inq", "inqs", "inquis", "king", "manti", "sphinx", "core", "stinger", "wool", "food", "relic", "relics", "stick", "sticks", "hilt", "since", "burrow", "burrows", "mob", "mobs", "profit", "playtime", "mf", "diana" -> {
+                    if (fishmod.features.diana.DianaSettings.dianaPartyCommands && respond(cmd, typer, isLocal)) {
+                        String r = fishmod.features.diana.DianaTracker.partyReply(cmd, rawArg1);
+                        if (r != null) sendCmd(mc, responder, r);
+                    }
+                }
+                default -> {
+                    if ((FLOOR_RE.matcher(cmd).matches() || cmd.equals("e")) && FishSettings.pcJoinFloor && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) handleJoinInstance(cmd, mc, responder);
+                    else if (KUUDRA_RE.matcher(cmd).matches() && FishSettings.pcJoinFloor && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) handleKuudra(cmd, mc, responder);
                 }
             }
-            default -> {
-                if ((FLOOR_RE.matcher(cmd).matches() || cmd.equals("e")) && FishSettings.pcJoinFloor && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) handleJoinInstance(cmd, mc, responder);
-                else if (KUUDRA_RE.matcher(cmd).matches() && FishSettings.pcJoinFloor && partyActionAllowed(responder, isLocal) && allowPartyAction(typer, isMe)) handleKuudra(cmd, mc, responder);
-            }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("PartyCommandHandler.1", "party command dispatch failed cmd=" + cmd + " typer=" + typer, t);
         }
     }
 
@@ -220,7 +224,11 @@ public class PartyCommandHandler {
         return switch (FishSettings.pcPartyActionsMode) {
             case "everyone", "blacklist" -> true;
             case "whitelist" -> fishmod.utils.NameList.contains(FishSettings.pcPartyActionsWhitelist, typer);
-            default -> false;
+            case "off", "self" -> false;
+            default -> {
+                fishmod.utils.debug.FishDiag.fail("PartyCommandHandler.2", "unknown party actions mode: " + FishSettings.pcPartyActionsMode);
+                yield false;
+            }
         };
     }
 
@@ -312,15 +320,25 @@ public class PartyCommandHandler {
     private static void sendRawCommand(Minecraft mc, String command) {
         CompletableFuture.delayedExecutor(250, TimeUnit.MILLISECONDS)
             .execute(() -> mc.execute(() -> {
-                if (mc.getConnection() != null) {
-                    mc.getConnection().sendCommand(command);
-                    ChatCommandState.lastPartyCommandAt = System.currentTimeMillis();
+                try {
+                    if (mc.getConnection() != null) {
+                        mc.getConnection().sendCommand(command);
+                        ChatCommandState.lastPartyCommandAt = System.currentTimeMillis();
+                    }
+                } catch (Throwable t) {
+                    fishmod.utils.debug.FishDiag.fail("PartyCommandHandler.3", "sending party response command failed", t);
                 }
             }));
     }
 
     private static void runRtcaForPlayer(Minecraft mc, String ign, String responder) {
-        HypixelApi.getByName(mc, ign, data -> buildAndSendRtca(mc, data, ign, responder));
+        HypixelApi.getByName(mc, ign, data -> {
+            try {
+                buildAndSendRtca(mc, data, ign, responder);
+            } catch (Throwable t) {
+                fishmod.utils.debug.FishDiag.fail("PartyCommandHandler.10", "rtca response build failed ign=" + ign, t);
+            }
+        });
     }
 
     private static void runCataForPlayer(Minecraft mc, String ign, String responder) {
@@ -333,36 +351,41 @@ public class PartyCommandHandler {
 
     private static void runStatsForPlayer(Minecraft mc, String ign, String cmd, String floorArg, String responder) {
         HypixelApi.getByName(mc, ign, data -> {
-            StringBuilder sb = new StringBuilder(ign + "'s ");
-            switch (cmd) {
-                case "secrets" -> {
-                    sb.append("Secrets: ").append(String.format("%,d", data.totalSecrets));
-                    if (data.secretAverage != null) sb.append(" | SA: ").append(data.secretAverage);
-                }
-                case "sa" -> {
-                    sb.append("SA: ").append(data.secretAverage != null ? data.secretAverage : "N/A");
-                }
-                case "runs" -> {
-                    String floor = floorArg != null ? floorArg.toLowerCase() : "m7";
-                    long count;
-                    String label;
-                    if (floor.equals("e")) {
-                        count = data.cataTimes[0];
-                        label = "E";
-                    } else if (FLOOR_RE.matcher(floor).matches()) {
-                        char type = floor.charAt(0);
-                        int num   = floor.charAt(1) - '0';
-                        long[] times = (type == 'm') ? data.masterTimes : data.cataTimes;
-                        count = num < times.length ? times[num] : 0;
-                        label = (type == 'm' ? "M" : "F") + num;
-                    } else {
-                        count = data.totalRuns;
-                        label = "Total";
+            try {
+                StringBuilder sb = new StringBuilder(ign + "'s ");
+                switch (cmd) {
+                    case "secrets" -> {
+                        sb.append("Secrets: ").append(String.format("%,d", data.totalSecrets));
+                        if (data.secretAverage != null) sb.append(" | SA: ").append(data.secretAverage);
                     }
-                    sb.append(label).append(" Runs: ").append(String.format("%,d", count));
+                    case "sa" -> {
+                        sb.append("SA: ").append(data.secretAverage != null ? data.secretAverage : "N/A");
+                    }
+                    case "runs" -> {
+                        String floor = floorArg != null ? floorArg.toLowerCase() : "m7";
+                        long count;
+                        String label;
+                        if (floor.equals("e")) {
+                            count = data.cataTimes[0];
+                            label = "E";
+                        } else if (FLOOR_RE.matcher(floor).matches()) {
+                            char type = floor.charAt(0);
+                            int num   = floor.charAt(1) - '0';
+                            long[] times = (type == 'm') ? data.masterTimes : data.cataTimes;
+                            count = num < times.length ? times[num] : 0;
+                            label = (type == 'm' ? "M" : "F") + num;
+                        } else {
+                            count = data.totalRuns;
+                            label = "Total";
+                        }
+                        sb.append(label).append(" Runs: ").append(String.format("%,d", count));
+                    }
+                    default -> fishmod.utils.debug.FishDiag.fail("PartyCommandHandler.4", "unexpected stats cmd: " + cmd);
                 }
+                sendCmd(mc, responder, sb.toString());
+            } catch (Throwable t) {
+                fishmod.utils.debug.FishDiag.fail("PartyCommandHandler.5", "stats response build failed cmd=" + cmd + " ign=" + ign, t);
             }
-            sendCmd(mc, responder, sb.toString());
         });
     }
 
@@ -374,18 +397,22 @@ public class PartyCommandHandler {
 
     private static void runPbForPlayer(Minecraft mc, String ign, String floor, String responder) {
         HypixelApi.getByName(mc, ign, data -> {
-            boolean isMaster = floor == null || floor.toLowerCase().startsWith("m");
-            int floorNum = 7;
-            if (floor != null && floor.equalsIgnoreCase("e")) {
-                floorNum = 0;
-                isMaster = false;
-            } else if (floor != null) {
-                try { floorNum = Integer.parseInt(floor.substring(1)); } catch (Exception ignored) {}
+            try {
+                boolean isMaster = floor == null || floor.toLowerCase().startsWith("m");
+                int floorNum = 7;
+                if (floor != null && floor.equalsIgnoreCase("e")) {
+                    floorNum = 0;
+                    isMaster = false;
+                } else if (floor != null) {
+                    try { floorNum = Integer.parseInt(floor.substring(1)); } catch (Exception ignored) {}
+                }
+                String[] pbs = isMaster ? data.masterPbs : data.cataPbs;
+                String pb = (floorNum >= 0 && floorNum < pbs.length) ? pbs[floorNum] : null;
+                String label = (isMaster ? "M" : "F") + floorNum + " PB";
+                sendCmd(mc, responder, ign + "'s " + label + ": " + (pb != null ? pb : "N/A"));
+            } catch (Throwable t) {
+                fishmod.utils.debug.FishDiag.fail("PartyCommandHandler.6", "pb response build failed floor=" + floor + " ign=" + ign, t);
             }
-            String[] pbs = isMaster ? data.masterPbs : data.cataPbs;
-            String pb = (floorNum >= 0 && floorNum < pbs.length) ? pbs[floorNum] : null;
-            String label = (isMaster ? "M" : "F") + floorNum + " PB";
-            sendCmd(mc, responder, ign + "'s " + label + ": " + (pb != null ? pb : "N/A"));
         });
     }
 
@@ -410,31 +437,35 @@ public class PartyCommandHandler {
 
     private static void runCollectionForPlayer(Minecraft mc, String ign, String floor, String responder) {
         HypixelApi.getByName(mc, ign, data -> {
-            String label;
-            String value;
-            if (floor != null) {
-                boolean isMaster = floor.toLowerCase().startsWith("m");
-                int floorNum = 7;
-                if (floor.equalsIgnoreCase("e")) {
-                    floorNum = 0;
-                    isMaster = false;
+            try {
+                String label;
+                String value;
+                if (floor != null) {
+                    boolean isMaster = floor.toLowerCase().startsWith("m");
+                    int floorNum = 7;
+                    if (floor.equalsIgnoreCase("e")) {
+                        floorNum = 0;
+                        isMaster = false;
+                    } else {
+                        try { floorNum = Integer.parseInt(floor.substring(1)); } catch (Exception ignored) {}
+                        if (floorNum < 0) floorNum = 7;
+                    }
+                    long cataRuns   = floorNum < data.cataTimes.length   ? data.cataTimes[floorNum]   : 0;
+                    long masterRuns = floorNum < data.masterTimes.length ? data.masterTimes[floorNum] : 0;
+                    long col = cataRuns + masterRuns * 2;
+                    label = (isMaster ? "M" : "F") + floorNum + " Collection";
+                    value = formatCollectionProgress(col);
                 } else {
-                    try { floorNum = Integer.parseInt(floor.substring(1)); } catch (Exception ignored) {}
-                    if (floorNum < 0) floorNum = 7;
+                    long col = 0;
+                    for (long t : data.cataTimes)   col += t;
+                    for (long t : data.masterTimes) col += t * 2;
+                    label = "Collection";
+                    value = String.format("%,d", col);
                 }
-                long cataRuns   = floorNum < data.cataTimes.length   ? data.cataTimes[floorNum]   : 0;
-                long masterRuns = floorNum < data.masterTimes.length ? data.masterTimes[floorNum] : 0;
-                long col = cataRuns + masterRuns * 2;
-                label = (isMaster ? "M" : "F") + floorNum + " Collection";
-                value = formatCollectionProgress(col);
-            } else {
-                long col = 0;
-                for (long t : data.cataTimes)   col += t;
-                for (long t : data.masterTimes) col += t * 2;
-                label = "Collection";
-                value = String.format("%,d", col);
+                sendCmd(mc, responder, ign + "'s " + label + ": " + value);
+            } catch (Throwable t) {
+                fishmod.utils.debug.FishDiag.fail("PartyCommandHandler.7", "collection response build failed floor=" + floor + " ign=" + ign, t);
             }
-            sendCmd(mc, responder, ign + "'s " + label + ": " + value);
         });
     }
 
@@ -445,32 +476,36 @@ public class PartyCommandHandler {
         }
         final int targetLevel = target;
         HypixelApi.getByName(mc, ign, data -> {
-            long xpNeeded;
-            if (targetLevel < HypixelApi.CATA_XP_TABLE.length) {
-                xpNeeded = HypixelApi.CATA_XP_TABLE[targetLevel] - data.cataXp;
-            } else {
-                long over = (long)(targetLevel - 50) * HypixelApi.CATA_OVERFLOW_XP_PER_LEVEL;
-                xpNeeded = HypixelApi.CATA_XP_TABLE[50] + over - data.cataXp;
-            }
-            long xpPerRun = Math.max(1, FishSettings.rtcCataXpPerRun);
-            String result;
-            if (xpNeeded <= 0) {
-                result = "Done ✔";
-            } else {
-                long runs;
-                if (FishSettings.rtcaIncludeDailyBonus) {
-                    long bonusXp = (long)(5 * xpPerRun * 1.4);
-                    if (xpNeeded <= bonusXp) {
-                        runs = (long) Math.ceil(xpNeeded / (xpPerRun * 1.4));
-                    } else {
-                        runs = 5 + (xpNeeded - bonusXp + xpPerRun - 1) / xpPerRun;
-                    }
+            try {
+                long xpNeeded;
+                if (targetLevel < HypixelApi.CATA_XP_TABLE.length) {
+                    xpNeeded = HypixelApi.CATA_XP_TABLE[targetLevel] - data.cataXp;
                 } else {
-                    runs = (xpNeeded + xpPerRun - 1) / xpPerRun;
+                    long over = (long)(targetLevel - 50) * HypixelApi.CATA_OVERFLOW_XP_PER_LEVEL;
+                    xpNeeded = HypixelApi.CATA_XP_TABLE[50] + over - data.cataXp;
                 }
-                result = runs >= 1_000 ? String.format("%.1fk", runs / 1_000.0) : Long.toString(runs);
+                long xpPerRun = Math.max(1, FishSettings.rtcCataXpPerRun);
+                String result;
+                if (xpNeeded <= 0) {
+                    result = "Done ✔";
+                } else {
+                    long runs;
+                    if (FishSettings.rtcaIncludeDailyBonus) {
+                        long bonusXp = (long)(5 * xpPerRun * 1.4);
+                        if (xpNeeded <= bonusXp) {
+                            runs = (long) Math.ceil(xpNeeded / (xpPerRun * 1.4));
+                        } else {
+                            runs = 5 + (xpNeeded - bonusXp + xpPerRun - 1) / xpPerRun;
+                        }
+                    } else {
+                        runs = (xpNeeded + xpPerRun - 1) / xpPerRun;
+                    }
+                    result = runs >= 1_000 ? String.format("%.1fk", runs / 1_000.0) : Long.toString(runs);
+                }
+                sendCmd(mc, responder, ign + "'s runs to Cata " + targetLevel + ": " + result);
+            } catch (Throwable t) {
+                fishmod.utils.debug.FishDiag.fail("PartyCommandHandler.8", "rtc response build failed target=" + targetLevel + " ign=" + ign, t);
             }
-            sendCmd(mc, responder, ign + "'s runs to Cata " + targetLevel + ": " + result);
         });
     }
 
@@ -498,42 +533,50 @@ public class PartyCommandHandler {
         }
         final int targetLevel = target;
         HypixelApi.getByName(mc, ign, data -> {
-            long curXp = data.classXp.getOrDefault(classKey, 0L);
-            long goalXp;
-            if (targetLevel < HypixelApi.CATA_XP_TABLE.length) {
-                goalXp = HypixelApi.CATA_XP_TABLE[targetLevel];
-            } else {
-                long over = (long)(targetLevel - 50) * HypixelApi.CATA_OVERFLOW_XP_PER_LEVEL;
-                goalXp = HypixelApi.CATA_XP_TABLE[50] + over;
-            }
-            long xpNeeded = goalXp - curXp;
-            String disp = Character.toUpperCase(classKey.charAt(0)) + classKey.substring(1);
-            String result;
-            if (xpNeeded <= 0) {
-                result = "Done ✔";
-            } else {
-                long xpPerRun = Math.max(1, FishSettings.rtcaClassXpPerRun);
-                long runs;
-                if (FishSettings.rtcaIncludeDailyBonus) {
-                    long bonusXp = (long)(5 * xpPerRun * 1.4);
-                    if (xpNeeded <= bonusXp) runs = (long) Math.ceil(xpNeeded / (xpPerRun * 1.4));
-                    else                     runs = 5 + (xpNeeded - bonusXp + xpPerRun - 1) / xpPerRun;
+            try {
+                long curXp = data.classXp.getOrDefault(classKey, 0L);
+                long goalXp;
+                if (targetLevel < HypixelApi.CATA_XP_TABLE.length) {
+                    goalXp = HypixelApi.CATA_XP_TABLE[targetLevel];
                 } else {
-                    runs = (xpNeeded + xpPerRun - 1) / xpPerRun;
+                    long over = (long)(targetLevel - 50) * HypixelApi.CATA_OVERFLOW_XP_PER_LEVEL;
+                    goalXp = HypixelApi.CATA_XP_TABLE[50] + over;
                 }
-                String runsStr = runs >= 1_000 ? String.format("%.1fk", runs / 1_000.0) : Long.toString(runs);
-                result = fmtCoins(xpNeeded) + " XP | " + runsStr + " runs";
+                long xpNeeded = goalXp - curXp;
+                String disp = Character.toUpperCase(classKey.charAt(0)) + classKey.substring(1);
+                String result;
+                if (xpNeeded <= 0) {
+                    result = "Done ✔";
+                } else {
+                    long xpPerRun = Math.max(1, FishSettings.rtcaClassXpPerRun);
+                    long runs;
+                    if (FishSettings.rtcaIncludeDailyBonus) {
+                        long bonusXp = (long)(5 * xpPerRun * 1.4);
+                        if (xpNeeded <= bonusXp) runs = (long) Math.ceil(xpNeeded / (xpPerRun * 1.4));
+                        else                     runs = 5 + (xpNeeded - bonusXp + xpPerRun - 1) / xpPerRun;
+                    } else {
+                        runs = (xpNeeded + xpPerRun - 1) / xpPerRun;
+                    }
+                    String runsStr = runs >= 1_000 ? String.format("%.1fk", runs / 1_000.0) : Long.toString(runs);
+                    result = fmtCoins(xpNeeded) + " XP | " + runsStr + " runs";
+                }
+                sendCmd(mc, responder, ign + "'s " + disp + " to " + targetLevel + ": " + result);
+            } catch (Throwable t) {
+                fishmod.utils.debug.FishDiag.fail("PartyCommandHandler.9", "crtc response build failed class=" + classKey + " ign=" + ign, t);
             }
-            sendCmd(mc, responder, ign + "'s " + disp + " to " + targetLevel + ": " + result);
         });
     }
 
     private static void sendDprofit(Minecraft mc, String responder) {
-        double total = fishmod.features.PartyLootScreen.totalValueForChat();
-        int runs = fishmod.features.PartyLootScreen.runsForChat();
-        double avg = total / Math.max(1, runs);
-        String pr = fishmod.features.PartyLootScreen.fmtCoinsPublic(avg);
-        sendCmd(mc, responder, "Profit Per Run: " + pr + " (" + runs + " runs)");
+        try {
+            double total = fishmod.features.PartyLootScreen.totalValueForChat();
+            int runs = fishmod.features.PartyLootScreen.runsForChat();
+            double avg = total / Math.max(1, runs);
+            String pr = fishmod.features.PartyLootScreen.fmtCoinsPublic(avg);
+            sendCmd(mc, responder, "Profit Per Run: " + pr + " (" + runs + " runs)");
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("PartyCommandHandler.11", "dprofit response build failed", t);
+        }
     }
 
     private static void buildAndSendRtca(Minecraft mc, HypixelApi.DungeonData data, String ign, String responder) {
@@ -708,7 +751,7 @@ public class PartyCommandHandler {
         }
         if (ping < 0) {
             try { var si = mc.getCurrentServer(); if (si != null && si.ping > 0) ping = (int) si.ping; }
-            catch (Exception ignored) {}
+            catch (Exception e) { fishmod.utils.debug.FishDiag.fail("PartyCommandHandler.12", "reading server ping failed", e); }
         }
         sendCmd(mc, responder, "Ping: " + (ping >= 0 ? ping + "ms" : "N/A"));
     }

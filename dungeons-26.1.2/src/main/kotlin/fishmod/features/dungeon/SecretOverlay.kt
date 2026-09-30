@@ -6,6 +6,7 @@ import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import fishmod.utils.debug.FishDiag
 
 object SecretOverlay {
 
@@ -29,6 +30,7 @@ object SecretOverlay {
 
     @JvmStatic
     fun onSecrets(f: Int, t: Int) {
+        FishDiag.check(f >= 0 && t >= 0, "SecretOverlay.1") { "bad secret count $f/$t" }
         SecretClicked.onSecretCount(f, found, System.currentTimeMillis() - seenAt <= STALE_MS)
         found = f; total = t; seenAt = System.currentTimeMillis()
     }

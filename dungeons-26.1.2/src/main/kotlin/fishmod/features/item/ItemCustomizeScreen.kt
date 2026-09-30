@@ -1,5 +1,6 @@
 package fishmod.features.item
 
+import fishmod.utils.debug.FishDiag
 import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
 import fishmod.utils.data.ItemUtil
@@ -223,18 +224,21 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         val trim = if (id != null) ItemCustomizationStore.getArmorTrim(id) else null
         trimMatDropdown.selected = if (trim != null) trimMaterials.indexOf(trim.material) else -1
         trimPatDropdown.selected = if (trim != null) trimPatterns.indexOf(trim.pattern) else -1
+        if (trim != null && trimMaterials.isNotEmpty() && trimPatterns.isNotEmpty()) {
+            FishDiag.check(trimMatDropdown.selected >= 0 && trimPatDropdown.selected >= 0, "ItemCustomizeScreen.3") { "saved trim ${trim.material}/${trim.pattern} not in trim registries" }
+        }
 
         trimMatDropdown.close(); trimPatDropdown.close()
     }
 
     private fun dyeAllowed(st: ItemStack?): Boolean {
         if (st == null || st.isEmpty) return false
-        return try { st.has(DataComponents.DYED_COLOR) } catch (e: Exception) { false }
+        return try { st.has(DataComponents.DYED_COLOR) } catch (e: Exception) { FishDiag.fail("ItemCustomizeScreen.1", "dyed colour component check failed for ${st.hoverName.string}", e); false }
     }
 
     private fun isArmour(st: ItemStack): Boolean {
         if (st.isEmpty) return false
-        val eq = try { st.get(DataComponents.EQUIPPABLE) } catch (e: Exception) { null } ?: return false
+        val eq = try { st.get(DataComponents.EQUIPPABLE) } catch (e: Exception) { FishDiag.fail("ItemCustomizeScreen.2", "equippable component read failed for ${st.hoverName.string}", e); null } ?: return false
         return eq.assetId().isPresent && eq.slot() in ARMOR_EQUIP
     }
 
@@ -275,6 +279,9 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         if (trimMatDropdown.selected >= 0 && trimPatDropdown.selected >= 0 &&
             trimMaterials.isNotEmpty() && trimPatterns.isNotEmpty()
         ) {
+            if (!FishDiag.check(trimMatDropdown.selected < trimMaterials.size && trimPatDropdown.selected < trimPatterns.size, "ItemCustomizeScreen.4") {
+                    "trim selection out of range mat=${trimMatDropdown.selected}/${trimMaterials.size} pat=${trimPatDropdown.selected}/${trimPatterns.size}"
+                }) return
             ItemCustomizationStore.setArmorTrim(
                 id, ItemCustomizationStore.ArmorTrimId(trimMaterials[trimMatDropdown.selected], trimPatterns[trimPatDropdown.selected])
             )
@@ -320,6 +327,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
     }
 
     private fun select(idx: Int) {
+        if (!FishDiag.check(idx in 0 until inv().containerSize, "ItemCustomizeScreen.8") { "selected slot $idx outside inventory size ${inv().containerSize}" }) return
         focusField(null)
         selectedIndex = idx
         loadFields()
@@ -350,16 +358,20 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         if (selIdx >= 0) selRing(ctx, armSlotX(selIdx), armSlotY())
         else if (selectedIndex < mainCount()) selRing(ctx, invSlotX(selectedIndex), invSlotY(selectedIndex))
 
-        for (r in 0 until 4) {
-            val s = ARMOR_SLOTS[r]
-            if (s < inv().containerSize) {
-                val a = inv().getItem(s)
-                if (!a.isEmpty) ctx.item(a, armSlotX(r) + 1, armSlotY() + 1)
+        try {
+            for (r in 0 until 4) {
+                val s = ARMOR_SLOTS[r]
+                if (s < inv().containerSize) {
+                    val a = inv().getItem(s)
+                    if (!a.isEmpty) ctx.item(a, armSlotX(r) + 1, armSlotY() + 1)
+                }
             }
-        }
-        for (i in 0 until mainCount()) {
-            val st = inv().getItem(i)
-            if (!st.isEmpty) ctx.item(st, invSlotX(i) + 1, invSlotY(i) + 1)
+            for (i in 0 until mainCount()) {
+                val st = inv().getItem(i)
+                if (!st.isEmpty) ctx.item(st, invSlotX(i) + 1, invSlotY(i) + 1)
+            }
+        } catch (e: Exception) {
+            FishDiag.fail("ItemCustomizeScreen.5", "item customize inventory render failed", e)
         }
 
         ScreenTheme.roundedRect(ctx, lx, pvY, LEFT_W, 56, 6, BG_SECTION)
@@ -368,7 +380,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
             ctx.pose().pushMatrix()
             ctx.pose().translate((lx + 10).toFloat(), (pvY + 12).toFloat())
             ctx.pose().scale(2f, 2f)
-            ctx.item(sel, 0, 0)
+            try { ctx.item(sel, 0, 0) } catch (e: Exception) { FishDiag.fail("ItemCustomizeScreen.6", "item customize preview render failed for ${sel.hoverName.string}", e) }
             ctx.pose().popMatrix()
         }
 
@@ -400,7 +412,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         val mouseY = UiScale.vx(mouseY)
         UiRecorder.clear()
         if (!ready || minecraft?.player == null) { super.extractRenderState(ctx, mouseX, mouseY, delta); return }
-        drawChrome(mouseX, mouseY)
+        try { drawChrome(mouseX, mouseY) } catch (e: Exception) { FishDiag.fail("ItemCustomizeScreen.7", "item customize chrome draw failed tab=$tab slot=$selectedIndex", e) }
         super.extractRenderState(ctx, mouseX, mouseY, delta)
         if (tab == Tab.TRIM && trimUsable(selected()) == null) {
             trimMatDropdown.renderOpen(mouseX, mouseY)

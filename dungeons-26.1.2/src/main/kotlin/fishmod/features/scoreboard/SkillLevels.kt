@@ -1,5 +1,6 @@
 package fishmod.features.scoreboard
 
+import fishmod.utils.debug.FishDiag
 import com.google.gson.JsonObject
 import fishmod.utils.HypixelApi
 import fishmod.utils.Location
@@ -54,7 +55,7 @@ object SkillLevels {
             fetchInFlight = true
             HypixelApi.getLocalMember(client) { member ->
                 fetchInFlight = false
-                apply(member)
+                FishDiag.guard("SkillLevels.3", "skill levels apply threw") { apply(member) }
             }
         }
     }
@@ -68,11 +69,13 @@ object SkillLevels {
                 if (exp.has(key)) out.add(label to levelFor(exp.get(key).asDouble.toLong()))
             }
             if (out.isNotEmpty()) levels = out
-        } catch (ignored: Exception) {
+        } catch (e: Exception) {
+            FishDiag.fail("SkillLevels.1", "failed to read skill xp from API member", e)
         }
     }
 
     private fun levelFor(xp: Long): Double {
+        FishDiag.check(xp >= 0, "SkillLevels.2") { "negative skill xp $xp" }
         var lvl = 0
         for (i in SKILL_XP.indices.reversed()) if (xp >= SKILL_XP[i]) {
             lvl = i

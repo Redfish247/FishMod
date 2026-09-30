@@ -20,6 +20,10 @@ public class RecipeBookScreenMixin {
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void fishmod$renderSearchBar(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
-        SearchBar.render(context, mouseX, mouseY, deltaTicks);
+        try {
+            SearchBar.render(context, mouseX, mouseY, deltaTicks);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("RecipeBookScreenMixin.1", "search bar render (recipe screen) failed", t);
+        }
     }
 }

@@ -21,7 +21,13 @@ public class FishBossBarHudMixin {
         at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/components/LerpingBossEvent;getName()Lnet/minecraft/network/chat/Component;")
     )
     private Component fishmod$bossHealth(LerpingBossEvent instance, Operation<Component> original) {
-        return BossBarFeature.appendHealth(instance, original.call(instance));
+        Component name = original.call(instance);
+        try {
+            return BossBarFeature.appendHealth(instance, name);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("FishBossBarHudMixin.1", "boss bar health append failed", t);
+            return name;
+        }
     }
 
     @WrapOperation(
@@ -29,6 +35,12 @@ public class FishBossBarHudMixin {
         at = @At(value = "INVOKE", target = "Ljava/util/Map;values()Ljava/util/Collection;")
     )
     private Collection<LerpingBossEvent> fishmod$hideObjective(Map<?, LerpingBossEvent> map, Operation<Collection<LerpingBossEvent>> original) {
-        return RenderOptimizer.filterBossBars(original.call(map));
+        Collection<LerpingBossEvent> bars = original.call(map);
+        try {
+            return RenderOptimizer.filterBossBars(bars);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("FishBossBarHudMixin.2", "boss bar filter failed", t);
+            return bars;
+        }
     }
 }

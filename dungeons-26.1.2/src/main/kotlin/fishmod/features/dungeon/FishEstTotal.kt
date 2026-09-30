@@ -2,6 +2,7 @@ package fishmod.features.dungeon
 
 import fishmod.utils.Constants
 import fishmod.utils.Misc
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.dungeon.RunHistory
 import fishmod.utils.events.Events
@@ -99,13 +100,15 @@ object FishEstTotal {
         0.0, 0.0, Phase.SPLIT_LENGTH, Constants.TEXT_HEIGHT * 2 + 4, 1f, "Est. Total",
         { display() },
         { component, context -> render(component, context) },
-        { try { Phase.enableSplits } catch (t: Throwable) { false } }
+        { try { Phase.enableSplits } catch (t: Throwable) { FishDiag.fail("FishEstTotal.1", "Phase.enableSplits read failed", t); false } }
     )
 
     @JvmStatic
     fun init() {
         Events.ON_SERVER_TICK.register { if (floor == null) detectFloor(); false }
-        Events.ON_GAME_MESSAGE.register { message -> parseGameMessage(message) }
+        Events.ON_GAME_MESSAGE.register { message ->
+            try { parseGameMessage(message) } catch (e: Exception) { FishDiag.fail("FishEstTotal.3", "est total message parse failed (floor=$floor)", e); false }
+        }
         Events.ON_LOCATION_CHANGE.register { _ -> reset(); false }
     }
 
@@ -114,6 +117,7 @@ object FishEstTotal {
         val key = fishmod.features.dungeon.map.DungeonState.currentFloorKey() ?: return
         floor = key
         currentSplits = FLOOR_SPLITS[floor]
+        if (currentSplits == null && FLOOR_SPLITS.isNotEmpty()) FishDiag.fail("FishEstTotal.2", "no split data for floor key '$key' (known: ${FLOOR_SPLITS.keys})")
         currentSplits?.forEach { it.reset() }
     }
 
@@ -145,7 +149,8 @@ object FishEstTotal {
             if (s.avg < 0) continue
             if (s.ended()) times[s.name] = s.getRealTime()
         }
-        RunHistory.saveSplitTimes(floor, times)
+        FishDiag.check(times.isNotEmpty(), "FishEstTotal.4") { "run ended on $floor with no completed splits (${splits.count { it.started() }} started)" }
+        FishDiag.guard("FishEstTotal.5", "saving split times failed for $floor") { RunHistory.saveSplitTimes(floor, times) }
     }
 
     private fun reset() {
@@ -165,8 +170,8 @@ object FishEstTotal {
         val splits = currentSplits ?: return 0
         var onlyActivated = true
         var includeTotal = false
-        try { onlyActivated = Phase.onlyShowActivatedSplits } catch (ignored: Throwable) {}
-        try { includeTotal = Phase.includeTotalTime } catch (ignored: Throwable) {}
+        try { onlyActivated = Phase.onlyShowActivatedSplits } catch (t: Throwable) { FishDiag.fail("FishEstTotal.6", "Phase.onlyShowActivatedSplits read failed", t) }
+        try { includeTotal = Phase.includeTotalTime } catch (t: Throwable) { FishDiag.fail("FishEstTotal.7", "Phase.includeTotalTime read failed", t) }
         var count = splits.size
         if (!includeTotal) count--
         if (!onlyActivated) return Math.max(0, count)
@@ -183,6 +188,7 @@ object FishEstTotal {
         return try {
             Phase.enableSplits && Phase.runStarted() && currentSplits != null
         } catch (t: Throwable) {
+            FishDiag.fail("FishEstTotal.8", "est total display check failed", t)
             false
         }
     }
@@ -226,13 +232,16 @@ object FishEstTotal {
             val baseY = Phase.splitTimer.scaledY
             y = baseY + Constants.TEXT_HEIGHT * computeVisibleRowCount() + 8
         } catch (t: Throwable) {
-            return renderAt(context, client, splits, component.scaledX, component.scaledY)
+            FishDiag.fail("FishEstTotal.9", "split timer position read failed, using own HUD position", t)
+            try { renderAt(context, client, splits, component.scaledX, component.scaledY) } catch (e: Exception) { FishDiag.fail("FishEstTotal.10", "est total render failed (fallback pos)", e) }
+            return
         }
-        renderAt(context, client, splits, x, y)
+        try { renderAt(context, client, splits, x, y) } catch (e: Exception) { FishDiag.fail("FishEstTotal.11", "est total render failed (floor=$floor, ${splits.size} splits)", e) }
     }
 
     private fun renderAt(context: GuiGraphicsExtractor, client: Minecraft, splits: ArrayList<LocalSplit>, x: Int, y: Int) {
         val splitCount = splits.size - 1
+        FishDiag.check(splitCount >= 0, "FishEstTotal.12") { "empty split list for floor $floor" }
         var base = 0.0
         var delta = 0.0
         var personalCount = 0
@@ -279,13 +288,14 @@ object FishEstTotal {
     private fun loadSplits(): HashMap<String, ArrayList<LocalSplit>> {
         try {
             javaClass.getResourceAsStream("/data/fishmod_splits.json").use { stream ->
-                if (stream == null) return HashMap()
+                if (stream == null) { FishDiag.fail("FishEstTotal.13", "bundled splits resource /data/fishmod_splits.json missing"); return HashMap() }
                 InputStreamReader(stream).use { reader ->
                     val root: JsonElement = JsonParser.parseReader(reader)
                     return parseSplits(root.asJsonObject)
                 }
             }
         } catch (e: Exception) {
+            FishDiag.fail("FishEstTotal.14", "bundled splits resource failed to parse", e)
             return HashMap()
         }
     }
@@ -295,15 +305,20 @@ object FishEstTotal {
         for (entry in obj.entrySet()) {
             val splits = ArrayList<LocalSplit>()
             for (el in entry.value.asJsonArray) {
-                val s = el.asJsonObject
-                splits.add(
-                    LocalSplit(
-                        s.get("name").asString,
-                        s.get("start").asString,
-                        s.get("end").asString,
-                        if (s.has("avg")) s.get("avg").asDouble else -1.0
+                try {
+                    val s = el.asJsonObject
+                    splits.add(
+                        LocalSplit(
+                            s.get("name").asString,
+                            s.get("start").asString,
+                            s.get("end").asString,
+                            if (s.has("avg")) s.get("avg").asDouble else -1.0
+                        )
                     )
-                )
+                } catch (e: Exception) {
+                    FishDiag.fail("FishEstTotal.15", "bad split entry in floor ${entry.key}: $el", e)
+                    throw e
+                }
             }
             floors[entry.key] = splits
         }

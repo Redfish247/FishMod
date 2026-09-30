@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.map
 
+import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.NativeImage
 import fishmod.utils.Misc
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
@@ -50,6 +51,7 @@ object MapImageLoader {
 
             ClientLifecycleEvents.CLIENT_STOPPING.register { close() }
         } catch (e: Exception) {
+            FishDiag.fail("MapImageLoader.1", "map image loader init failed at $IMAGES_PATH", e)
         }
     }
 
@@ -59,6 +61,7 @@ object MapImageLoader {
         try {
             watchService?.close()
         } catch (e: Exception) {
+            FishDiag.fail("MapImageLoader.2", "closing map image watch service failed", e)
         }
         watchService = null
     }
@@ -91,6 +94,7 @@ object MapImageLoader {
                             unloadImage(base)
                         }
                     } catch (e: Exception) {
+                        FishDiag.fail("MapImageLoader.3", "map image watch event failed kind=${event.kind().name()} file=$name", e)
                     }
                 }
                 key.reset()
@@ -112,19 +116,23 @@ object MapImageLoader {
                 val id = Identifier.fromNamespaceAndPath("fishmod", "map_bg_$safe${suffix}f")
 
                 Minecraft.getInstance().execute {
-                    val tex = DynamicTexture({ id.toString() }, img)
-                    Minecraft.getInstance().textureManager.register(id, tex)
-                    val prev = LOADED.put(fileName, ImageData(id, tex))
-                    if (prev != null) {
-                        try {
-                            Minecraft.getInstance().textureManager.release(prev.id)
-                        } catch (e: Exception) {
+                    FishDiag.guard("MapImageLoader.4", "registering map image texture '$fileName' failed") {
+                        val tex = DynamicTexture({ id.toString() }, img)
+                        Minecraft.getInstance().textureManager.register(id, tex)
+                        val prev = LOADED.put(fileName, ImageData(id, tex))
+                        if (prev != null) {
+                            try {
+                                Minecraft.getInstance().textureManager.release(prev.id)
+                            } catch (e: Exception) {
+                                FishDiag.fail("MapImageLoader.5", "releasing previous map image '$fileName' failed", e)
+                            }
                         }
+                        if (!quiet) Misc.addChatMessage(Component.literal("§a[Map] Loaded image: §f$fileName §7(${w}x$h)"))
                     }
-                    if (!quiet) Misc.addChatMessage(Component.literal("§a[Map] Loaded image: §f$fileName §7(${w}x$h)"))
                 }
             }
         } catch (e: Exception) {
+            FishDiag.fail("MapImageLoader.6", "failed to load map image '$fileName'", e)
             Misc.addChatMessage(Component.literal("§c[Map] Failed to load image '$fileName': ${e.message}"))
         }
     }
@@ -135,6 +143,7 @@ object MapImageLoader {
             try {
                 Minecraft.getInstance().textureManager.release(data.id)
             } catch (e: Exception) {
+                FishDiag.fail("MapImageLoader.7", "releasing map image '$fileName' failed", e)
             }
         }
     }

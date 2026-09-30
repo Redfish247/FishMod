@@ -1,6 +1,7 @@
 package fishmod.features.slayers
 
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 
 object SlayerTimer {
 
@@ -51,6 +52,7 @@ object SlayerTimer {
     fun onBossSlain(): Double {
         if (startNanos == 0L) return -1.0
         val secs = (System.nanoTime() - startNanos) / 1_000_000_000.0
+        FishDiag.check(secs >= 0.0, "SlayerTimer.1") { "negative boss kill time $secs" }
         startNanos = 0L
         pendingFullSpawn = false
         return secs
@@ -69,6 +71,7 @@ object SlayerTimer {
         if (nowMs - lastKilledCallMs < 3_000L) return
         lastKilledCallMs = nowMs
         if (lastKillNanos != 0L) lastCycleSeconds = (now - lastKillNanos) / 1_000_000_000.0
+        FishDiag.check(lastKillNanos == 0L || lastCycleSeconds >= 0.0, "SlayerTimer.2") { "negative slayer cycle time $lastCycleSeconds" }
         lastKillNanos = now
     }
 

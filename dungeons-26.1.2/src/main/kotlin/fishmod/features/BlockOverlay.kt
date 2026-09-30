@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.config.values.FishSettings
@@ -15,9 +16,15 @@ object BlockOverlay {
 
     @JvmStatic
     fun init() {
-        RenderingEvents.GIZMO.register { _ -> if (!FishSettings.blockOverlayPhase) renderGizmo() }
+        RenderingEvents.GIZMO.register { _ ->
+            if (!FishSettings.blockOverlayPhase) {
+                try { renderGizmo() } catch (t: Throwable) { FishDiag.fail("BlockOverlay.1", "block overlay gizmo render failed (mode ${FishSettings.blockOverlayMode})", t) }
+            }
+        }
         RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
-            if (FishSettings.blockOverlayPhase) { renderNoDepth(m, vc, fill = true); renderNoDepth(m, vc, fill = false) }
+            if (FishSettings.blockOverlayPhase) {
+                try { renderNoDepth(m, vc, fill = true); renderNoDepth(m, vc, fill = false) } catch (t: Throwable) { FishDiag.fail("BlockOverlay.2", "block overlay no-depth render failed (mode ${FishSettings.blockOverlayMode})", t) }
+            }
         }
     }
 

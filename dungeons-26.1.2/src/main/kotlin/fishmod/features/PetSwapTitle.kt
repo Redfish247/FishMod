@@ -2,6 +2,7 @@ package fishmod.features
 
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
@@ -19,7 +20,8 @@ object PetSwapTitle {
             if (overlay || !FishSettings.petSwapTitleEnabled) return@register
             val s = COLOR.replace(msg.string, "").trim()
             val name = (AUTOPET.find(s) ?: SUMMON.find(s))?.groupValues?.get(1)?.replace("✦", "")?.trim() ?: return@register
-            show(name, rarityColor(msg, name))
+            if (!FishDiag.check(name.isNotEmpty(), "PetSwapTitle.1") { "pet swap name empty in '$s'" }) return@register
+            FishDiag.guard("PetSwapTitle.2", "pet swap title failed") { show(name, rarityColor(msg, name)) }
         }
     }
 

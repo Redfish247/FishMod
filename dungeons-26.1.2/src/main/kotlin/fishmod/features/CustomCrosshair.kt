@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.minecraft.client.Minecraft
@@ -14,7 +15,7 @@ object CustomCrosshair {
     fun register() {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "custom_crosshair")) { g, _ ->
             val mc = Minecraft.getInstance()
-            if (active(mc)) {
+            if (active(mc)) try {
                 val cx = g.guiWidth() / 2
                 val cy = g.guiHeight() / 2
                 if (FishSettings.crosshairMode == "Preset") {
@@ -31,6 +32,8 @@ object CustomCrosshair {
                         g.blit(RenderPipelines.GUI_TEXTURED, imgId, cx - w / 2, cy - h / 2, 0.0f, 0.0f, w, h, w, h, FishSettings.crosshairColor)
                     }
                 }
+            } catch (t: Throwable) {
+                FishDiag.fail("CustomCrosshair.1", "crosshair render failed (mode ${FishSettings.crosshairMode}, preset ${FishSettings.crosshairPreset})", t)
             }
         }
     }

@@ -11,6 +11,11 @@ public abstract class ClientClockManagerMixin {
 
     @ModifyReturnValue(method = "getTotalTicks", at = @At("RETURN"))
     private long fishmod$timeChangerOverride(long original) {
-        return TimeChanger.active() ? TimeChanger.overrideTicks() : original;
+        try {
+            return TimeChanger.active() ? TimeChanger.overrideTicks() : original;
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("ClientClockManagerMixin.1", "time changer override failed", t);
+            return original;
+        }
     }
 }

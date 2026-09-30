@@ -13,8 +13,12 @@ public class ChatHistoryMixin {
 
     @Inject(method = "addMessageToDisplayQueue", at = @At("HEAD"), cancellable = true)
     private void fishmod$filterBySearch(GuiMessage message, CallbackInfo ci) {
-        if (ChatSearch.getActive() && !ChatSearch.matches(message.content())) {
-            ci.cancel();
+        try {
+            if (ChatSearch.getActive() && !ChatSearch.matches(message.content())) {
+                ci.cancel();
+            }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("ChatHistoryMixin.1", "chat search filter failed", t);
         }
     }
 }

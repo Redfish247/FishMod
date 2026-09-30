@@ -1,6 +1,7 @@
 package fishmod.features.slayers
 
 import fishmod.utils.Location
+import fishmod.utils.debug.FishDiag
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.monster.Blaze
 import net.minecraft.world.entity.monster.EnderMan
@@ -66,7 +67,7 @@ enum class SlayerType(
         fun parseCategory(line: String): Pair<SlayerType, Int>? {
             val t = entries.firstOrNull { line.startsWith(it.displayName) } ?: return null
             val tierStr = line.removePrefix(t.displayName).trim()
-            val tier = fishmod.utils.data.Roman.toInt(tierStr).takeIf { it in 1..5 } ?: return null
+            val tier = FishDiag.notNull(fishmod.utils.data.Roman.toInt(tierStr).takeIf { it in 1..5 }, "SlayerType.2") { "slayer category '$line' has bad tier '$tierStr'" } ?: return null
             return t to tier
         }
     }

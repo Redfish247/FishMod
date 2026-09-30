@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.puzzles.odin
 
+import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.Debug
@@ -23,7 +24,9 @@ object IceFillSolver {
             Gson().fromJson(InputStreamReader(s, StandardCharsets.UTF_8), IceFillData::class.java)
         }
     } catch (e: Exception) {
-        Debug.LOGGER.error("Ice Fill floors failed to load", e); IceFillData()
+        Debug.LOGGER.error("Ice Fill floors failed to load", e)
+        FishDiag.fail("IceFillSolver.1", "iceFillFloors.json failed to load", e)
+        IceFillData()
     }
 
     private val currentPatterns = ArrayList<Vec3>()
@@ -50,10 +53,13 @@ object IceFillSolver {
         val patterns = if (optimize) floors.hard else floors.easy
         val found = BooleanArray(3)
         repeat(3) { index ->
-            val ids = floors.identifier.getOrNull(index) ?: run { found[index] = true; return@repeat }
+            val ids = floors.identifier.getOrNull(index) ?: run {
+                FishDiag.fail("IceFillSolver.2", "ice fill identifier missing for floor $index (have ${floors.identifier.size})")
+                found[index] = true; return@repeat
+            }
             for (pIdx in ids.indices) {
                 if (isRealAir(room, ids[pIdx][0]) && !isRealAir(room, ids[pIdx][1])) {
-                    patterns.getOrNull(index)?.getOrNull(pIdx)?.forEach {
+                    FishDiag.notNull(patterns.getOrNull(index)?.getOrNull(pIdx), "IceFillSolver.3") { "ice fill pattern missing floor=$index pattern=$pIdx optimize=$optimize" }?.forEach {
                         val w = room.getRealCoords(it.pos())
                         currentPatterns.add(Vec3(w.x + 0.5, w.y + 0.1, w.z + 0.5))
                     }

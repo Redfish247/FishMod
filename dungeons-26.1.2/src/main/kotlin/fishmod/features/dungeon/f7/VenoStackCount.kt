@@ -14,6 +14,7 @@ import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.world.entity.boss.wither.WitherBoss
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
+import fishmod.utils.debug.FishDiag
 
 // Counts own Mage beams that hit Storm while holding a Venomous weapon (stacks cap at 40, expire 5s after last hit).
 object VenoStackCount {
@@ -41,9 +42,13 @@ object VenoStackCount {
             { FishSettings.venoStackScale }, { v -> FishSettings.venoStackScale = v }
         )
         Events.ON_WORLD_CHANGE.register { reset(); false }
-        ClientTickEvents.END_CLIENT_TICK.register { onTick() }
+        ClientTickEvents.END_CLIENT_TICK.register {
+            try { onTick() } catch (e: Exception) { FishDiag.fail("VenoStackCount.1", "veno stack tick threw (beams=${beams.size})", e) }
+        }
         Events.ON_PARTICLE.register { packet ->
-            if (packet.particle.type === ParticleTypes.FIREWORK && active()) onBeamPoint(Vec3(packet.x, packet.y, packet.z))
+            try {
+                if (packet.particle.type === ParticleTypes.FIREWORK && active()) onBeamPoint(Vec3(packet.x, packet.y, packet.z))
+            } catch (e: Exception) { FishDiag.fail("VenoStackCount.2", "veno beam particle handler threw", e) }
             false
         }
     }
@@ -56,6 +61,7 @@ object VenoStackCount {
     private fun onTick() {
         tick++
         beams.removeAll { tick - it.lastTick > 2 }
+        if (beams.size > 500) FishDiag.fail("VenoStackCount.5", "beam list grew to ${beams.size}")
         if (stacks > 0 && System.currentTimeMillis() - lastHitMs > DURATION_MS) stacks = 0
         val mc = Minecraft.getInstance()
         val p = mc.player
@@ -77,7 +83,8 @@ object VenoStackCount {
     private fun isVenomous(stack: net.minecraft.world.item.ItemStack): Boolean {
         if (stack.isEmpty) return false
         val tag = stack.fishmodCustomDataTag() ?: return false
-        return tag.getCompound("enchantments").map { it.contains("venomous") }.orElse(false)
+        return try { tag.getCompound("enchantments").map { it.contains("venomous") }.orElse(false) }
+        catch (e: Exception) { FishDiag.fail("VenoStackCount.3", "reading held item enchantments failed", e); false }
     }
 
     private fun onBeamPoint(pt: Vec3) {
@@ -100,6 +107,10 @@ object VenoStackCount {
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tickCounter: DeltaTracker) {
         if (!FishSettings.venoStackEnabled || stacks <= 0) return
+        try { renderHudInner(ctx) } catch (e: Exception) { FishDiag.fail("VenoStackCount.4", "veno stack HUD render threw", e) }
+    }
+
+    private fun renderHudInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
         val left = (DURATION_MS - (System.currentTimeMillis() - lastHitMs)).coerceAtLeast(0L)

@@ -7,6 +7,7 @@ import fishmod.utils.FishMsg
 import fishmod.utils.Location
 import fishmod.utils.Misc
 import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
@@ -106,21 +107,27 @@ object UpdateManager {
             if (staged != null && Files.isRegularFile(staged) && isNewer(state.stagedVersion)) downloadState = DownloadState.STAGED
             else if (state.stagedFile != null) {
                 // Installed (or superseded): drop the staged copy; the previous jar's .bak stays until the next install.
-                staged?.let { runCatching { Files.deleteIfExists(it) } }
+                staged?.let { runCatching { Files.deleteIfExists(it) }.onFailure { e -> FishDiag.fail("UpdateManager.1", "delete old staged jar $it", e) } }
                 state.stagedVersion = null; state.stagedFile = null; save()
             }
         }
         checkAsync(false)
 
         ClientPlayConnectionEvents.JOIN.register { _, _, mc ->
-            val wasOnHypixel = onHypixel
-            onHypixel = isHypixel(mc)
-            ticksSinceJoin = 0
-            if (onHypixel && !wasOnHypixel) shownThisLogin = false
-            if (onHypixel) checkAsync(false)
+            try {
+                val wasOnHypixel = onHypixel
+                onHypixel = isHypixel(mc)
+                ticksSinceJoin = 0
+                if (onHypixel && !wasOnHypixel) shownThisLogin = false
+                if (onHypixel) checkAsync(false)
+            } catch (t: Throwable) {
+                FishDiag.fail("UpdateManager.2", "updater join handler", t)
+            }
         }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> onHypixel = false }
-        ClientTickEvents.END_CLIENT_TICK.register(::tick)
+        ClientTickEvents.END_CLIENT_TICK.register { mc ->
+            try { tick(mc) } catch (t: Throwable) { FishDiag.fail("UpdateManager.3", "updater tick", t) }
+        }
         ClientLifecycleEvents.CLIENT_STOPPING.register { launchInstaller() }
     }
 
@@ -136,6 +143,7 @@ object UpdateManager {
         if (++ticksSinceJoin < JOIN_SETTLE_TICKS || ticksSinceJoin % 20 != 0) return
         if (Location.inDungeon() || Location.`in`(Location.KUUDRA)) return
         val release = pendingRelease() ?: return
+        if (!FishDiag.check(release.version.isNotEmpty(), "UpdateManager.4") { "pending release has empty version tag=${release.tag}" }) return
         // Once per Hypixel login, never again while connected.
         shownThisLogin = true
         synchronized(lock) { state.lastShownAt = System.currentTimeMillis(); save() }
@@ -156,7 +164,7 @@ object UpdateManager {
 
     private fun isNewer(version: String?): Boolean {
         val remote = SemVer.parse(version, mcVersion) ?: return false
-        val local = SemVer.parse(currentVersion, mcVersion) ?: return false
+        val local = FishDiag.notNull(SemVer.parse(currentVersion, mcVersion), "UpdateManager.5") { "cannot parse own version '$currentVersion' mc=$mcVersion" } ?: return false
         return remote > local
     }
 
@@ -169,6 +177,7 @@ object UpdateManager {
         worker.execute {
             try { fetchLatest() } catch (t: Throwable) {
                 Debug.LOGGER.warn("[FishMod updater] check failed: {}", t.toString())
+                FishDiag.fail("UpdateManager.6", "update check failed repo=$githubRepo", t)
                 synchronized(lock) { state.nextCheckAt = System.currentTimeMillis() + FAILURE_BACKOFF_MS; save() }
             } finally { checking.set(false) }
         }
@@ -187,7 +196,11 @@ object UpdateManager {
         val now = System.currentTimeMillis()
         when (res.statusCode()) {
             200 -> {
-                val release = parseRelease(JsonParser.parseString(res.body()).asJsonObject)
+                val body = res.body()
+                if (!FishDiag.check(!body.isNullOrBlank(), "UpdateManager.7") { "GitHub 200 with empty body" }) return
+                val parsed = JsonParser.parseString(body)
+                if (!FishDiag.check(parsed.isJsonObject, "UpdateManager.8") { "GitHub release JSON not an object: ${body.take(120)}" }) return
+                val release = parseRelease(parsed.asJsonObject)
                 synchronized(lock) {
                     state.release = release
                     state.etag = res.headers().firstValue("etag").orElse(null)
@@ -197,8 +210,14 @@ object UpdateManager {
             }
             304 -> synchronized(lock) { state.lastCheckAt = now; state.nextCheckAt = 0; save() }
             404 -> synchronized(lock) { state.release = null; state.etag = null; state.lastCheckAt = now; save() }
-            403, 429 -> synchronized(lock) { state.nextCheckAt = rateLimitResetAt(res, now); save() }
-            else -> synchronized(lock) { state.nextCheckAt = now + FAILURE_BACKOFF_MS; save() }
+            403, 429 -> {
+                FishDiag.fail("UpdateManager.9", "GitHub rate limited HTTP ${res.statusCode()} remaining=${res.headers().firstValue("x-ratelimit-remaining").orElse("?")}")
+                synchronized(lock) { state.nextCheckAt = rateLimitResetAt(res, now); save() }
+            }
+            else -> {
+                FishDiag.fail("UpdateManager.10", "GitHub release check HTTP ${res.statusCode()}")
+                synchronized(lock) { state.nextCheckAt = now + FAILURE_BACKOFF_MS; save() }
+            }
         }
     }
 
@@ -212,13 +231,15 @@ object UpdateManager {
     private fun parseRelease(o: JsonObject): Release? {
         if (o.bool("draft") || o.bool("prerelease")) return null
         val tag = o.str("tag_name")
-        if (SemVer.parse(tag, mcVersion) == null) return null
+        if (!FishDiag.check(SemVer.parse(tag, mcVersion) != null, "UpdateManager.11") { "unparseable release tag '$tag' mc=$mcVersion" }) return null
         val jars = o.getAsJsonArray("assets")?.mapNotNull { it as? JsonObject }
             ?.filter { it.str("name").endsWith(".jar") && !it.str("name").contains("-sources") } ?: emptyList()
         val asset = jars.firstOrNull { mcVersion.isNotEmpty() && it.str("name").endsWith("-$mcVersion.jar") }
             ?: jars.singleOrNull()?.takeIf { mcVersion.isEmpty() || !Regex("""-\d+\.\d+(\.\d+)?\.jar$""").containsMatchIn(it.str("name")) }
         val safeName = asset?.str("name")?.takeIf { Regex("""^[\w.+-]+\.jar$""").matches(it) }
         val url = asset?.str("browser_download_url")?.takeIf { it.startsWith("https://github.com/") }
+        if (asset != null && safeName == null) FishDiag.fail("UpdateManager.12", "release asset has unsafe name '${asset.str("name")}'")
+        if (asset != null && url == null) FishDiag.fail("UpdateManager.13", "release asset url not on github: ${asset.str("browser_download_url").take(120)}")
         return Release(
             version = tag.removePrefix("v").removePrefix("V"),
             tag = tag,
@@ -272,7 +293,7 @@ object UpdateManager {
                 val staged = stagingDir.resolve(release.assetName)
                 Files.move(part, staged, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
                 synchronized(lock) {
-                    state.stagedFile?.let(Path::of)?.takeIf { it != staged }?.let { runCatching { Files.deleteIfExists(it) } }
+                    state.stagedFile?.let(Path::of)?.takeIf { it != staged }?.let { runCatching { Files.deleteIfExists(it) }.onFailure { e -> FishDiag.fail("UpdateManager.14", "delete superseded staged jar $it", e) } }
                     state.stagedVersion = release.version
                     state.stagedFile = staged.toString()
                     save()
@@ -280,8 +301,9 @@ object UpdateManager {
                 downloadProgress = 1f
                 downloadState = DownloadState.STAGED
             } catch (t: Throwable) {
-                runCatching { Files.deleteIfExists(part) }
+                runCatching { Files.deleteIfExists(part) }.onFailure { e -> FishDiag.fail("UpdateManager.15", "delete partial download $part", e) }
                 Debug.LOGGER.warn("[FishMod updater] download failed: {}", t.toString())
+                FishDiag.fail("UpdateManager.16", "update download failed ${release.assetName} v${release.version}", t)
                 downloadError = when {
                     t is java.net.http.HttpTimeoutException -> "Timed out"
                     t is java.io.IOException -> "Network error"
@@ -307,6 +329,7 @@ object UpdateManager {
                 !proc.waitFor(5, java.util.concurrent.TimeUnit.SECONDS) || proc.exitValue() == 0
             } catch (t: Throwable) {
                 Debug.LOGGER.warn("[FishMod updater] could not open {}: {}", url, t.toString())
+                FishDiag.fail("UpdateManager.17", "open browser failed os=${System.getProperty("os.name")}", t)
                 false
             }
             if (!ok) Minecraft.getInstance().execute { reportOpenFailure(url) }
@@ -315,9 +338,10 @@ object UpdateManager {
 
     private fun reportOpenFailure(url: String) {
         val mc = Minecraft.getInstance()
-        runCatching { mc.keyboardHandler.clipboard = url }
+        runCatching { mc.keyboardHandler.clipboard = url }.onFailure { FishDiag.fail("UpdateManager.18", "copy url to clipboard", it) }
         val link = Component.literal(url.removePrefix("https://")).withStyle { st ->
             runCatching { st.withColor(ChatFormatting.AQUA).withUnderlined(true).withClickEvent(ClickEvent.OpenUrl(URI.create(url))) }
+                .onFailure { FishDiag.fail("UpdateManager.19", "build clickable link for $url", it) }
                 .getOrDefault(st.withColor(ChatFormatting.AQUA))
         }
         Misc.addChatMessage(
@@ -347,15 +371,15 @@ object UpdateManager {
     private fun launchInstaller() {
         if (downloadState != DownloadState.STAGED) return
         try {
-            val staged = synchronized(lock) { state.stagedFile }?.let(Path::of)?.takeIf(Files::isRegularFile) ?: return
-            val oldJar = currentJar() ?: return
-            val java = ProcessHandle.current().info().command().orElse(null) ?: return
+            val staged = FishDiag.notNull(synchronized(lock) { state.stagedFile }?.let(Path::of)?.takeIf(Files::isRegularFile), "UpdateManager.20") { "staged update file missing: ${state.stagedFile}" } ?: return
+            val oldJar = FishDiag.notNull(currentJar(), "UpdateManager.21") { "cannot locate current mod jar origin=${container?.origin?.kind}" } ?: return
+            val java = FishDiag.notNull(ProcessHandle.current().info().command().orElse(null), "UpdateManager.22") { "cannot resolve java executable for installer" } ?: return
             val classDir = stagingDir.resolve("installer")
             val classFile = classDir.resolve("fishmod/utils/update/UpdateInstaller.class")
             Files.createDirectories(classFile.parent)
             UpdateManager::class.java.getResourceAsStream("/fishmod/utils/update/UpdateInstaller.class")?.use {
                 Files.copy(it, classFile, StandardCopyOption.REPLACE_EXISTING)
-            } ?: return
+            } ?: run { FishDiag.fail("UpdateManager.23", "UpdateInstaller.class resource missing from jar"); return }
             ProcessBuilder(
                 java, "-Xmx32m", "-cp", classDir.toString(), "fishmod.utils.update.UpdateInstaller",
                 ProcessHandle.current().pid().toString(), oldJar.toString(), staged.toString(),
@@ -363,6 +387,7 @@ object UpdateManager {
             ).redirectErrorStream(true).redirectOutput(stagingDir.resolve("installer.log").toFile()).start()
         } catch (t: Throwable) {
             Debug.LOGGER.warn("[FishMod updater] could not launch installer: {}", t.toString())
+            FishDiag.fail("UpdateManager.24", "launch update installer", t)
         }
     }
 
@@ -373,6 +398,7 @@ object UpdateManager {
             }
         } catch (t: Throwable) {
             Debug.LOGGER.warn("[FishMod updater] resetting unreadable state: {}", t.toString())
+            FishDiag.fail("UpdateManager.25", "read updater.json $stateFile", t)
             state = State()
         }
     }
@@ -385,6 +411,7 @@ object UpdateManager {
             Files.move(tmp, stateFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
         } catch (t: Throwable) {
             Debug.LOGGER.warn("[FishMod updater] could not save state: {}", t.toString())
+            FishDiag.fail("UpdateManager.26", "save updater.json $stateFile", t)
         }
     }
 

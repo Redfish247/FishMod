@@ -4,6 +4,7 @@ import fishmod.cosmetic.NickData
 import fishmod.cosmetic.NickState
 import fishmod.utils.config.FishConfig
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.ChatFormatting
@@ -27,7 +28,13 @@ object InstallHeartbeat {
 
     @JvmStatic
     fun init() {
-        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> report() }
+        ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
+            try {
+                report()
+            } catch (e: Exception) {
+                FishDiag.fail("InstallHeartbeat.1", "install heartbeat report failed", e)
+            }
+        }
     }
 
     private fun report() {
@@ -38,14 +45,19 @@ object InstallHeartbeat {
         val uuid = player.getUUID().toString().replace("-", "")
         val name = player.gameProfile.name() ?: return
         lastReportedAt = now
+        FishDiag.check(modVersion != "unknown", "InstallHeartbeat.4") { "mod container fishmod-dungeons not found, version unknown" }
 
         HypixelApi.reportSeen(uuid, name, modVersion) { _, _, _, welcomeText, discordUrl, nickClearedAt ->
             mc.execute {
-                reconcileNickRevoke(nickClearedAt)
-                if (!FishSettings.hasSeenWelcomeMessage) {
-                    sendWelcomeBox(welcomeText, discordUrl)
-                    FishSettings.hasSeenWelcomeMessage = true
-                    FishConfig.manager.save()
+                try {
+                    reconcileNickRevoke(nickClearedAt)
+                    if (!FishSettings.hasSeenWelcomeMessage) {
+                        sendWelcomeBox(welcomeText, discordUrl)
+                        FishSettings.hasSeenWelcomeMessage = true
+                        FishConfig.manager.save()
+                    }
+                } catch (e: Exception) {
+                    FishDiag.fail("InstallHeartbeat.2", "heartbeat response handling failed", e)
                 }
             }
         }
@@ -81,6 +93,7 @@ object InstallHeartbeat {
                     .withClickEvent(ClickEvent.OpenUrl(URI.create(url)))
                     .withHoverEvent(HoverEvent.ShowText(Component.literal(url)))
             } catch (e: Exception) {
+                FishDiag.fail("InstallHeartbeat.3", "bad welcome link url '$url'", e)
                 style.withColor(ChatFormatting.BLUE)
             }
         }

@@ -26,15 +26,6 @@ object LeapMenu {
     private var cache: List<Target> = emptyList()
     private var cacheScreen: AbstractContainerScreen<*>? = null
     private var cacheAt = 0L
-    private var cacheSig = 0
-
-    // Heads arrive after the screen opens; re-collect as soon as any slot's stack is replaced.
-    private fun slotSignature(screen: AbstractContainerScreen<*>): Int {
-        val slots = screen.menu.slots
-        var h = 1
-        for (i in 0 until slots.size - 36) h = h * 31 + System.identityHashCode(slots[i].item)
-        return h
-    }
 
     private val TABLIST_RX = Regex("^\\[(\\d+)] (?:\\[\\w+] )*(\\w+) .*?\\((\\w+)(?: (\\w+))*\\)$")
     private val teammateClasses = HashMap<String, DungeonClass>()
@@ -216,11 +207,9 @@ object LeapMenu {
     fun render(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
         if (!isLeapMenu(screen)) return
         val now = System.currentTimeMillis()
-        val sig = slotSignature(screen)
-        if (screen !== cacheScreen || sig != cacheSig || now - cacheAt >= 200L) {
+        if (screen !== cacheScreen || now - cacheAt >= 200L) {
             cache = collect(screen)
             cacheScreen = screen
-            cacheSig = sig
             cacheAt = now
         }
         val mc = Minecraft.getInstance()

@@ -19,28 +19,32 @@ public interface ItemTrimMixin {
     @SuppressWarnings("unchecked")
     @ModifyReturnValue(method = "get", at = @At("RETURN"))
     private <T> T fishmod$customItemData(T original, DataComponentType<? extends T> type) {
-        if (type == DataComponents.TRIM) {
-            if (((Object) this) instanceof ItemStack stack) {
-                String uuid = ItemUtil.getUuid(stack);
-                if (uuid != null) {
-                    ItemCustomizationStore.ArmorTrimId trimId = ItemCustomizationStore.getArmorTrim(uuid);
-                    if (trimId != null) {
-                        ArmorTrim trim = ArmorTrimCache.get(trimId);
-                        if (trim != null) return (T) trim;
+        try {
+            if (type == DataComponents.TRIM) {
+                if (((Object) this) instanceof ItemStack stack) {
+                    String uuid = ItemUtil.getUuid(stack);
+                    if (uuid != null) {
+                        ItemCustomizationStore.ArmorTrimId trimId = ItemCustomizationStore.getArmorTrim(uuid);
+                        if (trimId != null) {
+                            ArmorTrim trim = ArmorTrimCache.get(trimId);
+                            if (trim != null) return (T) trim;
+                        }
+                    }
+                }
+            } else if (type == DataComponents.ITEM_MODEL) {
+                if (((Object) this) instanceof ItemStack stack) {
+                    String uuid = ItemUtil.getUuid(stack);
+                    if (uuid != null) {
+                        String modelId = ItemCustomizationStore.getModelId(uuid);
+                        if (modelId != null) {
+                            Identifier id = ArmorTrimCache.modelId(modelId);
+                            if (id != null) return (T) id;
+                        }
                     }
                 }
             }
-        } else if (type == DataComponents.ITEM_MODEL) {
-            if (((Object) this) instanceof ItemStack stack) {
-                String uuid = ItemUtil.getUuid(stack);
-                if (uuid != null) {
-                    String modelId = ItemCustomizationStore.getModelId(uuid);
-                    if (modelId != null) {
-                        Identifier id = ArmorTrimCache.modelId(modelId);
-                        if (id != null) return (T) id;
-                    }
-                }
-            }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("ItemTrimMixin.1", "custom trim/model lookup failed type=" + type, t);
         }
         return original;
     }

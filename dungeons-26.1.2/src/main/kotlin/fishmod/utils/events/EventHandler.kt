@@ -17,7 +17,11 @@ class EventHandler<T> {
         if (listeners.isEmpty()) return false
         var cancelled = false
         for (listener in listeners) {
-            if (action.test(listener)) cancelled = true
+            try {
+                if (action.test(listener)) cancelled = true
+            } catch (t: Throwable) {
+                fishmod.utils.debug.FishDiag.fail("Event." + (listener?.javaClass?.name?.substringAfterLast('.') ?: "?"), "listener threw", t)
+            }
         }
         return cancelled
     }

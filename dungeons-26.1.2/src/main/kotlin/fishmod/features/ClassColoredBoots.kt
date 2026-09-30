@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.dungeon.DungeonClass
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -35,6 +36,7 @@ object ClassColoredBoots {
                 if (boots.get(DataComponents.DYED_COLOR)?.rgb() != color) boots.set(DataComponents.DYED_COLOR, DyedItemColor(color))
             } catch (ex: Exception) {
                 if (!loggedError) { loggedError = true; fishmod.utils.debug.Debug.LOGGER.warn("[ClassColoredBoots] failed to dye boots: {}", ex.message) }
+                FishDiag.fail("ClassColoredBoots.1", "failed to dye boots for ${DungeonClass.currentClass}", ex)
             }
         }
     }

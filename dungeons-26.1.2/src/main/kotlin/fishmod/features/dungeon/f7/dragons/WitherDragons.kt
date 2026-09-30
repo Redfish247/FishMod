@@ -28,6 +28,7 @@ import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import kotlin.math.sqrt
+import fishmod.utils.debug.FishDiag
 
 object WitherDragons {
 
@@ -56,36 +57,44 @@ object WitherDragons {
         }
 
         Events.ON_PACKET.register { packet ->
-            if (on()) when (packet) {
-                is ClientboundLevelParticlesPacket -> DragonCheck.handleSpawnPacket(packet, tick)
-                is ClientboundAddEntityPacket -> DragonCheck.dragonSpawn(packet, tick)
-                is ClientboundSetEntityDataPacket -> DragonCheck.dragonUpdate(packet, tick)
-                is ClientboundSetEquipmentPacket -> DragonCheck.dragonSprayed(packet, tick)
-                is ClientboundSoundPacket -> DragonCheck.trackArrows(packet, tick)
-                is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
-                is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::onBlock)
-            }
+            if (on()) try {
+                when (packet) {
+                    is ClientboundLevelParticlesPacket -> DragonCheck.handleSpawnPacket(packet, tick)
+                    is ClientboundAddEntityPacket -> DragonCheck.dragonSpawn(packet, tick)
+                    is ClientboundSetEntityDataPacket -> DragonCheck.dragonUpdate(packet, tick)
+                    is ClientboundSetEquipmentPacket -> DragonCheck.dragonSprayed(packet, tick)
+                    is ClientboundSoundPacket -> DragonCheck.trackArrows(packet, tick)
+                    is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
+                    is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::onBlock)
+                }
+            } catch (e: Exception) { FishDiag.fail("WitherDragons.1", "dragon packet handler threw on ${packet.javaClass.simpleName}", e) }
             false
         }
 
         ClientEntityEvents.ENTITY_UNLOAD.register { entity, _ ->
             if (on() && entity is EnderDragon) {
-                WitherDragon.byEntityId(entity.id)?.let { if (it.state == WitherDragonState.ALIVE) { it.entity = null; it.offScoreboardTicks = 0 } }
+                try {
+                    WitherDragon.byEntityId(entity.id)?.let { if (it.state == WitherDragonState.ALIVE) { it.entity = null; it.offScoreboardTicks = 0 } }
+                } catch (e: Exception) { FishDiag.fail("WitherDragons.2", "dragon unload handler threw", e) }
             }
         }
 
         Events.ON_SERVER_TICK.register {
             tick++
-            if (on()) serverTick()
+            if (on()) try { serverTick() } catch (e: Exception) { FishDiag.fail("WitherDragons.3", "dragon server tick threw", e) }
             false
         }
 
         RenderingEvents.NO_DEPTH_LINE.register { ctx, m, vc ->
             if (!on()) return@register
-            renderLines(ctx, m, vc)
-            renderText(ctx, m)
+            try {
+                renderLines(ctx, m, vc)
+                renderText(ctx, m)
+            } catch (e: Exception) { FishDiag.fail("WitherDragons.4", "dragon line/text render threw", e) }
         }
-        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc -> if (on()) renderFills(m, vc) }
+        RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
+            if (on()) try { renderFills(m, vc) } catch (e: Exception) { FishDiag.fail("WitherDragons.5", "dragon box fill render threw", e) }
+        }
     }
 
     private fun onBlock(pos: BlockPos, state: BlockState) {
@@ -98,7 +107,10 @@ object WitherDragons {
         for (d in WitherDragon.real) {
             if (d.state == WitherDragonState.SPAWNING) {
                 d.timeToSpawn--
-                if (d.timeToSpawn <= -20) d.setDead(true, tick)
+                if (d.timeToSpawn <= -20) {
+                    FishDiag.fail("WitherDragons.6", "${d.name} dragon never spawned after its timer ran out")
+                    d.setDead(true, tick)
+                }
             }
             if (d.state == WitherDragonState.ALIVE && d.entity == null) {
                 if (DragonCheck.isAliveOnScoreboard(d)) d.offScoreboardTicks = 0
@@ -126,6 +138,7 @@ object WitherDragons {
 
     fun onDragonDead(d: WitherDragon, atTick: Long) {
         if (!FishSettings.witherDragonsEnabled || !FishSettings.witherDragonsSendStats) return
+        FishDiag.check(atTick >= d.spawnedTick, "WitherDragons.7") { "${d.name} death tick $atTick before spawn ${d.spawnedTick}" }
         val stats = buildList {
             add("&7Time: &6${"%.1f".format((atTick - d.spawnedTick) / 20.0)}s")
             if (d == priorityDragon) add("&fArrows: &6${d.arrowsHit}")
@@ -181,6 +194,10 @@ object WitherDragons {
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tickCounter: net.minecraft.client.DeltaTracker) {
         if (!on() || !FishSettings.witherDragonsTimerHud) return
+        try { renderHudInner(ctx) } catch (e: Exception) { FishDiag.fail("WitherDragons.8", "dragon timer HUD render threw", e) }
+    }
+
+    private fun renderHudInner(ctx: GuiGraphicsExtractor) {
         val d = priorityDragon
         if (d == WitherDragon.NONE || d.state != WitherDragonState.SPAWNING || d.timeToSpawn <= 0) return
         val mc = Minecraft.getInstance()
@@ -201,7 +218,8 @@ object WitherDragons {
     private fun timerText(t: Int): String = when (FishSettings.witherDragonsTimerStyle) {
         0 -> "${t * 50}ms"
         1 -> "${"%.1f".format(t / 20f)}s"
-        else -> "${t}t"
+        2 -> "${t}t"
+        else -> { FishDiag.fail("WitherDragons.9", "unknown dragon timer style ${FishSettings.witherDragonsTimerStyle}"); "${t}t" }
     }
 
     private fun formatHealth(h: Float): Component {

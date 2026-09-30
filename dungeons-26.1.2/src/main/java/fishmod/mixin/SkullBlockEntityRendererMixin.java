@@ -35,13 +35,17 @@ public abstract class SkullBlockEntityRendererMixin {
     private void renderEssence(SkullBlock.Type skullType, SkullBlockEntity blockEntity, CallbackInfoReturnable<RenderType> cir) {
         if (!Visual.fixWitherEssence || skullType != SkullBlock.Types.PLAYER) return;
 
-        ResolvableProfile profileComponent = blockEntity.getOwnerProfile();
-        if (profileComponent == null) return;
+        try {
+            ResolvableProfile profileComponent = blockEntity.getOwnerProfile();
+            if (profileComponent == null) return;
 
-        GameProfile profile = profileComponent.partialProfile();
+            GameProfile profile = profileComponent.partialProfile();
 
-        if (fishmod$ESSENCE_ID.equals(profile.id())) {
-            cir.setReturnValue(getSkullRenderType(SkullBlock.Types.PLAYER, ESSENCE_TEXTURE));
+            if (fishmod$ESSENCE_ID.equals(profile.id())) {
+                cir.setReturnValue(getSkullRenderType(SkullBlock.Types.PLAYER, ESSENCE_TEXTURE));
+            }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("SkullBlockEntityRendererMixin.1", "wither essence skull resolve failed", t);
         }
     }
 }

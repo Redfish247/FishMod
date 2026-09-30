@@ -14,6 +14,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.Vec3
+import fishmod.utils.debug.FishDiag
 
 object DeviceNotifier {
 
@@ -30,11 +31,13 @@ object DeviceNotifier {
         Events.ON_TERMINAL.register { name, _, objective, _, _ ->
             if (objective != "device" || !EntityUtil.isClientPlayer(name)) return@register false
 
-            if ((Floor7.notifyPre4Completion && at4thDev()) || (Floor7.notifySSCompletion && atSS())) {
-                completedTime = System.currentTimeMillis()
-                showNotification = true
-                Scheduler.scheduleSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1f)
-            }
+            try {
+                if ((Floor7.notifyPre4Completion && at4thDev()) || (Floor7.notifySSCompletion && atSS())) {
+                    completedTime = System.currentTimeMillis()
+                    showNotification = true
+                    Scheduler.scheduleSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1f)
+                }
+            } catch (e: Exception) { FishDiag.fail("DeviceNotifier.1", "device notifier terminal handler threw", e) }
             false
         }
     }
@@ -78,6 +81,6 @@ object DeviceNotifier {
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
         if (System.currentTimeMillis() - completedTime >= TOTAL_DURATION) showNotification = false
-        RenderUtils.drawCenteredText(context, component, Component.literal("§aDevice Completed!"))
+        FishDiag.guard("DeviceNotifier.2", "device notifier render threw") { RenderUtils.drawCenteredText(context, component, Component.literal("§aDevice Completed!")) }
     }
 }

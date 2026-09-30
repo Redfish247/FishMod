@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.Events
 import net.minecraft.client.Minecraft
@@ -27,10 +28,14 @@ object LoadoutTitle {
 
         val mc = Minecraft.getInstance()
         mc.execute {
-            val hud = mc.gui
-            hud.setTimes(0, 25, 8)
-            hud.setTitle(title)
-            hud.setSubtitle(subtitle)
+            try {
+                val hud = mc.gui
+                hud.setTimes(0, 25, 8)
+                hud.setTitle(title)
+                hud.setSubtitle(subtitle)
+            } catch (t: Throwable) {
+                FishDiag.fail("LoadoutTitle.1", "loadout title display failed for '${title.string}'", t)
+            }
         }
         return false
     }

@@ -37,7 +37,13 @@ public abstract class ChatSearchMixin extends Screen {
 
     @Inject(method = "init", at = @At("TAIL"))
     private void fishmod$addSearchBox(CallbackInfo ci) {
-        if (FishSettings.chatFeatureEnabled && FishSettings.chatSearch && fishmod$searchShown) fishmod$buildSearchBox();
+        if (FishSettings.chatFeatureEnabled && FishSettings.chatSearch && fishmod$searchShown) {
+            try {
+                fishmod$buildSearchBox();
+            } catch (Throwable t) {
+                fishmod.utils.debug.FishDiag.fail("ChatSearchMixin.1", "chat search box build failed", t);
+            }
+        }
     }
 
     @Unique
@@ -88,12 +94,20 @@ public abstract class ChatSearchMixin extends Screen {
         int key = event.key();
 
         InputConstants.Key bound = ((KeyBindingAccessor) Keybinds.chatSearchToggle).getBoundKey();
+        if (bound == null) {
+            fishmod.utils.debug.FishDiag.fail("ChatSearchMixin.2", "chat search toggle keybind has no bound key");
+            return;
+        }
         if (bound.getType() == InputConstants.Type.KEYSYM
                 && bound.getValue() != InputConstants.UNKNOWN.getValue()
                 && key == bound.getValue()) {
             fishmod$searchShown = !fishmod$searchShown;
-            if (fishmod$searchShown) { fishmod$buildSearchBox(); fishmod$focusSearchBox(); }
-            else fishmod$removeSearchBox();
+            try {
+                if (fishmod$searchShown) { fishmod$buildSearchBox(); fishmod$focusSearchBox(); }
+                else fishmod$removeSearchBox();
+            } catch (Throwable t) {
+                fishmod.utils.debug.FishDiag.fail("ChatSearchMixin.3", "chat search toggle failed shown=" + fishmod$searchShown, t);
+            }
             cir.setReturnValue(true);
             return;
         }

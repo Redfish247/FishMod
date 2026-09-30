@@ -4,6 +4,7 @@ import fishmod.features.FishHudEditor
 import fishmod.mixin.accessors.PlayerTabOverlayAccessor
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
@@ -47,7 +48,7 @@ object Blessings {
             { FishSettings.blessingScale }, { v -> FishSettings.blessingScale = v }
         )
 
-        Events.ON_SERVER_TICK.register { poll(); false }
+        Events.ON_SERVER_TICK.register { FishDiag.guard("Blessings.2", "blessing tab poll failed") { poll() }; false }
         Events.ON_WORLD_CHANGE.register { clear(); false }
         Events.ON_LOCATION_CHANGE.register { _ -> clear(); false }
     }
@@ -62,7 +63,11 @@ object Blessings {
         val footer = overlay.`fishmod$getFooter`()?.string ?: return
         val plain = COLOR.replace(footer, "")
         for (t in Type.entries) {
-            t.current = t.regex.find(plain)?.let { fishmod.utils.data.Roman.toInt(it.groupValues[1]) } ?: 0
+            t.current = t.regex.find(plain)?.let { m ->
+                fishmod.utils.data.Roman.toInt(m.groupValues[1]).also {
+                    if (it <= 0 && m.groupValues[1].isNotEmpty()) FishDiag.fail("Blessings.1", "blessing ${t.display} level unparsed: '${m.value}'")
+                }
+            } ?: 0
         }
     }
 
@@ -77,13 +82,18 @@ object Blessings {
 
         val sc = FishSettings.blessingScale.toFloat()
         ctx.pose().pushMatrix()
-        ctx.pose().translate(FishSettings.blessingHudX.toFloat(), FishSettings.blessingHudY.toFloat())
-        ctx.pose().scale(sc, sc)
-        shown.forEachIndexed { i, t ->
-            val label = Component.literal("${t.display}: ").withColor(t.color() and 0xFFFFFF)
-                .append(Component.literal(t.current.toString()).withColor(0x55FF55))
-            ctx.text(mc.font, label, 0, i * LINE_H, -1, true)
+        try {
+            ctx.pose().translate(FishSettings.blessingHudX.toFloat(), FishSettings.blessingHudY.toFloat())
+            ctx.pose().scale(sc, sc)
+            shown.forEachIndexed { i, t ->
+                val label = Component.literal("${t.display}: ").withColor(t.color() and 0xFFFFFF)
+                    .append(Component.literal(t.current.toString()).withColor(0x55FF55))
+                ctx.text(mc.font, label, 0, i * LINE_H, -1, true)
+            }
+        } catch (e: Exception) {
+            FishDiag.fail("Blessings.3", "blessing hud render failed", e)
+        } finally {
+            ctx.pose().popMatrix()
         }
-        ctx.pose().popMatrix()
     }
 }

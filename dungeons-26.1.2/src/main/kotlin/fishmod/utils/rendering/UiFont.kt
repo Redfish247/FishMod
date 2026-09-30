@@ -1,5 +1,6 @@
 package fishmod.utils.rendering
 
+import fishmod.utils.debug.FishDiag
 import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL12
 import org.lwjgl.opengl.GL15
@@ -53,11 +54,13 @@ object UiFont {
                 val a = st.mallocInt(1); val d = st.mallocInt(1); val g = st.mallocInt(1)
                 STBTruetype.stbtt_GetFontVMetrics(info, a, d, g)
                 ascent = a[0]
+                if (ascent <= 0) FishDiag.fail("UiFont.2", "Inter font reports non-positive ascent ${a[0]}")
             }
             loaded = true
         } catch (t: Throwable) {
             failed = true
             fishmod.utils.debug.Debug.LOGGER.error("[UiFont] failed to load Inter", t)
+            FishDiag.fail("UiFont.1", "load bundled Inter font", t)
         }
         return loaded
     }
@@ -121,11 +124,16 @@ object UiFont {
             val bytes = f.readBytes()
             val buf = MemoryUtil.memAlloc(bytes.size).put(bytes).flip()
             val fi = STBTTFontinfo.malloc()
-            if (!STBTruetype.stbtt_InitFont(fi, buf)) { fi.free(); MemoryUtil.memFree(buf); return null }
+            if (!STBTruetype.stbtt_InitFont(fi, buf)) {
+                FishDiag.fail("UiFont.3", "stbtt_InitFont rejected fallback font $path")
+                fi.free(); MemoryUtil.memFree(buf); return null
+            }
             val interScale = STBTruetype.stbtt_ScaleForPixelHeight(info, 1f)
+            if (!(interScale > 0f)) FishDiag.fail("UiFont.4", "Inter scale invalid ($interScale) while loading fallback $path")
             return Fallback(fi, buf, STBTruetype.stbtt_ScaleForPixelHeight(fi, 1f) / interScale)
         } catch (t: Throwable) {
             fishmod.utils.debug.Debug.LOGGER.warn("[UiFont] fallback font $path failed: $t")
+            FishDiag.fail("UiFont.5", "load fallback font $path", t)
             return null
         }
     }
@@ -147,6 +155,7 @@ object UiFont {
 
     fun glyph(cp: Int, devSize: Float): Glyph? {
         if (!ensureLoaded()) return null
+        if (!(devSize > 0f) || devSize.isInfinite()) FishDiag.fail("UiFont.6", "glyph requested with invalid size $devSize cp=$cp")
         val q = Math.round(devSize * 4f)
         val key = (cp.toLong() shl 20) or q.toLong()
         glyphs.get(key)?.let { return it }
@@ -157,13 +166,16 @@ object UiFont {
 
     private fun bake(cp: Int, devSize: Float): Glyph {
         val fi = fontIndex(cp)
-        val info = if (fi == 0) info else fallback(fi - 1)!!.info
+        val fb = if (fi == 0) null else fallback(fi - 1)
+        if (fi != 0 && fb == null) FishDiag.fail("UiFont.7", "fallback font slot ${fi - 1} vanished for cp=$cp")
+        val info = if (fi == 0) info else fb!!.info
         val sc = STBTruetype.stbtt_ScaleForPixelHeight(info, devSize)
         MemoryStack.stackPush().use { st ->
             val x0 = st.mallocInt(1); val y0 = st.mallocInt(1); val x1 = st.mallocInt(1); val y1 = st.mallocInt(1)
             STBTruetype.stbtt_GetCodepointBitmapBox(info, cp, sc, sc, x0, y0, x1, y1)
             val gw = x1[0] - x0[0]; val gh = y1[0] - y0[0]
             if (gw <= 0 || gh <= 0) return Glyph(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+            if (gw + 2 * GAP >= ATLAS || gh + 2 * GAP >= ATLAS) FishDiag.fail("UiFont.8", "glyph cp=$cp at size $devSize is ${gw}x$gh, bigger than the ${ATLAS}px atlas")
             if (penX + gw + GAP >= ATLAS) { penX = GAP; penY += rowH + GAP; rowH = 0 }
             if (penY + gh + GAP >= ATLAS) {
                 glyphs.clear(); java.util.Arrays.fill(atlas, 0); penX = GAP; penY = GAP; rowH = 0
@@ -186,6 +198,7 @@ object UiFont {
     fun texture(): Int {
         if (texture == 0) {
             texture = GL11.glGenTextures()
+            if (texture == 0) FishDiag.fail("UiFont.9", "glGenTextures returned 0 for font atlas")
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, texture)
             GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR)
             GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR)

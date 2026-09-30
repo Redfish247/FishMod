@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.puzzles.odin
 
+import fishmod.utils.debug.FishDiag
 import com.google.gson.annotations.SerializedName
 import net.minecraft.core.BlockPos
 
@@ -63,7 +64,7 @@ data class ORoom(
             ORotations.WEST -> BlockPos(-p.z, p.y, p.x)
             ORotations.SOUTH -> BlockPos(p.x, p.y, p.z)
             ORotations.EAST -> BlockPos(p.z, p.y, -p.x)
-            else -> p
+            else -> { FishDiag.fail("OdinDungeon.1", "rotateAroundNorth with unresolved rotation $rotation"); p }
         }
 
         fun rotateToNorth(p: BlockPos, rotation: ORotations): BlockPos = when (rotation) {
@@ -71,7 +72,7 @@ data class ORoom(
             ORotations.WEST -> BlockPos(p.z, p.y, -p.x)
             ORotations.SOUTH -> BlockPos(p.x, p.y, p.z)
             ORotations.EAST -> BlockPos(-p.z, p.y, p.x)
-            else -> p
+            else -> { FishDiag.fail("OdinDungeon.2", "rotateToNorth with unresolved rotation $rotation"); p }
         }
     }
 }

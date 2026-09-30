@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.rendering.UiScale
 import net.minecraft.client.Minecraft
@@ -307,7 +308,8 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
         if (inside(mx, my, linkX, linkY, linkW, linkH) && visible(linkY, linkH)) {
             try {
                 Util.getPlatform().openUri(DISCORD_URL)
-            } catch (ignored: Throwable) {
+            } catch (t: Throwable) {
+                FishDiag.fail("CreditsScreen.1", "could not open discord link", t)
             }
             return true
         }

@@ -10,6 +10,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
 import net.minecraft.sounds.SoundEvents
+import fishmod.utils.debug.FishDiag
 
 object StormOverAlert {
 
@@ -48,7 +49,7 @@ object StormOverAlert {
         if (!FishSettings.stormOverEnabled) return
         shownAt = System.currentTimeMillis()
         if (FishSettings.stormOverSound)
-            Minecraft.getInstance().player?.playSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1.5f)
+            FishDiag.guard("StormOverAlert.1", "storm over sound failed") { Minecraft.getInstance().player?.playSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1.5f) }
     }
 
     @JvmStatic
@@ -61,6 +62,10 @@ object StormOverAlert {
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.stormOverEnabled) return
+        try { renderHudInner(ctx) } catch (e: Exception) { FishDiag.fail("StormOverAlert.3", "storm over HUD render threw", e) }
+    }
+
+    private fun renderHudInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
         val text = when {

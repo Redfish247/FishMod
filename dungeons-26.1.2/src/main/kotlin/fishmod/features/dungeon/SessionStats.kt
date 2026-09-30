@@ -18,6 +18,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.regex.Pattern
+import fishmod.utils.debug.FishDiag
 
 object SessionStats {
 
@@ -70,6 +71,7 @@ object SessionStats {
     private fun autoResume() {
         val now = System.currentTimeMillis()
         if (paused && autoPaused) {
+            FishDiag.check(pauseStartedMs <= now, "SessionStats.1") { "auto-resume: pause start ${pauseStartedMs - now}ms in the future" }
             if (pauseStartedMs > 0 && sessionStartMs > 0) sessionStartMs += (now - pauseStartedMs)
             pauseStartedMs = 0
             paused = false
@@ -119,11 +121,19 @@ object SessionStats {
 
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { client ->
             if (!FishSettings.sessionStatsEnabled) return@EndTick
+            try { onTick(client) } catch (e: Exception) { FishDiag.fail("SessionStats.2", "session stats tick threw", e) }
+        })
+
+        registerRest()
+    }
+
+    private fun onTick(client: Minecraft) {
+        run {
             val loc = Location.getCurrentLocation()
             if (loc != Location.DUNGEON) {
                 havePos = false
                 autoPause(1, System.currentTimeMillis())
-                return@EndTick
+                return
             }
             if (client.player != null) {
                 val x = client.player!!.x
@@ -138,7 +148,10 @@ object SessionStats {
                 }
             }
             tickAutoPause()
-        })
+        }
+    }
+
+    private fun registerRest() {
 
         Events.ON_WORLD_CHANGE.register {
             havePos = false
@@ -169,6 +182,7 @@ object SessionStats {
         Events.ON_GAME_MESSAGE.register { message ->
             if (!FishSettings.sessionStatsEnabled) return@register false
             val s = message.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
+            if (s.startsWith("☠ ") && !DEATH_PAT.matcher(s).find() && (s.contains(" killed") || s.contains(" died"))) FishDiag.fail("SessionStats.3", "death line not matched: '$s'")
 
             if (s == MORT_START) {
                 if (sessionStartMs < 0) sessionStartMs = System.currentTimeMillis()
@@ -223,8 +237,10 @@ object SessionStats {
             if (!paused && sessionStartMs > 0) {
                 autoPause(1, if (lastActivityMs > 0) lastActivityMs else sessionStartMs)
             }
-        } catch (ignored: IOException) {
-        } catch (ignored: RuntimeException) {
+        } catch (e: IOException) {
+            FishDiag.fail("SessionStats.4", "reading session_stats.json failed", e)
+        } catch (e: RuntimeException) {
+            FishDiag.fail("SessionStats.5", "parsing session_stats.json failed", e)
         }
     }
 
@@ -243,7 +259,8 @@ object SessionStats {
             try {
                 Files.createDirectories(SAVE_FILE.parent)
                 Files.writeString(SAVE_FILE, json)
-            } catch (ignored: IOException) {
+            } catch (e: IOException) {
+                FishDiag.fail("SessionStats.6", "writing session_stats.json failed", e)
             }
         }
     }
@@ -252,7 +269,10 @@ object SessionStats {
         if (runs <= 0 || sessionStartMs <= 0) return 0.0
         val now = if (paused && pauseStartedMs > 0) pauseStartedMs else System.currentTimeMillis()
         val elapsed = now - sessionStartMs
-        if (elapsed < 1000) return 0.0
+        if (elapsed < 1000) {
+            FishDiag.check(elapsed >= 0, "SessionStats.7") { "negative session elapsed $elapsed (paused=$paused)" }
+            return 0.0
+        }
         return runs * 3_600_000.0 / elapsed
     }
 
@@ -291,6 +311,10 @@ object SessionStats {
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         btnVisible = false
         if (!FishSettings.sessionStatsEnabled) return
+        try { renderHudInner(ctx) } catch (e: Exception) { FishDiag.fail("SessionStats.8", "session stats HUD render threw", e) }
+    }
+
+    private fun renderHudInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
         if (mc.player == null) return
         if (mc.screen != null && mc.screen !is net.minecraft.client.gui.screens.ChatScreen) return
@@ -316,6 +340,10 @@ object SessionStats {
     fun renderInScreen(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         btnVisible = false
         if (!FishSettings.sessionStatsEnabled) return
+        try { renderInScreenInner(ctx, mouseX, mouseY) } catch (e: Exception) { FishDiag.fail("SessionStats.9", "session stats in-screen render threw", e) }
+    }
+
+    private fun renderInScreenInner(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         val mc = Minecraft.getInstance()
         if (mc.screen !is AbstractContainerScreen<*>) return
         val loc = Location.getCurrentLocation()
@@ -379,6 +407,7 @@ object SessionStats {
                 autoPaused = false
                 pauseStartedMs = now
             } else {
+                FishDiag.check(pauseStartedMs <= now, "SessionStats.10") { "manual resume: pause start ${pauseStartedMs - now}ms in the future" }
                 if (pauseStartedMs > 0 && sessionStartMs > 0) sessionStartMs += (now - pauseStartedMs)
                 pauseStartedMs = 0
                 paused = false

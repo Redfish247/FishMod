@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import fishmod.mixin.accessors.LerpingBossEventAccessor
 import fishmod.utils.Location
 import fishmod.utils.config.values.Dungeons
@@ -18,7 +19,8 @@ object BossBarFeature {
     @JvmStatic
     fun appendHealth(instance: LerpingBossEvent, name: Component): Component {
         if (!Dungeons.bossHealthNumbers || !Location.inDungeon()) return name
-        val percent = (instance as LerpingBossEventAccessor).targetPercent
+        val accessor = instance as? LerpingBossEventAccessor ?: run { FishDiag.fail("BossBarFeature.1", "LerpingBossEventAccessor mixin not applied"); return name }
+        val percent = accessor.targetPercent
         if (name === lastName && percent == lastPercent) lastOut?.let { return it }
         val maxHealth = getMaxHealth(name) ?: return name
         val currentHealth = (percent * maxHealth).roundToInt().toFloat()

@@ -4,6 +4,7 @@ import fishmod.utils.Location
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import fishmod.mixin.accessors.HandledScreenAccessor
 import fishmod.utils.rendering.DrawEvents
@@ -48,10 +49,13 @@ object TerminalSolver {
             TerminalType.NUMBERS -> NumbersHandler()
             TerminalType.RUBIX -> RubixHandler()
             TerminalType.MELODY -> MelodyHandler()
-            TerminalType.STARTS_WITH -> STARTS_WITH_LETTER.matcher(name).let { if (it.find()) StartsWithHandler(it.group(1)) else null }
+            TerminalType.STARTS_WITH -> STARTS_WITH_LETTER.matcher(name).let {
+                if (it.find()) StartsWithHandler(it.group(1))
+                else { FishDiag.fail("TerminalSolver.1", "starts-with title didn't match letter regex: '$name'"); null }
+            }
             TerminalType.SELECT -> SELECT_COLOR.matcher(name).let {
                 if (it.find()) SelectAllHandler(it.group(1).trim().lowercase().replace("silver", "light gray").replace(' ', '_'))
-                else null
+                else { FishDiag.fail("TerminalSolver.2", "select-all title didn't match colour regex: '$name'"); null }
             }
         }
         debug("build $type '${name.take(24)}'")
@@ -74,6 +78,7 @@ object TerminalSolver {
     private fun onOwnTerminalDone() {
         val type = lastType ?: return
         lastType = null
+        if (!FishDiag.check(lastOpenedMs > 0L, "TerminalSolver.11") { "terminal $type done but open time never recorded" }) return
         val secs = (System.currentTimeMillis() - lastOpenedMs) / 1000.0
         if (secs > 60.0 || fishmod.utils.dungeon.PracticeMode.active) return
         fishmod.features.dungeon.PbMessages.announce(FishSettings.pbMessagesTerminals, "term:${type.name}",
@@ -98,16 +103,24 @@ object TerminalSolver {
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { tickSync() }
 
         Events.ON_GAME_MESSAGE.register { text ->
-            val m = ACTIVATED.matcher(COLOR.replace(text.string, ""))
-            if (m.find() && m.group(1) == Minecraft.getInstance().player?.gameProfile?.name) {
-                if (FishSettings.terminalSolverSound) SoundManager.ping("termSolved", 0)
-                onOwnTerminalDone()
+            try {
+                val m = ACTIVATED.matcher(COLOR.replace(text.string, ""))
+                if (m.find() && m.group(1) == Minecraft.getInstance().player?.gameProfile?.name) {
+                    if (FishSettings.terminalSolverSound) SoundManager.ping("termSolved", 0)
+                    onOwnTerminalDone()
+                }
+            } catch (e: Exception) {
+                FishDiag.fail("TerminalSolver.3", "terminal-activated chat handling failed", e)
             }
             false
         }
 
-        DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y -> drawSlot(ctx, x, y, before = true) }
-        DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y -> drawSlot(ctx, x, y, before = false) }
+        DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y ->
+            try { drawSlot(ctx, x, y, before = true) } catch (e: Exception) { FishDiag.fail("TerminalSolver.4", "terminal slot draw (before) failed type=${current?.type}", e) }
+        }
+        DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
+            try { drawSlot(ctx, x, y, before = false) } catch (e: Exception) { FishDiag.fail("TerminalSolver.5", "terminal slot draw (after) failed type=${current?.type}", e) }
+        }
 
         net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback.EVENT.register(
             net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback { _, _, _, lines ->
@@ -120,11 +133,18 @@ object TerminalSolver {
     private fun onOpen(packet: ClientboundOpenScreenPacket) {
         if (!Location.inDungeon()) { reset(); return }
         debug("open '${COLOR.replace(packet.title.string, "").take(30)}' id=${packet.containerId}")
-        ensureHandler(packet.title.string)
+        try { ensureHandler(packet.title.string) } catch (e: Exception) { FishDiag.fail("TerminalSolver.6", "terminal handler build failed on open '${packet.title.string}'", e) }
     }
 
     @JvmStatic
-    fun onMouseClick(button: Int, screen: AbstractContainerScreen<*>): Boolean {
+    fun onMouseClick(button: Int, screen: AbstractContainerScreen<*>): Boolean = try {
+        onMouseClickInner(button, screen)
+    } catch (e: Exception) {
+        FishDiag.fail("TerminalSolver.7", "terminal click handling failed button=$button type=${current?.type}", e)
+        false
+    }
+
+    private fun onMouseClickInner(button: Int, screen: AbstractContainerScreen<*>): Boolean {
         val term = current ?: return false
         if (!FishSettings.terminalSolverEnabled && !simActive) return false
         val slot = (screen as HandledScreenAccessor).`fishmod$getHoveredSlot`() ?: return false
@@ -230,6 +250,10 @@ object TerminalSolver {
     }
 
     private fun tickSync() {
+        try { tickSyncInner() } catch (e: Exception) { FishDiag.fail("TerminalSolver.8", "terminal tick sync failed type=${current?.type} title='$currentTitle'", e) }
+    }
+
+    private fun tickSyncInner() {
         if (simActive) return
         if (!FishSettings.terminalSolverEnabled || !fishmod.utils.Location.inDungeon()) return
         val screen = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return
@@ -237,7 +261,7 @@ object TerminalSolver {
 
         val menu = screen.menu
         val n = term.type.windowSize
-        if (menu.slots.size < n) return
+        if (!FishDiag.check(menu.slots.size >= n, "TerminalSolver.9") { "terminal ${term.type} menu has ${menu.slots.size} slots, expected >= $n" }) return
 
         var changed = false
         for (i in 0 until n) {
@@ -249,7 +273,7 @@ object TerminalSolver {
             term.handleSlotUpdate(n - 1)
             if (changed) {
                 debug("sync ${term.type} items=${term.items.count { it != null && !it.isEmpty }} sol=${term.solution.size}")
-                if (Debug.termInfo && term.solution.isEmpty()) dumpBoard(term, n)
+                if (Debug.termInfo && term.solution.isEmpty()) FishDiag.guard("TerminalSolver.10", "terminal board dump failed") { dumpBoard(term, n) }
             }
         }
     }
