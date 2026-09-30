@@ -1,6 +1,5 @@
 package fishmod.utils.rendering
 
-import com.mojang.blaze3d.opengl.GlStateManager
 import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL13
 import org.lwjgl.opengl.GL14
@@ -33,13 +32,15 @@ class GlStateGuard {
     private var unpackAlignment = 0
     private var samplerBinding = 0
     private var frameBuffer = 0
+    private var readFrameBuffer = 0
     private var frameBufferLogged = false
 
     private var samplerObjectsSupported = true
 
     fun capture() {
         try {
-            frameBuffer = GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING)
+            frameBuffer = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING)
+            readFrameBuffer = GL11.glGetInteger(GL30.GL_READ_FRAMEBUFFER_BINDING)
             if (!frameBufferLogged) {
                 frameBufferLogged = true
                 fishmod.utils.debug.Debug.LOGGER.info("[UiRenderer] framebuffer bound at paint time: {}", frameBuffer)
@@ -89,8 +90,10 @@ class GlStateGuard {
 
     fun restore() {
         try {
-            GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, frameBuffer)
-            GlStateManager._glUseProgram(program)
+            // Raw bind: GlStateManager's FBO cache never saw our bind, so its call would be skipped and leave our FBO bound (breaks ImmediatelyFast).
+            GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, frameBuffer)
+            GL30.glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, readFrameBuffer)
+            GL20.glUseProgram(program)
             GL30.glBindVertexArray(vao)
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, arrayBuffer)
             GL13.glActiveTexture(GL13.GL_TEXTURE0)
