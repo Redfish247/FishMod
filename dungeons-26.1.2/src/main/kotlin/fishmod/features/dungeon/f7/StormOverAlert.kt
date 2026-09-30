@@ -15,6 +15,8 @@ object StormOverAlert {
 
     private const val NAME = "Storm Over Alert"
     private const val COUNTDOWN_TICKS = 5 * 20
+    private const val HUD_W = 120
+    private const val HUD_H = 14
     private val SERVER_COUNTDOWN = Regex("^[1-5]$")
 
     private var shownAt = 0L
@@ -27,7 +29,7 @@ object StormOverAlert {
             NAME,
             { FishSettings.stormOverHudX }, { v -> FishSettings.stormOverHudX = v },
             { FishSettings.stormOverHudY }, { v -> FishSettings.stormOverHudY = v },
-            120, 14,
+            HUD_W, HUD_H,
             { FishSettings.stormOverScale }, { v -> FishSettings.stormOverScale = v }
         )
         Events.ON_WORLD_CHANGE.register { shownAt = 0L; ticksLeft = -1; false }
@@ -72,7 +74,8 @@ object StormOverAlert {
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.stormOverHudX.toFloat(), FishSettings.stormOverHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, text, 0, 0, FishSettings.stormOverColor or 0xFF000000.toInt(), true)
+        ctx.text(mc.font, text, (HUD_W - mc.font.width(text)) / 2, (HUD_H - mc.font.lineHeight) / 2 + 1,
+            FishSettings.stormOverColor or 0xFF000000.toInt(), true)
         ctx.pose().popMatrix()
     }
 }

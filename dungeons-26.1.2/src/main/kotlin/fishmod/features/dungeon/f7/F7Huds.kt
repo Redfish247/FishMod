@@ -137,6 +137,7 @@ object F7Huds {
         SectionProgress.init()
         CurrentSection.init()
         DeviceNotifier.init()
+        TitleHider.init()
         MelodyWarning.init()
         SectionCompletion.init()
         GateDisplay.init()

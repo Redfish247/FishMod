@@ -1198,6 +1198,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Show Number", "", FishSettings::cooldownShowText))
             f.sub.add(ToggleSetting("Under 3s Only", "", FishSettings::cooldownOnlyUnder3s))
             f.sub.add(ToggleSetting("In Inventory", "", FishSettings::cooldownInInventory))
+            f.sub.add(ToggleSetting("Disable Cooldown Background", "Hide vanilla's white cooldown sweep on items", Visual::hideCooldown))
             hud.features.add(f)
         }
         hud.features.add(Feature("Catacombs Overflow Levels", FishSettings::catacombsOverflowEnabled))
@@ -1887,6 +1888,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(floor7)
         columns.add(hud)
         columns.add(slayer)
+        columns.add(fishmod.features.diana.DianaMenu.column())
         columns.add(visuals)
         columns.add(cosmetics)
         if (cheats.features.isNotEmpty()) columns.add(cheats)
@@ -3888,6 +3890,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
         private fun descFor(name: String): String {
+            fishmod.features.diana.DianaMenu.describe(name)?.let { return it }
             return when (name) {
                 "Chat" -> "Smart Copy, Compact Chat, Infinite History, Search, Filter"
                 "Mod Prefix" -> "Tag FishMod's chat output with a prefix"

@@ -19,7 +19,7 @@ import net.minecraft.network.chat.MessageSignature;
 public class ChatHudMixin {
 
     private static final String CMD_ALT =
-            "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|crit|fps|tps|ping|ai|allinv|d|mp|collection|kick|k|warp|w|transfer|pt|ptme|promote|pro|demote|dem|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|help|\\?|e|[fm][1-7]|t[1-5]";
+            "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|crit|fps|tps|ping|ai|allinv|d|mp|collection|kick|k|warp|w|transfer|pt|ptme|promote|pro|demote|dem|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|chim|chimera|chimls|inq|inqs|inquis|king|manti|sphinx|core|stinger|wool|food|relic|relics|stick|sticks|hilt|since|burrow|burrows|mob|mobs|profit|playtime|mf|diana|help|\\?|e|[fm][1-7]|t[1-5]";
 
     private static final String ARG_TAIL = "(?:\\s+(\\w+)(?:\\s+(\\w+)(?:\\s+(\\w+))?)?)?\\s*$";
 
