@@ -87,10 +87,10 @@ object ArrowGuess {
         if (dust.size < SHAFT) return
         val pts = dust.keys.toList()
         val line = findShaft(pts) ?: return DianaTest.log("arrow: no shaft in ${pts.size} pts")
-        val onLine = line.toHashSet()
+        // Neighbours include the shaft's own points: base end has 2 (shaft only), tip end 4 (shaft + barbs)
         val c1 = line[1]; val c2 = line[line.size - 2]
-        val n1 = pts.count { it !in onLine && it.distanceTo(c1) <= TOL }
-        val n2 = pts.count { it !in onLine && it.distanceTo(c2) <= TOL }
+        val n1 = pts.count { it != c1 && it.distanceTo(c1) <= TOL }
+        val n2 = pts.count { it != c2 && it.distanceTo(c2) <= TOL }
         val (base, tip) = when {
             n1 == 4 && n2 == 2 -> line.last() to line.first()
             n1 == 2 && n2 == 4 -> line.first() to line.last()
