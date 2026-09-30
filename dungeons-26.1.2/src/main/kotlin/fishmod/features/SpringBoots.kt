@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.data.ItemUtil
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
@@ -39,7 +40,7 @@ object SpringBoots {
 
     private fun wearingSpringBoots(): Boolean {
         val p = Minecraft.getInstance().player ?: return false
-        return ItemUtil.getId(p.getItemBySlot(EquipmentSlot.FEET)) == "SPRING_BOOTS"
+        return FishDiag.guard("SpringBoots.1", "boots id lookup failed") { ItemUtil.getId(p.getItemBySlot(EquipmentSlot.FEET)) == "SPRING_BOOTS" } ?: false
     }
 
     @JvmStatic
@@ -62,6 +63,7 @@ object SpringBoots {
                         pitch == LOW_PITCH -> lows = (lows + 1).coerceAtMost(2)
                         HIGH_PITCHES.any { it == pitch } -> highs++
                     }
+                    FishDiag.check(lows + highs >= 0, "SpringBoots.2") { "spring boots charge negative lows=$lows highs=$highs" }
                     currentHeight = HEIGHTS[(lows + highs).coerceIn(HEIGHTS.indices)]
                 }
                 FIREWORK -> if (RESET_PITCHES.any { it == pitch }) reset()
@@ -83,7 +85,11 @@ object SpringBoots {
         val p = Minecraft.getInstance().player ?: return
         val y = p.y + currentHeight
         val box = AABB(p.x - 0.5, y, p.z - 0.5, p.x + 0.5, y + 1.0, p.z + 0.5)
-        RenderUtils.renderOutline(matrices, vc, box, RenderUtils.toFloats(FishSettings.springBootsBoxColor))
+        try {
+            RenderUtils.renderOutline(matrices, vc, box, RenderUtils.toFloats(FishSettings.springBootsBoxColor))
+        } catch (e: Exception) {
+            FishDiag.fail("SpringBoots.3", "spring boots box render failed (h=$currentHeight)", e)
+        }
     }
 
     @JvmStatic
@@ -96,9 +102,14 @@ object SpringBoots {
         else "§aCharge: §f${fishmod.utils.Fmt.f0(pct.toDouble())}%"
         val sc = FishSettings.springBootsScale.toFloat()
         ctx.pose().pushMatrix()
-        ctx.pose().translate(FishSettings.springBootsHudX.toFloat(), FishSettings.springBootsHudY.toFloat())
-        ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, label, 0, 0, -1, true)
-        ctx.pose().popMatrix()
+        try {
+            ctx.pose().translate(FishSettings.springBootsHudX.toFloat(), FishSettings.springBootsHudY.toFloat())
+            ctx.pose().scale(sc, sc)
+            ctx.text(mc.font, label, 0, 0, -1, true)
+        } catch (e: Exception) {
+            FishDiag.fail("SpringBoots.4", "spring boots hud render failed", e)
+        } finally {
+            ctx.pose().popMatrix()
+        }
     }
 }

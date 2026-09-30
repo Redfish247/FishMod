@@ -15,6 +15,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.regex.Pattern
+import fishmod.utils.debug.FishDiag
 
 object MelodyWarning {
 
@@ -35,7 +36,7 @@ object MelodyWarning {
 
             val matcher = PATTERN.matcher(message)
             if (matcher.find()) {
-                val progress = matcher.group(1).toInt()
+                val progress = FishDiag.notNull(matcher.group(1).toIntOrNull(), "MelodyWarning.1") { "melody % not an int: '$message'" } ?: return@register false
                 if (progress > furthestProgress) {
                     melodyStarted = true
                     name = username
@@ -82,6 +83,7 @@ object MelodyWarning {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
+        FishDiag.check(!name.isNullOrEmpty(), "MelodyWarning.3") { "melody warning shown with no player name" }
         val dungeonClass = DungeonClass.getClass(name)
         val num = minOf(furthestProgress / 25, 3)
 
@@ -96,6 +98,6 @@ object MelodyWarning {
 
         val text = nameText.append(infoText)
 
-        RenderUtils.drawCenteredText(context, component, text)
+        FishDiag.guard("MelodyWarning.2", "melody warning render threw") { RenderUtils.drawCenteredText(context, component, text) }
     }
 }

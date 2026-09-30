@@ -1,6 +1,7 @@
 package fishmod.utils.rendering
 
 import com.mojang.blaze3d.vertex.PoseStack
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents
 import net.minecraft.client.Minecraft
@@ -26,18 +27,23 @@ object RenderingEvents {
 
     private fun gizmos(ctx: LevelRenderContext) {
         if (Minecraft.getInstance().level == null) return
-        RenderUtils.clearDeferredFills()
-        GIZMO.invoke { it.emit(ctx) }
+        try {
+            RenderUtils.clearDeferredFills()
+            GIZMO.invoke { it.emit(ctx) }
+        } catch (t: Throwable) {
+            FishDiag.fail("RenderingEvents.1", "gizmo pass", t)
+        }
     }
 
     private fun render(ctx: LevelRenderContext) {
         val mc = Minecraft.getInstance()
         if (mc.level == null) return
-        val buffers: MultiBufferSource.BufferSource = ctx.bufferSource() ?: return
-        val ps: PoseStack = ctx.poseStack() ?: return
+        val buffers: MultiBufferSource.BufferSource = FishDiag.notNull(ctx.bufferSource(), "RenderingEvents.2") { "level render context has no buffer source" } ?: return
+        val ps: PoseStack = FishDiag.notNull(ctx.poseStack(), "RenderingEvents.3") { "level render context has no pose stack" } ?: return
 
         val cam = mc.gameRenderer.mainCamera.position()
         ps.pushPose()
+        try {
         ps.translate(-cam.x, -cam.y, -cam.z)
 
         if (RenderUtils.hasDeferredFills()) {
@@ -55,8 +61,11 @@ object RenderingEvents {
             RenderUtils.flushRedirectedQuads(buffers.getBuffer(RenderLayers.FILL_ND))
             buffers.endBatch(RenderLayers.FILL_ND)
         }
-
-        ps.popPose()
+        } catch (t: Throwable) {
+            FishDiag.fail("RenderingEvents.4", "world overlay render pass", t)
+        } finally {
+            ps.popPose()
+        }
     }
 
     private fun drawLayer(

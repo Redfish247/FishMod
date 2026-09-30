@@ -3,6 +3,7 @@ package fishmod.utils
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import java.net.URI
 import java.net.http.HttpClient
@@ -57,17 +58,20 @@ object MayorApi {
             .build()
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept { resp ->
             try {
+                FishDiag.check(resp.statusCode() == 200, "MayorApi.1") { "election API returned HTTP ${resp.statusCode()}" }
                 val root = JsonParser.parseString(resp.body()).asJsonObject
                 paulDungeonBonus = parsePaul(root)
                 mayorLine = parseMayorLine(root)
                 lastFetch = System.currentTimeMillis()
             } catch (e: Exception) {
+                FishDiag.fail("MayorApi.2", "election response parse failed", e)
                 Debug.LOGGER.warn("MayorApi: parse failed - {}", e.message)
                 lastFetch = failStamp()
             } finally {
                 fetching = false
             }
         }.exceptionally { e ->
+            FishDiag.fail("MayorApi.3", "election request failed", e)
             Debug.LOGGER.warn("MayorApi: fetch failed - {}", e.message)
             lastFetch = failStamp()
             fetching = false
@@ -77,7 +81,7 @@ object MayorApi {
 
     private fun parseMayorLine(root: JsonObject): String? {
         val mayor = root.getAsJsonObject("mayor") ?: return null
-        val name = mayor.get("name")?.asString ?: return null
+        val name = FishDiag.notNull(mayor.get("name")?.asString, "MayorApi.5") { "election mayor object has no name" } ?: return null
         val perk = mayor.getAsJsonArray("perks")?.firstOrNull()?.asJsonObject?.get("name")?.asString
         return if (perk != null) "§7Mayor: §e$name §7($perk)" else "§7Mayor: §e$name"
     }
@@ -101,7 +105,8 @@ object MayorApi {
     private fun hasEzpz(perks: com.google.gson.JsonArray?): Boolean {
         if (perks == null) return false
         for (p in perks) {
-            val n = runCatching { p.asJsonObject.get("name").asString }.getOrNull() ?: continue
+            val n = runCatching { p.asJsonObject.get("name").asString }
+                .onFailure { FishDiag.fail("MayorApi.4", "mayor perk without name: $p", it) }.getOrNull() ?: continue
             if (n.lowercase().contains("ezpz")) return true
         }
         return false

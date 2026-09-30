@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.features.chat.ChatRule
 import fishmod.features.chat.ChatRuleHandler
@@ -153,7 +154,7 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
     }
 
     override fun removed() {
-        saveAll()
+        try { saveAll() } catch (t: Throwable) { FishDiag.fail("ChatCommandsScreen.1", "saving rules/aliases/keys failed (${aliasRows.size} aliases, ${keyRows.size} keys)", t) }
         super.removed()
     }
 
@@ -176,11 +177,15 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
         UiRecorder.clear()
         hits.clear()
         captureChip = null
-        drawFrame()
-        when (tab) {
-            Tab.NOTIFICATIONS -> drawNotifications()
-            Tab.ALIASES -> drawAliases()
-            Tab.KEYS -> drawKeys()
+        try {
+            drawFrame()
+            when (tab) {
+                Tab.NOTIFICATIONS -> drawNotifications()
+                Tab.ALIASES -> drawAliases()
+                Tab.KEYS -> drawKeys()
+            }
+        } catch (t: Throwable) {
+            FishDiag.fail("ChatCommandsScreen.2", "chat & commands screen draw failed on tab $tab", t)
         }
         super.extractRenderState(ctx, mx, my, delta)
     }
@@ -701,7 +706,10 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
 
         setFocus(null)
         for (h in hits.asReversed()) {
-            if (h.contains(x, y)) { h.action(); return true }
+            if (h.contains(x, y)) {
+                try { h.action() } catch (t: Throwable) { FishDiag.fail("ChatCommandsScreen.3", "click action failed on tab $tab", t) }
+                return true
+            }
         }
         return super.mouseClicked(click, doubled)
     }
@@ -735,7 +743,7 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
                 return true
             }
             f.keyPressed(input)
-            sinks[f]?.invoke(f.value)
+            try { sinks[f]?.invoke(f.value) } catch (t: Throwable) { FishDiag.fail("ChatCommandsScreen.4", "field sink failed on key", t) }
             return true
         }
         if (input.key() == GLFW.GLFW_KEY_ESCAPE) { onClose(); return true }
@@ -746,7 +754,7 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
         val f = focused
         if (f != null) {
             f.charTyped(input)
-            sinks[f]?.invoke(f.value)
+            try { sinks[f]?.invoke(f.value) } catch (t: Throwable) { FishDiag.fail("ChatCommandsScreen.5", "field sink failed on char", t) }
             return true
         }
         return super.charTyped(input)

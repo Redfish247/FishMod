@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.puzzles.odin
 
+import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import fishmod.utils.Misc
@@ -23,7 +24,9 @@ object WaterSolver {
             )
         }
     } catch (e: Exception) {
-        Debug.LOGGER.error("Water solutions failed to load", e); emptyMap()
+        Debug.LOGGER.error("Water solutions failed to load", e)
+        FishDiag.fail("WaterSolver.1", "waterSolutions.json failed to load", e)
+        emptyMap()
     }
 
     private val solutions = HashMap<LeverBlock, List<Double>>()
@@ -66,8 +69,10 @@ object WaterSolver {
         }
 
         solutions.clear()
-        waterSolutions[optimized.toString()]?.get(patternIdentifier.toString())?.get(extendedSlots)?.forEach { (key, times) ->
-            LeverBlock.fromKey(key)?.let { solutions[it] = times }
+        FishDiag.notNull(waterSolutions[optimized.toString()]?.get(patternIdentifier.toString())?.get(extendedSlots), "WaterSolver.2") {
+            "no water solution for optimized=$optimized pattern=$patternIdentifier slots=$extendedSlots"
+        }?.forEach { (key, times) ->
+            FishDiag.notNull(LeverBlock.fromKey(key), "WaterSolver.3") { "unknown water lever key '$key'" }?.let { solutions[it] = times }
         }
         solutionListDirty = true
     }

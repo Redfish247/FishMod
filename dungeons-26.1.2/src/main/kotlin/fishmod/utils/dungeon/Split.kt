@@ -3,6 +3,7 @@ package fishmod.utils.dungeon
 import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.Constants
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
@@ -73,7 +74,11 @@ class Split(
                 cachedRaw = raw
                 cachedNameColors = raw.split(';').mapNotNull { e ->
                     val i = e.lastIndexOf('=')
-                    if (i <= 0) null else e.substring(i + 1).toLongOrNull(16)?.let { e.substring(0, i) to it.toInt() }
+                    if (i <= 0) {
+                        if (e.isNotBlank()) FishDiag.fail("Split.1", "split name colour entry without '=': '$e'")
+                        null
+                    } else FishDiag.notNull(e.substring(i + 1).toLongOrNull(16), "Split.2") { "bad hex in split name colour '$e'" }
+                        ?.let { e.substring(0, i) to it.toInt() }
                 }.toMap()
             }
             return cachedNameColors
@@ -131,6 +136,7 @@ class Split(
     fun end() {
         if (ended) return
         endTime = System.currentTimeMillis()
+        if (started && endTime < startTime) FishDiag.fail("Split.3", "split '$name' ended before it started (clock went back ${startTime - endTime}ms)")
         started = false
         ended = true
         cachedAt = 0L
@@ -225,6 +231,7 @@ class Split(
         if (nameText == null || timerText == null || now - cachedAt >= refreshMs) {
             nameText = createNameText()
             timerText = createTimeText()
+            if (tick < 0) FishDiag.fail("Split.4", "split '$name' tick counter negative: $tick")
             cachedName = nameText
             cachedTimer = timerText
             cachedTimerWidth = textRenderer.width(timerText)

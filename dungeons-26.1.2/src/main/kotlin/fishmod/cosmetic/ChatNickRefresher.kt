@@ -1,5 +1,6 @@
 package fishmod.cosmetic
 
+import fishmod.utils.debug.FishDiag
 import fishmod.mixin.ChatHudInvoker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.components.ChatComponent
@@ -17,7 +18,7 @@ object ChatNickRefresher {
         val mc = Minecraft.getInstance()
         mc.execute {
             scheduled = false
-            reapply(mc)
+            try { reapply(mc) } catch (t: Throwable) { FishDiag.fail("ChatNickRefresher.1", "chat nick reapply failed", t) }
         }
     }
 

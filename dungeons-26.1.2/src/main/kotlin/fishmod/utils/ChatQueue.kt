@@ -2,6 +2,7 @@ package fishmod.utils
 
 import fishmod.features.dungeon.ChatCommandState
 import fishmod.utils.events.Events
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import java.util.ArrayDeque
@@ -18,7 +19,13 @@ object ChatQueue {
 
     @JvmStatic
     fun init() {
-        ClientTickEvents.END_CLIENT_TICK.register { flush() }
+        ClientTickEvents.END_CLIENT_TICK.register {
+            try {
+                flush()
+            } catch (e: Exception) {
+                FishDiag.fail("ChatQueue.1", "chat queue flush failed (${pending.size} pending)", e)
+            }
+        }
         Events.ON_WORLD_CHANGE.register { synchronized(pending) { pending.clear() }; false }
     }
 

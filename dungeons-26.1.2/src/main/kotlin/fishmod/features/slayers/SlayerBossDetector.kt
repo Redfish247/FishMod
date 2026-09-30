@@ -1,6 +1,7 @@
 package fishmod.features.slayers
 
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.multiplayer.ClientLevel
@@ -16,7 +17,13 @@ object SlayerBossDetector {
 
     @JvmStatic
     fun init() {
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc -> tick(mc) })
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
+            try {
+                tick(mc)
+            } catch (e: Exception) {
+                FishDiag.fail("SlayerBossDetector.1", "boss detector tick failed (state=${SlayerManager.state}, type=${SlayerManager.type})", e)
+            }
+        })
     }
 
     private fun tick(mc: Minecraft) {
@@ -26,7 +33,7 @@ object SlayerBossDetector {
             return
         }
         val level = mc.level ?: return
-        val type = SlayerManager.type ?: return
+        val type = FishDiag.notNull(SlayerManager.type, "SlayerBossDetector.2") { "active slayer quest but type is null (state=${SlayerManager.state})" } ?: return
 
         val bound = SlayerManager.bossEntity
         if (bound != null && (!bound.isAlive || bound.isRemoved)) SlayerManager.bossEntity = null

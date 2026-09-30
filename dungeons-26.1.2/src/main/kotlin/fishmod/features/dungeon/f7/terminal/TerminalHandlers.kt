@@ -5,6 +5,7 @@ import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
+import fishmod.utils.debug.FishDiag
 
 enum class TerminalType(val windowPrefix: String, val windowSize: Int) {
     PANES("Correct all the panes!", 45),
@@ -36,7 +37,7 @@ private val ENCHANT_OVERRIDES: Set<Item> = buildSet {
     runCatching {
         for (item in BuiltInRegistries.ITEM)
             if (item.components().has(DataComponents.ENCHANTMENT_GLINT_OVERRIDE)) add(item)
-    }
+    }.onFailure { FishDiag.fail("TerminalHandlers.1", "scanning glint-override items failed", it) }
     add(Items.GOLDEN_APPLE)
     add(Items.ENCHANTED_GOLDEN_APPLE)
 }
@@ -49,6 +50,7 @@ abstract class TerminalHandler(val type: TerminalType) {
     abstract fun handleSlotUpdate(slot: Int): Boolean
 
     fun canClick(slotIndex: Int, right: Boolean): Boolean {
+        FishDiag.check(slotIndex in 0 until type.windowSize, "TerminalHandlers.6") { "$type canClick slot $slotIndex out of range" }
         if (type == TerminalType.MELODY) return slotIndex == 16 || slotIndex == 25 || slotIndex == 34 || slotIndex == 43
         if (slotIndex !in solution) return false
         if (type == TerminalType.NUMBERS && slotIndex != solution.firstOrNull()) return false
@@ -77,6 +79,8 @@ class NumbersHandler : TerminalHandler(TerminalType.NUMBERS) {
             items.mapIndexedNotNull { i, it -> if (it?.`is`(RED_PANE) == true) i else null }
                 .sortedBy { items[it]?.count ?: 0 }
         )
+        val counts = solution.map { items[it]?.count ?: 0 }
+        if (counts.toSet().size != counts.size) FishDiag.fail("TerminalHandlers.2", "numbers terminal has duplicate counts $counts")
         return true
     }
 }
@@ -147,6 +151,9 @@ class RubixHandler : TerminalHandler(TerminalType.RUBIX) {
     private fun solve(): List<Int> {
         val panes = items.withIndex().filter { (_, s) -> s.isPane() && s?.`is`(BLACK_PANE) == false }
         if (panes.isEmpty()) return emptyList()
+        panes.firstOrNull { (_, s) -> colorIdxOf(s) < 0 }?.let { (i, s) ->
+            FishDiag.fail("TerminalHandlers.3", "rubix pane at $i has unknown colour ${s?.item}")
+        }
         val candidates = if (lastColorIdx != null) listOf(lastColorIdx!!) else RUBIX_ORDER.indices.toList()
         var best: List<Int>? = null
         var bestTarget = -1
@@ -161,6 +168,7 @@ class RubixHandler : TerminalHandler(TerminalType.RUBIX) {
             }
         }
         if (lastColorIdx == null && bestTarget >= 0) lastColorIdx = bestTarget
+        if (best == null) FishDiag.fail("TerminalHandlers.4", "rubix solver produced no solution (panes=${panes.size} last=$lastColorIdx)")
         return best ?: emptyList()
     }
 }
@@ -178,6 +186,7 @@ class MelodyHandler : TerminalHandler(TerminalType.MELODY) {
         val greenClay = items.indexOfLast { it?.`is`(LIME_TERRACOTTA) == true }.takeIf { it != -1 } ?: return true
         greenClayRow = greenClay / 9
         targetCol = magentaPane % 9
+        FishDiag.check(greenClay % 9 == 7, "TerminalHandlers.5") { "melody lime terracotta at unexpected slot $greenClay" }
         solution.addAll(items.mapIndexedNotNull { i, it ->
             when {
                 i == greenPane || it?.`is`(MAGENTA_PANE) == true -> i

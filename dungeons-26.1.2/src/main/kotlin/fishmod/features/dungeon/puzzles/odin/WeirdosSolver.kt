@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.puzzles.odin
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
@@ -19,7 +20,7 @@ object WeirdosSolver {
         val cleanNpc = COLOR.replace(npc, "").trim()
         val correctNPC = Minecraft.getInstance().level?.entitiesForRendering()?.find {
             it is ArmorStand && COLOR.replace(it.name.string, "").trim() == cleanNpc
-        } ?: return
+        } ?: run { FishDiag.fail("WeirdosSolver.1", "weirdo NPC '$cleanNpc' spoke but no armor stand found"); return }
         val room = OdinScan.currentRoom ?: return
         val relativePos = room.getRelativeCoords(BlockPos(correctNPC.x.toInt() - 1, 69, correctNPC.z.toInt() - 1))
         val pos = room.getRealCoords(relativePos.offset(1, 0, 0))

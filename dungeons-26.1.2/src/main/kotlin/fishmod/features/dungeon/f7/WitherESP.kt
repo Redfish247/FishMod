@@ -8,6 +8,7 @@ import fishmod.utils.rendering.RenderingEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.boss.wither.WitherBoss
+import fishmod.utils.debug.FishDiag
 
 object WitherESP {
 
@@ -17,13 +18,17 @@ object WitherESP {
 
     @JvmStatic
     fun init() {
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { tick() })
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick {
+            try { tick() } catch (e: Exception) { FishDiag.fail("WitherESP.1", "wither ESP scan threw", e) }
+        })
         RenderingEvents.GIZMO.register { _ ->
             if (!active()) return@register
-            val stroke = color()
-            for (wither in cachedWithers) {
-                if (wither.isAlive) RenderUtils.gizmoBox(wither.boundingBox, 0, stroke)
-            }
+            try {
+                val stroke = color()
+                for (wither in cachedWithers) {
+                    if (wither.isAlive) RenderUtils.gizmoBox(wither.boundingBox, 0, stroke)
+                }
+            } catch (e: Exception) { FishDiag.fail("WitherESP.2", "wither ESP render threw (n=${cachedWithers.size})", e) }
         }
     }
 
@@ -39,6 +44,7 @@ object WitherESP {
         cachedWithers = level.entitiesForRendering().filterIsInstance<WitherBoss>().filter {
             !it.isInvisible && it.isAlive && it.invulnerableTicks != 800 && it.boundingBox.ysize >= 2.0
         }
+        FishDiag.check(cachedWithers.size <= 6, "WitherESP.3") { "unexpected wither count ${cachedWithers.size}" }
     }
 
     private fun color(): Int = when {

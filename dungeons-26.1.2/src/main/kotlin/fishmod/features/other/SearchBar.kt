@@ -1,5 +1,6 @@
 package fishmod.features.other
 
+import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.Window
 import fishmod.mixin.accessors.KeyBindingAccessor
 import fishmod.utils.MathParser
@@ -32,7 +33,13 @@ object SearchBar {
     fun init() {
         DrawEvents.INVENTORY_SLOT_AFTER.register { context, item, x, y ->
             if (!FishSettings.inventorySearchEnabled || !shouldDisplay() || searchTerm.isEmpty() || !parsedValue.isNaN()) return@register
-            if (!matches(item)) {
+            val matched = try {
+                matches(item)
+            } catch (e: Exception) {
+                FishDiag.fail("SearchBar.3", "search match failed for term '$searchTerm'", e)
+                true
+            }
+            if (!matched) {
                 context.fill(x, y, x + 16, y + 16, 0xaa111111.toInt())
             } else if (FishSettings.inventorySearchHighlight) {
                 val c = FishSettings.inventorySearchHighlightColor
@@ -64,7 +71,12 @@ object SearchBar {
         if (!FishSettings.inventorySearchEnabled || !exists() || !shouldDisplay()) return
         val bar = searchBar!!
         bar.x = (Minecraft.getInstance().window.guiScaledWidth - SEARCH_WIDTH) / 2
-        bar.extractRenderState(context, mouseX, mouseY, deltaTicks)
+        try {
+            bar.extractRenderState(context, mouseX, mouseY, deltaTicks)
+        } catch (e: Exception) {
+            FishDiag.fail("SearchBar.4", "search bar render failed", e)
+            return
+        }
 
         if (!parsedValue.isNaN()) {
             val expression = "  §e= §2" + RenderUtils.formatNumber(parsedValue.toFloat())
@@ -96,7 +108,8 @@ object SearchBar {
                 val mc = Minecraft.getInstance()
                 val dropCode = (mc.options.keyDrop as KeyBindingAccessor).boundKey.value
                 if (input.key() == dropCode) { bar.isFocused = false; return false }
-            } catch (ignored: Exception) {
+            } catch (e: Exception) {
+                FishDiag.fail("SearchBar.1", "failed to read drop key binding", e)
             }
             if (input.key() == GLFW.GLFW_KEY_ENTER) {
                 if (!parsedValue.isNaN()) {
@@ -139,7 +152,12 @@ object SearchBar {
         )
         bar.setResponder { string ->
             searchTerm = string.lowercase()
-            parsedValue = MathParser.parseExpression(searchTerm)
+            parsedValue = try {
+                MathParser.parseExpression(searchTerm)
+            } catch (e: Exception) {
+                FishDiag.fail("SearchBar.2", "MathParser threw on '$searchTerm'", e)
+                Double.NaN
+            }
         }
         searchBar = bar
         return true

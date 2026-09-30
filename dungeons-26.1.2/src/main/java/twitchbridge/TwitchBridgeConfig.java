@@ -39,6 +39,7 @@ public class TwitchBridgeConfig {
 			}
 		} catch (IOException | RuntimeException e) {
 			TwitchBridgeClient.LOGGER.warn("[TwitchBridge] Could not read config, using defaults", e);
+			fishmod.utils.debug.FishDiag.fail("TwitchBridgeConfig.1", "twitch-bridge.json read failed, using defaults", e);
 		}
 		TwitchBridgeConfig cfg = new TwitchBridgeConfig();
 		cfg.save();
@@ -52,6 +53,7 @@ public class TwitchBridgeConfig {
 			Files.writeString(PATH, GSON.toJson(this), StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			TwitchBridgeClient.LOGGER.warn("[TwitchBridge] Could not write config", e);
+			fishmod.utils.debug.FishDiag.fail("TwitchBridgeConfig.2", "twitch-bridge.json write failed", e);
 		}
 	}
 

@@ -29,6 +29,7 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.ceil
+import fishmod.utils.debug.FishDiag
 
 object BloodSolver {
 
@@ -58,18 +59,22 @@ object BloodSolver {
             val w = watcher
             if (w != null && w.isRemoved) { watcher = null; bloodMobs.clear() }
             bloodMobs.keys.removeAll { it.isRemoved || !it.isAlive }
+            if (bloodMobs.size > 64) FishDiag.fail("BloodSolver.6", "blood mob map grew to ${bloodMobs.size}")
             false
         }
 
         Events.ON_GAME_MESSAGE.register { message ->
             when (message.string) {
                 OPEN_MESSAGE -> if (bloodOpenTick < 0) bloodOpenTick = dungeonTick
-                WATCHER_MESSAGE -> if (Floor7.bloodSolverEnabled) onWatcherSpawn()
+                WATCHER_MESSAGE -> if (Floor7.bloodSolverEnabled) {
+                    try { onWatcherSpawn() } catch (e: Exception) { FishDiag.fail("BloodSolver.3", "watcher spawn handler threw", e) }
+                }
             }
             false
         }
 
         Events.ON_PACKET.register { packet ->
+            try {
             when (packet) {
                 is ClientboundSetEquipmentPacket -> {
                     if (watcher == null && Location.inDungeon()) {
@@ -87,12 +92,13 @@ object BloodSolver {
                 }
                 is ClientboundMoveEntityPacket -> onMobMove(packet)
             }
+            } catch (e: Exception) { FishDiag.fail("BloodSolver.1", "blood solver packet handler threw on ${packet.javaClass.simpleName}", e) }
             false
         }
 
         RenderingEvents.NO_DEPTH_LINE.register { ctx, matrices, vc ->
             if (Floor7.bloodSolverEnabled && Location.inDungeon() && !Phase.inBoss() && bloodMobs.isNotEmpty()) {
-                render(ctx, matrices, vc)
+                try { render(ctx, matrices, vc) } catch (e: Exception) { FishDiag.fail("BloodSolver.2", "blood solver render threw (mobs=${bloodMobs.size})", e) }
             }
         }
     }
@@ -109,6 +115,7 @@ object BloodSolver {
         firstSpawns = false
         if (bloodOpenTick < 0) return
         val seconds = (dungeonTick - bloodOpenTick) / 20
+        FishDiag.check(seconds in 1..120, "BloodSolver.5") { "implausible watcher spawn delay ${seconds}s (open=$bloodOpenTick now=$dungeonTick)" }
 
         if (Floor7.bloodSolverKillTitle) {
             val moveTicks = when (seconds) {
@@ -170,6 +177,7 @@ object BloodSolver {
         for ((stand, data) in bloodMobs) {
             val end = data.endVector ?: continue
             val timeTook = dungeonTick - data.started
+            if (timeTook < 0) { FishDiag.fail("BloodSolver.7", "blood mob started in the future (took=$timeTook)"); continue }
             val time = (if (data.firstSpawn) 40 else 0) + 38 - timeTook + 0.8
             val secondsLeft = ((time - 0.8) / 20.0).coerceAtLeast(0.0)
             if (secondsLeft <= 0.0) continue

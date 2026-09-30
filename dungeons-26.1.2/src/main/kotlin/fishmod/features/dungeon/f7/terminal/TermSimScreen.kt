@@ -18,6 +18,7 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import org.lwjgl.glfw.GLFW
 import kotlin.random.Random
+import fishmod.utils.debug.FishDiag
 
 class TermSimScreen private constructor(
     private val menu: TermSimMenu,
@@ -46,7 +47,10 @@ class TermSimScreen private constructor(
 
     override fun init() {
         super.init()
-        if (!built) { built = true; loadPbs(); newRound(type) }
+        if (!built) {
+            built = true
+            try { loadPbs(); newRound(type) } catch (e: Exception) { FishDiag.fail("TermSimScreen.9", "term sim init threw ($type)", e) }
+        }
     }
 
     override fun removed() {
@@ -55,12 +59,12 @@ class TermSimScreen private constructor(
     }
 
     private fun loadPbs() = FishSettings.termSimPbs.split(',').forEachIndexed { i, s ->
-        if (i < pbs.size) s.trim().toDoubleOrNull()?.let { pbs[i] = it }
+        if (i < pbs.size && s.isNotBlank()) FishDiag.notNull(s.trim().toDoubleOrNull(), "TermSimScreen.1") { "bad term sim PB entry '$s'" }?.let { pbs[i] = it }
     }
 
     private fun savePbs() {
         FishSettings.termSimPbs = pbs.joinToString(",") { if (it == Double.MAX_VALUE) "" else "%.3f".format(it) }
-        runCatching { FishConfig.manager.save() }
+        runCatching { FishConfig.manager.save() }.onFailure { FishDiag.fail("TermSimScreen.2", "saving term sim PBs failed", it) }
     }
 
     private fun newRound(t: TerminalType) {
@@ -90,6 +94,7 @@ class TermSimScreen private constructor(
             TerminalType.MELODY -> genMelody()
         }
         sync()
+        FishDiag.check(handler.solution.isNotEmpty(), "TermSimScreen.8") { "sim $t round generated with no solution" }
     }
 
     private fun sync() {
@@ -101,6 +106,7 @@ class TermSimScreen private constructor(
 
     private fun win() {
         lastMs = System.currentTimeMillis() - (if (startedAt != 0L) startedAt else openedAt)
+        FishDiag.check(lastMs >= 0, "TermSimScreen.6") { "negative sim solve time $lastMs" }
         val o = type.ordinal
         if (lastMs / 1000.0 < pbs[o]) { pbs[o] = lastMs / 1000.0; savePbs() }
         solvedCount++
@@ -187,12 +193,13 @@ class TermSimScreen private constructor(
         if (melTick++ % 6 != 0) return
         melLime += melDir
         if (melLime <= 1 || melLime >= 5) melDir = -melDir
-        rebuildMelody()
+        FishDiag.check(melLime in 1..5, "TermSimScreen.3") { "sim melody lime col out of range: $melLime" }
+        try { rebuildMelody() } catch (e: Exception) { FishDiag.fail("TermSimScreen.4", "sim melody rebuild threw", e) }
     }
 
     override fun slotClicked(slot: Slot, slotId: Int, mouseButton: Int, input: ContainerInput) {
         if (slot.container !== box) return
-        simClick(slot.index, mouseButton)
+        try { simClick(slot.index, mouseButton) } catch (e: Exception) { FishDiag.fail("TermSimScreen.5", "sim click threw ($type slot ${slot.index})", e) }
     }
 
     fun simClick(idx: Int, button: Int) {
@@ -291,7 +298,7 @@ class TermSimScreen private constructor(
 
         private fun colorItems(color: String): List<net.minecraft.world.item.Item> =
             SELECT_MATS.mapNotNull { BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath("minecraft", "${color}_$it")) }
-                .ifEmpty { listOf(Items.WHITE_WOOL) }
+                .ifEmpty { FishDiag.fail("TermSimScreen.7", "no items found for sim colour '$color'"); listOf(Items.WHITE_WOOL) }
 
         private fun plain(s: ItemStack): String = s.hoverName.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()
 

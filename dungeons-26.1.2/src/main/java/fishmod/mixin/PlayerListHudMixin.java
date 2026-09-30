@@ -30,6 +30,7 @@ public class PlayerListHudMixin {
                     header == null ? "" : header.getString(),
                     footer == null ? "" : footer.getString());
         } catch (Exception e) {
+            fishmod.utils.debug.FishDiag.fail("PlayerListHudMixin.1", "compact tab render failed", e);
             if (!fishmod$loggedRenderError) {
                 fishmod$loggedRenderError = true;
                 fishmod.utils.debug.Debug.LOGGER.error("[FishMod] CompactTab.render failed; tab suppressed (logged once)", e);

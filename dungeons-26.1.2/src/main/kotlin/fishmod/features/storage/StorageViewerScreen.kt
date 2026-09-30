@@ -3,6 +3,7 @@ package fishmod.features.storage
 import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.rendering.UiRenderer
 import fishmod.utils.rendering.UiScale
@@ -81,7 +82,11 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         }.contains(q)
 
     override fun paintUiOverlay() {
-        UiRenderer.paint(width, height, k)
+        try {
+            UiRenderer.paint(width, height, k)
+        } catch (e: Exception) {
+            FishDiag.fail("StorageViewerScreen.9", "storage viewer paint failed", e)
+        }
     }
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, rawMouseX: Int, rawMouseY: Int, delta: Float) {
@@ -90,8 +95,8 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         updateScale()
         val mouseX = (rawMouseX / k).toInt()
         val mouseY = (rawMouseY / k).toInt()
-        runCatching { ctx.blurBeforeThisStratum() }
-        runCatching { ctx.nextStratum() }
+        runCatching { ctx.blurBeforeThisStratum() }.onFailure { FishDiag.fail("StorageViewerScreen.1", "blurBeforeThisStratum failed", it) }
+        runCatching { ctx.nextStratum() }.onFailure { FishDiag.fail("StorageViewerScreen.2", "nextStratum failed", it) }
         ctx.pose().pushMatrix()
         ctx.pose().scale(k, k)
         ctx.fill(0, 0, vw + 1, vh + 1, BASE_TINT)
@@ -124,7 +129,7 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         val gridLeft = max(panelX + 12, (panelX + panelX2) / 2 - gridW / 2)
         val topBase = viewTop + 8 - scroll
 
-        runCatching { ctx.enableScissor(panelX + 2, viewTop, panelX2 - 2, viewBot) }
+        runCatching { ctx.enableScissor(panelX + 2, viewTop, panelX2 - 2, viewBot) }.onFailure { FishDiag.fail("StorageViewerScreen.7", "enableScissor failed", it) }
         UiRecorder.pushScissor((panelX + 2).toFloat(), viewTop.toFloat(), (panelX2 - panelX - 4).toFloat(), (viewBot - viewTop).toFloat())
         val dims = ArrayList<IntArray>()
         var hovered: ItemStack? = null
@@ -148,13 +153,13 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         }
         contentHeight = (y + rowMaxH) - topBase + 16
         UiRecorder.popScissor()
-        runCatching { ctx.disableScissor() }
+        runCatching { ctx.disableScissor() }.onFailure { FishDiag.fail("StorageViewerScreen.3", "disableScissor failed", it) }
 
         if (dims.isNotEmpty()) {
-            runCatching { ctx.nextStratum() }
-            runCatching { ctx.enableScissor(panelX + 2, viewTop, panelX2 - 2, viewBot) }
+            runCatching { ctx.nextStratum() }.onFailure { FishDiag.fail("StorageViewerScreen.4", "dim-layer nextStratum failed", it) }
+            runCatching { ctx.enableScissor(panelX + 2, viewTop, panelX2 - 2, viewBot) }.onFailure { FishDiag.fail("StorageViewerScreen.5", "dim-layer enableScissor failed", it) }
             for (d in dims) ctx.fill(d[0], d[1], d[0] + SLOT - 1, d[1] + SLOT - 1, DIM)
-            runCatching { ctx.disableScissor() }
+            runCatching { ctx.disableScissor() }.onFailure { FishDiag.fail("StorageViewerScreen.6", "dim-layer disableScissor failed", it) }
         }
 
         val maxScroll = maxScroll()
@@ -175,7 +180,8 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         val mc = minecraft
         val hs = hovered
         if (hs != null && mc != null) {
-            val lines = runCatching { Screen.getTooltipFromItem(mc, hs) }.getOrNull()
+            val lines = runCatching { Screen.getTooltipFromItem(mc, hs) }
+                .onFailure { FishDiag.fail("StorageViewerScreen.8", "tooltip build failed for ${hs.hoverName.string}", it) }.getOrNull()
             if (lines != null) ScreenTheme.nItemTooltip(lines, mouseX, mouseY, vw, vh, paintScale = k)
         }
     }
@@ -296,6 +302,7 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         if (my > MARGIN + TOP_BAR) {
             for (r in titleRects) {
                 if (mx in r[0]..(r[0] + r[2]) && my in r[1]..(r[1] + r[3])) {
+                    FishDiag.check(r.size > 4 && r[4] in 0 until 27, "StorageViewerScreen.10") { "bad title rect page index ${r.getOrNull(4)}" }
                     StoragePage(r[4]).open(); onClose(); return true
                 }
             }

@@ -2,6 +2,7 @@ package fishmod.features
 
 import fishmod.utils.Location
 import fishmod.utils.config.values.Visual
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.components.LerpingBossEvent
@@ -33,12 +34,13 @@ object RenderOptimizer {
         Events.ON_PACKET.register { packet ->
             if (!Visual.renderOptimizer) return@register false
             val mc = Minecraft.getInstance()
+            try {
             when (packet) {
                 is ClientboundSetEntityDataPacket -> {
                     if (Visual.roHideArcherPassive && Location.inDungeon()) {
                         val item = packet.packedItems().firstOrNull { it.id() == 8 }?.value() as? ItemStack
                         if (item != null && !item.isEmpty && item.`is`(Items.BONE_MEAL)) {
-                            mc.execute { mc.level?.removeEntity(packet.id(), Entity.RemovalReason.DISCARDED) }
+                            mc.execute { FishDiag.guard("RenderOptimizer.1", "archer passive removal failed") { mc.level?.removeEntity(packet.id(), Entity.RemovalReason.DISCARDED) } }
                         }
                     }
                 }
@@ -53,10 +55,13 @@ object RenderOptimizer {
                                 (Visual.roHideHealerFairy && slot == EquipmentSlot.MAINHAND && tex == HEALER_FAIRY_TEXTURE) ||
                                 (Visual.roHideSoulWeaver && slot == EquipmentSlot.HEAD && tex == SOUL_WEAVER_TEXTURE) ||
                                 (Visual.roHideTentacleHead && slot == EquipmentSlot.HEAD && tex == TENTACLE_TEXTURE)
-                            if (hide) mc.execute { mc.level?.removeEntity(packet.entity, Entity.RemovalReason.DISCARDED) }
+                            if (hide) mc.execute { FishDiag.guard("RenderOptimizer.2", "hidden entity removal failed") { mc.level?.removeEntity(packet.entity, Entity.RemovalReason.DISCARDED) } }
                         }
                     }
                 }
+            }
+            } catch (e: Exception) {
+                FishDiag.fail("RenderOptimizer.3", "render optimizer packet handling failed (${packet.javaClass.simpleName})", e)
             }
             false
         }
@@ -74,6 +79,8 @@ object RenderOptimizer {
     @JvmStatic
     fun filterBossBars(bars: Collection<LerpingBossEvent>): Collection<LerpingBossEvent> {
         if (!Visual.renderOptimizer || !Visual.roHideObjective) return bars
-        return bars.filterNot { it.name.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trimStart().startsWith("Objective:") }
+        return FishDiag.guard("RenderOptimizer.4", "boss bar filter failed") {
+            bars.filterNot { it.name.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trimStart().startsWith("Objective:") }
+        } ?: bars
     }
 }

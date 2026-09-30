@@ -3,6 +3,7 @@ package fishmod.utils.sound
 import fishmod.shaded.practicalconfig.data.SoundData
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.Identifier
 import net.minecraft.sounds.SoundEvent
@@ -50,16 +51,20 @@ object SoundManager {
     private fun resolve(v: Any?): SoundEvent = when (v) {
         is SoundEvent -> v
         is net.minecraft.core.Holder<*> -> v.value() as SoundEvent
-        else -> SoundEvents.NOTE_BLOCK_PLING.value()
+        else -> {
+            FishDiag.fail("SoundManager.1", "sound preset holds unexpected type ${v?.javaClass?.name}")
+            SoundEvents.NOTE_BLOCK_PLING.value()
+        }
     }
 
     @JvmStatic
     fun preset(name: String?): SoundEvent {
         if (name.isNullOrBlank()) return SoundEvents.NOTE_BLOCK_PLING.value()
         PRESETS[name]?.let { return resolve(it) }
-        val id = Identifier.tryParse(if (':' in name) name else "minecraft:$name")
+        val id = FishDiag.notNull(Identifier.tryParse(if (':' in name) name else "minecraft:$name"), "SoundManager.2") { "invalid sound id '$name'" }
         val fromRegistry: SoundEvent? =
             id?.let { BuiltInRegistries.SOUND_EVENT.getOptional(it).orElse(null) }
+        if (id != null && fromRegistry == null) FishDiag.fail("SoundManager.3", "sound '$id' not in registry, using pling")
         return fromRegistry ?: SoundEvents.NOTE_BLOCK_PLING.value()
     }
 
@@ -83,14 +88,22 @@ object SoundManager {
             if (prev != null && now - prev < debounceMs) return false
             lastPlayed[key] = now
         }
-        Misc.sendSound(sound, v, pitch)
+        if (v.isNaN() || pitch.isNaN()) FishDiag.fail("SoundManager.4", "play $sound with NaN volume=$volume pitch=$pitch")
+        try {
+            Misc.sendSound(sound, v, pitch)
+        } catch (t: Throwable) {
+            FishDiag.fail("SoundManager.5", "play sound $sound", t)
+            return false
+        }
         return true
     }
 
     @JvmStatic
     @JvmOverloads
-    fun play(data: SoundData, key: String? = null, debounceMs: Long = 0L): Boolean =
-        play(SoundEvent.createVariableRangeEvent(data.sound), data.volume, data.pitch, key, debounceMs)
+    fun play(data: SoundData, key: String? = null, debounceMs: Long = 0L): Boolean {
+        val ev = FishDiag.guard("SoundManager.6", "create sound event from config data") { SoundEvent.createVariableRangeEvent(data.sound) } ?: return false
+        return play(ev, data.volume, data.pitch, key, debounceMs)
+    }
 
     @JvmStatic
     @JvmOverloads
@@ -110,7 +123,13 @@ object SoundManager {
             if (prev != null && now - prev < debounceMs) return false
             lastPlayed[key] = now
         }
-        Misc.sendSound2D(sound, v, pitch)
+        if (v.isNaN() || pitch.isNaN()) FishDiag.fail("SoundManager.7", "play2D $sound with NaN volume=$volume pitch=$pitch")
+        try {
+            Misc.sendSound2D(sound, v, pitch)
+        } catch (t: Throwable) {
+            FishDiag.fail("SoundManager.8", "play 2D sound $sound", t)
+            return false
+        }
         return true
     }
 

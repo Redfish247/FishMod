@@ -3,6 +3,7 @@ package fishmod.utils.networth
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 import java.net.URI
 import java.net.http.HttpClient
@@ -65,6 +66,7 @@ object ItemsDb {
             } catch (e: Throwable) {
                 fetching.set(false)
                 fishmod.utils.debug.Debug.LOGGER.warn("[ItemsDb] failed to start fetch thread: {}", e.toString())
+                FishDiag.fail("ItemsDb.1", "start items fetch thread", e)
             }
         }
     }
@@ -77,9 +79,12 @@ object ItemsDb {
                     loadFromDisk()
                 } catch (e: Exception) {
                     fishmod.utils.debug.Debug.LOGGER.warn("[ItemsDb] loadFromDisk failed: {}", e.toString())
+                    FishDiag.fail("ItemsDb.2", "load cached items.json", e)
                 }
             }
             if (stale()) fetch()
+        } catch (t: Throwable) {
+            FishDiag.fail("ItemsDb.3", "items db load/refresh thread", t)
         } finally {
             fetching.set(false)
         }
@@ -95,7 +100,10 @@ object ItemsDb {
         val f = file()
         if (!Files.exists(f)) return
         val json = Files.readString(f, StandardCharsets.UTF_8)
-        index(JsonParser.parseString(json).asJsonObject)
+        if (!FishDiag.check(json.isNotBlank(), "ItemsDb.4") { "cached items.json is empty ($f)" }) return
+        val parsed = JsonParser.parseString(json)
+        if (!FishDiag.check(parsed.isJsonObject, "ItemsDb.5") { "cached items.json root not an object" }) return
+        index(parsed.asJsonObject)
         loadedAt = Files.getLastModifiedTime(f).toMillis()
     }
 
@@ -107,7 +115,10 @@ object ItemsDb {
                 .timeout(Duration.ofSeconds(20)).GET().build()
             val r = HTTP.send(req, HttpResponse.BodyHandlers.ofString())
             if (r.statusCode() == 200) {
-                val root = JsonParser.parseString(r.body()).asJsonObject
+                val parsed = JsonParser.parseString(r.body())
+                if (!FishDiag.check(parsed.isJsonObject, "ItemsDb.6") { "items API root not an object: ${r.body().take(120)}" }) return
+                val root = parsed.asJsonObject
+                FishDiag.check(!root.has("success") || root.get("success").let { it.isJsonPrimitive && it.asBoolean }, "ItemsDb.7") { "items API success=false cause=${root.get("cause")}" }
                 index(root)
                 loadedAt = System.currentTimeMillis()
                 try {
@@ -115,15 +126,20 @@ object ItemsDb {
                     Files.createDirectories(f.parent)
                     Files.writeString(f, r.body(), StandardCharsets.UTF_8)
                 } catch (ignored: Exception) {
+                    FishDiag.fail("ItemsDb.8", "write items.json cache", ignored)
                 }
+            } else {
+                FishDiag.fail("ItemsDb.9", "items API HTTP ${r.statusCode()}")
             }
         } catch (e: Exception) {
             fishmod.utils.debug.Debug.LOGGER.warn("[ItemsDb] fetch: {}", e.toString())
+            FishDiag.fail("ItemsDb.10", "fetch items API", e)
         }
     }
 
     private fun index(root: JsonObject?) {
-        if (root == null || !root.has("items") || !root.get("items").isJsonArray) return
+        if (!FishDiag.check(root != null && root.has("items") && root.get("items").isJsonArray, "ItemsDb.11") { "items JSON missing 'items' array keys=${root?.keySet()?.take(8)}" }) return
+        if (root == null) return
         val next = HashMap<String, JsonObject>()
         val nextNames = HashMap<String, String>()
         val nextNpc = HashMap<String, Double>()
@@ -141,16 +157,18 @@ object ItemsDb {
                     try {
                         nextNpc[id] = o.get("npc_sell_price").asDouble
                     } catch (ignored: Exception) {
+                        FishDiag.fail("ItemsDb.12", "bad npc_sell_price for $id: ${o.get("npc_sell_price")}", ignored)
                     }
                 }
             }
         }
+        FishDiag.check(next.isNotEmpty(), "ItemsDb.13") { "items JSON had array but 0 usable items" }
         if (next.isNotEmpty()) {
             items = next
             nameToId = nextNames
             npcSellPrice = nextNpc
             fishmod.utils.debug.Debug.LOGGER.info("[ItemsDb] indexed {} items ({} names, {} with NPC sell price)", next.size, nextNames.size, nextNpc.size)
-            fishmod.features.croesus.CroesusPrices.applyPriceMode()
+            FishDiag.guard("ItemsDb.14", "apply croesus price mode after items index") { fishmod.features.croesus.CroesusPrices.applyPriceMode() }
         }
     }
 }

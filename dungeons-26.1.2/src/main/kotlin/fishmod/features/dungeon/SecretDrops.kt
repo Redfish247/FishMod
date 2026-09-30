@@ -6,6 +6,7 @@ import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.entity.SkullBlockEntity
 import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.phys.Vec3
+import fishmod.utils.debug.FishDiag
 
 // Secret item / bat matching, same approach as Odin + NoammAddons: item by name, bat by its sound packet.
 object SecretDrops {
@@ -29,7 +30,7 @@ object SecretDrops {
     @JvmStatic
     fun isSecretSkull(level: Level, pos: BlockPos): Boolean {
         val skull = level.getBlockEntity(pos) as? SkullBlockEntity ?: return false
-        return skull.ownerProfile?.partialProfile()?.id()?.toString() in SECRET_SKULLS
+        return try { skull.ownerProfile?.partialProfile()?.id()?.toString() in SECRET_SKULLS } catch (e: Exception) { FishDiag.fail("SecretDrops.1", "skull owner lookup threw at $pos", e); false }
     }
 
     @JvmStatic

@@ -57,8 +57,12 @@ public abstract class ItemInHandRendererMixin {
 
     @ModifyVariable(method = "renderArmWithItem", at = @At("HEAD"), ordinal = 2, argsOnly = true)
     private float fishmod$noSwing(float attack) {
-        if (Visual.renderOptimizer && Visual.noSwingAnimation) {
-            if (!Visual.noSwingTerminatorOnly || "TERMINATOR".equals(ItemUtil.getId(mainHandItem))) return 1f;
+        try {
+            if (Visual.renderOptimizer && Visual.noSwingAnimation) {
+                if (!Visual.noSwingTerminatorOnly || "TERMINATOR".equals(ItemUtil.getId(mainHandItem))) return 1f;
+            }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("ItemInHandRendererMixin.1", "no-swing terminator check failed", t);
         }
         return attack;
     }

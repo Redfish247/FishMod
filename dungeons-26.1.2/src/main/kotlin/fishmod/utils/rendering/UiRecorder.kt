@@ -1,5 +1,7 @@
 package fishmod.utils.rendering
 
+import fishmod.utils.debug.FishDiag
+
 object UiRecorder {
 
     private const val OP_FILL_ROUNDED_RECT = 0
@@ -38,6 +40,7 @@ object UiRecorder {
     private fun ensureCapacity() {
         if (count < ops.size) return
         val newCap = ops.size * 2
+        if (newCap > 262144) FishDiag.fail("UiRecorder.1", "UI command buffer growing to $newCap, clear() not being called?")
         ops = ops.copyOf(newCap)
         floats = floats.copyOf(newCap * FLOATS_PER_CMD)
         ints = ints.copyOf(newCap * INTS_PER_CMD)
@@ -63,6 +66,7 @@ object UiRecorder {
 
     @JvmStatic
     fun replay(scale: Float) {
+        if (scale.isNaN() || scale <= 0f) FishDiag.fail("UiRecorder.2", "replay with invalid scale $scale ($count cmds)")
         for (idx in 0 until count) exec(idx, scale)
     }
 
@@ -99,6 +103,7 @@ object UiRecorder {
             OP_PUSH_SCISSOR -> UiRenderer.pushScissor(x, y, w, h)
             OP_POP_SCISSOR -> UiRenderer.popScissor()
             OP_FILL_ROUNDED_CORNERS -> UiRenderer.shape(x, y, w, h, f4, f5, floats[fb + 6] * k, floats[fb + 7] * k, ints[ib])
+            else -> FishDiag.fail("UiRecorder.3", "unknown UI op $op at index $idx")
         }
     }
 
@@ -180,6 +185,7 @@ object UiRecorder {
     @JvmStatic
     fun textWidthBold(s: String, size: Float): Float {
         val devPerVirtual = net.minecraft.client.Minecraft.getInstance().window.guiScale * UiScale.factor()
+        if (!(devPerVirtual > 0f)) FishDiag.fail("UiRecorder.4", "textWidthBold with non-positive device scale $devPerVirtual")
         return UiFont.width(s, size) + s.codePointCount(0, s.length) / devPerVirtual
     }
 

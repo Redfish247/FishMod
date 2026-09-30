@@ -4,6 +4,7 @@ import fishmod.features.dungeon.map.DungeonScore
 import fishmod.features.dungeon.map.DungeonState
 import fishmod.utils.ChatQueue
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import net.minecraft.client.Minecraft
 import net.minecraft.network.protocol.game.ClientboundEntityEventPacket
@@ -30,6 +31,7 @@ object MimicAnnounce {
                 val s = COLOR.replace(text.string, "").trim()
                 if (PRINCE.matches(s)) princeKilled(false)
                 else if (BAT.matches(s)) batKilled(false)
+                else if (s.startsWith("A Prince falls") || s.startsWith("A Bat has been slain")) FishDiag.fail("MimicAnnounce.1", "bonus score line unparsed: '$s'")
                 else when {
                     s.contains("Mimic Killed", true) || s.contains("Mimic Dead", true) -> mimicSent = true
                     s.contains("Prince Killed", true) -> princeSent = true
@@ -43,8 +45,12 @@ object MimicAnnounce {
             if (FishSettings.mimicAnnounceEnabled && !mimicSent && packet is ClientboundEntityEventPacket
                 && packet.eventId.toInt() == 3 && isFloor67() && inClear()
             ) {
-                val e = Minecraft.getInstance().level?.let { packet.getEntity(it) }
-                if (e is Zombie && e.isBaby) mimicKilled(false)
+                try {
+                    val e = Minecraft.getInstance().level?.let { packet.getEntity(it) }
+                    if (e is Zombie && e.isBaby) mimicKilled(false)
+                } catch (ex: Exception) {
+                    FishDiag.fail("MimicAnnounce.2", "mimic death packet handling failed", ex)
+                }
             }
             false
         }
@@ -78,6 +84,6 @@ object MimicAnnounce {
 
     private fun send(raw: String) {
         val msg = raw.replace(FORMAT_CODE_RE, "").trim()
-        if (msg.isNotEmpty()) ChatQueue.enqueue("pc $msg")
+        if (msg.isNotEmpty()) FishDiag.guard("MimicAnnounce.3", "bonus score party message failed") { ChatQueue.enqueue("pc $msg") }
     }
 }

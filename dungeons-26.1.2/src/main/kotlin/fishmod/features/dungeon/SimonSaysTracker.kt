@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.AABB
 import java.util.regex.Pattern
+import fishmod.utils.debug.FishDiag
 
 object SimonSaysTracker {
 
@@ -74,7 +75,16 @@ object SimonSaysTracker {
 
         fishmod.utils.events.Events.ON_GAME_MESSAGE.register { message ->
             if (!FishSettings.simonSaysEnabled) return@register false
-            val s = message.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
+            try { onChat(message.string) } catch (e: Exception) { FishDiag.fail("SimonSaysTracker.1", "SS tracker chat handler threw (round=$round)", e) }
+            false
+        }
+
+        registerRest()
+    }
+
+    private fun onChat(raw: String) {
+        run {
+            val s = raw.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
 
             if (!armed && s.lowercase().contains(GOLDOR_INTRO)) {
                 armed = true
@@ -87,6 +97,8 @@ object SimonSaysTracker {
                     val n = ss.group(1)[0] - '0'
                     if (n in 1..4) {
                         round = n
+                    } else if (n < 1) {
+                        FishDiag.fail("SimonSaysTracker.2", "SS chat round out of range: '$s'")
                     } else if (n >= 5) {
                         round = 5
                         doneAtMs = System.currentTimeMillis()
@@ -104,17 +116,22 @@ object SimonSaysTracker {
             }
 
             if (debug && s.contains("device")) log("msg: \"$s\"")
-            if (!s.contains("completed a device")) return@register false
+            if (!s.contains("completed a device")) return
             val mc = Minecraft.getInstance()
             val self = mc.player?.gameProfile?.name()
             val mine = (self == null) || s.contains(self)
             if (debug) log("completed-a-device match; self=$self mine=$mine completed=$completed")
             if (mine) tryComplete()
-            false
         }
+    }
 
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { debugTick(it); tick(it) })
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "simon_says_tracker")) { ctx, tc -> if (!fishmod.features.FishHudEditor.isOpen()) renderHud(ctx, tc) }
+    private fun registerRest() {
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick {
+            try { debugTick(it); tick(it) } catch (e: Exception) { FishDiag.fail("SimonSaysTracker.3", "SS tracker tick threw (round=$round seqLen=$seqLen armed=$armed)", e) }
+        })
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "simon_says_tracker")) { ctx, tc ->
+            if (!fishmod.features.FishHudEditor.isOpen()) try { renderHud(ctx, tc) } catch (e: Exception) { FishDiag.fail("SimonSaysTracker.4", "SS tracker HUD render threw", e) }
+        }
 
         FishHudEditor.register(
             "Simon Says",
@@ -182,6 +199,7 @@ object SimonSaysTracker {
         if (btn == Blocks.AIR) seqLen = 0
         if (up && buttonsUp == false) {
             skipOver = true
+            FishDiag.check(seqLen in 0..5, "SimonSaysTracker.7") { "SS seqLen out of range: $seqLen" }
             if (seqLen > 0 && seqLen > round && seqLen < 5) {
                 round = seqLen
                 if (round > lastAnnounced) { lastAnnounced = round; announceRound(round) }
@@ -224,7 +242,8 @@ object SimonSaysTracker {
             2 -> FishSettings.simon2Enabled to FishSettings.simon2Message
             3 -> FishSettings.simon3Enabled to FishSettings.simon3Message
             4 -> FishSettings.simon4Enabled to FishSettings.simon4Message
-            else -> FishSettings.simon5Enabled to FishSettings.simon5Message
+            5 -> FishSettings.simon5Enabled to FishSettings.simon5Message
+            else -> FishDiag.fail("SimonSaysTracker.5", "announceRound with invalid round $r").let { FishSettings.simon5Enabled to FishSettings.simon5Message }
         }
         when {
             custom && text.isNotBlank() -> fishmod.utils.ChatQueue.enqueue("pc $text")
@@ -271,6 +290,7 @@ object SimonSaysTracker {
         if (breakArmedAtMs == 0L) { breakArmedAtMs = now; return }
 
         val sinceClick = now - fishmod.features.dungeon.f7.SimonSaysSolver.lastRoundCompleteMs
+        FishDiag.check(fishmod.features.dungeon.f7.SimonSaysSolver.lastRoundCompleteMs == 0L || sinceClick >= 0, "SimonSaysTracker.6") { "SS last round complete is ${-sinceClick}ms in the future" }
         if (fishmod.features.dungeon.f7.SimonSaysSolver.lastRoundCompleteMs != 0L && sinceClick in 0..BREAK_GRACE_MS) {
             tryComplete()
             return

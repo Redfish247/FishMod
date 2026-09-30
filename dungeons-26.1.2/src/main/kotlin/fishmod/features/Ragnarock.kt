@@ -4,6 +4,7 @@ import fishmod.utils.Location
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemUtil
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
@@ -37,7 +38,7 @@ object Ragnarock {
 
     private fun holdingAxe(): Boolean {
         val p = Minecraft.getInstance().player ?: return false
-        return ItemUtil.getId(p.mainHandItem) == "RAGNAROCK_AXE"
+        return FishDiag.guard("Ragnarock.2", "rag axe id lookup failed") { ItemUtil.getId(p.mainHandItem) == "RAGNAROCK_AXE" } ?: false
     }
 
     @JvmStatic
@@ -61,6 +62,7 @@ object Ragnarock {
                 }
                 if (FishSettings.ragnarockTimer) ticksLeft = BUFF_TICKS
             }
+            if (ticksLeft < 0 || ticksLeft > BUFF_TICKS) FishDiag.fail("Ragnarock.3", "rag ticksLeft out of range: $ticksLeft")
             false
         }
 
@@ -86,9 +88,14 @@ object Ragnarock {
         val txt = "§5Rag: $color${"%.1f".format(secs)}s"
         val sc = FishSettings.ragnarockTimerScale.toFloat()
         ctx.pose().pushMatrix()
-        ctx.pose().translate(FishSettings.ragnarockTimerHudX.toFloat(), FishSettings.ragnarockTimerHudY.toFloat())
-        ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, txt, 0, 0, -1, true)
-        ctx.pose().popMatrix()
+        try {
+            ctx.pose().translate(FishSettings.ragnarockTimerHudX.toFloat(), FishSettings.ragnarockTimerHudY.toFloat())
+            ctx.pose().scale(sc, sc)
+            ctx.text(mc.font, txt, 0, 0, -1, true)
+        } catch (e: Exception) {
+            FishDiag.fail("Ragnarock.1", "rag timer render failed (ticksLeft=$ticksLeft)", e)
+        } finally {
+            ctx.pose().popMatrix()
+        }
     }
 }

@@ -1,5 +1,6 @@
 package fishmod.features.item
 
+import fishmod.utils.debug.FishDiag
 import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
 import fishmod.utils.rendering.UiRecorder
@@ -104,8 +105,12 @@ class AuctionPriceScreen(
         ScreenTheme.roundedRect(ctx, panelX + pad, panelY + 12, 24, 24, 6, GOLD_SOFT)
         val itemX = panelX + pad + 4
         val itemY = panelY + 16
-        ctx.item(item, itemX, itemY)
-        ctx.itemDecorations(font, item, itemX, itemY)
+        try {
+            ctx.item(item, itemX, itemY)
+            ctx.itemDecorations(font, item, itemX, itemY)
+        } catch (e: Exception) {
+            FishDiag.fail("AuctionPriceScreen.1", "auction price screen item render failed for ${item.hoverName.string}", e)
+        }
         ctx.pose().popMatrix()
     }
 
@@ -130,7 +135,7 @@ class AuctionPriceScreen(
             UiRecorder.text("e.g. 42.5m, 800k, 1.2b", (priceField.x + 3).toFloat(), (priceField.y + 5.5f), 7f, 0xFF5A6470.toInt())
         }
 
-        val parsed = parsePrice(priceField.value)
+        val parsed = FishDiag.guard("AuctionPriceScreen.2", "parsing auction price '${priceField.value}' failed") { parsePrice(priceField.value) }
         val big = parsed?.let { formatWithCommas(it) } ?: "—"
         val bigSize = 18f
         val bw = UiRecorder.textWidth(big, bigSize)
@@ -269,17 +274,25 @@ class AuctionPriceScreen(
     }
 
     override fun onClose() {
-        val value = parsePrice(priceField.value)?.toString() ?: ""
-        Minecraft.getInstance().connection?.send(
-            ServerboundSignUpdatePacket(sign.blockPos, true, value, originalLines[1], originalLines[2], originalLines[3])
-        )
+        val value = FishDiag.guard("AuctionPriceScreen.3", "parsing auction price '${priceField.value}' on confirm failed") { parsePrice(priceField.value) }?.toString() ?: ""
+        try {
+            Minecraft.getInstance().connection?.send(
+                ServerboundSignUpdatePacket(sign.blockPos, true, value, originalLines[1], originalLines[2], originalLines[3])
+            )
+        } catch (e: Exception) {
+            FishDiag.fail("AuctionPriceScreen.4", "sending auction price sign update failed value='$value' lines=${originalLines.size}", e)
+        }
         Minecraft.getInstance().setScreen(null)
     }
 
     private fun cancel() {
-        Minecraft.getInstance().connection?.send(
-            ServerboundSignUpdatePacket(sign.blockPos, true, originalLines[0], originalLines[1], originalLines[2], originalLines[3])
-        )
+        try {
+            Minecraft.getInstance().connection?.send(
+                ServerboundSignUpdatePacket(sign.blockPos, true, originalLines[0], originalLines[1], originalLines[2], originalLines[3])
+            )
+        } catch (e: Exception) {
+            FishDiag.fail("AuctionPriceScreen.5", "sending auction cancel sign update failed lines=${originalLines.size}", e)
+        }
         Minecraft.getInstance().setScreen(null)
     }
 

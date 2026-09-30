@@ -3,6 +3,7 @@ package fishmod.features.slayers
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import java.nio.file.Files
@@ -36,7 +37,13 @@ object SlayerStatsTracker {
     @JvmStatic
     fun init() {
         load()
-        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc -> tick(mc) })
+        ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
+            try {
+                tick(mc)
+            } catch (e: Exception) {
+                FishDiag.fail("SlayerStatsTracker.3", "slayer stats tick failed", e)
+            }
+        })
     }
 
     private fun tick(mc: Minecraft) {
@@ -83,6 +90,7 @@ object SlayerStatsTracker {
     }
 
     private fun perHour(total: Double): Double {
+        FishDiag.check(activeMs >= 0L, "SlayerStatsTracker.5") { "negative active slayer time $activeMs" }
         if (activeMs < 5_000L || total <= 0.0) return 0.0
         return total * 3_600_000.0 / activeMs
     }
@@ -119,12 +127,13 @@ object SlayerStatsTracker {
     private fun load() {
         try {
             if (!Files.exists(SAVE_FILE)) return
-            val d = GSON.fromJson(Files.readString(SAVE_FILE), SaveData::class.java) ?: return
+            val d = FishDiag.notNull(GSON.fromJson(Files.readString(SAVE_FILE), SaveData::class.java), "SlayerStatsTracker.4") { "$SAVE_FILE decoded to null (empty file?)" } ?: return
             xpGained = d.xpGained
             kills = d.kills
             activeMs = d.activeMs
             everStarted = d.everStarted
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            FishDiag.fail("SlayerStatsTracker.1", "failed to load $SAVE_FILE", e)
         }
     }
 
@@ -136,6 +145,12 @@ object SlayerStatsTracker {
         d.activeMs = activeMs
         d.everStarted = everStarted
         val json = GSON.toJson(d)
-        fishmod.utils.IoExecutor.execute { fishmod.utils.SafeFiles.writeAtomic(SAVE_FILE, json) }
+        fishmod.utils.IoExecutor.execute {
+            try {
+                fishmod.utils.SafeFiles.writeAtomic(SAVE_FILE, json)
+            } catch (e: Exception) {
+                FishDiag.fail("SlayerStatsTracker.2", "failed to save $SAVE_FILE", e)
+            }
+        }
     }
 }

@@ -13,6 +13,7 @@ import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.decoration.ItemFrame
 import net.minecraft.world.item.Items
+import fishmod.utils.debug.FishDiag
 
 object ArrowAlign {
 
@@ -33,7 +34,7 @@ object ArrowAlign {
             if (!FishSettings.arrowAlignEnabled || !inP3()) { clicksRemaining = emptyMap(); return@register }
             if (++tickAcc < 3) return@register
             tickAcc = 0
-            solve(mc)
+            try { solve(mc) } catch (e: Exception) { FishDiag.fail("ArrowAlign.1", "arrow align solve threw", e) }
         }
 
         UseEntityCallback.EVENT.register(UseEntityCallback { player, _, hand, entity, _ ->
@@ -51,16 +52,19 @@ object ArrowAlign {
             ) return@UseEntityCallback InteractionResult.FAIL
 
             recentClick[index] = System.currentTimeMillis()
-            if ((clicksRemaining[index] ?: 0) > 0) {
-                lastRotations?.let { it[index] = (it[index] + 1) % 8 }
-                Minecraft.getInstance().let { if (it.level != null && it.player != null) solve(it) }
-            }
+            try {
+                if ((clicksRemaining[index] ?: 0) > 0) {
+                    lastRotations?.let { it[index] = (it[index] + 1) % 8 }
+                    Minecraft.getInstance().let { if (it.level != null && it.player != null) solve(it) }
+                }
+            } catch (e: Exception) { FishDiag.fail("ArrowAlign.2", "arrow align click predict threw (index=$index)", e) }
             InteractionResult.PASS
         })
 
         RenderingEvents.GIZMO.register { _ ->
             if (!FishSettings.arrowAlignEnabled || clicksRemaining.isEmpty() || !inP3()) return@register
             if (Minecraft.getInstance().level == null) return@register
+            try {
             for ((index, need) in clicksRemaining) {
                 if (need <= 0) continue
                 val color = if (need < 3) "§2" else if (need < 5) "§6" else "§c"
@@ -70,6 +74,7 @@ object ArrowAlign {
                     net.minecraft.world.phys.Vec3(p.x + 0.5, p.y + 0.6, p.z + 0.5), 1f, -0x1,
                 )
             }
+            } catch (e: Exception) { FishDiag.fail("ArrowAlign.3", "arrow align render threw (n=${clicksRemaining.size})", e) }
         }
     }
 
@@ -79,6 +84,7 @@ object ArrowAlign {
         val byPos = HashMap<Long, Int>()
         for (e in mc.level!!.entitiesForRendering()) {
             if (e !is ItemFrame || !e.item.`is`(Items.ARROW)) continue
+            FishDiag.check(e.rotation in 0..7, "ArrowAlign.4") { "item frame rotation out of range: ${e.rotation} at ${e.blockPosition()}" }
             byPos[e.blockPosition().asLong()] = e.rotation
         }
         val now = System.currentTimeMillis()
@@ -113,10 +119,14 @@ object ArrowAlign {
                 if (n != 0) out[i] = n
             }
             clicksRemaining = out
+            noMatch = 0
             return
         }
         clicksRemaining = emptyMap()
+        if (cur.any { it != -1 } && ++noMatch == 40) FishDiag.fail("ArrowAlign.5", "no arrow align solution matches layout ${cur.joinToString(",")}")
     }
+
+    private var noMatch = 0
 
     private val SOLUTIONS: List<IntArray> = listOf(
         intArrayOf(7, 7, -1, -1, -1, 1, -1, -1, -1, -1, 1, 3, 3, 3, 3, -1, -1, -1, -1, 1, -1, -1, -1, 7, 1),

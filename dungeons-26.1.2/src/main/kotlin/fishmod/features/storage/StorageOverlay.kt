@@ -2,6 +2,7 @@ package fishmod.features.storage
 
 import fishmod.features.ScreenTheme
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.rendering.UiRenderer
 import net.minecraft.client.Minecraft
@@ -110,7 +111,11 @@ object StorageOverlay {
         if (!pendingPaint) return
         pendingPaint = false
         val w = mc.window
-        UiRenderer.paint(w.guiScaledWidth, w.guiScaledHeight, scale)
+        try {
+            UiRenderer.paint(w.guiScaledWidth, w.guiScaledHeight, scale)
+        } catch (e: Exception) {
+            FishDiag.fail("StorageOverlay.5", "storage UI paint failed", e)
+        }
         UiRecorder.clear()
     }
 
@@ -200,6 +205,14 @@ object StorageOverlay {
 
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
+        try {
+            renderInner(ctx, mouseX, mouseY, screen)
+        } catch (e: Exception) {
+            FishDiag.fail("StorageOverlay.8", "storage overlay render failed (${StorageCache.view().size} pages)", e)
+        }
+    }
+
+    private fun renderInner(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
         if (!on(screen)) return
         UiRecorder.clear()
         pendingPaint = false
@@ -215,8 +228,8 @@ object StorageOverlay {
         lastMouseX = mouseX / s.toDouble()
         lastMouseY = mouseY / s.toDouble()
 
-        runCatching { ctx.blurBeforeThisStratum() }
-        runCatching { ctx.nextStratum() }
+        runCatching { ctx.blurBeforeThisStratum() }.onFailure { FishDiag.fail("StorageOverlay.1", "blurBeforeThisStratum failed", it) }
+        runCatching { ctx.nextStratum() }.onFailure { FishDiag.fail("StorageOverlay.2", "nextStratum failed", it) }
         rect(ctx, 0, 0, vw + 2, vh + 2, 0x66_0A0A12)
 
         val menu = screen.menu
@@ -242,7 +255,8 @@ object StorageOverlay {
         ctx.pose().popMatrix()
 
         tooltipStack?.let {
-            val lines = runCatching { Screen.getTooltipFromItem(mc, it) }.getOrNull()
+            val lines = runCatching { Screen.getTooltipFromItem(mc, it) }
+                .onFailure { e -> FishDiag.fail("StorageOverlay.3", "tooltip build failed for ${it.hoverName.string}", e) }.getOrNull()
             if (!lines.isNullOrEmpty()) ScreenTheme.nItemTooltip(lines, smx, smy, vw, vh, 1f / s, s)
         }
         pendingPaint = true
@@ -517,6 +531,7 @@ object StorageOverlay {
         val gm = mc.gameMode ?: return false
         val shift = modifiers and GLFW.GLFW_MOD_SHIFT != 0
         val type = input ?: if (shift) ContainerInput.QUICK_MOVE else ContainerInput.PICKUP
+        if (!FishDiag.check(slot.index in 0 until menu.slots.size, "StorageOverlay.7") { "slot ${slot.index} outside menu of ${menu.slots.size}" }) return false
         gm.handleContainerInput(menu.containerId, slot.index, button, type, player)
         return true
     }
@@ -535,6 +550,7 @@ object StorageOverlay {
         if (eligible.size < 2) return null
         val base = AbstractContainerMenu.getQuickCraftPlaceCount(eligible.size, dragType, carried)
         var remaining = carried.count
+        FishDiag.check(base >= 0, "StorageOverlay.9") { "negative quick-craft place count $base for ${eligible.size} slots" }
         val stacks = HashMap<Int, ItemStack>()
         val playerStacks = HashMap<Int, ItemStack>()
         for (slot in eligible) {
@@ -561,7 +577,14 @@ object StorageOverlay {
     }
 
     @JvmStatic
-    fun onOverlayClick(click: MouseButtonEvent, doubled: Boolean, screen: AbstractContainerScreen<*>): Boolean {
+    fun onOverlayClick(click: MouseButtonEvent, doubled: Boolean, screen: AbstractContainerScreen<*>): Boolean = try {
+        onOverlayClickInner(click, doubled, screen)
+    } catch (e: Exception) {
+        FishDiag.fail("StorageOverlay.6", "storage overlay click failed at ${click.x()},${click.y()}", e)
+        true
+    }
+
+    private fun onOverlayClickInner(click: MouseButtonEvent, doubled: Boolean, screen: AbstractContainerScreen<*>): Boolean {
         if (!on(screen)) return false
         val s = scale
         val rx = click.x() / s
@@ -699,7 +722,7 @@ object StorageOverlay {
         ctx.fill(x, y, x + w, y + h, color)
 
     private fun scissor(ctx: GuiGraphicsExtractor, x: Int, y: Int, w: Int, h: Int) {
-        runCatching { ctx.enableScissor(x, y, x + w, y + h) }
+        runCatching { ctx.enableScissor(x, y, x + w, y + h) }.onFailure { FishDiag.fail("StorageOverlay.4", "enableScissor failed ($x,$y ${w}x$h)", it) }
     }
 
     private fun inRect(mx: Int, my: Int, x: Int, y: Int, w: Int, h: Int) = mx >= x && mx < x + w && my >= y && my < y + h

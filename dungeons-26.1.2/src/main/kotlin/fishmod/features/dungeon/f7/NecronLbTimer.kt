@@ -14,6 +14,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.sounds.SoundEvents
 import kotlin.math.ceil
 import kotlin.math.max
+import fishmod.utils.debug.FishDiag
 
 object NecronLbTimer {
 
@@ -28,8 +29,10 @@ object NecronLbTimer {
             resetOn = { Location.inDungeon() },
             onTick = { t ->
                 if (Floor7.enableNecronLbTimer && t == endTick()) {
-                    Misc.forceTitle(Component.literal("SHOOT LB!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD), Component.empty())
-                    Scheduler.scheduleSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1.5f)
+                    try {
+                        Misc.forceTitle(Component.literal("SHOOT LB!").withStyle(ChatFormatting.RED, ChatFormatting.BOLD), Component.empty())
+                        Scheduler.scheduleSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 1.5f)
+                    } catch (e: Exception) { FishDiag.fail("NecronLbTimer.1", "necron LB alert threw", e) }
                 }
             }
         )
@@ -44,6 +47,6 @@ object NecronLbTimer {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
-        RenderUtils.drawTimer(component, context, (endTick() - timer.tick) * Constants.TICK_DURATION, Floor7.necronLbColor)
+        FishDiag.guard("NecronLbTimer.2", "necron LB timer render threw") { RenderUtils.drawTimer(component, context, (endTick() - timer.tick) * Constants.TICK_DURATION, Floor7.necronLbColor) }
     }
 }

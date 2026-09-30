@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.map
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.DungeonMapSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
@@ -35,7 +36,7 @@ object Mimic {
 
                     if (rot && chestPositions != null) {
                         for (local in chestPositions) {
-                            val world = room.offset(local) ?: continue
+                            val world = FishDiag.notNull(room.offset(local), "Mimic.1") { "room '${data?.name}' rotated ${room.rotation} but has no clay pos" } ?: continue
                             val be: BlockEntity? = mc.level!!.getBlockEntity(world)
                             if (be is TrappedChestBlockEntity) {
                                 room.setMimic(true)
@@ -47,6 +48,7 @@ object Mimic {
                 }
             } catch (t: Throwable) {
                 fishmod.utils.debug.Debug.LOGGER.error("[Mimic] tick failed", t)
+                FishDiag.fail("Mimic.2", "mimic chest scan tick failed rooms=${Scan.rooms.size}", t)
             }
         })
     }
