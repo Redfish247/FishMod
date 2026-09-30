@@ -14,6 +14,10 @@ public abstract class FluidStateModelSetMixin {
 
     @Inject(method = "get", at = @At("RETURN"), cancellable = true)
     private void fishmod$lavaToWater(FluidState state, CallbackInfoReturnable<FluidModel> cir) {
-        LavaToWater.modelHook((FluidStateModelSet) (Object) this, state, cir);
+        try {
+            LavaToWater.modelHook((FluidStateModelSet) (Object) this, state, cir);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("FluidStateModelSetMixin.1", "lava-to-water model hook failed", t);
+        }
     }
 }

@@ -6,6 +6,7 @@ import fishmod.utils.dungeon.DungeonClass
 import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.entity.state.EntityRenderState
 import net.minecraft.world.entity.player.Player
+import fishmod.utils.debug.FishDiag
 
 object PlayerHighlight {
 
@@ -17,6 +18,6 @@ object PlayerHighlight {
         val range = FishSettings.playerHighlightRange.toDouble()
         if (me.distanceToSqr(player) > range * range) return EntityRenderState.NO_OUTLINE
         val cls = DungeonClass.getClass(player) ?: return EntityRenderState.NO_OUTLINE
-        return DungeonClass.getColor(cls) and 0xFFFFFF
+        return try { DungeonClass.getColor(cls) and 0xFFFFFF } catch (e: Exception) { FishDiag.fail("PlayerHighlight.1", "class colour lookup failed for $cls", e); EntityRenderState.NO_OUTLINE }
     }
 }

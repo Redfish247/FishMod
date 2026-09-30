@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.puzzles.odin
 
+import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import fishmod.features.dungeon.puzzles.PuzzleSolvers
@@ -19,7 +20,9 @@ object QuizSolver {
                 object : TypeToken<Map<String, List<String>>>() {}.type)
         }
     } catch (e: Exception) {
-        Debug.LOGGER.error("Quiz answers failed to load", e); emptyMap()
+        Debug.LOGGER.error("Quiz answers failed to load", e)
+        FishDiag.fail("QuizSolver.1", "quizAnswers.json failed to load", e)
+        emptyMap()
     }
 
     private val OPTION_LOCALS = arrayOf(BlockPos(20, 70, 6), BlockPos(15, 70, 9), BlockPos(10, 70, 6))
@@ -40,7 +43,7 @@ object QuizSolver {
 
         val t = msg.trim()
         if ((t.startsWith("ⓐ") || t.startsWith("ⓑ") || t.startsWith("ⓒ")) && triviaAnswers?.any { msg.endsWith(it) } == true) {
-            correctOption = when (t[0]) { 'ⓐ' -> 0; 'ⓑ' -> 1; 'ⓒ' -> 2; else -> -1 }
+            correctOption = when (t[0]) { 'ⓐ' -> 0; 'ⓑ' -> 1; 'ⓒ' -> 2; else -> { FishDiag.fail("QuizSolver.2", "quiz option letter not recognised: '$t'"); -1 } }
             Debug.LOGGER.info("[Quiz] answer option={} line={}", correctOption, t)
         }
 
@@ -55,6 +58,7 @@ object QuizSolver {
         val opt = correctOption
         if (opt < 0) return
         val room = quizRoom ?: OdinScan.findRoom("Quiz")?.also { quizRoom = it } ?: return
+        if (!FishDiag.check(opt in OPTION_LOCALS.indices, "QuizSolver.3") { "quiz correct option out of range: $opt" }) return
         val pos = room.getRealCoords(OPTION_LOCALS[opt]).offset(0, -1, 0)
         val color = FishSettings.quizColor
         ORender.filledBox(AABB(pos), color)

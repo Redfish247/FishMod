@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.map
 
+import fishmod.utils.debug.FishDiag
 import fishmod.mixin.accessors.MapItemSavedDataAccessor
 import fishmod.utils.config.values.DungeonMapSettings
 import fishmod.utils.debug.Debug
@@ -57,6 +58,7 @@ object DungeonMap {
                         rescanMapItem(packet)
                     } catch (t: Throwable) {
                         Debug.LOGGER.error("[DungeonMap] rescanMapItem failed", t)
+                        FishDiag.fail("DungeonMap.1", "map item rescan failed mapId=$mapId size=$mapSize roomSize=$roomSize start=$startCoords", t)
                     }
                 }
             }
@@ -98,7 +100,7 @@ object DungeonMap {
 
         val stateChanges = updateRoomState(colors)
         if (stateListeners.isNotEmpty()) {
-            for (u in stateChanges) for (l in stateListeners) runCatching { l(u) }
+            for (u in stateChanges) for (l in stateListeners) runCatching { l(u) }.onFailure { FishDiag.fail("DungeonMap.2", "room state listener failed room='${u.room.data?.name}' ${u.old}->${u.neu}", it) }
         }
         scanDoors(colors)
 
@@ -160,6 +162,7 @@ object DungeonMap {
         }
 
         if (greenLength != 16 && greenLength != 18) return false
+        FishDiag.check(greenStart >= 0, "DungeonMap.9") { "entrance run length $greenLength but no start index" }
 
         val floor = DungeonState.floorNumber()
         val sc: MapVec2i
@@ -208,6 +211,7 @@ object DungeonMap {
         for (i in 0 until ms.x) {
             for (j in 0 until ms.z) {
                 val idx = MapVec2i(i, j).multiply(rs + 4).add(sc).mapIndex()
+                FishDiag.check(idx in colors.indices, "DungeonMap.3") { "room tile pixel out of range idx=$idx cell=($i,$j) rs=$rs start=$sc colors=${colors.size}" }
                 if (colors.size > idx && colors[idx].toInt() != 0) {
                     grid[i][j] = roomIndex++
                 }
@@ -256,7 +260,10 @@ object DungeonMap {
         for (u in uniques) {
             val coords = u.tiles[0]
             val idx = coords.multiply(rs + 4).add(sc).mapIndex()
-            if (colors.size <= idx) continue
+            if (colors.size <= idx) {
+                FishDiag.fail("DungeonMap.4", "room colour pixel out of range idx=$idx coords=$coords rs=$rs start=$sc")
+                continue
+            }
             val color = colors[idx]
 
             val type = when (color.toInt()) {
@@ -279,13 +286,13 @@ object DungeonMap {
                     2 -> Room.Shape.S2x1
                     3 -> if (collinear(u.tiles)) Room.Shape.S3x1 else Room.Shape.SL
                     4 -> if (collinear(u.tiles)) Room.Shape.S4x1 else Room.Shape.S2x2
-                    else -> Room.Shape.UNKNOWN
+                    else -> { FishDiag.fail("DungeonMap.5", "map room merged ${u.tiles.size} tiles (type=$type) tiles=${u.tiles}"); Room.Shape.UNKNOWN }
                 }
             }
 
             var found: Room? = null
             for (tile in u.tiles) {
-                val existing = Scan.roomsList[tile.roomListIndex()]
+                val existing = FishDiag.notNull(Scan.roomsList.getOrNull(tile.roomListIndex()), "DungeonMap.6") { "map tile $tile outside rooms grid mapSize=$ms" } ?: continue
                 if (existing.owner != null) {
                     found = existing.owner
                     break
@@ -404,7 +411,11 @@ object DungeonMap {
 
     private fun colorAt(colors: ByteArray, sc: MapVec2i, tile: Int, placement: MapVec2i): Byte {
         val idx = sc.add(placement.multiply(tile)).mapIndex()
-        return if (colors.size <= idx) 0 else colors[idx]
+        if (colors.size <= idx || idx < 0) {
+            FishDiag.fail("DungeonMap.7", "room state pixel out of range idx=$idx placement=$placement sc=$sc tile=$tile")
+            return 0
+        }
+        return colors[idx]
     }
 
     private fun scanDoors(colors: ByteArray) {
@@ -422,6 +433,7 @@ object DungeonMap {
 
                 val doorIndex = sc.add(MapVec2i(door, midRoom)).mapIndex()
                 val roomIndex = sc.add(MapVec2i(door, midRoom - hrs + 1)).mapIndex()
+                FishDiag.check(doorIndex in colors.indices, "DungeonMap.8") { "door pixel out of range idx=$doorIndex a=$a b=$b rs=$rs sc=$sc" }
                 if (colors.size > doorIndex && roomIndex in colors.indices && colors[roomIndex].toInt() == 0) {
                     handleDoor(MapVec2i(coordsDoor, coordsMidRoom), MapVec2i(a, b), MapVec2i(1, 0), colors[doorIndex])
                 }

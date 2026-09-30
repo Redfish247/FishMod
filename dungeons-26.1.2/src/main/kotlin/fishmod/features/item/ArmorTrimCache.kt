@@ -1,5 +1,6 @@
 package fishmod.features.item
 
+import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 import net.minecraft.core.registries.Registries
 import net.minecraft.resources.Identifier
@@ -21,16 +22,23 @@ object ArmorTrimCache {
             trims.clear()
         }
         return trims.getOrPut(id.material + "|" + id.pattern) {
-            val material = registryAccess.lookupOrThrow(Registries.TRIM_MATERIAL).get(Identifier.parse(id.material)).orElse(null)
-            val pattern = registryAccess.lookupOrThrow(Registries.TRIM_PATTERN).get(Identifier.parse(id.pattern)).orElse(null)
-            java.util.Optional.ofNullable(if (material != null && pattern != null) ArmorTrim(material, pattern) else null)
+            try {
+                val material = FishDiag.notNull(registryAccess.lookupOrThrow(Registries.TRIM_MATERIAL).get(Identifier.parse(id.material)).orElse(null), "ArmorTrimCache.1") { "trim material not in registry: '${id.material}'" }
+                val pattern = FishDiag.notNull(registryAccess.lookupOrThrow(Registries.TRIM_PATTERN).get(Identifier.parse(id.pattern)).orElse(null), "ArmorTrimCache.2") { "trim pattern not in registry: '${id.pattern}'" }
+                java.util.Optional.ofNullable(if (material != null && pattern != null) ArmorTrim(material, pattern) else null)
+            } catch (e: Exception) {
+                FishDiag.fail("ArmorTrimCache.3", "armor trim lookup failed material='${id.material}' pattern='${id.pattern}'", e)
+                java.util.Optional.empty()
+            }
         }.orElse(null)
     }
 
     @JvmStatic
     fun modelId(raw: String): Identifier? {
         if (modelIds.size > 256) modelIds.clear()
-        return modelIds.getOrPut(raw) { java.util.Optional.ofNullable(Identifier.tryParse(raw)) }.orElse(null)
+        return modelIds.getOrPut(raw) {
+            java.util.Optional.ofNullable(FishDiag.notNull(Identifier.tryParse(raw), "ArmorTrimCache.4") { "custom item model id not a valid identifier: '$raw'" })
+        }.orElse(null)
     }
 
     @JvmStatic

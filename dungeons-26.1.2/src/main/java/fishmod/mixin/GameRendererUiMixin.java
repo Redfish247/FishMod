@@ -25,12 +25,16 @@ public class GameRendererUiMixin {
         )
     )
     private void fishmod$paintUiOverlay(DeltaTracker deltaTracker, boolean tick, CallbackInfo ci) {
-        AnimatedDyeAnimator.tickFrame();
-        Screen current = Minecraft.getInstance().screen;
-        if (current instanceof HasUiOverlay screen) {
-            screen.paintUiOverlay();
-        } else if (current instanceof AbstractContainerScreen<?> container && StorageOverlay.isActive(container)) {
-            StorageOverlay.paintUiOverlay();
+        try {
+            AnimatedDyeAnimator.tickFrame();
+            Screen current = Minecraft.getInstance().screen;
+            if (current instanceof HasUiOverlay screen) {
+                screen.paintUiOverlay();
+            } else if (current instanceof AbstractContainerScreen<?> container && StorageOverlay.isActive(container)) {
+                StorageOverlay.paintUiOverlay();
+            }
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("GameRendererUiMixin.1", "ui overlay paint failed", t);
         }
     }
 }

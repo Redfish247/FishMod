@@ -1,5 +1,6 @@
 package fishmod.cosmetic
 
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.HypixelApi
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
@@ -16,7 +17,7 @@ object PlayerSize {
 
     @JvmStatic
     fun init() {
-        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> uploadOwn() }
+        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> FishDiag.guard("PlayerSize.1", "player size upload on join failed") { uploadOwn() } }
     }
 
     @JvmStatic

@@ -1,5 +1,6 @@
 package fishmod.utils.data
 
+import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 
 object ScoreboardUtil {
@@ -27,6 +28,10 @@ object ScoreboardUtil {
             val start = display.indexOf("(")
             val end = display.indexOf(")")
             if (start == -1 || end == -1) return null
+            if (end < start) {
+                FishDiag.fail("ScoreboardUtil.1", "tab class entry has ')' before '(': '$display'")
+                return null
+            }
 
             val inside = display.substring(start + 1, end).trim()
 
@@ -37,6 +42,7 @@ object ScoreboardUtil {
             val roman = parts[1]
 
             val level = Roman.toInt(roman)
+            if (level <= 0 && roman != "0") FishDiag.fail("ScoreboardUtil.2", "could not parse class level '$roman' from tab '$display'")
 
             return ClassInfo(className, level)
         }

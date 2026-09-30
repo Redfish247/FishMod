@@ -6,6 +6,7 @@ import fishmod.utils.Misc
 import fishmod.utils.NameList
 import fishmod.utils.Scheduler
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.data.PartyUtil
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
@@ -28,14 +29,17 @@ object KickListManager {
 
     @JvmStatic
     fun init() {
-        ClientTickEvents.END_CLIENT_TICK.register { onTick() }
+        ClientTickEvents.END_CLIENT_TICK.register {
+            try { onTick() } catch (e: Exception) { FishDiag.fail("KickListManager.1", "kick list tick failed (${pending.size} pending)", e) }
+        }
         Events.ON_WORLD_CHANGE.register { lastKick.clear(); pending.clear(); false }
         Events.ON_GAME_MESSAGE.register { text ->
             if (FishSettings.pcKickListEnabled && FishSettings.pcKickList.isNotBlank()) {
                 val stripped = Constants.STRIP_COLOR_REGEX.replace(text.string, "")
                 val m = PF_JOIN.matcher(stripped).takeIf { it.find() }
                     ?: JOIN.matcher(stripped).takeIf { it.find() }
-                m?.let { onJoin(it.group(1)) }
+                m?.let { mm -> FishDiag.guard("KickListManager.2", "kick list join handling failed") { onJoin(mm.group(1)) } }
+                if (m == null && stripped.startsWith("Party Finder > ") && stripped.contains("joined the dungeon group")) FishDiag.fail("KickListManager.3", "party finder join line unparsed: '$stripped'")
             }
             false
         }
@@ -60,7 +64,7 @@ object KickListManager {
         if (prev != null && now - prev < KICK_COOLDOWN_MS) return
         lastKick[key] = now
         FishMsg.send("§9Kick List §7> kicking §e$name")
-        Scheduler.scheduleTask({ Misc.executeCommand("party kick $name") }, 2)
+        Scheduler.scheduleTask({ FishDiag.guard("KickListManager.4", "party kick command failed for $name") { Misc.executeCommand("party kick $name") } }, 2)
         Scheduler.scheduleTask({ PartyUtil.forceRefresh() }, 20)
     }
 
@@ -91,7 +95,7 @@ object KickListManager {
         val self = mc.player?.name?.string ?: return
 
         for (uuid in PartyUtil.getMemberUuids()) {
-            val name = connection.getPlayerInfo(uuid)?.profile?.name ?: continue
+            val name = connection.getPlayerInfo(uuid)?.profile?.name ?: run { FishDiag.fail("KickListManager.5", "no tab info for party member $uuid"); null } ?: continue
             if (name.equals(self, ignoreCase = true)) continue
             if (!NameList.contains(FishSettings.pcKickList, name)) continue
             kick(name)

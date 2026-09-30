@@ -6,6 +6,7 @@ import fishmod.utils.events.Events
 import fishmod.features.dungeon.f7.terminal.MelodyHandler
 import fishmod.features.dungeon.f7.terminal.TerminalSolver
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import fishmod.utils.debug.FishDiag
 
 object MelodyMessage {
 
@@ -14,7 +15,9 @@ object MelodyMessage {
 
     @JvmStatic
     fun init() {
-        ClientTickEvents.END_CLIENT_TICK.register { tick() }
+        ClientTickEvents.END_CLIENT_TICK.register {
+            try { tick() } catch (e: Exception) { FishDiag.fail("MelodyMessage.1", "melody message tick threw", e) }
+        }
         Events.ON_WORLD_CHANGE.register { reset(); false }
     }
 
@@ -40,7 +43,10 @@ object MelodyMessage {
                 2 -> 25
                 3 -> 50
                 4 -> 75
-                else -> -1
+                else -> {
+                    FishDiag.check(melody.greenClayRow in -1..5, "MelodyMessage.2") { "melody green clay row out of range: ${melody.greenClayRow}" }
+                    -1
+                }
             }
             if (pct > 0 && pct != lastPctSent) {
                 lastPctSent = pct

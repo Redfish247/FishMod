@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.puzzles.odin
 
+import fishmod.utils.debug.FishDiag
 import fishmod.features.dungeon.puzzles.PuzzleSolvers
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.Minecraft
@@ -24,7 +25,8 @@ object BlazeSolver {
         Minecraft.getInstance().level?.entitiesForRendering()?.forEach { entity ->
             if (entity !is ArmorStand || entity in blazes) return@forEach
             val tag = COLOR.replace(entity.name.string, "")
-            val hp = blazeHealthRegex.find(tag)?.groups?.get(1)?.value?.replace(",", "")?.toIntOrNull() ?: return@forEach
+            val hm = blazeHealthRegex.find(tag) ?: return@forEach
+            val hp = FishDiag.notNull(hm.groupValues[1].replace(",", "").toIntOrNull(), "BlazeSolver.1") { "blaze hp not numeric: '$tag'" } ?: return@forEach
             hpMap[entity] = hp
             blazes.add(entity)
         }

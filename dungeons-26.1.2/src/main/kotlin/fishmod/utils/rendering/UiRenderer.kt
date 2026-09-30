@@ -1,5 +1,6 @@
 package fishmod.utils.rendering
 
+import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL13
@@ -106,6 +107,7 @@ void main(){
         GL20.glCompileShader(s)
         if (GL20.glGetShaderi(s, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
             val log = GL20.glGetShaderInfoLog(s)
+            FishDiag.fail("UiRenderer.1", "UI shader type $type compile failed: $log")
             GL20.glDeleteShader(s)
             throw IllegalStateException("UI shader compile failed: $log")
         }
@@ -120,12 +122,18 @@ void main(){
         GL20.glAttachShader(p, vs); GL20.glAttachShader(p, fs)
         GL20.glLinkProgram(p)
         GL20.glDeleteShader(vs); GL20.glDeleteShader(fs)
-        if (GL20.glGetProgrami(p, GL20.GL_LINK_STATUS) == GL11.GL_FALSE) throw IllegalStateException("UI shader link failed: " + GL20.glGetProgramInfoLog(p))
+        if (GL20.glGetProgrami(p, GL20.GL_LINK_STATUS) == GL11.GL_FALSE) {
+            val log = GL20.glGetProgramInfoLog(p)
+            FishDiag.fail("UiRenderer.2", "UI shader link failed: $log")
+            throw IllegalStateException("UI shader link failed: $log")
+        }
         program = p
         uView = GL20.glGetUniformLocation(p, "uView")
         uAtlas = GL20.glGetUniformLocation(p, "uAtlas")
+        if (uView < 0 || uAtlas < 0) FishDiag.fail("UiRenderer.3", "UI shader uniforms missing uView=$uView uAtlas=$uAtlas")
         vao = GL30.glGenVertexArrays()
         vbo = GL15.glGenBuffers()
+        if (vao == 0 || vbo == 0) FishDiag.fail("UiRenderer.4", "UI VAO/VBO allocation failed vao=$vao vbo=$vbo")
         GL30.glBindVertexArray(vao)
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo)
         val sizes = intArrayOf(2, 2, 2, 4, 4, 4, 4, 2)
@@ -145,6 +153,8 @@ void main(){
             init()
             val win = Minecraft.getInstance().window
             pixelRatio = win.guiScale.toFloat()
+            if (!(pixelRatio > 0f)) FishDiag.fail("UiRenderer.5", "window guiScale invalid: ${win.guiScale}")
+            if (win.width <= 0 || win.height <= 0) FishDiag.fail("UiRenderer.6", "painting UI into empty window ${win.width}x${win.height}")
             // Map from the real framebuffer, not the rounded-up GUI size, or odd window sizes stretch text off the pixel grid.
             viewW = win.width / pixelRatio; viewH = win.height / pixelRatio
             fbH = win.height
@@ -166,11 +176,17 @@ void main(){
             GL11.glDepthMask(false)
             scissors.clear()
             verts = 0
+            if (!(scale > 0f)) FishDiag.fail("UiRenderer.7", "UI paint with invalid scale $scale")
             UiRecorder.replay(scale)
             flush()
+            if (scissors.isNotEmpty()) FishDiag.fail("UiRenderer.8", "unbalanced pushScissor: ${scissors.size} left open after paint")
             consecutiveFailures = 0
         } catch (t: Throwable) {
-            if (++consecutiveFailures >= 3) failed = true
+            FishDiag.fail("UiRenderer.9", "UI paint failed (attempt ${consecutiveFailures + 1})", t)
+            if (++consecutiveFailures >= 3) {
+                failed = true
+                FishDiag.fail("UiRenderer.10", "UI renderer disabled after 3 consecutive paint failures")
+            }
             if (!failLogged) {
                 failLogged = true
                 fishmod.utils.debug.Debug.LOGGER.error("[UiRenderer] paint failed - FishMod screens will render without their UI layer", t)
@@ -185,11 +201,18 @@ void main(){
 
     // Whatever FBO is left bound here is luck (ImmediatelyFast leaves the main one; vanilla often leaves 0, which blitToScreen then overwrites).
     private fun bindMainTarget() {
-        val tex = (Minecraft.getInstance().mainRenderTarget.colorTexture as? com.mojang.blaze3d.opengl.GlTexture)?.glId() ?: return
+        val tex = (Minecraft.getInstance().mainRenderTarget.colorTexture as? com.mojang.blaze3d.opengl.GlTexture)?.glId()
+        if (tex == null) {
+            FishDiag.fail("UiRenderer.11", "main render target colour texture is not a GlTexture: ${Minecraft.getInstance().mainRenderTarget.colorTexture?.javaClass?.name}")
+            return
+        }
         if (tex != targetTex || targetFbo == 0) {
             if (targetFbo == 0) targetFbo = GL30.glGenFramebuffers()
+            if (targetFbo == 0) FishDiag.fail("UiRenderer.12", "glGenFramebuffers returned 0")
             GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, targetFbo)
             GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, tex, 0)
+            val status = GL30.glCheckFramebufferStatus(GL30.GL_FRAMEBUFFER)
+            if (status != GL30.GL_FRAMEBUFFER_COMPLETE) FishDiag.fail("UiRenderer.13", "UI framebuffer incomplete status=0x${Integer.toHexString(status)} tex=$tex")
             targetTex = tex
         }
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, targetFbo)
@@ -207,6 +230,7 @@ void main(){
 
     private fun ensure(n: Int) {
         if (buf.remaining() >= n * FLOATS) return
+        if (buf.capacity() > FLOATS * 6 * 262144) FishDiag.fail("UiRenderer.14", "UI vertex buffer growing past ${buf.capacity()} floats, runaway draw?")
         val nb = MemoryUtil.memAllocFloat(Math.max(buf.capacity() * 2, buf.position() + n * FLOATS))
         buf.flip(); nb.put(buf); MemoryUtil.memFree(buf); buf = nb
     }
@@ -239,12 +263,14 @@ void main(){
 
     fun shape(x: Float, y: Float, w: Float, h: Float, tl: Float, tr: Float, br: Float, bl: Float, colA: Int, colB: Int = colA, stroke: Float = 0f, grad: Float = 0f) {
         if (w <= 0f || h <= 0f) return
+        if (x.isNaN() || y.isNaN() || w.isNaN() || h.isNaN()) FishDiag.fail("UiRenderer.15", "shape() given NaN x=$x y=$y w=$w h=$h")
         radTmp[0] = tl; radTmp[1] = tr; radTmp[2] = br; radTmp[3] = bl
         val pad = 1.5f / pixelRatio + 0.5f
         quad(x - pad, y - pad, x + w + pad, y + h + pad, x + w / 2, y + h / 2, w / 2, h / 2, radTmp, colA, colB, MODE_SHAPE, stroke, 0f, grad)
     }
 
     fun shadow(x: Float, y: Float, w: Float, h: Float, r: Float, feather: Float, color: Int) {
+        if (feather < 0f || x.isNaN() || y.isNaN() || w.isNaN() || h.isNaN()) FishDiag.fail("UiRenderer.16", "shadow() bad input x=$x y=$y w=$w h=$h feather=$feather")
         val rr = r + feather * 0.5f
         radTmp[0] = rr; radTmp[1] = rr; radTmp[2] = rr; radTmp[3] = rr
         quad(x - feather, y - feather, x + w + feather, y + h + feather,
@@ -252,6 +278,7 @@ void main(){
     }
 
     fun triangle(x0: Float, y0: Float, x1: Float, y1: Float, x2: Float, y2: Float, color: Int) {
+        if (x0.isNaN() || y0.isNaN() || x1.isNaN() || y1.isNaN() || x2.isNaN() || y2.isNaN()) FishDiag.fail("UiRenderer.17", "triangle() given NaN vertex")
         ensure(3)
         vert(x0, y0, 0f, 0f, 0f, 0f, ZERO, color, color, MODE_SOLID, 0f, 0f, 0f, 0f, 0f)
         vert(x1, y1, 0f, 0f, 0f, 0f, ZERO, color, color, MODE_SOLID, 0f, 0f, 0f, 0f, 0f)
@@ -261,6 +288,7 @@ void main(){
     fun line(x0: Float, y0: Float, x1: Float, y1: Float, width: Float, color: Int) {
         val dx = x1 - x0; val dy = y1 - y0
         val len = Math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
+        if (len.isNaN() || width.isNaN()) FishDiag.fail("UiRenderer.18", "line() given NaN ($x0,$y0)->($x1,$y1) w=$width")
         if (len <= 0f) return
         val ux = dx / len; val uy = dy / len
         val hw = width / 2f
@@ -280,6 +308,7 @@ void main(){
 
     fun text(s: String, x: Float, y: Float, size: Float, color: Int, bold: Boolean = false) {
         if (s.isEmpty() || size <= 0f) return
+        if (size.isNaN() || x.isNaN() || y.isNaN()) FishDiag.fail("UiRenderer.19", "text() given NaN x=$x y=$y size=$size for '${s.take(24)}'")
         val pr = pixelRatio
         val dev = size * pr
         val sc = UiFont.scaleFor(dev)
@@ -308,6 +337,8 @@ void main(){
     }
 
     fun pushScissor(x: Float, y: Float, w: Float, h: Float) {
+        if (x.isNaN() || y.isNaN() || w.isNaN() || h.isNaN()) FishDiag.fail("UiRenderer.21", "pushScissor given NaN x=$x y=$y w=$w h=$h")
+        if (scissors.size > 64) FishDiag.fail("UiRenderer.22", "scissor stack depth ${scissors.size}, missing popScissor?")
         var x0 = x; var y0 = y; var x1 = x + w; var y1 = y + h
         scissors.lastOrNull()?.let { p ->
             x0 = Math.max(x0, p[0]); y0 = Math.max(y0, p[1]); x1 = Math.min(x1, p[2]); y1 = Math.min(y1, p[3])
@@ -318,7 +349,10 @@ void main(){
     }
 
     fun popScissor() {
-        if (scissors.isEmpty()) return
+        if (scissors.isEmpty()) {
+            FishDiag.fail("UiRenderer.20", "popScissor with empty scissor stack")
+            return
+        }
         flush()
         scissors.removeLast()
         applyScissor()

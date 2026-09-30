@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.puzzles.odin
 
+import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import fishmod.utils.config.values.FishSettings
@@ -20,7 +21,9 @@ object BeamsSolver {
                 object : TypeToken<List<List<Int>>>() {}.type)
         }
     } catch (e: Exception) {
-        Debug.LOGGER.error("Creeper beams solutions failed to load", e); emptyList()
+        Debug.LOGGER.error("Creeper beams solutions failed to load", e)
+        FishDiag.fail("BeamsSolver.1", "creeperBeamsSolutions.json failed to load", e)
+        emptyList()
     }
 
     private val current = ConcurrentHashMap<BlockPos, Pair<BlockPos, Int>>()
@@ -46,7 +49,9 @@ object BeamsSolver {
     private fun recalculate(room: ORoom) {
         val level = Minecraft.getInstance().level ?: return
         current.clear()
+        FishDiag.check(lanternPairs.isNotEmpty(), "BeamsSolver.2") { "creeper beams solutions list is empty" }
         lanternPairs.forEachIndexed { index, list ->
+            if (!FishDiag.check(list.size >= 6, "BeamsSolver.3") { "creeper beams pair $index has ${list.size} coords" }) return@forEachIndexed
             val pos = room.getRealCoords(BlockPos(list[0], list[1], list[2]))
                 .takeIf { level.getBlockState(it).block == Blocks.SEA_LANTERN } ?: return@forEachIndexed
             val pos2 = room.getRealCoords(BlockPos(list[3], list[4], list[5]))

@@ -6,6 +6,7 @@ import fishmod.utils.dungeon.Phase
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import fishmod.utils.debug.FishDiag
 
 object CurrentSection {
 
@@ -15,6 +16,7 @@ object CurrentSection {
     fun init() {
         Events.ON_SECTION_CHANGE.register {
             section++
+            FishDiag.check(section <= 5, "CurrentSection.1") { "section counter went past 5: $section" }
             false
         }
         Events.ON_LOCATION_CHANGE.register {
@@ -30,6 +32,6 @@ object CurrentSection {
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
-        RenderUtils.drawPrefixedText(component, context, "Section", " $section")
+        FishDiag.guard("CurrentSection.2", "current section render threw") { RenderUtils.drawPrefixedText(component, context, "Section", " $section") }
     }
 }

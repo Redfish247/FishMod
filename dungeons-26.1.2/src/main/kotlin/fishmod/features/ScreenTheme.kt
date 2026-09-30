@@ -2,6 +2,7 @@ package fishmod.features
 
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import fishmod.utils.rendering.UiRecorder
+import fishmod.utils.debug.FishDiag
 
 object ScreenTheme {
     val ACCENT = 0xFF24B6B0.toInt()
@@ -97,11 +98,16 @@ object ScreenTheme {
         val visibleW = w - pad * 2f
         val scroll = if (focused) Math.max(0f, cursorX - visibleW) else 0f
         UiRecorder.pushScissor((x + 1).toFloat(), (y + 1).toFloat(), (w - 2).toFloat(), (h - 2).toFloat())
-        UiRecorder.text(text, x + pad - scroll, y + (h - textSize) / 2f, textSize, TEXT_COLOR)
-        if (focused && (System.currentTimeMillis() / 500) % 2 == 0L) {
-            UiRecorder.fillRect(x + pad + cursorX - scroll, (y + 2).toFloat(), 1f, (h - 4).toFloat(), TEXT_COLOR)
+        try {
+            UiRecorder.text(text, x + pad - scroll, y + (h - textSize) / 2f, textSize, TEXT_COLOR)
+            if (focused && (System.currentTimeMillis() / 500) % 2 == 0L) {
+                UiRecorder.fillRect(x + pad + cursorX - scroll, (y + 2).toFloat(), 1f, (h - 4).toFloat(), TEXT_COLOR)
+            }
+        } catch (e: Exception) {
+            FishDiag.fail("ScreenTheme.1", "text field render failed (len=${text.length}, cursor=$cursor)", e)
+        } finally {
+            UiRecorder.popScissor()
         }
-        UiRecorder.popScissor()
     }
 
     private class Run(val text: String, val color: Int, val bold: Boolean)
@@ -147,7 +153,7 @@ object ScreenTheme {
 
     fun nLegacyText(s: String, x: Int, y: Int, baseColor: Int, size: Float = 7.5f) {
         val out = ArrayList<Run>()
-        legacyRuns(s, baseColor, false, out)
+        if (FishDiag.guard("ScreenTheme.2", "legacy text parse failed") { legacyRuns(s, baseColor, false, out) } == null) return
         var px = x.toFloat()
         for (r in out) {
             if (r.bold) UiRecorder.textBold(r.text, px, y.toFloat(), size, r.color) else UiRecorder.text(r.text, px, y.toFloat(), size, r.color)
@@ -172,12 +178,16 @@ object ScreenTheme {
         if (lines.isEmpty()) return
         if (lines != tooltipLines) {
             tooltipLines = lines
-            tooltipRuns = lines.mapIndexed { i, c -> componentRuns(c, if (i == 0) 0xFFFFFFFF.toInt() else 0xFFAAAAAA.toInt()) }
+            tooltipRuns = FishDiag.guard("ScreenTheme.3", "tooltip component parse failed (${lines.size} lines)") {
+                lines.mapIndexed { i, c -> componentRuns(c, if (i == 0) 0xFFFFFFFF.toInt() else 0xFFAAAAAA.toInt()) }
+            } ?: emptyList()
             tooltipWidthSize = -1f
         }
+        if (!FishDiag.check(tooltipRuns.isNotEmpty(), "ScreenTheme.4") { "tooltip runs empty for ${lines.size} lines" }) return
         val runs = tooltipRuns
         val rawH = runs.size * 10f + (if (runs.size > 1) 2f else 0f) + 12f - 2f
         val u = k * Math.min(1f, (screenH - 8f) / (rawH * k)).coerceAtLeast(0.3f)
+        if (!FishDiag.check(u.isFinite() && u > 0f, "ScreenTheme.5") { "tooltip scale invalid u=$u k=$k rawH=$rawH screenH=$screenH" }) return
         val size = 7.5f * u
         val lineH = 10f * u
         val pad = 6f * u

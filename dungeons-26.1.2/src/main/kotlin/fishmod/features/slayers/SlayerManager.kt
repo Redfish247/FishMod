@@ -3,6 +3,7 @@ package fishmod.features.slayers
 import fishmod.utils.Constants
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
@@ -90,7 +91,7 @@ object SlayerManager {
     }
 
     private fun areaMatches(t: SlayerType, lines: List<String>): Boolean {
-        val rules = AREA_RULES[t] ?: return Location.`in`(t.island)
+        val rules = FishDiag.notNull(AREA_RULES[t], "SlayerManager.7") { "no area rule for slayer $t" } ?: return Location.`in`(t.island)
         val rule = rules.firstOrNull { Location.`in`(it.island) } ?: return false
         val names = rule.areas ?: return true
         return lines.any { line -> names.any { line.contains(it, ignoreCase = true) } }
@@ -122,7 +123,11 @@ object SlayerManager {
                 return@EndTick
             }
             if (scanCounter++ % SCAN_INTERVAL_TICKS != 0) return@EndTick
-            scanScoreboard(mc)
+            try {
+                scanScoreboard(mc)
+            } catch (e: Exception) {
+                FishDiag.fail("SlayerManager.1", "slayer scoreboard scan failed (type=$type, state=$state)", e)
+            }
         })
 
         Events.ON_WORLD_CHANGE.register { fullReset(); false }
@@ -136,7 +141,7 @@ object SlayerManager {
             if (!FishSettings.slayerAnyEnabled()) return@register false
             val s = text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim()
             val now = System.currentTimeMillis()
-            when {
+            try { when {
                 QUEST_STARTED.matcher(s).find() -> {
                     if (now - lastQuestStartedMs > CHAT_DEDUPE_MS) {
                         lastQuestStartedMs = now
@@ -168,6 +173,8 @@ object SlayerManager {
                         }
                     }
                 }
+            } } catch (e: Exception) {
+                FishDiag.fail("SlayerManager.2", "slayer chat handler failed on '$s'", e)
             }
             false
         }
@@ -179,7 +186,10 @@ object SlayerManager {
         var purse = -1.0
         for (l in lines) {
             val m = PURSE.matcher(l)
-            if (m.find()) { purse = m.group(1).replace(",", "").toDoubleOrNull() ?: -1.0; break }
+            if (m.find()) {
+                purse = FishDiag.notNull(m.group(1).replace(",", "").toDoubleOrNull(), "SlayerManager.3") { "purse value not numeric in '$l'" } ?: -1.0
+                break
+            }
         }
         SlayerProfitTracker.observePurse(purse)
 
@@ -259,6 +269,7 @@ object SlayerManager {
         if (pct.find()) {
             return SpawnProgress(pct.group(1).toDouble().coerceIn(0.0, 100.0), null, null, line)
         }
+        FishDiag.fail("SlayerManager.5", "unrecognised slayer progress line '$line' (type=$type)")
         return SpawnProgress(null, null, null, line)
     }
 
@@ -271,7 +282,7 @@ object SlayerManager {
             else -> 1.0
         }
         val body = if (mult == 1.0) t else t.dropLast(1)
-        return (body.toDoubleOrNull() ?: 0.0) * mult
+        return (FishDiag.notNull(body.toDoubleOrNull(), "SlayerManager.4") { "slayer progress number not numeric: '$s'" } ?: 0.0) * mult
     }
 
     private fun setState(next: State) {
@@ -307,7 +318,7 @@ object SlayerManager {
     }
 
     private fun onBossSlain() {
-        val t = type ?: return
+        val t = FishDiag.notNull(type, "SlayerManager.6") { "boss slain state reached with no slayer type" } ?: return
         val secs = SlayerTimer.onBossSlain()
         if (secs > 0.0) {
             val isPb = SlayerPersonalBests.record(t, tier, secs)

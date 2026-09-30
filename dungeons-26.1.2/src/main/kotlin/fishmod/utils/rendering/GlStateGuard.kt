@@ -1,6 +1,7 @@
 package fishmod.utils.rendering
 
 import com.mojang.blaze3d.opengl.GlStateManager
+import fishmod.utils.debug.FishDiag
 import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL13
 import org.lwjgl.opengl.GL14
@@ -59,6 +60,7 @@ class GlStateGuard {
                 } catch (t: Throwable) {
                     samplerObjectsSupported = false
                     fishmod.utils.debug.Debug.LOGGER.warn("[UiRenderer] GL33 sampler objects unsupported - skipping sampler unbind", t)
+                    FishDiag.fail("GlStateGuard.1", "GL33 sampler binding unsupported", t)
                 }
             }
 
@@ -84,6 +86,7 @@ class GlStateGuard {
             GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, 1)
         } catch (t: Throwable) {
             fishmod.utils.debug.Debug.LOGGER.error("[UiRenderer] GlStateGuard.capture() failed", t)
+            FishDiag.fail("GlStateGuard.2", "capture GL state before UI paint", t)
         }
     }
 
@@ -96,7 +99,10 @@ class GlStateGuard {
             GL13.glActiveTexture(GL13.GL_TEXTURE0)
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, texture2d)
             if (samplerObjectsSupported) {
-                try { GL33.glBindSampler(0, samplerBinding) } catch (_: Throwable) { samplerObjectsSupported = false }
+                try { GL33.glBindSampler(0, samplerBinding) } catch (t: Throwable) {
+                    samplerObjectsSupported = false
+                    FishDiag.fail("GlStateGuard.3", "restore sampler binding $samplerBinding", t)
+                }
             }
 
             setEnabled(GL11.GL_BLEND, blendEnabled)
@@ -111,12 +117,14 @@ class GlStateGuard {
             setEnabled(GL11.GL_STENCIL_TEST, stencilEnabled)
             setEnabled(GL11.GL_CULL_FACE, cullFaceEnabled)
 
+            if (viewport[2] <= 0 || viewport[3] <= 0) FishDiag.fail("GlStateGuard.4", "restoring empty viewport ${viewport.joinToString()}")
             GL11.glViewport(viewport[0], viewport[1], viewport[2], viewport[3])
             GL11.glPixelStorei(GL11.GL_UNPACK_ALIGNMENT, unpackAlignment)
 
             GL13.glActiveTexture(activeTexture)
         } catch (t: Throwable) {
             fishmod.utils.debug.Debug.LOGGER.error("[UiRenderer] GlStateGuard.restore() failed", t)
+            FishDiag.fail("GlStateGuard.5", "restore GL state after UI paint", t)
         }
     }
 

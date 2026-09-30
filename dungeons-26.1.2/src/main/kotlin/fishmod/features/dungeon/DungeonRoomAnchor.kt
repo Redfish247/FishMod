@@ -2,6 +2,7 @@ package fishmod.features.dungeon
 
 import fishmod.features.dungeon.map.DungeonMap
 import fishmod.features.dungeon.map.Room
+import fishmod.utils.debug.FishDiag
 import net.minecraft.core.BlockPos
 
 object DungeonRoomAnchor {
@@ -12,7 +13,10 @@ object DungeonRoomAnchor {
     fun current(): Anchor? {
         val room = DungeonMap.roomPlayerIn()?.owner ?: return null
         val name = room.data?.name ?: return null
-        val clay = room.clayPos ?: return null
+        val clay = room.clayPos ?: run {
+            if (room.rotation != Room.Rotation.NONE) FishDiag.fail("DungeonRoomAnchor.1", "room $name has rotation ${room.rotation} but no clay pos")
+            return null
+        }
         if (room.rotation == Room.Rotation.NONE) return null
         return Anchor(name, room.rotation, clay)
     }
@@ -32,7 +36,7 @@ object DungeonRoomAnchor {
         Room.Rotation.SOUTH -> BlockPos(x, y, z)
         Room.Rotation.WEST -> BlockPos(-z, y, x)
         Room.Rotation.EAST -> BlockPos(z, y, -x)
-        Room.Rotation.NONE -> BlockPos(x, y, z)
+        Room.Rotation.NONE -> { FishDiag.fail("DungeonRoomAnchor.2", "toWorld called with unrotated anchor"); BlockPos(x, y, z) }
     }
 
     private fun rotateToNorth(x: Int, y: Int, z: Int, rot: Room.Rotation): BlockPos = when (rot) {
@@ -40,6 +44,6 @@ object DungeonRoomAnchor {
         Room.Rotation.SOUTH -> BlockPos(x, y, z)
         Room.Rotation.WEST -> BlockPos(z, y, -x)
         Room.Rotation.EAST -> BlockPos(-z, y, x)
-        Room.Rotation.NONE -> BlockPos(x, y, z)
+        Room.Rotation.NONE -> { FishDiag.fail("DungeonRoomAnchor.3", "toLocal called with unrotated anchor"); BlockPos(x, y, z) }
     }
 }

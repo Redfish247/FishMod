@@ -19,11 +19,16 @@ public class PrestigeTabNameMixin {
         boolean badges = FishSettings.badgesEnabled && FishSettings.badgesOnTab;
         if (!prestige && !badges) return original;
         java.util.UUID id = playerInfo.getProfile().id();
-        return fishmod.cosmetic.NameDecorCache.TAB.get(id, original, () -> {
-            Component out = original;
-            if (prestige) out = PrestigeLevelColors.colorizeLevelPrefix(out);
-            if (badges) out = fishmod.cosmetic.badge.BadgeRenderer.insertKnown(out, id.toString().replace("-", ""));
-            return out;
-        });
+        try {
+            return fishmod.cosmetic.NameDecorCache.TAB.get(id, original, () -> {
+                Component out = original;
+                if (prestige) out = PrestigeLevelColors.colorizeLevelPrefix(out);
+                if (badges) out = fishmod.cosmetic.badge.BadgeRenderer.insertKnown(out, id.toString().replace("-", ""));
+                return out;
+            });
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("PrestigeTabNameMixin.1", "tab name decorate failed id=" + id, t);
+            return original;
+        }
     }
 }

@@ -9,6 +9,7 @@ import net.minecraft.core.component.DataComponents
 import net.minecraft.world.inventory.ContainerInput
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
+import fishmod.utils.debug.FishDiag
 
 object PartyFinderPanel {
 
@@ -58,7 +59,8 @@ object PartyFinderPanel {
 
     private fun parseFloor(s: String): Int = s.toIntOrNull() ?: when (s.uppercase()) {
         "I" -> 1; "II" -> 2; "III" -> 3; "IV" -> 4; "V" -> 5; "VI" -> 6; "VII" -> 7
-        else -> 0
+        "ENTRANCE" -> 0
+        else -> { FishDiag.fail("PartyFinderPanel.1", "unknown PF floor token '$s'"); 0 }
     }
 
     private fun collect(screen: AbstractContainerScreen<*>): List<Party> {
@@ -82,8 +84,12 @@ object PartyFinderPanel {
                 if (p.contains("Master Mode", true)) master = true
                 MEMBER.find(p)?.let { m -> names.add(m.groupValues[1]); present.add(m.groupValues[2]) }
                 FLOOR.find(p)?.let { floor = parseFloor(it.groupValues[1]) }
-                LEVEL_REQ.find(p)?.let { levelReq = it.groupValues[1].toIntOrNull() ?: 0 }
-                MEMBERS.find(p)?.let { mem = it.groupValues[1].toInt(); maxMem = it.groupValues[2].toInt() }
+                LEVEL_REQ.find(p)?.let { levelReq = FishDiag.notNull(it.groupValues[1].toIntOrNull(), "PartyFinderPanel.2") { "level req not numeric: '$p'" } ?: 0 }
+                MEMBERS.find(p)?.let {
+                    val a = it.groupValues[1].toIntOrNull(); val b = it.groupValues[2].toIntOrNull()
+                    if (a == null || b == null) FishDiag.fail("PartyFinderPanel.3", "members count not numeric: '$p'")
+                    else { mem = a; maxMem = b }
+                }
                 if (note == null && p.startsWith("Note:")) {
                     note = raw[idx].substringAfter("Note:").trim().ifEmpty { null }
                 }
@@ -91,8 +97,9 @@ object PartyFinderPanel {
             val nameStr = strip(stack.hoverName.string).trim()
             val leader = LEADER.find(nameStr)?.groupValues?.get(1)
                 ?: nameStr.split(' ').lastOrNull { it.matches(NAME) }
-                ?: names.firstOrNull() ?: "?"
+                ?: names.firstOrNull() ?: run { FishDiag.fail("PartyFinderPanel.4", "no leader parsed from '$nameStr' slot=$i"); "?" }
             if (mem == 0) mem = (names + leader).distinctBy { it.lowercase() }.size
+            FishDiag.check(mem <= maxMem, "PartyFinderPanel.5") { "members $mem > max $maxMem for $leader" }
             out.add(Party(i, leader, mem, maxMem, floor, master, present, names, note, levelReq))
         }
         return out
@@ -122,6 +129,10 @@ object PartyFinderPanel {
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
         if (!active(screen)) { parties = emptyList(); rowRects = emptyList(); cacheScreen = null; return }
+        try { renderInner(ctx, mouseX, mouseY, screen) } catch (e: Exception) { FishDiag.fail("PartyFinderPanel.6", "PF list panel render threw (parties=${parties.size})", e) }
+    }
+
+    private fun renderInner(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, screen: AbstractContainerScreen<*>) {
         val now = System.currentTimeMillis()
         if (screen !== cacheScreen || now - cacheAt >= 200L) {
             cachedAll = collect(screen)
@@ -205,7 +216,7 @@ object PartyFinderPanel {
         rowRects = rects
 
         if (hoverParty in parties.indices) {
-            val s = screen.menu.slots.getOrNull(parties[hoverParty].slot) ?: return
+            val s = FishDiag.notNull(screen.menu.slots.getOrNull(parties[hoverParty].slot), "PartyFinderPanel.7") { "hovered party slot ${parties[hoverParty].slot} out of range (${screen.menu.slots.size})" } ?: return
             val sx = bgX + s.x; val sy = bgY + s.y
             ctx.fill(sx - 1, sy - 1, sx + 17, sy + 17, 0x804CC2FF.toInt())
             ctx.fill(sx - 1, sy - 1, sx + 17, sy, 0xFF4CC2FF.toInt())
@@ -226,7 +237,7 @@ object PartyFinderPanel {
             if (d.failed) continue
             val arr = if (p.master) d.masterPbs else d.cataPbs
             val m = arr.getOrNull(p.floor)?.trim()?.let { PB_LINE.find(it) }
-            val sec = if (m == null) Int.MAX_VALUE else m.groupValues[1].toInt() * 60 + m.groupValues[2].toInt()
+            val sec = if (m == null) Int.MAX_VALUE else (m.groupValues[1].toIntOrNull() ?: run { FishDiag.fail("PartyFinderPanel.8", "PB minutes overflow '${m.value}'"); 99_999 }) * 60 + m.groupValues[2].toInt()
             if (sec > worstSec) { worstSec = sec; worstName = n }
         }
         if (worstName == null) return if (pending) "§8wPB …" else "§8wPB —"
@@ -275,6 +286,7 @@ object PartyFinderPanel {
         if (button == 0 && FishSettings.pfListClickJoin) {
             val mc = Minecraft.getInstance()
             val p = mc.player
+            FishDiag.check(parties[idx].slot < screen.menu.slots.size, "PartyFinderPanel.9") { "click-join slot ${parties[idx].slot} >= ${screen.menu.slots.size}" }
             if (p != null) mc.gameMode?.handleContainerInput(
                 screen.menu.containerId, parties[idx].slot, 0, ContainerInput.PICKUP, p)
         }

@@ -34,14 +34,22 @@ public abstract class InventoryScreenMixin extends AbstractRecipeBookScreen<Inve
         Matrix3x2fStack stack = context.pose();
         stack.pushMatrix();
         stack.translate(this.leftPos, this.topPos);
-        InventoryButton.renderAll(context, mouseX, mouseY, deltaTicks);
+        try {
+            InventoryButton.renderAll(context, mouseX, mouseY, deltaTicks);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("InventoryScreenMixin.1", "inventory buttons render failed", t);
+        }
         stack.popMatrix();
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         if (Buttons.enableInventoryButtons) {
-            InventoryButton.parseClicks(click.x() - this.leftPos, click.y() - this.topPos);
+            try {
+                InventoryButton.parseClicks(click.x() - this.leftPos, click.y() - this.topPos);
+            } catch (Throwable t) {
+                fishmod.utils.debug.FishDiag.fail("InventoryScreenMixin.2", "inventory button click failed", t);
+            }
         }
         return super.mouseClicked(click, doubled);
     }

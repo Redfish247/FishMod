@@ -4,6 +4,7 @@ import fishmod.features.FishHudEditor
 import fishmod.utils.Constants
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -54,11 +55,19 @@ object SlayerHuds {
 
     @JvmStatic
     fun renderSpawn(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
+        try {
+            renderSpawnInner(ctx, tick)
+        } catch (e: Exception) {
+            FishDiag.fail("SlayerHuds.1", "slayer spawn HUD render failed (type=${SlayerManager.type}, state=${SlayerManager.state})", e)
+        }
+    }
+
+    private fun renderSpawnInner(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.slayerSpawnHudEnabled) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
         if (!SlayerManager.isActiveSlayer() || !SlayerManager.inCorrectArea()) return
-        val type = SlayerManager.type ?: return
+        val type = FishDiag.notNull(SlayerManager.type, "SlayerHuds.5") { "active slayer with null type in spawn HUD" } ?: return
 
         val lines = ArrayList<String>(3)
         lines.add("§5§l${type.displayName} ${roman(SlayerManager.tier)}")
@@ -85,6 +94,14 @@ object SlayerHuds {
 
     @JvmStatic
     fun renderStats(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
+        try {
+            renderStatsInner(ctx, tick)
+        } catch (e: Exception) {
+            FishDiag.fail("SlayerHuds.2", "slayer stats HUD render failed (type=${SlayerManager.type}, state=${SlayerManager.state})", e)
+        }
+    }
+
+    private fun renderStatsInner(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.slayerStatsHudEnabled) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
@@ -115,6 +132,14 @@ object SlayerHuds {
 
     @JvmStatic
     fun renderProfit(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
+        try {
+            renderProfitInner(ctx, tick)
+        } catch (e: Exception) {
+            FishDiag.fail("SlayerHuds.3", "slayer profit HUD render failed (type=${SlayerManager.type}, state=${SlayerManager.state})", e)
+        }
+    }
+
+    private fun renderProfitInner(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.slayerProfitEnabled) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
@@ -160,12 +185,20 @@ object SlayerHuds {
     }
 
     @JvmStatic
-    fun onProfitClick(mx: Double, my: Double, button: Int): Boolean {
+    fun onProfitClick(mx: Double, my: Double, button: Int): Boolean = try {
+        onProfitClickInner(mx, my, button)
+    } catch (e: Exception) {
+        FishDiag.fail("SlayerHuds.7", "slayer profit HUD click failed at $mx,$my button $button", e)
+        false
+    }
+
+    private fun onProfitClickInner(mx: Double, my: Double, button: Int): Boolean {
         if (!FishSettings.slayerProfitEnabled) return false
         if (System.currentTimeMillis() - profitFrameMs > 500) return false
         if (mx < profitLeft || mx > profitRight) return false
         val type = SlayerManager.type ?: return false
         val tier = SlayerManager.tier
+        if (!FishDiag.check(profitRowTop.size == profitRowTag.size && profitRowBot.size == profitRowTag.size, "SlayerHuds.8") { "profit row hitboxes out of sync: ${profitRowTop.size}/${profitRowBot.size}/${profitRowTag.size}" }) return false
         for (i in profitRowTag.indices) {
             if (my < profitRowTop[i] || my > profitRowBot[i]) continue
             val tag = profitRowTag[i]
@@ -187,6 +220,14 @@ object SlayerHuds {
 
     @JvmStatic
     fun renderTimer(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
+        try {
+            renderTimerInner(ctx, tick)
+        } catch (e: Exception) {
+            FishDiag.fail("SlayerHuds.4", "slayer timer HUD render failed (type=${SlayerManager.type}, state=${SlayerManager.state})", e)
+        }
+    }
+
+    private fun renderTimerInner(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.slayerTimerEnabled) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
@@ -249,6 +290,7 @@ object SlayerHuds {
     private fun rateInt(v: Double): String = if (v <= 0.0) "§8—" else fishmod.utils.Fmt.grouped(v.toLong())
 
     private fun roman(n: Int): String = when (n) {
-        1 -> "I"; 2 -> "II"; 3 -> "III"; 4 -> "IV"; 5 -> "V"; else -> n.toString()
+        1 -> "I"; 2 -> "II"; 3 -> "III"; 4 -> "IV"; 5 -> "V"
+        else -> { FishDiag.fail("SlayerHuds.6", "slayer tier out of range: $n"); n.toString() }
     }
 }

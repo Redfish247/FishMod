@@ -3,6 +3,7 @@ package fishmod.features.dungeon
 import fishmod.utils.Location
 import fishmod.utils.Keybinds
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 
@@ -25,6 +26,6 @@ object DungeonAbilities {
     private fun drop(mc: Minecraft, fullStack: Boolean) {
         val p = mc.player ?: return
         if (p.mainHandItem.isEmpty) return
-        p.drop(fullStack)
+        FishDiag.guard("DungeonAbilities.1", "dungeon ability drop failed (fullStack=$fullStack)") { p.drop(fullStack) }
     }
 }

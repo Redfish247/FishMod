@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
@@ -22,24 +23,37 @@ object MageBeam {
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register {
             tick++
-            beams.removeAll { tick - it.lastTick > FishSettings.mageBeamDurationTicks.coerceIn(1, 100) }
+            try {
+                beams.removeAll { tick - it.lastTick > FishSettings.mageBeamDurationTicks.coerceIn(1, 100) }
+            } catch (e: Exception) {
+                FishDiag.fail("MageBeam.3", "mage beam expiry failed", e)
+            }
         }
 
         Events.ON_PARTICLE.register { packet ->
             if (!FishSettings.mageBeamEnabled || !Location.inDungeon()) return@register false
             if (packet.particle.type !== ParticleTypes.FIREWORK) return@register false
-            val p = Vec3(packet.x, packet.y, packet.z)
-            val recent = beams.lastOrNull()
-            if (recent != null && tick - recent.lastTick < 2 && inLine(recent.points, p)) {
-                recent.points.add(p); recent.lastTick = tick
-            } else {
-                beams.add(Beam(arrayListOf(p), tick))
+            try {
+                val p = Vec3(packet.x, packet.y, packet.z)
+                val recent = beams.lastOrNull()
+                if (recent != null && tick - recent.lastTick < 2 && inLine(recent.points, p)) {
+                    recent.points.add(p); recent.lastTick = tick
+                } else {
+                    beams.add(Beam(arrayListOf(p), tick))
+                }
+                if (beams.size > 256) FishDiag.fail("MageBeam.1", "mage beam list leaking: ${beams.size} beams")
+            } catch (e: Exception) {
+                FishDiag.fail("MageBeam.2", "mage beam particle tracking failed (${beams.size} beams)", e)
             }
             FishSettings.mageBeamHideParticles
         }
 
-        RenderingEvents.GIZMO.register { _ -> if (FishSettings.mageBeamDepth) renderGizmo() }
-        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc -> if (!FishSettings.mageBeamDepth) render(m, vc) }
+        RenderingEvents.GIZMO.register { _ ->
+            if (FishSettings.mageBeamDepth) try { renderGizmo() } catch (e: Exception) { FishDiag.fail("MageBeam.4", "mage beam gizmo render failed", e) }
+        }
+        RenderingEvents.NO_DEPTH_LINE.register { _, m, vc ->
+            if (!FishSettings.mageBeamDepth) try { render(m, vc) } catch (e: Exception) { FishDiag.fail("MageBeam.5", "mage beam line render failed", e) }
+        }
     }
 
     private fun renderGizmo() {

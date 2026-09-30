@@ -3,6 +3,7 @@ package fishmod.utils.config
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
+import fishmod.utils.debug.FishDiag
 import java.io.File
 import java.io.FileReader
 import java.io.FileWriter
@@ -42,6 +43,7 @@ object UserColorStore {
                 if (loaded != null) data = loaded
             }
         } catch (e: Exception) {
+            FishDiag.fail("UserColorStore.1", "failed to load $FILE_PATH", e)
             fishmod.utils.debug.Debug.LOGGER.warn("[UserColorStore] load failed: {}", e.toString())
         }
     }
@@ -52,6 +54,7 @@ object UserColorStore {
             file.parentFile?.mkdirs()
             FileWriter(file).use { writer -> GSON.toJson(data, writer) }
         } catch (e: Exception) {
+            FishDiag.fail("UserColorStore.2", "failed to save $FILE_PATH (${data.colors.size} colours)", e)
             fishmod.utils.debug.Debug.LOGGER.warn("[UserColorStore] save failed: {}", e.toString())
         }
     }

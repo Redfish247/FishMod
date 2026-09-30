@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.debug.FishDiag
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
 import java.util.function.Supplier
@@ -23,6 +24,8 @@ object FishModAddonApi {
 
     @JvmStatic
     fun registerDungeonToggle(name: String, description: String, get: Supplier<Boolean>, set: Consumer<Boolean>) {
+        if (name.isBlank()) FishDiag.fail("FishModAddonApi.1", "addon dungeon toggle registered with blank name")
+        if (dungeonToggles.any { it.name() == name }) FishDiag.fail("FishModAddonApi.2", "addon dungeon toggle '$name' registered twice")
         dungeonToggles.add(ExternalToggle(name, description, get, set))
     }
 
@@ -31,6 +34,8 @@ object FishModAddonApi {
 
     @JvmStatic
     fun registerCheatToggle(name: String, description: String, get: Supplier<Boolean>, set: Consumer<Boolean>) {
+        if (name.isBlank()) FishDiag.fail("FishModAddonApi.3", "addon cheat toggle registered with blank name")
+        if (cheatToggles.any { it.name() == name }) FishDiag.fail("FishModAddonApi.4", "addon cheat toggle '$name' registered twice")
         cheatToggles.add(ExternalToggle(name, description, get, set))
     }
 }

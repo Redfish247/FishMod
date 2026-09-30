@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.map
 
+import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.multiplayer.ClientLevel
@@ -68,6 +69,7 @@ object Scan {
                         scan(world)
                     } catch (t: Throwable) {
                         fishmod.utils.debug.Debug.LOGGER.error("[Scan] scan failed", t)
+                        FishDiag.fail("Scan.1", "dungeon room scan failed rooms=${rooms.size} doors=${doors.size} loadedAll=$loadedAllRooms", t)
                     }
                 }
             }
@@ -101,7 +103,10 @@ object Scan {
         if (!DungeonState.isInDungeon()) return
         if (!DungeonMap.anyFeatureEnabled()) return
 
-        if (!RoomData.isLoaded()) RoomData.loadRoomData()
+        if (!RoomData.isLoaded()) {
+            RoomData.loadRoomData()
+            FishDiag.check(RoomData.isLoaded(), "Scan.2") { "rooms.json still not loaded after loadRoomData()" }
+        }
 
         if (loadedAllRooms) {
             scanWorldDoors(world)
@@ -119,6 +124,7 @@ object Scan {
 
             val ms = DungeonMap.getMapSize()
             if (ms != null) {
+                FishDiag.check(ms.x in 0..6 && ms.z in 0..6, "Scan.3") { "map size out of grid range: $ms" }
                 val zMax = if (SpecialColumn.column != -1) ms.z - 1 else ms.z
                 var all = true
 
@@ -155,6 +161,7 @@ object Scan {
 
     private fun coreChar(block: Block): Char = coreChars.getOrPut(block) {
         val path = BuiltInRegistries.BLOCK.getKey(block).path
+        FishDiag.check(path.isNotEmpty(), "Scan.4") { "block $block has empty registry path in core hash" }
         if (path.isEmpty()) '\u0000' else path[0].lowercaseChar()
     }
 
@@ -237,7 +244,10 @@ object Scan {
                     fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal(
                         "§b[roomCore] §7cell ($x,$z) §fhash=§e$coreHash §7-> §f${rd?.name ?: "§cUNKNOWN"}"))
                 }
-                if (rd == null) continue
+                if (rd == null) {
+                    FishDiag.fail("Scan.5", "no room data for core hash=$coreHash cell=($x,$z) height=$height roomsLoaded=${RoomData.isLoaded()}")
+                    continue
+                }
 
                 var found: Room? = null
                 for (r in ArrayList(rooms)) {
@@ -397,7 +407,10 @@ object Scan {
                     break
                 }
             }
-            if (other == null) return false
+            if (other == null) {
+                FishDiag.fail("Scan.7", "L room '${room.data?.name}' has ${room.tiles.size} tiles but no middle tile")
+                return false
+            }
 
             if (topLeft.pos.x == bottomRight.pos.x) {
                 room.clayPos = BlockPos(other.pos.x - 15, 0, topLeft.pos.z + 15)
@@ -429,7 +442,10 @@ object Scan {
         val height = room.height ?: return false
 
         if (room.data?.name == "Fairy") {
-            if (room.tiles.isEmpty()) return false
+            if (room.tiles.isEmpty()) {
+                FishDiag.fail("Scan.6", "Fairy room has data but no tiles")
+                return false
+            }
             val tile = room.tiles[0]
             room.clayPos = BlockPos(tile.pos.x - 15, height, tile.pos.z - 15)
             room.rotation = Room.Rotation.SOUTH

@@ -2,15 +2,24 @@ package fishmod.features.item
 
 import fishmod.features.croesus.CroesusPrices
 import fishmod.utils.data.ItemUtil
+import fishmod.utils.debug.FishDiag
 import net.minecraft.world.item.ItemStack
 
 object ItemValue {
 
     @JvmStatic
-    fun estimate(stack: ItemStack): Double {
+    fun estimate(stack: ItemStack): Double = try {
+        estimateInner(stack)
+    } catch (e: Exception) {
+        FishDiag.fail("ItemValue.1", "value estimate failed for ${stack.hoverName.string}", e)
+        0.0
+    }
+
+    private fun estimateInner(stack: ItemStack): Double {
         if (stack.isEmpty) return 0.0
         val id = ItemUtil.getId(stack) ?: return 0.0
         val mods = ModifierValue.calc(stack)
+        FishDiag.check(!mods.isNaN() && mods >= 0.0, "ItemValue.2") { "modifier value $mods for $id" }
         val tag = stack.fishmodCustomDataTag()
         val boost = tag?.getInt("baseStatBoostPercentage")?.orElse(0) ?: 0
 
@@ -41,13 +50,16 @@ object ItemValue {
             }
 
             val dynamic = CroesusPrices.dynamicBinPrice(id, cacheKey, stack.hoverName.string, enchantments, extra)
+            FishDiag.check(!dynamic.isNaN(), "ItemValue.3") { "dynamicBinPrice NaN for $cacheKey" }
             if (dynamic > 0.0) return dynamic
 
             val live = CroesusPrices.qualityBinPrice(id, boost)
+            FishDiag.check(!live.isNaN(), "ItemValue.4") { "qualityBinPrice NaN for $id boost=$boost" }
             if (live > 0.0) return live + mods
         }
 
         val base = CroesusPrices.price(id)
+        FishDiag.check(!base.isNaN(), "ItemValue.5") { "CroesusPrices.price NaN for $id" }
         if (base <= 0.0) return 0.0
         return (base + mods) * qualityFallbackMultiplier(boost)
     }

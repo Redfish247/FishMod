@@ -1,6 +1,7 @@
 package fishmod.features.dungeon
 
 import fishmod.utils.Misc
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.Dungeons
 import fishmod.utils.dungeon.DungeonClass
 import fishmod.utils.dungeon.Phase
@@ -30,7 +31,7 @@ object DupeClassDetector {
 
         Events.ON_PLAYER_ENTRY.register { _ ->
             if (!Dungeons.detectDuplicateClass) return@register false
-            checkForDupes()
+            try { checkForDupes() } catch (e: Exception) { FishDiag.fail("DupeClassDetector.1", "dupe class check failed (${DungeonClass.getAll().size} players)", e) }
             false
         }
     }
@@ -39,7 +40,7 @@ object DupeClassDetector {
         val byClass: MutableMap<DungeonClass, MutableList<String>> = EnumMap(DungeonClass::class.java)
 
         DungeonClass.getAll().forEach { name, dungeonClass ->
-            if (dungeonClass == null) return@forEach
+            if (dungeonClass == null) { FishDiag.fail("DupeClassDetector.2", "player $name has null dungeon class"); return@forEach }
             if (dungeonClass == DungeonClass.MAGE && Dungeons.ignoreDupeMage) return@forEach
             byClass.computeIfAbsent(dungeonClass) { ArrayList() }.add(name)
         }

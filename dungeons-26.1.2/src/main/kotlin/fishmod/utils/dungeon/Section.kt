@@ -9,6 +9,7 @@ import fishmod.features.dungeon.PbMessages
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.config.values.Floor7
 import fishmod.utils.debug.Debug
+import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
 import fishmod.utils.events.interfaces.SectionEvent
 import net.minecraft.client.Minecraft
@@ -111,13 +112,14 @@ object Section {
         resetSection()
         endSplit(currentSection)
         currentSection++
+        FishDiag.check(currentSection <= 5, "Section.1") { "goldor section advanced past core: $currentSection (completed=$completed total=$total)" }
         total = totalFor(currentSection)
 
         if (Debug.termInfo) {
             Misc.addChatMessage(Component.literal("section: $currentSection"))
         }
 
-        Events.ON_SECTION_CHANGE.invoke(SectionEvent::onSection)
+        FishDiag.guard("Section.2", "ON_SECTION_CHANGE listeners (section $currentSection)") { Events.ON_SECTION_CHANGE.invoke(SectionEvent::onSection) }
         startSplit(currentSection)
     }
 
@@ -133,8 +135,12 @@ object Section {
         split.end()
         if (!wasRunning || PracticeMode.active) return
         val floor = Phase.getFloor() ?: return
-        val r = PbMessages.announce(FishSettings.pbMessagesGoldor, "goldor:$floor:S${index + 1}",
-            Component.literal("§6Goldor S${index + 1}"), split.getRealTime()) ?: return
+        val time = split.getRealTime()
+        FishDiag.check(!time.isNaN() && time >= 0, "Section.3") { "goldor S${index + 1} ended with bad time $time" }
+        val r = FishDiag.guard("Section.4", "announce goldor section PB S${index + 1}") {
+            PbMessages.announce(FishSettings.pbMessagesGoldor, "goldor:$floor:S${index + 1}",
+                Component.literal("§6Goldor S${index + 1}"), time)
+        } ?: return
         split.paceColor = Phase.paceColor(r, -1.0)
     }
 
@@ -149,7 +155,7 @@ object Section {
         if (Debug.termInfo) {
             Misc.addChatMessage(Component.literal("ending all sections"))
         }
-        Events.ON_SECTION_CHANGE.invoke(SectionEvent::onSection)
+        FishDiag.guard("Section.5", "ON_SECTION_CHANGE listeners (end all)") { Events.ON_SECTION_CHANGE.invoke(SectionEvent::onSection) }
     }
 
     @JvmStatic
@@ -171,8 +177,11 @@ object Section {
                 totalNeeded = matcher.group(5).toInt()
             } catch (e: NumberFormatException) {
                 Debug.LOGGER.error("Failed to parse terminal message, {}", e.message)
+                FishDiag.fail("Section.6", "parse terminal counts in '$string'", e)
                 return false
             }
+
+            FishDiag.check(totalNeeded in 1..8 && currentCompleted in 0..totalNeeded, "Section.7") { "odd terminal count $currentCompleted/$totalNeeded section=$currentSection msg='$string'" }
 
             if (completed == 0 && currentCompleted == totalNeeded) {
                 if (Debug.termInfo) {
@@ -186,10 +195,13 @@ object Section {
                 Misc.addChatMessage(Component.literal("name:$name:objective>$objective:($currentCompleted/$totalNeeded)"))
             }
 
-            Events.ON_TERMINAL.invoke { terminalEvent -> terminalEvent.onComplete(name, action, objective, currentCompleted, totalNeeded) }
+            FishDiag.guard("Section.8", "ON_TERMINAL listeners $name $objective $currentCompleted/$totalNeeded") {
+                Events.ON_TERMINAL.invoke { terminalEvent -> terminalEvent.onComplete(name, action, objective, currentCompleted, totalNeeded) }
+            }
 
             if (Floor7.terminalTimeStamps) {
                 val texts = message.siblings
+                FishDiag.check(texts.isNotEmpty(), "Section.9") { "terminal message has no siblings, can't restyle: '$string'" }
                 if (texts.isNotEmpty()) {
                     Misc.addChatMessage(
                         Component.literal(name).setStyle(texts.first().style)
@@ -281,8 +293,12 @@ object Section {
 
         val textRenderer: Font = Minecraft.getInstance().font
 
-        for (i in splits.indices) {
-            splits[i].drawSplit(context, textRenderer, x, y + Constants.TEXT_HEIGHT * i, SPLIT_LENGTH)
+        try {
+            for (i in splits.indices) {
+                splits[i].drawSplit(context, textRenderer, x, y + Constants.TEXT_HEIGHT * i, SPLIT_LENGTH)
+            }
+        } catch (t: Throwable) {
+            FishDiag.fail("Section.10", "render terminal splits HUD", t)
         }
     }
 
