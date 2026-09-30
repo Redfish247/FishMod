@@ -461,6 +461,12 @@ object RenderUtils {
         renderLineTo(context, matrices, consumer, pos.x, pos.y, pos.z, color)
     }
 
+    @JvmStatic
+    fun fillBox(matrices: PoseStack, consumer: VertexConsumer, b: AABB, argb: Int) {
+        val c = toFloats(argb)
+        drawFilledBox(matrices, consumer, b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ, c[0], c[1], c[2], c[3])
+    }
+
     private fun drawFilledBox(
         matrices: PoseStack, consumer: VertexConsumer,
         x1: Double, y1: Double, z1: Double,
