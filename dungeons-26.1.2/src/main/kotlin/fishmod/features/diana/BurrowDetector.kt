@@ -124,8 +124,8 @@ object BurrowDetector {
             if (death) { prune(); chains.pollFirst() }
             DianaWaypoints.markRemoved(w.pos)
             DianaWaypoints.removeAt(w.pos, WpType.BURROW, WpType.GUESS, WpType.ARROW, WpType.SUB)
+            // Keep lastClickedWaypoint: the next arrow spawns here and filters on it (as SBO does)
             ArrowGuess.onBurrowAt(w.pos)
-            Diana.lastClickedWaypoint = null
             return
         }
         if (type != null && w.type != WpType.BURROW) {
