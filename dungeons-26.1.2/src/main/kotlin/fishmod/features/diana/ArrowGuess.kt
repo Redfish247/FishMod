@@ -198,17 +198,14 @@ object ArrowGuess {
         return if (tExit == Double.MAX_VALUE) null else o.add(d.scale(tExit))
     }
 
-    // Invalid block or spade held 1s within 32 blocks with no burrow: next candidate or drop the guess
+    // Invalid block, or spade held within 32 blocks for a full second with no burrow: next candidate or drop the guess
     private fun advance() {
-        val me = Diana.player()?.position() ?: return
-        val spadeReady = Diana.heldSpadeFor(1000)
+        if (Diana.player() == null) return
         val it = entries.iterator()
         while (it.hasNext()) {
             val e = it.next()
             val cur = e.current ?: run { it.remove(); continue }
-            val noBurrow = DianaWaypoints.at(cur, WpType.BURROW) == null
-            val nearGuess = Vec3(cur.x + 0.5, cur.y + 0.5, cur.z + 0.5).distanceToSqr(me) <= 1024
-            val spadeWrong = spadeReady && noBurrow && nearGuess
+            val spadeWrong = DianaWaypoints.at(cur, WpType.ARROW)?.let { w -> DianaWaypoints.spadeDisproved(w) } ?: false
             if (!DianaWaypoints.isValidBlock(cur) || spadeWrong) {
                 dropEntryWaypoints(e)
                 if (!e.moveToNext()) {
