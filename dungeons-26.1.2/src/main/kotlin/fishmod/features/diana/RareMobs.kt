@@ -302,9 +302,9 @@ object RareMobs {
         val rare = RareMob.fromAlias(trailing)
         if (rare != null) {
             if (!DianaSettings.dianaReceiveRareMob || !rare.receive()) return
-            if (DianaWaypoints.rareMobNear(Vec3.atCenterOf(pos), 10.0)) return
-            DianaWaypoints.addRareMob(pos, "${rare.label} §7($sender)", 45_000)
-            if (!self) notify(rare, sender)
+            // Always alert on a share; only skip the duplicate waypoint
+            if (!DianaWaypoints.rareMobNear(Vec3.atCenterOf(pos), 10.0)) DianaWaypoints.addRareMob(pos, "${rare.label} §7($sender)", 45_000)
+            if (!self) notify(rare, sender, force = true)
         } else if (!self) {
             DianaWaypoints.addWorld(pos, "§9$sender", 30_000)
         }
@@ -312,9 +312,9 @@ object RareMobs {
 
     // ---- notify ----
 
-    private fun notify(rare: RareMob, from: String) {
+    private fun notify(rare: RareMob, from: String, force: Boolean = false) {
         val now = System.currentTimeMillis()
-        if (now - (lastNotify[rare] ?: 0L) < 3000) return
+        if (!force && now - (lastNotify[rare] ?: 0L) < 3000) return
         lastNotify[rare] = now
         title("§6§l<§b§l§kO§6§l> ${rare.code}§l${rare.short.uppercase()}! §6§l<§b§l§kO§6§l>", if (from.isEmpty()) "" else "§7$from")
         playSound()

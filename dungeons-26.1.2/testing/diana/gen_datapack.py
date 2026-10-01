@@ -208,7 +208,14 @@ at(1100, "item replace entity @a armor.head with minecraft:diamond_helmet", tell
 at(1120, CROWN, marker("crownset 5800000000"))
 at(1125, marker("crowndump"))
 at(1130, "scoreboard objectives remove fmsb", "team remove fmpurse")
-at(1140, tell("§a[test] scenario done"))
+# rare mob outranks burrows for warping, except while a burrow is half dug (1/2)
+at(1150, marker("clear"), "tp @a 0 71 0 0 20", burrow_particles("mob", 3, 3))
+at(1155, burrow_particles("mob", 3, 3), marker("click 3 70 3"), tell("§c§lOi! §eYou dug out §2Minos Champion§e!"))
+at(1160, tell("§9Party §8> §b[MVP§c+§b] Tester§f: x: -140, y: 70, z: -100 | Minos Inquisitor"))
+at(1170, marker("dump"), marker("warp"), marker("shot 15_rare_title_midburrow"))
+at(1180, 'particle minecraft:large_smoke 3.5 71 3.5 0 0 0 0.01 1 force')
+at(1190, marker("dump"), marker("warp"))
+at(1200, tell("§a[test] scenario done"))
 
 # schedule chain
 w("start", setup + [f"schedule function fmtest:s{i} {t + 200}t append" for i, (t, _) in enumerate(steps)])
