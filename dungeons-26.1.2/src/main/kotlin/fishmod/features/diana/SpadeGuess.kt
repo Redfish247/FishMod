@@ -56,15 +56,23 @@ object SpadeGuess {
         g?.let { place(it) }
     }
 
+    fun trailActive() = System.currentTimeMillis() - lastLavaMs < 3000
+
     private fun place(v: Vec3) {
-        val pos = BlockPos(floor(v.x).toInt(), floor(v.y - 0.5).toInt(), floor(v.z).toInt())
+        // Far guesses get a wild Y; outside the hub Y range the cleanup tick deleted it every frame (flicker/vanish)
+        val y = floor(v.y - 0.5).toInt().coerceIn(DianaWaypoints.MIN_Y + 1, DianaWaypoints.MAX_Y)
+        val raw = BlockPos(floor(v.x).toInt(), y, floor(v.z).toInt())
+        // Rough Y (worse far away): sit it on grass so the invalid-block check doesn't keep deleting it
+        val pos = if (DianaWaypoints.chunkLoaded(raw) && !DianaWaypoints.isValidBlock(raw)) DianaWaypoints.snapToGround(raw) ?: raw else raw
         if (DianaWaypoints.removedRecently(pos)) return
         // Each trail point nudges the guess a little; keep the current one unless it really moved (stops flicker)
-        if (DianaWaypoints.list.any { it.type == WpType.GUESS && it.distTo(v) <= 4 }) return
+        if (DianaWaypoints.list.any { it.type == WpType.GUESS && flat(it.pos, pos) <= 4 }) return
         DianaWaypoints.list.removeIf { it.type == WpType.GUESS && it.pos != pos && it.distTo(v) <= 32 }
         if (DianaWaypoints.list.any { it.pos == pos && (it.type == WpType.BURROW || it.type == WpType.GUESS) }) return
         DianaWaypoints.add(Waypoint(pos, WpType.GUESS, "Guess"))
     }
+
+    private fun flat(a: BlockPos, b: BlockPos): Double { val dx = (a.x - b.x).toDouble(); val dz = (a.z - b.z).toDouble(); return sqrt(dx * dx + dz * dz) }
 
     fun guess(): Vec3? {
         if (points.size < 4) return null
