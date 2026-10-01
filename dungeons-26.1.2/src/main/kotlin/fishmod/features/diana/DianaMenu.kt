@@ -100,7 +100,7 @@ object DianaMenu {
         tracker.sub.add(ToggleSetting("Stats Message", "\"Took 120 Mobs to get an Inquis!\"", S::dianaStatsMessage))
         tracker.sub.add(ButtonSetting("Past Events", "Also /fm diana pastevents", "Open") { DianaTracker.openPastEvents() })
         tracker.sub.add(ButtonSetting("Reset Session", "Also /fm diana resetsession", "Reset") { DianaTracker.resetSession() })
-        tracker.sub.add(ButtonSetting("Import From SBO", "Adds SBO's Total tracker onto FishMod's Total (also /fm diana importsbo)", "Import") { DianaTracker.importSbo() })
+        tracker.sub.add(ButtonSetting("Import From SBO", "Adds SBO's Total and past years onto FishMod's (also /fm diana importsbo)", "Import") { DianaTracker.importSbo() })
         col.features.add(tracker)
 
         val ann = Feature("Diana Announcers", S::dianaAnnouncers)

@@ -629,8 +629,19 @@ object DianaTracker {
         for ((k, n) in sbo.items) t.items[k] = (t.items[k] ?: 0L) + n
         for ((k, n) in sbo.mobs) t.mobs[k] = (t.mobs[k] ?: 0L) + n
         t.timeMs += sbo.timeMs
+        // Past years FishMod doesn't already have are added; the list is kept sorted by year
+        var added = 0
+        read("pastDianaEvents.json")?.getAsJsonArray("events")?.forEach { e ->
+            val ev = fromSbo(e.asJsonObject)
+            if (ev.year == 0 || ev.mobs.values.none { it > 0 } || data.past.any { it.year == ev.year }) return@forEach
+            data.past.add(PastEvent().also {
+                it.year = ev.year; it.items = ev.items; it.mobs = ev.mobs; it.timeMs = ev.timeMs; it.profit = profit(ev).toLong()
+            })
+            added++
+        }
+        data.past.sortBy { it.year }
         changed(); flushSave(true)
-        FishMsg.send("§aAdded SBO's Total tracker onto FishMod's Total.")
+        FishMsg.send("§aAdded SBO's Total tracker onto FishMod's Total and $added past events.")
     }
 
     @JvmStatic
