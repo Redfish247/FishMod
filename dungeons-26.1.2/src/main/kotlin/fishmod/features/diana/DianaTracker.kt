@@ -717,8 +717,8 @@ object DianaTracker {
 
     fun fmtTime(ms: Long): String {
         val s = ms / 1000
-        val h = s / 3600; val m = s % 3600 / 60
-        return if (h > 0) "${h}h ${m}m" else "${m}m ${s % 60}s"
+        val d = s / 86400; val h = s % 86400 / 3600; val m = s % 3600 / 60
+        return if (d > 0) "${d}d ${h}h ${m}m" else if (h > 0) "${h}h ${m}m" else "${m}m ${s % 60}s"
     }
 
     private fun load() {

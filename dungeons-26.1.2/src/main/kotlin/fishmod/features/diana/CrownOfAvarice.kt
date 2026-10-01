@@ -49,6 +49,8 @@ object CrownOfAvarice {
     private var lastDugCoinsMs = 0L
     private var lastNonCrownMs = 0L
     private var tick = 0
+    private const val MILESTONE = 100_000_000L
+    private val lastSeen = HashMap<String, Long>()
 
     fun init() {
         load()
@@ -76,6 +78,7 @@ object CrownOfAvarice {
 
     private fun onTick(mc: Minecraft) {
         val p = mc.player ?: return
+        checkMilestone(p.getItemBySlot(EquipmentSlot.HEAD))
         val purse = readPurse(mc)
         val prev = lastPurse
         lastPurse = purse
@@ -92,6 +95,19 @@ object CrownOfAvarice {
         if (!Diana.active() || !fromDiana || selling || gain > MAX_GAIN) return
         totals[u] = maxOf(totals[u] ?: 0L, itemCoins(helmet)) + (gain * SCALE).toLong()
         save()
+    }
+
+    // Chat line each time the worn crown passes another 100M
+    private fun checkMilestone(helmet: ItemStack) {
+        if (!DianaSettings.dianaCrownMilestones) return
+        val u = uuidOf(helmet) ?: return
+        val cur = total(helmet) ?: return
+        val prev = lastSeen.put(u, cur) ?: return
+        if (cur / MILESTONE > prev / MILESTONE && cur - prev < MILESTONE) {
+            val m = cur / MILESTONE * 100
+            val amt = if (m >= 1000) "%.1fB".format(Locale.US, m / 1000.0).replace(".0B", "B") else "${m}M"
+            FishMsg.send("§dCrown of Avarice §7reached §6$amt §7coins!")
+        }
     }
 
     private fun readPurse(mc: Minecraft): Long {
