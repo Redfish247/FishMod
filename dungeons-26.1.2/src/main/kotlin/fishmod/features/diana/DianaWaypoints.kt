@@ -171,6 +171,8 @@ object DianaWaypoints {
             if (spadeDisproved(g)) { list.remove(g); markRemoved(g.pos); continue }
             if (isValidBlock(g.pos) || !chunkLoaded(g.pos)) continue
             list.remove(g)
+            // Far guesses have a rough Y; move onto the nearest grass instead of dropping
+            snapToGround(g.pos)?.takeIf { at(it, WpType.GUESS, WpType.BURROW) == null }?.let { add(Waypoint(it, WpType.GUESS, g.label)) }
         }
         // Arrow on a known burrow merges into it
         for (a in list.filter { it.type == WpType.ARROW || it.type == WpType.SUB }) {
