@@ -53,7 +53,9 @@ object DianaWaypoints {
     // Spade held within 32 blocks and no burrow showed up for a full second: the guess is wrong
     fun spadeDisproved(w: Waypoint): Boolean {
         val me = Diana.player()?.position()
-        val checking = me != null && Diana.holdingSpade && at(w.pos, WpType.BURROW) == null &&
+        // Not while the trail is still drawing / the guess is fresh, or it gets dropped and re-added (flicker)
+        val settled = System.currentTimeMillis() - w.created > 3000 && !SpadeGuess.trailActive()
+        val checking = me != null && settled && Diana.holdingSpade && at(w.pos, WpType.BURROW) == null &&
             w.center.distanceToSqr(me) <= SPADE_CHECK_RANGE_SQ
         if (!checking) { w.spadeNearSince = 0L; return false }
         val now = System.currentTimeMillis()
