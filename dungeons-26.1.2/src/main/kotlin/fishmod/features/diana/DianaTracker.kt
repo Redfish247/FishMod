@@ -112,8 +112,14 @@ object DianaTracker {
     private val STACK_DROPS = setOf("ENCHANTED_GOLD", "ENCHANTED_ANCIENT_CLAW", "ANCIENT_CLAW")
     private val SACK_NAMES = mapOf(
         "Enchanted Gold" to "ENCHANTED_GOLD", "Enchanted Ancient Claw" to "ENCHANTED_ANCIENT_CLAW", "Ancient Claw" to "ANCIENT_CLAW",
+        "Gold" to "GOLD_INGOT",
     )
-    private val SACK_LINE = Regex("""\+([\d,]+) ([^(\n]+)""")
+    private val SACK_LINE = Regex("""([+-])([\d,]+) ([^(\n]+)""")
+    // Sack auto-crafting swaps 160 base items for 1 enchanted one; that's not a drop
+    private val CRAFTED_FROM = mapOf("ENCHANTED_ANCIENT_CLAW" to "ANCIENT_CLAW", "ENCHANTED_GOLD" to "GOLD_INGOT")
+    private const val CRAFT_RATIO = 160L
+    private var lastSackHover = ""
+    private var lastSackMs = 0L
     private const val PICKUP_WINDOW_MS = 3_000L
     private const val SACK_WINDOW_MS = 30_000L
     private val invCounts = HashMap<String, Int>()
@@ -529,16 +535,31 @@ object DianaTracker {
     // "[Sacks] +N items" lists what went straight to sacks in its hover text
     private fun onSacks(text: Component) {
         if (!mobDiedWithin(SACK_WINDOW_MS)) return
-        val hovers = ArrayList<String>()
+        // Several parts of the line carry the same hover, so collect each distinct text once
+        val hovers = LinkedHashSet<String>()
         fun walk(c: Component) {
-            (c.style.hoverEvent as? net.minecraft.network.chat.HoverEvent.ShowText)?.let { hovers += it.value().string }
+            (c.style.hoverEvent as? net.minecraft.network.chat.HoverEvent.ShowText)?.let { hovers += it.value().string.replace(Constants.STRIP_COLOR_REGEX, "") }
             c.siblings.forEach(::walk)
         }
         walk(text)
-        for (h in hovers) for (m in SACK_LINE.findAll(h.replace(Constants.STRIP_COLOR_REGEX, ""))) {
-            val name = m.groupValues[2].replace("Ingot", "").trim()
+        val joined = hovers.joinToString("\n")
+        val now = System.currentTimeMillis()
+        if (joined == lastSackHover && now - lastSackMs < 1000) return
+        lastSackHover = joined; lastSackMs = now
+
+        val added = HashMap<String, Long>()
+        val removed = HashMap<String, Long>()
+        for (m in SACK_LINE.findAll(joined)) {
+            val name = m.groupValues[3].replace("Ingot", "").trim()
             val id = SACK_NAMES[name] ?: continue
-            m.groupValues[1].replace(",", "").toLongOrNull()?.let { track(id, it) }
+            val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: continue
+            val into = if (m.groupValues[1] == "+") added else removed
+            into[id] = (into[id] ?: 0L) + n
+        }
+        for ((id, n) in added) {
+            if (id !in STACK_DROPS) continue
+            val crafted = CRAFTED_FROM[id]?.let { base -> minOf(n, (removed[base] ?: 0L) / CRAFT_RATIO) } ?: 0L
+            if (n - crafted > 0) track(id, n - crafted)
         }
     }
 
