@@ -151,7 +151,7 @@ object DianaTrackerHud {
                 val strike = hidden
                 val left = if (strike) "§7§m" + r.text.replace(STRIP, "") else r.text
                 val right = if (strike) "§7§m" + r.tail.replace(STRIP, "") else r.tail
-                ctx.text(font, left, 0, i * 10, -1, true)
+                ctx.text(font, left, r.tailX - 6 - font.width(left), i * 10, -1, true)
                 ctx.text(font, right, r.tailX, i * 10, -1, true)
             }
             i++
