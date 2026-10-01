@@ -118,6 +118,8 @@ object DianaTracker {
 
     private val BURROW = Regex("^You .*?Griffin [Bb]urrow")
     private val DUG_MOB = Regex("You dug (?:out )?(?:an? )?(.+?)!$")
+    // A cocoon spawns another copy of the mob, so it counts as an extra dig
+    private val COCOON_MOB = Regex("CAUGHT!.*?You cocooned (?:an? )?(.+?)!$")
     private val COINS = Regex("^Wow! You dug out ([\\d,]+) coins!")
     private val TREASURE = Regex("^RARE DROP! You dug out an? (.+?)!$")
     private val RARE_DROP = Regex("^RARE DROP! (.+)$")
@@ -227,6 +229,13 @@ object DianaTracker {
                 if (!dup) onMobDug(name)
                 return DianaSettings.dianaMessageHider
             }
+        }
+        COCOON_MOB.find(s)?.let { m ->
+            var name = m.groupValues[1]
+            PREFIXES.firstOrNull { name.startsWith(it) }?.let { name = name.removePrefix(it) }
+            if (name == "Siamese Lynx") name = "Siamese Lynxes"
+            if (name in MOBS && !dup) onMobDug(name)
+            return false
         }
         return DianaMessageHider.shouldHide(s)
     }
