@@ -67,6 +67,7 @@ object FishDiag {
     }
 
     private fun record(code: String, message: String, t: Throwable?) {
+        if (isTransientNetwork(t)) return
         try {
             val n = counts.computeIfAbsent(code) { AtomicInteger() }.incrementAndGet()
             if (n > FULL_LOGS_PER_CODE) {
@@ -152,8 +153,22 @@ object FishDiag {
     @JvmStatic
     fun logPath(): String = logFile.absolutePath
 
+    // Timeouts / dropped connections are the network, not a bug.
+    private fun isTransientNetwork(t: Throwable?): Boolean {
+        var c = t
+        var depth = 0
+        while (c != null && depth++ < 8) {
+            if (c is java.net.http.HttpTimeoutException || c is java.net.ConnectException ||
+                c is java.net.SocketTimeoutException || c is java.net.UnknownHostException ||
+                c is java.nio.channels.ClosedChannelException) return true
+            if (c is java.io.IOException && c.message?.contains("closed", ignoreCase = true) == true) return true
+            c = c.cause
+        }
+        return false
+    }
+
     private fun modVersion(): String = try {
-        net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer(fishmod.utils.Constants.NAMESPACE)
+        net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer("fishmod-dungeons")
             .map { it.metadata.version.friendlyString }.orElse("?")
     } catch (_: Throwable) { "?" }
 
