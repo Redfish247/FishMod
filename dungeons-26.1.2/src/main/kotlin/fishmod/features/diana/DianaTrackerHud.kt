@@ -177,7 +177,7 @@ object DianaTrackerHud {
             if (hide && n + ls == 0L) continue
             val coins = DianaTracker.priceOf(k) * (n + ls)
             val value = if (coins > 0) "§6${DianaTracker.short(coins)}" else ""
-            val tail = "§7| $label §f$n" + pct(t, k, n, "") + (if (ls > 0) " ${label.take(2)}+$ls LS" + pct(t, k, ls, "_LS") else "")
+            val tail = "§7| $label §f$n" + pct(t, k, n, "") + (if (ls > 0) " §f+$ls LS" + pct(t, k, ls, "_LS") else "")
             items += ItemLine("loot:$k", value, tail)
         }
         val valueColW = items.maxOfOrNull { font.width(it.value) } ?: 0
