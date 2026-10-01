@@ -44,6 +44,8 @@ public class Keybinds {
 
     public static KeyMapping chatPeek;
 
+    public static KeyMapping zoom;
+
     private static final Path KEYBIND_BACKUP_FILE = Paths.get(fishmod.utils.config.FolderUtility.CONFIG_PATH + "keybinds.txt");
     private static final Map<String, KeyMapping> TRACKED = new LinkedHashMap<>();
     private static final Map<String, String> lastKnown = new LinkedHashMap<>();
@@ -168,6 +170,13 @@ public class Keybinds {
                 GLFW.GLFW_KEY_UNKNOWN,
                 category));
         TRACKED.put("chat_peek", chatPeek);
+
+        zoom = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                "Zoom (Hold)",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_C,
+                category));
+        TRACKED.put("zoom", zoom);
 
         restoreKeybindBackup();
 
