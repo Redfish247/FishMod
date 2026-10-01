@@ -118,7 +118,7 @@ object DianaTrackerHud {
         val hud = Hud(gx, gy, gs, on, lines)
         huds[id] = hud
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", id)) { ctx, _ ->
-            if (!FishHudEditor.isOpen() && Minecraft.getInstance().screen !is InventoryScreen && shown() && on())
+            if (!FishHudEditor.isOpen() && Minecraft.getInstance().screen !is InventoryScreen && !Minecraft.getInstance().options.keyPlayerList.isDown && shown() && on())
                 draw(ctx, rows(id, hud), gx(), gy(), gs(), false)
         }
     }
