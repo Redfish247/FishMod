@@ -43,6 +43,7 @@
     "ExperienceBarRendererMixin",
     "DyedItemColorMixin",
     "GameRendererUiMixin",
+    "GlCommandEncoderUiTargetMixin",
     "GuiScoreboardMixin",
     "ItemTrimMixin",
     "EntityRendererMixin",
