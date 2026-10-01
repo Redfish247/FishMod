@@ -210,7 +210,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             ),
             "Party & Social" to listOf("Party Finder List"),
             "Slayer" to listOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit"),
-            "Diana" to listOf("Diana Loot Tracker", "Diana Mob Tracker", "Diana Stats", "Diana Magic Find", "Diana Mythos HP", "Diana No Shuriken"),
+            "Diana" to listOf("Diana Loot Tracker", "Diana Mob Tracker", "Diana Stats", "Diana Magic Find", "Diana Mythos HP", "Diana No Shuriken", "Diana Rare Mob Alert", "Diana Warp Title"),
         )
 
         private class Sample(
@@ -309,6 +309,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Spring Boots" to s("§aCharge: §f67%"),
             "Diana Mythos HP" to s("§2Empyrean King Minos §a100M§f/§a100M§c❤ §b✯", "§6King Minos §7- §575 Hits"),
             "Diana No Shuriken" to s("§c§lNO SHURIKEN!"),
+            "Diana Rare Mob Alert" to c("§6§l<§b§lO§6§l> §d§lINQUISITOR! §6§l<§b§lO§6§l>", "§7Tester"),
+            "Diana Warp Title" to c("§bWarp §eCastle"),
             "Diana Loot Tracker" to s("§6§lDiana Loot §7(Event)", "§5Chimera§7: §f2", "§6Daedalus Stick§7: §f1", "§9Griffin Feather§7: §f14", "§6Coins§7: §f1.2m", "§aProfit§7: §f25.3m §7(4.1m/h)"),
             "Diana Mob Tracker" to s("§6§lDiana Mobs §7(Event)", "§dMinos Inquisitor§7: §f6", "§5Minos Champion§7: §f21", "§7Total Mobs§7: §f140"),
             "Diana Stats" to s("§6§lDiana Stats", "§eMobs since Inq§7: §f38", "§eInqs since Chimera§7: §f4"),
