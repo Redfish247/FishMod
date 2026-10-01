@@ -623,29 +623,14 @@ object DianaTracker {
         fun read(name: String) = File(dir, name).takeIf { it.isFile }?.let {
             try { com.google.gson.JsonParser.parseString(it.readText()).asJsonObject } catch (e: Exception) { null }
         }
-        val parts = ArrayList<String>()
-        read("dianaTrackerTotal.json")?.let { data.total = fromSbo(it); parts += "Total" }
-        read("dianaTrackerMayor.json")?.let { o ->
-            val ev = fromSbo(o)
-            if (ev.year == 0) ev.year = electedYear()
-            if (ev.year == electedYear()) { data.event = ev; parts += "Event" }
-        }
-        read("pastDianaEvents.json")?.getAsJsonArray("events")?.let { arr ->
-            val byYear = LinkedHashMap<Int, PastEvent>()
-            data.past.forEach { byYear[it.year] = it }
-            for (e in arr) {
-                val t = fromSbo(e.asJsonObject)
-                if (t.year == 0 || t.mobs.values.none { it > 0 }) continue
-                byYear[t.year] = PastEvent().also {
-                    it.year = t.year; it.items = t.items; it.mobs = t.mobs; it.timeMs = t.timeMs; it.profit = profit(t).toLong()
-                }
-            }
-            data.past = byYear.values.sortedBy { it.year }.toMutableList()
-            parts += "${arr.size()} Past Events"
-        }
-        if (parts.isEmpty()) { FishMsg.send("§cSBO config found but no Diana tracker files in it."); return }
+        val sbo = read("dianaTrackerTotal.json")?.let(::fromSbo)
+        if (sbo == null) { FishMsg.send("§cSBO config found but no dianaTrackerTotal.json in it."); return }
+        val t = data.total
+        for ((k, n) in sbo.items) t.items[k] = (t.items[k] ?: 0L) + n
+        for ((k, n) in sbo.mobs) t.mobs[k] = (t.mobs[k] ?: 0L) + n
+        t.timeMs += sbo.timeMs
         changed(); flushSave(true)
-        FishMsg.send("§aImported from SBO: §f${parts.joinToString(", ")}§a.")
+        FishMsg.send("§aAdded SBO's Total tracker onto FishMod's Total.")
     }
 
     @JvmStatic
