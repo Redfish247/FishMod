@@ -54,6 +54,7 @@ object FishSettings {
     @ConfigValue @JvmField var guiScaleAuction: Int = 100
     @ConfigValue @JvmField var guiScaleWaypoint: Int = 100
     @ConfigValue @JvmField var guiScaleCredits: Int = 100
+    @ConfigValue @JvmField var guiScaleDianaProfit: Int = 100
 
     @ConfigValue @JvmField var petXpTamingLevel: Int = 0
     @ConfigValue @JvmField var petXpBeastmasterBonus: Int = 0

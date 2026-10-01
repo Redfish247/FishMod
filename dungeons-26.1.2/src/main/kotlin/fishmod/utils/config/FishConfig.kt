@@ -16,10 +16,7 @@ import fishmod.utils.dungeon.Split
 
 object FishConfig {
 
-    @JvmField
-    val manager: ConfigManager = ConfigManager(
-        "config/fishmod-settings.json",
-        listOf(
+    private val classes: List<Class<*>> = listOf(
             FishSettings::class.java, FishPuzzleDisplay::class.java, FishEstTotal::class.java,
             Phase::class.java,
             Section::class.java,
@@ -32,5 +29,9 @@ object FishConfig {
             DungeonMapSettings::class.java,
             fishmod.features.diana.DianaSettings::class.java
         )
-    )
+
+    init { ColorDefaults.snapshot(classes) }
+
+    @JvmField
+    val manager: ConfigManager = ConfigManager("config/fishmod-settings.json", classes)
 }

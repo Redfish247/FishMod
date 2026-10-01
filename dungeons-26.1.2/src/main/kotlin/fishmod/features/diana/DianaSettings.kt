@@ -131,6 +131,12 @@ object DianaSettings {
     @ConfigValue @JvmField var dianaHpHudX: Int = 300
     @ConfigValue @JvmField var dianaHpHudY: Int = 40
     @ConfigValue @JvmField var dianaHpHudScale: Double = 1.0
+    @ConfigValue @JvmField var dianaRareTitleX: Int = -1
+    @ConfigValue @JvmField var dianaRareTitleY: Int = -1
+    @ConfigValue @JvmField var dianaRareTitleScale: Double = 1.0
+    @ConfigValue @JvmField var dianaWarpTitleX: Int = -1
+    @ConfigValue @JvmField var dianaWarpTitleY: Int = -1
+    @ConfigValue @JvmField var dianaWarpTitleScale: Double = 1.0
     @ConfigValue @JvmField var dianaShurikenHudX: Int = 300
     @ConfigValue @JvmField var dianaShurikenHudY: Int = 120
     @ConfigValue @JvmField var dianaShurikenHudScale: Double = 1.0

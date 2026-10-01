@@ -98,6 +98,7 @@ class Split(
     }
 
     fun nameColor(): Int = nameColors()[name] ?: color
+    fun defaultNameColor(): Int = color
 
     private var tick: Int = 0
     private var startTime: Long = 0
