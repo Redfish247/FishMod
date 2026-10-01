@@ -560,11 +560,67 @@ object DianaTracker {
         mc.schedule { mc.setScreen(DianaPastEventsScreen()) }
     }
 
+    private val SBO_LS = Regex(" ?L[sS]$")
+    private val SBO_KEYS = mapOf("coins" to "COINS", "Total Burrows" to "TOTAL_BURROWS", "TotalMobs" to "TOTAL_MOBS")
+    private val SBO_SKIP = setOf("time", "scavengerCoins", "fishCoins")
+
+    // SBO tracker JSON {items:{..}, mobs:{..}} -> our Tracker; SBO keeps playtime in items.time (ms)
+    private fun fromSbo(o: com.google.gson.JsonObject): Tracker {
+        val t = Tracker()
+        if (o.has("year")) t.year = o.get("year").asInt
+        for ((sec, out) in listOf("items" to t.items, "mobs" to t.mobs)) {
+            val m = o.getAsJsonObject(sec) ?: continue
+            for ((k, v) in m.entrySet()) {
+                if (!v.isJsonPrimitive || !v.asJsonPrimitive.isNumber) continue
+                if (k == "time") { t.timeMs = v.asLong; continue }
+                if (k in SBO_SKIP) continue
+                val n = v.asLong
+                if (n == 0L) continue
+                val key = SBO_KEYS[k] ?: key(k.replace(SBO_LS, "_LS"))
+                out[key] = (out[key] ?: 0L) + n
+            }
+        }
+        return t
+    }
+
     @JvmStatic
-    fun command(): LiteralArgumentBuilder<FabricClientCommandSource> =
+    fun importSbo() {
+        val dir = listOf("config/sbo", "config/SBO").map(::File).firstOrNull { it.isDirectory }
+        if (dir == null) { FishMsg.send("§cNo SBO config found (config/sbo)."); return }
+        fun read(name: String) = File(dir, name).takeIf { it.isFile }?.let {
+            try { com.google.gson.JsonParser.parseString(it.readText()).asJsonObject } catch (e: Exception) { null }
+        }
+        val parts = ArrayList<String>()
+        read("dianaTrackerTotal.json")?.let { data.total = fromSbo(it); parts += "Total" }
+        read("dianaTrackerMayor.json")?.let { o ->
+            val ev = fromSbo(o)
+            if (ev.year == 0) ev.year = electedYear()
+            if (ev.year == electedYear()) { data.event = ev; parts += "Event" }
+        }
+        read("pastDianaEvents.json")?.getAsJsonArray("events")?.let { arr ->
+            val byYear = LinkedHashMap<Int, PastEvent>()
+            data.past.forEach { byYear[it.year] = it }
+            for (e in arr) {
+                val t = fromSbo(e.asJsonObject)
+                if (t.year == 0 || t.mobs.values.none { it > 0 }) continue
+                byYear[t.year] = PastEvent().also {
+                    it.year = t.year; it.items = t.items; it.mobs = t.mobs; it.timeMs = t.timeMs; it.profit = profit(t).toLong()
+                }
+            }
+            data.past = byYear.values.sortedBy { it.year }.toMutableList()
+            parts += "${arr.size()} Past Events"
+        }
+        if (parts.isEmpty()) { FishMsg.send("§cSBO config found but no Diana tracker files in it."); return }
+        changed(); flushSave(true)
+        FishMsg.send("§aImported from SBO: §f${parts.joinToString(", ")}§a.")
+    }
+
+    @JvmStatic
+    fun command():LiteralArgumentBuilder<FabricClientCommandSource> =
         ClientCommands.literal("diana")
             .then(ClientCommands.literal("resetsession").executes { resetSession(); 1 })
             .then(ClientCommands.literal("pastevents").executes { openPastEvents(); 1 })
+            .then(ClientCommands.literal("importsbo").executes { importSbo(); 1 })
 
     // Party command replies from the Event tracker, null if not a Diana command
     @JvmStatic
