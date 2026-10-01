@@ -100,8 +100,8 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
         UiRecorder.fillRoundedRect((winX + 1).toFloat(), footY.toFloat(), (winW - 2).toFloat(), (FOOT_H - 1).toFloat(), 11f, PANEL2)
         UiRecorder.fillRect((winX + 1).toFloat(), footY.toFloat(), (winW - 2).toFloat(), 12f, PANEL2)
         UiRecorder.fillRect(winX.toFloat(), footY.toFloat(), winW.toFloat(), 1f, LINE)
-        UiRecorder.text("/fm diana pastevents", (winX + 14).toFloat(), footY + (FOOT_H - S_XS) / 2f, S_XS, ScreenTheme.SUBTEXT_COLOR)
-        val cbX = winX + 14 + tw("/fm diana pastevents", S_XS) + 18
+        UiRecorder.text("/fm dianaloot", (winX + 14).toFloat(), footY + (FOOT_H - S_XS) / 2f, S_XS, ScreenTheme.SUBTEXT_COLOR)
+        val cbX = winX + 14 + tw("/fm dianaloot", S_XS) + 18
         val cbY = footY + (FOOT_H - 10) / 2
         val cbHov = over(cbX, cbY - 2, 14 + tw("Single select", S_SM) + 6, 14)
         if (single) UiRecorder.fillRoundedRect(cbX.toFloat(), cbY.toFloat(), 10f, 10f, 3f, ACCENT)
