@@ -115,7 +115,7 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
         var cy = y
         val allOn = evs.all { it.idx in selected }
         fun chip(label: String, on: Boolean, action: () -> Unit) {
-            val cw = tw(label, S_SM) + 16
+            val cw = (if (on) Math.ceil(UiRecorder.textWidthBold(label, S_SM).toDouble()).toInt() else tw(label, S_SM)) + 16
             if (cx + cw > x + w) { cx = x; cy += chipH + 4 }
             val hov = over(cx, cy, cw, chipH)
             if (on) UiRecorder.fillPillBar(cx.toFloat(), cy.toFloat(), cw.toFloat(), chipH.toFloat(), ACCENT)
@@ -192,7 +192,7 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
             if (ry + ROW_H < top || ry > top + lh) continue
             if (over(x0, ry, rowW, ROW_H - 2) && curMy in top..(top + lh)) ScreenTheme.roundedRect(ctx, x0, ry, rowW, ROW_H - 2, 6, RAISE)
             val iy = ry + (ROW_H - 2 - 20) / 2
-            val icon = LootIcons.icon(r.key.removeSuffix("_LS"))
+            val icon = iconFor(r.key)
             if (icon != null) {
                 ScreenTheme.roundedRect(ctx, x0 + 6, iy, 20, 20, 5, LINE)
                 ctx.item(icon, x0 + 8, iy + 2)
@@ -322,6 +322,15 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
         }
 
         private fun tw(s: String, size: Float): Int = Math.ceil(UiRecorder.textWidth(s, size).toDouble()).toInt()
+
+        private val COIN_ICON = net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GOLD_NUGGET)
+        private val BURROW_ICON = net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GOLDEN_SHOVEL)
+
+        private fun iconFor(key: String): net.minecraft.world.item.ItemStack? = when (key.removeSuffix("_LS")) {
+            "COINS", "SCAVENGER_COINS", "FISH_COINS" -> COIN_ICON
+            "TOTAL_BURROWS" -> BURROW_ICON
+            else -> LootIcons.icon(DianaTracker.itemId(key))
+        }
 
         private fun clip(s: String, maxW: Int, size: Float): String {
             if (tw(s, size) <= maxW) return s

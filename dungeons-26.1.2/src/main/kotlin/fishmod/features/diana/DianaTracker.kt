@@ -105,6 +105,9 @@ object DianaTracker {
     )
     private val NO_PRICE = setOf("TOTAL_BURROWS", "COINS")
 
+    // SkyBlock item id for a tracker key (Chimera is a book, shards/dye are prefixed)
+    fun itemId(k: String): String = k.removeSuffix("_LS").let { PRICE_ID[it] ?: if (it == "MYTHOLOGICAL_DYE") "DYE_MYTHOLOGICAL" else it }
+
     // Stackable mob drops with no chat line: counted from inventory pickups and the [Sacks] hover (as SBO does)
     private val STACK_DROPS = setOf("ENCHANTED_GOLD", "ENCHANTED_ANCIENT_CLAW", "ANCIENT_CLAW")
     private val SACK_NAMES = mapOf(
