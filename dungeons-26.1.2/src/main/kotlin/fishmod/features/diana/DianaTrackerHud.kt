@@ -177,7 +177,7 @@ object DianaTrackerHud {
             if (hide && n + ls == 0L) continue
             val coins = DianaTracker.priceOf(k) * (n + ls)
             val value = if (coins > 0) "§6${DianaTracker.short(coins)}" else ""
-            val tail = "${"| " + label} §f$n" + if (ls > 0) " §7+$ls LS" else ""
+            val tail = "${"| " + label} §f$n" + pct(t, k, n, "") + (if (ls > 0) " §7+$ls LS" + pct(t, k, ls, "_LS") else "")
             items += ItemLine("loot:$k", value, tail)
         }
         val valueColW = items.maxOfOrNull { font.width(it.value) } ?: 0
@@ -191,6 +191,16 @@ object DianaTrackerHud {
         out += Row("loot:PLAYTIME", "§7Playtime §f${DianaTracker.fmtTime(t.timeMs)}" + if (DianaTracker.paused()) " §c[Paused]" else "")
         out += Row("loot:PROFIT", "§eProfit §6${DianaTracker.short(profit)} §7(${DianaTracker.short(DianaTracker.perHour(profit, t))}/h)")
         return out
+    }
+
+    private val PCT_DROPS = setOf("CHIMERA", "FATEFUL_STINGER", "SHIMMERING_WOOL", "MANTI_CORE", "MINOS_RELIC", "BRAIN_FOOD")
+
+    // Drop rate per source mob, e.g. Chimera per Inquisitor (LS drops against LS kills)
+    private fun pct(t: DianaTracker.Tracker, k: String, n: Long, suffix: String): String {
+        if (k !in PCT_DROPS || n <= 0) return ""
+        val src = DianaTracker.drop(k).source ?: return ""
+        val kills = t.mob(src + suffix)
+        return if (kills > 0) " §7(${"%.2f".format(n * 100.0 / kills)}%)" else ""
     }
 
     private fun mobRows(): List<Row> {
