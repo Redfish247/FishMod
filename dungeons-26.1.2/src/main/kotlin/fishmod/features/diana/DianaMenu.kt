@@ -100,6 +100,7 @@ object DianaMenu {
         tracker.sub.add(ToggleSetting("Stats Message", "\"Took 120 Mobs to get an Inquis!\"", S::dianaStatsMessage))
         tracker.sub.add(ButtonSetting("Past Events", "Also /fm dianaloot", "Open") { DianaTracker.openPastEvents() })
         tracker.sub.add(ButtonSetting("Reset Session", "Also /fm diana resetsession", "Reset") { DianaTracker.resetSession() })
+        tracker.sub.add(ButtonSetting("Import From SBO", "Adds SBO's Total and past years onto FishMod's (also /fm diana importsbo)", "Import") { DianaTracker.importSbo() })
         col.features.add(tracker)
 
         val ann = Feature("Diana Announcers", S::dianaAnnouncers)
@@ -114,6 +115,7 @@ object DianaMenu {
         col.features.add(Feature("Diana Message Hider", S::dianaMessageHider))
         col.features.add(Feature("Sphinx Solver", S::dianaSphinxSolver))
         col.features.add(Feature("Crown of Avarice Counter", S::dianaCrownCounter))
+        col.features.add(Feature("Crown of Avarice Milestones", S::dianaCrownMilestones))
 
         val style = Feature("Diana Waypoint Style", null, null)
         style.sub.add(SubcategoryHeader("Colors"))
@@ -157,6 +159,7 @@ object DianaMenu {
         "Diana Message Hider" -> "Hide spammy Diana chat"
         "Sphinx Solver" -> "Click anywhere in chat to answer the Sphinx"
         "Crown of Avarice Counter" -> "Keep counting coins past 1B (/fm crown set <amount>)"
+        "Crown of Avarice Milestones" -> "Chat message every 100M coins your crown collects"
         "Diana Waypoint Style" -> "Colors, opacity and text for Diana waypoints"
         else -> null
     }

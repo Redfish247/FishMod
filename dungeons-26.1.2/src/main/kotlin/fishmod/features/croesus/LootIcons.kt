@@ -132,7 +132,7 @@ object LootIcons {
     }
 
     private fun build(id: String): ItemStack? {
-        val o = ItemsDb.get(id) ?: return null
+        val o = ItemsDb.get(id) ?: return fallback(id)
         val material = o.get("material")?.takeIf { it.isJsonPrimitive }?.asString ?: run { FishDiag.fail("LootIcons.6", "items db entry $id has no material"); return null }
         val dur = o.get("durability")?.takeIf { it.isJsonPrimitive }?.asInt ?: 0
         val item = itemFor(material, dur) ?: run { FishDiag.fail("LootIcons.7", "no vanilla item for material '$material' (id=$id dur=$dur)"); return null }
@@ -147,6 +147,13 @@ object LootIcons {
             ?.takeIf { it.size == 3 }?.let { (r, g, b) -> stack.set(DataComponents.DYED_COLOR, DyedItemColor((r shl 16) or (g shl 8) or b)) }
         if (o.get("glowing")?.asBoolean == true) stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
         return stack
+    }
+
+    // Hunting shards and dyes aren't in the Hypixel items DB
+    private fun fallback(id: String): ItemStack? = when {
+        id.startsWith("SHARD_") || id.endsWith("_SHARD") -> ItemStack(Items.PRISMARINE_SHARD)
+        id.startsWith("DYE_") || id.endsWith("_DYE") -> ItemStack(Items.MAGENTA_DYE)
+        else -> null
     }
 
     private fun itemFor(material: String, dur: Int): Item? {
