@@ -29,6 +29,7 @@ import net.minecraft.util.Mth
 import fishmod.utils.rendering.UiRecorder
 import org.lwjgl.glfw.GLFW
 import kotlin.reflect.KMutableProperty0
+import fishmod.utils.config.ColorDefaults
 
 private val FORMAT_CODE_RE = Regex("[&§][0-9a-fk-orxA-FK-ORX]")
 
@@ -563,7 +564,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderIntSetting("Placement Distance", "Max raycast range for placement", { wp.getDistance() }, { wp.setDistanceQuiet(it) }, 1, 64))
             f.sub.add(SliderDoubleSetting("Line Width", "Outline thickness when Fill is off", { wp.getLineWidth() }, { wp.setLineWidthQuiet(it) }, 0.01, 0.5)
                 .gatedBy { !wp.isFill() })
-            f.sub.add(ColorPickerSetting("Color", "", { wp.getColorArgb() }, { wp.setColorArgb(it) }))
+            f.sub.add(ColorPickerSetting("Color", "", { wp.getColorArgb() }, { wp.setColorArgb(it) }, ColorDefaults.of(FishSettings::class.java, "wpEditColor")))
             f.sub.add(DropdownSetting("Type", "Metadata tag for the next waypoint placed",
                 fishmod.utils.dungeon.waypoints.WaypointType.values(),
                 { wp.getType() }, { wp.setTypeEnum(it) }))
@@ -806,10 +807,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ColorPickerSetting("Running", "", Split.Companion::realTimeColorOngoing))
             f.sub.add(ColorPickerSetting("Finished", "", Split.Companion::realTimeColorComplete))
             f.sub.add(ColorPickerSetting("Tick Time", "The time in brackets", { Split.serverTimeColorComplete },
-                { v -> Split.serverTimeColorInactive = v; Split.serverTimeColorOngoing = v; Split.serverTimeColorComplete = v }))
+                { v -> Split.serverTimeColorInactive = v; Split.serverTimeColorOngoing = v; Split.serverTimeColorComplete = v },
+                ColorDefaults.of(Split::class.java, "serverTimeColorComplete")))
             f.sub.add(SubcategoryHeader("Split Name Colors"))
             for (s in Phase.distinctSplits()) {
-                f.sub.add(ColorPickerSetting(s.name, "", { s.nameColor() }, { v -> Split.setNameColor(s.name, v) }))
+                f.sub.add(ColorPickerSetting(s.name, "", { s.nameColor() }, { v -> Split.setNameColor(s.name, v) }, s.defaultNameColor()))
             }
             f.sub.add(ButtonSetting("Reset Names", "Back to the default split name colors", { "Reset" }, Runnable { Split.resetNameColors() }))
             f.sub.add(SubcategoryHeader("Reset Data — click twice to confirm"))
@@ -948,15 +950,18 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ConditionalColorPickerSetting("Start Color", "",
                 { !"RAINBOW".equals(FishSettings.nickColorMode, ignoreCase = true) },
                 { FishSettings.nickColorStart },
-                { v -> FishSettings.nickColorStart = v; if (NickState.isActive()) NickState.applyFromSettings() }))
+                { v -> FishSettings.nickColorStart = v; if (NickState.isActive()) NickState.applyFromSettings() },
+                ColorDefaults.of(FishSettings::class.java, "nickColorStart")))
             f.sub.add(ConditionalColorPickerSetting("Mid Color", "",
                 { "GRADIENT3".equals(FishSettings.nickColorMode, ignoreCase = true) },
                 { FishSettings.nickColorMid },
-                { v -> FishSettings.nickColorMid = v; if (NickState.isActive()) NickState.applyFromSettings() }))
+                { v -> FishSettings.nickColorMid = v; if (NickState.isActive()) NickState.applyFromSettings() },
+                ColorDefaults.of(FishSettings::class.java, "nickColorMid")))
             f.sub.add(ConditionalColorPickerSetting("End Color", "",
                 { "GRADIENT".equals(FishSettings.nickColorMode, ignoreCase = true) || "GRADIENT3".equals(FishSettings.nickColorMode, ignoreCase = true) },
                 { FishSettings.nickColorEnd },
-                { v -> FishSettings.nickColorEnd = v; if (NickState.isActive()) NickState.applyFromSettings() }))
+                { v -> FishSettings.nickColorEnd = v; if (NickState.isActive()) NickState.applyFromSettings() },
+                ColorDefaults.of(FishSettings::class.java, "nickColorEnd")))
             f.sub.add(SubcategoryHeader("Modes"))
             f.sub.add(SubcategoryHeader("SOLID: 1 color"))
             f.sub.add(SubcategoryHeader("GRADIENT: start → end"))
@@ -1462,7 +1467,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("PB Colors", "Pink section time on a new PB", FishSettings::splitPbColors))
             f.sub.add(ColorPickerSetting("New PB", "", FishSettings::splitPbColor).gatedBy { FishSettings.splitPbColors })
             Section.sectionSplits().forEachIndexed { i, s ->
-                f.sub.add(ColorPickerSetting("S${i + 1} Name", "", { s.nameColor() }, { v -> Split.setNameColor(s.name, v) }))
+                f.sub.add(ColorPickerSetting("S${i + 1} Name", "", { s.nameColor() }, { v -> Split.setNameColor(s.name, v) }, s.defaultNameColor()))
             }
             f.sub.add(DropdownSetting("Show During", "",
                 Section.DisplayTerminalSplitsWhen.values(),
@@ -3513,8 +3518,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
     }
 
-    open class ColorPickerSetting(name: String, desc: String, val getter: () -> Int, val setter: (Int) -> Unit) : Setting(name, desc) {
-        constructor(name: String, desc: String, prop: KMutableProperty0<Int>) : this(name, desc, { prop.get() }, { prop.set(it) })
+    open class ColorPickerSetting(name: String, desc: String, val getter: () -> Int, val setter: (Int) -> Unit, val defaultColor: Int? = null) : Setting(name, desc) {
+        constructor(name: String, desc: String, prop: KMutableProperty0<Int>) : this(name, desc, { prop.get() }, { prop.set(it) }, defaultOf(prop))
+
+        private fun presetCount(): Int = PRESET_ARGB.size + (if (defaultColor != null) 1 else 0)
 
         private val expandAnim = Easing.Anim(200)
         private var expanded = false
@@ -3561,7 +3568,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
         private fun contentHeight(): Int {
-            return if (activeTab == 0) TAB_BAR_H + PRESET_ARGB.size * OPTION_H
+            return if (activeTab == 0) TAB_BAR_H + presetCount() * OPTION_H
             else TAB_BAR_H + HEX_ROW_H + Math.max(UserColorStore.all().size, 1) * OPTION_H
         }
 
@@ -3604,9 +3611,20 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
                 var cy = oy + TAB_BAR_H
                 if (activeTab == 0) {
+                    if (defaultColor != null) {
+                        val dc = defaultColor or 0xFF000000.toInt()
+                        val selected = cur == dc
+                        val rowHov = mx >= innerX0 && mx <= innerX1 && my >= cy && my <= cy + OPTION_H
+                        if (rowHov) roundedRect(ctx, innerX0 + 2, cy + 1, innerX1 - innerX0 - 4, OPTION_H - 2, 4, ROW_HOVER)
+                        disc(ctx, innerX0 + 10, cy + OPTION_H / 2, 4, dc)
+                        st(ctx, tr, "Default", innerX0 + 20, cy + (OPTION_H - 8) / 2,
+                            if (selected) ACCENT_HOVER else (if (rowHov) TEXT_COLOR else SUBTEXT_COLOR))
+                        if (selected) UiRecorder.fillRect(innerX0.toFloat(), (cy + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
+                        cy += OPTION_H
+                    }
                     for (i in PRESET_ARGB.indices) {
                         val rowY = cy + i * OPTION_H
-                        val selected = i == idx
+                        val selected = i == idx && (defaultColor == null || cur != (defaultColor or 0xFF000000.toInt()))
                         val rowHov = mx >= innerX0 && mx <= innerX1 && my >= rowY && my <= rowY + OPTION_H
                         if (rowHov) roundedRect(ctx, innerX0 + 2, rowY + 1, innerX1 - innerX0 - 4, OPTION_H - 2, 4, ROW_HOVER)
                         disc(ctx, innerX0 + 10, rowY + OPTION_H / 2, 4, PRESET_ARGB[i])
@@ -3671,6 +3689,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
             var cy = oy + TAB_BAR_H
             if (activeTab == 0) {
+                if (defaultColor != null) {
+                    if (mx >= innerX0 && mx <= innerX1 && my >= cy && my <= cy + OPTION_H) {
+                        setter(defaultColor)
+                        expanded = false
+                        expandAnim.setTarget(false)
+                        return true
+                    }
+                    cy += OPTION_H
+                }
                 for (i in PRESET_ARGB.indices) {
                     val rowY = cy + i * OPTION_H
                     if (mx >= innerX0 && mx <= innerX1 && my >= rowY && my <= rowY + OPTION_H) {
@@ -3726,6 +3753,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Dark Gray", "Black"
             )
             private const val TAB_BAR_H = 18
+
+            fun defaultOf(prop: KMutableProperty0<Int>): Int? {
+                val owner = ((prop as? kotlin.jvm.internal.CallableReference)?.owner as? kotlin.jvm.internal.ClassBasedDeclarationContainer)?.jClass
+                    ?: return ColorDefaults.of(prop.name)
+                val cls = if (owner.simpleName == "Companion") owner.enclosingClass ?: owner else owner
+                return ColorDefaults.of(cls, prop.name) ?: ColorDefaults.of(prop.name)
+            }
             private const val HEX_ROW_H = 22
             private const val ADD_BTN_W = 32
         }
@@ -3733,8 +3767,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     class ConditionalColorPickerSetting(
         name: String, desc: String, val visible: () -> Boolean,
-        getter: () -> Int, setter: (Int) -> Unit
-    ) : ColorPickerSetting(name, desc, getter, setter) {
+        getter: () -> Int, setter: (Int) -> Unit, defaultColor: Int? = null
+    ) : ColorPickerSetting(name, desc, getter, setter, defaultColor) {
         val shownName: String = name
 
         private fun syncName() { this.name = if (visible()) shownName else "" }
