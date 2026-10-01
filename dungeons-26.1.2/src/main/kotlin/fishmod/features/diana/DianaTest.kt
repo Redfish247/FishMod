@@ -10,7 +10,7 @@ object DianaTest {
     private val LOG = LoggerFactory.getLogger("FishMod/DianaTest")
     private val CLICK = Regex("""^\[fmtest] click (-?\d+) (-?\d+) (-?\d+)$""")
 
-    fun log(msg: String) { if (Diana.testMode) LOG.info(msg) }
+    fun log(msg: String) { LOG.info("[DianaDbg] " + msg) } // TEMP: always on to chase guess flicker
 
     fun init() {
         LOG.info("Diana test mode on")

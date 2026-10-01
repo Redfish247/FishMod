@@ -69,6 +69,7 @@ object SpadeGuess {
         if (DianaWaypoints.list.any { it.type == WpType.GUESS && flat(it.pos, pos) <= 4 }) return
         DianaWaypoints.list.removeIf { it.type == WpType.GUESS && it.pos != pos && it.distTo(v) <= 32 }
         if (DianaWaypoints.list.any { it.pos == pos && (it.type == WpType.BURROW || it.type == WpType.GUESS) }) return
+        DianaTest.log("spade: place $pos (raw $v)")
         DianaWaypoints.add(Waypoint(pos, WpType.GUESS, "Guess"))
     }
 
