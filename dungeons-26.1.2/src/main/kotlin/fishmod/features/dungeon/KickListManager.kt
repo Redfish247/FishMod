@@ -95,7 +95,7 @@ object KickListManager {
         val self = mc.player?.name?.string ?: return
 
         for (uuid in PartyUtil.getMemberUuids()) {
-            val name = connection.getPlayerInfo(uuid)?.profile?.name ?: run { FishDiag.fail("KickListManager.5", "no tab info for party member $uuid"); null } ?: continue
+            val name = connection.getPlayerInfo(uuid)?.profile?.name ?: continue // member in another lobby
             if (name.equals(self, ignoreCase = true)) continue
             if (!NameList.contains(FishSettings.pcKickList, name)) continue
             kick(name)
