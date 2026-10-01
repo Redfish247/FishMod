@@ -59,6 +59,7 @@
     "MinecraftClientMixin",
     "PerspectiveToggleMixin",
     "MouseMixin",
+    "CameraZoomMixin",
     "ChannelMixin",
     "SoundEngineMixin",
     "ScreenEffectRendererMixin",

@@ -232,6 +232,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         run {
+            val f = Feature("Zoom", FishSettings::zoomEnabled)
+            f.sub.add(KeybindSetting("Zoom Key (hold)", "", { fishmod.utils.Keybinds.zoom }))
+            f.sub.add(SliderDoubleSetting("Zoom Amount", "How far the key zooms in (x times)", { FishSettings.zoomFactor }, { FishSettings.zoomFactor = it }, 1.5, 10.0))
+            f.sub.add(ToggleSetting("Scroll to Zoom", "Scroll while holding the key to zoom further in or out", FishSettings::zoomScroll))
+            f.sub.add(ToggleSetting("Smooth Zoom", "Animate the zoom instead of snapping", FishSettings::zoomSmoothAnim))
+            f.sub.add(ToggleSetting("Smooth Camera", "Cinematic mouse movement while zoomed", FishSettings::zoomSmoothCamera))
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Chat", FishSettings::chatFeatureEnabled)
             f.sub.add(ToggleSetting("Smart Copy Chat", "", FishSettings::smartCopyChat))
             f.sub.add(ToggleSetting("Compact Chat", "Collapse identical messages within the last minute into one \"(N)\" line", FishSettings::chatCompact))

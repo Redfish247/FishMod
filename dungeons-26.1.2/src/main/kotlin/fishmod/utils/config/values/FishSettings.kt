@@ -149,6 +149,12 @@ object FishSettings {
 
     @ConfigValue @JvmField var chatPeek: Boolean = true
 
+    @ConfigValue @JvmField var zoomEnabled: Boolean = true
+    @ConfigValue @JvmField var zoomFactor: Double = 4.0
+    @ConfigValue @JvmField var zoomScroll: Boolean = true
+    @ConfigValue @JvmField var zoomSmoothAnim: Boolean = false
+    @ConfigValue @JvmField var zoomSmoothCamera: Boolean = false
+
     @ConfigValue @JvmField var bridgeBotEnabled: Boolean = false
     @ConfigValue @JvmField var bridgeBotName: String = ""
 
