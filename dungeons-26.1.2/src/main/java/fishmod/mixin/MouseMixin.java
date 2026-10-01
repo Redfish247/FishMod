@@ -1,6 +1,8 @@
 package fishmod.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import fishmod.features.NoCursorReset;
+import fishmod.features.other.Zoom;
 import fishmod.utils.Keybinds;
 import fishmod.utils.config.values.ExtraOptions;
 import net.minecraft.client.Minecraft;
@@ -37,6 +39,16 @@ public class MouseMixin {
         if (!Minecraft.getInstance().hasShiftDown()) amount *= 7.0;
         Minecraft.getInstance().gui.getChat().scrollChat((int) amount);
         ci.cancel();
+    }
+
+    @Inject(method = "onScroll", at = @At("HEAD"), cancellable = true)
+    private void fishmod$zoomScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
+        if (Zoom.onScroll(vertical)) ci.cancel();
+    }
+
+    @ModifyExpressionValue(method = "turnPlayer", at = @At(value = "FIELD", target = "Lnet/minecraft/client/Options;smoothCamera:Z"))
+    private boolean fishmod$zoomSmoothCamera(boolean original) {
+        return original || Zoom.smoothCamera();
     }
 
     @Inject(method = "grabMouse", at = @At(value = "FIELD",
