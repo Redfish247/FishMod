@@ -31,6 +31,7 @@ object UiScale {
             is fishmod.features.item.AuctionPriceScreen -> FishSettings.guiScaleAuction
             is fishmod.features.dungeon.DungeonWaypointTitleScreen -> FishSettings.guiScaleWaypoint
             is fishmod.features.CreditsScreen -> FishSettings.guiScaleCredits
+            is fishmod.features.diana.DianaPastEventsScreen -> FishSettings.guiScaleDianaProfit
             else -> 100
         }
         return pct.coerceIn(50, 150) / 100f
