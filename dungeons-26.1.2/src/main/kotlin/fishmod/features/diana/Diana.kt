@@ -110,5 +110,6 @@ object Diana {
             .then(ClientCommands.literal("clear").executes(run { DianaWaypoints.clearAll(); FishMsg.send("§aDiana waypoints cleared.") }))
             .then(ClientCommands.literal("resetsession").executes(run { DianaTracker.resetSession() }))
             .then(ClientCommands.literal("pastevents").executes(run { DianaTracker.openPastEvents() }))
+            .then(ClientCommands.literal("pde").executes(run { DianaTracker.openPastEvents() }))
     }
 }
