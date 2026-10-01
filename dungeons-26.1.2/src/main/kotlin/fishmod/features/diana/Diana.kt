@@ -82,6 +82,7 @@ object Diana {
             false
         }
 
+        DianaTitles.init()
         DianaWaypoints.init()
         BurrowDetector.init()
         SpadeGuess.init()

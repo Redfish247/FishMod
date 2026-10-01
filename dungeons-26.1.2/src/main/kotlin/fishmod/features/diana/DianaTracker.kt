@@ -105,12 +105,21 @@ object DianaTracker {
     )
     private val NO_PRICE = setOf("TOTAL_BURROWS", "COINS")
 
+    // SkyBlock item id for a tracker key (Chimera is a book, shards/dye are prefixed)
+    fun itemId(k: String): String = k.removeSuffix("_LS").let { PRICE_ID[it] ?: if (it == "MYTHOLOGICAL_DYE") "DYE_MYTHOLOGICAL" else it }
+
     // Stackable mob drops with no chat line: counted from inventory pickups and the [Sacks] hover (as SBO does)
     private val STACK_DROPS = setOf("ENCHANTED_GOLD", "ENCHANTED_ANCIENT_CLAW", "ANCIENT_CLAW")
     private val SACK_NAMES = mapOf(
         "Enchanted Gold" to "ENCHANTED_GOLD", "Enchanted Ancient Claw" to "ENCHANTED_ANCIENT_CLAW", "Ancient Claw" to "ANCIENT_CLAW",
+        "Gold" to "GOLD_INGOT",
     )
-    private val SACK_LINE = Regex("""\+([\d,]+) ([^(\n]+)""")
+    private val SACK_LINE = Regex("""([+-])([\d,]+) ([^(\n]+)""")
+    // Sack auto-crafting swaps 160 base items for 1 enchanted one; that's not a drop
+    private val CRAFTED_FROM = mapOf("ENCHANTED_ANCIENT_CLAW" to "ANCIENT_CLAW", "ENCHANTED_GOLD" to "GOLD_INGOT")
+    private const val CRAFT_RATIO = 160L
+    private var lastSackHover = ""
+    private var lastSackMs = 0L
     private const val PICKUP_WINDOW_MS = 3_000L
     private const val SACK_WINDOW_MS = 30_000L
     private val invCounts = HashMap<String, Int>()
@@ -118,6 +127,8 @@ object DianaTracker {
 
     private val BURROW = Regex("^You .*?Griffin [Bb]urrow")
     private val DUG_MOB = Regex("You dug (?:out )?(?:an? )?(.+?)!$")
+    // A cocoon spawns another copy of the mob, so it counts as an extra dig
+    private val COCOON_MOB = Regex("CAUGHT!.*?You cocooned (?:an? )?(.+?)!$")
     private val COINS = Regex("^Wow! You dug out ([\\d,]+) coins!")
     private val TREASURE = Regex("^RARE DROP! You dug out an? (.+?)!$")
     private val RARE_DROP = Regex("^RARE DROP! (.+)$")
@@ -227,6 +238,13 @@ object DianaTracker {
                 if (!dup) onMobDug(name)
                 return DianaSettings.dianaMessageHider
             }
+        }
+        COCOON_MOB.find(s)?.let { m ->
+            var name = m.groupValues[1]
+            PREFIXES.firstOrNull { name.startsWith(it) }?.let { name = name.removePrefix(it) }
+            if (name == "Siamese Lynx") name = "Siamese Lynxes"
+            if (name in MOBS && !dup) onMobDug(name)
+            return false
         }
         return DianaMessageHider.shouldHide(s)
     }
@@ -517,16 +535,31 @@ object DianaTracker {
     // "[Sacks] +N items" lists what went straight to sacks in its hover text
     private fun onSacks(text: Component) {
         if (!mobDiedWithin(SACK_WINDOW_MS)) return
-        val hovers = ArrayList<String>()
+        // Several parts of the line carry the same hover, so collect each distinct text once
+        val hovers = LinkedHashSet<String>()
         fun walk(c: Component) {
-            (c.style.hoverEvent as? net.minecraft.network.chat.HoverEvent.ShowText)?.let { hovers += it.value().string }
+            (c.style.hoverEvent as? net.minecraft.network.chat.HoverEvent.ShowText)?.let { hovers += it.value().string.replace(Constants.STRIP_COLOR_REGEX, "") }
             c.siblings.forEach(::walk)
         }
         walk(text)
-        for (h in hovers) for (m in SACK_LINE.findAll(h.replace(Constants.STRIP_COLOR_REGEX, ""))) {
-            val name = m.groupValues[2].replace("Ingot", "").trim()
+        val joined = hovers.joinToString("\n")
+        val now = System.currentTimeMillis()
+        if (joined == lastSackHover && now - lastSackMs < 1000) return
+        lastSackHover = joined; lastSackMs = now
+
+        val added = HashMap<String, Long>()
+        val removed = HashMap<String, Long>()
+        for (m in SACK_LINE.findAll(joined)) {
+            val name = m.groupValues[3].replace("Ingot", "").trim()
             val id = SACK_NAMES[name] ?: continue
-            m.groupValues[1].replace(",", "").toLongOrNull()?.let { track(id, it) }
+            val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: continue
+            val into = if (m.groupValues[1] == "+") added else removed
+            into[id] = (into[id] ?: 0L) + n
+        }
+        for ((id, n) in added) {
+            if (id !in STACK_DROPS) continue
+            val crafted = CRAFTED_FROM[id]?.let { base -> minOf(n, (removed[base] ?: 0L) / CRAFT_RATIO) } ?: 0L
+            if (n - crafted > 0) track(id, n - crafted)
         }
     }
 

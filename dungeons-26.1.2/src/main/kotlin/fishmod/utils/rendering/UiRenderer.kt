@@ -198,24 +198,41 @@ void main(){
 
     private var targetFbo = 0
     private var targetTex = -1
+    private var targetLogged = false
 
-    // Whatever FBO is left bound here is luck (ImmediatelyFast leaves the main one; vanilla often leaves 0, which blitToScreen then overwrites).
+    // Set by GlCommandEncoderUiTargetMixin: colour texture of the last render pass, i.e. what GuiRenderer just drew into.
+    @JvmField @Volatile var lastPassColorTex = 0
+
+    // Draw into the GUI's own target, not whatever FBO is left bound (vanilla unbinds to 0, ImmediatelyFast doesn't) or a guess at the main target (other mods redirect GUI output).
     private fun bindMainTarget() {
-        val tex = (Minecraft.getInstance().mainRenderTarget.colorTexture as? com.mojang.blaze3d.opengl.GlTexture)?.glId()
-        if (tex == null) {
+        val mainTex = (Minecraft.getInstance().mainRenderTarget.colorTexture as? com.mojang.blaze3d.opengl.GlTexture)?.glId() ?: 0
+        val passTex = lastPassColorTex
+        if (!targetLogged) {
+            targetLogged = true
+            fishmod.utils.debug.Debug.LOGGER.info("[UiRenderer] UI target: lastPass={} main={}", passTex, mainTex)
+        }
+        if (passTex != 0 && attach(passTex)) return
+        if (mainTex == 0) {
             FishDiag.fail("UiRenderer.11", "main render target colour texture is not a GlTexture: ${Minecraft.getInstance().mainRenderTarget.colorTexture?.javaClass?.name}")
             return
         }
-        if (tex != targetTex || targetFbo == 0) {
-            if (targetFbo == 0) targetFbo = GL30.glGenFramebuffers()
-            if (targetFbo == 0) FishDiag.fail("UiRenderer.12", "glGenFramebuffers returned 0")
-            GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, targetFbo)
-            GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, tex, 0)
-            val status = GL30.glCheckFramebufferStatus(GL30.GL_FRAMEBUFFER)
-            if (status != GL30.GL_FRAMEBUFFER_COMPLETE) FishDiag.fail("UiRenderer.13", "UI framebuffer incomplete status=0x${Integer.toHexString(status)} tex=$tex")
-            targetTex = tex
-        }
+        attach(mainTex)
+    }
+
+    private fun attach(tex: Int): Boolean {
+        if (targetFbo == 0) targetFbo = GL30.glGenFramebuffers()
+        if (targetFbo == 0) { FishDiag.fail("UiRenderer.12", "glGenFramebuffers returned 0"); return false }
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, targetFbo)
+        if (tex == targetTex) return true
+        GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, tex, 0)
+        val status = GL30.glCheckFramebufferStatus(GL30.GL_FRAMEBUFFER)
+        if (status != GL30.GL_FRAMEBUFFER_COMPLETE) {
+            FishDiag.fail("UiRenderer.13", "UI framebuffer incomplete status=0x${Integer.toHexString(status)} tex=$tex")
+            targetTex = -1
+            return false
+        }
+        targetTex = tex
+        return true
     }
 
     private fun flush() {

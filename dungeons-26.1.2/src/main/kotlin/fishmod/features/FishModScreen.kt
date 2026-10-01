@@ -143,6 +143,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderIntSetting("Auction Price Scale %", "100% = default size", FishSettings::guiScaleAuction, 50, 150, 5))
             f.sub.add(SliderIntSetting("Waypoint Title Scale %", "100% = default size", FishSettings::guiScaleWaypoint, 50, 150, 5))
             f.sub.add(SliderIntSetting("Credits Scale %", "100% = default size", FishSettings::guiScaleCredits, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Diana Profit Scale %", "100% = default size", FishSettings::guiScaleDianaProfit, 50, 150, 5))
             general.features.add(f)
         }
         run {
