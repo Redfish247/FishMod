@@ -66,7 +66,7 @@ object ItemRarityHotbar {
     private val PET_NAME = Regex("\\[Lvl \\d+](?: §8\\[[^\\]]*])? §([0-9a-f])")
     private val PET_COLOR: Map<Char, ItemRarity> = mapOf(
         'f' to ItemRarity.COMMON, 'a' to ItemRarity.UNCOMMON, '9' to ItemRarity.RARE,
-        '5' to ItemRarity.EPIC, '6' to ItemRarity.LEGENDARY, 'd' to ItemRarity.MYTHIC, 'b' to ItemRarity.DIVINE,
+        '5' to ItemRarity.EPIC, '6' to ItemRarity.LEGENDARY, 'd' to ItemRarity.MYTHIC, 'b' to ItemRarity.DIVINE, 'c' to ItemRarity.SPECIAL,
     )
 
     private val RARITY_BY_NAME: Map<String, ItemRarity> = ItemRarity.entries.associateBy { it.name }
@@ -75,7 +75,9 @@ object ItemRarityHotbar {
     fun getRarity(stack: ItemStack): ItemRarity {
         stack.get(DataComponents.LORE)?.lines()?.let { lines ->
             for (i in lines.indices.reversed()) {
-                for (word in lines[i].string.split(" ")) {
+                val line = lines[i].string
+                if (line.contains("VERY SPECIAL")) return ItemRarity.VERY_SPECIAL
+                for (word in line.split(" ")) {
                     RARITY_BY_NAME[word]?.let { return it }
                 }
             }

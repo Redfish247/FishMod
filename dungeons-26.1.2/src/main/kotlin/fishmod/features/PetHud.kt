@@ -393,6 +393,8 @@ object PetHud {
         "LEGENDARY" -> ItemRarity.LEGENDARY
         "MYTHIC" -> ItemRarity.MYTHIC
         "DIVINE" -> ItemRarity.DIVINE
+        "SPECIAL" -> ItemRarity.SPECIAL
+        "VERY_SPECIAL", "VERY SPECIAL" -> ItemRarity.VERY_SPECIAL
         else -> ItemRarity.NONE
     }
 
