@@ -59,6 +59,8 @@ object SpadeGuess {
     private fun place(v: Vec3) {
         val pos = BlockPos(floor(v.x).toInt(), floor(v.y - 0.5).toInt(), floor(v.z).toInt())
         if (DianaWaypoints.removedRecently(pos)) return
+        // Each trail point nudges the guess a little; keep the current one unless it really moved (stops flicker)
+        if (DianaWaypoints.list.any { it.type == WpType.GUESS && it.distTo(v) <= 4 }) return
         DianaWaypoints.list.removeIf { it.type == WpType.GUESS && it.pos != pos && it.distTo(v) <= 32 }
         if (DianaWaypoints.list.any { it.pos == pos && (it.type == WpType.BURROW || it.type == WpType.GUESS) }) return
         DianaWaypoints.add(Waypoint(pos, WpType.GUESS, "Guess"))
