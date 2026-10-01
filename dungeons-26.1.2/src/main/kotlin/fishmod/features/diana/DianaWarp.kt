@@ -42,9 +42,10 @@ object DianaWarp {
         if (!DianaSettings.dianaWarp) { if (lastTitle != null) { DianaWaypoints.list.forEach { it.warpHint = null }; lastTitle = null }; return }
         if (!Diana.active()) return
         val me = Diana.player()?.position() ?: return
+        DianaWaypoints.list.forEach { it.warpHint = null }
+        if (midBurrow(me)) { lastTitle = null; return }
         val rare = if (DianaSettings.dianaRareMobs) DianaWaypoints.newestRareMob() else null
         val target = rare ?: DianaWaypoints.closestTarget(me)
-        DianaWaypoints.list.forEach { it.warpHint = null }
         val w = target?.let { finalWarp(it.center, me, fixed = rare != null) }
         target?.warpHint = w?.name
         if (DianaSettings.dianaWarpTitle && w != null && w.name != lastTitle) {
@@ -61,11 +62,18 @@ object DianaWarp {
         val now = System.currentTimeMillis()
         if (now - lastWarpMs < 500) return
         val me = Diana.player()?.position() ?: return
-        val rare = DianaWaypoints.newestRareMob()
-        val target = if (rareMob) rare ?: return else DianaWaypoints.closestTarget(me) ?: return
-        val w = finalWarp(target.center, me, fixed = rareMob) ?: return
+        if (midBurrow(me)) return
+        // A rare mob outranks burrows, so the guess key warps to it too
+        val rare = if (DianaSettings.dianaRareMobs) DianaWaypoints.newestRareMob() else null
+        val target = if (rareMob) rare ?: return else rare ?: DianaWaypoints.closestTarget(me) ?: return
+        val w = finalWarp(target.center, me, fixed = target === rare) ?: return
         lastWarpMs = now
         Diana.player()?.connection?.sendCommand("warp ${w.name}")
+    }
+
+    // Never warp away from a burrow you've dug once (1/2) and still need to finish
+    private fun midBurrow(me: Vec3): Boolean = DianaWaypoints.list.any {
+        it.type == WpType.BURROW && it.burrowType != BurrowType.START && it.timesDug == 1 && it.distTo(me) <= 30
     }
 
     // Follows up to 10 hops so a warp is only suggested when it's the end of the chain
