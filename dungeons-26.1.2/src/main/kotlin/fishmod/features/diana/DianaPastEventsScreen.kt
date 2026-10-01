@@ -54,9 +54,9 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
     private fun events(): List<Ev> {
         val cur = DianaTracker.event
         val list = ArrayList<Ev>()
-        list += Ev(-1, "Year ${cur.year} (now)", cur.items, cur.mobs, cur.timeMs)
+        list += Ev(-1, "${cur.year} (now)", cur.items, cur.mobs, cur.timeMs)
         val past = DianaTracker.pastEvents
-        for (i in past.indices.reversed()) list += Ev(i, "Year ${past[i].year}", past[i].items, past[i].mobs, past[i].timeMs)
+        for (i in past.indices.reversed()) list += Ev(i, "${past[i].year}", past[i].items, past[i].mobs, past[i].timeMs)
         return list
     }
 
@@ -125,21 +125,21 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
         val evs = events()
         selected.retainAll(evs.map { it.idx }.toSet())
         // event chips, wrapping
-        val chipH = 16
+        val chipH = 11
         var cx = x
         var cy = y
         val allOn = evs.all { it.idx in selected }
         fun chip(label: String, on: Boolean, action: () -> Unit) {
-            val cw = (if (on) Math.ceil(UiRecorder.textWidthBold(label, S_SM).toDouble()).toInt() else tw(label, S_SM)) + 16
-            if (cx + cw > x + w) { cx = x; cy += chipH + 4 }
+            val cw = (if (on) Math.ceil(UiRecorder.textWidthBold(label, S_XS).toDouble()).toInt() else tw(label, S_XS)) + 10
+            if (cx + cw > x + w) { cx = x; cy += chipH + 3 }
             val hov = over(cx, cy, cw, chipH)
             if (on) UiRecorder.fillPillBar(cx.toFloat(), cy.toFloat(), cw.toFloat(), chipH.toFloat(), ACCENT)
             else UiRecorder.roundedRectRing(cx.toFloat(), cy.toFloat(), cw.toFloat(), chipH.toFloat(), chipH / 2f, 1f, if (hov) RAISE else PANEL2, if (hov) ACCENT else LINE2)
             val fg = if (on) ACC_INK else if (hov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR
-            if (on) UiRecorder.textBold(label, (cx + 8).toFloat(), cy + (chipH - S_SM) / 2f, S_SM, fg)
-            else UiRecorder.text(label, (cx + 8).toFloat(), cy + (chipH - S_SM) / 2f, S_SM, fg)
+            if (on) UiRecorder.textBold(label, (cx + 5).toFloat(), cy + (chipH - S_XS) / 2f, S_XS, fg)
+            else UiRecorder.text(label, (cx + 5).toFloat(), cy + (chipH - S_XS) / 2f, S_XS, fg)
             hit(cx, cy, cw, chipH, action)
-            cx += cw + 4
+            cx += cw + 3
         }
         chip("All", allOn) { if (allOn) { selected.clear(); selected.add(-1) } else selected.addAll(evs.map { it.idx }); scroll = 0 }
         for (e in evs) chip(e.label, e.idx in selected) {
