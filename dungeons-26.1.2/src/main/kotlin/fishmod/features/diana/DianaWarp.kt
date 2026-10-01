@@ -1,11 +1,9 @@
 package fishmod.features.diana
 
 import com.mojang.blaze3d.platform.InputConstants
-import fishmod.utils.Misc
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
 import net.minecraft.client.KeyMapping
-import net.minecraft.network.chat.Component
 import net.minecraft.world.phys.Vec3
 
 // Keybinds that /warp to the hub warp closest to the current guess or rare mob
@@ -42,16 +40,15 @@ object DianaWarp {
         if (!DianaSettings.dianaWarp) { if (lastTitle != null) { DianaWaypoints.list.forEach { it.warpHint = null }; lastTitle = null }; return }
         if (!Diana.active()) return
         val me = Diana.player()?.position() ?: return
+        DianaWaypoints.list.forEach { it.warpHint = null }
+        if (midBurrow(me)) { lastTitle = null; return }
         val rare = if (DianaSettings.dianaRareMobs) DianaWaypoints.newestRareMob() else null
         val target = rare ?: DianaWaypoints.closestTarget(me)
-        DianaWaypoints.list.forEach { it.warpHint = null }
         val w = target?.let { finalWarp(it.center, me, fixed = rare != null) }
         target?.warpHint = w?.name
         if (DianaSettings.dianaWarpTitle && w != null && w.name != lastTitle) {
             val col = if (rare != null) "§d" else "§b"
-            val line = Component.literal("${col}Warp §e${w.name.replaceFirstChar { it.uppercase() }}")
-            if (DianaSettings.dianaWarpTitleSubtitle) Misc.forceTitle(Component.empty(), line, 1500)
-            else Misc.forceTitle(line, Component.empty(), 1500)
+            DianaTitles.warpTitle("${col}Warp §e${w.name.replaceFirstChar { it.uppercase() }}")
         }
         lastTitle = w?.name
     }
@@ -61,11 +58,18 @@ object DianaWarp {
         val now = System.currentTimeMillis()
         if (now - lastWarpMs < 500) return
         val me = Diana.player()?.position() ?: return
-        val rare = DianaWaypoints.newestRareMob()
-        val target = if (rareMob) rare ?: return else DianaWaypoints.closestTarget(me) ?: return
-        val w = finalWarp(target.center, me, fixed = rareMob) ?: return
+        if (midBurrow(me)) return
+        // A rare mob outranks burrows, so the guess key warps to it too
+        val rare = if (DianaSettings.dianaRareMobs) DianaWaypoints.newestRareMob() else null
+        val target = if (rareMob) rare ?: return else rare ?: DianaWaypoints.closestTarget(me) ?: return
+        val w = finalWarp(target.center, me, fixed = target === rare) ?: return
         lastWarpMs = now
         Diana.player()?.connection?.sendCommand("warp ${w.name}")
+    }
+
+    // Never warp away from a burrow you've dug once (1/2) and still need to finish
+    private fun midBurrow(me: Vec3): Boolean = DianaWaypoints.list.any {
+        it.type == WpType.BURROW && it.burrowType != BurrowType.START && it.timesDug == 1 && it.distTo(me) <= 30
     }
 
     // Follows up to 10 hops so a warp is only suggested when it's the end of the chain
