@@ -49,6 +49,50 @@ public class PartyCommandHandler {
             return false;
         });
 
+        // server packets only: addMessage also sees chat replayed by history mods on join, which re-ran old commands
+        net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
+            if (!overlay) onServerChat(fishmod.utils.HypixelApi.STRIP_COLOR.matcher(message.getString()).replaceAll(""));
+            return true;
+        });
+    }
+
+    private static final String CMD_ALT =
+            "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|crit|fps|tps|ping|ai|allinv|d|mp|collection|kick|k|warp|w|transfer|pt|ptme|promote|pro|demote|dem|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|chim|chimera|chimls|inq|inqs|inquis|king|manti|sphinx|core|stinger|wool|food|relic|relics|stick|sticks|hilt|since|burrow|burrows|mob|mobs|profit|playtime|mf|diana|help|\\?|e|[fm][1-7]|t[1-5]";
+    private static final String ARG_TAIL = "(?:\\s+(\\w+)(?:\\s+(\\w+)(?:\\s+(\\w+))?)?)?\\s*$";
+    private static final java.util.regex.Pattern PARTY_CMD = java.util.regex.Pattern.compile(
+            "^Party > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")" + ARG_TAIL);
+    private static final java.util.regex.Pattern GUILD_CMD = java.util.regex.Pattern.compile(
+            "^(?:Guild|G) > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")" + ARG_TAIL);
+    private static final java.util.regex.Pattern MSG_CMD = java.util.regex.Pattern.compile(
+            "^From (?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")" + ARG_TAIL);
+    private static final java.util.regex.Pattern TO_CMD = java.util.regex.Pattern.compile(
+            "^To (?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")" + ARG_TAIL);
+    private static final java.util.regex.Pattern ALL_CMD = java.util.regex.Pattern.compile(
+            "^(?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")" + ARG_TAIL);
+
+    private static void onServerChat(String plain) {
+        try {
+            if (FishSettings.chatParty && tryDispatch(PARTY_CMD, plain, "pc ", null)) return;
+            if (FishSettings.chatGuild && tryDispatch(GUILD_CMD, plain, "gc ", null)) return;
+            if (FishSettings.chatPrivate && (tryDispatch(MSG_CMD, plain, null, "msg ") || tryDispatch(TO_CMD, plain, null, "msg "))) return;
+            if (FishSettings.chatAll) tryDispatch(ALL_CMD, plain, "ac ", null);
+        } catch (Throwable t) {
+            fishmod.utils.debug.FishDiag.fail("ChatHudMixin.1", "chat command dispatch failed", t);
+        }
+    }
+
+    private static boolean tryDispatch(java.util.regex.Pattern p, String plain, String channelResponder, String dmPrefix) {
+        java.util.regex.Matcher m = p.matcher(plain);
+        if (!m.find()) return false;
+        ChatCommandState.lastPartyCommandAt = System.currentTimeMillis();
+        String matchedName = m.group(1);
+        String cmd = m.group(2);
+        String responder = (dmPrefix != null) ? dmPrefix + matchedName + " " : channelResponder;
+        if (matchedName == null || cmd == null) {
+            fishmod.utils.debug.FishDiag.fail("ChatHudMixin.2", "party cmd regex matched without name/cmd: " + plain);
+        }
+        onPartyCommand(matchedName, cmd, m.group(3), m.group(4), m.group(5), responder);
+        return true;
     }
 
     private static final java.util.regex.Pattern FLOOR_RE = java.util.regex.Pattern.compile("[fm][1-7]");
