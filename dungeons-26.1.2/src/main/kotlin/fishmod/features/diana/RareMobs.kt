@@ -1,7 +1,6 @@
 package fishmod.features.diana
 
 import fishmod.features.FishHudEditor
-import fishmod.mixin.accessors.GuiAccessor
 import fishmod.utils.ChatQueue
 import fishmod.utils.events.Events
 import fishmod.utils.sound.SoundManager
@@ -328,15 +327,7 @@ object RareMobs {
     }
 
     private fun title(t: String, sub: String) {
-        val mc = Minecraft.getInstance()
-        mc.execute {
-            val acc = mc.gui as GuiAccessor
-            acc.`fishmod$setTitleFadeInTime`(DianaSettings.dianaTitleFadeIn.coerceAtLeast(0))
-            acc.`fishmod$setTitleStayTime`(DianaSettings.dianaTitleStay.coerceAtLeast(1))
-            acc.`fishmod$setTitleFadeOutTime`(DianaSettings.dianaTitleFadeOut.coerceAtLeast(0))
-            mc.gui.setTitle(Component.literal(t))
-            mc.gui.setSubtitle(Component.literal(sub))
-        }
+        Minecraft.getInstance().execute { DianaTitles.rareAlert(t, sub) }
     }
 
     // ---- glow hook (EntityRendererMixin) ----

@@ -1,11 +1,9 @@
 package fishmod.features.diana
 
 import com.mojang.blaze3d.platform.InputConstants
-import fishmod.utils.Misc
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
 import net.minecraft.client.KeyMapping
-import net.minecraft.network.chat.Component
 import net.minecraft.world.phys.Vec3
 
 // Keybinds that /warp to the hub warp closest to the current guess or rare mob
@@ -50,9 +48,7 @@ object DianaWarp {
         target?.warpHint = w?.name
         if (DianaSettings.dianaWarpTitle && w != null && w.name != lastTitle) {
             val col = if (rare != null) "§d" else "§b"
-            val line = Component.literal("${col}Warp §e${w.name.replaceFirstChar { it.uppercase() }}")
-            if (DianaSettings.dianaWarpTitleSubtitle) Misc.forceTitle(Component.empty(), line, 1500)
-            else Misc.forceTitle(line, Component.empty(), 1500)
+            DianaTitles.warpTitle("${col}Warp §e${w.name.replaceFirstChar { it.uppercase() }}")
         }
         lastTitle = w?.name
     }
