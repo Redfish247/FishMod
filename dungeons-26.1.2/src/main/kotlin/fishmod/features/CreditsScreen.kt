@@ -65,6 +65,20 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
                     "Wither dragons (floor7), scrollable item tooltip",
                 ),
             ),
+            Credit(
+                "SkyblockOverhaul (SBO)", "Diana features reference", 0xFFE0C35F.toInt(),
+                details = listOf(
+                    "Spade guess, close burrow detection & hub warp logic",
+                    "Rare mob share/receive, Diana tracker & announcers",
+                    "Sphinx solver, party commands, message hider",
+                ),
+            ),
+            Credit(
+                "SidOfThe7Cs (SkyHanni)", "Diana arrow guess", 0xFF8FE05F.toInt(),
+                details = listOf(
+                    "Arrow direction guess & sub-guesses (SkyHanni PR #4916, via SBO)",
+                ),
+            ),
         )
     }
 
