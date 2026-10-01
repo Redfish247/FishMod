@@ -1,6 +1,5 @@
 package fishmod.mixin;
 
-import fishmod.features.dungeon.PartyCommandHandler;
 import fishmod.utils.config.values.FishSettings;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -18,21 +17,6 @@ import net.minecraft.network.chat.MessageSignature;
 @Mixin(ChatComponent.class)
 public class ChatHudMixin {
 
-    private static final String CMD_ALT =
-            "rtca|rtc|crtc|cata|pb|secrets|sa|runs|totalruns|dprofit|crit|fps|tps|ping|ai|allinv|d|mp|collection|kick|k|warp|w|transfer|pt|ptme|promote|pro|demote|dem|corpse|corpses|bank|powder|nw|networth|level|sblvl|farming|nuc|nucleus|worm|scatha|chim|chimera|chimls|inq|inqs|inquis|king|manti|sphinx|core|stinger|wool|food|relic|relics|stick|sticks|hilt|since|burrow|burrows|mob|mobs|profit|playtime|mf|diana|help|\\?|e|[fm][1-7]|t[1-5]";
-
-    private static final String ARG_TAIL = "(?:\\s+(\\w+)(?:\\s+(\\w+)(?:\\s+(\\w+))?)?)?\\s*$";
-
-    private static final Pattern PARTY_CMD = Pattern.compile(
-            "^Party > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")" + ARG_TAIL);
-    private static final Pattern GUILD_CMD = Pattern.compile(
-            "^(?:Guild|G) > (?:\\[[^\\]]+\\] )*(\\w+)(?: \\[[^\\]]+\\])?: [.!](" + CMD_ALT + ")" + ARG_TAIL);
-    private static final Pattern MSG_CMD = Pattern.compile(
-            "^From (?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")" + ARG_TAIL);
-    private static final Pattern TO_CMD = Pattern.compile(
-            "^To (?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")" + ARG_TAIL);
-    private static final Pattern ALL_CMD = Pattern.compile(
-            "^(?:\\[[^\\]]+\\] )*(\\w+): [.!](" + CMD_ALT + ")" + ARG_TAIL);
     private static final Pattern FROM_MSG = Pattern.compile("^From (?:\\[[^\\]]+\\] )*(\\w+): (.+)$");
 
     @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
@@ -69,16 +53,6 @@ public class ChatHudMixin {
                 }
             }
 
-            if (FishSettings.chatParty && tryDispatch(PARTY_CMD, plain, "pc ", null)) return;
-            if (FishSettings.chatGuild && tryDispatch(GUILD_CMD, plain, "gc ", null)) return;
-            if (FishSettings.chatPrivate) {
-                if (tryDispatch(MSG_CMD, plain, null, "msg ")) return;
-                if (tryDispatch(TO_CMD, plain, null, "msg ")) return;
-            }
-            if (FishSettings.chatAll) {
-                if (tryDispatch(ALL_CMD, plain, "ac ", null)) return;
-            }
-
             if (FishSettings.pfStatsEnabled) {
                 Matcher pfm = FROM_MSG.matcher(plain);
                 if (pfm.find()) fishmod.features.dungeon.PartyFinderStats.onWhisper(pfm.group(1));
@@ -89,22 +63,5 @@ public class ChatHudMixin {
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("ChatHudMixin.1", "chat addMessage hook failed", t);
         }
-    }
-
-    private static boolean tryDispatch(Pattern p, String plain, String channelResponder, String dmPrefix) {
-        Matcher m = p.matcher(plain);
-        if (!m.find()) return false;
-        fishmod.features.dungeon.ChatCommandState.lastPartyCommandAt = System.currentTimeMillis();
-        String matchedName = m.group(1);
-        String cmd = m.group(2);
-        String rawArg1 = m.group(3);
-        String rawArg2 = m.group(4);
-        String rawArg3 = m.group(5);
-        String responder = (dmPrefix != null) ? dmPrefix + matchedName + " " : channelResponder;
-        if (matchedName == null || cmd == null) {
-            fishmod.utils.debug.FishDiag.fail("ChatHudMixin.2", "party cmd regex matched without name/cmd: " + plain);
-        }
-        PartyCommandHandler.onPartyCommand(matchedName, cmd, rawArg1, rawArg2, rawArg3, responder);
-        return true;
     }
 }
