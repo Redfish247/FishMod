@@ -1928,6 +1928,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(hud)
         columns.add(slayer)
         columns.add(fishmod.features.diana.DianaMenu.column())
+        columns.add(fishmod.features.mining.MiningMenu.column())
         columns.add(visuals)
         columns.add(cosmetics)
         if (cheats.features.isNotEmpty()) columns.add(cheats)
@@ -4059,6 +4060,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         private fun descFor(name: String): String {
             fishmod.features.diana.DianaMenu.describe(name)?.let { return it }
+            fishmod.features.mining.MiningMenu.describe(name)?.let { return it }
             return when (name) {
                 "Chat" -> "Smart Copy, Compact Chat, Infinite History, Search, Filter"
                 "Mod Prefix" -> "Tag FishMod's chat output with a prefix"
