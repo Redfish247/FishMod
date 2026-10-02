@@ -27,7 +27,8 @@ object FishConfig {
             Buttons::class.java,
             F7Huds::class.java,
             DungeonMapSettings::class.java,
-            fishmod.features.diana.DianaSettings::class.java
+            fishmod.features.diana.DianaSettings::class.java,
+            fishmod.features.mining.MiningSettings::class.java
         )
 
     init { ColorDefaults.snapshot(classes) }
