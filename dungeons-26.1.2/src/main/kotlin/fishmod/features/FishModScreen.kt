@@ -1245,6 +1245,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { if (FishSettings.perfHudClock24h) "24 Hour" else "12 Hour" },
                 { v -> FishSettings.perfHudClock24h = v == "24 Hour" }))
             f.sub.add(ToggleSetting("Clock Seconds", "", FishSettings::perfHudClockSeconds))
+            f.sub.add(ToggleSetting("Detach Clock", "Move the clock as its own HUD element", FishSettings::perfHudClockDetached))
             f.sub.add(ToggleSetting("Single Line", "Show all values side by side", FishSettings::perfHudHorizontal))
             hud.features.add(f)
         }
