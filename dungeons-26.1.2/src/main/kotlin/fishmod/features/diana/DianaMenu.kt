@@ -34,6 +34,10 @@ object DianaMenu {
         guess.sub.add(ToggleSetting("Beacon Beam", "Beam above guesses and burrows", S::dianaBeaconBeam))
         guess.sub.add(SliderIntSetting("Beam Hide Distance", "Hide the beam when this close", S::dianaBeaconDistance, 0, 50).gatedBy { S.dianaBeaconBeam })
         guess.sub.add(ToggleSetting("Chain End Title", "\"Use Spade!\" when a chain ends with nothing nearby", S::dianaChainEndTitle))
+        guess.sub.add(ToggleSetting("Burrow Dug Sound", "Play a sound each time you dig a burrow", S::dianaBurrowDugSound))
+        guess.sub.add(SoundSearchSetting("Dug Sound", "Type to search every game sound",
+            { S.dianaBurrowDugSoundName }, { v -> S.dianaBurrowDugSoundName = v }, { S.dianaBurrowDugVolume }).gatedBy { S.dianaBurrowDugSound })
+        guess.sub.add(SliderIntSetting("Dug Volume %", "", S::dianaBurrowDugVolume, 0, 500, 5).gatedBy { S.dianaBurrowDugSound })
         guess.sub.add(ButtonSetting("Clear Waypoints", "Also /fm diana clear", "Clear") { DianaWaypoints.clearAll() })
         col.features.add(guess)
 

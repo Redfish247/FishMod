@@ -22,6 +22,9 @@ object DianaSettings {
     @ConfigValue @JvmField var dianaBeaconBeam: Boolean = false
     @ConfigValue @JvmField var dianaBeaconDistance: Int = 8
     @ConfigValue @JvmField var dianaChainEndTitle: Boolean = false
+    @ConfigValue @JvmField var dianaBurrowDugSound: Boolean = true
+    @ConfigValue @JvmField var dianaBurrowDugSoundName: String = "Orb Pickup"
+    @ConfigValue @JvmField var dianaBurrowDugVolume: Int = 100
 
     // Warp
     @ConfigValue @JvmField var dianaWarpCastle: Boolean = true

@@ -2,6 +2,7 @@ package fishmod.features.diana
 
 import fishmod.utils.Misc
 import fishmod.utils.events.Events
+import fishmod.utils.sound.SoundManager
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.network.chat.Component
@@ -31,9 +32,23 @@ object BurrowDetector {
             false
         }
         Events.ON_GAME_MESSAGE.register { text ->
-            if (Diana.inHub() && DianaSettings.dianaGuessing) onChat(text.string.replace(Regex("§."), ""))
+            if (Diana.inHub()) {
+                val s = text.string.replace(Regex("§."), "")
+                if (DianaSettings.dianaBurrowDugSound) dugSound(s)
+                if (DianaSettings.dianaGuessing) onChat(s)
+            }
             false
         }
+    }
+
+    // Covers every dig line incl. the (4/4) chain end; debounced so loot lines on the same dig don't double up
+    private fun dugSound(s: String) {
+        if (!DUG.matches(s) && !CHAIN_DONE.matches(s) && !(FIRST_DIG.matches(s) && !s.contains("Griffin Burrow"))) return
+        var vol = DianaSettings.dianaBurrowDugVolume.coerceIn(0, 500) / 100f
+        val snd = SoundManager.preset(DianaSettings.dianaBurrowDugSoundName)
+        if (!SoundManager.play(snd, minOf(vol, 1f), key = "diana_dug", debounceMs = 500)) return
+        vol -= 1f
+        while (vol > 0.01f) { SoundManager.play(snd, minOf(vol, 1f)); vol -= 1f }
     }
 
     private fun near(a: Double, b: Double) = abs(a - b) < 0.005
