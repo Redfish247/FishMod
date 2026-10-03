@@ -30,7 +30,7 @@ public class SoundEngineMixin {
         at = @At("HEAD"), cancellable = true)
     private void fishmod$arrowHitCue(SoundInstance instance, CallbackInfoReturnable<SoundEngine.PlayResult> cir) {
         try {
-            if (fishmod.features.ArrowHitSound.onLocalSound(instance)) {
+            if (fishmod.features.ArrowHitSound.onLocalSound(instance) || fishmod.features.MeleeHitSound.onLocalSound(instance)) {
                 cir.setReturnValue(SoundEngine.PlayResult.NOT_STARTED);
             }
         } catch (Throwable t) {
