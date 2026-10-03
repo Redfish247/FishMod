@@ -34,7 +34,8 @@ object Mining {
 
     @JvmStatic var area: String = ""; private set
     @JvmStatic var sidebar: List<String> = emptyList(); private set
-    private val recentTargets = HashMap<BlockPos, Long>()
+    private class Target(val ms: Long, val state: BlockState)
+    private val recentTargets = HashMap<BlockPos, Target>()
     private var lastSwingMs = 0L
     private var tick = 0
 
@@ -80,22 +81,38 @@ object Mining {
         if (mc.options.keyAttack.isDown) {
             lastSwingMs = System.currentTimeMillis()
             val hit = mc.hitResult
-            if (hit is BlockHitResult && hit.type == HitResult.Type.BLOCK) recentTargets[hit.blockPos.immutable()] = lastSwingMs
+            if (hit is BlockHitResult && hit.type == HitResult.Type.BLOCK) {
+                val st = mc.level?.getBlockState(hit.blockPos)
+                if (st != null && !gone(st)) recentTargets[hit.blockPos.immutable()] = Target(lastSwingMs, st)
+            }
         }
-        if (tick % 40 == 0) { val now = System.currentTimeMillis(); recentTargets.entries.removeIf { now - it.value > 3000 } }
+        // Fallback when the update packet slipped past onBlock: a mined target turned to air/bedrock
+        val level = mc.level
+        if (level != null) {
+            val it = recentTargets.entries.iterator()
+            while (it.hasNext()) {
+                val (pos, t) = it.next()
+                if (!gone(level.getBlockState(pos))) continue
+                it.remove()
+                for (l in breakListeners) l.onBreak(pos, t.state, true)
+            }
+        }
+        if (tick % 40 == 0) { val now = System.currentTimeMillis(); recentTargets.entries.removeIf { now - it.value.ms > 3000 } }
     }
 
     // Runs before vanilla applies the packet, so the level still holds the old state
+    private fun gone(s: BlockState) = s.isAir || s.`is`(Blocks.BEDROCK)
+
     private fun onBlock(pos: BlockPos, new: BlockState) {
         if (!(new.isAir || new.`is`(Blocks.BEDROCK))) return
         val mc = Minecraft.getInstance()
         val p = mc.player ?: return
-        val old = mc.level?.getBlockState(pos) ?: return
-        if (old.isAir || old.`is`(Blocks.BEDROCK)) return
         val now = System.currentTimeMillis()
-        val original = recentTargets[pos]?.let { now - it < 1500 } == true
+        val tgt = recentTargets[pos]
+        val old = mc.level?.getBlockState(pos)?.takeUnless { gone(it) } ?: tgt?.state ?: return
+        val original = tgt != null && now - tgt.ms < 1500
         if (!original && (now - lastSwingMs > 1500 || p.eyePosition.distanceToSqr(Vec3.atCenterOf(pos)) > 49)) return
-        if (original) recentTargets.remove(pos)
+        recentTargets.remove(pos)
         val ip = pos.immutable()
         for (l in breakListeners) l.onBreak(ip, old, original)
     }

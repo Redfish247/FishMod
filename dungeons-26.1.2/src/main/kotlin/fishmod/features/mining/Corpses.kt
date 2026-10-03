@@ -47,7 +47,7 @@ object Corpses {
     private var shaftDone = false
 
     fun init() {
-        Events.ON_WORLD_CHANGE.register { seenTicks.clear(); announced.clear(); shaftType = null; shaftDone = false; false }
+        Events.ON_WORLD_CHANGE.register { seenTicks.clear(); announced.clear(); shaftType = null; shaftDone = false; enteredMs = 0L; false }
         Events.ON_LOCATION_CHANGE.register { loc ->
             if (loc == Location.MINESHAFT) { enteredMs = System.currentTimeMillis(); shaftType = null; shaftDone = false }
             false
@@ -108,8 +108,12 @@ object Corpses {
     private fun checkShaft() {
         if (shaftType == null) {
             val joined = Mining.sidebar.joinToString(" ").uppercase().replace("_", "")
-            shaftType = SHAFTS.entries.firstOrNull { joined.contains(it.key) }?.value ?: return
-            typeAtMs = System.currentTimeMillis()
+            val now = System.currentTimeMillis()
+            if (enteredMs == 0L) enteredMs = now
+            // Type code not on the sidebar: still announce after 5s, just without the type
+            shaftType = SHAFTS.entries.firstOrNull { joined.contains(it.key) }?.value
+                ?: (if (now - enteredMs > 5000) "Mineshaft" else return)
+            typeAtMs = now
         }
         val summary = corpseSummary()
         if (summary == null && System.currentTimeMillis() - typeAtMs < 5000) return
