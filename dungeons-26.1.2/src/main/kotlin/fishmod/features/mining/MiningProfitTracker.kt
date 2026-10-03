@@ -124,11 +124,11 @@ object MiningProfitTracker {
 
     private fun trackable(name: String) = name.endsWith("Powder") || name.startsWith("Enchanted Book") || idOf(name) != null
 
-    private val GEM = Regex("""^(Rough|Flawed|Fine|Flawless|Perfect) (\w+) Gemstone$""")
+    private val GEM = Regex("""(Rough|Flawed|Fine|Flawless|Perfect) (\w+) Gemstone$""")
 
-    // Gem names in the items DB carry a symbol prefix, so build their id directly
+    // Sack names carry a symbol prefix (e.g. "☘ Rough Jade Gemstone"), so build gem ids directly
     private fun idOf(name: String): String? =
-        GEM.find(name)?.let { "${it.groupValues[1].uppercase()}_${it.groupValues[2].uppercase()}_GEM" } ?: ItemsDb.idFor(name)
+        GEM.find(name)?.let { "${it.groupValues[1].uppercase()}_${it.groupValues[2].uppercase()}_GEM" } ?: ItemsDb.idFor(name) ?: ItemsDb.idFor(name.trimStart { !it.isLetterOrDigit() })
 
     private fun startLoot(cat: Cat, countKey: String, sub: String?) {
         endLoot()
@@ -264,7 +264,10 @@ object MiningProfitTracker {
             Cat.CHEST -> listOf("Powder Chests"); Cat.MINING -> emptyList()
             null -> listOf("Corpses", "Nucleus Runs", "Excavations", "Powder Chests")
         }
-        for (c in counts) t.counts[c]?.let { out += "§7$c §f${"%,d".format(it)}" }
+        for (c in counts) t.counts[c]?.let {
+            val extra = if (only == null && c == "Corpses") " §7(§6${Mining.short(rows.filter { r -> r.cat == Cat.CORPSES }.sumOf { r -> r.value })}§7)" else ""
+            out += "§7$c §f${"%,d".format(it)}$extra"
+        }
         if (S.miningProfitShowPowder) {
             val powder = HashMap<String, Long>()
             for ((k, n) in t.items) {
@@ -273,15 +276,18 @@ object MiningProfitTracker {
                 if (only != null && !k.startsWith(only.name + "|")) continue
                 powder[name] = (powder[name] ?: 0L) + n
             }
-            for ((name, n) in powder.entries.sortedBy { it.key }) out += "§7$name §b${"%,d".format(n)}"
+            for ((name, n) in powder.entries.sortedBy { it.key })
+                out += "§7$name §b${"%,d".format(n)} §7(${Mining.short(perHour(n.toDouble(), t))}/h)"
         }
         val profit = rows.sumOf { it.value }
-        val ph = if (t.timeMs < 60_000) 0.0 else profit * 3_600_000.0 / t.timeMs
+        val ph = perHour(profit, t)
         out += "§7Playtime §f${fishmod.features.diana.DianaTracker.fmtTime(t.timeMs)}"
         out += "§eProfit §6${Mining.short(profit)} §7(${Mining.short(ph)}/h)"
         cache = out
         return out
     }
+
+    private fun perHour(v: Double, t: Tracker) = if (t.timeMs < 60_000) 0.0 else v * 3_600_000.0 / t.timeMs
 
     fun resetSession() { data.session = Tracker(); changed(); FishMsg.send("§aMining profit session reset.") }
     fun resetTotal() { data.total = Tracker(); changed(); FishMsg.send("§aMining profit total reset.") }
