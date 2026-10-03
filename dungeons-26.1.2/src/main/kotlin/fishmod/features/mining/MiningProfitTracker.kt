@@ -122,7 +122,13 @@ object MiningProfitTracker {
         add(cat, name, n)
     }
 
-    private fun trackable(name: String) = name.endsWith("Powder") || name.startsWith("Enchanted Book") || ItemsDb.idFor(name) != null
+    private fun trackable(name: String) = name.endsWith("Powder") || name.startsWith("Enchanted Book") || idOf(name) != null
+
+    private val GEM = Regex("""^(Rough|Flawed|Fine|Flawless|Perfect) (\w+) Gemstone$""")
+
+    // Gem names in the items DB carry a symbol prefix, so build their id directly
+    private fun idOf(name: String): String? =
+        GEM.find(name)?.let { "${it.groupValues[1].uppercase()}_${it.groupValues[2].uppercase()}_GEM" } ?: ItemsDb.idFor(name)
 
     private fun startLoot(cat: Cat, countKey: String, sub: String?) {
         endLoot()
@@ -183,7 +189,7 @@ object MiningProfitTracker {
 
     fun priceOf(name: String): Double {
         if (name.endsWith("Powder")) return 0.0
-        val id = ItemsDb.idFor(name) ?: return 0.0
+        val id = idOf(name) ?: return 0.0
         CroesusPrices.bazaarPrice(id, S.miningProfitPriceMode != "Insta Sell")?.let { if (it > 0) return it }
         return CroesusPrices.price(id)
     }
@@ -195,7 +201,7 @@ object MiningProfitTracker {
 
     // Name colour from the item's Hypixel tier; null for powder/unknown items
     private fun rarityColor(name: String): String? {
-        val id = ItemsDb.idFor(name) ?: return null
+        val id = idOf(name) ?: return null
         return RARITY[ItemsDb.get(id)?.get("tier")?.asString ?: "COMMON"]
     }
 
@@ -215,7 +221,7 @@ object MiningProfitTracker {
             val cat = runCatching { Cat.valueOf(k.substringBefore('|')) }.getOrNull() ?: return@mapNotNull null
             if (only != null && cat != only) return@mapNotNull null
             val name = k.substringAfter('|')
-            if (!S.miningProfitShowPowder && name.endsWith("Powder")) return@mapNotNull null
+            if (name.endsWith("Powder")) return@mapNotNull null
             Row(cat, name, n, priceOf(name) * n)
         }
         rows = when (S.miningProfitSort) {
@@ -240,6 +246,16 @@ object MiningProfitTracker {
             null -> listOf("Corpses", "Nucleus Runs", "Excavations", "Powder Chests")
         }
         for (c in counts) t.counts[c]?.let { out += "§7$c §f${"%,d".format(it)}" }
+        if (S.miningProfitShowPowder) {
+            val powder = HashMap<String, Long>()
+            for ((k, n) in t.items) {
+                val name = k.substringAfter('|')
+                if (!name.endsWith("Powder")) continue
+                if (only != null && !k.startsWith(only.name + "|")) continue
+                powder[name] = (powder[name] ?: 0L) + n
+            }
+            for ((name, n) in powder.entries.sortedBy { it.key }) out += "§7$name §b${"%,d".format(n)}"
+        }
         val profit = rows.sumOf { it.value }
         val ph = if (t.timeMs < 60_000) 0.0 else profit * 3_600_000.0 / t.timeMs
         out += "§7Playtime §f${fishmod.features.diana.DianaTracker.fmtTime(t.timeMs)}"

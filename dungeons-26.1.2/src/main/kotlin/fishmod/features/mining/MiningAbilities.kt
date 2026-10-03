@@ -122,13 +122,13 @@ object MiningAbilities {
             if (!exposed) continue
             val gem = Gem.of(st) != null
             val breaks = when {
-                tunnels -> st.block in MiningBlocks.TUNNEL_BREAKABLE || gem
+                tunnels || st.`is`(Blocks.PACKED_ICE) -> st.block in MiningBlocks.TUNNEL_BREAKABLE || gem
                 hollows || shaft -> true
                 else -> st.block in MiningBlocks.CONVERT_INTO_BEDROCK || gem
             }
             if (!breaks) continue
             // In the Hollows/shafts/tunnel ice+gems the block turns to air and exposes the next layer
-            if (hollows || shaft || (tunnels && (gem || st.`is`(Blocks.PACKED_ICE)))) grid[i][j][k] = Blocks.AIR.defaultBlockState()
+            if (hollows || shaft || st.`is`(Blocks.PACKED_ICE) || (tunnels && gem)) grid[i][j][k] = Blocks.AIR.defaultBlockState()
             out += pos.offset(i - 4, j - 4, k - 4)
             val name = MiningBlocks.material(st)
             drops[name] = (drops[name] ?: 0) + 1
