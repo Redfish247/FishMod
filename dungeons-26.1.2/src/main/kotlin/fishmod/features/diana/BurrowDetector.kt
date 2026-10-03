@@ -2,6 +2,7 @@ package fishmod.features.diana
 
 import fishmod.utils.Misc
 import fishmod.utils.events.Events
+import fishmod.utils.sound.SoundManager
 import net.minecraft.core.BlockPos
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.network.chat.Component
@@ -30,10 +31,59 @@ object BurrowDetector {
             if (Diana.inHub() && DianaSettings.dianaGuessing && DianaSettings.dianaBurrowDetection) onParticle(p)
             false
         }
+        Events.ON_SOUND.register { snd, _, pitch -> Diana.inHub() && DianaSettings.dianaMuteHypixelDug && onServerSound(snd.location.toString(), pitch) }
         Events.ON_GAME_MESSAGE.register { text ->
-            if (Diana.inHub() && DianaSettings.dianaGuessing) onChat(text.string.replace(Regex("§."), ""))
+            if (Diana.inHub()) {
+                val s = text.string.replace(Regex("§."), "")
+                if (isDigLine(s)) onDigLine()
+                if (DianaSettings.dianaBurrowDugSound) dugSound(s)
+                if (DianaSettings.dianaGuessing) onChat(s)
+            }
             false
         }
+    }
+
+    private fun isDigLine(s: String) = DUG.matches(s) || CHAIN_DONE.matches(s) || (FIRST_DIG.matches(s) && !s.contains("Griffin Burrow"))
+
+    // ---- Hypixel dig ding mute: learn the ding-like sound that lands next to a dig line, then cancel it ----
+    private const val DING_WINDOW_MS = 400L
+    private val DING_HINTS = listOf("note_block", "experience_orb", "player.levelup", "amethyst", "bell", "arrow.hit_player")
+    private var lastDing: Pair<String, Long>? = null
+    private var lastDigMs = 0L
+
+    private fun sig(id: String, pitch: Float) = "$id@${"%.2f".format(java.util.Locale.ROOT, pitch)}"
+
+    private fun onServerSound(id: String, pitch: Float): Boolean {
+        val sg = sig(id, pitch)
+        if (sg == DianaSettings.dianaHypixelDugSig) return true
+        if (DING_HINTS.none { id.contains(it) }) return false
+        val now = System.currentTimeMillis()
+        if (now - lastDigMs <= DING_WINDOW_MS) { learn(sg); return true }
+        lastDing = sg to now
+        return false
+    }
+
+    private fun onDigLine() {
+        val now = System.currentTimeMillis()
+        lastDigMs = now
+        lastDing?.let { (sg, t) -> if (now - t <= DING_WINDOW_MS) learn(sg) }
+        lastDing = null
+    }
+
+    private fun learn(sg: String) {
+        if (sg == DianaSettings.dianaHypixelDugSig) return
+        DianaTest.log("learned hypixel dig sound $sg")
+        DianaSettings.dianaHypixelDugSig = sg
+    }
+
+    // Covers every dig line incl. the (4/4) chain end; debounced so loot lines on the same dig don't double up
+    private fun dugSound(s: String) {
+        if (!isDigLine(s)) return
+        var vol = DianaSettings.dianaBurrowDugVolume.coerceIn(0, 500) / 100f
+        val snd = SoundManager.preset(DianaSettings.dianaBurrowDugSoundName)
+        if (!SoundManager.play(snd, minOf(vol, 1f), key = "diana_dug", debounceMs = 500)) return
+        vol -= 1f
+        while (vol > 0.01f) { SoundManager.play(snd, minOf(vol, 1f)); vol -= 1f }
     }
 
     private fun near(a: Double, b: Double) = abs(a - b) < 0.005
