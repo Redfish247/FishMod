@@ -544,6 +544,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "§7FPS: §a144".takeIf { FishSettings.perfHudFps },
             "§7TPS: §a19.9".takeIf { FishSettings.perfHudTps },
             "§7Ping: §a42ms".takeIf { FishSettings.perfHudPing },
+            PerformanceHud.clockText().takeIf { FishSettings.perfHudClock },
         ).ifEmpty { listOf("§7FPS: §a144") }
         return if (FishSettings.perfHudHorizontal) Sample(listOf(ls.joinToString("  "))) else Sample(ls)
     }

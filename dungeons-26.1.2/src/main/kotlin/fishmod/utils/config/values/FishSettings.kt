@@ -740,6 +740,9 @@ object FishSettings {
     @ConfigValue @JvmField var perfHudTps: Boolean = true
     @ConfigValue @JvmField var perfHudPing: Boolean = true
     @ConfigValue @JvmField var perfHudHorizontal: Boolean = false
+    @ConfigValue @JvmField var perfHudClock: Boolean = false
+    @ConfigValue @JvmField var perfHudClock24h: Boolean = false
+    @ConfigValue @JvmField var perfHudClockSeconds: Boolean = true
     @ConfigValue @JvmField var perfHudX: Int = 10
     @ConfigValue @JvmField var perfHudY: Int = 60
     @ConfigValue @JvmField var perfHudScale: Double = 1.0
