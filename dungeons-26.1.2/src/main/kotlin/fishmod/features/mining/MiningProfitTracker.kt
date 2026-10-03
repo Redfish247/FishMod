@@ -174,6 +174,7 @@ object MiningProfitTracker {
     }
 
     private val POWDER = Regex("""^(Mithril|Gemstone|Glacite): ([\d,]+)$""")
+    private val POWDER_COLOR = mapOf("Glacite Powder" to "§b", "Mithril Powder" to "§2", "Gemstone Powder" to "§d")
     private val powderSeen = HashMap<String, Long>()
     private var tickN = 0
 
@@ -277,7 +278,7 @@ object MiningProfitTracker {
                 powder[name] = (powder[name] ?: 0L) + n
             }
             for ((name, n) in powder.entries.sortedBy { it.key })
-                out += "§7$name §b${"%,d".format(n)} §7(${Mining.short(perHour(n.toDouble(), t))}/h)"
+                out += "${POWDER_COLOR[name] ?: "§7"}$name §f${"%,d".format(n)} §7(${Mining.short(perHour(n.toDouble(), t))}/h)"
         }
         val profit = rows.sumOf { it.value }
         val ph = perHour(profit, t)
