@@ -50,11 +50,17 @@ object BurrowDetector {
     private val DING_HINTS = listOf("note_block", "experience_orb", "player.levelup", "amethyst", "bell", "arrow.hit_player")
     private var lastDing: Pair<String, Long>? = null
     private var lastDigMs = 0L
+    private val DIG_LOG = org.slf4j.LoggerFactory.getLogger("FishMod/DigSound")
+    private val recentSounds = ArrayDeque<Pair<String, Long>>()
 
     private fun sig(id: String, pitch: Float) = "$id@${"%.2f".format(java.util.Locale.ROOT, pitch)}"
 
     private fun onServerSound(id: String, pitch: Float): Boolean {
         val sg = sig(id, pitch)
+        val t = System.currentTimeMillis()
+        recentSounds.addLast(sg to t)
+        while (recentSounds.size > 40 || (recentSounds.isNotEmpty() && t - recentSounds.first().second > 1500)) recentSounds.pollFirst()
+        if (t - lastDigMs <= 1000) DIG_LOG.info("after dig +{}ms: {}", t - lastDigMs, sg)
         if (sg == DianaSettings.dianaHypixelDugSig) return true
         if (DING_HINTS.none { id.contains(it) }) return false
         val now = System.currentTimeMillis()
@@ -66,6 +72,8 @@ object BurrowDetector {
     private fun onDigLine() {
         val now = System.currentTimeMillis()
         lastDigMs = now
+        DIG_LOG.info("dig line; learned='{}'; sounds before: {}", DianaSettings.dianaHypixelDugSig,
+            recentSounds.joinToString { "${it.first} -${now - it.second}ms" })
         lastDing?.let { (sg, t) -> if (now - t <= DING_WINDOW_MS) learn(sg) }
         lastDing = null
     }

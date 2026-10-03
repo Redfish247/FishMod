@@ -418,6 +418,11 @@ object FishSettings {
     @ConfigValue @JvmField var arrowHitSoundName: String = "Note: Harp"
     @ConfigValue @JvmField var arrowHitSoundVolume: Int = 100
     @ConfigValue @JvmField var arrowHitSoundPitch: Double = 1.4
+    @ConfigValue @JvmField var meleeHitSoundEnabled: Boolean = false
+    @ConfigValue @JvmField var meleeHitSoundSuppress: Boolean = false
+    @ConfigValue @JvmField var meleeHitSoundName: String = "Note: Harp"
+    @ConfigValue @JvmField var meleeHitSoundVolume: Int = 100
+    @ConfigValue @JvmField var meleeHitSoundPitch: Double = 1.4
 
     @ConfigValue @JvmField var dungeonBreakerEnabled: Boolean = false
     @ConfigValue @JvmField var dungeonBreakerHudEnabled: Boolean = true
