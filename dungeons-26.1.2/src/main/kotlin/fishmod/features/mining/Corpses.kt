@@ -83,8 +83,14 @@ object Corpses {
             announced += e.uuid
             val msg = S.miningCorpseFormat.replace("{x}", e.x.roundToInt().toString()).replace("{y}", (e.y.roundToInt() + 1).toString())
                 .replace("{z}", e.z.roundToInt().toString()).replace("{type}", type.display)
-            ChatQueue.enqueue("pc $msg")
+            announce(msg)
         }
+    }
+
+    // Solo: Hypixel drops /pc, so show it locally instead
+    private fun announce(msg: String) {
+        if (fishmod.utils.data.PartyUtil.isInParty()) ChatQueue.enqueue("pc $msg")
+        else fishmod.utils.FishMsg.send("§b$msg")
     }
 
     private fun corpseSummary(): String? {
@@ -110,6 +116,6 @@ object Corpses {
         shaftDone = true
         val text = S.miningShaftFormat.replace("{type}", shaftType!!).replace("{corpses}", summary ?: "No corpses")
         if (S.miningShaftTitle) Mining.title("§b§l$shaftType", "§f${summary ?: "No corpses"}", S.miningShaftTitleMs, true)
-        if (S.miningShaftParty) ChatQueue.enqueue("pc $text")
+        if (S.miningShaftParty) announce(text)
     }
 }
