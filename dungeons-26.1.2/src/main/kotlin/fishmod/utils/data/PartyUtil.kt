@@ -42,6 +42,9 @@ object PartyUtil {
     }
 
     @JvmStatic
+    fun isInParty(): Boolean = inParty
+
+    @JvmStatic
     fun amLeader(): Boolean {
         sendPacket()
         if (!inParty) return false
