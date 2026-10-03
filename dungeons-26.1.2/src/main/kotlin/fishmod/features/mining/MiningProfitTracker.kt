@@ -227,7 +227,7 @@ object MiningProfitTracker {
 
     private fun tracker(): Tracker = if (S.miningProfitMode == "Total") data.total else data.session
 
-    private class Row(val cat: Cat, val name: String, val n: Long, val value: Double)
+    private class Row(val cat: Cat, val name: String, val n: Long, val value: Double, val split: Map<Cat, Long> = emptyMap())
 
     private var cacheVer = -1; private var cacheAt = 0L; private var cache: List<String> = emptyList()
 
@@ -244,6 +244,11 @@ object MiningProfitTracker {
             if (name.endsWith("Powder")) return@mapNotNull null
             Row(cat, name, n, priceOf(name) * n)
         }
+        // Same item from several sources: one row, per-source counts shown after it
+        rows = rows.groupBy { it.name }.map { (name, rs) ->
+            if (rs.size == 1) rs[0]
+            else Row(rs.maxBy { it.n }.cat, name, rs.sumOf { it.n }, rs.sumOf { it.value }, rs.sortedBy { it.cat.ordinal }.associate { it.cat to it.n })
+        }
         rows = when (S.miningProfitSort) {
             "Least Profit" -> rows.sortedBy { it.value }
             "Category" -> rows.sortedWith(compareBy<Row> { it.cat.ordinal }.thenByDescending { it.value })
@@ -256,7 +261,8 @@ object MiningProfitTracker {
         if (scroll > 0) out += "§8  ▲ $scroll more"
         for (r in rows.drop(scroll).take(max)) {
             val v = if (r.value > 0) "§6${Mining.short(r.value)}" else ""
-            out += "$v	§7| ${rarityColor(r.name) ?: r.cat.color}${r.name} §f${"%,d".format(r.n)}"
+            out += "$v	§7| ${rarityColor(r.name) ?: r.cat.color}${r.name} §f${"%,d".format(r.n)}" +
+                (if (r.split.isEmpty()) "" else " §8(" + r.split.entries.joinToString("§8/") { "${it.key.color}${"%,d".format(it.value)}" } + "§8)")
         }
         val below = rows.size - scroll - max
         if (below > 0) out += "§8  ▼ $below more §7(scroll in inventory)"
