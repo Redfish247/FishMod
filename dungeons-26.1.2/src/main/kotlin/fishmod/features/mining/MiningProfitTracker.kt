@@ -188,6 +188,17 @@ object MiningProfitTracker {
         return CroesusPrices.price(id)
     }
 
+    private val RARITY = mapOf(
+        "COMMON" to "§f", "UNCOMMON" to "§a", "RARE" to "§9", "EPIC" to "§5", "LEGENDARY" to "§6",
+        "MYTHIC" to "§d", "DIVINE" to "§b", "SPECIAL" to "§c", "VERY_SPECIAL" to "§c",
+    )
+
+    // Name colour from the item's Hypixel tier; null for powder/unknown items
+    private fun rarityColor(name: String): String? {
+        val id = ItemsDb.idFor(name) ?: return null
+        return RARITY[ItemsDb.get(id)?.get("tier")?.asString ?: "COMMON"]
+    }
+
     private fun tracker(): Tracker = if (S.miningProfitMode == "Total") data.total else data.session
 
     private class Row(val cat: Cat, val name: String, val n: Long, val value: Double)
@@ -218,9 +229,8 @@ object MiningProfitTracker {
         out += "§e§lMining Profit §7(${S.miningProfitCategory}, ${S.miningProfitMode})"
         if (scroll > 0) out += "§8  ▲ $scroll more"
         for (r in rows.drop(scroll).take(max)) {
-            val v = if (r.value > 0) " §6${Mining.short(r.value)}" else ""
-            val tag = if (only == null) "${r.cat.color}▍" else ""
-            out += "$tag§7${"%,d".format(r.n)}x §f${r.name}$v"
+            val v = if (r.value > 0) "§6${Mining.short(r.value)}" else ""
+            out += "$v	§7| ${rarityColor(r.name) ?: r.cat.color}${r.name} §f${"%,d".format(r.n)}"
         }
         val below = rows.size - scroll - max
         if (below > 0) out += "§8  ▼ $below more §7(scroll in inventory)"
@@ -229,11 +239,11 @@ object MiningProfitTracker {
             Cat.CHEST -> listOf("Powder Chests"); Cat.MINING -> emptyList()
             null -> listOf("Corpses", "Nucleus Runs", "Excavations", "Powder Chests")
         }
-        for (c in counts) t.counts[c]?.let { out += "§7$c: §f${"%,d".format(it)}" }
+        for (c in counts) t.counts[c]?.let { out += "§7$c §f${"%,d".format(it)}" }
         val profit = rows.sumOf { it.value }
         val ph = if (t.timeMs < 60_000) 0.0 else profit * 3_600_000.0 / t.timeMs
-        out += "§7Time: §f${fishmod.features.diana.DianaTracker.fmtTime(t.timeMs)}"
-        out += "§eProfit: §6${Mining.short(profit)} §7(${Mining.short(ph)}/h)"
+        out += "§7Playtime §f${fishmod.features.diana.DianaTracker.fmtTime(t.timeMs)}"
+        out += "§eProfit §6${Mining.short(profit)} §7(${Mining.short(ph)}/h)"
         cache = out
         return out
     }
