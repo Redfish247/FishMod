@@ -43,7 +43,7 @@ object Mining {
     fun inHollows(): Boolean = Location.`in`(Location.CRYSTAL_HOLLOWS)
     fun inShaft(): Boolean = Location.`in`(Location.MINESHAFT)
     fun inTunnels(): Boolean = Location.`in`(Location.DWARVEN_MINES) &&
-        (area.contains("Glacite") || area.contains("Base Camp") || area.contains("Fossil Research"))
+        (area.contains("Glacite") || area.contains("Base Camp") || area.contains("Fossil Research") || tabLine("Glacite Mineshafts:") != null)
     fun inGlacite(): Boolean = inTunnels() || inShaft()
 
     @JvmStatic
