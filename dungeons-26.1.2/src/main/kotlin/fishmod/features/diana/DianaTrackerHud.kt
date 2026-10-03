@@ -102,11 +102,23 @@ object DianaTrackerHud {
             val lx = (mx - h.gx()) / sc; val ly = (my - h.gy()) / sc
             if (lx < 0 || ly < 0) return@forVisible
             val row = rows(id, h).getOrNull((ly / 10).toInt()) ?: return@forVisible
-            if (row.id == null || lx > row.width(font)) return@forVisible
-            DianaTracker.toggleHidden(row.id)
+            val w = row.width(font) + if (row.id?.startsWith("cycle:") == true) font.width(" [click to swap]") else 0
+            if (row.id == null || lx > w) return@forVisible
+            if (row.id.startsWith("cycle:")) cycleMode(row.id) else DianaTracker.toggleHidden(row.id)
             return true
         }
         return false
+    }
+
+    private val MODES = listOf("Event", "Session", "Total")
+
+    // Inventory: clicking a tracker title swaps Event -> Session -> Total
+    private fun cycleMode(id: String) {
+        fun next(m: String) = MODES[(MODES.indexOf(m) + 1) % MODES.size]
+        if (id == "cycle:loot") DianaSettings.dianaLootTracker = next(DianaSettings.dianaLootTracker)
+        else DianaSettings.dianaMobTracker = next(DianaSettings.dianaMobTracker)
+        caches.clear()
+        runCatching { fishmod.utils.config.FishConfig.manager.save() }
     }
 
     private fun reg(
@@ -142,10 +154,12 @@ object DianaTrackerHud {
         pose.scale(scale.toFloat(), scale.toFloat())
         var i = 0
         for (r in rows) {
-            val hidden = r.id != null && DianaTracker.isHidden(r.id)
+            val hidden = r.id != null && !r.id.startsWith("cycle:") && DianaTracker.isHidden(r.id)
             if (hidden && !editing) continue
             val font = mc.font
-            if (r.tail == null) {
+            if (editing && r.id?.startsWith("cycle:") == true) {
+                ctx.text(font, r.text + " §8[click to swap]", 0, i * 10, -1, true)
+            } else if (r.tail == null) {
                 ctx.text(font, if (hidden) "§7§m" + r.text.replace(STRIP, "") else r.text, 0, i * 10, -1, true)
             } else {
                 val strike = hidden
@@ -168,7 +182,7 @@ object DianaTrackerHud {
         val hide = DianaSettings.dianaHideUnobtained
         val font = Minecraft.getInstance().font
         val out = ArrayList<Row>()
-        out += Row(null, title("Diana Loot", mode, t))
+        out += Row("cycle:loot", title("Diana Loot", mode, t))
 
         data class ItemLine(val id: String, val value: String, val tail: String)
         val items = ArrayList<ItemLine>()
@@ -208,7 +222,7 @@ object DianaTrackerHud {
         val t = DianaTracker.tracker(mode) ?: return emptyList()
         val tot = t.mob("TOTAL_MOBS")
         val out = ArrayList<Row>()
-        out += Row(null, title("Diana Mobs", mode, t))
+        out += Row("cycle:mobs", title("Diana Mobs", mode, t))
         for (name in DianaTracker.MOBS) {
             val k = DianaTracker.key(name)
             val n = t.mob(k); val ls = t.mob(k + "_LS")
