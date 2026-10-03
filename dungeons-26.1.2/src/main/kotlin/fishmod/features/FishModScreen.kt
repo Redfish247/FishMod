@@ -1320,6 +1320,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         run {
+            val f = Feature("Mob Hit Sound (Melee)", FishSettings::meleeHitSoundEnabled)
+            f.sub.add(SoundSearchSetting("Sound", "Type to search every game sound",
+                { FishSettings.meleeHitSoundName }, { v -> FishSettings.meleeHitSoundName = v },
+                { FishSettings.meleeHitSoundVolume }, { FishSettings.meleeHitSoundPitch }))
+            f.sub.add(SliderIntSetting("Volume %", "Above 100 = louder (stacked plays)", FishSettings::meleeHitSoundVolume, 0, 500, 10))
+            f.sub.add(SliderDoubleSetting("Pitch", "", FishSettings::meleeHitSoundPitch, 0.0, 2.0))
+            f.sub.add(ToggleSetting("Suppress Vanilla Sound", "Mute the vanilla attack sounds", FishSettings::meleeHitSoundSuppress))
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Block Overlay", FishSettings::blockOverlayEnabled)
             val blockOverlayModeOptions = arrayOf("Outline", "Fill", "Filled Outline")
             f.sub.add(DropdownSetting("Mode", "", blockOverlayModeOptions,
