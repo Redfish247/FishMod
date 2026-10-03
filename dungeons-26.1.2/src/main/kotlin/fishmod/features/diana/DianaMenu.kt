@@ -38,6 +38,7 @@ object DianaMenu {
         guess.sub.add(SoundSearchSetting("Dug Sound", "Type to search every game sound",
             { S.dianaBurrowDugSoundName }, { v -> S.dianaBurrowDugSoundName = v }, { S.dianaBurrowDugVolume }).gatedBy { S.dianaBurrowDugSound })
         guess.sub.add(SliderIntSetting("Dug Volume %", "", S::dianaBurrowDugVolume, 0, 500, 5).gatedBy { S.dianaBurrowDugSound })
+        guess.sub.add(ToggleSetting("Mute Hypixel Dig Ding", "Learns Hypixel's dig sound on your first digs, then mutes it", S::dianaMuteHypixelDug))
         guess.sub.add(ButtonSetting("Clear Waypoints", "Also /fm diana clear", "Clear") { DianaWaypoints.clearAll() })
         col.features.add(guess)
 
