@@ -15,6 +15,7 @@ object PerformanceHud {
 
     private const val NAME = "Performance"
     private const val LINE_H = 10
+    const val CLOCK_NAME = "Clock"
 
     @JvmStatic
     fun init() {
@@ -24,6 +25,13 @@ object PerformanceHud {
             { FishSettings.perfHudY }, { v -> FishSettings.perfHudY = v },
             110, 30,
             { FishSettings.perfHudScale }, { v -> FishSettings.perfHudScale = v }
+        )
+        FishHudEditor.register(
+            CLOCK_NAME,
+            { FishSettings.clockHudX }, { v -> FishSettings.clockHudX = v },
+            { FishSettings.clockHudY }, { v -> FishSettings.clockHudY = v },
+            50, 10,
+            { FishSettings.clockHudScale }, { v -> FishSettings.clockHudScale = v }
         )
     }
 
@@ -45,7 +53,7 @@ object PerformanceHud {
             val v = if (ping < 0) "§c—" else (when { ping > 200 -> "§c"; ping > 100 -> "§e"; else -> "§a" }) + "${ping}ms"
             out.add("${label}Ping: $v")
         }
-        if (FishSettings.perfHudClock) out.add(clockText())
+        if (FishSettings.perfHudClock && !FishSettings.perfHudClockDetached) out.add(clockText())
         return out
     }
 
@@ -81,6 +89,14 @@ object PerformanceHud {
     private fun renderInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
+        if (FishSettings.perfHudClock && FishSettings.perfHudClockDetached) {
+            val sc = FishSettings.clockHudScale.toFloat()
+            ctx.pose().pushMatrix()
+            ctx.pose().translate(FishSettings.clockHudX.toFloat(), FishSettings.clockHudY.toFloat())
+            ctx.pose().scale(sc, sc)
+            ctx.text(mc.font, clockText(), 0, 0, -1, true)
+            ctx.pose().popMatrix()
+        }
         val ls = lines(mc)
         if (ls.isEmpty()) return
 

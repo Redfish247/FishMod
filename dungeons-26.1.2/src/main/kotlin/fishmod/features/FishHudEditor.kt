@@ -537,14 +537,18 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     }
 
     private fun sample(e: HudEntry): Sample? =
-        if (e.name() == "Performance") perfSample() else SAMPLES[e.name()]
+        when (e.name()) {
+            "Performance" -> perfSample()
+            PerformanceHud.CLOCK_NAME -> Sample(listOf(PerformanceHud.clockText()))
+            else -> SAMPLES[e.name()]
+        }
 
     private fun perfSample(): Sample {
         val ls = listOfNotNull(
             "§7FPS: §a144".takeIf { FishSettings.perfHudFps },
             "§7TPS: §a19.9".takeIf { FishSettings.perfHudTps },
             "§7Ping: §a42ms".takeIf { FishSettings.perfHudPing },
-            PerformanceHud.clockText().takeIf { FishSettings.perfHudClock },
+            PerformanceHud.clockText().takeIf { FishSettings.perfHudClock && !FishSettings.perfHudClockDetached },
         ).ifEmpty { listOf("§7FPS: §a144") }
         return if (FishSettings.perfHudHorizontal) Sample(listOf(ls.joinToString("  "))) else Sample(ls)
     }
