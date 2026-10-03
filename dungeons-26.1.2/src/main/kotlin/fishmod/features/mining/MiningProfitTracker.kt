@@ -63,7 +63,7 @@ object MiningProfitTracker {
         load()
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         ClientLifecycleEvents.CLIENT_STOPPING.register { save(true) }
-        Events.ON_WORLD_CHANGE.register { save(true); lootCat = null; false }
+        Events.ON_WORLD_CHANGE.register { save(true); lootCat = null; powderSeen.clear(); false }
         Events.ON_GAME_MESSAGE.register { text ->
             if (S.miningProfit && Mining.inMiningIsland()) onChat(text)
             false
@@ -118,7 +118,7 @@ object MiningProfitTracker {
         val name = m.groupValues[1].trim()
         if (name.isEmpty() || name in SKIP || name.endsWith("!") || name.endsWith(":")) return
         val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: 1L
-        if (!trackable(name)) return
+        if (!trackable(name) || name.endsWith("Powder")) return
         add(cat, name, n)
     }
 
@@ -155,7 +155,8 @@ object MiningProfitTracker {
         for (m in SACK_LINE.findAll(hovers.joinToString("\n"))) {
             if (m.groupValues[1] != "+") continue
             val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: continue
-            add(Cat.MINING, m.groupValues[3].trim(), n)
+            val item = m.groupValues[3].trim()
+            if (!item.endsWith("Powder")) add(Cat.MINING, item, n)
         }
     }
 
@@ -172,6 +173,23 @@ object MiningProfitTracker {
         changed()
     }
 
+    private val POWDER = Regex("""^(Mithril|Gemstone|Glacite): ([\d,]+)$""")
+    private val powderSeen = HashMap<String, Long>()
+    private var tickN = 0
+
+    // Powder from the tab's Powders widget: gains since last read, credited to the loot just opened
+    private fun readPowder(now: Long) {
+        for (l in Mining.tabWidget("Powders:")) {
+            val m = POWDER.find(l) ?: continue
+            val v = m.groupValues[2].replace(",", "").toLongOrNull() ?: continue
+            val key = m.groupValues[1] + " Powder"
+            val prev = powderSeen.put(key, v) ?: continue
+            if (v <= prev) continue
+            val cat = lootCat ?: lastCat?.takeIf { now - lastLootMs < 10_000 } ?: Cat.MINING
+            add(cat, key, v - prev)
+        }
+    }
+
     private fun changed() { dirty = true; version++ }
 
     private fun tick() {
@@ -182,6 +200,7 @@ object MiningProfitTracker {
         }
         lastTickMs = now
         if (lootCat != null && now > lootEndMs) endLoot()
+        if (S.miningProfit && Mining.inMiningIsland() && tickN++ % 20 == 0) readPowder(now)
         save(false)
     }
 
