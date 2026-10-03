@@ -7,6 +7,9 @@ import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 object PerformanceHud {
 
@@ -42,7 +45,20 @@ object PerformanceHud {
             val v = if (ping < 0) "§c—" else (when { ping > 200 -> "§c"; ping > 100 -> "§e"; else -> "§a" }) + "${ping}ms"
             out.add("${label}Ping: $v")
         }
+        if (FishSettings.perfHudClock) out.add(clockText())
         return out
+    }
+
+    private val FMT_12 = DateTimeFormatter.ofPattern("h:mm:ss a", Locale.US)
+    private val FMT_12_NS = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
+    private val FMT_24 = DateTimeFormatter.ofPattern("HH:mm:ss")
+    private val FMT_24_NS = DateTimeFormatter.ofPattern("HH:mm")
+
+    @JvmStatic
+    fun clockText(): String {
+        val sec = FishSettings.perfHudClockSeconds
+        val fmt = if (FishSettings.perfHudClock24h) (if (sec) FMT_24 else FMT_24_NS) else (if (sec) FMT_12 else FMT_12_NS)
+        return "§f" + LocalTime.now().format(fmt)
     }
 
     private fun ping(mc: Minecraft): Int {

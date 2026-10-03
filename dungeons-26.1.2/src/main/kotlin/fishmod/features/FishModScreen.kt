@@ -1240,6 +1240,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("FPS", "", FishSettings::perfHudFps))
             f.sub.add(ToggleSetting("TPS", "Server ticks per second", FishSettings::perfHudTps))
             f.sub.add(ToggleSetting("Ping", "", FishSettings::perfHudPing))
+            f.sub.add(ToggleSetting("Clock", "Real-world local time", FishSettings::perfHudClock))
+            f.sub.add(DropdownSetting("Clock Format", "", arrayOf("12 Hour", "24 Hour"),
+                { if (FishSettings.perfHudClock24h) "24 Hour" else "12 Hour" },
+                { v -> FishSettings.perfHudClock24h = v == "24 Hour" }))
+            f.sub.add(ToggleSetting("Clock Seconds", "", FishSettings::perfHudClockSeconds))
             f.sub.add(ToggleSetting("Single Line", "Show all values side by side", FishSettings::perfHudHorizontal))
             hud.features.add(f)
         }
