@@ -172,7 +172,15 @@ object MiningHuds {
         pose.pushMatrix()
         pose.translate(x.toFloat(), y.toFloat())
         pose.scale(scale.toFloat(), scale.toFloat())
-        for ((i, l) in lines.withIndex()) ctx.text(mc.font, l, 0, i * 10, -1, true)
+        // "value	item" lines: value right-aligned in its own column, item text after it (Diana style)
+        val font = mc.font
+        val colX = lines.maxOfOrNull { if ('	' in it) font.width(it.substringBefore('	')) + 6 else 0 } ?: 0
+        for ((i, l) in lines.withIndex()) {
+            if ('	' !in l) { ctx.text(font, l, 0, i * 10, -1, true); continue }
+            val left = l.substringBefore('	')
+            ctx.text(font, left, colX - 6 - font.width(left), i * 10, -1, true)
+            ctx.text(font, l.substringAfter('	'), colX, i * 10, -1, true)
+        }
         pose.popMatrix()
     }
 }
