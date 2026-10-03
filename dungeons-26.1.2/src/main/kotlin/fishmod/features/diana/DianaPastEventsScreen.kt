@@ -176,7 +176,7 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
         tile(x, ty, tileW, tileH, "TOTAL PROFIT", fmtCoins(total), GOLD, "${selected.size} event" + if (selected.size == 1) "" else "s")
         tile(x + (tileW + 8), ty, tileW, tileH, "PER HOUR", if (time < 60_000) "—" else fmtCoins(total * 3_600_000.0 / time), ScreenTheme.TEXT_COLOR, DianaTracker.fmtTime(time))
         tile(x + (tileW + 8) * 2, ty, tileW, tileH, "BURROWS", "%,d".format(burrows), ScreenTheme.TEXT_COLOR,
-            if (burrows > 0) fmtCoins(total / burrows) + "/ea" else null)
+            if (burrows > 0 && time >= 60_000) "%,.0f BPH".format(burrows * 3_600_000.0 / time) else null)
         tile(x + (tileW + 8) * 3, ty, tileW, tileH, "MOBS", "%,d".format(mobs["TOTAL_MOBS"] ?: 0L), ScreenTheme.TEXT_COLOR,
             "${mobs["MINOS_INQUISITOR"] ?: 0L} inq")
 

@@ -53,7 +53,9 @@ object DianaWaypoints {
     // Spade held within 32 blocks and no burrow showed up for a full second: the guess is wrong
     fun spadeDisproved(w: Waypoint): Boolean {
         val me = Diana.player()?.position()
-        val checking = me != null && Diana.holdingSpade && at(w.pos, WpType.BURROW) == null &&
+        // Not while the trail is still drawing / the guess is fresh, or it gets dropped and re-added (flicker)
+        val settled = System.currentTimeMillis() - w.created > 3000 && !SpadeGuess.trailActive()
+        val checking = me != null && settled && Diana.holdingSpade && at(w.pos, WpType.BURROW) == null &&
             w.center.distanceToSqr(me) <= SPADE_CHECK_RANGE_SQ
         if (!checking) { w.spadeNearSince = 0L; return false }
         val now = System.currentTimeMillis()
@@ -94,14 +96,18 @@ object DianaWaypoints {
         val level = Minecraft.getInstance().level ?: return true
         if (!level.hasChunk(p.x shr 4, p.z shr 4)) return true
         val st = level.getBlockState(p)
+        // void_air = chunk counted as present but has no real data yet; unknown, not invalid
+        if (st.`is`(Blocks.VOID_AIR)) return true
         val ok = st.`is`(Blocks.GRASS_BLOCK) || (st.isAir && Diana.clickedRecently(p))
         val valid = ok && level.getBlockState(p.above()).isAir
         if (!valid && !st.isAir) invalid.add(p.immutable())
         return valid
     }
 
-    fun chunkLoaded(p: BlockPos): Boolean =
-        Minecraft.getInstance().level?.hasChunk(p.x shr 4, p.z shr 4) == true
+    fun chunkLoaded(p: BlockPos): Boolean {
+        val level = Minecraft.getInstance().level ?: return false
+        return level.hasChunk(p.x shr 4, p.z shr 4) && !level.getBlockState(p).`is`(Blocks.VOID_AIR)
+    }
 
     // Grass-with-air-above nearest p in height, searching the whole hub Y range of p's column, then rings out to 6;
     // null if the chunk isn't loaded or there's no grass nearby (village, paths...)
@@ -130,7 +136,7 @@ object DianaWaypoints {
 
     fun add(w: Waypoint): Waypoint { list.add(w); return w }
 
-    fun remove(w: Waypoint) { list.remove(w) }
+    fun remove(w: Waypoint) { DianaTest.log("wp: remove ${w.type} ${w.pos}"); list.remove(w) }
 
     fun removeAt(p: BlockPos, vararg types: WpType) { list.removeIf { it.pos == p && it.type in types } }
 
@@ -163,14 +169,17 @@ object DianaWaypoints {
     private fun tick() {
         val now = System.currentTimeMillis()
         removedAt.entries.removeIf { now - it.value > 1000 }
-        list.removeIf { now > it.expiresAt || (it.type != WpType.WORLD && it.type != WpType.RARE && !inHubBounds(it.pos)) }
+        list.removeIf { (now > it.expiresAt || (it.type != WpType.WORLD && it.type != WpType.RARE && !inHubBounds(it.pos))).also { r -> if (r) DianaTest.log("wp: drop ${it.type} ${it.pos} expired/outOfHub") } }
         // Spade guesses defer to a burrow/arrow in range; drop only when the spot is clearly invalid (loaded)
         for (g in list.filter { it.type == WpType.GUESS }) {
             val better = list.firstOrNull { (it.type == WpType.BURROW || it.type == WpType.ARROW) && it.center.distanceTo(g.center) <= 32 }
-            if (better != null) { better.carryFrom(g); list.remove(g); continue }
-            if (spadeDisproved(g)) { list.remove(g); markRemoved(g.pos); continue }
+            if (better != null) { DianaTest.log("wp: drop GUESS ${g.pos} merged into ${better.type} ${better.pos}"); better.carryFrom(g); list.remove(g); continue }
+            if (spadeDisproved(g)) { DianaTest.log("wp: drop GUESS ${g.pos} spadeDisproved"); list.remove(g); markRemoved(g.pos); continue }
             if (isValidBlock(g.pos) || !chunkLoaded(g.pos)) continue
+            DianaTest.log("wp: drop GUESS ${g.pos} invalidBlock ${Minecraft.getInstance().level?.getBlockState(g.pos)} snap=${snapToGround(g.pos)}")
             list.remove(g)
+            // Far guesses have a rough Y; move onto the nearest grass instead of dropping
+            snapToGround(g.pos)?.takeIf { at(it, WpType.GUESS, WpType.BURROW) == null }?.let { add(Waypoint(it, WpType.GUESS, g.label)) }
         }
         // Arrow on a known burrow merges into it
         for (a in list.filter { it.type == WpType.ARROW || it.type == WpType.SUB }) {
