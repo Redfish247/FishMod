@@ -56,8 +56,7 @@ object GemstoneLocator {
                 if (floor.size > 1 && floor[1].distanceToSqr(feet) < floor[0].distanceToSqr(floor[1])) floor = floor.drop(1)
                 // World-space ribbon (flat + upright) so it's wide from above and from the side
                 val curve = smooth(listOf(feet.add(0.0, 0.1, 0.0)) + floor)
-                for (i in 1 until curve.size) RenderUtils.gizmoThickLine(curve[i - 1], curve[i], S.miningGemLineWidth * 0.05, argb,
-                    curve[i].distanceToSqr(feet) < 20.0 * 20.0)
+                RenderUtils.gizmoRibbon(curve, S.miningGemLineWidth * 0.05, argb) { it.distanceToSqr(feet) < 20.0 * 20.0 }
             }
         }
     }

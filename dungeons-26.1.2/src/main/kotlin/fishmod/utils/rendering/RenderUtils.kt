@@ -237,6 +237,24 @@ object RenderUtils {
         )
     }
 
+    // Continuous flat + upright ribbon through points; shared corner edges so bends have no gaps
+    @JvmStatic
+    fun gizmoRibbon(pts: List<Vec3>, halfWidth: Double, argb: Int, throughWalls: (Vec3) -> Boolean) {
+        if (pts.size < 2 || (argb ushr 24) == 0) return
+        val up = Vec3(0.0, halfWidth, 0.0)
+        val side = pts.indices.map { i ->
+            val d = pts[minOf(i + 1, pts.size - 1)].subtract(pts[maxOf(i - 1, 0)])
+            val h = Vec3(-d.z, 0.0, d.x)
+            if (h.lengthSqr() < 1.0e-9) Vec3(halfWidth, 0.0, 0.0) else h.normalize().scale(halfWidth)
+        }
+        for (i in 1 until pts.size) {
+            val a = pts[i - 1]; val b = pts[i]; val sa = side[i - 1]; val sb = side[i]
+            val top = throughWalls(b)
+            Gizmos.rect(a.subtract(sa), a.add(sa), b.add(sb), b.subtract(sb), GizmoStyle.fill(argb)).also { if (top) it.setAlwaysOnTop() }
+            Gizmos.rect(a.subtract(up), a.add(up), b.add(up), b.subtract(up), GizmoStyle.fill(argb)).also { if (top) it.setAlwaysOnTop() }
+        }
+    }
+
     @JvmStatic
     fun gizmoThickLine(a: Vec3, b: Vec3, halfWidth: Double, argb: Int) = gizmoThickLine(a, b, halfWidth, argb, false)
 
