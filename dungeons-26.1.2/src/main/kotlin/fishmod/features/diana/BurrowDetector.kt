@@ -49,9 +49,7 @@ object BurrowDetector {
 
     private fun onServerSound(id: String): Boolean {
         if (id != DIG_DING || !Diana.active()) return false
-        // Other players' digs send the same ding; only trust it while we're swinging, else it eats the debounce
-        val p = net.minecraft.client.Minecraft.getInstance().player
-        if (DianaSettings.dianaBurrowDugSound && p != null && p.swinging) playDug()
+        // The ding also fires for other players' digs and for smacks during the post-mob cooldown, so only chat triggers the sound
         return DianaSettings.dianaMuteHypixelDug
     }
 
