@@ -121,6 +121,7 @@ object DianaMenu {
         col.features.add(Feature("Sphinx Solver", S::dianaSphinxSolver))
         col.features.add(Feature("Crown of Avarice Counter", S::dianaCrownCounter))
         col.features.add(Feature("Crown of Avarice Milestones", S::dianaCrownMilestones))
+        col.features.add(Feature("Crown of Avarice Tracker", S::dianaCrownHud))
 
         val style = Feature("Diana Waypoint Style", null, null)
         style.sub.add(SubcategoryHeader("Colors"))
@@ -164,6 +165,7 @@ object DianaMenu {
         "Diana Message Hider" -> "Hide spammy Diana chat"
         "Sphinx Solver" -> "Click anywhere in chat to answer the Sphinx"
         "Crown of Avarice Counter" -> "Keep counting coins past 1B (/fm crown set <amount>)"
+        "Crown of Avarice Tracker" -> "HUD with crown coins (past 1B), coins/hour and time to max"
         "Crown of Avarice Milestones" -> "Chat message every 100M coins your crown collects"
         "Diana Waypoint Style" -> "Colors, opacity and text for Diana waypoints"
         else -> null
