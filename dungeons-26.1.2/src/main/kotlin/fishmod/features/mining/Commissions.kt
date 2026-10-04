@@ -1,5 +1,6 @@
 package fishmod.features.mining
 
+import fishmod.utils.events.Events
 import fishmod.utils.rendering.DrawEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
@@ -18,16 +19,21 @@ object Commissions {
     @JvmStatic var current: List<Comm> = emptyList(); private set
     private var tick = 0
 
+    private val COMPLETE = Regex("""^(.+?) Commission Complete!""")
+
     fun init() {
+        // e.g. "AQUAMARINE GEMSTONE COLLECTOR Commission Complete! Visit the King..."
+        Events.ON_GAME_MESSAGE.register { text ->
+            if (S.miningCommTitle) COMPLETE.find(Mining.strip(text.string).trim())?.let { m ->
+                val name = m.groupValues[1].lowercase().split(' ').joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
+                Mining.title(S.miningCommTitleText, "§e$name", 2000, true)
+            }
+            false
+        }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || tick++ % 10 != 0) return@register
             if (!Mining.inMiningIsland()) { current = emptyList(); return@register }
             val next = Mining.tabWidget("Commissions:").mapNotNull { LINE.find(it) }.map { Comm(it.groupValues[1], it.groupValues[2]) }
-            // Title only when the same commission flips to done (not on first read)
-            if (S.miningCommTitle) for (c in next) {
-                val before = current.firstOrNull { it.name == c.name }
-                if (c.done && before != null && !before.done) Mining.title(S.miningCommTitleText, "§e${c.name}", 2000, true)
-            }
             current = next
         }
         MiningHuds.reg("Commissions", "mining_comms", 160, 50,
