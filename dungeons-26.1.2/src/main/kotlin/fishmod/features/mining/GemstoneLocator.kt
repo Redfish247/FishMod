@@ -54,8 +54,9 @@ object GemstoneLocator {
                 var floor = pts.map { it.add(0.0, -1.9, 0.0) }
                 // Skip a first point that's behind you so the line doesn't double back
                 if (floor.size > 1 && floor[1].distanceToSqr(feet) < floor[0].distanceToSqr(floor[1])) floor = floor.drop(1)
+                // World-space ribbon (flat + upright) so it's wide from above and from the side
                 val curve = smooth(listOf(feet.add(0.0, 0.1, 0.0)) + floor)
-                for (i in 1 until curve.size) RenderUtils.gizmoLine(curve[i - 1], curve[i], argb, S.miningGemLineWidth * 2f, true)
+                for (i in 1 until curve.size) RenderUtils.gizmoThickLine(curve[i - 1], curve[i], S.miningGemLineWidth * 0.05, argb)
             }
         }
     }
