@@ -81,8 +81,14 @@ object MiningProfitTracker {
         // In the inventory the HUD stays up and scrolls with the mouse wheel
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is InventoryScreen) return@AfterInit
-            ScreenEvents.afterExtract(screen).register(ScreenEvents.AfterExtract { _, ctx, _, _, _ ->
-                if (shown()) MiningHuds.draw(ctx, lines(), S.miningProfitHudX, S.miningProfitHudY, S.miningProfitHudScale)
+            ScreenEvents.afterExtract(screen).register(ScreenEvents.AfterExtract { _, ctx, mx, my, _ ->
+                if (!shown()) return@AfterExtract
+                val l = lines()
+                val sc = S.miningProfitHudScale
+                MiningHuds.draw(ctx, l, S.miningProfitHudX, S.miningProfitHudY, sc)
+                fishmod.features.other.TrackerResetButton.draw(ctx, "mining", S.miningProfitHudX, S.miningProfitHudY + (l.size * 10 * sc).toInt() + 2, sc, mx, my) {
+                    if (S.miningProfitMode == "Total") resetTotal() else resetSession()
+                }
             })
             ScreenMouseEvents.allowMouseScroll(screen).register(ScreenMouseEvents.AllowMouseScroll { _, mx, my, _, v ->
                 !(shown() && over(mx, my) && scrollBy(if (v > 0) -1 else 1))
