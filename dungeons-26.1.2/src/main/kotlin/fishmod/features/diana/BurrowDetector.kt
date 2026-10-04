@@ -31,7 +31,7 @@ object BurrowDetector {
             if (Diana.inHub() && DianaSettings.dianaGuessing && DianaSettings.dianaBurrowDetection) onParticle(p)
             false
         }
-        Events.ON_SOUND.register { snd, _, _ -> onServerSound(snd.location.toString()) }
+        Events.ON_SOUND.register { snd, _, pitch -> onServerSound(snd.location.toString(), pitch) }
         Events.ON_GAME_MESSAGE.register { text ->
             if (Diana.inHub()) {
                 val s = text.string.replace(Regex("§."), "")
@@ -47,9 +47,16 @@ object BurrowDetector {
     // ---- Hypixel's dig ding (arrow.hit_player, pitch climbs per dig) arrives the instant you dig, before the chat line ----
     private const val DIG_DING = "minecraft:entity.arrow.hit_player"
 
-    private fun onServerSound(id: String): Boolean {
+    private var lastDingPitch = -1f
+    private var lastDingMs = 0L
+
+    private fun onServerSound(id: String, pitch: Float): Boolean {
         if (id != DIG_DING || !Diana.inHub()) return false
-        // Not gated on the spade: after a mob kill you hold your weapon and Hypixel still dings; only chat triggers our sound
+        // Pitch climbs per dig; smacks during the post-mob cooldown repeat the same pitch, so only a new pitch is a real dig
+        val now = System.currentTimeMillis()
+        val fresh = pitch != lastDingPitch || now - lastDingMs > 20_000
+        lastDingPitch = pitch; lastDingMs = now
+        if (fresh && DianaSettings.dianaBurrowDugSound && Diana.active() && Diana.player()?.swinging == true) playDug()
         return DianaSettings.dianaMuteHypixelDug
     }
 
