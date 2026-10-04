@@ -139,6 +139,7 @@ object BurrowDetector {
     private fun onDugOut(pos: BlockPos) {
         DianaWaypoints.markRemoved(pos)
         DianaWaypoints.removeAt(pos, WpType.BURROW, WpType.GUESS, WpType.ARROW, WpType.SUB)
+        DianaWaypoints.removeSubsNear(pos)
         ArrowGuess.onBurrowAt(pos)
     }
 
@@ -188,6 +189,7 @@ object BurrowDetector {
             if (death) { prune(); chains.pollFirst() }
             DianaWaypoints.markRemoved(w.pos)
             DianaWaypoints.removeAt(w.pos, WpType.BURROW, WpType.GUESS, WpType.ARROW, WpType.SUB)
+            DianaWaypoints.removeSubsNear(w.pos)
             // Keep lastClickedWaypoint: the next arrow spawns here and filters on it (as SBO does)
             ArrowGuess.onBurrowAt(w.pos)
             return
