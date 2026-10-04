@@ -134,7 +134,7 @@ object CrownOfAvarice {
         val rate = perHour(session)
         val lines = ArrayList<String>()
         lines += "§dCrown of Avarice"
-        lines += if (cur < CAP) "§7Coins: §6${short(cur)}§7/§61B" else "§7Coins: §6${short(cur)} §a(Maxed)"
+        lines += if (cur < CAP) "§7Coins: §6${short(cur)}§7/§61B" else "§7Coins: §6${NUM.format(cur)}"
         val now = System.currentTimeMillis()
         val running = session != null && crown === p.getItemBySlot(EquipmentSlot.HEAD) &&
             session.lastGainMs > 0 && now - session.lastGainMs <= DianaSettings.dianaAfkTimeout * 1000L
