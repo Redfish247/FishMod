@@ -13,6 +13,8 @@ object DianaSoundMute {
         if (DianaSettings.dianaMuteBurrowSounds) {
             // A new burrow plings as it appears, before its particles let us place it
             if (path == "block.note_block.pling") return true
+            // Only dig noises: mobs spawn on the burrow and their sounds must still play
+            if (path != "entity.zombie.infect" && !path.startsWith("block.")) return false
             for (w in DianaWaypoints.list) {
                 if (w.type != WpType.BURROW) continue
                 val c = w.center
