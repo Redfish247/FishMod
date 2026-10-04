@@ -16,12 +16,15 @@ object MeleeHitSound {
     private var lastHitMs = 0L
     private var target: LivingEntity? = null
     private var swingMs = 0L
+    private var lastHurt = 0
 
     fun init() {
         AttackEntityCallback.EVENT.register { player, level, _, entity, _ ->
             if (level.isClientSide) lastHitMs = System.currentTimeMillis()
-            if (level.isClientSide && FishSettings.meleeHitSoundEnabled && entity is LivingEntity && entity.hurtTime == 0) {
+            // No hurtTime == 0 gate: fast swings land while the last flash is still fading
+            if (level.isClientSide && FishSettings.meleeHitSoundEnabled && entity is LivingEntity) {
                 target = entity
+                lastHurt = entity.hurtTime
                 swingMs = System.currentTimeMillis()
             }
             InteractionResult.PASS
@@ -30,7 +33,10 @@ object MeleeHitSound {
             val t = target ?: return@register
             val now = System.currentTimeMillis()
             if (now - swingMs > CONFIRM_MS || t.isRemoved) { target = null; return@register }
-            if (t.hurtTime > 0) {
+            // A new hit resets hurtTime upward; otherwise it only counts down
+            val rose = t.hurtTime > lastHurt
+            lastHurt = t.hurtTime
+            if (rose) {
                 target = null
                 FishDiag.guard("MeleeHitSound.1", "melee hit sound '${FishSettings.meleeHitSoundName}' failed") {
                     SoundManager.play2D(
