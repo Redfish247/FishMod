@@ -49,7 +49,9 @@ object BurrowDetector {
 
     private fun onServerSound(id: String): Boolean {
         if (id != DIG_DING || !Diana.active()) return false
-        if (DianaSettings.dianaBurrowDugSound) playDug()
+        // Other players' digs send the same ding; only trust it while we're swinging, else it eats the debounce
+        val p = net.minecraft.client.Minecraft.getInstance().player
+        if (DianaSettings.dianaBurrowDugSound && p != null && p.swinging) playDug()
         return DianaSettings.dianaMuteHypixelDug
     }
 
@@ -61,7 +63,7 @@ object BurrowDetector {
     private fun playDug() {
         var vol = DianaSettings.dianaBurrowDugVolume.coerceIn(0, 500) / 100f
         val snd = SoundManager.preset(DianaSettings.dianaBurrowDugSoundName)
-        if (!SoundManager.play(snd, minOf(vol, 1f), key = "diana_dug", debounceMs = 1500)) return
+        if (!SoundManager.play(snd, minOf(vol, 1f), key = "diana_dug", debounceMs = 700)) return
         vol -= 1f
         while (vol > 0.01f) { SoundManager.play(snd, minOf(vol, 1f)); vol -= 1f }
     }
