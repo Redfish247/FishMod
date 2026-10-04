@@ -56,12 +56,9 @@ object CrownOfAvarice {
     private val lastSeen = HashMap<String, Long>()
 
     // Coins/hour: only time with gains inside the AFK window counts
-    private var rateUuid: String? = null
-    private var rateGained = 0L
-    private var rateActiveMs = 0L
-    private var rateLastTotal = -1L
-    private var rateLastGainMs = 0L
-    private var rateLastTickMs = 0L
+    // Per crown, so swapping between crowns pauses one session instead of resetting it
+    private class Session(var gained: Long = 0L, var activeMs: Long = 0L, var lastTotal: Long = -1L, var lastGainMs: Long = 0L, var lastTickMs: Long = 0L)
+    private val sessions = HashMap<String, Session>()
 
     fun init() {
         load()
@@ -83,26 +80,21 @@ object CrownOfAvarice {
 
     private fun trackRate(helmet: ItemStack) {
         if (ItemUtil.getId(helmet) != ID) return
-        val u = uuidOf(helmet) ?: "crown"
         val cur = total(helmet) ?: itemCoins(helmet)
         val now = System.currentTimeMillis()
-        if (u != rateUuid) {
-            rateUuid = u; rateGained = 0L; rateActiveMs = 0L; rateLastTotal = cur; rateLastGainMs = 0L; rateLastTickMs = now
-            return
+        val r = sessions.getOrPut(uuidOf(helmet) ?: "crown") { Session(lastTotal = cur, lastTickMs = now) }
+        // Gap since this crown was last worn doesn't count
+        val worn = now - r.lastTickMs <= 2_000L
+        if (worn && r.lastGainMs > 0 && now - r.lastGainMs <= DianaSettings.dianaAfkTimeout * 1000L) r.activeMs += now - r.lastTickMs
+        r.lastTickMs = now
+        if (worn && cur > r.lastTotal) {
+            r.gained += cur - r.lastTotal
+            r.lastGainMs = now
         }
-        // Session clock runs while coins keep coming in, pauses once AFK
-        if (rateLastGainMs > 0 && now - rateLastGainMs <= DianaSettings.dianaAfkTimeout * 1000L) rateActiveMs += now - rateLastTickMs
-        rateLastTickMs = now
-        if (cur > rateLastTotal) {
-            rateGained += cur - rateLastTotal
-            rateLastGainMs = now
-        }
-        rateLastTotal = cur
+        r.lastTotal = cur
     }
 
-    private fun perHour(): Long = if (rateActiveMs < 60_000L) 0L else (rateGained * 3_600_000.0 / rateActiveMs).toLong()
-
-    fun resetRate() { rateUuid = null }
+    private fun perHour(r: Session?): Long = if (r == null || r.activeMs < 60_000L) 0L else (r.gained * 3_600_000.0 / r.activeMs).toLong()
 
     private fun short(n: Long): String = when {
         n >= 1_000_000_000L -> "%.2fB".format(Locale.US, n / 1e9)
@@ -121,11 +113,15 @@ object CrownOfAvarice {
         val p = Minecraft.getInstance().player ?: return emptyList()
         val crown = listOf(p.getItemBySlot(EquipmentSlot.HEAD), p.mainHandItem).firstOrNull { ItemUtil.getId(it) == ID } ?: return emptyList()
         val cur = total(crown) ?: itemCoins(crown)
-        val rate = perHour()
+        val session = sessions[uuidOf(crown) ?: "crown"]
+        val rate = perHour(session)
         val lines = ArrayList<String>()
         lines += "§dCrown of Avarice"
         lines += if (cur < CAP) "§7Coins: §6${short(cur)}§7/§61B" else "§7Coins: §6${short(cur)} §a(Maxed)"
-        lines += "§7Time: §f${duration(rateActiveMs)}"
+        val now = System.currentTimeMillis()
+        val running = session != null && crown === p.getItemBySlot(EquipmentSlot.HEAD) &&
+            session.lastGainMs > 0 && now - session.lastGainMs <= DianaSettings.dianaAfkTimeout * 1000L
+        lines += "§7Time: §f${duration(session?.activeMs ?: 0L)}" + if (running) "" else " §c(Paused)"
         lines += "§7Per Hour: §6${if (rate > 0) short(rate) else "-"}"
         if (cur < CAP) lines += "§7Time to Max: §b${if (rate > 0) duration((CAP - cur) * 3_600_000L / rate) else "-"}"
         return lines
