@@ -46,7 +46,12 @@ object BurrowDetector {
 
     // ---- Hypixel's dig ding (arrow.hit_player, pitch climbs per dig) arrives the instant you dig, before the chat line ----
     private const val DIG_DING = "minecraft:entity.arrow.hit_player"
-    private const val DIG_THUD = "minecraft:entity.ender_dragon.hurt"
+    private val DIG_SOUNDS = listOf(
+        "minecraft:entity.ender_dragon.hurt" to 0.54f,
+        "minecraft:item.flintandsteel.use" to 0.54f,
+        "minecraft:block.wooden_pressure_plate.click_on" to 0.698f,
+        "minecraft:entity.generic.explode" to 1.19f,
+    )
 
     private val DIG_LOG = org.slf4j.LoggerFactory.getLogger("FishMod/DigDing")
     private var lastDingPitch = -1f
@@ -61,8 +66,8 @@ object BurrowDetector {
             recentSounds.addLast("${System.currentTimeMillis() % 100000} $id p=$pitch")
             while (recentSounds.size > 12) recentSounds.pollFirst()
         }
-        // Hypixel's main dig sound is a low dragon hurt (~0.54) a moment before each dig line
-        if (id == DIG_THUD && pitch in 0.5f..0.58f && Diana.inHub()) return DianaSettings.dianaMuteHypixelDug
+        // Hypixel's dig/burrow-pop sounds, matched by exact pitch so other uses of these sounds still play
+        if (Diana.inHub() && DIG_SOUNDS.any { (snd, p) -> id == snd && abs(pitch - p) < 0.02f }) return DianaSettings.dianaMuteHypixelDug
         if (id != DIG_DING || !Diana.inHub()) return false
         // Pitch climbs per burrow; mob/treasure burrows take two breaks at the same pitch, anything past that is a post-mob cooldown smack
         val now = System.currentTimeMillis()
