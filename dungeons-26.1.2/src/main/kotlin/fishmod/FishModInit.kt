@@ -580,18 +580,10 @@ class FishModInit : ClientModInitializer {
                     })
                     .then(ClientCommands.literal("debug")
                         .executes {
-                            val mc = Minecraft.getInstance()
-                            val n = fishmod.utils.debug.FishDiag.count()
-                            if (n == 0) {
-                                fishmod.utils.Misc.addChatMessage(Component.literal("§a[FishMod] No problems recorded this session."))
-                            } else {
-                                mc.execute { mc.keyboardHandler.clipboard = fishmod.utils.debug.FishDiag.buildReport() }
-                                fishmod.utils.Misc.addChatMessage(Component.literal("§e[FishMod] Debug report copied ($n issue codes). Paste it to Eli on Discord."))
-                                fishmod.utils.debug.FishDiag.summaryLines(5).forEach { fishmod.utils.Misc.addChatMessage(Component.literal("§7  $it")) }
-                                fishmod.utils.Misc.addChatMessage(Component.literal("§8  Full log: ${fishmod.utils.debug.FishDiag.logPath()}"))
-                            }
+                            debugReport()
                             Constants.SUCCESS
                         }
+                        .then(ClientCommands.literal("report").executes { debugReport(); Constants.SUCCESS })
                         .then(ClientCommands.literal("clear").executes {
                             fishmod.utils.debug.FishDiag.clear()
                             fishmod.utils.Misc.addChatMessage(Component.literal("§a[FishMod] Debug codes cleared."))
@@ -1451,5 +1443,19 @@ class FishModInit : ClientModInitializer {
         safeInit("ChatQueue") { fishmod.utils.ChatQueue.init() }
         safeInit("PrestigeChatFade") { fishmod.cosmetic.prestige.PrestigeChatFade.init() }
         safeInit("NametagCullingCompat") { fishmod.cosmetic.NametagCullingCompat.init() }
+    }
+}
+
+// /fm debug and /fm debug report: copy the FishDiag report
+private fun debugReport() {
+    val mc = Minecraft.getInstance()
+    val n = fishmod.utils.debug.FishDiag.count()
+    if (n == 0) {
+        fishmod.utils.Misc.addChatMessage(Component.literal("§a[FishMod] No problems recorded this session."))
+    } else {
+        mc.execute { mc.keyboardHandler.clipboard = fishmod.utils.debug.FishDiag.buildReport() }
+        fishmod.utils.Misc.addChatMessage(Component.literal("§e[FishMod] Debug report copied ($n issue codes). Paste it to Eli on Discord."))
+        fishmod.utils.debug.FishDiag.summaryLines(5).forEach { fishmod.utils.Misc.addChatMessage(Component.literal("§7  $it")) }
+        fishmod.utils.Misc.addChatMessage(Component.literal("§8  Full log: ${fishmod.utils.debug.FishDiag.logPath()}"))
     }
 }

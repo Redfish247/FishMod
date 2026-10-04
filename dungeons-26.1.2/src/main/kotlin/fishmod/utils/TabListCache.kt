@@ -54,7 +54,10 @@ object TabListCache {
     }
 
     private fun scan(mc: Minecraft) {
-        val online = mc.connection!!.onlinePlayers
+        // onlinePlayers is unordered; sort like vanilla's tab so widgets read top-to-bottom per column
+        val online = mc.connection!!.onlinePlayers.sortedWith(
+            compareBy<PlayerInfo> { -it.tabListOrder }.thenBy { it.team?.name ?: "" }
+                .thenBy(String.CASE_INSENSITIVE_ORDER) { it.profile.name })
         var identity = online.size
         for (info in online) {
             identity = identity * 31 + System.identityHashCode(info)

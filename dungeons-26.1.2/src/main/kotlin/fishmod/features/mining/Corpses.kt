@@ -47,7 +47,7 @@ object Corpses {
     private var shaftDone = false
 
     fun init() {
-        Events.ON_WORLD_CHANGE.register { seenTicks.clear(); announced.clear(); shaftType = null; shaftDone = false; false }
+        Events.ON_WORLD_CHANGE.register { seenTicks.clear(); announced.clear(); shaftType = null; shaftDone = false; enteredMs = 0L; false }
         Events.ON_LOCATION_CHANGE.register { loc ->
             if (loc == Location.MINESHAFT) { enteredMs = System.currentTimeMillis(); shaftType = null; shaftDone = false }
             false
@@ -83,8 +83,14 @@ object Corpses {
             announced += e.uuid
             val msg = S.miningCorpseFormat.replace("{x}", e.x.roundToInt().toString()).replace("{y}", (e.y.roundToInt() + 1).toString())
                 .replace("{z}", e.z.roundToInt().toString()).replace("{type}", type.display)
-            ChatQueue.enqueue("pc $msg")
+            announce(msg)
         }
+    }
+
+    // Solo: Hypixel drops /pc, so show it locally instead
+    private fun announce(msg: String) {
+        if (fishmod.utils.data.PartyUtil.isInParty()) ChatQueue.enqueue("pc $msg")
+        else fishmod.utils.FishMsg.send("§b$msg")
     }
 
     private fun corpseSummary(): String? {
@@ -102,14 +108,18 @@ object Corpses {
     private fun checkShaft() {
         if (shaftType == null) {
             val joined = Mining.sidebar.joinToString(" ").uppercase().replace("_", "")
-            shaftType = SHAFTS.entries.firstOrNull { joined.contains(it.key) }?.value ?: return
-            typeAtMs = System.currentTimeMillis()
+            val now = System.currentTimeMillis()
+            if (enteredMs == 0L) enteredMs = now
+            // Type code not on the sidebar: still announce after 5s, just without the type
+            shaftType = SHAFTS.entries.firstOrNull { joined.contains(it.key) }?.value
+                ?: (if (now - enteredMs > 5000) "Mineshaft" else return)
+            typeAtMs = now
         }
         val summary = corpseSummary()
         if (summary == null && System.currentTimeMillis() - typeAtMs < 5000) return
         shaftDone = true
         val text = S.miningShaftFormat.replace("{type}", shaftType!!).replace("{corpses}", summary ?: "No corpses")
         if (S.miningShaftTitle) Mining.title("§b§l$shaftType", "§f${summary ?: "No corpses"}", S.miningShaftTitleMs, true)
-        if (S.miningShaftParty) ChatQueue.enqueue("pc $text")
+        if (S.miningShaftParty) announce(text)
     }
 }
