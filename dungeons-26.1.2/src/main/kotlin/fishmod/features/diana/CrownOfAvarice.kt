@@ -35,7 +35,7 @@ object CrownOfAvarice {
     private const val CAP = 1_000_000_000L
     // A maxed crown gives 2x coins instead of 5x, so each purse gain is scaled up by 2.5
     private const val SCALE = 2.5
-    // Only purse gains right after a Diana coin source count (mob kill or dug coins)
+    // Only purse gains right after a Diana coin source count (mob kill, dug coins, or a burrow dig for Four-Eyed Fish)
     private const val COIN_WINDOW_MS = 3_000L
     private const val MAX_GAIN = 10_000_000L
 
@@ -165,7 +165,7 @@ object CrownOfAvarice {
         // Below 1B Hypixel still counts it on the item itself
         if (itemCoins(helmet) < CAP && (totals[u] ?: 0L) < CAP) return
         val now = System.currentTimeMillis()
-        val fromDiana = now - maxOf(lastDugCoinsMs, RareMobs.lastDianaMobDeathMs) <= COIN_WINDOW_MS
+        val fromDiana = now - maxOf(lastDugCoinsMs, RareMobs.lastDianaMobDeathMs, BurrowDetector.lastDigMs) <= COIN_WINDOW_MS
         val menuOpen = mc.screen != null && mc.screen !is net.minecraft.client.gui.screens.ChatScreen
         val selling = menuOpen || now - lastNonCrownMs <= COIN_WINDOW_MS
         if (!Diana.active() || !fromDiana || selling || gain > MAX_GAIN) return
