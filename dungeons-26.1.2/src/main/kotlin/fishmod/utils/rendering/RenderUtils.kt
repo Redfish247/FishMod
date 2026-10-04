@@ -238,11 +238,14 @@ object RenderUtils {
     }
 
     @JvmStatic
-    fun gizmoThickLine(a: Vec3, b: Vec3, halfWidth: Double, argb: Int) {
+    fun gizmoThickLine(a: Vec3, b: Vec3, halfWidth: Double, argb: Int) = gizmoThickLine(a, b, halfWidth, argb, false)
+
+    @JvmStatic
+    fun gizmoThickLine(a: Vec3, b: Vec3, halfWidth: Double, argb: Int, throughWalls: Boolean) {
         if ((argb ushr 24) == 0) return
         val (quad1, quad2) = crossQuads(a, b, halfWidth) ?: return
-        gizmoQuad(quad1, argb, 0)
-        gizmoQuad(quad2, argb, 0)
+        for (q in arrayOf(quad1, quad2))
+            Gizmos.rect(q[0], q[1], q[2], q[3], GizmoStyle.fill(argb)).also { if (throughWalls) it.setAlwaysOnTop() }
     }
 
     @JvmStatic
