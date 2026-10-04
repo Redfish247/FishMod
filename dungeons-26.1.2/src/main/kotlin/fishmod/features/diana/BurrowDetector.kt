@@ -61,7 +61,7 @@ object BurrowDetector {
     private fun playDug() {
         var vol = DianaSettings.dianaBurrowDugVolume.coerceIn(0, 500) / 100f
         val snd = SoundManager.preset(DianaSettings.dianaBurrowDugSoundName)
-        if (!SoundManager.play(snd, minOf(vol, 1f), key = "diana_dug", debounceMs = 700)) return
+        if (!SoundManager.play(snd, minOf(vol, 1f), key = "diana_dug", debounceMs = 2000)) return
         vol -= 1f
         while (vol > 0.01f) { SoundManager.play(snd, minOf(vol, 1f)); vol -= 1f }
     }
