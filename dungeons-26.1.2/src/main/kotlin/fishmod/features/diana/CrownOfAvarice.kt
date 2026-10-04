@@ -111,6 +111,8 @@ object CrownOfAvarice {
         r.lastTotal = cur
     }
 
+    private fun coins(n: Long): String = if (DianaSettings.dianaCrownHudFullNumber) NUM.format(n) else short(n)
+
     private fun perHour(r: Session?): Long = if (r == null || r.activeMs < 60_000L) 0L else (r.gained * 3_600_000.0 / r.activeMs).toLong()
 
     private fun short(n: Long): String = when {
@@ -134,7 +136,7 @@ object CrownOfAvarice {
         val rate = perHour(session)
         val lines = ArrayList<String>()
         lines += "§dCrown of Avarice"
-        lines += if (cur < CAP) "§7Coins: §6${short(cur)}§7/§61B" else "§7Coins: §6${NUM.format(cur)}"
+        lines += if (cur < CAP) "§7Coins: §6${coins(cur)}§7/§61B" else "§7Coins: §6${coins(cur)}"
         val now = System.currentTimeMillis()
         val running = session != null && crown === p.getItemBySlot(EquipmentSlot.HEAD) &&
             session.lastGainMs > 0 && now - session.lastGainMs <= DianaSettings.dianaAfkTimeout * 1000L
@@ -228,7 +230,9 @@ object CrownOfAvarice {
         for (i in lines.indices) {
             val s = lines[i].string
             when {
-                s.startsWith("Coins Consumed:") -> lines[i] = Component.literal("§7Coins Consumed: §6${NUM.format(tracked)}")
+                // Hypixel's capped counter line; matched by its value so a renamed label still gets replaced
+                s.contains(':') && s.contains("Coin") && s.substringAfter(':').filter { it.isDigit() }.toLongOrNull() == itemCoins(stack) ->
+                    lines[i] = Component.literal("§7${s.substringBefore(':').trim()}: §6${NUM.format(tracked)}")
                 s.trim().endsWith("x Damage") && s.trim().startsWith("+") ->
                     lines[i] = Component.literal("  §c+${"%.3f".format(Locale.US, 1 + 0.015 * digits).trimEnd('0').trimEnd('.')}x§c Damage")
                 s.trim().endsWith("Magic Find") && s.trim().startsWith("+") && i > 0 && lines.getOrNull(i - 1)?.string?.contains("Damage") == true ->
