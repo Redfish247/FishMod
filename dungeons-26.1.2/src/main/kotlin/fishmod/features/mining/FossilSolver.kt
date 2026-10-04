@@ -65,6 +65,9 @@ object FossilSolver {
     private var charges = 0
     private var maxCharges = 0
     private var types: List<String> = emptyList()
+    private var possible: Map<Int, Double> = emptyMap() // slot -> share of placements covering it
+    private var sure: Set<Int> = emptySet()             // slots every remaining placement covers
+    private var fossilName = ""
 
     private fun screen(): AbstractContainerScreen<*>? =
         (Minecraft.getInstance().screen as? AbstractContainerScreen<*>)?.takeIf { it.title.string == "Fossil Excavator" }
@@ -80,11 +83,15 @@ object FossilSolver {
         DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, _, x, y ->
             if (!S.miningFossilSolver || bestSlot < 0 || screen() == null) return@register
             val slot = DrawEvents.currentSlot ?: return@register
-            if (slot.index != bestSlot || slot.container === Minecraft.getInstance().player?.inventory) return@register
-            ctx.fill(x, y, x + 16, y + 16, Mining.alpha(S.miningFossilColor, S.miningFossilOpacity))
+            if (slot.container === Minecraft.getInstance().player?.inventory) return@register
+            when {
+                slot.index in sure -> ctx.fill(x, y, x + 16, y + 16, Mining.alpha(0x55FF55, S.miningFossilOpacity))
+                slot.index == bestSlot -> ctx.fill(x, y, x + 16, y + 16, Mining.alpha(S.miningFossilColor, S.miningFossilOpacity))
+                slot.index in possible -> ctx.fill(x, y, x + 16, y + 16, Mining.alpha(S.miningFossilColor, (S.miningFossilOpacity * (0.15 + 0.5 * possible.getValue(slot.index))).toInt().coerceAtLeast(12)))
+            }
         }
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, _, x, y ->
-            if (!S.miningFossilSolver || !S.miningFossilPercent || bestSlot < 0 || screen() == null) return@register
+            if (!S.miningFossilSolver || !S.miningFossilPercent || bestSlot < 0 || sure.isNotEmpty() || screen() == null) return@register
             val slot = DrawEvents.currentSlot ?: return@register
             if (slot.index != bestSlot || slot.container === Minecraft.getInstance().player?.inventory) return@register
             val pose = ctx.pose(); pose.pushMatrix(); pose.translate(x.toFloat(), y + 10f); pose.scale(0.5f, 0.5f)
@@ -103,11 +110,13 @@ object FossilSolver {
         })
     }
 
-    private fun reset() { sig = 0; bestSlot = -1; status = ""; types = emptyList(); maxCharges = 0; charges = 0 }
+    private fun reset() { sig = 0; bestSlot = -1; status = ""; types = emptyList(); maxCharges = 0; charges = 0
+        possible = emptyMap(); sure = emptySet(); fossilName = "" }
 
     private fun panel(): List<String> {
         val out = arrayListOf("§6§lFossil Solver", status, "§eCharges: §a$charges")
-        if (types.isNotEmpty()) out += "§eTypes: §7" + types.joinToString(", ")
+        if (fossilName.isNotEmpty()) out += "§eFossil: §a$fossilName"
+        else if (types.isNotEmpty()) out += "§eTypes: §7" + types.joinToString(", ")
         return out
     }
 
@@ -124,6 +133,7 @@ object FossilSolver {
                 if (name == "Fossil") PROGRESS.find(l)?.let { pct = it.groupValues[1] }
             }
         }
+        possible = emptyMap(); sure = emptySet(); fossilName = ""
         if (fossils.isEmpty() && dirt.isEmpty()) { bestSlot = -1; status = ""; return }
         solve(fossils, dirt, pct)
     }
@@ -142,15 +152,22 @@ object FossilSolver {
         val pool = if (pct == null) FOSSILS else FOSSILS.filter { it.pct == pct }
         types = if (pct == null) emptyList() else pool.map { it.name }
         val counts = HashMap<Tile, Int>()
+        val names = HashSet<String>()
         var total = 0
         for (x in 0..8) for (y in 0..5) for (f in pool) for (shape in f.shapes) {
             val placed = shape.moveTo(x, y)
             if (placed.tiles.any { it in invalid || it.x !in 0..8 || it.y !in 0..5 }) continue
             if (!found.all { it in placed.tiles }) continue
-            total++
+            total++; names += f.name
             for (t in placed.tiles) counts[t] = (counts[t] ?: 0) + 1
         }
         found.forEach { counts.remove(it) }
+        if (total > 0) {
+            possible = counts.entries.associate { it.key.slot() to it.value.toDouble() / total }
+            if (found.isNotEmpty()) sure = counts.filterValues { it == total }.keys.map { it.slot() }.toSet()
+            if (names.size == 1 && found.isNotEmpty()) fossilName = names.first()
+            types = names.sorted()
+        }
         val best = counts.maxByOrNull { it.value }
         if (best == null) {
             bestSlot = -1
@@ -159,6 +176,10 @@ object FossilSolver {
         }
         bestSlot = best.key.slot(); bestPct = best.value.toDouble() / total
         remaining = total
-        status = "§ePossible fossils: §a$remaining"
+        status = when {
+            sure.isNotEmpty() && sure.size == counts.size -> "§aFossil located, dig the green slots."
+            fossilName.isNotEmpty() -> "§eIdentified, §a$remaining §eplacements left"
+            else -> "§ePossible placements: §a$remaining"
+        }
     }
 }

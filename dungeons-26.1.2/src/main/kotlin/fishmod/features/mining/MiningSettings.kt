@@ -29,6 +29,7 @@ object MiningSettings {
     // Gemstone locator
     @ConfigValue @JvmField var miningGemLines: Boolean = true
     @ConfigValue @JvmField var miningGemBoxes: Boolean = true
+    @ConfigValue @JvmField var miningGemPaths: Boolean = true
     @ConfigValue @JvmField var miningGemRadius: Int = 24
     @ConfigValue @JvmField var miningGemMax: Int = 3
     @ConfigValue @JvmField var miningGemLineWidth: Int = 3
@@ -51,6 +52,7 @@ object MiningSettings {
     @ConfigValue @JvmField var miningProfitLines: Int = 25
     @ConfigValue @JvmField var miningProfitPriceMode: String = "Sell Offer"
     @ConfigValue @JvmField var miningProfitShowPowder: Boolean = true
+    @ConfigValue @JvmField var miningProfitShowSources: Boolean = true
     @ConfigValue @JvmField var miningProfitAfkSec: Int = 60
     @ConfigValue @JvmField var miningProfitHudX: Int = 5
     @ConfigValue @JvmField var miningProfitHudY: Int = 160

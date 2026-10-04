@@ -211,7 +211,7 @@ void main(){
             targetLogged = true
             fishmod.utils.debug.Debug.LOGGER.info("[UiRenderer] UI target: lastPass={} main={}", passTex, mainTex)
         }
-        if (passTex != 0 && attach(passTex)) return
+        if (passTex != 0 && GL11.glIsTexture(passTex) && attach(passTex)) return
         if (mainTex == 0) {
             FishDiag.fail("UiRenderer.11", "main render target colour texture is not a GlTexture: ${Minecraft.getInstance().mainRenderTarget.colorTexture?.javaClass?.name}")
             return
@@ -223,7 +223,7 @@ void main(){
         if (targetFbo == 0) targetFbo = GL30.glGenFramebuffers()
         if (targetFbo == 0) { FishDiag.fail("UiRenderer.12", "glGenFramebuffers returned 0"); return false }
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, targetFbo)
-        if (tex == targetTex) return true
+        // Re-attach every paint: a resized/recreated target can reuse the same id, leaving the old attachment dead
         GL30.glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, tex, 0)
         val status = GL30.glCheckFramebufferStatus(GL30.GL_FRAMEBUFFER)
         if (status != GL30.GL_FRAMEBUFFER_COMPLETE) {
