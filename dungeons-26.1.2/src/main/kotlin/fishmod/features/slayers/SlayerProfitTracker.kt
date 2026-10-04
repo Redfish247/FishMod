@@ -59,7 +59,7 @@ object SlayerProfitTracker {
 
 
     private fun idleMs(): Long = FishSettings.slayerProfitIdleSeconds.coerceIn(10, 3600) * 1000L
-    private fun sessionMode(): Boolean = FishSettings.slayerProfitDisplayMode.equals("This Session", true)
+    fun sessionMode(): Boolean = FishSettings.slayerProfitDisplayMode.equals("This Session", true)
     private fun countKillCoins(): Boolean = FishSettings.slayerProfitCountKillCoins
 
     private fun key(type: SlayerType, tier: Int): String = "${type.name} $tier"

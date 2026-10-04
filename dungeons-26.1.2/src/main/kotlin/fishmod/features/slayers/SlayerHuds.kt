@@ -146,7 +146,7 @@ object SlayerHuds {
             if (screen !is net.minecraft.client.gui.screens.inventory.InventoryScreen) return@register
             net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.afterExtract(screen).register { _, ctx, mx, my, _ ->
                 try {
-                    if (!renderProfitInner(ctx, true)) return@register
+                    if (!renderProfitInner(ctx, true) || !SlayerProfitTracker.sessionMode()) return@register
                     fishmod.features.other.TrackerResetButton.draw(ctx, "slayer", profitLeft.toInt(), profitRowBot.last().toInt() + 2,
                         FishSettings.slayerProfitHudScale, mx, my) { SlayerProfitTracker.reset() }
                 } catch (e: Exception) {
