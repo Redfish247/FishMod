@@ -31,11 +31,11 @@ object BurrowDetector {
             if (Diana.inHub() && DianaSettings.dianaGuessing && DianaSettings.dianaBurrowDetection) onParticle(p)
             false
         }
-        Events.ON_SOUND.register { snd, _, _ -> onServerSound(snd.location.toString()) }
+        Events.ON_SOUND.register { snd, _, pitch -> onServerSound(snd.location.toString(), pitch) }
         Events.ON_GAME_MESSAGE.register { text ->
             if (Diana.inHub()) {
                 val s = text.string.replace(Regex("§."), "")
-                if (DianaSettings.dianaBurrowDugSound) dugSound(s)
+                dugSound(s)
                 if (DianaSettings.dianaGuessing) onChat(s)
             }
             false
@@ -46,24 +46,56 @@ object BurrowDetector {
 
     // ---- Hypixel's dig ding (arrow.hit_player, pitch climbs per dig) arrives the instant you dig, before the chat line ----
     private const val DIG_DING = "minecraft:entity.arrow.hit_player"
+    private val DIG_SOUNDS = listOf(
+        "minecraft:entity.ender_dragon.hurt" to 0.54f,
+        "minecraft:item.flintandsteel.use" to 0.54f,
+        "minecraft:block.wooden_pressure_plate.click_on" to 0.698f,
+        "minecraft:entity.generic.explode" to 1.19f,
+    )
 
-    private fun onServerSound(id: String): Boolean {
-        if (id != DIG_DING || !Diana.active()) return false
-        // Other players' digs send the same ding; only trust it while we're swinging, else it eats the debounce
-        val p = net.minecraft.client.Minecraft.getInstance().player
-        if (DianaSettings.dianaBurrowDugSound && p != null && p.swinging) playDug()
+    private val DIG_LOG = org.slf4j.LoggerFactory.getLogger("FishMod/DigDing")
+    private var lastDingPitch = -1f
+    private var lastDingMs = 0L
+    private var samePitchCount = 0
+
+    // Temporary: recent hub sounds, dumped next to each dig chat line to find what slips past the mute
+    private val recentSounds = java.util.concurrent.ConcurrentLinkedDeque<String>()
+
+    private fun onServerSound(id: String, pitch: Float): Boolean {
+        if (Diana.inHub()) {
+            recentSounds.addLast("${System.currentTimeMillis() % 100000} $id p=$pitch")
+            while (recentSounds.size > 12) recentSounds.pollFirst()
+        }
+        // Hypixel's dig/burrow-pop sounds, matched by exact pitch so other uses of these sounds still play
+        if (Diana.inHub() && DIG_SOUNDS.any { (snd, p) -> id == snd && abs(pitch - p) < 0.02f }) return DianaSettings.dianaMuteHypixelDug
+        if (id != DIG_DING || !Diana.inHub()) return false
+        // Pitch climbs per burrow; mob/treasure burrows take two breaks at the same pitch, anything past that is a post-mob cooldown smack
+        val now = System.currentTimeMillis()
+        samePitchCount = if (pitch != lastDingPitch || now - lastDingMs > 20_000) 1 else samePitchCount + 1
+        val fresh = samePitchCount <= 2
+        lastDingPitch = pitch; lastDingMs = now; lastDigMs = now
+        DIG_LOG.info("dig ding pitch=$pitch n=$samePitchCount spade=${Diana.active()} swing=${Diana.player()?.swinging}")
+        if (fresh && DianaSettings.dianaBurrowDugSound && Diana.active() && Diana.player()?.swinging == true) playDug()
         return DianaSettings.dianaMuteHypixelDug
     }
 
     // Covers every dig line incl. the (4/4) chain end; debounced so loot lines on the same dig don't double up
+    // Each break posts its own line (mob/loot, then the n/10 line ~2s later); 500ms only merges same-dig loot lines
+    @Volatile var lastDigMs = 0L; private set
+
     private fun dugSound(s: String) {
-        if (isDigLine(s)) playDug()
+        if (isDigLine(s)) lastDigMs = System.currentTimeMillis()
+        if (s.contains("dug out") || s.contains("Burrow")) DIG_LOG.info("dig chat '$s' at ${System.currentTimeMillis() % 100000} recent=${recentSounds.joinToString(" | ")}")
+        if (DianaSettings.dianaBurrowDugSound && isDigLine(s) && System.currentTimeMillis() - lastPlayMs > 600) playDug("diana_dug_chat", 500)
     }
 
-    private fun playDug() {
+    private var lastPlayMs = 0L
+
+    private fun playDug(key: String = "diana_dug", debounceMs: Long = 300) {
         var vol = DianaSettings.dianaBurrowDugVolume.coerceIn(0, 500) / 100f
         val snd = SoundManager.preset(DianaSettings.dianaBurrowDugSoundName)
-        if (!SoundManager.play(snd, minOf(vol, 1f), key = "diana_dug", debounceMs = 700)) return
+        if (!SoundManager.play(snd, minOf(vol, 1f), key = key, debounceMs = debounceMs)) return
+        lastPlayMs = System.currentTimeMillis()
         vol -= 1f
         while (vol > 0.01f) { SoundManager.play(snd, minOf(vol, 1f)); vol -= 1f }
     }

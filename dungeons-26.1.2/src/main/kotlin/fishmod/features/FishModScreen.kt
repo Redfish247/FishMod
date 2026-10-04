@@ -1395,6 +1395,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Hide Fire Overlay", "The first-person fire overlay", Visual::roHideFireOverlay))
             f.sub.add(ToggleSetting("Hide Inventory Labels", "The \"Crafting\" text in your inventory", Visual::roHideInventoryLabels))
             f.sub.add(ToggleSetting("Hide Objective", "The \"Objective:\" boss bar (e.g. Rift races)", Visual::roHideObjective))
+            // Mutually exclusive: turning one on turns the other off
+            f.sub.add(ToggleSetting("Remove Damage Indicator", "Hide the floating damage numbers",
+                { Visual.roRemoveDamageIndicator }, { v -> Visual.roRemoveDamageIndicator = v; if (v) Visual.roFormatDamageIndicator = false }))
+            f.sub.add(ToggleSetting("Format Damage Indicator", "Shorten damage numbers, e.g. 1,234,567 -> 1.23M",
+                { Visual.roFormatDamageIndicator }, { v -> Visual.roFormatDamageIndicator = v; if (v) Visual.roRemoveDamageIndicator = false }))
             visuals.features.add(f)
         }
         run {
