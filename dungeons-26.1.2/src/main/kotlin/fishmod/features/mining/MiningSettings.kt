@@ -51,6 +51,7 @@ object MiningSettings {
     @ConfigValue @JvmField var miningProfitLines: Int = 25
     @ConfigValue @JvmField var miningProfitPriceMode: String = "Sell Offer"
     @ConfigValue @JvmField var miningProfitShowPowder: Boolean = true
+    @ConfigValue @JvmField var miningProfitShowSources: Boolean = true
     @ConfigValue @JvmField var miningProfitAfkSec: Int = 60
     @ConfigValue @JvmField var miningProfitHudX: Int = 5
     @ConfigValue @JvmField var miningProfitHudY: Int = 160

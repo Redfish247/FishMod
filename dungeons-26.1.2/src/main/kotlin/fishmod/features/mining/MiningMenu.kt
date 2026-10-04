@@ -55,6 +55,7 @@ object MiningMenu {
         profit.sub.add(DropdownSetting("Tracker", "", arrayOf("Session", "Total"), { S.miningProfitMode }, { v -> S.miningProfitMode = v }))
         profit.sub.add(SliderIntSetting("Visible Lines", "Scroll over the HUD in your inventory for the rest", S::miningProfitLines, 5, 25))
         profit.sub.add(ToggleSetting("Show Powder", "", S::miningProfitShowPowder))
+        profit.sub.add(ToggleSetting("Show Sources", "Per-source counts after merged items", S::miningProfitShowSources))
         profit.sub.add(DropdownSetting("Bazaar Price", "", arrayOf("Sell Offer", "Insta Sell"), { S.miningProfitPriceMode }, { v -> S.miningProfitPriceMode = v }))
         profit.sub.add(SliderIntSetting("AFK Timeout (s)", "", S::miningProfitAfkSec, 10, 900, 5))
         profit.sub.add(ButtonSetting("Reset Session", "", "Reset") { MiningProfitTracker.resetSession() })
