@@ -22,9 +22,9 @@ import fishmod.features.mining.MiningSettings as S
 // Mining profit tracker (same shape as the Diana tracker): Session/Total, per category, chat + sack parsing
 object MiningProfitTracker {
 
-    enum class Cat(val display: String, val color: String) {
-        CORPSES("Corpses", "§b"), MINING("Mining", "§a"), FOSSIL("Fossil Excavator", "§6"),
-        NUCLEUS("Nucleus Runs", "§5"), CHEST("Powder Chests", "§e");
+    enum class Cat(val display: String, val color: String, val short: String) {
+        CORPSES("Corpses", "§b", "Corpse"), MINING("Mining", "§a", "Mined"), FOSSIL("Fossil Excavator", "§6", "Fossil"),
+        NUCLEUS("Nucleus Runs", "§5", "Nucleus"), CHEST("Powder Chests", "§e", "Chest");
         companion object { fun of(s: String) = entries.firstOrNull { it.display == s } }
     }
 
@@ -262,7 +262,7 @@ object MiningProfitTracker {
         for (r in rows.drop(scroll).take(max)) {
             val v = if (r.value > 0) "§6${Mining.short(r.value)}" else ""
             out += "$v	§7| ${rarityColor(r.name) ?: r.cat.color}${r.name} §f${"%,d".format(r.n)}" +
-                (if (r.split.isEmpty()) "" else " §8(" + r.split.entries.joinToString("§8/") { "${it.key.color}${"%,d".format(it.value)}" } + "§8)")
+                (if (r.split.isEmpty()) "" else " §8(" + r.split.entries.joinToString(" ") { "${it.key.color}${it.key.short} §f${"%,d".format(it.value)}" } + "§8)")
         }
         val below = rows.size - scroll - max
         if (below > 0) out += "§8  ▼ $below more §7(scroll in inventory)"
