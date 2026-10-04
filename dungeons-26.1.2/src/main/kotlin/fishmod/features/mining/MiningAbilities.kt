@@ -114,7 +114,12 @@ object MiningAbilities {
         val out = ArrayList<BlockPos>()
         val drops = HashMap<String, Int>()
         val tunnels = Mining.inTunnels(); val shaft = Mining.inShaft(); val hollows = Mining.inHollows()
+        val done = Array(8) { Array(8) { BooleanArray(8) } }
+        // Repeat passes until nothing new: a block turning to air can expose ones already scanned
+        var changed = true
+        while (changed) { changed = false
         for (i in 1..6) for (j in 1..6) for (k in 1..6) {
+            if (done[i][j][k]) continue
             val st = grid[i][j][k]
             if (st.isAir || st.`is`(Blocks.BEDROCK)) continue
             val exposed = grid[i - 1][j][k].isAir || grid[i + 1][j][k].isAir || grid[i][j - 1][k].isAir ||
@@ -122,17 +127,18 @@ object MiningAbilities {
             if (!exposed) continue
             val gem = Gem.of(st) != null
             val breaks = when {
-                tunnels -> st.block in MiningBlocks.TUNNEL_BREAKABLE || gem
+                tunnels || st.`is`(Blocks.PACKED_ICE) -> st.block in MiningBlocks.TUNNEL_BREAKABLE || gem
                 hollows || shaft -> true
                 else -> st.block in MiningBlocks.CONVERT_INTO_BEDROCK || gem
             }
             if (!breaks) continue
+            done[i][j][k] = true; changed = true
             // In the Hollows/shafts/tunnel ice+gems the block turns to air and exposes the next layer
-            if (hollows || shaft || (tunnels && (gem || st.`is`(Blocks.PACKED_ICE)))) grid[i][j][k] = Blocks.AIR.defaultBlockState()
+            if (hollows || shaft || st.`is`(Blocks.PACKED_ICE) || (tunnels && gem)) grid[i][j][k] = Blocks.AIR.defaultBlockState()
             out += pos.offset(i - 4, j - 4, k - 4)
             val name = MiningBlocks.material(st)
             drops[name] = (drops[name] ?: 0) + 1
-        }
+        } }
         pickBlocks = out; pickDrops = drops
     }
 }
