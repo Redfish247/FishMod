@@ -100,6 +100,7 @@ object Diana {
         val wp = DianaWaypoints.findDiggable(pos) ?: return
         wp.clicked = true
         lastClickedWaypoint = wp.pos
+        if (wp.type == WpType.ARROW) ArrowGuess.onGuessClicked(wp.pos)
     }
 
     fun player() = Minecraft.getInstance().player

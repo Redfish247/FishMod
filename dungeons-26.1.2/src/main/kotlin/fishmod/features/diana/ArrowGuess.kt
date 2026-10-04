@@ -21,9 +21,11 @@ object ArrowGuess {
 
     private class Entry(val cands: MutableList<BlockPos>) {
         var idx = 0
+        var clickedAt = 0L
         val current get() = cands.getOrNull(idx)
     }
 
+    private const val CLICK_CONFIRM_MS = 1000L
     private const val DUST_TTL_MS = 2000L
     private const val DUST_CAP = 120
 
@@ -72,17 +74,20 @@ object ArrowGuess {
 
     fun onBurrowDug() { dust.clear() }
 
-    // A real burrow at pos supersedes any arrow guess landing there
+    // A real burrow on any of an arrow's candidates resolves it: drop the guess and all its subs
     fun onBurrowAt(pos: BlockPos) {
         val it = entries.iterator()
         while (it.hasNext()) {
             val e = it.next()
-            if (e.current == pos) {
-                DianaWaypoints.removeAt(pos, WpType.ARROW)
-                it.remove()
-                e.cands.drop(e.idx + 1).forEach { c -> DianaWaypoints.removeAt(c, WpType.SUB) }
-            } else if (pos in e.cands) DianaWaypoints.removeAt(pos, WpType.SUB)
+            if (pos !in e.cands.drop(e.idx)) continue
+            dropEntryWaypoints(e)
+            it.remove()
         }
+    }
+
+    // Clicked the current guess: if no burrow shows up there, advance() moves on to the next sub guess
+    fun onGuessClicked(pos: BlockPos) {
+        entries.firstOrNull { it.current == pos }?.clickedAt = System.currentTimeMillis()
     }
 
     private fun detect() {
@@ -206,7 +211,10 @@ object ArrowGuess {
             val e = it.next()
             val cur = e.current ?: run { it.remove(); continue }
             val spadeWrong = DianaWaypoints.at(cur, WpType.ARROW)?.let { w -> DianaWaypoints.spadeDisproved(w) } ?: false
-            if (!DianaWaypoints.isValidBlock(cur) || spadeWrong) {
+            val clickedWrong = e.clickedAt != 0L && System.currentTimeMillis() - e.clickedAt > CLICK_CONFIRM_MS &&
+                DianaWaypoints.at(cur, WpType.BURROW) == null
+            if (!DianaWaypoints.isValidBlock(cur) || spadeWrong || clickedWrong) {
+                e.clickedAt = 0L
                 dropEntryWaypoints(e)
                 if (!e.moveToNext()) {
                     it.remove()
