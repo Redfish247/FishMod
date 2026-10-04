@@ -67,6 +67,12 @@ object DianaTitles {
 
     fun warpTitle(text: String) = show(warp, text, "", 2, 30, 6)
 
+    // Skip straight to the fade-out once the warp is used or no longer suggested
+    fun fadeWarpTitle() {
+        val t = (System.currentTimeMillis() - warp.start) / 50f
+        if (warp.start != 0L && t < warp.fadeIn + warp.stay) warp.start = System.currentTimeMillis() - (warp.fadeIn + warp.stay) * 50L
+    }
+
     private fun show(s: Slot, main: String, sub: String, fadeIn: Int, stay: Int, fadeOut: Int) {
         s.main = main; s.sub = sub
         s.fadeIn = fadeIn; s.stay = stay; s.fadeOut = fadeOut
