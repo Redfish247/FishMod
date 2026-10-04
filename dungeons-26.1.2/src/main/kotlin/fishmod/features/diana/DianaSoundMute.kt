@@ -9,7 +9,7 @@ object DianaSoundMute {
     fun shouldMute(event: SoundEvent, x: Double, y: Double, z: Double): Boolean {
         if (!Diana.inHub()) return false
         val path = event.location().path
-        if (DianaSettings.dianaMuteSpadeSounds && Diana.holdingSpade && path.startsWith("block.note_block.")) return true
+        if (DianaSettings.dianaMuteSpadeSounds && Diana.holdingSpade && (path.startsWith("block.note_block.") || path == "entity.enderman.teleport")) return true
         if (DianaSettings.dianaMuteBurrowSounds) {
             for (w in DianaWaypoints.list) {
                 if (w.type != WpType.BURROW) continue
