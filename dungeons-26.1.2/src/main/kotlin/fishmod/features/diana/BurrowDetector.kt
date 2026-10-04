@@ -65,10 +65,10 @@ object BurrowDetector {
     }
 
     // Covers every dig line incl. the (4/4) chain end; debounced so loot lines on the same dig don't double up
-    // Chat has its own 2s key so a 1/2 ding can't swallow the 2/2 loot/mob line; only skip it if a ding just covered this dig
+    // Each break posts its own line (mob/loot, then the n/10 line ~2s later); 500ms only merges same-dig loot lines
     private fun dugSound(s: String) {
         if (s.contains("dug out") || s.contains("Burrow")) DIG_LOG.info("dig chat '$s'")
-        if (isDigLine(s) && System.currentTimeMillis() - lastPlayMs > 600) playDug("diana_dug_chat", 2000)
+        if (isDigLine(s) && System.currentTimeMillis() - lastPlayMs > 600) playDug("diana_dug_chat", 500)
     }
 
     private var lastPlayMs = 0L
