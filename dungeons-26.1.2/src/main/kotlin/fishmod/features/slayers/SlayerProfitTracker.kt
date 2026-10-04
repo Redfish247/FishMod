@@ -357,7 +357,7 @@ object SlayerProfitTracker {
         val cat = "${type.displayName} $tier"
         out.add(
             if (resetArmed()) DisplayRow("§c§lClick again to reset ${modeLabel()}!", "", "title")
-            else DisplayRow("§e§l$cat Profit Tracker" + (if (isPaused()) " §8(idle)" else ""), "", "title")
+            else DisplayRow("§e§l$cat Profit §7(${modeLabel()})" + (if (isPaused()) " §8(idle)" else ""), "", "title")
         )
 
         val cap = FishSettings.slayerProfitLines.coerceIn(3, 30)
@@ -376,10 +376,13 @@ object SlayerProfitTracker {
                 continue
             }
             if (!hiddenRow) visibleShown++
-            val nm = if (r.coins) "§6Mob Kill Coins" else "§f${r.name}"
-            val label = if (hiddenRow) "§7${sep(r.count)}x §8§m${r.name}" else "§7${sep(r.count)}x $nm"
+            val label = when {
+                hiddenRow -> "§7| §8§m${r.name} ${sep(r.count)}"
+                r.coins -> "§7| §6Mob Kill Coins"
+                else -> "§7| §f${r.name} §f${sep(r.count)}"
+            }
             val value = when {
-                hiddenRow -> "§7§m${sh(r.value)}"
+                hiddenRow -> "§8§m${sh(r.value)}"
                 r.priced -> "§6${sh(r.value)}"
                 else -> "§8?"
             }
@@ -387,19 +390,18 @@ object SlayerProfitTracker {
         }
         if (collapsedCount > 0) {
             val noun = if (collapsedCount == 1) "item" else "items"
-            out.add(DisplayRow("§7$collapsedCount more $noun", "§6${sh(collapsedValue)}", "collapsed"))
+            out.add(DisplayRow("§7| §8$collapsedCount more $noun", "§6${sh(collapsedValue)}", "collapsed"))
         }
 
-        out.add(DisplayRow(" §7Slayer Spawn Costs:", "§c-${sh(spawnCost(type, tier).toDouble())}", "cost"))
-        out.add(DisplayRow("§7Bosses killed:", "§e${sep(bosses(type, tier).toLong())}", "bosses"))
+        out.add(DisplayRow("§7Bosses §f${sep(bosses(type, tier).toLong())}", "", "bosses"))
+        out.add(DisplayRow("§7Spawn Costs §c-${sh(spawnCost(type, tier).toDouble())}", "", "cost"))
+        out.add(DisplayRow("§7Playtime §f${fishmod.features.diana.DianaTracker.fmtTime(activeMs(type, tier))}", "", "time"))
 
         val p = profit(type, tier, allRows)
-        val pc = if (p < 0) "§c" else "§6"
-        val coinWord = if (Math.abs(p.toLong()) == 1L) "coin" else "coins"
-        out.add(DisplayRow("§e${modeLabel()} Profit:", "$pc${sep(p.toLong())} $coinWord", "profit"))
-
         val pph = profitPerHour(type, tier, p)
-        out.add(DisplayRow("§eProfit/h:", if (pph == 0.0) "§8—" else "${if (pph < 0) "§c" else "§6"}${sh(pph)}", "rate"))
+        val pc = if (p < 0) "§c" else "§6"
+        val rc = if (pph < 0) "§c" else "§7"
+        out.add(DisplayRow("§eProfit $pc${sh(p)} §7($rc${sh(pph)}§7/h)", "", "profit"))
 
         if (interactive) {
             val sw = if (sessionMode()) "§7[ §7Total §8| §a§lThis Session §7]" else "§7[ §a§lTotal §8| §7This Session §7]"

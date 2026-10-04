@@ -89,7 +89,7 @@ object SlayerHuds {
             SlayerManager.State.NONE -> return
         }
         drawBlock(ctx, FishSettings.slayerSpawnHudX, FishSettings.slayerSpawnHudY,
-            FishSettings.slayerSpawnHudScale, lines, opacity = FishSettings.slayerSpawnOpacity)
+            FishSettings.slayerSpawnHudScale, lines)
     }
 
     @JvmStatic
@@ -120,7 +120,7 @@ object SlayerHuds {
         if (lines.size == 1) return
 
         drawBlock(ctx, FishSettings.slayerStatsHudX, FishSettings.slayerStatsHudY,
-            FishSettings.slayerStatsHudScale, lines, opacity = FishSettings.slayerStatsOpacity)
+            FishSettings.slayerStatsHudScale, lines)
     }
 
     private var profitFrameMs = 0L
@@ -154,9 +154,10 @@ object SlayerHuds {
         val rows = SlayerProfitTracker.display(type, tier, interactive)
         val f = mc.font
         val lh = Constants.TEXT_HEIGHT + 2
-        val gap = 8
+        // value column right-aligned, item text after it (Mining/Diana style)
+        val colX = rows.maxOfOrNull { if (it.value.isEmpty()) 0 else f.width(it.value) + 6 } ?: 0
         var panelW = 0
-        for (r in rows) panelW = Math.max(panelW, f.width(r.label) + (if (r.value.isEmpty()) 0 else gap + f.width(r.value)))
+        for (r in rows) panelW = Math.max(panelW, (if (r.value.isEmpty()) 0 else colX) + f.width(r.label))
 
         val x = FishSettings.slayerProfitHudX
         val y = FishSettings.slayerProfitHudY
@@ -165,11 +166,11 @@ object SlayerHuds {
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())
         ctx.pose().scale(sc, sc)
-        if (FishSettings.slayerProfitOpacity > 0) ctx.fill(-3, -2, panelW + 3, lh * rows.size + 1, bgColor(FishSettings.slayerProfitOpacity))
         for (i in rows.indices) {
             val r = rows[i]
-            ctx.text(f, r.label, 0, lh * i, 0xFFFFFFFF.toInt(), true)
-            if (r.value.isNotEmpty()) ctx.text(f, r.value, panelW - f.width(r.value), lh * i, 0xFFFFFFFF.toInt(), true)
+            if (r.value.isEmpty()) { ctx.text(f, r.label, 0, lh * i, 0xFFFFFFFF.toInt(), true); continue }
+            ctx.text(f, r.value, colX - 6 - f.width(r.value), lh * i, 0xFFFFFFFF.toInt(), true)
+            ctx.text(f, r.label, colX, lh * i, 0xFFFFFFFF.toInt(), true)
         }
         ctx.pose().popMatrix()
 
@@ -257,12 +258,12 @@ object SlayerHuds {
         if (lines.isEmpty()) return
 
         drawBlock(ctx, FishSettings.slayerTimerHudX, FishSettings.slayerTimerHudY,
-            FishSettings.slayerTimerHudScale, lines, opacity = FishSettings.slayerTimerOpacity)
+            FishSettings.slayerTimerHudScale, lines)
     }
 
     private fun drawBlock(
         ctx: GuiGraphicsExtractor, x: Int, y: Int, scale: Double,
-        lines: List<String>, opacity: Int,
+        lines: List<String>,
     ) {
         val mc = Minecraft.getInstance()
         val lh = Constants.TEXT_HEIGHT + 2
@@ -270,19 +271,8 @@ object SlayerHuds {
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())
         ctx.pose().scale(sc, sc)
-        if (opacity > 0) {
-            var w = 0
-            for (l in lines) w = Math.max(w, mc.font.width(l))
-            ctx.fill(-3, -2, w + 3, lh * lines.size + 1, bgColor(opacity))
-        }
         for (i in lines.indices) ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF.toInt(), true)
         ctx.pose().popMatrix()
-    }
-
-    private fun bgColor(opacityPct: Int): Int {
-        val pct = opacityPct.coerceIn(0, 100)
-        val a = (pct * 2.55).roundToInt()
-        return a shl 24
     }
 
     private fun fmt(v: Double): String = fishmod.utils.Fmt.grouped(v.toLong())
