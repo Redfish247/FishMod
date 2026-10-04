@@ -274,6 +274,15 @@ object SlayerProfitTracker {
         save()
     }
 
+    @JvmStatic
+    fun resetSession() {
+        synchronized(lock) { session.clear() }
+        idlePaused = false
+        lastActivityMs = 0
+        lastPurse = -1.0
+        displayCache = null
+    }
+
     class Row(
         @JvmField val name: String,
         @JvmField val count: Long,

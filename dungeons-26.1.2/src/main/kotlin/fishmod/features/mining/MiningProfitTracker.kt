@@ -296,7 +296,7 @@ object MiningProfitTracker {
 
     private fun perHour(v: Double, t: Tracker) = if (t.timeMs < 60_000) 0.0 else v * 3_600_000.0 / t.timeMs
 
-    fun resetSession() { data.session = Tracker(); changed(); FishMsg.send("§aMining profit session reset.") }
+    fun resetSession(msg: Boolean = true) { data.session = Tracker(); changed(); if (msg) FishMsg.send("§aMining profit session reset.") }
     fun resetTotal() { data.total = Tracker(); changed(); FishMsg.send("§aMining profit total reset.") }
 
     private fun load() {

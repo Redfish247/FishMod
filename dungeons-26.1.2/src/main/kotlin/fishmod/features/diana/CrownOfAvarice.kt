@@ -60,6 +60,8 @@ object CrownOfAvarice {
     private class Session(var gained: Long = 0L, var activeMs: Long = 0L, var lastTotal: Long = -1L, var lastGainMs: Long = 0L, var lastTickMs: Long = 0L)
     private val sessions = HashMap<String, Session>()
 
+    fun resetSessions() { sessions.clear() }
+
     fun init() {
         load()
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 10 == 0) onTick(it) }
