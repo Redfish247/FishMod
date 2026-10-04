@@ -48,8 +48,8 @@ object BurrowDetector {
     private const val DIG_DING = "minecraft:entity.arrow.hit_player"
 
     private fun onServerSound(id: String): Boolean {
-        if (id != DIG_DING || !Diana.active()) return false
-        // The ding also fires for other players' digs and for smacks during the post-mob cooldown, so only chat triggers the sound
+        if (id != DIG_DING || !Diana.inHub()) return false
+        // Not gated on the spade: after a mob kill you hold your weapon and Hypixel still dings; only chat triggers our sound
         return DianaSettings.dianaMuteHypixelDug
     }
 
