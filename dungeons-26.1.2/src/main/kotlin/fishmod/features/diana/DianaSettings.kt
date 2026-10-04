@@ -26,7 +26,6 @@ object DianaSettings {
     @ConfigValue @JvmField var dianaBurrowDugSoundName: String = "Orb Pickup"
     @ConfigValue @JvmField var dianaBurrowDugVolume: Int = 100
     @ConfigValue @JvmField var dianaMuteHypixelDug: Boolean = true
-    @ConfigValue @JvmField var dianaHypixelDugSig: String = ""
 
     // Warp
     @ConfigValue @JvmField var dianaWarpCastle: Boolean = true
