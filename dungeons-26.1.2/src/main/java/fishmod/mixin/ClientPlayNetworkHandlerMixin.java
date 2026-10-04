@@ -85,7 +85,7 @@ public class ClientPlayNetworkHandlerMixin {
                 Misc.addChatMessage(Component.literal("Sound: " + event.location() + " Volume: " + volume + " Pitch: " + pitch));
             }
 
-            if (fishmod.features.diana.DianaSoundMute.shouldMute(event, packet.getX(), packet.getY(), packet.getZ())) {
+            if (fishmod.features.diana.DianaSoundMute.shouldMute(event, pitch, packet.getX(), packet.getY(), packet.getZ())) {
                 ci.cancel();
                 return;
             }
