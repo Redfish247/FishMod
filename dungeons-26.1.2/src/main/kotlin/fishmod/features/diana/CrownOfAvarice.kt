@@ -46,6 +46,7 @@ object CrownOfAvarice {
     // Coins from selling, trading or the bank are not crown coins
     private val NOT_CROWN = Regex("""^(?:You sold |\[Bazaar]|\[Auction]|\[NPC]|Sold |You collected |You claimed |Withdrew |Withdrawing |Deposited |Trade completed|You have withdrawn|Claimed )""")
     private val NUM = NumberFormat.getIntegerInstance(Locale.US)
+    private val LOG = org.slf4j.LoggerFactory.getLogger("fishmod/crown")
 
     private var totals: MutableMap<String, Long> = HashMap()
     private var lastPurse = -1L
@@ -186,6 +187,7 @@ object CrownOfAvarice {
         val fromDiana = now - maxOf(lastDugCoinsMs, RareMobs.lastDianaMobDeathMs, BurrowDetector.lastDigMs) <= COIN_WINDOW_MS
         val menuOpen = mc.screen != null && mc.screen !is net.minecraft.client.gui.screens.ChatScreen
         val selling = menuOpen || now - lastNonCrownMs <= COIN_WINDOW_MS
+        if (Diana.inHub()) LOG.info("crown gain=$gain active=${Diana.active()} sinceDig=${now - BurrowDetector.lastDigMs} sinceDug=${now - lastDugCoinsMs} sinceMob=${now - RareMobs.lastDianaMobDeathMs} selling=$selling")
         if (!Diana.active() || !fromDiana || selling || gain > MAX_GAIN) return
         totals[u] = maxOf(totals[u] ?: 0L, itemCoins(helmet)) + (gain * SCALE).toLong()
         save()
