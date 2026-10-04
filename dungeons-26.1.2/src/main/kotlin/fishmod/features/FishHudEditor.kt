@@ -210,7 +210,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             ),
             "Party & Social" to listOf("Party Finder List"),
             "Slayer" to listOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit"),
-            "Diana" to listOf("Diana Loot Tracker", "Diana Mob Tracker", "Diana Stats", "Diana Magic Find", "Diana Mythos HP", "Diana No Shuriken", "Diana Rare Mob Alert", "Diana Warp Title"),
+            "Diana" to listOf("Diana Loot Tracker", "Diana Mob Tracker", "Diana Stats", "Diana Magic Find", "Diana Mythos HP", "Diana No Shuriken", "Diana Rare Mob Alert", "Diana Warp Title", "Crown of Avarice"),
             "Mining" to listOf("Mineshaft Pity", "Fossil Solver", "Mining Profit", "Pickobulus", "Maniac Miner", "SkyMall", "Commissions"),
         )
 
@@ -325,6 +325,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Diana Loot Tracker" to s("§6§lDiana Loot §7(Event)", "§5Chimera§7: §f2", "§6Daedalus Stick§7: §f1", "§9Griffin Feather§7: §f14", "§6Coins§7: §f1.2m", "§aProfit§7: §f25.3m §7(4.1m/h)"),
             "Diana Mob Tracker" to s("§6§lDiana Mobs §7(Event)", "§dMinos Inquisitor§7: §f6", "§5Minos Champion§7: §f21", "§7Total Mobs§7: §f140"),
             "Diana Stats" to s("§6§lDiana Stats", "§eMobs since Inq§7: §f38", "§eInqs since Chimera§7: §f4"),
+            "Crown of Avarice" to s("§dCrown of Avarice", "§7Coins: §6250.0M§7/§61B", "§7Time: §f1h 12m", "§7Per Hour: §650.0M", "§7Time to Max: §b15h 0m"),
             "Diana Magic Find" to s("§6§lDiana Magic Find", "§5Chimera§7: §b320%", "§6Stick§7: §b250%"),
             "Pet" to s("§6Ender Dragon §a+1.2k §7(845.3k/1.9M 44.5%)"),
             "Slayer Spawn" to s("§5§lRevenant Horror V", "§7Spawn: §f1,850 §7/ §f2,400 §8(77%)", lineH = 12),

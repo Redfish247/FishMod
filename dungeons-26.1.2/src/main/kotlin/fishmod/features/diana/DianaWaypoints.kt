@@ -134,6 +134,12 @@ object DianaWaypoints {
     fun findDiggable(p: BlockPos): Waypoint? =
         at(p, WpType.BURROW) ?: at(p, WpType.ARROW) ?: at(p, WpType.GUESS) ?: at(p, WpType.SUB)
 
+    // Sub guesses are a block or two off the real burrow, so match loosely
+    fun removeSubsNear(p: BlockPos, r: Int = 3) {
+        list.filter { it.type == WpType.SUB && Math.abs(it.pos.x - p.x) <= r && Math.abs(it.pos.z - p.z) <= r && Math.abs(it.pos.y - p.y) <= 4 }
+            .forEach { remove(it) }
+    }
+
     fun add(w: Waypoint): Waypoint { list.add(w); return w }
 
     fun remove(w: Waypoint) { DianaTest.log("wp: remove ${w.type} ${w.pos}"); list.remove(w) }
