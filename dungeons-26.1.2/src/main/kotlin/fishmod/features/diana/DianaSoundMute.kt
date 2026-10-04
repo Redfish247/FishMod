@@ -15,8 +15,9 @@ object DianaSoundMute {
         if (DianaSettings.dianaMuteBurrowSounds) {
             // Digging noise
             if (path == "entity.zombie.infect" && abs(pitch - 1.968f) < 0.02f) return true
-            // A burrow's ping, only right next to a burrow or guess
-            if (path == "block.note_block.pling" && nearWaypoint(x, y, z, 4.0)) return true
+            // Burrow pings: next to a burrow/guess, or the chime as the next arrow pops up just after a dig
+            if (path == "block.note_block.pling" &&
+                (nearWaypoint(x, y, z, 4.0) || System.currentTimeMillis() - BurrowDetector.lastDigMs < 1500)) return true
         }
         return false
     }

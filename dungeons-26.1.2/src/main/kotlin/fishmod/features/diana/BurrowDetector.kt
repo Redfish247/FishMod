@@ -35,7 +35,7 @@ object BurrowDetector {
         Events.ON_GAME_MESSAGE.register { text ->
             if (Diana.inHub()) {
                 val s = text.string.replace(Regex("§."), "")
-                if (DianaSettings.dianaBurrowDugSound) dugSound(s)
+                dugSound(s)
                 if (DianaSettings.dianaGuessing) onChat(s)
             }
             false
@@ -73,7 +73,7 @@ object BurrowDetector {
         val now = System.currentTimeMillis()
         samePitchCount = if (pitch != lastDingPitch || now - lastDingMs > 20_000) 1 else samePitchCount + 1
         val fresh = samePitchCount <= 2
-        lastDingPitch = pitch; lastDingMs = now
+        lastDingPitch = pitch; lastDingMs = now; lastDigMs = now
         DIG_LOG.info("dig ding pitch=$pitch n=$samePitchCount spade=${Diana.active()} swing=${Diana.player()?.swinging}")
         if (fresh && DianaSettings.dianaBurrowDugSound && Diana.active() && Diana.player()?.swinging == true) playDug()
         return DianaSettings.dianaMuteHypixelDug
@@ -81,9 +81,12 @@ object BurrowDetector {
 
     // Covers every dig line incl. the (4/4) chain end; debounced so loot lines on the same dig don't double up
     // Each break posts its own line (mob/loot, then the n/10 line ~2s later); 500ms only merges same-dig loot lines
+    @Volatile var lastDigMs = 0L; private set
+
     private fun dugSound(s: String) {
+        if (isDigLine(s)) lastDigMs = System.currentTimeMillis()
         if (s.contains("dug out") || s.contains("Burrow")) DIG_LOG.info("dig chat '$s' at ${System.currentTimeMillis() % 100000} recent=${recentSounds.joinToString(" | ")}")
-        if (isDigLine(s) && System.currentTimeMillis() - lastPlayMs > 600) playDug("diana_dug_chat", 500)
+        if (DianaSettings.dianaBurrowDugSound && isDigLine(s) && System.currentTimeMillis() - lastPlayMs > 600) playDug("diana_dug_chat", 500)
     }
 
     private var lastPlayMs = 0L
