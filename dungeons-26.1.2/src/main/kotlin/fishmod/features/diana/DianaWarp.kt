@@ -41,7 +41,7 @@ object DianaWarp {
         if (!Diana.active()) return
         val me = Diana.player()?.position() ?: return
         DianaWaypoints.list.forEach { it.warpHint = null }
-        if (midBurrow(me)) { lastTitle = null; return }
+        if (midBurrow(me)) { if (lastTitle != null) DianaTitles.fadeWarpTitle(); lastTitle = null; return }
         val rare = if (DianaSettings.dianaRareMobs) DianaWaypoints.newestRareMob() else null
         val target = rare ?: DianaWaypoints.closestTarget(me)
         val w = target?.let { finalWarp(it.center, me, fixed = rare != null) }
@@ -49,7 +49,7 @@ object DianaWarp {
         if (DianaSettings.dianaWarpTitle && w != null && w.name != lastTitle) {
             val col = if (rare != null) "§d" else "§b"
             DianaTitles.warpTitle("${col}Warp §e${w.name.replaceFirstChar { it.uppercase() }}")
-        }
+        } else if (w == null && lastTitle != null) DianaTitles.fadeWarpTitle()
         lastTitle = w?.name
     }
 
@@ -64,6 +64,7 @@ object DianaWarp {
         val target = if (rareMob) rare ?: return else rare ?: DianaWaypoints.closestTarget(me) ?: return
         val w = finalWarp(target.center, me, fixed = target === rare) ?: return
         lastWarpMs = now
+        DianaTitles.fadeWarpTitle()
         Diana.player()?.connection?.sendCommand("warp ${w.name}")
     }
 
