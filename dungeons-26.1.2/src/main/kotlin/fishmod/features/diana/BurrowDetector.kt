@@ -52,7 +52,14 @@ object BurrowDetector {
     private var lastDingMs = 0L
     private var samePitchCount = 0
 
+    // Temporary: recent hub sounds, dumped next to each dig chat line to find what slips past the mute
+    private val recentSounds = java.util.concurrent.ConcurrentLinkedDeque<String>()
+
     private fun onServerSound(id: String, pitch: Float): Boolean {
+        if (Diana.inHub()) {
+            recentSounds.addLast("${System.currentTimeMillis() % 100000} $id p=$pitch")
+            while (recentSounds.size > 12) recentSounds.pollFirst()
+        }
         if (id != DIG_DING || !Diana.inHub()) return false
         // Pitch climbs per burrow; mob/treasure burrows take two breaks at the same pitch, anything past that is a post-mob cooldown smack
         val now = System.currentTimeMillis()
@@ -67,7 +74,7 @@ object BurrowDetector {
     // Covers every dig line incl. the (4/4) chain end; debounced so loot lines on the same dig don't double up
     // Each break posts its own line (mob/loot, then the n/10 line ~2s later); 500ms only merges same-dig loot lines
     private fun dugSound(s: String) {
-        if (s.contains("dug out") || s.contains("Burrow")) DIG_LOG.info("dig chat '$s'")
+        if (s.contains("dug out") || s.contains("Burrow")) DIG_LOG.info("dig chat '$s' at ${System.currentTimeMillis() % 100000} recent=${recentSounds.joinToString(" | ")}")
         if (isDigLine(s) && System.currentTimeMillis() - lastPlayMs > 600) playDug("diana_dug_chat", 500)
     }
 
