@@ -4,7 +4,11 @@ import fishmod.utils.Location
 import fishmod.utils.config.values.Visual
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
+import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.Style
+import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.client.gui.components.LerpingBossEvent
 import net.minecraft.core.component.DataComponents
 import net.minecraft.core.particles.ParticleTypes
@@ -66,6 +70,37 @@ object RenderOptimizer {
             false
         }
     }
+
+    // Hypixel damage numbers: armor stands named like "1,234" or "✧1,234,567✧" (crit, one colour per char)
+    private val DAMAGE = Regex("""^(\D{0,2})([\d,]+)(\D{0,2})$""")
+    private val formatted = HashMap<Int, Pair<String, Component>>()
+
+    // Called while building the nametag, so the raw number never gets a frame on screen; null hides it
+    @JvmStatic
+    fun damageNameTag(e: Entity, name: Component): Component? {
+        if (!Visual.renderOptimizer || !(Visual.roRemoveDamageIndicator || Visual.roFormatDamageIndicator)) return name
+        if (e !is ArmorStand || !Location.inSkyblock()) return name
+        val raw = name.string
+        val m = DAMAGE.matchEntire(raw.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()) ?: return name
+        if (Visual.roRemoveDamageIndicator) return null
+        formatted[e.id]?.let { (k, c) -> if (k == raw) return c }
+        val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: return name
+        val color = name.toFlatList().firstOrNull { it.string.any(Char::isDigit) }?.style ?: Style.EMPTY
+        val text = Component.literal(shorten(n)).withStyle(color)
+        val out = if (m.groupValues[1].isNotEmpty())
+            Component.literal("✧").withStyle(ChatFormatting.WHITE).append(text).append(Component.literal("✧").withStyle(ChatFormatting.WHITE))
+        else text
+        if (formatted.size > 512) formatted.clear()
+        formatted[e.id] = raw to out
+        return out
+    }
+
+    private fun shorten(n: Long): String = when {
+        n >= 1_000_000_000 -> "%.2fB".format(n / 1e9)
+        n >= 1_000_000 -> "%.2fM".format(n / 1e6)
+        n >= 10_000 -> "%.1fk".format(n / 1e3)
+        else -> "%,d".format(n)
+    }.replace(".00", "").replace(".0k", "k")
 
     private fun skullTexture(stack: ItemStack): String? {
         val profile = stack.get(DataComponents.PROFILE) ?: return null
