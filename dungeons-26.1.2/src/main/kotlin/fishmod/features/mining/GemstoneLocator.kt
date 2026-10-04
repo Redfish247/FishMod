@@ -21,7 +21,7 @@ object GemstoneLocator {
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
-            if (tick++ % 20 != 0) return@register
+            if (tick++ % 5 != 0) return@register
             val p = mc.player; val level = mc.level
             if (!S.miningGemLines || p == null || level == null || !Mining.inTunnels()) { targets = emptyList(); paths = emptyList(); return@register }
             val want = wanted()
@@ -50,15 +50,31 @@ object GemstoneLocator {
             val feet = net.minecraft.client.Minecraft.getInstance().player?.position() ?: return@register
             for ((g, pts) in paths) {
                 val argb = Mining.alpha(g.rgb, 100)
-                var last = feet.add(0.0, 0.1, 0.0)
-                for (pt in pts) {
-                    // Graph points sit ~2 blocks up; drop them to the floor
-                    val next = pt.add(0.0, -1.9, 0.0)
-                    RenderUtils.gizmoLine(last, next, argb, S.miningGemLineWidth * 2f, true)
-                    last = next
-                }
+                // Graph points sit ~2 blocks up; drop them to the floor
+                var floor = pts.map { it.add(0.0, -1.9, 0.0) }
+                // Skip a first point that's behind you so the line doesn't double back
+                if (floor.size > 1 && floor[1].distanceToSqr(feet) < floor[0].distanceToSqr(floor[1])) floor = floor.drop(1)
+                val curve = smooth(listOf(feet.add(0.0, 0.1, 0.0)) + floor)
+                for (i in 1 until curve.size) RenderUtils.gizmoLine(curve[i - 1], curve[i], argb, S.miningGemLineWidth * 2f, true)
             }
         }
+    }
+
+    // Catmull-Rom through the points so corners curve instead of snapping
+    private fun smooth(p: List<Vec3>, steps: Int = 8): List<Vec3> {
+        if (p.size < 3) return p
+        val out = ArrayList<Vec3>()
+        for (i in 0 until p.size - 1) {
+            val p0 = p[maxOf(i - 1, 0)]; val p1 = p[i]; val p2 = p[i + 1]; val p3 = p[minOf(i + 2, p.size - 1)]
+            for (s in 0 until steps) {
+                val t = s.toDouble() / steps; val t2 = t * t; val t3 = t2 * t
+                fun c(a: Double, b: Double, c: Double, d: Double) =
+                    0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3)
+                out += Vec3(c(p0.x, p1.x, p2.x, p3.x), c(p0.y, p1.y, p2.y, p3.y), c(p0.z, p1.z, p2.z, p3.z))
+            }
+        }
+        out += p.last()
+        return out
     }
 
     // One path per wanted gem to its nearest graph spot by walking distance; dropped once you're there
