@@ -49,14 +49,16 @@ object BurrowDetector {
 
     private var lastDingPitch = -1f
     private var lastDingMs = 0L
+    private var samePitchCount = 0
 
     private fun onServerSound(id: String, pitch: Float): Boolean {
         if (id != DIG_DING || !Diana.inHub()) return false
-        // Pitch climbs per dig; smacks during the post-mob cooldown repeat the same pitch, so only a new pitch is a real dig
+        // Pitch climbs per burrow; mob/treasure burrows take two breaks at the same pitch, anything past that is a post-mob cooldown smack
         val now = System.currentTimeMillis()
-        val fresh = pitch != lastDingPitch || now - lastDingMs > 20_000
+        samePitchCount = if (pitch != lastDingPitch || now - lastDingMs > 20_000) 1 else samePitchCount + 1
+        val fresh = samePitchCount <= 2
         lastDingPitch = pitch; lastDingMs = now
-        if (fresh && DianaSettings.dianaBurrowDugSound && Diana.active() && Diana.player()?.swinging == true) playDug()
+        if (fresh && DianaSettings.dianaBurrowDugSound && Diana.active() && Diana.player()?.swinging == true) playDug(300)
         return DianaSettings.dianaMuteHypixelDug
     }
 
@@ -65,10 +67,10 @@ object BurrowDetector {
         if (isDigLine(s)) playDug()
     }
 
-    private fun playDug() {
+    private fun playDug(debounceMs: Long = 2000) {
         var vol = DianaSettings.dianaBurrowDugVolume.coerceIn(0, 500) / 100f
         val snd = SoundManager.preset(DianaSettings.dianaBurrowDugSoundName)
-        if (!SoundManager.play(snd, minOf(vol, 1f), key = "diana_dug", debounceMs = 2000)) return
+        if (!SoundManager.play(snd, minOf(vol, 1f), key = "diana_dug", debounceMs = debounceMs)) return
         vol -= 1f
         while (vol > 0.01f) { SoundManager.play(snd, minOf(vol, 1f)); vol -= 1f }
     }
