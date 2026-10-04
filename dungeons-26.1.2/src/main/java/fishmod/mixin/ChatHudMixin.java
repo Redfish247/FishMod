@@ -24,7 +24,6 @@ public class ChatHudMixin {
     private void onAddMessage(Component message, MessageSignature signature, GuiMessageSource source, GuiMessageTag tag, CallbackInfo ci) {
         try {
             String messageText = message.getString();
-            fishmod.features.dungeon.AutoRequeue.onChatLine(messageText);
             fishmod.features.Ragnarock.checkP5Taunt(messageText);
 
             if (fishmod.features.ChatFilter.shouldHide(message)

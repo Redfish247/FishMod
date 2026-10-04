@@ -37,6 +37,7 @@ object AutoRequeue {
     fun init() {
         Events.ON_GAME_MESSAGE.register { text ->
             val s = COLOR.replace(text.string, "")
+            onChatLine(text.string)
             when {
                 s == MORT_START -> { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false }
                 BREAKUP.matcher(s).find() -> partyChanged = true
