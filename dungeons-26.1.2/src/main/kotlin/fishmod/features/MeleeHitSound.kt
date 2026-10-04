@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.event.player.AttackEntityCallback
 import net.minecraft.client.resources.sounds.SoundInstance
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.decoration.ArmorStand
 
 // Arrow Hit Sound for melee: plays only when the server registers the hit
 object MeleeHitSound {
@@ -17,6 +18,9 @@ object MeleeHitSound {
     private var target: LivingEntity? = null
     private var swingMs = 0L
     private var lastHurt = 0
+    private val seenSplashes = HashSet<Int>()
+    // Hypixel's damage numbers, e.g. "1,234" or "✧12,345✧"
+    private val SPLASH = Regex("""^\D{0,3}[\d,.]+[kKmM]?\D{0,3}$""")
 
     fun init() {
         AttackEntityCallback.EVENT.register { player, level, _, entity, _ ->
@@ -24,6 +28,8 @@ object MeleeHitSound {
             if (level.isClientSide && FishSettings.meleeHitSoundEnabled && entity is LivingEntity && !entity.isDeadOrDying) {
                 target = entity
                 lastHurt = entity.hurtTime
+                // Numbers already floating belong to earlier swings
+                level.getEntitiesOfClass(ArmorStand::class.java, entity.boundingBox.inflate(3.0)).forEach { seenSplashes.add(it.id) }
                 swingMs = System.currentTimeMillis()
             }
             InteractionResult.PASS
@@ -35,7 +41,7 @@ object MeleeHitSound {
             val rose = t.hurtTime > lastHurt
             lastHurt = t.hurtTime
             // Hypixel sends damage packets even for blocked swings, so only a restarted hurt flash counts
-            if (rose) {
+            if (rose || damageSplash(t)) {
                 target = null
                 FishDiag.guard("MeleeHitSound.1", "melee hit sound '${FishSettings.meleeHitSoundName}' failed") {
                     SoundManager.play2D(
@@ -47,6 +53,19 @@ object MeleeHitSound {
                 }
             } else if (now - swingMs > CONFIRM_MS || t.isRemoved) target = null
         }
+    }
+
+    // A fresh damage number next to the target means the hit landed, even when ferocity keeps the hurt flash pinned
+    private fun damageSplash(t: LivingEntity): Boolean {
+        val level = t.level()
+        var found = false
+        for (e in level.getEntitiesOfClass(ArmorStand::class.java, t.boundingBox.inflate(3.0))) {
+            if (e.tickCount > 10 || e.id in seenSplashes) continue
+            val name = e.customName?.string?.replace(Regex("§."), "") ?: continue
+            if (SPLASH.matches(name.trim())) { seenSplashes.add(e.id); found = true }
+        }
+        if (seenSplashes.size > 256) seenSplashes.clear()
+        return found
     }
 
     // Vanilla player.attack.* sounds that land right after one of our swings
