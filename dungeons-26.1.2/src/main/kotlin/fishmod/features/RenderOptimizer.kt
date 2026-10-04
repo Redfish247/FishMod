@@ -4,7 +4,6 @@ import fishmod.utils.Location
 import fishmod.utils.config.values.Visual
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
@@ -34,11 +33,6 @@ object RenderOptimizer {
         Events.ON_PARTICLE.register { packet ->
             Visual.renderOptimizer && Visual.roHideExplosionParticles &&
                 (packet.particle.type === ParticleTypes.EXPLOSION || packet.particle.type === ParticleTypes.EXPLOSION_EMITTER)
-        }
-
-        ClientTickEvents.END_CLIENT_TICK.register { mc ->
-            if (Visual.renderOptimizer && (Visual.roRemoveDamageIndicator || Visual.roFormatDamageIndicator) && Location.inSkyblock())
-                FishDiag.guard("RenderOptimizer.5", "damage indicator pass failed") { tickDamageIndicators(mc) }
         }
 
         Events.ON_PACKET.register { packet ->
@@ -79,25 +73,26 @@ object RenderOptimizer {
 
     // Hypixel damage numbers: armor stands named like "1,234" or "✧1,234,567✧" (crit, one colour per char)
     private val DAMAGE = Regex("""^(\D{0,2})([\d,]+)(\D{0,2})$""")
-    private val handledStands = HashSet<Int>()
+    private val formatted = HashMap<Int, Pair<String, Component>>()
 
-    private fun tickDamageIndicators(mc: Minecraft) {
-        val level = mc.level ?: return
-        val player = mc.player ?: return
-        if (handledStands.size > 2048) handledStands.clear()
-        for (e in level.getEntitiesOfClass(ArmorStand::class.java, player.boundingBox.inflate(48.0))) {
-            if (e.tickCount > 40 || e.id in handledStands) continue
-            val name = e.customName ?: continue
-            val m = DAMAGE.matchEntire(name.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()) ?: continue
-            val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: continue
-            handledStands.add(e.id)
-            // Hidden rather than removed so Melee Hit Sound can still see the hit landed
-            if (Visual.roRemoveDamageIndicator) { e.isCustomNameVisible = false; continue }
-            val color = name.toFlatList().firstOrNull { it.string.any(Char::isDigit) }?.style ?: Style.EMPTY
-            val crit = m.groupValues[1].isNotEmpty()
-            val text = Component.literal(shorten(n)).withStyle(color)
-            e.customName = if (crit) Component.literal("✧").withStyle(ChatFormatting.WHITE).append(text).append(Component.literal("✧").withStyle(ChatFormatting.WHITE)) else text
-        }
+    // Called while building the nametag, so the raw number never gets a frame on screen; null hides it
+    @JvmStatic
+    fun damageNameTag(e: Entity, name: Component): Component? {
+        if (!Visual.renderOptimizer || !(Visual.roRemoveDamageIndicator || Visual.roFormatDamageIndicator)) return name
+        if (e !is ArmorStand || !Location.inSkyblock()) return name
+        val raw = name.string
+        val m = DAMAGE.matchEntire(raw.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()) ?: return name
+        if (Visual.roRemoveDamageIndicator) return null
+        formatted[e.id]?.let { (k, c) -> if (k == raw) return c }
+        val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: return name
+        val color = name.toFlatList().firstOrNull { it.string.any(Char::isDigit) }?.style ?: Style.EMPTY
+        val text = Component.literal(shorten(n)).withStyle(color)
+        val out = if (m.groupValues[1].isNotEmpty())
+            Component.literal("✧").withStyle(ChatFormatting.WHITE).append(text).append(Component.literal("✧").withStyle(ChatFormatting.WHITE))
+        else text
+        if (formatted.size > 512) formatted.clear()
+        formatted[e.id] = raw to out
+        return out
     }
 
     private fun shorten(n: Long): String = when {
