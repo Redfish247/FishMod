@@ -82,6 +82,10 @@ object DianaSettings {
     @ConfigValue @JvmField var dianaStatsMessage: Boolean = true
     @ConfigValue @JvmField var dianaCrownCounter: Boolean = true
     @ConfigValue @JvmField var dianaCrownMilestones: Boolean = true
+    @ConfigValue @JvmField var dianaCrownHud: Boolean = true
+    @ConfigValue @JvmField var dianaCrownHudX: Int = 10
+    @ConfigValue @JvmField var dianaCrownHudY: Int = 120
+    @ConfigValue @JvmField var dianaCrownHudScale: Double = 1.0
 
     // Announcers
     @ConfigValue @JvmField var dianaRareDropChat: Boolean = true
