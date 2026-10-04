@@ -39,7 +39,9 @@ object GemstoneLocator {
             targets = found.flatMap { (g, l) ->
                 l.sortedBy { Vec3.atCenterOf(it).distanceToSqr(eye) }.take(S.miningGemMax.coerceAtLeast(1)).map { g to it }
             }
-            paths = if (S.miningGemPaths) findPaths(want, p.position()) else emptyList()
+            // Already in a gem's area (its blocks right around you): no path for that gem
+            val here = found.filterValues { l -> l.any { Vec3.atCenterOf(it).distanceToSqr(eye) < 8.0 * 8.0 } }.keys
+            paths = if (S.miningGemPaths) findPaths(want - here, p.position()) else emptyList()
         }
         RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (!S.miningGemLines || !S.miningGemBoxes || targets.isEmpty() || !Mining.inTunnels()) return@register
@@ -80,6 +82,7 @@ object GemstoneLocator {
 
     // One path per wanted gem to its nearest graph spot by walking distance; dropped once you're there
     private fun findPaths(want: Set<Gem>, feet: Vec3): List<Pair<Gem, List<Vec3>>> {
+        if (want.isEmpty()) return emptyList()
         TunnelGraph.ensureLoaded()
         val start = TunnelGraph.closest(feet) ?: return emptyList()
         val (dist, prev) = TunnelGraph.search(start)
@@ -87,7 +90,7 @@ object GemstoneLocator {
         for (g in want) {
             val label = g.display + " Gemstone"
             val goal = TunnelGraph.nodes.filter { it.name == label && it in dist }.minByOrNull { dist.getValue(it) } ?: continue
-            if (goal.pos.distanceToSqr(feet) < 4.0 * 4.0) continue
+            if (goal.pos.distanceToSqr(feet) < 12.0 * 12.0) continue
             out += g to TunnelGraph.path(prev, goal).map { it.pos }
         }
         return out
