@@ -1230,7 +1230,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Show Number", "", FishSettings::cooldownShowText))
             f.sub.add(ToggleSetting("Under 3s Only", "", FishSettings::cooldownOnlyUnder3s))
             f.sub.add(ToggleSetting("In Inventory", "", FishSettings::cooldownInInventory))
-            f.sub.add(ToggleSetting("Disable Cooldown Background", "Hide vanilla's white cooldown sweep on items", Visual::hideCooldown))
+            f.sub.add(ToggleSetting("Disable Cooldown Background", "Hide the white cooldown sweep behind the timer", Visual::hideCooldown))
             hud.features.add(f)
         }
         hud.features.add(Feature("Catacombs Overflow Levels", FishSettings::catacombsOverflowEnabled))
