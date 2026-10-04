@@ -77,7 +77,21 @@ object CrownOfAvarice {
         FishHudEditor.register("Crown of Avarice", { DianaSettings.dianaCrownHudX }, { DianaSettings.dianaCrownHudX = it },
             { DianaSettings.dianaCrownHudY }, { DianaSettings.dianaCrownHudY = it }, 120, 49,
             { DianaSettings.dianaCrownHudScale }, { DianaSettings.dianaCrownHudScale = it }, { DianaSettings.dianaCrownHud })
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "crown_of_avarice")) { ctx, _ -> drawHud(ctx) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "crown_of_avarice")) { ctx, _ ->
+            if (Minecraft.getInstance().screen !is net.minecraft.client.gui.screens.inventory.InventoryScreen) drawHud(ctx)
+        }
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
+            if (screen !is net.minecraft.client.gui.screens.inventory.InventoryScreen) return@register
+            net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.afterExtract(screen).register { _, ctx, mx, my, _ ->
+                val n = drawHud(ctx)
+                if (n > 0) {
+                    val sc = DianaSettings.dianaCrownHudScale
+                    fishmod.features.other.TrackerResetButton.draw(ctx, "crown", DianaSettings.dianaCrownHudX, DianaSettings.dianaCrownHudY + (n * 10 * sc).toInt() + 2, sc, mx, my) {
+                        resetSessions(); FishMsg.send("§aCrown of Avarice session reset.")
+                    }
+                }
+            }
+        }
     }
 
     private fun trackRate(helmet: ItemStack) {
@@ -129,11 +143,12 @@ object CrownOfAvarice {
         return lines
     }
 
-    private fun drawHud(ctx: net.minecraft.client.gui.GuiGraphicsExtractor) {
+    // Returns how many lines were drawn
+    private fun drawHud(ctx: net.minecraft.client.gui.GuiGraphicsExtractor): Int {
         val mc = Minecraft.getInstance()
-        if (!DianaSettings.dianaCrownHud || FishHudEditor.isOpen() || mc.options.hideGui || mc.player == null) return
+        if (!DianaSettings.dianaCrownHud || FishHudEditor.isOpen() || mc.options.hideGui || mc.player == null) return 0
         val lines = hudLines()
-        if (lines.isEmpty()) return
+        if (lines.isEmpty()) return 0
         val pose = ctx.pose()
         pose.pushMatrix()
         pose.translate(DianaSettings.dianaCrownHudX.toFloat(), DianaSettings.dianaCrownHudY.toFloat())
@@ -141,6 +156,7 @@ object CrownOfAvarice {
         pose.scale(sc, sc)
         lines.forEachIndexed { i, l -> ctx.text(mc.font, l, 0, i * 10, -1, true) }
         pose.popMatrix()
+        return lines.size
     }
 
     private fun uuidOf(stack: ItemStack): String? =

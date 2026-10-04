@@ -133,22 +133,39 @@ object SlayerHuds {
     @JvmStatic
     fun renderProfit(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         try {
-            renderProfitInner(ctx, tick)
+            renderProfitInner(ctx, false)
         } catch (e: Exception) {
             FishDiag.fail("SlayerHuds.3", "slayer profit HUD render failed (type=${SlayerManager.type}, state=${SlayerManager.state})", e)
         }
     }
 
-    private fun renderProfitInner(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
-        if (!FishSettings.slayerProfitEnabled) return
+    // In the inventory it is redrawn on top of the screen with a reset button under it
+    @JvmStatic
+    fun initInventory() {
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
+            if (screen !is net.minecraft.client.gui.screens.inventory.InventoryScreen) return@register
+            net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.afterExtract(screen).register { _, ctx, mx, my, _ ->
+                try {
+                    if (!renderProfitInner(ctx, true)) return@register
+                    fishmod.features.other.TrackerResetButton.draw(ctx, "slayer", profitLeft.toInt(), profitRowBot.last().toInt() + 2,
+                        FishSettings.slayerProfitHudScale, mx, my) { SlayerProfitTracker.reset() }
+                } catch (e: Exception) {
+                    FishDiag.fail("SlayerHuds.9", "slayer profit inventory render failed", e)
+                }
+            }
+        }
+    }
+
+    private fun renderProfitInner(ctx: GuiGraphicsExtractor, inInv: Boolean): Boolean {
+        if (!FishSettings.slayerProfitEnabled) return false
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.options.hideGui) return false
         // keep drawing while chat is open so it can be clicked (SkyHanni behaviour)
-        if (mc.screen != null && mc.screen !is net.minecraft.client.gui.screens.ChatScreen) return
-        if (!Location.inSkyblock() || !SlayerManager.inCorrectArea()) return
-        val type = SlayerManager.type ?: return
+        if (mc.screen != null && mc.screen !is net.minecraft.client.gui.screens.ChatScreen && !inInv) return false
+        if (!Location.inSkyblock() || !SlayerManager.inCorrectArea()) return false
+        val type = SlayerManager.type ?: return false
         val tier = SlayerManager.tier
-        if (!SlayerProfitTracker.hasData(type, tier)) return
+        if (!SlayerProfitTracker.hasData(type, tier)) return false
 
         val interactive = mc.screen is net.minecraft.client.gui.screens.ChatScreen
         val rows = SlayerProfitTracker.display(type, tier, interactive)
@@ -183,6 +200,7 @@ object SlayerHuds {
             profitRowBot.add(y + lh.toDouble() * (i + 1) * sc)
             profitRowTag.add(rows[i].tag)
         }
+        return rows.isNotEmpty()
     }
 
     @JvmStatic
