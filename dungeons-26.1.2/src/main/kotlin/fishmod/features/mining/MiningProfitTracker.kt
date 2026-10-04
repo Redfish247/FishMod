@@ -262,7 +262,7 @@ object MiningProfitTracker {
         for (r in rows.drop(scroll).take(max)) {
             val v = if (r.value > 0) "§6${Mining.short(r.value)}" else ""
             out += "$v	§7| ${rarityColor(r.name) ?: r.cat.color}${r.name} §f${"%,d".format(r.n)}" +
-                (if (r.split.isEmpty()) "" else " §8(" + r.split.entries.joinToString(" ") { "${it.key.color}${it.key.short} §f${"%,d".format(it.value)}" } + "§8)")
+                (if (r.split.isEmpty() || !S.miningProfitShowSources) "" else " §8(" + r.split.entries.joinToString(" ") { "${it.key.color}${it.key.short} §f${"%,d".format(it.value)}" } + "§8)")
         }
         val below = rows.size - scroll - max
         if (below > 0) out += "§8  ▼ $below more §7(scroll in inventory)"
