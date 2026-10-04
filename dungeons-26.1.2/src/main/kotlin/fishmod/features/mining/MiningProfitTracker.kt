@@ -86,9 +86,8 @@ object MiningProfitTracker {
                 val l = lines()
                 val sc = S.miningProfitHudScale
                 MiningHuds.draw(ctx, l, S.miningProfitHudX, S.miningProfitHudY, sc)
-                fishmod.features.other.TrackerResetButton.draw(ctx, "mining", S.miningProfitHudX, S.miningProfitHudY + (l.size * 10 * sc).toInt() + 2, sc, mx, my) {
-                    if (S.miningProfitMode == "Total") resetTotal() else resetSession()
-                }
+                if (S.miningProfitMode != "Total")
+                    fishmod.features.other.TrackerResetButton.draw(ctx, "mining", S.miningProfitHudX, S.miningProfitHudY + (l.size * 10 * sc).toInt() + 2, sc, mx, my) { resetSession() }
             })
             ScreenMouseEvents.allowMouseScroll(screen).register(ScreenMouseEvents.AllowMouseScroll { _, mx, my, _, v ->
                 !(shown() && over(mx, my) && scrollBy(if (v > 0) -1 else 1))
