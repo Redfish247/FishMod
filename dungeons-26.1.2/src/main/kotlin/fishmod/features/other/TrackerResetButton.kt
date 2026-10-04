@@ -15,28 +15,35 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen
 object TrackerResetButton {
 
     private const val CONFIRM_MS = 3_000L
-    private const val PAD = 4
     private var armedAt = 0L
 
     private fun armed() = System.currentTimeMillis() - armedAt <= CONFIRM_MS
-    private fun label() = if (armed()) "§c§lClick again to confirm" else "§eReset Trackers"
+    private fun label(hover: Boolean) = when {
+        armed() -> "§4§l[ Click again to confirm ]"
+        hover -> "§4§l[ Reset Trackers ]"
+        else -> "§c§l[ Reset Trackers ]"
+    }
 
-    private fun bounds(screenW: Int): IntArray {
-        val w = Minecraft.getInstance().font.width(label()) + PAD * 2
-        return intArrayOf(screenW - w - 4, 4, screenW - 4, 4 + 9 + PAD * 2)
+    // Centred just under the inventory panel (176x166)
+    private fun bounds(screenW: Int, screenH: Int): IntArray {
+        val w = Minecraft.getInstance().font.width(label(false))
+        val x = screenW / 2 - w / 2
+        val y = (screenH + 166) / 2 + 4
+        return intArrayOf(x, y, x + w, y + 10)
     }
 
     fun init() {
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is InventoryScreen) return@AfterInit
             ScreenEvents.afterExtract(screen).register(ScreenEvents.AfterExtract { _, ctx, mx, my, _ ->
-                val b = bounds(screen.width)
+                val b = bounds(screen.width, screen.height)
                 val hover = mx in b[0]..b[2] && my in b[1]..b[3]
-                ctx.fill(b[0], b[1], b[2], b[3], if (hover) 0xC0303030.toInt() else 0x90000000.toInt())
-                ctx.text(Minecraft.getInstance().font, label(), b[0] + PAD, b[1] + PAD + 1, -1, true)
+                val font = Minecraft.getInstance().font
+                val l = label(hover)
+                ctx.text(font, l, screen.width / 2 - font.width(l) / 2, b[1], -1, true)
             })
             ScreenMouseEvents.allowMouseClick(screen).register(ScreenMouseEvents.AllowMouseClick { _, click ->
-                val b = bounds(screen.width)
+                val b = bounds(screen.width, screen.height)
                 if (click.button() != 0 || click.x() < b[0] || click.x() > b[2] || click.y() < b[1] || click.y() > b[3]) return@AllowMouseClick true
                 onClick()
                 false
