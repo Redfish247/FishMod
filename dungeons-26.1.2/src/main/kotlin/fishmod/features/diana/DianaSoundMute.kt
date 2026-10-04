@@ -11,6 +11,8 @@ object DianaSoundMute {
         val path = event.location().path
         if (DianaSettings.dianaMuteSpadeSounds && Diana.holdingSpade && (path.startsWith("block.note_block.") || path == "entity.enderman.teleport")) return true
         if (DianaSettings.dianaMuteBurrowSounds) {
+            // A new burrow plings as it appears, before its particles let us place it
+            if (path == "block.note_block.pling") return true
             for (w in DianaWaypoints.list) {
                 if (w.type != WpType.BURROW) continue
                 val c = w.center
