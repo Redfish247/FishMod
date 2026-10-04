@@ -36,6 +36,7 @@ object MiningMenu {
         col.features.add(pity)
 
         val gem = Feature("Commission Gemstone Lines", S::miningGemLines)
+        gem.sub.add(ToggleSetting("Walking Paths", "Lines along the tunnels to the nearest spot for each gem (SkyHanni map)", S::miningGemPaths))
         gem.sub.add(ToggleSetting("Boxes", "Box the gemstone blocks too", S::miningGemBoxes))
         gem.sub.add(SliderIntSetting("Scan Radius", "", S::miningGemRadius, 8, 48))
         gem.sub.add(SliderIntSetting("Lines Per Gem", "", S::miningGemMax, 1, 10))

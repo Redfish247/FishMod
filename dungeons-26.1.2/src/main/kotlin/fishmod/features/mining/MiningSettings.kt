@@ -29,6 +29,7 @@ object MiningSettings {
     // Gemstone locator
     @ConfigValue @JvmField var miningGemLines: Boolean = true
     @ConfigValue @JvmField var miningGemBoxes: Boolean = true
+    @ConfigValue @JvmField var miningGemPaths: Boolean = true
     @ConfigValue @JvmField var miningGemRadius: Int = 24
     @ConfigValue @JvmField var miningGemMax: Int = 3
     @ConfigValue @JvmField var miningGemLineWidth: Int = 3
