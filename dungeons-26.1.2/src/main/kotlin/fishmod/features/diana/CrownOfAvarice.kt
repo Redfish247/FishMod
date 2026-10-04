@@ -15,6 +15,9 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
+import fishmod.features.FishHudEditor
+import net.minecraft.resources.Identifier
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import net.minecraft.world.entity.EquipmentSlot
@@ -52,6 +55,11 @@ object CrownOfAvarice {
     private const val MILESTONE = 100_000_000L
     private val lastSeen = HashMap<String, Long>()
 
+    // Coins/hour: only time with gains inside the AFK window counts
+    // Per crown, so swapping between crowns pauses one session instead of resetting it
+    private class Session(var gained: Long = 0L, var activeMs: Long = 0L, var lastTotal: Long = -1L, var lastGainMs: Long = 0L, var lastTickMs: Long = 0L)
+    private val sessions = HashMap<String, Session>()
+
     fun init() {
         load()
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 10 == 0) onTick(it) }
@@ -64,6 +72,73 @@ object CrownOfAvarice {
         }
         Events.ON_WORLD_CHANGE.register { lastPurse = -1L; false }
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines -> editTooltip(stack, lines) })
+        FishHudEditor.register("Crown of Avarice", { DianaSettings.dianaCrownHudX }, { DianaSettings.dianaCrownHudX = it },
+            { DianaSettings.dianaCrownHudY }, { DianaSettings.dianaCrownHudY = it }, 120, 49,
+            { DianaSettings.dianaCrownHudScale }, { DianaSettings.dianaCrownHudScale = it }, { DianaSettings.dianaCrownHud })
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "crown_of_avarice")) { ctx, _ -> drawHud(ctx) }
+    }
+
+    private fun trackRate(helmet: ItemStack) {
+        if (ItemUtil.getId(helmet) != ID) return
+        val cur = total(helmet) ?: itemCoins(helmet)
+        val now = System.currentTimeMillis()
+        val r = sessions.getOrPut(uuidOf(helmet) ?: "crown") { Session(lastTotal = cur, lastTickMs = now) }
+        // Gap since this crown was last worn doesn't count
+        val worn = now - r.lastTickMs <= 2_000L
+        if (worn && r.lastGainMs > 0 && now - r.lastGainMs <= DianaSettings.dianaAfkTimeout * 1000L) r.activeMs += now - r.lastTickMs
+        r.lastTickMs = now
+        if (worn && cur > r.lastTotal) {
+            r.gained += cur - r.lastTotal
+            r.lastGainMs = now
+        }
+        r.lastTotal = cur
+    }
+
+    private fun perHour(r: Session?): Long = if (r == null || r.activeMs < 60_000L) 0L else (r.gained * 3_600_000.0 / r.activeMs).toLong()
+
+    private fun short(n: Long): String = when {
+        n >= 1_000_000_000L -> "%.2fB".format(Locale.US, n / 1e9)
+        n >= 1_000_000L -> "%.1fM".format(Locale.US, n / 1e6)
+        n >= 1_000L -> "%.1fK".format(Locale.US, n / 1e3)
+        else -> n.toString()
+    }
+
+    private fun duration(ms: Long): String {
+        val m = ms / 60_000L
+        val d = m / 1440; val h = m / 60 % 24; val mm = m % 60
+        return when { d > 0 -> "${d}d ${h}h"; h > 0 -> "${h}h ${mm}m"; else -> "${mm}m" }
+    }
+
+    private fun hudLines(): List<String> {
+        val p = Minecraft.getInstance().player ?: return emptyList()
+        val crown = listOf(p.getItemBySlot(EquipmentSlot.HEAD), p.mainHandItem).firstOrNull { ItemUtil.getId(it) == ID } ?: return emptyList()
+        val cur = total(crown) ?: itemCoins(crown)
+        val session = sessions[uuidOf(crown) ?: "crown"]
+        val rate = perHour(session)
+        val lines = ArrayList<String>()
+        lines += "§dCrown of Avarice"
+        lines += if (cur < CAP) "§7Coins: §6${short(cur)}§7/§61B" else "§7Coins: §6${short(cur)} §a(Maxed)"
+        val now = System.currentTimeMillis()
+        val running = session != null && crown === p.getItemBySlot(EquipmentSlot.HEAD) &&
+            session.lastGainMs > 0 && now - session.lastGainMs <= DianaSettings.dianaAfkTimeout * 1000L
+        lines += "§7Time: §f${duration(session?.activeMs ?: 0L)}" + if (running) "" else " §c(Paused)"
+        lines += "§7Per Hour: §6${if (rate > 0) short(rate) else "-"}"
+        if (cur < CAP) lines += "§7Time to Max: §b${if (rate > 0) duration((CAP - cur) * 3_600_000L / rate) else "-"}"
+        return lines
+    }
+
+    private fun drawHud(ctx: net.minecraft.client.gui.GuiGraphicsExtractor) {
+        val mc = Minecraft.getInstance()
+        if (!DianaSettings.dianaCrownHud || FishHudEditor.isOpen() || mc.options.hideGui || mc.player == null) return
+        val lines = hudLines()
+        if (lines.isEmpty()) return
+        val pose = ctx.pose()
+        pose.pushMatrix()
+        pose.translate(DianaSettings.dianaCrownHudX.toFloat(), DianaSettings.dianaCrownHudY.toFloat())
+        val sc = DianaSettings.dianaCrownHudScale.toFloat()
+        pose.scale(sc, sc)
+        lines.forEachIndexed { i, l -> ctx.text(mc.font, l, 0, i * 10, -1, true) }
+        pose.popMatrix()
     }
 
     private fun uuidOf(stack: ItemStack): String? =
@@ -79,6 +154,7 @@ object CrownOfAvarice {
     private fun onTick(mc: Minecraft) {
         val p = mc.player ?: return
         checkMilestone(p.getItemBySlot(EquipmentSlot.HEAD))
+        trackRate(p.getItemBySlot(EquipmentSlot.HEAD))
         val purse = readPurse(mc)
         val prev = lastPurse
         lastPurse = purse
