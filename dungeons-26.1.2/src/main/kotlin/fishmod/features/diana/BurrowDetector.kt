@@ -47,6 +47,7 @@ object BurrowDetector {
     // ---- Hypixel's dig ding (arrow.hit_player, pitch climbs per dig) arrives the instant you dig, before the chat line ----
     private const val DIG_DING = "minecraft:entity.arrow.hit_player"
 
+    private val DIG_LOG = org.slf4j.LoggerFactory.getLogger("FishMod/DigDing")
     private var lastDingPitch = -1f
     private var lastDingMs = 0L
     private var samePitchCount = 0
@@ -58,19 +59,25 @@ object BurrowDetector {
         samePitchCount = if (pitch != lastDingPitch || now - lastDingMs > 20_000) 1 else samePitchCount + 1
         val fresh = samePitchCount <= 2
         lastDingPitch = pitch; lastDingMs = now
-        if (fresh && DianaSettings.dianaBurrowDugSound && Diana.active() && Diana.player()?.swinging == true) playDug(300)
+        DIG_LOG.info("dig ding pitch=$pitch n=$samePitchCount spade=${Diana.active()} swing=${Diana.player()?.swinging}")
+        if (fresh && DianaSettings.dianaBurrowDugSound && Diana.active() && Diana.player()?.swinging == true) playDug()
         return DianaSettings.dianaMuteHypixelDug
     }
 
     // Covers every dig line incl. the (4/4) chain end; debounced so loot lines on the same dig don't double up
+    // Chat has its own 2s key so a 1/2 ding can't swallow the 2/2 loot/mob line; only skip it if a ding just covered this dig
     private fun dugSound(s: String) {
-        if (isDigLine(s)) playDug()
+        if (s.contains("dug out") || s.contains("Burrow")) DIG_LOG.info("dig chat '$s'")
+        if (isDigLine(s) && System.currentTimeMillis() - lastPlayMs > 600) playDug("diana_dug_chat", 2000)
     }
 
-    private fun playDug(debounceMs: Long = 2000) {
+    private var lastPlayMs = 0L
+
+    private fun playDug(key: String = "diana_dug", debounceMs: Long = 300) {
         var vol = DianaSettings.dianaBurrowDugVolume.coerceIn(0, 500) / 100f
         val snd = SoundManager.preset(DianaSettings.dianaBurrowDugSoundName)
-        if (!SoundManager.play(snd, minOf(vol, 1f), key = "diana_dug", debounceMs = debounceMs)) return
+        if (!SoundManager.play(snd, minOf(vol, 1f), key = key, debounceMs = debounceMs)) return
+        lastPlayMs = System.currentTimeMillis()
         vol -= 1f
         while (vol > 0.01f) { SoundManager.play(snd, minOf(vol, 1f)); vol -= 1f }
     }
