@@ -23,6 +23,10 @@ public abstract class CosmeticEntityNameMixin {
     @ModifyReturnValue(method = "getNameTag(Lnet/minecraft/world/entity/Entity;)Lnet/minecraft/network/chat/Component;", at = @At("RETURN"))
     private Component fishmod$cosmeticNameTag(Component original, Entity entity) {
         if (original == null) return original;
+        if (entity instanceof ArmorStand) {
+            Component dmg = fishmod.features.RenderOptimizer.damageNameTag(entity, original);
+            if (dmg != original) return dmg;
+        }
         if (FishSettings.petNametagHideLevel && entity instanceof ArmorStand) {
             String plain = ChatFormatting.stripFormatting(original.getString());
             java.util.regex.Matcher m = fishmod$PET_LEVEL.matcher(plain);
