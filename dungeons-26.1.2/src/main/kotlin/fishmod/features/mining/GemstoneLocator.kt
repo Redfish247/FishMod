@@ -9,7 +9,7 @@ import net.minecraft.world.phys.Vec3
 import fishmod.features.mining.MiningSettings as S
 
 // Glacite Tunnels: walking paths (SkyHanni tunnel graph) to the nearest spot of each gem your commissions want,
-// plus boxes/lines on the gem blocks once you're close, all in the gem's colour
+// plus optional boxes on nearby gem blocks, all in the gem's colour
 object GemstoneLocator {
 
     private var targets: List<Pair<Gem, BlockPos>> = emptyList()
@@ -42,14 +42,8 @@ object GemstoneLocator {
             paths = if (S.miningGemPaths) findPaths(want, p.position()) else emptyList()
         }
         RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
-            if (!S.miningGemLines || targets.isEmpty() || !Mining.inTunnels()) return@register
-            val start = Mining.lineStart()
-            for ((g, pos) in targets) {
-                if (S.miningGemBoxes) RenderUtils.fillBox(ps, vc, AABB(pos), Mining.alpha(g.rgb, S.miningGemOpacity))
-                // Tracers only for gems you're already at; far ones get a walking path instead
-                if (!S.miningGemPaths || paths.none { it.first == g })
-                    RenderUtils.screenLine(ps, vc, start, Vec3.atCenterOf(pos), Mining.alpha(g.rgb, 100), S.miningGemLineWidth.toFloat())
-            }
+            if (!S.miningGemLines || !S.miningGemBoxes || targets.isEmpty() || !Mining.inTunnels()) return@register
+            if (S.miningGemBoxes) for ((g, pos) in targets) RenderUtils.fillBox(ps, vc, AABB(pos), Mining.alpha(g.rgb, S.miningGemOpacity))
         }
         RenderingEvents.GIZMO.register { _ ->
             if (!S.miningGemLines || !S.miningGemPaths || paths.isEmpty() || !Mining.inTunnels()) return@register
@@ -58,8 +52,9 @@ object GemstoneLocator {
                 val argb = Mining.alpha(g.rgb, 100)
                 var last = feet.add(0.0, 0.1, 0.0)
                 for (pt in pts) {
-                    val next = pt.add(0.0, 0.1, 0.0)
-                    RenderUtils.gizmoLine(last, next, argb, S.miningGemLineWidth.toFloat(), true)
+                    // Graph points sit ~2 blocks up; drop them to the floor
+                    val next = pt.add(0.0, -1.9, 0.0)
+                    RenderUtils.gizmoLine(last, next, argb, S.miningGemLineWidth * 2f, true)
                     last = next
                 }
             }
@@ -75,7 +70,7 @@ object GemstoneLocator {
         for (g in want) {
             val label = g.display + " Gemstone"
             val goal = TunnelGraph.nodes.filter { it.name == label && it in dist }.minByOrNull { dist.getValue(it) } ?: continue
-            if (goal.pos.distanceToSqr(feet) < 10.0 * 10.0) continue
+            if (goal.pos.distanceToSqr(feet) < 4.0 * 4.0) continue
             out += g to TunnelGraph.path(prev, goal).map { it.pos }
         }
         return out
