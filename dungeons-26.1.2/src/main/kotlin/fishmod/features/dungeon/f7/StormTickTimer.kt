@@ -31,9 +31,9 @@ object StormTickTimer {
     private val LB_ARCHER_END_TICK: Int = Math.round(34.40 * 20).toInt()
     private val LB_HEALER_END_TICK: Int = Math.round(34.10 * 20).toInt()
 
-    private val PY_TICK: Int = Math.round(31.5 * 20).toInt()
+    private val PY_TICK: Int = Math.round(29.5 * 20).toInt() // alpha: 2s earlier (was 31.5)
 
-    private val STORM_OVER_TICK: Int = Math.round(28.75 * 20).toInt()
+    private val STORM_OVER_TICK: Int = Math.round(26.75 * 20).toInt() // alpha: lightning 2s earlier (was 28.75)
 
     private val timer = TickTimer()
     private var deathTime = 0.0

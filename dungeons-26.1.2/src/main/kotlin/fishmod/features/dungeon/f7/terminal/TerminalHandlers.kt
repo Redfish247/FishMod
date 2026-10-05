@@ -44,14 +44,16 @@ private val ENCHANT_OVERRIDES: Set<Item> = buildSet {
 
 abstract class TerminalHandler(val type: TerminalType) {
     val solution = java.util.concurrent.CopyOnWriteArrayList<Int>()
-    val items: Array<ItemStack?> = arrayOfNulls(type.windowSize)
+    // Live container size; alpha shrank Numbers/Melody, so it's read from the open menu.
+    @Volatile var windowSize: Int = type.windowSize
+    val items: Array<ItemStack?> = arrayOfNulls(54)
     val timeOpened = System.currentTimeMillis()
 
     abstract fun handleSlotUpdate(slot: Int): Boolean
 
     fun canClick(slotIndex: Int, right: Boolean): Boolean {
-        FishDiag.check(slotIndex in 0 until type.windowSize, "TerminalHandlers.6") { "$type canClick slot $slotIndex out of range" }
-        if (type == TerminalType.MELODY) return slotIndex == 16 || slotIndex == 25 || slotIndex == 34 || slotIndex == 43
+        FishDiag.check(slotIndex in 0 until windowSize, "TerminalHandlers.6") { "$type canClick slot $slotIndex out of range" }
+        if (this is MelodyHandler) return slotIndex % 9 == 7 && slotIndex / 9 in 1..laneRows
         if (slotIndex !in solution) return false
         if (type == TerminalType.NUMBERS && slotIndex != solution.firstOrNull()) return false
         if (type == TerminalType.RUBIX) {
@@ -64,7 +66,7 @@ abstract class TerminalHandler(val type: TerminalType) {
 
 class PanesHandler : TerminalHandler(TerminalType.PANES) {
     override fun handleSlotUpdate(slot: Int): Boolean {
-        if (slot != type.windowSize - 1) return false
+        if (slot != windowSize - 1) return false
         solution.clear()
         solution.addAll(items.mapIndexedNotNull { i, it -> if (it?.`is`(RED_PANE) == true) i else null })
         return true
@@ -73,7 +75,7 @@ class PanesHandler : TerminalHandler(TerminalType.PANES) {
 
 class NumbersHandler : TerminalHandler(TerminalType.NUMBERS) {
     override fun handleSlotUpdate(slot: Int): Boolean {
-        if (slot != type.windowSize - 1) return false
+        if (slot != windowSize - 1) return false
         solution.clear()
         solution.addAll(
             items.mapIndexedNotNull { i, it -> if (it?.`is`(RED_PANE) == true) i else null }
@@ -87,7 +89,7 @@ class NumbersHandler : TerminalHandler(TerminalType.NUMBERS) {
 
 class StartsWithHandler(private val letter: String) : TerminalHandler(TerminalType.STARTS_WITH) {
     override fun handleSlotUpdate(slot: Int): Boolean {
-        if (slot != type.windowSize - 1) return false
+        if (slot != windowSize - 1) return false
         solution.clear()
         solution.addAll(items.mapIndexedNotNull { i, it ->
             if (it == null || it.isEmpty || it.isPane()) return@mapIndexedNotNull null
@@ -113,7 +115,7 @@ class SelectAllHandler(colorName: String) : TerminalHandler(TerminalType.SELECT)
     }
 
     override fun handleSlotUpdate(slot: Int): Boolean {
-        if (slot != type.windowSize - 1) return false
+        if (slot != windowSize - 1) return false
         solution.clear()
         solution.addAll(items.mapIndexedNotNull { i, it ->
             if (it == null || it.isEmpty || it.hasFoil() || it.`is`(BLACK_PANE)) return@mapIndexedNotNull null
@@ -128,7 +130,7 @@ class RubixHandler : TerminalHandler(TerminalType.RUBIX) {
     private var lastColorIdx: Int? = null
 
     override fun handleSlotUpdate(slot: Int): Boolean {
-        if (items.last() == null || slot != type.windowSize - 1) return false
+        if (items[windowSize - 1] == null || slot != windowSize - 1) return false
         solution.clear()
         solution.addAll(solve())
         return true
@@ -178,6 +180,12 @@ class MelodyHandler : TerminalHandler(TerminalType.MELODY) {
         private set
     @Volatile var targetCol: Int = -1
         private set
+
+    // Lane rows = rows with terracotta in col 7 (4 on live, 3 on alpha).
+    val laneRows: Int
+        get() = (1 until windowSize / 9).count { r ->
+            items[r * 9 + 7]?.let { !it.isEmpty && BuiltInRegistries.ITEM.getKey(it.item).path.endsWith("terracotta") } == true
+        }.takeIf { it > 0 } ?: (windowSize / 9 - 2).coerceIn(1, 4)
 
     override fun handleSlotUpdate(slot: Int): Boolean {
         solution.clear()
