@@ -59,7 +59,7 @@ object CompactTab {
         setOf("VIP"),
     )
 
-    private val IRONMAN_BINGO_MARKERS = Regex("[☘♻☢⚘🌱]")
+    private val IRONMAN_BINGO_MARKERS = Regex("[♲☘♻☢⚘🌱Ⓑ]")
 
     private val SOCIAL_COLOR_CODE = Regex("§([0-9a-fk-or])", RegexOption.IGNORE_CASE)
     private val BRACKET_TAG = Regex("""\[[^\[\]]*]""")
@@ -67,21 +67,49 @@ object CompactTab {
     private fun sortLevelOf(stripped: String): Int =
         SORT_LEVEL_TAG.find(stripped)?.groupValues?.get(1)?.toIntOrNull() ?: 0
 
-    private fun sortRankTierOf(stripped: String): Int {
+    private fun sortRankTierOf(stripped: String, legacy: String): Int {
         for (m in SORT_RANK_TAG.findAll(stripped)) {
             val tag = m.groupValues[1].uppercase()
             val idx = RANK_TIER_GROUPS.indexOfFirst { tag in it }
             if (idx >= 0) return idx
         }
-        return RANK_TIER_GROUPS.size
+        // SkyBlock tab has no rank tag; rank shows as the name colour
+        return when (nameColorOf(legacy)) {
+            "c" -> 1
+            "2" -> 2
+            "6" -> 4
+            "b" -> 5
+            "a" -> 7
+            else -> RANK_TIER_GROUPS.size
+        }
+    }
+
+    private val SORT_NAME = Regex("""[A-Za-z0-9_]{1,16}""")
+
+    private fun sortNameOf(stripped: String): String =
+        SORT_NAME.find(BRACKET_TAG.replace(stripped, " "))?.value?.lowercase() ?: ""
+
+    private fun nameColorOf(legacy: String): String? =
+        SOCIAL_COLOR_CODE.findAll(BRACKET_TAG.replace(legacy, "")).map { it.groupValues[1].lowercase() }
+            .lastOrNull { it[0] in '0'..'9' || it[0] in 'a'..'f' }
+
+    private fun legacyOf(c: net.minecraft.network.chat.Component?): String {
+        if (c == null) return ""
+        val sb = StringBuilder()
+        c.visit({ style, text ->
+            val name = style.color?.serialize()
+            val fmt = name?.let { net.minecraft.ChatFormatting.getByName(it) }
+            if (fmt != null) sb.append('§').append(fmt.char)
+            sb.append(text)
+            java.util.Optional.empty<Unit>()
+        }, net.minecraft.network.chat.Style.EMPTY)
+        return sb.toString()
     }
 
     private fun sortIsIronmanBingo(raw: String): Boolean = IRONMAN_BINGO_MARKERS.containsMatchIn(raw)
 
-    private fun sortSocialTierOf(raw: String): Int {
-        val withoutTags = BRACKET_TAG.replace(raw, "")
-        val code = SOCIAL_COLOR_CODE.findAll(withoutTags).lastOrNull()?.groupValues?.get(1)?.lowercase()
-        return when (code) {
+    private fun sortSocialTierOf(legacy: String): Int {
+        return when (nameColorOf(legacy)) {
             "6" -> 0
             "b" -> 1
             "2" -> 2
@@ -99,16 +127,16 @@ object CompactTab {
         val mode = FishSettings.compactTabSortMode
         val sortedRest = if (mode == "Random") rest.sortedBy { (it.profile.id.hashCode() xor shuffleSeed).toLong() } else {
             fun stripped(e: PlayerInfo) = BLANK_COLOR.matcher(e.tabListDisplayName?.string ?: "").replaceAll("")
-            fun raw(e: PlayerInfo) = e.tabListDisplayName?.string ?: ""
+            fun raw(e: PlayerInfo) = legacyOf(e.tabListDisplayName)
             val cmp: Comparator<PlayerInfo> = when (mode) {
                 "SB Level" -> compareByDescending { sortLevelOf(stripped(it)) }
-                "Name (Abc)" -> compareBy<PlayerInfo> { nameOf(it).lowercase() }
+                "Name (Abc)" -> compareBy<PlayerInfo> { sortNameOf(stripped(it)) }
                     .thenByDescending { sortLevelOf(stripped(it)) }
                 "Ironman/Bingo" -> compareBy<PlayerInfo> { if (sortIsIronmanBingo(raw(it))) 0 else 1 }
                     .thenByDescending { sortLevelOf(stripped(it)) }
                 "Party/Friends/Guild" -> compareBy<PlayerInfo> { sortSocialTierOf(raw(it)) }
                     .thenByDescending { sortLevelOf(stripped(it)) }
-                else -> compareBy<PlayerInfo> { sortRankTierOf(stripped(it)) }
+                else -> compareBy<PlayerInfo> { sortRankTierOf(stripped(it), raw(it)) }
                     .thenByDescending { sortLevelOf(stripped(it)) }
             }
             rest.sortedWith(cmp)
