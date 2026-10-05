@@ -108,15 +108,6 @@ object CompactTab {
 
     private fun sortIsIronmanBingo(raw: String): Boolean = IRONMAN_BINGO_MARKERS.containsMatchIn(raw)
 
-    private fun sortSocialTierOf(legacy: String): Int {
-        return when (nameColorOf(legacy)) {
-            "6" -> 0
-            "b" -> 1
-            "2" -> 2
-            else -> 3
-        }
-    }
-
     private val shuffleSeed = java.util.concurrent.ThreadLocalRandom.current().nextInt()
 
     private fun sortPlayersColumn(entries: List<PlayerInfo>): List<PlayerInfo> {
@@ -133,8 +124,6 @@ object CompactTab {
                 "Name (Abc)" -> compareBy<PlayerInfo> { sortNameOf(stripped(it)) }
                     .thenByDescending { sortLevelOf(stripped(it)) }
                 "Ironman/Bingo" -> compareBy<PlayerInfo> { if (sortIsIronmanBingo(raw(it))) 0 else 1 }
-                    .thenByDescending { sortLevelOf(stripped(it)) }
-                "Party/Friends/Guild" -> compareBy<PlayerInfo> { sortSocialTierOf(raw(it)) }
                     .thenByDescending { sortLevelOf(stripped(it)) }
                 else -> compareBy<PlayerInfo> { sortRankTierOf(stripped(it), raw(it)) }
                     .thenByDescending { sortLevelOf(stripped(it)) }
