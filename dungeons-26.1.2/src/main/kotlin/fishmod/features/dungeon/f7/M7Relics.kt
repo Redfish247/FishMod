@@ -35,7 +35,7 @@ object M7Relics {
     private const val NAME = "Relic Spawn Timer"
     private const val SPAWN_TICKS = 42
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
-    private val P5_START = Pattern.compile("\\[BOSS] Necron: All this, for nothing\\.\\.\\.")
+    private const val RESTART_GUARD_MS = 30_000L
 
     @Volatile private var spawnEndMs = 0L
     private val PICKUP = Pattern.compile("^(\\w{3,16}) picked the Corrupted (\\w{3,6}) Relic!$")
@@ -56,7 +56,8 @@ object M7Relics {
 
         Events.ON_GAME_MESSAGE.register { text ->
             val msg = COLOR.replace(text.string, "")
-            if (P5_START.matcher(msg).find()) {
+            // Old or alpha Necron line; first one wins so a later line can't restart it.
+            if (fishmod.utils.dungeon.DialogueCompat.isNecronEnd(msg) && System.currentTimeMillis() - p5StartMs > RESTART_GUARD_MS) {
                 p5StartMs = System.currentTimeMillis()
                 myRelic = null
                 pickers.clear(); placed.clear()
@@ -77,11 +78,25 @@ object M7Relics {
         }
         Events.ON_WORLD_CHANGE.register { spawnEndMs = 0L; p5StartMs = 0L; myRelic = null; pickers.clear(); placed.clear(); false }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register {
-            try { checkPlaced(); checkAllPlaced() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
+            try { checkSpawned(); checkPlaced(); checkAllPlaced() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
         }
 
         RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
             try { renderBox(m, vc) } catch (e: Exception) { FishDiag.fail("M7Relics.4", "relic cauldron render threw", e) }
+        }
+    }
+
+    // Relic stands showing up = spawned: end the countdown, and start P5 tracking if no line was seen.
+    private fun checkSpawned() {
+        if (spawnEndMs == 0L && p5StartMs != 0L) return
+        val level = Minecraft.getInstance().level ?: return
+        if (Phase.getFloor() != "M7") return
+        for (e in level.entitiesForRendering()) {
+            if (e !is ArmorStand) continue
+            if (!e.getItemBySlot(EquipmentSlot.HEAD).hoverName.string.contains("Corrupted")) continue
+            spawnEndMs = 0L
+            if (p5StartMs == 0L) { p5StartMs = System.currentTimeMillis(); myRelic = null; pickers.clear(); placed.clear() }
+            return
         }
     }
 

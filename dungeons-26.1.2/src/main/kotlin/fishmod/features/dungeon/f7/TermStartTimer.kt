@@ -13,7 +13,7 @@ import fishmod.utils.debug.FishDiag
 
 object TermStartTimer {
 
-    private const val TOTAL_TICKS = 100
+    private const val TOTAL_TICKS = 60 // alpha: 2s earlier (was 100)
     private var tick = TOTAL_TICKS
 
     @JvmStatic

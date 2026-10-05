@@ -60,9 +60,10 @@ object SimonSaysTracker {
     private var buttonsUp: Boolean? = null
     private val BUTTON_CHECK = BlockPos(110, 120, 93)
 
-    private val SS_CHAT: Pattern = Pattern.compile("Simon Says: (\\d)/5")
+    private val SS_CHAT: Pattern = Pattern.compile("Simon Says: (\\d)/[45]")
 
     private const val GOLDOR_INTRO = "who dares trespass into my domain"
+    private const val SS_ROUNDS = 4 // alpha: 4 rounds (was 5)
 
     @JvmField
     var debug = false
@@ -95,12 +96,12 @@ object SimonSaysTracker {
                 val ss = SS_CHAT.matcher(s)
                 if (ss.find()) {
                     val n = ss.group(1)[0] - '0'
-                    if (n in 1..4) {
+                    if (n in 1 until SS_ROUNDS) {
                         round = n
                     } else if (n < 1) {
                         FishDiag.fail("SimonSaysTracker.2", "SS chat round out of range: '$s'")
-                    } else if (n >= 5) {
-                        round = 5
+                    } else if (n >= SS_ROUNDS) {
+                        round = SS_ROUNDS
                         doneAtMs = System.currentTimeMillis()
                         if (!completed && falseFailSent) {
                             Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§a(actually completed — ignore the FAILED above)"))
@@ -187,7 +188,7 @@ object SimonSaysTracker {
         if (!primed) { litPrev.clear(); litPrev.addAll(scanBuf); primed = true }
         else {
             for (p in scanBuf) if (!litPrev.contains(p)) {
-                seqLen = (seqLen + 1).coerceAtMost(5)
+                seqLen = (seqLen + 1).coerceAtMost(SS_ROUNDS)
                 if (FishSettings.simonSaysSkipCompat && seqLen == 2 && !skipOver) seqLen--
                 if (debug) log("flash seqLen=$seqLen")
             }
@@ -199,8 +200,8 @@ object SimonSaysTracker {
         if (btn == Blocks.AIR) seqLen = 0
         if (up && buttonsUp == false) {
             skipOver = true
-            FishDiag.check(seqLen in 0..5, "SimonSaysTracker.7") { "SS seqLen out of range: $seqLen" }
-            if (seqLen > 0 && seqLen > round && seqLen < 5) {
+            FishDiag.check(seqLen in 0..SS_ROUNDS, "SimonSaysTracker.7") { "SS seqLen out of range: $seqLen" }
+            if (seqLen > 0 && seqLen > round && seqLen < SS_ROUNDS) {
                 round = seqLen
                 if (round > lastAnnounced) { lastAnnounced = round; announceRound(round) }
             }
@@ -211,10 +212,10 @@ object SimonSaysTracker {
     private fun tryComplete() {
         if (debug) log("tryComplete called (completed=$completed)")
         if (completed) return
-        round = 5
-        lastAnnounced = 5
+        round = SS_ROUNDS
+        lastAnnounced = SS_ROUNDS
         doneAtMs = System.currentTimeMillis()
-        announceRound(5)
+        announceRound(SS_ROUNDS)
         if (falseFailSent) {
             Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§a(actually completed — ignore the FAILED above)"))
             if (FishSettings.simonSaysPartyChat) fishmod.utils.ChatQueue.enqueue("pc Simon Says: actually completed, ignore the FAILED above")
@@ -235,9 +236,9 @@ object SimonSaysTracker {
     }
 
     private fun announceRound(r: Int) {
-        val label = "$r/5" + (if (r >= 5) " (done)" else "")
+        val label = "$r/$SS_ROUNDS" + (if (r >= SS_ROUNDS) " (done)" else "")
         Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() + "§bSimon Says: §a" + label))
-        val (custom, text) = when (r) {
+        val (custom, text) = if (r >= SS_ROUNDS) FishSettings.simon5Enabled to FishSettings.simon5Message else when (r) {
             1 -> FishSettings.simon1Enabled to FishSettings.simon1Message
             2 -> FishSettings.simon2Enabled to FishSettings.simon2Message
             3 -> FishSettings.simon3Enabled to FishSettings.simon3Message
@@ -336,7 +337,7 @@ object SimonSaysTracker {
         val now = System.currentTimeMillis()
         val showReset = round <= 0 && FishSettings.ssProgressShowReset && resetAtMs > 0 && now - resetAtMs < 3000
         if (round <= 0 && !showReset) return
-        if (round >= 5 && doneAtMs > 0 && now - doneAtMs > 2000) return
+        if (round >= SS_ROUNDS && doneAtMs > 0 && now - doneAtMs > 2000) return
         val mc = Minecraft.getInstance()
         val player = mc.player ?: return
         val dc = deviceCenter
@@ -344,7 +345,7 @@ object SimonSaysTracker {
 
         val (text, color) = when {
             showReset -> FishSettings.ssProgressResetText to FishSettings.ssProgressResetColor
-            round >= 5 -> {
+            round >= SS_ROUNDS -> {
                 if (!FishSettings.ssProgressShowCompleted) return
                 FishSettings.ssProgressCompletedText to FishSettings.ssProgressCompletedColor
             }
