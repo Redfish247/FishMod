@@ -15,17 +15,24 @@ object NucleusHighlight {
             maxOf(x1, x2) + 1.0, maxOf(y1, y2) + 1.0, maxOf(z1, z2) + 1.0)
 
     private val POCKETS = listOf(
-        Pocket(box(474, 124, 524, 485, 111, 535)) { S.miningNucleusAmber },
-        Pocket(box(474, 124, 492, 485, 111, 503)) { S.miningNucleusAmethyst },
-        Pocket(box(508, 124, 473, 519, 111, 484)) { S.miningNucleusTopaz },
-        Pocket(box(542, 124, 492, 553, 111, 503)) { S.miningNucleusJade },
-        Pocket(box(542, 124, 524, 553, 111, 535)) { S.miningNucleusSapphire },
+        Pocket(box(474, 123, 524, 484, 111, 534)) { S.miningNucleusAmber },
+        Pocket(box(474, 123, 492, 484, 111, 502)) { S.miningNucleusAmethyst },
+        Pocket(box(508, 123, 473, 518, 111, 483)) { S.miningNucleusTopaz },
+        Pocket(box(542, 123, 492, 552, 111, 502)) { S.miningNucleusJade },
+        Pocket(box(542, 123, 524, 552, 111, 534)) { S.miningNucleusSapphire },
     )
+
+    // Area name, or position as a fallback if the sidebar line doesn't parse
+    private fun inNucleus(): Boolean {
+        if (Mining.area.contains("Nucleus")) return true
+        val p = net.minecraft.client.Minecraft.getInstance().player ?: return false
+        return p.x in 460.0..567.0 && p.z in 460.0..567.0 && p.y in 100.0..190.0
+    }
 
     fun init() {
         RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (!S.miningNucleusBoxes || !Mining.inHollows()) return@register
-            if (S.miningNucleusOnlyInside && !Mining.area.contains("Nucleus")) return@register
+            if (S.miningNucleusOnlyInside && !inNucleus()) return@register
             for (p in POCKETS) {
                 val c = p.color()
                 if (S.miningNucleusFilled) RenderUtils.fillBox(ps, vc, p.box, Mining.alpha(c, S.miningNucleusOpacity))

@@ -124,7 +124,7 @@ object Mining {
         return sb.listPlayerScores(obj).sortedByDescending { it.value() }.map { e ->
             val team = sb.getPlayersTeam(e.owner())
             val raw = if (team != null) team.playerPrefix.string + team.playerSuffix.string else e.owner()
-            raw.replace(Constants.STRIP_COLOR_REGEX, "").trim()
+            raw.replace(Constants.STRIP_COLOR_REGEX, "").filterNot { it.isSurrogate() }.trim()  // Hypixel pads lines with emoji
         }
     }
 
