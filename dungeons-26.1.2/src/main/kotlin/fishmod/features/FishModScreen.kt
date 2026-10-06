@@ -408,7 +408,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { FishSettings.compactTabStatBarPosition },
                 { v -> FishSettings.compactTabStatBarPosition = v }).gatedBy { FishSettings.compactTabStatBarEnabled })
             f.sub.add(DropdownSetting("Tab Sort", "", arrayOf(
-                "Rank (Default)", "SB Level", "Name (Abc)", "Ironman/Bingo", "Party/Friends/Guild", "Random"),
+                "Rank (Default)", "SB Level", "Name (Abc)", "Ironman/Bingo", "Random"),
                 { FishSettings.compactTabSortMode },
                 { v -> FishSettings.compactTabSortMode = v }))
             f.sub.add(DropdownSetting("Bottom Line", "Stats = cookie / god pot / effects from the tab footer", arrayOf("Hypixel", "Stats", "Custom", "Off"),
@@ -1240,7 +1240,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Show Number", "", FishSettings::cooldownShowText))
             f.sub.add(ToggleSetting("Under 3s Only", "", FishSettings::cooldownOnlyUnder3s))
             f.sub.add(ToggleSetting("In Inventory", "", FishSettings::cooldownInInventory))
-            f.sub.add(ToggleSetting("Disable Cooldown Background", "Hide vanilla's white cooldown sweep on items", Visual::hideCooldown))
+            f.sub.add(ToggleSetting("Disable Cooldown Background", "Hide the white cooldown sweep behind the timer", Visual::hideCooldown))
             hud.features.add(f)
         }
         hud.features.add(Feature("Catacombs Overflow Levels", FishSettings::catacombsOverflowEnabled))
@@ -1469,7 +1469,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("LB Release Timer", "", Floor7::enableLbReleaseTimer))
             f.sub.add(ColorPickerSetting("LB Release Timer Color", "", Floor7::lbReleaseTimerColor).gatedBy { Floor7.enableLbReleaseTimer })
             f.sub.add(SliderIntSetting("LB Release Ping (ms)", "Fires the release cue this much earlier to offset latency", Floor7::lbReleaseTimerPingMs, 0, 500).gatedBy { Floor7.enableLbReleaseTimer })
-            f.sub.add(ToggleSetting("Py Tick Timer", "Counts down 5s to 31.5s, then tells you to stand on the crusher", Floor7::enablePyTimer))
+            f.sub.add(ToggleSetting("Py Tick Timer", "Counts down 5s to 29.5s, then tells you to stand on the crusher", Floor7::enablePyTimer))
             f.sub.add(ColorPickerSetting("Py Timer Color", "", Floor7::pyTimerColor).gatedBy { Floor7.enablePyTimer })
             f.sub.add(SliderIntSetting("Py Ping (ms)", "Ends the countdown this much earlier so high ping doesn't make you late", Floor7::pyTimerPingMs, 0, 500).gatedBy { Floor7.enablePyTimer })
             f.sub.add(ToggleSetting("Storm Crushed Noti", "", Floor7::notifyStormCrush))
@@ -1611,6 +1611,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             solvers.features.add(f)
         }
         run {
+            val f = Feature("Storm LB Waypoint", FishSettings::stormLbWaypointEnabled)
+            f.sub.add(ColorPickerSetting("Color", "", FishSettings::stormLbWaypointColor))
+            floor7.features.add(f)
+        }
+        run {
             val f = Feature("Wither Highlight", FishSettings::witherEspEnabled)
             f.sub.add(ColorPickerSetting("Maxor", "", FishSettings::witherEspMaxorColor))
             f.sub.add(ColorPickerSetting("Storm", "", FishSettings::witherEspStormColor))
@@ -1620,7 +1625,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Storm Over Alert", FishSettings::stormOverEnabled)
-            f.sub.add(SubcategoryHeader("5s countdown + title at 28.75s once Storm has used both lightning procs — move it in the HUD editor"))
+            f.sub.add(SubcategoryHeader("5s countdown + title at 26.75s once Storm has used both lightning procs — move it in the HUD editor"))
             f.sub.add(InputSetting("Text", "", FishSettings::stormOverText))
             f.sub.add(ColorPickerSetting("Color", "", FishSettings::stormOverColor))
             f.sub.add(ToggleSetting("Sound", "", FishSettings::stormOverSound))
@@ -1896,7 +1901,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val spawnHud = Feature("Spawn Progress HUD", FishSettings::slayerSpawnHudEnabled)
             spawnHud.sub.add(SubcategoryHeader("Live spawn-bar %  ·  drag position with Edit HUD"))
             spawnHud.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerSpawnHudScale, 0.5, 3.0))
-            spawnHud.sub.add(SliderIntSetting("Background Opacity %", "0 = no background panel", FishSettings::slayerSpawnOpacity, 0, 100))
             slayer.features.add(spawnHud)
 
             val statsHud = Feature("Slayer Stats HUD", FishSettings::slayerStatsHudEnabled)
@@ -1905,7 +1909,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             statsHud.sub.add(ToggleSetting("Show Kills", "", FishSettings::slayerStatsShowKills))
             statsHud.sub.add(ToggleSetting("Show XP/hr", "", FishSettings::slayerStatsShowXpHr))
             statsHud.sub.add(ToggleSetting("Show Kills/hr", "", FishSettings::slayerStatsShowKillsHr))
-            statsHud.sub.add(SliderIntSetting("Background Opacity %", "0 = no background panel", FishSettings::slayerStatsOpacity, 0, 100))
             statsHud.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerStatsHudScale, 0.5, 3.0))
             statsHud.sub.add(ButtonSetting("Reset Session Stats", "Zero the XP / kills / time counters", Runnable { fishmod.features.slayers.SlayerStatsTracker.reset() }))
             slayer.features.add(statsHud)
@@ -1921,7 +1924,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             profit.sub.add(ToggleSetting("Count Mob Kill Coins", "Count small purse gains while grinding as a \"Mob Kill Coins\" drop row + profit", FishSettings::slayerProfitCountKillCoins))
             profit.sub.add(ToggleSetting("Always Show Hidden Rows", "Keep hidden rows on screen (dark + struck) even when chat is closed", FishSettings::slayerProfitShowHidden))
             profit.sub.add(SliderIntSetting("Idle Pause (s)", "No drop/kill this long → pause & rewind the clock by this much", FishSettings::slayerProfitIdleSeconds, 15, 600, 15))
-            profit.sub.add(SliderIntSetting("Background Opacity %", "0 = no background panel", FishSettings::slayerProfitOpacity, 0, 100))
             profit.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerProfitHudScale, 0.5, 3.0))
             profit.sub.add(ButtonSetting("Reset This Mode", "Clear drops / bosses / time for the current Display mode, every slayer", Runnable { fishmod.features.slayers.SlayerProfitTracker.reset() }))
             slayer.features.add(profit)
@@ -1936,7 +1938,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             timer.sub.add(ToggleSetting("Show New PB", "", FishSettings::slayerTimerShowNewPb))
             timer.sub.add(ToggleSetting("Show Cycle", "Full kill-to-kill time (fight + loot + walk + refill) + a live 'since kill' counter", FishSettings::slayerTimerShowCycle))
             timer.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerTimerHudScale, 0.5, 3.0))
-            timer.sub.add(SliderIntSetting("Background Opacity %", "0 = no background panel", FishSettings::slayerTimerOpacity, 0, 100))
             slayer.features.add(timer)
 
             val phases = Feature("Boss Phases", FishSettings::slayerPhaseEnabled)
