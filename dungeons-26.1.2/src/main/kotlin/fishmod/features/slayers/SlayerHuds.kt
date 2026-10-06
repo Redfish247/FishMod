@@ -89,7 +89,7 @@ object SlayerHuds {
             SlayerManager.State.NONE -> return
         }
         drawBlock(ctx, FishSettings.slayerSpawnHudX, FishSettings.slayerSpawnHudY,
-            FishSettings.slayerSpawnHudScale, lines, opacity = FishSettings.slayerSpawnOpacity)
+            FishSettings.slayerSpawnHudScale, lines)
     }
 
     @JvmStatic
@@ -120,7 +120,7 @@ object SlayerHuds {
         if (lines.size == 1) return
 
         drawBlock(ctx, FishSettings.slayerStatsHudX, FishSettings.slayerStatsHudY,
-            FishSettings.slayerStatsHudScale, lines, opacity = FishSettings.slayerStatsOpacity)
+            FishSettings.slayerStatsHudScale, lines)
     }
 
     private var profitFrameMs = 0L
@@ -133,30 +133,48 @@ object SlayerHuds {
     @JvmStatic
     fun renderProfit(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         try {
-            renderProfitInner(ctx, tick)
+            renderProfitInner(ctx, false)
         } catch (e: Exception) {
             FishDiag.fail("SlayerHuds.3", "slayer profit HUD render failed (type=${SlayerManager.type}, state=${SlayerManager.state})", e)
         }
     }
 
-    private fun renderProfitInner(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
-        if (!FishSettings.slayerProfitEnabled) return
+    // In the inventory it is redrawn on top of the screen with a reset button under it
+    @JvmStatic
+    fun initInventory() {
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
+            if (screen !is net.minecraft.client.gui.screens.inventory.InventoryScreen) return@register
+            net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.afterExtract(screen).register { _, ctx, mx, my, _ ->
+                try {
+                    if (!renderProfitInner(ctx, true) || !SlayerProfitTracker.sessionMode()) return@register
+                    fishmod.features.other.TrackerResetButton.draw(ctx, "slayer", profitLeft.toInt(), profitRowBot.last().toInt() + 2,
+                        FishSettings.slayerProfitHudScale, mx, my) { SlayerProfitTracker.reset() }
+                } catch (e: Exception) {
+                    FishDiag.fail("SlayerHuds.9", "slayer profit inventory render failed", e)
+                }
+            }
+        }
+    }
+
+    private fun renderProfitInner(ctx: GuiGraphicsExtractor, inInv: Boolean): Boolean {
+        if (!FishSettings.slayerProfitEnabled) return false
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.options.hideGui) return false
         // keep drawing while chat is open so it can be clicked (SkyHanni behaviour)
-        if (mc.screen != null && mc.screen !is net.minecraft.client.gui.screens.ChatScreen) return
-        if (!Location.inSkyblock() || !SlayerManager.inCorrectArea()) return
-        val type = SlayerManager.type ?: return
+        if (mc.screen != null && mc.screen !is net.minecraft.client.gui.screens.ChatScreen && !inInv) return false
+        if (!Location.inSkyblock() || !SlayerManager.inCorrectArea()) return false
+        val type = SlayerManager.type ?: return false
         val tier = SlayerManager.tier
-        if (!SlayerProfitTracker.hasData(type, tier)) return
+        if (!SlayerProfitTracker.hasData(type, tier)) return false
 
         val interactive = mc.screen is net.minecraft.client.gui.screens.ChatScreen
         val rows = SlayerProfitTracker.display(type, tier, interactive)
         val f = mc.font
         val lh = Constants.TEXT_HEIGHT + 2
-        val gap = 8
+        // value column right-aligned, item text after it (Mining/Diana style)
+        val colX = rows.maxOfOrNull { if (it.value.isEmpty()) 0 else f.width(it.value) + 6 } ?: 0
         var panelW = 0
-        for (r in rows) panelW = Math.max(panelW, f.width(r.label) + (if (r.value.isEmpty()) 0 else gap + f.width(r.value)))
+        for (r in rows) panelW = Math.max(panelW, (if (r.value.isEmpty()) 0 else colX) + f.width(r.label))
 
         val x = FishSettings.slayerProfitHudX
         val y = FishSettings.slayerProfitHudY
@@ -165,11 +183,11 @@ object SlayerHuds {
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())
         ctx.pose().scale(sc, sc)
-        if (FishSettings.slayerProfitOpacity > 0) ctx.fill(-3, -2, panelW + 3, lh * rows.size + 1, bgColor(FishSettings.slayerProfitOpacity))
         for (i in rows.indices) {
             val r = rows[i]
-            ctx.text(f, r.label, 0, lh * i, 0xFFFFFFFF.toInt(), true)
-            if (r.value.isNotEmpty()) ctx.text(f, r.value, panelW - f.width(r.value), lh * i, 0xFFFFFFFF.toInt(), true)
+            if (r.value.isEmpty()) { ctx.text(f, r.label, 0, lh * i, 0xFFFFFFFF.toInt(), true); continue }
+            ctx.text(f, r.value, colX - 6 - f.width(r.value), lh * i, 0xFFFFFFFF.toInt(), true)
+            ctx.text(f, r.label, colX, lh * i, 0xFFFFFFFF.toInt(), true)
         }
         ctx.pose().popMatrix()
 
@@ -182,6 +200,7 @@ object SlayerHuds {
             profitRowBot.add(y + lh.toDouble() * (i + 1) * sc)
             profitRowTag.add(rows[i].tag)
         }
+        return rows.isNotEmpty()
     }
 
     @JvmStatic
@@ -257,12 +276,12 @@ object SlayerHuds {
         if (lines.isEmpty()) return
 
         drawBlock(ctx, FishSettings.slayerTimerHudX, FishSettings.slayerTimerHudY,
-            FishSettings.slayerTimerHudScale, lines, opacity = FishSettings.slayerTimerOpacity)
+            FishSettings.slayerTimerHudScale, lines)
     }
 
     private fun drawBlock(
         ctx: GuiGraphicsExtractor, x: Int, y: Int, scale: Double,
-        lines: List<String>, opacity: Int,
+        lines: List<String>,
     ) {
         val mc = Minecraft.getInstance()
         val lh = Constants.TEXT_HEIGHT + 2
@@ -270,19 +289,8 @@ object SlayerHuds {
         ctx.pose().pushMatrix()
         ctx.pose().translate(x.toFloat(), y.toFloat())
         ctx.pose().scale(sc, sc)
-        if (opacity > 0) {
-            var w = 0
-            for (l in lines) w = Math.max(w, mc.font.width(l))
-            ctx.fill(-3, -2, w + 3, lh * lines.size + 1, bgColor(opacity))
-        }
         for (i in lines.indices) ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF.toInt(), true)
         ctx.pose().popMatrix()
-    }
-
-    private fun bgColor(opacityPct: Int): Int {
-        val pct = opacityPct.coerceIn(0, 100)
-        val a = (pct * 2.55).roundToInt()
-        return a shl 24
     }
 
     private fun fmt(v: Double): String = fishmod.utils.Fmt.grouped(v.toLong())

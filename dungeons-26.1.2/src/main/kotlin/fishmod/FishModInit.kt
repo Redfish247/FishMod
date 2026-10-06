@@ -481,6 +481,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.92", "fishmod.features.dungeon.PartyMemberTracker.init() failed") { fishmod.features.dungeon.PartyMemberTracker.init() }
         FishDiag.guard("FishModInit.93", "fishmod.features.dungeon.PartyFinderPanel.init() failed") { fishmod.features.dungeon.PartyFinderPanel.init() }
         FishDiag.guard("FishModInit.94", "fishmod.features.dungeon.f7.WitherESP.init() failed") { fishmod.features.dungeon.f7.WitherESP.init() }
+        FishDiag.guard("FishModInit.StormLb", "StormLbWaypoint.init() failed") { fishmod.features.dungeon.f7.StormLbWaypoint.init() }
         FishDiag.guard("FishModInit.95", "fishmod.features.dungeon.f7.M7Relics.init() failed") { fishmod.features.dungeon.f7.M7Relics.init() }
         FishDiag.guard("FishModInit.96", "fishmod.features.dungeon.puzzles.PuzzleSolvers.init() failed") { fishmod.features.dungeon.puzzles.PuzzleSolvers.init() }
         FishDiag.guard("FishModInit.97", "fishmod.features.dungeon.SimonSaysTracker.init() failed") { fishmod.features.dungeon.SimonSaysTracker.init() }
@@ -490,6 +491,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.101", "fishmod.features.dungeon.StarredMobHighlight.init() failed") { fishmod.features.dungeon.StarredMobHighlight.init() }
         FishDiag.guard("FishModInit.102", "fishmod.features.slayers.SlayerManager.init() failed") { fishmod.features.slayers.SlayerManager.init() }
         FishDiag.guard("FishModInit.156", "fishmod.features.diana.Diana.init() failed") { fishmod.features.diana.Diana.init() }
+        FishDiag.guard("FishModInit.158", "TrackerResetButton.init() failed") { fishmod.features.other.TrackerResetButton.init() }
         FishDiag.guard("FishModInit.157", "fishmod.features.mining.Mining.init() failed") { fishmod.features.mining.Mining.init() }
         FishDiag.guard("FishModInit.103", "fishmod.features.dungeon.f7.F7Huds.init() failed") { fishmod.features.dungeon.f7.F7Huds.init() }
         FishDiag.guard("FishModInit.104", "fishmod.utils.config.values.Buttons.init() failed") { fishmod.utils.config.values.Buttons.init() }
@@ -599,6 +601,7 @@ class FishModInit : ClientModInitializer {
                     .then(waypointSubcommand("waypoint"))
                     .then(waypointSubcommand("waypoints"))
                     .then(fishmod.features.dungeon.RouteRecorder.command())
+                    .then(fishmod.features.dungeon.f7.StormLbWaypoint.command())
                     .then(fishmod.features.diana.Diana.command())
                     .then(ClientCommands.literal("dianaloot").executes { fishmod.features.diana.DianaTracker.openPastEvents(); 1 })
                     .then(fishmod.features.diana.CrownOfAvarice.command())
