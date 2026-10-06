@@ -123,7 +123,11 @@ object DianaMenu {
         col.features.add(Feature("Sphinx Solver", S::dianaSphinxSolver))
         col.features.add(Feature("Crown of Avarice Counter", S::dianaCrownCounter))
         col.features.add(Feature("Crown of Avarice Milestones", S::dianaCrownMilestones))
-        col.features.add(Feature("Crown of Avarice Tracker", S::dianaCrownHud))
+        run {
+            val f = Feature("Crown of Avarice Tracker", S::dianaCrownHud)
+            f.sub.add(ToggleSetting("Full Number", "Show the exact coin count instead of 7.92B", S::dianaCrownHudFullNumber))
+            col.features.add(f)
+        }
 
         val style = Feature("Diana Waypoint Style", null, null)
         style.sub.add(SubcategoryHeader("Colors"))
