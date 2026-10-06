@@ -79,8 +79,13 @@ object DianaTrackerHud {
         // In the inventory every line shows; click one to hide/unhide it
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is InventoryScreen) return@AfterInit
-            ScreenEvents.afterExtract(screen).register(ScreenEvents.AfterExtract { _, ctx, _, _, _ ->
-                forVisible { id, h -> draw(ctx, rows(id, h), h.gx(), h.gy(), h.gs(), true) }
+            ScreenEvents.afterExtract(screen).register(ScreenEvents.AfterExtract { _, ctx, mx, my, _ ->
+                forVisible { id, h ->
+                    val r = rows(id, h)
+                    draw(ctx, r, h.gx(), h.gy(), h.gs(), true)
+                    val mode = when (id) { "diana_loot" -> DianaSettings.dianaLootTracker; "diana_mobs" -> DianaSettings.dianaMobTracker; else -> "" }
+                    if (r.isNotEmpty() && mode == "Session") fishmod.features.other.TrackerResetButton.draw(ctx, "diana:$id", h.gx(), h.gy() + (r.size * 10 * h.gs()).toInt() + 2, h.gs(), mx, my) { DianaTracker.resetSession() }
+                }
             })
             ScreenMouseEvents.allowMouseClick(screen).register(ScreenMouseEvents.AllowMouseClick { _, click ->
                 click.button() != 0 || !onClick(click.x(), click.y())

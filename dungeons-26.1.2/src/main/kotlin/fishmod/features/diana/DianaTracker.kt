@@ -581,10 +581,10 @@ object DianaTracker {
     }
 
     @JvmStatic
-    fun resetSession() {
+    fun resetSession(msg: Boolean = true) {
         data.session = Tracker()
         changed()
-        FishMsg.send("§aDiana session tracker reset.")
+        if (msg) FishMsg.send("§aDiana session tracker reset.")
     }
 
     @JvmStatic
