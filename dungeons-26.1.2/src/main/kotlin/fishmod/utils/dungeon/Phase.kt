@@ -79,9 +79,15 @@ object Phase {
         if (floor!!.contains("7")) inFloor7 = true
     }
 
-    // Alpha doesn't send Necron's death line; his boss bar emptying or vanishing stands in for it
+    // Alpha doesn't send Necron's death line; in M7 the relics spawning stands in for it
+    @JvmStatic
+    fun onRelicSpawn() {
+        if (awaitingNecronDeath()) fireP5Start("relics spawned")
+    }
+
+    // F7 has no relics, so its boss bar emptying or vanishing stands in instead
     private fun checkP5Fallback() {
-        if (!awaitingNecronDeath()) return
+        if (!awaitingNecronDeath() || floor == "M7") return
         val bars = (Minecraft.getInstance().gui.bossOverlay as BossBarHudAccessor).bossBars.values
         val necron = bars.firstOrNull { it.name.string.contains("Necron") }
         if (necron != null && necron.progress > 0f) { necronBarSeen = true; return }
