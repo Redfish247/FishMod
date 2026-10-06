@@ -398,7 +398,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { FishSettings.compactTabStatBarPosition },
                 { v -> FishSettings.compactTabStatBarPosition = v }).gatedBy { FishSettings.compactTabStatBarEnabled })
             f.sub.add(DropdownSetting("Tab Sort", "", arrayOf(
-                "Rank (Default)", "SB Level", "Name (Abc)", "Ironman/Bingo", "Party/Friends/Guild", "Random"),
+                "Rank (Default)", "SB Level", "Name (Abc)", "Ironman/Bingo", "Random"),
                 { FishSettings.compactTabSortMode },
                 { v -> FishSettings.compactTabSortMode = v }))
             f.sub.add(DropdownSetting("Bottom Line", "Stats = cookie / god pot / effects from the tab footer", arrayOf("Hypixel", "Stats", "Custom", "Off"),
@@ -1599,6 +1599,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ColorPickerSetting("Aim 2nd", "", FishSettings::arrowsDeviceAim2Color).gatedBy { FishSettings.arrowsDeviceShowAim })
             f.sub.add(ColorPickerSetting("Aim 3rd", "", FishSettings::arrowsDeviceAim3Color).gatedBy { FishSettings.arrowsDeviceShowAim })
             solvers.features.add(f)
+        }
+        run {
+            val f = Feature("Storm LB Waypoint", FishSettings::stormLbWaypointEnabled)
+            f.sub.add(ColorPickerSetting("Color", "", FishSettings::stormLbWaypointColor))
+            floor7.features.add(f)
         }
         run {
             val f = Feature("Wither Highlight", FishSettings::witherEspEnabled)

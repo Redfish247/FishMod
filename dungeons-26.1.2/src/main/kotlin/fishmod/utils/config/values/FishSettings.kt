@@ -538,6 +538,9 @@ object FishSettings {
     @ConfigValue @JvmField var blockOverlayPhase: Boolean = false
     @ConfigValue @JvmField var blockOverlayOutlineThickness: Double = 0.02
 
+    @ConfigValue @JvmField var stormLbWaypointEnabled: Boolean = false
+    @ConfigValue @JvmField var stormLbWaypointColor: Int = 0xFF55FF55.toInt()
+
     @ConfigValue @JvmField var witherEspEnabled: Boolean = false
     @ConfigValue @JvmField var witherEspMaxorColor: Int = 0xFF5804A4.toInt()
     @ConfigValue @JvmField var witherEspStormColor: Int = 0xFF00D0FF.toInt()
