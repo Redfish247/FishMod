@@ -1459,7 +1459,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("LB Release Timer", "", Floor7::enableLbReleaseTimer))
             f.sub.add(ColorPickerSetting("LB Release Timer Color", "", Floor7::lbReleaseTimerColor).gatedBy { Floor7.enableLbReleaseTimer })
             f.sub.add(SliderIntSetting("LB Release Ping (ms)", "Fires the release cue this much earlier to offset latency", Floor7::lbReleaseTimerPingMs, 0, 500).gatedBy { Floor7.enableLbReleaseTimer })
-            f.sub.add(ToggleSetting("Py Tick Timer", "Counts down 5s to 31.5s, then tells you to stand on the crusher", Floor7::enablePyTimer))
+            f.sub.add(ToggleSetting("Py Tick Timer", "Counts down 5s to 29.5s, then tells you to stand on the crusher", Floor7::enablePyTimer))
             f.sub.add(ColorPickerSetting("Py Timer Color", "", Floor7::pyTimerColor).gatedBy { Floor7.enablePyTimer })
             f.sub.add(SliderIntSetting("Py Ping (ms)", "Ends the countdown this much earlier so high ping doesn't make you late", Floor7::pyTimerPingMs, 0, 500).gatedBy { Floor7.enablePyTimer })
             f.sub.add(ToggleSetting("Storm Crushed Noti", "", Floor7::notifyStormCrush))
@@ -1615,7 +1615,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Storm Over Alert", FishSettings::stormOverEnabled)
-            f.sub.add(SubcategoryHeader("5s countdown + title at 28.75s once Storm has used both lightning procs — move it in the HUD editor"))
+            f.sub.add(SubcategoryHeader("5s countdown + title at 26.75s once Storm has used both lightning procs — move it in the HUD editor"))
             f.sub.add(InputSetting("Text", "", FishSettings::stormOverText))
             f.sub.add(ColorPickerSetting("Color", "", FishSettings::stormOverColor))
             f.sub.add(ToggleSetting("Sound", "", FishSettings::stormOverSound))

@@ -23,7 +23,7 @@ object TermCustomGui {
         if (t.type == TerminalType.MELODY && FishSettings.terminalStopMelody) return false
         if (screen is TermSimScreen) return TerminalSolver.simActive
         if (screen !is AbstractContainerScreen<*>) return false
-        return FishSettings.terminalSolverEnabled && screen.menu.slots.size >= t.type.windowSize
+        return FishSettings.terminalSolverEnabled && screen.menu.slots.size >= t.windowSize
     }
 
     @JvmStatic
@@ -35,7 +35,7 @@ object TermCustomGui {
     private fun renderInner(ctx: GuiGraphicsExtractor, screenW: Int, screenH: Int, t: TerminalHandler) {
         rects.clear()
         val mc = Minecraft.getInstance()
-        val size = t.type.windowSize
+        val size = t.windowSize
         val cols = 9
         val scale = FishSettings.terminalCustomScale.coerceIn(0.5, 3.0)
         val cell = (30 * scale).toInt().coerceAtLeast(12)
@@ -46,11 +46,11 @@ object TermCustomGui {
 
         val pa = when (t.type) {
             TerminalType.RUBIX       -> intArrayOf(3, 5, 1, 3)
-            TerminalType.NUMBERS     -> intArrayOf(1, 7, 1, 2)
+            TerminalType.NUMBERS     -> numbersBounds(t)
             TerminalType.PANES       -> intArrayOf(1, 7, 1, 3)
             TerminalType.STARTS_WITH -> intArrayOf(1, 7, 1, 3)
             TerminalType.SELECT      -> intArrayOf(1, 7, 1, 4)
-            TerminalType.MELODY      -> intArrayOf(1, 7, 1, 4)
+            TerminalType.MELODY      -> intArrayOf(1, 7, 1, (t as? MelodyHandler)?.laneRows ?: 4)
         }
         val minC = pa[0]; val maxC = pa[1]; val minR = pa[2]; val maxR = pa[3]
         val gridCols = maxC - minC + 1
@@ -132,16 +132,16 @@ object TermCustomGui {
         val colum = FishSettings.terminalMelodyColor
         val pointer = FishSettings.terminalMelodyPointerColor
         val bg = 0x66404040
-        // Target column: one tall bar over rows 1-4 instead of the magenta pane on the top row.
+        val lanes = (t as? MelodyHandler)?.laneRows ?: 4
         val target = (t as? MelodyHandler)?.targetCol ?: -1
         if (target in 1..5) {
             val cx = ox + (target - 1) * (cell + gap)
-            roundFill(ctx, cx, oy, cell, 4 * cell + 3 * gap, round, colum)
+            roundFill(ctx, cx, oy, cell, lanes * cell + (lanes - 1) * gap, round, colum)
         }
-        for (i in 0 until t.type.windowSize) {
+        for (i in 0 until t.windowSize) {
             val r = i / 9
             val c = i % 9
-            if (r < 1 || r > 4 || c < 1 || c > 7) continue
+            if (r < 1 || r > lanes || c < 1 || c > 7) continue
             if (c == 6) continue
             val inSol = i in sol
             if (!inSol && c == target) continue
@@ -151,6 +151,19 @@ object TermCustomGui {
             roundFill(ctx, cx, cy, cell, cell, round, color)
             if (c == 7) rects[i] = intArrayOf(cx, cy, cell, cell)
         }
+    }
+
+    // Grid bounds from the actual panes (2x7 live, 2x5 alpha).
+    private fun numbersBounds(t: TerminalHandler): IntArray {
+        var minC = 9; var maxC = -1; var minR = 9; var maxR = -1
+        for (i in 0 until t.windowSize) {
+            val st = t.items[i] ?: continue
+            if (!st.`is`(net.minecraft.world.item.Items.RED_STAINED_GLASS_PANE) && !st.`is`(net.minecraft.world.item.Items.LIME_STAINED_GLASS_PANE)) continue
+            val r = i / 9; val c = i % 9
+            if (c < minC) minC = c; if (c > maxC) maxC = c
+            if (r < minR) minR = r; if (r > maxR) maxR = r
+        }
+        return if (maxC < 0) intArrayOf(1, 7, 1, 2) else intArrayOf(minC, maxC, minR, maxR)
     }
 
     private fun drawCentered(ctx: GuiGraphicsExtractor, mc: Minecraft, s: String, cx: Int, cy: Int, cell: Int) {

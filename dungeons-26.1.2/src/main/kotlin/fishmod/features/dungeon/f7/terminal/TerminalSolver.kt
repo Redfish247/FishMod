@@ -181,20 +181,20 @@ object TerminalSolver {
         if (term is MelodyHandler) {
             // Highlight the whole target column (rows 1-4) instead of the magenta pane on the top row.
             val r = idx / 9
-            val inCol = r in 1..4 && idx % 9 == term.targetCol
+            val inCol = r in 1..term.laneRows && idx % 9 == term.targetCol
             if (!before) {
-                if (!inSol && !inCol && FishSettings.terminalHideWrong && idx < term.type.windowSize)
+                if (!inSol && !inCol && FishSettings.terminalHideWrong && idx < term.windowSize)
                     ctx.fill(x, y, x + 16, y + 16, FishSettings.terminalWrongCover)
                 return
             }
-            if (r < 1 || r > 4) return
+            if (r < 1 || r > term.laneRows) return
             if (inSol) ctx.fill(x, y, x + 16, y + 16, FishSettings.terminalMelodyPointerColor)
             else if (inCol) ctx.fill(x, y, x + 16, y + 16, FishSettings.terminalMelodyColor)
             return
         }
 
         if (!inSol) {
-            if (!before && FishSettings.terminalHideWrong && idx < term.type.windowSize
+            if (!before && FishSettings.terminalHideWrong && idx < term.windowSize
                 && term.type != TerminalType.NUMBERS
             ) {
                 ctx.fill(x, y, x + 16, y + 16, FishSettings.terminalWrongCover)
@@ -226,7 +226,7 @@ object TerminalSolver {
         if (!FishSettings.terminalSolverEnabled && !simActive) return false
         val term = current ?: return false
         if (term.type != TerminalType.NUMBERS || slot.container is Inventory) return false
-        return slot.index < term.type.windowSize && slot.item.`is`(net.minecraft.world.item.Items.LIME_STAINED_GLASS_PANE)
+        return slot.index < term.windowSize && slot.item.`is`(net.minecraft.world.item.Items.LIME_STAINED_GLASS_PANE)
     }
 
     fun slotColor(term: TerminalHandler, idx: Int): Int = when (term.type) {
@@ -242,7 +242,7 @@ object TerminalSolver {
             -2 -> FishSettings.terminalRubixNeg2
             else -> 0
         }
-        TerminalType.MELODY -> if (idx / 9 == 0 || idx / 9 == 5) FishSettings.terminalMelodyColor
+        TerminalType.MELODY -> if (idx / 9 == 0 || idx / 9 > ((term as? MelodyHandler)?.laneRows ?: 4)) FishSettings.terminalMelodyColor
             else FishSettings.terminalMelodyPointerColor
         TerminalType.STARTS_WITH -> FishSettings.terminalStartsWithColor
         TerminalType.SELECT -> FishSettings.terminalSelectColor
@@ -260,7 +260,8 @@ object TerminalSolver {
         val term = ensureHandler(screen.title.string) ?: return
 
         val menu = screen.menu
-        val n = term.type.windowSize
+        term.windowSize = menu.slots.count { it.container !is Inventory }.coerceIn(9, 54)
+        val n = term.windowSize
         if (!FishDiag.check(menu.slots.size >= n, "TerminalSolver.9") { "terminal ${term.type} menu has ${menu.slots.size} slots, expected >= $n" }) return
 
         var changed = false
