@@ -11,6 +11,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.minecraft.client.Minecraft
+import kotlin.math.abs
 import net.minecraft.network.chat.Component
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
@@ -28,6 +29,7 @@ object StormLbWaypoint {
     private val ARCHER = Spot(87.70, 169.00, 75.30, -133.29f, -32.37f)
     private val HEALER = Spot(59.30, 169.00, 64.01, -90.23f, -19.47f)
     private const val AIM_DIST = 12.0
+    private const val PAD_RADIUS = 1.0
 
     // Debug override: forces a class's waypoint on anywhere (/fm stormlb archer|healer|off).
     private var testSpot: Spot? = null
@@ -67,8 +69,10 @@ object StormLbWaypoint {
 
         RenderUtils.gizmoBox(AABB(s.x - 0.3, s.y, s.z - 0.3, s.x + 0.3, s.y + 0.05, s.z + 0.3), color and 0x40FFFFFF, color, true)
 
-        // X/Y stay locked to the aim point; Z follows the player.
-        val pz = player.getPosition(Minecraft.getInstance().deltaTracker.getGameTimeDeltaPartialTick(true)).z
+        // Aim only shows while standing on the pad; X/Y locked, Z follows the player.
+        val pos = player.getPosition(Minecraft.getInstance().deltaTracker.getGameTimeDeltaPartialTick(true))
+        if (abs(pos.x - s.x) > PAD_RADIUS || abs(pos.z - s.z) > PAD_RADIUS || abs(pos.y - s.y) > 1.5) return
+        val pz = pos.z
         val aim = Vec3(s.aim.x, s.aim.y, s.aim.z - s.z + pz)
         RenderUtils.gizmoBox(AABB(aim.x - 0.1, aim.y - 0.1, aim.z - 0.1, aim.x + 0.1, aim.y + 0.1, aim.z + 0.1), color and 0x60FFFFFF, color, true)
     }
