@@ -35,7 +35,7 @@ object CrownOfAvarice {
     private const val CAP = 1_000_000_000L
     // A maxed crown gives 2x coins instead of 5x, so each purse gain is scaled up by 2.5
     private const val SCALE = 2.5
-    // Only purse gains right after a Diana coin source count (mob kill or dug coins)
+    // Only purse gains right after a Diana coin source count (mob kill, dug coins, or a burrow dig for Four-Eyed Fish)
     private const val COIN_WINDOW_MS = 3_000L
     private const val MAX_GAIN = 10_000_000L
 
@@ -60,6 +60,8 @@ object CrownOfAvarice {
     private class Session(var gained: Long = 0L, var activeMs: Long = 0L, var lastTotal: Long = -1L, var lastGainMs: Long = 0L, var lastTickMs: Long = 0L)
     private val sessions = HashMap<String, Session>()
 
+    fun resetSessions() { sessions.clear() }
+
     fun init() {
         load()
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 10 == 0) onTick(it) }
@@ -75,7 +77,21 @@ object CrownOfAvarice {
         FishHudEditor.register("Crown of Avarice", { DianaSettings.dianaCrownHudX }, { DianaSettings.dianaCrownHudX = it },
             { DianaSettings.dianaCrownHudY }, { DianaSettings.dianaCrownHudY = it }, 120, 49,
             { DianaSettings.dianaCrownHudScale }, { DianaSettings.dianaCrownHudScale = it }, { DianaSettings.dianaCrownHud })
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "crown_of_avarice")) { ctx, _ -> drawHud(ctx) }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "crown_of_avarice")) { ctx, _ ->
+            if (Minecraft.getInstance().screen !is net.minecraft.client.gui.screens.inventory.InventoryScreen) drawHud(ctx)
+        }
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
+            if (screen !is net.minecraft.client.gui.screens.inventory.InventoryScreen) return@register
+            net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.afterExtract(screen).register { _, ctx, mx, my, _ ->
+                val n = drawHud(ctx)
+                if (n > 0) {
+                    val sc = DianaSettings.dianaCrownHudScale
+                    fishmod.features.other.TrackerResetButton.draw(ctx, "crown", DianaSettings.dianaCrownHudX, DianaSettings.dianaCrownHudY + (n * 10 * sc).toInt() + 2, sc, mx, my) {
+                        resetSessions(); FishMsg.send("§aCrown of Avarice session reset.")
+                    }
+                }
+            }
+        }
     }
 
     private fun trackRate(helmet: ItemStack) {
@@ -127,11 +143,12 @@ object CrownOfAvarice {
         return lines
     }
 
-    private fun drawHud(ctx: net.minecraft.client.gui.GuiGraphicsExtractor) {
+    // Returns how many lines were drawn
+    private fun drawHud(ctx: net.minecraft.client.gui.GuiGraphicsExtractor): Int {
         val mc = Minecraft.getInstance()
-        if (!DianaSettings.dianaCrownHud || FishHudEditor.isOpen() || mc.options.hideGui || mc.player == null) return
+        if (!DianaSettings.dianaCrownHud || FishHudEditor.isOpen() || mc.options.hideGui || mc.player == null) return 0
         val lines = hudLines()
-        if (lines.isEmpty()) return
+        if (lines.isEmpty()) return 0
         val pose = ctx.pose()
         pose.pushMatrix()
         pose.translate(DianaSettings.dianaCrownHudX.toFloat(), DianaSettings.dianaCrownHudY.toFloat())
@@ -139,6 +156,7 @@ object CrownOfAvarice {
         pose.scale(sc, sc)
         lines.forEachIndexed { i, l -> ctx.text(mc.font, l, 0, i * 10, -1, true) }
         pose.popMatrix()
+        return lines.size
     }
 
     private fun uuidOf(stack: ItemStack): String? =
@@ -165,7 +183,7 @@ object CrownOfAvarice {
         // Below 1B Hypixel still counts it on the item itself
         if (itemCoins(helmet) < CAP && (totals[u] ?: 0L) < CAP) return
         val now = System.currentTimeMillis()
-        val fromDiana = now - maxOf(lastDugCoinsMs, RareMobs.lastDianaMobDeathMs) <= COIN_WINDOW_MS
+        val fromDiana = now - maxOf(lastDugCoinsMs, RareMobs.lastDianaMobDeathMs, BurrowDetector.lastDigMs) <= COIN_WINDOW_MS
         val menuOpen = mc.screen != null && mc.screen !is net.minecraft.client.gui.screens.ChatScreen
         val selling = menuOpen || now - lastNonCrownMs <= COIN_WINDOW_MS
         if (!Diana.active() || !fromDiana || selling || gain > MAX_GAIN) return
