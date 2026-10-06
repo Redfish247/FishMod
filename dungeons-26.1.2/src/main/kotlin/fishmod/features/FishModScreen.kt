@@ -76,6 +76,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private var stackDragCol: Column? = null
     private var stackDragY = 0
     private var stackGrabDY = 0
+    // eased per-tab stack Y, keyed by column name
+    private val stackAnimY = HashMap<String, Double>()
+    // unfold drop start time per column name
+    private val unfoldStart = HashMap<String, Long>()
 
     private val screenOpenTime = System.currentTimeMillis()
     private var closing = false
@@ -2024,6 +2028,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         saveFoldedColumns()
         frameVisibleColumns = null
         if (unfolding) {
+            if (FishSettings.fmAnimations) unfoldStart[c.name] = System.currentTimeMillis() else unfoldStart.remove(c.name)
             val idx = visibleColumns().indexOf(c)
             if (idx >= 0) hScroll = idx * (columnWidth() + COLUMN_GUTTER)
         }
@@ -2146,6 +2151,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         val ease = openEase(index)
         return -restTop.toFloat() * (1f - ease)
+    }
+
+    private fun unfoldYOffset(c: Column, restTop: Int): Float {
+        val st = unfoldStart[c.name] ?: return 0f
+        val dur = fmDropMs().toFloat()
+        val elapsed = System.currentTimeMillis() - st
+        if (dur <= 0f || elapsed >= dur || closing) { unfoldStart.remove(c.name); return 0f }
+        val ease = Easing.easeOutBack(Mth.clamp(elapsed / dur, 0f, 1f))
+        return -(restTop + (bottom() - restTop) * 0.25f) * (1f - ease)
     }
 
     private fun currentCardBg(): Int {
@@ -2382,7 +2396,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val textW = sw(this.font, label, 0.85f)
         if (filled) {
             roundedRect(ctx, x, y, w, h, h / 2, if (hover) ACCENT_HOVER else accent)
-            sst(ctx, this.font, label, x + (w - textW) / 2, y + (h - 8) / 2, 0xFF06302F.toInt(), 0.85f)
+            sst(ctx, this.font, label, x + (w - textW) / 2, y + (h - 8) / 2, 0xFFFFFFFF.toInt(), 0.85f)
         } else {
             roundedRectRing(ctx, x, y, w, h, h / 2 - 1, 1, if (hover) 0xFF20272E.toInt() else 0xFF171C21.toInt(), if (hover) ACCENT_HOVER else accent)
             sst(ctx, this.font, label, x + (w - textW) / 2, y + (h - 8) / 2, if (hover) ACCENT_HOVER else TEXT_COLOR, 0.85f)
@@ -2419,17 +2433,25 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     private fun renderHint(ctx: GuiGraphicsExtractor) {
-        val lines = arrayOf(
-            "Click a header to fold it",
-            "Drag a column's header to move it",
-            "Right-drag a header onto another to merge them",
-        )
-        val sc = 1.1f
-        val lh = 12
-        var y = bottom() - BOTTOM_RESERVE + (BOTTOM_RESERVE - lines.size * lh) / 2 - 8
-        for (line in lines) {
-            sst(ctx, this.font, line, right() - MARGIN - sw(this.font, line, sc), y, HINT_COLOR, sc)
-            y += lh
+        // Keycap controls box, same style as the HUD editor's
+        val rows = arrayOf("Click" to "Fold a column", "Drag" to "Move a column", "Right-drag" to "Merge onto another")
+        val ts = 10f
+        val ks = 9.5f
+        val rowH = 14.5f
+        val capH = rowH - 2f
+        val pad = 5f
+        val capCol = rows.maxOf { UiRecorder.textWidth(it.first, ks) } + 6f
+        val cw = pad * 2 + capCol + 5f + rows.maxOf { UiRecorder.textWidth(it.second, ts) }
+        val ch = pad * 2 + rows.size * rowH - 2f
+        val bx = (left() + MARGIN).toFloat()
+        val by = bottom() - ch - 3f
+        UiRecorder.roundedRectRing(bx, by, cw, ch, 5f, 1f, 0xE00E1115.toInt(), 0xFF2B333C.toInt())
+        var y = by + pad
+        for ((k, t) in rows) {
+            UiRecorder.roundedRectRing(bx + pad, y, UiRecorder.textWidth(k, ks) + 6f, capH, 2f, 1f, 0xFF1B2027.toInt(), 0xFF3A3F48.toInt())
+            UiRecorder.text(k, bx + pad + 3f, y + (capH - ks) / 2f, ks, TEXT_COLOR)
+            UiRecorder.text(t, bx + pad + capCol + 5f, y + (capH - ts) / 2f, ts, 0xFFAEB8C2.toInt())
+            y += rowH
         }
     }
 
@@ -2484,7 +2506,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         for (i in cols.indices) {
             val c = cols[i]
             if (c === dc) continue
-            val yOff = Math.round(columnYOffset(i, top - HEADER_H))
+            val yOff = Math.round(columnYOffset(i, top - HEADER_H) + unfoldYOffset(c, top - HEADER_H))
             try {
                 renderOneColumn(ctx, c, columnX0(i), colW, top, bot, mouseX, mouseY, yOff)
             } catch (t: Throwable) {
@@ -2504,6 +2526,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun stackMaxScroll(): Int = Math.max(0, columns.size * stackPitch() - ROW_GAP - (stackListBot() - stackListTop()))
     private fun stackX0(): Int = left() + MARGIN
     private fun stackTabY(i: Int): Int = stackListTop() + i * stackPitch() - stackScroll
+    private fun stackDropIndex(): Int =
+        ((stackDragY - stackGrabDY + stackPitch() / 2 - stackListTop() + stackScroll) / stackPitch()).coerceIn(0, columns.size - 1)
+
     private fun stackTabLabel(c: Column): String = if (c.isGroup()) c.name + " +" + (c.children.size - 1) else c.name
 
     private fun stackTabAt(mx: Int, my: Int): Column? {
@@ -2527,12 +2552,24 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val dragging = stackDragCol
         UiRecorder.pushScissor(x0.toFloat(), lt.toFloat(), STACK_W.toFloat(), (lb - lt).toFloat())
         try {
-            for (i in columns.indices) {
-                val c = columns[i]
-                if (c === dragging && dragMoved) continue
-                drawStackTab(ctx, c, tx0, stackTabY(i), tw, mouseX, mouseY)
+            val live = dragging != null && dragMoved
+            val gap = if (live) stackDropIndex() else -1
+            var slot = 0
+            for (c in columns) {
+                if (live && c === dragging) continue
+                if (slot == gap) slot++
+                val target = stackTabY(slot++).toDouble()
+                val cur = stackAnimY[c.name] ?: target
+                var ny = cur + (target - cur) * 0.35
+                if (Math.abs(target - ny) < 0.5) ny = target
+                stackAnimY[c.name] = ny
+                drawStackTab(ctx, c, tx0, Math.round(ny).toInt(), tw, mouseX, mouseY)
             }
-            if (dragging != null && dragMoved) drawStackTab(ctx, dragging, tx0, stackDragY - stackGrabDY, tw, mouseX, mouseY)
+            if (live) {
+                val dy = stackDragY - stackGrabDY
+                stackAnimY[dragging!!.name] = dy.toDouble()
+                drawStackTab(ctx, dragging, tx0, dy, tw, mouseX, mouseY)
+            }
         } finally { UiRecorder.popScissor() }
 
         if (ms > 0) {
@@ -2554,7 +2591,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val cy = y + STACK_TAB_H / 2
         if (open) disc(ctx, x + 9, cy, 3, ACCENT)
         else roundedRectRing(ctx, x + 6, cy - 3, 6, 6, 3, 1, 0, SUBTEXT_COLOR)
-        sst(ctx, this.font, ellipsize(stackTabLabel(c), w - 34), x + 17, y + (STACK_TAB_H - 9) / 2, if (open) TEXT_COLOR else SUBTEXT_COLOR, 1f)
+        sst(ctx, this.font, ellipsize(stackTabLabel(c), w - 38), x + 18, y + (STACK_TAB_H - 10) / 2, if (open) TEXT_COLOR else SUBTEXT_COLOR, 1.1f)
         drawChevron(ctx, x + w - 12, cy, open, if (open) TEXT_COLOR else CHEVRON_COLOR)
     }
 
@@ -2936,7 +2973,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val sc = stackDragCol
         if (sc != null) {
             if (dragMoved) {
-                val target = ((stackDragY - stackGrabDY + stackPitch() / 2 - stackListTop() + stackScroll) / stackPitch()).coerceIn(0, columns.size - 1)
+                val target = stackDropIndex()
                 columns.remove(sc)
                 columns.add(target.coerceAtMost(columns.size), sc)
                 saveColumnOrder()
@@ -4140,8 +4177,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val HEADER_STRIP_H = 3
         private const val MIN_COLUMN_W = 172
         private const val MAX_COLUMN_W = 260
-        private const val STACK_W = 160
-        private const val STACK_TAB_H = 22
+        private const val STACK_W = 176
+        private const val STACK_TAB_H = 24
         private const val DRAG_THRESHOLD = 4
 
         private const val ROW_H = 22
