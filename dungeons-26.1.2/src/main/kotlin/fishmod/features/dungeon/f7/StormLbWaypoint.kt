@@ -21,6 +21,8 @@ object StormLbWaypoint {
 
     private class Spot(val x: Double, val y: Double, val z: Double, yaw: Float, pitch: Float) {
         val dir: Vec3 = Vec3.directionFromRotation(pitch, yaw)
+        // Fixed aim point along the recorded look ray from the spot's eye.
+        val aim: Vec3 = Vec3(x, y + 1.62, z).add(dir.scale(AIM_DIST))
     }
 
     private val ARCHER = Spot(87.70, 169.00, 75.30, -133.29f, -32.37f)
@@ -65,8 +67,9 @@ object StormLbWaypoint {
 
         RenderUtils.gizmoBox(AABB(s.x - 0.3, s.y, s.z - 0.3, s.x + 0.3, s.y + 0.05, s.z + 0.3), color and 0x40FFFFFF, color, true)
 
-        val aim = player.getEyePosition(Minecraft.getInstance().deltaTracker.getGameTimeDeltaPartialTick(true)).add(s.dir.scale(AIM_DIST))
-        RenderUtils.gizmoBox(AABB(aim.x - 0.25, aim.y - 0.25, aim.z - 0.25, aim.x + 0.25, aim.y + 0.25, aim.z + 0.25), color and 0x60FFFFFF, color, true)
-        RenderUtils.gizmoText(Component.literal("LB"), aim.add(0.0, 0.5, 0.0), 1f, color, true)
+        // X/Y stay locked to the aim point; Z follows the player.
+        val pz = player.getPosition(Minecraft.getInstance().deltaTracker.getGameTimeDeltaPartialTick(true)).z
+        val aim = Vec3(s.aim.x, s.aim.y, s.aim.z - s.z + pz)
+        RenderUtils.gizmoBox(AABB(aim.x - 0.1, aim.y - 0.1, aim.z - 0.1, aim.x + 0.1, aim.y + 0.1, aim.z + 0.1), color and 0x60FFFFFF, color, true)
     }
 }
