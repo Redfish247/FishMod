@@ -59,6 +59,8 @@ object PartyUtil {
             grabbedTime = System.currentTimeMillis()
         } else {
             Debug.LOGGER.warn("Server bound party info packet lost")
+            // retry in 10s instead of on every call
+            grabbedTime = System.currentTimeMillis() - MIN_DELAY + 10_000
             FishDiag.fail("PartyUtil.4", "Hypixel Mod API refused party info request (not registered / not on Hypixel?)")
         }
     }
