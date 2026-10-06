@@ -1886,7 +1886,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val spawnHud = Feature("Spawn Progress HUD", FishSettings::slayerSpawnHudEnabled)
             spawnHud.sub.add(SubcategoryHeader("Live spawn-bar %  ·  drag position with Edit HUD"))
             spawnHud.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerSpawnHudScale, 0.5, 3.0))
-            spawnHud.sub.add(SliderIntSetting("Background Opacity %", "0 = no background panel", FishSettings::slayerSpawnOpacity, 0, 100))
             slayer.features.add(spawnHud)
 
             val statsHud = Feature("Slayer Stats HUD", FishSettings::slayerStatsHudEnabled)
@@ -1895,7 +1894,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             statsHud.sub.add(ToggleSetting("Show Kills", "", FishSettings::slayerStatsShowKills))
             statsHud.sub.add(ToggleSetting("Show XP/hr", "", FishSettings::slayerStatsShowXpHr))
             statsHud.sub.add(ToggleSetting("Show Kills/hr", "", FishSettings::slayerStatsShowKillsHr))
-            statsHud.sub.add(SliderIntSetting("Background Opacity %", "0 = no background panel", FishSettings::slayerStatsOpacity, 0, 100))
             statsHud.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerStatsHudScale, 0.5, 3.0))
             statsHud.sub.add(ButtonSetting("Reset Session Stats", "Zero the XP / kills / time counters", Runnable { fishmod.features.slayers.SlayerStatsTracker.reset() }))
             slayer.features.add(statsHud)
@@ -1911,7 +1909,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             profit.sub.add(ToggleSetting("Count Mob Kill Coins", "Count small purse gains while grinding as a \"Mob Kill Coins\" drop row + profit", FishSettings::slayerProfitCountKillCoins))
             profit.sub.add(ToggleSetting("Always Show Hidden Rows", "Keep hidden rows on screen (dark + struck) even when chat is closed", FishSettings::slayerProfitShowHidden))
             profit.sub.add(SliderIntSetting("Idle Pause (s)", "No drop/kill this long → pause & rewind the clock by this much", FishSettings::slayerProfitIdleSeconds, 15, 600, 15))
-            profit.sub.add(SliderIntSetting("Background Opacity %", "0 = no background panel", FishSettings::slayerProfitOpacity, 0, 100))
             profit.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerProfitHudScale, 0.5, 3.0))
             profit.sub.add(ButtonSetting("Reset This Mode", "Clear drops / bosses / time for the current Display mode, every slayer", Runnable { fishmod.features.slayers.SlayerProfitTracker.reset() }))
             slayer.features.add(profit)
@@ -1926,7 +1923,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             timer.sub.add(ToggleSetting("Show New PB", "", FishSettings::slayerTimerShowNewPb))
             timer.sub.add(ToggleSetting("Show Cycle", "Full kill-to-kill time (fight + loot + walk + refill) + a live 'since kill' counter", FishSettings::slayerTimerShowCycle))
             timer.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerTimerHudScale, 0.5, 3.0))
-            timer.sub.add(SliderIntSetting("Background Opacity %", "0 = no background panel", FishSettings::slayerTimerOpacity, 0, 100))
             slayer.features.add(timer)
 
             val phases = Feature("Boss Phases", FishSettings::slayerPhaseEnabled)
