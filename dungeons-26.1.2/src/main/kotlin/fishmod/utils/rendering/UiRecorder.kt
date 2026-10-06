@@ -86,8 +86,9 @@ object UiRecorder {
             OP_FILL_RECT_HGRADIENT -> UiRenderer.shape(x, y, w, h, 0f, 0f, 0f, 0f, ints[ib], ints[ib + 1], grad = 2f)
             OP_CHEVRON -> {
                 val c = ints[ib + 1]
-                if (ints[ib] != 0) UiRenderer.triangle(x, y - 2.5f * k, x + 7 * k, y - 2.5f * k, x + 3.5f * k, y + 3 * k, c)
-                else UiRenderer.triangle(x, y - 3.5f * k, x, y + 3.5f * k, x + 5 * k, y, c)
+                val lw = 1.5f * k
+                if (ints[ib] != 0) { UiRenderer.line(x + 0.5f * k, y - 1.5f * k, x + 3.5f * k, y + 1.5f * k, lw, c); UiRenderer.line(x + 3.5f * k, y + 1.5f * k, x + 6.5f * k, y - 1.5f * k, lw, c) }
+                else { UiRenderer.line(x + 1.5f * k, y - 3f * k, x + 4.5f * k, y, lw, c); UiRenderer.line(x + 4.5f * k, y, x + 1.5f * k, y + 3f * k, lw, c) }
             }
             OP_POP_OUT_ICON -> {
                 val c = ints[ib]; val sz = w; val lw = 1.4f * k
