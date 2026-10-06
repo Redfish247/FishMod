@@ -28,7 +28,6 @@ object FishSettings {
     @ConfigValue @JvmField var soulflowHudY: Int = 60
 
     @ConfigValue @JvmField var fmColumnOrder: String = ""
-    @ConfigValue @JvmField var fmFoldedColumns: String = ""
 
     @ConfigValue @JvmField var fmAnimations: Boolean = true
 
