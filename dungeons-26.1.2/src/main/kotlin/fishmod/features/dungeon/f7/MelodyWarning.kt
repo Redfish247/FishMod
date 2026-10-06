@@ -85,7 +85,8 @@ object MelodyWarning {
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
         FishDiag.check(!name.isNullOrEmpty(), "MelodyWarning.3") { "melody warning shown with no player name" }
         val dungeonClass = DungeonClass.getClass(name)
-        val num = minOf(furthestProgress / 25, 3)
+        val lanes = if (furthestProgress % 25 == 0) 4 else 3 // alpha: 33/67%
+        val num = minOf(Math.round(furthestProgress * lanes / 100.0).toInt(), lanes - 1)
 
         var color = Constants.DARK_PURPLE
         if (Dungeons.useClassColors) {
@@ -94,7 +95,7 @@ object MelodyWarning {
 
         val nameText = Component.literal(dungeonClass?.name ?: name ?: "Someone")
             .setStyle(Style.EMPTY.withColor(color).withBold(true))
-        val infoText = Component.literal(" §r§dhas melody! $num/4").setStyle(Style.EMPTY)
+        val infoText = Component.literal(" §r§dhas melody! $num/$lanes").setStyle(Style.EMPTY)
 
         val text = nameText.append(infoText)
 

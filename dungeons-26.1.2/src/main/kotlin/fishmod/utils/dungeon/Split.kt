@@ -110,11 +110,11 @@ class Split(
 
     fun parseMessage(string: String) {
         if (!started) {
-            if (startString == string) {
+            if (DialogueCompat.matches(startString, string)) {
                 start()
             }
         } else if (!ended) {
-            if (endString == string) {
+            if (DialogueCompat.matches(endString, string)) {
                 end()
             }
         }
