@@ -1601,6 +1601,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             solvers.features.add(f)
         }
         run {
+            val f = Feature("Storm LB Waypoint", FishSettings::stormLbWaypointEnabled)
+            f.sub.add(ColorPickerSetting("Color", "", FishSettings::stormLbWaypointColor))
+            floor7.features.add(f)
+        }
+        run {
             val f = Feature("Wither Highlight", FishSettings::witherEspEnabled)
             f.sub.add(ColorPickerSetting("Maxor", "", FishSettings::witherEspMaxorColor))
             f.sub.add(ColorPickerSetting("Storm", "", FishSettings::witherEspStormColor))
