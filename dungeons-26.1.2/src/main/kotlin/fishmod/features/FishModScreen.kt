@@ -2497,8 +2497,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         } finally { UiRecorder.popScissor() }
     }
 
-    private fun stackListTop(): Int = cyTop() + 4
-    private fun stackListBot(): Int = cyBot() - 6
+    private fun stackListTop(): Int = cyTop() - HEADER_H
+    private fun stackListBot(): Int = cyBot()
     private fun stackPitch(): Int = STACK_TAB_H + ROW_GAP
     private fun stackMaxScroll(): Int = Math.max(0, columns.size * stackPitch() - ROW_GAP - (stackListBot() - stackListTop()))
     private fun stackX0(): Int = left() + MARGIN
@@ -2506,7 +2506,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun stackTabLabel(c: Column): String = if (c.isGroup()) c.name + " +" + (c.children.size - 1) else c.name
 
     private fun stackTabAt(mx: Int, my: Int): Column? {
-        if (mx < stackX0() + 6 || mx > stackX0() + STACK_W - 6) return null
+        if (mx < stackX0() || mx > stackX0() + STACK_W) return null
         if (my < stackListTop() || my > stackListBot()) return null
         for (i in columns.indices) {
             val y = stackTabY(i)
@@ -2518,18 +2518,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun renderStack(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         stackScroll = Mth.clamp(stackScroll, 0, stackMaxScroll())
         val x0 = stackX0()
-        val hy = cyTop() - HEADER_H
-        val bot = cyBot()
-        UiRecorder.dropShadow(x0.toFloat(), hy.toFloat(), STACK_W.toFloat(), (bot - hy).toFloat(), CARD_RADIUS.toFloat(), 10f, 0x60000000)
-        roundedRect(ctx, x0, hy, STACK_W, bot - hy, CARD_RADIUS, currentCardBg())
-        UiRecorder.fillRectTopRounded(x0.toFloat(), hy.toFloat(), STACK_W.toFloat(), HEADER_STRIP_H.toFloat(), CARD_RADIUS.toFloat(), ScreenTheme.ACCENT)
-        sst(ctx, this.font, "Columns", x0 + 10, hy + HEADER_STRIP_H + 6, TEXT_COLOR, 1f)
-
         val lt = stackListTop()
         val lb = stackListBot()
         val ms = stackMaxScroll()
-        val tx0 = x0 + 6
-        val tw = STACK_W - 12 - (if (ms > 0) 4 else 0)
+        val tx0 = x0
+        val tw = STACK_W - (if (ms > 0) 6 else 0)
         val dragging = stackDragCol
         UiRecorder.pushScissor(x0.toFloat(), lt.toFloat(), STACK_W.toFloat(), (lb - lt).toFloat())
         try {
@@ -2545,7 +2538,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val vp = lb - lt
             val barH = Math.max(20, (vp.toLong() * vp / (vp + ms)).toInt())
             val barY = lt + ((vp - barH).toLong() * stackScroll / ms).toInt()
-            val trackX = x0 + STACK_W - 5
+            val trackX = x0 + STACK_W - 2
             UiRecorder.fillRect(trackX.toFloat(), lt.toFloat(), 2f, vp.toFloat(), 0xFF141A20.toInt())
             UiRecorder.fillRect(trackX.toFloat(), barY.toFloat(), 2f, barH.toFloat(), ACCENT)
         }
@@ -2553,12 +2546,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun drawStackTab(ctx: GuiGraphicsExtractor, c: Column, x: Int, y: Int, w: Int, mouseX: Int, mouseY: Int) {
         val open = !isFolded(c)
+        UiRecorder.dropShadow(x.toFloat(), y.toFloat(), w.toFloat(), STACK_TAB_H.toFloat(), 4f, 6f, 0x50000000)
+        roundedRect(ctx, x, y, w, STACK_TAB_H, 4, currentCardBg())
         roundedRect(ctx, x, y, w, STACK_TAB_H, 4, if (open) ROW_ENABLED else ROW_BUTTON)
         if (stackDragCol == null && mouseX in x..x + w && mouseY >= y && mouseY < y + STACK_TAB_H) roundedRect(ctx, x, y, w, STACK_TAB_H, 4, ROW_HOVER)
         val cy = y + STACK_TAB_H / 2
         if (open) disc(ctx, x + 9, cy, 3, ACCENT)
         else roundedRectRing(ctx, x + 6, cy - 3, 6, 6, 3, 1, 0, SUBTEXT_COLOR)
-        sst(ctx, this.font, ellipsize(stackTabLabel(c), w - 34), x + 17, y + (STACK_TAB_H - 8) / 2, if (open) TEXT_COLOR else SUBTEXT_COLOR, 0.9f)
+        sst(ctx, this.font, ellipsize(stackTabLabel(c), w - 34), x + 17, y + (STACK_TAB_H - 9) / 2, if (open) TEXT_COLOR else SUBTEXT_COLOR, 1f)
         drawChevron(ctx, x + w - 12, cy, open, if (open) TEXT_COLOR else CHEVRON_COLOR)
     }
 
@@ -4144,8 +4139,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val HEADER_STRIP_H = 3
         private const val MIN_COLUMN_W = 172
         private const val MAX_COLUMN_W = 260
-        private const val STACK_W = 150
-        private const val STACK_TAB_H = 18
+        private const val STACK_W = 160
+        private const val STACK_TAB_H = 22
         private const val DRAG_THRESHOLD = 4
 
         private const val ROW_H = 22
