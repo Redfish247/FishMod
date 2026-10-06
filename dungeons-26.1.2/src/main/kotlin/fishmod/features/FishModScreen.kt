@@ -80,6 +80,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private val stackAnimY = HashMap<String, Double>()
     // unfold drop start time per column name
     private val unfoldStart = HashMap<String, Long>()
+    // stack groups showing their children, keyed by host name
+    private val expandedGroups = HashSet<String>()
 
     private val screenOpenTime = System.currentTimeMillis()
     private var closing = false
@@ -2434,7 +2436,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun renderHint(ctx: GuiGraphicsExtractor) {
         // Keycap controls box, same style as the HUD editor's
-        val rows = arrayOf("Click" to "Fold a column", "Drag" to "Move a column", "Right-drag" to "Merge onto another")
+        val rows = arrayOf("Click" to "Fold a column", "Drag" to "Move a column", "Right-drag" to "Merge onto another", "Right-click" to "Show merged tabs")
         val ts = 10f
         val ks = 9.5f
         val rowH = 14.5f
@@ -2523,22 +2525,54 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     private fun stackListTop(): Int = cyTop() - HEADER_H
     private fun stackListBot(): Int = cyBot()
     private fun stackPitch(): Int = STACK_TAB_H + ROW_GAP
-    private fun stackMaxScroll(): Int = Math.max(0, columns.size * stackPitch() - ROW_GAP - (stackListBot() - stackListTop()))
+    private fun isStackExpanded(c: Column): Boolean = c.isGroup() && c.name in expandedGroups
+    private fun stackRows(c: Column): Int = 1 + (if (isStackExpanded(c)) c.children.size else 0)
+    private fun stackMaxScroll(): Int = Math.max(0, columns.sumOf { stackRows(it) } * stackPitch() - ROW_GAP - (stackListBot() - stackListTop()))
     private fun stackX0(): Int = left() + MARGIN
-    private fun stackTabY(i: Int): Int = stackListTop() + i * stackPitch() - stackScroll
-    private fun stackDropIndex(): Int =
-        ((stackDragY - stackGrabDY + stackPitch() / 2 - stackListTop() + stackScroll) / stackPitch()).coerceIn(0, columns.size - 1)
+    private fun stackRowY(row: Int): Int = stackListTop() + row * stackPitch() - stackScroll
+    private fun stackTabY(i: Int): Int {
+        var row = 0
+        for (k in 0 until i) row += stackRows(columns[k])
+        return stackRowY(row)
+    }
+    // drop index counts top-level columns, skipping the dragged one
+    private fun stackDropIndex(): Int {
+        val r = (stackDragY - stackGrabDY + stackPitch() / 2 - stackListTop() + stackScroll) / stackPitch()
+        var acc = 0
+        var idx = 0
+        for (c in columns) {
+            if (c === stackDragCol) continue
+            if (r <= acc) break
+            acc += stackRows(c)
+            idx++
+        }
+        return idx.coerceIn(0, columns.size - 1)
+    }
 
     private fun stackTabLabel(c: Column): String = if (c.isGroup()) c.name + " +" + (c.children.size - 1) else c.name
 
-    private fun stackTabAt(mx: Int, my: Int): Column? {
+    // (group/column, child index or -1)
+    private fun stackHitAt(mx: Int, my: Int): Pair<Column, Int>? {
         if (mx < stackX0() || mx > stackX0() + STACK_W) return null
         if (my < stackListTop() || my > stackListBot()) return null
-        for (i in columns.indices) {
-            val y = stackTabY(i)
-            if (my >= y && my < y + STACK_TAB_H) return columns[i]
+        var row = 0
+        for (c in columns) {
+            for (k in -1 until stackRows(c) - 1) {
+                val y = stackRowY(row++)
+                if (my >= y && my < y + STACK_TAB_H) return c to k
+            }
         }
         return null
+    }
+
+    private fun stackTabAt(mx: Int, my: Int): Column? = stackHitAt(mx, my)?.takeIf { it.second < 0 }?.first
+
+    private fun openGroupChild(g: Column, k: Int) {
+        g.activeChild = k.coerceIn(0, g.children.size - 1)
+        frameVisibleColumns = null
+        if (isFolded(g)) { toggleFold(g); return }
+        val idx = visibleColumns().indexOf(g)
+        if (idx >= 0) hScroll = Mth.clamp(idx * (columnWidth() + COLUMN_GUTTER), 0, maxHScroll())
     }
 
     private fun renderStack(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
@@ -2555,15 +2589,23 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val live = dragging != null && dragMoved
             val gap = if (live) stackDropIndex() else -1
             var slot = 0
-            for (c in columns) {
-                if (live && c === dragging) continue
-                if (slot == gap) slot++
-                val target = stackTabY(slot++).toDouble()
-                val cur = stackAnimY[c.name] ?: target
+            var idx = 0
+            fun ease(key: String, target: Double, from: Double = target): Int {
+                val cur = stackAnimY[key] ?: from
                 var ny = cur + (target - cur) * 0.35
                 if (Math.abs(target - ny) < 0.5) ny = target
-                stackAnimY[c.name] = ny
-                drawStackTab(ctx, c, tx0, Math.round(ny).toInt(), tw, mouseX, mouseY)
+                stackAnimY[key] = ny
+                return Math.round(ny).toInt()
+            }
+            for (c in columns) {
+                if (live && c === dragging) continue
+                if (idx++ == gap) slot++
+                val gy = ease(c.name, stackRowY(slot++).toDouble())
+                drawStackTab(ctx, c, tx0, gy, tw, mouseX, mouseY)
+                if (isStackExpanded(c)) for ((k, ch) in c.children.withIndex()) {
+                    val sy = ease(c.name + "\u0000" + ch.name, stackRowY(slot++).toDouble(), gy.toDouble())
+                    drawStackSubTab(ctx, ch, k == c.activeChild && !isFolded(c), tx0 + STACK_SUB_INDENT, sy, tw - STACK_SUB_INDENT, mouseX, mouseY)
+                }
             }
             if (live) {
                 val dy = stackDragY - stackGrabDY
@@ -2592,7 +2634,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (open) disc(ctx, x + 9, cy, 3, ACCENT)
         else roundedRectRing(ctx, x + 6, cy - 3, 6, 6, 3, 1, 0, SUBTEXT_COLOR)
         sst(ctx, this.font, ellipsize(stackTabLabel(c), w - 38), x + 18, y + (STACK_TAB_H - 10) / 2, if (open) TEXT_COLOR else SUBTEXT_COLOR, 1.1f)
-        drawChevron(ctx, x + w - 12, cy, open, if (open) TEXT_COLOR else CHEVRON_COLOR)
+        drawChevron(ctx, x + w - 12, cy, if (c.isGroup()) isStackExpanded(c) else open, if (open) TEXT_COLOR else CHEVRON_COLOR)
+    }
+
+    private fun drawStackSubTab(ctx: GuiGraphicsExtractor, c: Column, active: Boolean, x: Int, y: Int, w: Int, mouseX: Int, mouseY: Int) {
+        roundedRect(ctx, x, y, w, STACK_TAB_H, 4, currentCardBg())
+        roundedRect(ctx, x, y, w, STACK_TAB_H, 4, ROW_BUTTON)
+        if (stackDragCol == null && mouseX in x..x + w && mouseY >= y && mouseY < y + STACK_TAB_H) roundedRect(ctx, x, y, w, STACK_TAB_H, 4, ROW_HOVER)
+        val cy = y + STACK_TAB_H / 2
+        if (active) disc(ctx, x + 9, cy, 3, ACCENT)
+        else roundedRectRing(ctx, x + 6, cy - 3, 6, 6, 3, 1, 0, SUBTEXT_COLOR)
+        sst(ctx, this.font, ellipsize(c.name, w - 24), x + 18, y + (STACK_TAB_H - 10) / 2, if (active) TEXT_COLOR else SUBTEXT_COLOR, 1.0f)
     }
 
     private fun renderOneColumn(ctx: GuiGraphicsExtractor, c: Column, x0: Int, colW: Int, top: Int, bot: Int, mouseX: Int, mouseY: Int, yOffset: Int = 0) {
@@ -2763,7 +2815,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val headerTop = cyTop() - HEADER_H
 
         if (mx >= stackX0() && mx <= stackX0() + STACK_W && my >= headerTop && my <= cyBot()) {
-            val tab = stackTabAt(mx, my)
+            val hit = stackHitAt(mx, my)
+            if (hit != null && hit.second >= 0) {
+                if (btn == 0) openGroupChild(hit.first, hit.second)
+                return true
+            }
+            val tab = hit?.first
+            if (tab != null && btn == 1 && tab.isGroup()) {
+                if (!expandedGroups.remove(tab.name)) expandedGroups.add(tab.name)
+                stackScroll = Mth.clamp(stackScroll, 0, stackMaxScroll())
+                return true
+            }
             if (tab != null && btn == 0) {
                 stackDragCol = tab
                 stackGrabDY = my - stackTabY(columns.indexOf(tab))
@@ -4179,6 +4241,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val MAX_COLUMN_W = 260
         private const val STACK_W = 176
         private const val STACK_TAB_H = 24
+        private const val STACK_SUB_INDENT = 10
         private const val DRAG_THRESHOLD = 4
 
         private const val ROW_H = 22
