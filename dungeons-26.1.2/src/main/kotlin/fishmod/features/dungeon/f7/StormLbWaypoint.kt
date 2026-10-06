@@ -69,11 +69,10 @@ object StormLbWaypoint {
 
         RenderUtils.gizmoBox(AABB(s.x - 0.3, s.y, s.z - 0.3, s.x + 0.3, s.y + 0.05, s.z + 0.3), color and 0x40FFFFFF, color, true)
 
-        // Aim only shows while standing on the pad; X/Y locked, Z follows the player.
+        // Fixed aim point; only shows while standing on the pad.
         val pos = player.getPosition(Minecraft.getInstance().deltaTracker.getGameTimeDeltaPartialTick(true))
         if (abs(pos.x - s.x) > PAD_RADIUS || abs(pos.z - s.z) > PAD_RADIUS || abs(pos.y - s.y) > 1.5) return
-        val pz = pos.z
-        val aim = Vec3(s.aim.x, s.aim.y, s.aim.z - s.z + pz)
+        val aim = s.aim
         RenderUtils.gizmoBox(AABB(aim.x - 0.1, aim.y - 0.1, aim.z - 0.1, aim.x + 0.1, aim.y + 0.1, aim.z + 0.1), color and 0x60FFFFFF, color, true)
     }
 }
