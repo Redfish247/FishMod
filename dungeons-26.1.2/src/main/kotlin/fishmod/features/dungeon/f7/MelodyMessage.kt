@@ -39,10 +39,9 @@ object MelodyMessage {
         }
 
         if (open && FishSettings.melodyMessageProgress && melody != null) {
+            val lanes = melody.laneRows
             val pct = when (melody.greenClayRow) {
-                2 -> 25
-                3 -> 50
-                4 -> 75
+                in 2..lanes -> Math.round((melody.greenClayRow - 1) * 100.0 / lanes).toInt()
                 else -> {
                     FishDiag.check(melody.greenClayRow in -1..5, "MelodyMessage.2") { "melody green clay row out of range: ${melody.greenClayRow}" }
                     -1

@@ -272,7 +272,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Dungeon Breaker" to s("§cCharges: §e17§7/§e20§c⸕"),
             "Spirit Bear" to s("§cBear: §f18/25"),
             "Session Stats" to s("§7Runs: §a14", "§7Deaths: §c3", "§7R/hr: §e9.2", "§7Time: §f1h 31m", lineH = 12),
-            "Simon Says" to s("§bSimon Says: §a3§7/5"),
+            "Simon Says" to s("§bSimon Says: §a3§7/4"),
             "Party Finder List" to s(
                 "§e§lParty Finder §7(§f7§7)",
                 "§8· §fTechnoFish  §d§lM7 §8[§e4§7/5§8]  §7lv §f45  §8· §7wPB §fSlowGuy §f5:48",

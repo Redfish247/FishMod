@@ -198,11 +198,14 @@ object WitherDragons {
     }
 
     private fun renderHudInner(ctx: GuiGraphicsExtractor) {
-        val d = priorityDragon
-        if (d == WitherDragon.NONE || d.state != WitherDragonState.SPAWNING || d.timeToSpawn <= 0) return
+        // Alpha: first two spawns overlap, so show every spawning dragon (priority first).
+        val prio = priorityDragon
+        val list = WitherDragon.real.filter { it.state == WitherDragonState.SPAWNING && it.timeToSpawn > 0 }
+            .sortedBy { if (it == prio) 0 else 1 }
+        if (list.isEmpty()) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
-        val txt = "§${d.colorCode}${timerText(d.timeToSpawn)}"
+        val txt = list.joinToString(" §7| ") { "§${it.colorCode}${timerText(it.timeToSpawn)}" }
         val sc = FishSettings.witherDragonsHudScale.toFloat()
         val w = mc.font.width(txt) * sc
         val x = if (FishSettings.witherDragonsHudX < 0) (mc.window.guiScaledWidth - w) / 2f else FishSettings.witherDragonsHudX.toFloat()
