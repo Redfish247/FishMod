@@ -95,8 +95,8 @@ object M7Relics {
             if (e !is ArmorStand) continue
             if (!e.getItemBySlot(EquipmentSlot.HEAD).hoverName.string.contains("Corrupted")) continue
             spawnEndMs = 0L
+            Phase.onRelicSpawn()
             if (p5StartMs == 0L) { p5StartMs = System.currentTimeMillis(); myRelic = null; pickers.clear(); placed.clear() }
-            return
         }
     }
 
