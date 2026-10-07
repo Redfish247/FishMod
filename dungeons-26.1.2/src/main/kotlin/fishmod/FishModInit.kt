@@ -483,6 +483,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.94", "fishmod.features.dungeon.f7.WitherESP.init() failed") { fishmod.features.dungeon.f7.WitherESP.init() }
         FishDiag.guard("FishModInit.StormLb", "StormLbWaypoint.init() failed") { fishmod.features.dungeon.f7.StormLbWaypoint.init() }
         FishDiag.guard("FishModInit.95", "fishmod.features.dungeon.f7.M7Relics.init() failed") { fishmod.features.dungeon.f7.M7Relics.init() }
+        FishDiag.guard("FishModInit.95b", "NecronTrace.init() failed") { fishmod.utils.dungeon.NecronTrace.init() }
         FishDiag.guard("FishModInit.96", "fishmod.features.dungeon.puzzles.PuzzleSolvers.init() failed") { fishmod.features.dungeon.puzzles.PuzzleSolvers.init() }
         FishDiag.guard("FishModInit.97", "fishmod.features.dungeon.SimonSaysTracker.init() failed") { fishmod.features.dungeon.SimonSaysTracker.init() }
         FishDiag.guard("FishModInit.98", "fishmod.features.chat.ChatRuleHandler.init() failed") { fishmod.features.chat.ChatRuleHandler.init() }
