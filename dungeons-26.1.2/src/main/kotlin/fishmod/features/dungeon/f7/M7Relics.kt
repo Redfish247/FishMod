@@ -34,6 +34,9 @@ object M7Relics {
 
     private const val NAME = "Relic Spawn Timer"
     private const val SPAWN_TICKS = 42
+    private const val NECRON_MAX_HP = 1_400_000_000f
+    private const val LOW_HP = 70_000_000f
+    private const val LOW_HP_TICKS = 140
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private const val RESTART_GUARD_MS = 30_000L
 
@@ -86,18 +89,19 @@ object M7Relics {
         }
     }
 
-    // Alpha has no death line: start the countdown when Necron's wither hits 0 HP.
+    // Alpha has no death line: start a 7s countdown once Necron's boss bar reaches 70M (of 1.4B).
     private fun checkNecronDeath() {
         if (p5StartMs != 0L || Phase.getFloor() != "M7" || Phase.getPhase() != 8) return
-        val level = Minecraft.getInstance().level ?: return
-        val dead = level.entitiesForRendering().any {
-            it is net.minecraft.world.entity.boss.wither.WitherBoss && !it.isInvisible && it.boundingBox.ysize >= 2.0 && (it.isDeadOrDying || it.health <= 0f)
+        val bars = (Minecraft.getInstance().gui.bossOverlay as fishmod.mixin.accessors.BossBarHudAccessor).bossBars ?: return
+        val low = bars.values.any {
+            COLOR.replace(it.name.string, "").trim() == "Necron" &&
+                (it as fishmod.mixin.accessors.LerpingBossEventAccessor).targetPercent * NECRON_MAX_HP <= LOW_HP
         }
-        if (!dead) return
+        if (!low) return
         p5StartMs = System.currentTimeMillis()
         myRelic = null
         pickers.clear(); placed.clear()
-        if (Floor7.enableRelicStartTimer) spawnEndMs = System.currentTimeMillis() + SPAWN_TICKS * 50L
+        if (Floor7.enableRelicStartTimer) spawnEndMs = System.currentTimeMillis() + LOW_HP_TICKS * 50L
     }
 
     // Relic stands showing up = spawned: end the countdown, and start P5 tracking if no line was seen.
