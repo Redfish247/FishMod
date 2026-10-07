@@ -78,12 +78,26 @@ object M7Relics {
         }
         Events.ON_WORLD_CHANGE.register { spawnEndMs = 0L; p5StartMs = 0L; myRelic = null; pickers.clear(); placed.clear(); false }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register {
-            try { checkSpawned(); checkPlaced(); checkAllPlaced() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
+            try { checkNecronDeath(); checkSpawned(); checkPlaced(); checkAllPlaced() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
         }
 
         RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
             try { renderBox(m, vc) } catch (e: Exception) { FishDiag.fail("M7Relics.4", "relic cauldron render threw", e) }
         }
+    }
+
+    // Alpha has no death line: start the countdown when Necron's wither hits 0 HP.
+    private fun checkNecronDeath() {
+        if (p5StartMs != 0L || Phase.getFloor() != "M7" || Phase.getPhase() != 8) return
+        val level = Minecraft.getInstance().level ?: return
+        val dead = level.entitiesForRendering().any {
+            it is net.minecraft.world.entity.boss.wither.WitherBoss && !it.isInvisible && it.boundingBox.ysize >= 2.0 && (it.isDeadOrDying || it.health <= 0f)
+        }
+        if (!dead) return
+        p5StartMs = System.currentTimeMillis()
+        myRelic = null
+        pickers.clear(); placed.clear()
+        if (Floor7.enableRelicStartTimer) spawnEndMs = System.currentTimeMillis() + SPAWN_TICKS * 50L
     }
 
     // Relic stands showing up = spawned: end the countdown, and start P5 tracking if no line was seen.
