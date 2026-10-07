@@ -84,6 +84,19 @@ object Phase {
     }
 
 
+    private var sawNecronBar = false
+
+    // Necron dies when his boss bar empties or vanishes; relics spawn ~6s later.
+    @JvmStatic
+    fun checkNecronBar() {
+        if (!awaitingNecronDeath()) { sawNecronBar = false; return }
+        val bars = (net.minecraft.client.Minecraft.getInstance().gui.bossOverlay as fishmod.mixin.accessors.BossBarHudAccessor).bossBars ?: return
+        val bar = bars.values.firstOrNull { it.name.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim() == "Necron" }
+        val pct = (bar as? fishmod.mixin.accessors.LerpingBossEventAccessor)?.targetPercent
+        if (pct != null && pct > 0f) { sawNecronBar = true; return }
+        if (sawNecronBar) { sawNecronBar = false; fireP5Start("necron bar empty") }
+    }
+
     private fun awaitingNecronDeath() = inFloor7 && currentPhase == 8 && currentSplits?.getOrNull(9)?.name == "Dragons"
 
     private fun fireP5Start(reason: String) {
