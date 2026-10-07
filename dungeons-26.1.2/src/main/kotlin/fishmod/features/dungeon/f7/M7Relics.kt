@@ -36,7 +36,7 @@ object M7Relics {
     private const val SPAWN_TICKS = 42
     private const val NECRON_MAX_HP = 1_400_000_000f
     private const val LOW_HP = 70_000_000f
-    private const val LOW_HP_TICKS = 140
+    private const val LOW_HP_TICKS = 114
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private const val RESTART_GUARD_MS = 30_000L
 
@@ -90,7 +90,7 @@ object M7Relics {
         }
     }
 
-    // Alpha has no death line: start a 7s countdown once Necron's boss bar reaches 70M (of 1.4B).
+    // Alpha has no death line: start a 5.7s countdown once Necron's boss bar reaches 70M (of 1.4B).
     private fun checkNecronDeath() {
         if (p5StartMs != 0L || Phase.getFloor() != "M7" || Phase.getPhase() != 8) return
         val bars = (Minecraft.getInstance().gui.bossOverlay as fishmod.mixin.accessors.BossBarHudAccessor).bossBars ?: return
