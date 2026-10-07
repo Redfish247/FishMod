@@ -18,6 +18,7 @@ object MageBeam {
 
     private val beams = ArrayList<Beam>()
     private var tick = 0
+    private const val MAX_BEAMS = 256
 
     @JvmStatic
     fun init() {
@@ -41,7 +42,8 @@ object MageBeam {
                 } else {
                     beams.add(Beam(arrayListOf(p), tick))
                 }
-                if (beams.size > 256) FishDiag.fail("MageBeam.1", "mage beam list leaking: ${beams.size} beams")
+                // Firework bursts spawn hundreds of stray one-point beams; keep the newest.
+                if (beams.size > MAX_BEAMS) beams.subList(0, beams.size - MAX_BEAMS).clear()
             } catch (e: Exception) {
                 FishDiag.fail("MageBeam.2", "mage beam particle tracking failed (${beams.size} beams)", e)
             }
