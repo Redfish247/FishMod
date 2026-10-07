@@ -43,6 +43,7 @@ object M7Relics {
     @Volatile private var spawnEndMs = 0L
     private val PICKUP = Pattern.compile("^(\\w{3,16}) picked the Corrupted (\\w{3,6}) Relic!$")
     private var p5StartMs = 0L
+    private var sawHighBar = false
     private var myRelic: Relic? = null
     private val pickers = HashMap<Relic, String>()
     private val placed = LinkedHashMap<Relic, Double>()
@@ -79,7 +80,7 @@ object M7Relics {
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { spawnEndMs = 0L; p5StartMs = 0L; myRelic = null; pickers.clear(); placed.clear(); false }
+        Events.ON_WORLD_CHANGE.register { sawHighBar = false; spawnEndMs = 0L; p5StartMs = 0L; myRelic = null; pickers.clear(); placed.clear(); false }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register {
             try { Phase.checkNecronBar(); checkNecronDeath(); checkSpawned(); checkPlaced(); checkAllPlaced() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
         }
@@ -93,11 +94,12 @@ object M7Relics {
     private fun checkNecronDeath() {
         if (p5StartMs != 0L || Phase.getFloor() != "M7" || Phase.getPhase() != 8) return
         val bars = (Minecraft.getInstance().gui.bossOverlay as fishmod.mixin.accessors.BossBarHudAccessor).bossBars ?: return
-        val low = bars.values.any {
-            COLOR.replace(it.name.string, "").trim() == "Necron" &&
-                (it as fishmod.mixin.accessors.LerpingBossEventAccessor).targetPercent * NECRON_MAX_HP <= LOW_HP
-        }
-        if (!low) return
+        val pct = bars.values.firstOrNull { COLOR.replace(it.name.string, "").trim() == "Necron" }
+            ?.let { (it as fishmod.mixin.accessors.LerpingBossEventAccessor).targetPercent } ?: return
+        // Bar reads low as the phase opens; only count a drop after seeing it above 70M.
+        if (pct * NECRON_MAX_HP > LOW_HP) { sawHighBar = true; return }
+        if (!sawHighBar) return
+        sawHighBar = false
         p5StartMs = System.currentTimeMillis()
         myRelic = null
         pickers.clear(); placed.clear()
@@ -183,7 +185,7 @@ object M7Relics {
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!Floor7.enableRelicStartTimer) return
         val left = spawnEndMs - System.currentTimeMillis()
-        FishDiag.check(left <= SPAWN_TICKS * 50L + 1000L, "M7Relics.7") { "relic spawn timer too far in future: ${left}ms" }
+        FishDiag.check(left <= LOW_HP_TICKS * 50L + 1000L, "M7Relics.7") { "relic spawn timer too far in future: ${left}ms" }
         if (left <= 0L) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.options.hideGui) return
