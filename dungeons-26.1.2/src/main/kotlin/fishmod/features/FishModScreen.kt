@@ -1387,7 +1387,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("Recipe Viewer", FishSettings::recipeViewer)
             f.sub.add(SubcategoryHeader("Hold Shift on an item to open its NEU recipe"))
             f.sub.add(ToggleSetting("Enabled", "", FishSettings::recipeViewer))
-            f.sub.add(ToggleSetting("Show Hint Line", "Adds 'Hold Shift for recipe' to tooltips", FishSettings::recipeViewerHint))
             f.sub.add(SliderIntSetting("Hold Time (ms)", "", FishSettings::recipeViewerHoldTime, 250, 5000, 50))
             hud.features.add(f)
         }
