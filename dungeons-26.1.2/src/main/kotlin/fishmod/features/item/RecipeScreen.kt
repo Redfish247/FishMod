@@ -201,6 +201,7 @@ class RecipeScreen(startId: String, private val parent: Screen?) : Screen(Compon
 
         super.extractRenderState(ctx, rawX, rawY, delta)
 
+        // Drawn on the overlay so it sits above the overlay's own text
         slots().firstOrNull { it.id != null && inside(mx, my, it.x, it.y, it.size, it.size) }?.let { s ->
             val sid = s.id!!
             val lines = ArrayList<Component>()
@@ -208,7 +209,7 @@ class RecipeScreen(startId: String, private val parent: Screen?) : Screen(Compon
             RecipeViewer.lore(sid).forEach { lines.add(Component.literal(it)) }
             if (s.count > 1) lines.add(Component.literal("§8Amount: ${"%,d".format(s.count)}"))
             if (sid != id && hasPage(sid)) lines.add(Component.literal("§eClick to view"))
-            ctx.setComponentTooltipForNextFrame(font, lines, rawX, rawY)
+            ScreenTheme.nItemTooltip(lines, mx, my, vw(), vh(), paintScale = UiScale.factor())
         }
     }
 
