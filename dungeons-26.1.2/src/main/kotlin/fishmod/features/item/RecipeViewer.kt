@@ -31,6 +31,9 @@ object RecipeViewer {
 
     const val COIN = "SKYBLOCK_COIN"
     private val TEXTURE_RE = Regex("Value:\\\\?\"([A-Za-z0-9+/=]+)\\\\?\"")
+    private val MODEL_RE = Regex("ItemModel:\"([a-z0-9_.:/-]+)\"")
+    private val COLOR_RE = Regex("[{,]color:([0-9]+)")
+    private val MISSING_MODEL = Identifier.fromNamespaceAndPath("fishmod", "definitely_missing_model")
     private val GRID_KEYS = listOf("A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3")
     private val LAST_PHASE = Identifier.fromNamespaceAndPath("fishmod", "recipe_viewer_last")
 
@@ -162,16 +165,36 @@ object RecipeViewer {
         if (id == COIN) return ItemStack(Items.GOLD_NUGGET)
         val o = NeuRepo.get(id)
         val itemId = o?.get("itemid")?.asString ?: ""
-        val texture = o?.get("nbttag")?.asString?.let { TEXTURE_RE.find(it)?.groupValues?.get(1) }
+        val nbt = o?.get("nbttag")?.asString ?: ""
+        val texture = TEXTURE_RE.find(nbt)?.groupValues?.get(1)
         val stack = when {
             itemId == "minecraft:skull" && texture != null -> head(id, texture)
-            else -> LootIcons.icon(id)?.copy()
-                ?: BuiltInRegistries.ITEM.getOptional(Identifier.tryParse(itemId) ?: Identifier.withDefaultNamespace("paper")).map { ItemStack(it) }.orElse(ItemStack(Items.PAPER))
+            else -> BuiltInRegistries.ITEM.getOptional(Identifier.tryParse(itemId) ?: Identifier.withDefaultNamespace("paper"))
+                .filter { it != Items.AIR }.map { ItemStack(it) }.orElse(null)
+                ?: LootIcons.icon(id)?.copy() ?: ItemStack(Items.PAPER)
         }
+        // Hypixel's resource pack ships the real textures under these model ids
+        MODEL_RE.find(nbt)?.groupValues?.get(1)?.let(Identifier::tryParse)?.takeIf(::modelExists)?.let { stack.set(DataComponents.ITEM_MODEL, it) }
+        COLOR_RE.find(nbt)?.groupValues?.get(1)?.toIntOrNull()?.let { stack.set(DataComponents.DYED_COLOR, net.minecraft.world.item.component.DyedItemColor(it)) }
+        if (nbt.contains("ench:[")) stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
         val plain = Style.EMPTY.withItalic(false)
         stack.set(DataComponents.CUSTOM_NAME, Component.literal(displayName(id)).withStyle(plain))
         stack.set(DataComponents.LORE, ItemLore(lore(id).map { Component.literal(it).withStyle(plain) }))
         return stack
+    }
+
+    private fun modelExists(model: Identifier): Boolean {
+        val mm = Minecraft.getInstance().modelManager
+        return mm.getItemModel(model) !== mm.getItemModel(MISSING_MODEL)
+    }
+
+    fun clearCache() = stacks.clear()
+
+    // Text colour of a §-coded name's first colour code
+    fun colorOf(s: String): Int {
+        val i = s.indexOf('§')
+        if (i < 0 || i + 1 >= s.length) return 0xFFEDF1F5.toInt()
+        return net.minecraft.ChatFormatting.getByCode(s[i + 1])?.color?.let { it or 0xFF000000.toInt() } ?: 0xFFEDF1F5.toInt()
     }
 
     private fun head(id: String, texture: String): ItemStack {
