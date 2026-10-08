@@ -67,7 +67,7 @@ object RecipeViewer {
         if (!shift || id != holdId || now - lastSeen > 200) { holdId = id; holdStart = now; fired = false }
         lastSeen = now
         if (!shift) {
-            if (FishSettings.recipeViewerHint) lines.add(Component.literal("§8Hold Shift for recipe"))
+            lines.add(Component.literal("§7Recipe §8" + "|".repeat(20) + " §8[§eShift§8]"))
             return
         }
         val total = FishSettings.recipeViewerHoldTime.coerceAtLeast(100)

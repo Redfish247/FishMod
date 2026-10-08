@@ -499,7 +499,6 @@ object FishSettings {
 
     @ConfigValue @JvmField var itemTooltipPrices: Boolean = false
     @ConfigValue @JvmField var recipeViewer: Boolean = true
-    @ConfigValue @JvmField var recipeViewerHint: Boolean = false
     @ConfigValue @JvmField var recipeViewerHoldTime: Int = 1200
     @ConfigValue @JvmField var itemTooltipNpcSell: Boolean = false
 
