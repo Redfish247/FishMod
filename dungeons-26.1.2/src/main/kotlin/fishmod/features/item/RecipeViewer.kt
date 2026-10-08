@@ -67,7 +67,7 @@ object RecipeViewer {
             if (FishSettings.recipeViewerHint) lines.add(Component.literal("§8Hold Shift for recipe"))
             return
         }
-        val total = FishSettings.recipeViewerHoldMs.coerceAtLeast(100)
+        val total = FishSettings.recipeViewerHoldTime.coerceAtLeast(100)
         val p = ((now - holdStart).toFloat() / total).coerceIn(0f, 1f)
         val filled = (p * 20).toInt()
         lines.add(Component.literal("§7Recipe §a" + "|".repeat(filled) + "§8" + "|".repeat(20 - filled)))
