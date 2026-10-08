@@ -191,8 +191,11 @@ class RecipeScreen(startId: String, private val parent: Screen?) : Screen(Compon
             val ocx = px + W - PAD - 58f
             UiRecorder.text(on, ocx - UiRecorder.textWidth(on, 6f) / 2f, py + CARD_Y + CARD_H / 2f + OUT / 2f + 4, 6f, RecipeViewer.colorOf(outName))
             if (r.detail.isNotEmpty()) {
-                val d = fit(r.detail, W - PAD * 2, 7f)
-                UiRecorder.text(d, px + W / 2f - UiRecorder.textWidth(d, 7f) / 2f, (py + CARD_Y + CARD_H + 8).toFloat(), 7f, ScreenTheme.SUBTEXT_COLOR)
+                val prefix = when (r.kind) { "Shop" -> "Sold by "; "Forge" -> "Forge time: "; "Drop" -> "Dropped by "; else -> "" }
+                val d = fit(r.detail, W - PAD * 2 - UiRecorder.textWidth(prefix, 8f).toInt(), 8f)
+                val dx = px + W / 2f - (UiRecorder.textWidth(prefix, 8f) + UiRecorder.textWidth(d, 8f)) / 2f
+                UiRecorder.text(prefix, dx, (py + CARD_Y + CARD_H + 7).toFloat(), 8f, ScreenTheme.SUBTEXT_COLOR)
+                UiRecorder.textBold(d, dx + UiRecorder.textWidth(prefix, 8f), (py + CARD_Y + CARD_H + 7).toFloat(), 8f, ScreenTheme.TEXT_COLOR)
             }
         }
 
