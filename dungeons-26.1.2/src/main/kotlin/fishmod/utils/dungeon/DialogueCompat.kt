@@ -3,7 +3,6 @@ package fishmod.utils.dungeon
 // Alpha boss-line aliases; old lines still match exactly.
 object DialogueCompat {
     const val NECRON_END_OLD = "[BOSS] Necron: All this, for nothing..."
-    const val NECRON_END_NEW = "[BOSS] Necron: ARGH!"
     private const val WATCHER_OPEN_NEW = "[BOSS] The Watcher: Ah, we meet again."
     private val WATCHER_OPEN_OLD = setOf(
         "[BOSS] The Watcher: Congratulations, you made it through the Entrance.",
@@ -16,7 +15,8 @@ object DialogueCompat {
         "[BOSS] The Watcher: Things feel a little more roomy now, eh?",
     )
 
-    @JvmStatic fun isNecronEnd(s: String): Boolean = s == NECRON_END_OLD || s.startsWith(NECRON_END_NEW)
+    // Alpha "ARGH!" fires mid-fight (~7s before death), so only the old line counts; relic spawn / WK line cover alpha.
+    @JvmStatic fun isNecronEnd(s: String): Boolean = s == NECRON_END_OLD
 
     @JvmStatic fun isWatcherOpen(s: String): Boolean = s in WATCHER_OPEN_OLD || s.startsWith(WATCHER_OPEN_NEW)
 
@@ -24,7 +24,6 @@ object DialogueCompat {
     fun matches(expected: String, actual: String): Boolean = when {
         expected == actual -> true
         expected in WATCHER_OPEN_OLD -> actual.startsWith(WATCHER_OPEN_NEW)
-        expected == NECRON_END_OLD -> actual.startsWith(NECRON_END_NEW)
         else -> false
     }
 }
