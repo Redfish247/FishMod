@@ -46,7 +46,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
     private var lines: List<String> = emptyList()
     private var scroll = 0f
     private val open = Easing.Anim(180).apply { setTarget(true) }
-    private val targetUrl = UpdateManager.modrinthUrl ?: release.htmlUrl.ifEmpty { null }
+    private val targetUrl = release.htmlUrl.ifEmpty { null } ?: UpdateManager.modrinthUrl
     private val canInstall = UpdateManager.canInstall(release)
 
     override fun init() {
@@ -150,7 +150,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
         UiRecorder.textBold("Update", tx + UiRecorder.textWidthBold("FishMod", 9f) + UiRecorder.textWidth(" ", 9f) + 1f, (y + 13).toFloat(), 9f, fade(ScreenTheme.ACCENT, p))
         UiRecorder.text("v${UpdateManager.currentVersion}  →  v${release.version}", tx, (y + 26).toFloat(), 6.5f, fade(ScreenTheme.SUBTEXT_COLOR, p))
         if (targetUrl != null) {
-            val label = if (UpdateManager.modrinthUrl != null) "Modrinth" else "GitHub"
+            val label = "Modrinth"
             val lw = UiRecorder.textWidth(label, 6.5f)
             val lx = x + panelW - pad - lw - 10
             val col = fade(if (bodyHov) ScreenTheme.ACCENT_HOVER else ScreenTheme.SUBTEXT_COLOR, p)
@@ -182,7 +182,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
             UiRecorder.fillPillBar((x + pad + innerW - 5).toFloat(), thumbY, 2f, thumbH, fade(0x44FFFFFF, p))
         }
         if (bodyHov) {
-            val hint = "Click to open on ${if (UpdateManager.modrinthUrl != null) "Modrinth" else "GitHub"}"
+            val hint = "Click to open on Modrinth"
             val hw = UiRecorder.textWidth(hint, 6f)
             UiRecorder.fillRoundedRect(x + panelW / 2f - hw / 2f - 6f, ly + logH - 14f, hw + 12f, 11f, 5.5f, 0xCC000000.toInt())
             UiRecorder.text(hint, x + panelW / 2f - hw / 2f, ly + logH - 11.5f, 6f, ScreenTheme.ACCENT_HOVER)
@@ -242,7 +242,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
         return (a shl 24) or (color and 0x00FFFFFF)
     }
 
-    // GitHub markdown → plain lines; headings are tagged with \u0001 so they render bold.
+    // Modrinth markdown → plain lines; headings are tagged with \u0001 so they render bold.
     private fun changelog(body: String): List<String> {
         val out = ArrayList<String>()
         for (raw in body.replace("\r", "").lines()) {
@@ -252,6 +252,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
                 .replace(Regex("""\[([^\]]*)]\([^)]*\)"""), "$1")
                 .replace(Regex("<[^>]+>"), "")
                 .replace("**", "").replace("__", "").replace("`", "")
+            s = s.removePrefix(">").trim()
             val heading = s.startsWith("#")
             s = s.trimStart('#', ' ')
             s = s.replace(Regex("""^[-*+]\s+"""), "• ")
