@@ -89,9 +89,13 @@ object CompactTab {
     private fun sortNameOf(stripped: String): String =
         SORT_NAME.find(BRACKET_TAG.replace(stripped, " "))?.value?.lowercase() ?: ""
 
-    private fun nameColorOf(legacy: String): String? =
-        SOCIAL_COLOR_CODE.findAll(BRACKET_TAG.replace(legacy, "")).map { it.groupValues[1].lowercase() }
+    // colour in effect at the name itself, not trailing faction/emblem symbols
+    private fun nameColorOf(legacy: String): String? {
+        val s = BRACKET_TAG.replace(legacy, "")
+        val nameStart = SORT_NAME.find(SOCIAL_COLOR_CODE.replace(s) { " ".repeat(it.value.length) })?.range?.first ?: s.length
+        return SOCIAL_COLOR_CODE.findAll(s.substring(0, nameStart)).map { it.groupValues[1].lowercase() }
             .lastOrNull { it[0] in '0'..'9' || it[0] in 'a'..'f' }
+    }
 
     private fun legacyOf(c: net.minecraft.network.chat.Component?): String {
         if (c == null) return ""
