@@ -1384,6 +1384,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             hud.features.add(f)
         }
         run {
+            val f = Feature("Recipe Viewer", FishSettings::recipeViewer)
+            f.sub.add(SubcategoryHeader("Hold Shift on an item to open its NEU recipe"))
+            f.sub.add(ToggleSetting("Enabled", "", FishSettings::recipeViewer))
+            f.sub.add(SliderIntSetting("Hold Time (ms)", "", FishSettings::recipeViewerHoldTime, 250, 5000, 50))
+            hud.features.add(f)
+        }
+        run {
             val f = Feature("Auto BIN Price", FishSettings::auctionPriceAutofillEnabled)
             f.sub.add(SubcategoryHeader("Prefills the AH \"Create Auction\" price field with item value minus a discount"))
             f.sub.add(SliderIntSetting("Discount %", "", FishSettings::auctionAutofillPercent, 0, 50))
