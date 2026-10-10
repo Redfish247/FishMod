@@ -26,10 +26,19 @@ object PowderChests {
             false
         }
         Events.ON_WORLD_CHANGE.register { chests.clear(); false }
+        // Lockpicked chests linger until Hypixel clears the block
+        Events.ON_GAME_MESSAGE.register { text ->
+            if (chests.isNotEmpty() && text.string.contains("CHEST LOCKPICKED")) {
+                val pp = Minecraft.getInstance().player?.position()
+                if (pp != null) chests.keys.minByOrNull { Vec3.atCenterOf(it).distanceToSqr(pp) }?.let { chests.remove(it) }
+            }
+            false
+        }
         RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (!S.miningChests || chests.isEmpty()) return@register
             val now = System.currentTimeMillis()
-            chests.entries.removeIf { now - it.value > TTL_MS }
+            val lvl = Minecraft.getInstance().level
+            chests.entries.removeIf { now - it.value > TTL_MS || (lvl != null && !lvl.getBlockState(it.key).`is`(Blocks.CHEST)) }
             val start = Mining.lineStart()
             for (p in chests.keys) {
                 val b = AABB(p.x + 0.0625, p.y.toDouble(), p.z + 0.0625, p.x + 0.9375, p.y + 0.875, p.z + 0.9375)
