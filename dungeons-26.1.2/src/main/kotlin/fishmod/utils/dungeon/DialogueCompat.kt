@@ -24,7 +24,7 @@ object DialogueCompat {
     fun matches(expected: String, actual: String): Boolean = when {
         expected == actual -> true
         expected in WATCHER_OPEN_OLD -> actual.startsWith(WATCHER_OPEN_NEW)
-        expected == NECRON_END_OLD -> actual.startsWith(NECRON_END_NEW)
+        // ARGH! comes ~7s before Necron dies, so it does not end the split; relic spawn / WK line do
         else -> false
     }
 }

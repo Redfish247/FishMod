@@ -33,7 +33,8 @@ object M7Relics {
     }
 
     private const val NAME = "Relic Spawn Timer"
-    private const val SPAWN_TICKS = 42
+    // Necron death -> relic stands, measured by NoammAddons: 50-63t
+    private const val SPAWN_TICKS = 55
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private const val RESTART_GUARD_MS = 30_000L
 
@@ -61,8 +62,6 @@ object M7Relics {
                 p5StartMs = System.currentTimeMillis()
                 myRelic = null
                 pickers.clear(); placed.clear()
-                if (Floor7.enableRelicStartTimer)
-                    spawnEndMs = System.currentTimeMillis() + SPAWN_TICKS * 50L
             } else if (p5StartMs != 0L) {
                 val m = PICKUP.matcher(msg)
                 if (!m.find()) {
@@ -75,6 +74,9 @@ object M7Relics {
                 }
             }
             false
+        }
+        fishmod.utils.dungeon.NecronDeath.onDeath {
+            if (Floor7.enableRelicStartTimer && Phase.getFloor() == "M7") spawnEndMs = System.currentTimeMillis() + SPAWN_TICKS * 50L
         }
         Events.ON_WORLD_CHANGE.register { spawnEndMs = 0L; p5StartMs = 0L; myRelic = null; pickers.clear(); placed.clear(); false }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register {
