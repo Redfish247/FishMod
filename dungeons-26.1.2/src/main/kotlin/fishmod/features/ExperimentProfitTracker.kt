@@ -32,6 +32,7 @@ object ExperimentProfitTracker {
     private val DROP = Regex("^\\+(?:\\[Lvl 1] )?(.+)$")
     private val XP = Regex("^([\\d,.]+)([kMB]?) Enchanting Exp$")
     private val COUNT = Regex("^(.+?) x([\\d,]+)$")
+    private val NOT_ITEM = Regex("(?i)\bclicks?\b|^\d+ \w+ clicks")
     private val ROMAN = Regex("^(.+) (I|II|III|IV|V|VI|VII|VIII|IX|X)$")
     private const val WINDOW_MS = 15_000L
     private val FILE = File("config/fishmod/experiment_profit.json")
@@ -77,6 +78,7 @@ object ExperimentProfitTracker {
             data.xp += parseShort(m.groupValues[1], m.groupValues[2])
             changed(); return
         }
+        if (NOT_ITEM.containsMatchIn(reward)) return
         val cm = COUNT.find(reward)
         val name = cm?.groupValues?.get(1)?.trim() ?: reward
         val n = cm?.groupValues?.get(2)?.replace(",", "")?.toLongOrNull() ?: 1L
@@ -123,29 +125,39 @@ object ExperimentProfitTracker {
         if (FishSettings.expProfitOnlyIsland && fishmod.utils.Location.getCurrentLocation() != fishmod.utils.Location.PRIVATE_ISLAND) return
         if (data.experiments == 0 && data.drops.isEmpty() && data.xp == 0L) return
 
-        val lines = ArrayList<String>()
-        lines.add("§d§lEXPERIMENT PROFIT")
-        val rows = data.drops.map { (name, n) -> Triple(name, n, priceOf(name) * n) }.sortedByDescending { it.third }
+        // Same layout as the Slayer/Mining trackers: right-aligned value column, "| item count" after it
+        val rows = ArrayList<Pair<String, String>>()
+        rows.add("§e§lExperiment Profit" to "")
+        val items = data.drops.filterKeys { !NOT_ITEM.containsMatchIn(it) }.map { (name, n) -> Triple(name, n, priceOf(name) * n) }.sortedByDescending { it.third }
         var total = 0.0
-        val maxRows = FishSettings.expProfitLines.coerceIn(1, 30)
-        for ((i, r) in rows.withIndex()) {
+        val cap = FishSettings.expProfitLines.coerceIn(1, 30)
+        var hiddenN = 0; var hiddenV = 0.0
+        for ((i, r) in items.withIndex()) {
             total += r.third
-            if (i >= maxRows) continue
-            val value = if (r.third > 0) "§6${short(r.third)}" else "§8—"
-            lines.add("§7${r.second}x §f${r.first}§7: $value")
+            if (i >= cap) { hiddenN++; hiddenV += r.third; continue }
+            rows.add("§7| §f${r.first} §f${"%,d".format(r.second)}" to (if (r.third > 0) "§6${short(r.third)}" else "§8?"))
         }
-        if (rows.size > maxRows) lines.add("§8+${rows.size - maxRows} more")
-        val exps = data.experiments
-        lines.add("§7Experiments: §f$exps" + data.byType.entries.joinToString("§8, ", " §8(", "§8)") { "§7${it.key.take(1)}§f${it.value}" }.takeIf { data.byType.isNotEmpty() }.orEmpty())
-        lines.add("§7Enchanting XP: §b${short(data.xp.toDouble())}" + if (exps > 0) " §8(§b${short(data.xp.toDouble() / exps)}§8/exp)" else "")
-        lines.add("§7Total value: §6${short(total)}" + if (exps > 0) " §8(§6${short(total / exps)}§8/exp)" else "")
+        if (hiddenN > 0) rows.add("§7| §8$hiddenN more ${if (hiddenN == 1) "item" else "items"}" to "§6${short(hiddenV)}")
 
+        // Chronomatron/Ultrasequencer are add-ons: shown, but per-experiment rates use Superpairs only
+        val sp = data.byType["Superpairs"] ?: 0
+        val addons = data.byType.filterKeys { it != "Superpairs" }.entries.joinToString(" ") { "§7${it.key.take(6)} §f${it.value}" }
+        rows.add("§7Superpairs §f$sp" + (if (addons.isNotEmpty()) " §8| $addons" else "") to "")
+        rows.add("§7Enchanting XP §b${short(data.xp.toDouble())}" + (if (sp > 0) " §7(§b${short(data.xp.toDouble() / sp)}§7/exp)" else "") to "")
+        rows.add("§eProfit §6${short(total)}" + (if (sp > 0) " §7(§6${short(total / sp)}§7/exp)" else "") to "")
+
+        val f = mc.font
         val lh = Constants.TEXT_HEIGHT + 2
+        val colX = rows.maxOfOrNull { if (it.second.isEmpty()) 0 else f.width(it.second) + 6 } ?: 0
         val sc = FishSettings.expProfitHudScale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.expProfitHudX.toFloat(), FishSettings.expProfitHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        for (i in lines.indices) ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF.toInt(), true)
+        for ((i, r) in rows.withIndex()) {
+            if (r.second.isEmpty()) { ctx.text(f, r.first, 0, lh * i, 0xFFFFFFFF.toInt(), true); continue }
+            ctx.text(f, r.second, colX - 6 - f.width(r.second), lh * i, 0xFFFFFFFF.toInt(), true)
+            ctx.text(f, r.first, colX, lh * i, 0xFFFFFFFF.toInt(), true)
+        }
         ctx.pose().popMatrix()
     }
 

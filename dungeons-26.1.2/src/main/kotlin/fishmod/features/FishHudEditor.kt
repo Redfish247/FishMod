@@ -331,7 +331,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Diana Magic Find" to s("§6§lDiana Magic Find", "§5Chimera§7: §b320%", "§6Stick§7: §b250%"),
             "Pet" to s("§6Ender Dragon §a+1.2k §7(845.3k/1.9M 44.5%)"),
             "Slayer Spawn" to s("§5§lRevenant Horror V", "§7Spawn: §f1,850 §7/ §f2,400 §8(77%)", lineH = 12),
-            "Experiment Profit" to s("§d§lEXPERIMENT PROFIT", "§71x §fUltimate Wise I§7: §61.2M", "§7Experiments: §f3", "§7Enchanting XP: §b450K §8(§b150K§8/exp)", "§7Total value: §61.2M §8(§6400K§8/exp)", lineH = 12),
+            "Experiment Profit" to s("§e§lExperiment Profit", "§61.2M §7| §fUltimate Wise I §f1", "§7Superpairs §f3 §8| §7Chrono §f3", "§7Enchanting XP §b450K §7(§b150K§7/exp)", "§eProfit §61.2M §7(§6400K§7/exp)", lineH = 12),
             "Slayer Carries" to s("§5§lSLAYER CARRIES", "§eSteve §7Voidgloom Seraph IV§7: §f3§7/§f10", lineH = 12),
             "Slayer Stats" to s("§5§lSLAYER STATS", "§7XP: §f12.5K", "§7Kills: §f84", "§7XP/hr: §e45.2K", "§7Kills/hr: §e31", lineH = 12),
             "Slayer Boss Timer" to s("§6Boss: §f12.84s", "§7PB: §f9.51s", "§a§lNEW PB!", "§7Cycle: §f52.3s", "§7Since kill: §f18.4s", lineH = 12),
