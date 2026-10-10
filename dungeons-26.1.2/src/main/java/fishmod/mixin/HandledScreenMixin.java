@@ -78,6 +78,11 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
             if (!fishmod$loggedCroesusProfit) { fishmod$loggedCroesusProfit = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] CroesusProfit.render failed; suppressed (logged once)", e); }
         }
         try {
+            fishmod.features.item.AnitaShop.render(context, self);
+        } catch (Exception e) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.20", "AnitaShop.render failed", e);
+        }
+        try {
             fishmod.features.item.ContainerValue.render(context, self);
         } catch (Exception e) {
             fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.6", "ContainerValue.render failed screen=" + self.getClass().getSimpleName(), e);

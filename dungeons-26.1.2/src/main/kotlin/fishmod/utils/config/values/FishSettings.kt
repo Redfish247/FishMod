@@ -975,6 +975,7 @@ object FishSettings {
     @ConfigValue @JvmField var slayerProfitMinValue: Int = 0
     @ConfigValue @JvmField var slayerProfitCountKillCoins: Boolean = true
 
+    @ConfigValue @JvmField var anitaProfitEnabled: Boolean = false
     @ConfigValue @JvmField var expProfitEnabled: Boolean = false
     @ConfigValue @JvmField var expProfitOnlyIsland: Boolean = true
     @ConfigValue @JvmField var expProfitLines: Int = 10

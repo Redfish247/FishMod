@@ -1251,6 +1251,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         hud.features.add(Feature("Catacombs Overflow Levels", FishSettings::catacombsOverflowEnabled))
         run {
+            hud.features.add(Feature("Anita Medal Profit", FishSettings::anitaProfitEnabled))
             val f = Feature("Experiment Profit Tracker", FishSettings::expProfitEnabled)
             f.sub.add(SubcategoryHeader("Experimentation Table drops, value, Enchanting XP and XP per experiment  ·  drag with Edit HUD"))
             f.sub.add(ToggleSetting("Only On Private Island", "", FishSettings::expProfitOnlyIsland))
@@ -4412,6 +4413,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Party Finder List" -> "Scrollable party summary beside the menu; hover a row to highlight its head"
                 "Party Finder Auto Kick" -> "As leader, kick joiners who miss the S+ PB / secrets bar"
                 "Container Value" -> "No-background value list + total beside the open container / storage overlay"
+                "Anita Medal Profit" -> "In Anita's shop: coins per bronze medal for each item, best one highlighted"
                 else -> descForExternal(name)
             }
         }
