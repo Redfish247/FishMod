@@ -52,6 +52,7 @@ object SlayerCarryTracker {
             { FishSettings.slayerCarryHudEnabled },
         )
         ClientTickEvents.END_CLIENT_TICK.register { mc -> FishDiag.guard("SlayerCarryTracker.1", "carry tracker tick failed") { tick(mc) } }
+        fishmod.utils.events.Events.ON_LOCATION_CHANGE.register { loc -> onLocation(loc); false }
     }
 
     private fun tick(mc: Minecraft) {
@@ -115,6 +116,15 @@ object SlayerCarryTracker {
             Misc.forceTitle(Component.literal("§aCarry done!"), Component.literal("§e${c.ign} §7${c.done}/${c.total}"))
             Scheduler.scheduleSound(SoundEvents.PLAYER_LEVELUP, 1f, 1f)
         }
+    }
+
+    // Leaving the slayer islands drops the carries
+    private fun onLocation(loc: fishmod.utils.Location) {
+        if (carries.isEmpty() || loc == fishmod.utils.Location.UNKNOWN) return
+        if (SlayerType.entries.any { it.island == loc }) return
+        val n = carries.size
+        carries.clear(); watched.clear(); save()
+        Misc.addChatMessage(Component.literal("§b[FM] §fLeft the slayer area, cleared $n carr${if (n == 1) "y" else "ies"}"))
     }
 
     // ── commands ──
