@@ -973,6 +973,13 @@ object FishSettings {
     @ConfigValue @JvmField var slayerProfitMinValue: Int = 0
     @ConfigValue @JvmField var slayerProfitCountKillCoins: Boolean = true
 
+    @ConfigValue @JvmField var expProfitEnabled: Boolean = false
+    @ConfigValue @JvmField var expProfitOnlyIsland: Boolean = true
+    @ConfigValue @JvmField var expProfitLines: Int = 10
+    @ConfigValue @JvmField var expProfitHudX: Int = 10
+    @ConfigValue @JvmField var expProfitHudY: Int = 60
+    @ConfigValue @JvmField var expProfitHudScale: Double = 1.0
+
     @ConfigValue @JvmField var slayerCarryHudEnabled: Boolean = true
     @ConfigValue @JvmField var slayerCarryHudX: Int = 10
     @ConfigValue @JvmField var slayerCarryHudY: Int = 120
