@@ -59,7 +59,7 @@ object SlayerCarryTracker {
         val lvl = mc.level
         if (lvl !== level) { level = lvl; watched.clear(); seen.clear() }
         val player = mc.player ?: return
-        if (lvl == null || carries.isEmpty()) return
+        if (lvl == null || carries.isEmpty() || !FishSettings.slayerCarryHudEnabled) return
 
         val it = watched.values.iterator()
         while (it.hasNext()) {
@@ -147,6 +147,7 @@ object SlayerCarryTracker {
 
     @JvmStatic
     fun add(ign: String, total: Int) {
+        if (!FishSettings.slayerCarryHudEnabled) { FishSettings.slayerCarryHudEnabled = true; fishmod.utils.config.FishConfig.manager.save() }
         val key = ign.lowercase()
         val c = carries.getOrPut(key) { Carry(ign) }
         if (total >= 0) c.total = total

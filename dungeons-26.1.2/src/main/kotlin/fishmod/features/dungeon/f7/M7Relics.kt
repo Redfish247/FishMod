@@ -153,7 +153,7 @@ object M7Relics {
     }
 
     private fun renderBox(matrices: PoseStack, vc: VertexConsumer) {
-        if (!Floor7.renderRelicHighlight || !Location.inDungeon() || !Phase.inP5()) return
+        if (!Floor7.enableRelicStartTimer || !Floor7.renderRelicHighlight || !Location.inDungeon() || !Phase.inP5()) return
         val relic = heldRelic() ?: return
         val c = relic.cauldron
         val box = AABB(c.x - 0.5, c.y - 0.5, c.z - 0.5, c.x + 0.5, c.y + 0.5, c.z + 0.5)

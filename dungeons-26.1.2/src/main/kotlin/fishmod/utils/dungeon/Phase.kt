@@ -297,7 +297,7 @@ object Phase {
     private fun showSplitPb(): Boolean = FishSettings.pbMessagesEnabled && FishSettings.pbMessagesSplits
 
     private fun printSplits() {
-        Misc.addChatMessage(Component.literal("§aSplits: "))
+        if (enableSplits) Misc.addChatMessage(Component.literal("§aSplits: "))
         val splits = currentSplits ?: return
         for (split in splits) {
             val wasRunning = split.started()
@@ -306,7 +306,7 @@ object Phase {
             val tick = if (wasRunning) tickPb(split) else null
             val line = split.createNameText().append(split.createTimeText())
             if (showSplitPb()) appendPbTags(line, pb, tick, true)
-            Misc.addChatMessage(line)
+            if (enableSplits) Misc.addChatMessage(line)
         }
         FishDiag.guard("Phase.15", "save run history floor=$floor") { RunHistory.saveSplits(floor, splits) }
         if (splits.isNotEmpty()) {

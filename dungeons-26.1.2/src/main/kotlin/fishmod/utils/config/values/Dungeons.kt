@@ -42,6 +42,6 @@ object Dungeons {
 
     @ConfigValue @JvmField var renderClassName: Boolean = false
 
-    @ConfigValue @JvmField var bossHealthNumbers: Boolean = true
+    @ConfigValue @JvmField var bossHealthNumbers: Boolean = false
 
 }
