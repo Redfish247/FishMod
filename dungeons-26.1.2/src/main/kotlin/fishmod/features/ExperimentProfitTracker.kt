@@ -25,6 +25,7 @@ object ExperimentProfitTracker {
         var xp: Long = 0,
         val byType: MutableMap<String, Int> = LinkedHashMap(),
         val drops: MutableMap<String, Long> = LinkedHashMap(),
+        var colors: MutableMap<String, String>? = LinkedHashMap(),
     )
 
     private val TABLE_SCREEN = Regex("(?:Superpairs|Chronomatron|Ultrasequencer) ?(?:\\(.+\\)|➜ Stakes|Rewards)|Experiment(?:ation Tabl| [Oo]v)er?")
@@ -60,13 +61,13 @@ object ExperimentProfitTracker {
         }
         Events.ON_GAME_MESSAGE.register { text ->
             if (FishSettings.expProfitEnabled) FishDiag.guard("ExperimentProfitTracker.1", "experiment chat parse failed") {
-                onChat(text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim())
+                onChat(text.string.replace(Constants.STRIP_COLOR_REGEX, "").trim(), text)
             }
             false
         }
     }
 
-    private fun onChat(s: String) {
+    private fun onChat(s: String, raw: Component) {
         if (System.currentTimeMillis() - lastTableMs > WINDOW_MS) return
         CLAIM.find(s)?.let { m ->
             data.experiments++
@@ -83,7 +84,35 @@ object ExperimentProfitTracker {
         val name = cm?.groupValues?.get(1)?.trim() ?: reward
         val n = cm?.groupValues?.get(2)?.replace(",", "")?.toLongOrNull() ?: 1L
         data.drops.merge(name, n, Long::plus)
+        rewardColor(raw)?.let { (data.colors ?: LinkedHashMap<String, String>().also { m -> data.colors = m })[name] = it }
         changed()
+    }
+
+    // Hypixel colours the reward name by rarity: take the colour of the first text after the "+"
+    private fun rewardColor(raw: Component): String? {
+        var seenPlus = false
+        var out: String? = null
+        raw.visit({ style, text ->
+            if (!seenPlus) { if (text.contains('+')) { seenPlus = true; if (text.substringAfter('+').isNotBlank()) out = code(style) } }
+            else if (out == null && text.isNotBlank()) out = code(style)
+            java.util.Optional.empty<Unit>()
+        }, net.minecraft.network.chat.Style.EMPTY)
+        return out
+    }
+
+    private fun code(style: net.minecraft.network.chat.Style): String? {
+        val c = style.color ?: return null
+        val f = net.minecraft.ChatFormatting.entries.firstOrNull { it.isColor && it.color == c.value } ?: return null
+        return "§" + f.char
+    }
+
+    private fun colorOf(name: String): String {
+        data.colors?.get(name)?.let { return it }
+        val tier = ItemsDb.get(ItemsDb.idFor(name))?.get("tier")?.asString
+        return when (tier) {
+            "UNCOMMON" -> "§a"; "RARE" -> "§9"; "EPIC" -> "§5"; "LEGENDARY" -> "§6"; "MYTHIC" -> "§d"
+            "DIVINE" -> "§b"; "SPECIAL", "VERY_SPECIAL" -> "§c"; else -> if (ROMAN.matches(name)) "§9" else "§f"
+        }
     }
 
     private fun parseShort(num: String, suffix: String): Long {
@@ -135,7 +164,7 @@ object ExperimentProfitTracker {
         for ((i, r) in items.withIndex()) {
             total += r.third
             if (i >= cap) { hiddenN++; hiddenV += r.third; continue }
-            rows.add("§7| §f${r.first} §f${"%,d".format(r.second)}" to (if (r.third > 0) "§6${short(r.third)}" else "§8?"))
+            rows.add("§7| ${colorOf(r.first)}${r.first} §f${"%,d".format(r.second)}" to (if (r.third > 0) "§6${short(r.third)}" else "§8?"))
         }
         if (hiddenN > 0) rows.add("§7| §8$hiddenN more ${if (hiddenN == 1) "item" else "items"}" to "§6${short(hiddenV)}")
 
