@@ -30,7 +30,7 @@ object CrystalSpawn {
     fun init() {
         Events.ON_GAME_MESSAGE.register { text ->
             if (!Location.inDungeon() || !Phase.inP1()
-                || (!Floor7.enableCrystalSpawnTime && !Floor7.crystalPlaceReminder)
+                || !Floor7.enableCrystalSpawnTime
             ) {
                 return@register false
             }
@@ -90,7 +90,7 @@ object CrystalSpawn {
     @JvmStatic
     fun displayNotification(): Boolean {
         return (Floor7.instantlyDisplayCrystalReminder || tickSincePicked > REMINDER_TICK)
-                && Location.inDungeon() && Phase.inP1() && Floor7.crystalPlaceReminder && pickedUp
+                && Location.inDungeon() && Phase.inP1() && Floor7.enableCrystalSpawnTime && Floor7.crystalPlaceReminder && pickedUp
     }
 
     @JvmStatic

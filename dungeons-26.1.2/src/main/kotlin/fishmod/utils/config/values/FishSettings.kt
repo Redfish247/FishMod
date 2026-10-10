@@ -44,7 +44,7 @@ object FishSettings {
     @ConfigValue @JvmField var fmRowAlpha: Int = 15
     @ConfigValue @JvmField var fmRowBgAlpha: Int = 100
     @ConfigValue @JvmField var guiSettings: Boolean = false
-    @ConfigValue @JvmField var debugReports: Boolean = true
+    @ConfigValue @JvmField var debugReports: Boolean = false
     @ConfigValue @JvmField var debugChatNotices: Boolean = true
     @ConfigValue @JvmField var guiScaleMain: Int = 100
     @ConfigValue @JvmField var guiScaleChatCommands: Int = 100
@@ -69,7 +69,7 @@ object FishSettings {
     @ConfigValue @JvmField var petSwapTitleColor: Int = 0xFFFFAA00.toInt()
     @ConfigValue @JvmField var petSwapTitleMs: Int = 1500
     @ConfigValue @JvmField var petHudShowLevel: Boolean = false
-    @ConfigValue @JvmField var petNametagHideLevel: Boolean = true
+    @ConfigValue @JvmField var petNametagHideLevel: Boolean = false
     @ConfigValue @JvmField var petHudIcon: Boolean = false
     @ConfigValue @JvmField var petHudShowRarity: Boolean = true
     @ConfigValue @JvmField var petHudFadeIdle: Boolean = false
@@ -140,7 +140,7 @@ object FishSettings {
     @ConfigValue @JvmField var pfAutoKickTankCata:    Int = 0
     @ConfigValue @JvmField var pfAutoKickTankSb:      Int = 0
     @ConfigValue @JvmField var pfAutoKickTankMp:      Int = 0
-    @ConfigValue @JvmField var chatFeatureEnabled: Boolean = true
+    @ConfigValue @JvmField var chatFeatureEnabled: Boolean = false
 
     @ConfigValue @JvmField var chatCompact: Boolean = false
 
@@ -151,7 +151,7 @@ object FishSettings {
 
     @ConfigValue @JvmField var chatPeek: Boolean = true
 
-    @ConfigValue @JvmField var zoomEnabled: Boolean = true
+    @ConfigValue @JvmField var zoomEnabled: Boolean = false
     @ConfigValue @JvmField var zoomFactor: Double = 4.0
     @ConfigValue @JvmField var zoomScroll: Boolean = true
     @ConfigValue @JvmField var zoomSmoothAnim: Boolean = false
@@ -170,7 +170,7 @@ object FishSettings {
     @ConfigValue @JvmField var compactTabFooterMode: String = "Hypixel"
     @ConfigValue @JvmField var compactTabFooterText: String = "&dCookie &f{cookie} &8| &cGod Pot &f{godpot}"
 
-    @ConfigValue @JvmField var partyCommandsEnabled: Boolean = true
+    @ConfigValue @JvmField var partyCommandsEnabled: Boolean = false
     @ConfigValue @JvmField var pcAllinvite: Boolean = false
     @ConfigValue @JvmField var pcPb: Boolean = false
     @ConfigValue @JvmField var pcCata: Boolean = false
@@ -254,7 +254,7 @@ object FishSettings {
     @ConfigValue @JvmField var prestigeColorsAnimSpeed: Double = 1.0
     @ConfigValue @JvmField var prestigeColorsAnimStyle: String = "FADE"
 
-    @ConfigValue @JvmField var badgesEnabled: Boolean = true
+    @ConfigValue @JvmField var badgesEnabled: Boolean = false
     @ConfigValue @JvmField var badgesOnNametags: Boolean = true
     @ConfigValue @JvmField var badgesOnTab: Boolean = true
     @ConfigValue @JvmField var badgesInChat: Boolean = true
@@ -269,7 +269,7 @@ object FishSettings {
 
     @ConfigValue @JvmField var disableFrontFacingCamera: Boolean = false
 
-    @ConfigValue @JvmField var dungeonWaypointsEnabled: Boolean = true
+    @ConfigValue @JvmField var dungeonWaypointsEnabled: Boolean = false
     @ConfigValue @JvmField var posMsgEnabled: Boolean = false
     @ConfigValue @JvmField var posMsgShowBlocks: Boolean = true
     @ConfigValue @JvmField var posMsgColor: Int = 0x66FFAA00
@@ -368,7 +368,7 @@ object FishSettings {
 
     @ConfigValue @JvmField var autoSprintEnabled: Boolean = false
 
-    @ConfigValue @JvmField var soundMasterEnabled: Boolean = true
+    @ConfigValue @JvmField var soundMasterEnabled: Boolean = false
     @ConfigValue @JvmField var soundMasterVolume: Int = 100
 
     @ConfigValue @JvmField var puzzleSolversEnabled: Boolean = false
@@ -740,7 +740,7 @@ object FishSettings {
     @ConfigValue @JvmField var stormOverScale: Double = 2.5
     @ConfigValue @JvmField var stormOverCountdown: Boolean = true
     @ConfigValue @JvmField var stormOverHideServerCountdown: Boolean = true
-    @ConfigValue @JvmField var venoStackEnabled: Boolean = true
+    @ConfigValue @JvmField var venoStackEnabled: Boolean = false
     @ConfigValue @JvmField var venoStackHudX: Int = 200
     @ConfigValue @JvmField var venoStackHudY: Int = 140
     @ConfigValue @JvmField var venoStackScale: Double = 1.5
@@ -841,7 +841,7 @@ object FishSettings {
 
     @ConfigValue @JvmField var autoRequeueDelayMs: Int = 2000
 
-    @ConfigValue @JvmField var routeRecorderEnabled: Boolean = true
+    @ConfigValue @JvmField var routeRecorderEnabled: Boolean = false
     @ConfigValue @JvmField var routeAutoLoad: Boolean = true
     @ConfigValue @JvmField var routeThroughWalls: Boolean = true
     @ConfigValue @JvmField var routeSecretsThroughWalls: Boolean = true
@@ -980,7 +980,7 @@ object FishSettings {
     @ConfigValue @JvmField var expProfitHudY: Int = 60
     @ConfigValue @JvmField var expProfitHudScale: Double = 1.0
 
-    @ConfigValue @JvmField var slayerCarryHudEnabled: Boolean = true
+    @ConfigValue @JvmField var slayerCarryHudEnabled: Boolean = false
     @ConfigValue @JvmField var slayerCarryHudX: Int = 10
     @ConfigValue @JvmField var slayerCarryHudY: Int = 120
     @ConfigValue @JvmField var slayerCarryHudScale: Double = 1.0
