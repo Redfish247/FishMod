@@ -8,8 +8,9 @@ import java.util.regex.Pattern
 
 object DungeonState {
 
-    private val SIDEBAR_FLOOR = Pattern.compile("The Catacombs \\(([FM])(\\d)\\)")
-    private val ENTERED_FLOOR = Pattern.compile("entered The Catacombs, Floor (\\w+)!")
+    private val SIDEBAR_FLOOR = Pattern.compile("The Catacombs \\(([FM])?(\\d|E)\\)")
+    // Entrance has no "Floor" word: "entered The Catacombs, Entrance!"
+    private val ENTERED_FLOOR = Pattern.compile("entered The Catacombs, (?:Floor )?(\\w+)!")
 
     private var chatFloor = -1
     private var inBoss = false
