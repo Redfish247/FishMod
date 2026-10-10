@@ -1251,6 +1251,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         hud.features.add(Feature("Catacombs Overflow Levels", FishSettings::catacombsOverflowEnabled))
         run {
+            val f = Feature("Experiment Profit Tracker", FishSettings::expProfitEnabled)
+            f.sub.add(SubcategoryHeader("Experimentation Table drops, value, Enchanting XP and XP per experiment  ·  drag with Edit HUD"))
+            f.sub.add(ToggleSetting("Only On Private Island", "", FishSettings::expProfitOnlyIsland))
+            f.sub.add(SliderIntSetting("Item Lines", "", FishSettings::expProfitLines, 1, 30))
+            f.sub.add(SliderDoubleSetting("Scale", "", FishSettings::expProfitHudScale, 0.5, 3.0))
+            f.sub.add(ButtonSetting("Reset", "Clear all tracked experiments", Runnable { fishmod.features.ExperimentProfitTracker.reset() }))
+            hud.features.add(f)
+        }
+        run {
             val f = Feature("Performance HUD", FishSettings::perfHudEnabled)
             f.sub.add(SubcategoryHeader("Move/scale it in the HUD editor"))
             f.sub.add(ToggleSetting("FPS", "", FishSettings::perfHudFps))
