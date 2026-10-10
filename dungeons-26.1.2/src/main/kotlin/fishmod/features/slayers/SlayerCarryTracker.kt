@@ -19,6 +19,7 @@ import net.minecraft.world.phys.Vec3
 import java.io.File
 
 // /trackcarry: counts slayer bosses spawned by a customer that die near you.
+// Owner = "Spawned by: X" stand if Hypixel shows one, else the tracked player nearest the boss when it appears.
 object SlayerCarryTracker {
 
     const val HUD = "Slayer Carries"
@@ -27,13 +28,16 @@ object SlayerCarryTracker {
 
     private class Watched(val ign: String, val stand: ArmorStand, var pos: Vec3, var boss: String)
 
-    private const val SPAWNED_BY = "Spawned by: "
+    private val SPAWNED_BY_RE = Regex("""Spawned by: (\w+)""")
+    private const val MARK = "☠"
+    private const val OWNER_RANGE_SQ = 8.0 * 8.0
     private const val COUNT_RANGE_SQ = 32.0 * 32.0
     private val FILE = File("config/fishmod/slayer_carries.json")
     private val TIER_RE = Regex("""\b(I|II|III|IV|V)\b""")
 
     private val carries = LinkedHashMap<String, Carry>()
     private val watched = HashMap<Int, Watched>()
+    private val seen = HashSet<Int>()
     private var level: Any? = null
     private var tick = 0
 
@@ -53,7 +57,7 @@ object SlayerCarryTracker {
 
     private fun tick(mc: Minecraft) {
         val lvl = mc.level
-        if (lvl !== level) { level = lvl; watched.clear() }
+        if (lvl !== level) { level = lvl; watched.clear(); seen.clear() }
         val player = mc.player ?: return
         if (lvl == null || carries.isEmpty()) return
 
@@ -67,24 +71,39 @@ object SlayerCarryTracker {
 
         if (tick++ % 5 != 0) return
         for (e in lvl.entitiesForRendering()) {
-            if (e !is ArmorStand || watched.containsKey(e.id)) continue
+            if (e !is ArmorStand || e.id in seen) continue
             val name = e.customName?.string ?: continue
-            if (!name.startsWith(SPAWNED_BY)) continue
-            val ign = name.substring(SPAWNED_BY.length).trim().lowercase()
-            if (!carries.containsKey(ign)) continue
-            watched[e.id] = Watched(ign, e, e.position(), bossName(lvl, e))
+            if (!name.contains(MARK)) continue
+            seen.add(e.id)
+            val boss = bossLabel(name) ?: continue
+            val ign = owner(lvl, e) ?: continue
+            watched[e.id] = Watched(ign, e, e.position(), boss)
         }
+        if (seen.size > 4096) seen.retainAll(lvl.entitiesForRendering().map { it.id }.toSet())
     }
 
-    // The boss nametag ("☠ Voidgloom Seraph IV 12M❤") floats just above the "Spawned by" stand
-    private fun bossName(lvl: net.minecraft.client.multiplayer.ClientLevel, stand: ArmorStand): String {
-        for (o in lvl.getEntities(stand, stand.boundingBox.inflate(1.0, 3.0, 1.0))) {
+    private fun owner(lvl: net.minecraft.client.multiplayer.ClientLevel, boss: ArmorStand): String? {
+        for (o in lvl.getEntities(boss, boss.boundingBox.inflate(1.5, 4.0, 1.5))) {
             val n = (o as? ArmorStand)?.customName?.string ?: continue
-            val type = SlayerType.entries.firstOrNull { t -> t.bossNames.any { n.contains(it) } } ?: continue
-            val tier = TIER_RE.find(n.substringAfter(type.bossNames.first { n.contains(it) }))?.value
-            return if (tier != null) "${type.bossLabel} $tier" else type.bossLabel
+            val ign = SPAWNED_BY_RE.find(n)?.groupValues?.get(1)?.lowercase() ?: continue
+            return if (carries.containsKey(ign)) ign else null
         }
-        return ""
+        var best: String? = null
+        var bestD = OWNER_RANGE_SQ
+        for (p in lvl.players()) {
+            val ign = p.gameProfile.name().lowercase()
+            if (!carries.containsKey(ign)) continue
+            val d = p.distanceToSqr(boss)
+            if (d <= bestD) { bestD = d; best = ign }
+        }
+        return best
+    }
+
+    // "☠ Voidgloom Seraph IV 12M❤" -> "Voidgloom Seraph IV"
+    private fun bossLabel(n: String): String? {
+        val type = SlayerType.entries.firstOrNull { t -> t.bossNames.any { n.contains(it) } } ?: return null
+        val tier = TIER_RE.find(n.substringAfter(type.bossNames.first { n.contains(it) }))?.value
+        return if (tier != null) "${type.bossLabel} $tier" else type.bossLabel
     }
 
     private fun count(w: Watched) {
