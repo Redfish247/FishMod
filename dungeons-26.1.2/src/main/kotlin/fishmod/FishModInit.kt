@@ -624,6 +624,7 @@ class FishModInit : ClientModInitializer {
             dispatcher.register(
                 ClientCommands.literal("trackcarry")
                     .then(ClientCommands.literal("clear").executes { fishmod.features.slayers.SlayerCarryTracker.clear(); Constants.SUCCESS })
+                    .then(ClientCommands.literal("debug").executes { fishmod.features.slayers.SlayerCarryTracker.debug(); Constants.SUCCESS })
                     .then(ClientCommands.literal("remove").then(ClientCommands.argument("ign", StringArgumentType.word()).executes { ctx ->
                         fishmod.features.slayers.SlayerCarryTracker.remove(StringArgumentType.getString(ctx, "ign")); Constants.SUCCESS
                     }))
