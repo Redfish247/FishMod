@@ -973,6 +973,11 @@ object FishSettings {
     @ConfigValue @JvmField var slayerProfitMinValue: Int = 0
     @ConfigValue @JvmField var slayerProfitCountKillCoins: Boolean = true
 
+    @ConfigValue @JvmField var slayerCarryHudEnabled: Boolean = true
+    @ConfigValue @JvmField var slayerCarryHudX: Int = 10
+    @ConfigValue @JvmField var slayerCarryHudY: Int = 120
+    @ConfigValue @JvmField var slayerCarryHudScale: Double = 1.0
+
     @ConfigValue @JvmField var slayerPhaseEnabled: Boolean = false
     @ConfigValue @JvmField var slayerPhaseWorldText: Boolean = true
     @ConfigValue @JvmField var slayerPhaseTitles: Boolean = true
