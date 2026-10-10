@@ -80,7 +80,7 @@ object M7Relics {
         }
         Events.ON_WORLD_CHANGE.register { spawnEndMs = 0L; p5StartMs = 0L; myRelic = null; pickers.clear(); placed.clear(); false }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register {
-            try { checkSpawned(); checkPlaced(); checkAllPlaced() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
+            try { fishmod.utils.dungeon.NecronTrace.tick(); Phase.checkNecronBar(); checkSpawned(); checkPlaced(); checkAllPlaced() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
         }
 
         RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
