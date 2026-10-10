@@ -26,10 +26,9 @@ object SlayerCarryTracker {
 
     data class Carry(val ign: String, var done: Int = 0, var total: Int = 0, var boss: String = "")
 
-    private class Watched(val ign: String, val stand: ArmorStand, var pos: Vec3, var boss: String)
+    private class Watched(val ign: String, val stand: net.minecraft.world.entity.Entity, var pos: Vec3, var boss: String)
 
     private val SPAWNED_BY_RE = Regex("""Spawned by: (\w+)""")
-    private const val MARK = "☠"
     private const val OWNER_RANGE_SQ = 8.0 * 8.0
     private const val COUNT_RANGE_SQ = 32.0 * 32.0
     private val FILE = File("config/fishmod/slayer_carries.json")
@@ -71,20 +70,19 @@ object SlayerCarryTracker {
 
         if (tick++ % 5 != 0) return
         for (e in lvl.entitiesForRendering()) {
-            if (e !is ArmorStand || e.id in seen) continue
+            if (e.id in seen || !e.hasCustomName()) continue
             val name = e.customName?.string ?: continue
-            if (!name.contains(MARK)) continue
-            seen.add(e.id)
             val boss = bossLabel(name) ?: continue
+            seen.add(e.id)
             val ign = owner(lvl, e) ?: continue
             watched[e.id] = Watched(ign, e, e.position(), boss)
         }
         if (seen.size > 4096) seen.retainAll(lvl.entitiesForRendering().map { it.id }.toSet())
     }
 
-    private fun owner(lvl: net.minecraft.client.multiplayer.ClientLevel, boss: ArmorStand): String? {
+    private fun owner(lvl: net.minecraft.client.multiplayer.ClientLevel, boss: net.minecraft.world.entity.Entity): String? {
         for (o in lvl.getEntities(boss, boss.boundingBox.inflate(1.5, 4.0, 1.5))) {
-            val n = (o as? ArmorStand)?.customName?.string ?: continue
+            val n = o.customName?.string ?: continue
             val ign = SPAWNED_BY_RE.find(n)?.groupValues?.get(1)?.lowercase() ?: continue
             return if (carries.containsKey(ign)) ign else null
         }
@@ -102,8 +100,8 @@ object SlayerCarryTracker {
     // "☠ Voidgloom Seraph IV 12M❤" -> "Voidgloom Seraph IV"
     private fun bossLabel(n: String): String? {
         val type = SlayerType.entries.firstOrNull { t -> t.bossNames.any { n.contains(it) } } ?: return null
-        val tier = TIER_RE.find(n.substringAfter(type.bossNames.first { n.contains(it) }))?.value
-        return if (tier != null) "${type.bossLabel} $tier" else type.bossLabel
+        val tier = TIER_RE.find(n.substringAfter(type.bossNames.first { n.contains(it) }))?.value ?: return null
+        return "${type.bossLabel} $tier"
     }
 
     private fun count(w: Watched) {
@@ -120,6 +118,22 @@ object SlayerCarryTracker {
     }
 
     // ── commands ──
+
+    @JvmStatic
+    fun debug() {
+        val mc = Minecraft.getInstance()
+        val p = mc.player ?: return
+        val lvl = mc.level ?: return
+        var n = 0
+        for (e in lvl.getEntities(p, p.boundingBox.inflate(10.0))) {
+            val name = e.customName?.string ?: continue
+            val line = "${e.type.description.string} #${e.id} '${name}' d=${"%.1f".format(e.distanceTo(p))}"
+            fishmod.utils.debug.Debug.LOGGER.info("[CarryDebug] $line")
+            Misc.addChatMessage(Component.literal("§8[carry] §7$line"))
+            n++
+        }
+        Misc.addChatMessage(Component.literal("§b[FM] §f$n named entities within 10 blocks · watching ${watched.size} · tracking ${carries.keys}"))
+    }
 
     @JvmStatic
     fun add(ign: String, total: Int) {
