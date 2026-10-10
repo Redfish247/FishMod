@@ -2525,7 +2525,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             if (c === dc) continue
             val yOff = Math.round(columnYOffset(i, top - HEADER_H) + unfoldYOffset(c, top - HEADER_H))
             try {
-                renderOneColumn(ctx, c, columnX0(i), colW, top, bot, mouseX, mouseY, yOff)
+                renderOneColumn(ctx, c, columnX0(i), colW, top, bot, if (dc != null) -10000 else mouseX, if (dc != null) -10000 else mouseY, yOff)
             } catch (t: Throwable) {
                 FishDiag.fail("FishModScreen.23", "column '${c.name}' render failed group=${c.isGroup()}", t)
             }
