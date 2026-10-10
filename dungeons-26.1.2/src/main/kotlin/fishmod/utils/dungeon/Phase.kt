@@ -55,6 +55,7 @@ object Phase {
             for (split in splits) {
                 split.tick()
             }
+            if (necronArgh && awaitingNecronDeath() && necronBarEmpty()) fireP5Start("necron boss bar hit 0")
             false
         }
 
@@ -86,7 +87,16 @@ object Phase {
 
     private fun awaitingNecronDeath() = inFloor7 && currentPhase == 8 && currentSplits?.getOrNull(9)?.name == "Dragons"
 
+    // Necron dies when his bar empties after ARGH! (NoammAddons F7Listener), not on the line itself
+    private var necronArgh = false
+
+    private fun necronBarEmpty(): Boolean {
+        val overlay = net.minecraft.client.Minecraft.getInstance().gui.bossOverlay as? fishmod.mixin.accessors.BossBarHudAccessor ?: return false
+        return overlay.bossBars.values.any { it.name.string.contains("Necron") && it.progress <= 0f }
+    }
+
     private fun fireP5Start(reason: String) {
+        necronArgh = false
         fishmod.utils.debug.Debug.LOGGER.info("[Phase] P5 fallback: $reason")
         Events.ON_GAME_MESSAGE.invoke { it.onGameMessage(Component.literal(P5_START)) }
     }
@@ -102,6 +112,7 @@ object Phase {
         stormDead = false
         stormKillAnnounced = false
         runOver = false
+        necronArgh = false
     }
 
     @JvmStatic
@@ -110,6 +121,11 @@ object Phase {
         val splits = currentSplits ?: return false
         if (runOver) return false
         if (string == WK_FIRST_LINE && awaitingNecronDeath()) fireP5Start("wither king spoke")
+        if (awaitingNecronDeath() && string.startsWith(fishmod.utils.dungeon.DialogueCompat.NECRON_END_NEW)) {
+            necronArgh = true
+            if (necronBarEmpty()) fireP5Start("necron boss bar already 0")
+            return false
+        }
 
         for (i in splits.indices) {
             val currentSplit = splits[i]
