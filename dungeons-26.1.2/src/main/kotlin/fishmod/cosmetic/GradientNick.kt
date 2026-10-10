@@ -79,7 +79,7 @@ object GradientNick {
                 val lt = scaled - seg
                 val a = stops[seg]
                 val b = stops[seg + 1]
-                colorPrefix = hex(intArrayOf(lerp(a[0], b[0], lt), lerp(a[1], b[1], lt), lerp(a[2], b[2], lt)))
+                colorPrefix = hex(mixOklab(a, b, lt))
             }
             out.append(colorPrefix).append(activeFormats).append(c)
             letterIdx++
@@ -88,7 +88,45 @@ object GradientNick {
         return out.toString()
     }
 
-    private fun lerp(a: Int, b: Int, t: Double): Int = Math.round(a + (b - a) * t).toInt()
+    // Blend in OKLab so brightness stays even; raw RGB lerp makes light/dark bands between hues
+    private fun mixOklab(a: IntArray, b: IntArray, t: Double): IntArray {
+        val la = toOklab(a)
+        val lb = toOklab(b)
+        return fromOklab(DoubleArray(3) { la[it] + (lb[it] - la[it]) * t })
+    }
+
+    private fun toLinear(c: Int): Double {
+        val v = (c and 0xFF) / 255.0
+        return if (v <= 0.04045) v / 12.92 else Math.pow((v + 0.055) / 1.055, 2.4)
+    }
+
+    private fun toSrgb(v: Double): Int {
+        val c = if (v <= 0.0031308) v * 12.92 else 1.055 * Math.pow(v, 1 / 2.4) - 0.055
+        return Math.round(c.coerceIn(0.0, 1.0) * 255).toInt()
+    }
+
+    private fun toOklab(rgb: IntArray): DoubleArray {
+        val r = toLinear(rgb[0]); val g = toLinear(rgb[1]); val b = toLinear(rgb[2])
+        val l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
+        val m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
+        val s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
+        return doubleArrayOf(
+            0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+            1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+            0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
+        )
+    }
+
+    private fun fromOklab(lab: DoubleArray): IntArray {
+        val l = Math.pow(lab[0] + 0.3963377774 * lab[1] + 0.2158037573 * lab[2], 3.0)
+        val m = Math.pow(lab[0] - 0.1055613458 * lab[1] - 0.0638541728 * lab[2], 3.0)
+        val s = Math.pow(lab[0] - 0.0894841775 * lab[1] - 1.2914855480 * lab[2], 3.0)
+        return intArrayOf(
+            toSrgb(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+            toSrgb(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+            toSrgb(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s)
+        )
+    }
 
     private fun hex(rgb: IntArray): String {
         return String.format("&#%02x%02x%02x", rgb[0] and 0xFF, rgb[1] and 0xFF, rgb[2] and 0xFF)
