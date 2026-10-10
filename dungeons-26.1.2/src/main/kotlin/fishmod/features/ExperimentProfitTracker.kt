@@ -32,7 +32,7 @@ object ExperimentProfitTracker {
     private val DROP = Regex("^\\+(?:\\[Lvl 1] )?(.+)$")
     private val XP = Regex("^([\\d,.]+)([kMB]?) Enchanting Exp$")
     private val COUNT = Regex("^(.+?) x([\\d,]+)$")
-    private val NOT_ITEM = Regex("(?i)\bclicks?\b|^\d+ \w+ clicks")
+    private val NOT_ITEM = Regex("""(?i)bclicks?b""")
     private val ROMAN = Regex("^(.+) (I|II|III|IV|V|VI|VII|VIII|IX|X)$")
     private const val WINDOW_MS = 15_000L
     private val FILE = File("config/fishmod/experiment_profit.json")
