@@ -621,6 +621,20 @@ class FishModInit : ClientModInitializer {
                         Constants.SUCCESS
                     }
             )
+            dispatcher.register(
+                ClientCommands.literal("trackcarry")
+                    .then(ClientCommands.literal("clear").executes { fishmod.features.slayers.SlayerCarryTracker.clear(); Constants.SUCCESS })
+                    .then(ClientCommands.literal("debug").executes { fishmod.features.slayers.SlayerCarryTracker.debug(); Constants.SUCCESS })
+                    .then(ClientCommands.literal("remove").then(ClientCommands.argument("ign", StringArgumentType.word()).executes { ctx ->
+                        fishmod.features.slayers.SlayerCarryTracker.remove(StringArgumentType.getString(ctx, "ign")); Constants.SUCCESS
+                    }))
+                    .then(ClientCommands.argument("ign", StringArgumentType.word())
+                        .then(ClientCommands.argument("amount", IntegerArgumentType.integer(0, 1000)).executes { ctx ->
+                            fishmod.features.slayers.SlayerCarryTracker.add(StringArgumentType.getString(ctx, "ign"), IntegerArgumentType.getInteger(ctx, "amount")); Constants.SUCCESS
+                        })
+                        .executes { ctx -> fishmod.features.slayers.SlayerCarryTracker.add(StringArgumentType.getString(ctx, "ign"), -1); Constants.SUCCESS })
+                    .executes { fishmod.features.slayers.SlayerCarryTracker.list(); Constants.SUCCESS }
+            )
             for (cmd in arrayOf("pbsplits", "splitspb")) dispatcher.register(
                 ClientCommands.literal(cmd)
                     .then(ClientCommands.argument("floor", StringArgumentType.word()).executes { ctx ->
@@ -1322,6 +1336,7 @@ class FishModInit : ClientModInitializer {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_spawn_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderSpawn(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.137", "slayer_spawn_hud render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_stats_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderStats(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.138", "slayer_stats_hud render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_timer_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderTimer(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.139", "slayer_timer_hud render failed", t) } }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_carry_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerCarryTracker.render(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.200", "slayer_carry_hud render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_profit_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderProfit(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.140", "slayer_profit_hud render failed", t) } }
         FishHudEditor.register(
             "PB Pace",
