@@ -283,6 +283,7 @@ object StorageOverlay {
         if (!on(screen)) return
         UiRecorder.clear()
         pendingPaint = false
+        carriedLayer = null
         recomputeGeometry()
         dragPreview = computeDragPreview()
         tooltipStack = null
@@ -566,10 +567,23 @@ object StorageOverlay {
         if (carried.isEmpty) return
         val shown = dragPreview?.let { carried.copyWithCount(it.carriedCount) } ?: carried
         if (shown.isEmpty) return
-        val x = mouseX - 8
-        val y = mouseY - 8
-        ctx.item(shown, x, y)
-        ctx.itemDecorations(font, shown, x, y)
+        carriedLayer = Triple(shown, mouseX - 8, mouseY - 8)
+    }
+
+    private var carriedLayer: Triple<ItemStack, Int, Int>? = null
+
+    // Held item goes in its own GUI pass after the UI paint so panels never cover it.
+    @JvmStatic
+    fun extractCarriedLayer(state: net.minecraft.client.renderer.state.gui.GuiRenderState): Boolean {
+        val (stack, x, y) = carriedLayer ?: return false
+        carriedLayer = null
+        val ctx = GuiGraphicsExtractor(mc, state, 0, 0)
+        ctx.pose().pushMatrix()
+        ctx.pose().scale(scale, scale)
+        ctx.item(stack, x, y)
+        ctx.itemDecorations(font, stack, x, y)
+        ctx.pose().popMatrix()
+        return true
     }
 
     private fun activePageSlotAt(mouseX: Double, mouseY: Double, activePage: StoragePage, data: TreeMap<StoragePage, NBTInventory?>): Slot? {
