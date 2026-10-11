@@ -83,7 +83,7 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
             arrayOf("Cactus Green", "667F33"), arrayOf("Light Blue", "6699D8"), arrayOf("Cyan", "4C7F99"), arrayOf("Lapis (Blue)", "334CB2"),
             arrayOf("Purple", "7F3FB2"), arrayOf("Magenta", "B24CD8"), arrayOf("Pink", "F27FA5"), arrayOf("Cocoa (Brown)", "664C33")
         )
-        val DYE_RGB: IntArray = IntArray(DYES.size) { i -> java.lang.Long.parseLong(DYES[i][1], 16).toInt() }
+        const val VANILLA_DYES_FROM = 26
 
         const val SWATCH = 16
         const val SWATCH_GAP = 4
@@ -109,6 +109,10 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
     private lateinit var nameField: EditBox
     private lateinit var modelField: EditBox
     private lateinit var dyeField: EditBox
+    private lateinit var neuField: EditBox
+    private var neuScroll = 0
+    private var neuQuery = ""
+    private var neuResults: List<NeuItems.Entry> = emptyList()
     private lateinit var trimMatDropdown: Dropdown
     private lateinit var trimPatDropdown: Dropdown
 
@@ -163,8 +167,13 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         nameField.setBordered(false)
 
         modelField = EditBox(this.font, rx, fieldY, rw, 18, Component.literal("Model"))
-        modelField.setMaxLength(64)
+        modelField.setMaxLength(96)
         modelField.setBordered(false)
+
+        neuField = EditBox(this.font, rx, 0, rw, 18, Component.literal("Search"))
+        neuField.setMaxLength(48)
+        neuField.setBordered(false)
+        NeuItems.ensureLoaded()
 
         dyeField = EditBox(this.font, rx + 28, 0, 70, 18, Component.literal("Hex"))
         dyeField.setMaxLength(6)
@@ -191,11 +200,44 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
     private fun doneRect() = ClickRect(panelX + PANEL_W - 14 - 70, footY, 70, 18)
     private fun applyRect() = ClickRect(panelX + PANEL_W - 14 - 70 - 8 - 70, footY, 70, 18)
     private fun modelDefaultRect() = ClickRect(rx, contentY + 58, 84, 16)
+    private fun neuFieldY() = contentY + 92
+    private fun neuGridY() = neuFieldY() + 26
+    private fun neuCols() = max(1, rw / CELL)
+    private fun neuRows() = max(1, (footY - 10 - neuGridY()) / CELL)
+
+    private fun neuList(): List<NeuItems.Entry> {
+        val q = neuField.value
+        if (q != neuQuery || (neuResults.isEmpty() && NeuItems.ready())) {
+            neuQuery = q
+            neuResults = NeuItems.search(q, 400)
+            neuScroll = 0
+        }
+        return neuResults
+    }
+
+    private fun neuAt(mx: Int, my: Int): NeuItems.Entry? {
+        val list = neuList()
+        val cols = neuCols()
+        if (!inBox(mx, my, rx, neuGridY(), cols * CELL, neuRows() * CELL)) return null
+        val idx = (neuScroll + (my - neuGridY()) / CELL) * cols + (mx - rx) / CELL
+        return list.getOrNull(idx)
+    }
     private fun dyeClearRect() = ClickRect(rx + rw - 60, dyeHexY(), 60, 18)
     private fun trimClearRect() = ClickRect(rx, contentY + 36, 70, 16)
     private fun dyeHexY() = contentY + 10 + dyeRows() * (SWATCH + SWATCH_GAP) + 16
     private fun dyeCols() = max(1, (rw + SWATCH_GAP) / (SWATCH + SWATCH_GAP))
-    private fun dyeRows() = (DYES.size + dyeCols() - 1) / dyeCols()
+    private fun dyeRows() = (dyes().size + dyeCols() - 1) / dyeCols()
+
+    // NEU's Hypixel dyes when loaded (with their real hex), then the vanilla dyes
+    private var dyeCache: List<Array<String>> = DYES.toList()
+    private var dyeCacheNeu = false
+    private fun dyes(): List<Array<String>> {
+        if (!dyeCacheNeu && NeuItems.dyes().isNotEmpty()) {
+            dyeCacheNeu = true
+            dyeCache = NeuItems.dyes().map { arrayOf(it.name, it.hex!!) } + DYES.drop(VANILLA_DYES_FROM)
+        }
+        return dyeCache
+    }
 
     private fun uuidOf(st: ItemStack): String? = if (st.isEmpty) null else ItemUtil.getUuid(st)
 
@@ -252,7 +294,8 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         val sel = selected()
         val id = uuidOf(sel) ?: return
         val v = modelField.value.trim()
-        if (v.isBlank() || v == defaultModel(sel) || net.minecraft.resources.Identifier.tryParse(v) == null) {
+        val neu = NeuItems.idOf(v)
+        if (v.isBlank() || v == defaultModel(sel) || (neu == null && net.minecraft.resources.Identifier.tryParse(v) == null) || neu?.isEmpty() == true) {
             ItemCustomizationStore.removeModelId(id)
         } else {
             ItemCustomizationStore.setModelId(id, v)
@@ -372,6 +415,19 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
             }
         } catch (e: Exception) {
             FishDiag.fail("ItemCustomizeScreen.5", "item customize inventory render failed", e)
+        }
+
+        if (tab == Tab.MODEL) {
+            val list = neuList()
+            val cols = neuCols()
+            val cur = NeuItems.idOf(modelField.value.trim())
+            for (r in 0 until neuRows()) for (c in 0 until cols) {
+                val e = list.getOrNull((neuScroll + r) * cols + c) ?: break
+                val x = rx + c * CELL; val y = neuGridY() + r * CELL
+                slotBg(ctx, x, y, inBox(mx, my, x, y, CELL, CELL))
+                if (e.id == cur) selRing(ctx, x, y)
+                try { ctx.item(NeuItems.icon(e), x + 1, y + 1) } catch (ex: Exception) { FishDiag.fail("ItemCustomizeScreen.8", "NEU icon render failed for ${e.id}", ex) }
+            }
         }
 
         ScreenTheme.roundedRect(ctx, lx, pvY, LEFT_W, 56, 6, BG_SECTION)
@@ -559,11 +615,29 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         val def = defaultModel(selected())
         ScreenTheme.nst("Model", rx, y0, TEXT_HINT, 0.6f)
         ScreenTheme.nTextField(modelField, focusedField === modelField, rx, y0 + 10, rw, 20, 9f)
-        ScreenTheme.nst("Any item id, like minecraft:diamond_sword.", rx, y0 + 36, TEXT_HINT, 0.55f)
+        ScreenTheme.nst(clip("Any item id, like minecraft:diamond_sword, or pick a SkyBlock skin below.", rw, 0.55f), rx, y0 + 36, TEXT_HINT, 0.55f)
         ScreenTheme.nst(clip("Leave it as $def to keep the normal look.", rw, 0.55f), rx, y0 + 45, TEXT_HINT, 0.55f)
         val v = modelField.value.trim()
-        if (v.isNotEmpty() && net.minecraft.resources.Identifier.tryParse(v) == null)
+        val neu = NeuItems.idOf(v)
+        if (neu != null) {
+            val e = NeuItems.get(neu)
+            if (e != null) ScreenTheme.nst(clip("SkyBlock skin: ${e.name}", rw - 90, 0.55f), rx + 90, y0 + 62, ACCENT, 0.55f)
+            else if (NeuItems.ready()) ScreenTheme.nst("Unknown NEU item, so the default model is kept.", rx, y0 + 80, WARN, 0.55f)
+        } else if (v.isNotEmpty() && net.minecraft.resources.Identifier.tryParse(v) == null)
             ScreenTheme.nst("Not a valid id, so the default model is kept.", rx, y0 + 80, WARN, 0.55f)
+
+        ScreenTheme.nst("SkyBlock skins (NEU repo)", rx, neuFieldY() - 9, TEXT_HINT, 0.6f)
+        ScreenTheme.nTextField(neuField, focusedField === neuField, rx, neuFieldY(), rw, 20, 9f)
+        val list = neuList()
+        val status = when {
+            NeuItems.loading && !NeuItems.ready() -> "Downloading NEU item repo..."
+            NeuItems.failed && !NeuItems.ready() -> "Couldn't load the NEU repo. Check your connection and reopen."
+            neuField.value.isBlank() -> "Type to search, for example wither or dragon."
+            list.isEmpty() -> "No items match."
+            else -> null
+        }
+        if (status != null) ScreenTheme.nst(status, rx, neuGridY() + 4, TEXT_HINT, 0.55f)
+        neuAt(mouseX, mouseY)?.let { ScreenTheme.nst(clip(it.name, rw - 150, 0.55f), rx + 150, neuFieldY() - 9, TEXT_PRIM, 0.55f) }
         if (def.isNotEmpty() && v != def) drawButton(modelDefaultRect(), "Use default", mouseX, mouseY, ACCENT, filled = false)
     }
 
@@ -580,21 +654,22 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         val cur = dyeField.value.trim().uppercase()
         val cols = dyeCols()
         var hovered = -1
-        for (i in DYES.indices) {
+        val dyes = dyes()
+        for (i in dyes.indices) {
             val x = rx + (i % cols) * (SWATCH + SWATCH_GAP)
             val y = y0 + 10 + (i / cols) * (SWATCH + SWATCH_GAP)
             val hov = inBox(mouseX, mouseY, x, y, SWATCH, SWATCH)
             if (hov) hovered = i
-            val col = 0xFF000000.toInt() or DYE_RGB[i]
-            val isSel = cur == DYES[i][1]
+            val col = 0xFF000000.toInt() or dyes[i][1].toInt(16)
+            val isSel = cur == dyes[i][1]
             if (isSel) ScreenTheme.nRoundedRectRing(x, y, SWATCH, SWATCH, 4, 2, col, 0xFFFFFFFF.toInt())
             else ScreenTheme.nRoundedRectRing(x, y, SWATCH, SWATCH, 4, 1, col, if (hov) ACCENT else 0x33FFFFFF)
         }
         val gridBot = y0 + 10 + dyeRows() * (SWATCH + SWATCH_GAP)
-        val curIdx = if (cur.length == 6) DYES.indexOfFirst { it[1] == cur } else -1
+        val curIdx = if (cur.length == 6) dyes.indexOfFirst { it[1] == cur } else -1
         val label = when {
-            hovered >= 0 -> DYES[hovered][0]
-            curIdx >= 0 -> DYES[curIdx][0]
+            hovered >= 0 -> dyes[hovered][0]
+            curIdx >= 0 -> dyes[curIdx][0]
             cur.length == 6 -> "Custom colour"
             else -> "No dye set"
         }
@@ -704,6 +779,11 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
             }
             Tab.MODEL -> {
                 if (inBox(mx, my, rx, contentY + 10, rw, 20)) { focusField(modelField); return true }
+                if (inBox(mx, my, rx, neuFieldY(), rw, 20)) { focusField(neuField); return true }
+                neuAt(mx, my)?.let { e ->
+                    if (uuidOf(sel) != null) { modelField.setValue(NeuItems.PREFIX + e.id); applyModel() }
+                    return true
+                }
                 val def = defaultModel(sel)
                 if (def.isNotEmpty() && modelField.value.trim() != def && modelDefaultRect().hit(mx, my)) {
                     modelField.setValue(def); applyModel(); focusField(null); return true
@@ -711,10 +791,11 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
             }
             Tab.DYE -> if (uuidOf(sel) != null && dyeAllowed(sel)) {
                 val cols = dyeCols()
-                for (i in DYES.indices) {
+                val dyes = dyes()
+                for (i in dyes.indices) {
                     val x = rx + (i % cols) * (SWATCH + SWATCH_GAP)
                     val y = contentY + 10 + (i / cols) * (SWATCH + SWATCH_GAP)
-                    if (inBox(mx, my, x, y, SWATCH, SWATCH)) { dyeField.setValue(DYES[i][1]); applyDye(); focusField(null); return true }
+                    if (inBox(mx, my, x, y, SWATCH, SWATCH)) { dyeField.setValue(dyes[i][1]); applyDye(); focusField(null); return true }
                 }
                 if (inBox(mx, my, rx + 28, dyeHexY(), 70, 18)) { focusField(dyeField); return true }
                 if (dyeField.value.isNotBlank() && dyeClearRect().hit(mx, my)) { dyeField.setValue(""); applyDye(); focusField(null); return true }
@@ -735,6 +816,11 @@ class ItemCustomizeScreen : Screen(Component.literal("Item Customize")), HasUiOv
         val mx = UiScale.vx(mouseX); val my = UiScale.vx(mouseY)
         if (trimMatDropdown.scrolled(mx, my, verticalAmount)) return true
         if (trimPatDropdown.scrolled(mx, my, verticalAmount)) return true
+        if (tab == Tab.MODEL && inBox(mx, my, rx, neuGridY(), rw, neuRows() * CELL)) {
+            val maxScroll = max(0, (neuList().size + neuCols() - 1) / neuCols() - neuRows())
+            neuScroll = max(0, min(maxScroll, neuScroll - Math.signum(verticalAmount).toInt()))
+            return true
+        }
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)
     }
 

@@ -33,7 +33,8 @@ object M7Relics {
     }
 
     private const val NAME = "Relic Spawn Timer"
-    private const val SPAWN_TICKS = 42
+    // Necron death -> relic stands, measured by NoammAddons: 50-63t
+    private const val SPAWN_TICKS = 55
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private const val RESTART_GUARD_MS = 30_000L
 
@@ -61,8 +62,6 @@ object M7Relics {
                 p5StartMs = System.currentTimeMillis()
                 myRelic = null
                 pickers.clear(); placed.clear()
-                if (Floor7.enableRelicStartTimer)
-                    spawnEndMs = System.currentTimeMillis() + SPAWN_TICKS * 50L
             } else if (p5StartMs != 0L) {
                 val m = PICKUP.matcher(msg)
                 if (!m.find()) {
@@ -76,9 +75,12 @@ object M7Relics {
             }
             false
         }
+        fishmod.utils.dungeon.NecronDeath.onDeath {
+            if (Floor7.enableRelicStartTimer && Phase.getFloor() == "M7") spawnEndMs = System.currentTimeMillis() + SPAWN_TICKS * 50L
+        }
         Events.ON_WORLD_CHANGE.register { spawnEndMs = 0L; p5StartMs = 0L; myRelic = null; pickers.clear(); placed.clear(); false }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register {
-            try { checkSpawned(); checkPlaced(); checkAllPlaced() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
+            try { fishmod.utils.dungeon.NecronTrace.tick(); Phase.checkNecronBar(); checkSpawned(); checkPlaced(); checkAllPlaced() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
         }
 
         RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
@@ -153,7 +155,7 @@ object M7Relics {
     }
 
     private fun renderBox(matrices: PoseStack, vc: VertexConsumer) {
-        if (!Floor7.renderRelicHighlight || !Location.inDungeon() || !Phase.inP5()) return
+        if (!Floor7.enableRelicStartTimer || !Floor7.renderRelicHighlight || !Location.inDungeon() || !Phase.inP5()) return
         val relic = heldRelic() ?: return
         val c = relic.cauldron
         val box = AABB(c.x - 0.5, c.y - 0.5, c.z - 0.5, c.x + 0.5, c.y + 0.5, c.z + 0.5)

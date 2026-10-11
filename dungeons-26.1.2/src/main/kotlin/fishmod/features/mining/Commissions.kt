@@ -24,7 +24,7 @@ object Commissions {
     fun init() {
         // e.g. "AQUAMARINE GEMSTONE COLLECTOR Commission Complete! Visit the King..."
         Events.ON_GAME_MESSAGE.register { text ->
-            if (S.miningCommTitle) COMPLETE.find(Mining.strip(text.string).trim())?.let { m ->
+            if ((S.miningCommissions && S.miningCommTitle)) COMPLETE.find(Mining.strip(text.string).trim())?.let { m ->
                 val name = m.groupValues[1].lowercase().split(' ').joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
                 Mining.title(S.miningCommTitleText, "§e$name", 2000, true)
             }
@@ -39,10 +39,10 @@ object Commissions {
         MiningHuds.reg("Commissions", "mining_comms", 160, 50,
             { S.miningCommHudX }, { S.miningCommHudX = it }, { S.miningCommHudY }, { S.miningCommHudY = it },
             { S.miningCommHudScale }, { S.miningCommHudScale = it },
-            { S.miningCommHud && current.isNotEmpty() }, ::lines)
+            { (S.miningCommissions && S.miningCommHud) && current.isNotEmpty() }, ::lines)
 
         DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y ->
-            if (!S.miningCommHighlight || stack.isEmpty) return@register
+            if (!(S.miningCommissions && S.miningCommHighlight) || stack.isEmpty) return@register
             val scr = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return@register
             if (scr.title.string != "Commissions") return@register
             val slot = DrawEvents.currentSlot ?: return@register
