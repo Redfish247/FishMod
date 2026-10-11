@@ -97,7 +97,8 @@ object BossDamage {
     fun test() {
         tallies.clear()
         val fake = listOf("Maxor" to (210e6 to 800e6), "Storm" to (260e6 to 1e9), "Goldor" to (300e6 to 1.2e9),
-            "Necron" to (350e6 to 1.4e9), "Power Dragon" to (180e6 to 600e6), "Wither King" to (90e6 to 300e6))
+            "Necron" to (350e6 to 1.4e9), "Power Dragon" to (180e6 to 600e6), "Flame Dragon" to (120e6 to 450e6),
+            "Apex Dragon" to (150e6 to 500e6), "Ice Dragon" to (95e6 to 400e6), "Soul Dragon" to (140e6 to 520e6), "Wither King" to (90e6 to 300e6))
         for ((n, v) in fake) tallies[n] = Tally().apply { mine = v.first; total = v.second }
         Scheduler.scheduleTask(Runnable { FishDiag.guard("BossDamage.3", "boss damage test") { print() } }, 20)
     }
@@ -105,7 +106,8 @@ object BossDamage {
     private fun print() {
         Misc.addChatMessage(Component.literal("§3§lBoss Damage"))
         var mineSum = 0.0; var totalSum = 0.0
-        for ((name, t) in tallies) {
+        val order = listOf("Maxor", "Storm", "Goldor", "Necron") + WitherDragon.entries.filter { it != WitherDragon.NONE }.map { it.displayName }
+        for ((name, t) in tallies.entries.sortedBy { e -> order.indexOf(e.key).let { if (it < 0) order.size else it } }.map { it.key to it.value }) {
             mineSum += t.mine; totalSum += t.total
             Misc.addChatMessage(Component.literal(" §7$name: §f${Misc.abbr(t.mine)} §8(§b${pct(t.mine, t.total)}§8)"))
         }
