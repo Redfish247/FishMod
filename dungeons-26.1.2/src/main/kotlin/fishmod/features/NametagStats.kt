@@ -35,13 +35,19 @@ object NametagStats {
     }
 
     private val cache = ConcurrentHashMap<String, Entry>()
+
+    private fun pruneExpired() {
+        val cutoff = System.currentTimeMillis() - TTL_MS
+        cache.values.removeIf { maxOf(it.nwAt, it.dungAt) < cutoff }
+        if (cache.size > MAX_ENTRIES) cache.clear()
+    }
     private val inFlight = AtomicInteger(0)
     @Volatile private var lastKick = 0L
 
     @JvmStatic
     fun init() {
         // Keep entries across lobby swaps (TTL expires them); just cap size.
-        Events.ON_WORLD_CHANGE.register { if (cache.size > MAX_ENTRIES) cache.clear(); false }
+        Events.ON_WORLD_CHANGE.register { pruneExpired(); false }
     }
 
     private fun canKick(now: Long): Boolean =
@@ -54,6 +60,7 @@ object NametagStats {
         if (!VALID_IGN.matches(name)) return null
 
         val hub = Location.inDungeonHub()
+        if (cache.size > MAX_ENTRIES) pruneExpired()
         val e = cache.computeIfAbsent(name.lowercase()) { Entry() }
         val now = System.currentTimeMillis()
         val showNw = FishSettings.nametagStatsShowNetworth
