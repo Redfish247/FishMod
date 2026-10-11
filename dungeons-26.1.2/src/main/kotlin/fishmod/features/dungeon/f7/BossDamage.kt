@@ -92,6 +92,16 @@ object BossDamage {
         }
     }
 
+    // /bossdamagetest: fake M7 tallies, printed after the same 20-tick delay
+    @JvmStatic
+    fun test() {
+        tallies.clear()
+        val fake = listOf("Maxor" to (210e6 to 800e6), "Storm" to (260e6 to 1e9), "Goldor" to (300e6 to 1.2e9),
+            "Necron" to (350e6 to 1.4e9), "Power Dragon" to (180e6 to 600e6), "Wither King" to (90e6 to 300e6))
+        for ((n, v) in fake) tallies[n] = Tally().apply { mine = v.first; total = v.second }
+        Scheduler.scheduleTask(Runnable { FishDiag.guard("BossDamage.3", "boss damage test") { print() } }, 20)
+    }
+
     private fun print() {
         Misc.addChatMessage(Component.literal("§3§lBoss Damage"))
         var mineSum = 0.0; var totalSum = 0.0
