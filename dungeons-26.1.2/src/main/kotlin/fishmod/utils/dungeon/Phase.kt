@@ -64,6 +64,8 @@ object Phase {
         }
 
         Events.ON_GAME_MESSAGE.register(Phase::parseGameMessage)
+        NecronDeath.init()
+        NecronDeath.onDeath { if (awaitingNecronDeath()) fireP5Start("necron dead") }
     }
 
     private fun detectFloor() {
@@ -77,12 +79,25 @@ object Phase {
         if (floor!!.contains("7")) inFloor7 = true
     }
 
-    // Alpha doesn't send Necron's death line; in M7 the relics spawning stands in for it
+    // Alpha doesn't send Necron's death line; NecronDeath (boss bar) ends P4, relic spawn / WK line are backups
     @JvmStatic
     fun onRelicSpawn() {
         if (awaitingNecronDeath()) fireP5Start("relics spawned")
     }
 
+
+    private var sawNecronBar = false
+
+    // Necron dies when his boss bar empties or vanishes; relics spawn ~6s later.
+    @JvmStatic
+    fun checkNecronBar() {
+        if (!awaitingNecronDeath()) { sawNecronBar = false; return }
+        val bars = (net.minecraft.client.Minecraft.getInstance().gui.bossOverlay as fishmod.mixin.accessors.BossBarHudAccessor).bossBars ?: return
+        val bar = bars.values.firstOrNull { it.name.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim() == "Necron" }
+        val pct = (bar as? fishmod.mixin.accessors.LerpingBossEventAccessor)?.targetPercent
+        if (pct != null && pct > 0f) { sawNecronBar = true; return }
+        if (sawNecronBar) { sawNecronBar = false; fireP5Start("necron bar empty") }
+    }
 
     private fun awaitingNecronDeath() = inFloor7 && currentPhase == 8 && currentSplits?.getOrNull(9)?.name == "Dragons"
 
@@ -281,7 +296,7 @@ object Phase {
     private fun showSplitPb(): Boolean = FishSettings.pbMessagesEnabled && FishSettings.pbMessagesSplits
 
     private fun printSplits() {
-        Misc.addChatMessage(Component.literal("§aSplits: "))
+        if (enableSplits) Misc.addChatMessage(Component.literal("§aSplits: "))
         val splits = currentSplits ?: return
         for (split in splits) {
             val wasRunning = split.started()
@@ -290,7 +305,7 @@ object Phase {
             val tick = if (wasRunning) tickPb(split) else null
             val line = split.createNameText().append(split.createTimeText())
             if (showSplitPb()) appendPbTags(line, pb, tick, true)
-            Misc.addChatMessage(line)
+            if (enableSplits) Misc.addChatMessage(line)
         }
         FishDiag.guard("Phase.15", "save run history floor=$floor") { RunHistory.saveSplits(floor, splits) }
         if (splits.isNotEmpty()) {

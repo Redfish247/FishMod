@@ -52,13 +52,14 @@ object SlayerCarryTracker {
             { FishSettings.slayerCarryHudEnabled },
         )
         ClientTickEvents.END_CLIENT_TICK.register { mc -> FishDiag.guard("SlayerCarryTracker.1", "carry tracker tick failed") { tick(mc) } }
+        fishmod.utils.events.Events.ON_LOCATION_CHANGE.register { loc -> onLocation(loc); false }
     }
 
     private fun tick(mc: Minecraft) {
         val lvl = mc.level
         if (lvl !== level) { level = lvl; watched.clear(); seen.clear() }
         val player = mc.player ?: return
-        if (lvl == null || carries.isEmpty()) return
+        if (lvl == null || carries.isEmpty() || !FishSettings.slayerCarryHudEnabled) return
 
         val it = watched.values.iterator()
         while (it.hasNext()) {
@@ -117,6 +118,15 @@ object SlayerCarryTracker {
         }
     }
 
+    // Leaving the slayer islands drops the carries
+    private fun onLocation(loc: fishmod.utils.Location) {
+        if (carries.isEmpty() || loc == fishmod.utils.Location.UNKNOWN) return
+        if (SlayerType.entries.any { it.island == loc }) return
+        val n = carries.size
+        carries.clear(); watched.clear(); save()
+        Misc.addChatMessage(Component.literal("§b[FM] §fLeft the slayer area, cleared $n carr${if (n == 1) "y" else "ies"}"))
+    }
+
     // ── commands ──
 
     @JvmStatic
@@ -137,6 +147,7 @@ object SlayerCarryTracker {
 
     @JvmStatic
     fun add(ign: String, total: Int) {
+        if (!FishSettings.slayerCarryHudEnabled) { FishSettings.slayerCarryHudEnabled = true; fishmod.utils.config.FishConfig.manager.save() }
         val key = ign.lowercase()
         val c = carries.getOrPut(key) { Carry(ign) }
         if (total >= 0) c.total = total
