@@ -16,6 +16,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(GameRenderer.class)
 public class GameRendererUiMixin {
 
+    @org.spongepowered.asm.mixin.Shadow @org.spongepowered.asm.mixin.Final private net.minecraft.client.gui.render.GuiRenderer guiRenderer;
+    @org.spongepowered.asm.mixin.Unique private com.mojang.blaze3d.buffers.GpuBufferSlice fishmod$fogSlice;
+
+    @org.spongepowered.asm.mixin.injection.ModifyArg(
+        method = "render(Lnet/minecraft/client/DeltaTracker;Z)V",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/render/GuiRenderer;render(Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V")
+    )
+    private com.mojang.blaze3d.buffers.GpuBufferSlice fishmod$captureFog(com.mojang.blaze3d.buffers.GpuBufferSlice slice) {
+        fishmod$fogSlice = slice;
+        return slice;
+    }
+
     @Inject(
         method = "render(Lnet/minecraft/client/DeltaTracker;Z)V",
         at = @At(
@@ -32,6 +44,8 @@ public class GameRendererUiMixin {
                 screen.paintUiOverlay();
             } else if (current instanceof AbstractContainerScreen<?> container && StorageOverlay.isActive(container)) {
                 StorageOverlay.paintUiOverlay();
+                var state = ((GameRenderer) (Object) this).getGameRenderState().guiRenderState;
+                if (StorageOverlay.extractCarriedLayer(state)) guiRenderer.render(fishmod$fogSlice);
             }
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("GameRendererUiMixin.1", "ui overlay paint failed", t);
