@@ -671,6 +671,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Show Teammates", "", FishSettings::extraStatsTeammates))
             dungeon.features.add(f)
         }
+        run {
+            val f = Feature("Boss Damage", FishSettings::bossDamageEnabled)
+            f.sub.add(SubcategoryHeader("F7/M7: your damage + % of all damage to each wither / dragon, posted 1s after the run"))
+            dungeon.features.add(f)
+        }
         dungeon.features.add(Feature("Terracotta Timer", FishSettings::terracottaTimerEnabled))
         run {
             val f = Feature("Spirit Bear", FishSettings::spiritBearEnabled)
