@@ -185,8 +185,16 @@ object StorageOverlay {
 
     private const val SIDEBAR_W = 190
     private const val SIDEBAR_GAP = 6
-    private const val ROW_H = 8
-    private const val ROW_TEXT = 0.72f
+    private const val ROW_H = 10
+    private const val ROW_SIZE = 8f
+    private val glyphOk = HashMap<Int, Boolean>()
+
+    // Drop glyphs the UI font can't draw (they'd render as boxes)
+    private fun displayable(s: String): String {
+        val sb = StringBuilder()
+        s.codePoints().forEach { cp -> if (glyphOk.getOrPut(cp) { fishmod.utils.rendering.UiFont.canDisplay(cp) }) sb.appendCodePoint(cp) }
+        return sb.toString().replace(Regex(" {2,}"), " ").trim()
+    }
     private var sidebarW = 0
     private var sidebarScroll = 0
     private var sidebarRowsMax = 0
@@ -212,7 +220,7 @@ object StorageOverlay {
         sidebarScroll = sidebarScroll.coerceIn(0, sidebarRowsMax)
         hoveredValueName = null
         val inList = inRect(smx, smy, x + 4, listY, sidebarW - 8, listH)
-        ctx.enableScissor(x + 4, listY, x + sidebarW - 4, listY + listH)
+        UiRecorder.pushScissor(x + 4f, listY.toFloat(), sidebarW - 8f, listH.toFloat())
         if (rows.isEmpty()) UiRecorder.text("Nothing valuable here", x + 8f, listY + 2f, TEXT_SIZE, ScreenTheme.SUBTEXT_COLOR)
         rows.drop(sidebarScroll).forEachIndexed { i, r ->
             val ry = listY + i * ROW_H
@@ -222,26 +230,17 @@ object StorageOverlay {
                 hoveredValueName = r.name
                 tooltipStack = r.stack
             }
-            // vanilla font: Hypixel names use glyphs (stars, symbols) the UI font lacks
-            val vw = font.width(r.value) * ROW_TEXT
-            val maxName = (sidebarW - 20 - vw) / ROW_TEXT
-            var name = r.label
-            if (font.width(name) > maxName) {
-                while (name.isNotEmpty() && font.width("$name...") > maxName) name = name.dropLast(1)
+            val vw = UiRecorder.textWidth(r.value, ROW_SIZE)
+            val maxName = sidebarW - 20f - vw
+            var name = displayable(r.label)
+            if (UiRecorder.textWidth(name, ROW_SIZE) > maxName) {
+                while (name.isNotEmpty() && UiRecorder.textWidth("$name...", ROW_SIZE) > maxName) name = name.dropLast(1)
                 name = "$name..."
             }
-            ctx.pose().pushMatrix()
-            ctx.pose().translate(x + 8f, ry + 0.5f)
-            ctx.pose().scale(ROW_TEXT, ROW_TEXT)
-            ctx.text(font, name, 0, 0, r.color, false)
-            ctx.pose().popMatrix()
-            ctx.pose().pushMatrix()
-            ctx.pose().translate(x + sidebarW - 8f - vw, ry + 0.5f)
-            ctx.pose().scale(ROW_TEXT, ROW_TEXT)
-            ctx.text(font, r.value, 0, 0, GOLD, false)
-            ctx.pose().popMatrix()
+            UiRecorder.text(name, x + 8f, ry.toFloat(), ROW_SIZE, r.color)
+            UiRecorder.text(r.value, x + sidebarW - 8f - vw, ry.toFloat(), ROW_SIZE, GOLD)
         }
-        ctx.disableScissor()
+        UiRecorder.popScissor()
 
         UiRecorder.fillRect(x + 6f, (y + h - 20).toFloat(), sidebarW - 12f, 1f, MENU_BORDER)
         UiRecorder.text("Total", x + 8f, y + h - 14f, TEXT_SIZE, ScreenTheme.SUBTEXT_COLOR)
