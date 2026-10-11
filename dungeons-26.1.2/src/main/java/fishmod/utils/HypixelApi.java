@@ -571,7 +571,9 @@ public class HypixelApi {
         return d;
     }
 
-    public static void getByNameSilent(String ign, DungeonDataCallback callback) {
+    public static void getByNameSilent(String ign, DungeonDataCallback rawCallback) {
+        // deliver on the client thread, callers touch game state
+        DungeonDataCallback callback = d -> Minecraft.getInstance().execute(() -> rawCallback.onData(d));
         String cachedUuid = getCachedUuid(ign);
         if (cachedUuid != null) { fetchProfilesSilent(cachedUuid, callback); return; }
         resolveUuid(ign, 0, uuid -> {
@@ -904,7 +906,9 @@ public class HypixelApi {
                         for (JsonElement profileEl : root.getAsJsonArray("profiles")) {
                             JsonObject profile = profileEl.getAsJsonObject();
                             if (!profile.has("selected") || !profile.get("selected").getAsBoolean()) continue;
-                            JsonObject member = profile.getAsJsonObject("members").getAsJsonObject(uuid);
+                            JsonObject members = profile.getAsJsonObject("members");
+                            JsonObject member = members == null ? null : members.getAsJsonObject(uuid);
+                            if (member == null) { mc.schedule(() -> Misc.addChatMessage(Component.literal("§cmember not found"))); return; }
                             mc.schedule(() -> {
                                 Misc.addChatMessage(Component.literal("§b--- accessory_bag_storage keys ---"));
                                 if (member.has("accessory_bag_storage")) {
@@ -921,11 +925,13 @@ public class HypixelApi {
                     } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.36", "dumpMemberKeys failed", e);
                         mc.schedule(() -> Misc.addChatMessage(Component.literal("§cParse error: " + e.getMessage())));
                     }
-                });
+                }).exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.37a", "dumpMemberKeys profile request failed", e);
+                    mc.schedule(() -> Misc.addChatMessage(Component.literal("§cRequest failed: " + e.getMessage()))); return null; });
             } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.37", "dumpMemberKeys failed", e);
                 mc.schedule(() -> Misc.addChatMessage(Component.literal("§cUUID error: " + e.getMessage())));
             }
-        });
+        }).exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.37b", "dumpMemberKeys uuid request failed", e);
+            mc.schedule(() -> Misc.addChatMessage(Component.literal("§cRequest failed: " + e.getMessage()))); return null; });
     }
 
     public static void dumpSkillKeys(Minecraft mc, String ign) {

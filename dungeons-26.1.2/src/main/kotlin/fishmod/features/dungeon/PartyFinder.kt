@@ -43,6 +43,9 @@ object PartyFinder {
     private val sbCache = ConcurrentHashMap<String, Double>()
     private val pending = ConcurrentHashMap.newKeySet<String>()
     private val kicked = ConcurrentHashMap.newKeySet<String>()
+    // bumped on world change so in-flight lookups from the old lobby are dropped
+    @Volatile private var gen = 0
+    private val failedAt = ConcurrentHashMap<String, Long>()
 
     @JvmStatic
     fun init() {
@@ -65,7 +68,7 @@ object PartyFinder {
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { kicked.clear(); cache.clear(); sbCache.clear(); false }
+        Events.ON_WORLD_CHANGE.register { gen++; kicked.clear(); cache.clear(); sbCache.clear(); pending.clear(); failedAt.clear(); false }
     }
 
     private fun tryAutoKick(name: String, clazz: String?) {
@@ -85,8 +88,10 @@ object PartyFinder {
 
         val cached = cache[key]
         if (cached != null && !cached.failed) { evalThenFinish(name, key, clazz, cached); return }
+        val g = gen
         HypixelApi.getByNameSilent(name) { d ->
-            cache[key] = d
+            if (g != gen) return@getByNameSilent
+            if (!d.failed) cache[key] = d
             if (d.failed) {
                 FishDiag.fail("PartyFinder.3", "auto-kick API lookup failed for $name")
                 mc.execute { FishMsg.send("§9AutoKick §7> couldn't look up §e$name§7, not kicking") }
@@ -101,7 +106,9 @@ object PartyFinder {
         val sbMin = clazz?.let { sbReqFor(it) } ?: 0
         if (sbMin <= 0) { finishAutoKick(name, key, base); return }
         sbCache[key]?.let { finishAutoKick(name, key, base + sbReason(clazz!!, it, sbMin)); return }
+        val g = gen
         HypixelApi.getProfileStats(Minecraft.getInstance(), name) { sb, _ ->
+            if (g != gen) return@getProfileStats
             sbCache[key] = sb
             finishAutoKick(name, key, base + sbReason(clazz!!, sb, sbMin))
         }
@@ -359,12 +366,18 @@ object PartyFinder {
 
     private fun request(name: String) {
         val key = name.lowercase()
-        if (cache.containsKey(key) || !pending.add(key)) return
+        if (cache.containsKey(key)) return
+        failedAt[key]?.let { if (System.currentTimeMillis() - it < 30_000) return }
+        if (!pending.add(key)) return
         if (pending.size > 6) { pending.remove(key); return }
+        val g = gen
         HypixelApi.getByNameSilent(name) { data ->
-            if (data.failed) FishDiag.fail("PartyFinder.15", "PF stats lookup failed for $name")
-            cache[key] = data
+            if (g != gen) return@getByNameSilent
             pending.remove(key)
+            if (data.failed) {
+                FishDiag.fail("PartyFinder.15", "PF stats lookup failed for $name")
+                failedAt[key] = System.currentTimeMillis()
+            } else { failedAt.remove(key); cache[key] = data }
         }
     }
 
