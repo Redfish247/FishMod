@@ -172,21 +172,67 @@ object StorageOverlay {
             .coerceAtMost(((vw - PADDING) / (PAGE_WIDTH + PADDING)).coerceAtLeast(1))
         innerW = PAGE_WIDTH * pageWidthCount + (pageWidthCount - 1) * PADDING
         overviewW = innerW + 3 * PADDING + SCROLL_BAR_WIDTH
-        mx0 = vw / 2 - overviewW / 2
+        sidebarW = if (fishmod.features.item.ContainerValue.storageSidebarEnabled()) SIDEBAR_W else 0
+        val sideSpan = if (sidebarW > 0) sidebarW + SIDEBAR_GAP else 0
+        mx0 = (vw / 2 - (overviewW + sideSpan) / 2 + sideSpan).coerceAtLeast(sideSpan + 2)
         val avail = vh - PLAYER_HEIGHT - 12
         overviewH = minOf(avail, FishSettings.storageMaxHeight.coerceIn(80, 900)).coerceAtLeast(80)
         innerH = overviewH - PADDING * 2 - HEADER_H
         my0 = (vh / 2 - (overviewH + PLAYER_HEIGHT) / 2).coerceAtLeast(6)
-        playerX0 = vw / 2 - PLAYER_WIDTH / 2
+        playerX0 = mx0 + overviewW / 2 - PLAYER_WIDTH / 2
         playerY0 = my0 + overviewH + 2
-
-        val sidebar = (fishmod.features.item.ContainerValue.storageSidebarWidthGuiPx() / scale).toInt()
-        if (sidebar > 0) {
-            val shift = (sidebar + 8 - mx0).coerceAtLeast(0)
-            mx0 += shift
-            playerX0 += shift
-        }
     }
+
+    private const val SIDEBAR_W = 150
+    private const val SIDEBAR_GAP = 6
+    private const val ROW_H = 10
+    private var sidebarW = 0
+    private var sidebarScroll = 0
+    private var sidebarRowsMax = 0
+    private var sidebarTotal = ""
+
+    // Fixed-width panel left of the storage grid; never resizes, so the grid stays put
+    private fun drawValueSidebar(screen: AbstractContainerScreen<*>, smx: Int, smy: Int) {
+        if (sidebarW <= 0) return
+        val rows = fishmod.features.item.ContainerValue.storageRows(screen)
+        sidebarTotal = fishmod.features.item.ContainerValue.storageTotal()
+        val x = mx0 - SIDEBAR_GAP - sidebarW
+        val y = my0
+        val h = overviewH
+        UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), sidebarW.toFloat(), h.toFloat(), PANEL_R, PANEL_BAND, 0, MENU_BG)
+        UiRecorder.fillRect(x + 3f, y + 3f, sidebarW - 6f, h - 6f, MENU_BG)
+        UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), sidebarW.toFloat(), h.toFloat(), PANEL_R, 1f, 0, MENU_BORDER)
+        UiRecorder.textBold("Container Value", x + 8f, y + 9f, TITLE_SIZE, ScreenTheme.TEXT_COLOR)
+        UiRecorder.text("${rows.size} items", x + 8f, y + 20f, TEXT_SIZE - 1f, ScreenTheme.SUBTEXT_COLOR)
+
+        val listY = y + 32
+        val listH = h - 32 - 22
+        sidebarRowsMax = (rows.size - listH / ROW_H).coerceAtLeast(0)
+        sidebarScroll = sidebarScroll.coerceIn(0, sidebarRowsMax)
+        UiRecorder.pushScissor(x + 4f, listY.toFloat(), sidebarW - 8f, listH.toFloat())
+        if (rows.isEmpty()) UiRecorder.text("Nothing valuable here", x + 8f, listY + 2f, TEXT_SIZE, ScreenTheme.SUBTEXT_COLOR)
+        rows.drop(sidebarScroll).forEachIndexed { i, r ->
+            val ry = listY + i * ROW_H
+            if (ry > listY + listH) return@forEachIndexed
+            if (i % 2 == 1) UiRecorder.fillRect(x + 4f, ry.toFloat() - 1f, sidebarW - 8f, ROW_H.toFloat(), 0x10FFFFFF)
+            val vw = UiRecorder.textWidth(r.value, TEXT_SIZE)
+            val maxName = sidebarW - 22f - vw
+            var name = r.label
+            while (name.length > 3 && UiRecorder.textWidth(name, TEXT_SIZE) > maxName) name = name.dropLast(2) + "…"
+            UiRecorder.text(name, x + 8f, ry.toFloat(), TEXT_SIZE, r.color)
+            UiRecorder.text(r.value, x + sidebarW - 8f - vw, ry.toFloat(), TEXT_SIZE, GOLD)
+        }
+        UiRecorder.popScissor()
+
+        UiRecorder.fillRect(x + 6f, (y + h - 20).toFloat(), sidebarW - 12f, 1f, MENU_BORDER)
+        UiRecorder.text("Total", x + 8f, y + h - 14f, TEXT_SIZE, ScreenTheme.SUBTEXT_COLOR)
+        val tw = UiRecorder.textWidthBold(sidebarTotal, TITLE_SIZE)
+        UiRecorder.textBold(sidebarTotal, x + sidebarW - 8f - tw, y + h - 14.5f, TITLE_SIZE, GOLD)
+        sidebarRect = intArrayOf(x, y, sidebarW, h)
+    }
+
+    private var sidebarRect = IntArray(4)
+    private const val GOLD = 0xFFFFAA00.toInt()
 
     private val scrollPanelX get() = mx0 + PADDING
     private val scrollPanelY get() = my0 + PADDING + HEADER_H
@@ -244,6 +290,7 @@ object StorageOverlay {
         UiRecorder.roundedRectRing(mx0.toFloat(), my0.toFloat(), overviewW.toFloat(), overviewH.toFloat(), PANEL_R, PANEL_BAND, 0, MENU_BG)
         UiRecorder.roundedRectRing(mx0.toFloat(), my0.toFloat(), overviewW.toFloat(), overviewH.toFloat(), PANEL_R, 1f, 0, MENU_BORDER)
 
+        drawValueSidebar(screen, smx, smy)
         drawHeader(all.size)
         drawPages(ctx, data, smx, smy, active, chestSlots)
         drawScrollBar()
@@ -268,6 +315,14 @@ object StorageOverlay {
         UiRecorder.textBold("Storage", tx, ty, TITLE_SIZE, ScreenTheme.TEXT_COLOR)
         val lw = UiRecorder.textWidth("Storage", TITLE_SIZE) + 6f
         UiRecorder.text("$pageCount pages", tx + lw, ty + 0.5f, TEXT_SIZE, ScreenTheme.SUBTEXT_COLOR)
+        if (sidebarW > 0) {
+            val label = "Total value in opened"
+            val gap = 5f
+            val w = UiRecorder.textWidth(label, TEXT_SIZE) + gap + UiRecorder.textWidthBold(sidebarTotal, TITLE_SIZE)
+            val cx = mx0 + overviewW / 2f - w / 2f
+            UiRecorder.text(label, cx, ty + 0.5f, TEXT_SIZE, ScreenTheme.SUBTEXT_COLOR)
+            UiRecorder.textBold(sidebarTotal, cx + UiRecorder.textWidth(label, TEXT_SIZE) + gap, ty, TITLE_SIZE, GOLD)
+        }
 
         val fw = 130; val fh = 13
         val fx = mx0 + overviewW - fw - PADDING; val fy = my0 + 7
@@ -669,6 +724,11 @@ object StorageOverlay {
     @JvmStatic
     fun mouseScrolled(verticalAmount: Double, screen: AbstractContainerScreen<*>): Boolean {
         if (!on(screen)) return false
+        val r = sidebarRect
+        if (sidebarW > 0 && inRect(lastMouseX, lastMouseY, r[0], r[1], r[2], r[3])) {
+            sidebarScroll = (sidebarScroll - verticalAmount.toInt().coerceIn(-3, 3) * 2).coerceIn(0, sidebarRowsMax)
+            return true
+        }
         val speed = verticalAmount * FishSettings.storageScrollSpeed.coerceIn(1, 50) * -1
         scroll = (scroll + speed.toFloat()).coerceIn(0f, maxScroll)
         return true

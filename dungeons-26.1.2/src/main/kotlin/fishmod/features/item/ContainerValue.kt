@@ -56,13 +56,30 @@ object ContainerValue {
         }
     }
 
+    class SidebarRow(val label: String, val value: String, val color: Int)
+
     @JvmStatic
-    fun storageSidebarWidthGuiPx(): Int =
-        if (FishSettings.containerValueEnabled && rows.isNotEmpty()) widthPx else 0
+    fun storageSidebarEnabled(): Boolean = FishSettings.containerValueEnabled && Location.inSkyblock()
+
+    // Storage overlay draws these in its own fixed sidebar
+    @JvmStatic
+    fun storageRows(screen: AbstractContainerScreen<*>): List<SidebarRow> {
+        try { recompute(screen) } catch (e: Exception) {
+            FishDiag.fail("ContainerValue.4", "storage container value recompute failed", e); return emptyList()
+        }
+        return rows.map { r ->
+            SidebarRow(if (r.count > 1) "${r.count}x ${r.name}" else r.name, abbr(r.value),
+                if (r.color != 0) r.color or 0xFF000000.toInt() else 0xFFAAAAAA.toInt())
+        }
+    }
+
+    @JvmStatic
+    fun storageTotal(): String = abbr(total)
 
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, screen: AbstractContainerScreen<*>) {
         if (!FishSettings.containerValueEnabled || !Location.inSkyblock() || !eligible(screen)) return
+        if (StorageOverlay.isActive(screen)) return
         val font = Minecraft.getInstance().font
 
         try { recompute(screen) } catch (e: Exception) {
