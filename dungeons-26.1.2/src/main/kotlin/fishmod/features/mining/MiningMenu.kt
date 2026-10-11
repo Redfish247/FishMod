@@ -63,7 +63,7 @@ object MiningMenu {
         profit.sub.add(ButtonSetting("Reset Total", "", "Reset") { MiningProfitTracker.resetTotal() })
         col.features.add(profit)
 
-        val ab = Feature("Mining Abilities", null, null)
+        val ab = Feature("Mining Abilities", S::miningAbilities)
         ab.sub.add(SubcategoryHeader("Ability Ready Title"))
         ab.sub.add(ToggleSetting("Ready Title", "Title when a pickaxe ability is off cooldown", S::miningAbilityTitle))
         ab.sub.add(InputSetting("Title Text", "{ability} = ability name", S::miningAbilityTitleText).gatedBy { S.miningAbilityTitle })
@@ -79,7 +79,7 @@ object MiningMenu {
         ab.sub.add(ToggleSetting("SkyMall HUD", "Current SkyMall perk (from chat)", S::miningSkyMall))
         col.features.add(ab)
 
-        val comm = Feature("Commissions", null, null)
+        val comm = Feature("Commissions", S::miningCommissions)
         comm.sub.add(ToggleSetting("Commission HUD", "Current commissions from the tab list", S::miningCommHud))
         comm.sub.add(ToggleSetting("Completed Title", "", S::miningCommTitle))
         comm.sub.add(InputSetting("Title Text", "", S::miningCommTitleText).gatedBy { S.miningCommTitle })

@@ -1251,6 +1251,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         hud.features.add(Feature("Catacombs Overflow Levels", FishSettings::catacombsOverflowEnabled))
         run {
+            hud.features.add(Feature("Anita Medal Profit", FishSettings::anitaProfitEnabled))
+            val f = Feature("Experiment Profit Tracker", FishSettings::expProfitEnabled)
+            f.sub.add(SubcategoryHeader("Experimentation Table drops, value, Enchanting XP and XP per experiment  ·  drag with Edit HUD"))
+            f.sub.add(ToggleSetting("Only On Private Island", "", FishSettings::expProfitOnlyIsland))
+            f.sub.add(SliderIntSetting("Item Lines", "", FishSettings::expProfitLines, 1, 30))
+            f.sub.add(SliderDoubleSetting("Scale", "", FishSettings::expProfitHudScale, 0.5, 3.0))
+            f.sub.add(ButtonSetting("Reset", "Clear all tracked experiments", Runnable { fishmod.features.ExperimentProfitTracker.reset() }))
+            hud.features.add(f)
+        }
+        run {
             val f = Feature("Performance HUD", FishSettings::perfHudEnabled)
             f.sub.add(SubcategoryHeader("Move/scale it in the HUD editor"))
             f.sub.add(ToggleSetting("FPS", "", FishSettings::perfHudFps))
@@ -1384,6 +1394,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             hud.features.add(f)
         }
         run {
+            val f = Feature("Recipe Viewer", FishSettings::recipeViewer)
+            f.sub.add(SubcategoryHeader("Hold Shift on an item to open its NEU recipe"))
+            f.sub.add(ToggleSetting("Enabled", "", FishSettings::recipeViewer))
+            f.sub.add(SliderIntSetting("Hold Time (ms)", "", FishSettings::recipeViewerHoldTime, 250, 5000, 50))
+            hud.features.add(f)
+        }
+        run {
             val f = Feature("Auto BIN Price", FishSettings::auctionPriceAutofillEnabled)
             f.sub.add(SubcategoryHeader("Prefills the AH \"Create Auction\" price field with item value minus a discount"))
             f.sub.add(SliderIntSetting("Discount %", "", FishSettings::auctionAutofillPercent, 0, 50))
@@ -1481,7 +1498,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Storm Crushed Noti", "", Floor7::notifyStormCrush))
             f.sub.add(ToggleSetting("Pillar Explosion Timer", "Counts down the second before the crushed pillar explodes", Floor7::timePillarExplosion))
             f.sub.add(SubcategoryHeader("Necron"))
-            f.sub.add(ToggleSetting("Necron LB Timer", "Counts down to the LB shot 8s into Necron's phase, then says SHOOT LB", Floor7::enableNecronLbTimer))
+            f.sub.add(ToggleSetting("Necron LB Timer", "Counts down to the LB shot 4s into Necron's phase, then says SHOOT LB", Floor7::enableNecronLbTimer))
             f.sub.add(SliderIntSetting("Necron LB Ping (ms)", "Ends it this much earlier to offset latency", Floor7::necronLbPingMs, 0, 500).gatedBy { Floor7.enableNecronLbTimer })
             f.sub.add(ColorPickerSetting("Necron LB Color", "", Floor7::necronLbColor).gatedBy { Floor7.enableNecronLbTimer })
             f.sub.add(SubcategoryHeader("Goldor"))
@@ -2516,7 +2533,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             if (c === dc) continue
             val yOff = Math.round(columnYOffset(i, top - HEADER_H) + unfoldYOffset(c, top - HEADER_H))
             try {
-                renderOneColumn(ctx, c, columnX0(i), colW, top, bot, mouseX, mouseY, yOff)
+                renderOneColumn(ctx, c, columnX0(i), colW, top, bot, if (dc != null) -10000 else mouseX, if (dc != null) -10000 else mouseY, yOff)
             } catch (t: Throwable) {
                 FishDiag.fail("FishModScreen.23", "column '${c.name}' render failed group=${c.isGroup()}", t)
             }
@@ -4396,6 +4413,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Party Finder List" -> "Scrollable party summary beside the menu; hover a row to highlight its head"
                 "Party Finder Auto Kick" -> "As leader, kick joiners who miss the S+ PB / secrets bar"
                 "Container Value" -> "No-background value list + total beside the open container / storage overlay"
+                "Anita Medal Profit" -> "In Anita's shop: coins per bronze medal for each item, best one highlighted"
                 else -> descForExternal(name)
             }
         }

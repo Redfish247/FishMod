@@ -35,7 +35,7 @@ object MiningAbilities {
             val s = Mining.strip(text.string).trim()
             READY.find(s)?.let { m ->
                 val ab = m.groupValues[1]
-                if (S.miningAbilityTitle && ab in ABILITIES)
+                if ((S.miningAbilities && S.miningAbilityTitle) && ab in ABILITIES)
                     Mining.title(S.miningAbilityTitleText.replace("{ability}", ab), "", S.miningAbilityTitleMs, S.miningAbilitySound)
             }
             USED.find(s)?.let { m ->
@@ -49,7 +49,7 @@ object MiningAbilities {
         ClientTickEvents.END_CLIENT_TICK.register { tickPickobulus() }
 
         RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
-            if (!S.miningPickobulus || pickBlocks.isEmpty()) return@register
+            if (!(S.miningAbilities && S.miningPickobulus) || pickBlocks.isEmpty()) return@register
             for (p in pickBlocks) {
                 val b = AABB(p)
                 if (S.miningPickobulusOpacity > 0) RenderUtils.fillBox(ps, vc, b, Mining.alpha(S.miningPickobulusColor, S.miningPickobulusOpacity))
@@ -60,21 +60,21 @@ object MiningAbilities {
         MiningHuds.reg("Pickobulus", "mining_pickobulus", 140, 60,
             { S.miningPickobulusHudX }, { S.miningPickobulusHudX = it }, { S.miningPickobulusHudY }, { S.miningPickobulusHudY = it },
             { S.miningPickobulusHudScale }, { S.miningPickobulusHudScale = it },
-            { S.miningPickobulus && S.miningPickobulusHud && (pickBlocks.isNotEmpty() || pickError.isNotEmpty()) }) {
+            { (S.miningAbilities && S.miningPickobulus) && S.miningPickobulusHud && (pickBlocks.isNotEmpty() || pickError.isNotEmpty()) }) {
             if (pickError.isNotEmpty()) listOf("§b§lPickobulus", pickError)
             else listOf("§b§lPickobulus §7(${pickBlocks.size} blocks)") + pickDrops.entries.sortedByDescending { it.value }.map { "§7${it.key}: §f${it.value}" }
         }
         MiningHuds.reg("Maniac Miner", "mining_maniac", 120, 30,
             { S.miningManiacHudX }, { S.miningManiacHudX = it }, { S.miningManiacHudY }, { S.miningManiacHudY = it },
             { S.miningManiacHudScale }, { S.miningManiacHudScale = it },
-            { S.miningManiac && maniacStart > 0 && (maniacActive() || System.currentTimeMillis() - maniacEnd < 10_000) }) {
+            { (S.miningAbilities && S.miningManiac) && maniacStart > 0 && (maniacActive() || System.currentTimeMillis() - maniacEnd < 10_000) }) {
             val secs = ((if (maniacActive()) System.currentTimeMillis() else maniacEnd) - maniacStart) / 1000
             listOf("§c§lManiac Miner" + if (maniacActive()) "" else " §7(ended)", "§7Blocks: §f$maniacBlocks §8(${secs}s)")
         }
         MiningHuds.reg("SkyMall", "mining_skymall", 160, 12,
             { S.miningSkyMallHudX }, { S.miningSkyMallHudX = it }, { S.miningSkyMallHudY }, { S.miningSkyMallHudY = it },
             { S.miningSkyMallHudScale }, { S.miningSkyMallHudScale = it },
-            { S.miningSkyMall && S.miningSkyMallPerk.isNotEmpty() && (Mining.inMiningIsland() || fishmod.features.FishHudEditor.isOpen()) }) {
+            { (S.miningAbilities && S.miningSkyMall) && S.miningSkyMallPerk.isNotEmpty() && (Mining.inMiningIsland() || fishmod.features.FishHudEditor.isOpen()) }) {
             listOf("§bSkyMall: §f${S.miningSkyMallPerk}")
         }
     }
@@ -95,7 +95,7 @@ object MiningAbilities {
 
     private fun tickPickobulus() {
         pickBlocks = emptyList(); pickError = ""
-        if (!S.miningPickobulus || !Mining.inMiningIsland()) return
+        if (!(S.miningAbilities && S.miningPickobulus) || !Mining.inMiningIsland()) return
         val mc = Minecraft.getInstance()
         val p = mc.player ?: return
         val level = mc.level ?: return

@@ -3,12 +3,14 @@ package fishmod.mixin;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import fishmod.features.item.ArmorTrimCache;
 import fishmod.features.item.ItemCustomizationStore;
+import fishmod.features.item.NeuItems;
 import fishmod.utils.data.ItemUtil;
 import net.minecraft.core.component.DataComponentHolder;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.world.item.equipment.trim.ArmorTrim;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -37,8 +39,20 @@ public interface ItemTrimMixin {
                     if (uuid != null) {
                         String modelId = ItemCustomizationStore.getModelId(uuid);
                         if (modelId != null) {
-                            Identifier id = ArmorTrimCache.modelId(modelId);
+                            String neu = NeuItems.idOf(modelId);
+                            Identifier id = neu != null ? NeuItems.model(neu) : ArmorTrimCache.modelId(modelId);
                             if (id != null) return (T) id;
+                        }
+                    }
+                }
+            } else if (type == DataComponents.PROFILE) {
+                if (((Object) this) instanceof ItemStack stack) {
+                    String uuid = ItemUtil.getUuid(stack);
+                    if (uuid != null) {
+                        String neu = NeuItems.idOf(ItemCustomizationStore.getModelId(uuid));
+                        if (neu != null) {
+                            ResolvableProfile profile = NeuItems.profile(neu);
+                            if (profile != null) return (T) profile;
                         }
                     }
                 }

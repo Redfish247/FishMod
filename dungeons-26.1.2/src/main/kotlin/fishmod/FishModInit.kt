@@ -387,6 +387,8 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.2", "fishmod.utils.IoExecutor.init() failed") { fishmod.utils.IoExecutor.init() }
 
         fishmod.cosmetic.NickData.load()
+        // Rebuild from settings so a nick saved by an older gradient build picks up the current colours
+        if (fishmod.cosmetic.NickState.isActive()) fishmod.cosmetic.NickState.applyFromSettings()
         FishDiag.guard("FishModInit.3", "fishmod.cosmetic.RemoteNicks.init() failed") { fishmod.cosmetic.RemoteNicks.init() }
         FishDiag.guard("FishModInit.4", "fishmod.cosmetic.PlayerSize.init() failed") { fishmod.cosmetic.PlayerSize.init() }
         FishDiag.guard("FishModInit.MeleeHit", "MeleeHitSound.init() failed") { fishmod.features.MeleeHitSound.init() }
@@ -407,6 +409,8 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.18", "PartyCommandHandler.init() failed") { PartyCommandHandler.init() }
         FishDiag.guard("FishModInit.19", "SoulflowHud.init() failed") { SoulflowHud.init() }
         FishDiag.guard("FishModInit.20", "PetHud.init() failed") { PetHud.init() }
+        FishDiag.guard("FishModInit.201", "ExperimentProfitTracker.init() failed") { fishmod.features.ExperimentProfitTracker.init() }
+        FishDiag.guard("FishModInit.203", "AnitaShop.init() failed") { fishmod.features.item.AnitaShop.init() }
         FishDiag.guard("FishModInit.21", "CooldownOverlay.init() failed") { CooldownOverlay.init() }
         FishDiag.guard("FishModInit.22", "fishmod.features.croesus.CroesusLootDetector.init() failed") { fishmod.features.croesus.CroesusLootDetector.init() }
         FishDiag.guard("FishModInit.23", "fishmod.features.CatacombsOverflowOverlay.init() failed") { fishmod.features.CatacombsOverflowOverlay.init() }
@@ -419,6 +423,8 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.30", "ItemRarityHotbar.init() failed") { ItemRarityHotbar.init() }
         FishDiag.guard("FishModInit.31", "fishmod.features.item.ItemQualityTooltip.init() failed") { fishmod.features.item.ItemQualityTooltip.init() }
         FishDiag.guard("FishModInit.32", "fishmod.features.item.ItemPriceTooltip.init() failed") { fishmod.features.item.ItemPriceTooltip.init() }
+        FishDiag.guard("FishModInit.32b", "fishmod.features.item.RecipeViewer.init() failed") { fishmod.features.item.RecipeViewer.init() }
+        FishDiag.guard("FishModInit.32c", "fishmod.features.item.TooltipPinBottom.init() failed") { fishmod.features.item.TooltipPinBottom.init() }
         FishDiag.guard("FishModInit.33", "fishmod.features.item.ContainerValue.init() failed") { fishmod.features.item.ContainerValue.init() }
         FishDiag.guard("FishModInit.34", "fishmod.features.item.AuctionPriceAutofill.init() failed") { fishmod.features.item.AuctionPriceAutofill.init() }
         FishDiag.guard("FishModInit.35", "MayorApi.init() failed") { MayorApi.init() }
@@ -483,6 +489,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.94", "fishmod.features.dungeon.f7.WitherESP.init() failed") { fishmod.features.dungeon.f7.WitherESP.init() }
         FishDiag.guard("FishModInit.StormLb", "StormLbWaypoint.init() failed") { fishmod.features.dungeon.f7.StormLbWaypoint.init() }
         FishDiag.guard("FishModInit.95", "fishmod.features.dungeon.f7.M7Relics.init() failed") { fishmod.features.dungeon.f7.M7Relics.init() }
+        FishDiag.guard("FishModInit.95b", "NecronTrace.init() failed") { fishmod.utils.dungeon.NecronTrace.init() }
         FishDiag.guard("FishModInit.96", "fishmod.features.dungeon.puzzles.PuzzleSolvers.init() failed") { fishmod.features.dungeon.puzzles.PuzzleSolvers.init() }
         FishDiag.guard("FishModInit.97", "fishmod.features.dungeon.SimonSaysTracker.init() failed") { fishmod.features.dungeon.SimonSaysTracker.init() }
         FishDiag.guard("FishModInit.98", "fishmod.features.chat.ChatRuleHandler.init() failed") { fishmod.features.chat.ChatRuleHandler.init() }
@@ -1336,6 +1343,7 @@ class FishModInit : ClientModInitializer {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_spawn_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderSpawn(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.137", "slayer_spawn_hud render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_stats_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderStats(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.138", "slayer_stats_hud render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_timer_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderTimer(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.139", "slayer_timer_hud render failed", t) } }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "experiment_profit_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.ExperimentProfitTracker.render(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.202", "experiment_profit_hud render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_carry_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerCarryTracker.render(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.200", "slayer_carry_hud render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "slayer_profit_hud")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.slayers.SlayerHuds.renderProfit(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.140", "slayer_profit_hud render failed", t) } }
         FishHudEditor.register(
