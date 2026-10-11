@@ -171,6 +171,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             java.util.Map.entry("Slayer Spawn", doubleArrayOf(10.0, 140.0, 1.0)),
             java.util.Map.entry("Slayer Stats", doubleArrayOf(10.0, 170.0, 1.0)),
             java.util.Map.entry("Slayer Carries", doubleArrayOf(10.0, 120.0, 1.0)),
+            java.util.Map.entry("Experiment Profit", doubleArrayOf(10.0, 60.0, 1.0)),
             java.util.Map.entry("Slayer Boss Timer", doubleArrayOf(10.0, 255.0, 1.0)),
             java.util.Map.entry("Slayer Profit", doubleArrayOf(240.0, 90.0, 1.0))
         )
@@ -207,7 +208,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 "Relic Spawn Timer",
             ),
             "HUD & Overlays" to listOf(
-                "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Notifications", "Warp Cooldown", "Tac Timer", "Rag Timer", "Spring Boots",
+                "Custom Scoreboard", "Performance", "Pet", "Soulflow", "Chat Notifications", "Warp Cooldown", "Tac Timer", "Rag Timer", "Spring Boots", "Experiment Profit",
             ),
             "Party & Social" to listOf("Party Finder List"),
             "Slayer" to listOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit", "Slayer Carries"),
@@ -330,6 +331,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Diana Magic Find" to s("§6§lDiana Magic Find", "§5Chimera§7: §b320%", "§6Stick§7: §b250%"),
             "Pet" to s("§6Ender Dragon §a+1.2k §7(845.3k/1.9M 44.5%)"),
             "Slayer Spawn" to s("§5§lRevenant Horror V", "§7Spawn: §f1,850 §7/ §f2,400 §8(77%)", lineH = 12),
+            "Experiment Profit" to s("§e§lExperiment Profit", "§61.2M §7| §fUltimate Wise I §f1", "§7Superpairs §f3 §8| §7Chrono §f3", "§7Enchanting XP §b450K §7(§b150K§7/exp)", "§eProfit §61.2M §7(§6400K§7/exp)", lineH = 12),
             "Slayer Carries" to s("§5§lSLAYER CARRIES", "§eSteve §7Voidgloom Seraph IV§7: §f3§7/§f10", lineH = 12),
             "Slayer Stats" to s("§5§lSLAYER STATS", "§7XP: §f12.5K", "§7Kills: §f84", "§7XP/hr: §e45.2K", "§7Kills/hr: §e31", lineH = 12),
             "Slayer Boss Timer" to s("§6Boss: §f12.84s", "§7PB: §f9.51s", "§a§lNEW PB!", "§7Cycle: §f52.3s", "§7Since kill: §f18.4s", lineH = 12),

@@ -52,7 +52,8 @@ public abstract class CosmeticEntityNameMixin {
             if (!real.isEmpty() && out.getString().contains(real))
                 out = NameRewriter.replaceName(out, real, NickState.asComponent());
         }
-        out = fishmod.cosmetic.RemoteNicks.applyResolvedOnly(out);
+        // Real players only (v4 UUID); Hypixel NPCs like Seymour can share a nicked player's name
+        if (entity instanceof Player && entity.getUUID().version() == 4) out = fishmod.cosmetic.RemoteNicks.applyResolvedOnly(out);
         if (prestige) out = PrestigeLevelColors.colorizeLevelPrefix(out);
         if (badges) out = fishmod.cosmetic.badge.BadgeRenderer.insertKnown(out, entity.getUUID().toString().replace("-", ""));
         return out;
