@@ -183,9 +183,10 @@ object StorageOverlay {
         playerY0 = my0 + overviewH + 2
     }
 
-    private const val SIDEBAR_W = 150
+    private const val SIDEBAR_W = 190
     private const val SIDEBAR_GAP = 6
-    private const val ROW_H = 10
+    private const val ROW_H = 8
+    private const val ROW_TEXT = 0.72f
     private var sidebarW = 0
     private var sidebarScroll = 0
     private var sidebarRowsMax = 0
@@ -222,15 +223,23 @@ object StorageOverlay {
                 tooltipStack = r.stack
             }
             // vanilla font: Hypixel names use glyphs (stars, symbols) the UI font lacks
-            val vw = font.width(r.value)
-            val maxName = sidebarW - 20 - vw
+            val vw = font.width(r.value) * ROW_TEXT
+            val maxName = (sidebarW - 20 - vw) / ROW_TEXT
             var name = r.label
             if (font.width(name) > maxName) {
                 while (name.isNotEmpty() && font.width("$name...") > maxName) name = name.dropLast(1)
                 name = "$name..."
             }
-            ctx.text(font, name, x + 8, ry, r.color, false)
-            ctx.text(font, r.value, x + sidebarW - 8 - vw, ry, GOLD, false)
+            ctx.pose().pushMatrix()
+            ctx.pose().translate(x + 8f, ry + 0.5f)
+            ctx.pose().scale(ROW_TEXT, ROW_TEXT)
+            ctx.text(font, name, 0, 0, r.color, false)
+            ctx.pose().popMatrix()
+            ctx.pose().pushMatrix()
+            ctx.pose().translate(x + sidebarW - 8f - vw, ry + 0.5f)
+            ctx.pose().scale(ROW_TEXT, ROW_TEXT)
+            ctx.text(font, r.value, 0, 0, GOLD, false)
+            ctx.pose().popMatrix()
         }
         ctx.disableScissor()
 
