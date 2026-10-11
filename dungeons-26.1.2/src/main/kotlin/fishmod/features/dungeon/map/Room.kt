@@ -76,14 +76,9 @@ class Room(
             }
             return if (type == Type.BLOOD) intArrayOf(MapColors.darker(MapColors.bloodColor(), dm)) else intArrayOf(MapColors.unopenedColor())
         } else {
-            val base: Int
-            if (!mimic || !(s.mapRoomAdditionsEnabled && s.mapRoomAdditionsMimic) || legit) {
-                if (type == Type.UNKNOWN) return intArrayOf(MapColors.unopenedColor())
-                FishDiag.notNull(type, "Room.1") { "room '${data?.name}' has null type while rendering colour state=$state" }
-                base = MapColors.roomColor(type!!)
-            } else {
-                base = s.mapMimicRoomColor
-            }
+            if (type == Type.UNKNOWN) return intArrayOf(MapColors.unopenedColor())
+            FishDiag.notNull(type, "Room.1") { "room '${data?.name}' has null type while rendering colour state=$state" }
+            val base = MapColors.roomColor(type!!)
 
             return if (state != State.UNDISCOVERED && state != State.UNOPENED) intArrayOf(base) else intArrayOf(MapColors.darker(base, dm))
         }
