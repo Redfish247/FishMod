@@ -192,7 +192,7 @@ object StorageOverlay {
     private var sidebarTotal = ""
 
     // Fixed-width panel left of the storage grid; never resizes, so the grid stays put
-    private fun drawValueSidebar(screen: AbstractContainerScreen<*>, smx: Int, smy: Int) {
+    private fun drawValueSidebar(ctx: GuiGraphicsExtractor, screen: AbstractContainerScreen<*>, smx: Int, smy: Int) {
         if (sidebarW <= 0) return
         val rows = fishmod.features.item.ContainerValue.storageRows(screen)
         sidebarTotal = fishmod.features.item.ContainerValue.storageTotal()
@@ -200,7 +200,7 @@ object StorageOverlay {
         val y = my0
         val h = overviewH
         UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), sidebarW.toFloat(), h.toFloat(), PANEL_R, PANEL_BAND, 0, MENU_BG)
-        UiRecorder.fillRect(x + 3f, y + 3f, sidebarW - 6f, h - 6f, MENU_BG)
+        rect(ctx, x + 3, y + 3, sidebarW - 6, h - 6, MENU_BG)
         UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), sidebarW.toFloat(), h.toFloat(), PANEL_R, 1f, 0, MENU_BORDER)
         UiRecorder.textBold("Container Value", x + 8f, y + 9f, TITLE_SIZE, ScreenTheme.TEXT_COLOR)
         UiRecorder.text("${rows.size} items", x + 8f, y + 20f, TEXT_SIZE - 1f, ScreenTheme.SUBTEXT_COLOR)
@@ -209,20 +209,30 @@ object StorageOverlay {
         val listH = h - 32 - 22
         sidebarRowsMax = (rows.size - listH / ROW_H).coerceAtLeast(0)
         sidebarScroll = sidebarScroll.coerceIn(0, sidebarRowsMax)
-        UiRecorder.pushScissor(x + 4f, listY.toFloat(), sidebarW - 8f, listH.toFloat())
+        hoveredValueName = null
+        val inList = inRect(smx, smy, x + 4, listY, sidebarW - 8, listH)
+        ctx.enableScissor(x + 4, listY, x + sidebarW - 4, listY + listH)
         if (rows.isEmpty()) UiRecorder.text("Nothing valuable here", x + 8f, listY + 2f, TEXT_SIZE, ScreenTheme.SUBTEXT_COLOR)
         rows.drop(sidebarScroll).forEachIndexed { i, r ->
             val ry = listY + i * ROW_H
             if (ry > listY + listH) return@forEachIndexed
-            if (i % 2 == 1) UiRecorder.fillRect(x + 4f, ry.toFloat() - 1f, sidebarW - 8f, ROW_H.toFloat(), 0x10FFFFFF)
-            val vw = UiRecorder.textWidth(r.value, TEXT_SIZE)
-            val maxName = sidebarW - 22f - vw
+            if (inList && smy >= ry - 1 && smy < ry - 1 + ROW_H) {
+                rect(ctx, x + 4, ry - 1, sidebarW - 8, ROW_H, ROW_HOVER)
+                hoveredValueName = r.name
+                tooltipStack = r.stack
+            }
+            // vanilla font: Hypixel names use glyphs (stars, symbols) the UI font lacks
+            val vw = font.width(r.value)
+            val maxName = sidebarW - 20 - vw
             var name = r.label
-            while (name.length > 3 && UiRecorder.textWidth(name, TEXT_SIZE) > maxName) name = name.dropLast(2) + "…"
-            UiRecorder.text(name, x + 8f, ry.toFloat(), TEXT_SIZE, r.color)
-            UiRecorder.text(r.value, x + sidebarW - 8f - vw, ry.toFloat(), TEXT_SIZE, GOLD)
+            if (font.width(name) > maxName) {
+                while (name.isNotEmpty() && font.width("$name...") > maxName) name = name.dropLast(1)
+                name = "$name..."
+            }
+            ctx.text(font, name, x + 8, ry, r.color, false)
+            ctx.text(font, r.value, x + sidebarW - 8 - vw, ry, GOLD, false)
         }
-        UiRecorder.popScissor()
+        ctx.disableScissor()
 
         UiRecorder.fillRect(x + 6f, (y + h - 20).toFloat(), sidebarW - 12f, 1f, MENU_BORDER)
         UiRecorder.text("Total", x + 8f, y + h - 14f, TEXT_SIZE, ScreenTheme.SUBTEXT_COLOR)
@@ -232,6 +242,9 @@ object StorageOverlay {
     }
 
     private var sidebarRect = IntArray(4)
+    private var hoveredValueName: String? = null
+    private const val ROW_HOVER = 0x22FFFFFF
+    private const val VALUE_MATCH = 0x9955FF55.toInt()
     private const val GOLD = 0xFFFFAA00.toInt()
 
     private val scrollPanelX get() = mx0 + PADDING
@@ -290,7 +303,7 @@ object StorageOverlay {
         UiRecorder.roundedRectRing(mx0.toFloat(), my0.toFloat(), overviewW.toFloat(), overviewH.toFloat(), PANEL_R, PANEL_BAND, 0, MENU_BG)
         UiRecorder.roundedRectRing(mx0.toFloat(), my0.toFloat(), overviewW.toFloat(), overviewH.toFloat(), PANEL_R, 1f, 0, MENU_BORDER)
 
-        drawValueSidebar(screen, smx, smy)
+        drawValueSidebar(ctx, screen, smx, smy)
         drawHeader(all.size)
         drawPages(ctx, data, smx, smy, active, chestSlots)
         drawScrollBar()
@@ -456,6 +469,8 @@ object StorageOverlay {
             val slotHot = inView && inRect(mouseX, mouseY, sx - 1, sy - 1, 18, 18)
             if (!renderStack.isEmpty) {
                 if (isSearching && matches(renderStack)) rect(ctx, sx, sy, 16, 16, SEARCH_MATCH)
+                if (isActive && hoveredValueName != null && fishmod.features.item.ContainerValue.plainName(renderStack) == hoveredValueName)
+                    rect(ctx, sx - 1, sy - 1, 18, 18, VALUE_MATCH)
                 ctx.item(renderStack, sx, sy)
                 if (slotHot && hovered == null && !display.isEmpty) hovered = display
             }

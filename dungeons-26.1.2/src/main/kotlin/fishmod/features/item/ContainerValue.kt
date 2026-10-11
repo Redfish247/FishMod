@@ -33,7 +33,7 @@ object ContainerValue {
         Regex("^(Storage|Ender Chest(?: ✦)? \\([1-9]/[1-9]\\)|.+ Backpack(?: ✦)? \\(Slot #\\d+\\))$")
     private val PLAIN_CHEST = setOf("Chest", "Large Chest", "Ender Chest", "Personal Vault")
 
-    private class Row(val name: String, var count: Int, var value: Double, val color: Int)
+    private class Row(val name: String, var count: Int, var value: Double, val color: Int, val stack: ItemStack)
 
     private var rows: List<Row> = emptyList()
     private var total = 0.0
@@ -56,7 +56,7 @@ object ContainerValue {
         }
     }
 
-    class SidebarRow(val label: String, val value: String, val color: Int)
+    class SidebarRow(val name: String, val label: String, val value: String, val color: Int, val stack: ItemStack)
 
     @JvmStatic
     fun storageSidebarEnabled(): Boolean = FishSettings.containerValueEnabled && Location.inSkyblock()
@@ -68,10 +68,13 @@ object ContainerValue {
             FishDiag.fail("ContainerValue.4", "storage container value recompute failed", e); return emptyList()
         }
         return rows.map { r ->
-            SidebarRow(if (r.count > 1) "${r.count}x ${r.name}" else r.name, abbr(r.value),
-                if (r.color != 0) r.color or 0xFF000000.toInt() else 0xFFAAAAAA.toInt())
+            SidebarRow(r.name, if (r.count > 1) "${r.count}x ${r.name}" else r.name, abbr(r.value),
+                if (r.color != 0) r.color or 0xFF000000.toInt() else 0xFFAAAAAA.toInt(), r.stack)
         }
     }
+
+    @JvmStatic
+    fun plainName(stack: ItemStack): String = CODE.replace(stack.hoverName.string, "")
 
     @JvmStatic
     fun storageTotal(): String = abbr(total)
@@ -151,7 +154,7 @@ object ContainerValue {
             sum += v
             val name = CODE.replace(stack.hoverName.string, "")
             val ex = agg[name]
-            if (ex == null) agg[name] = Row(name, stack.count, v, ItemRarityHotbar.getRarity(stack).color)
+            if (ex == null) agg[name] = Row(name, stack.count, v, ItemRarityHotbar.getRarity(stack).color, stack)
             else { ex.count += stack.count; ex.value += v }
         }
 
