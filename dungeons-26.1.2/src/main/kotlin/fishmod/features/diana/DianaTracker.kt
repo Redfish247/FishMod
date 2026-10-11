@@ -20,6 +20,7 @@ import kotlin.math.abs
 
 // Diana loot/mob/stat tracker (Event, Session, Total) with chat parsing and announcers
 object DianaTracker {
+    private const val MAX_PAST = 200
 
     private const val FILE_PATH = "config/fishmod/diana_tracker.json"
     private const val SB_EPOCH = 1560276000L
@@ -455,6 +456,7 @@ object DianaTracker {
                 it.year = ev.year; it.items = LinkedHashMap(ev.items); it.mobs = LinkedHashMap(ev.mobs)
                 it.timeMs = ev.timeMs; it.profit = profit(ev).toLong()
             })
+            while (data.past.size > MAX_PAST) data.past.removeAt(0)
         }
         data.event = Tracker().also { it.year = y }
         changed()
@@ -640,6 +642,7 @@ object DianaTracker {
             added++
         }
         data.past.sortBy { it.year }
+        while (data.past.size > MAX_PAST) data.past.removeAt(0)
         changed(); flushSave(true)
         FishMsg.send("§aAdded SBO's Total tracker onto FishMod's Total and $added past events.")
     }

@@ -62,6 +62,7 @@ object CompactTab {
     private val IRONMAN_BINGO_MARKERS = Regex("[♲☘♻☢⚘🌱Ⓑ]")
 
     private val SOCIAL_COLOR_CODE = Regex("§([0-9a-fk-or])", RegexOption.IGNORE_CASE)
+    private val COLOR_CODE = Regex("§.")
     private val BRACKET_TAG = Regex("""\[[^\[\]]*]""")
 
     private fun sortLevelOf(stripped: String): Int =
@@ -447,7 +448,7 @@ object CompactTab {
                 if (obj != null) for (en in sb.listPlayerScores(obj)) {
                     val team = sb.getPlayersTeam(en.owner())
                     val raw = if (team != null) team.playerPrefix.string + en.owner() + team.playerSuffix.string else en.ownerName().string
-                    hay += " " + raw.replace(Regex("§."), "")
+                    hay += " " + raw.replace(COLOR_CODE, "")
                 }
             }
         } catch (ex: Exception) {
@@ -478,7 +479,7 @@ object CompactTab {
 
     private fun parseStats(footer: String?): FooterStats {
         val raw = (footer ?: "").split("\n") + TabListCache.entries.mapNotNull { it.info.tabListDisplayName?.string }
-        val lines = raw.map { it.replace(Regex("§."), "").trim() }.filter { it.isNotEmpty() }
+        val lines = raw.map { it.replace(COLOR_CODE, "").trim() }.filter { it.isNotEmpty() }
         var cookie = "—"
         var godPot = "None"
         var effects = "—"
@@ -502,7 +503,7 @@ object CompactTab {
 
     private fun footerLine(footer: String?): String {
         if (footer != null && footer.isNotEmpty()) for (line in footer.split("\n")) {
-            val s = line.replace(Regex("§."), "").trim()
+            val s = line.replace(COLOR_CODE, "").trim()
             if (s.uppercase().contains("STORE") || s.uppercase().contains("RANKS")) return "§6$s"
         }
         return "§6Ranks, Boosters & MORE! §eSTORE.HYPIXEL.NET"

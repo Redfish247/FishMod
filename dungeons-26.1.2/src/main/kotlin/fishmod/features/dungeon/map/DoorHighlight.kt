@@ -162,8 +162,18 @@ object DoorHighlight {
 
     private fun outlineOnly(): Boolean = DungeonMapSettings.mapDoorOutlineOnly
 
-    private fun outlineDoors(): List<Door> =
-        ArrayList(Scan.doors).filter { if (keyLive(it)) keyVisible(it) else inRoomVisible(it) }
+    private var outlineCache: List<Door> = emptyList()
+    private var outlineCacheAt = 0L
+
+    // shared across the three render passes; refreshed at most once per tick
+    private fun outlineDoors(): List<Door> {
+        val now = System.currentTimeMillis()
+        if (now - outlineCacheAt >= 50) {
+            outlineCache = ArrayList(Scan.doors).filter { if (keyLive(it)) keyVisible(it) else inRoomVisible(it) }
+            outlineCacheAt = now
+        }
+        return outlineCache
+    }
 
     private fun keyDoor(door: Door): Boolean = keyLive(door)
 
