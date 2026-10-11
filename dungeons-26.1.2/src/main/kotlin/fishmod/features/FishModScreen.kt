@@ -1919,6 +1919,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             statsHud.sub.add(ButtonSetting("Reset Session Stats", "Zero the XP / kills / time counters", Runnable { fishmod.features.slayers.SlayerStatsTracker.reset() }))
             slayer.features.add(statsHud)
 
+            val carry = Feature("Carry Tracker HUD", FishSettings::slayerCarryHudEnabled)
+            carry.sub.add(SubcategoryHeader("/trackcarry <ign> [amount]  ·  /trackcarry remove <ign>  ·  /trackcarry clear"))
+            carry.sub.add(SubcategoryHeader("Counts bosses \"Spawned by\" that player dying near you"))
+            carry.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerCarryHudScale, 0.5, 3.0))
+            slayer.features.add(carry)
+
             val profit = Feature("Profit Tracker", FishSettings::slayerProfitEnabled)
             profit.sub.add(SubcategoryHeader("SkyHanni-style: prices real drops for coins/hr  ·  drag with Edit HUD"))
             profit.sub.add(SubcategoryHeader("With chat open: click the mode line to switch  ·  left-click a row to hide it  ·  right-click the title to reset"))
