@@ -224,9 +224,6 @@ object DungeonMapSettings {
     @JvmField
     var mapRoomAdditionsPrince: Boolean = false
 
-    @ConfigValue
-    @JvmField
-    var mapRoomAdditionsMimic: Boolean = true
 
     @ConfigValue
     @JvmField
@@ -320,9 +317,6 @@ object DungeonMapSettings {
     @JvmField
     var mapRareRoomColor: Int = -13479
 
-    @ConfigValue
-    @JvmField
-    var mapMimicRoomColor: Int = -4570572
 
     @ConfigValue
     @JvmField
