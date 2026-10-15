@@ -72,6 +72,7 @@ object Rift {
         val names = ents.mapNotNull { e -> (e.customName ?: if (e is net.minecraft.world.entity.decoration.ArmorStand) null else e.name)?.string?.let { strip(it) } }
             .filter { it.isNotBlank() }.distinct().take(25)
         say("§7nearby (${names.size}): " + names.joinToString(" | "))
+        say("§7bacte cand: " + RiftMobs.bacteDebug.joinToString(" | ").ifEmpty { "none" })
         say("§7crux matched: " + RiftMobs.lastCruxNames.joinToString(" | ").ifEmpty { "none" })
     }
 
