@@ -71,6 +71,7 @@ object RiftMobs {
     private fun findBacte(me: Entity, windowOpen: Boolean) {
         val lv = Minecraft.getInstance().level ?: return
         val cand = ArrayList<String>()
+        val sizes = ArrayList<String>()
         val sl = ArrayList<Entity>(); val te = ArrayList<Entity>()
         var boss = false
         for (e in lv.getEntities(me, me.boundingBox.inflate(48.0)) { true }) {
@@ -82,10 +83,12 @@ object RiftMobs {
             if (BACTE_TAG.containsMatchIn(n) || "Bacte" in n) boss = true
             val slime = e is net.minecraft.world.entity.monster.Slime
             val medium = slime && (e as net.minecraft.world.entity.monster.Slime).size in S.riftBacteSizeMin..S.riftBacteSizeMax
-            if (tent || slime || BACTE_TAG.containsMatchIn(n)) cand.add("${e.type.descriptionId.substringAfterLast('.')}${if (slime) "#" + (e as net.minecraft.world.entity.monster.Slime).size else ""}:'${n.take(50)}'")
+            if (slime) { val sz = (e as net.minecraft.world.entity.monster.Slime).size; val v = e.deltaMovement
+                sizes.add("#$sz dist=${Math.round(Math.sqrt(e.distanceToSqr(me)))} y=${Math.round(e.y)} spd=${"%.2f".format(Math.sqrt(v.x * v.x + v.z * v.z))}") }
+            else if (tent || BACTE_TAG.containsMatchIn(n)) cand.add("${e.type.descriptionId.substringAfterLast('.')}:'${n.take(50)}'")
             if (medium) sl.add(e) else if (tent) te.add(if (stand) Rift.mobUnder(e) ?: e else e)
         }
-        bacteDebug = cand.take(12)
+        bacteDebug = (cand + sizes.sortedBy { it.substringAfter("#").substringBefore(" ").toInt() }).take(30)
         val on = boss || windowOpen
         bacteSlimes = if (on) sl else emptyList()
         bacte = if (on) te.distinct() else emptyList()
