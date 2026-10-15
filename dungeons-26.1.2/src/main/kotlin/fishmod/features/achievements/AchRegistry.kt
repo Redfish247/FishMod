@@ -43,6 +43,46 @@ object AchRegistry {
         ALL.add(x); BY_ID[id] = x
     }
 
+    // Short area blurb shown under each rail row
+    val SECTION_SUBTITLES = mapOf(
+        "All" to "Every achievement",
+        "Recent" to "Latest unlocks",
+        "Leaderboard" to "Top players",
+        "Money" to "Profit & RNG drops",
+        "Dungeons" to "Runs & completions",
+        "Secrets" to "Dungeon secrets & rooms",
+        "Puzzles" to "Room puzzle solves",
+        "F7/M7 Terminals" to "Goldor terminal phase",
+        "Floor Progression" to "Clearing each floor",
+        "Master Mode" to "Master catacombs runs",
+        "M7 Speedrunning" to "Fast Necron clears",
+        "Kuudra" to "Crimson Isle boss runs",
+        "Fishing" to "Catches & sea creatures",
+        "Slayer" to "Slayer boss kills",
+        "Farming" to "Crops & farming",
+        "Mining" to "Ores, powder & corpses",
+        "Garden" to "Garden visitors & plots",
+        "Foraging & Hunting" to "Trees & hunting",
+        "Burrows" to "Diana burrow digging",
+        "Inquisitors" to "Diana inquisitor kills",
+        "Mythological Mobs" to "Diana mythic mobs",
+        "Diana RNG" to "Diana rare drops",
+        "Diana Profit" to "Diana coin earnings",
+        "Diana Events" to "Mayor Diana events",
+        "Crimson Isle" to "Nether island content",
+        "Rift" to "The Rift dimension",
+        "Pets" to "Pet levels & drops",
+        "Museum & Collections" to "Donations & collections",
+        "Bazaar & Auction House" to "Trading & flipping",
+        "Minions" to "Minion crafting",
+        "Events & Misc" to "Seasonal & misc",
+        "Playtime (All parts of game)" to "Time spent playing",
+        "Skill Levels" to "Skill XP milestones",
+        "FishMod / General" to "Mod usage",
+        "Secret Achievements" to "Hidden challenges",
+        "Ultimate" to "End-game feats",
+    )
+
     val SECTIONS: List<String> by lazy { ALL.map { it.section }.distinct() }
 
     init {
