@@ -62,7 +62,7 @@ object AchLeaderboard {
     // The achievements screen needs the whole list, not just the top 10
     fun wantFull() { fullAt = System.currentTimeMillis(); wantedAt = fullAt }
 
-    private fun limit(): Int = if (System.currentTimeMillis() - fullAt < 3000) 200 else 10
+    private fun limit(): Int = if (System.currentTimeMillis() - fullAt < 3000) 100 else 10
 
     fun init() {
         if (registered) return
