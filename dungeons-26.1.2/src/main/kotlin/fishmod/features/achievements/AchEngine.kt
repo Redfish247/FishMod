@@ -127,6 +127,7 @@ object AchEngine {
     fun command(): LiteralArgumentBuilder<FabricClientCommandSource> =
         ClientCommands.literal("ach")
             .executes { Minecraft.getInstance().schedule { Minecraft.getInstance().setScreen(AchScreen()) }; 1 }
+            .then(ClientCommands.literal("test").executes { AchPopup.test(); 1 })
             .then(ClientCommands.literal("sync").executes { AchApiSync.sync(true); 1 })
             .then(ClientCommands.literal("lb")
                 .then(ClientCommands.literal("here").executes { AchLeaderboard.here(); 1 })
