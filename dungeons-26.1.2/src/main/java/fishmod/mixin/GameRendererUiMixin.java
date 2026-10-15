@@ -33,6 +33,7 @@ public class GameRendererUiMixin {
             } else if (current instanceof AbstractContainerScreen<?> container && StorageOverlay.isActive(container)) {
                 StorageOverlay.paintUiOverlay();
             }
+            fishmod.features.achievements.AchPopup.paintUiOverlay();
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("GameRendererUiMixin.1", "ui overlay paint failed", t);
         }

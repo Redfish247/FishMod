@@ -11,7 +11,6 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.components.toasts.SystemToast
 import net.minecraft.network.chat.Component
 
 // Unlock checks, AP totals, toasts and /fm ach
@@ -29,6 +28,7 @@ object AchEngine {
         AchTrackers.init()
         AchUsage.init()
         AchLeaderboard.init()
+        AchPopup.init()
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (!AchSettings.achEnabled) return@register
             FishDiag.guard("AchEngine.1", "achievement tick") {
@@ -94,21 +94,12 @@ object AchEngine {
         val pts = fresh.sumOf { it.points }
         if (fresh.size > 3) {
             if (AchSettings.achChat) FishMsg.send("§6[Achievements] §eUnlocked ${fresh.size} achievements §6+$pts AP §7(${points()} AP total)")
-            toast(mc, "${fresh.size} Achievements Unlocked", "+$pts AP")
+            if (AchSettings.achToast) AchPopup.show("${fresh.size} Achievements", "Unlocked in one go", pts, "")
         } else for (a in fresh) {
             if (AchSettings.achChat) FishMsg.send("§6[Achievement] §e${a.name} §7- ${a.desc} §6+${a.points} AP")
-            toast(mc, "Achievement Unlocked §6+${a.points} AP", a.name)
+            if (AchSettings.achToast) AchPopup.show(a.name, a.desc, a.points, a.section)
         }
-        if (AchSettings.achSound) {
-            SoundManager.play(SoundManager.preset(AchSettings.achSoundName), AchSettings.achSoundVolume / 100f, AchSettings.achSoundPitch.toFloat())
-        }
-    }
-
-    private fun toast(mc: Minecraft, title: String, line: String) {
-        if (!AchSettings.achToast) return
-        FishDiag.guard("AchEngine.2", "achievement toast") {
-            mc.toastManager.addToast(SystemToast.multiline(mc, SystemToast.SystemToastId(5000L), Component.literal(title), Component.literal(line)))
-        }
+        AchPopup.playSound()
     }
 
     fun fmt(a: Ach, v: Long): String = when (a.unit) {
