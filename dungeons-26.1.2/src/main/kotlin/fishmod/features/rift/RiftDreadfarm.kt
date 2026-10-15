@@ -54,7 +54,7 @@ object RiftDreadfarm {
         if (!S.riftBerberis || !hasWand || type !== ParticleTypes.FIREWORK || !Rift.inRift()) return
         val ar = Rift.area(); if (ar.isNotEmpty() && !ar.contains("Dreadfarm", true)) return
         val b = berbs.filter { it.pos.distanceToSqr(at) < 8 }.minByOrNull { it.pos.distanceToSqr(at) }
-        if (b == null) { berbs.add(Berb(at)); return }
+        if (b == null) { berbs.add(Berb(at).also { it.y = at.y - 1 }); return }
         val isMoving = b.pos != at
         if (isMoving) {
             if (b.pos.distanceTo(at) > 3) { b.prev = null; b.moving = true }
