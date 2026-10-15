@@ -168,7 +168,7 @@ object AchLeaderboard {
     }
 
     private fun areaOk(): Boolean {
-        if (AchSettings.achLbVillageOnly && !(Location.getCurrentLocation() == Location.HUB && fishmod.features.mining.Mining.sidebar.any { it.contains("Village", true) })) return false
+        if (AchSettings.achLbVillageOnly && !(Location.getCurrentLocation() == Location.HUB)) return false
         val a = AchSettings.achLbArea
         return a.isEmpty() || a == "Any" || Location.getCurrentLocation().name2 == a
     }
