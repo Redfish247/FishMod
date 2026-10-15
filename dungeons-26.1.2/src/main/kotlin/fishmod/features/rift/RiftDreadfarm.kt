@@ -92,7 +92,6 @@ object RiftDreadfarm {
             val box = cell(b.pos, b.y)
             if (!b.moving) {
                 RenderUtils.gizmoBox(box, (c and 0xFFFFFF) or 0x60000000, c, false)
-                RenderUtils.gizmoText(Component.literal("§eWilted Berberis"), Vec3(box.center.x, box.maxY + 0.6, box.center.z), 1.5f, -1, false)
             } else {
                 RenderUtils.gizmoBox(box, 0x50FFFFFF, 0xFFFFFFFF.toInt(), false)
                 b.prev?.let { pv ->
