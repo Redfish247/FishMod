@@ -138,7 +138,11 @@ object RiftMobs {
     private fun bacteAim() {
         val me = Minecraft.getInstance().player ?: return
         val eye = me.eyePosition; val look = me.lookAngle
-        if (S.riftBacteSlimeBoxes) for (sl in bacteSlimes) if (sl.isAlive) RenderUtils.gizmoBox(sl.boundingBox, 0x4055FF55, 0xFF55FF55.toInt(), true)
+        if (S.riftBacteSlimeBoxes) for (sl in bacteSlimes) if (sl.isAlive) {
+            val p = EntityUtil.getLerpedPos(sl)
+            val yaw = sl.yRot.toDouble()
+            RenderUtils.gizmoYawBox(p, sl.bbWidth / 2.0, sl.bbHeight.toDouble(), yaw, 0x5555FF55, true)
+        }
         val targets = bacte.filter { it.isAlive }
         if (targets.isEmpty()) return
         for (t in targets) RenderUtils.gizmoBox(t.boundingBox, 0x30FF5555, 0xFFFF5555.toInt(), true)

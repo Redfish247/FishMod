@@ -170,6 +170,21 @@ object RenderUtils {
         Gizmos.rect(corners[0], corners[1], corners[2], corners[3], GizmoStyle.strokeAndFill(strokeArgb, 2f, fillArgb))
     }
 
+    // Filled box turned by yawDeg around its base centre (no outline)
+    @JvmStatic
+    fun gizmoYawBox(base: Vec3, halfWidth: Double, height: Double, yawDeg: Double, fillArgb: Int, throughWalls: Boolean) {
+        if ((fillArgb ushr 24) == 0 || base.x.isNaN() || base.y.isNaN() || base.z.isNaN()) return
+        val rad = Math.toRadians(yawDeg); val c = Math.cos(rad); val s = Math.sin(rad)
+        fun pt(lx: Double, y: Double, lz: Double) = Vec3(base.x + lx * c - lz * s, base.y + y, base.z + lx * s + lz * c)
+        val h = halfWidth
+        val b = arrayOf(pt(-h, 0.0, -h), pt(h, 0.0, -h), pt(h, 0.0, h), pt(-h, 0.0, h))
+        val t = arrayOf(pt(-h, height, -h), pt(h, height, -h), pt(h, height, h), pt(-h, height, h))
+        val style = GizmoStyle.fill(fillArgb)
+        fun face(a: Vec3, bb: Vec3, cc: Vec3, d: Vec3) { val g = Gizmos.rect(a, bb, cc, d, style); if (throughWalls) g.setAlwaysOnTop() }
+        face(b[0], b[1], b[2], b[3]); face(t[0], t[1], t[2], t[3])
+        for (i in 0..3) { val j = (i + 1) % 4; face(b[i], b[j], t[j], t[i]) }
+    }
+
     @JvmStatic
     fun gizmoLine(a: Vec3, b: Vec3, argb: Int) {
         if (a.x.isNaN() || a.y.isNaN() || a.z.isNaN() || b.x.isNaN() || b.y.isNaN() || b.z.isNaN()) FishDiag.fail("RenderUtils.6", "gizmoLine given NaN $a -> $b")
