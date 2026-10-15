@@ -120,6 +120,9 @@ object RiftMobs {
         if (S.riftBacte) findBacte(me, System.currentTimeMillis() < bacteUntil) else { bacte = emptyList(); bacteSlimes = emptyList() }
     }
 
+    // Slimes of an active Bacte fight are drawn as boxes only
+    fun shouldHideSlime(e: Entity): Boolean = S.riftBacte && S.riftBacteHideSlimes && S.riftBacteSlimeBoxes && bacteSlimes.contains(e)
+
     private fun render() {
         if (!Rift.inRift()) return
         for (m in marks) {
