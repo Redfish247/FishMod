@@ -6,6 +6,8 @@ object ExtrasSettings {
     // Arrow HUD
     @ConfigValue @JvmField var arrowHud: Boolean = false
     @ConfigValue @JvmField var arrowHudOnlyBow: Boolean = true
+    @ConfigValue @JvmField var arrowHudExtra: Boolean = true
+    @ConfigValue @JvmField var arrowHudRarity: Boolean = true
     @ConfigValue @JvmField var arrowHudX: Int = 10
     @ConfigValue @JvmField var arrowHudY: Int = 90
     @ConfigValue @JvmField var arrowHudScale: Double = 1.0

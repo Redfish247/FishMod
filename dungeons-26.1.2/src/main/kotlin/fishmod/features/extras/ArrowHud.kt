@@ -27,6 +27,8 @@ object ArrowHud {
 
     private var type = "Unknown"
     private var count = -1L
+    private var rarityRgb = 0
+    private var extra = 0L
     private var warnedLow = false
     private var warnedOut = false
     private var tickN = 0
@@ -68,12 +70,13 @@ object ArrowHud {
                 m.groupValues[2].replace(",", "").toLongOrNull()?.let { setCount(it) }
             }
         }
-        var inv = 0L
-        for (st in p.inventory.nonEquipmentItems) {
+        var inv = 0L; var loose = 0L
+        for ((i, st) in p.inventory.nonEquipmentItems.withIndex()) {
             if (st.isEmpty) continue
             if (st.item == Items.ARROW || st.item == Items.TIPPED_ARROW || st.item == Items.SPECTRAL_ARROW
-                || ItemUtil.getId(st)?.endsWith("ARROW") == true) inv += st.count
+                || ItemUtil.getId(st)?.endsWith("ARROW") == true) { inv += st.count; if (i != 8) loose += st.count }
         }
+        extra = loose
         if (inv > 0 && count < 0) setCount(inv)
     }
 
@@ -87,6 +90,7 @@ object ArrowHud {
             id?.endsWith("ARROW") == true || name.contains("Arrow", true)
         if (!arrowy) return false
         type = name.replace(Regex("""\s*x?[\d,]+$"""), "").ifEmpty { name }
+        rarityRgb = fishmod.features.ItemRarityHotbar.getRarity(st).color and 0xFFFFFF
         setCount(st.count.toLong())
         return true
     }
@@ -122,7 +126,7 @@ object ArrowHud {
         try {
             ctx.pose().translate(S.arrowHudX.toFloat(), S.arrowHudY.toFloat())
             ctx.pose().scale(sc, sc)
-            ctx.text(mc.font, Component.literal(type).withColor(S.arrowHudColor and 0xFFFFFF).append(Component.literal(" §7x$n")), 0, 0, -1, true)
+            ctx.text(mc.font, Component.literal(type).withColor(if (S.arrowHudRarity && rarityRgb != 0) rarityRgb else S.arrowHudColor and 0xFFFFFF).append(Component.literal(" §7x$n")).append(Component.literal(if (S.arrowHudExtra && extra > 0) " §8(+${fishmod.utils.Fmt.grouped(extra)} extra)" else "")), 0, 0, -1, true)
         } finally {
             ctx.pose().popMatrix()
         }
