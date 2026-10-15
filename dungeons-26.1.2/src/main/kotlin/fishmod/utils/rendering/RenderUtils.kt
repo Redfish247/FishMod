@@ -180,7 +180,9 @@ object RenderUtils {
         val b = arrayOf(pt(-h, 0.0, -h), pt(h, 0.0, -h), pt(h, 0.0, h), pt(-h, 0.0, h))
         val t = arrayOf(pt(-h, height, -h), pt(h, height, -h), pt(h, height, h), pt(-h, height, h))
         val style = GizmoStyle.fill(fillArgb)
-        fun face(a: Vec3, bb: Vec3, cc: Vec3, d: Vec3) { val g = Gizmos.rect(a, bb, cc, d, style); if (throughWalls) g.setAlwaysOnTop() }
+        fun face(a: Vec3, bb: Vec3, cc: Vec3, d: Vec3) {
+            for (q in arrayOf(arrayOf(a, bb, cc, d), arrayOf(d, cc, bb, a))) { val g = Gizmos.rect(q[0], q[1], q[2], q[3], style); if (throughWalls) g.setAlwaysOnTop() }
+        }
         face(b[0], b[1], b[2], b[3]); face(t[0], t[1], t[2], t[3])
         for (i in 0..3) { val j = (i + 1) % 4; face(b[i], b[j], t[j], t[i]) }
     }
