@@ -29,6 +29,8 @@ object RiftMobs {
     }
     // Last scan results for /fm rift debug
     @Volatile var lastCruxNames: List<String> = emptyList(); private set
+    // Crux nametags may carry only the kind plus health, e.g. "Volt 300/300❤"
+    private val CRUX_TAG = Regex("^(?:Shy|Shadow|Volt|Scribe|Frozille|Splatter)(?: Crux)? [0-9,.]+[kKmM]?/[0-9,.]+[kKmM]?")
     private val SHY_LINES = setOf("I'm ugly! :(", "Eek!", "Don't look at me!", "Look away!")
     private val BACTE_NAME = Regex("(?:^|[^A-Za-z])(Bacte|Bact|Bac|Ba)(?![A-Za-z])")
     private val BACTE_CHAT = Regex("^(Bacte|Bact|Bac|Ba) (is rooting|is growing|has summoned|is vulnerable)|^BACTE DOWN")
@@ -119,7 +121,7 @@ object RiftMobs {
         val out = ArrayList<Mark>()
         var flee: Entity? = null
         for ((stand, name) in Rift.namedStands(48.0)) {
-            if (S.riftCrux && stand.isAlive && "Crux" in name && stand.distanceToSqr(me) <= range * range) {
+            if (S.riftCrux && stand.isAlive && ("Crux" in name || CRUX_TAG.containsMatchIn(name)) && stand.distanceToSqr(me) <= range * range) {
                 CRUX_HINTS.entries.firstOrNull { name.contains(it.key) && hintOn(it.key) }?.let { h ->
                     // One label per hint kind: keep only the nearest stand (Volt's ring is many stands)
                     val prev = out.indexOfFirst { it.text == h.value }
