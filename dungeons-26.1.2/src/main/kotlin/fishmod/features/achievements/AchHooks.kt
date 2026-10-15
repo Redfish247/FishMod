@@ -61,7 +61,7 @@ object AchHooks {
     }
 
     private val FISH_NAMES = setOf("fish", "redfish2471")
-    private val HI_FISH = Regex("(?i)\bhi fish\b")
+    private val HI_FISH = Regex("(?i)\\bhi fish\\b")
 
     // Own "Hi Fish" line while Fish is in the tab list
     private fun hiFish(s: String) {
