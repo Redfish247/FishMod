@@ -43,6 +43,7 @@ object RiftMobs {
     @Volatile private var marks: List<Mark> = emptyList()
     @Volatile private var fleespook: Entity? = null
     @Volatile private var bacte: List<Entity> = emptyList()
+    @Volatile private var bacteSlimes: List<Entity> = emptyList()
     private var bacteId = -1
     private var tick = 0
 
@@ -65,32 +66,33 @@ object RiftMobs {
         bacteUntil = now + 120_000L
     }
 
-    // Bacte (found by its health tag), tentacles; nearest slime only as a fallback while the chat window is open
-    private fun findBacte(me: Entity, windowOpen: Boolean): List<Entity> {
-        val lv = Minecraft.getInstance().level ?: return emptyList()
+    // Slimes (they fly off in a straight line when hit) and tentacles; only while a Bacte fight is on
+    private fun findBacte(me: Entity, windowOpen: Boolean) {
+        val lv = Minecraft.getInstance().level ?: return
         val cand = ArrayList<String>()
-        val out = ArrayList<Entity>()
-        val slimes = ArrayList<Entity>()
+        val sl = ArrayList<Entity>(); val te = ArrayList<Entity>()
+        var boss = false
         for (e in lv.getEntities(me, me.boundingBox.inflate(48.0)) { true }) {
             if (!e.isAlive) continue
             val n = (e.customName ?: e.name).string.let { Rift.strip(it) }
             val stand = e is net.minecraft.world.entity.decoration.ArmorStand
             if (stand && e.customName == null) continue
-            val hit = BACTE_TAG.containsMatchIn(n) || BACTE_NAME.containsMatchIn(n) || "Bacte" in n || "entacle" in n
+            val tent = "entacle" in n
+            if (BACTE_TAG.containsMatchIn(n) || "Bacte" in n) boss = true
             val slime = e is net.minecraft.world.entity.monster.Slime
-            if (hit || slime) cand.add("${e.type.descriptionId.substringAfterLast('.')}:'${n.take(50)}'")
-            if (slime) slimes.add(e)
-            else if (hit) out.add(if (stand) Rift.mobUnder(e) ?: e else e)
+            if (tent || slime || BACTE_TAG.containsMatchIn(n)) cand.add("${e.type.descriptionId.substringAfterLast('.')}:'${n.take(50)}'")
+            if (slime) sl.add(e) else if (tent) te.add(if (stand) Rift.mobUnder(e) ?: e else e)
         }
         bacteDebug = cand.take(12)
-        if (out.isEmpty() && windowOpen) slimes.minByOrNull { it.distanceToSqr(me) }?.let { out.add(it) }
-        return out.distinct().sortedBy { it.distanceToSqr(me) }.take(12)
+        val on = boss || windowOpen
+        bacteSlimes = if (on) sl else emptyList()
+        bacte = if (on) te.distinct() else emptyList()
     }
 
     private fun scan() {
         if (!Rift.inRift() || !(S.riftCrux || S.riftFleespook || S.riftBacte)) {
             bacteDebug = emptyList();
-            marks = emptyList(); fleespook = null; bacte = emptyList(); return
+            marks = emptyList(); fleespook = null; bacte = emptyList(); bacteSlimes = emptyList(); return
         }
         val me = Minecraft.getInstance().player ?: return
         val range = S.riftCruxRange.toDouble()
@@ -114,7 +116,7 @@ object RiftMobs {
                 Misc.forceTitle(Component.literal("§eLook away!"), Component.empty(), 300)
         }
         marks = out; lastCruxNames = names; fleespook = flee
-        bacte = if (S.riftBacte) findBacte(me, System.currentTimeMillis() < bacteUntil) else emptyList()
+        if (S.riftBacte) findBacte(me, System.currentTimeMillis() < bacteUntil) else { bacte = emptyList(); bacteSlimes = emptyList() }
     }
 
     private fun render() {
@@ -125,9 +127,25 @@ object RiftMobs {
             RenderUtils.gizmoText(Component.literal(m.text), Vec3(p.x, p.y + m.e.bbHeight + 0.6, p.z), 1.4f, -1, S.riftCruxWalls)
         }
         fleespook?.takeIf { it.isAlive }?.let { line(it, S.riftFleespookColor, "§5Fleespook") }
-        if (S.riftBacteLine) for (e in bacte) if (e.isAlive) line(e, S.riftBacteColor, null)
+        if (S.riftBacteLine) bacteAim()
     }
 
+    // Path the slime under your crosshair takes when hit (straight, away from you); red if it crosses a tentacle
+    private fun bacteAim() {
+        val me = Minecraft.getInstance().player ?: return
+        val eye = me.eyePosition; val look = me.lookAngle
+        for (t in bacte) if (t.isAlive) RenderUtils.gizmoBox(t.boundingBox, 0x30FF5555, 0xFFFF5555.toInt(), true)
+        val slime = bacteSlimes.filter { it.isAlive && it.distanceToSqr(me) < 100.0 }.minByOrNull { sl ->
+            val v = sl.boundingBox.center.subtract(eye); val t = v.dot(look)
+            if (t <= 0) Double.MAX_VALUE else v.subtract(look.scale(t)).length()
+        } ?: return
+        val c = slime.boundingBox.center
+        val d = Vec3(c.x - me.x, 0.0, c.z - me.z).let { if (it.lengthSqr() < 1e-6) return else it.normalize() }
+        val end = c.add(d.scale(40.0))
+        val hits = bacte.any { t -> t.isAlive && t.boundingBox.inflate(0.4).clip(c, end).isPresent }
+        RenderUtils.gizmoLine(c, end, if (hits) 0xFFFF5555.toInt() else S.riftBacteColor, 3f, true)
+    }
+
     private fun line(e: Entity, argb: Int, label: String?) {
         val p = EntityUtil.getLerpedPos(e)
         RenderUtils.gizmoLine(RenderUtils.cameraLineStart(1.0), Vec3(p.x, p.y, p.z), argb, 2f, true)
