@@ -33,7 +33,7 @@ object ContainerValue {
         Regex("^(Storage|Rift Storage|(?:Ender Chest|Rift Storage)(?: ✦)? \\([1-9]/[1-9]\\)|.+ Backpack(?: ✦)? \\(Slot #\\d+\\))$")
     private val PLAIN_CHEST = setOf("Chest", "Large Chest", "Ender Chest", "Personal Vault")
 
-    private val MOTES = Regex("Motes Sell Price:?\s*([0-9,]+)")
+    private val MOTES = Regex("Motes Sell Price:?\\s*([0-9,]+)")
     private fun inRift() = Location.`in`(Location.THE_RIFT)
 
     // Rift items are worth motes: read the "Motes Sell Price" lore line
