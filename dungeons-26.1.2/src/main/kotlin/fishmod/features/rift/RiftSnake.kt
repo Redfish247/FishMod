@@ -16,6 +16,11 @@ import fishmod.features.rift.RiftSettings as S
 object RiftSnake {
 
     private const val HEAD_MS = 1200L
+    // The snake fades through these as it ages; stone means it left
+    private val SNAKE = setOf(
+        Blocks.LAPIS_BLOCK, Blocks.BLUE_STAINED_GLASS, Blocks.LIGHT_BLUE_STAINED_GLASS,
+        Blocks.CYAN_TERRACOTTA, Blocks.BLUE_TERRACOTTA, Blocks.LIGHT_BLUE_TERRACOTTA,
+    )
     private val blocks = ConcurrentHashMap<BlockPos, Long>()
 
     fun init() {
@@ -41,16 +46,17 @@ object RiftSnake {
     private fun onBlock(pos: BlockPos, state: BlockState) {
         seen.add(System.currentTimeMillis() to net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.block).path)
         if (seen.size > 400) seen.poll()
-        if (state.block == Blocks.LAPIS_BLOCK) blocks[pos.immutable()] = System.currentTimeMillis()
+        if (state.block in SNAKE) blocks.putIfAbsent(pos.immutable(), System.currentTimeMillis())
         else blocks.remove(pos)
     }
 
     private fun render() {
         if (!S.riftSnake || blocks.isEmpty() || !Rift.inRift()) return
         val now = System.currentTimeMillis()
+        val tail = if (blocks.size >= 2) blocks.entries.minByOrNull { it.value }?.key else null
         for ((pos, at) in blocks) {
             val head = now - at < HEAD_MS
-            val c = if (head) S.riftSnakeHeadColor else S.riftSnakeColor
+            val c = if (pos == tail) S.riftSnakeTailColor else if (head) S.riftSnakeHeadColor else S.riftSnakeColor
             RenderUtils.gizmoBox(AABB(pos), (c and 0xFFFFFF) or 0x30000000, c, !head)
         }
     }

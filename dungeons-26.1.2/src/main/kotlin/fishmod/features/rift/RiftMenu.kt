@@ -70,6 +70,7 @@ object RiftMenu {
         val snake = Feature("Snake Helper", S::riftSnake)
         snake.sub.add(ColorPickerSetting("Body Colour", "", S::riftSnakeColor))
         snake.sub.add(ColorPickerSetting("Head Colour", "", S::riftSnakeHeadColor))
+        snake.sub.add(ColorPickerSetting("Tail Colour", "The oldest block: hit this one first", S::riftSnakeTailColor))
         col.features.add(snake)
 
         val vamp = Feature("Vampire Slayer Helper", S::riftVampire)
