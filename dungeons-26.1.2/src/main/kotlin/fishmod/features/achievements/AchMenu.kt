@@ -52,7 +52,7 @@ object AchMenu {
         lb.sub.add(InputDoubleSetting("Y", "", { S.achLbY }, { v -> S.achLbY = v }))
         lb.sub.add(InputDoubleSetting("Z", "", { S.achLbZ }, { v -> S.achLbZ = v }))
         lb.sub.add(SliderDoubleSetting("Scale", "", S::achLbScale, 0.5, 4.0))
-        lb.sub.add(ToggleSetting("Village Only", "Only show the board while in the Hub Village", S::achLbVillageOnly))
+        lb.sub.add(ToggleSetting("Hub Only", "Only show the board while in the Hub", S::achLbVillageOnly))
         lb.sub.add(DropdownSetting("Area", "Only show in this area (Any = everywhere)", arrayOf("Any") + fishmod.utils.Location.values().map { it.name2 }.filter { it != "Unknown" }.toTypedArray(), { S.achLbArea }, { v -> S.achLbArea = v }))
         lb.sub.add(ButtonSetting("Set To My Position", "Same as /fm ach lb here", "Here") { AchLeaderboard.here() })
         lb.sub.add(ButtonSetting("Submit Score", "Send your totals now", "Submit") { AchLeaderboard.submit(true) })
