@@ -104,7 +104,7 @@ object RiftDreadfarm {
     }
 
     private fun cell(p: Vec3, y: Double): AABB {
-        val x = Math.floor(p.x - 0.5 + 0.01); val z = Math.floor(p.z - 0.5 + 0.01); val yy = Math.floor(y + 0.01)
+        val x = Math.floor(p.x - 0.5 + 0.01); val z = Math.floor(p.z - 0.5 + 0.01); val yy = Math.floor(y + 0.01) + 1
         return AABB(x + 0.1, yy - 0.1, z + 0.1, x + 0.9, yy + 0.9, z + 0.9)
     }
 }
