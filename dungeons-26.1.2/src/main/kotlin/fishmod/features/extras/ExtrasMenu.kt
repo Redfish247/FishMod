@@ -18,7 +18,9 @@ object ExtrasMenu {
 
         val arrow = Feature("Arrow HUD", S::arrowHud)
         arrow.sub.add(ToggleSetting("Only While Holding Bow", "Hide the HUD unless a bow is in hand", S::arrowHudOnlyBow))
-        arrow.sub.add(ColorPickerSetting("Arrow Name Color", "", S::arrowHudColor))
+        arrow.sub.add(ToggleSetting("Show Extra Arrows", "Loose arrows in your inventory besides the selected stack", S::arrowHudExtra))
+        arrow.sub.add(ToggleSetting("Rarity Colour", "Colour the arrow name by its rarity", S::arrowHudRarity))
+        arrow.sub.add(ColorPickerSetting("Arrow Name Color", "Used when Rarity Colour is off or the rarity is unknown", S::arrowHudColor))
         arrow.sub.add(ToggleSetting("Low Arrows Warning", "Title + sound when the quiver runs low", S::arrowLowWarn))
         arrow.sub.add(SliderIntSetting("Low Threshold", "", S::arrowLowThreshold, 16, 2048, 16).gatedBy { S.arrowLowWarn })
         arrow.sub.add(ToggleSetting("Out Of Arrows Warning", "", S::arrowOutWarn))
