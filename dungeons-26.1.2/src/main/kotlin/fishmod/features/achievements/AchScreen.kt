@@ -54,6 +54,8 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
     private var scroll = 0
     private var contentH = 0
     private var railScroll = 0
+    private val lbScroll = intArrayOf(0, 0)
+    private val lbBox = arrayOf(intArrayOf(0, 0, 0, 0), intArrayOf(0, 0, 0, 0))
     private var railBox = intArrayOf(0, 0, 0, 0)
     private val clicks = ArrayList<Pair<IntArray, () -> Unit>>()
 
@@ -120,7 +122,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         val cw = w - RAIL_W - 32
         hero(cx, y + 14, cw)
         val top = y + 14 + HERO_H + 12
-        AchLeaderboard.want()
+        if (group == LB) AchLeaderboard.wantFull() else AchLeaderboard.want()
         if (group == LB) leaderboard(cx, top, cw, y + h - 14 - top) else grid(cx, top, cw, y + h - 14 - top, mx, my)
         hoverAch?.let { detail(it, mx, my) }
 
@@ -270,36 +272,53 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
     }
 
     private fun panel(x: Int, y: Int, w: Int, h: Int, title: String, secrets: Boolean) {
+        val idx = if (secrets) 1 else 0
+        lbBox[idx] = intArrayOf(x, y, w, h - 12)
         UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), (h - 12).toFloat(), 10f, 1f, PANEL2, LINE)
         UiRecorder.textBold(title, (x + 12).toFloat(), (y + 10).toFloat(), S_MD, if (secrets) 0xFFC77DFF.toInt() else ACCENT)
         val list = if (secrets) AchLeaderboard.secrets else AchLeaderboard.points
         val rh = 20
+        if (AchLeaderboard.loaded && list.isNotEmpty()) {
+            val cnt = "${list.size} players"
+            UiRecorder.text(cnt, (x + w - 12 - tw(cnt, S_XS)).toFloat(), (y + 12).toFloat(), S_XS, DIM)
+        }
         if (!AchLeaderboard.loaded || list.isEmpty()) {
             val msg = if (!AchLeaderboard.loaded) (if (AchLeaderboard.offline) "Leaderboard offline" else "Loading...") else "No scores yet."
             UiRecorder.text(msg, x + (w - tw(msg, S_SM)) / 2f, (y + 50).toFloat(), S_SM, DIM)
             return
         }
-        var ry = y + 28
+        val top = y + 28
+        val viewH = h - 12 - 28 - 6
+        val content = list.size * rh
+        lbScroll[idx] = lbScroll[idx].coerceIn(0, max(0, content - viewH))
+        val sc = lbScroll[idx]
+        val myName = Minecraft.getInstance().player?.gameProfile?.name ?: ""
+        val scrolls = content > viewH
+        val rowW = if (scrolls) w - 18 else w - 12
+        UiRecorder.pushScissor(x.toFloat(), top.toFloat(), w.toFloat(), viewH.toFloat())
         for ((i, e) in list.withIndex()) {
+            val ry = top + i * rh - sc
+            if (ry + rh < top || ry > top + viewH) continue
             val rank = i + 1
             val col = when (rank) { 1 -> GOLD; 2 -> 0xFFC0C7CF.toInt(); 3 -> 0xFFCD7F32.toInt(); else -> DIM }
-            if (i % 2 == 0) UiRecorder.fillRoundedRect((x + 6).toFloat(), ry.toFloat(), (w - 12).toFloat(), rh.toFloat(), 6f, 0x14FFFFFF)
+            val mine = e.name.equals(myName, true)
+            if (mine) UiRecorder.fillRoundedRect((x + 6).toFloat(), ry.toFloat(), rowW.toFloat(), rh.toFloat(), 6f, ACC_SOFT)
+            else if (i % 2 == 0) UiRecorder.fillRoundedRect((x + 6).toFloat(), ry.toFloat(), rowW.toFloat(), rh.toFloat(), 6f, 0x14FFFFFF)
             if (rank <= 3) UiRecorder.disc((x + 20).toFloat(), ry + rh / 2f, 7f, col)
             val r = "$rank"
             UiRecorder.textBold(r, x + 20 - tw(r, S_XS) / 2f, ry + (rh - S_XS) / 2f, S_XS, if (rank <= 3) ACC_INK else DIM)
             val v = AchLeaderboard.value(e, secrets)
             val vw = tw(v, S_SM)
-            UiRecorder.text(clip(e.name, (w - 36 - vw - 24).toFloat(), S_SM), (x + 34).toFloat(), ry + (rh - S_SM) / 2f, S_SM, ScreenTheme.TEXT_COLOR)
-            UiRecorder.text(v, (x + w - 12 - vw).toFloat(), ry + (rh - S_SM) / 2f, S_SM, GOLD)
-            ry += rh
+            val nameCol = if (mine) ACCENT else ScreenTheme.TEXT_COLOR
+            UiRecorder.text(clip(e.name, (rowW - 36 - vw - 12).toFloat(), S_SM), (x + 34).toFloat(), ry + (rh - S_SM) / 2f, S_SM, nameCol)
+            UiRecorder.text(v, (x + 6 + rowW - 8 - vw).toFloat(), ry + (rh - S_SM) / 2f, S_SM, GOLD)
         }
-        AchLeaderboard.meLine(secrets)?.let {
-            val plain = it.replace(Regex("§."), "")
-            val rank = plain.substringBefore(' ')
-            val v = plain.substringAfter("You ")
-            UiRecorder.fillRoundedRect((x + 6).toFloat(), (ry + 2).toFloat(), (w - 12).toFloat(), rh.toFloat(), 6f, ACC_SOFT)
-            UiRecorder.text("$rank  You", (x + 14).toFloat(), ry + 2 + (rh - S_SM) / 2f, S_SM, ACCENT)
-            UiRecorder.text(v, (x + w - 12 - tw(v, S_SM)).toFloat(), ry + 2 + (rh - S_SM) / 2f, S_SM, GOLD)
+        UiRecorder.popScissor()
+        if (scrolls) {
+            val barH = max(16, viewH * viewH / content)
+            val barY = top + (viewH - barH) * sc / max(1, content - viewH)
+            UiRecorder.fillPillBar((x + w - 7).toFloat(), top.toFloat(), 3f, viewH.toFloat(), 0x22FFFFFF)
+            UiRecorder.fillPillBar((x + w - 7).toFloat(), barY.toFloat(), 3f, barH.toFloat(), ACCENT)
         }
     }
 
@@ -442,6 +461,11 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         val mx = UiScale.vx(mouseX); val my = UiScale.vx(mouseY)
         if (inside(mx, my, railBox[0], railBox[1], railBox[2], railBox[3])) {
             railScroll = max(0, railScroll - (verticalAmount * 24).toInt())
+            return true
+        }
+        if (group == LB) {
+            val i = if (inside(mx, my, lbBox[1][0], lbBox[1][1], lbBox[1][2], lbBox[1][3])) 1 else 0
+            lbScroll[i] = max(0, lbScroll[i] - (verticalAmount * 40).toInt())
             return true
         }
         scroll = max(0, scroll - (verticalAmount * 40).toInt())
