@@ -56,8 +56,9 @@ object RiftSnake {
         val tail = if (blocks.size >= 2) blocks.entries.minByOrNull { it.value }?.key else null
         for ((pos, at) in blocks) {
             val head = now - at < HEAD_MS
-            val c = if (pos == tail) S.riftSnakeTailColor else if (head) S.riftSnakeHeadColor else S.riftSnakeColor
-            RenderUtils.gizmoBox(AABB(pos), (c and 0xFFFFFF) or 0x30000000, c, !head)
+            if (!head && pos != tail) continue
+            val c = if (pos == tail) S.riftSnakeColor else S.riftSnakeHeadColor
+            RenderUtils.gizmoBox(AABB(pos), (c and 0xFFFFFF) or 0x30000000, c, false)
         }
     }
 }
