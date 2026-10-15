@@ -28,6 +28,12 @@ object AchStore {
         var runs: MutableList<RunRec> = ArrayList()
         var rng: MutableList<RngRec> = ArrayList()
         var lastApiSync = 0L
+        var verSeen = ""
+        var updateDay = ""
+        var mastersOn: MutableSet<String> = HashSet()
+        var hudAreas: MutableSet<String> = HashSet()
+        var riftAreas: MutableSet<String> = HashSet()
+        var basis: MutableMap<String, DoubleArray> = HashMap()
     }
 
     private const val MAX_RUNS = 5000

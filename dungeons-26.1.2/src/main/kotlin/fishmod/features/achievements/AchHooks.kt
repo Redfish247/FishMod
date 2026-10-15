@@ -31,6 +31,17 @@ object AchHooks {
     private var feastSeen = false
     private var lastFeastMs = 0L
     private var tick = 0
+    private val termMiss = HashMap<String, Int>()
+
+    // A wrong click in a terminal; 5 on the same terminal type in one run
+    @JvmStatic
+    fun terminalMisclick(type: String) {
+        if (!Location.inDungeon()) return
+        if (termMiss.merge(type, 1, Int::plus)!! >= 5) AchStore.max("secret.sweatyHands", 1)
+    }
+
+    @JvmStatic
+    fun i4Plate() { Minecraft.getInstance().execute { AchStore.max("secret.i4Plate", 1) } }
 
     fun init() {
         Events.ON_GAME_MESSAGE.register { c ->
@@ -57,7 +68,7 @@ object AchHooks {
 
     private fun resetRun() {
         runStartMs = 0L; bloodSeen = false; mimicSeen = false; princeSeen = false
-        sectionStartMs = 0L; inTerms = false
+        sectionStartMs = 0L; inTerms = false; termMiss.clear()
     }
 
     private val FISH_NAMES = setOf("fish", "redfish2471")
@@ -76,6 +87,11 @@ object AchHooks {
 
     private fun onChat(s: String) {
         hiFish(s)
+        AchFlips.onChat(s)
+        if (!s.contains(": ")) {
+            if (s.startsWith("TROPHY FISH!") && s.contains("Golden Fish")) AchStore.max("fish.golden", 1)
+            if (s.contains("Plhlegblast")) AchStore.max("fish.plhleg", 1)
+        }
         if (s == MORT_START) {
             resetRun()
             runStartMs = System.currentTimeMillis()
@@ -92,7 +108,13 @@ object AchHooks {
             return
         }
         when {
-            s.startsWith("PUZZLE SOLVED!") && Location.inDungeon() -> AchBus.post(AchEvent.PuzzleDone(false))
+            s.startsWith("PUZZLE SOLVED!") && Location.inDungeon() -> {
+                if (s.contains("Water Board") && s.contains(Minecraft.getInstance().player?.name?.string ?: "\u0000")) {
+                    val t = fishmod.features.dungeon.puzzles.odin.WaterSolver.secondsSinceOpen()
+                    if (t in 0.0..5.0) AchStore.inc("puzzle.waterSub5")
+                }
+                AchBus.post(AchEvent.PuzzleDone(false))
+            }
             s.startsWith("PUZZLE FAIL!") && Location.inDungeon() -> AchBus.post(AchEvent.PuzzleDone(true))
             s.startsWith("☠ You ") -> AchBus.post(AchEvent.OwnDeath(s))
             s.startsWith("OFFER ACCEPTED with") -> AchBus.post(AchEvent.VisitorAccepted)
@@ -122,6 +144,10 @@ object AchHooks {
     // State polled from existing trackers each tick
     fun onTick() {
         if (tick++ % 5 != 0) return
+        if (fishmod.features.rift.Rift.inRift()) {
+            val a = fishmod.features.rift.Rift.strip(Mining.area).replace("⏣", "").trim()
+            if (a.isNotEmpty() && AchStore.data.riftAreas.add(a)) { AchStore.changed(); AchStore.max("rift.areas", AchStore.data.riftAreas.size.toLong()) }
+        }
         if (Location.inDungeon() && runStartMs > 0) {
             if (!bloodSeen && DungeonState.bloodOpened) {
                 bloodSeen = true

@@ -46,6 +46,8 @@ object WaterSolver {
 
     fun onServerTick() { tickCounter++ }
 
+    fun secondsSinceOpen(): Double = if (openedWaterTicks < 0) -1.0 else (tickCounter - openedWaterTicks) / 20.0
+
     private fun scan(optimized: Boolean) {
         if (failed) return
         val room = OdinScan.currentRoom ?: return

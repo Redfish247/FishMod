@@ -21,6 +21,7 @@ object AchUsage {
         markDay()
         val ver = FabricLoader.getInstance().getModContainer("fishmod-dungeons").map { it.metadata.version.friendlyString }.orElse("")
         if (Regex("(?i)(pre|beta|alpha|rc|dev)").containsMatchIn(ver.substringBefore('-' + "26."))) AchStore.max("fm.prerelease", 1)
+        if (AchStore.data.verSeen != ver) { AchStore.data.verSeen = ver; AchStore.data.updateDay = LocalDate.now().toString(); AchStore.changed() }
         IoExecutor.execute { snapshot = readConfig() }
         ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
             if (screen is fishmod.features.FishModScreen) {
@@ -66,5 +67,20 @@ object AchUsage {
     }
 
     @JvmStatic
-    fun onHudSaved() { AchStore.inc("fm.hudSaves") }
+    fun onHudSaved() {
+        AchStore.inc("fm.hudSaves")
+        if (AchStore.data.hudAreas.add(fishmod.utils.Location.getCurrentLocation().name)) AchStore.changed()
+        AchStore.max("fm.hudAreas", AchStore.data.hudAreas.size.toLong())
+    }
+
+    // Master toggles seen on at /fm close; feeds Ultimate Tester and The Optimizer
+    @JvmStatic
+    fun onFeatureScan(features: List<fishmod.features.FishModScreen.Feature>) {
+        val masters = features.filter { it.hasMaster() }
+        if (masters.isEmpty()) return
+        val on = masters.filter { it.get?.invoke() == true }.map { it.name }
+        if (AchStore.data.mastersOn.addAll(on)) AchStore.changed()
+        AchStore.max("fm.featuresPct", AchStore.data.mastersOn.size * 100L / masters.size)
+        if (on.any { it == "Render Optimizer" || it == "Performance HUD" }) AchStore.max("fm.perfOn", 1)
+    }
 }

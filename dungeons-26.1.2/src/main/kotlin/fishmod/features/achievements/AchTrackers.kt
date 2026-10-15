@@ -142,6 +142,7 @@ object AchTrackers {
         }
         val d = LocalDate.now().toString()
         st.data.playDays[d] = (st.data.playDays[d] ?: 0L) + 1
+        if (d == st.data.updateDay) st.max("play.updateDay", st.data.playDays[d] ?: 0L)
         st.max("play.afkBest", (System.currentTimeMillis() - lastInputMs) / 1000)
     }
 
