@@ -54,10 +54,6 @@ object Visitors {
             { S.gardenVisitorTimer && Garden.inGarden() && nextVisitor.isNotEmpty() }) {
             listOf("§aVisitors: §f$count  §7Next: " + (if (nextVisitor.contains("Full", true)) "§cQueue Full" else "§b$nextVisitor"))
         }
-        Garden.hud("Visitor Shopping List", "garden_shopping", 180, 60,
-            { S.gardenShoppingHudX }, { S.gardenShoppingHudX = it }, { S.gardenShoppingHudY }, { S.gardenShoppingHudY = it },
-            { S.gardenShoppingHudScale }, { S.gardenShoppingHudScale = it },
-            { S.gardenShoppingList && shopping.isNotEmpty() }, ::shoppingLines)
         Garden.hud("Visitor Stats", "garden_visitor_stats", 140, 50,
             { S.gardenVisitorStatsHudX }, { S.gardenVisitorStatsHudX = it }, { S.gardenVisitorStatsHudY }, { S.gardenVisitorStatsHudY = it },
             { S.gardenVisitorStatsHudScale }, { S.gardenVisitorStatsHudScale = it },
@@ -206,4 +202,63 @@ object Visitors {
     }
 
     fun clear() = shopping.clear()
+
+    // Shopping list lives in the Bazaar menu; clicking an entry opens it in /bz and copies the amount
+    private class Hit(val x0: Int, val y0: Int, val x1: Int, val y1: Int, val name: String, val amount: Int)
+    private var hits: List<Hit> = emptyList()
+
+    private fun isBazaar(screen: AbstractContainerScreen<*>): Boolean {
+        val t = Garden.strip(screen.title.string)
+        return t.contains("Bazaar") || t.contains("➜")
+    }
+
+    @JvmStatic
+    fun renderShopping(ctx: net.minecraft.client.gui.GuiGraphicsExtractor, screen: AbstractContainerScreen<*>) {
+        hits = emptyList()
+        if (!S.gardenShoppingList || shopping.isEmpty() || !isBazaar(screen)) return
+        val font = Minecraft.getInstance().font
+        val agg = LinkedHashMap<String, Int>()
+        for (reqs in shopping.values) for (r in reqs) agg[r.name] = (agg[r.name] ?: 0) + r.amount
+        val rows = ArrayList<Triple<String, String, Int>>()
+        var total = 0.0
+        for ((n, a) in agg) {
+            val h = have(n)
+            var line = (if (h >= a) "§a" else "§f") + n + " §8x${"%,d".format(a)}"
+            if (h > 0) line += " §7($h)"
+            if (S.gardenShoppingPrices) { val p = Garden.priceOf(n) * a; total += p; line += " §6${Garden.short(p)}" }
+            rows.add(Triple(n, line, maxOf(if (h in 1 until a) a - h else a, 1)))
+        }
+        val head = Garden.legacy(S.gardenShoppingColor) + "§lShopping List"
+        val foot = if (S.gardenShoppingPrices) "§7Total: §6${Garden.short(total)}" else null
+        val w = (listOf(head, foot ?: "") + rows.map { it.second } + "§8Click: open + copy amount").maxOf { font.width(Component.literal(it)) }
+        val lh = font.lineHeight + 1
+        val acc = screen as fishmod.mixin.accessors.HandledScreenAccessor
+        val x = (acc.bgX - w - 6).coerceAtLeast(2)
+        var y = acc.bgY.coerceAtLeast(2)
+        ctx.text(font, Component.literal(head), x, y, -1, true); y += lh
+        val out = ArrayList<Hit>()
+        val mc = Minecraft.getInstance()
+        val mx = mc.mouseHandler.xpos() * mc.window.guiScaledWidth / mc.window.screenWidth
+        val my = mc.mouseHandler.ypos() * mc.window.guiScaledHeight / mc.window.screenHeight
+        for ((n, line, amt) in rows) {
+            val hover = mx >= x && mx <= x + w && my >= y && my < y + lh
+            if (hover) ctx.fill(x - 2, y - 1, x + w + 2, y + lh - 1, 0x40FFFFFF)
+            ctx.text(font, Component.literal(line), x, y, -1, true)
+            out.add(Hit(x, y, x + w, y + lh, n, amt)); y += lh
+        }
+        if (foot != null) { ctx.text(font, Component.literal(foot), x, y, -1, true); y += lh }
+        ctx.text(font, Component.literal("§8Click: open + copy amount"), x, y, -1, true)
+        hits = out
+    }
+
+    @JvmStatic
+    fun mouseClicked(click: net.minecraft.client.input.MouseButtonEvent, screen: AbstractContainerScreen<*>): Boolean {
+        if (click.button() != 0 || hits.isEmpty() || !isBazaar(screen)) return false
+        val h = hits.firstOrNull { click.x() >= it.x0 && click.x() <= it.x1 && click.y() >= it.y0 && click.y() < it.y1 } ?: return false
+        val mc = Minecraft.getInstance()
+        mc.keyboardHandler.setClipboard(h.amount.toString())
+        mc.player?.connection?.sendCommand("bz ${h.name}")
+        FishMsg.send("§7Copied §f${h.amount} §7- search opened for §f${h.name}")
+        return true
+    }
 }
