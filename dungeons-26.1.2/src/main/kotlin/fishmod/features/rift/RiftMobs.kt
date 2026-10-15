@@ -67,8 +67,7 @@ object RiftMobs {
         bacteUntil = now + 120_000L
     }
 
-    // Tentacles are slimes that stay put; Bacte itself is the huge one
-    private const val BOSS_SIZE = 10
+    // Tentacle segments are slimes (sizes 8-13) that stay put; the boss is dropped via its health tag
     private val still = HashMap<Int, Pair<Vec3, Long>>()
     private fun stillFor(e: Entity): Long {
         val now = System.currentTimeMillis(); val p = e.position()
@@ -90,7 +89,7 @@ object RiftMobs {
             val n = (e.customName ?: e.name).string.let { Rift.strip(it) }
             val stand = e is net.minecraft.world.entity.decoration.ArmorStand
             if (stand && e.customName == null) continue
-            val tent = "entacle" in n || "lobercyst" in n
+            val tent = "entacle" in n || "lobbercyst" in n || "lobercyst" in n
             if (BACTE_TAG.containsMatchIn(n) || "Bacte" in n) { boss = true; if (stand) tagStand = e }
             val slime = e is net.minecraft.world.entity.monster.Slime
             val medium = slime && (e as net.minecraft.world.entity.monster.Slime).size in S.riftBacteSizeMin..S.riftBacteSizeMax
@@ -99,7 +98,7 @@ object RiftMobs {
             else if (tent || BACTE_TAG.containsMatchIn(n)) cand.add("${e.type.descriptionId.substringAfterLast('.')}:'${n.take(50)}'")
             if (medium) sl.add(e)
             else if (tent) te.add(if (stand) Rift.mobUnder(e) ?: e else e)
-            else if (slime && stillFor(e) >= 750L && (e as net.minecraft.world.entity.monster.Slime).size < BOSS_SIZE) te.add(e)
+            else if (slime && stillFor(e) >= 750L) te.add(e)
         }
         bacteDebug = (cand + sizes.sortedBy { it.substringAfter("#").substringBefore(" ").toInt() }).take(30)
         // the boss is also stationary: drop whatever slime sits under its health tag
