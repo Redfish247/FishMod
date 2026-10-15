@@ -96,13 +96,19 @@ object AchPopup {
     }
 
     private fun draw(c: Card, x: Float, y: Float, p: Float) {
-        UiRecorder.dropShadow(x, y, W.toFloat(), H.toFloat(), 10f, 18f, a(0x55FFC83D, p))
+        // Centered glow: stacked expanded rects fading outward on every side
+        for (i in 14 downTo 1) {
+            val e = i * 2.5f
+            UiRecorder.fillRoundedRect(x - e, y - e, W + 2 * e, H + 2 * e, 10f + e, a(((0x2A * (15 - i)) / 15 shl 24) or 0xFFC83D, p))
+        }
         UiRecorder.roundedRectRing(x, y, W.toFloat(), H.toFloat(), 10f, 1.2f, a(BG, p), a(GOLD, p * 0.8f))
         UiRecorder.fillRect(x + 12f, y + 1f, W - 24f, 2f, a(TEAL, p))
 
         val cx = x + 29f
         val cy = y + H / 2f + 1f
-        UiRecorder.disc(cx, cy, 19f, a(0x30FFC83D, p))
+        UiRecorder.disc(cx, cy, 25f, a(0x18FFC83D, p))
+        UiRecorder.disc(cx, cy, 22f, a(0x24FFC83D, p))
+        UiRecorder.disc(cx, cy, 19f, a(0x40FFC83D, p))
         UiRecorder.disc(cx, cy, 16f, a(0xFF1C2028.toInt(), p))
         trophy(cx, cy, p)
 
