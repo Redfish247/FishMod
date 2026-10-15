@@ -38,6 +38,17 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenPestSound: Boolean = true
     @ConfigValue @JvmField var gardenPestFinder: Boolean = false
     @ConfigValue @JvmField var gardenPestFinderLine: Boolean = true
+    @ConfigValue @JvmField var gardenPestHudColor: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var gardenPestProfitColor: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var gardenPestMarkerColor: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var gardenPestLineColor: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var gardenComposterColor: Int = 0xFF00AA00.toInt()
+    @ConfigValue @JvmField var gardenComposterWarnColor: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var gardenJacobColor: Int = 0xFFFFFF55.toInt()
+    @ConfigValue @JvmField var gardenRareCropColor: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var gardenVisitorStatsColor: Int = 0xFF55FF55.toInt()
+    @ConfigValue @JvmField var gardenShoppingColor: Int = 0xFFFFFF55.toInt()
+    @ConfigValue @JvmField var gardenVisitorFullColor: Int = 0xFFFF5555.toInt()
     @ConfigValue @JvmField var gardenPestFinderColor: Int = 0xFFFF5555.toInt()
     @ConfigValue @JvmField var gardenPestFinderOpacity: Int = 20
     @ConfigValue @JvmField var gardenPestHud: Boolean = false

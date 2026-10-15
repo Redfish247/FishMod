@@ -44,7 +44,7 @@ object Visitors {
             names = Mining.tabWidget("Visitors:")
             if (names.isNotEmpty()) shopping.keys.retainAll { k -> names.any { it.contains(k) } }
             val full = nextVisitor.contains("Full", true)
-            if (full && !fullWarned && S.gardenVisitorSixthWarn && S.gardenVisitorTimer) Mining.title("§cVisitor Queue Full!", "", 2000, true)
+            if (full && !fullWarned && S.gardenVisitorSixthWarn && S.gardenVisitorTimer) Mining.title(Garden.legacy(S.gardenVisitorFullColor) + "Visitor Queue Full!", "", 2000, true)
             fullWarned = full
             scanMenu(mc)
         }
@@ -62,7 +62,7 @@ object Visitors {
             { S.gardenVisitorStatsHudX }, { S.gardenVisitorStatsHudX = it }, { S.gardenVisitorStatsHudY }, { S.gardenVisitorStatsHudY = it },
             { S.gardenVisitorStatsHudScale }, { S.gardenVisitorStatsHudScale = it },
             { S.gardenVisitorStats && Garden.inGarden() }) {
-            listOf("§a§lVisitor Stats", "§7Accepted: §f${S.gardenStatAccepted}", "§7Copper: §c${"%,d".format(S.gardenStatCopper)}",
+            listOf(Garden.legacy(S.gardenVisitorStatsColor) + "§lVisitor Stats", "§7Accepted: §f${S.gardenStatAccepted}", "§7Copper: §c${"%,d".format(S.gardenStatCopper)}",
                 "§7Garden XP: §2${"%,d".format(S.gardenStatGardenXp)}", "§7Rare Rewards: §d${S.gardenStatRare}")
         }
 
@@ -191,7 +191,7 @@ object Visitors {
     private fun shoppingLines(): List<String> {
         val agg = LinkedHashMap<String, Int>()
         for (reqs in shopping.values) for (r in reqs) agg[r.name] = (agg[r.name] ?: 0) + r.amount
-        val out = arrayListOf("§e§lShopping List")
+        val out = arrayListOf(Garden.legacy(S.gardenShoppingColor) + "§lShopping List")
         var total = 0.0
         for ((n, a) in agg) {
             val h = have(n)

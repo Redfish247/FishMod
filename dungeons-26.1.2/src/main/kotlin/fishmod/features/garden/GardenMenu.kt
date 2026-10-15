@@ -17,6 +17,7 @@ object GardenMenu {
 
         val timer = Feature("Visitor Timer", S::gardenVisitorTimer)
         timer.sub.add(ToggleSetting("Queue Full Warning", "Title when the visitor queue is full", S::gardenVisitorSixthWarn))
+        timer.sub.add(ColorPickerSetting("Queue Full Colour", "Nearest chat colour is used", S::gardenVisitorFullColor))
         col.features.add(timer)
 
         val arrive = Feature("Visitor Arrival Alert", S::gardenVisitorArrivalTitle)
@@ -28,6 +29,7 @@ object GardenMenu {
         val shop = Feature("Visitor Shopping List", S::gardenShoppingList)
         shop.sub.add(ToggleSetting("Show Prices", "", S::gardenShoppingPrices))
         shop.sub.add(ButtonSetting("Clear List", "", "Clear") { Visitors.clear() })
+        shop.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenShoppingColor))
         col.features.add(shop)
 
         col.features.add(Feature("Visitor Menu Info", S::gardenVisitorMenuInfo))
@@ -41,6 +43,7 @@ object GardenMenu {
         stats.sub.add(ButtonSetting("Reset", "", "Reset") {
             S.gardenStatAccepted = 0; S.gardenStatCopper = 0; S.gardenStatGardenXp = 0; S.gardenStatRare = 0
         })
+        stats.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenVisitorStatsColor))
         col.features.add(stats)
 
         val pt = Feature("Pest Spawn Title", S::gardenPestTitle)
@@ -50,25 +53,35 @@ object GardenMenu {
 
         val pf = Feature("Pest Finder", S::gardenPestFinder)
         pf.sub.add(ToggleSetting("Line", "Line to each infested plot", S::gardenPestFinderLine))
-        pf.sub.add(ColorPickerSetting("Color", "", S::gardenPestFinderColor))
+        pf.sub.add(ColorPickerSetting("Plot Colour", "", S::gardenPestFinderColor))
+        pf.sub.add(ColorPickerSetting("Pest Marker Colour", "Box on the pest from the vacuum trail", S::gardenPestMarkerColor))
+        pf.sub.add(ColorPickerSetting("Line Colour", "", S::gardenPestLineColor))
         pf.sub.add(SliderIntSetting("Opacity %", "", S::gardenPestFinderOpacity, 5, 100))
         col.features.add(pf)
 
-        col.features.add(Feature("Pest Timer HUD", S::gardenPestHud))
+        val pth = Feature("Pest Timer HUD", S::gardenPestHud)
+        pth.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenPestHudColor))
+        col.features.add(pth)
 
         val pp = Feature("Pest Profit Tracker", S::gardenPestProfit)
         pp.sub.add(ButtonSetting("Reset", "", "Reset") { Pests.resetProfit() })
+        pp.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenPestProfitColor))
         col.features.add(pp)
 
         val comp = Feature("Composter HUD", S::gardenComposterHud)
         comp.sub.add(ToggleSetting("Inactive Warning", "Title when the composter runs dry", S::gardenComposterWarn))
+        comp.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenComposterColor))
+        comp.sub.add(ColorPickerSetting("Warning Colour", "Nearest chat colour is used", S::gardenComposterWarnColor))
         col.features.add(comp)
 
-        col.features.add(Feature("Jacob's Contest HUD", S::gardenJacobHud))
+        val jac = Feature("Jacob's Contest HUD", S::gardenJacobHud)
+        jac.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenJacobColor))
+        col.features.add(jac)
 
         val rc = Feature("Rare Crop Tracker", S::gardenRareCrop)
         rc.sub.add(ToggleSetting("Title", "", S::gardenRareCropTitle))
         rc.sub.add(ButtonSetting("Reset", "", "Reset") { S.gardenRareCropCount = 0 })
+        rc.sub.add(ColorPickerSetting("Colour", "Nearest chat colour is used", S::gardenRareCropColor))
         col.features.add(rc)
 
         return col
