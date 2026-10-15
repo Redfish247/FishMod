@@ -91,7 +91,7 @@ object StorageOverlay {
         titleFor = title
         val t = title.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
         titlePage = StoragePage.fromTitle(t)
-        titleIsStorage = t == "Storage" || titlePage != null
+        titleIsStorage = StoragePage.isOverviewTitle(t) || titlePage != null
     }
 
     private fun on(screen: AbstractContainerScreen<*>): Boolean {
@@ -127,7 +127,10 @@ object StorageOverlay {
     private fun allData(): TreeMap<StoragePage, NBTInventory?> {
         val out = TreeMap<StoragePage, NBTInventory?>()
         val view = StorageCache.view()
-        for (i in (StorageCache.knownPages() + view.keys).sorted()) out[StoragePage(i)] = view[i]
+        val rift = StoragePage.inRift()
+        for (i in (StorageCache.knownPages() + view.keys).sorted()) if ((i >= StoragePage.RIFT_BASE) == rift) out[StoragePage(i)] = view[i]
+        // Rift: always show both ender chest pages, even before they're cached
+        if (rift) for (i in StoragePage.RIFT_BASE until StoragePage.MAX_INDEX) if (!out.containsKey(StoragePage(i))) out[StoragePage(i)] = null
         return out
     }
 

@@ -86,9 +86,10 @@ object StorageCache {
         val screen = mc.screen as? AbstractContainerScreen<*> ?: run { flush(); return }
         val plainTitle = fishmod.utils.ScreenTitle.plain(screen)
 
-        if (plainTitle == "Storage") { scanOverview(screen); return }
+        if (plainTitle == "Storage" && !StoragePage.inRift()) { scanOverview(screen); return }
+        if (StoragePage.isOverviewTitle(plainTitle)) return
         val page = StoragePage.fromTitle(plainTitle) ?: run { flush(); return }
-        if (!FishDiag.check(page.index in 0 until 27, "StorageCache.6") { "storage page index ${page.index} out of range from '$plainTitle'" }) return
+        if (!FishDiag.check(page.index in 0 until StoragePage.MAX_INDEX, "StorageCache.6") { "storage page index ${page.index} out of range from '$plainTitle'" }) return
 
         val now = System.currentTimeMillis()
         if (now - lastSnapshot < 100) return
@@ -130,7 +131,7 @@ object StorageCache {
         if (!Files.exists(file)) return
         try {
             val root = NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap())
-            for (i in 0 until 27) {
+            for (i in 0 until StoragePage.MAX_INDEX) {
                 if (!root.contains("${i}_inv")) continue
                 val inv = NBTInventory.decode(root.getString("${i}_inv").orElse(""))
                 FishDiag.notNull(inv, "StorageCache.4") { "stored page $i failed to decode" }
