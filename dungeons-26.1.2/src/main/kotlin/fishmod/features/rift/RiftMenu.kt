@@ -49,7 +49,6 @@ object RiftMenu {
         val bacte = Feature("Bacte Helper", S::riftBacte)
         bacte.sub.add(ToggleSetting("Line To Bacte", "", S::riftBacteLine))
         bacte.sub.add(ToggleSetting("Spawn Title", "", S::riftBacteTitle))
-        bacte.sub.add(ToggleSetting("Announce In All Chat", "Sends one /ac message when Bacte spawns (max once a minute)", S::riftBacteAnnounce))
         bacte.sub.add(ColorPickerSetting("Line Colour", "", S::riftBacteColor))
         col.features.add(bacte)
 
