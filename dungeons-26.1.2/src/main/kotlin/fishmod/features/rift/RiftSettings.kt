@@ -35,7 +35,6 @@ object RiftSettings {
     @ConfigValue @JvmField var riftBacte: Boolean = false
     @ConfigValue @JvmField var riftBacteLine: Boolean = true
     @ConfigValue @JvmField var riftBacteTitle: Boolean = true
-    @ConfigValue @JvmField var riftBacteAnnounce: Boolean = false
     @ConfigValue @JvmField var riftBacteColor: Int = 0xFF55FF55.toInt()
 
     // Living Cave

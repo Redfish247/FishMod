@@ -1,6 +1,5 @@
 package fishmod.features.rift
 
-import fishmod.utils.ChatQueue
 import fishmod.utils.Misc
 import fishmod.utils.data.EntityUtil
 import fishmod.utils.events.Events
@@ -41,15 +40,14 @@ object RiftMobs {
     private class Mark(val e: Entity, val text: String)
     @Volatile private var marks: List<Mark> = emptyList()
     @Volatile private var fleespook: Entity? = null
-    @Volatile private var bacte: Entity? = null
+    @Volatile private var bacte: List<Entity> = emptyList()
     private var bacteId = -1
-    private var lastAnnounce = 0L
     private var tick = 0
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 5 == 0) scan() }
         Events.ON_GAME_MESSAGE.register { t -> onBacteChat(Rift.strip(t.string).trim()); false }
-        Events.ON_WORLD_CHANGE.register { bacteUntil = 0L; marks = emptyList(); fleespook = null; bacte = null; bacteId = -1; false }
+        Events.ON_WORLD_CHANGE.register { bacteUntil = 0L; marks = emptyList(); fleespook = null; bacte = emptyList(); bacteId = -1; false }
         RenderingEvents.GIZMO.register { _ -> render() }
     }
 
@@ -57,39 +55,38 @@ object RiftMobs {
     private fun onBacteChat(m: String) {
         if (!S.riftBacte || !Rift.inRift() || !BACTE_CHAT.containsMatchIn(m)) return
         val now = System.currentTimeMillis()
-        if (BACTE_END.containsMatchIn(m)) { bacteUntil = 0L; bacte = null; bacteId = -1; return }
+        if (BACTE_END.containsMatchIn(m)) { bacteUntil = 0L; bacte = emptyList(); bacteId = -1; return }
         if (now > bacteUntil) {
             bacteStart = now
             if (S.riftBacteTitle) Misc.forceTitle(Component.literal("§a§lBacte!"), Component.literal("§7Bacte spawned"), 2000)
-            if (S.riftBacteAnnounce && now - lastAnnounce > 60_000L) {
-                lastAnnounce = now
-                val p = Minecraft.getInstance().player?.blockPosition()
-                ChatQueue.enqueue("ac [FishMod] Bacte spawned" + (p?.let { " near ${it.x}, ${it.y}, ${it.z}" } ?: ""))
-            }
         }
         bacteUntil = now + 120_000L
     }
 
-    private fun findBacte(me: Entity): Entity? {
-        val lv = Minecraft.getInstance().level ?: return null
+    // Every Bacte-named mob, tentacle and slime in range, nearest first
+    private fun findBacte(me: Entity): List<Entity> {
+        val lv = Minecraft.getInstance().level ?: return emptyList()
         val cand = ArrayList<String>()
-        var best: Entity? = null
+        val out = ArrayList<Entity>()
         for (e in lv.getEntities(me, me.boundingBox.inflate(48.0)) { true }) {
+            if (!e.isAlive) continue
             val n = (e.customName ?: e.name).string.let { Rift.strip(it) }
-            if (e is net.minecraft.world.entity.decoration.ArmorStand && e.customName == null) continue
-            val hit = BACTE_NAME.containsMatchIn(n) || "Bacte" in n
-            if (hit || e is net.minecraft.world.entity.monster.Slime) cand.add("${e.type.descriptionId.substringAfterLast('.')}:'${n.take(50)}'")
-            if (hit && e.isAlive && (best == null || e.distanceToSqr(me) < best.distanceToSqr(me))) best = e
+            val stand = e is net.minecraft.world.entity.decoration.ArmorStand
+            if (stand && e.customName == null) continue
+            val hit = BACTE_NAME.containsMatchIn(n) || "Bacte" in n || "entacle" in n
+            val slime = e is net.minecraft.world.entity.monster.Slime
+            if (hit || slime) cand.add("${e.type.descriptionId.substringAfterLast('.')}:'${n.take(50)}'")
+            if (slime) out.add(e)
+            else if (hit) out.add(if (stand) Rift.mobUnder(e) ?: e else e)
         }
         bacteDebug = cand.take(12)
-        if (best is net.minecraft.world.entity.decoration.ArmorStand) best = Rift.mobUnder(best) ?: best
-        return best
+        return out.distinct().sortedBy { it.distanceToSqr(me) }.take(12)
     }
 
     private fun scan() {
         if (!Rift.inRift() || !(S.riftCrux || S.riftFleespook || S.riftBacte)) {
             bacteDebug = emptyList();
-            marks = emptyList(); fleespook = null; bacte = null; return
+            marks = emptyList(); fleespook = null; bacte = emptyList(); return
         }
         val me = Minecraft.getInstance().player ?: return
         val range = S.riftCruxRange.toDouble()
@@ -113,7 +110,7 @@ object RiftMobs {
                 Misc.forceTitle(Component.literal("§eLook away!"), Component.empty(), 300)
         }
         marks = out; lastCruxNames = names; fleespook = flee
-        bacte = if (S.riftBacte && System.currentTimeMillis() < bacteUntil) findBacte(me) else null
+        bacte = if (S.riftBacte && System.currentTimeMillis() < bacteUntil) findBacte(me) else emptyList()
     }
 
     private fun render() {
@@ -124,7 +121,7 @@ object RiftMobs {
             RenderUtils.gizmoText(Component.literal(m.text), Vec3(p.x, p.y + m.e.bbHeight + 0.6, p.z), 1.4f, -1, S.riftCruxWalls)
         }
         fleespook?.takeIf { it.isAlive }?.let { line(it, S.riftFleespookColor, "§5Fleespook") }
-        if (S.riftBacteLine) bacte?.takeIf { it.isAlive }?.let { line(it, S.riftBacteColor, null) }
+        if (S.riftBacteLine) for (e in bacte) if (e.isAlive) line(e, S.riftBacteColor, null)
     }
 
     private fun line(e: Entity, argb: Int, label: String?) {
