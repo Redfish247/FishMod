@@ -81,8 +81,9 @@ object RiftMobs {
             val tent = "entacle" in n || "lobercyst" in n
             if (BACTE_TAG.containsMatchIn(n) || "Bacte" in n) boss = true
             val slime = e is net.minecraft.world.entity.monster.Slime
-            if (tent || slime || BACTE_TAG.containsMatchIn(n)) cand.add("${e.type.descriptionId.substringAfterLast('.')}:'${n.take(50)}'")
-            if (slime) sl.add(e) else if (tent) te.add(if (stand) Rift.mobUnder(e) ?: e else e)
+            val medium = slime && (e as net.minecraft.world.entity.monster.Slime).size == 2
+            if (tent || slime || BACTE_TAG.containsMatchIn(n)) cand.add("${e.type.descriptionId.substringAfterLast('.')}${if (slime) "#" + (e as net.minecraft.world.entity.monster.Slime).size else ""}:'${n.take(50)}'")
+            if (medium) sl.add(e) else if (tent) te.add(if (stand) Rift.mobUnder(e) ?: e else e)
         }
         bacteDebug = cand.take(12)
         val on = boss || windowOpen
