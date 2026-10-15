@@ -32,6 +32,14 @@ object RiftMenu {
 
         val crux = Feature("Crux Helper", S::riftCrux)
         crux.sub.add(ToggleSetting("Shy Look Away Title", "Title when a Shy Crux is shouting near you", S::riftShyTitle))
+        crux.sub.add(SliderIntSetting("Hint Range", "Only label Crux mobs within this many blocks", S::riftCruxRange, 5, 40))
+        crux.sub.add(ToggleSetting("Through Walls", "", S::riftCruxWalls))
+        crux.sub.add(ToggleSetting("Shy Hint", "", S::riftCruxShy))
+        crux.sub.add(ToggleSetting("Shadow Hint", "", S::riftCruxShadow))
+        crux.sub.add(ToggleSetting("Volt Hint", "", S::riftCruxVolt))
+        crux.sub.add(ToggleSetting("Scribe Hint", "", S::riftCruxScribe))
+        crux.sub.add(ToggleSetting("Frozille Hint", "", S::riftCruxFrozille))
+        crux.sub.add(ToggleSetting("Splatter Hint", "", S::riftCruxSplatter))
         col.features.add(crux)
 
         val flee = Feature("Fleespook Tracker", S::riftFleespook)

@@ -20,6 +20,14 @@ object RiftSettings {
     // Wyld Woods / mobs
     @ConfigValue @JvmField var riftCrux: Boolean = false
     @ConfigValue @JvmField var riftShyTitle: Boolean = true
+    @ConfigValue @JvmField var riftCruxRange: Int = 20
+    @ConfigValue @JvmField var riftCruxWalls: Boolean = false
+    @ConfigValue @JvmField var riftCruxShy: Boolean = true
+    @ConfigValue @JvmField var riftCruxShadow: Boolean = true
+    @ConfigValue @JvmField var riftCruxVolt: Boolean = true
+    @ConfigValue @JvmField var riftCruxScribe: Boolean = true
+    @ConfigValue @JvmField var riftCruxFrozille: Boolean = true
+    @ConfigValue @JvmField var riftCruxSplatter: Boolean = true
     @ConfigValue @JvmField var riftFleespook: Boolean = false
     @ConfigValue @JvmField var riftFleespookColor: Int = 0xFFAA55FF.toInt()
 

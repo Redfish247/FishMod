@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.phys.AABB
+import fishmod.features.rift.RiftSettings as S
 
 // Shared Rift state + init of every Rift helper
 object Rift {
@@ -56,8 +57,31 @@ object Rift {
             .minByOrNull { it.distanceToSqr(stand) }
     }
 
+    private fun say(t: String) = fishmod.utils.Misc.addChatMessage(net.minecraft.network.chat.Component.literal(t))
+
+    // /fm rift debug: local-only state dump
+    private fun debugDump() {
+        val mc = Minecraft.getInstance(); val me = mc.player ?: return
+        say("§6[Rift debug] inRift=${inRift()} area='${area()}'")
+        say("§7tab Area: '${fishmod.features.mining.Mining.tabLine("Area:")}' sbArea='${fishmod.features.mining.Mining.area}'")
+        say("§7sidebar: " + fishmod.features.mining.Mining.sidebar.joinToString(" | ") { it.take(40) })
+        say("§7held id=${heldId()} wand=${RiftDreadfarm.wandHeld()} berberis=${S.riftBerberis} tracked=${RiftDreadfarm.berberisCount()} fireworks(5s)=${RiftDreadfarm.recentParticles()} total=${RiftDreadfarm.particleSeen}")
+        val hit = mc.hitResult as? net.minecraft.world.phys.BlockHitResult
+        say("§7target block=" + (hit?.let { "${it.blockPos.toShortString()} ${mc.level?.getBlockState(it.blockPos)?.block?.descriptionId}" } ?: "none"))
+        val ents = mc.level?.getEntities(me, me.boundingBox.inflate(16.0)) { true }.orEmpty()
+        val names = ents.mapNotNull { e -> (e.customName ?: if (e is net.minecraft.world.entity.decoration.ArmorStand) null else e.name)?.string?.let { strip(it) } }
+            .filter { it.isNotBlank() }.distinct().take(25)
+        say("§7nearby (${names.size}): " + names.joinToString(" | "))
+        say("§7crux matched: " + RiftMobs.lastCruxNames.joinToString(" | ").ifEmpty { "none" })
+    }
+
     @JvmStatic
     fun init() {
+        net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback.EVENT.register { d, _ ->
+            d.register(net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("fm").then(
+                net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("rift").then(
+                    net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("debug").executes { debugDump(); 1 })))
+        }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player != null && tick++ % 20 == 0) { if (inRift()) pollArea() else cachedArea = "" }
         }
