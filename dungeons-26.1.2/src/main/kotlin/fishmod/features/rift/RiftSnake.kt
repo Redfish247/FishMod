@@ -39,8 +39,9 @@ object RiftSnake {
         if (!S.riftSnake || blocks.isEmpty() || !Rift.inRift()) return
         val now = System.currentTimeMillis()
         for ((pos, at) in blocks) {
-            val c = if (now - at < HEAD_MS) S.riftSnakeHeadColor else S.riftSnakeColor
-            RenderUtils.gizmoBox(AABB(pos), (c and 0xFFFFFF) or 0x30000000, c, true)
+            val head = now - at < HEAD_MS
+            val c = if (head) S.riftSnakeHeadColor else S.riftSnakeColor
+            RenderUtils.gizmoBox(AABB(pos), (c and 0xFFFFFF) or 0x30000000, c, !head)
         }
     }
 }
