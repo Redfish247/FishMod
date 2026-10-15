@@ -60,7 +60,22 @@ object AchHooks {
         sectionStartMs = 0L; inTerms = false
     }
 
+    private val FISH_NAMES = setOf("fish", "redfish2471")
+    private val HI_FISH = Regex("(?i)\bhi fish\b")
+
+    // Own "Hi Fish" line while Fish is in the tab list
+    private fun hiFish(s: String) {
+        val mc = Minecraft.getInstance()
+        val me = mc.player?.name?.string ?: return
+        val i = s.indexOf("$me:")
+        if (i < 0 || !HI_FISH.containsMatchIn(s.substring(i + me.length + 1))) return
+        if (s.substring(0, i).any { it == ':' }) return
+        val here = mc.connection?.onlinePlayers?.any { it.profile.name.lowercase() in FISH_NAMES } ?: false
+        if (here) AchStore.max("hifish.said", 1)
+    }
+
     private fun onChat(s: String) {
+        hiFish(s)
         if (s == MORT_START) {
             resetRun()
             runStartMs = System.currentTimeMillis()

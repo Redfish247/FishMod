@@ -340,7 +340,7 @@ object AchRegistry {
         a("the_perfect_setup", "FishMod / General", "The Perfect Setup", "Save configurations for 5 activities", "Hard", 15, "", 0L, "", false)
         a("fishmod_veteran", "FishMod / General", "FishMod Veteran", "Use FishMod on 150 different days", "Insane", 35, "fm.days", 150L, "", false)
         a("the_ultimate_tester", "FishMod / General", "The Ultimate Tester", "Use 90% of major FishMod features", "Insane", 45, "", 0L, "", false)
-        a("the_fishmodder", "FishMod / General", "The Fishmodder", "Say “Hi Fish” While in lobby w/ Him", "Impossible", 50, "server.hiFish", 1L, "", false)
+        a("the_fishmodder", "FishMod / General", "The Fishmodder", "Say “Hi Fish” While in lobby w/ Him", "Impossible", 50, "hifish.said", 1L, "", false)
         a("stat_nerd", "FishMod / General", "Stat Nerd", "Open session stats 100 times", "Easy", 5, "", 0L, "", false)
         a("pb_machine", "FishMod / General", "PB Machine", "Set 25 new personal bests", "Hard", 20, "fm.pbs", 25L, "", false)
         a("early_adopter", "FishMod / General", "Early Adopter", "Use a FishMod prerelease build", "Medium", 15, "fm.prerelease", 1L, "", false)
