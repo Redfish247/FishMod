@@ -23,6 +23,10 @@ object AchMenu {
 
         val main = Feature("Achievements", S::achEnabled)
         summary = LabelSetting("", "").also { main.sub.add(it) }
+        main.sub.add(ButtonSetting("Open Achievements", "Browse every achievement", "Open") {
+            val mc = net.minecraft.client.Minecraft.getInstance()
+            mc.setScreen(AchScreen(mc.screen))
+        })
         main.sub.add(ToggleSetting("Unlock Toast", "Corner pop-up on unlock", S::achToast))
         main.sub.add(ToggleSetting("Chat Message", "", S::achChat))
         main.sub.add(ToggleSetting("Sound", "", S::achSound))
