@@ -35,6 +35,13 @@ object RiftSettings {
     @ConfigValue @JvmField var riftSnakeColor: Int = 0xFF5555FF.toInt()
     @ConfigValue @JvmField var riftSnakeHeadColor: Int = 0xFFFF5555.toInt()
 
+    // Mirrorverse / Stillgore / Colosseum
+    @ConfigValue @JvmField var riftParkour: Boolean = false
+    @ConfigValue @JvmField var riftParkourAhead: Int = 3
+    @ConfigValue @JvmField var riftParkourColor: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var riftEffigies: Boolean = false
+    @ConfigValue @JvmField var riftKillZone: Boolean = false
+
     // Vampire slayer
     @ConfigValue @JvmField var riftVampire: Boolean = false
     @ConfigValue @JvmField var riftVampireSteakTitle: Boolean = true
