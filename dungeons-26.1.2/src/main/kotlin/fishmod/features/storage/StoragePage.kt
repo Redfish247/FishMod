@@ -27,7 +27,7 @@ data class StoragePage(val index: Int) : Comparable<StoragePage> {
         fun inRift() = fishmod.utils.Location.`in`(fishmod.utils.Location.THE_RIFT)
 
         fun isOverviewTitle(t: String) = t == "Storage" || t == "Rift Storage"
-        private val ENDER = Regex("^Ender Chest (?:✦ )?\\(([1-9])/[1-9]\\)$")
+        private val ENDER = Regex("^(?:Ender Chest|Rift Storage) (?:✦ )?\\(([1-9])/[1-9]\\)$")
         private val BACKPACK = Regex("^.+Backpack (?:✦ )?\\(Slot #([0-9]+)\\)$")
 
         fun fromTitle(title: String): StoragePage? {
