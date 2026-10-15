@@ -46,6 +46,7 @@ object RiftMobs {
     @Volatile private var bacteSlimes: List<Entity> = emptyList()
     private var bacteId = -1
     private var tick = 0
+    private var lastShootCue = 0L
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 5 == 0) scan() }
@@ -77,7 +78,7 @@ object RiftMobs {
             val n = (e.customName ?: e.name).string.let { Rift.strip(it) }
             val stand = e is net.minecraft.world.entity.decoration.ArmorStand
             if (stand && e.customName == null) continue
-            val tent = "entacle" in n
+            val tent = "entacle" in n || "lobercyst" in n
             if (BACTE_TAG.containsMatchIn(n) || "Bacte" in n) boss = true
             val slime = e is net.minecraft.world.entity.monster.Slime
             if (tent || slime || BACTE_TAG.containsMatchIn(n)) cand.add("${e.type.descriptionId.substringAfterLast('.')}:'${n.take(50)}'")
@@ -130,22 +131,33 @@ object RiftMobs {
         if (S.riftBacteLine) bacteAim()
     }
 
-    // Path the slime under your crosshair takes when hit (straight, away from you); red if it crosses a tentacle
-    private fun bacteAim() {
-        val me = Minecraft.getInstance().player ?: return
-        val eye = me.eyePosition; val look = me.lookAngle
-        for (t in bacte) if (t.isAlive) RenderUtils.gizmoBox(t.boundingBox, 0x30FF5555, 0xFFFF5555.toInt(), true)
-        val slime = bacteSlimes.filter { it.isAlive && it.distanceToSqr(me) < 100.0 }.minByOrNull { sl ->
-            val v = sl.boundingBox.center.subtract(eye); val t = v.dot(look)
-            if (t <= 0) Double.MAX_VALUE else v.subtract(look.scale(t)).length()
-        } ?: return
-        val c = slime.boundingBox.center
-        val d = Vec3(c.x - me.x, 0.0, c.z - me.z).let { if (it.lengthSqr() < 1e-6) return else it.normalize() }
-        val end = c.add(d.scale(40.0))
-        val hits = bacte.any { t -> t.isAlive && t.boundingBox.inflate(0.4).clip(c, end).isPresent }
-        RenderUtils.gizmoLine(c, end, if (hits) 0xFFFF5555.toInt() else S.riftBacteColor, 3f, true)
-    }
-
+    // Path the slime under your crosshair takes when hit (straight, away from you); red if it crosses a tentacle
+    private fun bacteAim() {
+        val me = Minecraft.getInstance().player ?: return
+        val eye = me.eyePosition; val look = me.lookAngle
+        if (S.riftBacteSlimeBoxes) for (sl in bacteSlimes) if (sl.isAlive) RenderUtils.gizmoBox(sl.boundingBox, 0x4055FF55, 0xFF55FF55.toInt(), true)
+        val targets = bacte.filter { it.isAlive }
+        if (targets.isEmpty()) return
+        for (t in targets) RenderUtils.gizmoBox(t.boundingBox, 0x30FF5555, 0xFFFF5555.toInt(), true)
+        val slime = bacteSlimes.filter { it.isAlive && it.distanceToSqr(me) < 100.0 }.minByOrNull { sl ->
+            val v = sl.boundingBox.center.subtract(eye); val t = v.dot(look)
+            if (t <= 0) Double.MAX_VALUE else v.subtract(look.scale(t)).length()
+        } ?: return
+        val c = slime.boundingBox.center
+        val d = Vec3(c.x - me.x, 0.0, c.z - me.z).let { if (it.lengthSqr() < 1e-6) return else it.normalize() }
+        val end = c.add(d.scale(40.0))
+        val hits = targets.any { t -> t.boundingBox.inflate(0.4).clip(c, end).isPresent }
+        RenderUtils.gizmoLine(c, end, if (hits) 0xFFFF5555.toInt() else S.riftBacteColor, 3f, true)
+        if (hits && S.riftBacteShootAlert) {
+            val now = System.currentTimeMillis()
+            if (now - lastShootCue > 1500L) {
+                lastShootCue = now
+                Misc.forceTitle(Component.literal("§c§lSHOOT!"), Component.empty(), 700)
+                fishmod.utils.sound.SoundManager.ping("bacteShoot", 500)
+            }
+        }
+    }
+
     private fun line(e: Entity, argb: Int, label: String?) {
         val p = EntityUtil.getLerpedPos(e)
         RenderUtils.gizmoLine(RenderUtils.cameraLineStart(1.0), Vec3(p.x, p.y, p.z), argb, 2f, true)
