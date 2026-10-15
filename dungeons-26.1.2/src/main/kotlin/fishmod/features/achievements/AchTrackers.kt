@@ -179,6 +179,18 @@ object AchTrackers {
         return v
     }
 
+    // Lifetime dungeon chest loot value from the loot tracker rows (chest costs aren't recorded)
+    private fun dungeonLootValue(): Double {
+        var v = 0.0
+        for (r in fishmod.features.croesus.LootTrackerStore.rows()) {
+            if (r.id.isEmpty() || r.count <= 0) continue
+            val id = r.id
+            val p = fishmod.features.croesus.CroesusPrices.bazaarPrice(id, false)?.takeIf { it > 0 } ?: fishmod.features.croesus.CroesusPrices.price(id)
+            if (p > 0) v += p * r.count
+        }
+        return v
+    }
+
     private fun pollLedgers() {
         val st = AchStore
         val kuudra = feed("kuudra", KuudraSettings.kuudraProfitTotal)
@@ -186,12 +198,14 @@ object AchTrackers {
         val diana = feed("diana", DianaTracker.profit(DianaTracker.total))
         val mining = feed("mining", MiningProfitTracker.profitOf(false))
         val pests = feed("pests", Pests.profitValue())
+        val dungeons = feed("dungeons", dungeonLootValue())
+        st.max("dungeons.profit", dungeons.toLong())
         st.max("kuudra.profit", kuudra.toLong())
         st.max("slayer.profit", slayer.toLong())
         st.max("diana.profit", diana.toLong())
         st.max("mining.profit", mining.toLong())
-        st.max("profit.total", (kuudra + slayer + diana + mining + pests).toLong())
-        val session = mapOf("kuudra" to kuudra, "slayer" to slayer, "diana" to diana, "mining" to mining, "pests" to pests)
+        st.max("profit.total", (kuudra + slayer + diana + mining + pests + dungeons).toLong())
+        val session = mapOf("kuudra" to kuudra, "slayer" to slayer, "diana" to diana, "mining" to mining, "pests" to pests, "dungeons" to dungeons)
             .entries.sumOf { (k, v) -> v - (sessionStart[k] ?: v) }
         st.max("profit.sessionBest", session.toLong())
         st.max("farming.sessionBest", Pests.profitValue().toLong())

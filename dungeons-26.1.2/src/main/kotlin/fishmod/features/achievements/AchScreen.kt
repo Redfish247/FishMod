@@ -73,7 +73,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
     private fun hidden(a: Ach): Boolean = AchSettings.achHideUntracked && !a.tracked && !AchEngine.unlocked(a)
     private fun secretHidden(a: Ach): Boolean = a.secret && !AchEngine.unlocked(a) && !AchSettings.achShowSecrets
 
-    private fun groups(): List<String> = listOf(ALL, RECENT, LB) + AchRegistry.SECTIONS
+    private fun groups(): List<String> = listOf(LB, ALL, RECENT) + AchRegistry.SECTIONS
 
     private fun inGroup(g: String): List<Ach> = when (g) {
         ALL -> AchRegistry.ALL.filter { !hidden(it) }
@@ -143,18 +143,20 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
             val bx = x + 8
             val bw = w - 16
             val hov = !on && inside(mx, my, bx, ry, bw, rh)
-            if (on) {
+            if (g == LB) {
+                UiRecorder.fillRoundedRect(bx.toFloat(), ry.toFloat(), bw.toFloat(), rh.toFloat(), 8f, if (on || hov) 0xFFE3B23C.toInt() else 0xFFC9962A.toInt())
+            } else if (on) {
                 UiRecorder.fillRoundedRect(bx.toFloat(), ry.toFloat(), bw.toFloat(), rh.toFloat(), 8f, ACC_SOFT)
                 UiRecorder.fillRoundedRect(bx.toFloat(), (ry + 7).toFloat(), 3f, (rh - 14).toFloat(), 1.5f, ACCENT)
             } else if (hov) UiRecorder.fillRoundedRect(bx.toFloat(), ry.toFloat(), bw.toFloat(), rh.toFloat(), 8f, RAISE)
             val rcx = bx + 20
             val rcy = ry + rh / 2
-            ring(rcx.toFloat(), rcy.toFloat(), 9f, frac, if (on) ACCENT else 0xFF2F8F8B.toInt(), 2f)
+            ring(rcx.toFloat(), rcy.toFloat(), 9f, frac, if (g == LB) 0xFF2A1D05.toInt() else if (on) ACCENT else 0xFF2F8F8B.toInt(), 2f)
             val glyph = when (g) { ALL -> "*"; RECENT -> "R"; LB -> "L"; else -> g.first().uppercase() }
-            UiRecorder.textBold(glyph, rcx - UiRecorder.textWidthBold(glyph, S_XS) / 2f, rcy - S_XS / 2f, S_XS, if (on) ACCENT else ScreenTheme.SUBTEXT_COLOR)
+            UiRecorder.textBold(glyph, rcx - UiRecorder.textWidthBold(glyph, S_XS) / 2f, rcy - S_XS / 2f, S_XS, if (g == LB) 0xFF2A1D05.toInt() else if (on) ACCENT else ScreenTheme.SUBTEXT_COLOR)
             val cnt = if (g == RECENT) "${AchStore.data.unlocked.size}" else if (g == LB) "" else "$done"
             val nameW = bw - 38 - tw(cnt, S_XS) - 12
-            UiRecorder.text(clip(g, nameW.toFloat(), S_MD), (bx + 36).toFloat(), ry + (rh - S_MD) / 2f, S_MD, if (on || hov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR)
+            UiRecorder.text(clip(g, nameW.toFloat(), S_MD), (bx + 36).toFloat(), ry + (rh - S_MD) / 2f, S_MD, if (g == LB) 0xFF2A1D05.toInt() else if (on || hov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR)
             UiRecorder.text(cnt, (bx + bw - 8 - tw(cnt, S_XS)).toFloat(), ry + (rh - S_XS) / 2f, S_XS, DIM)
             val gg = g
             clicks.add(intArrayOf(bx, ry, bw, rh) to { group = gg; scroll = 0 })
