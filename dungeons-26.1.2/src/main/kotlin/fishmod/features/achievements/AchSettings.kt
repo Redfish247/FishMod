@@ -14,4 +14,10 @@ object AchSettings {
     @ConfigValue @JvmField var achShowSecrets: Boolean = false
     @ConfigValue @JvmField var achHideUntracked: Boolean = false
     @ConfigValue @JvmField var achRngMinValue: Int = 1_000_000
+    @ConfigValue @JvmField var achLbEnabled: Boolean = true
+    @ConfigValue @JvmField var achLbX: Double = 6.5
+    @ConfigValue @JvmField var achLbY: Double = 69.0
+    @ConfigValue @JvmField var achLbZ: Double = -22.5
+    @ConfigValue @JvmField var achLbScale: Double = 1.0
+    @ConfigValue @JvmField var achLbArea: String = "Any"
 }

@@ -34,13 +34,13 @@ object AchApiSync {
         HypixelApi.fetchSelectedMember(uuid) { member ->
             mc.execute {
                 running = false
-                if (member == null) { if (manual) FishMsg.send("§cAchievement sync failed (API unreachable or no profile)."); return@execute }
+                if (member == null) { if (manual) { FishMsg.send("§cAchievement sync failed (API unreachable or no profile)."); AchLeaderboard.submit(true) }; return@execute }
                 val before = AchStore.data.unlocked.size
                 try { apply(member) } catch (t: Throwable) { fishmod.utils.debug.FishDiag.fail("AchApiSync.1", "apply profile failed", t) }
                 AchStore.data.lastApiSync = System.currentTimeMillis()
                 AchStore.changed()
                 AchEngine.evaluate()
-                if (manual) FishMsg.send("§aAchievements synced. §7${AchStore.data.unlocked.size - before} new unlock(s).")
+                if (manual) { FishMsg.send("§aAchievements synced. §7${AchStore.data.unlocked.size - before} new unlock(s)."); AchLeaderboard.submit(true) }
             }
         }
     }
