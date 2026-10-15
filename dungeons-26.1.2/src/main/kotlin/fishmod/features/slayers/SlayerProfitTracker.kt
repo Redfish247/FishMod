@@ -302,6 +302,11 @@ object SlayerProfitTracker {
         return out
     }
 
+    // Lifetime drop counts across every boss/tier, for the achievement RNG feed
+    fun totalDrops(): Map<String, Long> = synchronized(lock) {
+        val m = HashMap<String, Long>(); for (d in total.values) for ((n, c) in d.drops) m[n] = (m[n] ?: 0L) + c; m
+    }
+
     // Profit across every boss/tier, for the achievement ledger
     fun allProfit(sessionOnly: Boolean): Double {
         val snap = synchronized(lock) { (if (sessionOnly) session else total).values.map { Triple(HashMap(it.drops), it.spawnCost, it.mobKillCoins) } }
