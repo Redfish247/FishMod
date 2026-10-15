@@ -92,6 +92,7 @@ object RiftDreadfarm {
             val box = cell(b.pos, b.y)
             if (!b.moving) {
                 RenderUtils.gizmoBox(box, (c and 0xFFFFFF) or 0x60000000, c, false)
+                RenderUtils.gizmoLine(RenderUtils.cameraLineStart(1.0), box.center, c, 2f, true)
             } else {
                 RenderUtils.gizmoBox(box, 0x50FFFFFF, 0xFFFFFFFF.toInt(), false)
                 b.prev?.let { pv ->
