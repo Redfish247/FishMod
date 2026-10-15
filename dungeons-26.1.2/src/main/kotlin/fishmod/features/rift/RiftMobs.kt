@@ -46,7 +46,6 @@ object RiftMobs {
     @Volatile private var bacteSlimes: List<Entity> = emptyList()
     private var bacteId = -1
     private var tick = 0
-    private var lastShootCue = 0L
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 5 == 0) scan() }
@@ -174,14 +173,6 @@ object RiftMobs {
         val end = c.add(d.scale(40.0))
         val hits = targets.any { t -> t.boundingBox.inflate(0.4).clip(c, end).isPresent }
         RenderUtils.gizmoLine(c, end, if (hits) 0xFFFF5555.toInt() else S.riftBacteColor, 3f, true)
-        if (hits && S.riftBacteShootAlert) {
-            val now = System.currentTimeMillis()
-            if (now - lastShootCue > 1500L) {
-                lastShootCue = now
-                Misc.forceTitle(Component.literal("§c§lSHOOT!"), Component.empty(), 700)
-                fishmod.utils.sound.SoundManager.ping("bacteShoot", 500)
-            }
-        }
     }
 
     private fun line(e: Entity, argb: Int, label: String?) {

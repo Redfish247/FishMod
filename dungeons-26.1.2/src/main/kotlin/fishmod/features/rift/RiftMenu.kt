@@ -53,7 +53,6 @@ object RiftMenu {
         bacte.sub.add(SliderIntSetting("Slime Size Min", "Smallest slime size to box (size 3 is the common one)", S::riftBacteSizeMin, 1, 16))
         bacte.sub.add(SliderIntSetting("Slime Size Max", "Largest slime size to box", S::riftBacteSizeMax, 1, 16))
         bacte.sub.add(ToggleSetting("Hide Slimes", "Stop drawing the slimes themselves (needs Slime Boxes)", S::riftBacteHideSlimes))
-        bacte.sub.add(ToggleSetting("Shoot Alert", "Title + sound when a hit slime would reach a tentacle or Blobercyst", S::riftBacteShootAlert))
         bacte.sub.add(ColorPickerSetting("Line Colour", "", S::riftBacteColor))
         col.features.add(bacte)
 

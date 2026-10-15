@@ -39,7 +39,6 @@ object RiftSettings {
     @ConfigValue @JvmField var riftBacteSizeMin: Int = 3
     @ConfigValue @JvmField var riftBacteSizeMax: Int = 3
     @ConfigValue @JvmField var riftBacteHideSlimes: Boolean = true
-    @ConfigValue @JvmField var riftBacteShootAlert: Boolean = true
     @ConfigValue @JvmField var riftBacteColor: Int = 0xFF55FF55.toInt()
 
     // Living Cave
