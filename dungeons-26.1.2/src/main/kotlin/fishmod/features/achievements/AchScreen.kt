@@ -174,7 +174,8 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
 
     // hero strip: AP ring, rank title, overall bar, search
     private fun hero(x: Int, y: Int, w: Int) {
-        val all = AchRegistry.ALL
+        // Stats follow the selected category; All/Recent/Leaderboard use everything
+        val all = if (group == ALL || group == RECENT || group == LB) AchRegistry.ALL else AchRegistry.ALL.filter { it.section == group }
         val done = all.count { AchEngine.unlocked(it) }
         val frac = if (all.isNotEmpty()) done.toFloat() / all.size else 0f
         val pct = (frac * 100).toInt()
@@ -186,14 +187,12 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         UiRecorder.textBold(p, rcx - UiRecorder.textWidthBold(p, S_LG) / 2f, rcy - S_LG / 2f, S_LG, ScreenTheme.TEXT_COLOR)
 
         val tx = x + 14 + 56 + 16
-        val rank = when {
-            pct >= 100 -> "Legend"; pct >= 75 -> "Master"; pct >= 50 -> "Expert"
-            pct >= 25 -> "Adept"; pct >= 10 -> "Apprentice"; else -> "Novice"
-        }
-        UiRecorder.textBold(rank, tx.toFloat(), (y + 14).toFloat(), S_VAL, GOLD)
-        val sub = "%,d / %,d AP   -   $done / ${all.size} unlocked".format(AchEngine.points(), AchEngine.maxPoints())
+        val title = when (group) { ALL -> "All Achievements"; RECENT -> "Recent"; LB -> "Leaderboard"; else -> group }
         val sw = min(190, w / 3)
         val sx = x + w - 14 - sw
+        UiRecorder.textBold(clip(title, (sx - tx - 16).toFloat(), S_VAL), tx.toFloat(), (y + 14).toFloat(), S_VAL, GOLD)
+        val pts = all.filter { AchEngine.unlocked(it) }.sumOf { it.points }
+        val sub = "$done / ${all.size} unlocked   -   %,d / %,d AP".format(pts, all.sumOf { it.points })
         UiRecorder.text(clip(sub, (sx - tx - 16).toFloat(), S_SM), tx.toFloat(), (y + 33).toFloat(), S_SM, ScreenTheme.SUBTEXT_COLOR)
         bar(tx, y + 52, sx - tx - 16, 4, frac, ACCENT)
 
