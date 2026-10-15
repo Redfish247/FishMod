@@ -51,7 +51,7 @@ object AchTrackers {
                 st.inc("puzzle.solved"); st.inc("puzzle.curStreak"); st.max("puzzle.bestStreak", st.get("puzzle.curStreak"))
             }
             is AchEvent.TerminalDone -> if (e.own && e.objective.contains("terminal", true)) st.inc("term.done")
-            is AchEvent.TerminalSection -> if (e.seconds in 1.0..10.0) st.inc("term.sectionSub10")
+            is AchEvent.TerminalSection -> if (e.seconds in 1.0..5.0) st.inc("term.sectionSub5")
             is AchEvent.BloodOpened -> if (e.seconds in 1.0..15.0) st.max("dungeon.bloodSub15", 1)
             AchEvent.MimicKilled -> st.inc("dungeon.mimic")
             AchEvent.PrinceKilled -> st.inc("dungeon.prince")
