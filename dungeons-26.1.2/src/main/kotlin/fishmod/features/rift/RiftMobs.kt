@@ -32,6 +32,8 @@ object RiftMobs {
     private val SHY_LINES = setOf("I'm ugly! :(", "Eek!", "Don't look at me!", "Look away!")
     private val BACTE_NAME = Regex("(?:^|[^A-Za-z])(Bacte|Bact|Bac|Ba)(?![A-Za-z])")
     private val BACTE_CHAT = Regex("^(Bacte|Bact|Bac|Ba) (is rooting|is growing|has summoned|is vulnerable)|^BACTE DOWN")
+    // Health tag over the mob, e.g. "B 1,000/1,000❤" (name shrinks to B/Ba/Bac/Bact as it grows)
+    private val BACTE_TAG = Regex("^(Bacte|Bact|Bac|Ba|B) [0-9,.]+[kKmM]?/[0-9,.]+[kKmM]?")
     private val BACTE_END = Regex("BACTE DOWN")
     @Volatile private var bacteUntil = 0L
     @Volatile private var bacteStart = 0L
@@ -64,22 +66,24 @@ object RiftMobs {
     }
 
     // Every Bacte-named mob, tentacle and slime in range, nearest first
-    private fun findBacte(me: Entity): List<Entity> {
+    private fun findBacte(me: Entity, windowOpen: Boolean): List<Entity> {
         val lv = Minecraft.getInstance().level ?: return emptyList()
         val cand = ArrayList<String>()
         val out = ArrayList<Entity>()
+        val slimes = ArrayList<Entity>()
         for (e in lv.getEntities(me, me.boundingBox.inflate(48.0)) { true }) {
             if (!e.isAlive) continue
             val n = (e.customName ?: e.name).string.let { Rift.strip(it) }
             val stand = e is net.minecraft.world.entity.decoration.ArmorStand
             if (stand && e.customName == null) continue
-            val hit = BACTE_NAME.containsMatchIn(n) || "Bacte" in n || "entacle" in n
+            val hit = BACTE_TAG.containsMatchIn(n) || BACTE_NAME.containsMatchIn(n) || "Bacte" in n || "entacle" in n
             val slime = e is net.minecraft.world.entity.monster.Slime
             if (hit || slime) cand.add("${e.type.descriptionId.substringAfterLast('.')}:'${n.take(50)}'")
-            if (slime) out.add(e)
+            if (slime) slimes.add(e)
             else if (hit) out.add(if (stand) Rift.mobUnder(e) ?: e else e)
         }
         bacteDebug = cand.take(12)
+        if (windowOpen || out.isNotEmpty()) out.addAll(slimes)
         return out.distinct().sortedBy { it.distanceToSqr(me) }.take(12)
     }
 
@@ -110,7 +114,7 @@ object RiftMobs {
                 Misc.forceTitle(Component.literal("§eLook away!"), Component.empty(), 300)
         }
         marks = out; lastCruxNames = names; fleespook = flee
-        bacte = if (S.riftBacte && System.currentTimeMillis() < bacteUntil) findBacte(me) else emptyList()
+        bacte = if (S.riftBacte) findBacte(me, System.currentTimeMillis() < bacteUntil) else emptyList()
     }
 
     private fun render() {
