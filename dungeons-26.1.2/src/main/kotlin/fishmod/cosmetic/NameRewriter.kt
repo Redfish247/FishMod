@@ -92,5 +92,20 @@ object NameRewriter {
         }
     }
 
+    private var dumps = 0
+
+    // Temp: logs per-segment colours of chat lines with the player's name (first 40)
+    @JvmStatic
+    fun dumpColors(tag: String, c: Component?) {
+        if (c == null || dumps >= 40 || !c.string.contains(NickState.realName())) return
+        dumps++
+        val sb = StringBuilder("[NickDump] $tag:")
+        c.visit({ style, text ->
+            if (text.isNotEmpty()) sb.append(" [").append(style.color?.serialize() ?: "none").append(if (style.isBold) " b" else "").append("]").append(text)
+            Optional.empty<Any>()
+        }, Style.EMPTY)
+        fishmod.utils.debug.Debug.LOGGER.info(sb.toString())
+    }
+
     private data class Segment(val text: String, val style: Style)
 }

@@ -417,6 +417,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Rank (Default)", "SB Level", "Name (Abc)", "Ironman/Bingo", "Random"),
                 { FishSettings.compactTabSortMode },
                 { v -> FishSettings.compactTabSortMode = v }))
+            f.sub.add(ToggleSetting("Pin YT/Staff On Top", "Keep YouTube + staff ranks first when sorting by level/name", FishSettings::compactTabPinStaff))
+            f.sub.add(SliderIntSetting("Tab Scale %", "", FishSettings::compactTabScale, 40, 150, 5))
             f.sub.add(DropdownSetting("Bottom Line", "Stats = cookie / god pot / effects from the tab footer", arrayOf("Hypixel", "Stats", "Custom", "Off"),
                 { FishSettings.compactTabFooterMode },
                 { v -> FishSettings.compactTabFooterMode = v }))
@@ -1041,7 +1043,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Badges", FishSettings::badgesEnabled)
-            f.sub.add(SubcategoryHeader("Small icons beside a player's name, after the [level] badge — granted only by Eli, never self-assignable"))
+            f.sub.add(SubcategoryHeader("Small icons beside a player's name, after the [level] badge — granted only by RedFish, never self-assignable"))
             f.sub.add(ToggleSetting("On Nametags", "", FishSettings::badgesOnNametags))
             f.sub.add(ToggleSetting("In Tab List", "", FishSettings::badgesOnTab))
             f.sub.add(ToggleSetting("In Chat", "", FishSettings::badgesInChat))
@@ -1481,7 +1483,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Storm Crushed Noti", "", Floor7::notifyStormCrush))
             f.sub.add(ToggleSetting("Pillar Explosion Timer", "Counts down the second before the crushed pillar explodes", Floor7::timePillarExplosion))
             f.sub.add(SubcategoryHeader("Necron"))
-            f.sub.add(ToggleSetting("Necron LB Timer", "Counts down to the LB shot 8s into Necron's phase, then says SHOOT LB", Floor7::enableNecronLbTimer))
+            f.sub.add(ToggleSetting("Necron LB Timer", "Counts down to the LB shot 4s into Necron's phase, then says SHOOT LB", Floor7::enableNecronLbTimer))
             f.sub.add(SliderIntSetting("Necron LB Ping (ms)", "Ends it this much earlier to offset latency", Floor7::necronLbPingMs, 0, 500).gatedBy { Floor7.enableNecronLbTimer })
             f.sub.add(ColorPickerSetting("Necron LB Color", "", Floor7::necronLbColor).gatedBy { Floor7.enableNecronLbTimer })
             f.sub.add(SubcategoryHeader("Goldor"))
@@ -3379,9 +3381,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     class SubcategoryHeader(name: String) : Setting(name, "") {
         private fun w(t: String) = Math.ceil(UiRecorder.textWidth(t, SUBCAT_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
 
-        private val twoLine: Boolean = w(name) > (MIN_COLUMN_W - 38)
+        private val minLines: Int = wrap(name, MIN_COLUMN_W - 38).size
 
-        override fun getHeight(): Int = if (twoLine) SUBCAT_HEIGHT_2 else SUBCAT_HEIGHT
+        override fun getHeight(): Int = when {
+            minLines <= 1 -> SUBCAT_HEIGHT
+            else -> SUBCAT_HEIGHT_2 + (minLines - 2) * 9
+        }
 
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             val h = getHeight()
@@ -3391,25 +3396,20 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             if (lines.size <= 1) {
                 stBold(ctx, tr, lines.getOrElse(0) { name }, leftX + 6, sy + (h - 8) / 2, ACCENT)
             } else {
-                stBold(ctx, tr, lines[0], leftX + 6, sy + 4, ACCENT)
-                stBold(ctx, tr, lines[1], leftX + 6, sy + 13, ACCENT)
+                for ((i, l) in lines.withIndex()) stBold(ctx, tr, l, leftX + 6, sy + 4 + i * 9, ACCENT)
             }
         }
 
         private fun wrap(s: String, maxW: Int): List<String> {
             if (w(s) <= maxW) return listOf(s)
-            val words = s.split(" ")
-            var line1 = ""
-            var i = 0
-            while (i < words.size) {
-                val candidate = if (line1.isEmpty()) words[i] else "$line1 ${words[i]}"
-                if (w(candidate) > maxW && line1.isNotEmpty()) break
-                line1 = candidate
-                i++
+            val out = ArrayList<String>()
+            var line = ""
+            for (word in s.split(" ")) {
+                val candidate = if (line.isEmpty()) word else "$line $word"
+                if (w(candidate) > maxW && line.isNotEmpty()) { out.add(line); line = word } else line = candidate
             }
-            if (line1.isEmpty() && words.isNotEmpty()) { line1 = words[0]; i = 1 }
-            val rest = words.drop(i).joinToString(" ")
-            return if (rest.isEmpty()) listOf(line1) else listOf(line1, fit(rest, maxW))
+            if (line.isNotEmpty()) out.add(line)
+            return out
         }
     }
 

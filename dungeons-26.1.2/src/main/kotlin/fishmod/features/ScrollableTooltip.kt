@@ -26,6 +26,7 @@ object ScrollableTooltip {
 
     @JvmStatic
     fun trackHoveredSlot(slot: Int) {
+        if (slot < 0) return
         if (slot != lastSlot) { resetScroll(); lastSlot = slot }
     }
 
@@ -40,7 +41,7 @@ object ScrollableTooltip {
         when {
             shift && !ctrl -> offsetX -= amt
             ctrl && !shift -> {
-                val next = (baseScale() + scaleOverride / 10f + (vertical / 100f).toFloat() * speed).coerceIn(0.3f, 2.0f)
+                val next = (baseScale() + scaleOverride / 10f + (vertical * 0.05).toFloat()).coerceIn(0.3f, 2.0f)
                 scaleOverride = (next - baseScale()) * 10f
             }
             else -> offsetY += amt

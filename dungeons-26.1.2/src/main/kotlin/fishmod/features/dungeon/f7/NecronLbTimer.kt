@@ -19,7 +19,7 @@ import fishmod.utils.debug.FishDiag
 object NecronLbTimer {
 
     private const val NECRON_PHASE = 8
-    private const val SHOOT_TICK = 8 * 20
+    private const val SHOOT_TICK = 4 * 20
     private val timer = TickTimer()
 
     @JvmStatic
