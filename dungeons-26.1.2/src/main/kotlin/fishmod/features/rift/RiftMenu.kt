@@ -58,7 +58,10 @@ object RiftMenu {
         park.sub.add(ColorPickerSetting("Colour", "", S::riftParkourColor))
         col.features.add(park)
 
-        col.features.add(Feature("Blood Effigy Spots", S::riftEffigies))
+        val eff = Feature("Blood Effigy Spots", S::riftEffigies)
+        eff.sub.add(ColorPickerSetting("Colour", "", S::riftEffigyColor))
+        eff.sub.add(ToggleSetting("Invert Colours", "Swap which square colour means not broken", S::riftEffigyInvert))
+        col.features.add(eff)
         col.features.add(Feature("Colosseum Kill Zone Warning", S::riftKillZone))
 
         val snake = Feature("Snake Helper", S::riftSnake)

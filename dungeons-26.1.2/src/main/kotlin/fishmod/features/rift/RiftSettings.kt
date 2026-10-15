@@ -48,6 +48,8 @@ object RiftSettings {
     @ConfigValue @JvmField var riftParkourAhead: Int = 3
     @ConfigValue @JvmField var riftParkourColor: Int = 0xFF55FFFF.toInt()
     @ConfigValue @JvmField var riftEffigies: Boolean = false
+    @ConfigValue @JvmField var riftEffigyColor: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var riftEffigyInvert: Boolean = false
     @ConfigValue @JvmField var riftKillZone: Boolean = false
 
     // Vampire slayer

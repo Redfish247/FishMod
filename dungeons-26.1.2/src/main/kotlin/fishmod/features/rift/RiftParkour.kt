@@ -66,11 +66,38 @@ object RiftParkour {
             }
         }
         if (S.riftEffigies && Rift.inArea("Stillgore", "Oubliette", "Chateau", "Château")) {
+            val live = effigyLive() ?: return
+            val c = S.riftEffigyColor
             for ((i, e) in EFFIGIES.withIndex()) {
+                if (i >= live.size || !live[i]) continue
                 val b = AABB(e[0].toDouble(), e[1].toDouble(), e[2].toDouble(), e[0] + 1.0, e[1] + 1.0, e[2] + 1.0)
-                RenderUtils.gizmoBox(b, 0x40FF5555, 0xFFFF5555.toInt(), true)
-                RenderUtils.gizmoText(Component.literal("§cEffigy ${i + 1}"), Vec3(e[0] + 0.5, e[1] + 1.6, e[2] + 0.5), 1.5f, -1, true)
+                RenderUtils.gizmoBox(b, (0x40 shl 24) or (c and 0xFFFFFF), c, true)
+                val d = Math.sqrt(me.distanceToSqr(e[0] + 0.5, e[1] + 0.5, e[2] + 0.5)).toInt()
+                RenderUtils.gizmoText(Component.literal("§cEffigy ${i + 1} §7${d}m"), Vec3(e[0] + 0.5, e[1] + 1.6, e[2] + 0.5), 1.5f, -1, true)
+                RenderUtils.gizmoBox(AABB(e[0] + 0.4, e[1] + 1.0, e[2] + 0.4, e[0] + 0.6, e[1] + 40.0, e[2] + 0.6), (0x30 shl 24) or (c and 0xFFFFFF), c, true)
             }
         }
+    }
+
+    // Per-square state from the raw sidebar "Effigies:" line (SkyHanni: §7 = not broken, §c = broken); null if line missing
+    private fun effigyLive(): List<Boolean>? {
+        val mc = Minecraft.getInstance()
+        val sb = mc.level?.scoreboard ?: return null
+        val obj = sb.getDisplayObjective(net.minecraft.world.scores.DisplaySlot.SIDEBAR) ?: return null
+        for (e in sb.listPlayerScores(obj)) {
+            val team = sb.getPlayersTeam(e.owner())
+            val raw = if (team != null) team.playerPrefix.string + team.playerSuffix.string else e.owner()
+            val at = raw.indexOf("Effigies:")
+            if (at < 0) continue
+            val out = ArrayList<Boolean>(); var code = 'r'; var i = at + 9
+            while (i < raw.length) {
+                val ch = raw[i]
+                if (ch == '§' && i + 1 < raw.length) { code = raw[i + 1].lowercaseChar(); i += 2; continue }
+                if (ch == '⧯') out += ((code == '7') != S.riftEffigyInvert)
+                i++
+            }
+            return out
+        }
+        return null
     }
 }
