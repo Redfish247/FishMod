@@ -477,6 +477,19 @@ object RenderUtils {
         matrices.popPose()
     }
 
+    // Text on a rigid board turned only around Y so every line rotates together; lx/ly are local board offsets
+    @JvmStatic
+    fun renderBoardText(matrices: PoseStack, text: Component, base: Vec3, yaw: Float, lx: Double, ly: Double, scale: Float) {
+        val font = Minecraft.getInstance().font
+        matrices.pushPose()
+        matrices.translate(base.x, base.y, base.z)
+        matrices.mulPose(org.joml.Quaternionf().rotateY(yaw))
+        matrices.translate(lx, ly, 0.0)
+        matrices.scale(TEXT_SCALE * scale, -TEXT_SCALE * scale, TEXT_SCALE * scale)
+        font.drawInBatch(text, -font.width(text) / 2f, 0f, -0x1, true, matrices.last().pose(), textBuffers, Font.DisplayMode.SEE_THROUGH, 0, 15728880)
+        matrices.popPose()
+    }
+
     @JvmStatic
     fun flushText() = textBuffers.endBatch()
 
