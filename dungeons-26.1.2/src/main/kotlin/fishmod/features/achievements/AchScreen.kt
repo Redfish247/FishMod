@@ -53,6 +53,8 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
     private var group = ALL
     private var scroll = 0
     private var contentH = 0
+    private var railScroll = 0
+    private var railBox = intArrayOf(0, 0, 0, 0)
     private val clicks = ArrayList<Pair<IntArray, () -> Unit>>()
 
     override fun init() {
@@ -131,18 +133,26 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         UiRecorder.fillRect((x + w - 10).toFloat(), (y + 1).toFloat(), 11f, (h - 2).toFloat(), PANEL2)
         UiRecorder.fillRect((x + w).toFloat(), (y + 1).toFloat(), 1f, (h - 2).toFloat(), LINE)
         UiRecorder.textBold("TROPHIES", (x + 16).toFloat(), (y + 18).toFloat(), S_XS, DIM)
-        var ry = y + 36
-        val rh = 28
-        val maxRows = (h - 36 - 50) / (rh + 2)
+        val rh = 32
+        val top = y + 36
+        val bot = y + h - 16 - 22 - 8
+        val listTop = top + rh + 2
+        val viewH = bot - listTop
+        val scrollable = groups().drop(1)
+        val total = scrollable.size * (rh + 2)
+        railScroll = railScroll.coerceIn(0, max(0, total - viewH))
+        railBox = intArrayOf(x, top, w, bot - top)
         for ((i, g) in groups().withIndex()) {
-            if (i >= maxRows) break
+            val ry = if (i == 0) top else listTop + (i - 1) * (rh + 2) - railScroll
+            if (i > 0 && (ry + rh < listTop || ry > bot)) continue
+            if (i > 0) UiRecorder.pushScissor(x.toFloat(), listTop.toFloat(), w.toFloat(), viewH.toFloat())
             val on = g == group
             val l = inGroup(g)
             val done = l.count { AchEngine.unlocked(it) }
             val frac = if (g == RECENT || g == LB || l.isEmpty()) 0f else done.toFloat() / l.size
             val bx = x + 8
             val bw = w - 16
-            val hov = !on && inside(mx, my, bx, ry, bw, rh)
+            val hov = !on && inside(mx, my, bx, ry, bw, rh) && (i == 0 || my in listTop..bot)
             if (g == LB) {
                 UiRecorder.fillRoundedRect(bx.toFloat(), ry.toFloat(), bw.toFloat(), rh.toFloat(), 8f, if (on || hov) 0xFFE3B23C.toInt() else 0xFFC9962A.toInt())
             } else if (on) {
@@ -156,11 +166,21 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
             UiRecorder.textBold(glyph, rcx - UiRecorder.textWidthBold(glyph, S_XS) / 2f, rcy - S_XS / 2f, S_XS, if (g == LB) 0xFF2A1D05.toInt() else if (on) ACCENT else ScreenTheme.SUBTEXT_COLOR)
             val cnt = if (g == RECENT) "${AchStore.data.unlocked.size}" else if (g == LB) "" else "$done"
             val nameW = bw - 38 - tw(cnt, S_XS) - 12
-            UiRecorder.text(clip(g, nameW.toFloat(), S_MD), (bx + 36).toFloat(), ry + (rh - S_MD) / 2f, S_MD, if (g == LB) 0xFF2A1D05.toInt() else if (on || hov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR)
-            UiRecorder.text(cnt, (bx + bw - 8 - tw(cnt, S_XS)).toFloat(), ry + (rh - S_XS) / 2f, S_XS, DIM)
+            UiRecorder.text(clip(g, nameW.toFloat(), S_MD), (bx + 36).toFloat(), (ry + 5).toFloat(), S_MD, if (g == LB) 0xFF2A1D05.toInt() else if (on || hov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR)
+            val subT = AchRegistry.SECTION_SUBTITLES[g] ?: ""
+            UiRecorder.text(clip(subT, (bw - 36 - 8).toFloat(), S_XS), (bx + 36).toFloat(), (ry + 18).toFloat(), S_XS, if (g == LB) 0xFF5A430F.toInt() else DIM)
+            UiRecorder.text(cnt, (bx + bw - 8 - tw(cnt, S_XS)).toFloat(), (ry + 6).toFloat(), S_XS, DIM)
+            if (i > 0) UiRecorder.popScissor()
             val gg = g
-            clicks.add(intArrayOf(bx, ry, bw, rh) to { group = gg; scroll = 0 })
-            ry += rh + 2
+            val cy0 = if (i == 0) ry else max(ry, listTop)
+            val cy1 = if (i == 0) ry + rh else min(ry + rh, bot)
+            clicks.add(intArrayOf(bx, cy0, bw, cy1 - cy0) to { group = gg; scroll = 0 })
+        }
+        if (total > viewH) {
+            val barH = max(16, viewH * viewH / total)
+            val barY = listTop + (viewH - barH) * railScroll / max(1, total - viewH)
+            UiRecorder.fillPillBar((x + w - 5).toFloat(), listTop.toFloat(), 3f, viewH.toFloat(), 0x22FFFFFF)
+            UiRecorder.fillPillBar((x + w - 5).toFloat(), barY.toFloat(), 3f, barH.toFloat(), ACCENT)
         }
         val bw = w - 32
         val bh = 22
@@ -193,8 +213,10 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         UiRecorder.textBold(clip(title, (sx - tx - 16).toFloat(), S_VAL), tx.toFloat(), (y + 14).toFloat(), S_VAL, GOLD)
         val pts = all.filter { AchEngine.unlocked(it) }.sumOf { it.points }
         val sub = "$done / ${all.size} unlocked   -   %,d / %,d AP".format(pts, all.sumOf { it.points })
-        UiRecorder.text(clip(sub, (sx - tx - 16).toFloat(), S_SM), tx.toFloat(), (y + 33).toFloat(), S_SM, ScreenTheme.SUBTEXT_COLOR)
-        bar(tx, y + 52, sx - tx - 16, 4, frac, ACCENT)
+        UiRecorder.text(clip(sub, (sx - tx - 16).toFloat(), S_SM), tx.toFloat(), (y + 31).toFloat(), S_SM, ScreenTheme.SUBTEXT_COLOR)
+        val area = AchRegistry.SECTION_SUBTITLES[group] ?: ""
+        UiRecorder.text(clip(area, (sx - tx - 16).toFloat(), S_XS), tx.toFloat(), (y + 44).toFloat(), S_XS, DIM)
+        bar(tx, y + 58, sx - tx - 16, 4, frac, ACCENT)
 
         val sh = 22
         val sy = y + (HERO_H - sh) / 2
@@ -417,6 +439,11 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         mx >= x && mx <= x + w && my >= y && my <= y + h
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
+        val mx = UiScale.vx(mouseX); val my = UiScale.vx(mouseY)
+        if (inside(mx, my, railBox[0], railBox[1], railBox[2], railBox[3])) {
+            railScroll = max(0, railScroll - (verticalAmount * 24).toInt())
+            return true
+        }
         scroll = max(0, scroll - (verticalAmount * 40).toInt())
         return true
     }
