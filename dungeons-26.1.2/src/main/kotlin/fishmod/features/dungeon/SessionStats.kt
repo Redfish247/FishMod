@@ -322,6 +322,7 @@ object SessionStats {
         val show = (loc == Location.DUNGEON && FishSettings.sessionStatsInDungeon)
             || (loc == Location.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub)
         if (!show) return
+        if (mc.screen !== lastCountedScreen) { lastCountedScreen = mc.screen; fishmod.features.achievements.AchStore.inc("fm.statsOpened") }
 
         val x = FishSettings.sessionStatsHudX
         val y = FishSettings.sessionStatsHudY
@@ -335,6 +336,8 @@ object SessionStats {
             ctx.text(mc.font, lines[i], 0, lh * i, 0xFFFFFFFF.toInt(), true)
         ctx.pose().popMatrix()
     }
+
+    private var lastCountedScreen: Any? = null
 
     @JvmStatic
     fun renderInScreen(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {

@@ -2334,6 +2334,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             try { Config.manager.save() } catch (t: Throwable) { FishDiag.fail("FishModScreen.8", "Config save on /fm close failed", t) }
             try { FishConfig.manager.save() } catch (t: Throwable) { FishDiag.fail("FishModScreen.9", "FishConfig save on /fm close failed", t) }
             fishmod.features.achievements.AchUsage.onConfigSaved()
+            FishDiag.guard("FishModScreen.ach", "achievement feature scan failed") { fishmod.features.achievements.AchUsage.onFeatureScan(columns.flatMap { c -> listOf(c) + c.children }.flatMap { it.features }) }
             super.onClose()
             return
         }
