@@ -84,6 +84,11 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
             if (!fishmod$loggedContainerValue) { fishmod$loggedContainerValue = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] ContainerValue.render failed; suppressed (logged once)", e); }
         }
         try {
+            fishmod.features.garden.Visitors.renderShopping(context, self);
+        } catch (Exception e) {
+            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.16", "Visitors.renderShopping failed screen=" + self.getClass().getSimpleName(), e);
+        }
+        try {
             fishmod.features.item.AuctionPriceAutofill.trackScreen(self);
         } catch (Exception e) {
             fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.7", "AuctionPriceAutofill.trackScreen failed screen=" + self.getClass().getSimpleName(), e);
@@ -217,6 +222,11 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
             }
 
             if (fishmod.features.dungeon.PartyFinderPanel.mouseClicked(click.button(), cx, cy, (AbstractContainerScreen<?>) (Object) this)) {
+                cir.setReturnValue(true);
+                return;
+            }
+
+            if (fishmod.features.garden.Visitors.mouseClicked(click, (AbstractContainerScreen<?>) (Object) this)) {
                 cir.setReturnValue(true);
                 return;
             }
