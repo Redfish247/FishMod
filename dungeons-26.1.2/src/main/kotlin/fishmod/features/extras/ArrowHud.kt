@@ -60,6 +60,7 @@ object ArrowHud {
     private fun scan() {
         val p = Minecraft.getInstance().player ?: return
         if (!Location.inSkyblock()) return
+        if (slotNine(p)) return
         if (holdingBow()) {
             p.mainHandItem.get(DataComponents.LORE)?.lines()?.forEach { line ->
                 val m = LORE_ARROW.find(line.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()) ?: return@forEach
@@ -74,6 +75,20 @@ object ArrowHud {
                 || ItemUtil.getId(st)?.endsWith("ARROW") == true) inv += st.count
         }
         if (inv > 0 && count < 0) setCount(inv)
+    }
+
+    // Hotbar slot 9 holds the selected arrow stack; its name is the type and stack size the count
+    private fun slotNine(p: net.minecraft.world.entity.player.Player): Boolean {
+        val st = p.inventory.getItem(8)
+        if (st.isEmpty) return false
+        val name = fishmod.utils.Constants.STRIP_COLOR_REGEX.replace(st.hoverName.string, "").trim()
+        val id = ItemUtil.getId(st)
+        val arrowy = st.item == Items.ARROW || st.item == Items.TIPPED_ARROW || st.item == Items.SPECTRAL_ARROW ||
+            id?.endsWith("ARROW") == true || name.contains("Arrow", true)
+        if (!arrowy) return false
+        type = name.replace(Regex("""\s*x?[\d,]+$"""), "").ifEmpty { name }
+        setCount(st.count.toLong())
+        return true
     }
 
     private fun setCount(n: Long) {

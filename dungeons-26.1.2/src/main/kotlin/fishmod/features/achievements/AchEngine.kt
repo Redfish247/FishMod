@@ -115,16 +115,6 @@ object AchEngine {
         else -> "%,d".format(v)
     }
 
-    private fun summary() {
-        val all = AchRegistry.ALL
-        FishMsg.send("§6[Achievements] §e${all.count { unlocked(it) }}/${all.size} unlocked §7| §6${points()}/${maxPoints()} AP")
-        for (sec in AchRegistry.SECTIONS) {
-            val list = all.filter { it.section == sec }
-            FishMsg.send(" §7$sec: §f${list.count { unlocked(it) }}/${list.size}")
-        }
-        FishMsg.send("§7Browse in /fm -> Achievements. §8/fm ach sync | runs | rng")
-    }
-
     private fun runs() {
         val r = AchStore.data.runs.takeLast(10)
         if (r.isEmpty()) { FishMsg.send("§7No runs logged yet."); return }
@@ -142,7 +132,7 @@ object AchEngine {
     @JvmStatic
     fun command(): LiteralArgumentBuilder<FabricClientCommandSource> =
         ClientCommands.literal("ach")
-            .executes { summary(); 1 }
+            .executes { Minecraft.getInstance().schedule { Minecraft.getInstance().setScreen(AchScreen()) }; 1 }
             .then(ClientCommands.literal("sync").executes { AchApiSync.sync(true); 1 })
             .then(ClientCommands.literal("runs").executes { runs(); 1 })
             .then(ClientCommands.literal("rng").executes { rng(); 1 })
