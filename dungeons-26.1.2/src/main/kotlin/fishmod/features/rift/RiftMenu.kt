@@ -45,6 +45,14 @@ object RiftMenu {
         bacte.sub.add(ColorPickerSetting("Line Colour", "", S::riftBacteColor))
         col.features.add(bacte)
 
+        val park = Feature("Mirrorverse Parkour", S::riftParkour)
+        park.sub.add(SliderIntSetting("Platforms Ahead", "", S::riftParkourAhead, 1, 8))
+        park.sub.add(ColorPickerSetting("Colour", "", S::riftParkourColor))
+        col.features.add(park)
+
+        col.features.add(Feature("Blood Effigy Spots", S::riftEffigies))
+        col.features.add(Feature("Colosseum Kill Zone Warning", S::riftKillZone))
+
         val snake = Feature("Snake Helper", S::riftSnake)
         snake.sub.add(ColorPickerSetting("Body Colour", "", S::riftSnakeColor))
         snake.sub.add(ColorPickerSetting("Head Colour", "", S::riftSnakeHeadColor))
@@ -65,10 +73,13 @@ object RiftMenu {
         "Rift Nametag Stats" -> "Vampire XP + Enigma Souls in nametags (needs Nametag Stats on)"
         "Punchcard Marker" -> "Mark players you already punched"
         "Agaricus Cap Timer" -> "Countdown on the cap, CLICK when it turns red"
-        "Berberis Highlighter" -> "Box the Wilted Berberis from its particles"
+        "Berberis Highlighter" -> "Box the Wilted Berberis from its particles (hold the Farming Wand)"
         "Crux Helper" -> "What to do for each Crux"
         "Fleespook Tracker" -> "Line to the Fleespook"
         "Bacte Helper" -> "Bacte spawn alert, line, optional all-chat announce"
+        "Mirrorverse Parkour" -> "Lava Maze, Upside Down and Tubulator platforms (SkyHanni data)"
+        "Blood Effigy Spots" -> "Boxes at the six Stillgore Chateau effigy spots"
+        "Colosseum Kill Zone Warning" -> "Title when told to get back in the arena"
         "Snake Helper" -> "Outline Living Cave snakes, head highlighted"
         "Vampire Slayer Helper" -> "Boss highlight, STEAK alert, Twinclaws warning"
         else -> null

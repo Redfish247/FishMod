@@ -44,7 +44,7 @@ object RiftNametag {
         val now = System.currentTimeMillis()
         if (!e.pending && (e.at == 0L || now - e.at > TTL_MS) && now - lastKick > 1000L) {
             e.pending = true; lastKick = now
-            HypixelApi.getMemberByName(name) { m -> apply(e, m); e.at = System.currentTimeMillis(); e.pending = false }
+            HypixelApi.getMemberByName(name) { m -> apply(e, m); e.at = if (m == null) System.currentTimeMillis() - TTL_MS + 60_000L else System.currentTimeMillis(); e.pending = false }
         }
         val sb = StringBuilder()
         if (S.riftNametagVampire && e.vampXp >= 0) {
