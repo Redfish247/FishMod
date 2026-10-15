@@ -46,6 +46,9 @@ object AchLeaderboard {
     @Volatile private var lastSubmit = 0L
     @Volatile private var lastSubmittedKey = ""
     @Volatile private var wantedAt = 0L
+    @Volatile private var fullAt = 0L
+    @Volatile private var loadedLimit = 0
+    @Volatile var total = 0; private set
     private var registered = false
 
     // Secret achievements unlocked (the Secret Achievements section, max 13)
@@ -55,6 +58,11 @@ object AchLeaderboard {
 
     // Called by the board renderer and the achievements screen while they are visible
     fun want() { wantedAt = System.currentTimeMillis() }
+
+    // The achievements screen needs the whole list, not just the top 10
+    fun wantFull() { fullAt = System.currentTimeMillis(); wantedAt = fullAt }
+
+    private fun limit(): Int = if (System.currentTimeMillis() - fullAt < 3000) 200 else 10
 
     fun init() {
         if (registered) return
@@ -70,7 +78,7 @@ object AchLeaderboard {
         val now = System.currentTimeMillis()
         if (!submitting && now - lastSubmit > SUBMIT_GAP_MS && Location.inSkyblock() && key() != lastSubmittedKey) submit(false)
         val gap = if (offline) FETCH_RETRY_MS else FETCH_GAP_MS
-        if (!fetching && now - wantedAt < 3000 && now - lastFetch > gap) fetch()
+        if (!fetching && now - wantedAt < 3000 && (now - lastFetch > gap || (limit() > loadedLimit && now - lastFetch > 3000))) fetch()
     }
 
     private fun uuid(): String = Minecraft.getInstance().player?.uuid?.toString()?.replace("-", "") ?: ""
@@ -119,12 +127,14 @@ object AchLeaderboard {
         if (fetching) return
         fetching = true
         lastFetch = System.currentTimeMillis()
-        val r = try { req("/leaderboard?uuid=" + uuid()).GET().build() } catch (t: Throwable) { fetching = false; offline = true; return }
+        val lim = limit()
+        val r = try { req("/leaderboard?limit=$lim&uuid=" + uuid()).GET().build() } catch (t: Throwable) { fetching = false; offline = true; return }
         Http.CLIENT.sendAsync(r, HttpResponse.BodyHandlers.ofString()).thenAccept { resp ->
             try {
                 val o = JsonParser.parseString(resp.body()).asJsonObject
                 if (resp.statusCode() != 200 || !o.get("success").asBoolean) throw IllegalStateException("status ${resp.statusCode()}")
                 points = parse(o, "points"); secrets = parse(o, "secrets")
+                total = o.get("total")?.asInt ?: 0; loadedLimit = lim
                 generatedAt = o.get("generatedAt")?.asLong ?: System.currentTimeMillis()
                 me = o.get("me")?.takeIf { it.isJsonObject }?.asJsonObject?.let {
                     Me(it.get("points").asInt, it.get("secrets").asInt, it.get("pointsRank").asInt, it.get("secretsRank").asInt)
@@ -160,7 +170,7 @@ object AchLeaderboard {
     }
 
     private fun lines(secretList: Boolean): List<String> {
-        val list = if (secretList) secrets else points
+        val list = (if (secretList) secrets else points).take(10)
         val out = ArrayList<String>()
         for ((i, e) in list.withIndex()) out.add("${medal(i + 1)}#${i + 1} §f${e.name} §e${value(e, secretList)}")
         meLine(secretList)?.let { out.add("§8..."); out.add(it) }
