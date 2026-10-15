@@ -33,10 +33,34 @@ object Pests {
     private var kills = 0
     private var tick = 0
     private var lastScreen: Any? = null
+    // Vacuum trail: angry-villager particles lead to the pest, the farthest one is the guess
+    private val trail = ArrayList<Vec3>()
+    private var lastTrail = 0L
+    private var guess: Vec3? = null
+
+    private fun holdingVacuum(): Boolean =
+        net.minecraft.client.Minecraft.getInstance().player?.mainHandItem
+            ?.let { fishmod.utils.data.ItemUtil.getId(it) }?.contains("VACUUM") == true
+
+    private fun updateGuess() {
+        val me = net.minecraft.client.Minecraft.getInstance().player ?: return
+        if (trail.size < 2) return
+        guess = trail.maxByOrNull { it.distanceToSqr(me.position()) }
+    }
 
     fun init() {
         Events.ON_GAME_MESSAGE.register { t -> onChat(Garden.strip(t.string).trim()); false }
-        Events.ON_WORLD_CHANGE.register { tabPlots = emptyList(); false }
+        Events.ON_WORLD_CHANGE.register { tabPlots = emptyList(); trail.clear(); guess = null; false }
+        Events.ON_PARTICLE.register { p ->
+            if (S.gardenPestFinder && p.particle.type === net.minecraft.core.particles.ParticleTypes.ANGRY_VILLAGER && Garden.inGarden() && holdingVacuum()) {
+                val now = System.currentTimeMillis()
+                if (now - lastTrail > 2500L) { trail.clear(); guess = null }
+                lastTrail = now
+                trail.add(Vec3(p.x, p.y, p.z))
+                updateGuess()
+            }
+            false
+        }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null) return@register
             scrapePlots(mc.screen)
@@ -54,12 +78,23 @@ object Pests {
             remembered.entries.removeIf { now - it.value > 6 * 60_000L }
             val plots = if (tabPlots.isNotEmpty()) tabPlots.toSet() else remembered.keys
             val start = Mining.lineStart()
+            val g = guess
+            if (g != null) {
+                val me = net.minecraft.client.Minecraft.getInstance().player
+                if (now - lastTrail > 20_000L || (me != null && me.position().distanceToSqr(g) < 16.0)) guess = null
+            }
+            guess?.let { gp ->
+                val gb = AABB(gp.x - 0.5, gp.y - 0.5, gp.z - 0.5, gp.x + 0.5, gp.y + 0.5, gp.z + 0.5)
+                RenderUtils.fillBox(ps, vc, gb, Mining.alpha(0xFF5555, 120))
+                Mining.outline(ps, vc, gb, Mining.alpha(0xFF5555, 255), 2f)
+                if (S.gardenPestFinderLine) RenderUtils.screenLine(ps, vc, start, gp, Mining.alpha(0xFF5555, 255), 2f)
+            }
             for (id in plots) {
                 val c = centerOf(id) ?: continue
                 val b = AABB(c.x - 1, 66.0, c.z - 1, c.x + 1, 110.0, c.z + 1)
                 RenderUtils.fillBox(ps, vc, b, Mining.alpha(S.gardenPestFinderColor, S.gardenPestFinderOpacity))
                 Mining.outline(ps, vc, b, Mining.alpha(S.gardenPestFinderColor, 100), 2f)
-                if (S.gardenPestFinderLine) RenderUtils.screenLine(ps, vc, start, c, Mining.alpha(S.gardenPestFinderColor, 100), 2f)
+                if (S.gardenPestFinderLine && guess == null) RenderUtils.screenLine(ps, vc, start, c, Mining.alpha(S.gardenPestFinderColor, 100), 2f)
             }
         }
         Garden.hud("Pest Timer", "garden_pests", 150, 40,
