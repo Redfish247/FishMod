@@ -22,6 +22,8 @@ object RiftSnake {
         Blocks.CYAN_TERRACOTTA, Blocks.BLUE_TERRACOTTA, Blocks.LIGHT_BLUE_TERRACOTTA,
     )
     private val blocks = ConcurrentHashMap<BlockPos, Long>()
+    private val lastUpdate = ConcurrentHashMap<BlockPos, Long>()
+    private const val STALE_MS = 5000L
 
     fun init() {
         Events.ON_PACKET.register { packet ->
@@ -31,7 +33,7 @@ object RiftSnake {
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { blocks.clear(); false }
+        Events.ON_WORLD_CHANGE.register { blocks.clear(); lastUpdate.clear(); false }
         RenderingEvents.GIZMO.register { _ -> render() }
     }
 
@@ -46,13 +48,17 @@ object RiftSnake {
     private fun onBlock(pos: BlockPos, state: BlockState) {
         seen.add(System.currentTimeMillis() to net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.block).path)
         if (seen.size > 400) seen.poll()
-        if (state.block in SNAKE) blocks.putIfAbsent(pos.immutable(), System.currentTimeMillis())
-        else blocks.remove(pos)
+        val p = pos.immutable()
+        if (state.block in SNAKE) { val n = System.currentTimeMillis(); blocks.putIfAbsent(p, n); lastUpdate[p] = n }
+        else { blocks.remove(p); lastUpdate.remove(p) }
     }
 
     private fun render() {
         if (!S.riftSnake || blocks.isEmpty() || !Rift.inRift()) return
         val now = System.currentTimeMillis()
+        // blocks the server stopped updating are leftovers, not the snake
+        blocks.keys.removeIf { now - (lastUpdate[it] ?: 0L) > STALE_MS }
+        lastUpdate.keys.removeIf { !blocks.containsKey(it) }
         val tail = if (blocks.size >= 2) blocks.entries.minByOrNull { it.value }?.key else null
         for ((pos, at) in blocks) {
             val head = now - at < HEAD_MS
