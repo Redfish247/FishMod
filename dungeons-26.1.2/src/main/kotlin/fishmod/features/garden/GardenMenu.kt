@@ -1,0 +1,93 @@
+package fishmod.features.garden
+
+import fishmod.features.FishModScreen.ButtonSetting
+import fishmod.features.FishModScreen.ColorPickerSetting
+import fishmod.features.FishModScreen.Column
+import fishmod.features.FishModScreen.Feature
+import fishmod.features.FishModScreen.InputSetting
+import fishmod.features.FishModScreen.SliderIntSetting
+import fishmod.features.FishModScreen.ToggleSetting
+import fishmod.features.garden.GardenSettings as S
+
+// The Farming tab in /fm
+object GardenMenu {
+
+    fun column(): Column {
+        val col = Column("Farming")
+
+        val timer = Feature("Visitor Timer", S::gardenVisitorTimer)
+        timer.sub.add(ToggleSetting("Queue Full Warning", "Title when the visitor queue is full", S::gardenVisitorSixthWarn))
+        col.features.add(timer)
+
+        val arrive = Feature("Visitor Arrival Alert", S::gardenVisitorArrivalTitle)
+        arrive.sub.add(InputSetting("Title Text", "{name} = visitor", S::gardenVisitorArrivalText))
+        arrive.sub.add(ToggleSetting("Sound", "", S::gardenVisitorArrivalSound))
+        arrive.sub.add(ToggleSetting("Hide Arrival Chat", "", S::gardenVisitorHideArrival))
+        col.features.add(arrive)
+
+        val shop = Feature("Visitor Shopping List", S::gardenShoppingList)
+        shop.sub.add(ToggleSetting("Show Prices", "", S::gardenShoppingPrices))
+        shop.sub.add(ButtonSetting("Clear List", "", "Clear") { Visitors.clear() })
+        col.features.add(shop)
+
+        col.features.add(Feature("Visitor Menu Info", S::gardenVisitorMenuInfo))
+
+        val rare = Feature("Visitor Rare Reward Warning", S::gardenRareRewardWarn)
+        rare.sub.add(InputSetting("Rewards", "Comma-separated names", S::gardenRareRewardList))
+        rare.sub.add(ColorPickerSetting("Accept Highlight", "", S::gardenRareRewardColor))
+        col.features.add(rare)
+
+        val stats = Feature("Visitor Stats", S::gardenVisitorStats)
+        stats.sub.add(ButtonSetting("Reset", "", "Reset") {
+            S.gardenStatAccepted = 0; S.gardenStatCopper = 0; S.gardenStatGardenXp = 0; S.gardenStatRare = 0
+        })
+        col.features.add(stats)
+
+        val pt = Feature("Pest Spawn Title", S::gardenPestTitle)
+        pt.sub.add(InputSetting("Title Text", "{plot} = plot name", S::gardenPestTitleText))
+        pt.sub.add(ToggleSetting("Sound", "", S::gardenPestSound))
+        col.features.add(pt)
+
+        val pf = Feature("Pest Finder", S::gardenPestFinder)
+        pf.sub.add(ToggleSetting("Line", "Line to each infested plot", S::gardenPestFinderLine))
+        pf.sub.add(ColorPickerSetting("Color", "", S::gardenPestFinderColor))
+        pf.sub.add(SliderIntSetting("Opacity %", "", S::gardenPestFinderOpacity, 5, 100))
+        col.features.add(pf)
+
+        col.features.add(Feature("Pest Timer HUD", S::gardenPestHud))
+
+        val pp = Feature("Pest Profit Tracker", S::gardenPestProfit)
+        pp.sub.add(ButtonSetting("Reset", "", "Reset") { Pests.resetProfit() })
+        col.features.add(pp)
+
+        val comp = Feature("Composter HUD", S::gardenComposterHud)
+        comp.sub.add(ToggleSetting("Inactive Warning", "Title when the composter runs dry", S::gardenComposterWarn))
+        col.features.add(comp)
+
+        col.features.add(Feature("Jacob's Contest HUD", S::gardenJacobHud))
+
+        val rc = Feature("Rare Crop Tracker", S::gardenRareCrop)
+        rc.sub.add(ToggleSetting("Title", "", S::gardenRareCropTitle))
+        rc.sub.add(ButtonSetting("Reset", "", "Reset") { S.gardenRareCropCount = 0 })
+        col.features.add(rc)
+
+        return col
+    }
+
+    fun describe(name: String): String? = when (name) {
+        "Visitor Timer" -> "Visitor count and time to the next visitor"
+        "Visitor Arrival Alert" -> "Title when a visitor arrives"
+        "Visitor Shopping List" -> "Items your visitors want, with prices"
+        "Visitor Menu Info" -> "Cost and coins/copper on the Accept Offer tooltip"
+        "Visitor Rare Reward Warning" -> "Title and highlight for rare visitor rewards"
+        "Visitor Stats" -> "Accepted visitors, copper, garden XP, rare rewards"
+        "Pest Spawn Title" -> "Title when a pest spawns"
+        "Pest Finder" -> "Waypoints on infested plots"
+        "Pest Timer HUD" -> "Pest count, cooldown, plots, spray, bonus"
+        "Pest Profit Tracker" -> "Value of pest drops this session"
+        "Composter HUD" -> "Composter widget from the tab list"
+        "Jacob's Contest HUD" -> "Jacob's Contest widget from the tab list"
+        "Rare Crop Tracker" -> "Counts RARE CROP drops"
+        else -> null
+    }
+}

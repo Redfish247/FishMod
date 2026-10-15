@@ -1,0 +1,46 @@
+package fishmod.features.rift
+
+import fishmod.utils.events.Events
+import fishmod.utils.rendering.RenderUtils
+import fishmod.utils.rendering.RenderingEvents
+import net.minecraft.core.BlockPos
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket
+import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket
+import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.block.state.BlockState
+import net.minecraft.world.phys.AABB
+import java.util.concurrent.ConcurrentHashMap
+import fishmod.features.rift.RiftSettings as S
+
+// Living Cave snakes: outline lapis snake blocks, head = newest block
+object RiftSnake {
+
+    private const val HEAD_MS = 1200L
+    private val blocks = ConcurrentHashMap<BlockPos, Long>()
+
+    fun init() {
+        Events.ON_PACKET.register { packet ->
+            if (S.riftSnake && Rift.inArea("Living Cave", "Living Stillness")) when (packet) {
+                is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
+                is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates { p, st -> onBlock(p, st) }
+            }
+            false
+        }
+        Events.ON_WORLD_CHANGE.register { blocks.clear(); false }
+        RenderingEvents.GIZMO.register { _ -> render() }
+    }
+
+    private fun onBlock(pos: BlockPos, state: BlockState) {
+        if (state.block == Blocks.LAPIS_BLOCK) blocks[pos.immutable()] = System.currentTimeMillis()
+        else blocks.remove(pos)
+    }
+
+    private fun render() {
+        if (!S.riftSnake || blocks.isEmpty() || !Rift.inRift()) return
+        val now = System.currentTimeMillis()
+        for ((pos, at) in blocks) {
+            val c = if (now - at < HEAD_MS) S.riftSnakeHeadColor else S.riftSnakeColor
+            RenderUtils.gizmoBox(AABB(pos), (c and 0xFFFFFF) or 0x30000000, c, true)
+        }
+    }
+}

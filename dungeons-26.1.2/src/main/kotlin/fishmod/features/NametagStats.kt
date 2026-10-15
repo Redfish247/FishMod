@@ -52,6 +52,7 @@ object NametagStats {
         if (!FishSettings.nametagStatsEnabled) return null
         if (!Location.inSkyblock()) return null
         if (!VALID_IGN.matches(name)) return null
+        fishmod.features.rift.RiftNametag.override(name)?.let { return it.ifEmpty { null } }
 
         val hub = Location.inDungeonHub()
         val e = cache.computeIfAbsent(name.lowercase()) { Entry() }

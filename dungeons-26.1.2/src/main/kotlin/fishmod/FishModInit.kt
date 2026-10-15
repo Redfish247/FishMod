@@ -408,6 +408,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.17", "fishmod.features.CritTracker.init() failed") { fishmod.features.CritTracker.init() }
         FishDiag.guard("FishModInit.18", "PartyCommandHandler.init() failed") { PartyCommandHandler.init() }
         FishDiag.guard("FishModInit.19", "SoulflowHud.init() failed") { SoulflowHud.init() }
+        FishDiag.guard("FishModInit.Extras", "Extras.init() failed") { fishmod.features.extras.Extras.init() }
         FishDiag.guard("FishModInit.20", "PetHud.init() failed") { PetHud.init() }
         FishDiag.guard("FishModInit.21", "CooldownOverlay.init() failed") { CooldownOverlay.init() }
         FishDiag.guard("FishModInit.22", "fishmod.features.croesus.CroesusLootDetector.init() failed") { fishmod.features.croesus.CroesusLootDetector.init() }
@@ -495,6 +496,9 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.156", "fishmod.features.diana.Diana.init() failed") { fishmod.features.diana.Diana.init() }
         FishDiag.guard("FishModInit.158", "TrackerResetButton.init() failed") { fishmod.features.other.TrackerResetButton.init() }
         FishDiag.guard("FishModInit.157", "fishmod.features.mining.Mining.init() failed") { fishmod.features.mining.Mining.init() }
+        FishDiag.guard("FishModInit.157k", "fishmod.features.kuudra.Kuudra.init() failed") { fishmod.features.kuudra.Kuudra.init() }
+        FishDiag.guard("FishModInit.R1", "fishmod.features.rift.Rift.init() failed") { fishmod.features.rift.Rift.init() }
+        FishDiag.guard("FishModInit.garden", "fishmod.features.garden.Garden.init() failed") { fishmod.features.garden.Garden.init() }
         FishDiag.guard("FishModInit.103", "fishmod.features.dungeon.f7.F7Huds.init() failed") { fishmod.features.dungeon.f7.F7Huds.init() }
         FishDiag.guard("FishModInit.104", "fishmod.utils.config.values.Buttons.init() failed") { fishmod.utils.config.values.Buttons.init() }
         FishHudEditor.register("Tick Timer", fishmod.features.dungeon.f7.F7Huds.tickTimer)

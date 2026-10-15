@@ -2745,4 +2745,20 @@ public class HypixelApi {
             return 0;
         }
     }
+
+    // Selected-profile member JSON for any player (null on failure), callback off-thread
+    public static void getMemberByName(String ign, java.util.function.Consumer<JsonObject> cb) {
+        CompletableFuture.runAsync(() -> {
+            String uuid = resolveUuidBlocking(ign);
+            if (uuid == null) { cb.accept(null); return; }
+            try {
+                HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuid))
+                    .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId()).header("User-Agent", "Mozilla/5.0")
+                    .timeout(Duration.ofSeconds(12)).GET().build();
+                HttpResponse<String> r = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
+                cb.accept(findSelectedMember(JsonParser.parseString(r.body()).getAsJsonObject(), uuid));
+            } catch (Exception ex) { fishmod.utils.debug.FishDiag.fail("HypixelApi.R1", "getMemberByName failed", ex); cb.accept(null); }
+        }, API_EXECUTOR);
+    }
 }

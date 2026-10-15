@@ -103,7 +103,7 @@ object DianaTracker {
         "KING_MINOS_SHARD" to "SHARD_KING_MINOS", "SPHINX_SHARD" to "SHARD_SPHINX", "MINOTAUR_SHARD" to "SHARD_MINOTAUR",
         "CRETAN_BULL_SHARD" to "SHARD_CRETAN_BULL", "HARPY_SHARD" to "SHARD_HARPY",
     )
-    private val NO_PRICE = setOf("TOTAL_BURROWS", "COINS")
+    private val NO_PRICE = setOf("TOTAL_BURROWS", "COINS", "SHURIKENS_USED")
 
     // SkyBlock item id for a tracker key (Chimera is a book, shards/dye are prefixed)
     fun itemId(k: String): String = k.removeSuffix("_LS").let { PRICE_ID[it] ?: if (it == "MYTHOLOGICAL_DYE") "DYE_MYTHOLOGICAL" else it }
@@ -171,7 +171,7 @@ object DianaTracker {
         ClientLifecycleEvents.CLIENT_STOPPING.register { flushSave(true) }
         Events.ON_WORLD_CHANGE.register {
             flushSave(true); lastActivityMs = 0L; sinceActivityMs = 0L; afk = true; hiltBaseline = false; seenHilts.clear()
-            invBaseline = false
+            invBaseline = false; shurikenCount = -1
             false
         }
         Events.ON_GAME_MESSAGE.register { text ->
@@ -530,6 +530,20 @@ object DianaTracker {
             }
         }
         invCounts.clear(); invCounts.putAll(cur); invBaseline = true
+        scanShurikens(menu, p)
+    }
+
+    private var shurikenCount = -1
+    private var shurikenHeld = false
+
+    // Shurikens used: stack shrinks outside menus while one was in hand
+    private fun scanShurikens(menu: Boolean, p: net.minecraft.world.entity.player.Player) {
+        var n = 0
+        for (st in p.inventory.nonEquipmentItems) if (ItemUtil.getId(st)?.contains("SHURIKEN") == true) n += st.count
+        val held = ItemUtil.getId(p.mainHandItem)?.contains("SHURIKEN") == true
+        if (menu) { shurikenCount = -1; shurikenHeld = held; return }
+        if (shurikenCount >= 0 && n < shurikenCount && (held || shurikenHeld) && Diana.inHub()) track("SHURIKENS_USED", (shurikenCount - n).toLong())
+        shurikenCount = n; shurikenHeld = held
     }
 
     // "[Sacks] +N items" lists what went straight to sacks in its hover text

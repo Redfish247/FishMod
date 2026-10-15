@@ -11,15 +11,26 @@ object ChatNickRefresher {
     @Volatile
     private var scheduled = false
 
+    // Chat Patches keeps thousands of lines; only re-style the recent ones, debounced
+    private const val MAX_LINES = 200
+    private const val DEBOUNCE_MS = 750L
+    @Volatile private var lastRunMs = 0L
+
     @JvmStatic
     fun requestRefresh() {
         if (scheduled) return
         scheduled = true
+        val wait = (lastRunMs + DEBOUNCE_MS - System.currentTimeMillis()).coerceAtLeast(0)
         val mc = Minecraft.getInstance()
-        mc.execute {
-            scheduled = false
-            try { reapply(mc) } catch (t: Throwable) { FishDiag.fail("ChatNickRefresher.1", "chat nick reapply failed", t) }
+        val run = Runnable {
+            mc.execute {
+                scheduled = false
+                lastRunMs = System.currentTimeMillis()
+                try { reapply(mc) } catch (t: Throwable) { FishDiag.fail("ChatNickRefresher.1", "chat nick reapply failed", t) }
+            }
         }
+        if (wait <= 0) run.run()
+        else java.util.concurrent.CompletableFuture.delayedExecutor(wait, java.util.concurrent.TimeUnit.MILLISECONDS).execute(run)
     }
 
     private fun reapply(mc: Minecraft) {
@@ -30,7 +41,7 @@ object ChatNickRefresher {
         if (messages == null || messages.isEmpty()) return
 
         var changed = false
-        for (i in messages.indices) {
+        for (i in 0 until minOf(messages.size, MAX_LINES)) {
             val line = messages[i]
             val content = line.content()
             val swapped = swapKnown(content)

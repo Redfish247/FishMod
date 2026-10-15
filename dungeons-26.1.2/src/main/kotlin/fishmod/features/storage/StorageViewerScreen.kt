@@ -302,7 +302,7 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         if (my > MARGIN + TOP_BAR) {
             for (r in titleRects) {
                 if (mx in r[0]..(r[0] + r[2]) && my in r[1]..(r[1] + r[3])) {
-                    FishDiag.check(r.size > 4 && r[4] in 0 until 27, "StorageViewerScreen.10") { "bad title rect page index ${r.getOrNull(4)}" }
+                    FishDiag.check(r.size > 4 && r[4] in 0 until StoragePage.MAX_INDEX, "StorageViewerScreen.10") { "bad title rect page index ${r.getOrNull(4)}" }
                     StoragePage(r[4]).open(); onClose(); return true
                 }
             }

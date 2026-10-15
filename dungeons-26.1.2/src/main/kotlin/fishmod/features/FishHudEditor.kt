@@ -212,6 +212,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Slayer" to listOf("Slayer Spawn", "Slayer Stats", "Slayer Boss Timer", "Slayer Profit"),
             "Diana" to listOf("Diana Loot Tracker", "Diana Mob Tracker", "Diana Stats", "Diana Magic Find", "Diana Mythos HP", "Diana No Shuriken", "Diana Rare Mob Alert", "Diana Warp Title", "Crown of Avarice"),
             "Mining" to listOf("Mineshaft Pity", "Fossil Solver", "Mining Profit", "Pickobulus", "Maniac Miner", "SkyMall", "Commissions"),
+            "Farming" to listOf("Visitor Timer", "Visitor Shopping List", "Visitor Stats", "Pest Timer", "Pest Profit", "Composter", "Jacob's Contest", "Rare Crops"),
         )
 
         private class Sample(
@@ -321,6 +322,14 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Pickobulus" to s("§b§lPickobulus §7(38 blocks)", "§7Glacite: §f24", "§7Umber: §f9", "§7Hard Stone: §f5"),
             "Maniac Miner" to s("§c§lManiac Miner", "§7Blocks: §f212 §8(18s)"),
             "SkyMall" to s("§bSkyMall: §f+100 ☘ Mining Fortune"),
+            "Visitor Timer" to s("§aVisitors: §f3  §7Next: §b2m 14s"),
+            "Visitor Shopping List" to s("§e§lShopping List", "§fEnchanted Hay Bale §8x2 §6340k", "§fBox of Seeds §8x1 §6610k", "§7Total: §6950k"),
+            "Visitor Stats" to s("§a§lVisitor Stats", "§7Accepted: §f124", "§7Copper: §c8,412", "§7Garden XP: §21,950", "§7Rare Rewards: §d3"),
+            "Pest Timer" to s("§c§lPests §f3", "§7Cooldown: §e1m 58s", "§7Plots: §f4, 12", "§7Spray: §aCompost (12m)"),
+            "Pest Profit" to s("§c§lPest Profit", "§61.2M §fBurrowing Spores §8x1", "§7Kills: §f42", "§eTotal: §61.9M"),
+            "Composter" to s("§2§lComposter", "§7Organic Matter: 120k", "§7Fuel: 30k", "§7Time Left: 2h 5m", "§7Stored Compost: 12"),
+            "Jacob's Contest" to s("§e§lJacob's Contest", "§f○ Wheat", "§fStarts In: 12m"),
+            "Rare Crops" to s("§6Rare Crops: §f7"),
             "Fossil Solver" to s("§6§lFossil Solver", "§eIdentified, §a4 §eplacements left", "§eCharges: §a12", "§eFossil: §aClaw"),
             "Diana Loot Tracker" to s("§6§lDiana Loot §7(Event)", "§5Chimera§7: §f2", "§6Daedalus Stick§7: §f1", "§9Griffin Feather§7: §f14", "§6Coins§7: §f1.2m", "§aProfit§7: §f25.3m §7(4.1m/h)"),
             "Diana Mob Tracker" to s("§6§lDiana Mobs §7(Event)", "§dMinos Inquisitor§7: §f6", "§5Minos Champion§7: §f21", "§7Total Mobs§7: §f140"),
