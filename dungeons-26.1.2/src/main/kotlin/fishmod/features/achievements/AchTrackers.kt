@@ -24,6 +24,8 @@ object AchTrackers {
     private var lastKuudraChests = -1
     private var lastPestKills = -1
     private var tick = 0
+    private var polls = 0
+    private val rngSeen = HashMap<String, Long>()
     private var lastInputMs = System.currentTimeMillis()
     private var lastYaw = 0f
     private var lastPitch = 0f
@@ -107,11 +109,18 @@ object AchTrackers {
     private fun onDrop(e: AchEvent.Drop) {
         val st = AchStore
         if (e.rarity !in RNG_RARITIES && e.value < AchSettings.achRngMinValue) return
-        st.inc("rng.count")
+        st.inc("rng.chat")
+        st.max("rng.count", st.get("rng.chat"))
         st.max("rng.best", e.value.toLong())
         if (SlayerManager.type != null) st.inc("slayer.rng")
         if (!sessionRng.add(e.item)) secret("chosenOne")
+        if (recentRng(e.item)) return
         st.addRng(AchStore.RngRec().also { it.t = System.currentTimeMillis(); it.item = e.item; it.value = e.value; it.source = e.source })
+    }
+
+    private fun recentRng(item: String): Boolean {
+        val now = System.currentTimeMillis()
+        return AchStore.data.rng.takeLast(8).any { it.t > now - 10_000 && it.item.equals(item, true) }
     }
 
     fun onTick(mc: Minecraft) {
@@ -175,7 +184,7 @@ object AchTrackers {
         if (cur < f.last * 0.5 && f.last > 1_000_000) f.base += f.last
         if (f.last != cur) { f.last = cur; AchStore.changed() }
         val v = f.base + cur
-        sessionStart.putIfAbsent(name, v)
+        if (v != 0.0 || polls >= 12) sessionStart.putIfAbsent(name, v)
         return v
     }
 
@@ -193,6 +202,7 @@ object AchTrackers {
 
     private fun pollLedgers() {
         val st = AchStore
+        polls++
         val kuudra = feed("kuudra", KuudraSettings.kuudraProfitTotal)
         val slayer = feed("slayer", SlayerProfitTracker.allProfit(false))
         val diana = feed("diana", DianaTracker.profit(DianaTracker.total))
@@ -218,6 +228,45 @@ object AchTrackers {
         lastPestKills = pk
         st.max("mining.corpses", MiningProfitTracker.totalCount("Corpses"))
         pollDiana()
+        FishDiag.guard("AchTrackers.3", "rng feed") { pollRng() }
+    }
+
+    // Rare drops from the real trackers: count/best/log, idempotent via max() and a per-item baseline
+    private fun pollRng() {
+        val st = AchStore
+        val min = AchSettings.achRngMinValue.toDouble()
+        var total = 0L
+        var best = 0.0
+        fun feedItem(src: String, item: String, n: Long, unit: Double) {
+            if (n <= 0 || unit.isNaN()) return
+            total += n; best = maxOf(best, unit)
+            val key = "$src|$item"
+            val prev = rngSeen.put(key, n)
+            val fresh = if (prev == null) (if (st.data.rng.none { it.source == src && it.item == item }) 1L else 0L) else n - prev
+            repeat(fresh.coerceIn(0L, 5L).toInt()) { if (!recentRng(item)) st.addRng(AchStore.RngRec().also { it.t = System.currentTimeMillis(); it.item = item; it.value = unit; it.source = src }) }
+        }
+        val tot = DianaTracker.total
+        for (d in DianaTracker.DROPS) {
+            val unit = DianaTracker.priceOf(d.key)
+            if (d.loud || unit >= min) feedItem("Diana", d.name, both(tot, d.key), unit)
+        }
+        for ((name, n) in SlayerProfitTracker.totalDrops()) {
+            if (name.endsWith("Coins")) continue
+            val unit = fishmod.utils.networth.ItemsDb.idFor(name)?.let { fishmod.features.croesus.CroesusPrices.price(it) } ?: 0.0
+            if (unit >= min) feedItem("Slayer", name, n, unit)
+        }
+        for ((name, n) in MiningProfitTracker.totalItems()) {
+            val unit = MiningProfitTracker.priceOf(name)
+            if (unit >= min) feedItem("Mining", name, n, unit)
+        }
+        for (r in fishmod.features.croesus.LootTrackerStore.rows()) {
+            if (r.id.isEmpty() || r.count <= 0) continue
+            val unit = fishmod.features.croesus.CroesusPrices.bazaarPrice(r.id, false)?.takeIf { it > 0 } ?: fishmod.features.croesus.CroesusPrices.price(r.id)
+            if (unit >= min) feedItem("Dungeons", r.name, r.count.toLong(), unit)
+        }
+        st.max("rng.trk", total)
+        st.max("rng.count", maxOf(total, st.get("rng.chat")))
+        st.max("rng.best", best.toLong())
     }
 
     private fun both(t: DianaTracker.Tracker, k: String) = t.item(k) + t.item(k + "_LS")

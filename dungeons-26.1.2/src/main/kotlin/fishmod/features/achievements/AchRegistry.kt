@@ -186,7 +186,6 @@ object AchRegistry {
         a("ballista_builder", "Kuudra", "Ballista Builder", "Build the ballista 150 times", "Medium", 15, "kuudra.ballista", 150L, "", false)
         a("kuudra_profits", "Kuudra", "Kuudra Profits", "10M Kuudra Profit", "Hard", 20, "kuudra.profit", 10000000L, "coins", false)
         a("kuudra_kingpin", "Kuudra", "Kuudra Kingpin", "1B Kuudra Profit", "Insane", 35, "kuudra.profit", 1000000000L, "coins", false)
-        a("godroll", "Kuudra", "Godroll", "Pull a godroll attribute item", "Insane", 35, "", 0L, "", false)
         a("first_bite", "Fishing", "First Bite", "Catch 1 sea creature", "Easy", 1, "fish.seaCreatures", 1L, "", false)
         a("angler", "Fishing", "Angler", "1,000 sea creatures", "Easy", 10, "fish.seaCreatures", 1000L, "", false)
         a("deep_sea_diver", "Fishing", "Deep Sea Diver", "10,000 sea creatures", "Hard", 20, "fish.seaCreatures", 10000L, "", false)

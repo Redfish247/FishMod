@@ -126,6 +126,7 @@ object AchEngine {
 
     private fun rng() {
         val r = AchStore.data.rng.takeLast(10)
+        FishMsg.send("§6[RNG] §7count §f${AchStore.get("rng.count")} §7best §6${fishmod.features.diana.DianaTracker.short(AchStore.get("rng.best").toDouble())}")
         if (r.isEmpty()) { FishMsg.send("§7No RNG drops logged yet."); return }
         FishMsg.send("§6[RNG Log] §7last ${r.size} of ${AchStore.data.rng.size}")
         for (x in r.asReversed()) FishMsg.send(" §d${x.item} §6${fishmod.features.diana.DianaTracker.short(x.value)} §8${x.source}")

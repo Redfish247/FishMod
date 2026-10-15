@@ -251,6 +251,7 @@ object MiningProfitTracker {
     // Achievement ledger reads: value of the total/session trackers and a counter
     fun profitOf(session: Boolean): Double = (if (session) data.session else data.total).items.entries.sumOf { (k, n) ->
         val name = k.substringAfter('|'); if (name.endsWith("Powder")) 0.0 else priceOf(name) * n }
+    fun totalItems(): Map<String, Long> = data.total.items.entries.associate { it.key.substringAfter('|') to it.value }
     fun totalCount(k: String): Long = data.total.counts[k] ?: 0L
 
     private fun tracker(): Tracker = if (S.miningProfitMode == "Total") data.total else data.session
