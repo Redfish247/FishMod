@@ -21,6 +21,7 @@ object RiftSettings {
     @ConfigValue @JvmField var riftCrux: Boolean = false
     @ConfigValue @JvmField var riftShyTitle: Boolean = true
     @ConfigValue @JvmField var riftCruxRange: Int = 20
+    @ConfigValue @JvmField var riftCruxTextPct: Int = 80
     @ConfigValue @JvmField var riftCruxWalls: Boolean = false
     @ConfigValue @JvmField var riftCruxShy: Boolean = true
     @ConfigValue @JvmField var riftCruxShadow: Boolean = true

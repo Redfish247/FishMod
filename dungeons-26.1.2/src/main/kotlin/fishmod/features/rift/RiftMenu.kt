@@ -33,6 +33,7 @@ object RiftMenu {
         val crux = Feature("Crux Helper", S::riftCrux)
         crux.sub.add(ToggleSetting("Shy Look Away Title", "Title when a Shy Crux is shouting near you", S::riftShyTitle))
         crux.sub.add(SliderIntSetting("Hint Range", "Only label Crux mobs within this many blocks", S::riftCruxRange, 5, 40))
+        crux.sub.add(SliderIntSetting("Text Size", "Hint size in % (80 is the default)", S::riftCruxTextPct, 30, 200))
         crux.sub.add(ToggleSetting("Through Walls", "", S::riftCruxWalls))
         crux.sub.add(ToggleSetting("Shy Hint", "", S::riftCruxShy))
         crux.sub.add(ToggleSetting("Shadow Hint", "", S::riftCruxShadow))

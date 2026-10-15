@@ -148,7 +148,7 @@ object RiftMobs {
         for (m in marks) {
             if (!m.e.isAlive) continue
             val p = EntityUtil.getLerpedPos(m.e)
-            RenderUtils.gizmoText(Component.literal(m.text), Vec3(p.x, p.y + m.e.bbHeight + 0.6, p.z), 1.4f, -1, S.riftCruxWalls)
+            RenderUtils.gizmoText(Component.literal(m.text), Vec3(p.x, p.y + m.e.bbHeight + 0.6, p.z), S.riftCruxTextPct / 100f, -1, S.riftCruxWalls)
         }
         fleespook?.takeIf { it.isAlive }?.let { line(it, S.riftFleespookColor, "§5Fleespook") }
         if (S.riftBacteLine) bacteAim()
