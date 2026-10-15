@@ -481,7 +481,7 @@ public class HypixelApi {
         if (extras != null) {
             try {
                 int lvl = extras.getIntOr("dungeon_item_level", -1);
-                if (lvl >= 0) return lvl;
+                if (lvl >= 0) return Math.min(lvl, 5);
             } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.20", "getStarCount failed", ignored);}
         }
         try {
@@ -494,7 +494,7 @@ public class HypixelApi {
             Tag nameEl = display.get("Name");
             if (nameEl == null) return 0;
             String name = STRIP_COLOR.matcher(nameEl.asString().orElse("")).replaceAll("");
-            return (int) name.chars().filter(c -> c == '\u272A').count();
+            return Math.min(5, (int) name.chars().filter(c -> c == '✪').count());
         } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.21", "getStarCount failed", e); return 0; }
     }
 

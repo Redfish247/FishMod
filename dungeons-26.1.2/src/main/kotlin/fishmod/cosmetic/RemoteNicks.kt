@@ -146,7 +146,10 @@ object RemoteNicks {
         if (!fishmod.utils.config.values.FishSettings.remoteNicksEnabled || styledByName.isEmpty()) return text
         var s = text.string
         var out = text
+        val own = if (NickState.isActive()) NickState.realName() else null
         for ((k, v) in styledByName) {
+            // Own name is already swapped locally; the server copy can be stale
+            if (k == own) continue
             if (s.contains(k)) {
                 val replaced = NameRewriter.replaceName(out, k, v) ?: continue
                 out = replaced

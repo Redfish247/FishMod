@@ -167,6 +167,8 @@ object FishSettings {
     @ConfigValue @JvmField var compactTabStatBarEnabled: Boolean = true
     @ConfigValue @JvmField var compactTabStatBarPosition: String = "TOP"
     @ConfigValue @JvmField var compactTabSortMode: String = "Rank (Default)"
+    @ConfigValue @JvmField var compactTabScale: Int = 100
+    @ConfigValue @JvmField var compactTabPinStaff: Boolean = false
     @ConfigValue @JvmField var compactTabFooterMode: String = "Hypixel"
     @ConfigValue @JvmField var compactTabFooterText: String = "&dCookie &f{cookie} &8| &cGod Pot &f{godpot}"
 

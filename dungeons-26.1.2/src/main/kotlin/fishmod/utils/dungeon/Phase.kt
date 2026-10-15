@@ -64,6 +64,8 @@ object Phase {
         }
 
         Events.ON_GAME_MESSAGE.register(Phase::parseGameMessage)
+        NecronDeath.init()
+        NecronDeath.onDeath { if (awaitingNecronDeath()) fireP5Start("necron dead") }
     }
 
     private fun detectFloor() {
@@ -77,7 +79,7 @@ object Phase {
         if (floor!!.contains("7")) inFloor7 = true
     }
 
-    // Alpha doesn't send Necron's death line; in M7 the relics spawning stands in for it
+    // Alpha doesn't send Necron's death line; NecronDeath (boss bar) ends P4, relic spawn / WK line are backups
     @JvmStatic
     fun onRelicSpawn() {
         if (awaitingNecronDeath()) fireP5Start("relics spawned")
