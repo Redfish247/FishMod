@@ -36,6 +36,8 @@ object RiftSettings {
     @ConfigValue @JvmField var riftBacteLine: Boolean = true
     @ConfigValue @JvmField var riftBacteTitle: Boolean = true
     @ConfigValue @JvmField var riftBacteSlimeBoxes: Boolean = true
+    @ConfigValue @JvmField var riftBacteSizeMin: Int = 3
+    @ConfigValue @JvmField var riftBacteSizeMax: Int = 3
     @ConfigValue @JvmField var riftBacteHideSlimes: Boolean = true
     @ConfigValue @JvmField var riftBacteShootAlert: Boolean = true
     @ConfigValue @JvmField var riftBacteColor: Int = 0xFF55FF55.toInt()
