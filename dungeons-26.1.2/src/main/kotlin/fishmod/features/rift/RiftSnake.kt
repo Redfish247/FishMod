@@ -9,21 +9,36 @@ import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.AABB
-import java.util.concurrent.ConcurrentHashMap
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.minecraft.client.Minecraft
 import fishmod.features.rift.RiftSettings as S
 
-// Living Cave snakes: outline lapis snake blocks, head = newest block
 object RiftSnake {
 
-    private const val HEAD_MS = 1200L
-    // The snake fades through these as it ages; stone means it left
-    private val SNAKE = setOf(
-        Blocks.LAPIS_BLOCK, Blocks.BLUE_STAINED_GLASS, Blocks.LIGHT_BLUE_STAINED_GLASS,
+    // Ported from SkyHanni LivingCaveSnakeFeatures: a snake is a chain of lapis blocks, newest at the head;
+    // the server puts the original block back at the tail, which is the one to hit first.
+    private class Snake(val blocks: MutableList<BlockPos>) {
+        val head get() = blocks.first()
+        var invalidHeadSince = 0L
+        fun invalidShape() = blocks.isEmpty() || blocks.zipWithNext().any { (a, b) -> a.distSqr(b) > 9.0 }
+    }
+
+    private val snakes = ArrayList<Snake>()
+    private val added = java.util.concurrent.ConcurrentLinkedQueue<BlockPos>()
+    private val removed = java.util.concurrent.ConcurrentLinkedQueue<BlockPos>()
+    // Colour-fade stages the server also sends; they are not snake blocks and must not count as the tail leaving
+    private val FADE = setOf(
+        Blocks.BLUE_STAINED_GLASS, Blocks.LIGHT_BLUE_STAINED_GLASS,
         Blocks.CYAN_TERRACOTTA, Blocks.BLUE_TERRACOTTA, Blocks.LIGHT_BLUE_TERRACOTTA,
     )
-    private val blocks = ConcurrentHashMap<BlockPos, Long>()
-    private val lastUpdate = ConcurrentHashMap<BlockPos, Long>()
-    private const val STALE_MS = 5000L
+
+    // Recent block updates by type, for /fm rift debug
+    private val seen = java.util.concurrent.ConcurrentLinkedQueue<Pair<Long, String>>()
+    fun debug(): String {
+        val now = System.currentTimeMillis(); seen.removeIf { now - it.first > 15_000L }
+        val g = seen.groupingBy { it.second }.eachCount().entries.sortedByDescending { it.value }.take(8)
+        return "snake: snakes=${snakes.size} blocks=${snakes.sumOf { it.blocks.size }} updates(15s)=" + g.joinToString(", ") { "${it.key}x${it.value}" }.ifEmpty { "none" }
+    }
 
     fun init() {
         Events.ON_PACKET.register { packet ->
@@ -33,38 +48,52 @@ object RiftSnake {
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { blocks.clear(); lastUpdate.clear(); false }
+        Events.ON_WORLD_CHANGE.register { snakes.clear(); added.clear(); removed.clear(); false }
+        ClientTickEvents.END_CLIENT_TICK.register { try { tick() } catch (_: Throwable) { snakes.clear() } }
         RenderingEvents.GIZMO.register { _ -> render() }
-    }
-
-    // Recent block updates by type, for /fm rift debug
-    private val seen = java.util.concurrent.ConcurrentLinkedQueue<Pair<Long, String>>()
-    fun debug(): String {
-        val now = System.currentTimeMillis(); seen.removeIf { now - it.first > 15_000L }
-        val g = seen.groupingBy { it.second }.eachCount().entries.sortedByDescending { it.value }.take(8)
-        return "snake: tracked=${blocks.size} updates(15s)=" + g.joinToString(", ") { "${it.key}x${it.value}" }.ifEmpty { "none" }
     }
 
     private fun onBlock(pos: BlockPos, state: BlockState) {
         seen.add(System.currentTimeMillis() to net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.block).path)
         if (seen.size > 400) seen.poll()
         val p = pos.immutable()
-        if (state.block in SNAKE) { val n = System.currentTimeMillis(); blocks.putIfAbsent(p, n); lastUpdate[p] = n }
-        else { blocks.remove(p); lastUpdate.remove(p) }
+        if (state.block == Blocks.LAPIS_BLOCK) added.add(p)
+        else if (state.block !in FADE) removed.add(p)
+    }
+
+    private fun tick() {
+        if (!S.riftSnake || !Rift.inRift()) { snakes.clear(); added.clear(); removed.clear(); return }
+        while (true) { addSnakeBlock(added.poll() ?: break) }
+        while (true) {
+            val loc = removed.poll() ?: break
+            snakes.removeIf { s -> loc in s.blocks && run { s.blocks.remove(loc); s.blocks.isEmpty() } }
+        }
+        val level = Minecraft.getInstance().level ?: return
+        val now = System.currentTimeMillis()
+        snakes.removeIf { s ->
+            if (s.invalidShape()) return@removeIf true
+            if (level.getBlockState(s.head).block != Blocks.LAPIS_BLOCK) {
+                if (s.invalidHeadSince == 0L) s.invalidHeadSince = now
+                now - s.invalidHeadSince > 1000L
+            } else { s.invalidHeadSince = 0L; false }
+        }
+    }
+
+    private fun addSnakeBlock(p: BlockPos) {
+        if (snakes.any { p in it.blocks }) return
+        val near = snakes.filter { it.head.distSqr(p) < 3.01 }.minByOrNull { it.head.distSqr(p) }
+        if (near == null) snakes.add(Snake(mutableListOf(p))) else near.blocks.add(0, p)
     }
 
     private fun render() {
-        if (!S.riftSnake || blocks.isEmpty() || !Rift.inRift()) return
-        val now = System.currentTimeMillis()
-        // blocks the server stopped updating are leftovers, not the snake
-        blocks.keys.removeIf { now - (lastUpdate[it] ?: 0L) > STALE_MS }
-        lastUpdate.keys.removeIf { !blocks.containsKey(it) }
-        val tail = if (blocks.size >= 2) blocks.entries.minByOrNull { it.value }?.key else null
-        for ((pos, at) in blocks) {
-            val head = now - at < HEAD_MS
-            if (!head && pos != tail) continue
-            val c = if (pos == tail) S.riftSnakeColor else S.riftSnakeHeadColor
-            RenderUtils.gizmoBox(AABB(pos), (c and 0xFFFFFF) or 0x30000000, c, false)
+        if (!S.riftSnake || snakes.isEmpty() || !Rift.inRift()) return
+        for (s in snakes.toList()) {
+            val head = s.blocks.firstOrNull() ?: continue
+            val tail = s.blocks.lastOrNull() ?: continue
+            if (s.blocks.size > 1) box(tail, S.riftSnakeColor)
+            box(head, S.riftSnakeHeadColor)
         }
     }
+
+    private fun box(pos: BlockPos, c: Int) = RenderUtils.gizmoBox(AABB(pos), (c and 0xFFFFFF) or 0x30000000, c, false)
 }
