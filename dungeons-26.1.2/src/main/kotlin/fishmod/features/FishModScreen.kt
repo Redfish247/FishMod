@@ -2473,6 +2473,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         UiRecorder.fillRectTopRounded(x0.toFloat(), hy.toFloat(), w.toFloat(), HEADER_STRIP_H.toFloat(), CARD_RADIUS.toFloat(), ScreenTheme.ACCENT)
         val titleClip = w - (if (showPopOut) 40 else 20)
         sst(ctx, this.font, ellipsize(c.name, titleClip), x0 + 10, hy + HEADER_STRIP_H + 6, TEXT_COLOR, 1f)
+        c.sub()?.let { sst(ctx, this.font, ellipsize(it, titleClip, 0.8f), x0 + 10, hy + HEADER_STRIP_H + 19, SUBTEXT_COLOR, 0.8f) }
         if (showPopOut) {
             val r = popOutIconRect(x1, hy)
             val hov = mouseX in r[0]..r[2] && mouseY in r[1]..r[3]
@@ -3334,6 +3335,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     class Column(val name: String) {
+        var subtitle: String? = null
+        fun sub(): String? = subtitle ?: COLUMN_SUBTITLES[name]
         val features: MutableList<Feature> = ArrayList()
         var scroll = 0
 
@@ -4241,7 +4244,29 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         private const val COLUMN_GUTTER = 6
         private const val CARD_RADIUS = 7
-        private const val HEADER_H = 24
+        private const val HEADER_H = 36
+        private val COLUMN_SUBTITLES = mapOf(
+            "General" to "Core mod options",
+            "Dungeons" to "Run helpers & alerts",
+            "Dungeon Solvers" to "Puzzle & room solvers",
+            "Dungeon Trackers" to "Run stats & timers",
+            "Dungeon Map" to "Map display & rooms",
+            "Floor 7" to "Boss fight helpers",
+            "Inventory & Storage" to "Items, chests & search",
+            "Party & Social" to "Party, chat & friends",
+            "Cosmetics" to "Looks & colour tweaks",
+            "HUD & Overlays" to "On-screen elements",
+            "Visuals & Rendering" to "ESP, boxes & effects",
+            "Diana" to "Mythological event tools",
+            "Slayer" to "Slayer boss helpers",
+            "Cheats" to "Risky automation",
+            "Mining" to "Mining & powder tools",
+            "Kuudra" to "Crimson Isle boss run tools",
+            "Rift" to "Rift dimension helpers",
+            "Extras" to "Misc & utilities",
+            "Farming" to "Garden farming tools",
+            "Achievements" to "Goals & progress",
+        )
         private const val HEADER_STRIP_H = 3
         private const val MIN_COLUMN_W = 172
         private const val MAX_COLUMN_W = 260
