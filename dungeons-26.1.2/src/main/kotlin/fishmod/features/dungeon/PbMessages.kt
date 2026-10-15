@@ -35,6 +35,7 @@ object PbMessages {
             val prev = pbs[key]
             val isPb = prev == null || seconds < prev
             if (isPb) { pbs[key] = seconds; save() }
+            if (isPb && prev != null) fishmod.features.achievements.AchBus.post(fishmod.features.achievements.AchEvent.PersonalBest(key, prev - seconds))
             return Result(seconds, prev, isPb)
         }
     }

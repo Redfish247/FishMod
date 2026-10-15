@@ -248,6 +248,11 @@ object MiningProfitTracker {
         return RARITY[ItemsDb.get(id)?.get("tier")?.asString ?: "COMMON"]
     }
 
+    // Achievement ledger reads: value of the total/session trackers and a counter
+    fun profitOf(session: Boolean): Double = (if (session) data.session else data.total).items.entries.sumOf { (k, n) ->
+        val name = k.substringAfter('|'); if (name.endsWith("Powder")) 0.0 else priceOf(name) * n }
+    fun totalCount(k: String): Long = data.total.counts[k] ?: 0L
+
     private fun tracker(): Tracker = if (S.miningProfitMode == "Total") data.total else data.session
 
     private class Row(val cat: Cat, val name: String, val n: Long, val value: Double, val split: Map<Cat, Long> = emptyMap())
