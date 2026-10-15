@@ -85,8 +85,20 @@ object AchHooks {
         if (here) AchStore.max("hifish.said", 1)
     }
 
+    private val PLAYTIME = Regex("""^You have (?:(\d[\d,]*) hours?)?(?: and )?(?:(\d+) minutes?)? ?playtime!""")
+
+    // Reply to the player's own /playtime: Hypixel's real total beats the local counter
+    private fun playtime(s: String) {
+        val m = PLAYTIME.find(s) ?: return
+        val h = m.groupValues[1].replace(",", "").toLongOrNull() ?: 0L
+        val min = m.groupValues[2].toLongOrNull() ?: 0L
+        if (h == 0L && min == 0L) return
+        AchStore.max("play.total", h * 3600 + min * 60)
+    }
+
     private fun onChat(s: String) {
         hiFish(s)
+        playtime(s)
         AchFlips.onChat(s)
         if (!s.contains(": ")) {
             if (s.startsWith("TROPHY FISH!") && s.contains("Golden Fish")) AchStore.max("fish.golden", 1)
