@@ -85,23 +85,23 @@ object Pests {
             }
             guess?.let { gp ->
                 val gb = AABB(gp.x - 0.5, gp.y - 0.5, gp.z - 0.5, gp.x + 0.5, gp.y + 0.5, gp.z + 0.5)
-                RenderUtils.fillBox(ps, vc, gb, Mining.alpha(0xFF5555, 120))
-                Mining.outline(ps, vc, gb, Mining.alpha(0xFF5555, 255), 2f)
-                if (S.gardenPestFinderLine) RenderUtils.screenLine(ps, vc, start, gp, Mining.alpha(0xFF5555, 255), 2f)
+                RenderUtils.fillBox(ps, vc, gb, Mining.alpha(S.gardenPestMarkerColor, 120))
+                Mining.outline(ps, vc, gb, Mining.alpha(S.gardenPestMarkerColor, 255), 2f)
+                if (S.gardenPestFinderLine) RenderUtils.screenLine(ps, vc, start, gp, Mining.alpha(S.gardenPestLineColor, 255), 2f)
             }
             for (id in plots) {
                 val c = centerOf(id) ?: continue
                 val b = AABB(c.x - 1, 66.0, c.z - 1, c.x + 1, 110.0, c.z + 1)
                 RenderUtils.fillBox(ps, vc, b, Mining.alpha(S.gardenPestFinderColor, S.gardenPestFinderOpacity))
                 Mining.outline(ps, vc, b, Mining.alpha(S.gardenPestFinderColor, 100), 2f)
-                if (S.gardenPestFinderLine && guess == null) RenderUtils.screenLine(ps, vc, start, c, Mining.alpha(S.gardenPestFinderColor, 100), 2f)
+                if (S.gardenPestFinderLine && guess == null) RenderUtils.screenLine(ps, vc, start, c, Mining.alpha(S.gardenPestLineColor, 100), 2f)
             }
         }
         Garden.hud("Pest Timer", "garden_pests", 150, 40,
             { S.gardenPestHudX }, { S.gardenPestHudX = it }, { S.gardenPestHudY }, { S.gardenPestHudY = it },
             { S.gardenPestHudScale }, { S.gardenPestHudScale = it },
             { S.gardenPestHud && Garden.inGarden() }) {
-            val out = arrayListOf("§c§lPests §f$alive")
+            val out = arrayListOf("${Garden.legacy(S.gardenPestHudColor)}§lPests §f$alive")
             if (cooldown.isNotEmpty()) out += "§7Cooldown: " + (if (cooldown.contains("READY", true)) "§a" else "§e") + cooldown
             val plots = if (tabPlots.isNotEmpty()) tabPlots else remembered.keys.toList()
             if (plots.isNotEmpty()) out += "§7Plots: §f" + plots.joinToString(", ") { labelOf(it) }
@@ -137,7 +137,7 @@ object Pests {
 
     private fun profitLines(): List<String> {
         val rows = drops.map { (k, v) -> Triple(k, v, Garden.priceOf(k) * v) }.sortedByDescending { it.third }
-        val out = arrayListOf("§c§lPest Profit")
+        val out = arrayListOf("${Garden.legacy(S.gardenPestProfitColor)}§lPest Profit")
         for (r in rows.take(10)) out += "§6${Garden.short(r.third)}\t§f${r.first} §8x${r.second}"
         out += "§7Kills: §f$kills"
         out += "§eTotal: §6${Garden.short(rows.sumOf { it.third })}"

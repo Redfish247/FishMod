@@ -20,28 +20,28 @@ object GardenWidgets {
             composter = Mining.tabWidget("Composter:")
             jacob = Mining.tabWidget("Jacob's Contest:")
             val idle = composter.any { it.contains("INACTIVE", true) || it.startsWith("Fuel: 0") || it.startsWith("Organic Matter: 0") }
-            if (idle && !composterWarned && S.gardenComposterWarn) Mining.title("§cComposter Inactive!", "", 2000, true)
+            if (idle && !composterWarned && S.gardenComposterWarn) Mining.title(Garden.legacy(S.gardenComposterWarnColor) + "Composter Inactive!", "", 2000, true)
             composterWarned = idle
         }
         Events.ON_GAME_MESSAGE.register { t ->
             val s = Garden.strip(t.string).trim()
             if (S.gardenRareCrop && s.startsWith("RARE CROP!")) {
                 S.gardenRareCropCount++
-                if (S.gardenRareCropTitle) Mining.title("§6§lRARE CROP!", "§f" + s.removePrefix("RARE CROP!").trim(), 2000, true)
+                if (S.gardenRareCropTitle) Mining.title(Garden.legacy(S.gardenRareCropColor) + "§lRARE CROP!", "§f" + s.removePrefix("RARE CROP!").trim(), 2000, true)
             }
             false
         }
         Garden.hud("Composter", "garden_composter", 150, 50,
             { S.gardenComposterHudX }, { S.gardenComposterHudX = it }, { S.gardenComposterHudY }, { S.gardenComposterHudY = it },
             { S.gardenComposterHudScale }, { S.gardenComposterHudScale = it },
-            { S.gardenComposterHud && composter.isNotEmpty() }) { listOf("§2§lComposter") + composter.map { "§7$it" } }
+            { S.gardenComposterHud && composter.isNotEmpty() }) { listOf(Garden.legacy(S.gardenComposterColor) + "§lComposter") + composter.map { "§7$it" } }
         Garden.hud("Jacob's Contest", "garden_jacob", 150, 50,
             { S.gardenJacobHudX }, { S.gardenJacobHudX = it }, { S.gardenJacobHudY }, { S.gardenJacobHudY = it },
             { S.gardenJacobHudScale }, { S.gardenJacobHudScale = it },
-            { S.gardenJacobHud && jacob.isNotEmpty() }) { listOf("§e§lJacob's Contest") + jacob.map { "§f$it" } }
+            { S.gardenJacobHud && jacob.isNotEmpty() }) { listOf(Garden.legacy(S.gardenJacobColor) + "§lJacob's Contest") + jacob.map { "§f$it" } }
         Garden.hud("Rare Crops", "garden_rare_crop", 120, 12,
             { S.gardenRareCropHudX }, { S.gardenRareCropHudX = it }, { S.gardenRareCropHudY }, { S.gardenRareCropHudY = it },
             { S.gardenRareCropHudScale }, { S.gardenRareCropHudScale = it },
-            { S.gardenRareCrop && Garden.inGarden() }) { listOf("§6Rare Crops: §f${S.gardenRareCropCount}") }
+            { S.gardenRareCrop && Garden.inGarden() }) { listOf(Garden.legacy(S.gardenRareCropColor) + "Rare Crops: §f${S.gardenRareCropCount}") }
     }
 }
