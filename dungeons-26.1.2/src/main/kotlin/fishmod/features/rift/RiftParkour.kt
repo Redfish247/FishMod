@@ -13,7 +13,13 @@ import fishmod.features.rift.RiftSettings as S
 // Mirrorverse parkours, Blood Effigy spots and Colosseum kill-zone warning; course data from SkyHanni-Repo
 object RiftParkour {
 
-    private class Course(val pts: List<IntArray>, val shortcuts: List<IntArray>) { var idx = -1 }
+    private class Course(val pts: List<IntArray>, val shortcuts: List<IntArray>) {
+        var idx = -1
+        private val minX = pts.minOf { it[0] } - 6.0; private val maxX = pts.maxOf { it[0] } + 7.0
+        private val minY = pts.minOf { it[1] } - 6.0; private val maxY = pts.maxOf { it[1] } + 8.0
+        private val minZ = pts.minOf { it[2] } - 6.0; private val maxZ = pts.maxOf { it[2] } + 7.0
+        fun inRoom(x: Double, y: Double, z: Double) = x in minX..maxX && y in minY..maxY && z in minZ..maxZ
+    }
 
     private fun c(vararg v: Int) = v.toList().chunked(3).map { it.toIntArray() }
 
@@ -43,9 +49,10 @@ object RiftParkour {
         if (!Rift.inRift()) return
         val me = Minecraft.getInstance().player ?: return
         if (S.riftParkour) for (co in COURSES) {
+            // Only inside the course's own room (bounds + small margin), never through walls from outside
+            if (!co.inRoom(me.x, me.y, me.z)) { co.idx = -1; continue }
             val near = co.pts.indices.minByOrNull { me.distanceToSqr(co.pts[it][0] + 0.0, co.pts[it][1] + 0.0, co.pts[it][2] + 0.0) } ?: continue
             val n = co.pts[near]
-            if (me.distanceToSqr(n[0] + 0.0, n[1] + 0.0, n[2] + 0.0) > 40 * 40) { co.idx = -1; continue }
             val dx = me.x - n[0]; val dz = me.z - n[2]; val dy = me.y - n[1]
             if (dx * dx + dz * dz < 2.6 * 2.6 && dy > -1.0 && dy < 3.0 && near > co.idx) co.idx = near
             val from = co.idx.coerceAtLeast(0)
