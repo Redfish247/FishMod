@@ -45,6 +45,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         private const val GAP = 10
         private const val ALL = "All"
         private const val RECENT = "Recent"
+        private const val LB = "Leaderboard"
         private val DATE = SimpleDateFormat("MMM d, yyyy")
     }
 
@@ -72,10 +73,11 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
     private fun hidden(a: Ach): Boolean = AchSettings.achHideUntracked && !a.tracked && !AchEngine.unlocked(a)
     private fun secretHidden(a: Ach): Boolean = a.secret && !AchEngine.unlocked(a) && !AchSettings.achShowSecrets
 
-    private fun groups(): List<String> = listOf(ALL, RECENT) + AchRegistry.SECTIONS
+    private fun groups(): List<String> = listOf(ALL, RECENT, LB) + AchRegistry.SECTIONS
 
     private fun inGroup(g: String): List<Ach> = when (g) {
         ALL -> AchRegistry.ALL.filter { !hidden(it) }
+        LB -> emptyList()
         RECENT -> AchStore.data.unlocked.entries.sortedByDescending { it.value }
             .mapNotNull { AchRegistry.BY_ID[it.key] }.take(50)
         else -> AchRegistry.ALL.filter { it.section == g && !hidden(it) }
@@ -116,7 +118,8 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         val cw = w - RAIL_W - 32
         hero(cx, y + 14, cw)
         val top = y + 14 + HERO_H + 12
-        grid(cx, top, cw, y + h - 14 - top, mx, my)
+        AchLeaderboard.want()
+        if (group == LB) leaderboard(cx, top, cw, y + h - 14 - top) else grid(cx, top, cw, y + h - 14 - top, mx, my)
         hoverAch?.let { detail(it, mx, my) }
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
@@ -136,7 +139,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
             val on = g == group
             val l = inGroup(g)
             val done = l.count { AchEngine.unlocked(it) }
-            val frac = if (g == RECENT || l.isEmpty()) 0f else done.toFloat() / l.size
+            val frac = if (g == RECENT || g == LB || l.isEmpty()) 0f else done.toFloat() / l.size
             val bx = x + 8
             val bw = w - 16
             val hov = !on && inside(mx, my, bx, ry, bw, rh)
@@ -147,9 +150,9 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
             val rcx = bx + 20
             val rcy = ry + rh / 2
             ring(rcx.toFloat(), rcy.toFloat(), 9f, frac, if (on) ACCENT else 0xFF2F8F8B.toInt(), 2f)
-            val glyph = when (g) { ALL -> "*"; RECENT -> "R"; else -> g.first().uppercase() }
+            val glyph = when (g) { ALL -> "*"; RECENT -> "R"; LB -> "L"; else -> g.first().uppercase() }
             UiRecorder.textBold(glyph, rcx - UiRecorder.textWidthBold(glyph, S_XS) / 2f, rcy - S_XS / 2f, S_XS, if (on) ACCENT else ScreenTheme.SUBTEXT_COLOR)
-            val cnt = if (g == RECENT) "${AchStore.data.unlocked.size}" else "$done"
+            val cnt = if (g == RECENT) "${AchStore.data.unlocked.size}" else if (g == LB) "" else "$done"
             val nameW = bw - 38 - tw(cnt, S_XS) - 12
             UiRecorder.text(clip(g, nameW.toFloat(), S_MD), (bx + 36).toFloat(), ry + (rh - S_MD) / 2f, S_MD, if (on || hov) ScreenTheme.TEXT_COLOR else ScreenTheme.SUBTEXT_COLOR)
             UiRecorder.text(cnt, (bx + bw - 8 - tw(cnt, S_XS)).toFloat(), ry + (rh - S_XS) / 2f, S_XS, DIM)
@@ -233,6 +236,50 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         }
     }
 
+    // Two ranked lists: AP and secret achievements
+    private fun leaderboard(x: Int, y: Int, w: Int, h: Int) {
+        val colW = (w - GAP) / 2
+        panel(x, y, colW, h, "Top Achievement Points", false)
+        panel(x + colW + GAP, y, colW, h, "Top Secret Hunters", true)
+        val note = if (!AchLeaderboard.loaded) (if (AchLeaderboard.offline) "Leaderboard offline" else "Loading...")
+        else (if (AchLeaderboard.offline) "offline - " else "") + AchLeaderboard.ago()
+        UiRecorder.text(note, x.toFloat(), (y + h - S_XS - 1).toFloat(), S_XS, if (AchLeaderboard.offline) 0xFFC05A4A.toInt() else DIM)
+    }
+
+    private fun panel(x: Int, y: Int, w: Int, h: Int, title: String, secrets: Boolean) {
+        UiRecorder.roundedRectRing(x.toFloat(), y.toFloat(), w.toFloat(), (h - 12).toFloat(), 10f, 1f, PANEL2, LINE)
+        UiRecorder.textBold(title, (x + 12).toFloat(), (y + 10).toFloat(), S_MD, if (secrets) 0xFFC77DFF.toInt() else ACCENT)
+        val list = if (secrets) AchLeaderboard.secrets else AchLeaderboard.points
+        val rh = 20
+        if (!AchLeaderboard.loaded || list.isEmpty()) {
+            val msg = if (!AchLeaderboard.loaded) (if (AchLeaderboard.offline) "Leaderboard offline" else "Loading...") else "No scores yet."
+            UiRecorder.text(msg, x + (w - tw(msg, S_SM)) / 2f, (y + 50).toFloat(), S_SM, DIM)
+            return
+        }
+        var ry = y + 28
+        for ((i, e) in list.withIndex()) {
+            val rank = i + 1
+            val col = when (rank) { 1 -> GOLD; 2 -> 0xFFC0C7CF.toInt(); 3 -> 0xFFCD7F32.toInt(); else -> DIM }
+            if (i % 2 == 0) UiRecorder.fillRoundedRect((x + 6).toFloat(), ry.toFloat(), (w - 12).toFloat(), rh.toFloat(), 6f, 0x14FFFFFF)
+            if (rank <= 3) UiRecorder.disc((x + 20).toFloat(), ry + rh / 2f, 7f, col)
+            val r = "$rank"
+            UiRecorder.textBold(r, x + 20 - tw(r, S_XS) / 2f, ry + (rh - S_XS) / 2f, S_XS, if (rank <= 3) ACC_INK else DIM)
+            val v = AchLeaderboard.value(e, secrets)
+            val vw = tw(v, S_SM)
+            UiRecorder.text(clip(e.name, (w - 36 - vw - 24).toFloat(), S_SM), (x + 34).toFloat(), ry + (rh - S_SM) / 2f, S_SM, ScreenTheme.TEXT_COLOR)
+            UiRecorder.text(v, (x + w - 12 - vw).toFloat(), ry + (rh - S_SM) / 2f, S_SM, GOLD)
+            ry += rh
+        }
+        AchLeaderboard.meLine(secrets)?.let {
+            val plain = it.replace(Regex("§."), "")
+            val rank = plain.substringBefore(' ')
+            val v = plain.substringAfter("You ")
+            UiRecorder.fillRoundedRect((x + 6).toFloat(), (ry + 2).toFloat(), (w - 12).toFloat(), rh.toFloat(), 6f, ACC_SOFT)
+            UiRecorder.text("$rank  You", (x + 14).toFloat(), ry + 2 + (rh - S_SM) / 2f, S_SM, ACCENT)
+            UiRecorder.text(v, (x + w - 12 - tw(v, S_SM)).toFloat(), ry + 2 + (rh - S_SM) / 2f, S_SM, GOLD)
+        }
+    }
+
     private fun tile(a: Ach, x: Int, y: Int, w: Int, hov: Boolean) {
         val done = AchEngine.unlocked(a)
         val secret = secretHidden(a)
@@ -296,7 +343,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         var desc = a.desc
         var descColor = ScreenTheme.SUBTEXT_COLOR
         when {
-            secret -> { desc = "Secret achievement"; descColor = DIM }
+            secret -> { desc = a.hint.ifEmpty { "Secret achievement" }; descColor = 0xFFC77DFF.toInt() }
             a.serverSide && !done -> { desc = a.desc + " (needs FishMod server support)"; descColor = DIM }
             !a.tracked && !done -> { desc = a.desc + " (not tracked yet)"; descColor = 0xFFB07A3A.toInt() }
         }

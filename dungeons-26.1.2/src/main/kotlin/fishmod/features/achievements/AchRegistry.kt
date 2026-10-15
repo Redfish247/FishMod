@@ -7,9 +7,33 @@ object AchRegistry {
         val id: String, val section: String, val name: String, val desc: String, val difficulty: String,
         val points: Int, val metric: String, val goal: Long, val unit: String, val secret: Boolean,
     ) {
+        val hint: String get() = HINTS[id] ?: ""
         val tracked: Boolean get() = metric.isNotEmpty() && !metric.startsWith("server.")
         val serverSide: Boolean get() = metric.startsWith("server.")
     }
+
+    // Cryptic one-liners shown for secrets that are still hidden
+    val HINTS = mapOf(
+        "secret_found" to "Every room hides something. Start poking around.",
+        "secret_hunter" to "A thousand little discoveries add up.",
+        "secret_service" to "Your eyes are trained for loot nobody else sees.",
+        "secret_addict" to "One more chest, one more lever, one more lie to yourself.",
+        "the_secret_is_safe" to "Only the truly obsessed keep digging this long.",
+        "secret_speedster" to "Greed pays off when you cram it into a single run.",
+        "fish_out_of_water" to "A fish should feel right at home opening menus... where it's wet.",
+        "one_more_run" to "The clock strikes twelve and the queue button still glows.",
+        "there_was_never_a_secret" to "Sometimes the greatest find is finding absolutely nothing.",
+        "frame_perfect" to "Beat yourself by less than a blink.",
+        "the_chosen_one" to "Lightning strikes twice, in the same sitting.",
+        "the_fish_king" to "He who rules every other secret wears the crown.",
+        "i_hate_bers" to "That plate in the fourth room can't take the pressure.",
+        "wrong_floor" to "A catacombs master visiting the very first floor. Lost?",
+        "sweaty_hands" to "The same panel keeps betraying you. Again. And again.",
+        "splash_zone" to "It's hot, it's bright, and it's the last thing you see.",
+        "the_one_that_got_away" to "Some prey vanishes if you take too long to finish it.",
+        "party_of_one" to "The hardest floor needs no friends. Prove it.",
+        "fish_friend" to "A certain fish enjoys your company, run after run.",
+    )
 
     val ALL = ArrayList<Ach>()
     val BY_ID = HashMap<String, Ach>()

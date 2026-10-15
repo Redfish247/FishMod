@@ -28,6 +28,7 @@ object AchEngine {
         AchHooks.init()
         AchTrackers.init()
         AchUsage.init()
+        AchLeaderboard.init()
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (!AchSettings.achEnabled) return@register
             FishDiag.guard("AchEngine.1", "achievement tick") {
@@ -35,6 +36,7 @@ object AchEngine {
                 AchTrackers.onTick(mc)
                 if (tick++ % 20 == 0) { evaluate(); AchStore.tick() }
                 autoSync(mc)
+                AchLeaderboard.onTick(mc)
             }
         }
         ClientLifecycleEvents.CLIENT_STOPPING.register { AchStore.saveNow() }
@@ -134,6 +136,9 @@ object AchEngine {
         ClientCommands.literal("ach")
             .executes { Minecraft.getInstance().schedule { Minecraft.getInstance().setScreen(AchScreen()) }; 1 }
             .then(ClientCommands.literal("sync").executes { AchApiSync.sync(true); 1 })
+            .then(ClientCommands.literal("lb")
+                .then(ClientCommands.literal("here").executes { AchLeaderboard.here(); 1 })
+                .then(ClientCommands.literal("refresh").executes { AchLeaderboard.submit(true); AchLeaderboard.fetch(); 1 }))
             .then(ClientCommands.literal("runs").executes { runs(); 1 })
             .then(ClientCommands.literal("rng").executes { rng(); 1 })
 }

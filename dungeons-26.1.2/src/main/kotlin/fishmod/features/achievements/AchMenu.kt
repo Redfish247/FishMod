@@ -3,6 +3,8 @@ package fishmod.features.achievements
 import fishmod.features.FishModScreen.ButtonSetting
 import fishmod.features.FishModScreen.Column
 import fishmod.features.FishModScreen.Feature
+import fishmod.features.FishModScreen.DropdownSetting
+import fishmod.features.FishModScreen.InputDoubleSetting
 import fishmod.features.FishModScreen.InputIntSetting
 import fishmod.features.FishModScreen.LabelSetting
 import fishmod.features.FishModScreen.SliderDoubleSetting
@@ -41,6 +43,17 @@ object AchMenu {
         main.sub.add(ToggleSetting("Hide Untracked", "Hide ones FishMod can't track yet", S::achHideUntracked))
         col.features.add(main)
 
+        val lb = Feature("Leaderboard Board", S::achLbEnabled)
+        lb.sub.add(LabelSetting("In-world top 10", "Shows within 48 blocks of the spot; /fm ach lb here sets it to your feet"))
+        lb.sub.add(InputDoubleSetting("X", "", { S.achLbX }, { v -> S.achLbX = v }))
+        lb.sub.add(InputDoubleSetting("Y", "", { S.achLbY }, { v -> S.achLbY = v }))
+        lb.sub.add(InputDoubleSetting("Z", "", { S.achLbZ }, { v -> S.achLbZ = v }))
+        lb.sub.add(SliderDoubleSetting("Scale", "", S::achLbScale, 0.5, 4.0))
+        lb.sub.add(DropdownSetting("Area", "Only show in this area (Any = everywhere)", arrayOf("Any") + fishmod.utils.Location.values().map { it.name2 }.filter { it != "Unknown" }.toTypedArray(), { S.achLbArea }, { v -> S.achLbArea = v }))
+        lb.sub.add(ButtonSetting("Set To My Position", "Same as /fm ach lb here", "Here") { AchLeaderboard.here() })
+        lb.sub.add(ButtonSetting("Submit Score", "Send your totals now", "Submit") { AchLeaderboard.submit(true) })
+        col.features.add(lb)
+
         for (sec in AchRegistry.SECTIONS) {
             val f = Feature(sec, null, null)
             for (a in AchRegistry.ALL) if (a.section == sec) {
@@ -66,7 +79,7 @@ object AchMenu {
             val hidden = a.secret && !done && !S.achShowSecrets
             l.name = (if (done) "✔ " else "") + (if (hidden) "???" else a.name) + "  (${a.points} AP)"
             l.description = when {
-                hidden -> "Secret achievement"
+                hidden -> a.hint.ifEmpty { "Secret achievement" }
                 done -> a.desc
                 a.serverSide -> "Needs FishMod server support - " + a.desc
                 !a.tracked -> "Not tracked yet - " + a.desc
