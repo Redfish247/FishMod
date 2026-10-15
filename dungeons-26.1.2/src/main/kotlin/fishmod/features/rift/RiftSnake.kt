@@ -30,7 +30,17 @@ object RiftSnake {
         RenderingEvents.GIZMO.register { _ -> render() }
     }
 
+    // Recent block updates by type, for /fm rift debug
+    private val seen = java.util.concurrent.ConcurrentLinkedQueue<Pair<Long, String>>()
+    fun debug(): String {
+        val now = System.currentTimeMillis(); seen.removeIf { now - it.first > 15_000L }
+        val g = seen.groupingBy { it.second }.eachCount().entries.sortedByDescending { it.value }.take(8)
+        return "snake: tracked=${blocks.size} updates(15s)=" + g.joinToString(", ") { "${it.key}x${it.value}" }.ifEmpty { "none" }
+    }
+
     private fun onBlock(pos: BlockPos, state: BlockState) {
+        seen.add(System.currentTimeMillis() to net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.block).path)
+        if (seen.size > 400) seen.poll()
         if (state.block == Blocks.LAPIS_BLOCK) blocks[pos.immutable()] = System.currentTimeMillis()
         else blocks.remove(pos)
     }
