@@ -1973,6 +1973,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(fishmod.features.rift.RiftMenu.column())
         columns.add(fishmod.features.extras.ExtrasMenu.column())
         columns.add(fishmod.features.garden.GardenMenu.column())
+        columns.add(fishmod.features.achievements.AchMenu.column())
         columns.add(visuals)
         columns.add(cosmetics)
         if (cheats.features.isNotEmpty()) columns.add(cheats)
@@ -2332,6 +2333,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             closeFinalized = true
             try { Config.manager.save() } catch (t: Throwable) { FishDiag.fail("FishModScreen.8", "Config save on /fm close failed", t) }
             try { FishConfig.manager.save() } catch (t: Throwable) { FishDiag.fail("FishModScreen.9", "FishConfig save on /fm close failed", t) }
+            fishmod.features.achievements.AchUsage.onConfigSaved()
             super.onClose()
             return
         }
@@ -4342,6 +4344,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             fishmod.features.rift.RiftMenu.describe(name)?.let { return it }
             fishmod.features.extras.ExtrasMenu.describe(name)?.let { return it }
             fishmod.features.garden.GardenMenu.describe(name)?.let { return it }
+            fishmod.features.achievements.AchMenu.describe(name)?.let { return it }
             return when (name) {
                 "Chat" -> "Smart Copy, Compact Chat, Infinite History, Search, Filter"
                 "Mod Prefix" -> "Tag FishMod's chat output with a prefix"

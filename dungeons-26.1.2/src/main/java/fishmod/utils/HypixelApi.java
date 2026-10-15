@@ -70,7 +70,7 @@ public class HypixelApi {
         "enchanting", 60, "alchemy", 50, "taming", 60, "hunting", 50, "carpentry", 50
     );
 
-    private static double skillLevelFor(long xp, int cap) {
+    public static double skillLevelFor(long xp, int cap) {
         int level = 0;
         for (int i = Math.min(cap, SKILL_XP_TABLE.length - 1); i >= 0; i--) {
             if (xp >= SKILL_XP_TABLE[i]) { level = i; break; }
@@ -616,6 +616,38 @@ public class HypixelApi {
             .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.26", "fetchProfilesSilent request future failed", e); callback.onData(failedData()); return null; });
     }
 
+    // Raw selected-profile member JSON for uuid (null on any failure), shared cache with other lookups
+    public static void fetchSelectedMember(String uuidStr, java.util.function.Consumer<JsonObject> cb) {
+        HttpRequest req;
+        try {
+            req = HttpRequest.newBuilder()
+                .uri(URI.create(PROXY_URL + "/skyblock/profiles?uuid=" + uuidStr))
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
+                .header("User-Agent", "Mozilla/5.0")
+                .timeout(Duration.ofSeconds(10))
+                .GET()
+                .build();
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.ach1", "fetchSelectedMember build failed", e); cb.accept(null); return; }
+        HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+            .thenAccept(resp -> {
+                if (friendlyProxyError(resp) != null) { cb.accept(null); return; }
+                try {
+                    JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
+                    if (!root.has("success") || !root.get("success").getAsBoolean() || !root.has("profiles") || !root.get("profiles").isJsonArray()) { cb.accept(null); return; }
+                    for (JsonElement profileEl : root.getAsJsonArray("profiles")) {
+                        JsonObject profile = profileEl.getAsJsonObject();
+                        if (!profile.has("selected") || !profile.get("selected").getAsBoolean()) continue;
+                        JsonObject members = profile.getAsJsonObject("members");
+                        if (members == null || !members.has(uuidStr)) continue;
+                        cb.accept(members.getAsJsonObject(uuidStr));
+                        return;
+                    }
+                    cb.accept(null);
+                } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.ach2", "fetchSelectedMember parse failed", e); cb.accept(null); }
+            })
+            .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.ach3", "fetchSelectedMember request failed", e); cb.accept(null); return null; });
+    }
+
     public static void getByName(Minecraft mc, String ign, DungeonDataCallback callback) {
         mc.schedule(() -> Misc.addChatMessage(Component.literal("§7Looking up " + ign + "...")));
         resolveUuid(ign, 0, uuid -> {
@@ -757,7 +789,7 @@ public class HypixelApi {
         return result;
     }
 
-    private static String computeSkillAverage(JsonObject member) {
+    public static String computeSkillAverage(JsonObject member) {
         try {
             JsonObject nested = null;
             if (member.has("player_data") && member.get("player_data").isJsonObject()) {

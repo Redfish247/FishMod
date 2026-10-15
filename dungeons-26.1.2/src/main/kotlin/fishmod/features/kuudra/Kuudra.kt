@@ -149,6 +149,7 @@ object Kuudra {
             supplies = m.groupValues[2].toInt()
             val t = if (phaseStart[1] > 0) now() - phaseStart[1] else 0L
             supplyTimes.add(m.groupValues[1] to t)
+            if (m.groupValues[1] == Minecraft.getInstance().player?.name?.string) fishmod.features.achievements.AchBus.post(fishmod.features.achievements.AchEvent.SupplyDelivered)
             if (S.kuudraAlerts && S.kuudraAlertSupplies && supplies == m.groupValues[3].toInt()) alert("§a§lSupplies ${supplies}/${supplies}", "")
             if (S.kuudraSupplyTimes && phase == 1) {
                 FishMsg.send("§6${m.groupValues[1]} §a§lrecovered a supply in ${fmt(t)}! §r§8(${m.groupValues[2]}/${m.groupValues[3]})")
@@ -165,6 +166,7 @@ object Kuudra {
         phaseStart[p - 1] = t
         if (p > 1 && phaseStart[p - 2] > 0) KuudraHuds.onSplit(p - 2, t - phaseStart[p - 2])
         phase = p
+        if (p == 3) fishmod.features.achievements.AchBus.post(fishmod.features.achievements.AchEvent.BallistaBuilt)
         if (S.kuudraAlerts && S.kuudraAlertPhase) when (p) {
             2 -> alert("§e§lBuild started", "")
             3 -> alert("§a§lBallista built", "§7Eat / stun phase")
@@ -179,6 +181,7 @@ object Kuudra {
         KuudraHuds.onEnd(t - phaseStart[0])
         phase = 5
         KuudraChests.onRunEnd()
+        fishmod.features.achievements.AchBus.post(fishmod.features.achievements.AchEvent.KuudraEnded(tier, t - phaseStart[0]))
     }
 
     private fun onPre() {

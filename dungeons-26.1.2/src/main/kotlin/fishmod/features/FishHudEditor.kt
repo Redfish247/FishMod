@@ -1191,6 +1191,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
     override fun onClose() {
         try { FishConfig.manager.save() } catch (t: Throwable) { FishDiag.fail("FishHudEditor.9", "config save on HUD editor close failed", t) }
+        fishmod.features.achievements.AchUsage.onHudSaved()
         try { fishmod.features.chat.ChatRuleStore.save() } catch (t: Throwable) { FishDiag.fail("FishHudEditor.10", "chat rule save on HUD editor close failed", t) }
         Minecraft.getInstance().setScreen(parent)
     }

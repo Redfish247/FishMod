@@ -109,6 +109,9 @@ object Pests {
         return out
     }
 
+    fun profitValue(): Double = drops.entries.sumOf { (k, v) -> Garden.priceOf(k) * v }
+    fun killCount(): Int = kills
+
     fun resetProfit() { drops.clear(); kills = 0 }
 
     // "Configure Plots" menu: 5x5 grid from slot 2, names like "Plot - 4" or custom
