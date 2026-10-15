@@ -67,6 +67,16 @@ object RiftMobs {
         bacteUntil = now + 120_000L
     }
 
+    // Tentacles are slimes that stay put; Bacte itself is the huge one
+    private const val BOSS_SIZE = 10
+    private val still = HashMap<Int, Pair<Vec3, Long>>()
+    private fun stillFor(e: Entity): Long {
+        val now = System.currentTimeMillis(); val p = e.position()
+        val prev = still[e.id]
+        if (prev == null || prev.first.distanceToSqr(p) > 0.0025) { still[e.id] = p to now; return 0L }
+        return now - prev.second
+    }
+
     // Slimes (they fly off in a straight line when hit) and tentacles; only while a Bacte fight is on
     private fun findBacte(me: Entity, windowOpen: Boolean) {
         val lv = Minecraft.getInstance().level ?: return
@@ -74,22 +84,28 @@ object RiftMobs {
         val sizes = ArrayList<String>()
         val sl = ArrayList<Entity>(); val te = ArrayList<Entity>()
         var boss = false
+        var tagStand: Entity? = null
         for (e in lv.getEntities(me, me.boundingBox.inflate(48.0)) { true }) {
             if (!e.isAlive) continue
             val n = (e.customName ?: e.name).string.let { Rift.strip(it) }
             val stand = e is net.minecraft.world.entity.decoration.ArmorStand
             if (stand && e.customName == null) continue
             val tent = "entacle" in n || "lobercyst" in n
-            if (BACTE_TAG.containsMatchIn(n) || "Bacte" in n) boss = true
+            if (BACTE_TAG.containsMatchIn(n) || "Bacte" in n) { boss = true; if (stand) tagStand = e }
             val slime = e is net.minecraft.world.entity.monster.Slime
             val medium = slime && (e as net.minecraft.world.entity.monster.Slime).size in S.riftBacteSizeMin..S.riftBacteSizeMax
             if (slime) { val sz = (e as net.minecraft.world.entity.monster.Slime).size; val v = e.deltaMovement
                 sizes.add("#$sz dist=${Math.round(Math.sqrt(e.distanceToSqr(me)))} y=${Math.round(e.y)} spd=${"%.2f".format(Math.sqrt(v.x * v.x + v.z * v.z))}") }
             else if (tent || BACTE_TAG.containsMatchIn(n)) cand.add("${e.type.descriptionId.substringAfterLast('.')}:'${n.take(50)}'")
-            if (medium) sl.add(e) else if (tent) te.add(if (stand) Rift.mobUnder(e) ?: e else e)
+            if (medium) sl.add(e)
+            else if (tent) te.add(if (stand) Rift.mobUnder(e) ?: e else e)
+            else if (slime && stillFor(e) >= 750L && (e as net.minecraft.world.entity.monster.Slime).size < BOSS_SIZE) te.add(e)
         }
         bacteDebug = (cand + sizes.sortedBy { it.substringAfter("#").substringBefore(" ").toInt() }).take(30)
+        // the boss is also stationary: drop whatever slime sits under its health tag
+        tagStand?.let { st -> Rift.mobUnder(st)?.let { b -> te.removeAll { it.id == b.id } } }
         val on = boss || windowOpen
+        if (still.size > 200) still.clear()
         bacteSlimes = if (on) sl else emptyList()
         bacte = if (on) te.distinct() else emptyList()
     }
