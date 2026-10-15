@@ -99,8 +99,10 @@ object RiftMobs {
         for ((stand, name) in Rift.namedStands(48.0)) {
             if (S.riftCrux && stand.isAlive && "Crux" in name && stand.distanceToSqr(me) <= range * range) {
                 CRUX_HINTS.entries.firstOrNull { name.contains(it.key) && hintOn(it.key) }?.let { h ->
-                    // One label per mob: skip stands within 2 blocks of an already-kept one
-                    if (out.none { it.text == h.value && it.e.distanceToSqr(stand) < 4.0 }) { out.add(Mark(stand, h.value)); names.add(name) }
+                    // One label per hint kind: keep only the nearest stand (Volt's ring is many stands)
+                    val prev = out.indexOfFirst { it.text == h.value }
+                    if (prev < 0) { out.add(Mark(stand, h.value)); names.add(name) }
+                    else if (stand.distanceToSqr(me) < out[prev].e.distanceToSqr(me)) out[prev] = Mark(stand, h.value)
                 }
             }
             if (S.riftFleespook && "Fleespook" in name) flee = stand
