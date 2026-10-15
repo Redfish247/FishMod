@@ -50,6 +50,7 @@ object RiftMenu {
         bacte.sub.add(ToggleSetting("Slime Path Line", "Flat line of a hit slime's flight; only while a tentacle or Blobercyst is alive", S::riftBacteLine))
         bacte.sub.add(ToggleSetting("Spawn Title", "", S::riftBacteTitle))
         bacte.sub.add(ToggleSetting("Slime Boxes", "Green through-wall boxes on slimes", S::riftBacteSlimeBoxes))
+        bacte.sub.add(ToggleSetting("Hide Slimes", "Stop drawing the slimes themselves (needs Slime Boxes)", S::riftBacteHideSlimes))
         bacte.sub.add(ToggleSetting("Shoot Alert", "Title + sound when a hit slime would reach a tentacle or Blobercyst", S::riftBacteShootAlert))
         bacte.sub.add(ColorPickerSetting("Line Colour", "", S::riftBacteColor))
         col.features.add(bacte)

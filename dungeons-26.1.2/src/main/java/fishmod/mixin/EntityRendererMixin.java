@@ -124,6 +124,10 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
     private void fishmod$cullEntities(T entity, Frustum frustum, double camX, double camY, double camZ,
                                      CallbackInfoReturnable<Boolean> cir) {
         try {
+            if (fishmod.features.rift.RiftMobs.INSTANCE.shouldHideSlime(entity)) {
+                cir.setReturnValue(false);
+                return;
+            }
             if (fishmod.features.dungeon.puzzles.odin.BlazeSolver.INSTANCE.shouldHideMob(entity)) {
                 cir.setReturnValue(false);
                 return;
