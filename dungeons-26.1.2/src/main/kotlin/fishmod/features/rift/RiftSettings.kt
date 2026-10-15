@@ -44,6 +44,7 @@ object RiftSettings {
     // Living Cave
     @ConfigValue @JvmField var riftSnake: Boolean = false
     @ConfigValue @JvmField var riftSnakeColor: Int = 0xFF5555FF.toInt()
+    @ConfigValue @JvmField var riftSnakeTailColor: Int = 0xFF55FF55.toInt()
     @ConfigValue @JvmField var riftSnakeHeadColor: Int = 0xFFFF5555.toInt()
 
     // Mirrorverse / Stillgore / Colosseum
