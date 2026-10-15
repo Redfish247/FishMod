@@ -30,8 +30,22 @@ object ContainerValue {
 
     private val CODE = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val STORAGE_TITLE =
-        Regex("^(Storage|Ender Chest(?: ✦)? \\([1-9]/[1-9]\\)|.+ Backpack(?: ✦)? \\(Slot #\\d+\\))$")
+        Regex("^(Storage|Rift Storage|(?:Ender Chest|Rift Storage)(?: ✦)? \\([1-9]/[1-9]\\)|.+ Backpack(?: ✦)? \\(Slot #\\d+\\))$")
     private val PLAIN_CHEST = setOf("Chest", "Large Chest", "Ender Chest", "Personal Vault")
+
+    private val MOTES = Regex("Motes Sell Price:?\s*([0-9,]+)")
+    private fun inRift() = Location.`in`(Location.THE_RIFT)
+
+    // Rift items are worth motes: read the "Motes Sell Price" lore line
+    private fun motesValue(stack: ItemStack): Double {
+        val lore = stack.get(net.minecraft.core.component.DataComponents.LORE) ?: return 0.0
+        for (l in lore.lines()) {
+            val m = MOTES.find(CODE.replace(l.string, "")) ?: continue
+            return m.groupValues[1].replace(",", "").toDoubleOrNull() ?: 0.0
+        }
+        return 0.0
+    }
+    private fun unitName() = if (inRift()) " Motes" else ""
 
     private class Row(val name: String, var count: Int, var value: Double, val color: Int)
 
@@ -127,7 +141,7 @@ object ContainerValue {
             val stack: ItemStack = slot.item
             if (stack.isEmpty) continue
             if (ItemUtil.getId(stack) == null) continue
-            val unit = ItemValue.estimate(stack)
+            val unit = if (inRift()) motesValue(stack) else ItemValue.estimate(stack)
             if (!FishDiag.check(!unit.isNaN() && !unit.isInfinite(), "ContainerValue.3") { "item value not finite for ${stack.hoverName.string}: $unit" }) continue
             if (unit <= 0.0) continue
             val v = unit * stack.count
@@ -148,12 +162,12 @@ object ContainerValue {
         val lines = ArrayList<Component>(shown.size)
         for (r in shown) {
             val label = if (r.count > 1) "${r.count}x ${trim(r.name)}" else trim(r.name)
-            maxw = maxOf(maxw, font.width("$label  ${abbr(r.value)}"))
+            maxw = maxOf(maxw, font.width("$label  ${abbr(r.value)}${unitName()}"))
             val rgb = if (r.color != 0) r.color and 0xFFFFFF else GREY
             lines.add(
                 Component.literal(label).withStyle { it.withColor(rgb) }
                     .append(Component.literal("  ").withStyle { it.withColor(GREY) })
-                    .append(Component.literal(abbr(r.value)).withStyle { it.withColor(GOLD) }),
+                    .append(Component.literal(abbr(r.value) + unitName()).withStyle { it.withColor(if (inRift()) 0xAA00AA else GOLD) }),
             )
         }
         cachedLines = lines
@@ -161,8 +175,8 @@ object ContainerValue {
             Component.literal("… +${list.size - shown.size} more").withStyle { it.withColor(DIM) }
         else null
         cachedTotalLine = Component.literal("Total: ").withStyle { it.withColor(YELLOW) }
-            .append(Component.literal(abbr(sum)).withStyle { it.withColor(GOLD) })
-        widthPx = maxOf(maxw, font.width("Total: ${abbr(total)}"))
+            .append(Component.literal(abbr(sum) + unitName()).withStyle { it.withColor(if (inRift()) 0xAA00AA else GOLD) })
+        widthPx = maxOf(maxw, font.width("Total: ${abbr(total)}${unitName()}"))
     }
 
     private fun trim(s: String): String = if (s.length <= NAME_MAX) s else s.take(NAME_MAX - 1) + "…"
