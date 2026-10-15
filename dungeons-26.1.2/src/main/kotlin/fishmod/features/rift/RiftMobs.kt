@@ -65,7 +65,7 @@ object RiftMobs {
         bacteUntil = now + 120_000L
     }
 
-    // Every Bacte-named mob, tentacle and slime in range, nearest first
+    // Bacte (found by its health tag), tentacles; nearest slime only as a fallback while the chat window is open
     private fun findBacte(me: Entity, windowOpen: Boolean): List<Entity> {
         val lv = Minecraft.getInstance().level ?: return emptyList()
         val cand = ArrayList<String>()
@@ -83,7 +83,7 @@ object RiftMobs {
             else if (hit) out.add(if (stand) Rift.mobUnder(e) ?: e else e)
         }
         bacteDebug = cand.take(12)
-        if (windowOpen || out.isNotEmpty()) out.addAll(slimes)
+        if (out.isEmpty() && windowOpen) slimes.minByOrNull { it.distanceToSqr(me) }?.let { out.add(it) }
         return out.distinct().sortedBy { it.distanceToSqr(me) }.take(12)
     }
 
