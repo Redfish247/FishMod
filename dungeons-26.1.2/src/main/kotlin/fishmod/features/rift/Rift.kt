@@ -23,13 +23,13 @@ object Rift {
     @Volatile private var cachedArea = ""
     private var tick = 0
 
-    // Tab "Area:" widget first, then any sidebar line naming a known Rift area, then Mining's raw sidebar glyph line
+    // Sidebar line naming a known Rift area first; the tab widget only says "The Rift" there, so it is a last resort
     private fun pollArea() {
-        val tab = fishmod.features.mining.Mining.tabLine("Area:")?.removePrefix("Area:")?.trim().orEmpty()
-        if (tab.isNotEmpty()) { cachedArea = tab; return }
         val lines = fishmod.features.mining.Mining.sidebar
         val hit = lines.firstOrNull { l -> KNOWN.any { l.contains(it, ignoreCase = true) } }
-        cachedArea = hit?.dropWhile { !it.isLetter() }?.trim() ?: fishmod.features.mining.Mining.area
+        if (hit != null) { cachedArea = hit.dropWhile { !it.isLetter() }.trim(); return }
+        val tab = fishmod.features.mining.Mining.tabLine("Area:")?.removePrefix("Area:")?.trim().orEmpty()
+        cachedArea = if (tab.isNotEmpty() && !tab.equals("The Rift", true)) tab else fishmod.features.mining.Mining.area
     }
 
     // Current Rift area name (e.g. "Dreadfarm")

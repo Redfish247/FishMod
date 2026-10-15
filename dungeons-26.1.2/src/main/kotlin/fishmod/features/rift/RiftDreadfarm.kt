@@ -64,7 +64,7 @@ object RiftDreadfarm {
     }
 
     private fun tickCap() {
-        if (!S.riftAgaricus || !Rift.inRift() || Rift.heldId() != "FARMING_WAND") { capPos = null; return }
+        if (!S.riftAgaricus || !Rift.inRift() || !wandHeld()) { capPos = null; return }
         val mc = Minecraft.getInstance()
         val hit = mc.hitResult as? BlockHitResult ?: run { capPos = null; return }
         val level = mc.level ?: return
