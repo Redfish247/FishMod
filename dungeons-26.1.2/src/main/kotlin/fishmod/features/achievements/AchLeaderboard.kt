@@ -186,29 +186,21 @@ object AchLeaderboard {
             offline -> "§c(offline) §8${ago()}"
             else -> "§8${ago()}"
         }
-        // Panels sit side by side, perpendicular to the viewer's line to the board
-        val dx = eye.x - base.x
-        val dz = eye.z - base.z
-        val len = Math.sqrt(dx * dx + dz * dz).coerceAtLeast(0.001)
-        val rx = dz / len
-        val rz = -dx / len
+        // One rigid board facing the viewer (yaw only) so every line turns together
+        val yaw = Math.atan2(eye.x - base.x, eye.z - base.z).toFloat()
         val off = 2.3 * sc
-
         val panels = listOf(Triple("§b§lTop Achievement Points", lines(false), -off), Triple("§d§lTop Secret Hunters", lines(true), off))
         val rows = if (loaded) panels.maxOf { it.second.size } else 0
-        // The board floats above the configured spot
-        var y = base.y + 0.8 + (rows + 3) * lh
-        RenderUtils.renderText(ctx, m, Component.literal("§6§l✦ FishMod Achievements ✦"), base.x, y, base.z, (sc * 1.25).toFloat())
+        var y = 0.8 + (rows + 3) * lh
+        RenderUtils.renderBoardText(m, Component.literal("§6§l✦ FishMod Achievements ✦"), base, yaw, 0.0, y, (sc * 1.25).toFloat())
         y -= lh * 1.4
         for ((title, ls, side) in panels) {
             var ly = y
-            val px = base.x + rx * side
-            val pz = base.z + rz * side
-            RenderUtils.renderText(ctx, m, Component.literal(title), px, ly, pz, sc.toFloat())
+            RenderUtils.renderBoardText(m, Component.literal(title), base, yaw, side, ly, sc.toFloat())
             ly -= lh * 1.2
-            for (l in ls) { RenderUtils.renderText(ctx, m, Component.literal(l), px, ly, pz, sc.toFloat()); ly -= lh }
+            for (l in ls) { RenderUtils.renderBoardText(m, Component.literal(l), base, yaw, side, ly, sc.toFloat()); ly -= lh }
         }
-        RenderUtils.renderText(ctx, m, Component.literal(status), base.x, base.y + 0.8, base.z, (sc * 0.9).toFloat())
+        RenderUtils.renderBoardText(m, Component.literal(status), base, yaw, 0.0, 0.8, (sc * 0.9).toFloat())
     }
 
     fun here() {
