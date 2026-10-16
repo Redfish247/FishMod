@@ -100,6 +100,7 @@ object GardenMenu {
         sens.sub.add(SliderIntSetting("Sensitivity %", "Of your normal setting, on the ground in a plot", S::gardenSensPercent, 5, 100))
         sens.sub.add(ToggleSetting("Only With Items", "Only lower while holding one of the items below", S::gardenSensItemsOnly))
         sens.sub.add(ToggleSetting("Farming Tool", "Hoe / axe / dicer / cane knife etc.", S::gardenSensHoe))
+        sens.sub.add(ToggleSetting("Fishing Rod", "Any fishing rod", S::gardenSensRod))
         sens.sub.add(ToggleSetting("Pest Vacuum", "", S::gardenSensVacuum))
         sens.sub.add(ToggleSetting("Sprayonator", "", S::gardenSensSprayonator))
         sens.sub.add(ToggleSetting("Squeaky Mousemat", "", S::gardenSensMousemat))
