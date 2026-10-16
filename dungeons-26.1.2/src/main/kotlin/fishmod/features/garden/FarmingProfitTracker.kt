@@ -35,6 +35,7 @@ object FarmingProfitTracker {
         var items: MutableMap<String, Long> = LinkedHashMap()  // "CAT|Item Name" -> count
         var counts: MutableMap<String, Long> = LinkedHashMap()
         var timeMs = 0L
+        var feverMs = 0L
     }
     private class Persisted { var session = Tracker(); var total = Tracker() }
 
@@ -280,6 +281,7 @@ object FarmingProfitTracker {
         val profit = rows.sumOf { it.value }
         val ph = perHour(profit, t)
         out += "§7Playtime §f${fishmod.features.diana.DianaTracker.fmtTime(t.timeMs)}"
+        if (t.feverMs > 0) out += "${Garden.legacy(S.gardenFeverColor)}Crop Fever §f${fishmod.features.diana.DianaTracker.fmtTime(t.feverMs)}"
         out += "§eProfit §6${Garden.short(profit)} §7(${Garden.short(ph)}/h)"
         cache = out
         return out
@@ -292,6 +294,7 @@ object FarmingProfitTracker {
     // Session items ("CAT|Item" -> count) and active time, for the other garden HUDs
     fun sessionItems(): Map<String, Long> = HashMap(data.session.items)
     fun sessionTimeMs(): Long = data.session.timeMs
+    fun addFeverTime(ms: Long) { data.session.feverMs += ms; data.total.feverMs += ms; changed() }
 
     fun resetSession(msg: Boolean = true) { data.session = Tracker(); changed(); if (msg) FishMsg.send("§aFarming profit session reset.") }
     fun resetTotal() { data.total = Tracker(); changed(); FishMsg.send("§aFarming profit total reset.") }

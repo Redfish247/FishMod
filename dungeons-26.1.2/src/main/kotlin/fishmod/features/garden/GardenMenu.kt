@@ -87,8 +87,8 @@ object GardenMenu {
         fp.sub.add(ButtonSetting("Reset Total", "", "Reset") { FarmingProfitTracker.resetTotal() })
         col.features.add(fp)
 
-        val cf = Feature("Crop Fever Tracker", S::gardenFever)
-        cf.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenFeverColor))
+        val cf = Feature("Crop Fever Time", S::gardenFever)
+        cf.sub.add(ColorPickerSetting("Line Colour", "Nearest chat colour is used", S::gardenFeverColor))
         col.features.add(cf)
 
         val ff = Feature("Fortune Bonus Message", S::gardenFortuneMsg)
@@ -98,6 +98,11 @@ object GardenMenu {
 
         val sens = Feature("Mouse Sensitivity Reducer", S::gardenSens)
         sens.sub.add(SliderIntSetting("Sensitivity %", "Of your normal setting, on the ground in a plot", S::gardenSensPercent, 5, 100))
+        sens.sub.add(ToggleSetting("Only With Items", "Only lower while holding one of the items below", S::gardenSensItemsOnly))
+        sens.sub.add(ToggleSetting("Farming Tool", "Hoe / axe / dicer / cane knife etc.", S::gardenSensHoe))
+        sens.sub.add(ToggleSetting("Pest Vacuum", "", S::gardenSensVacuum))
+        sens.sub.add(ToggleSetting("Sprayonator", "", S::gardenSensSprayonator))
+        sens.sub.add(ToggleSetting("Squeaky Mousemat", "", S::gardenSensMousemat))
         sens.sub.add(ToggleSetting("Chat Message", "", S::gardenSensMsg))
         sens.sub.add(ToggleSetting("HUD", "Shown while lowered", S::gardenSensHud))
         sens.sub.add(ColorPickerSetting("Colour", "Nearest chat colour is used", S::gardenSensColor))
@@ -146,7 +151,7 @@ object GardenMenu {
         "Pest Finder" -> "Waypoints on infested plots"
         "Pest Timer HUD" -> "Pest count, cooldown, plots, spray, bonus"
         "Farming Profit Tracker" -> "Pests, crops, visitors and rare crops: session/total profit per hour"
-        "Crop Fever Tracker" -> "Drops and profit/hour during Crop Fever, with a farming tool held"
+        "Crop Fever Time" -> "Adds total time spent farming during Crop Fever to the Farming Profit tracker"
         "Fortune Bonus Message" -> "Chat message when your bonus Farming Fortune changes"
         "Mouse Sensitivity Reducer" -> "Lowers mouse sensitivity while on the ground in a plot"
         "Speed Sign Helper" -> "Best speed and yaw/pitch for the held crop on the sign screen"
