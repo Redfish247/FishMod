@@ -31,6 +31,11 @@ object GardenMenu {
         shop.sub.add(ToggleSetting("Show Prices", "", S::gardenShoppingPrices))
         shop.sub.add(ButtonSetting("Clear List", "", "Clear") { Visitors.clear() })
         shop.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenShoppingColor))
+        shop.sub.add(ColorPickerSetting("Item Name Colour", "Nearest chat colour is used", S::gardenShoppingNameColor))
+        shop.sub.add(ColorPickerSetting("Amount Colour", "Nearest chat colour is used", S::gardenShoppingAmountColor))
+        shop.sub.add(ColorPickerSetting("Price Colour", "Nearest chat colour is used", S::gardenShoppingPriceColor))
+        shop.sub.add(ColorPickerSetting("Total Colour", "Nearest chat colour is used", S::gardenShoppingTotalColor))
+        shop.sub.add(ColorPickerSetting("Hint Colour", "Nearest chat colour is used", S::gardenShoppingHintColor))
         col.features.add(shop)
 
         col.features.add(Feature("Visitor Menu Info", S::gardenVisitorMenuInfo))
@@ -82,6 +87,30 @@ object GardenMenu {
         fp.sub.add(ButtonSetting("Reset Total", "", "Reset") { FarmingProfitTracker.resetTotal() })
         col.features.add(fp)
 
+        val mph = Feature("Money Per Hour", S::gardenMoneyHour)
+        mph.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenMoneyHourColor))
+        col.features.add(mph)
+
+        val cf = Feature("Crop Fever Tracker", S::gardenFever)
+        cf.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenFeverColor))
+        col.features.add(cf)
+
+        val ff = Feature("Fortune Bonus Message", S::gardenFortuneMsg)
+        ff.sub.add(InputSetting("Message", "{bonus} = bonus value", S::gardenFortuneMsgText))
+        ff.sub.add(ColorPickerSetting("Colour", "Nearest chat colour is used", S::gardenFortuneMsgColor))
+        col.features.add(ff)
+
+        val sens = Feature("Mouse Sensitivity Reducer", S::gardenSens)
+        sens.sub.add(SliderIntSetting("Sensitivity %", "Of your normal setting, on the ground in a plot", S::gardenSensPercent, 5, 100))
+        sens.sub.add(ToggleSetting("Chat Message", "", S::gardenSensMsg))
+        sens.sub.add(ToggleSetting("HUD", "Shown while lowered", S::gardenSensHud))
+        sens.sub.add(ColorPickerSetting("Colour", "Nearest chat colour is used", S::gardenSensColor))
+        col.features.add(sens)
+
+        val ss = Feature("Speed Sign Helper", S::gardenSpeedSign)
+        ss.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenSpeedSignColor))
+        col.features.add(ss)
+
         val comp = Feature("Composter HUD", S::gardenComposterHud)
         comp.sub.add(ToggleSetting("Inactive Warning", "Title when the composter runs dry", S::gardenComposterWarn))
         comp.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenComposterColor))
@@ -98,6 +127,9 @@ object GardenMenu {
         rc.sub.add(ColorPickerSetting("Colour", "Nearest chat colour is used", S::gardenRareCropColor))
         col.features.add(rc)
 
+        GardenMilestoneMenu.addTo(col)
+        GardenExtrasMenu.add(col)
+
         return col
     }
 
@@ -113,9 +145,14 @@ object GardenMenu {
         "Pest Finder" -> "Waypoints on infested plots"
         "Pest Timer HUD" -> "Pest count, cooldown, plots, spray, bonus"
         "Farming Profit Tracker" -> "Pests, crops, visitors and rare crops: session/total profit per hour"
+        "Money Per Hour" -> "Current crop and coins/hour from crops, seeds, Mooshroom, Bountiful and armor drops"
+        "Crop Fever Tracker" -> "Drops and profit/hour during Crop Fever, with a farming tool held"
+        "Fortune Bonus Message" -> "Chat message when your bonus Farming Fortune changes"
+        "Mouse Sensitivity Reducer" -> "Lowers mouse sensitivity while on the ground in a plot"
+        "Speed Sign Helper" -> "Best speed and yaw/pitch for the held crop on the sign screen"
         "Composter HUD" -> "Composter widget from the tab list"
         "Jacob's Contest HUD" -> "Jacob's Contest widget from the tab list"
         "Rare Crop Tracker" -> "Counts RARE CROP drops"
-        else -> null
+        else -> GardenMilestoneMenu.describe(name) ?: GardenExtrasMenu.describe(name)
     }
 }

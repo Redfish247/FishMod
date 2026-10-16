@@ -33,6 +33,8 @@ object FishConfig {
             fishmod.features.kuudra.KuudraSettings::class.java,
             fishmod.features.rift.RiftSettings::class.java,
             fishmod.features.garden.GardenSettings::class.java,
+            fishmod.features.garden.GardenExtraSettings::class.java,
+            fishmod.features.garden.GardenMilestoneSettings::class.java,
             fishmod.features.achievements.AchSettings::class.java
         )
 

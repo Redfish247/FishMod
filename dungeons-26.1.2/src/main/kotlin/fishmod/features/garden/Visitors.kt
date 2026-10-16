@@ -187,6 +187,9 @@ object Visitors {
         return n
     }
 
+    private fun L(c: Int) = Garden.legacy(c)
+    private fun hint() = L(S.gardenShoppingHintColor) + "Click: open + copy amount"
+
     private fun shoppingLines(): List<String> {
         val agg = LinkedHashMap<String, Int>()
         for (reqs in shopping.values) for (r in reqs) agg[r.name] = (agg[r.name] ?: 0) + r.amount
@@ -194,13 +197,13 @@ object Visitors {
         var total = 0.0
         for ((n, a) in agg) {
             val h = have(n)
-            val c = if (h >= a) "§a" else "§f"
-            var line = "$c$n §8x${"%,d".format(a)}"
+            val c = if (h >= a) "§a" else L(S.gardenShoppingNameColor)
+            var line = "$c$n ${L(S.gardenShoppingAmountColor)}x${"%,d".format(a)}"
             if (h > 0) line += " §7($h)"
-            if (S.gardenShoppingPrices) { val p = Garden.priceOf(n) * a; total += p; line += " §6${Garden.short(p)}" }
+            if (S.gardenShoppingPrices) { val p = Garden.priceOf(n) * a; total += p; line += " ${L(S.gardenShoppingPriceColor)}${Garden.short(p)}" }
             out += line
         }
-        if (S.gardenShoppingPrices) out += "§7Total: §6${Garden.short(total)}"
+        if (S.gardenShoppingPrices) out += "${L(S.gardenShoppingTotalColor)}Total: ${L(S.gardenShoppingPriceColor)}${Garden.short(total)}"
         return out
     }
 
@@ -226,14 +229,14 @@ object Visitors {
         var total = 0.0
         for ((n, a) in agg) {
             val h = have(n)
-            var line = (if (h >= a) "§a" else "§f") + n + " §8x${"%,d".format(a)}"
+            var line = (if (h >= a) "§a" else L(S.gardenShoppingNameColor)) + n + " ${L(S.gardenShoppingAmountColor)}x${"%,d".format(a)}"
             if (h > 0) line += " §7($h)"
-            if (S.gardenShoppingPrices) { val p = Garden.priceOf(n) * a; total += p; line += " §6${Garden.short(p)}" }
+            if (S.gardenShoppingPrices) { val p = Garden.priceOf(n) * a; total += p; line += " ${L(S.gardenShoppingPriceColor)}${Garden.short(p)}" }
             rows.add(Triple(n, line, maxOf(if (h in 1 until a) a - h else a, 1)))
         }
         val head = Garden.legacy(S.gardenShoppingColor) + "§lShopping List"
-        val foot = if (S.gardenShoppingPrices) "§7Total: §6${Garden.short(total)}" else null
-        val w = (listOf(head, foot ?: "") + rows.map { it.second } + "§8Click: open + copy amount").maxOf { font.width(Component.literal(it)) }
+        val foot = if (S.gardenShoppingPrices) "${L(S.gardenShoppingTotalColor)}Total: ${L(S.gardenShoppingPriceColor)}${Garden.short(total)}" else null
+        val w = (listOf(head, foot ?: "") + rows.map { it.second } + hint()).maxOf { font.width(Component.literal(it)) }
         val lh = font.lineHeight + 1
         val acc = screen as fishmod.mixin.accessors.HandledScreenAccessor
         val x = (acc.bgX - w - 6).coerceAtLeast(2)
@@ -250,7 +253,7 @@ object Visitors {
             out.add(Hit(x, y, x + w, y + lh, n, amt)); y += lh
         }
         if (foot != null) { ctx.text(font, Component.literal(foot), x, y, -1, true); y += lh }
-        ctx.text(font, Component.literal("§8Click: open + copy amount"), x, y, -1, true)
+        ctx.text(font, Component.literal(hint()), x, y, -1, true)
         hits = out
     }
 
