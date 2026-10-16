@@ -20,7 +20,7 @@ object GardenWidgets {
             composter = Mining.tabWidget("Composter:")
             jacob = Mining.tabWidget("Jacob's Contest:")
             val idle = composter.any { it.contains("INACTIVE", true) || it.startsWith("Fuel: 0") || it.startsWith("Organic Matter: 0") }
-            if (idle && !composterWarned && S.gardenComposterWarn) Mining.title(Garden.legacy(S.gardenComposterWarnColor) + "Composter Inactive!", "", 2000, true)
+            if (idle && !composterWarned && S.gardenComposterWarn) GardenTitles.show(Garden.legacy(S.gardenComposterWarnColor) + "Composter Inactive!", "", 2000, true)
             composterWarned = idle
         }
         Events.ON_GAME_MESSAGE.register { t ->

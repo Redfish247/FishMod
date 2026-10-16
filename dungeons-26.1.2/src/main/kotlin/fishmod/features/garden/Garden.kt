@@ -20,6 +20,7 @@ object Garden {
         FarmingProfitTracker.init()
         GardenWidgets.init()
         GardenAlerts.init()
+        GardenTitles.init()
         GardenMilestones.init()
         GardenLevels.init()
         GardenMisc.init()

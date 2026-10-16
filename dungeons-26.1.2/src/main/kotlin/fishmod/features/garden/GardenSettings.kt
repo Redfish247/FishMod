@@ -56,6 +56,9 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenShoppingHintColor: Int = 0xFF555555.toInt()
     @ConfigValue @JvmField var gardenVisitorFullColor: Int = 0xFFFF5555.toInt()
     @ConfigValue @JvmField var gardenAlert: Boolean = true
+    @ConfigValue @JvmField var gardenTitleX: Int = 300
+    @ConfigValue @JvmField var gardenTitleY: Int = 60
+    @ConfigValue @JvmField var gardenTitleScale: Double = 1.6
     @ConfigValue @JvmField var gardenAlertSeconds: Int = 4
     @ConfigValue @JvmField var gardenAlertX: Int = 300
     @ConfigValue @JvmField var gardenAlertY: Int = 90
