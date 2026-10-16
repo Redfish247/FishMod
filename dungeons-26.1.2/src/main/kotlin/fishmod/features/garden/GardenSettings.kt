@@ -16,9 +16,6 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenVisitorHideArrival: Boolean = false
     @ConfigValue @JvmField var gardenShoppingList: Boolean = false
     @ConfigValue @JvmField var gardenShoppingPrices: Boolean = true
-    @ConfigValue @JvmField var gardenShoppingHudX: Int = 5
-    @ConfigValue @JvmField var gardenShoppingHudY: Int = 90
-    @ConfigValue @JvmField var gardenShoppingHudScale: Double = 1.0
     @ConfigValue @JvmField var gardenVisitorMenuInfo: Boolean = false
     @ConfigValue @JvmField var gardenRareRewardWarn: Boolean = false
     @ConfigValue @JvmField var gardenRareRewardList: String = "Flowering Bouquet, Overgrown Grass, Green Bandana, Dedication, Music Rune, Space Helmet, Cultivating, Replenish, Delicate, Copper Dye, Jungle Key, Fruit Bowl, Harbinger Potion, Pet Cake"
@@ -39,7 +36,6 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenPestFinder: Boolean = false
     @ConfigValue @JvmField var gardenPestFinderLine: Boolean = true
     @ConfigValue @JvmField var gardenPestHudColor: Int = 0xFFFF5555.toInt()
-    @ConfigValue @JvmField var gardenPestProfitColor: Int = 0xFFFF5555.toInt()
     @ConfigValue @JvmField var gardenPestMarkerColor: Int = 0xFFFF5555.toInt()
     @ConfigValue @JvmField var gardenPestLineColor: Int = 0xFFFF5555.toInt()
     @ConfigValue @JvmField var gardenComposterColor: Int = 0xFF00AA00.toInt()
@@ -49,16 +45,17 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenVisitorStatsColor: Int = 0xFF55FF55.toInt()
     @ConfigValue @JvmField var gardenShoppingColor: Int = 0xFFFFFF55.toInt()
     @ConfigValue @JvmField var gardenVisitorFullColor: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var gardenAlert: Boolean = true
+    @ConfigValue @JvmField var gardenAlertSeconds: Int = 4
+    @ConfigValue @JvmField var gardenAlertX: Int = 300
+    @ConfigValue @JvmField var gardenAlertY: Int = 90
+    @ConfigValue @JvmField var gardenAlertScale: Double = 1.6
     @ConfigValue @JvmField var gardenPestFinderColor: Int = 0xFFFF5555.toInt()
     @ConfigValue @JvmField var gardenPestFinderOpacity: Int = 20
     @ConfigValue @JvmField var gardenPestHud: Boolean = false
     @ConfigValue @JvmField var gardenPestHudX: Int = 200
     @ConfigValue @JvmField var gardenPestHudY: Int = 60
     @ConfigValue @JvmField var gardenPestHudScale: Double = 1.0
-    @ConfigValue @JvmField var gardenPestProfit: Boolean = false
-    @ConfigValue @JvmField var gardenPestProfitHudX: Int = 200
-    @ConfigValue @JvmField var gardenPestProfitHudY: Int = 120
-    @ConfigValue @JvmField var gardenPestProfitHudScale: Double = 1.0
 
     // Garden widgets
     @ConfigValue @JvmField var gardenComposterHud: Boolean = false

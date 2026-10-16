@@ -52,7 +52,7 @@ object Pests {
         Events.ON_GAME_MESSAGE.register { t -> onChat(Garden.strip(t.string).trim()); false }
         Events.ON_WORLD_CHANGE.register { tabPlots = emptyList(); trail.clear(); guess = null; false }
         Events.ON_PARTICLE.register { p ->
-            if (S.gardenPestFinder && p.particle.type === net.minecraft.core.particles.ParticleTypes.ANGRY_VILLAGER && Garden.inGarden() && holdingVacuum()) {
+            if (S.gardenPestFinder && p.particle.type === net.minecraft.core.particles.ParticleTypes.ANGRY_VILLAGER && p.count == 1 && p.maxSpeed == 0f && Garden.inGarden() && holdingVacuum()) {
                 val now = System.currentTimeMillis()
                 if (now - lastTrail > 2500L) { trail.clear(); guess = null }
                 lastTrail = now
@@ -65,12 +65,11 @@ object Pests {
             if (mc.player == null) return@register
             scrapePlots(mc.screen)
             if (tick++ % 10 != 0 || !Garden.inGarden()) return@register
-            alive = Mining.sidebar.firstOrNull { it.contains("The Garden") }?.let { COUNT.find(it)?.groupValues?.get(1)?.toIntOrNull() } ?: 0
-            tabPlots = Mining.tabLine("Plots:")?.substringAfter(":")?.split(',', '&')?.mapNotNull { idFor(it.trim()) } ?: emptyList()
+            alive = Mining.sidebar.firstOrNull { it.contains("The Garden") || it.contains("ൠ") }?.let { COUNT.find(it)?.groupValues?.get(1)?.toIntOrNull() } ?: 0
+            tabPlots = Mining.tabLine("Plots:")?.substringAfter(":")?.split(',', '&')?.mapNotNull { it.trim().toIntOrNull()?.takeIf { n -> n in 0..24 } } ?: emptyList()
             cooldown = Mining.tabLine("Cooldown:")?.substringAfter(":")?.trim() ?: ""
             spray = Mining.tabLine("Spray:")?.substringAfter(":")?.trim() ?: ""
             bonus = Mining.tabLine("Bonus:")?.substringAfter(":")?.trim() ?: ""
-            if (alive == 0 && tabPlots.isEmpty()) remembered.clear()
         }
         RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (!S.gardenPestFinder || !Garden.inGarden()) return@register
@@ -109,10 +108,6 @@ object Pests {
             if (bonus.isNotEmpty()) out += "§7Bonus: §6$bonus"
             out
         }
-        Garden.hud("Pest Profit", "garden_pest_profit", 160, 50,
-            { S.gardenPestProfitHudX }, { S.gardenPestProfitHudX = it }, { S.gardenPestProfitHudY }, { S.gardenPestProfitHudY = it },
-            { S.gardenPestProfitHudScale }, { S.gardenPestProfitHudScale = it },
-            { S.gardenPestProfit && Garden.inGarden() }, ::profitLines)
     }
 
     private fun onChat(s: String) {
@@ -135,39 +130,30 @@ object Pests {
         }
     }
 
-    private fun profitLines(): List<String> {
-        val rows = drops.map { (k, v) -> Triple(k, v, Garden.priceOf(k) * v) }.sortedByDescending { it.third }
-        val out = arrayListOf("${Garden.legacy(S.gardenPestProfitColor)}§lPest Profit")
-        for (r in rows.take(10)) out += "§6${Garden.short(r.third)}\t§f${r.first} §8x${r.second}"
-        out += "§7Kills: §f$kills"
-        out += "§eTotal: §6${Garden.short(rows.sumOf { it.third })}"
-        return out
-    }
-
     fun profitValue(): Double = drops.entries.sumOf { (k, v) -> Garden.priceOf(k) * v }
     fun killCount(): Int = kills
 
-    fun resetProfit() { drops.clear(); kills = 0 }
 
     // "Configure Plots" menu: 5x5 grid from slot 2, names like "Plot - 4" or custom
     private fun scrapePlots(screen: Any?) {
         val scr = screen as? AbstractContainerScreen<*> ?: run { lastScreen = null; return }
         if (scr === lastScreen || Garden.strip(scr.title.string).trim() != "Configure Plots") return
-        lastScreen = scr
+        var found = false
         for (r in 0..4) for (c in 0..4) {
             val st = scr.menu.slots.getOrNull(2 + r * 9 + c)?.item ?: continue
             if (st.isEmpty) continue
             val name = Garden.strip(st.hoverName.string).trim()
             val label = if (name.contains("Plot -")) name.substringAfter("Plot -").trim() else if (name == "The Barn") name else continue
-            labels[label.lowercase()] = LAYOUT[r][c]
+            labels[label.lowercase()] = LAYOUT[r][c]; found = true
         }
+        if (found) lastScreen = scr
     }
 
     private fun idFor(label: String): Int? {
         if (label.isEmpty()) return null
         labels[label.lowercase()]?.let { return it }
         if (label == "The Barn") return 0
-        return label.takeWhile { it.isDigit() }.toIntOrNull()?.takeIf { it in 1..24 }
+        return label.toIntOrNull()?.takeIf { it in 1..24 }
     }
 
     private fun labelOf(id: Int): String = labels.entries.firstOrNull { it.value == id }?.key?.uppercase() ?: id.toString()

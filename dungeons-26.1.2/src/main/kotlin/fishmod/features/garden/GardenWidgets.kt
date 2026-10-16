@@ -25,9 +25,14 @@ object GardenWidgets {
         }
         Events.ON_GAME_MESSAGE.register { t ->
             val s = Garden.strip(t.string).trim()
-            if (S.gardenRareCrop && s.startsWith("RARE CROP!")) {
+            if (S.gardenRareCrop && RARE_CROP.containsMatchIn(s)) {
                 S.gardenRareCropCount++
-                if (S.gardenRareCropTitle) Mining.title(Garden.legacy(S.gardenRareCropColor) + "§lRARE CROP!", "§f" + s.removePrefix("RARE CROP!").trim(), 2000, true)
+                if (S.gardenRareCropTitle) {
+                    val rest = s.replace(RARE_CROP, "").trim()
+                    val name = rest.substringBefore(" (").trim()
+                    val rc = GardenAlerts.rarityColor(rest, name) ?: Garden.legacy(S.gardenRareCropColor)
+                    GardenAlerts.show(rc + "§l" + (if (s.startsWith("VERY")) "VERY RARE CROP!" else "RARE CROP!"), rc + rest)
+                }
             }
             false
         }
@@ -38,10 +43,26 @@ object GardenWidgets {
         Garden.hud("Jacob's Contest", "garden_jacob", 150, 50,
             { S.gardenJacobHudX }, { S.gardenJacobHudX = it }, { S.gardenJacobHudY }, { S.gardenJacobHudY = it },
             { S.gardenJacobHudScale }, { S.gardenJacobHudScale = it },
-            { S.gardenJacobHud && jacob.isNotEmpty() }) { listOf(Garden.legacy(S.gardenJacobColor) + "§lJacob's Contest") + jacob.map { "§f$it" } }
+            { S.gardenJacobHud && jacob.isNotEmpty() }) { listOf(Garden.legacy(S.gardenJacobColor) + "§lJacob's Contest") + jacob.map(::jacobLine) }
         Garden.hud("Rare Crops", "garden_rare_crop", 120, 12,
             { S.gardenRareCropHudX }, { S.gardenRareCropHudX = it }, { S.gardenRareCropHudY }, { S.gardenRareCropHudY = it },
             { S.gardenRareCropHudScale }, { S.gardenRareCropHudScale = it },
             { S.gardenRareCrop && Garden.inGarden() }) { listOf(Garden.legacy(S.gardenRareCropColor) + "Rare Crops: §f${S.gardenRareCropCount}") }
+    }
+
+    private val RARE_CROP = Regex("^(?:VERY )?RARE CROP!")
+
+    private val CROP_COLOR = mapOf(
+        "wheat" to "§6", "carrot" to "§6", "potato" to "§e", "pumpkin" to "§6", "melon" to "§a",
+        "mushroom" to "§c", "cocoa" to "§6", "cactus" to "§2", "sugar cane" to "§a", "nether wart" to "§4",
+    )
+
+    // "Starts In: 37m" gets a yellow value; crop rows get their crop colour
+    private fun jacobLine(l: String): String {
+        val t = l.trim()
+        val i = t.indexOf(':')
+        if (i in 1..18) return "§7" + t.substring(0, i + 1) + " §e" + t.substring(i + 1).trim()
+        val c = CROP_COLOR.entries.firstOrNull { t.contains(it.key, true) }?.value ?: "§f"
+        return c + t
     }
 }

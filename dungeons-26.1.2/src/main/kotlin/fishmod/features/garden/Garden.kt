@@ -19,6 +19,7 @@ object Garden {
         Pests.init()
         FarmingProfitTracker.init()
         GardenWidgets.init()
+        GardenAlerts.init()
     }
 
     fun strip(s: String) = Mining.strip(s)

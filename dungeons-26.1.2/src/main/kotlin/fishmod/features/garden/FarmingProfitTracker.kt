@@ -49,8 +49,9 @@ object FarmingProfitTracker {
     private val ACCEPTED = Regex("""^OFFER ACCEPTED with (.+?) \((\w+)\)""")
     private val COPPER = Regex("""^\+([\d,]+) Copper""")
     private val GXP = Regex("""^\+([\d,]+) Garden Experience""")
-    private val REWARD_ITEM = Regex("""^\+\s*(?:([\d,]+)x?\s+)?(.+?)(?:\s+x([\d,]+))?$""")
+    private val REWARD_ITEM = Regex("""^\+?\s*(?:([\d,]+)x?\s+)?(.+?)(?:\s+x([\d,]+))?$""")
     private val SACK_LINE = Regex("""([+-])([\d,]+) ([^(\n]+)""")
+    private val RARE_CROP = Regex("^(?:VERY )?RARE CROP!")
     private val PAREN = Regex("""\(([^)]+)\)""")
     private val TRAIL_PAREN = Regex("""\s*\(.*\)\s*$""")
 
@@ -107,7 +108,8 @@ object FarmingProfitTracker {
     // ---- parsing ----
 
     private fun onChat(text: Component) {
-        val s = Garden.strip(text.string).trim()
+        val raw = Garden.strip(text.string)
+        val s = raw.trim()
         val now = System.currentTimeMillis()
         if (s.startsWith("[Sacks]")) { onSacks(text, now); return }
         DROP.find(s)?.let { m ->
@@ -115,9 +117,9 @@ object FarmingProfitTracker {
             credit(Cat.PESTS, m.groupValues[2].trim(), m.groupValues[1].toLongOrNull() ?: 1L, now)
             return
         }
-        if (s.startsWith("RARE CROP!")) { onRareCrop(s, now); return }
+        if (RARE_CROP.containsMatchIn(s)) { onRareCrop(s, now); return }
         if (ACCEPTED.containsMatchIn(s)) { count("Visitors"); rewardUntil = now + 2000; return }
-        if (now < rewardUntil && s.startsWith("+")) onReward(s, now)
+        if (now < rewardUntil && (s.startsWith("+") || raw.startsWith("    "))) onReward(s, now)
     }
 
     private fun onReward(s: String, now: Long) {
@@ -131,7 +133,7 @@ object FarmingProfitTracker {
     // Unknown line format: count it, and credit whichever candidate name ItemsDb can price
     private fun onRareCrop(s: String, now: Long) {
         count("Rare Crops")
-        val rest = s.removePrefix("RARE CROP!").trim()
+        val rest = s.replace(RARE_CROP, "").trim()
         val cands = listOf(rest, rest.replace(TRAIL_PAREN, ""), rest.substringBefore(" (")) + PAREN.findAll(rest).map { it.groupValues[1] }.toList()
         val name = cands.map { it.trim() }.firstOrNull { it.isNotEmpty() && idOf(it) != null } ?: return
         credit(Cat.RARE, name, 1L, now)
