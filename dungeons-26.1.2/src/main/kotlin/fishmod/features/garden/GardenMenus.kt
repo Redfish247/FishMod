@@ -159,7 +159,7 @@ object GardenMenus {
                 if (X.gardenAnita && GardenExtras.inMenu("Anita")) pickAnita()
                 if (X.gardenStereo && GardenExtras.inMenu("Stereo Harmony")) scanStereo()
             }
-            if (tick++ % 20 == 0) greenhouse = if (X.gardenGreenhouse) fishmod.utils.TabListCache.entries.map { it.stripped.trim() }
+            if (tick++ % 20 == 0) greenhouse = if (X.gardenGreenhouse && Garden.inGarden()) fishmod.utils.TabListCache.entries.map { it.stripped.trim() }
                 .filter { it.contains("Harvestable", true) || (it.contains("Water", true) && it.contains(':')) } else emptyList()
         }
         ItemTooltipCallback.EVENT.register(ItemTooltipCallback { stack, _, _, lines -> tooltip(stack, lines) })
@@ -184,6 +184,6 @@ object GardenMenus {
         Garden.hud("Greenhouse", "garden_greenhouse", 130, 30,
             { X.gardenGreenhouseHudX }, { X.gardenGreenhouseHudX = it }, { X.gardenGreenhouseHudY }, { X.gardenGreenhouseHudY = it },
             { X.gardenGreenhouseHudScale }, { X.gardenGreenhouseHudScale = it },
-            { X.gardenGreenhouse && greenhouse.isNotEmpty() }) { greenhouseLines() }
+            { X.gardenGreenhouse && Garden.inGarden() && greenhouse.isNotEmpty() }) { greenhouseLines() }
     }
 }
