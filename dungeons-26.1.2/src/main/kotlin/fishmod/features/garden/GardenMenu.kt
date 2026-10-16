@@ -40,6 +40,10 @@ object GardenMenu {
         rare.sub.add(ColorPickerSetting("Accept Highlight", "", S::gardenRareRewardColor))
         col.features.add(rare)
 
+        val alert = Feature("Rare Drop Alert", S::gardenAlert)
+        alert.sub.add(SliderIntSetting("Show For (s)", "Position and size: HUD editor", S::gardenAlertSeconds, 1, 15))
+        col.features.add(alert)
+
         val stats = Feature("Visitor Stats", S::gardenVisitorStats)
         stats.sub.add(ButtonSetting("Reset", "", "Reset") {
             S.gardenStatAccepted = 0; S.gardenStatCopper = 0; S.gardenStatGardenXp = 0; S.gardenStatRare = 0
@@ -64,10 +68,6 @@ object GardenMenu {
         pth.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenPestHudColor))
         col.features.add(pth)
 
-        val pp = Feature("Pest Profit Tracker", S::gardenPestProfit)
-        pp.sub.add(ButtonSetting("Reset", "", "Reset") { Pests.resetProfit() })
-        pp.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenPestProfitColor))
-        col.features.add(pp)
 
         val fp = Feature("Farming Profit Tracker", S::gardenProfit)
         fp.sub.add(DropdownSetting("Category", "", FarmingProfitTracker.CATEGORIES, { S.gardenProfitCategory }, { v -> S.gardenProfitCategory = v }))
@@ -107,11 +107,11 @@ object GardenMenu {
         "Visitor Shopping List" -> "Items your visitors want, with prices"
         "Visitor Menu Info" -> "Cost and coins/copper on the Accept Offer tooltip"
         "Visitor Rare Reward Warning" -> "Title and highlight for rare visitor rewards"
+        "Rare Drop Alert" -> "On-screen alert for rare crops and rare visitor rewards, coloured by rarity"
         "Visitor Stats" -> "Accepted visitors, copper, garden XP, rare rewards"
         "Pest Spawn Title" -> "Title when a pest spawns"
         "Pest Finder" -> "Waypoints on infested plots"
         "Pest Timer HUD" -> "Pest count, cooldown, plots, spray, bonus"
-        "Pest Profit Tracker" -> "Value of pest drops this session"
         "Farming Profit Tracker" -> "Pests, crops, visitors and rare crops: session/total profit per hour"
         "Composter HUD" -> "Composter widget from the tab list"
         "Jacob's Contest HUD" -> "Jacob's Contest widget from the tab list"

@@ -36,6 +36,7 @@ object Visitors {
 
     fun init() {
         Events.ON_GAME_MESSAGE.register { text -> onChat(Garden.strip(text.string).trim()) }
+        Events.ON_WORLD_CHANGE.register { shopping.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || tick++ % 10 != 0) return@register
             if (!Garden.inGarden()) { count = 0; nextVisitor = ""; return@register }
@@ -43,6 +44,7 @@ object Visitors {
             nextVisitor = Mining.tabLine("Next Visitor:")?.substringAfter(":")?.trim() ?: ""
             names = Mining.tabWidget("Visitors:")
             if (names.isNotEmpty()) shopping.keys.retainAll { k -> names.any { it.contains(k) } }
+            else if (count == 0 && nextVisitor.isNotEmpty()) shopping.clear()
             val full = nextVisitor.contains("Full", true)
             if (full && !fullWarned && S.gardenVisitorSixthWarn && S.gardenVisitorTimer) Mining.title(Garden.legacy(S.gardenVisitorFullColor) + "Visitor Queue Full!", "", 2000, true)
             fullWarned = full
@@ -85,7 +87,7 @@ object Visitors {
         if (System.currentTimeMillis() < rewardUntil) {
             COPPER.find(s)?.let { S.gardenStatCopper += num(it.groupValues[1]) }
             GXP.find(s)?.let { S.gardenStatGardenXp += num(it.groupValues[1]) }
-            if (s.startsWith("+") && rareIn(listOf(s)) != null) S.gardenStatRare++
+            if (rareIn(listOf(s)) != null) S.gardenStatRare++
         }
         return false
     }
@@ -115,7 +117,8 @@ object Visitors {
             warnedScreen = scr
             val rare = rareIn(lore)
             if (rare != null && S.gardenRareRewardWarn) {
-                Mining.title("§d§lRARE REWARD!", "§f$rare", 2500, true)
+                val rc = GardenAlerts.rarityColor(rare, rare.replace(Regex("\\s*x[\\d,]+$"), ""), rare.replace(Regex("^[\\d,]+x?\\s+"), "")) ?: "§d"
+                GardenAlerts.show(rc + "§lRARE REWARD!", rc + rare)
                 FishMsg.send("§dThis visitor offers §f$rare§d!")
             }
         }
