@@ -20,6 +20,15 @@ object Garden {
         FarmingProfitTracker.init()
         GardenWidgets.init()
         GardenAlerts.init()
+        GardenMilestones.init()
+        GardenLevels.init()
+        GardenMisc.init()
+        MoneyPerHour.init()
+        CropFever.init()
+        FortuneBonus.init()
+        SensitivityReducer.init()
+        SpeedSignHelper.init()
+        GardenExtras.init()
     }
 
     fun strip(s: String) = Mining.strip(s)

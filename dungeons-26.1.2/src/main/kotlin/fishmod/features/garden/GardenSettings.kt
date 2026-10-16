@@ -44,6 +44,11 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenRareCropColor: Int = 0xFFFFAA00.toInt()
     @ConfigValue @JvmField var gardenVisitorStatsColor: Int = 0xFF55FF55.toInt()
     @ConfigValue @JvmField var gardenShoppingColor: Int = 0xFFFFFF55.toInt()
+    @ConfigValue @JvmField var gardenShoppingNameColor: Int = 0xFFFFFFFF.toInt()
+    @ConfigValue @JvmField var gardenShoppingAmountColor: Int = 0xFF555555.toInt()
+    @ConfigValue @JvmField var gardenShoppingPriceColor: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var gardenShoppingTotalColor: Int = 0xFFAAAAAA.toInt()
+    @ConfigValue @JvmField var gardenShoppingHintColor: Int = 0xFF555555.toInt()
     @ConfigValue @JvmField var gardenVisitorFullColor: Int = 0xFFFF5555.toInt()
     @ConfigValue @JvmField var gardenAlert: Boolean = true
     @ConfigValue @JvmField var gardenAlertSeconds: Int = 4
@@ -87,4 +92,38 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenProfitHudX: Int = 5
     @ConfigValue @JvmField var gardenProfitHudY: Int = 160
     @ConfigValue @JvmField var gardenProfitHudScale: Double = 1.0
+
+    // Money per hour
+    @ConfigValue @JvmField var gardenMoneyHour: Boolean = false
+    @ConfigValue @JvmField var gardenMoneyHourColor: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var gardenMoneyHourX: Int = 200
+    @ConfigValue @JvmField var gardenMoneyHourY: Int = 260
+    @ConfigValue @JvmField var gardenMoneyHourScale: Double = 1.0
+
+    // Crop Fever tracker
+    @ConfigValue @JvmField var gardenFever: Boolean = false
+    @ConfigValue @JvmField var gardenFeverColor: Int = 0xFFFF55FF.toInt()
+    @ConfigValue @JvmField var gardenFeverX: Int = 350
+    @ConfigValue @JvmField var gardenFeverY: Int = 220
+    @ConfigValue @JvmField var gardenFeverScale: Double = 1.0
+
+    // Farming fortune bonus message
+    @ConfigValue @JvmField var gardenFortuneMsg: Boolean = false
+    @ConfigValue @JvmField var gardenFortuneMsgText: String = "Bonus Farming Fortune: §f{bonus}"
+    @ConfigValue @JvmField var gardenFortuneMsgColor: Int = 0xFFFFAA00.toInt()
+
+    // Mouse sensitivity reducer
+    @ConfigValue @JvmField var gardenSens: Boolean = false
+    @ConfigValue @JvmField var gardenSensPercent: Int = 50
+    @ConfigValue @JvmField var gardenSensMsg: Boolean = true
+    @ConfigValue @JvmField var gardenSensHud: Boolean = true
+    @ConfigValue @JvmField var gardenSensColor: Int = 0xFF55FFFF.toInt()
+    @ConfigValue @JvmField var gardenSensOriginal: Double = -1.0
+    @ConfigValue @JvmField var gardenSensX: Int = 5
+    @ConfigValue @JvmField var gardenSensY: Int = 300
+    @ConfigValue @JvmField var gardenSensScale: Double = 1.0
+
+    // Speed sign helper
+    @ConfigValue @JvmField var gardenSpeedSign: Boolean = false
+    @ConfigValue @JvmField var gardenSpeedSignColor: Int = 0xFF55FF55.toInt()
 }
