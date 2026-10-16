@@ -39,6 +39,11 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenPestMarkerColor: Int = 0xFFFF5555.toInt()
     @ConfigValue @JvmField var gardenPestLineColor: Int = 0xFFFF5555.toInt()
     @ConfigValue @JvmField var gardenComposterColor: Int = 0xFF00AA00.toInt()
+    @ConfigValue @JvmField var gardenComposterLabelColor: Int = 0xFFAAAAAA.toInt()
+    @ConfigValue @JvmField var gardenComposterOrganicColor: Int = 0xFF55FF55.toInt()
+    @ConfigValue @JvmField var gardenComposterFuelColor: Int = 0xFFFFAA00.toInt()
+    @ConfigValue @JvmField var gardenComposterTimeColor: Int = 0xFFFFFF55.toInt()
+    @ConfigValue @JvmField var gardenComposterCompostColor: Int = 0xFF55FFFF.toInt()
     @ConfigValue @JvmField var gardenComposterWarnColor: Int = 0xFFFF5555.toInt()
     @ConfigValue @JvmField var gardenJacobColor: Int = 0xFFFFFF55.toInt()
     @ConfigValue @JvmField var gardenRareCropColor: Int = 0xFFFFAA00.toInt()
@@ -92,13 +97,6 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenProfitHudX: Int = 5
     @ConfigValue @JvmField var gardenProfitHudY: Int = 160
     @ConfigValue @JvmField var gardenProfitHudScale: Double = 1.0
-
-    // Money per hour
-    @ConfigValue @JvmField var gardenMoneyHour: Boolean = false
-    @ConfigValue @JvmField var gardenMoneyHourColor: Int = 0xFFFFAA00.toInt()
-    @ConfigValue @JvmField var gardenMoneyHourX: Int = 200
-    @ConfigValue @JvmField var gardenMoneyHourY: Int = 260
-    @ConfigValue @JvmField var gardenMoneyHourScale: Double = 1.0
 
     // Crop Fever tracker
     @ConfigValue @JvmField var gardenFever: Boolean = false

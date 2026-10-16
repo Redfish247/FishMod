@@ -37,10 +37,4 @@ object GardenMilestoneSettings {
     @ConfigValue @JvmField var gardenLogBookHudY: Int = 240
     @ConfigValue @JvmField var gardenLogBookHudScale: Double = 1.0
 
-    @ConfigValue @JvmField var gardenCarrolyn: Boolean = false
-    @ConfigValue @JvmField var gardenCarrolynDone: String = ""
-    @ConfigValue @JvmField var gardenCarrolynColor: Int = 0xFFFFAA00.toInt()
-    @ConfigValue @JvmField var gardenCarrolynHudX: Int = 200
-    @ConfigValue @JvmField var gardenCarrolynHudY: Int = 300
-    @ConfigValue @JvmField var gardenCarrolynHudScale: Double = 1.0
 }

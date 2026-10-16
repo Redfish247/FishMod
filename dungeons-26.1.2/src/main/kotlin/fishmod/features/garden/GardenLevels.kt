@@ -6,6 +6,7 @@ import fishmod.utils.data.ItemUtil
 import fishmod.utils.events.Events
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.client.resources.sounds.SoundInstance
 import net.minecraft.network.chat.Component
 import fishmod.features.garden.GardenMilestoneSettings as S
@@ -50,7 +51,7 @@ object GardenLevels {
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null) return@register
-            if (tick++ % 20 == 0) { scanTab(); scanHoe() }
+            if (tick++ % 20 == 0) { scanTab(); scanHoe(); scanMenu() }
         }
         Events.ON_GAME_MESSAGE.register { t ->
             val m = GXP.find(Garden.strip(t.string))
@@ -73,6 +74,34 @@ object GardenLevels {
             { S.gardenHoeHudX }, { S.gardenHoeHudX = it }, { S.gardenHoeHudY }, { S.gardenHoeHudY = it },
             { S.gardenHoeHudScale }, { S.gardenHoeHudScale = it },
             { S.gardenHoeHud && Garden.inGarden() && hoeLines.isNotEmpty() }) { hoeLines }
+    }
+
+    private val MENU_LEVEL = Regex("Garden Level:? (\\d+)|Level:? (\\d+)|Level (\\d+)", RegexOption.IGNORE_CASE)
+    private val MENU_XP = Regex("([\\d,.]+[kK]?)\\s*/\\s*([\\d,.]+[kK]?)")
+    private val MENU_PCT = Regex("([\\d.]+)%")
+
+    // Sync from the Garden Desk / Farming Skill menus: item named Garden Level (guessed lore: Level N, x/y or a percent)
+    private fun scanMenu() {
+        val scr = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return
+        val t = Garden.strip(scr.title.string)
+        if (!t.contains("Desk", true) && !t.contains("Farming Skill", true) && !t.contains("Garden Level", true)) return
+        for (sl in scr.menu.slots) {
+            val st = sl.item
+            if (st.isEmpty) continue
+            val n = Garden.strip(st.hoverName.string)
+            if (!n.contains("Garden Level", true) && !n.contains("Garden Skill", true) && !(t.contains("Farming Skill", true) && n.contains("Garden", true))) continue
+            val lore = Garden.lore(st)
+            val lvl = (listOf(n) + lore).firstNotNullOfOrNull { MENU_LEVEL.find(it) }?.groupValues?.drop(1)?.firstOrNull { it.isNotEmpty() }?.toIntOrNull() ?: continue
+            var into = -1L
+            for (l in lore) { val m = MENU_XP.find(l) ?: continue; into = num(m.groupValues[1]).toLong(); break }
+            if (into < 0) {
+                val p = lore.firstNotNullOfOrNull { MENU_PCT.find(it) }?.groupValues?.get(1)?.toDoubleOrNull()
+                into = if (p != null) ((if (lvl < XP.size) XP[lvl] else OVER_STEP) * p / 100.0).toLong() else 0L
+            }
+            S.gardenLevelXp = cum(lvl) + into
+            checkLevelUp()
+            return
+        }
     }
 
     private fun scanTab() {

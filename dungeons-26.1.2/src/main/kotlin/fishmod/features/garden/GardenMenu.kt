@@ -87,10 +87,6 @@ object GardenMenu {
         fp.sub.add(ButtonSetting("Reset Total", "", "Reset") { FarmingProfitTracker.resetTotal() })
         col.features.add(fp)
 
-        val mph = Feature("Money Per Hour", S::gardenMoneyHour)
-        mph.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenMoneyHourColor))
-        col.features.add(mph)
-
         val cf = Feature("Crop Fever Tracker", S::gardenFever)
         cf.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenFeverColor))
         col.features.add(cf)
@@ -114,6 +110,11 @@ object GardenMenu {
         val comp = Feature("Composter HUD", S::gardenComposterHud)
         comp.sub.add(ToggleSetting("Inactive Warning", "Title when the composter runs dry", S::gardenComposterWarn))
         comp.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenComposterColor))
+        comp.sub.add(ColorPickerSetting("Label Colour", "Nearest chat colour is used", S::gardenComposterLabelColor))
+        comp.sub.add(ColorPickerSetting("Organic Matter Colour", "Nearest chat colour is used", S::gardenComposterOrganicColor))
+        comp.sub.add(ColorPickerSetting("Fuel Colour", "Nearest chat colour is used", S::gardenComposterFuelColor))
+        comp.sub.add(ColorPickerSetting("Time Left Colour", "Nearest chat colour is used", S::gardenComposterTimeColor))
+        comp.sub.add(ColorPickerSetting("Stored Compost Colour", "Nearest chat colour is used", S::gardenComposterCompostColor))
         comp.sub.add(ColorPickerSetting("Warning Colour", "Nearest chat colour is used", S::gardenComposterWarnColor))
         col.features.add(comp)
 
@@ -145,7 +146,6 @@ object GardenMenu {
         "Pest Finder" -> "Waypoints on infested plots"
         "Pest Timer HUD" -> "Pest count, cooldown, plots, spray, bonus"
         "Farming Profit Tracker" -> "Pests, crops, visitors and rare crops: session/total profit per hour"
-        "Money Per Hour" -> "Current crop and coins/hour from crops, seeds, Mooshroom, Bountiful and armor drops"
         "Crop Fever Tracker" -> "Drops and profit/hour during Crop Fever, with a farming tool held"
         "Fortune Bonus Message" -> "Chat message when your bonus Farming Fortune changes"
         "Mouse Sensitivity Reducer" -> "Lowers mouse sensitivity while on the ground in a plot"

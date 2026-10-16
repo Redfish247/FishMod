@@ -23,7 +23,6 @@ object Garden {
         GardenMilestones.init()
         GardenLevels.init()
         GardenMisc.init()
-        MoneyPerHour.init()
         CropFever.init()
         FortuneBonus.init()
         SensitivityReducer.init()

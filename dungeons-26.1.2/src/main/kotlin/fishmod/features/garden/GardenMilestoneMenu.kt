@@ -37,10 +37,6 @@ object GardenMilestoneMenu {
         lb.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenLogBookColor))
         col.features.add(lb)
 
-        val ca = Feature("Help Carrolyn", S::gardenCarrolyn)
-        ca.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenCarrolynColor))
-        ca.sub.add(ButtonSetting("Reset", "", "Reset") { GardenMisc.resetCarrolyn() })
-        col.features.add(ca)
     }
 
     fun describe(name: String): String? = when (name) {
@@ -50,7 +46,6 @@ object GardenMilestoneMenu {
         "Garden Level Overflow" -> "Garden level past max in a HUD and chat"
         "Hoe Level Overflow" -> "Hoe level overflow HUD, optional muted hoe sounds"
         "Log Book Stats" -> "Visitor Log Book stats HUD"
-        "Help Carrolyn" -> "Checklist of Carrolyn's requested items"
         else -> null
     }
 }
