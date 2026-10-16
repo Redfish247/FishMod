@@ -112,6 +112,17 @@ object GardenMenus {
         anitaBest = GardenExtras.slots().mapNotNull { s -> anitaRate(s.item)?.let { s.item to it } }.maxByOrNull { it.second }?.first
     }
 
+    // Slot already shows the crop (pumpkin/melon come as block variants), so no badge on top
+    private fun sameCrop(crop: net.minecraft.world.item.Item, held: net.minecraft.world.item.Item): Boolean {
+        if (crop == held) return true
+
+        return when (crop) {
+            net.minecraft.world.item.Items.PUMPKIN -> held == net.minecraft.world.item.Items.CARVED_PUMPKIN || held == net.minecraft.world.item.Items.JACK_O_LANTERN
+            net.minecraft.world.item.Items.MELON_SLICE -> held == net.minecraft.world.item.Items.MELON
+            else -> false
+        }
+    }
+
     private fun toolkit() = GardenExtras.inMenu("Toolkit", "Farming Tools")
 
     private fun tooltip(stack: ItemStack, lines: MutableList<Component>) {
@@ -164,7 +175,7 @@ object GardenMenus {
                     GardenExtras.cropItem(PEST_CROP[p] ?: "")?.let { ctx.fill(x, y, x + 16, y + 16, 0xFF2B2B2B.toInt()); ctx.item(ItemStack(it), x, y) }
                 }
             }
-            if (X.gardenToolkitIcons && toolkit()) GardenExtras.cropItem(GardenExtras.name(stack))?.takeIf { it != stack.item }?.let { GardenExtras.badge(ctx, it, x, y) }
+            if (X.gardenToolkitIcons && toolkit()) GardenExtras.cropItem(GardenExtras.name(stack))?.takeIf { !sameCrop(it, stack.item) }?.let { GardenExtras.badge(ctx, it, x, y) }
         }
         Garden.hud("Stereo Harmony", "garden_stereo", 130, 30,
             { X.gardenStereoHudX }, { X.gardenStereoHudX = it }, { X.gardenStereoHudY }, { X.gardenStereoHudY = it },
