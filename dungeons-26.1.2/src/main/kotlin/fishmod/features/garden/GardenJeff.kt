@@ -34,6 +34,6 @@ object GardenJeff {
         Garden.hud("Jeff Buy Order", "garden_jeff", 120, 80,
             { X.gardenJeffHudX }, { X.gardenJeffHudX = it }, { X.gardenJeffHudY }, { X.gardenJeffHudY = it },
             { X.gardenJeffHudScale }, { X.gardenJeffHudScale = it },
-            { X.gardenJeff && GardenExtras.inMenu("Jeff", "Garden Chips") }) { lines() }
+            { X.gardenJeff && GardenExtras.inMenu("Manage Chips", "Jeff") }) { lines() }
     }
 }

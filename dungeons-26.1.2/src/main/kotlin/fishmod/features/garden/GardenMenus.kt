@@ -164,7 +164,7 @@ object GardenMenus {
                     GardenExtras.cropItem(PEST_CROP[p] ?: "")?.let { ctx.fill(x, y, x + 16, y + 16, 0xFF2B2B2B.toInt()); ctx.item(ItemStack(it), x, y) }
                 }
             }
-            if (X.gardenToolkitIcons && toolkit()) GardenExtras.cropItem(GardenExtras.name(stack))?.let { GardenExtras.badge(ctx, it, x, y) }
+            if (X.gardenToolkitIcons && toolkit()) GardenExtras.cropItem(GardenExtras.name(stack))?.takeIf { it != stack.item }?.let { GardenExtras.badge(ctx, it, x, y) }
         }
         Garden.hud("Stereo Harmony", "garden_stereo", 130, 30,
             { X.gardenStereoHudX }, { X.gardenStereoHudX = it }, { X.gardenStereoHudY }, { X.gardenStereoHudY = it },

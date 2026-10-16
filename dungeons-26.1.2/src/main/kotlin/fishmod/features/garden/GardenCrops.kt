@@ -8,7 +8,7 @@ object GardenCrops {
 
     enum class Crop(val display: String, val color: String, val speed: Int, val yaw: Double, val pitch: Double) {
         WHEAT("Wheat", "§6", 93, -90.0, 3.0), CARROT("Carrot", "§6", 93, -90.0, 3.0), POTATO("Potato", "§e", 93, -90.0, 3.0),
-        NETHER_WART("Nether Wart", "§4", 116, -90.0, 3.0), PUMPKIN("Pumpkin", "§6", 155, -180.0, -45.0), MELON("Melon", "§a", 155, -180.0, -58.0),
+        NETHER_WART("Nether Wart", "§4", 93, -90.0, 3.0), PUMPKIN("Pumpkin", "§6", 155, -180.0, -45.0), MELON("Melon", "§a", 155, -180.0, -58.0),
         COCOA("Cocoa Beans", "§6", 155, -90.0, -45.0), SUGAR_CANE("Sugar Cane", "§a", 328, 45.0, 0.0), CACTUS("Cactus", "§2", 464, -90.0, 0.0),
         MUSHROOM("Mushroom", "§c", 233, -115.0, 0.0),
     }
