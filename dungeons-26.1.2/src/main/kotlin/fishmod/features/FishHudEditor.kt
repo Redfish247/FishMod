@@ -214,7 +214,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Mining" to listOf("Mineshaft Pity", "Fossil Solver", "Mining Profit", "Pickobulus", "Maniac Miner", "SkyMall", "Commissions"),
             "Farming" to listOf(
                 "Visitor Timer", "Visitor Shopping List", "Visitor Stats", "Charmed Visitor", "Pest Timer", "Pest Profit", "Farming Profit", "Composter", "Jacob's Contest", "Rare Crops",
-                "Rare Drop Alert", "Crop Milestone", "Garden Level", "Hoe Level", "Crop Fever", "Jeff Buy Order", "Greenhouse", "Stereo Harmony", "Mushroom Pet Perk",
+                "Rare Drop Alert", "Garden Titles", "Crop Milestone", "Garden Level", "Hoe Level", "Crop Fever", "Jeff Buy Order", "Greenhouse", "Stereo Harmony", "Mushroom Pet Perk",
                 "Log Book", "Sensitivity",
             ),
             "Kuudra" to listOf("Kuudra Build", "Kuudra Chest Counter", "Kuudra Chest Value", "Kuudra Fresh Timers", "Kuudra Health", "Kuudra Profit", "Kuudra Splits", "Kuudra Supplies"),
@@ -346,6 +346,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Rare Crops" to s("§6Rare Crops: §f7"),
             "Farming Profit" to s("§6§lFarming Profit §7(All, Session)", "§6 2.4M §7| §fEnchanted Potato §8x640", "§6 820k §7| §fBountiful Drops §8x12",
                 "§6 310k §7| §fSeeds §8x4,200", "§7Time §f1h 05m", "§eProfit §63.5M §7(3.2M/h)"),
+            "Garden Titles" to c("§a§lNew Visitor: §fSpaceman"),
             "Rare Drop Alert" to c("§6§lRARE DROP!", "§6Cropie §7(+120 Farming Fortune)"),
             "Crop Milestone" to s("§6§lWheat §7- Tier §f32", "§7Next: §f33 §8(71.3%)", "§7Average tier: §f28.4", "§7ETA: §e4m 12s §8(2.1 lvl/h)"),
             "Garden Level" to s("§a§lGarden Level §f20 §7(+5 overflow)", "§7XP: §f4,210§7/§f10,000 §8(42.1%)"),

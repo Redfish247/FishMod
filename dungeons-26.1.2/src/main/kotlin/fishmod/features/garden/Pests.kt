@@ -116,7 +116,7 @@ object Pests {
         APPEARED.find(s)?.let { m ->
             val label = m.groupValues[2].ifEmpty { m.groupValues[3] }
             idFor(label)?.let { remembered[it] = System.currentTimeMillis() }
-            if (S.gardenPestTitle) Mining.title(S.gardenPestTitleText.replace("{plot}", label), "", 1500, S.gardenPestSound)
+            if (S.gardenPestTitle) GardenTitles.show(S.gardenPestTitleText.replace("{plot}", label), "", 1500, S.gardenPestSound)
             return
         }
         OFFLINE.find(s)?.let { m ->
