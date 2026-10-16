@@ -90,7 +90,7 @@ object Pests {
             }
             for (id in plots) {
                 val c = centerOf(id) ?: continue
-                val b = AABB(c.x - 1, 66.0, c.z - 1, c.x + 1, 110.0, c.z + 1)
+                val b = AABB(c.x - 48, 66.0, c.z - 48, c.x + 48, 110.0, c.z + 48)
                 RenderUtils.fillBox(ps, vc, b, Mining.alpha(S.gardenPestFinderColor, S.gardenPestFinderOpacity))
                 Mining.outline(ps, vc, b, Mining.alpha(S.gardenPestFinderColor, 100), 2f)
                 if (S.gardenPestFinderLine && guess == null) RenderUtils.screenLine(ps, vc, start, c, Mining.alpha(S.gardenPestLineColor, 100), 2f)

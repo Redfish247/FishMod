@@ -116,6 +116,11 @@ object GardenSettings {
     // Mouse sensitivity reducer
     @ConfigValue @JvmField var gardenSens: Boolean = false
     @ConfigValue @JvmField var gardenSensPercent: Int = 50
+    @ConfigValue @JvmField var gardenSensItemsOnly: Boolean = false
+    @ConfigValue @JvmField var gardenSensHoe: Boolean = true
+    @ConfigValue @JvmField var gardenSensVacuum: Boolean = true
+    @ConfigValue @JvmField var gardenSensSprayonator: Boolean = true
+    @ConfigValue @JvmField var gardenSensMousemat: Boolean = true
     @ConfigValue @JvmField var gardenSensMsg: Boolean = true
     @ConfigValue @JvmField var gardenSensHud: Boolean = true
     @ConfigValue @JvmField var gardenSensColor: Int = 0xFF55FFFF.toInt()

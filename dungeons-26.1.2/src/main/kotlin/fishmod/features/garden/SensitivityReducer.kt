@@ -15,6 +15,15 @@ object SensitivityReducer {
 
     private fun inPlot() = Mining.sidebar.any { it.contains("Plot", true) }
 
+    private fun holdingAllowedItem(): Boolean {
+        if (!S.gardenSensItemsOnly) return true
+        val id = Minecraft.getInstance().player?.mainHandItem?.let { fishmod.utils.data.ItemUtil.getId(it) } ?: return false
+        return (S.gardenSensHoe && GardenCrops.holdingFarmingTool()) ||
+            (S.gardenSensVacuum && id.contains("VACUUM")) ||
+            (S.gardenSensSprayonator && id.contains("SPRAYONATOR")) ||
+            (S.gardenSensMousemat && id.contains("SQUEAKY_MOUSEMAT"))
+    }
+
     private fun restore(mc: Minecraft, msg: Boolean) {
         if (S.gardenSensOriginal < 0) { reduced = false; return }
         mc.options.sensitivity().set(S.gardenSensOriginal)
@@ -31,7 +40,7 @@ object SensitivityReducer {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             val p = mc.player
             if (p == null) return@register
-            val want = S.gardenSens && Garden.inGarden() && p.onGround() && inPlot()
+            val want = S.gardenSens && Garden.inGarden() && p.onGround() && inPlot() && holdingAllowedItem()
             val opt = mc.options.sensitivity()
             if (want && !reduced) {
                 S.gardenSensOriginal = opt.get()

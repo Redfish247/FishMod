@@ -214,7 +214,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Mining" to listOf("Mineshaft Pity", "Fossil Solver", "Mining Profit", "Pickobulus", "Maniac Miner", "SkyMall", "Commissions"),
             "Farming" to listOf(
                 "Visitor Timer", "Visitor Shopping List", "Visitor Stats", "Charmed Visitor", "Pest Timer", "Pest Profit", "Farming Profit", "Composter", "Jacob's Contest", "Rare Crops",
-                "Rare Drop Alert", "Garden Titles", "Crop Milestone", "Garden Level", "Hoe Level", "Crop Fever", "Jeff Buy Order", "Greenhouse", "Stereo Harmony", "Mushroom Pet Perk",
+                "Rare Drop Alert", "Garden Titles", "Crop Milestone", "Garden Level", "Hoe Level", "Jeff Buy Order", "Greenhouse", "Stereo Harmony", "Mushroom Pet Perk",
                 "Log Book", "Sensitivity",
             ),
             "Kuudra" to listOf("Kuudra Build", "Kuudra Chest Counter", "Kuudra Chest Value", "Kuudra Fresh Timers", "Kuudra Health", "Kuudra Profit", "Kuudra Splits", "Kuudra Supplies"),
@@ -351,7 +351,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Crop Milestone" to s("§6§lWheat §7- Tier §f32", "§7Next: §f33 §8(71.3%)", "§7Average tier: §f28.4", "§7ETA: §e4m 12s §8(2.1 lvl/h)"),
             "Garden Level" to s("§a§lGarden Level §f20 §7(+5 overflow)", "§7XP: §f4,210§7/§f10,000 §8(42.1%)"),
             "Hoe Level" to s("§e§lHoe Level §f14§7/§f10 §a(+4 overflow)"),
-            "Crop Fever" to s("§d§lCrop Fever", "§7Time: §f2m 10s", "§7Wheat: §f1,420", "§6Profit: §a640k §7(17.8M/h)"),
             "Jeff Buy Order" to s("§e§lJeff Buy Order", "§8§mRarefinder", "§a▶ §f§lVermin Vaporizer §7(2/3)", "§7  Hypercharge", "§7  Cropshot", "§7  Overdrive"),
             "Charmed Visitor" to s("§d§lCharmed Visitor", "§7Next: §f12m 30s", "§7Charm: §a+35%"),
             "Mushroom Pet Perk" to s("§c§lMushroom Pet Perk", "§7Progress: §f6,420§7/§f10,000"),
