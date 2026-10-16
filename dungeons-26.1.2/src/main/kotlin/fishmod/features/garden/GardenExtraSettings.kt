@@ -20,12 +20,6 @@ object GardenExtraSettings {
     @ConfigValue @JvmField var gardenCharmedHudX: Int = 5
     @ConfigValue @JvmField var gardenCharmedHudY: Int = 130
     @ConfigValue @JvmField var gardenCharmedHudScale: Double = 1.0
-    @ConfigValue @JvmField var gardenMushroom: Boolean = false
-    @ConfigValue @JvmField var gardenMushroomHeader: String = "Mushroom"
-    @ConfigValue @JvmField var gardenMushroomColor: Int = 0xFFFF5555.toInt()
-    @ConfigValue @JvmField var gardenMushroomHudX: Int = 5
-    @ConfigValue @JvmField var gardenMushroomHudY: Int = 160
-    @ConfigValue @JvmField var gardenMushroomHudScale: Double = 1.0
 
     // Composter upgrade prices
     @ConfigValue @JvmField var gardenCompUpgrades: Boolean = false
