@@ -21,11 +21,6 @@ object GardenExtrasMenu {
         ch.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", X::gardenCharmedColor))
         col.features.add(ch)
 
-        val mu = Feature("Mushroom Pet Perk HUD", X::gardenMushroom)
-        mu.sub.add(InputSetting("Tab Header", "Text of the tab-list widget line to show", X::gardenMushroomHeader))
-        mu.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", X::gardenMushroomColor))
-        col.features.add(mu)
-
         val cu = Feature("Composter Upgrade Prices", X::gardenCompUpgrades)
         cu.sub.add(ColorPickerSetting("Cheapest Highlight", "", X::gardenCompUpgradesColor))
         col.features.add(cu)
@@ -59,7 +54,6 @@ object GardenExtrasMenu {
     fun describe(name: String): String? = when (name) {
         "Jeff Buy Order" -> "Chip buy order HUD inside Jeff's shop"
         "Charmed Visitor HUD" -> "Charmed visitor perk progress from the tab list"
-        "Mushroom Pet Perk HUD" -> "Mushroom pet perk progress from the tab list"
         "Composter Upgrade Prices" -> "Upgrade costs rounded down, cheapest highlighted"
         "Stereo Harmony" -> "Active vinyl with its pest and crop; crop icons in the menu"
         "Greenhouse Status" -> "Harvestable and water status from the tab list"

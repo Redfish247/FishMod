@@ -216,7 +216,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Mining" to listOf("Mineshaft Pity", "Fossil Solver", "Mining Profit", "Pickobulus", "Maniac Miner", "SkyMall", "Commissions"),
             "Farming" to listOf(
                 "Visitor Timer", "Visitor Shopping List", "Visitor Stats", "Charmed Visitor", "Pest Timer", "Pest Profit", "Farming Profit", "Composter", "Jacob's Contest", "Rare Crops",
-                "Rare Drop Alert", "Garden Titles", "Crop Milestone", "Garden Level", "Hoe Level", "Jeff Buy Order", "Greenhouse", "Stereo Harmony", "Mushroom Pet Perk",
+                "Rare Drop Alert", "Garden Titles", "Crop Milestone", "Garden Level", "Hoe Level", "Jeff Buy Order", "Greenhouse", "Stereo Harmony",
                 "Log Book", "Sensitivity",
             ),
             "Kuudra" to listOf("Kuudra Build", "Kuudra Chest Counter", "Kuudra Chest Value", "Kuudra Fresh Timers", "Kuudra Health", "Kuudra Profit", "Kuudra Splits", "Kuudra Supplies"),
@@ -355,7 +355,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Hoe Level" to s("§e§lHoe Level §f14§7/§f10 §a(+4 overflow)"),
             "Jeff Buy Order" to s("§e§lJeff Buy Order", "§8§mRarefinder", "§a▶ §f§lVermin Vaporizer §7(2/3)", "§7  Hypercharge", "§7  Cropshot", "§7  Overdrive"),
             "Charmed Visitor" to s("§d§lCharmed Visitor", "§7Next: §f12m 30s", "§7Charm: §a+35%"),
-            "Mushroom Pet Perk" to s("§c§lMushroom Pet Perk", "§7Progress: §f6,420§7/§f10,000"),
             "Greenhouse" to s("§a§lGreenhouse", "§7Harvestable: §a12", "§7Water: §c Low"),
             "Stereo Harmony" to s("§d§lStereo Harmony", "§7Vinyl: §fPretty Fly", "§7Pest: §aFly §7Crop: §6Wheat"),
             "Log Book" to s("§b§lLog Book", "§7Visited: §f128§7/§f165", "§7Accepted: §f1,204", "§7Rare: §d38§7/§d60"),
