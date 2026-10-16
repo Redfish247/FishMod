@@ -17,7 +17,9 @@ object SensitivityReducer {
 
     private fun holdingAllowedItem(): Boolean {
         if (!S.gardenSensItemsOnly) return true
-        val id = Minecraft.getInstance().player?.mainHandItem?.let { fishmod.utils.data.ItemUtil.getId(it) } ?: return false
+        val held = Minecraft.getInstance().player?.mainHandItem ?: return false
+        if (S.gardenSensRod && held.`is`(net.minecraft.world.item.Items.FISHING_ROD)) return true
+        val id = fishmod.utils.data.ItemUtil.getId(held) ?: return false
         return (S.gardenSensHoe && GardenCrops.holdingFarmingTool()) ||
             (S.gardenSensVacuum && id.contains("VACUUM")) ||
             (S.gardenSensSprayonator && id.contains("SPRAYONATOR")) ||

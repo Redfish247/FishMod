@@ -118,6 +118,7 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenSensPercent: Int = 50
     @ConfigValue @JvmField var gardenSensItemsOnly: Boolean = false
     @ConfigValue @JvmField var gardenSensHoe: Boolean = true
+    @ConfigValue @JvmField var gardenSensRod: Boolean = true
     @ConfigValue @JvmField var gardenSensVacuum: Boolean = true
     @ConfigValue @JvmField var gardenSensSprayonator: Boolean = true
     @ConfigValue @JvmField var gardenSensMousemat: Boolean = true
