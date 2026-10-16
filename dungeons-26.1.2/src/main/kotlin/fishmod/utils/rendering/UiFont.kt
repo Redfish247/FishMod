@@ -95,6 +95,12 @@ object UiFont {
         return k
     }
 
+    fun canDisplay(cp: Int): Boolean {
+        if (!ensureLoaded()) return false
+        if (STBTruetype.stbtt_FindGlyphIndex(info, cp) != 0) return true
+        return FALLBACK_PATHS.indices.any { i -> fallback(i)?.let { STBTruetype.stbtt_FindGlyphIndex(it.info, cp) != 0 } == true }
+    }
+
     private fun fontIndex(cp: Int): Int {
         val cached = fontFor.get(cp)
         if (cached >= 0) return cached

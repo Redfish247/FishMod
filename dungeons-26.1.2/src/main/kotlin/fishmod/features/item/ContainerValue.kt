@@ -47,7 +47,7 @@ object ContainerValue {
     }
     private fun unitName() = if (inRift()) " Motes" else ""
 
-    private class Row(val name: String, var count: Int, var value: Double, val color: Int)
+    private class Row(val name: String, var count: Int, var value: Double, val color: Int, val stack: ItemStack)
 
     private var rows: List<Row> = emptyList()
     private var total = 0.0
@@ -70,13 +70,33 @@ object ContainerValue {
         }
     }
 
+    class SidebarRow(val name: String, val label: String, val value: String, val color: Int, val stack: ItemStack)
+
     @JvmStatic
-    fun storageSidebarWidthGuiPx(): Int =
-        if (FishSettings.containerValueEnabled && rows.isNotEmpty()) widthPx else 0
+    fun storageSidebarEnabled(): Boolean = FishSettings.containerValueEnabled && Location.inSkyblock()
+
+    // Storage overlay draws these in its own fixed sidebar
+    @JvmStatic
+    fun storageRows(screen: AbstractContainerScreen<*>): List<SidebarRow> {
+        try { recompute(screen) } catch (e: Exception) {
+            FishDiag.fail("ContainerValue.4", "storage container value recompute failed", e); return emptyList()
+        }
+        return rows.map { r ->
+            SidebarRow(r.name, if (r.count > 1) "${r.count}x ${r.name}" else r.name, abbr(r.value) + unitName(),
+                if (r.color != 0) r.color or 0xFF000000.toInt() else 0xFFAAAAAA.toInt(), r.stack)
+        }
+    }
+
+    @JvmStatic
+    fun plainName(stack: ItemStack): String = CODE.replace(stack.hoverName.string, "")
+
+    @JvmStatic
+    fun storageTotal(): String = abbr(total) + unitName()
 
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, screen: AbstractContainerScreen<*>) {
         if (!FishSettings.containerValueEnabled || !Location.inSkyblock() || !eligible(screen)) return
+        if (StorageOverlay.isActive(screen)) return
         val font = Minecraft.getInstance().font
 
         try { recompute(screen) } catch (e: Exception) {
@@ -148,7 +168,7 @@ object ContainerValue {
             sum += v
             val name = CODE.replace(stack.hoverName.string, "")
             val ex = agg[name]
-            if (ex == null) agg[name] = Row(name, stack.count, v, ItemRarityHotbar.getRarity(stack).color)
+            if (ex == null) agg[name] = Row(name, stack.count, v, ItemRarityHotbar.getRarity(stack).color, stack)
             else { ex.count += stack.count; ex.value += v }
         }
 
