@@ -673,6 +673,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Show Teammates", "", FishSettings::extraStatsTeammates))
             dungeon.features.add(f)
         }
+        run {
+            val f = Feature("Boss Damage", FishSettings::bossDamageEnabled)
+            f.sub.add(SubcategoryHeader("F7/M7: your damage + % of all damage to each wither / dragon, posted 1s after the run"))
+            dungeon.features.add(f)
+        }
         dungeon.features.add(Feature("Terracotta Timer", FishSettings::terracottaTimerEnabled))
         run {
             val f = Feature("Spirit Bear", FishSettings::spiritBearEnabled)
@@ -1253,6 +1258,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         hud.features.add(Feature("Catacombs Overflow Levels", FishSettings::catacombsOverflowEnabled))
         run {
+            hud.features.add(Feature("Anita Medal Profit", FishSettings::anitaProfitEnabled))
+            val f = Feature("Experiment Profit Tracker", FishSettings::expProfitEnabled)
+            f.sub.add(SubcategoryHeader("Experimentation Table drops, value, Enchanting XP and XP per experiment  ·  drag with Edit HUD"))
+            f.sub.add(ToggleSetting("Only On Private Island", "", FishSettings::expProfitOnlyIsland))
+            f.sub.add(SliderIntSetting("Item Lines", "", FishSettings::expProfitLines, 1, 30))
+            f.sub.add(SliderDoubleSetting("Scale", "", FishSettings::expProfitHudScale, 0.5, 3.0))
+            f.sub.add(ButtonSetting("Reset", "Clear all tracked experiments", Runnable { fishmod.features.ExperimentProfitTracker.reset() }))
+            hud.features.add(f)
+        }
+        run {
             val f = Feature("Performance HUD", FishSettings::perfHudEnabled)
             f.sub.add(SubcategoryHeader("Move/scale it in the HUD editor"))
             f.sub.add(ToggleSetting("FPS", "", FishSettings::perfHudFps))
@@ -1383,6 +1398,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Scrollable Tooltips", "", FishSettings::tooltipScrollEnabled))
             f.sub.add(SliderIntSetting("Tooltip Scale %", "", FishSettings::tooltipScrollScale, 30, 150, 5).gatedBy { FishSettings.tooltipScrollEnabled })
             f.sub.add(SliderIntSetting("Scroll Speed", "", FishSettings::tooltipScrollSpeed, 1, 10).gatedBy { FishSettings.tooltipScrollEnabled })
+            hud.features.add(f)
+        }
+        run {
+            val f = Feature("Recipe Viewer", FishSettings::recipeViewer)
+            f.sub.add(SubcategoryHeader("Hold Shift on an item to open its NEU recipe"))
+            f.sub.add(ToggleSetting("Enabled", "", FishSettings::recipeViewer))
+            f.sub.add(SliderIntSetting("Hold Time (ms)", "", FishSettings::recipeViewerHoldTime, 250, 5000, 50))
             hud.features.add(f)
         }
         run {
@@ -1793,9 +1815,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Room Additions", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsEnabled)
             f.sub.add(ToggleSetting("Prince Crown Icon", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsPrince))
-            f.sub.add(ToggleSetting("Mimic Reveal", "", fishmod.utils.config.values.DungeonMapSettings::mapRoomAdditionsMimic))
-            f.sub.add(ColorPickerSetting("Mimic Room Color", "", fishmod.utils.config.values.DungeonMapSettings::mapMimicRoomColor)
-                .gatedBy { fishmod.utils.config.values.DungeonMapSettings.mapRoomAdditionsMimic })
             f.sub.add(SliderIntSetting("Darken Multiplier %", "",
                 { (fishmod.utils.config.values.DungeonMapSettings.mapDarkenMultiplier * 100).toInt() },
                 { v -> fishmod.utils.config.values.DungeonMapSettings.mapDarkenMultiplier = v / 100.0f },
@@ -1920,6 +1939,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             statsHud.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerStatsHudScale, 0.5, 3.0))
             statsHud.sub.add(ButtonSetting("Reset Session Stats", "Zero the XP / kills / time counters", Runnable { fishmod.features.slayers.SlayerStatsTracker.reset() }))
             slayer.features.add(statsHud)
+
+            val carry = Feature("Carry Tracker HUD", FishSettings::slayerCarryHudEnabled)
+            carry.sub.add(SubcategoryHeader("/trackcarry <ign> [amount]  ·  /trackcarry remove <ign>  ·  /trackcarry clear"))
+            carry.sub.add(SubcategoryHeader("Counts bosses \"Spawned by\" that player dying near you"))
+            carry.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerCarryHudScale, 0.5, 3.0))
+            slayer.features.add(carry)
 
             val profit = Feature("Profit Tracker", FishSettings::slayerProfitEnabled)
             profit.sub.add(SubcategoryHeader("SkyHanni-style: prices real drops for coins/hr  ·  drag with Edit HUD"))
@@ -2520,7 +2545,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             if (c === dc) continue
             val yOff = Math.round(columnYOffset(i, top - HEADER_H) + unfoldYOffset(c, top - HEADER_H))
             try {
-                renderOneColumn(ctx, c, columnX0(i), colW, top, bot, mouseX, mouseY, yOff)
+                renderOneColumn(ctx, c, columnX0(i), colW, top, bot, if (dc != null) -10000 else mouseX, if (dc != null) -10000 else mouseY, yOff)
             } catch (t: Throwable) {
                 FishDiag.fail("FishModScreen.23", "column '${c.name}' render failed group=${c.isGroup()}", t)
             }
@@ -4427,6 +4452,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Party Finder List" -> "Scrollable party summary beside the menu; hover a row to highlight its head"
                 "Party Finder Auto Kick" -> "As leader, kick joiners who miss the S+ PB / secrets bar"
                 "Container Value" -> "No-background value list + total beside the open container / storage overlay"
+                "Anita Medal Profit" -> "In Anita's shop: coins per bronze medal for each item, best one highlighted"
                 else -> descForExternal(name)
             }
         }

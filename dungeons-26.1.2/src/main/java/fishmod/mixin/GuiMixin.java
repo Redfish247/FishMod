@@ -72,6 +72,13 @@ public class GuiMixin {
         if (!fishmod$ab(FishSettings.abHideXpBar)) original.call(extractor, font, level);
     }
 
+    @Inject(method = "extractRenderState", at = @At("HEAD"), cancellable = true)
+    private void fishmod$hideUnderStorage(GuiGraphicsExtractor extractor, DeltaTracker deltaTracker, CallbackInfo ci) {
+        // storage overlay sits above every HUD element
+        if (net.minecraft.client.Minecraft.getInstance().screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> c
+            && fishmod.features.storage.StorageOverlay.isActive(c)) ci.cancel();
+    }
+
     @Inject(method = "extractRenderState", at = @At("HEAD"))
     private void fishmod$darkModePre(GuiGraphicsExtractor extractor, DeltaTracker deltaTracker, CallbackInfo ci) {
         try {

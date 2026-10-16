@@ -150,7 +150,7 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
-    var enableTickTimers: Boolean = true
+    var enableTickTimers: Boolean = false
 
     @ConfigValue
     @JvmField

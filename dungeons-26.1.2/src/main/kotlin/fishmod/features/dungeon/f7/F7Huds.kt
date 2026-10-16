@@ -32,7 +32,7 @@ object F7Huds {
     @ConfigValue
     var crystalReminder: HUDComponent = HUDComponent(
         0.0, 0.0, NOTI_W, 10, 1f, "Crystal Reminder",
-        { false }, CrystalSpawn::renderNotification, { Floor7.crystalPlaceReminder }
+        { false }, CrystalSpawn::renderNotification, { Floor7.enableCrystalSpawnTime && Floor7.crystalPlaceReminder }
     )
 
     @JvmField
