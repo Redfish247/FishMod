@@ -76,4 +76,18 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenRareCropHudY: Int = 140
     @ConfigValue @JvmField var gardenRareCropHudScale: Double = 1.0
     @ConfigValue @JvmField var gardenRareCropCount: Int = 0
+
+    // Farming profit tracker
+    @ConfigValue @JvmField var gardenProfit: Boolean = false
+    @ConfigValue @JvmField var gardenProfitMode: String = "Session"
+    @ConfigValue @JvmField var gardenProfitCategory: String = "Combined"
+    @ConfigValue @JvmField var gardenProfitSort: String = "Most Profit"
+    @ConfigValue @JvmField var gardenProfitLines: Int = 25
+    @ConfigValue @JvmField var gardenProfitPriceMode: String = "Sell Offer"
+    @ConfigValue @JvmField var gardenProfitShowSources: Boolean = true
+    @ConfigValue @JvmField var gardenProfitAfkSec: Int = 60
+    @ConfigValue @JvmField var gardenProfitColor: Int = 0xFFFFFF55.toInt()
+    @ConfigValue @JvmField var gardenProfitHudX: Int = 5
+    @ConfigValue @JvmField var gardenProfitHudY: Int = 160
+    @ConfigValue @JvmField var gardenProfitHudScale: Double = 1.0
 }

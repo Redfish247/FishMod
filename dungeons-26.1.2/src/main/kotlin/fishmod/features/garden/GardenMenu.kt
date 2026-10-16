@@ -3,6 +3,7 @@ package fishmod.features.garden
 import fishmod.features.FishModScreen.ButtonSetting
 import fishmod.features.FishModScreen.ColorPickerSetting
 import fishmod.features.FishModScreen.Column
+import fishmod.features.FishModScreen.DropdownSetting
 import fishmod.features.FishModScreen.Feature
 import fishmod.features.FishModScreen.InputSetting
 import fishmod.features.FishModScreen.SliderIntSetting
@@ -68,6 +69,19 @@ object GardenMenu {
         pp.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenPestProfitColor))
         col.features.add(pp)
 
+        val fp = Feature("Farming Profit Tracker", S::gardenProfit)
+        fp.sub.add(DropdownSetting("Category", "", FarmingProfitTracker.CATEGORIES, { S.gardenProfitCategory }, { v -> S.gardenProfitCategory = v }))
+        fp.sub.add(DropdownSetting("Sort", "", FarmingProfitTracker.SORTS, { S.gardenProfitSort }, { v -> S.gardenProfitSort = v }))
+        fp.sub.add(DropdownSetting("Tracker", "", arrayOf("Session", "Total"), { S.gardenProfitMode }, { v -> S.gardenProfitMode = v }))
+        fp.sub.add(SliderIntSetting("Visible Lines", "Scroll over the HUD in your inventory for the rest", S::gardenProfitLines, 5, 25))
+        fp.sub.add(ToggleSetting("Show Sources", "Per-source counts after merged items", S::gardenProfitShowSources))
+        fp.sub.add(DropdownSetting("Bazaar Price", "", arrayOf("Sell Offer", "Insta Sell"), { S.gardenProfitPriceMode }, { v -> S.gardenProfitPriceMode = v }))
+        fp.sub.add(SliderIntSetting("AFK Timeout (s)", "", S::gardenProfitAfkSec, 10, 900, 5))
+        fp.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenProfitColor))
+        fp.sub.add(ButtonSetting("Reset Session", "", "Reset") { FarmingProfitTracker.resetSession() })
+        fp.sub.add(ButtonSetting("Reset Total", "", "Reset") { FarmingProfitTracker.resetTotal() })
+        col.features.add(fp)
+
         val comp = Feature("Composter HUD", S::gardenComposterHud)
         comp.sub.add(ToggleSetting("Inactive Warning", "Title when the composter runs dry", S::gardenComposterWarn))
         comp.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenComposterColor))
@@ -98,6 +112,7 @@ object GardenMenu {
         "Pest Finder" -> "Waypoints on infested plots"
         "Pest Timer HUD" -> "Pest count, cooldown, plots, spray, bonus"
         "Pest Profit Tracker" -> "Value of pest drops this session"
+        "Farming Profit Tracker" -> "Pests, crops, visitors and rare crops: session/total profit per hour"
         "Composter HUD" -> "Composter widget from the tab list"
         "Jacob's Contest HUD" -> "Jacob's Contest widget from the tab list"
         "Rare Crop Tracker" -> "Counts RARE CROP drops"

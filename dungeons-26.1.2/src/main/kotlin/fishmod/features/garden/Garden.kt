@@ -17,6 +17,7 @@ object Garden {
     fun init() {
         Visitors.init()
         Pests.init()
+        FarmingProfitTracker.init()
         GardenWidgets.init()
     }
 
