@@ -272,7 +272,11 @@ object FarmingProfitTracker {
             Cat.RARE -> listOf("Rare Crops"); Cat.CROPS -> emptyList()
             null -> listOf("Pests Killed", "Visitors", "Copper", "Garden XP", "Rare Crops")
         }
-        for (c in counts) t.counts[c]?.let { out += "§7$c §f${"%,d".format(it)}" }
+        for (c in counts) t.counts[c]?.let {
+            val ph = perHour(it.toDouble(), t)
+            val rate = if (ph <= 0.0) "" else " §7(§f" + (if (ph < 10) "%.1f".format(ph) else Garden.short(ph)) + "§7/h)"
+            out += "${COUNT_COLOR[c] ?: "§7"}$c §f${"%,d".format(it)}$rate"
+        }
         val profit = rows.sumOf { it.value }
         val ph = perHour(profit, t)
         out += "§7Playtime §f${fishmod.features.diana.DianaTracker.fmtTime(t.timeMs)}"
@@ -280,6 +284,8 @@ object FarmingProfitTracker {
         cache = out
         return out
     }
+
+    private val COUNT_COLOR = mapOf("Pests Killed" to "§c", "Visitors" to "§a", "Copper" to "§6", "Garden XP" to "§2", "Rare Crops" to "§d")
 
     private fun perHour(v: Double, t: Tracker) = if (t.timeMs < 60_000) 0.0 else v * 3_600_000.0 / t.timeMs
 
