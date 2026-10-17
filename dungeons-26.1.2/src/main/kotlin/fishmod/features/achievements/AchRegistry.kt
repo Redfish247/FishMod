@@ -22,13 +22,12 @@ object AchRegistry {
         "secret_speedster" to "Greed pays off when you cram it into a single run.",
         "fish_out_of_water" to "A fish should feel right at home opening menus... where it's wet.",
         "one_more_run" to "The clock strikes twelve and the queue button still glows.",
-        "there_was_never_a_secret" to "Sometimes the greatest find is finding absolutely nothing.",
         "frame_perfect" to "Beat yourself by less than a blink.",
         "the_chosen_one" to "Lightning strikes twice, in the same sitting.",
         "the_fish_king" to "He who rules every other secret wears the crown.",
         "i_hate_bers" to "That plate in the fourth room can't take the pressure.",
         "wrong_floor" to "A catacombs master visiting the very first floor. Lost?",
-        "sweaty_hands" to "The same panel keeps betraying you. Again. And again.",
+        "hot_tub" to "The floor is lava. Literally. Over and over.",
         "splash_zone" to "It's hot, it's bright, and it's the last thing you see.",
         "the_one_that_got_away" to "Some prey vanishes if you take too long to finish it.",
         "party_of_one" to "The hardest floor needs no friends. Prove it.",
@@ -386,13 +385,12 @@ object AchRegistry {
         a("board_contributor", "FishMod / General", "Board Contributor", "Leave 10 notes on the test board", "Medium", 10, "server.boardNotes", 10L, "", false)
         a("fish_out_of_water", "Secret Achievements", "Fish Out of Water", "Open FishMod while standing in water", "Secret", 50, "secret.waterGui", 1L, "", true)
         a("one_more_run", "Secret Achievements", "One More Run", "Start another dungeon run after midnight", "Secret", 25, "secret.midnightRun", 1L, "", true)
-        a("there_was_never_a_secret", "Secret Achievements", "There Was Never a Secret", "Search an entire dungeon without finding a secret", "Secret", 50, "secret.noSecrets", 1L, "", true)
         a("frame_perfect", "Secret Achievements", "Frame Perfect", "Beat your previous PB by <0.01s", "Secret", 25, "secret.framePerfect", 1L, "", true)
         a("the_chosen_one", "Secret Achievements", "The Chosen One", "Obtain the same designated rare RNG twice in one session", "Secret", 25, "secret.chosenOne", 1L, "", true)
         a("the_fish_king", "Secret Achievements", "The Fish King", "Unlock every secret achievement", "Impossible", 100, "meta.fishKing", 1L, "", true)
         a("i_hate_bers", "Secret Achievements", "I Hate Bers", "Break the I4 Pressure Plate", "Secret", 25, "secret.i4Plate", 1L, "", true)
         a("wrong_floor", "Secret Achievements", "Wrong Floor", "Enter F1 while Catacombs 50", "Secret", 25, "secret.wrongFloor", 1L, "", true)
-        a("sweaty_hands", "Secret Achievements", "Sweaty Hands", "Fail the same terminal 5 times in one run", "Secret", 25, "secret.sweatyHands", 1L, "", true)
+        a("hot_tub", "Secret Achievements", "Hot Tub", "Fall in lava 10 times in 1 run", "Secret", 25, "secret.lavaFalls", 1L, "", true)
         a("splash_zone", "Secret Achievements", "Splash Zone", "Die to lava in a dungeon", "Secret", 25, "secret.lavaDeath", 1L, "", true)
         a("the_one_that_got_away", "Secret Achievements", "The One That Got Away", "An Inquisitor despawns before you kill it", "Secret", 25, "secret.inqDespawn", 1L, "", true)
         a("party_of_one", "Secret Achievements", "Party of One", "Complete an M7 solo", "Secret", 100, "secret.soloM7", 1L, "", true)

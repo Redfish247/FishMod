@@ -151,7 +151,6 @@ object TerminalSolver {
         if (slot.container is Inventory) return false
         if (!simActive && System.currentTimeMillis() - term.timeOpened < FishSettings.terminalFirstClickProtMs) return true
         val right = button == 1
-        if (!simActive && !term.canClick(slot.index, right)) fishmod.features.achievements.AchHooks.terminalMisclick(term.type.name)
         if (FishSettings.terminalBlockWrongClicks && !term.canClick(slot.index, right)) return true
 
         if (FishSettings.terminalMiddleClickGui && !simActive && button != 2) {

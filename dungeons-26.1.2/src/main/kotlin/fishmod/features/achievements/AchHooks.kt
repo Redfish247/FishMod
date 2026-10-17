@@ -31,14 +31,8 @@ object AchHooks {
     private var feastSeen = false
     private var lastFeastMs = 0L
     private var tick = 0
-    private val termMiss = HashMap<String, Int>()
-
-    // A wrong click in a terminal; 5 on the same terminal type in one run
-    @JvmStatic
-    fun terminalMisclick(type: String) {
-        if (!Location.inDungeon()) return
-        if (termMiss.merge(type, 1, Int::plus)!! >= 5) AchStore.max("secret.sweatyHands", 1)
-    }
+    private var lavaDeaths = 0
+    private val LAVA_DEATH = Regex("^☠ You .*lava")
 
     @JvmStatic
     fun i4Plate() { Minecraft.getInstance().execute { AchStore.max("secret.i4Plate", 1) } }
@@ -68,7 +62,7 @@ object AchHooks {
 
     private fun resetRun() {
         runStartMs = 0L; bloodSeen = false; mimicSeen = false; princeSeen = false
-        sectionStartMs = 0L; inTerms = false; termMiss.clear()
+        sectionStartMs = 0L; inTerms = false; lavaDeaths = 0
     }
 
     private val FISH_NAMES = setOf("fish", "redfish2471")
@@ -97,6 +91,7 @@ object AchHooks {
     }
 
     private fun onChat(s: String) {
+        if (Location.inDungeon() && LAVA_DEATH.containsMatchIn(s) && ++lavaDeaths >= 10) AchStore.max("secret.lavaFalls", 1)
         hiFish(s)
         playtime(s)
         AchFlips.onChat(s)
