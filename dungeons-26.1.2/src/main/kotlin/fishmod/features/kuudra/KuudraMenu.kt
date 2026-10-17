@@ -3,6 +3,7 @@ package fishmod.features.kuudra
 import fishmod.features.FishModScreen.ButtonSetting
 import fishmod.features.FishModScreen.ColorPickerSetting
 import fishmod.features.FishModScreen.Column
+import fishmod.features.FishModScreen.DropdownSetting
 import fishmod.features.FishModScreen.Feature
 import fishmod.features.FishModScreen.InputSetting
 import fishmod.features.FishModScreen.SliderIntSetting
@@ -74,7 +75,9 @@ object KuudraMenu {
         chests.sub.add(ToggleSetting("Chest Value", "Item values in the Paid/Free Chest", S::kuudraChestValue))
         chests.sub.add(ToggleSetting("Opened Chest Highlight", "Vesuvius/Croesus: red = done, orange = partly opened", S::kuudraOpenedHighlight))
         chests.sub.add(ToggleSetting("Profit Tracker", "Adds a paid chest's profit when you open it", S::kuudraProfit))
-        chests.sub.add(ButtonSetting("Reset Profit", "", "Reset") { S.kuudraProfitTotal = 0.0; S.kuudraProfitChests = 0 })
+        chests.sub.add(DropdownSetting("Tracker View", "Session = this launch, Total = saved", arrayOf("Session", "Total"), { S.kuudraProfitMode }, { v -> S.kuudraProfitMode = v }).gatedBy { S.kuudraProfit })
+        chests.sub.add(SliderIntSetting("Tracker Rows", "Top items shown by value", S::kuudraProfitRows, 3, 25, 1).gatedBy { S.kuudraProfit })
+        chests.sub.add(ButtonSetting("Reset Profit", "Clears session and total", "Reset") { S.kuudraProfitTotal = 0.0; S.kuudraProfitChests = 0; KuudraLoot.reset() })
         chests.sub.add(ToggleSetting("Chest Counter", "Runs since you last claimed at Vesuvius", S::kuudraChestCounter))
         chests.sub.add(SliderIntSetting("Chest Cap", "", S::kuudraChestCap, 10, 60))
         chests.sub.add(ToggleSetting("Cap Party Reminder", "One party message when you hit the cap", S::kuudraChestCapParty).gatedBy { S.kuudraChestCounter })

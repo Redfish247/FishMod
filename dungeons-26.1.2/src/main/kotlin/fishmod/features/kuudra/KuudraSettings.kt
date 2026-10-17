@@ -83,6 +83,8 @@ object KuudraSettings {
     @ConfigValue @JvmField var kuudraProfit: Boolean = false
     @ConfigValue @JvmField var kuudraProfitTotal: Double = 0.0
     @ConfigValue @JvmField var kuudraProfitChests: Int = 0
+    @ConfigValue @JvmField var kuudraProfitMode: String = "Session"
+    @ConfigValue @JvmField var kuudraProfitRows: Int = 10
     @ConfigValue @JvmField var kuudraProfitX: Int = 10
     @ConfigValue @JvmField var kuudraProfitY: Int = 300
     @ConfigValue @JvmField var kuudraProfitScale: Double = 1.0

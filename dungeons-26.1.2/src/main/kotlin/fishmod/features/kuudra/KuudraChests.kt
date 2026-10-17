@@ -23,7 +23,7 @@ object KuudraChests {
     private val AMOUNT = Regex("^(.+?) x(\\d+)$")
     private val COINS = Regex("^([\\d,]+) Coins$")
 
-    private class Parsed(val slot: Int, val lines: List<String>, val value: Double, val cost: Double)
+    private class Parsed(val slot: Int, val lines: List<String>, val value: Double, val cost: Double, val drops: List<Triple<String, Int, Double>>)
     private var parsed: Parsed? = null
     private var claimed = false
 
@@ -96,6 +96,7 @@ object KuudraChests {
             if (ci < 0) continue
             val out = arrayListOf("§6§l${scr.title.string} Value")
             var value = 0.0; var cost = 0.0; var inCost = false
+            val drops = ArrayList<Triple<String, Int, Double>>()
             for (l in lore.drop(ci + 1)) {
                 if (l.isEmpty()) continue
                 if (l == "Cost") { inCost = true; continue }
@@ -106,12 +107,14 @@ object KuudraChests {
                 }
                 val v = price(l)
                 value += v
+                val am = AMOUNT.find(l)
+                drops += Triple(am?.groupValues?.get(1) ?: l, am?.groupValues?.get(2)?.toIntOrNull() ?: 1, v)
                 out += "§a${Mining.short(v)}	§f$l"
             }
             out += "§7Cost: §c${Mining.short(cost)}"
             val profit = value - cost
             out += "§eProfit: " + (if (profit >= 0) "§a" else "§c") + Mining.short(profit)
-            return Parsed(i, out, value, cost)
+            return Parsed(i, out, value, cost, drops)
         }
         return null
     }
@@ -123,6 +126,7 @@ object KuudraChests {
         claimed = true
         S.kuudraProfitTotal += p.value - p.cost
         S.kuudraProfitChests++
+        KuudraLoot.record(p.drops, p.value, p.cost)
         FishMsg.send("§6Kuudra chest: " + (if (p.value - p.cost >= 0) "§a" else "§c") + Mining.short(p.value - p.cost))
     }
 
