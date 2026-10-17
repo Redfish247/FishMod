@@ -352,8 +352,11 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         val nc = if (done) ScreenTheme.TEXT_COLOR else if (secret) DIM else 0xFF9AA4AE.toInt()
         val shownName = clip(name, (w - 14).toFloat(), S_SM)
         UiRecorder.text(shownName, bcx - tw(shownName, S_SM) / 2f, (y + 46).toFloat(), S_SM, nc)
-        val ap = "${a.points} AP"
-        UiRecorder.text(ap, bcx - tw(ap, S_XS) / 2f, (y + 59).toFloat(), S_XS, if (done) GOLD else DIM)
+        val ap = " · ${a.points} AP"
+        val dw = tw(a.difficulty, S_XS)
+        val lx = bcx - (dw + tw(ap, S_XS)) / 2f
+        UiRecorder.text(a.difficulty, lx, (y + 59).toFloat(), S_XS, if (done) dc else AchIcons.dim(dc, 0.6f))
+        UiRecorder.text(ap, lx + dw, (y + 59).toFloat(), S_XS, if (done) GOLD else DIM)
 
         val frac = progress(a)
         val by = y + TILE_H - 11
@@ -420,6 +423,8 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
         }
         val foot = if (done) "Unlocked " + DATE.format(Date(AchStore.data.unlocked[a.id] ?: 0L)) else "Locked"
         UiRecorder.text(foot, (cx + 12).toFloat(), ty.toFloat(), S_XS, if (done) ACCENT else DIM)
+        val dcol = AchIcons.diffColor(a.difficulty)
+        UiRecorder.text(a.difficulty, (cx + cw - 12 - tw(a.difficulty, S_XS)).toFloat(), ty.toFloat(), S_XS, dcol)
     }
 
     // arc drawn as small discs, clockwise from top
