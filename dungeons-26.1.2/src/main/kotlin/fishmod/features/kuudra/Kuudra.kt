@@ -104,7 +104,7 @@ object Kuudra {
                 if (PROGRESS.containsMatchIn(n)) piles.add(e)
                 if (n == "Elle") elle = e
                 if (phase == 2) BUILD.find(n)?.let { buildPct = it.groupValues[1].toInt(); builders = it.groupValues[2].toInt() }
-                if (phase == 1 && n == "✓ SUPPLIES RECEIVED ✓") dropDone(e.x.toInt(), e.z.toInt())
+                if (phase == 1 && n.contains("SUPPLIES RECEIVED")) dropDone(e.x, e.z)
             }
             is Player -> if (e !== mc.player && e.uuid.version() == 4) players.add(e)
         }
@@ -118,14 +118,12 @@ object Kuudra {
         }
     }
 
-    private fun dropDone(x: Int, z: Int) {
-        val s = when {
-            x == -98 && z == -112 -> Supply.Shop; x == -98 && z == -99 -> Supply.Equals
-            x == -110 && z == -106 -> Supply.xCannon; x == -106 && z == -112 -> Supply.X
-            x == -94 && z == -106 -> Supply.Triangle; x == -106 && z == -99 -> Supply.Slash
-            else -> return
-        }
-        s.active = false
+    // Nearest drop spot to the "SUPPLIES RECEIVED" hologram is marked placed
+    private fun dropDone(x: Double, z: Double) {
+        val s = Supply.entries.filter { it != Supply.None && it != Supply.Square }
+            .minByOrNull { val dx = it.drop.x + 0.5 - x; val dz = it.drop.z + 0.5 - z; dx * dx + dz * dz } ?: return
+        val dx = s.drop.x + 0.5 - x; val dz = s.drop.z + 0.5 - z
+        if (dx * dx + dz * dz <= 9.0) s.active = false
     }
 
     private fun onChat(msg: String): Boolean {
