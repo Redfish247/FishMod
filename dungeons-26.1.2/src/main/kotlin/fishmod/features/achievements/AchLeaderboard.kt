@@ -185,10 +185,8 @@ object AchLeaderboard {
 
     private fun renderBoard(ctx: LevelRenderContext, m: PoseStack) {
         val p = Minecraft.getInstance().player ?: return
-        val base = Vec3(AchSettings.achLbX, AchSettings.achLbY, AchSettings.achLbZ)
+        if (!areaOk()) return
         val eye = p.position()
-        if (eye.distanceToSqr(base) > RANGE * RANGE || !areaOk()) return
-        want()
         val sc = AchSettings.achLbScale.coerceIn(0.3, 5.0)
         val lh = LINE_H * sc
         val status = when {
@@ -197,29 +195,32 @@ object AchLeaderboard {
             offline -> "§c(offline) §8${ago()}"
             else -> "§8${ago()}"
         }
-        // One rigid board facing the viewer (yaw only) so every line turns together
-        val yaw = Math.atan2(eye.x - base.x, eye.z - base.z).toFloat()
-        val off = 2.3 * sc
-        val panels = listOf(Triple("§b§lTop Achievement Points", lines(false), -off), Triple("§d§lTop Secret Hunters", lines(true), off))
-        val rows = if (loaded) panels.maxOf { it.second.size } else 0
-        var y = 0.8 + (rows + 3) * lh
-        RenderUtils.renderBoardText(m, Component.literal("§6§l✦ FishMod Achievements ✦"), base, yaw, 0.0, y, (sc * 1.25).toFloat())
-        y -= lh * 1.4
-        for ((title, ls, side) in panels) {
-            var ly = y
-            RenderUtils.renderBoardText(m, Component.literal(title), base, yaw, side, ly, sc.toFloat())
-            ly -= lh * 1.2
-            for (l in ls) { RenderUtils.renderBoardText(m, Component.literal(l), base, yaw, side, ly, sc.toFloat()); ly -= lh }
+        val boards = listOf(
+            Triple(Vec3(AchSettings.achPtsX, AchSettings.achPtsY, AchSettings.achPtsZ), "§b§lTop Achievement Points", false),
+            Triple(Vec3(AchSettings.achSecX, AchSettings.achSecY, AchSettings.achSecZ), "§d§lTop Secret Hunters", true)
+        )
+        for ((base, title, secretList) in boards) {
+            if (eye.distanceToSqr(base) > RANGE * RANGE) continue
+            want()
+            val yaw = Math.atan2(eye.x - base.x, eye.z - base.z).toFloat()
+            val ls = lines(secretList)
+            val rows = if (loaded) ls.size else 0
+            var y = 0.8 + (rows + 2) * lh
+            RenderUtils.renderBoardText(m, Component.literal(title), base, yaw, 0.0, y, (sc * 1.1).toFloat())
+            y -= lh * 1.4
+            for (l in ls) { RenderUtils.renderBoardText(m, Component.literal(l), base, yaw, 0.0, y, sc.toFloat()); y -= lh }
+            RenderUtils.renderBoardText(m, Component.literal(status), base, yaw, 0.0, 0.8, (sc * 0.9).toFloat())
         }
-        RenderUtils.renderBoardText(m, Component.literal(status), base, yaw, 0.0, 0.8, (sc * 0.9).toFloat())
     }
 
-    fun here() {
+    fun here(secretList: Boolean) {
         val p = Minecraft.getInstance().player ?: return
-        AchSettings.achLbX = Math.round(p.x * 100) / 100.0
-        AchSettings.achLbY = Math.round(p.y * 100) / 100.0
-        AchSettings.achLbZ = Math.round(p.z * 100) / 100.0
+        val x = Math.round(p.x * 100) / 100.0
+        val y = Math.round(p.y * 100) / 100.0
+        val z = Math.round(p.z * 100) / 100.0
+        if (secretList) { AchSettings.achSecX = x; AchSettings.achSecY = y; AchSettings.achSecZ = z }
+        else { AchSettings.achPtsX = x; AchSettings.achPtsY = y; AchSettings.achPtsZ = z }
         try { FishConfig.manager.save() } catch (t: Throwable) { FishDiag.fail("AchLeaderboard.2", "config save failed", t) }
-        FishMsg.send("§aLeaderboard board moved to §f${AchSettings.achLbX}, ${AchSettings.achLbY}, ${AchSettings.achLbZ}")
+        FishMsg.send("§a${if (secretList) "Secret Hunters" else "Points"} board moved to §f$x, $y, $z")
     }
 }

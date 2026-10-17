@@ -130,7 +130,10 @@ object AchEngine {
             .then(ClientCommands.literal("test").executes { AchPopup.test(); 1 })
             .then(ClientCommands.literal("sync").executes { AchApiSync.sync(true); 1 })
             .then(ClientCommands.literal("lb")
-                .then(ClientCommands.literal("here").executes { AchLeaderboard.here(); 1 })
+                .then(ClientCommands.literal("here")
+                    .executes { AchLeaderboard.here(false); 1 }
+                    .then(ClientCommands.literal("points").executes { AchLeaderboard.here(false); 1 })
+                    .then(ClientCommands.literal("secrets").executes { AchLeaderboard.here(true); 1 }))
                 .then(ClientCommands.literal("refresh").executes { AchLeaderboard.submit(true); AchLeaderboard.fetch(); 1 }))
             .then(ClientCommands.literal("runs").executes { runs(); 1 })
             .then(ClientCommands.literal("rng").executes { rng(); 1 })

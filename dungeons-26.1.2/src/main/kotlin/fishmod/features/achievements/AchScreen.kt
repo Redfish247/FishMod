@@ -309,7 +309,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
             UiRecorder.textBold(r, x + 20 - tw(r, S_XS) / 2f, ry + (rh - S_XS) / 2f, S_XS, if (rank <= 3) ACC_INK else DIM)
             val v = AchLeaderboard.value(e, secrets)
             val vw = tw(v, S_SM)
-            val nameCol = if (mine) ACCENT else ScreenTheme.TEXT_COLOR
+            val nameCol = if (mine) ACCENT else if (rank <= 3) col else ScreenTheme.TEXT_COLOR
             UiRecorder.text(clip(e.name, (rowW - 36 - vw - 12).toFloat(), S_SM), (x + 34).toFloat(), ry + (rh - S_SM) / 2f, S_SM, nameCol)
             UiRecorder.text(v, (x + 6 + rowW - 8 - vw).toFloat(), ry + (rh - S_SM) / 2f, S_SM, GOLD)
         }
