@@ -40,7 +40,6 @@ object AchMenu {
         main.sub.add(ToggleSetting("API Sync On Login", "One Hypixel profile pull per launch", S::achApiSyncOnLogin))
         main.sub.add(ButtonSetting("Sync Now", "Same as /fm ach sync", "Sync") { AchApiSync.sync(true) })
         main.sub.add(InputIntSetting("RNG Min Value", "Drops worth at least this count as RNG", { S.achRngMinValue }, { v -> S.achRngMinValue = v.coerceAtLeast(0) }))
-        main.sub.add(ToggleSetting("Reveal Secrets", "Show secret names before unlocking", S::achShowSecrets))
         main.sub.add(ToggleSetting("Hide Untracked", "Hide ones FishMod can't track yet", S::achHideUntracked))
         col.features.add(main)
 

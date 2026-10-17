@@ -15,7 +15,6 @@ object AchSettings {
     @ConfigValue @JvmField var achSoundVolume: Int = 100
     @ConfigValue @JvmField var achSoundPitch: Double = 1.0
     @ConfigValue @JvmField var achApiSyncOnLogin: Boolean = true
-    @ConfigValue @JvmField var achShowSecrets: Boolean = false
     @ConfigValue @JvmField var achHideUntracked: Boolean = false
     @ConfigValue @JvmField var achRngMinValue: Int = 1_000_000
     @ConfigValue @JvmField var achLbEnabled: Boolean = true
