@@ -78,8 +78,14 @@ object KuudraHuds {
         MiningHuds.reg("Kuudra Profit", "kuudra_profit", 110, 20,
             { S.kuudraProfitX }, { S.kuudraProfitX = it }, { S.kuudraProfitY }, { S.kuudraProfitY = it },
             { S.kuudraProfitScale }, { S.kuudraProfitScale = it }, { (S.kuudraChestsMaster && S.kuudraProfit) && Kuudra.inKuudra() }) {
-            val n = S.kuudraProfitChests
-            listOf("§6Kuudra Profit: §a${Mining.short(S.kuudraProfitTotal)}", "§7$n paid chests" + if (n > 0) ", §a${Mining.short(S.kuudraProfitTotal / n)}§7/chest" else "")
+            val bk = if (S.kuudraProfitMode == "Total") KuudraLoot.total else KuudraLoot.session
+            val prof = bk.value - bk.cost
+            val out = arrayListOf("§6§lKuudra Loot §7(${S.kuudraProfitMode})",
+                "§fProfit: " + (if (prof >= 0) "§a" else "§c") + Mining.short(prof),
+                "§7${bk.chests} paid chests" + if (bk.chests > 0) ", " + Mining.short(prof / bk.chests) + "/chest" else "")
+            val items = bk.items.values.sortedByDescending { it.value }.take(S.kuudraProfitRows)
+            for (it in items) out += "§a${Mining.short(it.value)}\t§f${it.count}x ${it.name}"
+            out
         }
     }
 
