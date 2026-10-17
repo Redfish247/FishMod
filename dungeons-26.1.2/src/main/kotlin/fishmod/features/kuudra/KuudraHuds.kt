@@ -49,35 +49,35 @@ object KuudraHuds {
             { S.kuudraSplitsScale }, { S.kuudraSplitsScale = it }, { S.kuudraSplits && on() }) { splitLines() }
         MiningHuds.reg("Kuudra Supplies", "kuudra_supplies", 120, 70,
             { S.kuudraSupplyHudX }, { S.kuudraSupplyHudX = it }, { S.kuudraSupplyHudY }, { S.kuudraSupplyHudY = it },
-            { S.kuudraSupplyHudScale }, { S.kuudraSupplyHudScale = it }, { S.kuudraSupplyHud && Kuudra.inKuudra() && Kuudra.phase == 1 }) {
+            { S.kuudraSupplyHudScale }, { S.kuudraSupplyHudScale = it }, { (S.kuudraSupplyMaster && S.kuudraSupplyHud) && Kuudra.inKuudra() && Kuudra.phase == 1 }) {
             val out = arrayListOf("§6Supplies: §a${Kuudra.supplies}§7/6")
             for ((n, t) in Kuudra.supplyTimes) out += "§e$n §7${Kuudra.fmt(t)}"
             out
         }
         MiningHuds.reg("Kuudra Build", "kuudra_build", 90, 20,
             { S.kuudraBuildHudX }, { S.kuudraBuildHudX = it }, { S.kuudraBuildHudY }, { S.kuudraBuildHudY = it },
-            { S.kuudraBuildHudScale }, { S.kuudraBuildHudScale = it }, { S.kuudraBuildHud && Kuudra.inKuudra() && Kuudra.phase == 2 }) {
+            { S.kuudraBuildHudScale }, { S.kuudraBuildHudScale = it }, { (S.kuudraBuildMaster && S.kuudraBuildHud) && Kuudra.inKuudra() && Kuudra.phase == 2 }) {
             listOf("§bBuild: ${colorPct(Kuudra.buildPct)}%", "§bBuilders: ${colorN(Kuudra.builders)}", "§bFreshers: ${colorN(activeFresh().size)}")
         }
         MiningHuds.reg("Kuudra Fresh Timers", "kuudra_fresh", 90, 30,
             { S.kuudraFreshHudX }, { S.kuudraFreshHudX = it }, { S.kuudraFreshHudY }, { S.kuudraFreshHudY = it },
-            { S.kuudraFreshHudScale }, { S.kuudraFreshHudScale = it }, { S.kuudraFreshHud && Kuudra.inKuudra() && Kuudra.phase == 2 }) {
+            { S.kuudraFreshHudScale }, { S.kuudraFreshHudScale = it }, { (S.kuudraBuildMaster && S.kuudraFreshHud) && Kuudra.inKuudra() && Kuudra.phase == 2 }) {
             activeFresh().map { (n, left) -> "§6$n§f: ${"%.1f".format(left / 1000.0)}s" }
         }
         MiningHuds.reg("Kuudra Health", "kuudra_hp", 100, 10,
             { S.kuudraHpHudX }, { S.kuudraHpHudX = it }, { S.kuudraHpHudY }, { S.kuudraHpHudY = it },
-            { S.kuudraHpHudScale }, { S.kuudraHpHudScale = it }, { S.kuudraHpHud && Kuudra.inKuudra() && Kuudra.boss?.isAlive == true }) {
+            { S.kuudraHpHudScale }, { S.kuudraHpHudScale = it }, { (S.kuudraBossMaster && S.kuudraHpHud) && Kuudra.inKuudra() && Kuudra.boss?.isAlive == true }) {
             listOf(hpText(Kuudra.boss?.health ?: 0f))
         }
         MiningHuds.reg("Kuudra Chest Counter", "kuudra_chests", 90, 10,
             { S.kuudraChestCounterX }, { S.kuudraChestCounterX = it }, { S.kuudraChestCounterY }, { S.kuudraChestCounterY = it },
-            { S.kuudraChestCounterScale }, { S.kuudraChestCounterScale = it }, { S.kuudraChestCounter && Kuudra.inKuudra() }) {
+            { S.kuudraChestCounterScale }, { S.kuudraChestCounterScale = it }, { (S.kuudraChestsMaster && S.kuudraChestCounter) && Kuudra.inKuudra() }) {
             val c = S.kuudraChestCount; val col = if (c >= S.kuudraChestCap) "§c" else if (c >= S.kuudraChestCap - 5) "§e" else "§a"
             listOf("§6Chests: $col$c§7/${S.kuudraChestCap}")
         }
         MiningHuds.reg("Kuudra Profit", "kuudra_profit", 110, 20,
             { S.kuudraProfitX }, { S.kuudraProfitX = it }, { S.kuudraProfitY }, { S.kuudraProfitY = it },
-            { S.kuudraProfitScale }, { S.kuudraProfitScale = it }, { S.kuudraProfit && Kuudra.inKuudra() }) {
+            { S.kuudraProfitScale }, { S.kuudraProfitScale = it }, { (S.kuudraChestsMaster && S.kuudraProfit) && Kuudra.inKuudra() }) {
             val n = S.kuudraProfitChests
             listOf("§6Kuudra Profit: §a${Mining.short(S.kuudraProfitTotal)}", "§7$n paid chests" + if (n > 0) ", §a${Mining.short(S.kuudraProfitTotal / n)}§7/chest" else "")
         }

@@ -34,7 +34,7 @@ object KuudraChests {
             val title = scr.title.string
             if (CHEST_TITLE.matches(title)) {
                 ScreenEvents.afterExtract(scr).register(ScreenEvents.AfterExtract { _, ctx, _, _, _ ->
-                    if (!S.kuudraChestValue) return@AfterExtract
+                    if (!(S.kuudraChestsMaster && S.kuudraChestValue)) return@AfterExtract
                     FishDiag.guard("KuudraChests.1", "chest value failed") {
                         if (parsed == null) parsed = parse(scr)
                         val p = parsed ?: return@guard
@@ -54,7 +54,7 @@ object KuudraChests {
         })
 
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
-            if (!S.kuudraOpenedHighlight || stack.isEmpty) return@register
+            if (!(S.kuudraChestsMaster && S.kuudraOpenedHighlight) || stack.isEmpty) return@register
             val t = Minecraft.getInstance().screen?.title?.string ?: return@register
             if (!t.contains("Vesuvius") && !t.contains("Croesus")) return@register
             val slot = DrawEvents.currentSlot ?: return@register
@@ -70,7 +70,7 @@ object KuudraChests {
 
         MiningHuds.reg("Kuudra Chest Value", "kuudra_chest_value", 150, 60,
             { S.kuudraChestValueX }, { S.kuudraChestValueX = it }, { S.kuudraChestValueY }, { S.kuudraChestValueY = it },
-            { S.kuudraChestValueScale }, { S.kuudraChestValueScale = it }, { S.kuudraChestValue }) { emptyList() }
+            { S.kuudraChestValueScale }, { S.kuudraChestValueScale = it }, { (S.kuudraChestsMaster && S.kuudraChestValue) }) { emptyList() }
     }
 
     private fun lore(s: ItemStack): List<String> = s.get(DataComponents.LORE)?.lines()?.map { Mining.strip(it.string).trim() } ?: emptyList()
@@ -117,7 +117,7 @@ object KuudraChests {
     }
 
     private fun onClaimClick(scr: AbstractContainerScreen<*>, idx: Int) {
-        if (!S.kuudraProfit || claimed) return
+        if (!(S.kuudraChestsMaster && S.kuudraProfit) || claimed) return
         val p = parsed ?: parse(scr) ?: return
         if (idx != p.slot) return
         claimed = true
@@ -133,7 +133,7 @@ object KuudraChests {
     }
 
     fun onRunEnd() {
-        if (!S.kuudraChestCounter) return
+        if (!(S.kuudraChestsMaster && S.kuudraChestCounter)) return
         S.kuudraChestCount++
         if (S.kuudraChestCount >= S.kuudraChestCap) {
             Kuudra.alert("§c§lKuudra chests full", "§7${S.kuudraChestCount}/${S.kuudraChestCap} - claim at Vesuvius")
