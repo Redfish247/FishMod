@@ -75,7 +75,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
     private fun vh(): Int = (this.height / UiScale.factor()).toInt()
 
     private fun hidden(a: Ach): Boolean = AchSettings.achHideUntracked && !a.tracked && !AchEngine.unlocked(a)
-    private fun secretHidden(a: Ach): Boolean = a.secret && !AchEngine.unlocked(a) && !AchSettings.achShowSecrets
+    private fun secretHidden(a: Ach): Boolean = a.secret && !AchEngine.unlocked(a)
 
     private fun groups(): List<String> = listOf(LB, ALL, RECENT) + AchRegistry.SECTIONS
 
