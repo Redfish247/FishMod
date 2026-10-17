@@ -13,15 +13,13 @@ import fishmod.features.FishModScreen.SoundSearchSetting
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.achievements.AchSettings as S
 
-// The Achievements tab in /fm: settings plus one browsable section per achievement group
+// The Achievements tab in /fm: settings only; the list lives in /fm ach
 object AchMenu {
 
-    private val rows = ArrayList<Pair<LabelSetting, AchRegistry.Ach>>()
     private var summary: LabelSetting? = null
 
     fun column(): Column {
         val col = Column("Achievements")
-        rows.clear()
 
         val main = Feature("Achievements", S::achEnabled)
         summary = LabelSetting("", "").also { main.sub.add(it) }
@@ -62,16 +60,6 @@ object AchMenu {
         lb.sub.add(ButtonSetting("Submit Score", "Send your totals now", "Submit") { AchLeaderboard.submit(true) })
         col.features.add(lb)
 
-        for (sec in AchRegistry.SECTIONS) {
-            val f = Feature(sec, null, null)
-            for (a in AchRegistry.ALL) if (a.section == sec) {
-                val l = LabelSetting(a.name, "")
-                l.gatedBy { !(S.achHideUntracked && !a.tracked && !AchEngine.unlocked(a)) }
-                rows.add(l to a)
-                f.sub.add(l)
-            }
-            col.features.add(f)
-        }
         refresh()
         return col
     }
@@ -81,19 +69,6 @@ object AchMenu {
             val all = AchRegistry.ALL
             it.name = "${all.count { a -> AchEngine.unlocked(a) }}/${all.size} unlocked"
             it.description = "${AchEngine.points()}/${AchEngine.maxPoints()} AP"
-        }
-        for ((l, a) in rows) {
-            val done = AchEngine.unlocked(a)
-            val hidden = a.secret && !done && !S.achShowSecrets
-            l.name = (if (done) "✔ " else "") + (if (hidden) "???" else a.name) + "  (${a.points} AP)"
-            l.description = when {
-                hidden -> a.hint.ifEmpty { "Secret achievement" }
-                done -> a.desc
-                a.serverSide -> "Needs FishMod server support - " + a.desc
-                !a.tracked -> "Not tracked yet - " + a.desc
-                a.metric.startsWith("meta.") || a.metric.startsWith("secret.") -> a.desc
-                else -> "${AchEngine.fmt(a, minOf(AchEngine.value(a), a.goal))}/${AchEngine.fmt(a, a.goal)} - ${a.desc}"
-            }
         }
     }
 
