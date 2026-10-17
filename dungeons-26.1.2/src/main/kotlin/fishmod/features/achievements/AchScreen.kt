@@ -333,15 +333,19 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
 
         val bcx = x + w / 2f
         val bcy = y + 24f
-        val glyph = if (secret) "?" else (a.name.firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "?")
+        val glyph = "?"
         val gw = UiRecorder.textWidthBold(glyph, S_LG)
-        if (done) {
-            UiRecorder.disc(bcx, bcy, 15f, 0x3324B6B0)
-            UiRecorder.disc(bcx, bcy, 12f, ACCENT)
-            UiRecorder.textBold(glyph, bcx - gw / 2f, bcy - S_LG / 2f, S_LG, ACC_INK)
+        val dc = AchIcons.diffColor(a.difficulty)
+        if (secret) {
+            UiRecorder.disc(bcx, bcy, 12f, 0xFF0D1014.toInt())
+            UiRecorder.textBold(glyph, bcx - gw / 2f, bcy - S_LG / 2f, S_LG, 0xFF3A424B.toInt())
+        } else if (done) {
+            UiRecorder.disc(bcx, bcy, 15f, (dc and 0xFFFFFF) or 0x33000000)
+            UiRecorder.disc(bcx, bcy, 12f, dc)
+            AchIcons.draw(a.section, bcx, bcy, 7.5f, ACC_INK)
         } else {
-            UiRecorder.disc(bcx, bcy, 12f, if (secret) 0xFF0D1014.toInt() else LINE)
-            UiRecorder.textBold(glyph, bcx - gw / 2f, bcy - S_LG / 2f, S_LG, if (secret) 0xFF3A424B.toInt() else DIM)
+            UiRecorder.disc(bcx, bcy, 12f, LINE)
+            AchIcons.draw(a.section, bcx, bcy, 7.5f, AchIcons.dim(dc, 0.55f))
         }
 
         val name = if (secret) "???" else a.name
