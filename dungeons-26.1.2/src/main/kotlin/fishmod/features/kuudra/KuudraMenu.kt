@@ -29,7 +29,7 @@ object KuudraMenu {
         alerts.sub.add(ToggleSetting("Sound", "", S::kuudraAlertSound))
         col.features.add(alerts)
 
-        val sup = Feature("Supply Helper", null, null)
+        val sup = Feature("Supply Helper", S::kuudraSupplyMaster)
         sup.sub.add(ToggleSetting("Supply Times", "Who picked up a supply and how fast", S::kuudraSupplyTimes))
         sup.sub.add(ToggleSetting("Hide Original Message", "", S::kuudraSupplyHideOriginal).gatedBy { S.kuudraSupplyTimes })
         sup.sub.add(ToggleSetting("Supply Progress HUD", "", S::kuudraSupplyHud))
@@ -48,7 +48,7 @@ object KuudraMenu {
         pre.sub.add(ToggleSetting("Advanced Priority", "", S::kuudraCratePriorityAdvanced).gatedBy { S.kuudraCratePriority })
         col.features.add(pre)
 
-        val build = Feature("Build Helper", null, null)
+        val build = Feature("Build Helper", S::kuudraBuildMaster)
         build.sub.add(ToggleSetting("Build HUD", "Build %, builders, freshers", S::kuudraBuildHud))
         build.sub.add(ToggleSetting("Pile Waypoints", "Beam + progress on unfinished piles", S::kuudraPileWaypoints))
         build.sub.add(ColorPickerSetting("Pile Color", "", S::kuudraPileColor).gatedBy { S.kuudraPileWaypoints })
@@ -58,7 +58,7 @@ object KuudraMenu {
         build.sub.add(InputSetting("Fresh Message", "", S::kuudraFreshMessage).gatedBy { S.kuudraFreshParty })
         col.features.add(build)
 
-        val boss = Feature("Kuudra Boss", null, null)
+        val boss = Feature("Kuudra Boss", S::kuudraBossMaster)
         boss.sub.add(ToggleSetting("Highlight Kuudra", "", S::kuudraHighlight))
         boss.sub.add(ColorPickerSetting("Kuudra Color", "", S::kuudraHighlightColor).gatedBy { S.kuudraHighlight })
         boss.sub.add(ToggleSetting("Health In World", "", S::kuudraHpWorld))
@@ -70,7 +70,7 @@ object KuudraMenu {
         boss.sub.add(ColorPickerSetting("Elle Color", "", S::kuudraElleColor).gatedBy { S.kuudraElleHighlight })
         col.features.add(boss)
 
-        val chests = Feature("Kuudra Chests", null, null)
+        val chests = Feature("Kuudra Chests", S::kuudraChestsMaster)
         chests.sub.add(ToggleSetting("Chest Value", "Item values in the Paid/Free Chest", S::kuudraChestValue))
         chests.sub.add(ToggleSetting("Opened Chest Highlight", "Vesuvius/Croesus: red = done, orange = partly opened", S::kuudraOpenedHighlight))
         chests.sub.add(ToggleSetting("Profit Tracker", "Adds a paid chest's profit when you open it", S::kuudraProfit))

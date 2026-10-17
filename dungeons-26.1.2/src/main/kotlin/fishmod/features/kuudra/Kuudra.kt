@@ -140,7 +140,7 @@ object Kuudra {
             NOT_AGAIN -> checkPre()
             OWN_FRESH -> {
                 freshers[Minecraft.getInstance().player?.name?.string ?: "You"] = now()
-                if (S.kuudraFreshParty && S.kuudraFreshMessage.isNotBlank()) party(S.kuudraFreshMessage)
+                if ((S.kuudraBuildMaster && S.kuudraFreshParty) && S.kuudraFreshMessage.isNotBlank()) party(S.kuudraFreshMessage)
             }
         }
         PARTY_FRESH.find(msg)?.let { freshers[it.groupValues[1]] = now() }
@@ -151,7 +151,7 @@ object Kuudra {
             supplyTimes.add(m.groupValues[1] to t)
             if (m.groupValues[1] == Minecraft.getInstance().player?.name?.string) fishmod.features.achievements.AchBus.post(fishmod.features.achievements.AchEvent.SupplyDelivered)
             if (S.kuudraAlerts && S.kuudraAlertSupplies && supplies == m.groupValues[3].toInt()) alert("§a§lSupplies ${supplies}/${supplies}", "")
-            if (S.kuudraSupplyTimes && phase == 1) {
+            if ((S.kuudraSupplyMaster && S.kuudraSupplyTimes) && phase == 1) {
                 FishMsg.send("§6${m.groupValues[1]} §a§lrecovered a supply in ${fmt(t)}! §r§8(${m.groupValues[2]}/${m.groupValues[3]})")
                 return S.kuudraSupplyHideOriginal
             }

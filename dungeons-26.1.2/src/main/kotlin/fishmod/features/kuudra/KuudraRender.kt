@@ -49,19 +49,19 @@ object KuudraRender {
                 fun txt(s: String, p: Vec3, sc: Float) = RenderUtils.renderText(ctx, ps, Component.literal(s), p, sc)
                 val ph = Kuudra.phase
                 if (ph == 1) {
-                    if (S.kuudraSupplyWaypoints) for (g in Kuudra.giants) txt("§ePick Up!", supplyPos(g).add(0.0, 2.5, 0.0), 1.5f)
-                    if (S.kuudraDropWaypoints) for (s in drops()) txt("§ePlace Here!", Vec3.atCenterOf(s.drop).add(0.0, 1.5, 0.0), 1.5f)
-                    if (S.kuudraPreAreaLabels) for (s in Supply.entries) if (s != Supply.None) txt("§e${s.name}", Vec3.atCenterOf(s.pick), 2f)
+                    if ((S.kuudraSupplyMaster && S.kuudraSupplyWaypoints)) for (g in Kuudra.giants) txt("§ePick Up!", supplyPos(g).add(0.0, 2.5, 0.0), 1.5f)
+                    if ((S.kuudraSupplyMaster && S.kuudraDropWaypoints)) for (s in drops()) txt("§ePlace Here!", Vec3.atCenterOf(s.drop).add(0.0, 1.5, 0.0), 1.5f)
+                    if ((S.kuudraSupplyMaster && S.kuudraPreAreaLabels)) for (s in Supply.entries) if (s != Supply.None) txt("§e${s.name}", Vec3.atCenterOf(s.pick), 2f)
                 }
                 if (ph == 2) {
-                    if (S.kuudraPileWaypoints) for (a in Kuudra.piles) txt(a.name.string, a.position().add(0.0, 3.0, 0.0), 1.5f)
-                    if (S.kuudraBallistaText) {
+                    if ((S.kuudraBuildMaster && S.kuudraPileWaypoints)) for (a in Kuudra.piles) txt(a.name.string, a.position().add(0.0, 3.0, 0.0), 1.5f)
+                    if ((S.kuudraBuildMaster && S.kuudraBallistaText)) {
                         txt("§bBuild §c${Kuudra.buildPct}%", Vec3(-101.5, 82.0, -105.5), 3f)
                         txt("§bBuilders ${Kuudra.builders}", Vec3(-101.5, 81.0, -105.5), 3f)
                     }
                 }
                 val b = Kuudra.boss
-                if (S.kuudraHpWorld && b != null && b.isAlive) txt(KuudraHuds.hpText(b.health), b.position().add(b.lookAngle.scale(13.0)).add(0.0, 10.0, 0.0), 4f)
+                if ((S.kuudraBossMaster && S.kuudraHpWorld) && b != null && b.isAlive) txt(KuudraHuds.hpText(b.health), b.position().add(b.lookAngle.scale(13.0)).add(0.0, 10.0, 0.0), 4f)
             }
         }
     }
@@ -83,25 +83,25 @@ object KuudraRender {
     private fun fills(ps: PoseStack, vc: VertexConsumer) {
         val ph = Kuudra.phase
         if (ph == 1) {
-            if (S.kuudraSupplyWaypoints) for (g in Kuudra.giants) { val p = supplyPos(g); beam(ps, vc, p.x, p.y, p.z, S.kuudraSupplyColor) }
-            if (S.kuudraDropWaypoints) for (s in drops()) {
+            if ((S.kuudraSupplyMaster && S.kuudraSupplyWaypoints)) for (g in Kuudra.giants) { val p = supplyPos(g); beam(ps, vc, p.x, p.y, p.z, S.kuudraSupplyColor) }
+            if ((S.kuudraSupplyMaster && S.kuudraDropWaypoints)) for (s in drops()) {
                 val c = if (Kuudra.missing == s) 0xFF55FF55.toInt() else 0xFFFF5555.toInt()
                 beam(ps, vc, s.drop.x + 0.5, s.drop.y.toDouble(), s.drop.z + 0.5, c)
             }
-            if (S.kuudraPearlWaypoints) pearls { box, c, filled -> if (filled) RenderUtils.fillBox(ps, vc, box, Mining.alpha(c, 60)) }
+            if ((S.kuudraSupplyMaster && S.kuudraPearlWaypoints)) pearls { box, c, filled -> if (filled) RenderUtils.fillBox(ps, vc, box, Mining.alpha(c, 60)) }
         }
-        if (ph == 2 && S.kuudraPileWaypoints) for (a in Kuudra.piles) beam(ps, vc, a.x, a.y, a.z, S.kuudraPileColor)
+        if (ph == 2 && (S.kuudraBuildMaster && S.kuudraPileWaypoints)) for (a in Kuudra.piles) beam(ps, vc, a.x, a.y, a.z, S.kuudraPileColor)
     }
 
     private fun lines(ps: PoseStack, vc: VertexConsumer) {
         val ph = Kuudra.phase
-        if (ph == 1 && S.kuudraGiantBox) for (g in Kuudra.giants) Mining.outline(ps, vc, g.boundingBox, Mining.alpha(S.kuudraSupplyColor, 100), 2f)
-        if (ph == 1 && S.kuudraPearlWaypoints) pearls { box, c, filled -> if (!filled) Mining.outline(ps, vc, box, c, 2f) }
+        if (ph == 1 && (S.kuudraSupplyMaster && S.kuudraGiantBox)) for (g in Kuudra.giants) Mining.outline(ps, vc, g.boundingBox, Mining.alpha(S.kuudraSupplyColor, 100), 2f)
+        if (ph == 1 && (S.kuudraSupplyMaster && S.kuudraPearlWaypoints)) pearls { box, c, filled -> if (!filled) Mining.outline(ps, vc, box, c, 2f) }
         val b = Kuudra.boss
-        if (S.kuudraHighlight && b != null && b.isAlive) Mining.outline(ps, vc, b.boundingBox, S.kuudraHighlightColor, 3f)
-        if (S.kuudraTeamHighlight) for (p in Kuudra.players) if (p.isAlive) Mining.outline(ps, vc, p.boundingBox, S.kuudraTeamColor, 2f)
+        if ((S.kuudraBossMaster && S.kuudraHighlight) && b != null && b.isAlive) Mining.outline(ps, vc, b.boundingBox, S.kuudraHighlightColor, 3f)
+        if ((S.kuudraBossMaster && S.kuudraTeamHighlight)) for (p in Kuudra.players) if (p.isAlive) Mining.outline(ps, vc, p.boundingBox, S.kuudraTeamColor, 2f)
         val e = Kuudra.elle
-        if (S.kuudraElleHighlight && e != null && e.isAlive) {
+        if ((S.kuudraBossMaster && S.kuudraElleHighlight) && e != null && e.isAlive) {
             val p = e.position()
             Mining.outline(ps, vc, AABB(p.x - 0.4, p.y - 2.0, p.z - 0.4, p.x + 0.4, p.y, p.z + 0.4), S.kuudraElleColor, 2f)
         }

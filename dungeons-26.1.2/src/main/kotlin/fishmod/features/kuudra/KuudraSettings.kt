@@ -4,6 +4,11 @@ import fishmod.shaded.practicalconfig.manager.ConfigValue
 
 object KuudraSettings {
 
+    @ConfigValue @JvmField var kuudraSupplyMaster: Boolean = true
+    @ConfigValue @JvmField var kuudraBuildMaster: Boolean = true
+    @ConfigValue @JvmField var kuudraBossMaster: Boolean = true
+    @ConfigValue @JvmField var kuudraChestsMaster: Boolean = true
+
     // Splits
     @ConfigValue @JvmField var kuudraSplits: Boolean = false
     @ConfigValue @JvmField var kuudraSplitsChat: Boolean = true
