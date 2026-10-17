@@ -32,6 +32,7 @@ object AchLeaderboard {
     private const val FETCH_RETRY_MS = 30_000L
     private const val RANGE = 48.0
     private const val LINE_H = 0.25
+    private val SECRET_TOTAL: Int by lazy { AchRegistry.ALL.count { it.section == "Secret Achievements" } }
 
     @Volatile var points: List<Entry> = emptyList(); private set
     @Volatile var secrets: List<Entry> = emptyList(); private set
@@ -51,7 +52,7 @@ object AchLeaderboard {
     @Volatile var total = 0; private set
     private var registered = false
 
-    // Secret achievements unlocked (the Secret Achievements section, max 13)
+    // Secret achievements unlocked (the Secret Achievements section, )
     fun secretCount(): Int = AchRegistry.ALL.count { it.section == "Secret Achievements" && AchEngine.unlocked(it) }
 
     private fun key(): String = "${AchEngine.points()}/${secretCount()}/${AchStore.data.unlocked.size}"
@@ -158,14 +159,14 @@ object AchLeaderboard {
 
     fun medal(rank: Int): String = when (rank) { 1 -> "§6"; 2 -> "§f"; 3 -> "§c"; else -> "§7" }
 
-    fun value(e: Entry, secretList: Boolean): String = if (secretList) "${e.secrets}/13" else "%,d AP".format(e.points)
+    fun value(e: Entry, secretList: Boolean): String = if (secretList) "${e.secrets}/${SECRET_TOTAL}" else "%,d AP".format(e.points)
 
     // Own rank line when outside the top 10, else null
     fun meLine(secretList: Boolean): String? {
         val m = me ?: return null
         val rank = if (secretList) m.secretsRank else m.pointsRank
         if (rank <= 10) return null
-        val v = if (secretList) "${m.secrets}/13" else "%,d AP".format(m.points)
+        val v = if (secretList) "${m.secrets}/${SECRET_TOTAL}" else "%,d AP".format(m.points)
         return "§a#$rank §fYou §e$v"
     }
 

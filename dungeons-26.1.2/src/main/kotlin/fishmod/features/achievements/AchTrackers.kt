@@ -99,7 +99,6 @@ object AchTrackers {
             st.max("m7.splusStreak", st.get("m7.curSplus"))
             if (e.solo) secret("soloM7")
         }
-        if (e.secrets == 0 && e.cleared >= 100) secret("noSecrets")
         st.addRun(AchStore.RunRec().also {
             it.t = System.currentTimeMillis(); it.floor = f; it.secs = e.seconds; it.score = e.score
             it.deaths = e.deaths; it.secrets = e.secrets; it.solo = e.solo
