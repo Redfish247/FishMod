@@ -82,10 +82,22 @@ object KuudraMenu {
         col.features.add(chests)
 
         val perks = Feature("Block Useless Perks", S::kuudraBlockPerks)
-        perks.sub.add(InputSetting("Perks", "Comma list; clicks on these in the Perk Menu are ignored", S::kuudraBlockPerksList))
+        for (perk in BLOCKABLE_PERKS) perks.sub.add(ToggleSetting(perk, "Ignore clicks on this perk in the Perk Menu", { perkBlocked(perk) }, { on -> setPerkBlocked(perk, on) }))
         col.features.add(perks)
 
         return col
+    }
+
+    private val BLOCKABLE_PERKS = listOf("Steady Hands", "Bomberman", "Mining Frenzy", "Elle's Lava Rod", "Elle's Pickaxe", "Auto Revive", "Human Cannonball", "Elle's Supplies")
+
+    private fun perkList(): List<String> = S.kuudraBlockPerksList.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+
+    private fun perkBlocked(perk: String): Boolean = perkList().any { it.equals(perk, true) }
+
+    // Other entries in the saved list are kept as they are
+    private fun setPerkBlocked(perk: String, on: Boolean) {
+        val rest = perkList().filterNot { it.equals(perk, true) }
+        S.kuudraBlockPerksList = (if (on) rest + perk else rest).joinToString(", ")
     }
 
     fun describe(name: String): String? = when (name) {
