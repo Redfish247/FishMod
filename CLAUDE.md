@@ -1,6 +1,6 @@
 # FishModDungeons
 
-- Active code: `dungeons-26.1.2` only (Mojang mappings). `dungeons-1.21.11` is frozen; never edit or mirror to it.
+- Active code: `dungeons-26.1.2` (Mojang mappings) AND `dungeons-26.2`, until Eli drops 26.1.2. `dungeons-26.2` compiles the 26.1.2 sources; a same-path file under `dungeons-26.2/src/main` overrides it, version-specific API calls go in `fishmod/compat/*`. Every change must build and work on both (`./gradlew :dungeons-26.1.2:build :dungeons-26.2:build`; test 26.2 with `tools/run262.sh` + `tools/fmtest.ps1`). `dungeons-1.21.11` is frozen; never edit or mirror to it.
 - Work, commit and build on `main` in this checkout. No feature branches or worktrees, even if the app started in one. Before starting: `git pull --ff-only`.
 - **Commit every change** on `main` (small commits, one logical change each, new version in the message when a build is cut) so any step can be reverted. Never leave finished work uncommitted. Build only from committed main.
 - **Session start: check for other running sessions** (`mcp__ccd_session_mgmt__list_sessions`, or `ListAgents`) and `git status`/`git log -5` for their uncommitted or recent work. If another session is active: note what it is touching, stay out of its files, pick a non-overlapping slice, and message it (SendMessage) when your work affects its area. Work parallel, not perpendicular: pull before building, and pick a version above any other session's.
