@@ -164,6 +164,18 @@ object Debug {
                         })
                 )
 
+                .then(ClientCommands.literal("holo").executes { _ ->
+                    val mc = net.minecraft.client.Minecraft.getInstance()
+                    val p = mc.player
+                    val lvl = mc.level
+                    if (p != null && lvl != null) {
+                        val near = lvl.entitiesForRendering().filter { it !== p && it.distanceTo(p) < 12 && (it.hasCustomName() || it is net.minecraft.world.entity.Display) }
+                        Misc.addChatMessage(Component.literal("holo: ${near.size} named/display entities within 12"))
+                        for (e in near.take(12)) Misc.addChatMessage(Component.literal("${e.type.toShortString()} '${e.customName?.string ?: e.displayName?.string}' d=${"%.1f".format(e.distanceTo(p))}"))
+                    }
+                    Constants.SUCCESS
+                })
+
                 .then(
                     ClientCommands.literal("location")
                         .then(
