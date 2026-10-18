@@ -55,6 +55,7 @@ object FishSettings {
     @ConfigValue @JvmField var guiScaleAuction: Int = 100
     @ConfigValue @JvmField var guiScaleWaypoint: Int = 100
     @ConfigValue @JvmField var guiScaleCredits: Int = 100
+    @ConfigValue @JvmField var guiScaleProfileViewer: Int = 100
     @ConfigValue @JvmField var guiScaleDianaProfit: Int = 100
 
     @ConfigValue @JvmField var petXpTamingLevel: Int = 0
@@ -162,11 +163,17 @@ object FishSettings {
 
     @ConfigValue @JvmField var twitchBridgeEnabled: Boolean = false
 
+    @ConfigValue @JvmField var profileViewerEnabled: Boolean = true
+    @ConfigValue @JvmField var pvOverflowSkills: Boolean = false
+    @ConfigValue @JvmField var pvTheme: String = "Dark Glass"
+
     @ConfigValue @JvmField var compactTabEnabled: Boolean = false
     @ConfigValue @JvmField var compactTabOpacity: Int = 70
     @ConfigValue @JvmField var compactTabStatBarEnabled: Boolean = true
     @ConfigValue @JvmField var compactTabStatBarPosition: String = "TOP"
     @ConfigValue @JvmField var compactTabSortMode: String = "Rank (Default)"
+    @ConfigValue @JvmField var compactTabScale: Int = 100
+    @ConfigValue @JvmField var compactTabPinStaff: Boolean = false
     @ConfigValue @JvmField var compactTabFooterMode: String = "Hypixel"
     @ConfigValue @JvmField var compactTabFooterText: String = "&dCookie &f{cookie} &8| &cGod Pot &f{godpot}"
 
@@ -523,6 +530,7 @@ object FishSettings {
     @ConfigValue @JvmField var etherwarpSoundPitch: Double = 1.0
 
     @ConfigValue @JvmField var extraStatsEnabled: Boolean = false
+    @ConfigValue @JvmField var bossDamageEnabled: Boolean = false
     @ConfigValue @JvmField var extraStatsBits: Boolean = true
     @ConfigValue @JvmField var extraStatsClassExp: Boolean = true
     @ConfigValue @JvmField var extraStatsCombat: Boolean = true

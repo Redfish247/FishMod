@@ -207,6 +207,7 @@ object DianaTrackerHud {
         val profit = DianaTracker.profit(t)
         out += Row("loot:COINS", "§6Coins §6${DianaTracker.short(t.item("COINS").toDouble())}")
         out += Row("loot:BURROWS", "§7Burrows §f${"%,d".format(burrows.toLong())} §7(${"%.1f".format(DianaTracker.perHour(burrows, t))}/h)")
+        t.item("SHURIKENS_USED").takeIf { it > 0 }?.let { out += Row("loot:SHURIKENS", "§7Shurikens Used §f${"%,d".format(it)}") }
         out += Row("loot:PLAYTIME", "§7Playtime §f${DianaTracker.fmtTime(t.timeMs)}" + if (DianaTracker.paused()) " §c[Paused]" else "")
         out += Row("loot:PROFIT", "§eProfit §6${DianaTracker.short(profit)} §7(${DianaTracker.short(DianaTracker.perHour(profit, t))}/h)")
         return out
