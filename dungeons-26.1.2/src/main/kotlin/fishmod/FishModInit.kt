@@ -437,7 +437,6 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.39", "fishmod.features.WarpCooldown.init() failed") { fishmod.features.WarpCooldown.init() }
         FishDiag.guard("FishModInit.40", "fishmod.features.dungeon.DungeonBreaker.init() failed") { fishmod.features.dungeon.DungeonBreaker.init() }
         FishDiag.guard("FishModInit.41", "fishmod.features.BlockOverlay.init() failed") { fishmod.features.BlockOverlay.init() }
-        FishDiag.guard("FishModInit.41b", "fishmod.features.HologramText.init() failed") { fishmod.features.HologramText.init() }
         FishDiag.guard("FishModInit.42", "fishmod.features.CameraTweaks.init() failed") { fishmod.features.CameraTweaks.init() }
         FishDiag.guard("FishModInit.43", "fishmod.features.GyroHelper.init() failed") { fishmod.features.GyroHelper.init() }
         FishDiag.guard("FishModInit.44", "fishmod.features.dungeon.MageBeam.init() failed") { fishmod.features.dungeon.MageBeam.init() }

@@ -169,9 +169,9 @@ object Debug {
                     val p = mc.player
                     val lvl = mc.level
                     if (p != null && lvl != null) {
-                        val near = lvl.entitiesForRendering().filter { it !== p && it.distanceTo(p) < 12 && (it.hasCustomName() || it is net.minecraft.world.entity.Display) }
-                        Misc.addChatMessage(Component.literal("holo: ${near.size} named/display entities within 12"))
-                        for (e in near.take(12)) Misc.addChatMessage(Component.literal("${e.type.toShortString()} '${e.customName?.string ?: e.displayName?.string}' d=${"%.1f".format(e.distanceTo(p))}"))
+                        val all = lvl.entitiesForRendering().filter { it !== p && it.distanceTo(p) < 24 }
+                        Misc.addChatMessage(Component.literal("holo: ${all.size} entities within 24: " + all.groupingBy { it.type.toShortString() }.eachCount()))
+                        for (e in all.filter { it.hasCustomName() || it is net.minecraft.world.entity.Display || it.displayName?.string?.contains("Hunter") == true }.take(12)) Misc.addChatMessage(Component.literal("${e.type.toShortString()} '${e.customName?.string ?: e.displayName?.string}' d=${"%.1f".format(e.distanceTo(p))} y=${"%.1f".format(e.y - p.y)}"))
                     }
                     Constants.SUCCESS
                 })
