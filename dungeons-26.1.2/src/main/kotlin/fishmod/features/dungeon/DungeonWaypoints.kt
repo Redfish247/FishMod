@@ -1,4 +1,6 @@
 package fishmod.features.dungeon
+import fishmod.compat.curScreen
+import fishmod.compat.showScreen
 
 import com.mojang.blaze3d.platform.InputConstants
 import com.mojang.blaze3d.vertex.PoseStack
@@ -437,7 +439,7 @@ object DungeonWaypoints {
 
         var fired = false
         while (placeKey != null && placeKey!!.consumeClick()) fired = true
-        if (fired && mc.screen == null) {
+        if (fired && mc.curScreen == null) {
             try {
                 if (editMode) handlePlace(mc)
                 else if (pmEditMode) handlePlacePm(mc)
@@ -463,7 +465,7 @@ object DungeonWaypoints {
 
     private fun handlePlacePm(mc: Minecraft) {
         if (mc.player!!.isShiftKeyDown || pmMessage == null) {
-            mc.setScreen(DungeonWaypointTitleScreen { text ->
+            mc.showScreen(DungeonWaypointTitleScreen { text ->
                 if (text != null) { pmMessage = text; placePm(mc) }
             })
             return
@@ -620,7 +622,7 @@ object DungeonWaypoints {
         }
 
         if (mc.player!!.isShiftKeyDown) {
-            mc.setScreen(DungeonWaypointTitleScreen { title ->
+            mc.showScreen(DungeonWaypointTitleScreen { title ->
                 try {
                     val w = StoredWaypoint(
                         px, py, pz, halfX, halfY, halfZ,

@@ -1,4 +1,6 @@
 package fishmod.features.mining
+import fishmod.compat.cam
+import fishmod.compat.hudHidden
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
@@ -153,7 +155,7 @@ object Mining {
     fun alpha(rgb: Int, pct: Int) = ((pct.coerceIn(0, 100) * 255 / 100) shl 24) or (rgb and 0xFFFFFF)
 
     fun lineStart(): Vec3 {
-        val cam = Minecraft.getInstance().gameRenderer.mainCamera
+        val cam = Minecraft.getInstance().cam
         return cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()))
     }
 
@@ -184,7 +186,7 @@ object MiningHuds {
 
     fun draw(ctx: GuiGraphicsExtractor, lines: List<String>, x: Int, y: Int, scale: Double) {
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui || lines.isEmpty()) return
+        if (mc.player == null || mc.hudHidden || lines.isEmpty()) return
         val pose = ctx.pose()
         pose.pushMatrix()
         pose.translate(x.toFloat(), y.toFloat())

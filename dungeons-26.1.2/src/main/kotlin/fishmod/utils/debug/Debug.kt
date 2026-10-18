@@ -1,4 +1,6 @@
 package fishmod.utils.debug
+import fishmod.compat.hud
+import fishmod.compat.showScreen
 
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -65,14 +67,14 @@ object Debug {
         dispatcher.register(
             ClientCommands.literal("fm")
                 .executes { _ ->
-                    Minecraft.getInstance().schedule { Minecraft.getInstance().setScreen(fishmod.features.FishModScreen()) }
+                    Minecraft.getInstance().schedule { Minecraft.getInstance().showScreen(fishmod.features.FishModScreen()) }
                     Constants.SUCCESS
                 }
                 .then(
                     ClientCommands.literal("bossbars")
                         .executes { _ ->
                             val mc = Minecraft.getInstance()
-                            val accessor = mc.gui.bossOverlay as BossBarHudAccessor
+                            val accessor = mc.hud.bossOverlay as BossBarHudAccessor
                             val bars = accessor.bossBars
                             if (bars == null || bars.isEmpty()) {
                                 Misc.addChatMessage(Component.literal("§cNo boss bars active."))

@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.showScreen
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.rendering.UiRecorder
@@ -339,7 +340,7 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
     }
 
     override fun onClose() {
-        Minecraft.getInstance().setScreen(parent)
+        Minecraft.getInstance().showScreen(parent)
     }
 
     override fun paintUiOverlay() {

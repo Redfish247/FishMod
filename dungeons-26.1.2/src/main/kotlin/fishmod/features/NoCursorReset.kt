@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.curScreen
 
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -11,7 +12,7 @@ object NoCursorReset {
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
-            if (mc.screen != null) {
+            if (mc.curScreen != null) {
                 wasOpen = true
                 clock = System.currentTimeMillis()
             } else if (wasOpen) {

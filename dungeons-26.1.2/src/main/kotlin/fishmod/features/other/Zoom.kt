@@ -1,4 +1,5 @@
 package fishmod.features.other
+import fishmod.compat.curScreen
 
 import fishmod.utils.Keybinds
 import fishmod.utils.config.values.FishSettings
@@ -19,7 +20,7 @@ object Zoom {
     @JvmStatic
     fun active(): Boolean {
         val key = Keybinds.zoom ?: return false
-        return FishSettings.zoomEnabled && Minecraft.getInstance().screen == null && key.isDown
+        return FishSettings.zoomEnabled && Minecraft.getInstance().curScreen == null && key.isDown
     }
 
     @JvmStatic

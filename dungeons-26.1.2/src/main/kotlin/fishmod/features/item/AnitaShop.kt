@@ -1,4 +1,5 @@
 package fishmod.features.item
+import fishmod.compat.curScreen
 
 import fishmod.features.croesus.CroesusPrices
 import fishmod.mixin.accessors.HandledScreenAccessor
@@ -37,7 +38,7 @@ object AnitaShop {
     fun init() {
         DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y ->
             if (!FishSettings.anitaProfitEnabled || bestSlot < 0 || stack.isEmpty) return@register
-            val scr = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return@register
+            val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return@register
             if (fishmod.utils.ScreenTitle.plain(scr).trim() != TITLE) return@register
             val slot = DrawEvents.currentSlot ?: return@register
             if (slot.index == bestSlot && slot.container !is Inventory) ctx.fill(x, y, x + 16, y + 16, 0x8055FF55.toInt())

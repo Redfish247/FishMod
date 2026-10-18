@@ -1,5 +1,8 @@
 package fishmod.features.dungeon.f7.terminal
 
+import fishmod.compat.CB
+import fishmod.compat.CI
+
 import net.minecraft.core.component.DataComponents
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.world.item.Item
@@ -16,15 +19,15 @@ enum class TerminalType(val windowPrefix: String, val windowSize: Int) {
     MELODY("Click the button on time!", 54),
 }
 
-private val RED_PANE = Items.RED_STAINED_GLASS_PANE
-private val BLACK_PANE = Items.BLACK_STAINED_GLASS_PANE
-private val LIME_PANE = Items.LIME_STAINED_GLASS_PANE
-private val MAGENTA_PANE = Items.MAGENTA_STAINED_GLASS_PANE
-private val LIME_TERRACOTTA = Items.LIME_TERRACOTTA
+private val RED_PANE = CI.RED_STAINED_GLASS_PANE
+private val BLACK_PANE = CI.BLACK_STAINED_GLASS_PANE
+private val LIME_PANE = CI.LIME_STAINED_GLASS_PANE
+private val MAGENTA_PANE = CI.MAGENTA_STAINED_GLASS_PANE
+private val LIME_TERRACOTTA = CI.LIME_TERRACOTTA
 
 private val RUBIX_ORDER: List<Item> = listOf(
-    Items.ORANGE_STAINED_GLASS_PANE, Items.YELLOW_STAINED_GLASS_PANE,
-    Items.GREEN_STAINED_GLASS_PANE, Items.BLUE_STAINED_GLASS_PANE, Items.RED_STAINED_GLASS_PANE,
+    CI.ORANGE_STAINED_GLASS_PANE, CI.YELLOW_STAINED_GLASS_PANE,
+    CI.GREEN_STAINED_GLASS_PANE, CI.BLUE_STAINED_GLASS_PANE, CI.RED_STAINED_GLASS_PANE,
 )
 
 private fun ItemStack?.isPane(): Boolean =

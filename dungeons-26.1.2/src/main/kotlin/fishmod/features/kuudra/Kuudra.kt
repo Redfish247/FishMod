@@ -17,7 +17,7 @@ import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.entity.ai.attributes.Attributes
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.monster.Giant
-import net.minecraft.world.entity.monster.MagmaCube
+import fishmod.compat.MagmaCubeT
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.Vec3
 
@@ -45,7 +45,7 @@ object Kuudra {
     val piles = ArrayList<ArmorStand>()
     val players = ArrayList<Player>()
     var elle: ArmorStand? = null; private set
-    var boss: MagmaCube? = null; private set
+    var boss: MagmaCubeT? = null; private set
     var builders = 0; private set
     var buildPct = 0; private set
     var supplies = 0; private set
@@ -100,10 +100,10 @@ object Kuudra {
         val level = mc.level ?: return
         if (tier == 0) Mining.sidebar.firstNotNullOfOrNull { TIER.find(it) }?.let { tier = it.groupValues[1].toInt() }
         giants.clear(); piles.clear(); players.clear()
-        var bossFound: MagmaCube? = null
+        var bossFound: MagmaCubeT? = null
         for (e in level.entitiesForRendering()) when (e) {
             is Giant -> if (e.y < 67.0 && e.mainHandItem.hoverName.string.endsWith("Head")) giants.add(e)
-            is MagmaCube -> if (e.size == 30 && e.isAlive && e.getAttributeBaseValue(Attributes.MAX_HEALTH) >= 10000.0 && (bossFound == null || e.y > bossFound!!.y)) bossFound = e
+            is MagmaCubeT -> if (e.size == 30 && e.isAlive && e.getAttributeBaseValue(Attributes.MAX_HEALTH) >= 10000.0 && (bossFound == null || e.y > bossFound!!.y)) bossFound = e
             is ArmorStand -> {
                 val n = e.name.string
                 if (PROGRESS.containsMatchIn(n)) piles.add(e)

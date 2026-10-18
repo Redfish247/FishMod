@@ -14,9 +14,19 @@ base {
 
 sourceSets {
 	main {
-		java.srcDirs = ['../dungeons-26.1.2/src/main/java']
-		kotlin.srcDirs = ['../dungeons-26.1.2/src/main/kotlin', '../dungeons-26.1.2/src/main/java']
-		resources.srcDirs = ['../dungeons-26.1.2/src/main/resources']
+		java.srcDirs = ['../dungeons-26.1.2/src/main/java', 'src/main/java']
+		kotlin.srcDirs = ['../dungeons-26.1.2/src/main/kotlin', '../dungeons-26.1.2/src/main/java', 'src/main/kotlin', 'src/main/java']
+		resources.srcDirs = ['../dungeons-26.1.2/src/main/resources', 'src/main/resources']
+		// A file under dungeons-26.2/src replaces the 26.1.2 file at the same relative path.
+		def baseDir = file('../dungeons-26.1.2/src/main').canonicalFile
+		def mineDir = file('src/main').canonicalFile
+		[kotlin, java, resources].each { ss ->
+			ss.exclude { el ->
+				def f = el.file.canonicalFile
+				f.isFile() && f.path.startsWith(baseDir.path + File.separator) &&
+					new File(mineDir, f.path.substring(baseDir.path.length() + 1)).exists()
+			}
+		}
 	}
 }
 

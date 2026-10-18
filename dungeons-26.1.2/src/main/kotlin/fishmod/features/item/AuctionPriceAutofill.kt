@@ -1,4 +1,6 @@
 package fishmod.features.item
+import fishmod.compat.showScreen
+import fishmod.compat.curScreen
 
 import fishmod.utils.debug.FishDiag
 import fishmod.mixin.accessors.AbstractSignEditScreenAccessor
@@ -53,7 +55,7 @@ object AuctionPriceAutofill {
         mc.execute {
             try {
                 val replacement = AuctionPriceScreen(sign, lines, item, suggested)
-                mc.screen = replacement
+                mc.showScreen(replacement)
                 replacement.init(width, height)
             } catch (e: Exception) {
                 FishDiag.fail("AuctionPriceAutofill.3", "opening auction price screen failed suggested=$suggested", e)

@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.Fmt
 
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
@@ -37,7 +38,7 @@ object PetSwapTitle {
         if (idx < 2) return null
         for (i in idx - 1 downTo 1) {
             if (raw[i - 1] != '§') continue
-            net.minecraft.ChatFormatting.getByCode(raw[i])?.color?.let { return it }
+            Fmt.colorOf(raw[i])?.let { return it }
         }
         return null
     }

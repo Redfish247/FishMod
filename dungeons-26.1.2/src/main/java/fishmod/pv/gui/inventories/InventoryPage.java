@@ -1737,7 +1737,7 @@ public final class InventoryPage {
 				int dyeX = startX + col * (SLOT + SLOT_GAP);
 				drawSlot(g, font, dyeX, dyeY, null, mouseX, mouseY);
 				ItemStack dye = new ItemStack(
-					col == equippedColumn ? Items.LIME_DYE : Items.LIGHT_GRAY_DYE
+					col == equippedColumn ? fishmod.compat.CI.LIME_DYE : fishmod.compat.CI.LIGHT_GRAY_DYE
 				);
 				g.item(dye, dyeX + 1, dyeY + 1);
 			}

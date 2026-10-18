@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.compat.curScreen
 
 import fishmod.utils.Misc
 import fishmod.utils.TabListCache
@@ -107,7 +108,7 @@ object GardenLevels {
 
     // Sync like SkyHanni: Garden Level item in the Desk (slot 4) or SkyBlock Menu (slot 10); also any Garden Level item in the Farming Skill menu
     private fun scanMenu() {
-        val scr = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return
+        val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return
         val t = Garden.strip(scr.title.string).trim()
         val slots = scr.menu.slots
         val st: ItemStack = when {

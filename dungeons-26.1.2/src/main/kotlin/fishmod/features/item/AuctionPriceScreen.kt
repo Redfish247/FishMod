@@ -1,4 +1,5 @@
 package fishmod.features.item
+import fishmod.compat.showScreen
 
 import fishmod.utils.debug.FishDiag
 import fishmod.features.HasUiOverlay
@@ -282,7 +283,7 @@ class AuctionPriceScreen(
         } catch (e: Exception) {
             FishDiag.fail("AuctionPriceScreen.4", "sending auction price sign update failed value='$value' lines=${originalLines.size}", e)
         }
-        Minecraft.getInstance().setScreen(null)
+        Minecraft.getInstance().showScreen(null)
     }
 
     private fun cancel() {
@@ -293,7 +294,7 @@ class AuctionPriceScreen(
         } catch (e: Exception) {
             FishDiag.fail("AuctionPriceScreen.5", "sending auction cancel sign update failed lines=${originalLines.size}", e)
         }
-        Minecraft.getInstance().setScreen(null)
+        Minecraft.getInstance().showScreen(null)
     }
 
     override fun paintUiOverlay() {

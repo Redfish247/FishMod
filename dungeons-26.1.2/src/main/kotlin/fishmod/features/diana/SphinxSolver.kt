@@ -1,4 +1,5 @@
 package fishmod.features.diana
+import fishmod.compat.hud
 
 import fishmod.utils.events.Events
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -78,7 +79,7 @@ object SphinxSolver {
             question = it
             questionAt = System.currentTimeMillis()
             solved = null
-            Minecraft.getInstance().gui.chat.addClientSystemMessage(
+            Minecraft.getInstance().hud.chat.addClientSystemMessage(
                 Component.literal("§6[FishMod] §bClick anywhere while chat is open to answer."))
             return false
         }
@@ -108,7 +109,7 @@ object SphinxSolver {
             val t = it.text.lowercase()
             if (expected != null) t == expected else t in ALL_ANSWERS
         }
-        val chat = Minecraft.getInstance().gui.chat
+        val chat = Minecraft.getInstance().hud.chat
         if (correct < 0) {
             lines.forEach { chat.addClientSystemMessage(it.original) }
             return

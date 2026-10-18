@@ -52,7 +52,7 @@ public final class MuseumPage {
 	private static final int DISABLED = 0xFF555555;
 	private static final int SCROLL_STEP = (SLOT + SLOT_GAP) * 3;
 	private static final int LIST_SCROLL_STEP = LIST_ICON + LIST_ROW_GAP + 2;
-	private static final ItemStack MISSING_ICON = new ItemStack(Items.GRAY_DYE);
+	private static final ItemStack MISSING_ICON = new ItemStack(fishmod.compat.CI.GRAY_DYE);
 
 	public enum LoadState {
 		IDLE,

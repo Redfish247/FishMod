@@ -1,4 +1,5 @@
 package fishmod.features.other
+import fishmod.compat.curScreen
 
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.InputConstants
@@ -58,7 +59,7 @@ object CommandKeys {
         ensureLoaded()
         if (entries.isEmpty()) return
 
-        if (client.screen != null || client.player == null) {
+        if (client.curScreen != null || client.player == null) {
             held.clear()
             return
         }

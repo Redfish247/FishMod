@@ -1,4 +1,5 @@
 package fishmod.features.chat
+import fishmod.compat.hud
 
 import fishmod.mixin.ChatHudInvoker
 import fishmod.utils.config.values.FishSettings
@@ -38,7 +39,7 @@ object ChatSearch {
     }
 
     private fun refresh() {
-        val chat = Minecraft.getInstance().gui?.chat ?: return
+        val chat = Minecraft.getInstance().hud?.chat ?: return
         FishDiag.guard("ChatSearch.1", "chat search refresh failed (query='$query')") {
             chat.resetChatScroll()
             (chat as ChatHudInvoker).invokeRefresh()

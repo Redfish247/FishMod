@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.hudHidden
 
 import fishmod.utils.config.values.Dungeons
 import fishmod.utils.config.values.FishSettings
@@ -66,7 +67,7 @@ object WarpCooldown {
         val rem = remainingMs()
         if (rem <= 0L) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
 
         val label = net.minecraft.network.chat.Component.literal("§eWarp: ")
             .append(net.minecraft.network.chat.Component.literal(fishmod.utils.Fmt.f1(rem / 1000.0) + "s")

@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.curScreen
 
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
@@ -11,7 +12,7 @@ object AutoSprint {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (!FishSettings.autoSprintEnabled) return@register
             val p = mc.player ?: return@register
-            if (mc.screen != null) return@register
+            if (mc.curScreen != null) return@register
             if (!Location.inSkyblock()) return@register
             if (FishSettings.autoSprintDungeonOnly && !Location.inDungeon()) return@register
             if (p.isSprinting || p.isSpectator || p.isPassenger) return@register

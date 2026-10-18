@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.Fmt
 
 import fishmod.utils.debug.FishDiag
 import fishmod.features.dungeon.PartyCommandHandler
@@ -103,8 +104,8 @@ object CompactTab {
         val sb = StringBuilder()
         c.visit({ style, text ->
             val name = style.color?.serialize()
-            val fmt = name?.let { net.minecraft.ChatFormatting.getByName(it) }
-            if (fmt != null) sb.append('§').append(fmt.char)
+            val fmt = name?.let { Fmt.codeOfName(it) }
+            if (fmt != null) sb.append('§').append(fmt)
             sb.append(text)
             java.util.Optional.empty<Unit>()
         }, net.minecraft.network.chat.Style.EMPTY)

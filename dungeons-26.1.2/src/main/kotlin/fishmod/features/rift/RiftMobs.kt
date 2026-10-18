@@ -92,9 +92,9 @@ object RiftMobs {
             if (stand && e.customName == null) continue
             val tent = "entacle" in n || "lobbercyst" in n || "lobercyst" in n
             if (BACTE_TAG.containsMatchIn(n) || "Bacte" in n) { boss = true; if (stand) tagStand = e }
-            val slime = e is net.minecraft.world.entity.monster.Slime
-            val medium = slime && (e as net.minecraft.world.entity.monster.Slime).size in S.riftBacteSizeMin..S.riftBacteSizeMax
-            if (slime) { val sz = (e as net.minecraft.world.entity.monster.Slime).size; val v = e.deltaMovement
+            val slime = e is fishmod.compat.SlimeT
+            val medium = slime && (e as fishmod.compat.SlimeT).size in S.riftBacteSizeMin..S.riftBacteSizeMax
+            if (slime) { val sz = (e as fishmod.compat.SlimeT).size; val v = e.deltaMovement
                 sizes.add("#$sz dist=${Math.round(Math.sqrt(e.distanceToSqr(me)))} y=${Math.round(e.y)} spd=${"%.2f".format(Math.sqrt(v.x * v.x + v.z * v.z))}") }
             else if (tent || BACTE_TAG.containsMatchIn(n)) cand.add("${e.type.descriptionId.substringAfterLast('.')}:'${n.take(50)}'")
             if (medium) sl.add(e)

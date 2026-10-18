@@ -118,7 +118,7 @@ public final class FishingTrophyTrialPage {
 			skull = SkyBlockItemFactory.trophySkullStack(row.id() + "_" + best.suffix());
 		}
 		if (skull.isEmpty()) {
-			skull = new ItemStack(best == null ? Items.GRAY_DYE : Items.TROPICAL_FISH);
+			skull = new ItemStack(best == null ? fishmod.compat.CI.GRAY_DYE : Items.TROPICAL_FISH);
 		}
 		float scale = ICON / 16f;
 		g.pose().pushMatrix();

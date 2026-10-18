@@ -1,5 +1,8 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.compat.CB
+import fishmod.compat.CI
+
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.Location
@@ -120,11 +123,11 @@ object ArrowsDevice {
         val old = prev.put(pos.asLong(), state.block)
 
         FishDiag.check(markedPositions.size <= devicePositions.size, "ArrowsDevice.7") { "marked ${markedPositions.size} > ${devicePositions.size} targets" }
-        if (old == Blocks.EMERALD_BLOCK && state.`is`(Blocks.BLUE_TERRACOTTA)) {
+        if (old == Blocks.EMERALD_BLOCK && state.`is`(CB.BLUE_TERRACOTTA)) {
             markedPositions.add(pos.immutable())
             if (targetPosition == pos) targetPosition = null
             if (FishSettings.arrowsDeviceShowAim) optimalAimPositions = calculateOptimalAimPositions(pos)
-        } else if (old == Blocks.BLUE_TERRACOTTA && state.`is`(Blocks.EMERALD_BLOCK)) {
+        } else if (old == CB.BLUE_TERRACOTTA && state.`is`(Blocks.EMERALD_BLOCK)) {
             markedPositions.remove(pos)
             targetPosition = pos.immutable()
             if (FishSettings.arrowsDeviceShowAim) optimalAimPositions = calculateOptimalAimPositions(pos)

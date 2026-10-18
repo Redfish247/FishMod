@@ -1,4 +1,5 @@
 package fishmod.utils.dungeon
+import fishmod.compat.hud
 
 import fishmod.mixin.accessors.BossBarHudAccessor
 import fishmod.utils.Constants
@@ -33,7 +34,7 @@ object NecronDeath {
     }
 
     private fun check(mc: Minecraft) {
-        val bars = (mc.gui.bossOverlay as BossBarHudAccessor).bossBars.values
+        val bars = (mc.hud.bossOverlay as BossBarHudAccessor).bossBars.values
         if (bars.any { it.name.string.contains("Necron") && it.progress <= 0f }) return fire("boss bar 0")
 
         val level = mc.level ?: return

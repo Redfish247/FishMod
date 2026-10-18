@@ -1,5 +1,8 @@
 package fishmod.features.dungeon.map
 
+import fishmod.compat.CB
+import fishmod.compat.CI
+
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -358,7 +361,7 @@ object Scan {
                 r1.rushRoom = true
                 r2.rushRoom = true
                 type = Door.Type.WITHER
-            } else if (block === Blocks.RED_TERRACOTTA) {
+            } else if (block === CB.RED_TERRACOTTA) {
                 type = Door.Type.BLOOD
             } else {
                 type = Door.Type.NORMAL
@@ -461,7 +464,7 @@ object Scan {
 
             for (tile in room.tiles) {
                 val bp = BlockPos(tile.pos.x + rotation.pos.x, height, tile.pos.z + rotation.pos.z)
-                if (level.getBlockState(bp).block === Blocks.BLUE_TERRACOTTA) {
+                if (level.getBlockState(bp).block === CB.BLUE_TERRACOTTA) {
                     if (room.tiles.size == 1) {
                         clay = bp
                         break
@@ -472,7 +475,7 @@ object Scan {
                         val dx = if (facing.axis == Direction.Axis.X) facing.stepX else 0
                         val dz = if (facing.axis == Direction.Axis.Z) facing.stepZ else 0
                         val nb = level.getBlockState(bp.offset(dx, 0, dz)).block
-                        if (nb !== Blocks.AIR && nb !== Blocks.BLUE_TERRACOTTA) {
+                        if (nb !== Blocks.AIR && nb !== CB.BLUE_TERRACOTTA) {
                             ok = false
                             break
                         }

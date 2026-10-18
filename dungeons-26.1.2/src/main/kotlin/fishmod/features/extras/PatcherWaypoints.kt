@@ -1,4 +1,5 @@
 package fishmod.features.extras
+import fishmod.compat.cam
 
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
@@ -51,7 +52,7 @@ object PatcherWaypoints {
     }
 
     private fun render(ctx: net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext, ps: com.mojang.blaze3d.vertex.PoseStack, vc: com.mojang.blaze3d.vertex.VertexConsumer) {
-        val eye = Minecraft.getInstance().gameRenderer.mainCamera.position()
+        val eye = Minecraft.getInstance().cam.position()
         val argb = S.patcherWaypointColor
         val rgb = argb and 0xFFFFFF
         for (w in list) {

@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.hudHidden
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.HypixelApi
@@ -264,7 +265,7 @@ object CooldownOverlay {
         val mc = Minecraft.getInstance()
         val p: LocalPlayer = mc.player ?: return
         if (mc.level == null) return
-        if (mc.options.hideGui) return
+        if (mc.hudHidden) return
         if (mc.debugOverlay != null && mc.debugOverlay.showDebugScreen()) return
 
         pruneExpired()

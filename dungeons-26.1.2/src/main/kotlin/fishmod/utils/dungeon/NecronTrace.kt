@@ -1,4 +1,5 @@
 package fishmod.utils.dungeon
+import fishmod.compat.hud
 
 import fishmod.utils.debug.Debug
 import fishmod.utils.events.Events
@@ -38,7 +39,7 @@ object NecronTrace {
         if (!active()) return
         val mc = Minecraft.getInstance()
         val level = mc.level ?: return
-        val bars = (mc.gui.bossOverlay as fishmod.mixin.accessors.BossBarHudAccessor).bossBars
+        val bars = (mc.hud.bossOverlay as fishmod.mixin.accessors.BossBarHudAccessor).bossBars
         val bar = bars?.values?.joinToString(", ") {
             val pct = (it as fishmod.mixin.accessors.LerpingBossEventAccessor).targetPercent
             "'${it.name.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()}' %.1f%%".format(pct * 100f)

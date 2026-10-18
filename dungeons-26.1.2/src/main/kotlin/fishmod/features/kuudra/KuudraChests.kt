@@ -1,4 +1,5 @@
 package fishmod.features.kuudra
+import fishmod.compat.curScreen
 
 import fishmod.features.croesus.CroesusPrices
 import fishmod.features.croesus.CroesusRewardParser
@@ -63,7 +64,7 @@ object KuudraChests {
 
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             if (!(S.kuudraChestsMaster && S.kuudraOpenedHighlight) || stack.isEmpty) return@register
-            val t = Minecraft.getInstance().screen?.title?.string ?: return@register
+            val t = Minecraft.getInstance().curScreen?.title?.string ?: return@register
             if (!t.contains("Vesuvius") && !t.contains("Croesus")) return@register
             val slot = DrawEvents.currentSlot ?: return@register
             if (slot.container === Minecraft.getInstance().player?.inventory) return@register

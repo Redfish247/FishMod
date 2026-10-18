@@ -1,4 +1,5 @@
 package fishmod.features.dungeon.f7.dragons
+import fishmod.compat.hudHidden
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
@@ -204,7 +205,7 @@ object WitherDragons {
             .sortedBy { if (it == prio) 0 else 1 }
         if (list.isEmpty()) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         val txt = list.joinToString(" §7| ") { "§${it.colorCode}${timerText(it.timeToSpawn)}" }
         val sc = FishSettings.witherDragonsHudScale.toFloat()
         val w = mc.font.width(txt) * sc

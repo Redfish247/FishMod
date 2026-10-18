@@ -1,5 +1,8 @@
 package fishmod.features.croesus
 
+import fishmod.compat.CB
+import fishmod.compat.CI
+
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import fishmod.features.storage.NBTInventory
@@ -152,7 +155,7 @@ object LootIcons {
     // Hunting shards and dyes aren't in the Hypixel items DB
     private fun fallback(id: String): ItemStack? = when {
         id.startsWith("SHARD_") || id.endsWith("_SHARD") -> ItemStack(Items.PRISMARINE_SHARD)
-        id.startsWith("DYE_") || id.endsWith("_DYE") -> ItemStack(Items.MAGENTA_DYE)
+        id.startsWith("DYE_") || id.endsWith("_DYE") -> ItemStack(CI.MAGENTA_DYE)
         else -> null
     }
 

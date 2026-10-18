@@ -1,4 +1,5 @@
 package fishmod.features.dungeon.map
+import fishmod.compat.hudHidden
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.Misc
@@ -42,7 +43,7 @@ object ScoreMessages {
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!DungeonMapSettings.mapScoreMessages) return
         val mc = Minecraft.getInstance()
-        if (mc.options.hideGui) return
+        if (mc.hudHidden) return
         val text = currentText ?: return
         val now = System.currentTimeMillis()
         if (now >= displayUntilMs) {

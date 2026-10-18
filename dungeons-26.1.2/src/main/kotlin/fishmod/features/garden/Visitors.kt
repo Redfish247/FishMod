@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.compat.curScreen
 
 import fishmod.features.mining.Mining
 import fishmod.utils.FishMsg
@@ -95,18 +96,18 @@ object Visitors {
     private fun num(s: String) = s.replace(",", "").toIntOrNull() ?: 0
 
     private fun isVisitorMenu(): Boolean {
-        val scr = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return false
+        val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return false
         return Garden.inGarden() && scr.menu.slots.any { !it.item.isEmpty && Garden.strip(it.item.hoverName.string) == "Accept Offer" }
     }
 
     private fun acceptButton(): ItemStack? {
-        val scr = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return null
+        val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return null
         return scr.menu.slots.firstOrNull { !it.item.isEmpty && Garden.strip(it.item.hoverName.string) == "Accept Offer" }?.item
     }
 
     // Reads the visitor's request once per menu open
     private fun scanMenu(mc: Minecraft) {
-        val scr = mc.screen as? AbstractContainerScreen<*>
+        val scr = mc.curScreen as? AbstractContainerScreen<*>
         if (scr == null) { warnedScreen = null; return }
         if (!Garden.inGarden()) return
         val btn = acceptButton() ?: return

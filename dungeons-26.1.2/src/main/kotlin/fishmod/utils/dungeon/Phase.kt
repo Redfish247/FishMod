@@ -1,4 +1,5 @@
 package fishmod.utils.dungeon
+import fishmod.compat.hud
 
 import fishmod.shaded.practicalconfig.hud.HUDComponent
 import fishmod.shaded.practicalconfig.manager.ConfigValue
@@ -92,7 +93,7 @@ object Phase {
     @JvmStatic
     fun checkNecronBar() {
         if (!awaitingNecronDeath()) { sawNecronBar = false; return }
-        val bars = (net.minecraft.client.Minecraft.getInstance().gui.bossOverlay as fishmod.mixin.accessors.BossBarHudAccessor).bossBars ?: return
+        val bars = (net.minecraft.client.Minecraft.getInstance().hud.bossOverlay as fishmod.mixin.accessors.BossBarHudAccessor).bossBars ?: return
         val bar = bars.values.firstOrNull { it.name.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim() == "Necron" }
         val pct = (bar as? fishmod.mixin.accessors.LerpingBossEventAccessor)?.targetPercent
         if (pct != null && pct > 0f) { sawNecronBar = true; return }

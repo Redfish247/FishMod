@@ -1,4 +1,5 @@
 package fishmod.features.dungeon.map
+import fishmod.compat.curScreen
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.DungeonMapSettings
@@ -249,7 +250,7 @@ object DungeonPlayers {
     fun shouldRenderNames(mc: Minecraft): Boolean {
         if (mc.player == null) return false
         if (isHoldingLeap(mc)) return true
-        val screen = mc.screen
+        val screen = mc.curScreen
         if (screen != null) {
             val title = screen.title.string
             return title == "Spirit Leap" || title == "Teleport to Player"

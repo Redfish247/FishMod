@@ -1,4 +1,5 @@
 package fishmod.features.mining
+import fishmod.compat.curScreen
 
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.DrawEvents
@@ -43,7 +44,7 @@ object Commissions {
 
         DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y ->
             if (!(S.miningCommissions && S.miningCommHighlight) || stack.isEmpty) return@register
-            val scr = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return@register
+            val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return@register
             if (scr.title.string != "Commissions") return@register
             val slot = DrawEvents.currentSlot ?: return@register
             if (slot.container === Minecraft.getInstance().player?.inventory) return@register

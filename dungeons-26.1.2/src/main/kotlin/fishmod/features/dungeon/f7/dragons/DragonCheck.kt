@@ -8,7 +8,7 @@ import net.minecraft.network.protocol.game.ClientboundSetEquipmentPacket
 import net.minecraft.network.protocol.game.ClientboundSoundPacket
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.core.particles.ParticleTypes
-import net.minecraft.world.entity.EntityType
+import fishmod.compat.ET
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.item.Items
@@ -48,7 +48,7 @@ object DragonCheck {
     }
 
     fun dragonSpawn(p: ClientboundAddEntityPacket, tick: Long) {
-        if (p.type != EntityType.ENDER_DRAGON) return
+        if (p.type != ET.ENDER_DRAGON) return
         val v = Vec3(p.x, p.y, p.z)
         val inBox = WitherDragon.real.firstOrNull {
             it.state == WitherDragonState.SPAWNING &&

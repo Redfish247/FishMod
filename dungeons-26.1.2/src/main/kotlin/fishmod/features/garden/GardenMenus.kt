@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.compat.curScreen
 
 import fishmod.utils.rendering.DrawEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -153,7 +154,7 @@ object GardenMenus {
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null) return@register
-            if (mc.screen == null) { cheapest = null; anitaBest = null }
+            if (mc.curScreen == null) { cheapest = null; anitaBest = null }
             else if (tick % 5 == 0) {
                 if (X.gardenCompUpgrades && GardenExtras.inMenu("Composter Upgrades")) pickCheapest()
                 if (X.gardenAnita && GardenExtras.inMenu("Anita")) pickAnita()

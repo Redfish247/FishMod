@@ -1,5 +1,8 @@
 package fishmod.features.dungeon.map
 
+import fishmod.compat.CB
+import fishmod.compat.CI
+
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
@@ -37,7 +40,7 @@ object DoorHighlight {
         val bp = net.minecraft.core.BlockPos(door.pos.x, 69, door.pos.z)
         if (!level.isLoaded(bp)) return door.locked
         val b = level.getBlockState(bp).block
-        return b === net.minecraft.world.level.block.Blocks.COAL_BLOCK || b === net.minecraft.world.level.block.Blocks.RED_TERRACOTTA
+        return b === net.minecraft.world.level.block.Blocks.COAL_BLOCK || b === CB.RED_TERRACOTTA
     }
 
     private fun isFairyRoom(r: Room?): Boolean = r != null && (r.type == Room.Type.FAIRY || r.data?.name == "Fairy")

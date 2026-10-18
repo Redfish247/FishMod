@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.curScreen
 
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
@@ -55,7 +56,7 @@ object PetIcons {
     }
 
     private fun learn(mc: Minecraft) {
-        val screen = mc.screen as? AbstractContainerScreen<*> ?: return
+        val screen = mc.curScreen as? AbstractContainerScreen<*> ?: return
         if (!PETS_TITLE.matches(fishmod.utils.ScreenTitle.plain(screen).trim())) return
         var changed = false
         for (slot in screen.menu.slots) {

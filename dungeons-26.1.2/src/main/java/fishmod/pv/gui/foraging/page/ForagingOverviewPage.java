@@ -195,7 +195,7 @@ public final class ForagingOverviewPage {
 			if (found) {
 				ForagingUi.drawFishFamilyIcon(g, id, bx + 1, by + 1);
 			} else {
-				g.item(new ItemStack(Items.GRAY_DYE), bx + 1, by + 1);
+				g.item(new ItemStack(fishmod.compat.CI.GRAY_DYE), bx + 1, by + 1);
 			}
 			this.zones.add(HoverZone.of(bx, by, SLOT, SLOT, List.of(
 				PvTooltip.Line.of(FishFamilyData.displayName(id), found ? PvDraw.COLOR_TEXT : PvDraw.COLOR_MUTED),
