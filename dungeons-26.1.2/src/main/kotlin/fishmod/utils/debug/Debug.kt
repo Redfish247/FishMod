@@ -37,6 +37,17 @@ object Debug {
     @JvmField
     var renderPositions = false
 
+    var holoTrace = false
+    private var holoTraceAt = 0L
+
+    // Prints each nametag text containing "Hunters" at most every 3 s
+    fun holoTraceMsg(type: String, text: String) {
+        val now = System.currentTimeMillis()
+        if (!text.contains("Hunters") || now - holoTraceAt < 3000) return
+        holoTraceAt = now
+        Misc.addChatMessage(Component.literal("holo trace: $type '$text'"))
+    }
+
     @JvmField
     var sendNotiDebug = false
 
@@ -163,6 +174,12 @@ object Debug {
                             Constants.SUCCESS
                         })
                 )
+
+                .then(ClientCommands.literal("holotrace").executes { _ ->
+                    holoTrace = !holoTrace
+                    Misc.addChatMessage(Component.literal("Holo trace: ").append(Misc.getStatusText(holoTrace)))
+                    Constants.SUCCESS
+                })
 
                 .then(ClientCommands.literal("holo").then(ClientCommands.argument("q", StringArgumentType.greedyString()).executes { c -> holoDump(StringArgumentType.getString(c, "q")); Constants.SUCCESS }).executes { _ ->
                     val mc = net.minecraft.client.Minecraft.getInstance()
