@@ -28,9 +28,9 @@ object HologramText {
 
     // Returns true when the line was taken over (caller hides the vanilla nametag)
     @JvmStatic
-    fun take(x: Double, y: Double, z: Double, attachment: Vec3?, text: Component?): Boolean {
+    fun take(base: Vec3, attachment: Vec3?, text: Component?): Boolean {
         if (!Visual.nametagsOnTop || text == null || attachment == null) return false
-        lines += Line(Vec3(x + attachment.x, y + attachment.y, z + attachment.z), text)
+        lines += Line(base.add(attachment), text)
         return true
     }
 }
