@@ -53,13 +53,13 @@ object Visitors {
         Garden.hud("Visitor Timer", "garden_visitor_timer", 140, 20,
             { S.gardenVisitorTimerHudX }, { S.gardenVisitorTimerHudX = it }, { S.gardenVisitorTimerHudY }, { S.gardenVisitorTimerHudY = it },
             { S.gardenVisitorTimerHudScale }, { S.gardenVisitorTimerHudScale = it },
-            { S.gardenVisitorTimer && Garden.inGarden() && nextVisitor.isNotEmpty() }) {
+            { S.gardenVisitorTimer && Garden.inGarden() && nextVisitor.isNotEmpty() }, { S.gardenVisitorTimer }) {
             listOf("§aVisitors: §f$count  §7Next: " + (if (nextVisitor.contains("Full", true)) "§cQueue Full" else "§b$nextVisitor"))
         }
         Garden.hud("Visitor Stats", "garden_visitor_stats", 140, 50,
             { S.gardenVisitorStatsHudX }, { S.gardenVisitorStatsHudX = it }, { S.gardenVisitorStatsHudY }, { S.gardenVisitorStatsHudY = it },
             { S.gardenVisitorStatsHudScale }, { S.gardenVisitorStatsHudScale = it },
-            { S.gardenVisitorStats && Garden.inGarden() }) {
+            { S.gardenVisitorStats && Garden.inGarden() }, { S.gardenVisitorStats }) {
             listOf(Garden.legacy(S.gardenVisitorStatsColor) + "§lVisitor Stats", "§7Accepted: §f${S.gardenStatAccepted}", "§7Copper: §c${"%,d".format(S.gardenStatCopper)}",
                 "§7Garden XP: §2${"%,d".format(S.gardenStatGardenXp)}", "§7Rare Rewards: §d${S.gardenStatRare}")
         }

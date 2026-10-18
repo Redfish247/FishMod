@@ -38,7 +38,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         private val lockedVal: Boolean = false,
         private val getScaleVal: DoubleSupplier? = null,
         private val setScaleVal: DoubleConsumer? = null,
-        private val visibleVal: BooleanSupplier? = null
+        private val visibleVal: BooleanSupplier? = null,
+        private val enabledVal: BooleanSupplier? = null
     ) {
         fun name(): String = nameVal
         fun getX(): IntSupplier = getXVal
@@ -52,6 +53,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         fun scale(): Double = if (getScaleVal != null) getScaleVal.asDouble else 1.0
         fun isVisible(): Boolean = visibleVal == null || visibleVal.asBoolean
+        /** Setting-level on/off for the list pill (not "showing right now"). */
+        fun isEnabledInList(): Boolean =
+            enabledVal?.asBoolean ?: FeatureMasters.map[nameVal]?.invoke() ?: isVisible()
     }
 
     companion object {
@@ -93,6 +97,19 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             visible: BooleanSupplier
         ) {
             addEntry(HudEntry(name, getX, setX, getY, setY, w, h, false, getScale, setScale, visible))
+        }
+
+        @JvmStatic
+        fun register(
+            name: String,
+            getX: IntSupplier, setX: IntConsumer,
+            getY: IntSupplier, setY: IntConsumer,
+            w: Int, h: Int,
+            getScale: DoubleSupplier, setScale: DoubleConsumer,
+            visible: BooleanSupplier,
+            enabled: BooleanSupplier?
+        ) {
+            addEntry(HudEntry(name, getX, setX, getY, setY, w, h, false, getScale, setScale, visible, enabled))
         }
 
         @JvmStatic
@@ -217,9 +234,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Farming" to listOf(
                 "Visitor Timer", "Visitor Shopping List", "Visitor Stats", "Charmed Visitor", "Pest Timer", "Pest Profit", "Farming Profit", "Composter", "Jacob's Contest", "Rare Crops",
                 "Rare Drop Alert", "Garden Titles", "Crop Milestone", "Garden Level", "Hoe Level", "Jeff Buy Order", "Greenhouse", "Stereo Harmony",
-                "Log Book", "Sensitivity",
+                "Log Book", "Sensitivity", "Anita Medal Profit",
             ),
-            "Kuudra" to listOf("Kuudra Build", "Kuudra Chest Counter", "Kuudra Chest Value", "Kuudra Fresh Timers", "Kuudra Health", "Kuudra Profit", "Kuudra Splits", "Kuudra Supplies"),
+            "Kuudra" to listOf("Kuudra Backbone", "Kuudra Build", "Kuudra Chest Counter", "Kuudra Chest Value", "Kuudra Fresh Timers", "Kuudra Health", "Kuudra Profit", "Kuudra Splits", "Kuudra Supplies"),
         )
 
         private class Sample(
@@ -775,7 +792,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     }
 
     private fun centerText(s: String, cx: Float, y: Float, size: Float, color: Int) {
-        UiRecorder.textBold(s, cx - UiRecorder.textWidth(s, size) / 2f, y, size, color)
+        UiRecorder.textBold(s, cx - UiRecorder.textWidthBold(s, size) / 2f, y, size, color)
     }
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
@@ -965,7 +982,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                         if (on) rowBg(yf, ROW_PICKED)
                         if (hov) rowBg(yf, ROW_HOV)
                         if (on) UiRecorder.fillRoundedRect(4f, yf + 2.5f, 2f, SIDE_ROW - 5f, 1f, ACCENT)
-                        val off = !row.e.isVisible()
+                        val off = !row.e.isEnabledInList()
                         val col = if (off) 0xFF666B72.toInt() else if (on) TEXT else LABEL
                         val tw = UiRecorder.textWidth("off", 5.5f)
                         val ox = sideW - 10f - tw - 6f

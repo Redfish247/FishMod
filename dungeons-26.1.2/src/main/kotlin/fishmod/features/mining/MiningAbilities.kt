@@ -60,21 +60,21 @@ object MiningAbilities {
         MiningHuds.reg("Pickobulus", "mining_pickobulus", 140, 60,
             { S.miningPickobulusHudX }, { S.miningPickobulusHudX = it }, { S.miningPickobulusHudY }, { S.miningPickobulusHudY = it },
             { S.miningPickobulusHudScale }, { S.miningPickobulusHudScale = it },
-            { (S.miningAbilities && S.miningPickobulus) && S.miningPickobulusHud && (pickBlocks.isNotEmpty() || pickError.isNotEmpty()) }) {
+            { (S.miningAbilities && S.miningPickobulus) && S.miningPickobulusHud && (pickBlocks.isNotEmpty() || pickError.isNotEmpty()) }, { (S.miningAbilities && S.miningPickobulus) && S.miningPickobulusHud }) {
             if (pickError.isNotEmpty()) listOf("§b§lPickobulus", pickError)
             else listOf("§b§lPickobulus §7(${pickBlocks.size} blocks)") + pickDrops.entries.sortedByDescending { it.value }.map { "§7${it.key}: §f${it.value}" }
         }
         MiningHuds.reg("Maniac Miner", "mining_maniac", 120, 30,
             { S.miningManiacHudX }, { S.miningManiacHudX = it }, { S.miningManiacHudY }, { S.miningManiacHudY = it },
             { S.miningManiacHudScale }, { S.miningManiacHudScale = it },
-            { (S.miningAbilities && S.miningManiac) && maniacStart > 0 && (maniacActive() || System.currentTimeMillis() - maniacEnd < 10_000) }) {
+            { (S.miningAbilities && S.miningManiac) && maniacStart > 0 && (maniacActive() || System.currentTimeMillis() - maniacEnd < 10_000) }, { (S.miningAbilities && S.miningManiac) }) {
             val secs = ((if (maniacActive()) System.currentTimeMillis() else maniacEnd) - maniacStart) / 1000
             listOf("§c§lManiac Miner" + if (maniacActive()) "" else " §7(ended)", "§7Blocks: §f$maniacBlocks §8(${secs}s)")
         }
         MiningHuds.reg("SkyMall", "mining_skymall", 160, 12,
             { S.miningSkyMallHudX }, { S.miningSkyMallHudX = it }, { S.miningSkyMallHudY }, { S.miningSkyMallHudY = it },
             { S.miningSkyMallHudScale }, { S.miningSkyMallHudScale = it },
-            { (S.miningAbilities && S.miningSkyMall) && S.miningSkyMallPerk.isNotEmpty() && (Mining.inMiningIsland() || fishmod.features.FishHudEditor.isOpen()) }) {
+            { (S.miningAbilities && S.miningSkyMall) && S.miningSkyMallPerk.isNotEmpty() && (Mining.inMiningIsland() || fishmod.features.FishHudEditor.isOpen()) }, { (S.miningAbilities && S.miningSkyMall) }) {
             listOf("§bSkyMall: §f${S.miningSkyMallPerk}")
         }
     }

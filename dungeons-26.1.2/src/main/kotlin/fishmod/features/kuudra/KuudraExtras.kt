@@ -91,7 +91,7 @@ object KuudraExtras {
         })
         MiningHuds.reg("Kuudra Backbone", "kuudra_backbone", 100, 10,
             { S.kuudraBackboneX }, { S.kuudraBackboneX = it }, { S.kuudraBackboneY }, { S.kuudraBackboneY = it },
-            { S.kuudraBackboneScale }, { S.kuudraBackboneScale = it }, { S.kuudraBossMaster && S.kuudraBackbone && Kuudra.inKuudra() && (boneLeft > 0 || rendShow > 0) }) {
+            { S.kuudraBackboneScale }, { S.kuudraBackboneScale = it }, { S.kuudraBossMaster && S.kuudraBackbone && Kuudra.inKuudra() && (boneLeft > 0 || rendShow > 0) }, { S.kuudraBossMaster }) {
             if (rendShow > 0) listOf("§a§lREND NOW!")
             else {
                 val done = ((boneStart - boneLeft) * 20 / maxOf(1, boneStart)).coerceIn(0, 20)

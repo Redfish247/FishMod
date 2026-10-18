@@ -180,10 +180,10 @@ object GardenMenus {
         Garden.hud("Stereo Harmony", "garden_stereo", 130, 30,
             { X.gardenStereoHudX }, { X.gardenStereoHudX = it }, { X.gardenStereoHudY }, { X.gardenStereoHudY = it },
             { X.gardenStereoHudScale }, { X.gardenStereoHudScale = it },
-            { X.gardenStereo && Garden.inGarden() && X.gardenStereoActive.isNotEmpty() }) { stereoLines() }
+            { X.gardenStereo && Garden.inGarden() && X.gardenStereoActive.isNotEmpty() }, { X.gardenStereo }) { stereoLines() }
         Garden.hud("Greenhouse", "garden_greenhouse", 130, 30,
             { X.gardenGreenhouseHudX }, { X.gardenGreenhouseHudX = it }, { X.gardenGreenhouseHudY }, { X.gardenGreenhouseHudY = it },
             { X.gardenGreenhouseHudScale }, { X.gardenGreenhouseHudScale = it },
-            { X.gardenGreenhouse && Garden.inGarden() && greenhouse.isNotEmpty() }) { greenhouseLines() }
+            { X.gardenGreenhouse && Garden.inGarden() && greenhouse.isNotEmpty() }, { X.gardenGreenhouse }) { greenhouseLines() }
     }
 }

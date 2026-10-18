@@ -21,7 +21,7 @@ object GardenMisc {
         Garden.hud("Log Book", "garden_logbook", 150, 50,
             { S.gardenLogBookHudX }, { S.gardenLogBookHudX = it }, { S.gardenLogBookHudY }, { S.gardenLogBookHudY = it },
             { S.gardenLogBookHudScale }, { S.gardenLogBookHudScale = it },
-            { S.gardenLogBookHud && Garden.inGarden() && logBook.isNotEmpty() }) {
+            { S.gardenLogBookHud && Garden.inGarden() && logBook.isNotEmpty() }, { S.gardenLogBookHud }) {
             listOf(Garden.legacy(S.gardenLogBookColor) + "§lLog Book") + logBook.map { "§7${it.key}: §f${it.value}" }
         }
     }

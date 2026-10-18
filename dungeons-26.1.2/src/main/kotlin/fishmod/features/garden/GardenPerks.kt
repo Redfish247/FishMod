@@ -18,6 +18,6 @@ object GardenPerks {
         Garden.hud("Charmed Visitor", "garden_charmed", 130, 24,
             { X.gardenCharmedHudX }, { X.gardenCharmedHudX = it }, { X.gardenCharmedHudY }, { X.gardenCharmedHudY = it },
             { X.gardenCharmedHudScale }, { X.gardenCharmedHudScale = it },
-            { X.gardenCharmed && charmed.isNotEmpty() }) { listOf(Garden.legacy(X.gardenCharmedColor) + "§lCharmed Visitor") + charmed.map { "§7$it" } }
+            { X.gardenCharmed && charmed.isNotEmpty() }, { X.gardenCharmed }) { listOf(Garden.legacy(X.gardenCharmedColor) + "§lCharmed Visitor") + charmed.map { "§7$it" } }
     }
 }
