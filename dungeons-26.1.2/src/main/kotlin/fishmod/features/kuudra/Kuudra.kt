@@ -55,14 +55,16 @@ object Kuudra {
     var preSpot = Supply.None; private set
     var missing = Supply.None; private set
     private var stunAlerted = false
-    private var sideAlerted = false
+    private var lastSide: String? = null
+    private var lastSideMs = 0L
     private var tick = 0
 
     private val SUPPLY = Regex("^(?:\\[[^]]*] )?(\\w{1,16}) recovered one of Elle's supplies! \\((\\d)/(\\d)\\)$")
-    private val BUILD = Regex("Building Progress (\\d+)% \\((\\d+) Players Helping\\)")
+    private val BUILD_PCT = Regex("Building Progress:?\\s*(\\d+)%")
+    private val BUILD_N = Regex("\\((\\d+)\\s+Players? Helping\\)")
     private val PROGRESS = Regex("PROGRESS: (\\d+)%")
-    private val PARTY_FRESH = Regex("^Party > (?:\\[[^]]*?] )?(\\w{1,16}): FRESH.*$")
-    private val PARTY_NOPRE = Regex("^Party > (?:\\[[^]]*?] )?(\\w{1,16}): No ?(Triangle|X|Equals|Slash|xCannon|Square|Shop)!$")
+    private val PARTY_FRESH = Regex("^Party > (?:\\[[^]]*?] )?(\\w{1,16}): FRESH.*$", RegexOption.IGNORE_CASE)
+    private val PARTY_NOPRE = Regex("^Party > (?:\\[[^]]*?] )?(\\w{1,16}): No ?(Triangle|X|Equals|Slash|xCannon|X ?Cannon|Square|Shop)!$", RegexOption.IGNORE_CASE)
     private val TIER = Regex("Kuudra's Hollow \\(T(\\d)\\)")
     private const val OWN_FRESH = "Your Fresh Tools Perk bonus doubles your building speed for the next 10 seconds!"
     private const val PRE = "[NPC] Elle: Head over to the main platform, I will join you when I get a bite!"
@@ -89,32 +91,35 @@ object Kuudra {
         Supply.entries.forEach { it.active = true }
         giants.clear(); piles.clear(); players.clear(); freshers.clear(); supplyTimes.clear()
         boss = null; elle = null; phase = 0; tier = 0; builders = 0; buildPct = 0; supplies = 0
-        phaseStart.fill(0); preSpot = Supply.None; missing = Supply.None; stunAlerted = false; sideAlerted = false
+        phaseStart.fill(0); preSpot = Supply.None; missing = Supply.None; stunAlerted = false; lastSide = null
     }
 
     private fun scan(mc: Minecraft) {
         val level = mc.level ?: return
         if (tier == 0) Mining.sidebar.firstNotNullOfOrNull { TIER.find(it) }?.let { tier = it.groupValues[1].toInt() }
         giants.clear(); piles.clear(); players.clear()
+        var bossFound: MagmaCube? = null
         for (e in level.entitiesForRendering()) when (e) {
-            is Giant -> if (e.mainHandItem.hoverName.string.endsWith("Head")) giants.add(e)
-            is MagmaCube -> if (e.size == 30 && e.getAttributeBaseValue(Attributes.MAX_HEALTH) == 100000.0) boss = e
+            is Giant -> if (e.y < 67.0 && e.mainHandItem.hoverName.string.endsWith("Head")) giants.add(e)
+            is MagmaCube -> if (e.size == 30 && e.isAlive && e.getAttributeBaseValue(Attributes.MAX_HEALTH) >= 10000.0 && (bossFound == null || e.y > bossFound!!.y)) bossFound = e
             is ArmorStand -> {
                 val n = e.name.string
                 if (PROGRESS.containsMatchIn(n)) piles.add(e)
                 if (n == "Elle") elle = e
-                if (phase == 2) BUILD.find(n)?.let { buildPct = it.groupValues[1].toInt(); builders = it.groupValues[2].toInt() }
+                if (phase == 2) BUILD_PCT.find(n)?.let { buildPct = it.groupValues[1].toInt(); builders = BUILD_N.find(n)?.groupValues?.get(1)?.toInt() ?: 0 }
                 if (phase == 1 && n.contains("SUPPLIES RECEIVED")) dropDone(e.x, e.z)
             }
             is Player -> if (e !== mc.player && e.uuid.version() == 4) players.add(e)
         }
+        boss = bossFound
         if (phase == 2 && S.kuudraAlerts && S.kuudraAlertStunPct in 1..100 && tier >= 3 && !stunAlerted && buildPct >= S.kuudraAlertStunPct) {
             stunAlerted = true; alert("§3§lGo to stun", "")
         }
         val b = boss
-        if (phase == 4 && b != null && S.kuudraAlerts && S.kuudraAlertSide && !sideAlerted) {
+        if (phase == 4 && b != null && S.kuudraAlerts && S.kuudraAlertSide) {
             val side = when { b.x < -128 -> "RIGHT"; b.z > -84 -> "FRONT"; b.x > -72 -> "LEFT"; b.z < -132 -> "BACK"; else -> null }
-            if (side != null) { sideAlerted = true; alert("§c§l$side!", "§7Kuudra spawn side") }
+            val t = now()
+            if (side != null && side != lastSide && t - lastSideMs >= 1000) { lastSide = side; lastSideMs = t; alert("§c§l$side!", "§7Kuudra spawn side") }
         }
     }
 
@@ -128,21 +133,21 @@ object Kuudra {
 
     private fun onChat(msg: String): Boolean {
         if (!inKuudra()) return false
-        when (msg) {
-            "[NPC] Elle: Okay adventurers, I will go and fish up Kuudra!" -> setPhase(1)
-            "[NPC] Elle: OMG! Great work collecting my supplies!" -> setPhase(2)
-            "[NPC] Elle: Phew! The Ballista is finally ready! It should be strong enough to tank Kuudra's blows now!" -> setPhase(3)
-            "[NPC] Elle: POW! SURELY THAT'S IT! I don't think he has any more in him!" -> setPhase(4)
-            END -> { if (phase in 1..4) endRun() }
-            PRE -> onPre()
-            NOT_AGAIN -> checkPre()
-            OWN_FRESH -> {
+        when {
+            msg.contains("[NPC] Elle: Okay adventurers, I will go and fish up Kuudra!") -> setPhase(1)
+            msg.contains("[NPC] Elle: OMG! Great work collecting my supplies!") -> setPhase(2)
+            msg.contains("[NPC] Elle: Phew! The Ballista is finally ready!") -> setPhase(3)
+            msg.contains("[NPC] Elle: POW! SURELY THAT'S IT!") -> setPhase(4)
+            msg.trim() == "KUUDRA DOWN!" || msg.contains(END) -> { if (phase in 1..4) endRun() }
+            msg.contains(PRE) -> onPre()
+            msg.contains(NOT_AGAIN) -> checkPre()
+            msg == OWN_FRESH -> {
                 freshers[Minecraft.getInstance().player?.name?.string ?: "You"] = now()
                 if ((S.kuudraBuildMaster && S.kuudraFreshParty) && S.kuudraFreshMessage.isNotBlank()) party(S.kuudraFreshMessage)
             }
         }
         PARTY_FRESH.find(msg)?.let { freshers[it.groupValues[1]] = now() }
-        PARTY_NOPRE.find(msg)?.let { onMissing(Supply.valueOf(it.groupValues[2])) }
+        PARTY_NOPRE.find(msg)?.let { onMissing(Supply.entries.first { s -> s.name.equals(it.groupValues[2].replace(" ", ""), true) }) }
         SUPPLY.find(msg)?.let { m ->
             supplies = m.groupValues[2].toInt()
             val t = if (phaseStart[1] > 0) now() - phaseStart[1] else 0L
@@ -182,20 +187,26 @@ object Kuudra {
         fishmod.features.achievements.AchBus.post(fishmod.features.achievements.AchEvent.KuudraEnded(tier, t - phaseStart[0]))
     }
 
-    private fun onPre() {
-        val p = Minecraft.getInstance().player?.blockPosition() ?: return
-        preSpot = when {
+    private fun detectPre(): Supply {
+        val p = Minecraft.getInstance().player?.blockPosition() ?: return Supply.None
+        return when {
             Supply.Triangle.pick.closerThan(p, 15.0) -> Supply.Triangle
             Supply.X.pick.closerThan(p, 30.0) -> Supply.X
             Supply.Equals.pick.closerThan(p, 15.0) -> Supply.Equals
             Supply.Slash.pick.closerThan(p, 15.0) -> Supply.Slash
             else -> Supply.None
         }
+    }
+
+    private fun onPre() {
+        preSpot = detectPre()
         if (S.kuudraNoPre) FishMsg.send(if (preSpot == Supply.None) "§cPre-spot not registered (not there in time)" else "§aPre-spot: ${preSpot.name}")
     }
 
     private fun checkPre() {
-        if (!S.kuudraNoPre || preSpot == Supply.None) return
+        if (!S.kuudraNoPre) return
+        if (preSpot == Supply.None) preSpot = detectPre()
+        if (preSpot == Supply.None) return
         var pre = false; var second = false
         for (g in giants) {
             val v = Vec3(g.x, 76.0, g.z)
@@ -206,13 +217,13 @@ object Kuudra {
                 preSpot == Supply.Slash && Supply.Square.pick.closerToCenterThan(v, 20.0) -> second = true
             }
         }
-        val msg = when {
-            !pre -> "No ${preSpot.name}!"
-            !second -> when (preSpot) { Supply.Triangle -> "No Shop!"; Supply.X -> "No xCannon!"; Supply.Slash -> "No Square!"; else -> return }
-            else -> return
+        val msgs = ArrayList<String>()
+        if (!pre) msgs.add("No ${preSpot.name}!")
+        if (!second) when (preSpot) { Supply.Triangle -> msgs.add("No Shop!"); Supply.X -> msgs.add("No xCannon!"); Supply.Slash -> msgs.add("No Square!"); else -> {} }
+        for (msg in msgs) {
+            FishMsg.send("§c$msg")
+            if (S.kuudraNoPreParty) party(msg)
         }
-        FishMsg.send("§c$msg")
-        if (S.kuudraNoPreParty) party(msg)
     }
 
     private fun onMissing(s: Supply) {
