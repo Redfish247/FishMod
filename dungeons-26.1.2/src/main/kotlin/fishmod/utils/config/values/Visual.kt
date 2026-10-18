@@ -45,6 +45,8 @@ object Visual {
 
     @ConfigValue @JvmField var nametagsOnTop: Boolean = true
 
+    @ConfigValue @JvmField var lateWorldText: Boolean = true
+
     @ConfigValue @JvmField var oldPlayerHead: Boolean = false
 
     @ConfigValue @JvmField var fixWitherEssence: Boolean = false

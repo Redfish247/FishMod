@@ -26,6 +26,7 @@ object RenderingEvents {
         registered = true
         LevelRenderEvents.BEFORE_GIZMOS.register(LevelRenderEvents.BeforeGizmos { ctx -> gizmos(ctx) })
         LevelRenderEvents.COLLECT_SUBMITS.register(LevelRenderEvents.CollectSubmits { ctx -> collect(ctx) })
+        WorldText.init()
     }
 
     private fun gizmos(ctx: LevelRenderContext) {
@@ -72,6 +73,7 @@ object RenderingEvents {
             FishDiag.fail("RenderingEvents.4", "world overlay render pass", t)
         } finally {
             WorldText.collector = null
+            WorldText.commit(ctx.levelState().cameraRenderState)
         }
     }
 
