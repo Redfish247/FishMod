@@ -44,10 +44,6 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
                     state.nameTag = null;
                 }
             }
-            if (entity instanceof net.minecraft.world.entity.decoration.ArmorStand && state.nameTag != null
-                    && fishmod.features.HologramText.take(entity.getPosition(tickProgress), state.nameTagAttachment, state.nameTag)) {
-                state.nameTag = null;
-            }
             if (entity instanceof RemotePlayer player && Dungeons.renderClassName && Location.inDungeon()) {
                 if (DungeonClass.isTeammate(player)) {
                     state.nameTag = null;
