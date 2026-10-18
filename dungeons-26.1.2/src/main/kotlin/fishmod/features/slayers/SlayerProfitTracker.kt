@@ -145,6 +145,7 @@ object SlayerProfitTracker {
     fun onBossKill(type: SlayerType) {
         val k = key(type, SlayerManager.tier)
         synchronized(lock) { val (t, s) = bothData(k); t.bosses++; s.bosses++ }
+        fishmod.features.achievements.AchBus.post(fishmod.features.achievements.AchEvent.SlayerKill(type.name, SlayerManager.tier))
         noteActivity()
         save()
     }
@@ -299,6 +300,19 @@ object SlayerProfitTracker {
         }
         out.sortByDescending { it.value }
         return out
+    }
+
+    // Lifetime drop counts across every boss/tier, for the achievement RNG feed
+    fun totalDrops(): Map<String, Long> = synchronized(lock) {
+        val m = HashMap<String, Long>(); for (d in total.values) for ((n, c) in d.drops) m[n] = (m[n] ?: 0L) + c; m
+    }
+
+    // Profit across every boss/tier, for the achievement ledger
+    fun allProfit(sessionOnly: Boolean): Double {
+        val snap = synchronized(lock) { (if (sessionOnly) session else total).values.map { Triple(HashMap(it.drops), it.spawnCost, it.mobKillCoins) } }
+        return snap.sumOf { (drops, cost, mkc) ->
+            drops.entries.sumOf { (n, c) -> (if (n.endsWith("Coins")) 0.0 else ItemsDb.idFor(n)?.let { CroesusPrices.price(it) } ?: 0.0) * c } + mkc - cost
+        }
     }
 
     fun spawnCost(type: SlayerType, tier: Int): Long = view(key(type, tier))?.spawnCost ?: 0L

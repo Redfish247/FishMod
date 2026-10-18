@@ -86,6 +86,7 @@ object RareMobs {
     @Volatile var lastDianaMobDeathMs = 0L
 
     private val defeated = HashSet<Int>()
+    private val inqSeen = HashMap<Int, DoubleArray>()
     private val missingTicks = HashMap<Waypoint, Int>()
     private val glow = ConcurrentHashMap<Int, Int>()
     private val pendingSends = ArrayList<Pair<Long, String>>()
@@ -123,7 +124,7 @@ object RareMobs {
     }
 
     private fun reset() {
-        defeated.clear(); missingTicks.clear(); glow.clear()
+        defeated.clear(); missingTicks.clear(); glow.clear(); inqSeen.clear()
         hpLines = emptyList(); noShuriken = false
     }
 
@@ -190,17 +191,31 @@ object RareMobs {
                 continue
             }
             lines.add(dist to comp)
+            if (rare == RareMob.INQ) inqSeen.getOrPut(e.id) { doubleArrayOf(System.currentTimeMillis().toDouble(), dist) }[1] = dist
             if (rare == null) continue
             rareStands.add(e.position())
             if (!plain.contains('✯') && dist < shurikenDist) shurikenDist = dist
             if (DianaSettings.dianaRareMobs && DianaSettings.dianaScanRareMobs && e is ArmorStand) scanStand(e, rare)
         }
 
+        checkInqDespawn(alive)
         defeated.retainAll(alive)
         hpLines = lines.sortedBy { it.first }.take(6).map { it.second }
         noShuriken = shurikenDist != Double.MAX_VALUE
         if (newGlow != null) { glow.clear(); glow.putAll(newGlow) }
         if (DianaSettings.dianaRareMobs) pruneStale(eye, rareStands)
+    }
+
+    // An Inquisitor tag that vanishes up close with no kill: despawned
+    private fun checkInqDespawn(alive: Set<Int>) {
+        val now = System.currentTimeMillis()
+        val it = inqSeen.entries.iterator()
+        while (it.hasNext()) {
+            val (id, v) = it.next()
+            if (id in alive) continue
+            it.remove()
+            if (id !in defeated && v[1] <= 30.0 && now - v[0] > 8_000 && now - lastDianaMobDeathMs > 4_000) fishmod.features.achievements.AchStore.max("secret.inqDespawn", 1)
+        }
     }
 
     private fun onDeath(name: String, pos: Vec3, dist: Double, rare: RareMob?) {

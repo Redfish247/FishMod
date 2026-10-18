@@ -132,7 +132,10 @@ object CompactTab {
                 else -> compareBy<PlayerInfo> { sortRankTierOf(stripped(it), raw(it)) }
                     .thenByDescending { sortLevelOf(stripped(it)) }
             }
-            rest.sortedWith(cmp)
+            if (FishSettings.compactTabPinStaff && mode != "Rank (Default)") {
+                val (staff, others) = rest.partition { sortRankTierOf(stripped(it), raw(it)) <= 3 }
+                staff.sortedBy { sortRankTierOf(stripped(it), raw(it)) } + others.sortedWith(cmp)
+            } else rest.sortedWith(cmp)
         }
         val out = ArrayList<PlayerInfo>(entries.size)
         out.add(header)
@@ -156,10 +159,15 @@ object CompactTab {
 
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, screenW: Int, tabHeader: String?, tabFooter: String?) {
+        val s = FishSettings.compactTabScale.coerceIn(40, 150) / 100f
+        val scaled = s != 1f
         try {
-            renderInner(ctx, screenW, tabHeader, tabFooter)
+            if (scaled) { ctx.pose().pushMatrix(); ctx.pose().scale(s) }
+            renderInner(ctx, if (scaled) (screenW / s).toInt() else screenW, tabHeader, tabFooter)
         } catch (t: Throwable) {
             FishDiag.fail("CompactTab.1", "compact tab render failed (${TabListCache.entries.size} entries)", t)
+        } finally {
+            if (scaled) ctx.pose().popMatrix()
         }
     }
 

@@ -1,0 +1,44 @@
+{
+	"prestige_chocolate": {
+		"2": 150000000,
+		"3": 1000000000,
+		"4": 4000000000,
+		"5": 10000000000,
+		"6": 30000000000
+	},
+	"hitman_slot_cost": [
+		1000, 10000, 100000, 200000, 400000, 600000, 800000, 1000000, 1500000, 2000000,
+		3000000, 4000000, 5000000, 6000000, 7000000, 8500000, 10000000, 12000000, 14000000, 16000000,
+		18000000, 20000000, 22000000, 24000000, 26000000, 28000000, 30000000, 32000000
+	],
+	"factions": {
+		"city": {
+			"COMMON": ["peon", "speedy", "cobble", "alley", "subway"],
+			"UNCOMMON": ["skyrise", "traffic", "tunnel", "graffiti"],
+			"RARE": ["taxi", "shortcut", "walker"],
+			"EPIC": ["minister", "neon"],
+			"LEGENDARY": ["mayor"]
+		},
+		"mountain": {
+			"COMMON": ["granite", "mistral", "chasm", "timber", "glacier"],
+			"UNCOMMON": ["canyon", "icefur", "valley", "scree"],
+			"RARE": ["eagle", "tundra", "crag"],
+			"EPIC": ["avalanche", "summit"],
+			"LEGENDARY": ["horizon"]
+		},
+		"country": {
+			"COMMON": ["hazel", "daisy", "root", "twigy", "haybale"],
+			"UNCOMMON": ["moss", "marigold", "nectar", "clover"],
+			"RARE": ["silo", "iris", "aster"],
+			"EPIC": ["lavender", "juniper"],
+			"LEGENDARY": ["rosebud"]
+		},
+		"beach": {
+			"COMMON": ["tan", "palm", "splash", "seashell", "sandy"],
+			"UNCOMMON": ["seabun", "lagoon", "mocktail", "anchor"],
+			"RARE": ["coconut", "starfish", "oasis"],
+			"EPIC": ["dune", "surf"],
+			"LEGENDARY": ["sunset"]
+		}
+	}
+}

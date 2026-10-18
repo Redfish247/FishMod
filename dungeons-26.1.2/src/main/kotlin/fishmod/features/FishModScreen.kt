@@ -159,6 +159,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderIntSetting("Auction Price Scale %", "100% = default size", FishSettings::guiScaleAuction, 50, 150, 5))
             f.sub.add(SliderIntSetting("Waypoint Title Scale %", "100% = default size", FishSettings::guiScaleWaypoint, 50, 150, 5))
             f.sub.add(SliderIntSetting("Credits Scale %", "100% = default size", FishSettings::guiScaleCredits, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Profile Viewer Scale %", "100% = default size", FishSettings::guiScaleProfileViewer, 50, 150, 5))
             f.sub.add(SliderIntSetting("Diana Profit Scale %", "100% = default size", FishSettings::guiScaleDianaProfit, 50, 150, 5))
             general.features.add(f)
         }
@@ -407,6 +408,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         run {
+            val f = Feature("Profile Viewer", FishSettings::profileViewerEnabled)
+            f.sub.add(LabelSetting("Opens with /pv <player> [page]", ""))
+            f.sub.add(DropdownSetting("Theme", "Glass colours for the profile viewer", fishmod.pv.gui.PvTheme.NAMES,
+                { FishSettings.pvTheme },
+                { v -> FishSettings.pvTheme = v }))
+            f.sub.add(ToggleSetting("Show Overflow Skill Levels", "Uncapped skill levels in the viewer; maxed bars stay gold but fill toward the next level", FishSettings::pvOverflowSkills))
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Compact Tab", FishSettings::compactTabEnabled)
             f.sub.add(SliderIntSetting("Opacity %", "", FishSettings::compactTabOpacity, 0, 100))
             f.sub.add(ToggleSetting("Stat Bar", "SERVER/TPS/FPS/PING strip", FishSettings::compactTabStatBarEnabled))
@@ -417,6 +427,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 "Rank (Default)", "SB Level", "Name (Abc)", "Ironman/Bingo", "Random"),
                 { FishSettings.compactTabSortMode },
                 { v -> FishSettings.compactTabSortMode = v }))
+            f.sub.add(ToggleSetting("Pin YT/Staff On Top", "Keep YouTube + staff ranks first when sorting by level/name", FishSettings::compactTabPinStaff))
+            f.sub.add(SliderIntSetting("Tab Scale %", "", FishSettings::compactTabScale, 40, 150, 5))
             f.sub.add(DropdownSetting("Bottom Line", "Stats = cookie / god pot / effects from the tab footer", arrayOf("Hypixel", "Stats", "Custom", "Off"),
                 { FishSettings.compactTabFooterMode },
                 { v -> FishSettings.compactTabFooterMode = v }))
@@ -669,6 +681,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Show Class EXP", "", FishSettings::extraStatsClassExp))
             f.sub.add(ToggleSetting("Show Combat Stats", "Damage / kills / healing", FishSettings::extraStatsCombat))
             f.sub.add(ToggleSetting("Show Teammates", "", FishSettings::extraStatsTeammates))
+            dungeon.features.add(f)
+        }
+        run {
+            val f = Feature("Boss Damage", FishSettings::bossDamageEnabled)
+            f.sub.add(SubcategoryHeader("F7/M7: your damage + % of all damage to each wither / dragon, posted 1s after the run"))
             dungeon.features.add(f)
         }
         dungeon.features.add(Feature("Terracotta Timer", FishSettings::terracottaTimerEnabled))
@@ -1041,7 +1058,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Badges", FishSettings::badgesEnabled)
-            f.sub.add(SubcategoryHeader("Small icons beside a player's name, after the [level] badge — granted only by Eli, never self-assignable"))
+            f.sub.add(SubcategoryHeader("Small icons beside a player's name, after the [level] badge — granted only by RedFish, never self-assignable"))
             f.sub.add(ToggleSetting("On Nametags", "", FishSettings::badgesOnNametags))
             f.sub.add(ToggleSetting("In Tab List", "", FishSettings::badgesOnTab))
             f.sub.add(ToggleSetting("In Chat", "", FishSettings::badgesInChat))
@@ -1987,6 +2004,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         columns.add(slayer)
         columns.add(fishmod.features.diana.DianaMenu.column())
         columns.add(fishmod.features.mining.MiningMenu.column())
+        columns.add(fishmod.features.kuudra.KuudraMenu.column())
+        columns.add(fishmod.features.rift.RiftMenu.column())
+        columns.add(fishmod.features.extras.ExtrasMenu.column())
+        columns.add(fishmod.features.garden.GardenMenu.column())
+        columns.add(fishmod.features.achievements.AchMenu.column())
         columns.add(visuals)
         columns.add(cosmetics)
         if (cheats.features.isNotEmpty()) columns.add(cheats)
@@ -2346,6 +2368,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             closeFinalized = true
             try { Config.manager.save() } catch (t: Throwable) { FishDiag.fail("FishModScreen.8", "Config save on /fm close failed", t) }
             try { FishConfig.manager.save() } catch (t: Throwable) { FishDiag.fail("FishModScreen.9", "FishConfig save on /fm close failed", t) }
+            fishmod.features.achievements.AchUsage.onConfigSaved()
+            FishDiag.guard("FishModScreen.ach", "achievement feature scan failed") { fishmod.features.achievements.AchUsage.onFeatureScan(columns.flatMap { c -> listOf(c) + c.children }.flatMap { it.features }) }
             super.onClose()
             return
         }
@@ -2485,6 +2509,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         UiRecorder.fillRectTopRounded(x0.toFloat(), hy.toFloat(), w.toFloat(), HEADER_STRIP_H.toFloat(), CARD_RADIUS.toFloat(), ScreenTheme.ACCENT)
         val titleClip = w - (if (showPopOut) 40 else 20)
         sst(ctx, this.font, ellipsize(c.name, titleClip), x0 + 10, hy + HEADER_STRIP_H + 6, TEXT_COLOR, 1f)
+        c.sub()?.let { sst(ctx, this.font, ellipsize(it, titleClip, 0.8f), x0 + 10, hy + HEADER_STRIP_H + 19, SUBTEXT_COLOR, 0.8f) }
         if (showPopOut) {
             val r = popOutIconRect(x1, hy)
             val hov = mouseX in r[0]..r[2] && mouseY in r[1]..r[3]
@@ -3346,6 +3371,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     class Column(val name: String) {
+        var subtitle: String? = null
+        fun sub(): String? = subtitle ?: COLUMN_SUBTITLES[name]
         val features: MutableList<Feature> = ArrayList()
         var scroll = 0
 
@@ -3399,9 +3426,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     class SubcategoryHeader(name: String) : Setting(name, "") {
         private fun w(t: String) = Math.ceil(UiRecorder.textWidth(t, SUBCAT_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
 
-        private val twoLine: Boolean = w(name) > (MIN_COLUMN_W - 38)
+        private val minLines: Int = wrap(name, MIN_COLUMN_W - 38).size
 
-        override fun getHeight(): Int = if (twoLine) SUBCAT_HEIGHT_2 else SUBCAT_HEIGHT
+        override fun getHeight(): Int = when {
+            minLines <= 1 -> SUBCAT_HEIGHT
+            else -> SUBCAT_HEIGHT_2 + (minLines - 2) * 9
+        }
 
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
             val h = getHeight()
@@ -3411,25 +3441,20 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             if (lines.size <= 1) {
                 stBold(ctx, tr, lines.getOrElse(0) { name }, leftX + 6, sy + (h - 8) / 2, ACCENT)
             } else {
-                stBold(ctx, tr, lines[0], leftX + 6, sy + 4, ACCENT)
-                stBold(ctx, tr, lines[1], leftX + 6, sy + 13, ACCENT)
+                for ((i, l) in lines.withIndex()) stBold(ctx, tr, l, leftX + 6, sy + 4 + i * 9, ACCENT)
             }
         }
 
         private fun wrap(s: String, maxW: Int): List<String> {
             if (w(s) <= maxW) return listOf(s)
-            val words = s.split(" ")
-            var line1 = ""
-            var i = 0
-            while (i < words.size) {
-                val candidate = if (line1.isEmpty()) words[i] else "$line1 ${words[i]}"
-                if (w(candidate) > maxW && line1.isNotEmpty()) break
-                line1 = candidate
-                i++
+            val out = ArrayList<String>()
+            var line = ""
+            for (word in s.split(" ")) {
+                val candidate = if (line.isEmpty()) word else "$line $word"
+                if (w(candidate) > maxW && line.isNotEmpty()) { out.add(line); line = word } else line = candidate
             }
-            if (line1.isEmpty() && words.isNotEmpty()) { line1 = words[0]; i = 1 }
-            val rest = words.drop(i).joinToString(" ")
-            return if (rest.isEmpty()) listOf(line1) else listOf(line1, fit(rest, maxW))
+            if (line.isNotEmpty()) out.add(line)
+            return out
         }
     }
 
@@ -4255,7 +4280,29 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         private const val COLUMN_GUTTER = 6
         private const val CARD_RADIUS = 7
-        private const val HEADER_H = 24
+        private const val HEADER_H = 36
+        private val COLUMN_SUBTITLES = mapOf(
+            "General" to "Core mod options",
+            "Dungeons" to "Run helpers & alerts",
+            "Dungeon Solvers" to "Puzzle & room solvers",
+            "Dungeon Trackers" to "Run stats & timers",
+            "Dungeon Map" to "Map display & rooms",
+            "Floor 7" to "Boss fight helpers",
+            "Inventory & Storage" to "Items, chests & search",
+            "Party & Social" to "Party, chat & friends",
+            "Cosmetics" to "Looks & colour tweaks",
+            "HUD & Overlays" to "On-screen elements",
+            "Visuals & Rendering" to "ESP, boxes & effects",
+            "Diana" to "Mythological event tools",
+            "Slayer" to "Slayer boss helpers",
+            "Cheats" to "Risky automation",
+            "Mining" to "Mining & powder tools",
+            "Kuudra" to "Crimson Isle boss run tools",
+            "Rift" to "Rift dimension helpers",
+            "Extras" to "Misc & utilities",
+            "Farming" to "Garden farming tools",
+            "Achievements" to "Goals & progress",
+        )
         private const val HEADER_STRIP_H = 3
         private const val MIN_COLUMN_W = 172
         private const val MAX_COLUMN_W = 260
@@ -4354,6 +4401,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private fun descFor(name: String): String {
             fishmod.features.diana.DianaMenu.describe(name)?.let { return it }
             fishmod.features.mining.MiningMenu.describe(name)?.let { return it }
+            fishmod.features.kuudra.KuudraMenu.describe(name)?.let { return it }
+            fishmod.features.rift.RiftMenu.describe(name)?.let { return it }
+            fishmod.features.extras.ExtrasMenu.describe(name)?.let { return it }
+            fishmod.features.garden.GardenMenu.describe(name)?.let { return it }
+            fishmod.features.achievements.AchMenu.describe(name)?.let { return it }
             return when (name) {
                 "Chat" -> "Smart Copy, Compact Chat, Infinite History, Search, Filter"
                 "Mod Prefix" -> "Tag FishMod's chat output with a prefix"

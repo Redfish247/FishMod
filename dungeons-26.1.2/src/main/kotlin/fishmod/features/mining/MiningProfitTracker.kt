@@ -63,7 +63,7 @@ object MiningProfitTracker {
         load()
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         ClientLifecycleEvents.CLIENT_STOPPING.register { save(true) }
-        Events.ON_WORLD_CHANGE.register { save(true); lootCat = null; powderSeen.clear(); false }
+        Events.ON_WORLD_CHANGE.register { save(true); lootCat = null; lootPending.clear(); powderSeen.clear(); false }
         Events.ON_GAME_MESSAGE.register { text ->
             if (S.miningProfit && Mining.inMiningIsland()) onChat(text)
             false
@@ -125,6 +125,24 @@ object MiningProfitTracker {
         val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: 1L
         if (!trackable(name) || name.endsWith("Powder")) return
         add(cat, name, n)
+        lootPending.getOrPut(norm(name)) { ArrayList() } += longArrayOf(n, now)
+    }
+
+    // Loot-block items that will reappear in the batched [Sacks] summary; deducted so they aren't also "Mined"
+    private val lootPending = HashMap<String, MutableList<LongArray>>()
+    private fun norm(name: String) = name.trimStart { !it.isLetterOrDigit() }.lowercase()
+
+    private fun consumePending(item: String, n: Long, now: Long): Long {
+        val q = lootPending[norm(item)] ?: return n
+        q.removeAll { now - it[1] > 90_000 }
+        var left = n
+        val it = q.iterator()
+        while (left > 0 && it.hasNext()) {
+            val e = it.next()
+            val take = minOf(left, e[0]); left -= take; e[0] -= take
+            if (e[0] <= 0) it.remove()
+        }
+        return left
     }
 
     private fun trackable(name: String) = name.endsWith("Powder") || name.startsWith("Enchanted Book") || idOf(name) != null
@@ -154,14 +172,14 @@ object MiningProfitTracker {
             c.siblings.forEach(::walk)
         }
         walk(text)
-        val cat = lootCat ?: lastCat?.takeIf { now - lastLootMs < 5000 } ?: Cat.MINING
-        // Loot blocks already list their items; sacks only add plain mining drops
-        if (cat != Cat.MINING) return
+        // Loot blocks already list their items; sacks only add what wasn't in a recent loot block
         for (m in SACK_LINE.findAll(hovers.joinToString("\n"))) {
             if (m.groupValues[1] != "+") continue
             val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: continue
             val item = m.groupValues[3].trim()
-            if (!item.endsWith("Powder")) add(Cat.MINING, item, n)
+            if (item.endsWith("Powder")) continue
+            val rest = consumePending(item, n, now)
+            if (rest > 0) add(Cat.MINING, item, rest)
         }
     }
 
@@ -229,6 +247,12 @@ object MiningProfitTracker {
         val id = idOf(name) ?: return null
         return RARITY[ItemsDb.get(id)?.get("tier")?.asString ?: "COMMON"]
     }
+
+    // Achievement ledger reads: value of the total/session trackers and a counter
+    fun profitOf(session: Boolean): Double = (if (session) data.session else data.total).items.entries.sumOf { (k, n) ->
+        val name = k.substringAfter('|'); if (name.endsWith("Powder")) 0.0 else priceOf(name) * n }
+    fun totalItems(): Map<String, Long> = data.total.items.entries.associate { it.key.substringAfter('|') to it.value }
+    fun totalCount(k: String): Long = data.total.counts[k] ?: 0L
 
     private fun tracker(): Tracker = if (S.miningProfitMode == "Total") data.total else data.session
 

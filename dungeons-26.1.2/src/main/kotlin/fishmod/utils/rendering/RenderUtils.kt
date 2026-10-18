@@ -170,6 +170,23 @@ object RenderUtils {
         Gizmos.rect(corners[0], corners[1], corners[2], corners[3], GizmoStyle.strokeAndFill(strokeArgb, 2f, fillArgb))
     }
 
+    // Filled box turned by yawDeg around its base centre (no outline)
+    @JvmStatic
+    fun gizmoYawBox(base: Vec3, halfWidth: Double, height: Double, yawDeg: Double, fillArgb: Int, throughWalls: Boolean) {
+        if ((fillArgb ushr 24) == 0 || base.x.isNaN() || base.y.isNaN() || base.z.isNaN()) return
+        val rad = Math.toRadians(yawDeg); val c = Math.cos(rad); val s = Math.sin(rad)
+        fun pt(lx: Double, y: Double, lz: Double) = Vec3(base.x + lx * c - lz * s, base.y + y, base.z + lx * s + lz * c)
+        val h = halfWidth
+        val b = arrayOf(pt(-h, 0.0, -h), pt(h, 0.0, -h), pt(h, 0.0, h), pt(-h, 0.0, h))
+        val t = arrayOf(pt(-h, height, -h), pt(h, height, -h), pt(h, height, h), pt(-h, height, h))
+        val style = GizmoStyle.fill(fillArgb)
+        fun face(a: Vec3, bb: Vec3, cc: Vec3, d: Vec3) {
+            for (q in arrayOf(arrayOf(a, bb, cc, d), arrayOf(d, cc, bb, a))) { val g = Gizmos.rect(q[0], q[1], q[2], q[3], style); if (throughWalls) g.setAlwaysOnTop() }
+        }
+        face(b[0], b[1], b[2], b[3]); face(t[0], t[1], t[2], t[3])
+        for (i in 0..3) { val j = (i + 1) % 4; face(b[i], b[j], t[j], t[i]) }
+    }
+
     @JvmStatic
     fun gizmoLine(a: Vec3, b: Vec3, argb: Int) {
         if (a.x.isNaN() || a.y.isNaN() || a.z.isNaN() || b.x.isNaN() || b.y.isNaN() || b.z.isNaN()) FishDiag.fail("RenderUtils.6", "gizmoLine given NaN $a -> $b")
@@ -474,6 +491,19 @@ object RenderUtils {
         matrices.mulPose(context.levelState().cameraRenderState.orientation)
         matrices.scale(pxSize, -pxSize, pxSize)
         font.drawInBatch(text, -font.width(text) / 2f, 0f, argb, shadow, matrices.last().pose(), textBuffers, Font.DisplayMode.SEE_THROUGH, 0, 15728880)
+        matrices.popPose()
+    }
+
+    // Text on a rigid board turned only around Y so every line rotates together; lx/ly are local board offsets
+    @JvmStatic
+    fun renderBoardText(matrices: PoseStack, text: Component, base: Vec3, yaw: Float, lx: Double, ly: Double, scale: Float) {
+        val font = Minecraft.getInstance().font
+        matrices.pushPose()
+        matrices.translate(base.x, base.y, base.z)
+        matrices.mulPose(org.joml.Quaternionf().rotateY(yaw))
+        matrices.translate(lx, ly, 0.0)
+        matrices.scale(TEXT_SCALE * scale, -TEXT_SCALE * scale, TEXT_SCALE * scale)
+        font.drawInBatch(text, -font.width(text) / 2f, 0f, -0x1, true, matrices.last().pose(), textBuffers, Font.DisplayMode.SEE_THROUGH, 0, 15728880)
         matrices.popPose()
     }
 

@@ -18,6 +18,7 @@ object UiRecorder {
     private const val OP_PUSH_SCISSOR = 11
     private const val OP_POP_SCISSOR = 12
     private const val OP_FILL_ROUNDED_CORNERS = 13
+    private const val OP_LINE = 14
 
     private const val FLOATS_PER_CMD = 8
     private const val INTS_PER_CMD = 2
@@ -103,6 +104,7 @@ object UiRecorder {
             }
             OP_PUSH_SCISSOR -> UiRenderer.pushScissor(x, y, w, h)
             OP_POP_SCISSOR -> UiRenderer.popScissor()
+            OP_LINE -> UiRenderer.line(x, y, w, h, f4, ints[ib])
             OP_FILL_ROUNDED_CORNERS -> UiRenderer.shape(x, y, w, h, f4, f5, floats[fb + 6] * k, floats[fb + 7] * k, ints[ib])
             else -> FishDiag.fail("UiRecorder.3", "unknown UI op $op at index $idx")
         }
@@ -157,6 +159,11 @@ object UiRecorder {
     @JvmStatic
     fun fillRectHGradient(x: Float, y: Float, w: Float, h: Float, leftColor: Int, rightColor: Int) {
         push(OP_FILL_RECT_HGRADIENT, x, y, w, h, i0 = leftColor, i1 = rightColor)
+    }
+
+    @JvmStatic
+    fun line(x0: Float, y0: Float, x1: Float, y1: Float, width: Float, color: Int) {
+        push(OP_LINE, x0, y0, x1, y1, width, i0 = color)
     }
 
     @JvmStatic

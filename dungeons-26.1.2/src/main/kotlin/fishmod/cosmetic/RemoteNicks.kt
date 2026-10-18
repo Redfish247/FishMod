@@ -149,7 +149,13 @@ object RemoteNicks {
         if (s.trimStart().startsWith("[NPC]")) return text
         var out = text
         val own = if (NickState.isActive()) NickState.realName() else null
-        for ((k, v) in styledByName) {
+        // Look up the line's name-like tokens instead of scanning every known nick
+        val hits = LinkedHashSet<String>()
+        val m = IGN_PAT.matcher(s)
+        while (m.find()) { val n = m.group(1); if (styledByName.containsKey(n)) hits += n }
+        if (hits.isEmpty()) return text
+        for (k in hits) {
+            val v = styledByName[k] ?: continue
             // Own name is already swapped locally; the server copy can be stale
             if (k == own) continue
             if (s.contains(k)) {
