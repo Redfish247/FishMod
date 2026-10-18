@@ -175,6 +175,12 @@ object Debug {
                         })
                 )
 
+                .then(ClientCommands.literal("latetext").executes { _ ->
+                    fishmod.utils.config.values.Visual.lateWorldText = !fishmod.utils.config.values.Visual.lateWorldText
+                    Misc.addChatMessage(Component.literal("Late world text (26.2): ").append(Misc.getStatusText(fishmod.utils.config.values.Visual.lateWorldText)))
+                    Constants.SUCCESS
+                })
+
                 .then(ClientCommands.literal("holotrace").executes { _ ->
                     holoTrace = !holoTrace
                     Misc.addChatMessage(Component.literal("Holo trace: ").append(Misc.getStatusText(holoTrace)))
