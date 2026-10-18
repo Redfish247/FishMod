@@ -164,7 +164,7 @@ object Debug {
                         })
                 )
 
-                .then(ClientCommands.literal("holo").executes { _ ->
+                .then(ClientCommands.literal("holo").then(ClientCommands.argument("q", StringArgumentType.greedyString()).executes { c -> holoDump(StringArgumentType.getString(c, "q")); Constants.SUCCESS }).executes { _ ->
                     val mc = net.minecraft.client.Minecraft.getInstance()
                     val p = mc.player
                     val lvl = mc.level
@@ -249,4 +249,16 @@ object Debug {
         Misc.addChatMessage(Component.literal("Gateblown: " + Section.isGateBlownUp()))
         Misc.addChatMessage(Component.literal("In floor 7: " + Phase.isInFloor7()))
     }
+}
+
+// /badev holo <text>: nearest entities (64 blocks) whose name contains the text
+private fun holoDump(q: String) {
+    val mc = net.minecraft.client.Minecraft.getInstance()
+    val p = mc.player ?: return
+    val lvl = mc.level ?: return
+    fun nm(e: net.minecraft.world.entity.Entity) = e.customName?.string ?: e.displayName?.string ?: ""
+    val all = lvl.entitiesForRendering().filter { it !== p && it.distanceTo(p) < 64 }
+    val hits = all.filter { nm(it).contains(q, true) }.sortedBy { it.distanceTo(p) }
+    Misc.addChatMessage(Component.literal("holo: ${all.size} entities within 64 ${all.groupingBy { it.type.toShortString() }.eachCount()}; ${hits.size} match '$q'"))
+    for (e in hits.take(15)) Misc.addChatMessage(Component.literal("${e.type.toShortString()} '${nm(e)}' d=${"%.1f".format(e.distanceTo(p))} dy=${"%.1f".format(e.y - p.y)}"))
 }
