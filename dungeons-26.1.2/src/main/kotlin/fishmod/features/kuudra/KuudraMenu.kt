@@ -71,6 +71,24 @@ object KuudraMenu {
         boss.sub.add(ColorPickerSetting("Elle Color", "", S::kuudraElleColor).gatedBy { S.kuudraElleHighlight })
         col.features.add(boss)
 
+        val extra = Feature("Kuudra Fight Extras", S::kuudraBossMaster)
+        extra.sub.add(ToggleSetting("Ability Announcer", "Party message with your position when you cast a spell", S::kuudraAnnounce))
+        extra.sub.add(ToggleSetting("Spirit Spark", "", S::kuudraAnnounceSpirit).gatedBy { S.kuudraAnnounce })
+        extra.sub.add(ToggleSetting("Hollowed Rush", "", S::kuudraAnnounceHollowed).gatedBy { S.kuudraAnnounce })
+        extra.sub.add(ToggleSetting("Raging Wind", "", S::kuudraAnnounceWind).gatedBy { S.kuudraAnnounce })
+        extra.sub.add(ToggleSetting("Ichor Pool", "", S::kuudraAnnounceIchor).gatedBy { S.kuudraAnnounce })
+        extra.sub.add(ToggleSetting("Ichor Pool Area", "Circle where a party member's Ichor Pool lands", S::kuudraIchorArea))
+        extra.sub.add(ColorPickerSetting("Ichor Color", "", S::kuudraIchorColor).gatedBy { S.kuudraIchorArea })
+        extra.sub.add(ToggleSetting("Rend Damage Alert", "Chat message when anyone pulls with Rend", S::kuudraRendAlert))
+        extra.sub.add(ToggleSetting("Backbone Alert", "Timer bar after throwing a Bonemerang", S::kuudraBackbone))
+        extra.sub.add(ToggleSetting("Backbone Sound", "", S::kuudraBackboneSound).gatedBy { S.kuudraBackbone })
+        extra.sub.add(SliderIntSetting("Backbone Advance", "Ticks early to alert", S::kuudraBackboneAdvance, 0, 10).gatedBy { S.kuudraBackbone })
+        extra.sub.add(ToggleSetting("Stun Waypoints", "Where to hit the pod while stunning", S::kuudraStunWaypoints))
+        extra.sub.add(DropdownSetting("Stun Pod", "", arrayOf("Left Pod", "Right Pod", "Back Pod"), { S.kuudraStunPod }, { v -> S.kuudraStunPod = v }).gatedBy { S.kuudraStunWaypoints })
+        extra.sub.add(DropdownSetting("Stun Style", "", arrayOf("Outline", "Filled", "Both"), { S.kuudraStunStyle }, { v -> S.kuudraStunStyle = v }).gatedBy { S.kuudraStunWaypoints })
+        extra.sub.add(ColorPickerSetting("Stun Color", "", S::kuudraStunColor).gatedBy { S.kuudraStunWaypoints })
+        col.features.add(extra)
+
         val chests = Feature("Kuudra Chests", S::kuudraChestsMaster)
         chests.sub.add(ToggleSetting("Chest Value", "Item values in the Paid/Free Chest", S::kuudraChestValue))
         chests.sub.add(ToggleSetting("Opened Chest Highlight", "Vesuvius/Croesus: red = done, orange = partly opened", S::kuudraOpenedHighlight))
@@ -110,6 +128,7 @@ object KuudraMenu {
         "Pre-spot Alert" -> "Detects your pre spot and whether its crate spawned"
         "Build Helper" -> "Build progress, pile waypoints and fresh timers"
         "Kuudra Boss" -> "Kuudra highlight and health, team and Elle boxes"
+        "Kuudra Fight Extras" -> "Ability announcer, ichor pool circle, rend alert, backbone timer, stun waypoints"
         "Kuudra Chests" -> "Chest value, profit, Vesuvius highlight, chest counter"
         "Block Useless Perks" -> "Stops misclicks on useless Kuudra perks"
         else -> null

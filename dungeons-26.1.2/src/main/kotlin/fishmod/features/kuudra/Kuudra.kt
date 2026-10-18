@@ -86,6 +86,7 @@ object Kuudra {
         KuudraHuds.init()
         KuudraRender.init()
         KuudraChests.init()
+        KuudraExtras.init()
     }
 
     private fun reset() {
