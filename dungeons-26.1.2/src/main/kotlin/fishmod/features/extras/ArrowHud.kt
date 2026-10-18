@@ -23,6 +23,7 @@ object ArrowHud {
     private val LOW = Regex("""^You only have ([\d,]+) arrows? left in your Quiver!$""")
     private val FILLED = Regex("""^You filled your quiver with ([\d,]+) extra arrows?!$""")
     private val LORE_ARROW = Regex("""^(?:Active|Selected) Arrow: (.+?)(?: \(([\d,]+)\))?$""")
+    private val REMAINING = Regex("""(?i)arrows remaining:?\s*([\d,]+)|([\d,]+)\s*arrows remaining""")
     private const val EMPTY_MSG = "You don't have any more arrows left in your Quiver!"
 
     private var type = "Unknown"
@@ -91,8 +92,17 @@ object ArrowHud {
         if (!arrowy) return false
         type = name.replace(Regex("""\s*x?[\d,]+$"""), "").ifEmpty { name }
         rarityRgb = fishmod.features.ItemRarityHotbar.getRarity(st).color and 0xFFFFFF
-        setCount(st.count.toLong())
+        setCount(remainingFromLore(st) ?: st.count.toLong())
         return true
+    }
+
+    // "Arrows Remaining: 1,234" lore line is the real quiver count; the stack size caps at 64
+    private fun remainingFromLore(st: net.minecraft.world.item.ItemStack): Long? {
+        st.get(DataComponents.LORE)?.lines()?.forEach { line ->
+            val m = REMAINING.find(fishmod.utils.Constants.STRIP_COLOR_REGEX.replace(line.string, "").trim()) ?: return@forEach
+            (m.groupValues[1].ifEmpty { m.groupValues[2] }).replace(",", "").toLongOrNull()?.let { return it }
+        }
+        return null
     }
 
     private fun setCount(n: Long) {
