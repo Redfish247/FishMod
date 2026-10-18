@@ -37,6 +37,9 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
     public void fishmod$adjustNameTag(T entity, S state, float tickProgress, CallbackInfo ci) {
 
         try {
+            if (state.nameTag != null && fishmod.utils.debug.Debug.INSTANCE.getHoloTrace()) {
+                fishmod.utils.debug.Debug.INSTANCE.holoTraceMsg(entity.getType().toShortString(), state.nameTag.getString());
+            }
             if (Dungeons.hideBlazeNameTag && state.nameTag != null && Location.inDungeon()
                     && !(entity instanceof net.minecraft.world.entity.player.Player)) {
                 String nameTagText = state.nameTag.getString();
