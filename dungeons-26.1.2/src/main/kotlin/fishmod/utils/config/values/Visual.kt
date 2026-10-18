@@ -43,6 +43,8 @@ object Visual {
 
     @ConfigValue @JvmField var hideEntityFire: Boolean = false
 
+    @ConfigValue @JvmField var nametagsOnTop: Boolean = true
+
     @ConfigValue @JvmField var oldPlayerHead: Boolean = false
 
     @ConfigValue @JvmField var fixWitherEssence: Boolean = false

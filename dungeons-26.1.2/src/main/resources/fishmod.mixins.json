@@ -47,6 +47,7 @@
     "GuiScoreboardMixin",
     "ItemTrimMixin",
     "EntityRendererMixin",
+    "NameTagOnTopMixin",
     "EntityRenderStateMixin",
     "ItemInHandRendererMixin",
     "FluidStateModelSetMixin",
