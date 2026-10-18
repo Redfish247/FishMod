@@ -148,6 +148,7 @@ void main(){
 
     @JvmStatic
     fun paint(screenW: Int, screenH: Int, scale: Float) {
+        if (System.getProperty("fishmod.noui") != null) return
         if (failed) return
         guard.capture()
         try {
