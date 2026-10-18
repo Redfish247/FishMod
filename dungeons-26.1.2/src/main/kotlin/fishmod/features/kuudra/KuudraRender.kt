@@ -50,7 +50,7 @@ object KuudraRender {
                 val ph = Kuudra.phase
                 if (ph == 1) {
                     if ((S.kuudraSupplyMaster && S.kuudraSupplyWaypoints)) for (g in Kuudra.giants) txt("§ePick Up!", supplyPos(g).add(0.0, 2.5, 0.0), 1.5f)
-                    if ((S.kuudraSupplyMaster && S.kuudraDropWaypoints)) for (s in drops()) txt("§ePlace Here!", Vec3.atCenterOf(s.drop).add(0.0, 1.5, 0.0), 1.5f)
+                    if ((S.kuudraSupplyMaster && S.kuudraDropWaypoints)) for (s in drops()) txt("§ePlace Here!", Vec3(s.cx, s.drop.y + 1.5, s.cz), 1.5f)
                     if ((S.kuudraSupplyMaster && S.kuudraPreAreaLabels)) for (s in Supply.entries) if (s != Supply.None) txt("§e${s.name}", Vec3.atCenterOf(s.pick), 2f)
                 }
                 if (ph == 2) {
@@ -66,11 +66,11 @@ object KuudraRender {
         }
     }
 
-    // Odin's offset from the giant to the crate on the ground
+    // IQ's offset from the giant to the crate on the ground
     fun supplyPos(g: Entity): Vec3 {
         val p = EntityUtil.getLerpedPos(g)
         val r = Math.toRadians(g.yRot + 130.0)
-        return Vec3(p.x + 3.7 * cos(r), 73.0, p.z + 3.7 * sin(r))
+        return Vec3(p.x + 3.7 * cos(r) + 0.5, 74.0, p.z + 3.7 * sin(r) + 1.5)
     }
 
     private fun drops() = Supply.entries.filter { it != Supply.None && it != Supply.Square && it.active }
@@ -86,7 +86,7 @@ object KuudraRender {
             if ((S.kuudraSupplyMaster && S.kuudraSupplyWaypoints)) for (g in Kuudra.giants) { val p = supplyPos(g); beam(ps, vc, p.x, p.y, p.z, S.kuudraSupplyColor) }
             if ((S.kuudraSupplyMaster && S.kuudraDropWaypoints)) for (s in drops()) {
                 val c = if (Kuudra.missing == s) 0xFF55FF55.toInt() else 0xFFFF5555.toInt()
-                beam(ps, vc, s.drop.x + 0.5, s.drop.y.toDouble(), s.drop.z + 0.5, c)
+                beam(ps, vc, s.cx, s.drop.y.toDouble(), s.cz, c)
             }
             if ((S.kuudraSupplyMaster && S.kuudraPearlWaypoints)) pearls { box, c, filled -> if (filled) RenderUtils.fillBox(ps, vc, box, Mining.alpha(c, 60)) }
         }

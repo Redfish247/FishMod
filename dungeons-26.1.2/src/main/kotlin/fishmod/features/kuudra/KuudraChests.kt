@@ -7,6 +7,7 @@ import fishmod.features.mining.MiningHuds
 import fishmod.mixin.accessors.HandledScreenAccessor
 import fishmod.utils.FishMsg
 import fishmod.utils.debug.FishDiag
+import fishmod.utils.events.Events
 import fishmod.utils.rendering.DrawEvents
 import fishmod.features.kuudra.KuudraSettings as S
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
@@ -26,11 +27,16 @@ object KuudraChests {
     private class Parsed(val slot: Int, val lines: List<String>, val value: Double, val cost: Double, val drops: List<Triple<String, Int, Double>>, val sig: Int)
     private var parsed: Parsed? = null
     private var claimed = false
+    private var pending: Parsed? = null
 
     fun init() {
+        Events.ON_GAME_MESSAGE.register { c ->
+            if (S.kuudraChestsMaster && S.kuudraProfit && Mining.strip(c.string).contains("PAID CHEST REWARDS")) FishDiag.guard("KuudraChests.2", "paid rewards failed") { onPaidRewards() }
+            false
+        }
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, scr, _, _ ->
             if (scr !is AbstractContainerScreen<*>) return@AfterInit
-            parsed = null; claimed = false
+            parsed = null; claimed = false; pending = null
             val title = scr.title.string
             if (CHEST_TITLE.matches(title)) {
                 ScreenEvents.afterExtract(scr).register(ScreenEvents.AfterExtract { _, ctx, _, _, _ ->
@@ -127,6 +133,14 @@ object KuudraChests {
         if (idx != p.slot) return
         // only a real buy click counts; reroll / already-opened / can't-afford clicks don't
         if (lore(scr.menu.slots[idx].item).none { it.startsWith("Click to open") }) return
+        pending = p
+    }
+
+    // IQ: a click only counts once the server confirms it with the PAID CHEST REWARDS chat line
+    private fun onPaidRewards() {
+        val p = pending ?: return
+        pending = null
+        if (claimed) return
         claimed = true
         S.kuudraProfitTotal += p.value - p.cost
         S.kuudraProfitChests++
