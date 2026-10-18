@@ -1444,7 +1444,7 @@ class FishModInit : ClientModInitializer {
         ScreenEvents.AFTER_INIT.register(ScreenEvents.AfterInit { _, screen, _, _ ->
             if (screen !is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>) return@AfterInit
             FishDiag.guard("FishModInit.153", "CroesusLootDetector.onScreenInit failed") { fishmod.features.croesus.CroesusLootDetector.onScreenInit(screen) }
-            ScreenEvents.afterExtract(screen).register(ScreenEvents.AfterExtract { _, ctx, mx, my, _ ->
+            ScreenEvents.beforeExtract(screen).register(ScreenEvents.BeforeExtract { _, ctx, mx, my, _ ->
                 try { SessionStats.renderInScreen(ctx, mx, my) } catch (t: Throwable) { FishDiag.fail("FishModInit.154", "SessionStats.renderInScreen failed", t) }
             })
         })
