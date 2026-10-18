@@ -37,7 +37,7 @@ public class MouseMixin {
         if (!Keybinds.chatPeekActive()) return;
         double amount = Math.max(-1.0, Math.min(1.0, vertical));
         if (!Minecraft.getInstance().hasShiftDown()) amount *= 7.0;
-        Minecraft.getInstance().gui.getChat().scrollChat((int) amount);
+        fishmod.compat.McCompatKt.getHud(Minecraft.getInstance()).getChat().scrollChat((int) amount);
         ci.cancel();
     }
 
@@ -61,7 +61,7 @@ public class MouseMixin {
     @Inject(method = "releaseMouse", at = @At(value = "FIELD",
             target = "Lnet/minecraft/client/MouseHandler;xpos:D", opcode = Opcodes.GETFIELD, ordinal = 0))
     private void fishmod$restoreCursor(CallbackInfo ci) {
-        if (NoCursorReset.shouldHook() && Minecraft.getInstance().screen instanceof AbstractContainerScreen) {
+        if (NoCursorReset.shouldHook() && fishmod.compat.McCompatKt.getCurScreen(Minecraft.getInstance()) instanceof AbstractContainerScreen) {
             this.xpos = this.fishmod$beforeX;
             this.ypos = this.fishmod$beforeY;
         }

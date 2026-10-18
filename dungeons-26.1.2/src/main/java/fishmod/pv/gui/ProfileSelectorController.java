@@ -99,7 +99,7 @@ final class ProfileSelectorController {
 					Minecraft client = Minecraft.getInstance();
 					if (client != null) {
 						client.execute(() -> {
-							if (client.screen == this.screen) {
+							if (fishmod.compat.McCompatKt.getCurScreen(client) == this.screen) {
 								this.profileCoopFlyoutScroll = 0;
 							}
 						});
@@ -684,7 +684,7 @@ final class ProfileSelectorController {
 			}
 			return;
 		}
-		Minecraft.getInstance().setScreen(this.screen.forCoopMember(name, profileId));
+		fishmod.compat.McCompatKt.showScreen(Minecraft.getInstance(), this.screen.forCoopMember(name, profileId));
 	}
 
 	private record CoopMemberHit(int x, int y, int w, int h, String uuid, String name, String profileId) {
@@ -710,7 +710,7 @@ final class ProfileSelectorController {
 				return;
 			}
 			client.execute(() -> {
-				if (client.screen != this.screen || !this.screen.isLoadGeneration(generation)) {
+				if (fishmod.compat.McCompatKt.getCurScreen(client) != this.screen || !this.screen.isLoadGeneration(generation)) {
 					return;
 				}
 				if (updated == null || !updated.ok()) {
@@ -724,7 +724,7 @@ final class ProfileSelectorController {
 				return;
 			}
 			client.execute(() -> {
-				if (client.screen != this.screen || !this.screen.isLoadGeneration(generation)) {
+				if (fishmod.compat.McCompatKt.getCurScreen(client) != this.screen || !this.screen.isLoadGeneration(generation)) {
 					return;
 				}
 				if (error != null || loaded == null || !loaded.ok()) {

@@ -39,7 +39,7 @@ public class GameRendererUiMixin {
     private void fishmod$paintUiOverlay(DeltaTracker deltaTracker, boolean tick, CallbackInfo ci) {
         try {
             AnimatedDyeAnimator.tickFrame();
-            Screen current = Minecraft.getInstance().screen;
+            Screen current = fishmod.compat.McCompatKt.getCurScreen(Minecraft.getInstance());
             if (current instanceof HasUiOverlay screen) {
                 screen.paintUiOverlay();
             } else if (current instanceof AbstractContainerScreen<?> container && StorageOverlay.isActive(container)) {

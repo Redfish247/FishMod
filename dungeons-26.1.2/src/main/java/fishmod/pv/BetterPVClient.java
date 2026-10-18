@@ -97,7 +97,7 @@ public final class BetterPVClient {
 		if (!PV_SHADOW_CHAT_SENT.compareAndSet(false, true)) {
 			return;
 		}
-		client.gui.getChat().addClientSystemMessage(
+		fishmod.compat.McCompatKt.getHud(client).getChat().addClientSystemMessage(
 			net.minecraft.network.chat.Component.literal(
 				"BetterPV: another mod uses /pv. Use /betterpv pv [name] instead."
 			).withColor(0xFFD36A)

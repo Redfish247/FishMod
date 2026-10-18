@@ -1,4 +1,5 @@
 package fishmod.utils.rendering
+import fishmod.compat.mainTarget
 
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
@@ -205,7 +206,7 @@ void main(){
 
     // Draw into the GUI's own target, not whatever FBO is left bound (vanilla unbinds to 0, ImmediatelyFast doesn't) or a guess at the main target (other mods redirect GUI output).
     private fun bindMainTarget() {
-        val mainTex = (Minecraft.getInstance().mainRenderTarget.colorTexture as? com.mojang.blaze3d.opengl.GlTexture)?.glId() ?: 0
+        val mainTex = (Minecraft.getInstance().mainTarget.colorTexture as? com.mojang.blaze3d.opengl.GlTexture)?.glId() ?: 0
         val passTex = lastPassColorTex
         if (!targetLogged) {
             targetLogged = true
@@ -213,7 +214,7 @@ void main(){
         }
         if (passTex != 0 && GL11.glIsTexture(passTex) && attach(passTex)) return
         if (mainTex == 0) {
-            FishDiag.fail("UiRenderer.11", "main render target colour texture is not a GlTexture: ${Minecraft.getInstance().mainRenderTarget.colorTexture?.javaClass?.name}")
+            FishDiag.fail("UiRenderer.11", "main render target colour texture is not a GlTexture: ${Minecraft.getInstance().mainTarget.colorTexture?.javaClass?.name}")
             return
         }
         attach(mainTex)

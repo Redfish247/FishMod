@@ -238,7 +238,7 @@ public final class ProfileViewerScreen extends Screen {
 				return;
 			}
 			client.execute(() -> {
-				if (client.screen != this || generation != this.loadGeneration) {
+				if (fishmod.compat.McCompatKt.getCurScreen(client) != this || generation != this.loadGeneration) {
 					return;
 				}
 				if (updated == null || !updated.ok()) {
@@ -252,7 +252,7 @@ public final class ProfileViewerScreen extends Screen {
 				return;
 			}
 			client.execute(() -> {
-				if (client.screen != this || generation != this.loadGeneration) {
+				if (fishmod.compat.McCompatKt.getCurScreen(client) != this || generation != this.loadGeneration) {
 					return;
 				}
 				ProfileFetcher.LoadedProfile displayed = loaded;
@@ -295,7 +295,7 @@ public final class ProfileViewerScreen extends Screen {
 			return;
 		}
 		client.execute(() -> {
-			if (client.screen != this || !this.dataReady) {
+			if (fishmod.compat.McCompatKt.getCurScreen(client) != this || !this.dataReady) {
 				return;
 			}
 			if (this.playerUuid != null && updated.snapshot() != null
@@ -1030,7 +1030,7 @@ public final class ProfileViewerScreen extends Screen {
 	private void openSearchedPlayer(String name) {
 		ProfileViewerScreen next = new ProfileViewerScreen(name);
 		next.recordSearch = true;
-		Minecraft.getInstance().setScreen(next);
+		fishmod.compat.McCompatKt.showScreen(Minecraft.getInstance(), next);
 	}
 
 	private void submitPlayerSearch() {

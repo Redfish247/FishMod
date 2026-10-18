@@ -1,4 +1,5 @@
 package fishmod.utils.data
+import fishmod.compat.Fmt
 
 import fishmod.utils.debug.FishDiag
 
@@ -85,7 +86,7 @@ object LegacyFormatting {
                 if (fmt != null) {
                     flush()
                     if (fmt == ChatFormatting.RESET) color = 0xFFFFFFFF.toInt()
-                    else fmt.color?.let { color = (0xFF shl 24) or it }
+                    else Fmt.colorOf(next)?.let { color = (0xFF shl 24) or it }
                     i += 2
                     continue
                 }

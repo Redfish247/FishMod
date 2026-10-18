@@ -247,7 +247,7 @@ public class Keybinds {
             }
 
             if (openConfig.consumeClick()) {
-                client.setScreen(new fishmod.features.FishModScreen());
+                fishmod.compat.McCompatKt.showScreen(client, new fishmod.features.FishModScreen());
             }
 
             while (slotBindCycleProfile.consumeClick()) {
