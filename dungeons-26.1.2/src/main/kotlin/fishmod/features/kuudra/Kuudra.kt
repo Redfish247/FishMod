@@ -24,15 +24,16 @@ import net.minecraft.world.phys.Vec3
 // Kuudra run state (phases from Elle's lines, entities scanned every 10 ticks); data/regexes follow Odin
 object Kuudra {
 
-    enum class Supply(val pick: BlockPos, val drop: BlockPos) {
-        Triangle(BlockPos(-67, 77, -122), BlockPos(-94, 78, -106)),
-        X(BlockPos(-142, 77, -151), BlockPos(-106, 78, -112)),
-        Equals(BlockPos(-65, 76, -87), BlockPos(-98, 78, -99)),
-        Slash(BlockPos(-113, 77, -68), BlockPos(-106, 78, -99)),
-        Shop(BlockPos(-81, 76, -143), BlockPos(-98, 78, -112)),
-        xCannon(BlockPos(-143, 76, -125), BlockPos(-110, 78, -106)),
-        Square(BlockPos(-143, 76, -80), BlockPos.ZERO),
-        None(BlockPos.ZERO, BlockPos.ZERO);
+    enum class Supply(val pick: BlockPos, val drop: BlockPos, val cx: Double, val cz: Double) {
+        // drop centres (cx, cz) are IQ's pile positions
+        Triangle(BlockPos(-67, 77, -122), BlockPos(-95, 78, -107), -94.0, -106.0),
+        X(BlockPos(-142, 77, -151), BlockPos(-107, 78, -114), -106.0, -113.0),
+        Equals(BlockPos(-65, 76, -87), BlockPos(-107, 78, -100), -106.0, -99.0),
+        Slash(BlockPos(-113, 77, -68), BlockPos(-99, 78, -100), -98.0, -99.0),
+        Shop(BlockPos(-81, 76, -143), BlockPos(-99, 78, -114), -98.0, -113.0),
+        xCannon(BlockPos(-143, 76, -125), BlockPos(-111, 78, -107), -110.0, -106.0),
+        Square(BlockPos(-143, 76, -80), BlockPos.ZERO, 0.0, 0.0),
+        None(BlockPos.ZERO, BlockPos.ZERO, 0.0, 0.0);
         @JvmField var active = true
     }
 
@@ -126,8 +127,8 @@ object Kuudra {
     // Nearest drop spot to the "SUPPLIES RECEIVED" hologram is marked placed
     private fun dropDone(x: Double, z: Double) {
         val s = Supply.entries.filter { it != Supply.None && it != Supply.Square }
-            .minByOrNull { val dx = it.drop.x + 0.5 - x; val dz = it.drop.z + 0.5 - z; dx * dx + dz * dz } ?: return
-        val dx = s.drop.x + 0.5 - x; val dz = s.drop.z + 0.5 - z
+            .minByOrNull { val dx = it.cx - x; val dz = it.cz - z; dx * dx + dz * dz } ?: return
+        val dx = s.cx - x; val dz = s.cz - z
         if (dx * dx + dz * dz <= 9.0) s.active = false
     }
 
@@ -138,6 +139,7 @@ object Kuudra {
             msg.contains("[NPC] Elle: OMG! Great work collecting my supplies!") -> setPhase(2)
             msg.contains("[NPC] Elle: Phew! The Ballista is finally ready!") -> setPhase(3)
             msg.contains("[NPC] Elle: POW! SURELY THAT'S IT!") -> setPhase(4)
+            msg.trim() == "DEFEAT" -> { if (phase in 1..4) phase = 5 }
             msg.trim() == "KUUDRA DOWN!" || msg.contains(END) -> { if (phase in 1..4) endRun() }
             msg.contains(PRE) -> onPre()
             msg.contains(NOT_AGAIN) -> checkPre()
