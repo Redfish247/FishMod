@@ -23,7 +23,7 @@ object KuudraChests {
     private val AMOUNT = Regex("^(.+?) x(\\d+)$")
     private val COINS = Regex("^([\\d,]+) Coins$")
 
-    private class Parsed(val slot: Int, val lines: List<String>, val value: Double, val cost: Double, val drops: List<Triple<String, Int, Double>>)
+    private class Parsed(val slot: Int, val lines: List<String>, val value: Double, val cost: Double, val drops: List<Triple<String, Int, Double>>, val sig: Int)
     private var parsed: Parsed? = null
     private var claimed = false
 
@@ -36,7 +36,9 @@ object KuudraChests {
                 ScreenEvents.afterExtract(scr).register(ScreenEvents.AfterExtract { _, ctx, _, _, _ ->
                     if (!(S.kuudraChestsMaster && S.kuudraChestValue)) return@AfterExtract
                     FishDiag.guard("KuudraChests.1", "chest value failed") {
-                        if (parsed == null) parsed = parse(scr)
+                        val cur = parsed
+                        val stale = cur != null && scr.menu.slots.getOrNull(cur.slot)?.let { lore(it.item).hashCode() != cur.sig } == true
+                        if (cur == null || stale) parsed = parse(scr)
                         val p = parsed ?: return@guard
                         MiningHuds.draw(ctx, p.lines, S.kuudraChestValueX, S.kuudraChestValueY, S.kuudraChestValueScale)
                     }
@@ -114,7 +116,7 @@ object KuudraChests {
             out += "§7Cost: §c${Mining.short(cost)}"
             val profit = value - cost
             out += "§eProfit: " + (if (profit >= 0) "§a" else "§c") + Mining.short(profit)
-            return Parsed(i, out, value, cost, drops)
+            return Parsed(i, out, value, cost, drops, lore.hashCode())
         }
         return null
     }
@@ -123,6 +125,8 @@ object KuudraChests {
         if (!(S.kuudraChestsMaster && S.kuudraProfit) || claimed) return
         val p = parsed ?: parse(scr) ?: return
         if (idx != p.slot) return
+        // only a real buy click counts; reroll / already-opened / can't-afford clicks don't
+        if (lore(scr.menu.slots[idx].item).none { it.startsWith("Click to open") }) return
         claimed = true
         S.kuudraProfitTotal += p.value - p.cost
         S.kuudraProfitChests++
