@@ -114,6 +114,10 @@ enum class Location(val name2: String) {
         @JvmStatic
         fun inDungeonHub(): Boolean = inSkyblockFlag && currentLocation == DUNGEON_HUB
 
+        // Debug-only: lets singleplayer test worlds pretend to be on SkyBlock (/fm debug skyblock on).
+        @JvmStatic
+        fun devSetSkyblock(on: Boolean) { inSkyblockFlag = on }
+
         @JvmStatic
         fun getCurrentLocation(): Location = currentLocation
 

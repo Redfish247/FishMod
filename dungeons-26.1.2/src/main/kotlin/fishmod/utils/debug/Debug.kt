@@ -151,6 +151,20 @@ object Debug {
                 }))
 
                 .then(
+                    ClientCommands.literal("skyblock")
+                        .then(ClientCommands.literal("on").executes { _ ->
+                            Location.devSetSkyblock(true)
+                            Misc.addChatMessage(Component.literal("Fake SkyBlock: on"))
+                            Constants.SUCCESS
+                        })
+                        .then(ClientCommands.literal("off").executes { _ ->
+                            Location.devSetSkyblock(false)
+                            Misc.addChatMessage(Component.literal("Fake SkyBlock: off"))
+                            Constants.SUCCESS
+                        })
+                )
+
+                .then(
                     ClientCommands.literal("location")
                         .then(
                             ClientCommands.literal("current")
