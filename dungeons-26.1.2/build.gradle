@@ -72,6 +72,7 @@ dependencies {
 
 processResources {
 	inputs.property "version", project.version
+	inputs.property "minecraftDep", project.findProperty("minecraft_dep") ?: "~26.1.2"
 	inputs.property "modrinthSlug", project.findProperty('modrinth_slug') ?: 'fishmod'
 	inputs.property "githubRepo", project.findProperty('github_repo') ?: 'Redfish247/FishModDungeons'
 
