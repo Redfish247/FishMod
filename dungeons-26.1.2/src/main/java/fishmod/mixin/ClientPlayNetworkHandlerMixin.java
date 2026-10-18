@@ -52,9 +52,9 @@ public class ClientPlayNetworkHandlerMixin {
     private void fishmod$renderOptimizerHideEntities(net.minecraft.network.protocol.game.ClientboundAddEntityPacket packet, CallbackInfo ci) {
         if (!fishmod.utils.config.values.Visual.renderOptimizer) return;
         net.minecraft.world.entity.EntityType<?> t = packet.getType();
-        if ((fishmod.utils.config.values.Visual.roHideFallingBlocks && t == net.minecraft.world.entity.EntityType.FALLING_BLOCK)
-                || (fishmod.utils.config.values.Visual.roHideLightning && t == net.minecraft.world.entity.EntityType.LIGHTNING_BOLT)
-                || (fishmod.utils.config.values.Visual.roHideExperienceOrbs && t == net.minecraft.world.entity.EntityType.EXPERIENCE_ORB)) {
+        if ((fishmod.utils.config.values.Visual.roHideFallingBlocks && t == fishmod.compat.ET.FALLING_BLOCK)
+                || (fishmod.utils.config.values.Visual.roHideLightning && t == fishmod.compat.ET.LIGHTNING_BOLT)
+                || (fishmod.utils.config.values.Visual.roHideExperienceOrbs && t == fishmod.compat.ET.EXPERIENCE_ORB)) {
             ci.cancel();
         }
     }

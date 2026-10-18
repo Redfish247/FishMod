@@ -111,8 +111,7 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
         int y = above ? baseOffset - 10 : baseOffset + 10;
         try {
             for (Component line : lines) {
-                collector.submitNameTag(poseStack, state.nameTagAttachment, y, line,
-                    !state.isDiscrete, state.lightCoords, state.distanceToCameraSq, cameraRenderState);
+                fishmod.compat.NameTagCompat.submit(collector, poseStack, state, y, line, cameraRenderState);
                 y += above ? -10 : 10;
             }
         } catch (Throwable t) {

@@ -1,4 +1,5 @@
 package fishmod.features.diana
+import fishmod.compat.mainTarget
 import fishmod.compat.showScreen
 
 import fishmod.utils.events.Events
@@ -53,7 +54,7 @@ object DianaTest {
     private fun shot(name: String) {
         val mc = net.minecraft.client.Minecraft.getInstance()
         fishmod.utils.Scheduler.scheduleTask(Runnable {
-            net.minecraft.client.Screenshot.grab(mc.gameDirectory, "diana_$name.png", mc.mainRenderTarget, 1) { LOG.info("shot {}", name) }
+            net.minecraft.client.Screenshot.grab(mc.gameDirectory, "diana_$name.png", mc.mainTarget, 1) { LOG.info("shot {}", name) }
         }, 10)
     }
 

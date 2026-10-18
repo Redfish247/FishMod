@@ -14,7 +14,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
-import net.minecraft.client.renderer.MultiBufferSource
+import fishmod.compat.WorldText
 import net.minecraft.gizmos.Gizmos
 import net.minecraft.gizmos.GizmoStyle
 import net.minecraft.gizmos.TextGizmo
@@ -26,7 +26,7 @@ import org.joml.Vector3f
 object RenderUtils {
 
     private const val TEXT_SCALE = 0.025f
-    private val textBuffers: MultiBufferSource.BufferSource = MultiBufferSource.immediate(ByteBufferBuilder(1536))
+
 
     @JvmStatic
     fun toFloats(argb: Int): FloatArray {
@@ -479,7 +479,7 @@ object RenderUtils {
         matrices.scale(TEXT_SCALE * scale, -TEXT_SCALE * scale, TEXT_SCALE * scale)
 
         val halfWidth = textRenderer.width(text) / 2f
-        textRenderer.drawInBatch(text, -halfWidth, 0f, -0x1, true, matrices.last().pose(), textBuffers, Font.DisplayMode.SEE_THROUGH, 0, 15728880)
+        WorldText.draw(matrices, text, -0x1, true)
         matrices.popPose()
     }
 
@@ -491,7 +491,7 @@ object RenderUtils {
         matrices.translate(pos.x, pos.y, pos.z)
         matrices.mulPose(context.levelState().cameraRenderState.orientation)
         matrices.scale(pxSize, -pxSize, pxSize)
-        font.drawInBatch(text, -font.width(text) / 2f, 0f, argb, shadow, matrices.last().pose(), textBuffers, Font.DisplayMode.SEE_THROUGH, 0, 15728880)
+        WorldText.draw(matrices, text, argb, shadow)
         matrices.popPose()
     }
 
@@ -504,12 +504,12 @@ object RenderUtils {
         matrices.mulPose(org.joml.Quaternionf().rotateY(yaw))
         matrices.translate(lx, ly, 0.0)
         matrices.scale(TEXT_SCALE * scale, -TEXT_SCALE * scale, TEXT_SCALE * scale)
-        font.drawInBatch(text, -font.width(text) / 2f, 0f, -0x1, true, matrices.last().pose(), textBuffers, Font.DisplayMode.SEE_THROUGH, 0, 15728880)
+        WorldText.draw(matrices, text, -0x1, true)
         matrices.popPose()
     }
 
     @JvmStatic
-    fun flushText() = textBuffers.endBatch()
+    fun flushText() = WorldText.flush()
 
     @JvmStatic
     fun renderText(context: LevelRenderContext, matrices: PoseStack, text: Component, pos: Vec3, scale: Float) {
