@@ -39,7 +39,7 @@ object GardenMilestones {
         Garden.hud("Crop Milestone", "garden_milestone", 150, 36,
             { S.gardenMilestoneHudX }, { S.gardenMilestoneHudX = it }, { S.gardenMilestoneHudY }, { S.gardenMilestoneHudY = it },
             { S.gardenMilestoneHudScale }, { S.gardenMilestoneHudScale = it },
-            { S.gardenMilestoneHud && Garden.inGarden() && cropNow.isNotEmpty() }) { hudLines() }
+            { S.gardenMilestoneHud && Garden.inGarden() && cropNow.isNotEmpty() }, { S.gardenMilestoneHud }) { hudLines() }
     }
 
     private fun scanTab() {

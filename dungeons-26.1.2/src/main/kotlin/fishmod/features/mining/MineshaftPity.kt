@@ -35,7 +35,7 @@ object MineshaftPity {
         MiningHuds.reg("Mineshaft Pity", "mining_pity", 150, 40,
             { S.miningPityHudX }, { S.miningPityHudX = it }, { S.miningPityHudY }, { S.miningPityHudY = it },
             { S.miningPityHudScale }, { S.miningPityHudScale = it },
-            { S.miningPity && (Mining.inTunnels() || fishmod.features.FishHudEditor.isOpen()) }, ::lines)
+            { S.miningPity && (Mining.inTunnels() || fishmod.features.FishHudEditor.isOpen()) }, { S.miningPity }, ::lines)
         halfPoints = S.miningPityPoints.toDouble()
     }
 

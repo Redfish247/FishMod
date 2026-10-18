@@ -15,6 +15,7 @@ import fishmod.pv.api.ProfileFetcher;
 import fishmod.pv.data.FormatUtil;
 import fishmod.pv.gui.inventories.SkyBlockItemFactory;
 import fishmod.pv.gui.ItemIcons;
+import fishmod.pv.gui.nav.IconButtonBar;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -176,7 +177,7 @@ final class ProfileSelectorController {
 		Font font = this.screen.font();
 		int contentH = profileCoopFlyoutHeight(font, this.profileMenuHoverChoice);
 		ProfileMenuLayout layout = profileMenuLayout(font);
-		int visibleH = Math.min(contentH, this.screen.height - layout.menuY() - 4);
+		int visibleH = Math.min(contentH, visibleScreenH() - layout.menuY() - 4);
 		int maxScroll = Math.max(0, contentH - visibleH);
 		this.profileCoopFlyoutScroll = Math.max(
 			0,
@@ -296,7 +297,7 @@ final class ProfileSelectorController {
 		int flyoutX = profileCoopFlyoutX(layout);
 		int flyoutY = layout.menuY();
 		int flyoutW = PROFILE_COOP_FLYOUT_W;
-		int flyoutH = Math.min(profileCoopFlyoutHeight(font, choice), this.screen.height - flyoutY - 4);
+		int flyoutH = Math.min(profileCoopFlyoutHeight(font, choice), visibleScreenH() - flyoutY - 4);
 		return mouseX >= flyoutX && mouseX < flyoutX + flyoutW + PROFILE_COOP_FLYOUT_BRIDGE
 			&& mouseY >= flyoutY && mouseY < flyoutY + flyoutH;
 	}
@@ -344,9 +345,14 @@ final class ProfileSelectorController {
 				int badgeY = cy + 1 + Math.max(0, (layout.lineH() - 2 - PROFILE_BADGE_SIZE) / 2);
 				ItemIcons.drawItemIcon(g, badge, badgeX, badgeY, PROFILE_BADGE_SIZE);
 			}
-			drawProfileCoopCounts(g, font, choice, layout.menuX(), layout.menuW(), cy + 2);
 			cy += layout.lineH();
 		}
+	}
+
+	/** Screen height in the viewer's scaled coordinates, so popups use the room that is actually there. */
+	private int visibleScreenH() {
+		int virtual = IconButtonBar.virtualHeight();
+		return virtual > 0 ? virtual : this.screen.height;
 	}
 
 	private void drawProfileCoopCounts(
@@ -395,7 +401,7 @@ final class ProfileSelectorController {
 		int flyoutY = layout.menuY();
 		int flyoutW = PROFILE_COOP_FLYOUT_W;
 		int contentH = profileCoopFlyoutHeight(font, choice);
-		int flyoutH = Math.min(contentH, this.screen.height - flyoutY - 4);
+		int flyoutH = Math.min(contentH, visibleScreenH() - flyoutY - 4);
 		PvDraw.popupSurface(g, flyoutX, flyoutY, flyoutW, flyoutH);
 
 		int innerX = flyoutX + PROFILE_COOP_FLYOUT_PAD;
@@ -555,11 +561,6 @@ final class ProfileSelectorController {
 		int w = font.width(choice.cuteName());
 		if (!profileModeBadge(choice).isEmpty()) {
 			w += 3 + PROFILE_BADGE_SIZE;
-		}
-		if (choice.coop().soloProfile()) {
-			w += 8 + font.width("Solo");
-		} else {
-			w += 8 + PROFILE_MENU_COUNTS_W;
 		}
 		return w;
 	}

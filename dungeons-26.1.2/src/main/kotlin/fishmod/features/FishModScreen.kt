@@ -1275,7 +1275,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderIntSetting("Item Lines", "", FishSettings::expProfitLines, 1, 30))
             f.sub.add(SliderDoubleSetting("Scale", "", FishSettings::expProfitHudScale, 0.5, 3.0))
             f.sub.add(ButtonSetting("Reset", "Clear all tracked experiments", Runnable { fishmod.features.ExperimentProfitTracker.reset() }))
-            hud.features.add(f)
+            general.features.add(f)
         }
         run {
             val f = Feature("Performance HUD", FishSettings::perfHudEnabled)
@@ -3387,6 +3387,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         val sub: MutableList<Setting> = ArrayList()
         val expandAnim = Easing.Anim(250)
+        init { if (get != null) FeatureMasters.map.putIfAbsent(name, get) }
         fun hasMaster(): Boolean = get != null && set != null
 
         fun expanded(): Boolean = expandAnim.target()
@@ -4489,4 +4490,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             disc(ctx, knobX, y + h / 2, knobR, 0xFFFFFFFF.toInt())
         }
     }
+}
+
+/** Feature name -> master toggle, so the HUD editor can tell "setting off" from "not showing right now". */
+object FeatureMasters {
+    @JvmField val map: java.util.concurrent.ConcurrentHashMap<String, () -> Boolean> = java.util.concurrent.ConcurrentHashMap()
 }

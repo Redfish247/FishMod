@@ -174,9 +174,9 @@ object MiningHuds {
     fun reg(
         name: String, id: String, w: Int, h: Int,
         gx: () -> Int, sx: (Int) -> Unit, gy: () -> Int, sy: (Int) -> Unit,
-        gs: () -> Double, ss: (Double) -> Unit, on: () -> Boolean, lines: () -> List<String>,
+        gs: () -> Double, ss: (Double) -> Unit, on: () -> Boolean, enabled: (() -> Boolean)? = null, lines: () -> List<String>,
     ) {
-        FishHudEditor.register(name, gx, sx, gy, sy, w, h, gs, ss, on)
+        FishHudEditor.register(name, gx, sx, gy, sy, w, h, gs, ss, on, enabled?.let { e -> java.util.function.BooleanSupplier { e() } })
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", id)) { ctx, _ ->
             if (!FishHudEditor.isOpen() && on()) draw(ctx, lines(), gx(), gy(), gs())
         }

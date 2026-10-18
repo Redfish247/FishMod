@@ -101,7 +101,7 @@ object Pests {
         Garden.hud("Pest Timer", "garden_pests", 150, 40,
             { S.gardenPestHudX }, { S.gardenPestHudX = it }, { S.gardenPestHudY }, { S.gardenPestHudY = it },
             { S.gardenPestHudScale }, { S.gardenPestHudScale = it },
-            { S.gardenPestHud && Garden.inGarden() }) {
+            { S.gardenPestHud && Garden.inGarden() }, { S.gardenPestHud }) {
             val out = arrayListOf("${Garden.legacy(S.gardenPestHudColor)}§lPests §f$alive")
             if (cooldown.isNotEmpty()) out += "§7Cooldown: " + (if (cooldown.contains("READY", true)) "§a" else "§e") + cooldown
             val plots = if (tabPlots.isNotEmpty()) tabPlots else remembered.keys.toList()
