@@ -272,7 +272,7 @@ object FarmingProfitTracker {
         val counts = when (only) {
             Cat.PESTS -> listOf("Pests Killed"); Cat.VISITORS -> listOf("Visitors", "Copper", "Garden XP")
             Cat.RARE -> listOf("Rare Crops"); Cat.CROPS -> emptyList()
-            null -> listOf("Pests Killed", "Visitors", "Copper", "Garden XP", "Rare Crops")
+            null -> listOf("Pests Killed", "Visitors", "Copper", "Garden XP")
         }
         for (c in counts) t.counts[c]?.let {
             val ph = perHour(it.toDouble(), t)
@@ -284,6 +284,7 @@ object FarmingProfitTracker {
         out += "§7Playtime §f${fishmod.features.diana.DianaTracker.fmtTime(t.timeMs)}"
         if (t.feverMs > 0) out += "${Garden.legacy(S.gardenFeverColor)}Crop Fever §f${fishmod.features.diana.DianaTracker.fmtTime(t.feverMs)}"
         out += "§eProfit §6${Garden.short(profit)} §7(${Garden.short(ph)}/h)"
+        out += "${Garden.legacy(S.gardenRareCropColor)}Rare Crops §f${"%,d".format(S.gardenRareCropCount)}"
         cache = out
         return out
     }
