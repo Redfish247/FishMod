@@ -18,6 +18,7 @@ object BurrowDetector {
     private val CHAIN_DONE = Regex("""^You finished the Griffin burrow chain!.*""")
     private val FIRST_DIG = Regex(""".*You (?:just )?dug out(?!.*\(\d+/\d+\)$).*""")
     private val DEATH = Regex("""^ ☠ You .+""")
+    private val COLOR_CODE = Regex("§.")
     private val TREASURE_WORDS = listOf("Griffin Feather", " coins!", "Mythos Fragment", "Braided Griffin Feather", "Myth the Fish")
 
     private val chains = ArrayDeque<Long>()
@@ -34,7 +35,7 @@ object BurrowDetector {
         Events.ON_SOUND.register { snd, _, pitch -> onServerSound(snd.location.toString(), pitch) }
         Events.ON_GAME_MESSAGE.register { text ->
             if (Diana.inHub()) {
-                val s = text.string.replace(Regex("§."), "")
+                val s = text.string.replace(COLOR_CODE, "")
                 dugSound(s)
                 if (DianaSettings.dianaGuessing) onChat(s)
             }
