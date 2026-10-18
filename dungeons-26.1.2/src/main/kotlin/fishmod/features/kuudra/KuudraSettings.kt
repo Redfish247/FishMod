@@ -96,6 +96,26 @@ object KuudraSettings {
     @ConfigValue @JvmField var kuudraChestCounterY: Int = 330
     @ConfigValue @JvmField var kuudraChestCounterScale: Double = 1.0
 
+    // Extras
+    @ConfigValue @JvmField var kuudraAnnounce: Boolean = false
+    @ConfigValue @JvmField var kuudraAnnounceSpirit: Boolean = true
+    @ConfigValue @JvmField var kuudraAnnounceHollowed: Boolean = true
+    @ConfigValue @JvmField var kuudraAnnounceWind: Boolean = true
+    @ConfigValue @JvmField var kuudraAnnounceIchor: Boolean = true
+    @ConfigValue @JvmField var kuudraIchorArea: Boolean = false
+    @ConfigValue @JvmField var kuudraIchorColor: Int = 0xD260EEFF.toInt()
+    @ConfigValue @JvmField var kuudraRendAlert: Boolean = false
+    @ConfigValue @JvmField var kuudraBackbone: Boolean = false
+    @ConfigValue @JvmField var kuudraBackboneSound: Boolean = true
+    @ConfigValue @JvmField var kuudraBackboneAdvance: Int = 0
+    @ConfigValue @JvmField var kuudraBackboneX: Int = 10
+    @ConfigValue @JvmField var kuudraBackboneY: Int = 360
+    @ConfigValue @JvmField var kuudraBackboneScale: Double = 1.0
+    @ConfigValue @JvmField var kuudraStunWaypoints: Boolean = false
+    @ConfigValue @JvmField var kuudraStunPod: String = "Left Pod"
+    @ConfigValue @JvmField var kuudraStunStyle: String = "Outline"
+    @ConfigValue @JvmField var kuudraStunColor: Int = 0xC800F5FF.toInt()
+
     // Perks
     @ConfigValue @JvmField var kuudraBlockPerks: Boolean = false
     @ConfigValue @JvmField var kuudraBlockPerksList: String = "Steady Hands, Bomberman, Mining Frenzy, Elle's Lava Rod, Elle's Pickaxe, Auto Revive"
