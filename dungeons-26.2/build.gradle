@@ -1,0 +1,241 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+	id 'org.jetbrains.kotlin.jvm' version "${kotlin_version}"
+	id 'maven-publish'
+	id 'com.modrinth.minotaur' version '2.+'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+sourceSets {
+	main {
+		java.srcDirs = ['../dungeons-26.1.2/src/main/java']
+		kotlin.srcDirs = ['../dungeons-26.1.2/src/main/kotlin', '../dungeons-26.1.2/src/main/java']
+		resources.srcDirs = ['../dungeons-26.1.2/src/main/resources']
+	}
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
+    withSourcesJar()
+}
+
+loom {
+    runConfigs.named("client") {
+        setIdeConfigGenerated(true)
+        vmArg("-Dmixin.debug.export=true")
+        vmArg("-Ddevauth.enabled=true")
+        vmArg("-Ddevauth.account=main")
+        if (System.getProperty("java.vendor.version")?.contains("JBR") ||
+                System.getProperty("java.vm.vendor")?.contains("JetBrains")) {
+            vmArg("-XX:+AllowEnhancedClassRedefinition")
+        }
+    }
+
+    runConfigs.named("server") {
+        setIdeConfigGenerated(false)
+    }
+}
+
+repositories {
+	maven { url = "https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1" }
+	mavenCentral()
+	maven { url 'https://jitpack.io' }
+	maven {
+		name = "Terraformers"
+		url = "https://maven.terraformersmc.com/"
+	}
+	maven { url = 'https://repo.hypixel.net/repository/Hypixel/' }
+	maven {
+		name = "Modrinth"
+		url = "https://api.modrinth.com/maven"
+		content { includeGroup "maven.modrinth" }
+	}
+}
+
+dependencies {
+	implementation project(':common')
+
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	implementation("com.terraformersmc:modmenu:${project.modmenu_version}")
+	implementation "net.fabricmc:fabric-language-kotlin:${project.fabric_kotlin_version}"
+	compileOnly("net.hypixel:mod-api:${project.hypixel_api_core_version}")
+	include implementation("maven.modrinth:hypixel-mod-api:${project.hypixel_api_version}")
+	// Fork of BladeMasterGabe/practical-config ported to 26.2 (see gradle.properties), bundled via
+	// the :practical-config-relocated shim project, which repackages it under
+	// fishmod.shaded.practicalconfig so it can't collide with another mod's own bundled copy of the
+	// same library at the same package (see that project's build.gradle for why).
+	include implementation(project(':practical-config-relocated'))
+
+	runtimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
+}
+
+processResources {
+	inputs.property "version", project.version
+	inputs.property "minecraftDep", project.findProperty("minecraft_dep") ?: "~26.2"
+	inputs.property "modrinthSlug", project.findProperty('modrinth_slug') ?: 'fishmod'
+	inputs.property "githubRepo", project.findProperty('github_repo') ?: 'Redfish247/FishModDungeons'
+
+	filesMatching("fabric.mod.json") {
+		expand inputs.properties
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+	compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25
+}
+
+jar {
+	inputs.property "archivesName", project.base.archivesName
+
+	from("LICENSE") {
+		rename { "${it}_${inputs.properties.archivesName}"}
+	}
+
+	from(project(':common').sourceSets.main.output)
+}
+
+modrinth {
+	token       = providers.environmentVariable('MODRINTH_TOKEN')
+			.orElse(providers.gradleProperty('modrinth_token'))
+	projectId   = providers.environmentVariable('MODRINTH_PROJECT_ID')
+			.orElse(providers.gradleProperty('modrinth_project_id'))
+			.orElse('glXPWTyr')
+	versionNumber = project.findProperty('modrinth_version') ?: project.mod_version
+	versionName   = "FishMod ${project.findProperty('modrinth_version') ?: project.mod_version}"
+	versionType   = 'release'
+	uploadFile    = tasks.jar
+	gameVersions  = [project.minecraft_version]
+	loaders       = ['fabric']
+	changelog     = providers.environmentVariable('CHANGELOG')
+			.orElse("Release ${project.mod_version}")
+	dependencies {
+		required.project 'fabric-api'
+		required.project 'hypixel-mod-api'
+	}
+}
+tasks.modrinth.dependsOn tasks.build
+
+def discordWebhook = providers.environmentVariable('DISCORD_WEBHOOK')
+		.orElse(providers.gradleProperty('discord_webhook'))
+
+tasks.register('announceDiscord') {
+	description = 'Posts a Modrinth release announcement to a Discord webhook.'
+	group = 'publishing'
+
+	onlyIf {
+		if (!discordWebhook.isPresent() || discordWebhook.get().trim().isEmpty()) {
+			logger.warn('announceDiscord: no DISCORD_WEBHOOK env var / discord_webhook property set — skipping Discord announcement.')
+			return false
+		}
+		if (tasks.modrinth.state.failure != null) {
+			logger.warn('announceDiscord: modrinth publish failed — skipping Discord announcement.')
+			return false
+		}
+		return true
+	}
+
+	doLast {
+		def ver = (project.findProperty('modrinth_version') ?: project.mod_version).toString()
+		def mcVer = project.minecraft_version.toString()
+		def changelogText = (System.getenv('CHANGELOG') ?: "Release ${project.mod_version}").toString()
+		def pageUrl = "https://modrinth.com/mod/fishmod/version/${ver}".toString()
+		def payload = [
+			username        : 'FishMod Releases',
+			content         : "@everyone 📦 **FishMod ${ver}** is now live on Modrinth — update now!".toString(),
+			allowed_mentions: [parse: ['everyone']],
+			embeds          : [[
+				title      : "🎣 FishMod ${ver} released on Modrinth".toString(),
+				url        : pageUrl,
+				description: 'A new version of FishMod is out now. Download or update straight from Modrinth.',
+				color      : 2406064,
+				fields     : [
+					[name: 'Version',    value: ver,           inline: true],
+					[name: 'Minecraft',  value: mcVer,         inline: true],
+					[name: 'Loader',     value: 'Fabric',      inline: true],
+					[name: "What's new", value: changelogText, inline: false],
+					[name: 'Download',   value: "[modrinth.com/mod/fishmod](${pageUrl})".toString(), inline: false]
+				],
+				thumbnail  : [url: 'https://cdn.modrinth.com/data/glXPWTyr/d8f3a4f7bb9d828eae870c1b7aa8ca86559e1f4a.webp'],
+				footer     : [text: 'Available on Modrinth']
+			]]
+		]
+		def body = groovy.json.JsonOutput.toJson(payload)
+		def client = java.net.http.HttpClient.newHttpClient()
+		def request = java.net.http.HttpRequest.newBuilder()
+				.uri(java.net.URI.create(discordWebhook.get().trim()))
+				.header('Content-Type', 'application/json')
+				.header('User-Agent', 'FishMod-Release-Notifier (https://github.com/Redfish247/FishModDungeons, 1.0)')
+				.POST(java.net.http.HttpRequest.BodyPublishers.ofString(body, java.nio.charset.StandardCharsets.UTF_8))
+				.build()
+		def response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString())
+		if (response.statusCode() >= 200 && response.statusCode() < 300) {
+			logger.lifecycle("announceDiscord: posted FishMod ${ver} announcement to Discord (HTTP ${response.statusCode()}).")
+		} else {
+			throw new GradleException("announceDiscord: Discord webhook HTTP ${response.statusCode()} — ${response.body()}")
+		}
+	}
+}
+
+tasks.named('modrinth').configure { finalizedBy 'announceDiscord' }
+
+tasks.register('deployJar') {
+	group = 'fishmod'
+	description = 'Build and copy the jar into local client mods folders (deploy_targets / deploy_profile properties)'
+	dependsOn tasks.build
+	def jarFile = tasks.jar.archiveFile
+	def targetSpec = (project.findProperty('deploy_targets') ?: '').toString()
+	def isWindows = System.getProperty('os.name').toLowerCase().contains('win')
+	def appData = System.getenv('APPDATA')
+	doLast {
+		def jar = jarFile.get().asFile
+		def targets = targetSpec.split(';').findAll { it.trim() }.collect { new File(it.trim()) }
+		if (targets.isEmpty() && appData != null) {
+			targets = [
+				new File(appData, "ModrinthApp/profiles/${project.findProperty('deploy_profile') ?: 'Skyblock 1.21.8'}/mods"),
+				new File(appData, 'PrismLauncher/instances/FishTest/minecraft/mods'),
+			]
+		}
+		if (targets.isEmpty()) {
+			logger.warn("deployJar: set deploy_targets (';'-separated mods folders) in ~/.gradle/gradle.properties")
+			return
+		}
+		def running = isWindows
+			? ['powershell', '-NoProfile', '-Command',
+				"Get-CimInstance Win32_Process | Where-Object Name -like 'java*' | ForEach-Object CommandLine"].execute().text
+			: ['ps', '-eo', 'args'].execute().text
+		targets.each { dir ->
+			def gameDir = dir.parentFile
+			def name = gameDir?.name == 'minecraft' ? gameDir.parentFile?.name : gameDir?.name
+			if (!dir.isDirectory()) { logger.lifecycle("deployJar: skip ${dir} (no mods folder)"); return }
+			if (name && running.contains(name)) { logger.warn("deployJar: SKIPPED ${name} - that client is open, close it and rerun"); return }
+			dir.listFiles().findAll { it.name ==~ /FishModDungeons-.*\.jar/ && it.name != jar.name }.each { old ->
+				if (old.delete()) logger.lifecycle("deployJar: removed ${old.name} from ${name}")
+				else logger.warn("deployJar: couldn't remove ${old.name} from ${name}")
+			}
+			java.nio.file.Files.copy(jar.toPath(), new File(dir, jar.name).toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+			logger.lifecycle("deployJar: ${jar.name} -> ${name}")
+		}
+	}
+}
+
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			artifactId = project.archives_base_name
+			from components.java
+		}
+	}
+}
