@@ -159,6 +159,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderIntSetting("Auction Price Scale %", "100% = default size", FishSettings::guiScaleAuction, 50, 150, 5))
             f.sub.add(SliderIntSetting("Waypoint Title Scale %", "100% = default size", FishSettings::guiScaleWaypoint, 50, 150, 5))
             f.sub.add(SliderIntSetting("Credits Scale %", "100% = default size", FishSettings::guiScaleCredits, 50, 150, 5))
+            f.sub.add(SliderIntSetting("Profile Viewer Scale %", "100% = default size", FishSettings::guiScaleProfileViewer, 50, 150, 5))
             f.sub.add(SliderIntSetting("Diana Profit Scale %", "100% = default size", FishSettings::guiScaleDianaProfit, 50, 150, 5))
             general.features.add(f)
         }
@@ -404,6 +405,15 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Sound Manager", FishSettings::soundMasterEnabled)
             f.sub.add(SliderIntSetting("Master Volume %", "Applied to every FishMod feature cue", FishSettings::soundMasterVolume, 0, 100))
+            general.features.add(f)
+        }
+        run {
+            val f = Feature("Profile Viewer", FishSettings::profileViewerEnabled)
+            f.sub.add(LabelSetting("Opens with /pv <player> [page]", ""))
+            f.sub.add(DropdownSetting("Theme", "Glass colours for the profile viewer", fishmod.pv.gui.PvTheme.NAMES,
+                { FishSettings.pvTheme },
+                { v -> FishSettings.pvTheme = v }))
+            f.sub.add(ToggleSetting("Show Overflow Skill Levels", "Uncapped skill levels in the viewer; maxed bars stay gold but fill toward the next level", FishSettings::pvOverflowSkills))
             general.features.add(f)
         }
         run {
