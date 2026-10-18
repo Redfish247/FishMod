@@ -48,6 +48,7 @@
     "ItemTrimMixin",
     "EntityRendererMixin",
     "NameTagOnTopMixin",
+    "TextDisplayOnTopMixin",
     "EntityRenderStateMixin",
     "ItemInHandRendererMixin",
     "FluidStateModelSetMixin",
