@@ -17,6 +17,7 @@ import net.minecraft.world.phys.Vec3
 import fishmod.utils.debug.FishDiag
 
 object DeviceNotifier {
+    private val REVIVE = Regex("§aYou will be revived in \\ds")
 
     private const val TOTAL_DURATION = 1500L
 
@@ -70,7 +71,7 @@ object DeviceNotifier {
             return false
         }
 
-        return !string.matches(Regex("§aYou will be revived in \\ds"))
+        return !string.matches(REVIVE)
     }
 
     @JvmStatic
