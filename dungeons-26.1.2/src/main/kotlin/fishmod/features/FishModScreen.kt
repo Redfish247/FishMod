@@ -1,4 +1,6 @@
 package fishmod.features
+import fishmod.compat.curScreen
+import fishmod.compat.showScreen
 
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.InputConstants
@@ -93,7 +95,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         try { applySavedColumnOrder() } catch (t: Throwable) { FishDiag.fail("FishModScreen.3", "applySavedColumnOrder failed for '${FishSettings.fmColumnOrder}'", t) }
         loadFoldedColumns()
         fishmod.utils.Scheduler.scheduleTask({
-            if (paintCount == 0 && Minecraft.getInstance().screen === this) {
+            if (paintCount == 0 && Minecraft.getInstance().curScreen === this) {
                 FishDiag.fail("FishModScreen.1", "paintUiOverlay never invoked 40 ticks after open (GameRendererUiMixin hook did not fire)")
                 fishmod.utils.debug.Debug.LOGGER.error("[UiRenderer] paintUiOverlay was never invoked - the GameRendererUiMixin hook didn't fire (likely a rendering-mod conflict)")
                 fishmod.utils.Misc.addChatMessage(Component.literal(
@@ -1162,10 +1164,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(DropdownSetting("Who Can Trigger", "", arrayOf("off", "self", "whitelist", "blacklist", "everyone"),
                 { FishSettings.pcPartyActionsMode }, { v -> FishSettings.pcPartyActionsMode = v }))
             f.sub.add(ButtonSetting("Whitelist", "Edit who may trigger party actions", "Open", Runnable {
-                Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.WHITELIST, Minecraft.getInstance().screen))
+                Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.WHITELIST, Minecraft.getInstance().curScreen))
             }))
             f.sub.add(ButtonSetting("Blacklist", "Edit who is always blocked", "Open", Runnable {
-                Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.BLACKLIST, Minecraft.getInstance().screen))
+                Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.BLACKLIST, Minecraft.getInstance().curScreen))
             }))
             party.features.add(f)
         }
@@ -1173,7 +1175,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("Kick List", { FishSettings.pcKickListEnabled }, { v -> FishSettings.pcKickListEnabled = v })
             f.sub.add(SubcategoryHeader("Anyone on this list is auto-kicked from your party whenever you're leader"))
             f.sub.add(ButtonSetting("Manage List", "Add/remove names, or /fm kicklist", "Open", Runnable {
-                Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.KICK, Minecraft.getInstance().screen))
+                Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.KICK, Minecraft.getInstance().curScreen))
             }))
             party.features.add(f)
         }
@@ -2848,8 +2850,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (searchFocused) return true
 
         val rects = topBarButtonRects()
-        if (hovBtn(mx, my, rects[0][0], rects[0][1], rects[0][2], rects[0][3])) { Minecraft.getInstance().setScreen(FishHudEditor(this)); return true }
-        if (hovBtn(mx, my, rects[1][0], rects[1][1], rects[1][2], rects[1][3])) { Minecraft.getInstance().setScreen(CreditsScreen(this)); return true }
+        if (hovBtn(mx, my, rects[0][0], rects[0][1], rects[0][2], rects[0][3])) { Minecraft.getInstance().showScreen(FishHudEditor(this)); return true }
+        if (hovBtn(mx, my, rects[1][0], rects[1][1], rects[1][2], rects[1][3])) { Minecraft.getInstance().showScreen(CreditsScreen(this)); return true }
         if (hovBtn(mx, my, rects[2][0], rects[2][1], rects[2][2], rects[2][3])) {
             if (resetArmed) { resetAllColumns(); resetArmed = false }
             else { resetArmed = true; resetArmedAt = System.currentTimeMillis() }

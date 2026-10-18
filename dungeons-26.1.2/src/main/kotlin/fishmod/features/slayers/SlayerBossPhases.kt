@@ -1,4 +1,5 @@
 package fishmod.features.slayers
+import fishmod.compat.hudHidden
 
 import fishmod.utils.Constants
 import fishmod.utils.Location
@@ -110,7 +111,7 @@ object SlayerBossPhases {
     private fun tick() {
         if (!enabled()) { show = false; line1 = ""; line2 = ""; return }
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.level == null || mc.options.hideGui || !Location.inSkyblock()) {
+        if (mc.player == null || mc.level == null || mc.hudHidden || !Location.inSkyblock()) {
             show = false; line1 = ""; line2 = ""; return
         }
 

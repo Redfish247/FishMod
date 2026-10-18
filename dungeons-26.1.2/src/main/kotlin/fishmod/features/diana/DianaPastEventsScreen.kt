@@ -1,4 +1,5 @@
 package fishmod.features.diana
+import fishmod.compat.showScreen
 
 import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
@@ -301,7 +302,7 @@ class DianaPastEventsScreen(private val parent: Screen? = null) :
         return super.charTyped(input)
     }
 
-    override fun onClose() { Minecraft.getInstance().setScreen(parent) }
+    override fun onClose() { Minecraft.getInstance().showScreen(parent) }
 
     override fun isPauseScreen(): Boolean = false
 

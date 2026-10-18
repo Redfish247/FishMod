@@ -1,4 +1,5 @@
 package fishmod.features.dungeon
+import fishmod.compat.curScreen
 
 import fishmod.utils.FishMsg
 import fishmod.utils.HypixelApi
@@ -196,7 +197,7 @@ object PartyFinder {
 
     private fun inPartyFinder(): Boolean {
         if (!FishSettings.pfMenuEnabled) return false
-        val s = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return false
+        val s = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return false
         return fishmod.utils.ScreenTitle.plain(s) == "Party Finder"
     }
 
@@ -207,7 +208,7 @@ object PartyFinder {
     }
 
     private fun captureSelectedClass() {
-        val s = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return
+        val s = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return
         if (fishmod.utils.ScreenTitle.plain(s) != "Catacombs Gate") return
         for (slot in s.menu.slots) {
             for (line in lore(slot.item)) {

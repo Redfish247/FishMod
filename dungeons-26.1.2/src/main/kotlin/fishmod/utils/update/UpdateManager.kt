@@ -1,4 +1,6 @@
 package fishmod.utils.update
+import fishmod.compat.curScreen
+import fishmod.compat.showScreen
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
@@ -138,7 +140,7 @@ object UpdateManager {
     }
 
     private fun tick(mc: Minecraft) {
-        if (!onHypixel || shownThisLogin || mc.player == null || mc.screen != null) return
+        if (!onHypixel || shownThisLogin || mc.player == null || mc.curScreen != null) return
         if (++ticksSinceJoin < JOIN_SETTLE_TICKS || ticksSinceJoin % 20 != 0) return
         if (Location.inDungeon() || Location.`in`(Location.KUUDRA)) return
         val release = pendingRelease() ?: return
@@ -146,7 +148,7 @@ object UpdateManager {
         // Once per Hypixel login, never again while connected.
         shownThisLogin = true
         synchronized(lock) { state.lastShownAt = System.currentTimeMillis(); save() }
-        mc.setScreen(UpdateScreen(release))
+        mc.showScreen(UpdateScreen(release))
     }
 
     fun pendingRelease(): Release? = synchronized(lock) {

@@ -1,4 +1,5 @@
 package fishmod.features.diana
+import fishmod.compat.cam
 
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
@@ -222,10 +223,10 @@ object DianaWaypoints {
 
     private fun withAlpha(rgb: Int, a: Float) = ((a.coerceIn(0f, 1f) * 255).toInt() shl 24) or (rgb and 0xFFFFFF)
 
-    private fun eye(): Vec3? = Minecraft.getInstance().gameRenderer.mainCamera.position()
+    private fun eye(): Vec3? = Minecraft.getInstance().cam.position()
 
     private fun lineStart(): Vec3 {
-        val cam = Minecraft.getInstance().gameRenderer.mainCamera
+        val cam = Minecraft.getInstance().cam
         return cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()))
     }
 

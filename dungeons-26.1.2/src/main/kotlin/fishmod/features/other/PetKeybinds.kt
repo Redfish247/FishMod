@@ -1,4 +1,5 @@
 package fishmod.features.other
+import fishmod.compat.curScreen
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.Keybinds
@@ -66,7 +67,7 @@ object PetKeybinds {
             return
         }
         click(mc, menu.containerId, slot.index)
-        if (FishSettings.petKeybindsAutoClose && mc.screen === screen) screen.onClose()
+        if (FishSettings.petKeybindsAutoClose && mc.curScreen === screen) screen.onClose()
     }
 
     private fun petName(stack: ItemStack): String? {

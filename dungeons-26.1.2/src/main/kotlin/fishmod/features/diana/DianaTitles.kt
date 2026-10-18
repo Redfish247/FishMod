@@ -1,4 +1,5 @@
 package fishmod.features.diana
+import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
@@ -81,7 +82,7 @@ object DianaTitles {
 
     private fun draw(ctx: GuiGraphicsExtractor, s: Slot, main: String, sub: String, alpha: Float) {
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui || main.isEmpty()) return
+        if (mc.player == null || mc.hudHidden || main.isEmpty()) return
         val font = mc.font
         val scale = s.gs().toFloat()
         val small = s === warp && DianaSettings.dianaWarpTitleSubtitle

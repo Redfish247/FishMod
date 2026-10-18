@@ -1,4 +1,8 @@
 package fishmod.features.dungeon.f7.terminal
+import fishmod.compat.curScreen
+
+import fishmod.compat.CB
+import fishmod.compat.CI
 
 import fishmod.utils.Location
 import fishmod.utils.Misc
@@ -32,7 +36,7 @@ object TerminalSolver {
     fun onScreenClosed() {
         if (simActive) return
         Minecraft.getInstance().schedule {
-            if (!simActive && Minecraft.getInstance().screen !is AbstractContainerScreen<*>) reset()
+            if (!simActive && Minecraft.getInstance().curScreen !is AbstractContainerScreen<*>) reset()
         }
     }
 
@@ -125,7 +129,7 @@ object TerminalSolver {
         net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback.EVENT.register(
             net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback { _, _, _, lines ->
                 if ((FishSettings.terminalSolverEnabled || simActive) && FishSettings.terminalStopTooltips && current != null
-                    && Minecraft.getInstance().screen is AbstractContainerScreen<*>
+                    && Minecraft.getInstance().curScreen is AbstractContainerScreen<*>
                 ) lines.clear()
             })
     }
@@ -172,7 +176,7 @@ object TerminalSolver {
         val term = current ?: return
         if (term.type == TerminalType.MELODY && FishSettings.terminalStopMelody) return
         val mc = Minecraft.getInstance()
-        val screen = mc.screen as? AbstractContainerScreen<*> ?: return
+        val screen = mc.curScreen as? AbstractContainerScreen<*> ?: return
         val slot = DrawEvents.currentSlot ?: screen.menu.slots.firstOrNull { it.x == x && it.y == y } ?: return
         if (slot.container is Inventory) return
         val idx = slot.index
@@ -226,7 +230,7 @@ object TerminalSolver {
         if (!FishSettings.terminalSolverEnabled && !simActive) return false
         val term = current ?: return false
         if (term.type != TerminalType.NUMBERS || slot.container is Inventory) return false
-        return slot.index < term.windowSize && slot.item.`is`(net.minecraft.world.item.Items.LIME_STAINED_GLASS_PANE)
+        return slot.index < term.windowSize && slot.item.`is`(CI.LIME_STAINED_GLASS_PANE)
     }
 
     fun slotColor(term: TerminalHandler, idx: Int): Int = when (term.type) {
@@ -256,7 +260,7 @@ object TerminalSolver {
     private fun tickSyncInner() {
         if (simActive) return
         if (!FishSettings.terminalSolverEnabled || !fishmod.utils.Location.inDungeon()) return
-        val screen = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return
+        val screen = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return
         val term = ensureHandler(screen.title.string) ?: return
 
         val menu = screen.menu

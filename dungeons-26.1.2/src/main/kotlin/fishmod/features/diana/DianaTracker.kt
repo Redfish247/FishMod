@@ -1,4 +1,6 @@
 package fishmod.features.diana
+import fishmod.compat.curScreen
+import fishmod.compat.showScreen
 
 import com.google.gson.GsonBuilder
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
@@ -524,7 +526,7 @@ object DianaTracker {
             val id = ItemUtil.getId(st) ?: continue
             if (id in STACK_DROPS) cur[id] = (cur[id] ?: 0) + st.count
         }
-        val menu = mc.screen is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>
+        val menu = mc.curScreen is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>
         if (invBaseline && !menu && Diana.inHub() && mobDiedWithin(PICKUP_WINDOW_MS)) {
             for ((id, n) in cur) {
                 val gained = n - (invCounts[id] ?: 0)
@@ -606,7 +608,7 @@ object DianaTracker {
     @JvmStatic
     fun openPastEvents() {
         val mc = Minecraft.getInstance()
-        mc.schedule { mc.setScreen(DianaPastEventsScreen()) }
+        mc.schedule { mc.showScreen(DianaPastEventsScreen()) }
     }
 
     private val SBO_LS = Regex(" ?L[sS]$")

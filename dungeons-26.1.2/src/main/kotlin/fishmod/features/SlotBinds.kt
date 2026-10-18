@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.curScreen
 
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.mixin.accessors.HandledScreenAccessor
@@ -204,7 +205,7 @@ object SlotBinds {
 
     private fun drawSlot(ctx: GuiGraphicsExtractor, x: Int, y: Int) {
         if (!FishSettings.slotBindsEnabled || !FishSettings.slotBindsShow) return
-        val screen = Minecraft.getInstance().screen as? InventoryScreen ?: return
+        val screen = Minecraft.getInstance().curScreen as? InventoryScreen ?: return
         ensureLoaded()
         if (binds.isEmpty()) return
         val slots = screen.menu.slots

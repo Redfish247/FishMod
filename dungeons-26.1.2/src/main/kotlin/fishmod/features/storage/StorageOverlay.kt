@@ -1,4 +1,5 @@
 package fishmod.features.storage
+import fishmod.compat.curScreen
 
 import fishmod.features.ScreenTheme
 import fishmod.utils.config.values.FishSettings
@@ -268,7 +269,7 @@ object StorageOverlay {
     private val maxScroll get() = (lastRenderedInnerHeight.toFloat() + 6 - innerH).coerceAtLeast(0f)
 
     private fun screenMenu(): AbstractContainerMenu? =
-        (mc.screen as? AbstractContainerScreen<*>)?.menu
+        (mc.curScreen as? AbstractContainerScreen<*>)?.menu
 
     private fun rowCountOf(menu: AbstractContainerMenu): Int =
         (menu as? ChestMenu)?.rowCount ?: ((menu.slots.size - 36) / 9)

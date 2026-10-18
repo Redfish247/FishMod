@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.Fmt
 
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import fishmod.utils.rendering.UiRecorder
@@ -123,7 +124,7 @@ object ScreenTheme {
                 val fmt = net.minecraft.ChatFormatting.getByCode(s[i + 1].lowercaseChar())
                 if (fmt != null) {
                     if (sb.isNotEmpty()) { out.add(Run(sb.toString(), color, bold)); sb.setLength(0) }
-                    val fc = fmt.color
+                    val fc = Fmt.colorOf(s[i + 1])
                     when {
                         fmt == net.minecraft.ChatFormatting.RESET -> { color = baseColor; bold = false }
                         fmt == net.minecraft.ChatFormatting.BOLD -> bold = true

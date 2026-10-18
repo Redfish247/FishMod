@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.compat.curScreen
 
 import fishmod.utils.Misc
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
@@ -38,7 +39,7 @@ object GardenExtras {
         Misc.addChatMessage(Component.literal("§aMutations: ").append(link).append(Component.literal(" §7(copied)")))
     }
 
-    fun screen(): AbstractContainerScreen<*>? = Minecraft.getInstance().screen as? AbstractContainerScreen<*>
+    fun screen(): AbstractContainerScreen<*>? = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*>
     fun title(): String = screen()?.let { Garden.strip(it.title.string).trim() } ?: ""
     fun inMenu(vararg keys: String): Boolean = title().let { t -> t.isNotEmpty() && keys.any { t.contains(it, true) } }
     fun slots(): List<Slot> = screen()?.menu?.slots?.filter { !it.item.isEmpty && it.container !== Minecraft.getInstance().player?.inventory } ?: emptyList()

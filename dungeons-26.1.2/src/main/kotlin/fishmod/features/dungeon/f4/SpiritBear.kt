@@ -1,4 +1,5 @@
 package fishmod.features.dungeon.f4
+import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.features.dungeon.map.DungeonState
@@ -68,7 +69,7 @@ object SpiritBear {
 
     private fun renderHudInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         val body = when {
             timer < 0 -> "§f$kills/${maxKills()}"
             timer > 0 -> "§e${"%.1f".format(timer / 20.0)}s"

@@ -1,4 +1,5 @@
 package fishmod.features.dungeon
+import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.utils.Location
@@ -54,7 +55,7 @@ object QuizHud {
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.quizHudEnabled || !Location.inDungeon() || stage == 0 || ticksLeft <= 0) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         val sc = FishSettings.quizHudScale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.quizHudX.toFloat(), FishSettings.quizHudY.toFloat())

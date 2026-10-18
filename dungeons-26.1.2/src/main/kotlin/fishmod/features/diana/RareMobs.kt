@@ -1,4 +1,5 @@
 package fishmod.features.diana
+import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.utils.ChatQueue
@@ -357,7 +358,7 @@ object RareMobs {
 
     private fun renderHud(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui || !Diana.inHub()) return
+        if (mc.player == null || mc.hudHidden || !Diana.inHub()) return
         val font = mc.font
         if (DianaSettings.dianaMythosHp) {
             val lines = hpLines

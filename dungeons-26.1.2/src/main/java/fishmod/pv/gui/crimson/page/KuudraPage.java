@@ -361,7 +361,7 @@ public final class KuudraPage {
 						PvDraw.fill(g, bx + 1, by + 1, SLOT - 2, SLOT - 2, 0x88000000);
 					}
 				} else {
-					g.item(new ItemStack(Items.GRAY_DYE), bx + iconPad, by + iconPad);
+					g.item(new ItemStack(fishmod.compat.CI.GRAY_DYE), bx + iconPad, by + iconPad);
 				}
 				if (piece.owned() && piece.dyeColor() != null) {
 					PvDraw.fill(g, bx + SLOT - 4, by + 1, 3, 3, 0xFF000000 | (piece.dyeColor() & 0xFFFFFF));

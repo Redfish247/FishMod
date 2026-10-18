@@ -1,4 +1,6 @@
 package fishmod.features.dungeon
+import fishmod.compat.curScreen
+import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.features.PetHud
@@ -142,7 +144,7 @@ object InvincibilityTracker {
         iconTick = 0
         val mc = Minecraft.getInstance()
         val allKnown = Type.entries.all { storedTexture(it).isNotEmpty() }
-        if (allKnown && mc.screen !is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>) return
+        if (allKnown && mc.curScreen !is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>) return
         if (!fishmod.utils.Location.inSkyblock()) return
         val player = mc.player ?: return
         val inv = player.inventory
@@ -153,7 +155,7 @@ object InvincibilityTracker {
             val t = Type.entries.firstOrNull { id in it.ids } ?: continue
             texture(st)?.let { storeTexture(t, it) }
         }
-        val screen = mc.screen as? net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*> ?: return
+        val screen = mc.curScreen as? net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*> ?: return
         if (!fishmod.utils.ScreenTitle.plain(screen).contains("Pets")) return
         for (slot in screen.menu.slots) {
             val st = slot.item
@@ -199,7 +201,7 @@ object InvincibilityTracker {
         if (!Dungeons.displayInvincibilityTimer || !Location.inDungeon()) return
         if (FishSettings.invincShowInBoss && !Phase.inBoss()) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
 
         val shown = Type.entries.filter { visible(it) }
         if (shown.isEmpty()) return

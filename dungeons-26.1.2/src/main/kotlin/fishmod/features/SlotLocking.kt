@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.curScreen
 
 import fishmod.mixin.accessors.HandledScreenAccessor
 import fishmod.utils.Keybinds
@@ -115,7 +116,7 @@ object SlotLocking {
         if (!FishSettings.slotLockingEnabled) return
         ensureLoaded()
         if (locked.isEmpty()) return
-        val screen = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return
+        val screen = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return
         val slot = DrawEvents.currentSlot?.takeIf { it.container is Inventory }
             ?: screen.menu.slots.firstOrNull { it.x == x && it.y == y && it.container is Inventory } ?: return
         if (!isLocked(slot)) return

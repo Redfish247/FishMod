@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.curScreen
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.Constants
@@ -30,7 +31,7 @@ object PbPaceHud {
     private fun renderInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
         if (mc.player == null) return
-        if (mc.screen != null && mc.screen !is ChatScreen) return
+        if (mc.curScreen != null && mc.curScreen !is ChatScreen) return
         if (!Phase.runStarted()) return
 
         val splits: List<Split> = Phase.getCurrentSplits()

@@ -1,4 +1,5 @@
 package fishmod.features.storage
+import fishmod.compat.showScreen
 
 import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
@@ -325,7 +326,7 @@ class StorageViewerScreen : Screen(Component.literal("Storage Viewer")), HasUiOv
         @JvmStatic
         fun open() {
             if (!FishSettings.storageOverlayEnabled) return
-            Minecraft.getInstance().setScreen(StorageViewerScreen())
+            Minecraft.getInstance().showScreen(StorageViewerScreen())
         }
     }
 }

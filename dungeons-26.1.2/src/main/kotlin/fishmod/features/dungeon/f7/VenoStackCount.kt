@@ -1,4 +1,5 @@
 package fishmod.features.dungeon.f7
+import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.features.item.fishmodCustomDataTag
@@ -112,7 +113,7 @@ object VenoStackCount {
 
     private fun renderHudInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         val left = (DURATION_MS - (System.currentTimeMillis() - lastHitMs)).coerceAtLeast(0L)
         val sc = FishSettings.venoStackScale.toFloat()
         ctx.pose().pushMatrix()

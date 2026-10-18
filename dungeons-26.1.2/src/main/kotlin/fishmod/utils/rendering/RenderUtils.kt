@@ -1,4 +1,5 @@
 package fishmod.utils.rendering
+import fishmod.compat.cam
 
 import com.mojang.blaze3d.vertex.ByteBufferBuilder
 import com.mojang.blaze3d.vertex.PoseStack
@@ -38,7 +39,7 @@ object RenderUtils {
 
     @JvmStatic
     fun cameraLineStart(ahead: Double): Vec3 {
-        val cam = Minecraft.getInstance().gameRenderer.mainCamera
+        val cam = Minecraft.getInstance().cam
         return cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()).scale(ahead))
     }
 
@@ -220,7 +221,7 @@ object RenderUtils {
     @JvmStatic
     fun screenLine(ps: PoseStack, vc: VertexConsumer, a0: Vec3, b0: Vec3, argb: Int, px: Float) {
         val mc = Minecraft.getInstance()
-        val cam = mc.gameRenderer.mainCamera.position()
+        val cam = mc.cam.position()
         val a = pullIn(a0, cam).first; val b = pullIn(b0, cam).first
         val dir = b.subtract(a)
         if (dir.lengthSqr() < 1.0e-9) return

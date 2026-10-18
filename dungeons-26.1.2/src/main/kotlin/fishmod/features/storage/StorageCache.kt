@@ -1,4 +1,8 @@
 package fishmod.features.storage
+import fishmod.compat.curScreen
+
+import fishmod.compat.CB
+import fishmod.compat.CI
 
 import fishmod.utils.config.FolderUtility
 import fishmod.utils.config.values.FishSettings
@@ -25,9 +29,9 @@ object StorageCache {
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val dir: Path = Paths.get(FolderUtility.CONFIG_PATH + "storage")
     private val EMPTY_MARKERS = setOf(
-        Blocks.RED_STAINED_GLASS_PANE.asItem(),
-        Blocks.BROWN_STAINED_GLASS_PANE.asItem(),
-        Items.GRAY_DYE,
+        CB.RED_STAINED_GLASS_PANE.asItem(),
+        CB.BROWN_STAINED_GLASS_PANE.asItem(),
+        CI.GRAY_DYE,
     )
 
     @Volatile private var pages: TreeMap<Int, NBTInventory> = TreeMap()
@@ -83,7 +87,7 @@ object StorageCache {
         val id = uuid() ?: return
         if (id != loadedFor) { load(id); loadedFor = id }
 
-        val screen = mc.screen as? AbstractContainerScreen<*> ?: run { flush(); return }
+        val screen = mc.curScreen as? AbstractContainerScreen<*> ?: run { flush(); return }
         val plainTitle = fishmod.utils.ScreenTitle.plain(screen)
 
         if (plainTitle == "Storage" && !StoragePage.inRift()) { scanOverview(screen); return }

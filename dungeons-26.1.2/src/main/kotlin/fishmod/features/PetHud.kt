@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.curScreen
 
 import fishmod.features.item.ItemRarity
 import fishmod.utils.HypixelApi
@@ -190,7 +191,7 @@ object PetHud {
 
             if (Location.inDungeon()) return@register
 
-            scanPetsMenuIfOpen(client.screen)
+            scanPetsMenuIfOpen(client.curScreen)
 
             if (forceScanTicks > 0) {
                 forceScanTicks--

@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.compat.curScreen
 
 import fishmod.features.mining.Mining
 import fishmod.utils.events.Events
@@ -63,7 +64,7 @@ object Pests {
         }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null) return@register
-            scrapePlots(mc.screen)
+            scrapePlots(mc.curScreen)
             if (tick++ % 10 != 0 || !Garden.inGarden()) return@register
             alive = Mining.sidebar.firstOrNull { it.contains("The Garden") || it.contains("ൠ") }?.let { COUNT.find(it)?.groupValues?.get(1)?.toIntOrNull() } ?: 0
             tabPlots = Mining.tabLine("Plots:")?.substringAfter(":")?.split(',', '&')?.mapNotNull { it.trim().toIntOrNull()?.takeIf { n -> n in 0..24 } } ?: emptyList()

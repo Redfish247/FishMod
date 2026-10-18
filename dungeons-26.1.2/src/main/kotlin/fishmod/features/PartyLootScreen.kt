@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.showScreen
 
 import fishmod.utils.debug.FishDiag
 import fishmod.features.croesus.CroesusPrices
@@ -738,7 +739,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
 
     override fun onClose() {
         try { commitEdit() } catch (t: Throwable) { FishDiag.fail("PartyLootScreen.13", "commit edit on close failed", t) }
-        Minecraft.getInstance().setScreen(parent)
+        Minecraft.getInstance().showScreen(parent)
     }
 
     override fun isPauseScreen(): Boolean = false

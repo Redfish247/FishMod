@@ -1,4 +1,7 @@
 package fishmod.features
+import fishmod.compat.Fmt
+import fishmod.compat.curScreen
+import fishmod.compat.hudHidden
 
 import com.google.gson.Gson
 import fishmod.features.croesus.CroesusPrices
@@ -54,7 +57,7 @@ object ExperimentProfitTracker {
             { FishSettings.expProfitEnabled },
         )
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
-            val s = mc.screen ?: return@register
+            val s = mc.curScreen ?: return@register
             if (FishSettings.expProfitEnabled && TABLE_SCREEN.containsMatchIn(fishmod.utils.ScreenTitle.plain(s))) {
                 lastTableMs = System.currentTimeMillis()
             }
@@ -102,8 +105,8 @@ object ExperimentProfitTracker {
 
     private fun code(style: net.minecraft.network.chat.Style): String? {
         val c = style.color ?: return null
-        val f = net.minecraft.ChatFormatting.entries.firstOrNull { it.isColor && it.color == c.value } ?: return null
-        return "§" + f.char
+        val f = Fmt.codeOfRgb(c.value) ?: return null
+        return "§" + f
     }
 
     private fun colorOf(name: String): String {
@@ -150,7 +153,7 @@ object ExperimentProfitTracker {
     fun render(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.expProfitEnabled) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         if (FishSettings.expProfitOnlyIsland && fishmod.utils.Location.getCurrentLocation() != fishmod.utils.Location.PRIVATE_ISLAND) return
         if (data.experiments == 0 && data.drops.isEmpty() && data.xp == 0L) return
 

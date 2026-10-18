@@ -1,4 +1,6 @@
 package fishmod.features.diana
+import fishmod.compat.curScreen
+import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
@@ -135,7 +137,7 @@ object DianaTrackerHud {
         val hud = Hud(gx, gy, gs, on, lines)
         huds[id] = hud
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", id)) { ctx, _ ->
-            if (!FishHudEditor.isOpen() && Minecraft.getInstance().screen !is InventoryScreen && !Minecraft.getInstance().options.keyPlayerList.isDown && shown() && on())
+            if (!FishHudEditor.isOpen() && Minecraft.getInstance().curScreen !is InventoryScreen && !Minecraft.getInstance().options.keyPlayerList.isDown && shown() && on())
                 draw(ctx, rows(id, hud), gx(), gy(), gs(), false)
         }
     }
@@ -152,7 +154,7 @@ object DianaTrackerHud {
     // editing = inventory view: hidden rows stay in place, greyed and struck through
     private fun draw(ctx: GuiGraphicsExtractor, rows: List<Row>, x: Int, y: Int, scale: Double, editing: Boolean) {
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui || rows.isEmpty()) return
+        if (mc.player == null || mc.hudHidden || rows.isEmpty()) return
         val pose = ctx.pose()
         pose.pushMatrix()
         pose.translate(x.toFloat(), y.toFloat())

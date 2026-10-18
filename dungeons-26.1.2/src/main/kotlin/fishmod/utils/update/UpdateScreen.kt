@@ -1,4 +1,5 @@
 package fishmod.utils.update
+import fishmod.compat.showScreen
 
 import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
@@ -288,7 +289,7 @@ class UpdateScreen(private val release: UpdateManager.Release) : Screen(Componen
     }
 
     override fun onClose() {
-        Minecraft.getInstance().setScreen(null)
+        Minecraft.getInstance().showScreen(null)
     }
 
     override fun paintUiOverlay() {

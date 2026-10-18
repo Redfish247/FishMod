@@ -1,4 +1,5 @@
 package fishmod.features.dungeon
+import fishmod.compat.curScreen
 
 import fishmod.features.dungeon.map.DungeonPlayers
 import fishmod.features.dungeon.map.DungeonState
@@ -60,7 +61,7 @@ object LeapMenu {
 
     @JvmStatic
     fun isOverlayOpen(): Boolean {
-        val s = Minecraft.getInstance().screen
+        val s = Minecraft.getInstance().curScreen
         return s is AbstractContainerScreen<*> && isLeapMenu(s)
     }
 
@@ -308,6 +309,6 @@ object LeapMenu {
         val mc = Minecraft.getInstance()
         val p = mc.player ?: return
         mc.gameMode?.handleContainerInput(screen.menu.containerId, t.slot, 0, ContainerInput.PICKUP, p)
-        if (mc.screen === screen) screen.onClose()
+        if (mc.curScreen === screen) screen.onClose()
     }
 }

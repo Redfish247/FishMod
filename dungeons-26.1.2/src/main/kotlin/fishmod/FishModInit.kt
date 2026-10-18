@@ -1,4 +1,5 @@
 package fishmod
+import fishmod.compat.showScreen
 
 import com.mojang.brigadier.arguments.DoubleArgumentType
 import com.mojang.brigadier.arguments.IntegerArgumentType
@@ -293,7 +294,7 @@ class FishModInit : ClientModInitializer {
             return ClientCommands.literal(name)
                 .executes {
                     Minecraft.getInstance().schedule {
-                        Minecraft.getInstance().setScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.NOTIFICATIONS))
+                        Minecraft.getInstance().showScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.NOTIFICATIONS))
                     }
                     Constants.SUCCESS
                 }
@@ -552,37 +553,37 @@ class FishModInit : ClientModInitializer {
                 ClientCommands.literal("fm")
                     .then(ClientCommands.literal("commandkeys").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.KEYS))
+                            Minecraft.getInstance().showScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.KEYS))
                         }
                         Constants.SUCCESS
                     })
                     .then(ClientCommands.literal("customize").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.item.ItemCustomizeScreen())
+                            Minecraft.getInstance().showScreen(fishmod.features.item.ItemCustomizeScreen())
                         }
                         Constants.SUCCESS
                     })
                     .then(ClientCommands.literal("aliases").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.ALIASES))
+                            Minecraft.getInstance().showScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.ALIASES))
                         }
                         Constants.SUCCESS
                     })
                     .then(ClientCommands.literal("whitelist").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.WHITELIST))
+                            Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.WHITELIST))
                         }
                         Constants.SUCCESS
                     })
                     .then(ClientCommands.literal("blacklist").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.BLACKLIST))
+                            Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.BLACKLIST))
                         }
                         Constants.SUCCESS
                     })
                     .then(ClientCommands.literal("kicklist").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.KICK))
+                            Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.KICK))
                         }
                         Constants.SUCCESS
                     })
@@ -631,7 +632,7 @@ class FishModInit : ClientModInitializer {
                     .then(sackSubcommand("twap"))
                     .executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.FishModScreen())
+                            Minecraft.getInstance().showScreen(fishmod.features.FishModScreen())
                         }
                         Constants.SUCCESS
                     }
@@ -666,7 +667,7 @@ class FishModInit : ClientModInitializer {
                 ClientCommands.literal("fmloot")
                     .executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.LOOT))
+                            Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.LOOT))
                         }
                         Constants.SUCCESS
                     }

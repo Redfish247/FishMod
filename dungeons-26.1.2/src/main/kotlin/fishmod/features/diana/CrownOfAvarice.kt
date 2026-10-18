@@ -1,4 +1,6 @@
 package fishmod.features.diana
+import fishmod.compat.curScreen
+import fishmod.compat.hudHidden
 
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
@@ -79,7 +81,7 @@ object CrownOfAvarice {
             { DianaSettings.dianaCrownHudY }, { DianaSettings.dianaCrownHudY = it }, 120, 49,
             { DianaSettings.dianaCrownHudScale }, { DianaSettings.dianaCrownHudScale = it }, { DianaSettings.dianaCrownHud })
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "crown_of_avarice")) { ctx, _ ->
-            if (Minecraft.getInstance().screen !is net.minecraft.client.gui.screens.inventory.InventoryScreen) drawHud(ctx)
+            if (Minecraft.getInstance().curScreen !is net.minecraft.client.gui.screens.inventory.InventoryScreen) drawHud(ctx)
         }
         net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
             if (screen !is net.minecraft.client.gui.screens.inventory.InventoryScreen) return@register
@@ -149,7 +151,7 @@ object CrownOfAvarice {
     // Returns how many lines were drawn
     private fun drawHud(ctx: net.minecraft.client.gui.GuiGraphicsExtractor): Int {
         val mc = Minecraft.getInstance()
-        if (!DianaSettings.dianaCrownHud || FishHudEditor.isOpen() || mc.options.hideGui || mc.player == null) return 0
+        if (!DianaSettings.dianaCrownHud || FishHudEditor.isOpen() || mc.hudHidden || mc.player == null) return 0
         val lines = hudLines()
         if (lines.isEmpty()) return 0
         val pose = ctx.pose()
@@ -187,7 +189,7 @@ object CrownOfAvarice {
         if (itemCoins(helmet) < CAP && (totals[u] ?: 0L) < CAP) return
         val now = System.currentTimeMillis()
         val fromDiana = now - maxOf(lastDugCoinsMs, RareMobs.lastDianaMobDeathMs, BurrowDetector.lastDigMs) <= COIN_WINDOW_MS
-        val menuOpen = mc.screen != null && mc.screen !is net.minecraft.client.gui.screens.ChatScreen
+        val menuOpen = mc.curScreen != null && mc.curScreen !is net.minecraft.client.gui.screens.ChatScreen
         val selling = menuOpen || now - lastNonCrownMs <= COIN_WINDOW_MS
         if (Diana.inHub()) LOG.info("crown gain=$gain active=${Diana.active()} sinceDig=${now - BurrowDetector.lastDigMs} sinceDug=${now - lastDugCoinsMs} sinceMob=${now - RareMobs.lastDianaMobDeathMs} selling=$selling")
         if (!Diana.active() || !fromDiana || selling || gain > MAX_GAIN) return

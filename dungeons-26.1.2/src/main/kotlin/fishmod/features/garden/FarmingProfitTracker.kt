@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.compat.curScreen
 
 import com.google.gson.GsonBuilder
 import fishmod.features.FishHudEditor
@@ -76,7 +77,7 @@ object FarmingProfitTracker {
             { S.gardenProfit })
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "farming_profit")) { ctx, _ ->
             val mc = Minecraft.getInstance()
-            if (!FishHudEditor.isOpen() && mc.screen !is InventoryScreen && shown())
+            if (!FishHudEditor.isOpen() && mc.curScreen !is InventoryScreen && shown())
                 MiningHuds.draw(ctx, lines(), S.gardenProfitHudX, S.gardenProfitHudY, S.gardenProfitHudScale)
         }
         // In the inventory the HUD stays up and scrolls with the mouse wheel

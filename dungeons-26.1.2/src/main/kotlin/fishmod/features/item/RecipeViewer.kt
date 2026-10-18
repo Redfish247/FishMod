@@ -1,4 +1,7 @@
 package fishmod.features.item
+import fishmod.compat.Fmt
+import fishmod.compat.curScreen
+import fishmod.compat.showScreen
 
 import com.google.gson.JsonObject
 import fishmod.features.croesus.LootIcons
@@ -56,7 +59,7 @@ object RecipeViewer {
     private fun onTooltip(stack: ItemStack, lines: MutableList<Component>) {
         if (!FishSettings.recipeViewer || !Location.inSkyblock() || stack.isEmpty) return
         val mc = Minecraft.getInstance()
-        val screen = mc.screen as? AbstractContainerScreen<*> ?: return
+        val screen = mc.curScreen as? AbstractContainerScreen<*> ?: return
         if ((screen as HandledScreenAccessor).`fishmod$getHoveredSlot`()?.item !== stack) return
         val id = ItemUtil.getId(stack) ?: return
         NeuRepo.ensureLoaded()
@@ -76,7 +79,7 @@ object RecipeViewer {
         lines.add(Component.literal("§7Recipe §a" + "|".repeat(filled) + "§8" + "|".repeat(20 - filled)))
         if (p >= 1f && !fired) {
             fired = true
-            mc.execute { mc.setScreen(RecipeScreen(id, screen)) }
+            mc.execute { mc.showScreen(RecipeScreen(id, screen)) }
         }
     }
 
@@ -194,7 +197,7 @@ object RecipeViewer {
     fun colorOf(s: String): Int {
         val i = s.indexOf('§')
         if (i < 0 || i + 1 >= s.length) return 0xFFEDF1F5.toInt()
-        return net.minecraft.ChatFormatting.getByCode(s[i + 1])?.color?.let { it or 0xFF000000.toInt() } ?: 0xFFEDF1F5.toInt()
+        return Fmt.colorOf(s[i + 1])?.let { it or 0xFF000000.toInt() } ?: 0xFFEDF1F5.toInt()
     }
 
     private fun head(id: String, texture: String): ItemStack {

@@ -1,4 +1,5 @@
 package fishmod.features.achievements
+import fishmod.compat.showScreen
 
 import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
@@ -514,7 +515,7 @@ class AchScreen(private val parent: Screen? = null) : Screen(Component.literal("
     }
 
     override fun onClose() {
-        Minecraft.getInstance().setScreen(parent)
+        Minecraft.getInstance().showScreen(parent)
     }
 
     override fun paintUiOverlay() {

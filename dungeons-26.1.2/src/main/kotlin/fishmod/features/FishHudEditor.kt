@@ -1,4 +1,6 @@
 package fishmod.features
+import fishmod.compat.curScreen
+import fishmod.compat.showScreen
 
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.InputConstants
@@ -405,7 +407,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         const val SCORE_TITLE_W = 200
 
         @JvmStatic
-        fun isOpen(): Boolean = Minecraft.getInstance().screen is FishHudEditor
+        fun isOpen(): Boolean = Minecraft.getInstance().curScreen is FishHudEditor
 
         private const val SNAP = 4
         private const val MARGIN = 4
@@ -1241,6 +1243,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         try { FishConfig.manager.save() } catch (t: Throwable) { FishDiag.fail("FishHudEditor.9", "config save on HUD editor close failed", t) }
         fishmod.features.achievements.AchUsage.onHudSaved()
         try { fishmod.features.chat.ChatRuleStore.save() } catch (t: Throwable) { FishDiag.fail("FishHudEditor.10", "chat rule save on HUD editor close failed", t) }
-        Minecraft.getInstance().setScreen(parent)
+        Minecraft.getInstance().showScreen(parent)
     }
 }

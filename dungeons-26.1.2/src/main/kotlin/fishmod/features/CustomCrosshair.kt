@@ -1,4 +1,6 @@
 package fishmod.features
+import fishmod.compat.curScreen
+import fishmod.compat.hudHidden
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
@@ -16,7 +18,7 @@ object CustomCrosshair {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "custom_crosshair")) { g, _ ->
             val mc = Minecraft.getInstance()
             // Vanilla's crosshair stays cancelled by the mixin; only skip our draw while a screen (e.g. Storage Overlay) is open
-            if (mc.screen == null && active(mc)) try {
+            if (mc.curScreen == null && active(mc)) try {
                 val cx = g.guiWidth() / 2
                 val cy = g.guiHeight() / 2
                 if (FishSettings.crosshairMode == "Preset") {
@@ -41,7 +43,7 @@ object CustomCrosshair {
 
     @JvmStatic
     fun active(mc: Minecraft): Boolean {
-        if (!FishSettings.crosshairEnabled || mc.options.hideGui) return false
+        if (!FishSettings.crosshairEnabled || mc.hudHidden) return false
         if (!mc.options.cameraType.isFirstPerson) return false
         if (FishSettings.crosshairHideInF3 && mc.debugOverlay != null && mc.debugOverlay.showDebugScreen()) return false
         if (FishSettings.crosshairMode == "Preset") return true

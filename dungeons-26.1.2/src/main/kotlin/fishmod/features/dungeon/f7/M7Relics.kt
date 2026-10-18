@@ -1,4 +1,5 @@
 package fishmod.features.dungeon.f7
+import fishmod.compat.hudHidden
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
@@ -170,7 +171,7 @@ object M7Relics {
         FishDiag.check(left <= SPAWN_TICKS * 50L + 1000L, "M7Relics.7") { "relic spawn timer too far in future: ${left}ms" }
         if (left <= 0L) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         val sc = FishSettings.relicTimerScale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.relicTimerHudX.toFloat(), FishSettings.relicTimerHudY.toFloat())

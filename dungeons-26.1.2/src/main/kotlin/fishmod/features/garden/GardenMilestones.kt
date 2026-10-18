@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.compat.curScreen
 
 import fishmod.utils.Misc
 import fishmod.utils.TabListCache
@@ -64,7 +65,7 @@ object GardenMilestones {
     }
 
     private fun menuKind(): String {
-        val scr = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return ""
+        val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return ""
         val t = Garden.strip(scr.title.string)
         return when {
             t.contains("Crop Milestones") -> "milestone"
@@ -76,7 +77,7 @@ object GardenMilestones {
 
     private fun scanMenu() {
         if (menuKind() != "milestone") return
-        val scr = Minecraft.getInstance().screen as AbstractContainerScreen<*>
+        val scr = Minecraft.getInstance().curScreen as AbstractContainerScreen<*>
         for (s in scr.menu.slots) {
             val st = s.item
             if (st.isEmpty) continue
