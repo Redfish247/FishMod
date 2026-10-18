@@ -63,6 +63,19 @@ object InstallHeartbeat {
         }
     }
 
+    /** Live revoke from /sync: a blocked uuid loses its custom name immediately, a cleared one drops a nick set before the clear. */
+    @JvmStatic
+    fun applyAdminRevoke(blocked: Boolean, nickClearedAt: Long) {
+        if (blocked) {
+            if (NickState.isActive()) {
+                NickState.reset()
+                Misc.addChatMessage(Component.literal("Your FishMod access was removed by an admin.").withStyle(ChatFormatting.RED))
+            }
+            return
+        }
+        reconcileNickRevoke(nickClearedAt)
+    }
+
     private fun reconcileNickRevoke(nickClearedAt: Long) {
         if (nickClearedAt <= 0 || !NickState.isActive()) return
         if (NickData.lastSetAtMs() >= nickClearedAt) return

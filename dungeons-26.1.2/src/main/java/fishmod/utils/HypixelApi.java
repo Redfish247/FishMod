@@ -2087,11 +2087,11 @@ public class HypixelApi {
     }
 
     public interface SyncCallback {
-        void onData(long version, Map<String, String> nicks, Map<String, String> items, Map<String, String> scales, Map<String, String> badges);
+        void onData(long version, Map<String, String> nicks, Map<String, String> items, Map<String, String> scales, Map<String, String> badges, java.util.Set<String> blocked, Map<String, Long> cleared);
     }
 
     public static void fetchSync(java.util.Collection<String> uuidsNoDashes, long version, SyncCallback cb) {
-        if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.onData(version, null, null, null, null); return; }
+        if (uuidsNoDashes == null || uuidsNoDashes.isEmpty()) { cb.onData(version, null, null, null, null, null, null); return; }
         try {
             String q = String.join(",", uuidsNoDashes);
             HttpRequest req = HttpRequest.newBuilder()
@@ -2103,16 +2103,29 @@ public class HypixelApi {
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString()).thenAccept(r -> {
                 try {
                     JsonObject root = JsonParser.parseString(r.body()).getAsJsonObject();
-                    if (!root.has("success") || !root.get("success").getAsBoolean()) { cb.onData(version, null, null, null, null); return; }
+                    if (!root.has("success") || !root.get("success").getAsBoolean()) { cb.onData(version, null, null, null, null, null, null); return; }
                     long ver = root.has("version") ? root.get("version").getAsLong() : version;
-                    if (!root.has("changed") || !root.get("changed").getAsBoolean()) { cb.onData(ver, null, null, null, null); return; }
-                    cb.onData(ver, parseStringMap(root, "nicks"), parseStringMap(root, "items"), parseStringMap(root, "scales"), parseStringMap(root, "badges"));
-                } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.107", "fetchSync failed", ignored); cb.onData(version, null, null, null, null); }
-            }).exceptionally(t -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.108", "fetchSync request future failed", t); cb.onData(version, null, null, null, null); return null; });
-        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.109", "fetchSync failed", e); cb.onData(version, null, null, null, null); }
+                    if (!root.has("changed") || !root.get("changed").getAsBoolean()) { cb.onData(ver, null, null, null, null, null, null); return; }
+                    cb.onData(ver, parseStringMap(root, "nicks"), parseStringMap(root, "items"), parseStringMap(root, "scales"), parseStringMap(root, "badges"), parseStringSet(root, "blocked"), parseLongMap(root, "cleared"));
+                } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.107", "fetchSync failed", ignored); cb.onData(version, null, null, null, null, null, null); }
+            }).exceptionally(t -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.108", "fetchSync request future failed", t); cb.onData(version, null, null, null, null, null, null); return null; });
+        } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.109", "fetchSync failed", e); cb.onData(version, null, null, null, null, null, null); }
     }
 
-    public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fishmod.cosmetic.badge.BadgeDef>> cb) {
+        private static java.util.Set<String> parseStringSet(JsonObject root, String key) {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        if (root.has(key) && root.get(key).isJsonArray()) for (var el : root.getAsJsonArray(key)) out.add(el.getAsString());
+        return out;
+    }
+
+    private static Map<String, Long> parseLongMap(JsonObject root, String key) {
+        Map<String, Long> out = new java.util.HashMap<>();
+        if (root.has(key) && root.get(key).isJsonObject())
+            for (var e : root.getAsJsonObject(key).entrySet()) out.put(e.getKey(), e.getValue().getAsLong());
+        return out;
+    }
+
+public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fishmod.cosmetic.badge.BadgeDef>> cb) {
         try {
             HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(PROXY_URL + "/badge-defs"))

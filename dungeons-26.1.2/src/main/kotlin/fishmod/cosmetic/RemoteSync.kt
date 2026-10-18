@@ -96,15 +96,16 @@ object RemoteSync {
         }
         fishmod.cosmetic.badge.BadgeManager.replaceNames(names)
         if (dashlessIds.size > 1024) dashlessIds.clear()
-        if (uuidToName.isEmpty() && !badgesOn) return
+        if (uuidToName.isEmpty() && !badgesOn && !nicksOn) return
 
         val newPlayers = !lastUuids.containsAll(uuidToName.keys)
         val since = if (newPlayers) -1L else version
         val keys: Set<String> = HashSet(uuidToName.keys)
-        val queryKeys: Set<String> = if (badgesOn) (keys + selfUuid) else keys
+        // self is always asked about so an admin block/nick-clear reaches this client without a restart
+        val queryKeys: Set<String> = keys + selfUuid
         if (queryKeys.isEmpty()) return
 
-        HypixelApi.fetchSync(queryKeys, since) { ver, nicks, _, scales, badges ->
+        HypixelApi.fetchSync(queryKeys, since) { ver, nicks, _, scales, badges, blocked, cleared ->
             mc.execute {
                 version = ver
                 lastUuids = keys
@@ -112,6 +113,7 @@ object RemoteSync {
                 val changed = nicks != null || scales != null || badges != null
                 interval = if (changed) BASE_TICKS else minOf(interval + STEP_TICKS, MAX_TICKS)
                 try {
+                    fishmod.utils.InstallHeartbeat.applyAdminRevoke(blocked?.contains(selfUuid) == true, cleared?.get(selfUuid) ?: 0L)
                     if (nicks != null && FishSettings.remoteNicksEnabled) RemoteNicks.acceptNicks(uuidToName, nicks)
                     if (scales != null && FishSettings.playerSizeShared) RemoteScales.acceptScales(keys, scales)
                     if (badges != null && FishSettings.badgesEnabled) fishmod.cosmetic.badge.BadgeManager.acceptBadges(queryKeys, badges)
