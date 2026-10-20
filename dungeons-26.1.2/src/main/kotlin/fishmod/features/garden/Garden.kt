@@ -28,6 +28,7 @@ object Garden {
         FortuneBonus.init()
         SensitivityReducer.init()
         GardenKeybinds.init()
+        GardenCarrolyn.init()
         SpeedSignHelper.init()
         GardenExtras.init()
     }

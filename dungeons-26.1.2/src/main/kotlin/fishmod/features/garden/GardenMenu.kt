@@ -98,6 +98,10 @@ object GardenMenu {
         ff.sub.add(ColorPickerSetting("Colour", "Nearest chat colour is used", S::gardenFortuneMsgColor))
         col.features.add(ff)
 
+        val carr = Feature("Help Carrolyn", S::gardenCarrolyn)
+        carr.sub.add(SubcategoryHeader("Carrolyn items get a tooltip hint; right-click one for a clickable warp to the Crimson Isle"))
+        col.features.add(carr)
+
         val gk = Feature("Garden Keybinds", S::gardenKeys)
         gk.sub.add(SubcategoryHeader("Your own keys act as the vanilla ones while farming in a plot (not the barn)"))
         for (i in GardenKeybinds.NAMES.indices) gk.sub.add(KeybindSetting(GardenKeybinds.NAMES[i], "", { fishmod.utils.Keybinds.gardenKeys?.getOrNull(i) }))
