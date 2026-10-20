@@ -33,6 +33,8 @@ object KuudraMenu {
         val sup = Feature("Supply Helper", S::kuudraSupplyMaster)
         sup.sub.add(ToggleSetting("Supply Times", "Who picked up a supply and how fast", S::kuudraSupplyTimes))
         sup.sub.add(ToggleSetting("Hide Original Message", "", S::kuudraSupplyHideOriginal).gatedBy { S.kuudraSupplyTimes })
+        sup.sub.add(ToggleSetting("Recover Party Message", "One party message when you recover a supply", S::kuudraSupplyParty))
+        sup.sub.add(InputSetting("Recover Message", "{n} = count, {total} = needed", S::kuudraSupplyMessage).gatedBy { S.kuudraSupplyParty })
         sup.sub.add(ToggleSetting("Supply Progress HUD", "", S::kuudraSupplyHud))
         sup.sub.add(ToggleSetting("Supply Waypoints", "Beam on every crate", S::kuudraSupplyWaypoints))
         sup.sub.add(ColorPickerSetting("Supply Color", "", S::kuudraSupplyColor))

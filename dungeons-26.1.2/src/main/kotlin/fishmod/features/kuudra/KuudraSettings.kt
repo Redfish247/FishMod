@@ -29,6 +29,8 @@ object KuudraSettings {
     // Supplies
     @ConfigValue @JvmField var kuudraSupplyTimes: Boolean = false
     @ConfigValue @JvmField var kuudraSupplyHideOriginal: Boolean = false
+    @ConfigValue @JvmField var kuudraSupplyParty: Boolean = false
+    @ConfigValue @JvmField var kuudraSupplyMessage: String = "Supply {n}/{total} recovered"
     @ConfigValue @JvmField var kuudraSupplyHud: Boolean = false
     @ConfigValue @JvmField var kuudraSupplyHudX: Int = 10
     @ConfigValue @JvmField var kuudraSupplyHudY: Int = 190
