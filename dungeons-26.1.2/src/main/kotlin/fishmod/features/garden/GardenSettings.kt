@@ -113,6 +113,13 @@ object GardenSettings {
     @ConfigValue @JvmField var gardenFortuneMsgText: String = "Bonus Farming Fortune: §f{bonus}"
     @ConfigValue @JvmField var gardenFortuneMsgColor: Int = 0xFFFFAA00.toInt()
 
+    // Garden keybinds
+    @ConfigValue @JvmField var gardenKeys: Boolean = false
+    @ConfigValue @JvmField var gardenKeysHoe: Boolean = true
+    @ConfigValue @JvmField var gardenKeysRod: Boolean = true
+    @ConfigValue @JvmField var gardenKeysMousemat: Boolean = true
+    @ConfigValue @JvmField var gardenKeysGrasp: Boolean = true
+
     // Mouse sensitivity reducer
     @ConfigValue @JvmField var gardenSens: Boolean = false
     @ConfigValue @JvmField var gardenSensPercent: Int = 50

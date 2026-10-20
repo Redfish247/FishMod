@@ -28,6 +28,8 @@ public class Keybinds {
 
     public static KeyMapping[] petKeybinds;
 
+    public static KeyMapping[] gardenKeys;
+
     public static KeyMapping wardrobeNextPage;
     public static KeyMapping wardrobePrevPage;
 
@@ -106,6 +108,16 @@ public class Keybinds {
                     GLFW.GLFW_KEY_UNKNOWN,
                     category));
             TRACKED.put("pet_key_" + fishmod.features.other.PetKeybinds.PETS[i].toLowerCase().replace(' ', '_'), petKeybinds[i]);
+        }
+
+        gardenKeys = new KeyMapping[fishmod.features.garden.GardenKeybinds.NAMES.length];
+        for (int i = 0; i < gardenKeys.length; i++) {
+            gardenKeys[i] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                    "Garden: " + fishmod.features.garden.GardenKeybinds.NAMES[i],
+                    InputConstants.Type.KEYSYM,
+                    GLFW.GLFW_KEY_UNKNOWN,
+                    category));
+            TRACKED.put("garden_key_" + fishmod.features.garden.GardenKeybinds.NAMES[i].toLowerCase().replace(' ', '_'), gardenKeys[i]);
         }
 
         wardrobeNextPage = KeyMappingHelper.registerKeyMapping(new KeyMapping(
