@@ -19,6 +19,8 @@ object KuudraSettings {
 
     // Alerts
     @ConfigValue @JvmField var kuudraAlerts: Boolean = false
+    @ConfigValue @JvmField var kuudraRequeue: Boolean = false
+    @ConfigValue @JvmField var kuudraRequeueDelayMs: Int = 8000
     @ConfigValue @JvmField var kuudraAlertPhase: Boolean = true
     @ConfigValue @JvmField var kuudraAlertSupplies: Boolean = true
     @ConfigValue @JvmField var kuudraAlertNoPre: Boolean = true
