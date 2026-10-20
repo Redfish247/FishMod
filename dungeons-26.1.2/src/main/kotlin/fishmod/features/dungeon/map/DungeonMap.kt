@@ -433,14 +433,16 @@ object DungeonMap {
 
                 val doorIndex = sc.add(MapVec2i(door, midRoom)).mapIndex()
                 val roomIndex = sc.add(MapVec2i(door, midRoom - hrs + 1)).mapIndex()
-                FishDiag.check(doorIndex in colors.indices, "DungeonMap.8") { "door pixel out of range idx=$doorIndex a=$a b=$b rs=$rs sc=$sc" }
-                if (colors.size > doorIndex && roomIndex in colors.indices && colors[roomIndex].toInt() == 0) {
+                // Smaller floors have fewer than 6 rows; rows past the map edge are skipped.
+                val inMap = sc.x + door in 0..127 && sc.z + midRoom in 0..127
+                if (inMap && doorIndex in colors.indices && roomIndex in colors.indices && colors[roomIndex].toInt() == 0) {
                     handleDoor(MapVec2i(coordsDoor, coordsMidRoom), MapVec2i(a, b), MapVec2i(1, 0), colors[doorIndex])
                 }
 
                 val doorIndex2 = sc.add(MapVec2i(midRoom, door)).mapIndex()
                 val roomIndex2 = sc.add(MapVec2i(midRoom - hrs + 1, door)).mapIndex()
-                if (colors.size > doorIndex2 && roomIndex2 in colors.indices && colors[roomIndex2].toInt() == 0) {
+                val inMap2 = sc.x + midRoom in 0..127 && sc.z + door in 0..127
+                if (inMap2 && doorIndex2 in colors.indices && roomIndex2 in colors.indices && colors[roomIndex2].toInt() == 0) {
                     handleDoor(MapVec2i(coordsMidRoom, coordsDoor), MapVec2i(b, a), MapVec2i(0, 1), colors[doorIndex2])
                 }
             }
