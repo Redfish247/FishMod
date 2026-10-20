@@ -47,6 +47,8 @@ object Visual {
 
     @ConfigValue @JvmField var lateWorldText: Boolean = true
 
+    @ConfigValue @JvmField var gizmoOverlays: Boolean = true
+
     @ConfigValue @JvmField var oldPlayerHead: Boolean = false
 
     @ConfigValue @JvmField var fixWitherEssence: Boolean = false
