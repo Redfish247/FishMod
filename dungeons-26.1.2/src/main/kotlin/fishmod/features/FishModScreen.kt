@@ -1021,6 +1021,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             cosmetics.features.add(f)
         }
         run {
+            val f = Feature("See Others' Items",
+                { FishSettings.remoteItemsEnabled },
+                { v ->
+                    FishSettings.remoteItemsEnabled = v
+                    if (v) fishmod.cosmetic.RemoteSync.forceSync() else fishmod.cosmetic.RemoteItems.clearAll()
+                })
+            f.sub.add(SubcategoryHeader("Shows other FishMod users' custom item dye, trim, model and name; also shares yours"))
+            cosmetics.features.add(f)
+        }
+        run {
             val f = Feature("Nametag", FishSettings::nickPreviewEnabled)
             f.sub.add(SliderDoubleSetting("Height", "", FishSettings::nickPreviewYOffset, -1.5, 1.0))
             cosmetics.features.add(f)

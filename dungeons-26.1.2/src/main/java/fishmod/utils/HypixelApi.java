@@ -2069,6 +2069,23 @@ public class HypixelApi {
         } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.105", "fetchNicks failed", e); cb.accept(java.util.Map.of()); }
     }
 
+    public static void uploadItems(String uuidNoDashes, String itemsJson) {
+        try {
+            JsonObject o = new JsonObject();
+            o.addProperty("uuid", uuidNoDashes);
+            o.addProperty("items", itemsJson == null ? "" : itemsJson);
+            HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(PROXY_URL + "/items"))
+                .header("X-FishMod-Token", MOD_TOKEN).header("X-FishMod-Caller", callerId())
+                .header("Content-Type", "application/json")
+                .header("User-Agent", "Mozilla/5.0")
+                .timeout(Duration.ofSeconds(10))
+                .POST(HttpRequest.BodyPublishers.ofString(o.toString()))
+                .build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.110", "uploadItems failed", ignored);}
+    }
+
     public static void uploadScale(String uuidNoDashes, float x, float y, float z) {
         try {
             JsonObject o = new JsonObject();

@@ -26,33 +26,53 @@ object ItemCustomizationStore {
 
     private var data = Data()
 
+    // Other players' shared customs, keyed by a synthetic uuid (see RemoteItems); never persisted.
+    private val remote = Data()
+
+    @JvmStatic fun setRemote(uuid: String, name: String?, model: String?, dye: Int?, animated: AnimatedDye?, trim: ArmorTrimId?) {
+        name?.let { remote.itemNames[uuid] = it }
+        model?.let { remote.modelIds[uuid] = it }
+        if (animated != null) remote.animatedDyes[uuid] = animated else dye?.let { remote.dyeColors[uuid] = it }
+        trim?.let { remote.armorTrims[uuid] = it }
+    }
+
+    @JvmStatic fun clearRemote() {
+        remote.dyeColors.clear(); remote.animatedDyes.clear(); remote.armorTrims.clear()
+        remote.itemNames.clear(); remote.modelIds.clear()
+    }
+
+    fun own(uuid: String) = Own(data.dyeColors[uuid], data.animatedDyes[uuid], data.armorTrims[uuid], data.itemNames[uuid], data.modelIds[uuid])
+    class Own(val dye: Int?, val animated: AnimatedDye?, val trim: ArmorTrimId?, val name: String?, val model: String?) {
+        fun isEmpty() = dye == null && animated == null && trim == null && name == null && model == null
+    }
+
     init { load() }
 
-    @JvmStatic fun getDyeColor(uuid: String): Int? = data.dyeColors[uuid]
+    @JvmStatic fun getDyeColor(uuid: String): Int? = data.dyeColors[uuid] ?: remote.dyeColors[uuid]
     @JvmStatic fun setDyeColor(uuid: String, argb: Int) { data.dyeColors[uuid] = argb; data.animatedDyes.remove(uuid); save() }
     @JvmStatic fun removeDyeColor(uuid: String) { if (data.dyeColors.remove(uuid) != null) save() }
 
-    @JvmStatic fun getAnimatedDye(uuid: String): AnimatedDye? = data.animatedDyes[uuid]
+    @JvmStatic fun getAnimatedDye(uuid: String): AnimatedDye? = data.animatedDyes[uuid] ?: remote.animatedDyes[uuid]
     @JvmStatic fun removeAnimatedDye(uuid: String) { if (data.animatedDyes.remove(uuid) != null) save() }
 
-    @JvmStatic fun getArmorTrim(uuid: String): ArmorTrimId? = data.armorTrims[uuid]
+    @JvmStatic fun getArmorTrim(uuid: String): ArmorTrimId? = data.armorTrims[uuid] ?: remote.armorTrims[uuid]
     @JvmStatic fun setArmorTrim(uuid: String, trim: ArmorTrimId) { data.armorTrims[uuid] = trim; save() }
     @JvmStatic fun removeArmorTrim(uuid: String) { if (data.armorTrims.remove(uuid) != null) save() }
 
-    @JvmStatic fun getItemName(uuid: String): String? = data.itemNames[uuid]
+    @JvmStatic fun getItemName(uuid: String): String? = data.itemNames[uuid] ?: remote.itemNames[uuid]
 
     private val parsedNames = HashMap<String, net.minecraft.network.chat.MutableComponent>()
 
     @JvmStatic
     fun parsedItemName(uuid: String): net.minecraft.network.chat.MutableComponent? {
-        val name = data.itemNames[uuid] ?: return null
+        val name = data.itemNames[uuid] ?: remote.itemNames[uuid] ?: return null
         if (parsedNames.size > 256) parsedNames.clear()
         return parsedNames.getOrPut(name) { fishmod.utils.data.LegacyFormatting.parse(name) }.copy()
     }
     @JvmStatic fun setItemName(uuid: String, name: String) { data.itemNames[uuid] = name; save() }
     @JvmStatic fun removeItemName(uuid: String) { if (data.itemNames.remove(uuid) != null) save() }
 
-    @JvmStatic fun getModelId(uuid: String): String? = data.modelIds[uuid]
+    @JvmStatic fun getModelId(uuid: String): String? = data.modelIds[uuid] ?: remote.modelIds[uuid]
     @JvmStatic fun setModelId(uuid: String, id: String) { data.modelIds[uuid] = id; save() }
     @JvmStatic fun removeModelId(uuid: String) { if (data.modelIds.remove(uuid) != null) save() }
 
