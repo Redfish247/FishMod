@@ -14,6 +14,7 @@ object CroesusRewardParser {
     )
     private val ITEM_REPLACEMENTS: MutableMap<String, String> = HashMap()
     private val BOOK_PATTERN: Pattern = Pattern.compile("Enchanted Book \\((?:§.)*([\\w' ]+?) ((?:[IVX]+|\\d+))(?:§.)*\\)")
+    private val PET_PATTERN: Pattern = Pattern.compile("\\[Lvl \\d+\\]\\s*§([0-9a-f])([\\w' §0-9a-fk-or]+)")
     private val ESSENCE_PATTERN: Pattern = Pattern.compile("^(\\w+) Essence x(\\d+)$")
 
     init {
@@ -60,10 +61,20 @@ object CroesusRewardParser {
         return if (!m.matches()) null else arrayOf("ESSENCE_" + m.group(1).uppercase(), m.group(2))
     }
 
+    private fun tryParsePet(line: String): Array<String>? {
+        val m = PET_PATTERN.matcher(line)
+        if (!m.find()) return null
+        val rarity = when (m.group(1)) { "f" -> 0; "a" -> 1; "9" -> 2; "5" -> 3; "6" -> 4; "d" -> 5; else -> return null }
+        val name = strip(m.group(2)).trim().uppercase().replace(" ", "_")
+        return arrayOf("$name;$rarity", "1")
+    }
+
     @JvmStatic
     fun parseLine(line: String): Array<String> {
         val book = tryParseBook(line)
         if (book != null) return book
+        val pet = tryParsePet(line)
+        if (pet != null) return pet
 
         val clean = strip(line).trim()
         val essence = tryParseEssence(clean)
