@@ -72,10 +72,12 @@ object RemoteSync {
         val nicksOn = FishSettings.remoteNicksEnabled
         val sizeOn = FishSettings.playerSizeShared
         val badgesOn = FishSettings.badgesEnabled
+        val itemsOn = FishSettings.remoteItemsEnabled
+        if (!itemsOn) RemoteItems.clearAll()
         if (!nicksOn) RemoteNicks.clearAll()
         if (!sizeOn) RemoteScales.clearAll()
         if (!badgesOn) fishmod.cosmetic.badge.BadgeManager.clearAll()
-        if (!nicksOn && !sizeOn && !badgesOn) return
+        if (!nicksOn && !sizeOn && !badgesOn && !itemsOn) return
 
         val mc = Minecraft.getInstance()
         if (mc.connection == null || mc.player == null) return
@@ -96,7 +98,7 @@ object RemoteSync {
         }
         fishmod.cosmetic.badge.BadgeManager.replaceNames(names)
         if (dashlessIds.size > 1024) dashlessIds.clear()
-        if (uuidToName.isEmpty() && !badgesOn && !nicksOn) return
+        if (uuidToName.isEmpty() && !badgesOn && !nicksOn && !itemsOn) return
 
         val newPlayers = !lastUuids.containsAll(uuidToName.keys)
         val since = if (newPlayers) -1L else version
@@ -105,16 +107,17 @@ object RemoteSync {
         val queryKeys: Set<String> = keys + selfUuid
         if (queryKeys.isEmpty()) return
 
-        HypixelApi.fetchSync(queryKeys, since) { ver, nicks, _, scales, badges, blocked, cleared ->
+        HypixelApi.fetchSync(queryKeys, since) { ver, nicks, items, scales, badges, blocked, cleared ->
             mc.execute {
                 version = ver
                 lastUuids = keys
                 lastTabSize = tabSize()
-                val changed = nicks != null || scales != null || badges != null
+                val changed = nicks != null || items != null || scales != null || badges != null
                 interval = if (changed) BASE_TICKS else minOf(interval + STEP_TICKS, MAX_TICKS)
                 try {
                     fishmod.utils.InstallHeartbeat.applyAdminRevoke(blocked?.contains(selfUuid) == true, cleared?.get(selfUuid) ?: 0L)
                     if (nicks != null && FishSettings.remoteNicksEnabled) RemoteNicks.acceptNicks(uuidToName, nicks)
+                    if (items != null && FishSettings.remoteItemsEnabled) RemoteItems.acceptItems(keys, items)
                     if (scales != null && FishSettings.playerSizeShared) RemoteScales.acceptScales(keys, scales)
                     if (badges != null && FishSettings.badgesEnabled) fishmod.cosmetic.badge.BadgeManager.acceptBadges(queryKeys, badges)
                 } catch (t: Throwable) {

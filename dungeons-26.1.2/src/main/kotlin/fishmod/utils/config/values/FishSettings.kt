@@ -201,6 +201,7 @@ object FishSettings {
     @ConfigValue @JvmField var modPrefix: String = "FM"
 
     @ConfigValue @JvmField var remoteNicksEnabled: Boolean = false
+    @ConfigValue @JvmField var remoteItemsEnabled: Boolean = false
 
     @ConfigValue @JvmField var playerSizeEnabled: Boolean = false
     @ConfigValue @JvmField var wpEditFill: Boolean = false
