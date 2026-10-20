@@ -22,6 +22,7 @@ object Garden {
         GardenAlerts.init()
         GardenTitles.init()
         GardenMilestones.init()
+        MushroomCowPerk.init()
         GardenLevels.init()
         GardenMisc.init()
         CropFever.init()

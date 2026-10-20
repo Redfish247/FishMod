@@ -4,6 +4,7 @@ import fishmod.features.FishModScreen.ButtonSetting
 import fishmod.features.FishModScreen.ColorPickerSetting
 import fishmod.features.FishModScreen.Column
 import fishmod.features.FishModScreen.Feature
+import fishmod.features.FishModScreen.SubcategoryHeader
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.garden.GardenMilestoneSettings as S
 
@@ -16,6 +17,12 @@ object GardenMilestoneMenu {
         mh.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenMilestoneColor))
         mh.sub.add(ButtonSetting("Copy Milestone Data", "Copies known crop tiers to the clipboard", "Copy") { GardenMilestones.copy() })
         col.features.add(mh)
+
+        val mu = Feature("Mooshroom Cow Perk HUD", S::gardenMushroom)
+        mu.sub.add(SubcategoryHeader("Mushroom milestone progress from the perk while farming other crops; open /cropmilestones once to sync"))
+        mu.sub.add(ToggleSetting("ETA", "Time to the next mushroom milestone at your current break rate", S::gardenMushroomEta))
+        mu.sub.add(ColorPickerSetting("Title Colour", "Nearest chat colour is used", S::gardenMushroomColor))
+        col.features.add(mu)
 
         val icons = Feature("Garden Menu Numbers", S::gardenIconNumbers)
         icons.sub.add(ColorPickerSetting("Number Colour", "", S::gardenIconNumberColor))
