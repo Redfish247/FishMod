@@ -6,7 +6,9 @@ import fishmod.features.FishModScreen.Column
 import fishmod.features.FishModScreen.DropdownSetting
 import fishmod.features.FishModScreen.Feature
 import fishmod.features.FishModScreen.InputSetting
+import fishmod.features.FishModScreen.KeybindSetting
 import fishmod.features.FishModScreen.SliderIntSetting
+import fishmod.features.FishModScreen.SubcategoryHeader
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.garden.GardenSettings as S
 
@@ -95,6 +97,15 @@ object GardenMenu {
         ff.sub.add(InputSetting("Message", "{bonus} = bonus value", S::gardenFortuneMsgText))
         ff.sub.add(ColorPickerSetting("Colour", "Nearest chat colour is used", S::gardenFortuneMsgColor))
         col.features.add(ff)
+
+        val gk = Feature("Garden Keybinds", S::gardenKeys)
+        gk.sub.add(SubcategoryHeader("Your own keys act as the vanilla ones while farming in a plot (not the barn)"))
+        for (i in GardenKeybinds.NAMES.indices) gk.sub.add(KeybindSetting(GardenKeybinds.NAMES[i], "", { fishmod.utils.Keybinds.gardenKeys?.getOrNull(i) }))
+        gk.sub.add(ToggleSetting("Farming Tool", "", S::gardenKeysHoe))
+        gk.sub.add(ToggleSetting("Fishing Rod", "", S::gardenKeysRod))
+        gk.sub.add(ToggleSetting("Squeaky Mousemat", "", S::gardenKeysMousemat))
+        gk.sub.add(ToggleSetting("Sun's Grasp", "", S::gardenKeysGrasp))
+        col.features.add(gk)
 
         val sens = Feature("Mouse Sensitivity Reducer", S::gardenSens)
         sens.sub.add(SliderIntSetting("Sensitivity %", "Of your normal setting, on the ground in a plot", S::gardenSensPercent, 5, 100))
