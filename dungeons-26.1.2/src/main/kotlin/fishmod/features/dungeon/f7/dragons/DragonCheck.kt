@@ -43,6 +43,7 @@ object DragonCheck {
         if (!anyNew && WitherDragon.real.none { p.x in it.xRange && p.z in it.zRange }) FishDiag.fail("DragonCheck.1", "dragon spawn particle at unknown spot ${p.x},${p.z}")
         if (spawning.isNotEmpty()) {
             WitherDragons.priorityDragon = DragonPriority.findPriority(spawning)
+            WitherDragons.spawnRank = spawning.toList()
             if (anyNew) WitherDragons.onDragonsSpawning(spawning)
         }
     }
