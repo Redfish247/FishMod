@@ -16,6 +16,10 @@ object KuudraMenu {
     fun column(): Column {
         val col = Column("Kuudra")
 
+        val rq = Feature("Auto Requeue", S::kuudraRequeue)
+        rq.sub.add(SliderIntSetting("Delay (ms)", "Wait after the run ends, e.g. to open your chests", S::kuudraRequeueDelayMs, 0, 30000))
+        col.features.add(rq)
+
         val splits = Feature("Kuudra Splits", S::kuudraSplits)
         splits.sub.add(ToggleSetting("Chat Splits", "Print each phase time and PB", S::kuudraSplitsChat))
         splits.sub.add(ButtonSetting("Reset PBs", "", "Reset") { S.kuudraPbs = "" })

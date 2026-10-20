@@ -28,8 +28,8 @@ object AutoRequeue {
     private val INVISIBLE = Regex("[\\u00A0\\u200B\\u200C\\u200D\\uFEFF\\u00AD]")
     private fun clean(s: String) = INVISIBLE.replace(s, " ").trim()
 
-    private var partyChanged = false
-    private var dtSkip = false
+    internal var partyChanged = false
+    internal var dtSkip = false
     private var startTeamCount = 0
     private var extraStatsHandled = false
 
