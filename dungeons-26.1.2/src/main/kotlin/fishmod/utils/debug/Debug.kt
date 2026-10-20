@@ -181,6 +181,12 @@ object Debug {
                     Constants.SUCCESS
                 })
 
+                .then(ClientCommands.literal("gizmos").executes { _ ->
+                    fishmod.utils.config.values.Visual.gizmoOverlays = !fishmod.utils.config.values.Visual.gizmoOverlays
+                    Misc.addChatMessage(Component.literal("Highlights via gizmos (26.2): ").append(Misc.getStatusText(fishmod.utils.config.values.Visual.gizmoOverlays)))
+                    Constants.SUCCESS
+                })
+
                 .then(ClientCommands.literal("holotrace").executes { _ ->
                     holoTrace = !holoTrace
                     Misc.addChatMessage(Component.literal("Holo trace: ").append(Misc.getStatusText(holoTrace)))
