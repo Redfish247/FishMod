@@ -384,7 +384,7 @@ class FishModInit : ClientModInitializer {
     override fun onInitializeClient() {
         FishDiag.guard("FishModInit.1", "FishConfig.manager.load() failed") { FishConfig.manager.load() }
         safeInit("Config") { Config.manager.load() }
-        safeInit("ProfileViewer") { fishmod.pv.BetterPVClient.init() }
+        if (!net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("fishpv")) safeInit("ProfileViewer") { fishmod.pv.BetterPVClient.init() }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register { FishConfig.manager.save() }
         FishDiag.guard("FishModInit.2", "fishmod.utils.IoExecutor.init() failed") { fishmod.utils.IoExecutor.init() }
 

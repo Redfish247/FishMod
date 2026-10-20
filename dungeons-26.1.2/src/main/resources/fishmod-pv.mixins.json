@@ -1,6 +1,7 @@
 {
 	"required": true,
 	"package": "fishmod.pv.mixin",
+	"plugin": "fishmod.pv.mixin.PvMixinPlugin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
 		"ChatScreenClickMixin",
