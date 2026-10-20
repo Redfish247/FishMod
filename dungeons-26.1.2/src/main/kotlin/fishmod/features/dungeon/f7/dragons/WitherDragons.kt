@@ -202,11 +202,11 @@ object WitherDragons {
 
     private fun renderHudInner(ctx: GuiGraphicsExtractor) {
         val list = WitherDragon.real.filter { it.state == WitherDragonState.SPAWNING && it.timeToSpawn > 0 }
-            .sortedBy { rankIndex(it) }
+            .sortedByDescending { rankIndex(it) }
         if (list.isEmpty()) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
-        // One line per dragon, first-priority on top, rank + name + colour to tell them apart.
+        // One line per dragon, #1 on the bottom and #2 above it.
         val lines = list.map { "§${it.colorCode}${rankTag(it)}${it.name} §f${timerText(it.timeToSpawn)}" }
         val sc = FishSettings.witherDragonsHudScale.toFloat()
         val w = (lines.maxOf { mc.font.width(it) }) * sc
