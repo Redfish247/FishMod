@@ -141,16 +141,7 @@ object DianaWaypoints {
             .forEach { remove(it) }
     }
 
-    fun add(w: Waypoint): Waypoint { list.add(w); dbg.info("wp: add {} {} '{}'", w.type, w.pos, w.label); return w }
-
-    private val dbg = org.slf4j.LoggerFactory.getLogger("FishMod/DianaWp")
-    private var dumpTick = 0
-
-    // Temporary: periodic waypoint dump with the eye position, to match on-screen labels to waypoints
-    private fun dump() {
-        if (++dumpTick % 40 != 0 || list.isEmpty()) return
-        dbg.info("wp: eye={} list={}", eye(), list.map { "${it.type}@${it.pos.x},${it.pos.y},${it.pos.z}" })
-    }
+    fun add(w: Waypoint): Waypoint { list.add(w); return w }
 
     fun remove(w: Waypoint) { DianaTest.log("wp: remove ${w.type} ${w.pos}"); list.remove(w) }
 
@@ -183,7 +174,6 @@ object DianaWaypoints {
     }
 
     private fun tick() {
-        dump()
         val now = System.currentTimeMillis()
         removedAt.entries.removeIf { now - it.value > 1000 }
         list.removeIf { (now > it.expiresAt || (it.type != WpType.WORLD && it.type != WpType.RARE && !inHubBounds(it.pos))).also { r -> if (r) DianaTest.log("wp: drop ${it.type} ${it.pos} expired/outOfHub") } }
@@ -279,7 +269,7 @@ object DianaWaypoints {
             if (text.isNotEmpty()) {
                 // World size per font pixel grows with distance so labels stay the same size on screen;
                 // past render distance the label is pulled in along the same ray (SBO does the same)
-                val (pos, pk) = RenderUtils.pullIn(Vec3(w.pos.x + 0.5, w.pos.y + 1.5 + d / 25.0, w.pos.z + 0.5), eye)
+                val (pos, pk) = RenderUtils.pullIn(Vec3(w.pos.x + 0.5, w.pos.y + 1.2 + d / 60.0, w.pos.z + 0.5), eye)
                 val px = (DianaSettings.dianaTextScale * maxOf(0.035, d * 0.0035) * pk).toFloat()
                 val textColor = withAlpha(0xFFFFFF, DianaSettings.dianaTextOpacity / 100f)
                 RenderUtils.renderSeeThroughText(rCtx, rPs, Component.literal(colorCode(w, closest) + text), pos, px, textColor, DianaSettings.dianaTextShadow)
