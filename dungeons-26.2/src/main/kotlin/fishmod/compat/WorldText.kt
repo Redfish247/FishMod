@@ -12,7 +12,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
 import org.joml.Matrix4f
 import org.joml.Vector3f
-import org.joml.Vector4f
+import kotlin.math.abs
 
 // 26.2 side. Late mode (Visual.lateWorldText): the label is projected to the screen and drawn in the HUD, after water/glass/leaves.
 // Otherwise text goes to the submit collector, which drains before translucent terrain.
@@ -23,7 +23,7 @@ object WorldText {
 
     private var pending = ArrayList<Item>()
     private var shown: List<Item> = emptyList()
-    private val view = Matrix4f()
+    private val fwd = Vector3f(); private val up = Vector3f(); private val left = Vector3f()
     private val proj = Matrix4f()
 
     @JvmStatic
@@ -33,15 +33,14 @@ object WorldText {
             try {
                 val font = Minecraft.getInstance().font
                 val w = g.guiWidth().toFloat(); val h = g.guiHeight().toFloat()
-                val v = Vector4f()
+                // Project with the camera's own axes; the stored view/projection matrices put labels off in pitch
+                val f = abs(proj.m11()) * 0.5f * h
                 for (it in shown) {
-                    v.set(it.rel.x, it.rel.y, it.rel.z, 1f)
-                    v.mul(view).mul(proj)
-                    if (v.w <= 0.05f) continue
-                    val sx = (v.x / v.w * 0.5f + 0.5f) * w
-                    // 26.2's projection has Y pointing down already; flipping again mirrored labels around screen centre
-                    val sy = (0.5f + v.y / v.w * 0.5f) * h
-                    val s = proj.m11() * 0.5f * h / v.w * it.size
+                    val z = it.rel.dot(fwd)
+                    if (z <= 0.05f) continue
+                    val sx = w / 2 - it.rel.dot(left) / z * f
+                    val sy = h / 2 - it.rel.dot(up) / z * f
+                    val s = f / z * it.size
                     if (s < 0.05f || s > 40f) continue
                     g.pose().pushMatrix()
                     g.pose().translate(sx, sy)
@@ -58,7 +57,9 @@ object WorldText {
     // Called once per frame from the collect pass: freezes this frame's labels with its camera
     @JvmStatic
     fun commit(cam: CameraRenderState) {
-        view.set(cam.viewRotationMatrix); proj.set(cam.projectionMatrix)
+        proj.set(cam.projectionMatrix)
+        val c = Minecraft.getInstance().cam
+        fwd.set(c.forwardVector()); up.set(c.upVector()); left.set(c.leftVector())
         shown = pending
         pending = ArrayList()
     }
