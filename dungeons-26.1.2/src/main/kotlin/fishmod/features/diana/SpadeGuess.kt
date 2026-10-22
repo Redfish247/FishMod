@@ -18,8 +18,9 @@ object SpadeGuess {
     private val points = ArrayList<Vec3>()
     private var lastUseMs = 0L
     private var lastLavaMs = 0L
+    private var trailGuess: BlockPos? = null
 
-    fun reset() { points.clear() }
+    fun reset() { points.clear(); trailGuess = null }
 
     fun init() {
         Events.ON_PARTICLE.register { p ->
@@ -39,6 +40,7 @@ object SpadeGuess {
         val now = System.currentTimeMillis()
         if (now - lastLavaMs < 200) return
         points.clear()
+        trailGuess = null
         lastUseMs = now
     }
 
@@ -69,14 +71,18 @@ object SpadeGuess {
         if (DianaWaypoints.list.any { it.type == WpType.GUESS && flat(it.pos, pos) <= 4 }) return
         DianaWaypoints.list.removeIf { it.type == WpType.GUESS && it.pos != pos && it.distTo(v) <= 32 }
         if (DianaWaypoints.list.any { it.pos == pos && (it.type == WpType.BURROW || it.type == WpType.GUESS) }) return
+        // Early fits can land far off; drop this trail's previous guess wherever it is
+        trailGuess?.let { old -> DianaWaypoints.list.removeIf { it.type == WpType.GUESS && it.pos == old } }
         DianaTest.log("spade: place $pos (raw $v)")
         DianaWaypoints.add(Waypoint(pos, WpType.GUESS, "Guess"))
+        trailGuess = pos
     }
 
     private fun flat(a: BlockPos, b: BlockPos): Double { val dx = (a.x - b.x).toDouble(); val dz = (a.z - b.z).toDouble(); return sqrt(dx * dx + dz * dz) }
 
     fun guess(): Vec3? {
-        if (points.size < 4) return null
+        // 4 points extrapolate wildly; wait for a steadier fit
+        if (points.size < 6) return null
         val cx = fit(points.map { it.x }) ?: return null
         val cy = fit(points.map { it.y }) ?: return null
         val cz = fit(points.map { it.z }) ?: return null
