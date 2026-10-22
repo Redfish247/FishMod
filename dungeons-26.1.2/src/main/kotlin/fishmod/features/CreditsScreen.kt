@@ -46,14 +46,6 @@ class CreditsScreen(private val parent: Screen?) : Screen(Component.literal("Cre
             Credit("BladeMasterGabe", "splits & dungeon features", 0xFFE0A63A.toInt()),
             Credit("22yrs", "shared the dungeon map and blessed the port", 0xFF7A8CE0.toInt()),
             Credit(
-                "Vyriv", "BetterPV: the profile viewer", 0xFF5B8CFF.toInt(),
-                details = listOf(
-                    "Profile viewer code ported from BetterPV (MPL-2.0, github.com/Vyriv/BetterPV)",
-                    "Data: NEU-REPO, Athen & SkyHelper prices, EliteBot, SkyCofl",
-                    "Font: Inter by The Inter Project Authors (SIL OFL 1.1)",
-                ),
-            ),
-            Credit(
                 "Odin (odtheking)", "puzzle solvers, terminals & QoL ports", 0xFFB05FE0.toInt(),
                 details = listOf(
                     "Puzzle solvers: Blaze, Boulder, TP Maze, Weirdos, Water Board, Ice Fill, Beams, Quiz/Oruo",
