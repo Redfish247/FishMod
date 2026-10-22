@@ -57,7 +57,8 @@ object WorldText {
     // Called once per frame from the collect pass: freezes this frame's labels with its camera
     @JvmStatic
     fun commit(cam: CameraRenderState) {
-        view.set(cam.viewRotationMatrix); proj.set(cam.projectionMatrix)
+        // viewRotationMatrix put labels off in pitch; build the view from the camera orientation like vanilla does
+        view.rotation(org.joml.Quaternionf(cam.orientation).conjugate()); proj.set(cam.projectionMatrix)
         shown = pending
         pending = ArrayList()
     }
