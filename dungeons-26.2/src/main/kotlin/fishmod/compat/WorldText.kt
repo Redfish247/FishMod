@@ -10,6 +10,7 @@ import net.minecraft.client.renderer.SubmitNodeCollector
 import net.minecraft.client.renderer.state.level.CameraRenderState
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
+import net.minecraft.world.phys.Vec3
 import org.joml.Matrix4f
 import org.joml.Vector3f
 import org.joml.Vector4f
@@ -19,7 +20,7 @@ import org.joml.Vector4f
 object WorldText {
     @JvmField var collector: SubmitNodeCollector? = null
 
-    private class Item(val rel: Vector3f, val world: net.minecraft.world.phys.Vec3, val size: Float, val text: Component, val argb: Int, val shadow: Boolean)
+    private class Item(val rel: Vector3f, val world: Vec3, val size: Float, val text: Component, val argb: Int, val shadow: Boolean)
 
     private var pending = ArrayList<Item>()
     private var shown: List<Item> = emptyList()
@@ -71,8 +72,12 @@ object WorldText {
             val m = ps.last().pose()
             val rel = m.transformPosition(Vector3f())
             val size = m.transformDirection(Vector3f(1f, 0f, 0f)).length()
-            val world = Minecraft.getInstance().cam.position().add(rel.x.toDouble(), rel.y.toDouble(), rel.z.toDouble())
-            pending += Item(rel, world, size, text, argb, shadow)
+            // Gizmo mode hands us world coords (identity stack); the collect pass hands camera-relative ones
+            val cam = Minecraft.getInstance().cam.position()
+            val p = Vec3(rel.x.toDouble(), rel.y.toDouble(), rel.z.toDouble())
+            val world = if (Visual.gizmoOverlays) p else cam.add(p)
+            val camRel = world.subtract(cam)
+            pending += Item(Vector3f(camRel.x.toFloat(), camRel.y.toFloat(), camRel.z.toFloat()), world, size, text, argb, shadow)
             return
         }
         val c = collector ?: return
