@@ -177,7 +177,7 @@ class Split(
         val serverTimeColor: Int
         val parenthesesColor: Int
 
-        if (!started) {
+        if (!started && !ended) {
             realTimeColor = realTimeColorInactive
             serverTimeColor = serverTimeColorInactive
             parenthesesColor = parenthesesColorInactive
