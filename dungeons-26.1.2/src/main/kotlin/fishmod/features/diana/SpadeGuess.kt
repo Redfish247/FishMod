@@ -15,6 +15,7 @@ import kotlin.math.sqrt
 // Fits a cubic to the spade's lava trail and extrapolates where the trail lands
 object SpadeGuess {
 
+    private val LOG = org.slf4j.LoggerFactory.getLogger("FishMod/SpadeGuess")
     private val points = ArrayList<Vec3>()
     private var lastUseMs = 0L
     private var lastLavaMs = 0L
@@ -42,6 +43,7 @@ object SpadeGuess {
         points.clear()
         trailGuess = null
         lastUseMs = now
+        LOG.info("spade: use at {}", net.minecraft.client.Minecraft.getInstance().player?.position())
     }
 
     private fun onPoint(v: Vec3) {
@@ -50,11 +52,11 @@ object SpadeGuess {
         if (now - lastUseMs > 3000) return DianaTest.log("spade: point ignored, no recent use")
         if (points.isNotEmpty()) {
             val d = points.last().distanceTo(v)
-            if (d <= 0 || d > 3) return
+            if (d <= 0 || d > 3) return LOG.info("spade: skip {} {} {} d={}", v.x, v.y, v.z, d)
         }
         points.add(v)
         val g = guess()
-        DianaTest.log("spade: ${points.size} pts guess=$g")
+        LOG.info("spade: pt {} {} {} -> {} pts guess={} player={}", v.x, v.y, v.z, points.size, g, net.minecraft.client.Minecraft.getInstance().player?.position())
         g?.let { place(it) }
     }
 
