@@ -74,6 +74,9 @@ object ArrowGuess {
 
     fun onBurrowDug() { dust.clear() }
 
+    // A spade guess is far more precise than the arrow's distance band; drop the arrow guesses
+    fun clearGuesses() { entries.forEach { dropEntryWaypoints(it) }; entries.clear() }
+
     // A real burrow on any of an arrow's candidates resolves it: drop the guess and all its subs
     fun onBurrowAt(pos: BlockPos) {
         val it = entries.iterator()

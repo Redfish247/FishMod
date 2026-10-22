@@ -74,6 +74,7 @@ object SpadeGuess {
         DianaWaypoints.list.removeIf { it.type == WpType.GUESS && it.pos != pos && it.distTo(v) <= 32 }
         if (DianaWaypoints.list.any { it.pos == pos && (it.type == WpType.BURROW || it.type == WpType.GUESS) }) return
         // Early fits can land far off; drop this trail's previous guess wherever it is
+        ArrowGuess.clearGuesses()
         trailGuess?.let { old -> DianaWaypoints.list.removeIf { it.type == WpType.GUESS && it.pos == old } }
         DianaTest.log("spade: place $pos (raw $v)")
         DianaWaypoints.add(Waypoint(pos, WpType.GUESS, "Guess"))
