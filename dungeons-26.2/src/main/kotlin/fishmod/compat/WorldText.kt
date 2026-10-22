@@ -39,7 +39,8 @@ object WorldText {
                     v.mul(view).mul(proj)
                     if (v.w <= 0.05f) continue
                     val sx = (v.x / v.w * 0.5f + 0.5f) * w
-                    val sy = (0.5f - v.y / v.w * 0.5f) * h
+                    // 26.2's projection has Y pointing down already; flipping again mirrored labels around screen centre
+                    val sy = (0.5f + v.y / v.w * 0.5f) * h
                     val s = proj.m11() * 0.5f * h / v.w * it.size
                     if (s < 0.05f || s > 40f) continue
                     g.pose().pushMatrix()
@@ -57,8 +58,7 @@ object WorldText {
     // Called once per frame from the collect pass: freezes this frame's labels with its camera
     @JvmStatic
     fun commit(cam: CameraRenderState) {
-        // viewRotationMatrix put labels off in pitch; build the view from the camera orientation like vanilla does
-        view.rotation(org.joml.Quaternionf(cam.orientation).conjugate()); proj.set(cam.projectionMatrix)
+        view.set(cam.viewRotationMatrix); proj.set(cam.projectionMatrix)
         shown = pending
         pending = ArrayList()
     }
