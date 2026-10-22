@@ -23,8 +23,7 @@
 		]
 	},
 	"mixins": [
-		"fishmod.mixins.json",
-		"fishmod-pv.mixins.json"
+		"fishmod.mixins.json"
 	],
 	"custom": {
 		"fishmod:updater": {

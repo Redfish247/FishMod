@@ -55,7 +55,6 @@ object FishSettings {
     @ConfigValue @JvmField var guiScaleAuction: Int = 100
     @ConfigValue @JvmField var guiScaleWaypoint: Int = 100
     @ConfigValue @JvmField var guiScaleCredits: Int = 100
-    @ConfigValue @JvmField var guiScaleProfileViewer: Int = 100
     @ConfigValue @JvmField var guiScaleDianaProfit: Int = 100
 
     @ConfigValue @JvmField var petXpTamingLevel: Int = 0
@@ -163,9 +162,6 @@ object FishSettings {
 
     @ConfigValue @JvmField var twitchBridgeEnabled: Boolean = false
 
-    @ConfigValue @JvmField var profileViewerEnabled: Boolean = true
-    @ConfigValue @JvmField var pvOverflowSkills: Boolean = false
-    @ConfigValue @JvmField var pvTheme: String = "Dark Glass"
 
     @ConfigValue @JvmField var compactTabEnabled: Boolean = false
     @ConfigValue @JvmField var compactTabOpacity: Int = 70
