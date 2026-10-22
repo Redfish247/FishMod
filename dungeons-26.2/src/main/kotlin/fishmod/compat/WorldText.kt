@@ -19,7 +19,7 @@ import org.joml.Vector4f
 object WorldText {
     @JvmField var collector: SubmitNodeCollector? = null
 
-    private class Item(val rel: Vector3f, val size: Float, val text: Component, val argb: Int, val shadow: Boolean)
+    private class Item(val rel: Vector3f, val world: net.minecraft.world.phys.Vec3, val size: Float, val text: Component, val argb: Int, val shadow: Boolean)
 
     private var pending = ArrayList<Item>()
     private var shown: List<Item> = emptyList()
@@ -38,9 +38,10 @@ object WorldText {
                     v.set(it.rel.x, it.rel.y, it.rel.z, 1f)
                     v.mul(view).mul(proj)
                     if (v.w <= 0.05f) continue
-                    val sx = (v.x / v.w * 0.5f + 0.5f) * w
-                    // 26.2's projection has Y pointing down already; flipping again mirrored labels around screen centre
-                    val sy = (0.5f + v.y / v.w * 0.5f) * h
+                    // Vanilla's own projection (locator bar uses it), so labels track the world at any pitch
+                    val sp = Minecraft.getInstance().gameRenderer.projectPointToScreen(it.world)
+                    val sx = (sp.x.toFloat() * 0.5f + 0.5f) * w
+                    val sy = (0.5f - sp.y.toFloat() * 0.5f) * h
                     val s = proj.m11() * 0.5f * h / v.w * it.size
                     if (s < 0.05f || s > 40f) continue
                     g.pose().pushMatrix()
@@ -70,7 +71,8 @@ object WorldText {
             val m = ps.last().pose()
             val rel = m.transformPosition(Vector3f())
             val size = m.transformDirection(Vector3f(1f, 0f, 0f)).length()
-            pending += Item(rel, size, text, argb, shadow)
+            val world = Minecraft.getInstance().cam.position().add(rel.x.toDouble(), rel.y.toDouble(), rel.z.toDouble())
+            pending += Item(rel, world, size, text, argb, shadow)
             return
         }
         val c = collector ?: return
