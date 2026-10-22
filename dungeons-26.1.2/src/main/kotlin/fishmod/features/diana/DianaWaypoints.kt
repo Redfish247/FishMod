@@ -141,7 +141,16 @@ object DianaWaypoints {
             .forEach { remove(it) }
     }
 
-    fun add(w: Waypoint): Waypoint { list.add(w); return w }
+    fun add(w: Waypoint): Waypoint { list.add(w); dbg.info("wp: add {} {} '{}'", w.type, w.pos, w.label); return w }
+
+    private val dbg = org.slf4j.LoggerFactory.getLogger("FishMod/DianaWp")
+    private var dumpTick = 0
+
+    // Temporary: periodic waypoint dump with the eye position, to match on-screen labels to waypoints
+    private fun dump() {
+        if (++dumpTick % 40 != 0 || list.isEmpty()) return
+        dbg.info("wp: eye={} list={}", eye(), list.map { "${it.type}@${it.pos.x},${it.pos.y},${it.pos.z}" })
+    }
 
     fun remove(w: Waypoint) { DianaTest.log("wp: remove ${w.type} ${w.pos}"); list.remove(w) }
 
@@ -174,6 +183,7 @@ object DianaWaypoints {
     }
 
     private fun tick() {
+        dump()
         val now = System.currentTimeMillis()
         removedAt.entries.removeIf { now - it.value > 1000 }
         list.removeIf { (now > it.expiresAt || (it.type != WpType.WORLD && it.type != WpType.RARE && !inHubBounds(it.pos))).also { r -> if (r) DianaTest.log("wp: drop ${it.type} ${it.pos} expired/outOfHub") } }
