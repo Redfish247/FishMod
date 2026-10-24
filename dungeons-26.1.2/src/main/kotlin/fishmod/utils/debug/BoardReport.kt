@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  * In-game bug reports / suggestions and deduplicated auto error reports, sent to the test board inbox.
- * Sends only: kind, title, text, dedup key, mod + MC version, area, recent FishDiag lines (player name scrubbed).
+ * Sends only: kind, title, text, dedup key, mod + MC version, area, recent FishDiag lines for bugs only (player name scrubbed).
  */
 object BoardReport {
 
@@ -99,7 +99,7 @@ object BoardReport {
             addProperty("mod", modVersion())
             addProperty("mc", mcVersion())
             addProperty("loc", area())
-            addProperty("log", scrub(FishDiag.recentLines(15).joinToString("\n")).take(4000))
+            if (kind != "suggest") addProperty("log", scrub(FishDiag.recentLines(15).joinToString("\n")).take(4000))
         }
         val req = HttpRequest.newBuilder(URI.create(ENDPOINT))
             .timeout(Duration.ofSeconds(15))

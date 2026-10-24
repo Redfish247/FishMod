@@ -88,7 +88,7 @@ class BoardReportScreen(private val parent: Screen?) : Screen(Component.literal(
         details = field(details, 500, lx + PAD, y, inner).also { box("details", it, lx + PAD, y, inner, focused == 1, if (bug) "Where, when, what you expected" else "Any details") }
         y += FIELD_H + 10
 
-        UiRecorder.text("Sends mod/MC version, area and recent FishMod errors. No name, IP or token.", (lx + PAD).toFloat(), y.toFloat(), 5.8f, ScreenTheme.SUBTEXT_COLOR)
+        UiRecorder.text(if (bug) "Sends mod/MC version, area and recent FishMod errors. No name or IP." else "Sends mod/MC version and area. No name or IP.", (lx + PAD).toFloat(), y.toFloat(), 5.8f, ScreenTheme.SUBTEXT_COLOR)
         y += 14
         if (status.isNotEmpty()) UiRecorder.text(status, (lx + PAD).toFloat(), (y + 5).toFloat(), 6.5f, if (statusOk) OK else ScreenTheme.DANGER)
         pill("send", if (sending) "Sending…" else "Send", lx + w - PAD - 70, y, 70, 18, true, mx, my)
