@@ -1346,6 +1346,7 @@ class FishModInit : ClientModInitializer {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "invincibility")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.InvincibilityTracker.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.128", "invincibility render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "relic_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.M7Relics.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.129", "relic_timer render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "spring_boots")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.SpringBoots.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.130", "spring_boots render failed", t) } }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "stopwatch")) { ctx, _ -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.other.Stopwatch.renderHud(ctx) } catch (t: Throwable) { FishDiag.fail("FishModInit.204", "stopwatch render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "tac_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.TacTimer.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.131", "tac_timer render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "rag_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.Ragnarock.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.132", "rag_timer render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "spirit_bear")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f4.SpiritBear.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.133", "spirit_bear render failed", t) } }
@@ -1477,6 +1478,7 @@ class FishModInit : ClientModInitializer {
         safeInit("PracticeMode") { fishmod.utils.dungeon.PracticeMode.init() }
         safeInit("Section") { Section.init() }
         safeInit("TerminalTracker") { fishmod.features.dungeon.f7.TerminalTracker.init() }
+        safeInit("Stopwatch") { fishmod.features.other.Stopwatch.init() }
         safeInit("PartyUtil") { PartyUtil.init() }
         safeInit("RenderingEvents") { RenderingEvents.init() }
         safeInit("Scheduler") { Scheduler.init() }
