@@ -493,6 +493,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.93", "fishmod.features.dungeon.PartyFinderPanel.init() failed") { fishmod.features.dungeon.PartyFinderPanel.init() }
         FishDiag.guard("FishModInit.94", "fishmod.features.dungeon.f7.WitherESP.init() failed") { fishmod.features.dungeon.f7.WitherESP.init() }
         FishDiag.guard("FishModInit.StormLb", "StormLbWaypoint.init() failed") { fishmod.features.dungeon.f7.StormLbWaypoint.init() }
+        FishDiag.guard("FishModInit.NecronDrop", "NecronDropPredict.init() failed") { fishmod.features.dungeon.f7.NecronDropPredict.init() }
         FishDiag.guard("FishModInit.95", "fishmod.features.dungeon.f7.M7Relics.init() failed") { fishmod.features.dungeon.f7.M7Relics.init() }
         FishDiag.guard("FishModInit.95b", "NecronTrace.init() failed") { fishmod.utils.dungeon.NecronTrace.init() }
         FishDiag.guard("FishModInit.96", "fishmod.features.dungeon.puzzles.PuzzleSolvers.init() failed") { fishmod.features.dungeon.puzzles.PuzzleSolvers.init() }
@@ -528,6 +529,7 @@ class FishModInit : ClientModInitializer {
         FishHudEditor.register("Section Completion", fishmod.features.dungeon.f7.F7Huds.sectionCompletion)
         FishHudEditor.register("Players Leaped", fishmod.features.dungeon.f7.F7Huds.playersLeaped)
         FishHudEditor.register("Goldor Splits", fishmod.utils.dungeon.Section.terminalSplits)
+        FishHudEditor.register("Terminal Tracker", fishmod.features.dungeon.f7.TerminalTracker.hud)
         FishDiag.guard("FishModInit.105", "fishmod.utils.dungeon.DungeonClass.init() failed") { fishmod.utils.dungeon.DungeonClass.init() }
         FishDiag.guard("FishModInit.106", "fishmod.features.ClassColoredBoots.init() failed") { fishmod.features.ClassColoredBoots.init() }
         FishDiag.guard("FishModInit.107", "fishmod.features.dungeon.DupeClassDetector.init() failed") { fishmod.features.dungeon.DupeClassDetector.init() }
@@ -1474,6 +1476,7 @@ class FishModInit : ClientModInitializer {
         safeInit("Phase") { Phase.init() }
         safeInit("PracticeMode") { fishmod.utils.dungeon.PracticeMode.init() }
         safeInit("Section") { Section.init() }
+        safeInit("TerminalTracker") { fishmod.features.dungeon.f7.TerminalTracker.init() }
         safeInit("PartyUtil") { PartyUtil.init() }
         safeInit("RenderingEvents") { RenderingEvents.init() }
         safeInit("Scheduler") { Scheduler.init() }

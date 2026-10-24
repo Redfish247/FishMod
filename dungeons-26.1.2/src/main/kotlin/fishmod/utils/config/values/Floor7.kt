@@ -62,6 +62,26 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
+    var enableNecronDropPredict: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var necronDropLeadTicks: Int = 20
+
+    @ConfigValue
+    @JvmField
+    var necronDropOffsetX: Int = 0
+
+    @ConfigValue
+    @JvmField
+    var necronDropOffsetZ: Int = 0
+
+    @ConfigValue
+    @JvmField
+    var necronDropColor: Int = 0xff55ffff.toInt()
+
+    @ConfigValue
+    @JvmField
     var enableGoldorTickTimer: Boolean = false
 
     @ConfigValue

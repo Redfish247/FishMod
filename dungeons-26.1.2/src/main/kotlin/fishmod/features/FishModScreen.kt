@@ -16,6 +16,7 @@ import fishmod.utils.config.values.Floor7
 import fishmod.utils.config.values.Visual
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.dungeon.Section
+import fishmod.features.dungeon.f7.TerminalTracker
 import fishmod.utils.dungeon.Split
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
@@ -1520,6 +1521,11 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Necron LB Timer", "Counts down to the LB shot 4s into Necron's phase, then says SHOOT LB", Floor7::enableNecronLbTimer))
             f.sub.add(SliderIntSetting("Necron LB Ping (ms)", "Ends it this much earlier to offset latency", Floor7::necronLbPingMs, 0, 500).gatedBy { Floor7.enableNecronLbTimer })
             f.sub.add(ColorPickerSetting("Necron LB Color", "", Floor7::necronLbColor).gatedBy { Floor7.enableNecronLbTimer })
+            f.sub.add(ToggleSetting("Necron Drop Prediction", "Marks where you land: position plus velocity times the lead, dropped to the floor (Necron phase)", Floor7::enableNecronDropPredict))
+            f.sub.add(SliderIntSetting("Drop Lead (ticks)", "How many ticks of current movement to project ahead", Floor7::necronDropLeadTicks, 0, 100).gatedBy { Floor7.enableNecronDropPredict })
+            f.sub.add(SliderIntSetting("Drop Offset X", "Blocks added to the predicted X", Floor7::necronDropOffsetX, -20, 20).gatedBy { Floor7.enableNecronDropPredict })
+            f.sub.add(SliderIntSetting("Drop Offset Z", "Blocks added to the predicted Z", Floor7::necronDropOffsetZ, -20, 20).gatedBy { Floor7.enableNecronDropPredict })
+            f.sub.add(ColorPickerSetting("Drop Marker Color", "", Floor7::necronDropColor).gatedBy { Floor7.enableNecronDropPredict })
             f.sub.add(SubcategoryHeader("Goldor"))
             f.sub.add(ToggleSetting("Goldor", "", Floor7::enableGoldorTickTimer))
             f.sub.add(ToggleSetting("In 3s Increments", "", Floor7::inDeathTicks).gatedBy { Floor7.enableGoldorTickTimer })
@@ -1542,6 +1548,22 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Hide Terminal Titles", Floor7::hideTerminalTitles)
             f.sub.add(SubcategoryHeader("Hides Hypixel titles and subtitles during P3 (terminal/device/gate spam). Death and revive titles still show."))
+            floor7.features.add(f)
+        }
+        run {
+            val f = Feature("Terminal Tracker", TerminalTracker::enabled)
+            f.sub.add(SubcategoryHeader("Per-section list of who finished each terminal/device/lever and what is missing."))
+            f.sub.add(ToggleSetting("Show All Sections", "Show earlier sections too", TerminalTracker::showAllSections))
+            f.sub.add(ToggleSetting("Log Positions", "Print each completion with the player position to chat and the log", TerminalTracker::logPositions))
+            f.sub.add(InputSetting("Title", "", { TerminalTracker.title }, { v -> TerminalTracker.title = v }))
+            f.sub.add(SliderIntSetting("Background Opacity", "", TerminalTracker::bgOpacity, 0, 100, 5))
+            f.sub.add(ColorPickerSetting("Background", "", TerminalTracker::bgColor))
+            f.sub.add(ColorPickerSetting("Terminal", "", TerminalTracker::termColor))
+            f.sub.add(ColorPickerSetting("Device", "", TerminalTracker::deviceColor))
+            f.sub.add(ColorPickerSetting("Lever", "", TerminalTracker::leverColor))
+            f.sub.add(ColorPickerSetting("Gate", "", TerminalTracker::gateColor))
+            f.sub.add(ColorPickerSetting("Player Name", "", TerminalTracker::nameColor))
+            f.sub.add(ColorPickerSetting("Missing", "", TerminalTracker::missingColor))
             floor7.features.add(f)
         }
         run {

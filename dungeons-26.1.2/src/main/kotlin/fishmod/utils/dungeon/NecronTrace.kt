@@ -14,6 +14,7 @@ object NecronTrace {
     private var lastBar = ""
     private var lastWithers = ""
     private var relicsLogged = false
+    private var ticks = 0
 
     private fun active() = Phase.getFloor()?.endsWith("7") == true && (Phase.getPhase() == 8 || startMs != 0L && !relicsLogged)
 
@@ -44,6 +45,9 @@ object NecronTrace {
             val pct = (it as fishmod.mixin.accessors.LerpingBossEventAccessor).targetPercent
             "'${it.name.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()}' %.1f%%".format(pct * 100f)
         } ?: "none"
+        val p = mc.player
+        if (p != null && ticks++ % 5 == 0 && (System.currentTimeMillis() - startMs) < 20000)
+            log("me: pos=%.2f,%.2f,%.2f vel=%.3f,%.3f,%.3f ground=%s".format(p.x, p.y, p.z, p.deltaMovement.x, p.deltaMovement.y, p.deltaMovement.z, p.onGround()))
         if (bar != lastBar) { lastBar = bar; log("bar: ${bar.ifEmpty { "none" }}") }
 
         val withers = level.entitiesForRendering().filterIsInstance<WitherBoss>().filter { it.boundingBox.ysize >= 2.0 }
