@@ -22,9 +22,9 @@ import kotlin.math.hypot
 object NecronDropPredict {
 
     private const val DRAG_TICKS = 50
-    private const val DRAG_DZ = 60.0
+    private const val DRAG_DZ = 61.0
     private const val START_SPEED = 0.7
-    private const val LOCK_DIST = 4.0
+    private const val LOCK_DIST = 6.0
     private const val MAX_WAIT_TICKS = 200
 
     private var phaseTicks = 0
