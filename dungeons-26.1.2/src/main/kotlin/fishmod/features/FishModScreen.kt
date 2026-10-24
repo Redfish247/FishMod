@@ -2155,6 +2155,26 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         hScroll = Mth.clamp(hScroll, 0, maxHScroll())
     }
 
+    // unfold every column in the folder, or fold them all if none are folded
+    private fun toggleFolderColumns(f: Folder) {
+        val cols = columns.filter { folderOf(it) === f }
+        if (cols.isEmpty()) return
+        val unfolding = cols.any { isFolded(it) }
+        for (c in cols) {
+            if (unfolding && isFolded(c)) {
+                foldedColumns.remove(c.name)
+                if (FishSettings.fmAnimations) unfoldStart[c.name] = System.currentTimeMillis() else unfoldStart.remove(c.name)
+            } else if (!unfolding) foldedColumns.add(c.name)
+        }
+        saveFoldedColumns()
+        frameVisibleColumns = null
+        if (unfolding) {
+            val idx = visibleColumns().indexOf(cols[0])
+            if (idx >= 0) hScroll = idx * (columnWidth() + COLUMN_GUTTER)
+        }
+        hScroll = Mth.clamp(hScroll, 0, maxHScroll())
+    }
+
     private fun left(): Int = 0
     private fun top(): Int = 0
     private fun right(): Int = (this.width / fishmod.utils.rendering.UiScale.factor()).toInt()
@@ -2541,7 +2561,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
     private fun renderHint(ctx: GuiGraphicsExtractor) {
         // Keycap controls box, same style as the HUD editor's
-        val rows = arrayOf("Click" to "Fold a column", "Drag" to "Move a column", "Drag onto folder" to "File it in the folder", "Right-click folder" to "Rename (empty = delete)")
+        val rows = arrayOf("Click" to "Fold a column", "Drag" to "Move a column", "Drag onto folder" to "File it in the folder", "Click folder" to "Open its columns", "Right-click folder" to "Show/hide its tabs", "Shift+Right-click" to "Rename folder (empty = delete)")
         val ts = 10f
         val ks = 9.5f
         val rowH = 14.5f
@@ -3006,7 +3026,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             }
             when {
                 r.isAdd() -> if (btn == 0) createFolder()
-                f != null -> if (btn == 1) startRename(f) else if (btn == 0) { stackDragFolder = f; startDrag() }
+                f != null && btn == 1 -> {
+                    val shift = InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_LEFT_SHIFT) ||
+                        InputConstants.isKeyDown(Minecraft.getInstance().window, GLFW.GLFW_KEY_RIGHT_SHIFT)
+                    if (shift) startRename(f)
+                    else { f.open = !f.open; saveFolders(); stackScroll = Mth.clamp(stackScroll, 0, stackMaxScroll()) }
+                }
+                f != null && btn == 0 -> { stackDragFolder = f; startDrag() }
                 c != null && btn == 0 -> { stackDragCol = c; startDrag() }
             }
             return true
@@ -3157,7 +3183,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (sc != null || sf != null) {
             if (dragMoved) applyStackDrop()
             else if (sc != null) toggleFold(sc)
-            else if (sf != null) { sf.open = !sf.open; saveFolders() }
+            else if (sf != null) toggleFolderColumns(sf)
             stackDragCol = null
             stackDragFolder = null
         }
