@@ -100,6 +100,8 @@ object Debug {
                 )
         )
 
+        dispatcher.register(ClientCommands.literal("fm").then(BoardReport.command("bug")).then(BoardReport.command("suggest")))
+
         dispatcher.register(
             ClientCommands.literal("badev")
                 .then(ClientCommands.literal("runInfo").executes { _ ->
