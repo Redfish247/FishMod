@@ -83,6 +83,7 @@ object FishDiag {
             else Debug.LOGGER.warn("[FishDiag {}] {}", code, message)
             writer.execute { appendToFile(entry) }
             if (n == 1) notifyChat(code)
+            if (n == 1 && t != null) BoardReport.auto(code, message, t)
         } catch (_: Throwable) {
         }
     }
@@ -145,6 +146,9 @@ object FishDiag {
         snapshot.takeLast(60).forEach { sb.append(format(it)).append('\n') }
         return sb.toString()
     }
+
+    @JvmStatic
+    fun recentLines(limit: Int): List<String> = synchronized(recent) { recent.toList() }.takeLast(limit).map { format(it) }
 
     @JvmStatic
     fun summaryLines(limit: Int = 10): List<String> =
