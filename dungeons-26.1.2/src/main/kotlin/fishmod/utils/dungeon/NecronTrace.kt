@@ -46,7 +46,7 @@ object NecronTrace {
             "'${it.name.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()}' %.1f%%".format(pct * 100f)
         } ?: "none"
         val p = mc.player
-        if (p != null && ticks++ % 5 == 0 && (System.currentTimeMillis() - startMs) < 20000)
+        if (p != null && ticks++ % 1 == 0 && (System.currentTimeMillis() - startMs) < 20000)
             log("me: pos=%.2f,%.2f,%.2f vel=%.3f,%.3f,%.3f ground=%s".format(p.x, p.y, p.z, p.deltaMovement.x, p.deltaMovement.y, p.deltaMovement.z, p.onGround()))
         if (bar != lastBar) { lastBar = bar; log("bar: ${bar.ifEmpty { "none" }}") }
 
