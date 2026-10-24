@@ -85,7 +85,7 @@ public class HypixelApi {
     public static final long CATA_OVERFLOW_XP_PER_LEVEL = 200_000_000L;
 
     private static final String PROXY_URL = "https://fishmod.dev";
-    private static final String MOD_TOKEN = "fishmod123";
+    public static final String MOD_TOKEN = "fishmod123";
 
     private static String callerId() {
         var mc = Minecraft.getInstance();
