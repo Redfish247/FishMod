@@ -222,7 +222,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Floor 7" to listOf(
                 "Tick Timer", "Wither Dragon Timer", "Crystal Spawn Time", "Crystal Reminder",
                 "Storm Death Time", "LB Release Timer", "Py Tick Timer", "Necron LB Timer", "Storm Crushed", "Pillar Explosion Timer", "Term Start Timer",
-                "Section Progress", "Goldor Splits", "Current Section", "Device Completed",
+                "Section Progress", "Goldor Splits", "Terminal Tracker", "Current Section", "Device Completed",
                 "Melody Warning", "Section Completion", "Storm Over Alert", "Veno Stack Count", "Players Leaped",
                 "Relic Spawn Timer",
             ),
@@ -275,6 +275,12 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 "§63rd " to "§a11.92s§8 (§711.70s§8)",
                 "§64th " to "§a14.05s§8 (§713.85s§8)",
             ), width = 120),
+            "Terminal Tracker" to Sample(
+                listOf("§fTerminals", "§fS2 (5/8)", " §bTerm #1 §fTechnoFish", " §bTerm #2 §fGoldorMain",
+                    " §dDev #1 §fSlowGuy", " §cLever #1 §fTechnoFish", " §cLever #2 §fHealerGuy", " §cMissing 3", " §cGate pending"),
+                lineH = 10,
+                bg = 0x66000000,
+            ),
             "Splits" to cols(listOf(
                 "§4Blood Open " to "§a25.70s§8 (§725.10s§8)",
                 "§cBlood Clear " to "§a1m 7.02s§8 (§765.40s§8)",
