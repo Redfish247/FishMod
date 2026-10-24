@@ -59,6 +59,7 @@
     "KeyboardMixin",
     "LightmapMixin",
     "MinecraftClientMixin",
+    "OptionsSaveMixin",
     "PerspectiveToggleMixin",
     "MouseMixin",
     "CameraZoomMixin",
