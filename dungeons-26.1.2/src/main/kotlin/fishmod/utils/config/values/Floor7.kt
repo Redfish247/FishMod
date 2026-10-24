@@ -66,27 +66,7 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
-    var necronDragStartTick: Int = 3175
-
-    @ConfigValue
-    @JvmField
-    var necronDragEndTick: Int = 3225
-
-    @ConfigValue
-    @JvmField
-    var necronDropLeadTicks: Int = 20
-
-    @ConfigValue
-    @JvmField
-    var necronDropOffsetX: Int = 0
-
-    @ConfigValue
-    @JvmField
-    var necronDropOffsetZ: Int = 0
-
-    @ConfigValue
-    @JvmField
-    var necronDropColor: Int = 0xff55ffff.toInt()
+    var necronDropColor: Int = 0xffff0000.toInt()
 
     @ConfigValue
     @JvmField
