@@ -28,7 +28,7 @@ object NecronDropPredict {
     private var lastVx = 0.0; private var lastVy = 0.0; private var lastVz = 0.0
     private var logged = false
 
-    private fun active() = Floor7.enableNecronDropPredict && Location.inDungeon() && Phase.isInFloor7() && Phase.getPhase() == 8
+    private fun active() = Floor7.enableNecronDropPredict && Location.inDungeon() && Phase.isInFloor7() && Phase.getPhase() in 8..9
 
     @JvmStatic
     fun init() {
@@ -55,7 +55,7 @@ object NecronDropPredict {
         }
         lastY = y; lastX = p.x; lastZ = p.z
         lastVx = p.deltaMovement.x; lastVy = p.deltaMovement.y; lastVz = p.deltaMovement.z
-        if (!dragging) return
+        if (!dragging || dragTicks > DRAG_TICKS + 40) return
         val color = Floor7.necronDropColor
         val s = LANDING
         RenderUtils.gizmoBox(AABB(s.x - 0.3, s.y, s.z - 0.3, s.x + 0.3, s.y + 1.8, s.z + 0.3), color and 0x40FFFFFF, color, true)
