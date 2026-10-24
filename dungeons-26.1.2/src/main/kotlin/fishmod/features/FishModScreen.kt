@@ -1558,12 +1558,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(InputSetting("Title", "", { TerminalTracker.title }, { v -> TerminalTracker.title = v }))
             f.sub.add(SliderIntSetting("Background Opacity", "", TerminalTracker::bgOpacity, 0, 100, 5))
             f.sub.add(ColorPickerSetting("Background", "", TerminalTracker::bgColor))
-            f.sub.add(ColorPickerSetting("Terminal", "", TerminalTracker::termColor))
-            f.sub.add(ColorPickerSetting("Device", "", TerminalTracker::deviceColor))
-            f.sub.add(ColorPickerSetting("Lever", "", TerminalTracker::leverColor))
-            f.sub.add(ColorPickerSetting("Gate", "", TerminalTracker::gateColor))
+            f.sub.add(ColorPickerSetting("Done", "", TerminalTracker::doneColor))
+            f.sub.add(ColorPickerSetting("Pending", "", TerminalTracker::pendingColor))
+            f.sub.add(ColorPickerSetting("Header", "", TerminalTracker::headerColor))
             f.sub.add(ColorPickerSetting("Player Name", "", TerminalTracker::nameColor))
-            f.sub.add(ColorPickerSetting("Missing", "", TerminalTracker::missingColor))
             floor7.features.add(f)
         }
         run {

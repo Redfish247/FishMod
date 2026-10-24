@@ -14,15 +14,34 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.phys.Vec3
 
 object TerminalTracker {
-    private class Entry(val kind: String, val player: String, val pos: Vec3?, val label: String)
+    private class Slot(val label: String, val pos: Vec3?) {
+        var player = ""
+        var doneAt = -1L
+        val done get() = doneAt >= 0
+    }
 
-    // section -> (label, position); empty until Eli captures coordinates with "Log Positions"
-    private val KNOWN: Map<Int, List<Pair<String, Vec3>>> = emptyMap()
+    private fun t(n: Int, x: Double, y: Double, z: Double) = Slot("T$n", Vec3(x, y, z))
+    private fun d(n: Int, x: Double, y: Double, z: Double) = Slot("D$n", Vec3(x, y, z))
+    private fun l(n: Int, x: Double, y: Double, z: Double) = Slot("L$n", Vec3(x, y, z))
+
+    // Layout per section, positions = player spot at completion; S3 coords unknown (order fallback)
+    private fun layout(section: Int): MutableList<Slot> = when (section) {
+        1 -> mutableListOf(t(1, 109.9, 113.0, 73.4), t(2, 109.5, 119.0, 79.5), t(3, 91.9, 112.0, 92.4), t(4, 91.8, 122.0, 101.3),
+            d(1, 108.8, 120.0, 93.9), l(1, 95.5, 123.0, 114.5), l(2, 105.3, 124.6, 113.3))
+        2 -> mutableListOf(t(1, 68.6, 109.0, 124.9), t(2, 59.3, 120.0, 124.6), t(3, 46.3, 109.0, 122.3), t(4, 40.2, 109.0, 124.2),
+            t(5, 39.5, 109.0, 140.6), d(1, 61.1, 132.0, 140.1), l(1, 28.3, 123.1, 128.1), l(2, 23.5, 132.0, 138.5))
+        3 -> mutableListOf(Slot("T1", null), Slot("T2", null), Slot("T3", null), Slot("T4", null),
+            Slot("D1", null), Slot("L1", null), Slot("L2", null))
+        else -> mutableListOf(t(1, 41.6, 109.0, 32.2), t(2, 44.9, 121.0, 31.7), t(3, 67.2, 109.0, 31.8), t(4, 71.8, 115.0, 45.9),
+            l(1, 86.5, 128.3, 45.5), l(2, 84.8, 120.1, 35.3))
+    }
+
     private const val SNAP_DIST = 12.0
+    private const val MAX_SECTION = 4
 
-    private val entries = HashMap<Int, MutableList<Entry>>()
-    private val totals = HashMap<Int, Int>()
-    private val gates = HashSet<Int>()
+    private val slots = HashMap<Int, MutableList<Slot>>()
+    private val starts = HashMap<Int, Long>()
+    private val gates = HashMap<Int, Long>()
 
     @ConfigValue @JvmField var enabled: Boolean = false
     @ConfigValue @JvmField var showAllSections: Boolean = false
@@ -30,12 +49,10 @@ object TerminalTracker {
     @ConfigValue @JvmField var title: String = "Terminals"
     @ConfigValue @JvmField var bgOpacity: Int = 40
     @ConfigValue @JvmField var bgColor: Int = 0xFF000000.toInt()
-    @ConfigValue @JvmField var termColor: Int = 0xFF55FFFF.toInt()
-    @ConfigValue @JvmField var deviceColor: Int = 0xFFFF55FF.toInt()
-    @ConfigValue @JvmField var leverColor: Int = 0xFFFF5555.toInt()
-    @ConfigValue @JvmField var gateColor: Int = 0xFFAA00AA.toInt()
+    @ConfigValue @JvmField var doneColor: Int = 0xFF55FF55.toInt()
+    @ConfigValue @JvmField var pendingColor: Int = 0xFFFF5555.toInt()
     @ConfigValue @JvmField var nameColor: Int = 0xFFFFFFFF.toInt()
-    @ConfigValue @JvmField var missingColor: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var headerColor: Int = 0xFFFFFF55.toInt()
 
     @ConfigValue @JvmField
     var hud: HUDComponent = HUDComponent(
@@ -45,34 +62,47 @@ object TerminalTracker {
     @JvmStatic
     fun init() {
         Events.ON_LOCATION_CHANGE.register { _ -> clear(); false }
-        Events.ON_TERMINAL.register { name, _, objective, current, total ->
-            FishDiag.guard("TerminalTracker.1", "record $objective by $name") { record(name, objective, total) }
+        Events.ON_PHASE_CHANGE.register {
+            if (Phase.inTerminals() && 1 !in starts) starts[1] = System.currentTimeMillis()
+            false
+        }
+        Events.ON_SECTION_CHANGE.register {
+            val s = Section.getSection()
+            if (s in 2..MAX_SECTION) starts.putIfAbsent(s, System.currentTimeMillis())
+            false
+        }
+        Events.ON_TERMINAL.register { name, _, objective, _, _ ->
+            FishDiag.guard("TerminalTracker.1", "record $objective by $name") { record(name, objective) }
             false
         }
         Events.ON_GAME_MESSAGE.register { msg ->
             if (Phase.inTerminals() && msg.string == "The gate has been destroyed!") {
-                val s = (1..4).firstOrNull { it !in gates && it <= maxOf(Section.getSection(), 1) } ?: return@register false
-                gates.add(s)
+                val s = (1..3).firstOrNull { it !in gates && it <= maxOf(Section.getSection(), 1) }
+                if (s != null) gates[s] = System.currentTimeMillis()
             }
             false
         }
     }
 
-    private fun clear() { entries.clear(); totals.clear(); gates.clear() }
+    private fun clear() { slots.clear(); starts.clear(); gates.clear() }
 
-    private fun record(name: String, objective: String, total: Int) {
+    private fun record(name: String, objective: String) {
         val section = Section.getSection()
-        if (section !in 1..4) return
-        val mc = Minecraft.getInstance()
-        val pos = mc.level?.players()?.firstOrNull { it.gameProfile.name == name }?.position()
-        val list = entries.getOrPut(section) { mutableListOf() }
-        val nth = list.count { it.kind == objective } + 1
-        val snapped = pos?.let { p -> KNOWN[section]?.minByOrNull { it.second.distanceTo(p) }?.takeIf { it.second.distanceTo(p) <= SNAP_DIST }?.first }
-        list.add(Entry(objective, name, pos, snapped ?: "#$nth"))
-        totals[section] = total
+        if (section !in 1..MAX_SECTION) return
+        val prefix = when (objective) { "terminal" -> "T"; "device" -> "D"; else -> "L" }
+        val now = System.currentTimeMillis()
+        starts.putIfAbsent(section, now)
+        val pos = Minecraft.getInstance().level?.players()?.firstOrNull { it.gameProfile.name == name }?.position()
+        val list = slots.getOrPut(section) { layout(section) }
+        val free = list.filter { !it.done && it.label.startsWith(prefix) }
+        val slot = pos?.let { p -> free.filter { it.pos != null }.minByOrNull { it.pos!!.distanceTo(p) }?.takeIf { it.pos!!.distanceTo(p) <= SNAP_DIST } }
+            ?: free.firstOrNull()
+            ?: Slot("$prefix${list.count { it.label.startsWith(prefix) } + 1}", null).also { list.add(it) }
+        slot.player = name
+        slot.doneAt = now
         if (logPositions) {
             val p = pos?.let { "%.1f, %.1f, %.1f".format(it.x, it.y, it.z) } ?: "unknown"
-            val line = "[TermTracker] S$section $objective #$nth by $name at $p"
+            val line = "[TermTracker] S$section $objective ${slot.label} by $name at $p"
             fishmod.utils.debug.Debug.LOGGER.info(line)
             Misc.addChatMessage(Component.literal("§7$line"))
         }
@@ -86,43 +116,42 @@ object TerminalTracker {
         try { renderInner(component, context) } catch (e: Exception) { FishDiag.fail("TerminalTracker.2", "terminal tracker render threw", e) }
     }
 
-    private fun kindColor(kind: String): Int = when (kind) {
-        "terminal" -> termColor
-        "device" -> deviceColor
-        else -> leverColor
-    }
+    private class Line(val text: String, val color: Int, val indent: Int = 0, val player: String = "", val time: String = "")
 
-    private fun kindName(kind: String): String = when (kind) {
-        "terminal" -> "Term"
-        "device" -> "Dev"
-        else -> "Lever"
-    }
-
-    private class Line(val text: String, val color: Int, val indent: Int = 0, val player: String = "")
+    private fun secs(from: Long, to: Long) = "%.1fs".format((to - from) / 1000.0)
 
     private fun renderInner(component: HUDComponent, context: GuiGraphicsExtractor) {
         val font = Minecraft.getInstance().font ?: return
-        val cur = Section.getSection().coerceIn(1, 4)
+        val cur = Section.getSection().coerceIn(1, MAX_SECTION)
         val lines = ArrayList<Line>()
-        lines.add(Line(title, nameColor))
+        lines.add(Line(title, headerColor))
         for (s in (if (showAllSections) (1..cur).toList() else listOf(cur))) {
-            val list = entries[s].orEmpty()
-            val total = totals[s] ?: Section.totalFor(s)
-            lines.add(Line("S$s (${list.size}/$total)", nameColor))
-            for (e in list) lines.add(Line("${kindName(e.kind)} ${e.label}", kindColor(e.kind), 4, e.player))
-            if (list.size < total) lines.add(Line("Missing ${total - list.size}", missingColor, 4))
-            val gate = s in gates
-            lines.add(Line(if (gate) "Gate done" else "Gate pending", if (gate) gateColor else missingColor, 4))
+            val list = slots[s] ?: layout(s)
+            val start = starts[s] ?: System.currentTimeMillis()
+            lines.add(Line("S$s (${list.count { it.done }}/${list.size})", headerColor))
+            for (sl in list) {
+                lines.add(if (sl.done) Line(sl.label, doneColor, 4, sl.player, secs(start, sl.doneAt)) else Line(sl.label, pendingColor, 4))
+            }
+            if (s <= 3) {
+                val g = gates[s]
+                lines.add(if (g != null) Line("Gate", doneColor, 4, "", secs(start, g)) else Line("Gate", pendingColor, 4))
+            }
         }
         val rowH = font.lineHeight + 1
         val x = component.scaledX
         val y0 = component.scaledY
         val alpha = (bgOpacity.coerceIn(0, 100) * 255 / 100) shl 24
         context.fill(x - 2, y0 - 2, x + component.width, y0 + lines.size * rowH + 1, alpha or (bgColor and 0xFFFFFF))
-        lines.forEachIndexed { i, l ->
+        lines.forEachIndexed { i, ln ->
             val y = y0 + i * rowH
-            context.text(font, l.text, x + l.indent, y, l.color, true)
-            if (l.player.isNotEmpty()) context.text(font, l.player, x + l.indent + font.width(l.text + " "), y, nameColor, true)
+            var cx = x + ln.indent
+            context.text(font, ln.text, cx, y, ln.color, true)
+            cx += font.width(ln.text) + 4
+            if (ln.player.isNotEmpty()) {
+                context.text(font, ln.player, cx, y, nameColor, true)
+                cx += font.width(ln.player) + 4
+            }
+            if (ln.time.isNotEmpty()) context.text(font, ln.time, cx, y, ln.color, true)
         }
     }
 }
