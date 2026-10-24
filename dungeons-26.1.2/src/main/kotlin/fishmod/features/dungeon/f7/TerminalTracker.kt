@@ -37,6 +37,8 @@ object TerminalTracker {
             d(1, 63.5, 127.0, 35.5), l(1, 84.8, 120.1, 35.3), l(2, 86.5, 128.3, 45.5))
     }
 
+    private fun flat(a: Vec3, b: Vec3) = Math.hypot(a.x - b.x, a.z - b.z)
+
     private const val SNAP_DIST = 12.0
     private const val MAX_SECTION = 4
     private const val DETECT_DIST = 15.0
@@ -96,7 +98,7 @@ object TerminalTracker {
             var best = 0
             var bestD = DETECT_DIST
             for (s in 1..MAX_SECTION) for (sl in slots.getOrPut(s) { layout(s) }) {
-                val d = sl.pos?.distanceTo(pos) ?: continue
+                val d = sl.pos?.let { flat(it, pos) } ?: continue
                 if (d < bestD) { bestD = d; best = s }
             }
             if (best != 0) return best
@@ -114,7 +116,7 @@ object TerminalTracker {
         starts.putIfAbsent(section, now)
         val list = slots.getOrPut(section) { layout(section) }
         val free = list.filter { !it.done && it.label.startsWith(prefix) }
-        val slot = pos?.let { p -> free.filter { it.pos != null }.minByOrNull { it.pos!!.distanceTo(p) }?.takeIf { it.pos!!.distanceTo(p) <= SNAP_DIST } }
+        val slot = pos?.let { p -> free.filter { it.pos != null }.minByOrNull { flat(it.pos!!, p) }?.takeIf { flat(it.pos!!, p) <= SNAP_DIST } }
             ?: free.firstOrNull()
             ?: Slot("$prefix${list.count { it.label.startsWith(prefix) } + 1}", null).also { list.add(it) }
         slot.player = name
