@@ -15,6 +15,7 @@ import net.minecraft.world.phys.Vec3
 
 object TerminalTracker {
     private class Slot(val label: String, val pos: Vec3?) {
+        val shown = when (label[0]) { 'T' -> label.substring(1); 'D' -> "Dev"; else -> if (label == "L1") "LL" else if (label == "L2") "RL" else label }
         var player = ""
         var doneAt = -1L
         val done get() = doneAt >= 0
@@ -151,7 +152,7 @@ object TerminalTracker {
             val start = starts[s] ?: System.currentTimeMillis()
             lines.add(Line("S$s (${list.count { it.done }}/${list.size})", headerColor))
             for (sl in list) {
-                lines.add(if (sl.done) Line(sl.label, doneColor, 4, sl.player, secs(start, sl.doneAt)) else Line(sl.label, pendingColor, 4))
+                lines.add(if (sl.done) Line(sl.shown, doneColor, 4, sl.player, secs(start, sl.doneAt)) else Line(sl.shown, pendingColor, 4))
             }
             if (s <= 3) {
                 val g = gates[s]
