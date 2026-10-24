@@ -28,13 +28,13 @@ object TerminalTracker {
     // Layout per section, positions = player spot at completion
     private fun layout(section: Int): MutableList<Slot> = when (section) {
         1 -> mutableListOf(t(1, 109.9, 113.0, 73.4), t(2, 109.5, 119.0, 79.5), t(3, 91.9, 112.0, 92.4), t(4, 91.8, 122.0, 101.3),
-            d(1, 108.8, 120.0, 93.9), l(1, 95.5, 123.0, 114.5), l(2, 105.3, 124.6, 113.3))
+            d(1, 108.8, 120.0, 93.9), l(1, 105.3, 124.6, 113.3), l(2, 95.5, 123.0, 114.5))
         2 -> mutableListOf(t(1, 68.6, 109.0, 124.9), t(2, 59.3, 120.0, 124.6), t(3, 46.3, 109.0, 122.3), t(4, 40.2, 109.0, 124.2),
-            t(5, 39.5, 109.0, 140.6), d(1, 61.1, 132.0, 140.1), l(1, 28.3, 123.1, 128.1), l(2, 23.5, 132.0, 138.5))
+            t(5, 39.5, 109.0, 140.6), d(1, 61.1, 132.0, 140.1), l(1, 23.5, 132.0, 138.5), l(2, 28.3, 123.1, 128.1))
         3 -> mutableListOf(t(1, 0.6, 109.0, 77.9), t(2, 0.4, 119.0, 93.1), t(3, 1.0, 109.0, 112.3), t(4, 15.5, 123.0, 94.5),
             d(1, -0.4, 120.0, 77.8), l(1, 5.0, 124.0, 55.9), l(2, 11.9, 121.6, 55.6))
         else -> mutableListOf(t(1, 41.6, 109.0, 32.2), t(2, 44.9, 121.0, 31.7), t(3, 67.2, 109.0, 31.8), t(4, 71.8, 115.0, 45.9),
-            d(1, 63.5, 127.0, 35.5), l(1, 86.5, 128.3, 45.5), l(2, 84.8, 120.1, 35.3))
+            d(1, 63.5, 127.0, 35.5), l(1, 84.8, 120.1, 35.3), l(2, 86.5, 128.3, 45.5))
     }
 
     private const val SNAP_DIST = 12.0
@@ -128,7 +128,7 @@ object TerminalTracker {
     }
 
     @JvmStatic
-    fun display(): Boolean = enabled && Location.inDungeon() && Phase.isInFloor7() && Phase.inTerminals()
+    fun display(): Boolean = enabled && Location.inDungeon() && Phase.isInFloor7() && (Phase.inTerminals() || (Phase.inP2() && Phase.stormDead()))
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
