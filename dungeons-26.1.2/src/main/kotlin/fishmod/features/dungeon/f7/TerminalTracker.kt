@@ -5,6 +5,7 @@ import fishmod.shaded.practicalconfig.manager.ConfigValue
 import fishmod.utils.Location
 import fishmod.utils.Misc
 import fishmod.utils.debug.FishDiag
+import fishmod.utils.dungeon.DungeonClass
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.dungeon.Section
 import fishmod.utils.events.Events
@@ -111,6 +112,10 @@ object TerminalTracker {
         val section = detectSection(pos)
         if (section !in 1..MAX_SECTION) return
         viewSection = section
+        if (section == 1 && objective == "device") {
+            val cls = DungeonClass.getClass(name)
+            if (cls != null && cls != DungeonClass.HEALER && cls != DungeonClass.TANK) return
+        }
         val prefix = when (objective) { "terminal" -> "T"; "device" -> "D"; else -> "L" }
         val now = System.currentTimeMillis()
         starts.putIfAbsent(section, now)
