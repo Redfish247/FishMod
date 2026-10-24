@@ -2464,8 +2464,16 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
 
+    // Edit HUD pill, right of the search bar
+    private fun editHudRect(): IntArray {
+        val bh = 24
+        val x = (right() - 190) / 2 + 190 + 8
+        val y = bottom() - BOTTOM_RESERVE + (BOTTOM_RESERVE - bh) / 2 - 8
+        return intArrayOf(x, y, sw(this.font, "Edit HUD", 0.85f) + 24, bh)
+    }
+
     private fun topBarButtonRects(): Array<IntArray> {
-        val labels = arrayOf("Edit HUD", "Credits", if (resetArmed) "Confirm?" else "Reset", "Save & Close")
+        val labels = arrayOf("Report", "Credits", if (resetArmed) "Confirm?" else "Reset", "Save & Close")
         val bh = 20
         val gap = 8
         val y = MARGIN - 2
@@ -2486,7 +2494,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val fw = sw(this.font, "Fish", ws)
         sst(ctx, this.font, "Mod", MARGIN + fw, MARGIN, ACCENT, ws)
 
-        val labels = arrayOf("Edit HUD", "Credits", if (resetArmed) "Confirm?" else "Reset", "Save & Close")
+        val labels = arrayOf("Report", "Credits", if (resetArmed) "Confirm?" else "Reset", "Save & Close")
         val filled = booleanArrayOf(false, false, false, true)
         val accents = intArrayOf(ACCENT, ACCENT, if (resetArmed) 0xFFE05A5A.toInt() else ACCENT, ACCENT)
         val rects = topBarButtonRects()
@@ -2535,6 +2543,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         } else {
             nvgTextFieldContent(field, bx + 30, by + 6, bw - 40, bh - 12)
         }
+        val e = editHudRect()
+        drawPillButton(ctx, e[0], e[1], e[2], e[3], "Edit HUD", false, ACCENT, mouseX >= e[0] && mouseX <= e[0] + e[2] && mouseY >= e[1] && mouseY <= e[1] + e[3])
     }
 
     private fun renderHint(ctx: GuiGraphicsExtractor) {
@@ -2906,8 +2916,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         searchField?.setFocused(searchFocused)
         if (searchFocused) return true
 
+        val e = editHudRect()
+        if (hovBtn(mx, my, e[0], e[1], e[2], e[3])) { Minecraft.getInstance().showScreen(FishHudEditor(this)); return true }
         val rects = topBarButtonRects()
-        if (hovBtn(mx, my, rects[0][0], rects[0][1], rects[0][2], rects[0][3])) { Minecraft.getInstance().showScreen(FishHudEditor(this)); return true }
+        if (hovBtn(mx, my, rects[0][0], rects[0][1], rects[0][2], rects[0][3])) { Minecraft.getInstance().showScreen(BoardReportScreen(this)); return true }
         if (hovBtn(mx, my, rects[1][0], rects[1][1], rects[1][2], rects[1][3])) { Minecraft.getInstance().showScreen(CreditsScreen(this)); return true }
         if (hovBtn(mx, my, rects[2][0], rects[2][1], rects[2][2], rects[2][3])) {
             if (resetArmed) { resetAllColumns(); resetArmed = false }

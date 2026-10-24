@@ -44,20 +44,20 @@ object BoardReport {
             })
 
     private fun manual(kind: String, text: String) {
-        if (!FishSettings.boardReports) {
-            Misc.addChatMessage(Component.literal("§c[FishMod] Board reports are off (General > Board Reports)."))
-            return
-        }
-        val now = System.currentTimeMillis()
-        if (now - lastManualAt < MANUAL_COOLDOWN_MS) {
-            Misc.addChatMessage(Component.literal("§c[FishMod] Wait ${(MANUAL_COOLDOWN_MS - (now - lastManualAt)) / 1000}s before sending another."))
-            return
-        }
-        lastManualAt = now
         val label = if (kind == "bug") "Bug report" else "Suggestion"
-        send(kind, text.take(80), text, null) { ok, msg ->
+        submit(kind, text.take(80), text) { ok, msg ->
             Misc.addChatMessage(Component.literal(if (ok) "§a[FishMod] $label sent, thanks!" else "§c[FishMod] $label not sent: $msg"))
         }
+    }
+
+    /** Player-written report; [done] runs off-thread with (ok, reason). */
+    fun submit(kind: String, title: String, text: String, done: (Boolean, String) -> Unit) {
+        if (!FishSettings.boardReports) return done(false, "board reports are off (General > Board Reports)")
+        if (title.isBlank() && text.isBlank()) return done(false, "write something first")
+        val now = System.currentTimeMillis()
+        if (now - lastManualAt < MANUAL_COOLDOWN_MS) return done(false, "wait ${(MANUAL_COOLDOWN_MS - (now - lastManualAt)) / 1000}s before sending another")
+        lastManualAt = now
+        send(kind, title.take(120), text, null, done)
     }
 
     /** Called by FishDiag on the first hit of a code with a throwable; deduped and rate limited. */
