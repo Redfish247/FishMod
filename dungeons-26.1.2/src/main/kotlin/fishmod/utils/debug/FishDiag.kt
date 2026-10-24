@@ -83,7 +83,7 @@ object FishDiag {
             else Debug.LOGGER.warn("[FishDiag {}] {}", code, message)
             writer.execute { appendToFile(entry) }
             if (n == 1) notifyChat(code)
-            if (n == 1 && t != null) BoardReport.auto(code, message, t)
+            if (n == 1) BoardReport.auto(code, message, t)
         } catch (_: Throwable) {
         }
     }

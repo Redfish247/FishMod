@@ -168,8 +168,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         run {
             val f = Feature("Board Reports", FishSettings::boardReports)
             f.sub.add(SubcategoryHeader("/fm bug <text> and /fm suggest <text> send to the test board. No name, IP or token is sent."))
-            f.sub.add(ToggleSetting("Auto-Report Errors", "Send each new kind of mod error once (version, area, stack trace)", FishSettings::boardAutoReport))
-            f.sub.add(SliderIntSetting("Auto Reports Per Hour", "", FishSettings::boardAutoPerHour, 1, 20).gatedBy { FishSettings.boardAutoReport })
+            f.sub.add(ToggleSetting("Auto-Report Errors", "Send each new kind of \"Something didn't work right\" error once (version, area, details)", FishSettings::boardAutoSend))
+            f.sub.add(SliderIntSetting("Auto Reports Per Hour", "", FishSettings::boardAutoPerHour, 1, 20).gatedBy { FishSettings.boardAutoSend })
             general.features.add(f)
         }
         run {

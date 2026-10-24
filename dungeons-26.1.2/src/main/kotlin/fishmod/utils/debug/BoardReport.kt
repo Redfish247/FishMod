@@ -60,11 +60,11 @@ object BoardReport {
         send(kind, title.take(120), text, null, done)
     }
 
-    /** Called by FishDiag on the first hit of a code with a throwable; deduped and rate limited. */
+    /** Called by FishDiag on the first hit of each code; deduped and rate limited. */
     @JvmStatic
-    fun auto(code: String, message: String, t: Throwable) {
+    fun auto(code: String, message: String, t: Throwable?) {
         try {
-            if (!FishSettings.boardReports || !FishSettings.boardAutoReport) return
+            if (!FishSettings.boardReports || !FishSettings.boardAutoSend) return
             val key = dedupKey(code, t)
             loadSent()
             if (key in sentKeys) return
@@ -75,17 +75,19 @@ object BoardReport {
                 autoTimes.addLast(now)
             }
             sentKeys.add(key)
-            val text = "$message\n${t.javaClass.name}: ${scrub(t.message ?: "")}\n" +
+            val text = if (t == null) message else "$message\n${t.javaClass.name}: ${scrub(t.message ?: "")}\n" +
                 t.stackTrace.take(8).joinToString("\n") { "  at $it" }
-            send("auto", "[$code] ${t.javaClass.simpleName}: $message".take(120), text, key) { ok, _ ->
+            val title = if (t == null) "[$code] $message" else "[$code] ${t.javaClass.simpleName}: $message"
+            send("auto", title.take(120), text, key) { ok, _ ->
                 if (ok) saveSent() else sentKeys.remove(key)
             }
         } catch (_: Throwable) {
         }
     }
 
-    // Exception type + first FishMod frame (no line number, so it survives version bumps).
-    private fun dedupKey(code: String, t: Throwable): String {
+    // Code + exception type + first FishMod frame (no line number, so it survives version bumps).
+    private fun dedupKey(code: String, t: Throwable?): String {
+        if (t == null) return code
         val frame = t.stackTrace.firstOrNull { it.className.startsWith("fishmod.") }
         return "$code|${t.javaClass.name}|${frame?.let { it.className + "." + it.methodName } ?: "?"}"
     }

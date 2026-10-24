@@ -49,7 +49,7 @@ object FishSettings {
     @ConfigValue @JvmField var debugReports: Boolean = false
     @ConfigValue @JvmField var debugChatNotices: Boolean = true
     @ConfigValue @JvmField var boardReports: Boolean = true
-    @ConfigValue @JvmField var boardAutoReport: Boolean = false
+    @ConfigValue @JvmField var boardAutoSend: Boolean = true
     @ConfigValue @JvmField var boardAutoPerHour: Int = 5
     @ConfigValue @JvmField var guiScaleMain: Int = 100
     @ConfigValue @JvmField var guiScaleChatCommands: Int = 100
