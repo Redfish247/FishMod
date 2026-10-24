@@ -24,6 +24,9 @@ object NecronDropPredict {
     private var dragging = false
     private var dragTicks = 0
     private var lastY = Double.NaN
+    private var lastX = 0.0; private var lastZ = 0.0
+    private var lastVx = 0.0; private var lastVy = 0.0; private var lastVz = 0.0
+    private var logged = false
 
     private fun active() = Floor7.enableNecronDropPredict && Location.inDungeon() && Phase.isInFloor7() && Phase.getPhase() == 8
 
@@ -34,15 +37,24 @@ object NecronDropPredict {
             false
         }
         RenderingEvents.GIZMO.register { _ ->
-            if (!active()) { dragging = false; dragTicks = 0; lastY = Double.NaN; return@register }
+            if (!active()) { dragging = false; dragTicks = 0; lastY = Double.NaN; logged = false; return@register }
             try { render() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.1", "necron drop predict render threw", e) }
         }
     }
 
     private fun render() {
-        val y = Minecraft.getInstance().player?.y ?: return
-        if (!dragging && !lastY.isNaN() && lastY - y > DROP_Y) { dragging = true; dragTicks = 0 }
-        lastY = y
+        val p = Minecraft.getInstance().player ?: return
+        val y = p.y
+        if (!dragging && !lastY.isNaN() && lastY - y > DROP_Y) {
+            dragging = true; dragTicks = 0
+            fishmod.utils.debug.Debug.LOGGER.info("[NecronDrop] start: pre pos=%.2f,%.2f,%.2f vel=%.3f,%.3f,%.3f now=%.2f,%.2f,%.2f".format(lastX, lastY, lastZ, lastVx, lastVy, lastVz, p.x, p.y, p.z))
+        }
+        if (dragging && dragTicks == DRAG_TICKS && !logged) {
+            logged = true
+            fishmod.utils.debug.Debug.LOGGER.info("[NecronDrop] end (50 ticks): pos=%.2f,%.2f,%.2f".format(p.x, p.y, p.z))
+        }
+        lastY = y; lastX = p.x; lastZ = p.z
+        lastVx = p.deltaMovement.x; lastVy = p.deltaMovement.y; lastVz = p.deltaMovement.z
         if (!dragging) return
         val color = Floor7.necronDropColor
         val s = LANDING
