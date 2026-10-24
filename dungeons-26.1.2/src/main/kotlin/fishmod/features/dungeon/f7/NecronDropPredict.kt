@@ -76,8 +76,11 @@ object NecronDropPredict {
         val k = DRAG_DZ / dz
         val ex = s.x + dx * k
         val ez = s.z + dz * k
-        val hit = level.clip(ClipContext(Vec3(ex, 90.0, ez), Vec3(ex, 40.0, ez), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p))
-        val ey = if (hit.type == HitResult.Type.BLOCK) hit.location.y else 64.0
+        // The platform floor is uneven (64.06 to 65.0); take the highest top within the box footprint.
+        val ey = listOf(-0.3, 0.0, 0.3).flatMap { ox -> listOf(-0.3, 0.0, 0.3).mapNotNull { oz ->
+            val h = level.clip(ClipContext(Vec3(ex + ox, 90.0, ez + oz), Vec3(ex + ox, 40.0, ez + oz), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p))
+            if (h.type == HitResult.Type.BLOCK) h.location.y else null
+        } }.maxOrNull() ?: 64.5
         landing = Vec3(ex, ey, ez)
         dragTicks = phaseTicks - startTick
         Debug.LOGGER.info("[NecronDrop] start=%.2f,%.2f,%.2f dir=%.2f,%.2f predicted=%.2f,%.2f,%.2f".format(s.x, s.y, s.z, dx, dz, ex, ey, ez))
