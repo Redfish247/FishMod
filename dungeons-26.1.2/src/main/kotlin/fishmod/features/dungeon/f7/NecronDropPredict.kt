@@ -15,10 +15,12 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.Vec3
 
-// Marks the predicted landing spot: your position pushed along your velocity by a tunable lead, dropped to the floor.
+// Red box at the predicted landing: position plus velocity over the ticks left in the drag, dropped to the floor.
 object NecronDropPredict {
 
     private const val WARN_TICKS = 100
+    private const val DRAG_START = 3175
+    private const val DRAG_END = 3225
     private val timer = TickTimer()
 
     private fun active() = Floor7.enableNecronDropPredict && Location.inDungeon() && Phase.isInFloor7() && Phase.getPhase() == 8
@@ -30,7 +32,7 @@ object NecronDropPredict {
             resetOn = { Location.inDungeon() }
         )
         RenderingEvents.GIZMO.register { _ ->
-            if (!active() || timer.tick !in (Floor7.necronDragStartTick - WARN_TICKS)..Floor7.necronDragEndTick) return@register
+            if (!active() || timer.tick !in DRAG_START..DRAG_END) return@register
             try { render() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.1", "necron drop predict render threw", e) }
         }
     }
@@ -41,9 +43,9 @@ object NecronDropPredict {
         val level = mc.level ?: return
         val pos = player.getPosition(mc.deltaTracker.getGameTimeDeltaPartialTick(true))
         val v = player.deltaMovement
-        val lead = Floor7.necronDropLeadTicks
-        val x = pos.x + v.x * lead + Floor7.necronDropOffsetX
-        val z = pos.z + v.z * lead + Floor7.necronDropOffsetZ
+        val lead = (DRAG_END - timer.tick).coerceAtLeast(0)
+        val x = pos.x + v.x * lead
+        val z = pos.z + v.z * lead
         val hit = level.clip(ClipContext(Vec3(x, pos.y, z), Vec3(x, pos.y - 80.0, z), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player))
         if (hit.type != HitResult.Type.BLOCK) return
         val y = hit.location.y
@@ -52,14 +54,14 @@ object NecronDropPredict {
     }
 
     @JvmStatic
-    fun display(): Boolean = active() && Floor7.enableTickTimers && timer.tick in (Floor7.necronDragStartTick - WARN_TICKS)..Floor7.necronDragEndTick
+    fun display(): Boolean = active() && Floor7.enableTickTimers && timer.tick in (DRAG_START - WARN_TICKS)..DRAG_END
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
         FishDiag.guard("NecronDropPredict.2", "necron drag timer render threw") {
             val t = timer.tick
-            val label = if (t < Floor7.necronDragStartTick) "Drag in" else "Dragged"
-            val left = (if (t < Floor7.necronDragStartTick) Floor7.necronDragStartTick - t else Floor7.necronDragEndTick - t) * Constants.TICK_DURATION
+            val label = if (t < DRAG_START) "Drag in" else "Dragged"
+            val left = (if (t < DRAG_START) DRAG_START - t else DRAG_END - t) * Constants.TICK_DURATION
             RenderUtils.drawPrefixedText(component, context, label, "%s (t=%s)".format(Constants.DECIMAL_FORMAT.format(left), Constants.DECIMAL_FORMAT.format(t * Constants.TICK_DURATION)))
         }
     }
