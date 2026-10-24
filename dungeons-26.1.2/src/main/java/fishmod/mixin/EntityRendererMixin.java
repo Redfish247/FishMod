@@ -138,6 +138,11 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
                 cir.setReturnValue(false);
                 return;
             }
+            if (entity instanceof Player && fishmod.features.dungeon.LeapAnnounce.hidePlayersNow()
+                    && entity != Minecraft.getInstance().player) {
+                cir.setReturnValue(false);
+                return;
+            }
             if (!Visual.renderOptimizer) return;
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null || entity == mc.player) return;

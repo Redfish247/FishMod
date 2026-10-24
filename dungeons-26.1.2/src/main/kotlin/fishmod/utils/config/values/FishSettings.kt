@@ -500,6 +500,8 @@ object FishSettings {
     @ConfigValue @JvmField var leapMenuClassOrder: String = "MAGE,BERSERK,ARCHER,HEALER,TANK"
     @ConfigValue @JvmField var leapMenuMap: Boolean = false
     @ConfigValue @JvmField var leapMenuMapAfterBR: Boolean = false
+    @ConfigValue @JvmField var leapHidePlayers: Boolean = false
+    @ConfigValue @JvmField var leapHidePlayersSeconds: Double = 2.0
 
     @ConfigValue @JvmField var itemTooltipPrices: Boolean = false
     @ConfigValue @JvmField var recipeViewer: Boolean = true

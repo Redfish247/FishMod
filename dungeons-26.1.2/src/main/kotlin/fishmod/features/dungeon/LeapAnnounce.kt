@@ -16,8 +16,18 @@ object LeapAnnounce {
 
     private val TARGET: Pattern = Pattern.compile("You have teleported to (.+?)!")
 
+    // Hide-players-after-leap window end (ms)
+    @Volatile private var hideUntil = 0L
+
+    @JvmStatic
+    fun hidePlayersNow(): Boolean = FishSettings.leapHidePlayers && System.currentTimeMillis() < hideUntil
+
     @JvmStatic
     fun init() {
+        Events.ON_LEAP.register { _ ->
+            if (FishSettings.leapHidePlayers) hideUntil = System.currentTimeMillis() + (FishSettings.leapHidePlayersSeconds * 1000).toLong()
+            false
+        }
         Events.ON_LEAP.register { message ->
             if (!Dungeons.enableLeapMessages) return@register false
             val s = message.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
