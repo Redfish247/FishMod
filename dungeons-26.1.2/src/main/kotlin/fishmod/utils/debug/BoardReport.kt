@@ -25,8 +25,8 @@ import java.util.concurrent.ConcurrentHashMap
  */
 object BoardReport {
 
-    // Proposed worker route (tools/board-inbox); 404 until Eli deploys it.
-    private const val ENDPOINT = "https://board.fishmod.dev/board/inbox"
+    // fishmod.dev worker → /incomming-features review queue; 404 until that route is deployed.
+    private const val ENDPOINT = "https://fishmod.dev/api/report"
     private const val MANUAL_COOLDOWN_MS = 30_000L
     private const val HOUR_MS = 3_600_000L
 
@@ -104,6 +104,7 @@ object BoardReport {
         val req = HttpRequest.newBuilder(URI.create(ENDPOINT))
             .timeout(Duration.ofSeconds(15))
             .header("content-type", "application/json")
+            .header("X-FishMod-Token", fishmod.utils.HypixelApi.MOD_TOKEN)
             .header("user-agent", "FishModDungeons/${modVersion()}")
             .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
             .build()
@@ -111,7 +112,8 @@ object BoardReport {
             when {
                 e != null -> done(false, "couldn't reach the board")
                 r.statusCode() == 429 -> done(false, "too many reports, try later")
-                r.statusCode() == 404 -> done(false, "board inbox isn't live yet")
+                r.statusCode() == 404 -> done(false, "report inbox isn't live yet")
+                r.statusCode() == 413 -> done(false, "report too large")
                 r.statusCode() !in 200..299 -> done(false, "HTTP ${r.statusCode()}")
                 else -> done(isOk(r.body()), "board said no")
             }
