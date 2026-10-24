@@ -948,6 +948,10 @@ object FishSettings {
     @ConfigValue @JvmField var slayerCocoonAlertEnabled: Boolean = false
     @ConfigValue @JvmField var slayerCocoonAlertDurationMs: Int = 2000
 
+    @ConfigValue @JvmField var slayerRngTitleEnabled: Boolean = false
+    @ConfigValue @JvmField var slayerRngTitleDurationMs: Int = 2500
+    @ConfigValue @JvmField var slayerRngTitleColor: Int = 0xFFFF55FF.toInt()
+
     @ConfigValue @JvmField var slayerSpawnHudEnabled: Boolean = false
     @ConfigValue @JvmField var slayerSpawnHudX: Int = 10
     @ConfigValue @JvmField var slayerSpawnHudY: Int = 140

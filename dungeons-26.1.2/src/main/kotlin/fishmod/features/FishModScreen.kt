@@ -1999,6 +1999,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             cocoon.sub.add(SliderIntSetting("Alert Duration (ms)", "", FishSettings::slayerCocoonAlertDurationMs, 250, 8000, 250))
             slayer.features.add(cocoon)
 
+            val rngTitle = Feature("RNG Meter Title", FishSettings::slayerRngTitleEnabled)
+            rngTitle.sub.add(SubcategoryHeader("Shows the \"RNG Meter - ...\" chat line as an on-screen title"))
+            rngTitle.sub.add(ColorPickerSetting("Title Colour", "", { FishSettings.slayerRngTitleColor }, { v -> FishSettings.slayerRngTitleColor = v }, 0xFFFF55FF.toInt()))
+            rngTitle.sub.add(SliderIntSetting("Duration (ms)", "", FishSettings::slayerRngTitleDurationMs, 250, 8000, 250))
+            slayer.features.add(rngTitle)
+
             val spawnHud = Feature("Spawn Progress HUD", FishSettings::slayerSpawnHudEnabled)
             spawnHud.sub.add(SubcategoryHeader("Live spawn-bar %  ·  drag position with Edit HUD"))
             spawnHud.sub.add(SliderDoubleSetting("Scale", "", FishSettings::slayerSpawnHudScale, 0.5, 3.0))
