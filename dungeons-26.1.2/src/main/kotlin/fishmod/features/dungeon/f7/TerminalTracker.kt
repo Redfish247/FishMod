@@ -19,6 +19,7 @@ object TerminalTracker {
         val shown = when (label[0]) { 'T' -> label.substring(1); 'D' -> "Dev"; else -> if (label == "L1") "LL" else if (label == "L2") "RL" else label }
         var player = ""
         var doneAt = -1L
+        var pre = false
         val done get() = doneAt >= 0
     }
 
@@ -112,9 +113,11 @@ object TerminalTracker {
         val section = detectSection(pos)
         if (section !in 1..MAX_SECTION) return
         viewSection = section
-        if (section == 1 && objective == "device") {
+        if (objective == "device") {
             val cls = DungeonClass.getClass(name)
-            if (cls != null && cls != DungeonClass.HEALER && cls != DungeonClass.TANK) return
+            if (cls == DungeonClass.BERSERK && section <= 2) preCompleteS4Device(name)
+            if (section == 1 && cls != null && cls != DungeonClass.HEALER && cls != DungeonClass.TANK) return
+            if (section == 4 && slots.getOrPut(4) { layout(4) }.any { it.label == "D1" && it.pre }) return
         }
         val prefix = when (objective) { "terminal" -> "T"; "device" -> "D"; else -> "L" }
         val now = System.currentTimeMillis()
@@ -132,6 +135,14 @@ object TerminalTracker {
             fishmod.utils.debug.Debug.LOGGER.info(line)
             Misc.addChatMessage(Component.literal("§7$line"))
         }
+    }
+
+    // Berserk's S1/S2 device counts as the S4 device
+    private fun preCompleteS4Device(name: String) {
+        val dev = slots.getOrPut(4) { layout(4) }.firstOrNull { it.label == "D1" && !it.done } ?: return
+        dev.player = name
+        dev.doneAt = System.currentTimeMillis()
+        dev.pre = true
     }
 
     @JvmStatic
@@ -155,7 +166,7 @@ object TerminalTracker {
             val start = starts[s] ?: System.currentTimeMillis()
             lines.add(Line("S$s (${list.count { it.done }}/${list.size})", headerColor))
             for (sl in list) {
-                lines.add(if (sl.done) Line(sl.shown, doneColor, 4, sl.player, secs(start, sl.doneAt)) else Line(sl.shown, pendingColor, 4))
+                lines.add(if (sl.done) Line(sl.shown, doneColor, 4, sl.player, if (sl.pre) "pre" else secs(start, sl.doneAt)) else Line(sl.shown, pendingColor, 4))
             }
             if (s <= 3) {
                 val g = gates[s]
