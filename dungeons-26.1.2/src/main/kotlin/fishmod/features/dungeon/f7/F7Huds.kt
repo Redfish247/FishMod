@@ -58,6 +58,13 @@ object F7Huds {
 
     @JvmField
     @ConfigValue
+    var necronDragTimer: HUDComponent = HUDComponent(
+        10.0, 140.0, TICK_W, 10, 1f, "Necron Drag Timer",
+        { false }, NecronDropPredict::render, { Floor7.enableTickTimers && Floor7.enableNecronDropPredict }
+    )
+
+    @JvmField
+    @ConfigValue
     var lbReleaseTimer: HUDComponent = HUDComponent(
         10.0, 104.0, TICK_W, 10, 1f, "LB Release Timer",
         { false }, StormTickTimer::renderLbReleaseTimer, { Floor7.enableTickTimers && Floor7.enableLbReleaseTimer }
@@ -132,6 +139,7 @@ object F7Huds {
         CrystalSpawn.init()
         StormTickTimer.init()
         NecronLbTimer.init()
+        NecronDropPredict.init()
         PillarExplode.init()
         GoldorTickTimer.init()
         TermStartTimer.init()
@@ -157,6 +165,7 @@ object F7Huds {
         renderOne(ctx, TerminalTracker.hud, TerminalTracker.display(), TerminalTracker::render, 10, 230)
         renderOne(ctx, lbReleaseTimer, StormTickTimer.displayLbReleaseTimer(), StormTickTimer::renderLbReleaseTimer, 10, 166)
         renderOne(ctx, pyTimer, StormTickTimer.displayPyTimer(), StormTickTimer::renderPyTimer, 10, 178)
+        renderOne(ctx, necronDragTimer, NecronDropPredict.display(), NecronDropPredict::render, 10, 220)
         renderOne(ctx, necronLbTimer, NecronLbTimer.display(), NecronLbTimer::render, 10, 190)
         renderOne(ctx, crystalReminder, CrystalSpawn.displayNotification(), CrystalSpawn::renderNotification, 10, 40)
         renderOne(ctx, stormCrush, PillarExplode.display(), PillarExplode::render, 10, 28)

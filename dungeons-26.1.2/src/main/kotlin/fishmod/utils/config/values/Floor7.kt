@@ -66,6 +66,14 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
+    var necronDragStartTick: Int = 3175
+
+    @ConfigValue
+    @JvmField
+    var necronDragEndTick: Int = 3225
+
+    @ConfigValue
+    @JvmField
     var necronDropLeadTicks: Int = 20
 
     @ConfigValue
