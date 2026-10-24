@@ -49,9 +49,6 @@ object TerminalTracker {
     @ConfigValue @JvmField var enabled: Boolean = false
     @ConfigValue @JvmField var showAllSections: Boolean = false
     @ConfigValue @JvmField var logPositions: Boolean = false
-    @ConfigValue @JvmField var title: String = "Terminals"
-    @ConfigValue @JvmField var bgOpacity: Int = 40
-    @ConfigValue @JvmField var bgColor: Int = 0xFF000000.toInt()
     @ConfigValue @JvmField var doneColor: Int = 0xFF55FF55.toInt()
     @ConfigValue @JvmField var pendingColor: Int = 0xFFFF5555.toInt()
     @ConfigValue @JvmField var nameColor: Int = 0xFFFFFFFF.toInt()
@@ -146,7 +143,6 @@ object TerminalTracker {
         val font = Minecraft.getInstance().font ?: return
         val cur = (if (viewSection != 0) viewSection else Section.getSection()).coerceIn(1, MAX_SECTION)
         val lines = ArrayList<Line>()
-        lines.add(Line(title, headerColor))
         for (s in (if (showAllSections) (1..cur).toList() else listOf(cur))) {
             val list = slots[s] ?: layout(s)
             val start = starts[s] ?: System.currentTimeMillis()
@@ -162,8 +158,6 @@ object TerminalTracker {
         val rowH = font.lineHeight + 1
         val x = component.scaledX
         val y0 = component.scaledY
-        val alpha = (bgOpacity.coerceIn(0, 100) * 255 / 100) shl 24
-        context.fill(x - 2, y0 - 2, x + component.width, y0 + lines.size * rowH + 1, alpha or (bgColor and 0xFFFFFF))
         lines.forEachIndexed { i, ln ->
             val y = y0 + i * rowH
             var cx = x + ln.indent
