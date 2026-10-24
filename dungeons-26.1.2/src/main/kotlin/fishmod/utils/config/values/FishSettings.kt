@@ -29,6 +29,8 @@ object FishSettings {
 
     @ConfigValue @JvmField var fmColumnOrder: String = ""
     @ConfigValue @JvmField var fmFoldedColumns: String = ""
+    // sidebar folders: name|open|col,col;...
+    @ConfigValue @JvmField var fmSidebarFolders: String = ""
 
     @ConfigValue @JvmField var fmAnimations: Boolean = true
 
