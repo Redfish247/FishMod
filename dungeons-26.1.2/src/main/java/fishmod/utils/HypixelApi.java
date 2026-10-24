@@ -352,9 +352,10 @@ public class HypixelApi {
                 String k = cat.getKey();
                 if (k.equals("IS_UNLOCKED") || k.equals("IN_USE") || !cat.getValue().isJsonArray()) continue;
                 for (JsonElement se : cat.getValue().getAsJsonArray()) {
+                    if (!se.isJsonObject()) continue;
                     try {
                         JsonObject so = se.getAsJsonObject();
-                        if (!so.has("data")) continue;
+                        if (!so.has("data") || !so.get("data").isJsonPrimitive()) continue;
                         CompoundTag exa = decodeRawCompound(so.get("data").getAsString());
                         if (exa == null || !exa.contains("id")) continue;
                         CompoundTag tag = new CompoundTag();
@@ -1840,6 +1841,8 @@ public class HypixelApi {
     }
 
     private static fishmod.features.OverflowPetLevels.Rarity petRarity(String tier) {
+        // SPECIAL/VERY_SPECIAL/DIVINE pets level on the mythic curve
+        if ("SPECIAL".equals(tier) || "VERY_SPECIAL".equals(tier) || "DIVINE".equals(tier)) return fishmod.features.OverflowPetLevels.Rarity.MYTHIC;
         try { return fishmod.features.OverflowPetLevels.Rarity.valueOf(tier); }
         catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.93", "petRarity failed", e); return fishmod.features.OverflowPetLevels.Rarity.LEGENDARY; }
     }

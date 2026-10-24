@@ -107,7 +107,7 @@ object StorageCache {
         if (prev != null && prev.stacks.size == slots.size &&
             slots.indices.all { ItemStack.matches(slots[it].item, prev.stacks[it]) }
         ) return
-        pages[page.index] = NBTInventory(slots.map { it.item.copy() })
+        pages[page.index] = NBTInventory(slots.map { it.item.copy() }).also { it.encode() }
         known.add(page.index)
         dirty = true
     }

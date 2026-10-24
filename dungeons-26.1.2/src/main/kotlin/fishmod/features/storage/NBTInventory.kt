@@ -13,11 +13,14 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.Base64
 
-class NBTInventory(val stacks: List<ItemStack>) {
+class NBTInventory(val stacks: List<ItemStack>, private var encoded: String? = null) {
 
     val rows get() = (stacks.size + 8) / 9
 
-    fun encode(): String {
+    // Cached: holders go stale after a server switch rebuilds registries
+    fun encode(): String = encoded ?: encodeNow().also { encoded = it }
+
+    private fun encodeNow(): String {
         val ops = registryOps()
         val list = ListTag()
         for (s in stacks) {
@@ -48,7 +51,7 @@ class NBTInventory(val stacks: List<ItemStack>) {
                     parsed.error().ifPresent { err -> FishDiag.fail("NBTInventory.2", "failed to decode stored item $i: ${err.message()}") }
                     items.add(parsed.result().orElse(ItemStack.EMPTY))
                 }
-                NBTInventory(items)
+                NBTInventory(items, encoded)
             }
         }.onFailure { FishDiag.fail("NBTInventory.3", "failed to decode storage page (${encoded.length} chars)", it) }.getOrNull()
 
