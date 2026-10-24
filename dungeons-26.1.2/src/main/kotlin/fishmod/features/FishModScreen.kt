@@ -1522,6 +1522,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderIntSetting("Necron LB Ping (ms)", "Ends it this much earlier to offset latency", Floor7::necronLbPingMs, 0, 500).gatedBy { Floor7.enableNecronLbTimer })
             f.sub.add(ColorPickerSetting("Necron LB Color", "", Floor7::necronLbColor).gatedBy { Floor7.enableNecronLbTimer })
             f.sub.add(ToggleSetting("Necron Drop Prediction", "Marks where you land: position plus velocity times the lead, dropped to the floor (Necron phase)", Floor7::enableNecronDropPredict))
+            f.sub.add(SliderIntSetting("Drag Start (tick)", "Server ticks since Necron's phase began when the drag starts (158.75s = 3175)", Floor7::necronDragStartTick, 0, 6000).gatedBy { Floor7.enableNecronDropPredict })
+            f.sub.add(SliderIntSetting("Drag End (tick)", "Server ticks since Necron's phase began when the drag ends (161.25s = 3225)", Floor7::necronDragEndTick, 0, 6000).gatedBy { Floor7.enableNecronDropPredict })
             f.sub.add(SliderIntSetting("Drop Lead (ticks)", "How many ticks of current movement to project ahead", Floor7::necronDropLeadTicks, 0, 100).gatedBy { Floor7.enableNecronDropPredict })
             f.sub.add(SliderIntSetting("Drop Offset X", "Blocks added to the predicted X", Floor7::necronDropOffsetX, -20, 20).gatedBy { Floor7.enableNecronDropPredict })
             f.sub.add(SliderIntSetting("Drop Offset Z", "Blocks added to the predicted Z", Floor7::necronDropOffsetZ, -20, 20).gatedBy { Floor7.enableNecronDropPredict })
