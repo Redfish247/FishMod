@@ -229,7 +229,7 @@ public class Keybinds {
         }
     }
 
-    private static void syncKeybindBackup() {
+    public static void syncKeybindBackup() {
         boolean changed = false;
         for (Map.Entry<String, KeyMapping> e : TRACKED.entrySet()) {
             String cur = e.getValue().saveString();
