@@ -104,9 +104,10 @@ object Stopwatch {
 
     @JvmStatic
     fun init() {
-        toggleKey = key("Stopwatch: Start/Stop")
-        splitKey = key("Stopwatch: Split")
-        resetKey = key("Stopwatch: Reset")
+        // No ':' in names: options.txt splits on the first ':'
+        toggleKey = key("Stopwatch - Start/Stop")
+        splitKey = key("Stopwatch - Split")
+        resetKey = key("Stopwatch - Reset")
         fishmod.features.FishHudEditor.register(NAME, hud)
 
         ClientTickEvents.END_CLIENT_TICK.register { mc -> FishDiag.guard("Stopwatch.1", "stopwatch tick") { tick(mc) } }
