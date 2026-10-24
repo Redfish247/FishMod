@@ -638,6 +638,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { v -> FishSettings.leapMenuSort = sortByOptions.indexOf(v).coerceAtLeast(0) }))
             f.sub.add(InputSetting("Class Order", "Comma-separated: MAGE,BERSERK,ARCHER,HEALER,TANK",
                 { FishSettings.leapMenuClassOrder }, { v -> FishSettings.leapMenuClassOrder = v }).gatedBy { FishSettings.leapMenuSort == 0 })
+            f.sub.add(SubcategoryHeader("Hide Players"))
+            f.sub.add(ToggleSetting("Hide Players After Leap", "Hide other players for a moment after you leap", FishSettings::leapHidePlayers))
+            f.sub.add(SliderDoubleSetting("Duration", "Seconds", FishSettings::leapHidePlayersSeconds, 0.5, 5.0).gatedBy { FishSettings.leapHidePlayers })
             f.sub.add(SubcategoryHeader("Message"))
             f.sub.add(ToggleSetting("Leap Message", "", Dungeons::enableLeapMessages))
             f.sub.add(LabelSetting("{name} target  {class} class", "{c} class letter  ·  & = colours")
