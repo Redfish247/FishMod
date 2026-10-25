@@ -130,7 +130,7 @@ object StorageCache {
     private fun flush() { if (dirty) { save(); dirty = false } }
 
     private fun load(id: String) {
-        pages = TreeMap(); known = sortedSetOf()
+        pages = TreeMap(); known = sortedSetOf(); expectedRows.clear()
         val file = dir.resolve("$id.nbt")
         if (!Files.exists(file)) return
         try {

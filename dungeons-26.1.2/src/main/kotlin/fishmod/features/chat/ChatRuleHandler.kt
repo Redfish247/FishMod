@@ -82,6 +82,7 @@ object ChatRuleHandler {
             mc.player?.sendOverlayMessage(Component.literal(rule.actionBarMessage))
         }
         if (rule.titleMessage.isNotBlank()) {
+            if (activeTitles.size >= 16) activeTitles.removeAt(0)
             activeTitles.add(ActiveTitle(rule.titleMessage, System.currentTimeMillis() + maxOf(200L, rule.titleDurationMs)))
         }
         if (rule.soundEnabled) {

@@ -72,6 +72,7 @@ object CroesusLootDetector {
     }
 
     private fun onTick(mc: Minecraft) {
+        if (!FishSettings.lootTrackerEnabled) { runGuiOpenPrev = false; return }
         val title = if (mc.curScreen == null) "" else fishmod.utils.ScreenTitle.plain(mc.curScreen!!)
         val runGuiOpenNow = RUN_GUI_PATTERN.matcher(title).matches()
         if (runGuiOpenNow && !runGuiOpenPrev) {
