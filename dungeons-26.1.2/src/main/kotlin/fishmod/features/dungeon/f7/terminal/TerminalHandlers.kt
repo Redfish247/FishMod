@@ -185,12 +185,18 @@ class MelodyHandler : TerminalHandler(TerminalType.MELODY) {
         private set
 
     // Lane rows = rows with terracotta in col 7 (4 on live, 3 on alpha).
+    // Cached per item update; read per slot per frame by the solver render.
+    @Volatile private var laneCache = -1
     val laneRows: Int
-        get() = (1 until windowSize / 9).count { r ->
-            items[r * 9 + 7]?.let { !it.isEmpty && BuiltInRegistries.ITEM.getKey(it.item).path.endsWith("terracotta") } == true
-        }.takeIf { it > 0 } ?: (windowSize / 9 - 2).coerceIn(1, 4)
+        get() {
+            if (laneCache < 0) laneCache = (1 until windowSize / 9).count { r ->
+                items[r * 9 + 7]?.let { !it.isEmpty && BuiltInRegistries.ITEM.getKey(it.item).path.endsWith("terracotta") } == true
+            }.takeIf { it > 0 } ?: (windowSize / 9 - 2).coerceIn(1, 4)
+            return laneCache
+        }
 
     override fun handleSlotUpdate(slot: Int): Boolean {
+        laneCache = -1
         solution.clear()
         val greenPane = items.indexOfLast { it?.`is`(LIME_PANE) == true }.takeIf { it != -1 } ?: return true
         val magentaPane = items.indexOfFirst { it?.`is`(MAGENTA_PANE) == true }.takeIf { it != -1 } ?: return true
