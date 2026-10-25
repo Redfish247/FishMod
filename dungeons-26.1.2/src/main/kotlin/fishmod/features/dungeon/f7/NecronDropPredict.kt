@@ -17,10 +17,6 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.Vec3
 import kotlin.math.hypot
-import com.mojang.brigadier.builder.LiteralArgumentBuilder
-import net.fabricmc.fabric.api.client.command.v2.ClientCommands
-import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 
 // Necron's drag moves you in a straight line ~DRAG_DZ blocks in z (21 logged runs); the line is read off the first ticks of the drag.
 object NecronDropPredict {
@@ -38,45 +34,13 @@ object NecronDropPredict {
     private var landing: Vec3? = null
     private var dragTicks = 0
 
-    // Singleplayer test (/fm necrondrag): replays a logged drag by moving the player along it.
-    private var testTick = -1
-    private var testLinger = 0
-    private var testStart = Vec3.ZERO
-    private val TEST_END = Vec3(-9.06, 0.0, 61.65)
-    private val TEST_PROFILE = doubleArrayOf(0.0, 0.11, 0.26, 0.40, 0.53, 0.66, 0.78, 0.89, 0.98, 1.0)
-
-    @JvmStatic
-    fun command(): LiteralArgumentBuilder<FabricClientCommandSource> = ClientCommands.literal("necrondrag").executes {
-        val p = Minecraft.getInstance().player
-        if (p != null) { reset(); testStart = Vec3(p.x, p.y, p.z); testTick = 0 }
-        1
-    }
-
-    private fun testStep() {
-        val p = Minecraft.getInstance().player ?: return
-        val i = (testTick / 5).coerceAtMost(TEST_PROFILE.size - 2)
-        val f = TEST_PROFILE[i] + (TEST_PROFILE[i + 1] - TEST_PROFILE[i]) * ((testTick % 5) / 5.0)
-        p.setPos(testStart.x + TEST_END.x * f, testStart.y, testStart.z + TEST_END.z * f)
-        p.deltaMovement = Vec3.ZERO
-        testTick++
-        if (testTick > 45) {
-            testTick = -2; testLinger = 200
-            Debug.LOGGER.info("[NecronDrop] test end at=%.2f,%.2f,%.2f".format(p.x, p.y, p.z))
-        }
-    }
-
-    private fun active() = testTick != -1 || Floor7.enableNecronDropPredict && Location.inDungeon() && Phase.isInFloor7() && Phase.getPhase() in 8..9
+    private fun active() = Floor7.enableNecronDropPredict && Location.inDungeon() && Phase.isInFloor7() && Phase.getPhase() in 8..9
 
     private fun reset() { phaseTicks = 0; prev = null; start = null; landing = null; dragTicks = 0 }
 
     @JvmStatic
     fun init() {
-        ClientTickEvents.END_CLIENT_TICK.register {
-            if (testTick == -2 && --testLinger <= 0) { testTick = -1; reset() }
-            if (testTick >= 0) { try { testStep(); tick() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.4", "necron drop test threw", e) } }
-        }
         Events.ON_SERVER_TICK.register {
-            if (testTick >= 0) return@register false
             try { tick() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.3", "necron drop tick threw", e) }
             false
         }
