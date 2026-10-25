@@ -61,7 +61,7 @@ object InvincibilityTracker {
 
         Events.ON_GAME_MESSAGE.register { text ->
             if (Dungeons.displayInvincibilityTimer) {
-                val s = COLOR.replace(text.string, "").trim()
+                val s = COLOR.replace(text.string, "").replace(Regex("\\s+"), " ").trim()
                 val hit = Type.entries.firstOrNull { it.regex.matches(s) }
                 if (hit == null && (s.endsWith("saved your life!") || s.endsWith("saved you from certain death!"))) FishDiag.fail("InvincibilityTracker.1", "unrecognised invincibility proc line: '$s'")
                 hit?.let { t ->
