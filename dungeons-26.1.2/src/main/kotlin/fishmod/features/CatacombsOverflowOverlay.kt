@@ -14,7 +14,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.core.component.DataComponents
 import net.minecraft.network.chat.Component
 import net.minecraft.world.item.ItemStack
-import java.util.regex.Pattern
 
 private val TRAILING_PUNCT_RE = Regex("[!.]+$")
 
