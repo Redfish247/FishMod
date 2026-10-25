@@ -76,7 +76,8 @@ public class DrawContextMixin {
     }
 
     @Inject(method = "item(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;III)V", at=@At("HEAD"))
-    private void scaleUp(LivingEntity entity, Level world, ItemStack stack, int x, int y, int seed, CallbackInfo ci) {
+    private void scaleUp(LivingEntity entity, Level world, ItemStack stack, int x, int y, int seed, CallbackInfo ci,
+                         @Share("fishmod$headScaled") LocalBooleanRef scaled) {
         if (entity != null) {
             try {
                 fishmod.features.ItemRarityHotbar.drawRarity((GuiGraphicsExtractor) (Object) this, stack, x, y);
@@ -87,6 +88,7 @@ public class DrawContextMixin {
         if (Visual.oldPlayerHead && stack.getItem() == Items.PLAYER_HEAD) {
             float scale = 0.875f;
             int offset = (16 - (int)(scale * 16)) / 2;
+            scaled.set(true);
 
             pose.pushMatrix();
             pose.translate(x * (1 - scale) + offset, y * (1 - scale) + offset);
@@ -95,8 +97,10 @@ public class DrawContextMixin {
     }
 
     @Inject(method = "item(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;III)V", at=@At("TAIL"))
-    private void scaleDown(LivingEntity entity, Level world, ItemStack stack, int x, int y, int seed, CallbackInfo ci) {
-        if (Visual.oldPlayerHead && stack.getItem() == Items.PLAYER_HEAD) {
+    private void scaleDown(LivingEntity entity, Level world, ItemStack stack, int x, int y, int seed, CallbackInfo ci,
+                           @Share("fishmod$headScaled") LocalBooleanRef scaled) {
+        // Pop only what HEAD pushed, so a mid-frame toggle can't unbalance the pose stack.
+        if (scaled.get()) {
             pose.popMatrix();
         }
     }
