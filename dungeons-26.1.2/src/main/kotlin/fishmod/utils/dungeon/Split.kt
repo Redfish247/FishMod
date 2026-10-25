@@ -132,6 +132,8 @@ class Split(
         ended = false
         started = false
         cachedAt = 0L
+        startTime = 0L
+        endTime = 0L
     }
 
     fun end() {
