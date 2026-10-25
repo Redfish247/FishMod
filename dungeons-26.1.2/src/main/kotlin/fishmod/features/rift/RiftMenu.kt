@@ -80,6 +80,12 @@ object RiftMenu {
         vamp.sub.add(ToggleSetting("Twinclaws Warning", "", S::riftVampireTwinclaws))
         vamp.sub.add(ColorPickerSetting("Boss Colour", "", S::riftVampireColor))
         vamp.sub.add(ColorPickerSetting("Steakable Colour", "", S::riftVampireSteakColor))
+        vamp.sub.add(ToggleSetting("Line to Boss", "", S::riftVampireLine))
+        vamp.sub.add(ColorPickerSetting("Line Colour", "", S::riftVampireLineColor))
+        vamp.sub.add(ToggleSetting("Highlight Blood Ichor", "", S::riftVampireIchor))
+        vamp.sub.add(ColorPickerSetting("Ichor Colour", "", S::riftVampireIchorColor))
+        vamp.sub.add(ToggleSetting("Highlight Killer Spring", "", S::riftVampireSpring))
+        vamp.sub.add(ColorPickerSetting("Spring Colour", "", S::riftVampireSpringColor))
         col.features.add(vamp)
 
         return col
