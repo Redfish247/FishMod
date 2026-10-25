@@ -141,7 +141,7 @@ object InvincibilityTracker {
     }
 
     private fun learnIcons() {
-        if (!FishSettings.invincIcons || ++iconTick < 20) return
+        if (!Dungeons.displayInvincibilityTimer || !FishSettings.invincIcons || ++iconTick < 20) return
         iconTick = 0
         val mc = Minecraft.getInstance()
         val allKnown = Type.entries.all { storedTexture(it).isNotEmpty() }
