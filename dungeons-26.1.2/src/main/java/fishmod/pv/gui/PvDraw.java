@@ -7,17 +7,13 @@
  */
 package fishmod.pv.gui;
 
-import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
-import net.minecraft.resources.Identifier;
 
 public final class PvDraw {
 	public static final int COLOR_PANEL = 0x8A10162A;
@@ -55,12 +51,7 @@ public final class PvDraw {
 	public static final int C_BL = 8;
 	public static final int C_ALL = 15;
 
-	/** Cosmetics-inspired loop + vivid HSV rainbow for the Konami easter egg. */
-	private static final float EASTER_EGG_SPEED = 0.12F;
-	/** Horizontal resolution of the prebaked maxed-bar gradient (smooth, one blit). */
-	private static final int MAXED_BAR_TEX_W = 256;
-	private static final Identifier MAXED_BAR_TEX = Identifier.fromNamespaceAndPath("betterpv", "gui/maxed_xp_bar");
-	private static boolean maxedBarRegistered;
+	private static final int[][] INSETS_CACHE = new int[128][];
 
 	private PvDraw() {
 	}
@@ -69,7 +60,20 @@ public final class PvDraw {
 		g.fill(x, y, x + w, y + h, argb);
 	}
 
+	// Cached per radius: called many times per frame; callers only read the array.
 	private static int[] cornerInsets(int r) {
+		if (r < INSETS_CACHE.length) {
+			int[] hit = INSETS_CACHE[r];
+			if (hit == null) {
+				hit = computeInsets(r);
+				INSETS_CACHE[r] = hit;
+			}
+			return hit;
+		}
+		return computeInsets(r);
+	}
+
+	private static int[] computeInsets(int r) {
 		int[] ins = new int[r];
 		for (int i = 0; i < r; i++) {
 			double dy = r - i - 0.5;
@@ -401,167 +405,6 @@ public final class PvDraw {
 		roundedFill(g, x, y, Math.max(filled, Math.min(w, h)), h, h / 2, maxed ? COLOR_GOLD : COLOR_BAR_PROGRESS);
 	}
 
-	private static void drawXpBarSolidRounded(
-		GuiGraphicsExtractor g, int x, int y, int w, int h, int fillColor, boolean roundRight
-	) {
-		if (w <= 0 || h <= 0) {
-			return;
-		}
-		if (h < 3 || w == 1) {
-			fill(g, x, y + (h < 3 ? 0 : 1), w, h < 3 ? h : Math.max(1, h - 2), fillColor);
-			return;
-		}
-		int leftInset = 1;
-		int rightInset = roundRight ? 1 : 0;
-		int bodyW = w - leftInset - rightInset;
-		if (bodyW > 0) {
-			fill(g, x + leftInset, y, bodyW, h, fillColor);
-		}
-		fill(g, x, y + 1, 1, Math.max(1, h - 2), fillColor);
-		if (roundRight) {
-			fill(g, x + w - 1, y + 1, 1, Math.max(1, h - 2), fillColor);
-		}
-	}
-
-	/** Smooth lilac→cream maxed fill via one prebaked texture blit (not N fill rects). */
-	private static void drawXpBarMaxed(
-		GuiGraphicsExtractor g, int x, int y, int w, int h, boolean roundRight
-	) {
-		ensureMaxedBarTexture();
-		if (!maxedBarRegistered || w <= 0 || h <= 0) {
-			fill(g, x, y, w, h, COLOR_MAXED_BAR_LEFT);
-			return;
-		}
-		int leftInset = 1;
-		int rightInset = roundRight ? 1 : 0;
-		int bodyW = w - leftInset - rightInset;
-		if (bodyW > 0) {
-			g.blit(
-				RenderPipelines.GUI_TEXTURED,
-				MAXED_BAR_TEX,
-				x + leftInset, y,
-				0, 0,
-				bodyW, h,
-				MAXED_BAR_TEX_W, BAR_HEIGHT,
-				MAXED_BAR_TEX_W, BAR_HEIGHT
-			);
-		}
-		fill(g, x, y + 1, 1, Math.max(1, h - 2), COLOR_MAXED_BAR_LEFT);
-		if (roundRight) {
-			// Tip colour follows the gradient at this fill width (not always cream).
-			float t = MAXED_BAR_TEX_W <= 1
-				? 1F
-				: (float) Math.min(Math.max(w - 1, 0), MAXED_BAR_TEX_W - 1) / (float) (MAXED_BAR_TEX_W - 1);
-			fill(g, x + w - 1, y + 1, 1, Math.max(1, h - 2), lerpArgb(COLOR_MAXED_BAR_LEFT, COLOR_MAXED_BAR_RIGHT, t));
-		}
-	}
-
-	private static void ensureMaxedBarTexture() {
-		if (maxedBarRegistered) {
-			return;
-		}
-		Minecraft client = Minecraft.getInstance();
-		if (client == null) {
-			return;
-		}
-		NativeImage image = new NativeImage(MAXED_BAR_TEX_W, BAR_HEIGHT, false);
-		for (int px = 0; px < MAXED_BAR_TEX_W; px++) {
-			float t = MAXED_BAR_TEX_W <= 1 ? 0F : (float) px / (float) (MAXED_BAR_TEX_W - 1);
-			int argb = lerpArgb(COLOR_MAXED_BAR_LEFT, COLOR_MAXED_BAR_RIGHT, t);
-			for (int py = 0; py < BAR_HEIGHT; py++) {
-				image.setPixel(px, py, argb);
-			}
-		}
-		client.getTextureManager().register(MAXED_BAR_TEX, new DynamicTexture(() -> "BetterPV maxed XP bar", image));
-		maxedBarRegistered = true;
-	}
-
-	/** Scrolling HSV rainbow - tips sample the same t-map as the body so ends stay in sync. */
-	private static void drawXpBarAnimatedGradient(
-		GuiGraphicsExtractor g, int x, int y, int w, int h, boolean roundRight
-	) {
-		double time = System.currentTimeMillis() / 50.0D;
-		float offset = (float) positiveModulo(time * EASTER_EGG_SPEED, 1.0D);
-		final float spanHue = 0.85F;
-		drawPillGradient(
-			g, x, y, w, h,
-			t -> rainbowArgb(positiveModulo(t * spanHue + offset, 1.0F)),
-			true,
-			roundRight,
-			12
-		);
-	}
-
-	@FunctionalInterface
-	private interface BarColorAt {
-		int at(float t);
-	}
-
-	private static void drawPillGradient(
-		GuiGraphicsExtractor g,
-		int x,
-		int y,
-		int w,
-		int h,
-		BarColorAt colorAt,
-		boolean roundLeft,
-		boolean roundRight,
-		int maxSegments
-	) {
-		if (w <= 0 || h <= 0) {
-			return;
-		}
-		if (h < 3) {
-			fill(g, x, y, w, h, colorAt.at(0.5F));
-			return;
-		}
-
-		java.util.function.IntUnaryOperator atPx = px -> {
-			float t = w <= 1 ? 0F : (float) px / (float) (w - 1);
-			return colorAt.at(t);
-		};
-
-		if (w == 1) {
-			fill(g, x, y + 1, 1, h - 2, atPx.applyAsInt(0));
-			return;
-		}
-
-		int fromCol = roundLeft ? 1 : 0;
-		int toCol = roundRight ? w - 1 : w;
-		if (roundLeft) {
-			fill(g, x, y + 1, 1, h - 2, atPx.applyAsInt(0));
-		}
-		if (roundRight) {
-			fill(g, x + w - 1, y + 1, 1, h - 2, atPx.applyAsInt(w - 1));
-		}
-		fillGradientSpan(g, x, y, w, h, fromCol, toCol, colorAt, maxSegments);
-	}
-
-	private static void fillGradientSpan(
-		GuiGraphicsExtractor g,
-		int barX,
-		int y,
-		int barW,
-		int h,
-		int fromCol,
-		int toCol,
-		BarColorAt colorAt,
-		int maxSegments
-	) {
-		int span = toCol - fromCol;
-		if (span <= 0) {
-			return;
-		}
-		int segments = Math.min(span, Math.max(1, maxSegments));
-		for (int s = 0; s < segments; s++) {
-			int x0 = barX + fromCol + s * span / segments;
-			int x1 = barX + fromCol + (s + 1) * span / segments;
-			int midPx = Math.max(0, Math.min(barW - 1, (x0 + x1 - 1) / 2 - barX));
-			float t = barW <= 1 ? 0F : (float) midPx / (float) (barW - 1);
-			fill(g, x0, y, Math.max(1, x1 - x0), h, colorAt.at(t));
-		}
-	}
-
 	/** Hue wheel colour; blends toward cosmetics purple so it still nods to the name gradient. */
 	public static int chromaRgb(float hue) {
 		return rainbowArgb(hue);
@@ -595,11 +438,6 @@ public final class PvDraw {
 	private static float positiveModulo(float value, float modulus) {
 		float remainder = value % modulus;
 		return remainder < 0.0F ? remainder + modulus : remainder;
-	}
-
-	private static double positiveModulo(double value, double modulus) {
-		double remainder = value % modulus;
-		return remainder < 0.0D ? remainder + modulus : remainder;
 	}
 
 	private static int lerpArgb(int from, int to, float t) {

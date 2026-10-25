@@ -19,14 +19,24 @@ public final class CollectionCategoryIcons {
 	public static ItemStack icon(String categoryId) {
 		String id = categoryId == null ? "" : categoryId.trim().toUpperCase(Locale.ROOT);
 		return switch (id) {
-			case "FARMING" -> new ItemStack(Items.GOLDEN_HOE);
-			case "MINING" -> new ItemStack(Items.STONE_PICKAXE);
-			case "COMBAT" -> new ItemStack(Items.IRON_SWORD);
-			case "FORAGING" -> new ItemStack(Items.JUNGLE_SAPLING);
-			case "FISHING" -> new ItemStack(Items.FISHING_ROD);
-			case "BOSS" -> new ItemStack(Items.WITHER_SKELETON_SKULL);
-			case "RIFT" -> new ItemStack(Items.MYCELIUM);
-			default -> new ItemStack(Items.CHEST);
+			case "FARMING" -> FARMING;
+			case "MINING" -> MINING;
+			case "COMBAT" -> COMBAT;
+			case "FORAGING" -> FORAGING;
+			case "FISHING" -> FISHING;
+			case "BOSS" -> BOSS;
+			case "RIFT" -> RIFT;
+			default -> OTHER;
 		};
 	}
+
+	// Drawn every frame; shared read-only stacks avoid per-frame allocation.
+	private static final ItemStack FARMING = new ItemStack(Items.GOLDEN_HOE);
+	private static final ItemStack MINING = new ItemStack(Items.STONE_PICKAXE);
+	private static final ItemStack COMBAT = new ItemStack(Items.IRON_SWORD);
+	private static final ItemStack FORAGING = new ItemStack(Items.JUNGLE_SAPLING);
+	private static final ItemStack FISHING = new ItemStack(Items.FISHING_ROD);
+	private static final ItemStack BOSS = new ItemStack(Items.WITHER_SKELETON_SKULL);
+	private static final ItemStack RIFT = new ItemStack(Items.MYCELIUM);
+	private static final ItemStack OTHER = new ItemStack(Items.CHEST);
 }

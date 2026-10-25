@@ -56,6 +56,7 @@ public final class MinionsPage {
 	private boolean costsFinal;
 	private long costsAt;
 	private final Map<String, List<MinionCosts.TierCost>> missingById = new HashMap<>();
+	private final Map<String, Integer> indexById = new HashMap<>();
 	private List<MinionCosts.MissingTier> cheapest = List.of();
 	private Map<MinionCosts.Category, List<Integer>> groups = Map.of();
 
@@ -127,12 +128,14 @@ public final class MinionsPage {
 		this.costsAt = now;
 		this.costsFinal = ItemPricer.isReady() && NeuRepoCache.isReady() && HypixelCollectionsCache.isReady();
 		this.missingById.clear();
+		this.indexById.clear();
 		List<CollectionSnapshot.MinionEntry> minions = snapshot == null ? List.of() : snapshot.minions();
 		Map<MinionCosts.Category, List<Integer>> byCategory = new EnumMap<>(MinionCosts.Category.class);
 		for (int i = 0; i < minions.size(); i++) {
 			CollectionSnapshot.MinionEntry minion = minions.get(i);
 			byCategory.computeIfAbsent(MinionCosts.categoryOf(minion.id()), k -> new ArrayList<>()).add(i);
 			this.missingById.put(minion.id(), MinionCosts.missingTiers(minion));
+			this.indexById.put(minion.id(), i);
 		}
 		this.groups = byCategory;
 		this.cheapest = MinionCosts.cheapestNext(minions);
@@ -290,10 +293,7 @@ public final class MinionsPage {
 			);
 			return;
 		}
-		Map<String, Integer> indexById = new HashMap<>();
-		for (int i = 0; i < minions.size(); i++) {
-			indexById.put(minions.get(i).id(), i);
-		}
+		Map<String, Integer> indexById = this.indexById;
 		int rowH = Math.max(ITEM_ICON, font.lineHeight) + 2;
 		this.minionMaxScroll = Math.max(0, this.cheapest.size() * rowH - this.minionH);
 		this.minionScroll = Math.max(0, Math.min(this.minionScroll, this.minionMaxScroll));

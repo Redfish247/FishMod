@@ -54,6 +54,12 @@ public final class KuudraPage {
 	private int kuudraW;
 	private int kuudraH;
 
+	// Per-card caches so lore parsing and dyed icon copies don't run every frame.
+	private CrimsonKuudraCard cachedCard;
+	private final java.util.Map<List<String>, List<Component>> loreCache = new java.util.IdentityHashMap<>();
+	private final java.util.Map<CrimsonKuudraCard.ArmorPiece, ItemStack> armorIcons = new java.util.IdentityHashMap<>();
+	private static final ItemStack EMPTY_ARMOR_ICON = new ItemStack(fishmod.compat.CI.GRAY_DYE);
+
 	private final KuudraChecklistColumn itemsColumn = new KuudraChecklistColumn();
 	private final KuudraChecklistColumn armourColumn = new KuudraChecklistColumn();
 	private boolean showingChecklist;
@@ -233,6 +239,11 @@ public final class KuudraPage {
 		int x, int y, int w, int h, int mx, int my
 	) {
 		CrimsonKuudraCard card = snapshot.kuudraCard();
+		if (card != this.cachedCard) {
+			this.cachedCard = card;
+			this.loreCache.clear();
+			this.armorIcons.clear();
+		}
 		int lx = x + PAD;
 		int contentTop = y + PAD;
 		int lw = w - PAD * 2;
@@ -353,7 +364,14 @@ public final class KuudraPage {
 				PvDraw.fill(g, bx, by, SLOT, SLOT, ITEM_SLOT_BG);
 				g.outline(bx, by, SLOT, SLOT,
 					hovered ? PvDraw.COLOR_ACCENT : (piece.owned() ? ITEM_SLOT_BORDER : DISABLED));
-				ItemStack icon = armorIconStack(piece);
+				ItemStack icon = this.armorIcons.get(piece);
+				if (icon == null) {
+					icon = armorIconStack(piece);
+					// Paper is the still-loading placeholder; retry until the real icon arrives.
+					if (!icon.isEmpty() && !icon.is(Items.PAPER)) {
+						this.armorIcons.put(piece, icon);
+					}
+				}
 				int iconPad = Math.max(0, (SLOT - 16) / 2);
 				if (!icon.isEmpty()) {
 					g.item(icon, bx + iconPad, by + iconPad);
@@ -361,7 +379,7 @@ public final class KuudraPage {
 						PvDraw.fill(g, bx + 1, by + 1, SLOT - 2, SLOT - 2, 0x88000000);
 					}
 				} else {
-					g.item(new ItemStack(fishmod.compat.CI.GRAY_DYE), bx + iconPad, by + iconPad);
+					g.item(EMPTY_ARMOR_ICON, bx + iconPad, by + iconPad);
 				}
 				if (piece.owned() && piece.dyeColor() != null) {
 					PvDraw.fill(g, bx + SLOT - 4, by + 1, 3, 3, 0xFF000000 | (piece.dyeColor() & 0xFFFFFF));
@@ -405,7 +423,12 @@ public final class KuudraPage {
 	) {
 		if (lore != null && !lore.isEmpty()) {
 			String title = displayName != null && !displayName.isBlank() ? displayName : label;
-			this.zones.add(HoverZone.ofComponents(x, y, w, h, loreComponents(title, lore)));
+			List<Component> tip = this.loreCache.get(lore);
+			if (tip == null) {
+				tip = loreComponents(title, lore);
+				this.loreCache.put(lore, tip);
+			}
+			this.zones.add(HoverZone.ofComponents(x, y, w, h, tip));
 			return;
 		}
 		List<PvTooltip.Line> tip = new ArrayList<>();

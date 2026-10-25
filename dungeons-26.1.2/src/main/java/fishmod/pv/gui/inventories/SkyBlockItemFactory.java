@@ -43,6 +43,8 @@ import net.minecraft.world.item.component.ItemLore;
  */
 public final class SkyBlockItemFactory {
 	private static final Set<String> FAILED_ICON_IDS = ConcurrentHashMap.newKeySet();
+	private static final Pattern PET_LEVEL = Pattern.compile("(?i)\\[Lvl\\s*(\\d+)\\]");
+	private static final Pattern LVL_PLACEHOLDER = Pattern.compile("(?i)\\[Lvl\\s*\\{?LVL\\}?\\]\\s*");
 	/** NEU {@code MINING_2_PORTAL} skull Value (HotM / mining menu stand-in). */
 	private static final String HOTM_TAB_SKULL_VALUE =
 		"ewogICJ0aW1lc3RhbXAiIDogMTYxODk5OTIyNDk2OSwKICAicHJvZmlsZUlkIiA6ICI1NjY3NWIyMjMyZjA0ZWUwODkxNzllOWM5MjA2Y2ZlOCIsCiAgInByb2ZpbGVOYW1lIiA6ICJUaGVJbmRyYSIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS83NDIxM2RjNmRjNGIxNjQxZGVmZDMzM2Y0YTQ3MzJjYzcxNGRkNjc3NzE4ZmExMGYxNDBhNjkzOWMxMmFhMzJiIgogICAgfQogIH0KfQ==";
@@ -391,7 +393,7 @@ public final class SkyBlockItemFactory {
 			if (neu != null && neu.has("displayname") && neu.get("displayname").isJsonPrimitive()) {
 				name = neu.get("displayname").getAsString();
 				// Pets ship as "[Lvl {LVL}] Name" - strip the level placeholder for UI labels.
-				name = name.replaceAll("(?i)\\[Lvl\\s*\\{?LVL\\}?\\]\\s*", "").trim();
+				name = LVL_PLACEHOLDER.matcher(name).replaceAll("").trim();
 			}
 		}
 		if (name == null || name.isBlank()) {
@@ -531,7 +533,7 @@ public final class SkyBlockItemFactory {
 		if (displayName == null || displayName.isBlank()) {
 			return 1;
 		}
-		Matcher m = Pattern.compile("(?i)\\[Lvl\\s*(\\d+)\\]").matcher(displayName);
+		Matcher m = PET_LEVEL.matcher(displayName);
 		if (m.find()) {
 			try {
 				return Math.max(1, Integer.parseInt(m.group(1)));
@@ -691,7 +693,7 @@ public final class SkyBlockItemFactory {
 		if (neu != null && neu.has("displayname") && neu.get("displayname").isJsonPrimitive()) {
 			String name = neu.get("displayname").getAsString();
 			if (name != null && !name.isBlank()) {
-				name = name.replaceAll("(?i)\\[Lvl\\s*\\{?LVL\\}?\\]\\s*", "").trim();
+				name = LVL_PLACEHOLDER.matcher(name).replaceAll("").trim();
 				return ItemTextFormat.stripFormatting(name);
 			}
 		}
