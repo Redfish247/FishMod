@@ -20,7 +20,8 @@ import fishmod.features.extras.ExtrasSettings as S
 // Selected quiver arrow + count, with low / out warnings
 object ArrowHud {
     private val SELECTED = Regex("""^You set your selected arrow type to (.+?)!$""")
-    private val LOW = Regex("""^You only have ([\d,]+) arrows? left in your Quiver!$""")
+    private val COUNT_SUFFIX = Regex("""\s*x?[\d,]+$""")
+    private val LOW =Regex("""^You only have ([\d,]+) arrows? left in your Quiver!$""")
     private val FILLED = Regex("""^You filled your quiver with ([\d,]+) extra arrows?!$""")
     private val LORE_ARROW = Regex("""^(?:Active|Selected) Arrow: (.+?)(?: \(([\d,]+)\))?$""")
     private val REMAINING = Regex("""(?i)arrows remaining:?\s*([\d,]+)|([\d,]+)\s*arrows remaining""")
@@ -90,7 +91,7 @@ object ArrowHud {
         val arrowy = st.item == Items.ARROW || st.item == Items.TIPPED_ARROW || st.item == Items.SPECTRAL_ARROW ||
             id?.endsWith("ARROW") == true || name.contains("Arrow", true)
         if (!arrowy) return false
-        type = name.replace(Regex("""\s*x?[\d,]+$"""), "").ifEmpty { name }
+        type = name.replace(COUNT_SUFFIX, "").ifEmpty { name }
         rarityRgb = fishmod.features.ItemRarityHotbar.getRarity(st).color and 0xFFFFFF
         setCount(remainingFromLore(st) ?: st.count.toLong())
         return true

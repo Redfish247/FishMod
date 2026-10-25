@@ -193,11 +193,13 @@ object StorageOverlay {
     private const val ROW_SIZE = 8f
     private val glyphOk = HashMap<Int, Boolean>()
 
+    private val MULTI_SPACE = Regex(" {2,}")
+
     // Drop glyphs the UI font can't draw (they'd render as boxes)
     private fun displayable(s: String): String {
         val sb = StringBuilder()
         s.codePoints().forEach { cp -> if (glyphOk.getOrPut(cp) { fishmod.utils.rendering.UiFont.canDisplay(cp) }) sb.appendCodePoint(cp) }
-        return sb.toString().replace(Regex(" {2,}"), " ").trim()
+        return sb.toString().replace(MULTI_SPACE, " ").trim()
     }
     private var sidebarW = 0
     private var sidebarScroll = 0
