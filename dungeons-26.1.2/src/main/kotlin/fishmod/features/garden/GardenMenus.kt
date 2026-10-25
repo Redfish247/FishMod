@@ -53,7 +53,9 @@ object GardenMenus {
 
     private fun pestOf(name: String, lore: List<String>): String? =
         VINYL_PEST.entries.firstOrNull { name.contains(it.key, true) }?.value
-            ?: PEST_CROP.keys.firstOrNull { p -> lore.any { Regex("\\b$p\\b", RegexOption.IGNORE_CASE).containsMatchIn(it) } }
+            ?: PEST_WORD.entries.firstOrNull { (_, r) -> lore.any { r.containsMatchIn(it) } }?.key
+
+    private val PEST_WORD by lazy { PEST_CROP.keys.associateWith { Regex("\\b$it\\b", RegexOption.IGNORE_CASE) } }
 
     private fun isVinyl(name: String, lore: List<String>) = VINYL_PEST.keys.any { name.contains(it, true) } || lore.any { it.contains("vinyl", true) }
 

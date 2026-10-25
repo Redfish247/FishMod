@@ -151,7 +151,8 @@ object RecipeViewer {
         else -> "${s}s"
     }
 
-    fun clean(s: String): String = s.replace(Regex("§."), "")
+    private val FORMAT_CODE = Regex("§.")
+    fun clean(s: String): String = s.replace(FORMAT_CODE, "")
 
     fun displayName(id: String): String =
         if (id == COIN) "§6Coins" else NeuRepo.get(id)?.get("displayname")?.asString ?: id
