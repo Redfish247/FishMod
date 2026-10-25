@@ -502,8 +502,15 @@ public final class HypixelApiClient {
 				JsonObject player = body.has("player") && body.get("player").isJsonObject()
 					? body.getAsJsonObject("player")
 					: body;
+				long now = System.currentTimeMillis();
+				// evict player JSON older than an hour
+				PLAYER_CACHED_AT.entrySet().removeIf(e -> {
+					if (now - e.getValue() <= 3_600_000L) return false;
+					PLAYER_CACHE.remove(e.getKey());
+					return true;
+				});
 				PLAYER_CACHE.put(id, player);
-				PLAYER_CACHED_AT.put(id, System.currentTimeMillis());
+				PLAYER_CACHED_AT.put(id, now);
 				return Optional.of(player);
 			},
 			EXECUTOR

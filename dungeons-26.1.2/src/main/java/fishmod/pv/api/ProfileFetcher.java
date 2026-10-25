@@ -474,7 +474,7 @@ public final class ProfileFetcher {
 		putCache(uuidKey(uuid), loaded);
 		putCache(nameKey(name), loaded);
 		if (cleanedNameKey != null && !cleanedNameKey.isBlank()) {
-			CACHE.put(cleanedNameKey, new CacheEntry(loaded, System.currentTimeMillis() + CACHE_TTL_MS));
+			putCache(cleanedNameKey, loaded);
 		}
 	}
 
@@ -694,6 +694,8 @@ public final class ProfileFetcher {
 		if (key == null || key.isBlank() || profile == null || !profile.ok()) {
 			return;
 		}
+		// drop expired profiles so viewed players don't pile up for the whole session
+		CACHE.values().removeIf(e -> !e.fresh());
 		CACHE.put(key, new CacheEntry(profile, System.currentTimeMillis() + CACHE_TTL_MS));
 	}
 
