@@ -1,5 +1,6 @@
 package fishmod.cosmetic
 
+import fishmod.compat.curScreen
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.HypixelApi
 import fishmod.utils.config.values.FishSettings
