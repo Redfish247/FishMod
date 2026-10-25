@@ -70,6 +70,10 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
+    var necronDropStyle: Int = 0
+
+    @ConfigValue
+    @JvmField
     var enableGoldorTickTimer: Boolean = false
 
     @ConfigValue
