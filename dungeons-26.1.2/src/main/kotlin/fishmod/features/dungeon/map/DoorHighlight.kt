@@ -1,7 +1,6 @@
 package fishmod.features.dungeon.map
 
 import fishmod.compat.CB
-import fishmod.compat.CI
 
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.vertex.PoseStack
@@ -21,6 +20,7 @@ object DoorHighlight {
 
     @JvmStatic
     fun init() {
+        fishmod.utils.events.Events.ON_WORLD_CHANGE.register { lastRoom = null; outlineCache = emptyList(); outlineCacheAt = 0L; false }
         RenderingEvents.GIZMO.register { _ ->
             try { renderGizmo() } catch (e: Exception) { FishDiag.fail("DoorHighlight.1", "door highlight gizmo render failed doors=${Scan.doors.size}", e) }
         }

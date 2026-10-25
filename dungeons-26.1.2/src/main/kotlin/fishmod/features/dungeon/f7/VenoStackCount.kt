@@ -66,7 +66,7 @@ object VenoStackCount {
         if (stacks > 0 && System.currentTimeMillis() - lastHitMs > DURATION_MS) stacks = 0
         val mc = Minecraft.getInstance()
         val p = mc.player
-        holdingVeno = p != null && isVenomous(p.mainHandItem)
+        holdingVeno = FishSettings.venoStackEnabled && p != null && isVenomous(p.mainHandItem)
         if (!FishSettings.venoStackEnabled || !Location.inDungeon() || !Phase.inP2() || Phase.stormDead()) {
             stormBox = null
             if (Phase.stormDead() || !Location.inDungeon()) stacks = 0

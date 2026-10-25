@@ -1,7 +1,6 @@
 package fishmod.features.dungeon.map
 
 import fishmod.compat.CB
-import fishmod.compat.CI
 
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents
@@ -341,9 +340,7 @@ object Scan {
         val r2 = t2.owner
         if (r1 == null || r2 == null) return
 
-        for (d in ArrayList(doors)) {
-            if (pos == d.pos) return
-        }
+        if (synchronized(doors) { doors.any { it.pos == pos } }) return
 
         val chunk = world.getChunk(pos.x shr 4, pos.z shr 4)
         val top = getTopY(chunk, pos) ?: return

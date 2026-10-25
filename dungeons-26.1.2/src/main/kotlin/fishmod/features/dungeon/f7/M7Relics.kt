@@ -100,6 +100,7 @@ object M7Relics {
             spawnEndMs = 0L
             Phase.onRelicSpawn()
             if (p5StartMs == 0L) { p5StartMs = System.currentTimeMillis(); myRelic = null; pickers.clear(); placed.clear() }
+            return
         }
     }
 
