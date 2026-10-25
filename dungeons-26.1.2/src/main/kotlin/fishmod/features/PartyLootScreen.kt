@@ -759,7 +759,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
     }
 
     companion object {
-        private val ACCENT = ScreenTheme.ACCENT
+        private val ACCENT get() = ScreenTheme.ACCENT
         private val PANEL = 0xF014181D.toInt()
         private val PANEL2 = 0xFF0F1317.toInt()
         private val RAISE = 0xFF1B2027.toInt()

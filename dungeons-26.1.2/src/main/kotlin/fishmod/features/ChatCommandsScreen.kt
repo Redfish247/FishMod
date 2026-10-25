@@ -31,8 +31,8 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
     private enum class Out(val label: String) { TITLE("Title"), ACTION_BAR("Action Bar"), SOUND("Sound"), CHAT("Chat Reply") }
 
     private companion object {
-        val ACCENT = ScreenTheme.ACCENT
-        val ACCENT_HOVER = ScreenTheme.ACCENT_HOVER
+        val ACCENT get() = ScreenTheme.ACCENT
+        val ACCENT_HOVER get() = ScreenTheme.ACCENT_HOVER
         val TEXT = ScreenTheme.TEXT_COLOR
         val SUB = ScreenTheme.SUBTEXT_COLOR
         val DANGER = ScreenTheme.DANGER

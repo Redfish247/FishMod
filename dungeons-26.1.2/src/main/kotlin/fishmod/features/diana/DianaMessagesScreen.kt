@@ -31,7 +31,7 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
             mc.schedule { mc.showScreen(DianaMessagesScreen(parent)) }
         }
 
-        private val ACCENT = ScreenTheme.ACCENT
+        private val ACCENT get() = ScreenTheme.ACCENT
         private val TEXT = ScreenTheme.TEXT_COLOR
         private val SUB = ScreenTheme.SUBTEXT_COLOR
         private val CARD_BG = ScreenTheme.CARD_BG
