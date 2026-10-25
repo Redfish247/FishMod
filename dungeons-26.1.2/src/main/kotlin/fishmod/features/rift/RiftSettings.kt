@@ -77,4 +77,12 @@ object RiftSettings {
     @ConfigValue @JvmField var riftLeechColor: Int = 0xFF55FF55.toInt()
     @ConfigValue @JvmField var riftVampireSpring: Boolean = true
     @ConfigValue @JvmField var riftVampireSpringColor: Int = 0xFFFF55FF.toInt()
+
+    // Rift Guide overlay
+    @ConfigValue @JvmField var riftGuide: Boolean = false
+    @ConfigValue @JvmField var riftGuideMaxLines: Int = 15
+    @ConfigValue @JvmField var riftGuideColor: Int = 0xFFFFFFFF.toInt()
+    @ConfigValue @JvmField var riftGuideX: Int = 5
+    @ConfigValue @JvmField var riftGuideY: Int = 80
+    @ConfigValue @JvmField var riftGuideScale: Double = 1.0
 }
