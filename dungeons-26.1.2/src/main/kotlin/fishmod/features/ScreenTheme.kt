@@ -6,8 +6,9 @@ import fishmod.utils.rendering.UiRecorder
 import fishmod.utils.debug.FishDiag
 
 object ScreenTheme {
-    val ACCENT = 0xFF24B6B0.toInt()
-    val ACCENT_HOVER = 0xFF3AD8D1.toInt()
+    // follows the config accent once FishModScreen has refreshed its theme
+    var ACCENT = 0xFF24B6B0.toInt()
+    var ACCENT_HOVER = 0xFF3AD8D1.toInt()
     val CARD_BG = 0xFF14181D.toInt()
     val TEXT_COLOR = 0xFFEDF1F5.toInt()
     val SUBTEXT_COLOR = 0xFF8A96A3.toInt()

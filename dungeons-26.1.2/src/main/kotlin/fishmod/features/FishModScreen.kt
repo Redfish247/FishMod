@@ -2343,6 +2343,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val alpha = Mth.clamp(Math.round(FishSettings.fmButtonAlpha * 2.55f), 0, 255)
         ACCENT = (alpha shl 24) or rgb
         ACCENT_HOVER = brighten(ACCENT, 28)
+        ScreenTheme.ACCENT = ACCENT; ScreenTheme.ACCENT_HOVER = ACCENT_HOVER
 
         val btnAlpha = Mth.clamp(Math.round(FishSettings.fmRowBgAlpha * 2.55f), 0, 255)
         ROW_BUTTON = (btnAlpha shl 24) or (brighten(cardBgRgb(), 10) and 0xFFFFFF)
@@ -2471,7 +2472,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             renderTopBar(ctx, vmx, vmy)
             renderContent(ctx, vmx, vmy)
             renderSearchBar(ctx, vmx, vmy)
-            renderHint(ctx)
+            // hint is wider than the sidebar, so only show it while hovering the sidebar
+            if (vmx in stackX0()..stackX0() + STACK_W) renderHint(ctx)
             renderHoverTooltip(ctx)
         } catch (t: Throwable) {
             FishDiag.fail("FishModScreen.10", "widget rendering failed search='$searchText' hScroll=$hScroll", t)
@@ -2600,7 +2602,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         val w = x1 - x0
         UiRecorder.dropShadow(x0.toFloat(), hy.toFloat(), w.toFloat(), (cardBottom - hy).toFloat(), CARD_RADIUS.toFloat(), 10f, 0x60000000)
         roundedRect(ctx, x0, hy, w, cardBottom - hy, CARD_RADIUS, currentCardBg())
-        UiRecorder.fillRectTopRounded(x0.toFloat(), hy.toFloat(), w.toFloat(), HEADER_STRIP_H.toFloat(), CARD_RADIUS.toFloat(), ScreenTheme.ACCENT)
+        UiRecorder.fillRectTopRounded(x0.toFloat(), hy.toFloat(), w.toFloat(), HEADER_STRIP_H.toFloat(), CARD_RADIUS.toFloat(), ACCENT)
         val titleClip = w - 20
         sst(ctx, this.font, ellipsize(c.name, titleClip), x0 + 10, hy + HEADER_STRIP_H + 6, TEXT_COLOR, 1f)
         c.sub()?.let { sst(ctx, this.font, ellipsize(it, titleClip, 0.8f), x0 + 10, hy + HEADER_STRIP_H + 19, SUBTEXT_COLOR, 0.8f) }
@@ -4319,7 +4321,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private const val PILL_H = 18
         private const val OPTION_H = 16
         private val SLIDER_BG = 0xFF2C3138.toInt()
-        private val SLIDER_FILL = ACCENT
+        private val SLIDER_FILL get() = ACCENT
         private const val SLIDER_W = 56
         private const val SLIDER_H = 5
         private const val INPUT_W = 62
