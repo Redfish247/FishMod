@@ -200,7 +200,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 for (i in slots.indices) {
                     val idx = i
                     f.sub.add(KeybindSetting("Slot " + (idx + 1), "",
-                        { fishmod.utils.Keybinds.wardrobeSlots!![idx] }))
+                        { fishmod.utils.Keybinds.wardrobeSlots?.getOrNull(idx) }))
                 }
             }
             f.sub.add(SubcategoryHeader("Pagination"))

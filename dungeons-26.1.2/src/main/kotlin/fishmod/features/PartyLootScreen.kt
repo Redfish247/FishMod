@@ -112,6 +112,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         val vh = (this.height / UiScale.factor()).toInt()
         val sc = UiScale.factor()
         ctx.pose().pushMatrix()
+        try {
         ctx.pose().scale(sc, sc)
         ctx.fill(0, 0, vw + 1, vh + 1, 0x99000000.toInt())
 
@@ -135,7 +136,9 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         val bw = winW - 28
         val bh = footY - 10 - by
         if (tab == Tab.LOOT) renderLoot(ctx, bx, by, bw, bh) else renderNames(bx, by, bw, bh)
-        ctx.pose().popMatrix()
+        } finally {
+            ctx.pose().popMatrix()
+        }
 
         super.extractRenderState(ctx, mouseX, mouseY, delta)
     }
@@ -331,6 +334,7 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
         val valW = 70
         val cntW = 44
         val rowW = if (maxScroll > 0) lw - 6 else lw
+        try {
         for (i in rows.indices) {
             val r = rows[i]
             val ry = top + i * DROP_H - lootScroll
@@ -374,8 +378,10 @@ class PartyLootScreen(initialTab: Tab = Tab.LOOT, private val parent: Screen? = 
             val vs = if (v > 0) fmtCoins(v) else "-"
             UiRecorder.text(vs, (valX + valW - tw(vs, S_MD)).toFloat(), ry + (DROP_H - 2 - S_MD) / 2f, S_MD, if (v > 0) GOLD else DIM)
         }
+        } finally {
         runCatching { ctx.disableScissor() }.onFailure { FishDiag.fail("PartyLootScreen.2", "disableScissor failed", it) }
         UiRecorder.popScissor()
+        }
         if (maxScroll > 0) {
             val barH = max(12, lh * lh / (rows.size * DROP_H))
             val barY = top + (lh - barH) * lootScroll / max(1, maxScroll)
