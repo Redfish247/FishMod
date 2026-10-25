@@ -64,7 +64,7 @@ object MiningProfitTracker {
         load()
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
         ClientLifecycleEvents.CLIENT_STOPPING.register { save(true) }
-        Events.ON_WORLD_CHANGE.register { save(true); lootCat = null; lootPending.clear(); powderSeen.clear(); false }
+        Events.ON_WORLD_CHANGE.register { save(true); lootCat = null; lootPending.clear(); sackMined.clear(); powderSeen.clear(); false }
         Events.ON_GAME_MESSAGE.register { text ->
             if (S.miningProfit && Mining.inMiningIsland()) onChat(text)
             false
@@ -126,16 +126,35 @@ object MiningProfitTracker {
         val n = m.groupValues[2].replace(",", "").toLongOrNull() ?: 1L
         if (!trackable(name) || name.endsWith("Powder")) return
         add(cat, name, n)
-        lootPending.getOrPut(norm(name)) { ArrayList() } += longArrayOf(n, now)
+        // [Sacks] already counted these as mined (it arrived before the loot block): move them out of Mined
+        val early = consume(sackMined, norm(name), n, now)
+        if (early > 0) add(Cat.MINING, name, -early)
+        lootPending.getOrPut(norm(name)) { ArrayList() } += longArrayOf(n - early, now)
     }
 
     // Loot-block items that will reappear in the batched [Sacks] summary; deducted so they aren't also "Mined"
     private val lootPending = HashMap<String, MutableList<LongArray>>()
-    private fun norm(name: String) = name.trimStart { !it.isLetterOrDigit() }.lowercase()
+    // Items [Sacks] credited as Mined, in case the loot block lands after the summary
+    private val sackMined = HashMap<String, MutableList<LongArray>>()
+    private const val PENDING_MS = 180_000L
+    private fun norm(name: String) = name.trimStart { !it.isLetterOrDigit() }.lowercase().replace(Regex("""\s+"""), " ")
+
+    private fun consume(map: HashMap<String, MutableList<LongArray>>, key: String, n: Long, now: Long): Long {
+        val q = map[key] ?: return 0L
+        q.removeAll { now - it[1] > PENDING_MS }
+        var left = n
+        val it = q.iterator()
+        while (left > 0 && it.hasNext()) {
+            val e = it.next()
+            val take = minOf(left, e[0]); left -= take; e[0] -= take
+            if (e[0] <= 0) it.remove()
+        }
+        return n - left
+    }
 
     private fun consumePending(item: String, n: Long, now: Long): Long {
         val q = lootPending[norm(item)] ?: return n
-        q.removeAll { now - it[1] > 90_000 }
+        q.removeAll { now - it[1] > PENDING_MS }
         var left = n
         val it = q.iterator()
         while (left > 0 && it.hasNext()) {
@@ -180,7 +199,10 @@ object MiningProfitTracker {
             val item = m.groupValues[3].trim()
             if (item.endsWith("Powder")) continue
             val rest = consumePending(item, n, now)
-            if (rest > 0) add(Cat.MINING, item, rest)
+            if (rest > 0) {
+                add(Cat.MINING, item, rest)
+                sackMined.getOrPut(norm(item)) { ArrayList() } += longArrayOf(rest, now)
+            }
         }
     }
 
