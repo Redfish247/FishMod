@@ -175,7 +175,7 @@ object GardenMenus {
             if (X.gardenStereo && GardenExtras.inMenu("Stereo Harmony")) {
                 val n = GardenExtras.name(stack); val lore = Garden.lore(stack)
                 if (isVinyl(n, lore)) pestOf(n, lore)?.let { p ->
-                    GardenExtras.cropItem(PEST_CROP[p] ?: "")?.let { ctx.fill(x, y, x + 16, y + 16, 0xFF2B2B2B.toInt()); ctx.item(ItemStack(it), x, y) }
+                    GardenExtras.cropItem(PEST_CROP[p] ?: "")?.let { ctx.fill(x, y, x + 16, y + 16, 0xFF2B2B2B.toInt()); ctx.item(GardenExtras.stackOf(it), x, y) }
                 }
             }
             if (X.gardenToolkitIcons && toolkit()) GardenExtras.cropItem(GardenExtras.name(stack))?.takeIf { !sameCrop(it, stack.item) }?.let { GardenExtras.badge(ctx, it, x, y) }

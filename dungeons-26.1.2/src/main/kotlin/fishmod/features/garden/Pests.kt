@@ -19,6 +19,7 @@ object Pests {
     private val DROP = Regex("""received (\d+)x (.+?) for killing an? ([A-Za-z ]+)!""")
     private val NO_PESTS = Regex("""There are not any Pests on your Garden""")
     private val COUNT = Regex("""x(\d+)""")
+    private val PLOT_SEP = Regex(",| and ")
 
     // Hypixel plot numbers on the 5x5 grid, north to south
     private val LAYOUT = arrayOf(
@@ -50,7 +51,7 @@ object Pests {
     }
 
     fun init() {
-        Events.ON_GAME_MESSAGE.register { t -> onChat(Garden.strip(t.string).trim()); false }
+        Events.ON_GAME_MESSAGE.register { t -> if (Garden.inGarden()) onChat(Garden.strip(t.string).trim()); false }
         Events.ON_WORLD_CHANGE.register { tabPlots = emptyList(); trail.clear(); guess = null; false }
         Events.ON_PARTICLE.register { p ->
             if (S.gardenPestFinder && p.particle.type === net.minecraft.core.particles.ParticleTypes.ANGRY_VILLAGER && p.count == 1 && p.maxSpeed == 0f && Garden.inGarden() && holdingVacuum()) {
@@ -123,7 +124,7 @@ object Pests {
             return
         }
         OFFLINE.find(s)?.let { m ->
-            for (t in m.groupValues[1].split(Regex(",| and "))) idFor(t.trim())?.let { remembered[it] = System.currentTimeMillis() }
+            for (t in m.groupValues[1].split(PLOT_SEP)) idFor(t.trim())?.let { remembered[it] = System.currentTimeMillis() }
             return
         }
         DROP.find(s)?.let { m ->

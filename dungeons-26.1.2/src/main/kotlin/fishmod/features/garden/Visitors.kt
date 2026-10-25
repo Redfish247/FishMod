@@ -23,6 +23,8 @@ object Visitors {
     private val REQ = Regex("""^(.+?)(?: x([\d,]+))?$""")
     private val COPPER = Regex("""^\+([\d,]+) Copper""")
     private val GXP = Regex("""^\+([\d,]+) Garden Experience""")
+    private val TRAIL_AMT = Regex("\\s*x[\\d,]+$")
+    private val LEAD_AMT = Regex("^[\\d,]+x?\\s+")
 
     class Req(val name: String, val amount: Int)
 
@@ -36,7 +38,7 @@ object Visitors {
     private var tick = 0
 
     fun init() {
-        Events.ON_GAME_MESSAGE.register { text -> onChat(Garden.strip(text.string).trim()) }
+        Events.ON_GAME_MESSAGE.register { text -> Garden.inGarden() && onChat(Garden.strip(text.string).trim()) }
         Events.ON_WORLD_CHANGE.register { shopping.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || tick++ % 10 != 0) return@register
@@ -118,7 +120,7 @@ object Visitors {
             warnedScreen = scr
             val rare = rareIn(lore)
             if (rare != null && S.gardenRareRewardWarn) {
-                val rc = GardenAlerts.rarityColor(rare, rare.replace(Regex("\\s*x[\\d,]+$"), ""), rare.replace(Regex("^[\\d,]+x?\\s+"), "")) ?: "§d"
+                val rc = GardenAlerts.rarityColor(rare, rare.replace(TRAIL_AMT, ""), rare.replace(LEAD_AMT, "")) ?: "§d"
                 GardenAlerts.show(rc + "§lRARE REWARD!", rc + rare)
                 FishMsg.send("§dThis visitor offers §f$rare§d!")
             }
@@ -190,23 +192,6 @@ object Visitors {
 
     private fun L(c: Int) = Garden.legacy(c)
     private fun hint() = L(S.gardenShoppingHintColor) + "Click: open + copy amount"
-
-    private fun shoppingLines(): List<String> {
-        val agg = LinkedHashMap<String, Int>()
-        for (reqs in shopping.values) for (r in reqs) agg[r.name] = (agg[r.name] ?: 0) + r.amount
-        val out = arrayListOf(Garden.legacy(S.gardenShoppingColor) + "§lShopping List")
-        var total = 0.0
-        for ((n, a) in agg) {
-            val h = have(n)
-            val c = if (h >= a) "§a" else L(S.gardenShoppingNameColor)
-            var line = "$c$n ${L(S.gardenShoppingAmountColor)}x${"%,d".format(a)}"
-            if (h > 0) line += " §7($h)"
-            if (S.gardenShoppingPrices) { val p = Garden.priceOf(n) * a; total += p; line += " ${L(S.gardenShoppingPriceColor)}${Garden.short(p)}" }
-            out += line
-        }
-        if (S.gardenShoppingPrices) out += "${L(S.gardenShoppingTotalColor)}Total: ${L(S.gardenShoppingPriceColor)}${Garden.short(total)}"
-        return out
-    }
 
     fun clear() = shopping.clear()
 

@@ -34,7 +34,7 @@ object KuudraLoot {
     } catch (t: Throwable) { FishDiag.fail("KuudraLoot.1", "kuudra loot load failed", t); Book() }
 
     private fun save() {
-        try { Files.createDirectories(FILE.parent); Files.writeString(FILE, GSON.toJson(total)) }
-        catch (t: Throwable) { FishDiag.fail("KuudraLoot.2", "kuudra loot save failed", t) }
+        val json = try { GSON.toJson(total) } catch (t: Throwable) { FishDiag.fail("KuudraLoot.2", "kuudra loot save failed", t); return }
+        fishmod.utils.IoExecutor.execute { FishDiag.guard("KuudraLoot.3", "kuudra loot write failed") { fishmod.utils.SafeFiles.writeAtomic(FILE, json) } }
     }
 }
