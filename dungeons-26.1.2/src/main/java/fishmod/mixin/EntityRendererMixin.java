@@ -47,7 +47,8 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
                     state.nameTag = null;
                 }
             }
-            if (entity instanceof net.minecraft.world.entity.decoration.ArmorStand && state.nameTag != null
+            // Gate before getPosition: it allocates a Vec3 per named armor stand per frame.
+            if (Visual.nametagsOnTop && entity instanceof net.minecraft.world.entity.decoration.ArmorStand && state.nameTag != null
                     && fishmod.features.HologramText.take(entity.getPosition(tickProgress), state.nameTagAttachment, state.nameTag)) {
                 state.nameTag = null;
             }
