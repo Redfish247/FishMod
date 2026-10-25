@@ -21,7 +21,7 @@ object RiftHedgehog {
 
     private fun dump() {
         val mc = Minecraft.getInstance(); val me = mc.player ?: return
-        val ents = mc.level?.getEntities(me, me.boundingBox.inflate(10.0)) { it !== me && it.type != EntityType.ARROW }.orEmpty()
+        val ents = mc.level?.getEntities(me, me.boundingBox.inflate(10.0)) { it !== me && EntityType.getKey(it.type).path != "arrow" }.orEmpty()
             .sortedBy { it.distanceToSqr(me) }.take(25)
         Misc.addChatMessage(Component.literal("§6[Rift ents] ${ents.size} entities (10 blocks)"))
         for (e in ents) {
