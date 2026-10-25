@@ -19,7 +19,7 @@ object RiftCaducousStem {
     fun count() = tops.size
 
     fun init() {
-        ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 5 == 0) scan() }
+        ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 4 == 0) scan() }
         fishmod.utils.events.Events.ON_WORLD_CHANGE.register { tops = emptyList(); false }
         RenderingEvents.GIZMO.register { _ -> render() }
     }
@@ -31,13 +31,16 @@ object RiftCaducousStem {
         val ar = Rift.area(); if (ar.isNotEmpty() && !ar.contains("Dreadfarm", true)) { tops = emptyList(); return }
         val base = me.blockPosition()
         val found = ArrayList<BlockPos>()
+        val m = BlockPos.MutableBlockPos()
         for (dx in -RADIUS..RADIUS) for (dz in -RADIUS..RADIUS) {
-            var top: BlockPos? = null
-            for (dy in -RADIUS..RADIUS + 2) {
-                val p = BlockPos(base.x + dx, base.y + dy, base.z + dz)
-                if (level.getBlockState(p).`is`(Blocks.ROSE_BUSH)) top = p
-            }
-            if (top != null) found.add(top)
+            var y = base.y + RADIUS + 2
+            val low = base.y - RADIUS
+            // First bush from the top of the window, then climb past the window to the stem's real top
+            while (y >= low && !level.getBlockState(m.set(base.x + dx, y, base.z + dz)).`is`(Blocks.ROSE_BUSH)) y--
+            if (y < low) continue
+            var n = 0
+            while (n++ < 64 && level.getBlockState(m.set(base.x + dx, y + 1, base.z + dz)).`is`(Blocks.ROSE_BUSH)) y++
+            found.add(BlockPos(base.x + dx, y, base.z + dz))
         }
         tops = found
     }
