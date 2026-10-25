@@ -22,6 +22,8 @@ object RiftHay {
 
     private val cleared = java.util.concurrent.ConcurrentHashMap.newKeySet<Long>()
     private var lastWarn = 0L
+    @Volatile private var hayUpdates = 0
+    @Volatile private var warns = 0
 
     fun init() {
         Events.ON_PACKET.register { packet ->
@@ -42,10 +44,12 @@ object RiftHay {
     // The packet is read before the client applies it, so the level still holds the old state
     private fun onBlock(pos: BlockPos, new: BlockState) {
         val key = pos.asLong()
-        if (new.block == Blocks.HAY_BLOCK) { cleared.remove(key); return }
+        if (new.block == Blocks.HAY_BLOCK) { hayUpdates++; cleared.remove(key); return }
         val old = Minecraft.getInstance().level?.getBlockState(pos) ?: return
         if (old.block == Blocks.HAY_BLOCK && cleared.size < 4096) cleared.add(key)
     }
+
+    fun debug() = "hay: cleared=${cleared.size} hayUpdates=$hayUpdates warns=$warns"
 
     // Cleared hay cells the player's body overlaps
     private fun standingIn(): Boolean {
@@ -63,7 +67,7 @@ object RiftHay {
         if (!S.riftHay || !Rift.inRift() || !standingIn()) return
         val now = System.currentTimeMillis()
         if (now - lastWarn < 800L) return
-        lastWarn = now
+        lastWarn = now; warns++
         if (S.riftHayTitle) Misc.forceTitle(Component.literal(S.riftHayText), Component.empty(), 700)
         if (S.riftHaySound) Minecraft.getInstance().player?.playSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1f, 0.6f)
     }
