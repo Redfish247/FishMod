@@ -197,7 +197,13 @@ public class HypixelApi {
         scheduleUuidSave();
     }
 
-    private static synchronized void ensureUuidCacheLoaded() {
+    // Lock-free fast path: the class lock is also held by saveUuidCacheNow's file write.
+    private static void ensureUuidCacheLoaded() {
+        if (uuidCacheLoaded) return;
+        loadUuidCache();
+    }
+
+    private static synchronized void loadUuidCache() {
         if (uuidCacheLoaded) return;
         try {
             var file = FabricLoader.getInstance().getConfigDir().resolve("fishmod_uuid_cache.json");
@@ -738,12 +744,18 @@ public class HypixelApi {
                 .thenAccept(resp -> {
                     int code = resp.statusCode();
                     String uuid = (code >= 200 && code < 300) ? parseUuid(resp.body()) : null;
-                    if (uuid != null) { putUuid(ign, uuid); cb.accept(uuid); return; }
+                    if (uuid != null) { putUuid(ign, uuid); acceptOnce(cb, uuid); return; }
                     boolean transientErr = code == 429 || code == 408 || code >= 500;
-                    if (attempt == 0 && !transientErr) { cb.accept(null); return; }
+                    if (attempt == 0 && !transientErr) { acceptOnce(cb, null); return; }
                     resolveUuid(ign, next, cb);
                 })
                 .exceptionally(e -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.28", "resolveUuid request future failed", e); resolveUuid(ign, next, cb); return null; });
+    }
+
+    // A throwing callback would hit exceptionally() and retry the lookup, calling cb a second time.
+    private static void acceptOnce(java.util.function.Consumer<String> cb, String uuid) {
+        try { cb.accept(uuid); }
+        catch (Throwable t) { fishmod.utils.debug.FishDiag.fail("HypixelApi.28b", "resolveUuid callback threw", t); }
     }
 
     public static void resolveUuidAsync(String ign, java.util.function.Consumer<String> cb) {
@@ -1104,16 +1116,23 @@ public class HypixelApi {
             networthInFlight.put(key, new java.util.concurrent.CopyOnWriteArrayList<>(java.util.List.of(marshaled)));
         }
         java.util.concurrent.CompletableFuture.runAsync(() -> {
+            // Remove under the same lock getNetworth adds waiters with, or a late waiter is never called.
             NetworthCallback broadcast = (networth, profileName) -> {
-                java.util.List<NetworthCallback> waiters = networthInFlight.remove(key);
+                java.util.List<NetworthCallback> waiters;
+                synchronized (networthInFlight) { waiters = networthInFlight.remove(key); }
                 if (waiters != null) for (NetworthCallback w : waiters) w.onData(networth, profileName);
             };
-            String uuid = resolveUuidBlocking(ign);
-            if (uuid == null) { broadcast.onData(-1, null); return; }
-            Boolean blocked = getNetworthRemote(uuid, broadcast);
-            if (blocked == null) return;
-            if (blocked) { broadcast.onData(NETWORTH_BLOCKED, null); return; }
-            getNetworthLocal(uuid, broadcast);
+            try {
+                String uuid = resolveUuidBlocking(ign);
+                if (uuid == null) { broadcast.onData(-1, null); return; }
+                Boolean blocked = getNetworthRemote(uuid, broadcast);
+                if (blocked == null) return;
+                if (blocked) { broadcast.onData(NETWORTH_BLOCKED, null); return; }
+                getNetworthLocal(uuid, broadcast);
+            } catch (Throwable t) {
+                fishmod.utils.debug.FishDiag.fail("HypixelApi.40b", "networth lookup threw for " + ign, t);
+                broadcast.onData(-1, null);
+            }
         }, NETWORTH_EXECUTOR);
     }
 
@@ -2231,8 +2250,9 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
                     member = findSelectedMember(root, uuid);
             } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.115", "getLocalMember failed", ignored);}
             JsonObject fm = member;
-            mc.execute(() -> { cb.accept(fm); finishLocalMemberFetch(fm, true); });
-        }).exceptionally(t -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.116", "getLocalMember request future failed", t); mc.execute(() -> { cb.accept(null); finishLocalMemberFetch(null, false); }); return null; });
+            // finally: a throwing cb must not leave the fetch flagged in progress, or every later caller waits forever.
+            mc.execute(() -> { try { cb.accept(fm); } finally { finishLocalMemberFetch(fm, true); } });
+        }).exceptionally(t -> { fishmod.utils.debug.FishDiag.fail("HypixelApi.116", "getLocalMember request future failed", t); mc.execute(() -> { try { cb.accept(null); } finally { finishLocalMemberFetch(null, false); } }); return null; });
     }
 
     private static void finishLocalMemberFetch(JsonObject result, boolean success) {
@@ -2249,7 +2269,9 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
             waiters = localMemberWaiters;
             localMemberWaiters = null;
         }
-        if (waiters != null) for (java.util.function.Consumer<JsonObject> w : waiters) w.accept(result);
+        if (waiters != null) for (java.util.function.Consumer<JsonObject> w : waiters) {
+            try { w.accept(result); } catch (Throwable t) { fishmod.utils.debug.FishDiag.fail("HypixelApi.116b", "local member waiter threw", t); }
+        }
     }
 
     public static void getEconomyByName(Minecraft mc, String ign, EconomyCallback cb) {
