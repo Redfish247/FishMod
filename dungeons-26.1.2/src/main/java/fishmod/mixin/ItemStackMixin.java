@@ -19,6 +19,7 @@ public class ItemStackMixin implements ItemRarityHolder, ItemCustomDataHolder {
 
     @Inject(method = "getHoverName", at = @At("RETURN"), cancellable = true)
     private void fishmod$customItemName(CallbackInfoReturnable<Component> cir) {
+        if (!ItemCustomizationStore.hasAny()) return;
         try {
             String uuid = ItemUtil.getUuid((ItemStack) (Object) this);
             if (uuid == null) return;

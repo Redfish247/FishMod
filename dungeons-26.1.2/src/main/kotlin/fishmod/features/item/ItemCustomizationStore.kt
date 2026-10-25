@@ -22,7 +22,12 @@ object ItemCustomizationStore {
         val armorTrims: MutableMap<String, ArmorTrimId> = HashMap(),
         val itemNames: MutableMap<String, String> = HashMap(),
         val modelIds: MutableMap<String, String> = HashMap()
-    )
+    ) {
+        fun isEmpty() = dyeColors.isEmpty() && animatedDyes.isEmpty() && armorTrims.isEmpty() && itemNames.isEmpty() && modelIds.isEmpty()
+    }
+
+    // Lets per-render item mixins skip the uuid read when nothing is customized.
+    @JvmStatic fun hasAny(): Boolean = !data.isEmpty() || !remote.isEmpty()
 
     private var data = Data()
 
