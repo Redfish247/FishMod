@@ -17,13 +17,14 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.Vec3
 import kotlin.math.hypot
+import kotlin.math.sqrt
 
-// Necron's drag moves you in a straight line ~DRAG_DZ blocks in z (21 logged runs); the line is read off the first ticks of the drag.
+// Necron's drag pulls you ~DRAG_LEN blocks (3D) along the direction of its first ticks, wherever you stand (5 logged runs from different spots, 1.6-3.3 blocks off).
 object NecronDropPredict {
 
     private const val DRAG_TICKS = 50
-    private const val DRAG_DZ = 61.0
-    private const val START_SPEED = 0.7
+    private const val DRAG_LEN = 64.0
+    private const val START_DZ = 0.9
     private const val LOCK_DIST = 6.0
     private const val MAX_WAIT_TICKS = 200
 
@@ -65,7 +66,7 @@ object NecronDropPredict {
         val last = prev
         prev = pos
         if (start == null) {
-            if (last != null && phaseTicks < MAX_WAIT_TICKS && hypot(pos.x - last.x, pos.z - last.z) > START_SPEED) { start = last; startTick = phaseTicks }
+            if (last != null && phaseTicks < MAX_WAIT_TICKS && pos.z - last.z > START_DZ) { start = last; startTick = phaseTicks }
             return
         }
         val s = start ?: return
@@ -73,12 +74,13 @@ object NecronDropPredict {
         val dz = pos.z - s.z
         if (hypot(dx, dz) < LOCK_DIST) return
         if (dz < 0.5) { start = null; return }
-        val k = DRAG_DZ / dz
+        val dy = pos.y - s.y
+        val k = DRAG_LEN / sqrt(dx * dx + dy * dy + dz * dz)
         val ex = s.x + dx * k
         val ez = s.z + dz * k
         // The platform floor is uneven (64.06 to 65.0); take the highest top within the box footprint.
         val ey = listOf(-0.3, 0.0, 0.3).flatMap { ox -> listOf(-0.3, 0.0, 0.3).mapNotNull { oz ->
-            val h = level.clip(ClipContext(Vec3(ex + ox, p.y + 30.0, ez + oz), Vec3(ex + ox, p.y - 50.0, ez + oz), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p))
+            val h = level.clip(ClipContext(Vec3(ex + ox, 85.0, ez + oz), Vec3(ex + ox, 50.0, ez + oz), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p))
             if (h.type == HitResult.Type.BLOCK) h.location.y else null
         } }.maxOrNull() ?: 64.5
         landing = Vec3(ex, ey, ez)
