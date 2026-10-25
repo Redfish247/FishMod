@@ -435,8 +435,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         private const val HANDLE_W = 10
         private const val HANDLE_H = 44
 
-        private val ACCENT = ScreenTheme.ACCENT
-        private val ACCENT_HOVER = ScreenTheme.ACCENT_HOVER
+        private val ACCENT get() = ScreenTheme.ACCENT
+        private val ACCENT_HOVER get() = ScreenTheme.ACCENT_HOVER
         private val TEXT = ScreenTheme.TEXT_COLOR
         private val SUBTEXT = ScreenTheme.SUBTEXT_COLOR
         private val ON_ACCENT = 0xFF06302F.toInt()
@@ -844,7 +844,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                     val ts = 6.5f
                     val ty = if (y - 2 - 10f * k >= 1f) (y - 2) / k - 10f else (y + h + 2) / k
                     val tx = (x - 1) / k
-                    UiRecorder.fillRoundedRect(tx, ty, UiRecorder.textWidth(tag, ts) + 7f, 10f, 3f, ACCENT)
+                    UiRecorder.fillRoundedRect(tx, ty, UiRecorder.textWidthBold(tag, ts) + 7f, 10f, 3f, ACCENT)
                     UiRecorder.textBold(tag, tx + 3.5f, ty + (10f - ts) / 2f, ts, ON_ACCENT)
                     if (e.setScale() != null && !e.locked()) {
                         UiRecorder.roundedRectRing(
@@ -873,7 +873,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         val ts = 6.5f
         val lead = sel?.name() ?: if (picked.isEmpty()) "Hover the left edge to pick a HUD to move" else "Click a HUD to select it"
         val rest = if (sel != null) "  ·  ${Math.round(sel.scale() * 100)}%  ·  x ${sel.getX().asInt}, y ${sel.getY().asInt}" else ""
-        val lw = UiRecorder.textWidth(lead, ts) + if (sel != null) 0.4f else 0f
+        val lw = if (sel != null) UiRecorder.textWidthBold(lead, ts) else UiRecorder.textWidth(lead, ts)
         val pw = lw + UiRecorder.textWidth(rest, ts) + 18f
         val ph = 13f
         val px = (cW() - pw) / 2f
