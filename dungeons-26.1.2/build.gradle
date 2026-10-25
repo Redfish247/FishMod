@@ -21,8 +21,10 @@ loom {
     runConfigs.named("client") {
         setIdeConfigGenerated(true)
         vmArg("-Dmixin.debug.export=true")
-        vmArg("-Ddevauth.enabled=true")
+        vmArg("-Ddevauth.enabled=${project.findProperty('devauth') ?: 'true'}")
         vmArg("-Ddevauth.account=main")
+        // -Pworld=<save> joins that singleplayer world on launch (smoke tests)
+        if (project.findProperty('world')) programArgs("--quickPlaySingleplayer", project.findProperty('world').toString())
         if (System.getProperty("java.vendor.version")?.contains("JBR") ||
                 System.getProperty("java.vm.vendor")?.contains("JetBrains")) {
             vmArg("-XX:+AllowEnhancedClassRedefinition")
@@ -68,6 +70,8 @@ dependencies {
 	include implementation(project(':practical-config-relocated'))
 
 	runtimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
+	// DevAuth needs it; MC no longer bundles Apache HttpClient
+	runtimeOnly("org.apache.httpcomponents:httpclient:4.5.14")
 }
 
 processResources {
