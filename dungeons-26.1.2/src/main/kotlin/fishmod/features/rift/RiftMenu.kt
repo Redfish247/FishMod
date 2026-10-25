@@ -98,6 +98,8 @@ object RiftMenu {
         hay.sub.add(ToggleSetting("Sound", "", S::riftHaySound))
         hay.sub.add(ToggleSetting("Cleared Hay Boxes", "Box the cells where hay was cleared", S::riftHayBoxes))
         hay.sub.add(ColorPickerSetting("Colour", "", S::riftHayColor))
+        hay.sub.add(SliderIntSetting("Regrow Seconds", "Guess until the mod has seen hay refill once and learned the real delay", S::riftHayDelay, 2, 60))
+        hay.sub.add(SliderIntSetting("Warn Seconds Before", "Warn only this long before the hay refills your cell", S::riftHayLead, 1, 10))
         col.features.add(hay)
 
         val leech = Feature("Leech Supreme Helper", S::riftLeech)
