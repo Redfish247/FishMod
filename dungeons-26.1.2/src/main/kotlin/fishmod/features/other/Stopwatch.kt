@@ -111,7 +111,7 @@ object Stopwatch {
         fishmod.features.FishHudEditor.register(NAME, hud)
 
         ClientTickEvents.END_CLIENT_TICK.register { mc -> FishDiag.guard("Stopwatch.1", "stopwatch tick") { tick(mc) } }
-        Events.ON_GAME_MESSAGE.register { msg -> FishDiag.guard("Stopwatch.2", "stopwatch chat") { onChat(msg.string.replace(COLOR, "")) }; false }
+        Events.ON_GAME_MESSAGE.register { msg -> if (enabled) FishDiag.guard("Stopwatch.2", "stopwatch chat") { onChat(msg.string.replace(COLOR, "")) }; false }
         Events.ON_TERMINAL.register { name, _, objective, _, _ ->
             when (objective) {
                 "terminal" -> {
@@ -183,9 +183,17 @@ object Stopwatch {
         if (t != want || t == Trigger.NONE) return false
         return when (t) {
             Trigger.CHAT, Trigger.GUI_OPEN -> arg != null && text.isNotEmpty() && arg.contains(text, true)
-            Trigger.CHAT_REGEX -> arg != null && text.isNotEmpty() && runCatching { Regex(text).containsMatchIn(arg) }.getOrDefault(false)
+            Trigger.CHAT_REGEX -> arg != null && text.isNotEmpty() && (userRegex(text)?.containsMatchIn(arg) ?: false)
             else -> true
         }
+    }
+
+    // Compiled user regexes, keyed by pattern text (null = invalid)
+    private val regexCache = HashMap<String, Regex?>()
+    private fun userRegex(p: String): Regex? {
+        if (regexCache.size > 16) regexCache.clear()
+        if (!regexCache.containsKey(p)) regexCache[p] = runCatching { Regex(p) }.getOrNull()
+        return regexCache[p]
     }
 
     // One event does one thing: reset, then stop, then split, then start

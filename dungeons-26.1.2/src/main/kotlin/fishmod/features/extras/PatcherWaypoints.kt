@@ -39,6 +39,7 @@ object PatcherWaypoints {
         val label = SENDER.findAll(before).lastOrNull()?.groupValues?.get(1) ?: "Waypoint"
         val pos = Vec3(x + 0.5, y.toDouble(), z + 0.5)
         list.removeIf { it.label == label || it.pos == pos }
+        if (list.size >= 32) list.removeAt(0)
         list += Wp(label, pos, System.currentTimeMillis() + S.patcherWaypointSeconds.coerceIn(5, 3600) * 1000L)
     }
 
