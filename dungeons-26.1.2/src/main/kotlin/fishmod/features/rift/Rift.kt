@@ -73,6 +73,7 @@ object Rift {
             .filter { it.isNotBlank() }.distinct().take(25)
         say("§7nearby (${names.size}): " + names.joinToString(" | "))
         say("§7" + RiftSnake.debug())
+        say("§7" + RiftHay.debug())
         say("§7bacte cand: " + RiftMobs.bacteDebug.joinToString(" | ").ifEmpty { "none" })
         say("§7crux matched: " + RiftMobs.lastCruxNames.joinToString(" | ").ifEmpty { "none" })
     }
