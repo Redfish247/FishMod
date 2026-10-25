@@ -18,6 +18,12 @@ import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.Vec3
 import kotlin.math.hypot
 import kotlin.math.sqrt
+import com.mojang.brigadier.builder.LiteralArgumentBuilder
+import fishmod.utils.Misc
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.minecraft.network.chat.Component
 
 // Necron's drag pulls you ~DRAG_LEN blocks (3D) along the direction of its first ticks, wherever you stand (5 logged runs from different spots, 1.6-3.3 blocks off).
 object NecronDropPredict {
@@ -38,13 +44,69 @@ object NecronDropPredict {
     private var landing: Vec3? = null
     private var dragTicks = 0
 
-    private fun active() = Floor7.enableNecronDropPredict && Location.inDungeon() && Phase.isInFloor7() && Phase.getPhase() in 8..9
+    // Singleplayer test (/fm necrondrag [random]): pulls the player to a random point in the target box with the logged speed profile.
+    private const val TEST_TICKS = 40
+    private const val TARGET_Y = 70.0
+    private const val TARGET_Z_MIN = 105.5
+    private const val TARGET_Z_MAX = 118.5
+    private var testTick = -1
+    private var testLinger = 0
+    private var testStart = Vec3.ZERO
+    private var testTarget = Vec3.ZERO
+
+    private fun testDist(ticks: Int): Double {
+        var d = 0.0
+        for (n in 0 until ticks) d += if (n < 3) 1.73 else 2.01 - 0.0217 * (n - 3)
+        return d
+    }
+
+    @JvmStatic
+    fun command(): LiteralArgumentBuilder<FabricClientCommandSource> =
+        ClientCommands.literal("necrondrag").executes { startTest(false); 1 }
+            .then(ClientCommands.literal("random").executes { startTest(true); 1 })
+
+    private fun startTest(randomStart: Boolean) {
+        val p = Minecraft.getInstance().player ?: return
+        val r = kotlin.random.Random
+        reset()
+        testStart = if (randomStart) Vec3(r.nextDouble(28.0, 90.0), r.nextDouble(64.0, 126.0), r.nextDouble(14.0, 48.0)) else Vec3(p.x, p.y, p.z)
+        testTarget = Vec3(r.nextDouble(TARGET_X_MIN, TARGET_X_MAX), TARGET_Y, r.nextDouble(TARGET_Z_MIN, TARGET_Z_MAX))
+        p.setPos(testStart.x, testStart.y, testStart.z)
+        p.setNoGravity(true)
+        p.deltaMovement = Vec3.ZERO
+        testTick = 0
+        Misc.addChatMessage(Component.literal("§b[necrondrag] §7start §f%.1f %.1f %.1f §7target §f%.1f %.1f %.1f".format(testStart.x, testStart.y, testStart.z, testTarget.x, testTarget.y, testTarget.z)))
+    }
+
+    private fun testStep() {
+        val p = Minecraft.getInstance().player ?: return
+        val full = testTarget.subtract(testStart)
+        val f = (testDist(testTick + 1) / full.length()).coerceAtMost(1.0)
+        p.setPos(testStart.x + full.x * f, testStart.y + full.y * f, testStart.z + full.z * f)
+        p.deltaMovement = Vec3.ZERO
+        testTick++
+        if (testTick >= TEST_TICKS) {
+            testTick = -2; testLinger = 200
+            p.setNoGravity(false)
+            val pred = landing
+            val reached = testDist(TEST_TICKS) >= full.length()
+            Misc.addChatMessage(Component.literal("§b[necrondrag] §7ended at §f%.1f %.1f %.1f §7(%s)%s".format(p.x, p.y, p.z, if (reached) "reached target" else "fell short",
+                if (pred != null) " §7predicted off by §f%.1f §7blocks".format(hypot(pred.x - p.x, pred.z - p.z)) else " §cno prediction")))
+        }
+    }
+
+    private fun active() = testTick != -1 || Floor7.enableNecronDropPredict && Location.inDungeon() && Phase.isInFloor7() && Phase.getPhase() in 8..9
 
     private fun reset() { phaseTicks = 0; prev = null; start = null; landing = null; dragTicks = 0 }
 
     @JvmStatic
     fun init() {
+        ClientTickEvents.END_CLIENT_TICK.register {
+            if (testTick == -2 && --testLinger <= 0) { testTick = -1; reset() }
+            if (testTick >= 0) { try { testStep(); tick() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.4", "necron drop test threw", e) } }
+        }
         Events.ON_SERVER_TICK.register {
+            if (testTick >= 0) return@register false
             try { tick() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.3", "necron drop tick threw", e) }
             false
         }
