@@ -59,6 +59,16 @@ object DragonCheck {
             modMessage("&7dragonSpawn id=${p.id} pos=${v} matched=${inBox?.name ?: "none"}")
         }
         if (inBox != null) { inBox.setAlive(p.id, tick); return }
+        // Late spawn: ping-tick timer ran out or particle packet was missed; recover only if the scoreboard still lists it.
+        val late = WitherDragon.real.firstOrNull {
+            it.state == WitherDragonState.DEAD &&
+                v.x in it.box.minX..it.box.maxX && v.z in it.box.minZ..it.box.maxZ
+        }
+        if (late != null) {
+            if (isAliveOnScoreboard(late)) late.setAlive(p.id, tick)
+            else if (fishmod.utils.debug.Debug.dragonDebug) modMessage("&7dragonSpawn id=${p.id} ignored: ${late.name} not on scoreboard")
+            return
+        }
         WitherDragon.real.firstOrNull { it.state == WitherDragonState.ALIVE && it.entity == null && it.entityId == p.id }
             ?.let { it.entityId = p.id }
             ?: FishDiag.fail("DragonCheck.2", "ender dragon ${p.id} spawned at $v with no spawning dragon matching (states=${WitherDragon.real.map { it.state }})")
