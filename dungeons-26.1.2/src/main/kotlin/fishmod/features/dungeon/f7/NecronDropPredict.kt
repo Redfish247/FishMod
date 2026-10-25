@@ -25,6 +25,9 @@ object NecronDropPredict {
     private const val DRAG_TICKS = 50
     private const val DRAG_LEN = 64.0
     private const val START_DZ = 0.9
+    private const val TARGET_X_MIN = 47.5
+    private const val TARGET_X_MAX = 63.5
+    private const val TARGET_Z = 112.0
     private const val LOCK_DIST = 6.0
     private const val MAX_WAIT_TICKS = 200
 
@@ -76,8 +79,13 @@ object NecronDropPredict {
         if (dz < 0.5) { start = null; return }
         val dy = pos.y - s.y
         val k = DRAG_LEN / sqrt(dx * dx + dy * dy + dz * dz)
-        val ex = s.x + dx * k
-        val ez = s.z + dz * k
+        // The pull aims at a random point in the target box; snap the measured line into the box, then stop short or at the target.
+        val aimX = (s.x + dx / dz * (TARGET_Z - s.z)).coerceIn(TARGET_X_MIN, TARGET_X_MAX)
+        val aimDx = aimX - s.x
+        val aimDz = TARGET_Z - s.z
+        val reach = minOf(hypot(dx, dz) * k, hypot(aimDx, aimDz))
+        val ex = s.x + aimDx / hypot(aimDx, aimDz) * reach
+        val ez = s.z + aimDz / hypot(aimDx, aimDz) * reach
         // The platform floor is uneven (64.06 to 65.0); take the highest top within the box footprint.
         val ey = listOf(-0.3, 0.0, 0.3).flatMap { ox -> listOf(-0.3, 0.0, 0.3).mapNotNull { oz ->
             val h = level.clip(ClipContext(Vec3(ex + ox, 85.0, ez + oz), Vec3(ex + ox, 50.0, ez + oz), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p))
