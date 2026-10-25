@@ -230,7 +230,7 @@ object WitherDragons {
 
     private fun timerText(t: Int): String = when (FishSettings.witherDragonsTimerStyle) {
         0 -> "${t * 50}ms"
-        1 -> "${"%.1f".format(t / 20f)}s"
+        1 -> fishmod.utils.Fmt.f1(t / 20.0) + "s"
         2 -> "${t}t"
         else -> { FishDiag.fail("WitherDragons.9", "unknown dragon timer style ${FishSettings.witherDragonsTimerStyle}"); "${t}t" }
     }
