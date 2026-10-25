@@ -33,6 +33,7 @@ object NecronDropPredict {
     private const val TARGET_X_MAX = 63.5
     private const val TARGET_Z = 112.0
     private const val LOCK_DIST = 6.0
+    private const val HIDE_AFTER_STOP_TICKS = 10
     private const val MAX_WAIT_TICKS = 200
 
     private var phaseTicks = 0
@@ -41,6 +42,8 @@ object NecronDropPredict {
     private var startTick = 0
     private var landing: Vec3? = null
     private var dragTicks = 0
+    private var lastMoveTick = 0
+    private var dragOver = false
 
     // Singleplayer test (/fm necrondrag [random]): pulls the player to a random point in the target box with the logged speed profile.
     private const val TEST_TICKS = 40
@@ -95,7 +98,7 @@ object NecronDropPredict {
 
     private fun active() = testTick != -1 || Floor7.enableNecronDropPredict && Location.inDungeon() && Phase.isInFloor7() && Phase.getPhase() in 8..9
 
-    private fun reset() { phaseTicks = 0; prev = null; start = null; landing = null; dragTicks = 0 }
+    private fun reset() { phaseTicks = 0; prev = null; start = null; landing = null; dragTicks = 0; lastMoveTick = 0; dragOver = false }
 
     @JvmStatic
     fun init() {
@@ -110,7 +113,7 @@ object NecronDropPredict {
         }
         RenderingEvents.GIZMO.register { _ ->
             val s = landing ?: return@register
-            if (!active() || dragTicks > DRAG_TICKS + 40) return@register
+            if (!active() || dragOver) return@register
             try {
                 val color = Floor7.necronDropColor
                 if (Floor7.necronDropStyle == "Beacon") RenderUtils.gizmoBox(AABB(s.x - 0.15, s.y - 40.0, s.z - 0.15, s.x + 0.15, s.y + 300.0, s.z + 0.15), color and 0x60FFFFFF, 0)
@@ -126,7 +129,14 @@ object NecronDropPredict {
         val pos = Vec3(p.x, p.y, p.z)
         phaseTicks++
         if (phaseTicks <= 200) Debug.LOGGER.info("[NecronDropTrace] t=%d pos=%.2f,%.2f,%.2f ground=%s".format(phaseTicks, pos.x, pos.y, pos.z, p.onGround()))
-        if (landing != null) { dragTicks++; return }
+        if (landing != null) {
+            dragTicks++
+            val before = prev
+            prev = pos
+            if (before != null && hypot(pos.x - before.x, pos.z - before.z) > 0.3) lastMoveTick = phaseTicks
+            if (phaseTicks - lastMoveTick > HIDE_AFTER_STOP_TICKS) dragOver = true
+            return
+        }
         val last = prev
         prev = pos
         if (start == null) {
@@ -150,6 +160,7 @@ object NecronDropPredict {
         // Height follows how far along the line to the target the pull gets (y 70 only if it reaches).
         val ey = s.y + (TARGET_Y - s.y) * (reach / hypot(aimDx, aimDz))
         landing = Vec3(ex, ey, ez)
+        lastMoveTick = phaseTicks
         dragTicks = phaseTicks - startTick
         Debug.LOGGER.info("[NecronDrop] start=%.2f,%.2f,%.2f dir=%.2f,%.2f predicted=%.2f,%.2f,%.2f".format(s.x, s.y, s.z, dx, dz, ex, ey, ez))
     }
