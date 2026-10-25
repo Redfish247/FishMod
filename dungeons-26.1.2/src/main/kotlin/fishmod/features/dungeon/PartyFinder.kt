@@ -368,7 +368,7 @@ object PartyFinder {
     private fun request(name: String) {
         val key = name.lowercase()
         if (cache.containsKey(key)) return
-        failedAt[key]?.let { if (System.currentTimeMillis() - it < 30_000) return }
+        failedAt[key]?.let { if (System.currentTimeMillis() - it < 120_000) return }
         if (!pending.add(key)) return
         if (pending.size > 6) { pending.remove(key); return }
         val g = gen
@@ -376,7 +376,8 @@ object PartyFinder {
             if (g != gen) return@getByNameSilent
             pending.remove(key)
             if (data.failed) {
-                FishDiag.fail("PartyFinder.15", "PF stats lookup failed for $name")
+                // expected (nicked/unknown name, proxy rate limit); real HTTP/parse faults report in HypixelApi
+                fishmod.utils.debug.Debug.LOGGER.info("PF stats lookup failed for {}", name)
                 failedAt[key] = System.currentTimeMillis()
             } else { failedAt.remove(key); cache[key] = data }
         }
