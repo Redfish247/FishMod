@@ -94,6 +94,7 @@ object Rift {
         FishDiag.guard("Rift.4", "RiftSnake init failed") { RiftSnake.init() }
         FishDiag.guard("Rift.5", "RiftVampire init failed") { RiftVampire.init() }
         FishDiag.guard("Rift.6", "RiftParkour init failed") { RiftParkour.init() }
+        FishDiag.guard("Rift.7", "RiftCaducousStem init failed") { RiftCaducousStem.init() }
         FishDiag.guard("Rift.L", "RiftLeech init failed") { RiftLeech.init() }
     }
 }

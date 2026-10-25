@@ -16,6 +16,8 @@ object RiftSettings {
     @ConfigValue @JvmField var riftAgaricusSeconds: Int = 5
     @ConfigValue @JvmField var riftBerberis: Boolean = false
     @ConfigValue @JvmField var riftBerberisColor: Int = 0xFFFFFF55.toInt()
+    @ConfigValue @JvmField var riftStem: Boolean = false
+    @ConfigValue @JvmField var riftStemColor: Int = 0xFFFF55FF.toInt()
 
     // Wyld Woods / mobs
     @ConfigValue @JvmField var riftCrux: Boolean = false

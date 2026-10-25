@@ -30,6 +30,10 @@ object RiftMenu {
         ber.sub.add(ColorPickerSetting("Colour", "", S::riftBerberisColor))
         col.features.add(ber)
 
+        val stem = Feature("Caducous Stem Highlighter", S::riftStem)
+        stem.sub.add(ColorPickerSetting("Colour", "", S::riftStemColor))
+        col.features.add(stem)
+
         val crux = Feature("Crux Helper", S::riftCrux)
         crux.sub.add(ToggleSetting("Shy Look Away Title", "Title when a Shy Crux is shouting near you", S::riftShyTitle))
         crux.sub.add(SliderIntSetting("Hint Range", "Only label Crux mobs within this many blocks", S::riftCruxRange, 5, 40))
@@ -101,6 +105,7 @@ object RiftMenu {
         "Punchcard Marker" -> "Mark players you already punched"
         "Agaricus Cap Timer" -> "Countdown on the cap, CLICK when it turns red"
         "Berberis Highlighter" -> "Box the Wilted Berberis from its particles (hold the Farming Wand)"
+        "Caducous Stem Highlighter" -> "Box the top Rose Bush of each stem (hold the Farming Wand, harvest top to bottom)"
         "Crux Helper" -> "What to do for each Crux"
         "Fleespook Tracker" -> "Line to the Fleespook"
         "Bacte Helper" -> "Bacte spawn alert, line, optional all-chat announce"
