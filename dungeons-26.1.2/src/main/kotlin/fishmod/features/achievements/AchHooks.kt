@@ -33,12 +33,14 @@ object AchHooks {
     private var tick = 0
     private var lavaDeaths = 0
     private val LAVA_DEATH = Regex("^☠ You .*lava")
+    private val ELAPSED = Regex("(\\d+)([hms])")
 
     @JvmStatic
     fun i4Plate() { Minecraft.getInstance().execute { AchStore.max("secret.i4Plate", 1) } }
 
     fun init() {
         Events.ON_GAME_MESSAGE.register { c ->
+            if (!AchSettings.achEnabled) return@register false
             FishDiag.guard("AchHooks.1", "achievement chat parse") { onChat(c.string.replace(Constants.STRIP_COLOR_REGEX, "").trim()) }
             false
         }
@@ -141,7 +143,7 @@ object AchHooks {
 
     private fun parseElapsed(s: String): Double {
         var t = 0.0
-        Regex("(\\d+)([hms])").findAll(s).forEach { m ->
+        ELAPSED.findAll(s).forEach { m ->
             val n = m.groupValues[1].toDouble()
             t += when (m.groupValues[2]) { "h" -> n * 3600; "m" -> n * 60; else -> n }
         }
