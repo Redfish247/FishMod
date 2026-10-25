@@ -9,7 +9,6 @@ object MineshaftPity {
 
     private const val MAX = 2000
     private val TAB = Regex("""Glacite Mineshafts: ([\d,]+)/2,000""")
-    private val perBlock = HashMap<PityBlock, Double>()
     private var lastShaftMs = 0L
     private var halfPoints = 0.0
 
@@ -19,13 +18,12 @@ object MineshaftPity {
             val pb = MiningBlocks.pity(old) ?: return@BreakListener
             // Spread blocks (Pickobulus etc.) count half, like SkyHanni
             val add = if (original) pb.weight.toDouble() else pb.weight / 2.0
-            perBlock[pb] = (perBlock[pb] ?: 0.0) + add
             halfPoints += add
             S.miningPityPoints = halfPoints.toInt().coerceAtMost(MAX)
             S.miningPityBlocks++
         }
         Events.ON_GAME_MESSAGE.register { text ->
-            if (Mining.strip(text.string).contains("You found a Glacite Mineshaft portal!")) reset()
+            if (S.miningPity && Mining.strip(text.string).contains("You found a Glacite Mineshaft portal!")) reset()
             false
         }
         Events.ON_LOCATION_CHANGE.register { loc ->
@@ -43,12 +41,12 @@ object MineshaftPity {
 
     private fun reset() {
         lastShaftMs = System.currentTimeMillis()
-        perBlock.clear(); halfPoints = 0.0
+        halfPoints = 0.0
         S.miningPityPoints = 0; S.miningPityBlocks = 0
     }
 
     fun points(): Int {
-        Mining.tabLine("Glacite Mineshafts:")?.let { l -> TAB.find(l)?.let { return it.groupValues[1].replace(",", "").toInt() } }
+        Mining.tabLine("Glacite Mineshafts:")?.let { l -> TAB.find(l)?.groupValues?.get(1)?.replace(",", "")?.toIntOrNull()?.let { return it } }
         return halfPoints.toInt().coerceAtMost(MAX)
     }
 

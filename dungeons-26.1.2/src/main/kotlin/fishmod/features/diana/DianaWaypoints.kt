@@ -16,7 +16,6 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.abs
-import kotlin.math.sqrt
 
 enum class WpType { BURROW, GUESS, ARROW, SUB, RARE, WORLD }
 
@@ -312,10 +311,5 @@ object DianaWaypoints {
             line(if (i == 0) lineStart() else from, to, color, (width / 1.6f).coerceIn(1f, 20f))
             left.remove(next); from = to; i++
         }
-    }
-
-    fun dist(a: BlockPos, b: BlockPos): Double {
-        val dx = (a.x - b.x).toDouble(); val dy = (a.y - b.y).toDouble(); val dz = (a.z - b.z).toDouble()
-        return sqrt(dx * dx + dy * dy + dz * dz)
     }
 }

@@ -40,6 +40,7 @@ object RiftNametag {
     }
 
     private fun stats(name: String): String? {
+        if (cache.size > 500) cache.clear()
         val e = cache.computeIfAbsent(name.lowercase()) { Entry() }
         val now = System.currentTimeMillis()
         if (!e.pending && (e.at == 0L || now - e.at > TTL_MS) && now - lastKick > 1000L) {
