@@ -227,8 +227,10 @@ final class SafariSection {
 		return out;
 	}
 
+	private static final java.util.regex.Pattern NON_ALNUM = java.util.regex.Pattern.compile("[^a-z0-9]");
+
 	private static String critterKey(String raw) {
-		return raw == null ? "" : raw.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+		return raw == null ? "" : NON_ALNUM.matcher(raw.toLowerCase(Locale.ROOT)).replaceAll("");
 	}
 
 	private static void drawCritterIcon(GuiGraphicsExtractor g, String critterId, int x, int y, ItemStack fallback) {
