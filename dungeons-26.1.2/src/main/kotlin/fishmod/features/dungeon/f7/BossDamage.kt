@@ -64,7 +64,7 @@ object BossDamage {
         for (boss in bosses) {
             for (stand in level.getEntitiesOfClass(ArmorStand::class.java, boss.boundingBox.inflate(4.0))) {
                 if (stand.tickCount > 3 || stand.id in seen) continue
-                val raw = stand.customName?.string?.replace(Regex("§."), "")?.trim() ?: continue
+                val raw = stand.customName?.string?.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")?.trim() ?: continue
                 val dmg = parse(raw) ?: continue
                 seen.add(stand.id)
                 val t = tallies.getOrPut(bossName(boss)) { Tally() }
