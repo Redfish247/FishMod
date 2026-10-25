@@ -21,7 +21,7 @@ object RiftHedgehog {
 
     private fun dump() {
         val mc = Minecraft.getInstance(); val me = mc.player ?: return
-        val ents = mc.level?.getEntities(me, me.boundingBox.inflate(10.0)) { it !is Player }.orEmpty()
+        val ents = mc.level?.getEntities(me, me.boundingBox.inflate(10.0)) { it !== me && it.type != EntityType.ARROW }.orEmpty()
             .sortedBy { it.distanceToSqr(me) }.take(25)
         Misc.addChatMessage(Component.literal("§6[Rift ents] ${ents.size} entities (10 blocks)"))
         for (e in ents) {
@@ -31,7 +31,7 @@ object RiftHedgehog {
             }.orEmpty()
             val fx = (e as? LivingEntity)?.activeEffects?.joinToString(",") { it.effect.unwrapKey().map { k -> k.identifier().path }.orElse("?") }.orEmpty()
             Misc.addChatMessage(Component.literal(
-                "§7${EntityType.getKey(e.type).path} #${e.id} d=${"%.1f".format(Math.sqrt(e.distanceToSqr(me)))} $name inv=${e.isInvisible} glow=${e.isCurrentlyGlowing} pose=${e.pose.name} fire=${e.isOnFire} ride=${e.vehicle?.id} eq=[$eq] fx=[$fx]"))
+                "§7${EntityType.getKey(e.type).path} #${e.id} d=${"%.1f".format(Math.sqrt(e.distanceToSqr(me)))} $name${if (e is Player) " player='${e.name.string}'" else ""} inv=${e.isInvisible} glow=${e.isCurrentlyGlowing} pose=${e.pose.name} fire=${e.isOnFire} ride=${e.vehicle?.id} eq=[$eq] fx=[$fx]"))
         }
     }
 
