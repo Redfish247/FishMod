@@ -3429,7 +3429,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
     }
 
     class SubcategoryHeader(name: String) : Setting(name, "") {
-        private fun w(t: String) = Math.ceil(UiRecorder.textWidth(t, SUBCAT_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
+        // drawn bold, so measure bold or long lines overflow the column
+        private fun w(t: String) = Math.ceil(UiRecorder.textWidthBold(t, SUBCAT_TEXT_SIZE * TEXT_SCALE).toDouble()).toInt()
 
         private val minLines: Int = wrap(name, MIN_COLUMN_W - 38).size
 
