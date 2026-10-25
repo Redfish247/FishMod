@@ -71,6 +71,14 @@ class TermSimScreen private constructor(
         runCatching { FishConfig.manager.save() }.onFailure { FishDiag.fail("TermSimScreen.2", "saving term sim PBs failed", it) }
     }
 
+    private fun reopenAs(t: TerminalType) {
+        val mc = Minecraft.getInstance()
+        val rows = t.windowSize / 9
+        val next = TermSimScreen(TermSimMenu(rows, mc.player!!.inventory, SimpleContainer(rows * 9)), t)
+        next.lastMs = lastMs; next.solvedCount = solvedCount; pbs.copyInto(next.pbs)
+        mc.showScreen(next)
+    }
+
     private fun newRound(t: TerminalType) {
         type = t
         for (i in 0 until box.containerSize) box.setItem(i, ItemStack.EMPTY)
@@ -261,7 +269,10 @@ class TermSimScreen private constructor(
     override fun keyPressed(input: KeyEvent): Boolean {
         val k = input.key()
         if (k in GLFW.GLFW_KEY_1..GLFW.GLFW_KEY_6) {
-            newRound(TerminalType.entries[k - GLFW.GLFW_KEY_1]); return true
+            val t = TerminalType.entries[k - GLFW.GLFW_KEY_1]
+            // a different size needs a new menu, or the old container frame shows behind the GUI
+            if (t.windowSize != type.windowSize) reopenAs(t) else newRound(t)
+            return true
         }
         if (k == GLFW.GLFW_KEY_R) { newRound(type); return true }
         return super.keyPressed(input)
