@@ -77,7 +77,7 @@ object Kuudra {
 
     @JvmStatic
     fun init() {
-        Events.ON_GAME_MESSAGE.register { c -> FishDiag.guard("Kuudra.1", "kuudra chat failed") { onChat(Mining.strip(c.string)) } ?: false }
+        Events.ON_GAME_MESSAGE.register { c -> inKuudra() && (FishDiag.guard("Kuudra.1", "kuudra chat failed") { onChat(Mining.strip(c.string)) } ?: false) }
         Events.ON_WORLD_CHANGE.register { reset(); false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || !inKuudra() || tick++ % 10 != 0) return@register

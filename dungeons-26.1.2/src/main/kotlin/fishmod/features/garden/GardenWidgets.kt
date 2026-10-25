@@ -24,7 +24,7 @@ object GardenWidgets {
             composterWarned = idle
         }
         Events.ON_GAME_MESSAGE.register { t ->
-            val s = Garden.strip(t.string).trim()
+            val s = if (S.gardenRareCrop) Garden.strip(t.string).trim() else ""
             if (S.gardenRareCrop && RARE_CROP.containsMatchIn(s)) {
                 S.gardenRareCropCount++
                 if (S.gardenRareCropTitle) {

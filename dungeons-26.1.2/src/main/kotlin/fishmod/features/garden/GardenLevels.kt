@@ -79,12 +79,12 @@ object GardenLevels {
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null) return@register
-            if (tick++ % 20 == 0) { scanTab(); scanHoe() }
+            if (tick++ % 20 == 0) { scanTab(); if (S.gardenHoeHud && Garden.inGarden()) scanHoe() else hoeLines = emptyList() }
             if (tick % 5 == 0) scanMenu()
         }
         Events.ON_GAME_MESSAGE.register { t ->
-            val m = GXP.find(Garden.strip(t.string))
-            if (m != null && Garden.inGarden() && S.gardenLevelXp > 0) {
+            val m = if (Garden.inGarden() && S.gardenLevelXp > 0) GXP.find(Garden.strip(t.string)) else null
+            if (m != null) {
                 S.gardenLevelXp += m.groupValues[1].replace(",", "").toLongOrNull() ?: 0
                 checkLevelUp()
             }

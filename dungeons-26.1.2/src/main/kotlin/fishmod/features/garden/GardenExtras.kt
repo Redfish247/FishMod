@@ -62,11 +62,15 @@ object GardenExtras {
     )
     fun cropItem(text: String): Item? = CROP_ITEMS.entries.firstOrNull { text.contains(it.key, true) }?.value
 
+    // Cached display stacks so slot draws don't allocate per frame
+    private val stacks = HashMap<Item, ItemStack>()
+    fun stackOf(item: Item): ItemStack = stacks.getOrPut(item) { ItemStack(item) }
+
     // Small item badge at the slot's bottom-right
     fun badge(ctx: GuiGraphicsExtractor, item: Item, x: Int, y: Int, scale: Float = 0.6f) {
         val p = ctx.pose()
         p.pushMatrix(); p.translate(x + 16 - 16 * scale, y + 16 - 16 * scale); p.scale(scale, scale)
-        ctx.item(ItemStack(item), 0, 0)
+        ctx.item(stackOf(item), 0, 0)
         p.popMatrix()
     }
 
