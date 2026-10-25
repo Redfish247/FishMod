@@ -113,7 +113,7 @@ object NecronDropPredict {
             if (!active() || dragTicks > DRAG_TICKS + 40) return@register
             try {
                 val color = Floor7.necronDropColor
-                if (Floor7.necronDropStyle == "Beacon") RenderUtils.gizmoBox(AABB(s.x - 0.15, s.y - 40.0, s.z - 0.15, s.x + 0.15, s.y + 300.0, s.z + 0.15), color and 0x60FFFFFF, color, true)
+                if (Floor7.necronDropStyle == "Beacon") RenderUtils.gizmoBox(AABB(s.x - 0.15, s.y - 40.0, s.z - 0.15, s.x + 0.15, s.y + 300.0, s.z + 0.15), color and 0x60FFFFFF, 0)
                 else RenderUtils.gizmoBox(AABB(s.x - 0.3, s.y, s.z - 0.3, s.x + 0.3, s.y + 1.8, s.z + 0.3), color and 0x40FFFFFF, color, true)
             } catch (e: Exception) { FishDiag.fail("NecronDropPredict.1", "necron drop predict render threw", e) }
         }
