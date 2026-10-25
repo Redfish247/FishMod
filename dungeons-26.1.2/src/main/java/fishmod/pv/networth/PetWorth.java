@@ -22,18 +22,33 @@ public final class PetWorth {
 	}
 
 	public static LevelInfo levelInfo(JsonObject pet) {
-		if (pet == null || !pet.has("type") || !pet.has("tier") || !pet.has("exp")) {
+		if (!hasCore(pet)) {
 			return new LevelInfo(1, 100, 0, 0, 0, 0, 0f);
 		}
 		String type = pet.get("type").getAsString();
 		String tier = pet.get("tier").getAsString();
 		double exp = pet.get("exp").getAsDouble();
-		String heldItem = pet.has("heldItem") && !pet.get("heldItem").isJsonNull() ? pet.get("heldItem").getAsString() : null;
+		String heldItem = prim(pet, "heldItem");
+		return getPetLevel(type, boostedTier(tier, heldItem), exp);
+	}
+
+	// type/tier/exp present as primitives; JsonNull would throw on getAs*.
+	private static boolean hasCore(JsonObject pet) {
+		return pet != null && prim(pet, "type") != null && prim(pet, "tier") != null && prim(pet, "exp") != null;
+	}
+
+	private static String prim(JsonObject o, String key) {
+		return o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsString() : null;
+	}
+
+	private static String boostedTier(String tier, String heldItem) {
 		List<String> tiers = NetworthData.tiers();
+		if (tiers.isEmpty()) {
+			return tier;
+		}
 		int tierIndex = Math.max(0, tiers.indexOf(tier));
 		boolean tierBoost = "PET_ITEM_TIER_BOOST".equals(heldItem);
-		int boostedIndex = Math.min(tiers.size() - 1, tierIndex + (tierBoost ? 1 : 0));
-		return getPetLevel(type, tiers.get(boostedIndex), exp);
+		return tiers.get(Math.min(tiers.size() - 1, tierIndex + (tierBoost ? 1 : 0)));
 	}
 
 	public record LevelInfo(
@@ -54,7 +69,7 @@ public final class PetWorth {
 		if (pet.has("soulbound") && pet.get("soulbound").isJsonPrimitive() && pet.get("soulbound").getAsBoolean()) {
 			return true;
 		}
-		if (!pet.has("type") || pet.get("type").isJsonNull()) {
+		if (!pet.has("type") || !pet.get("type").isJsonPrimitive()) {
 			return false;
 		}
 		return NetworthData.soulboundPets().contains(pet.get("type").getAsString());
@@ -65,21 +80,16 @@ public final class PetWorth {
 	}
 
 	public static double value(JsonObject pet, boolean includeCosmetics) {
-		if (pet == null || !pet.has("type") || !pet.has("tier") || !pet.has("exp")) {
+		if (!hasCore(pet)) {
 			return 0;
 		}
 		String type = pet.get("type").getAsString();
 		String tier = pet.get("tier").getAsString();
 		double exp = pet.get("exp").getAsDouble();
-		String skin = pet.has("skin") && !pet.get("skin").isJsonNull() ? pet.get("skin").getAsString() : null;
-		String heldItem = pet.has("heldItem") && !pet.get("heldItem").isJsonNull() ? pet.get("heldItem").getAsString() : null;
-		int candyUsed = pet.has("candyUsed") ? pet.get("candyUsed").getAsInt() : 0;
-
-		List<String> tiers = NetworthData.tiers();
-		int tierIndex = Math.max(0, tiers.indexOf(tier));
-		boolean tierBoost = "PET_ITEM_TIER_BOOST".equals(heldItem);
-		int boostedIndex = Math.min(tiers.size() - 1, tierIndex + (tierBoost ? 1 : 0));
-		String boostedTier = tiers.get(boostedIndex);
+		String skin = prim(pet, "skin");
+		String heldItem = prim(pet, "heldItem");
+		int candyUsed = pet.has("candyUsed") && pet.get("candyUsed").isJsonPrimitive() ? pet.get("candyUsed").getAsInt() : 0;
+		String boostedTier = boostedTier(tier, heldItem);
 
 		// Price keys use the pet's actual tier (SkyHelper); XP table uses boosted tier.
 		String basePetId = tier + "_" + type;

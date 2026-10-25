@@ -262,7 +262,7 @@ final class LoadoutDecoder {
 	}
 
 	static InventorySnapshot.Slot petSlot(JsonObject pet) {
-		if (pet == null || !pet.has("type")) {
+		if (pet == null || !pet.has("type") || !pet.get("type").isJsonPrimitive()) {
 			return null;
 		}
 		String type = pet.get("type").getAsString();
@@ -281,7 +281,7 @@ final class LoadoutDecoder {
 	}
 
 	static String petLabel(JsonObject pet) {
-		if (pet == null || !pet.has("type")) {
+		if (pet == null || !pet.has("type") || !pet.get("type").isJsonPrimitive()) {
 			return "";
 		}
 		return InventoryDecodeSupport.prettyWords(pet.get("type").getAsString());
