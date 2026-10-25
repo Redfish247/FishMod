@@ -147,8 +147,12 @@ object StorageOverlay {
             s.get(DataComponents.LORE)?.lines()?.forEach { sb.append('\n').append(it.string.lowercase()) }
             sb.toString()
         }
-        return text.contains(search.lowercase())
+        if (searchLowerFor !== search) { searchLowerFor = search; searchLower = search.lowercase() }
+        return text.contains(searchLower)
     }
+
+    private var searchLowerFor: String? = null
+    private var searchLower = ""
 
     private fun visibleData(activePage: StoragePage?, activeSlots: List<Slot>?, all: TreeMap<StoragePage, NBTInventory?> = allData()): TreeMap<StoragePage, NBTInventory?> {
         val data = all
