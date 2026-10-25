@@ -39,9 +39,15 @@ import java.util.zip.GZIPInputStream;
 
 public final class HypixelApiClient {
 	private static final String WORKER_BASE = "https://fishmod.dev";
+	/** Same worker under its workers.dev name, tried when fishmod.dev is reset on the player's network. */
+	private static final String WORKER_FALLBACK_BASE = "https://fishmod.redfish2471.workers.dev";
+	/** Set once fishmod.dev is reset on this network, so later requests go straight to the fallback. */
+	private static volatile boolean fallbackSticky;
 	private static final URI MOJANG_PROFILE = URI.create("https://api.mojang.com/users/profiles/minecraft/");
 	private static final URI MOJANG_SESSION = URI.create("https://sessionserver.mojang.com/session/minecraft/profile/");
 	private static final Duration TIMEOUT = Duration.ofSeconds(40);
+	/** Why the last proxy request failed; shown in the viewer error. */
+	static volatile String lastFailure;
 	private static final Duration UUID_LOOKUP_TIMEOUT = Duration.ofSeconds(5);
 	// The server may try two Mojang endpoints before answering from an older entry.
 	private static final Duration SERVER_UUID_TIMEOUT = Duration.ofSeconds(8);
@@ -49,6 +55,22 @@ public final class HypixelApiClient {
 	private static final long SPACING_MS = 80L;
 
 	private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+	/** Fallbacks for networks that reset the default TLS 1.3 / HTTP/2 handshake: TLS 1.2 + HTTP/1.1, then HTTP/1.1 only. */
+	private static final HttpClient HTTP_TLS12 = HttpClient.newBuilder()
+		.connectTimeout(Duration.ofSeconds(5))
+		.version(HttpClient.Version.HTTP_1_1)
+		.sslParameters(tls12Parameters())
+		.build();
+	private static final HttpClient HTTP_H1 = HttpClient.newBuilder()
+		.connectTimeout(Duration.ofSeconds(5))
+		.version(HttpClient.Version.HTTP_1_1)
+		.build();
+
+	private static javax.net.ssl.SSLParameters tls12Parameters() {
+		javax.net.ssl.SSLParameters params = new javax.net.ssl.SSLParameters();
+		params.setProtocols(new String[] {"TLSv1.2"});
+		return params;
+	}
 	private static final ConcurrentHashMap<String, JsonObject> PLAYER_CACHE = new ConcurrentHashMap<>();
 	private static final ConcurrentHashMap<String, Long> PLAYER_CACHED_AT = new ConcurrentHashMap<>();
 	private static final ConcurrentHashMap<String, CompletableFuture<Optional<JsonObject>>> PLAYER_IN_FLIGHT =
@@ -657,6 +679,24 @@ public final class HypixelApiClient {
 		boolean allowStreamRetry,
 		RequestTiming timing
 	) {
+		return getJson(url, allowReauth, allowStreamRetry, timing, 0);
+	}
+
+	/** Connection-level failures worth retrying (Cloudflare occasionally resets a fresh TLS handshake). */
+	private static boolean isTransientNetwork(IOException exception) {
+		return exception instanceof javax.net.ssl.SSLException
+			|| exception instanceof java.net.ConnectException
+			|| exception instanceof java.net.http.HttpConnectTimeoutException
+			|| exception instanceof java.nio.channels.ClosedChannelException;
+	}
+
+	private static Optional<JsonObject> getJson(
+		String url,
+		boolean allowReauth,
+		boolean allowStreamRetry,
+		RequestTiming timing,
+		int netAttempt
+	) {
 		String cacheKey = null;
 		try {
 			String target = rewriteUrl(url);
@@ -668,7 +708,9 @@ public final class HypixelApiClient {
 					return cached;
 				}
 			}
-			URI uri = URI.create(target);
+			String fallback = BetterPVConfig.fallbackHost().isBlank() ? WORKER_FALLBACK_BASE : BetterPVConfig.fallbackHost();
+			boolean useFallback = (fallbackSticky || netAttempt >= 1) && !fallback.isBlank() && target.startsWith(WORKER_BASE);
+			URI uri = URI.create(useFallback ? fallback.replaceAll("/+$", "") + target.substring(WORKER_BASE.length()) : target);
 			HttpRequest.Builder builder = HttpRequest.newBuilder(uri).timeout(TIMEOUT).GET();
 			boolean needsProxyAuth = target.startsWith(WORKER_BASE);
 			if (needsProxyAuth && !FishProxyAuth.applyAuthHeaders(builder, uri)) {
@@ -685,7 +727,8 @@ public final class HypixelApiClient {
 				builder.setHeader("X-BetterPV-Correlation-ID", timing.correlationId());
 			}
 			long startedNanos = System.nanoTime();
-			HttpResponse<InputStream> response = HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofInputStream());
+			HttpClient client = netAttempt == 0 ? HTTP : netAttempt == 1 ? HTTP_TLS12 : HTTP_H1;
+			HttpResponse<InputStream> response = client.send(builder.build(), HttpResponse.BodyHandlers.ofInputStream());
 			long headersNanos = System.nanoTime();
 			boolean streamed = "1".equals(response.headers().firstValue("x-hypixel-stream").orElse(""));
 			byte[] bytes;
@@ -711,16 +754,19 @@ public final class HypixelApiClient {
 				if (allowReauth) {
 					return getJson(url, false, allowStreamRetry, RequestTiming.retry(timing.correlationId()));
 				}
+				lastFailure = "HTTP 401";
 				BetterPV.LOGGER.warn("Hypixel GET {} unauthorized after re-auth", url);
 				return Optional.empty();
 			}
 			if (response.statusCode() == 503 && needsProxyAuth) {
 				logTiming(url, response, bytes.length, timing, startedNanos, headersNanos, bodyNanos, 0L, 0L, bodyRead);
+				lastFailure = "HTTP 503";
 				BetterPV.LOGGER.warn("Hypixel GET {} session auth unavailable (503)", url);
 				return Optional.empty();
 			}
 			if (response.statusCode() < 200 || response.statusCode() >= 300 || bytes.length == 0) {
 				logTiming(url, response, bytes.length, timing, startedNanos, headersNanos, bodyNanos, 0L, 0L, bodyRead);
+				lastFailure = response.statusCode() >= 200 && response.statusCode() < 300 ? "empty response" : "HTTP " + response.statusCode();
 				BetterPV.LOGGER.warn("Hypixel GET {} failed status={}", url, response.statusCode());
 				return Optional.empty();
 			}
@@ -757,6 +803,7 @@ public final class HypixelApiClient {
 			}
 			JsonObject root = element.getAsJsonObject();
 			if (root.has("success") && root.get("success").isJsonPrimitive() && !root.get("success").getAsBoolean()) {
+				lastFailure = root.has("cause") ? root.get("cause").getAsString() : "success=false";
 				return Optional.empty();
 			}
 			if (cacheKey != null) {
@@ -764,6 +811,20 @@ public final class HypixelApiClient {
 			}
 			return Optional.of(root);
 		} catch (IOException | InterruptedException exception) {
+			if (exception instanceof IOException io && netAttempt < 3 && isTransientNetwork(io)) {
+				if (io instanceof javax.net.ssl.SSLException) {
+					fallbackSticky = true;
+				}
+				BetterPV.LOGGER.warn("Hypixel GET {} network error ({}), retry {}", url, exception.toString(), netAttempt + 1);
+				try {
+					Thread.sleep(300L * (netAttempt + 1));
+				} catch (InterruptedException interrupted) {
+					Thread.currentThread().interrupt();
+					return Optional.empty();
+				}
+				return getJson(url, allowReauth, allowStreamRetry, timing, netAttempt + 1);
+			}
+			lastFailure = exception.getClass().getSimpleName() + (exception.getMessage() == null ? "" : ": " + exception.getMessage());
 			BetterPV.LOGGER.warn("Hypixel GET {} failed", url, exception);
 			if (exception instanceof InterruptedException) {
 				Thread.currentThread().interrupt();

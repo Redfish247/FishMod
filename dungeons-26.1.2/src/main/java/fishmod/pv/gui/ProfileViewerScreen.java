@@ -1195,6 +1195,10 @@ public final class ProfileViewerScreen extends Screen {
 		if (PvTooltip.panOverflow(scrollX != 0D ? scrollX : scrollY, horizontal)) {
 			return true;
 		}
+		// Shift expands some tips (networth) taller than the screen; with no sideways overflow the wheel pans vertically.
+		if (horizontal && scrollX == 0D && PvTooltip.panOverflow(scrollY, false)) {
+			return true;
+		}
 		if (this.profileSelector.mouseScrolled(virtualX, virtualY, scrollY)) {
 			return true;
 		}

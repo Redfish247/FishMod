@@ -20,7 +20,7 @@ public final class FishProxyAuth {
 	}
 
 	public static Optional<String> userFacingFailure() {
-		return Optional.empty();
+		return Optional.ofNullable(HypixelApiClient.lastFailure).map(f -> "Profiles request failed (" + f + ")");
 	}
 
 	public static void notifyPlayerIfNeeded() {}

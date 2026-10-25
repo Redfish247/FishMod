@@ -35,6 +35,9 @@ public final class DungeonPage {
 	private static final int GAP = 6;
 	private static final int CALC_H = 78;
 	private static final int FLOOR_GAP_MAX = 6;
+	/** Height of the personal-best line under each floor name. */
+	private static final int PB_H = 8;
+	private static final float PB_SCALE = 0.75F;
 	private static final int FIELD_H = 14;
 	private static final int BTN_W = 36;
 	private static final int HELP_GAP = 3;
@@ -402,7 +405,7 @@ public final class DungeonPage {
 
 		int firstFloorY = runsY + PAD + headerH;
 		int totalY = runsY + runsH - PAD - lineH;
-		int floorBlock = 7 * lineH;
+		int floorBlock = 7 * (lineH + PB_H);
 		int stretch = totalY - firstFloorY - floorBlock;
 		int gap;
 		int totalGap;
@@ -416,7 +419,7 @@ public final class DungeonPage {
 			totalGap = Math.max(gap, stretch - usedGaps);
 			totalY = firstFloorY + floorBlock + usedGaps + totalGap;
 		}
-		FloorLayout floors = new FloorLayout(firstFloorY, lineH, gap, totalY);
+		FloorLayout floors = new FloorLayout(firstFloorY, lineH, gap, totalY, PB_H);
 		drawRunsPanel(g, font, leftX, runsY, leftW, runsH, floors, mouseX, mouseY);
 		drawRightColumn(g, font, rightX, y, rightW, h, floors.totalY(), mouseX, mouseY);
 	}
@@ -947,9 +950,9 @@ public final class DungeonPage {
 			String floorLabel = Component.translatable("betterpv.dungeons.floor", floor).getString();
 			String masterLabel = Component.translatable("betterpv.dungeons.master_floor", floor).getString();
 
-			drawFloorCell(g, font, leftCol, cy, colW, floors.lineH(), floors.gap(), floorLabel, normal, NORMAL_FLOOR_COLOR);
-			drawFloorCell(g, font, rightCol, cy, colW, floors.lineH(), floors.gap(), masterLabel, master, MASTER_FLOOR_COLOR);
-			cy += floors.lineH() + floors.gap();
+			drawFloorCell(g, font, leftCol, cy, colW, floors.lineH() + floors.pbH(), floors.gap(), floorLabel, normal, NORMAL_FLOOR_COLOR);
+			drawFloorCell(g, font, rightCol, cy, colW, floors.lineH() + floors.pbH(), floors.gap(), masterLabel, master, MASTER_FLOOR_COLOR);
+			cy += floors.lineH() + floors.pbH() + floors.gap();
 		}
 
 		drawTotalLine(g, font, leftCol, floors.totalY(), colW, normalTotal);
@@ -992,10 +995,35 @@ public final class DungeonPage {
 		String shown = trimToWidth(font, label, Math.max(8, w - rightW - 4));
 		PvDraw.text(g, font, shown, x, y, nameColor);
 		PvDraw.textRight(g, font, right, x + w, y, PvDraw.COLOR_TEXT);
+		drawPbLine(g, font, x, y + font.lineHeight, floor);
 		this.zones.add(new HoverZone(
 			x, y - 1, w, lineH + Math.max(2, gap / 2),
 			floorStatsTip(label, floor)
 		));
+	}
+
+	/** Small personal-best line under a floor name: S+, S and any-rank clear times. */
+	private static void drawPbLine(GuiGraphicsExtractor g, Font font, int x, int y, DungeonSnapshot.FloorEntry floor) {
+		long[] times = {floor.fastestSPlusMs(), floor.fastestSMs(), floor.fastestMs()};
+		String[] tags = {"S+", "S", "Any"};
+		int[] colors = {COLOR_TIME_S_PLUS, COLOR_TIME_S, COLOR_TIME};
+		int cx = x;
+		boolean any = false;
+		for (int i = 0; i < times.length; i++) {
+			if (times[i] <= 0L) {
+				continue;
+			}
+			any = true;
+			String tag = tags[i] + " ";
+			String time = FormatUtil.prettyTime(times[i]);
+			PvDraw.textScaled(g, font, tag, cx, y + 1, PvDraw.COLOR_MUTED, PB_SCALE);
+			cx += Math.round(font.width(tag) * PB_SCALE);
+			PvDraw.textScaled(g, font, time, cx, y + 1, colors[i], PB_SCALE);
+			cx += Math.round(font.width(time + "  ") * PB_SCALE);
+		}
+		if (!any) {
+			PvDraw.textScaled(g, font, "no clears", x, y + 1, 0xFF6A6A7A, PB_SCALE);
+		}
 	}
 
 	private List<PvTooltip.Line> cataTip() {
@@ -1056,34 +1084,41 @@ public final class DungeonPage {
 
 	static List<PvTooltip.Line> floorStatsTip(String title, DungeonSnapshot.FloorEntry floor) {
 		List<PvTooltip.Line> lines = new ArrayList<>();
-		lines.add(PvTooltip.Line.bold(title, PvDraw.COLOR_GOLD));
-		lines.add(statLine("Tier Completions", FormatUtil.commas(floor.completions()), COLOR_COMPLETIONS));
-		lines.add(statLine("Milestone Completions", FormatUtil.commas(floor.milestoneCompletions()), COLOR_COMPLETIONS));
-		lines.add(statLine("Mobs Killed", FormatUtil.shortXp(floor.mobsKilled()), COLOR_MOBS));
-		lines.add(statLine(
-			"Best Score",
+		lines.add(PvTooltip.Line.title(title, PvDraw.COLOR_ACCENT));
+		lines.add(PvTooltip.Line.row("Clears", PvDraw.COLOR_MUTED, FormatUtil.commas(floor.completions()), COLOR_COMPLETIONS));
+		if (floor.milestoneCompletions() > 0L) {
+			lines.add(PvTooltip.Line.row("Milestone", PvDraw.COLOR_MUTED, FormatUtil.commas(floor.milestoneCompletions()), COLOR_COMPLETIONS));
+		}
+		lines.add(PvTooltip.Line.divider());
+		lines.add(PvTooltip.Line.row("S+ record", PvDraw.COLOR_MUTED, timeText(floor.fastestSPlusMs()), COLOR_TIME_S_PLUS));
+		lines.add(PvTooltip.Line.row("S record", PvDraw.COLOR_MUTED, timeText(floor.fastestSMs()), COLOR_TIME_S));
+		lines.add(PvTooltip.Line.row("Fastest clear", PvDraw.COLOR_MUTED, timeText(floor.fastestMs()), COLOR_TIME));
+		lines.add(PvTooltip.Line.divider());
+		lines.add(PvTooltip.Line.row(
+			"Top score",
+			PvDraw.COLOR_MUTED,
 			FormatUtil.commas(floor.bestScore()),
 			floor.bestScore() >= 300L ? COLOR_SCORE_S_PLUS : COLOR_SCORE
 		));
-		lines.add(statLine("Most Mobs Killed", FormatUtil.commas(floor.mostMobsKilled()), COLOR_MOBS));
-		lines.add(timeLine("Fastest Time", floor.fastestMs(), COLOR_TIME));
-		lines.add(timeLine("Fastest Time S", floor.fastestSMs(), COLOR_TIME_S));
-		lines.add(timeLine("Fastest Time S+", floor.fastestSPlusMs(), COLOR_TIME_S_PLUS));
+		lines.add(PvTooltip.Line.row("Kills (total)", PvDraw.COLOR_MUTED, FormatUtil.shortXp(floor.mobsKilled()), COLOR_MOBS));
+		lines.add(PvTooltip.Line.row("Kills (best run)", PvDraw.COLOR_MUTED, FormatUtil.commas(floor.mostMobsKilled()), COLOR_MOBS));
 		if (floor.mostHealing() > 0D) {
-			lines.add(statLine("Most Healing", FormatUtil.shortXp(floor.mostHealing()), COLOR_HEALING));
+			lines.add(PvTooltip.Line.row("Healing (best run)", PvDraw.COLOR_MUTED, FormatUtil.shortXp(floor.mostHealing()), COLOR_HEALING));
 		}
 		if (floor.mostDamage() > 0D && floor.mostDamageClass() != null) {
 			String className = ClassLevelQuery.displayName(floor.mostDamageClass());
-			int classColor = classColor(floor.mostDamageClass());
-			lines.add(new PvTooltip.Line(List.of(
-				PvTooltip.Span.of("Most Damage: ", PvDraw.COLOR_MUTED),
-				PvTooltip.Span.of(FormatUtil.shortXp(floor.mostDamage()), COLOR_STAT),
-				PvTooltip.Span.of(" (", PvDraw.COLOR_MUTED),
-				PvTooltip.Span.of(className, classColor),
-				PvTooltip.Span.of(")", PvDraw.COLOR_MUTED)
-			)));
+			lines.add(PvTooltip.Line.row(
+				"Damage (best run)",
+				PvDraw.COLOR_MUTED,
+				FormatUtil.shortXp(floor.mostDamage()) + " " + className,
+				classColor(floor.mostDamageClass())
+			));
 		}
 		return lines;
+	}
+
+	private static String timeText(long ms) {
+		return ms <= 0L ? "none" : FormatUtil.prettyTime(ms);
 	}
 
 	private static PvTooltip.Line statLine(String label, String value, int valueColor) {
@@ -1130,7 +1165,7 @@ public final class DungeonPage {
 		return DungeonSnapshot.FloorEntry.empty(key, "F" + floor);
 	}
 
-	private record FloorLayout(int firstFloorY, int lineH, int gap, int totalY) {
+	private record FloorLayout(int firstFloorY, int lineH, int gap, int totalY, int pbH) {
 	}
 
 	private record HoverZone(int x, int y, int w, int h, List<PvTooltip.Line> lines) {

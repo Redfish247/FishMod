@@ -60,7 +60,7 @@ public final class AttributeShardsPage {
 	private int attrListY;
 	private int attrListW;
 	private int attrListH;
-	private boolean sortByRarity;
+	private boolean sortByRarity = true;
 	private List<ForagingSnapshot.AttributeShardRow> sortedSource;
 	private List<ForagingSnapshot.AttributeShardRow> raritySorted = List.of();
 	private int sortX;
