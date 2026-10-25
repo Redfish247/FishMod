@@ -154,8 +154,8 @@ object PetHud {
 
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register { msg, overlay ->
             if (!FishSettings.petHudEnabled || !overlay || petName == null) return@register
-            val s = HypixelApi.STRIP_COLOR.matcher(msg.string).replaceAll("")
             val matchSkill = PET_SKILL[petName] ?: return@register
+            val s = HypixelApi.STRIP_COLOR.matcher(msg.string).replaceAll("")
             val m = SKILL_XP_BAR.matcher(s)
             while (m.find()) {
                 if (!m.group(2).equals(matchSkill, ignoreCase = true)) continue

@@ -48,8 +48,9 @@ object HologramText {
                     g.pose().pushMatrix()
                     g.pose().translate(sx, sy)
                     g.pose().scale(s, s)
-                    g.fill(-font.width(l.text) / 2 - 1, -1, font.width(l.text) / 2 + 1, 9, 0x40000000)
-                    g.text(font, l.text, -font.width(l.text) / 2, 0, -1, true)
+                    val half = font.width(l.text) / 2
+                    g.fill(-half - 1, -1, half + 1, 9, 0x40000000)
+                    g.text(font, l.text, -half, 0, -1, true)
                     g.pose().popMatrix()
                 }
             } catch (t: Throwable) {
@@ -84,7 +85,7 @@ object HologramText {
     // Returns true when the line was taken over (caller hides the vanilla nametag)
     @JvmStatic
     fun take(base: Vec3, attachment: Vec3?, text: Component?): Boolean {
-        if (!Visual.nametagsOnTop || text == null || attachment == null) return false
+        if (!Visual.nametagsOnTop || text == null || attachment == null || pending.size >= 512) return false
         val pos = base.add(attachment)
         if (!blockedByTranslucent(pos)) return false
         pending += Line(pos, text)

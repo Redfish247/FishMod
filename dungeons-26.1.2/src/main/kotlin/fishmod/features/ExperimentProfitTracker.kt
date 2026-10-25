@@ -136,8 +136,14 @@ object ExperimentProfitTracker {
         return 0.0
     }
 
+    // Priced rows rebuilt at most once a second, not every frame
+    private var itemsCache: List<Triple<String, Long, Double>> = emptyList()
+    private var itemsAt = 0L
+    private var itemsDirty = true
+
     private fun changed() {
         dirty = true
+        itemsDirty = true
         save()
     }
 
@@ -160,7 +166,12 @@ object ExperimentProfitTracker {
         // Same layout as the Slayer/Mining trackers: right-aligned value column, "| item count" after it
         val rows = ArrayList<Pair<String, String>>()
         rows.add("§e§lExperiment Profit" to "")
-        val items = data.drops.filterKeys { !NOT_ITEM.containsMatchIn(it) }.map { (name, n) -> Triple(name, n, priceOf(name) * n) }.sortedByDescending { it.third }
+        val now = System.currentTimeMillis()
+        if (itemsDirty || now - itemsAt > 1000L) {
+            itemsCache = data.drops.filterKeys { !NOT_ITEM.containsMatchIn(it) }.map { (name, n) -> Triple(name, n, priceOf(name) * n) }.sortedByDescending { it.third }
+            itemsDirty = false; itemsAt = now
+        }
+        val items = itemsCache
         var total = 0.0
         val cap = FishSettings.expProfitLines.coerceIn(1, 30)
         var hiddenN = 0; var hiddenV = 0.0
