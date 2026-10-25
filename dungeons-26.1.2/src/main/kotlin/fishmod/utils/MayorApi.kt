@@ -31,7 +31,7 @@ object MayorApi {
 
     @JvmStatic
     fun init() {
-        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> refresh() }
+        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> if (System.currentTimeMillis() - lastFetch > CACHE_MS) refresh() }
     }
 
     @JvmStatic
@@ -95,7 +95,7 @@ object MayorApi {
         if (mayor.has("minister")) {
             val minister = mayor.getAsJsonObject("minister")
             if ("paul".equals(minister.get("key")?.asString, ignoreCase = true) && minister.has("perk")) {
-                val perkName = minister.getAsJsonObject("perk").get("name").asString.lowercase()
+                val perkName = minister.getAsJsonObject("perk")?.get("name")?.asString?.lowercase() ?: return false
                 return perkName.contains("ezpz")
             }
         }
