@@ -92,6 +92,11 @@ object RiftMenu {
     }
 
     fun describe(name: String): String? = when (name) {
+        val leech = Feature("Leech Supreme Helper", S::riftLeech)
+        leech.sub.add(ToggleSetting("Go There Title", "", S::riftLeechTitle))
+        leech.sub.add(ColorPickerSetting("Spot Colour", "", S::riftLeechColor))
+        col.features.add(leech)
+
         "Rift Nametag Stats" -> "Vampire XP + Enigma Souls in nametags (needs Nametag Stats on)"
         "Punchcard Marker" -> "Mark players you already punched"
         "Agaricus Cap Timer" -> "Countdown on the cap, CLICK when it turns red"
@@ -107,3 +112,4 @@ object RiftMenu {
         else -> null
     }
 }
+        "Leech Supreme Helper" -> "Laser phase: box + line to the safe spot and a go-there title"
