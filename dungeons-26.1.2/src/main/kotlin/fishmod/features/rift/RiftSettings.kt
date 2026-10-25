@@ -90,7 +90,7 @@ object RiftSettings {
     @ConfigValue @JvmField var riftHaySound: Boolean = true
     @ConfigValue @JvmField var riftHayBoxes: Boolean = true
     @ConfigValue @JvmField var riftHayColor: Int = 0xFFFF5555.toInt()
-    @ConfigValue @JvmField var riftHayDelay: Int = 10
+    @ConfigValue @JvmField var riftHayDelay: Int = 40
     @ConfigValue @JvmField var riftHayLead: Int = 2
 
     // Rift Guide overlay
