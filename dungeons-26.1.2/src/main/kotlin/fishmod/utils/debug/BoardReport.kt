@@ -29,6 +29,7 @@ object BoardReport {
     private const val ENDPOINT = "https://fishmod.dev/api/report"
     private const val MANUAL_COOLDOWN_MS = 30_000L
     private const val HOUR_MS = 3_600_000L
+    private val IP_REGEX = Regex("\\b\\d{1,3}(\\.\\d{1,3}){3}\\b")
 
     private val sentFile get() = FabricLoader.getInstance().configDir.resolve("FishMod").resolve("board-reported.txt")
     private val sentKeys: MutableSet<String> = ConcurrentHashMap.newKeySet()
@@ -134,7 +135,7 @@ object BoardReport {
             if (name.length >= 3) out = out.replace(name, "<player>", ignoreCase = true)
         } catch (_: Throwable) {
         }
-        return out.replace(Regex("\\b\\d{1,3}(\\.\\d{1,3}){3}\\b"), "<ip>")
+        return out.replace(IP_REGEX, "<ip>")
     }
 
     private fun loadSent() {

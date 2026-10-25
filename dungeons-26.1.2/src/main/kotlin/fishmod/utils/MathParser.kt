@@ -220,7 +220,7 @@ object MathParser {
                 if (index == 0) {
                     copiedString = copiedString.substring(token.length)
                     output.add(token)
-                    wasPrevNum = false
+                    wasPrevNum = token == ")"
                     continue
                 }
             }
