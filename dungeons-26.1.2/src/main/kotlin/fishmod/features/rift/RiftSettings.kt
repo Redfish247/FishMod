@@ -68,15 +68,28 @@ object RiftSettings {
     @ConfigValue @JvmField var riftVampireSteakColor: Int = 0xFFFFAA00.toInt()
     @ConfigValue @JvmField var riftVampireLine: Boolean = false
     @ConfigValue @JvmField var riftVampireLineColor: Int = 0xFFFFFFFF.toInt()
-    @ConfigValue @JvmField var riftVampireIchor: Boolean = true
-    @ConfigValue @JvmField var riftVampireIchorColor: Int = 0xFFAA0000.toInt()
 
     // Leech Supreme
     @ConfigValue @JvmField var riftLeech: Boolean = false
     @ConfigValue @JvmField var riftLeechTitle: Boolean = true
     @ConfigValue @JvmField var riftLeechColor: Int = 0xFF55FF55.toInt()
+    @ConfigValue @JvmField var riftVampireIchor: Boolean = true
+    @ConfigValue @JvmField var riftVampireIchorColor: Int = 0xFFAA0000.toInt()
     @ConfigValue @JvmField var riftVampireSpring: Boolean = true
     @ConfigValue @JvmField var riftVampireSpringColor: Int = 0xFFFF55FF.toInt()
+
+    // Burger warning (-1 = McGrubber stacks not seen yet)
+    @ConfigValue @JvmField var riftBurgerWarn: Boolean = false
+    @ConfigValue @JvmField var riftBurgerTitle: Boolean = true
+    @ConfigValue @JvmField var riftGrubberStacks: Int = -1
+
+    // Half-Eaten Cave
+    @ConfigValue @JvmField var riftHay: Boolean = false
+    @ConfigValue @JvmField var riftHayTitle: Boolean = true
+    @ConfigValue @JvmField var riftHayText: String = "§c§lHAY WILL CRUSH YOU!"
+    @ConfigValue @JvmField var riftHaySound: Boolean = true
+    @ConfigValue @JvmField var riftHayBoxes: Boolean = true
+    @ConfigValue @JvmField var riftHayColor: Int = 0xFFFF5555.toInt()
 
     // Rift Guide overlay
     @ConfigValue @JvmField var riftGuide: Boolean = false
