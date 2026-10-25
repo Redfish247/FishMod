@@ -620,7 +620,6 @@ class FishModInit : ClientModInitializer {
                     .then(waypointSubcommand("waypoints"))
                     .then(fishmod.features.dungeon.RouteRecorder.command())
                     .then(fishmod.features.dungeon.f7.StormLbWaypoint.command())
-                    .then(fishmod.features.dungeon.f7.NecronDropPredict.command())
                     .then(fishmod.features.diana.Diana.command())
                     .then(fishmod.features.achievements.AchEngine.command())
                     .then(ClientCommands.literal("dianaloot").executes { fishmod.features.diana.DianaTracker.openPastEvents(); 1 })
