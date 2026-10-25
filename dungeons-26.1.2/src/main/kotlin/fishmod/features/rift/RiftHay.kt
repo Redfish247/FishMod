@@ -47,7 +47,7 @@ object RiftHay {
                 val key = pos.asLong()
                 if (level.getBlockState(pos).block == Blocks.HAY_BLOCK) {
                     if (seen.size < 20000) seen.add(key)
-                    // Regrow delay learned from the last clear-to-refill gap
+                    // Measured for the debug line only: last clear-to-refill gap
                     cleared.remove(key)?.let { t -> (System.currentTimeMillis() - t).takeIf { it in 1000L..120000L }?.let { learnedMs = it } }
                 } else if (key in seen) cleared.putIfAbsent(key, System.currentTimeMillis())
             }
@@ -55,7 +55,7 @@ object RiftHay {
     }
 
     // Age at which a cleared cell counts as about to refill
-    private fun dueMs() = (if (learnedMs > 0) learnedMs else S.riftHayDelay * 1000L) - S.riftHayLead * 1000L
+    private fun dueMs() = S.riftHayDelay * 1000L - S.riftHayLead * 1000L
 
     // Cleared hay cells the player's body overlaps
     private fun standingIn(): Boolean {
