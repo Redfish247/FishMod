@@ -776,6 +776,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         val sc = e.scale().toFloat()
         val pose = ctx.pose()
         pose.pushMatrix()
+        try {
         pose.translate(x.toFloat(), y.toFloat())
         pose.scale(sc, sc)
         if (s != null) {
@@ -790,7 +791,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             ctx.fill(0, 0, e.w(), e.h(), 0x40000000)
             ctx.centeredText(this.font, "§7" + e.name(), e.w() / 2, (e.h() - 8) / 2, 0xFFFFFFFF.toInt())
         }
-        pose.popMatrix()
+        } finally {
+            pose.popMatrix()
+        }
     }
 
     private fun ellipsize(s: String, maxW: Float, size: Float): String {
