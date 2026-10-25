@@ -85,8 +85,15 @@ public final class TwitchIrcClient {
 		String nick = "justinfan" + ThreadLocalRandom.current().nextInt(10_000, 99_999);
 
 		Socket s = SSLSocketFactory.getDefault().createSocket(HOST, PORT);
-		s.setSoTimeout(READ_TIMEOUT_MS);
 		socket = s;
+		if (!started) { closeSocketQuietly(); return; }
+
+		try {
+			s.setSoTimeout(READ_TIMEOUT_MS);
+		} catch (IOException e) {
+			closeSocketQuietly();
+			throw e;
+		}
 
 		try (BufferedWriter out = new BufferedWriter(
 				new OutputStreamWriter(s.getOutputStream(), StandardCharsets.UTF_8));
