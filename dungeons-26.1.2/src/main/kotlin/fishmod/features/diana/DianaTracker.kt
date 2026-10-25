@@ -374,6 +374,7 @@ object DianaTracker {
     private val MF_PART = Regex("\\s*\\(\\+\\{mf\\}%? ✯ Magic Find\\)")
     private val PRICE_PART = Regex("\\s*\\(\\+\\{price\\} coins\\)")
     private val SPACES = Regex(" {2,}")
+    private val EMPTY_MF = Regex("\\s*\\(\\+%? ✯ Magic Find\\)")
     private val SPACE_CODES_SPACE = Regex(""" +((?:§.)+) +""")
 
     // Fills a drop template; empty MF / price brackets are dropped so the line stays clean
@@ -388,7 +389,7 @@ object DianaTracker {
             .replace("{since}", took.toString())
             .replace("{lstext}", if (ls) "(LS)" else "")
             .replace('&', '§')
-        if (mf <= 0) out = out.replace(Regex("\\s*\\(\\+%? ✯ Magic Find\\)"), "")
+        if (mf <= 0) out = out.replace(EMPTY_MF, "")
         // An empty slot like {lstext} leaves "§d " between two spaces; fold those into one space
         var prev: String
         do { prev = out; out = out.replace(SPACE_CODES_SPACE, " $1") } while (out != prev)
@@ -512,8 +513,8 @@ object DianaTracker {
             checkYear()
             if (Diana.active()) CroesusPrices.refreshIfStale()
         }
-        if (tickN % 10 == 0 && DianaSettings.dianaTracker) mc.player?.let { scanHilts(it) }
-        if (tickN % 5 == 0 && DianaSettings.dianaTracker) mc.player?.let { scanStackDrops(mc, it) }
+        if (tickN % 10 == 0 && DianaSettings.dianaTracker && Diana.inHub()) mc.player?.let { scanHilts(it) }
+        if (tickN % 5 == 0 && DianaSettings.dianaTracker && Diana.inHub()) mc.player?.let { scanStackDrops(mc, it) }
         flushSave(false)
     }
 

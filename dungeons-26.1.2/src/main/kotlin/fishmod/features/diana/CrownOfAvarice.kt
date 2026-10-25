@@ -178,6 +178,8 @@ object CrownOfAvarice {
         val p = mc.player ?: return
         checkMilestone(p.getItemBySlot(EquipmentSlot.HEAD))
         trackRate(p.getItemBySlot(EquipmentSlot.HEAD))
+        // Skip the scoreboard scan while off; reset so re-enabling doesn't count a stale gain
+        if (!DianaSettings.dianaCrownCounter) { lastPurse = -1L; return }
         val purse = readPurse(mc)
         val prev = lastPurse
         lastPurse = purse

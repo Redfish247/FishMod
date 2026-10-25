@@ -85,9 +85,10 @@ object BurrowDetector {
     @Volatile var lastDigMs = 0L; private set
 
     private fun dugSound(s: String) {
-        if (isDigLine(s)) lastDigMs = System.currentTimeMillis()
+        val dig = isDigLine(s)
+        if (dig) lastDigMs = System.currentTimeMillis()
         if (s.contains("dug out") || s.contains("Burrow")) DIG_LOG.info("dig chat '$s' at ${System.currentTimeMillis() % 100000} recent=${recentSounds.joinToString(" | ")}")
-        if (DianaSettings.dianaBurrowDugSound && isDigLine(s) && System.currentTimeMillis() - lastPlayMs > 600) playDug("diana_dug_chat", 500)
+        if (DianaSettings.dianaBurrowDugSound && dig && System.currentTimeMillis() - lastPlayMs > 600) playDug("diana_dug_chat", 500)
     }
 
     private var lastPlayMs = 0L

@@ -137,7 +137,8 @@ object MiningProfitTracker {
     // Items [Sacks] credited as Mined, in case the loot block lands after the summary
     private val sackMined = HashMap<String, MutableList<LongArray>>()
     private const val PENDING_MS = 180_000L
-    private fun norm(name: String) = name.trimStart { !it.isLetterOrDigit() }.lowercase().replace(Regex("""\s+"""), " ")
+    private val WS = Regex("""\s+""")
+    private fun norm(name: String) = name.trimStart { !it.isLetterOrDigit() }.lowercase().replace(WS, " ")
 
     private fun consume(map: HashMap<String, MutableList<LongArray>>, key: String, n: Long, now: Long): Long {
         val q = map[key] ?: return 0L

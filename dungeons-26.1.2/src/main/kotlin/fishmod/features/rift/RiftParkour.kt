@@ -36,6 +36,7 @@ object RiftParkour {
     fun init() {
         Events.ON_WORLD_CHANGE.register { COURSES.forEach { it.idx = -1 }; false }
         Events.ON_GAME_MESSAGE.register { text ->
+            if (!Rift.inRift()) return@register false
             val m = Rift.strip(text.string)
             if (m.contains("THE LAVA OOFED YOU BACK TO THE START")) COURSES.forEach { it.idx = -1 }
             if (S.riftKillZone && Rift.inRift() && m.contains("Get back in the arena or you will DIE"))

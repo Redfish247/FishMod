@@ -51,8 +51,8 @@ object RiftMobs {
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { if (tick++ % 5 == 0) scan() }
-        Events.ON_GAME_MESSAGE.register { t -> onBacteChat(Rift.strip(t.string).trim()); false }
-        Events.ON_WORLD_CHANGE.register { bacteUntil = 0L; marks = emptyList(); fleespook = null; bacte = emptyList(); bacteId = -1; false }
+        Events.ON_GAME_MESSAGE.register { t -> if (S.riftBacte && Rift.inRift()) onBacteChat(Rift.strip(t.string).trim()); false }
+        Events.ON_WORLD_CHANGE.register { bacteUntil = 0L; marks = emptyList(); fleespook = null; bacte = emptyList(); bacteSlimes = emptyList(); still.clear(); bacteId = -1; false }
         RenderingEvents.GIZMO.register { _ -> render() }
     }
 

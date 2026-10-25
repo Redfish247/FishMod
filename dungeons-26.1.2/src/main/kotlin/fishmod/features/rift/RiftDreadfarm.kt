@@ -42,10 +42,12 @@ object RiftDreadfarm {
                 hasWand = Rift.heldId() == "FARMING_WAND" ||
                     Minecraft.getInstance().player?.mainHandItem?.hoverName?.string?.contains("Farming Wand") == true
                 val now = System.currentTimeMillis(); berbs.removeIf { now - it.last > 500L }
+                // Debug-only counter; prune here so it can't grow while nobody reads it
+                while ((seenTimes.peek() ?: now) < now - 5000L) seenTimes.poll()
             }
         }
         Events.ON_WORLD_CHANGE.register { capPos = null; berbs.clear(); false }
-        Events.ON_PARTICLE.register { p -> onParticle(p.particle.type, Vec3(p.x, p.y, p.z)); false }
+        Events.ON_PARTICLE.register { p -> if (p.particle.type === ParticleTypes.FIREWORK) onParticle(p.particle.type, Vec3(p.x, p.y, p.z)); false }
         RenderingEvents.GIZMO.register { _ -> render() }
     }
 

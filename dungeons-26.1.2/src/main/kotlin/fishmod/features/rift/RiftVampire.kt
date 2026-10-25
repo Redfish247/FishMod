@@ -85,7 +85,7 @@ object RiftVampire {
             .mapNotNull { s -> s.customName?.string?.let(Rift::strip) }.filter { it.contains(contains) }
     }
 
-    private fun skin(s: ArmorStand): String = skinCache.getOrPut(s.id) {
+    private fun skin(s: ArmorStand): String = skinCache.also { if (it.size > 1000) it.clear() }.getOrPut(s.id) {
         val tex = s.getItemBySlot(EquipmentSlot.HEAD).get(DataComponents.PROFILE)
             ?.partialProfile()?.properties?.get("textures")?.firstOrNull()?.value() ?: return@getOrPut ""
         runCatching { String(Base64.getDecoder().decode(tex)).substringAfter("/texture/").takeWhile { it.isLetterOrDigit() } }

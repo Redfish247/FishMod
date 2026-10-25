@@ -21,9 +21,14 @@ object TunnelGraph {
 
     @Volatile var nodes: List<Node> = emptyList(); private set
     @Volatile private var loading = false
+    private var lastAttemptMs = 0L
 
     fun ensureLoaded() {
         if (loading || (nodes.isNotEmpty() && System.currentTimeMillis() - FILE.lastModified() < REFRESH_MS)) return
+        // A failed fetch leaves the file stale; don't retry every few ticks
+        val now = System.currentTimeMillis()
+        if (now - lastAttemptMs < 5 * 60_000L) return
+        lastAttemptMs = now
         loading = true
         fishmod.utils.IoExecutor.execute {
             try {
