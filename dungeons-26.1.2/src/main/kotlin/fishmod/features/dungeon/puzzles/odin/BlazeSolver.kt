@@ -23,7 +23,7 @@ object BlazeSolver {
         val hpMap = mutableMapOf<ArmorStand, Int>()
         blazes.clear()
         Minecraft.getInstance().level?.entitiesForRendering()?.forEach { entity ->
-            if (entity !is ArmorStand || entity in blazes) return@forEach
+            if (entity !is ArmorStand) return@forEach
             val tag = COLOR.replace(entity.name.string, "")
             val hm = blazeHealthRegex.find(tag) ?: return@forEach
             val hp = FishDiag.notNull(hm.groupValues[1].replace(",", "").toIntOrNull(), "BlazeSolver.1") { "blaze hp not numeric: '$tag'" } ?: return@forEach

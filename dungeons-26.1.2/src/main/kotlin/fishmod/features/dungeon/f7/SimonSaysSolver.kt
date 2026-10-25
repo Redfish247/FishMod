@@ -143,7 +143,8 @@ object SimonSaysSolver {
     private fun onBlock(pos: BlockPos, updated: BlockState) {
         if (!trackingActive()) return
 
-        val old = prev.put(pos.asLong(), updated.block)
+        // Only the lantern/button grid reads `old`; don't remember every P3 block update.
+        val old = if (pos.x in 110..111 && pos.y in 120..123 && pos.z in 92..95) prev.put(pos.asLong(), updated.block) else null
 
         if (pos == startButton && updated.block === Blocks.STONE_BUTTON && powered(updated)) {
             resetSolution()

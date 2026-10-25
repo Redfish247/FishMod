@@ -162,7 +162,7 @@ object TerminalTracker {
         val cur = (if (viewSection != 0) viewSection else Section.getSection()).coerceIn(1, MAX_SECTION)
         val lines = ArrayList<Line>()
         for (s in (if (showAllSections) (1..cur).toList() else listOf(cur))) {
-            val list = slots[s] ?: layout(s)
+            val list = slots.getOrPut(s) { layout(s) }
             val start = starts[s] ?: System.currentTimeMillis()
             lines.add(Line("S$s (${list.count { it.done }}/${list.size})", headerColor))
             for (sl in list) {
