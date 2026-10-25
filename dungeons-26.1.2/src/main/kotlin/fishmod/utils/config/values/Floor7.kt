@@ -70,7 +70,7 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
-    var necronDropStyle: Int = 0
+    var necronDropStyle: String = "Box"
 
     @ConfigValue
     @JvmField
