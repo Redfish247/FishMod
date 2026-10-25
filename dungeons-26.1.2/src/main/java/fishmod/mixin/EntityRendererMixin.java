@@ -115,7 +115,8 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
         List<Component> lines = ((NametagStatsHolder) state).fishmod$getNametagStats();
         if (lines == null || lines.isEmpty()) return;
         boolean above = FishSettings.nametagStatsAbove;
-        int y = above ? baseOffset - 10 : baseOffset + 10;
+        // Vanilla lifts the name one row when a score line sits under it, so go one row higher too.
+        int y = above ? baseOffset - (state.scoreText != null ? 20 : 10) : baseOffset + 10;
         try {
             for (Component line : lines) {
                 fishmod.compat.NameTagCompat.submit(collector, poseStack, state, y, line, cameraRenderState);
