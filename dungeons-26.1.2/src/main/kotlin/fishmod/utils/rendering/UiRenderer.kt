@@ -25,6 +25,7 @@ object UiRenderer {
     private var vbo = 0
     private var uView = -1
     private var uAtlas = -1
+    private val noUi = System.getProperty("fishmod.noui") != null
     private var failed = false
     private var failLogged = false
     private var consecutiveFailures = 0
@@ -148,8 +149,7 @@ void main(){
 
     @JvmStatic
     fun paint(screenW: Int, screenH: Int, scale: Float) {
-        if (System.getProperty("fishmod.noui") != null) return
-        if (failed) return
+        if (failed || noUi) return
         guard.capture()
         try {
             init()
@@ -177,6 +177,8 @@ void main(){
             GL11.glDisable(GL11.GL_SCISSOR_TEST)
             GL11.glDepthMask(false)
             scissors.clear()
+            // A paint that threw mid-replay leaves stale floats behind; drop them or they draw in place of this frame's.
+            buf.clear()
             verts = 0
             if (!(scale > 0f)) FishDiag.fail("UiRenderer.7", "UI paint with invalid scale $scale")
             UiRecorder.replay(scale)
