@@ -9,6 +9,8 @@ import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
 
 object LegacyFormatting {
+    private val HEX6 = Regex("[0-9a-fA-F]{6}")
+
 
     @JvmStatic
     fun parse(raw: String): MutableComponent {
@@ -35,7 +37,7 @@ object LegacyFormatting {
                 }
                 if (next == '#' && i + 7 < raw.length) {
                     val hex = raw.substring(i + 2, i + 8)
-                    if (hex.matches(Regex("[0-9a-fA-F]{6}"))) {
+                    if (hex.matches(HEX6)) {
                         flush()
                         try {
                             style = Style.EMPTY.withColor(net.minecraft.network.chat.TextColor.parseColor("#$hex").getOrThrow())
@@ -75,7 +77,7 @@ object LegacyFormatting {
                 if (next == '*') { sb.append('*'); i += 2; continue }
                 if (next == '#' && i + 7 < raw.length) {
                     val hex = raw.substring(i + 2, i + 8)
-                    if (hex.matches(Regex("[0-9a-fA-F]{6}"))) {
+                    if (hex.matches(HEX6)) {
                         flush()
                         color = (0xFF shl 24) or hex.toInt(16)
                         i += 8
