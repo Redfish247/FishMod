@@ -25,6 +25,8 @@ object PlayerSize {
         val mc = Minecraft.getInstance()
         val isSelf = mc.player != null && p.getUUID() == mc.player!!.getUUID()
         if (isSelf) {
+            // inventory paperdoll renders self while a screen is open; scaling it fills the box with skin
+            if (mc.curScreen is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>) return IDENTITY
             return if (FishSettings.playerSizeEnabled) localSelfValue() else IDENTITY
         }
         if (!FishSettings.playerSizeShared) return IDENTITY
