@@ -92,6 +92,23 @@ object RiftMenu {
         vamp.sub.add(ColorPickerSetting("Spring Colour", "", S::riftVampireSpringColor))
         col.features.add(vamp)
 
+        val hay = Feature("Half-Eaten Cave Hay Warning", S::riftHay)
+        hay.sub.add(ToggleSetting("Title", "Warn when you stand where hay was cleared (it regrows and crushes you)", S::riftHayTitle))
+        hay.sub.add(fishmod.features.FishModScreen.InputSetting("Title Text", "& colour codes work", S::riftHayText))
+        hay.sub.add(ToggleSetting("Sound", "", S::riftHaySound))
+        hay.sub.add(ToggleSetting("Cleared Hay Boxes", "Box the cells where hay was cleared", S::riftHayBoxes))
+        hay.sub.add(ColorPickerSetting("Colour", "", S::riftHayColor))
+        col.features.add(hay)
+
+        val leech = Feature("Leech Supreme Helper", S::riftLeech)
+        leech.sub.add(ToggleSetting("Go There Title", "", S::riftLeechTitle))
+        leech.sub.add(ColorPickerSetting("Spot Colour", "", S::riftLeechColor))
+        col.features.add(leech)
+
+        val burger = Feature("Burger Warning", S::riftBurgerWarn)
+        burger.sub.add(ToggleSetting("Title", "Big title as well as the chat warning", S::riftBurgerTitle))
+        col.features.add(burger)
+
         val guide = Feature("Rift Guide Overlay", S::riftGuide)
         guide.sub.add(SliderIntSetting("Max Lines", "", S::riftGuideMaxLines, 3, 40))
         guide.sub.add(ColorPickerSetting("Task Colour", "", S::riftGuideColor))
@@ -101,11 +118,6 @@ object RiftMenu {
     }
 
     fun describe(name: String): String? = when (name) {
-        val leech = Feature("Leech Supreme Helper", S::riftLeech)
-        leech.sub.add(ToggleSetting("Go There Title", "", S::riftLeechTitle))
-        leech.sub.add(ColorPickerSetting("Spot Colour", "", S::riftLeechColor))
-        col.features.add(leech)
-
         "Rift Nametag Stats" -> "Vampire XP + Enigma Souls in nametags (needs Nametag Stats on)"
         "Punchcard Marker" -> "Mark players you already punched"
         "Agaricus Cap Timer" -> "Countdown on the cap, CLICK when it turns red"
@@ -120,7 +132,8 @@ object RiftMenu {
         "Snake Helper" -> "Outline Living Cave snakes, head highlighted"
         "Rift Guide Overlay" -> "Unfinished Rift Guide tasks on screen; open each guide page once to load it (move it in Edit HUD)"
         "Vampire Slayer Helper" -> "Boss highlight, STEAK alert, Twinclaws warning"
+        "Burger Warning" -> "Warn when the Motes Grubber menu opens with Highlite in your inventory and under 5/5 McGrubber burgers"
+        "Leech Supreme Helper" -> "Laser phase: box + line to the safe spot and a go-there title"
         else -> null
     }
 }
-        "Leech Supreme Helper" -> "Laser phase: box + line to the safe spot and a go-there title"
