@@ -1560,6 +1560,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderIntSetting("Necron LB Ping (ms)", "Ends it this much earlier to offset latency", Floor7::necronLbPingMs, 0, 500).gatedBy { Floor7.enableNecronLbTimer })
             f.sub.add(ColorPickerSetting("Necron LB Color", "", Floor7::necronLbColor).gatedBy { Floor7.enableNecronLbTimer })
             f.sub.add(ToggleSetting("Necron Drop Prediction", "Red box where Necron's drag will drop you, from your velocity and the known drag time", Floor7::enableNecronDropPredict))
+            f.sub.add(DropdownSetting("Drop Marker Style", "", arrayOf("Box", "Beacon"),
+                { Floor7.necronDropStyle },
+                { v -> Floor7.necronDropStyle = v }).gatedBy { Floor7.enableNecronDropPredict })
             f.sub.add(ColorPickerSetting("Drop Marker Color", "", Floor7::necronDropColor).gatedBy { Floor7.enableNecronDropPredict })
             f.sub.add(SubcategoryHeader("Goldor"))
             f.sub.add(ToggleSetting("Goldor", "", Floor7::enableGoldorTickTimer))
