@@ -18,12 +18,13 @@ object RiftHay {
 
     // Main-thread only
     private val seen = HashSet<Long>()
-    private val cleared = HashSet<Long>()
+    private val cleared = HashMap<Long, Long>()
+    private var learnedMs = 0L
     private var lastWarn = 0L
     private var tick = 0
     private var warns = 0
 
-    fun debug() = "hay: seen=${seen.size} cleared=${cleared.size} warns=$warns"
+    fun debug() = "hay: seen=${seen.size} cleared=${cleared.size} warns=$warns regrow=${learnedMs}ms"
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
@@ -46,8 +47,9 @@ object RiftHay {
                 val key = pos.asLong()
                 if (level.getBlockState(pos).block == Blocks.HAY_BLOCK) {
                     if (seen.size < 20000) seen.add(key)
-                    cleared.remove(key)
-                } else if (key in seen) cleared.add(key)
+                    // Regrow delay learned from the last clear-to-refill gap
+                    cleared.remove(key)?.let { t -> (System.currentTimeMillis() - t).takeIf { it in 1000L..120000L }?.let { learnedMs = it } }
+                } else if (key in seen) cleared.putIfAbsent(key, System.currentTimeMillis())
             }
         }
     }
@@ -56,11 +58,13 @@ object RiftHay {
     private fun standingIn(): Boolean {
         val me = Minecraft.getInstance().player ?: return false
         if (cleared.isEmpty()) return false
+        val now = System.currentTimeMillis()
+        val due = (if (learnedMs > 0) learnedMs else S.riftHayDelay * 1000L) - S.riftHayLead * 1000L
         val box = me.boundingBox
         for (x in Math.floor(box.minX).toInt()..Math.floor(box.maxX - 1e-3).toInt())
             for (y in Math.floor(box.minY).toInt()..Math.floor(box.maxY - 1e-3).toInt())
                 for (z in Math.floor(box.minZ).toInt()..Math.floor(box.maxZ - 1e-3).toInt())
-                    if (BlockPos.asLong(x, y, z) in cleared) return true
+                    if (cleared[BlockPos.asLong(x, y, z)]?.let { now - it >= due } == true) return true
         return false
     }
 
@@ -79,7 +83,7 @@ object RiftHay {
         if (!S.riftHay || !S.riftHayBoxes || !Rift.inRift() || cleared.isEmpty()) return
         val me = Minecraft.getInstance().player ?: return
         val c = S.riftHayColor
-        for (k in cleared) {
+        for (k in cleared.keys) {
             val p = BlockPos.of(k)
             if (me.distanceToSqr(p.x + 0.5, p.y + 0.5, p.z + 0.5) > 144.0) continue
             RenderUtils.gizmoBox(AABB(p), (c and 0xFFFFFF) or 0x40000000, c, false)
