@@ -86,9 +86,11 @@ object RenderUtils {
         redirectedQuads.add(r); redirectedQuads.add(g); redirectedQuads.add(b); redirectedQuads.add(a)
     }
 
-    private fun quadSink(consumer: VertexConsumer): QuadSink =
-        if (quadsToFillLayer) redirectSink
-        else QuadSink { pose, x, y, z, r, g, b, a -> consumer.addVertex(pose, x, y, z).setColor(r, g, b, a) }
+    // Branch per vertex instead of a capturing lambda per box (was one allocation per draw call).
+    private fun quadVertex(consumer: VertexConsumer, pose: PoseStack.Pose, x: Float, y: Float, z: Float, r: Float, g: Float, b: Float, a: Float) {
+        if (quadsToFillLayer) redirectSink.v(pose, x, y, z, r, g, b, a)
+        else consumer.addVertex(pose, x, y, z).setColor(r, g, b, a)
+    }
 
     @JvmStatic
     fun hasRedirectedQuads() = !redirectedQuads.isEmpty
@@ -351,8 +353,7 @@ object RenderUtils {
         if (rgba[3] == 0f) return
         if (corners.size != 4) FishDiag.fail("RenderUtils.12", "renderFilledQuad given ${corners.size} corners, quad buffer will desync")
         val pose = matrixStack.last()
-        val sink = quadSink(consumer)
-        for (c in corners) sink.v(pose, c.x.toFloat(), c.y.toFloat(), c.z.toFloat(), rgba[0], rgba[1], rgba[2], rgba[3])
+        for (c in corners) quadVertex(consumer, pose, c.x.toFloat(), c.y.toFloat(), c.z.toFloat(), rgba[0], rgba[1], rgba[2], rgba[3])
     }
 
     @JvmStatic
@@ -468,9 +469,7 @@ object RenderUtils {
 
     @JvmStatic
     fun renderText(context: LevelRenderContext, matrices: PoseStack, text: Component, x: Double, y: Double, z: Double, scale: Float) {
-        val client = Minecraft.getInstance()
-        val textRenderer = client.font
-        client.player ?: return
+        Minecraft.getInstance().player ?: return
         if (x.isNaN() || y.isNaN() || z.isNaN() || scale.isNaN() || scale == 0f) FishDiag.fail("RenderUtils.18", "renderText bad input ($x,$y,$z) scale=$scale")
 
         matrices.pushPose()
@@ -478,7 +477,6 @@ object RenderUtils {
         matrices.mulPose(context.levelState().cameraRenderState.orientation)
         matrices.scale(TEXT_SCALE * scale, -TEXT_SCALE * scale, TEXT_SCALE * scale)
 
-        val halfWidth = textRenderer.width(text) / 2f
         WorldText.draw(matrices, text, -0x1, true)
         matrices.popPose()
     }
@@ -486,7 +484,6 @@ object RenderUtils {
     // See-through billboard text; `pxSize` = world units per font pixel. Flushed by the NO_DEPTH_* passes
     @JvmStatic
     fun renderSeeThroughText(context: LevelRenderContext, matrices: PoseStack, text: Component, pos: Vec3, pxSize: Float, argb: Int, shadow: Boolean) {
-        val font = Minecraft.getInstance().font
         matrices.pushPose()
         matrices.translate(pos.x, pos.y, pos.z)
         matrices.mulPose(context.levelState().cameraRenderState.orientation)
@@ -498,7 +495,6 @@ object RenderUtils {
     // Text on a rigid board turned only around Y so every line rotates together; lx/ly are local board offsets
     @JvmStatic
     fun renderBoardText(matrices: PoseStack, text: Component, base: Vec3, yaw: Float, lx: Double, ly: Double, scale: Float) {
-        val font = Minecraft.getInstance().font
         matrices.pushPose()
         matrices.translate(base.x, base.y, base.z)
         matrices.mulPose(org.joml.Quaternionf().rotateY(yaw))
@@ -554,34 +550,33 @@ object RenderUtils {
         r: Float, g: Float, b: Float, a: Float
     ) {
         val entry = matrices.last()
-        val c = quadSink(consumer)
         val ax1 = x1.toFloat(); val ay1 = y1.toFloat(); val az1 = z1.toFloat()
         val ax2 = x2.toFloat(); val ay2 = y2.toFloat(); val az2 = z2.toFloat()
 
-        c.v(entry, ax1, ay1, az1, r, g, b, a)
-        c.v(entry, ax2, ay1, az1, r, g, b, a)
-        c.v(entry, ax2, ay1, az2, r, g, b, a)
-        c.v(entry, ax1, ay1, az2, r, g, b, a)
-        c.v(entry, ax1, ay2, az1, r, g, b, a)
-        c.v(entry, ax2, ay2, az1, r, g, b, a)
-        c.v(entry, ax2, ay2, az2, r, g, b, a)
-        c.v(entry, ax1, ay2, az2, r, g, b, a)
-        c.v(entry, ax1, ay1, az1, r, g, b, a)
-        c.v(entry, ax2, ay1, az1, r, g, b, a)
-        c.v(entry, ax2, ay2, az1, r, g, b, a)
-        c.v(entry, ax1, ay2, az1, r, g, b, a)
-        c.v(entry, ax1, ay1, az2, r, g, b, a)
-        c.v(entry, ax2, ay1, az2, r, g, b, a)
-        c.v(entry, ax2, ay2, az2, r, g, b, a)
-        c.v(entry, ax1, ay2, az2, r, g, b, a)
-        c.v(entry, ax1, ay1, az1, r, g, b, a)
-        c.v(entry, ax1, ay2, az1, r, g, b, a)
-        c.v(entry, ax1, ay2, az2, r, g, b, a)
-        c.v(entry, ax1, ay1, az2, r, g, b, a)
-        c.v(entry, ax2, ay1, az1, r, g, b, a)
-        c.v(entry, ax2, ay2, az1, r, g, b, a)
-        c.v(entry, ax2, ay2, az2, r, g, b, a)
-        c.v(entry, ax2, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az2, r, g, b, a)
     }
 
     @JvmStatic
