@@ -105,7 +105,7 @@ object FishEstTotal {
 
     @JvmStatic
     fun init() {
-        Events.ON_SERVER_TICK.register { if (floor == null) detectFloor(); false }
+        Events.ON_SERVER_TICK.register { if (floor == null && fishmod.utils.Location.inDungeon()) detectFloor(); false }
         Events.ON_GAME_MESSAGE.register { message ->
             try { parseGameMessage(message) } catch (e: Exception) { FishDiag.fail("FishEstTotal.3", "est total message parse failed (floor=$floor)", e); false }
         }

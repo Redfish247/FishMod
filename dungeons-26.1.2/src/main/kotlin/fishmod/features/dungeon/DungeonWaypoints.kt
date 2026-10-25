@@ -136,6 +136,11 @@ object DungeonWaypoints {
             )
         )
 
+        // New world = new run: drop route progress so reached points don't stay hidden.
+        fishmod.utils.events.Events.ON_WORLD_CHANGE.register {
+            if (routeReached.isNotEmpty() || routeLoopCursor.isNotEmpty()) { routeReached.clear(); routeLoopCursor.clear(); progressVersion++ }
+            false
+        }
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
             try { onTick(mc) } catch (e: Exception) { FishDiag.fail("DungeonWaypoints.1", "waypoint tick failed (key=$lastGlobalDim, ${liveWaypoints.size} live)", e) }
         })
