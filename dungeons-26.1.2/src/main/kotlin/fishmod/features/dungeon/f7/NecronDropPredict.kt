@@ -12,9 +12,7 @@ import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
-import net.minecraft.world.level.ClipContext
 import net.minecraft.world.phys.AABB
-import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.Vec3
 import kotlin.math.hypot
 import kotlin.math.sqrt
@@ -124,7 +122,6 @@ object NecronDropPredict {
         if (!active()) { reset(); return }
         val mc = Minecraft.getInstance()
         val p = mc.player ?: return
-        val level = mc.level ?: return
         val pos = Vec3(p.x, p.y, p.z)
         phaseTicks++
         if (phaseTicks <= 200) Debug.LOGGER.info("[NecronDropTrace] t=%d pos=%.2f,%.2f,%.2f ground=%s".format(phaseTicks, pos.x, pos.y, pos.z, p.onGround()))
@@ -149,11 +146,8 @@ object NecronDropPredict {
         val reach = minOf(hypot(dx, dz) * k, hypot(aimDx, aimDz))
         val ex = s.x + aimDx / hypot(aimDx, aimDz) * reach
         val ez = s.z + aimDz / hypot(aimDx, aimDz) * reach
-        // The platform floor is uneven (64.06 to 65.0); take the highest top within the box footprint.
-        val ey = listOf(-0.3, 0.0, 0.3).flatMap { ox -> listOf(-0.3, 0.0, 0.3).mapNotNull { oz ->
-            val h = level.clip(ClipContext(Vec3(ex + ox, 85.0, ez + oz), Vec3(ex + ox, 50.0, ez + oz), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p))
-            if (h.type == HitResult.Type.BLOCK) h.location.y else null
-        } }.maxOrNull() ?: 64.5
+        // The drag ends at the target height, so the box sits there.
+        val ey = TARGET_Y
         landing = Vec3(ex, ey, ez)
         dragTicks = phaseTicks - startTick
         Debug.LOGGER.info("[NecronDrop] start=%.2f,%.2f,%.2f dir=%.2f,%.2f predicted=%.2f,%.2f,%.2f".format(s.x, s.y, s.z, dx, dz, ex, ey, ez))
