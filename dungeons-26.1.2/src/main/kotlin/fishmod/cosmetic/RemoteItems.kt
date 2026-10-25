@@ -95,6 +95,8 @@ object RemoteItems {
     @JvmStatic
     fun acceptItems(queried: Set<String>, payloads: Map<String, String>) {
         if (!FishSettings.remoteItemsEnabled) { clearAll(); return }
+        // drop players who left the tab so the map doesn't grow across lobbies
+        byPlayer.keys.retainAll(queried)
         for (u in queried) {
             val payload = payloads[u]
             val parsed = if (payload.isNullOrEmpty()) emptyMap() else parse(payload)
