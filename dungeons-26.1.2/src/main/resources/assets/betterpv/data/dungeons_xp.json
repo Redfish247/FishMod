@@ -1,0 +1,23 @@
+{
+	"floors": [
+		{ "id": "entrance", "label": "E", "mode": "normal", "floor": 0, "base": 55, "unlock_cata": 0 },
+		{ "id": "f1", "label": "F1", "mode": "normal", "floor": 1, "base": 110, "unlock_cata": 1 },
+		{ "id": "f2", "label": "F2", "mode": "normal", "floor": 2, "base": 220, "unlock_cata": 3 },
+		{ "id": "f3", "label": "F3", "mode": "normal", "floor": 3, "base": 560, "unlock_cata": 5 },
+		{ "id": "f4", "label": "F4", "mode": "normal", "floor": 4, "base": 1420, "unlock_cata": 9 },
+		{ "id": "f5", "label": "F5", "mode": "normal", "floor": 5, "base": 2400, "unlock_cata": 14 },
+		{ "id": "f6", "label": "F6", "mode": "normal", "floor": 6, "base": 4880, "unlock_cata": 19 },
+		{ "id": "f7", "label": "F7", "mode": "normal", "floor": 7, "base": 28000, "unlock_cata": 24 },
+		{ "id": "m1", "label": "M1", "mode": "master", "floor": 1, "base": 15000, "unlock_cata": 24 },
+		{ "id": "m2", "label": "M2", "mode": "master", "floor": 2, "base": 20000, "unlock_cata": 26 },
+		{ "id": "m3", "label": "M3", "mode": "master", "floor": 3, "base": 35000, "unlock_cata": 28 },
+		{ "id": "m4", "label": "M4", "mode": "master", "floor": 4, "base": 55000, "unlock_cata": 30 },
+		{ "id": "m5", "label": "M5", "mode": "master", "floor": 5, "base": 70000, "unlock_cata": 32 },
+		{ "id": "m6", "label": "M6", "mode": "master", "floor": 6, "base": 100000, "unlock_cata": 34 },
+		{ "id": "m7", "label": "M7", "mode": "master", "floor": 7, "base": 300000, "unlock_cata": 36 }
+	],
+	"hecatomb_s_plus": [0, 0.0056, 0.0072, 0.0088, 0.0104, 0.012, 0.0136, 0.0152, 0.0168, 0.0184, 0.02],
+	"expert_ring_bonus": 0.1,
+	"experienced_floor_bonus": 0.5,
+	"experienced_floor_min_completions": 5
+}
