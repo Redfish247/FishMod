@@ -1110,7 +1110,7 @@ public final class DungeonPage {
 		if (classId == null) {
 			return COLOR_STAT;
 		}
-		return switch (classId.toLowerCase()) {
+		return switch (classId.toLowerCase(Locale.ROOT)) {
 			case "mage" -> COLOR_MAGE;
 			case "berserk" -> COLOR_BERSERK;
 			case "archer" -> COLOR_ARCHER;

@@ -154,8 +154,11 @@ public final class CrimsonUi {
 		if (text == null || text.isEmpty()) {
 			return "";
 		}
-		return text.replaceAll("§.", "").replaceAll("&[0-9a-fk-or]", "");
+		return AMP_CODE.matcher(SECTION_CODE.matcher(text).replaceAll("")).replaceAll("");
 	}
+
+	private static final java.util.regex.Pattern SECTION_CODE = java.util.regex.Pattern.compile("§.");
+	private static final java.util.regex.Pattern AMP_CODE = java.util.regex.Pattern.compile("&[0-9a-fk-or]");
 
 	public static boolean visible(int y, int h, int clipTop, int clipBottom) {
 		return y + h > clipTop && y < clipBottom;

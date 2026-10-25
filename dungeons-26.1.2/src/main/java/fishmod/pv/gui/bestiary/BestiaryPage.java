@@ -59,6 +59,8 @@ public final class BestiaryPage {
 	private final Map<String, ItemStack> iconCache = new HashMap<>();
 	private String hoverKey = "";
 	private List<Component> hoverTip = List.of();
+	private BestiarySnapshot.FamilyProgress tipFamily;
+	private List<Component> tipCache = List.of();
 
 	public void apply(BestiarySnapshot snapshot) {
 		this.snapshot = snapshot == null ? BestiarySnapshot.empty() : snapshot;
@@ -265,9 +267,14 @@ public final class BestiaryPage {
 		}
 		g.disableScissor();
 
-		if (linked != null) {
+		if (linked != null && linked.family() != null) {
+			// Rebuild the tooltip only when the hovered family changes.
+			if (linked != this.tipFamily) {
+				this.tipFamily = linked;
+				this.tipCache = tooltipFor(linked);
+			}
 			this.hoverKey = linked.family().id();
-			this.hoverTip = tooltipFor(linked);
+			this.hoverTip = this.tipCache;
 		}
 	}
 
@@ -564,10 +571,7 @@ public final class BestiaryPage {
 				icon = SkyBlockItemFactory.texturedHead(cat.textureValue());
 			}
 			if (icon.isEmpty() && cat.itemIcon() != null && !cat.itemIcon().isBlank()) {
-				String itemId = cat.itemIcon().toLowerCase(Locale.ROOT).replace(' ', '_');
-				icon = BuiltInRegistries.ITEM.getOptional(Identifier.withDefaultNamespace(itemId))
-					.map(ItemStack::new)
-					.orElse(ItemStack.EMPTY);
+				icon = vanillaItem(cat.itemIcon());
 			}
 		}
 		if (icon.isEmpty()) {
@@ -589,10 +593,7 @@ public final class BestiaryPage {
 			icon = SkyBlockItemFactory.texturedHead(texture);
 		}
 		if (icon.isEmpty() && fam.family().itemIcon() != null && !fam.family().itemIcon().isBlank()) {
-			String itemId = fam.family().itemIcon().toLowerCase(Locale.ROOT).replace(' ', '_');
-			icon = BuiltInRegistries.ITEM.getOptional(Identifier.withDefaultNamespace(itemId))
-				.map(ItemStack::new)
-				.orElse(ItemStack.EMPTY);
+			icon = vanillaItem(fam.family().itemIcon());
 		}
 		if (icon.isEmpty()) {
 			icon = new ItemStack(Items.SPAWNER);
@@ -613,8 +614,17 @@ public final class BestiaryPage {
 		if (id == null || id.isBlank()) {
 			return "";
 		}
-		String cleaned = id.trim().replaceAll("§[0-9a-fk-or]", "");
-		cleaned = cleaned.replaceAll("(?i)_\\d+$", "");
+		String cleaned = FORMAT_CODE.matcher(id.trim()).replaceAll("");
+		cleaned = LEVEL_SUFFIX.matcher(cleaned).replaceAll("");
 		return MobNames.pretty(cleaned);
+	}
+
+	private static final java.util.regex.Pattern FORMAT_CODE = java.util.regex.Pattern.compile("§[0-9a-fk-or]");
+	private static final java.util.regex.Pattern LEVEL_SUFFIX = java.util.regex.Pattern.compile("(?i)_\\d+$");
+
+	private static ItemStack vanillaItem(String name) {
+		Identifier itemId = Identifier.tryParse(name.toLowerCase(Locale.ROOT).replace(' ', '_'));
+		return itemId == null ? ItemStack.EMPTY
+			: BuiltInRegistries.ITEM.getOptional(itemId).map(ItemStack::new).orElse(ItemStack.EMPTY);
 	}
 }

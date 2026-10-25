@@ -26,6 +26,10 @@ import static fishmod.pv.gui.events.EventsUi.*;
 
 /** Bingo events subpage. */
 public final class BingoPage {
+	// Goal tooltips per goals list; done-state is fixed for a given snapshot.
+	private List<EventsSnapshot.BingoGoal> tipGoals;
+	private Set<String> tipCompleted = Set.of();
+	private final java.util.Map<EventsSnapshot.BingoGoal, List<PvTooltip.Line>> tipCache = new java.util.IdentityHashMap<>();
 	public void render(
 		EventsSnapshot snapshot,
 		EventsPage.BingoLoadState bingoState,
@@ -199,6 +203,11 @@ public final class BingoPage {
 		int gridY = y + Math.max(0, (h - gridH) / 2);
 		int icon = Math.max(1, Math.min(16, cell - 4));
 
+		if (goals != this.tipGoals || !completed.equals(this.tipCompleted)) {
+			this.tipGoals = goals;
+			this.tipCompleted = completed;
+			this.tipCache.clear();
+		}
 		int count = Math.min(goals.size(), cols * rows);
 		for (int i = 0; i < count; i++) {
 			EventsSnapshot.BingoGoal goal = goals.get(i);
@@ -239,6 +248,16 @@ public final class BingoPage {
 				PvDraw.progressBar(g, cx + 2, barY, cell - 4, barH, fill, COLOR_COMMUNITY, false);
 			}
 
+			List<PvTooltip.Line> tip = this.tipCache.get(goal);
+			if (tip == null) {
+				tip = goalTip(goal, done, community);
+				this.tipCache.put(goal, tip);
+			}
+			ui.addClippedHover(cx, cy, cell, cell, ui.contentX, ui.contentY, ui.contentW, ui.contentH, tip);
+		}
+	}
+
+	private static List<PvTooltip.Line> goalTip(EventsSnapshot.BingoGoal goal, boolean done, boolean community) {
 			String name = goal.name().isBlank() ? prettyGoalId(goal.id()) : goal.name();
 			List<PvTooltip.Line> tip = new ArrayList<>();
 			tip.add(PvTooltip.Line.title(name, done ? COLOR_COMPLETE : PvDraw.COLOR_TEXT));
@@ -263,16 +282,20 @@ public final class BingoPage {
 					tip.add(PvTooltip.Line.meta(line));
 				}
 			}
-			ui.addClippedHover(cx, cy, cell, cell, ui.contentX, ui.contentY, ui.contentW, ui.contentH, tip);
-		}
+			return tip;
 	}
 
 	private static ItemStack bingoIcon(EventsSnapshot.BingoGoal goal, boolean done) {
 		if (goal.community()) {
-			return new ItemStack(done ? Items.DIAMOND : Items.GOLD_INGOT);
+			return done ? ICON_COMMUNITY_DONE : ICON_COMMUNITY;
 		}
-		return new ItemStack(done ? Items.FILLED_MAP : Items.PAPER);
+		return done ? ICON_PERSONAL_DONE : ICON_PERSONAL;
 	}
+
+	private static final ItemStack ICON_COMMUNITY_DONE = new ItemStack(Items.DIAMOND);
+	private static final ItemStack ICON_COMMUNITY = new ItemStack(Items.GOLD_INGOT);
+	private static final ItemStack ICON_PERSONAL_DONE = new ItemStack(Items.FILLED_MAP);
+	private static final ItemStack ICON_PERSONAL = new ItemStack(Items.PAPER);
 
 	private static Set<String> completedGoalIds(EventsSnapshot.Bingo bingo) {
 		Set<String> out = new HashSet<>();
