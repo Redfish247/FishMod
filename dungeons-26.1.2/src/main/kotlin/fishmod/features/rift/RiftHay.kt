@@ -54,12 +54,15 @@ object RiftHay {
         }
     }
 
+    // Age at which a cleared cell counts as about to refill
+    private fun dueMs() = (if (learnedMs > 0) learnedMs else S.riftHayDelay * 1000L) - S.riftHayLead * 1000L
+
     // Cleared hay cells the player's body overlaps
     private fun standingIn(): Boolean {
         val me = Minecraft.getInstance().player ?: return false
         if (cleared.isEmpty()) return false
         val now = System.currentTimeMillis()
-        val due = (if (learnedMs > 0) learnedMs else S.riftHayDelay * 1000L) - S.riftHayLead * 1000L
+        val due = dueMs()
         val box = me.boundingBox
         for (x in Math.floor(box.minX).toInt()..Math.floor(box.maxX - 1e-3).toInt())
             for (y in Math.floor(box.minY).toInt()..Math.floor(box.maxY - 1e-3).toInt())
@@ -83,7 +86,9 @@ object RiftHay {
         if (!S.riftHay || !S.riftHayBoxes || !Rift.inRift() || cleared.isEmpty()) return
         val me = Minecraft.getInstance().player ?: return
         val c = S.riftHayColor
-        for (k in cleared.keys) {
+        val now = System.currentTimeMillis(); val due = dueMs()
+        for ((k, t) in cleared) {
+            if (now - t < due) continue
             val p = BlockPos.of(k)
             if (me.distanceToSqr(p.x + 0.5, p.y + 0.5, p.z + 0.5) > 144.0) continue
             RenderUtils.gizmoBox(AABB(p), (c and 0xFFFFFF) or 0x40000000, c, false)
