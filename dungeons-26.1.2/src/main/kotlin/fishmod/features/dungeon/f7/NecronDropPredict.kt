@@ -104,10 +104,11 @@ object NecronDropPredict {
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register {
             if (testTick == -2 && --testLinger <= 0) { testTick = -1; reset() }
+            if (testTick == -2) { try { tick() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.4", "necron drop test threw", e) } }
             if (testTick >= 0) { try { tick(); testStep() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.4", "necron drop test threw", e) } }
         }
         Events.ON_SERVER_TICK.register {
-            if (testTick >= 0) return@register false
+            if (testTick != -1) return@register false
             try { tick() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.3", "necron drop tick threw", e) }
             false
         }
