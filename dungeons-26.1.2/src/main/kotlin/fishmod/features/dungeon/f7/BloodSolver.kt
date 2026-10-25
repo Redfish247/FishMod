@@ -65,8 +65,8 @@ object BloodSolver {
 
         Events.ON_GAME_MESSAGE.register { message ->
             when (message.string) {
-                OPEN_MESSAGE -> if (bloodOpenTick < 0) bloodOpenTick = dungeonTick
-                WATCHER_MESSAGE -> if (Floor7.bloodSolverEnabled) {
+                OPEN_MESSAGE -> if (bloodOpenTick < 0 && Location.inDungeon()) bloodOpenTick = dungeonTick
+                WATCHER_MESSAGE -> if (Floor7.bloodSolverEnabled && Location.inDungeon()) {
                     try { onWatcherSpawn() } catch (e: Exception) { FishDiag.fail("BloodSolver.3", "watcher spawn handler threw", e) }
                 }
             }
@@ -115,7 +115,7 @@ object BloodSolver {
         firstSpawns = false
         if (bloodOpenTick < 0) return
         val seconds = (dungeonTick - bloodOpenTick) / 20
-        FishDiag.check(seconds in 1..120, "BloodSolver.5") { "implausible watcher spawn delay ${seconds}s (open=$bloodOpenTick now=$dungeonTick)" }
+        if (seconds !in 1..120) return // stale or uninitialised timestamps: no reliable delay
 
         if (Floor7.bloodSolverKillTitle) {
             val moveTicks = when (seconds) {
