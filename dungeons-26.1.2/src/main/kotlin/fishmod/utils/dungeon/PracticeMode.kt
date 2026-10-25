@@ -28,8 +28,10 @@ object PracticeMode {
         })
     }
 
+    private val BUILTIN_IPS = listOf("hypixelp3sim.zapto.org", "mc.strad.dev")
+
     private fun ips(): List<String> =
-        FishSettings.practiceServerIps.split(',').map { it.trim().lowercase() }.filter { it.isNotEmpty() }
+        (FishSettings.practiceServerIps.split(',').map { it.trim().lowercase() }.filter { it.isNotEmpty() } + BUILTIN_IPS).distinct()
 
     private fun refresh(mc: Minecraft) {
         val addr = mc.currentServer?.ip?.trim()?.lowercase().orEmpty()
@@ -52,7 +54,7 @@ object PracticeMode {
     @JvmStatic
     fun command(arg: String?) {
         when (arg?.lowercase()?.trim()) {
-            null, "", "status" -> msg("active=§f$active §7phase=§f${label(phaseOverride)} §7ips=§f${FishSettings.practiceServerIps}")
+            null, "", "status" -> msg("active=§f$active §7phase=§f${label(phaseOverride)} §7ips=§f${ips().joinToString(",")}")
             "off", "auto" -> { phaseOverride = -1; msg("phase override cleared — following the real tracker") }
             "here" -> addHere()
             "p1" -> set(4)
