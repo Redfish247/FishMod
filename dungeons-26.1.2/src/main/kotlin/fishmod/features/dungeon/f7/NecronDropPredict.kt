@@ -65,6 +65,7 @@ object NecronDropPredict {
         val level = mc.level ?: return
         val pos = Vec3(p.x, p.y, p.z)
         phaseTicks++
+        if (phaseTicks <= 200) Debug.LOGGER.info("[NecronDropTrace] t=%d pos=%.2f,%.2f,%.2f ground=%s".format(phaseTicks, pos.x, pos.y, pos.z, p.onGround()))
         if (landing != null) { dragTicks++; return }
         val last = prev
         prev = pos
