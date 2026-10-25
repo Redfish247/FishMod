@@ -1,6 +1,5 @@
 package fishmod.features.rift
 
-import fishmod.utils.debug.FishDiag
 import fishmod.utils.Misc
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
@@ -9,47 +8,49 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
-import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket
-import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.level.block.Blocks
-import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.phys.AABB
 import fishmod.features.rift.RiftSettings as S
 
-// Half-Eaten Cave hay warning. No SkyHanni/Skyblocker equivalent exists; cleared hay cells come from block-update packets.
+// Half-Eaten Cave hay warning. No SkyHanni/Skyblocker equivalent; block-update packets never showed clears (debug 2026-10-24), so hay is scanned from the loaded level.
 object RiftHay {
 
-    private val cleared = java.util.concurrent.ConcurrentHashMap.newKeySet<Long>()
+    // Main-thread only
+    private val seen = HashSet<Long>()
+    private val cleared = HashSet<Long>()
     private var lastWarn = 0L
-    @Volatile private var hayUpdates = 0
-    @Volatile private var warns = 0
+    private var tick = 0
+    private var warns = 0
+
+    fun debug() = "hay: seen=${seen.size} cleared=${cleared.size} warns=$warns"
 
     fun init() {
-        Events.ON_PACKET.register { packet ->
-            if (!S.riftHay || !Rift.inRift()) return@register false
-            try {
-                when (packet) {
-                    is ClientboundBlockUpdatePacket -> onBlock(packet.pos, packet.blockState)
-                    is ClientboundSectionBlocksUpdatePacket -> packet.runUpdates(::onBlock)
-                }
-            } catch (e: Exception) { FishDiag.fail("RiftHay.1", "hay packet handler threw", e) }
-            false
-        }
-        Events.ON_WORLD_CHANGE.register { cleared.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register { tick() }
+        Events.ON_WORLD_CHANGE.register { Minecraft.getInstance().execute { seen.clear(); cleared.clear() }; false }
         RenderingEvents.GIZMO.register { _ -> render() }
     }
 
-    // The packet is read before the client applies it, so the level still holds the old state
-    private fun onBlock(pos: BlockPos, new: BlockState) {
-        val key = pos.asLong()
-        if (new.block == Blocks.HAY_BLOCK) { hayUpdates++; cleared.remove(key); return }
-        val old = Minecraft.getInstance().level?.getBlockState(pos) ?: return
-        if (old.block == Blocks.HAY_BLOCK && cleared.size < 4096) cleared.add(key)
+    // Hay seen in range marks a cell; a marked cell that is no longer hay is a cleared cell that will refill
+    private fun scan() {
+        val mc = Minecraft.getInstance()
+        val level = mc.level ?: return
+        val me = mc.player ?: return
+        val c = me.blockPosition()
+        val pos = BlockPos.MutableBlockPos()
+        for (x in c.x - 10..c.x + 10) for (z in c.z - 10..c.z + 10) {
+            pos.set(x, c.y, z)
+            if (!level.hasChunkAt(pos)) continue
+            for (y in c.y - 5..c.y + 6) {
+                pos.set(x, y, z)
+                val key = pos.asLong()
+                if (level.getBlockState(pos).block == Blocks.HAY_BLOCK) {
+                    if (seen.size < 20000) seen.add(key)
+                    cleared.remove(key)
+                } else if (key in seen) cleared.add(key)
+            }
+        }
     }
-
-    fun debug() = "hay: cleared=${cleared.size} hayUpdates=$hayUpdates warns=$warns"
 
     // Cleared hay cells the player's body overlaps
     private fun standingIn(): Boolean {
@@ -64,7 +65,9 @@ object RiftHay {
     }
 
     private fun tick() {
-        if (!S.riftHay || !Rift.inRift() || !standingIn()) return
+        if (!S.riftHay || !Rift.inRift()) return
+        if (tick++ % 4 == 0) scan()
+        if (!standingIn()) return
         val now = System.currentTimeMillis()
         if (now - lastWarn < 800L) return
         lastWarn = now; warns++
