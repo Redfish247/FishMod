@@ -25,6 +25,19 @@ public final class FormatUtil {
 	private FormatUtil() {
 	}
 
+	// DecimalFormat isn't thread-safe; snapshots format off the render thread too.
+	private static String fmt(DecimalFormat format, long value) {
+		synchronized (format) {
+			return format.format(value);
+		}
+	}
+
+	private static String fmt(DecimalFormat format, double value) {
+		synchronized (format) {
+			return format.format(value);
+		}
+	}
+
 	/** Calendar date in UTC (e.g. {@code Dec 1, 2024}). Empty when {@code ms <= 0}. */
 	public static String prettyDate(long ms) {
 		if (ms <= 0L) {
@@ -42,25 +55,25 @@ public final class FormatUtil {
 	}
 
 	public static String commas(long value) {
-		return COMMAS.format(value);
+		return fmt(COMMAS, value);
 	}
 
 	public static String oneDecimal(double value) {
-		return ONE_DEC.format(value);
+		return fmt(ONE_DEC, value);
 	}
 
 	public static String twoDecimals(double value) {
-		return TWO_DEC.format(value);
+		return fmt(TWO_DEC, value);
 	}
 
 	/** 0..1 fraction as a percentage (e.g. {@code 41.7%}). */
 	public static String percent(double fraction) {
 		double clamped = Double.isFinite(fraction) ? Math.max(0D, Math.min(1D, fraction)) : 0D;
-		return ONE_DEC.format(clamped * 100D) + "%";
+		return fmt(ONE_DEC, clamped * 100D) + "%";
 	}
 
 	public static String weight(double value) {
-		return WEIGHT.format(value);
+		return fmt(WEIGHT, value);
 	}
 
 	/** Compact coins for networth display (e.g. 29.167b). */
@@ -137,7 +150,7 @@ public final class FormatUtil {
 	public static String compactCoins(double value) {
 		double abs = Math.abs(value);
 		if (abs < 1_000) {
-			return COMMAS.format(Math.round(value));
+			return fmt(COMMAS, Math.round(value));
 		}
 		String[] suffixes = {"k", "m", "b", "t"};
 		double scaled = value / 1_000;
@@ -172,7 +185,7 @@ public final class FormatUtil {
 		if (abs >= 1_000L) {
 			return trim(value / 1_000L) + (upperSuffix ? "K" : "k");
 		}
-		return COMMAS.format(Math.round(value));
+		return fmt(COMMAS, Math.round(value));
 	}
 
 	private static String trim(double value) {

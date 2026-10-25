@@ -278,7 +278,7 @@ public final class GardenSnapshot {
 	private final List<PersonalBest> personalBests;
 	private final Map<String, Integer> perks;
 	private final List<ContestEntry> contests;
-	private Map<String, CropPlacement> placements;
+	private volatile Map<String, CropPlacement> placements;
 	private final List<ChipEntry> gardenChips;
 	private final List<GreenhouseRow> greenhouse;
 	private final GreenhouseMeta greenhouseMeta;

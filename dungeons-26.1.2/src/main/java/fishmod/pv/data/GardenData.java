@@ -54,16 +54,16 @@ public final class GardenData {
 					root = new JsonObject();
 					return;
 				}
-				root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
-				gardenXp = readLongArray(root.get("garden_xp_cumulative"));
-				visitorMilestones = readLongArray(root.get("visitor_milestone_cumulative"));
-				uniqueVisitorMilestones = readLongArray(root.get("unique_visitor_milestone_cumulative"));
-				if (root.has("max_plots")) {
-					maxPlots = root.get("max_plots").getAsInt();
+				JsonObject parsed = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
+				gardenXp = readLongArray(parsed.get("garden_xp_cumulative"));
+				visitorMilestones = readLongArray(parsed.get("visitor_milestone_cumulative"));
+				uniqueVisitorMilestones = readLongArray(parsed.get("unique_visitor_milestone_cumulative"));
+				if (parsed.has("max_plots")) {
+					maxPlots = parsed.get("max_plots").getAsInt();
 				}
 				Map<String, long[]> crops = new LinkedHashMap<>();
-				JsonObject cropObj = root.has("crop_milestones") && root.get("crop_milestones").isJsonObject()
-					? root.getAsJsonObject("crop_milestones")
+				JsonObject cropObj = parsed.has("crop_milestones") && parsed.get("crop_milestones").isJsonObject()
+					? parsed.getAsJsonObject("crop_milestones")
 					: null;
 				if (cropObj != null) {
 					for (Map.Entry<String, JsonElement> e : cropObj.entrySet()) {
@@ -74,8 +74,8 @@ public final class GardenData {
 
 				List<String> visitors = new ArrayList<>();
 				Map<String, String> rarities = new LinkedHashMap<>();
-				JsonObject vis = root.has("visitors") && root.get("visitors").isJsonObject()
-					? root.getAsJsonObject("visitors")
+				JsonObject vis = parsed.has("visitors") && parsed.get("visitors").isJsonObject()
+					? parsed.getAsJsonObject("visitors")
 					: null;
 				if (vis != null) {
 					for (Map.Entry<String, JsonElement> e : vis.entrySet()) {
@@ -92,6 +92,8 @@ public final class GardenData {
 				}
 				visitorIds = List.copyOf(visitors);
 				visitorRarities = Map.copyOf(rarities);
+				// Publish last so readers never see root set with tables still empty.
+				root = parsed;
 			} catch (IOException | RuntimeException exception) {
 				if (exception instanceof RuntimeException runtime && !SoftDataFailure.isSoft(runtime)) {
 					throw runtime;
