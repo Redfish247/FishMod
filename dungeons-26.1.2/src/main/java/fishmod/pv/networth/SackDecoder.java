@@ -72,8 +72,10 @@ final class SackDecoder {
 		Map<String, Integer> counts = new LinkedHashMap<>();
 		if (countsJson != null) {
 			for (var entry : countsJson.entrySet()) {
-				if (entry.getValue().isJsonPrimitive()) {
-					counts.put(entry.getKey().toUpperCase(Locale.ROOT), entry.getValue().getAsInt());
+				// Same number check and int clamp as parseSacks; a non-numeric value would throw.
+				if (entry.getValue().isJsonPrimitive() && entry.getValue().getAsJsonPrimitive().isNumber()) {
+					double raw = entry.getValue().getAsDouble();
+					counts.put(entry.getKey().toUpperCase(Locale.ROOT), (int) Math.max(0D, Math.min(Integer.MAX_VALUE, raw)));
 				}
 			}
 		}
@@ -327,6 +329,9 @@ final class SackDecoder {
 	}
 
 	static int sackAmount(Map<String, Integer> counts, String itemId) {
+		if (itemId == null) {
+			return 0;
+		}
 		String key = itemId.toUpperCase(Locale.ROOT);
 		Integer amount = counts.get(key);
 		if (amount == null) {
@@ -339,6 +344,9 @@ final class SackDecoder {
 	}
 
 	static void claimSackId(Set<String> claimed, String id) {
+		if (id == null) {
+			return;
+		}
 		String key = id.toUpperCase(Locale.ROOT);
 		claimed.add(key);
 		claimed.add(key.replace('-', ':'));
@@ -346,6 +354,9 @@ final class SackDecoder {
 	}
 
 	static boolean isClaimedSackId(Set<String> claimed, String id) {
+		if (id == null) {
+			return false;
+		}
 		String key = id.toUpperCase(Locale.ROOT);
 		return claimed.contains(key)
 			|| claimed.contains(key.replace('-', ':'))

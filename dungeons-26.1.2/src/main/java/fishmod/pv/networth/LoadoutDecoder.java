@@ -222,11 +222,8 @@ final class LoadoutDecoder {
 			Map.entry("attack_speed", "AS"),
 			Map.entry("intelligence", "Int")
 		)) {
-			if (!slot.has(entry.getKey()) || !slot.get(entry.getKey()).isJsonPrimitive()) {
-				continue;
-			}
-			int value = slot.get(entry.getKey()).getAsInt();
-			if (value != 0) {
+			Integer value = InventoryDecodeSupport.jsonInt(slot, entry.getKey());
+			if (value != null && value != 0) {
 				stats.add(new InventorySnapshot.StatPoint(entry.getKey(), entry.getValue(), value));
 			}
 		}

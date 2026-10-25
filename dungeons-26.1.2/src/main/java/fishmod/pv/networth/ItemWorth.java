@@ -257,7 +257,7 @@ public final class ItemWorth {
 		String upper = last.toUpperCase(Locale.ROOT);
 		for (String tier : List.of(
 			"MYTHIC", "LEGENDARY", "EPIC", "RARE", "UNCOMMON", "COMMON",
-			"DIVINE", "SPECIAL", "VERY SPECIAL", "SUPREME", "ULTIMATE"
+			"DIVINE", "VERY SPECIAL", "SPECIAL", "SUPREME", "ULTIMATE"
 		)) {
 			if (upper.contains(tier)) {
 				return SkyBlockItemFactory.tierArgb(tier.replace(' ', '_'));
@@ -630,7 +630,7 @@ public final class ItemWorth {
 		if (level <= 5) {
 			return 0;
 		}
-		JsonArray costs = skyblockItem != null && skyblockItem.has("upgrade_costs")
+		JsonArray costs = skyblockItem != null && skyblockItem.get("upgrade_costs") instanceof JsonArray
 			? skyblockItem.getAsJsonArray("upgrade_costs")
 			: null;
 		if (costs != null && costs.size() > 5) {
@@ -646,7 +646,7 @@ public final class ItemWorth {
 	}
 
 	private static double essenceStars(JsonObject skyblockItem, CompoundTag ea) {
-		if (skyblockItem == null || !skyblockItem.has("upgrade_costs")) {
+		if (skyblockItem == null || !(skyblockItem.get("upgrade_costs") instanceof JsonArray)) {
 			return 0;
 		}
 		int level = upgradeLevel(ea);
@@ -659,7 +659,9 @@ public final class ItemWorth {
 			JsonElement step = costs.get(i);
 			if (step.isJsonArray()) {
 				for (JsonElement cost : step.getAsJsonArray()) {
-					total += starCost(cost.getAsJsonObject());
+					if (cost.isJsonObject()) {
+						total += starCost(cost.getAsJsonObject());
+					}
 				}
 			} else if (step.isJsonObject()) {
 				total += starCost(step.getAsJsonObject());
