@@ -27,7 +27,7 @@ import net.minecraft.network.chat.Component
 object NecronDropPredict {
 
     private const val DRAG_TICKS = 50
-    private const val DRAG_LEN = 64.0
+    private const val DRAG_LEN = 65.0
     private const val START_DZ = 0.9
     private const val TARGET_X_MIN = 47.5
     private const val TARGET_X_MAX = 63.5
@@ -101,7 +101,7 @@ object NecronDropPredict {
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register {
             if (testTick == -2 && --testLinger <= 0) { testTick = -1; reset() }
-            if (testTick >= 0) { try { testStep(); tick() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.4", "necron drop test threw", e) } }
+            if (testTick >= 0) { try { tick(); testStep() } catch (e: Exception) { FishDiag.fail("NecronDropPredict.4", "necron drop test threw", e) } }
         }
         Events.ON_SERVER_TICK.register {
             if (testTick >= 0) return@register false
