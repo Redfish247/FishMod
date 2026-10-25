@@ -3504,7 +3504,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val slx = leftX + 2
             val slw = rightX - leftX - 4
             val sly = sy + SLIDER_CTRL_Y
-            val pct = (getter() - min).toFloat() / (max - min)
+            val pct = if (max > min) Mth.clamp((getter() - min).toFloat() / (max - min), 0f, 1f) else 0f
             pill(ctx, slx, sly, slx + slw, sly + SLIDER_H, SLIDER_BG)
             val fillW = (slw * pct).toInt()
             if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
@@ -3530,7 +3530,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val slx = leftX + 2
             val slw = rightX - leftX - 4
             val sly = sy + SLIDER_CTRL_Y
-            val pct = ((getter() - min) / (max - min)).toFloat()
+            val pct = if (max > min) Mth.clamp(((getter() - min) / (max - min)).toFloat(), 0f, 1f) else 0f
             pill(ctx, slx, sly, slx + slw, sly + SLIDER_H, SLIDER_BG)
             val fillW = (slw * pct).toInt()
             if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
@@ -4272,7 +4272,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         private val TRACK_OFF = 0xFF3A3F48.toInt()
         private val TEXT_COLOR = ScreenTheme.TEXT_COLOR
         private val SUBTEXT_COLOR = ScreenTheme.SUBTEXT_COLOR
-        private val HINT_COLOR = 0xFFFFFFFF.toInt()
         private val CHEVRON_COLOR = 0xFF6C7885.toInt()
 
         private const val TEXT_SCALE = ScreenTheme.TEXT_SCALE
@@ -4356,10 +4355,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         fun disc(ctx: GuiGraphicsExtractor, cx: Int, cy: Int, r: Int, color: Int) {
             UiRecorder.disc(cx.toFloat(), cy.toFloat(), r.toFloat(), color)
-        }
-
-        private fun nf(x1: Int, y1: Int, x2: Int, y2: Int, color: Int) {
-            UiRecorder.fillRect(x1.toFloat(), y1.toFloat(), (x2 - x1).toFloat(), (y2 - y1).toFloat(), color)
         }
 
         fun st(ctx: GuiGraphicsExtractor, tr: Font, s: String, x: Int, y: Int, color: Int) {
