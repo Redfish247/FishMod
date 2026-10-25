@@ -48,6 +48,8 @@ public class PartyCommandHandler {
             lastTickMs = now;
             return false;
         });
+        // Don't count the world-swap gap as one huge tick.
+        Events.ON_WORLD_CHANGE.register(() -> { lastTickMs = -1; return false; });
 
         // server packets only: addMessage also sees chat replayed by history mods on join, which re-ran old commands
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {

@@ -68,7 +68,8 @@ object IceSprayTimer {
     }
 
     private fun render() {
-        if (!FishSettings.iceSprayTimerEnabled || frozen.isEmpty()) return
+        if (!FishSettings.iceSprayTimerEnabled) { if (frozen.isNotEmpty()) frozen.clear(); return }
+        if (frozen.isEmpty()) return
         val now = System.currentTimeMillis()
         frozen.entries.removeIf { (e, until) -> until <= now || !e.isAlive || e.isRemoved }
         val groups = ArrayList<MutableList<Pair<LivingEntity, Long>>>()
