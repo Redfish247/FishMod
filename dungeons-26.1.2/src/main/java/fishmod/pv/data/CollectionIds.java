@@ -7,7 +7,6 @@
  */
 package fishmod.pv.data;
 
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -115,12 +114,28 @@ public final class CollectionIds {
 		return key.replace(':', '-');
 	}
 
+	// Memo: called per collection item per frame; ids are a small fixed set.
+	private static final Map<String, List<String>> LOOKUP_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+
 	public static List<String> lookupKeys(String collectionId) {
 		String key = normalize(collectionId);
-		Set<String> keys = new LinkedHashSet<>();
 		if (key.isEmpty()) {
 			return List.of();
 		}
+		List<String> cached = LOOKUP_CACHE.get(key);
+		if (cached != null) {
+			return cached;
+		}
+		if (LOOKUP_CACHE.size() > 4096) {
+			LOOKUP_CACHE.clear();
+		}
+		List<String> computed = List.copyOf(computeLookupKeys(key));
+		LOOKUP_CACHE.put(key, computed);
+		return computed;
+	}
+
+	private static Set<String> computeLookupKeys(String key) {
+		Set<String> keys = new LinkedHashSet<>();
 		addVariants(keys, key);
 		String[] aliases = ALIASES.get(key);
 		if (aliases != null) {
@@ -139,7 +154,7 @@ public final class CollectionIds {
 				}
 			}
 		}
-		return new ArrayList<>(keys);
+		return keys;
 	}
 
 	/** Component item ids to sum for aggregate collections, or empty. */

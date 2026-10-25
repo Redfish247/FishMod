@@ -217,7 +217,7 @@ public record DungeonChestHistory(List<Run> runs) {
 	}
 
 	private static boolean isUltimateBook(JsonObject def) {
-		return def != null && def.has("internalname")
+		return def != null && def.has("internalname") && def.get("internalname").isJsonPrimitive()
 			&& def.get("internalname").getAsString().toUpperCase(Locale.ROOT).startsWith("ULTIMATE_");
 	}
 

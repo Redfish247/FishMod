@@ -32,6 +32,8 @@ import java.util.regex.Pattern;
 public final class PetLoreResolver {
 	private static final Pattern PLACEHOLDER = Pattern.compile("\\{([A-Za-z0-9_]+)\\}|<([A-Za-z0-9_]+)>|\\(([0-9]+)\\)");
 	private static volatile JsonObject petnumsCache;
+	private static final JsonObject EMPTY_PETNUMS = new JsonObject();
+	private static long petnumsRetryAt;
 
 	private PetLoreResolver() {
 	}
@@ -328,8 +330,18 @@ public final class PetLoreResolver {
 			if (petnumsCache != null) {
 				return petnumsCache;
 			}
-			petnumsCache = loadPetnums();
-			return petnumsCache;
+			// Repo may not be downloaded yet: retry later instead of caching empty forever.
+			long now = System.currentTimeMillis();
+			if (now < petnumsRetryAt) {
+				return EMPTY_PETNUMS;
+			}
+			JsonObject loaded = loadPetnums();
+			if (loaded.size() == 0) {
+				petnumsRetryAt = now + 30_000L;
+				return EMPTY_PETNUMS;
+			}
+			petnumsCache = loaded;
+			return loaded;
 		}
 	}
 
@@ -348,7 +360,7 @@ public final class PetLoreResolver {
 						}
 					}
 				}
-			} catch (IOException | IllegalStateException | ClassCastException | NumberFormatException | UnsupportedOperationException ignored) {
+			} catch (IOException | com.google.gson.JsonParseException | IllegalStateException | ClassCastException | NumberFormatException | UnsupportedOperationException ignored) {
 			}
 		}
 		return new JsonObject();

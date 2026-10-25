@@ -243,7 +243,7 @@ public final class PetSnapshot {
 		PetWorth.LevelInfo info = PetWorth.levelInfo(pet);
 		boolean active = pet.has("active") && pet.get("active").isJsonPrimitive() && pet.get("active").getAsBoolean();
 		String heldItem = pet.has("heldItem") && pet.get("heldItem").isJsonPrimitive() ? pet.get("heldItem").getAsString() : "";
-		int candyUsed = pet.has("candyUsed") && pet.get("candyUsed").isJsonPrimitive() ? pet.get("candyUsed").getAsInt() : 0;
+		int candyUsed = intOf(pet, "candyUsed");
 		String skin = pet.has("skin") && pet.get("skin").isJsonPrimitive() ? pet.get("skin").getAsString() : "";
 		String uuid = "";
 		if (pet.has("uniqueId") && pet.get("uniqueId").isJsonPrimitive()) {

@@ -89,6 +89,9 @@ public final class MinionCosts {
 		Map<String, String> byItem = new LinkedHashMap<>();
 		for (HypixelCollectionsCache.Category category : HypixelCollectionsCache.categories()) {
 			for (HypixelCollectionsCache.Item item : category.items()) {
+				if (item == null || item.id() == null) {
+					continue;
+				}
 				byItem.put(item.id().toUpperCase(Locale.ROOT), category.id());
 			}
 		}

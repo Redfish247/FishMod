@@ -68,10 +68,10 @@ public final class BestiaryData {
 	}
 
 	private static volatile boolean loaded;
-	private static List<Category> categories = List.of();
-	private static Map<String, List<Integer>> brackets = Map.of();
-	private static Map<String, Map<String, List<Integer>>> bracketSets = Map.of();
-	private static Map<String, Family> familiesById = Map.of();
+	private static volatile List<Category> categories = List.of();
+	private static volatile Map<String, List<Integer>> brackets = Map.of();
+	private static volatile Map<String, Map<String, List<Integer>>> bracketSets = Map.of();
+	private static volatile Map<String, Family> familiesById = Map.of();
 
 	private BestiaryData() {
 	}
@@ -213,7 +213,7 @@ public final class BestiaryData {
 		}
 		Icon icon = parseIcon(obj.get("icon"));
 		List<Family> families = new ArrayList<>();
-		if (obj.has("hasSubcategories") && obj.get("hasSubcategories").getAsBoolean()) {
+		if (obj.has("hasSubcategories") && obj.get("hasSubcategories").isJsonPrimitive() && obj.get("hasSubcategories").getAsBoolean()) {
 			for (var sub : obj.entrySet()) {
 				String subKey = sub.getKey();
 				if (subKey == null

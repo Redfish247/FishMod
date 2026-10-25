@@ -102,7 +102,7 @@ public final class AbiphoneNpcs {
 		Set<String> ids = new HashSet<>();
 		Set<String> idNeu = new HashSet<>();
 		Set<String> tokens = new HashSet<>();
-		for (String raw : contactIds) {
+		for (String raw : contactIds == null ? List.<String>of() : contactIds) {
 			String id = norm(raw);
 			if (id.isEmpty()) {
 				continue;
