@@ -21,6 +21,7 @@ public interface ItemTrimMixin {
     @SuppressWarnings("unchecked")
     @ModifyReturnValue(method = "get", at = @At("RETURN"))
     private <T> T fishmod$customItemData(T original, DataComponentType<? extends T> type) {
+        if (!ItemCustomizationStore.hasAny()) return original;
         try {
             if (type == DataComponents.TRIM) {
                 if (((Object) this) instanceof ItemStack stack) {
