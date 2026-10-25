@@ -32,6 +32,8 @@ object AutoRequeue {
     internal var dtSkip = false
     private var startTeamCount = 0
     private var extraStatsHandled = false
+    private var lastFloor = -1
+    private var lastMaster = false
 
     @JvmStatic
     fun init() {
@@ -39,7 +41,7 @@ object AutoRequeue {
             val s = COLOR.replace(text.string, "")
             onChatLine(text.string)
             when {
-                s == MORT_START -> { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false }
+                s == MORT_START -> { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false; lastFloor = -1; lastMaster = false }
                 BREAKUP.matcher(s).find() -> partyChanged = true
                 EXTRA_STATS.matcher(s).find() -> {
                     if (extraStatsHandled) return@register false
@@ -64,11 +66,13 @@ object AutoRequeue {
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false; false }
+        Events.ON_WORLD_CHANGE.register { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false; lastFloor = -1; lastMaster = false; false }
         Events.ON_SERVER_TICK.register {
             if (DungeonState.isInDungeon() && !DungeonState.isInBoss()) {
                 val n = fishmod.features.dungeon.map.DungeonPlayers.count()
                 if (n > startTeamCount) startTeamCount = n
+                val f = DungeonState.floorNumber()
+                if (f >= 0) { lastFloor = f; lastMaster = DungeonState.isMasterMode() }
             }
             false
         }
@@ -83,11 +87,14 @@ object AutoRequeue {
     }
 
     private fun requeueCommand(): String {
-        val floor = DungeonState.floorNumber()
+        // sidebar/chat floor can be gone by extra stats; fall back to the one seen during the run
+        val live = DungeonState.floorNumber()
+        val floor = if (live >= 0) live else lastFloor
+        val master = if (live >= 0) DungeonState.isMasterMode() else lastMaster
         return when {
             floor == 0 -> "joininstance catacombs_entrance"
             floor in 1..7 -> "joininstance " +
-                (if (DungeonState.isMasterMode()) "master_" else "") +
+                (if (master) "master_" else "") +
                 "catacombs_floor_" + NUM_WORDS[floor - 1]
             else -> {
                 FishDiag.fail("AutoRequeue.3", "unknown floor $floor for requeue, falling back to instancerequeue")
