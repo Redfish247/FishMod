@@ -146,8 +146,8 @@ object NecronDropPredict {
         val reach = minOf(hypot(dx, dz) * k, hypot(aimDx, aimDz))
         val ex = s.x + aimDx / hypot(aimDx, aimDz) * reach
         val ez = s.z + aimDz / hypot(aimDx, aimDz) * reach
-        // The drag ends at the target height, so the box sits there.
-        val ey = TARGET_Y
+        // Height follows how far along the line to the target the pull gets (y 70 only if it reaches).
+        val ey = s.y + (TARGET_Y - s.y) * (reach / hypot(aimDx, aimDz))
         landing = Vec3(ex, ey, ez)
         dragTicks = phaseTicks - startTick
         Debug.LOGGER.info("[NecronDrop] start=%.2f,%.2f,%.2f dir=%.2f,%.2f predicted=%.2f,%.2f,%.2f".format(s.x, s.y, s.z, dx, dz, ex, ey, ez))
