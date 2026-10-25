@@ -90,7 +90,8 @@ public final class MuseumPage {
 	private MuseumSort sort = MuseumSort.ALL;
 
 	private List<Slot> slots = List.of();
-	private final Map<Integer, ItemStack> iconByIndex = new HashMap<>();
+	// Keyed by slot identity: grid indices shift when "missing only" filters the view.
+	private final Map<Slot, ItemStack> iconByIndex = new java.util.IdentityHashMap<>();
 	private final Map<String, ItemStack> missingIconById = new HashMap<>();
 	private List<CheapRow> cheapest = List.of();
 	private double costToMax;
@@ -444,7 +445,7 @@ public final class MuseumPage {
 			PvDraw.roundedFill(g, bx, by, SLOT, SLOT, 3, raritySlotBackground(rarity, slot.missing(), hovered));
 			PvDraw.roundedRing(g, bx, by, SLOT, SLOT, 3, hovered ? PvDraw.COLOR_ACCENT : ITEM_SLOT_BORDER, PvDraw.C_ALL);
 			int pad = Math.max(0, (SLOT - 16) / 2);
-			ItemStack icon = iconAt(i, slot);
+			ItemStack icon = iconAt(slot);
 			if (slot.missing()) {
 				if (!icon.isEmpty()) {
 					g.item(icon, bx + pad, by + pad);
@@ -762,13 +763,13 @@ public final class MuseumPage {
 	}
 
 	/** Lightweight icon only - never builds full lore stacks for the grid unless needed for skulls. */
-	private ItemStack iconAt(int index, Slot slot) {
-		ItemStack cached = this.iconByIndex.get(index);
+	private ItemStack iconAt(Slot slot) {
+		ItemStack cached = this.iconByIndex.get(slot);
 		if (cached != null) {
 			return cached;
 		}
 		if (slot.missing()) {
-			this.iconByIndex.put(index, MISSING_ICON);
+			this.iconByIndex.put(slot, MISSING_ICON);
 			return MISSING_ICON;
 		}
 		ItemStack icon;
@@ -799,7 +800,7 @@ public final class MuseumPage {
 		}
 		// Don't freeze paper before pack/NEU textures arrive.
 		if (!isWeakIcon(icon) || SkyBlockIconRenderer.hasKnownIcon(iconId)) {
-			this.iconByIndex.put(index, icon);
+			this.iconByIndex.put(slot, icon);
 		}
 		return icon;
 	}

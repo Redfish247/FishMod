@@ -51,6 +51,8 @@ final class ProfileSelectorController {
 	private ProfileFetcher.ProfileChoice profileMenuHoverChoice;
 	private int profileCoopFlyoutScroll;
 	private final List<CoopMemberHit> coopMemberHits = new ArrayList<>();
+	// Per-screen head stacks so the flyout doesn't rebuild one per member every frame.
+	private final java.util.Map<UUID, ItemStack> headCache = new java.util.HashMap<>();
 	private int profileFooterX;
 	private int profileFooterY;
 	private int profileFooterW;
@@ -91,6 +93,7 @@ final class ProfileSelectorController {
 	void applyChoices(List<ProfileFetcher.ProfileChoice> choices, String viewedUndashed, String playerName) {
 		if (choices != null && !choices.isEmpty()) {
 			this.profileChoices = choices;
+			this.headCache.clear();
 			ProfileFetcher.warmCoopMemberNames(
 				this.profileChoices,
 				viewedUndashed,
@@ -514,7 +517,8 @@ final class ProfileSelectorController {
 		}
 		UUID uuid = HypixelApiClient.parseUndashedUuid(member.uuid());
 		if (uuid != null) {
-			ItemIcons.drawItemIcon(g, coopMemberHead(uuid), x, y - 1, PROFILE_COOP_ICON);
+			ItemStack head = this.headCache.computeIfAbsent(uuid, ProfileSelectorController::coopMemberHead);
+			ItemIcons.drawItemIcon(g, head, x, y - 1, PROFILE_COOP_ICON);
 		}
 		String name = ProfileFetcher.coopMemberDisplayName(member);
 		int nameColor = former ? COLOR_COOP_FORMER : COLOR_COOP_CURRENT;

@@ -180,6 +180,8 @@ public final class HomePage {
 		if (unsoulboundNonCosmetic != null) {
 			this.networthUnsoulboundNonCosmetic = unsoulboundNonCosmetic;
 		}
+		// NW label is cached by total only; a failed load keeps total 0 and would stay "...".
+		this.leftColumn.clearCaches();
 		invalidateLayoutCache();
 	}
 

@@ -62,6 +62,7 @@ public final class InventoryPage {
 	private static final int FLIP_MS = 480;
 	private static final int POWERS_ROW = 12;
 	private static final int MISSING_ROW = 18;
+	private static final java.util.regex.Pattern FORMAT_CODE = java.util.regex.Pattern.compile("§.");
 
 	private InventorySnapshot snapshot = InventorySnapshot.empty();
 	/** Panes not shown in the storage side column. */
@@ -119,9 +120,12 @@ public final class InventoryPage {
 	/** Sack menu icons keyed by page so the stack cache doesn't grow every frame. */
 	private final Map<InventorySnapshot.Page, InventorySnapshot.Slot> sackMenuSlots = new IdentityHashMap<>();
 	private final ItemValueOverlay valueOverlay = new ItemValueOverlay();
+	private List<SackValue> sackValuesCache;
+	private long sackValuesAtMs;
 
 	public void apply(InventorySnapshot snapshot) {
 		this.snapshot = snapshot == null ? InventorySnapshot.empty() : snapshot;
+		this.sackValuesCache = null;
 		this.pageIndex.clear();
 		this.openSackIndex = null;
 		this.gemScroll = 0;
@@ -431,7 +435,13 @@ public final class InventoryPage {
 	}
 
 	private List<SackValue> sackValues() {
-		return SackValue.compute(this.snapshot.sacks(), ItemPricer::materialPrice, SkyBlockItemFactory::plainDisplayName);
+		// Pricing every sack each frame is costly; refresh once a second so late prices still land.
+		long now = System.currentTimeMillis();
+		if (this.sackValuesCache == null || now - this.sackValuesAtMs > 1000L) {
+			this.sackValuesCache = SackValue.compute(this.snapshot.sacks(), ItemPricer::materialPrice, SkyBlockItemFactory::plainDisplayName);
+			this.sackValuesAtMs = now;
+		}
+		return this.sackValuesCache;
 	}
 
 	private void drawSackValueHeader(
@@ -588,7 +598,7 @@ public final class InventoryPage {
 		);
 		ItemWorth.Breakdown breakdown = ItemWorth.breakdown(worth);
 		String title = slot.displayName() != null && !slot.displayName().isBlank()
-			? slot.displayName().replaceAll("§.", "").trim()
+			? FORMAT_CODE.matcher(slot.displayName()).replaceAll("").trim()
 			: SkyBlockItemFactory.plainDisplayName(slot.id());
 		this.valueOverlay.open(title, stack, slot.id(), breakdown);
 	}
@@ -1890,7 +1900,7 @@ public final class InventoryPage {
 		if (value == null || value.isEmpty()) {
 			return "";
 		}
-		return value.replaceAll("§.", "").toLowerCase(Locale.ROOT);
+		return FORMAT_CODE.matcher(value).replaceAll("").toLowerCase(Locale.ROOT);
 	}
 
 	private static String trimToWidth(Font font, String value, int maxW) {
