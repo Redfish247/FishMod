@@ -119,7 +119,7 @@ object VenoStackCount {
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.venoStackHudX.toFloat(), FishSettings.venoStackHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, "%.1fs".format(left / 1000.0), 0, 0, 0xFFFFFF55.toInt(), true)
+        ctx.text(mc.font, fishmod.utils.Fmt.f1(left / 1000.0) + "s", 0, 0, 0xFFFFFF55.toInt(), true)
         ctx.text(mc.font, "$stacks/$MAX_STACKS", 0, 10, if (stacks >= MAX_STACKS) 0xFFFF5555.toInt() else 0xFFFFFFFF.toInt(), true)
         ctx.pose().popMatrix()
     }

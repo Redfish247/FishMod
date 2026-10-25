@@ -177,7 +177,7 @@ object M7Relics {
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.relicTimerHudX.toFloat(), FishSettings.relicTimerHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, "§dRelic §f" + String.format("%.2fs", left / 1000.0), 0, 0, -1, true)
+        ctx.text(mc.font, "§dRelic §f" + fishmod.utils.Fmt.f2(left / 1000.0) + "s", 0, 0, -1, true)
         ctx.pose().popMatrix()
     }
 }

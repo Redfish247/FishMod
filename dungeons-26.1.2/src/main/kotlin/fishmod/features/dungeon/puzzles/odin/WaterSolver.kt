@@ -117,7 +117,7 @@ object WaterSolver {
                     openedWaterTicks == -1 && timeInTicks == 0 -> "§a§lCLICK ME!"
                     openedWaterTicks == -1 -> "§e${time}s"
                     else -> (openedWaterTicks + timeInTicks - tickCounter).takeIf { it > 0 }
-                        ?.let { "§e%.1fs".format(it / 20f) } ?: "§a§lCLICK ME!"
+                        ?.let { "§e" + fishmod.utils.Fmt.f1(it / 20.0) + "s" } ?: "§a§lCLICK ME!"
                 }
                 ORender.text(label, Vec3(lp.x + 0.5, lp.y + (index + lever.i) * 0.5 + 1.5, lp.z + 0.5), 1f)
             }

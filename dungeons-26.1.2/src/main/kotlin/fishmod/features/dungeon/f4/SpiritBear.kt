@@ -72,7 +72,7 @@ object SpiritBear {
         if (mc.player == null || mc.hudHidden) return
         val body = when {
             timer < 0 -> "§f$kills/${maxKills()}"
-            timer > 0 -> "§e${"%.1f".format(timer / 20.0)}s"
+            timer > 0 -> "§e" + fishmod.utils.Fmt.f1(timer / 20.0) + "s"
             else -> "§aAlive!"
         }
         val sc = FishSettings.spiritBearScale.toFloat()

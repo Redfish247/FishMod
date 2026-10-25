@@ -149,8 +149,8 @@ object InvincibilityTracker {
         if (!fishmod.utils.Location.inSkyblock()) return
         val player = mc.player ?: return
         val inv = player.inventory
-        val stacks = (0 until inv.containerSize).map { inv.getItem(it) } + player.getItemBySlot(EquipmentSlot.HEAD)
-        for (st in stacks) {
+        for (i in 0..inv.containerSize) {
+            val st = if (i < inv.containerSize) inv.getItem(i) else player.getItemBySlot(EquipmentSlot.HEAD)
             if (st.isEmpty) continue
             val id = ItemUtil.getId(st) ?: continue
             val t = Type.entries.firstOrNull { id in it.ids } ?: continue
@@ -197,6 +197,8 @@ object InvincibilityTracker {
         }
     }
 
+    private val shown = ArrayList<Type>()
+
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!Dungeons.displayInvincibilityTimer || !Location.inDungeon()) return
@@ -204,7 +206,8 @@ object InvincibilityTracker {
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
 
-        val shown = Type.entries.filter { visible(it) }
+        shown.clear()
+        for (t in Type.entries) if (visible(t)) shown.add(t)
         if (shown.isEmpty()) return
 
         val sc = FishSettings.invincScale.toFloat()

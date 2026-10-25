@@ -73,13 +73,16 @@ object Blessings {
         }
     }
 
+    private val shown = ArrayList<Type>()
+
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.blessingDisplayEnabled || !Location.inDungeon()) return
         val mc = Minecraft.getInstance()
         if (mc.player == null || mc.hudHidden) return
 
-        val shown = Type.entries.filter { it.enabled() && it.current > 0 }
+        shown.clear()
+        for (t in Type.entries) if (t.enabled() && t.current > 0) shown.add(t)
         if (shown.isEmpty()) return
 
         val sc = FishSettings.blessingScale.toFloat()
