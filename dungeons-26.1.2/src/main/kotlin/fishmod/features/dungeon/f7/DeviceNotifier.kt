@@ -12,7 +12,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.player.LocalPlayer
 import net.minecraft.network.chat.Component
 import net.minecraft.sounds.SoundEvents
-import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.Vec3
 import fishmod.utils.debug.FishDiag
 
@@ -46,11 +45,6 @@ object DeviceNotifier {
     @JvmStatic
     fun atSS(): Boolean {
         val player: LocalPlayer = Minecraft.getInstance().player ?: return false
-        return SS_POSITION.distanceTo(player.position()) <= DISTANCE
-    }
-
-    @JvmStatic
-    fun atSS(player: Player): Boolean {
         return SS_POSITION.distanceTo(player.position()) <= DISTANCE
     }
 
