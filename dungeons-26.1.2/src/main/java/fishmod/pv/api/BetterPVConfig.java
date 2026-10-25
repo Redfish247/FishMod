@@ -58,6 +58,12 @@ public final class BetterPVConfig {
 		return normalizeProfileScale(fishmod.utils.config.values.FishSettings.guiScaleProfileViewer);
 	}
 
+	/** Optional override for the proxy fallback host (betterpv.json "fallbackHost"). */
+	public static String fallbackHost() {
+		return document.has("fallbackHost") && document.get("fallbackHost").isJsonPrimitive()
+			? document.get("fallbackHost").getAsString().trim() : "";
+	}
+
 	public static synchronized void setProfileViewerScalePercent(int percent) {
 		int normalized = normalizeProfileScale(percent);
 		if (normalized == profileViewerScalePercent) {
