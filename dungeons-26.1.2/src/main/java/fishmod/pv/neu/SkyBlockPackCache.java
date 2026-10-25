@@ -61,6 +61,8 @@ public final class SkyBlockPackCache {
 	private static final AtomicBoolean STARTED = new AtomicBoolean(false);
 	private static final Object LOCK = new Object();
 	private static volatile boolean ready;
+	// Lets blocking waiters return instead of sitting out the full timeout after a failed load.
+	private static volatile boolean loadFailed;
 	/** {@code .../extracted/assets/hypixel_skyblock} */
 	private static volatile Path assetsRoot;
 
@@ -78,7 +80,7 @@ public final class SkyBlockPackCache {
 		start();
 		synchronized (LOCK) {
 			long deadline = System.currentTimeMillis() + 180_000L;
-			while (!ready && System.currentTimeMillis() < deadline) {
+			while (!ready && !loadFailed && System.currentTimeMillis() < deadline) {
 				try {
 					LOCK.wait(500L);
 				} catch (InterruptedException exception) {
@@ -306,6 +308,7 @@ public final class SkyBlockPackCache {
 			BetterPV.LOGGER.warn("[BetterPV] SkyBlock pack load failed: {}", exception.toString());
 			synchronized (LOCK) {
 				ready = false;
+				loadFailed = true;
 				LOCK.notifyAll();
 			}
 		}
@@ -408,7 +411,10 @@ public final class SkyBlockPackCache {
 				if (!keep) {
 					continue;
 				}
-				Path out = extracted.resolve(name);
+				Path out = extracted.resolve(name).normalize();
+				if (!out.startsWith(extracted.normalize())) {
+					throw new IOException("Zip slip: " + name);
+				}
 				Files.createDirectories(out.getParent());
 				Files.copy(zip, out, StandardCopyOption.REPLACE_EXISTING);
 			}

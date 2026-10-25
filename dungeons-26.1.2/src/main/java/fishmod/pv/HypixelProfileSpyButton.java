@@ -33,6 +33,8 @@ public final class HypixelProfileSpyButton {
 	private static final Pattern TITLE_PROFILE = Pattern.compile("^([A-Za-z0-9_]{3,16})'s Profile$");
 	private static final Pattern TITLE_NAME = Pattern.compile("^([A-Za-z0-9_]{3,16})$");
 	private static final int SLOT = 16;
+	// Built once on first draw instead of every frame.
+	private static ItemStack icon;
 
 	private HypixelProfileSpyButton() {
 	}
@@ -234,9 +236,13 @@ public final class HypixelProfileSpyButton {
 		int x = target.x;
 		int y = target.y;
 		boolean hover = mouseX >= x && mouseX < x + SLOT && mouseY >= y && mouseY < y + SLOT;
-		ItemStack stack = new ItemStack(Items.COMMAND_BLOCK);
-		stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-			Component.literal("Open BetterPV").withColor(0x55FF55));
+		ItemStack stack = icon;
+		if (stack == null) {
+			stack = new ItemStack(Items.COMMAND_BLOCK);
+			stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
+				Component.literal("Open BetterPV").withColor(0x55FF55));
+			icon = stack;
+		}
 		g.item(stack, x, y);
 		if (hover) {
 			int tipX = x + SLOT + 8;
