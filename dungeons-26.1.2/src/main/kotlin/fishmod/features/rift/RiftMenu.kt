@@ -92,6 +92,11 @@ object RiftMenu {
         vamp.sub.add(ColorPickerSetting("Spring Colour", "", S::riftVampireSpringColor))
         col.features.add(vamp)
 
+        val guide = Feature("Rift Guide Overlay", S::riftGuide)
+        guide.sub.add(SliderIntSetting("Max Lines", "", S::riftGuideMaxLines, 3, 40))
+        guide.sub.add(ColorPickerSetting("Task Colour", "", S::riftGuideColor))
+        col.features.add(guide)
+
         return col
     }
 
@@ -113,6 +118,7 @@ object RiftMenu {
         "Blood Effigy Spots" -> "Boxes at the six Stillgore Chateau effigy spots"
         "Colosseum Kill Zone Warning" -> "Title when told to get back in the arena"
         "Snake Helper" -> "Outline Living Cave snakes, head highlighted"
+        "Rift Guide Overlay" -> "Unfinished Rift Guide tasks on screen; open each guide page once to load it (move it in Edit HUD)"
         "Vampire Slayer Helper" -> "Boss highlight, STEAK alert, Twinclaws warning"
         else -> null
     }
