@@ -42,9 +42,10 @@ import net.minecraft.world.item.Items;
 public final class MuseumPage {
 	private static final int GAP = 8;
 	private static final int PAD = 6;
-	private static final int SLOT = 18;
+	private static final int SLOT = 22;
+	private static final int ICON = 20;
 	private static final int SLOT_GAP = 2;
-	private static final int LIST_ICON = 16;
+	private static final int LIST_ICON = 19;
 	private static final int LIST_ROW_GAP = 3;
 	private static final int ITEM_SLOT_BG = 0x1CFFFFFF;
 	private static final int ITEM_SLOT_BORDER = 0x00FFFFFF;
@@ -81,6 +82,10 @@ public final class MuseumPage {
 		}
 	}
 
+	/** Per-slot draw data resolved once instead of every frame. */
+	private record SlotView(String iconId, int rarityArgb) {
+	}
+
 	private record CheapRow(String donationId, String iconId, String name, int nameColor, double price) {
 	}
 
@@ -93,6 +98,12 @@ public final class MuseumPage {
 	// Keyed by slot identity: grid indices shift when "missing only" filters the view.
 	private final Map<Slot, ItemStack> iconByIndex = new java.util.IdentityHashMap<>();
 	private final Map<String, ItemStack> missingIconById = new HashMap<>();
+	private final Map<Slot, SlotView> viewBySlot = new java.util.IdentityHashMap<>();
+	// Weak (paper) icons are cached too and dropped here periodically so NEU textures can upgrade them.
+	private final List<Slot> weakSlots = new ArrayList<>();
+	private final List<String> weakMissingIds = new ArrayList<>();
+	private long nextWeakRetryMs;
+	private List<Slot> missingView = List.of();
 	private List<CheapRow> cheapest = List.of();
 	private double costToMax;
 	private double donatedValue;
@@ -195,6 +206,9 @@ public final class MuseumPage {
 		this.slots = List.of();
 		this.iconByIndex.clear();
 		this.missingIconById.clear();
+		this.viewBySlot.clear();
+		this.weakSlots.clear();
+		this.weakMissingIds.clear();
 		this.cheapest = List.of();
 		this.costToMax = 0;
 		this.donatedValue = 0;
@@ -395,16 +409,8 @@ public final class MuseumPage {
 			this.gridMaxScroll = 0;
 			return null;
 		}
-		List<Slot> view = this.slots;
-		if (this.missingOnly) {
-			List<Slot> only = new ArrayList<>();
-			for (Slot slot : this.slots) {
-				if (slot.missing()) {
-					only.add(slot);
-				}
-			}
-			view = only;
-		}
+		retryWeakIcons();
+		List<Slot> view = this.missingOnly ? this.missingView : this.slots;
 		if (view.isEmpty()) {
 			PvDraw.textCentered(g, font, HypixelItemsCache.allItems().isEmpty() ? "Loading item data..." : "No museum slots",
 				x + w / 2, y + h / 2 - font.lineHeight / 2, PvDraw.COLOR_MUTED);
@@ -441,18 +447,12 @@ public final class MuseumPage {
 			}
 			boolean hovered = mx >= bx && mx < bx + SLOT && my >= by && my < by + SLOT
 				&& my >= this.gridY && my < this.gridY + this.gridH;
-			int rarity = SkyBlockItemFactory.tierArgb(slotTier(slot));
-			PvDraw.roundedFill(g, bx, by, SLOT, SLOT, 3, raritySlotBackground(rarity, slot.missing(), hovered));
+			SlotView sv = slotView(slot);
+			PvDraw.roundedFill(g, bx, by, SLOT, SLOT, 3, raritySlotBackground(sv.rarityArgb(), slot.missing(), hovered));
 			PvDraw.roundedRing(g, bx, by, SLOT, SLOT, 3, hovered ? PvDraw.COLOR_ACCENT : ITEM_SLOT_BORDER, PvDraw.C_ALL);
-			int pad = Math.max(0, (SLOT - 16) / 2);
-			ItemStack icon = iconAt(slot);
-			if (slot.missing()) {
-				if (!icon.isEmpty()) {
-					g.item(icon, bx + pad, by + pad);
-				}
-			} else {
-				drawSkyblockIcon(g, resolveIconId(slot), icon, bx + pad, by + pad, 16);
-			}
+			int pad = Math.max(0, (SLOT - ICON) / 2);
+			ItemStack icon = slot.missing() ? missingIcon(slot.donationId(), sv.iconId()) : iconAt(slot);
+			drawSkyblockIcon(g, sv.iconId(), icon, bx + pad, by + pad, ICON);
 			if (hovered) {
 				hoveredKey = slot.donationId();
 			}
@@ -540,7 +540,7 @@ public final class MuseumPage {
 				&& my >= by && my < by + rowH - LIST_ROW_GAP
 				&& my >= this.listY && my < this.listY + this.listH;
 
-			ItemStack icon = missingIcon(row);
+			ItemStack icon = missingIcon(row.donationId(), row.iconId());
 			int iconY = by + Math.max(0, (Math.max(LIST_ICON, font.lineHeight) - LIST_ICON) / 2);
 			drawSkyblockIcon(g, row.iconId(), icon, lx, iconY, LIST_ICON);
 
@@ -588,6 +588,13 @@ public final class MuseumPage {
 		MuseumCatalog.ensureBuilt();
 		List<Slot> built = buildSlots();
 		this.slots = built;
+		List<Slot> onlyMissing = new ArrayList<>();
+		for (Slot slot : built) {
+			if (slot.missing()) {
+				onlyMissing.add(slot);
+			}
+		}
+		this.missingView = List.copyOf(onlyMissing);
 		List<String> missingIds = new ArrayList<>();
 		for (Slot slot : built) {
 			if (slot.missing() && slot.donationId() != null && !isSpecialKey(slot.donationId())) {
@@ -597,6 +604,9 @@ public final class MuseumPage {
 		NeuRepoCache.prefetch(missingIds);
 		this.iconByIndex.clear();
 		this.missingIconById.clear();
+		this.viewBySlot.clear();
+		this.weakSlots.clear();
+		this.weakMissingIds.clear();
 		this.hoverKey = "";
 		this.hoverTip = List.of();
 		this.totalCount = built.size();
@@ -649,20 +659,48 @@ public final class MuseumPage {
 		SkyBlockItemFactory.prefetchIds(warm);
 	}
 
-	private ItemStack missingIcon(CheapRow row) {
-		ItemStack cached = this.missingIconById.get(row.donationId());
+	/** Shared by the grid and the cheapest-missing list. */
+	private ItemStack missingIcon(String donationId, String iconId) {
+		ItemStack cached = this.missingIconById.get(donationId);
 		if (cached != null) {
 			return cached;
 		}
-		ItemStack icon = SkyBlockItemFactory.iconStack(row.iconId());
+		ItemStack icon = SkyBlockItemFactory.iconStack(iconId);
 		if (icon.isEmpty()) {
 			icon = MISSING_ICON;
 		}
-		// Paper+item_model is normal until the pack texture resolves - keep retrying.
-		if (!isWeakIcon(icon) || SkyBlockIconRenderer.hasKnownIcon(row.iconId())) {
-			this.missingIconById.put(row.donationId(), icon);
+		this.missingIconById.put(donationId, icon);
+		// Paper+item_model is normal until the pack texture resolves - retry later.
+		if (isWeakIcon(icon) && !SkyBlockIconRenderer.hasKnownIcon(iconId)) {
+			this.weakMissingIds.add(donationId);
 		}
 		return icon;
+	}
+
+	private SlotView slotView(Slot slot) {
+		SlotView cached = this.viewBySlot.get(slot);
+		if (cached == null) {
+			String iconId = slot.missing() ? MuseumCatalog.iconId(slot.donationId()) : resolveIconId(slot);
+			cached = new SlotView(iconId == null ? "" : iconId, SkyBlockItemFactory.tierArgb(slotTier(slot)));
+			this.viewBySlot.put(slot, cached);
+		}
+		return cached;
+	}
+
+	private void retryWeakIcons() {
+		long now = System.currentTimeMillis();
+		if (now < this.nextWeakRetryMs) {
+			return;
+		}
+		this.nextWeakRetryMs = now + 1000L;
+		for (Slot slot : this.weakSlots) {
+			this.iconByIndex.remove(slot);
+		}
+		for (String id : this.weakMissingIds) {
+			this.missingIconById.remove(id);
+		}
+		this.weakSlots.clear();
+		this.weakMissingIds.clear();
 	}
 
 	/** Prefer SkyBlock pack / NEU textures over paper stand-ins (modern custom-model items). */
@@ -798,9 +836,10 @@ public final class MuseumPage {
 		if (icon.isEmpty()) {
 			icon = new ItemStack(Items.BARRIER);
 		}
+		this.iconByIndex.put(slot, icon);
 		// Don't freeze paper before pack/NEU textures arrive.
-		if (!isWeakIcon(icon) || SkyBlockIconRenderer.hasKnownIcon(iconId)) {
-			this.iconByIndex.put(slot, icon);
+		if (isWeakIcon(icon) && !SkyBlockIconRenderer.hasKnownIcon(iconId)) {
+			this.weakSlots.add(slot);
 		}
 		return icon;
 	}
