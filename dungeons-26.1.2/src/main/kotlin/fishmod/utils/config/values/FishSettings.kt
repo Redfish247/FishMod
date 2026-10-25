@@ -690,7 +690,7 @@ object FishSettings {
     @ConfigValue @JvmField var cameraNoBlindness: Boolean = false
     @ConfigValue @JvmField var cameraNoNausea: Boolean = false
 
-    @ConfigValue @JvmField var practiceServerIps: String = "hypixelp3sim.zapto.org"
+    @ConfigValue @JvmField var practiceServerIps: String = "hypixelp3sim.zapto.org,mc.strad.dev"
 
     @ConfigValue @JvmField var terminalSolverEnabled: Boolean = false
     @ConfigValue @JvmField var terminalBlockWrongClicks: Boolean = true
