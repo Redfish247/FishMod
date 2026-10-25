@@ -181,7 +181,11 @@ object UiFont {
             STBTruetype.stbtt_GetCodepointBitmapBox(info, cp, sc, sc, x0, y0, x1, y1)
             val gw = x1[0] - x0[0]; val gh = y1[0] - y0[0]
             if (gw <= 0 || gh <= 0) return Glyph(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
-            if (gw + 2 * GAP >= ATLAS || gh + 2 * GAP >= ATLAS) FishDiag.fail("UiFont.8", "glyph cp=$cp at size $devSize is ${gw}x$gh, bigger than the ${ATLAS}px atlas")
+            if (gw + 2 * GAP >= ATLAS || gh + 2 * GAP >= ATLAS) {
+                // Would write past the atlas array (AIOOBE every frame); skip the glyph instead.
+                FishDiag.fail("UiFont.8", "glyph cp=$cp at size $devSize is ${gw}x$gh, bigger than the ${ATLAS}px atlas")
+                return Glyph(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+            }
             if (penX + gw + GAP >= ATLAS) { penX = GAP; penY += rowH + GAP; rowH = 0 }
             if (penY + gh + GAP >= ATLAS) {
                 glyphs.clear(); java.util.Arrays.fill(atlas, 0); penX = GAP; penY = GAP; rowH = 0
