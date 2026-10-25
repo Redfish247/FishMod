@@ -585,14 +585,18 @@ public final class Leveling {
 
 	public static int skillCap(String skill, JsonObject member) {
 		int base = RepoData.skillCap(skill);
+		if (member == null) {
+			return "runecrafting".equals(skill) || "social".equals(skill) ? Math.min(base, 25) : base;
+		}
 		if ("farming".equals(skill)) {
 			JsonObject jacobs = obj(member.get("jacobs_contest"));
 			if (jacobs == null) {
 				jacobs = obj(member.get("jacob2"));
 			}
 			JsonObject perks = jacobs == null ? null : obj(jacobs.get("perks"));
-			if (perks != null && perks.has("farming_level_cap")) {
-				base += perks.get("farming_level_cap").getAsInt();
+			Float extra = perks == null ? null : num(perks.get("farming_level_cap"));
+			if (extra != null) {
+				base += Math.round(extra);
 			}
 		}
 		if ("foraging".equals(skill)) {
@@ -770,10 +774,10 @@ public final class Leveling {
 		if (leveling == null) {
 			return null;
 		}
-		if ("runecrafting".equals(skill) && leveling.has("runecrafting_xp")) {
+		if ("runecrafting".equals(skill) && leveling.get("runecrafting_xp") instanceof JsonArray) {
 			return leveling.getAsJsonArray("runecrafting_xp");
 		}
-		if ("social".equals(skill) && leveling.has("social")) {
+		if ("social".equals(skill) && leveling.get("social") instanceof JsonArray) {
 			return leveling.getAsJsonArray("social");
 		}
 		return RepoData.levelingXp();

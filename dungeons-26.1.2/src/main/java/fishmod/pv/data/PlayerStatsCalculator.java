@@ -847,8 +847,9 @@ public final class PlayerStatsCalculator {
 				continue;
 			}
 			String key = normalizeStatKey(entry.getKey());
-			if (wanted(key)) {
-				out.put(key, entry.getValue().getAsDouble());
+			Double value = Leveling.numDouble(entry.getValue());
+			if (wanted(key) && value != null) {
+				out.put(key, value);
 			}
 		}
 		return out;
@@ -929,7 +930,7 @@ public final class PlayerStatsCalculator {
 				continue;
 			}
 			int cap = Leveling.skillCap(skill, member);
-			Leveling.Progress progress = Leveling.getLevel(RepoData.levelingXp(), xp, cap, false);
+			Leveling.Progress progress = Leveling.getLevel(Leveling.skillTable(skill), xp, cap, false);
 			int level = progress == null ? 0 : (int) Math.floor(progress.level());
 			if (level > 0) {
 				out.put(skill, level);
@@ -974,8 +975,9 @@ public final class PlayerStatsCalculator {
 	/** NEU misc.base_stats uses defence / crit_chance naming. */
 	private static Double readBaseStat(JsonObject base, String id) {
 		for (String key : baseStatKeys(id)) {
-			if (base.has(key) && base.get(key).isJsonPrimitive()) {
-				return base.get(key).getAsDouble();
+			Double value = Leveling.numDouble(base.get(key));
+			if (value != null) {
+				return value;
 			}
 		}
 		return null;

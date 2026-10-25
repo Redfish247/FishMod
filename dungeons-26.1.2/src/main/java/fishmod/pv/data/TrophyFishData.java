@@ -84,7 +84,7 @@ public final class TrophyFishData {
 	);
 
 	private static volatile boolean loaded;
-	private static List<Def> defs = List.of();
+	private static volatile List<Def> defs = List.of();
 
 	private TrophyFishData() {
 	}
@@ -166,9 +166,6 @@ public final class TrophyFishData {
 			}
 			if (sb.length() > 0) {
 				sb.append(' ');
-			}
-			if ("FISH".equalsIgnoreCase(part) && parts.length > 1 && part.equals(parts[parts.length - 1])) {
-				// keep "Obfuscated Fish 1" style: already have Fish in name from... no, OBFUSCATED_FISH_1
 			}
 			sb.append(Character.toUpperCase(part.charAt(0)));
 			if (part.length() > 1) {

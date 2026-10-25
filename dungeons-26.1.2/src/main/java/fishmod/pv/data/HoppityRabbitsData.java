@@ -25,7 +25,7 @@ import java.util.Map;
 /** NEU {@code hoppity.json} rabbit id → rarity (COMMON … DIVINE). */
 public final class HoppityRabbitsData {
 	private static volatile boolean loaded;
-	private static Map<String, String> rarityById = Map.of();
+	private static volatile Map<String, String> rarityById = Map.of();
 
 	private HoppityRabbitsData() {
 	}
