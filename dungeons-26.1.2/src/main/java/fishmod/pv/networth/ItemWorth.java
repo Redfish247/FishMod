@@ -604,7 +604,7 @@ public final class ItemWorth {
 			return 0;
 		}
 		boolean hasEnchants = !NbtAttrs.intMap(ea, "enchantments").isEmpty();
-		String category = skyblockItem != null && skyblockItem.has("category")
+		String category = skyblockItem != null && skyblockItem.has("category") && skyblockItem.get("category").isJsonPrimitive()
 			? skyblockItem.get("category").getAsString()
 			: "";
 		boolean allows = NetworthData.allowedRecombCategories().contains(category)
@@ -672,12 +672,12 @@ public final class ItemWorth {
 		if (upgrade == null) {
 			return 0;
 		}
-		int amount = upgrade.has("amount") ? upgrade.get("amount").getAsInt() : 0;
-		if (upgrade.has("essence_type")) {
+		int amount = upgrade.has("amount") && upgrade.get("amount").isJsonPrimitive() ? upgrade.get("amount").getAsInt() : 0;
+		if (upgrade.has("essence_type") && upgrade.get("essence_type").isJsonPrimitive()) {
 			String type = upgrade.get("essence_type").getAsString().toUpperCase(Locale.ROOT);
 			return ItemPricer.price("ESSENCE_" + type) * amount * NetworthData.worth("essence", 0.75);
 		}
-		if (upgrade.has("item_id")) {
+		if (upgrade.has("item_id") && upgrade.get("item_id").isJsonPrimitive()) {
 			return ItemPricer.price(upgrade.get("item_id").getAsString()) * amount;
 		}
 		return 0;
@@ -706,7 +706,7 @@ public final class ItemWorth {
 		if (modifier == null || modifier.isBlank()) {
 			return 0;
 		}
-		String category = skyblockItem != null && skyblockItem.has("category")
+		String category = skyblockItem != null && skyblockItem.has("category") && skyblockItem.get("category").isJsonPrimitive()
 			? skyblockItem.get("category").getAsString()
 			: "";
 		if ("ACCESSORY".equals(category)) {

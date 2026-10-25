@@ -616,7 +616,7 @@ public final class InventoryDecoder {
 		List<Stack> out = new ArrayList<>();
 		for (var entry : essence.entrySet()) {
 			JsonObject data = InventoryDecodeSupport.obj(entry.getValue());
-			if (data == null || !data.has("current")) {
+			if (data == null || !data.has("current") || !data.get("current").isJsonPrimitive()) {
 				continue;
 			}
 			int amount = data.get("current").getAsInt();
