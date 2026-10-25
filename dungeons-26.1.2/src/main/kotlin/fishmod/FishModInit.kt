@@ -541,7 +541,8 @@ class FishModInit : ClientModInitializer {
             { try { Phase.splitTimer.scaledX } catch (t: Throwable) { FishDiag.fail("FishModInit.108", "Est. Total x lookup failed", t); 0 } },
             {
                 try {
-                    Phase.splitTimer.scaledY + Constants.TEXT_HEIGHT * Phase.getVisibleRowCount() + 8
+                    // outside a run the editor shows the 6-row Splits preview
+                    Phase.splitTimer.scaledY + Constants.TEXT_HEIGHT * Phase.getVisibleRowCount().let { if (it > 0) it else 6 } + 8
                 } catch (t: Throwable) {
                     FishDiag.fail("FishModInit.109", "Est. Total y lookup failed", t)
                     Phase.splitTimer.scaledY + 20
