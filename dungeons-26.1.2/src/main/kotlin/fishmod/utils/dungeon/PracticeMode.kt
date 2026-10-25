@@ -22,6 +22,15 @@ object PracticeMode {
         ClientPlayConnectionEvents.JOIN.register(ClientPlayConnectionEvents.Join { _, _, mc ->
             try { refresh(mc) } catch (t: Throwable) { FishDiag.fail("PracticeMode.1", "practice mode refresh on join", t) }
         })
+        // The sim announces each boss end in chat; follow it so no manual /fmpractice is needed mid-run.
+        Events.ON_GAME_MESSAGE.register { text ->
+            if (active) {
+                val s = text.string
+                if (s.startsWith("Goldor killed in") || s.startsWith("Goldor finished in")) phaseOverride = 8
+                else if (s.startsWith("Necron finished in") || s.startsWith("Necron killed in")) phaseOverride = 9
+            }
+            false
+        }
         ClientPlayConnectionEvents.DISCONNECT.register(ClientPlayConnectionEvents.Disconnect { _, _ ->
             active = false
             phaseOverride = -1
@@ -61,8 +70,8 @@ object PracticeMode {
             "p2" -> set(5)
             "p3", "p3t", "terminals" -> set(6)
             "p3g", "tunnel", "goldor" -> set(7)
-            "p4" -> set(8)
-            "p5", "dragons" -> set(9)
+            "p4", "4", "necron" -> set(8)
+            "p5", "5", "dragons" -> set(9)
             else -> msg("§cusage: /fmpractice [status|here|off|p1|p2|p3|p3g|p4|p5]")
         }
     }
