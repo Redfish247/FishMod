@@ -111,11 +111,13 @@ object RemoteItems {
         val out = HashMap<String, Custom>()
         try {
             for (e in JsonParser.parseString(json).asJsonArray) {
-                val o = e.asJsonObject
-                val v = o.get("v")?.asString ?: continue
-                val animated = o.get("a")?.takeIf { it.isJsonObject }?.let { GSON.fromJson(it, AnimatedDye::class.java) }
-                val trim = if (o.has("tm") && o.has("tp")) ArmorTrimId(o.get("tm").asString, o.get("tp").asString) else null
-                out[v] = Custom(o.get("n")?.asString, o.get("m")?.asString, o.get("d")?.asInt, animated, trim)
+                try { // one bad entry must not drop the rest
+                    val o = e.asJsonObject
+                    val v = o.get("v")?.asString ?: continue
+                    val animated = o.get("a")?.takeIf { it.isJsonObject }?.let { GSON.fromJson(it, AnimatedDye::class.java) }
+                    val trim = if (o.has("tm") && o.has("tp")) ArmorTrimId(o.get("tm").asString, o.get("tp").asString) else null
+                    out[v] = Custom(o.get("n")?.asString, o.get("m")?.asString, o.get("d")?.asInt, animated, trim)
+                } catch (ex: Exception) { FishDiag.fail("RemoteItems.3", "bad shared item entry", ex) }
             }
         } catch (ex: Exception) { FishDiag.fail("RemoteItems.2", "bad shared items payload", ex) }
         return out
