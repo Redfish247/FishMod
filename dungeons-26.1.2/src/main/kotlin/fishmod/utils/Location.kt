@@ -71,6 +71,8 @@ enum class Location(val name2: String) {
         @JvmStatic
         fun getLocation(locationName: String): Location {
             var location: Location
+            // Hypixel names the dungeon run map "Catacombs"
+            if (locationName.equals("Catacombs", ignoreCase = true)) return DUNGEON
             try {
                 location = valueOf(locationName.uppercase().replace(" ", "_").replace("'", ""))
             } catch (e: IllegalArgumentException) {
