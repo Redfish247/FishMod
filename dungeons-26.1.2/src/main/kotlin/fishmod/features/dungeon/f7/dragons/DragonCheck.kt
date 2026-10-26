@@ -19,7 +19,7 @@ import fishmod.utils.debug.FishDiag
 
 object DragonCheck {
 
-    private val HEALTH_TOKEN = Regex("\\d+(?:\\.\\d+)?[bBmMkK]")
+    private val HEALTH_TOKEN = Regex("\\d+(?:\\.\\d+)?[bBmMkK]?") // suffix optional so a bare "0" can match
     private const val HEALTH_DATA_ID = 9
 
     fun handleSpawnPacket(p: ClientboundLevelParticlesPacket, tick: Long) {
@@ -122,8 +122,11 @@ object DragonCheck {
             val team = sb.getPlayersTeam(score.owner())
             val line = PlayerTeam.formatNameForTeam(team, net.minecraft.network.chat.Component.literal(score.owner()))
                 .string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
-            if (line.contains(d.displayName, ignoreCase = true) && HEALTH_TOKEN.find(line)?.value != "0") return true
+            if (lineShowsAlive(line, d.displayName)) return true
         }
         return false
     }
+
+    internal fun lineShowsAlive(line: String, name: String): Boolean =
+        line.contains(name, ignoreCase = true) && HEALTH_TOKEN.find(line)?.value != "0"
 }
