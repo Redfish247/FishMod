@@ -1,6 +1,7 @@
 package fishmod.features
 
 import fishmod.utils.debug.FishDiag
+import fishmod.compat.showScreen
 import com.mojang.blaze3d.platform.InputConstants
 import fishmod.features.chat.ChatRule
 import fishmod.features.chat.ChatRuleHandler
@@ -23,10 +24,10 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 
-class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
+class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val parent: Screen? = null) :
     Screen(Component.literal("Chat & Commands")), HasUiOverlay {
 
-    enum class Tab(val label: String) { NOTIFICATIONS("Notifications"), ALIASES("Aliases"), KEYS("Keys") }
+    enum class Tab(val label: String) { NOTIFICATIONS("Notifications"), FILTER("Chat Filter"), ALIASES("Aliases"), KEYS("Keys") }
 
     private enum class Out(val label: String) { TITLE("Title"), ACTION_BAR("Action Bar"), SOUND("Sound"), CHAT("Chat Reply") }
 
@@ -72,6 +73,7 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
     }
     private class AliasRow(val alias: EditBox, val cmd: EditBox)
     private class KeyRow(var key: InputConstants.Key, var enabled: Boolean, val cmd: EditBox)
+    private class FilterRow(val entry: ChatFilter.Entry, val field: EditBox)
 
     private var px = 0; private var py = 0; private var pw = 0; private var ph = 0
     private var bx = 0; private var by = 0; private var bw = 0; private var bh = 0
@@ -106,6 +108,9 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
     private var capture: KeyRow? = null
     private var captureChip: IntArray? = null
 
+    private val filterRows = ArrayList<FilterRow>()
+    private lateinit var filterTestField: EditBox
+
     override fun init() {
         if (!loaded) {
             nameField = mkField(256, "").also { f -> sinks[f] = { v -> selected?.name = v } }
@@ -120,6 +125,8 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
 
             for (e in CommandAliases.all()) aliasRows.add(AliasRow(mkField(32, e.alias()), mkField(256, e.command())))
             for (e in CommandKeys.all()) keyRows.add(KeyRow(e.key(), e.enabled(), mkField(256, e.command())))
+            for (e in ChatFilter.parse(fishmod.utils.config.values.FishSettings.cfCustomPatterns)) addFilterRow(e)
+            filterTestField = mkField(256, "")
 
             selected = ChatRuleStore.rules().firstOrNull()
             loadRuleFields()
@@ -151,6 +158,19 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
         ChatRuleStore.save()
         CommandAliases.replaceAll(aliasRows.map { CommandAliases.Entry(it.alias.value, it.cmd.value) })
         CommandKeys.replaceAll(keyRows.map { CommandKeys.Entry(it.key, it.cmd.value, it.enabled) })
+        fishmod.utils.config.values.FishSettings.cfCustomPatterns = ChatFilter.encode(filterRows.map { it.entry })
+        fishmod.utils.config.FishConfig.manager.save()
+    }
+
+    private fun addFilterRow(e: ChatFilter.Entry): FilterRow {
+        val row = FilterRow(e, mkField(256, e.text))
+        sinks[row.field] = { v -> e.text = v }
+        filterRows.add(row)
+        return row
+    }
+
+    override fun onClose() {
+        if (parent != null) net.minecraft.client.Minecraft.getInstance().showScreen(parent) else super.onClose()
     }
 
     override fun removed() {
@@ -181,6 +201,7 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
             drawFrame()
             when (tab) {
                 Tab.NOTIFICATIONS -> drawNotifications()
+                Tab.FILTER -> drawFilter()
                 Tab.ALIASES -> drawAliases()
                 Tab.KEYS -> drawKeys()
             }
@@ -192,6 +213,7 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
 
     private fun countText(t: Tab): String = when (t) {
         Tab.NOTIFICATIONS -> ChatRuleStore.rules().let { r -> "${r.count { it.enabled }}/${r.size}" }
+        Tab.FILTER -> filterRows.count { it.entry.enabled && it.entry.text.isNotBlank() }.toString()
         Tab.ALIASES -> aliasRows.count { it.alias.value.isNotBlank() }.toString()
         Tab.KEYS -> keyRows.count { it.key != InputConstants.UNKNOWN }.toString()
     }
@@ -443,6 +465,97 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS) :
             Out.ACTION_BAR -> field(actionBarField, x + 8, y + 26, w - 16, 18, "Action bar text")
             Out.CHAT -> field(chatField, x + 8, y + 26, w - 16, 18, "Shown in your chat")
             Out.SOUND -> text("Plays a note block pling", x + 8f, y + 26f, 7f, SUB)
+        }
+    }
+
+    private val filterToggles = listOf(
+        "Common Hypixel Spam" to fishmod.utils.config.values.FishSettings::cfCommonSpam,
+        "Skyblock/Dungeon Spam" to fishmod.utils.config.values.FishSettings::cfNoammSpam,
+        "Kill Combo" to fishmod.utils.config.values.FishSettings::cfKillCombo,
+        "Boss Messages" to fishmod.utils.config.values.FishSettings::cfBossMessages,
+        "Friend Join/Leave" to fishmod.utils.config.values.FishSettings::cfFriendJoinLeave,
+        "Bazaar" to fishmod.utils.config.values.FishSettings::cfBazaar,
+        "Warping" to fishmod.utils.config.values.FishSettings::cfWarping,
+        "Collapse Blank Lines" to fishmod.utils.config.values.FishSettings::cfCollapseBlank,
+        "Custom Messages" to fishmod.utils.config.values.FishSettings::cfCustom,
+    )
+
+    private fun importNotifications() {
+        fishmod.utils.config.values.FishSettings.cfCustomPatterns = ChatFilter.encode(filterRows.map { it.entry })
+        ChatFilter.importNotificationHides()
+        filterRows.forEach { sinks.remove(it.field) }
+        filterRows.clear()
+        for (e in ChatFilter.parse(fishmod.utils.config.values.FishSettings.cfCustomPatterns)) addFilterRow(e)
+    }
+
+    private fun drawFilter() {
+        val s = fishmod.utils.config.values.FishSettings
+        val lx = bx
+        val lw = LIST_W
+        ScreenTheme.nRoundedRectRing(lx, by, lw, 24, 6, 1, CARD_BG, BORDER)
+        text("Chat Filter", lx + 8f, by + 8f, 7.5f, if (s.chatFilterEnabled) TEXT else SUB)
+        switch(lx + lw - 30, by + 7, s.chatFilterEnabled) { s.chatFilterEnabled = !s.chatFilterEnabled }
+
+        var ty = by + 30
+        val th = filterToggles.size * 20 + 8
+        ScreenTheme.nRoundedRectRing(lx, ty, lw, th, 6, 1, LIST_BG, BORDER)
+        ty += 6
+        for ((name, prop) in filterToggles) {
+            switchLabeled(lx + 8, ty + 2, name, prop.get()) { prop.set(!prop.get()) }
+            ty += 20
+        }
+        ty += 10
+        text("Hidden lines still go to", lx.toFloat(), ty.toFloat(), 7f, DIM)
+        text("the log and other mods.", lx.toFloat(), ty + 10f, 7f, DIM)
+        button("Import from Notifications", lx, by + bh - 22, lw, 22) { importNotifications() }
+
+        val rx = lx + lw + 12
+        val rw = bx + bw - rx
+        label("Test a chat line", rx, by)
+        field(filterTestField, rx, by + 10, rw - 118, 18, "Paste a chat message")
+        val test = filterTestField.value.replace(COLOR, "").trim()
+        if (test.isNotEmpty()) {
+            fishmod.utils.config.values.FishSettings.cfCustomPatterns = ChatFilter.encode(filterRows.map { it.entry })
+            val why = ChatFilter.reason(test)
+            chip(clipText(why?.let { "hidden: $it" } ?: "shown", 104, 6.5f), rx + rw - 110, by + 13, if (why != null) ACCENT else DIM)
+        }
+
+        val modeW = 132
+        val xw = 18
+        val fx = rx + 28
+        val fw = rw - 28 - modeW - 6 - xw - 6
+        label("ON", rx, by + 36)
+        label("MESSAGE", fx, by + 36)
+        label("MATCH", fx + fw + 6, by + 36)
+
+        val ly = by + 48
+        val lh = max(ROW_H, min(filterRows.size * ROW_H, bh - (ly - by) - 30))
+        rowsArea = intArrayOf(rx, ly, rw, lh)
+        rowsScroll = rowsScroll.coerceIn(0, max(0, filterRows.size * ROW_H - lh))
+        pushClip(rx, ly, rw, lh)
+        for ((i, row) in filterRows.withIndex()) {
+            val ry = ly + i * ROW_H - rowsScroll
+            if (ry + ROW_H < ly || ry > ly + lh) continue
+            val e = row.entry
+            switch(rx, ry + 5, e.enabled) { e.enabled = !e.enabled }
+            val bad = e.mode == ChatFilter.Mode.REGEX && e.text.isNotBlank() && e.compiled() == null
+            field(row.field, fx, ry + 2, fw, 18, "Text to hide")
+            if (bad) ScreenTheme.nRoundedRectRing(fx, ry + 2, fw, 18, 4, 1, 0, DANGER)
+            segmented(fx + fw + 6, ry + 3, modeW, 16, ChatFilter.Mode.values().map { it.label }, e.mode.ordinal) { m ->
+                e.mode = ChatFilter.Mode.values()[m]
+            }
+            iconX(rx + rw - xw, ry + 2, xw, 18) {
+                filterRows.remove(row)
+                sinks.remove(row.field)
+            }
+        }
+        if (filterRows.isEmpty()) text("No custom messages yet.", rx + 4f, ly + 7f, 7.5f, DIM)
+        popClip()
+
+        addRow("+ Add message", rx, ly + lh + 6, rw, 22) {
+            val row = addFilterRow(ChatFilter.Entry())
+            rowsScroll = Int.MAX_VALUE
+            setFocus(row.field)
         }
     }
 

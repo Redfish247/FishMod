@@ -30,11 +30,13 @@ public class ChatHudMixin {
             if (fishmod.features.ChatFilter.shouldHide(message)) {
                 // Visual-only hide: keep the vanilla [CHAT] log line we skip by cancelling.
                 LOGGER.info("[CHAT] {}", messageText.replace("\r", "\\r").replace("\n", "\\n"));
+                if (!messageText.isBlank()) fishmod.features.chat.ChatHideState.dropPrecedingBlank((ChatComponent) (Object) this);
                 fishmod.features.chat.ChatHideState.noteSuppressed();
                 ci.cancel();
                 return;
             }
             if (fishmod.features.chat.ChatRuleHandler.shouldHideAtDisplay(message)) {
+                fishmod.features.chat.ChatHideState.dropPrecedingBlank((ChatComponent) (Object) this);
                 fishmod.features.chat.ChatHideState.noteSuppressed();
                 ci.cancel();
                 return;
