@@ -5,6 +5,7 @@ import fishmod.utils.Misc
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.dungeon.RunHistory
+import fishmod.utils.dungeon.Split
 import fishmod.utils.events.Events
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -19,57 +20,9 @@ import java.util.regex.Pattern
 
 object FishEstTotal {
 
-    private class LocalSplit(
-        val name: String,
-        val startMsg: String,
-        val endMsg: String,
-        val avg: Double
-    ) {
-        private var startedFlag = false
-        private var endedFlag = false
-        var startTime: Long = 0
-            private set
-        private var endTime: Long = 0
-
-        fun reset() {
-            startedFlag = false; endedFlag = false; startTime = 0; endTime = 0
-        }
-
-        fun parseMessage(msg: String) {
-            if (!startedFlag && msg == startMsg) {
-                startTime = System.currentTimeMillis()
-                startedFlag = true
-            } else if (startedFlag && !endedFlag && msg == endMsg) {
-                end()
-            }
-        }
-
-        fun end() {
-            if (endedFlag) return
-            endTime = System.currentTimeMillis()
-            startedFlag = false
-            endedFlag = true
-        }
-
-        fun started(): Boolean = startedFlag
-        fun ended(): Boolean = endedFlag
-
-        fun getRealTime(): Double {
-            if (startTime == 0L) return 0.0
-            if (endedFlag) return (endTime - startTime) / 1000.0
-            if (startedFlag) return (System.currentTimeMillis() - startTime) / 1000.0
-            return 0.0
-        }
-    }
-
-    private val END_PATTERN: Pattern =
-        Pattern.compile("^\\s*☠ Defeated (.+) in 0?([\\dhms ]+)\\s*(\\(NEW RECORD!\\))?$")
-
-    private val FLOOR_SPLITS: HashMap<String, ArrayList<LocalSplit>> = loadSplits()
-
-    private var currentSplits: ArrayList<LocalSplit>? = null
-    private var floor: String? = null
-    private var runOver = false
+    // Reads the Splits HUD's own splits so both always agree (a private copy missed early splits).
+    private val currentSplits: List<Split>? get() = Phase.currentSplitList()
+    private val floor: String? get() = Phase.getFloor()
 
     private var cachedEstKey: String? = null
     private var cachedEstLabel: Component? = null
@@ -105,65 +58,7 @@ object FishEstTotal {
 
     @JvmStatic
     fun init() {
-        Events.ON_SERVER_TICK.register { if (floor == null && fishmod.utils.Location.inDungeon()) detectFloor(); false }
-        Events.ON_GAME_MESSAGE.register { message ->
-            try { parseGameMessage(message) } catch (e: Exception) { FishDiag.fail("FishEstTotal.3", "est total message parse failed (floor=$floor)", e); false }
-        }
         Events.ON_LOCATION_CHANGE.register { _ -> reset(); false }
-    }
-
-    private fun detectFloor() {
-        if (floor != null) return
-        val key = fishmod.features.dungeon.map.DungeonState.currentFloorKey() ?: return
-        floor = key
-        currentSplits = FLOOR_SPLITS[floor]
-        if (currentSplits == null && FLOOR_SPLITS.isNotEmpty()) FishDiag.fail("FishEstTotal.2", "no split data for floor key '$key' (known: ${FLOOR_SPLITS.keys})")
-        currentSplits?.forEach { it.reset() }
-    }
-
-    private const val RUN_START_FRAGMENT = "I found this map when I first entered the dungeon"
-
-    private fun parseGameMessage(message: Component): Boolean {
-        val string = message.string
-        if (runOver && string.contains(RUN_START_FRAGMENT)) {
-            reset()
-            detectFloor()
-        }
-        val splits = currentSplits
-        if (splits == null || runOver) return false
-        for (s in splits) {
-            if (!s.ended()) s.parseMessage(string)
-        }
-        if (END_PATTERN.matcher(string).find()) endRun()
-        return false
-    }
-
-    private fun endRun() {
-        runOver = true
-        val splits = currentSplits ?: return
-        for (s in splits) {
-            if (s.startTime > 0) s.end()
-        }
-        val times = LinkedHashMap<String, Double>()
-        for (s in splits) {
-            if (s.avg < 0) continue
-            if (s.ended()) times[s.name] = s.getRealTime()
-        }
-        FishDiag.check(times.isNotEmpty(), "FishEstTotal.4") { "run ended on $floor with no completed splits (${splits.count { it.started() }} started)" }
-        FishDiag.guard("FishEstTotal.5", "saving split times failed for $floor") { RunHistory.saveSplitTimes(floor, times) }
-    }
-
-    private fun reset() {
-        currentSplits = null
-        floor = null
-        runOver = false
-        cachedEstKey = null
-        cachedEstLabel = null
-        cachedEstTime = null
-        cachedEstTimeWidth = 0
-        cachedLagStr = null
-        cachedLagTime = null
-        cachedLagTimeWidth = 0
     }
 
     private fun computeVisibleRowCount(): Int {
@@ -196,7 +91,7 @@ object FishEstTotal {
     @JvmStatic
     fun printDebugInfo() {
         val splits = currentSplits
-        Misc.addChatMessage(Component.literal("§e[EstTotal] floor=$floor runOver=$runOver splits=${splits?.size ?: -1}"))
+        Misc.addChatMessage(Component.literal("§e[EstTotal] floor=$floor splits=${splits?.size ?: -1}"))
         if (splits == null) return
         var base = 0.0
         var delta = 0.0
@@ -245,7 +140,7 @@ object FishEstTotal {
         finally { pose.popMatrix() }
     }
 
-    private fun renderAt(context: GuiGraphicsExtractor, client: Minecraft, splits: ArrayList<LocalSplit>, x: Int, y: Int) {
+    private fun renderAt(context: GuiGraphicsExtractor, client: Minecraft, splits: List<Split>, x: Int, y: Int) {
         val splitCount = splits.size - 1
         FishDiag.check(splitCount >= 0, "FishEstTotal.12") { "empty split list for floor $floor" }
         var base = 0.0
@@ -289,45 +184,5 @@ object FishEstTotal {
         }
         context.text(client.font, LAG_LABEL, x, y, 0xFFFFFFFF.toInt(), true)
         context.text(client.font, cachedLagTime!!, x + Phase.SPLIT_LENGTH - cachedLagTimeWidth, y, 0xFFFFFFFF.toInt(), true)
-    }
-
-    private fun loadSplits(): HashMap<String, ArrayList<LocalSplit>> {
-        try {
-            javaClass.getResourceAsStream("/data/fishmod_splits.json").use { stream ->
-                if (stream == null) { FishDiag.fail("FishEstTotal.13", "bundled splits resource /data/fishmod_splits.json missing"); return HashMap() }
-                InputStreamReader(stream).use { reader ->
-                    val root: JsonElement = JsonParser.parseReader(reader)
-                    return parseSplits(root.asJsonObject)
-                }
-            }
-        } catch (e: Exception) {
-            FishDiag.fail("FishEstTotal.14", "bundled splits resource failed to parse", e)
-            return HashMap()
-        }
-    }
-
-    private fun parseSplits(obj: JsonObject): HashMap<String, ArrayList<LocalSplit>> {
-        val floors = HashMap<String, ArrayList<LocalSplit>>()
-        for (entry in obj.entrySet()) {
-            val splits = ArrayList<LocalSplit>()
-            for (el in entry.value.asJsonArray) {
-                try {
-                    val s = el.asJsonObject
-                    splits.add(
-                        LocalSplit(
-                            s.get("name").asString,
-                            s.get("start").asString,
-                            s.get("end").asString,
-                            if (s.has("avg")) s.get("avg").asDouble else -1.0
-                        )
-                    )
-                } catch (e: Exception) {
-                    FishDiag.fail("FishEstTotal.15", "bad split entry in floor ${entry.key}: $el", e)
-                    throw e
-                }
-            }
-            floors[entry.key] = splits
-        }
-        return floors
     }
 }
