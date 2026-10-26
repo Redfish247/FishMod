@@ -91,7 +91,10 @@ tasks.withType(JavaCompile).configureEach {
 	it.options.release = 25
 }
 
-test { useJUnitPlatform() }
+test {
+	useJUnitPlatform()
+	systemProperty "fishmod.test", "true"
+}
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
 	compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25
