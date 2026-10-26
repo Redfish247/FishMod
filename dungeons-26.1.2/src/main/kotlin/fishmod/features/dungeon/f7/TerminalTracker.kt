@@ -50,7 +50,7 @@ object TerminalTracker {
     private val starts = HashMap<Int, Long>()
     private val gates = HashMap<Int, Long>()
 
-    @ConfigValue @JvmField var enabled: Boolean = false
+    @ConfigValue @JvmField var terminalTrackerEnabled: Boolean = false
     @ConfigValue @JvmField var showAllSections: Boolean = false
     @ConfigValue @JvmField var logPositions: Boolean = false
     @ConfigValue @JvmField var doneColor: Int = 0xFF55FF55.toInt()
@@ -60,7 +60,7 @@ object TerminalTracker {
 
     @ConfigValue @JvmField
     var hud: HUDComponent = HUDComponent(
-        10.0, 230.0, 150, 80, 1f, "Terminal Tracker", { false }, TerminalTracker::render, { enabled }
+        10.0, 230.0, 150, 80, 1f, "Terminal Tracker", { false }, TerminalTracker::render, { terminalTrackerEnabled }
     )
 
     @JvmStatic
@@ -146,7 +146,7 @@ object TerminalTracker {
     }
 
     @JvmStatic
-    fun display(): Boolean = enabled && Location.inDungeon() && Phase.isInFloor7() && (Phase.inTerminals() || (Phase.inP2() && Phase.stormDead()))
+    fun display(): Boolean = terminalTrackerEnabled && Location.inDungeon() && Phase.isInFloor7() && (Phase.inTerminals() || (Phase.inP2() && Phase.stormDead()))
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {

@@ -1599,7 +1599,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             floor7.features.add(f)
         }
         run {
-            val f = Feature("Terminal Tracker", TerminalTracker::enabled)
+            val f = Feature("Terminal Tracker", TerminalTracker::terminalTrackerEnabled)
             f.sub.add(SubcategoryHeader("Per-section list of who finished each terminal/device/lever and what is missing."))
             f.sub.add(ToggleSetting("Show All Sections", "Show earlier sections too", TerminalTracker::showAllSections))
             f.sub.add(ToggleSetting("Log Positions", "Print each completion with the player position to chat and the log", TerminalTracker::logPositions))
