@@ -2205,12 +2205,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         if (f == visibleCacheSearch) return
         visibleCacheSearch = f
         visibleFeaturesCache.clear()
-        // fold features we opened for a setting match once the search changes
-        for (ft in searchOpened) ft.expandAnim.setTarget(false)
-        searchOpened.clear()
     }
-
-    private val searchOpened = HashSet<Feature>()
 
     private fun settingMatches(ft: Feature, f: String): Boolean =
         ft.sub.any { it.name.lowercase().contains(f) || it.description.lowercase().contains(f) }
@@ -2222,10 +2217,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val out = ArrayList<Feature>()
             for (ft in c.features) {
                 if (f.isEmpty() || ft.name.lowercase().contains(f)) out.add(ft)
-                else if (settingMatches(ft, f)) {
-                    out.add(ft)
-                    if (!ft.expanded()) { ft.expandAnim.setTarget(true); searchOpened.add(ft) }
-                }
+                else if (settingMatches(ft, f)) out.add(ft)
             }
             out
         }
