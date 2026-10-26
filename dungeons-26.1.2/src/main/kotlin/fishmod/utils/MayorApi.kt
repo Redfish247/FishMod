@@ -80,22 +80,21 @@ object MayorApi {
     }
 
     private fun parseMayorLine(root: JsonObject): String? {
-        val mayor = root.getAsJsonObject("mayor") ?: return null
-        val name = FishDiag.notNull(mayor.get("name")?.asString, "MayorApi.5") { "election mayor object has no name" } ?: return null
-        val perk = mayor.getAsJsonArray("perks")?.firstOrNull()?.asJsonObject?.get("name")?.asString
+        val mayor = root.get("mayor")?.takeIf { it.isJsonObject }?.asJsonObject ?: return null // null/non-object mayor must not throw
+        val name = FishDiag.notNull(mayor.get("name")?.takeIf { it.isJsonPrimitive }?.asString, "MayorApi.5") { "election mayor object has no name" } ?: return null
+        val perk = runCatching { mayor.getAsJsonArray("perks")?.firstOrNull()?.asJsonObject?.get("name")?.asString }.getOrNull()
         return if (perk != null) "§7Mayor: §e$name §7($perk)" else "§7Mayor: §e$name"
     }
 
     private fun parsePaul(root: JsonObject): Boolean {
-        if (!root.has("mayor")) return false
-        val mayor = root.getAsJsonObject("mayor")
-        if ("paul".equals(mayor.get("key")?.asString, ignoreCase = true) && hasEzpz(mayor.getAsJsonArray("perks"))) {
+        val mayor = root.get("mayor")?.takeIf { it.isJsonObject }?.asJsonObject ?: return false
+        if ("paul".equals(mayor.get("key")?.asString, ignoreCase = true) && hasEzpz(mayor.get("perks")?.takeIf { it.isJsonArray }?.asJsonArray)) {
             return true
         }
-        if (mayor.has("minister")) {
-            val minister = mayor.getAsJsonObject("minister")
-            if ("paul".equals(minister.get("key")?.asString, ignoreCase = true) && minister.has("perk")) {
-                val perkName = minister.getAsJsonObject("perk")?.get("name")?.asString?.lowercase() ?: return false
+        val minister = mayor.get("minister")?.takeIf { it.isJsonObject }?.asJsonObject
+        if (minister != null) {
+            if ("paul".equals(minister.get("key")?.asString, ignoreCase = true)) {
+                val perkName = minister.get("perk")?.takeIf { it.isJsonObject }?.asJsonObject?.get("name")?.asString?.lowercase() ?: return false
                 return perkName.contains("ezpz")
             }
         }
