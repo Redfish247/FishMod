@@ -340,7 +340,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             ),
             "Tac Timer" to s("§5Tac: §a2.4"),
             "Arrow HUD" to s("§fFlint Arrow §7x§f1,284"),
-            "Kuudra Splits" to s("§6§lKuudra Splits §7T5", "§bSupplies: §a38.2s §8(36.9s)", "§bBuild: §a41.5s §8(40.1s)", "§bFuel/Stun: §a22.8s §8(21.5s)", "§bKuudra: §e18.3s", "§fTotal: §e2m 1.8s §8(1m 58s)"),
+            "Kuudra Splits" to s("§6§lKuudra Splits §7T5", "§bSupplies: §a38.2s §8(36.9s)", "§bBuild: §a41.5s §8(40.1s)", "§bEat: §a22.8s §8(21.5s)", "§bKill: §e18.3s", "§fTotal: §e2m 1.8s §8(1m 58s)"),
             "Kuudra Supplies" to s("§6Supplies: §a4§7/6", "§eSupply 1 §73.2s", "§eSupply 2 §76.8s", "§eSupply 3 §79.1s", "§eSupply 4 §711.4s"),
             "Kuudra Build" to s("§bBuild: §e64%", "§bBuilders: §a3", "§bFreshers: §a2"),
             "Kuudra Fresh Timers" to s("§6TechnoFish§f: 7.4s", "§6GoldorMain§f: 4.1s"),

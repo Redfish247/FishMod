@@ -141,7 +141,7 @@ object Kuudra {
             msg.contains("[NPC] Elle: OMG! Great work collecting my supplies!") -> setPhase(2)
             msg.contains("[NPC] Elle: Phew! The Ballista is finally ready!") -> setPhase(3)
             msg.contains("[NPC] Elle: POW! SURELY THAT'S IT!") -> setPhase(4)
-            msg.trim() == "DEFEAT" -> { if (phase in 1..4) { phase = 5; KuudraRequeue.onRunEnd() } }
+            msg.trim() == "DEFEAT" -> { if (phase in 1..4) { phase = 5; phaseStart[4] = now(); KuudraRequeue.onRunEnd() } }  // freeze splits on a wipe
             msg.trim() == "KUUDRA DOWN!" || msg.contains(END) -> { if (phase in 1..4) endRun() }
             msg.contains(PRE) -> onPre()
             msg.contains(NOT_AGAIN) -> checkPre()
