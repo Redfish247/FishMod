@@ -154,7 +154,8 @@ object Kuudra {
         PARTY_NOPRE.find(msg)?.let { onMissing(Supply.entries.first { s -> s.name.equals(it.groupValues[2].replace(" ", ""), true) }) }
         SUPPLY.find(msg)?.let { m ->
             supplies = m.groupValues[2].toInt()
-            val t = if (phaseStart[1] > 0) now() - phaseStart[1] else 0L
+            // supplies phase starts at phaseStart[0]; [1] is the build start
+            val t = if (phaseStart[0] > 0) now() - phaseStart[0] else 0L
             supplyTimes.add(m.groupValues[1] to t)
             if (m.groupValues[1] == Minecraft.getInstance().player?.name?.string) {
                 fishmod.features.achievements.AchBus.post(fishmod.features.achievements.AchEvent.SupplyDelivered)

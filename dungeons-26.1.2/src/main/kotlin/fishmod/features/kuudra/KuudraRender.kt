@@ -41,10 +41,11 @@ object KuudraRender {
     fun init() {
         RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (Kuudra.inKuudra()) FishDiag.guard("KuudraRender.1", "kuudra fill render failed") { fills(ps, vc) }
+            // screenLine emits quads, so outlines must go on the QUADS buffer, not DEBUG_LINES
+            if (Kuudra.inKuudra()) FishDiag.guard("KuudraRender.2", "kuudra line render failed") { lines(ps, vc) }
         }
         RenderingEvents.NO_DEPTH_LINE.register { ctx, ps, vc ->
             if (!Kuudra.inKuudra()) return@register
-            FishDiag.guard("KuudraRender.2", "kuudra line render failed") { lines(ps, vc) }
             FishDiag.guard("KuudraRender.3", "kuudra text render failed") {
                 fun txt(s: String, p: Vec3, sc: Float) = RenderUtils.renderText(ctx, ps, Component.literal(s), p, sc)
                 val ph = Kuudra.phase
