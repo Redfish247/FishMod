@@ -108,7 +108,8 @@ object MathParser {
             handleTokenRPN(stack, token)
         }
 
-        if (stack.isEmpty()) return Double.NaN
+        // Leftover operands (e.g. "2(3)") mean a malformed expression.
+        if (stack.size != 1) return Double.NaN
         return stack.pop()
     }
 
