@@ -39,7 +39,7 @@ object LeapAnnounce {
             try {
                 val target = m.group(1).trim()
                 val clazz = DungeonClass.getClass(target)
-                if (clazz == null) FishDiag.fail("LeapAnnounce.3", "no dungeon class known for leap target '$target'")
+                if (clazz == null && fishmod.utils.Location.inDungeon()) FishDiag.fail("LeapAnnounce.3", "no dungeon class known for leap target '$target'")
                 val className = clazz?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "?"
                 val classLetter = DungeonClass.getChar(clazz)
                 fun fill(t: String) = t.replace("{name}", target).replace("{class}", className).replace("{c}", classLetter)
