@@ -44,7 +44,7 @@ enum class DungeonClass {
             }
 
             Events.ON_PLAYER_ENTRY.register { receivedEntry ->
-                if (receivedEntry == null) return@register false
+                if (receivedEntry == null || !fishmod.utils.Location.inDungeon()) return@register false
                 val text = receivedEntry.displayName() ?: return@register false
                 val string = fishmod.utils.Constants.STRIP_COLOR_REGEX.replace(text.string, "").trim()
                 val matcher = NAME_CLASS_PATTERN.matcher(string)
