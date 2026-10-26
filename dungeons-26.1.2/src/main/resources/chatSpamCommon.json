@@ -7,7 +7,6 @@
   "^Your radio signal is strong!$",
   "^You can no longer consume or splash any potions during the remainder of this Dungeon run!$",
   "^Your InfiniPot™ purchased and consumed a .+!$",
-  "^\\[(Berserk|Healer|Mage|Archer|Tank)\\] .+ -> .+$",
   "^(Berserk|Healer|Mage|Archer|Tank) Milestone .+$",
   "^Used (Healing Circle|Explosive Shot|Guided Sheep|Throwing Axe|Castle of Stone|Seismic Wave|Thunderstorm)!$",
   "^(Healing Circle|Explosive Shot|Guided Sheep|Castle of Stone|Seismic Wave|Thunderstorm) is now available!$",
@@ -20,7 +19,6 @@
   "^One or more items didn't fit in your inventory and were added to your (material|item) stash! Click here to pick them up!$",
   "^Something is already here!$",
   "^This block is already occupied!$",
-  "^Zapped \\d+ blocks! UNDO$",
   "^Refreshing\\.\\.\\.$",
   "^You are AFK\\. Move around to return from AFK\\.$",
   "^➤ You have reached your Hype limit!.*$",
@@ -49,5 +47,13 @@
   "^Woah! Slow down there!$",
   "^Your Slayer Kill gave you .+ HP healing for \\d+ seconds!$",
   "^You earned \\d+ Event Silver!$",
-  "^\\[Bazaar\\] Executing instant (buy|sell)\\.\\.\\.$"
+  "^\\[Bazaar\\] Executing instant (buy|sell)\\.\\.\\.$",
+  "^LOOT SHARE You received loot for assisting .+$",
+  "^.*Shards for assisting .+$",
+  "^Autopet equipped your .+$",
+  "^.+ picked the Corrupted .+ Relic!$",
+  "^.+ (completed a device|activated a lever|activated a terminal)! .+$",
+  "^Follow the arrows!$",
+  "^CHARM! You charmed the .+$",
+  "^The wind has changed direction!$"
 ]
