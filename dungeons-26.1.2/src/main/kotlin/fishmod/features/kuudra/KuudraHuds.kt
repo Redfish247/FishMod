@@ -112,7 +112,8 @@ object KuudraHuds {
     fun hpText(hp: Float): String {
         val c = when { hp > 99000 -> "§a"; hp > 75000 -> "§2"; hp > 50000 -> "§e"; hp > 25000 -> "§6"; hp > 10000 -> "§c"; else -> "§4" }
         val k = hp / 1000.0
-        return if (Kuudra.phase == 4 && S.kuudraHpScaled) "$c${"%.1f".format(hp / 100.0)}M§7/§a240M§c❤"
+        // T5 kill phase: real HP x9600 = shown HP (25k -> 240M)
+        return if (Kuudra.phase == 4 && S.kuudraHpScaled && hp <= 25000f && Kuudra.tier !in 1..4) "$c${"%.1f".format(hp * 9600.0 / 1_000_000.0)}M§7/§a240M§c❤"
         else "$c${"%.1f".format(k)}K§7/§a100K§c❤"
     }
 
