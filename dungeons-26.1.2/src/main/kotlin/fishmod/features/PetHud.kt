@@ -342,7 +342,7 @@ object PetHud {
         if (s.endsWith("K")) { mult = 1_000.0; s = s.substring(0, s.length - 1) }
         else if (s.endsWith("M")) { mult = 1_000_000.0; s = s.substring(0, s.length - 1) }
         else if (s.endsWith("B")) { mult = 1_000_000_000.0; s = s.substring(0, s.length - 1) }
-        return try { s.toDouble() * mult } catch (e: NumberFormatException) { FishDiag.fail("PetHud.9", "abbrev number unparsed: '$sIn'", e); -1.0 }
+        return try { (s.toDouble() * mult).takeIf { it.isFinite() } ?: -1.0 } catch (e: NumberFormatException) { FishDiag.fail("PetHud.9", "abbrev number unparsed: '$sIn'", e); -1.0 }
     }
 
     private fun reset() {

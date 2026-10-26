@@ -248,7 +248,7 @@ object CrownOfAvarice {
     private fun parseAmount(s: String): Long? {
         val t = s.trim().lowercase().replace(",", "").replace("_", "")
         val mult = when (t.lastOrNull()) { 'k' -> 1e3; 'm' -> 1e6; 'b' -> 1e9; else -> 1.0 }
-        val num = (if (mult == 1.0) t else t.dropLast(1)).toDoubleOrNull() ?: return null
+        val num = (if (mult == 1.0) t else t.dropLast(1)).toDoubleOrNull()?.takeIf { it.isFinite() && it * mult < 9e18 } ?: return null
         return (num * mult).toLong().takeIf { it >= 0 }
     }
 
