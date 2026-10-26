@@ -35,7 +35,7 @@
   "^⚠ .+ is enraged! ⚠$",
   "^You have teleported to \\w+!$",
   "^You formed a tether with \\w+!$",
-  "^✆ (RING\\.\\.\\. ?)+ \\[PICK UP\\]$",
+  "^✆ RING\\.\\.\\. (RING\\.\\.\\. ?)+ \\[PICK UP\\]$",
   "^\\[NPC\\] Sirius: ✆ .+$",
   "^The Launch Pad's (launch|vertical) strength has been set to \\d+!$",
   "^You placed a Launch Pad! RIGHT CLICK the Launch Pad to change its settings!$",

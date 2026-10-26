@@ -293,11 +293,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Warping", "", FishSettings::cfWarping))
             f.sub.add(ToggleSetting("Collapse Blank Lines", "Drop repeated empty chat lines", FishSettings::cfCollapseBlank))
             f.sub.add(ToggleSetting("Custom Messages", "Hide the messages listed below", FishSettings::cfCustom))
-            f.sub.add(InputSetting("Messages", "One per line (or ;-separated), ignores case. text = partial match, =text = whole line only, /regex/ = regex",
-                { FishSettings.cfCustomPatterns }, { v -> FishSettings.cfCustomPatterns = v ?: "" })
-                .gatedBy { FishSettings.cfCustom })
-            f.sub.add(ButtonSetting("Import from Chat Notifications", "Move hide-only notification rules here (originals get disabled, not deleted)", "Import",
-                Runnable { ChatFilter.importNotificationHides() }))
+            f.sub.add(ButtonSetting("Edit Messages", "Add, test and import messages to hide (partial, exact or regex)", "Open",
+                Runnable { Minecraft.getInstance().showScreen(ChatCommandsScreen(ChatCommandsScreen.Tab.FILTER, Minecraft.getInstance().curScreen)) }))
             general.features.add(f)
         }
         run {
