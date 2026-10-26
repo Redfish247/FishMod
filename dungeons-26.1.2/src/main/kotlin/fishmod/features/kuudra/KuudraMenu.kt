@@ -6,6 +6,7 @@ import fishmod.features.FishModScreen.Column
 import fishmod.features.FishModScreen.DropdownSetting
 import fishmod.features.FishModScreen.Feature
 import fishmod.features.FishModScreen.InputSetting
+import fishmod.features.FishModScreen.SliderDoubleSetting
 import fishmod.features.FishModScreen.SliderIntSetting
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.kuudra.KuudraSettings as S
@@ -17,7 +18,8 @@ object KuudraMenu {
         val col = Column("Kuudra")
 
         val rq = Feature("Auto Requeue", S::kuudraRequeue)
-        rq.sub.add(SliderIntSetting("Delay (ms)", "Wait after the run ends, e.g. to open your chests", S::kuudraRequeueDelayMs, 0, 30000))
+        rq.sub.add(SliderDoubleSetting("Delay (s)", "Wait after the run ends, e.g. to open your chests",
+            { S.kuudraRequeueDelayMs / 1000.0 }, { v -> S.kuudraRequeueDelayMs = (v * 1000).toInt() }, 0.0, 30.0))
         col.features.add(rq)
 
         val splits = Feature("Kuudra Splits", S::kuudraSplits)
