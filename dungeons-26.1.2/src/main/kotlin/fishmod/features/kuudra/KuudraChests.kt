@@ -119,7 +119,7 @@ object KuudraChests {
                 }
                 val v = price(l)
                 value += v
-                val am = AMOUNT.find(l)
+                val am = AMOUNT.find(l.replace(",", ""))
                 drops += Triple(am?.groupValues?.get(1) ?: l, am?.groupValues?.get(2)?.toIntOrNull() ?: 1, v)
                 out += "§a${Mining.short(v)}	§f$l"
             }
