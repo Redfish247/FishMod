@@ -97,7 +97,8 @@ public final class EssenceShopCosts {
 				}
 				int[] tiers = new int[arr.getAsJsonArray().size()];
 				for (int i = 0; i < tiers.length; i++) {
-					tiers[i] = arr.getAsJsonArray().get(i).getAsInt();
+					JsonElement t = arr.getAsJsonArray().get(i); // bad tier = 0, keep the rest
+					tiers[i] = t.isJsonPrimitive() && t.getAsJsonPrimitive().isNumber() ? t.getAsInt() : 0;
 				}
 				out.put(perk.getKey().toLowerCase(Locale.ROOT), tiers);
 			}
