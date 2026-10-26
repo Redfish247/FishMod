@@ -236,7 +236,13 @@ object FishEstTotal {
             try { renderAt(context, client, splits, component.scaledX, component.scaledY) } catch (e: Exception) { FishDiag.fail("FishEstTotal.10", "est total render failed (fallback pos)", e) }
             return
         }
+        // Splits draw inside their own scale, so follow it or the rows overlap at scale != 1.
+        val rel = try { Phase.splitTimer.scale / component.scale } catch (t: Throwable) { 1f }
+        val pose = context.pose()
+        pose.pushMatrix()
+        pose.scale(rel, rel)
         try { renderAt(context, client, splits, x, y) } catch (e: Exception) { FishDiag.fail("FishEstTotal.11", "est total render failed (floor=$floor, ${splits.size} splits)", e) }
+        finally { pose.popMatrix() }
     }
 
     private fun renderAt(context: GuiGraphicsExtractor, client: Minecraft, splits: ArrayList<LocalSplit>, x: Int, y: Int) {
