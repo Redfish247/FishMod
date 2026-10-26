@@ -65,6 +65,8 @@ object BoardReport {
     @JvmStatic
     fun auto(code: String, message: String, t: Throwable?) {
         try {
+            // unit tests feed bad input on purpose; never upload those
+            if (System.getProperty("fishmod.test") != null || Thread.currentThread().name.startsWith("Test worker")) return
             if (!FishSettings.boardReports || !FishSettings.boardAutoSend) return
             val key = dedupKey(code, t)
             loadSent()
