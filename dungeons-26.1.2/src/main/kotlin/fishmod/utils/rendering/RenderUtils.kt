@@ -582,17 +582,16 @@ object RenderUtils {
     @JvmStatic
     fun formatNumber(num: Float): String {
         if (num.isNaN() || num.isInfinite()) FishDiag.fail("RenderUtils.20", "formatNumber given $num")
-        return if (Floor7.capitalizeHealthNumbers) {
-            if (num >= 1e9) String.format(java.util.Locale.ROOT, "%.1fB", num / 1e9f)
-            else if (num >= 1e6) String.format(java.util.Locale.ROOT, "%.1fM", num / 1e6f)
-            else if (num >= 1e3) String.format(java.util.Locale.ROOT, "%.1fK", num / 1e3f)
-            else wholeOrDecimal(num)
-        } else {
-            if (num >= 1e9) String.format(java.util.Locale.ROOT, "%.1fb", num / 1e9f)
-            else if (num >= 1e6) String.format(java.util.Locale.ROOT, "%.1fm", num / 1e6f)
-            else if (num >= 1e3) String.format(java.util.Locale.ROOT, "%.1fk", num / 1e3f)
-            else wholeOrDecimal(num)
-        }
+        return formatNumber(num, Floor7.capitalizeHealthNumbers)
+    }
+
+    // thresholds avoid "1000.0K" rollover
+    internal fun formatNumber(num: Float, caps: Boolean): String {
+        val (b, m, k) = if (caps) Triple("B", "M", "K") else Triple("b", "m", "k")
+        return if (num >= 999_950_000f) String.format(java.util.Locale.ROOT, "%.1f$b", num / 1e9f)
+        else if (num >= 999_950f) String.format(java.util.Locale.ROOT, "%.1f$m", num / 1e6f)
+        else if (num >= 1e3) String.format(java.util.Locale.ROOT, "%.1f$k", num / 1e3f)
+        else wholeOrDecimal(num)
     }
 
     private fun wholeOrDecimal(num: Float): String =
