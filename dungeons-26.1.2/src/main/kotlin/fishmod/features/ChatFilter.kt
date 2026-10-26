@@ -29,22 +29,61 @@ object ChatFilter {
     }
 
     @Volatile private var customRaw: String? = null
-    @Volatile private var customList: List<Pattern> = emptyList()
-    @Volatile private var customText: List<String> = emptyList()
+    @Volatile private var customContains: List<String> = emptyList()
+    @Volatile private var customExact: List<String> = emptyList()
+    @Volatile private var customRegex: List<Pattern> = emptyList()
 
     private fun refreshCustom() {
         val raw = FishSettings.cfCustomPatterns
         if (raw == customRaw) return
-        val lines = raw.split('\n', ';').map { it.trim() }.filter { it.isNotEmpty() }
-        customText = lines
-        customList = lines.mapNotNull { try { Pattern.compile(it) } catch (e: PatternSyntaxException) { null } }
+        val contains = ArrayList<String>(); val exact = ArrayList<String>(); val regex = ArrayList<Pattern>()
+        for (line in raw.split('\n', ';').map { it.trim() }.filter { it.isNotEmpty() }) {
+            when {
+                line.length > 2 && line.startsWith("/") && line.endsWith("/") -> compile(line.substring(1, line.length - 1))?.let(regex::add)
+                line.startsWith("^") || line.endsWith("$") -> compile(line)?.let(regex::add)
+                line.startsWith("=") -> exact.add(line.substring(1).trim())
+                else -> contains.add(line)
+            }
+        }
+        customContains = contains; customExact = exact; customRegex = regex
         customRaw = raw
     }
 
-    // Plain text hides any line containing it; regex must match the whole line.
+    private fun compile(p: String): Pattern? =
+        try { Pattern.compile(p, Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE) } catch (e: PatternSyntaxException) { null }
+
+    // text = partial match, =text = whole line, /regex/ = regex anywhere; all ignore case.
     private fun customHides(s: String): Boolean {
         refreshCustom()
-        return customText.any { s.contains(it) } || customList.any { it.matcher(s).matches() }
+        return customContains.any { s.contains(it, true) } || customExact.any { s.equals(it, true) }
+            || customRegex.any { it.matcher(s).find() }
+    }
+
+    // Copies hide-only Chat Notification rules into Custom Messages and disables the originals.
+    @JvmStatic
+    fun importNotificationHides() {
+        val rules = fishmod.features.chat.ChatRuleStore.rules().filter {
+            it.enabled && it.hideMessage && it.filter.isNotBlank() && it.chatMessage.isBlank()
+                && it.actionBarMessage.isBlank() && it.titleMessage.isBlank() && !it.soundEnabled
+        }
+        val existing = FishSettings.cfCustomPatterns.split('\n').map { it.trim() }.toMutableList()
+        existing.removeAll { it.isEmpty() }
+        for (r in rules) {
+            val f = r.filter.trim()
+            val line = when {
+                r.regex && r.partialMatch -> "/$f/"
+                r.regex -> "/^(?:$f)$/"
+                r.partialMatch -> f
+                else -> "=$f"
+            }
+            if (line !in existing) existing.add(line)
+            r.enabled = false
+        }
+        FishSettings.cfCustomPatterns = existing.joinToString("\n")
+        FishSettings.cfCustom = true
+        fishmod.features.chat.ChatRuleStore.save()
+        fishmod.utils.Misc.addChatMessage(Component.literal(fishmod.utils.FishMsg.prefix() +
+            "Chat Filter: imported ${rules.size} hide-only notification rules (originals disabled)."))
     }
 
     @Volatile private var lastBlank = false
