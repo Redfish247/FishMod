@@ -61,6 +61,16 @@ object FishEstTotal {
         Events.ON_LOCATION_CHANGE.register { _ -> reset(); false }
     }
 
+    private fun reset() {
+        cachedEstKey = null
+        cachedEstLabel = null
+        cachedEstTime = null
+        cachedEstTimeWidth = 0
+        cachedLagStr = null
+        cachedLagTime = null
+        cachedLagTimeWidth = 0
+    }
+
     private fun computeVisibleRowCount(): Int {
         val splits = currentSplits ?: return 0
         var onlyActivated = true
