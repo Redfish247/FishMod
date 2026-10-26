@@ -96,7 +96,8 @@ object KuudraHuds {
         val now = Kuudra.now()
         for (i in 0 until 4) {
             val start = ps[i]
-            val end = ps[i + 1]
+            // a DEFEAT mid-phase only sets ps[4]; freeze the running split there too
+            val end = ps[i + 1].takeIf { it > 0L } ?: ps[4]
             val v = when { start == 0L -> "§7-"; end == 0L -> "§e" + Kuudra.fmt(now - start); else -> "§a" + Kuudra.fmt(end - start) }
             out += "§b${Kuudra.PHASES[i]}: $v" + if (pb[i] > 0) " §8(${Kuudra.fmt(pb[i])})" else ""
         }
