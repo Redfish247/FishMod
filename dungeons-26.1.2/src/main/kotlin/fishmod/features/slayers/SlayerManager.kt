@@ -40,7 +40,7 @@ object SlayerManager {
     private val MINIBOSS_CHAT = Pattern.compile("SLAYER MINI-?BOSS (.+?) has spawned!")
 
     private val PCT = Pattern.compile("(\\d{1,3})%")
-    private val FRACTION = Pattern.compile("\\(?([\\d,.]+)\\s*/\\s*([\\d,.]+)\\)?")
+    private val FRACTION = Pattern.compile("\\(?([\\d,.]+[kKmMbB]?)\\s*/\\s*([\\d,.]+[kKmMbB]?)\\)?") // k/m/b suffix on high tiers
 
     private val PURSE = Pattern.compile("(?:Purse|Piggy):\\s*([\\d,]+)")
 
