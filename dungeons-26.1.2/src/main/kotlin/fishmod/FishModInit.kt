@@ -290,11 +290,11 @@ class FishModInit : ClientModInitializer {
             return tree
         }
 
-        private fun chatNotificationsSubcommand(name: String): com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> {
+        private fun chatNotificationsSubcommand(name: String, tab: fishmod.features.ChatCommandsScreen.Tab = fishmod.features.ChatCommandsScreen.Tab.NOTIFICATIONS): com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> {
             return ClientCommands.literal(name)
                 .executes {
                     Minecraft.getInstance().schedule {
-                        Minecraft.getInstance().showScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.NOTIFICATIONS))
+                        Minecraft.getInstance().showScreen(fishmod.features.ChatCommandsScreen(tab))
                     }
                     Constants.SUCCESS
                 }
@@ -630,6 +630,8 @@ class FishModInit : ClientModInitializer {
                     .then(fishmod.features.diana.CrownOfAvarice.command())
                     .then(chatNotificationsSubcommand("chatnotifications"))
                     .then(chatNotificationsSubcommand("cn"))
+                    .then(chatNotificationsSubcommand("chatfilter", fishmod.features.ChatCommandsScreen.Tab.FILTER))
+                    .then(chatNotificationsSubcommand("cf", fishmod.features.ChatCommandsScreen.Tab.FILTER))
                     .then(sackSubcommand("ep"))
                     .then(sackSubcommand("ij"))
                     .then(sackSubcommand("sl"))
