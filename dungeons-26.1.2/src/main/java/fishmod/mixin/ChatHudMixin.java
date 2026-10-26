@@ -27,7 +27,13 @@ public class ChatHudMixin {
             String messageText = message.getString();
             fishmod.features.Ragnarock.checkP5Taunt(messageText);
 
-            if (fishmod.features.ChatFilter.shouldHide(message)) {
+            Component folded = fishmod.features.ChatFilter.rewrite(message);
+            if (folded != null) {
+                ci.cancel();
+                ((ChatComponent) (Object) this).addClientSystemMessage(folded);
+                return;
+            }
+            if (fishmod.features.ChatFilter.isCallerLine(message) || fishmod.features.ChatFilter.shouldHide(message)) {
                 // Visual-only hide: keep the vanilla [CHAT] log line we skip by cancelling.
                 LOGGER.info("[CHAT] {}", messageText.replace("\r", "\\r").replace("\n", "\\n"));
                 if (!messageText.isBlank()) fishmod.features.chat.ChatHideState.dropPrecedingBlank((ChatComponent) (Object) this);

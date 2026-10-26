@@ -114,6 +114,32 @@ object ChatFilter {
             "Chat Filter: imported ${rules.size} hide-only notification rules (originals disabled)."))
     }
 
+    private val CALLER: Pattern = Pattern.compile("^✆ (\\S.*?) ✆$")
+    @Volatile private var caller: String? = null
+    @Volatile private var callerAt = 0L
+
+    // Abiphone call: hides "✆ Name ✆" and returns the first RING line with the caller folded in.
+    @JvmStatic
+    fun rewrite(text: Component?): Component? {
+        if (!FishSettings.chatFilterEnabled || !FishSettings.cfCommonSpam || text == null) return null
+        val s = text.string.replace(COLOR, "").trim()
+        val name = caller
+        if (name != null && s.startsWith("✆ RING...") && System.currentTimeMillis() - callerAt < 5000) {
+            caller = null
+            return Component.literal("§a✆ §b$name§a: ").append(text)
+        }
+        return null
+    }
+
+    @JvmStatic
+    fun isCallerLine(text: Component?): Boolean {
+        if (!FishSettings.chatFilterEnabled || !FishSettings.cfCommonSpam || text == null) return false
+        val m = CALLER.matcher(text.string.replace(COLOR, "").trim())
+        if (!m.matches()) return false
+        caller = m.group(1); callerAt = System.currentTimeMillis()
+        return true
+    }
+
     @Volatile private var lastBlank = false
 
     @JvmStatic
