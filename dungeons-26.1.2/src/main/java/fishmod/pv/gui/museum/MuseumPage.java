@@ -448,8 +448,11 @@ public final class MuseumPage {
 			boolean hovered = mx >= bx && mx < bx + SLOT && my >= by && my < by + SLOT
 				&& my >= this.gridY && my < this.gridY + this.gridH;
 			SlotView sv = slotView(slot);
-			PvDraw.roundedFill(g, bx, by, SLOT, SLOT, 3, raritySlotBackground(sv.rarityArgb(), slot.missing(), hovered));
-			PvDraw.roundedRing(g, bx, by, SLOT, SLOT, 3, hovered ? PvDraw.COLOR_ACCENT : ITEM_SLOT_BORDER, PvDraw.C_ALL);
+			// Rounded fills/rings are dozens of draw calls each; the grid has hundreds of slots, so plain rects.
+			PvDraw.fill(g, bx, by, SLOT, SLOT, raritySlotBackground(sv.rarityArgb(), slot.missing(), hovered));
+			if (hovered) {
+				g.outline(bx, by, SLOT, SLOT, PvDraw.COLOR_ACCENT);
+			}
 			int pad = Math.max(0, (SLOT - ICON) / 2);
 			ItemStack icon = slot.missing() ? missingIcon(slot.donationId(), sv.iconId()) : iconAt(slot);
 			drawSkyblockIcon(g, sv.iconId(), icon, bx + pad, by + pad, ICON);
