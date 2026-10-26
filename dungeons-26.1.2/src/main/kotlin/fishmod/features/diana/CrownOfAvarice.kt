@@ -118,8 +118,8 @@ object CrownOfAvarice {
     private fun perHour(r: Session?): Long = if (r == null || r.activeMs < 60_000L) 0L else (r.gained * 3_600_000.0 / r.activeMs).toLong()
 
     private fun short(n: Long): String = when {
-        n >= 1_000_000_000L -> "%.2fB".format(Locale.US, n / 1e9)
-        n >= 1_000_000L -> "%.1fM".format(Locale.US, n / 1e6)
+        n >= 999_995_000L -> "%.2fB".format(Locale.US, n / 1e9)
+        n >= 999_950L -> "%.1fM".format(Locale.US, n / 1e6)
         n >= 1_000L -> "%.1fK".format(Locale.US, n / 1e3)
         else -> n.toString()
     }

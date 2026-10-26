@@ -728,9 +728,9 @@ object DianaTracker {
     fun short(v: Double): String {
         val a = abs(v)
         return when {
-            a >= 1e9 -> "%.2fB".format(v / 1e9)
-            a >= 1e6 -> "%.2fM".format(v / 1e6)
-            a >= 1e3 -> "%.1fK".format(v / 1e3)
+            a >= 999_995_000.0 -> "%.2fB".format(v / 1e9) // thresholds avoid "1000.0K" rollover
+            a >= 999_950.0 -> "%.2fM".format(v / 1e6)
+            a >= 999.5 -> "%.1fK".format(v / 1e3)
             else -> "%.0f".format(v)
         }
     }
