@@ -188,7 +188,8 @@ object Kuudra {
     private fun endRun() {
         val t = now()
         phaseStart[4] = t
-        KuudraHuds.onSplit(3, t - phaseStart[3])
+        // kill-phase line can be missed (joined late), don't record a bogus split
+        if (phaseStart[3] > 0) KuudraHuds.onSplit(3, t - phaseStart[3])
         KuudraHuds.onEnd(t - phaseStart[0])
         phase = 5
         KuudraChests.onRunEnd()
