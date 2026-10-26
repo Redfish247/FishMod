@@ -279,19 +279,23 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SubcategoryHeader("Chat Peek"))
             f.sub.add(ToggleSetting("Chat Peek", "Hold the bound key to pull up chat fully opaque and scroll through it, without opening the chat box", FishSettings::chatPeek))
             f.sub.add(KeybindSetting("Peek Key (hold)", "Unbound by default", { fishmod.utils.Keybinds.chatPeek }).gatedBy { FishSettings.chatPeek })
-            f.sub.add(SubcategoryHeader("Chat Filter"))
-            f.sub.add(ToggleSetting("Chat Filter", "", FishSettings::chatFilterEnabled))
-            f.sub.add(ToggleSetting("Kill Combo", "", FishSettings::cfKillCombo).gatedBy { FishSettings.chatFilterEnabled })
-            f.sub.add(ToggleSetting("Boss Messages", "", FishSettings::cfBossMessages).gatedBy { FishSettings.chatFilterEnabled })
-            f.sub.add(ToggleSetting("Friend Join/Leave", "", FishSettings::cfFriendJoinLeave).gatedBy { FishSettings.chatFilterEnabled })
-            f.sub.add(ToggleSetting("Bazaar", "", FishSettings::cfBazaar).gatedBy { FishSettings.chatFilterEnabled })
-            f.sub.add(ToggleSetting("Warping", "", FishSettings::cfWarping).gatedBy { FishSettings.chatFilterEnabled })
-            f.sub.add(ToggleSetting("Skyblock/Dungeon Spam", "NoammAddons' full useless-message list", FishSettings::cfNoammSpam).gatedBy { FishSettings.chatFilterEnabled })
-            f.sub.add(ToggleSetting("Collapse Blank Lines", "Drop repeated empty chat lines", FishSettings::cfCollapseBlank).gatedBy { FishSettings.chatFilterEnabled })
-            f.sub.add(ToggleSetting("Custom Regex", "Apply the list below", FishSettings::cfCustom).gatedBy { FishSettings.chatFilterEnabled })
-            f.sub.add(InputSetting("Patterns", "One regex per line (or ;-separated)",
+            general.features.add(f)
+        }
+        run {
+            val f = Feature("Chat Filter", FishSettings::chatFilterEnabled)
+            f.sub.add(SubcategoryHeader("Hides lines from your chat only; they still go to the log and other mods"))
+            f.sub.add(ToggleSetting("Common Hypixel Spam", "Most frequent useless lines from real logs (event rewards, stash, class perks, leaps...)", FishSettings::cfCommonSpam))
+            f.sub.add(ToggleSetting("Skyblock/Dungeon Spam", "NoammAddons' full useless-message list", FishSettings::cfNoammSpam))
+            f.sub.add(ToggleSetting("Kill Combo", "", FishSettings::cfKillCombo))
+            f.sub.add(ToggleSetting("Boss Messages", "", FishSettings::cfBossMessages))
+            f.sub.add(ToggleSetting("Friend Join/Leave", "", FishSettings::cfFriendJoinLeave))
+            f.sub.add(ToggleSetting("Bazaar", "", FishSettings::cfBazaar))
+            f.sub.add(ToggleSetting("Warping", "", FishSettings::cfWarping))
+            f.sub.add(ToggleSetting("Collapse Blank Lines", "Drop repeated empty chat lines", FishSettings::cfCollapseBlank))
+            f.sub.add(ToggleSetting("Custom Messages", "Hide the messages listed below", FishSettings::cfCustom))
+            f.sub.add(InputSetting("Messages", "One per line (or ;-separated). Plain text hides any line containing it; regex must match the whole line",
                 { FishSettings.cfCustomPatterns }, { v -> FishSettings.cfCustomPatterns = v ?: "" })
-                .gatedBy { FishSettings.chatFilterEnabled && FishSettings.cfCustom })
+                .gatedBy { FishSettings.cfCustom })
             general.features.add(f)
         }
         run {

@@ -232,6 +232,7 @@ object FishSettings {
     @ConfigValue @JvmField var cfBazaar: Boolean = false
     @ConfigValue @JvmField var cfWarping: Boolean = false
     @ConfigValue @JvmField var cfNoammSpam: Boolean = false
+    @ConfigValue @JvmField var cfCommonSpam: Boolean = true
     @ConfigValue @JvmField var cfCollapseBlank: Boolean = false
     @ConfigValue @JvmField var cfCustom: Boolean = false
     @ConfigValue @JvmField var cfCustomPatterns: String = ""
