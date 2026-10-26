@@ -201,6 +201,9 @@ object Phase {
     fun getFloor(): String? = floor
 
     @JvmStatic
+    fun currentSplitList(): List<Split>? = currentSplits
+
+    @JvmStatic
     fun splitFloors(): List<String> = FLOOR_ORDER.filter { FLOOR_SPLITS.containsKey(it) }
 
     private val FLOOR_ORDER = listOf("E", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "M1", "M2", "M3", "M4", "M5", "M6", "M7")
