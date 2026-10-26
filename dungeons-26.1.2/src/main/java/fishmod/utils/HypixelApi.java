@@ -1968,7 +1968,7 @@ public class HypixelApi {
         JsonObject chosen = null;
         for (JsonElement pe : root.getAsJsonArray("profiles")) {
             JsonObject p = pe.getAsJsonObject();
-            if (p.has("selected") && p.get("selected").getAsBoolean()) { chosen = p; break; }
+            if (p.has("selected") && p.get("selected").isJsonPrimitive() && p.get("selected").getAsBoolean()) { chosen = p; break; }
             if (chosen == null) chosen = p;
         }
         return chosen;
@@ -1976,7 +1976,7 @@ public class HypixelApi {
 
     private static JsonObject findSelectedMember(JsonObject root, String uuidStr) {
         JsonObject chosen = findSelectedProfile(root);
-        if (chosen == null || !chosen.has("members")) return null;
+        if (chosen == null || !chosen.has("members") || !chosen.get("members").isJsonObject()) return null;
         JsonObject members = chosen.getAsJsonObject("members");
         return members.has(uuidStr) ? members.getAsJsonObject(uuidStr) : null;
     }

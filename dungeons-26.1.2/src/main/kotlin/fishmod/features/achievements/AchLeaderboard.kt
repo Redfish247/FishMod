@@ -146,9 +146,8 @@ object AchLeaderboard {
         }.exceptionally { _ -> offline = true; fetching = false; null }
     }
 
-    private fun parse(o: JsonObject, k: String): List<Entry> = o.getAsJsonArray(k).map {
-        val e = it.asJsonObject
-        Entry(e.get("name").asString, e.get("points").asInt, e.get("secrets").asInt)
+    private fun parse(o: JsonObject, k: String): List<Entry> = o.getAsJsonArray(k).mapNotNull {
+        runCatching { val e = it.asJsonObject; Entry(e.get("name").asString, e.get("points").asInt, e.get("secrets").asInt) }.getOrNull() // skip bad rows
     }
 
     fun ago(): String {
