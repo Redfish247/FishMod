@@ -49,6 +49,7 @@ object RemoteScales {
                 FishDiag.fail("RemoteScales.1", "scale has ${parts.size} parts: '$raw'")
                 return null
             }
+            if (x.isNaN() || y.isNaN() || z.isNaN()) return null // "NaN" parses as a float
             x = clamp(x)
             y = clamp(y)
             z = clamp(z)
