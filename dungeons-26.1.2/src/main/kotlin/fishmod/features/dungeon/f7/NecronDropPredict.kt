@@ -156,7 +156,7 @@ object NecronDropPredict {
         val aimX = (s.x + dx / dz * (TARGET_Z - s.z)).coerceIn(TARGET_X_MIN, TARGET_X_MAX)
         val aimDx = aimX - s.x
         val aimDz = TARGET_Z - s.z
-        val reach = minOf(DRAG_LEN,hypot(aimDx, aimDz))
+        val reach = minOf(DRAG_LEN - (s.y - DRAG_BASE_Y).coerceAtLeast(0.0) * DRAG_LEN_PER_Y, hypot(aimDx, aimDz))
         val ex = s.x + aimDx / hypot(aimDx, aimDz) * reach
         val ez = s.z + aimDz / hypot(aimDx, aimDz) * reach
         // Height follows how far along the line to the target the pull gets (y 70 only if it reaches).
