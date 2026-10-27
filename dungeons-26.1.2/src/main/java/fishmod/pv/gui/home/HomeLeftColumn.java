@@ -415,7 +415,7 @@ final class HomeLeftColumn {
 		drawSkillAverage(g, font, x, ty, w, snapshot, zones);
 
 		ty += layout.line;
-		String bankValue = FormatUtil.shortCoins(snapshot.bankCoins());
+		String bankValue = FormatUtil.shortCoins(snapshot.bankCoins()) + " / " + FormatUtil.shortCoins(snapshot.purseCoins());
 		Component bankLine = Component.empty()
 			.append(PvDraw.styled(BANK_LABEL, 0xFF55FF55, false))
 			.append(PvDraw.styled(bankValue, PvDraw.COLOR_GOLD, true));

@@ -118,6 +118,10 @@ final class HomeTooltips {
 			"Balance", PvDraw.COLOR_MUTED,
 			FormatUtil.shortCoins(snapshot.bankCoins()), PvDraw.COLOR_GOLD
 		));
+		lines.add(PvTooltip.Line.row(
+			"Purse", PvDraw.COLOR_MUTED,
+			FormatUtil.shortCoins(snapshot.purseCoins()), PvDraw.COLOR_GOLD
+		));
 		List<ProfileSnapshot.BankTransaction> txs = snapshot.bankTransactions();
 		if (txs == null || txs.isEmpty()) {
 			lines.add(PvTooltip.Line.meta("No transactions, or Banking API off"));
