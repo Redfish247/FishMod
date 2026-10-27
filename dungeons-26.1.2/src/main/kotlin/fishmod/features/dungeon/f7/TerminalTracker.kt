@@ -62,8 +62,59 @@ object TerminalTracker {
         }
     }
 
+    // /termreplay: client-only replay of the 2026-10-26 22:35 run at real pace (chat + HUD, nothing sent)
+    private var replayUntil = 0L
+    private val replayRun = listOf(
+        "0|0|§c[BOSS] Goldor§f: Who dares trespass into my domain?",
+        "1880|1|Olkebex|terminal", "2250|1|Hayacyaa|lever", "3260|1|Hayacyaa|lever", "4030|1|gate",
+        "5110|1|Olkebex|terminal", "5660|1|xkxr|terminal", "5780|1|RedFish2471|device", "8010|1|jtszn|device", "8640|1|xkxr|terminal",
+        "8650|2|section", "10560|2|Hayacyaa|device", "12710|2|RedFish2471|terminal", "13050|2|Olkebex|terminal", "13590|2|jtszn|lever",
+        "13670|2|xkxr|terminal", "14640|2|gate", "15690|2|Olkebex|lever", "16560|2|RedFish2471|terminal", "17600|2|Hayacyaa|terminal",
+        "17610|3|section", "20400|3|xkxr|terminal", "22480|3|Olkebex|terminal", "22530|3|jtszn|terminal", "23530|3|xkxr|lever",
+        "27000|4|section",
+    )
+
     @JvmStatic
-    fun display(): Boolean = terminalTrackerEnabled && Location.inDungeon() && Phase.isInFloor7() && (Phase.inTerminals() || (Phase.inP2() && Phase.stormDead()))
+    fun replay() {
+        val mc = Minecraft.getInstance()
+        val t0 = System.currentTimeMillis() + 1500
+        replayUntil = t0 + 40000
+        mc.execute {
+            // Leftovers from a "previous run" so the reset is visible
+            st.sectionChanged(4, t0 - 5000)
+            listOf("T1", "T2", "L1").forEach { l -> st.list(4).first { it.label == l }.doneAt = t0 - 4000 }
+            Misc.addChatMessage(Component.literal("§7[TermReplay] previous run leftovers in S4, P3 starts in 1.5s"))
+        }
+        Thread({
+            val counts = HashMap<Int, Int>()
+            for (line in replayRun) {
+                val p = line.split("|")
+                val at = t0 + p[0].toLong()
+                Thread.sleep(maxOf(0L, at - System.currentTimeMillis()))
+                val sec = p[1].toInt()
+                mc.execute {
+                    when {
+                        p.size == 3 && p[0] == "0" -> { Misc.addChatMessage(Component.literal(p[2])); st.terminalsStarted(at) }
+                        p[2] == "section" -> st.sectionChanged(sec, at)
+                        p[2] == "gate" -> { Misc.addChatMessage(Component.literal("The gate has been destroyed!")); st.gateDestroyed(at) }
+                        else -> {
+                            val n = (counts[sec] ?: 0) + 1
+                            counts[sec] = n
+                            val verb = if (p[3] == "device") "completed" else "activated"
+                            Misc.addChatMessage(Component.literal("§b${p[2]} §a$verb a ${p[3]}! (§c$n§a/${if (sec == 2) 8 else 7})"))
+                            st.record(p[2], p[3], null, null, sec, p[2] == "RedFish2471", true, at)
+                        }
+                    }
+                }
+            }
+            Thread.sleep(maxOf(0L, replayUntil - System.currentTimeMillis()))
+            mc.execute { st.clear(); Misc.addChatMessage(Component.literal("§7[TermReplay] done")) }
+        }, "TermReplay").apply { isDaemon = true }.start()
+    }
+
+    @JvmStatic
+    fun display(): Boolean = terminalTrackerEnabled && System.currentTimeMillis() < replayUntil ||
+        terminalTrackerEnabled &&Location.inDungeon() && Phase.isInFloor7() && (Phase.inTerminals() || (Phase.inP2() && Phase.stormDead()))
 
     @JvmStatic
     fun render(component: HUDComponent, context: GuiGraphicsExtractor) {
