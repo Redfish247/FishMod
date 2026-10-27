@@ -23,11 +23,11 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.network.chat.Component
 
-// Necron's drag pulls you ~DRAG_LEN blocks (3D) along the direction of its first ticks, wherever you stand (5 logged runs from different spots, 1.6-3.3 blocks off).
+// Necron's drag pulls you ~DRAG_LEN blocks (3D) along the direction of its first ticks (2026-10-26 runs: 56-59 blocks).
 object NecronDropPredict {
 
     private const val DRAG_TICKS = 50
-    private const val DRAG_LEN = 65.0
+    private const val DRAG_LEN = 58.0
     private const val START_DZ = 0.9
     private const val TARGET_X_MIN = 47.5
     private const val TARGET_X_MAX = 63.5
