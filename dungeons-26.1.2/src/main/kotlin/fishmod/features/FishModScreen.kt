@@ -922,6 +922,14 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             dungeonTrackers.features.add(f)
         }
         run {
+            val f = Feature("Croesus Highlights", FishSettings::croesusHighlightEnabled)
+            f.sub.add(SubcategoryHeader("In the Croesus menu: colours runs by unopened, opened (key left) or done"))
+            f.sub.add(ColorPickerSetting("Unopened", "", FishSettings::croesusUnopenedColor))
+            f.sub.add(ColorPickerSetting("Opened", "", FishSettings::croesusOpenedColor))
+            f.sub.add(ColorPickerSetting("Done", "", FishSettings::croesusDoneColor))
+            dungeonTrackers.features.add(f)
+        }
+        run {
             val f = Feature("Simon Says", FishSettings::simonSaysEnabled)
             f.sub.add(ToggleSetting("Show HUD", "", FishSettings::simonSaysHudEnabled))
             f.sub.add(ToggleSetting("To Party", "", FishSettings::simonSaysPartyChat))
@@ -1869,6 +1877,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Show Secrets", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowSecrets))
             f.sub.add(ToggleSetting("Secrets Tail = Left (not total)", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowLeft)
                 .gatedBy { fishmod.utils.config.values.DungeonMapSettings.mapInfoShowSecrets })
+            f.sub.add(ToggleSetting("Force Paul", "Always count Paul's +10 score (auto-detected when he's mayor or minister)", fishmod.utils.config.values.DungeonMapSettings::mapInfoForcePaul))
             f.sub.add(ToggleSetting("Show Score", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowScore))
             f.sub.add(ToggleSetting("Show Deaths", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowDeaths))
             f.sub.add(ToggleSetting("Show Mimic", "", fishmod.utils.config.values.DungeonMapSettings::mapInfoShowMimic))
@@ -1877,7 +1886,6 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Hide When Done", "Drop Mimic/Prince/Crypts once complete", fishmod.utils.config.values.DungeonMapSettings::mapInfoHideCompleted))
             dungeonMap.features.add(f)
         }
-            f.sub.add(ToggleSetting("Force Paul", "Always count Paul's +10 score (auto-detected when he's mayor or minister)", fishmod.utils.config.values.DungeonMapSettings::mapInfoForcePaul))
         run {
             val f = Feature("Player Heads", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadsEnabled)
             f.sub.add(ColorPickerSetting("Head Background", "", fishmod.utils.config.values.DungeonMapSettings::mapPlayerHeadBackground))
