@@ -48,15 +48,8 @@ public final class SkyBlockPackCache {
 		"https://github.com/EnderNon/skyblockpack-dump/raw/main/resourcepacks.hypixel.net/SkyBlock/5c59e0a9-9865-4d4e-91d2-915515672cbd/84.zip"
 	};
 	private static final Duration TIMEOUT = Duration.ofSeconds(120);
-	private static final HttpClient HTTP = HttpClient.newBuilder()
-		.connectTimeout(Duration.ofSeconds(15))
-		.followRedirects(HttpClient.Redirect.ALWAYS)
-		.build();
-	private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor(r -> {
-		Thread t = new Thread(r, "BetterPV-SkyBlockPack");
-		t.setDaemon(true);
-		return t;
-	});
+	private static final HttpClient HTTP = fishmod.utils.Http.REDIRECT;
+	private static final ExecutorService EXECUTOR = fishmod.pv.api.PvExecutors.IO;
 
 	private static final AtomicBoolean STARTED = new AtomicBoolean(false);
 	private static final Object LOCK = new Object();

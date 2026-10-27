@@ -13,9 +13,7 @@ import com.google.gson.JsonParser;
 import fishmod.pv.BetterPV;
 import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import fishmod.utils.Http;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,12 +25,7 @@ public final class AthenPriceCache {
 	private static final URI PRICES_URI = URI.create("https://athen.aerii.xyz/prices");
 	private static final Duration TIMEOUT = Duration.ofSeconds(10);
 	private static final long REFRESH_MINUTES = 10L;
-	private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
-	private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor(r -> {
-		Thread t = new Thread(r, "BetterPV-AthenPrices");
-		t.setDaemon(true);
-		return t;
-	});
+	private static final ScheduledExecutorService EXECUTOR = fishmod.pv.api.PvExecutors.SCHEDULER;
 
 	private static volatile Map<String, Double> prices = Map.of();
 	/** Bazaar-only unit prices (preferred for sack / material valuation). */
@@ -75,12 +68,7 @@ public final class AthenPriceCache {
 	}
 
 	private static void refresh() throws IOException, InterruptedException {
-		HttpRequest request = HttpRequest.newBuilder(PRICES_URI).timeout(TIMEOUT).GET().build();
-		HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
-		if (response.statusCode() < 200 || response.statusCode() >= 300) {
-			throw new IOException("Vyriv prices HTTP " + response.statusCode());
-		}
-		JsonObject root = JsonParser.parseString(response.body()).getAsJsonObject();
+		JsonObject root = Http.getJson(PRICES_URI.toString(), TIMEOUT).getAsJsonObject();
 		Map<String, Double> next = new ConcurrentHashMap<>();
 		Map<String, Double> nextBazaar = new ConcurrentHashMap<>();
 		// Bazaar first so materials use IB/sell — AH LBIN must not stomp sack prices.

@@ -80,17 +80,9 @@ public final class HypixelApiClient {
 	/** Mojang names do not change during this client session often enough to justify repeat lookups. */
 	private static final ConcurrentHashMap<String, UuidName> UUID_NAME_CACHE = new ConcurrentHashMap<>();
 	/** Small pool so museum + election (and other GETs) can overlap while spacing starts. */
-	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(4, r -> {
-		Thread t = new Thread(r, "BetterPV-HypixelApi");
-		t.setDaemon(true);
-		return t;
-	});
+	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(4, PvExecutors.daemon("BetterPV-HypixelApi"));
 	/** Heavy profile parse (NBT / networth) stays off the HTTP pool. */
-	private static final ExecutorService PARSE_EXECUTOR = Executors.newFixedThreadPool(2, r -> {
-		Thread t = new Thread(r, "BetterPV-ProfileParse");
-		t.setDaemon(true);
-		return t;
-	});
+	private static final ExecutorService PARSE_EXECUTOR = Executors.newFixedThreadPool(2, PvExecutors.daemon("BetterPV-ProfileParse"));
 
 	/** Shared so auth, resources and /pv calls to api.vyriv.dev reuse one warm connection. */
 	public static HttpClient http() {
@@ -612,11 +604,11 @@ public final class HypixelApiClient {
 	private static Optional<JsonObject> fetchVyrivApi(String workerUrl, String routeName, RequestTiming timing) {
 		waitForSlot();
 		long attemptStarted = System.nanoTime();
-		Optional<JsonObject> viaWorker = getJson(workerUrl, true, true, timing);
+		Optional<JsonObject> viaWorker = getJson(workerUrl, true, true, timing, 0);
 		if (viaWorker.isEmpty() && System.nanoTime() - attemptStarted > TIMEOUT.toNanos() - 2_000_000_000L) {
 			// The proxy was still fetching from Hypixel when we gave up; it caches the result, so ask again.
 			BetterPV.LOGGER.info("[PV] {} timed out, retrying once", routeName);
-			viaWorker = getJson(workerUrl, true, true, timing);
+			viaWorker = getJson(workerUrl, true, true, timing, 0);
 		}
 		if (viaWorker.isPresent()) {
 			return viaWorker;
@@ -663,23 +655,7 @@ public final class HypixelApiClient {
 
 	private static Optional<JsonObject> getJson(String url) {
 		long now = System.nanoTime();
-		return getJson(url, true, true, new RequestTiming(UUID.randomUUID().toString(), now, now));
-	}
-
-	// A streamed MISS is cut mid-body when the upstream read fails, so a broken
-	// transfer is retried once (usually a cache HIT by then).
-	private static Optional<JsonObject> getJson(String url, boolean allowReauth, boolean allowStreamRetry) {
-		long now = System.nanoTime();
-		return getJson(url, allowReauth, allowStreamRetry, new RequestTiming(UUID.randomUUID().toString(), now, now));
-	}
-
-	private static Optional<JsonObject> getJson(
-		String url,
-		boolean allowReauth,
-		boolean allowStreamRetry,
-		RequestTiming timing
-	) {
-		return getJson(url, allowReauth, allowStreamRetry, timing, 0);
+		return getJson(url, true, true, new RequestTiming(UUID.randomUUID().toString(), now, now), 0);
 	}
 
 	/** Connection-level failures worth retrying (Cloudflare occasionally resets a fresh TLS handshake). */
@@ -690,6 +666,7 @@ public final class HypixelApiClient {
 			|| exception instanceof java.nio.channels.ClosedChannelException;
 	}
 
+	// A streamed MISS is cut mid-body when the upstream read fails, so a broken transfer is retried once.
 	private static Optional<JsonObject> getJson(
 		String url,
 		boolean allowReauth,
@@ -739,7 +716,7 @@ public final class HypixelApiClient {
 				logTiming(url, response, bodyRead.bytesRead(), timing, startedNanos, headersNanos, System.nanoTime(), 0L, 0L, bodyRead);
 				if (streamed && allowStreamRetry) {
 					BetterPV.LOGGER.warn("Hypixel GET {} stream broke ({}), retrying once", url, exception.toString());
-					return getJson(url, allowReauth, false, RequestTiming.retry(timing.correlationId()));
+					return getJson(url, allowReauth, false, RequestTiming.retry(timing.correlationId()), 0);
 				}
 				throw exception;
 			}
@@ -752,7 +729,7 @@ public final class HypixelApiClient {
 					TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos)
 				);
 				if (allowReauth) {
-					return getJson(url, false, allowStreamRetry, RequestTiming.retry(timing.correlationId()));
+					return getJson(url, false, allowStreamRetry, RequestTiming.retry(timing.correlationId()), 0);
 				}
 				lastFailure = "HTTP 401";
 				BetterPV.LOGGER.warn("Hypixel GET {} unauthorized after re-auth", url);
@@ -792,7 +769,7 @@ public final class HypixelApiClient {
 				logTiming(url, response, bytes.length, timing, startedNanos, headersNanos, bodyNanos, gzipNanos, Math.max(0L, parseNanos - gzipNanos), bodyRead);
 				if (streamed && allowStreamRetry) {
 					BetterPV.LOGGER.warn("Hypixel GET {} stream incomplete ({}), retrying once", url, exception.toString());
-					return getJson(url, allowReauth, false, RequestTiming.retry(timing.correlationId()));
+					return getJson(url, allowReauth, false, RequestTiming.retry(timing.correlationId()), 0);
 				}
 				throw exception;
 			}
