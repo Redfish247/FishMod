@@ -3,6 +3,8 @@ import fishmod.compat.curScreen
 
 import com.google.gson.GsonBuilder
 import fishmod.features.FishHudEditor
+import fishmod.features.ProfitTrackerKit
+import fishmod.features.ProfitTrackerKit.Row
 import fishmod.features.croesus.CroesusPrices
 import fishmod.utils.FishMsg
 import fishmod.utils.events.Events
@@ -23,7 +25,7 @@ import fishmod.features.mining.MiningSettings as S
 // Mining profit tracker (same shape as the Diana tracker): Session/Total, per category, chat + sack parsing
 object MiningProfitTracker {
 
-    enum class Cat(val display: String, val color: String, val short: String) {
+    enum class Cat(val display: String, override val color: String, override val short: String) : ProfitTrackerKit.Cat {
         CORPSES("Corpses", "§b", "Corpse"), MINING("Mining", "§a", "Mined"), FOSSIL("Fossil Excavator", "§6", "Fossil"),
         NUCLEUS("Nucleus Runs", "§5", "Nucleus"), CHEST("Powder Chests", "§e", "Chest");
         companion object { fun of(s: String) = entries.firstOrNull { it.display == s } }
@@ -261,17 +263,6 @@ object MiningProfitTracker {
         return CroesusPrices.price(id)
     }
 
-    private val RARITY = mapOf(
-        "COMMON" to "§f", "UNCOMMON" to "§a", "RARE" to "§9", "EPIC" to "§5", "LEGENDARY" to "§6",
-        "MYTHIC" to "§d", "DIVINE" to "§b", "SPECIAL" to "§c", "VERY_SPECIAL" to "§c",
-    )
-
-    // Name colour from the item's Hypixel tier; null for powder/unknown items
-    private fun rarityColor(name: String): String? {
-        val id = idOf(name) ?: return null
-        return RARITY[ItemsDb.get(id)?.get("tier")?.asString ?: "COMMON"]
-    }
-
     // Achievement ledger reads: value of the total/session trackers and a counter
     fun profitOf(session: Boolean): Double = (if (session) data.session else data.total).items.entries.sumOf { (k, n) ->
         val name = k.substringAfter('|'); if (name.endsWith("Powder")) 0.0 else priceOf(name) * n }
@@ -280,33 +271,20 @@ object MiningProfitTracker {
 
     private fun tracker(): Tracker = if (S.miningProfitMode == "Total") data.total else data.session
 
-    private class Row(val cat: Cat, val name: String, val n: Long, val value: Double, val split: Map<Cat, Long> = emptyMap())
+    private val cache = ProfitTrackerKit.LineCache()
 
-    private var cacheVer = -1; private var cacheAt = 0L; private var cache: List<String> = emptyList()
+    fun lines(): List<String> = cache.get(version, ::buildLines)
 
-    fun lines(): List<String> {
-        val now = System.currentTimeMillis()
-        if (cacheVer == version && now - cacheAt < 1000) return cache
-        cacheVer = version; cacheAt = now
+    private fun buildLines(): List<String> {
         val t = tracker()
         val only = Cat.of(S.miningProfitCategory)
-        var rows = t.items.mapNotNull { (k, n) ->
+        val rows = ProfitTrackerKit.sort(ProfitTrackerKit.mergeSources(t.items.mapNotNull { (k, n) ->
             val cat = runCatching { Cat.valueOf(k.substringBefore('|')) }.getOrNull() ?: return@mapNotNull null
             if (only != null && cat != only) return@mapNotNull null
             val name = k.substringAfter('|')
             if (name.endsWith("Powder")) return@mapNotNull null
             Row(cat, name, n, priceOf(name) * n)
-        }
-        // Same item from several sources: one row, per-source counts shown after it
-        rows = rows.groupBy { it.name }.map { (name, rs) ->
-            if (rs.size == 1) rs[0]
-            else Row(rs.maxBy { it.n }.cat, name, rs.sumOf { it.n }, rs.sumOf { it.value }, rs.sortedBy { it.cat.ordinal }.associate { it.cat to it.n })
-        }
-        rows = when (S.miningProfitSort) {
-            "Least Profit" -> rows.sortedBy { it.value }
-            "Category" -> rows.sortedWith(compareBy<Row> { it.cat.ordinal }.thenByDescending { it.value })
-            else -> rows.sortedByDescending { it.value }
-        }
+        }), S.miningProfitSort)
         val max = S.miningProfitLines.coerceIn(5, 25)
         scroll = scroll.coerceIn(0, (rows.size - max).coerceAtLeast(0))
         val out = ArrayList<String>()
@@ -314,8 +292,7 @@ object MiningProfitTracker {
         if (scroll > 0) out += "§8  ▲ $scroll more"
         for (r in rows.drop(scroll).take(max)) {
             val v = if (r.value > 0) "§6${Mining.short(r.value)}" else ""
-            out += "$v	§7| ${rarityColor(r.name) ?: r.cat.color}${r.name} §f${"%,d".format(r.n)}" +
-                (if (r.split.isEmpty() || !S.miningProfitShowSources) "" else " §8(" + r.split.entries.joinToString(" ") { "${it.key.color}${it.key.short} §f${"%,d".format(it.value)}" } + "§8)")
+            out += ProfitTrackerKit.rowLine(r, v, ProfitTrackerKit.rarityColor(idOf(r.name)), S.miningProfitShowSources)
         }
         val below = rows.size - scroll - max
         if (below > 0) out += "§8  ▼ $below more §7(scroll in inventory)"
@@ -343,11 +320,10 @@ object MiningProfitTracker {
         val ph = perHour(profit, t)
         out += "§7Playtime §f${fishmod.features.diana.DianaTracker.fmtTime(t.timeMs)}"
         out += "§eProfit §6${Mining.short(profit)} §7(${Mining.short(ph)}/h)"
-        cache = out
         return out
     }
 
-    private fun perHour(v: Double, t: Tracker) = if (t.timeMs < 60_000) 0.0 else v * 3_600_000.0 / t.timeMs
+    private fun perHour(v: Double, t: Tracker) = ProfitTrackerKit.perHour(v, t.timeMs)
 
     fun resetSession(msg: Boolean = true) { data.session = Tracker(); changed(); if (msg) FishMsg.send("§aMining profit session reset.") }
     fun resetTotal() { data.total = Tracker(); changed(); FishMsg.send("§aMining profit total reset.") }

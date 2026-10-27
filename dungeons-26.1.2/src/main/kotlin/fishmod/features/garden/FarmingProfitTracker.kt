@@ -3,6 +3,8 @@ import fishmod.compat.curScreen
 
 import com.google.gson.GsonBuilder
 import fishmod.features.FishHudEditor
+import fishmod.features.ProfitTrackerKit
+import fishmod.features.ProfitTrackerKit.Row
 import fishmod.features.croesus.CroesusPrices
 import fishmod.features.mining.MiningHuds
 import fishmod.utils.FishMsg
@@ -24,7 +26,7 @@ import fishmod.features.garden.GardenSettings as S
 // Farming profit tracker (same shape as the Mining one): Session/Total, per category, chat + sack parsing
 object FarmingProfitTracker {
 
-    enum class Cat(val display: String, val color: String, val short: String) {
+    enum class Cat(val display: String, override val color: String, override val short: String) : ProfitTrackerKit.Cat {
         PESTS("Pests", "§c", "Pest"), CROPS("Crops", "§a", "Crop"), VISITORS("Visitors", "§b", "Visitor"), RARE("Rare Crops", "§6", "Rare");
         companion object { fun of(s: String) = entries.firstOrNull { it.display == s } }
     }
@@ -219,44 +221,21 @@ object FarmingProfitTracker {
         return CroesusPrices.price(id)
     }
 
-    private val RARITY = mapOf(
-        "COMMON" to "§f", "UNCOMMON" to "§a", "RARE" to "§9", "EPIC" to "§5", "LEGENDARY" to "§6",
-        "MYTHIC" to "§d", "DIVINE" to "§b", "SPECIAL" to "§c", "VERY_SPECIAL" to "§c",
-    )
-
-    private fun rarityColor(name: String): String? {
-        val id = idOf(name) ?: return null
-        return RARITY[ItemsDb.get(id)?.get("tier")?.asString ?: "COMMON"]
-    }
-
     private fun tracker(): Tracker = if (S.gardenProfitMode == "Total") data.total else data.session
 
-    private class Row(val cat: Cat, val name: String, val n: Long, val value: Double, val split: Map<Cat, Long> = emptyMap())
+    private val cache = ProfitTrackerKit.LineCache()
 
-    private var cacheVer = -1; private var cacheAt = 0L; private var cache: List<String> = emptyList()
+    fun lines(): List<String> = cache.get(version, ::buildLines)
 
-    fun lines(): List<String> {
-        val now = System.currentTimeMillis()
-        if (cacheVer == version && now - cacheAt < 1000) return cache
-        cacheVer = version; cacheAt = now
+    private fun buildLines(): List<String> {
         val t = tracker()
         val only = Cat.of(S.gardenProfitCategory)
-        var rows = t.items.mapNotNull { (k, n) ->
+        val rows = ProfitTrackerKit.sort(ProfitTrackerKit.mergeSources(t.items.mapNotNull { (k, n) ->
             val cat = runCatching { Cat.valueOf(k.substringBefore('|')) }.getOrNull() ?: return@mapNotNull null
             if (only != null && cat != only) return@mapNotNull null
             val name = k.substringAfter('|')
             Row(cat, name, n, priceOf(name) * n)
-        }
-        // Same item from several sources: one row, per-source counts shown after it
-        rows = rows.groupBy { it.name }.map { (name, rs) ->
-            if (rs.size == 1) rs[0]
-            else Row(rs.maxBy { it.n }.cat, name, rs.sumOf { it.n }, rs.sumOf { it.value }, rs.sortedBy { it.cat.ordinal }.associate { it.cat to it.n })
-        }
-        rows = when (S.gardenProfitSort) {
-            "Least Profit" -> rows.sortedBy { it.value }
-            "Category" -> rows.sortedWith(compareBy<Row> { it.cat.ordinal }.thenByDescending { it.value })
-            else -> rows.sortedByDescending { it.value }
-        }
+        }), S.gardenProfitSort)
         val max = S.gardenProfitLines.coerceIn(5, 25)
         scroll = scroll.coerceIn(0, (rows.size - max).coerceAtLeast(0))
         val out = ArrayList<String>()
@@ -264,8 +243,7 @@ object FarmingProfitTracker {
         if (scroll > 0) out += "§8  ▲ $scroll more"
         for (r in rows.drop(scroll).take(max)) {
             val v = if (r.value > 0) "§6${Garden.short(r.value)}" else ""
-            out += "$v	§7| ${rarityColor(r.name) ?: r.cat.color}${r.name} §f${"%,d".format(r.n)}" +
-                (if (r.split.isEmpty() || !S.gardenProfitShowSources) "" else " §8(" + r.split.entries.joinToString(" ") { "${it.key.color}${it.key.short} §f${"%,d".format(it.value)}" } + "§8)")
+            out += ProfitTrackerKit.rowLine(r, v, ProfitTrackerKit.rarityColor(idOf(r.name)), S.gardenProfitShowSources)
         }
         val below = rows.size - scroll - max
         if (below > 0) out += "§8  ▼ $below more §7(scroll in inventory)"
@@ -285,13 +263,12 @@ object FarmingProfitTracker {
         if (t.feverMs > 0) out += "${Garden.legacy(S.gardenFeverColor)}Crop Fever §f${fishmod.features.diana.DianaTracker.fmtTime(t.feverMs)}"
         out += "§eProfit §6${Garden.short(profit)} §7(${Garden.short(ph)}/h)"
         out += "${Garden.legacy(S.gardenRareCropColor)}Rare Crops §f${"%,d".format(S.gardenRareCropCount)}"
-        cache = out
         return out
     }
 
     private val COUNT_COLOR = mapOf("Pests Killed" to "§c", "Visitors" to "§a", "Copper" to "§6", "Garden XP" to "§2", "Rare Crops" to "§d")
 
-    private fun perHour(v: Double, t: Tracker) = if (t.timeMs < 60_000) 0.0 else v * 3_600_000.0 / t.timeMs
+    private fun perHour(v: Double, t: Tracker) = ProfitTrackerKit.perHour(v, t.timeMs)
 
     // Session items ("CAT|Item" -> count) and active time, for the other garden HUDs
     fun sessionItems(): Map<String, Long> = HashMap(data.session.items)
