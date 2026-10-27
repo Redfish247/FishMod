@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
 import fishmod.compat.showScreen
 import com.mojang.blaze3d.platform.InputConstants
@@ -63,7 +64,6 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
         const val RULE_ROW_H = 30
         const val ROW_H = 24
 
-        val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
         fun withAlpha(c: Int, a: Double): Int = ((a.coerceIn(0.0, 1.0) * 255).toInt() shl 24) or (c and 0xFFFFFF)
     }
@@ -369,7 +369,7 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
         label("Test a chat line", ex, y)
         field(testField, ex, y + 10, ew - 92, 18, "Paste a chat message")
         if (testField.value.isNotBlank()) {
-            val m = ChatRuleHandler.matches(r, testField.value.replace(COLOR, ""))
+            val m = ChatRuleHandler.matches(r, TextStrip.plain(testField.value))
             chip(if (m) "matches" else "no match", ex + ew - 84, y + 13, if (m) ACCENT else DIM)
         }
         y += 36
@@ -382,7 +382,7 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
 
         if (isOn(r, Out.TITLE)) {
             label("Title preview", ex, y)
-            val t = r.titleMessage.replace(COLOR, "").ifBlank { "Title text" }
+            val t = TextStrip.plain(r.titleMessage).ifBlank { "Title text" }
             val w = tw(t, 8.5f).toInt() + 24
             ScreenTheme.nRoundedRect(ex, y + 11, min(w, ew), 22, 6, 0xCC000000.toInt())
             text(clipText(t, ew - 24, 8.5f), ex + 12f, y + 18f, 8.5f, TITLE_YELLOW)
@@ -513,7 +513,7 @@ class ChatCommandsScreen(private var tab: Tab = Tab.NOTIFICATIONS, private val p
         val rw = bx + bw - rx
         label("Test a chat line", rx, by)
         field(filterTestField, rx, by + 10, rw - 118, 18, "Paste a chat message")
-        val test = filterTestField.value.replace(COLOR, "").trim()
+        val test = TextStrip.plain(filterTestField.value).trim()
         if (test.isNotEmpty()) {
             fishmod.utils.config.values.FishSettings.cfCustomPatterns = ChatFilter.encode(filterRows.map { it.entry })
             val why = ChatFilter.reason(test)

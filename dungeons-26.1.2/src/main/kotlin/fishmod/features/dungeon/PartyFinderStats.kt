@@ -1,6 +1,7 @@
 package fishmod.features.dungeon
 
 import fishmod.utils.FishMsg
+import fishmod.utils.TextStrip
 import fishmod.utils.HypixelApi
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.events.Events
@@ -13,7 +14,6 @@ object PartyFinderStats {
     private val lastLookupAt: MutableMap<String, Long> = HashMap()
     private const val COOLDOWN_MS = 15_000L
 
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     private val PF_JOIN: Pattern =
         Pattern.compile("^Party Finder > (\\w{1,16}) joined the dungeon group! \\((\\w+) Level (\\d+)\\)$")
@@ -23,7 +23,7 @@ object PartyFinderStats {
         Events.ON_GAME_MESSAGE.register { text ->
             if (!FishSettings.pfStatsEnabled) return@register false
             try {
-                val plain = text.string.replace(COLOR, "")
+                val plain = TextStrip.plain(text.string)
                 val m = PF_JOIN.matcher(plain)
                 if (m.find()) lookup(m.group(1), joinLine = true)
                 else if (plain.startsWith("Party Finder > ") && plain.contains("joined the dungeon group")) FishDiag.fail("PartyFinderStats.1", "PF join line didn't match: '$plain'")

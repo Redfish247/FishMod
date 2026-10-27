@@ -1,5 +1,6 @@
 package fishmod.features
 import fishmod.compat.Fmt
+import fishmod.utils.TextStrip
 
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
@@ -11,7 +12,6 @@ import java.util.Optional
 
 object PetSwapTitle {
 
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val AUTOPET = Regex("""Autopet equipped your \[Lvl\s*\d+]\s*(.+?)!""")
     private val SUMMON = Regex("""You summoned your\s+(.+?)!""")
 
@@ -19,7 +19,7 @@ object PetSwapTitle {
     fun init() {
         ClientReceiveMessageEvents.GAME.register { msg, overlay ->
             if (overlay || !FishSettings.petSwapTitleEnabled) return@register
-            val s = COLOR.replace(msg.string, "").trim()
+            val s = TextStrip.plain(msg.string).trim()
             val name = (AUTOPET.find(s) ?: SUMMON.find(s))?.groupValues?.get(1)?.replace("✦", "")?.trim() ?: return@register
             if (!FishDiag.check(name.isNotEmpty(), "PetSwapTitle.1") { "pet swap name empty in '$s'" }) return@register
             FishDiag.guard("PetSwapTitle.2", "pet swap title failed") { show(name, rarityColor(msg, name)) }

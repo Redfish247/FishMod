@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 
+import fishmod.utils.TextStrip
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.data.ItemUtil
@@ -22,7 +23,6 @@ object IceSprayTimer {
     private const val CONE_COS = 0.64
     private const val GROUP_RADIUS = 4.0
     private const val FREEZE_MS = 5000L
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     private val frozen = HashMap<LivingEntity, Long>()
     private var lastCastAt = 0L
@@ -30,7 +30,7 @@ object IceSprayTimer {
     @JvmStatic
     fun init() {
         ClientReceiveMessageEvents.GAME.register { msg, overlay ->
-            if (overlay && FishSettings.iceSprayTimerEnabled && COLOR.replace(msg.string, "").contains("Mana (Ice Spray)")) FishDiag.guard("IceSprayTimer.1", "ice spray cast (action bar) failed") { cast() }
+            if (overlay && FishSettings.iceSprayTimerEnabled && TextStrip.plain(msg.string).contains("Mana (Ice Spray)")) FishDiag.guard("IceSprayTimer.1", "ice spray cast (action bar) failed") { cast() }
         }
         UseItemCallback.EVENT.register(UseItemCallback { player, _, hand ->
             try {

@@ -227,7 +227,7 @@ public final class MagicalPowerCalculator {
 			}
 			// Rarity line looks like "§d§l§ka§r §d§lMYTHIC ACCESSORY §d§l§ka". Match on the spaced text:
 			// normalizeTier underscores it first, and "MYTHIC_ACCESSORY" never matches a word boundary.
-			String plain = line.replaceAll("§.", "").toUpperCase(Locale.ROOT);
+			String plain = fishmod.utils.TextStrip.plain(line).toUpperCase(Locale.ROOT);
 			if (!plain.contains("ACCESSORY") && !plain.contains("HATCESSORY")) {
 				continue;
 			}

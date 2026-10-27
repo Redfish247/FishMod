@@ -60,7 +60,7 @@ public final class TrophyFishData {
 		}
 		String first = null;
 		for (String raw : lore) {
-			String plain = raw == null ? "" : raw.replaceAll("§.", "").trim();
+			String plain = raw == null ? "" : fishmod.utils.TextStrip.plain(raw).trim();
 			if (plain.isBlank()) {
 				continue;
 			}

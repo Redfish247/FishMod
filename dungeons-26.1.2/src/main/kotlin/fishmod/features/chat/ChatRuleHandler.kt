@@ -1,6 +1,7 @@
 package fishmod.features.chat
 
 import fishmod.features.FishHudEditor
+import fishmod.utils.TextStrip
 import fishmod.utils.Misc
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
@@ -16,13 +17,12 @@ object ChatRuleHandler {
     private class ActiveTitle(val text: String, val untilMs: Long)
     private val activeTitles = ArrayList<ActiveTitle>()
 
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     @JvmStatic
     fun init() {
         fishmod.utils.events.Events.ON_GAME_MESSAGE.register { message ->
             if (!ChatRuleStore.isMasterEnabled()) return@register false
-            val raw = message.string.replace(COLOR, "")
+            val raw = TextStrip.plain(message.string)
             for (rule in ChatRuleStore.rules()) {
                 if (!rule.enabled || rule.filter.isBlank()) continue
                 try {
@@ -50,7 +50,7 @@ object ChatRuleHandler {
     @JvmStatic
     fun shouldHideAtDisplay(message: Component?): Boolean {
         if (message == null || !ChatRuleStore.isMasterEnabled()) return false
-        val raw = message.string?.replace(COLOR, "") ?: return false
+        val raw = message.string?.let(TextStrip::plain) ?: return false
         for (rule in ChatRuleStore.rules()) {
             if (!rule.enabled || !rule.hideMessage || rule.filter.isBlank()) continue
             if (matches(rule, raw)) return true

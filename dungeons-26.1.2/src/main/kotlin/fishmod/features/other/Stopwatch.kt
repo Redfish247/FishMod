@@ -55,7 +55,6 @@ object Stopwatch {
     private const val NAME = "Stopwatch"
     private const val MORT_START = "[NPC] Mort: Here, I found this map when I first entered the dungeon."
     private val WITHER_DOOR = Regex("^\\w+ opened a WITHER door!$")
-    private val COLOR = Regex("§.")
 
     @ConfigValue @JvmField var enabled: Boolean = false
     @ConfigValue @JvmField var startTrigger: Trigger = Trigger.MOVE
@@ -111,7 +110,7 @@ object Stopwatch {
         fishmod.features.FishHudEditor.register(NAME, hud)
 
         ClientTickEvents.END_CLIENT_TICK.register { mc -> FishDiag.guard("Stopwatch.1", "stopwatch tick") { tick(mc) } }
-        Events.ON_GAME_MESSAGE.register { msg -> if (enabled) FishDiag.guard("Stopwatch.2", "stopwatch chat") { onChat(msg.string.replace(COLOR, "")) }; false }
+        Events.ON_GAME_MESSAGE.register { msg -> if (enabled) FishDiag.guard("Stopwatch.2", "stopwatch chat") { onChat(fishmod.utils.TextStrip.plain(msg.string)) }; false }
         Events.ON_TERMINAL.register { name, _, objective, _, _ ->
             when (objective) {
                 "terminal" -> {
@@ -131,7 +130,7 @@ object Stopwatch {
         Events.ON_LOCATION_CHANGE.register { _ -> fire(Trigger.AREA_CHANGE); false }
         ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
             if (enabled && screen is AbstractContainerScreen<*>) {
-                val title = screen.title.string.replace(COLOR, "")
+                val title = fishmod.utils.TextStrip.plain(screen.title.string)
                 if (TerminalType.values().any { title.startsWith(it.windowPrefix) }) fire(Trigger.TERMINAL_OPEN)
                 fire(Trigger.GUI_OPEN, title)
                 ScreenEvents.remove(screen).register { fire(Trigger.GUI_CLOSE) }

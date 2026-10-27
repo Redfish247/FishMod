@@ -33,7 +33,7 @@ object CroesusRewardParser {
         ITEM_REPLACEMENTS["Livid Dye"] = "DYE_LIVID"
     }
 
-    private fun strip(s: String): String = HypixelApi.STRIP_COLOR.matcher(s).replaceAll("")
+    private fun strip(s: String): String = fishmod.utils.TextStrip.plain(s)
 
     private fun tryParseBook(line: String): Array<String>? {
         val m = BOOK_PATTERN.matcher(line)

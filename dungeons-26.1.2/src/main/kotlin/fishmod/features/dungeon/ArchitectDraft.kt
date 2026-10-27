@@ -1,6 +1,7 @@
 package fishmod.features.dungeon
 
 import fishmod.utils.Location
+import fishmod.utils.TextStrip
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.events.Events
@@ -10,7 +11,6 @@ import java.util.regex.Pattern
 
 object ArchitectDraft {
 
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val PUZZLE_FAIL = Pattern.compile("PUZZLE FAIL! (\\w{1,16}) .+")
     private val ORUO_WRONG = Pattern.compile("\\[STATUE] Oruo the Omniscient: (\\w{1,16}) chose the wrong answer!.*")
 
@@ -20,7 +20,7 @@ object ArchitectDraft {
     fun init() {
         Events.ON_GAME_MESSAGE.register { text ->
             if (!FishSettings.architectDraftRefill || !Location.inDungeon()) return@register false
-            val s = text.string.replace(COLOR, "").trim()
+            val s = TextStrip.plain(text.string).trim()
             val self = Minecraft.getInstance().player?.gameProfile?.name ?: return@register false
             val m1 = PUZZLE_FAIL.matcher(s)
             val m2 = ORUO_WRONG.matcher(s)

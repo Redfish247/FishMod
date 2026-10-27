@@ -1,5 +1,6 @@
 package fishmod.features.other
 import fishmod.compat.curScreen
+import fishmod.utils.TextStrip
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.Keybinds
@@ -22,7 +23,6 @@ object PetKeybinds {
     @JvmField val COUNT = PETS.size
     private const val PLAYER_INV_SLOTS = 36
 
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val LEVEL = Regex("""\[Lvl\s*(\d+)]\s*""")
     private val PETS_TITLE = Regex("""^(\(\d+/\d+\)\s*)?Pets.*""")
 
@@ -72,13 +72,13 @@ object PetKeybinds {
 
     private fun petName(stack: ItemStack): String? {
         if (stack.isEmpty) return null
-        val raw = stack.hoverName.string.replace(COLOR, "").trim()
+        val raw = TextStrip.plain(stack.hoverName.string).trim()
         val m = LEVEL.find(raw) ?: return null
         return raw.substring(m.range.last + 1).trim()
     }
 
     private fun petLevel(stack: ItemStack): Int {
-        val raw = stack.hoverName.string.replace(COLOR, "").trim()
+        val raw = TextStrip.plain(stack.hoverName.string).trim()
         val lvl = LEVEL.find(raw)?.groupValues?.get(1) ?: return 0
         return FishDiag.notNull(lvl.toIntOrNull(), "PetKeybinds.3") { "pet level not numeric: '$lvl' in '$raw'" } ?: 0
     }

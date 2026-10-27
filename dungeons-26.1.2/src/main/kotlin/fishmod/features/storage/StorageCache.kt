@@ -26,7 +26,6 @@ import java.util.TreeMap
 
 object StorageCache {
 
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val dir: Path = Paths.get(FolderUtility.CONFIG_PATH + "storage")
     private val EMPTY_MARKERS = setOf(
         CB.RED_STAINED_GLASS_PANE.asItem(),

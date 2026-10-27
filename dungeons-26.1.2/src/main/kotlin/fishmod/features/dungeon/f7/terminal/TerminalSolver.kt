@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.f7.terminal
 import fishmod.compat.curScreen
+import fishmod.utils.TextStrip
 
 import fishmod.compat.CB
 import fishmod.compat.CI
@@ -43,7 +44,7 @@ object TerminalSolver {
     private fun reset() { current = null; currentTitle = "" }
 
     private fun ensureHandler(rawTitle: String): TerminalHandler? {
-        val name = COLOR.replace(rawTitle, "")
+        val name = TextStrip.plain(rawTitle)
         val type = TerminalType.entries.firstOrNull { name.startsWith(it.windowPrefix) }
         if (type == null) { reset(); return null }
         if (current?.type == type && name == currentTitle) return current
@@ -92,7 +93,6 @@ object TerminalSolver {
     private val STARTS_WITH_LETTER = Pattern.compile("What starts with: '?(\\w+)'?")
     private val SELECT_COLOR = Pattern.compile("Select all the ([\\w ]+?) items!")
     private val ACTIVATED = Pattern.compile("(.{1,16}) activated a terminal! \\((\\d)/(\\d)\\)")
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     @JvmStatic
     fun init() {
@@ -108,7 +108,7 @@ object TerminalSolver {
 
         Events.ON_GAME_MESSAGE.register { text ->
             try {
-                val m = ACTIVATED.matcher(COLOR.replace(text.string, ""))
+                val m = ACTIVATED.matcher(TextStrip.plain(text.string))
                 if (m.find() && m.group(1) == Minecraft.getInstance().player?.gameProfile?.name) {
                     if (FishSettings.terminalSolverSound) SoundManager.ping("termSolved", 0)
                     onOwnTerminalDone()
@@ -136,7 +136,7 @@ object TerminalSolver {
 
     private fun onOpen(packet: ClientboundOpenScreenPacket) {
         if (!Location.inDungeon()) { reset(); return }
-        debug("open '${COLOR.replace(packet.title.string, "").take(30)}' id=${packet.containerId}")
+        debug("open '${TextStrip.plain(packet.title.string).take(30)}' id=${packet.containerId}")
         try { ensureHandler(packet.title.string) } catch (e: Exception) { FishDiag.fail("TerminalSolver.6", "terminal handler build failed on open '${packet.title.string}'", e) }
     }
 
@@ -289,7 +289,7 @@ object TerminalSolver {
             if (st.isEmpty) return@mapNotNull null
             val id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(st.item).path
             if (id == "black_stained_glass_pane" || id == "gray_stained_glass_pane") return@mapNotNull null
-            "$i:$id${if (st.hasFoil()) "*" else ""}x${st.count}'${COLOR.replace(st.hoverName.string, "").trim().take(14)}'"
+            "$i:$id${if (st.hasFoil()) "*" else ""}x${st.count}'${TextStrip.plain(st.hoverName.string).trim().take(14)}'"
         }.take(8)
         debug("  " + sample.joinToString(" "))
     }

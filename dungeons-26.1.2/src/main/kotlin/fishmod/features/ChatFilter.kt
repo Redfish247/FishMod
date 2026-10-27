@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
 import com.google.gson.Gson
 import fishmod.utils.config.values.FishSettings
@@ -11,7 +12,6 @@ import java.util.regex.PatternSyntaxException
 
 object ChatFilter {
 
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     private val FRIEND_JOIN_LEAVE: Pattern = Pattern.compile("Friend > \\S+ (?:joined|left)\\.")
 
@@ -122,7 +122,7 @@ object ChatFilter {
     @JvmStatic
     fun rewrite(text: Component?): Component? {
         if (!FishSettings.chatFilterEnabled || !FishSettings.cfCommonSpam || text == null) return null
-        val s = text.string.replace(COLOR, "").trim()
+        val s = TextStrip.plain(text.string).trim()
         val name = caller
         if (name != null && s.startsWith("✆ RING...") && System.currentTimeMillis() - callerAt < 5000) {
             caller = null
@@ -134,7 +134,7 @@ object ChatFilter {
     @JvmStatic
     fun isCallerLine(text: Component?): Boolean {
         if (!FishSettings.chatFilterEnabled || !FishSettings.cfCommonSpam || text == null) return false
-        val m = CALLER.matcher(text.string.replace(COLOR, "").trim())
+        val m = CALLER.matcher(TextStrip.plain(text.string).trim())
         if (!m.matches()) return false
         caller = m.group(1); callerAt = System.currentTimeMillis()
         return true
@@ -146,7 +146,7 @@ object ChatFilter {
     fun shouldHide(text: Component?): Boolean {
         if (!FishSettings.chatFilterEnabled || text == null) return false
         val raw = text.string ?: return false
-        val s = raw.replace(COLOR, "").trim()
+        val s = TextStrip.plain(raw).trim()
 
         if (s.isEmpty()) {
             val hide = FishSettings.cfCollapseBlank && lastBlank

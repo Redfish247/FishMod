@@ -82,7 +82,7 @@ object CroesusLootDetector {
         runGuiOpenPrev = runGuiOpenNow
     }
 
-    private fun strip(s: String): String = HypixelApi.STRIP_COLOR.matcher(s).replaceAll("")
+    private fun strip(s: String): String = fishmod.utils.TextStrip.plain(s)
 
     private fun getSlot(menu: AbstractContainerMenu, index: Int): ItemStack =
         if (index >= 0 && index < menu.slots.size) menu.slots[index].item else ItemStack.EMPTY

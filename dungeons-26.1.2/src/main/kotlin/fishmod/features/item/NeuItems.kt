@@ -29,7 +29,6 @@ object NeuItems {
 
     private val MODEL_RE = Regex("""ItemModel:"([a-z0-9_.:/-]+)"""")
     private val TEXTURE_RE = Regex("""Value:"([A-Za-z0-9+/=]+)"""")
-    private val COLOR_RE = Regex("§.")
     private val HEX_RE = Regex("#([0-9A-Fa-f]{6})")
 
     @Volatile private var entries: Map<String, Entry> = emptyMap()
@@ -109,7 +108,7 @@ object NeuItems {
         if (!dye && !isSkin(id)) return null
         val o = JsonParser.parseString(text).asJsonObject
         val nbt = o.get("nbttag")?.asString ?: ""
-        val name = COLOR_RE.replace(o.get("displayname")?.asString ?: id, "").trim().ifEmpty { id }
+        val name = fishmod.utils.TextStrip.plain(o.get("displayname")?.asString ?: id).trim().ifEmpty { id }
         val legacy = o.get("itemid")?.asString ?: "minecraft:stone"
         val model = MODEL_RE.find(nbt)?.groupValues?.get(1) ?: if (legacy == "minecraft:skull") "minecraft:player_head" else legacy
         val hex = if (dye) o.getAsJsonArray("lore")?.firstNotNullOfOrNull { HEX_RE.find(it.asString)?.groupValues?.get(1)?.uppercase() } else null

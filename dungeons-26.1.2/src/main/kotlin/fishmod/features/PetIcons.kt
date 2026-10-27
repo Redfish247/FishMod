@@ -1,5 +1,6 @@
 package fishmod.features
 import fishmod.compat.curScreen
+import fishmod.utils.TextStrip
 
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
@@ -19,7 +20,6 @@ object PetIcons {
 
     private const val FILE_PATH = "config/fishmod-pet-icons.json"
     private val GSON = GsonBuilder().setPrettyPrinting().create()
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val LEVEL = Regex("""\[Lvl\s*\d+]""")
     private val PETS_TITLE = Regex("""^(\(\d+/\d+\)\s*)?Pets.*""")
 
@@ -62,7 +62,7 @@ object PetIcons {
         for (slot in screen.menu.slots) {
             val st = slot.item
             if (st.isEmpty) continue
-            val name = COLOR.replace(st.hoverName.string, "")
+            val name = TextStrip.plain(st.hoverName.string)
             val m = LEVEL.find(name) ?: continue
             val k = key(name.substring(m.range.last + 1))
             if (k.isEmpty()) continue

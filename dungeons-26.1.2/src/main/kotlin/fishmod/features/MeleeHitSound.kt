@@ -21,7 +21,6 @@ object MeleeHitSound {
     private val seenSplashes = HashSet<Int>()
     // Hypixel's damage numbers, e.g. "1,234" or "✧12,345✧"
     private val SPLASH = Regex("""^\D{0,3}[\d,.]+[kKmM]?\D{0,3}$""")
-    private val COLOR_CODE = Regex("§.")
 
     fun init() {
         AttackEntityCallback.EVENT.register { player, level, _, entity, _ ->
@@ -62,7 +61,7 @@ object MeleeHitSound {
         var found = false
         for (e in level.getEntitiesOfClass(ArmorStand::class.java, t.boundingBox.inflate(3.0))) {
             if (e.tickCount > 10 || e.id in seenSplashes) continue
-            val name = e.customName?.string?.replace(COLOR_CODE, "") ?: continue
+            val name = e.customName?.string?.let(fishmod.utils.TextStrip::plain) ?: continue
             if (SPLASH.matches(name.trim())) { seenSplashes.add(e.id); found = true }
         }
         if (seenSplashes.size > 256) seenSplashes.clear()

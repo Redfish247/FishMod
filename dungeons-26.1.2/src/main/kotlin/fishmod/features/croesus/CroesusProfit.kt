@@ -1,6 +1,7 @@
 package fishmod.features.croesus
 
 import fishmod.mixin.accessors.HandledScreenAccessor
+import fishmod.utils.TextStrip
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
@@ -15,7 +16,6 @@ object CroesusProfit {
     private val PREVIEW_TITLE = Regex("^(?:Master )?Catacombs - .*")
     private val CROESUS_TITLE = Regex("(?:\\(\\d+/\\d+\\) )?Croesus")
     private val COST =Regex("([\\d,]+) Coins?")
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     private class Chest(val slot: Int, val name: String, val value: Double, val cost: Double) {
         val profit get() = value - cost
@@ -89,7 +89,7 @@ object CroesusProfit {
             val stack = s.item
             if (stack.isEmpty) continue
             val raw = stack.get(DataComponents.LORE)?.lines() ?: continue
-            val lore = raw.map { COLOR.replace(it.string, "") }
+            val lore = raw.map { TextStrip.plain(it.string) }
             // SkyHanni CroesusChestTracker: used kismet is struck through
             val kismetUsed = raw.any { l -> l.string.contains("Kismet Feather") && strike(l) }
             val rgb = when {
@@ -124,7 +124,7 @@ object CroesusProfit {
             val stack = menu.slots[i].item
             if (stack.isEmpty || !stack.`is`(Items.PLAYER_HEAD)) continue
             val tooltip = tooltip(stack)
-            val plain = tooltip.map { COLOR.replace(it, "") }
+            val plain = tooltip.map { TextStrip.plain(it) }
             if (plain.none { it.contains("Contents") }) continue
 
             val cost = plain.firstNotNullOfOrNull {
@@ -134,7 +134,7 @@ object CroesusProfit {
             val info = CroesusRewardParser.parseRewards(tooltip, err) ?: run { FishDiag.fail("CroesusProfit.3", "chest preview in slot $i unparsed: ${err[0]}"); null } ?: continue
             var value = 0.0
             for (ri in info.items) value += CroesusPrices.price(ri.id) * ri.qty.coerceAtLeast(1)
-            out.add(Chest(i, COLOR.replace(stack.hoverName.string, "").trim(), value, cost))
+            out.add(Chest(i, TextStrip.plain(stack.hoverName.string).trim(), value, cost))
         }
         out.sortByDescending { it.profit }
         chests = out
