@@ -63,6 +63,20 @@ class TerminalTrackerReplayTest {
         assertEquals(4, st.current(4))
     }
 
+    @Test fun slowS4PreDuringS2StaysOutOfS2() {
+        for (berserk in listOf(true, false)) {
+            val st = TerminalTrackerState()
+            st.terminalsStarted(0)
+            st.sectionChanged(2, 9000)
+            // Standing at the S4 device (63.5, 35.5) when it completes mid S2
+            st.record("RedFish2471", "device", 63.4, 35.6, 2, berserk, true, 11000)
+            assertEquals(0, st.list(2).count { it.done }, "S2 got the S4 device (berserk=$berserk)")
+            assertTrue(st.list(4).first { it.label == "D1" }.pre)
+            assertEquals(2, st.current(2))
+            assertNull(st.starts[4], "S4 timer started early")
+        }
+    }
+
     @Test fun s1ToS2PaceNoSpill() {
         val st = TerminalTrackerState()
         play(st, 0)
