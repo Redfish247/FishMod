@@ -1321,8 +1321,9 @@ class FishModInit : ClientModInitializer {
                             )
                     )
             )
+            // no "ai": Hypixel's /ai <uuid> accepts island invites
             for (name in arrayOf(
-                "fps", "tps", "ping", "dprofit", "crit", "ai", "allinv", "d",
+                "fps", "tps", "ping", "dprofit", "crit", "allinv", "d",
                 "e", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "m1", "m2", "m3", "m4", "m5", "m6", "m7",
                 "t1", "t2", "t3", "t4", "t5"
             )) {
