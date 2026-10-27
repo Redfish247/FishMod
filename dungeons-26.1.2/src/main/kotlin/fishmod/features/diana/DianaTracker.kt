@@ -454,6 +454,8 @@ object DianaTracker {
         val ev = data.event
         if (ev.year == 0) { ev.year = y; changed(); return }
         if (ev.year >= y) return
+        // New year only counts once Diana (Mythological Ritual) is confirmed elected
+        if (!fishmod.utils.MayorApi.isDianaRitualActive()) return
         if (ev.mobs.values.any { it > 0 }) {
             data.past.add(PastEvent().also {
                 it.year = ev.year; it.items = LinkedHashMap(ev.items); it.mobs = LinkedHashMap(ev.mobs)

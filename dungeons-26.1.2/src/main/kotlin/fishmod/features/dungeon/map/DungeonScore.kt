@@ -226,7 +226,7 @@ object DungeonScore {
     @JvmStatic
     fun calculatePaulScore(): Int {
         val mode = DungeonMapSettings.mapScorePaul
-        val active = (mode == 0 && paul) || mode == 1
+        val active = DungeonMapSettings.mapInfoForcePaul || (mode == 0 && paul) || mode == 1
         return if (active) 10 else 0
     }
 

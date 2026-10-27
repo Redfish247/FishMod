@@ -16,10 +16,17 @@ object MayorApi {
     private const val URL = "https://api.hypixel.net/v2/resources/skyblock/election"
     private const val CACHE_MS = 10 * 60 * 1000L
     private const val FAIL_CACHE_MS = 60 * 1000L
+    private const val SWITCH_CACHE_MS = 60 * 1000L
+    private const val SWITCH_WINDOW_MS = 15 * 60 * 1000L
+    private const val SB_EPOCH_MS = 1560276000_000L
+    private const val YEAR_MS = 1200_000L * 372
+    private const val ELECTION_OFFSET_MS = 1200_000L * 88
     private val HTTP: HttpClient = fishmod.utils.Http.CLIENT
 
     @Volatile
     private var paulDungeonBonus = false
+    @Volatile
+    private var dianaRitual = false
     @Volatile
     private var mayorLine: String? = null
     @Volatile
@@ -29,20 +36,44 @@ object MayorApi {
 
     private fun failStamp(): Long = System.currentTimeMillis() - CACHE_MS + FAIL_CACHE_MS
 
+    // Start of the current mayor term (Late Spring 27, every 5d4h real time)
+    private fun lastSwitchMs(now: Long): Long {
+        val t = now - SB_EPOCH_MS - ELECTION_OFFSET_MS
+        return SB_EPOCH_MS + ELECTION_OFFSET_MS + Math.floorDiv(t, YEAR_MS) * YEAR_MS
+    }
+
+    // Refetch at each term switch, then every minute for a while in case the API lags
+    private fun stale(): Boolean {
+        val now = System.currentTimeMillis()
+        val sw = lastSwitchMs(now)
+        if (lastFetch < sw) return true
+        val ttl = if (now - sw < SWITCH_WINDOW_MS) SWITCH_CACHE_MS else CACHE_MS
+        return now - lastFetch > ttl
+    }
+
+    private fun refreshIfStale() { if (stale()) refresh() }
+
     @JvmStatic
     fun init() {
-        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> if (System.currentTimeMillis() - lastFetch > CACHE_MS) refresh() }
+        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> refreshIfStale() }
     }
 
     @JvmStatic
     fun isPaulDungeonBonusActive(): Boolean {
-        if (System.currentTimeMillis() - lastFetch > CACHE_MS) refresh()
+        refreshIfStale()
         return paulDungeonBonus
+    }
+
+    // Diana as mayor or minister with Mythological Ritual
+    @JvmStatic
+    fun isDianaRitualActive(): Boolean {
+        refreshIfStale()
+        return dianaRitual
     }
 
     @JvmStatic
     fun mayorLine(): String? {
-        if (System.currentTimeMillis() - lastFetch > CACHE_MS) refresh()
+        refreshIfStale()
         return mayorLine
     }
 
@@ -61,6 +92,7 @@ object MayorApi {
                 FishDiag.check(resp.statusCode() == 200, "MayorApi.1") { "election API returned HTTP ${resp.statusCode()}" }
                 val root = JsonParser.parseString(resp.body()).asJsonObject
                 paulDungeonBonus = parsePaul(root)
+                dianaRitual = hasPerk(root, "diana", "mythological ritual")
                 mayorLine = parseMayorLine(root)
                 lastFetch = System.currentTimeMillis()
             } catch (e: Exception) {
@@ -99,6 +131,17 @@ object MayorApi {
             }
         }
         return false
+    }
+
+    private fun hasPerk(root: JsonObject, key: String, perk: String): Boolean {
+        val mayor = root.get("mayor")?.takeIf { it.isJsonObject }?.asJsonObject ?: return false
+        if (key.equals(mayor.get("key")?.asString, ignoreCase = true)) {
+            val perks = mayor.get("perks")?.takeIf { it.isJsonArray }?.asJsonArray ?: return false
+            return perks.any { runCatching { it.asJsonObject.get("name").asString }.getOrNull()?.lowercase()?.contains(perk) == true }
+        }
+        val minister = mayor.get("minister")?.takeIf { it.isJsonObject }?.asJsonObject ?: return false
+        if (!key.equals(minister.get("key")?.asString, ignoreCase = true)) return false
+        return minister.get("perk")?.takeIf { it.isJsonObject }?.asJsonObject?.get("name")?.asString?.lowercase()?.contains(perk) == true
     }
 
     private fun hasEzpz(perks: com.google.gson.JsonArray?): Boolean {
