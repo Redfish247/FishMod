@@ -38,6 +38,9 @@ object ItemsDb {
     }
 
     @JvmStatic
+    fun allItems(): Collection<JsonObject> = items.values
+
+    @JvmStatic
     fun initAsync() = ensureLoaded()
 
     @JvmStatic
