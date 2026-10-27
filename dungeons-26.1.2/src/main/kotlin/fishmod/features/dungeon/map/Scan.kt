@@ -26,6 +26,9 @@ object Scan {
     @JvmField
     val rooms: MutableSet<Room> = Collections.synchronizedSet(LinkedHashSet())
 
+    // unknown core hashes already reported this run
+    private val missedCores = HashSet<Int>()
+
     @JvmField
     val doors: MutableList<Door> = Collections.synchronizedList(ArrayList())
 
@@ -89,6 +92,7 @@ object Scan {
     @JvmStatic
     fun reset() {
         rooms.clear()
+        missedCores.clear()
         doors.clear()
         roomsList = newRoomsList()
         loadedAllRooms = false
@@ -247,6 +251,7 @@ object Scan {
                         "§b[roomCore] §7cell ($x,$z) §fhash=§e$coreHash §7-> §f${rd?.name ?: "§cUNKNOWN"}"))
                 }
                 if (rd == null) {
+                    if (!missedCores.add(coreHash)) continue
                     FishDiag.fail("Scan.5", "no room data for core hash=$coreHash cell=($x,$z) height=$height roomsLoaded=${RoomData.isLoaded()}")
                     continue
                 }
