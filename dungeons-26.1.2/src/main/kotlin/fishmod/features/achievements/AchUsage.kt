@@ -18,10 +18,6 @@ object AchUsage {
     @Volatile private var snapshot: Map<String, String>? = null
 
     fun init() {
-        markDay()
-        val ver = FabricLoader.getInstance().getModContainer("fishmod-dungeons").map { it.metadata.version.friendlyString }.orElse("")
-        if (Regex("(?i)(pre|beta|alpha|rc|dev)").containsMatchIn(ver.substringBefore('-' + "26."))) AchStore.max("fm.prerelease", 1)
-        if (AchStore.data.verSeen != ver) { AchStore.data.verSeen = ver; AchStore.data.updateDay = LocalDate.now().toString(); AchStore.changed() }
         IoExecutor.execute { snapshot = readConfig() }
         ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
             if (screen is fishmod.features.FishModScreen) {
@@ -29,6 +25,14 @@ object AchUsage {
                 if (Minecraft.getInstance().player?.isInWater == true) AchStore.max("secret.waterGui", 1)
             }
         }
+    }
+
+    // Runs once a player's achievement file is loaded
+    fun onBind() {
+        markDay()
+        val ver = FabricLoader.getInstance().getModContainer("fishmod-dungeons").map { it.metadata.version.friendlyString }.orElse("")
+        if (Regex("(?i)(pre|beta|alpha|rc|dev)").containsMatchIn(ver.substringBefore('-' + "26."))) AchStore.max("fm.prerelease", 1)
+        if (AchStore.data.verSeen != ver) { AchStore.data.verSeen = ver; AchStore.data.updateDay = LocalDate.now().toString(); AchStore.changed() }
     }
 
     private fun markDay() {

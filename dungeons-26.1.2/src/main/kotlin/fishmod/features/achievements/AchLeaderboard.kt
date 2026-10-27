@@ -92,7 +92,8 @@ object AchLeaderboard {
     fun submit(manual: Boolean) {
         val mc = Minecraft.getInstance()
         val player = mc.player ?: return
-        if (submitting) return
+        // Never submit progress loaded for another account (copied config folders)
+        if (submitting || !AchStore.ownedBy(uuid())) return
         submitting = true
         lastSubmit = System.currentTimeMillis()
         val k = key()

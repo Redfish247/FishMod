@@ -31,6 +31,7 @@ object AchEngine {
         AchLeaderboard.init()
         AchPopup.init()
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
+            if (mc.player != null) FishDiag.guard("AchEngine.2", "achievement owner bind") { AchStore.bind() }
             if (!AchSettings.achEnabled) return@register
             FishDiag.guard("AchEngine.1", "achievement tick") {
                 AchHooks.onTick()
