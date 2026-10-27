@@ -77,7 +77,7 @@ object AchHooks {
         val i = s.indexOf("$me:")
         if (i < 0 || !HI_FISH.containsMatchIn(s.substring(i + me.length + 1))) return
         if (s.substring(0, i).any { it == ':' }) return
-        val here = mc.connection?.onlinePlayers?.any { it.profile.name.lowercase() in FISH_NAMES } ?: false
+        val here = fishmod.utils.TabListCache.entries.any { it.info.profile.name.lowercase() in FISH_NAMES }
         if (here) AchStore.max("hifish.said", 1)
     }
 

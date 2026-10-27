@@ -57,7 +57,7 @@ object RemoteSync {
 
     private fun tabSize(): Int {
         val mc = Minecraft.getInstance()
-        return if (mc.connection == null) 0 else mc.connection!!.onlinePlayers.size
+        return if (mc.connection == null) 0 else fishmod.utils.TabListCache.entries.size
     }
 
     @JvmStatic
@@ -86,8 +86,8 @@ object RemoteSync {
         val names = HashMap<String, String>()
         if (selfName != null && selfName.isNotEmpty()) names[selfName] = selfUuid
         val uuidToName = HashMap<String, String>()
-        for (entry in mc.connection!!.onlinePlayers) {
-            val gp = entry.profile ?: continue
+        for (te in fishmod.utils.TabListCache.entries) {
+            val gp = te.info.profile ?: continue
             if (gp.id() == null) continue
             val name = gp.name()
             if (name == null || name.isEmpty()) continue
