@@ -67,15 +67,16 @@ object TerminalTracker {
     fun init() {
         Events.ON_LOCATION_CHANGE.register { _ -> clear(); false }
         Events.ON_PHASE_CHANGE.register {
-            if (Phase.inTerminals() && viewSection == 0) {
+            // Fresh state each P3; leftovers from a run without a location change ate S1
+            if (Phase.inTerminals()) {
+                clear()
                 viewSection = 1
-                starts.putIfAbsent(1, System.currentTimeMillis())
+                starts[1] = System.currentTimeMillis()
             }
             false
         }
         Events.ON_SECTION_CHANGE.register {
-            if (viewSection == 0) viewSection = Section.getSection().coerceIn(1, MAX_SECTION)
-            else viewSection = minOf(viewSection + 1, MAX_SECTION)
+            viewSection = Section.getSection().coerceIn(1, MAX_SECTION)
             starts.putIfAbsent(viewSection, System.currentTimeMillis())
             false
         }
@@ -105,8 +106,10 @@ object TerminalTracker {
             }
             if (best != 0) return best
         }
-        return if (viewSection != 0) viewSection else Section.getSection()
+        return currentSection()
     }
+
+    private fun currentSection(): Int = Section.getSection().takeIf { it in 1..MAX_SECTION } ?: viewSection
 
     private fun record(name: String, objective: String) {
         val pos = Minecraft.getInstance().level?.players()?.firstOrNull { it.gameProfile.name == name }?.position()
@@ -159,7 +162,7 @@ object TerminalTracker {
 
     private fun renderInner(component: HUDComponent, context: GuiGraphicsExtractor) {
         val font = Minecraft.getInstance().font ?: return
-        val cur = (if (viewSection != 0) viewSection else Section.getSection()).coerceIn(1, MAX_SECTION)
+        val cur = currentSection().coerceIn(1, MAX_SECTION)
         val lines = ArrayList<Line>()
         for (s in (if (showAllSections) (1..cur).toList() else listOf(cur))) {
             val list = slots.getOrPut(s) { layout(s) }
