@@ -86,7 +86,7 @@ object CroesusProfit {
         for (i in 0 until n) {
             val s = screen.menu.slots[i]
             val stack = s.item
-            if (stack.isEmpty || !stack.`is`(Items.PLAYER_HEAD)) continue
+            if (stack.isEmpty) continue
             val lore = stack.get(DataComponents.LORE)?.lines()?.map { COLOR.replace(it.string, "") } ?: continue
             val color = when {
                 lore.any { it.contains("No more Chests to open") } -> FishSettings.croesusDoneColor
