@@ -44,6 +44,7 @@ object AchApiSync {
             val pid = profile?.get("profile_id")?.asString
             mc.execute {
                 running = false
+                if (!AchStore.ownedBy(uuid)) return@execute
                 if (member == null) { if (manual) { FishMsg.send("§cAchievement sync failed (API unreachable or no profile)."); AchLeaderboard.submit(true) }; return@execute }
                 val before = AchStore.data.unlocked.size
                 try { apply(member) } catch (t: Throwable) { fishmod.utils.debug.FishDiag.fail("AchApiSync.1", "apply profile failed", t) }
@@ -60,6 +61,7 @@ object AchApiSync {
     private fun extras(uuid: String, pid: String?, member: JsonObject) {
         val mc = Minecraft.getInstance()
         fun land(f: () -> Unit) = mc.execute {
+            if (!AchStore.ownedBy(uuid)) return@execute
             try { f() } catch (t: Throwable) { fishmod.utils.debug.FishDiag.fail("AchApiSync.2", "extra endpoint apply failed", t) }
             AchStore.changed(); AchEngine.evaluate()
         }
