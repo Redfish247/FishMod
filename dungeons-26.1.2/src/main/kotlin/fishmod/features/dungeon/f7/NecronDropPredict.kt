@@ -15,7 +15,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import kotlin.math.hypot
-import kotlin.math.sqrt
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import fishmod.utils.Misc
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
@@ -23,11 +22,11 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.network.chat.Component
 
-// Necron's drag pulls you ~DRAG_LEN blocks (3D) along the direction of its first ticks (2026-10-26 runs: 56-59 blocks).
+// Necron's drag pulls you ~DRAG_LEN blocks horizontally along the direction of its first ticks (2026-10-26 runs: 55.5-58.7, any start height).
 object NecronDropPredict {
 
     private const val DRAG_TICKS = 50
-    private const val DRAG_LEN = 58.0
+    private const val DRAG_LEN = 57.0
     private const val START_DZ = 0.9
     private const val TARGET_X_MIN = 47.5
     private const val TARGET_X_MAX = 63.5
@@ -151,13 +150,11 @@ object NecronDropPredict {
         // Show a guess from the first pulled tick, refine it until LOCK_DIST blocks.
         val early = hypot(dx, dz) < LOCK_DIST
         if (dz < 0.5) { start = null; landing = null; return }
-        val dy = pos.y - s.y
-        val k = DRAG_LEN / sqrt(dx * dx + dy * dy + dz * dz)
         // The pull aims at a random point in the target box; snap the measured line into the box, then stop short or at the target.
         val aimX = (s.x + dx / dz * (TARGET_Z - s.z)).coerceIn(TARGET_X_MIN, TARGET_X_MAX)
         val aimDx = aimX - s.x
         val aimDz = TARGET_Z - s.z
-        val reach = minOf(hypot(dx, dz) * k, hypot(aimDx, aimDz))
+        val reach = minOf(DRAG_LEN,hypot(aimDx, aimDz))
         val ex = s.x + aimDx / hypot(aimDx, aimDz) * reach
         val ez = s.z + aimDz / hypot(aimDx, aimDz) * reach
         // Height follows how far along the line to the target the pull gets (y 70 only if it reaches).
