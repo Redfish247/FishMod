@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.map
 
+import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
 import net.minecraft.world.level.Level
@@ -62,7 +63,7 @@ object DungeonState {
             }
         }
 
-        val s = stripColors(msg)
+        val s = TextStrip.plainAmp(msg)
         if (WITHER_KEY_CLAIM.matcher(s).matches() || s == "A Wither Key was picked up!") {
             witherKeys++
         } else if (WITHER_DOOR_OPEN.matcher(s).matches()) {
@@ -75,7 +76,6 @@ object DungeonState {
         }
     }
 
-    private fun stripColors(s: String): String = s.replace(MAP_COLOR_CODES, "")
 
     private fun parseRomanFloor(s0: String?): Int {
         if (s0 == null) return -1
@@ -127,12 +127,10 @@ object DungeonState {
 
     private fun computeInDungeon(mc: Minecraft): Boolean {
         try {
-            val conn = mc.connection
-            if (mc.player == null || conn == null) return false
+            if (mc.player == null || mc.connection == null) return false
 
-            for (info in conn.onlinePlayers) {
-                val display = info.tabListDisplayName?.string ?: info.profile.name
-                if (stripColors(display).contains("Dungeon: Catacombs")) return true
+            for (e in fishmod.utils.TabListCache.entries) {
+                if (TextStrip.plainAmp(e.stripped).contains("Dungeon: Catacombs")) return true
             }
         } catch (e: Exception) {
             FishDiag.fail("DungeonState.3", "tab list dungeon check failed", e)
@@ -166,13 +164,9 @@ object DungeonState {
         sidebarFloor = -1
         sidebarMaster = false
         if (level == null) return
-        val sb = level.scoreboard
-        val sidebar = sb.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return
-        for (entry in sb.listPlayerScores(sidebar)) {
-            val owner = entry.owner()
-            val team = sb.getPlayersTeam(owner)
-            val raw = if (team != null) team.playerPrefix.string + team.playerSuffix.string else owner
-            val m = SIDEBAR_FLOOR.matcher(stripColors(raw))
+        for (entry in fishmod.utils.SidebarCache.entries) {
+            val team = entry.team
+            val m = SIDEBAR_FLOOR.matcher(TextStrip.plainAmp(entry.raw))
             if (m.find()) {
                 val f = m.group(2)
                 sidebarFloor = if (f == "E") 0 else FishDiag.notNull(f.toIntOrNull(), "DungeonState.4") { "sidebar floor not numeric: '$f'" } ?: 1

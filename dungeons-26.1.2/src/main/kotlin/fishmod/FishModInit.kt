@@ -401,6 +401,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.8", "fishmod.utils.InstallHeartbeat.init() failed") { fishmod.utils.InstallHeartbeat.init() }
         FishDiag.guard("FishModInit.9", "fishmod.utils.update.UpdateManager.init() failed") { fishmod.utils.update.UpdateManager.init() }
         FishDiag.guard("FishModInit.10", "fishmod.utils.TabListCache.register() failed") { fishmod.utils.TabListCache.register() }
+        FishDiag.guard("FishModInit.205", "fishmod.utils.SidebarCache.register() failed") { fishmod.utils.SidebarCache.register() }
 
         FishDiag.guard("FishModInit.11", "LagTracker.init() failed") { LagTracker.init() }
         FishDiag.guard("FishModInit.12", "SessionStats.init() failed") { SessionStats.init() }
@@ -947,9 +948,9 @@ class FishModInit : ClientModInitializer {
                         }
                         Misc.addChatMessage(Component.literal("§b--- Tab entries (non-empty) ---"))
                         var n = 0
-                        for (e: PlayerInfo in mc.connection!!.onlinePlayers) {
-                            if (e.tabListDisplayName == null) continue
-                            val s = e.tabListDisplayName!!.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()
+                        for (te in fishmod.utils.TabListCache.entries) {
+                            if (te.info.tabListDisplayName == null) continue
+                            val s = te.stripped.trim()
                             if (s.isEmpty()) continue
                             if (s.lowercase().contains("pet") || s.contains("Lvl") || s.contains("XP") || s.contains("/")) {
                                 Misc.addChatMessage(Component.literal("§7$s"))
@@ -997,13 +998,12 @@ class FishModInit : ClientModInitializer {
                         } else {
                             var total = 0
                             var nullName = 0
-                            for (e: PlayerInfo in handler.onlinePlayers) {
+                            for (te in fishmod.utils.TabListCache.entries) {
                                 total++
-                                if (e.tabListDisplayName == null) {
+                                if (te.info.tabListDisplayName == null) {
                                     nullName++; continue
                                 }
-                                val raw = e.tabListDisplayName!!.string
-                                val clean = raw.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()
+                                val clean = te.stripped.trim()
                                 if (clean.isNotEmpty())
                                     Misc.addChatMessage(Component.literal("§8TAB: §7$clean"))
                             }
@@ -1151,8 +1151,8 @@ class FishModInit : ClientModInitializer {
                 if (mc.connection != null) {
                     val rem = b.remaining.lowercase()
                     val seen = HashSet<String>()
-                    for (e: PlayerInfo in mc.connection!!.onlinePlayers) {
-                        val n = e.profile.name
+                    for (te in fishmod.utils.TabListCache.entries) {
+                        val n = te.info.profile.name
                         if (n.isBlank() || !seen.add(n.lowercase())) continue
                         if (n.lowercase().startsWith(rem)) b.suggest(n)
                     }

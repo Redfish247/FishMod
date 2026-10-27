@@ -7,7 +7,6 @@ import fishmod.utils.Location
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.data.ItemUtil
-import fishmod.utils.data.ScoreboardUtil
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.DrawEvents
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
@@ -177,6 +176,18 @@ object CooldownOverlay {
         }
     }
 
+    // class level from own tab entry "(Mage XL)", 0 if missing
+    private fun currentClassLevel(myName: String): Int {
+        val e = fishmod.utils.TabListCache.entries.firstOrNull { it.info.profile.name == myName } ?: return 0
+        val display = e.info.tabListDisplayName?.string ?: myName
+        val start = display.indexOf('(')
+        val end = display.indexOf(')')
+        if (start == -1 || end == -1 || end < start) return 0
+        val parts = display.substring(start + 1, end).trim().split(" ")
+        if (parts.size != 2) return 0
+        return fishmod.utils.data.Roman.toInt(parts[1])
+    }
+
     private fun onAbilityFired() {
         try {
             onAbilityFiredInner()
@@ -203,9 +214,9 @@ object CooldownOverlay {
         var finalCdResult: Double
         val inDungeon = Location.inDungeon()
 
-        for (entry in mc.connection!!.onlinePlayers) {
-            if (entry.tabListDisplayName != null) {
-                val line = entry.tabListDisplayName!!.string
+        for (entry in fishmod.utils.TabListCache.entries) {
+            if (entry.info.tabListDisplayName != null) {
+                val line = entry.info.tabListDisplayName!!.string
 
                 if (line.contains(p.name.string) && line.contains("Mage")) {
                     isMage = true
@@ -214,7 +225,7 @@ object CooldownOverlay {
                         mageLvl = fishmod.utils.data.Roman.toInt(roman)
                     } catch (e: Exception) {
                         FishDiag.fail("CooldownOverlay.5", "mage level not parsed from tab line '${line.take(80)}'", e)
-                        mageLvl = ScoreboardUtil.getCurrentClassLevel()
+                        mageLvl = currentClassLevel(p.name.string)
                     }
                 }
             }
