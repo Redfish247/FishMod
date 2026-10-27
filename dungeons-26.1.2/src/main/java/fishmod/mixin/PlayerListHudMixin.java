@@ -18,24 +18,15 @@ public class PlayerListHudMixin {
     @Shadow private Component header;
     @Shadow private Component footer;
 
-    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedRenderError = false;
-
     @Inject(method = "extractRenderState", at = @At("HEAD"), cancellable = true)
     private void fishmod$compactTab(GuiGraphicsExtractor context, int scaledWindowWidth, Scoreboard scoreboard,
                                     Objective objective, CallbackInfo ci) {
         if (!FishSettings.compactTabEnabled) return;
         if (!CompactTab.shouldRender()) return;
-        try {
-            CompactTab.render(context, scaledWindowWidth,
-                    header == null ? "" : header.getString(),
-                    footer == null ? "" : footer.getString());
-        } catch (Exception e) {
-            fishmod.utils.debug.FishDiag.fail("PlayerListHudMixin.1", "compact tab render failed", e);
-            if (!fishmod$loggedRenderError) {
-                fishmod$loggedRenderError = true;
-                fishmod.utils.debug.Debug.LOGGER.error("[FishMod] CompactTab.render failed; tab suppressed (logged once)", e);
-            }
-        }
+        fishmod.utils.debug.MixinGuard.run("PlayerListHudMixin.1", "compact tab render failed",
+                () -> CompactTab.render(context, scaledWindowWidth,
+                        header == null ? "" : header.getString(),
+                        footer == null ? "" : footer.getString()));
         ci.cancel();
     }
 }
