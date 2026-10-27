@@ -13,7 +13,8 @@ import net.minecraft.world.item.Items
 object CroesusProfit {
 
     private val PREVIEW_TITLE = Regex("^(?:Master )?Catacombs - .*")
-    private val COST = Regex("([\\d,]+) Coins?")
+    private val CROESUS_TITLE = Regex("(?:\\(\\d+/\\d+\\) )?Croesus")
+    private val COST =Regex("([\\d,]+) Coins?")
     private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     private class Chest(val slot: Int, val name: String, val value: Double, val cost: Double) {
@@ -41,7 +42,7 @@ object CroesusProfit {
 
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, screen: AbstractContainerScreen<*>) {
-        if (FishSettings.croesusHighlightEnabled && screen.title.string == "Croesus") {
+        if (FishSettings.croesusHighlightEnabled && CROESUS_TITLE.matches(screen.title.string)) {
             try { highlightRuns(ctx, screen) } catch (e: Exception) { FishDiag.fail("CroesusProfit.4", "croesus run highlight failed", e) }
             return
         }
@@ -87,19 +88,27 @@ object CroesusProfit {
             val s = screen.menu.slots[i]
             val stack = s.item
             if (stack.isEmpty) continue
-            val lore = stack.get(DataComponents.LORE)?.lines()?.map { COLOR.replace(it.string, "") } ?: continue
-            if (lore.none { it.contains("Completed:") }) continue
-            // used modifiers drop out of the "Available Modifiers" list
+            val raw = stack.get(DataComponents.LORE)?.lines() ?: continue
+            val lore = raw.map { COLOR.replace(it.string, "") }
+            // SkyHanni CroesusChestTracker: used kismet is struck through
+            val kismetUsed = raw.any { l -> l.string.contains("Kismet Feather") && strike(l) }
             val color = when {
-                lore.none { it.contains("Dungeon Chest Key") } -> FishSettings.croesusKeyColor
-                lore.none { it.contains("Kismet Feather") } -> FishSettings.croesusKismetColor
-                lore.any { it.contains("No Chests Opened") } -> FishSettings.croesusUnopenedColor
+                lore.any { it.contains("No more chests to open!", true) } -> FishSettings.croesusKeyColor
+                kismetUsed -> FishSettings.croesusKismetColor
+                lore.any { it.contains("No chests opened yet!", true) } -> FishSettings.croesusUnopenedColor
                 else -> continue
             }
             val x = acc.bgX + s.x
             val y = acc.bgY + s.y
             ctx.fill(x, y, x + 16, y + 16, color)
         }
+    }
+
+    private fun strike(c: net.minecraft.network.chat.Component): Boolean {
+        if (c.string.contains("§m")) return true
+        var hit = false
+        c.visit({ style, s -> if (style.isStrikethrough && s.contains("Kismet")) hit = true; java.util.Optional.empty<Unit>() }, net.minecraft.network.chat.Style.EMPTY)
+        return hit
     }
 
     private fun scan(screen: AbstractContainerScreen<*>) {
