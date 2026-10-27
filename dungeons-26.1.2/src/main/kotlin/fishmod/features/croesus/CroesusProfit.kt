@@ -41,6 +41,10 @@ object CroesusProfit {
 
     @JvmStatic
     fun render(ctx: GuiGraphicsExtractor, screen: AbstractContainerScreen<*>) {
+        if (FishSettings.croesusHighlightEnabled && screen.title.string == "Croesus") {
+            try { highlightRuns(ctx, screen) } catch (e: Exception) { FishDiag.fail("CroesusProfit.4", "croesus run highlight failed", e) }
+            return
+        }
         if (!on(screen)) {
             if (chests.isNotEmpty()) { chests = emptyList(); bestSlots = emptyList() }
             return
@@ -72,6 +76,27 @@ object CroesusProfit {
         }
         } catch (e: Exception) {
             FishDiag.fail("CroesusProfit.2", "croesus profit render failed (${chests.size} chests)", e)
+        }
+    }
+
+    // SkyHanni-style run state from the Croesus run item lore
+    private fun highlightRuns(ctx: GuiGraphicsExtractor, screen: AbstractContainerScreen<*>) {
+        val acc = screen as HandledScreenAccessor
+        val n = screen.menu.slots.size - 36
+        for (i in 0 until n) {
+            val s = screen.menu.slots[i]
+            val stack = s.item
+            if (stack.isEmpty || !stack.`is`(Items.PLAYER_HEAD)) continue
+            val lore = stack.get(DataComponents.LORE)?.lines()?.map { COLOR.replace(it.string, "") } ?: continue
+            val color = when {
+                lore.any { it.contains("No more Chests to open") } -> FishSettings.croesusDoneColor
+                lore.any { it.contains("Opened Chest:") } -> FishSettings.croesusOpenedColor
+                lore.any { it.contains("No Chests Opened") } -> FishSettings.croesusUnopenedColor
+                else -> continue
+            }
+            val x = acc.bgX + s.x
+            val y = acc.bgY + s.y
+            ctx.fill(x, y, x + 16, y + 16, color)
         }
     }
 
