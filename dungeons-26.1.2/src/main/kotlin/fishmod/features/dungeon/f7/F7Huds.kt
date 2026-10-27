@@ -65,6 +65,13 @@ object F7Huds {
 
     @JvmField
     @ConfigValue
+    var necronDropLanding: HUDComponent = HUDComponent(
+        0.0, 20.0, NOTI_W, 10, 1f, "Necron Drop Lava/Platform",
+        { false }, NecronDropPredict::renderLanding, { Floor7.enableNecronDropPredict && Floor7.necronDropLavaPopup }
+    )
+
+    @JvmField
+    @ConfigValue
     var lbReleaseTimer: HUDComponent = HUDComponent(
         10.0, 104.0, TICK_W, 10, 1f, "LB Release Timer",
         { false }, StormTickTimer::renderLbReleaseTimer, { Floor7.enableTickTimers && Floor7.enableLbReleaseTimer }
@@ -166,6 +173,7 @@ object F7Huds {
         renderOne(ctx, lbReleaseTimer, StormTickTimer.displayLbReleaseTimer(), StormTickTimer::renderLbReleaseTimer, 10, 166)
         renderOne(ctx, pyTimer, StormTickTimer.displayPyTimer(), StormTickTimer::renderPyTimer, 10, 178)
         renderOne(ctx, necronDragTimer, NecronDropPredict.display(), NecronDropPredict::render, 10, 220)
+        renderOne(ctx, necronDropLanding, NecronDropPredict.displayLanding(), NecronDropPredict::renderLanding, 10, 76)
         renderOne(ctx, necronLbTimer, NecronLbTimer.display(), NecronLbTimer::render, 10, 190)
         renderOne(ctx, crystalReminder, CrystalSpawn.displayNotification(), CrystalSpawn::renderNotification, 10, 40)
         renderOne(ctx, stormCrush, PillarExplode.display(), PillarExplode::render, 10, 28)
