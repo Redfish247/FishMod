@@ -162,7 +162,7 @@ object F7Huds {
         renderOne(ctx, stormDeathTime, StormTickTimer.displayDeathTime(), StormTickTimer::renderDeathTime, 10, 130)
         renderOne(ctx, sectionProgress, SectionProgress.display(), SectionProgress::render, 10, 142)
         renderOne(ctx, Section.terminalSplits, Section.display(), Section::render, 10, 154)
-        renderOne(ctx, TerminalTracker.hud, TerminalTracker.display(), TerminalTracker::render, 10, 230)
+        renderOne(ctx, TerminalTracker.terminalTrackerHud, TerminalTracker.display(), TerminalTracker::render, 10, 230)
         renderOne(ctx, lbReleaseTimer, StormTickTimer.displayLbReleaseTimer(), StormTickTimer::renderLbReleaseTimer, 10, 166)
         renderOne(ctx, pyTimer, StormTickTimer.displayPyTimer(), StormTickTimer::renderPyTimer, 10, 178)
         renderOne(ctx, necronDragTimer, NecronDropPredict.display(), NecronDropPredict::render, 10, 220)

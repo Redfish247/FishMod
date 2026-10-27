@@ -530,7 +530,7 @@ class FishModInit : ClientModInitializer {
         FishHudEditor.register("Section Completion", fishmod.features.dungeon.f7.F7Huds.sectionCompletion)
         FishHudEditor.register("Players Leaped", fishmod.features.dungeon.f7.F7Huds.playersLeaped)
         FishHudEditor.register("Goldor Splits", fishmod.utils.dungeon.Section.terminalSplits)
-        FishHudEditor.register("Terminal Tracker", fishmod.features.dungeon.f7.TerminalTracker.hud)
+        FishHudEditor.register("Terminal Tracker", fishmod.features.dungeon.f7.TerminalTracker.terminalTrackerHud)
         FishDiag.guard("FishModInit.105", "fishmod.utils.dungeon.DungeonClass.init() failed") { fishmod.utils.dungeon.DungeonClass.init() }
         FishDiag.guard("FishModInit.106", "fishmod.features.ClassColoredBoots.init() failed") { fishmod.features.ClassColoredBoots.init() }
         FishDiag.guard("FishModInit.107", "fishmod.features.dungeon.DupeClassDetector.init() failed") { fishmod.features.dungeon.DupeClassDetector.init() }
