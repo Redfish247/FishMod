@@ -120,13 +120,9 @@ object Mining {
     }
 
     private fun sidebarLines(mc: Minecraft): List<String> {
-        val level = mc.level ?: return emptyList()
-        val sb = level.scoreboard
-        val obj = sb.getDisplayObjective(net.minecraft.world.scores.DisplaySlot.SIDEBAR) ?: return emptyList()
-        return sb.listPlayerScores(obj).sortedByDescending { it.value() }.map { e ->
-            val team = sb.getPlayersTeam(e.owner())
-            val raw = if (team != null) team.playerPrefix.string + team.playerSuffix.string else e.owner()
-            raw.replace(Constants.STRIP_COLOR_REGEX, "").filterNot { it.isSurrogate() }.trim()  // Hypixel pads lines with emoji
+        if (mc.level == null) return emptyList()
+        return fishmod.utils.SidebarCache.entries.map { e ->
+            e.plain.filterNot { it.isSurrogate() }.trim()  // Hypixel pads lines with emoji
         }
     }
 

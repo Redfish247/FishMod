@@ -213,13 +213,9 @@ object CrownOfAvarice {
     }
 
     private fun readPurse(mc: Minecraft): Long {
-        val sb = mc.level?.scoreboard ?: return -1L
-        val obj = sb.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return -1L
-        for (entry in sb.listPlayerScores(obj)) {
-            val team = sb.getPlayersTeam(entry.owner())
-            val raw = (if (team != null) team.playerPrefix.string + team.playerSuffix.string else entry.owner())
-                .replace(Constants.STRIP_COLOR_REGEX, "")
-            PURSE.find(raw)?.let { return it.groupValues[1].replace(",", "").toLongOrNull() ?: -1L }
+        if (mc.level == null) return -1L
+        for (entry in fishmod.utils.SidebarCache.entries) {
+            PURSE.find(entry.plain)?.let { return it.groupValues[1].replace(",", "").toLongOrNull() ?: -1L }
         }
         return -1L
     }
