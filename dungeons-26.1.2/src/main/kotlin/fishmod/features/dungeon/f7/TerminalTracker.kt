@@ -59,7 +59,7 @@ object TerminalTracker {
     @ConfigValue @JvmField var headerColor: Int = 0xFFFFFF55.toInt()
 
     @ConfigValue @JvmField
-    var hud: HUDComponent = HUDComponent(
+    var terminalTrackerHud: HUDComponent = HUDComponent(
         10.0, 230.0, 150, 80, 1f, "Terminal Tracker", { false }, TerminalTracker::render, { terminalTrackerEnabled }
     )
 
