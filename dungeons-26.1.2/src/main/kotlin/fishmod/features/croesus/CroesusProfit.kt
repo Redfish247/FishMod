@@ -92,13 +92,14 @@ object CroesusProfit {
             val lore = raw.map { COLOR.replace(it.string, "") }
             // SkyHanni CroesusChestTracker: used kismet is struck through
             val kismetUsed = raw.any { l -> l.string.contains("Kismet Feather") && strike(l) }
-            val color = when {
+            val rgb = when {
                 lore.any { it.contains("No more chests to open!", true) } -> continue
-                kismetUsed -> FishSettings.croesusKismetColor
                 lore.any { it.contains("No chests opened yet!", true) } -> FishSettings.croesusUnopenedColor
+                !kismetUsed && lore.any { it.contains("Kismet Feather") } -> FishSettings.croesusKismetColor
                 lore.any { Regex("Opened [cC]hest:").containsMatchIn(it) } -> FishSettings.croesusKeyColor
                 else -> continue
             }
+            val color = (rgb and 0xFFFFFF) or ((FishSettings.croesusHighlightOpacity.coerceIn(0, 100) * 255 / 100) shl 24)
             val x = acc.bgX + s.x
             val y = acc.bgY + s.y
             ctx.fill(x, y, x + 16, y + 16, color)
