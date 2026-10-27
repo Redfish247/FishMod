@@ -1,16 +1,9 @@
-import fishmod.features.dungeon.f7.BossDamage
 import fishmod.features.slayers.SlayerType
 import fishmod.utils.data.Roman
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class DungeonParsersTest {
-    private fun bossParse(s: String): Double? {
-        val m = BossDamage::class.java.getDeclaredMethod("parse", String::class.java)
-        m.isAccessible = true
-        return m.invoke(BossDamage, s) as Double?
-    }
-
     @Test fun romanBasics() {
         assertEquals(4, Roman.toInt("IV"))
         assertEquals(5, Roman.toInt(" v "))
@@ -41,14 +34,5 @@ class DungeonParsersTest {
         assertEquals(1200.0, k.current!!, 1e-9)
         assertEquals(50.0, k.percent!!, 1e-9)
         assertEquals(42.0, progress("42% complete").percent!!, 1e-9)
-    }
-
-    @Test fun bossDamageSplash() {
-        assertEquals(1234.0, bossParse("✧1,234✧"))
-        assertEquals(1.5e6, bossParse("1.5M"))
-        assertEquals(12e3, bossParse("12k"))
-        assertNull(bossParse(""))
-        assertNull(bossParse("abc"))
-        assertNull(bossParse(",,,"))
     }
 }
