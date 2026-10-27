@@ -13,9 +13,7 @@ import com.google.gson.JsonParser;
 import fishmod.pv.BetterPV;
 import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import fishmod.utils.Http;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,12 +30,7 @@ public final class SkyHelperPriceCache {
 	);
 	private static final Duration TIMEOUT = Duration.ofSeconds(20);
 	private static final long REFRESH_MINUTES = 30L;
-	private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
-	private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor(r -> {
-		Thread t = new Thread(r, "BetterPV-SkyHelperPrices");
-		t.setDaemon(true);
-		return t;
-	});
+	private static final ScheduledExecutorService EXECUTOR = fishmod.pv.api.PvExecutors.SCHEDULER;
 
 	private static volatile Map<String, Double> prices = Map.of();
 	private static volatile boolean ready;
@@ -70,12 +63,7 @@ public final class SkyHelperPriceCache {
 	}
 
 	private static void refresh() throws IOException, InterruptedException {
-		HttpRequest request = HttpRequest.newBuilder(PRICES_URI).timeout(TIMEOUT).GET().build();
-		HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
-		if (response.statusCode() < 200 || response.statusCode() >= 300) {
-			throw new IOException("SkyHelper prices HTTP " + response.statusCode());
-		}
-		JsonElement root = JsonParser.parseString(response.body());
+		JsonElement root = Http.getJson(PRICES_URI.toString(), TIMEOUT);
 		if (!root.isJsonObject()) {
 			throw new IOException("SkyHelper prices not an object");
 		}

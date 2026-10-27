@@ -61,20 +61,9 @@ public final class NeuRepoCache {
 	private static final long REFRESH_HOURS = 24L;
 	private static final String UPDATED_AT = "updated-at.txt";
 
-	private static final HttpClient HTTP = HttpClient.newBuilder()
-		.connectTimeout(Duration.ofSeconds(10))
-		.followRedirects(HttpClient.Redirect.ALWAYS)
-		.build();
-	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2, r -> {
-		Thread t = new Thread(r, "BetterPV-NeuRepo");
-		t.setDaemon(true);
-		return t;
-	});
-	private static final ScheduledExecutorService SCHEDULER = Executors.newSingleThreadScheduledExecutor(r -> {
-		Thread t = new Thread(r, "BetterPV-NeuRepoRefresh");
-		t.setDaemon(true);
-		return t;
-	});
+	private static final HttpClient HTTP = fishmod.utils.Http.REDIRECT;
+	private static final ExecutorService EXECUTOR = fishmod.pv.api.PvExecutors.IO;
+	private static final ScheduledExecutorService SCHEDULER = fishmod.pv.api.PvExecutors.SCHEDULER;
 
 	private static final Map<String, JsonObject> ITEMS = new ConcurrentHashMap<>();
 	private static final Map<String, Boolean> MISS = new ConcurrentHashMap<>();

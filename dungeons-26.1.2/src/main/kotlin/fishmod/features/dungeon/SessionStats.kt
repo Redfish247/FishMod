@@ -23,7 +23,6 @@ import fishmod.utils.debug.FishDiag
 
 object SessionStats {
 
-    private val ioExecutor = fishmod.utils.IoExecutor
 
     private val DEATH_PAT = Pattern.compile("☠ \\S+ (?:was|were) killed by|☠ \\S+ (?:died|quit)")
 
@@ -256,7 +255,7 @@ object SessionStats {
         d.autoPaused = autoPaused
         d.lastActivityMs = lastActivityMs
         val json = GSON.toJson(d)
-        ioExecutor.execute {
+        fishmod.utils.IoExecutor.execute {
             try {
                 Files.createDirectories(SAVE_FILE.parent)
                 Files.writeString(SAVE_FILE, json)

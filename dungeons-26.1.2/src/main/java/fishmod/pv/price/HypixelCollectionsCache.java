@@ -38,11 +38,7 @@ public final class HypixelCollectionsCache {
 	private static final AtomicBoolean REFRESHING = new AtomicBoolean();
 	private static final AtomicBoolean RETRY_PENDING = new AtomicBoolean();
 	private static final HttpClient HTTP = HypixelApiClient.http();
-	private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor(r -> {
-		Thread t = new Thread(r, "BetterPV-HypixelCollections");
-		t.setDaemon(true);
-		return t;
-	});
+	private static final ScheduledExecutorService EXECUTOR = fishmod.pv.api.PvExecutors.SCHEDULER;
 
 	public record Tier(int tier, long amountRequired, List<String> unlocks) {
 		public Tier {
