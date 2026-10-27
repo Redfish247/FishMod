@@ -94,6 +94,7 @@ object CroesusProfit {
             val kismetUsed = raw.any { l -> l.string.contains("Kismet Feather") && strike(l) }
             val rgb = when {
                 lore.any { it.contains("No more chests to open!", true) } -> continue
+                lore.any { Regex("Opened [cC]hest:").containsMatchIn(it) } -> FishSettings.croesusKeyColor
                 !kismetUsed && lore.any { it.contains("Kismet Feather") } -> FishSettings.croesusKismetColor
                 lore.any { it.contains("No chests opened yet!", true) } -> FishSettings.croesusUnopenedColor
                 lore.any { Regex("Opened [cC]hest:").containsMatchIn(it) } -> FishSettings.croesusKeyColor
