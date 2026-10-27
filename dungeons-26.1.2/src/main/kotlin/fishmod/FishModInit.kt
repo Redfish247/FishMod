@@ -455,7 +455,6 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.55", "fishmod.features.LavaToWater.init() failed") { fishmod.features.LavaToWater.init() }
         FishDiag.guard("FishModInit.56", "fishmod.features.storage.StorageCache.init() failed") { fishmod.features.storage.StorageCache.init() }
         FishDiag.guard("FishModInit.57", "fishmod.features.dungeon.ExtraStats.init() failed") { fishmod.features.dungeon.ExtraStats.init() }
-        FishDiag.guard("FishModInit.57b", "BossDamage.init() failed") { fishmod.features.dungeon.f7.BossDamage.init() }
         FishDiag.guard("FishModInit.58", "fishmod.features.EtherwarpHelper.init() failed") { fishmod.features.EtherwarpHelper.init() }
         FishDiag.guard("FishModInit.59", "fishmod.features.dungeon.DungeonAbilities.init() failed") { fishmod.features.dungeon.DungeonAbilities.init() }
         FishDiag.guard("FishModInit.60", "fishmod.features.dungeon.f6.TerracottaTimer.init() failed") { fishmod.features.dungeon.f6.TerracottaTimer.init() }
@@ -666,7 +665,6 @@ class FishModInit : ClientModInitializer {
                     .suggests { _, b -> (listOf("latest") + fishmod.features.dungeon.f7.TerminalTracker.replayNames()).forEach(b::suggest); b.buildFuture() }
                     .executes { ctx -> fishmod.features.dungeon.f7.TerminalTracker.replay(StringArgumentType.getString(ctx, "replay")); Constants.SUCCESS })
                 .executes { fishmod.features.dungeon.f7.TerminalTracker.replay(); Constants.SUCCESS })
-            dispatcher.register(ClientCommands.literal("bossdamagetest").executes { fishmod.features.dungeon.f7.BossDamage.test(); Constants.SUCCESS })
             for (cmd in arrayOf("pbsplits", "splitspb")) dispatcher.register(
                 ClientCommands.literal(cmd)
                     .then(ClientCommands.argument("floor", StringArgumentType.word()).executes { ctx ->

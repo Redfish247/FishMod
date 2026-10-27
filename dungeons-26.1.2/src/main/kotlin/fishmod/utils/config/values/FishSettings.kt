@@ -539,7 +539,6 @@ object FishSettings {
     @ConfigValue @JvmField var etherwarpSoundPitch: Double = 1.0
 
     @ConfigValue @JvmField var extraStatsEnabled: Boolean = false
-    @ConfigValue @JvmField var bossDamageEnabled: Boolean = false
     @ConfigValue @JvmField var extraStatsBits: Boolean = true
     @ConfigValue @JvmField var extraStatsClassExp: Boolean = true
     @ConfigValue @JvmField var extraStatsCombat: Boolean = true
