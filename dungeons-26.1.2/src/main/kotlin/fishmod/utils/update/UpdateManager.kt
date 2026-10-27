@@ -52,7 +52,7 @@ object UpdateManager {
         val assetName: String = "",
         val assetUrl: String = "",
         val assetSize: Long = 0,
-        val assetSha512: String = "",
+        val assetSha256: String = "",
     )
 
     private class State {
@@ -73,8 +73,8 @@ object UpdateManager {
     private val mcVersion: String = FabricLoader.getInstance().getModContainer("minecraft")
         .map { it.metadata.version.friendlyString }.orElse("")
     private val updaterMeta = container?.metadata?.getCustomValue("fishmod:updater")?.asObject
-    private val slug: String? = updaterMeta?.get("modrinth")?.asString?.takeIf { Regex("""^[\w.-]{2,64}$""").matches(it) }
-    val modrinthUrl: String? = slug?.let { "https://modrinth.com/mod/$it/versions" }
+    private val repo: String? = updaterMeta?.get("github")?.asString?.takeIf { Regex("""^[\w.-]{1,64}/[\w.-]{1,100}$""").matches(it) }
+    val releasesUrl: String? = repo?.let { "https://github.com/$it/releases" }
 
     private val gameDir: Path = FabricLoader.getInstance().gameDir
     private val stateFile: Path = FabricLoader.getInstance().configDir.resolve("fishmod").resolve("updater.json")
@@ -97,11 +97,11 @@ object UpdateManager {
     private var shownThisLogin = false
     private var ticksSinceJoin = 0
 
-    private val userAgent = "Redfish247/FishModDungeons/$currentVersion (modrinth updater)"
+    private val userAgent = "Redfish247/FishModDungeons/$currentVersion (github updater)"
 
     @JvmStatic
     fun init() {
-        if (slug == null) return
+        if (repo == null) return
         load()
         synchronized(lock) {
             val staged = state.stagedFile?.let(Path::of)
@@ -178,7 +178,7 @@ object UpdateManager {
         worker.execute {
             try { fetchLatest() } catch (t: Throwable) {
                 Debug.LOGGER.warn("[FishMod updater] check failed: {}", t.toString())
-                FishDiag.fail("UpdateManager.6", "update check failed slug=$slug", t)
+                FishDiag.fail("UpdateManager.6", "update check failed repo=$repo", t)
                 synchronized(lock) { state.nextCheckAt = System.currentTimeMillis() + FAILURE_BACKOFF_MS; save() }
             } finally { checking.set(false) }
         }
@@ -186,11 +186,9 @@ object UpdateManager {
 
     private fun fetchLatest() {
         val etag = synchronized(lock) { state.etag.takeIf { state.release != null } }
-        val q = { s: String -> java.net.URLEncoder.encode(s, Charsets.UTF_8) }
-        val gv = if (mcVersion.isNotEmpty()) "&game_versions=" + q("[\"$mcVersion\"]") else ""
-        val req = HttpRequest.newBuilder(URI.create("https://api.modrinth.com/v2/project/$slug/version?loaders=" + q("[\"fabric\"]") + gv))
+        val req = HttpRequest.newBuilder(URI.create("https://api.github.com/repos/$repo/releases?per_page=15"))
             .timeout(Duration.ofSeconds(15))
-            .header("Accept", "application/json")
+            .header("Accept", "application/vnd.github+json")
             .header("User-Agent", userAgent)
             .apply { if (etag != null) header("If-None-Match", etag) }
             .GET().build()
@@ -199,13 +197,14 @@ object UpdateManager {
         when (res.statusCode()) {
             200 -> {
                 val body = res.body()
-                if (!FishDiag.check(!body.isNullOrBlank(), "UpdateManager.7") { "Modrinth 200 with empty body" }) return
+                if (!FishDiag.check(!body.isNullOrBlank(), "UpdateManager.7") { "GitHub 200 with empty body" }) return
                 val parsed = JsonParser.parseString(body)
-                if (!FishDiag.check(parsed.isJsonArray, "UpdateManager.8") { "Modrinth versions JSON not an array: ${body.take(120)}" }) return
+                if (!FishDiag.check(parsed.isJsonArray, "UpdateManager.8") { "GitHub releases JSON not an array: ${body.take(120)}" }) return
+                // Newest version that ships a jar for this Minecraft version.
                 val release = parsed.asJsonArray.mapNotNull { it as? JsonObject }
-                    .filter { it.str("version_type") == "release" }
-                    .maxByOrNull { it.str("date_published") }
-                    ?.let(::parseRelease)
+                    .filter { !it.bool("draft") && !it.bool("prerelease") }
+                    .mapNotNull(::parseRelease)
+                    .maxByOrNull { SemVer.parse(it.version, mcVersion)!! }
                 synchronized(lock) {
                     state.release = release
                     state.etag = res.headers().firstValue("etag").orElse(null)
@@ -216,11 +215,11 @@ object UpdateManager {
             304 -> synchronized(lock) { state.lastCheckAt = now; state.nextCheckAt = 0; save() }
             404 -> synchronized(lock) { state.release = null; state.etag = null; state.lastCheckAt = now; save() }
             403, 429 -> {
-                FishDiag.fail("UpdateManager.9", "Modrinth rate limited HTTP ${res.statusCode()} remaining=${res.headers().firstValue("x-ratelimit-remaining").orElse("?")}")
+                FishDiag.fail("UpdateManager.9", "GitHub rate limited HTTP ${res.statusCode()} remaining=${res.headers().firstValue("x-ratelimit-remaining").orElse("?")}")
                 synchronized(lock) { state.nextCheckAt = rateLimitResetAt(res, now); save() }
             }
             else -> {
-                FishDiag.fail("UpdateManager.10", "Modrinth version check HTTP ${res.statusCode()}")
+                FishDiag.fail("UpdateManager.10", "GitHub release check HTTP ${res.statusCode()}")
                 synchronized(lock) { state.nextCheckAt = now + FAILURE_BACKOFF_MS; save() }
             }
         }
@@ -229,38 +228,35 @@ object UpdateManager {
     private fun rateLimitResetAt(res: HttpResponse<*>, now: Long): Long {
         val h = res.headers()
         h.firstValue("retry-after").orElse(null)?.toLongOrNull()?.let { return now + it.coerceIn(60, 86_400) * 1000 }
-        // Modrinth's X-Ratelimit-Reset is seconds until reset, not an epoch.
-        h.firstValue("x-ratelimit-reset").orElse(null)?.toLongOrNull()?.let { return now + it.coerceIn(60, 86_400) * 1000 }
+        // GitHub's X-RateLimit-Reset is an epoch in seconds.
+        h.firstValue("x-ratelimit-reset").orElse(null)?.toLongOrNull()?.let { return (it * 1000).coerceIn(now + 60_000, now + 86_400_000) }
         return now + FAILURE_BACKOFF_MS
     }
 
+    // Picks this MC version's jar (FishModDungeons-<ver>-<mc>.jar); the release title/tag is not trusted for the version.
     private fun parseRelease(o: JsonObject): Release? {
-        val files = o.getAsJsonArray("files")?.mapNotNull { it as? JsonObject } ?: emptyList()
-        val file = files.firstOrNull { it.bool("primary") && it.str("filename").endsWith(".jar") }
-            ?: files.firstOrNull { it.str("filename").endsWith(".jar") && !it.str("filename").contains("-sources") }
-        val fname = file?.str("filename") ?: ""
-        // version_number on Modrinth is hand-typed and unreliable; the jar name is what the build produced.
-        val fromName = Regex("""-(\d.*)\.jar$""").find(fname)?.groupValues?.get(1)?.takeIf { SemVer.parse(it, mcVersion) != null }
-        val raw = fromName ?: o.str("version_number")
-        val ver = SemVer.parse(raw, mcVersion)
-        if (!FishDiag.check(ver != null, "UpdateManager.11") { "unparseable Modrinth version file='$fname' number='${o.str("version_number")}' mc=$mcVersion" }) return null
+        val assets = o.getAsJsonArray("assets")?.mapNotNull { it as? JsonObject } ?: emptyList()
+        val suffix = if (mcVersion.isNotEmpty()) "-$mcVersion.jar" else ".jar"
+        val file = assets.firstOrNull { val n = it.str("name"); n.endsWith(suffix) && !n.contains("-sources") && !n.contains("-dev") } ?: return null
+        val fname = file.str("name")
+        val ver = SemVer.parse(Regex("""-(\d.*)\.jar$""").find(fname)?.groupValues?.get(1), mcVersion)
+        if (!FishDiag.check(ver != null, "UpdateManager.11") { "unparseable release jar name '$fname' tag='${o.str("tag_name")}' mc=$mcVersion" }) return null
         val safeName = fname.takeIf { Regex("""^[\w.+-]+\.jar$""").matches(it) }
-        val url = file?.str("url")?.takeIf { it.startsWith("https://cdn.modrinth.com/") }
-        if (file != null && safeName == null) FishDiag.fail("UpdateManager.12", "version file has unsafe name '$fname'")
-        if (file != null && url == null) FishDiag.fail("UpdateManager.13", "version file url not on Modrinth CDN: ${file.str("url").take(120)}")
+        val url = file.str("browser_download_url").takeIf { it.startsWith("https://github.com/$repo/releases/download/") }
+        if (safeName == null) FishDiag.fail("UpdateManager.12", "release asset has unsafe name '$fname'")
+        if (url == null) FishDiag.fail("UpdateManager.13", "release asset url not on github.com/$repo: ${file.str("browser_download_url").take(120)}")
         val version = ver.toString()
-        val id = o.str("id").takeIf { Regex("""^\w+$""").matches(it) }
         return Release(
             version = version,
-            tag = o.str("version_number"),
+            tag = o.str("tag_name"),
             name = o.str("name").ifBlank { "FishModDungeons $version" },
-            body = o.str("changelog").take(8000),
-            htmlUrl = if (id != null && slug != null) "https://modrinth.com/mod/$slug/version/$id" else "",
-            publishedAt = o.str("date_published"),
+            body = o.str("body").take(8000),
+            htmlUrl = o.str("html_url").takeIf { it.startsWith("https://github.com/$repo/releases/") } ?: "",
+            publishedAt = o.str("published_at"),
             assetName = if (url != null) safeName ?: "" else "",
             assetUrl = if (safeName != null) url ?: "" else "",
-            assetSize = file?.get("size")?.takeIf { it.isJsonPrimitive }?.asLong ?: 0,
-            assetSha512 = file?.getAsJsonObject("hashes")?.str("sha512")?.lowercase(Locale.ROOT)?.takeIf { it.length == 128 } ?: "",
+            assetSize = file.get("size")?.takeIf { it.isJsonPrimitive }?.asLong ?: 0,
+            assetSha256 = file.str("digest").lowercase(Locale.ROOT).takeIf { it.startsWith("sha256:") && it.length == 71 }?.substring(7) ?: "",
         )
     }
 
@@ -280,7 +276,7 @@ object UpdateManager {
                 if (res.statusCode() != 200) { res.body().close(); throw IllegalStateException("HTTP ${res.statusCode()}") }
                 val total = res.headers().firstValueAsLong("content-length").orElse(release.assetSize)
                 if (total > MAX_JAR_BYTES) { res.body().close(); throw IllegalStateException("file too large") }
-                val sha = MessageDigest.getInstance("SHA-512")
+                val sha = MessageDigest.getInstance("SHA-256")
                 var read = 0L
                 res.body().use { input ->
                     Files.newOutputStream(part).use { out ->
@@ -297,7 +293,7 @@ object UpdateManager {
                     }
                 }
                 if (release.assetSize > 0 && read != release.assetSize) throw IllegalStateException("size mismatch")
-                if (release.assetSha512.isNotEmpty() && hex(sha.digest()) != release.assetSha512) throw IllegalStateException("checksum mismatch")
+                if (release.assetSha256.isNotEmpty() && hex(sha.digest()) != release.assetSha256) throw IllegalStateException("checksum mismatch")
                 verifyJar(part, release)
 
                 val staged = stagingDir.resolve(release.assetName)
