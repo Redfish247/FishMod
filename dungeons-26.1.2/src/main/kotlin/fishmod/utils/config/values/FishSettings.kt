@@ -631,8 +631,8 @@ object FishSettings {
     @ConfigValue @JvmField var croesusProfitEnabled: Boolean = false
     @ConfigValue @JvmField var croesusHighlightEnabled: Boolean = false
     @ConfigValue @JvmField var croesusUnopenedColor: Int = 0x8055FF55.toInt()
-    @ConfigValue @JvmField var croesusOpenedColor: Int = 0x80FFFF55.toInt()
-    @ConfigValue @JvmField var croesusDoneColor: Int = 0x80FF5555.toInt()
+    @ConfigValue @JvmField var croesusKismetColor: Int = 0x8055FFFF.toInt()
+    @ConfigValue @JvmField var croesusKeyColor: Int = 0x80FF5555.toInt()
 
     @ConfigValue @JvmField var spiritBearEnabled: Boolean = false
     @ConfigValue @JvmField var spiritBearHudX: Int = 10

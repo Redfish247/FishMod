@@ -923,10 +923,10 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Croesus Highlights", FishSettings::croesusHighlightEnabled)
-            f.sub.add(SubcategoryHeader("In the Croesus menu: colours runs by unopened, opened (key left) or done"))
+            f.sub.add(SubcategoryHeader("In the Croesus menu: colours runs by unopened, kismet used or chest key used"))
             f.sub.add(ColorPickerSetting("Unopened", "", FishSettings::croesusUnopenedColor))
-            f.sub.add(ColorPickerSetting("Opened", "", FishSettings::croesusOpenedColor))
-            f.sub.add(ColorPickerSetting("Done", "", FishSettings::croesusDoneColor))
+            f.sub.add(ColorPickerSetting("Kismet Used", "", FishSettings::croesusKismetColor))
+            f.sub.add(ColorPickerSetting("Chest Key Used", "", FishSettings::croesusKeyColor))
             dungeonTrackers.features.add(f)
         }
         run {

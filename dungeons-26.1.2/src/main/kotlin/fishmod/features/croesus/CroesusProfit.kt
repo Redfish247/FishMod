@@ -88,9 +88,11 @@ object CroesusProfit {
             val stack = s.item
             if (stack.isEmpty) continue
             val lore = stack.get(DataComponents.LORE)?.lines()?.map { COLOR.replace(it.string, "") } ?: continue
+            if (lore.none { it.contains("Completed:") }) continue
+            // used modifiers drop out of the "Available Modifiers" list
             val color = when {
-                lore.any { it.contains("No more Chests to open") } -> FishSettings.croesusDoneColor
-                lore.any { it.contains("Opened Chest:") } -> FishSettings.croesusOpenedColor
+                lore.none { it.contains("Dungeon Chest Key") } -> FishSettings.croesusKeyColor
+                lore.none { it.contains("Kismet Feather") } -> FishSettings.croesusKismetColor
                 lore.any { it.contains("No Chests Opened") } -> FishSettings.croesusUnopenedColor
                 else -> continue
             }
