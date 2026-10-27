@@ -393,17 +393,7 @@ object SlayerManager {
     }
 
     private fun sidebarLines(mc: Minecraft): List<String> {
-        val level = mc.level ?: return emptyList()
-        val sb = level.scoreboard
-        val obj = sb.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return emptyList()
-        val entries = sb.listPlayerScores(obj)
-            .sortedWith(compareByDescending<PlayerScoreEntry> { it.value() })
-        val out = ArrayList<String>(entries.size)
-        for (entry in entries) {
-            val team = sb.getPlayersTeam(entry.owner())
-            val raw = if (team != null) team.playerPrefix.string + team.playerSuffix.string else entry.owner()
-            out.add(raw.replace(Constants.STRIP_COLOR_REGEX, "").trim())
-        }
-        return out
+        if (mc.level == null) return emptyList()
+        return fishmod.utils.SidebarCache.entries.map { it.plain.trim() }
     }
 }

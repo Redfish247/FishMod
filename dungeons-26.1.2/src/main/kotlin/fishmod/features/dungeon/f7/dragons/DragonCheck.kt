@@ -116,14 +116,9 @@ object DragonCheck {
     }
 
     private fun isAliveOnScoreboardInner(d: WitherDragon): Boolean {
-        val sb = Minecraft.getInstance().level?.scoreboard ?: return true
-        val obj = sb.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return true
-        for (score in sb.listPlayerScores(obj)) {
-            val team = sb.getPlayersTeam(score.owner())
-            val line = PlayerTeam.formatNameForTeam(team, net.minecraft.network.chat.Component.literal(score.owner()))
-                .string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
-            if (lineShowsAlive(line, d.displayName)) return true
-        }
+        val sidebar = fishmod.utils.SidebarCache.entries
+        if (sidebar.isEmpty()) return true
+        for (e in sidebar) if (lineShowsAlive(e.plain, d.displayName)) return true
         return false
     }
 

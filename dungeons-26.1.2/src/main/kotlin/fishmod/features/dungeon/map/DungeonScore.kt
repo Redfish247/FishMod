@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.map
 
+import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.MayorApi
 import fishmod.utils.TabListCache
@@ -99,7 +100,7 @@ object DungeonScore {
     @JvmStatic
     fun onChatMessage(msg: String?) {
         if (msg == null) return
-        val clean = stripColors(msg)
+        val clean = TextStrip.plainAmp(msg)
         if (PRINCE_FALLS.matcher(clean).matches()) princeKilled = true
 
         val lower = clean.lowercase()
@@ -107,7 +108,6 @@ object DungeonScore {
         if (lower.contains("mimic dead") || lower.contains("mimic killed")) mimicKilled = true
     }
 
-    private fun stripColors(s: String): String = s.replace(MAP_COLOR_CODES, "")
 
     private var parsedTabVersion = -1
 
@@ -157,14 +157,9 @@ object DungeonScore {
     }
 
     private fun parseSidebar(mc: Minecraft) {
-        val level = mc.level ?: return
-        val sb = level.scoreboard
-        val sidebar = sb.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return
-        for (entry in sb.listPlayerScores(sidebar)) {
-            val owner = entry.owner()
-            val team = sb.getPlayersTeam(owner)
-            val raw = if (team != null) team.playerPrefix.string + team.playerSuffix.string else owner
-            val line = stripColors(raw)
+        if (mc.level == null) return
+        for (entry in fishmod.utils.SidebarCache.entries) {
+            val line = TextStrip.plainAmp(entry.raw)
             val m = CLEARED.matcher(line)
             if (m.find()) percentCleared = parseInt(m.group(1), percentCleared)
         }
