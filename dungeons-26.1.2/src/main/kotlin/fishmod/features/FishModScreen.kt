@@ -1261,7 +1261,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SubcategoryHeader("Only fires while you're party leader"))
             f.sub.add(ToggleSetting("Master Mode", "Check Master PBs instead of normal", FishSettings::pfAutoKickMaster))
             f.sub.add(SliderIntSetting("Floor", "Which floor's PB to check", FishSettings::pfAutoKickFloor, 1, 7))
-            f.sub.add(SliderIntSetting("Max S+ Seconds", "Kick if their S+ PB is slower (or missing)", FishSettings::pfAutoKickMaxSeconds, 60, 480, 5))
+            f.sub.add(SliderIntSetting("Max S+ Time", "Kick if their S+ PB is slower (or missing)", FishSettings::pfAutoKickMaxSeconds, 60, 480, 5) { "${it / 60}:${"%02d".format(it % 60)}" })
             f.sub.add(SliderIntSetting("Min Secrets (k)", "0 = don't check secrets", FishSettings::pfAutoKickMinSecretsK, 0, 200))
             f.sub.add(ToggleSetting("Announce in Party", "Send a /pc line before kicking", FishSettings::pfAutoKickInform))
             f.sub.add(SubcategoryHeader("Per-class minimums — 0 = off. Class read from the join message."))
@@ -3508,8 +3508,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         companion object { const val W = 26; const val H = 14 }
     }
 
-    class SliderIntSetting(name: String, desc: String, val getter: () -> Int, val setter: (Int) -> Unit, val min: Int, val max: Int, val step: Int = 1) : Setting(name, desc) {
-        constructor(name: String, desc: String, prop: KMutableProperty0<Int>, min: Int, max: Int, step: Int = 1) : this(name, desc, { prop.get() }, { prop.set(it) }, min, max, step)
+    class SliderIntSetting(name: String, desc: String, val getter: () -> Int, val setter: (Int) -> Unit, val min: Int, val max: Int, val step: Int = 1, val format: ((Int) -> String)? = null) : Setting(name, desc) {
+        constructor(name: String, desc: String, prop: KMutableProperty0<Int>, min: Int, max: Int, step: Int = 1, format: ((Int) -> String)? = null) : this(name, desc, { prop.get() }, { prop.set(it) }, min, max, step, format)
 
         init {
             FishDiag.check(max > min, "FishModScreen.31") { "int slider '$name' has empty range $min..$max" }
@@ -3530,7 +3530,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             pill(ctx, slx, sly, slx + slw, sly + SLIDER_H, SLIDER_BG)
             val fillW = (slw * pct).toInt()
             if (fillW > 0) pill(ctx, slx, sly, slx + Math.max(fillW, SLIDER_H), sly + SLIDER_H, SLIDER_FILL)
-            val v = getter().toString()
+            val v = format?.invoke(getter()) ?: getter().toString()
             st(ctx, tr, v, slx + slw - stw(tr, v), sy + 2, SUBTEXT_COLOR)
         }
         override fun onDrag(mx: Int, sx: Int, sliderW: Int) {
