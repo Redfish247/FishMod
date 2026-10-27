@@ -1586,6 +1586,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { Floor7.necronDropStyle },
                 { v -> Floor7.necronDropStyle = v }).gatedBy { Floor7.enableNecronDropPredict })
             f.sub.add(ColorPickerSetting("Drop Marker Color", "", Floor7::necronDropColor).gatedBy { Floor7.enableNecronDropPredict })
+            f.sub.add(ToggleSetting("Lava/Platform Popup", "Says if the predicted drop is over lava or a platform (move it in the HUD editor)", Floor7::necronDropLavaPopup).gatedBy { Floor7.enableNecronDropPredict })
             f.sub.add(SubcategoryHeader("Goldor"))
             f.sub.add(ToggleSetting("Goldor", "", Floor7::enableGoldorTickTimer))
             f.sub.add(ToggleSetting("In 3s Increments", "", Floor7::inDeathTicks).gatedBy { Floor7.enableGoldorTickTimer })

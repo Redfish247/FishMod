@@ -74,6 +74,10 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
+    var necronDropLavaPopup: Boolean = true
+
+    @ConfigValue
+    @JvmField
     var enableGoldorTickTimer: Boolean = false
 
     @ConfigValue

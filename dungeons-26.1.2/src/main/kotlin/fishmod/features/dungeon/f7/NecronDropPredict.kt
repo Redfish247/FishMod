@@ -169,6 +169,31 @@ object NecronDropPredict {
         Debug.LOGGER.info("[NecronDrop] start=%.2f,%.2f,%.2f dir=%.2f,%.2f predicted=%.2f,%.2f,%.2f".format(s.x, s.y, s.z, dx, dz, ex, ey, ez))
     }
 
+    // First non-air block under the landing: true = lava, false = platform, null = nothing loaded/found.
+    private fun overLava(): Boolean? {
+        val s = landing ?: return null
+        val level = Minecraft.getInstance().level ?: return null
+        val pos = net.minecraft.core.BlockPos.MutableBlockPos(kotlin.math.floor(s.x).toInt(), kotlin.math.floor(s.y).toInt(), kotlin.math.floor(s.z).toInt())
+        while (pos.y > level.minY) {
+            val st = level.getBlockState(pos)
+            if (st.fluidState.`is`(net.minecraft.tags.FluidTags.LAVA)) return true
+            if (!st.isAir && st.blocksMotion()) return false
+            pos.move(0, -1, 0)
+        }
+        return null
+    }
+
+    @JvmStatic
+    fun displayLanding(): Boolean = active() && Floor7.necronDropLavaPopup && landing != null && !dragOver
+
+    @JvmStatic
+    fun renderLanding(component: HUDComponent, context: GuiGraphicsExtractor) {
+        FishDiag.guard("NecronDropPredict.5", "necron landing popup render threw") {
+            val text = when (overLava()) { true -> "§c§lAbove Lava!"; false -> "§a§lAbove Platform"; null -> "§7Landing: ?" }
+            RenderUtils.drawCenteredText(context, component, Component.literal(text))
+        }
+    }
+
     @JvmStatic
     fun display(): Boolean = active() && Floor7.enableTickTimers && landing != null && dragTicks <= DRAG_TICKS
 

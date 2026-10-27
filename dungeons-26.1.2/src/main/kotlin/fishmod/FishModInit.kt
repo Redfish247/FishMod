@@ -520,6 +520,7 @@ class FishModInit : ClientModInitializer {
         FishHudEditor.register("Py Tick Timer", fishmod.features.dungeon.f7.F7Huds.pyTimer)
         FishHudEditor.register("Necron LB Timer", fishmod.features.dungeon.f7.F7Huds.necronLbTimer)
         FishHudEditor.register("Necron Drag Timer", fishmod.features.dungeon.f7.F7Huds.necronDragTimer)
+        FishHudEditor.register("Necron Drop Lava/Platform", fishmod.features.dungeon.f7.F7Huds.necronDropLanding)
         FishHudEditor.register("Storm Crushed", fishmod.features.dungeon.f7.F7Huds.stormCrush)
         FishHudEditor.register("Pillar Explosion Timer", fishmod.features.dungeon.f7.F7Huds.pillarExplosion)
         FishHudEditor.register("Term Start Timer", fishmod.features.dungeon.f7.F7Huds.termStartTimer)
