@@ -94,8 +94,8 @@ object CroesusProfit {
             val kismetUsed = raw.any { l -> l.string.contains("Kismet Feather") && strike(l) }
             val rgb = when {
                 lore.any { it.contains("No more chests to open!", true) } -> continue
-                lore.any { it.contains("No chests opened yet!", true) } -> FishSettings.croesusUnopenedColor
                 !kismetUsed && lore.any { it.contains("Kismet Feather") } -> FishSettings.croesusKismetColor
+                lore.any { it.contains("No chests opened yet!", true) } -> FishSettings.croesusUnopenedColor
                 lore.any { Regex("Opened [cC]hest:").containsMatchIn(it) } -> FishSettings.croesusKeyColor
                 else -> continue
             }
@@ -103,6 +103,8 @@ object CroesusProfit {
             val x = acc.bgX + s.x
             val y = acc.bgY + s.y
             ctx.fill(x, y, x + 16, y + 16, color)
+            // Redraw the icon so it sits over the highlight
+            ctx.item(stack, x, y)
         }
     }
 
