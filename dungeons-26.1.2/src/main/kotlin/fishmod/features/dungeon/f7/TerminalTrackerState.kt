@@ -74,9 +74,13 @@ class TerminalTrackerState {
     fun record(name: String, objective: String, x: Double?, z: Double?, counter: Int, berserk: Boolean, s1DeviceCounts: Boolean, now: Long): Pair<Int, Slot>? {
         val section = detectSection(x, z, counter)
         if (section !in 1..MAX_SECTION) return null
+        val live = current(counter)
+        // S4 device done early (stood at it, or berserk before S3) is the S4 pre, never the live section's device
+        if (objective == "device" && live in 1..3 && (section == 4 || berserk && live <= 2)) {
+            return preCompleteS4Device(name, now)?.let { 4 to it }
+        }
         viewSection = section
         if (objective == "device") {
-            if (berserk && section <= 2) preCompleteS4Device(name, now)
             if (section == 1 && !s1DeviceCounts) return null
             if (section == 4 && list(4).any { it.label == "D1" && it.pre }) return null
         }
@@ -95,10 +99,11 @@ class TerminalTrackerState {
     }
 
     // Berserk's S1/S2 device counts as the S4 device
-    private fun preCompleteS4Device(name: String, now: Long) {
-        val dev = list(4).firstOrNull { it.label == "D1" && !it.done } ?: return
+    private fun preCompleteS4Device(name: String, now: Long): Slot? {
+        val dev = list(4).firstOrNull { it.label == "D1" && !it.done } ?: return null
         dev.player = name
         dev.doneAt = now
         dev.pre = true
+        return dev
     }
 }
