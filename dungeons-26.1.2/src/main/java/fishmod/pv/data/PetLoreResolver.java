@@ -99,7 +99,7 @@ public final class PetLoreResolver {
 			if (neu != null && neu.has("displayname") && neu.get("displayname").isJsonPrimitive()) {
 				String raw = neu.get("displayname").getAsString();
 				int bracket = raw.indexOf("] ");
-				String stripped = (bracket >= 0 ? raw.substring(bracket + 2) : raw).replaceAll("§.", "").trim();
+				String stripped = fishmod.utils.TextStrip.plain(bracket >= 0 ? raw.substring(bracket + 2) : raw).trim();
 				if (!stripped.isEmpty()) name = stripped;
 			}
 			out.add(new PetType(type, name, PET_TIERS[best], neuId));

@@ -131,8 +131,7 @@ object RareMobs {
 
     // ---- name tags ----
 
-    private val CODES = Regex("§.")
-    private fun strip(s: String) = s.replace(CODES, "")
+    private fun strip(s: String) = fishmod.utils.TextStrip.plain(s)
 
     private fun parseHp(raw: String): Double? {
         val s = (HP_FMT.find(raw) ?: HP_PLAIN.find(strip(raw)))?.groupValues?.get(1) ?: return null

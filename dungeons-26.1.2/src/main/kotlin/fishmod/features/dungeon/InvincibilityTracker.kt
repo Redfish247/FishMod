@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 import fishmod.compat.curScreen
+import fishmod.utils.TextStrip
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
@@ -47,7 +48,6 @@ object InvincibilityTracker {
     private const val NAME = "Invincibility Timer"
     private const val LINE_H = 10
     private const val ICON_LINE_H = 18
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val WS = Regex("\\s+")
 
     @JvmStatic
@@ -62,7 +62,7 @@ object InvincibilityTracker {
 
         Events.ON_GAME_MESSAGE.register { text ->
             if (Dungeons.displayInvincibilityTimer) {
-                val s = COLOR.replace(text.string, "").replace(WS, " ").trim()
+                val s = TextStrip.plain(text.string).replace(WS, " ").trim()
                 val hit = Type.entries.firstOrNull { it.regex.matches(s) }
                 if (hit == null && (s.endsWith("saved your life!") || s.endsWith("saved you from certain death!"))) FishDiag.fail("InvincibilityTracker.1", "unrecognised invincibility proc line: '$s'")
                 hit?.let { t ->

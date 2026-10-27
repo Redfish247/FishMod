@@ -129,7 +129,7 @@ public final class AbiphoneNpcs {
 			if (!found) {
 				List<String> requirement = new ArrayList<>();
 				for (String line : strings(def, "requirement")) {
-					String plain = line.replaceAll("§.", "").replaceFirst("^-\\s*", "").trim();
+					String plain = fishmod.utils.TextStrip.plain(line).replaceFirst("^-\\s*", "").trim();
 					if (!plain.isEmpty()) {
 						requirement.add(plain);
 					}

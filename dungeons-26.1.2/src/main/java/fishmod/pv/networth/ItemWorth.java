@@ -249,7 +249,7 @@ public final class ItemWorth {
 		if (raw == null) {
 			return "";
 		}
-		return raw.replaceAll("§.", "").trim();
+		return fishmod.utils.TextStrip.plain(raw).trim();
 	}
 
 	private static int itemNameColor(InventoryDecoder.Stack stack) {

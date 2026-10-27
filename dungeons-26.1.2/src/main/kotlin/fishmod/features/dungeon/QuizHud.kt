@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 import fishmod.compat.hudHidden
+import fishmod.utils.TextStrip
 
 import fishmod.features.FishHudEditor
 import fishmod.utils.Location
@@ -14,7 +15,6 @@ import fishmod.utils.debug.FishDiag
 object QuizHud {
 
     private const val NAME = "Quiz Timer"
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     private var stage = 0
     private var ticksLeft = 0
@@ -29,7 +29,7 @@ object QuizHud {
             { FishSettings.quizHudScale }, { v -> FishSettings.quizHudScale = v }
         )
         Events.ON_GAME_MESSAGE.register { text ->
-            val s = COLOR.replace(text.string, "")
+            val s = TextStrip.plain(text.string)
             when {
                 s.contains("I am Oruo the Omniscient. I have lived many lives.") -> { stage = 1; ticksLeft = 220 }
                 s.contains("2 questions left... Then you will have proven your worth to me!") -> {

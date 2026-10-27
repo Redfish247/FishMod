@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 import fishmod.compat.hud
+import fishmod.utils.TextStrip
 import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
@@ -37,7 +38,6 @@ object Blessings {
 
     private const val NAME = "Blessings"
     private const val LINE_H = 10
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private var tickAcc = 0
 
     @JvmStatic
@@ -63,7 +63,7 @@ object Blessings {
         tickAcc = 0
         val overlay = Minecraft.getInstance().hud.tabList as? PlayerTabOverlayAccessor ?: return
         val footer = overlay.`fishmod$getFooter`()?.string ?: return
-        val plain = COLOR.replace(footer, "")
+        val plain = TextStrip.plain(footer)
         for (t in Type.entries) {
             t.current = t.regex.find(plain)?.let { m ->
                 fishmod.utils.data.Roman.toInt(m.groupValues[1]).also {

@@ -1,6 +1,7 @@
 package fishmod.features.dungeon
 
 import fishmod.features.dungeon.map.DungeonState
+import fishmod.utils.TextStrip
 import fishmod.utils.config.values.Dungeons
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
@@ -23,7 +24,6 @@ object AutoRequeue {
     )
     private val DT_LINE: Pattern = Pattern.compile("^(?:§9)?Party §8> .*: !dt$", Pattern.CASE_INSENSITIVE)
     private val MORT_START = "[NPC] Mort: Here, I found this map when I first entered the dungeon."
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     private val INVISIBLE = Regex("[\\u00A0\\u200B\\u200C\\u200D\\uFEFF\\u00AD]")
     private fun clean(s: String) = INVISIBLE.replace(s, " ").trim()
@@ -38,7 +38,7 @@ object AutoRequeue {
     @JvmStatic
     fun init() {
         Events.ON_GAME_MESSAGE.register { text ->
-            val s = COLOR.replace(text.string, "")
+            val s = TextStrip.plain(text.string)
             onChatLine(text.string)
             when {
                 s == MORT_START -> { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false; lastFloor = -1; lastMaster = false }
@@ -80,7 +80,7 @@ object AutoRequeue {
 
     @JvmStatic
     fun onChatLine(raw: String) {
-        val s = COLOR.replace(raw, "")
+        val s = TextStrip.plain(raw)
         if (DT_LINE.matcher(raw).find() || clean(s).let { it.contains("Party >", ignoreCase = true) && it.contains(": !dt", ignoreCase = true) }) {
             dtSkip = true
         }

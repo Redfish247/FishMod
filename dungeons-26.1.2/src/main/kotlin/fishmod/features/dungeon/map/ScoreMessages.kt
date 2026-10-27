@@ -83,7 +83,7 @@ object ScoreMessages {
 
     private fun chatText(raw: String?, time: String): String {
         val s = (raw ?: "").replace("<time>", time)
-        return s.replace(MAP_COLOR_CODES, "")
+        return fishmod.utils.TextStrip.plainAmp(s)
     }
 
     private fun titleText(raw: String?, time: String): String {

@@ -1,5 +1,6 @@
 package fishmod.features.chat
 import fishmod.compat.hud
+import fishmod.utils.TextStrip
 
 import fishmod.mixin.ChatHudInvoker
 import fishmod.utils.config.values.FishSettings
@@ -21,7 +22,7 @@ object ChatSearch {
     @JvmStatic
     fun matches(line: Component): Boolean {
         if (!active) return true
-        val plain = line.string.replace(COLOR_CODE, "")
+        val plain = TextStrip.plain(line.string)
         return plain.contains(query.trim(), ignoreCase = true)
     }
 
@@ -46,5 +47,4 @@ object ChatSearch {
         }
     }
 
-    private val COLOR_CODE = fishmod.utils.Constants.STRIP_COLOR_REGEX
 }

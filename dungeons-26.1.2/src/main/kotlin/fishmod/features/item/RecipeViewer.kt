@@ -151,8 +151,7 @@ object RecipeViewer {
         else -> "${s}s"
     }
 
-    private val FORMAT_CODE = Regex("§.")
-    fun clean(s: String): String = s.replace(FORMAT_CODE, "")
+    fun clean(s: String): String = fishmod.utils.TextStrip.plain(s)
 
     fun displayName(id: String): String =
         if (id == COIN) "§6Coins" else NeuRepo.get(id)?.get("displayname")?.asString ?: id
