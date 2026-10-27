@@ -44,6 +44,7 @@ object NecronDropPredict {
     private var dragTicks = 0
     private var lastMoveTick = 0
     private var dragOver = false
+    private var locked = false
 
     // Singleplayer test (/fm necrondrag [random]): pulls the player to a random point in the target box with the logged speed profile.
     private const val TEST_TICKS = 40
@@ -98,7 +99,7 @@ object NecronDropPredict {
 
     private fun active() = testTick != -1 || Floor7.enableNecronDropPredict && Location.inDungeon() && Phase.isInFloor7() && Phase.getPhase() in 8..9
 
-    private fun reset() { phaseTicks = 0; prev = null; start = null; landing = null; dragTicks = 0; lastMoveTick = 0; dragOver = false }
+    private fun reset() { phaseTicks = 0; prev = null; start = null; landing = null; dragTicks = 0; lastMoveTick = 0; dragOver = false; locked = false }
 
     @JvmStatic
     fun init() {
@@ -130,7 +131,7 @@ object NecronDropPredict {
         val pos = Vec3(p.x, p.y, p.z)
         phaseTicks++
         if (phaseTicks <= 200) Debug.LOGGER.info("[NecronDropTrace] t=%d pos=%.2f,%.2f,%.2f ground=%s".format(phaseTicks, pos.x, pos.y, pos.z, p.onGround()))
-        if (landing != null) {
+        if (locked) {
             dragTicks++
             val before = prev
             prev = pos
@@ -147,8 +148,9 @@ object NecronDropPredict {
         val s = start ?: return
         val dx = pos.x - s.x
         val dz = pos.z - s.z
-        if (hypot(dx, dz) < LOCK_DIST) return
-        if (dz < 0.5) { start = null; return }
+        // Show a guess from the first pulled tick, refine it until LOCK_DIST blocks.
+        val early = hypot(dx, dz) < LOCK_DIST
+        if (dz < 0.5) { start = null; landing = null; return }
         val dy = pos.y - s.y
         val k = DRAG_LEN / sqrt(dx * dx + dy * dy + dz * dz)
         // The pull aims at a random point in the target box; snap the measured line into the box, then stop short or at the target.
@@ -163,6 +165,8 @@ object NecronDropPredict {
         landing = Vec3(ex, ey, ez)
         lastMoveTick = phaseTicks
         dragTicks = phaseTicks - startTick
+        if (early) return
+        locked = true
         Debug.LOGGER.info("[NecronDrop] start=%.2f,%.2f,%.2f dir=%.2f,%.2f predicted=%.2f,%.2f,%.2f".format(s.x, s.y, s.z, dx, dz, ex, ey, ez))
     }
 
