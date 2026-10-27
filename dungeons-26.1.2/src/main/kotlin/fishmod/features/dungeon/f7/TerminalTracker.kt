@@ -74,11 +74,53 @@ object TerminalTracker {
         "27000|4|section",
     )
 
+    private val replayDir get() = net.fabricmc.loader.api.FabricLoader.getInstance().configDir.resolve("dungeonreplay").resolve("replays")
+
     @JvmStatic
-    fun replay() {
+    fun replayNames(): List<String> = try {
+        java.nio.file.Files.list(replayDir).use { s -> s.map { it.fileName.toString() }.filter { it.endsWith(".dgr") }.sorted().toList().reversed() }
+    } catch (e: Exception) { emptyList() }
+
+    // Goldor part of a DungeonReplay .dgr (events.json) in replayRun format; section bumps when the count resets
+    private fun loadDgr(name: String): List<String>? {
+        val file = replayDir.resolve(if (name == "latest") replayNames().firstOrNull() ?: return null else name)
+        val events = java.util.zip.ZipFile(file.toFile()).use { z ->
+            val e = z.getEntry("events.json") ?: return null
+            com.google.gson.JsonParser.parseString(String(z.getInputStream(e).readAllBytes(), Charsets.UTF_8)).asJsonArray
+        }
+        val out = ArrayList<String>()
+        var t0 = -1L
+        var sec = 1
+        var last = 0
+        for (el in events) {
+            val o = el.asJsonObject
+            val type = o["type"].asString
+            val ms = o["timeMs"].asLong
+            if (type == "GOLDOR_START") { t0 = ms; out.add("0|0|§c[BOSS] Goldor§f: Who dares trespass into my domain?"); continue }
+            if (t0 < 0) continue
+            if (type == "CORE_OPEN") break
+            val pl = o.getAsJsonObject("payload")
+            when (type) {
+                "GATE" -> out.add("${ms - t0}|$sec|gate")
+                "TERMINAL", "LEVER", "DEVICE" -> {
+                    val n = pl["g2"].asString.toInt()
+                    if (n <= last && sec < MAX_SECTION) { sec++; out.add("${ms - t0}|$sec|section") }
+                    last = n
+                    out.add("${ms - t0}|$sec|${pl["g1"].asString}|${type.lowercase()}")
+                }
+            }
+        }
+        return if (t0 < 0) null else out
+    }
+
+    @JvmStatic
+    fun replay(name: String? = null) {
         val mc = Minecraft.getInstance()
+        val run = if (name == null) replayRun else try { loadDgr(name) } catch (e: Exception) { null }
+        if (run == null) { Misc.addChatMessage(Component.literal("§c[TermReplay] no Goldor phase in '$name'")); return }
+        if (name != null) Misc.addChatMessage(Component.literal("§7[TermReplay] $name"))
         val t0 = System.currentTimeMillis() + 1500
-        replayUntil = t0 + 40000
+        replayUntil = t0 + (run.lastOrNull()?.substringBefore('|')?.toLong() ?: 0L) + 13000
         mc.execute {
             // Leftovers from a "previous run" so the reset is visible
             st.sectionChanged(4, t0 - 5000)
@@ -87,14 +129,14 @@ object TerminalTracker {
         }
         Thread({
             val counts = HashMap<Int, Int>()
-            for (line in replayRun) {
+            for (line in run) {
                 val p = line.split("|")
                 val at = t0 + p[0].toLong()
                 Thread.sleep(maxOf(0L, at - System.currentTimeMillis()))
                 val sec = p[1].toInt()
                 mc.execute {
                     when {
-                        p.size == 3 && p[0] == "0" -> { Misc.addChatMessage(Component.literal(p[2])); st.terminalsStarted(at) }
+                        p.size == 3 && p[1] == "0" -> { Misc.addChatMessage(Component.literal(p[2])); st.terminalsStarted(at) }
                         p[2] == "section" -> st.sectionChanged(sec, at)
                         p[2] == "gate" -> { Misc.addChatMessage(Component.literal("The gate has been destroyed!")); st.gateDestroyed(at) }
                         else -> {
