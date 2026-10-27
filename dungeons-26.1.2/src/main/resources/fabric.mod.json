@@ -28,7 +28,8 @@
 	],
 	"custom": {
 		"fishmod:updater": {
-			"modrinth": "${modrinthSlug}"
+			"modrinth": "${modrinthSlug}",
+			"github": "${githubRepo}"
 		}
 	},
 	"depends": {
