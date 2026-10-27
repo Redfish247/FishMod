@@ -661,7 +661,11 @@ class FishModInit : ClientModInitializer {
                         .executes { ctx -> fishmod.features.slayers.SlayerCarryTracker.add(StringArgumentType.getString(ctx, "ign"), -1); Constants.SUCCESS })
                     .executes { fishmod.features.slayers.SlayerCarryTracker.list(); Constants.SUCCESS }
             )
-            dispatcher.register(ClientCommands.literal("termreplay").executes { fishmod.features.dungeon.f7.TerminalTracker.replay(); Constants.SUCCESS })
+            dispatcher.register(ClientCommands.literal("termreplay")
+                .then(ClientCommands.argument("replay", StringArgumentType.greedyString())
+                    .suggests { _, b -> (listOf("latest") + fishmod.features.dungeon.f7.TerminalTracker.replayNames()).forEach(b::suggest); b.buildFuture() }
+                    .executes { ctx -> fishmod.features.dungeon.f7.TerminalTracker.replay(StringArgumentType.getString(ctx, "replay")); Constants.SUCCESS })
+                .executes { fishmod.features.dungeon.f7.TerminalTracker.replay(); Constants.SUCCESS })
             dispatcher.register(ClientCommands.literal("bossdamagetest").executes { fishmod.features.dungeon.f7.BossDamage.test(); Constants.SUCCESS })
             for (cmd in arrayOf("pbsplits", "splitspb")) dispatcher.register(
                 ClientCommands.literal(cmd)
