@@ -46,7 +46,8 @@ object Visitors {
             count = Mining.tabLine("Visitors:")?.let { COUNT.find(it)?.groupValues?.get(1)?.toIntOrNull() } ?: 0
             nextVisitor = Mining.tabLine("Next Visitor:")?.substringAfter(":")?.trim() ?: ""
             names = Mining.tabWidget("Visitors:")
-            if (names.isNotEmpty()) shopping.keys.retainAll { k -> names.any { it.contains(k) } }
+            // Tab widget truncates long queues; only prune when every visitor is listed
+            if (names.isNotEmpty() && names.size >= count && names.none { it.contains("more", true) }) shopping.keys.retainAll { k -> names.any { it.contains(k) } }
             else if (count == 0 && nextVisitor.isNotEmpty()) shopping.clear()
             val full = nextVisitor.contains("Full", true)
             if (full && !fullWarned && S.gardenVisitorSixthWarn && S.gardenVisitorTimer) GardenTitles.show(Garden.legacy(S.gardenVisitorFullColor) + "Visitor Queue Full!", "", 2000, true)
