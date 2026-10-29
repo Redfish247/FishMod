@@ -15,6 +15,9 @@ enum class Location(val name2: String) {
     PRIVATE_ISLAND("Private Island"),
     HUB("Hub"),
     GALATEA("Galatea"),
+    // own packet map names since the foraging/safari update (seen in error reports)
+    MOONGLADE_MARSH("Moonglade Marsh"),
+    TORRHUS_CANYON("Torrhus Canyon"),
     THE_PARK("The Park"),
     THE_FARMING_ISLANDS("The Farming Islands"),
     GOLD_MINE("Gold Mine"),
