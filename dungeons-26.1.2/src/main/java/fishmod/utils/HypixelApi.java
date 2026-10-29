@@ -126,8 +126,42 @@ public class HypixelApi {
             return u.startsWith(PROXY_URL + "/skyblock/") || u.startsWith(PROXY_URL + "/networth");
         }
 
+        // Past the server's HTTP/2 stream limit requests fail with "too many concurrent streams", so queue extras.
+        private static final int MAX_CONCURRENT = 16;
+        private int active = 0;
+        private final java.util.ArrayDeque<Runnable> waiting = new java.util.ArrayDeque<>();
+
+        private CompletableFuture<HttpResponse<String>> limited(HttpRequest req, HttpResponse.BodyHandler<String> handler) {
+            CompletableFuture<HttpResponse<String>> out = new CompletableFuture<>();
+            Runnable task = () -> {
+                CompletableFuture<HttpResponse<String>> f;
+                try { f = RAW_HTTP.sendAsync(req, handler); }
+                catch (Throwable t) { release(); out.completeExceptionally(t); return; }
+                f.whenComplete((r, t) -> {
+                    release();
+                    if (t != null) out.completeExceptionally(t); else out.complete(r);
+                });
+            };
+            boolean runNow;
+            synchronized (this) {
+                runNow = active < MAX_CONCURRENT;
+                if (runNow) active++; else waiting.add(task);
+            }
+            if (runNow) task.run();
+            return out;
+        }
+
+        private void release() {
+            Runnable next;
+            synchronized (this) {
+                next = waiting.poll();
+                if (next == null) active--;
+            }
+            if (next != null) java.util.concurrent.ForkJoinPool.commonPool().execute(next);
+        }
+
         CompletableFuture<HttpResponse<String>> sendAsync(HttpRequest req, HttpResponse.BodyHandler<String> handler) {
-            if (!cacheable(req)) return RAW_HTTP.sendAsync(req, handler);
+            if (!cacheable(req)) return limited(req, handler);
             String key = req.uri().toString();
             Cached c = cache.get(key);
             if (c != null) {
@@ -138,7 +172,7 @@ public class HypixelApi {
             CompletableFuture<HttpResponse<String>> f = new CompletableFuture<>();
             CompletableFuture<HttpResponse<String>> existing = inFlight.putIfAbsent(key, f);
             if (existing != null) return existing;
-            RAW_HTTP.sendAsync(req, handler).whenComplete((r, t) -> {
+            limited(req, handler).whenComplete((r, t) -> {
                 if (r != null) cache.put(key, new Cached(r, System.currentTimeMillis()));
                 inFlight.remove(key, f);
                 if (t != null) f.completeExceptionally(t); else f.complete(r);
@@ -147,7 +181,6 @@ public class HypixelApi {
         }
 
         HttpResponse<String> send(HttpRequest req, HttpResponse.BodyHandler<String> handler) throws java.io.IOException, InterruptedException {
-            if (!cacheable(req)) return RAW_HTTP.send(req, handler);
             try {
                 return sendAsync(req, handler).get();
             } catch (java.util.concurrent.ExecutionException e) {
