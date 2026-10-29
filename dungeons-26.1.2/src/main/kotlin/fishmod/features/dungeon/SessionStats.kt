@@ -162,7 +162,7 @@ object SessionStats {
         }
 
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
-            if (FishSettings.sessionStatsResetOnRelog) reset()
+            if (FishSettings.sessionStatsResetOnRelog) FishDiag.guard("SessionStats.11", "session stats reset on join failed") { reset() }
         }
 
         Events.ON_LOCATION_CHANGE.register { _ ->

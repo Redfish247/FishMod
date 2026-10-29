@@ -58,7 +58,7 @@ enum class Location(val name2: String) {
 
                         changeLocation(getLocation(locationName))
                     }
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     FishDiag.fail("Location.2", "location packet handling failed ($packet)", e)
                 }
             }
@@ -94,7 +94,7 @@ enum class Location(val name2: String) {
 
             try {
                 Events.ON_LOCATION_CHANGE.invoke { locationChangeEvent -> locationChangeEvent.onLocationChange(currentLocation) }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 FishDiag.fail("Location.3", "location change listener threw for ${location.name2}", e)
             }
         }

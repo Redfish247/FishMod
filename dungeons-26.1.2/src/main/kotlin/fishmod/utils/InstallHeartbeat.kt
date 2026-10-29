@@ -31,7 +31,7 @@ object InstallHeartbeat {
         ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
             try {
                 report()
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 FishDiag.fail("InstallHeartbeat.1", "install heartbeat report failed", e)
             }
         }
