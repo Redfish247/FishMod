@@ -83,6 +83,9 @@ object CroesusRewardParser {
 
         val id = ItemsDb.idFor(clean)
         if (id != null && !id.startsWith("STARRED_")) return arrayOf(id, "1")
+        // Starred and plain gear share a display name; Croesus only drops the plain one
+        val base = id?.removePrefix("STARRED_")
+        if (base != null && base != id && ItemsDb.get(base) != null) return arrayOf(base, "1")
 
         return arrayOf("false", "Could not find item ID for line \"$clean\"")
     }
