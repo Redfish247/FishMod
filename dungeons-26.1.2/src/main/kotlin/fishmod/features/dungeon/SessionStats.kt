@@ -236,6 +236,7 @@ object SessionStats {
             pauseStartedMs = d.pauseStartedMs
             autoPaused = d.autoPaused
             lastActivityMs = d.lastActivityMs
+            if (paused && sessionStartMs > 0 && pauseStartedMs in 1 until sessionStartMs) pauseStartedMs = sessionStartMs
             if (!paused && sessionStartMs > 0) {
                 autoPause(1, if (lastActivityMs > 0) lastActivityMs else sessionStartMs)
             }
