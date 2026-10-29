@@ -137,6 +137,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SliderIntSetting("Button Opacity %", "Feature row fill, separate from the background", FishSettings::fmRowBgAlpha, 0, 100))
             f.sub.add(ColorPickerSetting("Enabled Tint Color", "Tint on an enabled row, e.g. Door Colors", FishSettings::fmRowColor))
             f.sub.add(SliderIntSetting("Enabled Tint %", "0% invisible - 100% solid", FishSettings::fmRowAlpha, 0, 100))
+            f.sub.add(SubcategoryHeader("Layout"))
+            f.sub.add(ToggleSetting("Compact GUI", "Tighter rows, gaps and columns so more fits on screen", FishSettings::fmCompact))
             f.sub.add(SubcategoryHeader("Cascade Animation"))
             f.sub.add(ToggleSetting("Menu Animations", "Off = the menu just appears; no cascade / expand / toggle slides", FishSettings::fmAnimations))
             f.sub.add(SliderIntSetting("Drop Duration (ms)", "200 snappy - 1200 dramatic", FishSettings::fmDropDurationMs, 200, 1200, 25).gatedBy { FishSettings.fmAnimations })
@@ -4293,11 +4295,12 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
 
         private const val TEXT_SCALE = ScreenTheme.TEXT_SCALE
 
-        private const val MARGIN = 16
+        private val COMPACT get() = FishSettings.fmCompact
+        private val MARGIN get() = if (COMPACT) 10 else 16
         private const val TOP_BAR_H = 26
         private const val BOTTOM_RESERVE = 46
 
-        private const val COLUMN_GUTTER = 6
+        private val COLUMN_GUTTER get() = if (COMPACT) 4 else 6
         private const val CARD_RADIUS = 7
         private const val HEADER_H = 36
         private val COLUMN_SUBTITLES = mapOf(
@@ -4323,17 +4326,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             "Achievements" to "Goals & progress",
         )
         private const val HEADER_STRIP_H = 3
-        private const val MIN_COLUMN_W = 172
-        private const val MAX_COLUMN_W = 260
+        private val MIN_COLUMN_W get() = if (COMPACT) 156 else 172
+        private val MAX_COLUMN_W get() = if (COMPACT) 236 else 260
         private const val STACK_W = 176
-        private const val STACK_TAB_H = 24
+        private val STACK_TAB_H get() = if (COMPACT) 20 else 24
         private const val STACK_SUB_INDENT = 10
         private const val DRAG_THRESHOLD = 4
 
-        private const val ROW_H = 22
-        private const val ROW_GAP = 3
-        private const val ITEM_HEIGHT = 22
-        private const val PILL_H = 18
+        private val ROW_H get() = if (COMPACT) 18 else 22
+        private val ROW_GAP get() = if (COMPACT) 1 else 3
+        private val ITEM_HEIGHT get() = if (COMPACT) 18 else 22
+        private val PILL_H get() = if (COMPACT) 15 else 18
         private const val OPTION_H = 16
         private val SLIDER_BG = 0xFF2C3138.toInt()
         private val SLIDER_FILL get() = ACCENT
