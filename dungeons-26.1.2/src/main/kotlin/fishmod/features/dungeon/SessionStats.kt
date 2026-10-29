@@ -92,6 +92,8 @@ object SessionStats {
         autoPaused = true
         autoPauseReason = reason
         pauseStartedMs = if (freezeAtMs > 0) freezeAtMs else System.currentTimeMillis()
+        // last activity can predate the session start (moved, then first run began)
+        if (sessionStartMs > 0 && pauseStartedMs < sessionStartMs) pauseStartedMs = sessionStartMs
     }
 
     private fun tickAutoPause() {
