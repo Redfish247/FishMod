@@ -299,8 +299,11 @@ public class HypixelApi {
         } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.4", "saveUuidCacheNow failed", ignored);}
     }
 
+    public static final String FAIL_NOT_FOUND = "not found";
+
     public static class DungeonData {
         public boolean failed;
+        public String failReason;
         public long cataXp;
         public int  cataLevel;
         public long totalSecrets;
@@ -615,9 +618,12 @@ public class HypixelApi {
         void onData(DungeonData data);
     }
 
-    private static DungeonData failedData() {
+    private static DungeonData failedData() { return failedData("error"); }
+
+    private static DungeonData failedData(String reason) {
         DungeonData d = new DungeonData();
         d.failed = true;
+        d.failReason = reason;
         return d;
     }
 
@@ -627,7 +633,7 @@ public class HypixelApi {
         String cachedUuid = getCachedUuid(ign);
         if (cachedUuid != null) { fetchProfilesSilent(cachedUuid, callback); return; }
         resolveUuid(ign, 0, uuid -> {
-            if (uuid == null) { callback.onData(failedData()); return; }
+            if (uuid == null) { callback.onData(failedData(FAIL_NOT_FOUND)); return; }
             fetchProfilesSilent(uuid, callback);
         });
     }
@@ -639,10 +645,10 @@ public class HypixelApi {
         } catch (Exception e) { fishmod.utils.debug.FishDiag.fail("HypixelApi.24", "fetchProfilesSilent failed", e); callback.onData(failedData()); return; }
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
             .thenAccept(resp -> {
-                if (friendlyProxyError(resp) != null) { callback.onData(failedData()); return; }
+                if (friendlyProxyError(resp) != null) { callback.onData(failedData("proxy HTTP " + resp.statusCode())); return; }
                 try {
                     JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
-                    if (!root.get("success").getAsBoolean()) { callback.onData(failedData()); return; }
+                    if (!root.get("success").getAsBoolean()) { callback.onData(failedData("api success=false")); return; }
                     // "profiles" is null for players who never joined SkyBlock
                     if (!root.has("profiles") || !root.get("profiles").isJsonArray()) { callback.onData(new DungeonData()); return; }
                     for (JsonElement profileEl : root.getAsJsonArray("profiles")) {
