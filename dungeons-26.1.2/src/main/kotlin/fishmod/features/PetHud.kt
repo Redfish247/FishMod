@@ -342,6 +342,8 @@ object PetHud {
         if (s.endsWith("K")) { mult = 1_000.0; s = s.substring(0, s.length - 1) }
         else if (s.endsWith("M")) { mult = 1_000_000.0; s = s.substring(0, s.length - 1) }
         else if (s.endsWith("B")) { mult = 1_000_000_000.0; s = s.substring(0, s.length - 1) }
+        // Hypixel shows "NaN" xp on some pets: treat as unknown, not a parse failure
+        if (s == "NAN" || s.endsWith("INFINITY")) return -1.0
         return try { (s.toDouble() * mult).takeIf { it.isFinite() } ?: -1.0 } catch (e: NumberFormatException) { FishDiag.fail("PetHud.9", "abbrev number unparsed: '$sIn'", e); -1.0 }
     }
 
