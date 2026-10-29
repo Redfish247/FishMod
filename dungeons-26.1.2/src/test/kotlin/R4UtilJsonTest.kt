@@ -30,6 +30,8 @@ class R4UtilJsonTest {
             assertDoesNotThrow { call(MayorApi, MayorApi.javaClass, "parseMayorLine", r) }
             assertDoesNotThrow { call(MayorApi, MayorApi.javaClass, "parsePaul", r) }
         }
+        assertEquals("§7Mayor: §eCole", call(MayorApi, MayorApi.javaClass, "parseMayorLine", obj("""{"mayor":{"key":"cole"}}""")))
+        assertNull(call(MayorApi, MayorApi.javaClass, "parseMayorLine", obj("""{"mayor":{}}""")))
         assertEquals(true, call(MayorApi, MayorApi.javaClass, "parsePaul",
             obj("""{"mayor":{"key":"x","minister":{"key":"Paul","perk":{"name":"EZPZ"}}}}""")))
     }

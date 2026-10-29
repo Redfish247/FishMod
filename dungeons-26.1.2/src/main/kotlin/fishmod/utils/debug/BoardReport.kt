@@ -37,6 +37,12 @@ object BoardReport {
     private val autoTimes = ArrayDeque<Long>()
     @Volatile private var lastManualAt = 0L
 
+    // Unit tests feed bad input on purpose; JUnit's launcher is test-runtime only, so it also catches async threads
+    private val underTest: Boolean by lazy {
+        System.getProperty("fishmod.test") != null || Thread.currentThread().name.startsWith("Test worker") ||
+            runCatching { Class.forName("org.junit.platform.launcher.Launcher", false, BoardReport::class.java.classLoader) }.isSuccess
+    }
+
     fun command(kind: String): LiteralArgumentBuilder<FabricClientCommandSource> =
         ClientCommands.literal(kind)
             .executes { Misc.addChatMessage(Component.literal("§7Usage: /fm $kind <text>")); 1 }
@@ -65,8 +71,7 @@ object BoardReport {
     @JvmStatic
     fun auto(code: String, message: String, t: Throwable?) {
         try {
-            // unit tests feed bad input on purpose; never upload those
-            if (System.getProperty("fishmod.test") != null || Thread.currentThread().name.startsWith("Test worker")) return
+            if (underTest) return
             if (!FishSettings.boardReports || !FishSettings.boardAutoSend) return
             val key = dedupKey(code, t)
             loadSent()
@@ -96,6 +101,7 @@ object BoardReport {
     }
 
     private fun send(kind: String, title: String, text: String, key: String?, done: (Boolean, String) -> Unit) {
+        if (underTest) return done(false, "board reports are disabled under unit tests")
         val body = JsonObject().apply {
             addProperty("kind", kind)
             addProperty("title", scrub(title))
