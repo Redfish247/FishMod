@@ -91,7 +91,8 @@ object CommandKeys {
                 val parts = line.split("\t", limit = 3)
                 if (parts.size < 2 || parts[0].isBlank()) continue
                 val key = InputConstants.getKey(parts[0].trim())
-                FishDiag.check(key != InputConstants.UNKNOWN, "CommandKeys.3") { "unknown key name '${parts[0]}' in command_keys.txt" }
+                // key.keyboard.unknown = deliberately unbound row
+                FishDiag.check(key != InputConstants.UNKNOWN || parts[0].trim() == InputConstants.UNKNOWN.name, "CommandKeys.3") { "unknown key name '${parts[0]}' in command_keys.txt" }
                 if (parts.size == 3 && (parts[1] == "0" || parts[1] == "1")) {
                     entries.add(Entry(key, parts[2].trim(), parts[1] == "1"))
                 } else {
