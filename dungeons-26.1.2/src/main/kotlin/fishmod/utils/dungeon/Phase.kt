@@ -102,6 +102,15 @@ object Phase {
 
     private fun awaitingNecronDeath() = inFloor7 && currentPhase == 8 && currentSplits?.getOrNull(9)?.name == "Dragons"
 
+    // Goldor's line can be missed; first terminal/device/lever progress line still means P3
+    private val TERM_PROGRESS: Pattern = Pattern.compile("^.{1,16} (activated|completed) a (terminal|device|lever)! \\(\\d/\\d\\)$")
+    private const val P3_START = "[BOSS] Goldor: Who dares trespass into my domain?"
+
+    private fun fireP3Start(reason: String) {
+        fishmod.utils.debug.Debug.LOGGER.info("[Phase] P3 fallback: $reason")
+        Events.ON_GAME_MESSAGE.invoke { it.onGameMessage(Component.literal(P3_START)) }
+    }
+
     private fun fireP5Start(reason: String) {
         fishmod.utils.debug.Debug.LOGGER.info("[Phase] P5 fallback: $reason")
         Events.ON_GAME_MESSAGE.invoke { it.onGameMessage(Component.literal(P5_START)) }
@@ -126,6 +135,7 @@ object Phase {
         val splits = currentSplits ?: return false
         if (runOver) return false
         if (string == WK_FIRST_LINE && awaitingNecronDeath()) fireP5Start("wither king spoke")
+        if (inFloor7 && currentPhase == 5 && TERM_PROGRESS.matcher(string).matches()) fireP3Start("progress line '$string'")
 
         for (i in splits.indices) {
             val currentSplit = splits[i]
