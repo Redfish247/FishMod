@@ -397,6 +397,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.MeleeHit", "MeleeHitSound.init() failed") { fishmod.features.MeleeHitSound.init() }
         FishDiag.guard("FishModInit.5", "fishmod.features.NametagStats.init() failed") { fishmod.features.NametagStats.init() }
         FishDiag.guard("FishModInit.6", "fishmod.cosmetic.RemoteSync.init() failed") { fishmod.cosmetic.RemoteSync.init() }
+        FishDiag.guard("FishModInit.6b", "fishmod.cosmetic.CosmeticLive.init() failed") { fishmod.cosmetic.CosmeticLive.init() }
         FishDiag.guard("FishModInit.7", "fishmod.cosmetic.badge.BadgeRegistry.init() failed") { fishmod.cosmetic.badge.BadgeRegistry.init() }
         FishDiag.guard("FishModInit.8", "fishmod.utils.InstallHeartbeat.init() failed") { fishmod.utils.InstallHeartbeat.init() }
         FishDiag.guard("FishModInit.9", "fishmod.utils.update.UpdateManager.init() failed") { fishmod.utils.update.UpdateManager.init() }
