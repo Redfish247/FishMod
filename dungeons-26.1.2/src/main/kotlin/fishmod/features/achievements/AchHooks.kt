@@ -1,4 +1,5 @@
 package fishmod.features.achievements
+import fishmod.compat.curScreen
 
 import fishmod.features.croesus.CroesusPrices
 import fishmod.features.dungeon.map.DungeonScore
@@ -13,6 +14,8 @@ import fishmod.utils.dungeon.PracticeMode
 import fishmod.utils.events.Events
 import fishmod.utils.networth.ItemsDb
 import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.core.component.DataComponents
 
 // Turns chat, scoreboard and existing tracker state into AchEvents (passive only)
 object AchHooks {
@@ -92,6 +95,34 @@ object AchHooks {
         AchStore.max("play.total", h * 3600 + min * 60)
     }
 
+    // "Detailed /playtime" chest, slot 4 lore rows "687.7 hours on X" / "28 minutes on X" (format per SkyHanni LimboPlaytime)
+    private const val DETAILED_TITLE = "Detailed /playtime"
+    private val DETAILED_ROW = Regex("""^([\d.,]+) (hours?|minutes?) on (.+)$""")
+    private var detailedRead = false
+
+    private fun detailedPlaytime() {
+        val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*>
+        if (scr == null || scr.title.string != DETAILED_TITLE) { detailedRead = false; return }
+        if (detailedRead) return
+        val lore = scr.menu.slots.getOrNull(4)?.item?.get(DataComponents.LORE)?.lines() ?: return
+        if (lore.isEmpty()) return
+        detailedRead = true
+        for (c in lore) {
+            val m = DETAILED_ROW.find(c.string.replace(Constants.STRIP_COLOR_REGEX, "").trim()) ?: continue
+            val n = m.groupValues[1].replace(",", "").toDoubleOrNull() ?: continue
+            val secs = (if (m.groupValues[2].startsWith("hour")) n * 3600 else n * 60).toLong()
+            val island = m.groupValues[3]
+            // same scope as the local counter: inside runs only, not Dungeon Hub / Crimson Isle
+            val key = when {
+                island.contains("Dungeon Hub", true) -> null
+                island.contains("Dungeon", true) || island.contains("Catacombs", true) -> "play.dungeon"
+                island.contains("Kuudra", true) -> "play.kuudra"
+                else -> null
+            } ?: continue
+            if (secs > 0) AchStore.max(key, secs)
+        }
+    }
+
     private fun onChat(s: String) {
         if (Location.inDungeon() && LAVA_DEATH.containsMatchIn(s) && ++lavaDeaths >= 10) AchStore.max("secret.lavaFalls", 1)
         hiFish(s)
@@ -153,6 +184,7 @@ object AchHooks {
     // State polled from existing trackers each tick
     fun onTick() {
         if (tick++ % 5 != 0) return
+        detailedPlaytime()
         if (fishmod.features.rift.Rift.inRift()) {
             val a = fishmod.features.rift.Rift.strip(Mining.area).replace("⏣", "").trim()
             if (a.isNotEmpty() && AchStore.data.riftAreas.add(a)) { AchStore.changed(); AchStore.max("rift.areas", AchStore.data.riftAreas.size.toLong()) }
