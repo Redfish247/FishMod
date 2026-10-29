@@ -28,6 +28,8 @@ object Scan {
 
     // unknown core hashes already reported this run
     private val missedCores = HashSet<Int>()
+    // last unknown hash per cell; only a hash seen twice in a row is reported (chunks still loading)
+    private val pendingCores = IntArray(36)
 
     @JvmField
     val doors: MutableList<Door> = Collections.synchronizedList(ArrayList())
@@ -93,6 +95,7 @@ object Scan {
     fun reset() {
         rooms.clear()
         missedCores.clear()
+        pendingCores.fill(0)
         doors.clear()
         roomsList = newRoomsList()
         loadedAllRooms = false
@@ -107,6 +110,9 @@ object Scan {
     @JvmStatic
     fun scan(world: ClientLevel) {
         if (!DungeonState.isInDungeon()) return
+        // tab list lags a world change; trust a known non-dungeon location
+        val loc = fishmod.utils.Location.getCurrentLocation()
+        if (loc != fishmod.utils.Location.DUNGEON && loc != fishmod.utils.Location.UNKNOWN && !fishmod.utils.dungeon.PracticeMode.active) return
         if (!DungeonMap.anyFeatureEnabled()) return
 
         if (!RoomData.isLoaded()) {
@@ -251,7 +257,10 @@ object Scan {
                         "§b[roomCore] §7cell ($x,$z) §fhash=§e$coreHash §7-> §f${rd?.name ?: "§cUNKNOWN"}"))
                 }
                 if (rd == null) {
-                    if (!missedCores.add(coreHash)) continue
+                    val idx = place.roomListIndex()
+                    val stable = pendingCores[idx] == coreHash
+                    pendingCores[idx] = coreHash
+                    if (!stable || !missedCores.add(coreHash)) continue
                     FishDiag.fail("Scan.5", "no room data for core hash=$coreHash cell=($x,$z) height=$height roomsLoaded=${RoomData.isLoaded()}")
                     continue
                 }
