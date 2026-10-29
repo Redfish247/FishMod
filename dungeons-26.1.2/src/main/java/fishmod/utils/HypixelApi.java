@@ -643,11 +643,13 @@ public class HypixelApi {
                 try {
                     JsonObject root = JsonParser.parseString(resp.body()).getAsJsonObject();
                     if (!root.get("success").getAsBoolean()) { callback.onData(failedData()); return; }
+                    // "profiles" is null for players who never joined SkyBlock
+                    if (!root.has("profiles") || !root.get("profiles").isJsonArray()) { callback.onData(new DungeonData()); return; }
                     for (JsonElement profileEl : root.getAsJsonArray("profiles")) {
                         JsonObject profile = profileEl.getAsJsonObject();
                         if (!profile.has("selected") || !profile.get("selected").getAsBoolean()) continue;
                         JsonObject members = profile.getAsJsonObject("members");
-                        if (!members.has(uuidStr)) continue;
+                        if (members == null || !members.has(uuidStr)) continue;
                         JsonObject member = members.getAsJsonObject(uuidStr);
                         if (!member.has("dungeons")) continue;
                         callback.onData(parseDungeonData(uuidStr, member));
@@ -966,11 +968,12 @@ public class HypixelApi {
                         mc.schedule(() -> Misc.addChatMessage(Component.literal("§cAPI error — proxy rejected request.")));
                         return;
                     }
-                    for (JsonElement profileEl : root.getAsJsonArray("profiles")) {
+                    JsonArray profiles = root.has("profiles") && root.get("profiles").isJsonArray() ? root.getAsJsonArray("profiles") : new JsonArray();
+                    for (JsonElement profileEl : profiles) {
                         JsonObject profile = profileEl.getAsJsonObject();
                         if (!profile.has("selected") || !profile.get("selected").getAsBoolean()) continue;
                         JsonObject members = profile.getAsJsonObject("members");
-                        if (!members.has(uuidStr)) continue;
+                        if (members == null || !members.has(uuidStr)) continue;
                         JsonObject member = members.getAsJsonObject(uuidStr);
                         if (!member.has("dungeons")) continue;
                         callback.onData(parseDungeonData(uuidStr, member));
