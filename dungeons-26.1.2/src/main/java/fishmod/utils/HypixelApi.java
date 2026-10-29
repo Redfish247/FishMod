@@ -2170,6 +2170,8 @@ public static void fetchBadgeDefs(java.util.function.Consumer<java.util.List<fis
                                 o.has("order") ? o.get("order").getAsInt() : 0
                             ));
                         }
+                    } else if (r.statusCode() >= 200 && r.statusCode() < 300) {
+                        fishmod.utils.debug.FishDiag.fail("HypixelApi.114", "fetchBadgeDefs response has no badges");
                     }
                 } catch (Exception ignored) { fishmod.utils.debug.FishDiag.fail("HypixelApi.111", "fetchBadgeDefs failed", ignored);}
                 cb.accept(out);
