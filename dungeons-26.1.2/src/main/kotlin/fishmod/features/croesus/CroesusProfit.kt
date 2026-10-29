@@ -119,6 +119,7 @@ object CroesusProfit {
     private fun scan(screen: AbstractContainerScreen<*>) {
         val menu = screen.menu
         val out = ArrayList<Chest>(6)
+        val noCost = ArrayList<Int>()
         for (i in menu.slots.indices) {
             if (i > 16) break
             val stack = menu.slots[i].item
@@ -131,11 +132,14 @@ object CroesusProfit {
                 COST.find(it)?.groupValues?.get(1)?.replace(",", "")?.toDoubleOrNull()
             } ?: 0.0
             val err = arrayOf<String?>(null)
+            // No Cost line = not buyable (likely already opened)
+            if (plain.none { it.contains("Cost") }) { noCost.add(i); continue }
             val info = CroesusRewardParser.parseRewards(tooltip, err) ?: run { FishDiag.fail("CroesusProfit.3", "chest preview in slot $i unparsed: ${err[0]}"); null } ?: continue
             var value = 0.0
             for (ri in info.items) value += CroesusPrices.price(ri.id) * ri.qty.coerceAtLeast(1)
             out.add(Chest(i, TextStrip.plain(stack.hoverName.string).trim(), value, cost))
         }
+        if (out.isEmpty() && noCost.size > 1) FishDiag.fail("CroesusProfit.3", "no chest preview has a Cost line (slots $noCost)")
         out.sortByDescending { it.profit }
         chests = out
         bestSlots = out.asSequence().filter { it.profit > 0 }.take(2).map { it.slot }.toList()
