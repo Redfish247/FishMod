@@ -19,6 +19,7 @@ object RemoteSync {
     private var version: Long = -1
     private var lastUuids: Set<String> = setOf()
     private var lastTabSize = 0
+    private var appliedLiveRev = -1L
     private val dashlessIds = HashMap<java.util.UUID, String>()
 
     private fun dashless(id: java.util.UUID): String = dashlessIds.getOrPut(id) { id.toString().replace("-", "") }
@@ -38,6 +39,10 @@ object RemoteSync {
                     tick = interval
                 }
             }
+            if (CosmeticLive.ready) {
+                interval = BASE_TICKS
+                if (CosmeticLive.rev != appliedLiveRev) tick = interval
+            }
             tick++
             if (tick < interval) return@register
             tick = 0
@@ -51,6 +56,7 @@ object RemoteSync {
         version = -1
         lastUuids = setOf()
         lastTabSize = 0
+        appliedLiveRev = -1L
         dashlessIds.clear()
     }
 
@@ -62,6 +68,7 @@ object RemoteSync {
     @JvmStatic
     fun forceSync() {
         version = -1
+        appliedLiveRev = -1L
         interval = BASE_TICKS
         tick = 0
         refresh()
@@ -106,6 +113,16 @@ object RemoteSync {
         val queryKeys: Set<String> = keys + selfUuid
         if (queryKeys.isEmpty()) return
 
+        // live socket holds every cosmetic locally: no request, re-apply only on a push or new players
+        val live = CosmeticLive.slice(queryKeys)
+        if (live != null) {
+            if (!newPlayers && CosmeticLive.rev == appliedLiveRev && keys == lastUuids) return
+            appliedLiveRev = CosmeticLive.rev
+            lastUuids = keys
+            apply(keys, queryKeys, uuidToName, selfUuid, live.nicks, live.items, live.scales, live.badges, live.blocked, live.cleared)
+            return
+        }
+
         HypixelApi.fetchSync(queryKeys, since) { ver, nicks, items, scales, badges, blocked, cleared ->
             mc.execute {
                 version = ver
@@ -113,16 +130,24 @@ object RemoteSync {
                 lastTabSize = tabSize()
                 val changed = nicks != null || items != null || scales != null || badges != null
                 interval = if (changed) BASE_TICKS else minOf(interval + STEP_TICKS, MAX_TICKS)
-                try {
-                    fishmod.utils.InstallHeartbeat.applyAdminRevoke(blocked?.contains(selfUuid) == true, cleared?.get(selfUuid) ?: 0L)
-                    if (nicks != null && FishSettings.remoteNicksEnabled) RemoteNicks.acceptNicks(uuidToName, nicks)
-                    if (items != null && FishSettings.remoteItemsEnabled) RemoteItems.acceptItems(keys, items)
-                    if (scales != null && FishSettings.playerSizeShared) RemoteScales.acceptScales(keys, scales)
-                    if (badges != null && FishSettings.badgesEnabled) fishmod.cosmetic.badge.BadgeManager.acceptBadges(queryKeys, badges)
-                } catch (t: Throwable) {
-                    FishDiag.fail("RemoteSync.3", "applying synced cosmetics failed (${keys.size} players)", t)
-                }
+                apply(keys, queryKeys, uuidToName, selfUuid, nicks, items, scales, badges, blocked, cleared)
             }
+        }
+    }
+
+    private fun apply(
+        keys: Set<String>, queryKeys: Set<String>, uuidToName: Map<String, String>, selfUuid: String,
+        nicks: Map<String, String>?, items: Map<String, String>?, scales: Map<String, String>?,
+        badges: Map<String, String>?, blocked: Set<String>?, cleared: Map<String, Long>?,
+    ) {
+        try {
+            fishmod.utils.InstallHeartbeat.applyAdminRevoke(blocked?.contains(selfUuid) == true, cleared?.get(selfUuid) ?: 0L)
+            if (nicks != null && FishSettings.remoteNicksEnabled) RemoteNicks.acceptNicks(uuidToName, nicks)
+            if (items != null && FishSettings.remoteItemsEnabled) RemoteItems.acceptItems(keys, items)
+            if (scales != null && FishSettings.playerSizeShared) RemoteScales.acceptScales(keys, scales)
+            if (badges != null && FishSettings.badgesEnabled) fishmod.cosmetic.badge.BadgeManager.acceptBadges(queryKeys, badges)
+        } catch (t: Throwable) {
+            FishDiag.fail("RemoteSync.3", "applying synced cosmetics failed (${keys.size} players)", t)
         }
     }
 }
