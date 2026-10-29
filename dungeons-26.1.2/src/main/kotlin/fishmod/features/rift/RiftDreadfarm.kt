@@ -29,6 +29,11 @@ object RiftDreadfarm {
     @Volatile var particleSeen = 0; private set
     @Volatile var lastParticleMs = 0L; private set
     private val seenTimes = java.util.concurrent.ConcurrentLinkedQueue<Long>()
+    // Debug: proves the particle hook fires at all, and why fireworks were dropped
+    @Volatile var anyParticles = 0; private set
+    @Volatile var rejected = 0; private set
+    @Volatile var lastReject = ""; private set
+    @Volatile var lastFirework = "none"; private set
     fun wandHeld() = hasWand
     fun berberisCount() = berbs.size
     // Firework particles seen in the last 5s (any area / wand state)
@@ -40,21 +45,30 @@ object RiftDreadfarm {
             tickCap()
             if (tick++ % 5 == 0) {
                 hasWand = Rift.heldId() == "FARMING_WAND" ||
-                    Minecraft.getInstance().player?.mainHandItem?.hoverName?.string?.contains("Farming Wand") == true
+                    Minecraft.getInstance().player?.mainHandItem?.hoverName?.string?.contains("Farming Wand", true) == true
                 val now = System.currentTimeMillis(); berbs.removeIf { now - it.last > 500L }
                 // Debug-only counter; prune here so it can't grow while nobody reads it
                 while ((seenTimes.peek() ?: now) < now - 5000L) seenTimes.poll()
             }
         }
         Events.ON_WORLD_CHANGE.register { capPos = null; berbs.clear(); false }
-        Events.ON_PARTICLE.register { p -> if (p.particle.type === ParticleTypes.FIREWORK) onParticle(p.particle.type, Vec3(p.x, p.y, p.z)); false }
+        Events.ON_PARTICLE.register { p -> anyParticles++; if (p.particle.type === ParticleTypes.FIREWORK) onParticle(p.particle.type, Vec3(p.x, p.y, p.z)); false }
         RenderingEvents.GIZMO.register { _ -> render() }
     }
 
     private fun onParticle(type: net.minecraft.core.particles.ParticleType<*>, at: Vec3) {
-        if (type === ParticleTypes.FIREWORK) { seenTimes.add(System.currentTimeMillis()); particleSeen++ }
-        if (!S.riftBerberis || !hasWand || type !== ParticleTypes.FIREWORK || !Rift.inRift()) return
-        val ar = Rift.area(); if (ar.isNotEmpty() && !ar.contains("Dreadfarm", true)) return
+        if (type !== ParticleTypes.FIREWORK) return
+        seenTimes.add(System.currentTimeMillis()); particleSeen++
+        lastFirework = "${Fmt.f1(at.x)},${Fmt.f1(at.y)},${Fmt.f1(at.z)}"
+        // Gate as SkyHanni RiftWiltedBerberisHelper: Dreadfarm + FARMING_WAND; unknown/blank area is allowed
+        val why = when {
+            !S.riftBerberis -> "setting off"
+            !hasWand -> "no wand"
+            !Rift.inRift() -> "not in rift"
+            Rift.knownOtherArea("Dreadfarm") -> "area '${Rift.area()}'"
+            else -> null
+        }
+        if (why != null) { rejected++; lastReject = why; return }
         val b = berbs.filter { it.pos.distanceToSqr(at) < 8 }.minByOrNull { it.pos.distanceToSqr(at) }
         if (b == null) { berbs.add(Berb(at).also { it.y = at.y - 1 }); return }
         val isMoving = b.pos != at
