@@ -33,12 +33,17 @@ object QuizHud {
             when {
                 s.contains("I am Oruo the Omniscient. I have lived many lives.") -> { stage = 1; ticksLeft = 220 }
                 s.contains("2 questions left... Then you will have proven your worth to me!") -> {
-                    FishDiag.check(stage == 1 || stage == 0, "QuizHud.3") { "quiz stage 2 arrived from stage $stage" }
+                    FishDiag.check(stage <= 2, "QuizHud.3") { "quiz stage 2 arrived from stage $stage" }
                     stage = 2; ticksLeft = 100
                 }
                 s.contains("One more question!") -> {
-                    FishDiag.check(stage == 2 || stage == 0, "QuizHud.2") { "quiz stage 3 arrived from stage $stage" }
+                    FishDiag.check(stage == 2 || stage == 3 || stage == 0, "QuizHud.2") { "quiz stage 3 arrived from stage $stage" }
                     stage = 3; ticksLeft = 100
+                }
+                // backup when the "questions left" lines are missed: "answered Question #N correctly!"
+                s.startsWith("[STATUE] Oruo the Omniscient: ") && s.contains("answered Question #") && s.endsWith("correctly!") -> {
+                    val n = s.substringAfter("answered Question #").takeWhile { it.isDigit() }.toIntOrNull()
+                    if (n != null && n in 1..2 && stage in 1..n) { stage = n + 1; ticksLeft = 100 }
                 }
                 s.startsWith("[STATUE] Oruo the Omniscient: ") && s.contains("answered the final question") -> {
                     FishDiag.check(stage == 3 || stage == 0, "QuizHud.1") { "quiz finished while at stage $stage" }
