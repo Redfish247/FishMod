@@ -18,6 +18,8 @@ object RemoteNicks {
     private val inFlight: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     private const val NEGATIVE_TTL_MS = 15 * 60_000L
+    // Every name-like chat word costs a UUID + nick lookup; skipped names retry the next time they show up
+    private const val MAX_IN_FLIGHT = 8
     private val IGN_PAT: Pattern = Pattern.compile("\\b([A-Za-z0-9_]{3,16})\\b")
 
     @JvmStatic
@@ -91,6 +93,7 @@ object RemoteNicks {
             if (styledByName.containsKey(name)) continue
             val neg = negativeCache[name]
             if (neg != null && neg > now) continue
+            if (inFlight.size >= MAX_IN_FLIGHT) break
             if (!inFlight.add(name)) continue
             triggered++
             lookupAndCache(name)
