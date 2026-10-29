@@ -26,8 +26,7 @@ object RemoteSync {
     @JvmStatic
     fun init() {
         ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
-            reset()
-            FishDiag.guard("RemoteSync.1", "cosmetic sync on join failed") { refresh() }
+            FishDiag.guard("RemoteSync.1", "cosmetic sync on join failed") { reset(); refresh() }
         }
         ClientTickEvents.END_CLIENT_TICK.register { client ->
             val size = tabSize()
