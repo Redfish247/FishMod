@@ -1,7 +1,8 @@
-# Sends chat commands to a running FishTest window (singleplayer only), then prints new chat and error lines from its log.
+# Sends chat commands to a running FishTest window (singleplayer or the local FishSim server), then prints new chat and error lines from its log.
 # Usage: powershell -NoProfile -File tools/fmtest.ps1 [-Inst FishTest|FishTest-26.2] "/badev skyblock on" "/badev location set DWARVEN_MINES" "@shot" "@wait 5"
 # "@shot" presses F2 and prints the screenshot path; "@wait N" sleeps N seconds; "@key X" sends raw SendKeys X (e.g. "{ESC}").
-param([string]$Inst = 'FishTest-26.2', [Parameter(ValueFromRemainingArguments=$true)][string[]]$Cmds)
+# -Sim also prints new FishSim server log lines (errors, commands) when testing on the local FishSim server.
+param([string]$Inst = 'FishTest-26.2', [switch]$Sim, [Parameter(ValueFromRemainingArguments=$true)][string[]]$Cmds)
 Add-Type @"
 using System; using System.Runtime.InteropServices;
 public class FmWin { [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h); }
@@ -12,6 +13,8 @@ if (-not $p) { Write-Output "$Inst not running"; exit 1 }
 $mc = "$env:APPDATA\PrismLauncher\instances\$Inst\minecraft"
 $log = "$mc\logs\latest.log"
 $before = (Get-Content $log).Count
+$simLog = 'D:\FishSim\server\logs\latest.log'
+$simBefore = if ($Sim -and (Test-Path $simLog)) { (Get-Content $simLog).Count } else { 0 }
 [FmWin]::SetForegroundWindow((Get-Process -Id $p.ProcessId).MainWindowHandle) | Out-Null
 Start-Sleep 1
 foreach ($c in $Cmds) {
@@ -28,4 +31,7 @@ foreach ($c in $Cmds) {
 }
 Start-Sleep 2
 Get-Content $log | Select-Object -Skip $before | Where-Object { $_ -match '\[CHAT\]|ERROR|Exception|FishDiag|failed|Unknown or incomplete|at fishmod|Caused by' } | ForEach-Object { $_.Substring(0, [Math]::Min(300, $_.Length)) }
+if ($Sim -and (Test-Path $simLog)) {
+    Get-Content $simLog | Select-Object -Skip $simBefore | Where-Object { $_ -match 'issued server command|WARN|ERROR|Exception|FishSim|lost connection|Caused by' } | ForEach-Object { "sim: " + $_.Substring(0, [Math]::Min(300, $_.Length)) }
+}
 Write-Output "done; alive=$([bool](Get-Process -Id $p.ProcessId -ErrorAction SilentlyContinue))"
