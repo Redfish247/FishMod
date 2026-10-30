@@ -3564,7 +3564,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
     }
 
-    class DropdownSetting<T>(name: String, desc: String, val values: Array<T>, val getter: () -> T, val setter: (T) -> Unit) : Setting(name, desc) {
+    class DropdownSetting<T>(name: String, desc: String, val values: Array<T>, val getter: () -> T, val setter: (T) -> Unit,
+                             val label: (T) -> String = { it.toString() }, val swatch: ((T) -> Int)? = null) : Setting(name, desc) {
         private val expandAnim = Easing.Anim(200)
         private var expanded = false
         private var pillX = 0
@@ -3586,14 +3587,17 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
 
         override fun render(ctx: GuiGraphicsExtractor, leftX: Int, rightX: Int, sy: Int, mx: Int, my: Int, tr: Font) {
-            val current = getter().toString()
+            val currentValue = getter()
+            val current = label(currentValue)
             val textW = stw(tr, current)
-            pillW = textW + 22
+            val sw = swatch
+            pillW = textW + 22 + (if (sw != null) 12 else 0)
             pillX = rightX - pillW - 2
             val by = sy + (ITEM_HEIGHT - PILL_H) / 2
             val hov = mx >= pillX && mx <= pillX + pillW && my >= by && my <= by + PILL_H
             roundedRectRing(ctx, pillX, by, pillW, PILL_H, PILL_H / 2, 2, TRACK_OFF, if (hov) ACCENT_HOVER else ACCENT)
-            st(ctx, tr, current, pillX + 10, by + (PILL_H - 8) / 2 - 1, TEXT_COLOR)
+            if (sw != null) disc(ctx, pillX + 12, by + PILL_H / 2, 4, sw(currentValue))
+            st(ctx, tr, current, pillX + (if (sw != null) 22 else 10), by + (PILL_H - 8) / 2 - 1, TEXT_COLOR)
 
             val animating = expandAnim.isAnimating()
             if (expanded || animating) {
@@ -3607,7 +3611,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                     val selected = i == curIdx
                     val rowHov = mx >= leftX + 2 && mx <= rightX - 2 && my >= rowY && my <= rowY + OPTION_H
                     if (rowHov) roundedRect(ctx, leftX + 4, rowY + 1, rightX - leftX - 8, OPTION_H - 2, 4, ROW_HOVER)
-                    st(ctx, tr, values[i].toString(), leftX + 10, rowY + (OPTION_H - 8) / 2,
+                    if (sw != null) disc(ctx, leftX + 12, rowY + OPTION_H / 2, 4, sw(values[i]))
+                    st(ctx, tr, label(values[i]), leftX + (if (sw != null) 22 else 10), rowY + (OPTION_H - 8) / 2,
                         if (selected) ACCENT_HOVER else (if (rowHov) TEXT_COLOR else SUBTEXT_COLOR))
                     if (selected) UiRecorder.fillRect((leftX + 2).toFloat(), (rowY + 3).toFloat(), 2f, (OPTION_H - 6).toFloat(), ACCENT)
                 }
