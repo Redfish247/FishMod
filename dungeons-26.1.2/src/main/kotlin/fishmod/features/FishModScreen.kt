@@ -1805,7 +1805,9 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         val cheats = Column("Cheats")
         for (et in FishModAddonApi.cheatToggles) {
-            cheats.features.add(Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) }))
+            val f = Feature(et.name(), { et.get().get() }, { v -> et.set().accept(v) })
+            for (make in et.subSettings) f.sub.add(make())
+            cheats.features.add(f)
         }
 
         run {
