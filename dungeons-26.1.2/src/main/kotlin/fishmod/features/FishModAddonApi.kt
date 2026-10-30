@@ -64,8 +64,14 @@ object FishModAddonApi {
     @JvmStatic
     fun addCheatChoiceSetting(parent: String, name: String, description: String, options: java.util.List<String>, get: Supplier<String>, set: Consumer<String>) {
         val opts = options.toTypedArray<String>()
+        // all legacy colour names -> swatches and "Dark Purple" style labels
+        val rgbOf = { s: String -> fishmod.compat.Fmt.codeOfName(s)?.let { fishmod.compat.Fmt.colorOf(it) } }
+        val isColors = opts.all { rgbOf(it) != null }
         cheatParent(parent, name)?.subSettings?.add {
-            FishModScreen.DropdownSetting(name, description, opts, { get.get() }, { v -> set.accept(v) })
+            if (isColors) FishModScreen.DropdownSetting(name, description, opts, { get.get() }, { v -> set.accept(v) },
+                { s -> s.split('_').joinToString(" ") { w -> w.replaceFirstChar { it.uppercaseChar() } } },
+                { s -> (rgbOf(s) ?: 0xFFFFFF) or 0xFF000000.toInt() })
+            else FishModScreen.DropdownSetting(name, description, opts, { get.get() }, { v -> set.accept(v) })
         }
     }
 
