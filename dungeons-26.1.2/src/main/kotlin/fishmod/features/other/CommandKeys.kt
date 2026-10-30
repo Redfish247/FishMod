@@ -59,10 +59,9 @@ object CommandKeys {
         ensureLoaded()
         if (entries.isEmpty()) return
 
-        if (client.curScreen != null || client.player == null) {
-            held.clear()
-            return
-        }
+        if (client.player == null) { held.clear(); return }
+        // keys pressed in a screen (e.g. typing /bz) stay held so closing it doesn't fire them
+        val inScreen = client.curScreen != null
 
         for (e in entries) {
             if (e.key() == InputConstants.UNKNOWN || e.command().isBlank()) continue
@@ -74,7 +73,7 @@ object CommandKeys {
                 InputConstants.isKeyDown(client.window, e.key().value)
             val wasDown = held.contains(e.key())
 
-            if (down && !wasDown) Misc.executeCommand(e.command())
+            if (down && !wasDown && !inScreen) Misc.executeCommand(e.command())
             if (down) held.add(e.key()) else held.remove(e.key())
         }
     }
