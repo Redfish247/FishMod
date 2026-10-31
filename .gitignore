@@ -15,3 +15,19 @@ run/
 FishModNew/
 
 .codeindex/
+
+# Claude/session files: kept locally, not on GitHub
+/CLAUDE.md
+/AUDIT.md
+/PERFORMANCE_AUDIT_2026-09-04.md
+/PERFORMANCE_AUDIT_2026-10-27.md
+/anticheat-worker-proposal.md
+/notes
+/tools/auto-build.ps1
+/tools/check-game-closed.ps1
+/tools/code-index
+/tools/board-inbox
+/tools/deploy.ps1
+/tools/fmtest.ps1
+/tools/run262.sh
+/tools/smoke-test.ps1
