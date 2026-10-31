@@ -170,6 +170,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { v -> FishSettings.updateNoticeStyle = v }))
             general.features.add(f)
         }
+        general.features.add(Feature("Messages from RedFish", FishSettings::dashboardMessagesEnabled))
         run {
             val f = Feature("Debug Reports", FishSettings::debugReports)
             f.sub.add(ToggleSetting("Chat Notice", "Short chat line with a copy button when something breaks (max once a minute)", FishSettings::debugChatNotices))
