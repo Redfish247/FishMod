@@ -60,6 +60,8 @@ public final class FishingPage {
 	private FishingSnapshot snapshot = FishingSnapshot.empty();
 	private BestiarySnapshot bestiary = BestiarySnapshot.empty();
 	private final List<HoverZone> zones = new ArrayList<>();
+	private BestiarySnapshot.CategoryProgress seaRowsFor;
+	private List<BestiarySnapshot.FamilyProgress> seaRows;
 	private int listScroll;
 	private int listMaxScroll;
 	private int listX;
@@ -169,7 +171,11 @@ public final class FishingPage {
 		int bottom = y + h - PAD;
 
 		BestiarySnapshot.CategoryProgress category = this.bestiary.category(SEA_CREATURE_CATEGORY);
-		List<BestiarySnapshot.FamilyProgress> rows = seaCreatureRows(category);
+		if (category != this.seaRowsFor || this.seaRows == null) {
+			this.seaRows = seaCreatureRows(category);
+			this.seaRowsFor = category;
+		}
+		List<BestiarySnapshot.FamilyProgress> rows = this.seaRows;
 		int families = category == null ? 0 : category.families().size();
 		PvDraw.text(g, font, "Sea creature kills", rx, ry, PvDraw.COLOR_MUTED);
 		if (families > 0) {
@@ -269,11 +275,12 @@ public final class FishingPage {
 			return List.of();
 		}
 		List<FishingSnapshot.TrophyRow> out = new ArrayList<>(rows);
+		// Each key descending; chained .reversed() flipped the earlier keys too.
 		out.sort(Comparator
-			.comparingInt((FishingSnapshot.TrophyRow r) -> r.counts().bestRank()).reversed()
-			.thenComparingInt((FishingSnapshot.TrophyRow r) -> r.counts().discoveredTier()).reversed()
-			.thenComparingInt((FishingSnapshot.TrophyRow r) -> r.countsExact() ? r.totalCaught() : 0).reversed()
-			.thenComparing(FishingSnapshot.TrophyRow::name, String.CASE_INSENSITIVE_ORDER));
+			.comparingInt((FishingSnapshot.TrophyRow r) -> -r.counts().bestRank())
+			.thenComparingInt(r -> -r.counts().discoveredTier())
+			.thenComparingInt(r -> -(r.countsExact() ? r.totalCaught() : 0))
+			.thenComparing(r -> r.name() == null ? "" : r.name(), String.CASE_INSENSITIVE_ORDER));
 		return out;
 	}
 
@@ -438,7 +445,7 @@ public final class FishingPage {
 				sb.append(p.substring(1).toLowerCase(Locale.ROOT));
 			}
 		}
-		if (parts.length > 1) {
+		if (parts.length > 1 && !parts[1].isEmpty()) {
 			sb.append(" · ").append(parts[1].substring(0, 1).toUpperCase(Locale.ROOT))
 				.append(parts[1].substring(1).toLowerCase(Locale.ROOT));
 		}

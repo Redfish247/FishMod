@@ -110,8 +110,10 @@ final class ProfileHomeParser {
 		String undashed = HypixelApiClient.undashed(uuid);
 		String profileId = null;
 		if (best != null) {
-			cuteName = best.has("cute_name") ? best.get("cute_name").getAsString() : cuteName;
-			profileId = best.has("profile_id") ? best.get("profile_id").getAsString() : profileId;
+			String cute = ProfileParseSupport.str(best.get("cute_name"));
+			cuteName = cute.isEmpty() ? cuteName : cute;
+			String id = ProfileParseSupport.str(best.get("profile_id"));
+			profileId = id.isEmpty() ? profileId : id;
 		}
 		List<ProfileFetcher.ProfileChoice> choices = ProfileCoopIndex.listProfileChoices(profiles, profileId, undashed);
 		if (best == null) {

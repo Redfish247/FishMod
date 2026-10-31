@@ -12,6 +12,14 @@ object GardenMilestoneSettings {
     @ConfigValue @JvmField var gardenMilestoneHudY: Int = 240
     @ConfigValue @JvmField var gardenMilestoneHudScale: Double = 1.0
 
+    @ConfigValue @JvmField var gardenMushroom: Boolean = false
+    @ConfigValue @JvmField var gardenMushroomEta: Boolean = true
+    @ConfigValue @JvmField var gardenMushroomColor: Int = 0xFFFF5555.toInt()
+    @ConfigValue @JvmField var gardenMushroomHudX: Int = 5
+    @ConfigValue @JvmField var gardenMushroomHudY: Int = 200
+    @ConfigValue @JvmField var gardenMushroomHudScale: Double = 1.0
+    @ConfigValue @JvmField var gardenMushroomTotal: Long = -1
+
     @ConfigValue @JvmField var gardenIconNumbers: Boolean = false
     @ConfigValue @JvmField var gardenIconNumberColor: Int = 0xFFFFFF55.toInt()
     @ConfigValue @JvmField var gardenMilestoneTooltip: Boolean = false

@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.hud
 
 import fishmod.utils.debug.FishDiag
 import fishmod.mixin.ChatHudInvoker
@@ -23,8 +24,8 @@ object CompactChat {
         if (incoming.isEmpty()) return false
 
         val mc = Minecraft.getInstance()
-        if (mc.gui == null) return false
-        val nowTick = mc.gui.guiTicks
+        if (mc.hud == null) return false
+        val nowTick = mc.hud.guiTicks
 
         val acc = hud as? ChatHudInvoker ?: run { FishDiag.fail("CompactChat.1", "ChatHudInvoker mixin not applied"); return false }
         val messages = acc.messages

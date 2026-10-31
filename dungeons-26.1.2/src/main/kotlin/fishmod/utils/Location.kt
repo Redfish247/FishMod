@@ -15,6 +15,9 @@ enum class Location(val name2: String) {
     PRIVATE_ISLAND("Private Island"),
     HUB("Hub"),
     GALATEA("Galatea"),
+    // own packet map names since the foraging/safari update (seen in error reports)
+    MOONGLADE_MARSH("Moonglade Marsh"),
+    TORRHUS_CANYON("Torrhus Canyon"),
     THE_PARK("The Park"),
     THE_FARMING_ISLANDS("The Farming Islands"),
     GOLD_MINE("Gold Mine"),
@@ -55,7 +58,7 @@ enum class Location(val name2: String) {
 
                         changeLocation(getLocation(locationName))
                     }
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     FishDiag.fail("Location.2", "location packet handling failed ($packet)", e)
                 }
             }
@@ -71,6 +74,8 @@ enum class Location(val name2: String) {
         @JvmStatic
         fun getLocation(locationName: String): Location {
             var location: Location
+            // Hypixel names the dungeon run map "Catacombs"
+            if (locationName.equals("Catacombs", ignoreCase = true)) return DUNGEON
             try {
                 location = valueOf(locationName.uppercase().replace(" ", "_").replace("'", ""))
             } catch (e: IllegalArgumentException) {
@@ -89,7 +94,7 @@ enum class Location(val name2: String) {
 
             try {
                 Events.ON_LOCATION_CHANGE.invoke { locationChangeEvent -> locationChangeEvent.onLocationChange(currentLocation) }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 FishDiag.fail("Location.3", "location change listener threw for ${location.name2}", e)
             }
         }
@@ -113,6 +118,10 @@ enum class Location(val name2: String) {
 
         @JvmStatic
         fun inDungeonHub(): Boolean = inSkyblockFlag && currentLocation == DUNGEON_HUB
+
+        // Debug-only: lets singleplayer test worlds pretend to be on SkyBlock (/fm debug skyblock on).
+        @JvmStatic
+        fun devSetSkyblock(on: Boolean) { inSkyblockFlag = on }
 
         @JvmStatic
         fun getCurrentLocation(): Location = currentLocation

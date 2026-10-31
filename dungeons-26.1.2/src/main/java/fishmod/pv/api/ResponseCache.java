@@ -68,7 +68,9 @@ final class ResponseCache {
 		return Optional.empty();
 	}
 
-	static void put(String key, JsonObject json) {
+	static void put(String key, JsonObject original) {
+		// Own copy: caller mutates its object while the disk write serializes on another thread.
+		JsonObject json = original.deepCopy();
 		MEMORY.put(key, new Cached(json, System.currentTimeMillis()));
 		HypixelApiClient.networkExecutor().execute(() -> {
 			try {

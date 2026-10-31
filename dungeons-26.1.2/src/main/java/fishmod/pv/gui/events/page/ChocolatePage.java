@@ -562,10 +562,13 @@ public final class ChocolatePage {
 				PvTooltip.Line.row("Level", PvDraw.COLOR_MUTED, FormatUtil.commas(emp.level()), levelColor)));
 	}
 
+	// Textured heads are rebuilt from scratch per call; employees are a small fixed set.
+	private static final java.util.Map<String, ItemStack> EMPLOYEE_HEADS = new java.util.concurrent.ConcurrentHashMap<>();
+
 	private static ItemStack employeeIcon(String employeeId) {
 		String value = ChocolateEmployees.skullValue(employeeId);
 		if (value != null && !value.isBlank()) {
-			ItemStack head = SkyBlockItemFactory.texturedHead(value);
+			ItemStack head = EMPLOYEE_HEADS.computeIfAbsent(value, SkyBlockItemFactory::texturedHead);
 			if (head != null && !head.isEmpty()) {
 				return head;
 			}

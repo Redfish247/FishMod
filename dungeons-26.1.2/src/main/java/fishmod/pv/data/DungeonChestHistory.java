@@ -124,7 +124,7 @@ public record DungeonChestHistory(List<Run> runs) {
 						JsonObject po = Leveling.obj(p);
 						// Keeps Hypixel's § codes so the UI can show rank colours.
 						String name = po == null ? "" : str(po.get("display_name")).trim();
-						if (!name.replaceAll("§.", "").isBlank()) {
+						if (!fishmod.utils.TextStrip.plain(name).isBlank()) {
 							party.add(name);
 						}
 					}
@@ -217,7 +217,7 @@ public record DungeonChestHistory(List<Run> runs) {
 	}
 
 	private static boolean isUltimateBook(JsonObject def) {
-		return def != null && def.has("internalname")
+		return def != null && def.has("internalname") && def.get("internalname").isJsonPrimitive()
 			&& def.get("internalname").getAsString().toUpperCase(Locale.ROOT).startsWith("ULTIMATE_");
 	}
 

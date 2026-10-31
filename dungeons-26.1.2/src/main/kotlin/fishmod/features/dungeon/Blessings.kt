@@ -1,4 +1,7 @@
 package fishmod.features.dungeon
+import fishmod.compat.hud
+import fishmod.utils.TextStrip
+import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.mixin.accessors.PlayerTabOverlayAccessor
@@ -35,7 +38,6 @@ object Blessings {
 
     private const val NAME = "Blessings"
     private const val LINE_H = 10
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private var tickAcc = 0
 
     @JvmStatic
@@ -59,9 +61,9 @@ object Blessings {
         if (!FishSettings.blessingDisplayEnabled || !Location.inDungeon()) return
         if (++tickAcc < 20) return
         tickAcc = 0
-        val overlay = Minecraft.getInstance().gui.tabList as? PlayerTabOverlayAccessor ?: return
+        val overlay = Minecraft.getInstance().hud.tabList as? PlayerTabOverlayAccessor ?: return
         val footer = overlay.`fishmod$getFooter`()?.string ?: return
-        val plain = COLOR.replace(footer, "")
+        val plain = TextStrip.plain(footer)
         for (t in Type.entries) {
             t.current = t.regex.find(plain)?.let { m ->
                 fishmod.utils.data.Roman.toInt(m.groupValues[1]).also {
@@ -71,13 +73,16 @@ object Blessings {
         }
     }
 
+    private val shown = ArrayList<Type>()
+
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.blessingDisplayEnabled || !Location.inDungeon()) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
 
-        val shown = Type.entries.filter { it.enabled() && it.current > 0 }
+        shown.clear()
+        for (t in Type.entries) if (t.enabled() && t.current > 0) shown.add(t)
         if (shown.isEmpty()) return
 
         val sc = FishSettings.blessingScale.toFloat()

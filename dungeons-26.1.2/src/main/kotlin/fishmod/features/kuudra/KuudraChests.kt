@@ -1,4 +1,5 @@
 package fishmod.features.kuudra
+import fishmod.compat.curScreen
 
 import fishmod.features.croesus.CroesusPrices
 import fishmod.features.croesus.CroesusRewardParser
@@ -63,7 +64,7 @@ object KuudraChests {
 
         DrawEvents.INVENTORY_SLOT_AFTER.register { ctx, stack, x, y ->
             if (!(S.kuudraChestsMaster && S.kuudraOpenedHighlight) || stack.isEmpty) return@register
-            val t = Minecraft.getInstance().screen?.title?.string ?: return@register
+            val t = Minecraft.getInstance().curScreen?.title?.string ?: return@register
             if (!t.contains("Vesuvius") && !t.contains("Croesus")) return@register
             val slot = DrawEvents.currentSlot ?: return@register
             if (slot.container === Minecraft.getInstance().player?.inventory) return@register
@@ -83,11 +84,14 @@ object KuudraChests {
 
     private fun lore(s: ItemStack): List<String> = s.get(DataComponents.LORE)?.lines()?.map { Mining.strip(it.string).trim() } ?: emptyList()
 
-    private fun price(name: String): Double {
+    private fun price(raw: String): Double {
+        val name = raw.replace(",", "")
         val m = AMOUNT.find(name)
         val base = m?.groupValues?.get(1) ?: name
         val qty = m?.groupValues?.get(2)?.toIntOrNull() ?: 1
-        val r = CroesusRewardParser.parseLine(base)
+        // essence lines only parse with their "xN" suffix intact
+        val full = CroesusRewardParser.parseLine(name)
+        val r = if (full[0].startsWith("ESSENCE_")) full else CroesusRewardParser.parseLine(base)
         if (r[0] == "false") return 0.0
         val q = if (r[0].startsWith("ESSENCE_")) (r[1].toIntOrNull() ?: qty) else qty
         return CroesusPrices.price(r[0]) * q
@@ -115,7 +119,7 @@ object KuudraChests {
                 }
                 val v = price(l)
                 value += v
-                val am = AMOUNT.find(l)
+                val am = AMOUNT.find(l.replace(",", ""))
                 drops += Triple(am?.groupValues?.get(1) ?: l, am?.groupValues?.get(2)?.toIntOrNull() ?: 1, v)
                 out += "§a${Mining.short(v)}	§f$l"
             }

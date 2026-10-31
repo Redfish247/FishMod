@@ -26,11 +26,12 @@ object ClassColoredBoots {
     @JvmStatic
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
-            if (!FishSettings.classColoredBootsEnabled || mc.player == null) return@register
+            if (!FishSettings.classColoredBootsEnabled) return@register
+            val player = mc.player ?: return@register
             val rgb = colorFor(DungeonClass.currentClass)
             if (rgb < 0) return@register
             try {
-                val boots = mc.player!!.getItemBySlot(EquipmentSlot.FEET)
+                val boots = player.getItemBySlot(EquipmentSlot.FEET)
                 if (boots == null || boots.isEmpty) return@register
                 val color = rgb and 0xFFFFFF
                 if (boots.get(DataComponents.DYED_COLOR)?.rgb() != color) boots.set(DataComponents.DYED_COLOR, DyedItemColor(color))

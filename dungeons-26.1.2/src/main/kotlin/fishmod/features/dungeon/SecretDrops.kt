@@ -1,5 +1,6 @@
 package fishmod.features.dungeon
 
+import fishmod.utils.TextStrip
 import net.minecraft.core.BlockPos
 import net.minecraft.network.protocol.game.ClientboundSoundPacket
 import net.minecraft.world.level.Level
@@ -19,11 +20,10 @@ object SecretDrops {
     )
     // Wither essence + redstone key skull owners (Odin DungeonUtils)
     private val SECRET_SKULLS = setOf("e0f3e929-869e-3dca-9504-54c666ee6f23", "fed95410-aba1-39df-9b95-1d4f361eb66e")
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     @JvmStatic
     fun isSecretItem(e: ItemEntity): Boolean {
-        val name = COLOR.replace(e.item.hoverName.string, "").trim()
+        val name = TextStrip.plain(e.item.hoverName.string).trim()
         return ITEM_NAMES.any { name == it || name.endsWith(it) }
     }
 

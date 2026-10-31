@@ -22,14 +22,25 @@ object PracticeMode {
         ClientPlayConnectionEvents.JOIN.register(ClientPlayConnectionEvents.Join { _, _, mc ->
             try { refresh(mc) } catch (t: Throwable) { FishDiag.fail("PracticeMode.1", "practice mode refresh on join", t) }
         })
+        // The sim announces each boss end in chat; follow it so no manual /fmpractice is needed mid-run.
+        Events.ON_GAME_MESSAGE.register { text ->
+            if (active) {
+                val s = text.string
+                if (s.startsWith("Goldor killed in") || s.startsWith("Goldor finished in")) phaseOverride = 8
+                else if (s.startsWith("Necron finished in") || s.startsWith("Necron killed in")) phaseOverride = 9
+            }
+            false
+        }
         ClientPlayConnectionEvents.DISCONNECT.register(ClientPlayConnectionEvents.Disconnect { _, _ ->
             active = false
             phaseOverride = -1
         })
     }
 
+    private val BUILTIN_IPS = listOf("hypixelp3sim.zapto.org", "mc.strad.dev")
+
     private fun ips(): List<String> =
-        FishSettings.practiceServerIps.split(',').map { it.trim().lowercase() }.filter { it.isNotEmpty() }
+        (FishSettings.practiceServerIps.split(',').map { it.trim().lowercase() }.filter { it.isNotEmpty() } + BUILTIN_IPS).distinct()
 
     private fun refresh(mc: Minecraft) {
         val addr = mc.currentServer?.ip?.trim()?.lowercase().orEmpty()
@@ -52,15 +63,15 @@ object PracticeMode {
     @JvmStatic
     fun command(arg: String?) {
         when (arg?.lowercase()?.trim()) {
-            null, "", "status" -> msg("active=§f$active §7phase=§f${label(phaseOverride)} §7ips=§f${FishSettings.practiceServerIps}")
+            null, "", "status" -> msg("active=§f$active §7phase=§f${label(phaseOverride)} §7ips=§f${ips().joinToString(",")}")
             "off", "auto" -> { phaseOverride = -1; msg("phase override cleared — following the real tracker") }
             "here" -> addHere()
             "p1" -> set(4)
             "p2" -> set(5)
             "p3", "p3t", "terminals" -> set(6)
             "p3g", "tunnel", "goldor" -> set(7)
-            "p4" -> set(8)
-            "p5", "dragons" -> set(9)
+            "p4", "4", "necron" -> set(8)
+            "p5", "5", "dragons" -> set(9)
             else -> msg("§cusage: /fmpractice [status|here|off|p1|p2|p3|p3g|p4|p5]")
         }
     }

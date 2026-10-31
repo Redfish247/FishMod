@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.compat.curScreen
 
 import fishmod.features.mining.Mining
 import fishmod.utils.events.Events
@@ -18,6 +19,7 @@ object Pests {
     private val DROP = Regex("""received (\d+)x (.+?) for killing an? ([A-Za-z ]+)!""")
     private val NO_PESTS = Regex("""There are not any Pests on your Garden""")
     private val COUNT = Regex("""x(\d+)""")
+    private val PLOT_SEP = Regex(",| and ")
 
     // Hypixel plot numbers on the 5x5 grid, north to south
     private val LAYOUT = arrayOf(
@@ -49,7 +51,7 @@ object Pests {
     }
 
     fun init() {
-        Events.ON_GAME_MESSAGE.register { t -> onChat(Garden.strip(t.string).trim()); false }
+        Events.ON_GAME_MESSAGE.register { t -> if (Garden.inGarden()) onChat(Garden.strip(t.string).trim()); false }
         Events.ON_WORLD_CHANGE.register { tabPlots = emptyList(); trail.clear(); guess = null; false }
         Events.ON_PARTICLE.register { p ->
             if (S.gardenPestFinder && p.particle.type === net.minecraft.core.particles.ParticleTypes.ANGRY_VILLAGER && p.count == 1 && p.maxSpeed == 0f && Garden.inGarden() && holdingVacuum()) {
@@ -63,7 +65,7 @@ object Pests {
         }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null) return@register
-            scrapePlots(mc.screen)
+            scrapePlots(mc.curScreen)
             if (tick++ % 10 != 0 || !Garden.inGarden()) return@register
             alive = Mining.sidebar.firstOrNull { it.contains("The Garden") || it.contains("ൠ") }?.let { COUNT.find(it)?.groupValues?.get(1)?.toIntOrNull() } ?: 0
             tabPlots = Mining.tabLine("Plots:")?.substringAfter(":")?.split(',', '&')?.mapNotNull { it.trim().toIntOrNull()?.takeIf { n -> n in 0..24 } } ?: emptyList()
@@ -101,7 +103,7 @@ object Pests {
         Garden.hud("Pest Timer", "garden_pests", 150, 40,
             { S.gardenPestHudX }, { S.gardenPestHudX = it }, { S.gardenPestHudY }, { S.gardenPestHudY = it },
             { S.gardenPestHudScale }, { S.gardenPestHudScale = it },
-            { S.gardenPestHud && Garden.inGarden() }) {
+            { S.gardenPestHud && Garden.inGarden() }, { S.gardenPestHud }) {
             val out = arrayListOf("${Garden.legacy(S.gardenPestHudColor)}§lPests §f$alive")
             if (cooldown.isNotEmpty()) out += "§7Cooldown: " + (if (cooldown.contains("READY", true)) "§a" else "§e") + cooldown
             val plots = if (tabPlots.isNotEmpty()) tabPlots else remembered.keys.toList()
@@ -122,7 +124,7 @@ object Pests {
             return
         }
         OFFLINE.find(s)?.let { m ->
-            for (t in m.groupValues[1].split(Regex(",| and "))) idFor(t.trim())?.let { remembered[it] = System.currentTimeMillis() }
+            for (t in m.groupValues[1].split(PLOT_SEP)) idFor(t.trim())?.let { remembered[it] = System.currentTimeMillis() }
             return
         }
         DROP.find(s)?.let { m ->

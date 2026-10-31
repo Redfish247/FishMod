@@ -1,4 +1,5 @@
 package fishmod.utils
+import fishmod.compat.hud
 
 import fishmod.shaded.practicalconfig.data.SoundData
 import fishmod.utils.config.values.ExtraOptions
@@ -46,7 +47,7 @@ object Misc {
 
     @JvmStatic
     fun addChatMessage(text: Component) {
-        forceMainThread { INSTANCE.gui.chat.addClientSystemMessage(Component.literal(ExtraOptions.textPrefix).append(text)) }
+        forceMainThread { INSTANCE.hud.chat.addClientSystemMessage(Component.literal(ExtraOptions.textPrefix).append(text)) }
     }
 
     @JvmStatic
@@ -56,21 +57,21 @@ object Misc {
 
     @JvmStatic
     fun setTitle(text: Component) {
-        forceMainThread { INSTANCE.gui.setTitle(text) }
+        forceMainThread { INSTANCE.hud.setTitle(text) }
     }
 
     @JvmStatic
     fun forceTitle(title: Component, subtitle: Component) {
         forceMainThread {
-            INSTANCE.gui.setTitle(title)
-            INSTANCE.gui.setSubtitle(subtitle)
+            INSTANCE.hud.setTitle(title)
+            INSTANCE.hud.setSubtitle(subtitle)
         }
     }
 
     @JvmStatic
     fun forceTitle(title: Component, subtitle: Component, stayMs: Int) {
         forceMainThread {
-            val gui = INSTANCE.gui
+            val gui = INSTANCE.hud
             val acc = gui as fishmod.mixin.accessors.GuiAccessor
             acc.`fishmod$setTitleFadeInTime`(5)
             acc.`fishmod$setTitleStayTime`((stayMs / 50).coerceIn(1, 20 * 120))

@@ -25,10 +25,11 @@ import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 public final class NetworthData {
-	private static JsonObject applicationWorth;
-	private static JsonObject pets;
-	private static JsonObject misc;
-	private static Map<String, String> reforges = Map.of();
+	// applicationWorth is published last so a non-null read implies the rest are loaded.
+	private static volatile JsonObject applicationWorth;
+	private static volatile JsonObject pets;
+	private static volatile JsonObject misc;
+	private static volatile Map<String, String> reforges = Map.of();
 
 	private NetworthData() {
 	}
@@ -37,8 +38,16 @@ public final class NetworthData {
 		if (applicationWorth != null) {
 			return;
 		}
+		synchronized (NetworthData.class) {
+			if (applicationWorth == null) {
+				loadAll();
+			}
+		}
+	}
+
+	private static void loadAll() {
 		JsonObject awRoot = load("data/networth/application_worth.json");
-		applicationWorth = awRoot != null && awRoot.has("APPLICATION_WORTH")
+		JsonObject aw = awRoot != null && awRoot.has("APPLICATION_WORTH") && awRoot.get("APPLICATION_WORTH").isJsonObject()
 			? awRoot.getAsJsonObject("APPLICATION_WORTH")
 			: new JsonObject();
 		pets = load("data/networth/pets.json");
@@ -59,6 +68,7 @@ public final class NetworthData {
 			}
 		}
 		reforges = Map.copyOf(map);
+		applicationWorth = aw;
 	}
 
 	public static double worth(String key, double fallback) {

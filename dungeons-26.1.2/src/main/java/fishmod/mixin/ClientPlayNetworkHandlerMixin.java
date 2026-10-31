@@ -3,6 +3,7 @@ package fishmod.mixin;
 import fishmod.utils.Misc;
 import fishmod.utils.config.values.ExtraOptions;
 import fishmod.utils.debug.Debug;
+import fishmod.utils.debug.MixinGuard;
 import fishmod.utils.events.Events;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -41,20 +42,17 @@ public class ClientPlayNetworkHandlerMixin {
 
     @Inject(method = "applyPlayerInfoUpdate", at = @At(value = "TAIL"))
     private void onPlayerList(ClientboundPlayerInfoUpdatePacket.Action action, ClientboundPlayerInfoUpdatePacket.Entry receivedEntry, PlayerInfo currentEntry, CallbackInfo ci) {
-        try {
-            Events.ON_PLAYER_ENTRY.invoke(playerListEvent -> playerListEvent.onNewPlayerEntry(receivedEntry));
-        } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("ClientPlayNetworkHandlerMixin.1", "player list entry event failed action=" + action, t);
-        }
+        MixinGuard.run("ClientPlayNetworkHandlerMixin.1", "player list entry event failed",
+                () -> Events.ON_PLAYER_ENTRY.invoke(playerListEvent -> playerListEvent.onNewPlayerEntry(receivedEntry)));
     }
 
     @Inject(method = "handleAddEntity", at = @At("HEAD"), cancellable = true)
     private void fishmod$renderOptimizerHideEntities(net.minecraft.network.protocol.game.ClientboundAddEntityPacket packet, CallbackInfo ci) {
         if (!fishmod.utils.config.values.Visual.renderOptimizer) return;
         net.minecraft.world.entity.EntityType<?> t = packet.getType();
-        if ((fishmod.utils.config.values.Visual.roHideFallingBlocks && t == net.minecraft.world.entity.EntityType.FALLING_BLOCK)
-                || (fishmod.utils.config.values.Visual.roHideLightning && t == net.minecraft.world.entity.EntityType.LIGHTNING_BOLT)
-                || (fishmod.utils.config.values.Visual.roHideExperienceOrbs && t == net.minecraft.world.entity.EntityType.EXPERIENCE_ORB)) {
+        if ((fishmod.utils.config.values.Visual.roHideFallingBlocks && t == fishmod.compat.ET.FALLING_BLOCK)
+                || (fishmod.utils.config.values.Visual.roHideLightning && t == fishmod.compat.ET.LIGHTNING_BOLT)
+                || (fishmod.utils.config.values.Visual.roHideExperienceOrbs && t == fishmod.compat.ET.EXPERIENCE_ORB)) {
             ci.cancel();
         }
     }
@@ -62,11 +60,8 @@ public class ClientPlayNetworkHandlerMixin {
     @Inject(method = "handleAddEntity", at = @At("TAIL"))
     private void fishmod$onEntitySpawned(net.minecraft.network.protocol.game.ClientboundAddEntityPacket packet, CallbackInfo ci, @Local Entity entity) {
         if (entity == null) return;
-        try {
-            Events.ON_ENTITY_SPAWNED.invoke(e -> e.onEntity(entity, this.level));
-        } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("ClientPlayNetworkHandlerMixin.2", "entity spawned event failed type=" + entity.getType(), t);
-        }
+        MixinGuard.run("ClientPlayNetworkHandlerMixin.2", "entity spawned event failed",
+                () -> Events.ON_ENTITY_SPAWNED.invoke(e -> e.onEntity(entity, this.level)));
     }
 
     @Inject(method = "handleSoundEvent", at = @At(value = "HEAD"), cancellable = true)
@@ -121,13 +116,9 @@ public class ClientPlayNetworkHandlerMixin {
     @Inject(method = "handleParticleEvent", at = @At("HEAD"), cancellable = true)
     private void onParticle(ClientboundLevelParticlesPacket packet, CallbackInfo ci) {
         if (!Minecraft.getInstance().isSameThread()) return;
-        try {
-            if (Events.ON_PARTICLE.invoke(particleEvent -> particleEvent.onParticle(packet))) {
-                ci.cancel();
-            }
-        } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("ClientPlayNetworkHandlerMixin.5", "particle event failed", t);
-        }
+        MixinGuard.run("ClientPlayNetworkHandlerMixin.5", "particle event failed", () -> {
+            if (Events.ON_PARTICLE.invoke(particleEvent -> particleEvent.onParticle(packet))) ci.cancel();
+        });
     }
 
     @WrapOperation(method = "handleBundlePacket", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/Packet;handle(Lnet/minecraft/network/PacketListener;)V"))
@@ -142,7 +133,7 @@ public class ClientPlayNetworkHandlerMixin {
                 }
             }
 
-            Events.ON_PACKET.invoke(packetEvent -> packetEvent.onPacket(packet));
+            if (fishmod.utils.events.PacketFilter.wanted(packet)) Events.ON_PACKET.invoke(packetEvent -> packetEvent.onPacket(packet));
         } catch (Throwable t) {
             fishmod.utils.debug.FishDiag.fail("ClientPlayNetworkHandlerMixin.6", "bundled packet event failed packet=" + packet.getClass().getSimpleName(), t);
         }
@@ -170,13 +161,11 @@ public class ClientPlayNetworkHandlerMixin {
     @Inject(method = "setSubtitleText", at = @At("HEAD"), cancellable = true)
     private void fishmod$onSubtitle(net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket packet, CallbackInfo ci) {
         if (!Minecraft.getInstance().isSameThread()) return;
-        try {
+        MixinGuard.run("ClientPlayNetworkHandlerMixin.8", "subtitle packet handling failed", () -> {
             Component text = packet.text();
             if (text != null && (fishmod.features.dungeon.f7.StormOverAlert.shouldHideServerCountdown(text)
                     || fishmod.features.dungeon.f7.TitleHider.shouldHideTitle(text))) ci.cancel();
-        } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("ClientPlayNetworkHandlerMixin.8", "subtitle packet handling failed", t);
-        }
+        });
     }
 
     @Inject(method = "handleSystemChat", at = @At("HEAD"), cancellable = true)
@@ -186,14 +175,9 @@ public class ClientPlayNetworkHandlerMixin {
             fishmod$lastBundledSystemChat = null;
             return;
         }
-        try {
-            if (!packet.overlay()) {
-                if (Events.ON_GAME_MESSAGE.invoke(gameMessageEvent -> gameMessageEvent.onGameMessage(packet.content()))) {
-                    ci.cancel();
-                }
-            }
-        } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("ClientPlayNetworkHandlerMixin.9", "system chat event failed", t);
-        }
+        if (packet.overlay()) return;
+        MixinGuard.run("ClientPlayNetworkHandlerMixin.9", "system chat event failed", () -> {
+            if (Events.ON_GAME_MESSAGE.invoke(gameMessageEvent -> gameMessageEvent.onGameMessage(packet.content()))) ci.cancel();
+        });
     }
 }

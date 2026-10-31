@@ -1,4 +1,5 @@
 package fishmod.utils.rendering
+import fishmod.compat.curScreen
 
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
@@ -19,7 +20,7 @@ object UiScale {
     }
 
     @JvmStatic
-    fun userScale(screen: net.minecraft.client.gui.screens.Screen? = Minecraft.getInstance().screen): Float {
+    fun userScale(screen: net.minecraft.client.gui.screens.Screen? = Minecraft.getInstance().curScreen): Float {
         if (!FishSettings.guiSettings || screen == null) return 1f
         val pct = when (screen) {
             is fishmod.features.FishModScreen -> FishSettings.guiScaleMain
@@ -38,7 +39,7 @@ object UiScale {
     }
 
     private fun isSiblingScreen(): Boolean {
-        val s = Minecraft.getInstance().screen ?: return false
+        val s = Minecraft.getInstance().curScreen ?: return false
         return s is fishmod.features.HasUiOverlay && s !is fishmod.features.FishModScreen
     }
 

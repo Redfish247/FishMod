@@ -14,10 +14,7 @@ import com.google.gson.JsonParser;
 import fishmod.pv.BetterPV;
 import fishmod.pv.data.SoftDataFailure;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import fishmod.utils.Http;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,12 +31,7 @@ public final class EliteBotApiClient {
 	private static final Duration TIMEOUT = Duration.ofSeconds(15);
 	private static final long SPACING_MS = 400L;
 
-	private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
-	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2, r -> {
-		Thread t = new Thread(r, "BetterPV-EliteBot");
-		t.setDaemon(true);
-		return t;
-	});
+	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2, PvExecutors.daemon("BetterPV-EliteBot"));
 	private static long nextRequestAtMillis;
 
 	private EliteBotApiClient() {
@@ -68,48 +60,17 @@ public final class EliteBotApiClient {
 	}
 
 	private static Optional<JsonArray> getArray(String url) {
-		waitForSlot();
-		try {
-			HttpRequest request = HttpRequest.newBuilder(URI.create(url)).timeout(TIMEOUT).GET().build();
-			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
-			if (response.statusCode() < 200 || response.statusCode() >= 300 || response.body() == null || response.body().isBlank()) {
-				BetterPV.LOGGER.warn("Elite GET {} status={}", url, response.statusCode());
-				return Optional.empty();
-			}
-			JsonElement el = JsonParser.parseString(response.body());
-			if (el.isJsonArray()) {
-				return Optional.of(el.getAsJsonArray());
-			}
-			return Optional.empty();
-		} catch (IOException | InterruptedException exception) {
-			BetterPV.LOGGER.warn("Elite GET {} failed", url, exception);
-			if (exception instanceof InterruptedException) {
-				Thread.currentThread().interrupt();
-			}
-			return Optional.empty();
-		} catch (RuntimeException exception) {
-			if (!SoftDataFailure.isSoft(exception)) {
-				throw exception;
-			}
-			BetterPV.LOGGER.warn("Elite GET {} parse failed", url, exception);
-			return Optional.empty();
-		}
+		return get(url).filter(JsonElement::isJsonArray).map(JsonElement::getAsJsonArray);
 	}
 
 	private static Optional<JsonObject> getObject(String url) {
+		return get(url).filter(JsonElement::isJsonObject).map(JsonElement::getAsJsonObject);
+	}
+
+	private static Optional<JsonElement> get(String url) {
 		waitForSlot();
 		try {
-			HttpRequest request = HttpRequest.newBuilder(URI.create(url)).timeout(TIMEOUT).GET().build();
-			HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
-			if (response.statusCode() < 200 || response.statusCode() >= 300 || response.body() == null || response.body().isBlank()) {
-				BetterPV.LOGGER.warn("Elite GET {} status={}", url, response.statusCode());
-				return Optional.empty();
-			}
-			JsonElement el = JsonParser.parseString(response.body());
-			if (el.isJsonObject()) {
-				return Optional.of(el.getAsJsonObject());
-			}
-			return Optional.empty();
+			return Optional.of(Http.getJson(url, TIMEOUT));
 		} catch (IOException | InterruptedException exception) {
 			BetterPV.LOGGER.warn("Elite GET {} failed", url, exception);
 			if (exception instanceof InterruptedException) {

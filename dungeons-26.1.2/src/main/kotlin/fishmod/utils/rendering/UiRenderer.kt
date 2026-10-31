@@ -1,4 +1,5 @@
 package fishmod.utils.rendering
+import fishmod.compat.mainTarget
 
 import fishmod.utils.debug.FishDiag
 import net.minecraft.client.Minecraft
@@ -24,6 +25,7 @@ object UiRenderer {
     private var vbo = 0
     private var uView = -1
     private var uAtlas = -1
+    private val noUi = System.getProperty("fishmod.noui") != null
     private var failed = false
     private var failLogged = false
     private var consecutiveFailures = 0
@@ -147,7 +149,7 @@ void main(){
 
     @JvmStatic
     fun paint(screenW: Int, screenH: Int, scale: Float) {
-        if (failed) return
+        if (failed || noUi) return
         guard.capture()
         try {
             init()
@@ -175,6 +177,8 @@ void main(){
             GL11.glDisable(GL11.GL_SCISSOR_TEST)
             GL11.glDepthMask(false)
             scissors.clear()
+            // A paint that threw mid-replay leaves stale floats behind; drop them or they draw in place of this frame's.
+            buf.clear()
             verts = 0
             if (!(scale > 0f)) FishDiag.fail("UiRenderer.7", "UI paint with invalid scale $scale")
             UiRecorder.replay(scale)
@@ -205,7 +209,7 @@ void main(){
 
     // Draw into the GUI's own target, not whatever FBO is left bound (vanilla unbinds to 0, ImmediatelyFast doesn't) or a guess at the main target (other mods redirect GUI output).
     private fun bindMainTarget() {
-        val mainTex = (Minecraft.getInstance().mainRenderTarget.colorTexture as? com.mojang.blaze3d.opengl.GlTexture)?.glId() ?: 0
+        val mainTex = (Minecraft.getInstance().mainTarget.colorTexture as? com.mojang.blaze3d.opengl.GlTexture)?.glId() ?: 0
         val passTex = lastPassColorTex
         if (!targetLogged) {
             targetLogged = true
@@ -213,7 +217,7 @@ void main(){
         }
         if (passTex != 0 && GL11.glIsTexture(passTex) && attach(passTex)) return
         if (mainTex == 0) {
-            FishDiag.fail("UiRenderer.11", "main render target colour texture is not a GlTexture: ${Minecraft.getInstance().mainRenderTarget.colorTexture?.javaClass?.name}")
+            FishDiag.fail("UiRenderer.11", "main render target colour texture is not a GlTexture: ${Minecraft.getInstance().mainTarget.colorTexture?.javaClass?.name}")
             return
         }
         attach(mainTex)

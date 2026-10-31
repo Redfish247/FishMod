@@ -1,4 +1,5 @@
 package fishmod.features.mining
+import fishmod.compat.curScreen
 
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.DrawEvents
@@ -39,11 +40,11 @@ object Commissions {
         MiningHuds.reg("Commissions", "mining_comms", 160, 50,
             { S.miningCommHudX }, { S.miningCommHudX = it }, { S.miningCommHudY }, { S.miningCommHudY = it },
             { S.miningCommHudScale }, { S.miningCommHudScale = it },
-            { (S.miningCommissions && S.miningCommHud) && current.isNotEmpty() }, ::lines)
+            { (S.miningCommissions && S.miningCommHud) && current.isNotEmpty() }, { (S.miningCommissions && S.miningCommHud) }, ::lines)
 
         DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y ->
             if (!(S.miningCommissions && S.miningCommHighlight) || stack.isEmpty) return@register
-            val scr = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return@register
+            val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return@register
             if (scr.title.string != "Commissions") return@register
             val slot = DrawEvents.currentSlot ?: return@register
             if (slot.container === Minecraft.getInstance().player?.inventory) return@register

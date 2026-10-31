@@ -1,4 +1,6 @@
 package fishmod.features
+import fishmod.compat.curScreen
+import fishmod.compat.showScreen
 
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.InputConstants
@@ -38,7 +40,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         private val lockedVal: Boolean = false,
         private val getScaleVal: DoubleSupplier? = null,
         private val setScaleVal: DoubleConsumer? = null,
-        private val visibleVal: BooleanSupplier? = null
+        private val visibleVal: BooleanSupplier? = null,
+        private val enabledVal: BooleanSupplier? = null
     ) {
         fun name(): String = nameVal
         fun getX(): IntSupplier = getXVal
@@ -52,6 +55,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
 
         fun scale(): Double = if (getScaleVal != null) getScaleVal.asDouble else 1.0
         fun isVisible(): Boolean = visibleVal == null || visibleVal.asBoolean
+        /** Setting-level on/off for the list pill (not "showing right now"). */
+        fun isEnabledInList(): Boolean =
+            enabledVal?.asBoolean ?: FeatureMasters.map[nameVal]?.invoke() ?: isVisible()
     }
 
     companion object {
@@ -93,6 +99,19 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             visible: BooleanSupplier
         ) {
             addEntry(HudEntry(name, getX, setX, getY, setY, w, h, false, getScale, setScale, visible))
+        }
+
+        @JvmStatic
+        fun register(
+            name: String,
+            getX: IntSupplier, setX: IntConsumer,
+            getY: IntSupplier, setY: IntConsumer,
+            w: Int, h: Int,
+            getScale: DoubleSupplier, setScale: DoubleConsumer,
+            visible: BooleanSupplier,
+            enabled: BooleanSupplier?
+        ) {
+            addEntry(HudEntry(name, getX, setX, getY, setY, w, h, false, getScale, setScale, visible, enabled))
         }
 
         @JvmStatic
@@ -203,7 +222,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Floor 7" to listOf(
                 "Tick Timer", "Wither Dragon Timer", "Crystal Spawn Time", "Crystal Reminder",
                 "Storm Death Time", "LB Release Timer", "Py Tick Timer", "Necron LB Timer", "Storm Crushed", "Pillar Explosion Timer", "Term Start Timer",
-                "Section Progress", "Goldor Splits", "Current Section", "Device Completed",
+                "Section Progress", "Goldor Splits", "Terminal Tracker", "Current Section", "Device Completed",
                 "Melody Warning", "Section Completion", "Storm Over Alert", "Veno Stack Count", "Players Leaped",
                 "Relic Spawn Timer",
             ),
@@ -217,9 +236,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             "Farming" to listOf(
                 "Visitor Timer", "Visitor Shopping List", "Visitor Stats", "Charmed Visitor", "Pest Timer", "Pest Profit", "Farming Profit", "Composter", "Jacob's Contest", "Rare Crops",
                 "Rare Drop Alert", "Garden Titles", "Crop Milestone", "Garden Level", "Hoe Level", "Jeff Buy Order", "Greenhouse", "Stereo Harmony",
-                "Log Book", "Sensitivity",
+                "Log Book", "Sensitivity", "Anita Medal Profit",
             ),
-            "Kuudra" to listOf("Kuudra Build", "Kuudra Chest Counter", "Kuudra Chest Value", "Kuudra Fresh Timers", "Kuudra Health", "Kuudra Profit", "Kuudra Splits", "Kuudra Supplies"),
+            "Kuudra" to listOf("Kuudra Backbone", "Kuudra Build", "Kuudra Chest Counter", "Kuudra Chest Value", "Kuudra Fresh Timers", "Kuudra Health", "Kuudra Profit", "Kuudra Splits", "Kuudra Supplies"),
         )
 
         private class Sample(
@@ -256,6 +275,12 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                 "§63rd " to "§a11.92s§8 (§711.70s§8)",
                 "§64th " to "§a14.05s§8 (§713.85s§8)",
             ), width = 120),
+            "Terminal Tracker" to Sample(
+                listOf("§fTerminals", "§fS2 (5/8)", " §bTerm #1 §fTechnoFish", " §bTerm #2 §fGoldorMain",
+                    " §dDev #1 §fSlowGuy", " §cLever #1 §fTechnoFish", " §cLever #2 §fHealerGuy", " §cMissing 3", " §cGate pending"),
+                lineH = 10,
+                bg = 0x66000000,
+            ),
             "Splits" to cols(listOf(
                 "§4Blood Open " to "§a25.70s§8 (§725.10s§8)",
                 "§cBlood Clear " to "§a1m 7.02s§8 (§765.40s§8)",
@@ -315,7 +340,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             ),
             "Tac Timer" to s("§5Tac: §a2.4"),
             "Arrow HUD" to s("§fFlint Arrow §7x§f1,284"),
-            "Kuudra Splits" to s("§6§lKuudra Splits §7T5", "§bSupplies: §a38.2s §8(36.9s)", "§bBuild: §a41.5s §8(40.1s)", "§bFuel/Stun: §a22.8s §8(21.5s)", "§bKuudra: §e18.3s", "§fTotal: §e2m 1.8s §8(1m 58s)"),
+            "Kuudra Splits" to s("§6§lKuudra Splits §7T5", "§bSupplies: §a38.2s §8(36.9s)", "§bBuild: §a41.5s §8(40.1s)", "§bEat: §a22.8s §8(21.5s)", "§bKill: §e18.3s", "§fTotal: §e2m 1.8s §8(1m 58s)"),
             "Kuudra Supplies" to s("§6Supplies: §a4§7/6", "§eSupply 1 §73.2s", "§eSupply 2 §76.8s", "§eSupply 3 §79.1s", "§eSupply 4 §711.4s"),
             "Kuudra Build" to s("§bBuild: §e64%", "§bBuilders: §a3", "§bFreshers: §a2"),
             "Kuudra Fresh Timers" to s("§6TechnoFish§f: 7.4s", "§6GoldorMain§f: 4.1s"),
@@ -388,7 +413,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         const val SCORE_TITLE_W = 200
 
         @JvmStatic
-        fun isOpen(): Boolean = Minecraft.getInstance().screen is FishHudEditor
+        fun isOpen(): Boolean = Minecraft.getInstance().curScreen is FishHudEditor
 
         private const val SNAP = 4
         private const val MARGIN = 4
@@ -410,8 +435,8 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         private const val HANDLE_W = 10
         private const val HANDLE_H = 44
 
-        private val ACCENT = ScreenTheme.ACCENT
-        private val ACCENT_HOVER = ScreenTheme.ACCENT_HOVER
+        private val ACCENT get() = ScreenTheme.ACCENT
+        private val ACCENT_HOVER get() = ScreenTheme.ACCENT_HOVER
         private val TEXT = ScreenTheme.TEXT_COLOR
         private val SUBTEXT = ScreenTheme.SUBTEXT_COLOR
         private val ON_ACCENT = 0xFF06302F.toInt()
@@ -751,6 +776,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         val sc = e.scale().toFloat()
         val pose = ctx.pose()
         pose.pushMatrix()
+        try {
         pose.translate(x.toFloat(), y.toFloat())
         pose.scale(sc, sc)
         if (s != null) {
@@ -765,7 +791,9 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
             ctx.fill(0, 0, e.w(), e.h(), 0x40000000)
             ctx.centeredText(this.font, "§7" + e.name(), e.w() / 2, (e.h() - 8) / 2, 0xFFFFFFFF.toInt())
         }
-        pose.popMatrix()
+        } finally {
+            pose.popMatrix()
+        }
     }
 
     private fun ellipsize(s: String, maxW: Float, size: Float): String {
@@ -775,7 +803,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
     }
 
     private fun centerText(s: String, cx: Float, y: Float, size: Float, color: Int) {
-        UiRecorder.textBold(s, cx - UiRecorder.textWidth(s, size) / 2f, y, size, color)
+        UiRecorder.textBold(s, cx - UiRecorder.textWidthBold(s, size) / 2f, y, size, color)
     }
 
     override fun extractRenderState(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, delta: Float) {
@@ -816,7 +844,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                     val ts = 6.5f
                     val ty = if (y - 2 - 10f * k >= 1f) (y - 2) / k - 10f else (y + h + 2) / k
                     val tx = (x - 1) / k
-                    UiRecorder.fillRoundedRect(tx, ty, UiRecorder.textWidth(tag, ts) + 7f, 10f, 3f, ACCENT)
+                    UiRecorder.fillRoundedRect(tx, ty, UiRecorder.textWidthBold(tag, ts) + 7f, 10f, 3f, ACCENT)
                     UiRecorder.textBold(tag, tx + 3.5f, ty + (10f - ts) / 2f, ts, ON_ACCENT)
                     if (e.setScale() != null && !e.locked()) {
                         UiRecorder.roundedRectRing(
@@ -845,7 +873,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         val ts = 6.5f
         val lead = sel?.name() ?: if (picked.isEmpty()) "Hover the left edge to pick a HUD to move" else "Click a HUD to select it"
         val rest = if (sel != null) "  ·  ${Math.round(sel.scale() * 100)}%  ·  x ${sel.getX().asInt}, y ${sel.getY().asInt}" else ""
-        val lw = UiRecorder.textWidth(lead, ts) + if (sel != null) 0.4f else 0f
+        val lw = if (sel != null) UiRecorder.textWidthBold(lead, ts) else UiRecorder.textWidth(lead, ts)
         val pw = lw + UiRecorder.textWidth(rest, ts) + 18f
         val ph = 13f
         val px = (cW() - pw) / 2f
@@ -965,7 +993,7 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
                         if (on) rowBg(yf, ROW_PICKED)
                         if (hov) rowBg(yf, ROW_HOV)
                         if (on) UiRecorder.fillRoundedRect(4f, yf + 2.5f, 2f, SIDE_ROW - 5f, 1f, ACCENT)
-                        val off = !row.e.isVisible()
+                        val off = !row.e.isEnabledInList()
                         val col = if (off) 0xFF666B72.toInt() else if (on) TEXT else LABEL
                         val tw = UiRecorder.textWidth("off", 5.5f)
                         val ox = sideW - 10f - tw - 6f
@@ -1224,6 +1252,6 @@ class FishHudEditor(private val parent: Screen) : Screen(Component.literal("Edit
         try { FishConfig.manager.save() } catch (t: Throwable) { FishDiag.fail("FishHudEditor.9", "config save on HUD editor close failed", t) }
         fishmod.features.achievements.AchUsage.onHudSaved()
         try { fishmod.features.chat.ChatRuleStore.save() } catch (t: Throwable) { FishDiag.fail("FishHudEditor.10", "chat rule save on HUD editor close failed", t) }
-        Minecraft.getInstance().setScreen(parent)
+        Minecraft.getInstance().showScreen(parent)
     }
 }

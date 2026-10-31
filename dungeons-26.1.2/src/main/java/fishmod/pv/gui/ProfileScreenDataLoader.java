@@ -560,6 +560,6 @@ final class ProfileScreenDataLoader {
 	}
 
 	private boolean stillCurrent(Minecraft client, int generation) {
-		return client.screen == this.screen && this.screen.isLoadGeneration(generation);
+		return fishmod.compat.McCompatKt.getCurScreen(client) == this.screen && this.screen.isLoadGeneration(generation);
 	}
 }

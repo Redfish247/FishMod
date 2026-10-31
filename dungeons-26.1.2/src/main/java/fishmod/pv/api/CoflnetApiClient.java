@@ -36,12 +36,8 @@ public final class CoflnetApiClient {
 	private static final Duration TIMEOUT = Duration.ofSeconds(12);
 	private static final long SPACING_MS = 350L;
 
-	private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
-	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2, r -> {
-		Thread t = new Thread(r, "BetterPV-Coflnet");
-		t.setDaemon(true);
-		return t;
-	});
+	private static final HttpClient HTTP = fishmod.utils.Http.CLIENT;
+	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2, PvExecutors.daemon("BetterPV-Coflnet"));
 	private static long nextRequestAtMillis;
 
 	private CoflnetApiClient() {

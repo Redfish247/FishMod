@@ -17,7 +17,7 @@ import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.entity.ai.attributes.Attributes
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.entity.monster.Giant
-import net.minecraft.world.entity.monster.MagmaCube
+import fishmod.compat.MagmaCubeT
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.phys.Vec3
 
@@ -45,7 +45,7 @@ object Kuudra {
     val piles = ArrayList<ArmorStand>()
     val players = ArrayList<Player>()
     var elle: ArmorStand? = null; private set
-    var boss: MagmaCube? = null; private set
+    var boss: MagmaCubeT? = null; private set
     var builders = 0; private set
     var buildPct = 0; private set
     var supplies = 0; private set
@@ -77,7 +77,7 @@ object Kuudra {
 
     @JvmStatic
     fun init() {
-        Events.ON_GAME_MESSAGE.register { c -> FishDiag.guard("Kuudra.1", "kuudra chat failed") { onChat(Mining.strip(c.string)) } ?: false }
+        Events.ON_GAME_MESSAGE.register { c -> inKuudra() && (FishDiag.guard("Kuudra.1", "kuudra chat failed") { onChat(Mining.strip(c.string)) } ?: false) }
         Events.ON_WORLD_CHANGE.register { reset(); false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || !inKuudra() || tick++ % 10 != 0) return@register
@@ -90,6 +90,7 @@ object Kuudra {
     }
 
     private fun reset() {
+        KuudraRequeue.reset()
         Supply.entries.forEach { it.active = true }
         giants.clear(); piles.clear(); players.clear(); freshers.clear(); supplyTimes.clear()
         boss = null; elle = null; phase = 0; tier = 0; builders = 0; buildPct = 0; supplies = 0
@@ -100,10 +101,10 @@ object Kuudra {
         val level = mc.level ?: return
         if (tier == 0) Mining.sidebar.firstNotNullOfOrNull { TIER.find(it) }?.let { tier = it.groupValues[1].toInt() }
         giants.clear(); piles.clear(); players.clear()
-        var bossFound: MagmaCube? = null
+        var bossFound: MagmaCubeT? = null
         for (e in level.entitiesForRendering()) when (e) {
             is Giant -> if (e.y < 67.0 && e.mainHandItem.hoverName.string.endsWith("Head")) giants.add(e)
-            is MagmaCube -> if (e.size == 30 && e.isAlive && e.getAttributeBaseValue(Attributes.MAX_HEALTH) >= 10000.0 && (bossFound == null || e.y > bossFound!!.y)) bossFound = e
+            is MagmaCubeT -> if (e.size == 30 && e.isAlive && e.getAttributeBaseValue(Attributes.MAX_HEALTH) >= 10000.0 && (bossFound == null || e.y > bossFound!!.y)) bossFound = e
             is ArmorStand -> {
                 val n = e.name.string
                 if (PROGRESS.containsMatchIn(n)) piles.add(e)
@@ -140,7 +141,7 @@ object Kuudra {
             msg.contains("[NPC] Elle: OMG! Great work collecting my supplies!") -> setPhase(2)
             msg.contains("[NPC] Elle: Phew! The Ballista is finally ready!") -> setPhase(3)
             msg.contains("[NPC] Elle: POW! SURELY THAT'S IT!") -> setPhase(4)
-            msg.trim() == "DEFEAT" -> { if (phase in 1..4) phase = 5 }
+            msg.trim() == "DEFEAT" -> { if (phase in 1..4) { phase = 5; phaseStart[4] = now(); KuudraRequeue.onRunEnd() } }  // freeze splits on a wipe
             msg.trim() == "KUUDRA DOWN!" || msg.contains(END) -> { if (phase in 1..4) endRun() }
             msg.contains(PRE) -> onPre()
             msg.contains(NOT_AGAIN) -> checkPre()
@@ -153,9 +154,14 @@ object Kuudra {
         PARTY_NOPRE.find(msg)?.let { onMissing(Supply.entries.first { s -> s.name.equals(it.groupValues[2].replace(" ", ""), true) }) }
         SUPPLY.find(msg)?.let { m ->
             supplies = m.groupValues[2].toInt()
-            val t = if (phaseStart[1] > 0) now() - phaseStart[1] else 0L
+            // supplies phase starts at phaseStart[0]; [1] is the build start
+            val t = if (phaseStart[0] > 0) now() - phaseStart[0] else 0L
             supplyTimes.add(m.groupValues[1] to t)
-            if (m.groupValues[1] == Minecraft.getInstance().player?.name?.string) fishmod.features.achievements.AchBus.post(fishmod.features.achievements.AchEvent.SupplyDelivered)
+            if (m.groupValues[1] == Minecraft.getInstance().player?.name?.string) {
+                fishmod.features.achievements.AchBus.post(fishmod.features.achievements.AchEvent.SupplyDelivered)
+                if (S.kuudraSupplyMaster && S.kuudraSupplyParty && S.kuudraSupplyMessage.isNotBlank())
+                    party(S.kuudraSupplyMessage.replace("{n}", m.groupValues[2]).replace("{total}", m.groupValues[3]))
+            }
             if (S.kuudraAlerts && S.kuudraAlertSupplies && supplies == m.groupValues[3].toInt()) alert("§a§lSupplies ${supplies}/${supplies}", "")
             if ((S.kuudraSupplyMaster && S.kuudraSupplyTimes) && phase == 1) {
                 FishMsg.send("§6${m.groupValues[1]} §a§lrecovered a supply in ${fmt(t)}! §r§8(${m.groupValues[2]}/${m.groupValues[3]})")
@@ -183,10 +189,12 @@ object Kuudra {
     private fun endRun() {
         val t = now()
         phaseStart[4] = t
-        KuudraHuds.onSplit(3, t - phaseStart[3])
+        // kill-phase line can be missed (joined late), don't record a bogus split
+        if (phaseStart[3] > 0) KuudraHuds.onSplit(3, t - phaseStart[3])
         KuudraHuds.onEnd(t - phaseStart[0])
         phase = 5
         KuudraChests.onRunEnd()
+        KuudraRequeue.onRunEnd()
         fishmod.features.achievements.AchBus.post(fishmod.features.achievements.AchEvent.KuudraEnded(tier, t - phaseStart[0]))
     }
 

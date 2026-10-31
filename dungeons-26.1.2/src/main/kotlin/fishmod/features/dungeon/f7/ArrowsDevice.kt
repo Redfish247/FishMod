@@ -1,5 +1,8 @@
 package fishmod.features.dungeon.f7
 
+import fishmod.compat.CB
+import fishmod.compat.CI
+
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.Location
@@ -120,11 +123,12 @@ object ArrowsDevice {
         val old = prev.put(pos.asLong(), state.block)
 
         FishDiag.check(markedPositions.size <= devicePositions.size, "ArrowsDevice.7") { "marked ${markedPositions.size} > ${devicePositions.size} targets" }
-        if (old == Blocks.EMERALD_BLOCK && state.`is`(Blocks.BLUE_TERRACOTTA)) {
+        if (old == Blocks.EMERALD_BLOCK && state.`is`(CB.BLUE_TERRACOTTA)) {
             markedPositions.add(pos.immutable())
             if (targetPosition == pos) targetPosition = null
-            if (FishSettings.arrowsDeviceShowAim) optimalAimPositions = calculateOptimalAimPositions(pos)
-        } else if (old == Blocks.BLUE_TERRACOTTA && state.`is`(Blocks.EMERALD_BLOCK)) {
+            // a hit block is marked, not a target: re-aim for the live target, or clear until the next green one
+            if (FishSettings.arrowsDeviceShowAim) optimalAimPositions = targetPosition?.let { calculateOptimalAimPositions(it) } ?: emptyList()
+        } else if (old == CB.BLUE_TERRACOTTA && state.`is`(Blocks.EMERALD_BLOCK)) {
             markedPositions.remove(pos)
             targetPosition = pos.immutable()
             if (FishSettings.arrowsDeviceShowAim) optimalAimPositions = calculateOptimalAimPositions(pos)
@@ -190,7 +194,7 @@ object ArrowsDevice {
             .filter { (b1, b2) -> target == b1 || target == b2 }
             .mapNotNull { (b1, b2) -> createAim(b1, b2) }
             .maxByOrNull { it.coveredBlocks.size } ?: run {
-                FishDiag.fail("ArrowsDevice.6", "no aim pair covers target $target (marked=${markedPositions.size})")
+                if (target in unmarked) FishDiag.fail("ArrowsDevice.6", "no aim pair covers unmarked target $target (marked=${markedPositions.size})")
                 return emptyList()
             }
 

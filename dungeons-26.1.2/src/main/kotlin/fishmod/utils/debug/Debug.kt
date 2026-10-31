@@ -1,4 +1,6 @@
 package fishmod.utils.debug
+import fishmod.compat.hud
+import fishmod.compat.showScreen
 
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -35,6 +37,17 @@ object Debug {
     @JvmField
     var renderPositions = false
 
+    var holoTrace = false
+    private var holoTraceAt = 0L
+
+    // Prints each nametag text containing "Hunters" at most every 3 s
+    fun holoTraceMsg(type: String, text: String) {
+        val now = System.currentTimeMillis()
+        if (!text.contains("Hunters") || now - holoTraceAt < 3000) return
+        holoTraceAt = now
+        Misc.addChatMessage(Component.literal("holo trace: $type '$text'"))
+    }
+
     @JvmField
     var sendNotiDebug = false
 
@@ -65,14 +78,14 @@ object Debug {
         dispatcher.register(
             ClientCommands.literal("fm")
                 .executes { _ ->
-                    Minecraft.getInstance().schedule { Minecraft.getInstance().setScreen(fishmod.features.FishModScreen()) }
+                    Minecraft.getInstance().schedule { Minecraft.getInstance().showScreen(fishmod.features.FishModScreen()) }
                     Constants.SUCCESS
                 }
                 .then(
                     ClientCommands.literal("bossbars")
                         .executes { _ ->
                             val mc = Minecraft.getInstance()
-                            val accessor = mc.gui.bossOverlay as BossBarHudAccessor
+                            val accessor = mc.hud.bossOverlay as BossBarHudAccessor
                             val bars = accessor.bossBars
                             if (bars == null || bars.isEmpty()) {
                                 Misc.addChatMessage(Component.literal("§cNo boss bars active."))
@@ -86,6 +99,8 @@ object Debug {
                         }
                 )
         )
+
+        dispatcher.register(ClientCommands.literal("fm").then(BoardReport.command("bug")).then(BoardReport.command("suggest")))
 
         dispatcher.register(
             ClientCommands.literal("badev")
@@ -147,6 +162,50 @@ object Debug {
                     Events.ON_GAME_MESSAGE.invoke { gameMessageEvent -> gameMessageEvent.onGameMessage(Component.literal(message)) }
                     Constants.SUCCESS
                 }))
+
+                .then(
+                    ClientCommands.literal("skyblock")
+                        .then(ClientCommands.literal("on").executes { _ ->
+                            Location.devSetSkyblock(true)
+                            Misc.addChatMessage(Component.literal("Fake SkyBlock: on"))
+                            Constants.SUCCESS
+                        })
+                        .then(ClientCommands.literal("off").executes { _ ->
+                            Location.devSetSkyblock(false)
+                            Misc.addChatMessage(Component.literal("Fake SkyBlock: off"))
+                            Constants.SUCCESS
+                        })
+                )
+
+                .then(ClientCommands.literal("latetext").executes { _ ->
+                    fishmod.utils.config.values.Visual.lateWorldText = !fishmod.utils.config.values.Visual.lateWorldText
+                    Misc.addChatMessage(Component.literal("Late world text (26.2): ").append(Misc.getStatusText(fishmod.utils.config.values.Visual.lateWorldText)))
+                    Constants.SUCCESS
+                })
+
+                .then(ClientCommands.literal("gizmos").executes { _ ->
+                    fishmod.utils.config.values.Visual.gizmoOverlays = !fishmod.utils.config.values.Visual.gizmoOverlays
+                    Misc.addChatMessage(Component.literal("Highlights via gizmos (26.2): ").append(Misc.getStatusText(fishmod.utils.config.values.Visual.gizmoOverlays)))
+                    Constants.SUCCESS
+                })
+
+                .then(ClientCommands.literal("holotrace").executes { _ ->
+                    holoTrace = !holoTrace
+                    Misc.addChatMessage(Component.literal("Holo trace: ").append(Misc.getStatusText(holoTrace)))
+                    Constants.SUCCESS
+                })
+
+                .then(ClientCommands.literal("holo").then(ClientCommands.argument("q", StringArgumentType.greedyString()).executes { c -> holoDump(StringArgumentType.getString(c, "q")); Constants.SUCCESS }).executes { _ ->
+                    val mc = net.minecraft.client.Minecraft.getInstance()
+                    val p = mc.player
+                    val lvl = mc.level
+                    if (p != null && lvl != null) {
+                        val all = lvl.entitiesForRendering().filter { it !== p && it.distanceTo(p) < 24 }
+                        Misc.addChatMessage(Component.literal("holo: ${all.size} entities within 24: " + all.groupingBy { it.type.toShortString() }.eachCount()))
+                        for (e in all.filter { it.hasCustomName() || it is net.minecraft.world.entity.Display || it.displayName?.string?.contains("Hunter") == true }.take(12)) Misc.addChatMessage(Component.literal("${e.type.toShortString()} '${e.customName?.string ?: e.displayName?.string}' d=${"%.1f".format(e.distanceTo(p))} y=${"%.1f".format(e.y - p.y)}"))
+                    }
+                    Constants.SUCCESS
+                })
 
                 .then(
                     ClientCommands.literal("location")
@@ -221,4 +280,16 @@ object Debug {
         Misc.addChatMessage(Component.literal("Gateblown: " + Section.isGateBlownUp()))
         Misc.addChatMessage(Component.literal("In floor 7: " + Phase.isInFloor7()))
     }
+}
+
+// /badev holo <text>: nearest entities (64 blocks) whose name contains the text
+private fun holoDump(q: String) {
+    val mc = net.minecraft.client.Minecraft.getInstance()
+    val p = mc.player ?: return
+    val lvl = mc.level ?: return
+    fun nm(e: net.minecraft.world.entity.Entity) = e.customName?.string ?: e.displayName?.string ?: ""
+    val all = lvl.entitiesForRendering().filter { it !== p && it.distanceTo(p) < 64 }
+    val hits = all.filter { nm(it).contains(q, true) }.sortedBy { it.distanceTo(p) }
+    Misc.addChatMessage(Component.literal("holo: ${all.size} entities within 64 ${all.groupingBy { it.type.toShortString() }.eachCount()}; ${hits.size} match '$q'"))
+    for (e in hits.take(15)) Misc.addChatMessage(Component.literal("${e.type.toShortString()} '${nm(e)}' d=${"%.1f".format(e.distanceTo(p))} dy=${"%.1f".format(e.y - p.y)}"))
 }

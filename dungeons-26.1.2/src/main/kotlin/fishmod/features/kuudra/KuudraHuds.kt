@@ -46,38 +46,38 @@ object KuudraHuds {
     fun init() {
         MiningHuds.reg("Kuudra Splits", "kuudra_splits", 120, 60,
             { S.kuudraSplitsX }, { S.kuudraSplitsX = it }, { S.kuudraSplitsY }, { S.kuudraSplitsY = it },
-            { S.kuudraSplitsScale }, { S.kuudraSplitsScale = it }, { S.kuudraSplits && on() }) { splitLines() }
+            { S.kuudraSplitsScale }, { S.kuudraSplitsScale = it }, { S.kuudraSplits && on() }, { S.kuudraSplits }) { splitLines() }
         MiningHuds.reg("Kuudra Supplies", "kuudra_supplies", 120, 70,
             { S.kuudraSupplyHudX }, { S.kuudraSupplyHudX = it }, { S.kuudraSupplyHudY }, { S.kuudraSupplyHudY = it },
-            { S.kuudraSupplyHudScale }, { S.kuudraSupplyHudScale = it }, { (S.kuudraSupplyMaster && S.kuudraSupplyHud) && Kuudra.inKuudra() && Kuudra.phase == 1 }) {
+            { S.kuudraSupplyHudScale }, { S.kuudraSupplyHudScale = it }, { (S.kuudraSupplyMaster && S.kuudraSupplyHud) && Kuudra.inKuudra() && Kuudra.phase == 1 }, { (S.kuudraSupplyMaster && S.kuudraSupplyHud) }) {
             val out = arrayListOf("§6Supplies: §a${Kuudra.supplies}§7/6")
             for ((n, t) in Kuudra.supplyTimes) out += "§e$n §7${Kuudra.fmt(t)}"
             out
         }
         MiningHuds.reg("Kuudra Build", "kuudra_build", 90, 20,
             { S.kuudraBuildHudX }, { S.kuudraBuildHudX = it }, { S.kuudraBuildHudY }, { S.kuudraBuildHudY = it },
-            { S.kuudraBuildHudScale }, { S.kuudraBuildHudScale = it }, { (S.kuudraBuildMaster && S.kuudraBuildHud) && Kuudra.inKuudra() && Kuudra.phase == 2 }) {
+            { S.kuudraBuildHudScale }, { S.kuudraBuildHudScale = it }, { (S.kuudraBuildMaster && S.kuudraBuildHud) && Kuudra.inKuudra() && Kuudra.phase == 2 }, { (S.kuudraBuildMaster && S.kuudraBuildHud) }) {
             listOf("§bBuild: ${colorPct(Kuudra.buildPct)}%", "§bBuilders: ${colorN(Kuudra.builders)}", "§bFreshers: ${colorN(activeFresh().size)}")
         }
         MiningHuds.reg("Kuudra Fresh Timers", "kuudra_fresh", 90, 30,
             { S.kuudraFreshHudX }, { S.kuudraFreshHudX = it }, { S.kuudraFreshHudY }, { S.kuudraFreshHudY = it },
-            { S.kuudraFreshHudScale }, { S.kuudraFreshHudScale = it }, { (S.kuudraBuildMaster && S.kuudraFreshHud) && Kuudra.inKuudra() && Kuudra.phase == 2 }) {
+            { S.kuudraFreshHudScale }, { S.kuudraFreshHudScale = it }, { (S.kuudraBuildMaster && S.kuudraFreshHud) && Kuudra.inKuudra() && Kuudra.phase == 2 }, { (S.kuudraBuildMaster && S.kuudraFreshHud) }) {
             activeFresh().map { (n, left) -> "§6$n§f: ${"%.1f".format(left / 1000.0)}s" }
         }
         MiningHuds.reg("Kuudra Health", "kuudra_hp", 100, 10,
             { S.kuudraHpHudX }, { S.kuudraHpHudX = it }, { S.kuudraHpHudY }, { S.kuudraHpHudY = it },
-            { S.kuudraHpHudScale }, { S.kuudraHpHudScale = it }, { (S.kuudraBossMaster && S.kuudraHpHud) && Kuudra.inKuudra() && Kuudra.boss?.isAlive == true }) {
+            { S.kuudraHpHudScale }, { S.kuudraHpHudScale = it }, { (S.kuudraBossMaster && S.kuudraHpHud) && Kuudra.inKuudra() && Kuudra.boss?.isAlive == true }, { (S.kuudraBossMaster && S.kuudraHpHud) }) {
             listOf(hpText(Kuudra.boss?.health ?: 0f))
         }
         MiningHuds.reg("Kuudra Chest Counter", "kuudra_chests", 90, 10,
             { S.kuudraChestCounterX }, { S.kuudraChestCounterX = it }, { S.kuudraChestCounterY }, { S.kuudraChestCounterY = it },
-            { S.kuudraChestCounterScale }, { S.kuudraChestCounterScale = it }, { (S.kuudraChestsMaster && S.kuudraChestCounter) && Kuudra.inKuudra() }) {
+            { S.kuudraChestCounterScale }, { S.kuudraChestCounterScale = it }, { (S.kuudraChestsMaster && S.kuudraChestCounter) && Kuudra.inKuudra() }, { (S.kuudraChestsMaster && S.kuudraChestCounter) }) {
             val c = S.kuudraChestCount; val col = if (c >= S.kuudraChestCap) "§c" else if (c >= S.kuudraChestCap - 5) "§e" else "§a"
             listOf("§6Chests: $col$c§7/${S.kuudraChestCap}")
         }
         MiningHuds.reg("Kuudra Profit", "kuudra_profit", 110, 20,
             { S.kuudraProfitX }, { S.kuudraProfitX = it }, { S.kuudraProfitY }, { S.kuudraProfitY = it },
-            { S.kuudraProfitScale }, { S.kuudraProfitScale = it }, { (S.kuudraChestsMaster && S.kuudraProfit) && Kuudra.inKuudra() }) {
+            { S.kuudraProfitScale }, { S.kuudraProfitScale = it }, { (S.kuudraChestsMaster && S.kuudraProfit) && Kuudra.inKuudra() }, { (S.kuudraChestsMaster && S.kuudraProfit) }) {
             val bk = if (S.kuudraProfitMode == "Total") KuudraLoot.total else KuudraLoot.session
             val prof = bk.value - bk.cost
             val out = arrayListOf("§6§lKuudra Loot §7(${S.kuudraProfitMode})",
@@ -96,7 +96,8 @@ object KuudraHuds {
         val now = Kuudra.now()
         for (i in 0 until 4) {
             val start = ps[i]
-            val end = ps[i + 1]
+            // a DEFEAT mid-phase only sets ps[4]; freeze the running split there too
+            val end = ps[i + 1].takeIf { it > 0L } ?: ps[4]
             val v = when { start == 0L -> "§7-"; end == 0L -> "§e" + Kuudra.fmt(now - start); else -> "§a" + Kuudra.fmt(end - start) }
             out += "§b${Kuudra.PHASES[i]}: $v" + if (pb[i] > 0) " §8(${Kuudra.fmt(pb[i])})" else ""
         }
@@ -112,7 +113,8 @@ object KuudraHuds {
     fun hpText(hp: Float): String {
         val c = when { hp > 99000 -> "§a"; hp > 75000 -> "§2"; hp > 50000 -> "§e"; hp > 25000 -> "§6"; hp > 10000 -> "§c"; else -> "§4" }
         val k = hp / 1000.0
-        return if (Kuudra.phase == 4 && S.kuudraHpScaled) "$c${"%.1f".format(hp / 100.0)}M§7/§a240M§c❤"
+        // T5 kill phase: real HP x9600 = shown HP (25k -> 240M)
+        return if (Kuudra.phase == 4 && S.kuudraHpScaled && hp <= 25000f && Kuudra.tier !in 1..4) "$c${"%.1f".format(hp * 9600.0 / 1_000_000.0)}M§7/§a240M§c❤"
         else "$c${"%.1f".format(k)}K§7/§a100K§c❤"
     }
 

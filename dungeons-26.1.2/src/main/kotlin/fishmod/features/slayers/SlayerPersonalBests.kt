@@ -6,7 +6,6 @@ import com.google.gson.reflect.TypeToken
 import fishmod.utils.debug.FishDiag
 import java.io.File
 import java.io.FileReader
-import java.io.FileWriter
 import java.lang.reflect.Type
 
 object SlayerPersonalBests {
@@ -64,9 +63,7 @@ object SlayerPersonalBests {
         val json = synchronized(lock) { GSON.toJson(data) }
         writeExecutor.execute {
             try {
-                val file = File(FILE_PATH)
-                file.parentFile?.mkdirs()
-                FileWriter(file).use { it.write(json) }
+                fishmod.utils.SafeFiles.writeAtomic(File(FILE_PATH), json)
             } catch (e: Exception) {
                 FishDiag.fail("SlayerPersonalBests.2", "failed to save $FILE_PATH", e)
             }

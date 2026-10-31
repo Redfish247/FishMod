@@ -17,6 +17,7 @@ import net.minecraft.network.chat.MessageSignature;
 @Mixin(ChatComponent.class)
 public class ChatHudMixin {
 
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
     private static final Pattern FROM_MSG = Pattern.compile("^From (?:\\[[^\\]]+\\] )*(\\w+): (.+)$");
 
     @Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/multiplayer/chat/GuiMessageSource;Lnet/minecraft/client/multiplayer/chat/GuiMessageTag;)V",
@@ -26,8 +27,22 @@ public class ChatHudMixin {
             String messageText = message.getString();
             fishmod.features.Ragnarock.checkP5Taunt(messageText);
 
-            if (fishmod.features.ChatFilter.shouldHide(message)
-                    || fishmod.features.chat.ChatRuleHandler.shouldHideAtDisplay(message)) {
+            Component folded = fishmod.features.ChatFilter.rewrite(message);
+            if (folded != null) {
+                ci.cancel();
+                ((ChatComponent) (Object) this).addClientSystemMessage(folded);
+                return;
+            }
+            if (fishmod.features.ChatFilter.isCallerLine(message) || fishmod.features.ChatFilter.shouldHide(message)) {
+                // Visual-only hide: keep the vanilla [CHAT] log line we skip by cancelling.
+                LOGGER.info("[CHAT] {}", messageText.replace("\r", "\\r").replace("\n", "\\n"));
+                if (!messageText.isBlank()) fishmod.features.chat.ChatHideState.dropPrecedingBlank((ChatComponent) (Object) this);
+                fishmod.features.chat.ChatHideState.noteSuppressed();
+                ci.cancel();
+                return;
+            }
+            if (fishmod.features.chat.ChatRuleHandler.shouldHideAtDisplay(message)) {
+                fishmod.features.chat.ChatHideState.dropPrecedingBlank((ChatComponent) (Object) this);
                 fishmod.features.chat.ChatHideState.noteSuppressed();
                 ci.cancel();
                 return;

@@ -1,4 +1,5 @@
 package fishmod.features.achievements
+import fishmod.compat.curScreen
 
 import fishmod.features.croesus.CroesusPrices
 import fishmod.features.dungeon.map.DungeonScore
@@ -13,6 +14,8 @@ import fishmod.utils.dungeon.PracticeMode
 import fishmod.utils.events.Events
 import fishmod.utils.networth.ItemsDb
 import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.core.component.DataComponents
 
 // Turns chat, scoreboard and existing tracker state into AchEvents (passive only)
 object AchHooks {
@@ -33,12 +36,14 @@ object AchHooks {
     private var tick = 0
     private var lavaDeaths = 0
     private val LAVA_DEATH = Regex("^☠ You .*lava")
+    private val ELAPSED = Regex("(\\d+)([hms])")
 
     @JvmStatic
     fun i4Plate() { Minecraft.getInstance().execute { AchStore.max("secret.i4Plate", 1) } }
 
     fun init() {
         Events.ON_GAME_MESSAGE.register { c ->
+            if (!AchSettings.achEnabled) return@register false
             FishDiag.guard("AchHooks.1", "achievement chat parse") { onChat(c.string.replace(Constants.STRIP_COLOR_REGEX, "").trim()) }
             false
         }
@@ -75,7 +80,7 @@ object AchHooks {
         val i = s.indexOf("$me:")
         if (i < 0 || !HI_FISH.containsMatchIn(s.substring(i + me.length + 1))) return
         if (s.substring(0, i).any { it == ':' }) return
-        val here = mc.connection?.onlinePlayers?.any { it.profile.name.lowercase() in FISH_NAMES } ?: false
+        val here = fishmod.utils.TabListCache.entries.any { it.info.profile.name.lowercase() in FISH_NAMES }
         if (here) AchStore.max("hifish.said", 1)
     }
 
@@ -88,6 +93,34 @@ object AchHooks {
         val min = m.groupValues[2].toLongOrNull() ?: 0L
         if (h == 0L && min == 0L) return
         AchStore.max("play.total", h * 3600 + min * 60)
+    }
+
+    // "Detailed /playtime" chest, slot 4 lore rows "687.7 hours on X" / "28 minutes on X" (format per SkyHanni LimboPlaytime)
+    private const val DETAILED_TITLE = "Detailed /playtime"
+    private val DETAILED_ROW = Regex("""^([\d.,]+) (hours?|minutes?) on (.+)$""")
+    private var detailedRead = false
+
+    private fun detailedPlaytime() {
+        val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*>
+        if (scr == null || scr.title.string != DETAILED_TITLE) { detailedRead = false; return }
+        if (detailedRead) return
+        val lore = scr.menu.slots.getOrNull(4)?.item?.get(DataComponents.LORE)?.lines() ?: return
+        if (lore.isEmpty()) return
+        detailedRead = true
+        for (c in lore) {
+            val m = DETAILED_ROW.find(c.string.replace(Constants.STRIP_COLOR_REGEX, "").trim()) ?: continue
+            val n = m.groupValues[1].replace(",", "").toDoubleOrNull() ?: continue
+            val secs = (if (m.groupValues[2].startsWith("hour")) n * 3600 else n * 60).toLong()
+            val island = m.groupValues[3]
+            // same scope as the local counter: inside runs only, not Dungeon Hub / Crimson Isle
+            val key = when {
+                island.contains("Dungeon Hub", true) -> null
+                island.contains("Dungeon", true) || island.contains("Catacombs", true) -> "play.dungeon"
+                island.contains("Kuudra", true) -> "play.kuudra"
+                else -> null
+            } ?: continue
+            if (secs > 0) AchStore.max(key, secs)
+        }
     }
 
     private fun onChat(s: String) {
@@ -141,7 +174,7 @@ object AchHooks {
 
     private fun parseElapsed(s: String): Double {
         var t = 0.0
-        Regex("(\\d+)([hms])").findAll(s).forEach { m ->
+        ELAPSED.findAll(s).forEach { m ->
             val n = m.groupValues[1].toDouble()
             t += when (m.groupValues[2]) { "h" -> n * 3600; "m" -> n * 60; else -> n }
         }
@@ -151,6 +184,7 @@ object AchHooks {
     // State polled from existing trackers each tick
     fun onTick() {
         if (tick++ % 5 != 0) return
+        detailedPlaytime()
         if (fishmod.features.rift.Rift.inRift()) {
             val a = fishmod.features.rift.Rift.strip(Mining.area).replace("⏣", "").trim()
             if (a.isNotEmpty() && AchStore.data.riftAreas.add(a)) { AchStore.changed(); AchStore.max("rift.areas", AchStore.data.riftAreas.size.toLong()) }

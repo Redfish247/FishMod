@@ -6,6 +6,7 @@ import fishmod.features.FishModScreen.Column
 import fishmod.features.FishModScreen.DropdownSetting
 import fishmod.features.FishModScreen.Feature
 import fishmod.features.FishModScreen.InputSetting
+import fishmod.features.FishModScreen.SliderDoubleSetting
 import fishmod.features.FishModScreen.SliderIntSetting
 import fishmod.features.FishModScreen.ToggleSetting
 import fishmod.features.kuudra.KuudraSettings as S
@@ -15,6 +16,11 @@ object KuudraMenu {
 
     fun column(): Column {
         val col = Column("Kuudra")
+
+        val rq = Feature("Auto Requeue", S::kuudraRequeue)
+        rq.sub.add(SliderDoubleSetting("Delay (s)", "Wait after the run ends, e.g. to open your chests",
+            { S.kuudraRequeueDelayMs / 1000.0 }, { v -> S.kuudraRequeueDelayMs = (v * 1000).toInt() }, 0.0, 30.0))
+        col.features.add(rq)
 
         val splits = Feature("Kuudra Splits", S::kuudraSplits)
         splits.sub.add(ToggleSetting("Chat Splits", "Print each phase time and PB", S::kuudraSplitsChat))
@@ -33,6 +39,8 @@ object KuudraMenu {
         val sup = Feature("Supply Helper", S::kuudraSupplyMaster)
         sup.sub.add(ToggleSetting("Supply Times", "Who picked up a supply and how fast", S::kuudraSupplyTimes))
         sup.sub.add(ToggleSetting("Hide Original Message", "", S::kuudraSupplyHideOriginal).gatedBy { S.kuudraSupplyTimes })
+        sup.sub.add(ToggleSetting("Recover Party Message", "One party message when you recover a supply", S::kuudraSupplyParty))
+        sup.sub.add(InputSetting("Recover Message", "{n} = count, {total} = needed", S::kuudraSupplyMessage).gatedBy { S.kuudraSupplyParty })
         sup.sub.add(ToggleSetting("Supply Progress HUD", "", S::kuudraSupplyHud))
         sup.sub.add(ToggleSetting("Supply Waypoints", "Beam on every crate", S::kuudraSupplyWaypoints))
         sup.sub.add(ColorPickerSetting("Supply Color", "", S::kuudraSupplyColor))

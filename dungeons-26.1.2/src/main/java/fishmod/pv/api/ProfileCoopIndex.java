@@ -43,7 +43,7 @@ final class ProfileCoopIndex {
 				continue;
 			}
 			JsonObject profile = element.getAsJsonObject();
-			boolean selected = profile.has("selected") && profile.get("selected").getAsBoolean();
+			boolean selected = ProfileParseSupport.bool(profile, "selected");
 			if (selected || best == null) {
 				best = profile;
 				if (selected) {
@@ -70,11 +70,11 @@ final class ProfileCoopIndex {
 			if (first == null) {
 				first = profile;
 			}
-			String id = profile.has("profile_id") ? profile.get("profile_id").getAsString() : null;
+			String id = ProfileParseSupport.str(profile.get("profile_id"));
 			if (preferredProfileId != null && preferredProfileId.equals(id)) {
 				preferred = profile;
 			}
-			if (profile.has("selected") && profile.get("selected").getAsBoolean()) {
+			if (ProfileParseSupport.bool(profile, "selected")) {
 				selected = profile;
 			}
 		}
@@ -99,9 +99,9 @@ final class ProfileCoopIndex {
 				continue;
 			}
 			JsonObject profile = element.getAsJsonObject();
-			String id = profile.has("profile_id") ? profile.get("profile_id").getAsString() : "";
-			String cute = profile.has("cute_name") ? profile.get("cute_name").getAsString() : "Unknown";
-			boolean hypixelSelected = profile.has("selected") && profile.get("selected").getAsBoolean();
+			String id = ProfileParseSupport.str(profile.get("profile_id"));
+			String cute = profile.has("cute_name") ? ProfileParseSupport.str(profile.get("cute_name")) : "Unknown";
+			boolean hypixelSelected = ProfileParseSupport.bool(profile, "selected");
 			boolean selected = activeProfileId != null && !activeProfileId.isBlank()
 				? activeProfileId.equals(id)
 				: hypixelSelected;

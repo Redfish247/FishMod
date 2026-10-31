@@ -1,4 +1,6 @@
 package fishmod.features.diana
+import fishmod.compat.curScreen
+import fishmod.compat.showScreen
 
 import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
@@ -25,11 +27,11 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
     companion object {
         fun open() {
             val mc = Minecraft.getInstance()
-            val parent = mc.screen
-            mc.schedule { mc.setScreen(DianaMessagesScreen(parent)) }
+            val parent = mc.curScreen
+            mc.schedule { mc.showScreen(DianaMessagesScreen(parent)) }
         }
 
-        private val ACCENT = ScreenTheme.ACCENT
+        private val ACCENT get() = ScreenTheme.ACCENT
         private val TEXT = ScreenTheme.TEXT_COLOR
         private val SUB = ScreenTheme.SUBTEXT_COLOR
         private val CARD_BG = ScreenTheme.CARD_BG
@@ -117,7 +119,7 @@ class DianaMessagesScreen(private val parent: Screen?) : Screen(Component.litera
 
     override fun onClose() {
         save()
-        minecraft.setScreen(parent)
+        minecraft.showScreen(parent)
     }
 
     override fun removed() {

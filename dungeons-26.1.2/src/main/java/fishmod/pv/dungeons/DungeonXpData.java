@@ -30,7 +30,7 @@ public final class DungeonXpData {
 	private static double expertRingBonus = 0.1;
 	private static double experiencedFloorBonus = 0.5;
 	private static int experiencedFloorMinCompletions = 5;
-	private static boolean loaded;
+	private static volatile boolean loaded;
 
 	private DungeonXpData() {
 	}
@@ -39,7 +39,16 @@ public final class DungeonXpData {
 		if (loaded) {
 			return;
 		}
-		loaded = true;
+		synchronized (DungeonXpData.class) {
+			if (!loaded) {
+				load();
+				loaded = true;
+			}
+		}
+	}
+
+	// Fills the fields before loaded is published so other threads never see a half-loaded table.
+	private static void load() {
 		JsonObject root = RepoData.dungeonsXp();
 		if (root == null) {
 			return;

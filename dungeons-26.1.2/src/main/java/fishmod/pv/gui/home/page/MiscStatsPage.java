@@ -207,6 +207,8 @@ public final class MiscStatsPage {
 
 		boolean hovering = hit(mx, my, x, y, w, h)
 			&& !hit(mx, my, this.guildBtnX, this.guildBtnY, this.guildBtnW, this.guildBtnH);
+		// Only the profile face draws the guild button; a stale hitbox would swallow flip clicks.
+		this.guildBtnW = 0;
 		boolean showExtras = this.leftExtrasFace;
 		float scaleX = 1F;
 		if (this.leftFlipStartMs != 0L) {

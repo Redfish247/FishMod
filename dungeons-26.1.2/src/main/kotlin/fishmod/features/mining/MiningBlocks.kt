@@ -1,5 +1,8 @@
 package fishmod.features.mining
 
+import fishmod.compat.CB
+import fishmod.compat.CI
+
 import net.minecraft.world.item.DyeColor
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
@@ -43,9 +46,9 @@ enum class PityBlock(val display: String, val weight: Int) {
 
 object MiningBlocks {
 
-    private val MITHRIL = setOf<Block>(Blocks.GRAY_WOOL, Blocks.CYAN_TERRACOTTA, Blocks.PRISMARINE, Blocks.PRISMARINE_BRICKS,
-        Blocks.DARK_PRISMARINE, Blocks.LIGHT_BLUE_WOOL)
-    private val UMBER = setOf<Block>(Blocks.TERRACOTTA, Blocks.BROWN_TERRACOTTA, Blocks.SMOOTH_RED_SANDSTONE)
+    private val MITHRIL = setOf<Block>(CB.GRAY_WOOL, CB.CYAN_TERRACOTTA, Blocks.PRISMARINE, Blocks.PRISMARINE_BRICKS,
+        Blocks.DARK_PRISMARINE, CB.LIGHT_BLUE_WOOL)
+    private val UMBER = setOf<Block>(Blocks.TERRACOTTA, CB.BROWN_TERRACOTTA, Blocks.SMOOTH_RED_SANDSTONE)
     private val TUNGSTEN = setOf<Block>(Blocks.INFESTED_COBBLESTONE, Blocks.CLAY, Blocks.COBBLESTONE)
     private val HIGH_GEMS = setOf(Gem.AQUAMARINE, Gem.CITRINE, Gem.ONYX, Gem.PERIDOT)
 
@@ -79,15 +82,15 @@ object MiningBlocks {
     // Skyblocker PickobulusHelper: what Pickobulus can break outside the Hollows/Glacite
     val CONVERT_INTO_BEDROCK = setOf<Block>(
         Blocks.STONE, Blocks.COBBLESTONE, Blocks.POLISHED_DIORITE, Blocks.PRISMARINE, Blocks.PRISMARINE_BRICKS,
-        Blocks.DARK_PRISMARINE, Blocks.CYAN_TERRACOTTA, Blocks.LIGHT_BLUE_WOOL, Blocks.GRAY_WOOL, Blocks.LAPIS_BLOCK,
+        Blocks.DARK_PRISMARINE, CB.CYAN_TERRACOTTA, CB.LIGHT_BLUE_WOOL, CB.GRAY_WOOL, Blocks.LAPIS_BLOCK,
         Blocks.GOLD_BLOCK, Blocks.IRON_BLOCK, Blocks.DIAMOND_BLOCK, Blocks.EMERALD_BLOCK, Blocks.REDSTONE_BLOCK,
         Blocks.COAL_BLOCK, Blocks.QUARTZ_BLOCK, Blocks.GOLD_ORE, Blocks.IRON_ORE, Blocks.COAL_ORE, Blocks.LAPIS_ORE,
         Blocks.REDSTONE_ORE, Blocks.DIAMOND_ORE, Blocks.EMERALD_ORE, Blocks.NETHER_QUARTZ_ORE, Blocks.NETHERRACK,
         Blocks.GLOWSTONE, Blocks.OBSIDIAN, Blocks.END_STONE,
     )
     val TUNNEL_BREAKABLE = setOf<Block>(
-        Blocks.PACKED_ICE, Blocks.POLISHED_DIORITE, Blocks.INFESTED_STONE, Blocks.LIGHT_GRAY_CARPET, Blocks.PRISMARINE,
-        Blocks.PRISMARINE_BRICKS, Blocks.DARK_PRISMARINE, Blocks.LIGHT_BLUE_WOOL, Blocks.GRAY_WOOL, Blocks.CYAN_TERRACOTTA,
-        Blocks.BROWN_TERRACOTTA, Blocks.TERRACOTTA, Blocks.SMOOTH_RED_SANDSTONE, Blocks.INFESTED_COBBLESTONE, Blocks.CLAY,
+        Blocks.PACKED_ICE, Blocks.POLISHED_DIORITE, Blocks.INFESTED_STONE, CB.LIGHT_GRAY_CARPET, Blocks.PRISMARINE,
+        Blocks.PRISMARINE_BRICKS, Blocks.DARK_PRISMARINE, CB.LIGHT_BLUE_WOOL, CB.GRAY_WOOL, CB.CYAN_TERRACOTTA,
+        CB.BROWN_TERRACOTTA, Blocks.TERRACOTTA, Blocks.SMOOTH_RED_SANDSTONE, Blocks.INFESTED_COBBLESTONE, Blocks.CLAY,
     )
 }

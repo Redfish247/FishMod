@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.compat.curScreen
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.Minecraft
@@ -21,14 +22,14 @@ object GardenMisc {
         Garden.hud("Log Book", "garden_logbook", 150, 50,
             { S.gardenLogBookHudX }, { S.gardenLogBookHudX = it }, { S.gardenLogBookHudY }, { S.gardenLogBookHudY = it },
             { S.gardenLogBookHudScale }, { S.gardenLogBookHudScale = it },
-            { S.gardenLogBookHud && Garden.inGarden() && logBook.isNotEmpty() }) {
+            { S.gardenLogBookHud && Garden.inGarden() && logBook.isNotEmpty() }, { S.gardenLogBookHud }) {
             listOf(Garden.legacy(S.gardenLogBookColor) + "§lLog Book") + logBook.map { "§7${it.key}: §f${it.value}" }
         }
     }
 
     // Caches "Name: x/y" stat lines from the Logbook menu's info item
     private fun scanLogBook() {
-        val scr = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return
+        val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return
         val t = Garden.strip(scr.title.string)
         if (!t.contains("Logbook", true) && !t.contains("Log Book", true)) return
         for (s in scr.menu.slots) {

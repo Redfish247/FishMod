@@ -267,7 +267,7 @@ public final class GardenCosts {
 				List<Cost> tier = new ArrayList<>();
 				for (JsonElement el : e.getValue().getAsJsonArray()) {
 					JsonObject c = obj(el);
-					if (c != null && c.has("item")) {
+					if (c != null && c.has("item") && c.get("item").isJsonPrimitive()) {
 						tier.add(new Cost(c.get("item").getAsString(), longOf(c, "amount")));
 					}
 				}

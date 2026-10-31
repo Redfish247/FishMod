@@ -168,7 +168,8 @@ final class CollectionRewards {
 		if (items.size() != hypixelNamesSize) {
 			Map<String, String> index = new HashMap<>();
 			for (JsonObject item : items) {
-				if (item == null || !item.has("name") || !item.has("id")) {
+				if (item == null || !(item.get("name") instanceof com.google.gson.JsonPrimitive)
+					|| !(item.get("id") instanceof com.google.gson.JsonPrimitive)) {
 					continue;
 				}
 				String key = item.get("name").getAsString().replaceAll("\u00a7.", "").trim().toLowerCase(Locale.ROOT);
@@ -183,7 +184,8 @@ final class CollectionRewards {
 
 	static boolean isPet(String itemId) {
 		JsonObject item = NeuRepoCache.get(itemId);
-		return item != null && item.has("displayname") && item.get("displayname").getAsString().contains("{LVL}");
+		return item != null && item.get("displayname") instanceof com.google.gson.JsonPrimitive name
+			&& name.getAsString().contains("{LVL}");
 	}
 
 	static int color(Reward reward) {
@@ -250,7 +252,7 @@ final class CollectionRewards {
 				continue;
 			}
 			JsonObject r = el.getAsJsonObject();
-			if (!r.has("type") || !"forge".equalsIgnoreCase(r.get("type").getAsString())
+			if (!(r.get("type") instanceof com.google.gson.JsonPrimitive type) || !"forge".equalsIgnoreCase(type.getAsString())
 				|| !r.has("inputs") || !r.get("inputs").isJsonArray()) {
 				continue;
 			}

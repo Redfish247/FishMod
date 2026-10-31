@@ -1,4 +1,6 @@
 package fishmod.features.chat
+import fishmod.compat.hud
+import fishmod.utils.TextStrip
 
 import fishmod.mixin.ChatHudInvoker
 import fishmod.utils.config.values.FishSettings
@@ -20,7 +22,7 @@ object ChatSearch {
     @JvmStatic
     fun matches(line: Component): Boolean {
         if (!active) return true
-        val plain = line.string.replace(COLOR_CODE, "")
+        val plain = TextStrip.plain(line.string)
         return plain.contains(query.trim(), ignoreCase = true)
     }
 
@@ -38,12 +40,11 @@ object ChatSearch {
     }
 
     private fun refresh() {
-        val chat = Minecraft.getInstance().gui?.chat ?: return
+        val chat = Minecraft.getInstance().hud?.chat ?: return
         FishDiag.guard("ChatSearch.1", "chat search refresh failed (query='$query')") {
             chat.resetChatScroll()
             (chat as ChatHudInvoker).invokeRefresh()
         }
     }
 
-    private val COLOR_CODE = fishmod.utils.Constants.STRIP_COLOR_REGEX
 }

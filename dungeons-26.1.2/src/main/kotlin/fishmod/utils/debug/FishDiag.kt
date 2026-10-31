@@ -83,6 +83,7 @@ object FishDiag {
             else Debug.LOGGER.warn("[FishDiag {}] {}", code, message)
             writer.execute { appendToFile(entry) }
             if (n == 1) notifyChat(code)
+            if (n == 1) BoardReport.auto(code, message, t)
         } catch (_: Throwable) {
         }
     }
@@ -147,6 +148,9 @@ object FishDiag {
     }
 
     @JvmStatic
+    fun recentLines(limit: Int): List<String> = synchronized(recent) { recent.toList() }.takeLast(limit).map { format(it) }
+
+    @JvmStatic
     fun summaryLines(limit: Int = 10): List<String> =
         counts.entries.sortedByDescending { it.value.get() }.take(limit).map { "${it.key} x${it.value.get()}" }
 
@@ -160,7 +164,8 @@ object FishDiag {
         while (c != null && depth++ < 8) {
             if (c is java.net.http.HttpTimeoutException || c is java.net.ConnectException ||
                 c is java.net.SocketTimeoutException || c is java.net.UnknownHostException ||
-                c is java.nio.channels.ClosedChannelException) return true
+                c is java.nio.channels.ClosedChannelException || c is javax.net.ssl.SSLException ||
+                c is java.net.SocketException || c is java.io.EOFException) return true
             if (c is java.io.IOException && c.message?.contains("closed", ignoreCase = true) == true) return true
             c = c.cause
         }

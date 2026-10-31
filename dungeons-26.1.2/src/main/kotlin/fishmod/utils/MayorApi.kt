@@ -16,10 +16,17 @@ object MayorApi {
     private const val URL = "https://api.hypixel.net/v2/resources/skyblock/election"
     private const val CACHE_MS = 10 * 60 * 1000L
     private const val FAIL_CACHE_MS = 60 * 1000L
+    private const val SWITCH_CACHE_MS = 60 * 1000L
+    private const val SWITCH_WINDOW_MS = 15 * 60 * 1000L
+    private const val SB_EPOCH_MS = 1560276000_000L
+    private const val YEAR_MS = 1200_000L * 372
+    private const val ELECTION_OFFSET_MS = 1200_000L * 88
     private val HTTP: HttpClient = fishmod.utils.Http.CLIENT
 
     @Volatile
     private var paulDungeonBonus = false
+    @Volatile
+    private var dianaRitual = false
     @Volatile
     private var mayorLine: String? = null
     @Volatile
@@ -29,20 +36,44 @@ object MayorApi {
 
     private fun failStamp(): Long = System.currentTimeMillis() - CACHE_MS + FAIL_CACHE_MS
 
+    // Start of the current mayor term (Late Spring 27, every 5d4h real time)
+    private fun lastSwitchMs(now: Long): Long {
+        val t = now - SB_EPOCH_MS - ELECTION_OFFSET_MS
+        return SB_EPOCH_MS + ELECTION_OFFSET_MS + Math.floorDiv(t, YEAR_MS) * YEAR_MS
+    }
+
+    // Refetch at each term switch, then every minute for a while in case the API lags
+    private fun stale(): Boolean {
+        val now = System.currentTimeMillis()
+        val sw = lastSwitchMs(now)
+        if (lastFetch < sw) return true
+        val ttl = if (now - sw < SWITCH_WINDOW_MS) SWITCH_CACHE_MS else CACHE_MS
+        return now - lastFetch > ttl
+    }
+
+    private fun refreshIfStale() { if (stale()) refresh() }
+
     @JvmStatic
     fun init() {
-        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> refresh() }
+        ClientPlayConnectionEvents.JOIN.register { _, _, _ -> refreshIfStale() }
     }
 
     @JvmStatic
     fun isPaulDungeonBonusActive(): Boolean {
-        if (System.currentTimeMillis() - lastFetch > CACHE_MS) refresh()
+        refreshIfStale()
         return paulDungeonBonus
+    }
+
+    // Diana as mayor or minister with Mythological Ritual
+    @JvmStatic
+    fun isDianaRitualActive(): Boolean {
+        refreshIfStale()
+        return dianaRitual
     }
 
     @JvmStatic
     fun mayorLine(): String? {
-        if (System.currentTimeMillis() - lastFetch > CACHE_MS) refresh()
+        refreshIfStale()
         return mayorLine
     }
 
@@ -61,6 +92,7 @@ object MayorApi {
                 FishDiag.check(resp.statusCode() == 200, "MayorApi.1") { "election API returned HTTP ${resp.statusCode()}" }
                 val root = JsonParser.parseString(resp.body()).asJsonObject
                 paulDungeonBonus = parsePaul(root)
+                dianaRitual = hasPerk(root, "diana", "mythological ritual")
                 mayorLine = parseMayorLine(root)
                 lastFetch = System.currentTimeMillis()
             } catch (e: Exception) {
@@ -80,26 +112,38 @@ object MayorApi {
     }
 
     private fun parseMayorLine(root: JsonObject): String? {
-        val mayor = root.getAsJsonObject("mayor") ?: return null
-        val name = FishDiag.notNull(mayor.get("name")?.asString, "MayorApi.5") { "election mayor object has no name" } ?: return null
-        val perk = mayor.getAsJsonArray("perks")?.firstOrNull()?.asJsonObject?.get("name")?.asString
+        val mayor = root.get("mayor")?.takeIf { it.isJsonObject }?.asJsonObject ?: return null // null/non-object mayor must not throw
+        // Hypixel always sends name; fall back to key quietly (tests feed partial objects)
+        val name = (mayor.get("name") ?: mayor.get("key"))?.takeIf { it.isJsonPrimitive }?.asString?.takeIf { it.isNotBlank() }
+            ?.replaceFirstChar { it.uppercaseChar() } ?: return null
+        val perk = runCatching { mayor.getAsJsonArray("perks")?.firstOrNull()?.asJsonObject?.get("name")?.asString }.getOrNull()
         return if (perk != null) "§7Mayor: §e$name §7($perk)" else "§7Mayor: §e$name"
     }
 
     private fun parsePaul(root: JsonObject): Boolean {
-        if (!root.has("mayor")) return false
-        val mayor = root.getAsJsonObject("mayor")
-        if ("paul".equals(mayor.get("key")?.asString, ignoreCase = true) && hasEzpz(mayor.getAsJsonArray("perks"))) {
+        val mayor = root.get("mayor")?.takeIf { it.isJsonObject }?.asJsonObject ?: return false
+        if ("paul".equals(mayor.get("key")?.asString, ignoreCase = true) && hasEzpz(mayor.get("perks")?.takeIf { it.isJsonArray }?.asJsonArray)) {
             return true
         }
-        if (mayor.has("minister")) {
-            val minister = mayor.getAsJsonObject("minister")
-            if ("paul".equals(minister.get("key")?.asString, ignoreCase = true) && minister.has("perk")) {
-                val perkName = minister.getAsJsonObject("perk").get("name").asString.lowercase()
+        val minister = mayor.get("minister")?.takeIf { it.isJsonObject }?.asJsonObject
+        if (minister != null) {
+            if ("paul".equals(minister.get("key")?.asString, ignoreCase = true)) {
+                val perkName = minister.get("perk")?.takeIf { it.isJsonObject }?.asJsonObject?.get("name")?.asString?.lowercase() ?: return false
                 return perkName.contains("ezpz")
             }
         }
         return false
+    }
+
+    private fun hasPerk(root: JsonObject, key: String, perk: String): Boolean {
+        val mayor = root.get("mayor")?.takeIf { it.isJsonObject }?.asJsonObject ?: return false
+        if (key.equals(mayor.get("key")?.asString, ignoreCase = true)) {
+            val perks = mayor.get("perks")?.takeIf { it.isJsonArray }?.asJsonArray ?: return false
+            return perks.any { runCatching { it.asJsonObject.get("name").asString }.getOrNull()?.lowercase()?.contains(perk) == true }
+        }
+        val minister = mayor.get("minister")?.takeIf { it.isJsonObject }?.asJsonObject ?: return false
+        if (!key.equals(minister.get("key")?.asString, ignoreCase = true)) return false
+        return minister.get("perk")?.takeIf { it.isJsonObject }?.asJsonObject?.get("name")?.asString?.lowercase()?.contains(perk) == true
     }
 
     private fun hasEzpz(perks: com.google.gson.JsonArray?): Boolean {

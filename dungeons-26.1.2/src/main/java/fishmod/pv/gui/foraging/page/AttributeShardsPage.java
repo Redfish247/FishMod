@@ -60,7 +60,7 @@ public final class AttributeShardsPage {
 	private int attrListY;
 	private int attrListW;
 	private int attrListH;
-	private boolean sortByRarity;
+	private boolean sortByRarity = true;
 	private List<ForagingSnapshot.AttributeShardRow> sortedSource;
 	private List<ForagingSnapshot.AttributeShardRow> raritySorted = List.of();
 	private int sortX;
@@ -193,6 +193,9 @@ public final class AttributeShardsPage {
 			int r = i / cols;
 			int bx = lx + col * (SLOT + SLOT_GAP);
 			int by = ly + r * (SLOT + SLOT_GAP) - this.attrGridScroll;
+			if (by + SLOT < this.attrGridY || by > this.attrGridY + this.attrGridH) {
+				continue;
+			}
 			boolean hovered = mx >= bx && mx < bx + SLOT && my >= by && my < by + SLOT
 				&& ForagingUi.hit(mx, my, lx, this.attrGridY, lw, this.attrGridH);
 			boolean locked = !row.unlocked();
@@ -265,6 +268,10 @@ public final class AttributeShardsPage {
 		g.enableScissor(rx, this.attrListY, rx + rw + 3, this.attrListY + this.attrListH);
 		int yy = this.attrListY - this.attrListScroll;
 		for (ForagingSnapshot.AttributeShardRow row : notMaxed) {
+			if (yy + rowH < this.attrListY || yy > this.attrListY + this.attrListH) {
+				yy += rowH;
+				continue;
+			}
 			int need = Math.max(0, row.shardsForMax() - row.shardsOwned());
 			ItemStack stack = attributeIcon(row);
 			PvDraw.IconTextAlign rowAlign = PvDraw.IconTextAlign.of(yy, rowH, ICON, font.lineHeight);

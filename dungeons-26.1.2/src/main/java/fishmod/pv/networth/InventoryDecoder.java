@@ -501,15 +501,13 @@ public final class InventoryDecoder {
 		List<String> unlockedPowers = new ArrayList<>();
 		List<InventorySnapshot.TuningTemplate> tunings = new ArrayList<>();
 		if (storage != null) {
-			highest = storage.has("highest_magical_power") && storage.get("highest_magical_power").isJsonPrimitive()
-				? Math.max(0, storage.get("highest_magical_power").getAsInt())
-				: 0;
+			Integer highestRaw = InventoryDecodeSupport.jsonInt(storage, "highest_magical_power");
+			highest = highestRaw == null ? 0 : Math.max(0, highestRaw);
 			power = storage.has("selected_power") && storage.get("selected_power").isJsonPrimitive()
 				? storage.get("selected_power").getAsString()
 				: "";
-			bagUpgrades = storage.has("bag_upgrades_purchased") && storage.get("bag_upgrades_purchased").isJsonPrimitive()
-				? Math.max(0, storage.get("bag_upgrades_purchased").getAsInt())
-				: 0;
+			Integer upgradesRaw = InventoryDecodeSupport.jsonInt(storage, "bag_upgrades_purchased");
+			bagUpgrades = upgradesRaw == null ? 0 : Math.max(0, upgradesRaw);
 			if (storage.has("unlocked_powers") && storage.get("unlocked_powers").isJsonArray()) {
 				for (JsonElement el : storage.getAsJsonArray("unlocked_powers")) {
 					if (el != null && el.isJsonPrimitive()) {
@@ -616,11 +614,8 @@ public final class InventoryDecoder {
 		List<Stack> out = new ArrayList<>();
 		for (var entry : essence.entrySet()) {
 			JsonObject data = InventoryDecodeSupport.obj(entry.getValue());
-			if (data == null || !data.has("current")) {
-				continue;
-			}
-			int amount = data.get("current").getAsInt();
-			if (amount > 0) {
+			Integer amount = InventoryDecodeSupport.jsonInt(data, "current");
+			if (amount != null && amount > 0) {
 				out.add(new Stack("ESSENCE_" + entry.getKey().toUpperCase(Locale.ROOT), amount, new CompoundTag(), List.of(), false));
 			}
 		}

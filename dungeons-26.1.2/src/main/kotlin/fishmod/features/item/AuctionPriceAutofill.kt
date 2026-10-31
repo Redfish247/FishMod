@@ -1,4 +1,6 @@
 package fishmod.features.item
+import fishmod.compat.showScreen
+import fishmod.compat.curScreen
 
 import fishmod.utils.debug.FishDiag
 import fishmod.mixin.accessors.AbstractSignEditScreenAccessor
@@ -14,6 +16,9 @@ import net.minecraft.world.item.ItemStack
 object AuctionPriceAutofill {
 
     private val GUI_NAMES = setOf("Create BIN Auction", "Create Auction")
+
+    // Set while replacing the sign screen so vanilla's removed() doesn't send a blank sign.
+    @JvmField @Volatile var suppressSignSend = false
 
     private var pendingItem: ItemStack? = null
     private var lastSeenStack: ItemStack? = null
@@ -53,7 +58,8 @@ object AuctionPriceAutofill {
         mc.execute {
             try {
                 val replacement = AuctionPriceScreen(sign, lines, item, suggested)
-                mc.screen = replacement
+                suppressSignSend = true
+                try { mc.showScreen(replacement) } finally { suppressSignSend = false }
                 replacement.init(width, height)
             } catch (e: Exception) {
                 FishDiag.fail("AuctionPriceAutofill.3", "opening auction price screen failed suggested=$suggested", e)

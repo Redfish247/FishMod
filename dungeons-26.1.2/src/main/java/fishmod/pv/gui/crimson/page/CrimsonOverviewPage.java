@@ -252,10 +252,10 @@ public final class CrimsonOverviewPage {
 		int iconSize = 16;
 		int cardH = cardPad * 2 + iconSize + 2 + STAT_ROW;
 
-		drawFactionCard(g, font, "MAGE", new ItemStack(Items.BLAZE_POWDER),
+		drawFactionCard(g, font, "MAGE", MAGE_ICON,
 			snapshot.magesReputation(), snapshot.magesReputationHighest(), MAGE_COLOR,
 			x, y, colW, cardH, cardPad, iconSize);
-		drawFactionCard(g, font, "BARBARIAN", new ItemStack(Items.IRON_AXE),
+		drawFactionCard(g, font, "BARBARIAN", BARB_ICON,
 			snapshot.barbariansReputation(), snapshot.barbariansReputationHighest(), BARB_COLOR,
 			x + colW + gap, y, colW, cardH, cardPad, iconSize);
 		return y + cardH;
@@ -349,7 +349,7 @@ public final class CrimsonOverviewPage {
 	}
 
 	private static ItemStack dojoIcon(CrimsonSnapshot.DojoChallenge challenge) {
-		return switch (challenge) {
+		return DOJO_ICONS.computeIfAbsent(challenge, c -> switch (c) {
 			case MOB_KB -> new ItemStack(Items.BLAZE_ROD);
 			case WALL_JUMP -> new ItemStack(Items.RABBIT_FOOT);
 			case ARCHER -> new ItemStack(Items.LEAD);
@@ -357,8 +357,13 @@ public final class CrimsonOverviewPage {
 			case SNAKE -> new ItemStack(Items.BOW);
 			case FIREBALL -> new ItemStack(Items.FIRE_CHARGE);
 			case LOCK_HEAD -> new ItemStack(Items.ENDER_EYE);
-		};
+		});
 	}
+
+	private static final Map<CrimsonSnapshot.DojoChallenge, ItemStack> DOJO_ICONS =
+		new java.util.EnumMap<>(CrimsonSnapshot.DojoChallenge.class);
+	private static final ItemStack MAGE_ICON = new ItemStack(Items.BLAZE_POWDER);
+	private static final ItemStack BARB_ICON = new ItemStack(Items.IRON_AXE);
 
 	private void drawShopFace(GuiGraphicsExtractor g, Font font, CrimsonSnapshot snapshot, int x, int y, int w, int h) {
 		int lx = x + PAD;

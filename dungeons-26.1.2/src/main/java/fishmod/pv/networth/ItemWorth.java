@@ -249,7 +249,7 @@ public final class ItemWorth {
 		if (raw == null) {
 			return "";
 		}
-		return raw.replaceAll("§.", "").trim();
+		return fishmod.utils.TextStrip.plain(raw).trim();
 	}
 
 	private static int itemNameColor(InventoryDecoder.Stack stack) {
@@ -257,7 +257,7 @@ public final class ItemWorth {
 		String upper = last.toUpperCase(Locale.ROOT);
 		for (String tier : List.of(
 			"MYTHIC", "LEGENDARY", "EPIC", "RARE", "UNCOMMON", "COMMON",
-			"DIVINE", "SPECIAL", "VERY SPECIAL", "SUPREME", "ULTIMATE"
+			"DIVINE", "VERY SPECIAL", "SPECIAL", "SUPREME", "ULTIMATE"
 		)) {
 			if (upper.contains(tier)) {
 				return SkyBlockItemFactory.tierArgb(tier.replace(' ', '_'));
@@ -604,7 +604,7 @@ public final class ItemWorth {
 			return 0;
 		}
 		boolean hasEnchants = !NbtAttrs.intMap(ea, "enchantments").isEmpty();
-		String category = skyblockItem != null && skyblockItem.has("category")
+		String category = skyblockItem != null && skyblockItem.has("category") && skyblockItem.get("category").isJsonPrimitive()
 			? skyblockItem.get("category").getAsString()
 			: "";
 		boolean allows = NetworthData.allowedRecombCategories().contains(category)
@@ -630,7 +630,7 @@ public final class ItemWorth {
 		if (level <= 5) {
 			return 0;
 		}
-		JsonArray costs = skyblockItem != null && skyblockItem.has("upgrade_costs")
+		JsonArray costs = skyblockItem != null && skyblockItem.get("upgrade_costs") instanceof JsonArray
 			? skyblockItem.getAsJsonArray("upgrade_costs")
 			: null;
 		if (costs != null && costs.size() > 5) {
@@ -646,7 +646,7 @@ public final class ItemWorth {
 	}
 
 	private static double essenceStars(JsonObject skyblockItem, CompoundTag ea) {
-		if (skyblockItem == null || !skyblockItem.has("upgrade_costs")) {
+		if (skyblockItem == null || !(skyblockItem.get("upgrade_costs") instanceof JsonArray)) {
 			return 0;
 		}
 		int level = upgradeLevel(ea);
@@ -659,7 +659,9 @@ public final class ItemWorth {
 			JsonElement step = costs.get(i);
 			if (step.isJsonArray()) {
 				for (JsonElement cost : step.getAsJsonArray()) {
-					total += starCost(cost.getAsJsonObject());
+					if (cost.isJsonObject()) {
+						total += starCost(cost.getAsJsonObject());
+					}
 				}
 			} else if (step.isJsonObject()) {
 				total += starCost(step.getAsJsonObject());
@@ -672,12 +674,12 @@ public final class ItemWorth {
 		if (upgrade == null) {
 			return 0;
 		}
-		int amount = upgrade.has("amount") ? upgrade.get("amount").getAsInt() : 0;
-		if (upgrade.has("essence_type")) {
+		int amount = upgrade.has("amount") && upgrade.get("amount").isJsonPrimitive() ? upgrade.get("amount").getAsInt() : 0;
+		if (upgrade.has("essence_type") && upgrade.get("essence_type").isJsonPrimitive()) {
 			String type = upgrade.get("essence_type").getAsString().toUpperCase(Locale.ROOT);
 			return ItemPricer.price("ESSENCE_" + type) * amount * NetworthData.worth("essence", 0.75);
 		}
-		if (upgrade.has("item_id")) {
+		if (upgrade.has("item_id") && upgrade.get("item_id").isJsonPrimitive()) {
 			return ItemPricer.price(upgrade.get("item_id").getAsString()) * amount;
 		}
 		return 0;
@@ -706,7 +708,7 @@ public final class ItemWorth {
 		if (modifier == null || modifier.isBlank()) {
 			return 0;
 		}
-		String category = skyblockItem != null && skyblockItem.has("category")
+		String category = skyblockItem != null && skyblockItem.has("category") && skyblockItem.get("category").isJsonPrimitive()
 			? skyblockItem.get("category").getAsString()
 			: "";
 		if ("ACCESSORY".equals(category)) {

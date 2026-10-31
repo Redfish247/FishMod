@@ -1,5 +1,8 @@
 package fishmod.features.rift
 
+import fishmod.compat.CB
+import fishmod.compat.CI
+
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
@@ -28,8 +31,8 @@ object RiftSnake {
     private val removed = java.util.concurrent.ConcurrentLinkedQueue<BlockPos>()
     // Colour-fade stages the server also sends; they are not snake blocks and must not count as the tail leaving
     private val FADE = setOf(
-        Blocks.BLUE_STAINED_GLASS, Blocks.LIGHT_BLUE_STAINED_GLASS,
-        Blocks.CYAN_TERRACOTTA, Blocks.BLUE_TERRACOTTA, Blocks.LIGHT_BLUE_TERRACOTTA,
+        CB.BLUE_STAINED_GLASS, CB.LIGHT_BLUE_STAINED_GLASS,
+        CB.CYAN_TERRACOTTA, CB.BLUE_TERRACOTTA, CB.LIGHT_BLUE_TERRACOTTA,
     )
 
     // Recent block updates by type, for /fm rift debug

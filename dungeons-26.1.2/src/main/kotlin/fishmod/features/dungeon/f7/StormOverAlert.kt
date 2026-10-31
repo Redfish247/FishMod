@@ -1,4 +1,5 @@
 package fishmod.features.dungeon.f7
+import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.utils.Location
@@ -67,7 +68,7 @@ object StormOverAlert {
 
     private fun renderHudInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         val text = when {
             FishSettings.stormOverCountdown && ticksLeft > 0 && Phase.inP2() && !Phase.stormDead() ->
                 "%.2f".format(ticksLeft / 20.0)

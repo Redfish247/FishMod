@@ -20,6 +20,8 @@ object FishConfig {
             FishSettings::class.java, FishPuzzleDisplay::class.java, FishEstTotal::class.java,
             Phase::class.java,
             Section::class.java,
+            fishmod.features.dungeon.f7.TerminalTracker::class.java,
+            fishmod.features.other.Stopwatch::class.java,
             Split::class.java,
             Dungeons::class.java,
             Floor7::class.java,

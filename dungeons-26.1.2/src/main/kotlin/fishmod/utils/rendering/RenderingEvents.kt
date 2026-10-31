@@ -1,4 +1,5 @@
 package fishmod.utils.rendering
+import fishmod.compat.cam
 
 import com.mojang.blaze3d.vertex.PoseStack
 import fishmod.utils.debug.FishDiag
@@ -41,7 +42,7 @@ object RenderingEvents {
         val buffers: MultiBufferSource.BufferSource = FishDiag.notNull(ctx.bufferSource(), "RenderingEvents.2") { "level render context has no buffer source" } ?: return
         val ps: PoseStack = FishDiag.notNull(ctx.poseStack(), "RenderingEvents.3") { "level render context has no pose stack" } ?: return
 
-        val cam = mc.gameRenderer.mainCamera.position()
+        val cam = mc.cam.position()
         ps.pushPose()
         try {
         ps.translate(-cam.x, -cam.y, -cam.z)

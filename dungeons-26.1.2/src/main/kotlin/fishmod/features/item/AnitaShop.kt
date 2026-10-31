@@ -1,4 +1,6 @@
 package fishmod.features.item
+import fishmod.compat.curScreen
+import fishmod.utils.TextStrip
 
 import fishmod.features.croesus.CroesusPrices
 import fishmod.mixin.accessors.HandledScreenAccessor
@@ -20,7 +22,6 @@ object AnitaShop {
 
     private class Row(val slot: Int, val name: String, val perBronze: Double, val color: Int)
 
-    private val CODE = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val MEDAL = Regex("^(Gold|Silver|Bronze) [Mm]edal(?: x([\\d,]+))?$")
     private val AMOUNT = Regex("^(.+?) x([\\d,]+)$")
     private val ROMAN = Regex("^(.+) (I|II|III|IV|V|VI|VII|VIII|IX|X)$")
@@ -37,7 +38,7 @@ object AnitaShop {
     fun init() {
         DrawEvents.INVENTORY_SLOT_BEFORE.register { ctx, stack, x, y ->
             if (!FishSettings.anitaProfitEnabled || bestSlot < 0 || stack.isEmpty) return@register
-            val scr = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return@register
+            val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return@register
             if (fishmod.utils.ScreenTitle.plain(scr).trim() != TITLE) return@register
             val slot = DrawEvents.currentSlot ?: return@register
             if (slot.index == bestSlot && slot.container !is Inventory) ctx.fill(x, y, x + 16, y + 16, 0x8055FF55.toInt())
@@ -83,7 +84,7 @@ object AnitaShop {
             if (slot.container is Inventory) continue
             val stack = slot.item
             if (stack.isEmpty) continue
-            val lore = stack.get(DataComponents.LORE)?.lines()?.map { CODE.replace(it.string, "").trim() } ?: continue
+            val lore = stack.get(DataComponents.LORE)?.lines()?.map { TextStrip.plain(it.string).trim() } ?: continue
             if (lore.none { it == "Click to trade!" }) continue
             val head = lore.indexOfLast { it == "Cost" || it == "Cost:" }
             if (head < 0) continue
@@ -98,7 +99,7 @@ object AnitaShop {
                 extra += price(ItemsDb.idFor(n) ?: if (n == "Jacob's Ticket") "JACOBS_TICKET" else null) * k
             }
             if (bronze <= 0) continue
-            val name = CODE.replace(stack.hoverName.string, "").trim()
+            val name = TextStrip.plain(stack.hoverName.string).trim()
             val am = AMOUNT.find(name)
             val count = am?.groupValues?.get(2)?.replace(",", "")?.toLongOrNull() ?: stack.count.toLong()
             val value = itemValue(stack, am?.groupValues?.get(1) ?: name, lore) * count

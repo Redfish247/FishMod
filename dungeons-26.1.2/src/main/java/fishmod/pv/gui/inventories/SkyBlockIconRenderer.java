@@ -35,6 +35,8 @@ public final class SkyBlockIconRenderer {
 
 	public static void invalidateProbeCache() {
 		RESOLVES_BY_MODEL.clear();
+		DRAWN_BY_STACK.clear();
+		DRAWN_BY_ID.clear();
 	}
 
 	/** Used by {@link fishmod.pv.mixin.ItemModelResolverIconProbeMixin}. */
@@ -100,7 +102,7 @@ public final class SkyBlockIconRenderer {
 		}
 		String model = resolveModelString(skyblockId, itemModelOverride);
 		boolean usePack = model != null && resolvesWithoutMissing(model, skyblockId, stack);
-		ItemStack drawn = stackForPack(stack, skyblockId, usePack ? model : null);
+		ItemStack drawn = cachedStack(stack, skyblockId, usePack ? model : null);
 		boolean paper = drawn.isEmpty() || drawn.is(Items.PAPER);
 
 		if (!usePack && paper) {
@@ -212,6 +214,36 @@ public final class SkyBlockIconRenderer {
 			: SkyBlockItemFactory.customIconSize(skyblockId);
 		int draw = Math.max(1, size);
 		g.blit(RenderPipelines.GUI_TEXTURED, png, x, y, 0, 0, draw, draw, tex, tex, tex, tex);
+	}
+
+	private record Drawn(String id, String model, ItemStack stack) {
+	}
+
+	// Built stacks reused across frames; ItemStack has identity equality, so weak keys drop with their source.
+	private static final Map<ItemStack, Drawn> DRAWN_BY_STACK = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+	private static final Map<String, ItemStack> DRAWN_BY_ID = new ConcurrentHashMap<>();
+
+	private static ItemStack cachedStack(ItemStack stack, String skyblockId, String model) {
+		if (stack != null && !stack.isEmpty()) {
+			Drawn hit = DRAWN_BY_STACK.get(stack);
+			if (hit != null && java.util.Objects.equals(hit.id(), skyblockId) && java.util.Objects.equals(hit.model(), model)) {
+				return hit.stack();
+			}
+			ItemStack built = stackForPack(stack, skyblockId, model);
+			DRAWN_BY_STACK.put(stack, new Drawn(skyblockId, model, built));
+			return built;
+		}
+		String key = skyblockId + "|" + model;
+		ItemStack hit = DRAWN_BY_ID.get(key);
+		if (hit != null) {
+			return hit;
+		}
+		ItemStack built = stackForPack(stack, skyblockId, model);
+		// Paper stand-ins may still upgrade once NEU loads, so only freeze real items.
+		if (!built.is(Items.PAPER) && DRAWN_BY_ID.size() < 4096) {
+			DRAWN_BY_ID.put(key, built);
+		}
+		return built;
 	}
 
 	private static ItemStack stackForPack(ItemStack stack, String skyblockId, String model) {

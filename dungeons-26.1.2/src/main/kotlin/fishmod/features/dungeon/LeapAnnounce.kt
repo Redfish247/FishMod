@@ -16,8 +16,18 @@ object LeapAnnounce {
 
     private val TARGET: Pattern = Pattern.compile("You have teleported to (.+?)!")
 
+    // Hide-players-after-leap window end (ms)
+    @Volatile private var hideUntil = 0L
+
+    @JvmStatic
+    fun hidePlayersNow(): Boolean = FishSettings.leapHidePlayers && System.currentTimeMillis() < hideUntil
+
     @JvmStatic
     fun init() {
+        Events.ON_LEAP.register { _ ->
+            if (FishSettings.leapHidePlayers) hideUntil = System.currentTimeMillis() + (FishSettings.leapHidePlayersSeconds * 1000).toLong()
+            false
+        }
         Events.ON_LEAP.register { message ->
             if (!Dungeons.enableLeapMessages) return@register false
             val s = message.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
@@ -29,7 +39,7 @@ object LeapAnnounce {
             try {
                 val target = m.group(1).trim()
                 val clazz = DungeonClass.getClass(target)
-                if (clazz == null) FishDiag.fail("LeapAnnounce.3", "no dungeon class known for leap target '$target'")
+                if (clazz == null && fishmod.utils.Location.inDungeon()) FishDiag.fail("LeapAnnounce.3", "no dungeon class known for leap target '$target'")
                 val className = clazz?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "?"
                 val classLetter = DungeonClass.getChar(clazz)
                 fun fill(t: String) = t.replace("{name}", target).replace("{class}", className).replace("{c}", classLetter)

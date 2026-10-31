@@ -93,6 +93,8 @@ public final class DungeonCalcOverlay {
 	private int closeX;
 	private int closeY;
 	private int scroll;
+	private View linesFor;
+	private List<PvTooltip.Line> lines = List.of();
 
 	public boolean isOpen() {
 		return this.open;
@@ -134,7 +136,11 @@ public final class DungeonCalcOverlay {
 		PvDraw.fill(g, 0, 0, screenW, screenH, 0x88000000);
 
 		int lineH = font.lineHeight + 2;
-		List<PvTooltip.Line> lines = buildLines(this.view);
+		if (this.linesFor != this.view) {
+			this.linesFor = this.view;
+			this.lines = buildLines(this.view);
+		}
+		List<PvTooltip.Line> lines = this.lines;
 		boolean average = this.view.isAverage();
 		int contentH = lines.size() * lineH + PAD * 2 + font.lineHeight + 6;
 		this.panelW = average
@@ -303,7 +309,7 @@ public final class DungeonCalcOverlay {
 			&& Character.isDigit(trimmed.charAt(1))) {
 			return COLOR_FLOOR_MASTER;
 		}
-		String lower = trimmed.toLowerCase();
+		String lower = trimmed.toLowerCase(java.util.Locale.ROOT);
 		if (lower.contains("master") || lower.startsWith("mm")) {
 			return COLOR_FLOOR_MASTER;
 		}
@@ -314,7 +320,7 @@ public final class DungeonCalcOverlay {
 		if (classId == null || classId.isBlank()) {
 			return PvDraw.COLOR_TEXT;
 		}
-		return switch (classId.toLowerCase()) {
+		return switch (classId.toLowerCase(java.util.Locale.ROOT)) {
 			case "mage" -> COLOR_MAGE;
 			case "berserk" -> COLOR_BERSERK;
 			case "archer" -> COLOR_ARCHER;

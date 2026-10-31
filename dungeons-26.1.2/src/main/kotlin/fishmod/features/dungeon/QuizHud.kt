@@ -1,4 +1,6 @@
 package fishmod.features.dungeon
+import fishmod.compat.hudHidden
+import fishmod.utils.TextStrip
 
 import fishmod.features.FishHudEditor
 import fishmod.utils.Location
@@ -13,7 +15,6 @@ import fishmod.utils.debug.FishDiag
 object QuizHud {
 
     private const val NAME = "Quiz Timer"
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     private var stage = 0
     private var ticksLeft = 0
@@ -28,16 +29,21 @@ object QuizHud {
             { FishSettings.quizHudScale }, { v -> FishSettings.quizHudScale = v }
         )
         Events.ON_GAME_MESSAGE.register { text ->
-            val s = COLOR.replace(text.string, "")
+            val s = TextStrip.plain(text.string)
             when {
                 s.contains("I am Oruo the Omniscient. I have lived many lives.") -> { stage = 1; ticksLeft = 220 }
                 s.contains("2 questions left... Then you will have proven your worth to me!") -> {
-                    FishDiag.check(stage == 1 || stage == 0, "QuizHud.3") { "quiz stage 2 arrived from stage $stage" }
+                    FishDiag.check(stage <= 2, "QuizHud.3") { "quiz stage 2 arrived from stage $stage" }
                     stage = 2; ticksLeft = 100
                 }
                 s.contains("One more question!") -> {
-                    FishDiag.check(stage == 2 || stage == 0, "QuizHud.2") { "quiz stage 3 arrived from stage $stage" }
+                    FishDiag.check(stage == 2 || stage == 3 || stage == 0, "QuizHud.2") { "quiz stage 3 arrived from stage $stage" }
                     stage = 3; ticksLeft = 100
+                }
+                // backup when the "questions left" lines are missed: "answered Question #N correctly!"
+                s.startsWith("[STATUE] Oruo the Omniscient: ") && s.contains("answered Question #") && s.endsWith("correctly!") -> {
+                    val n = s.substringAfter("answered Question #").takeWhile { it.isDigit() }.toIntOrNull()
+                    if (n != null && n in 1..2 && stage in 1..n) { stage = n + 1; ticksLeft = 100 }
                 }
                 s.startsWith("[STATUE] Oruo the Omniscient: ") && s.contains("answered the final question") -> {
                     FishDiag.check(stage == 3 || stage == 0, "QuizHud.1") { "quiz finished while at stage $stage" }
@@ -54,7 +60,7 @@ object QuizHud {
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.quizHudEnabled || !Location.inDungeon() || stage == 0 || ticksLeft <= 0) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         val sc = FishSettings.quizHudScale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.quizHudX.toFloat(), FishSettings.quizHudY.toFloat())

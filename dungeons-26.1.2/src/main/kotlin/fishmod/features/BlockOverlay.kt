@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.hudHidden
 
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.vertex.PoseStack
@@ -32,7 +33,7 @@ object BlockOverlay {
         if (!FishSettings.blockOverlayEnabled) return null
         val mc = Minecraft.getInstance()
         val level = mc.level ?: return null
-        if (mc.player == null || mc.options.hideGui) return null
+        if (mc.player == null || mc.hudHidden) return null
         val hit = mc.hitResult as? BlockHitResult ?: return null
         if (hit.type != HitResult.Type.BLOCK) return null
         val pos = hit.blockPos

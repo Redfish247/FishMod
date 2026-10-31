@@ -17,7 +17,8 @@ object BadgeRegistry {
     @JvmStatic
     fun refresh() {
         HypixelApi.fetchBadgeDefs { list ->
-            FishDiag.check(list.isNotEmpty(), "BadgeRegistry.2") { "badge defs fetch returned nothing" }
+            // Failed fetch (already logged by HypixelApi): keep the last good defs instead of wiping badges
+            if (list.isEmpty()) return@fetchBadgeDefs
             val map = LinkedHashMap<String, BadgeDef>()
             for (d in list) map[d.id] = d
             defs = map

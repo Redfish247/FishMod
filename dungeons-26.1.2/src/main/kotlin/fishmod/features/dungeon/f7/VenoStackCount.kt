@@ -1,4 +1,5 @@
 package fishmod.features.dungeon.f7
+import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.features.item.fishmodCustomDataTag
@@ -65,7 +66,7 @@ object VenoStackCount {
         if (stacks > 0 && System.currentTimeMillis() - lastHitMs > DURATION_MS) stacks = 0
         val mc = Minecraft.getInstance()
         val p = mc.player
-        holdingVeno = p != null && isVenomous(p.mainHandItem)
+        holdingVeno = FishSettings.venoStackEnabled && p != null && isVenomous(p.mainHandItem)
         if (!FishSettings.venoStackEnabled || !Location.inDungeon() || !Phase.inP2() || Phase.stormDead()) {
             stormBox = null
             if (Phase.stormDead() || !Location.inDungeon()) stacks = 0
@@ -112,13 +113,13 @@ object VenoStackCount {
 
     private fun renderHudInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         val left = (DURATION_MS - (System.currentTimeMillis() - lastHitMs)).coerceAtLeast(0L)
         val sc = FishSettings.venoStackScale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.venoStackHudX.toFloat(), FishSettings.venoStackHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, "%.1fs".format(left / 1000.0), 0, 0, 0xFFFFFF55.toInt(), true)
+        ctx.text(mc.font, fishmod.utils.Fmt.f1(left / 1000.0) + "s", 0, 0, 0xFFFFFF55.toInt(), true)
         ctx.text(mc.font, "$stacks/$MAX_STACKS", 0, 10, if (stacks >= MAX_STACKS) 0xFFFF5555.toInt() else 0xFFFFFFFF.toInt(), true)
         ctx.pose().popMatrix()
     }

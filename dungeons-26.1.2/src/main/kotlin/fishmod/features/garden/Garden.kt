@@ -22,11 +22,14 @@ object Garden {
         GardenAlerts.init()
         GardenTitles.init()
         GardenMilestones.init()
+        MushroomCowPerk.init()
         GardenLevels.init()
         GardenMisc.init()
         CropFever.init()
         FortuneBonus.init()
         SensitivityReducer.init()
+        GardenKeybinds.init()
+        GardenCarrolyn.init()
         SpeedSignHelper.init()
         GardenExtras.init()
     }
@@ -58,7 +61,7 @@ object Garden {
 
     fun hud(name: String, id: String, w: Int, h: Int,
             gx: () -> Int, sx: (Int) -> Unit, gy: () -> Int, sy: (Int) -> Unit,
-            gs: () -> Double, ss: (Double) -> Unit, on: () -> Boolean, lines: () -> List<String>) =
-        MiningHuds.reg(name, id, w, h, gx, sx, gy, sy, gs, ss, on, lines)
+            gs: () -> Double, ss: (Double) -> Unit, on: () -> Boolean, enabled: (() -> Boolean)? = null, lines: () -> List<String>) =
+        MiningHuds.reg(name, id, w, h, gx, sx, gy, sy, gs, ss, on, enabled, lines)
 
 }

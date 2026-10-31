@@ -1,6 +1,7 @@
 package fishmod.features
 
 import fishmod.utils.Misc
+import fishmod.utils.TextStrip
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.minecraft.network.chat.Component
@@ -8,7 +9,6 @@ import java.util.regex.Pattern
 
 object BridgeBot {
 
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     @Volatile private var pattern: Pattern = buildPattern()
 
@@ -27,7 +27,7 @@ object BridgeBot {
         rebuildPattern()
         ClientReceiveMessageEvents.ALLOW_GAME.register { message, overlay ->
             if (overlay || !FishSettings.bridgeBotEnabled || FishSettings.bridgeBotName.isBlank()) return@register true
-            val plain = message.string.replace(COLOR, "").trim()
+            val plain = TextStrip.plain(message.string).trim()
             val m = pattern.matcher(plain)
             if (!m.matches()) return@register true
             Misc.addChatMessage(Component.literal("§2Bridge > §r${m.group(1)}§r: ${m.group(2)}"))

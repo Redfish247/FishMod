@@ -285,7 +285,7 @@ final class WardrobeDecoder {
 			}
 			for (var entry : layouts.entrySet()) {
 				JsonObject page = InventoryDecodeSupport.obj(entry.getValue());
-				if (page != null && page.has("id") && page.get("id").isJsonPrimitive() && page.get("id").getAsInt() == id) {
+				if (page != null && id.equals(InventoryDecodeSupport.jsonInt(page, "id"))) {
 					return page;
 				}
 			}

@@ -1,4 +1,6 @@
 package fishmod.features.achievements
+import fishmod.compat.curScreen
+import fishmod.compat.showScreen
 
 import fishmod.features.FishModScreen.ButtonSetting
 import fishmod.features.FishModScreen.Column
@@ -25,7 +27,7 @@ object AchMenu {
         summary = LabelSetting("", "").also { main.sub.add(it) }
         main.sub.add(ButtonSetting("Open Achievements", "Browse every achievement", "Open") {
             val mc = net.minecraft.client.Minecraft.getInstance()
-            mc.setScreen(AchScreen(mc.screen))
+            mc.showScreen(AchScreen(mc.curScreen))
         })
         main.sub.add(ToggleSetting("Unlock Popup", "Banner at the top of the screen on unlock (move it in the HUD editor)", S::achToast))
         main.sub.add(SliderDoubleSetting("Popup Scale", "", S::achPopupScale, 0.5, 2.5).gatedBy { S.achToast })

@@ -1,4 +1,5 @@
 package fishmod.features.dungeon
+import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.utils.Location
@@ -40,7 +41,7 @@ object SecretOverlay {
         if (!FishSettings.secretOverlayEnabled || !Location.inDungeon()) return
         if (System.currentTimeMillis() - seenAt > STALE_MS || total <= 0) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         val c = when { found >= total -> "§a"; found > 0 -> "§e"; else -> "§c" }
         val sc = FishSettings.secretOverlayScale.toFloat()
         ctx.pose().pushMatrix()

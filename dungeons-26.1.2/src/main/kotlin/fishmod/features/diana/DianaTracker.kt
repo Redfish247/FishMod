@@ -1,4 +1,6 @@
 package fishmod.features.diana
+import fishmod.compat.curScreen
+import fishmod.compat.showScreen
 
 import com.google.gson.GsonBuilder
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
@@ -372,6 +374,7 @@ object DianaTracker {
     private val MF_PART = Regex("\\s*\\(\\+\\{mf\\}%? ✯ Magic Find\\)")
     private val PRICE_PART = Regex("\\s*\\(\\+\\{price\\} coins\\)")
     private val SPACES = Regex(" {2,}")
+    private val EMPTY_MF = Regex("\\s*\\(\\+%? ✯ Magic Find\\)")
     private val SPACE_CODES_SPACE = Regex(""" +((?:§.)+) +""")
 
     // Fills a drop template; empty MF / price brackets are dropped so the line stays clean
@@ -386,7 +389,7 @@ object DianaTracker {
             .replace("{since}", took.toString())
             .replace("{lstext}", if (ls) "(LS)" else "")
             .replace('&', '§')
-        if (mf <= 0) out = out.replace(Regex("\\s*\\(\\+%? ✯ Magic Find\\)"), "")
+        if (mf <= 0) out = out.replace(EMPTY_MF, "")
         // An empty slot like {lstext} leaves "§d " between two spaces; fold those into one space
         var prev: String
         do { prev = out; out = out.replace(SPACE_CODES_SPACE, " $1") } while (out != prev)
@@ -451,6 +454,8 @@ object DianaTracker {
         val ev = data.event
         if (ev.year == 0) { ev.year = y; changed(); return }
         if (ev.year >= y) return
+        // New year only counts once Diana (Mythological Ritual) is confirmed elected
+        if (!fishmod.utils.MayorApi.isDianaRitualActive()) return
         if (ev.mobs.values.any { it > 0 }) {
             data.past.add(PastEvent().also {
                 it.year = ev.year; it.items = LinkedHashMap(ev.items); it.mobs = LinkedHashMap(ev.mobs)
@@ -510,8 +515,8 @@ object DianaTracker {
             checkYear()
             if (Diana.active()) CroesusPrices.refreshIfStale()
         }
-        if (tickN % 10 == 0 && DianaSettings.dianaTracker) mc.player?.let { scanHilts(it) }
-        if (tickN % 5 == 0 && DianaSettings.dianaTracker) mc.player?.let { scanStackDrops(mc, it) }
+        if (tickN % 10 == 0 && DianaSettings.dianaTracker && Diana.inHub()) mc.player?.let { scanHilts(it) }
+        if (tickN % 5 == 0 && DianaSettings.dianaTracker && Diana.inHub()) mc.player?.let { scanStackDrops(mc, it) }
         flushSave(false)
     }
 
@@ -524,7 +529,7 @@ object DianaTracker {
             val id = ItemUtil.getId(st) ?: continue
             if (id in STACK_DROPS) cur[id] = (cur[id] ?: 0) + st.count
         }
-        val menu = mc.screen is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>
+        val menu = mc.curScreen is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>
         if (invBaseline && !menu && Diana.inHub() && mobDiedWithin(PICKUP_WINDOW_MS)) {
             for ((id, n) in cur) {
                 val gained = n - (invCounts[id] ?: 0)
@@ -606,7 +611,7 @@ object DianaTracker {
     @JvmStatic
     fun openPastEvents() {
         val mc = Minecraft.getInstance()
-        mc.schedule { mc.setScreen(DianaPastEventsScreen()) }
+        mc.schedule { mc.showScreen(DianaPastEventsScreen()) }
     }
 
     private val SBO_LS = Regex(" ?L[sS]$")
@@ -725,9 +730,9 @@ object DianaTracker {
     fun short(v: Double): String {
         val a = abs(v)
         return when {
-            a >= 1e9 -> "%.2fB".format(v / 1e9)
-            a >= 1e6 -> "%.2fM".format(v / 1e6)
-            a >= 1e3 -> "%.1fK".format(v / 1e3)
+            a >= 999_995_000.0 -> "%.2fB".format(v / 1e9) // thresholds avoid "1000.0K" rollover
+            a >= 999_950.0 -> "%.2fM".format(v / 1e6)
+            a >= 999.5 -> "%.1fK".format(v / 1e3)
             else -> "%.0f".format(v)
         }
     }

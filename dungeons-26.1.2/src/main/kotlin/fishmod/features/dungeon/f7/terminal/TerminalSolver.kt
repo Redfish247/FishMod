@@ -1,4 +1,9 @@
 package fishmod.features.dungeon.f7.terminal
+import fishmod.compat.curScreen
+import fishmod.utils.TextStrip
+
+import fishmod.compat.CB
+import fishmod.compat.CI
 
 import fishmod.utils.Location
 import fishmod.utils.Misc
@@ -32,14 +37,14 @@ object TerminalSolver {
     fun onScreenClosed() {
         if (simActive) return
         Minecraft.getInstance().schedule {
-            if (!simActive && Minecraft.getInstance().screen !is AbstractContainerScreen<*>) reset()
+            if (!simActive && Minecraft.getInstance().curScreen !is AbstractContainerScreen<*>) reset()
         }
     }
 
     private fun reset() { current = null; currentTitle = "" }
 
     private fun ensureHandler(rawTitle: String): TerminalHandler? {
-        val name = COLOR.replace(rawTitle, "")
+        val name = TextStrip.plain(rawTitle)
         val type = TerminalType.entries.firstOrNull { name.startsWith(it.windowPrefix) }
         if (type == null) { reset(); return null }
         if (current?.type == type && name == currentTitle) return current
@@ -88,7 +93,6 @@ object TerminalSolver {
     private val STARTS_WITH_LETTER = Pattern.compile("What starts with: '?(\\w+)'?")
     private val SELECT_COLOR = Pattern.compile("Select all the ([\\w ]+?) items!")
     private val ACTIVATED = Pattern.compile("(.{1,16}) activated a terminal! \\((\\d)/(\\d)\\)")
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     @JvmStatic
     fun init() {
@@ -104,7 +108,7 @@ object TerminalSolver {
 
         Events.ON_GAME_MESSAGE.register { text ->
             try {
-                val m = ACTIVATED.matcher(COLOR.replace(text.string, ""))
+                val m = ACTIVATED.matcher(TextStrip.plain(text.string))
                 if (m.find() && m.group(1) == Minecraft.getInstance().player?.gameProfile?.name) {
                     if (FishSettings.terminalSolverSound) SoundManager.ping("termSolved", 0)
                     onOwnTerminalDone()
@@ -125,14 +129,14 @@ object TerminalSolver {
         net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback.EVENT.register(
             net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback { _, _, _, lines ->
                 if ((FishSettings.terminalSolverEnabled || simActive) && FishSettings.terminalStopTooltips && current != null
-                    && Minecraft.getInstance().screen is AbstractContainerScreen<*>
+                    && Minecraft.getInstance().curScreen is AbstractContainerScreen<*>
                 ) lines.clear()
             })
     }
 
     private fun onOpen(packet: ClientboundOpenScreenPacket) {
         if (!Location.inDungeon()) { reset(); return }
-        debug("open '${COLOR.replace(packet.title.string, "").take(30)}' id=${packet.containerId}")
+        debug("open '${TextStrip.plain(packet.title.string).take(30)}' id=${packet.containerId}")
         try { ensureHandler(packet.title.string) } catch (e: Exception) { FishDiag.fail("TerminalSolver.6", "terminal handler build failed on open '${packet.title.string}'", e) }
     }
 
@@ -172,7 +176,7 @@ object TerminalSolver {
         val term = current ?: return
         if (term.type == TerminalType.MELODY && FishSettings.terminalStopMelody) return
         val mc = Minecraft.getInstance()
-        val screen = mc.screen as? AbstractContainerScreen<*> ?: return
+        val screen = mc.curScreen as? AbstractContainerScreen<*> ?: return
         val slot = DrawEvents.currentSlot ?: screen.menu.slots.firstOrNull { it.x == x && it.y == y } ?: return
         if (slot.container is Inventory) return
         val idx = slot.index
@@ -226,7 +230,7 @@ object TerminalSolver {
         if (!FishSettings.terminalSolverEnabled && !simActive) return false
         val term = current ?: return false
         if (term.type != TerminalType.NUMBERS || slot.container is Inventory) return false
-        return slot.index < term.windowSize && slot.item.`is`(net.minecraft.world.item.Items.LIME_STAINED_GLASS_PANE)
+        return slot.index < term.windowSize && slot.item.`is`(CI.LIME_STAINED_GLASS_PANE)
     }
 
     fun slotColor(term: TerminalHandler, idx: Int): Int = when (term.type) {
@@ -256,7 +260,7 @@ object TerminalSolver {
     private fun tickSyncInner() {
         if (simActive) return
         if (!FishSettings.terminalSolverEnabled || !fishmod.utils.Location.inDungeon()) return
-        val screen = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return
+        val screen = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return
         val term = ensureHandler(screen.title.string) ?: return
 
         val menu = screen.menu
@@ -285,7 +289,7 @@ object TerminalSolver {
             if (st.isEmpty) return@mapNotNull null
             val id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(st.item).path
             if (id == "black_stained_glass_pane" || id == "gray_stained_glass_pane") return@mapNotNull null
-            "$i:$id${if (st.hasFoil()) "*" else ""}x${st.count}'${COLOR.replace(st.hoverName.string, "").trim().take(14)}'"
+            "$i:$id${if (st.hasFoil()) "*" else ""}x${st.count}'${TextStrip.plain(st.hoverName.string).trim().take(14)}'"
         }.take(8)
         debug("  " + sample.joinToString(" "))
     }

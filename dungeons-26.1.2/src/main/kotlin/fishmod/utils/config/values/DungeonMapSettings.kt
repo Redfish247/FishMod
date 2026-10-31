@@ -62,6 +62,10 @@ object DungeonMapSettings {
 
     @ConfigValue
     @JvmField
+    var mapInfoForcePaul: Boolean = false
+
+    @ConfigValue
+    @JvmField
     var mapInfoShowSecrets: Boolean = true
 
     @ConfigValue

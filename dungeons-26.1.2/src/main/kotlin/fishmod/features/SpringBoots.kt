@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.hudHidden
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
@@ -96,7 +97,7 @@ object SpringBoots {
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.springBootsEnabled || currentHeight <= 0f) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         val pct = currentHeight / HEIGHTS.last() * 100f
         val label = if (FishSettings.springBootsShowBlocks) "§aSpring: §f${fishmod.utils.Fmt.f1(currentHeight.toDouble())}"
         else "§aCharge: §f${fishmod.utils.Fmt.f0(pct.toDouble())}%"

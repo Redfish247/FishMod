@@ -19,6 +19,8 @@ object KuudraSettings {
 
     // Alerts
     @ConfigValue @JvmField var kuudraAlerts: Boolean = false
+    @ConfigValue @JvmField var kuudraRequeue: Boolean = false
+    @ConfigValue @JvmField var kuudraRequeueDelayMs: Int = 8000
     @ConfigValue @JvmField var kuudraAlertPhase: Boolean = true
     @ConfigValue @JvmField var kuudraAlertSupplies: Boolean = true
     @ConfigValue @JvmField var kuudraAlertNoPre: Boolean = true
@@ -29,6 +31,8 @@ object KuudraSettings {
     // Supplies
     @ConfigValue @JvmField var kuudraSupplyTimes: Boolean = false
     @ConfigValue @JvmField var kuudraSupplyHideOriginal: Boolean = false
+    @ConfigValue @JvmField var kuudraSupplyParty: Boolean = false
+    @ConfigValue @JvmField var kuudraSupplyMessage: String = "Supply {n}/{total} recovered"
     @ConfigValue @JvmField var kuudraSupplyHud: Boolean = false
     @ConfigValue @JvmField var kuudraSupplyHudX: Int = 10
     @ConfigValue @JvmField var kuudraSupplyHudY: Int = 190

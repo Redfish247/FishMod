@@ -15,7 +15,11 @@ object NametagCullingCompat {
         if (!FabricLoader.getInstance().isModLoaded("entityculling")) return
         val setTimeout: Method = try {
             Class.forName("dev.tr7zw.entityculling.access.Cullable").getMethod("setTimeout")
-        } catch (t: Throwable) { FishDiag.fail("NametagCullingCompat.1", "EntityCulling Cullable.setTimeout not found", t); return }
+        } catch (t: Throwable) {
+            // EntityCulling versions without this API: skip quietly, not an error report
+            org.slf4j.LoggerFactory.getLogger("fishmod").info("EntityCulling nametag compat off: {}", t.toString())
+            return
+        }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             val self = mc.player ?: return@register
             val level = mc.level ?: return@register

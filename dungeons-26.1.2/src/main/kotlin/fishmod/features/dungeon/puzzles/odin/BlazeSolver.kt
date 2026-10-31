@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.puzzles.odin
 
+import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
 import fishmod.features.dungeon.puzzles.PuzzleSolvers
 import fishmod.utils.config.values.FishSettings
@@ -15,7 +16,6 @@ object BlazeSolver {
     private var completed = false
     private var emptyScans = 0
     private val blazeHealthRegex = Regex("Blaze [\\d,]+/([\\d,]+)❤")
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     fun getBlaze() {
         val name = OdinScan.currentRoom?.data?.name
@@ -23,8 +23,8 @@ object BlazeSolver {
         val hpMap = mutableMapOf<ArmorStand, Int>()
         blazes.clear()
         Minecraft.getInstance().level?.entitiesForRendering()?.forEach { entity ->
-            if (entity !is ArmorStand || entity in blazes) return@forEach
-            val tag = COLOR.replace(entity.name.string, "")
+            if (entity !is ArmorStand) return@forEach
+            val tag = TextStrip.plain(entity.name.string)
             val hm = blazeHealthRegex.find(tag) ?: return@forEach
             val hp = FishDiag.notNull(hm.groupValues[1].replace(",", "").toIntOrNull(), "BlazeSolver.1") { "blaze hp not numeric: '$tag'" } ?: return@forEach
             hpMap[entity] = hp

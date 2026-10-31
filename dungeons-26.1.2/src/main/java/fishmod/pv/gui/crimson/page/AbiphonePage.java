@@ -359,10 +359,12 @@ public final class AbiphonePage {
 			return;
 		}
 		if (icon.isEmpty() || icon.is(Items.PAPER) || isUntexturedHead(icon)) {
-			icon = new ItemStack(Items.VILLAGER_SPAWN_EGG);
+			icon = FALLBACK_ICON;
 		}
 		g.item(icon, x, y);
 	}
+
+	private static final ItemStack FALLBACK_ICON = new ItemStack(Items.VILLAGER_SPAWN_EGG);
 
 	private static boolean isUntexturedHead(ItemStack icon) {
 		if (icon == null || icon.isEmpty() || !icon.is(Items.PLAYER_HEAD)) {

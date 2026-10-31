@@ -1,4 +1,5 @@
 package fishmod.features.dungeon
+import fishmod.compat.curScreen
 
 import fishmod.features.FishHudEditor
 import fishmod.utils.Constants
@@ -22,7 +23,6 @@ import fishmod.utils.debug.FishDiag
 
 object SessionStats {
 
-    private val ioExecutor = fishmod.utils.IoExecutor
 
     private val DEATH_PAT = Pattern.compile("☠ \\S+ (?:was|were) killed by|☠ \\S+ (?:died|quit)")
 
@@ -92,6 +92,8 @@ object SessionStats {
         autoPaused = true
         autoPauseReason = reason
         pauseStartedMs = if (freezeAtMs > 0) freezeAtMs else System.currentTimeMillis()
+        // last activity can predate the session start (moved, then first run began)
+        if (sessionStartMs > 0 && pauseStartedMs < sessionStartMs) pauseStartedMs = sessionStartMs
     }
 
     private fun tickAutoPause() {
@@ -160,7 +162,7 @@ object SessionStats {
         }
 
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
-            if (FishSettings.sessionStatsResetOnRelog) reset()
+            if (FishSettings.sessionStatsResetOnRelog) FishDiag.guard("SessionStats.11", "session stats reset on join failed") { reset() }
         }
 
         Events.ON_LOCATION_CHANGE.register { _ ->
@@ -234,6 +236,7 @@ object SessionStats {
             pauseStartedMs = d.pauseStartedMs
             autoPaused = d.autoPaused
             lastActivityMs = d.lastActivityMs
+            if (paused && sessionStartMs > 0 && pauseStartedMs in 1 until sessionStartMs) pauseStartedMs = sessionStartMs
             if (!paused && sessionStartMs > 0) {
                 autoPause(1, if (lastActivityMs > 0) lastActivityMs else sessionStartMs)
             }
@@ -255,7 +258,7 @@ object SessionStats {
         d.autoPaused = autoPaused
         d.lastActivityMs = lastActivityMs
         val json = GSON.toJson(d)
-        ioExecutor.execute {
+        fishmod.utils.IoExecutor.execute {
             try {
                 Files.createDirectories(SAVE_FILE.parent)
                 Files.writeString(SAVE_FILE, json)
@@ -317,12 +320,12 @@ object SessionStats {
     private fun renderHudInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
         if (mc.player == null) return
-        if (mc.screen != null && mc.screen !is net.minecraft.client.gui.screens.ChatScreen) return
+        if (mc.curScreen != null && mc.curScreen !is net.minecraft.client.gui.screens.ChatScreen) return
         val loc = Location.getCurrentLocation()
         val show = (loc == Location.DUNGEON && FishSettings.sessionStatsInDungeon)
             || (loc == Location.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub)
         if (!show) return
-        if (mc.screen !== lastCountedScreen) { lastCountedScreen = mc.screen; fishmod.features.achievements.AchStore.inc("fm.statsOpened") }
+        if (mc.curScreen !== lastCountedScreen) { lastCountedScreen = mc.curScreen; fishmod.features.achievements.AchStore.inc("fm.statsOpened") }
 
         val x = FishSettings.sessionStatsHudX
         val y = FishSettings.sessionStatsHudY
@@ -348,7 +351,7 @@ object SessionStats {
 
     private fun renderInScreenInner(ctx: GuiGraphicsExtractor, mouseX: Int, mouseY: Int) {
         val mc = Minecraft.getInstance()
-        if (mc.screen !is AbstractContainerScreen<*>) return
+        if (mc.curScreen !is AbstractContainerScreen<*>) return
         val loc = Location.getCurrentLocation()
         val show = (loc == Location.DUNGEON && FishSettings.sessionStatsInDungeon)
             || (loc == Location.DUNGEON_HUB && FishSettings.sessionStatsInDungeonHub)

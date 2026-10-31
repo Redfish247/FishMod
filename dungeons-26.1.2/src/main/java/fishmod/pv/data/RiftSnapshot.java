@@ -751,8 +751,9 @@ public final class RiftSnapshot {
 	}
 
 	private static long longVal(JsonObject obj, String key) {
-		Float n = Leveling.num(obj == null ? null : obj.get(key));
-		return n == null ? 0L : Math.max(0L, Math.round(n.doubleValue()));
+		// Double, not Float: epoch-ms timestamps lose minutes in float precision.
+		Double n = Leveling.numDouble(obj == null ? null : obj.get(key));
+		return n == null || n.isNaN() ? 0L : Math.max(0L, Math.round(n));
 	}
 
 	private static String str(JsonElement element) {

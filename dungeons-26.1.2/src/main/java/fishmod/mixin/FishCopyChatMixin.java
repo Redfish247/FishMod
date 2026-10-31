@@ -33,7 +33,7 @@ public class FishCopyChatMixin extends Screen {
 
         try {
             Minecraft mc = Minecraft.getInstance();
-            ChatHudInvoker hudInvoker = (ChatHudInvoker) mc.gui.getChat();
+            ChatHudInvoker hudInvoker = (ChatHudInvoker) fishmod.compat.McCompatKt.getHud(mc).getChat();
 
             double x = toChatLineX(hudInvoker, click.x());
             double y = toChatLineY(hudInvoker, click.y(), mc);

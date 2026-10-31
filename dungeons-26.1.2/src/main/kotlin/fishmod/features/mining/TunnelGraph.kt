@@ -21,9 +21,14 @@ object TunnelGraph {
 
     @Volatile var nodes: List<Node> = emptyList(); private set
     @Volatile private var loading = false
+    private var lastAttemptMs = 0L
 
     fun ensureLoaded() {
         if (loading || (nodes.isNotEmpty() && System.currentTimeMillis() - FILE.lastModified() < REFRESH_MS)) return
+        // A failed fetch leaves the file stale; don't retry every few ticks
+        val now = System.currentTimeMillis()
+        if (now - lastAttemptMs < 5 * 60_000L) return
+        lastAttemptMs = now
         loading = true
         fishmod.utils.IoExecutor.execute {
             try {
@@ -43,16 +48,18 @@ object TunnelGraph {
     private fun parse(json: String): Boolean {
         val root = JsonParser.parseString(json).asJsonObject
         val byId = HashMap<Int, Node>()
-        for ((k, v) in root.entrySet()) {
+        for ((k, v) in root.entrySet()) runCatching {
+            // skip a malformed node instead of dropping the whole graph
             val o = v.asJsonObject
             val p = o.get("Position").asString.split(":").map { it.toDouble() }
             val name = o.get("Name")?.asString?.let { Mining.strip(it) } ?: ""
             byId[k.toInt()] = Node(k.toInt(), Vec3(p[0] + 0.5, p[1], p[2] + 0.5), name)
         }
         for ((k, v) in root.entrySet()) {
-            val n = byId[k.toInt()] ?: continue
+            val n = byId[k.toIntOrNull()] ?: continue
             v.asJsonObject.getAsJsonObject("Neighbours")?.entrySet()?.forEach { (id, d) ->
-                byId[id.toInt()]?.let { n.next += it to d.asDouble }
+                val w = runCatching { d.asDouble }.getOrNull()?.takeIf { it.isFinite() && it >= 0 } ?: return@forEach
+                byId[id.toIntOrNull()]?.let { n.next += it to w }
             }
         }
         if (byId.isEmpty()) return false

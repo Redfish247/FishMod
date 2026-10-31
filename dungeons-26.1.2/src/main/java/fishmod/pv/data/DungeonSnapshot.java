@@ -166,7 +166,7 @@ public final class DungeonSnapshot {
 		this.classAverageProgress = classAverageProgress;
 		this.classAverageMaxed = classAverageMaxed;
 		this.classAverageHover = classAverageHover;
-		this.classes = List.copyOf(classes);
+		this.classes = classes == null ? List.of() : List.copyOf(classes);
 		this.normal = normal == null ? ModeStats.empty() : normal;
 		this.master = master == null ? ModeStats.empty() : master;
 		this.expertRing = expertRing;
@@ -270,7 +270,7 @@ public final class DungeonSnapshot {
 		if (classId == null || this.classEssenceBonuses.isEmpty()) {
 			return 0;
 		}
-		Double value = this.classEssenceBonuses.get(classId.toLowerCase());
+		Double value = this.classEssenceBonuses.get(classId.toLowerCase(java.util.Locale.ROOT));
 		return value == null ? 0 : value;
 	}
 

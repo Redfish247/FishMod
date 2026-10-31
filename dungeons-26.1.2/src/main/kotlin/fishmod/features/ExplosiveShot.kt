@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.hud
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
@@ -64,7 +65,7 @@ object ExplosiveShot {
                 "§7Explosive Shot §8• §f" + enemies + (if (enemies == 1) " enemy" else " enemies")
             )
             mc.execute {
-                val hud = mc.gui
+                val hud = mc.hud
                 hud.setTimes(0, 25, 8)
                 hud.setTitle(title)
                 hud.setSubtitle(subtitle)

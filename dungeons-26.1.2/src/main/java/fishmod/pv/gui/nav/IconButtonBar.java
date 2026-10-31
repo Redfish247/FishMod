@@ -248,6 +248,10 @@ public final class IconButtonBar {
 		virtualH = h;
 	}
 
+	public static int virtualHeight() {
+		return virtualH;
+	}
+
 	private static int[] screenSize() {
 		if (virtualW > 0 && virtualH > 0) {
 			return new int[] { virtualW, virtualH };

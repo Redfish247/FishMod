@@ -1,6 +1,7 @@
 package fishmod.utils;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
@@ -27,6 +28,8 @@ public class Keybinds {
     public static KeyMapping[] wardrobeSlots;
 
     public static KeyMapping[] petKeybinds;
+
+    public static KeyMapping[] gardenKeys;
 
     public static KeyMapping wardrobeNextPage;
     public static KeyMapping wardrobePrevPage;
@@ -108,6 +111,16 @@ public class Keybinds {
             TRACKED.put("pet_key_" + fishmod.features.other.PetKeybinds.PETS[i].toLowerCase().replace(' ', '_'), petKeybinds[i]);
         }
 
+        gardenKeys = new KeyMapping[fishmod.features.garden.GardenKeybinds.NAMES.length];
+        for (int i = 0; i < gardenKeys.length; i++) {
+            gardenKeys[i] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+                    "Garden: " + fishmod.features.garden.GardenKeybinds.NAMES[i],
+                    InputConstants.Type.KEYSYM,
+                    GLFW.GLFW_KEY_UNKNOWN,
+                    category));
+            TRACKED.put("garden_key_" + fishmod.features.garden.GardenKeybinds.NAMES[i].toLowerCase().replace(' ', '_'), gardenKeys[i]);
+        }
+
         wardrobeNextPage = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "Wardrobe Next Page",
                 InputConstants.Type.KEYSYM,
@@ -181,6 +194,8 @@ public class Keybinds {
         restoreKeybindBackup();
 
         ClientTickEvents.END_CLIENT_TICK.register(Keybinds::checkInputs);
+        // Flush on exit so a rebind/unbind in the last 2s isn't reverted by the stale backup.
+        ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> syncKeybindBackup());
     }
 
     private static void restoreKeybindBackup() {
@@ -214,7 +229,7 @@ public class Keybinds {
         }
     }
 
-    private static void syncKeybindBackup() {
+    public static void syncKeybindBackup() {
         boolean changed = false;
         for (Map.Entry<String, KeyMapping> e : TRACKED.entrySet()) {
             String cur = e.getValue().saveString();
@@ -247,7 +262,7 @@ public class Keybinds {
             }
 
             if (openConfig.consumeClick()) {
-                client.setScreen(new fishmod.features.FishModScreen());
+                fishmod.compat.McCompatKt.showScreen(client, new fishmod.features.FishModScreen());
             }
 
             while (slotBindCycleProfile.consumeClick()) {

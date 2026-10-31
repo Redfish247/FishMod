@@ -1,4 +1,6 @@
 package fishmod.features.mining
+import fishmod.compat.cam
+import fishmod.compat.hudHidden
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
@@ -118,13 +120,9 @@ object Mining {
     }
 
     private fun sidebarLines(mc: Minecraft): List<String> {
-        val level = mc.level ?: return emptyList()
-        val sb = level.scoreboard
-        val obj = sb.getDisplayObjective(net.minecraft.world.scores.DisplaySlot.SIDEBAR) ?: return emptyList()
-        return sb.listPlayerScores(obj).sortedByDescending { it.value() }.map { e ->
-            val team = sb.getPlayersTeam(e.owner())
-            val raw = if (team != null) team.playerPrefix.string + team.playerSuffix.string else e.owner()
-            raw.replace(Constants.STRIP_COLOR_REGEX, "").filterNot { it.isSurrogate() }.trim()  // Hypixel pads lines with emoji
+        if (mc.level == null) return emptyList()
+        return fishmod.utils.SidebarCache.entries.map { e ->
+            e.plain.filterNot { it.isSurrogate() }.trim()  // Hypixel pads lines with emoji
         }
     }
 
@@ -153,7 +151,7 @@ object Mining {
     fun alpha(rgb: Int, pct: Int) = ((pct.coerceIn(0, 100) * 255 / 100) shl 24) or (rgb and 0xFFFFFF)
 
     fun lineStart(): Vec3 {
-        val cam = Minecraft.getInstance().gameRenderer.mainCamera
+        val cam = Minecraft.getInstance().cam
         return cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()))
     }
 
@@ -174,9 +172,9 @@ object MiningHuds {
     fun reg(
         name: String, id: String, w: Int, h: Int,
         gx: () -> Int, sx: (Int) -> Unit, gy: () -> Int, sy: (Int) -> Unit,
-        gs: () -> Double, ss: (Double) -> Unit, on: () -> Boolean, lines: () -> List<String>,
+        gs: () -> Double, ss: (Double) -> Unit, on: () -> Boolean, enabled: (() -> Boolean)? = null, lines: () -> List<String>,
     ) {
-        FishHudEditor.register(name, gx, sx, gy, sy, w, h, gs, ss, on)
+        FishHudEditor.register(name, gx, sx, gy, sy, w, h, gs, ss, on, enabled?.let { e -> java.util.function.BooleanSupplier { e() } })
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", id)) { ctx, _ ->
             if (!FishHudEditor.isOpen() && on()) draw(ctx, lines(), gx(), gy(), gs())
         }
@@ -184,7 +182,7 @@ object MiningHuds {
 
     fun draw(ctx: GuiGraphicsExtractor, lines: List<String>, x: Int, y: Int, scale: Double) {
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui || lines.isEmpty()) return
+        if (mc.player == null || mc.hudHidden || lines.isEmpty()) return
         val pose = ctx.pose()
         pose.pushMatrix()
         pose.translate(x.toFloat(), y.toFloat())

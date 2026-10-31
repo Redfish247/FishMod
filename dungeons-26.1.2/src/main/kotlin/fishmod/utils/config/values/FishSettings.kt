@@ -29,8 +29,12 @@ object FishSettings {
 
     @ConfigValue @JvmField var fmColumnOrder: String = ""
     @ConfigValue @JvmField var fmFoldedColumns: String = ""
+    // sidebar folders: name|open|col,col;...
+    @ConfigValue @JvmField var fmSidebarFolders: String = ""
 
     @ConfigValue @JvmField var fmAnimations: Boolean = true
+
+    @ConfigValue @JvmField var fmCompact: Boolean = false
 
     @ConfigValue @JvmField var fmBgPreset: String = "Dark Glass"
     @ConfigValue @JvmField var fmBgCustomColor: Int = 0xFF14181D.toInt()
@@ -46,6 +50,9 @@ object FishSettings {
     @ConfigValue @JvmField var guiSettings: Boolean = false
     @ConfigValue @JvmField var debugReports: Boolean = false
     @ConfigValue @JvmField var debugChatNotices: Boolean = true
+    @ConfigValue @JvmField var boardReports: Boolean = true
+    @ConfigValue @JvmField var boardAutoSend: Boolean = true
+    @ConfigValue @JvmField var boardAutoPerHour: Int = 5
     @ConfigValue @JvmField var guiScaleMain: Int = 100
     @ConfigValue @JvmField var guiScaleChatCommands: Int = 100
     @ConfigValue @JvmField var guiScalePartyLoot: Int = 100
@@ -201,6 +208,7 @@ object FishSettings {
     @ConfigValue @JvmField var modPrefix: String = "FM"
 
     @ConfigValue @JvmField var remoteNicksEnabled: Boolean = false
+    @ConfigValue @JvmField var remoteItemsEnabled: Boolean = false
 
     @ConfigValue @JvmField var playerSizeEnabled: Boolean = false
     @ConfigValue @JvmField var wpEditFill: Boolean = false
@@ -226,6 +234,7 @@ object FishSettings {
     @ConfigValue @JvmField var cfBazaar: Boolean = false
     @ConfigValue @JvmField var cfWarping: Boolean = false
     @ConfigValue @JvmField var cfNoammSpam: Boolean = false
+    @ConfigValue @JvmField var cfCommonSpam: Boolean = true
     @ConfigValue @JvmField var cfCollapseBlank: Boolean = false
     @ConfigValue @JvmField var cfCustom: Boolean = false
     @ConfigValue @JvmField var cfCustomPatterns: String = ""
@@ -503,6 +512,8 @@ object FishSettings {
     @ConfigValue @JvmField var leapMenuClassOrder: String = "MAGE,BERSERK,ARCHER,HEALER,TANK"
     @ConfigValue @JvmField var leapMenuMap: Boolean = false
     @ConfigValue @JvmField var leapMenuMapAfterBR: Boolean = false
+    @ConfigValue @JvmField var leapHidePlayers: Boolean = false
+    @ConfigValue @JvmField var leapHidePlayersSeconds: Double = 2.0
 
     @ConfigValue @JvmField var itemTooltipPrices: Boolean = false
     @ConfigValue @JvmField var recipeViewer: Boolean = true
@@ -530,7 +541,6 @@ object FishSettings {
     @ConfigValue @JvmField var etherwarpSoundPitch: Double = 1.0
 
     @ConfigValue @JvmField var extraStatsEnabled: Boolean = false
-    @ConfigValue @JvmField var bossDamageEnabled: Boolean = false
     @ConfigValue @JvmField var extraStatsBits: Boolean = true
     @ConfigValue @JvmField var extraStatsClassExp: Boolean = true
     @ConfigValue @JvmField var extraStatsCombat: Boolean = true
@@ -620,6 +630,11 @@ object FishSettings {
     @ConfigValue @JvmField var lividSolverColor: Int = 0xFFFF5555.toInt()
 
     @ConfigValue @JvmField var croesusProfitEnabled: Boolean = false
+    @ConfigValue @JvmField var croesusHighlightEnabled: Boolean = false
+    @ConfigValue @JvmField var croesusUnopenedColor: Int = 0x8055FF55.toInt()
+    @ConfigValue @JvmField var croesusKismetColor: Int = 0x8055FFFF.toInt()
+    @ConfigValue @JvmField var croesusKeyColor: Int = 0x80FF5555.toInt()
+    @ConfigValue @JvmField var croesusHighlightOpacity: Int = 50
 
     @ConfigValue @JvmField var spiritBearEnabled: Boolean = false
     @ConfigValue @JvmField var spiritBearHudX: Int = 10
@@ -686,7 +701,7 @@ object FishSettings {
     @ConfigValue @JvmField var cameraNoBlindness: Boolean = false
     @ConfigValue @JvmField var cameraNoNausea: Boolean = false
 
-    @ConfigValue @JvmField var practiceServerIps: String = "hypixelp3sim.zapto.org"
+    @ConfigValue @JvmField var practiceServerIps: String = "hypixelp3sim.zapto.org,mc.strad.dev"
 
     @ConfigValue @JvmField var terminalSolverEnabled: Boolean = false
     @ConfigValue @JvmField var terminalBlockWrongClicks: Boolean = true
@@ -943,6 +958,10 @@ object FishSettings {
 
     @ConfigValue @JvmField var slayerCocoonAlertEnabled: Boolean = false
     @ConfigValue @JvmField var slayerCocoonAlertDurationMs: Int = 2000
+
+    @ConfigValue @JvmField var slayerRngTitleEnabled: Boolean = false
+    @ConfigValue @JvmField var slayerRngTitleDurationMs: Int = 2500
+    @ConfigValue @JvmField var slayerRngTitleColor: Int = 0xFFFF55FF.toInt()
 
     @ConfigValue @JvmField var slayerSpawnHudEnabled: Boolean = false
     @ConfigValue @JvmField var slayerSpawnHudX: Int = 10

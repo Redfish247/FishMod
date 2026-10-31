@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.curScreen
 
 import fishmod.features.item.ItemRarity
 import fishmod.utils.HypixelApi
@@ -38,6 +39,8 @@ object PetHud {
     private val TAB_OVERFLOW_XP: Pattern = Pattern.compile("\\+([\\d.,]+[KMB]?)\\s*XP")
 
     @JvmStatic fun activePetName(): String? = petName
+    @JvmStatic fun activePetLevel(): Int = petLevel
+    @JvmStatic fun activePetRarity(): ItemRarity = petRarity
 
     private var petName: String? = null
     private var petRarity: ItemRarity = ItemRarity.NONE
@@ -151,8 +154,8 @@ object PetHud {
 
         net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents.GAME.register { msg, overlay ->
             if (!FishSettings.petHudEnabled || !overlay || petName == null) return@register
-            val s = HypixelApi.STRIP_COLOR.matcher(msg.string).replaceAll("")
             val matchSkill = PET_SKILL[petName] ?: return@register
+            val s = HypixelApi.STRIP_COLOR.matcher(msg.string).replaceAll("")
             val m = SKILL_XP_BAR.matcher(s)
             while (m.find()) {
                 if (!m.group(2).equals(matchSkill, ignoreCase = true)) continue
@@ -190,7 +193,7 @@ object PetHud {
 
             if (Location.inDungeon()) return@register
 
-            scanPetsMenuIfOpen(client.screen)
+            scanPetsMenuIfOpen(client.curScreen)
 
             if (forceScanTicks > 0) {
                 forceScanTicks--
@@ -339,7 +342,9 @@ object PetHud {
         if (s.endsWith("K")) { mult = 1_000.0; s = s.substring(0, s.length - 1) }
         else if (s.endsWith("M")) { mult = 1_000_000.0; s = s.substring(0, s.length - 1) }
         else if (s.endsWith("B")) { mult = 1_000_000_000.0; s = s.substring(0, s.length - 1) }
-        return try { s.toDouble() * mult } catch (e: NumberFormatException) { FishDiag.fail("PetHud.9", "abbrev number unparsed: '$sIn'", e); -1.0 }
+        // Hypixel shows "NaN" xp on some pets: treat as unknown, not a parse failure
+        if (s == "NAN" || s.endsWith("INFINITY")) return -1.0
+        return try { (s.toDouble() * mult).takeIf { it.isFinite() } ?: -1.0 } catch (e: NumberFormatException) { FishDiag.fail("PetHud.9", "abbrev number unparsed: '$sIn'", e); -1.0 }
     }
 
     private fun reset() {

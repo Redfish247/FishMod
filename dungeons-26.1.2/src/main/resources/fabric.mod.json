@@ -28,12 +28,13 @@
 	],
 	"custom": {
 		"fishmod:updater": {
-			"modrinth": "${modrinthSlug}"
+			"modrinth": "${modrinthSlug}",
+			"github": "${githubRepo}"
 		}
 	},
 	"depends": {
 		"fabricloader": ">=0.19.3",
-		"minecraft": "~26.1.2",
+		"minecraft": "${minecraftDep}",
 		"java": ">=25",
 		"fabric-api": "*",
 		"hypixel-mod-api": "*"

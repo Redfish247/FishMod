@@ -1,6 +1,7 @@
 package fishmod.features.dungeon
 
 import fishmod.utils.Location
+import fishmod.utils.TextStrip
 import fishmod.utils.Misc
 import fishmod.utils.config.values.Dungeons
 import fishmod.utils.config.values.FishSettings
@@ -12,7 +13,6 @@ import java.util.regex.Pattern
 
 object KeyNotifier {
 
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val WITHER: Pattern = Pattern.compile("(?:\\[[A-Za-z+]+] )?([A-Za-z0-9_]+) has obtained Wither Key!")
     private val BLOOD: Pattern = Pattern.compile("(?:\\[[A-Za-z+]+] )?([A-Za-z0-9_]+) has obtained Blood Key!")
 
@@ -20,7 +20,7 @@ object KeyNotifier {
     fun init() {
         Events.ON_GAME_MESSAGE.register { text ->
             if (!Dungeons.enableKeyNotifier || !Location.inDungeon()) return@register false
-            val s = text.string.replace(COLOR, "").trim()
+            val s = TextStrip.plain(text.string).trim()
             try {
                 when {
                     s == "A Wither Key was picked up!" || WITHER.matcher(s).matches() ->

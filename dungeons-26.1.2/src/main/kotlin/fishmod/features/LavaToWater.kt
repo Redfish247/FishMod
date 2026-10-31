@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.reloadChunks
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
@@ -46,7 +47,7 @@ object LavaToWater {
     @JvmStatic
     fun refresh() {
         try {
-            Minecraft.getInstance().levelRenderer?.allChanged()
+            Minecraft.getInstance().reloadChunks()
         } catch (t: Throwable) {
             FishDiag.fail("LavaToWater.1", "levelRenderer.allChanged failed", t)
         }

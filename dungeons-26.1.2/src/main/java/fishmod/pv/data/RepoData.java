@@ -22,23 +22,27 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 public final class RepoData {
-	private static JsonObject weight;
-	private static JsonObject leveling;
-	private static JsonObject dungeonsXp;
+	// Volatile: read from profile-loading executor threads as well as the render thread.
+	private static volatile JsonObject weight;
+	private static volatile JsonObject leveling;
+	private static volatile JsonObject dungeonsXp;
 
 	private RepoData() {
 	}
 
 	public static void ensureLoaded() {
-		if (weight != null && leveling != null) {
+		if (weight != null && leveling != null && dungeonsXp != null) {
+			return;
+		}
+		synchronized (RepoData.class) {
+			if (weight == null || leveling == null) {
+				weight = loadJson("data/weight.json");
+				leveling = loadJson("data/leveling.json");
+			}
 			if (dungeonsXp == null) {
 				dungeonsXp = loadJson("data/dungeons_xp.json");
 			}
-			return;
 		}
-		weight = loadJson("data/weight.json");
-		leveling = loadJson("data/leveling.json");
-		dungeonsXp = loadJson("data/dungeons_xp.json");
 	}
 
 	public static JsonObject weight() {
@@ -58,7 +62,7 @@ public final class RepoData {
 
 	public static JsonArray levelingXp() {
 		JsonObject root = leveling();
-		return root != null && root.has("leveling_xp") ? root.getAsJsonArray("leveling_xp") : null;
+		return root != null && root.get("leveling_xp") instanceof JsonArray arr ? arr : null;
 	}
 
 	public static JsonArray catacombsXp() {
@@ -115,8 +119,9 @@ public final class RepoData {
 		JsonObject root = leveling();
 		if (root != null && root.has("leveling_caps") && root.get("leveling_caps").isJsonObject()) {
 			JsonObject caps = root.getAsJsonObject("leveling_caps");
-			if (caps.has(skill) && caps.get(skill).isJsonPrimitive()) {
-				return caps.get(skill).getAsInt();
+			Double cap = skill == null ? null : Leveling.numDouble(caps.get(skill));
+			if (cap != null) {
+				return cap.intValue();
 			}
 		}
 		return 60;

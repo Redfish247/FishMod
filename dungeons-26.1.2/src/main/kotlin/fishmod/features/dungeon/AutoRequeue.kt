@@ -1,6 +1,7 @@
 package fishmod.features.dungeon
 
 import fishmod.features.dungeon.map.DungeonState
+import fishmod.utils.TextStrip
 import fishmod.utils.config.values.Dungeons
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.debug.FishDiag
@@ -23,23 +24,24 @@ object AutoRequeue {
     )
     private val DT_LINE: Pattern = Pattern.compile("^(?:§9)?Party §8> .*: !dt$", Pattern.CASE_INSENSITIVE)
     private val MORT_START = "[NPC] Mort: Here, I found this map when I first entered the dungeon."
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     private val INVISIBLE = Regex("[\\u00A0\\u200B\\u200C\\u200D\\uFEFF\\u00AD]")
     private fun clean(s: String) = INVISIBLE.replace(s, " ").trim()
 
-    private var partyChanged = false
-    private var dtSkip = false
+    internal var partyChanged = false
+    internal var dtSkip = false
     private var startTeamCount = 0
     private var extraStatsHandled = false
+    private var lastFloor = -1
+    private var lastMaster = false
 
     @JvmStatic
     fun init() {
         Events.ON_GAME_MESSAGE.register { text ->
-            val s = COLOR.replace(text.string, "")
+            val s = TextStrip.plain(text.string)
             onChatLine(text.string)
             when {
-                s == MORT_START -> { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false }
+                s == MORT_START -> { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false; lastFloor = -1; lastMaster = false }
                 BREAKUP.matcher(s).find() -> partyChanged = true
                 EXTRA_STATS.matcher(s).find() -> {
                     if (extraStatsHandled) return@register false
@@ -64,11 +66,13 @@ object AutoRequeue {
             }
             false
         }
-        Events.ON_WORLD_CHANGE.register { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false; false }
+        Events.ON_WORLD_CHANGE.register { partyChanged = false; dtSkip = false; startTeamCount = 0; extraStatsHandled = false; lastFloor = -1; lastMaster = false; false }
         Events.ON_SERVER_TICK.register {
             if (DungeonState.isInDungeon() && !DungeonState.isInBoss()) {
                 val n = fishmod.features.dungeon.map.DungeonPlayers.count()
                 if (n > startTeamCount) startTeamCount = n
+                val f = DungeonState.floorNumber()
+                if (f >= 0) { lastFloor = f; lastMaster = DungeonState.isMasterMode() }
             }
             false
         }
@@ -76,18 +80,21 @@ object AutoRequeue {
 
     @JvmStatic
     fun onChatLine(raw: String) {
-        val s = COLOR.replace(raw, "")
+        val s = TextStrip.plain(raw)
         if (DT_LINE.matcher(raw).find() || clean(s).let { it.contains("Party >", ignoreCase = true) && it.contains(": !dt", ignoreCase = true) }) {
             dtSkip = true
         }
     }
 
     private fun requeueCommand(): String {
-        val floor = DungeonState.floorNumber()
+        // sidebar/chat floor can be gone by extra stats; fall back to the one seen during the run
+        val live = DungeonState.floorNumber()
+        val floor = if (live >= 0) live else lastFloor
+        val master = if (live >= 0) DungeonState.isMasterMode() else lastMaster
         return when {
             floor == 0 -> "joininstance catacombs_entrance"
             floor in 1..7 -> "joininstance " +
-                (if (DungeonState.isMasterMode()) "master_" else "") +
+                (if (master) "master_" else "") +
                 "catacombs_floor_" + NUM_WORDS[floor - 1]
             else -> {
                 FishDiag.fail("AutoRequeue.3", "unknown floor $floor for requeue, falling back to instancerequeue")

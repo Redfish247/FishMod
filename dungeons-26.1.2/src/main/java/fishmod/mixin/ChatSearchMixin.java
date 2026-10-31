@@ -51,7 +51,7 @@ public abstract class ChatSearchMixin extends Screen {
         int h = 12;
         int y = this.height - 38;
 
-        ChatComponent chat = Minecraft.getInstance().gui.getChat();
+        ChatComponent chat = fishmod.compat.McCompatKt.getHud(Minecraft.getInstance()).getChat();
         ChatHudInvoker acc = (ChatHudInvoker) chat;
         int x = 4;
         int w = Math.max(40, (int) (acc.invokeWidth() * acc.invokeChatScale()));

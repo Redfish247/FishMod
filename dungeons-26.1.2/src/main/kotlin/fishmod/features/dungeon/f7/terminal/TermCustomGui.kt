@@ -1,5 +1,8 @@
 package fishmod.features.dungeon.f7.terminal
 
+import fishmod.compat.CB
+import fishmod.compat.CI
+
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -158,7 +161,7 @@ object TermCustomGui {
         var minC = 9; var maxC = -1; var minR = 9; var maxR = -1
         for (i in 0 until t.windowSize) {
             val st = t.items[i] ?: continue
-            if (!st.`is`(net.minecraft.world.item.Items.RED_STAINED_GLASS_PANE) && !st.`is`(net.minecraft.world.item.Items.LIME_STAINED_GLASS_PANE)) continue
+            if (!st.`is`(CI.RED_STAINED_GLASS_PANE) && !st.`is`(CI.LIME_STAINED_GLASS_PANE)) continue
             val r = i / 9; val c = i % 9
             if (c < minC) minC = c; if (c > maxC) maxC = c
             if (r < minR) minR = r; if (r > maxR) maxR = r

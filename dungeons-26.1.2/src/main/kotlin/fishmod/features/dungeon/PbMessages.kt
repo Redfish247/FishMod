@@ -17,7 +17,6 @@ object PbMessages {
 
     private val FILE: Path = Paths.get("config/fishmod/personal_bests.json")
     private val GSON = GsonBuilder().setPrettyPrinting().create()
-    private val ioExecutor = fishmod.utils.IoExecutor
 
     private val pbs = HashMap<String, Double>()
     private var loaded = false
@@ -113,7 +112,7 @@ object PbMessages {
 
     private fun save() {
         val json = GSON.toJson(pbs)
-        ioExecutor.execute {
+        fishmod.utils.IoExecutor.execute {
             try {
                 Files.createDirectories(FILE.parent)
                 Files.writeString(FILE, json)

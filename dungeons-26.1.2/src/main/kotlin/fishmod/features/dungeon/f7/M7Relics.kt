@@ -1,16 +1,25 @@
 package fishmod.features.dungeon.f7
+import fishmod.compat.hudHidden
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.features.FishHudEditor
 import fishmod.features.dungeon.PbMessages
+import fishmod.utils.ChatQueue
+import fishmod.utils.Constants
+import fishmod.utils.Fmt
 import fishmod.utils.Location
+import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.config.values.Floor7
+import fishmod.utils.dungeon.DialogueCompat
+import fishmod.utils.dungeon.NecronDeath
+import fishmod.utils.dungeon.NecronTrace
 import fishmod.utils.dungeon.Phase
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
 import fishmod.utils.rendering.RenderingEvents
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.DeltaTracker
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -35,10 +44,11 @@ object M7Relics {
     private const val NAME = "Relic Spawn Timer"
     // Necron death -> relic stands, measured by NoammAddons: 50-63t
     private const val SPAWN_TICKS = 55
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
+    private val COLOR = Constants.STRIP_COLOR_REGEX
     private const val RESTART_GUARD_MS = 30_000L
 
     @Volatile private var spawnEndMs = 0L
+    private var spawned = false
     private val PICKUP = Pattern.compile("^(\\w{3,16}) picked the Corrupted (\\w{3,6}) Relic!$")
     private var p5StartMs = 0L
     private var myRelic: Relic? = null
@@ -58,7 +68,7 @@ object M7Relics {
         Events.ON_GAME_MESSAGE.register { text ->
             val msg = COLOR.replace(text.string, "")
             // Old or alpha Necron line; first one wins so a later line can't restart it.
-            if (fishmod.utils.dungeon.DialogueCompat.isNecronEnd(msg) && System.currentTimeMillis() - p5StartMs > RESTART_GUARD_MS) {
+            if (DialogueCompat.isNecronEnd(msg) && System.currentTimeMillis() - p5StartMs > RESTART_GUARD_MS) {
                 p5StartMs = System.currentTimeMillis()
                 myRelic = null
                 pickers.clear(); placed.clear()
@@ -75,12 +85,12 @@ object M7Relics {
             }
             false
         }
-        fishmod.utils.dungeon.NecronDeath.onDeath {
-            if (Floor7.enableRelicStartTimer && Phase.getFloor() == "M7") spawnEndMs = System.currentTimeMillis() + SPAWN_TICKS * 50L
+        NecronDeath.onDeath {
+            if (Floor7.enableRelicStartTimer && Phase.getFloor() == "M7") { spawnEndMs = System.currentTimeMillis() + SPAWN_TICKS * 50L; spawned = false }
         }
-        Events.ON_WORLD_CHANGE.register { spawnEndMs = 0L; p5StartMs = 0L; myRelic = null; pickers.clear(); placed.clear(); false }
-        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register {
-            try { fishmod.utils.dungeon.NecronTrace.tick(); Phase.checkNecronBar(); checkSpawned(); checkPlaced(); checkAllPlaced() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
+        Events.ON_WORLD_CHANGE.register { spawnEndMs = 0L; p5StartMs = 0L; spawned = false; myRelic = null; pickers.clear(); placed.clear(); relicStands.clear(); false }
+        ClientTickEvents.END_CLIENT_TICK.register {
+            try { NecronTrace.tick(); Phase.checkNecronBar(); checkRelics() } catch (e: Exception) { FishDiag.fail("M7Relics.3", "relic placed check threw (placed=${placed.size})", e) }
         }
 
         RenderingEvents.NO_DEPTH_FILLED.register { _, m, vc ->
@@ -88,63 +98,64 @@ object M7Relics {
         }
     }
 
-    // Relic stands showing up = spawned: end the countdown, and start P5 tracking if no line was seen.
-    private fun checkSpawned() {
-        if (spawnEndMs == 0L && p5StartMs != 0L) return
+    private val relicStands = ArrayList<ArmorStand>()
+
+    // One entity pass per tick: spawn detection, then placed checks on the "Relic" stands.
+    private fun checkRelics() {
         val level = Minecraft.getInstance().level ?: return
-        if (Phase.getFloor() != "M7") return
+        if (Phase.getFloor() != "M7") { myRelic = null; return }
+        val wantSpawn = !spawned && !(spawnEndMs == 0L && p5StartMs != 0L)
+        val wantAll = Floor7.relicTimesEnabled && p5StartMs != 0L && placed.size < Relic.entries.size
+        if (!wantSpawn && myRelic == null && !wantAll) return
+        var spawnSeen = false
+        relicStands.clear()
         for (e in level.entitiesForRendering()) {
             if (e !is ArmorStand) continue
-            if (!e.getItemBySlot(EquipmentSlot.HEAD).hoverName.string.contains("Corrupted")) continue
+            val head = e.getItemBySlot(EquipmentSlot.HEAD).hoverName.string
+            if (head.contains("Corrupted")) spawnSeen = true
+            if (head.contains("Relic")) relicStands += e
+        }
+        // Relic stands showing up = spawned: end the countdown, and start P5 tracking if no line was seen.
+        if (wantSpawn && spawnSeen) {
+            spawned = true
             spawnEndMs = 0L
             Phase.onRelicSpawn()
             if (p5StartMs == 0L) { p5StartMs = System.currentTimeMillis(); myRelic = null; pickers.clear(); placed.clear() }
         }
+        checkPlaced()
+        checkAllPlaced()
+    }
+
+    private fun onCauldron(e: ArmorStand, relic: Relic): Boolean {
+        val dx = e.x - (relic.cauldron.x + 0.5); val dz = e.z - (relic.cauldron.z + 0.5)
+        return dx * dx + dz * dz < 1.5 * 1.5
     }
 
     // Relic armor stand sitting on its cauldron = placed (NoammAddons M7Relics).
     private fun checkPlaced() {
         val relic = myRelic ?: return
-        val level = Minecraft.getInstance().level ?: return
-        if (Phase.getFloor() != "M7") { myRelic = null; return }
-        val cx = relic.cauldron.x + 0.5
-        val cz = relic.cauldron.z + 0.5
-        for (e in level.entitiesForRendering()) {
-            if (e !is ArmorStand) continue
-            if (!e.getItemBySlot(EquipmentSlot.HEAD).hoverName.string.contains("Relic")) continue
-            val dx = e.x - cx; val dz = e.z - cz
-            if (dx * dx + dz * dz >= 1.5 * 1.5) continue
-            myRelic = null
-            val secs = (System.currentTimeMillis() - p5StartMs) / 1000.0
-            FishDiag.check(p5StartMs != 0L && secs >= 0, "M7Relics.5") { "relic placed with bad P5 start (start=$p5StartMs secs=$secs)" }
-            val color = relic.name.lowercase().replaceFirstChar { it.uppercase() }
-            PbMessages.announce(FishSettings.pbMessagesRelics, "relic:${relic.name}",
-                Component.literal("${relic.code}$color Relic §aplaced in"), secs)
-            return
-        }
+        if (relicStands.none { onCauldron(it, relic) }) return
+        myRelic = null
+        val secs = (System.currentTimeMillis() - p5StartMs) / 1000.0
+        FishDiag.check(p5StartMs != 0L && secs >= 0, "M7Relics.5") { "relic placed with bad P5 start (start=$p5StartMs secs=$secs)" }
+        val color = relic.name.lowercase().replaceFirstChar { it.uppercase() }
+        PbMessages.announce(FishSettings.pbMessagesRelics, "relic:${relic.name}",
+            Component.literal("${relic.code}$color Relic §aplaced in"), secs)
     }
 
     private fun checkAllPlaced() {
         if (!Floor7.relicTimesEnabled || p5StartMs == 0L || placed.size == Relic.entries.size) return
-        val level = Minecraft.getInstance().level ?: return
-        if (Phase.getFloor() != "M7") return
         val now = System.currentTimeMillis()
-        for (e in level.entitiesForRendering()) {
-            if (e !is ArmorStand) continue
-            if (!e.getItemBySlot(EquipmentSlot.HEAD).hoverName.string.contains("Relic")) continue
-            for (relic in Relic.entries) {
-                if (relic in placed) continue
-                val dx = e.x - (relic.cauldron.x + 0.5); val dz = e.z - (relic.cauldron.z + 0.5)
-                if (dx * dx + dz * dz < 1.5 * 1.5) placed[relic] = (now - p5StartMs) / 1000.0
-            }
+        for (e in relicStands) for (relic in Relic.entries) {
+            if (relic !in placed && onCauldron(e, relic)) placed[relic] = (now - p5StartMs) / 1000.0
         }
         if (placed.size < Relic.entries.size) return
         for ((relic, secs) in placed) {
             val color = relic.name.lowercase().replaceFirstChar { it.uppercase() }
             val who = pickers[relic] ?: run { FishDiag.fail("M7Relics.6", "no picker recorded for ${relic.name} relic"); "?" }
             val time = PbMessages.fmt(secs)
-            if (Floor7.relicTimesParty) fishmod.utils.ChatQueue.enqueue("pc $color Relic: $time ($who)")
-            else fishmod.utils.Misc.addChatMessage(Component.literal("${relic.code}$color Relic§7: §e$time §7($who)"))
+            if (Floor7.relicTimesParty) ChatQueue.enqueue("pc $color Relic: $time ($who)")
+            else Misc.addChatMessage(Component.literal("${relic.code}$color Relic§7: §e$time §7($who)"))
         }
     }
 
@@ -170,12 +181,12 @@ object M7Relics {
         FishDiag.check(left <= SPAWN_TICKS * 50L + 1000L, "M7Relics.7") { "relic spawn timer too far in future: ${left}ms" }
         if (left <= 0L) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         val sc = FishSettings.relicTimerScale.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(FishSettings.relicTimerHudX.toFloat(), FishSettings.relicTimerHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, "§dRelic §f" + String.format("%.2fs", left / 1000.0), 0, 0, -1, true)
+        ctx.text(mc.font, "§dRelic §f" + Fmt.f2(left / 1000.0) + "s", 0, 0, -1, true)
         ctx.pose().popMatrix()
     }
 }

@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.compat.curScreen
 
 import fishmod.utils.rendering.DrawEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -52,7 +53,9 @@ object GardenMenus {
 
     private fun pestOf(name: String, lore: List<String>): String? =
         VINYL_PEST.entries.firstOrNull { name.contains(it.key, true) }?.value
-            ?: PEST_CROP.keys.firstOrNull { p -> lore.any { Regex("\\b$p\\b", RegexOption.IGNORE_CASE).containsMatchIn(it) } }
+            ?: PEST_WORD.entries.firstOrNull { (_, r) -> lore.any { r.containsMatchIn(it) } }?.key
+
+    private val PEST_WORD by lazy { PEST_CROP.keys.associateWith { Regex("\\b$it\\b", RegexOption.IGNORE_CASE) } }
 
     private fun isVinyl(name: String, lore: List<String>) = VINYL_PEST.keys.any { name.contains(it, true) } || lore.any { it.contains("vinyl", true) }
 
@@ -153,7 +156,7 @@ object GardenMenus {
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null) return@register
-            if (mc.screen == null) { cheapest = null; anitaBest = null }
+            if (mc.curScreen == null) { cheapest = null; anitaBest = null }
             else if (tick % 5 == 0) {
                 if (X.gardenCompUpgrades && GardenExtras.inMenu("Composter Upgrades")) pickCheapest()
                 if (X.gardenAnita && GardenExtras.inMenu("Anita")) pickAnita()
@@ -172,7 +175,7 @@ object GardenMenus {
             if (X.gardenStereo && GardenExtras.inMenu("Stereo Harmony")) {
                 val n = GardenExtras.name(stack); val lore = Garden.lore(stack)
                 if (isVinyl(n, lore)) pestOf(n, lore)?.let { p ->
-                    GardenExtras.cropItem(PEST_CROP[p] ?: "")?.let { ctx.fill(x, y, x + 16, y + 16, 0xFF2B2B2B.toInt()); ctx.item(ItemStack(it), x, y) }
+                    GardenExtras.cropItem(PEST_CROP[p] ?: "")?.let { ctx.fill(x, y, x + 16, y + 16, 0xFF2B2B2B.toInt()); ctx.item(GardenExtras.stackOf(it), x, y) }
                 }
             }
             if (X.gardenToolkitIcons && toolkit()) GardenExtras.cropItem(GardenExtras.name(stack))?.takeIf { !sameCrop(it, stack.item) }?.let { GardenExtras.badge(ctx, it, x, y) }
@@ -180,10 +183,10 @@ object GardenMenus {
         Garden.hud("Stereo Harmony", "garden_stereo", 130, 30,
             { X.gardenStereoHudX }, { X.gardenStereoHudX = it }, { X.gardenStereoHudY }, { X.gardenStereoHudY = it },
             { X.gardenStereoHudScale }, { X.gardenStereoHudScale = it },
-            { X.gardenStereo && Garden.inGarden() && X.gardenStereoActive.isNotEmpty() }) { stereoLines() }
+            { X.gardenStereo && Garden.inGarden() && X.gardenStereoActive.isNotEmpty() }, { X.gardenStereo }) { stereoLines() }
         Garden.hud("Greenhouse", "garden_greenhouse", 130, 30,
             { X.gardenGreenhouseHudX }, { X.gardenGreenhouseHudX = it }, { X.gardenGreenhouseHudY }, { X.gardenGreenhouseHudY = it },
             { X.gardenGreenhouseHudScale }, { X.gardenGreenhouseHudScale = it },
-            { X.gardenGreenhouse && Garden.inGarden() && greenhouse.isNotEmpty() }) { greenhouseLines() }
+            { X.gardenGreenhouse && Garden.inGarden() && greenhouse.isNotEmpty() }, { X.gardenGreenhouse }) { greenhouseLines() }
     }
 }

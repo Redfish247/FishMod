@@ -151,7 +151,7 @@ final class SafariSection {
 		this.gridMaxScroll = Math.max(0, contentH - this.gridH);
 		this.gridScroll = Math.min(this.gridScroll, this.gridMaxScroll);
 
-		ItemStack fallback = new ItemStack(Items.LIME_DYE);
+		ItemStack fallback = new ItemStack(fishmod.compat.CI.LIME_DYE);
 		g.enableScissor(this.gridX, this.gridY, this.gridX + this.gridW, this.gridY + this.gridH);
 		for (int i = 0; i < critters.size(); i++) {
 			int col = i % cols;
@@ -188,7 +188,7 @@ final class SafariSection {
 		g.disableScissor();
 	}
 
-	private static final ItemStack UNDISCOVERED_ICON = new ItemStack(Items.GRAY_DYE);
+	private static final ItemStack UNDISCOVERED_ICON = new ItemStack(fishmod.compat.CI.GRAY_DYE);
 	private final Map<String, ItemStack> critterHeads = new java.util.HashMap<>();
 
 	private record Critter(String id, String name, String texture, boolean discovered, boolean sparkling) {
@@ -227,8 +227,10 @@ final class SafariSection {
 		return out;
 	}
 
+	private static final java.util.regex.Pattern NON_ALNUM = java.util.regex.Pattern.compile("[^a-z0-9]");
+
 	private static String critterKey(String raw) {
-		return raw == null ? "" : raw.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+		return raw == null ? "" : NON_ALNUM.matcher(raw.toLowerCase(Locale.ROOT)).replaceAll("");
 	}
 
 	private static void drawCritterIcon(GuiGraphicsExtractor g, String critterId, int x, int y, ItemStack fallback) {
@@ -274,7 +276,7 @@ final class SafariSection {
 
 	private static boolean usableIcon(ItemStack stack) {
 		if (stack == null || stack.isEmpty() || stack.is(Items.PAPER) || stack.is(Items.BARRIER)
-			|| stack.is(Items.LIME_DYE)) {
+			|| stack.is(fishmod.compat.CI.LIME_DYE)) {
 			return false;
 		}
 		// Bare PLAYER_HEAD renders as Steve, so only accept textured skulls.

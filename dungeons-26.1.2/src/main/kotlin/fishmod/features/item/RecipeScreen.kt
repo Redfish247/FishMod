@@ -1,4 +1,5 @@
 package fishmod.features.item
+import fishmod.compat.showScreen
 
 import fishmod.features.HasUiOverlay
 import fishmod.features.ScreenTheme
@@ -285,7 +286,7 @@ class RecipeScreen(startId: String, private val parent: Screen?) : Screen(Compon
     }
 
     override fun onClose() {
-        Minecraft.getInstance().setScreen(parent)
+        Minecraft.getInstance().showScreen(parent)
     }
 
     override fun paintUiOverlay() {

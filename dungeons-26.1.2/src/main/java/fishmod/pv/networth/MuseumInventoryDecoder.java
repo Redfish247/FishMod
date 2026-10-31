@@ -33,7 +33,7 @@ final class MuseumInventoryDecoder {
 				if (value == null) {
 					continue;
 				}
-				if (value.has("borrowing") && value.get("borrowing").getAsBoolean()) {
+				if (value.has("borrowing") && value.get("borrowing").isJsonPrimitive() && value.get("borrowing").getAsBoolean()) {
 					continue;
 				}
 				JsonObject nested = InventoryDecodeSupport.obj(value.get("items"));

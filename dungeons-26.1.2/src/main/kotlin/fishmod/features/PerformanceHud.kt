@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.hudHidden
 
 import fishmod.utils.debug.FishDiag
 import fishmod.features.dungeon.PartyCommandHandler
@@ -88,7 +89,7 @@ object PerformanceHud {
 
     private fun renderInner(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         if (FishSettings.perfHudClock && FishSettings.perfHudClockDetached) {
             val sc = FishSettings.clockHudScale.toFloat()
             ctx.pose().pushMatrix()
