@@ -164,6 +164,13 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             general.features.add(f)
         }
         run {
+            val f = Feature("Update Notice", FishSettings::updateNotice)
+            f.sub.add(DropdownSetting("Style", "Chat Message = clickable download link, Popup = full update window", arrayOf("Chat Message", "Popup"),
+                { FishSettings.updateNoticeStyle },
+                { v -> FishSettings.updateNoticeStyle = v }))
+            general.features.add(f)
+        }
+        run {
             val f = Feature("Debug Reports", FishSettings::debugReports)
             f.sub.add(ToggleSetting("Chat Notice", "Short chat line with a copy button when something breaks (max once a minute)", FishSettings::debugChatNotices))
             general.features.add(f)
