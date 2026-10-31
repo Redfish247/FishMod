@@ -3,11 +3,15 @@ package fishmod.cosmetic
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import fishmod.utils.HypixelApi
+import fishmod.utils.Misc
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
+import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
+import net.minecraft.sounds.SoundEvents
 import java.net.URI
 import java.net.http.WebSocket
 import java.util.concurrent.CompletionStage
@@ -34,6 +38,8 @@ object CosmeticLive {
     private val badges = ConcurrentHashMap<String, String>()
     private val cleared = ConcurrentHashMap<String, Long>()
     @Volatile private var blocked: Set<String> = emptySet()
+    // Dashboard message ids already shown (server may resend on reconnect).
+    private val seenMsgs = LinkedHashSet<Long>()
 
     @Volatile private var ws: WebSocket? = null
     @Volatile private var connecting = false
@@ -101,7 +107,9 @@ object CosmeticLive {
     private fun accept(text: String) {
         if (text == "pong") return
         val root = JsonParser.parseString(text).asJsonObject
-        val full = root.get("t")?.asString == "snap"
+        val type = root.get("t")?.asString
+        if (type == "msg") { dashboardMessage(root); return }
+        val full = type == "snap"
         if (full) { nicks.clear(); items.clear(); scales.clear(); badges.clear(); cleared.clear() }
         mergeStrings(root, "nicks", nicks)
         mergeStrings(root, "items", items)
@@ -111,6 +119,25 @@ object CosmeticLive {
         root.getAsJsonArray("blocked")?.let { arr -> blocked = arr.mapTo(HashSet()) { it.asString } }
         if (full) ready = true
         rev++
+    }
+
+    private fun dashboardMessage(root: JsonObject) {
+        if (!FishSettings.dashboardMessagesEnabled) return
+        val id = root.get("id")?.takeIf { !it.isJsonNull }?.asLong ?: return
+        val text = root.get("text")?.takeIf { !it.isJsonNull }?.asString?.take(256)?.takeIf { it.isNotBlank() } ?: return
+        val from = root.get("from")?.takeIf { !it.isJsonNull }?.asString?.take(32)?.takeIf { it.isNotBlank() } ?: "FishMod"
+        synchronized(seenMsgs) {
+            if (!seenMsgs.add(id)) return
+            if (seenMsgs.size > 200) seenMsgs.remove(seenMsgs.first())
+        }
+        Minecraft.getInstance().execute {
+            Misc.addChatMessage(
+                Component.literal("[FishMod] ").withStyle(ChatFormatting.AQUA)
+                    .append(Component.literal("$from: ").withStyle(ChatFormatting.GOLD))
+                    .append(Component.literal(text).withStyle(ChatFormatting.WHITE))
+            )
+            Misc.sendSound2D(SoundEvents.EXPERIENCE_ORB_PICKUP, 0.5f, 1.2f)
+        }
     }
 
     private fun mergeStrings(root: JsonObject, key: String, into: MutableMap<String, String>) {
