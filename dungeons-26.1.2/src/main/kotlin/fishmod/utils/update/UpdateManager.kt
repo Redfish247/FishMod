@@ -5,8 +5,13 @@ import fishmod.compat.showScreen
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import fishmod.utils.Constants
 import fishmod.utils.FishMsg
 import fishmod.utils.Location
+import fishmod.utils.config.values.FishSettings
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands
+import net.minecraft.network.chat.HoverEvent
 import fishmod.utils.Misc
 import fishmod.utils.debug.Debug
 import fishmod.utils.debug.FishDiag
@@ -113,6 +118,7 @@ object UpdateManager {
             }
         }
         checkAsync(false)
+        registerCommands()
 
         ClientPlayConnectionEvents.JOIN.register { _, _, mc ->
             try {
@@ -147,8 +153,58 @@ object UpdateManager {
         if (!FishDiag.check(release.version.isNotEmpty(), "UpdateManager.4") { "pending release has empty version tag=${release.tag}" }) return
         // Once per Hypixel login, never again while connected.
         shownThisLogin = true
+        if (!FishSettings.updateNotice) return
         synchronized(lock) { state.lastShownAt = System.currentTimeMillis(); save() }
-        mc.showScreen(UpdateScreen(release))
+        if (FishSettings.updateNoticeStyle == "Popup") mc.showScreen(UpdateScreen(release)) else chatNotice(release)
+    }
+
+    private fun button(label: String, color: ChatFormatting, hover: String, click: ClickEvent): Component =
+        Component.literal(label).withStyle { it.withColor(color).withBold(true).withClickEvent(click).withHoverEvent(HoverEvent.ShowText(Component.literal(hover))) }
+
+    private fun chatNotice(release: Release) {
+        val page = release.htmlUrl.ifEmpty { null } ?: releasesUrl
+        val msg = Component.literal(FishMsg.prefix()).append(Component.literal("Update available: ").withStyle(ChatFormatting.GRAY))
+            .append(Component.literal("v$currentVersion → v${release.version} ").withStyle(ChatFormatting.AQUA))
+            .append(button("[Download]", ChatFormatting.GREEN, if (canInstall(release)) "Download now, installs when you close the game" else "Open the release page", ClickEvent.RunCommand("/fm update download")))
+        if (page != null) msg.append(" ").append(button("[Changelog]", ChatFormatting.YELLOW, "Open the release on GitHub", ClickEvent.RunCommand("/fm update page")))
+        msg.append(" ").append(button("[Ignore]", ChatFormatting.DARK_GRAY, "Don't remind me about v${release.version}", ClickEvent.RunCommand("/fm update ignore")))
+        Misc.addChatMessage(msg)
+    }
+
+    private fun latestRelease(): Release? = synchronized(lock) { state.release?.takeIf { isNewer(it.version) } }
+
+    private fun say(text: String, color: ChatFormatting) =
+        Misc.addChatMessage(Component.literal(FishMsg.prefix()).append(Component.literal(text).withStyle(color)))
+
+    private fun registerCommands() {
+        ClientCommandRegistrationCallback.EVENT.register(ClientCommandRegistrationCallback { d, _ ->
+            d.register(ClientCommands.literal("fm").then(ClientCommands.literal("update")
+                .then(ClientCommands.literal("download").executes { commandDownload(); Constants.SUCCESS })
+                .then(ClientCommands.literal("page").executes {
+                    (latestRelease()?.htmlUrl?.ifEmpty { null } ?: releasesUrl)?.let(::openInBrowser)
+                    Constants.SUCCESS
+                })
+                .then(ClientCommands.literal("ignore").executes {
+                    latestRelease()?.let { dismiss(it); say("Won't remind you about v${it.version}.", ChatFormatting.GRAY) }
+                    Constants.SUCCESS
+                })))
+        })
+    }
+
+    private fun commandDownload() {
+        val release = latestRelease() ?: return say("You're on the latest version.", ChatFormatting.GRAY)
+        if (!canInstall(release)) { (release.htmlUrl.ifEmpty { null } ?: releasesUrl)?.let(::openInBrowser); return }
+        when (downloadState) {
+            DownloadState.DOWNLOADING -> say("Already downloading (${(downloadProgress * 100).toInt()}%).", ChatFormatting.GRAY)
+            DownloadState.STAGED -> say("v${release.version} is downloaded. Close the game to install it.", ChatFormatting.GREEN)
+            else -> {
+                say("Downloading v${release.version}...", ChatFormatting.GRAY)
+                download(release) { ok ->
+                    if (ok) say("Downloaded v${release.version}. Close the game to install it.", ChatFormatting.GREEN)
+                    else say("Update download failed: ${downloadError ?: "unknown error"}. Click [Download] to retry.", ChatFormatting.RED)
+                }
+            }
+        }
     }
 
     fun pendingRelease(): Release? = synchronized(lock) {
@@ -260,7 +316,7 @@ object UpdateManager {
         )
     }
 
-    fun download(release: Release) {
+    fun download(release: Release, onDone: ((Boolean) -> Unit)? = null) {
         if (!canInstall(release)) return
         if (downloadState == DownloadState.DOWNLOADING || downloadState == DownloadState.STAGED) return
         downloadState = DownloadState.DOWNLOADING
@@ -317,6 +373,7 @@ object UpdateManager {
                 }
                 downloadState = DownloadState.FAILED
             }
+            onDone?.let { cb -> val ok = downloadState == DownloadState.STAGED; Minecraft.getInstance().execute { cb(ok) } }
         }
     }
 
