@@ -21,7 +21,7 @@ object TermStartTimer {
         Events.ON_SERVER_TICK.register {
             if (Location.inDungeon() && Phase.inP2() && Phase.stormDead()) {
                 tick--
-                if (tick == -200) FishDiag.fail("TermStartTimer.1", "term start timer 10s overdue, P3 never detected")
+                if (tick == -200) FishDiag.fail("TermStartTimer.1", "term start timer 10s overdue, P3 never detected (floor=${Phase.getFloor()} phase=${Phase.getPhase()}, no Goldor line or terminal progress seen)")
             }
             false
         }

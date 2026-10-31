@@ -3,8 +3,6 @@ package fishmod.features.dungeon.map
 import fishmod.utils.Addons
 import fishmod.utils.config.values.DungeonMapSettings
 
-internal val MAP_COLOR_CODES: Regex = Regex("(?i)[&§][0-9a-fk-or]")
-
 object MapColors {
 
     @JvmStatic

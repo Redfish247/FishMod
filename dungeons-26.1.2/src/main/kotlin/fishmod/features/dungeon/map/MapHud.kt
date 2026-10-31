@@ -1,4 +1,5 @@
 package fishmod.features.dungeon.map
+import fishmod.compat.hudHidden
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.DungeonMapSettings
@@ -17,7 +18,7 @@ object MapHud {
 
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "dungeon_map_hud")) { g, _ ->
             val mc = Minecraft.getInstance()
-            if (!fishmod.features.FishHudEditor.isOpen() && DungeonMapSettings.mapEnabled && !mc.options.hideGui && !mc.options.keyPlayerList.isDown && DungeonState.isInDungeon() &&
+            if (!fishmod.features.FishHudEditor.isOpen() && DungeonMapSettings.mapEnabled && !mc.hudHidden && !mc.options.keyPlayerList.isDown && DungeonState.isInDungeon() &&
                 !fishmod.features.dungeon.LeapMenu.isOverlayOpen() &&
                 !DungeonState.isInBoss()
             ) {

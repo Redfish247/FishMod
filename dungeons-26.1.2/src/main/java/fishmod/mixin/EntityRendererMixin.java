@@ -37,12 +37,20 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
     public void fishmod$adjustNameTag(T entity, S state, float tickProgress, CallbackInfo ci) {
 
         try {
+            if (state.nameTag != null && fishmod.utils.debug.Debug.INSTANCE.getHoloTrace()) {
+                fishmod.utils.debug.Debug.INSTANCE.holoTraceMsg(entity.getType().toShortString(), state.nameTag.getString());
+            }
             if (Dungeons.hideBlazeNameTag && state.nameTag != null && Location.inDungeon()
                     && !(entity instanceof net.minecraft.world.entity.player.Player)) {
                 String nameTagText = state.nameTag.getString();
                 if (nameTagText.contains("Blaze")) {
                     state.nameTag = null;
                 }
+            }
+            // Gate before getPosition: it allocates a Vec3 per named armor stand per frame.
+            if (Visual.nametagsOnTop && entity instanceof net.minecraft.world.entity.decoration.ArmorStand && state.nameTag != null
+                    && fishmod.features.HologramText.take(entity.getPosition(tickProgress), state.nameTagAttachment, state.nameTag)) {
+                state.nameTag = null;
             }
             if (entity instanceof RemotePlayer player && Dungeons.renderClassName && Location.inDungeon()) {
                 if (DungeonClass.isTeammate(player)) {
@@ -108,11 +116,11 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
         List<Component> lines = ((NametagStatsHolder) state).fishmod$getNametagStats();
         if (lines == null || lines.isEmpty()) return;
         boolean above = FishSettings.nametagStatsAbove;
-        int y = above ? baseOffset - 10 : baseOffset + 10;
+        // Vanilla lifts the name one row when a score line sits under it, so go one row higher too.
+        int y = above ? baseOffset - (state.scoreText != null ? 20 : 10) : baseOffset + 10;
         try {
             for (Component line : lines) {
-                collector.submitNameTag(poseStack, state.nameTagAttachment, y, line,
-                    !state.isDiscrete, state.lightCoords, state.distanceToCameraSq, cameraRenderState);
+                fishmod.compat.NameTagCompat.submit(collector, poseStack, state, y, line, cameraRenderState);
                 y += above ? -10 : 10;
             }
         } catch (Throwable t) {
@@ -129,6 +137,11 @@ public class EntityRendererMixin<T extends Entity, S extends EntityRenderState> 
                 return;
             }
             if (fishmod.features.dungeon.puzzles.odin.BlazeSolver.INSTANCE.shouldHideMob(entity)) {
+                cir.setReturnValue(false);
+                return;
+            }
+            if (entity instanceof Player && fishmod.features.dungeon.LeapAnnounce.hidePlayersNow()
+                    && entity != Minecraft.getInstance().player) {
                 cir.setReturnValue(false);
                 return;
             }

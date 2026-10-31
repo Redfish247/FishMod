@@ -1,4 +1,5 @@
 package fishmod.cosmetic
+import fishmod.compat.hud
 
 import fishmod.utils.debug.FishDiag
 import fishmod.mixin.ChatHudInvoker
@@ -34,8 +35,8 @@ object ChatNickRefresher {
     }
 
     private fun reapply(mc: Minecraft) {
-        if (mc.gui == null) return
-        val hud = mc.gui.chat ?: return
+        if (mc.hud == null) return
+        val hud = mc.hud.chat ?: return
         val invoker = hud as ChatHudInvoker
         val messages: MutableList<GuiMessage>? = invoker.messages
         if (messages == null || messages.isEmpty()) return

@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.compat.curScreen
 
 import fishmod.utils.Misc
 import fishmod.utils.TabListCache
@@ -78,12 +79,12 @@ object GardenLevels {
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null) return@register
-            if (tick++ % 20 == 0) { scanTab(); scanHoe() }
+            if (tick++ % 20 == 0) { scanTab(); if (S.gardenHoeHud && Garden.inGarden()) scanHoe() else hoeLines = emptyList() }
             if (tick % 5 == 0) scanMenu()
         }
         Events.ON_GAME_MESSAGE.register { t ->
-            val m = GXP.find(Garden.strip(t.string))
-            if (m != null && Garden.inGarden() && S.gardenLevelXp > 0) {
+            val m = if (Garden.inGarden() && S.gardenLevelXp > 0) GXP.find(Garden.strip(t.string)) else null
+            if (m != null) {
                 S.gardenLevelXp += m.groupValues[1].replace(",", "").toLongOrNull() ?: 0
                 checkLevelUp()
             }
@@ -92,7 +93,7 @@ object GardenLevels {
         Garden.hud("Garden Level", "garden_level", 150, 24,
             { S.gardenLevelHudX }, { S.gardenLevelHudX = it }, { S.gardenLevelHudY }, { S.gardenLevelHudY = it },
             { S.gardenLevelHudScale }, { S.gardenLevelHudScale = it },
-            { S.gardenLevelHud && Garden.inGarden() }) {
+            { S.gardenLevelHud && Garden.inGarden() }, { S.gardenLevelHud }) {
             val c = Garden.legacy(S.gardenLevelColor)
             if (S.gardenLevelXp <= 0) return@hud listOf("$c§lGarden Level §f? §cOpen the Garden Desk!")
             val (l, x, n) = levelOf(S.gardenLevelXp)
@@ -102,12 +103,12 @@ object GardenLevels {
         Garden.hud("Hoe Level", "garden_hoe", 130, 24,
             { S.gardenHoeHudX }, { S.gardenHoeHudX = it }, { S.gardenHoeHudY }, { S.gardenHoeHudY = it },
             { S.gardenHoeHudScale }, { S.gardenHoeHudScale = it },
-            { S.gardenHoeHud && Garden.inGarden() && hoeLines.isNotEmpty() }) { hoeLines }
+            { S.gardenHoeHud && Garden.inGarden() && hoeLines.isNotEmpty() }, { S.gardenHoeHud }) { hoeLines }
     }
 
     // Sync like SkyHanni: Garden Level item in the Desk (slot 4) or SkyBlock Menu (slot 10); also any Garden Level item in the Farming Skill menu
     private fun scanMenu() {
-        val scr = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return
+        val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return
         val t = Garden.strip(scr.title.string).trim()
         val slots = scr.menu.slots
         val st: ItemStack = when {

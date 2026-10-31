@@ -30,6 +30,10 @@ object RiftMenu {
         ber.sub.add(ColorPickerSetting("Colour", "", S::riftBerberisColor))
         col.features.add(ber)
 
+        val stem = Feature("Caducous Stem Highlighter", S::riftStem)
+        stem.sub.add(ColorPickerSetting("Colour", "", S::riftStemColor))
+        col.features.add(stem)
+
         val crux = Feature("Crux Helper", S::riftCrux)
         crux.sub.add(ToggleSetting("Shy Look Away Title", "Title when a Shy Crux is shouting near you", S::riftShyTitle))
         crux.sub.add(SliderIntSetting("Hint Range", "Only label Crux mobs within this many blocks", S::riftCruxRange, 5, 40))
@@ -80,7 +84,37 @@ object RiftMenu {
         vamp.sub.add(ToggleSetting("Twinclaws Warning", "", S::riftVampireTwinclaws))
         vamp.sub.add(ColorPickerSetting("Boss Colour", "", S::riftVampireColor))
         vamp.sub.add(ColorPickerSetting("Steakable Colour", "", S::riftVampireSteakColor))
+        vamp.sub.add(ToggleSetting("Line to Boss", "", S::riftVampireLine))
+        vamp.sub.add(ColorPickerSetting("Line Colour", "", S::riftVampireLineColor))
+        vamp.sub.add(ToggleSetting("Highlight Blood Ichor", "", S::riftVampireIchor))
+        vamp.sub.add(ColorPickerSetting("Ichor Colour", "", S::riftVampireIchorColor))
+        vamp.sub.add(ToggleSetting("Highlight Killer Spring", "", S::riftVampireSpring))
+        vamp.sub.add(ColorPickerSetting("Spring Colour", "", S::riftVampireSpringColor))
         col.features.add(vamp)
+
+        val hay = Feature("Half-Eaten Cave Hay Warning", S::riftHay)
+        hay.sub.add(ToggleSetting("Title", "Warn when you stand where hay was cleared (it regrows and crushes you)", S::riftHayTitle))
+        hay.sub.add(fishmod.features.FishModScreen.InputSetting("Title Text", "& colour codes work", S::riftHayText))
+        hay.sub.add(ToggleSetting("Sound", "", S::riftHaySound))
+        hay.sub.add(ToggleSetting("Cleared Hay Boxes", "Box the cells where hay was cleared", S::riftHayBoxes))
+        hay.sub.add(ColorPickerSetting("Colour", "", S::riftHayColor))
+        hay.sub.add(SliderIntSetting("Regrow Seconds", "Seconds until cleared hay starts to crush (about 40 on Hypixel)", S::riftHayDelay, 2, 60))
+        hay.sub.add(SliderIntSetting("Warn Seconds Before", "Warn only this long before the hay refills your cell", S::riftHayLead, 1, 10))
+        col.features.add(hay)
+
+        val leech = Feature("Leech Supreme Helper", S::riftLeech)
+        leech.sub.add(ToggleSetting("Go There Title", "", S::riftLeechTitle))
+        leech.sub.add(ColorPickerSetting("Spot Colour", "", S::riftLeechColor))
+        col.features.add(leech)
+
+        val burger = Feature("Burger Warning", S::riftBurgerWarn)
+        burger.sub.add(ToggleSetting("Title", "Big title as well as the chat warning", S::riftBurgerTitle))
+        col.features.add(burger)
+
+        val guide = Feature("Rift Guide Overlay", S::riftGuide)
+        guide.sub.add(SliderIntSetting("Max Lines", "", S::riftGuideMaxLines, 3, 40))
+        guide.sub.add(ColorPickerSetting("Task Colour", "", S::riftGuideColor))
+        col.features.add(guide)
 
         return col
     }
@@ -90,6 +124,7 @@ object RiftMenu {
         "Punchcard Marker" -> "Mark players you already punched"
         "Agaricus Cap Timer" -> "Countdown on the cap, CLICK when it turns red"
         "Berberis Highlighter" -> "Box the Wilted Berberis from its particles (hold the Farming Wand)"
+        "Caducous Stem Highlighter" -> "Box the top Rose Bush of each stem (hold the Farming Wand, harvest top to bottom)"
         "Crux Helper" -> "What to do for each Crux"
         "Fleespook Tracker" -> "Line to the Fleespook"
         "Bacte Helper" -> "Bacte spawn alert, line, optional all-chat announce"
@@ -97,7 +132,10 @@ object RiftMenu {
         "Blood Effigy Spots" -> "Boxes at the six Stillgore Chateau effigy spots"
         "Colosseum Kill Zone Warning" -> "Title when told to get back in the arena"
         "Snake Helper" -> "Outline Living Cave snakes, head highlighted"
+        "Rift Guide Overlay" -> "Unfinished Rift Guide tasks on screen; open each guide page once to load it (move it in Edit HUD)"
         "Vampire Slayer Helper" -> "Boss highlight, STEAK alert, Twinclaws warning"
+        "Burger Warning" -> "Warn when the Motes Grubber menu opens with Highlite in your inventory and under 5/5 McGrubber burgers"
+        "Leech Supreme Helper" -> "Laser phase: box + line to the safe spot and a go-there title"
         else -> null
     }
 }

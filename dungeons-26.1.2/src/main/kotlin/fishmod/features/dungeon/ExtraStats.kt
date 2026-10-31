@@ -1,6 +1,7 @@
 package fishmod.features.dungeon
 
 import fishmod.utils.Location
+import fishmod.utils.TextStrip
 import fishmod.utils.Misc
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
@@ -12,7 +13,6 @@ import net.minecraft.network.chat.Component
 
 object ExtraStats {
 
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val HEADER = Regex(" {29}> EXTRA STATS <")
     private val TITLE = Regex("^\\s*(Master Mode)? ?(?:The )?Catacombs - (Entrance|Floor .{1,3})( Stats)?$")
     private val DEFEATED = Regex("^\\s*☠ Defeated (.+) in 0?([\\dhms ]+?)\\s*(\\(NEW RECORD!\\))?$")
@@ -67,7 +67,7 @@ object ExtraStats {
 
         Events.ON_GAME_MESSAGE.register { text ->
             if (!FishSettings.extraStatsEnabled || !Location.inDungeon()) return@register false
-            val s = text.string.replace(COLOR, "")
+            val s = TextStrip.plain(text.string)
 
             if (HEADER.containsMatchIn(s)) {
                 if (!requested) { requested = true; Misc.executeCommand("showextrastats") }
@@ -115,7 +115,7 @@ object ExtraStats {
     }
 
     private fun centered(text: String): String {
-        val stripped = text.replace(COLOR, "")
+        val stripped = TextStrip.plain(text)
         if (stripped.isEmpty()) return text
         val mc = Minecraft.getInstance()
         val textWidth = mc.font.width(stripped)

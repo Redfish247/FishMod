@@ -13,6 +13,8 @@ import java.util.regex.Pattern;
 
 /** Shared § / & formatting helpers for item name and rarity parsing. */
 final class ItemTextFormat {
+	private static final Pattern FORMAT_CODE = Pattern.compile("§([0-9a-fk-or])", Pattern.CASE_INSENSITIVE);
+
 	private ItemTextFormat() {
 	}
 
@@ -45,7 +47,7 @@ final class ItemTextFormat {
 		if (text == null || text.isBlank()) {
 			return "";
 		}
-		Matcher code = Pattern.compile("§([0-9a-fk-or])", Pattern.CASE_INSENSITIVE).matcher(text);
+		Matcher code = FORMAT_CODE.matcher(text);
 		while (code.find()) {
 			String tier = switch (Character.toLowerCase(code.group(1).charAt(0))) {
 				case 'a' -> "UNCOMMON";

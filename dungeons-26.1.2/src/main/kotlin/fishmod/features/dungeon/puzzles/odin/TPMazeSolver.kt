@@ -1,4 +1,5 @@
 package fishmod.features.dungeon.puzzles.odin
+import fishmod.compat.center
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings

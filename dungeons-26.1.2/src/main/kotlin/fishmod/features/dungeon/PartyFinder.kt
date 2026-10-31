@@ -1,4 +1,6 @@
 package fishmod.features.dungeon
+import fishmod.compat.curScreen
+import fishmod.utils.TextStrip
 
 import fishmod.utils.FishMsg
 import fishmod.utils.HypixelApi
@@ -31,7 +33,6 @@ object PartyFinder {
     private val LEVEL_REQ = Pattern.compile("Dungeon Level Required:\\s*(\\d+)")
     private val FLOOR = Pattern.compile("Floor:\\s*(?:Floor\\s+)?(\\w+)")
     private val SELECTED_CLASS = Pattern.compile("Currently Selected:\\s*(\\w+)")
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val TOOLTIP_LAST_PHASE = Identifier.fromNamespaceAndPath("fishmod", "party_finder_tooltip_last")
 
     @Volatile private var capturedClass: String? = null
@@ -58,7 +59,7 @@ object PartyFinder {
         Events.ON_GAME_MESSAGE.register { text ->
             if (FishSettings.pfAutoKick) {
                 try {
-                    val plain = COLOR.replace(text.string, "")
+                    val plain = TextStrip.plain(text.string)
                     val m = PF_JOIN.matcher(plain)
                     if (m.find()) tryAutoKick(m.group(1), m.group(2))
                     else if (plain.startsWith("Party Finder > ") && plain.contains("joined the dungeon group")) FishDiag.fail("PartyFinder.1", "PF join line didn't match: '$plain'")
@@ -196,18 +197,18 @@ object PartyFinder {
 
     private fun inPartyFinder(): Boolean {
         if (!FishSettings.pfMenuEnabled) return false
-        val s = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return false
+        val s = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return false
         return fishmod.utils.ScreenTitle.plain(s) == "Party Finder"
     }
 
     private val loreCache = java.util.WeakHashMap<ItemStack, List<String>>()
 
     private fun lore(stack: ItemStack): List<String> = loreCache.getOrPut(stack) {
-        stack.get(DataComponents.LORE)?.lines()?.map { COLOR.replace(it.string, "") } ?: emptyList()
+        stack.get(DataComponents.LORE)?.lines()?.map { TextStrip.plain(it.string) } ?: emptyList()
     }
 
     private fun captureSelectedClass() {
-        val s = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return
+        val s = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return
         if (fishmod.utils.ScreenTitle.plain(s) != "Catacombs Gate") return
         for (slot in s.menu.slots) {
             for (line in lore(slot.item)) {
@@ -315,7 +316,7 @@ object PartyFinder {
         var floor = 0
         var master = false
         for (comp in lines) {
-            val p = COLOR.replace(comp.string, "")
+            val p = TextStrip.plain(comp.string)
             if (p.contains("Master Mode")) master = true
             val fm = FLOOR.matcher(p)
             if (fm.find()) floor = parseFloor(fm.group(1))
@@ -323,7 +324,7 @@ object PartyFinder {
 
         val present = HashSet<String>()
         for (i in lines.indices) {
-            val p = COLOR.replace(lines[i].string, "")
+            val p = TextStrip.plain(lines[i].string)
             val m = MEMBER.matcher(p)
             if (!m.matches()) continue
             val name = m.group(1)
@@ -333,7 +334,7 @@ object PartyFinder {
             lines[i] = Component.literal(" §b$name: §e$cls ${classColor(lvl)}$lvl${statsFor(name, floor, master)}")
         }
 
-        if (FishSettings.pfTooltipMissingList && lines.none { COLOR.replace(it.string, "").trimStart().startsWith("Missing:") }) {
+        if (FishSettings.pfTooltipMissingList && lines.none { TextStrip.plain(it.string).trimStart().startsWith("Missing:") }) {
             val missing = CLASSES.filter { it !in present }
             if (missing.isNotEmpty()) {
                 val mine = myClass()
@@ -367,7 +368,7 @@ object PartyFinder {
     private fun request(name: String) {
         val key = name.lowercase()
         if (cache.containsKey(key)) return
-        failedAt[key]?.let { if (System.currentTimeMillis() - it < 30_000) return }
+        failedAt[key]?.let { if (System.currentTimeMillis() - it < 120_000) return }
         if (!pending.add(key)) return
         if (pending.size > 6) { pending.remove(key); return }
         val g = gen
@@ -375,7 +376,8 @@ object PartyFinder {
             if (g != gen) return@getByNameSilent
             pending.remove(key)
             if (data.failed) {
-                FishDiag.fail("PartyFinder.15", "PF stats lookup failed for $name")
+                // expected (nicked/unknown name, proxy rate limit); real HTTP/parse faults report in HypixelApi
+                fishmod.utils.debug.Debug.LOGGER.info("PF stats lookup failed for {}", name)
                 failedAt[key] = System.currentTimeMillis()
             } else { failedAt.remove(key); cache[key] = data }
         }

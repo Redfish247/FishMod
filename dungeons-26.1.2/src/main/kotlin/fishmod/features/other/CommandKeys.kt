@@ -1,4 +1,5 @@
 package fishmod.features.other
+import fishmod.compat.curScreen
 
 import fishmod.utils.debug.FishDiag
 import com.mojang.blaze3d.platform.InputConstants
@@ -58,10 +59,9 @@ object CommandKeys {
         ensureLoaded()
         if (entries.isEmpty()) return
 
-        if (client.screen != null || client.player == null) {
-            held.clear()
-            return
-        }
+        if (client.player == null) { held.clear(); return }
+        // keys pressed in a screen (e.g. typing /bz) stay held so closing it doesn't fire them
+        val inScreen = client.curScreen != null
 
         for (e in entries) {
             if (e.key() == InputConstants.UNKNOWN || e.command().isBlank()) continue
@@ -73,7 +73,7 @@ object CommandKeys {
                 InputConstants.isKeyDown(client.window, e.key().value)
             val wasDown = held.contains(e.key())
 
-            if (down && !wasDown) Misc.executeCommand(e.command())
+            if (down && !wasDown && !inScreen) Misc.executeCommand(e.command())
             if (down) held.add(e.key()) else held.remove(e.key())
         }
     }
@@ -90,7 +90,8 @@ object CommandKeys {
                 val parts = line.split("\t", limit = 3)
                 if (parts.size < 2 || parts[0].isBlank()) continue
                 val key = InputConstants.getKey(parts[0].trim())
-                FishDiag.check(key != InputConstants.UNKNOWN, "CommandKeys.3") { "unknown key name '${parts[0]}' in command_keys.txt" }
+                // key.keyboard.unknown = deliberately unbound row
+                FishDiag.check(key != InputConstants.UNKNOWN || parts[0].trim() == InputConstants.UNKNOWN.name, "CommandKeys.3") { "unknown key name '${parts[0]}' in command_keys.txt" }
                 if (parts.size == 3 && (parts[1] == "0" || parts[1] == "1")) {
                     entries.add(Entry(key, parts[2].trim(), parts[1] == "1"))
                 } else {

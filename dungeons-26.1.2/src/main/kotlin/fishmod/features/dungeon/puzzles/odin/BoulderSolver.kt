@@ -72,6 +72,7 @@ object BoulderSolver {
     }
 
     fun playerInteract(clicked: BlockPos) {
+        if (currentPositions.isEmpty()) return
         currentPositions.remove(currentPositions.firstOrNull { it.click == clicked })
         if (currentPositions.isEmpty()) solved = true
     }

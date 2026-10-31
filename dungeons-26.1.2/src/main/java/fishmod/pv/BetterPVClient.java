@@ -39,8 +39,10 @@ public final class BetterPVClient {
 		/** Set when Brigadier reflection could not strip another mod's {@code /pv}. */
 	private static final AtomicBoolean PV_OVERRIDE_FAILED = new AtomicBoolean(false);
 	private static final AtomicBoolean PV_SHADOW_CHAT_SENT = new AtomicBoolean(false);
+	private static final AtomicBoolean INITIALIZED = new AtomicBoolean(false);
 
 	public static void init() {
+		if (!INITIALIZED.compareAndSet(false, true)) return;
 		BetterPVConfig.load();
 		ItemPricer.start();
 		NeuRepoCache.start();
@@ -66,7 +68,8 @@ public final class BetterPVClient {
 			new SimpleSynchronousResourceReloadListener() {
 				@Override
 				public Identifier getFabricId() {
-					return Identifier.fromNamespaceAndPath(BetterPV.MOD_ID, "icon_probe_cache");
+					// fishmod namespace: the standalone BetterPV mod registers betterpv:icon_probe_cache too
+					return Identifier.fromNamespaceAndPath("fishmod", "pv_icon_probe_cache");
 				}
 
 				@Override
@@ -97,7 +100,7 @@ public final class BetterPVClient {
 		if (!PV_SHADOW_CHAT_SENT.compareAndSet(false, true)) {
 			return;
 		}
-		client.gui.getChat().addClientSystemMessage(
+		fishmod.compat.McCompatKt.getHud(client).getChat().addClientSystemMessage(
 			net.minecraft.network.chat.Component.literal(
 				"BetterPV: another mod uses /pv. Use /betterpv pv [name] instead."
 			).withColor(0xFFD36A)

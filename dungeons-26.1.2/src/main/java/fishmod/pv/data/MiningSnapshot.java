@@ -250,8 +250,8 @@ public final class MiningSnapshot {
 			nodes = parseNodes(Leveling.obj(core == null ? null : core.get("nodes")));
 		}
 
-		JsonArray hotmTable = RepoData.leveling() != null && RepoData.leveling().has("HOTM")
-			? RepoData.leveling().getAsJsonArray("HOTM") : null;
+		JsonArray hotmTable = RepoData.leveling() != null && RepoData.leveling().get("HOTM") instanceof JsonArray arr
+			? arr : null;
 		int cap = Math.max(1, RepoData.skillCap("HOTM"));
 		int hotmLevel;
 		float hotmFill;
@@ -756,16 +756,17 @@ public final class MiningSnapshot {
 		if (obj == null) {
 			return 0L;
 		}
-		Float n = Leveling.num(obj.get(key));
-		return n == null ? 0L : Math.round(n.doubleValue());
+		// Double, not Float: epoch-ms forge start times lose minutes in float precision.
+		Double n = Leveling.numDouble(obj.get(key));
+		return n == null || n.isNaN() ? 0L : Math.round(n);
 	}
 
 	private static double doubleOf(JsonObject obj, String key) {
 		if (obj == null) {
 			return 0;
 		}
-		Float n = Leveling.num(obj.get(key));
-		return n == null ? 0 : n.doubleValue();
+		Double n = Leveling.numDouble(obj.get(key));
+		return n == null ? 0 : n;
 	}
 
 	private static int intOf(JsonObject obj, String key) {

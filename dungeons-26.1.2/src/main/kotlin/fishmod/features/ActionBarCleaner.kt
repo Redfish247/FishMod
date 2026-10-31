@@ -1,5 +1,6 @@
 package fishmod.features
 
+import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
@@ -7,7 +8,6 @@ import net.minecraft.network.chat.Component
 
 object ActionBarCleaner {
 
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val NONNUM  = Regex("[^0-9,/]")
     private val PAIR    = Regex("[\\d,]+/[\\d,]+")
     private val BARE    = Regex("[\\d,]+")
@@ -76,7 +76,7 @@ object ActionBarCleaner {
         val kept = StringBuilder()
 
         for (seg in segs) {
-            val text = COLOR.replace(seg, "").trim()
+            val text = TextStrip.plain(seg).trim()
             val core = NONNUM.replace(text, "")
             val isPair = '/' in core && PAIR.matches(core)
             val isBare = '/' !in core && core.isNotEmpty() && BARE.matches(core)

@@ -102,7 +102,7 @@ public final class AbiphoneNpcs {
 		Set<String> ids = new HashSet<>();
 		Set<String> idNeu = new HashSet<>();
 		Set<String> tokens = new HashSet<>();
-		for (String raw : contactIds) {
+		for (String raw : contactIds == null ? List.<String>of() : contactIds) {
 			String id = norm(raw);
 			if (id.isEmpty()) {
 				continue;
@@ -129,7 +129,7 @@ public final class AbiphoneNpcs {
 			if (!found) {
 				List<String> requirement = new ArrayList<>();
 				for (String line : strings(def, "requirement")) {
-					String plain = line.replaceAll("§.", "").replaceFirst("^-\\s*", "").trim();
+					String plain = fishmod.utils.TextStrip.plain(line).replaceFirst("^-\\s*", "").trim();
 					if (!plain.isEmpty()) {
 						requirement.add(plain);
 					}

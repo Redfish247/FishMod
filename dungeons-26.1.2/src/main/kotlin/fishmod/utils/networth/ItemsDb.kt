@@ -18,7 +18,9 @@ object ItemsDb {
 
     private const val ITEMS_URL = "https://api.hypixel.net/v2/resources/skyblock/items"
     private const val REFRESH_MS = 12L * 60 * 60 * 1000L
+    private const val RETRY_MS = 5L * 60 * 1000L
     private val COLOR = Regex("§.")
+    @Volatile private var retryAfter = 0L
 
     private val HTTP: HttpClient = fishmod.utils.Http.CLIENT
 
@@ -34,6 +36,9 @@ object ItemsDb {
         if (id == null) return null
         return items[id]
     }
+
+    @JvmStatic
+    fun allItems(): Collection<JsonObject> = items.values
 
     @JvmStatic
     fun initAsync() = ensureLoaded()
@@ -60,7 +65,7 @@ object ItemsDb {
 
     @JvmStatic
     fun ensureLoaded() {
-        if ((!loadedFromDisk || stale()) && fetching.compareAndSet(false, true)) {
+        if ((!loadedFromDisk || stale()) && System.currentTimeMillis() >= retryAfter && fetching.compareAndSet(false, true)) {
             try {
                 Thread(ItemsDb::loadAndRefresh, "FishMod-ItemsDb").apply { isDaemon = true }.start()
             } catch (e: Throwable) {
@@ -82,7 +87,10 @@ object ItemsDb {
                     FishDiag.fail("ItemsDb.2", "load cached items.json", e)
                 }
             }
-            if (stale()) fetch()
+            if (stale()) {
+                fetch()
+                if (stale()) retryAfter = System.currentTimeMillis() + RETRY_MS
+            }
         } catch (t: Throwable) {
             FishDiag.fail("ItemsDb.3", "items db load/refresh thread", t)
         } finally {

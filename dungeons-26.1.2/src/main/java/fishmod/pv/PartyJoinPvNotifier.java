@@ -69,6 +69,8 @@ public final class PartyJoinPvNotifier {
 		}
 		long now = System.currentTimeMillis();
 		String key = cleaned.toLowerCase(Locale.ROOT);
+		// Only the dedupe window matters; drop older names so the map stays small.
+		RECENT.values().removeIf(t -> now - t >= DEDUPE_MS);
 		Long last = RECENT.put(key, now);
 		if (last != null && now - last < DEDUPE_MS) {
 			return;
@@ -106,7 +108,7 @@ public final class PartyJoinPvNotifier {
 			if (client == null || client.gui == null) {
 				continue;
 			}
-			client.gui.getChat().addClientSystemMessage(bpvLine(next.name));
+			fishmod.compat.McCompatKt.getHud(client).getChat().addClientSystemMessage(bpvLine(next.name));
 		}
 	}
 

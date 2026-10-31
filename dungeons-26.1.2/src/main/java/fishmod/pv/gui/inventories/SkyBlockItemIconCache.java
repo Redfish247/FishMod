@@ -36,7 +36,18 @@ public final class SkyBlockItemIconCache {
 	}
 
 	public static void clear() {
+		List<Identifier> ids = new java.util.ArrayList<>();
+		for (IconState state : BY_MODEL.values()) {
+			if (state.textureId != null) {
+				ids.add(state.textureId);
+			}
+		}
 		BY_MODEL.clear();
+		Minecraft client = Minecraft.getInstance();
+		if (client != null && !ids.isEmpty()) {
+			// Free GPU textures; ids are deterministic so a re-request re-registers them.
+			client.execute(() -> ids.forEach(client.getTextureManager()::release));
+		}
 	}
 
 	/** Kick pack download; icons register as textures become available. */

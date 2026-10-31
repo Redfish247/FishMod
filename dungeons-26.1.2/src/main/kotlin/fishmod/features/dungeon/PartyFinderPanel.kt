@@ -1,6 +1,7 @@
 package fishmod.features.dungeon
 
 import fishmod.mixin.accessors.HandledScreenAccessor
+import fishmod.utils.TextStrip
 import fishmod.utils.config.values.FishSettings
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -13,7 +14,6 @@ import fishmod.utils.debug.FishDiag
 
 object PartyFinderPanel {
 
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val MEMBER = Regex("^\\s*(\\w{1,16}):?\\s+(Archer|Tank|Berserk|Healer|Mage)\\s*\\((\\d+)\\)\\s*$")
     private val LEVEL_REQ = Regex("Dungeon Level Required:\\s*(\\d+)")
     private val FLOOR = Regex("Floor:\\s*(?:Floor\\s+)?(\\w+)")
@@ -52,7 +52,7 @@ object PartyFinderPanel {
     private fun active(screen: AbstractContainerScreen<*>): Boolean =
         FishSettings.pfListPanel && fishmod.utils.ScreenTitle.plain(screen) == "Party Finder"
 
-    private fun strip(s: String) = COLOR.replace(s, "")
+    private fun strip(s: String) = TextStrip.plain(s)
 
     private fun loreRaw(stack: ItemStack): List<String> =
         stack.get(DataComponents.LORE)?.lines()?.map { it.string } ?: emptyList()

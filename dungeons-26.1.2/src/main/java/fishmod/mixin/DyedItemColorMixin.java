@@ -16,6 +16,7 @@ public class DyedItemColorMixin {
 
     @ModifyReturnValue(method = "getOrDefault", at = @At("RETURN"))
     private static int fishmod$customDyeColor(int originalColor, @Local(name = "itemStack") ItemStack stack) {
+        if (!ItemCustomizationStore.hasAny()) return originalColor;
         try {
             String uuid = ItemUtil.getUuid(stack);
             if (uuid == null) return originalColor;

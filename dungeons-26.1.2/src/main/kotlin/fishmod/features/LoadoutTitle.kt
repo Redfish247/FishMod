@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.hud
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.FishSettings
@@ -29,7 +30,7 @@ object LoadoutTitle {
         val mc = Minecraft.getInstance()
         mc.execute {
             try {
-                val hud = mc.gui
+                val hud = mc.hud
                 hud.setTimes(0, 25, 8)
                 hud.setTitle(title)
                 hud.setSubtitle(subtitle)

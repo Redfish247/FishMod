@@ -222,11 +222,8 @@ final class LoadoutDecoder {
 			Map.entry("attack_speed", "AS"),
 			Map.entry("intelligence", "Int")
 		)) {
-			if (!slot.has(entry.getKey()) || !slot.get(entry.getKey()).isJsonPrimitive()) {
-				continue;
-			}
-			int value = slot.get(entry.getKey()).getAsInt();
-			if (value != 0) {
+			Integer value = InventoryDecodeSupport.jsonInt(slot, entry.getKey());
+			if (value != null && value != 0) {
 				stats.add(new InventorySnapshot.StatPoint(entry.getKey(), entry.getValue(), value));
 			}
 		}
@@ -262,7 +259,7 @@ final class LoadoutDecoder {
 	}
 
 	static InventorySnapshot.Slot petSlot(JsonObject pet) {
-		if (pet == null || !pet.has("type")) {
+		if (pet == null || !pet.has("type") || !pet.get("type").isJsonPrimitive()) {
 			return null;
 		}
 		String type = pet.get("type").getAsString();
@@ -281,7 +278,7 @@ final class LoadoutDecoder {
 	}
 
 	static String petLabel(JsonObject pet) {
-		if (pet == null || !pet.has("type")) {
+		if (pet == null || !pet.has("type") || !pet.get("type").isJsonPrimitive()) {
 			return "";
 		}
 		return InventoryDecodeSupport.prettyWords(pet.get("type").getAsString());

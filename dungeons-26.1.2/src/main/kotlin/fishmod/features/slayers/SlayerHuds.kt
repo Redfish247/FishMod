@@ -1,4 +1,6 @@
 package fishmod.features.slayers
+import fishmod.compat.curScreen
+import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.utils.Constants
@@ -65,7 +67,7 @@ object SlayerHuds {
     private fun renderSpawnInner(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.slayerSpawnHudEnabled) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         if (!SlayerManager.isActiveSlayer() || !SlayerManager.inCorrectArea()) return
         val type = FishDiag.notNull(SlayerManager.type, "SlayerHuds.5") { "active slayer with null type in spawn HUD" } ?: return
 
@@ -104,7 +106,7 @@ object SlayerHuds {
     private fun renderStatsInner(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.slayerStatsHudEnabled) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         if (!SlayerManager.isActiveSlayer() || !SlayerManager.inCorrectArea() || !SlayerStatsTracker.hasData()) return
 
         val lines = ArrayList<String>(7)
@@ -159,15 +161,15 @@ object SlayerHuds {
     private fun renderProfitInner(ctx: GuiGraphicsExtractor, inInv: Boolean): Boolean {
         if (!FishSettings.slayerProfitEnabled) return false
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return false
+        if (mc.player == null || mc.hudHidden) return false
         // keep drawing while chat is open so it can be clicked (SkyHanni behaviour)
-        if (mc.screen != null && mc.screen !is net.minecraft.client.gui.screens.ChatScreen && !inInv) return false
+        if (mc.curScreen != null && mc.curScreen !is net.minecraft.client.gui.screens.ChatScreen && !inInv) return false
         if (!Location.inSkyblock() || !SlayerManager.inCorrectArea()) return false
         val type = SlayerManager.type ?: return false
         val tier = SlayerManager.tier
         if (!SlayerProfitTracker.hasData(type, tier)) return false
 
-        val interactive = mc.screen is net.minecraft.client.gui.screens.ChatScreen
+        val interactive = mc.curScreen is net.minecraft.client.gui.screens.ChatScreen
         val rows = SlayerProfitTracker.display(type, tier, interactive)
         val f = mc.font
         val lh = Constants.TEXT_HEIGHT + 2
@@ -249,7 +251,7 @@ object SlayerHuds {
     private fun renderTimerInner(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.slayerTimerEnabled) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         if (!SlayerManager.hasActiveQuest() || !SlayerManager.inCorrectArea()) return
 
         val lines = ArrayList<String>(4)

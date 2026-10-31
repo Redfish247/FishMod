@@ -66,11 +66,7 @@ public final class ProfileFetcher {
 	private static final ConcurrentHashMap<String, CacheEntry> CACHE = new ConcurrentHashMap<>();
 	private static final Pattern MINECRAFT_NAME = Pattern.compile("[A-Za-z0-9_]{1,16}");
 	/** Post-core enrichment / profile-switch parsing (bounded; avoids parse-pool deadlock). */
-	private static final ExecutorService ENRICH_EXECUTOR = Executors.newFixedThreadPool(3, r -> {
-		Thread t = new Thread(r, "BetterPV-Enrich");
-		t.setDaemon(true);
-		return t;
-	});
+	private static final ExecutorService ENRICH_EXECUTOR = Executors.newFixedThreadPool(3, PvExecutors.daemon("BetterPV-Enrich"));
 	private static final Object ACTIVE_ENRICH_LOCK = new Object();
 	private static volatile ProfileEnrichmentSession activeEnrichment;
 	private static volatile fishmod.pv.gui.nav.PvTab requestedTab;
@@ -474,7 +470,7 @@ public final class ProfileFetcher {
 		putCache(uuidKey(uuid), loaded);
 		putCache(nameKey(name), loaded);
 		if (cleanedNameKey != null && !cleanedNameKey.isBlank()) {
-			CACHE.put(cleanedNameKey, new CacheEntry(loaded, System.currentTimeMillis() + CACHE_TTL_MS));
+			putCache(cleanedNameKey, loaded);
 		}
 	}
 
@@ -694,6 +690,8 @@ public final class ProfileFetcher {
 		if (key == null || key.isBlank() || profile == null || !profile.ok()) {
 			return;
 		}
+		// drop expired profiles so viewed players don't pile up for the whole session
+		CACHE.values().removeIf(e -> !e.fresh());
 		CACHE.put(key, new CacheEntry(profile, System.currentTimeMillis() + CACHE_TTL_MS));
 	}
 

@@ -1,4 +1,6 @@
 package fishmod.features.dungeon
+import fishmod.compat.curScreen
+import fishmod.compat.showScreen
 
 import com.mojang.blaze3d.platform.InputConstants
 import com.mojang.blaze3d.vertex.PoseStack
@@ -134,6 +136,11 @@ object DungeonWaypoints {
             )
         )
 
+        // New world = new run: drop route progress so reached points don't stay hidden.
+        fishmod.utils.events.Events.ON_WORLD_CHANGE.register {
+            if (routeReached.isNotEmpty() || routeLoopCursor.isNotEmpty()) { routeReached.clear(); routeLoopCursor.clear(); progressVersion++ }
+            false
+        }
         ClientTickEvents.END_CLIENT_TICK.register(ClientTickEvents.EndTick { mc ->
             try { onTick(mc) } catch (e: Exception) { FishDiag.fail("DungeonWaypoints.1", "waypoint tick failed (key=$lastGlobalDim, ${liveWaypoints.size} live)", e) }
         })
@@ -437,7 +444,7 @@ object DungeonWaypoints {
 
         var fired = false
         while (placeKey != null && placeKey!!.consumeClick()) fired = true
-        if (fired && mc.screen == null) {
+        if (fired && mc.curScreen == null) {
             try {
                 if (editMode) handlePlace(mc)
                 else if (pmEditMode) handlePlacePm(mc)
@@ -463,7 +470,7 @@ object DungeonWaypoints {
 
     private fun handlePlacePm(mc: Minecraft) {
         if (mc.player!!.isShiftKeyDown || pmMessage == null) {
-            mc.setScreen(DungeonWaypointTitleScreen { text ->
+            mc.showScreen(DungeonWaypointTitleScreen { text ->
                 if (text != null) { pmMessage = text; placePm(mc) }
             })
             return
@@ -620,7 +627,7 @@ object DungeonWaypoints {
         }
 
         if (mc.player!!.isShiftKeyDown) {
-            mc.setScreen(DungeonWaypointTitleScreen { title ->
+            mc.showScreen(DungeonWaypointTitleScreen { title ->
                 try {
                     val w = StoredWaypoint(
                         px, py, pz, halfX, halfY, halfZ,

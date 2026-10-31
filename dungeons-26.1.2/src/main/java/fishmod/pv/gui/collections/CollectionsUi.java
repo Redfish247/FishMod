@@ -41,7 +41,26 @@ public final class CollectionsUi {
 	private CollectionsUi() {
 	}
 
+	// Only resolved hits are cached so a not-yet-loaded icon can still upgrade later.
+	private static final java.util.Map<String, String> RESOLVED = new java.util.concurrent.ConcurrentHashMap<>();
+
 	public static String resolveIconId(String collectionId) {
+		if (collectionId == null) {
+			return CollectionIds.iconId(collectionId);
+		}
+		String cached = RESOLVED.get(collectionId);
+		if (cached != null) {
+			return cached;
+		}
+		String resolved = resolveIconIdUncached(collectionId);
+		if (resolved == null) {
+			return CollectionIds.iconId(collectionId);
+		}
+		RESOLVED.put(collectionId, resolved);
+		return resolved;
+	}
+
+	private static String resolveIconIdUncached(String collectionId) {
 		if (BossCollections.isBossId(collectionId)) {
 			for (BossCollections.BossDef boss : BossCollections.bosses()) {
 				if (boss.id().equalsIgnoreCase(collectionId)) {
@@ -52,7 +71,6 @@ public final class CollectionsUi {
 		List<String> keys = new ArrayList<>();
 		keys.add(CollectionIds.iconId(collectionId));
 		keys.addAll(CollectionIds.lookupKeys(collectionId));
-		String fallback = CollectionIds.iconId(collectionId);
 		for (String key : keys) {
 			if (key == null || key.isBlank()) {
 				continue;
@@ -65,7 +83,7 @@ public final class CollectionsUi {
 				return key;
 			}
 		}
-		return fallback;
+		return null;
 	}
 
 	public static void drawVanillaIcon(GuiGraphicsExtractor g, ItemStack icon, int x, int y, int size) {

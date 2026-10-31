@@ -25,6 +25,8 @@ object BadgeManager {
 
     @JvmStatic
     fun acceptBadges(queried: Set<String>, raw: Map<String, String>) {
+        // drop players who left the tab so the map doesn't grow across lobbies
+        byUuid.keys.retainAll(queried)
         for (u in queried) {
             val json = raw[u]
             if (json == null) {

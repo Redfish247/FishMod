@@ -20,7 +20,6 @@ object RoomTimer {
 
     private val FILE: Path = Paths.get("config/fishmod/room_timers.json")
     private val GSON = GsonBuilder().setPrettyPrinting().create()
-    private val ioExecutor = fishmod.utils.IoExecutor
 
     private class Pb {
         @JvmField var clear: Long = Long.MAX_VALUE
@@ -116,7 +115,7 @@ object RoomTimer {
 
     private fun save() {
         val json = GSON.toJson(pbs)
-        ioExecutor.execute {
+        fishmod.utils.IoExecutor.execute {
             try {
                 Files.createDirectories(FILE.parent)
                 Files.writeString(FILE, json)

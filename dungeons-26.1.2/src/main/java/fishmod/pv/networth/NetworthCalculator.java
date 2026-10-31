@@ -193,7 +193,7 @@ public final class NetworthCalculator {
 	private static String itemLabel(InventoryDecoder.Stack stack) {
 		String name = stack.displayName();
 		if (name != null && !name.isBlank()) {
-			String plain = name.replaceAll("§.", "").trim();
+			String plain = fishmod.utils.TextStrip.plain(name).trim();
 			if (!plain.isBlank()) {
 				return plain;
 			}

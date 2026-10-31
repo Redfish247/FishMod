@@ -46,9 +46,9 @@ public final class AttributeShardsData {
 	}
 
 	private static volatile boolean loaded;
-	private static List<Def> defs = List.of();
-	private static Map<String, Def> byStackId = Map.of();
-	private static Map<String, int[]> costsByRarity = Map.of();
+	private static volatile List<Def> defs = List.of();
+	private static volatile Map<String, Def> byStackId = Map.of();
+	private static volatile Map<String, int[]> costsByRarity = Map.of();
 
 	private AttributeShardsData() {
 	}

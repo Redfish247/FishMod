@@ -53,6 +53,8 @@ public final class HomePage {
 	private WeightBreakdown senither = WeightBreakdown.empty(WeightSystem.SENITHER);
 	private WeightBreakdown lily = WeightBreakdown.empty(WeightSystem.LILY);
 	private NetworthBreakdown networthNormal = NetworthBreakdown.empty("");
+	private double fishNetworth = -1;
+	private String fishNetworthKey;
 	private NetworthBreakdown networthNonCosmetic = NetworthBreakdown.empty("");
 	private NetworthBreakdown networthUnsoulbound = NetworthBreakdown.empty("");
 	private NetworthBreakdown networthUnsoulboundNonCosmetic = NetworthBreakdown.empty("");
@@ -123,7 +125,29 @@ public final class HomePage {
 		if (nextUuid == null || prevUuid == null || !nextUuid.equals(prevUuid)) {
 			this.playerRank = null;
 		}
+		requestFishNetworth(snapshot);
 		invalidateLayoutCache();
+	}
+
+	// FishMod networth (same as !nw); only for the profile it was computed on.
+	private void requestFishNetworth(ProfileSnapshot snap) {
+		String key = snap == null ? null : snap.playerName() + "|" + snap.profileName();
+		if (key == null || key.equals(this.fishNetworthKey)) {
+			return;
+		}
+		this.fishNetworthKey = key;
+		this.fishNetworth = -1;
+		fishmod.utils.HypixelApi.getNetworth(net.minecraft.client.Minecraft.getInstance(), snap.playerName(), (nw, profile) -> {
+			if (!key.equals(this.fishNetworthKey) || nw <= 0) {
+				return;
+			}
+			if (profile != null && !profile.equalsIgnoreCase(snap.profileName())) {
+				return;
+			}
+			this.fishNetworth = nw;
+			this.leftColumn.clearCaches();
+			invalidateLayoutCache();
+		});
 	}
 
 	public void applyPlayerRank(JsonObject player) {
@@ -180,6 +204,8 @@ public final class HomePage {
 		if (unsoulboundNonCosmetic != null) {
 			this.networthUnsoulboundNonCosmetic = unsoulboundNonCosmetic;
 		}
+		// NW label is cached by total only; a failed load keeps total 0 and would stay "...".
+		this.leftColumn.clearCaches();
 		invalidateLayoutCache();
 	}
 
@@ -331,7 +357,7 @@ public final class HomePage {
 
 	private NetworthBreakdown activeNetworth() {
 		return switch (networthMode()) {
-			case NORMAL -> this.networthNormal;
+			case NORMAL -> this.fishNetworth > 0 ? this.networthNormal.withTotal(this.fishNetworth) : this.networthNormal;
 			case NON_COSMETIC -> this.networthNonCosmetic;
 			case UNSOULBOUND -> this.networthUnsoulbound;
 			case UNSOULBOUND_NON_COSMETIC -> this.networthUnsoulboundNonCosmetic;

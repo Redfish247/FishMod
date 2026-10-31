@@ -1,4 +1,5 @@
 package fishmod.features.slayers
+import fishmod.compat.hudHidden
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -184,7 +185,7 @@ object SlayerCarryTracker {
     fun render(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.slayerCarryHudEnabled || carries.isEmpty()) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         val lines = ArrayList<String>(carries.size + 1)
         lines.add("§5§lSLAYER CARRIES")
         for (c in carries.values) {

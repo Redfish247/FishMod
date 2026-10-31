@@ -38,6 +38,11 @@ public final class FishingTrophyTrialPage {
 	}
 
 	private final List<Zone> zones = new ArrayList<>();
+	private static final java.util.Map<String, ItemStack> SKULLS = new java.util.concurrent.ConcurrentHashMap<>();
+	private static final ItemStack UNDISCOVERED_ICON = new ItemStack(fishmod.compat.CI.GRAY_DYE);
+	private static final ItemStack DISCOVERED_ICON = new ItemStack(Items.TROPICAL_FISH);
+	private FishingSnapshot rowsFor;
+	private List<FishingSnapshot.TrophyRow> rows = List.of();
 
 	public void render(
 		GuiGraphicsExtractor g, Font font, FishingSnapshot snapshot,
@@ -45,8 +50,13 @@ public final class FishingTrophyTrialPage {
 	) {
 		this.zones.clear();
 		FishingSnapshot data = snapshot == null ? FishingSnapshot.empty() : snapshot;
-		List<FishingSnapshot.TrophyRow> rows = new ArrayList<>(FishingPage.sortedRows(data.trophyFish()));
-		rows.addAll(FishingPage.sortedRows(data.trophyFrogs()));
+		if (data != this.rowsFor) {
+			List<FishingSnapshot.TrophyRow> sorted = new ArrayList<>(FishingPage.sortedRows(data.trophyFish()));
+			sorted.addAll(FishingPage.sortedRows(data.trophyFrogs()));
+			this.rows = sorted;
+			this.rowsFor = data;
+		}
+		List<FishingSnapshot.TrophyRow> rows = this.rows;
 
 		PvDraw.innerPanel(g, x, y, w, h);
 		if (rows.isEmpty()) {
@@ -115,10 +125,19 @@ public final class FishingTrophyTrialPage {
 		TrophyFishData.Tier best = row.counts().bestDiscovered();
 		ItemStack skull = ItemStack.EMPTY;
 		if (best != null) {
-			skull = SkyBlockItemFactory.trophySkullStack(row.id() + "_" + best.suffix());
+			String skullId = row.id() + "_" + best.suffix();
+			skull = SKULLS.get(skullId);
+			if (skull == null) {
+				skull = SkyBlockItemFactory.trophySkullStack(skullId);
+				// Cache only once the texture is known; before that it's a plain head.
+				String value = fishmod.pv.data.TrophySkulls.value(skullId);
+				if (value != null && !value.isBlank()) {
+					SKULLS.put(skullId, skull);
+				}
+			}
 		}
 		if (skull.isEmpty()) {
-			skull = new ItemStack(best == null ? Items.GRAY_DYE : Items.TROPICAL_FISH);
+			skull = best == null ? UNDISCOVERED_ICON : DISCOVERED_ICON;
 		}
 		float scale = ICON / 16f;
 		g.pose().pushMatrix();

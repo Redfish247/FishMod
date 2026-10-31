@@ -143,7 +143,8 @@ object SimonSaysSolver {
     private fun onBlock(pos: BlockPos, updated: BlockState) {
         if (!trackingActive()) return
 
-        val old = prev.put(pos.asLong(), updated.block)
+        // Only the lantern/button grid reads `old`; don't remember every P3 block update.
+        val old = if (pos.x in 110..111 && pos.y in 120..123 && pos.z in 92..95) prev.put(pos.asLong(), updated.block) else null
 
         if (pos == startButton && updated.block === Blocks.STONE_BUTTON && powered(updated)) {
             resetSolution()
@@ -156,8 +157,12 @@ object SimonSaysSolver {
         when (pos.x) {
             111 ->
                 if (updated.block === Blocks.OBSIDIAN && old === Blocks.SEA_LANTERN && pos !in clickInOrder) {
+                    // a 6th distinct lantern means a new pattern started without a seen reset: restart from it
+                    if (clickInOrder.size >= 5) {
+                        Debug.LOGGER.warn("[SS] 6th lantern ${pos.y}:${pos.z}, restarting solution (old=${clickInOrder.map { "${it.y}:${it.z}" }} needed=$clickNeeded firstPhase=$firstPhase)")
+                        resetSolution()
+                    }
                     clickInOrder.add(pos.immutable())
-                    FishDiag.check(clickInOrder.size <= 5, "SimonSaysSolver.9") { "SS solution grew to ${clickInOrder.size} lanterns (firstPhase=$firstPhase)" }
                     lastLanternTick = 0
                     dbg("lantern ${pos.y}:${pos.z} added (${clickInOrder.size})")
                     if (!firstPhase) return

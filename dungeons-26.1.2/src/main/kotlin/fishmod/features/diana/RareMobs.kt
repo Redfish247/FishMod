@@ -1,4 +1,5 @@
 package fishmod.features.diana
+import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.utils.ChatQueue
@@ -130,8 +131,7 @@ object RareMobs {
 
     // ---- name tags ----
 
-    private val CODES = Regex("§.")
-    private fun strip(s: String) = s.replace(CODES, "")
+    private fun strip(s: String) = fishmod.utils.TextStrip.plain(s)
 
     private fun parseHp(raw: String): Double? {
         val s = (HP_FMT.find(raw) ?: HP_PLAIN.find(strip(raw)))?.groupValues?.get(1) ?: return null
@@ -357,7 +357,7 @@ object RareMobs {
 
     private fun renderHud(ctx: GuiGraphicsExtractor) {
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui || !Diana.inHub()) return
+        if (mc.player == null || mc.hudHidden || !Diana.inHub()) return
         val font = mc.font
         if (DianaSettings.dianaMythosHp) {
             val lines = hpLines

@@ -132,6 +132,8 @@ class Split(
         ended = false
         started = false
         cachedAt = 0L
+        startTime = 0L
+        endTime = 0L
     }
 
     fun end() {
@@ -177,7 +179,7 @@ class Split(
         val serverTimeColor: Int
         val parenthesesColor: Int
 
-        if (!started) {
+        if (!started && !ended) {
             realTimeColor = realTimeColorInactive
             serverTimeColor = serverTimeColorInactive
             parenthesesColor = parenthesesColorInactive

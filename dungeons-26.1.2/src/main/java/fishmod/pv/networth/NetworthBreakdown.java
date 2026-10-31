@@ -50,6 +50,11 @@ public final class NetworthBreakdown {
 		return new NetworthBreakdown(0, List.of(), note);
 	}
 
+	/** Same breakdown with another headline total (FishMod networth). */
+	public NetworthBreakdown withTotal(double total) {
+		return new NetworthBreakdown(total, this.categories, this.note);
+	}
+
 	public double total() {
 		return this.total;
 	}

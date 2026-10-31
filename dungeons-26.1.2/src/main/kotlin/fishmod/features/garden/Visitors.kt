@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.compat.curScreen
 
 import fishmod.features.mining.Mining
 import fishmod.utils.FishMsg
@@ -22,6 +23,8 @@ object Visitors {
     private val REQ = Regex("""^(.+?)(?: x([\d,]+))?$""")
     private val COPPER = Regex("""^\+([\d,]+) Copper""")
     private val GXP = Regex("""^\+([\d,]+) Garden Experience""")
+    private val TRAIL_AMT = Regex("\\s*x[\\d,]+$")
+    private val LEAD_AMT = Regex("^[\\d,]+x?\\s+")
 
     class Req(val name: String, val amount: Int)
 
@@ -35,7 +38,7 @@ object Visitors {
     private var tick = 0
 
     fun init() {
-        Events.ON_GAME_MESSAGE.register { text -> onChat(Garden.strip(text.string).trim()) }
+        Events.ON_GAME_MESSAGE.register { text -> Garden.inGarden() && onChat(Garden.strip(text.string).trim()) }
         Events.ON_WORLD_CHANGE.register { shopping.clear(); false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || tick++ % 10 != 0) return@register
@@ -43,7 +46,8 @@ object Visitors {
             count = Mining.tabLine("Visitors:")?.let { COUNT.find(it)?.groupValues?.get(1)?.toIntOrNull() } ?: 0
             nextVisitor = Mining.tabLine("Next Visitor:")?.substringAfter(":")?.trim() ?: ""
             names = Mining.tabWidget("Visitors:")
-            if (names.isNotEmpty()) shopping.keys.retainAll { k -> names.any { it.contains(k) } }
+            // Tab widget truncates long queues; only prune when every visitor is listed
+            if (names.isNotEmpty() && names.size >= count && names.none { it.contains("more", true) }) shopping.keys.retainAll { k -> names.any { it.contains(k) } }
             else if (count == 0 && nextVisitor.isNotEmpty()) shopping.clear()
             val full = nextVisitor.contains("Full", true)
             if (full && !fullWarned && S.gardenVisitorSixthWarn && S.gardenVisitorTimer) GardenTitles.show(Garden.legacy(S.gardenVisitorFullColor) + "Visitor Queue Full!", "", 2000, true)
@@ -53,13 +57,13 @@ object Visitors {
         Garden.hud("Visitor Timer", "garden_visitor_timer", 140, 20,
             { S.gardenVisitorTimerHudX }, { S.gardenVisitorTimerHudX = it }, { S.gardenVisitorTimerHudY }, { S.gardenVisitorTimerHudY = it },
             { S.gardenVisitorTimerHudScale }, { S.gardenVisitorTimerHudScale = it },
-            { S.gardenVisitorTimer && Garden.inGarden() && nextVisitor.isNotEmpty() }) {
+            { S.gardenVisitorTimer && Garden.inGarden() && nextVisitor.isNotEmpty() }, { S.gardenVisitorTimer }) {
             listOf("§aVisitors: §f$count  §7Next: " + (if (nextVisitor.contains("Full", true)) "§cQueue Full" else "§b$nextVisitor"))
         }
         Garden.hud("Visitor Stats", "garden_visitor_stats", 140, 50,
             { S.gardenVisitorStatsHudX }, { S.gardenVisitorStatsHudX = it }, { S.gardenVisitorStatsHudY }, { S.gardenVisitorStatsHudY = it },
             { S.gardenVisitorStatsHudScale }, { S.gardenVisitorStatsHudScale = it },
-            { S.gardenVisitorStats && Garden.inGarden() }) {
+            { S.gardenVisitorStats && Garden.inGarden() }, { S.gardenVisitorStats }) {
             listOf(Garden.legacy(S.gardenVisitorStatsColor) + "§lVisitor Stats", "§7Accepted: §f${S.gardenStatAccepted}", "§7Copper: §c${"%,d".format(S.gardenStatCopper)}",
                 "§7Garden XP: §2${"%,d".format(S.gardenStatGardenXp)}", "§7Rare Rewards: §d${S.gardenStatRare}")
         }
@@ -95,18 +99,18 @@ object Visitors {
     private fun num(s: String) = s.replace(",", "").toIntOrNull() ?: 0
 
     private fun isVisitorMenu(): Boolean {
-        val scr = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return false
+        val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return false
         return Garden.inGarden() && scr.menu.slots.any { !it.item.isEmpty && Garden.strip(it.item.hoverName.string) == "Accept Offer" }
     }
 
     private fun acceptButton(): ItemStack? {
-        val scr = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return null
+        val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return null
         return scr.menu.slots.firstOrNull { !it.item.isEmpty && Garden.strip(it.item.hoverName.string) == "Accept Offer" }?.item
     }
 
     // Reads the visitor's request once per menu open
     private fun scanMenu(mc: Minecraft) {
-        val scr = mc.screen as? AbstractContainerScreen<*>
+        val scr = mc.curScreen as? AbstractContainerScreen<*>
         if (scr == null) { warnedScreen = null; return }
         if (!Garden.inGarden()) return
         val btn = acceptButton() ?: return
@@ -117,7 +121,7 @@ object Visitors {
             warnedScreen = scr
             val rare = rareIn(lore)
             if (rare != null && S.gardenRareRewardWarn) {
-                val rc = GardenAlerts.rarityColor(rare, rare.replace(Regex("\\s*x[\\d,]+$"), ""), rare.replace(Regex("^[\\d,]+x?\\s+"), "")) ?: "§d"
+                val rc = GardenAlerts.rarityColor(rare, rare.replace(TRAIL_AMT, ""), rare.replace(LEAD_AMT, "")) ?: "§d"
                 GardenAlerts.show(rc + "§lRARE REWARD!", rc + rare)
                 FishMsg.send("§dThis visitor offers §f$rare§d!")
             }
@@ -189,23 +193,6 @@ object Visitors {
 
     private fun L(c: Int) = Garden.legacy(c)
     private fun hint() = L(S.gardenShoppingHintColor) + "Click: open + copy amount"
-
-    private fun shoppingLines(): List<String> {
-        val agg = LinkedHashMap<String, Int>()
-        for (reqs in shopping.values) for (r in reqs) agg[r.name] = (agg[r.name] ?: 0) + r.amount
-        val out = arrayListOf(Garden.legacy(S.gardenShoppingColor) + "§lShopping List")
-        var total = 0.0
-        for ((n, a) in agg) {
-            val h = have(n)
-            val c = if (h >= a) "§a" else L(S.gardenShoppingNameColor)
-            var line = "$c$n ${L(S.gardenShoppingAmountColor)}x${"%,d".format(a)}"
-            if (h > 0) line += " §7($h)"
-            if (S.gardenShoppingPrices) { val p = Garden.priceOf(n) * a; total += p; line += " ${L(S.gardenShoppingPriceColor)}${Garden.short(p)}" }
-            out += line
-        }
-        if (S.gardenShoppingPrices) out += "${L(S.gardenShoppingTotalColor)}Total: ${L(S.gardenShoppingPriceColor)}${Garden.short(total)}"
-        return out
-    }
 
     fun clear() = shopping.clear()
 

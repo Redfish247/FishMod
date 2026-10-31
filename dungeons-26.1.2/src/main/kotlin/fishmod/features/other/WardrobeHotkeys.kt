@@ -1,4 +1,6 @@
 package fishmod.features.other
+import fishmod.compat.curScreen
+import fishmod.utils.TextStrip
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.Keybinds
@@ -20,7 +22,6 @@ object WardrobeHotkeys {
 
     private const val PLAYER_INV_SLOTS = 36
 
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     private val LOADOUT_SLOTS = intArrayOf(14, 15, 16, 23, 24, 25, 32, 33, 34, 41, 42, 43)
 
@@ -89,7 +90,7 @@ object WardrobeHotkeys {
                 if (mcPlayer == null || mc.gameMode == null) return@Runnable
                 FishDiag.check(slotId in 0 until handler.slots.size, "WardrobeHotkeys.4") { "wardrobe slot $slotId outside menu of ${handler.slots.size}" }
                 mc.gameMode!!.handleContainerInput(containerId, slotId, 0, ContainerInput.PICKUP, mcPlayer)
-                if (FishSettings.wardrobeHotkeysAutoClose && mc.screen === screen) {
+                if (FishSettings.wardrobeHotkeysAutoClose && mc.curScreen === screen) {
                     screen.onClose()
                 }
             }
@@ -122,7 +123,7 @@ object WardrobeHotkeys {
             val slot = handler.slots[i]
             val stack = slot.item
             if (stack.isEmpty) continue
-            val name = stack.hoverName.string.replace(COLOR, "").trim()
+            val name = TextStrip.plain(stack.hoverName.string).trim()
             if (name.lowercase().contains(label)) return slot
         }
         return null

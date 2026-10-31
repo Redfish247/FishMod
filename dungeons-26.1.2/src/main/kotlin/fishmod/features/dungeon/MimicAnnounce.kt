@@ -1,6 +1,7 @@
 package fishmod.features.dungeon
 
 import fishmod.features.dungeon.map.DungeonScore
+import fishmod.utils.TextStrip
 import fishmod.features.dungeon.map.DungeonState
 import fishmod.utils.ChatQueue
 import fishmod.utils.config.values.FishSettings
@@ -14,7 +15,6 @@ private val FORMAT_CODE_RE = Regex("[&§][0-9A-FK-ORa-fk-or]")
 
 object MimicAnnounce {
 
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val PRINCE = Regex("^A Prince falls\\. \\+1 Bonus Score$")
     private val BAT = Regex("^A Bat has been slain\\. \\+1 Bonus Score$")
 
@@ -28,7 +28,7 @@ object MimicAnnounce {
 
         Events.ON_GAME_MESSAGE.register { text ->
             if (FishSettings.mimicAnnounceEnabled) {
-                val s = COLOR.replace(text.string, "").trim()
+                val s = TextStrip.plain(text.string).trim()
                 if (PRINCE.matches(s)) princeKilled(false)
                 else if (BAT.matches(s)) batKilled(false)
                 else if (s.startsWith("A Prince falls") || s.startsWith("A Bat has been slain")) FishDiag.fail("MimicAnnounce.1", "bonus score line unparsed: '$s'")

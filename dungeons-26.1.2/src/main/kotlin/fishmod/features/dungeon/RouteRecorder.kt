@@ -571,5 +571,6 @@ object RouteRecorder {
         msg("§7Mode §f${mode.name.lowercase()} §7· ${steps.size} steps" + if (mode == Mode.PLAYING) " · at #${progress + 1}" else "")
     }
 
-    private fun clean(name: String) = name.replace(Regex("[^A-Za-z0-9_-]"), "_").take(48)
+    private val UNSAFE_NAME = Regex("[^A-Za-z0-9_-]")
+    private fun clean(name: String) = name.replace(UNSAFE_NAME, "_").take(48)
 }

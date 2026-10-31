@@ -1,4 +1,5 @@
 package fishmod.features.croesus
+import fishmod.compat.curScreen
 
 import fishmod.utils.HypixelApi
 import fishmod.utils.config.values.FishSettings
@@ -71,7 +72,8 @@ object CroesusLootDetector {
     }
 
     private fun onTick(mc: Minecraft) {
-        val title = if (mc.screen == null) "" else fishmod.utils.ScreenTitle.plain(mc.screen!!)
+        if (!FishSettings.lootTrackerEnabled) { runGuiOpenPrev = false; return }
+        val title = if (mc.curScreen == null) "" else fishmod.utils.ScreenTitle.plain(mc.curScreen!!)
         val runGuiOpenNow = RUN_GUI_PATTERN.matcher(title).matches()
         if (runGuiOpenNow && !runGuiOpenPrev) {
             pendingChests.clear()
@@ -80,7 +82,7 @@ object CroesusLootDetector {
         runGuiOpenPrev = runGuiOpenNow
     }
 
-    private fun strip(s: String): String = HypixelApi.STRIP_COLOR.matcher(s).replaceAll("")
+    private fun strip(s: String): String = fishmod.utils.TextStrip.plain(s)
 
     private fun getSlot(menu: AbstractContainerMenu, index: Int): ItemStack =
         if (index >= 0 && index < menu.slots.size) menu.slots[index].item else ItemStack.EMPTY

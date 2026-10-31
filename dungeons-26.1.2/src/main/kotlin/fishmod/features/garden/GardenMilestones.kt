@@ -1,4 +1,5 @@
 package fishmod.features.garden
+import fishmod.compat.curScreen
 
 import fishmod.utils.Misc
 import fishmod.utils.TabListCache
@@ -39,7 +40,7 @@ object GardenMilestones {
         Garden.hud("Crop Milestone", "garden_milestone", 150, 36,
             { S.gardenMilestoneHudX }, { S.gardenMilestoneHudX = it }, { S.gardenMilestoneHudY }, { S.gardenMilestoneHudY = it },
             { S.gardenMilestoneHudScale }, { S.gardenMilestoneHudScale = it },
-            { S.gardenMilestoneHud && Garden.inGarden() && cropNow.isNotEmpty() }) { hudLines() }
+            { S.gardenMilestoneHud && Garden.inGarden() && cropNow.isNotEmpty() }, { S.gardenMilestoneHud }) { hudLines() }
     }
 
     private fun scanTab() {
@@ -64,7 +65,7 @@ object GardenMilestones {
     }
 
     private fun menuKind(): String {
-        val scr = Minecraft.getInstance().screen as? AbstractContainerScreen<*> ?: return ""
+        val scr = Minecraft.getInstance().curScreen as? AbstractContainerScreen<*> ?: return ""
         val t = Garden.strip(scr.title.string)
         return when {
             t.contains("Crop Milestones") -> "milestone"
@@ -76,7 +77,7 @@ object GardenMilestones {
 
     private fun scanMenu() {
         if (menuKind() != "milestone") return
-        val scr = Minecraft.getInstance().screen as AbstractContainerScreen<*>
+        val scr = Minecraft.getInstance().curScreen as AbstractContainerScreen<*>
         for (s in scr.menu.slots) {
             val st = s.item
             if (st.isEmpty) continue

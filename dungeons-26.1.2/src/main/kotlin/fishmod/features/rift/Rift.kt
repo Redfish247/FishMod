@@ -23,13 +23,21 @@ object Rift {
     @Volatile private var cachedArea = ""
     private var tick = 0
 
-    // Sidebar line naming a known Rift area first; the tab widget only says "The Rift" there, so it is a last resort
+    // Sidebar "ф <area>" line first (objective lines can name areas too), then any line naming a known area, tab last
     private fun pollArea() {
+        val sb = fishmod.features.mining.Mining.area
+        if (sb.isNotEmpty() && !sb.equals("The Rift", true)) { cachedArea = sb; return }
         val lines = fishmod.features.mining.Mining.sidebar
         val hit = lines.firstOrNull { l -> KNOWN.any { l.contains(it, ignoreCase = true) } }
         if (hit != null) { cachedArea = hit.dropWhile { !it.isLetter() }.trim(); return }
         val tab = fishmod.features.mining.Mining.tabLine("Area:")?.removePrefix("Area:")?.trim().orEmpty()
-        cachedArea = if (tab.isNotEmpty() && !tab.equals("The Rift", true)) tab else fishmod.features.mining.Mining.area
+        cachedArea = if (tab.isNotEmpty() && !tab.equals("The Rift", true)) tab else ""
+    }
+
+    // True only when the area is a known Rift area other than the given ones (blank/unknown = allowed)
+    fun knownOtherArea(vararg allowed: String): Boolean {
+        val a = area(); if (a.isEmpty() || allowed.any { a.contains(it, true) }) return false
+        return KNOWN.any { a.contains(it, true) }
     }
 
     // Current Rift area name (e.g. "Dreadfarm")
@@ -66,6 +74,7 @@ object Rift {
         say("§7tab Area: '${fishmod.features.mining.Mining.tabLine("Area:")}' sbArea='${fishmod.features.mining.Mining.area}'")
         say("§7sidebar: " + fishmod.features.mining.Mining.sidebar.joinToString(" | ") { it.take(40) })
         say("§7held id=${heldId()} wand=${RiftDreadfarm.wandHeld()} berberis=${S.riftBerberis} tracked=${RiftDreadfarm.berberisCount()} fireworks(5s)=${RiftDreadfarm.recentParticles()} total=${RiftDreadfarm.particleSeen}")
+        say("§7particles(any type)=${RiftDreadfarm.anyParticles} lastFirework=${RiftDreadfarm.lastFirework} dropped=${RiftDreadfarm.rejected} last drop='${RiftDreadfarm.lastReject}'")
         val hit = mc.hitResult as? net.minecraft.world.phys.BlockHitResult
         say("§7target block=" + (hit?.let { "${it.blockPos.toShortString()} ${mc.level?.getBlockState(it.blockPos)?.block?.descriptionId}" } ?: "none"))
         val ents = mc.level?.getEntities(me, me.boundingBox.inflate(16.0)) { true }.orEmpty()
@@ -73,6 +82,7 @@ object Rift {
             .filter { it.isNotBlank() }.distinct().take(25)
         say("§7nearby (${names.size}): " + names.joinToString(" | "))
         say("§7" + RiftSnake.debug())
+        say("§7" + RiftHay.debug())
         say("§7bacte cand: " + RiftMobs.bacteDebug.joinToString(" | ").ifEmpty { "none" })
         say("§7crux matched: " + RiftMobs.lastCruxNames.joinToString(" | ").ifEmpty { "none" })
     }
@@ -93,6 +103,10 @@ object Rift {
         FishDiag.guard("Rift.3", "RiftMobs init failed") { RiftMobs.init() }
         FishDiag.guard("Rift.4", "RiftSnake init failed") { RiftSnake.init() }
         FishDiag.guard("Rift.5", "RiftVampire init failed") { RiftVampire.init() }
+        FishDiag.guard("Rift.guide", "RiftGuide init failed") { RiftGuide.init() }
         FishDiag.guard("Rift.6", "RiftParkour init failed") { RiftParkour.init() }
-    }
+        FishDiag.guard("Rift.H", "RiftHay init failed") { RiftHay.init() }
+        FishDiag.guard("Rift.L", "RiftLeech init failed") { RiftLeech.init() }
+        FishDiag.guard("Rift.B", "RiftBurger init failed") { RiftBurger.init() }
+        FishDiag.guard("Rift.7","RiftCaducousStem init failed") { RiftCaducousStem.init() }    }
 }

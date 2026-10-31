@@ -3,6 +3,7 @@ package fishmod.mixin;
 import fishmod.features.dungeon.SessionStats;
 import fishmod.features.other.SearchBar;
 import fishmod.features.other.WardrobeHotkeys;
+import fishmod.utils.debug.MixinGuard;
 import fishmod.utils.rendering.DrawEvents;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -26,92 +27,30 @@ public abstract class HandledScreenMixin<T extends AbstractContainerMenu> extend
         super(title);
     }
 
-    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedSearchBar = false;
-    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedLeapMenu = false;
-    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedPartyFinder = false;
-    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedStorageOverlay = false;
-    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedCroesusProfit = false;
-    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedContainerValue = false;
-    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedAuctionPriceAutofill = false;
-    @org.spongepowered.asm.mixin.Unique private static boolean fishmod$loggedTermCustomGui = false;
-
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void render(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks, CallbackInfo ci) {
-        try {
-            Slot fishmod$hs = ((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot();
-            fishmod.features.ScrollableTooltip.trackHoveredSlot(
-                    fishmod$hs != null && !fishmod$hs.getItem().isEmpty() ? fishmod$hs.index : -1);
-        } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.9", "hovered slot tracking failed", t);
-        }
-
         AbstractContainerScreen<?> self = (AbstractContainerScreen<?>) (Object) this;
-
-        try {
-            SearchBar.render(context, mouseX, mouseY, deltaTicks);
-        } catch (Exception e) {
-            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.1", "SearchBar.render failed screen=" + self.getClass().getSimpleName(), e);
-            if (!fishmod$loggedSearchBar) { fishmod$loggedSearchBar = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] SearchBar.render failed; suppressed (logged once)", e); }
-        }
-        try {
-            fishmod.features.dungeon.LeapMenu.render(context, mouseX, mouseY, self);
-        } catch (Exception e) {
-            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.2", "LeapMenu.render failed screen=" + self.getClass().getSimpleName(), e);
-            if (!fishmod$loggedLeapMenu) { fishmod$loggedLeapMenu = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] LeapMenu.render failed; suppressed (logged once)", e); }
-        }
-        try {
-            fishmod.features.dungeon.PartyFinderPanel.render(context, mouseX, mouseY, self);
-        } catch (Exception e) {
-            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.3", "PartyFinderPanel.render failed screen=" + self.getClass().getSimpleName(), e);
-            if (!fishmod$loggedPartyFinder) { fishmod$loggedPartyFinder = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] PartyFinderPanel.render failed; suppressed (logged once)", e); }
-        }
-        try {
-            fishmod.features.storage.StorageOverlay.render(context, mouseX, mouseY, self);
-        } catch (Exception e) {
-            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.4", "StorageOverlay.render failed screen=" + self.getClass().getSimpleName(), e);
-            if (!fishmod$loggedStorageOverlay) { fishmod$loggedStorageOverlay = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] StorageOverlay.render failed; suppressed (logged once)", e); }
-        }
-        try {
-            fishmod.features.croesus.CroesusProfit.render(context, self);
-        } catch (Exception e) {
-            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.5", "CroesusProfit.render failed screen=" + self.getClass().getSimpleName(), e);
-            if (!fishmod$loggedCroesusProfit) { fishmod$loggedCroesusProfit = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] CroesusProfit.render failed; suppressed (logged once)", e); }
-        }
-        try {
-            fishmod.features.item.AnitaShop.render(context, self);
-        } catch (Exception e) {
-            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.20", "AnitaShop.render failed", e);
-        }
-        try {
-            fishmod.features.item.ContainerValue.render(context, self);
-        } catch (Exception e) {
-            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.6", "ContainerValue.render failed screen=" + self.getClass().getSimpleName(), e);
-            if (!fishmod$loggedContainerValue) { fishmod$loggedContainerValue = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] ContainerValue.render failed; suppressed (logged once)", e); }
-        }
-        try {
-            fishmod.features.garden.Visitors.renderShopping(context, self);
-        } catch (Exception e) {
-            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.16", "Visitors.renderShopping failed screen=" + self.getClass().getSimpleName(), e);
-        }
-        try {
-            fishmod.features.item.AuctionPriceAutofill.trackScreen(self);
-        } catch (Exception e) {
-            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.7", "AuctionPriceAutofill.trackScreen failed screen=" + self.getClass().getSimpleName(), e);
-            if (!fishmod$loggedAuctionPriceAutofill) { fishmod$loggedAuctionPriceAutofill = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] AuctionPriceAutofill.trackScreen failed; suppressed (logged once)", e); }
-        }
-        try {
-            if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(this)) {
+        MixinGuard.run("HandledScreenMixin.9", "hovered slot tracking failed", () -> {
+            Slot hs = ((fishmod.mixin.accessors.HandledScreenAccessor) (Object) this).fishmod$getHoveredSlot();
+            fishmod.features.ScrollableTooltip.trackHoveredSlot(hs != null && !hs.getItem().isEmpty() ? hs.index : -1);
+        });
+        MixinGuard.run("HandledScreenMixin.1", "SearchBar.render failed", () -> SearchBar.render(context, mouseX, mouseY, deltaTicks));
+        MixinGuard.run("HandledScreenMixin.2", "LeapMenu.render failed", () -> fishmod.features.dungeon.LeapMenu.render(context, mouseX, mouseY, self));
+        MixinGuard.run("HandledScreenMixin.3", "PartyFinderPanel.render failed", () -> fishmod.features.dungeon.PartyFinderPanel.render(context, mouseX, mouseY, self));
+        MixinGuard.run("HandledScreenMixin.4", "StorageOverlay.render failed", () -> fishmod.features.storage.StorageOverlay.render(context, mouseX, mouseY, self));
+        MixinGuard.run("HandledScreenMixin.5", "CroesusProfit.render failed", () -> fishmod.features.croesus.CroesusProfit.render(context, self));
+        MixinGuard.run("HandledScreenMixin.20", "AnitaShop.render failed", () -> fishmod.features.item.AnitaShop.render(context, self));
+        MixinGuard.run("HandledScreenMixin.6", "ContainerValue.render failed", () -> fishmod.features.item.ContainerValue.render(context, self));
+        MixinGuard.run("HandledScreenMixin.16", "Visitors.renderShopping failed", () -> fishmod.features.garden.Visitors.renderShopping(context, self));
+        MixinGuard.run("HandledScreenMixin.7", "AuctionPriceAutofill.trackScreen failed", () -> fishmod.features.item.AuctionPriceAutofill.trackScreen(self));
+        MixinGuard.run("HandledScreenMixin.8", "TermCustomGui.render failed", () -> {
+            if (fishmod.features.dungeon.f7.terminal.TermCustomGui.suppressVanilla(self)) {
                 fishmod.features.dungeon.f7.terminal.TermCustomGui.render(context, this.width, this.height);
             }
-        } catch (Exception e) {
-            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.8", "TermCustomGui.render failed screen=" + self.getClass().getSimpleName(), e);
-            if (!fishmod$loggedTermCustomGui) { fishmod$loggedTermCustomGui = true; fishmod.utils.debug.Debug.LOGGER.error("[FishMod] TermCustomGui.render failed; suppressed (logged once)", e); }
-        }
-        try {
-            if ((Object) this instanceof fishmod.features.dungeon.f7.terminal.TermSimScreen ts) ts.overlay(context);
-        } catch (Throwable t) {
-            fishmod.utils.debug.FishDiag.fail("HandledScreenMixin.10", "term sim overlay failed", t);
-        }
+        });
+        MixinGuard.run("HandledScreenMixin.10", "term sim overlay failed", () -> {
+            if (self instanceof fishmod.features.dungeon.f7.terminal.TermSimScreen ts) ts.overlay(context);
+        });
     }
 
     @Inject(method = "extractSlots", at = @At("HEAD"), cancellable = true)

@@ -1,4 +1,7 @@
 package fishmod.features.diana
+import fishmod.compat.curScreen
+import fishmod.utils.TextStrip
+import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
@@ -52,7 +55,6 @@ object DianaTrackerHud {
     private class Cache(var version: Int = -1, var at: Long = 0L, var rows: List<Row> = emptyList())
     private val caches = HashMap<String, Cache>()
     private val huds = LinkedHashMap<String, Hud>()
-    private val STRIP = Regex("§.")
 
     fun init() {
         reg("Diana Loot Tracker", "diana_loot", 200, 250,
@@ -135,7 +137,7 @@ object DianaTrackerHud {
         val hud = Hud(gx, gy, gs, on, lines)
         huds[id] = hud
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", id)) { ctx, _ ->
-            if (!FishHudEditor.isOpen() && Minecraft.getInstance().screen !is InventoryScreen && !Minecraft.getInstance().options.keyPlayerList.isDown && shown() && on())
+            if (!FishHudEditor.isOpen() && Minecraft.getInstance().curScreen !is InventoryScreen && !Minecraft.getInstance().options.keyPlayerList.isDown && shown() && on())
                 draw(ctx, rows(id, hud), gx(), gy(), gs(), false)
         }
     }
@@ -152,7 +154,7 @@ object DianaTrackerHud {
     // editing = inventory view: hidden rows stay in place, greyed and struck through
     private fun draw(ctx: GuiGraphicsExtractor, rows: List<Row>, x: Int, y: Int, scale: Double, editing: Boolean) {
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui || rows.isEmpty()) return
+        if (mc.player == null || mc.hudHidden || rows.isEmpty()) return
         val pose = ctx.pose()
         pose.pushMatrix()
         pose.translate(x.toFloat(), y.toFloat())
@@ -165,11 +167,11 @@ object DianaTrackerHud {
             if (editing && r.id?.startsWith("cycle:") == true) {
                 ctx.text(font, r.text + " §8[click to swap]", 0, i * 10, -1, true)
             } else if (r.tail == null) {
-                ctx.text(font, if (hidden) "§7§m" + r.text.replace(STRIP, "") else r.text, 0, i * 10, -1, true)
+                ctx.text(font, if (hidden) "§7§m" + TextStrip.plain(r.text) else r.text, 0, i * 10, -1, true)
             } else {
                 val strike = hidden
-                val left = if (strike) "§7§m" + r.text.replace(STRIP, "") else r.text
-                val right = if (strike) "§7§m" + r.tail.replace(STRIP, "") else r.tail
+                val left = if (strike) "§7§m" + TextStrip.plain(r.text) else r.text
+                val right = if (strike) "§7§m" + TextStrip.plain(r.tail) else r.tail
                 ctx.text(font, left, r.tailX - 6 - font.width(left), i * 10, -1, true)
                 ctx.text(font, right, r.tailX, i * 10, -1, true)
             }

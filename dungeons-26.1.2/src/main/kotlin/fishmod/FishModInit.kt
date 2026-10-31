@@ -1,4 +1,5 @@
 package fishmod
+import fishmod.compat.showScreen
 
 import com.mojang.brigadier.arguments.DoubleArgumentType
 import com.mojang.brigadier.arguments.IntegerArgumentType
@@ -289,11 +290,11 @@ class FishModInit : ClientModInitializer {
             return tree
         }
 
-        private fun chatNotificationsSubcommand(name: String): com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> {
+        private fun chatNotificationsSubcommand(name: String, tab: fishmod.features.ChatCommandsScreen.Tab = fishmod.features.ChatCommandsScreen.Tab.NOTIFICATIONS): com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> {
             return ClientCommands.literal(name)
                 .executes {
                     Minecraft.getInstance().schedule {
-                        Minecraft.getInstance().setScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.NOTIFICATIONS))
+                        Minecraft.getInstance().showScreen(fishmod.features.ChatCommandsScreen(tab))
                     }
                     Constants.SUCCESS
                 }
@@ -383,7 +384,7 @@ class FishModInit : ClientModInitializer {
     override fun onInitializeClient() {
         FishDiag.guard("FishModInit.1", "FishConfig.manager.load() failed") { FishConfig.manager.load() }
         safeInit("Config") { Config.manager.load() }
-        safeInit("ProfileViewer") { fishmod.pv.BetterPVClient.init() }
+        if (!net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("fishpv")) safeInit("ProfileViewer") { fishmod.pv.BetterPVClient.init() }
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.CLIENT_STOPPING.register { FishConfig.manager.save() }
         FishDiag.guard("FishModInit.2", "fishmod.utils.IoExecutor.init() failed") { fishmod.utils.IoExecutor.init() }
 
@@ -391,14 +392,17 @@ class FishModInit : ClientModInitializer {
         // Rebuild from settings so a nick saved by an older gradient build picks up the current colours
         if (fishmod.cosmetic.NickState.isActive()) fishmod.cosmetic.NickState.applyFromSettings()
         FishDiag.guard("FishModInit.3", "fishmod.cosmetic.RemoteNicks.init() failed") { fishmod.cosmetic.RemoteNicks.init() }
+        FishDiag.guard("FishModInit.3b", "fishmod.cosmetic.RemoteItems.init() failed") { fishmod.cosmetic.RemoteItems.init() }
         FishDiag.guard("FishModInit.4", "fishmod.cosmetic.PlayerSize.init() failed") { fishmod.cosmetic.PlayerSize.init() }
         FishDiag.guard("FishModInit.MeleeHit", "MeleeHitSound.init() failed") { fishmod.features.MeleeHitSound.init() }
         FishDiag.guard("FishModInit.5", "fishmod.features.NametagStats.init() failed") { fishmod.features.NametagStats.init() }
         FishDiag.guard("FishModInit.6", "fishmod.cosmetic.RemoteSync.init() failed") { fishmod.cosmetic.RemoteSync.init() }
+        FishDiag.guard("FishModInit.6b", "fishmod.cosmetic.CosmeticLive.init() failed") { fishmod.cosmetic.CosmeticLive.init() }
         FishDiag.guard("FishModInit.7", "fishmod.cosmetic.badge.BadgeRegistry.init() failed") { fishmod.cosmetic.badge.BadgeRegistry.init() }
         FishDiag.guard("FishModInit.8", "fishmod.utils.InstallHeartbeat.init() failed") { fishmod.utils.InstallHeartbeat.init() }
         FishDiag.guard("FishModInit.9", "fishmod.utils.update.UpdateManager.init() failed") { fishmod.utils.update.UpdateManager.init() }
         FishDiag.guard("FishModInit.10", "fishmod.utils.TabListCache.register() failed") { fishmod.utils.TabListCache.register() }
+        FishDiag.guard("FishModInit.205", "fishmod.utils.SidebarCache.register() failed") { fishmod.utils.SidebarCache.register() }
 
         FishDiag.guard("FishModInit.11", "LagTracker.init() failed") { LagTracker.init() }
         FishDiag.guard("FishModInit.12", "SessionStats.init() failed") { SessionStats.init() }
@@ -436,6 +440,7 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.39", "fishmod.features.WarpCooldown.init() failed") { fishmod.features.WarpCooldown.init() }
         FishDiag.guard("FishModInit.40", "fishmod.features.dungeon.DungeonBreaker.init() failed") { fishmod.features.dungeon.DungeonBreaker.init() }
         FishDiag.guard("FishModInit.41", "fishmod.features.BlockOverlay.init() failed") { fishmod.features.BlockOverlay.init() }
+        FishDiag.guard("FishModInit.41b", "fishmod.features.HologramText.init() failed") { fishmod.features.HologramText.init() }
         FishDiag.guard("FishModInit.42", "fishmod.features.CameraTweaks.init() failed") { fishmod.features.CameraTweaks.init() }
         FishDiag.guard("FishModInit.43", "fishmod.features.GyroHelper.init() failed") { fishmod.features.GyroHelper.init() }
         FishDiag.guard("FishModInit.44", "fishmod.features.dungeon.MageBeam.init() failed") { fishmod.features.dungeon.MageBeam.init() }
@@ -452,7 +457,6 @@ class FishModInit : ClientModInitializer {
         FishDiag.guard("FishModInit.55", "fishmod.features.LavaToWater.init() failed") { fishmod.features.LavaToWater.init() }
         FishDiag.guard("FishModInit.56", "fishmod.features.storage.StorageCache.init() failed") { fishmod.features.storage.StorageCache.init() }
         FishDiag.guard("FishModInit.57", "fishmod.features.dungeon.ExtraStats.init() failed") { fishmod.features.dungeon.ExtraStats.init() }
-        FishDiag.guard("FishModInit.57b", "BossDamage.init() failed") { fishmod.features.dungeon.f7.BossDamage.init() }
         FishDiag.guard("FishModInit.58", "fishmod.features.EtherwarpHelper.init() failed") { fishmod.features.EtherwarpHelper.init() }
         FishDiag.guard("FishModInit.59", "fishmod.features.dungeon.DungeonAbilities.init() failed") { fishmod.features.dungeon.DungeonAbilities.init() }
         FishDiag.guard("FishModInit.60", "fishmod.features.dungeon.f6.TerracottaTimer.init() failed") { fishmod.features.dungeon.f6.TerracottaTimer.init() }
@@ -516,6 +520,8 @@ class FishModInit : ClientModInitializer {
         FishHudEditor.register("LB Release Timer", fishmod.features.dungeon.f7.F7Huds.lbReleaseTimer)
         FishHudEditor.register("Py Tick Timer", fishmod.features.dungeon.f7.F7Huds.pyTimer)
         FishHudEditor.register("Necron LB Timer", fishmod.features.dungeon.f7.F7Huds.necronLbTimer)
+        FishHudEditor.register("Necron Drag Timer", fishmod.features.dungeon.f7.F7Huds.necronDragTimer)
+        FishHudEditor.register("Necron Drop Lava/Platform", fishmod.features.dungeon.f7.F7Huds.necronDropLanding)
         FishHudEditor.register("Storm Crushed", fishmod.features.dungeon.f7.F7Huds.stormCrush)
         FishHudEditor.register("Pillar Explosion Timer", fishmod.features.dungeon.f7.F7Huds.pillarExplosion)
         FishHudEditor.register("Term Start Timer", fishmod.features.dungeon.f7.F7Huds.termStartTimer)
@@ -526,6 +532,7 @@ class FishModInit : ClientModInitializer {
         FishHudEditor.register("Section Completion", fishmod.features.dungeon.f7.F7Huds.sectionCompletion)
         FishHudEditor.register("Players Leaped", fishmod.features.dungeon.f7.F7Huds.playersLeaped)
         FishHudEditor.register("Goldor Splits", fishmod.utils.dungeon.Section.terminalSplits)
+        FishHudEditor.register("Terminal Tracker", fishmod.features.dungeon.f7.TerminalTracker.terminalTrackerHud)
         FishDiag.guard("FishModInit.105", "fishmod.utils.dungeon.DungeonClass.init() failed") { fishmod.utils.dungeon.DungeonClass.init() }
         FishDiag.guard("FishModInit.106", "fishmod.features.ClassColoredBoots.init() failed") { fishmod.features.ClassColoredBoots.init() }
         FishDiag.guard("FishModInit.107", "fishmod.features.dungeon.DupeClassDetector.init() failed") { fishmod.features.dungeon.DupeClassDetector.init() }
@@ -536,7 +543,8 @@ class FishModInit : ClientModInitializer {
             { try { Phase.splitTimer.scaledX } catch (t: Throwable) { FishDiag.fail("FishModInit.108", "Est. Total x lookup failed", t); 0 } },
             {
                 try {
-                    Phase.splitTimer.scaledY + Constants.TEXT_HEIGHT * Phase.getVisibleRowCount() + 8
+                    // outside a run the editor shows the 6-row Splits preview
+                    Phase.splitTimer.scaledY + Constants.TEXT_HEIGHT * Phase.getVisibleRowCount().let { if (it > 0) it else 6 } + 8
                 } catch (t: Throwable) {
                     FishDiag.fail("FishModInit.109", "Est. Total y lookup failed", t)
                     Phase.splitTimer.scaledY + 20
@@ -552,37 +560,37 @@ class FishModInit : ClientModInitializer {
                 ClientCommands.literal("fm")
                     .then(ClientCommands.literal("commandkeys").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.KEYS))
+                            Minecraft.getInstance().showScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.KEYS))
                         }
                         Constants.SUCCESS
                     })
                     .then(ClientCommands.literal("customize").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.item.ItemCustomizeScreen())
+                            Minecraft.getInstance().showScreen(fishmod.features.item.ItemCustomizeScreen())
                         }
                         Constants.SUCCESS
                     })
                     .then(ClientCommands.literal("aliases").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.ALIASES))
+                            Minecraft.getInstance().showScreen(fishmod.features.ChatCommandsScreen(fishmod.features.ChatCommandsScreen.Tab.ALIASES))
                         }
                         Constants.SUCCESS
                     })
                     .then(ClientCommands.literal("whitelist").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.WHITELIST))
+                            Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.WHITELIST))
                         }
                         Constants.SUCCESS
                     })
                     .then(ClientCommands.literal("blacklist").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.BLACKLIST))
+                            Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.BLACKLIST))
                         }
                         Constants.SUCCESS
                     })
                     .then(ClientCommands.literal("kicklist").executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.KICK))
+                            Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.KICK))
                         }
                         Constants.SUCCESS
                     })
@@ -616,12 +624,16 @@ class FishModInit : ClientModInitializer {
                     .then(waypointSubcommand("waypoints"))
                     .then(fishmod.features.dungeon.RouteRecorder.command())
                     .then(fishmod.features.dungeon.f7.StormLbWaypoint.command())
+                    .then(fishmod.features.dungeon.f7.NecronDropPredict.command())
                     .then(fishmod.features.diana.Diana.command())
                     .then(fishmod.features.achievements.AchEngine.command())
                     .then(ClientCommands.literal("dianaloot").executes { fishmod.features.diana.DianaTracker.openPastEvents(); 1 })
+                    .then(fishmod.features.diana.DianaTracker.command())
                     .then(fishmod.features.diana.CrownOfAvarice.command())
                     .then(chatNotificationsSubcommand("chatnotifications"))
                     .then(chatNotificationsSubcommand("cn"))
+                    .then(chatNotificationsSubcommand("chatfilter", fishmod.features.ChatCommandsScreen.Tab.FILTER))
+                    .then(chatNotificationsSubcommand("cf", fishmod.features.ChatCommandsScreen.Tab.FILTER))
                     .then(sackSubcommand("ep"))
                     .then(sackSubcommand("ij"))
                     .then(sackSubcommand("sl"))
@@ -631,7 +643,7 @@ class FishModInit : ClientModInitializer {
                     .then(sackSubcommand("twap"))
                     .executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.FishModScreen())
+                            Minecraft.getInstance().showScreen(fishmod.features.FishModScreen())
                         }
                         Constants.SUCCESS
                     }
@@ -650,7 +662,11 @@ class FishModInit : ClientModInitializer {
                         .executes { ctx -> fishmod.features.slayers.SlayerCarryTracker.add(StringArgumentType.getString(ctx, "ign"), -1); Constants.SUCCESS })
                     .executes { fishmod.features.slayers.SlayerCarryTracker.list(); Constants.SUCCESS }
             )
-            dispatcher.register(ClientCommands.literal("bossdamagetest").executes { fishmod.features.dungeon.f7.BossDamage.test(); Constants.SUCCESS })
+            dispatcher.register(ClientCommands.literal("termreplay")
+                .then(ClientCommands.argument("replay", StringArgumentType.greedyString())
+                    .suggests { _, b -> (listOf("latest") + fishmod.features.dungeon.f7.TerminalTracker.replayNames()).forEach(b::suggest); b.buildFuture() }
+                    .executes { ctx -> fishmod.features.dungeon.f7.TerminalTracker.replay(StringArgumentType.getString(ctx, "replay")); Constants.SUCCESS })
+                .executes { fishmod.features.dungeon.f7.TerminalTracker.replay(); Constants.SUCCESS })
             for (cmd in arrayOf("pbsplits", "splitspb")) dispatcher.register(
                 ClientCommands.literal(cmd)
                     .then(ClientCommands.argument("floor", StringArgumentType.word()).executes { ctx ->
@@ -666,7 +682,7 @@ class FishModInit : ClientModInitializer {
                 ClientCommands.literal("fmloot")
                     .executes {
                         Minecraft.getInstance().schedule {
-                            Minecraft.getInstance().setScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.LOOT))
+                            Minecraft.getInstance().showScreen(fishmod.features.PartyLootScreen(fishmod.features.PartyLootScreen.Tab.LOOT))
                         }
                         Constants.SUCCESS
                     }
@@ -933,9 +949,9 @@ class FishModInit : ClientModInitializer {
                         }
                         Misc.addChatMessage(Component.literal("§b--- Tab entries (non-empty) ---"))
                         var n = 0
-                        for (e: PlayerInfo in mc.connection!!.onlinePlayers) {
-                            if (e.tabListDisplayName == null) continue
-                            val s = e.tabListDisplayName!!.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()
+                        for (te in fishmod.utils.TabListCache.entries) {
+                            if (te.info.tabListDisplayName == null) continue
+                            val s = te.stripped.trim()
                             if (s.isEmpty()) continue
                             if (s.lowercase().contains("pet") || s.contains("Lvl") || s.contains("XP") || s.contains("/")) {
                                 Misc.addChatMessage(Component.literal("§7$s"))
@@ -983,13 +999,12 @@ class FishModInit : ClientModInitializer {
                         } else {
                             var total = 0
                             var nullName = 0
-                            for (e: PlayerInfo in handler.onlinePlayers) {
+                            for (te in fishmod.utils.TabListCache.entries) {
                                 total++
-                                if (e.tabListDisplayName == null) {
+                                if (te.info.tabListDisplayName == null) {
                                     nullName++; continue
                                 }
-                                val raw = e.tabListDisplayName!!.string
-                                val clean = raw.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()
+                                val clean = te.stripped.trim()
                                 if (clean.isNotEmpty())
                                     Misc.addChatMessage(Component.literal("§8TAB: §7$clean"))
                             }
@@ -1137,8 +1152,8 @@ class FishModInit : ClientModInitializer {
                 if (mc.connection != null) {
                     val rem = b.remaining.lowercase()
                     val seen = HashSet<String>()
-                    for (e: PlayerInfo in mc.connection!!.onlinePlayers) {
-                        val n = e.profile.name
+                    for (te in fishmod.utils.TabListCache.entries) {
+                        val n = te.info.profile.name
                         if (n.isBlank() || !seen.add(n.lowercase())) continue
                         if (n.lowercase().startsWith(rem)) b.suggest(n)
                     }
@@ -1311,8 +1326,9 @@ class FishModInit : ClientModInitializer {
                             )
                     )
             )
+            // no "ai": Hypixel's /ai <uuid> accepts island invites
             for (name in arrayOf(
-                "fps", "tps", "ping", "dprofit", "crit", "ai", "allinv", "d",
+                "fps", "tps", "ping", "dprofit", "crit", "allinv", "d",
                 "e", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "m1", "m2", "m3", "m4", "m5", "m6", "m7",
                 "t1", "t2", "t3", "t4", "t5"
             )) {
@@ -1342,6 +1358,7 @@ class FishModInit : ClientModInitializer {
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "invincibility")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.InvincibilityTracker.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.128", "invincibility render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "relic_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f7.M7Relics.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.129", "relic_timer render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "spring_boots")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.SpringBoots.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.130", "spring_boots render failed", t) } }
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "stopwatch")) { ctx, _ -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.other.Stopwatch.renderHud(ctx) } catch (t: Throwable) { FishDiag.fail("FishModInit.204", "stopwatch render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "tac_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.TacTimer.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.131", "tac_timer render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "rag_timer")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.Ragnarock.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.132", "rag_timer render failed", t) } }
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "spirit_bear")) { ctx, tickCounter -> try { if (!fishmod.features.FishHudEditor.isOpen()) fishmod.features.dungeon.f4.SpiritBear.renderHud(ctx, tickCounter) } catch (t: Throwable) { FishDiag.fail("FishModInit.133", "spirit_bear render failed", t) } }
@@ -1472,6 +1489,8 @@ class FishModInit : ClientModInitializer {
         safeInit("Phase") { Phase.init() }
         safeInit("PracticeMode") { fishmod.utils.dungeon.PracticeMode.init() }
         safeInit("Section") { Section.init() }
+        safeInit("TerminalTracker") { fishmod.features.dungeon.f7.TerminalTracker.init() }
+        safeInit("Stopwatch") { fishmod.features.other.Stopwatch.init() }
         safeInit("PartyUtil") { PartyUtil.init() }
         safeInit("RenderingEvents") { RenderingEvents.init() }
         safeInit("Scheduler") { Scheduler.init() }

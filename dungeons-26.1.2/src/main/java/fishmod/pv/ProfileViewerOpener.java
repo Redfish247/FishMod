@@ -179,6 +179,6 @@ public final class ProfileViewerOpener {
 		if (name == null || name.isBlank()) {
 			return;
 		}
-		client.setScreen(new ProfileViewerScreen(name, tab, sub));
+		fishmod.compat.McCompatKt.showScreen(client, new ProfileViewerScreen(name, tab, sub));
 	}
 }

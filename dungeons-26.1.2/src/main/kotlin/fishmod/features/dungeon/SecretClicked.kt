@@ -1,6 +1,7 @@
 package fishmod.features.dungeon
 
 import com.mojang.blaze3d.vertex.PoseStack
+import fishmod.utils.TextStrip
 import com.mojang.blaze3d.vertex.VertexConsumer
 import fishmod.utils.Location
 import fishmod.utils.config.values.FishSettings
@@ -36,7 +37,6 @@ object SecretClicked {
 
     private val clicked = CopyOnWriteArrayList<Secret>()
     private var lastChime = 0L
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     private val itemPos = HashMap<Int, Vec3>()
     private var lastBat = 0L
@@ -69,7 +69,7 @@ object SecretClicked {
         })
 
         Events.ON_GAME_MESSAGE.register { text ->
-            if (COLOR.replace(text.string, "").trim() == "That chest is locked!") {
+            if (TextStrip.plain(text.string).trim() == "That chest is locked!") {
                 clicked.lastOrNull()?.locked = true
             }
             false

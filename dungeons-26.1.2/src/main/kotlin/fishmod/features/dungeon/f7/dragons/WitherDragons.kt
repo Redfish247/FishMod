@@ -1,4 +1,5 @@
 package fishmod.features.dungeon.f7.dragons
+import fishmod.compat.hudHidden
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
@@ -33,6 +34,7 @@ import fishmod.utils.debug.FishDiag
 object WitherDragons {
 
     @Volatile var priorityDragon: WitherDragon = WitherDragon.NONE
+    @Volatile var spawnRank: List<WitherDragon> = emptyList()
     private const val SCOREBOARD_GRACE = 40
     private var tick = 0L
 
@@ -51,6 +53,7 @@ object WitherDragons {
 
         Events.ON_WORLD_CHANGE.register {
             priorityDragon = WitherDragon.NONE
+            spawnRank = emptyList()
             WitherDragon.resetAll()
             tick = 0
             false
@@ -108,7 +111,8 @@ object WitherDragons {
             if (d.state == WitherDragonState.SPAWNING) {
                 d.timeToSpawn--
                 if (d.timeToSpawn <= -20) {
-                    FishDiag.fail("WitherDragons.6", "${d.name} dragon never spawned after its timer ran out")
+                    // Ping-tick timer can run slow; a late spawn is recovered in DragonCheck.dragonSpawn.
+                    if (fishmod.utils.debug.Debug.dragonDebug) modMessage("&7${d.name} spawn timer ran out, waiting for late spawn")
                     d.setDead(true, tick)
                 }
             }
@@ -179,7 +183,7 @@ object WitherDragons {
             }
             if (FishSettings.witherDragonsTimerWorld && d.state == WitherDragonState.SPAWNING && d.timeToSpawn > 0) {
                 RenderUtils.renderText(ctx, m,
-                    Component.literal("${d.name}: ${timerText(d.timeToSpawn)}").withColor(d.rgb),
+                    Component.literal("${rankTag(d)}${d.name}: ${timerText(d.timeToSpawn)}").withColor(d.rgb),
                     d.box.center, 2.5f)
             }
         }
@@ -198,29 +202,35 @@ object WitherDragons {
     }
 
     private fun renderHudInner(ctx: GuiGraphicsExtractor) {
-        // Alpha: first two spawns overlap, so show every spawning dragon (priority first).
-        val prio = priorityDragon
         val list = WitherDragon.real.filter { it.state == WitherDragonState.SPAWNING && it.timeToSpawn > 0 }
-            .sortedBy { if (it == prio) 0 else 1 }
+            .sortedBy { rankIndex(it) }
         if (list.isEmpty()) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
-        val txt = list.joinToString(" §7| ") { "§${it.colorCode}${timerText(it.timeToSpawn)}" }
+        if (mc.player == null || mc.hudHidden) return
+        // One line per dragon, #1 on top.
+        val lines = list.map { "§${it.colorCode}${rankTag(it)}${it.name} §f${timerText(it.timeToSpawn)}" }
         val sc = FishSettings.witherDragonsHudScale.toFloat()
-        val w = mc.font.width(txt) * sc
+        val w = (lines.maxOf { mc.font.width(it) }) * sc
         val x = if (FishSettings.witherDragonsHudX < 0) (mc.window.guiScaledWidth - w) / 2f else FishSettings.witherDragonsHudX.toFloat()
         ctx.pose().pushMatrix()
         ctx.pose().translate(x, FishSettings.witherDragonsHudY.toFloat())
         ctx.pose().scale(sc, sc)
-        ctx.text(mc.font, txt, 0, 0, -1, true)
+        lines.forEachIndexed { i, line -> ctx.text(mc.font, line, 0, i * (mc.font.lineHeight + 1), -1, true) }
         ctx.pose().popMatrix()
+    }
+
+    private fun rankIndex(d: WitherDragon): Int = spawnRank.indexOf(d).let { if (it < 0) Int.MAX_VALUE else it }
+
+    private fun rankTag(d: WitherDragon): String {
+        val i = spawnRank.indexOf(d)
+        return if (i < 0 || spawnRank.size < 2) "" else "${i + 1}. "
     }
 
     private fun rgba(rgb: Int, a: Float) = floatArrayOf(((rgb shr 16) and 0xFF) / 255f, ((rgb shr 8) and 0xFF) / 255f, (rgb and 0xFF) / 255f, a)
 
     private fun timerText(t: Int): String = when (FishSettings.witherDragonsTimerStyle) {
         0 -> "${t * 50}ms"
-        1 -> "${"%.1f".format(t / 20f)}s"
+        1 -> fishmod.utils.Fmt.f1(t / 20.0) + "s"
         2 -> "${t}t"
         else -> { FishDiag.fail("WitherDragons.9", "unknown dragon timer style ${FishSettings.witherDragonsTimerStyle}"); "${t}t" }
     }

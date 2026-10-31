@@ -1,4 +1,5 @@
 package fishmod.features.extras
+import fishmod.compat.cam
 
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
@@ -38,6 +39,7 @@ object PatcherWaypoints {
         val label = SENDER.findAll(before).lastOrNull()?.groupValues?.get(1) ?: "Waypoint"
         val pos = Vec3(x + 0.5, y.toDouble(), z + 0.5)
         list.removeIf { it.label == label || it.pos == pos }
+        if (list.size >= 32) list.removeAt(0)
         list += Wp(label, pos, System.currentTimeMillis() + S.patcherWaypointSeconds.coerceIn(5, 3600) * 1000L)
     }
 
@@ -51,7 +53,7 @@ object PatcherWaypoints {
     }
 
     private fun render(ctx: net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext, ps: com.mojang.blaze3d.vertex.PoseStack, vc: com.mojang.blaze3d.vertex.VertexConsumer) {
-        val eye = Minecraft.getInstance().gameRenderer.mainCamera.position()
+        val eye = Minecraft.getInstance().cam.position()
         val argb = S.patcherWaypointColor
         val rgb = argb and 0xFFFFFF
         for (w in list) {

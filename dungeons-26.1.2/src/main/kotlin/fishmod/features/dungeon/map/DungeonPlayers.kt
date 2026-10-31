@@ -1,4 +1,6 @@
 package fishmod.features.dungeon.map
+import fishmod.compat.curScreen
+import fishmod.utils.TextStrip
 
 import fishmod.utils.debug.FishDiag
 import fishmod.utils.config.values.DungeonMapSettings
@@ -43,15 +45,16 @@ object DungeonPlayers {
     }
 
     private fun updateRosterInner(mc: Minecraft) {
-        val conn = mc.connection ?: return
-        val ordered = ArrayList(conn.onlinePlayers)
+        if (mc.connection == null) return
+        val ordered = ArrayList<PlayerInfo>(fishmod.utils.TabListCache.entries.size)
+        for (e in fishmod.utils.TabListCache.entries) ordered.add(e.info)
         val teams = HashMap<PlayerInfo, String>(ordered.size * 2)
         for (info in ordered) teams[info] = teamName(info)
         ordered.sortWith(playerInfoOrder(teams))
 
         for (info in ordered) {
             val disp = info.tabListDisplayName ?: continue
-            val line = stripColors(disp.string)
+            val line = TextStrip.plainAmp(disp.string)
             val m = TABLIST.matcher(line)
             if (m.find()) {
                 val name = m.group(2)
@@ -81,7 +84,6 @@ object DungeonPlayers {
         }
     }
 
-    private fun stripColors(s: String): String = s.replace(MAP_COLOR_CODES, "")
 
     private fun playerInfoOrder(teams: Map<PlayerInfo, String>): Comparator<PlayerInfo> =
         compareBy<PlayerInfo> { if (isSpectator(it)) 1 else 0 }
@@ -249,7 +251,7 @@ object DungeonPlayers {
     fun shouldRenderNames(mc: Minecraft): Boolean {
         if (mc.player == null) return false
         if (isHoldingLeap(mc)) return true
-        val screen = mc.screen
+        val screen = mc.curScreen
         if (screen != null) {
             val title = screen.title.string
             return title == "Spirit Leap" || title == "Teleport to Player"

@@ -205,7 +205,7 @@ public final class ChatClickProcessor {
 
 	// Hypixel often embeds § codes inside literal text, which getString() keeps.
 	private static String stripLegacy(String text) {
-		return text == null ? null : text.replaceAll("§.", "");
+		return text == null ? null : fishmod.utils.TextStrip.plain(text);
 	}
 
 	/**

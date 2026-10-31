@@ -1,4 +1,5 @@
 package fishmod.features.dungeon.puzzles.odin
+import fishmod.compat.cam
 
 import fishmod.utils.config.values.FishSettings
 import fishmod.utils.rendering.RenderUtils
@@ -44,7 +45,7 @@ object ORender {
     }
 
     fun tracer(target: Vec3, argb: Int) {
-        val cam = Minecraft.getInstance().gameRenderer.mainCamera
+        val cam = Minecraft.getInstance().cam
         val start = cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()))
         RenderUtils.gizmoLine(start, target, argb)
     }

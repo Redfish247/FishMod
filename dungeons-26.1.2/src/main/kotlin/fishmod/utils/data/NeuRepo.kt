@@ -30,6 +30,8 @@ object NeuRepo {
 
     @Volatile private var items: Map<String, JsonObject> = emptyMap()
     private val loading = AtomicBoolean(false)
+    private const val RETRY_MS = 5L * 60 * 1000L
+    @Volatile private var retryAfter = 0L
 
     @JvmStatic fun isLoaded(): Boolean = items.isNotEmpty()
 
@@ -39,13 +41,14 @@ object NeuRepo {
 
     @JvmStatic
     fun ensureLoaded() {
-        if (isLoaded() || !loading.compareAndSet(false, true)) return
+        if (isLoaded() || System.currentTimeMillis() < retryAfter || !loading.compareAndSet(false, true)) return
         IoExecutor.execute {
             try {
                 val fresh = Files.exists(ZIP_PATH) && System.currentTimeMillis() - Files.getLastModifiedTime(ZIP_PATH).toMillis() < REFRESH_MS
                 if (Files.exists(ZIP_PATH)) runCatching { parse(Files.readAllBytes(ZIP_PATH)) }
                     .onFailure { FishDiag.fail("NeuRepo.1", "cached NEU repo zip unreadable", it) }
                 if (!fresh || !isLoaded()) download()
+                if (!isLoaded()) retryAfter = System.currentTimeMillis() + RETRY_MS
             } finally {
                 loading.set(false)
             }

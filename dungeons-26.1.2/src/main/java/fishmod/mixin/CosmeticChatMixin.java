@@ -26,7 +26,6 @@ public abstract class CosmeticChatMixin {
     private static Component fishmod$swap(Component msg) {
         if (msg == null) return msg;
         Component out = msg;
-        fishmod.cosmetic.NameRewriter.dumpColors("in", msg);
         if (NickState.isActive()) {
             String real = NickState.realName();
             if (!real.isEmpty() && out.getString().contains(real))
@@ -41,7 +40,6 @@ public abstract class CosmeticChatMixin {
                 && fishmod.utils.config.values.FishSettings.badgesInChat) {
             out = fishmod.cosmetic.badge.BadgeRenderer.insertForChat(out);
         }
-        fishmod.cosmetic.NameRewriter.dumpColors("out", out);
         return out;
     }
 }

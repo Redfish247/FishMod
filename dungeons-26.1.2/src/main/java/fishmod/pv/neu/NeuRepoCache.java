@@ -61,20 +61,9 @@ public final class NeuRepoCache {
 	private static final long REFRESH_HOURS = 24L;
 	private static final String UPDATED_AT = "updated-at.txt";
 
-	private static final HttpClient HTTP = HttpClient.newBuilder()
-		.connectTimeout(Duration.ofSeconds(10))
-		.followRedirects(HttpClient.Redirect.ALWAYS)
-		.build();
-	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2, r -> {
-		Thread t = new Thread(r, "BetterPV-NeuRepo");
-		t.setDaemon(true);
-		return t;
-	});
-	private static final ScheduledExecutorService SCHEDULER = Executors.newSingleThreadScheduledExecutor(r -> {
-		Thread t = new Thread(r, "BetterPV-NeuRepoRefresh");
-		t.setDaemon(true);
-		return t;
-	});
+	private static final HttpClient HTTP = fishmod.utils.Http.REDIRECT;
+	private static final ExecutorService EXECUTOR = fishmod.pv.api.PvExecutors.IO;
+	private static final ScheduledExecutorService SCHEDULER = fishmod.pv.api.PvExecutors.SCHEDULER;
 
 	private static final Map<String, JsonObject> ITEMS = new ConcurrentHashMap<>();
 	private static final Map<String, Boolean> MISS = new ConcurrentHashMap<>();
@@ -242,16 +231,19 @@ public final class NeuRepoCache {
 		}
 	}
 
-	private static final Map<String, List<String>> SACKS = new java.util.LinkedHashMap<>();
+	// Immutable snapshots swapped whole: parse threads iterate them while a repo update reloads.
+	private static volatile Map<String, List<String>> SACKS = Map.of();
 	/** Sack display name → NEU item id (player-head sack skins). */
-	private static final Map<String, String> SACK_ITEMS = new java.util.LinkedHashMap<>();
-	private static final Map<String, Integer> MINIONS = new java.util.LinkedHashMap<>();
+	private static volatile Map<String, String> SACK_ITEMS = Map.of();
+	private static volatile Map<String, Integer> MINIONS = Map.of();
+	private static final Object SACKS_LOCK = new Object();
+	private static final Object MINIONS_LOCK = new Object();
 
 	private static void ensureSacksLoaded() {
 		if (!SACKS.isEmpty() && !SACK_ITEMS.isEmpty()) {
 			return;
 		}
-		synchronized (SACKS) {
+		synchronized (SACKS_LOCK) {
 			if (!SACKS.isEmpty() && !SACK_ITEMS.isEmpty()) {
 				return;
 			}
@@ -263,7 +255,7 @@ public final class NeuRepoCache {
 		if (!MINIONS.isEmpty()) {
 			return;
 		}
-		synchronized (MINIONS) {
+		synchronized (MINIONS_LOCK) {
 			if (!MINIONS.isEmpty()) {
 				return;
 			}
@@ -276,6 +268,8 @@ public final class NeuRepoCache {
 		if (path == null) {
 			return;
 		}
+		Map<String, List<String>> sacksOut = new java.util.LinkedHashMap<>();
+		Map<String, String> sackItemsOut = new java.util.LinkedHashMap<>();
 		try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
 			JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
 			JsonObject sacks = root.has("sacks") && root.get("sacks").isJsonObject()
@@ -294,16 +288,18 @@ public final class NeuRepoCache {
 						}
 					}
 					if (!contents.isEmpty()) {
-						SACKS.put(entry.getKey(), List.copyOf(contents));
+						sacksOut.put(entry.getKey(), List.copyOf(contents));
 					}
 				}
 				if (def.has("item") && def.get("item").isJsonPrimitive()) {
 					String item = def.get("item").getAsString();
 					if (item != null && !item.isBlank()) {
-						SACK_ITEMS.put(entry.getKey(), item);
+						sackItemsOut.put(entry.getKey(), item);
 					}
 				}
 			}
+			SACKS = java.util.Collections.unmodifiableMap(sacksOut);
+			SACK_ITEMS = java.util.Collections.unmodifiableMap(sackItemsOut);
 		} catch (Exception exception) {
 			BetterPV.LOGGER.debug("Failed loading NEU sacks.json", exception);
 		}
@@ -319,6 +315,7 @@ public final class NeuRepoCache {
 			if (!root.has("minions") || !root.get("minions").isJsonObject()) {
 				return;
 			}
+			Map<String, Integer> minionsOut = new java.util.LinkedHashMap<>();
 			for (var entry : root.getAsJsonObject("minions").entrySet()) {
 				if (!entry.getValue().isJsonPrimitive()) {
 					continue;
@@ -326,11 +323,12 @@ public final class NeuRepoCache {
 				try {
 					int max = entry.getValue().getAsInt();
 					if (max > 0) {
-						MINIONS.put(entry.getKey().toUpperCase(Locale.ROOT), max);
+						minionsOut.put(entry.getKey().toUpperCase(Locale.ROOT), max);
 					}
 				} catch (Exception ignored) {
 				}
 			}
+			MINIONS = java.util.Collections.unmodifiableMap(minionsOut);
 		} catch (Exception exception) {
 			BetterPV.LOGGER.debug("Failed loading NEU misc.json minions", exception);
 		}
@@ -568,19 +566,20 @@ public final class NeuRepoCache {
 				}
 			});
 		}
-		ITEMS.clear();
-		MISS.clear();
+		// Overwrite then prune, so readers never see an empty map mid-reload.
 		ITEMS.putAll(next);
+		ITEMS.keySet().retainAll(next.keySet());
+		MISS.clear();
 		return next.size();
 	}
 
 	private static void reloadDependentCaches() {
-		synchronized (SACKS) {
-			SACKS.clear();
-			SACK_ITEMS.clear();
+		synchronized (SACKS_LOCK) {
+			SACKS = Map.of();
+			SACK_ITEMS = Map.of();
 		}
-		synchronized (MINIONS) {
-			MINIONS.clear();
+		synchronized (MINIONS_LOCK) {
+			MINIONS = Map.of();
 		}
 		BestiaryData.reload();
 		AttributeShardsData.reload();

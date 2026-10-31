@@ -1,4 +1,5 @@
 package fishmod.features.mining
+import fishmod.compat.curScreen
 
 import fishmod.features.FishHudEditor
 import fishmod.utils.rendering.DrawEvents
@@ -70,7 +71,7 @@ object FossilSolver {
     private var fossilName = ""
 
     private fun screen(): AbstractContainerScreen<*>? =
-        (Minecraft.getInstance().screen as? AbstractContainerScreen<*>)?.takeIf { it.title.string == "Fossil Excavator" }
+        (Minecraft.getInstance().curScreen as? AbstractContainerScreen<*>)?.takeIf { it.title.string == "Fossil Excavator" }
 
     fun init() {
         ClientTickEvents.END_CLIENT_TICK.register {

@@ -92,7 +92,8 @@ object AchLeaderboard {
     fun submit(manual: Boolean) {
         val mc = Minecraft.getInstance()
         val player = mc.player ?: return
-        if (submitting) return
+        // Never submit progress loaded for another account (copied config folders)
+        if (submitting || !AchStore.ownedBy(uuid())) return
         submitting = true
         lastSubmit = System.currentTimeMillis()
         val k = key()
@@ -146,9 +147,8 @@ object AchLeaderboard {
         }.exceptionally { _ -> offline = true; fetching = false; null }
     }
 
-    private fun parse(o: JsonObject, k: String): List<Entry> = o.getAsJsonArray(k).map {
-        val e = it.asJsonObject
-        Entry(e.get("name").asString, e.get("points").asInt, e.get("secrets").asInt)
+    private fun parse(o: JsonObject, k: String): List<Entry> = o.getAsJsonArray(k).mapNotNull {
+        runCatching { val e = it.asJsonObject; Entry(e.get("name").asString, e.get("points").asInt, e.get("secrets").asInt) }.getOrNull() // skip bad rows
     }
 
     fun ago(): String {

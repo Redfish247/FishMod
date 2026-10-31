@@ -15,6 +15,7 @@ import fishmod.pv.api.ProfileFetcher;
 import fishmod.pv.data.FormatUtil;
 import fishmod.pv.gui.inventories.SkyBlockItemFactory;
 import fishmod.pv.gui.ItemIcons;
+import fishmod.pv.gui.nav.IconButtonBar;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -50,6 +51,8 @@ final class ProfileSelectorController {
 	private ProfileFetcher.ProfileChoice profileMenuHoverChoice;
 	private int profileCoopFlyoutScroll;
 	private final List<CoopMemberHit> coopMemberHits = new ArrayList<>();
+	// Per-screen head stacks so the flyout doesn't rebuild one per member every frame.
+	private final java.util.Map<UUID, ItemStack> headCache = new java.util.HashMap<>();
 	private int profileFooterX;
 	private int profileFooterY;
 	private int profileFooterW;
@@ -90,6 +93,7 @@ final class ProfileSelectorController {
 	void applyChoices(List<ProfileFetcher.ProfileChoice> choices, String viewedUndashed, String playerName) {
 		if (choices != null && !choices.isEmpty()) {
 			this.profileChoices = choices;
+			this.headCache.clear();
 			ProfileFetcher.warmCoopMemberNames(
 				this.profileChoices,
 				viewedUndashed,
@@ -98,7 +102,7 @@ final class ProfileSelectorController {
 					Minecraft client = Minecraft.getInstance();
 					if (client != null) {
 						client.execute(() -> {
-							if (client.screen == this.screen) {
+							if (fishmod.compat.McCompatKt.getCurScreen(client) == this.screen) {
 								this.profileCoopFlyoutScroll = 0;
 							}
 						});
@@ -176,7 +180,7 @@ final class ProfileSelectorController {
 		Font font = this.screen.font();
 		int contentH = profileCoopFlyoutHeight(font, this.profileMenuHoverChoice);
 		ProfileMenuLayout layout = profileMenuLayout(font);
-		int visibleH = Math.min(contentH, this.screen.height - layout.menuY() - 4);
+		int visibleH = Math.min(contentH, visibleScreenH() - layout.menuY() - 4);
 		int maxScroll = Math.max(0, contentH - visibleH);
 		this.profileCoopFlyoutScroll = Math.max(
 			0,
@@ -296,7 +300,7 @@ final class ProfileSelectorController {
 		int flyoutX = profileCoopFlyoutX(layout);
 		int flyoutY = layout.menuY();
 		int flyoutW = PROFILE_COOP_FLYOUT_W;
-		int flyoutH = Math.min(profileCoopFlyoutHeight(font, choice), this.screen.height - flyoutY - 4);
+		int flyoutH = Math.min(profileCoopFlyoutHeight(font, choice), visibleScreenH() - flyoutY - 4);
 		return mouseX >= flyoutX && mouseX < flyoutX + flyoutW + PROFILE_COOP_FLYOUT_BRIDGE
 			&& mouseY >= flyoutY && mouseY < flyoutY + flyoutH;
 	}
@@ -344,9 +348,14 @@ final class ProfileSelectorController {
 				int badgeY = cy + 1 + Math.max(0, (layout.lineH() - 2 - PROFILE_BADGE_SIZE) / 2);
 				ItemIcons.drawItemIcon(g, badge, badgeX, badgeY, PROFILE_BADGE_SIZE);
 			}
-			drawProfileCoopCounts(g, font, choice, layout.menuX(), layout.menuW(), cy + 2);
 			cy += layout.lineH();
 		}
+	}
+
+	/** Screen height in the viewer's scaled coordinates, so popups use the room that is actually there. */
+	private int visibleScreenH() {
+		int virtual = IconButtonBar.virtualHeight();
+		return virtual > 0 ? virtual : this.screen.height;
 	}
 
 	private void drawProfileCoopCounts(
@@ -395,7 +404,7 @@ final class ProfileSelectorController {
 		int flyoutY = layout.menuY();
 		int flyoutW = PROFILE_COOP_FLYOUT_W;
 		int contentH = profileCoopFlyoutHeight(font, choice);
-		int flyoutH = Math.min(contentH, this.screen.height - flyoutY - 4);
+		int flyoutH = Math.min(contentH, visibleScreenH() - flyoutY - 4);
 		PvDraw.popupSurface(g, flyoutX, flyoutY, flyoutW, flyoutH);
 
 		int innerX = flyoutX + PROFILE_COOP_FLYOUT_PAD;
@@ -508,7 +517,8 @@ final class ProfileSelectorController {
 		}
 		UUID uuid = HypixelApiClient.parseUndashedUuid(member.uuid());
 		if (uuid != null) {
-			ItemIcons.drawItemIcon(g, coopMemberHead(uuid), x, y - 1, PROFILE_COOP_ICON);
+			ItemStack head = this.headCache.computeIfAbsent(uuid, ProfileSelectorController::coopMemberHead);
+			ItemIcons.drawItemIcon(g, head, x, y - 1, PROFILE_COOP_ICON);
 		}
 		String name = ProfileFetcher.coopMemberDisplayName(member);
 		int nameColor = former ? COLOR_COOP_FORMER : COLOR_COOP_CURRENT;
@@ -555,11 +565,6 @@ final class ProfileSelectorController {
 		int w = font.width(choice.cuteName());
 		if (!profileModeBadge(choice).isEmpty()) {
 			w += 3 + PROFILE_BADGE_SIZE;
-		}
-		if (choice.coop().soloProfile()) {
-			w += 8 + font.width("Solo");
-		} else {
-			w += 8 + PROFILE_MENU_COUNTS_W;
 		}
 		return w;
 	}
@@ -683,7 +688,7 @@ final class ProfileSelectorController {
 			}
 			return;
 		}
-		Minecraft.getInstance().setScreen(this.screen.forCoopMember(name, profileId));
+		fishmod.compat.McCompatKt.showScreen(Minecraft.getInstance(), this.screen.forCoopMember(name, profileId));
 	}
 
 	private record CoopMemberHit(int x, int y, int w, int h, String uuid, String name, String profileId) {
@@ -709,7 +714,7 @@ final class ProfileSelectorController {
 				return;
 			}
 			client.execute(() -> {
-				if (client.screen != this.screen || !this.screen.isLoadGeneration(generation)) {
+				if (fishmod.compat.McCompatKt.getCurScreen(client) != this.screen || !this.screen.isLoadGeneration(generation)) {
 					return;
 				}
 				if (updated == null || !updated.ok()) {
@@ -723,7 +728,7 @@ final class ProfileSelectorController {
 				return;
 			}
 			client.execute(() -> {
-				if (client.screen != this.screen || !this.screen.isLoadGeneration(generation)) {
+				if (fishmod.compat.McCompatKt.getCurScreen(client) != this.screen || !this.screen.isLoadGeneration(generation)) {
 					return;
 				}
 				if (error != null || loaded == null || !loaded.ok()) {

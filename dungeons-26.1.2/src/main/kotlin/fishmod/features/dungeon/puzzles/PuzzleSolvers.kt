@@ -1,5 +1,6 @@
 package fishmod.features.dungeon.puzzles
 
+import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
 import fishmod.features.dungeon.puzzles.odin.BeamsSolver
 import fishmod.features.dungeon.puzzles.odin.BlazeSolver
@@ -26,7 +27,6 @@ import net.minecraft.world.InteractionResult
 object PuzzleSolvers {
 
     private val weirdosRegex = Regex("\\[NPC] (.+): (.+).?")
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private var tickAcc = 0
 
     private val enabled: Boolean get() = FishSettings.puzzleSolversEnabled
@@ -94,7 +94,7 @@ object PuzzleSolvers {
 
         Events.ON_GAME_MESSAGE.register { text ->
             if (!enabled || !Location.inDungeon()) return@register false
-            val msg = COLOR.replace(text.string, "")
+            val msg = TextStrip.plain(text.string)
             if (FishSettings.weirdosSolver) weirdosRegex.find(msg)?.let {
                 FishDiag.guard("PuzzleSolvers.18", "weirdos NPC message handling failed '$msg'") { WeirdosSolver.onNPCMessage(it.groupValues[1], it.groupValues[2]) }
             }

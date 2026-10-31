@@ -72,7 +72,7 @@ object KuudraExtras {
     }
 
     fun init() {
-        Events.ON_GAME_MESSAGE.register { c -> FishDiag.guard("KuudraExtras.1", "kuudra extras chat failed") { onChat(Mining.strip(c.string)) }; false }
+        Events.ON_GAME_MESSAGE.register { c -> if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.1", "kuudra extras chat failed") { onChat(Mining.strip(c.string)) }; false }
         Events.ON_WORLD_CHANGE.register { reset(); false }
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
             if (mc.player == null || !Kuudra.inKuudra()) return@register
@@ -91,7 +91,7 @@ object KuudraExtras {
         })
         MiningHuds.reg("Kuudra Backbone", "kuudra_backbone", 100, 10,
             { S.kuudraBackboneX }, { S.kuudraBackboneX = it }, { S.kuudraBackboneY }, { S.kuudraBackboneY = it },
-            { S.kuudraBackboneScale }, { S.kuudraBackboneScale = it }, { S.kuudraBossMaster && S.kuudraBackbone && Kuudra.inKuudra() && (boneLeft > 0 || rendShow > 0) }) {
+            { S.kuudraBackboneScale }, { S.kuudraBackboneScale = it }, { S.kuudraBossMaster && S.kuudraBackbone && Kuudra.inKuudra() && (boneLeft > 0 || rendShow > 0) }, { S.kuudraBossMaster && S.kuudraBackbone }) {
             if (rendShow > 0) listOf("§a§lREND NOW!")
             else {
                 val done = ((boneStart - boneLeft) * 20 / maxOf(1, boneStart)).coerceIn(0, 20)
@@ -100,8 +100,7 @@ object KuudraExtras {
         }
         RenderingEvents.NO_DEPTH_FILLED.register { _, ps, vc ->
             if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.3", "kuudra extras fill render failed") { fills(ps, vc) }
-        }
-        RenderingEvents.NO_DEPTH_LINE.register { _, ps, vc ->
+            // screenLine emits quads: draw on the QUADS buffer, DEBUG_LINES turns them into corner ticks
             if (Kuudra.inKuudra()) FishDiag.guard("KuudraExtras.4", "kuudra extras line render failed") { lines(ps, vc) }
         }
     }
@@ -142,7 +141,7 @@ object KuudraExtras {
     private fun rend(mc: Minecraft) {
         if (!(S.kuudraBossMaster && S.kuudraRendAlert) || Kuudra.phase != 4) { lastHp = HP_CAP - 1f; return }
         val b = Kuudra.boss
-        if (mc.player!!.y > 30.0 || b == null || !b.isAlive) return
+        if ((mc.player?.y ?: return) > 30.0 || b == null || !b.isAlive) return
         val hp = b.health
         val secs = if (Kuudra.phaseStart[3] > 0) (Kuudra.now() - Kuudra.phaseStart[3]) / 1000.0 else 0.0
         if (hp > HP_CAP) return

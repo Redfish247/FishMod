@@ -73,7 +73,7 @@ public final class ChatOutput {
 		mc.execute(() -> {
 			try {
 				if (mc.gui != null) {
-					mc.gui.getChat().addClientSystemMessage(component);
+					fishmod.compat.McCompatKt.getHud(mc).getChat().addClientSystemMessage(component);
 				}
 			} catch (Throwable t) {
 				fishmod.utils.debug.FishDiag.fail("ChatOutput.1", "adding twitch chat line failed", t);

@@ -1,4 +1,5 @@
 package fishmod.features.storage
+import fishmod.compat.curScreen
 
 import fishmod.features.ScreenTheme
 import fishmod.utils.config.values.FishSettings
@@ -146,8 +147,12 @@ object StorageOverlay {
             s.get(DataComponents.LORE)?.lines()?.forEach { sb.append('\n').append(it.string.lowercase()) }
             sb.toString()
         }
-        return text.contains(search.lowercase())
+        if (searchLowerFor !== search) { searchLowerFor = search; searchLower = search.lowercase() }
+        return text.contains(searchLower)
     }
+
+    private var searchLowerFor: String? = null
+    private var searchLower = ""
 
     private fun visibleData(activePage: StoragePage?, activeSlots: List<Slot>?, all: TreeMap<StoragePage, NBTInventory?> = allData()): TreeMap<StoragePage, NBTInventory?> {
         val data = all
@@ -192,11 +197,13 @@ object StorageOverlay {
     private const val ROW_SIZE = 8f
     private val glyphOk = HashMap<Int, Boolean>()
 
+    private val MULTI_SPACE = Regex(" {2,}")
+
     // Drop glyphs the UI font can't draw (they'd render as boxes)
     private fun displayable(s: String): String {
         val sb = StringBuilder()
         s.codePoints().forEach { cp -> if (glyphOk.getOrPut(cp) { fishmod.utils.rendering.UiFont.canDisplay(cp) }) sb.appendCodePoint(cp) }
-        return sb.toString().replace(Regex(" {2,}"), " ").trim()
+        return sb.toString().replace(MULTI_SPACE, " ").trim()
     }
     private var sidebarW = 0
     private var sidebarScroll = 0
@@ -268,7 +275,7 @@ object StorageOverlay {
     private val maxScroll get() = (lastRenderedInnerHeight.toFloat() + 6 - innerH).coerceAtLeast(0f)
 
     private fun screenMenu(): AbstractContainerMenu? =
-        (mc.screen as? AbstractContainerScreen<*>)?.menu
+        (mc.curScreen as? AbstractContainerScreen<*>)?.menu
 
     private fun rowCountOf(menu: AbstractContainerMenu): Int =
         (menu as? ChestMenu)?.rowCount ?: ((menu.slots.size - 36) / 9)

@@ -1,4 +1,6 @@
 package fishmod.features
+import fishmod.compat.hudHidden
+import fishmod.utils.TextStrip
 
 import fishmod.utils.config.values.Dungeons
 import fishmod.utils.config.values.FishSettings
@@ -16,7 +18,6 @@ object WarpCooldown {
         Pattern.compile("\\b(\\w{1,16}) entered (?:MM )?\\w+ Catacombs, Floor \\w+!")
     private val KICKED: Pattern =
         Pattern.compile("^(?:You were kicked while joining that server!|You are no longer allowed to access this instance!)$")
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
 
     @Volatile private var enteredAt = 0L
     @Volatile private var armedAt = 0L
@@ -33,11 +34,12 @@ object WarpCooldown {
         )
 
         Events.ON_GAME_MESSAGE.register { text ->
+            if (!Dungeons.enableWarpCooldown) return@register false
             try {
-                val s = COLOR.replace(text.string, "")
-                if (Dungeons.enableWarpCooldown && ENTERED.matcher(s).find()) {
+                val s = TextStrip.plain(text.string)
+                if (ENTERED.matcher(s).find()) {
                     if (remainingMs() <= 0L) armedAt = System.currentTimeMillis()
-                } else if (Dungeons.enableWarpCooldown && FishSettings.warpAnnounceKick && KICKED.matcher(s).matches()) {
+                } else if (FishSettings.warpAnnounceKick && KICKED.matcher(s).matches()) {
                     fishmod.utils.ChatQueue.enqueue("pc ${FishSettings.warpKickText}")
                 }
             } catch (e: Exception) {
@@ -66,7 +68,7 @@ object WarpCooldown {
         val rem = remainingMs()
         if (rem <= 0L) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
 
         val label = net.minecraft.network.chat.Component.literal("§eWarp: ")
             .append(net.minecraft.network.chat.Component.literal(fishmod.utils.Fmt.f1(rem / 1000.0) + "s")

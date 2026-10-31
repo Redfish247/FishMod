@@ -40,8 +40,8 @@ public final class EnchantTooltip {
 		Pattern.CASE_INSENSITIVE
 	);
 	private static final int T6_GOLD = 0xFFAA00;
-	private static Map<String, Integer> maxByName;
-	private static Map<String, Boolean> ultimateByName;
+	private static volatile Map<String, Integer> maxByName;
+	private static volatile Map<String, Boolean> ultimateByName;
 
 	private EnchantTooltip() {
 	}
@@ -146,8 +146,18 @@ public final class EnchantTooltip {
 		if (maxByName != null) {
 			return;
 		}
-		maxByName = new HashMap<>();
-		ultimateByName = new HashMap<>();
+		Map<String, Integer> maxes = new HashMap<>();
+		Map<String, Boolean> ultimates = new HashMap<>();
+		try {
+			load(maxes, ultimates);
+		} finally {
+			// Publish only fully built maps (ultimate first: callers gate on maxByName).
+			ultimateByName = ultimates;
+			maxByName = maxes;
+		}
+	}
+
+	private static void load(Map<String, Integer> maxByName, Map<String, Boolean> ultimateByName) {
 		Minecraft client = Minecraft.getInstance();
 		Identifier id = Identifier.fromNamespaceAndPath("betterpv", "data/enchants.json");
 		try {
@@ -179,12 +189,12 @@ public final class EnchantTooltip {
 					}
 					int max = obj.has("max") ? obj.get("max").getAsInt() : 0;
 					boolean ultimate = obj.has("ultimate") && obj.get("ultimate").getAsBoolean();
-					put(entry.getKey(), max, ultimate);
+					put(maxByName, ultimateByName, entry.getKey(), max, ultimate);
 					if (obj.has("lore") && obj.get("lore").isJsonPrimitive()) {
-						put(obj.get("lore").getAsString(), max, ultimate);
+						put(maxByName, ultimateByName, obj.get("lore").getAsString(), max, ultimate);
 					}
 					if (obj.has("nbt") && obj.get("nbt").isJsonPrimitive()) {
-						put(obj.get("nbt").getAsString(), max, ultimate);
+						put(maxByName, ultimateByName, obj.get("nbt").getAsString(), max, ultimate);
 					}
 				}
 			}
@@ -193,7 +203,7 @@ public final class EnchantTooltip {
 		}
 	}
 
-	private static void put(String key, int max, boolean ultimate) {
+	private static void put(Map<String, Integer> maxByName, Map<String, Boolean> ultimateByName, String key, int max, boolean ultimate) {
 		if (key == null || key.isBlank() || max < 1) {
 			return;
 		}

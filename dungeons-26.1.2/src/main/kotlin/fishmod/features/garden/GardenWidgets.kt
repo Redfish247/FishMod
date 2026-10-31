@@ -24,7 +24,7 @@ object GardenWidgets {
             composterWarned = idle
         }
         Events.ON_GAME_MESSAGE.register { t ->
-            val s = Garden.strip(t.string).trim()
+            val s = if (S.gardenRareCrop) Garden.strip(t.string).trim() else ""
             if (S.gardenRareCrop && RARE_CROP.containsMatchIn(s)) {
                 S.gardenRareCropCount++
                 if (S.gardenRareCropTitle) {
@@ -39,15 +39,15 @@ object GardenWidgets {
         Garden.hud("Composter", "garden_composter", 150, 50,
             { S.gardenComposterHudX }, { S.gardenComposterHudX = it }, { S.gardenComposterHudY }, { S.gardenComposterHudY = it },
             { S.gardenComposterHudScale }, { S.gardenComposterHudScale = it },
-            { S.gardenComposterHud && composter.isNotEmpty() }) { listOf(Garden.legacy(S.gardenComposterColor) + "§lComposter") + composter.map(::composterLine) }
+            { S.gardenComposterHud && composter.isNotEmpty() }, { S.gardenComposterHud }) { listOf(Garden.legacy(S.gardenComposterColor) + "§lComposter") + composter.map(::composterLine) }
         Garden.hud("Jacob's Contest", "garden_jacob", 150, 50,
             { S.gardenJacobHudX }, { S.gardenJacobHudX = it }, { S.gardenJacobHudY }, { S.gardenJacobHudY = it },
             { S.gardenJacobHudScale }, { S.gardenJacobHudScale = it },
-            { S.gardenJacobHud && jacob.isNotEmpty() }) { listOf(Garden.legacy(S.gardenJacobColor) + "§lJacob's Contest") + jacob.map(::jacobLine) }
+            { S.gardenJacobHud && jacob.isNotEmpty() }, { S.gardenJacobHud }) { listOf(Garden.legacy(S.gardenJacobColor) + "§lJacob's Contest") + jacob.map(::jacobLine) }
         Garden.hud("Rare Crops", "garden_rare_crop", 120, 12,
             { S.gardenRareCropHudX }, { S.gardenRareCropHudX = it }, { S.gardenRareCropHudY }, { S.gardenRareCropHudY = it },
             { S.gardenRareCropHudScale }, { S.gardenRareCropHudScale = it },
-            { S.gardenRareCrop && Garden.inGarden() }) { listOf(Garden.legacy(S.gardenRareCropColor) + "Rare Crops: §f${S.gardenRareCropCount}") }
+            { S.gardenRareCrop && Garden.inGarden() }, { S.gardenRareCrop }) { listOf(Garden.legacy(S.gardenRareCropColor) + "Rare Crops: §f${S.gardenRareCropCount}") }
     }
 
     private val RARE_CROP = Regex("^(?:VERY )?RARE CROP!")

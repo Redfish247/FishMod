@@ -62,6 +62,22 @@ object Floor7 {
 
     @ConfigValue
     @JvmField
+    var enableNecronDropPredict: Boolean = false
+
+    @ConfigValue
+    @JvmField
+    var necronDropColor: Int = 0xffff0000.toInt()
+
+    @ConfigValue
+    @JvmField
+    var necronDropStyle: String = "Box"
+
+    @ConfigValue
+    @JvmField
+    var necronDropLavaPopup: Boolean = true
+
+    @ConfigValue
+    @JvmField
     var enableGoldorTickTimer: Boolean = false
 
     @ConfigValue

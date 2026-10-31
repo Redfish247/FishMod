@@ -1,4 +1,5 @@
 package fishmod.cosmetic.prestige
+import fishmod.compat.hud
 
 import fishmod.utils.debug.FishDiag
 import fishmod.mixin.ChatHudInvoker
@@ -26,8 +27,8 @@ object PrestigeChatFade {
 
     private fun tick() {
         val mc = Minecraft.getInstance()
-        val hud = mc.gui?.chat ?: return
-        val nowTick = mc.gui.guiTicks
+        val hud = mc.hud?.chat ?: return
+        val nowTick = mc.hud.guiTicks
 
         val invoker = hud as ChatHudInvoker
         val messages = invoker.messages

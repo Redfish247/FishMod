@@ -1,5 +1,6 @@
 package fishmod.features.item
 
+import fishmod.utils.TextStrip
 import fishmod.utils.debug.FishDiag
 import fishmod.features.ItemRarityHotbar
 import fishmod.features.croesus.CroesusPrices
@@ -28,7 +29,6 @@ object ContainerValue {
     private const val DIM = 0x808080
     private const val YELLOW = 0xFFFF55
 
-    private val CODE = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private val STORAGE_TITLE =
         Regex("^(Storage|Rift Storage|(?:Ender Chest|Rift Storage)(?: ✦)? \\([1-9]/[1-9]\\)|.+ Backpack(?: ✦)? \\(Slot #\\d+\\))$")
     private val PLAIN_CHEST = setOf("Chest", "Large Chest", "Ender Chest", "Personal Vault")
@@ -40,7 +40,7 @@ object ContainerValue {
     private fun motesValue(stack: ItemStack): Double {
         val lore = stack.get(net.minecraft.core.component.DataComponents.LORE) ?: return 0.0
         for (l in lore.lines()) {
-            val m = MOTES.find(CODE.replace(l.string, "")) ?: continue
+            val m = MOTES.find(TextStrip.plain(l.string)) ?: continue
             return m.groupValues[1].replace(",", "").toDoubleOrNull() ?: 0.0
         }
         return 0.0
@@ -88,7 +88,7 @@ object ContainerValue {
     }
 
     @JvmStatic
-    fun plainName(stack: ItemStack): String = CODE.replace(stack.hoverName.string, "")
+    fun plainName(stack: ItemStack): String = TextStrip.plain(stack.hoverName.string)
 
     @JvmStatic
     fun storageTotal(): String = abbr(total) + unitName()
@@ -166,7 +166,7 @@ object ContainerValue {
             if (unit <= 0.0) continue
             val v = unit * stack.count
             sum += v
-            val name = CODE.replace(stack.hoverName.string, "")
+            val name = TextStrip.plain(stack.hoverName.string)
             val ex = agg[name]
             if (ex == null) agg[name] = Row(name, stack.count, v, ItemRarityHotbar.getRarity(stack).color, stack)
             else { ex.count += stack.count; ex.value += v }

@@ -1,4 +1,7 @@
 package fishmod.features
+import fishmod.compat.Fmt
+import fishmod.compat.curScreen
+import fishmod.compat.hudHidden
 
 import com.google.gson.Gson
 import fishmod.features.croesus.CroesusPrices
@@ -54,7 +57,7 @@ object ExperimentProfitTracker {
             { FishSettings.expProfitEnabled },
         )
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
-            val s = mc.screen ?: return@register
+            val s = mc.curScreen ?: return@register
             if (FishSettings.expProfitEnabled && TABLE_SCREEN.containsMatchIn(fishmod.utils.ScreenTitle.plain(s))) {
                 lastTableMs = System.currentTimeMillis()
             }
@@ -102,8 +105,8 @@ object ExperimentProfitTracker {
 
     private fun code(style: net.minecraft.network.chat.Style): String? {
         val c = style.color ?: return null
-        val f = net.minecraft.ChatFormatting.entries.firstOrNull { it.isColor && it.color == c.value } ?: return null
-        return "§" + f.char
+        val f = Fmt.codeOfRgb(c.value) ?: return null
+        return "§" + f
     }
 
     private fun colorOf(name: String): String {
@@ -133,8 +136,14 @@ object ExperimentProfitTracker {
         return 0.0
     }
 
+    // Priced rows rebuilt at most once a second, not every frame
+    private var itemsCache: List<Triple<String, Long, Double>> = emptyList()
+    private var itemsAt = 0L
+    private var itemsDirty = true
+
     private fun changed() {
         dirty = true
+        itemsDirty = true
         save()
     }
 
@@ -150,14 +159,19 @@ object ExperimentProfitTracker {
     fun render(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.expProfitEnabled) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         if (FishSettings.expProfitOnlyIsland && fishmod.utils.Location.getCurrentLocation() != fishmod.utils.Location.PRIVATE_ISLAND) return
         if (data.experiments == 0 && data.drops.isEmpty() && data.xp == 0L) return
 
         // Same layout as the Slayer/Mining trackers: right-aligned value column, "| item count" after it
         val rows = ArrayList<Pair<String, String>>()
         rows.add("§e§lExperiment Profit" to "")
-        val items = data.drops.filterKeys { !NOT_ITEM.containsMatchIn(it) }.map { (name, n) -> Triple(name, n, priceOf(name) * n) }.sortedByDescending { it.third }
+        val now = System.currentTimeMillis()
+        if (itemsDirty || now - itemsAt > 1000L) {
+            itemsCache = data.drops.filterKeys { !NOT_ITEM.containsMatchIn(it) }.map { (name, n) -> Triple(name, n, priceOf(name) * n) }.sortedByDescending { it.third }
+            itemsDirty = false; itemsAt = now
+        }
+        val items = itemsCache
         var total = 0.0
         val cap = FishSettings.expProfitLines.coerceIn(1, 30)
         var hiddenN = 0; var hiddenV = 0.0

@@ -1,4 +1,5 @@
 package fishmod.utils.rendering
+import fishmod.compat.cam
 
 import com.mojang.blaze3d.vertex.ByteBufferBuilder
 import com.mojang.blaze3d.vertex.PoseStack
@@ -13,7 +14,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
-import net.minecraft.client.renderer.MultiBufferSource
+import fishmod.compat.WorldText
 import net.minecraft.gizmos.Gizmos
 import net.minecraft.gizmos.GizmoStyle
 import net.minecraft.gizmos.TextGizmo
@@ -25,7 +26,7 @@ import org.joml.Vector3f
 object RenderUtils {
 
     private const val TEXT_SCALE = 0.025f
-    private val textBuffers: MultiBufferSource.BufferSource = MultiBufferSource.immediate(ByteBufferBuilder(1536))
+
 
     @JvmStatic
     fun toFloats(argb: Int): FloatArray {
@@ -38,7 +39,7 @@ object RenderUtils {
 
     @JvmStatic
     fun cameraLineStart(ahead: Double): Vec3 {
-        val cam = Minecraft.getInstance().gameRenderer.mainCamera
+        val cam = Minecraft.getInstance().cam
         return cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()).scale(ahead))
     }
 
@@ -85,9 +86,11 @@ object RenderUtils {
         redirectedQuads.add(r); redirectedQuads.add(g); redirectedQuads.add(b); redirectedQuads.add(a)
     }
 
-    private fun quadSink(consumer: VertexConsumer): QuadSink =
-        if (quadsToFillLayer) redirectSink
-        else QuadSink { pose, x, y, z, r, g, b, a -> consumer.addVertex(pose, x, y, z).setColor(r, g, b, a) }
+    // Branch per vertex instead of a capturing lambda per box (was one allocation per draw call).
+    private fun quadVertex(consumer: VertexConsumer, pose: PoseStack.Pose, x: Float, y: Float, z: Float, r: Float, g: Float, b: Float, a: Float) {
+        if (quadsToFillLayer) redirectSink.v(pose, x, y, z, r, g, b, a)
+        else consumer.addVertex(pose, x, y, z).setColor(r, g, b, a)
+    }
 
     @JvmStatic
     fun hasRedirectedQuads() = !redirectedQuads.isEmpty
@@ -220,7 +223,7 @@ object RenderUtils {
     @JvmStatic
     fun screenLine(ps: PoseStack, vc: VertexConsumer, a0: Vec3, b0: Vec3, argb: Int, px: Float) {
         val mc = Minecraft.getInstance()
-        val cam = mc.gameRenderer.mainCamera.position()
+        val cam = mc.cam.position()
         val a = pullIn(a0, cam).first; val b = pullIn(b0, cam).first
         val dir = b.subtract(a)
         if (dir.lengthSqr() < 1.0e-9) return
@@ -350,8 +353,7 @@ object RenderUtils {
         if (rgba[3] == 0f) return
         if (corners.size != 4) FishDiag.fail("RenderUtils.12", "renderFilledQuad given ${corners.size} corners, quad buffer will desync")
         val pose = matrixStack.last()
-        val sink = quadSink(consumer)
-        for (c in corners) sink.v(pose, c.x.toFloat(), c.y.toFloat(), c.z.toFloat(), rgba[0], rgba[1], rgba[2], rgba[3])
+        for (c in corners) quadVertex(consumer, pose, c.x.toFloat(), c.y.toFloat(), c.z.toFloat(), rgba[0], rgba[1], rgba[2], rgba[3])
     }
 
     @JvmStatic
@@ -467,9 +469,7 @@ object RenderUtils {
 
     @JvmStatic
     fun renderText(context: LevelRenderContext, matrices: PoseStack, text: Component, x: Double, y: Double, z: Double, scale: Float) {
-        val client = Minecraft.getInstance()
-        val textRenderer = client.font
-        client.player ?: return
+        Minecraft.getInstance().player ?: return
         if (x.isNaN() || y.isNaN() || z.isNaN() || scale.isNaN() || scale == 0f) FishDiag.fail("RenderUtils.18", "renderText bad input ($x,$y,$z) scale=$scale")
 
         matrices.pushPose()
@@ -477,38 +477,35 @@ object RenderUtils {
         matrices.mulPose(context.levelState().cameraRenderState.orientation)
         matrices.scale(TEXT_SCALE * scale, -TEXT_SCALE * scale, TEXT_SCALE * scale)
 
-        val halfWidth = textRenderer.width(text) / 2f
-        textRenderer.drawInBatch(text, -halfWidth, 0f, -0x1, true, matrices.last().pose(), textBuffers, Font.DisplayMode.SEE_THROUGH, 0, 15728880)
+        WorldText.draw(matrices, text, -0x1, true)
         matrices.popPose()
     }
 
     // See-through billboard text; `pxSize` = world units per font pixel. Flushed by the NO_DEPTH_* passes
     @JvmStatic
     fun renderSeeThroughText(context: LevelRenderContext, matrices: PoseStack, text: Component, pos: Vec3, pxSize: Float, argb: Int, shadow: Boolean) {
-        val font = Minecraft.getInstance().font
         matrices.pushPose()
         matrices.translate(pos.x, pos.y, pos.z)
         matrices.mulPose(context.levelState().cameraRenderState.orientation)
         matrices.scale(pxSize, -pxSize, pxSize)
-        font.drawInBatch(text, -font.width(text) / 2f, 0f, argb, shadow, matrices.last().pose(), textBuffers, Font.DisplayMode.SEE_THROUGH, 0, 15728880)
+        WorldText.draw(matrices, text, argb, shadow)
         matrices.popPose()
     }
 
     // Text on a rigid board turned only around Y so every line rotates together; lx/ly are local board offsets
     @JvmStatic
     fun renderBoardText(matrices: PoseStack, text: Component, base: Vec3, yaw: Float, lx: Double, ly: Double, scale: Float) {
-        val font = Minecraft.getInstance().font
         matrices.pushPose()
         matrices.translate(base.x, base.y, base.z)
         matrices.mulPose(org.joml.Quaternionf().rotateY(yaw))
         matrices.translate(lx, ly, 0.0)
         matrices.scale(TEXT_SCALE * scale, -TEXT_SCALE * scale, TEXT_SCALE * scale)
-        font.drawInBatch(text, -font.width(text) / 2f, 0f, -0x1, true, matrices.last().pose(), textBuffers, Font.DisplayMode.SEE_THROUGH, 0, 15728880)
+        WorldText.draw(matrices, text, -0x1, true)
         matrices.popPose()
     }
 
     @JvmStatic
-    fun flushText() = textBuffers.endBatch()
+    fun flushText() = WorldText.flush()
 
     @JvmStatic
     fun renderText(context: LevelRenderContext, matrices: PoseStack, text: Component, pos: Vec3, scale: Float) {
@@ -553,50 +550,48 @@ object RenderUtils {
         r: Float, g: Float, b: Float, a: Float
     ) {
         val entry = matrices.last()
-        val c = quadSink(consumer)
         val ax1 = x1.toFloat(); val ay1 = y1.toFloat(); val az1 = z1.toFloat()
         val ax2 = x2.toFloat(); val ay2 = y2.toFloat(); val az2 = z2.toFloat()
 
-        c.v(entry, ax1, ay1, az1, r, g, b, a)
-        c.v(entry, ax2, ay1, az1, r, g, b, a)
-        c.v(entry, ax2, ay1, az2, r, g, b, a)
-        c.v(entry, ax1, ay1, az2, r, g, b, a)
-        c.v(entry, ax1, ay2, az1, r, g, b, a)
-        c.v(entry, ax2, ay2, az1, r, g, b, a)
-        c.v(entry, ax2, ay2, az2, r, g, b, a)
-        c.v(entry, ax1, ay2, az2, r, g, b, a)
-        c.v(entry, ax1, ay1, az1, r, g, b, a)
-        c.v(entry, ax2, ay1, az1, r, g, b, a)
-        c.v(entry, ax2, ay2, az1, r, g, b, a)
-        c.v(entry, ax1, ay2, az1, r, g, b, a)
-        c.v(entry, ax1, ay1, az2, r, g, b, a)
-        c.v(entry, ax2, ay1, az2, r, g, b, a)
-        c.v(entry, ax2, ay2, az2, r, g, b, a)
-        c.v(entry, ax1, ay2, az2, r, g, b, a)
-        c.v(entry, ax1, ay1, az1, r, g, b, a)
-        c.v(entry, ax1, ay2, az1, r, g, b, a)
-        c.v(entry, ax1, ay2, az2, r, g, b, a)
-        c.v(entry, ax1, ay1, az2, r, g, b, a)
-        c.v(entry, ax2, ay1, az1, r, g, b, a)
-        c.v(entry, ax2, ay2, az1, r, g, b, a)
-        c.v(entry, ax2, ay2, az2, r, g, b, a)
-        c.v(entry, ax2, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax1, ay1, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az1, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay2, az2, r, g, b, a)
+        quadVertex(consumer, entry, ax2, ay1, az2, r, g, b, a)
     }
 
     @JvmStatic
     fun formatNumber(num: Float): String {
         if (num.isNaN() || num.isInfinite()) FishDiag.fail("RenderUtils.20", "formatNumber given $num")
-        return if (Floor7.capitalizeHealthNumbers) {
-            if (num >= 1e9) String.format(java.util.Locale.ROOT, "%.1fB", num / 1e9f)
-            else if (num >= 1e6) String.format(java.util.Locale.ROOT, "%.1fM", num / 1e6f)
-            else if (num >= 1e3) String.format(java.util.Locale.ROOT, "%.1fK", num / 1e3f)
-            else wholeOrDecimal(num)
-        } else {
-            if (num >= 1e9) String.format(java.util.Locale.ROOT, "%.1fb", num / 1e9f)
-            else if (num >= 1e6) String.format(java.util.Locale.ROOT, "%.1fm", num / 1e6f)
-            else if (num >= 1e3) String.format(java.util.Locale.ROOT, "%.1fk", num / 1e3f)
-            else wholeOrDecimal(num)
-        }
+        return formatNumber(num, Floor7.capitalizeHealthNumbers)
+    }
+
+    // thresholds avoid "1000.0K" rollover
+    internal fun formatNumber(num: Float, caps: Boolean): String {
+        val (b, m, k) = if (caps) Triple("B", "M", "K") else Triple("b", "m", "k")
+        return if (num >= 999_950_000f) String.format(java.util.Locale.ROOT, "%.1f$b", num / 1e9f)
+        else if (num >= 999_950f) String.format(java.util.Locale.ROOT, "%.1f$m", num / 1e6f)
+        else if (num >= 1e3) String.format(java.util.Locale.ROOT, "%.1f$k", num / 1e3f)
+        else wholeOrDecimal(num)
     }
 
     private fun wholeOrDecimal(num: Float): String =

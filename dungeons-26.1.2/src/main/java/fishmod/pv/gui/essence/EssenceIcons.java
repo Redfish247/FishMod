@@ -26,7 +26,18 @@ public final class EssenceIcons {
 		return perk(perkId, Items.PAPER);
 	}
 
+	// Drawn every frame; shared read-only stacks per (fallback, perk).
+	private static final java.util.Map<Item, java.util.Map<String, ItemStack>> CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+
 	public static ItemStack perk(String perkId, Item fallback) {
+		if (perkId == null || "eagles_advantage".equals(perkId)) {
+			return build(perkId, fallback);
+		}
+		return CACHE.computeIfAbsent(fallback, f -> new java.util.concurrent.ConcurrentHashMap<>())
+			.computeIfAbsent(perkId, id -> build(id, fallback));
+	}
+
+	private static ItemStack build(String perkId, Item fallback) {
 		if (perkId == null) {
 			return new ItemStack(fallback);
 		}

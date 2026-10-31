@@ -1,4 +1,5 @@
 package fishmod.features
+import fishmod.compat.hudHidden
 
 import fishmod.utils.Location
 import fishmod.utils.Misc
@@ -82,7 +83,7 @@ object Ragnarock {
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!FishSettings.ragnarockEnabled || !FishSettings.ragnarockTimer || ticksLeft <= 0) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
         val secs = ticksLeft / 20.0
         val color = if (secs > 5) "§a" else if (secs > 2) "§e" else "§c"
         val txt = "§5Rag: $color${"%.1f".format(secs)}s"

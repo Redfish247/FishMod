@@ -52,22 +52,37 @@ object PartyUtil {
         return leaderUuid == self
     }
 
+    private var retryDelay = 10_000L
+    private var warned = false
+
+    private fun onHypixel(): Boolean {
+        val mc = Minecraft.getInstance()
+        if (mc.isLocalServer) return false
+        val host = mc.currentServer?.ip?.substringBefore(':')?.trim()?.trimEnd('.')?.lowercase() ?: return false
+        return host == "hypixel.net" || host.endsWith(".hypixel.net")
+    }
+
     @JvmStatic
     fun sendPacket() {
         if (System.currentTimeMillis() - grabbedTime < MIN_DELAY) return
+        // off Hypixel the Mod API can't answer; just wait quietly
+        if (!onHypixel()) { grabbedTime = System.currentTimeMillis() - MIN_DELAY + 5_000; return }
         if (INSTANCE.sendPacket(ServerboundPartyInfoPacket())) {
             grabbedTime = System.currentTimeMillis()
+            retryDelay = 10_000L
+            warned = false
         } else {
-            Debug.LOGGER.warn("Server bound party info packet lost")
-            // retry in 10s instead of on every call
-            grabbedTime = System.currentTimeMillis() - MIN_DELAY + 10_000
-            FishDiag.fail("PartyUtil.4", "Hypixel Mod API refused party info request (not registered / not on Hypixel?)")
+            // not registered yet (handshake pending): back off, log once, never an error report
+            if (!warned) { Debug.LOGGER.info("Hypixel Mod API not ready for party info, retrying with backoff"); warned = true }
+            grabbedTime = System.currentTimeMillis() - MIN_DELAY + retryDelay
+            retryDelay = minOf(retryDelay * 2, MIN_DELAY.toLong())
         }
     }
 
     @JvmStatic
     fun forceRefresh() {
         grabbedTime = 0
+        retryDelay = 10_000L
         sendPacket()
     }
 

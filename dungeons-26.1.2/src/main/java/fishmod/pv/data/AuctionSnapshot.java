@@ -806,7 +806,7 @@ public final class AuctionSnapshot {
 			if (end <= nowMs) {
 				continue;
 			}
-			boolean claimed = a.has("claimed") && a.get("claimed").getAsBoolean();
+			boolean claimed = bool(a, "claimed");
 			if (claimed) {
 				continue;
 			}
@@ -827,7 +827,7 @@ public final class AuctionSnapshot {
 		}
 		String name = str(a, "item_name");
 		String tier = str(a, "tier");
-		boolean bin = a.has("bin") && a.get("bin").getAsBoolean();
+		boolean bin = bool(a, "bin");
 		long startBid = longVal(a, "starting_bid");
 		long high = longVal(a, "highest_bid_amount");
 		long end = longVal(a, "end");
@@ -857,7 +857,7 @@ public final class AuctionSnapshot {
 		}
 		String tag = str(obj, "tag");
 		String name = str(obj, "itemName");
-		boolean bin = obj.has("bin") && obj.get("bin").getAsBoolean();
+		boolean bin = bool(obj, "bin");
 		long startBid = longVal(obj, "startingBid");
 		long high = bought ? longVal(obj, "highestOwnBid") : longVal(obj, "highestBid");
 		if (high <= 0L) {
@@ -928,6 +928,11 @@ public final class AuctionSnapshot {
 		} catch (IllegalStateException | ClassCastException | NumberFormatException | UnsupportedOperationException ignored) {
 			return "";
 		}
+	}
+
+	private static boolean bool(JsonObject obj, String key) {
+		JsonElement el = obj == null ? null : obj.get(key);
+		return el != null && el.isJsonPrimitive() && el.getAsBoolean();
 	}
 
 	private static long longVal(JsonObject obj, String key) {

@@ -8,7 +8,7 @@ import net.minecraft.network.protocol.game.ClientboundSetEquipmentPacket
 import net.minecraft.network.protocol.game.ClientboundSoundPacket
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.core.particles.ParticleTypes
-import net.minecraft.world.entity.EntityType
+import fishmod.compat.ET
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon
 import net.minecraft.world.entity.decoration.ArmorStand
 import net.minecraft.world.item.Items
@@ -19,7 +19,7 @@ import fishmod.utils.debug.FishDiag
 
 object DragonCheck {
 
-    private val HEALTH_TOKEN = Regex("\\d+(?:\\.\\d+)?[bBmMkK]")
+    private val HEALTH_TOKEN = Regex("\\d+(?:\\.\\d+)?[bBmMkK]?") // suffix optional so a bare "0" can match
     private const val HEALTH_DATA_ID = 9
 
     fun handleSpawnPacket(p: ClientboundLevelParticlesPacket, tick: Long) {
@@ -43,12 +43,13 @@ object DragonCheck {
         if (!anyNew && WitherDragon.real.none { p.x in it.xRange && p.z in it.zRange }) FishDiag.fail("DragonCheck.1", "dragon spawn particle at unknown spot ${p.x},${p.z}")
         if (spawning.isNotEmpty()) {
             WitherDragons.priorityDragon = DragonPriority.findPriority(spawning)
+            WitherDragons.spawnRank = spawning.sortedBy { it.timeToSpawn } // first to spawn = #1, ties keep priority order
             if (anyNew) WitherDragons.onDragonsSpawning(spawning)
         }
     }
 
     fun dragonSpawn(p: ClientboundAddEntityPacket, tick: Long) {
-        if (p.type != EntityType.ENDER_DRAGON) return
+        if (p.type != ET.ENDER_DRAGON) return
         val v = Vec3(p.x, p.y, p.z)
         val inBox = WitherDragon.real.firstOrNull {
             it.state == WitherDragonState.SPAWNING &&
@@ -58,6 +59,16 @@ object DragonCheck {
             modMessage("&7dragonSpawn id=${p.id} pos=${v} matched=${inBox?.name ?: "none"}")
         }
         if (inBox != null) { inBox.setAlive(p.id, tick); return }
+        // Late spawn: ping-tick timer ran out or particle packet was missed; recover only if the scoreboard still lists it.
+        val late = WitherDragon.real.firstOrNull {
+            it.state == WitherDragonState.DEAD &&
+                v.x in it.box.minX..it.box.maxX && v.z in it.box.minZ..it.box.maxZ
+        }
+        if (late != null) {
+            if (isAliveOnScoreboard(late)) late.setAlive(p.id, tick)
+            else if (fishmod.utils.debug.Debug.dragonDebug) modMessage("&7dragonSpawn id=${p.id} ignored: ${late.name} not on scoreboard")
+            return
+        }
         WitherDragon.real.firstOrNull { it.state == WitherDragonState.ALIVE && it.entity == null && it.entityId == p.id }
             ?.let { it.entityId = p.id }
             ?: FishDiag.fail("DragonCheck.2", "ender dragon ${p.id} spawned at $v with no spawning dragon matching (states=${WitherDragon.real.map { it.state }})")
@@ -105,14 +116,12 @@ object DragonCheck {
     }
 
     private fun isAliveOnScoreboardInner(d: WitherDragon): Boolean {
-        val sb = Minecraft.getInstance().level?.scoreboard ?: return true
-        val obj = sb.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return true
-        for (score in sb.listPlayerScores(obj)) {
-            val team = sb.getPlayersTeam(score.owner())
-            val line = PlayerTeam.formatNameForTeam(team, net.minecraft.network.chat.Component.literal(score.owner()))
-                .string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "")
-            if (line.contains(d.displayName, ignoreCase = true) && HEALTH_TOKEN.find(line)?.value != "0") return true
-        }
+        val sidebar = fishmod.utils.SidebarCache.entries
+        if (sidebar.isEmpty()) return true
+        for (e in sidebar) if (lineShowsAlive(e.plain, d.displayName)) return true
         return false
     }
+
+    internal fun lineShowsAlive(line: String, name: String): Boolean =
+        line.contains(name, ignoreCase = true) && HEALTH_TOKEN.find(line)?.value != "0"
 }

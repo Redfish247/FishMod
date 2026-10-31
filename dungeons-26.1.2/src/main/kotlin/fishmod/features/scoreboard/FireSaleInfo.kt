@@ -66,7 +66,7 @@ object FireSaleInfo {
     }
 
     private fun itemName(sale: JsonObject): String? {
-        for (key in arrayOf("item", "itemId", "product_id", "productId")) {
+        for (key in arrayOf("item_id", "item", "itemId", "product_id", "productId")) {
             if (sale.has(key)) return sale.get(key).asString
         }
         return null

@@ -260,7 +260,7 @@ object CroesusPrices {
             .thenAccept { r ->
                 fetching.remove(id)
                 try {
-                    if (r.statusCode() != 200) return@thenAccept
+                    if (r.statusCode() != 200) { coflnetAttempted[id] = System.currentTimeMillis(); return@thenAccept }
                     val obj = JsonParser.parseString(r.body()).asJsonObject
                     var med: JsonElement? = obj.get("median")
                     if (med == null || med.isJsonNull) med = obj.get("mode")

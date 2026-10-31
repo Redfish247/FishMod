@@ -215,7 +215,8 @@ object CustomScoreboard {
         val live = PingTracker.latest()
         if (live > 0) return live
         try {
-            val self = mc.connection?.getPlayerInfo(mc.player!!.uuid)
+            val uuid = mc.player?.uuid ?: return -1
+            val self = mc.connection?.getPlayerInfo(uuid)
             if (self != null && self.latency > 0) return self.latency
         } catch (e: Exception) {
             FishDiag.fail("CustomScoreboard.2", "failed to read own tab latency", e)

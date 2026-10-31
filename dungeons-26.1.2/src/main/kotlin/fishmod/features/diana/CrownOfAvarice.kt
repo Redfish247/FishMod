@@ -1,4 +1,6 @@
 package fishmod.features.diana
+import fishmod.compat.curScreen
+import fishmod.compat.hudHidden
 
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
@@ -79,7 +81,7 @@ object CrownOfAvarice {
             { DianaSettings.dianaCrownHudY }, { DianaSettings.dianaCrownHudY = it }, 120, 49,
             { DianaSettings.dianaCrownHudScale }, { DianaSettings.dianaCrownHudScale = it }, { DianaSettings.dianaCrownHud })
         HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("fishmod", "crown_of_avarice")) { ctx, _ ->
-            if (Minecraft.getInstance().screen !is net.minecraft.client.gui.screens.inventory.InventoryScreen) drawHud(ctx)
+            if (Minecraft.getInstance().curScreen !is net.minecraft.client.gui.screens.inventory.InventoryScreen) drawHud(ctx)
         }
         net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
             if (screen !is net.minecraft.client.gui.screens.inventory.InventoryScreen) return@register
@@ -116,8 +118,8 @@ object CrownOfAvarice {
     private fun perHour(r: Session?): Long = if (r == null || r.activeMs < 60_000L) 0L else (r.gained * 3_600_000.0 / r.activeMs).toLong()
 
     private fun short(n: Long): String = when {
-        n >= 1_000_000_000L -> "%.2fB".format(Locale.US, n / 1e9)
-        n >= 1_000_000L -> "%.1fM".format(Locale.US, n / 1e6)
+        n >= 999_995_000L -> "%.2fB".format(Locale.US, n / 1e9)
+        n >= 999_950L -> "%.1fM".format(Locale.US, n / 1e6)
         n >= 1_000L -> "%.1fK".format(Locale.US, n / 1e3)
         else -> n.toString()
     }
@@ -149,7 +151,7 @@ object CrownOfAvarice {
     // Returns how many lines were drawn
     private fun drawHud(ctx: net.minecraft.client.gui.GuiGraphicsExtractor): Int {
         val mc = Minecraft.getInstance()
-        if (!DianaSettings.dianaCrownHud || FishHudEditor.isOpen() || mc.options.hideGui || mc.player == null) return 0
+        if (!DianaSettings.dianaCrownHud || FishHudEditor.isOpen() || mc.hudHidden || mc.player == null) return 0
         val lines = hudLines()
         if (lines.isEmpty()) return 0
         val pose = ctx.pose()
@@ -176,6 +178,8 @@ object CrownOfAvarice {
         val p = mc.player ?: return
         checkMilestone(p.getItemBySlot(EquipmentSlot.HEAD))
         trackRate(p.getItemBySlot(EquipmentSlot.HEAD))
+        // Skip the scoreboard scan while off; reset so re-enabling doesn't count a stale gain
+        if (!DianaSettings.dianaCrownCounter) { lastPurse = -1L; return }
         val purse = readPurse(mc)
         val prev = lastPurse
         lastPurse = purse
@@ -187,7 +191,7 @@ object CrownOfAvarice {
         if (itemCoins(helmet) < CAP && (totals[u] ?: 0L) < CAP) return
         val now = System.currentTimeMillis()
         val fromDiana = now - maxOf(lastDugCoinsMs, RareMobs.lastDianaMobDeathMs, BurrowDetector.lastDigMs) <= COIN_WINDOW_MS
-        val menuOpen = mc.screen != null && mc.screen !is net.minecraft.client.gui.screens.ChatScreen
+        val menuOpen = mc.curScreen != null && mc.curScreen !is net.minecraft.client.gui.screens.ChatScreen
         val selling = menuOpen || now - lastNonCrownMs <= COIN_WINDOW_MS
         if (Diana.inHub()) LOG.info("crown gain=$gain active=${Diana.active()} sinceDig=${now - BurrowDetector.lastDigMs} sinceDug=${now - lastDugCoinsMs} sinceMob=${now - RareMobs.lastDianaMobDeathMs} selling=$selling")
         if (!Diana.active() || !fromDiana || selling || gain > MAX_GAIN) return
@@ -209,13 +213,9 @@ object CrownOfAvarice {
     }
 
     private fun readPurse(mc: Minecraft): Long {
-        val sb = mc.level?.scoreboard ?: return -1L
-        val obj = sb.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return -1L
-        for (entry in sb.listPlayerScores(obj)) {
-            val team = sb.getPlayersTeam(entry.owner())
-            val raw = (if (team != null) team.playerPrefix.string + team.playerSuffix.string else entry.owner())
-                .replace(Constants.STRIP_COLOR_REGEX, "")
-            PURSE.find(raw)?.let { return it.groupValues[1].replace(",", "").toLongOrNull() ?: -1L }
+        if (mc.level == null) return -1L
+        for (entry in fishmod.utils.SidebarCache.entries) {
+            PURSE.find(entry.plain)?.let { return it.groupValues[1].replace(",", "").toLongOrNull() ?: -1L }
         }
         return -1L
     }
@@ -244,7 +244,7 @@ object CrownOfAvarice {
     private fun parseAmount(s: String): Long? {
         val t = s.trim().lowercase().replace(",", "").replace("_", "")
         val mult = when (t.lastOrNull()) { 'k' -> 1e3; 'm' -> 1e6; 'b' -> 1e9; else -> 1.0 }
-        val num = (if (mult == 1.0) t else t.dropLast(1)).toDoubleOrNull() ?: return null
+        val num = (if (mult == 1.0) t else t.dropLast(1)).toDoubleOrNull()?.takeIf { it.isFinite() && it * mult < 9e18 } ?: return null
         return (num * mult).toLong().takeIf { it >= 0 }
     }
 

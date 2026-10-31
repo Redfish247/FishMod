@@ -1,5 +1,7 @@
 package fishmod.features.dungeon.map
 
+import fishmod.compat.CB
+
 import fishmod.utils.debug.FishDiag
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -23,6 +25,11 @@ object Scan {
 
     @JvmField
     val rooms: MutableSet<Room> = Collections.synchronizedSet(LinkedHashSet())
+
+    // unknown core hashes already reported this run
+    private val missedCores = HashSet<Int>()
+    // last unknown hash per cell; only a hash seen twice in a row is reported (chunks still loading)
+    private val pendingCores = IntArray(36)
 
     @JvmField
     val doors: MutableList<Door> = Collections.synchronizedList(ArrayList())
@@ -87,6 +94,8 @@ object Scan {
     @JvmStatic
     fun reset() {
         rooms.clear()
+        missedCores.clear()
+        pendingCores.fill(0)
         doors.clear()
         roomsList = newRoomsList()
         loadedAllRooms = false
@@ -101,6 +110,9 @@ object Scan {
     @JvmStatic
     fun scan(world: ClientLevel) {
         if (!DungeonState.isInDungeon()) return
+        // tab list lags a world change; trust a known non-dungeon location
+        val loc = fishmod.utils.Location.getCurrentLocation()
+        if (loc != fishmod.utils.Location.DUNGEON && loc != fishmod.utils.Location.UNKNOWN && !fishmod.utils.dungeon.PracticeMode.active) return
         if (!DungeonMap.anyFeatureEnabled()) return
 
         if (!RoomData.isLoaded()) {
@@ -245,6 +257,10 @@ object Scan {
                         "§b[roomCore] §7cell ($x,$z) §fhash=§e$coreHash §7-> §f${rd?.name ?: "§cUNKNOWN"}"))
                 }
                 if (rd == null) {
+                    val idx = place.roomListIndex()
+                    val stable = pendingCores[idx] == coreHash
+                    pendingCores[idx] = coreHash
+                    if (!stable || !missedCores.add(coreHash)) continue
                     FishDiag.fail("Scan.5", "no room data for core hash=$coreHash cell=($x,$z) height=$height roomsLoaded=${RoomData.isLoaded()}")
                     continue
                 }
@@ -338,9 +354,7 @@ object Scan {
         val r2 = t2.owner
         if (r1 == null || r2 == null) return
 
-        for (d in ArrayList(doors)) {
-            if (pos == d.pos) return
-        }
+        if (synchronized(doors) { doors.any { it.pos == pos } }) return
 
         val chunk = world.getChunk(pos.x shr 4, pos.z shr 4)
         val top = getTopY(chunk, pos) ?: return
@@ -358,7 +372,7 @@ object Scan {
                 r1.rushRoom = true
                 r2.rushRoom = true
                 type = Door.Type.WITHER
-            } else if (block === Blocks.RED_TERRACOTTA) {
+            } else if (block === CB.RED_TERRACOTTA) {
                 type = Door.Type.BLOOD
             } else {
                 type = Door.Type.NORMAL
@@ -461,7 +475,7 @@ object Scan {
 
             for (tile in room.tiles) {
                 val bp = BlockPos(tile.pos.x + rotation.pos.x, height, tile.pos.z + rotation.pos.z)
-                if (level.getBlockState(bp).block === Blocks.BLUE_TERRACOTTA) {
+                if (level.getBlockState(bp).block === CB.BLUE_TERRACOTTA) {
                     if (room.tiles.size == 1) {
                         clay = bp
                         break
@@ -472,7 +486,7 @@ object Scan {
                         val dx = if (facing.axis == Direction.Axis.X) facing.stepX else 0
                         val dz = if (facing.axis == Direction.Axis.Z) facing.stepZ else 0
                         val nb = level.getBlockState(bp.offset(dx, 0, dz)).block
-                        if (nb !== Blocks.AIR && nb !== Blocks.BLUE_TERRACOTTA) {
+                        if (nb !== Blocks.AIR && nb !== CB.BLUE_TERRACOTTA) {
                             ok = false
                             break
                         }

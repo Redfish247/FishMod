@@ -36,6 +36,7 @@ object RiftParkour {
     fun init() {
         Events.ON_WORLD_CHANGE.register { COURSES.forEach { it.idx = -1 }; false }
         Events.ON_GAME_MESSAGE.register { text ->
+            if (!Rift.inRift()) return@register false
             val m = Rift.strip(text.string)
             if (m.contains("THE LAVA OOFED YOU BACK TO THE START")) COURSES.forEach { it.idx = -1 }
             if (S.riftKillZone && Rift.inRift() && m.contains("Get back in the arena or you will DIE"))
@@ -81,12 +82,9 @@ object RiftParkour {
 
     // Per-square state from the raw sidebar "Effigies:" line (SkyHanni: §7 = not broken, §c = broken); null if line missing
     private fun effigyLive(): List<Boolean>? {
-        val mc = Minecraft.getInstance()
-        val sb = mc.level?.scoreboard ?: return null
-        val obj = sb.getDisplayObjective(net.minecraft.world.scores.DisplaySlot.SIDEBAR) ?: return null
-        for (e in sb.listPlayerScores(obj)) {
-            val team = sb.getPlayersTeam(e.owner())
-            val raw = if (team != null) team.playerPrefix.string + team.playerSuffix.string else e.owner()
+        if (Minecraft.getInstance().level == null) return null
+        for (e in fishmod.utils.SidebarCache.entries) {
+            val raw = e.raw
             val at = raw.indexOf("Effigies:")
             if (at < 0) continue
             val out = ArrayList<Boolean>(); var code = 'r'; var i = at + 9

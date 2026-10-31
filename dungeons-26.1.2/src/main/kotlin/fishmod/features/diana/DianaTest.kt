@@ -1,4 +1,6 @@
 package fishmod.features.diana
+import fishmod.compat.mainTarget
+import fishmod.compat.showScreen
 
 import fishmod.utils.events.Events
 import net.minecraft.core.BlockPos
@@ -36,8 +38,8 @@ object DianaTest {
                 s.startsWith("[fmtest] crownset ") -> CrownOfAvarice.wornCrown()?.let { CrownOfAvarice.set(it, s.substringAfterLast(' ').toLong()) }
                 s.startsWith("[fmtest] subguess ") -> s.removePrefix("[fmtest] subguess ").trim().split(" ").map { it.toInt() }.chunked(3)
                     .map { BlockPos(it[0], it[1], it[2]) }.let { ArrowGuess.addGuess(it) }
-                s == "[fmtest] openmenu" -> net.minecraft.client.Minecraft.getInstance().let { mc -> mc.schedule { mc.setScreen(fishmod.features.FishModScreen()) } }
-                s == "[fmtest] closescreen" -> net.minecraft.client.Minecraft.getInstance().setScreen(null)
+                s == "[fmtest] openmenu" -> net.minecraft.client.Minecraft.getInstance().let { mc -> mc.schedule { mc.showScreen(fishmod.features.FishModScreen()) } }
+                s == "[fmtest] closescreen" -> net.minecraft.client.Minecraft.getInstance().showScreen(null)
                 s.startsWith("[fmtest] shot ") -> shot(s.removePrefix("[fmtest] shot ").trim())
                 else -> CLICK.matchEntire(s)?.let { m ->
                     Diana.onBlockClick(BlockPos(m.groupValues[1].toInt(), m.groupValues[2].toInt(), m.groupValues[3].toInt()))
@@ -52,7 +54,7 @@ object DianaTest {
     private fun shot(name: String) {
         val mc = net.minecraft.client.Minecraft.getInstance()
         fishmod.utils.Scheduler.scheduleTask(Runnable {
-            net.minecraft.client.Screenshot.grab(mc.gameDirectory, "diana_$name.png", mc.mainRenderTarget, 1) { LOG.info("shot {}", name) }
+            net.minecraft.client.Screenshot.grab(mc.gameDirectory, "diana_$name.png", mc.mainTarget, 1) { LOG.info("shot {}", name) }
         }, 10)
     }
 

@@ -28,10 +28,10 @@ public final class ForagingHotfData {
 	}
 
 	private static volatile boolean loaded;
-	private static List<PerkDef> perks = List.of();
-	private static Map<String, PerkDef> byId = Map.of();
-	private static int maxX;
-	private static int maxY;
+	private static volatile List<PerkDef> perks = List.of();
+	private static volatile Map<String, PerkDef> byId = Map.of();
+	private static volatile int maxX;
+	private static volatile int maxY;
 
 	private ForagingHotfData() {
 	}

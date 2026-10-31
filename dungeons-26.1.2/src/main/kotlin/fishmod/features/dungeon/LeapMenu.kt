@@ -1,4 +1,6 @@
 package fishmod.features.dungeon
+import fishmod.compat.curScreen
+import fishmod.utils.TextStrip
 
 import fishmod.features.dungeon.map.DungeonPlayers
 import fishmod.features.dungeon.map.DungeonState
@@ -20,7 +22,6 @@ import org.lwjgl.glfw.GLFW
 object LeapMenu {
 
     private val NAME_RX = Regex("(?:\\[.+?] )?(\\w{1,16})")
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
     private data class Target(val slot: Int, val name: String, val clazz: DungeonClass?, val dead: Boolean)
 
     private var cache: List<Target> = emptyList()
@@ -34,9 +35,10 @@ object LeapMenu {
     private fun refreshTeammateClasses() {
         val mc = Minecraft.getInstance()
         if (mc.level !== lastLevel) { lastLevel = mc.level; teammateClasses.clear() }
-        val conn = mc.connection ?: return
-        for (info in conn.onlinePlayers) {
-            val line = COLOR.replace(info.tabListDisplayName?.string ?: continue, "")
+        if (mc.connection == null) return
+        for (e in fishmod.utils.TabListCache.entries) {
+            if (e.info.tabListDisplayName == null) continue
+            val line = e.stripped
             val m = TABLIST_RX.find(line) ?: continue
             val name = m.groupValues[2]
             if (teammateClasses.containsKey(name)) continue
@@ -60,7 +62,7 @@ object LeapMenu {
 
     @JvmStatic
     fun isOverlayOpen(): Boolean {
-        val s = Minecraft.getInstance().screen
+        val s = Minecraft.getInstance().curScreen
         return s is AbstractContainerScreen<*> && isLeapMenu(s)
     }
 
@@ -72,7 +74,7 @@ object LeapMenu {
         for (i in 0 until containerSize) {
             val stack = menu.slots[i].item
             if (stack.isEmpty || !stack.`is`(Items.PLAYER_HEAD)) continue
-            val name = NAME_RX.find(stack.hoverName.string.replace(COLOR, ""))?.groupValues?.get(1) ?: continue
+            val name = NAME_RX.find(TextStrip.plain(stack.hoverName.string))?.groupValues?.get(1) ?: continue
             val dp = DungeonPlayers.get(name)
             val clazz = teammateClasses[name] ?: dpClass(dp) ?: DungeonClass.getClass(name)
             out.add(Target(i, name, clazz, dp?.isDead() == true))
@@ -308,6 +310,6 @@ object LeapMenu {
         val mc = Minecraft.getInstance()
         val p = mc.player ?: return
         mc.gameMode?.handleContainerInput(screen.menu.containerId, t.slot, 0, ContainerInput.PICKUP, p)
-        if (mc.screen === screen) screen.onClose()
+        if (mc.curScreen === screen) screen.onClose()
     }
 }

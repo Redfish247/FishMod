@@ -1,4 +1,5 @@
 package fishmod.features.achievements
+import fishmod.compat.showScreen
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import fishmod.features.achievements.AchRegistry.Ach
@@ -30,6 +31,7 @@ object AchEngine {
         AchLeaderboard.init()
         AchPopup.init()
         ClientTickEvents.END_CLIENT_TICK.register { mc ->
+            if (mc.player != null) FishDiag.guard("AchEngine.2", "achievement owner bind") { AchStore.bind() }
             if (!AchSettings.achEnabled) return@register
             FishDiag.guard("AchEngine.1", "achievement tick") {
                 AchHooks.onTick()
@@ -126,7 +128,7 @@ object AchEngine {
     @JvmStatic
     fun command(): LiteralArgumentBuilder<FabricClientCommandSource> =
         ClientCommands.literal("ach")
-            .executes { Minecraft.getInstance().schedule { Minecraft.getInstance().setScreen(AchScreen()) }; 1 }
+            .executes { Minecraft.getInstance().schedule { Minecraft.getInstance().showScreen(AchScreen()) }; 1 }
             .then(ClientCommands.literal("test").executes { AchPopup.test(); 1 })
             .then(ClientCommands.literal("sync").executes { AchApiSync.sync(true); 1 })
             .then(ClientCommands.literal("lb")

@@ -974,7 +974,8 @@ public final class ForagingSnapshot {
 			int maxIdx = expected - 1;
 			for (String key : map.keySet()) {
 				try {
-					maxIdx = Math.max(maxIdx, Integer.parseInt(key));
+					// Cap so a bogus huge key can't spin a giant slot loop.
+					maxIdx = Math.max(maxIdx, Math.min(63, Integer.parseInt(key)));
 				} catch (NumberFormatException ignored) {
 				}
 			}

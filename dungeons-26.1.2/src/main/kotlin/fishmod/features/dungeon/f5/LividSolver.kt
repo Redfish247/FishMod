@@ -1,5 +1,8 @@
 package fishmod.features.dungeon.f5
 
+import fishmod.compat.CB
+import fishmod.compat.CI
+
 import fishmod.features.dungeon.map.DungeonState
 import fishmod.utils.Misc
 import fishmod.utils.config.values.FishSettings
@@ -24,15 +27,15 @@ object LividSolver {
     private val WOOL_POS = BlockPos(5, 108, 43)
 
     private enum class Livid(val entityName: String, val colorCode: Char, val wool: Block) {
-        VENDETTA("Vendetta", 'f', Blocks.WHITE_WOOL),
-        CROSSED("Crossed", 'd', Blocks.MAGENTA_WOOL),
-        ARCADE("Arcade", 'e', Blocks.YELLOW_WOOL),
-        SMILE("Smile", 'a', Blocks.LIME_WOOL),
-        DOCTOR("Doctor", '7', Blocks.GRAY_WOOL),
-        PURPLE("Purple", '5', Blocks.PURPLE_WOOL),
-        SCREAM("Scream", '9', Blocks.BLUE_WOOL),
-        FROG("Frog", '2', Blocks.GREEN_WOOL),
-        HOCKEY("Hockey", 'c', Blocks.RED_WOOL);
+        VENDETTA("Vendetta", 'f', CB.WHITE_WOOL),
+        CROSSED("Crossed", 'd', CB.MAGENTA_WOOL),
+        ARCADE("Arcade", 'e', CB.YELLOW_WOOL),
+        SMILE("Smile", 'a', CB.LIME_WOOL),
+        DOCTOR("Doctor", '7', CB.GRAY_WOOL),
+        PURPLE("Purple", '5', CB.PURPLE_WOOL),
+        SCREAM("Scream", '9', CB.BLUE_WOOL),
+        FROG("Frog", '2', CB.GREEN_WOOL),
+        HOCKEY("Hockey", 'c', CB.RED_WOOL);
 
         var entity: Player? = null
     }

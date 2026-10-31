@@ -22,6 +22,8 @@ object RemoteScales {
             byUuid.clear()
             return
         }
+        // drop players who left the tab so the map doesn't grow across lobbies
+        byUuid.keys.retainAll(queried)
         for (u in queried) {
             val xyz = parse(scales[u])
             if (xyz == null) byUuid.remove(u) else byUuid[u] = xyz
@@ -47,6 +49,7 @@ object RemoteScales {
                 FishDiag.fail("RemoteScales.1", "scale has ${parts.size} parts: '$raw'")
                 return null
             }
+            if (x.isNaN() || y.isNaN() || z.isNaN()) return null // "NaN" parses as a float
             x = clamp(x)
             y = clamp(y)
             z = clamp(z)

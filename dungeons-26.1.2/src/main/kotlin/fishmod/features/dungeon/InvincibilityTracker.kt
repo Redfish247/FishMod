@@ -1,4 +1,7 @@
 package fishmod.features.dungeon
+import fishmod.compat.curScreen
+import fishmod.utils.TextStrip
+import fishmod.compat.hudHidden
 
 import fishmod.features.FishHudEditor
 import fishmod.features.PetHud
@@ -45,7 +48,7 @@ object InvincibilityTracker {
     private const val NAME = "Invincibility Timer"
     private const val LINE_H = 10
     private const val ICON_LINE_H = 18
-    private val COLOR = fishmod.utils.Constants.STRIP_COLOR_REGEX
+    private val WS = Regex("\\s+")
 
     @JvmStatic
     fun init() {
@@ -59,7 +62,7 @@ object InvincibilityTracker {
 
         Events.ON_GAME_MESSAGE.register { text ->
             if (Dungeons.displayInvincibilityTimer) {
-                val s = COLOR.replace(text.string, "").trim()
+                val s = TextStrip.plain(text.string).replace(WS, " ").trim()
                 val hit = Type.entries.firstOrNull { it.regex.matches(s) }
                 if (hit == null && (s.endsWith("saved your life!") || s.endsWith("saved you from certain death!"))) FishDiag.fail("InvincibilityTracker.1", "unrecognised invincibility proc line: '$s'")
                 hit?.let { t ->
@@ -138,22 +141,22 @@ object InvincibilityTracker {
     }
 
     private fun learnIcons() {
-        if (!FishSettings.invincIcons || ++iconTick < 20) return
+        if (!Dungeons.displayInvincibilityTimer || !FishSettings.invincIcons || ++iconTick < 20) return
         iconTick = 0
         val mc = Minecraft.getInstance()
         val allKnown = Type.entries.all { storedTexture(it).isNotEmpty() }
-        if (allKnown && mc.screen !is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>) return
+        if (allKnown && mc.curScreen !is net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*>) return
         if (!fishmod.utils.Location.inSkyblock()) return
         val player = mc.player ?: return
         val inv = player.inventory
-        val stacks = (0 until inv.containerSize).map { inv.getItem(it) } + player.getItemBySlot(EquipmentSlot.HEAD)
-        for (st in stacks) {
+        for (i in 0..inv.containerSize) {
+            val st = if (i < inv.containerSize) inv.getItem(i) else player.getItemBySlot(EquipmentSlot.HEAD)
             if (st.isEmpty) continue
             val id = ItemUtil.getId(st) ?: continue
             val t = Type.entries.firstOrNull { id in it.ids } ?: continue
             texture(st)?.let { storeTexture(t, it) }
         }
-        val screen = mc.screen as? net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*> ?: return
+        val screen = mc.curScreen as? net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<*> ?: return
         if (!fishmod.utils.ScreenTitle.plain(screen).contains("Pets")) return
         for (slot in screen.menu.slots) {
             val st = slot.item
@@ -194,14 +197,17 @@ object InvincibilityTracker {
         }
     }
 
+    private val shown = ArrayList<Type>()
+
     @JvmStatic
     fun renderHud(ctx: GuiGraphicsExtractor, tick: DeltaTracker) {
         if (!Dungeons.displayInvincibilityTimer || !Location.inDungeon()) return
         if (FishSettings.invincShowInBoss && !Phase.inBoss()) return
         val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.options.hideGui) return
+        if (mc.player == null || mc.hudHidden) return
 
-        val shown = Type.entries.filter { visible(it) }
+        shown.clear()
+        for (t in Type.entries) if (visible(t)) shown.add(t)
         if (shown.isEmpty()) return
 
         val sc = FishSettings.invincScale.toFloat()

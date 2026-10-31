@@ -1,4 +1,8 @@
 package fishmod.features.dungeon.f7.terminal
+import fishmod.compat.showScreen
+
+import fishmod.compat.CB
+import fishmod.compat.CI
 
 import fishmod.utils.config.FishConfig
 import fishmod.utils.config.values.FishSettings
@@ -65,6 +69,14 @@ class TermSimScreen private constructor(
     private fun savePbs() {
         FishSettings.termSimPbs = pbs.joinToString(",") { if (it == Double.MAX_VALUE) "" else "%.3f".format(it) }
         runCatching { FishConfig.manager.save() }.onFailure { FishDiag.fail("TermSimScreen.2", "saving term sim PBs failed", it) }
+    }
+
+    private fun reopenAs(t: TerminalType) {
+        val mc = Minecraft.getInstance()
+        val rows = t.windowSize / 9
+        val next = TermSimScreen(TermSimMenu(rows, mc.player!!.inventory, SimpleContainer(rows * 9)), t)
+        next.lastMs = lastMs; next.solvedCount = solvedCount; pbs.copyInto(next.pbs)
+        mc.showScreen(next)
     }
 
     private fun newRound(t: TerminalType) {
@@ -178,8 +190,8 @@ class TermSimScreen private constructor(
                 col == melTarget && row !in 1..4 -> MAGENTA
                 col == melLime && row == melRow -> LIME
                 col in 1..5 && row == melRow -> RED
-                col == 7 && row == melRow -> Items.LIME_TERRACOTTA
-                col == 7 && row in 1..4 -> Items.RED_TERRACOTTA
+                col == 7 && row == melRow -> CI.LIME_TERRACOTTA
+                col == 7 && row in 1..4 -> CI.RED_TERRACOTTA
                 col in 1..5 && row in 1..4 -> WHITE
                 else -> BLACK
             }))
@@ -257,7 +269,10 @@ class TermSimScreen private constructor(
     override fun keyPressed(input: KeyEvent): Boolean {
         val k = input.key()
         if (k in GLFW.GLFW_KEY_1..GLFW.GLFW_KEY_6) {
-            newRound(TerminalType.entries[k - GLFW.GLFW_KEY_1]); return true
+            val t = TerminalType.entries[k - GLFW.GLFW_KEY_1]
+            // a different size needs a new menu, or the old container frame shows behind the GUI
+            if (t.windowSize != type.windowSize) reopenAs(t) else newRound(t)
+            return true
         }
         if (k == GLFW.GLFW_KEY_R) { newRound(type); return true }
         return super.keyPressed(input)
@@ -274,14 +289,14 @@ class TermSimScreen private constructor(
     }
 
     companion object {
-        private val BLACK = Items.BLACK_STAINED_GLASS_PANE
-        private val RED = Items.RED_STAINED_GLASS_PANE
-        private val LIME = Items.LIME_STAINED_GLASS_PANE
-        private val WHITE = Items.WHITE_STAINED_GLASS_PANE
-        private val MAGENTA = Items.MAGENTA_STAINED_GLASS_PANE
+        private val BLACK = CI.BLACK_STAINED_GLASS_PANE
+        private val RED = CI.RED_STAINED_GLASS_PANE
+        private val LIME = CI.LIME_STAINED_GLASS_PANE
+        private val WHITE = CI.WHITE_STAINED_GLASS_PANE
+        private val MAGENTA = CI.MAGENTA_STAINED_GLASS_PANE
         private val RUBIX_PANES = listOf(
-            Items.ORANGE_STAINED_GLASS_PANE, Items.YELLOW_STAINED_GLASS_PANE,
-            Items.GREEN_STAINED_GLASS_PANE, Items.BLUE_STAINED_GLASS_PANE, Items.RED_STAINED_GLASS_PANE,
+            CI.ORANGE_STAINED_GLASS_PANE, CI.YELLOW_STAINED_GLASS_PANE,
+            CI.GREEN_STAINED_GLASS_PANE, CI.BLUE_STAINED_GLASS_PANE, CI.RED_STAINED_GLASS_PANE,
         )
         private val RUBIX_CELLS = intArrayOf(12, 13, 14, 21, 22, 23, 30, 31, 32)
         private val SELECT_COLORS = listOf(
@@ -298,7 +313,7 @@ class TermSimScreen private constructor(
 
         private fun colorItems(color: String): List<net.minecraft.world.item.Item> =
             SELECT_MATS.mapNotNull { BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath("minecraft", "${color}_$it")) }
-                .ifEmpty { FishDiag.fail("TermSimScreen.7", "no items found for sim colour '$color'"); listOf(Items.WHITE_WOOL) }
+                .ifEmpty { FishDiag.fail("TermSimScreen.7", "no items found for sim colour '$color'"); listOf(CI.WHITE_WOOL) }
 
         private fun plain(s: ItemStack): String = s.hoverName.string.replace(fishmod.utils.Constants.STRIP_COLOR_REGEX, "").trim()
 
@@ -320,7 +335,7 @@ class TermSimScreen private constructor(
             } ?: TerminalType.entries.random()
             val rows = type.windowSize / 9
             val menu = TermSimMenu(rows, mc.player!!.inventory, SimpleContainer(rows * 9))
-            mc.setScreen(TermSimScreen(menu, type))
+            mc.showScreen(TermSimScreen(menu, type))
         }
     }
 }

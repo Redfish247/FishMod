@@ -1,4 +1,5 @@
 package fishmod.features.diana
+import fishmod.compat.cam
 
 import fishmod.utils.events.Events
 import fishmod.utils.rendering.RenderUtils
@@ -15,7 +16,6 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.abs
-import kotlin.math.sqrt
 
 enum class WpType { BURROW, GUESS, ARROW, SUB, RARE, WORLD }
 
@@ -222,10 +222,10 @@ object DianaWaypoints {
 
     private fun withAlpha(rgb: Int, a: Float) = ((a.coerceIn(0f, 1f) * 255).toInt() shl 24) or (rgb and 0xFFFFFF)
 
-    private fun eye(): Vec3? = Minecraft.getInstance().gameRenderer.mainCamera.position()
+    private fun eye(): Vec3? = Minecraft.getInstance().cam.position()
 
     private fun lineStart(): Vec3 {
-        val cam = Minecraft.getInstance().gameRenderer.mainCamera
+        val cam = Minecraft.getInstance().cam
         return cam.position().add(Vec3.directionFromRotation(cam.xRot(), cam.yRot()))
     }
 
@@ -268,7 +268,7 @@ object DianaWaypoints {
             if (text.isNotEmpty()) {
                 // World size per font pixel grows with distance so labels stay the same size on screen;
                 // past render distance the label is pulled in along the same ray (SBO does the same)
-                val (pos, pk) = RenderUtils.pullIn(Vec3(w.pos.x + 0.5, w.pos.y + 1.5 + d / 25.0, w.pos.z + 0.5), eye)
+                val (pos, pk) = RenderUtils.pullIn(Vec3(w.pos.x + 0.5, w.pos.y + 1.2 + d / 60.0, w.pos.z + 0.5), eye)
                 val px = (DianaSettings.dianaTextScale * maxOf(0.035, d * 0.0035) * pk).toFloat()
                 val textColor = withAlpha(0xFFFFFF, DianaSettings.dianaTextOpacity / 100f)
                 RenderUtils.renderSeeThroughText(rCtx, rPs, Component.literal(colorCode(w, closest) + text), pos, px, textColor, DianaSettings.dianaTextShadow)
@@ -311,10 +311,5 @@ object DianaWaypoints {
             line(if (i == 0) lineStart() else from, to, color, (width / 1.6f).coerceIn(1f, 20f))
             left.remove(next); from = to; i++
         }
-    }
-
-    fun dist(a: BlockPos, b: BlockPos): Double {
-        val dx = (a.x - b.x).toDouble(); val dy = (a.y - b.y).toDouble(); val dz = (a.z - b.z).toDouble()
-        return sqrt(dx * dx + dy * dy + dz * dz)
     }
 }
