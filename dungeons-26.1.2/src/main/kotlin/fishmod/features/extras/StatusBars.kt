@@ -35,13 +35,28 @@ object StatusBars {
         }
     }
 
+    // Skyblocker-style: same parts it strips, colour codes allowed anywhere
+    private val STRIP_HEALTH = Regex("""(?:§.)*[\d,]+/[\d,]+❤(?:\+(?:§.)*[\d,]+.)?""")
+    private val STRIP_MANA = Regex("""(?:§.)*[\d,]+/[\d,]+✎(?: (?:§.)*Mana| (?:§.)*[\d,]+(?:§.)*ʬ)?""")
+    private val STRIP_DEF = Regex("""(?:§.)*[\d,]+(?:§.)*❈(?: (?:§.)*Defense)?""")
+
+    // Reads health/mana/defense from the action bar; returns it with those parts removed when vanilla is hidden
     @JvmStatic
-    fun onActionBar(msg: Component) {
-        if (!S.statusBars) return
-        val s = fishmod.utils.Constants.STRIP_COLOR_REGEX.replace(msg.string, "")
+    fun onActionBar(msg: Component): Component {
+        if (!S.statusBars || !Location.inSkyblock()) return msg
+        val raw = msg.string
+        val s = fishmod.utils.Constants.STRIP_COLOR_REGEX.replace(raw, "")
         HEALTH.find(s)?.let { hp = num(it.groupValues[1]); hpMax = num(it.groupValues[2]) }
         MANA.find(s)?.let { mana = num(it.groupValues[1]); manaMax = num(it.groupValues[2]) }
         DEFENSE.find(s)?.let { def = num(it.groupValues[1]) }
+        if (!hideVanilla()) return msg
+        var out = raw
+        if (S.statusBarsHealth) out = STRIP_HEALTH.replace(out, "")
+        if (S.statusBarsMana) out = STRIP_MANA.replace(out, "")
+        if (S.statusBarsDefense) out = STRIP_DEF.replace(out, "")
+        if (out == raw) return msg
+        out = out.replace(Regex(" {3,}"), "     ").trim()
+        return Component.literal(out.ifEmpty { " " })
     }
 
     private fun num(s: String) = s.replace(",", "").toLongOrNull() ?: -1L
@@ -55,7 +70,9 @@ object StatusBars {
     private fun render(ctx: GuiGraphicsExtractor) {
         if (!S.statusBars || !Location.inSkyblock()) return
         val mc = Minecraft.getInstance()
-        mc.player ?: return
+        val p = mc.player ?: return
+        // no action bar read yet: fall back to vanilla health so the bars still show
+        if (hpMax <= 0) { hp = p.health.toLong(); hpMax = p.maxHealth.toLong().coerceAtLeast(1) }
         val sc = S.statusBarsScale.toFloat()
         ctx.pose().pushMatrix()
         try {
