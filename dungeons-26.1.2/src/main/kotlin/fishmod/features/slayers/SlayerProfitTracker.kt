@@ -281,7 +281,25 @@ object SlayerProfitTracker {
         @JvmField val value: Double,
         @JvmField val priced: Boolean,
         @JvmField val coins: Boolean = false,
+        @JvmField val id: String? = null,
     )
+
+    private val RUNE_NAME = Regex("^(.+) Rune ([IVX]+)$")
+    private val SHARD_NAME = Regex("^(.+) Shard$")
+
+    private fun idPart(s: String) = s.uppercase().replace("'", "").replace(Regex("[^A-Z0-9]+"), "_").trim('_')
+
+    // Runes and hunting shards aren't in the items API by name: "Bite Rune I" = RUNE_BITE_1, "Primordial Shard" = SHARD_PRIMORDIAL
+    private fun idFor(name: String): String? {
+        if (name.endsWith("Coins")) return null
+        ItemsDb.idFor(name)?.let { return it }
+        RUNE_NAME.matchEntire(name)?.let { m ->
+            val lvl = fishmod.utils.data.Roman.toInt(m.groupValues[2])
+            if (lvl > 0) return "RUNE_${idPart(m.groupValues[1])}_$lvl"
+        }
+        SHARD_NAME.matchEntire(name)?.let { return "SHARD_${idPart(it.groupValues[1])}" }
+        return null
+    }
 
     fun rows(type: SlayerType, tier: Int): List<Row> {
         val k = key(type, tier)
@@ -289,10 +307,10 @@ object SlayerProfitTracker {
         val snap = synchronized(lock) { if (d != null) LinkedHashMap(d.drops) else LinkedHashMap() }
         val out = ArrayList<Row>(snap.size + 1)
         for ((name, count) in snap) {
-            val id = if (name.endsWith("Coins")) null else ItemsDb.idFor(name)
+            val id = idFor(name)
             val unit = if (id != null) CroesusPrices.price(id) else 0.0
             if (unit.isNaN()) FishDiag.fail("SlayerProfitTracker.12", "price NaN for slayer drop $name ($id)")
-            out.add(Row(name, count, unit * count, id != null && unit > 0))
+            out.add(Row(name, count, unit * count, id != null && unit > 0, id = id))
         }
         if (countKillCoins()) {
             val mkc = d?.mobKillCoins ?: 0L
@@ -311,7 +329,7 @@ object SlayerProfitTracker {
     fun allProfit(sessionOnly: Boolean): Double {
         val snap = synchronized(lock) { (if (sessionOnly) session else total).values.map { Triple(HashMap(it.drops), it.spawnCost, it.mobKillCoins) } }
         return snap.sumOf { (drops, cost, mkc) ->
-            drops.entries.sumOf { (n, c) -> (if (n.endsWith("Coins")) 0.0 else ItemsDb.idFor(n)?.let { CroesusPrices.price(it) } ?: 0.0) * c } + mkc - cost
+            drops.entries.sumOf { (n, c) -> (idFor(n)?.let { CroesusPrices.price(it) } ?: 0.0) * c } + mkc - cost
         }
     }
 
@@ -393,7 +411,7 @@ object SlayerProfitTracker {
             val label = when {
                 hiddenRow -> "§7| §8§m${r.name} ${sep(r.count)}"
                 r.coins -> "§7| §6Mob Kill Coins"
-                else -> "§7| §f${r.name} §f${sep(r.count)}"
+                else -> "§7| ${fishmod.features.ProfitTrackerKit.rarityColor(r.id) ?: "§f"}${r.name} §f${sep(r.count)}"
             }
             val value = when {
                 hiddenRow -> "§8§m${sh(r.value)}"
