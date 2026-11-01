@@ -384,6 +384,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             val f = Feature("Ghost Box", FishSettings::ghostBoxEnabled)
             f.sub.add(ToggleSetting("Hide Ghost Model", "", FishSettings::ghostBoxHideModel))
             f.sub.add(ColorPickerSetting("Colour", "", FishSettings::ghostBoxColor))
+            f.sub.add(ToggleSetting("Filled", "", FishSettings::ghostBoxFilled))
+            f.sub.add(ColorPickerSetting("Fill Colour", "", FishSettings::ghostBoxFillColor).gatedBy { FishSettings.ghostBoxFilled })
             visuals.features.add(f)
         }
         run {
