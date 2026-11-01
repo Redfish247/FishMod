@@ -452,6 +452,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
                 { v -> FishSettings.compactTabFooterMode = v }))
             f.sub.add(InputSetting("Bottom Line Text", "& colours; {cookie} {godpot} {effects}",
                 FishSettings::compactTabFooterText).gatedBy { FishSettings.compactTabFooterMode == "Custom" })
+            f.sub.add(ToggleSetting("Show Potion Effects", "Effects count on the bottom line", FishSettings::compactTabShowEffects)
+                .gatedBy { FishSettings.compactTabFooterMode == "Stats" || FishSettings.compactTabFooterMode == "Custom" })
             general.features.add(f)
         }
         run {
