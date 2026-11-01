@@ -193,7 +193,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
         }
         run {
             val f = Feature("Inventory Buttons", Buttons::enableInventoryButtons)
-            f.sub.add(SubcategoryHeader("Open your inventory and click Edit (top-right) to add, move and edit buttons"))
+            f.sub.add(SubcategoryHeader("Open your inventory and click Edit (under its bottom-right corner) to add, move and edit buttons"))
             general.features.add(f)
         }
         run {
