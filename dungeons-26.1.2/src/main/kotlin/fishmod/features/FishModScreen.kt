@@ -629,6 +629,8 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(SubcategoryHeader("Database"))
             f.sub.add(ButtonSetting("Export to Clipboard", "Copy this world's waypoint database as text", "Copy", Runnable { wp.exportToClipboard() }))
             f.sub.add(ButtonSetting("Import from Clipboard", "Replace with a previously exported database", "Paste", Runnable { wp.importFromClipboard() }))
+            f.sub.add(ButtonSetting("Import Odin Config", "Add waypoints from Odin's packs in config/odin (keeps yours)", "Import", Runnable { fishmod.features.dungeon.OdinWaypointImport.importFromOdinConfig() }))
+            f.sub.add(ButtonSetting("Import Odin Clipboard", "Add waypoints from an Odin /dwp export string (keeps yours)", "Paste", Runnable { fishmod.features.dungeon.OdinWaypointImport.importFromClipboard() }))
             f.sub.add(ButtonSetting("Clear Current Area", "Delete every waypoint in the room/zone you're in now", "Clear", Runnable { wp.resetCurrentArea() }))
             f.sub.add(SubcategoryHeader("Routes"))
             f.sub.add(ButtonSetting("Start/Stop Recording", "Tags each waypoint placed next, in order, as a route",
