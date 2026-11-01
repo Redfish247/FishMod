@@ -53,6 +53,6 @@ object MiningBoxes {
         if (FishSettings.corpseHighlightEnabled) for (e in corpses) if (e.isAlive)
             RenderUtils.gizmoBox(e.boundingBox, 0, FishSettings.corpseHighlightColor, true)
         if (FishSettings.ghostBoxEnabled) for (e in ghosts) if (e.isAlive)
-            RenderUtils.gizmoBox(e.boundingBox, 0, FishSettings.ghostBoxColor)
+            RenderUtils.gizmoBox(e.boundingBox, if (FishSettings.ghostBoxFilled) FishSettings.ghostBoxFillColor else 0, FishSettings.ghostBoxColor)
     }
 }

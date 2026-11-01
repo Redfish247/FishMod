@@ -566,6 +566,8 @@ object FishSettings {
     @ConfigValue @JvmField var ghostBoxEnabled: Boolean = false
     @ConfigValue @JvmField var ghostBoxHideModel: Boolean = true
     @ConfigValue @JvmField var ghostBoxColor: Int = 0xFFAAAAFF.toInt()
+    @ConfigValue @JvmField var ghostBoxFilled: Boolean = false
+    @ConfigValue @JvmField var ghostBoxFillColor: Int = 0x40AAAAFF
 
     @ConfigValue @JvmField var blockOverlayEnabled: Boolean = false
     @ConfigValue @JvmField var blockOverlayMode: Int = 2
