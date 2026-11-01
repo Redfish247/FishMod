@@ -27,6 +27,8 @@ object UiRenderer {
     private var uAtlas = -1
     private val noUi = System.getProperty("fishmod.noui") != null
     private var failed = false
+    // Vulkan backend has no GL context; raw GL calls there crash the client
+    private val noGl by lazy { runCatching { org.lwjgl.opengl.GL.getCapabilities() }.isFailure.also { if (it) fishmod.utils.debug.Debug.LOGGER.warn("[UiRenderer] no OpenGL context (Vulkan?), custom UI painting disabled") } }
     private var failLogged = false
     private var consecutiveFailures = 0
 
@@ -149,7 +151,7 @@ void main(){
 
     @JvmStatic
     fun paint(screenW: Int, screenH: Int, scale: Float) {
-        if (failed || noUi) return
+        if (failed || noUi || noGl) return
         guard.capture()
         try {
             init()
