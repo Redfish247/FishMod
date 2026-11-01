@@ -1491,6 +1491,7 @@ class FishModScreen : Screen(Component.literal("FishMod")), HasUiOverlay {
             f.sub.add(ToggleSetting("Prices", "Value = base + modifiers (enchants, HPB, recomb, gems, reforge…)", FishSettings::itemTooltipPrices))
             f.sub.add(ToggleSetting("NPC Sell Price", "", FishSettings::itemTooltipNpcSell))
             f.sub.add(ToggleSetting("Dungeon Quality", "Stat-boost % + floor", FishSettings::itemQualityTooltip))
+            f.sub.add(ToggleSetting("Obtained Date", "When the item was obtained", fishmod.features.extras.ExtrasSettings::obtainedDateTooltip))
             f.sub.add(SubcategoryHeader("Scrollable Tooltips — scroll: move · shift: sideways · ctrl: scale"))
             f.sub.add(ToggleSetting("Scrollable Tooltips", "", FishSettings::tooltipScrollEnabled))
             f.sub.add(SliderIntSetting("Tooltip Scale %", "", FishSettings::tooltipScrollScale, 30, 150, 5).gatedBy { FishSettings.tooltipScrollEnabled })

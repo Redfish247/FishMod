@@ -80,7 +80,6 @@ object ExtrasMenu {
         col.features.add(Feature("Pet Level Overlay", S::overlayPetLevel))
         col.features.add(Feature("Minion Tier Overlay", S::overlayMinionTier))
         col.features.add(Feature("Cake Year Overlay", S::overlayCakeYear))
-        col.features.add(Feature("Obtained Date Tooltip", S::obtainedDateTooltip))
         col.features.add(Feature("Click Suggestion For /ahs", S::suggestionClickAhs))
 
         return col
@@ -98,7 +97,6 @@ object ExtrasMenu {
         "Pet Level Overlay" -> "Pet level in the slot corner"
         "Minion Tier Overlay" -> "Minion tier in the slot corner"
         "Cake Year Overlay" -> "New Year Cake year in the slot corner"
-        "Obtained Date Tooltip" -> "Adds when the item was obtained to its tooltip"
         "Click Suggestion For /ahs" -> "Clicking a missing pet / museum suggestion in FishMod screens runs /ahs <item>"
         else -> null
     }

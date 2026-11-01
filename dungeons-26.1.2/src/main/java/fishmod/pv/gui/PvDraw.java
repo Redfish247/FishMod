@@ -402,13 +402,26 @@ public final class PvDraw {
 		// Always round both ends of the fill, including incomplete bars.
 		// One scheme everywhere: gold when maxed, gray while still filling.
 		boolean maxed = maxedShiny || clamped >= 0.999f;
-		roundedFill(g, x, y, Math.max(filled, Math.min(w, h)), h, h / 2, maxed ? maxedColor() : COLOR_BAR_PROGRESS);
+		int fw = Math.max(filled, Math.min(w, h));
+		roundedFill(g, x, y, fw, h, h / 2, maxed ? maxedColor() : COLOR_BAR_PROGRESS);
+		if (maxed && fishmod.features.extras.ExtrasSettings.pvMaxedRainbow) {
+			chromaSlices(g, x, y, fw, h);
+		}
+	}
+
+	/** Fast sliding rainbow across the bar; ends keep the rounded base fill. */
+	private static void chromaSlices(GuiGraphicsExtractor g, int x, int y, int w, int h) {
+		int r = h / 2;
+		float t = (System.currentTimeMillis() % 1200L) / 1200F;
+		for (int sx = r; sx < w - r; sx += 2) {
+			g.fill(x + sx, y, x + Math.min(sx + 2, w - r), y + h, rainbowArgb(positiveModulo(sx / 60F - t, 1F)));
+		}
 	}
 
 	/** User-picked maxed bar colour, or a cycling rainbow. */
 	public static int maxedColor() {
 		if (fishmod.features.extras.ExtrasSettings.pvMaxedRainbow) {
-			return rainbowArgb((System.currentTimeMillis() % 2800L) / 2800F);
+			return rainbowArgb((System.currentTimeMillis() % 1200L) / 1200F);
 		}
 		return fishmod.features.extras.ExtrasSettings.pvMaxedColor;
 	}
